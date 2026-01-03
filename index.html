@@ -30,6 +30,16 @@
             position: sticky; top: 0; z-index: 1000;
         }
         .logo { font-size: 1.5rem; font-weight: 700; color: var(--primary-color); }
+        /* 로고 컨테이너 스타일 */
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px; /* 로고와 텍스트 사이 간격 */
+        }
+        .logo-container img {
+            height: 45px; /* 로고 높이 조절 (원하는 크기로 변경하세요) */
+            width: auto;
+        }
         .nav-links a { margin-left: 20px; font-size: 0.95rem; color: #64748b; font-weight: 500; }
         .nav-links a:hover { color: var(--accent-color); }
 
@@ -97,13 +107,22 @@
             .hero h1 { font-size: 1.8rem; }
             .features { flex-direction: column; align-items: center; }
             .course-item { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .logo-container img {
+                height: 35px;
+            }
+            .logo {
+                font-size: 1.2rem;
+            }
         }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="logo">StudyCrack</div>
+        <div class="logo-container" style="display: flex; align-items: center; gap: 10px;">
+            <img src="study_cracked_logo.png" alt="스터디크랙 로고" style="height: 40px; width: auto; object-fit: contain;">
+            <span class="logo">StudyCrack</span>
+        </div>
         <nav class="nav-links">
             <a href="#about">서비스 소개</a>
             <a href="#program">컨설팅 프로그램</a>
