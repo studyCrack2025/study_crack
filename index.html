@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>스터디크랙 - 고등입시를 성공으로 이끄는 파트너</title>
+    <title>스터디크랙 - 입시 전략의 모든 것</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
@@ -12,13 +12,13 @@
         /* 기본 스타일 초기화 */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Noto Sans KR', sans-serif; }
         body { color: #333; line-height: 1.6; }
-        a { text-decoration: none; color: inherit; }
+        a { text-decoration: none; color: inherit; cursor: pointer; }
         ul { list-style: none; }
 
         /* 색상 변수 */
         :root {
-            --primary-color: #0F172A; /* 짙은 네이비 (신뢰) */
-            --accent-color: #2563EB; /* 밝은 블루 (활기) */
+            --primary-color: #0F172A; /* 짙은 네이비 */
+            --accent-color: #2563EB; /* 블루 */
             --text-light: #F8FAFC;
             --bg-light: #F1F5F9;
         }
@@ -33,7 +33,7 @@
         .nav-links a { margin-left: 20px; font-size: 0.95rem; color: #64748b; font-weight: 500; }
         .nav-links a:hover { color: var(--accent-color); }
 
-        /* 히어로 섹션 (메인 배너) */
+        /* 히어로 섹션 */
         .hero {
             background-color: var(--primary-color); color: var(--text-light);
             padding: 100px 5%; text-align: center;
@@ -61,7 +61,7 @@
         .feature-card h3 { margin-bottom: 15px; font-size: 1.25rem; }
         .feature-card p { font-size: 0.95rem; color: #64748b; }
 
-        /* 커리큘럼/상품 안내 (PG사 필수 확인 요소) */
+        /* 컨설팅 프로그램 */
         .curriculum { background-color: var(--bg-light); }
         .course-list { max-width: 800px; margin: 0 auto; }
         .course-item {
@@ -72,14 +72,27 @@
         .course-info h4 { font-size: 1.1rem; margin-bottom: 5px; }
         .course-price { font-weight: 700; color: var(--primary-color); }
 
-        /* 푸터 (사업자 정보 필수) */
+        /* 푸터 */
         footer { background-color: #1e293b; color: #94a3b8; padding: 50px 5%; font-size: 0.9rem; }
         .footer-content { display: flex; flex-direction: column; gap: 20px; max-width: 1200px; margin: 0 auto; }
         .company-info p { margin-bottom: 5px; }
         .legal-links { margin-top: 20px; border-top: 1px solid #334155; padding-top: 20px; }
-        .legal-links a { margin-right: 20px; color: #cbd5e1; }
+        .legal-links span { margin-right: 20px; color: #cbd5e1; cursor: pointer; text-decoration: underline; }
 
-        /* 반응형 */
+        /* 약관 모달창 스타일 */
+        .modal {
+            display: none; position: fixed; z-index: 2000; left: 0; top: 0;
+            width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white; margin: 10% auto; padding: 30px;
+            border-radius: 10px; width: 80%; max-width: 600px;
+            max-height: 70vh; overflow-y: auto; color: #333;
+        }
+        .close-btn { float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .modal h2 { margin-bottom: 15px; font-size: 1.5rem; }
+        .modal pre { white-space: pre-wrap; font-family: inherit; font-size: 0.85rem; color: #555; }
+
         @media (max-width: 768px) {
             .hero h1 { font-size: 1.8rem; }
             .features { flex-direction: column; align-items: center; }
@@ -92,62 +105,62 @@
     <header>
         <div class="logo">StudyCrack</div>
         <nav class="nav-links">
-            <a href="#about">소개</a>
-            <a href="#program">프로그램</a>
+            <a href="#about">서비스 소개</a>
+            <a href="#program">컨설팅 프로그램</a>
             <a href="#contact">문의하기</a>
         </nav>
     </header>
 
     <section class="hero">
-        <h1>고등입시를 성공으로 이끄는<br>가장 확실한 파트너</h1>
-        <p>스터디크랙은 체계적인 데이터 분석과 1:1 밀착 관리로<br>학생의 잠재력을 합격으로 증명합니다.</p>
-        <a href="#program" class="cta-button">수강신청 바로가기</a>
+        <h1>성적은 전략입니다.<br>입시의 판을 바꾸는 1:1 컨설팅</h1>
+        <p>무작정 열심히 하는 공부는 이제 그만.<br>스터디크랙은 당신만의 합격 로드맵을 설계합니다.</p>
+        <a href="#program" class="cta-button">컨설팅 신청하기</a>
     </section>
 
     <section id="about" class="section">
-        <h2 class="section-title">왜 스터디크랙인가요?</h2>
+        <h2 class="section-title">Why StudyCrack?</h2>
         <div class="features">
             <div class="feature-card">
-                <span class="feature-icon">🎯</span>
-                <h3>목표 중심 커리큘럼</h3>
-                <p>불필요한 학습을 줄이고, 오직 입시 성공에 필요한 핵심만을 공략합니다.</p>
+                <span class="feature-icon">🗺️</span>
+                <h3>맞춤형 로드맵 설계</h3>
+                <p>현재 성적과 목표 대학을 분석하여,<br>합격 가능한 최적의 입시 전형과 전략을 수립합니다.</p>
             </div>
             <div class="feature-card">
-                <span class="feature-icon">📊</span>
-                <h3>철저한 성적 관리</h3>
-                <p>매주 진행되는 모의고사와 데이터 분석을 통해 약점을 강점으로 바꿉니다.</p>
+                <span class="feature-icon">📅</span>
+                <h3>독한 학습 플래닝</h3>
+                <p>일간/주간/월간 계획표를 직접 관리하며,<br>실행하지 않으면 끝까지 추적하여 완수시킵니다.</p>
             </div>
             <div class="feature-card">
-                <span class="feature-icon">💡</span>
-                <h3>1:1 멘토링</h3>
-                <p>단순한 지식 전달을 넘어, 학습 습관과 멘탈까지 관리하는 파트너입니다.</p>
+                <span class="feature-icon">🔍</span>
+                <h3>생활기록부 관리</h3>
+                <p>교과 세특부터 창체 활동까지,<br>대학이 원하는 인재상에 맞춰 생기부를 디자인합니다.</p>
             </div>
         </div>
     </section>
 
     <section id="program" class="section curriculum">
-        <h2 class="section-title">제공 프로그램</h2>
+        <h2 class="section-title">컨설팅 프로그램</h2>
         <div class="course-list">
             <div class="course-item">
                 <div class="course-info">
-                    <h4>고등 입시 올인원 클래스</h4>
-                    <p>전 과목 기초부터 심화까지 완벽 대비</p>
+                    <h4>원포인트 입시 전략 상담</h4>
+                    <p>생활기록부/모의고사 분석을 통한 현재 위치 진단</p>
                 </div>
-                <div class="course-price">상담 문의</div>
+                <div class="course-price">1회 150,000원</div>
             </div>
             <div class="course-item">
                 <div class="course-info">
-                    <h4>수학 집중 공략반</h4>
-                    <p>킬러 문항 대비 및 오답 노트 1:1 첨삭</p>
+                    <h4>월간 학습 코칭 (플래닝)</h4>
+                    <p>주 1회 온/오프라인 점검 및 데일리 플래너 피드백</p>
                 </div>
-                <div class="course-price">상담 문의</div>
+                <div class="course-price">월 400,000원</div>
             </div>
             <div class="course-item">
                 <div class="course-info">
-                    <h4>주말 실전 모의고사반</h4>
-                    <p>실전과 동일한 환경에서의 테스트 및 풀이</p>
+                    <h4>수시/정시 배치 컨설팅</h4>
+                    <p>지원 가능 대학 라인업 설정 및 최종 지원 전략</p>
                 </div>
-                <div class="course-price">상담 문의</div>
+                <div class="course-price">상담 후 결정</div>
             </div>
         </div>
     </section>
@@ -158,18 +171,75 @@
                 스터디크랙 (Study Crack)
             </div>
             <div class="company-info">
-                <p>대표자: 임태륭 | 사업자등록번호: 201-61-009=623</p>
+                <p>대표자: 임태륭 | 사업자등록번호: 201-61-00623</p>
                 <p>주소: 서울특별시 노원구 중계로 195, 106-203</p>
-                <p>고객센터: 010-4035-3745 | 이메일: contact@studycrack.com</p>
+                <p>고객센터: 010-4035-3745 | 이메일: studyCracked@gmail.com</p>
             </div>
             <div class="legal-links">
-                <a href="#">이용약관</a>
-                <a href="#">개인정보처리방침</a>
-                <a href="#">환불규정</a>
+                <span onclick="openModal('terms')">이용약관</span>
+                <span onclick="openModal('privacy')">개인정보처리방침</span>
             </div>
             <p style="margin-top: 20px; font-size: 0.8rem;">&copy; 2026 Study Crack. All rights reserved.</p>
         </div>
     </footer>
 
+    <div id="terms-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('terms')">&times;</span>
+            <h2>이용약관</h2>
+            <pre>
+제1조 (목적)
+본 약관은 스터디크랙(이하 "회사")이 제공하는 교육 컨설팅 서비스의 이용 조건 및 절차를 규정합니다.
+
+제2조 (서비스의 내용)
+회사는 학습 플래닝, 입시 컨설팅, 멘토링 등의 서비스를 제공합니다.
+
+제3조 (환불 규정) *중요
+1. 서비스 시작 전: 납부한 수강료 전액 환불
+2. 총 수업시간의 1/3 경과 전: 수강료의 2/3 해당액 환불
+3. 총 수업시간의 1/2 경과 전: 수강료의 1/2 해당액 환불
+4. 총 수업시간의 1/2 경과 후: 환불 불가
+(본 규정은 학원법 및 소비자분쟁해결기준을 준수합니다.)
+
+제4조 (의무)
+회원은 정해진 컨설팅 시간에 성실히 참여해야 하며, 무단 불참 시 서비스가 차감될 수 있습니다.
+            </pre>
+        </div>
+    </div>
+
+    <div id="privacy-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('privacy')">&times;</span>
+            <h2>개인정보처리방침</h2>
+            <pre>
+1. 수집하는 개인정보 항목
+성명, 전화번호, 이메일, 학교/학년 성적 정보
+
+2. 개인정보의 수집 및 이용 목적
+입시 상담, 학습 커리큘럼 설계, 서비스 안내 및 고객 응대
+
+3. 개인정보의 보유 및 이용 기간
+이용 목적 달성 시까지 보유하며, 법령에 따른 보존 기간이 필요한 경우 해당 기간 동안 보관합니다.
+
+4. 제3자 제공
+회사는 원칙적으로 이용자의 개인정보를 외부에 제공하지 않습니다.
+            </pre>
+        </div>
+    </div>
+
+    <script>
+        function openModal(type) {
+            document.getElementById(type + '-modal').style.display = 'block';
+        }
+        function closeModal(type) {
+            document.getElementById(type + '-modal').style.display = 'none';
+        }
+        // 모달 바깥 클릭 시 닫기
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
 </body>
 </html>
