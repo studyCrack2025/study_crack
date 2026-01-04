@@ -1,0 +1,19 @@
+# 1. 민감한 인증 키 (절대 올리면 안 됨!)
+credentials.json
+*.pem
+*.key
+
+# 2. 너무 무거운 의존성 폴더 (올릴 필요 없음)
+node_modules/
+
+# 3. 환경변수 파일 (나중에 쓸 수도 있음)
+.env
+
+# 4. 맥/윈도우 시스템 파일 (지저분함)
+.DS_Store
+Thumbs.db
+
+# 5. 에러 로그 등
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
