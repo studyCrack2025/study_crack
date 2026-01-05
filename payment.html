@@ -36,7 +36,7 @@
             <h3>신청할 프로그램 선택</h3>
             <div class="product-selection">
                 <div class="product-option" onclick="selectProduct(this, 'option1', 'https://buy.stripe.com/test_7sY7sN8bp5uc1s8cPuaZi02')">
-                    <div class="product-header">
+                    <div class="product-header" name='one-point'>
                         <span>원포인트 입시 전략 상담</span>
                         <span>150,000원</span>
                     </div>
@@ -44,7 +44,7 @@
                 </div>
 
                 <div class="product-option" onclick="selectProduct(this, 'option2', 'https://buy.stripe.com/test_14A3cx77l6yg1s85n2aZi03')">
-                    <div class="product-header">
+                    <div class="product-header" name='coaching'>
                         <span>월간 학습 코칭 (플래닝)</span>
                         <span>400,000원</span>
                     </div>
@@ -52,7 +52,7 @@
                 </div>
 
                 <div class="product-option" onclick="selectProduct(this, 'option3', 'https://buy.stripe.com/test_aFa6oJ4ZdbSA7QweXCaZi04')">
-                    <div class="product-header">
+                    <div class="product-header" name='consulting'>
                         <span>수시/정시 배치 컨설팅</span>
                         <span>300,000원</span>
                     </div>
@@ -68,15 +68,22 @@
         let selectedProductUrl = "";
         let selectedProductName = "";
 
-        function selectProduct(element, name, url) {
-            // 모든 옵션 선택 해제
+        function selectProduct(element, optionId, url) {
+            // 1. 모든 옵션 선택 스타일 해제
             document.querySelectorAll('.product-option').forEach(el => el.classList.remove('selected'));
-            // 클릭한 옵션 선택
+            
+            // 2. 클릭한 옵션 선택 스타일 적용
             element.classList.add('selected');
             selectedProductUrl = url;
             
-            // 상품명 추출 (UI에 보이는 텍스트)
-            selectedProductName = element.querySelector('.product-header span').innerText;
+            // 3. [수정됨] name 속성값 가져오기
+            // 클릭한 요소(element) 안에서 .product-header 클래스를 가진 div를 찾고,
+            // 그 div의 'name' 속성 값을 가져옵니다.
+            const headerDiv = element.querySelector('.product-header');
+            selectedProductName = headerDiv.getAttribute('name');
+
+            // 확인용 로그 (나중에 삭제 가능)
+            console.log("선택된 상품명:", selectedProductName);
         }
 
         async function processPayment() {
@@ -84,21 +91,21 @@
             const phone = document.getElementById('phone').value;
             const email = document.getElementById('email').value;
 
+            // 상품 선택 여부 확인
             if(!name || !phone || !email || !selectedProductUrl) {
                 alert("모든 정보를 입력하고 상품을 선택해주세요.");
                 return;
             }
 
-            // 버튼 비활성화 (중복 클릭 방지)
+            // 버튼 비활성화
             const btn = document.getElementById('submitBtn');
             btn.innerText = "처리 중...";
             btn.disabled = true;
 
-            // 1. 고유 주문번호(UUID) 생성 (시간 + 랜덤)
+            // 1. 고유 주문번호 생성
             const uniqueId = 'ORD-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
 
-            // 2. AWS Lambda로 데이터 전송 (구글 시트 저장용)
-            // 주의: 아래 URL은 실제 AWS Lambda 배포 후 나온 주소로 교체해야 합니다.
+            // 2. AWS Lambda URL (배포 후 교체 필수!)
             const LAMBDA_URL = "YOUR_AWS_LAMBDA_FUNCTION_URL"; 
 
             try {
@@ -106,19 +113,17 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        type: 'submit_form', // 요청 타입 구분
+                        type: 'submit_form',
                         uniqueId: uniqueId,
                         name: name,
                         phone: phone,
                         email: email,
-                        product: selectedProductName
+                        product: selectedProductName // 이제 'one-point' 등이 들어갑니다.
                     })
                 });
 
                 if (response.ok) {
-                    // 3. 성공 시 Stripe 결제 페이지로 이동
-                    // 핵심: client_reference_id에 고유번호를 붙여서 보냅니다.
-                    // Stripe Payment Links는 client_reference_id 파라미터를 지원합니다.
+                    // 3. Stripe 이동 (성공 시)
                     window.location.href = `${selectedProductUrl}?client_reference_id=${uniqueId}&prefilled_email=${email}`;
                 } else {
                     alert("오류가 발생했습니다. 다시 시도해주세요.");

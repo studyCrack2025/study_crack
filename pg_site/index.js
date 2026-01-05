@@ -1,52 +1,87 @@
 const { GoogleSpreadsheet } = require('google-spreadsheet');
-const { v4: uuidv4 } = require('uuid');
+const Stripe = require('stripe');
 
-// [안전한 방식] 코드에 키를 적지 않고, 별도 파일에서 불러옵니다.
-// 이렇게 하면 코드를 남에게 보여줘도 비밀키는 안전합니다.
-const creds = require('./credentials.json');
+// 설정값 입력
+const creds = require('./credentials.json'); // 구글 서비스 계정 키
+const SHEET_ID = process.env.SHEET_ID; 
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+
+const doc = new GoogleSpreadsheet(SHEET_ID);
+const stripe = Stripe(STRIPE_SECRET_KEY);
 
 exports.handler = async (event) => {
-    // 1. 데이터 파싱
-    let body;
-    try {
-        body = event.body ? JSON.parse(event.body) : event;
-    } catch (e) {
-        return { statusCode: 400, body: "Invalid JSON" };
+    // 1. 구글 시트 인증 및 로드 함수
+    async function loadSheet() {
+        await doc.useServiceAccountAuth(creds);
+        await doc.loadInfo();
+        return doc.sheetsByIndex[0]; // 첫 번째 시트 사용
     }
 
-    // 2. Stripe 이벤트 확인
-    if (body && body.type === 'checkout.session.completed') {
-        const session = body.data.object;
-        
-        const customer = session.customer_details || {};
-        const name = customer.name || "이름미입력";
-        const phone = customer.phone || "번호없음";
-        const uniqueId = uuidv4().slice(0, 8); 
+    // 요청 처리
+    try {
+        // [CASE A] Stripe Webhook 요청인 경우 (결제 완료 알림)
+        // Stripe는 헤더에 서명을 보냅니다.
+        const sig = event.headers['stripe-signature'];
+        if (sig) {
+            let stripeEvent;
+            try {
+                stripeEvent = stripe.webhooks.constructEvent(event.body, sig, STRIPE_WEBHOOK_SECRET);
+            } catch (err) {
+                return { statusCode: 400, body: `Webhook Error: ${err.message}` };
+            }
 
-        try {
-            // [주의] 본인의 시트 ID는 그대로 유지하세요!
-            const doc = new GoogleSpreadsheet('1XyHNce3imSuuzxr-6DAe9ZuicrMda5vVsMIIZLlebHg');
-            
-            // 불러온 creds 파일로 인증
-            await doc.useServiceAccountAuth(creds);
-            
-            await doc.loadInfo();
-            const sheet = doc.sheetsByIndex[0];
+            // 결제 세션 완료 이벤트만 처리
+            if (stripeEvent.type === 'checkout.session.completed') {
+                const session = stripeEvent.data.object;
+                const uniqueId = session.client_reference_id; // 우리가 보낸 그 ID
 
+                if (uniqueId) {
+                    const sheet = await loadSheet();
+                    const rows = await sheet.getRows();
+                    
+                    // ID가 일치하는 행 찾기 (헤더: ID, 이름, 전화, 이메일, 상품, 결제여부)
+                    const row = rows.find(r => r.ID === uniqueId);
+                    
+                    if (row) {
+                        row.Paid = 'O'; // 결제 확인 표시 변경
+                        await row.save();
+                        console.log(`Order ${uniqueId} marked as paid.`);
+                    }
+                }
+            }
+            return { statusCode: 200, body: JSON.stringify({ received: true }) };
+        }
+
+        // [CASE B] 프론트엔드 폼 제출 요청인 경우
+        const body = JSON.parse(event.body);
+        if (body.type === 'submit_form') {
+            const sheet = await loadSheet();
+            
+            // 시트에 행 추가 (헤더가 미리 작성되어 있어야 함: ID, Name, Phone, Email, Product, Paid)
             await sheet.addRow({
-                '고유번호': uniqueId,
-                '이름': String(name),
-                '전화번호': String(phone),
-                '제출여부': 'X'
+                ID: body.uniqueId,
+                Name: body.name,
+                Phone: body.phone,
+                Email: body.email,
+                Product: body.product,
+                Paid: 'X', // 초기 상태는 미결제
+                Date: new Date().toLocaleString('ko-KR')
             });
 
-            return { statusCode: 200, body: JSON.stringify({ message: "Success" }) };
-            
-        } catch (error) {
-            console.error("Error:", error);
-            return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
+            return {
+                statusCode: 200,
+                headers: {
+                    "Access-Control-Allow-Origin": "*", // CORS 허용
+                    "Access-Control-Allow-Headers": "Content-Type",
+                    "Access-Control-Allow-Methods": "OPTIONS,POST"
+                },
+                body: JSON.stringify({ message: "Form saved" })
+            };
         }
-    }
 
-    return { statusCode: 200, body: "Not a checkout event" };
+    } catch (error) {
+        console.error(error);
+        return { statusCode: 500, body: error.toString() };
+    }
 };
