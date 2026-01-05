@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스터디크랙 - 컨설팅 신청</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <a href="index.html" style="display: flex; align-items: center; gap: 10px;">
+                <img src="study_cracked_logo.png" alt="로고">
+                <span class="logo">StudyCrack</span>
+            </a>
+        </div>
+    </header>
+
+    <div class="payment-container">
+        <h2 style="text-align: center; margin-bottom: 30px;">컨설팅 신청서 작성</h2>
+        
+        <form id="paymentForm">
+            <div class="form-group">
+                <label for="name">이름 (학생 본인)</label>
+                <input type="text" id="name" required placeholder="예: 홍길동">
+            </div>
+            <div class="form-group">
+                <label for="phone">전화번호</label>
+                <input type="tel" id="phone" required placeholder="예: 010-1234-5678">
+            </div>
+            <div class="form-group">
+                <label for="email">이메일</label>
+                <input type="email" id="email" required placeholder="예: student@example.com">
+            </div>
+
+            <h3>신청할 프로그램 선택</h3>
+            <div class="product-selection">
+                <div class="product-option" onclick="selectProduct(this, 'option1', 'https://buy.stripe.com/test_7sY7sN8bp5uc1s8cPuaZi02')">
+                    <div class="product-header">
+                        <span>원포인트 입시 전략 상담</span>
+                        <span>150,000원</span>
+                    </div>
+                    <small>현재 위치 진단 및 전략 수립</small>
+                </div>
+
+                <div class="product-option" onclick="selectProduct(this, 'option2', 'https://buy.stripe.com/test_14A3cx77l6yg1s85n2aZi03')">
+                    <div class="product-header">
+                        <span>월간 학습 코칭 (플래닝)</span>
+                        <span>400,000원</span>
+                    </div>
+                    <small>주 1회 점검 및 데일리 플래너 피드백</small>
+                </div>
+
+                <div class="product-option" onclick="selectProduct(this, 'option3', 'https://buy.stripe.com/test_aFa6oJ4ZdbSA7QweXCaZi04')">
+                    <div class="product-header">
+                        <span>수시/정시 배치 컨설팅</span>
+                        <span>300,000원</span>
+                    </div>
+                    <small>지원 대학 라인업 및 최종 전략</small>
+                </div>
+            </div>
+
+            <button type="button" class="btn-pay" id="submitBtn" onclick="processPayment()">결제하기</button>
+        </form>
+    </div>
+
+    <script>
+        let selectedProductUrl = "";
+        let selectedProductName = "";
+
+        function selectProduct(element, name, url) {
+            // 모든 옵션 선택 해제
+            document.querySelectorAll('.product-option').forEach(el => el.classList.remove('selected'));
+            // 클릭한 옵션 선택
+            element.classList.add('selected');
+            selectedProductUrl = url;
+            
+            // 상품명 추출 (UI에 보이는 텍스트)
+            selectedProductName = element.querySelector('.product-header span').innerText;
+        }
+
+        async function processPayment() {
+            const name = document.getElementById('name').value;
+            const phone = document.getElementById('phone').value;
+            const email = document.getElementById('email').value;
+
+            if(!name || !phone || !email || !selectedProductUrl) {
+                alert("모든 정보를 입력하고 상품을 선택해주세요.");
+                return;
+            }
+
+            // 버튼 비활성화 (중복 클릭 방지)
+            const btn = document.getElementById('submitBtn');
+            btn.innerText = "처리 중...";
+            btn.disabled = true;
+
+            // 1. 고유 주문번호(UUID) 생성 (시간 + 랜덤)
+            const uniqueId = 'ORD-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+
+            // 2. AWS Lambda로 데이터 전송 (구글 시트 저장용)
+            // 주의: 아래 URL은 실제 AWS Lambda 배포 후 나온 주소로 교체해야 합니다.
+            const LAMBDA_URL = "YOUR_AWS_LAMBDA_FUNCTION_URL"; 
+
+            try {
+                const response = await fetch(LAMBDA_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'submit_form', // 요청 타입 구분
+                        uniqueId: uniqueId,
+                        name: name,
+                        phone: phone,
+                        email: email,
+                        product: selectedProductName
+                    })
+                });
+
+                if (response.ok) {
+                    // 3. 성공 시 Stripe 결제 페이지로 이동
+                    // 핵심: client_reference_id에 고유번호를 붙여서 보냅니다.
+                    // Stripe Payment Links는 client_reference_id 파라미터를 지원합니다.
+                    window.location.href = `${selectedProductUrl}?client_reference_id=${uniqueId}&prefilled_email=${email}`;
+                } else {
+                    alert("오류가 발생했습니다. 다시 시도해주세요.");
+                    btn.disabled = false;
+                    btn.innerText = "결제하기";
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("서버 통신 오류");
+                btn.disabled = false;
+                btn.innerText = "결제하기";
+            }
+        }
+    </script>
+</body>
+</html>

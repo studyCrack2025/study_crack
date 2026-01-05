@@ -4,123 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>스터디크랙 - 입시 전략의 모든 것</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
-    
-    <style>
-        /* 기본 스타일 초기화 */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Noto Sans KR', sans-serif; }
-        body { color: #333; line-height: 1.6; }
-        a { text-decoration: none; color: inherit; cursor: pointer; }
-        ul { list-style: none; }
-
-        /* 색상 변수 */
-        :root {
-            --primary-color: #0F172A; /* 짙은 네이비 */
-            --accent-color: #2563EB; /* 블루 */
-            --text-light: #F8FAFC;
-            --bg-light: #F1F5F9;
-        }
-
-        /* 헤더 */
-        header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 20px 5%; background-color: white; border-bottom: 1px solid #e2e8f0;
-            position: sticky; top: 0; z-index: 1000;
-        }
-        .logo { font-size: 1.5rem; font-weight: 700; color: var(--primary-color); }
-        /* 로고 컨테이너 스타일 */
-        .logo-container {
-            display: flex;
-            align-items: center;
-            gap: 12px; /* 로고와 텍스트 사이 간격 */
-        }
-        .logo-container img {
-            height: 45px; /* 로고 높이 조절 (원하는 크기로 변경하세요) */
-            width: auto;
-        }
-        .nav-links a { margin-left: 20px; font-size: 0.95rem; color: #64748b; font-weight: 500; }
-        .nav-links a:hover { color: var(--accent-color); }
-
-        /* 히어로 섹션 */
-        .hero {
-            background-color: var(--primary-color); color: var(--text-light);
-            padding: 100px 5%; text-align: center;
-        }
-        .hero h1 { font-size: 2.5rem; margin-bottom: 20px; line-height: 1.3; }
-        .hero p { font-size: 1.1rem; margin-bottom: 40px; opacity: 0.9; }
-        .cta-button {
-            background-color: var(--accent-color); color: white;
-            padding: 15px 30px; border-radius: 8px; font-weight: 700;
-            transition: background 0.3s;
-        }
-        .cta-button:hover { background-color: #1d4ed8; }
-
-        /* 소개 섹션 */
-        .section { padding: 80px 5%; }
-        .section-title { text-align: center; font-size: 2rem; margin-bottom: 50px; color: var(--primary-color); }
-        
-        .features { display: flex; gap: 30px; justify-content: center; flex-wrap: wrap; }
-        .feature-card {
-            background: white; border: 1px solid #e2e8f0; border-radius: 12px;
-            padding: 30px; width: 300px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-        .feature-icon { font-size: 2rem; margin-bottom: 20px; display: block; }
-        .feature-card h3 { margin-bottom: 15px; font-size: 1.25rem; }
-        .feature-card p { font-size: 0.95rem; color: #64748b; }
-
-        /* 컨설팅 프로그램 */
-        .curriculum { background-color: var(--bg-light); }
-        .course-list { max-width: 800px; margin: 0 auto; }
-        .course-item {
-            background: white; padding: 20px; margin-bottom: 15px; border-radius: 8px;
-            display: flex; justify-content: space-between; align-items: center;
-            border-left: 5px solid var(--accent-color);
-        }
-        .course-info h4 { font-size: 1.1rem; margin-bottom: 5px; }
-        .course-price { font-weight: 700; color: var(--primary-color); }
-
-        /* 푸터 */
-        footer { background-color: #1e293b; color: #94a3b8; padding: 50px 5%; font-size: 0.9rem; }
-        .footer-content { display: flex; flex-direction: column; gap: 20px; max-width: 1200px; margin: 0 auto; }
-        .company-info p { margin-bottom: 5px; }
-        .legal-links { margin-top: 20px; border-top: 1px solid #334155; padding-top: 20px; }
-        .legal-links span { margin-right: 20px; color: #cbd5e1; cursor: pointer; text-decoration: underline; }
-
-        /* 약관 모달창 스타일 */
-        .modal {
-            display: none; position: fixed; z-index: 2000; left: 0; top: 0;
-            width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);
-        }
-        .modal-content {
-            background-color: white; margin: 10% auto; padding: 30px;
-            border-radius: 10px; width: 80%; max-width: 600px;
-            max-height: 70vh; overflow-y: auto; color: #333;
-        }
-        .close-btn { float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
-        .modal h2 { margin-bottom: 15px; font-size: 1.5rem; }
-        .modal pre { white-space: pre-wrap; font-family: inherit; font-size: 0.85rem; color: #555; }
-
-        @media (max-width: 768px) {
-            .hero h1 { font-size: 1.8rem; }
-            .features { flex-direction: column; align-items: center; }
-            .course-item { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .logo-container img {
-                height: 35px;
-            }
-            .logo {
-                font-size: 1.2rem;
-            }
-        }
-    </style>
 </head>
 <body>
-
     <header>
-        <div class="logo-container" style="display: flex; align-items: center; gap: 10px;">
-            <img src="study_cracked_logo.png" alt="스터디크랙 로고" style="height: 40px; width: auto; object-fit: contain;">
+        <div class="logo-container">
+            <img src="study_cracked_logo.png" alt="스터디크랙 로고">
             <span class="logo">StudyCrack</span>
         </div>
         <nav class="nav-links">
@@ -133,7 +23,7 @@
     <section class="hero">
         <h1>성적은 전략입니다.<br>입시의 판을 바꾸는 1:1 컨설팅</h1>
         <p>무작정 열심히 하는 공부는 이제 그만.<br>스터디크랙은 당신만의 합격 로드맵을 설계합니다.</p>
-        <a href="#program" class="cta-button">컨설팅 신청하기</a>
+        <a href="payment.html" class="cta-button">컨설팅 신청하기</a>
     </section>
 
     <section id="about" class="section">
@@ -179,7 +69,7 @@
                     <h4>수시/정시 배치 컨설팅</h4>
                     <p>지원 가능 대학 라인업 설정 및 최종 지원 전략</p>
                 </div>
-                <div class="course-price">상담 후 결정</div>
+                <div class="course-price">회당 300,000원</div>
             </div>
         </div>
     </section>
@@ -206,59 +96,17 @@
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('terms')">&times;</span>
             <h2>이용약관</h2>
-            <pre>
-제1조 (목적)
-본 약관은 스터디크랙(이하 "회사")이 제공하는 교육 컨설팅 서비스의 이용 조건 및 절차를 규정합니다.
-
-제2조 (서비스의 내용)
-회사는 학습 플래닝, 입시 컨설팅, 멘토링 등의 서비스를 제공합니다.
-
-제3조 (환불 규정) *중요
-1. 서비스 시작 전: 납부한 수강료 전액 환불
-2. 총 수업시간의 1/3 경과 전: 수강료의 2/3 해당액 환불
-3. 총 수업시간의 1/2 경과 전: 수강료의 1/2 해당액 환불
-4. 총 수업시간의 1/2 경과 후: 환불 불가
-(본 규정은 학원법 및 소비자분쟁해결기준을 준수합니다.)
-
-제4조 (의무)
-회원은 정해진 컨설팅 시간에 성실히 참여해야 하며, 무단 불참 시 서비스가 차감될 수 있습니다.
-            </pre>
+            <pre>... (약관 내용) ...</pre>
         </div>
     </div>
-
     <div id="privacy-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('privacy')">&times;</span>
             <h2>개인정보처리방침</h2>
-            <pre>
-1. 수집하는 개인정보 항목
-성명, 전화번호, 이메일, 학교/학년 성적 정보
-
-2. 개인정보의 수집 및 이용 목적
-입시 상담, 학습 커리큘럼 설계, 서비스 안내 및 고객 응대
-
-3. 개인정보의 보유 및 이용 기간
-이용 목적 달성 시까지 보유하며, 법령에 따른 보존 기간이 필요한 경우 해당 기간 동안 보관합니다.
-
-4. 제3자 제공
-회사는 원칙적으로 이용자의 개인정보를 외부에 제공하지 않습니다.
-            </pre>
+            <pre>... (방침 내용) ...</pre>
         </div>
     </div>
 
-    <script>
-        function openModal(type) {
-            document.getElementById(type + '-modal').style.display = 'block';
-        }
-        function closeModal(type) {
-            document.getElementById(type + '-modal').style.display = 'none';
-        }
-        // 모달 바깥 클릭 시 닫기
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal')) {
-                event.target.style.display = 'none';
-            }
-        }
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
