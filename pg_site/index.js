@@ -71,11 +71,6 @@ exports.handler = async (event) => {
 
             return {
                 statusCode: 200,
-                headers: {
-                    "Access-Control-Allow-Origin": "*", // CORS 허용
-                    "Access-Control-Allow-Headers": "Content-Type",
-                    "Access-Control-Allow-Methods": "OPTIONS,POST"
-                },
                 body: JSON.stringify({ message: "Form saved" })
             };
         }
@@ -84,11 +79,6 @@ exports.handler = async (event) => {
         console.error(error);
         return {
             statusCode: 500,
-            headers: {
-                "Access-Control-Allow-Origin": "https://studycrack2025.github.io",
-                "Access-Control-Allow-Headers": "Content-Type",
-                "Access-Control-Allow-Methods": "OPTIONS,POST"
-            },
             body: JSON.stringify({ error: error.toString() })
         };
     }
