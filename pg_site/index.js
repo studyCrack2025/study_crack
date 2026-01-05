@@ -82,6 +82,14 @@ exports.handler = async (event) => {
 
     } catch (error) {
         console.error(error);
-        return { statusCode: 500, body: error.toString() };
+        return {
+            statusCode: 500,
+            headers: {
+                "Access-Control-Allow-Origin": "https://studycrack2025.github.io",
+                "Access-Control-Allow-Headers": "Content-Type",
+                "Access-Control-Allow-Methods": "OPTIONS,POST"
+            },
+            body: JSON.stringify({ error: error.toString() })
+        };
     }
 };

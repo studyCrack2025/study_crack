@@ -1,6 +1,7 @@
 {
   "dependencies": {
-    "google-spreadsheet": "^5.0.2",
-    "stripe": "^20.1.0"
+    "google-spreadsheet": "^3.3.0",
+    "stripe": "^20.1.0",
+    "uuid": "^9.0.1"
   }
 }
