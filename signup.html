@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입 - 스터디크랙</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/auth.css">
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1001.0.min.js"></script>
+    <script src="https://rawgit.com/aws/amazon-cognito-identity-js/master/dist/amazon-cognito-identity.min.js"></script>
+</head>
+<body class="auth-body">
+    <div class="auth-card">
+        <a href="index.html" class="auth-logo">StudyCrack</a>
+        <h2>회원가입</h2>
+        <div class="auth-form">
+            <input type="email" id="email" placeholder="이메일 (아이디)" required>
+            <input type="password" id="password" placeholder="비밀번호 (영문,숫자,특수문자 포함 8자)" required>
+            <input type="text" id="name" placeholder="이름 (학생 본인)" required>
+            <input type="tel" id="phone" placeholder="전화번호 (01012345678)" required>
+            <button class="auth-btn" onclick="handleSignUp()">가입하기</button>
+        </div>
+        <div class="auth-links">
+            <a href="login.html">이미 계정이 있으신가요? 로그인</a>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>

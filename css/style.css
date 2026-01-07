@@ -69,3 +69,4 @@ footer { background-color: #1e293b; color: #94a3b8; padding: 50px 5%; font-size:
 .btn-pay { width: 100%; padding: 15px; background-color: var(--accent-color); color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 10px; }
 .btn-pay:hover { background-color: #1d4ed8; }
 .btn-pay:disabled { background-color: #94a3b8; cursor: not-allowed; }
+.hidden { display: none !important; }

@@ -1,0 +1,53 @@
+/* 로그인/회원가입 전용 스타일 */
+body.auth-body {
+    background-color: #f1f5f9;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.auth-card {
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.auth-logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0F172A;
+    margin-bottom: 20px;
+    display: inline-block;
+}
+
+.auth-form input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.auth-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #2563EB;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.auth-btn:hover { background-color: #1d4ed8; }
+
+.auth-links { margin-top: 15px; font-size: 0.9rem; }
+.auth-links a { color: #64748b; text-decoration: underline; }

@@ -13,8 +13,8 @@ async function sendNotification(customerPhone, customerName, productName) {
     if (phone.startsWith("10")) phone = "0" + phone;
 
     // 2. 현재 날짜 포맷팅 (YYYY-MM-DD HH:mm 형태)
-    // 템플릿의 #{date} 부분에 넣기 위함
     const now = new Date();
+    // 템플릿 변수는 텍스트라 형식이 크게 중요하진 않지만 깔끔하게 보이도록 조정
     const dateStr = now.toLocaleString('ko-KR', { 
         timeZone: 'Asia/Seoul',
         year: 'numeric',
@@ -23,10 +23,9 @@ async function sendNotification(customerPhone, customerName, productName) {
         hour: '2-digit',
         minute: '2-digit',
         hour12: false 
-    });
+    }).replace(/\./g, '.').replace(/:/g, ':'); // 포맷 단순 정리
 
-    // 3. 메시지 내용 구성 (템플릿과 100% 일치해야 함)
-    // 템플릿: [스터디크랙] #{name}님, 결제가 정상적으로 완료되었습니다...
+    // 3. 메시지 내용 구성
     const msgText = `[스터디크랙] ${customerName}님, 결제가 정상적으로 완료되었습니다.
 
 스터디크랙과 함께 입시 성공을 향한 첫걸음을 내디뎌 주셔서 감사합니다.
@@ -43,15 +42,21 @@ async function sendNotification(customerPhone, customerName, productName) {
     const messageData = {
         to: phone,
         from: process.env.SOLAPI_SENDER_NUM, // 발신번호
-        text: msgText // 문자(LMS)로 갈 때도 이 내용 그대로 감
+        text: msgText 
     };
 
-    // 5. 알림톡 옵션 (환경변수에 설정이 있을 때만 적용)
+    // 5. 알림톡 옵션 설정 (여기가 핵심 수정 부분입니다)
     if (process.env.KAKAO_PFID && process.env.KAKAO_TRANSAC_TEMPLATE_ID) {
         messageData.kakaoOptions = {
-            pfId: process.env.KAKAO_PFID,          // 카카오 채널 ID
-            templateId: process.env.KAKAO_TRANSAC_TEMPLATE_ID, // 템플릿 ID
-            disableSms: false // 알림톡 실패 시, 위 msgText 내용 그대로 문자로 발송
+            pfId: process.env.KAKAO_PFID,          
+            templateId: process.env.KAKAO_TRANSAC_TEMPLATE_ID, 
+            disableSms: false,
+            buttons: [
+                {
+                    buttonType: "AC",      // AC = 채널 추가 (Add Channel)
+                    buttonName: "채널 추가" // 템플릿에 등록된 버튼 이름과 일치
+                }
+            ]
         };
         console.log(`📢 알림톡 발송 시도: ${customerName}`);
     } else {
