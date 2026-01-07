@@ -1,0 +1,89 @@
+/* css/payment.css */
+
+.payment-container { 
+    max-width: 600px; 
+    margin: 50px auto; 
+    padding: 0 20px; 
+}
+
+.form-group { 
+    margin-bottom: 20px; 
+}
+
+.form-group label { 
+    display: block; 
+    margin-bottom: 8px; 
+    font-weight: bold; 
+    color: #334155;
+}
+
+.form-group input { 
+    width: 100%; 
+    padding: 12px; 
+    border: 1px solid #e2e8f0; 
+    border-radius: 6px; 
+    font-size: 1rem; 
+    transition: border-color 0.3s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #2563EB;
+}
+
+.product-selection { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 15px; 
+    margin-bottom: 30px; 
+}
+
+.product-option { 
+    border: 2px solid #e2e8f0; 
+    border-radius: 8px; 
+    padding: 15px; 
+    cursor: pointer; 
+    transition: all 0.2s; 
+    background-color: white;
+}
+
+.product-option:hover { 
+    border-color: #94a3b8; 
+}
+
+.product-option.selected { 
+    border-color: #2563EB; 
+    background-color: #eff6ff; 
+    box-shadow: 0 0 0 1px #2563EB;
+}
+
+.product-header { 
+    display: flex; 
+    justify-content: space-between; 
+    font-weight: bold; 
+    margin-bottom: 5px; 
+    color: #0F172A;
+}
+
+.btn-pay { 
+    width: 100%; 
+    padding: 15px; 
+    background-color: #2563EB; 
+    color: white; 
+    border: none; 
+    border-radius: 8px; 
+    font-size: 1.1rem; 
+    font-weight: bold; 
+    cursor: pointer; 
+    margin-top: 10px; 
+    transition: background 0.3s;
+}
+
+.btn-pay:hover { 
+    background-color: #1d4ed8; 
+}
+
+.btn-pay:disabled { 
+    background-color: #94a3b8; 
+    cursor: not-allowed; 
+}
