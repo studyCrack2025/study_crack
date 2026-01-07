@@ -68,6 +68,31 @@
         let selectedProductUrl = "";
         let selectedProductName = "";
 
+        // 전화번호 포맷팅 함수
+        function formatPhoneNumber(rawPhone) {
+            // 1. 숫자 이외의 문자는 모두 제거
+            let cleaned = rawPhone.replace(/[^0-9]/g, '');
+
+            // 2. 혹시 '1012345678' 처럼 맨 앞 0을 빼고 넣었을 경우를 대비해 0 추가
+            if (cleaned.startsWith('10') && cleaned.length === 10) {
+                cleaned = '0' + cleaned;
+            }
+
+            // 3. 정규식으로 하이픈(-) 추가
+            // 11자리(010-1234-5678) 또는 10자리(010-123-4567) 모두 대응
+            return cleaned.replace(/^(\d{2,3})(\d{3,4})(\d{4})$/, `$1-$2-$3`);
+        }
+
+        // 입력할 때 자동으로 하이픈 넣어주기
+        const phoneInput = document.getElementById('phone');
+        phoneInput.addEventListener('input', (e) => {
+            const val = e.target.value.replace(/[^0-9]/g, '');
+            // 입력된 숫자를 포맷팅해서 다시 입력창에 보여줌
+            if(val.length >= 4) {
+                 e.target.value = val.replace(/^(\d{2,3})(\d{3,4})(\d{4})$/, `$1-$2-$3`);
+            }
+        });
+
         function selectProduct(element, optionId, url) {
             // 1. 모든 옵션 선택 스타일 해제
             document.querySelectorAll('.product-option').forEach(el => el.classList.remove('selected'));
@@ -76,26 +101,25 @@
             element.classList.add('selected');
             selectedProductUrl = url;
             
-            // 3. [수정됨] name 속성값 가져오기
-            // 클릭한 요소(element) 안에서 .product-header 클래스를 가진 div를 찾고,
-            // 그 div의 'name' 속성 값을 가져옵니다.
+            // 3. name 속성값 가져오기
             const headerDiv = element.querySelector('.product-header');
             selectedProductName = headerDiv.getAttribute('name');
-
-            // 확인용 로그 (나중에 삭제 가능)
-            console.log("선택된 상품명:", selectedProductName);
         }
 
         async function processPayment() {
             const name = document.getElementById('name').value;
-            const phone = document.getElementById('phone').value;
+            const rawPhone = document.getElementById('phone').value; // 입력된 원본 값
             const email = document.getElementById('email').value;
 
             // 상품 선택 여부 확인
-            if(!name || !phone || !email || !selectedProductUrl) {
+            if(!name || !rawPhone || !email || !selectedProductUrl) {
                 alert("모든 정보를 입력하고 상품을 선택해주세요.");
                 return;
             }
+
+            // [핵심 수정] 전화번호 포맷팅 적용
+            // 여기서 하이픈이 들어간 깔끔한 번호로 바뀝니다.
+            const formattedPhone = formatPhoneNumber(rawPhone);
 
             // 버튼 비활성화
             const btn = document.getElementById('submitBtn');
@@ -105,7 +129,7 @@
             // 1. 고유 주문번호 생성
             const uniqueId = 'ORD-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
 
-            // 2. AWS Lambda URL (배포 후 교체 필수!)
+            // 2. AWS Lambda URL
             const LAMBDA_URL = "https://5ydzn4zzijnh3zhzv2npa7tseq0nbnmi.lambda-url.ap-northeast-2.on.aws/"; 
 
             try {
@@ -116,9 +140,9 @@
                         type: 'submit_form',
                         uniqueId: uniqueId,
                         name: name,
-                        phone: phone,
+                        phone: formattedPhone, // [수정됨] 포맷팅된 번호를 전송
                         email: email,
-                        product: selectedProductName // 이제 'one-point' 등이 들어갑니다.
+                        product: selectedProductName
                     })
                 });
 
