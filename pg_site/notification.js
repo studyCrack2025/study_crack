@@ -47,7 +47,7 @@ async function sendNotification(customerPhone, customerName, productName) {
     };
 
     // 5. 알림톡 옵션 (환경변수에 설정이 있을 때만 적용)
-    if (process.env.KAKAO_PFID && process.env.KAKAO_TEMPLATE_ID) {
+    if (process.env.KAKAO_PFID && process.env.KAKAO_TRANSAC_TEMPLATE_ID) {
         messageData.kakaoOptions = {
             pfId: process.env.KAKAO_PFID,          // 카카오 채널 ID
             templateId: process.env.KAKAO_TRANSAC_TEMPLATE_ID, // 템플릿 ID
