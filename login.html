@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>회원가입 - 스터디크랙</title>
+    <title>로그인 - 스터디크랙</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/auth.css">
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1001.0.min.js"></script>
@@ -13,20 +13,22 @@
     <div class="auth-card">
         <a href="index.html" class="auth-logo" style="text-decoration: none;">StudyCrack</a>
         
-        <h2>회원가입</h2>
+        <h2>로그인</h2>
         
         <div class="auth-form">
-            <input type="email" id="email" placeholder="이메일 (아이디로 사용)" required>
-            <input type="password" id="password" placeholder="비밀번호 (영문, 숫자, 특수문자 포함 8자)" required>
-            <input type="text" id="name" placeholder="이름 (실명)" required>
-            <input type="tel" id="phone" placeholder="전화번호 (- 없이 입력)" required>
+            <div class="form-group">
+                <input type="email" id="email" placeholder="이메일" required>
+            </div>
+            <div class="form-group">
+                <input type="password" id="password" placeholder="비밀번호" required>
+            </div>
             
-            <button class="auth-btn" onclick="handleSignUp()">가입하기</button>
+            <button class="auth-btn" onclick="handleSignIn()">로그인</button>
         </div>
 
         <div class="auth-links">
-            <span>이미 계정이 있으신가요?</span>
-            <a href="login.html" style="color: #2563EB; font-weight: bold;">로그인하기</a>
+            <span>아직 계정이 없으신가요?</span>
+            <a href="signup.html" style="color: #2563EB; font-weight: bold;">회원가입하기</a>
         </div>
     </div>
 
