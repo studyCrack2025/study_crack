@@ -129,3 +129,11 @@ input[type="text"], input[type="email"], input[type="password"], input[type="tel
 
 /* 메인 버튼 비활성화 스타일 */
 button:disabled { cursor: not-allowed; opacity: 0.7; }
+
+/* 위에서 강제로 준 100% 설정을 라디오 버튼만 해제합니다 */
+.auth-form input[type="radio"] {
+    width: auto;
+    margin-bottom: 0;
+    margin-right: 5px; /* 버튼과 글씨 사이 간격 */
+    height: auto;      /* 높이도 자동 */
+}
