@@ -1,0 +1,122 @@
+/* css/mypage.css */
+
+.mypage-container {
+    display: flex;
+    max-width: 1200px;
+    margin: 50px auto;
+    padding: 0 20px;
+    gap: 30px;
+}
+
+/* 왼쪽 사이드바 */
+.profile-summary {
+    width: 300px;
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    text-align: center;
+    height: fit-content;
+}
+
+.profile-pic img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 10px;
+    background-color: #f1f5f9;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    margin: 10px 0;
+}
+.status-badge.incomplete { background-color: #fca5a5; color: #991b1b; } /* 미작성 (빨강) */
+.status-badge.partial { background-color: #fcd34d; color: #92400e; }    /* 부분완료 (노랑) */
+.status-badge.complete { background-color: #86efac; color: #166534; }    /* 완료 (초록) */
+
+.status-detail {
+    list-style: none;
+    text-align: left;
+    margin-top: 15px;
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+/* 메인 컨텐츠 영역 */
+.content-area {
+    flex: 1;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+}
+
+/* 탭 버튼 */
+.tabs {
+    display: flex;
+    border-bottom: 1px solid #e2e8f0;
+    background-color: #f8fafc;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 15px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-weight: bold;
+    color: #64748b;
+    border-bottom: 3px solid transparent;
+}
+
+.tab-btn.active {
+    color: #2563EB;
+    border-bottom-color: #2563EB;
+    background-color: white;
+}
+
+/* 탭 내용 */
+.tab-content {
+    display: none;
+    padding: 30px;
+}
+.tab-content.active { display: block; }
+
+/* 폼 요소 */
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
+.form-group input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; }
+
+.input-label { display: block; font-weight: bold; margin-top: 20px; margin-bottom: 8px; }
+.target-uni-list input { width: 100%; margin-bottom: 8px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; }
+
+/* 성적 테이블 */
+.exam-selector { margin-bottom: 20px; padding: 15px; background-color: #f1f5f9; border-radius: 8px; }
+.score-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+.score-table th, .score-table td { border: 1px solid #e2e8f0; padding: 10px; text-align: center; }
+.score-table th { background-color: #f8fafc; font-size: 0.9rem; }
+.score-table input, .score-table select { width: 100%; border: none; text-align: center; background: transparent; }
+
+.save-btn {
+    width: 100%;
+    padding: 15px;
+    background-color: #2563EB;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 20px;
+}
+.save-btn:hover { background-color: #1d4ed8; }
+
+@media (max-width: 768px) {
+    .mypage-container { flex-direction: column; }
+    .profile-summary { width: 100%; }
+}
