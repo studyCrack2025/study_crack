@@ -22,10 +22,15 @@
 
     <div class="mypage-container">
         <aside class="profile-summary">
-            <div class="profile-pic">
-                <img src="https://via.placeholder.com/100" alt="프로필">
-                <button class="small-btn edit-pic">사진 변경</button>
+            <div class="profile-pic-area">
+                <img src="https://via.placeholder.com/150" 
+                    onerror="this.src='assets/images/sample_profile.png'" 
+                    alt="프로필" class="profile-img">
+        
+                <button class="edit-pic-btn" onclick="document.getElementById('fileInput').click()">+</button>
+                <input type="file" id="fileInput" style="display: none;" accept="image/*">
             </div>
+            
             <h2 id="userNameDisplay">학생 이름</h2>
             <p id="userEmailDisplay">student@email.com</p>
             

@@ -6,9 +6,10 @@
     margin: 50px auto;
     padding: 0 20px;
     gap: 30px;
+    align-items: flex-start; /* 높이 달라도 상단 정렬 */
 }
 
-/* 왼쪽 사이드바 */
+/* --- 1. 사이드바 & 프로필 사진 디자인 수정 --- */
 .profile-summary {
     width: 300px;
     background: white;
@@ -16,45 +17,70 @@
     border-radius: 12px;
     border: 1px solid #e2e8f0;
     text-align: center;
-    height: fit-content;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
-.profile-pic img {
-    width: 100px;
-    height: 100px;
+.profile-pic-area {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 15px;
+}
+
+/* 사진 원형 자르기 */
+.profile-img {
+    width: 100%;
+    height: 100%;
     border-radius: 50%;
     object-fit: cover;
-    margin-bottom: 10px;
-    background-color: #f1f5f9;
+    border: 3px solid #f1f5f9;
 }
 
+/* 사진 추가 버튼 (카메라 아이콘 느낌의 원형 버튼) */
+.edit-pic-btn {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: #2563EB;
+    color: white;
+    border: 2px solid white;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: background 0.2s;
+}
+.edit-pic-btn:hover { background-color: #1d4ed8; }
+
+
+/* 상태 배지 */
 .status-badge {
     display: inline-block;
-    padding: 5px 15px;
+    padding: 6px 16px;
     border-radius: 20px;
     font-weight: bold;
-    font-size: 0.9rem;
-    margin: 10px 0;
+    font-size: 0.85rem;
+    margin: 15px 0;
 }
-.status-badge.incomplete { background-color: #fca5a5; color: #991b1b; } /* 미작성 (빨강) */
-.status-badge.partial { background-color: #fcd34d; color: #92400e; }    /* 부분완료 (노랑) */
-.status-badge.complete { background-color: #86efac; color: #166534; }    /* 완료 (초록) */
+.status-badge.incomplete { background-color: #fee2e2; color: #991b1b; } 
+.status-badge.partial { background-color: #fef3c7; color: #92400e; }
+.status-badge.complete { background-color: #dcfce7; color: #166534; }
 
-.status-detail {
-    list-style: none;
-    text-align: left;
-    margin-top: 15px;
-    font-size: 0.9rem;
-    color: #64748b;
-}
+.status-detail li { margin-bottom: 5px; color: #64748b; font-size: 0.9rem; list-style: none;}
 
-/* 메인 컨텐츠 영역 */
+
+/* --- 메인 컨텐츠 --- */
 .content-area {
     flex: 1;
     background: white;
     border-radius: 12px;
     border: 1px solid #e2e8f0;
-    overflow: hidden;
+    min-height: 600px; /* 최소 높이 확보 */
 }
 
 /* 탭 버튼 */
@@ -63,46 +89,80 @@
     border-bottom: 1px solid #e2e8f0;
     background-color: #f8fafc;
 }
-
 .tab-btn {
     flex: 1;
-    padding: 15px;
+    padding: 18px;
     border: none;
     background: none;
     cursor: pointer;
-    font-weight: bold;
+    font-weight: 600;
     color: #64748b;
     border-bottom: 3px solid transparent;
+    transition: all 0.2s;
 }
-
 .tab-btn.active {
     color: #2563EB;
     border-bottom-color: #2563EB;
     background-color: white;
 }
+.tab-content { display: none; padding: 40px; }
+.tab-content.active { display: block; animation: fadeIn 0.3s; }
 
-/* 탭 내용 */
-.tab-content {
-    display: none;
-    padding: 30px;
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* --- 2. 입력란 디자인 수정 (표 안의 입력창) --- */
+
+/* 성적 테이블 스타일 */
+.score-table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    margin-bottom: 20px; 
+    table-layout: fixed; /* 칸 크기 고정 */
 }
-.tab-content.active { display: block; }
 
-/* 폼 요소 */
-.form-group { margin-bottom: 20px; }
-.form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
-.form-group input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; }
+.score-table th {
+    background-color: #f1f5f9;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    font-size: 0.9rem;
+    color: #334155;
+}
 
-.input-label { display: block; font-weight: bold; margin-top: 20px; margin-bottom: 8px; }
-.target-uni-list input { width: 100%; margin-bottom: 8px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; }
+.score-table td {
+    border: 1px solid #e2e8f0;
+    padding: 0; /* 패딩 제거하여 입력창이 꽉 차게 */
+    height: 45px; /* 셀 높이 고정 */
+    vertical-align: middle;
+}
 
-/* 성적 테이블 */
-.exam-selector { margin-bottom: 20px; padding: 15px; background-color: #f1f5f9; border-radius: 8px; }
-.score-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-.score-table th, .score-table td { border: 1px solid #e2e8f0; padding: 10px; text-align: center; }
-.score-table th { background-color: #f8fafc; font-size: 0.9rem; }
-.score-table input, .score-table select { width: 100%; border: none; text-align: center; background: transparent; }
+/* 테이블 안의 입력창 꽉 채우기 */
+.score-table input, .score-table select {
+    width: 100%;
+    height: 100%;       /* 높이 100% */
+    border: none;       /* 테두리 없애기 (셀 테두리와 겹치므로) */
+    text-align: center; /* 글씨 가운데 정렬 */
+    background: transparent;
+    font-size: 1rem;
+    display: block;
+}
+.score-table input:focus, .score-table select:focus {
+    background-color: #f0f9ff; /* 포커스 시 약간 푸른 배경 */
+    outline: none;
+}
 
+/* 숫자 입력창 화살표(스피너) 제거 - 크롬, 사파리 등 */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+/* 파이어폭스용 */
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+
+/* 공통 버튼 */
 .save-btn {
     width: 100%;
     padding: 15px;
@@ -110,13 +170,15 @@
     color: white;
     border: none;
     border-radius: 8px;
+    font-size: 1.05rem;
     font-weight: bold;
     cursor: pointer;
-    margin-top: 20px;
+    margin-top: 30px;
+    transition: background 0.3s;
 }
 .save-btn:hover { background-color: #1d4ed8; }
 
-@media (max-width: 768px) {
-    .mypage-container { flex-direction: column; }
-    .profile-summary { width: 100%; }
-}
+/* 폼 그룹 */
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; font-weight: bold; margin-bottom: 8px; color: #334155; }
+.form-group input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;}
