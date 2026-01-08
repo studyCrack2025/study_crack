@@ -1,75 +1,171 @@
 // js/auth.js
 
+// AWS Cognito 설정
 const poolData = {
     UserPoolId: CONFIG.cognito.userPoolId,
     ClientId: CONFIG.cognito.clientId
 };
 const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 
-function handleSignUp() {
-    // 1. 입력값 가져오기
+// === 1. 비밀번호 실시간 확인 로직 ===
+document.addEventListener('DOMContentLoaded', () => {
+    const pwInput = document.getElementById('password');
+    const pwConfirmInput = document.getElementById('passwordConfirm');
+    const msgBox = document.getElementById('pwMsg');
+
+    function checkPasswordMatch() {
+        const pw = pwInput.value;
+        const confirm = pwConfirmInput.value;
+
+        if (!confirm) {
+            msgBox.innerHTML = "";
+            return;
+        }
+
+        if (pw === confirm) {
+            msgBox.innerHTML = "<span class='text-success'>비밀번호가 일치합니다.</span>";
+        } else {
+            msgBox.innerHTML = "<span class='text-error'>비밀번호가 일치하지 않습니다.</span>";
+        }
+    }
+
+    if(pwInput && pwConfirmInput) {
+        pwInput.addEventListener('input', checkPasswordMatch);
+        pwConfirmInput.addEventListener('input', checkPasswordMatch);
+    }
+});
+
+// === 2. 기타(Etc) 입력창 토글 로직 ===
+function toggleEtc(isShow) {
+    const etcInput = document.getElementById('referralEtc');
+    if (isShow) {
+        etcInput.classList.remove('hidden');
+        etcInput.required = true;
+    } else {
+        etcInput.classList.add('hidden');
+        etcInput.required = false;
+        etcInput.value = ""; // 숨기면 값 초기화
+    }
+}
+
+// === 3. 인증번호 받기 (실제 회원가입 요청) ===
+let timerInterval;
+
+function handleSendCode() {
+    // 모든 필드 값 가져오기
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
     const passwordConfirm = document.getElementById('passwordConfirm').value;
-    
     const name = document.getElementById('name').value;
     const gender = document.getElementById('gender').value;
-    const birthdate = document.getElementById('birthdate').value; // YYYY-MM-DD
+    const birthdate = document.getElementById('birthdate').value;
     const phoneRaw = document.getElementById('phone').value;
-    
     const school = document.getElementById('school').value;
-    const major = document.getElementById('major').value;
-    const referral = document.getElementById('referral').value;
+    
+    // 라디오 버튼 값 가져오기
+    const major = document.querySelector('input[name="major"]:checked').value;
+    let referral = document.querySelector('input[name="referral"]:checked').value;
+    
+    // '기타' 선택 시 텍스트 입력값으로 덮어쓰기
+    if (referral === 'etc') {
+        referral = document.getElementById('referralEtc').value;
+        if (!referral.trim()) {
+            alert("유입 경로(기타) 내용을 입력해주세요.");
+            return;
+        }
+    }
 
-    // 2. 유효성 검사
+    // 유효성 검사
+    if (!email || !password || !name || !phoneRaw || !school) {
+        alert("모든 정보를 입력해주세요. 정보가 있어야 인증코드를 보낼 수 있습니다.");
+        return;
+    }
     if (password !== passwordConfirm) {
         alert("비밀번호가 일치하지 않습니다.");
         return;
     }
-    if (!name || !birthdate || !school) {
-        alert("모든 필수 정보를 입력해주세요.");
-        return;
-    }
 
-    // 전화번호 포맷 (+82...)
+    // 전화번호 포맷 (+82)
     const phone = "+82" + phoneRaw.replace(/-/g, '').replace(/^0/, '');
 
-    // 3. Cognito 표준 속성 (Attributes) 구성
-    // ★ 여기서 에러(gender, given_name required)를 해결합니다.
+    // Cognito 속성 구성
     const attributeList = [
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'email', Value: email }),
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'phone_number', Value: phone }),
-        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'name', Value: name }),       // 전체 이름
-        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'given_name', Value: name }), // 이름 (필수 요구사항 대응)
-        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'gender', Value: gender }),   // 성별 (필수 요구사항 대응)
-        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'birthdate', Value: birthdate }) // 생년월일
+        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'name', Value: name }),
+        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'given_name', Value: name }),
+        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'gender', Value: gender }),
+        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'birthdate', Value: birthdate })
     ];
 
-    // 4. 세부 정보 (Metadata) 구성 - Lambda로 전달용
+    // Lambda로 보낼 메타데이터
     const clientMetadata = {
         school: school,
         major: major,
         referral: referral
     };
 
-    // 5. 회원가입 요청
-    // signUp(username, password, attributeList, validationData, callback, clientMetadata)
+    // 버튼 로딩 처리
+    const sendBtn = document.getElementById('sendCodeBtn');
+    sendBtn.innerText = "전송 중...";
+    sendBtn.disabled = true;
+
+    // 회원가입 요청 (성공 시 인증메일 발송됨)
     userPool.signUp(email, password, attributeList, null, function(err, result) {
         if (err) {
-            alert("가입 실패: " + err.message);
-            console.error(err);
+            alert("인증번호 발송 실패: " + err.message);
+            sendBtn.innerText = "인증번호 받기";
+            sendBtn.disabled = false;
             return;
         }
+
+        // 성공 시: 인증 박스 보여주기 & 타이머 시작
+        alert("인증번호가 발송되었습니다. 이메일을 확인해주세요.");
+        document.getElementById('verifySection').classList.remove('hidden');
+        sendBtn.innerText = "재전송";
+        sendBtn.disabled = false;
         
-        // 성공 시
-        const verificationCode = prompt(`${email}로 인증 코드를 보냈습니다. 코드를 입력해주세요:`);
-        if (verificationCode) {
-            confirmSignUp(email, verificationCode);
-        }
-    }, clientMetadata); // ★ 맨 마지막에 메타데이터 전달
+        // 입력 필드들 수정 불가 처리 (UX)
+        document.getElementById('email').disabled = true;
+        
+        startTimer(5 * 60); // 5분
+    }, clientMetadata);
 }
 
-function confirmSignUp(email, code) {
+// === 4. 타이머 함수 ===
+function startTimer(duration) {
+    let timer = duration, minutes, seconds;
+    const display = document.getElementById('timer');
+    
+    clearInterval(timerInterval); // 기존 타이머 있으면 초기화
+
+    timerInterval = setInterval(function () {
+        minutes = parseInt(timer / 60, 10);
+        seconds = parseInt(timer % 60, 10);
+
+        minutes = minutes < 10 ? "0" + minutes : minutes;
+        seconds = seconds < 10 ? "0" + seconds : seconds;
+
+        display.textContent = minutes + ":" + seconds;
+
+        if (--timer < 0) {
+            clearInterval(timerInterval);
+            alert("인증 시간이 만료되었습니다. 재전송 버튼을 눌러주세요.");
+            // 여기서 재전송 로직 구현은 복잡하므로 페이지 새로고침 유도 or 재전송 버튼 활성화
+        }
+    }, 1000);
+}
+
+// === 5. 인증코드 확인 (최종 완료) ===
+function handleVerify() {
+    const email = document.getElementById('email').value;
+    const code = document.getElementById('verifyCode').value;
+
+    if (!code) {
+        alert("인증코드를 입력해주세요.");
+        return;
+    }
+
     const userData = { Username: email, Pool: userPool };
     const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
 
@@ -78,62 +174,27 @@ function confirmSignUp(email, code) {
             alert("인증 실패: " + err.message);
             return;
         }
-        alert("회원가입이 완료되었습니다! 로그인해주세요.");
-        window.location.href = 'login.html';
+        
+        // 인증 성공!
+        clearInterval(timerInterval);
+        document.getElementById('verifySection').classList.add('hidden'); // 박스 숨김
+        
+        // 성공 UI 변경
+        const sendBtn = document.getElementById('sendCodeBtn');
+        sendBtn.innerText = "인증 완료";
+        sendBtn.style.backgroundColor = "#16a34a"; // 초록색
+        sendBtn.disabled = true;
+
+        // 최종 가입 버튼 활성화 및 텍스트 변경
+        const finalBtn = document.getElementById('finalSubmitBtn');
+        finalBtn.innerText = "회원가입 완료 및 로그인하러 가기";
+        finalBtn.disabled = false;
+        finalBtn.style.backgroundColor = "#2563EB";
+        
+        // 최종 버튼 클릭 이벤트 변경 (로그인 페이지 이동)
+        finalBtn.onclick = function() {
+            alert("회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.");
+            window.location.href = 'login.html';
+        };
     });
-}
-
-// 6. 로그인 처리 (login.html용)
-function handleSignIn() {
-    // login.html에 있는 input ID 확인
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-
-    const authData = { Username: email, Password: password };
-    const authDetails = new AmazonCognitoIdentity.AuthenticationDetails(authData);
-    
-    const userData = { Username: email, Pool: userPool };
-    const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
-
-    cognitoUser.authenticateUser(authDetails, {
-        onSuccess: function(result) {
-            // 토큰 저장
-            localStorage.setItem('accessToken', result.getAccessToken().getJwtToken());
-            localStorage.setItem('idToken', result.getIdToken().getJwtToken());
-            localStorage.setItem('userEmail', email);
-            
-            alert("로그인되었습니다.");
-            window.location.href = 'index.html';
-        },
-        onFailure: function(err) {
-            alert("로그인 실패: " + err.message);
-        }
-    });
-}
-
-// 7. 로그아웃 처리
-function handleSignOut() {
-    const cognitoUser = userPool.getCurrentUser();
-    if (cognitoUser != null) {
-        cognitoUser.signOut();
-    }
-    localStorage.clear();
-    window.location.href = 'index.html';
-}
-
-// 8. 로그인 상태 확인 (index.html 로드시 실행)
-function checkLoginStatus() {
-    const accessToken = localStorage.getItem('accessToken');
-    const loginBtn = document.getElementById('loginBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    
-    if (accessToken) {
-        // 로그인 상태
-        if(loginBtn) loginBtn.classList.add('hidden');
-        if(logoutBtn) logoutBtn.classList.remove('hidden');
-    } else {
-        // 비로그인 상태
-        if(loginBtn) loginBtn.classList.remove('hidden');
-        if(logoutBtn) logoutBtn.classList.add('hidden');
-    }
 }
