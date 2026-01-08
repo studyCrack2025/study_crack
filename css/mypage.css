@@ -17,6 +17,7 @@
     border-radius: 12px;
     border: 1px solid #e2e8f0;
     text-align: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
 .profile-pic-area {
@@ -47,7 +48,9 @@
     cursor: pointer;
     font-size: 1.2rem;
     display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
 }
+.edit-pic-btn:hover { background-color: #1d4ed8; }
 
 /* 상태 배지 */
 .status-badge {
@@ -73,14 +76,37 @@
 .tab-content { display: none; padding: 40px; }
 .tab-content.active { display: block; }
 
-/* --- [수정] 입력 폼 디자인 (깨짐 방지) --- */
+/* --- 입력 폼 디자인 수정 --- */
 .form-group { margin-bottom: 20px; }
 .form-group label { display: block; font-weight: bold; margin-bottom: 8px; color: #334155; }
-.form-group input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;}
 
-/* 정성 조사서 전용 스타일 */
+/* 모든 텍스트 입력창 스타일 통일 (희망진로 포함) */
+input[type="text"], 
+input[type="tel"], 
+input[type="password"],
+.target-uni-list input { 
+    width: 100%; 
+    padding: 12px; 
+    border: 1px solid #cbd5e1; 
+    border-radius: 6px; 
+    box-sizing: border-box; /* 패딩 포함 너비 계산 */
+    font-size: 1rem;
+    margin-bottom: 10px;
+}
+
+select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+/* 라벨 스타일 */
 .input-label { 
-    display: block; /* 블록 요소로 변경하여 줄바꿈 강제 */
+    display: block; 
     font-weight: bold; 
     margin-top: 25px; 
     margin-bottom: 10px; 
@@ -91,50 +117,38 @@
 .radio-group { margin-bottom: 15px; display: flex; gap: 15px; flex-wrap: wrap;}
 .radio-group label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
 
-/* 1지망~5지망 입력칸 스타일 */
-.target-uni-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-.target-uni-list input {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    box-sizing: border-box; /* 패딩 포함 너비 계산 */
-}
-
-/* 셀렉트 박스도 꽉 차게 */
-select {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    margin-bottom: 10px;
-}
-
-/* --- [수정] 성적표 테이블 (빗금 처리 포함) --- */
+/* --- [수정] 성적표 테이블 (가운데 정렬 적용) --- */
 .score-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; }
 .score-table th { background-color: #f1f5f9; padding: 12px; border: 1px solid #e2e8f0; font-size: 0.9rem; }
-.score-table td { border: 1px solid #e2e8f0; padding: 0; height: 45px; vertical-align: middle; }
+
+/* 모든 셀 가운데 정렬 */
+.score-table td { 
+    border: 1px solid #e2e8f0; 
+    padding: 0; 
+    height: 45px; 
+    vertical-align: middle; 
+    text-align: center; /* ★ 과목명 포함 모든 글자 가운데 정렬 */
+}
+
+/* 첫 번째 열(과목명) 강조 */
+.score-table td:first-child {
+    font-weight: 600;
+    color: #334155;
+    background-color: #f8fafc; /* 살짝 회색 배경 */
+}
 
 /* 입력창 스타일 */
 .score-table input, .score-table select {
-    width: 100%; height: 100%; border: none; text-align: center; background: transparent; display: block;
+    width: 100%; height: 100%; border: none; 
+    text-align: center; /* 입력값 가운데 정렬 */
+    background: transparent; display: block;
 }
 .score-table input:focus { background-color: #f0f9ff; outline: none; }
 
-/* ★ 빗금(사용 안함) 스타일 클래스 */
+/* 빗금 스타일 */
 .disabled-cell {
-    background-color: #f3f4f6; /* 회색 배경 */
-    background-image: repeating-linear-gradient(
-        45deg,
-        #f3f4f6,
-        #f3f4f6 10px,
-        #e5e7eb 10px,
-        #e5e7eb 12px
-    ); /* 빗금 패턴 */
+    background-color: #f3f4f6;
+    background-image: repeating-linear-gradient(45deg, #f3f4f6, #f3f4f6 10px, #e5e7eb 10px, #e5e7eb 12px);
     cursor: not-allowed;
 }
 
@@ -145,4 +159,6 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 .save-btn {
     width: 100%; padding: 15px; background-color: #2563EB; color: white;
     border: none; border-radius: 8px; font-size: 1.05rem; font-weight: bold; cursor: pointer; margin-top: 30px;
+    transition: background 0.3s;
 }
+.save-btn:hover { background-color: #1d4ed8; }

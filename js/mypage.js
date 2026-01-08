@@ -1,7 +1,7 @@
 // js/mypage.js
 
 // ★ 여기에 아까 만든 Lambda 함수 URL을 넣으세요!
-const API_URL = "https://YOUR_LAMBDA_URL_HERE.lambda-url.ap-northeast-2.on.aws/"; 
+const API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/"; 
 
 let currentUserData = {}; // 전체 데이터 보관용
 let examScores = {};      // 성적 데이터 보관용
