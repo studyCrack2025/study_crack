@@ -6,10 +6,10 @@
     margin: 50px auto;
     padding: 0 20px;
     gap: 30px;
-    align-items: flex-start; /* 높이 달라도 상단 정렬 */
+    align-items: flex-start;
 }
 
-/* --- 1. 사이드바 & 프로필 사진 디자인 수정 --- */
+/* --- 사이드바 --- */
 .profile-summary {
     width: 300px;
     background: white;
@@ -17,7 +17,6 @@
     border-radius: 12px;
     border: 1px solid #e2e8f0;
     text-align: center;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
 .profile-pic-area {
@@ -27,7 +26,6 @@
     margin: 0 auto 15px;
 }
 
-/* 사진 원형 자르기 */
 .profile-img {
     width: 100%;
     height: 100%;
@@ -36,7 +34,6 @@
     border: 3px solid #f1f5f9;
 }
 
-/* 사진 추가 버튼 (카메라 아이콘 느낌의 원형 버튼) */
 .edit-pic-btn {
     position: absolute;
     bottom: 0;
@@ -49,136 +46,103 @@
     border: 2px solid white;
     cursor: pointer;
     font-size: 1.2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    transition: background 0.2s;
+    display: flex; align-items: center; justify-content: center;
 }
-.edit-pic-btn:hover { background-color: #1d4ed8; }
-
 
 /* 상태 배지 */
 .status-badge {
-    display: inline-block;
-    padding: 6px 16px;
-    border-radius: 20px;
-    font-weight: bold;
-    font-size: 0.85rem;
-    margin: 15px 0;
+    display: inline-block; padding: 6px 16px; border-radius: 20px;
+    font-weight: bold; font-size: 0.85rem; margin: 15px 0;
 }
 .status-badge.incomplete { background-color: #fee2e2; color: #991b1b; } 
 .status-badge.partial { background-color: #fef3c7; color: #92400e; }
 .status-badge.complete { background-color: #dcfce7; color: #166534; }
-
 .status-detail li { margin-bottom: 5px; color: #64748b; font-size: 0.9rem; list-style: none;}
-
 
 /* --- 메인 컨텐츠 --- */
 .content-area {
-    flex: 1;
-    background: white;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    min-height: 600px; /* 최소 높이 확보 */
+    flex: 1; background: white; border-radius: 12px; border: 1px solid #e2e8f0; min-height: 600px;
 }
 
-/* 탭 버튼 */
-.tabs {
-    display: flex;
-    border-bottom: 1px solid #e2e8f0;
-    background-color: #f8fafc;
-}
+.tabs { display: flex; border-bottom: 1px solid #e2e8f0; background-color: #f8fafc; }
 .tab-btn {
-    flex: 1;
-    padding: 18px;
-    border: none;
-    background: none;
-    cursor: pointer;
-    font-weight: 600;
-    color: #64748b;
-    border-bottom: 3px solid transparent;
-    transition: all 0.2s;
+    flex: 1; padding: 18px; border: none; background: none;
+    cursor: pointer; font-weight: 600; color: #64748b; border-bottom: 3px solid transparent;
 }
-.tab-btn.active {
-    color: #2563EB;
-    border-bottom-color: #2563EB;
-    background-color: white;
-}
+.tab-btn.active { color: #2563EB; border-bottom-color: #2563EB; background-color: white; }
 .tab-content { display: none; padding: 40px; }
-.tab-content.active { display: block; animation: fadeIn 0.3s; }
+.tab-content.active { display: block; }
 
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-/* --- 2. 입력란 디자인 수정 (표 안의 입력창) --- */
-
-/* 성적 테이블 스타일 */
-.score-table { 
-    width: 100%; 
-    border-collapse: collapse; 
-    margin-bottom: 20px; 
-    table-layout: fixed; /* 칸 크기 고정 */
-}
-
-.score-table th {
-    background-color: #f1f5f9;
-    padding: 12px;
-    border: 1px solid #e2e8f0;
-    font-size: 0.9rem;
-    color: #334155;
-}
-
-.score-table td {
-    border: 1px solid #e2e8f0;
-    padding: 0; /* 패딩 제거하여 입력창이 꽉 차게 */
-    height: 45px; /* 셀 높이 고정 */
-    vertical-align: middle;
-}
-
-/* 테이블 안의 입력창 꽉 채우기 */
-.score-table input, .score-table select {
-    width: 100%;
-    height: 100%;       /* 높이 100% */
-    border: none;       /* 테두리 없애기 (셀 테두리와 겹치므로) */
-    text-align: center; /* 글씨 가운데 정렬 */
-    background: transparent;
-    font-size: 1rem;
-    display: block;
-}
-.score-table input:focus, .score-table select:focus {
-    background-color: #f0f9ff; /* 포커스 시 약간 푸른 배경 */
-    outline: none;
-}
-
-/* 숫자 입력창 화살표(스피너) 제거 - 크롬, 사파리 등 */
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-/* 파이어폭스용 */
-input[type="number"] {
-    -moz-appearance: textfield;
-}
-
-
-/* 공통 버튼 */
-.save-btn {
-    width: 100%;
-    padding: 15px;
-    background-color: #2563EB;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 1.05rem;
-    font-weight: bold;
-    cursor: pointer;
-    margin-top: 30px;
-    transition: background 0.3s;
-}
-.save-btn:hover { background-color: #1d4ed8; }
-
-/* 폼 그룹 */
+/* --- [수정] 입력 폼 디자인 (깨짐 방지) --- */
 .form-group { margin-bottom: 20px; }
 .form-group label { display: block; font-weight: bold; margin-bottom: 8px; color: #334155; }
 .form-group input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;}
+
+/* 정성 조사서 전용 스타일 */
+.input-label { 
+    display: block; /* 블록 요소로 변경하여 줄바꿈 강제 */
+    font-weight: bold; 
+    margin-top: 25px; 
+    margin-bottom: 10px; 
+    color: #1e293b;
+    font-size: 1rem;
+}
+
+.radio-group { margin-bottom: 15px; display: flex; gap: 15px; flex-wrap: wrap;}
+.radio-group label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+
+/* 1지망~5지망 입력칸 스타일 */
+.target-uni-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.target-uni-list input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    box-sizing: border-box; /* 패딩 포함 너비 계산 */
+}
+
+/* 셀렉트 박스도 꽉 차게 */
+select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    margin-bottom: 10px;
+}
+
+/* --- [수정] 성적표 테이블 (빗금 처리 포함) --- */
+.score-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; }
+.score-table th { background-color: #f1f5f9; padding: 12px; border: 1px solid #e2e8f0; font-size: 0.9rem; }
+.score-table td { border: 1px solid #e2e8f0; padding: 0; height: 45px; vertical-align: middle; }
+
+/* 입력창 스타일 */
+.score-table input, .score-table select {
+    width: 100%; height: 100%; border: none; text-align: center; background: transparent; display: block;
+}
+.score-table input:focus { background-color: #f0f9ff; outline: none; }
+
+/* ★ 빗금(사용 안함) 스타일 클래스 */
+.disabled-cell {
+    background-color: #f3f4f6; /* 회색 배경 */
+    background-image: repeating-linear-gradient(
+        45deg,
+        #f3f4f6,
+        #f3f4f6 10px,
+        #e5e7eb 10px,
+        #e5e7eb 12px
+    ); /* 빗금 패턴 */
+    cursor: not-allowed;
+}
+
+/* 숫자 화살표 제거 */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+.save-btn {
+    width: 100%; padding: 15px; background-color: #2563EB; color: white;
+    border: none; border-radius: 8px; font-size: 1.05rem; font-weight: bold; cursor: pointer; margin-top: 30px;
+}
