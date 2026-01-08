@@ -59,10 +59,7 @@ function handleSignOut() {
 }
 
 
-// ==========================================
 // [Part B] 로그인 (Sign In) 로직
-// ==========================================
-
 function handleSignIn() {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
@@ -75,10 +72,19 @@ function handleSignIn() {
 
     cognitoUser.authenticateUser(authDetails, {
         onSuccess: function(result) {
-            // 토큰 저장
-            localStorage.setItem('accessToken', result.getAccessToken().getJwtToken());
-            localStorage.setItem('idToken', result.getIdToken().getJwtToken());
+            // 1. 토큰 가져오기
+            const accessToken = result.getAccessToken().getJwtToken();
+            const idToken = result.getIdToken(); 
+            
+            // 2. 로컬 스토리지에 저장
+            localStorage.setItem('accessToken', accessToken);
+            localStorage.setItem('idToken', idToken.getJwtToken());
             localStorage.setItem('userEmail', email);
+            
+            // ★ [핵심 수정] userId (sub) 저장하기
+            // 이 값이 없어서 마이페이지에서 계속 튕겼던 것입니다.
+            const userId = idToken.payload.sub; 
+            localStorage.setItem('userId', userId);
             
             alert("로그인 성공!");
             window.location.href = 'index.html';
