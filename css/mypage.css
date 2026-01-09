@@ -108,6 +108,28 @@
 .pay-date { color: #64748b; font-size: 0.8rem; display: block; }
 .pay-product { font-weight: bold; color: #1e293b; }
 
+.account-actions {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+.btn-delete-account {
+    background: none;
+    border: none;
+    color: #94a3b8; /* 연한 회색 */
+    font-size: 0.85rem;
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.btn-delete-account:hover {
+    color: #ef4444; /* 마우스 올리면 빨간색 */
+    font-weight: bold;
+}
+
 /* --- 메인 컨텐츠 --- */
 .content-area {
     flex: 1; background: white; border-radius: 12px; border: 1px solid #e2e8f0; min-height: 600px;

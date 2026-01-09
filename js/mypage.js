@@ -285,3 +285,66 @@ function updateStatusUI(data) {
         badge.innerText = "미작성 상태";
     }
 }
+
+// === 회원 탈퇴 함수 ===
+async function handleDeleteAccount() {
+    // 1. 확인 절차
+    const isConfirmed = confirm("정말로 탈퇴하시겠습니까?\n\n탈퇴 시 저장된 성적 및 상담 데이터가 모두 삭제되며 복구할 수 없습니다.");
+    
+    if (!isConfirmed) return;
+
+    const userId = localStorage.getItem('userId');
+    const userEmail = localStorage.getItem('userEmail');
+
+    try {
+        // 2. DynamoDB 데이터 삭제 (Lambda 호출)
+        const response = await fetch(MYPAGE_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'delete_user',
+                userId: userId
+            })
+        });
+
+        if (!response.ok) throw new Error("DB 삭제 실패");
+
+        // 3. Cognito 계정 삭제
+        // (현재 로그인된 세션을 가져와서 삭제 요청)
+        const poolData = {
+            UserPoolId: CONFIG.cognito.userPoolId,
+            ClientId: CONFIG.cognito.clientId
+        };
+        const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+        const cognitoUser = userPool.getCurrentUser();
+
+        if (cognitoUser) {
+            cognitoUser.getSession((err, session) => {
+                if (err) {
+                    alert("세션 오류로 탈퇴에 실패했습니다. 다시 로그인 후 시도해주세요.");
+                    return;
+                }
+                
+                // 실제 계정 삭제 API 호출
+                cognitoUser.deleteUser((err, result) => {
+                    if (err) {
+                        alert("계정 삭제 실패: " + err.message);
+                        return;
+                    }
+                    
+                    // 4. 성공 시 마무리
+                    alert("회원 탈퇴가 완료되었습니다.\n그동안 이용해 주셔서 감사합니다.");
+                    localStorage.clear(); // 로컬 저장소 비우기
+                    window.location.href = 'index.html'; // 메인으로 이동
+                });
+            });
+        } else {
+            // 이미 세션이 없는 경우 로컬만 지우고 보냄
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+    } catch (error) {
+        console.error(error);
+        alert("탈퇴 처리 중 오류가 발생했습니다 관리자에게 문의하세요.");
+    }
+}
