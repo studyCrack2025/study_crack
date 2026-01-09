@@ -8,38 +8,28 @@ const poolData = {
 const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 
 // ==========================================
-// [Part A] 공통 및 유틸리티 (로그인 상태 관리)
+// [Part A] 공통 및 유틸리티
 // ==========================================
 
-// 페이지 로드 시 실행: 로그인 상태 체크하여 헤더 버튼 변경
 document.addEventListener('DOMContentLoaded', () => {
     checkLoginStatus();
-
-    // 비밀번호 실시간 확인 리스너 등록 (회원가입 페이지용)
+    // (회원가입 페이지용) 비밀번호 확인 리스너 등은 해당 페이지에 요소가 있을 때만 실행
     const pwInput = document.getElementById('password');
-    const pwConfirmInput = document.getElementById('passwordConfirm');
-    if(pwInput && pwConfirmInput) {
-        pwInput.addEventListener('input', checkPasswordMatch);
-        pwConfirmInput.addEventListener('input', checkPasswordMatch);
-    }
+    if(pwInput) pwInput.addEventListener('input', checkPasswordMatch);
 });
 
-// 로그인 상태 확인 함수
 function checkLoginStatus() {
     const accessToken = localStorage.getItem('accessToken');
     const loginBtn = document.getElementById('loginBtn');
-    const myPageBtn = document.getElementById('myPageBtn'); // 마이페이지 버튼
+    const myPageBtn = document.getElementById('myPageBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     
-    // 요소가 있는 경우에만 실행 (login.html 등에는 헤더가 다를 수 있음)
     if (loginBtn && logoutBtn) {
         if (accessToken) {
-            // 로그인 상태
             loginBtn.classList.add('hidden');
             if(myPageBtn) myPageBtn.classList.remove('hidden');
             logoutBtn.classList.remove('hidden');
         } else {
-            // 비로그인 상태
             loginBtn.classList.remove('hidden');
             if(myPageBtn) myPageBtn.classList.add('hidden');
             logoutBtn.classList.add('hidden');
@@ -47,7 +37,6 @@ function checkLoginStatus() {
     }
 }
 
-// 로그아웃 함수
 function handleSignOut() {
     const cognitoUser = userPool.getCurrentUser();
     if (cognitoUser != null) {
@@ -58,8 +47,10 @@ function handleSignOut() {
     window.location.href = 'index.html';
 }
 
+// ==========================================
+// [Part B] ★ 로그인 함수
+// ==========================================
 
-// [Part B] 로그인 (Sign In) 로직
 function handleSignIn() {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
@@ -72,19 +63,19 @@ function handleSignIn() {
 
     cognitoUser.authenticateUser(authDetails, {
         onSuccess: function(result) {
-            // 1. 토큰 가져오기
+            // 1. 토큰 추출
             const accessToken = result.getAccessToken().getJwtToken();
-            const idToken = result.getIdToken(); 
+            const idToken = result.getIdToken();
             
-            // 2. 로컬 스토리지에 저장
+            // 2. ★ [핵심 해결] Cognito의 고유 ID(sub)를 추출해서 'userId'로 저장
+            // 이 줄이 없으면 마이페이지에서 쫓겨납니다.
+            const userId = idToken.payload.sub; 
+
+            // 3. 저장 (주머니에 넣기)
             localStorage.setItem('accessToken', accessToken);
             localStorage.setItem('idToken', idToken.getJwtToken());
             localStorage.setItem('userEmail', email);
-            
-            // ★ [핵심 수정] userId (sub) 저장하기
-            // 이 값이 없어서 마이페이지에서 계속 튕겼던 것입니다.
-            const userId = idToken.payload.sub; 
-            localStorage.setItem('userId', userId);
+            localStorage.setItem('userId', userId); // ★ 반드시 저장!
             
             alert("로그인 성공!");
             window.location.href = 'index.html';
@@ -95,9 +86,8 @@ function handleSignIn() {
     });
 }
 
-
 // ==========================================
-// [Part C] 회원가입 (Sign Up) 로직 - 최신 반영됨
+// [Part C] 회원가입 (Sign Up) 로직
 // ==========================================
 
 // 비밀번호 일치 확인
