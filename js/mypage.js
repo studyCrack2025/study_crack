@@ -1,6 +1,5 @@
 // js/mypage.js
 
-// ★ 여기에 아까 만든 Lambda 함수 URL을 넣으세요!
 const API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/"; 
 
 let currentUserData = {}; // 전체 데이터 보관용
@@ -9,16 +8,16 @@ let examScores = {};      // 성적 데이터 보관용
 document.addEventListener('DOMContentLoaded', () => {
     // 1. 로그인 체크 (Cognito 토큰 & UserId 확인)
     const accessToken = localStorage.getItem('accessToken');
-    const userId = localStorage.getItem('userId'); // Cognito Sub ID (DB의 PK)
+    const userid = localStorage.getItem('userid'); // Cognito Sub ID (DB의 PK)
 
-    if (!accessToken || !userId) {
+    if (!accessToken || !userid) {
         alert("로그인이 필요합니다.");
         window.location.href = 'login.html';
         return;
     }
 
     // 2. 서버에서 데이터 가져오기
-    fetchUserData(userId);
+    fetchUserData(userid);
 });
 
 // 탭 전환 기능
@@ -30,11 +29,11 @@ function openTab(tabName) {
 }
 
 // === [API 통신] 데이터 불러오기 ===
-async function fetchUserData(userId) {
+async function fetchUserData(userid) {
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'get_user', userId: userId })
+            body: JSON.stringify({ type: 'get_user', userid: userid })
         });
         const data = await response.json();
         
@@ -96,7 +95,7 @@ function fillQualitativeForm(qual) {
 
 // === [API 통신] 1. 프로필 수정 저장 ===
 async function saveProfile() {
-    const userId = localStorage.getItem('userId');
+    const userid = localStorage.getItem('userid');
     const newPhone = document.getElementById('profilePhone').value;
     const newSchool = document.getElementById('profileSchool').value;
 
@@ -105,7 +104,7 @@ async function saveProfile() {
             method: 'POST',
             body: JSON.stringify({
                 type: 'update_profile',
-                userId: userId,
+                userid: userid,
                 data: { phone: newPhone, school: newSchool }
             })
         });
@@ -122,7 +121,7 @@ async function saveProfile() {
 
 // === [API 통신] 2. 정성 데이터 저장 ===
 async function saveQualitative() {
-    const userId = localStorage.getItem('userId');
+    const userid = localStorage.getItem('userid');
     const consent = document.getElementById('dataConsent').checked;
     
     if (!consent) {
@@ -148,7 +147,7 @@ async function saveQualitative() {
             method: 'POST',
             body: JSON.stringify({
                 type: 'update_qual',
-                userId: userId,
+                userid: userid,
                 data: qualData
             })
         });
@@ -184,7 +183,7 @@ function loadExamData() {
 }
 
 async function saveQuantitative() {
-    const userId = localStorage.getItem('userId');
+    const userid = localStorage.getItem('userid');
     const examMonth = document.getElementById('examSelect').value;
 
     // 현재 화면의 데이터를 객체로 만듦
@@ -213,7 +212,7 @@ async function saveQuantitative() {
             method: 'POST',
             body: JSON.stringify({
                 type: 'update_quan',
-                userId: userId,
+                userid: userid,
                 data: examScores // 전체 데이터를 통째로 업데이트
             })
         });
