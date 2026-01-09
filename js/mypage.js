@@ -1,14 +1,13 @@
 // js/mypage.js
 
-// Lambda URL (공백 없음 확인)
-const API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/"; 
+// ★ [수정됨] auth.js와 변수명이 겹치지 않게 이름을 변경했습니다.
+const MYPAGE_API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/"; 
 
 let currentUserData = {}; 
 let examScores = {};      
 
 document.addEventListener('DOMContentLoaded', () => {
     const accessToken = localStorage.getItem('accessToken');
-    // auth.js에서 대문자 Key로 저장함
     const userId = localStorage.getItem('userId'); 
 
     if (!accessToken || !userId) {
@@ -31,7 +30,8 @@ function openTab(tabName) {
 // === 데이터 불러오기 ===
 async function fetchUserData(userId) {
     try {
-        const response = await fetch(API_URL, {
+        // [수정됨] 변경된 변수명 사용
+        const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             body: JSON.stringify({ type: 'get_user', userId: userId })
         });
@@ -40,7 +40,6 @@ async function fetchUserData(userId) {
 
         const data = await response.json();
         
-        // 데이터가 비어있어도(첫 로그인) 에러가 아닙니다.
         currentUserData = data || {}; 
         
         renderUserInfo(currentUserData);
@@ -58,7 +57,6 @@ async function fetchUserData(userId) {
 
 // === 화면 그리기 ===
 function renderUserInfo(data) {
-    // DB에 값이 없으면 공란으로 둠
     document.getElementById('userNameDisplay').innerText = data.name || '이름 없음';
     document.getElementById('userEmailDisplay').innerText = localStorage.getItem('userEmail') || '';
     
@@ -84,12 +82,13 @@ function fillQualitativeForm(qual) {
     }
 }
 
-// === ★ [핵심] 프로필 저장 (이 버튼을 눌러야 DB가 생성됨) ===
+// === ★ [핵심] 프로필 저장 ===
+// 이제 파일 충돌이 없으므로 이 함수가 정상적으로 인식될 것입니다.
 async function saveProfile() {
     const userId = localStorage.getItem('userId');
     const newPhone = document.getElementById('profilePhone').value;
     const newSchool = document.getElementById('profileSchool').value;
-    const newName = document.getElementById('profileName').value; // 이름 입력값
+    const newName = document.getElementById('profileName').value;
 
     if (!newName) {
         alert("이름을 입력해주세요.");
@@ -97,7 +96,8 @@ async function saveProfile() {
     }
 
     try {
-        const response = await fetch(API_URL, {
+        // [수정됨] 변경된 변수명 사용
+        const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             body: JSON.stringify({
                 type: 'update_profile',
@@ -112,7 +112,7 @@ async function saveProfile() {
         
         if(response.ok) {
             alert("정보가 저장되었습니다.");
-            location.reload(); // 새로고침하면 이제 이름이 보일 겁니다!
+            location.reload(); 
         } else {
             throw new Error("저장 실패");
         }
@@ -146,7 +146,8 @@ async function saveQualitative() {
     };
 
     try {
-        const response = await fetch(API_URL, {
+        // [수정됨] 변경된 변수명 사용
+        const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             body: JSON.stringify({
                 type: 'update_qual',
@@ -237,7 +238,8 @@ async function saveQuantitative() {
     examScores[examMonth] = currentScore;
 
     try {
-        const response = await fetch(API_URL, {
+        // [수정됨] 변경된 변수명 사용
+        const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             body: JSON.stringify({
                 type: 'update_quan',
