@@ -1,22 +1,52 @@
 # 🎓 StudyCrack (스터디크랙) - 입시 컨설팅 플랫폼
 
 **StudyCrack**은 수험생을 위한 1:1 맞춤형 입시 컨설팅 및 학습 관리 웹 플랫폼입니다.
-AWS Serverless 아키텍처를 기반으로 구축되어, 별도의 서버 관리 없이 로그인, 데이터 저장, 결제 연동 기능을 수행합니다.
+AWS Serverless 아키텍처를 기반으로 구축되어, 별도의 서버 관리 없이 회원 관리, 데이터 저장, 결제 및 알림 자동화 기능을 수행합니다.
 
 ## 🛠 Tech Stack (기술 스택)
 
 ### Frontend
+
 * **HTML5 / CSS3**: 시멘틱 마크업 및 반응형 디자인 (Mobile-First)
 * **JavaScript (ES6+)**: Vanilla JS를 사용한 DOM 조작 및 비동기 통신 (`fetch`, `async/await`)
 
 ### Backend (Serverless)
-* **AWS Cognito**: 사용자 인증 (회원가입, 로그인, SMS 인증)
-* **AWS Lambda**: 백엔드 비즈니스 로직 처리 (Node.js 18.x)
-* **AWS DynamoDB**: NoSQL 데이터베이스 (학생 정보, 상담 일지, 성적 데이터 저장)
 
-### External APIs
-* **Solapi (CoolSMS)**: 카카오톡 알림톡 및 문자 발송 (채널 추가 버튼 등 템플릿 연동)
-* **Stripe**: (예정) 결제 시스템 연동
+* **AWS Cognito**: 사용자 인증 (회원가입, 로그인, SMS 인증, 세션 관리)
+* **AWS Lambda**: 백엔드 비즈니스 로직 처리 (Node.js 20.x)
+* `StudyCrack_API`: 유저 정보 조회, 프로필 수정, 성적 데이터 관리, 회원 탈퇴
+* `StudyCrack_Payment`: 결제 요청 처리, Stripe 웹훅 핸들링, 구글 시트 로깅
+
+
+* **AWS DynamoDB**: NoSQL 데이터베이스 (학생 정보, 상담 일지, 성적 데이터, 결제 내역 저장)
+
+### External APIs & Tools
+
+* **Stripe**: 신용카드 결제 시스템 연동 (Checkout Session)
+* **Google Sheets API**: 주문 접수 및 결제 내역 실시간 로깅 (백업 데이터베이스 역할)
+* **Solapi (CoolSMS)**: 결제 완료 시 알림톡 자동 발송
+
+---
+
+## ✨ Key Features (주요 기능)
+
+1. **회원 시스템**
+* Cognito 기반 회원가입/로그인 (전화번호 SMS 인증 포함)
+* **마이페이지**: 기본 인적사항 수정, 기초조사서(정성), 모의고사 성적(정량) 입력 및 저장
+* **회원 탈퇴**: DynamoDB 데이터 삭제 후 Cognito 계정 삭제 (이중 삭제 안전장치)
+
+
+2. **결제 시스템**
+* **자동 입력**: 결제 페이지 진입 시 로그인된 유저 정보를 DB에서 불러와 자동 채움
+* **결제 프로세스**: 웹사이트 신청 -> Lambda(구글시트 대기 저장) -> Stripe 결제 -> Webhook -> Lambda(DB 업데이트 & 알림)
+* **프리미엄 멤버십**: 유료 결제 내역이 확인되면 마이페이지에 **Gold 테두리** 및 **[PREMIUM] 뱃지** 자동 적용
+
+
+3. **데이터 관리**
+* 구글 시트에 모든 주문 건(결제 전/후) 실시간 기록
+* DynamoDB에 학생별 결제 이력(`payments` 배열) 자동 추가
+
+
 
 ---
 
@@ -26,23 +56,58 @@ AWS Serverless 아키텍처를 기반으로 구축되어, 별도의 서버 관�
 StudyCrack/
 ├── index.html           # 메인 랜딩 페이지 (서비스 소개)
 ├── login.html           # 로그인 페이지
-├── signup.html          # 회원가입 페이지 (기본/세부 정보 입력)
-├── payment.html         # 컨설팅 프로그램 신청 및 결제 페이지
-├── mypage.html          # 마이페이지 (기초조사서, 성적 입력)
+├── signup.html          # 회원가입 페이지 (SMS 인증 포함)
+├── payment.html         # 컨설팅 프로그램 신청 (유저 정보 자동 로드)
+├── success.html         # [NEW] 결제 완료 후 리디렉션 페이지
+├── mypage.html          # 마이페이지 (성적 입력, 탈퇴 기능, 프리미엄 뱃지)
 │
 ├── css/                 # 스타일시트 디렉토리
 │   ├── style.css        # 공통 스타일 (헤더, 푸터, 레이아웃)
 │   ├── auth.css         # 로그인/회원가입 전용 스타일
 │   ├── payment.css      # 결제 폼 전용 스타일
-│   └── mypage.css       # 마이페이지(탭, 성적표) 전용 스타일
+│   └── mypage.css       # 마이페이지 스타일 (골드 테두리 등 프리미엄 스타일 포함)
 │
 ├── js/                  # 자바스크립트 로직 디렉토리
-│   ├── config.js        # AWS Cognito 설정 파일 (API Key 관리)
-│   ├── auth.js          # 인증 로직 (가입, 로그인, 로그아웃, 상태체크)
-│   ├── script.js        # 메인 UI 로직 (모달, 네비게이션)
-│   ├── payment.js       # 결제 처리 및 Lambda 통신
-│   └── mypage.js        # 마이페이지 데이터 로드/저장 로직
+│   ├── config.js        # AWS Cognito 설정 파일
+│   ├── auth.js          # 인증 로직 (가입 시 DB 자동 생성, 로그인 시 userId 저장)
+│   ├── script.js        # 메인 UI 로직
+│   ├── payment.js       # 결제 처리 (Lambda 'StudyCrack_Payment' 통신)
+│   └── mypage.js        # 데이터 관리 (Lambda 'StudyCrack_API' 통신, 유료회원 체크)
 │
-└── assets/              # 정적 리소스 (이미지 등)
+└── assets/              # 정적 리소스
     └── images/
         └── study_cracked_logo.png
+
+```
+
+---
+
+## 💾 Database Schema (DynamoDB)
+
+**Table Name:** `StudyCrack_Students`
+**Partition Key:** `userid` (String)
+
+| 속성명 (Attribute) | 타입 | 설명 |
+| --- | --- | --- |
+| `userid` | String | **PK**, Cognito User Sub ID |
+| `name` | String | 학생 이름 |
+| `phone` | String | 전화번호 |
+| `school` | String | 학교명 |
+| `qualitative` | Map | 정성 조사서 (진로, 희망 대학 등) |
+| `quantitative` | Map | 정량 조사서 (모의고사 성적 데이터) |
+| `payments` | List | **[NEW]** 결제 내역 리스트 (Webhook 통해 자동 생성) |
+
+### `payments` 구조 예시
+
+```json
+[
+  {
+    "orderId": "ORD-173643XXXX",
+    "product": "원포인트 입시 전략 상담",
+    "amount": 150000,
+    "status": "paid",
+    "date": "2026-01-10 14:00:00"
+  }
+]
+
+```
