@@ -3,7 +3,6 @@
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const Stripe = require('stripe');
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
-// ★ GetCommand 추가 (DB 조회용)
 const { DynamoDBDocumentClient, UpdateCommand, GetCommand } = require("@aws-sdk/lib-dynamodb");
 const { sendNotification } = require('./notification'); 
 
@@ -30,9 +29,7 @@ function getKSTDate() {
 }
 
 exports.handler = async (event) => {
-    if (event.requestContext && event.requestContext.http && event.requestContext.http.method === 'OPTIONS') {
-        return { statusCode: 200, body: '' };
-    }
+    // AWS 콘솔에서 CORS를 켰으므로, 코드 내 OPTIONS 처리와 headers 반환은 모두 제거합니다.
 
     async function loadSheet() {
         await doc.useServiceAccountAuth(creds);
@@ -41,7 +38,8 @@ exports.handler = async (event) => {
     }
 
     try {
-        // [CASE A] Stripe Webhook (결제 완료)
+        // [CASE A] Stripe Webhook (결제 완료 알림)
+        // 웹훅은 보통 headers에 stripe-signature가 있는지로 구분합니다.
         const sig = event.headers['stripe-signature'];
         if (sig) {
             let stripeEvent;
@@ -54,8 +52,6 @@ exports.handler = async (event) => {
             if (stripeEvent.type === 'checkout.session.completed') {
                 const session = stripeEvent.data.object;
                 const uniqueId = session.client_reference_id;
-                
-                // ★ [수정 1] 여기서 Stripe 입력값은 안 씁니다. (삭제됨)
                 
                 if (uniqueId) {
                     const sheet = await loadSheet();
@@ -72,7 +68,7 @@ exports.handler = async (event) => {
 
                         if (userId) {
                             try {
-                                // ★ [수정 2] DynamoDB에서 진짜 유저 정보 조회
+                                // DynamoDB에서 진짜 유저 정보 조회
                                 const userResult = await docClient.send(new GetCommand({
                                     TableName: TABLE_NAME,
                                     Key: { userid: userId }
@@ -80,13 +76,10 @@ exports.handler = async (event) => {
                                 
                                 const userData = userResult.Item;
                                 
-                                // DB에 정보가 있으면 그걸 쓰고, 만약 없으면 시트에 저장된 거라도 씀
                                 const realName = userData?.name || row.Name || "고객";
                                 const realPhone = userData?.phone || row.Phone; 
-                                // (DB 전화번호 형식 확인 필요: 010-1234-5678 형식이면 알림톡 전송 시 - 제거 로직이 필요할 수도 있음. 
-                                // notification.js 내부에서 처리한다고 가정)
 
-                                // 1. 결제 내역 저장 (기존 로직)
+                                // DynamoDB에 결제 내역 추가
                                 const newPayment = {
                                     orderId: uniqueId,
                                     product: productName,
@@ -105,12 +98,12 @@ exports.handler = async (event) => {
                                     }
                                 }));
 
-                                // ★ [수정 3] DB에서 가져온 정확한 정보로 알림톡 발송
+                                // 알림톡 발송
                                 if (realPhone) {
                                     await sendNotification(realPhone, realName, productName);
-                                    console.log(`Notification sent to ${realName} (${realPhone})`);
+                                    console.log(`Notification sent to ${realName}`);
                                 } else {
-                                    console.log("No phone number found for notification.");
+                                    console.log("No phone number found.");
                                 }
 
                             } catch (dbErr) {
@@ -123,7 +116,7 @@ exports.handler = async (event) => {
             return { statusCode: 200, body: JSON.stringify({ received: true }) };
         }
 
-        // [CASE B] 폼 제출 (기존 유지)
+        // [CASE B] 폼 제출 (프론트엔드 -> 구글시트 임시 저장)
         const body = JSON.parse(event.body);
         if (body.type === 'submit_form') {
             const sheet = await loadSheet();
@@ -140,11 +133,18 @@ exports.handler = async (event) => {
                 UserId: body.userId
             });
 
-            return { statusCode: 200, headers, body: JSON.stringify({ message: "Form saved" }) };
+            // 헤더 없이 body만 반환 (AWS가 알아서 CORS 헤더 붙여줌)
+            return { 
+                statusCode: 200, 
+                body: JSON.stringify({ message: "Form saved" }) 
+            };
         }
 
     } catch (error) {
         console.error(error);
-        return { statusCode: 500, headers, body: JSON.stringify({ error: error.toString() }) };
+        return { 
+            statusCode: 500, 
+            body: JSON.stringify({ error: error.toString() }) 
+        };
     }
 };
