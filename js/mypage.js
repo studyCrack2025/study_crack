@@ -1,6 +1,6 @@
 // js/mypage.js
 
-// Lambda URL (공백 없음 확인 완료)
+// Lambda URL (공백 없음 확인)
 const API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/"; 
 
 let currentUserData = {}; 
@@ -8,7 +8,8 @@ let examScores = {};
 
 document.addEventListener('DOMContentLoaded', () => {
     const accessToken = localStorage.getItem('accessToken');
-    const userId = localStorage.getItem('userId'); // auth.js에서 저장한 대문자 Key
+    // auth.js에서 대문자 Key로 저장함
+    const userId = localStorage.getItem('userId'); 
 
     if (!accessToken || !userId) {
         alert("로그인이 필요합니다.");
@@ -16,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // 서버에서 데이터 가져오기
+    // 서버에서 데이터 가져오기 시도
     fetchUserData(userId);
 });
 
@@ -39,24 +40,25 @@ async function fetchUserData(userId) {
 
         const data = await response.json();
         
-        currentUserData = data;
-        renderUserInfo(data);
+        // 데이터가 비어있어도(첫 로그인) 에러가 아닙니다.
+        currentUserData = data || {}; 
         
-        if (data.qualitative) fillQualitativeForm(data.qualitative);
-        if (data.quantitative) examScores = data.quantitative;
+        renderUserInfo(currentUserData);
+        
+        if (currentUserData.qualitative) fillQualitativeForm(currentUserData.qualitative);
+        if (currentUserData.quantitative) examScores = currentUserData.quantitative;
         
         loadExamData(); 
-        updateStatusUI(data);
+        updateStatusUI(currentUserData);
 
     } catch (error) {
-        console.error("데이터 로드 실패 (신규 회원은 정상):", error);
-        // DB가 비어있으면 아무것도 안 함 (신규 회원)
+        console.error("데이터 로드 중 오류 (신규 회원은 무시 가능):", error);
     }
 }
 
 // === 화면 그리기 ===
 function renderUserInfo(data) {
-    // DB에 이름이 없으면 '이름 없음' 표시
+    // DB에 값이 없으면 공란으로 둠
     document.getElementById('userNameDisplay').innerText = data.name || '이름 없음';
     document.getElementById('userEmailDisplay').innerText = localStorage.getItem('userEmail') || '';
     
@@ -76,18 +78,23 @@ function fillQualitativeForm(qual) {
     
     if (qual.targets) {
         qual.targets.forEach((val, idx) => {
-            if(document.getElementById(`target${idx+1}`)) 
-                document.getElementById(`target${idx+1}`).value = val;
+            const input = document.getElementById(`target${idx+1}`);
+            if(input) input.value = val;
         });
     }
 }
 
-// === [중요] 프로필 저장 (이때 DB 데이터가 생성됨) ===
+// === ★ [핵심] 프로필 저장 (이 버튼을 눌러야 DB가 생성됨) ===
 async function saveProfile() {
     const userId = localStorage.getItem('userId');
     const newPhone = document.getElementById('profilePhone').value;
     const newSchool = document.getElementById('profileSchool').value;
-    const newName = document.getElementById('profileName').value; // 이름도 같이 저장
+    const newName = document.getElementById('profileName').value; // 이름 입력값
+
+    if (!newName) {
+        alert("이름을 입력해주세요.");
+        return;
+    }
 
     try {
         const response = await fetch(API_URL, {
@@ -98,17 +105,20 @@ async function saveProfile() {
                 data: { 
                     phone: newPhone, 
                     school: newSchool,
-                    name: newName // 이름 데이터 추가
+                    name: newName 
                 }
             })
         });
         
         if(response.ok) {
-            alert("회원 정보가 저장되었습니다.");
-            location.reload(); 
+            alert("정보가 저장되었습니다.");
+            location.reload(); // 새로고침하면 이제 이름이 보일 겁니다!
+        } else {
+            throw new Error("저장 실패");
         }
     } catch (error) {
-        alert("저장 실패");
+        console.error(error);
+        alert("저장 중 오류가 발생했습니다.");
     }
 }
 

@@ -1,11 +1,17 @@
 // js/auth.js
 
-// 1. AWS Cognito 설정 초기화
+// ★ 1. Lambda URL 설정 (회원가입 시 DB 저장을 위해 필요)
+const API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/";
+
+// AWS Cognito 설정
 const poolData = {
     UserPoolId: CONFIG.cognito.userPoolId,
     ClientId: CONFIG.cognito.clientId
 };
 const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+
+// 임시 저장용 변수 (회원가입 과정에서 사용)
+let tempUserId = ""; 
 
 // ==========================================
 // [Part A] 공통 및 유틸리티
@@ -13,9 +19,14 @@ const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 
 document.addEventListener('DOMContentLoaded', () => {
     checkLoginStatus();
-    // (회원가입 페이지용) 비밀번호 확인 리스너 등은 해당 페이지에 요소가 있을 때만 실행
+    
+    // 비밀번호 실시간 확인
     const pwInput = document.getElementById('password');
-    if(pwInput) pwInput.addEventListener('input', checkPasswordMatch);
+    const pwConfirmInput = document.getElementById('passwordConfirm');
+    if(pwInput && pwConfirmInput) {
+        pwInput.addEventListener('input', checkPasswordMatch);
+        pwConfirmInput.addEventListener('input', checkPasswordMatch);
+    }
 });
 
 function checkLoginStatus() {
@@ -48,7 +59,7 @@ function handleSignOut() {
 }
 
 // ==========================================
-// [Part B] ★ 로그인 함수
+// [Part B] 로그인 로직 (userId 저장 기능 추가됨)
 // ==========================================
 
 function handleSignIn() {
@@ -67,15 +78,13 @@ function handleSignIn() {
             const accessToken = result.getAccessToken().getJwtToken();
             const idToken = result.getIdToken();
             
-            // 2. ★ [핵심 해결] Cognito의 고유 ID(sub)를 추출해서 'userId'로 저장
-            // 이 줄이 없으면 마이페이지에서 쫓겨납니다.
+            // ★ [핵심 해결 1] 로그인 할 때 userId(sub)를 반드시 저장해야 마이페이지가 열림
             const userId = idToken.payload.sub; 
-
-            // 3. 저장 (주머니에 넣기)
+            
             localStorage.setItem('accessToken', accessToken);
             localStorage.setItem('idToken', idToken.getJwtToken());
             localStorage.setItem('userEmail', email);
-            localStorage.setItem('userId', userId); // ★ 반드시 저장!
+            localStorage.setItem('userId', userId); // ★ 저장 필수!
             
             alert("로그인 성공!");
             window.location.href = 'index.html';
@@ -87,10 +96,9 @@ function handleSignIn() {
 }
 
 // ==========================================
-// [Part C] 회원가입 (Sign Up) 로직
+// [Part C] 회원가입 로직 (DB 저장 기능 추가됨)
 // ==========================================
 
-// 비밀번호 일치 확인
 function checkPasswordMatch() {
     const pwInput = document.getElementById('password');
     const pwConfirmInput = document.getElementById('passwordConfirm');
@@ -103,7 +111,6 @@ function checkPasswordMatch() {
         msgBox.innerHTML = "";
         return;
     }
-
     if (pw === confirm) {
         msgBox.innerHTML = "<span class='text-success'>비밀번호가 일치합니다.</span>";
     } else {
@@ -111,7 +118,6 @@ function checkPasswordMatch() {
     }
 }
 
-// 기타(Etc) 입력창 토글
 function toggleEtc(isShow) {
     const etcInput = document.getElementById('referralEtc');
     if (isShow) {
@@ -124,7 +130,6 @@ function toggleEtc(isShow) {
     }
 }
 
-// 인증번호 받기 (회원가입 요청)
 let timerInterval;
 
 function handleSendCode() {
@@ -143,7 +148,7 @@ function handleSendCode() {
     if (referral === 'etc') {
         referral = document.getElementById('referralEtc').value;
         if (!referral.trim()) {
-            alert("유입 경로(기타) 내용을 입력해주세요.");
+            alert("유입 경로 내용을 입력해주세요.");
             return;
         }
     }
@@ -186,6 +191,10 @@ function handleSendCode() {
             return;
         }
 
+        // ★ 여기서 생성된 userId(sub)를 임시 변수에 저장해둡니다.
+        // 나중에 인증 완료(handleVerify)할 때 이 ID로 DB에 저장할 겁니다.
+        tempUserId = result.userSub; 
+
         alert("인증번호가 발송되었습니다. 이메일을 확인해주세요.");
         document.getElementById('verifySection').classList.remove('hidden');
         sendBtn.innerText = "재전송";
@@ -196,7 +205,6 @@ function handleSendCode() {
     }, clientMetadata);
 }
 
-// 타이머 함수
 function startTimer(duration) {
     let timer = duration, minutes, seconds;
     const display = document.getElementById('timer');
@@ -219,7 +227,7 @@ function startTimer(duration) {
     }, 1000);
 }
 
-// 인증코드 확인
+// ★ [핵심 해결 2] 인증 완료 시 DB에 초기 데이터 생성
 function handleVerify() {
     const email = document.getElementById('email').value;
     const code = document.getElementById('verifyCode').value;
@@ -232,28 +240,54 @@ function handleVerify() {
     const userData = { Username: email, Pool: userPool };
     const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
 
-    cognitoUser.confirmRegistration(code, true, function(err, result) {
+    cognitoUser.confirmRegistration(code, true, async function(err, result) {
         if (err) {
             alert("인증 실패: " + err.message);
             return;
         }
         
-        clearInterval(timerInterval);
-        document.getElementById('verifySection').classList.add('hidden');
-        
-        const sendBtn = document.getElementById('sendCodeBtn');
-        sendBtn.innerText = "인증 완료";
-        sendBtn.style.backgroundColor = "#16a34a";
-        sendBtn.disabled = true;
-
-        const finalBtn = document.getElementById('finalSubmitBtn');
-        finalBtn.innerText = "회원가입 완료 및 로그인하러 가기";
-        finalBtn.disabled = false;
-        finalBtn.style.backgroundColor = "#2563EB";
-        
-        finalBtn.onclick = function() {
-            alert("회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.");
+        // 인증 성공! -> 이제 DB에 데이터를 저장합시다.
+        try {
+            await createInitialUserDB(); // DB 저장 함수 호출
+            alert("회원가입 및 DB 생성이 완료되었습니다! 로그인 페이지로 이동합니다.");
             window.location.href = 'login.html';
-        };
+        } catch (dbErr) {
+            console.error(dbErr);
+            // DB 저장이 실패해도 일단 가입은 된 것이므로 로그인 페이지로 보냄 (로그인 후 정보수정 하면 됨)
+            alert("회원가입 완료. (초기 데이터 생성 중 오류가 있었으나 로그인 후 이용 가능합니다)");
+            window.location.href = 'login.html';
+        }
     });
+}
+
+// DB 초기 데이터 생성 함수 (Lambda 호출)
+async function createInitialUserDB() {
+    // 입력된 값들 가져오기
+    const name = document.getElementById('name').value;
+    const phoneRaw = document.getElementById('phone').value;
+    const school = document.getElementById('school').value;
+
+    // tempUserId가 없으면(새로고침 등) 실행 불가
+    if (!tempUserId) {
+        console.error("User ID가 없습니다.");
+        return;
+    }
+
+    // Lambda API 호출
+    const response = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+            type: 'update_profile', // 프로필 업데이트 기능 재활용
+            userId: tempUserId,
+            data: {
+                name: name,
+                phone: phoneRaw,
+                school: school
+            }
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error("DB 생성 실패");
+    }
 }
