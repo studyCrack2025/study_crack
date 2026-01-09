@@ -1,10 +1,28 @@
 // js/payment.js
 
+// ★ 1. 유저 정보를 가져올 API URL (StudyCrack_API 함수 URL)
+const USER_API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/";
+
+// ★ 2. 결제 요청용 API URL
+const PAYMENT_API_URL = "https://dh6pn3wcxl5dp2dsi4kubqiuau0qnblq.lambda-url.ap-northeast-2.on.aws/"; 
+
 let selectedProductUrl = "";
 let selectedProductName = "";
 
 // 페이지 로드 후 실행
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. 로그인 체크 및 유저 정보 로드
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+        alert("로그인이 필요합니다.");
+        window.location.href = 'login.html';
+        return;
+    }
+    
+    // 유저 정보 가져오기 실행
+    fetchUserInfo(userId);
+
+    // 전화번호 포맷팅 리스너 (혹시 수정할 경우 대비)
     const phoneInput = document.getElementById('phone');
     if (phoneInput) {
         phoneInput.addEventListener('input', (e) => {
@@ -15,6 +33,29 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// ★ [신규] 유저 정보 가져와서 채우기
+async function fetchUserInfo(userId) {
+    try {
+        const response = await fetch(USER_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'get_user', userId: userId })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            // 데이터 채우기
+            if (data.name) document.getElementById('name').value = data.name;
+            if (data.phone) document.getElementById('phone').value = data.phone;
+            
+            // 이메일은 Cognito 로그인 시 저장한 로컬스토리지에서 가져옴
+            const email = localStorage.getItem('userEmail');
+            if (email) document.getElementById('email').value = email;
+        }
+    } catch (error) {
+        console.error("유저 정보 로드 실패:", error);
+    }
+}
 
 // 상품 선택 함수
 function selectProduct(element, url) {
@@ -40,38 +81,24 @@ async function processPayment() {
     const name = document.getElementById('name').value;
     const rawPhone = document.getElementById('phone').value;
     const email = document.getElementById('email').value;
-
-    // ★ [수정 1] 로그인된 사용자 ID 가져오기
     const userId = localStorage.getItem('userId');
 
-    // 유효성 검사
     if (!name || !rawPhone || !email || !selectedProductUrl) {
         alert("모든 정보를 입력하고 상품을 선택해주세요.");
         return;
     }
 
-    // 비로그인 결제를 막고 싶다면 주석 해제하세요
-    
-    if (!userId) {
-        alert("로그인이 필요한 서비스입니다.");
-        window.location.href = 'login.html';
-        return;
-    }
-
     const formattedPhone = formatPhoneNumber(rawPhone);
-
     const btn = document.getElementById('submitBtn');
     const originalBtnText = btn.innerText;
+    
     btn.innerText = "처리 중...";
     btn.disabled = true;
 
     const uniqueId = 'ORD-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
 
-    // 'StudyCrack_Payment' Lambda 함수의 URL
-    const LAMBDA_URL = "https://dh6pn3wcxl5dp2dsi4kubqiuau0qnblq.lambda-url.ap-northeast-2.on.aws/"; 
-
     try {
-        const response = await fetch(LAMBDA_URL, {
+        const response = await fetch(PAYMENT_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -81,12 +108,12 @@ async function processPayment() {
                 phone: formattedPhone,
                 email: email,
                 product: selectedProductName,
-                userId: userId
+                userId: userId 
             })
         });
 
         if (response.ok) {
-            // Stripe 결제 페이지로 이동
+            // Stripe 페이지로 이동
             window.location.href = `${selectedProductUrl}?client_reference_id=${uniqueId}&prefilled_email=${email}`;
         } else {
             throw new Error('Server response not ok');
