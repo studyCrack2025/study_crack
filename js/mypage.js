@@ -1,6 +1,6 @@
 // js/mypage.js
 
-// ★ [수정됨] auth.js와 변수명이 겹치지 않게 이름을 변경했습니다.
+// Lambda URL (StudyCrack_API URL 유지)
 const MYPAGE_API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/"; 
 
 let currentUserData = {}; 
@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // 서버에서 데이터 가져오기 시도
     fetchUserData(userId);
 });
 
@@ -27,10 +26,8 @@ function openTab(tabName) {
     event.currentTarget.classList.add('active');
 }
 
-// === 데이터 불러오기 ===
 async function fetchUserData(userId) {
     try {
-        // [수정됨] 변경된 변수명 사용
         const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             body: JSON.stringify({ type: 'get_user', userId: userId })
@@ -39,7 +36,6 @@ async function fetchUserData(userId) {
         if (!response.ok) throw new Error("서버 오류");
 
         const data = await response.json();
-        
         currentUserData = data || {}; 
         
         renderUserInfo(currentUserData);
@@ -47,15 +43,40 @@ async function fetchUserData(userId) {
         if (currentUserData.qualitative) fillQualitativeForm(currentUserData.qualitative);
         if (currentUserData.quantitative) examScores = currentUserData.quantitative;
         
+        // ★ [추가] 결제 상태 확인 및 UI 업데이트
+        checkPaymentStatus(currentUserData.payments);
+
         loadExamData(); 
         updateStatusUI(currentUserData);
 
     } catch (error) {
-        console.error("데이터 로드 중 오류 (신규 회원은 무시 가능):", error);
+        console.error("데이터 로드 중 오류:", error);
     }
 }
 
-// === 화면 그리기 ===
+// ★ [신규 기능] 결제 여부 확인 함수
+function checkPaymentStatus(payments) {
+    const profileBox = document.querySelector('.profile-summary');
+    
+    // payments 배열이 있고, 그 중에 status가 'paid'인 게 하나라도 있으면
+    if (payments && payments.length > 0) {
+        const hasPaid = payments.some(p => p.status === 'paid');
+        
+        if (hasPaid) {
+            // 유료 회원 디자인 적용
+            profileBox.classList.add('paid-member');
+            
+            // 프리미엄 뱃지 요소 추가 (없으면 생성)
+            if (!document.querySelector('.premium-badge')) {
+                const badge = document.createElement('div');
+                badge.className = 'premium-badge';
+                badge.innerText = "PREMIUM MEMBER";
+                profileBox.appendChild(badge);
+            }
+        }
+    }
+}
+
 function renderUserInfo(data) {
     document.getElementById('userNameDisplay').innerText = data.name || '이름 없음';
     document.getElementById('userEmailDisplay').innerText = localStorage.getItem('userEmail') || '';
@@ -82,8 +103,6 @@ function fillQualitativeForm(qual) {
     }
 }
 
-// === ★ [핵심] 프로필 저장 ===
-// 이제 파일 충돌이 없으므로 이 함수가 정상적으로 인식될 것입니다.
 async function saveProfile() {
     const userId = localStorage.getItem('userId');
     const newPhone = document.getElementById('profilePhone').value;
@@ -96,17 +115,12 @@ async function saveProfile() {
     }
 
     try {
-        // [수정됨] 변경된 변수명 사용
         const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             body: JSON.stringify({
                 type: 'update_profile',
                 userId: userId,
-                data: { 
-                    phone: newPhone, 
-                    school: newSchool,
-                    name: newName 
-                }
+                data: { phone: newPhone, school: newSchool, name: newName }
             })
         });
         
@@ -117,12 +131,10 @@ async function saveProfile() {
             throw new Error("저장 실패");
         }
     } catch (error) {
-        console.error(error);
         alert("저장 중 오류가 발생했습니다.");
     }
 }
 
-// === 정성 데이터 저장 ===
 async function saveQualitative() {
     const userId = localStorage.getItem('userId');
     const consent = document.getElementById('dataConsent').checked;
@@ -146,7 +158,6 @@ async function saveQualitative() {
     };
 
     try {
-        // [수정됨] 변경된 변수명 사용
         const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             body: JSON.stringify({
@@ -165,25 +176,23 @@ async function saveQualitative() {
     }
 }
 
-// === 정량 데이터 저장 ===
 function loadExamData() {
     const examMonth = document.getElementById('examSelect').value;
     const data = examScores[examMonth] || {}; 
 
-    // 국어
     document.getElementById('koreanOpt').value = data.kor?.opt || 'none';
     document.getElementById('korStd').value = data.kor?.std || '';
     document.getElementById('korPct').value = data.kor?.pct || '';
     document.getElementById('korGrd').value = data.kor?.grd || '';
-    // 수학
+    
     document.getElementById('mathOpt').value = data.math?.opt || 'none';
     document.getElementById('mathStd').value = data.math?.std || '';
     document.getElementById('mathPct').value = data.math?.pct || '';
     document.getElementById('mathGrd').value = data.math?.grd || '';
-    // 영어/한국사
+    
     document.getElementById('engGrd').value = data.eng?.grd || '';
     document.getElementById('histGrd').value = data.hist?.grd || '';
-    // 탐구
+    
     document.getElementById('inq1Name').value = data.inq1?.name || '';
     document.getElementById('inq1Std').value = data.inq1?.std || '';
     document.getElementById('inq1Pct').value = data.inq1?.pct || '';
@@ -193,7 +202,7 @@ function loadExamData() {
     document.getElementById('inq2Std').value = data.inq2?.std || '';
     document.getElementById('inq2Pct').value = data.inq2?.pct || '';
     document.getElementById('inq2Grd').value = data.inq2?.grd || '';
-    // 제2외국어
+    
     document.getElementById('foreignName').value = data.foreign?.name || '';
     document.getElementById('foreignGrd').value = data.foreign?.grd || '';
 }
@@ -238,7 +247,6 @@ async function saveQuantitative() {
     examScores[examMonth] = currentScore;
 
     try {
-        // [수정됨] 변경된 변수명 사용
         const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             body: JSON.stringify({
