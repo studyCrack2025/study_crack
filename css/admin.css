@@ -92,6 +92,19 @@ body { margin: 0; font-family: 'Noto Sans KR', sans-serif; background-color: #f1
     text-align: center;
 }
 
+/* 차트 내부 래퍼: 높이를 강제로 고정 */
+.chart-wrapper {
+    position: relative;
+    height: 300px; /* ★ 이 높이 안에서만 그려집니다 */
+    width: 100%;
+}
+
+/* 캔버스 크기 강제 */
+canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
 /* 검색창 디자인 (수정됨) */
 .search-wrapper {
     display: flex; gap: 10px; margin-bottom: 20px;

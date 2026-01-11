@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>관리자 - StudyCrack</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <link rel="stylesheet" href="css/admin.css"> </head>
 <body>
 
@@ -53,15 +54,28 @@
             <hr class="section-divider" style="margin: 40px 0; border: 0; border-top: 2px dashed #cbd5e1;">
 
             <div id="chart-section-anchor">
-                <h1 class="page-title">📈 매출 상세 분석</h1>
-                <div class="charts-row"> 
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h1 class="page-title" style="margin: 0;">📈 매출 상세 분석</h1>
+                    
+                    <select id="periodSelector" onchange="updateCharts()" style="padding: 8px 15px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 1rem; cursor: pointer;">
+                        <option value="week">주간 (Weekly)</option>
+                        <option value="month" selected>월간 (Monthly)</option>
+                        <option value="quarter">분기 (Quarterly)</option>
+                    </select>
+                </div>
+
+                <div class="charts-row">
                     <div class="chart-container">
                         <h3>📅 기간별 매출 추이</h3>
-                        <canvas id="periodChart"></canvas>
+                        <div class="chart-wrapper">
+                            <canvas id="periodChart"></canvas>
+                        </div>
                     </div>
                     <div class="chart-container">
                         <h3>📦 상품별 판매 비중</h3>
-                        <canvas id="salesChart"></canvas> 
+                        <div class="chart-wrapper">
+                            <canvas id="salesChart"></canvas> 
+                        </div>
                     </div>
                 </div>
             </div>
