@@ -53,9 +53,16 @@
             <hr class="section-divider" style="margin: 40px 0; border: 0; border-top: 2px dashed #cbd5e1;">
 
             <div id="chart-section-anchor">
-                <h1 class="page-title">📈 상세 매출 분석</h1>
-                <div class="chart-container">
-                    <canvas id="salesChart"></canvas> 
+                <h1 class="page-title">📈 매출 상세 분석</h1>
+                <div class="charts-row"> 
+                    <div class="chart-container">
+                        <h3>📅 기간별 매출 추이</h3>
+                        <canvas id="periodChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>📦 상품별 판매 비중</h3>
+                        <canvas id="salesChart"></canvas> 
+                    </div>
                 </div>
             </div>
         </div>
@@ -90,14 +97,6 @@
             </div>
         </div>
     </main>
-</div>
-
-<div id="studentModal" class="modal hidden">
-    <div class="modal-content">
-        <span class="close-btn" onclick="closeModal()">&times;</span>
-        <div id="modalBodyContent">
-            </div>
-    </div>
 </div>
 
 <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>

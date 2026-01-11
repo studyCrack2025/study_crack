@@ -67,11 +67,29 @@ body { margin: 0; font-family: 'Noto Sans KR', sans-serif; background-color: #f1
 .card h3 { margin: 0 0 10px 0; font-size: 0.9rem; color: #64748b; }
 .card p { margin: 0; font-size: 2rem; font-weight: bold; color: #1e293b; }
 
-/* 차트 컨테이너 */
+/* 차트들을 감싸는 행 */
+.charts-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap; /* 화면 작으면 아래로 떨어지게 */
+}
+
+/* 개별 차트 컨테이너 수정 */
 .chart-container {
-    background: white; padding: 30px; border-radius: 12px;
+    background: white; 
+    padding: 25px; 
+    border-radius: 12px;
     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-    max-width: 800px; /* 너무 커지지 않게 */
+    flex: 1;             /* 공간 균등 분할 */
+    min-width: 400px;    /* 최소 너비 확보 */
+}
+
+.chart-container h3 {
+    margin-top: 0;
+    font-size: 1rem;
+    color: #475569;
+    margin-bottom: 15px;
+    text-align: center;
 }
 
 /* 검색창 디자인 (수정됨) */
