@@ -29,20 +29,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// [수정] 헤더 상태 체크 함수
 function checkLoginStatus() {
     const accessToken = localStorage.getItem('accessToken');
+    const userRole = localStorage.getItem('userRole'); // 역할 가져오기
+
     const loginBtn = document.getElementById('loginBtn');
     const myPageBtn = document.getElementById('myPageBtn');
+    const adminBtn = document.getElementById('adminBtn'); // HTML에 추가 필요
     const logoutBtn = document.getElementById('logoutBtn');
     
     if (loginBtn && logoutBtn) {
         if (accessToken) {
+            // 로그인 상태
             loginBtn.classList.add('hidden');
-            if(myPageBtn) myPageBtn.classList.remove('hidden');
             logoutBtn.classList.remove('hidden');
+
+            // ★ 관리자 vs 일반 학생 구분
+            if (userRole === 'admin') {
+                if(myPageBtn) myPageBtn.classList.add('hidden'); // 마이페이지 숨김
+                if(adminBtn) adminBtn.classList.remove('hidden'); // 관리자 버튼 보임
+            } else {
+                if(myPageBtn) myPageBtn.classList.remove('hidden');
+                if(adminBtn) adminBtn.classList.add('hidden');
+            }
         } else {
+            // 로그아웃 상태
             loginBtn.classList.remove('hidden');
             if(myPageBtn) myPageBtn.classList.add('hidden');
+            if(adminBtn) adminBtn.classList.add('hidden');
             logoutBtn.classList.add('hidden');
         }
     }
@@ -86,8 +101,24 @@ function handleSignIn() {
             localStorage.setItem('userEmail', email);
             localStorage.setItem('userId', userId); // ★ 저장 필수!
             
-            alert("로그인 성공!");
-            window.location.href = 'index.html';
+            // 2. [추가] 관리자 여부 확인을 위해 API 호출 (또는 Cognito 속성에 넣을수도 있지만 API가 확실함)
+            fetch("https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/", {
+                method: 'POST',
+                body: JSON.stringify({ type: 'get_user', userId: userId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                // DB에 저장된 role이 admin이면 로컬스토리지에 저장
+                if (data.role === 'admin') {
+                    localStorage.setItem('userRole', 'admin');
+                    alert("관리자 계정으로 로그인되었습니다.");
+                    window.location.href = 'admin.html'; // 관리자는 바로 관리자페이지로 보내드림 (편의성)
+                } else {
+                    localStorage.setItem('userRole', 'student');
+                    alert("로그인 성공!");
+                    window.location.href = 'index.html';
+                }
+            });
         },
         onFailure: function(err) {
             alert("로그인 실패: " + err.message);

@@ -3,125 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>관리자 대시보드 - StudyCrack</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/admin.css">
-    <link rel="stylesheet" href="css/mypage.css"> 
-    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
-</head>
+    <title>관리자 - StudyCrack</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="css/admin.css"> </head>
 <body>
-    <header>
-        <div class="logo-container">
-            <span class="logo">StudyCrack ADMIN</span>
-        </div>
-        <nav class="nav-links">
-            <a href="index.html" class="nav-btn">메인으로</a>
-            <a href="#" onclick="handleSignOut()" class="nav-btn">로그아웃</a>
-        </nav>
-    </header>
 
-    <div class="admin-container">
-        <section class="dashboard-section">
-            <h2>📊 전체 통계</h2>
-            <div class="stats-grid">
-                <div class="stat-card">
+<div class="admin-wrapper">
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2>StudyCrack<br><span>Admin</span></h2>
+        </div>
+        <ul class="menu">
+            <li class="menu-item has-submenu">
+                <a href="#" onclick="toggleSubmenu('stats-submenu')">📊 통계 관리 ▾</a>
+                <ul id="stats-submenu" class="submenu">
+                    <li><a href="#" onclick="showSection('dashboard')">전체 요약</a></li>
+                    <li><a href="#" onclick="showSection('sales-chart')">매출 분석</a></li>
+                </ul>
+            </li>
+            <li class="menu-item">
+                <a href="#" onclick="showSection('students')">👥 학생 관리</a>
+            </li>
+            <li class="menu-item logout">
+                <a href="#" onclick="handleSignOut()">로그아웃</a>
+            </li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        
+        <div id="section-dashboard" class="content-section active">
+            <h1 class="page-title">대시보드</h1>
+            
+            <div class="stats-cards">
+                <div class="card">
                     <h3>총 가입 학생</h3>
                     <p id="totalUsers">0명</p>
                 </div>
-                <div class="stat-card">
-                    <h3>총 매출액</h3>
+                <div class="card">
+                    <h3>누적 매출액</h3>
                     <p id="totalRevenue">0원</p>
                 </div>
-                <div class="stat-card">
-                    <h3>이번 달 결제</h3>
+                <div class="card">
+                    <h3>이번 달 매출</h3>
                     <p id="monthlyRevenue">0원</p>
                 </div>
             </div>
-            
-            <div class="stats-detail-box">
-                <h3>상품별 판매 현황</h3>
-                <ul id="productStatsList">
-                    </ul>
-            </div>
-        </section>
 
-        <section class="management-section">
-            <h2>👥 학생 관리</h2>
-            <div class="search-bar">
+            <div class="chart-container">
+                <h3>📈 상품별 판매 현황</h3>
+                <canvas id="salesChart"></canvas> 
+            </div>
+        </div>
+
+        <div id="section-students" class="content-section">
+            <h1 class="page-title">학생 관리</h1>
+
+            <div class="search-wrapper">
                 <select id="searchType">
                     <option value="name">이름</option>
                     <option value="email">이메일</option>
                     <option value="phone">전화번호</option>
                 </select>
-                <input type="text" id="searchInput" placeholder="검색어를 입력하세요">
+                <input type="text" id="searchInput" placeholder="검색어를 입력하세요...">
                 <button onclick="searchStudents()">검색</button>
             </div>
 
-            <table class="student-list-table">
-                <thead>
-                    <tr>
-                        <th>이름</th>
-                        <th>이메일</th>
-                        <th>학교</th>
-                        <th>가입일/상태</th>
-                        <th>관리</th>
-                    </tr>
-                </thead>
-                <tbody id="studentListBody">
-                    <tr><td colspan="5" style="text-align:center;">학생을 검색해주세요.</td></tr>
-                </tbody>
-            </table>
-        </section>
-    </div>
-
-    <div id="studentModal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal()">&times;</span>
-            
-            <div class="admin-memo-box">
-                <h3>🔒 관리자 메모 (학생에게 보이지 않음)</h3>
-                <textarea id="adminMemoInput" placeholder="이 학생에 대한 상담 노트나 특이사항을 기록하세요..."></textarea>
-                <button onclick="saveAdminMemo()" class="save-memo-btn">메모 저장</button>
-            </div>
-
-            <hr>
-
-            <div class="mypage-preview-area">
-                <h3 id="modalStudentName">학생 정보 조회</h3>
-                
-                <div class="tabs">
-                    <button class="tab-btn active" onclick="switchModalTab('info')">기본 정보</button>
-                    <button class="tab-btn" onclick="switchModalTab('qual')">정성 조사서</button>
-                    <button class="tab-btn" onclick="switchModalTab('quan')">성적표</button>
-                    <button class="tab-btn" onclick="switchModalTab('pay')">결제 내역</button>
-                </div>
-
-                <div id="view_info" class="tab-view active">
-                    <p><strong>학교:</strong> <span id="viewSchool"></span></p>
-                    <p><strong>전화번호:</strong> <span id="viewPhone"></span></p>
-                </div>
-
-                <div id="view_qual" class="tab-view">
-                    <p><strong>현재 상태:</strong> <span id="viewStatus"></span></p>
-                    <p><strong>희망 계열:</strong> <span id="viewStream"></span></p>
-                    <p><strong>희망 진로:</strong> <span id="viewCareer"></span></p>
-                    <p><strong>목표 대학:</strong> <span id="viewTargets"></span></p>
-                </div>
-
-                <div id="view_quan" class="tab-view">
-                    <div id="viewScoreTable">데이터 없음</div>
-                </div>
-
-                <div id="view_pay" class="tab-view">
-                    <ul id="viewPaymentList"></ul>
-                </div>
+            <div class="table-responsive">
+                <table class="student-table">
+                    <thead>
+                        <tr>
+                            <th>이름</th>
+                            <th>이메일</th>
+                            <th>학교</th>
+                            <th>상태</th>
+                            <th>관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentListBody">
+                        <tr><td colspan="5" class="empty-msg">학생을 검색해주세요.</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
-    </div>
+    </main>
+</div>
 
-    <script src="js/config.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/admin.js"></script>
+<div id="studentModal" class="modal hidden">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <div id="modalBodyContent">
+            </div>
+    </div>
+</div>
+
+<script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/admin.js"></script>
+
 </body>
 </html>

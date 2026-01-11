@@ -1,110 +1,105 @@
-.admin-container {
-    max-width: 1200px;
-    margin: 40px auto;
-    padding: 0 20px;
+/* css/admin.css */
+
+/* 기본 설정 */
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'Noto Sans KR', sans-serif; background-color: #f1f5f9; height: 100vh; overflow: hidden; }
+
+/* 레이아웃: 사이드바 + 메인 */
+.admin-wrapper { display: flex; height: 100%; }
+
+/* 1. 사이드바 스타일 */
+.sidebar {
+    width: 260px;
+    background-color: #1e293b; /* 어두운 남색 */
+    color: white;
+    display: flex; flex-direction: column;
+    flex-shrink: 0;
 }
 
-/* 통계 카드 */
-.stats-grid {
-    display: flex;
-    gap: 20px;
-    margin-bottom: 30px;
-}
-.stat-card {
-    flex: 1;
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+.sidebar-header {
+    padding: 30px 20px;
     text-align: center;
-    border-top: 4px solid #2563EB;
+    border-bottom: 1px solid #334155;
 }
-.stat-card h3 { color: #64748b; font-size: 0.9rem; margin-bottom: 10px; }
-.stat-card p { font-size: 1.8rem; font-weight: bold; color: #1e293b; }
+.sidebar-header h2 { margin: 0; font-size: 1.5rem; }
+.sidebar-header span { color: #3b82f6; font-size: 0.9rem; }
 
-.stats-detail-box {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 40px;
+.menu { list-style: none; padding: 0; margin: 20px 0; }
+.menu-item a {
+    display: block; padding: 15px 25px;
+    color: #cbd5e1; text-decoration: none;
+    transition: 0.3s; font-size: 1rem;
 }
+.menu-item a:hover { background-color: #334155; color: white; }
 
-/* 검색 바 */
-.search-bar {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
+/* 하위 메뉴 (아코디언) */
+.submenu {
+    list-style: none; padding: 0;
+    background-color: #0f172a;
+    display: none; /* 기본 숨김 */
 }
-.search-bar select, .search-bar input {
-    padding: 10px;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-}
-.search-bar input { flex: 1; }
-.search-bar button {
-    padding: 10px 20px;
-    background-color: #1e293b;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
+.submenu.open { display: block; }
+.submenu a { padding-left: 45px; font-size: 0.9rem; color: #94a3b8; }
+
+/* 2. 메인 컨텐츠 스타일 */
+.main-content {
+    flex: 1;
+    overflow-y: auto; /* 내용 많으면 스크롤 */
+    padding: 40px;
 }
 
-/* 학생 리스트 테이블 */
-.student-list-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
+.page-title { margin-top: 0; margin-bottom: 30px; color: #1e293b; }
+
+.content-section { display: none; } /* 탭 기능 */
+.content-section.active { display: block; animation: fadeIn 0.3s; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* 대시보드 카드 */
+.stats-cards {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;
 }
-.student-list-table th, .student-list-table td {
-    padding: 12px;
-    border-bottom: 1px solid #e2e8f0;
-    text-align: left;
+.card {
+    background: white; padding: 25px; border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    border-left: 5px solid #3b82f6;
 }
-.student-list-table th { background-color: #f8fafc; font-weight: 600; }
-.btn-view {
-    padding: 5px 10px;
-    background-color: #2563EB;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+.card h3 { margin: 0 0 10px 0; font-size: 0.9rem; color: #64748b; }
+.card p { margin: 0; font-size: 2rem; font-weight: bold; color: #1e293b; }
+
+/* 차트 컨테이너 */
+.chart-container {
+    background: white; padding: 30px; border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    max-width: 800px; /* 너무 커지지 않게 */
 }
 
-/* 모달 스타일 */
-.modal {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5);
-    display: flex; justify-content: center; align-items: center;
-    z-index: 1000;
+/* 검색창 디자인 (수정됨) */
+.search-wrapper {
+    display: flex; gap: 10px; margin-bottom: 20px;
+    background: white; padding: 15px; border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
+.search-wrapper select {
+    padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; width: 120px;
+}
+.search-wrapper input {
+    flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;
+}
+.search-wrapper button {
+    padding: 10px 25px; background-color: #3b82f6; color: white;
+    border: none; border-radius: 6px; cursor: pointer; font-weight: bold;
+}
+.search-wrapper button:hover { background-color: #2563eb; }
+
+/* 테이블 디자인 */
+.student-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
+.student-table th, .student-table td { padding: 15px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+.student-table th { background-color: #f8fafc; font-weight: 600; color: #475569; }
+.empty-msg { text-align: center; color: #94a3b8; padding: 30px; }
+
+/* 모달 */
+.modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 999; }
 .modal.hidden { display: none; }
-.modal-content {
-    background: white; width: 90%; max-width: 800px; max-height: 90vh;
-    overflow-y: auto; padding: 30px; border-radius: 12px; position: relative;
-}
-.close-btn {
-    position: absolute; top: 15px; right: 20px;
-    font-size: 2rem; cursor: pointer;
-}
-
-/* 관리자 메모 */
-.admin-memo-box {
-    background-color: #fff7ed;
-    border: 1px solid #fed7aa;
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-.admin-memo-box textarea {
-    width: 100%; height: 80px; margin-top: 10px; padding: 10px;
-    border: 1px solid #cbd5e1; resize: none;
-}
-.save-memo-btn {
-    margin-top: 5px; padding: 8px 15px; background: #ea580c; color: white;
-    border: none; border-radius: 4px; cursor: pointer; float: right;
-}
-
-/* 탭 전환 (모달 내부) */
-.tab-view { display: none; padding: 20px 0; }
-.tab-view.active { display: block; }
+.modal-content { background: white; width: 90%; max-width: 800px; padding: 30px; border-radius: 12px; position: relative; max-height: 90vh; overflow-y: auto;}
+.close-btn { position: absolute; top: 15px; right: 20px; font-size: 2rem; cursor: pointer; }
