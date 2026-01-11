@@ -230,3 +230,88 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
     transition: background 0.3s;
 }
 .save-btn:hover { background-color: #1d4ed8; }
+
+/* =========================================
+   [추가] 모바일/태블릿 반응형 스타일
+   화면 너비가 768px 이하일 때 적용됩니다.
+========================================= */
+@media (max-width: 768px) {
+
+    /* 1. 전체 레이아웃: 좌우 배치 -> 상하 배치로 변경 */
+    .mypage-container {
+        flex-direction: column; /* 세로로 쌓기 */
+        align-items: stretch;   /* 가로 꽉 채우기 */
+        padding: 10px;          /* 좌우 여백 줄임 */
+        margin-top: 20px;
+        gap: 20px;
+    }
+
+    /* 2. 사이드바 (프로필) 넓게 */
+    .profile-summary {
+        width: 100%; /* 고정폭 300px 해제 */
+        box-sizing: border-box; /* 패딩 포함 크기 계산 */
+        padding: 20px;
+    }
+
+    /* 3. 메인 컨텐츠 영역 */
+    .content-area {
+        width: 100%;
+        min-height: auto; /* 높이 제한 해제 */
+    }
+
+    /* 탭 메뉴 버튼 크기 조절 */
+    .tab-btn {
+        padding: 12px 5px; /* 패딩 줄임 */
+        font-size: 0.9rem; /* 글자 크기 약간 줄임 */
+    }
+
+    /* 탭 내부 여백 줄임 */
+    .tab-content {
+        padding: 20px 15px; 
+    }
+
+    /* 4. [중요] 성적 입력표 가로 스크롤 적용 
+       모바일에서 표가 찌그러지지 않도록 스크롤을 만듭니다. */
+    .score-table {
+        display: block;      /* 블록 요소로 변경하여 스크롤 가능하게 함 */
+        overflow-x: auto;    /* 가로 스크롤 허용 */
+        white-space: nowrap; /* 줄바꿈 방지 */
+        width: 100%;
+    }
+
+    /* 셀 최소 너비 지정 (입력창이 너무 작아지는 것 방지) */
+    .score-table th, 
+    .score-table td {
+        min-width: 70px;  /* 각 칸의 최소 너비 */
+        padding: 8px 4px; /* 패딩 조절 */
+    }
+    
+    /* 첫번째 컬럼(과목명)은 좀 더 좁게 */
+    .score-table td:first-child {
+        min-width: 50px;
+        position: sticky; /* (선택사항) 스크롤 시 과목명 고정하고 싶으면 left:0 추가 */
+        left: 0;
+        z-index: 1;
+    }
+
+    /* 5. 입력창 폰트 사이즈 조정 (iOS 자동확대 방지) */
+    input[type="text"], 
+    input[type="tel"], 
+    input[type="password"], 
+    input[type="number"],
+    select {
+        font-size: 16px !important; /* 16px 미만이면 아이폰에서 클릭 시 화면이 확대됨 */
+    }
+    
+    /* 희망 대학 입력칸 간격 조절 */
+    .target-uni-list input {
+        margin-bottom: 8px;
+    }
+    
+    /* 뱃지 위치 조정 */
+    .premium-badge {
+        right: 10px;
+        top: -10px;
+        font-size: 0.7rem;
+    }
+}
