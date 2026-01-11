@@ -35,15 +35,27 @@ function toggleSubmenu(id) {
 
 // 메인 화면 섹션 전환 (대시보드 <-> 학생관리)
 function showSection(sectionName) {
-    // 모든 섹션 숨김
+    // 1. 모든 섹션 숨김
     document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
     
-    // 선택된 섹션만 보임
-    // 'sales-chart'나 'dashboard'를 누르면 대시보드 섹션을 보여줌
+    // 2. 섹션 활성화 로직
     if (sectionName === 'students') {
+        // 학생 관리 섹션 보여주기
         document.getElementById('section-students').classList.add('active');
-    } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+    } else if (sectionName === 'dashboard') {
+        // 대시보드 보여주기 (맨 위로 스크롤)
         document.getElementById('section-dashboard').classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+    } else if (sectionName === 'sales-chart') {
+        // 대시보드 보여주되, 차트 위치로 스크롤 이동
+        document.getElementById('section-dashboard').classList.add('active');
+        const chartEl = document.querySelector('.chart-container');
+        if (chartEl) {
+            chartEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     }
 }
 

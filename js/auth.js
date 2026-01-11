@@ -297,6 +297,8 @@ async function createInitialUserDB() {
     const name = document.getElementById('name').value;
     const phoneRaw = document.getElementById('phone').value;
     const school = document.getElementById('school').value;
+    // ★ [추가] 이메일 값 가져오기
+    const email = document.getElementById('email').value; 
 
     // tempUserId가 없으면(새로고침 등) 실행 불가
     if (!tempUserId) {
@@ -313,7 +315,8 @@ async function createInitialUserDB() {
             data: {
                 name: name,
                 phone: phoneRaw,
-                school: school
+                school: school,
+                email: email
             }
         })
     });
