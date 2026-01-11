@@ -33,7 +33,7 @@
     <main class="main-content">
         
         <div id="section-dashboard" class="content-section active">
-            <h1 class="page-title">대시보드</h1>
+            <h1 class="page-title">📊 전체 요약</h1>
             
             <div class="stats-cards">
                 <div class="card">
@@ -50,15 +50,18 @@
                 </div>
             </div>
 
-            <div class="chart-container">
-                <h3>📈 상품별 판매 현황</h3>
-                <canvas id="salesChart"></canvas> 
+            <hr class="section-divider" style="margin: 40px 0; border: 0; border-top: 2px dashed #cbd5e1;">
+
+            <div id="chart-section-anchor">
+                <h1 class="page-title">📈 상세 매출 분석</h1>
+                <div class="chart-container">
+                    <canvas id="salesChart"></canvas> 
+                </div>
             </div>
         </div>
 
         <div id="section-students" class="content-section">
-            <h1 class="page-title">학생 관리</h1>
-
+            <h1 class="page-title">👥 학생 관리</h1>
             <div class="search-wrapper">
                 <select id="searchType">
                     <option value="name">이름</option>

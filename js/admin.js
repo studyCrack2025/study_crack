@@ -35,26 +35,23 @@ function toggleSubmenu(id) {
 
 // 메인 화면 섹션 전환 (대시보드 <-> 학생관리)
 function showSection(sectionName) {
-    // 1. 모든 섹션 숨김
     document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
     
-    // 2. 섹션 활성화 로직
     if (sectionName === 'students') {
-        // 학생 관리 섹션 보여주기
         document.getElementById('section-students').classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        
+
     } else if (sectionName === 'dashboard') {
-        // 대시보드 보여주기 (맨 위로 스크롤)
+        // [수정] 대시보드 상단(요약)으로 이동
         document.getElementById('section-dashboard').classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        
+
     } else if (sectionName === 'sales-chart') {
-        // 대시보드 보여주되, 차트 위치로 스크롤 이동
+        // [수정] 대시보드 내 차트 영역으로 이동
         document.getElementById('section-dashboard').classList.add('active');
-        const chartEl = document.querySelector('.chart-container');
-        if (chartEl) {
-            chartEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const chartAnchor = document.getElementById('chart-section-anchor');
+        if (chartAnchor) {
+            chartAnchor.scrollIntoView({ behavior: 'smooth' });
         }
     }
 }
@@ -197,9 +194,9 @@ async function searchStudents() {
                 <td>${s.school || '-'}</td>
                 <td>${statusBadge}</td>
                 <td>
-                    <button style="padding:6px 12px; background:#3b82f6; color:white; border:none; border-radius:4px; cursor:pointer; font-size:0.9rem;" 
-                            onclick="openStudentModal('${s.userid}')">
-                        상세보기
+                    <button style="padding:6px 12px; background:#3b82f6; color:white; border:none; border-radius:4px; cursor:pointer;" 
+                            onclick="goToStudentDetail('${s.userid}')">
+                        상세관리
                     </button>
                 </td>
             `;
@@ -212,144 +209,8 @@ async function searchStudents() {
     }
 }
 
-// ==========================================
-// [API] 학생 상세 보기 (모달)
-// ==========================================
-
-async function openStudentModal(targetUserId) {
-    const adminId = localStorage.getItem('userId');
-    currentModalUserId = targetUserId;
-    
-    const modal = document.getElementById('studentModal');
-    if(modal) modal.classList.remove('hidden');
-    
-    try {
-        const response = await fetch(ADMIN_API_URL, {
-            method: 'POST',
-            body: JSON.stringify({
-                type: 'admin_get_user_detail',
-                userId: adminId,
-                data: { targetUserId }
-            })
-        });
-
-        const student = await response.json();
-        renderStudentDetail(student);
-
-    } catch (error) {
-        alert("학생 상세 정보를 불러오지 못했습니다.");
-    }
-}
-
-function renderStudentDetail(s) {
-    // 모달 상단 이름
-    const titleEl = document.getElementById('modalStudentName');
-    if(titleEl) titleEl.innerText = `${s.name || '학생'} 상세 정보`;
-    
-    // 1. 관리자 메모
-    const memoEl = document.getElementById('adminMemoInput');
-    if(memoEl) memoEl.value = s.adminMemo || '';
-
-    // 2. 기본 정보 탭
-    setText('viewSchool', s.school);
-    setText('viewPhone', s.phone);
-
-    // 3. 정성 조사서 탭
-    const q = s.qualitative || {};
-    setText('viewStatus', q.status);
-    setText('viewStream', q.stream);
-    setText('viewCareer', q.career);
-    setText('viewTargets', q.targets ? q.targets.join(', ') : '-');
-
-    // 4. 성적표 탭
-    const quan = s.quantitative || {};
-    const scoreBox = document.getElementById('viewScoreTable');
-    if (scoreBox) {
-        if (Object.keys(quan).length === 0) {
-            scoreBox.innerHTML = '<p style="color:#94a3b8; text-align:center;">입력된 성적이 없습니다.</p>';
-        } else {
-            let scoreHtml = '<ul style="padding-left:20px; line-height:1.8;">';
-            for(const [exam, data] of Object.entries(quan)) {
-                // exam 코드를 한글로 변환 (예: mar -> 3월 학평)
-                const examName = convertExamName(exam);
-                scoreHtml += `<li><strong>${examName}:</strong> 국어(${data.kor?.grd || '-'}), 수학(${data.math?.grd || '-'}), 영어(${data.eng?.grd || '-'})</li>`;
-            }
-            scoreHtml += "</ul>";
-            scoreBox.innerHTML = scoreHtml;
-        }
-    }
-
-    // 5. 결제 내역 탭
-    const payList = document.getElementById('viewPaymentList');
-    if (payList) {
-        payList.innerHTML = "";
-        if (s.payments && s.payments.length > 0) {
-            s.payments.forEach(p => {
-                // 날짜 포맷팅 (YYYY-MM-DD 만 보여주기 등)
-                const simpleDate = p.date ? p.date.split(' ')[0] : '-';
-                payList.innerHTML += `
-                    <li style="margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:5px;">
-                        <span style="font-weight:bold; color:#2563EB;">[${simpleDate}]</span> 
-                        ${p.product} 
-                        <span style="float:right; font-weight:bold;">${parseInt(p.amount).toLocaleString()}원</span>
-                    </li>`;
-            });
-        } else {
-            payList.innerHTML = '<p style="color:#94a3b8; text-align:center;">결제 내역이 없습니다.</p>';
-        }
-    }
-}
-
-// 헬퍼 함수: ID로 엘리먼트 찾아 텍스트 넣기
-function setText(id, text) {
-    const el = document.getElementById(id);
-    if(el) el.innerText = text || '-';
-}
-
-// 헬퍼 함수: 시험 코드 변환
-function convertExamName(code) {
-    const map = {
-        'mar': '3월 학평', 'may': '5월 학평', 'jun': '6월 모평',
-        'jul': '7월 학평', 'sep': '9월 모평', 'oct': '10월 학평', 'csat': '수능'
-    };
-    return map[code] || code;
-}
-
-// === [API] 관리자 메모 저장 ===
-async function saveAdminMemo() {
-    const adminId = localStorage.getItem('userId');
-    const memo = document.getElementById('adminMemoInput').value;
-
-    if(!currentModalUserId) return;
-
-    try {
-        await fetch(ADMIN_API_URL, {
-            method: 'POST',
-            body: JSON.stringify({
-                type: 'admin_update_memo',
-                userId: adminId,
-                data: { targetUserId: currentModalUserId, memo: memo }
-            })
-        });
-        alert("메모가 저장되었습니다.");
-    } catch (error) {
-        alert("저장 실패");
-    }
-}
-
-// === UI: 모달 닫기 및 탭 전환 ===
-function closeModal() {
-    const modal = document.getElementById('studentModal');
-    if(modal) modal.classList.add('hidden');
-    currentModalUserId = null;
-}
-
-function switchModalTab(tabName) {
-    document.querySelectorAll('.tab-view').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    
-    const targetView = document.getElementById('view_' + tabName);
-    if(targetView) targetView.classList.add('active');
-    
-    if(event && event.currentTarget) event.currentTarget.classList.add('active');
+// 상세 페이지로 이동
+function goToStudentDetail(targetUserId) {
+    // URL 쿼리 스트링으로 학생 ID를 넘김
+    window.location.href = `admin_student_detail.html?uid=${targetUserId}`;
 }

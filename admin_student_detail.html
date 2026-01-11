@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>학생 상세 관리 - StudyCrack Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/mypage.css"> <link rel="stylesheet" href="css/admin.css">
+    <style>
+        /* 관리자 전용 헤더 스타일 */
+        .admin-header-bar { background: #1e293b; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .back-btn { background: #3b82f6; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: bold; }
+        
+        /* 관리자 메모 박스 강조 */
+        .admin-memo-container {
+            max-width: 1200px; margin: 20px auto; padding: 20px;
+            background-color: #fff7ed; border: 2px solid #fdba74; border-radius: 8px;
+        }
+        .admin-memo-container textarea { width: 100%; height: 100px; margin-top: 10px; padding: 10px; border: 1px solid #cbd5e1; resize: vertical; }
+        .save-memo-btn { margin-top: 10px; padding: 10px 20px; background: #ea580c; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="admin-header-bar">
+        <span>🔒 관리자 모드: 학생 상세 조회</span>
+        <a href="admin.html" class="back-btn">← 목록으로 돌아가기</a>
+    </div>
+
+    <div class="admin-memo-container">
+        <h3>📝 관리자 상담 노트 (학생에게 보이지 않음)</h3>
+        <textarea id="adminMemoInput" placeholder="이 학생에 대한 특이사항, 상담 내용 등을 기록하세요."></textarea>
+        <button onclick="saveAdminMemo()" class="save-memo-btn">메모 저장</button>
+    </div>
+
+    <div class="mypage-container" style="margin-top: 20px;">
+        <aside class="profile-summary" id="profileBox">
+            <div class="profile-pic-area">
+                <img src="assets/images/sample_profile.png" alt="프로필" class="profile-img">
+            </div>
+            <h2 id="viewName">-</h2>
+            <p id="viewEmail">-</p>
+            
+            <div class="survey-status-box">
+                <h4>기초조사서 상태</h4>
+                <div id="statusBadge" class="status-badge incomplete">미작성</div>
+            </div>
+        </aside>
+
+        <main class="content-area">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('info')">기본 정보</button>
+                <button class="tab-btn" onclick="switchTab('qual')">정성 조사서</button>
+                <button class="tab-btn" onclick="switchTab('quan')">성적표</button>
+                <button class="tab-btn" onclick="switchTab('pay')">결제 내역</button>
+            </div>
+
+            <div id="tab_info" class="tab-content active">
+                <h3>기본 인적사항</h3>
+                <p><strong>학교:</strong> <span id="viewSchool">-</span></p>
+                <p><strong>전화번호:</strong> <span id="viewPhone">-</span></p>
+            </div>
+
+            <div id="tab_qual" class="tab-content">
+                <h3>진로 및 목표</h3>
+                <p><strong>현재 상태:</strong> <span id="viewStatus">-</span></p>
+                <p><strong>희망 계열:</strong> <span id="viewStream">-</span></p>
+                <p><strong>희망 진로:</strong> <span id="viewCareer">-</span></p>
+                <p><strong>목표 대학:</strong> <span id="viewTargets">-</span></p>
+            </div>
+
+            <div id="tab_quan" class="tab-content">
+                <h3>성적 데이터</h3>
+                <div id="viewScoreTable">데이터 없음</div>
+            </div>
+
+            <div id="tab_pay" class="tab-content">
+                <h3>결제 이력</h3>
+                <ul id="viewPaymentList" class="payment-history"></ul>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script>
+        // 간단한 탭 전환 스크립트 (mypage.js 안 쓰고 독립적으로 동작)
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab_' + tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        // URL 파라미터에서 학생 ID 가져오기
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetUserId = urlParams.get('uid');
+        const adminId = localStorage.getItem('userId');
+        const ADMIN_API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/";
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!targetUserId || !adminId) {
+                alert("잘못된 접근입니다.");
+                window.location.href = 'admin.html';
+                return;
+            }
+            await loadStudentDetail();
+        });
+
+        async function loadStudentDetail() {
+            try {
+                const response = await fetch(ADMIN_API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        type: 'admin_get_user_detail',
+                        userId: adminId,
+                        data: { targetUserId: targetUserId }
+                    })
+                });
+                const s = await response.json();
+                renderData(s);
+            } catch (e) {
+                alert("데이터 로드 실패");
+            }
+        }
+
+        function renderData(s) {
+            // 1. 메모
+            document.getElementById('adminMemoInput').value = s.adminMemo || '';
+            
+            // 2. 프로필
+            document.getElementById('viewName').innerText = s.name || '이름 없음';
+            document.getElementById('viewEmail').innerText = s.email || '-';
+            
+            // 유료회원 뱃지
+            if (s.payments && s.payments.length > 0) {
+                document.getElementById('profileBox').classList.add('paid-member');
+            }
+
+            // 3. 탭 데이터 바인딩
+            setText('viewSchool', s.school);
+            setText('viewPhone', s.phone);
+            
+            const q = s.qualitative || {};
+            setText('viewStatus', q.status);
+            setText('viewStream', q.stream);
+            setText('viewCareer', q.career);
+            setText('viewTargets', q.targets ? q.targets.join(', ') : '-');
+
+            // 성적표
+            const quan = s.quantitative || {};
+            const scoreBox = document.getElementById('viewScoreTable');
+            if(Object.keys(quan).length > 0) {
+                let html = '<ul style="line-height:1.8">';
+                for(const [exam, d] of Object.entries(quan)) {
+                    html += `<li><strong>${exam}:</strong> 국(${d.kor?.grd}), 수(${d.math?.grd}), 영(${d.eng?.grd})</li>`;
+                }
+                html += '</ul>';
+                scoreBox.innerHTML = html;
+            }
+
+            // 결제내역
+            const payList = document.getElementById('viewPaymentList');
+            if(s.payments) {
+                s.payments.forEach(p => {
+                    payList.innerHTML += `<li class="payment-item"><span class="pay-product">${p.product}</span> <span class="pay-date">${p.date} / ${p.amount}원</span></li>`;
+                });
+            } else {
+                payList.innerHTML = "<li>내역 없음</li>";
+            }
+        }
+
+        function setText(id, txt) {
+            const el = document.getElementById(id);
+            if(el) el.innerText = txt || '-';
+        }
+
+        async function saveAdminMemo() {
+            const memo = document.getElementById('adminMemoInput').value;
+            try {
+                await fetch(ADMIN_API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        type: 'admin_update_memo',
+                        userId: adminId,
+                        data: { targetUserId: targetUserId, memo: memo }
+                    })
+                });
+                alert("메모 저장 완료");
+            } catch(e) { alert("저장 실패"); }
+        }
+    </script>
+</body>
+</html>
