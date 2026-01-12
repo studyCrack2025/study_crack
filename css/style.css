@@ -1,23 +1,10 @@
 /* =========================================
-   1. 기본 설정 및 변수
+   1. 기본 설정
    ========================================= */
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Noto Sans KR', sans-serif; }
-body { color: #333; line-height: 1.6; background-color: #f8fafc; } /* 배경색 살짝 회색조 */
+body { color: #333; line-height: 1.6; background-color: #f8fafc; }
 a { text-decoration: none; color: inherit; cursor: pointer; }
 ul, ol { list-style: none; }
-
-:root {
-    --primary-color: #0F172A; /* 짙은 네이비 (신뢰감) */
-    --accent-color: #2563EB;  /* 쨍한 블루 (강조) */
-    --text-dark: #1e293b;
-    --text-light: #64748b;
-    
-    /* 상품별 테마 컬러 */
-    --tier-basic: #059669;    /* 초록 (진입) */
-    --tier-standard: #2563EB; /* 블루 (표준) */
-    --tier-pro: #E11D48;      /* 세련된 레드 (심화) */
-    --tier-black: #171717;    /* 블랙 (프리미엄) */
-}
 
 /* =========================================
    2. 헤더 영역
@@ -37,19 +24,19 @@ header {
 
 .logo-container { display: flex; align-items: center; gap: 10px; }
 .logo-container img { height: 40px; width: auto; }
-.logo { font-size: 1.5rem; font-weight: 800; color: var(--primary-color); letter-spacing: -0.5px; }
+.logo { font-size: 1.5rem; font-weight: 800; color: #0F172A; letter-spacing: -0.5px; }
 
 .nav-links { display: flex; align-items: center; gap: 25px; }
 .nav-links a { 
     font-size: 0.95rem; 
-    color: var(--text-light); 
+    color: #64748b; 
     font-weight: 500; 
     transition: color 0.2s;
 }
-.nav-links a:hover { color: var(--accent-color); font-weight: 600; }
+.nav-links a:hover { color: #2563EB; font-weight: 600; }
 
 /* =========================================
-   3. 히어로 섹션 (아이콘 + 카드 + 버튼)
+   3. 히어로 섹션
    ========================================= */
 .hero { 
     background-color: white; 
@@ -57,13 +44,12 @@ header {
     text-align: center;
 }
 
-/* 3단 그리드 레이아웃 */
 .hero-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 40px;
     max-width: 1200px;
-    margin: 0 auto 60px auto; /* 하단 버튼과의 간격 */
+    margin: 0 auto 60px auto;
 }
 
 .hero-card {
@@ -81,26 +67,13 @@ header {
 }
 
 .hero-icon { font-size: 2.5rem; margin-bottom: 20px; display: block; }
+.hero-card h3 { font-size: 1.4rem; font-weight: 800; color: #0F172A; margin-bottom: 15px; line-height: 1.4; }
+.hero-card p { color: #64748b; line-height: 1.7; font-size: 1rem; word-break: keep-all; }
+.hero-card strong { color: #2563EB; }
 
-.hero-card h3 { 
-    font-size: 1.4rem; 
-    font-weight: 800; 
-    color: var(--primary-color); 
-    margin-bottom: 15px; 
-    line-height: 1.4;
-}
-.hero-card p { 
-    color: var(--text-light); 
-    line-height: 1.7; 
-    font-size: 1rem; 
-    word-break: keep-all;
-}
-.hero-card strong { color: var(--accent-color); }
-
-/* CTA 버튼 스타일 */
 .cta-container { text-align: center; margin-top: 40px; }
 .cta-button { 
-    background: linear-gradient(135deg, var(--accent-color), #1d4ed8);
+    background: linear-gradient(135deg, #2563EB, #1d4ed8);
     color: white; 
     padding: 18px 40px; 
     border-radius: 50px; 
@@ -110,16 +83,12 @@ header {
     transition: all 0.3s ease;
     display: inline-block;
 }
-.cta-button:hover { 
-    transform: translateY(-2px); 
-    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
-}
+.cta-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4); }
 
 /* =========================================
    4. About 섹션
    ========================================= */
 .section { padding: 100px 5%; }
-
 .message-section { 
     background-color: #F8FAFC; 
     text-align: center; 
@@ -128,41 +97,23 @@ header {
     border-bottom: 1px solid #e2e8f0;
 }
 .message-content { max-width: 800px; margin: 0 auto; }
-.message-section h2 { 
-    font-size: 2rem; 
-    font-weight: 800; 
-    color: var(--primary-color); 
-    margin-bottom: 20px;
-    word-break: keep-all;
-}
-.message-section h3 {
-    font-size: 1.3rem;
-    color: var(--accent-color);
-    font-weight: 700;
-    margin-bottom: 30px;
-    word-break: keep-all;
-}
-.message-section p {
-    font-size: 1.1rem;
-    color: #475569;
-    line-height: 1.8;
-    word-break: keep-all;
-}
+.message-section h2 { font-size: 2rem; font-weight: 800; color: #0F172A; margin-bottom: 20px; word-break: keep-all; }
+.message-section h3 { font-size: 1.3rem; color: #2563EB; font-weight: 700; margin-bottom: 30px; word-break: keep-all; }
+.message-section p { font-size: 1.1rem; color: #475569; line-height: 1.8; word-break: keep-all; }
 
 /* =========================================
-   5. 커리큘럼 (상품별 컬러 적용)
+   5. 커리큘럼 (강제 색상 적용 수정됨)
    ========================================= */
 .curriculum { background-color: white; }
 .curriculum-header { text-align: center; max-width: 800px; margin: 0 auto 60px auto; }
-.curriculum-header h2 { font-size: 2.2rem; font-weight: 800; color: var(--primary-color); margin-bottom: 20px; }
-.curriculum-header p { font-size: 1.1rem; color: var(--text-light); word-break: keep-all; line-height: 1.6;}
+.curriculum-header h2 { font-size: 2.2rem; font-weight: 800; color: #0F172A; margin-bottom: 20px; }
+.curriculum-header p { font-size: 1.1rem; color: #64748b; word-break: keep-all; line-height: 1.6;}
 
 .course-list { max-width: 900px; margin: 0 auto; }
 
-/* 공통 카드 스타일 */
 .course-item { 
     background: white; 
-    border: 1px solid #e2e8f0;
+    border: 1px solid #e2e8f0; /* 기본 테두리 */
     border-radius: 16px; 
     margin-bottom: 20px; 
     overflow: hidden;
@@ -176,7 +127,6 @@ header {
     transform: translateY(-2px);
 }
 
-/* 상품 헤더 (클릭 영역) */
 .course-summary { 
     padding: 25px 30px; 
     display: flex; 
@@ -184,27 +134,38 @@ header {
     align-items: center;
     background: #fff;
 }
-
 .course-title-group { display: flex; flex-direction: column; gap: 5px; }
 .course-name { font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
 .course-desc { font-size: 0.95rem; font-weight: 500; color: #64748b; margin-top: 5px;}
 .course-price { font-weight: 700; font-size: 1.1rem; white-space: nowrap;}
 
-/* 상품별 테마 적용 (좌측 라인, 텍스트 컬러) */
-.tier-basic .course-name, .tier-basic .course-price { color: var(--tier-basic); }
-.tier-basic { border-left: 6px solid var(--tier-basic); }
+/* --- [중요] 색상 강제 적용 (!important 추가) --- */
 
-.tier-standard .course-name, .tier-standard .course-price { color: var(--tier-standard); }
-.tier-standard { border-left: 6px solid var(--tier-standard); }
+/* BASIC - Green */
+.course-item.tier-basic { border-left: 6px solid #059669 !important; }
+.course-item.tier-basic .course-name, 
+.course-item.tier-basic .course-price { color: #059669 !important; }
 
-.tier-pro .course-name, .tier-pro .course-price { color: var(--tier-pro); }
-.tier-pro { border-left: 6px solid var(--tier-pro); }
+/* STANDARD - Blue */
+.course-item.tier-standard { border-left: 6px solid #2563EB !important; }
+.course-item.tier-standard .course-name, 
+.course-item.tier-standard .course-price { color: #2563EB !important; }
 
-.tier-black .course-name, .tier-black .course-price { color: var(--tier-black); }
-.tier-black { border-left: 6px solid var(--tier-black); background-color: #fafafa;}
+/* PRO - Red */
+.course-item.tier-pro { border-left: 6px solid #E11D48 !important; }
+.course-item.tier-pro .course-name, 
+.course-item.tier-pro .course-price { color: #E11D48 !important; }
 
+/* BLACK - Black */
+.course-item.tier-black { 
+    border-left: 6px solid #171717 !important; 
+    background-color: #fafafa; /* 아주 연한 회색 배경 */
+}
+.course-item.tier-black .course-name, 
+.course-item.tier-black .course-price { color: #171717 !important; }
 
-/* 상세 내용 (아코디언) */
+/* ----------------------------------------------- */
+
 .course-details { 
     padding: 0 30px 30px 30px; 
     color: #334155; 
@@ -219,12 +180,10 @@ header {
 
 .course-details ol { margin-top: 20px; padding-left: 20px; }
 .course-details li { margin-bottom: 12px; line-height: 1.6; font-size: 0.95rem; list-style-type: decimal;}
-.course-details li strong { color: var(--primary-color); font-weight: 600; }
+.course-details li strong { color: #0F172A; font-weight: 600; }
 
-/* 토글 아이콘 (화살표) */
 .toggle-icon { font-size: 0.8rem; color: #cbd5e1; transition: transform 0.3s; }
-.course-item.active .toggle-icon { transform: rotate(180deg); color: var(--primary-color); }
-
+.course-item.active .toggle-icon { transform: rotate(180deg); color: #0F172A; }
 .hidden-details { display: none; }
 
 /* =========================================
@@ -235,18 +194,15 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 .legal-links span { margin-right: 20px; cursor: pointer; }
 .legal-links span:hover { color: white; text-decoration: underline; }
 
-/* 모달 */
 .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
 .modal-content { background-color: white; margin: 5% auto; padding: 40px; border-radius: 16px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
 .close-btn { float: right; font-size: 28px; cursor: pointer; color: #94a3b8; }
 .close-btn:hover { color: #333; }
 .hidden { display: none !important; }
 
-/* 모바일 대응 */
 @media (max-width: 768px) {
     header { flex-direction: column; gap: 15px; padding: 15px; }
     .nav-links { flex-wrap: wrap; justify-content: center; gap: 15px; }
-    
     .hero-grid { grid-template-columns: 1fr; gap: 30px; }
     .course-summary { flex-direction: column; align-items: flex-start; gap: 15px; }
     .course-price { align-self: flex-end; }
