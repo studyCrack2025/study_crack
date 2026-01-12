@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>기초조사서 작성 - 스터디크랙</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/survey.css">
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <a href="index.html" style="display: flex; align-items: center; gap: 10px;">
+                <span class="logo">StudyCrack</span>
+            </a>
+        </div>
+        <nav class="nav-links">
+            <a href="mypage.html" class="nav-btn">마이페이지</a>
+            <a href="#" onclick="handleSignOut()" class="nav-btn">로그아웃</a>
+        </nav>
+    </header>
+
+    <div class="survey-container">
+        <div class="survey-header">
+            <h1>📝 기초조사서 작성</h1>
+            <p>정확한 입시 컨설팅을 위해 학생의 정보를 입력해주세요.<br>작성된 내용은 담당 컨설턴트만 열람 가능합니다.</p>
+        </div>
+
+        <div class="survey-tabs">
+            <button class="tab-btn active" onclick="openTab('qualitative')">1. 진로/희망 조사 (정성)</button>
+            <button class="tab-btn" onclick="openTab('quantitative')">2. 성적 입력 (정량)</button>
+        </div>
+
+        <div id="qualitative" class="tab-content active">
+            <div class="section-title">
+                <h3>학생 현황 및 진로 설계</h3>
+                <span class="required-note">* 표시는 필수 입력 항목입니다.</span>
+            </div>
+            
+            <label class="input-label">현재 상태 <span class="req">*</span></label>
+            <div class="radio-group" id="statusRadioGroup">
+                <label><input type="radio" name="studentStatus" value="h1_2" required> 고1/2 재학</label>
+                <label><input type="radio" name="studentStatus" value="h3"> 고3 재학</label>
+                <label><input type="radio" name="studentStatus" value="n_su"> N수생</label>
+                <label><input type="radio" name="studentStatus" value="black"> 검정고시</label>
+                <label><input type="radio" name="studentStatus" value="other"> 기타</label>
+            </div>
+            <input type="text" id="statusEtcInput" class="hidden-input" placeholder="상태 직접 입력">
+
+            <label class="input-label">희망 계열 <span class="req">*</span></label>
+            <select id="targetStream" required>
+                <option value="">선택하세요</option>
+                <option value="humanities">인문사회</option>
+                <option value="business">상경계열</option>
+                <option value="nature">자연/공학</option>
+                <option value="medical">의치한약수</option>
+                <option value="nursing">간호</option>
+                <option value="education">사범/교대</option>
+                <option value="art">예체능</option>
+                <option value="etc">기타</option>
+            </select>
+
+            <label class="input-label">희망 진로</label>
+            <input type="text" id="careerPath" placeholder="예: 인공지능 개발자, 초등교사 등">
+
+            <div class="form-section">
+                <h4>📌 원서 가치관</h4>
+                
+                <label class="input-label">올해 반드시 대학을 가야 하나요? <span class="req">*</span></label>
+                <select id="mustGoCollege" required>
+                    <option value="">선택하세요</option>
+                    <option value="yes">예 (필수)</option>
+                    <option value="no">아니오 (재수 가능)</option>
+                </select>
+
+                <label class="input-label">우선순위 <span class="req">*</span></label>
+                <select id="priorityType" required>
+                    <option value="">선택하세요</option>
+                    <option value="univ">대학 간판 중요</option>
+                    <option value="major">학과 전공 중요</option>
+                    <option value="balance">균형 있게 고려</option>
+                </select>
+
+                <label class="input-label">조합 허용 범위 <span class="req">*</span></label>
+                <input type="text" id="appStrategy" placeholder="예: 2상향 2적정 2안정" required>
+
+                <label class="input-label">최악의 시나리오 <span class="req">*</span></label>
+                <input type="text" id="worstScenario" placeholder="예: 지방 캠퍼스 절대 불가" required>
+
+                <label class="input-label">지역 범위 <span class="req">*</span></label>
+                <input type="text" id="regionRange" placeholder="예: 서울, 경기, 충청권까지" required>
+
+                <label class="input-label">교차 지원 가능 여부</label>
+                <input type="text" id="crossApply" placeholder="예: 문과지만 공대 교차지원 가능">
+            </div>
+
+            <div class="form-section">
+                <h4>📌 대학 후보군 상세</h4>
+                <label class="input-label">관심 대학/학과 (가/나/다군)</label>
+                <input type="text" id="groupGa" placeholder="[가군] 관심 대학/학과">
+                <input type="text" id="groupNa" placeholder="[나군] 관심 대학/학과">
+                <input type="text" id="groupDa" placeholder="[다군] 관심 대학/학과">
+
+                <label class="input-label">가장 가고 싶은 대학 (이유) <span class="req">*</span></label>
+                <input type="text" id="mostWanted" required>
+
+                <label class="input-label">절대 가기 싫은 대학 (이유)</label>
+                <input type="text" id="leastWanted">
+
+                <label class="input-label">본인의 상향/적정/안정 감각</label>
+                <textarea id="selfAssessment" rows="3"></textarea>
+            </div>
+
+            <div class="form-section">
+                <h4>📌 희망 대학 및 학과 (최종 요약)</h4>
+                <div class="target-uni-list">
+                    <input type="text" id="target1" placeholder="1지망 (예: 서울대 컴퓨터공학과)" required>
+                    <p class="warning-text">* 1지망은 신중히 입력해주세요</p>
+                    <input type="text" id="target2" placeholder="2지망 (필수)" required>
+                    <input type="text" id="target3" placeholder="3지망">
+                    <input type="text" id="target4" placeholder="4지망">
+                    <input type="text" id="target5" placeholder="5지망">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h4>📌 부모님/환경 요인</h4>
+                <label class="input-label">부모님 의견 영향도 <span class="req">*</span></label>
+                <select id="parentInfluence" required>
+                    <option value="">선택하세요</option>
+                    <option value="low">낮음</option>
+                    <option value="mid">중간</option>
+                    <option value="high">높음</option>
+                </select>
+                <label class="input-label">부모님 추천/반대 대학</label>
+                <input type="text" id="parentOpinion">
+            </div>
+
+            <div class="form-section">
+                <h4>📌 특이사항</h4>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="text" id="transferPlan" placeholder="편입 계획" style="flex:1">
+                    <input type="text" id="teachingCert" placeholder="교직 이수" style="flex:1">
+                </div>
+                <textarea id="etcConsultingInfo" placeholder="기타 멘토에게 하고 싶은 말" rows="3"></textarea>
+            </div>
+
+            <div class="consent-box">
+                <label><input type="checkbox" id="dataConsent" required> [필수] 개인정보 활용 동의</label>
+            </div>
+
+            <button id="btnSaveQual" class="save-btn" onclick="saveQualitative()" disabled>정성 데이터 저장</button>
+        </div>
+
+        <div id="quantitative" class="tab-content">
+            <div class="section-title">
+                <h3>모의고사 / 수능 성적 입력</h3>
+            </div>
+            <p class="guide-text">시험을 선택하고 과목별 성적을 입력한 뒤 '저장'을 눌러주세요.</p>
+
+            <div class="exam-selector">
+                <label>시험 선택:</label>
+                <select id="examSelect" onchange="loadExamData()">
+                    <option value="mar">3월 학평</option>
+                    <option value="may">5월 학평</option>
+                    <option value="jun">6월 모평</option>
+                    <option value="jul">7월 학평</option>
+                    <option value="sep">9월 모평</option>
+                    <option value="oct">10월 학평</option>
+                    <option value="csat">수능</option>
+                </select>
+            </div>
+
+            <div class="table-responsive">
+                <table class="score-table">
+                    <thead>
+                        <tr>
+                            <th>과목</th>
+                            <th>선택과목</th>
+                            <th>표준점수</th>
+                            <th>백분위</th>
+                            <th>등급</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>국어</td>
+                            <td>
+                                <select id="koreanOpt">
+                                    <option value="none">선택</option>
+                                    <option value="hwa">화법과작문</option>
+                                    <option value="un">언어와매체</option>
+                                </select>
+                            </td>
+                            <td><input type="number" id="korStd"></td>
+                            <td><input type="number" id="korPct"></td>
+                            <td><input type="number" id="korGrd"></td>
+                        </tr>
+                        <tr>
+                            <td>수학</td>
+                            <td>
+                                <select id="mathOpt">
+                                    <option value="none">선택</option>
+                                    <option value="hwak">확률과통계</option>
+                                    <option value="mi">미적분</option>
+                                    <option value="ki">기하</option>
+                                </select>
+                            </td>
+                            <td><input type="number" id="mathStd"></td>
+                            <td><input type="number" id="mathPct"></td>
+                            <td><input type="number" id="mathGrd"></td>
+                        </tr>
+                        <tr>
+                            <td>영어</td>
+                            <td class="disabled-cell"></td><td class="disabled-cell"></td><td class="disabled-cell"></td>
+                            <td><input type="number" id="engGrd"></td>
+                        </tr>
+                        <tr>
+                            <td>한국사</td>
+                            <td class="disabled-cell"></td><td class="disabled-cell"></td><td class="disabled-cell"></td>
+                            <td><input type="number" id="histGrd"></td>
+                        </tr>
+                        <tr>
+                            <td>탐구1</td>
+                            <td><input type="text" id="inq1Name" placeholder="과목명"></td>
+                            <td><input type="number" id="inq1Std"></td>
+                            <td><input type="number" id="inq1Pct"></td>
+                            <td><input type="number" id="inq1Grd"></td>
+                        </tr>
+                        <tr>
+                            <td>탐구2</td>
+                            <td><input type="text" id="inq2Name" placeholder="과목명"></td>
+                            <td><input type="number" id="inq2Std"></td>
+                            <td><input type="number" id="inq2Pct"></td>
+                            <td><input type="number" id="inq2Grd"></td>
+                        </tr>
+                        <tr>
+                            <td>제2외</td>
+                            <td><input type="text" id="foreignName" placeholder="과목명"></td>
+                            <td class="disabled-cell"></td><td class="disabled-cell"></td>
+                            <td><input type="number" id="foreignGrd"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <button class="save-btn" onclick="saveQuantitative()">선택한 시험 성적 저장</button>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/survey.js"></script>
+</body>
+</html>

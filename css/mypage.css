@@ -2,7 +2,7 @@
 
 .mypage-container {
     display: flex;
-    max-width: 1200px;
+    max-width: 1000px; /* 폭을 약간 줄여서 집중도 높임 */
     margin: 50px auto;
     padding: 0 20px;
     gap: 30px;
@@ -18,6 +18,7 @@
     border: 1px solid #e2e8f0;
     text-align: center;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    flex-shrink: 0;
 }
 
 .profile-pic-area {
@@ -28,29 +29,20 @@
 }
 
 .profile-img {
-    width: 100%;
-    height: 100%;
+    width: 100%; height: 100%;
     border-radius: 50%;
     object-fit: cover;
     border: 3px solid #f1f5f9;
 }
 
 .edit-pic-btn {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 36px;
-    height: 36px;
+    position: absolute; bottom: 0; right: 0;
+    width: 36px; height: 36px;
     border-radius: 50%;
-    background-color: #2563EB;
-    color: white;
-    border: 2px solid white;
-    cursor: pointer;
-    font-size: 1.2rem;
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.2s;
+    background-color: #2563EB; color: white;
+    border: 2px solid white; cursor: pointer;
+    font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
 }
-.edit-pic-btn:hover { background-color: #1d4ed8; }
 
 /* 상태 배지 */
 .status-badge {
@@ -60,253 +52,87 @@
 .status-badge.incomplete { background-color: #fee2e2; color: #991b1b; } 
 .status-badge.partial { background-color: #fef3c7; color: #92400e; }
 .status-badge.complete { background-color: #dcfce7; color: #166534; }
+
+.status-detail { padding: 0; margin-bottom: 20px; }
 .status-detail li { margin-bottom: 5px; color: #64748b; font-size: 0.9rem; list-style: none;}
 
-/* 유료 회원 (Premium Member) 전용 스타일 */
+.btn-go-survey {
+    display: block; width: 100%; padding: 10px;
+    background-color: #eff6ff; color: #2563eb;
+    text-decoration: none; border-radius: 6px;
+    font-weight: bold; font-size: 0.9rem;
+    transition: background 0.2s;
+}
+.btn-go-survey:hover { background-color: #dbeafe; }
+
+/* 유료 회원 스타일 */
 .profile-summary.paid-member {
-    border: 2px solid #F59E0B; /* 금색 테두리 */
-    box-shadow: 0 0 15px rgba(245, 158, 11, 0.2); /* 은은한 금색 광채 */
+    border: 2px solid #F59E0B;
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
     position: relative;
-    overflow: visible; /* 뱃지가 튀어나와도 보이게 */
 }
-
-/* 프리미엄 뱃지 */
 .premium-badge {
-    display: none; /* 기본 숨김 */
-    position: absolute;
-    top: -12px;
-    right: 20px;
+    position: absolute; top: -12px; right: 20px;
     background: linear-gradient(45deg, #F59E0B, #FCD34D);
-    color: #78350f;
-    padding: 5px 12px;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: 800;
+    color: #78350f; padding: 5px 12px;
+    border-radius: 12px; font-size: 0.8rem; font-weight: 800;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    z-index: 10;
 }
-
-/* 유료 회원일 때 뱃지 보이기 */
-.profile-summary.paid-member .premium-badge {
-    display: block;
-}
-
-/* 결제 내역 리스트 */
-.payment-history {
-    margin-top: 20px;
-    text-align: left;
-    background-color: #f8fafc;
-    padding: 15px;
-    border-radius: 8px;
-}
-.payment-item {
-    border-bottom: 1px solid #e2e8f0;
-    padding: 8px 0;
-    font-size: 0.9rem;
-}
-.payment-item:last-child { border-bottom: none; }
-.pay-date { color: #64748b; font-size: 0.8rem; display: block; }
-.pay-product { font-weight: bold; color: #1e293b; }
 
 .account-actions {
-    margin-top: 40px;
-    padding-top: 20px;
-    border-top: 1px solid #e2e8f0;
-    text-align: center;
+    margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0;
 }
-
 .btn-delete-account {
-    background: none;
-    border: none;
-    color: #94a3b8; /* 연한 회색 */
-    font-size: 0.85rem;
-    text-decoration: underline;
-    cursor: pointer;
-    transition: color 0.2s;
+    background: none; border: none; color: #94a3b8;
+    font-size: 0.85rem; text-decoration: underline; cursor: pointer;
 }
+.btn-delete-account:hover { color: #ef4444; font-weight: bold; }
 
-.btn-delete-account:hover {
-    color: #ef4444; /* 마우스 올리면 빨간색 */
-    font-weight: bold;
-}
 
-/* --- 메인 컨텐츠 --- */
+/* --- 메인 컨텐츠 영역 --- */
 .content-area {
-    flex: 1; background: white; border-radius: 12px; border: 1px solid #e2e8f0; min-height: 600px;
+    flex: 1;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    padding: 40px;
 }
 
-.tabs { display: flex; border-bottom: 1px solid #e2e8f0; background-color: #f8fafc; }
-.tab-btn {
-    flex: 1; padding: 18px; border: none; background: none;
-    cursor: pointer; font-weight: 600; color: #64748b; border-bottom: 3px solid transparent;
-}
-.tab-btn.active { color: #2563EB; border-bottom-color: #2563EB; background-color: white; }
-.tab-content { display: none; padding: 40px; }
-.tab-content.active { display: block; }
+.content-header h2 { margin-top: 0; color: #1e293b; }
+.content-header p { color: #64748b; margin-bottom: 30px; }
 
-/* --- 입력 폼 디자인 수정 --- */
+.form-container h3 {
+    margin-top: 30px; margin-bottom: 15px;
+    font-size: 1.1rem; color: #2563eb; border-bottom: 2px solid #f1f5f9;
+    padding-bottom: 10px;
+}
+.form-container h3:first-child { margin-top: 0; }
+
 .form-group { margin-bottom: 20px; }
 .form-group label { display: block; font-weight: bold; margin-bottom: 8px; color: #334155; }
 
-/* 모든 텍스트 입력창 스타일 통일 */
-input[type="text"], 
-input[type="tel"], 
-input[type="email"], 
-input[type="password"],
-textarea,
-.target-uni-list input { 
-    width: 100%; 
-    padding: 12px; 
-    border: 1px solid #cbd5e1; 
-    border-radius: 6px; 
-    box-sizing: border-box; 
-    font-size: 1rem;
-    margin-bottom: 10px;
+input[type="text"], input[type="tel"], input[type="email"], input[type="password"] {
+    width: 100%; padding: 12px;
+    border: 1px solid #cbd5e1; border-radius: 6px;
+    box-sizing: border-box; font-size: 1rem;
 }
+input:focus { outline: none; border-color: #2563EB; }
 
-select {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    margin-bottom: 10px;
-    font-size: 1rem;
-    box-sizing: border-box;
-}
-
-/* 라벨 스타일 */
-.input-label { 
-    display: block; 
-    font-weight: bold; 
-    margin-top: 25px; 
-    margin-bottom: 10px; 
-    color: #1e293b;
-    font-size: 1rem;
-}
-
-.radio-group { margin-bottom: 15px; display: flex; gap: 15px; flex-wrap: wrap;}
-.radio-group label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
-
-/* 추가된 섹션 스타일 */
-.form-section {
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid #e2e8f0;
-}
-.form-section h4 {
-    margin-bottom: 15px;
-    color: #2563EB;
-}
-.hidden-input {
-    display: none;
-    margin-top: 5px;
-}
-.warning-text {
-    color: #ef4444;
-    font-size: 0.85rem;
-    margin-top: -5px;
-    margin-bottom: 10px;
-    font-weight: bold;
-}
-
-/* 버튼 스타일 */
 .save-btn {
-    width: 100%; padding: 15px; background-color: #2563EB; color: white;
-    border: none; border-radius: 8px; font-size: 1.05rem; font-weight: bold; cursor: pointer; margin-top: 30px;
+    width: 100%; padding: 15px; margin-top: 30px;
+    background-color: #2563EB; color: white;
+    border: none; border-radius: 8px;
+    font-size: 1.05rem; font-weight: bold; cursor: pointer;
     transition: background 0.3s;
 }
 .save-btn:hover { background-color: #1d4ed8; }
-.save-btn:disabled {
-    background-color: #cbd5e1;
-    cursor: not-allowed;
-}
 
-/* --- 성적표 테이블 --- */
-.score-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; }
-.score-table th { background-color: #f1f5f9; padding: 12px; border: 1px solid #e2e8f0; font-size: 0.9rem; }
-.score-table td { 
-    border: 1px solid #e2e8f0; 
-    padding: 0; 
-    height: 45px; 
-    vertical-align: middle; 
-    text-align: center; 
-}
-.score-table td:first-child {
-    font-weight: 600;
-    color: #334155;
-    background-color: #f8fafc;
-}
-.score-table input, .score-table select {
-    width: 100%; height: 100%; border: none; 
-    text-align: center; 
-    background: transparent; display: block;
-}
-.score-table input:focus { background-color: #f0f9ff; outline: none; }
-.disabled-cell {
-    background-color: #f3f4f6;
-    background-image: repeating-linear-gradient(45deg, #f3f4f6, #f3f4f6 10px, #e5e7eb 10px, #e5e7eb 12px);
-    cursor: not-allowed;
-}
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-
-/* =========================================
-   [추가] 모바일/태블릿 반응형 스타일
-========================================= */
+/* 모바일 반응형 */
 @media (max-width: 768px) {
     .mypage-container {
-        flex-direction: column;
-        align-items: stretch;
-        padding: 10px;
-        margin-top: 20px;
-        gap: 20px;
+        flex-direction: column; padding: 10px; margin-top: 20px;
     }
-    .profile-summary {
-        width: 100%;
-        box-sizing: border-box;
-        padding: 20px;
-    }
-    .content-area {
-        width: 100%;
-        min-height: auto;
-    }
-    .tab-btn {
-        padding: 12px 5px;
-        font-size: 0.9rem;
-    }
-    .tab-content {
-        padding: 20px 15px; 
-    }
-    .score-table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-        width: 100%;
-    }
-    .score-table th, 
-    .score-table td {
-        min-width: 70px;
-        padding: 8px 4px;
-    }
-    .score-table td:first-child {
-        min-width: 50px;
-        position: sticky;
-        left: 0;
-        z-index: 1;
-    }
-    input[type="text"], 
-    input[type="tel"], 
-    input[type="password"], 
-    input[type="number"],
-    select {
-        font-size: 16px !important;
-    }
-    .target-uni-list input {
-        margin-bottom: 8px;
-    }
-    .premium-badge {
-        right: 10px;
-        top: -10px;
-        font-size: 0.7rem;
-    }
+    .profile-summary { width: 100%; }
+    .content-area { width: 100%; padding: 20px; }
+    input { font-size: 16px !important; }
 }
