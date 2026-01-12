@@ -1,4 +1,6 @@
-/* 기본 스타일 초기화 */
+/* =========================================
+   1. 기본 설정 및 변수
+   ========================================= */
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Noto Sans KR', sans-serif; }
 body { color: #333; line-height: 1.6; background-color: #fff; }
 a { text-decoration: none; color: inherit; cursor: pointer; }
@@ -9,14 +11,17 @@ ul { list-style: none; }
     --accent-color: #2563EB;
     --text-light: #F8FAFC;
     --bg-light: #F1F5F9;
+    --highlight-red: #FF0000; /* 강조용 빨간색 추가 */
 }
 
-/* --- 헤더 영역 --- */
+/* =========================================
+   2. 헤더 영역
+   ========================================= */
 header { 
     display: flex; 
     justify-content: space-between; 
     align-items: center; 
-    padding: 15px 5%; /* 높이 여백 조정 */
+    padding: 15px 5%; 
     background-color: white; 
     border-bottom: 1px solid #e2e8f0; 
     position: sticky; 
@@ -28,31 +33,48 @@ header {
 .logo-container img { height: 40px; width: auto; }
 .logo { font-size: 1.5rem; font-weight: 700; color: var(--primary-color); }
 
-/* 네비게이션 정렬 보완 */
-.nav-links { display: flex; align-items: center; gap: 20px; } /* gap으로 간격 조정 */
+.nav-links { display: flex; align-items: center; gap: 20px; }
 .nav-links a { 
     font-size: 0.95rem; 
     color: #64748b; 
     font-weight: 500; 
-    white-space: nowrap; /* 줄바꿈 방지 */
+    white-space: nowrap; 
 }
 .nav-links a:hover { color: var(--accent-color); }
 
-/* --- 히어로 섹션 --- */
+/* =========================================
+   3. 히어로 섹션 (이미지 1 반영 - 수정됨)
+   ========================================= */
 .hero { 
-    background-color: var(--primary-color); 
-    color: var(--text-light); 
-    padding: 100px 5%; 
-    text-align: center; 
-    /* 내용이 적어도 섹션이 너무 납작해지지 않게 최소 높이 설정 */
-    min-height: 400px; 
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    /* 기존 배경색 제거하고 흰색 배경으로 변경 (이미지 디자인 반영) */
+    background-color: white; 
+    color: #333; 
+    padding: 60px 5%; 
+    min-height: auto; 
+    display: block; /* Flex 제거 후 내부 컬럼으로 제어 */
 }
-.hero h1 { font-size: 2.5rem; margin-bottom: 20px; line-height: 1.3; word-break: keep-all; }
-.hero p { font-size: 1.1rem; margin-bottom: 40px; opacity: 0.9; word-break: keep-all; }
+
+/* 3단 레이아웃을 위한 컨테이너 */
+.hero-columns {
+    display: flex;
+    gap: 30px;
+    justify-content: space-between;
+    align-items: flex-start;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.hero-col { flex: 1; text-align: left; }
+.hero-col h3 { font-size: 1.3rem; margin-bottom: 15px; line-height: 1.4; }
+.hero-col p { font-size: 1rem; color: #555; word-break: keep-all; line-height: 1.7; }
+
+/* 붉은색 강조 텍스트 유틸리티 */
+.red-text, .red-text h3, .red-text h4, .red-text p { 
+    color: var(--highlight-red) !important; 
+    font-weight: 700; 
+}
+
+/* CTA 버튼 (필요 시 사용) */
 .cta-button { 
     background-color: var(--accent-color); 
     color: white; 
@@ -61,75 +83,106 @@ header {
     font-weight: 700; 
     transition: background 0.3s; 
     display: inline-block; 
+    margin-top: 30px;
 }
 .cta-button:hover { background-color: #1d4ed8; }
 
-/* --- 공통 섹션 --- */
+/* =========================================
+   4. About 섹션 (이미지 3 반영 - 수정됨)
+   ========================================= */
 .section { padding: 80px 5%; }
 .section-title { text-align: center; font-size: 2rem; margin-bottom: 50px; color: var(--primary-color); }
 
-/* --- 특징 카드 (Why StudyCrack) --- */
-.features { 
-    display: flex; 
-    gap: 30px; 
-    justify-content: center; 
-    flex-wrap: wrap; 
-}
+.big-red-section { text-align: center; padding: 60px 0; }
+.big-red-section h2 { font-size: 1.8rem; color: var(--highlight-red); font-weight: 700; margin-bottom: 20px; word-break: keep-all;}
+.big-red-section h3 { font-size: 1.5rem; color: black; margin-bottom: 10px; font-weight: 700; word-break: keep-all;}
+/* 특정 부분 빨간색 적용을 위한 클래스 */
+.big-red-section h3.red-part { color: var(--highlight-red); }
+
+
+/* 특징 카드 (Why StudyCrack - 기존 유지) */
+.features { display: flex; gap: 30px; justify-content: center; flex-wrap: wrap; }
 .feature-card { 
-    background: white; 
-    border: 1px solid #e2e8f0; 
-    border-radius: 12px; 
-    padding: 30px; 
-    /* 고정 width 대신 유연하게 */
-    width: 300px; 
-    flex: 1 1 300px; /* 공간 남으면 늘어나고 부족하면 줄어듦 */
-    max-width: 400px; /* 너무 커지는 것 방지 */
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
-    text-align: center; 
+    background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 30px; 
+    width: 300px; flex: 1 1 300px; max-width: 400px; 
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); text-align: center; 
 }
 .feature-icon { font-size: 2rem; margin-bottom: 20px; display: block; }
 
-/* --- 커리큘럼 리스트 --- */
+/* =========================================
+   5. 커리큘럼 리스트 (이미지 2, 4 반영 - 수정됨)
+   ========================================= */
 .curriculum { background-color: var(--bg-light); }
-.course-list { max-width: 800px; margin: 0 auto; }
-.course-item { 
-    background: white; 
-    padding: 20px; 
-    margin-bottom: 15px; 
-    border-radius: 8px; 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    border-left: 5px solid var(--accent-color);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-.course-info h4 { font-size: 1.1rem; margin-bottom: 5px; }
-.course-price { font-weight: 700; color: var(--primary-color); white-space: nowrap; margin-left: 20px;}
+.curriculum-header-red { text-align: center; max-width: 800px; margin: 0 auto 50px auto; }
+.curriculum-header-red p { color: var(--highlight-red); font-weight: 700; font-size: 1.2rem; margin-bottom: 20px; line-height: 1.5; word-break: keep-all; }
 
-/* --- 푸터 --- */
+.course-list { max-width: 800px; margin: 0 auto; }
+
+/* 클릭형 아이템 스타일 */
+.course-item { 
+    background: white; padding: 25px; margin-bottom: 15px; border-radius: 8px; 
+    border-left: 5px solid var(--accent-color); 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+    transition: all 0.3s ease;
+}
+
+/* 확장 가능한 아이템 */
+.course-item.expandable { 
+    cursor: pointer; 
+    display: flex; 
+    flex-direction: column; /* 세로 정렬 */
+    align-items: flex-start;
+}
+.course-item.expandable:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+/* 요약 부분 (빨간색) */
+.course-summary h4 { font-size: 1.2rem; margin-bottom: 8px; color: var(--highlight-red); }
+.course-summary p { font-weight: 700; color: var(--highlight-red); font-size: 1rem; }
+
+/* 상세 내용 (검정색 - 기본 숨김) */
+.course-details { 
+    width: 100%; 
+    margin-top: 20px; 
+    padding-top: 20px; 
+    border-top: 1px solid #eee; 
+    color: #333; 
+    text-align: left;
+    display: block; /* JS로 제어 */
+}
+.course-details ol { padding-left: 20px; }
+.course-details li { margin-bottom: 10px; line-height: 1.6; font-size: 0.95rem; }
+
+/* 숨김 클래스 */
+.hidden-details { display: none; }
+
+
+/* =========================================
+   6. 푸터 및 기타
+   ========================================= */
 footer { background-color: #1e293b; color: #94a3b8; padding: 50px 5%; font-size: 0.9rem; }
 .footer-content { display: flex; flex-direction: column; gap: 20px; max-width: 1200px; margin: 0 auto; }
 .legal-links { margin-top: 20px; border-top: 1px solid #334155; padding-top: 20px; }
 .legal-links span { margin-right: 20px; color: #cbd5e1; cursor: pointer; text-decoration: underline; }
 
-/* --- 모달 스타일 --- */
+/* 모달 스타일 */
 .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
 .modal-content { background-color: white; margin: 5% auto; padding: 30px; border-radius: 10px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; color: #333; position: relative; }
 .close-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; font-weight: bold; cursor: pointer; }
-
-/* --- 유틸리티 클래스 --- */
 .hidden { display: none !important; }
 
-/* --- 반응형 (모바일) --- */
+/* =========================================
+   7. 반응형 (모바일)
+   ========================================= */
 @media (max-width: 768px) {
     header { flex-direction: column; gap: 15px; padding: 15px; }
     .nav-links { flex-wrap: wrap; justify-content: center; gap: 15px; }
-    .nav-links a { margin-left: 0; }
     
-    .hero h1 { font-size: 1.8rem; }
+    /* Hero 3단 -> 1단 변경 */
+    .hero-columns { flex-direction: column; gap: 40px; }
+    .hero-col { width: 100%; text-align: center; }
+
     .features { flex-direction: column; align-items: center; }
-    .feature-card { width: 100%; max-width: 100%; } /* 모바일에서 꽉 차게 */
+    .feature-card { width: 100%; max-width: 100%; }
     
-    .course-item { flex-direction: column; align-items: flex-start; gap: 10px; }
-    .course-price { margin-left: 0; margin-top: 5px; }
+    .course-item { padding: 20px; }
 }
