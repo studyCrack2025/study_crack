@@ -3,7 +3,10 @@
 .payment-container { 
     max-width: 600px; 
     margin: 50px auto; 
-    padding: 0 20px; 
+    padding: 40px; 
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
 }
 
 .form-group { 
@@ -13,7 +16,7 @@
 .form-group label { 
     display: block; 
     margin-bottom: 8px; 
-    font-weight: bold; 
+    font-weight: 600; 
     color: #334155;
 }
 
@@ -24,6 +27,12 @@
     border-radius: 6px; 
     font-size: 1rem; 
     transition: border-color 0.3s;
+    background-color: #fff;
+}
+
+.form-group input:read-only {
+    background-color: #f3f4f6;
+    color: #64748b;
 }
 
 .form-group input:focus {
@@ -31,51 +40,91 @@
     border-color: #2563EB;
 }
 
+/* 상품 선택 영역 */
 .product-selection { 
     display: flex; 
     flex-direction: column; 
     gap: 15px; 
-    margin-bottom: 30px; 
+    margin: 30px 0; 
 }
 
 .product-option { 
-    border: 2px solid #e2e8f0; 
-    border-radius: 8px; 
-    padding: 15px; 
+    border: 1px solid #e2e8f0; 
+    border-radius: 12px; 
+    padding: 20px; 
     cursor: pointer; 
     transition: all 0.2s; 
     background-color: white;
+    position: relative;
 }
 
 .product-option:hover { 
-    border-color: #94a3b8; 
+    transform: translateY(-2px); 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
 }
 
+/* 선택된 상태 공통 */
 .product-option.selected { 
-    border-color: #2563EB; 
-    background-color: #eff6ff; 
-    box-shadow: 0 0 0 1px #2563EB;
+    background-color: #f8fafc; 
 }
 
+/* 내부 텍스트 스타일 */
 .product-header { 
     display: flex; 
     justify-content: space-between; 
-    font-weight: bold; 
+    align-items: center; 
     margin-bottom: 5px; 
-    color: #0F172A;
 }
 
+.p-name { font-weight: 800; font-size: 1.1rem; }
+.p-price { font-weight: 700; font-size: 1rem; }
+small { color: #64748b; font-size: 0.9rem; }
+
+
+/* --- [중요] 상품별 컬러 강제 적용 --- */
+
+/* BASIC - Green */
+.tier-basic .p-name, .tier-basic .p-price { color: #059669 !important; }
+.product-option.tier-basic.selected { 
+    box-shadow: 0 0 0 2px #059669 inset !important; 
+    background-color: #ecfdf5 !important; 
+}
+
+/* STANDARD - Blue */
+.tier-standard .p-name, .tier-standard .p-price { color: #2563EB !important; }
+.product-option.tier-standard.selected { 
+    box-shadow: 0 0 0 2px #2563EB inset !important; 
+    background-color: #eff6ff !important; 
+}
+
+/* PRO - Red */
+.tier-pro .p-name, .tier-pro .p-price { color: #E11D48 !important; }
+.product-option.tier-pro.selected { 
+    box-shadow: 0 0 0 2px #E11D48 inset !important; 
+    background-color: #fff1f2 !important; 
+}
+
+/* BLACK - Black */
+.tier-black .p-name, .tier-black .p-price { color: #171717 !important; }
+.product-option.tier-black { background-color: #fafafa; }
+.product-option.tier-black.selected { 
+    box-shadow: 0 0 0 2px #171717 inset !important; 
+    background-color: #e5e5e5 !important; 
+}
+
+
+/* 결제 버튼 */
 .btn-pay { 
     width: 100%; 
-    padding: 15px; 
+    padding: 18px; 
     background-color: #2563EB; 
     color: white; 
     border: none; 
     border-radius: 8px; 
     font-size: 1.1rem; 
-    font-weight: bold; 
+    font-weight: 700; 
     cursor: pointer; 
-    margin-top: 10px; 
+    margin-top: 20px; 
     transition: background 0.3s;
 }
 

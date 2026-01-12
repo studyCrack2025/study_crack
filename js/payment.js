@@ -1,28 +1,35 @@
 // js/payment.js
 
-// ★ 1. 유저 정보를 가져올 API URL (StudyCrack_API 함수 URL)
+// ★ 1. 유저 정보를 가져올 API URL
 const USER_API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/";
 
 // ★ 2. 결제 요청용 API URL
 const PAYMENT_API_URL = "https://dh6pn3wcxl5dp2dsi4kubqiuau0qnblq.lambda-url.ap-northeast-2.on.aws/"; 
 
-let selectedProductUrl = "";
+let selectedProductUrl = null;
 let selectedProductName = "";
+let selectedTier = null; // 'basic', 'standard', 'pro', 'black'
 
 // 페이지 로드 후 실행
 document.addEventListener('DOMContentLoaded', () => {
     // 1. 로그인 체크 및 유저 정보 로드
     const userId = localStorage.getItem('userId');
+    
+    // 테스트용: 로컬스토리지에 없어도 일단 진행 가능하게 할 경우 주석 처리 (실배포시 주석 해제)
+    /*
     if (!userId) {
         alert("로그인이 필요합니다.");
         window.location.href = 'login.html';
         return;
     }
+    */
     
-    // 유저 정보 가져오기 실행
-    fetchUserInfo(userId);
+    // 유저 정보 가져오기 실행 (userId가 있을 때만)
+    if (userId) {
+        fetchUserInfo(userId);
+    }
 
-    // 전화번호 포맷팅 리스너 (혹시 수정할 경우 대비)
+    // 전화번호 포맷팅 리스너
     const phoneInput = document.getElementById('phone');
     if (phoneInput) {
         phoneInput.addEventListener('input', (e) => {
@@ -34,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ★ [신규] 유저 정보 가져와서 채우기
+// 유저 정보 가져와서 채우기
 async function fetchUserInfo(userId) {
     try {
         const response = await fetch(USER_API_URL, {
@@ -48,7 +55,7 @@ async function fetchUserInfo(userId) {
             if (data.name) document.getElementById('name').value = data.name;
             if (data.phone) document.getElementById('phone').value = data.phone;
             
-            // 이메일은 Cognito 로그인 시 저장한 로컬스토리지에서 가져옴
+            // 이메일은 로컬스토리지 우선
             const email = localStorage.getItem('userEmail');
             if (email) document.getElementById('email').value = email;
         }
@@ -57,34 +64,56 @@ async function fetchUserInfo(userId) {
     }
 }
 
-// 상품 선택 함수
-function selectProduct(element, url) {
+// ★ [수정됨] 상품 선택 함수
+function selectProduct(element, url, tier) {
+    // 1. 스타일 초기화 및 선택
     document.querySelectorAll('.product-option').forEach(el => el.classList.remove('selected'));
     element.classList.add('selected');
+
+    // 2. 데이터 저장
     selectedProductUrl = url;
+    selectedTier = tier;
     
-    const headerDiv = element.querySelector('.product-header');
-    selectedProductName = headerDiv.getAttribute('name');
+    // 3. 상품명 추출 (HTML 구조 변경에 맞게 수정)
+    // <span class="p-name">BASIC</span> 형태에서 텍스트 추출
+    const nameSpan = element.querySelector('.p-name');
+    if (nameSpan) {
+        selectedProductName = nameSpan.innerText;
+    }
+
+    // 4. 버튼 텍스트 변경 (Black은 결제 없음)
+    const btn = document.getElementById('submitBtn');
+    if (tier === 'black') {
+        btn.innerText = "상담 신청하기 (결제 없음)";
+    } else {
+        btn.innerText = "결제하기";
+    }
 }
 
 // 전화번호 포맷팅 함수
 function formatPhoneNumber(rawPhone) {
     let cleaned = rawPhone.replace(/[^0-9]/g, '');
+    // 010 등으로 시작하게 보정
     if (cleaned.startsWith('10') && cleaned.length === 10) {
         cleaned = '0' + cleaned;
     }
     return cleaned.replace(/^(\d{2,3})(\d{3,4})(\d{4})$/, `$1-$2-$3`);
 }
 
-// 결제 처리 함수
+// ★ [수정됨] 결제 및 신청 처리 함수
 async function processPayment() {
     const name = document.getElementById('name').value;
     const rawPhone = document.getElementById('phone').value;
     const email = document.getElementById('email').value;
-    const userId = localStorage.getItem('userId');
+    const userId = localStorage.getItem('userId') || 'guest'; // 비로그인 시 guest 처리
 
-    if (!name || !rawPhone || !email || !selectedProductUrl) {
-        alert("모든 정보를 입력하고 상품을 선택해주세요.");
+    // 유효성 검사
+    if (!name || !rawPhone || !email) {
+        alert("모든 정보를 입력해주세요.");
+        return;
+    }
+    if (!selectedTier) {
+        alert("신청할 프로그램을 선택해주세요.");
         return;
     }
 
@@ -95,9 +124,11 @@ async function processPayment() {
     btn.innerText = "처리 중...";
     btn.disabled = true;
 
+    // 주문 번호 생성
     const uniqueId = 'ORD-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
 
     try {
+        // 1. DB에 신청 내역 저장 (모든 티어 공통)
         const response = await fetch(PAYMENT_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -108,13 +139,20 @@ async function processPayment() {
                 phone: formattedPhone,
                 email: email,
                 product: selectedProductName,
+                tier: selectedTier, // 티어 정보 추가 전송
                 userId: userId 
             })
         });
 
         if (response.ok) {
-            // Stripe 페이지로 이동
-            window.location.href = `${selectedProductUrl}?client_reference_id=${uniqueId}&prefilled_email=${email}`;
+            // ★ 분기 처리: BLACK 티어는 결제 없이 성공 페이지로
+            if (selectedTier === 'black') {
+                window.location.href = `success.html?tier=black`;
+            } 
+            // 나머지 티어는 Stripe 결제 페이지로 이동
+            else if (selectedProductUrl) {
+                window.location.href = `${selectedProductUrl}?client_reference_id=${uniqueId}&prefilled_email=${email}`;
+            }
         } else {
             throw new Error('Server response not ok');
         }
