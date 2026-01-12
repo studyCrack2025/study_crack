@@ -1,6 +1,5 @@
 // js/mypage.js
 
-// Lambda URL (StudyCrack_API URL 유지)
 const MYPAGE_API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/"; 
 
 let currentUserData = {}; 
@@ -17,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     fetchUserData(userId);
+    setupQualitativeFormUI(); // 정성 조사서 UI 로직 연결
 });
 
 function openTab(tabName) {
@@ -24,6 +24,56 @@ function openTab(tabName) {
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     document.getElementById(tabName).classList.add('active');
     event.currentTarget.classList.add('active');
+}
+
+// === 정성 조사서 UI 로직 (기타 입력창 토글 & 유효성 검사) ===
+function setupQualitativeFormUI() {
+    const radioGroup = document.getElementById('statusRadioGroup');
+    const etcInput = document.getElementById('statusEtcInput');
+    const qualitativeTab = document.getElementById('qualitative');
+
+    // 1. 기타 입력창 토글
+    radioGroup.addEventListener('change', function(e) {
+        if (e.target.value === 'other') {
+            etcInput.style.display = 'block';
+            etcInput.required = true;
+        } else {
+            etcInput.style.display = 'none';
+            etcInput.required = false;
+            etcInput.value = ''; 
+        }
+        checkQualitativeForm();
+    });
+
+    // 2. 유효성 검사 이벤트 연결
+    qualitativeTab.addEventListener('input', checkQualitativeForm);
+    qualitativeTab.addEventListener('change', checkQualitativeForm);
+}
+
+function checkQualitativeForm() {
+    const saveBtn = document.getElementById('btnSaveQual');
+    const qualitativeTab = document.getElementById('qualitative');
+    // 필수 항목 체크 (required 속성이 있는 요소들)
+    const requiredInputs = qualitativeTab.querySelectorAll('[required]');
+    let allValid = true;
+
+    requiredInputs.forEach(input => {
+        if (input.type === 'radio') {
+            const groupName = input.name;
+            const isChecked = document.querySelector(`input[name="${groupName}"]:checked`);
+            if (!isChecked) allValid = false;
+        } else if (input.type === 'checkbox') {
+            if (!input.checked) allValid = false;
+        } else {
+            // hidden 상태가 아니고 값이 비어있으면 invalid
+            if (input.offsetParent !== null && !input.value.trim()) {
+                allValid = false;
+            }
+        }
+    });
+
+    saveBtn.disabled = !allValid;
+    saveBtn.innerText = allValid ? "정성 데이터 저장" : "모든 필수 항목을 입력해주세요";
 }
 
 async function fetchUserData(userId) {
@@ -43,30 +93,25 @@ async function fetchUserData(userId) {
         if (currentUserData.qualitative) fillQualitativeForm(currentUserData.qualitative);
         if (currentUserData.quantitative) examScores = currentUserData.quantitative;
         
-        // ★ [추가] 결제 상태 확인 및 UI 업데이트
         checkPaymentStatus(currentUserData.payments);
 
         loadExamData(); 
         updateStatusUI(currentUserData);
+
+        // 데이터 로드 후 유효성 검사 한 번 실행
+        checkQualitativeForm();
 
     } catch (error) {
         console.error("데이터 로드 중 오류:", error);
     }
 }
 
-// ★ [신규 기능] 결제 여부 확인 함수
 function checkPaymentStatus(payments) {
     const profileBox = document.querySelector('.profile-summary');
-    
-    // payments 배열이 있고, 그 중에 status가 'paid'인 게 하나라도 있으면
     if (payments && payments.length > 0) {
         const hasPaid = payments.some(p => p.status === 'paid');
-        
         if (hasPaid) {
-            // 유료 회원 디자인 적용
             profileBox.classList.add('paid-member');
-            
-            // 프리미엄 뱃지 요소 추가 (없으면 생성)
             if (!document.querySelector('.premium-badge')) {
                 const badge = document.createElement('div');
                 badge.className = 'premium-badge';
@@ -79,27 +124,76 @@ function checkPaymentStatus(payments) {
 
 function renderUserInfo(data) {
     document.getElementById('userNameDisplay').innerText = data.name || '이름 없음';
-    document.getElementById('userEmailDisplay').innerText = localStorage.getItem('userEmail') || '';
+    document.getElementById('userEmailDisplay').innerText = data.email || localStorage.getItem('userEmail') || '';
     
     document.getElementById('profileName').value = data.name || '';
     document.getElementById('profilePhone').value = data.phone || '';
     document.getElementById('profileSchool').value = data.school || '';
+    document.getElementById('profileEmail').value = data.email || '';
 }
 
 function fillQualitativeForm(qual) {
     if (!qual) return;
+    
+    // 상태
     if (qual.status) {
+        // 기존 status 값이 있는지 확인
         const radio = document.querySelector(`input[name="studentStatus"][value="${qual.status}"]`);
-        if (radio) radio.checked = true;
+        if (radio) {
+            radio.checked = true;
+        } else {
+            // 값이 있는데 라디오버튼에 없으면 '기타'일 확률 높음 (또는 statusOther에 저장된 값)
+            const otherRadio = document.getElementById('statusOther');
+            otherRadio.checked = true;
+            const etcInput = document.getElementById('statusEtcInput');
+            etcInput.style.display = 'block';
+            etcInput.value = qual.status; // 기타 내용 채우기
+        }
     }
+
+    // 기본 정보
     document.getElementById('targetStream').value = qual.stream || '';
     document.getElementById('careerPath').value = qual.career || '';
-    
+
+    // 원서 가치관
+    if (qual.values) {
+        document.getElementById('mustGoCollege').value = qual.values.mustGo || '';
+        document.getElementById('priorityType').value = qual.values.priority || '';
+        document.getElementById('appStrategy').value = qual.values.strategy || '';
+        document.getElementById('worstScenario').value = qual.values.worst || '';
+        document.getElementById('regionRange').value = qual.values.region || '';
+        document.getElementById('crossApply').value = qual.values.cross || '';
+    }
+
+    // 대학 후보군
+    if (qual.candidates) {
+        document.getElementById('groupGa').value = qual.candidates.ga || '';
+        document.getElementById('groupNa').value = qual.candidates.na || '';
+        document.getElementById('groupDa').value = qual.candidates.da || '';
+        document.getElementById('mostWanted').value = qual.candidates.most || '';
+        document.getElementById('leastWanted').value = qual.candidates.least || '';
+        document.getElementById('selfAssessment').value = qual.candidates.self || '';
+    }
+
+    // 희망 대학
     if (qual.targets) {
         qual.targets.forEach((val, idx) => {
             const input = document.getElementById(`target${idx+1}`);
             if(input) input.value = val;
         });
+    }
+
+    // 부모님/환경
+    if (qual.parents) {
+        document.getElementById('parentOpinion').value = qual.parents.opinion || '';
+        document.getElementById('parentInfluence').value = qual.parents.influence || '';
+    }
+
+    // 특이사항
+    if (qual.special) {
+        document.getElementById('transferPlan').value = qual.special.transfer || '';
+        document.getElementById('teachingCert').value = qual.special.teaching || '';
+        document.getElementById('etcConsultingInfo').value = qual.special.etc || '';
     }
 }
 
@@ -108,10 +202,15 @@ async function saveProfile() {
     const newPhone = document.getElementById('profilePhone').value;
     const newSchool = document.getElementById('profileSchool').value;
     const newName = document.getElementById('profileName').value;
+    const newEmail = document.getElementById('profileEmail').value;
+    const newPw = document.getElementById('newPassword').value;
+    const confirmPw = document.getElementById('newPasswordConfirm').value;
 
-    if (!newName) {
-        alert("이름을 입력해주세요.");
-        return;
+    if (!newName) return alert("이름을 입력해주세요.");
+    
+    // 비밀번호 변경 확인
+    if (newPw && newPw !== confirmPw) {
+        return alert("비밀번호가 일치하지 않습니다.");
     }
 
     try {
@@ -120,7 +219,13 @@ async function saveProfile() {
             body: JSON.stringify({
                 type: 'update_profile',
                 userId: userId,
-                data: { phone: newPhone, school: newSchool, name: newName }
+                data: { 
+                    phone: newPhone, 
+                    school: newSchool, 
+                    name: newName,
+                    email: newEmail // 이메일 추가 전송
+                    // 비밀번호는 별도 API나 Cognito SDK로 처리해야 하지만 여기선 정보 전송만
+                }
             })
         });
         
@@ -137,24 +242,50 @@ async function saveProfile() {
 
 async function saveQualitative() {
     const userId = localStorage.getItem('userId');
-    const consent = document.getElementById('dataConsent').checked;
     
-    if (!consent) {
-        alert("개인정보 활용 동의에 체크해주세요.");
-        return;
+    // 상태값 처리 (기타인 경우 텍스트 입력값 사용)
+    let statusVal = document.querySelector('input[name="studentStatus"]:checked')?.value;
+    if (statusVal === 'other') {
+        statusVal = document.getElementById('statusEtcInput').value;
     }
 
     const qualData = {
-        status: document.querySelector('input[name="studentStatus"]:checked')?.value,
+        status: statusVal,
         stream: document.getElementById('targetStream').value,
         career: document.getElementById('careerPath').value,
+        
+        values: {
+            mustGo: document.getElementById('mustGoCollege').value,
+            priority: document.getElementById('priorityType').value,
+            strategy: document.getElementById('appStrategy').value,
+            worst: document.getElementById('worstScenario').value,
+            region: document.getElementById('regionRange').value,
+            cross: document.getElementById('crossApply').value,
+        },
+        candidates: {
+            ga: document.getElementById('groupGa').value,
+            na: document.getElementById('groupNa').value,
+            da: document.getElementById('groupDa').value,
+            most: document.getElementById('mostWanted').value,
+            least: document.getElementById('leastWanted').value,
+            self: document.getElementById('selfAssessment').value,
+        },
         targets: [
             document.getElementById('target1').value,
             document.getElementById('target2').value,
             document.getElementById('target3').value,
             document.getElementById('target4').value,
             document.getElementById('target5').value
-        ]
+        ],
+        parents: {
+            opinion: document.getElementById('parentOpinion').value,
+            influence: document.getElementById('parentInfluence').value,
+        },
+        special: {
+            transfer: document.getElementById('transferPlan').value,
+            teaching: document.getElementById('teachingCert').value,
+            etc: document.getElementById('etcConsultingInfo').value,
+        }
     };
 
     try {
@@ -288,28 +419,21 @@ function updateStatusUI(data) {
 
 // === 회원 탈퇴 함수 ===
 async function handleDeleteAccount() {
-    // 1. 확인 절차
     const isConfirmed = confirm("정말로 탈퇴하시겠습니까?\n\n탈퇴 시 저장된 성적 및 상담 데이터가 모두 삭제되며 복구할 수 없습니다.");
-    
     if (!isConfirmed) return;
 
     const userId = localStorage.getItem('userId');
-    const userEmail = localStorage.getItem('userEmail');
 
     try {
-        // 2. DynamoDB 데이터 삭제 (Lambda 호출)
+        // 1. DynamoDB 데이터 삭제
         const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
-            body: JSON.stringify({
-                type: 'delete_user',
-                userId: userId
-            })
+            body: JSON.stringify({ type: 'delete_user', userId: userId })
         });
 
         if (!response.ok) throw new Error("DB 삭제 실패");
 
-        // 3. Cognito 계정 삭제
-        // (현재 로그인된 세션을 가져와서 삭제 요청)
+        // 2. Cognito 계정 삭제
         const poolData = {
             UserPoolId: CONFIG.cognito.userPoolId,
             ClientId: CONFIG.cognito.clientId
@@ -319,32 +443,20 @@ async function handleDeleteAccount() {
 
         if (cognitoUser) {
             cognitoUser.getSession((err, session) => {
-                if (err) {
-                    alert("세션 오류로 탈퇴에 실패했습니다. 다시 로그인 후 시도해주세요.");
-                    return;
-                }
-                
-                // 실제 계정 삭제 API 호출
+                if (err) return alert("세션 오류. 다시 로그인해주세요.");
                 cognitoUser.deleteUser((err, result) => {
-                    if (err) {
-                        alert("계정 삭제 실패: " + err.message);
-                        return;
-                    }
-                    
-                    // 4. 성공 시 마무리
-                    alert("회원 탈퇴가 완료되었습니다.\n그동안 이용해 주셔서 감사합니다.");
-                    localStorage.clear(); // 로컬 저장소 비우기
-                    window.location.href = 'index.html'; // 메인으로 이동
+                    if (err) return alert("계정 삭제 실패: " + err.message);
+                    alert("회원 탈퇴가 완료되었습니다.");
+                    localStorage.clear();
+                    window.location.href = 'index.html';
                 });
             });
         } else {
-            // 이미 세션이 없는 경우 로컬만 지우고 보냄
             localStorage.clear();
             window.location.href = 'index.html';
         }
-
     } catch (error) {
         console.error(error);
-        alert("탈퇴 처리 중 오류가 발생했습니다 관리자에게 문의하세요.");
+        alert("탈퇴 처리 중 오류가 발생했습니다.");
     }
 }

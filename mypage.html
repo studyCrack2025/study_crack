@@ -27,7 +27,6 @@
                 <img src="https://via.placeholder.com/150" 
                      onerror="this.src='assets/images/sample_profile.png'" 
                      alt="프로필" class="profile-img">
-                
                 <button class="edit-pic-btn" onclick="document.getElementById('fileInput').click()">+</button>
                 <input type="file" id="fileInput" style="display: none;" accept="image/*">
             </div>
@@ -70,28 +69,40 @@
                     <label>학교</label>
                     <input type="text" id="profileSchool">
                 </div>
+
+                <h3>계정 정보 변경</h3>
+                <div class="form-group">
+                    <label>이메일 변경</label>
+                    <input type="email" id="profileEmail" placeholder="변경할 이메일 주소">
+                </div>
                 
-                <h3>비밀번호 변경</h3>
                 <div class="form-group">
                     <label>새 비밀번호</label>
                     <input type="password" id="newPassword" placeholder="변경할 경우에만 입력">
                 </div>
+                <div class="form-group">
+                    <label>새 비밀번호 확인</label>
+                    <input type="password" id="newPasswordConfirm" placeholder="비밀번호 재입력">
+                </div>
+
                 <button class="save-btn" onclick="saveProfile()">정보 수정 저장</button>
             </div>
 
             <div id="qualitative" class="tab-content">
                 <h3>학생 현황 및 진로 설계</h3>
                 
-                <label class="input-label">현재 상태</label>
-                <div class="radio-group">
+                <label class="input-label">현재 상태 (필수)</label>
+                <div class="radio-group" id="statusRadioGroup">
+                    <label><input type="radio" name="studentStatus" value="h1_2" required> 고1/2 재학</label>
                     <label><input type="radio" name="studentStatus" value="h3"> 고3 재학</label>
                     <label><input type="radio" name="studentStatus" value="n_su"> N수생 (재수/반수 등)</label>
                     <label><input type="radio" name="studentStatus" value="black"> 검정고시</label>
-                    <label><input type="radio" name="studentStatus" value="other"> 기타</label>
+                    <label><input type="radio" name="studentStatus" value="other" id="statusOther"> 기타</label>
                 </div>
+                <input type="text" id="statusEtcInput" class="hidden-input" placeholder="상태를 직접 입력해주세요">
 
-                <label class="input-label">희망 계열</label>
-                <select id="targetStream">
+                <label class="input-label">희망 계열 (필수)</label>
+                <select id="targetStream" required>
                     <option value="">선택하세요</option>
                     <option value="humanities">인문사회</option>
                     <option value="business">상경계열</option>
@@ -106,23 +117,100 @@
                 <label class="input-label">희망 진로 (구체적으로)</label>
                 <input type="text" id="careerPath" placeholder="예: 인공지능 개발자, 초등교사 등">
 
-                <label class="input-label">희망 대학 및 학과 (1~5지망)</label>
-                <div class="target-uni-list">
-                    <input type="text" id="target1" placeholder="1지망 (예: 서울대 컴퓨터공학과)">
-                    <input type="text" id="target2" placeholder="2지망">
-                    <input type="text" id="target3" placeholder="3지망">
-                    <input type="text" id="target4" placeholder="4지망">
-                    <input type="text" id="target5" placeholder="5지망">
+                <div class="form-section">
+                    <h4>📌 원서 가치관</h4>
+                    
+                    <label class="input-label">올해 반드시 대학을 가야 하나요? (필수)</label>
+                    <select id="mustGoCollege" required>
+                        <option value="">선택하세요</option>
+                        <option value="yes">예 (필수)</option>
+                        <option value="no">아니오 (재수 가능)</option>
+                    </select>
+
+                    <label class="input-label">우선순위: 대학(간판) vs 학과(전공) (필수)</label>
+                    <select id="priorityType" required>
+                        <option value="">선택하세요</option>
+                        <option value="univ">대학 이름이 더 중요</option>
+                        <option value="major">학과(전공)가 더 중요</option>
+                        <option value="balance">균형 있게 고려</option>
+                    </select>
+
+                    <label class="input-label">상향/적정/안정 조합 허용 범위 (필수)</label>
+                    <input type="text" id="appStrategy" placeholder="예: 2상향 2적정 2안정" required>
+
+                    <label class="input-label">절대 허용할 수 없는 최악의 시나리오 (필수)</label>
+                    <input type="text" id="worstScenario" placeholder="예: 지방 캠퍼스는 절대 불가" required>
+
+                    <label class="input-label">지역 범위 (필수)</label>
+                    <input type="text" id="regionRange" placeholder="예: 서울권, 경기권, 충청권까지 가능" required>
+
+                    <label class="input-label">계열 확정 및 교차 지원 가능 여부</label>
+                    <input type="text" id="crossApply" placeholder="예: 문과지만 공대 교차지원 가능">
                 </div>
 
-                <div class="consent-box">
+                <div class="form-section">
+                    <h4>📌 대학 후보군 상세</h4>
+
+                    <label class="input-label">관심 대학/학과 (군별 관심사)</label>
+                    <input type="text" id="groupGa" placeholder="[가군] 관심 대학/학과">
+                    <input type="text" id="groupNa" placeholder="[나군] 관심 대학/학과">
+                    <input type="text" id="groupDa" placeholder="[다군] 관심 대학/학과">
+
+                    <label class="input-label">가장 가고 싶은 대학 (이유 포함) (필수)</label>
+                    <input type="text" id="mostWanted" required>
+
+                    <label class="input-label">절대 가기 싫은 대학 (이유 포함)</label>
+                    <input type="text" id="leastWanted">
+
+                    <label class="input-label">본인이 생각하는 상향/적정/안정 감각</label>
+                    <textarea id="selfAssessment" placeholder="본인이 생각하기에 어디가 상향이고 안정인지 자유롭게 서술" rows="3" style="width:100%; border:1px solid #cbd5e1; border-radius:6px; padding:10px;"></textarea>
+                </div>
+
+                <div class="form-section">
+                    <h4>📌 희망 대학 및 학과 (최종 요약)</h4>
+                    <div class="target-uni-list">
+                        <input type="text" id="target1" placeholder="1지망 (예: 서울대 컴퓨터공학과)" required>
+                        <p class="warning-text">* 자주 수정할 수 없으므로 신중히 입력해주세요</p>
+                        
+                        <input type="text" id="target2" placeholder="2지망 (필수)" required>
+                        <input type="text" id="target3" placeholder="3지망 (선택)">
+                        <input type="text" id="target4" placeholder="4지망 (선택)">
+                        <input type="text" id="target5" placeholder="5지망 (선택)">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h4>📌 부모님/환경 요인</h4>
+                    <label class="input-label">부모님이 추천하거나 반대하는 대학</label>
+                    <input type="text" id="parentOpinion">
+
+                    <label class="input-label">부모님 의견 영향도 (필수)</label>
+                    <select id="parentInfluence" required>
+                        <option value="">선택하세요</option>
+                        <option value="low">낮음 (본인 의지 중요)</option>
+                        <option value="mid">중간 (협의 필요)</option>
+                        <option value="high">높음 (부모님 의견 따름)</option>
+                    </select>
+                </div>
+
+                <div class="form-section">
+                    <h4>📌 특이사항</h4>
+                    <label class="input-label">추가 고려 사항</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                         <input type="text" id="transferPlan" placeholder="편입 계획 여부" style="flex:1">
+                         <input type="text" id="teachingCert" placeholder="교직 이수 의향" style="flex:1">
+                    </div>
+                    <textarea id="etcConsultingInfo" placeholder="기타 컨설팅에 영향을 미치는 사유나 멘토에게 하고 싶은 말" rows="3" style="width:100%; border:1px solid #cbd5e1; border-radius:6px; padding:10px;"></textarea>
+                </div>
+
+                <div class="consent-box" style="margin-top: 20px;">
                     <label>
-                        <input type="checkbox" id="dataConsent"> 
+                        <input type="checkbox" id="dataConsent" required> 
                         [필수] 입시 컨설팅을 위한 개인정보 활용에 동의합니다.
                     </label>
                 </div>
 
-                <button class="save-btn" onclick="saveQualitative()">정성 데이터 저장</button>
+                <button id="btnSaveQual" class="save-btn" onclick="saveQualitative()" disabled>정성 데이터 저장</button>
             </div>
 
             <div id="quantitative" class="tab-content">
