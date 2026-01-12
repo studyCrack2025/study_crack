@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>스터디크랙 - 입시 전략의 모든 것</title>
     <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
     <header>
         <div class="logo-container">
-            <img src="assets/images/study_cracked_logo.png" alt="스터디크랙 로고">
+            <img src="assets/images/study_cracked_logo.png" alt="스터디크랙 로고" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
             <span class="logo">StudyCrack</span>
         </div>
         <nav class="nav-links">
@@ -22,113 +22,120 @@
         </nav>
     </header>
 
-    <section class="hero" style="padding-bottom: 20px; height: auto;">
-        <div class="hero-columns container">
-            <div class="hero-col">
-                <h3 class="red-text">같은 시간을 써도 결과가 달라지는 구조를 만듭니다.</h3>
-                <p>대부분의 공부는 "지금 성적에서 조금이라도 올리자"에 머뭅니다.<br>
-                스터디크랙은 다릅니다.<br>
-                목표 대학을 먼저 정하고, 그 대학의 반영 구조·점수 기울기·과목별 효율을 계산해<br>
-                같은 1시간을 써도 가장 합격에 가까워지는 오르는 방향으로만 공부하게 만듭니다.</p>
+    <section class="hero">
+        <div class="hero-grid">
+            <div class="hero-card">
+                <span class="hero-icon">⏳</span>
+                <h3>같은 시간을 써도<br>결과가 달라지는 구조</h3>
+                <p>대부분 "성적을 조금이라도 올리자"에 머뭅니다.<br>
+                스터디크랙은 <strong>목표 대학의 반영 구조와 점수 기울기</strong>를 계산해, 같은 1시간을 공부해도 합격 확률이 가장 높게 오르는 방향으로만 이끕니다.</p>
             </div>
-            <div class="hero-col">
-                <h3 class="red-text">합격에 가장 직결되는 공부만 남깁니다.</h3>
-                <p>스터디크랙은<br>
-                1. 과목별 1점 상승이 목표 대학에 합격 확률에 미치는 영향<br>
-                2. 대학별 환산점수 및 반영비 구조<br>
-                3. 어떤 과목에서 얼마나 올려야 최소한의 점수 상승으로 합격할 수 있는 지<br>
-                등 을 기준으로<br>
-                지금 당장 가장 효율 좋은 공부만 추려냅니다.</p>
+            <div class="hero-card">
+                <span class="hero-icon">🎯</span>
+                <h3>합격에 가장 직결되는<br>공부만 남깁니다</h3>
+                <p>대학별 환산점수와 반영비 구조를 분석하여,<br>
+                <strong>최소한의 점수 상승으로 합격할 수 있는 과목</strong>을 찾아냅니다. 지금 당장 효율이 가장 좋은 공부만 추려냅니다.</p>
             </div>
-            <div class="hero-col">
-                <h3 class="red-text">끝점이 정해진 공부</h3>
-                <p>'어디까지 하면 충분한지'를 알려줍니다<br>
-                불안한 공부의 공통점은 하나입니다.<br>
-                끝이 보이지 않습니다.<br>
-                스터디크랙은 목표 대학 기준으로<br>
-                1. 어느 점수까지 가면 의미 있는지<br>
-                2. 어느 구간부터는 효율이 급격히 떨어지는지<br>
-                3. 지금은 멈추고 다른 과목으로 옮겨야 하는지<br>
-                를 명확히 제시합니다.</p>
+            <div class="hero-card">
+                <span class="hero-icon">🏁</span>
+                <h3>끝점이 정해진 공부<br>불안함을 없앱니다</h3>
+                <p>불안한 공부의 원인은 '끝'이 안 보이기 때문입니다.<br>
+                <strong>어느 점수까지가 의미 있는지, 어디서 멈추고 다른 과목을 해야 하는지</strong> 명확한 기준선을 제시합니다.</p>
             </div>
         </div>
-         </section>
+        
+        <div class="cta-container">
+            <a href="payment.html" class="cta-button">내 맞춤 전략 설계받기 →</a>
+        </div>
+    </section>
 
-    <section id="about" class="section big-red-section">
-        <h2>공부량이 아니라 점수 효율로 설계하는 학습 로드맵 스터디크랙은</h2>
-        <h3>현재 성적 요약이나 조언으로 끝나지 않습니다.</h3>
-        <h3>목표 대학 기준으로 점수 구조를 계산하고,<br>가장 효율적인 대학 합격 경로를 제공합니다.</h3>
+    <section id="about" class="section message-section">
+        <div class="message-content">
+            <h2>공부량이 아니라 '점수 효율'입니다.</h2>
+            <h3>현재 성적 요약이나 단순 조언으로 끝나지 않습니다.</h3>
+            <p>목표 대학 기준으로 점수 구조를 역산하고,<br>
+            가장 빠르고 효율적인 <strong>대학 합격 시뮬레이션</strong>을 제공합니다.</p>
+        </div>
     </section>
 
     <section id="program" class="section curriculum">
-        <div class="curriculum-header-red" style="text-align: center; margin-bottom: 40px;">
-            <p>누구는 붙고, 누구는 떨어집니다.<br>점수는 같았습니다.</p>
-            <p style="margin-top: 30px;">목표대학마다 점수를 보는 방식이 다르기 때문입니다.<br>
-            그래서 당신만의 전략이 필요합니다.<br>
-            당신의 목표대학 기준으로 가장 효율적인 점수 상승만 설계합니다.</p>
-            <p style="margin-top: 30px;">합격과 무관한 노력은 빼고,<br>결과에 직결되는 점수만 남깁니다.</p>
+        <div class="curriculum-header">
+            <h2>합격을 위한 전략 로드맵</h2>
+            <p style="margin-top: 20px;">
+                누구는 붙고, 누구는 떨어집니다. 점수는 같았습니다.<br>
+                <strong>목표 대학마다 점수를 보는 방식이 다르기 때문입니다.</strong><br>
+                합격과 무관한 노력은 빼고, 결과에 직결되는 점수만 남기세요.
+            </p>
         </div>
         
         <div class="course-list">
             
-            <div class="course-item expandable">
-                <div class="course-summary red-text">
-                    <h4>BASIC - 99,000원</h4>
-                    <p>지금 점수가 목표 대학의합격선에서 얼마나 떨어져 있는지 계산해주는 진단형</p>
+            <div class="course-item tier-basic expandable">
+                <div class="course-summary">
+                    <div class="course-title-group">
+                        <div class="course-name">BASIC <span class="toggle-icon">▼</span></div>
+                        <div class="course-desc">내 점수와 목표 대학 합격선 거리 정밀 진단</div>
+                    </div>
+                    <div class="course-price">99,000원</div>
                 </div>
                 <div class="course-details hidden-details">
                     <ol>
-                        <li>개인 성적 입력 및 목표 대학 1곳 기준 환산점수 계산</li>
-                        <li>합격 컷 대비 학생 점수 거리 계산</li>
-                        <li>합격자 50% 70% 100% 점수 기준 컷 위치 분석<br>- 단순히 합격컷만 보는 게 아니라 중간 합격선, 안정 합격선까지 함께 비교해 내 점수가 어느 정도로 위험한지를 알려줍니다.</li>
-                        <li>목표 대학의 과목 기여도 분석<br>- 같은 1점을 올려도 대학마다 어떤 과목은 합격에 거의 영향이 없고, 어떤 과목은 바로 유리해집니다.<br>스터디크랙은 점수 대비 효과가 가장 큰 과목을 먼저 찾아줍니다.</li>
+                        <li><strong>개인 성적 및 목표 대학 환산점수 계산</strong></li>
+                        <li><strong>합격 컷 대비 거리 분석</strong><br>단순 합격컷이 아닌 중간/안정 합격선까지 비교해 위험도 경고</li>
+                        <li><strong>목표 대학 과목 기여도 분석</strong><br>같은 1점이라도 합격에 더 유리한 '효자 과목' 발굴</li>
                     </ol>
                 </div>
             </div>
 
-             <div class="course-item expandable">
-                <div class="course-summary red-text">
-                    <h4>STANDARD - 월 129,000원</h4>
-                    <p>어떤 과목을 올려야 제일 빨리 유리해지는지 알려주고, 지금 쓰는 플래너가 옳은 방향인지 점검해주는 요금제</p>
+             <div class="course-item tier-standard expandable">
+                <div class="course-summary">
+                    <div class="course-title-group">
+                        <div class="course-name">STANDARD <span class="toggle-icon">▼</span></div>
+                        <div class="course-desc">과목별 승부처 분석 및 학습 플래너 점검</div>
+                    </div>
+                    <div class="course-price">월 129,000원</div>
                 </div>
                 <div class="course-details hidden-details">
                     <ol>
-                        <li>BASIC 제공 항목 전부 +목표 대학 3 곳으로 확장</li>
-                        <li>목표 대학 별 과목별 1점당 환산 기울기 계산</li>
-                        <li>단일·복수 과목 점수 상승 시뮬레이션</li>
-                        <li>구조 지표(Upper / Tail) 분석<br>- 목표 대학에 안정적으로 합격할 수 있는 범위를 제공하여 대학 합격의 안정성을 높일 수 있습니다.</li>
-                        <li>주 1회 플래너 수정·보완(해설 포함)</li>
+                        <li>BASIC 제공 항목 전부 포함 + 목표 대학 3곳 확장</li>
+                        <li><strong>과목별 1점당 환산 기울기 계산</strong><br>어떤 과목을 올려야 제일 빨리 합격권에 드는지 분석</li>
+                        <li><strong>점수 상승 시뮬레이션</strong></li>
+                        <li><strong>구조 지표(Upper/Tail) 분석</strong> 및 주 1회 플래너 코칭</li>
                     </ol>
                 </div>
             </div>
 
-            <div class="course-item expandable">
-                <div class="course-summary red-text">
-                    <h4>PRO - 월 199,000원</h4>
-                    <p>점수를 가장 적게 올리고도 합격선에 닿는 방법을 계산해주고<br>대학 별 맞춤 학습 방향을 다시 잡아주는 요금제</p>
+            <div class="course-item tier-pro expandable">
+                <div class="course-summary">
+                    <div class="course-title-group">
+                        <div class="course-name">PRO <span class="toggle-icon">▼</span></div>
+                        <div class="course-desc">최소 노력 최대 효율, 맞춤 학습 방향 재설계</div>
+                    </div>
+                    <div class="course-price">월 199,000원</div>
                 </div>
                 <div class="course-details hidden-details">
                     <ol>
-                        <li>STANDARD 제공 항목 전부 + 목표 대학 6 곳으로 확장</li>
-                        <li>최소 점수 상승 조합 최적화<br>-모든 과목을 다 올릴 필요는 없습니다.<br>몇 점만 어디서 올리면 가장 빨리 합격선에 닿는지를 계산해드립니다.</li>
-                        <li>같은 점수로 더 유리한 대학 찾기<br>-같은 성적이라도 대학마다 결과는 완전히 다릅니다.<br>스터디크랙은 지금 점수로 가장 유리한 대학 순서를 보여줍니다.</li>
-                        <li>주 1회 전략 기반 플래너 보완(상담 포함)</li>
+                        <li>STANDARD 제공 항목 전부 포함 + 목표 대학 6곳 확장</li>
+                        <li><strong>최소 점수 상승 조합 최적화</strong><br>모든 과목을 다 올릴 필요 없습니다. 가장 빠른 합격 조합 계산</li>
+                        <li><strong>유리한 대학 역추적</strong><br>지금 점수로 가장 유리한 대학 순위 제공</li>
+                        <li>주 1회 전략 기반 심층 플래너 코칭</li>
                     </ol>
                 </div>
             </div>
 
-             <div class="course-item expandable">
-                <div class="course-summary red-text">
-                    <h4>BLACK - 가격 비공개 운영</h4>
-                    <p>선별제로만 운영<br>컨설턴트가 직접 개입해 입시컨설팅까지 책임지는 최상위 요금제</p>
+             <div class="course-item tier-black expandable">
+                <div class="course-summary">
+                    <div class="course-title-group">
+                        <div class="course-name">BLACK <span class="toggle-icon">▼</span></div>
+                        <div class="course-desc">선별 인원 프라이빗 컨설팅 (직접 개입)</div>
+                    </div>
+                    <div class="course-price">가격 비공개</div>
                 </div>
                 <div class="course-details hidden-details">
                     <ol>
                         <li>PRO 요금제 전부 포함</li>
-                        <li>스터디크랙 프리미엄 입시 컨설팅</li>
-                        <li>목표 대학·학과 전략 컨설팅 직접 개입</li>
-                        <li>점수·대학·시기 변화에 따른 전략 재설계</li>
-                        <li>플래너 보완 + 전략 판단 우선 대응</li>
+                        <li><strong>컨설턴트 직접 관리</strong><br>목표 대학/학과 전략 수립에 직접 개입</li>
+                        <li>시기별 전략 재설계 및 우선 대응</li>
                     </ol>
                 </div>
             </div>
@@ -158,14 +165,14 @@
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('terms')">&times;</span>
             <h2>이용약관</h2>
-            <pre>... (약관 내용) ...</pre>
+            <pre style="white-space: pre-wrap; font-family: inherit; color: #555;">여기에 이용약관 내용을 입력하세요.</pre>
         </div>
     </div>
     <div id="privacy-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('privacy')">&times;</span>
             <h2>개인정보처리방침</h2>
-            <pre>... (방침 내용) ...</pre>
+            <pre style="white-space: pre-wrap; font-family: inherit; color: #555;">여기에 개인정보처리방침 내용을 입력하세요.</pre>
         </div>
     </div>
 
