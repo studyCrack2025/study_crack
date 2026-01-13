@@ -54,21 +54,57 @@ function renderUserInfo(data) {
     document.getElementById('profileEmail').value = data.email || '';
 }
 
-// 결제 여부 확인 (프리미엄 뱃지)
+// 결제 여부 및 티어 확인 함수
 function checkPaymentStatus(payments) {
     const profileBox = document.querySelector('.profile-summary');
-    if (payments && payments.length > 0) {
-        const hasPaid = payments.some(p => p.status === 'paid');
-        if (hasPaid) {
-            profileBox.classList.add('paid-member');
-            if (!document.querySelector('.premium-badge')) {
-                const badge = document.createElement('div');
-                badge.className = 'premium-badge';
-                badge.innerText = "PREMIUM MEMBER";
-                profileBox.appendChild(badge);
-            }
-        }
+    
+    // 1. 결제 내역이 없거나 비어있으면 종료
+    if (!payments || payments.length === 0) return;
+
+    // 2. 'paid' 상태인 결제만 필터링
+    const paidHistory = payments.filter(p => p.status === 'paid');
+    if (paidHistory.length === 0) return;
+
+    // 3. 날짜순 정렬 (최신순: 내림차순)
+    // 날짜 형식이 "YYYY-MM-DD HH:mm:ss" 또는 ISOString이라고 가정
+    paidHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // 4. 가장 최근 결제 상품 가져오기
+    const latestPayment = paidHistory[0];
+    const productName = (latestPayment.product || "").toLowerCase();
+
+    // 5. 티어별 스타일 클래스 및 뱃지 텍스트 결정
+    let tierClass = '';
+    let badgeText = '';
+
+    if (productName.includes('black')) {
+        tierClass = 'tier-black';
+        badgeText = 'BLACK MEMBER';
+    } else if (productName.includes('pro')) {
+        tierClass = 'tier-pro';
+        badgeText = 'PRO MEMBER';
+    } else if (productName.includes('standard')) {
+        tierClass = 'tier-standard';
+        badgeText = 'STANDARD MEMBER';
+    } else {
+        // basic 또는 기타 상품
+        tierClass = 'tier-basic';
+        badgeText = 'BASIC MEMBER';
     }
+
+    // 6. UI 적용
+    // 기존 티어 클래스가 있다면 제거 (혹시 모를 중복 방지)
+    profileBox.classList.remove('tier-basic', 'tier-standard', 'tier-pro', 'tier-black');
+    profileBox.classList.add(tierClass);
+
+    // 뱃지가 없으면 생성, 있으면 텍스트만 변경
+    let badge = document.querySelector('.premium-badge');
+    if (!badge) {
+        badge = document.createElement('div');
+        badge.className = 'premium-badge';
+        profileBox.appendChild(badge);
+    }
+    badge.innerText = badgeText;
 }
 
 // 조사서 작성 상태 업데이트 (사이드바)

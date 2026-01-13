@@ -65,18 +65,66 @@
 }
 .btn-go-survey:hover { background-color: #dbeafe; }
 
-/* 유료 회원 스타일 */
-.profile-summary.paid-member {
-    border: 2px solid #F59E0B;
-    box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+/* --- 유료 회원 공통 스타일 --- */
+.profile-summary {
     position: relative;
+    transition: all 0.3s ease;
 }
+
+/* 프리미엄 뱃지 기본 모양 */
 .premium-badge {
-    position: absolute; top: -12px; right: 20px;
-    background: linear-gradient(45deg, #F59E0B, #FCD34D);
-    color: #78350f; padding: 5px 12px;
-    border-radius: 12px; font-size: 0.8rem; font-weight: 800;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    position: absolute;
+    top: -12px;
+    right: 20px;
+    padding: 5px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    letter-spacing: 0.5px;
+    z-index: 10;
+}
+
+/* === 1. BASIC 티어 (파란색 - 신뢰, 시작) === */
+.profile-summary.tier-basic {
+    border: 2px solid #3B82F6; /* Blue-500 */
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.15);
+}
+.profile-summary.tier-basic .premium-badge {
+    background: linear-gradient(135deg, #3B82F6, #60A5FA);
+    color: white;
+}
+
+/* === 2. STANDARD 티어 (실버/슬레이트 - 안정감) === */
+.profile-summary.tier-standard {
+    border: 2px solid #64748B; /* Slate-500 */
+    box-shadow: 0 0 15px rgba(100, 116, 139, 0.2);
+}
+.profile-summary.tier-standard .premium-badge {
+    background: linear-gradient(135deg, #94A3B8, #CBD5E1);
+    color: #0F172A;
+}
+
+/* === 3. PRO 티어 (골드 - 기존 프리미엄 느낌) === */
+.profile-summary.tier-pro {
+    border: 2px solid #F59E0B; /* Amber-500 */
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.25);
+}
+.profile-summary.tier-pro .premium-badge {
+    background: linear-gradient(135deg, #F59E0B, #FCD34D);
+    color: #78350f;
+}
+
+/* === 4. BLACK 티어 (블랙/다크 - 최상위 럭셔리) === */
+.profile-summary.tier-black {
+    border: 2px solid #171717; /* Neutral-900 */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(to bottom right, #ffffff, #f8fafc); /* 미세한 그라데이션 배경 */
+}
+.profile-summary.tier-black .premium-badge {
+    background: linear-gradient(135deg, #000000, #333333);
+    color: #FFD700; /* 금색 텍스트 */
+    border: 1px solid #444;
 }
 
 .account-actions {
