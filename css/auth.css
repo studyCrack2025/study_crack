@@ -1,4 +1,6 @@
-/* 로그인/회원가입 전용 스타일 */
+/* css/auth.css */
+
+/* 로그인/회원가입 전용 기본 레이아웃 */
 body.auth-body {
     background-color: #f1f5f9;
     display: flex;
@@ -25,35 +27,7 @@ body.auth-body {
     display: inline-block;
 }
 
-.auth-form input {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 15px;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    font-size: 1rem;
-}
-
-.auth-btn {
-    width: 100%;
-    padding: 12px;
-    background-color: #2563EB;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 1rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.3s;
-}
-
-.auth-btn:hover { background-color: #1d4ed8; }
-
-.auth-links { margin-top: 15px; font-size: 0.9rem; }
-.auth-links a { color: #64748b; text-decoration: underline; }
-
-/* css/auth.css 기존 내용 아래에 추가/수정 */
-
+/* 섹션 구분선 */
 .section-title {
     border-bottom: 2px solid #e2e8f0;
     padding-bottom: 10px;
@@ -79,6 +53,20 @@ input[type="text"], input[type="email"], input[type="password"], input[type="tel
     font-size: 1rem;
     margin-bottom: 15px;
     box-sizing: border-box;
+    height: 46px; /* 높이 통일 */
+}
+
+/* 입력창 + 버튼 세트 (한 줄 정렬) */
+.input-with-btn {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    align-items: center;
+}
+
+.input-with-btn input {
+    flex: 1;
+    margin-bottom: 0; /* 버튼과 높이 맞추기 위해 */
 }
 
 /* 작은 버튼 (인증번호 받기 등) */
@@ -91,8 +79,24 @@ input[type="text"], input[type="email"], input[type="password"], input[type="tel
     border-radius: 6px;
     cursor: pointer;
     font-size: 0.9rem;
+    height: 46px; /* 입력창과 높이 맞춤 */
 }
 .small-btn:hover { background-color: #1e293b; }
+
+/* 인증 확인 버튼 스타일 수정 */
+.verify-confirm-btn {
+    white-space: nowrap;
+    padding: 0 20px;
+    background-color: #0ea5e9; /* 밝은 파랑 */
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    height: 46px;
+    font-weight: bold;
+}
+.verify-confirm-btn:hover { background-color: #0284c7; }
 
 /* 인증 박스 스타일 */
 .verify-box {
@@ -103,6 +107,14 @@ input[type="text"], input[type="email"], input[type="password"], input[type="tel
     margin-bottom: 15px;
 }
 .verify-box p { font-size: 0.85rem; margin-bottom: 8px; color: #334155; }
+
+/* 타이머 스타일 */
+#timer, #phoneTimer {
+    color: #e11d48;
+    font-weight: bold;
+    width: 50px;
+    text-align: center;
+}
 
 /* 라디오 버튼 그룹 */
 .radio-group {
@@ -119,6 +131,12 @@ input[type="text"], input[type="email"], input[type="password"], input[type="tel
     gap: 5px;
 }
 
+.auth-form input[type="radio"] {
+    width: auto;
+    margin-bottom: 0;
+    height: auto;
+}
+
 /* 유틸리티 */
 .hidden { display: none !important; }
 
@@ -127,13 +145,21 @@ input[type="text"], input[type="email"], input[type="password"], input[type="tel
 .text-success { color: #16a34a; font-weight: bold; }
 .text-error { color: #dc2626; font-weight: bold; }
 
-/* 메인 버튼 비활성화 스타일 */
-button:disabled { cursor: not-allowed; opacity: 0.7; }
-
-/* 위에서 강제로 준 100% 설정을 라디오 버튼만 해제합니다 */
-.auth-form input[type="radio"] {
-    width: auto;
-    margin-bottom: 0;
-    margin-right: 5px; /* 버튼과 글씨 사이 간격 */
-    height: auto;      /* 높이도 자동 */
+/* 메인 버튼 스타일 */
+.auth-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #2563EB;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
 }
+.auth-btn:hover { background-color: #1d4ed8; }
+.auth-btn:disabled { cursor: not-allowed; opacity: 0.7; background-color: #ccc; }
+
+.auth-links { margin-top: 15px; font-size: 0.9rem; text-align: center; }
+.auth-links a { color: #64748b; text-decoration: underline; }
