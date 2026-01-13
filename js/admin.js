@@ -268,10 +268,37 @@ async function searchStudents() {
         }
 
         students.forEach(s => {
-            const isPaid = s.payments && s.payments.length > 0;
-            const statusBadge = isPaid 
-                ? '<span style="color:#16a34a; font-weight:bold; background:#dcfce7; padding:4px 8px; border-radius:12px; font-size:0.8rem;">PREMIUM</span>' 
-                : '<span style="color:#64748b; background:#f1f5f9; padding:4px 8px; border-radius:12px; font-size:0.8rem;">FREE</span>';
+            // --- [수정] 티어별 뱃지 결정 로직 시작 ---
+            let statusBadge = '<span style="color:#64748b; background:#f1f5f9; padding:4px 8px; border-radius:12px; font-size:0.8rem;">FREE</span>'; // 기본값 (무료)
+
+            if (s.payments && s.payments.length > 0) {
+                // 1. 'paid' 상태인 결제만 필터링
+                const paidHistory = s.payments.filter(p => p.status === 'paid');
+                
+                if (paidHistory.length > 0) {
+                    // 2. 날짜 내림차순 정렬 (최신순)
+                    paidHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    
+                    // 3. 가장 최근 상품명 확인
+                    const latestProduct = (paidHistory[0].product || "").toLowerCase();
+
+                    // 4. 상품명에 따른 뱃지 스타일 적용
+                    if (latestProduct.includes('black')) {
+                        // Black: 검정 배경 + 금색 글씨
+                        statusBadge = '<span style="color:#FFD700; background:#171717; padding:4px 8px; border-radius:12px; font-size:0.8rem; border:1px solid #333; font-weight:bold;">BLACK</span>';
+                    } else if (latestProduct.includes('pro')) {
+                        // Pro: 금색(호박색) 배경 + 진한 갈색 글씨
+                        statusBadge = '<span style="color:#92400e; background:#fef3c7; padding:4px 8px; border-radius:12px; font-size:0.8rem; font-weight:bold;">PRO</span>';
+                    } else if (latestProduct.includes('standard')) {
+                        // Standard: 회색(슬레이트) 배경 + 진한 회색 글씨
+                        statusBadge = '<span style="color:#334155; background:#e2e8f0; padding:4px 8px; border-radius:12px; font-size:0.8rem; font-weight:bold;">STANDARD</span>';
+                    } else {
+                        // Basic (또는 기타): 파란 배경 + 진한 파랑 글씨
+                        statusBadge = '<span style="color:#1e40af; background:#dbeafe; padding:4px 8px; border-radius:12px; font-size:0.8rem; font-weight:bold;">BASIC</span>';
+                    }
+                }
+            }
+            // --- [수정] 티어별 뱃지 결정 로직 끝 ---
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
