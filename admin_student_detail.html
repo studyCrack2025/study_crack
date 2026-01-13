@@ -5,85 +5,201 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>학생 상세 관리 - StudyCrack Admin</title>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/mypage.css"> <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="css/admin.css">
+    
     <style>
-        /* 관리자 전용 헤더 스타일 */
-        .admin-header-bar { background: #1e293b; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
-        .back-btn { background: #3b82f6; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: bold; }
-        
-        /* 관리자 메모 박스 강조 */
-        .admin-memo-container {
-            max-width: 1200px; margin: 20px auto; padding: 20px;
-            background-color: #fff7ed; border: 2px solid #fdba74; border-radius: 8px;
+        /* =========================================
+           [관리자 전용 스타일]
+           ========================================= */
+        body { background-color: #f1f5f9; padding-bottom: 50px; }
+
+        .admin-header-bar { 
+            background: #1e293b; color: white; padding: 15px 20px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .admin-memo-container textarea { width: 100%; height: 100px; margin-top: 10px; padding: 10px; border: 1px solid #cbd5e1; resize: vertical; }
-        .save-memo-btn { margin-top: 10px; padding: 10px 20px; background: #ea580c; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .back-btn { 
+            background: #3b82f6; color: white; padding: 8px 16px; 
+            border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 0.9rem;
+        }
+        .back-btn:hover { background: #2563eb; }
+
+        /* 상단 메모 컨테이너 */
+        .admin-memo-container {
+            max-width: 1000px; margin: 20px auto; padding: 20px;
+            background-color: #fff7ed; border: 2px solid #fdba74; border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .admin-memo-container h3 { margin-top: 0; color: #c2410c; font-size: 1.1rem; margin-bottom: 10px; }
+        .admin-memo-container textarea { 
+            width: 100%; height: 80px; padding: 10px; 
+            border: 1px solid #cbd5e1; border-radius: 6px; resize: vertical; 
+            font-family: inherit;
+        }
+        .save-memo-btn { 
+            margin-top: 10px; padding: 8px 20px; 
+            background: #ea580c; color: white; border: none; border-radius: 6px; 
+            cursor: pointer; font-weight: bold; float: right;
+        }
+
+        /* 상세 뷰 레이아웃 */
+        .detail-wrapper {
+            display: flex; max-width: 1000px; margin: 20px auto; gap: 20px;
+            align-items: flex-start;
+        }
+
+        /* 1. 사이드바 (프로필) */
+        .profile-card {
+            width: 280px; background: white; padding: 30px 20px;
+            border-radius: 12px; text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            flex-shrink: 0; position: relative;
+        }
+        .profile-img { 
+            width: 100px; height: 100px; border-radius: 50%; object-fit: cover; 
+            background: #f1f5f9; margin-bottom: 15px; border: 3px solid #e2e8f0;
+        }
+        .profile-card h2 { margin: 0 0 5px 0; font-size: 1.4rem; color: #1e293b; }
+        .profile-card p { margin: 0 0 15px 0; color: #64748b; font-size: 0.9rem; }
+
+        /* 뱃지 스타일 */
+        .tier-badge {
+            display: inline-block; padding: 5px 12px; border-radius: 20px;
+            font-size: 0.8rem; font-weight: bold; margin-bottom: 10px;
+        }
+        /* 분석 상태 뱃지 */
+        .analysis-badge {
+            display: block; width: fit-content; margin: 10px auto 0;
+            padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold;
+        }
+        .analysis-badge.pending { background-color: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; }
+        .analysis-badge.completed { background-color: #dcfce7; color: #166534; border: 1px solid #86efac; }
+        
+        /* 2. 메인 컨텐츠 (탭 뷰) */
+        .content-card {
+            flex: 1; background: white; border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            overflow: hidden; min-height: 500px;
+        }
+
+        .tabs { display: flex; border-bottom: 1px solid #e2e8f0; background: #f8fafc; overflow-x: auto;}
+        .tab-btn {
+            flex: 1; padding: 15px; border: none; background: none; white-space: nowrap;
+            font-weight: 600; color: #64748b; cursor: pointer;
+            border-bottom: 3px solid transparent; transition: 0.2s;
+        }
+        .tab-btn:hover { background: #f1f5f9; }
+        .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; background: white; }
+
+        .tab-content { display: none; padding: 30px; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* 분석 탭 스타일 */
+        .analysis-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .analysis-editor {
+            width: 100%; height: 400px; padding: 15px;
+            border: 1px solid #cbd5e1; border-radius: 8px;
+            font-size: 1rem; line-height: 1.6; resize: vertical;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        .analysis-editor:focus { outline: 2px solid #3b82f6; border-color: transparent; }
+        .save-analysis-btn {
+            width: 100%; padding: 15px; margin-top: 15px;
+            background: #2563EB; color: white; border: none; border-radius: 8px;
+            font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .save-analysis-btn:hover { background: #1d4ed8; }
+
+        /* 기타 리스트 스타일 (기존 유지) */
+        .info-list li { padding: 12px 0; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; }
+        .payment-item { background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; }
+        .qual-box { background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .qual-title { font-weight: bold; color: #3b82f6; display: block; margin-bottom: 5px; }
+        .score-card { background: #fff; border: 1px solid #e2e8f0; padding: 15px; margin-bottom: 15px; border-radius: 8px;}
+        .score-row { display: flex; gap: 15px; color: #475569; margin-top: 8px;}
+
+        @media (max-width: 768px) {
+            .detail-wrapper { flex-direction: column; }
+            .profile-card { width: 100%; box-sizing: border-box; }
+        }
     </style>
 </head>
 <body>
 
     <div class="admin-header-bar">
         <span>🔒 관리자 모드: 학생 상세 조회</span>
-        <a href="admin.html" class="back-btn">← 목록으로 돌아가기</a>
+        <a href="admin.html" class="back-btn">← 목록으로</a>
     </div>
 
     <div class="admin-memo-container">
-        <h3>📝 관리자 상담 노트 (학생에게 보이지 않음)</h3>
-        <textarea id="adminMemoInput" placeholder="이 학생에 대한 특이사항, 상담 내용 등을 기록하세요."></textarea>
-        <button onclick="saveAdminMemo()" class="save-memo-btn">메모 저장</button>
+        <h3>📝 상담 노트 (관리자용 단순 메모)</h3>
+        <textarea id="adminMemoInput" placeholder="간단한 상담 기록이나 특이사항을 작성하세요."></textarea>
+        <div style="overflow: hidden;">
+            <button onclick="saveAdminMemo()" class="save-memo-btn">메모 저장</button>
+        </div>
     </div>
 
-    <div class="mypage-container" style="margin-top: 20px;">
-        <aside class="profile-summary" id="profileBox">
-            <div class="profile-pic-area">
-                <img src="assets/images/sample_profile.png" alt="프로필" class="profile-img">
-            </div>
-            <h2 id="viewName">-</h2>
+    <div class="detail-wrapper">
+        <aside class="profile-card">
+            <img src="assets/images/sample_profile.png" alt="프로필" class="profile-img">
+            <h2 id="viewName">로딩중...</h2>
             <p id="viewEmail">-</p>
             
-            <div class="survey-status-box">
-                <h4>기초조사서 상태</h4>
-                <div id="statusBadge" class="status-badge incomplete">미작성</div>
+            <div id="tierBadgeArea" style="margin-bottom: 15px;"></div>
+            
+            <div style="border-top: 1px solid #f1f5f9; padding-top: 15px;">
+                <span style="font-size: 0.85rem; color:#64748b;">분석 진행 상태</span>
+                <div id="analysisStatusBadge" class="analysis-badge pending">⏳ 분석 대기</div>
             </div>
         </aside>
 
-        <main class="content-area">
+        <main class="content-card">
             <div class="tabs">
                 <button class="tab-btn active" onclick="switchTab('info')">기본 정보</button>
                 <button class="tab-btn" onclick="switchTab('qual')">정성 조사서</button>
                 <button class="tab-btn" onclick="switchTab('quan')">성적표</button>
                 <button class="tab-btn" onclick="switchTab('pay')">결제 내역</button>
+                <button class="tab-btn" onclick="switchTab('analysis')" style="color:#2563eb;">📊 분석</button>
             </div>
 
             <div id="tab_info" class="tab-content active">
-                <h3>기본 인적사항</h3>
-                <p><strong>학교:</strong> <span id="viewSchool">-</span></p>
-                <p><strong>전화번호:</strong> <span id="viewPhone">-</span></p>
+                <ul class="info-list">
+                    <li><span>학교</span> <strong id="viewSchool">-</strong></li>
+                    <li><span>전화번호</span> <strong id="viewPhone">-</strong></li>
+                </ul>
             </div>
 
             <div id="tab_qual" class="tab-content">
-                <h3>진로 및 목표</h3>
-                <p><strong>현재 상태:</strong> <span id="viewStatus">-</span></p>
-                <p><strong>희망 계열:</strong> <span id="viewStream">-</span></p>
-                <p><strong>희망 진로:</strong> <span id="viewCareer">-</span></p>
-                <p><strong>목표 대학:</strong> <span id="viewTargets">-</span></p>
+                <div id="qualContentArea"><p style="color:#ccc">내용 없음</p></div>
             </div>
 
             <div id="tab_quan" class="tab-content">
-                <h3>성적 데이터</h3>
-                <div id="viewScoreTable">데이터 없음</div>
+                <div id="viewScoreTable"><p style="color:#ccc">내용 없음</p></div>
             </div>
 
             <div id="tab_pay" class="tab-content">
-                <h3>결제 이력</h3>
-                <ul id="viewPaymentList" class="payment-history"></ul>
+                <ul id="viewPaymentList" style="list-style:none; padding:0;"></ul>
+            </div>
+
+            <div id="tab_analysis" class="tab-content">
+                <div class="analysis-header">
+                    <h3 style="margin:0; color:#1e293b;">종합 입시 분석 보고서 작성</h3>
+                    <span style="font-size:0.85rem; color:#64748b;">* 작성 후 완료 버튼을 누르면 학생에게도 보여질 수 있습니다.</span>
+                </div>
+                <textarea id="analysisEditor" class="analysis-editor" placeholder="학생의 정성/정량 데이터를 바탕으로 분석 내용을 작성해주세요.&#13;&#10;&#13;&#10;예시)&#13;&#10;1. 현재 성적 분석: ...&#13;&#10;2. 지원 가능 대학: ...&#13;&#10;3. 학습 전략 제언: ..."></textarea>
+                <button onclick="saveAnalysis()" class="save-analysis-btn">✅ 분석 완료 및 저장</button>
             </div>
         </main>
     </div>
 
     <script src="js/config.js"></script>
     <script>
-        // 간단한 탭 전환 스크립트 (mypage.js 안 쓰고 독립적으로 동작)
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetUserId = urlParams.get('uid');
+        const adminId = localStorage.getItem('userId');
+        const ADMIN_API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/";
+
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -91,19 +207,13 @@
             event.currentTarget.classList.add('active');
         }
 
-        // URL 파라미터에서 학생 ID 가져오기
-        const urlParams = new URLSearchParams(window.location.search);
-        const targetUserId = urlParams.get('uid');
-        const adminId = localStorage.getItem('userId');
-        const ADMIN_API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/";
-
-        document.addEventListener('DOMContentLoaded', async () => {
+        document.addEventListener('DOMContentLoaded', () => {
             if (!targetUserId || !adminId) {
                 alert("잘못된 접근입니다.");
                 window.location.href = 'admin.html';
                 return;
             }
-            await loadStudentDetail();
+            loadStudentDetail();
         });
 
         async function loadStudentDetail() {
@@ -124,69 +234,127 @@
         }
 
         function renderData(s) {
-            // 1. 메모
+            // 기본 데이터
             document.getElementById('adminMemoInput').value = s.adminMemo || '';
-            
-            // 2. 프로필
-            document.getElementById('viewName').innerText = s.name || '이름 없음';
+            document.getElementById('viewName').innerText = s.name || '-';
             document.getElementById('viewEmail').innerText = s.email || '-';
+            document.getElementById('viewSchool').innerText = s.school || '-';
+            document.getElementById('viewPhone').innerText = s.phone || '-';
+
+            // [추가] 분석 데이터 로드 및 좌측 뱃지 상태 업데이트
+            const analysisText = s.analysisContent || '';
+            const analysisStatus = s.analysisStatus || 'pending';
             
-            // 유료회원 뱃지
-            if (s.payments && s.payments.length > 0) {
-                document.getElementById('profileBox').classList.add('paid-member');
-            }
+            document.getElementById('analysisEditor').value = analysisText;
+            updateAnalysisBadge(analysisStatus);
 
-            // 3. 탭 데이터 바인딩
-            setText('viewSchool', s.school);
-            setText('viewPhone', s.phone);
-            
-            const q = s.qualitative || {};
-            setText('viewStatus', q.status);
-            setText('viewStream', q.stream);
-            setText('viewCareer', q.career);
-            setText('viewTargets', q.targets ? q.targets.join(', ') : '-');
+            // 티어 뱃지
+            renderTierBadge(s.payments);
+            // 정성/정량/결제 렌더링
+            renderQualitative(s.qualitative);
+            renderQuantitative(s.quantitative);
+            renderPayments(s.payments);
+        }
 
-            // 성적표
-            const quan = s.quantitative || {};
-            const scoreBox = document.getElementById('viewScoreTable');
-            if(Object.keys(quan).length > 0) {
-                let html = '<ul style="line-height:1.8">';
-                for(const [exam, d] of Object.entries(quan)) {
-                    html += `<li><strong>${exam}:</strong> 국(${d.kor?.grd}), 수(${d.math?.grd}), 영(${d.eng?.grd})</li>`;
-                }
-                html += '</ul>';
-                scoreBox.innerHTML = html;
-            }
-
-            // 결제내역
-            const payList = document.getElementById('viewPaymentList');
-            if(s.payments) {
-                s.payments.forEach(p => {
-                    payList.innerHTML += `<li class="payment-item"><span class="pay-product">${p.product}</span> <span class="pay-date">${p.date} / ${p.amount}원</span></li>`;
-                });
+        // [추가] 분석 상태 뱃지 업데이트 함수
+        function updateAnalysisBadge(status) {
+            const badge = document.getElementById('analysisStatusBadge');
+            if (status === 'completed') {
+                badge.className = 'analysis-badge completed';
+                badge.innerText = '✅ 분석 완료';
             } else {
-                payList.innerHTML = "<li>내역 없음</li>";
+                badge.className = 'analysis-badge pending';
+                badge.innerText = '⏳ 분석 대기';
             }
         }
 
-        function setText(id, txt) {
-            const el = document.getElementById(id);
-            if(el) el.innerText = txt || '-';
-        }
+        // [추가] 분석 내용 저장 함수
+        async function saveAnalysis() {
+            const content = document.getElementById('analysisEditor').value;
+            if (!content.trim()) {
+                alert("분석 내용을 입력해주세요.");
+                return;
+            }
+            
+            if(!confirm("분석 내용을 저장하고 '완료' 상태로 변경하시겠습니까?")) return;
 
-        async function saveAdminMemo() {
-            const memo = document.getElementById('adminMemoInput').value;
             try {
                 await fetch(ADMIN_API_URL, {
                     method: 'POST',
                     body: JSON.stringify({
-                        type: 'admin_update_memo',
+                        type: 'admin_save_analysis', // ★ Lambda에 이 타입 처리가 필요함
                         userId: adminId,
-                        data: { targetUserId: targetUserId, memo: memo }
+                        data: { 
+                            targetUserId: targetUserId, 
+                            content: content,
+                            status: 'completed'
+                        }
                     })
                 });
-                alert("메모 저장 완료");
-            } catch(e) { alert("저장 실패"); }
+                alert("분석 내용이 저장되었습니다.");
+                updateAnalysisBadge('completed'); // 즉시 UI 반영
+            } catch (e) {
+                alert("저장 중 오류가 발생했습니다.");
+            }
+        }
+
+        // --- 기존 렌더링 헬퍼 함수들 ---
+        function renderTierBadge(payments) {
+            const area = document.getElementById('tierBadgeArea');
+            let html = '<span class="tier-badge" style="background:#f1f5f9; color:#64748b;">FREE</span>';
+            if(payments && payments.length > 0) {
+                const paid = payments.filter(p => p.status === 'paid');
+                if(paid.length > 0) {
+                    paid.sort((a,b)=> new Date(b.date)-new Date(a.date));
+                    const last = (paid[0].product||"").toLowerCase();
+                    if(last.includes('black')) html = '<span class="tier-badge" style="background:#171717; color:#FFD700;">BLACK</span>';
+                    else if(last.includes('pro')) html = '<span class="tier-badge" style="background:#fef3c7; color:#92400e;">PRO</span>';
+                    else if(last.includes('standard')) html = '<span class="tier-badge" style="background:#e2e8f0; color:#334155;">STANDARD</span>';
+                    else html = '<span class="tier-badge" style="background:#dbeafe; color:#1e40af;">BASIC</span>';
+                }
+            }
+            area.innerHTML = html;
+        }
+
+        function renderQualitative(q) {
+            const area = document.getElementById('qualContentArea');
+            if(!q) return;
+            let html = '';
+            html += `<div class="qual-box"><span class="qual-title">기본</span> ${q.status || '-'} / ${q.stream || '-'} / ${q.career || '-'}</div>`;
+            if(q.targets) html += `<div class="qual-box"><span class="qual-title">희망대학</span> ${q.targets.join(', ')}</div>`;
+            if(q.values) html += `<div class="qual-box"><span class="qual-title">가치관</span> 우선순위: ${q.values.priority}, 전략: ${q.values.strategy}</div>`;
+            area.innerHTML = html;
+        }
+
+        function renderQuantitative(q) {
+            const area = document.getElementById('viewScoreTable');
+            if(!q) return;
+            let html = '';
+            for(const [exam, d] of Object.entries(q)) {
+                html += `<div class="score-card"><strong>${exam}</strong>: 국(${d.kor?.grd}) 수(${d.math?.grd}) 영(${d.eng?.grd})</div>`;
+            }
+            area.innerHTML = html || '데이터 없음';
+        }
+
+        function renderPayments(p) {
+            const list = document.getElementById('viewPaymentList');
+            list.innerHTML = "";
+            if(p && p.length) {
+                p.forEach(pay => {
+                    list.innerHTML += `<li class="payment-item"><span>${pay.product}</span> <strong>${pay.amount}원</strong></li>`;
+                });
+            } else {
+                list.innerHTML = "<li>내역 없음</li>";
+            }
+        }
+
+        async function saveAdminMemo() {
+            const memo = document.getElementById('adminMemoInput').value;
+            await fetch(ADMIN_API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ type: 'admin_update_memo', userId: adminId, data: { targetUserId, memo } })
+            });
+            alert("메모 저장 완료");
         }
     </script>
 </body>
