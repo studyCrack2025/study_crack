@@ -1,17 +1,27 @@
 // js/survey.js
 
+// 1. JS 로드 확인용 로그 (콘솔에 이 메시지가 안 뜨면 파일 경로 문제임)
+console.log("🚀 [survey.js] 스크립트가 로드되었습니다.");
+
 const API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/";
 let examScores = {}; 
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("✅ [survey.js] DOMContentLoaded 이벤트 발생");
+    
     const userId = localStorage.getItem('userId');
     if (!userId) {
         alert("로그인이 필요합니다.");
         window.location.href = 'login.html';
         return;
     }
+
+    // 초기화 함수들 실행
     fetchUserData(userId);
     setupUI();
+    
+    // 강제로 한 번 검사 실행
+    setTimeout(checkQualitativeForm, 500); 
 });
 
 function openTab(tabName) {
@@ -21,53 +31,70 @@ function openTab(tabName) {
     event.currentTarget.classList.add('active');
 }
 
-// === UI 설정 및 이벤트 연결 ===
+// === UI 설정 ===
 function setupUI() {
+    console.log("🔧 [survey.js] UI 설정 시작");
+
     const radioGroup = document.getElementById('statusRadioGroup');
     const etcInput = document.getElementById('statusEtcInput');
-    
-    // 1. 초기 상태: 숨겨진 입력창은 반드시 required를 제거해야 함
+    const qualTab = document.getElementById('qualitative');
+
+    // 1. 기타 입력창 초기화
     if(etcInput) {
         etcInput.style.display = 'none';
-        etcInput.removeAttribute('required'); // ★ 핵심: 시작할 때 필수 속성 제거
+        etcInput.removeAttribute('required'); 
+        console.log("🔧 기타 입력창 초기화 완료");
+    } else {
+        console.error("❌ HTML에서 id='statusEtcInput' 요소를 찾을 수 없습니다.");
     }
 
+    // 2. 라디오 버튼 이벤트 연결
     if (radioGroup) {
         radioGroup.addEventListener('change', (e) => {
+            console.log("🖱️ 라디오 버튼 변경 감지:", e.target.value);
             if (e.target.value === 'other') {
                 etcInput.style.display = 'block';
-                etcInput.setAttribute('required', 'true'); // 보일 때만 필수
+                etcInput.setAttribute('required', 'true');
             } else {
                 etcInput.style.display = 'none';
-                etcInput.removeAttribute('required'); // 숨기면 필수 해제
+                etcInput.removeAttribute('required');
                 etcInput.value = '';
             }
             checkQualitativeForm();
         });
+    } else {
+        console.error("❌ HTML에서 id='statusRadioGroup' 요소를 찾을 수 없습니다.");
     }
 
-    // 2. 폼 변경 감지 (입력, 클릭, 변경 모든 상황 감지)
-    const qualTab = document.getElementById('qualitative');
+    // 3. 폼 전체 이벤트 감지 (입력할 때마다 검사)
     if (qualTab) {
         qualTab.addEventListener('input', checkQualitativeForm);
         qualTab.addEventListener('change', checkQualitativeForm);
-        qualTab.addEventListener('click', checkQualitativeForm);
+        qualTab.addEventListener('click', checkQualitativeForm); // 라디오/체크박스 클릭 감지
+        console.log("👂 폼 이벤트 리스너 연결 완료");
+    } else {
+        console.error("❌ HTML에서 id='qualitative' (탭 영역)을 찾을 수 없습니다.");
     }
 }
 
-// === ★ 강력한 유효성 검사 로직 (디버깅 포함) ===
+// === ★ 핵심: 유효성 검사 (범인 색출) ===
 function checkQualitativeForm() {
+    // console.log("🔍 유효성 검사 시작..."); // 너무 많이 뜨면 주석 처리
+
     const saveBtn = document.getElementById('btnSaveQual');
     const container = document.getElementById('qualitative');
     
-    // 현재 DOM에 존재하는 모든 required 요소 가져오기
+    if (!saveBtn || !container) return;
+
+    // 현재 required 속성이 있는 모든 요소 찾기
     const inputs = container.querySelectorAll('[required]');
     
     let isValid = true;
     let blocker = null; // 범인을 저장할 변수
 
     for (const input of inputs) {
-        // 1. [중요] 눈에 안 보이는 요소(hidden)는 무조건 패스 (검사하지 않음)
+        // 1. 숨겨진 요소(Hidden)는 검사 제외
+        // offsetParent가 null이면 화면에 안 보이는 상태임 (display: none 등)
         if (input.offsetParent === null) {
             continue; 
         }
@@ -78,85 +105,91 @@ function checkQualitativeForm() {
             const isChecked = container.querySelector(`input[name="${groupName}"]:checked`);
             if (!isChecked) {
                 isValid = false;
-                blocker = `라디오 버튼 선택 안함 (${groupName})`;
-                break; 
+                blocker = `🔘 라디오 버튼 선택 안함: [${groupName}]`;
+                break; // 범인 찾았으니 중단
             }
         } 
-        // 3. 체크박스 검사 (개인정보 동의 등)
+        // 3. 체크박스 검사 (동의 등)
         else if (input.type === 'checkbox') {
             if (!input.checked) {
                 isValid = false;
-                blocker = `체크박스 미동의 (${input.id})`;
+                blocker = `✅ 체크박스 미동의: [${input.id}]`;
                 break;
             }
         } 
-        // 4. 일반 입력창(Text, Select, Date 등) 검사
+        // 4. 일반 입력창 검사 (텍스트, 셀렉트)
         else {
-            if (!input.value.trim()) {
+            if (!input.value || !input.value.trim()) {
                 isValid = false;
-                blocker = `빈칸 있음 (${input.id || input.placeholder || '이름없는 필드'})`;
+                blocker = `📝 빈칸 있음: [${input.id || input.placeholder || '이름없는 필드'}]`;
                 break;
             }
         }
     }
 
-    // 버튼 상태 업데이트
+    // 결과 처리
     saveBtn.disabled = !isValid;
     
     if (isValid) {
-        saveBtn.innerText = "정성 데이터 저장";
+        saveBtn.innerText = "정성 데이터 저장 (활성화됨)";
         saveBtn.style.backgroundColor = "#2563EB"; 
         saveBtn.style.cursor = "pointer";
-        console.log("✅ 모든 조건 충족됨! 버튼 활성화.");
+        // console.log("🟢 모든 조건 충족! 버튼 활성화");
     } else {
-        saveBtn.innerText = "모든 필수 항목을 입력해주세요";
+        saveBtn.innerText = "필수 항목을 모두 입력해주세요";
         saveBtn.style.backgroundColor = "#cbd5e1"; 
         saveBtn.style.cursor = "not-allowed";
         
-        // ★ 여기가 핵심입니다. F12 콘솔을 보면 범인이 나옵니다.
-        console.warn("⛔ 저장 불가 원인:", blocker); 
+        // ★ 범인이 누군지 콘솔에 찍어줍니다!
+        if (blocker) {
+            console.warn("⛔ 저장 불가 원인:", blocker);
+        }
     }
 }
 
-// === 데이터 로드 및 저장 (기존 로직 유지) ===
+// === 서버 데이터 로드 ===
 async function fetchUserData(userId) {
     try {
+        console.log("📡 데이터 로드 시작...");
         const response = await fetch(API_URL, {
             method: 'POST',
             body: JSON.stringify({ type: 'get_user', userId: userId })
         });
         const data = await response.json();
+        console.log("📦 데이터 수신 완료:", data);
 
         if (data.qualitative) fillQualitativeForm(data.qualitative);
         if (data.quantitative) examScores = data.quantitative;
         
         loadExamData();
-        checkQualitativeForm(); // 로드 직후 검사 실행
+        checkQualitativeForm(); // 데이터 채운 후 재검사
 
-    } catch (error) { console.error(error); }
+    } catch (error) { console.error("데이터 로드 오류:", error); }
 }
 
 function fillQualitativeForm(qual) {
     if (!qual) return;
     
+    // 라디오 버튼 채우기
     if (qual.status) {
         const radio = document.querySelector(`input[name="studentStatus"][value="${qual.status}"]`);
         if (radio) {
             radio.checked = true;
         } else {
-            // 기타인 경우 처리
+            // 기타 값 처리
             const otherBtn = document.querySelector('input[name="studentStatus"][value="other"]');
             if(otherBtn) otherBtn.checked = true;
             
             const etc = document.getElementById('statusEtcInput');
             if(etc) {
                 etc.style.display = 'block';
-                etc.setAttribute('required', 'true'); // 다시 필수 지정
+                etc.setAttribute('required', 'true');
                 etc.value = qual.status;
             }
         }
     }
 
+    // 나머지 필드 채우기 (ID 매핑)
     const ids = {
         'targetStream': qual.stream, 'careerPath': qual.career,
         'mustGoCollege': qual.values?.mustGo, 'priorityType': qual.values?.priority,
@@ -175,6 +208,7 @@ function fillQualitativeForm(qual) {
         if (el) el.value = val || '';
     }
 
+    // 희망 대학 채우기
     if (qual.targets) {
         qual.targets.forEach((val, idx) => {
             const input = document.getElementById(`target${idx+1}`);
@@ -182,10 +216,10 @@ function fillQualitativeForm(qual) {
         });
     }
     
-    // 데이터 채운 후 다시 검사
     checkQualitativeForm();
 }
 
+// === 저장 함수들 ===
 async function saveQualitative() {
     const userId = localStorage.getItem('userId');
     let statusVal = document.querySelector('input[name="studentStatus"]:checked')?.value;
