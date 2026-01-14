@@ -1,0 +1,39 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: ["main"]  # 브랜치명이 master라면 master로 수정하세요
+  workflow_dispatch:    # 수동 실행 버튼 활성화
+
+# 권한 설정 (배포를 위해 필수)
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# ★ 핵심: 동시성 제어 (이전 배포가 안 끝났는데 새 배포가 오면 이전 것을 취소함)
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.' # index.html이 있는 위치 (루트라면 '.')
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
