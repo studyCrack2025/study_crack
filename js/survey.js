@@ -59,22 +59,29 @@ function setupUI() {
     const radioGroup = document.getElementById('statusRadioGroup');
     const etcInput = document.getElementById('statusEtcInput');
     
-    radioGroup.addEventListener('change', (e) => {
-        if (e.target.value === 'other') {
-            etcInput.style.display = 'block';
-            etcInput.required = true;
-        } else {
-            etcInput.style.display = 'none';
-            etcInput.required = false;
-            etcInput.value = '';
-        }
-        checkQualitativeForm();
-    });
+    if (radioGroup) {
+        radioGroup.addEventListener('change', (e) => {
+            if (e.target.value === 'other') {
+                etcInput.style.display = 'block';
+                // setAttribute를 사용하여 확실하게 속성 부여
+                etcInput.setAttribute('required', 'true');
+            } else {
+                etcInput.style.display = 'none';
+                etcInput.removeAttribute('required');
+                etcInput.value = '';
+            }
+            checkQualitativeForm();
+        });
+    }
 
     // 2. 정성 탭 유효성 검사 리스너
     const qualTab = document.getElementById('qualitative');
-    qualTab.addEventListener('input', checkQualitativeForm);
-    qualTab.addEventListener('change', checkQualitativeForm);
+    if (qualTab) {
+        // change, input 뿐만 아니라 click(라디오/체크박스)도 감지
+        qualTab.addEventListener('input', checkQualitativeForm);
+        qualTab.addEventListener('change', checkQualitativeForm);
+        qualTab.addEventListener('click', checkQualitativeForm);
+    }
 }
 
 // === 정성 데이터 관련 로직 ===
@@ -124,21 +131,61 @@ function fillQualitativeForm(qual) {
 
 function checkQualitativeForm() {
     const saveBtn = document.getElementById('btnSaveQual');
-    const inputs = document.getElementById('qualitative').querySelectorAll('[required]');
-    let valid = true;
+    const container = document.getElementById('qualitative');
+    // required 속성이 있는 모든 입력 요소 가져오기
+    const inputs = container.querySelectorAll('[required]');
+    
+    let isValid = true;
+    let invalidFieldName = ""; // 디버깅용: 어떤 필드가 문제인지 저장
 
-    inputs.forEach(input => {
-        if (input.type === 'radio') {
-            if (!document.querySelector(`input[name="${input.name}"]:checked`)) valid = false;
-        } else if (input.type === 'checkbox') {
-            if (!input.checked) valid = false;
-        } else {
-            if (input.offsetParent !== null && !input.value.trim()) valid = false;
+    for (const input of inputs) {
+        // 1. 숨겨진 요소는 검사 제외 (offsetHeight가 0이면 숨겨진 상태)
+        if (input.offsetHeight === 0 && input.offsetWidth === 0) {
+            continue;
         }
-    });
 
-    saveBtn.disabled = !valid;
-    saveBtn.innerText = valid ? "정성 데이터 저장" : "필수 항목을 모두 입력해주세요";
+        // 2. 타입별 검사
+        if (input.type === 'radio') {
+            // 라디오 버튼은 그룹 중 하나라도 체크되어 있으면 통과
+            const groupName = input.name;
+            const isChecked = container.querySelector(`input[name="${groupName}"]:checked`);
+            if (!isChecked) {
+                isValid = false;
+                invalidFieldName = `라디오 버튼 (${groupName})`;
+                break; // 하나라도 실패하면 루프 종료
+            }
+        } else if (input.type === 'checkbox') {
+            // 체크박스는 반드시 체크되어야 함
+            if (!input.checked) {
+                isValid = false;
+                invalidFieldName = `체크박스 (${input.id})`;
+                break;
+            }
+        } else {
+            // 텍스트, 셀렉트 박스 등은 값이 비어있으면 안 됨
+            if (!input.value.trim()) {
+                isValid = false;
+                invalidFieldName = `입력창 (${input.placeholder || input.id})`;
+                break;
+            }
+        }
+    }
+
+    // 버튼 상태 업데이트
+    saveBtn.disabled = !isValid;
+    
+    if (isValid) {
+        saveBtn.innerText = "정성 데이터 저장";
+        saveBtn.style.backgroundColor = "#2563EB"; // 활성화 색상 (파랑)
+        saveBtn.style.cursor = "pointer";
+    } else {
+        saveBtn.innerText = "모든 필수 항목을 입력해주세요";
+        saveBtn.style.backgroundColor = "#cbd5e1"; // 비활성화 색상 (회색)
+        saveBtn.style.cursor = "not-allowed";
+        
+        // 개발자 도구(F12) 콘솔에서 원인 확인 가능
+        // console.log("유효성 검사 실패:", invalidFieldName); 
+    }
 }
 
 async function saveQualitative() {
