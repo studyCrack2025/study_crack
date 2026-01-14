@@ -9,186 +9,266 @@
     
     <style>
         /* =========================================
-           [관리자 전용 스타일]
+           [관리자 상세 페이지 전용 스타일]
            ========================================= */
-        body { background-color: #f1f5f9; padding-bottom: 50px; }
+        body { 
+            background-color: #f8fafc; /* 더 부드러운 배경색 */
+            padding-bottom: 80px; 
+            font-family: 'Noto Sans KR', sans-serif;
+        }
 
+        /* 1. 상단 네비게이션 바 */
         .admin-header-bar { 
-            background: #1e293b; color: white; padding: 15px 20px; 
+            background: #1e293b; color: white; padding: 15px 25px; 
             display: flex; justify-content: space-between; align-items: center; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            position: sticky; top: 0; z-index: 100;
         }
+        .header-title { font-size: 1.1rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .back-btn { 
-            background: #3b82f6; color: white; padding: 8px 16px; 
-            border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 0.9rem;
+            background: #334155; color: #e2e8f0; padding: 8px 16px; 
+            border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 0.9rem;
+            transition: 0.2s;
         }
-        .back-btn:hover { background: #2563eb; }
+        .back-btn:hover { background: #475569; color: white; }
 
-        /* 상단 메모 컨테이너 */
-        .admin-memo-container {
-            max-width: 1000px; margin: 20px auto; padding: 20px;
-            background-color: #fff7ed; border: 2px solid #fdba74; border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        .admin-memo-container h3 { margin-top: 0; color: #c2410c; font-size: 1.1rem; margin-bottom: 10px; }
-        .admin-memo-container textarea { 
-            width: 100%; height: 80px; padding: 10px; 
-            border: 1px solid #cbd5e1; border-radius: 6px; resize: vertical; 
-            font-family: inherit;
-        }
-        .save-memo-btn { 
-            margin-top: 10px; padding: 8px 20px; 
-            background: #ea580c; color: white; border: none; border-radius: 6px; 
-            cursor: pointer; font-weight: bold; float: right;
+        /* 2. 레이아웃 컨테이너 */
+        .detail-container {
+            max-width: 1100px; margin: 30px auto; padding: 0 20px;
+            display: grid; grid-template-columns: 300px 1fr; gap: 25px;
+            align-items: start;
         }
 
-        /* 상세 뷰 레이아웃 */
-        .detail-wrapper {
-            display: flex; max-width: 1000px; margin: 20px auto; gap: 20px;
-            align-items: flex-start;
-        }
-
-        /* 1. 사이드바 (프로필) */
+        /* 3. 좌측 프로필 카드 */
         .profile-card {
-            width: 280px; background: white; padding: 30px 20px;
-            border-radius: 12px; text-align: center;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-            flex-shrink: 0; position: relative;
+            background: white; padding: 35px 25px; border-radius: 16px;
+            text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0; position: sticky; top: 90px;
         }
         .profile-img { 
-            width: 100px; height: 100px; border-radius: 50%; object-fit: cover; 
-            background: #f1f5f9; margin-bottom: 15px; border: 3px solid #e2e8f0;
+            width: 110px; height: 110px; border-radius: 50%; object-fit: cover; 
+            background: #f1f5f9; margin-bottom: 15px; border: 4px solid #f8fafc;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
-        .profile-card h2 { margin: 0 0 5px 0; font-size: 1.4rem; color: #1e293b; }
-        .profile-card p { margin: 0 0 15px 0; color: #64748b; font-size: 0.9rem; }
+        .profile-name { margin: 0 0 5px 0; font-size: 1.5rem; color: #1e293b; font-weight: 700; }
+        .profile-email { margin: 0 0 20px 0; color: #64748b; font-size: 0.95rem; }
 
         /* 뱃지 스타일 */
         .tier-badge {
-            display: inline-block; padding: 5px 12px; border-radius: 20px;
-            font-size: 0.8rem; font-weight: bold; margin-bottom: 10px;
+            display: inline-block; padding: 6px 14px; border-radius: 20px;
+            font-size: 0.85rem; font-weight: 700; margin-bottom: 20px;
+            letter-spacing: 0.5px;
         }
-        /* 분석 상태 뱃지 */
+        /* 분석 상태 섹션 */
+        .analysis-status-box {
+            margin-top: 25px; padding-top: 20px; border-top: 1px solid #f1f5f9;
+        }
+        .status-label { font-size: 0.85rem; color:#94a3b8; font-weight: 600; display: block; margin-bottom: 8px; }
         .analysis-badge {
-            display: block; width: fit-content; margin: 10px auto 0;
-            padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold;
+            display: inline-block; padding: 8px 16px; border-radius: 8px; 
+            font-size: 0.9rem; font-weight: bold; width: 100%; box-sizing: border-box;
         }
         .analysis-badge.pending { background-color: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; }
-        .analysis-badge.completed { background-color: #dcfce7; color: #166534; border: 1px solid #86efac; }
-        
-        /* 2. 메인 컨텐츠 (탭 뷰) */
-        .content-card {
-            flex: 1; background: white; border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-            overflow: hidden; min-height: 500px;
+        .analysis-badge.completed { background-color: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+
+        /* 4. 메인 컨텐츠 영역 */
+        .main-content-area { display: flex; flex-direction: column; gap: 25px; }
+
+        /* [섹션 A] 관리자 상담 노트 */
+        .memo-card {
+            background: #fff7ed; border: 1px solid #fdba74; border-radius: 12px;
+            padding: 20px; box-shadow: 0 2px 4px rgba(251, 146, 60, 0.1);
+        }
+        .memo-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .memo-header h3 { margin: 0; color: #c2410c; font-size: 1.05rem; display: flex; align-items: center; gap: 6px; }
+        .memo-input { 
+            width: 100%; height: 80px; padding: 12px; 
+            border: 1px solid #fed7aa; border-radius: 8px; resize: vertical; 
+            font-family: inherit; font-size: 0.95rem; background: white;
+            transition: 0.2s;
+        }
+        .memo-input:focus { outline: none; border-color: #f97316; box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1); }
+        .memo-btn { 
+            margin-top: 10px; padding: 8px 20px; 
+            background: #ea580c; color: white; border: none; border-radius: 6px; 
+            cursor: pointer; font-weight: 600; font-size: 0.9rem; float: right;
+            transition: 0.2s;
+        }
+        .memo-btn:hover { background: #c2410c; }
+
+        /* [섹션 B] 상세 정보 탭 카드 */
+        .tab-card {
+            background: white; border-radius: 16px; border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden;
+            min-height: 600px;
         }
 
-        .tabs { display: flex; border-bottom: 1px solid #e2e8f0; background: #f8fafc; overflow-x: auto;}
-        .tab-btn {
-            flex: 1; padding: 15px; border: none; background: none; white-space: nowrap;
-            font-weight: 600; color: #64748b; cursor: pointer;
-            border-bottom: 3px solid transparent; transition: 0.2s;
+        /* 탭 메뉴 */
+        .tabs { 
+            display: flex; border-bottom: 1px solid #e2e8f0; background: #f8fafc; 
+            overflow-x: auto; /* 모바일 가로 스크롤 */
+            scrollbar-width: none; /* 스크롤바 숨김 */
         }
-        .tab-btn:hover { background: #f1f5f9; }
+        .tabs::-webkit-scrollbar { display: none; }
+        
+        .tab-btn {
+            flex: 1; min-width: 100px; padding: 18px 10px; border: none; background: none; 
+            font-weight: 600; color: #64748b; cursor: pointer; white-space: nowrap;
+            border-bottom: 3px solid transparent; transition: 0.2s; font-size: 0.95rem;
+        }
+        .tab-btn:hover { background: #f1f5f9; color: #334155; }
         .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; background: white; }
+        .tab-btn.highlight { color: #2563eb; } /* 분석 탭 강조 */
 
         .tab-content { display: none; padding: 30px; }
         .tab-content.active { display: block; animation: fadeIn 0.3s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* 분석 탭 스타일 */
-        .analysis-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        /* 내부 리스트 스타일 */
+        .info-item { 
+            padding: 15px 0; border-bottom: 1px solid #f1f5f9; 
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .info-label { font-weight: 600; color: #64748b; }
+        .info-value { color: #1e293b; font-weight: 500; font-size: 1.05rem; }
+
+        /* 분석 탭 디자인 개선 */
+        .analysis-header { 
+            display: flex; justify-content: space-between; align-items: flex-end; 
+            margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 15px;
+        }
+        .analysis-header h3 { margin: 0; color: #1e293b; font-size: 1.2rem; }
+        .analysis-guide { font-size: 0.85rem; color: #64748b; }
+        
         .analysis-editor {
-            width: 100%; height: 400px; padding: 15px;
-            border: 1px solid #cbd5e1; border-radius: 8px;
-            font-size: 1rem; line-height: 1.6; resize: vertical;
-            font-family: 'Noto Sans KR', sans-serif;
+            width: 100%; height: 450px; padding: 20px;
+            border: 1px solid #e2e8f0; border-radius: 12px;
+            font-size: 1rem; line-height: 1.7; resize: vertical;
+            font-family: 'Noto Sans KR', sans-serif; color: #334155;
+            background-color: #fcfcfc; box-shadow: inset 0 2px 4px rgba(0,0,0,0.03);
         }
-        .analysis-editor:focus { outline: 2px solid #3b82f6; border-color: transparent; }
+        .analysis-editor:focus { outline: none; border-color: #3b82f6; background: white; }
+        
         .save-analysis-btn {
-            width: 100%; padding: 15px; margin-top: 15px;
-            background: #2563EB; color: white; border: none; border-radius: 8px;
-            font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s;
+            display: block; width: 100%; padding: 16px; margin-top: 20px;
+            background: #2563EB; color: white; border: none; border-radius: 10px;
+            font-size: 1.1rem; font-weight: 700; cursor: pointer; 
+            transition: 0.2s; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
         }
-        .save-analysis-btn:hover { background: #1d4ed8; }
+        .save-analysis-btn:hover { background: #1d4ed8; transform: translateY(-2px); }
 
-        /* 기타 리스트 스타일 (기존 유지) */
-        .info-list li { padding: 12px 0; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; }
-        .payment-item { background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; }
-        .qual-box { background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        .qual-title { font-weight: bold; color: #3b82f6; display: block; margin-bottom: 5px; }
-        .score-card { background: #fff; border: 1px solid #e2e8f0; padding: 15px; margin-bottom: 15px; border-radius: 8px;}
-        .score-row { display: flex; gap: 15px; color: #475569; margin-top: 8px;}
+        /* 기타 스타일 */
+        .qual-box { background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #f1f5f9; }
+        .qual-title { font-weight: 700; color: #3b82f6; display: block; margin-bottom: 8px; font-size: 0.95rem; }
+        .qual-text { line-height: 1.6; color: #334155; }
 
+        .score-card { background: white; border: 1px solid #e2e8f0; padding: 20px; margin-bottom: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .score-header { font-weight: 700; color: #1e293b; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9; margin-bottom: 10px; }
+        .score-row { display: flex; flex-wrap: wrap; gap: 15px; color: #475569; font-size: 0.95rem; }
+
+        .payment-item { 
+            background: white; border: 1px solid #e2e8f0; border-radius: 10px;
+            padding: 18px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .pay-product { font-weight: 600; color: #1e293b; display: block; margin-bottom: 4px; }
+        .pay-date { font-size: 0.85rem; color: #94a3b8; }
+        .pay-amount { font-weight: 700; color: #2563eb; font-size: 1.1rem; }
+
+        /* =========================================
+           [모바일 반응형 스타일]
+           ========================================= */
         @media (max-width: 768px) {
-            .detail-wrapper { flex-direction: column; }
-            .profile-card { width: 100%; box-sizing: border-box; }
+            .detail-container { 
+                grid-template-columns: 1fr; /* 1단 레이아웃 */
+                margin-top: 20px; padding: 0 15px;
+            }
+            
+            .profile-card { position: static; /* 스티키 해제 */ }
+            
+            .main-content-area { order: 2; } /* 내용이 아래로 */
+            
+            .tab-content { padding: 20px; }
+            
+            .analysis-header { flex-direction: column; align-items: flex-start; gap: 5px; }
+            
+            .score-row span { width: 45%; } /* 성적표 2열 배치 */
         }
     </style>
 </head>
 <body>
 
     <div class="admin-header-bar">
-        <span>🔒 관리자 모드: 학생 상세 조회</span>
+        <div class="header-title">
+            <span>🔒 학생 상세 관리</span>
+        </div>
         <a href="admin.html" class="back-btn">← 목록으로</a>
     </div>
 
-    <div class="admin-memo-container">
-        <h3>📝 상담 노트 (관리자용 단순 메모)</h3>
-        <textarea id="adminMemoInput" placeholder="간단한 상담 기록이나 특이사항을 작성하세요."></textarea>
-        <div style="overflow: hidden;">
-            <button onclick="saveAdminMemo()" class="save-memo-btn">메모 저장</button>
-        </div>
-    </div>
-
-    <div class="detail-wrapper">
+    <div class="detail-container">
+        
         <aside class="profile-card">
             <img src="assets/images/sample_profile.png" alt="프로필" class="profile-img">
-            <h2 id="viewName">로딩중...</h2>
-            <p id="viewEmail">-</p>
+            <h2 id="viewName" class="profile-name">로딩중...</h2>
+            <p id="viewEmail" class="profile-email">-</p>
             
-            <div id="tierBadgeArea" style="margin-bottom: 15px;"></div>
+            <div id="tierBadgeArea"></div>
             
-            <div style="border-top: 1px solid #f1f5f9; padding-top: 15px;">
-                <span style="font-size: 0.85rem; color:#64748b;">분석 진행 상태</span>
-                <div id="analysisStatusBadge" class="analysis-badge pending">⏳ 분석 대기</div>
+            <div class="analysis-status-box">
+                <span class="status-label">분석 리포트 상태</span>
+                <div id="analysisStatusBadge" class="analysis-badge pending">⏳ 분석 대기중</div>
             </div>
         </aside>
 
-        <main class="content-card">
-            <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('info')">기본 정보</button>
-                <button class="tab-btn" onclick="switchTab('qual')">정성 조사서</button>
-                <button class="tab-btn" onclick="switchTab('quan')">성적표</button>
-                <button class="tab-btn" onclick="switchTab('pay')">결제 내역</button>
-                <button class="tab-btn" onclick="switchTab('analysis')" style="color:#2563eb;">📊 분석</button>
-            </div>
-
-            <div id="tab_info" class="tab-content active">
-                <ul class="info-list">
-                    <li><span>학교</span> <strong id="viewSchool">-</strong></li>
-                    <li><span>전화번호</span> <strong id="viewPhone">-</strong></li>
-                </ul>
-            </div>
-
-            <div id="tab_qual" class="tab-content">
-                <div id="qualContentArea"><p style="color:#ccc">내용 없음</p></div>
-            </div>
-
-            <div id="tab_quan" class="tab-content">
-                <div id="viewScoreTable"><p style="color:#ccc">내용 없음</p></div>
-            </div>
-
-            <div id="tab_pay" class="tab-content">
-                <ul id="viewPaymentList" style="list-style:none; padding:0;"></ul>
-            </div>
-
-            <div id="tab_analysis" class="tab-content">
-                <div class="analysis-header">
-                    <h3 style="margin:0; color:#1e293b;">종합 입시 분석 보고서 작성</h3>
-                    <span style="font-size:0.85rem; color:#64748b;">* 작성 후 완료 버튼을 누르면 학생에게도 보여질 수 있습니다.</span>
+        <main class="main-content-area">
+            
+            <div class="memo-card">
+                <div class="memo-header">
+                    <h3>📝 관리자 메모 <small style="color:#94a3b8; font-weight:400; font-size:0.8rem;">(학생에게 보이지 않음)</small></h3>
                 </div>
-                <textarea id="analysisEditor" class="analysis-editor" placeholder="학생의 정성/정량 데이터를 바탕으로 분석 내용을 작성해주세요.&#13;&#10;&#13;&#10;예시)&#13;&#10;1. 현재 성적 분석: ...&#13;&#10;2. 지원 가능 대학: ...&#13;&#10;3. 학습 전략 제언: ..."></textarea>
-                <button onclick="saveAnalysis()" class="save-analysis-btn">✅ 분석 완료 및 저장</button>
+                <textarea id="adminMemoInput" class="memo-input" placeholder="간단한 상담 기록이나 특이사항을 작성하세요."></textarea>
+                <div style="overflow: hidden; margin-top: 5px;">
+                    <button onclick="saveAdminMemo()" class="memo-btn">저장</button>
+                </div>
+            </div>
+
+            <div class="tab-card">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('info')">기본 정보</button>
+                    <button class="tab-btn" onclick="switchTab('qual')">정성 조사서</button>
+                    <button class="tab-btn" onclick="switchTab('quan')">성적표</button>
+                    <button class="tab-btn" onclick="switchTab('pay')">결제 내역</button>
+                    <button class="tab-btn highlight" onclick="switchTab('analysis')">📊 입시 분석</button>
+                </div>
+
+                <div id="tab_info" class="tab-content active">
+                    <div class="info-item">
+                        <span class="info-label">학교</span> <span class="info-value" id="viewSchool">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">전화번호</span> <span class="info-value" id="viewPhone">-</span>
+                    </div>
+                </div>
+
+                <div id="tab_qual" class="tab-content">
+                    <div id="qualContentArea"><p style="color:#ccc; text-align:center;">데이터 없음</p></div>
+                </div>
+
+                <div id="tab_quan" class="tab-content">
+                    <div id="viewScoreTable"><p style="color:#ccc; text-align:center;">데이터 없음</p></div>
+                </div>
+
+                <div id="tab_pay" class="tab-content">
+                    <div id="viewPaymentList"></div>
+                </div>
+
+                <div id="tab_analysis" class="tab-content">
+                    <div class="analysis-header">
+                        <h3>종합 분석 리포트 작성</h3>
+                        <span class="analysis-guide">※ 저장 시 '분석 완료' 상태로 변경됩니다.</span>
+                    </div>
+                    <textarea id="analysisEditor" class="analysis-editor" placeholder="[분석 내용 작성 가이드]&#13;&#10;&#13;&#10;1. 현재 성적 및 위치 분석&#13;&#10; - 모의고사 추이 분석...&#13;&#10;&#13;&#10;2. 지원 가능 대학 (상향/적정/안정)&#13;&#10; - 가군: ...&#13;&#10; - 나군: ...&#13;&#10;&#13;&#10;3. 향후 학습 전략 및 제언&#13;&#10; - ..."></textarea>
+                    <button onclick="saveAnalysis()" class="save-analysis-btn">✅ 분석 완료 및 리포트 저장</button>
+                </div>
             </div>
         </main>
     </div>
@@ -234,71 +314,63 @@
         }
 
         function renderData(s) {
-            // 기본 데이터
             document.getElementById('adminMemoInput').value = s.adminMemo || '';
             document.getElementById('viewName').innerText = s.name || '-';
             document.getElementById('viewEmail').innerText = s.email || '-';
             document.getElementById('viewSchool').innerText = s.school || '-';
             document.getElementById('viewPhone').innerText = s.phone || '-';
 
-            // [추가] 분석 데이터 로드 및 좌측 뱃지 상태 업데이트
             const analysisText = s.analysisContent || '';
             const analysisStatus = s.analysisStatus || 'pending';
-            
             document.getElementById('analysisEditor').value = analysisText;
             updateAnalysisBadge(analysisStatus);
 
-            // 티어 뱃지
             renderTierBadge(s.payments);
-            // 정성/정량/결제 렌더링
             renderQualitative(s.qualitative);
             renderQuantitative(s.quantitative);
             renderPayments(s.payments);
         }
 
-        // [추가] 분석 상태 뱃지 업데이트 함수
         function updateAnalysisBadge(status) {
             const badge = document.getElementById('analysisStatusBadge');
             if (status === 'completed') {
                 badge.className = 'analysis-badge completed';
-                badge.innerText = '✅ 분석 완료';
+                badge.innerText = '✅ 분석 완료 (발송됨)';
             } else {
                 badge.className = 'analysis-badge pending';
-                badge.innerText = '⏳ 분석 대기';
+                badge.innerText = '⏳ 분석 대기중';
             }
         }
 
-        // [추가] 분석 내용 저장 함수
         async function saveAnalysis() {
             const content = document.getElementById('analysisEditor').value;
-            if (!content.trim()) {
-                alert("분석 내용을 입력해주세요.");
-                return;
-            }
-            
-            if(!confirm("분석 내용을 저장하고 '완료' 상태로 변경하시겠습니까?")) return;
+            if (!content.trim()) return alert("내용을 입력해주세요.");
+            if(!confirm("저장하시겠습니까?")) return;
 
             try {
                 await fetch(ADMIN_API_URL, {
                     method: 'POST',
                     body: JSON.stringify({
-                        type: 'admin_save_analysis', // ★ Lambda에 이 타입 처리가 필요함
+                        type: 'admin_save_analysis',
                         userId: adminId,
-                        data: { 
-                            targetUserId: targetUserId, 
-                            content: content,
-                            status: 'completed'
-                        }
+                        data: { targetUserId, content, status: 'completed' }
                     })
                 });
-                alert("분석 내용이 저장되었습니다.");
-                updateAnalysisBadge('completed'); // 즉시 UI 반영
-            } catch (e) {
-                alert("저장 중 오류가 발생했습니다.");
-            }
+                alert("저장되었습니다.");
+                updateAnalysisBadge('completed');
+            } catch (e) { alert("오류 발생"); }
         }
 
-        // --- 기존 렌더링 헬퍼 함수들 ---
+        async function saveAdminMemo() {
+            const memo = document.getElementById('adminMemoInput').value;
+            await fetch(ADMIN_API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ type: 'admin_update_memo', userId: adminId, data: { targetUserId, memo } })
+            });
+            alert("메모 저장 완료");
+        }
+
+        // --- Render Helpers ---
         function renderTierBadge(payments) {
             const area = document.getElementById('tierBadgeArea');
             let html = '<span class="tier-badge" style="background:#f1f5f9; color:#64748b;">FREE</span>';
@@ -320,9 +392,10 @@
             const area = document.getElementById('qualContentArea');
             if(!q) return;
             let html = '';
+            // HTML 생성 로직 (기존과 동일)
             html += `<div class="qual-box"><span class="qual-title">기본</span> ${q.status || '-'} / ${q.stream || '-'} / ${q.career || '-'}</div>`;
             if(q.targets) html += `<div class="qual-box"><span class="qual-title">희망대학</span> ${q.targets.join(', ')}</div>`;
-            if(q.values) html += `<div class="qual-box"><span class="qual-title">가치관</span> 우선순위: ${q.values.priority}, 전략: ${q.values.strategy}</div>`;
+            if(q.values) html += `<div class="qual-box"><span class="qual-title">가치관</span> 우선순위: ${q.values.priority} / 전략: ${q.values.strategy}</div>`;
             area.innerHTML = html;
         }
 
@@ -331,9 +404,9 @@
             if(!q) return;
             let html = '';
             for(const [exam, d] of Object.entries(q)) {
-                html += `<div class="score-card"><strong>${exam}</strong>: 국(${d.kor?.grd}) 수(${d.math?.grd}) 영(${d.eng?.grd})</div>`;
+                html += `<div class="score-card"><div class="score-header">${convertExamName(exam)}</div><div class="score-row"><span>국(${d.kor?.grd})</span> <span>수(${d.math?.grd})</span> <span>영(${d.eng?.grd})</span> <span>탐1(${d.inq1?.grd})</span> <span>탐2(${d.inq2?.grd})</span></div></div>`;
             }
-            area.innerHTML = html || '데이터 없음';
+            area.innerHTML = html || '<p style="text-align:center;color:#ccc">데이터 없음</p>';
         }
 
         function renderPayments(p) {
@@ -341,20 +414,16 @@
             list.innerHTML = "";
             if(p && p.length) {
                 p.forEach(pay => {
-                    list.innerHTML += `<li class="payment-item"><span>${pay.product}</span> <strong>${pay.amount}원</strong></li>`;
+                    list.innerHTML += `<div class="payment-item"><div><span class="pay-product">${pay.product}</span><div class="pay-date">${pay.date.substring(0,16)}</div></div> <div class="pay-amount">${parseInt(pay.amount).toLocaleString()}원</div></div>`;
                 });
             } else {
-                list.innerHTML = "<li>내역 없음</li>";
+                list.innerHTML = "<p style='text-align:center; padding:20px; color:#94a3b8;'>결제 내역 없음</p>";
             }
         }
 
-        async function saveAdminMemo() {
-            const memo = document.getElementById('adminMemoInput').value;
-            await fetch(ADMIN_API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ type: 'admin_update_memo', userId: adminId, data: { targetUserId, memo } })
-            });
-            alert("메모 저장 완료");
+        function convertExamName(code) {
+            const map = { 'mar':'3월 학평', 'may':'5월 학평', 'jun':'6월 모평', 'jul':'7월 학평', 'sep':'9월 모평', 'oct':'10월 학평', 'csat':'수능' };
+            return map[code] || code;
         }
     </script>
 </body>
