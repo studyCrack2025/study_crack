@@ -237,7 +237,10 @@ async function saveQualitative() {
             openTab('quantitative');
             window.scrollTo(0,0);
         }
-    } catch (e) { alert("저장 실패"); }
+    } catch (e) { 
+        console.error(e); 
+        alert("에러 발생: " + e.message);
+    }
 }
 
 function loadExamData() {
