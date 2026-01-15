@@ -3,8 +3,8 @@
 const urlParams = new URLSearchParams(window.location.search);
 const targetUserId = urlParams.get('uid');
 const adminId = localStorage.getItem('userId');
-// config.js에 ADMIN_API_URL이 정의되어 있다고 가정, 없으면 아래 주석 해제
-// const ADMIN_API_URL = "여기에_API_URL_입력"; 
+
+const ADMIN_API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/";
 
 // 초기화
 document.addEventListener('DOMContentLoaded', () => {
