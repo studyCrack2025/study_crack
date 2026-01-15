@@ -334,5 +334,5 @@ async function searchStudents() {
 }
 
 function goToStudentDetail(targetUserId) {
-    window.location.href = `admin_student_detail.html?uid=${targetUserId}`;
+    window.location.href = `admin_detail.html?uid=${targetUserId}`;
 }
