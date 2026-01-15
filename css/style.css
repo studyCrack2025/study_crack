@@ -36,27 +36,63 @@ header {
 .nav-links a:hover { color: #2563EB; font-weight: 600; }
 
 /* =========================================
-   [New] 상단 로드맵 소개 섹션
+   상단 로드맵 소개 섹션
    ========================================= */
 .roadmap-intro {
     text-align: center;
-    padding: 60px 20px;
-    background-color: #f9f9f9; /* 배경색 */
-    border-bottom: 1px solid #e2e8f0;
+    /* 패딩을 늘려 더 시원한 느낌을 줌 */
+    padding: 90px 20px;
+    /* 단순 단색 배경 대신 은은한 블루 그라데이션 적용 */
+    background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+    /* 하단 테두리 대신 부드러운 내부 그림자로 깊이감 추가 */
+    border-bottom: none;
+    box-shadow: inset 0 -20px 30px -20px rgba(37, 99, 235, 0.05);
 }
+
 .roadmap-intro h2 {
-    font-size: 1.8rem;
-    font-weight: 800;
-    color: #0F172A;
-    margin-bottom: 15px;
+    /* 폰트 크기 대폭 확대 */
+    font-size: 2.6rem;
+    /* 가장 두꺼운 웨이트 적용 */
+    font-weight: 900;
+    /* 기본 검정보다 약간 더 깊이 있는 진한 파랑색 */
+    color: #1e3a8a;
+    margin-bottom: 25px;
+    /* 큰 글씨에 어울리는 자간과 행간 조정 */
+    letter-spacing: -1.5px;
+    line-height: 1.2;
 }
+
 .roadmap-intro p {
-    font-size: 1.1rem;
-    color: #475569;
+    /* 본문 폰트 크기도 확대 */
+    font-size: 1.3rem;
+    /* 가독성을 위해 약간 더 진한 회색 */
+    color: #334155;
     line-height: 1.7;
-    max-width: 800px;
+    max-width: 840px;
     margin: 0 auto;
     word-break: keep-all;
+    font-weight: 500;
+}
+
+/* 강조된 텍스트에 형광펜 효과 추가 */
+.roadmap-intro p strong {
+    position: relative;
+    font-weight: 800;
+    color: #0F172A;
+    z-index: 1;
+}
+
+.roadmap-intro p strong::after {
+    content: '';
+    position: absolute;
+    left: -2px;
+    bottom: 2px;
+    width: calc(100% + 4px);
+    height: 35%;
+    background-color: #bfdbfe; /* 연한 파란색 형광펜 */
+    opacity: 0.6;
+    z-index: -1;
+    border-radius: 4px;
 }
 
 /* =========================================
