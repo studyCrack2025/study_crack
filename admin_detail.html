@@ -54,15 +54,34 @@
                 </div>
 
                 <div id="tab_info" class="tab-content active">
-                    <div class="info-list">
-                        <div class="info-item">
-                            <span class="info-label">학교</span> <span class="info-value" id="viewSchool">-</span>
+                    <div class="info-dashboard-grid">
+                        <div class="info-dash-card">
+                            <div class="dash-icon">🏫</div>
+                            <div class="dash-content">
+                                <span class="dash-label">소속 학교</span>
+                                <span class="dash-value" id="viewSchool">-</span>
+                            </div>
                         </div>
-                        <div class="info-item">
-                            <span class="info-label">전화번호</span> <span class="info-value" id="viewPhone">-</span>
+                        <div class="info-dash-card">
+                            <div class="dash-icon">📞</div>
+                            <div class="dash-content">
+                                <span class="dash-label">전화번호</span>
+                                <span class="dash-value" id="viewPhone">-</span>
+                            </div>
                         </div>
-                        <div class="info-item">
-                            <span class="info-label">가입일</span> <span class="info-value" id="viewJoinDate">-</span>
+                        <div class="info-dash-card">
+                            <div class="dash-icon">📧</div>
+                            <div class="dash-content">
+                                <span class="dash-label">이메일 계정</span>
+                                <span class="dash-value" id="viewEmailFull">-</span>
+                            </div>
+                        </div>
+                        <div class="info-dash-card">
+                            <div class="dash-icon">📅</div>
+                            <div class="dash-content">
+                                <span class="dash-label">가입 일자</span>
+                                <span class="dash-value" id="viewJoinDate">-</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -80,7 +99,20 @@
                 </div>
 
                 <div id="tab_pay" class="tab-content">
-                    <div id="viewPaymentList"></div>
+                    <div class="payment-table-wrapper">
+                        <table class="payment-history-table">
+                            <thead>
+                                <tr>
+                                    <th>결제 일시</th>
+                                    <th>상품명 (티어)</th>
+                                    <th>결제 금액</th>
+                                    <th>상태</th>
+                                </tr>
+                            </thead>
+                            <tbody id="viewPaymentList">
+                                </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div id="tab_analysis" class="tab-content">
