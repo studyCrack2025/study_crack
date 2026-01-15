@@ -2,18 +2,22 @@
 
 /* 기본 설정 */
 * { box-sizing: border-box; }
-body { margin: 0; font-family: 'Noto Sans KR', sans-serif; background-color: #f1f5f9; height: 100vh; overflow: hidden; }
+body { margin: 0; font-family: 'Noto Sans KR', sans-serif; background-color: #f1f5f9; }
+
+/* [수정 1] 데스크탑에서는 스크롤 숨김, 모바일은 자동 */
+html, body { height: 100vh; overflow: hidden; }
 
 /* 레이아웃: 사이드바 + 메인 */
-.admin-wrapper { display: flex; height: 100%; }
+.admin-wrapper { display: flex; height: 100%; width: 100%; }
 
 /* 1. 사이드바 스타일 */
 .sidebar {
     width: 260px;
-    background-color: #1e293b; /* 어두운 남색 */
+    background-color: #1e293b;
     color: white;
     display: flex; flex-direction: column;
     flex-shrink: 0;
+    transition: transform 0.3s ease; /* 모바일 메뉴 효과용 */
 }
 
 .sidebar-header {
@@ -24,7 +28,7 @@ body { margin: 0; font-family: 'Noto Sans KR', sans-serif; background-color: #f1
 .sidebar-header h2 { margin: 0; font-size: 1.5rem; }
 .sidebar-header span { color: #3b82f6; font-size: 0.9rem; }
 
-.menu { list-style: none; padding: 0; margin: 20px 0; }
+.menu { list-style: none; padding: 0; margin: 20px 0; overflow-y: auto; }
 .menu-item a {
     display: block; padding: 15px 25px;
     color: #cbd5e1; text-decoration: none;
@@ -32,11 +36,10 @@ body { margin: 0; font-family: 'Noto Sans KR', sans-serif; background-color: #f1
 }
 .menu-item a:hover { background-color: #334155; color: white; }
 
-/* 하위 메뉴 (아코디언) */
 .submenu {
     list-style: none; padding: 0;
     background-color: #0f172a;
-    display: none; /* 기본 숨김 */
+    display: none;
 }
 .submenu.open { display: block; }
 .submenu a { padding-left: 45px; font-size: 0.9rem; color: #94a3b8; }
@@ -44,15 +47,14 @@ body { margin: 0; font-family: 'Noto Sans KR', sans-serif; background-color: #f1
 /* 2. 메인 컨텐츠 스타일 */
 .main-content {
     flex: 1;
-    overflow-y: auto; /* 내용 많으면 스크롤 */
+    overflow-y: auto; /* 내용 스크롤 */
     padding: 40px;
+    width: 100%; /* 차트 찌그러짐 방지 */
 }
 
 .page-title { margin-top: 0; margin-bottom: 30px; color: #1e293b; }
-
-.content-section { display: none; } /* 탭 기능 */
+.content-section { display: none; }
 .content-section.active { display: block; animation: fadeIn 0.3s; }
-
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* 대시보드 카드 */
@@ -67,70 +69,76 @@ body { margin: 0; font-family: 'Noto Sans KR', sans-serif; background-color: #f1
 .card h3 { margin: 0 0 10px 0; font-size: 0.9rem; color: #64748b; }
 .card p { margin: 0; font-size: 2rem; font-weight: bold; color: #1e293b; }
 
-/* 차트들을 감싸는 행 */
+/* 차트 영역 */
 .charts-row {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap; /* 화면 작으면 아래로 떨어지게 */
+    display: flex; gap: 20px; flex-wrap: wrap;
 }
 
-/* 개별 차트 컨테이너 수정 */
 .chart-container {
-    background: white; 
-    padding: 25px; 
-    border-radius: 12px;
+    background: white; padding: 25px; border-radius: 12px;
     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-    flex: 1;             /* 공간 균등 분할 */
-    min-width: 400px;    /* 최소 너비 확보 */
+    flex: 1;
+    min-width: 400px; /* 데스크탑 최소 너비 */
 }
+.chart-container h3 { margin: 0 0 15px 0; font-size: 1rem; color: #475569; text-align: center; }
 
-.chart-container h3 {
-    margin-top: 0;
-    font-size: 1rem;
-    color: #475569;
-    margin-bottom: 15px;
-    text-align: center;
-}
+.chart-wrapper { position: relative; height: 300px; width: 100%; }
+canvas { width: 100% !important; height: 100% !important; }
 
-/* 차트 내부 래퍼: 높이를 강제로 고정 */
-.chart-wrapper {
-    position: relative;
-    height: 300px; /* ★ 이 높이 안에서만 그려집니다 */
-    width: 100%;
-}
-
-/* 캔버스 크기 강제 */
-canvas {
-    width: 100% !important;
-    height: 100% !important;
-}
-
-/* 검색창 디자인 (수정됨) */
+/* 검색 및 테이블 */
 .search-wrapper {
     display: flex; gap: 10px; margin-bottom: 20px;
     background: white; padding: 15px; border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
-.search-wrapper select {
-    padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; width: 120px;
-}
-.search-wrapper input {
-    flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;
-}
+.search-wrapper select { padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; }
+.search-wrapper input { flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; }
 .search-wrapper button {
     padding: 10px 25px; background-color: #3b82f6; color: white;
     border: none; border-radius: 6px; cursor: pointer; font-weight: bold;
 }
-.search-wrapper button:hover { background-color: #2563eb; }
 
-/* 테이블 디자인 */
-.student-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
+/* 테이블 스크롤 처리용 래퍼 추가 */
+.table-responsive {
+    width: 100%; overflow-x: auto; /* 가로 스크롤 허용 */
+}
+.student-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; white-space: nowrap; /* 줄바꿈 방지 */ }
 .student-table th, .student-table td { padding: 15px; text-align: left; border-bottom: 1px solid #f1f5f9; }
 .student-table th { background-color: #f8fafc; font-weight: 600; color: #475569; }
-.empty-msg { text-align: center; color: #94a3b8; padding: 30px; }
 
 /* 모달 */
 .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 999; }
 .modal.hidden { display: none; }
 .modal-content { background: white; width: 90%; max-width: 800px; padding: 30px; border-radius: 12px; position: relative; max-height: 90vh; overflow-y: auto;}
 .close-btn { position: absolute; top: 15px; right: 20px; font-size: 2rem; cursor: pointer; }
+
+
+/* =========================================
+   [모바일 반응형 필수 교정]
+   ========================================= */
+@media (max-width: 900px) {
+    /* 1. 스크롤 잠금 해제 (제일 중요) */
+    html, body { height: auto; overflow-y: auto; }
+    
+    /* 2. 레이아웃 세로 정렬 */
+    .admin-wrapper { flex-direction: column; }
+    
+    /* 3. 사이드바 스타일 변경 */
+    .sidebar { width: 100%; height: auto; }
+    .menu { display: flex; overflow-x: auto; margin: 0; padding: 10px; white-space: nowrap; background: #0f172a; }
+    .menu-item a { padding: 10px 15px; font-size: 0.9rem; border-radius: 6px; }
+    
+    /* 4. 메인 컨텐츠 여백 축소 */
+    .main-content { padding: 20px; height: auto; overflow: visible; }
+    
+    /* 5. 그리드 1단 변경 */
+    .stats-cards { grid-template-columns: 1fr; }
+    
+    /* 6. 차트 너비 문제 해결 (화면 뚫는 것 방지) */
+    .charts-row { flex-direction: column; }
+    .chart-container { min-width: 0; width: 100%; } /* min-width 해제 */
+    
+    /* 7. 검색창 */
+    .search-wrapper { flex-direction: column; }
+    .search-wrapper select, .search-wrapper button { width: 100%; }
+}
