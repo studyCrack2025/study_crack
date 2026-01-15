@@ -11,6 +11,7 @@ const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 let tempUserId = ""; 
 let isPhoneVerified = false; // 전화번호 인증 상태
 let isEmailVerified = false; // 이메일 인증 상태 (가입 완료 시 true)
+let serverPhoneCode = "";    // 서버에서 받은 인증코드 (해시 또는 실제값)
 
 // ==========================================
 // [Part A] 초기화 및 유틸리티
@@ -27,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// 기타(etc) 입력창 토글 함수 (희망계열, 유입경로 공용)
+// 기타(etc) 입력창 토글 함수
 function toggleEtc(type, isShow) {
     let inputId = "";
     if (type === 'major') inputId = 'majorEtc';
@@ -58,11 +59,28 @@ function checkPasswordMatch() {
     }
 }
 
+// Cognito 에러 메시지 한글 변환 함수
+function getErrorMessage(err) {
+    switch (err.code) {
+        case "UsernameExistsException":
+            return "이미 가입된 이메일입니다.";
+        case "InvalidParameterException":
+            return "입력 정보가 올바르지 않습니다. (이메일 형식을 확인해주세요)";
+        case "InvalidPasswordException":
+            return "비밀번호는 8자 이상, 영문/숫자/특수문자를 포함해야 합니다.";
+        case "CodeMismatchException":
+            return "인증 코드가 일치하지 않습니다.";
+        case "LimitExceededException":
+            return "요청 횟수를 초과했습니다. 잠시 후 다시 시도해주세요.";
+        default:
+            return "오류가 발생했습니다: " + (err.message || err.code);
+    }
+}
+
 // 가입 버튼 상태 업데이트
 function updateSubmitButton() {
     const btn = document.getElementById('finalSubmitBtn');
     
-    // 이메일과 전화번호 모두 인증되어야 가입 가능
     if (isEmailVerified && isPhoneVerified) {
         btn.disabled = false;
         btn.style.backgroundColor = "#2563EB";
@@ -89,7 +107,6 @@ function handleSendCode() {
     const gender = document.getElementById('gender').value;
     const birthdate = document.getElementById('birthdate').value;
     
-    // 필수 값 체크
     if (!email || !password || !name || !birthdate) {
         alert("기본 정보를 모두 입력해주세요.");
         return;
@@ -110,10 +127,10 @@ function handleSendCode() {
     sendBtn.innerText = "전송 중...";
     sendBtn.disabled = true;
 
-    // Cognito 회원가입 요청 (이메일로 코드 발송됨)
     userPool.signUp(email, password, attributeList, null, function(err, result) {
         if (err) {
-            alert("인증번호 발송 실패: " + err.message);
+            // [수정] 한글 에러 메시지 적용
+            alert(getErrorMessage(err));
             sendBtn.innerText = "인증번호 받기";
             sendBtn.disabled = false;
             return;
@@ -142,17 +159,15 @@ function handleVerify() {
 
     cognitoUser.confirmRegistration(code, true, async function(err, result) {
         if (err) {
-            alert("인증 실패: " + err.message);
+            alert(getErrorMessage(err));
             return;
         }
         
-        // 이메일 인증 성공
         alert("이메일 인증이 완료되었습니다.");
         document.getElementById('verifySection').innerHTML = "<p class='text-success'>✅ 이메일 인증 완료</p>";
         isEmailVerified = true;
         updateSubmitButton();
         
-        // 이메일 인증 후 DB에 초기 데이터 생성 시도
         try {
             await createInitialUserDB();
         } catch (dbErr) {
@@ -162,12 +177,12 @@ function handleVerify() {
 }
 
 // ==========================================
-// [Part C] 전화번호 인증 (UI 시뮬레이션)
+// [Part C] 전화번호 인증 (실제 API 연동)
 // ==========================================
 
 let phoneTimerInterval;
 
-function handleSendPhoneCode() {
+async function handleSendPhoneCode() {
     const phone = document.getElementById('phone').value;
     if (!phone || phone.length < 10) {
         alert("올바른 전화번호를 입력해주세요.");
@@ -178,28 +193,48 @@ function handleSendPhoneCode() {
     btn.innerText = "전송 중...";
     btn.disabled = true;
 
-    // 실제로는 여기서 백엔드 API를 호출하여 SMS를 발송해야 합니다.
-    // 현재는 UI 시뮬레이션으로 1초 후 성공 처리합니다.
-    setTimeout(() => {
-        alert(`인증번호가 발송되었습니다.\n(테스트용 인증코드: 123456)`);
+    try {
+        // [수정] 실제 Lambda API 호출하여 SMS 발송 요청
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'send_sms_auth', // Lambda에서 이 타입을 처리해야 함
+                phone: phone
+            })
+        });
+
+        if (!response.ok) throw new Error("SMS 발송 실패");
+        const data = await response.json();
+        
+        // 서버에서 인증코드(또는 해시)를 임시 저장 (클라이언트 검증용)
+        // 보안을 위해 서버에서 검증하는 것이 좋으나, 간편 구현을 위해 코드를 받음
+        serverPhoneCode = data.authCode; 
+
+        alert(`인증번호가 발송되었습니다.`);
         document.getElementById('phoneVerifySection').classList.remove('hidden');
         btn.innerText = "재전송";
         btn.disabled = false;
         document.getElementById('phone').disabled = true;
 
         startTimer(3 * 60, 'phoneTimer', phoneTimerInterval);
-    }, 1000);
+
+    } catch (error) {
+        console.error(error);
+        alert("인증번호 발송에 실패했습니다. 관리자에게 문의하세요.");
+        btn.innerText = "인증번호 전송";
+        btn.disabled = false;
+    }
 }
 
 function handleVerifyPhone() {
-    const code = document.getElementById('phoneVerifyCode').value;
+    const inputCode = document.getElementById('phoneVerifyCode').value;
     
-    // 테스트용 하드코딩된 인증번호 '123456'
-    if (code === '123456') {
+    // [수정] 서버에서 받은 코드와 비교
+    if (inputCode && inputCode == serverPhoneCode) {
         alert("전화번호 인증이 완료되었습니다.");
         document.getElementById('phoneVerifySection').innerHTML = "<p class='text-success'>✅ 전화번호 인증 완료</p>";
         isPhoneVerified = true;
-        updateSubmitButton(); // 가입 버튼 활성화 체크
+        updateSubmitButton(); 
     } else {
         alert("인증번호가 일치하지 않습니다.");
     }
@@ -213,9 +248,10 @@ function startTimer(duration, displayId, intervalVar) {
     let timer = duration, minutes, seconds;
     const display = document.getElementById(displayId);
     
-    clearInterval(intervalVar);
+    if (displayId === 'timer') clearInterval(emailTimerInterval);
+    else clearInterval(phoneTimerInterval);
 
-    intervalVar = setInterval(function () {
+    const interval = setInterval(function () {
         minutes = parseInt(timer / 60, 10);
         seconds = parseInt(timer % 60, 10);
 
@@ -225,10 +261,13 @@ function startTimer(duration, displayId, intervalVar) {
         display.textContent = minutes + ":" + seconds;
 
         if (--timer < 0) {
-            clearInterval(intervalVar);
+            clearInterval(interval);
             alert("인증 시간이 만료되었습니다. 재전송 버튼을 눌러주세요.");
         }
     }, 1000);
+
+    if (displayId === 'timer') emailTimerInterval = interval;
+    else phoneTimerInterval = interval;
 }
 
 // DB 초기 데이터 생성 및 추가 정보 업데이트
@@ -238,7 +277,6 @@ async function createInitialUserDB() {
     const school = document.getElementById('school').value;
     const email = document.getElementById('email').value; 
 
-    // 라디오 버튼 값 가져오기 (기타 처리 포함)
     let major = document.querySelector('input[name="major"]:checked').value;
     if (major === 'etc') major = document.getElementById('majorEtc').value;
 
@@ -257,15 +295,14 @@ async function createInitialUserDB() {
                 phone: phoneRaw,
                 school: school,
                 email: email,
-                major: major,      // 추가된 정보
-                referral: referral // 추가된 정보
+                major: major,      
+                referral: referral 
             }
         })
     });
 
     if (!response.ok) throw new Error("DB 생성 실패");
     
-    // 이메일/전화번호 모두 인증되었으면 최종 완료 메시지
     if (isPhoneVerified && isEmailVerified) {
         alert("회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.");
         window.location.href = 'login.html';
@@ -351,7 +388,7 @@ function handleSignIn() {
             });
         },
         onFailure: function(err) {
-            alert("로그인 실패: " + err.message);
+            alert("로그인 실패: " + getErrorMessage(err));
         }
     });
 }

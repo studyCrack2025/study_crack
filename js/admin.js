@@ -243,62 +243,73 @@ function renderProductChart(productMap, total) {
 
 async function searchStudents() {
     const adminId = localStorage.getItem('userId');
-    const type = document.getElementById('searchType').value;
+    const type = document.getElementById('searchType').value; // 'name', 'school', 'paid', 'unpaid'
     const keyword = document.getElementById('searchInput').value || ""; 
     const tbody = document.getElementById('studentListBody');
 
     tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>데이터 조회 중...</td></tr>";
 
     try {
+        // 1. 전체 목록을 가져온 뒤 프론트엔드에서 필터링하는 방식 (데이터 양이 적을 때 유효)
+        // 만약 서버 사이드 필터링이 필요하다면 Lambda 함수 수정이 필요함.
+        // 여기서는 기존 'admin_search' 타입을 활용합니다.
+        
         const response = await fetch(ADMIN_API_URL, {
             method: 'POST',
             body: JSON.stringify({
                 type: 'admin_search',
                 userId: adminId,
-                data: { searchType: type, keyword: keyword }
+                data: { searchType: type, keyword: keyword } 
             })
         });
         
-        const students = await response.json();
+        let students = await response.json();
+        
+        // 2. [추가됨] 결제 상태에 따른 프론트엔드 필터링
+        if (type === 'paid') {
+            // 유료 회원: 결제 내역(status='paid')이 하나라도 있는 사람
+            students = students.filter(s => 
+                s.payments && s.payments.some(p => p.status === 'paid')
+            );
+        } else if (type === 'unpaid') {
+            // 무료 회원: 결제 내역이 아예 없거나, paid 상태인 내역이 없는 사람
+            students = students.filter(s => 
+                !s.payments || !s.payments.some(p => p.status === 'paid')
+            );
+        }
+
+        // 3. 렌더링 시작
         tbody.innerHTML = "";
         
         if (!students || students.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>데이터가 없습니다.</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>조건에 맞는 학생이 없습니다.</td></tr>";
             return;
         }
 
         students.forEach(s => {
-            // --- [수정] 티어별 뱃지 결정 로직 시작 ---
-            let statusBadge = '<span style="color:#64748b; background:#f1f5f9; padding:4px 8px; border-radius:12px; font-size:0.8rem;">FREE</span>'; // 기본값 (무료)
+            // --- 티어별 뱃지 결정 로직 ---
+            let statusBadge = '<span style="color:#64748b; background:#f1f5f9; padding:4px 8px; border-radius:12px; font-size:0.8rem;">FREE</span>'; // 기본값
 
             if (s.payments && s.payments.length > 0) {
-                // 1. 'paid' 상태인 결제만 필터링
                 const paidHistory = s.payments.filter(p => p.status === 'paid');
                 
                 if (paidHistory.length > 0) {
-                    // 2. 날짜 내림차순 정렬 (최신순)
+                    // 최신순 정렬
                     paidHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
-                    
-                    // 3. 가장 최근 상품명 확인
-                    const latestProduct = (paidHistory[0].product || "").toLowerCase();
+                    const latestProduct = (paidHistory[0].product || "").toUpperCase(); // 대문자 변환 안전장치
 
-                    // 4. 상품명에 따른 뱃지 스타일 적용
-                    if (latestProduct.includes('black')) {
-                        // Black: 검정 배경 + 금색 글씨
+                    if (latestProduct.includes('BLACK')) {
                         statusBadge = '<span style="color:#FFD700; background:#171717; padding:4px 8px; border-radius:12px; font-size:0.8rem; border:1px solid #333; font-weight:bold;">BLACK</span>';
-                    } else if (latestProduct.includes('pro')) {
-                        // Pro: 금색(호박색) 배경 + 진한 갈색 글씨
+                    } else if (latestProduct.includes('PRO')) {
                         statusBadge = '<span style="color:#92400e; background:#fef3c7; padding:4px 8px; border-radius:12px; font-size:0.8rem; font-weight:bold;">PRO</span>';
-                    } else if (latestProduct.includes('standard')) {
-                        // Standard: 회색(슬레이트) 배경 + 진한 회색 글씨
+                    } else if (latestProduct.includes('STANDARD')) {
                         statusBadge = '<span style="color:#334155; background:#e2e8f0; padding:4px 8px; border-radius:12px; font-size:0.8rem; font-weight:bold;">STANDARD</span>';
                     } else {
-                        // Basic (또는 기타): 파란 배경 + 진한 파랑 글씨
                         statusBadge = '<span style="color:#1e40af; background:#dbeafe; padding:4px 8px; border-radius:12px; font-size:0.8rem; font-weight:bold;">BASIC</span>';
                     }
                 }
             }
-            // --- [수정] 티어별 뱃지 결정 로직 끝 ---
+            // --- 뱃지 로직 끝 ---
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -317,6 +328,7 @@ async function searchStudents() {
         });
 
     } catch (error) {
+        console.error(error);
         tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>오류가 발생했습니다.</td></tr>";
     }
 }

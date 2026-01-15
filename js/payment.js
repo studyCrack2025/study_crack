@@ -15,14 +15,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. 로그인 체크 및 유저 정보 로드
     const userId = localStorage.getItem('userId');
     
-    // 테스트용: 로컬스토리지에 없어도 일단 진행 가능하게 할 경우 주석 처리 (실배포시 주석 해제)
-    /*
     if (!userId) {
         alert("로그인이 필요합니다.");
         window.location.href = 'login.html';
         return;
     }
-    */
     
     // 유저 정보 가져오기 실행 (userId가 있을 때만)
     if (userId) {
