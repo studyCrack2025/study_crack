@@ -4,29 +4,41 @@ const urlParams = new URLSearchParams(window.location.search);
 const targetUserId = urlParams.get('uid');
 const adminId = localStorage.getItem('userId');
 
+// [중요] config.js에서 이미 선언되었다면 이 줄은 지우거나 주석 처리해야 합니다.
+// 만약 config.js가 없다면 이대로 두세요.
 const ADMIN_API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/";
 
 // 초기화
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("1. 페이지 로드 시작 / TargetUID:", targetUserId); // [디버깅용 로그]
+
     if (!targetUserId || !adminId) {
-        alert("잘못된 접근입니다.");
+        alert("잘못된 접근입니다. (ID 누락)");
         window.location.href = 'admin.html';
         return;
     }
     loadStudentDetail();
 });
 
-// 탭 전환
+// 탭 전환 (event 객체 안전하게 사용)
 function switchTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById('tab_' + tabName).classList.add('active');
-    event.currentTarget.classList.add('active');
+    
+    const targetTab = document.getElementById('tab_' + tabName);
+    if(targetTab) targetTab.classList.add('active');
+    
+    // 클릭한 버튼에 active 추가 (window.event 사용)
+    const evt = window.event; 
+    if (evt && evt.currentTarget) {
+        evt.currentTarget.classList.add('active');
+    }
 }
 
 // 데이터 로드
 async function loadStudentDetail() {
     try {
+        console.log("2. 서버 데이터 요청 시작...");
         const response = await fetch(ADMIN_API_URL, {
             method: 'POST',
             body: JSON.stringify({
@@ -35,35 +47,52 @@ async function loadStudentDetail() {
                 data: { targetUserId: targetUserId }
             })
         });
+
+        if (!response.ok) {
+            throw new Error(`HTTP Error: ${response.status}`);
+        }
+
         const data = await response.json();
+        console.log("3. 서버 응답 데이터:", data); // [디버깅용 로그] - F12 콘솔에서 확인 가능
+
+        if (!data) {
+            throw new Error("서버에서 받은 데이터가 비어있습니다.");
+        }
+
         renderData(data);
+
     } catch (e) {
-        console.error(e);
-        alert("데이터를 불러오는 중 오류가 발생했습니다.");
+        console.error("❌ 로드 실패:", e);
+        alert("데이터 로드 중 오류 발생: " + e.message);
     }
 }
 
-// 전체 데이터 렌더링
+// 전체 데이터 렌더링 (안전 장치 추가)
 function renderData(s) {
-    // 1. 프로필 및 기본 정보
+    if (!s) {
+        console.error("데이터 객체(s)가 없습니다.");
+        return;
+    }
+
+    // 1. 프로필 및 기본 정보 (Optional Chaining ?. 사용으로 에러 방지)
     document.getElementById('viewName').innerText = s.name || '이름 없음';
     document.getElementById('viewEmail').innerText = s.email || '-';
     document.getElementById('viewSchool').innerText = s.school || '미입력';
     document.getElementById('viewPhone').innerText = s.phone || '미입력';
     document.getElementById('viewJoinDate').innerText = s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '-';
 
-    // 2. 뱃지 및 상태
-    renderTierBadge(s.payments);
+    // 2. 뱃지 및 상태 (배열이 없으면 빈 배열 전달)
+    renderTierBadge(s.payments || []);
     
     // 3. 분석 내용 및 상태
     document.getElementById('analysisEditor').value = s.analysisContent || '';
     document.getElementById('adminMemoInput').value = s.adminMemo || '';
     updateAnalysisBadge(s.analysisStatus);
 
-    // 4. 상세 탭 렌더링 (핵심)
-    renderQualitativeDetail(s.qualitative);
-    renderQuantitativeDetail(s.quantitative);
-    renderPayments(s.payments);
+    // 4. 상세 탭 렌더링 (객체가 없어도 에러 안 나게 처리)
+    renderQualitativeDetail(s.qualitative || null);
+    renderQuantitativeDetail(s.quantitative || {}); // 빈 객체 전달
+    renderPayments(s.payments || []);
 }
 
 // === [핵심 기능 1] 정성 조사서 상세 렌더링 ===
@@ -74,14 +103,10 @@ function renderQualitativeDetail(q) {
         return;
     }
 
-    // 헬퍼: 값이 없으면 '-' 표시
     const v = (val) => val ? val : '-';
 
-    // 섹션별 HTML 생성
-    let html = '';
-
-    // 섹션 1: 현재 상황 및 진로
-    html += `
+    // (기존 HTML 구조 유지하되 변수 접근 시 ?. 사용)
+    let html = `
         <div class="qual-section">
             <div class="qual-head">📍 현재 상황 및 진로</div>
             <div class="qual-grid">
@@ -91,10 +116,6 @@ function renderQualitativeDetail(q) {
                 <div class="qual-item"><span class="qual-label">교차 지원 의사</span><div class="qual-value">${v(q.values?.cross)}</div></div>
             </div>
         </div>
-    `;
-
-    // 섹션 2: 입시 전략 및 가치관
-    html += `
         <div class="qual-section">
             <div class="qual-head">🎯 입시 전략 및 가치관</div>
             <div class="qual-grid">
@@ -107,7 +128,6 @@ function renderQualitativeDetail(q) {
         </div>
     `;
 
-    // 섹션 3: 목표 대학
     const targets = q.targets || [];
     html += `
         <div class="qual-section">
@@ -125,10 +145,6 @@ function renderQualitativeDetail(q) {
                  <div class="qual-item"><span class="qual-label">다군 후보</span><div class="qual-value">${v(q.candidates?.da)}</div></div>
             </div>
         </div>
-    `;
-
-    // 섹션 4: 부모님 및 컨설팅 정보
-    html += `
         <div class="qual-section">
             <div class="qual-head">👨‍👩‍👧 부모님 의견 및 기타</div>
             <div class="qual-grid">
@@ -168,16 +184,12 @@ function renderQuantitativeDetail(q) {
     ];
 
     let html = '';
-
-    // 최신 시험이 위로 오도록 정렬 (옵션)
-    // 여기서는 수능 -> 9월 -> ... 순서가 좋으므로 키 순서를 지정해서 순회
     const orderedKeys = ['csat', 'oct', 'sep', 'jul', 'jun', 'may', 'mar'];
 
     orderedKeys.forEach(examKey => {
-        if (!q[examKey]) return; // 해당 시험 데이터 없으면 패스
+        if (!q[examKey]) return; 
         
         const data = q[examKey];
-        
         html += `
             <div class="score-exam-block">
                 <div class="score-exam-title">
@@ -198,7 +210,6 @@ function renderQuantitativeDetail(q) {
         subjects.forEach(sub => {
             const subData = data[sub.key];
             if (subData) {
-                // 등급 뱃지 스타일링
                 let gradeHtml = '-';
                 if(subData.grd) {
                     const g = parseInt(subData.grd);
@@ -217,11 +228,7 @@ function renderQuantitativeDetail(q) {
             }
         });
 
-        html += `
-                    </tbody>
-                </table>
-            </div>
-        `;
+        html += `</tbody></table></div>`;
     });
 
     if (html === '') {
@@ -231,16 +238,16 @@ function renderQuantitativeDetail(q) {
     area.innerHTML = html;
 }
 
-// === 기타 기능 (결제, 뱃지, 분석 저장 등) ===
+// === 기타 기능 ===
 
 function renderPayments(p) {
     const list = document.getElementById('viewPaymentList');
     list.innerHTML = "";
     if (p && p.length) {
-        // 날짜 내림차순 정렬
-        p.sort((a,b) => new Date(b.date) - new Date(a.date));
+        // [수정] 복사본을 만들어 정렬 (원본 배열 보호)
+        const sortedP = [...p].sort((a,b) => new Date(b.date) - new Date(a.date));
         
-        p.forEach(pay => {
+        sortedP.forEach(pay => {
             list.innerHTML += `
                 <div class="payment-item">
                     <div>
@@ -276,6 +283,7 @@ function renderTierBadge(payments) {
 
 function updateAnalysisBadge(status) {
     const badge = document.getElementById('analysisStatusBadge');
+    if(!badge) return; // 요소가 없으면 종료
     if (status === 'completed') {
         badge.className = 'analysis-badge completed';
         badge.innerText = '✅ 분석 완료 (리포트 발송됨)';
@@ -302,6 +310,7 @@ async function saveAnalysis() {
         alert("성공적으로 저장되었습니다.");
         updateAnalysisBadge('completed');
     } catch (e) {
+        console.error(e);
         alert("저장 중 오류가 발생했습니다.");
     }
 }
@@ -315,6 +324,7 @@ async function saveAdminMemo() {
         });
         alert("관리자 메모가 저장되었습니다.");
     } catch (e) {
+        console.error(e);
         alert("메모 저장 실패");
     }
 }
