@@ -276,8 +276,90 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 .legal-links span { margin-right: 20px; cursor: pointer; }
 .legal-links span:hover { color: white; text-decoration: underline; }
 
-.modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
-.modal-content { background-color: white; margin: 5% auto; padding: 40px; border-radius: 16px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+/* =========================================
+   [모달 디자인 개선]
+   ========================================= */
+
+/* 모달 헤더 */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #f1f5f9;
+    margin-bottom: 20px;
+}
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #1e293b;
+}
+.close-btn {
+    position: static; /* 기존 absolute 해제 */
+    font-size: 2rem;
+    color: #94a3b8;
+    line-height: 1;
+}
+.close-btn:hover { color: #ef4444; }
+
+/* 모달 본문 (스크롤 영역) */
+.modal-body {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 10px; /* 스크롤바 공간 확보 */
+    color: #475569;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    text-align: left; /* 왼쪽 정렬 강제 */
+}
+
+/* 스크롤바 디자인 */
+.modal-body::-webkit-scrollbar { width: 6px; }
+.modal-body::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
+.modal-body::-webkit-scrollbar-track { background-color: #f1f5f9; }
+
+/* 모달 내부 타이포그래피 */
+.modal-body h3 {
+    margin: 25px 0 10px 0;
+    font-size: 1.1rem;
+    color: #0f172a;
+    font-weight: 700;
+}
+.modal-body h4 {
+    margin: 15px 0 5px 0;
+    font-size: 1rem;
+    color: #334155;
+}
+.modal-body p { margin-bottom: 10px; }
+
+/* 리스트 스타일 */
+.modal-body ul {
+    list-style: disc;
+    padding-left: 20px;
+    margin-bottom: 15px;
+}
+.modal-body li { margin-bottom: 5px; }
+
+/* 구분선 */
+.modal-body hr {
+    border: none;
+    border-top: 1px solid #e2e8f0;
+    margin: 20px 0;
+}
+
+/* 강조 텍스트 */
+.warning-text { color: #dc2626; font-weight: 500; }
+.note { font-size: 0.9rem; color: #64748b; background: #f8fafc; padding: 10px; border-radius: 6px; }
+
+/* 환불 정책 박스 */
+.refund-policy {
+    background-color: #f8fafc;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    margin-top: 20px;
+}
+.refund-policy h3 { margin-top: 0; color: #2563eb; }
 .close-btn { float: right; font-size: 28px; cursor: pointer; color: #94a3b8; }
 .close-btn:hover { color: #333; }
 .hidden { display: none !important; }
