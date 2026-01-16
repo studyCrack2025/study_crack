@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="css/mypage.css">
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <header>
@@ -49,44 +50,133 @@
         </aside>
 
         <main class="content-area">
-            <div class="content-header">
-                <h2>내 정보 관리</h2>
-                <p>개인정보 및 계정 설정을 변경할 수 있습니다.</p>
+            <div class="main-tabs">
+                <button class="tab-btn active" onclick="switchMainTab('info')">내 정보 관리</button>
+                <button class="tab-btn" onclick="switchMainTab('solution')">나만의 솔루션</button>
             </div>
 
-            <div class="form-container">
-                <h3>기본 인적사항</h3>
-                <div class="form-group">
-                    <label>이름</label>
-                    <input type="text" id="profileName">
-                </div>
-                <div class="form-group">
-                    <label>전화번호</label>
-                    <input type="tel" id="profilePhone">
-                </div>
-                <div class="form-group">
-                    <label>학교</label>
-                    <input type="text" id="profileSchool">
+            <div id="tab-info" class="tab-content active">
+                <div class="content-header">
+                    <h2>내 정보 관리</h2>
+                    <p>개인정보 및 계정 설정을 변경할 수 있습니다.</p>
                 </div>
 
-                <h3>계정 정보 변경</h3>
-                <div class="form-group">
-                    <label>이메일</label>
-                    <input type="email" id="profileEmail" placeholder="변경할 이메일 주소">
-                </div>
-                
-                <div class="password-section">
+                <div class="form-container">
+                    <h3>기본 인적사항</h3>
                     <div class="form-group">
-                        <label>새 비밀번호</label>
-                        <input type="password" id="newPassword" placeholder="변경 시에만 입력">
+                        <label>이름</label>
+                        <input type="text" id="profileName">
                     </div>
                     <div class="form-group">
-                        <label>새 비밀번호 확인</label>
-                        <input type="password" id="newPasswordConfirm" placeholder="비밀번호 재입력">
+                        <label>전화번호</label>
+                        <input type="tel" id="profilePhone">
+                    </div>
+                    <div class="form-group">
+                        <label>학교</label>
+                        <input type="text" id="profileSchool">
+                    </div>
+
+                    <h3>계정 정보 변경</h3>
+                    <div class="form-group">
+                        <label>이메일</label>
+                        <input type="email" id="profileEmail" placeholder="변경할 이메일 주소">
+                    </div>
+                    
+                    <div class="password-section">
+                        <div class="form-group">
+                            <label>새 비밀번호</label>
+                            <input type="password" id="newPassword" placeholder="변경 시에만 입력">
+                        </div>
+                        <div class="form-group">
+                            <label>새 비밀번호 확인</label>
+                            <input type="password" id="newPasswordConfirm" placeholder="비밀번호 재입력">
+                        </div>
+                    </div>
+
+                    <button class="save-btn" onclick="saveProfile()">회원 정보 수정 저장</button>
+                </div>
+            </div>
+
+            <div id="tab-solution" class="tab-content">
+                <div class="solution-menu">
+                    <button class="sol-btn active" onclick="openSolution('univ')">목표대학 설정 및 분석</button>
+                    <button class="sol-btn" onclick="openSolution('sim')">점수 상승 시뮬레이션</button>
+                    <button class="sol-btn" onclick="openSolution('coach')">플래너 코칭</button>
+                    <button class="sol-btn black-btn" onclick="openSolution('black')">FOR BLACK</button>
+                </div>
+
+                <div id="sol-univ" class="sol-content active">
+                    <div class="content-header">
+                        <h2>목표대학 설정 및 분석</h2>
+                        <p class="warning-text">⚠️ 목표 대학은 설정 후 <strong>2주간 수정이 불가능</strong>합니다. 신중하게 선택해주세요.</p>
+                    </div>
+                    <div class="univ-grid" id="univGrid">
+                        </div>
+                    <button class="save-btn" onclick="saveTargetUnivs()">목표 대학 저장하기</button>
+                </div>
+
+                <div id="sol-sim" class="sol-content">
+                    <div class="content-header">
+                        <h2>점수 상승 시뮬레이션</h2>
+                        <p>현재 점수를 기반으로 목표 대학 합격 가능성을 시뮬레이션합니다.</p>
+                    </div>
+                    <div class="placeholder-box">
+                        <p>Standard 버전 이상 회원에게 제공되는 기능입니다.</p>
+                        <div class="chart-mockup">[시뮬레이션 그래프 영역]</div>
                     </div>
                 </div>
 
-                <button class="save-btn" onclick="saveProfile()">회원 정보 수정 저장</button>
+                <div id="sol-coach" class="sol-content">
+                    <div class="content-header">
+                        <h2>플래너 코칭</h2>
+                        <p>학습 계획을 점검하고 코멘트를 확인하세요.</p>
+                    </div>
+                    <div class="coach-container">
+                        <div class="coach-box">
+                            <h3>📅 주간 학습 점검</h3>
+                            <p>Standard 버전 기능</p>
+                        </div>
+                        <div class="coach-box deep-coaching">
+                            <h3>🧐 심층 코칭</h3>
+                            <div class="lock-overlay" id="deepCoachingLock">
+                                <i class="fas fa-lock"></i>
+                                <p>PRO 버전 이상만 이용 가능합니다</p>
+                            </div>
+                            <div class="coach-content">
+                                <p>전문 컨설턴트의 1:1 심층 분석 내용이 표시됩니다.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="sol-black" class="sol-content black-theme">
+                    <div class="black-header">
+                        <h2>오직 BLACK을 위한 특별한 관리</h2>
+                        <p>완벽한 설계를 위한 전용 프라이빗 컨설팅 공간</p>
+                    </div>
+                    
+                    <div class="black-section">
+                        <h3>♟️ 전략 설계 및 컨설턴트 조언</h3>
+                        <div class="strategy-board">
+                            <textarea readonly id="consultantAdvice" placeholder="담당 컨설턴트가 배정되면 전략이 입력됩니다."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="black-section">
+                        <h3>💬 1:1 프리미엄 질문</h3>
+                        <div class="qna-history" id="qnaHistory">
+                            <div class="qna-item">
+                                <span class="q-date">2023.10.01</span>
+                                <span class="q-title">수시 납치 관련 문의드립니다.</span>
+                                <span class="q-status answered">답변완료</span>
+                            </div>
+                        </div>
+                        <div class="qna-input-area">
+                            <input type="text" placeholder="컨설턴트에게 직접 질문하기 (BLACK 전용)">
+                            <button>질문 등록</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
