@@ -1,4 +1,5 @@
-/* --- 기존 CSS 유지 --- */
+/* --- mypage.css ---*/
+/* --- 기본 레이아웃 및 컨테이너 --- */
 .mypage-container {
     display: flex;
     max-width: 1000px;
@@ -8,6 +9,7 @@
     align-items: flex-start;
 }
 
+/* --- 왼쪽 사이드바 (프로필 영역) --- */
 .profile-summary {
     width: 300px;
     background: white;
@@ -44,7 +46,7 @@
     font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
 }
 
-/* 상태 배지 */
+/* 기초조사서 상태 배지 */
 .status-badge {
     display: inline-block; padding: 6px 16px; border-radius: 20px;
     font-weight: bold; font-size: 0.85rem; margin: 15px 0;
@@ -65,7 +67,7 @@
 }
 .btn-go-survey:hover { background-color: #dbeafe; }
 
-/* 티어별 스타일 */
+/* --- 티어(멤버십)별 스타일 --- */
 .premium-badge {
     position: absolute; top: -12px; right: 20px;
     padding: 5px 12px; border-radius: 12px;
@@ -73,15 +75,20 @@
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     letter-spacing: 0.5px; z-index: 10;
 }
+
+/* BASIC */
 .profile-summary.tier-basic { border: 2px solid #3B82F6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.15); }
 .profile-summary.tier-basic .premium-badge { background: linear-gradient(135deg, #3B82F6, #60A5FA); color: white; }
 
+/* STANDARD */
 .profile-summary.tier-standard { border: 2px solid #64748B; box-shadow: 0 0 15px rgba(100, 116, 139, 0.2); }
 .profile-summary.tier-standard .premium-badge { background: linear-gradient(135deg, #94A3B8, #CBD5E1); color: #0F172A; }
 
+/* PRO */
 .profile-summary.tier-pro { border: 2px solid #F59E0B; box-shadow: 0 0 20px rgba(245, 158, 11, 0.25); }
 .profile-summary.tier-pro .premium-badge { background: linear-gradient(135deg, #F59E0B, #FCD34D); color: #78350f; }
 
+/* BLACK */
 .profile-summary.tier-black { 
     border: 2px solid #171717; box-shadow: 0 0 20px rgba(0, 0, 0, 0.3); 
     background: linear-gradient(to bottom right, #ffffff, #f8fafc); 
@@ -94,7 +101,7 @@
 .btn-delete-account { background: none; border: none; color: #94a3b8; font-size: 0.85rem; text-decoration: underline; cursor: pointer; }
 .btn-delete-account:hover { color: #ef4444; font-weight: bold; }
 
-/* --- 메인 컨텐츠 영역 수정 --- */
+/* --- 오른쪽 메인 컨텐츠 영역 (수정됨) --- */
 .content-area {
     flex: 1;
     background: white;
@@ -104,36 +111,110 @@
     min-height: 600px;
 }
 
-/* 상단 메인 탭 */
-.main-tabs { display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 2px solid #e2e8f0; padding-bottom: 0; }
-.tab-btn {
-    padding: 10px 20px; border: none; background: none;
-    font-size: 1.1rem; font-weight: bold; color: #94a3b8;
-    cursor: pointer; border-bottom: 3px solid transparent;
-    transition: all 0.2s;
+/* 1. 상단 메인 탭 (중앙 정렬 및 여백 확대) */
+.main-tabs { 
+    display: flex; 
+    justify-content: center; /* 중앙 정렬 */
+    gap: 60px; /* 탭 사이 간격 넓힘 */
+    margin-bottom: 40px; 
+    border-bottom: 2px solid #f1f5f9; 
+    padding-bottom: 0; 
 }
-.tab-btn.active { color: #2563EB; border-bottom-color: #2563EB; }
+
+.tab-btn {
+    padding: 15px 10px;
+    border: none; 
+    background: none;
+    font-size: 1.15rem; /* 폰트 키움 */
+    font-weight: 600; 
+    color: #94a3b8;
+    cursor: pointer; 
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+    position: relative;
+    top: 2px;
+}
+
+.tab-btn:hover { color: #64748b; }
+.tab-btn.active { 
+    color: #2563EB; 
+    border-bottom-color: #2563EB; 
+}
 
 /* 탭 컨텐츠 제어 */
 .tab-content { display: none; }
 .tab-content.active { display: block; animation: fadeIn 0.3s; }
 
-/* 나만의 솔루션 서브 메뉴 */
-.solution-menu { display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; }
-.sol-btn {
-    padding: 8px 16px; border-radius: 20px; border: 1px solid #cbd5e1;
-    background: white; color: #475569; cursor: pointer; font-size: 0.9rem;
-    transition: all 0.2s;
+/* 2. 나만의 솔루션 서브 메뉴 (한 줄 꽉 채우기 + 모던 스타일) */
+.solution-menu { 
+    display: flex; 
+    gap: 12px; /* 버튼 사이 간격 */
+    margin-bottom: 35px; 
+    width: 100%; /* 전체 너비 사용 */
 }
-.sol-btn.active { background: #2563EB; color: white; border-color: #2563EB; font-weight: bold; }
-.sol-btn:hover:not(.active) { background: #f1f5f9; }
-.sol-btn.black-btn { border-color: #000; color: #000; font-weight: bold; }
-.sol-btn.black-btn.active { background: #000; color: #FFD700; border-color: #000; }
+
+.sol-btn {
+    flex: 1; /* 모든 버튼이 동일한 비율(1:1:1:1)로 공간 차지 */
+    display: flex;
+    flex-direction: column; /* 아이콘 위, 글자 아래 */
+    align-items: center;
+    justify-content: center;
+    padding: 15px 10px;
+    border-radius: 10px; 
+    border: 1px solid #e2e8f0;
+    background: #f8fafc; /* 아주 연한 회색 배경 */
+    color: #64748b; 
+    cursor: pointer; 
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.sol-btn i {
+    font-size: 1.2rem;
+    margin-bottom: 8px; /* 아이콘과 텍스트 사이 간격 */
+    color: #94a3b8;
+    transition: color 0.2s;
+}
+
+/* 서브 메뉴 호버 효과 */
+.sol-btn:hover:not(.active) { 
+    background: white; 
+    border-color: #cbd5e1;
+    transform: translateY(-2px); /* 살짝 떠오르는 효과 */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+/* 서브 메뉴 활성화 상태 */
+.sol-btn.active { 
+    background: white; 
+    color: #2563EB; 
+    border: 2px solid #2563EB; /* 파란 테두리 */
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.1);
+}
+.sol-btn.active i { color: #2563EB; }
+
+/* BLACK 버튼 전용 스타일 */
+.sol-btn.black-btn { 
+    background: #171717; 
+    color: #888;
+    border-color: #171717;
+}
+.sol-btn.black-btn i { color: #555; }
+
+.sol-btn.black-btn.active { 
+    background: #000; 
+    color: #FFD700; /* 금색 글자 */
+    border: 2px solid #000;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+.sol-btn.black-btn.active i { color: #FFD700; }
 
 .sol-content { display: none; }
 .sol-content.active { display: block; animation: fadeIn 0.3s; }
 
-/* 목표 대학 그리드 */
+/* --- 2-1. 목표 대학 그리드 스타일 --- */
 .univ-grid {
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;
 }
@@ -163,7 +244,12 @@
 
 .warning-text { color: #ef4444; font-size: 0.9rem; background: #fef2f2; padding: 10px; border-radius: 6px; }
 
-/* 플래너 코칭 & 락 오버레이 */
+/* --- 2-2. 점수 상승 시뮬레이션 --- */
+.placeholder-box {
+    text-align: center; padding: 40px; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1; color: #64748b;
+}
+
+/* --- 2-3. 플래너 코칭 & 락 오버레이 --- */
 .coach-container { display: flex; flex-direction: column; gap: 20px; }
 .coach-box { border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; position: relative; }
 .deep-coaching { border: 1px solid #cbd5e1; background: #f8fafc; }
@@ -174,8 +260,9 @@
     color: #64748b; font-weight: bold; z-index: 5;
     border-radius: 8px;
 }
+.lock-overlay i { font-size: 2rem; margin-bottom: 10px; color: #94a3b8; }
 
-/* FOR BLACK 테마 */
+/* --- 2-4. FOR BLACK 테마 --- */
 .black-theme { 
     background: linear-gradient(180deg, #1a1a1a 0%, #2d2d2d 100%); 
     padding: 30px; border-radius: 12px; color: white; margin: -20px; /* 패딩 보정 */
@@ -199,15 +286,27 @@
 .qna-item .q-date { color: #666; margin-right: 10px; }
 .qna-item .q-status { float: right; color: #4ade80; font-size: 0.8rem; }
 .qna-input-area { display: flex; gap: 10px; }
-.qna-input-area input { background: #333; border: none; color: white; }
+.qna-input-area input { flex: 1; padding: 10px; background: #333; border: none; color: white; border-radius: 6px; }
 .qna-input-area button { background: #FFD700; color: #000; border: none; padding: 0 20px; font-weight: bold; border-radius: 6px; cursor: pointer; }
 
-/* 기존 스타일 유지 (인풋 등) */
+/* --- 기존 폼 스타일 --- */
+.content-header h2 { margin-top: 0; color: #1e293b; }
+.content-header p { color: #64748b; margin-bottom: 30px; }
+
+.form-container h3 {
+    margin-top: 30px; margin-bottom: 15px;
+    font-size: 1.1rem; color: #2563eb; border-bottom: 2px solid #f1f5f9;
+    padding-bottom: 10px;
+}
+.form-container h3:first-child { margin-top: 0; }
+
 .form-group { margin-bottom: 20px; }
 .form-group label { display: block; font-weight: bold; margin-bottom: 8px; color: #334155; }
 input[type="text"], input[type="tel"], input[type="email"], input[type="password"] {
     width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 1rem;
 }
+input:focus { outline: none; border-color: #2563EB; }
+
 .save-btn {
     width: 100%; padding: 15px; margin-top: 30px;
     background-color: #2563EB; color: white; border: none; border-radius: 8px;
@@ -222,6 +321,13 @@ input[type="text"], input[type="tel"], input[type="email"], input[type="password
     .mypage-container { flex-direction: column; padding: 10px; margin-top: 20px; }
     .profile-summary { width: 100%; }
     .content-area { width: 100%; padding: 20px; min-height: auto; }
+    
+    .main-tabs { gap: 20px; }
+    .tab-btn { font-size: 1rem; padding: 10px 5px; }
+
+    .solution-menu { flex-wrap: wrap; gap: 10px; }
+    .sol-btn { flex: 1 1 45%; font-size: 0.85rem; padding: 12px; }
+    
     .univ-grid { grid-template-columns: 1fr; }
     .black-theme { margin: 0; border-radius: 8px; }
 }
