@@ -1,8 +1,8 @@
 /* =========================================
-   1. 기본 설정
+   1. 기본 설정 (Reset & Base)
    ========================================= */
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Noto Sans KR', sans-serif; }
-body { color: #333; line-height: 1.6; background-color: #f8fafc; }
+body { color: #333; line-height: 1.6; background-color: #f8fafc; overflow-x: hidden; }
 a { text-decoration: none; color: inherit; cursor: pointer; }
 ul, ol { list-style: none; }
 
@@ -10,394 +10,193 @@ ul, ol { list-style: none; }
    2. 헤더 영역
    ========================================= */
 header { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    padding: 15px 5%; 
-    background-color: white; 
-    border-bottom: 1px solid #e2e8f0; 
-    position: sticky; 
-    top: 0; 
-    z-index: 1000; 
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    display: flex; justify-content: space-between; align-items: center; 
+    padding: 15px 5%; background-color: white; border-bottom: 1px solid #e2e8f0; 
+    position: sticky; top: 0; z-index: 1000; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
-
 .logo-container { display: flex; align-items: center; gap: 10px; }
 .logo-container img { height: 40px; width: auto; }
 .logo { font-size: 1.5rem; font-weight: 800; color: #0F172A; letter-spacing: -0.5px; }
 
 .nav-links { display: flex; align-items: center; gap: 25px; }
-.nav-links a { 
-    font-size: 0.95rem; 
-    color: #64748b; 
-    font-weight: 500; 
-    transition: color 0.2s;
-}
+.nav-links a { font-size: 0.95rem; color: #64748b; font-weight: 500; transition: color 0.2s; }
 .nav-links a:hover { color: #2563EB; font-weight: 600; }
 
 /* =========================================
-   상단 로드맵 소개 섹션
+   3. 인트로 & 히어로 섹션
    ========================================= */
 .roadmap-intro {
-    text-align: center;
-    /* 패딩을 늘려 더 시원한 느낌을 줌 */
-    padding: 90px 20px;
-    /* 단순 단색 배경 대신 은은한 블루 그라데이션 적용 */
+    text-align: center; padding: 90px 20px;
     background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
-    /* 하단 테두리 대신 부드러운 내부 그림자로 깊이감 추가 */
-    border-bottom: none;
     box-shadow: inset 0 -20px 30px -20px rgba(37, 99, 235, 0.05);
 }
-
 .roadmap-intro h2 {
-    /* 폰트 크기 대폭 확대 */
-    font-size: 2.6rem;
-    /* 가장 두꺼운 웨이트 적용 */
-    font-weight: 900;
-    /* 기본 검정보다 약간 더 깊이 있는 진한 파랑색 */
-    color: #1e3a8a;
-    margin-bottom: 25px;
-    /* 큰 글씨에 어울리는 자간과 행간 조정 */
-    letter-spacing: -1.5px;
-    line-height: 1.2;
+    font-size: 2.6rem; font-weight: 900; color: #1e3a8a; 
+    margin-bottom: 25px; letter-spacing: -1.5px; line-height: 1.2; word-break: keep-all;
 }
-
 .roadmap-intro p {
-    /* 본문 폰트 크기도 확대 */
-    font-size: 1.3rem;
-    /* 가독성을 위해 약간 더 진한 회색 */
-    color: #334155;
-    line-height: 1.7;
-    max-width: 840px;
-    margin: 0 auto;
-    word-break: keep-all;
-    font-weight: 500;
+    font-size: 1.3rem; color: #334155; line-height: 1.7; 
+    max-width: 840px; margin: 0 auto; word-break: keep-all; font-weight: 500;
 }
-
-/* 강조된 텍스트에 형광펜 효과 추가 */
-.roadmap-intro p strong {
-    position: relative;
-    font-weight: 800;
-    color: #0F172A;
-    z-index: 1;
-}
-
+.roadmap-intro p strong { position: relative; font-weight: 800; color: #0F172A; z-index: 1; }
 .roadmap-intro p strong::after {
-    content: '';
-    position: absolute;
-    left: -2px;
-    bottom: 2px;
-    width: calc(100% + 4px);
-    height: 35%;
-    background-color: #bfdbfe; /* 연한 파란색 형광펜 */
-    opacity: 0.6;
-    z-index: -1;
-    border-radius: 4px;
+    content: ''; position: absolute; left: -2px; bottom: 2px; 
+    width: 100%; height: 35%; background-color: #bfdbfe; 
+    opacity: 0.6; z-index: -1; border-radius: 4px;
 }
 
-/* =========================================
-   3. 히어로 섹션
-   ========================================= */
-.hero { 
-    background-color: white; 
-    padding: 80px 5%; 
-    text-align: center;
-}
-
+.hero { background-color: white; padding: 80px 5%; text-align: center; }
 .hero-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 40px;
-    max-width: 1200px;
-    margin: 0 auto 60px auto;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+    gap: 40px; max-width: 1200px; margin: 0 auto 60px auto;
 }
-
 .hero-card {
-    text-align: left;
-    padding: 30px;
-    border-radius: 16px;
-    background: #fff;
-    border: 1px solid #f1f5f9;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    text-align: left; padding: 30px; border-radius: 16px; 
+    background: #fff; border: 1px solid #f1f5f9; 
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: transform 0.3s ease;
 }
-.hero-card:hover { 
-    transform: translateY(-5px); 
-    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-}
-
+.hero-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
 .hero-icon { font-size: 2.5rem; margin-bottom: 20px; display: block; }
-.hero-card h3 { font-size: 1.4rem; font-weight: 800; color: #0F172A; margin-bottom: 15px; line-height: 1.4; }
+.hero-card h3 { font-size: 1.4rem; font-weight: 800; color: #0F172A; margin-bottom: 15px; line-height: 1.4; word-break: keep-all;}
 .hero-card p { color: #64748b; line-height: 1.7; font-size: 1rem; word-break: keep-all; }
-.hero-card strong { color: #2563EB; }
 
 .cta-container { text-align: center; margin-top: 40px; }
 .cta-button { 
-    background: linear-gradient(135deg, #2563EB, #1d4ed8);
-    color: white; 
-    padding: 18px 40px; 
-    border-radius: 50px; 
-    font-weight: 700; 
-    font-size: 1.1rem;
-    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
-    transition: all 0.3s ease;
-    display: inline-block;
+    background: linear-gradient(135deg, #2563EB, #1d4ed8); color: white; 
+    padding: 18px 40px; border-radius: 50px; font-weight: 700; font-size: 1.1rem; 
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3); transition: all 0.3s ease; display: inline-block;
 }
 .cta-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4); }
 
 /* =========================================
-   4. About 섹션
+   4. About & Program 섹션
    ========================================= */
-.section { padding: 100px 5%; }
 .message-section { 
-    background-color: #F8FAFC; 
-    text-align: center; 
-    padding: 100px 5%;
-    border-top: 1px solid #e2e8f0;
-    border-bottom: 1px solid #e2e8f0;
+    background-color: #F8FAFC; text-align: center; padding: 100px 5%; 
+    border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;
 }
 .message-content { max-width: 800px; margin: 0 auto; }
 .message-section h2 { font-size: 2rem; font-weight: 800; color: #0F172A; margin-bottom: 20px; word-break: keep-all; }
 .message-section h3 { font-size: 1.3rem; color: #2563EB; font-weight: 700; margin-bottom: 30px; word-break: keep-all; }
 .message-section p { font-size: 1.1rem; color: #475569; line-height: 1.8; word-break: keep-all; }
 
-/* =========================================
-   5. 커리큘럼 (디자인 개선됨)
-   ========================================= */
-.curriculum { background-color: white; }
-
-/* [수정됨] 하단 유료상품 헤더 스타일 */
+.curriculum { background-color: white; padding: 100px 5%; }
 .curriculum-header { 
-    text-align: center; 
-    max-width: 900px; 
-    margin: 0 auto 60px auto; 
-    padding-bottom: 40px;
-    border-bottom: 2px solid #f1f5f9; 
+    text-align: center; max-width: 900px; margin: 0 auto 60px auto; 
+    padding-bottom: 40px; border-bottom: 2px solid #f1f5f9; 
 }
-
-.curriculum-header h2 { 
-    font-size: 2.4rem; 
-    font-weight: 900; 
-    color: #0F172A; 
-    margin-bottom: 25px; 
-    letter-spacing: -1px;
-    line-height: 1.2;
-}
-
-.curriculum-header p { 
-    font-size: 1.15rem; 
-    color: #475569; 
-    word-break: keep-all; 
-    line-height: 1.8;
-}
+.curriculum-header h2 { font-size: 2.4rem; font-weight: 900; color: #0F172A; margin-bottom: 25px; letter-spacing: -1px; word-break: keep-all; }
+.curriculum-header p { font-size: 1.15rem; color: #475569; line-height: 1.8; word-break: keep-all; }
 
 .course-list { max-width: 900px; margin: 0 auto; }
-
 .course-item { 
-    background: white; 
-    border: 1px solid #e2e8f0; 
-    border-radius: 16px; 
-    margin-bottom: 20px; 
-    overflow: hidden;
-    transition: all 0.3s ease;
+    background: white; border: 1px solid #e2e8f0; border-radius: 16px; 
+    margin-bottom: 20px; overflow: hidden; transition: all 0.3s ease; 
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
-
 .course-item.expandable { cursor: pointer; }
-.course-item.expandable:hover { 
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); 
-    transform: translateY(-2px);
-}
+.course-item.expandable:hover { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); transform: translateY(-2px); }
 
 .course-summary { 
-    padding: 25px 30px; 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center;
-    background: #fff;
+    padding: 25px 30px; display: flex; justify-content: space-between; align-items: center; background: #fff;
 }
 .course-title-group { display: flex; flex-direction: column; gap: 5px; }
 .course-name { font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
-.course-desc { font-size: 0.95rem; font-weight: 500; color: #64748b; margin-top: 5px;}
-.course-price { font-weight: 700; font-size: 1.1rem; white-space: nowrap;}
+.course-desc { font-size: 0.95rem; font-weight: 500; color: #64748b; margin-top: 5px; word-break: keep-all; }
+.course-price { font-weight: 700; font-size: 1.1rem; white-space: nowrap; }
 
-/* --- 색상 강제 적용 (!important) --- */
+/* 티어별 색상 */
+.course-item.tier-basic { border-left: 6px solid #059669; }
+.course-item.tier-basic .course-name, .course-item.tier-basic .course-price { color: #059669; }
 
-/* BASIC - Green */
-.course-item.tier-basic { border-left: 6px solid #059669 !important; }
-.course-item.tier-basic .course-name, 
-.course-item.tier-basic .course-price { color: #059669 !important; }
+.course-item.tier-standard { border-left: 6px solid #2563EB; }
+.course-item.tier-standard .course-name, .course-item.tier-standard .course-price { color: #2563EB; }
 
-/* STANDARD - Blue */
-.course-item.tier-standard { border-left: 6px solid #2563EB !important; }
-.course-item.tier-standard .course-name, 
-.course-item.tier-standard .course-price { color: #2563EB !important; }
+.course-item.tier-pro { border-left: 6px solid #E11D48; }
+.course-item.tier-pro .course-name, .course-item.tier-pro .course-price { color: #E11D48; }
 
-/* PRO - Red */
-.course-item.tier-pro { border-left: 6px solid #E11D48 !important; }
-.course-item.tier-pro .course-name, 
-.course-item.tier-pro .course-price { color: #E11D48 !important; }
-
-/* BLACK - Black */
-.course-item.tier-black { 
-    border-left: 6px solid #171717 !important; 
-    background-color: #fafafa; 
-}
-.course-item.tier-black .course-name, 
-.course-item.tier-black .course-price { color: #171717 !important; }
-
-/* ----------------------------------------------- */
+.course-item.tier-black { border-left: 6px solid #171717; background-color: #fafafa; }
+.course-item.tier-black .course-name, .course-item.tier-black .course-price { color: #171717; }
 
 .course-details { 
-    padding: 0 30px 30px 30px; 
-    color: #334155; 
-    border-top: 1px dashed #e2e8f0;
-    margin-top: 0;
+    padding: 0 30px 30px 30px; color: #334155; border-top: 1px dashed #e2e8f0; 
     animation: slideDown 0.3s ease-out;
 }
-@keyframes slideDown {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.course-details ol { margin-top: 20px; padding-left: 20px; }
-.course-details li { margin-bottom: 12px; line-height: 1.6; font-size: 0.95rem; list-style-type: decimal;}
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+.course-details ol { margin-top: 20px; padding-left: 20px; list-style: decimal; }
+.course-details li { margin-bottom: 12px; line-height: 1.6; font-size: 0.95rem; }
 .course-details li strong { color: #0F172A; font-weight: 600; }
-
 .toggle-icon { font-size: 0.8rem; color: #cbd5e1; transition: transform 0.3s; }
 .course-item.active .toggle-icon { transform: rotate(180deg); color: #0F172A; }
 .hidden-details { display: none; }
 
 /* =========================================
-   6. 푸터 & 기타
+   5. 푸터 & 모달 (렉 수정 완료)
    ========================================= */
 footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size: 0.9rem; }
 .footer-content { max-width: 1200px; margin: 0 auto; }
-.legal-links span { margin-right: 20px; cursor: pointer; }
-.legal-links span:hover { color: white; text-decoration: underline; }
-
-/* =========================================
-   [모달 디자인 개선]
-   ========================================= */
-
-/* 모달 헤더 */
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 20px;
-    border-bottom: 2px solid #f1f5f9;
-    margin-bottom: 20px;
-}
-.modal-header h2 {
-    margin: 0;
-    font-size: 1.5rem;
-    color: #1e293b;
-}
-.close-btn {
-    position: static; /* 기존 absolute 해제 */
-    font-size: 2rem;
-    color: #94a3b8;
-    line-height: 1;
-}
-.close-btn:hover { color: #ef4444; }
-
-/* 모달 본문 (스크롤 영역) */
-.modal-body {
-    max-height: 60vh;
-    overflow-y: auto;
-    padding-right: 10px; /* 스크롤바 공간 확보 */
-    color: #475569;
-    font-size: 0.95rem;
-    line-height: 1.7;
-    text-align: left; /* 왼쪽 정렬 강제 */
-}
-
-/* 스크롤바 디자인 */
-.modal-body::-webkit-scrollbar { width: 6px; }
-.modal-body::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
-.modal-body::-webkit-scrollbar-track { background-color: #f1f5f9; }
-
-/* 모달 내부 타이포그래피 */
-.modal-body h3 {
-    margin: 25px 0 10px 0;
-    font-size: 1.1rem;
-    color: #0f172a;
-    font-weight: 700;
-}
-.modal-body h4 {
-    margin: 15px 0 5px 0;
-    font-size: 1rem;
-    color: #334155;
-}
-.modal-body p { margin-bottom: 10px; }
-
-/* 리스트 스타일 */
-.modal-body ul {
-    list-style: disc;
-    padding-left: 20px;
-    margin-bottom: 15px;
-}
-.modal-body li { margin-bottom: 5px; }
-
-/* 구분선 */
-.modal-body hr {
-    border: none;
-    border-top: 1px solid #e2e8f0;
-    margin: 20px 0;
-}
-
-/* 강조 텍스트 */
-.warning-text { color: #dc2626; font-weight: 500; }
-.note { font-size: 0.9rem; color: #64748b; background: #f8fafc; padding: 10px; border-radius: 6px; }
-
-/* 환불 정책 박스 */
-.refund-policy {
-    background-color: #f8fafc;
-    padding: 20px;
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
-    margin-top: 20px;
-}
-.refund-policy h3 { margin-top: 0; color: #2563eb; }
-.close-btn { float: right; font-size: 28px; cursor: pointer; color: #94a3b8; }
-.close-btn:hover { color: #333; }
+.company-name { color: white; font-weight: bold; font-size: 1.1rem; margin-bottom: 10px; }
+.legal-links span { margin-right: 20px; cursor: pointer; text-decoration: underline; }
+.legal-links span:hover { color: white; }
 .hidden { display: none !important; }
 
+/* --- [중요] 모달 최적화 스타일 --- */
+.modal {
+    display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.6); /* backdrop-filter 제거로 렉 해결 */
+}
+.modal-content {
+    background-color: white; margin: 5% auto; padding: 30px; border-radius: 16px;
+    width: 90%; max-width: 600px; max-height: 80vh; 
+    display: flex; flex-direction: column;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+.modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 15px; border-bottom: 2px solid #f1f5f9; flex-shrink: 0;
+}
+.modal-header h2 { margin: 0; font-size: 1.4rem; color: #1e293b; }
+.close-btn { font-size: 2rem; color: #94a3b8; cursor: pointer; line-height: 1; }
+.close-btn:hover { color: #ef4444; }
+
+.modal-body {
+    overflow-y: auto; padding-top: 20px; padding-right: 10px;
+    font-size: 0.95rem; line-height: 1.6; color: #475569; text-align: left;
+}
+.modal-body::-webkit-scrollbar { width: 5px; }
+.modal-body::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
+
+.modal-body h3 { margin: 25px 0 10px 0; font-size: 1.1rem; color: #0f172a; font-weight: 700; }
+.modal-body ul { list-style: disc; padding-left: 20px; margin-bottom: 15px; }
+.modal-body p { margin-bottom: 10px; }
+.modal-body hr { border: none; border-top: 1px solid #e2e8f0; margin: 20px 0; }
+.warning-text { color: #dc2626; font-weight: 500; }
+.refund-box { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
+.privacy-contact { background: #f8fafc; padding: 10px; border-radius: 8px; font-size: 0.9rem; }
+
+
 /* =========================================
-   [모바일 반응형 보정 - 맨 아래 추가]
+   6. 모바일 반응형 (최종 보정)
    ========================================= */
 @media (max-width: 768px) {
+    /* 헤더 & 네비 */
     header { flex-direction: column; gap: 15px; padding: 15px; }
     .nav-links { flex-wrap: wrap; justify-content: center; gap: 15px; }
+
+    /* 인트로 섹션 */
+    .roadmap-intro { padding: 50px 20px; }
+    .roadmap-intro h2 { font-size: 1.7rem; line-height: 1.3; }
+    .roadmap-intro p { font-size: 1rem; padding: 0 5px; }
+
+    /* 히어로 섹션 */
     .hero-grid { grid-template-columns: 1fr; gap: 30px; }
+    
+    /* 커리큘럼 섹션 */
+    .curriculum-header h2 { font-size: 1.8rem; }
     .course-summary { flex-direction: column; align-items: flex-start; gap: 15px; }
     .course-price { align-self: flex-end; }
-    
-    /* 1. 상단 로드맵 섹션 여백 축소 */
-    .roadmap-intro {
-        padding: 50px 20px; /* 위아래 여백 줄임 */
-    }
+    .course-details { padding: 0 20px 20px 20px; }
 
-    /* 2. 메인 제목 (합격을 위한...) 크기 축소 */
-    .roadmap-intro h2 {
-        font-size: 1.7rem; /* 2.6rem -> 1.7rem으로 축소 */
-        line-height: 1.3;  /* 줄간격 좁힘 */
-        word-break: keep-all; /* 단어 중간 끊김 방지 */
-        letter-spacing: -0.5px;
-    }
-
-    /* 3. 본문 설명 (누구는 붙고...) 크기 축소 */
-    .roadmap-intro p {
-        font-size: 1rem; /* 1.3rem -> 1rem으로 축소 */
-        line-height: 1.6;
-        padding: 0 5px;  /* 좌우 여백 살짝 줌 */
-        word-break: keep-all; /* 단어 단위 줄바꿈 강제 */
-    }
-
-    /* 4. 형광펜 효과 높이 모바일에 맞게 조정 */
-    .roadmap-intro p strong::after {
-        height: 30%; 
-        bottom: 1px;
-    }
+    /* 모달 모바일 */
+    .modal-content { margin: 10% auto; width: 95%; max-height: 70vh; padding: 20px; }
 }
