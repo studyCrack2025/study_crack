@@ -105,9 +105,11 @@ function handleSendCode() {
     const name = document.getElementById('name').value;
     const gender = document.getElementById('gender').value;
     const birthdate = document.getElementById('birthdate').value;
+    let phone = document.getElementById('phone').value; // 전화번호 가져오기
 
-    if (!email || !password || !name || !birthdate) {
-        alert("기본 정보를 모두 입력해주세요.");
+    // 1. 유효성 검사
+    if (!email || !password || !name || !birthdate || !phone) {
+        alert("기본 정보(전화번호 포함)를 모두 입력해주세요.");
         return;
     }
     if (password !== passwordConfirm) {
@@ -115,20 +117,34 @@ function handleSendCode() {
         return;
     }
 
+    // 2. 전화번호 포맷팅 (01012345678 -> +821012345678)
+    // Cognito는 국제 표준 포맷(E.164)을 원합니다.
+    let cleanPhone = phone.replace(/-/g, '').trim();
+    if (cleanPhone.startsWith('010')) {
+        cleanPhone = '+82' + cleanPhone.substring(1);
+    } else if (cleanPhone.startsWith('10')) {
+        cleanPhone = '+82' + cleanPhone;
+    }
+
+    // 3. Cognito로 보낼 속성 리스트 생성
     const attributeList = [
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'email', Value: email }),
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'name', Value: name }),
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'gender', Value: gender }),
-        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'birthdate', Value: birthdate })
+        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'birthdate', Value: birthdate }),
+        // ★ [핵심 수정] 전화번호 속성 추가
+        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'phone_number', Value: cleanPhone })
     ];
 
     const sendBtn = document.getElementById('sendCodeBtn');
     sendBtn.innerText = "전송 중...";
     sendBtn.disabled = true;
 
+    // 4. 회원가입 요청
     userPool.signUp(email, password, attributeList, null, function(err, result) {
         if (err) {
-            alert(getErrorMessage(err));
+            alert(getErrorMessage(err)); // 에러 메시지 출력
+            console.error("Cognito SignUp Error:", err); // 콘솔에 자세한 에러 출력
             sendBtn.innerText = "인증번호 받기";
             sendBtn.disabled = false;
             return;
