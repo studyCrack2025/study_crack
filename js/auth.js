@@ -21,7 +21,7 @@ let serverPhoneCode = "";
 document.addEventListener('DOMContentLoaded', () => {
     checkLoginStatus();
     
-    // 비밀번호 확인 리스너 (요소가 있을 때만 연결)
+    // 비밀번호 확인 리스너
     const pwInput = document.getElementById('password');
     const pwConfirmInput = document.getElementById('passwordConfirm');
     if(pwInput && pwConfirmInput) {
@@ -59,14 +59,19 @@ function checkPasswordMatch() {
     }
 }
 
-// Cognito 에러 메시지 한글 변환
+// [수정 1] Cognito 에러 메시지 한글 변환 (로그인 실패 메시지 통일)
 function getErrorMessage(err) {
     switch (err.code) {
+        case "NotAuthorizedException": // 비밀번호 틀림
+        case "UserNotFoundException":  // 계정 없음
+            return "이메일 혹은 비밀번호가 정확하지 않습니다.";
+            
         case "UsernameExistsException": return "이미 가입된 이메일입니다.";
         case "InvalidParameterException": return "입력 정보가 올바르지 않습니다.";
         case "InvalidPasswordException": return "비밀번호는 8자 이상이어야 합니다.";
         case "CodeMismatchException": return "인증 코드가 일치하지 않습니다.";
         case "LimitExceededException": return "요청 횟수 초과. 잠시 후 시도하세요.";
+        case "UserNotConfirmedException": return "이메일 인증이 완료되지 않은 계정입니다.";
         default: return "오류 발생: " + (err.message || err.code);
     }
 }
@@ -164,14 +169,31 @@ function handleVerify() {
 }
 
 // ==========================================
-// [Part C] 전화번호 인증 (Lambda)
+// [Part C] 전화번호 인증 (Lambda) - 수정됨
 // ==========================================
 let phoneTimerInterval;
 
 async function handleSendPhoneCode() {
-    const phone = document.getElementById('phone').value;
-    if (!phone || phone.length < 10) {
-        alert("올바른 전화번호를 입력해주세요.");
+    let phone = document.getElementById('phone').value;
+    
+    // [수정 2] 전화번호 포맷팅 (010-1234-5678 -> +821012345678)
+    // AWS SNS는 국제 표준 포맷(E.164)을 가장 잘 인식합니다.
+    if (!phone) {
+        alert("전화번호를 입력해주세요.");
+        return;
+    }
+
+    // 하이픈 제거
+    let cleanPhone = phone.replace(/-/g, '').trim();
+
+    // 010으로 시작하면 +8210으로 변환
+    if (cleanPhone.startsWith('010')) {
+        cleanPhone = '+82' + cleanPhone.substring(1); 
+    } else if (cleanPhone.startsWith('10')) {
+        cleanPhone = '+82' + cleanPhone;
+    } else if (!cleanPhone.startsWith('+')) {
+        // 010이 아닌데 +가 없으면 한국 번호가 아닐 수 있음 (그대로 시도하거나 에러 처리)
+        alert("휴대폰 번호 형식을 확인해주세요. (예: 01012345678)");
         return;
     }
 
@@ -182,10 +204,17 @@ async function handleSendPhoneCode() {
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'send_sms_auth', phone: phone })
+            body: JSON.stringify({ 
+                type: 'send_sms_auth', 
+                phone: cleanPhone // 포맷팅된 번호 전송
+            })
         });
 
-        if (!response.ok) throw new Error("SMS 발송 실패");
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.message || "SMS 발송 실패");
+        }
+        
         const data = await response.json();
         
         serverPhoneCode = data.authCode; 
@@ -199,7 +228,7 @@ async function handleSendPhoneCode() {
 
     } catch (error) {
         console.error(error);
-        alert("인증번호 발송에 실패했습니다.");
+        alert("인증번호 발송에 실패했습니다. (관리자에게 문의하세요)");
         btn.innerText = "인증번호 전송";
         btn.disabled = false;
     }
@@ -208,7 +237,8 @@ async function handleSendPhoneCode() {
 function handleVerifyPhone() {
     const inputCode = document.getElementById('phoneVerifyCode').value;
     
-    if (inputCode && inputCode == serverPhoneCode) {
+    // 문자열/숫자 비교 문제 방지를 위해 == 사용 (또는 String() 변환)
+    if (inputCode && String(inputCode).trim() == String(serverPhoneCode).trim()) {
         alert("전화번호 인증이 완료되었습니다.");
         document.getElementById('phoneVerifySection').innerHTML = "<p class='text-success'>✅ 전화번호 인증 완료</p>";
         isPhoneVerified = true;
@@ -254,13 +284,11 @@ function startTimer(duration, displayId, intervalVar) {
 // ==========================================
 
 async function handleFinalSubmit() {
-    // 1. 인증 상태 재확인
     if (!isEmailVerified || !isPhoneVerified) {
         alert("이메일과 전화번호 인증을 모두 완료해주세요.");
         return;
     }
 
-    // 2. 선택 정보 가져오기 (오류 방지)
     const majorRadio = document.querySelector('input[name="major"]:checked');
     const referralRadio = document.querySelector('input[name="referral"]:checked');
 
@@ -275,7 +303,6 @@ async function handleFinalSubmit() {
     let referral = referralRadio.value;
     if (referral === 'etc') referral = document.getElementById('referralEtc').value;
 
-    // 3. 나머지 정보 가져오기
     const name = document.getElementById('name').value;
     const phoneRaw = document.getElementById('phone').value;
     const school = document.getElementById('school').value;
@@ -286,7 +313,6 @@ async function handleFinalSubmit() {
         return;
     }
 
-    // 4. DB 저장 API 호출
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
@@ -376,7 +402,6 @@ function handleSignIn() {
             localStorage.setItem('userEmail', email);
             localStorage.setItem('userId', userId);
             
-            // 로그인 후 권한(Role) 확인
             fetch(API_URL, {
                 method: 'POST',
                 body: JSON.stringify({ type: 'get_user', userId: userId })
@@ -395,14 +420,15 @@ function handleSignIn() {
             })
             .catch(err => {
                 console.error(err);
-                // DB에 정보가 없는 경우라도 일반 로그인 처리
+                // DB 확인이 안 돼도 로그인 처리
                 localStorage.setItem('userRole', 'student');
                 alert("로그인 성공!");
                 window.location.href = 'index.html';
             });
         },
+        // [수정] 실패 시 커스텀 에러 함수 호출
         onFailure: function(err) {
-            alert("로그인 실패: " + getErrorMessage(err));
+            alert(getErrorMessage(err));
         }
     });
 }
