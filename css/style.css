@@ -38,11 +38,33 @@ header {
     font-size: 1.3rem; color: #334155; line-height: 1.7; 
     max-width: 840px; margin: 0 auto; word-break: keep-all; font-weight: 500;
 }
-.roadmap-intro p strong { position: relative; font-weight: 800; color: #0F172A; z-index: 1; }
+
+.roadmap-intro p strong {
+    position: relative;
+    font-weight: 800;
+    color: #0F172A;
+    z-index: 1;
+    display: inline; /* 중요: inline 요소로 설정 */
+    
+    /* 핵심: 줄바꿈 시 스타일을 복제하여 각 줄에 적용 */
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    
+    /* 하이라이트가 글자 옆으로 너무 퍼지지 않도록 패딩 조절 */
+    padding: 0 4px; 
+}
+
 .roadmap-intro p strong::after {
-    content: ''; position: absolute; left: -2px; bottom: 2px; 
-    width: 100%; height: 35%; background-color: #bfdbfe; 
-    opacity: 0.6; z-index: -1; border-radius: 4px;
+    content: '';
+    position: absolute;
+    left: 0; /* 패딩 안쪽부터 시작 */
+    bottom: 2px;
+    width: 100%; /* 패딩 포함한 전체 너비 */
+    height: 35%;
+    background-color: #bfdbfe; /* 연한 파란색 */
+    opacity: 0.6;
+    z-index: -1;
+    border-radius: 4px;
 }
 
 .hero { background-color: white; padding: 80px 5%; text-align: center; }
