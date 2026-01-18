@@ -97,16 +97,16 @@ function formatPhoneNumber(rawPhone) {
     return cleaned.replace(/^(\d{2,3})(\d{3,4})(\d{4})$/, `$1-$2-$3`);
 }
 
-// ★ [수정됨] 결제 및 신청 처리 함수
+// 결제 및 신청 처리 함수
 async function processPayment() {
     const name = document.getElementById('name').value;
     const rawPhone = document.getElementById('phone').value;
     const email = document.getElementById('email').value;
-    const userId = localStorage.getItem('userId') || 'guest'; // 비로그인 시 guest 처리
+    
+    const userId = localStorage.getItem('userId') || 'guest';
 
-    // 유효성 검사
     if (!name || !rawPhone || !email) {
-        alert("모든 정보를 입력해주세요.");
+        alert("필수 정보를 모두 입력해주세요.");
         return;
     }
     if (!selectedTier) {
@@ -121,11 +121,10 @@ async function processPayment() {
     btn.innerText = "처리 중...";
     btn.disabled = true;
 
-    // 주문 번호 생성
     const uniqueId = 'ORD-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
 
     try {
-        // 1. DB에 신청 내역 저장 (모든 티어 공통)
+        // DB에 신청 내역 저장
         const response = await fetch(PAYMENT_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -136,17 +135,17 @@ async function processPayment() {
                 phone: formattedPhone,
                 email: email,
                 product: selectedProductName,
-                tier: selectedTier, // 티어 정보 추가 전송
+                tier: selectedTier,
                 userId: userId 
             })
         });
 
         if (response.ok) {
-            // ★ 분기 처리: BLACK 티어는 결제 없이 성공 페이지로
+            // BLACK 티어는 결제 없이 성공 페이지로
             if (selectedTier === 'black') {
                 window.location.href = `success.html?tier=black`;
             } 
-            // 나머지 티어는 Stripe 결제 페이지로 이동
+            // 나머지 티어는 결제 페이지로
             else if (selectedProductUrl) {
                 window.location.href = `${selectedProductUrl}?client_reference_id=${uniqueId}&prefilled_email=${email}`;
             }

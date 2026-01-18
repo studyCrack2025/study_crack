@@ -324,10 +324,50 @@ async function saveProfile() {
     }
 }
 
-// === 회원 탈퇴 함수 (유지) ===
+// === 회원 탈퇴 함수 (완성본) ===
 async function handleDeleteAccount() {
-    const isConfirmed = confirm("정말로 탈퇴하시겠습니까?\n\n탈퇴 시 저장된 모든 데이터가 삭제되며 복구할 수 없습니다.");
+    // 1. 재확인 (실수 방지)
+    const isConfirmed = confirm("정말로 탈퇴하시겠습니까?\n\n탈퇴 시 저장된 모든 데이터(성적, 결제 내역 등)가 영구 삭제되며 복구할 수 없습니다.");
+    
     if (!isConfirmed) return;
-    // ... (기존 로직 동일)
-    alert("탈퇴 기능 실행"); // 실제 코드는 위에서 제공해주신 것 그대로 유지
+
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+        alert("로그인 정보가 유효하지 않습니다.");
+        window.location.href = 'login.html';
+        return;
+    }
+
+    try {
+        // 2. 서버에 삭제 요청 전송
+        // (USER_API_URL 변수가 상단에 선언되어 있어야 합니다)
+        const response = await fetch(USER_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                type: 'delete_user',  // 백엔드에 보낼 명령
+                userId: userId
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            // 3. 성공 시 클라이언트 정리
+            alert("탈퇴가 완료되었습니다.\n그동안 이용해 주셔서 감사합니다.");
+            
+            // 저장된 모든 정보 삭제
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // 메인으로 이동
+            window.location.href = 'index.html';
+        } else {
+            throw new Error(result.error || "탈퇴 처리에 실패했습니다.");
+        }
+
+    } catch (error) {
+        console.error("탈퇴 오류:", error);
+        alert("오류가 발생했습니다: " + error.message);
+    }
 }
