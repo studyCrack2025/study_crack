@@ -214,35 +214,73 @@
 .sol-content { display: none; }
 .sol-content.active { display: block; animation: fadeIn 0.3s; }
 
-/* --- 2-1. 목표 대학 그리드 스타일 --- */
+/* --- 2-1. 목표 대학 관련 스타일 (수정됨) --- */
+.univ-sub-header { margin: 25px 0 15px 0; border-bottom: 1px dashed #e2e8f0; padding-bottom: 10px; }
+.univ-sub-header h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: #1e293b; }
+.univ-sub-header p { margin: 0; font-size: 0.9rem; color: #64748b; }
+
 .univ-grid {
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;
 }
 .univ-slot {
     border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; background: #f8fafc;
-    position: relative;
+    position: relative; display: flex; flex-direction: column; gap: 8px;
 }
-.univ-slot label { font-size: 0.8rem; color: #64748b; display: block; margin-bottom: 5px; }
-.univ-slot input { 
-    width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; 
+.univ-slot label { font-size: 0.85rem; font-weight: bold; color: #334155; }
+.univ-slot select { 
+    width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.9rem;
 }
-.univ-slot .slot-date { 
-    font-size: 0.75rem; color: #ef4444; margin-top: 5px; display: block; 
-}
+.univ-slot .slot-msg { font-size: 0.8rem; color: #ef4444; font-weight: 500; }
 
-/* 비활성화 슬롯 (등급 제한) */
-.univ-slot.locked {
-    background: #f1f5f9; opacity: 0.7; pointer-events: none;
-    display: flex; align-items: center; justify-content: center;
-    border: 1px dashed #cbd5e1;
+.divider { border: 0; border-top: 2px solid #f1f5f9; margin: 40px 0; }
+
+/* 비활성화 슬롯 */
+.univ-slot.locked-tier {
+    background: #f1f5f9; opacity: 0.6; pointer-events: none; justify-content: center; align-items: center; border: 1px dashed #cbd5e1;
 }
-.univ-slot.locked::after {
-    content: attr(data-msg);
-    color: #94a3b8; font-weight: bold; font-size: 0.9rem;
+.univ-slot.locked-tier::after {
+    content: attr(data-msg); color: #94a3b8; font-weight: bold; font-size: 0.9rem;
 }
-.univ-slot.locked input, .univ-slot.locked label { display: none; }
+.univ-slot.locked-tier label, .univ-slot.locked-tier select { display: none; }
 
 .warning-text { color: #ef4444; font-size: 0.9rem; background: #fef2f2; padding: 10px; border-radius: 6px; }
+
+/* --- 2-2. 분석 결과 카드 및 파이 차트 --- */
+.analysis-card {
+    background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+}
+.analysis-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+.analysis-header h4 { margin: 0; font-size: 1.05rem; color: #2563eb; }
+
+.analysis-body { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+.score-table-box { flex: 1; min-width: 250px; }
+.score-compare-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.score-compare-table th { background: #f8fafc; padding: 8px; text-align: left; color: #64748b; border-bottom: 1px solid #e2e8f0; }
+.score-compare-table td { padding: 10px 8px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+.score-diff.high { color: #2563eb; font-weight: bold; } /* 점수 높음 (파랑) */
+.score-diff.low { color: #dc2626; font-weight: bold; }  /* 점수 낮음 (빨강) */
+
+/* 파이 차트 영역 */
+.chart-box { 
+    width: 220px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.pie-chart {
+    width: 120px; height: 120px; border-radius: 50%;
+    /* 기본적으로 5등분 (20%씩) 예시 */
+    background: conic-gradient(
+        #3b82f6 0% 20%, 
+        #ef4444 20% 40%, 
+        #f59e0b 40% 60%, 
+        #10b981 60% 80%, 
+        #8b5cf6 80% 100%
+    );
+    margin-bottom: 10px;
+}
+.chart-legend { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; font-size: 0.75rem; color: #64748b; }
+.legend-item { display: flex; align-items: center; gap: 3px; }
+.color-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
 
 /* --- 2-2. 점수 상승 시뮬레이션 --- */
 .placeholder-box {
@@ -313,6 +351,7 @@ input:focus { outline: none; border-color: #2563EB; }
     font-size: 1.05rem; font-weight: bold; cursor: pointer; transition: background 0.3s;
 }
 .save-btn:hover { background-color: #1d4ed8; }
+.save-btn:disabled { background-color: #94a3b8; cursor: not-allowed; }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -329,5 +368,7 @@ input:focus { outline: none; border-color: #2563EB; }
     .sol-btn { flex: 1 1 45%; font-size: 0.85rem; padding: 12px; }
     
     .univ-grid { grid-template-columns: 1fr; }
+    .analysis-body { flex-direction: column; }
+    .chart-box { margin-top: 20px; }
     .black-theme { margin: 0; border-radius: 8px; }
 }

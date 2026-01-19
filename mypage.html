@@ -101,7 +101,7 @@
                 <div class="solution-menu">
                     <button class="sol-btn active" onclick="openSolution('univ')">
                         <i class="fas fa-university"></i>
-                        <span>목표대학 설정</span>
+                        <span>목표대학</span>
                     </button>
                     <button class="sol-btn" onclick="openSolution('sim')">
                         <i class="fas fa-chart-line"></i>
@@ -118,13 +118,24 @@
                 </div>
 
                 <div id="sol-univ" class="sol-content active">
-                    <div class="content-header">
-                        <h2>목표대학 설정 및 분석</h2>
-                        <p class="warning-text">⚠️ 목표 대학은 설정 후 <strong>2주간 수정이 불가능</strong>합니다. 신중하게 선택해주세요.</p>
+                    <div class="univ-sub-header">
+                        <h3>1. 목표대학 설정</h3>
+                        <p class="warning-text">⚠️ 목표 대학 설정 시 <strong>2주간 수정이 불가능</strong>합니다. (대학/학과 데이터 로딩 중...)</p>
                     </div>
-                    <div class="univ-grid" id="univGrid">
-                        </div>
-                    <button class="save-btn" onclick="saveTargetUnivs()">목표 대학 저장하기</button>
+                    
+                    <div class="univ-grid" id="univGrid"></div>
+                    <button id="btnSaveTarget" class="save-btn" onclick="saveTargetUnivs()">설정 저장하기 (2주 락 적용)</button>
+
+                    <hr class="divider">
+
+                    <div class="univ-sub-header">
+                        <h3>2. 목표대학 기본분석</h3>
+                        <p>저장된 목표 대학의 작년 입시 결과와 현재 내 점수를 비교합니다.</p>
+                    </div>
+                    
+                    <div id="univAnalysisResult" class="analysis-container">
+                        <p style="text-align:center; color:#94a3b8; padding:30px;">목표 대학을 설정하면 분석 결과가 나타납니다.</p>
+                    </div>
                 </div>
 
                 <div id="sol-sim" class="sol-content">

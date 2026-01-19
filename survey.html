@@ -198,6 +198,7 @@
                             <td><input type="number" id="korPct"></td>
                             <td><input type="number" id="korGrd"></td>
                         </tr>
+
                         <tr>
                             <td>수학</td>
                             <td>
@@ -212,34 +213,94 @@
                             <td><input type="number" id="mathPct"></td>
                             <td><input type="number" id="mathGrd"></td>
                         </tr>
+
                         <tr>
                             <td>영어</td>
-                            <td class="disabled-cell"></td><td class="disabled-cell"></td><td class="disabled-cell"></td>
+                            <td class="disabled-cell"></td>
+                            <td class="disabled-cell"></td>
+                            <td class="disabled-cell"></td>
                             <td><input type="number" id="engGrd"></td>
                         </tr>
+
                         <tr>
                             <td>한국사</td>
-                            <td class="disabled-cell"></td><td class="disabled-cell"></td><td class="disabled-cell"></td>
+                            <td class="disabled-cell"></td>
+                            <td class="disabled-cell"></td>
+                            <td class="disabled-cell"></td>
                             <td><input type="number" id="histGrd"></td>
                         </tr>
+
                         <tr>
                             <td>탐구1</td>
-                            <td><input type="text" id="inq1Name" placeholder="과목명"></td>
+                            <td>
+                                <select id="inq1Name" style="width: 100%;">
+                                    <option value="">과목 선택</option>
+                                    <optgroup label="사회탐구">
+                                        <option value="생활과 윤리">생활과 윤리</option>
+                                        <option value="윤리와 사상">윤리와 사상</option>
+                                        <option value="한국지리">한국지리</option>
+                                        <option value="세계지리">세계지리</option>
+                                        <option value="동아시아사">동아시아사</option>
+                                        <option value="세계사">세계사</option>
+                                        <option value="경제">경제</option>
+                                        <option value="정치와 법">정치와 법</option>
+                                        <option value="사회·문화">사회·문화</option>
+                                    </optgroup>
+                                    <optgroup label="과학탐구">
+                                        <option value="물리학Ⅰ">물리학Ⅰ</option>
+                                        <option value="화학Ⅰ">화학Ⅰ</option>
+                                        <option value="생명과학Ⅰ">생명과학Ⅰ</option>
+                                        <option value="지구과학Ⅰ">지구과학Ⅰ</option>
+                                        <option value="물리학Ⅱ">물리학Ⅱ</option>
+                                        <option value="화학Ⅱ">화학Ⅱ</option>
+                                        <option value="생명과학Ⅱ">생명과학Ⅱ</option>
+                                        <option value="지구과학Ⅱ">지구과학Ⅱ</option>
+                                    </optgroup>
+                                </select>
+                            </td>
                             <td><input type="number" id="inq1Std"></td>
                             <td><input type="number" id="inq1Pct"></td>
                             <td><input type="number" id="inq1Grd"></td>
                         </tr>
+
                         <tr>
                             <td>탐구2</td>
-                            <td><input type="text" id="inq2Name" placeholder="과목명"></td>
+                            <td>
+                                <select id="inq2Name" style="width: 100%;">
+                                    <option value="">과목 선택</option>
+                                    <optgroup label="사회탐구">
+                                        <option value="생활과 윤리">생활과 윤리</option>
+                                        <option value="윤리와 사상">윤리와 사상</option>
+                                        <option value="한국지리">한국지리</option>
+                                        <option value="세계지리">세계지리</option>
+                                        <option value="동아시아사">동아시아사</option>
+                                        <option value="세계사">세계사</option>
+                                        <option value="경제">경제</option>
+                                        <option value="정치와 법">정치와 법</option>
+                                        <option value="사회·문화">사회·문화</option>
+                                    </optgroup>
+                                    <optgroup label="과학탐구">
+                                        <option value="물리학Ⅰ">물리학Ⅰ</option>
+                                        <option value="화학Ⅰ">화학Ⅰ</option>
+                                        <option value="생명과학Ⅰ">생명과학Ⅰ</option>
+                                        <option value="지구과학Ⅰ">지구과학Ⅰ</option>
+                                        <option value="물리학Ⅱ">물리학Ⅱ</option>
+                                        <option value="화학Ⅱ">화학Ⅱ</option>
+                                        <option value="생명과학Ⅱ">생명과학Ⅱ</option>
+                                        <option value="지구과학Ⅱ">지구과학Ⅱ</option>
+                                    </optgroup>
+                                </select>
+                            </td>
                             <td><input type="number" id="inq2Std"></td>
                             <td><input type="number" id="inq2Pct"></td>
                             <td><input type="number" id="inq2Grd"></td>
                         </tr>
+
                         <tr>
                             <td>제2외</td>
                             <td><input type="text" id="foreignName" placeholder="과목명"></td>
-                            <td class="disabled-cell"></td><td class="disabled-cell"></td>
+                            <td class="disabled-cell"></td>
+                            <td class="disabled-cell"></td>
                             <td><input type="number" id="foreignGrd"></td>
                         </tr>
                     </tbody>
