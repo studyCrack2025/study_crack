@@ -49,12 +49,10 @@ async function fetchUserData(userId) {
 // === 대학 데이터 S3에서 가져오기 ===
 async function fetchUnivData() {
     try {
-        // 1. 람다 API 호출 (전체 데이터 요청)
-        // UNIV_DATA_API_URL 변수가 상단에 선언되어 있어야 합니다.
         const response = await fetch(UNIV_DATA_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'get_all_data' }) // 람다 함수에서 이 type을 확인하여 전체 데이터를 줍니다.
+            body: JSON.stringify({ type: 'get_all_data' }) 
         });
 
         if (!response.ok) {
@@ -62,40 +60,35 @@ async function fetchUnivData() {
         }
 
         const data = await response.json();
-        
-        // 2. 전역 변수에 원본 데이터 저장
         univData = data; 
 
-        // 3. 드롭다운용 데이터 가공: { "서울대": ["컴공", "경영"], ... }
+        // 데이터 가공 초기화
         univMap = {};
         
         univData.forEach(row => {
-            const univ = row["대학"];   // JSON 파일의 Key 이름과 일치해야 함
-            const major = row["학과명"]; // JSON 파일의 Key 이름과 일치해야 함
+            // ★ [수정] JSON 파일의 키 이름("대학명")과 정확히 일치시켜야 합니다.
+            const univ = row["대학명"]; 
+            const major = row["학과명"]; 
             
-            // 데이터가 유효한 경우에만 처리
             if (univ && major) {
                 if (!univMap[univ]) {
                     univMap[univ] = [];
                 }
-                // 학과명 중복 방지 (같은 학과가 분할 모집하는 경우 등 대비)
                 if (!univMap[univ].includes(major)) {
                     univMap[univ].push(major);
                 }
             }
         });
 
-        console.log(`대학 데이터 로드 완료: 총 ${univData.length}개 학과 정보`);
+        console.log(`대학 데이터 로드 완료: 총 ${Object.keys(univMap).length}개 대학`);
 
-        // 4. 데이터 로드 완료 후 UI 갱신
-        // (사용자가 이미 탭을 보고 있을 경우 드롭다운에 옵션을 채워넣기 위함)
+        // UI 갱신 (이미 탭이 열려있다면)
         if (document.getElementById('sol-univ').classList.contains('active')) {
             initUnivGrid(); 
         }
 
     } catch (e) {
         console.error("대학 데이터 로드 실패:", e);
-        // 사용자에게 조용히 실패를 알리거나, 재시도 로직을 넣을 수 있음
     }
 }
 
@@ -364,9 +357,8 @@ async function saveTargetUnivs() {
 // === 3. 목표 대학 기본 분석 렌더링 ===
 function renderUnivAnalysis() {
     const container = document.getElementById('univAnalysisResult');
-    container.innerHTML = ''; // 초기화
+    container.innerHTML = ''; 
 
-    // 유효한 목표 대학 필터링
     const targets = userTargetUnivs.filter(t => t && t.univ && t.major);
 
     if (targets.length === 0) {
@@ -374,21 +366,21 @@ function renderUnivAnalysis() {
         return;
     }
 
-    // 내 환산점수 계산 (임시 로직: 실제로는 복잡한 계산 엔진 필요)
-    // 여기서는 컷 점수와 비교 효과를 보여주기 위해 더미 값을 생성하거나, 정량 데이터가 있으면 단순 합산
+    // 내 환산점수 계산 (예시)
     let myScore = 0;
     if (userQuantData && userQuantData.csat) {
-        // 예: 수능 국+수 표준점수 합 (단순 예시)
         const k = parseFloat(userQuantData.csat.kor?.std || 0);
         const m = parseFloat(userQuantData.csat.math?.std || 0);
-        myScore = (k + m) * 1.5; // 대략적인 환산점수 흉내
+        myScore = (k + m) * 1.5; 
     } else {
-        myScore = 400.0; // 데이터 없으면 기본값
+        myScore = 400.0; 
     }
 
     targets.forEach(target => {
-        // JSON 데이터에서 해당 학과 정보 찾기
-        const info = univData.find(d => d["대학"] === target.univ && d["학과명"] === target.major);
+        // ★ [수정] 여기서도 "대학" -> "대학명"으로 바꿔야 데이터를 찾을 수 있습니다.
+        const info = univData.find(d => d["대학명"] === target.univ && d["학과명"] === target.major);
+        
+        // JSON 키 이름 그대로 사용
         const cutScore = info ? parseFloat(info["추정 2025 최종등록자 100%cut(환산)"]) : 0;
         
         let diff = 0;
@@ -396,7 +388,7 @@ function renderUnivAnalysis() {
         let diffText = '-';
 
         if (cutScore > 0) {
-            diff = (myScore - cutScore).toFixed(1);
+            diff = (myScore - cutScore).toFixed(2); // 소수점 2자리까지
             if (diff >= 0) {
                 diffClass = 'high'; diffText = `+${diff} (안정권)`;
             } else {
@@ -406,7 +398,6 @@ function renderUnivAnalysis() {
             diffText = "데이터 없음";
         }
 
-        // 카드 HTML 생성
         const card = document.createElement('div');
         card.className = 'analysis-card';
         card.innerHTML = `
@@ -418,15 +409,15 @@ function renderUnivAnalysis() {
                     <table class="score-compare-table">
                         <tr>
                             <th>구분</th>
-                            <th>점수</th>
+                            <th>점수 (환산)</th>
                         </tr>
                         <tr>
                             <td>합격 컷 (예상)</td>
-                            <td>${cutScore || '-'}점</td>
+                            <td>${cutScore ? cutScore.toFixed(2) : '-'}점</td>
                         </tr>
                         <tr>
                             <td>내 환산 점수</td>
-                            <td>${myScore.toFixed(1)}점</td>
+                            <td>${myScore.toFixed(2)}점</td>
                         </tr>
                         <tr>
                             <td>차이</td>
@@ -440,8 +431,7 @@ function renderUnivAnalysis() {
                         <div class="legend-item"><span class="color-dot" style="background:#3b82f6"></span>국어</div>
                         <div class="legend-item"><span class="color-dot" style="background:#ef4444"></span>수학</div>
                         <div class="legend-item"><span class="color-dot" style="background:#f59e0b"></span>영어</div>
-                        <div class="legend-item"><span class="color-dot" style="background:#10b981"></span>탐1</div>
-                        <div class="legend-item"><span class="color-dot" style="background:#8b5cf6"></span>탐2</div>
+                        <div class="legend-item"><span class="color-dot" style="background:#10b981"></span>탐구</div>
                     </div>
                     <p style="font-size:0.8rem; margin-top:5px; color:#64748b;">(반영비 예시)</p>
                 </div>
