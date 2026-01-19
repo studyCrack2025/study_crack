@@ -217,6 +217,7 @@ function initUnivGrid() {
 
     // 대학 목록 옵션 HTML 생성
     let univOptions = '<option value="">대학 선택</option>';
+    // univMap 키(대학명)들을 정렬해서 옵션 태그로 만듦
     Object.keys(univMap).sort().forEach(univ => {
         univOptions += `<option value="${univ}">${univ}</option>`;
     });
@@ -237,7 +238,7 @@ function initUnivGrid() {
                 const savedDate = new Date(savedData.date);
                 const unlockDate = new Date(savedDate);
                 unlockDate.setDate(unlockDate.getDate() + 14);
-                unlockDate.setHours(12, 0, 0, 0); // KST 12:00 설정 (서버시간 고려 필요하지만 일단 로컬처리)
+                unlockDate.setHours(12, 0, 0, 0); 
 
                 if (now < unlockDate) {
                     isLocked = true;
@@ -245,7 +246,7 @@ function initUnivGrid() {
                 }
             }
 
-            // HTML 구조 생성
+            // HTML 구조 생성 (select에 id 부여)
             slotDiv.innerHTML = `
                 <label>지망 ${i+1}</label>
                 <select id="univ_sel_${i}" onchange="updateMajors(${i})" ${isLocked ? 'disabled' : ''}>
@@ -259,13 +260,23 @@ function initUnivGrid() {
 
             grid.appendChild(slotDiv);
 
-            // 값 복원 (중요: 대학 선택 후 학과 옵션 로드해야 함)
+            // ★ [수정됨] 값 복원 및 학과 목록 로드 로직 강화 ★
             if (savedData.univ) {
+                // 1. 대학 선택값 설정
                 const uSel = document.getElementById(`univ_sel_${i}`);
-                uSel.value = savedData.univ;
-                updateMajors(i); // 학과 목록 로드
-                if (savedData.major) {
-                    document.getElementById(`major_sel_${i}`).value = savedData.major;
+                if (uSel) {
+                    uSel.value = savedData.univ;
+                    
+                    // 2. 대학이 선택되었으니 학과 목록 로드 (수동 호출)
+                    updateMajors(i); 
+                    
+                    // 3. 학과 선택값 설정
+                    if (savedData.major) {
+                        const mSel = document.getElementById(`major_sel_${i}`);
+                        if (mSel) {
+                            mSel.value = savedData.major;
+                        }
+                    }
                 }
             }
 
@@ -277,9 +288,6 @@ function initUnivGrid() {
             grid.appendChild(slotDiv);
         }
     }
-    
-    // 저장 버튼 상태 관리 (하나라도 락이 안 걸린게 있으면 활성)
-    // 여기선 일단 항상 활성화하되 저장 시 체크
 }
 
 // 대학 선택 시 학과 목록 업데이트
