@@ -158,7 +158,7 @@
             <div class="section-title">
                 <h3>모의고사 / 수능 성적 입력</h3>
             </div>
-            <p class="guide-text">시험을 선택하고 과목별 성적을 입력한 뒤 '저장'을 눌러주세요.</p>
+            <p class="guide-text">시험을 선택하고 <strong>표준점수</strong>를 입력하면 백분위와 등급이 자동 계산됩니다.</p>
 
             <div class="exam-selector">
                 <label>시험 선택:</label>
@@ -194,24 +194,24 @@
                                     <option value="un">언어와매체</option>
                                 </select>
                             </td>
-                            <td><input type="number" id="korStd"></td>
-                            <td><input type="number" id="korPct"></td>
-                            <td><input type="number" id="korGrd"></td>
+                            <td><input type="number" id="korStd" oninput="calculateScore('kor')"></td>
+                            <td><input type="number" id="korPct" readonly class="readonly-input"></td>
+                            <td><input type="number" id="korGrd" readonly class="readonly-input"></td>
                         </tr>
 
                         <tr>
                             <td>수학</td>
                             <td>
-                                <select id="mathOpt">
+                                <select id="mathOpt" onchange="calculateScore('math')">
                                     <option value="none">선택</option>
                                     <option value="hwak">확률과통계</option>
                                     <option value="mi">미적분</option>
                                     <option value="ki">기하</option>
                                 </select>
                             </td>
-                            <td><input type="number" id="mathStd"></td>
-                            <td><input type="number" id="mathPct"></td>
-                            <td><input type="number" id="mathGrd"></td>
+                            <td><input type="number" id="mathStd" oninput="calculateScore('math')"></td>
+                            <td><input type="number" id="mathPct" readonly class="readonly-input"></td>
+                            <td><input type="number" id="mathGrd" readonly class="readonly-input"></td>
                         </tr>
 
                         <tr>
@@ -233,7 +233,7 @@
                         <tr>
                             <td>탐구1</td>
                             <td>
-                                <select id="inq1Name" style="width: 100%;">
+                                <select id="inq1Name" style="width: 100%;" onchange="calculateScore('inq1')">
                                     <option value="">과목 선택</option>
                                     <optgroup label="사회탐구">
                                         <option value="생활과 윤리">생활과 윤리</option>
@@ -258,15 +258,15 @@
                                     </optgroup>
                                 </select>
                             </td>
-                            <td><input type="number" id="inq1Std"></td>
-                            <td><input type="number" id="inq1Pct"></td>
-                            <td><input type="number" id="inq1Grd"></td>
+                            <td><input type="number" id="inq1Std" oninput="calculateScore('inq1')"></td>
+                            <td><input type="number" id="inq1Pct" readonly class="readonly-input"></td>
+                            <td><input type="number" id="inq1Grd" readonly class="readonly-input"></td>
                         </tr>
 
                         <tr>
                             <td>탐구2</td>
                             <td>
-                                <select id="inq2Name" style="width: 100%;">
+                                <select id="inq2Name" style="width: 100%;" onchange="calculateScore('inq2')">
                                     <option value="">과목 선택</option>
                                     <optgroup label="사회탐구">
                                         <option value="생활과 윤리">생활과 윤리</option>
@@ -291,9 +291,9 @@
                                     </optgroup>
                                 </select>
                             </td>
-                            <td><input type="number" id="inq2Std"></td>
-                            <td><input type="number" id="inq2Pct"></td>
-                            <td><input type="number" id="inq2Grd"></td>
+                            <td><input type="number" id="inq2Std" oninput="calculateScore('inq2')"></td>
+                            <td><input type="number" id="inq2Pct" readonly class="readonly-input"></td>
+                            <td><input type="number" id="inq2Grd" readonly class="readonly-input"></td>
                         </tr>
 
                         <tr>
