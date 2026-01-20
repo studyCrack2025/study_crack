@@ -1,12 +1,18 @@
-const MYPAGE_API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/";
+/* js/mypage.js */
 
+const MYPAGE_API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/";
+// [주의] 방금 만드신 람다 함수(S3 데이터 가져오는 함수)의 URL을 여기에 꼭 넣어주세요!
 const UNIV_DATA_API_URL = "https://ftbrlbyaprizjcp5w7b2g5t6sq0srwem.lambda-url.ap-northeast-2.on.aws/"; 
 
+// 전역 변수
 let currentUserTier = 'free'; 
 let userTargetUnivs = []; 
-let univData = []; // S3에서 가져온 원본 대학 데이터
-let univMap = {};  // 대학명 -> [학과목록] 구조로 변환한 데이터
-let userQuantData = null; // 학생 성적 데이터 (분석용)
+let univData = []; // 원본 JSON 데이터
+let univMap = {};  // UI용 가공 데이터: { "대학명": [ {name, cut_pass, cut_70}, ... ] }
+let userQuantData = null; 
+
+// 모달 상태 관리 변수
+let currentSlotIndex = null; // 현재 수정 중인 지망 슬롯 번호 (0~7)
 
 document.addEventListener('DOMContentLoaded', () => {
     const accessToken = localStorage.getItem('accessToken');
@@ -19,10 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     fetchUserData(userId);
-    fetchUnivData(); // 대학 데이터 미리 로드
+    fetchUnivData(); 
 });
 
-// === 유저 정보 불러오기 ===
+// === 1. 유저 정보 불러오기 ===
 async function fetchUserData(userId) {
     try {
         const response = await fetch(MYPAGE_API_URL, {
@@ -39,14 +45,14 @@ async function fetchUserData(userId) {
         updateSurveyStatus(data);
 
         userTargetUnivs = data.targetUnivs || [];
-        userQuantData = data.quantitative; // 성적 데이터 저장
+        userQuantData = data.quantitative; 
 
     } catch (error) {
         console.error("데이터 로드 중 오류:", error);
     }
 }
 
-// === 대학 데이터 S3에서 가져오기 ===
+// === 2. 대학 데이터 가져오기 및 파싱 (변경된 구조 반영) ===
 async function fetchUnivData() {
     try {
         const response = await fetch(UNIV_DATA_API_URL, {
@@ -55,34 +61,41 @@ async function fetchUnivData() {
             body: JSON.stringify({ type: 'get_all_data' }) 
         });
 
-        if (!response.ok) {
-            throw new Error(`서버 응답 오류: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`서버 응답 오류`);
 
         const data = await response.json();
         univData = data; 
 
-        // 데이터 가공 초기화
+        // [파싱 로직] JSON 구조: [ { "대학명": "...", "전형별": [ { "학과명": "...", "합격권 추정": ... }, ... ] }, ... ]
         univMap = {};
         
-        univData.forEach(row => {
-            // ★ [수정] JSON 파일의 키 이름("대학명")과 정확히 일치시켜야 합니다.
-            const univ = row["대학명"]; 
-            const major = row["학과명"]; 
-            
-            if (univ && major) {
-                if (!univMap[univ]) {
-                    univMap[univ] = [];
-                }
-                if (!univMap[univ].includes(major)) {
-                    univMap[univ].push(major);
-                }
+        univData.forEach(item => {
+            const univName = item["대학명"];
+            if (!univName) return;
+
+            // 해당 대학의 학과 정보 리스트 추출
+            const majors = [];
+            if (item["전형별"] && Array.isArray(item["전형별"])) {
+                item["전형별"].forEach(dept => {
+                    majors.push({
+                        name: dept["학과명"],
+                        cut_pass: parseFloat(dept["합격권 추정"]) || 0,
+                        cut_70: parseFloat(dept["상위 70% 추정"]) || 0
+                    });
+                });
             }
+
+            // 대학명 키로 저장
+            if (!univMap[univName]) {
+                univMap[univName] = [];
+            }
+            // 학과 데이터 병합
+            univMap[univName].push(...majors);
         });
 
-        console.log(`대학 데이터 로드 완료: 총 ${Object.keys(univMap).length}개 대학`);
+        console.log(`대학 데이터 파싱 완료: 총 ${Object.keys(univMap).length}개 대학`);
 
-        // UI 갱신 (이미 탭이 열려있다면)
+        // 이미 탭이 열려있다면 UI 갱신
         if (document.getElementById('sol-univ').classList.contains('active')) {
             initUnivGrid(); 
         }
@@ -92,7 +105,7 @@ async function fetchUnivData() {
     }
 }
 
-// 정보 렌더링 함수
+// === 기본 UI 렌더링 함수들 ===
 function renderUserInfo(data) {
     document.getElementById('userNameDisplay').innerText = data.name || '이름 없음';
     document.getElementById('userEmailDisplay').innerText = data.email || localStorage.getItem('userEmail') || '';
@@ -105,9 +118,7 @@ function renderUserInfo(data) {
 
 function checkPaymentStatus(payments) {
     const profileBox = document.querySelector('.profile-summary');
-    let tier = 'free';
-    let tierClass = '';
-    let badgeText = '';
+    let tier = 'free'; let tierClass = ''; let badgeText = '';
 
     if (payments && payments.length > 0) {
         const paidHistory = payments.filter(p => p.status === 'paid');
@@ -116,15 +127,10 @@ function checkPaymentStatus(payments) {
             const latestPayment = paidHistory[0];
             const productName = (latestPayment.product || "").toLowerCase();
 
-            if (productName.includes('black')) {
-                tier = 'black'; tierClass = 'tier-black'; badgeText = 'BLACK MEMBER';
-            } else if (productName.includes('pro')) {
-                tier = 'pro'; tierClass = 'tier-pro'; badgeText = 'PRO MEMBER';
-            } else if (productName.includes('standard')) {
-                tier = 'standard'; tierClass = 'tier-standard'; badgeText = 'STANDARD MEMBER';
-            } else {
-                tier = 'basic'; tierClass = 'tier-basic'; badgeText = 'BASIC MEMBER';
-            }
+            if (productName.includes('black')) { tier = 'black'; tierClass = 'tier-black'; badgeText = 'BLACK MEMBER'; }
+            else if (productName.includes('pro')) { tier = 'pro'; tierClass = 'tier-pro'; badgeText = 'PRO MEMBER'; }
+            else if (productName.includes('standard')) { tier = 'standard'; tierClass = 'tier-standard'; badgeText = 'STANDARD MEMBER'; }
+            else { tier = 'basic'; tierClass = 'tier-basic'; badgeText = 'BASIC MEMBER'; }
         }
     }
     currentUserTier = tier;
@@ -161,6 +167,7 @@ function updateSurveyStatus(data) {
     }
 }
 
+// === 탭 전환 로직 ===
 function switchMainTab(tabName) {
     if (tabName === 'solution' && currentUserTier === 'free') {
         alert("유료 회원만 이용 가능합니다.");
@@ -194,12 +201,12 @@ function openSolution(solType) {
 
     if (solType === 'univ') {
         initUnivGrid(); 
-        renderUnivAnalysis(); // 분석 탭도 함께 렌더링
+        renderUnivAnalysis(); 
     }
     if (solType === 'coach') initCoachLock();
 }
 
-// === 2-1. 목표대학 설정 로직 (Dropdown + Lock) ===
+// === 3. 목표대학 설정 로직 (모달 연동) ===
 function initUnivGrid() {
     const grid = document.getElementById('univGrid');
     grid.innerHTML = ''; 
@@ -207,13 +214,6 @@ function initUnivGrid() {
     const tierLimits = { 'basic': 2, 'standard': 5, 'pro': 8, 'black': 8 };
     const limit = tierLimits[currentUserTier] || 0;
     const now = new Date();
-
-    // 대학 목록 옵션 HTML 생성
-    let univOptions = '<option value="">대학 선택</option>';
-    // univMap 키(대학명)들을 정렬해서 옵션 태그로 만듦
-    Object.keys(univMap).sort().forEach(univ => {
-        univOptions += `<option value="${univ}">${univ}</option>`;
-    });
 
     for (let i = 0; i < 8; i++) {
         const isActive = i < limit;
@@ -239,42 +239,24 @@ function initUnivGrid() {
                 }
             }
 
-            // HTML 구조 생성 (select에 id 부여)
+            // 버튼 텍스트 (값이 있으면 표시, 없으면 placeholder)
+            const btnText = (savedData.univ && savedData.major) 
+                ? `<strong>${savedData.univ}</strong><br><small>${savedData.major}</small>` 
+                : `<span class="placeholder">대학 및 학과를 선택하세요</span>`;
+
+            // HTML 생성 (Input 대신 Button 사용)
             slotDiv.innerHTML = `
                 <label>지망 ${i+1}</label>
-                <select id="univ_sel_${i}" onchange="updateMajors(${i})" ${isLocked ? 'disabled' : ''}>
-                    ${univOptions}
-                </select>
-                <select id="major_sel_${i}" ${isLocked ? 'disabled' : ''}>
-                    <option value="">학과 선택</option>
-                </select>
+                <button type="button" class="univ-select-btn" onclick="openUnivSelectModal(${i})" ${isLocked ? 'disabled' : ''}>
+                    <div>${btnText}</div>
+                    ${isLocked ? '<i class="fas fa-lock"></i>' : '<i class="fas fa-chevron-right"></i>'}
+                </button>
                 ${isLocked ? `<span class="slot-msg">${dateMsg}</span>` : ''}
             `;
-
             grid.appendChild(slotDiv);
 
-            // ★ [수정됨] 값 복원 및 학과 목록 로드 로직 강화 ★
-            if (savedData.univ) {
-                // 1. 대학 선택값 설정
-                const uSel = document.getElementById(`univ_sel_${i}`);
-                if (uSel) {
-                    uSel.value = savedData.univ;
-                    
-                    // 2. 대학이 선택되었으니 학과 목록 로드 (수동 호출)
-                    updateMajors(i); 
-                    
-                    // 3. 학과 선택값 설정
-                    if (savedData.major) {
-                        const mSel = document.getElementById(`major_sel_${i}`);
-                        if (mSel) {
-                            mSel.value = savedData.major;
-                        }
-                    }
-                }
-            }
-
         } else {
-            // 비활성화 슬롯
+            // 비활성화 슬롯 (티어 제한)
             let requiredTier = (i < 5) ? 'Standard' : 'PRO/BLACK';
             slotDiv.className = 'univ-slot locked-tier';
             slotDiv.setAttribute('data-msg', `${requiredTier} 이상`);
@@ -283,49 +265,95 @@ function initUnivGrid() {
     }
 }
 
-// 대학 선택 시 학과 목록 업데이트
-function updateMajors(index) {
-    const univSel = document.getElementById(`univ_sel_${index}`);
-    const majorSel = document.getElementById(`major_sel_${index}`);
-    const selectedUniv = univSel.value;
+// === 4. 대학/학과 선택 모달 로직 ===
 
-    majorSel.innerHTML = '<option value="">학과 선택</option>';
+// 모달 열기
+function openUnivSelectModal(index) {
+    currentSlotIndex = index;
+    const modal = document.getElementById('univSelectModal');
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden'; // 배경 스크롤 방지
     
-    if (selectedUniv && univMap[selectedUniv]) {
-        univMap[selectedUniv].forEach(major => {
-            const opt = document.createElement('option');
-            opt.value = major;
-            opt.innerText = major;
-            majorSel.appendChild(opt);
-        });
-    }
+    showUnivStep(); // 1단계(대학 선택) 화면 로드
 }
 
-// === 목표 대학 저장 (API 호출 + 2주 날짜 기록) ===
+// 모달 닫기
+function closeUnivModal() {
+    document.getElementById('univSelectModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+    currentSlotIndex = null;
+}
+
+// 1단계: 대학 목록 보여주기
+function showUnivStep() {
+    document.getElementById('modalTitle').innerText = "대학 선택";
+    document.getElementById('stepUnivList').style.display = 'grid';
+    document.getElementById('stepMajorList').style.display = 'none';
+    document.getElementById('modalFooter').style.display = 'none';
+
+    const listContainer = document.getElementById('stepUnivList');
+    listContainer.innerHTML = '';
+
+    // 대학 이름순 정렬하여 타일 생성
+    Object.keys(univMap).sort().forEach(univName => {
+        const item = document.createElement('div');
+        item.className = 'selection-item';
+        item.innerText = univName;
+        item.onclick = () => showMajorStep(univName);
+        listContainer.appendChild(item);
+    });
+}
+
+// 2단계: 학과 목록 보여주기
+function showMajorStep(univName) {
+    document.getElementById('modalTitle').innerText = `${univName} - 학과 선택`;
+    document.getElementById('stepUnivList').style.display = 'none';
+    document.getElementById('stepMajorList').style.display = 'grid';
+    document.getElementById('modalFooter').style.display = 'block'; // 뒤로가기 버튼 활성화
+
+    const listContainer = document.getElementById('stepMajorList');
+    listContainer.innerHTML = '';
+
+    const majors = univMap[univName] || [];
+    // 학과 이름순 정렬
+    majors.sort((a,b) => a.name.localeCompare(b.name));
+
+    majors.forEach(majorObj => {
+        const item = document.createElement('div');
+        item.className = 'selection-item';
+        item.innerText = majorObj.name;
+        // 선택 시 완료 함수 호출
+        item.onclick = () => selectComplete(univName, majorObj.name);
+        listContainer.appendChild(item);
+    });
+}
+
+// 선택 완료
+function selectComplete(univ, major) {
+    if (currentSlotIndex !== null) {
+        // 임시 저장 (서버 저장은 아님, 화면 갱신용)
+        // date: null 로 설정하여 '저장되지 않은 수정 상태'임을 표시
+        userTargetUnivs[currentSlotIndex] = { univ: univ, major: major, date: null };
+        initUnivGrid(); // 그리드 다시 그리기
+    }
+    closeUnivModal();
+}
+
+
+// === 5. 목표 대학 서버 저장 (2주 락 적용) ===
 async function saveTargetUnivs() {
     if(!confirm("저장하면 2주 동안 수정할 수 없습니다.\n정말 저장하시겠습니까?")) return;
 
-    const newUnivs = [];
-    const limit = { 'basic': 2, 'standard': 5, 'pro': 8, 'black': 8 }[currentUserTier] || 0;
+    // 현재 UI/변수에 있는 데이터 기준으로 저장용 배열 구성
+    const newUnivs = [...userTargetUnivs]; 
     const nowISO = new Date().toISOString();
 
-    for(let i=0; i<limit; i++) {
-        const univEl = document.getElementById(`univ_sel_${i}`);
-        const majorEl = document.getElementById(`major_sel_${i}`);
-        
-        if(univEl) {
-            // 이미 락 걸려있으면 기존 데이터 유지
-            if(univEl.disabled) {
-                newUnivs.push(userTargetUnivs[i]);
-            } else {
-                // 수정 가능한 슬롯
-                const uVal = univEl.value;
-                const mVal = majorEl.value;
-                if(uVal && mVal) {
-                    newUnivs.push({ univ: uVal, major: mVal, date: nowISO });
-                } else {
-                    newUnivs.push(null); // 비어있음
-                }
+    for(let i=0; i<newUnivs.length; i++) {
+        if(newUnivs[i] && newUnivs[i].univ && newUnivs[i].major) {
+            // 날짜가 없다는 건 이번에 새로 수정한 항목이라는 뜻 -> 현재 날짜로 락 검
+            // 날짜가 이미 있다면 (그리고 2주 안 지났다면) 기존 날짜 유지됨
+            if (!newUnivs[i].date) {
+                newUnivs[i].date = nowISO;
             }
         }
     }
@@ -343,9 +371,9 @@ async function saveTargetUnivs() {
         
         if(response.ok) {
             alert("저장되었습니다.");
-            userTargetUnivs = newUnivs;
-            initUnivGrid(); 
-            renderUnivAnalysis(); // 분석 갱신
+            userTargetUnivs = newUnivs; // 저장된 데이터로 갱신
+            initUnivGrid(); // 락 아이콘 등 UI 갱신
+            renderUnivAnalysis(); // 분석 탭도 갱신
         } else {
             alert("저장 실패");
         }
@@ -354,7 +382,7 @@ async function saveTargetUnivs() {
     }
 }
 
-// === 3. 목표 대학 기본 분석 렌더링 ===
+// === 6. 목표 대학 기본 분석 렌더링 (점수 비교) ===
 function renderUnivAnalysis() {
     const container = document.getElementById('univAnalysisResult');
     container.innerHTML = ''; 
@@ -366,31 +394,29 @@ function renderUnivAnalysis() {
         return;
     }
 
-    // 내 환산점수 계산 (예시)
-    let myScore = 0;
-    if (userQuantData && userQuantData.csat) {
-        const k = parseFloat(userQuantData.csat.kor?.std || 0);
-        const m = parseFloat(userQuantData.csat.math?.std || 0);
-        myScore = (k + m) * 1.5; 
-    } else {
-        myScore = 400.0; 
-    }
-
     targets.forEach(target => {
-        // ★ [수정] 여기서도 "대학" -> "대학명"으로 바꿔야 데이터를 찾을 수 있습니다.
-        const info = univData.find(d => d["대학명"] === target.univ && d["학과명"] === target.major);
-        
-        // JSON 키 이름 그대로 사용
-        const cutScore = info ? parseFloat(info["추정 2025 최종등록자 100%cut(환산)"]) : 0;
-        
-        let diff = 0;
-        let diffClass = '';
-        let diffText = '-';
+        // 저장된 univMap에서 해당 학과 데이터 찾기
+        const majorList = univMap[target.univ] || [];
+        const deptInfo = majorList.find(m => m.name === target.major);
 
-        if (cutScore > 0) {
-            diff = (myScore - cutScore).toFixed(2); // 소수점 2자리까지
+        const cutPass = deptInfo ? deptInfo.cut_pass : 0; // 합격권 추정
+        const cut70 = deptInfo ? deptInfo.cut_70 : 0;     // 상위 70% 추정
+
+        // [내 점수 자동 계산 로직] 합격권 대비 2% 부족하게 설정 (요청사항)
+        let myScore = 0;
+        if (cutPass > 0) {
+            myScore = cutPass * 0.98; 
+        }
+
+        // 점수 차이 계산
+        let diff = 0;
+        let diffText = '-';
+        let diffClass = '';
+
+        if (cutPass > 0) {
+            diff = (myScore - cutPass).toFixed(2);
             if (diff >= 0) {
-                diffClass = 'high'; diffText = `+${diff} (안정권)`;
+                diffClass = 'high'; diffText = `+${diff} (안정)`;
             } else {
                 diffClass = 'low'; diffText = `${diff} (부족)`;
             }
@@ -402,7 +428,10 @@ function renderUnivAnalysis() {
         card.className = 'analysis-card';
         card.innerHTML = `
             <div class="analysis-header">
-                <h4>${target.univ} ${target.major}</h4>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="univ-badge">${target.univ}</span>
+                    <h4>${target.major}</h4>
+                </div>
             </div>
             <div class="analysis-body">
                 <div class="score-table-box">
@@ -410,18 +439,26 @@ function renderUnivAnalysis() {
                         <tr>
                             <th>구분</th>
                             <th>점수 (환산)</th>
+                            <th>비고</th>
                         </tr>
                         <tr>
-                            <td>합격 컷 (예상)</td>
-                            <td>${cutScore ? cutScore.toFixed(2) : '-'}점</td>
+                            <td>합격권 추정</td>
+                            <td class="score-val">${cutPass ? cutPass.toFixed(2) : '-'}</td>
+                            <td>-</td>
                         </tr>
                         <tr>
+                            <td>상위 70% Cut</td>
+                            <td class="score-val">${cut70 ? cut70.toFixed(2) : '-'}</td>
+                            <td style="font-size:0.8rem; color:#64748b;">안정권 기준</td>
+                        </tr>
+                        <tr class="score-row highlight">
                             <td>내 환산 점수</td>
-                            <td>${myScore.toFixed(2)}점</td>
+                            <td class="score-val" style="color:#2563eb;">${myScore ? myScore.toFixed(2) : '-'}</td>
+                            <td style="font-size:0.8rem;">(예상치)</td>
                         </tr>
                         <tr>
-                            <td>차이</td>
-                            <td class="score-diff ${diffClass}">${diffText}</td>
+                            <td>점수 차이</td>
+                            <td colspan="2"><span class="diff-badge ${diff >= 0 ? 'plus' : 'minus'}">${diffText}</span></td>
                         </tr>
                     </table>
                 </div>
@@ -433,7 +470,7 @@ function renderUnivAnalysis() {
                         <div class="legend-item"><span class="color-dot" style="background:#f59e0b"></span>영어</div>
                         <div class="legend-item"><span class="color-dot" style="background:#10b981"></span>탐구</div>
                     </div>
-                    <p style="font-size:0.8rem; margin-top:5px; color:#64748b;">(반영비 예시)</p>
+                    <p style="font-size:0.8rem; margin-top:10px; color:#64748b;">[반영비율 예시]</p>
                 </div>
             </div>
         `;
@@ -441,13 +478,11 @@ function renderUnivAnalysis() {
     });
 }
 
+// === 기타 기능 (기존 유지) ===
 function initCoachLock() {
     const lockOverlay = document.getElementById('deepCoachingLock');
-    if (['pro', 'black'].includes(currentUserTier)) {
-        if(lockOverlay) lockOverlay.style.display = 'none';
-    } else {
-        if(lockOverlay) lockOverlay.style.display = 'flex';
-    }
+    if (['pro', 'black'].includes(currentUserTier)) { if(lockOverlay) lockOverlay.style.display = 'none'; } 
+    else { if(lockOverlay) lockOverlay.style.display = 'flex'; }
 }
 
 async function saveProfile() {
@@ -471,52 +506,24 @@ async function saveProfile() {
                 data: { name: newName, phone: newPhone, school: newSchool, email: newEmail }
             })
         });
-        
-        if(response.ok) {
-            alert("회원 정보가 수정되었습니다.");
-            location.reload(); 
-        } else {
-            throw new Error("저장 실패");
-        }
-    } catch (error) {
-        alert("저장 중 오류가 발생했습니다.");
-    }
+        if(response.ok) { alert("회원 정보가 수정되었습니다."); location.reload(); } 
+        else { throw new Error("저장 실패"); }
+    } catch (error) { alert("저장 중 오류가 발생했습니다."); }
 }
 
 async function handleDeleteAccount() {
-    const isConfirmed = confirm("정말로 탈퇴하시겠습니까?\n\n탈퇴 시 저장된 모든 데이터(성적, 결제 내역 등)가 영구 삭제되며 복구할 수 없습니다.");
+    const isConfirmed = confirm("정말로 탈퇴하시겠습니까?\n\n탈퇴 시 저장된 모든 데이터가 영구 삭제됩니다.");
     if (!isConfirmed) return;
-
     const userId = localStorage.getItem('userId');
-    if (!userId) {
-        alert("로그인 정보가 유효하지 않습니다.");
-        window.location.href = 'login.html';
-        return;
-    }
-
+    if (!userId) return window.location.href = 'login.html';
     try {
         const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                type: 'delete_user', 
-                userId: userId
-            })
+            body: JSON.stringify({ type: 'delete_user', userId: userId })
         });
-
-        const result = await response.json();
-
         if (response.ok) {
-            alert("탈퇴가 완료되었습니다.\n그동안 이용해 주셔서 감사합니다.");
-            localStorage.clear();
-            sessionStorage.clear();
-            window.location.href = 'index.html';
-        } else {
-            throw new Error(result.error || "탈퇴 처리에 실패했습니다.");
-        }
-
-    } catch (error) {
-        console.error("탈퇴 오류:", error);
-        alert("오류가 발생했습니다: " + error.message);
-    }
+            alert("탈퇴가 완료되었습니다.");
+            localStorage.clear(); sessionStorage.clear(); window.location.href = 'index.html';
+        } else { throw new Error("탈퇴 실패"); }
+    } catch (error) { alert("오류 발생"); }
 }
