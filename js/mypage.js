@@ -213,50 +213,62 @@ function initUnivGrid() {
 
     const tierLimits = { 'basic': 2, 'standard': 5, 'pro': 8, 'black': 8 };
     const limit = tierLimits[currentUserTier] || 0;
-    const now = new Date();
+    const now = new Date(); // 현재 시간
 
     for (let i = 0; i < 8; i++) {
         const isActive = i < limit;
+        // DB에서 불러온 데이터가 없으면 빈 객체로 초기화
         const savedData = userTargetUnivs[i] || { univ: '', major: '', date: null };
+        
         const slotDiv = document.createElement('div');
         
         if (isActive) {
             slotDiv.className = 'univ-slot';
             
-            // 2주 락 체크
+            // --- [핵심] 2주 락 체크 로직 ---
             let isLocked = false;
             let dateMsg = '';
             
             if (savedData.date) {
                 const savedDate = new Date(savedData.date);
                 const unlockDate = new Date(savedDate);
-                unlockDate.setDate(unlockDate.getDate() + 14);
-                unlockDate.setHours(12, 0, 0, 0); 
-
+                unlockDate.setDate(unlockDate.getDate() + 14); // 14일 더하기
+                
+                // 만약 현재 시간이 락 해제 시간보다 이전이라면 (아직 잠겨있음)
                 if (now < unlockDate) {
                     isLocked = true;
-                    dateMsg = `🔒 ${unlockDate.getMonth()+1}/${unlockDate.getDate()} 12:00 수정 가능`;
+                    // 날짜 포맷 예쁘게 (월/일)
+                    const m = unlockDate.getMonth() + 1;
+                    const d = unlockDate.getDate();
+                    dateMsg = `🔒 ${m}월 ${d}일 이후 수정 가능`;
                 }
             }
 
-            // 버튼 텍스트 (값이 있으면 표시, 없으면 placeholder)
+            // 버튼 텍스트 (값이 있으면 대학/학과 표시, 없으면 안내문구)
             const btnText = (savedData.univ && savedData.major) 
                 ? `<strong>${savedData.univ}</strong><br><small>${savedData.major}</small>` 
                 : `<span class="placeholder">대학 및 학과를 선택하세요</span>`;
 
-            // HTML 생성 (Input 대신 Button 사용)
+            // HTML 생성
+            // 락이 걸려있으면(isLocked) 버튼에 disabled 속성을 추가하고, 클릭 이벤트(onclick)도 막음
             slotDiv.innerHTML = `
                 <label>지망 ${i+1}</label>
-                <button type="button" class="univ-select-btn" onclick="openUnivSelectModal(${i})" ${isLocked ? 'disabled' : ''}>
+                <button type="button" class="univ-select-btn" 
+                        onclick="${isLocked ? '' : `openUnivSelectModal(${i})`}" 
+                        ${isLocked ? 'disabled' : ''}
+                        style="${isLocked ? 'background-color:#f3f4f6; cursor:not-allowed;' : ''}">
                     <div>${btnText}</div>
-                    ${isLocked ? '<i class="fas fa-lock"></i>' : '<i class="fas fa-chevron-right"></i>'}
+                    ${isLocked ? '<i class="fas fa-lock" style="color:#ef4444;"></i>' : '<i class="fas fa-chevron-right"></i>'}
                 </button>
                 ${isLocked ? `<span class="slot-msg">${dateMsg}</span>` : ''}
             `;
+            
+            // 만약 저장된 데이터는 있는데 락이 풀린 상태라면? -> 수정 가능하도록 렌더링됨
+            
             grid.appendChild(slotDiv);
 
         } else {
-            // 비활성화 슬롯 (티어 제한)
+            // 티어 제한으로 비활성화된 슬롯
             let requiredTier = (i < 5) ? 'Standard' : 'PRO/BLACK';
             slotDiv.className = 'univ-slot locked-tier';
             slotDiv.setAttribute('data-msg', `${requiredTier} 이상`);
@@ -344,41 +356,60 @@ function selectComplete(univ, major) {
 async function saveTargetUnivs() {
     if(!confirm("저장하면 2주 동안 수정할 수 없습니다.\n정말 저장하시겠습니까?")) return;
 
-    // 현재 UI/변수에 있는 데이터 기준으로 저장용 배열 구성
+    // 저장할 데이터 배열 생성
+    // 기존 데이터(userTargetUnivs)를 기반으로, 이번에 수정된 내용은 새로 갱신
     const newUnivs = [...userTargetUnivs]; 
-    const nowISO = new Date().toISOString();
+    const nowISO = new Date().toISOString(); // 현재 시간 (예: 2026-01-21T12:00:00.000Z)
 
-    for(let i=0; i<newUnivs.length; i++) {
-        if(newUnivs[i] && newUnivs[i].univ && newUnivs[i].major) {
-            // 날짜가 없다는 건 이번에 새로 수정한 항목이라는 뜻 -> 현재 날짜로 락 검
-            // 날짜가 이미 있다면 (그리고 2주 안 지났다면) 기존 날짜 유지됨
-            if (!newUnivs[i].date) {
-                newUnivs[i].date = nowISO;
+    // UI상에 있는 빈 슬롯들도 null로 채워 넣어야 순서가 유지됨
+    // 8개 슬롯(limit)을 루프 돌며 데이터 구성
+    const tierLimits = { 'basic': 2, 'standard': 5, 'pro': 8, 'black': 8 };
+    const limit = tierLimits[currentUserTier] || 2; // 기본값 안전장치
+
+    // 배열 길이 맞추기 (8개로 고정하거나 limit에 맞춤)
+    while(newUnivs.length < 8) newUnivs.push(null);
+
+    // 현재 선택된 값들로 업데이트
+    for(let i=0; i<limit; i++) {
+        // 현재 메모리(userTargetUnivs)에 있는 값 확인
+        // (selectComplete 함수에서 이미 userTargetUnivs[i]를 업데이트 해뒀음)
+        const currentData = userTargetUnivs[i];
+
+        if (currentData && currentData.univ && currentData.major) {
+            // 유효한 데이터가 있는데 날짜가 없다? => 방금 새로 입력한 것 => 날짜 부여 (락 시작)
+            if (!currentData.date) {
+                currentData.date = nowISO;
             }
+            // 날짜가 이미 있다면? => 기존에 저장된 것 => 날짜 유지 (락 유지)
+        } else {
+            // 데이터가 없거나 지워진 경우
+            userTargetUnivs[i] = null;
         }
     }
 
     const userId = localStorage.getItem('userId');
+    
     try {
         const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             body: JSON.stringify({
-                type: 'update_target_univs', 
+                type: 'update_target_univs',  // 백엔드에서 이 type을 처리해야 함
                 userId: userId,
-                data: newUnivs
+                data: userTargetUnivs // 업데이트된 배열 전체 전송
             })
         });
         
         if(response.ok) {
             alert("저장되었습니다.");
-            userTargetUnivs = newUnivs; // 저장된 데이터로 갱신
-            initUnivGrid(); // 락 아이콘 등 UI 갱신
-            renderUnivAnalysis(); // 분석 탭도 갱신
+            // 페이지를 새로고침해서 DB 데이터를 다시 확실하게 불러오는 것을 추천
+            location.reload(); 
         } else {
-            alert("저장 실패");
+            const err = await response.json();
+            alert("저장 실패: " + (err.error || "서버 응답 오류"));
         }
     } catch(e) {
-        alert("오류 발생");
+        console.error(e);
+        alert("통신 중 오류가 발생했습니다.");
     }
 }
 
