@@ -100,7 +100,7 @@ function renderTargetUnivs(list) {
     });
 }
 
-// [상담/코칭 타임라인 렌더링]
+// 상담/코칭 타임라인 렌더링 (상세 데이터 포함)
 function renderConsultHistory(weekly, deep) {
     const container = document.getElementById('consultTimeline');
     container.innerHTML = '';
@@ -120,7 +120,7 @@ function renderConsultHistory(weekly, deep) {
         });
     }
 
-    // 최신순 정렬
+    // 최신순 정렬 (날짜 내림차순)
     allItems.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     if (allItems.length === 0) {
@@ -138,23 +138,67 @@ function renderConsultHistory(weekly, deep) {
         
         if (isWeekly) {
             const d = item.data;
+            
+            // 과목별 상세 테이블 생성
+            let detailsHtml = '';
+            if (d.studyTime && Array.isArray(d.studyTime.details)) {
+                detailsHtml = `<table style="width:100%; font-size:0.85rem; border-collapse: collapse; margin-top:8px; margin-bottom:8px;">
+                    <tr style="background:#eef2ff; border-bottom:1px solid #dbeafe;">
+                        <th style="padding:4px; text-align:left;">과목</th>
+                        <th style="padding:4px; text-align:center;">계획</th>
+                        <th style="padding:4px; text-align:center;">실제</th>
+                        <th style="padding:4px; text-align:center;">달성률</th>
+                    </tr>`;
+                
+                d.studyTime.details.forEach(sub => {
+                    const rate = sub.plan > 0 ? Math.min((sub.act / sub.plan) * 100, 100).toFixed(0) : 0;
+                    // 달성률 색상 (높으면 초록, 낮으면 빨강)
+                    const color = rate >= 100 ? '#166534' : (rate >= 80 ? '#1e40af' : '#b91c1c');
+                    
+                    detailsHtml += `
+                    <tr style="border-bottom:1px solid #f1f5f9;">
+                        <td style="padding:4px;">${sub.subject}</td>
+                        <td style="padding:4px; text-align:center;">${sub.plan}H</td>
+                        <td style="padding:4px; text-align:center;">${sub.act}H</td>
+                        <td style="padding:4px; text-align:center; font-weight:bold; color:${color};">${rate}%</td>
+                    </tr>`;
+                });
+                detailsHtml += `</table>`;
+            }
+
             contentHtml = `
-                <div><strong>[달성률]</strong> 계획: ${d.studyTime?.totalPlan || 0}H / 실제: ${d.studyTime?.totalAct || 0}H (${d.studyTime?.totalRate || 0})</div>
-                <div style="margin-top:5px;"><strong>[코멘트]</strong> ${d.comment}</div>
-                <div class="hidden-detail" id="detail-${idx}">
-                    <p><strong>- 모의고사:</strong> ${d.mockExam?.type === 'none' ? '미응시' : '응시함'}</p>
-                    <p><strong>- 학업 추이:</strong> ${d.trend?.status}</p>
+                <div style="margin-bottom:8px;">
+                    <span style="font-weight:bold; color:#2563eb;">총 달성률: ${d.studyTime?.totalRate || '0%'}</span> 
+                    <span style="color:#64748b; font-size:0.9rem;">(계획 ${d.studyTime?.totalPlan || 0}H / 실제 ${d.studyTime?.totalAct || 0}H)</span>
                 </div>
-                <div class="detail-toggle" onclick="toggleDetail('detail-${idx}')">상세 보기 ▼</div>
+                
+                ${detailsHtml}
+
+                <div style="margin-top:10px; padding:10px; background:#fff; border-radius:6px; border:1px solid #e2e8f0;">
+                    <strong>💬 코멘트:</strong> ${d.comment}
+                </div>
+
+                <div class="hidden-detail" id="detail-${idx}">
+                    <p><strong>- 모의고사:</strong> ${d.mockExam?.type === 'none' ? '미응시' : `응시 (${d.mockExam?.type})`}</p>
+                    ${d.mockExam?.type !== 'none' && d.mockExam?.scores ? 
+                        `<p style="font-size:0.85rem; margin-left:10px; color:#475569;">
+                            국:${d.mockExam.scores.kor} / 수:${d.mockExam.scores.math} / 영:${d.mockExam.scores.eng} / 
+                            탐1:${d.mockExam.scores.inq1} / 탐2:${d.mockExam.scores.inq2}
+                        </p>` : ''
+                    }
+                    <p><strong>- 학업 추이:</strong> ${d.trend?.status === 'up' ? '📈 상승' : (d.trend?.status === 'down' ? '📉 하락' : '➖ 유지')}</p>
+                    ${d.trend?.status === 'down' && d.trend?.reasons ? `<p style="font-size:0.85rem; margin-left:10px; color:#ef4444;">└ 원인: ${d.trend.reasons.join(', ')}</p>` : ''}
+                </div>
+                <div class="detail-toggle" onclick="toggleDetail('detail-${idx}')">상세 정보 더보기 ▼</div>
             `;
         } else {
             const d = item.data;
             contentHtml = `
-                <div><strong>[계획]</strong> ${d.plan}</div>
-                <div style="margin-top:5px;"><strong>[방향]</strong> ${d.direction}</div>
+                <div><strong>[계획 점검]</strong> ${d.plan}</div>
+                <div style="margin-top:5px;"><strong>[방향성]</strong> ${d.direction}</div>
                 <div class="hidden-detail" id="detail-${idx}">
-                    <p><strong>- 과목 고민:</strong> ${d.subject}</p>
-                    <p><strong>- 기타:</strong> ${d.etc}</p>
+                    <p><strong>- 취약 과목:</strong> ${d.subject}</p>
+                    <p><strong>- 기타/멘탈:</strong> ${d.etc}</p>
                 </div>
                 <div class="detail-toggle" onclick="toggleDetail('detail-${idx}')">전체 내용 보기 ▼</div>
             `;
