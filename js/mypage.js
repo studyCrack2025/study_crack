@@ -582,23 +582,23 @@ function renderUnivAnalysis() {
 function openWeeklyCheckModal() {
     if (['free', 'basic'].includes(currentUserTier)) {
         // Standard 이상만 가능 (필요시 주석 해제)
-        // alert("Standard 멤버십 이상 이용 가능합니다."); return;
+        alert("Standard 멤버십 이상 이용 가능합니다."); 
+        return;
     }
 
     const modal = document.getElementById('weeklyCheckModal');
-    const title = document.getElementById('weeklyTitle');
-    const yearSpan = document.getElementById('weeklyYear');
     
-    // 오늘 날짜 기준 YY년 M월 N주차 계산
+    // 1. 날짜 계산
     const today = new Date();
     const yearShort = today.getFullYear().toString().slice(2); // '26'
     const month = today.getMonth() + 1;
     const week = getWeekOfMonth(today);
+
+    // 2. 텍스트 업데이트 (ID로 직접 접근)
+    document.getElementById('weeklyYear').innerText = `${yearShort}년`;
+    document.getElementById('weeklyDateDetail').innerText = `${month}월 ${week}주차`;
     
-    // 타이틀 업데이트
-    yearSpan.innerText = `${yearShort}년`;
-    title.childNodes[1].nodeValue = ` ${month}월 ${week}주차 학습점검`; // 텍스트 노드만 변경
-    
+    // 폼 초기화 및 모달 표시
     resetWeeklyForm();
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
