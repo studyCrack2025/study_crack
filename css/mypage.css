@@ -301,15 +301,15 @@
 .study-time-table th { background: #f1f5f9; padding: 8px; text-align: center; color: #475569; border-bottom: 2px solid #e2e8f0; }
 .study-time-table td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; vertical-align: middle; }
 .main-sub { display: block; font-size: 0.85rem; font-weight: bold; color: #334155; margin-bottom: 2px; }
-.sub-detail { 
+.sub-detail .custom-subj { 
     width: 90%; padding: 4px; font-size: 0.75rem; 
     border: 1px solid #e2e8f0; border-radius: 4px; text-align: center;
     background: #fff;
 }
 .sub-detail::placeholder { color: #cbd5e1; }
+.custom-subj::placeholder { color: #cbd5e1; }
 .study-time-table input.plan-time, 
 .study-time-table input.act-time { width: 80%; padding: 8px; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px; }
-.custom-subj { border: none; border-bottom: 1px solid #cbd5e1; border-radius: 0; background: transparent; }
 .total-row { background: #eff6ff; font-weight: bold; color: #2563eb; }
 .rate-txt { font-weight: bold; color: #334155; }
 
@@ -411,6 +411,69 @@ input:focus { outline: none; border-color: #2563EB; }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
+/* --- [신규] 심층 코칭(PRO) 스타일 --- */
+
+/* 1. 메인 박스 스타일 */
+.badge-pro { 
+    background: linear-gradient(135deg, #f59e0b, #d97706); color: white; 
+    padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; 
+    margin-top: 8px; display: inline-block; box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+}
+
+/* 2. PRO 전용 모달 레이아웃 */
+.pro-modal-content {
+    max-width: 700px; height: 90vh; /* 조금 더 크게 */
+    border-radius: 16px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+}
+
+/* 3. 헤더 디자인 (그라데이션) */
+.pro-modal-header {
+    background: linear-gradient(135deg, #1e293b, #0f172a); /* 다크 네이비 */
+    padding: 30px 25px; color: white;
+    display: flex; justify-content: space-between; align-items: flex-start;
+}
+.pro-modal-header h2 { 
+    margin: 0 0 8px 0; color: #fbbf24; /* 골드 텍스트 */
+    font-size: 1.5rem; letter-spacing: -0.5px; 
+}
+.pro-modal-header p { margin: 0; color: #94a3b8; font-size: 0.95rem; }
+.pro-close { color: #64748b; font-size: 2rem; transition: color 0.2s; }
+.pro-close:hover { color: #fbbf24; }
+
+/* 4. 바디 & 카드 디자인 */
+.pro-body { background-color: #f1f5f9; padding: 30px !important; }
+
+.pro-input-card {
+    background: white; border-radius: 12px; padding: 25px; margin-bottom: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #e2e8f0;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.pro-input-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.05); }
+
+.card-title { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.card-title i { color: #d97706; /* 앰버 아이콘 */ }
+.card-desc { font-size: 0.9rem; color: #64748b; margin-bottom: 15px; line-height: 1.4; }
+
+/* 5. 입력창 디자인 */
+.pro-textarea {
+    width: 100%; height: 120px; padding: 15px;
+    border: 1px solid #cbd5e1; border-radius: 8px;
+    font-size: 1rem; line-height: 1.6; resize: none;
+    background-color: #f8fafc; transition: all 0.2s;
+}
+.pro-textarea:focus {
+    background-color: white; border-color: #d97706; outline: none;
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+}
+
+/* 6. 하단 버튼 */
+.pro-footer { background: white; padding: 20px; text-align: right; border-top: 1px solid #e2e8f0; }
+.pro-btn {
+    background: linear-gradient(135deg, #d97706, #b45309);
+    width: auto; padding: 12px 30px; font-size: 1.1rem; border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(217, 119, 6, 0.3); margin-top: 0;
+}
+.pro-btn:hover { background: linear-gradient(135deg, #b45309, #92400e); transform: translateY(-2px); }
 
 /* =========================================
    9. 모바일 반응형 (Media Queries)

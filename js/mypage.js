@@ -846,6 +846,96 @@ async function submitWeeklyCheck() {
     }
 }
 
+// === [신규] 심층 코칭(PRO) 로직 ===
+
+function openDeepCoachingModal() {
+    // 1. 권한 체크 (PRO 유저만 가능)
+    if (currentUserTier !== 'pro') {
+        if (currentUserTier === 'black') {
+            alert("BLACK 멤버십 회원님은 [FOR BLACK] 전용관에서\n더 심도 있는 관리를 받으실 수 있습니다.");
+            // 선택적으로 FOR BLACK 탭으로 이동시킬 수 있음
+            // switchMainTab('solution'); openSolution('black');
+        } else {
+            alert("PRO 멤버십 전용 기능입니다.\n멤버십을 업그레이드하여 전문가의 1:1 코칭을 받아보세요.");
+        }
+        return;
+    }
+
+    const modal = document.getElementById('deepCoachingModal');
+    
+    // 초기화
+    modal.querySelectorAll('textarea').forEach(el => {
+        el.value = '';
+        el.parentElement.querySelector('.char-count span').innerText = '0';
+    });
+
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeDeepModal() {
+    document.getElementById('deepCoachingModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+// 글자수 카운터
+function updateCharCount(el) {
+    const len = el.value.length;
+    // 형제 요소 중 char-count 찾기
+    const counter = el.parentElement.querySelector('.char-count span');
+    if (counter) counter.innerText = len;
+}
+
+// 심층 코칭 제출
+async function submitDeepCoaching() {
+    // 입력값 수집 (순서대로: 계획, 방향, 과목, 기타)
+    const textareas = document.querySelectorAll('#deepCoachingModal .pro-textarea');
+    const answers = Array.from(textareas).map(t => t.value.trim());
+
+    // 1. 유효성 검사 (최소 1개 이상 작성했는지)
+    // 전부 비어있으면 거절
+    const isAllEmpty = answers.every(ans => ans === "");
+    if (isAllEmpty) {
+        alert("최소 한 가지 항목 이상 내용을 작성해주세요.");
+        return;
+    }
+
+    if (!confirm("작성하신 내용으로 컨설팅을 요청하시겠습니까?\n제출 후에는 수정이 불가능합니다.")) return;
+
+    const userId = localStorage.getItem('userId');
+    const today = new Date().toISOString();
+
+    const requestData = {
+        date: today,
+        plan: answers[0],
+        direction: answers[1],
+        subject: answers[2],
+        etc: answers[3],
+        status: 'pending' // 대기중
+    };
+
+    try {
+        const response = await fetch(MYPAGE_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'save_deep_coaching', // Lambda에 이 케이스 추가 필요
+                userId: userId,
+                data: requestData
+            })
+        });
+
+        if (response.ok) {
+            alert("✅ 컨설팅 요청이 접수되었습니다!\n담당 컨설턴트 배정 후 24시간 내 답변이 등록됩니다.");
+            closeDeepModal();
+        } else {
+            throw new Error("서버 통신 오류");
+        }
+    } catch (e) {
+        console.error(e);
+        alert("요청 실패: " + e.message);
+    }
+}
+
 // === 기타 기능 (기존 유지) ===
 function initCoachLock() {
     const lockOverlay = document.getElementById('deepCoachingLock');
