@@ -46,13 +46,18 @@ async function fetchUserData(userId) {
 
         userTargetUnivs = data.targetUnivs || [];
         userQuantData = data.quantitative; 
-
+        
+        // ★ [추가] 성적 데이터가 로드되었으니 계열을 다시 판단해서 대학 목록 갱신
+        if (typeof buildUnivMap === 'function') {
+            buildUnivMap();
+        }
     } catch (error) {
         console.error("데이터 로드 중 오류:", error);
     }
 }
 
 // === 2. 대학 데이터 가져오기 및 파싱 (변경된 구조 반영) ===
+// === [수정됨] 대학 데이터 S3에서 가져오기 및 계열별 필터링 ===
 async function fetchUnivData() {
     try {
         const response = await fetch(UNIV_DATA_API_URL, {
@@ -64,44 +69,106 @@ async function fetchUnivData() {
         if (!response.ok) throw new Error(`서버 응답 오류`);
 
         const data = await response.json();
-        univData = data; 
+        univData = data; // 원본 데이터 저장
 
-        // [파싱 로직] JSON 구조: [ { "대학명": "...", "전형별": [ { "학과명": "...", "합격권 추정": ... }, ... ] }, ... ]
-        univMap = {};
-        
-        univData.forEach(item => {
-            const univName = item["대학명"];
-            if (!univName) return;
-
-            // 해당 대학의 학과 정보 리스트 추출
-            const majors = [];
-            if (item["전형별"] && Array.isArray(item["전형별"])) {
-                item["전형별"].forEach(dept => {
-                    majors.push({
-                        name: dept["학과명"],
-                        cut_pass: parseFloat(dept["합격권 추정"]) || 0,
-                        cut_70: parseFloat(dept["상위 70% 추정"]) || 0
-                    });
-                });
-            }
-
-            // 대학명 키로 저장
-            if (!univMap[univName]) {
-                univMap[univName] = [];
-            }
-            // 학과 데이터 병합
-            univMap[univName].push(...majors);
-        });
-
-        console.log(`대학 데이터 파싱 완료: 총 ${Object.keys(univMap).length}개 대학`);
-
-        // 이미 탭이 열려있다면 UI 갱신
-        if (document.getElementById('sol-univ').classList.contains('active')) {
-            initUnivGrid(); 
-        }
+        // 데이터 파싱 실행 (유저 성적에 따라 문/이과 자동 분류)
+        buildUnivMap();
 
     } catch (e) {
         console.error("대학 데이터 로드 실패:", e);
+    }
+}
+
+// === [신규] 유저 성적 기반 계열 판단 및 데이터 가공 함수 ===
+function buildUnivMap() {
+    if (!univData || univData.length === 0) return;
+
+    // 1. 유저의 계열 판단 (이과 vs 문과)
+    const userStream = determineUserStream(); 
+    console.log(`🎯 유저 계열 판정: ${userStream}`);
+
+    // 2. 해당 계열 데이터만 추출하여 맵핑
+    univMap = {};
+    
+    univData.forEach(item => {
+        const univName = item["대학명"];
+        if (!univName) return;
+
+        const majors = [];
+        const streams = item["데이터"]; // { "문과": {...}, "이과": {...} }
+        
+        if (streams) {
+            // ★ 핵심: 판정된 계열(userStream)의 데이터만 가져옴
+            // 예: userStream이 "이과"면 streams["이과"]만 참조
+            const targetStreamData = streams[userStream]; 
+
+            if (targetStreamData && targetStreamData["전형별"] && Array.isArray(targetStreamData["전형별"])) {
+                targetStreamData["전형별"].forEach(dept => {
+                    majors.push({
+                        name: dept["학과명"],
+                        cut_pass: parseFloat(dept["합격권 추정"]) || 0,
+                        cut_70: parseFloat(dept["상위 70% 추정"]) || 0,
+                        stream: userStream 
+                    });
+                });
+            }
+        }
+
+        // 해당 대학에 갈 수 있는 학과가 있을 때만 맵에 추가
+        if (majors.length > 0) {
+            if (!univMap[univName]) {
+                univMap[univName] = [];
+            }
+            univMap[univName].push(...majors);
+        }
+    });
+
+    console.log(`✅ ${userStream} 데이터 파싱 완료: 총 ${Object.keys(univMap).length}개 대학`);
+
+    // UI 갱신 (이미 탭이 열려있다면)
+    if (document.getElementById('sol-univ').classList.contains('active')) {
+        initUnivGrid(); 
+    }
+}
+
+// === [신규] 계열 판단 로직 (미적/기하 + 과탐2 = 이과) ===
+function determineUserStream() {
+    // 1. 데이터가 없으면 기본값 '문과' (또는 '이과'로 설정 가능)
+    if (!userQuantData) return '문과';
+
+    // 2. 가장 최신 시험 데이터 찾기 (수능 > 9월 > 6월 ... 순서로 우선순위 둠)
+    const examPriorities = ['csat', 'sep', 'jun', 'oct', 'jul', 'mar', 'may'];
+    let targetExam = null;
+
+    for (const examName of examPriorities) {
+        if (userQuantData[examName] && userQuantData[examName].math && userQuantData[examName].math.opt) {
+            targetExam = userQuantData[examName];
+            break; 
+        }
+    }
+
+    // 입력된 성적이 아예 없으면 기본값 리턴
+    if (!targetExam) return '문과';
+
+    // 3. 조건 검사
+    const mathOpt = targetExam.math.opt; // 'mi'(미적), 'ki'(기하), 'hwak'(확통)
+    const inq1Name = targetExam.inq1?.name || "";
+    const inq2Name = targetExam.inq2?.name || "";
+
+    // 조건 A: 수학이 미적분(mi) 또는 기하(ki)
+    const isMathScience = (mathOpt === 'mi' || mathOpt === 'ki');
+
+    // 조건 B: 탐구 2과목 모두 과탐 (물화생지 포함 여부로 판단)
+    // 정규식: 물리학, 화학, 생명과학, 지구과학 (I, II 포함)
+    const scienceRegex = /물리|화학|생명|지구/;
+    const isInq1Science = scienceRegex.test(inq1Name);
+    const isInq2Science = scienceRegex.test(inq2Name);
+
+    // ★ 최종 판단: 수학(미/기) AND 과탐(2개) ==> 이과, 그 외 ==> 문과
+    if (isMathScience && isInq1Science && isInq2Science) {
+        return '이과';
+    } else {
+        return '문과';
     }
 }
 
