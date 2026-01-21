@@ -136,14 +136,15 @@
                             <span class="badge-std">Standard 이상</span>
                         </div>
                         
-                        <div class="coach-box deep-coaching">
+                        <div class="coach-box deep-coaching clickable" onclick="openDeepCoachingModal()">
                             <h3>🧐 심층 코칭</h3>
                             <div class="lock-overlay" id="deepCoachingLock">
                                 <i class="fas fa-lock"></i>
                                 <p>PRO 버전 이상</p>
                             </div>
                             <div class="coach-content">
-                                <p>전문 컨설턴트의 1:1 심층 분석 내용</p>
+                                <p>전문 컨설턴트와의 1:1 정밀 진단 & 솔루션</p>
+                                <span class="badge-pro">PRO Exclusive</span>
                             </div>
                         </div>
                     </div>
@@ -203,7 +204,7 @@
                 
                 <div class="check-section">
                     <h4>1. 과목별 학습 달성률 <span class="req">*</span></h4>
-                    <p class="desc">계획 시간과 실제 공부 시간을 <strong>시간 단위(예: 1.5)</strong>로 입력하세요.</p>
+                    <p class="desc">과목별 <strong>구체적인 과목명</strong>과 시간을 입력하세요.</p>
                     <div class="table-wrap">
                         <table class="study-time-table">
                             <thead>
@@ -289,7 +290,7 @@
                         </div>
                         <div class="mock-tile" onclick="selectMockType('edu', this)">
                             <span class="icon">🏛️</span>
-                            <span class="label">평가원(교육청)</span>
+                            <span class="label">평가원/청</span>
                         </div>
                         <div class="mock-tile" onclick="selectMockType('private', this)">
                             <span class="icon">📝</span>
@@ -298,7 +299,7 @@
                     </div>
                     <input type="hidden" id="mockExamType" value="none">
 
-                    <div id="mockExamFields" style="display:none; margin-top:15px;">
+                    <div id="mockExamFields" style="display:none; margin-top:20px;">
                         <div class="file-upload-box">
                             <label>📝 성적 인증 사진 첨부 (필수)</label>
                             <input type="file" id="mockExamProof" accept="image/*">
@@ -346,64 +347,52 @@
             </div>
         </div>
     </div>
-    
-    <div class="coach-box deep-coaching clickable" onclick="openDeepCoachingModal()">
-    <h3>🧐 심층 코칭</h3>
-    <div class="lock-overlay" id="deepCoachingLock">
-        <i class="fas fa-lock"></i>
-        <p>PRO 버전 전용</p>
-    </div>
-    <div class="coach-content">
-        <p>전문 컨설턴트와의 1:1 정밀 진단 & 솔루션</p>
-        <span class="badge-pro">PRO Exclusive</span>
-    </div>
-</div>
 
-<div id="deepCoachingModal" class="modal">
-    <div class="modal-content pro-modal-content">
-        <div class="pro-modal-header">
-            <div class="header-text">
-                <h2>1:1 심층 컨설팅 요청</h2>
-                <p>현재 고민을 구체적으로 적어주시면, 24시간 내에 전문 솔루션이 제공됩니다.</p>
+    <div id="deepCoachingModal" class="modal">
+        <div class="modal-content pro-modal-content">
+            <div class="pro-modal-header">
+                <div class="header-text">
+                    <h2>1:1 심층 컨설팅 요청</h2>
+                    <p>현재 고민을 구체적으로 적어주시면, 24시간 내에 전문 솔루션이 제공됩니다.</p>
+                </div>
+                <span class="close-btn pro-close" onclick="closeDeepModal()">&times;</span>
             </div>
-            <span class="close-btn pro-close" onclick="closeDeepModal()">&times;</span>
-        </div>
-        
-        <div class="modal-body scrollable pro-body">
-            <div class="pro-input-card">
-                <div class="card-title"><i class="fas fa-calendar-check"></i> 학습 계획 점검</div>
-                <p class="card-desc">현재 세우고 있는 계획의 문제점이나 확신이 없는 부분을 적어주세요.</p>
-                <textarea class="pro-textarea" maxlength="200" placeholder="예: 하루 14시간 계획을 세우는데 자꾸 밀립니다. 현실적인 수정이 필요합니다." oninput="updateCharCount(this)"></textarea>
-                <div class="char-count"><span>0</span>/200</div>
-            </div>
+            
+            <div class="modal-body scrollable pro-body">
+                <div class="pro-input-card">
+                    <div class="card-title"><i class="fas fa-calendar-check"></i> 학습 계획 점검</div>
+                    <p class="card-desc">현재 세우고 있는 계획의 문제점이나 확신이 없는 부분을 적어주세요.</p>
+                    <textarea class="pro-textarea" maxlength="200" placeholder="예: 하루 14시간 계획을 세우는데 자꾸 밀립니다. 현실적인 수정이 필요합니다." oninput="updateCharCount(this)"></textarea>
+                    <div class="char-count"><span>0</span>/200</div>
+                </div>
 
-            <div class="pro-input-card">
-                <div class="card-title"><i class="fas fa-compass"></i> 학습 방향성 설정</div>
-                <p class="card-desc">현재 공부하고 있는 방향이 맞는지, 입시 전략과 일치하는지 고민을 적어주세요.</p>
-                <textarea class="pro-textarea" maxlength="200" placeholder="예: 정시 파이터인데 내신 기간에 수능 공부 밸런스를 어떻게 잡아야 할까요?" oninput="updateCharCount(this)"></textarea>
-                <div class="char-count"><span>0</span>/200</div>
-            </div>
+                <div class="pro-input-card">
+                    <div class="card-title"><i class="fas fa-compass"></i> 학습 방향성 설정</div>
+                    <p class="card-desc">현재 공부하고 있는 방향이 맞는지, 입시 전략과 일치하는지 고민을 적어주세요.</p>
+                    <textarea class="pro-textarea" maxlength="200" placeholder="예: 정시 파이터인데 내신 기간에 수능 공부 밸런스를 어떻게 잡아야 할까요?" oninput="updateCharCount(this)"></textarea>
+                    <div class="char-count"><span>0</span>/200</div>
+                </div>
 
-            <div class="pro-input-card">
-                <div class="card-title"><i class="fas fa-book-open"></i> 취약 과목 솔루션</div>
-                <p class="card-desc">성적이 오르지 않는 특정 과목의 구체적인 증상을 적어주세요.</p>
-                <textarea class="pro-textarea" maxlength="200" placeholder="예: 수학 준킬러에서 시간이 너무 오래 걸립니다. 기출 분석은 2회독 했습니다." oninput="updateCharCount(this)"></textarea>
-                <div class="char-count"><span>0</span>/200</div>
+                <div class="pro-input-card">
+                    <div class="card-title"><i class="fas fa-book-open"></i> 취약 과목 솔루션</div>
+                    <p class="card-desc">성적이 오르지 않는 특정 과목의 구체적인 증상을 적어주세요.</p>
+                    <textarea class="pro-textarea" maxlength="200" placeholder="예: 수학 준킬러에서 시간이 너무 오래 걸립니다. 기출 분석은 2회독 했습니다." oninput="updateCharCount(this)"></textarea>
+                    <div class="char-count"><span>0</span>/200</div>
+                </div>
+
+                <div class="pro-input-card">
+                    <div class="card-title"><i class="fas fa-comment-dots"></i> 기타 멘탈 관리</div>
+                    <p class="card-desc">슬럼프, 불안감 등 학습 외적인 고민이 있다면 자유롭게 적어주세요.</p>
+                    <textarea class="pro-textarea" maxlength="200" placeholder="자유롭게 작성해주세요." oninput="updateCharCount(this)"></textarea>
+                    <div class="char-count"><span>0</span>/200</div>
+                </div>
             </div>
 
-            <div class="pro-input-card">
-                <div class="card-title"><i class="fas fa-comment-dots"></i> 기타 멘탈 관리</div>
-                <p class="card-desc">슬럼프, 불안감 등 학습 외적인 고민이 있다면 자유롭게 적어주세요.</p>
-                <textarea class="pro-textarea" maxlength="200" placeholder="자유롭게 작성해주세요." oninput="updateCharCount(this)"></textarea>
-                <div class="char-count"><span>0</span>/200</div>
+            <div class="modal-footer pro-footer">
+                <button class="save-btn pro-btn" onclick="submitDeepCoaching()">컨설팅 요청하기</button>
             </div>
         </div>
-
-        <div class="modal-footer pro-footer">
-            <button class="save-btn pro-btn" onclick="submitDeepCoaching()">컨설팅 요청하기</button>
-        </div>
     </div>
-</div>
 
     <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
