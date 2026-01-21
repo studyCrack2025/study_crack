@@ -5,12 +5,12 @@ const UNIV_DATA_API_URL = "https://ftbrlbyaprizjcp5w7b2g5t6sq0srwem.lambda-url.a
 
 // 전역 변수
 let currentUserTier = 'free';
-let userTargetUnivs = [null, null, null, null, null, null, null, null]; // 8슬롯 기본값
+let userTargetUnivs = [null, null, null, null, null, null, null, null]; 
 let univData = []; 
 let univMap = {};  
 let userQuantData = null; 
 
-// 모달 상태 관리 변수
+// 모달 상태 관리
 let currentSlotIndex = null;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -23,15 +23,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // 병렬 로딩 후 분석 UI 자동 실행
+    // [핵심] 병렬 로딩 후 분석 UI 자동 실행 (자동 로딩 기능)
     Promise.all([
         fetchUserData(userId),
         fetchUnivData()
     ]).then(() => {
         console.log("🚀 모든 데이터 로드 완료");
-        // 데이터가 다 준비된 상태에서 분석 실행
-        updateAnalysisUI();
-        initUnivGrid(); // 그리드 초기화
+        // 데이터 로드 직후 그리드와 분석표를 바로 갱신
+        initUnivGrid(); 
+        updateAnalysisUI(); 
     });
 
     setupUI();
@@ -57,7 +57,7 @@ async function fetchUserData(userId) {
         if (data.targetUnivs) userTargetUnivs = data.targetUnivs;
         if (data.quantitative) userQuantData = data.quantitative;
         
-        // 성적 데이터가 로드되었으니 계열 판단 다시 실행
+        // 성적 데이터 로드 후 계열 판단 다시 실행
         if (typeof buildUnivMap === 'function') {
             buildUnivMap();
         }
@@ -67,7 +67,7 @@ async function fetchUserData(userId) {
     }
 }
 
-// === 2. 대학 데이터 가져오기 및 파싱 ===
+// === 2. 대학 데이터 가져오기 ===
 async function fetchUnivData() {
     try {
         const response = await fetch(UNIV_DATA_API_URL, {
@@ -81,14 +81,14 @@ async function fetchUnivData() {
         const data = await response.json();
         univData = data; 
 
-        buildUnivMap(); // 파싱 실행
+        buildUnivMap(); 
 
     } catch (e) {
         console.error("대학 데이터 로드 실패:", e);
     }
 }
 
-// === 유저 성적 기반 계열 판단 및 데이터 가공 ===
+// === 계열 판단 및 데이터 가공 ===
 function buildUnivMap() {
     if (!univData || univData.length === 0) return;
 
@@ -123,6 +123,9 @@ function buildUnivMap() {
             univMap[univName].push(...majors);
         }
     });
+    
+    // 데이터 가공이 끝났으므로 UI 갱신 (혹시 모를 타이밍 이슈 방지)
+    updateAnalysisUI();
 }
 
 function determineUserStream() {
@@ -245,7 +248,7 @@ function openSolution(solType) {
 
     if (solType === 'univ') {
         initUnivGrid(); 
-        updateAnalysisUI(); // 탭 열 때 분석 갱신
+        updateAnalysisUI(); // 탭 열릴 때 분석 갱신
     }
     if (solType === 'coach') initCoachLock();
 }
@@ -399,7 +402,7 @@ async function saveTargetUnivs() {
     } catch(e) { console.error(e); alert("통신 오류 발생"); }
 }
 
-// === ★★★ 목표 대학 분석 자동 로딩 ★★★ ===
+// === [복구 및 수정] 목표 대학 기본 분석 (디자인 원상복구) ===
 function updateAnalysisUI() {
     const container = document.getElementById('univAnalysisResult');
     if (!container) return;
@@ -410,64 +413,87 @@ function updateAnalysisUI() {
         return;
     }
     
-    // 대학 데이터나 성적 데이터가 아직 로드 안됐으면 대기 (또는 메시지)
-    if (Object.keys(univMap).length === 0 || !userQuantData) {
-        container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px;">데이터 분석 중...</p>';
+    // 데이터 준비 여부 확인
+    if (Object.keys(univMap).length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px;">대학 데이터를 불러오는 중...</p>';
         return;
     }
 
-    // 내 점수 계산 (수능 기준 단순 합산 예시)
+    // 내 점수 계산 (단순 합산 예시)
     let myScore = 0;
-    if (userQuantData.csat) {
+    if (userQuantData && userQuantData.csat) {
         const d = userQuantData.csat;
         myScore += parseInt(d.kor?.std || 0) + parseInt(d.math?.std || 0) + parseInt(d.inq1?.std || 0) + parseInt(d.inq2?.std || 0);
     }
 
     let html = '';
+    
     userTargetUnivs.forEach((target, idx) => {
         if (!target || !target.univ) return;
 
+        // 대학 데이터에서 해당 학과 찾기
         const univInfo = univMap[target.univ];
-        let cutScore = 0;
+        let cutPass = 0;
+        let cut70 = 0;
+        
         if (univInfo) {
             const majorInfo = univInfo.find(m => m.name === target.major);
-            if (majorInfo) cutScore = majorInfo.cut_pass;
+            if (majorInfo) {
+                cutPass = majorInfo.cut_pass || 0;
+                cut70 = majorInfo.cut_70 || 0;
+            }
         }
 
-        const diff = (myScore - cutScore).toFixed(1);
+        // 점수 차이 및 상태 계산
+        const diff = (myScore - cutPass).toFixed(1);
         const diffClass = diff >= 0 ? 'plus' : 'minus';
-        const diffText = diff >= 0 ? `+${diff}` : diff;
+        const diffText = cutPass > 0 ? (diff >= 0 ? `+${diff}` : diff) : '-';
         
-        let prob = 0;
-        if (diff >= 5) prob = 90;
-        else if (diff >= 0) prob = 60;
-        else if (diff >= -5) prob = 30;
-        else prob = 10;
-
+        // 원본 디자인(HTML 구조)으로 복구
         html += `
         <div class="analysis-card">
             <div class="analysis-header">
                 <h4>${idx+1}지망: ${target.univ} <small>${target.major}</small></h4>
-                <span class="univ-badge">합격확률 ${prob}%</span>
+                <span class="univ-badge" style="background:#eff6ff; color:#2563eb; padding:4px 10px; border-radius:20px; font-size:0.8rem; font-weight:bold;">
+                    ${diff >= 0 ? '합격 유력' : '소신 지원'}
+                </span>
             </div>
             <div class="analysis-body">
                 <div class="score-table-box">
                     <table class="score-compare-table">
-                        <tr><th>구분</th><th>점수</th></tr>
-                        <tr><td>예상 합격컷</td><td><span class="score-val">${cutScore || '-'}</span></td></tr>
+                        <tr>
+                            <th>구분</th>
+                            <th>점수 (환산)</th>
+                            <th>비고</th>
+                        </tr>
+                        <tr>
+                            <td>합격권 추정</td>
+                            <td class="score-val">${cutPass > 0 ? cutPass : '데이터 없음'}</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>상위 70% Cut</td>
+                            <td class="score-val">${cut70 > 0 ? cut70 : '-'}</td>
+                            <td style="font-size:0.8rem; color:#64748b;">안정권 기준</td>
+                        </tr>
                         <tr class="score-row highlight">
-                            <td>내 환산점수</td>
-                            <td><span class="score-val">${myScore}</span> <span class="diff-badge ${diffClass}">${diffText}</span></td>
+                            <td>내 환산 점수</td>
+                            <td class="score-val" style="color:#2563eb;">${myScore > 0 ? myScore : '0'}</td>
+                            <td><span class="diff-badge ${diffClass}">${diffText}</span></td>
                         </tr>
                     </table>
                 </div>
                 <div class="chart-box">
-                    <div class="pie-chart" style="background: conic-gradient(${diff >= 0 ? '#10b981' : '#ef4444'} 0% ${prob}%, #e5e7eb ${prob}% 100%);"></div>
-                    <span style="font-size:0.8rem;">안정성 진단</span>
+                    <div class="pie-chart" style="background: conic-gradient(${diff >= 0 ? '#10b981' : '#ef4444'} 0% 75%, #e5e7eb 75% 100%);"></div>
+                    <div class="chart-legend">
+                        <div class="legend-item"><span class="color-dot" style="background:${diff >= 0 ? '#10b981' : '#ef4444'}"></span>내 점수</div>
+                        <div class="legend-item"><span class="color-dot" style="background:#e5e7eb"></span>부족분</div>
+                    </div>
                 </div>
             </div>
         </div>`;
     });
+
     container.innerHTML = html;
 }
 
@@ -647,7 +673,7 @@ async function submitWeeklyCheck() {
     } catch(e) { console.error(e); alert("제출 실패"); }
 }
 
-// === 심층 코칭 ===
+// === 심층 코칭 (PRO) ===
 function openDeepCoachingModal() {
     if (currentUserTier !== 'pro') {
         if(currentUserTier === 'black') alert("BLACK 회원은 [FOR BLACK] 메뉴를 이용해주세요.");
@@ -742,21 +768,10 @@ async function handleDeleteAccount() {
 }
 
 function setupUI() {
-    // [기능 추가] 새 비밀번호 확인 칸에서 'Enter' 키를 누르면 '저장' 버튼 실행
     const pwConfirmInput = document.getElementById('newPasswordConfirm');
     if (pwConfirmInput) {
         pwConfirmInput.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                saveProfile(); // 저장 함수 실행
-            }
-        });
-    }
-
-    // [기능 추가] 전화번호 입력 시 숫자만 입력되도록 강제
-    const phoneInput = document.getElementById('profilePhone');
-    if (phoneInput) {
-        phoneInput.addEventListener('input', function (e) {
-            this.value = this.value.replace(/[^0-9]/g, ''); // 숫자가 아니면 삭제
+            if (e.key === 'Enter') saveProfile();
         });
     }
 }
