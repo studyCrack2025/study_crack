@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/admin.css">
     <link rel="stylesheet" href="css/admin_detail.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
@@ -49,6 +50,7 @@
                     <button class="tab-btn active" onclick="switchTab('info')">학생 정보</button>
                     <button class="tab-btn" onclick="switchTab('qual')">정성 조사서</button>
                     <button class="tab-btn" onclick="switchTab('quan')">성적 데이터</button>
+                    <button class="tab-btn" onclick="switchTab('consult')">📋 상담/코칭</button>
                     <button class="tab-btn" onclick="switchTab('pay')">결제 내역</button>
                     <button class="tab-btn highlight" onclick="switchTab('analysis')">📊 분석 리포트</button>
                 </div>
@@ -59,7 +61,7 @@
                             <div class="info-icon-large">🎓</div>
                             <div class="info-header-text">
                                 <h3>기본 인적사항</h3>
-                                <p>학생의 연락처 및 학교 정보입니다. 수정이 필요한 경우 관리자 DB에서 수정하세요.</p>
+                                <p>학생의 연락처 및 학교 정보입니다.</p>
                             </div>
                         </div>
                         
@@ -81,6 +83,13 @@
                                 <span class="detail-value" id="viewJoinDate">-</span>
                             </div>
                         </div>
+
+                        <div class="univ-summary-section">
+                            <h4>🎯 목표 대학 설정 현황</h4>
+                            <div id="viewTargetUnivList" class="target-univ-list">
+                                <p style="color:#94a3b8;">설정된 목표 대학이 없습니다.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -92,10 +101,20 @@
                     <div id="viewScoreTable"></div>
                 </div>
 
+                <div id="tab_consult" class="tab-content">
+                    <div class="consult-header">
+                        <h3>학습 점검 및 코칭 이력</h3>
+                        <p>학생이 제출한 주간 리포트와 심층 상담 내역입니다.</p>
+                    </div>
+                    <div id="consultTimeline" class="timeline-container">
+                        <div class="empty-msg">데이터 로딩 중...</div>
+                    </div>
+                </div>
+
                 <div id="tab_pay" class="tab-content">
                     <div class="pay-summary-container">
                         <div class="pay-stat-box">
-                            <span class="pay-stat-label">총 결제 금액 (Lifetime)</span>
+                            <span class="pay-stat-label">총 결제 금액</span>
                             <span class="pay-stat-value total" id="payTotalAmount">0원</span>
                         </div>
                         <div class="pay-stat-box">
@@ -103,7 +122,6 @@
                             <span class="pay-stat-value" id="payLastDate">-</span>
                         </div>
                     </div>
-
                     <div class="payment-list-wrapper">
                         <table class="payment-table-modern">
                             <thead>
@@ -113,8 +131,7 @@
                                     <th style="text-align:right;">금액</th>
                                 </tr>
                             </thead>
-                            <tbody id="viewPaymentList">
-                                </tbody>
+                            <tbody id="viewPaymentList"></tbody>
                         </table>
                     </div>
                 </div>
