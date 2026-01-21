@@ -578,27 +578,28 @@ function renderUnivAnalysis() {
 
 // === 주간 학습 점검 로직 ===
 
-// 모달 열기 (날짜 계산 포함)
+// 모달 열기 (년도 및 날짜 계산)
 function openWeeklyCheckModal() {
     if (['free', 'basic'].includes(currentUserTier)) {
-        // Standard 이상만 가능 (필요시 조건 수정)
-        // alert("Standard 멤버십 이상 이용 가능합니다.");
-        // return;
+        // Standard 이상만 가능 (필요시 주석 해제)
+        // alert("Standard 멤버십 이상 이용 가능합니다."); return;
     }
 
     const modal = document.getElementById('weeklyCheckModal');
     const title = document.getElementById('weeklyTitle');
+    const yearSpan = document.getElementById('weeklyYear');
     
-    // 오늘 날짜 기준 N월 N주차 계산
+    // 오늘 날짜 기준 YY년 M월 N주차 계산
     const today = new Date();
+    const yearShort = today.getFullYear().toString().slice(2); // '26'
     const month = today.getMonth() + 1;
     const week = getWeekOfMonth(today);
     
-    title.innerText = `${month}월 ${week}주차 학습점검`;
+    // 타이틀 업데이트
+    yearSpan.innerText = `${yearShort}년`;
+    title.childNodes[1].nodeValue = ` ${month}월 ${week}주차 학습점검`; // 텍스트 노드만 변경
     
-    // 폼 초기화 (이전에 입력한 내용 리셋)
     resetWeeklyForm();
-    
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
 }
@@ -614,6 +615,20 @@ function getWeekOfMonth(date) {
     const day = start.getDay() || 7; // 월요일 시작 기준 (1~7)
     const diff = date.getDate() - 1 + (day - 1); 
     return Math.floor(diff / 7) + 1;
+}
+
+// 모의고사 타일 선택 함수
+function selectMockType(type, element) {
+    // 1. 값 저장
+    document.getElementById('mockExamType').value = type;
+    
+    // 2. 비주얼 업데이트 (selected 클래스 이동)
+    const tiles = document.querySelectorAll('.mock-tile');
+    tiles.forEach(tile => tile.classList.remove('selected'));
+    element.classList.add('selected');
+    
+    // 3. 입력 필드 토글
+    toggleMockExamFields();
 }
 
 // 1. 학습 시간 자동 계산
@@ -664,7 +679,6 @@ function toggleMockExamFields() {
     
     if (type === 'none') {
         fields.style.display = 'none';
-        // 값 초기화
         document.getElementById('mockExamProof').value = '';
         document.querySelectorAll('.mock-score').forEach(el => el.value = '');
     } else {
@@ -693,18 +707,20 @@ function checkLength(el) {
 
 // 폼 초기화
 function resetWeeklyForm() {
-    // Input들 비우기
     document.querySelectorAll('#weeklyCheckModal input').forEach(input => {
         if(input.type === 'radio' || input.type === 'checkbox') input.checked = false;
         else input.value = '';
     });
     document.querySelector('#weeklyCheckModal textarea').value = '';
     
-    // Select 초기화
+    // 타일 초기화
     document.getElementById('mockExamType').value = 'none';
+    const tiles = document.querySelectorAll('.mock-tile');
+    tiles.forEach(t => t.classList.remove('selected'));
+    tiles[0].classList.add('selected'); // '미응시' 선택
+    
     toggleMockExamFields();
     
-    // 계산 초기화
     document.querySelectorAll('.rate-txt').forEach(el => el.innerText = '0%');
     document.getElementById('totalPlan').innerText = '0H';
     document.getElementById('totalAct').innerText = '0H';
@@ -715,7 +731,7 @@ function resetWeeklyForm() {
 
 // === 주간 학습 점검 제출 로직 ===
 async function submitWeeklyCheck() {
-    // 1. 유효성 검사 (학습 시간)
+    // 1. 유효성 검사
     const totalPlan = parseFloat(document.getElementById('totalPlan').innerText);
     if (totalPlan === 0) {
         alert("최소 한 과목 이상의 학습 계획 시간을 입력해주세요.");
@@ -732,11 +748,8 @@ async function submitWeeklyCheck() {
             alert("모의고사 성적 인증 사진을 첨부해주세요.");
             return;
         }
-        // [참고] 실제 이미지 업로드는 S3 Presigned URL 방식이 필요합니다.
-        // 현재는 파일명만 DB에 저장하는 형태로 구현합니다.
         mockData.proofFile = fileInput.files[0].name; 
 
-        // 점수 수집
         const scores = document.querySelectorAll('.mock-score');
         mockData.scores = {
             kor: scores[0].value,
@@ -747,41 +760,57 @@ async function submitWeeklyCheck() {
         };
     }
 
-    // 3. 코멘트 검사
     const comment = document.getElementById('weekComment').value.trim();
-    if (!comment) {
-        alert("핵심 회고를 작성해주세요.");
-        return;
-    }
+    if (!comment) { alert("핵심 회고를 작성해주세요."); return; }
 
-    // 4. 학습 시간 데이터 수집
+    // 3. 학습 시간 데이터 수집 (구체적 과목명 포함)
     const studyRows = document.querySelectorAll('#studyTimeBody tr');
     let studyData = [];
-    studyRows.forEach((row, idx) => {
-        const subjName = row.querySelector('td:first-child').innerText || row.querySelector('input').value;
+    
+    studyRows.forEach((row) => {
+        // 과목명 가져오기 logic
+        let subjName = "";
+        
+        // 고정 과목(국수탐)인 경우: 텍스트 + (입력된 세부과목)
+        const mainSubSpan = row.querySelector('.main-sub');
+        const detailInput = row.querySelector('.sub-detail');
+        const customInput = row.querySelector('.custom-subj');
+
+        if (mainSubSpan) {
+            subjName = mainSubSpan.innerText;
+            if (detailInput && detailInput.value.trim()) {
+                subjName += `(${detailInput.value.trim()})`; // 예: 수학(미적)
+            }
+        } else if (customInput) {
+            subjName = customInput.value.trim() || "기타";
+        } else {
+            subjName = row.cells[0].innerText; // 영어 등
+        }
+
         const plan = row.querySelector('.plan-time').value || 0;
         const act = row.querySelector('.act-time').value || 0;
-        studyData.push({ subject: subjName, plan: plan, act: act });
+        
+        // 데이터가 있는 경우만 저장
+        if (plan > 0 || act > 0) {
+            studyData.push({ subject: subjName, plan: plan, act: act });
+        }
     });
 
-    // 5. 학업 추이 데이터 수집
     const trend = document.querySelector('input[name="studyTrend"]:checked')?.value || 'keep';
     let slumpReasons = [];
     if (trend === 'down') {
-        document.querySelectorAll('#slumpReasonBox input[type="checkbox"]:checked').forEach(cb => {
-            slumpReasons.push(cb.value);
-        });
+        document.querySelectorAll('#slumpReasonBox input[type="checkbox"]:checked').forEach(cb => slumpReasons.push(cb.value));
         const detail = document.getElementById('slumpDetail').value;
-        if(detail) slumpReasons.push(`detail: ${detail}`);
+        if(detail) slumpReasons.push(detail);
     }
 
-    // 최종 데이터 패키징
     const userId = localStorage.getItem('userId');
-    const today = new Date().toISOString(); // 저장 일시
-    
+    const today = new Date().toISOString();
+    const titleText = document.getElementById('weeklyTitle').innerText;
+
     const weeklyData = {
         date: today,
-        title: document.getElementById('weeklyTitle').innerText, // "1월 4주차 학습점검"
+        title: titleText,
         studyTime: {
             details: studyData,
             totalPlan: document.getElementById('totalPlan').innerText,
@@ -793,31 +822,27 @@ async function submitWeeklyCheck() {
         comment: comment
     };
 
-    if(!confirm("이번 주 학습 점검을 제출하시겠습니까?\n제출 후에는 수정이 어렵습니다.")) return;
+    if(!confirm("이번 주 학습 점검을 제출하시겠습니까?")) return;
 
-    // 6. 서버 전송
     try {
-        // MYPAGE_API_URL 변수는 상단에 이미 선언되어 있다고 가정합니다.
         const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             body: JSON.stringify({
-                type: 'save_weekly_check', // 람다에서 새로 만든 타입
+                type: 'save_weekly_check',
                 userId: userId,
                 data: weeklyData
             })
         });
 
         if (response.ok) {
-            alert("✅ 성공적으로 제출되었습니다!\n컨설턴트가 확인 후 피드백을 드릴 예정입니다.");
+            alert("✅ 제출되었습니다! 컨설턴트 피드백을 기다려주세요.");
             closeWeeklyModal();
-            // 필요 시 UI 초기화 로직 추가
         } else {
-            const err = await response.json();
-            throw new Error(err.error || "서버 응답 오류");
+            throw new Error("서버 응답 오류");
         }
     } catch (e) {
-        console.error("제출 실패:", e);
-        alert("제출 중 오류가 발생했습니다: " + e.message);
+        console.error(e);
+        alert("제출 실패: " + e.message);
     }
 }
 
