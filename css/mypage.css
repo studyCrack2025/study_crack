@@ -1,7 +1,7 @@
-/* --- mypage.css ---*/
+/* --- mypage.css --- */
 
 /* =========================================
-   1. 기본 레이아웃 및 왼쪽 사이드바
+   1. 전체 레이아웃 (Layout)
    ========================================= */
 .mypage-container {
     display: flex;
@@ -12,7 +12,21 @@
     align-items: flex-start;
 }
 
-/* 프로필 영역 */
+.content-area {
+    flex: 1;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    padding: 40px;
+    min-height: 600px;
+}
+
+.divider { border: 0; border-top: 2px solid #f1f5f9; margin: 40px 0; }
+
+
+/* =========================================
+   2. 왼쪽 사이드바 (Profile Sidebar)
+   ========================================= */
 .profile-summary {
     width: 300px;
     background: white;
@@ -28,15 +42,13 @@
 
 .profile-pic-area {
     position: relative;
-    width: 120px;
-    height: 120px;
+    width: 120px; height: 120px;
     margin: 0 auto 15px;
 }
 
 .profile-img {
     width: 100%; height: 100%;
-    border-radius: 50%;
-    object-fit: cover;
+    border-radius: 50%; object-fit: cover;
     border: 3px solid #f1f5f9;
 }
 
@@ -59,7 +71,7 @@
 .status-badge.complete { background-color: #dcfce7; color: #166534; }
 
 .status-detail { padding: 0; margin-bottom: 20px; }
-.status-detail li { margin-bottom: 5px; color: #64748b; font-size: 0.9rem; list-style: none;}
+.status-detail li { margin-bottom: 5px; color: #64748b; font-size: 0.9rem; list-style: none; }
 
 .btn-go-survey {
     display: block; width: 100%; padding: 10px;
@@ -70,7 +82,11 @@
 }
 .btn-go-survey:hover { background-color: #dbeafe; }
 
-/* 티어(멤버십)별 스타일 */
+.account-actions { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
+.btn-delete-account { background: none; border: none; color: #94a3b8; font-size: 0.85rem; text-decoration: underline; cursor: pointer; }
+.btn-delete-account:hover { color: #ef4444; font-weight: bold; }
+
+/* 멤버십 티어 스타일 */
 .premium-badge {
     position: absolute; top: -12px; right: 20px;
     padding: 5px 12px; border-radius: 12px;
@@ -78,20 +94,16 @@
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     letter-spacing: 0.5px; z-index: 10;
 }
-
-/* BASIC */
+/* Tier: Basic */
 .profile-summary.tier-basic { border: 2px solid #3B82F6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.15); }
 .profile-summary.tier-basic .premium-badge { background: linear-gradient(135deg, #3B82F6, #60A5FA); color: white; }
-
-/* STANDARD */
+/* Tier: Standard */
 .profile-summary.tier-standard { border: 2px solid #64748B; box-shadow: 0 0 15px rgba(100, 116, 139, 0.2); }
 .profile-summary.tier-standard .premium-badge { background: linear-gradient(135deg, #94A3B8, #CBD5E1); color: #0F172A; }
-
-/* PRO */
+/* Tier: Pro */
 .profile-summary.tier-pro { border: 2px solid #F59E0B; box-shadow: 0 0 20px rgba(245, 158, 11, 0.25); }
 .profile-summary.tier-pro .premium-badge { background: linear-gradient(135deg, #F59E0B, #FCD34D); color: #78350f; }
-
-/* BLACK */
+/* Tier: Black */
 .profile-summary.tier-black { 
     border: 2px solid #171717; box-shadow: 0 0 20px rgba(0, 0, 0, 0.3); 
     background: linear-gradient(to bottom right, #ffffff, #f8fafc); 
@@ -100,29 +112,15 @@
     background: linear-gradient(135deg, #000000, #333333); color: #FFD700; border: 1px solid #444; 
 }
 
-.account-actions { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
-.btn-delete-account { background: none; border: none; color: #94a3b8; font-size: 0.85rem; text-decoration: underline; cursor: pointer; }
-.btn-delete-account:hover { color: #ef4444; font-weight: bold; }
-
 
 /* =========================================
-   2. 오른쪽 메인 컨텐츠 영역
+   3. 메인 탭 및 메뉴 (Navigation)
    ========================================= */
-.content-area {
-    flex: 1;
-    background: white;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    padding: 40px;
-    min-height: 600px;
-}
-
-/* 상단 메인 탭 */
+/* 상단 탭 */
 .main-tabs { 
     display: flex; justify-content: center; gap: 60px; 
     margin-bottom: 40px; border-bottom: 2px solid #f1f5f9; padding-bottom: 0; 
 }
-
 .tab-btn {
     padding: 15px 10px; border: none; background: none;
     font-size: 1.15rem; font-weight: 600; color: #94a3b8; cursor: pointer; 
@@ -134,9 +132,8 @@
 .tab-content { display: none; }
 .tab-content.active { display: block; animation: fadeIn 0.3s; }
 
-/* 나만의 솔루션 서브 메뉴 */
+/* 솔루션 서브 메뉴 */
 .solution-menu { display: flex; gap: 12px; margin-bottom: 35px; width: 100%; }
-
 .sol-btn {
     flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
     padding: 15px 10px; border-radius: 10px; border: 1px solid #e2e8f0;
@@ -163,7 +160,7 @@
 
 
 /* =========================================
-   3. 목표 대학 설정 (그리드, 버튼, 모달)
+   4. 기능: 목표 대학 설정 (Univ Setting)
    ========================================= */
 .univ-sub-header { margin: 25px 0 15px 0; border-bottom: 1px dashed #e2e8f0; padding-bottom: 10px; }
 .univ-sub-header h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: #1e293b; }
@@ -177,8 +174,9 @@
     position: relative; display: flex; flex-direction: column; gap: 8px;
 }
 .univ-slot label { font-size: 0.85rem; font-weight: bold; color: #334155; }
+.univ-slot .slot-msg { font-size: 0.8rem; color: #ef4444; font-weight: 500; margin-top: 5px; }
 
-/* 대학 선택 버튼 (New: Input/Select 대체) */
+/* 대학 선택 버튼 */
 .univ-select-btn {
     width: 100%; padding: 12px; 
     border: 1px solid #cbd5e1; border-radius: 6px; 
@@ -191,8 +189,6 @@
 .univ-select-btn span.placeholder { color: #94a3b8; }
 .univ-select-btn i { font-size: 0.8rem; color: #cbd5e1; }
 
-.univ-slot .slot-msg { font-size: 0.8rem; color: #ef4444; font-weight: 500; margin-top: 5px; }
-
 /* 비활성화 슬롯 */
 .univ-slot.locked-tier {
     background: #f1f5f9; opacity: 0.6; pointer-events: none; justify-content: center; align-items: center; border: 1px dashed #cbd5e1;
@@ -203,9 +199,8 @@
 .univ-slot.locked-tier label, .univ-slot.locked-tier button { display: none; }
 
 .warning-text { color: #ef4444; font-size: 0.9rem; background: #fef2f2; padding: 10px; border-radius: 6px; }
-.divider { border: 0; border-top: 2px solid #f1f5f9; margin: 40px 0; }
 
-/* [New] 대학/학과 선택 모달 스타일 */
+/* 대학 선택 모달 */
 .select-modal-content {
     max-width: 700px; height: 80vh; max-height: 600px;
     display: flex; flex-direction: column;
@@ -225,15 +220,10 @@
     border-color: #2563EB; background: #eff6ff; color: #2563EB; transform: translateY(-2px);
     box-shadow: 0 4px 6px rgba(37, 99, 235, 0.1);
 }
-.modal-footer { padding-top: 15px; border-top: 1px solid #f1f5f9; text-align: left; }
-.back-step-btn {
-    background: none; border: none; color: #64748b; font-weight: 600; cursor: pointer; padding: 5px 10px;
-}
-.back-step-btn:hover { color: #1e293b; text-decoration: underline; }
 
 
 /* =========================================
-   4. 목표 대학 기본 분석 (카드 & 차트)
+   5. 기능: 목표 대학 분석 (Analysis)
    ========================================= */
 .analysis-card {
     background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 20px;
@@ -248,7 +238,7 @@
 .score-compare-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .score-compare-table th { background: #f8fafc; padding: 10px; text-align: left; color: #64748b; border-bottom: 1px solid #e2e8f0; font-weight: 600; }
 .score-compare-table td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; color: #334155; }
-.score-row.highlight { background: #fffbeb; } /* 내 점수 강조 */
+.score-row.highlight { background: #fffbeb; }
 
 .score-val { font-weight: bold; font-family: 'Roboto', sans-serif; }
 .diff-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-left: 8px; }
@@ -259,10 +249,9 @@
 .chart-box { width: 200px; display: flex; flex-direction: column; align-items: center; }
 .pie-chart {
     width: 120px; height: 120px; border-radius: 50%;
-    background: conic-gradient(#3b82f6 0% 25%, #ef4444 25% 50%, #f59e0b 50% 75%, #10b981 75% 100%); /* 예시 */
+    background: conic-gradient(#3b82f6 0% 25%, #ef4444 25% 50%, #f59e0b 50% 75%, #10b981 75% 100%);
     margin-bottom: 15px; position: relative;
 }
-/* 가운데 구멍 뚫기 (도넛 차트 효과) */
 .pie-chart::after {
     content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
     width: 70px; height: 70px; background: white; border-radius: 50%;
@@ -273,24 +262,71 @@
 
 
 /* =========================================
-   5. 기타 (시뮬레이션, 코칭, BLACK, 폼)
+   6. 기능: 코칭 & 주간점검 (Coaching)
    ========================================= */
-.placeholder-box {
-    text-align: center; padding: 40px; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1; color: #64748b;
-}
-
 .coach-container { display: flex; flex-direction: column; gap: 20px; }
 .coach-box { border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; position: relative; }
 .deep-coaching { border: 1px solid #cbd5e1; background: #f8fafc; }
+
+/* 락 오버레이 (Pro 이상) */
 .lock-overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(2px);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    color: #64748b; font-weight: bold; z-index: 5;
-    border-radius: 8px;
+    color: #64748b; font-weight: bold; z-index: 5; border-radius: 8px;
 }
 .lock-overlay i { font-size: 2rem; margin-bottom: 10px; color: #94a3b8; }
 
+/* 주간 학습 점검 모달 스타일 */
+.coach-box.clickable { cursor: pointer; transition: transform 0.2s, border-color 0.2s; }
+.coach-box.clickable:hover { border-color: #2563EB; transform: translateY(-3px); box-shadow: 0 4px 10px rgba(37,99,235,0.1); }
+.badge-std { background: #e0f2fe; color: #0284c7; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; margin-top: 5px; display: inline-block; }
+
+.check-modal-content { max-width: 600px; height: 85vh; display: flex; flex-direction: column; padding: 0; }
+.modal-header { padding: 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: white; border-radius: 12px 12px 0 0; }
+.modal-body.scrollable { overflow-y: auto; padding: 25px; flex: 1; background: #f8fafc; }
+.modal-footer { padding: 15px 20px; border-top: 1px solid #e2e8f0; background: white; border-radius: 0 0 12px 12px; }
+.back-step-btn { background: none; border: none; color: #64748b; font-weight: 600; cursor: pointer; padding: 5px 10px; }
+.back-step-btn:hover { color: #1e293b; text-decoration: underline; }
+
+/* 점검 항목 공통 */
+.check-section { background: white; border: 1px solid #e2e8f0; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+.check-section h4 { margin: 0 0 8px 0; color: #1e293b; font-size: 1.05rem; }
+.check-section .desc { font-size: 0.85rem; color: #64748b; margin-bottom: 15px; }
+.req { color: #ef4444; }
+
+/* 학습시간 테이블 */
+.table-wrap { overflow-x: auto; }
+.study-time-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.study-time-table th { background: #f1f5f9; padding: 8px; text-align: center; color: #475569; border-bottom: 2px solid #e2e8f0; }
+.study-time-table td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; }
+.study-time-table input { width: 100%; padding: 8px; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px; }
+.custom-subj { border: none; border-bottom: 1px solid #cbd5e1; border-radius: 0; background: transparent; }
+.total-row { background: #eff6ff; font-weight: bold; color: #2563eb; }
+.rate-txt { font-weight: bold; color: #334155; }
+
+/* 모의고사 입력 */
+.file-upload-box { border: 1px dashed #cbd5e1; padding: 15px; border-radius: 6px; margin-bottom: 15px; background: #fdfdfd; }
+.file-upload-box label { display: block; margin-bottom: 8px; font-size: 0.9rem; font-weight: bold; color: #475569; }
+.score-input-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.score-input-grid label { display: block; font-size: 0.8rem; text-align: center; margin-bottom: 4px; color: #64748b; }
+.score-input-grid input { width: 100%; padding: 8px; text-align: center; }
+
+/* 학업 추이 */
+.trend-radio-group { display: flex; gap: 15px; background: #f8fafc; padding: 10px; border-radius: 6px; justify-content: space-around; }
+.trend-radio-group label { cursor: pointer; font-weight: bold; color: #334155; }
+.sub-label { font-size: 0.9rem; font-weight: bold; color: #dc2626; display: block; margin-bottom: 8px; }
+.checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; }
+.checkbox-group label { font-size: 0.9rem; cursor: pointer; }
+
+/* 코멘트 */
+#weekComment { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; resize: none; height: 80px; }
+.char-count { text-align: right; font-size: 0.8rem; color: #94a3b8; margin-top: 4px; }
+
+
+/* =========================================
+   7. 기능: FOR BLACK 테마
+   ========================================= */
 .black-theme { 
     background: linear-gradient(180deg, #1a1a1a 0%, #2d2d2d 100%); 
     padding: 30px; border-radius: 12px; color: white; margin: -20px; /* 패딩 보정 */
@@ -317,7 +353,14 @@
 .qna-input-area input { flex: 1; padding: 10px; background: #333; border: none; color: white; border-radius: 6px; }
 .qna-input-area button { background: #FFD700; color: #000; border: none; padding: 0 20px; font-weight: bold; border-radius: 6px; cursor: pointer; }
 
-/* 폼 스타일 */
+
+/* =========================================
+   8. 공통 폼 및 기타 (Forms & Simulation)
+   ========================================= */
+.placeholder-box {
+    text-align: center; padding: 40px; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1; color: #64748b;
+}
+
 .content-header h2 { margin-top: 0; color: #1e293b; }
 .content-header p { color: #64748b; margin-bottom: 30px; }
 
@@ -345,7 +388,10 @@ input:focus { outline: none; border-color: #2563EB; }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-/* 모바일 반응형 */
+
+/* =========================================
+   9. 모바일 반응형 (Media Queries)
+   ========================================= */
 @media (max-width: 768px) {
     .mypage-container { flex-direction: column; padding: 10px; margin-top: 20px; }
     .profile-summary { width: 100%; }
@@ -361,4 +407,8 @@ input:focus { outline: none; border-color: #2563EB; }
     .analysis-body { flex-direction: column; }
     .chart-box { width: 100%; margin-top: 20px; border-top: 1px dashed #e2e8f0; padding-top: 20px; }
     .black-theme { margin: 0; border-radius: 8px; }
+}
+
+@media (max-width: 600px) {
+    .score-input-grid { grid-template-columns: repeat(3, 1fr); }
 }

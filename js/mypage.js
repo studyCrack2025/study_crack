@@ -576,6 +576,251 @@ function renderUnivAnalysis() {
     });
 }
 
+// === 주간 학습 점검 로직 ===
+
+// 모달 열기 (날짜 계산 포함)
+function openWeeklyCheckModal() {
+    if (['free', 'basic'].includes(currentUserTier)) {
+        // Standard 이상만 가능 (필요시 조건 수정)
+        // alert("Standard 멤버십 이상 이용 가능합니다.");
+        // return;
+    }
+
+    const modal = document.getElementById('weeklyCheckModal');
+    const title = document.getElementById('weeklyTitle');
+    
+    // 오늘 날짜 기준 N월 N주차 계산
+    const today = new Date();
+    const month = today.getMonth() + 1;
+    const week = getWeekOfMonth(today);
+    
+    title.innerText = `${month}월 ${week}주차 학습점검`;
+    
+    // 폼 초기화 (이전에 입력한 내용 리셋)
+    resetWeeklyForm();
+    
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeWeeklyModal() {
+    document.getElementById('weeklyCheckModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+// 월의 몇 번째 주인지 계산하는 헬퍼 함수
+function getWeekOfMonth(date) {
+    const start = new Date(date.getFullYear(), date.getMonth(), 1);
+    const day = start.getDay() || 7; // 월요일 시작 기준 (1~7)
+    const diff = date.getDate() - 1 + (day - 1); 
+    return Math.floor(diff / 7) + 1;
+}
+
+// 1. 학습 시간 자동 계산
+function calcStudyRates() {
+    const rows = document.querySelectorAll('#studyTimeBody tr');
+    let sumPlan = 0;
+    let sumAct = 0;
+
+    rows.forEach(row => {
+        const planInp = row.querySelector('.plan-time');
+        const actInp = row.querySelector('.act-time');
+        const rateTxt = row.querySelector('.rate-txt');
+
+        const plan = parseFloat(planInp.value) || 0;
+        const act = parseFloat(actInp.value) || 0;
+
+        sumPlan += plan;
+        sumAct += act;
+
+        // 개별 달성률 계산
+        if (plan > 0) {
+            const rate = Math.min((act / plan) * 100, 100).toFixed(0); // 100% 초과 방지
+            rateTxt.innerText = `${rate}%`;
+            
+            // 색상 효과
+            if(rate >= 100) rateTxt.style.color = '#10b981'; // 초록
+            else if(rate >= 80) rateTxt.style.color = '#3b82f6'; // 파랑
+            else rateTxt.style.color = '#ef4444'; // 빨강
+        } else {
+            rateTxt.innerText = '0%';
+            rateTxt.style.color = '#94a3b8';
+        }
+    });
+
+    // 총계 업데이트
+    document.getElementById('totalPlan').innerText = sumPlan.toFixed(1) + 'H';
+    document.getElementById('totalAct').innerText = sumAct.toFixed(1) + 'H';
+    
+    const totalRate = sumPlan > 0 ? Math.min((sumAct / sumPlan) * 100, 100).toFixed(0) : 0;
+    const totalRateEl = document.getElementById('totalRate');
+    totalRateEl.innerText = `${totalRate}%`;
+}
+
+// 2. 모의고사 필드 토글
+function toggleMockExamFields() {
+    const type = document.getElementById('mockExamType').value;
+    const fields = document.getElementById('mockExamFields');
+    
+    if (type === 'none') {
+        fields.style.display = 'none';
+        // 값 초기화
+        document.getElementById('mockExamProof').value = '';
+        document.querySelectorAll('.mock-score').forEach(el => el.value = '');
+    } else {
+        fields.style.display = 'block';
+    }
+}
+
+// 3. 하락 원인 토글
+function toggleSlumpReason() {
+    const trend = document.querySelector('input[name="studyTrend"]:checked')?.value;
+    const slumpBox = document.getElementById('slumpReasonBox');
+    
+    if (trend === 'down') {
+        slumpBox.style.display = 'block';
+    } else {
+        slumpBox.style.display = 'none';
+        // 체크박스 해제 로직 등은 선택사항
+    }
+}
+
+// 4. 글자수 체크
+function checkLength(el) {
+    const len = el.value.length;
+    document.getElementById('currLen').innerText = len;
+}
+
+// 폼 초기화
+function resetWeeklyForm() {
+    // Input들 비우기
+    document.querySelectorAll('#weeklyCheckModal input').forEach(input => {
+        if(input.type === 'radio' || input.type === 'checkbox') input.checked = false;
+        else input.value = '';
+    });
+    document.querySelector('#weeklyCheckModal textarea').value = '';
+    
+    // Select 초기화
+    document.getElementById('mockExamType').value = 'none';
+    toggleMockExamFields();
+    
+    // 계산 초기화
+    document.querySelectorAll('.rate-txt').forEach(el => el.innerText = '0%');
+    document.getElementById('totalPlan').innerText = '0H';
+    document.getElementById('totalAct').innerText = '0H';
+    document.getElementById('totalRate').innerText = '0%';
+    document.getElementById('currLen').innerText = '0';
+    document.getElementById('slumpReasonBox').style.display = 'none';
+}
+
+// === 주간 학습 점검 제출 로직 ===
+async function submitWeeklyCheck() {
+    // 1. 유효성 검사 (학습 시간)
+    const totalPlan = parseFloat(document.getElementById('totalPlan').innerText);
+    if (totalPlan === 0) {
+        alert("최소 한 과목 이상의 학습 계획 시간을 입력해주세요.");
+        return;
+    }
+
+    // 2. 모의고사 데이터 수집
+    const mockType = document.getElementById('mockExamType').value;
+    let mockData = { type: mockType, proofFile: null, scores: {} };
+
+    if (mockType !== 'none') {
+        const fileInput = document.getElementById('mockExamProof');
+        if (fileInput.files.length === 0) {
+            alert("모의고사 성적 인증 사진을 첨부해주세요.");
+            return;
+        }
+        // [참고] 실제 이미지 업로드는 S3 Presigned URL 방식이 필요합니다.
+        // 현재는 파일명만 DB에 저장하는 형태로 구현합니다.
+        mockData.proofFile = fileInput.files[0].name; 
+
+        // 점수 수집
+        const scores = document.querySelectorAll('.mock-score');
+        mockData.scores = {
+            kor: scores[0].value,
+            math: scores[1].value,
+            eng: scores[2].value,
+            inq1: scores[3].value,
+            inq2: scores[4].value
+        };
+    }
+
+    // 3. 코멘트 검사
+    const comment = document.getElementById('weekComment').value.trim();
+    if (!comment) {
+        alert("핵심 회고를 작성해주세요.");
+        return;
+    }
+
+    // 4. 학습 시간 데이터 수집
+    const studyRows = document.querySelectorAll('#studyTimeBody tr');
+    let studyData = [];
+    studyRows.forEach((row, idx) => {
+        const subjName = row.querySelector('td:first-child').innerText || row.querySelector('input').value;
+        const plan = row.querySelector('.plan-time').value || 0;
+        const act = row.querySelector('.act-time').value || 0;
+        studyData.push({ subject: subjName, plan: plan, act: act });
+    });
+
+    // 5. 학업 추이 데이터 수집
+    const trend = document.querySelector('input[name="studyTrend"]:checked')?.value || 'keep';
+    let slumpReasons = [];
+    if (trend === 'down') {
+        document.querySelectorAll('#slumpReasonBox input[type="checkbox"]:checked').forEach(cb => {
+            slumpReasons.push(cb.value);
+        });
+        const detail = document.getElementById('slumpDetail').value;
+        if(detail) slumpReasons.push(`detail: ${detail}`);
+    }
+
+    // 최종 데이터 패키징
+    const userId = localStorage.getItem('userId');
+    const today = new Date().toISOString(); // 저장 일시
+    
+    const weeklyData = {
+        date: today,
+        title: document.getElementById('weeklyTitle').innerText, // "1월 4주차 학습점검"
+        studyTime: {
+            details: studyData,
+            totalPlan: document.getElementById('totalPlan').innerText,
+            totalAct: document.getElementById('totalAct').innerText,
+            totalRate: document.getElementById('totalRate').innerText
+        },
+        mockExam: mockData,
+        trend: { status: trend, reasons: slumpReasons },
+        comment: comment
+    };
+
+    if(!confirm("이번 주 학습 점검을 제출하시겠습니까?\n제출 후에는 수정이 어렵습니다.")) return;
+
+    // 6. 서버 전송
+    try {
+        // MYPAGE_API_URL 변수는 상단에 이미 선언되어 있다고 가정합니다.
+        const response = await fetch(MYPAGE_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'save_weekly_check', // 람다에서 새로 만든 타입
+                userId: userId,
+                data: weeklyData
+            })
+        });
+
+        if (response.ok) {
+            alert("✅ 성공적으로 제출되었습니다!\n컨설턴트가 확인 후 피드백을 드릴 예정입니다.");
+            closeWeeklyModal();
+            // 필요 시 UI 초기화 로직 추가
+        } else {
+            const err = await response.json();
+            throw new Error(err.error || "서버 응답 오류");
+        }
+    } catch (e) {
+        console.error("제출 실패:", e);
+        alert("제출 중 오류가 발생했습니다: " + e.message);
+    }
+}
+
 // === 기타 기능 (기존 유지) ===
 function initCoachLock() {
     const lockOverlay = document.getElementById('deepCoachingLock');
