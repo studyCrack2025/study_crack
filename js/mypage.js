@@ -56,6 +56,7 @@ async function fetchUserData(userId) {
         // 중요: 데이터가 있으면 덮어쓰기
         if (data.targetUnivs) userTargetUnivs = data.targetUnivs;
         if (data.quantitative) userQuantData = data.quantitative;
+        if (data.weeklyHistory) weeklyDataHistory = data.weeklyHistory;
         
         // 성적 데이터 로드 후 계열 판단 다시 실행
         if (typeof buildUnivMap === 'function') {
@@ -402,7 +403,7 @@ async function saveTargetUnivs() {
     } catch(e) { console.error(e); alert("통신 오류 발생"); }
 }
 
-// === [복구 및 수정] 목표 대학 기본 분석 (디자인 원상복구) ===
+// === 목표 대학 기본 분석 ===
 function updateAnalysisUI() {
     const container = document.getElementById('univAnalysisResult');
     if (!container) return;
@@ -448,8 +449,7 @@ function updateAnalysisUI() {
         const diff = (myScore - cutPass).toFixed(1);
         const diffClass = diff >= 0 ? 'plus' : 'minus';
         const diffText = cutPass > 0 ? (diff >= 0 ? `+${diff}` : diff) : '-';
-        
-        // 원본 디자인(HTML 구조)으로 복구
+
         html += `
         <div class="analysis-card">
             <div class="analysis-header">
@@ -497,6 +497,46 @@ function updateAnalysisUI() {
     container.innerHTML = html;
 }
 
+// === 주간 점검 상태 및 마감 체크 ===
+function checkWeeklyStatus() {
+    const today = new Date();
+    const currentWeekTitle = getWeekTitle(today); // "26년 1월 4주차"
+    
+    // 1. 이번 주 제출 여부 확인
+    const thisWeekData = weeklyDataHistory.find(w => w.title.includes(currentWeekTitle));
+    const badge = document.getElementById('weeklyStatusBadge');
+    const msg = document.getElementById('weeklyDeadlineMsg');
+    const box = document.getElementById('weeklyBox');
+
+    if (thisWeekData) {
+        badge.className = 'badge-status submitted';
+        badge.innerText = '✅ 제출완료';
+    } else {
+        badge.className = 'badge-status pending';
+        badge.innerText = '미제출';
+    }
+
+    // 2. 마감 시간 체크 (일요일 20:00 ~ 월요일 00:00)
+    const day = today.getDay(); // 0:일, 1:월 ... 6:토
+    const hour = today.getHours();
+
+    // 일요일(0) 이면서 20시 이상이면 잠금
+    if (day === 0 && hour >= 20) {
+        badge.className = 'badge-status locked';
+        badge.innerText = '⛔ 마감됨';
+        msg.innerText = "수정 불가 (매주 일요일 20시 마감)";
+        
+        // 클릭 막기
+        box.classList.add('disabled');
+        box.onclick = null; // 이벤트 제거
+        box.setAttribute('onclick', ''); // 확실하게 제거
+    } else {
+        // 마감 전이면 남은 시간 안내 (일요일 20시까지)
+        // 간단하게 안내 문구만
+        msg.innerText = "※ 일요일 20:00 마감";
+    }
+}
+
 // === 주간 학습 점검 (모달 및 제출) ===
 function openWeeklyCheckModal() {
     if (['free', 'basic'].includes(currentUserTier)) {
@@ -511,6 +551,8 @@ function openWeeklyCheckModal() {
     document.getElementById('weeklyYear').innerText = `${yearShort}년`;
     document.getElementById('weeklyDateDetail').innerText = `${month}월 ${week}주차`;
     
+    const thisWeekData = weeklyDataHistory.find(w => w.title.includes(currentWeekTitle));
+    
     resetWeeklyForm();
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
@@ -521,11 +563,81 @@ function closeWeeklyModal() {
     document.body.style.overflow = 'auto';
 }
 
+function loadWeeklyDataToForm(data) {
+    // 1. 학습 시간
+    if (data.studyTime && data.studyTime.details) {
+        const rows = document.querySelectorAll('#studyTimeBody tr');
+        data.studyTime.details.forEach((detail, idx) => {
+            if (rows[idx]) {
+                // 과목명 파싱 (괄호 안 내용 등)
+                // 복잡하므로 간단하게 시간만 채워넣음 (사용자가 수정 가능하도록)
+                rows[idx].querySelector('.plan-time').value = detail.plan;
+                rows[idx].querySelector('.act-time').value = detail.act;
+                
+                // 세부 과목명 복구 (예: "수학(미적)" -> "미적")
+                const detailInput = rows[idx].querySelector('.sub-detail');
+                const customInput = rows[idx].querySelector('.custom-subj');
+                
+                if (detail.subject.includes('(') && detailInput) {
+                    const match = detail.subject.match(/\((.*?)\)/);
+                    if(match) detailInput.value = match[1];
+                } else if (customInput) {
+                    customInput.value = detail.subject;
+                }
+            }
+        });
+        calcStudyRates(); // 계산기 돌리기
+    }
+
+    // 2. 모의고사
+    if (data.mockExam) {
+        selectMockType(data.mockExam.type, document.querySelector(`.mock-tile[onclick*="'${data.mockExam.type}'"]`));
+        if (data.mockExam.scores) {
+            const inputs = document.querySelectorAll('.mock-score');
+            inputs[0].value = data.mockExam.scores.kor || '';
+            inputs[1].value = data.mockExam.scores.math || '';
+            inputs[2].value = data.mockExam.scores.eng || '';
+            inputs[3].value = data.mockExam.scores.inq1 || '';
+            inputs[4].value = data.mockExam.scores.inq2 || '';
+        }
+    }
+
+    // 3. 추이 및 코멘트
+    if (data.trend) {
+        const radio = document.querySelector(`input[name="studyTrend"][value="${data.trend.status}"]`);
+        if (radio) {
+            radio.checked = true;
+            toggleSlumpReason(); // 박스 열기
+            if (data.trend.status === 'down' && data.trend.reasons) {
+                data.trend.reasons.forEach(r => {
+                    const cb = document.querySelector(`#slumpReasonBox input[value="${r}"]`);
+                    if(cb) cb.checked = true;
+                    else document.getElementById('slumpDetail').value = r; // 기타 사유
+                });
+            }
+        }
+    }
+    
+    if (data.comment) {
+        const ta = document.getElementById('weekComment');
+        ta.value = data.comment;
+        checkLength(ta);
+    }
+}
+
 function getWeekOfMonth(date) {
     const start = new Date(date.getFullYear(), date.getMonth(), 1);
     const day = start.getDay() || 7; 
     const diff = date.getDate() - 1 + (day - 1); 
     return Math.floor(diff / 7) + 1;
+}
+
+// 날짜 타이틀 생성 헬퍼
+function getWeekTitle(date) {
+    const yearShort = date.getFullYear().toString().slice(2);
+    const month = date.getMonth() + 1;
+    const week = getWeekOfMonth(date);
+    return `${yearShort}년 ${month}월 ${week}주차`; // 공백 주의
 }
 
 function resetWeeklyForm() {

@@ -288,6 +288,16 @@
 .modal-footer { padding: 15px 20px; border-top: 1px solid #e2e8f0; background: white; border-radius: 0 0 12px 12px; }
 .back-step-btn { background: none; border: none; color: #64748b; font-weight: 600; cursor: pointer; padding: 5px 10px; }
 .back-step-btn:hover { color: #1e293b; text-decoration: underline; }
+.badge-status { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
+.badge-status.pending { background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; }
+.badge-status.submitted { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+.badge-status.locked { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+/* 비활성화된 박스 */
+.coach-box.disabled { 
+    opacity: 0.7; cursor: not-allowed; background-color: #f8fafc; border-color: #e2e8f0; 
+}
+.coach-box.disabled:hover { transform: none; box-shadow: none; border-color: #e2e8f0; }
 
 /* 점검 항목 공통 */
 .check-section { background: white; border: 1px solid #e2e8f0; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
@@ -307,7 +317,12 @@
     background: #fff;
 }
 .sub-detail::placeholder { color: #cbd5e1; }
-.custom-subj { border: none; border-bottom: 1px solid #cbd5e1; border-radius: 0; background: transparent; }
+.custom-subj { 
+    border: none; border-bottom: 1px solid #cbd5e1; 
+    border-radius: 0; 
+    background: transparent; 
+    text-align: center;
+}
 .custom-subj::placeholder { color: #cbd5e1; }
 .study-time-table input.plan-time, 
 .study-time-table input.act-time { width: 80%; padding: 8px; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px; }
