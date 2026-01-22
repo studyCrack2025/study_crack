@@ -545,13 +545,8 @@ function checkWeeklyStatus() {
     const history = Array.isArray(weeklyDataHistory) ? weeklyDataHistory : [];
     
     const thisWeekData = history.find(w => {
-        if (!w.title) return false;
-        // 공백을 싹 제거하고 비교 (예: "1월 4주차" vs "1월4주차")
-        const dbTitle = w.title.replace(/\s+/g, '');
-        const currTitle = currentWeekTitle.replace(/\s+/g, '');
-        
-        console.log(`   🔎 비교중: [DB] ${dbTitle} vs [Current] ${currTitle}`);
-        return dbTitle === currTitle;
+        if(!w.title) return false;
+        return w.title.replace(/\s+/g, '').includes(currentWeekTitle.replace(/\s+/g, ''));
     });
 
     console.log("🎯 이번 주 데이터 찾음?:", thisWeekData ? "YES (제출함)" : "NO (미제출)");
