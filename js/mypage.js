@@ -9,6 +9,7 @@ let userTargetUnivs = [null, null, null, null, null, null, null, null];
 let univData = []; 
 let univMap = {};  
 let userQuantData = null; 
+let weeklyDataHistory = [];
 
 // 모달 상태 관리
 let currentSlotIndex = null;
@@ -32,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 데이터 로드 직후 그리드와 분석표를 바로 갱신
         initUnivGrid(); 
         updateAnalysisUI(); 
+        checkWeeklyStatus();
     });
 
     setupUI();
