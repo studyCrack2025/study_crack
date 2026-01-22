@@ -528,59 +528,83 @@ function updateAnalysisUI() {
     container.innerHTML = html;
 }
 
-// === 주간 점검 상태 체크 ===
+// === [디버깅용] 주간 점검 상태 체크 ===
 function checkWeeklyStatus() {
+    console.log("--------------- [상태 체크 시작] ---------------");
+
+    // 1. 오늘 날짜 및 주차 계산 확인
     const today = new Date();
     const currentWeekTitle = getWeekTitle(today); 
-    
-    // 안전장치: 데이터가 아직 없거나 배열이 아니면 빈 배열 처리
-    const history = Array.isArray(weeklyDataHistory) ? weeklyDataHistory : [];
+    console.log("📅 오늘 날짜 기준 타이틀:", currentWeekTitle);
 
-    // 공백 제거 후 비교 (타이틀 불일치 방지)
-    const thisWeekData = history.find(w => 
-        w.title && w.title.replace(/\s/g, '') === currentWeekTitle.replace(/\s/g, '')
-    );
+    // 2. DB 데이터 확인
+    console.log("📂 로드된 전체 기록(weeklyDataHistory):", weeklyDataHistory);
+
+    // 3. 데이터 매칭 시도 (공백 제거 후 비교)
+    // 안전장치: weeklyDataHistory가 null이면 빈 배열로 처리
+    const history = Array.isArray(weeklyDataHistory) ? weeklyDataHistory : [];
     
+    const thisWeekData = history.find(w => {
+        if (!w.title) return false;
+        // 공백을 싹 제거하고 비교 (예: "1월 4주차" vs "1월4주차")
+        const dbTitle = w.title.replace(/\s+/g, '');
+        const currTitle = currentWeekTitle.replace(/\s+/g, '');
+        
+        console.log(`   🔎 비교중: [DB] ${dbTitle} vs [Current] ${currTitle}`);
+        return dbTitle === currTitle;
+    });
+
+    console.log("🎯 이번 주 데이터 찾음?:", thisWeekData ? "YES (제출함)" : "NO (미제출)");
+
+    // 4. DOM 요소 확인
     const badge = document.getElementById('weeklyStatusBadge');
     const msg = document.getElementById('weeklyDeadlineMsg');
     const box = document.getElementById('weeklyBox');
 
-    if (!badge || !box || !msg) return;
+    if (!badge || !box || !msg) {
+        console.error("❌ HTML 요소를 찾을 수 없음! ID를 확인하세요. (weeklyStatusBadge, weeklyDeadlineMsg, weeklyBox)");
+        return;
+    }
 
-    // 1. 제출 상태 배지 업데이트
+    // 5. 상태 반영
     if (thisWeekData) {
+        console.log("✅ 상태 변경: 제출완료");
         badge.className = 'badge-status submitted';
         badge.innerText = '✅ 제출완료';
     } else {
+        console.log("⬜ 상태 변경: 미제출");
         badge.className = 'badge-status pending';
         badge.innerText = '미제출';
     }
 
-    // 2. 마감 시간 체크 (일요일 20:00 ~ 월요일 00:00)
+    // 6. 마감 시간 체크
     const day = today.getDay(); // 0:일요일
     const hour = today.getHours();
+    console.log(`⏰ 현재 요일: ${day} (0=일), 시각: ${hour}시`);
 
-    // 일요일이면서 20시 이상이면 잠금
     if (day === 0 && hour >= 20) {
+        console.log("⛔ 마감 시간 초과 -> 잠금 처리");
         badge.className = 'badge-status locked';
         badge.innerText = '⛔ 마감됨';
         
         msg.style.color = '#ef4444';
         msg.innerText = "수정 불가 (매주 일요일 20시 마감)";
         
-        // 박스 비활성화
         box.classList.add('disabled');
         box.onclick = null; 
         box.setAttribute('onclick', ''); 
     } else {
-        // 마감 전이면 안내 메시지 표시 (기존 '로드 완료' 메시지를 덮어씀)
-        msg.style.color = '#64748b'; // 회색 복귀
+        console.log("🟢 마감 전 -> 활성 상태");
+        msg.style.color = '#64748b'; 
         msg.innerText = "※ 일요일 20:00 마감";
         
         // 박스 활성화 (혹시 잠겨있었다면 해제)
         box.classList.remove('disabled');
-        box.onclick = openWeeklyCheckModal; // 함수 재연결
+        // onclick 이벤트 복구 (HTML 속성에 있는 onclick을 JS로 재연결)
+        box.onclick = openWeeklyCheckModal; 
     }
+    
+    console.log("--------------- [상태 체크 종료] ---------------");
 }
 
 // === 주간 학습 점검 모달 ===
