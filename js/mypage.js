@@ -40,10 +40,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // 1. 로딩 상태 표시
+    // 1. [로딩 시작] 텍스트 표시
     setWeeklyLoadingStatus(true);
 
-    // 2. 병렬 데이터 로드
+    // 2. 데이터 병렬 로드
     Promise.all([
         fetchUserData(userId),
         fetchUnivData()
@@ -52,9 +52,21 @@ document.addEventListener('DOMContentLoaded', () => {
         initUnivGrid(); 
         updateAnalysisUI();
         
-        // 3. 로딩 완료 및 상태 체크
+        // 3. [로딩 완료] 표시
         setWeeklyLoadingStatus(false);
-        checkWeeklyStatus(); 
+
+        // 4. [1초 대기 후] 실제 제출 상태(미제출/제출완료) 표시
+        // '로드 완료' 메시지를 유저가 볼 수 있게 시간을 줍니다.
+        setTimeout(() => {
+            checkWeeklyStatus(); 
+        }, 1000); 
+    }).catch(err => {
+        console.error("초기화 실패:", err);
+        const msg = document.getElementById('weeklyDeadlineMsg');
+        if(msg) {
+            msg.style.color = 'red';
+            msg.innerText = "데이터 로드 실패";
+        }
     });
 
     setupUI();
@@ -64,17 +76,17 @@ function setWeeklyLoadingStatus(isLoading) {
     const msg = document.getElementById('weeklyDeadlineMsg');
     const badge = document.getElementById('weeklyStatusBadge');
     
+    if (!msg || !badge) return;
+
     if (isLoading) {
-        if(badge) badge.innerText = '...';
-        if(msg) {
-            msg.style.color = '#3b82f6';
-            msg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 데이터 로딩중...';
-        }
+        badge.innerText = '...';
+        badge.className = 'badge-status pending'; // 스타일 초기화
+        msg.style.color = '#3b82f6'; // 파란색
+        msg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 데이터 로딩중...';
     } else {
-        if(msg) {
-            msg.style.color = '#10b981';
-            msg.innerText = '✅ 로드 완료';
-        }
+        // 로드 완료 직후 보여줄 메시지
+        msg.style.color = '#10b981'; // 초록색
+        msg.innerHTML = '<strong>✅ 로드 완료</strong>';
     }
 }
 
@@ -521,15 +533,21 @@ function checkWeeklyStatus() {
     const today = new Date();
     const currentWeekTitle = getWeekTitle(today); 
     
-    // 로드된 데이터(weeklyDataHistory)에서 이번주 타이틀(공백제거 비교) 찾기
-    const thisWeekData = weeklyDataHistory.find(w => w.title && w.title.replace(/\s/g, '') === currentWeekTitle.replace(/\s/g, ''));
+    // 안전장치: 데이터가 아직 없거나 배열이 아니면 빈 배열 처리
+    const history = Array.isArray(weeklyDataHistory) ? weeklyDataHistory : [];
+
+    // 공백 제거 후 비교 (타이틀 불일치 방지)
+    const thisWeekData = history.find(w => 
+        w.title && w.title.replace(/\s/g, '') === currentWeekTitle.replace(/\s/g, '')
+    );
     
     const badge = document.getElementById('weeklyStatusBadge');
     const msg = document.getElementById('weeklyDeadlineMsg');
     const box = document.getElementById('weeklyBox');
 
-    if (!badge || !box) return;
+    if (!badge || !box || !msg) return;
 
+    // 1. 제출 상태 배지 업데이트
     if (thisWeekData) {
         badge.className = 'badge-status submitted';
         badge.innerText = '✅ 제출완료';
@@ -538,24 +556,30 @@ function checkWeeklyStatus() {
         badge.innerText = '미제출';
     }
 
-    const day = today.getDay(); 
+    // 2. 마감 시간 체크 (일요일 20:00 ~ 월요일 00:00)
+    const day = today.getDay(); // 0:일요일
     const hour = today.getHours();
 
+    // 일요일이면서 20시 이상이면 잠금
     if (day === 0 && hour >= 20) {
         badge.className = 'badge-status locked';
         badge.innerText = '⛔ 마감됨';
-        if(msg) {
-            msg.style.color = '#ef4444';
-            msg.innerText = "수정 불가 (매주 일요일 20시 마감)";
-        }
+        
+        msg.style.color = '#ef4444';
+        msg.innerText = "수정 불가 (매주 일요일 20시 마감)";
+        
+        // 박스 비활성화
         box.classList.add('disabled');
         box.onclick = null; 
         box.setAttribute('onclick', ''); 
     } else {
-        if(msg) {
-            msg.style.color = '#64748b';
-            msg.innerText = "※ 일요일 20:00 마감";
-        }
+        // 마감 전이면 안내 메시지 표시 (기존 '로드 완료' 메시지를 덮어씀)
+        msg.style.color = '#64748b'; // 회색 복귀
+        msg.innerText = "※ 일요일 20:00 마감";
+        
+        // 박스 활성화 (혹시 잠겨있었다면 해제)
+        box.classList.remove('disabled');
+        box.onclick = openWeeklyCheckModal; // 함수 재연결
     }
 }
 
