@@ -29,7 +29,8 @@ function getWeekTitle(date) {
     return `${yearShort}년 ${month}월 ${week}주차`; 
 }
 
-// === 초기화 ===
+
+// 초기화
 document.addEventListener('DOMContentLoaded', () => {
     const accessToken = localStorage.getItem('accessToken');
     const userId = localStorage.getItem('userId');
@@ -40,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // 1. [로딩 시작] 텍스트 표시
+    // 1. [로딩 시작]
     setWeeklyLoadingStatus(true);
 
     // 2. 데이터 병렬 로드
@@ -49,37 +50,37 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchUnivData()
     ]).then(() => {
         console.log("🚀 모든 데이터 로드 완료");
+        
+        // 3. UI 초기화 및 렌더링
         initUnivGrid(); 
         updateAnalysisUI();
         
-        // 3. [로딩 완료] 표시
+        // 4. [로딩 완료] 표시 및 상태 체크
         setWeeklyLoadingStatus(false);
-
-        // 4. [1초 대기 후] 실제 제출 상태(미제출/제출완료) 표시
-        // '로드 완료' 메시지를 유저가 볼 수 있게 시간을 줍니다.
         setTimeout(() => {
             checkWeeklyStatus(); 
-        }, 1000); 
+        }, 500); 
+
+        // 5. [수정됨] URL 파라미터 확인 및 탭 이동 (성공 시 실행되도록 이동)
+        const params = new URLSearchParams(window.location.search);
+        const tab = params.get('tab');
+        const sol = params.get('sol');
+
+        if (tab) {
+            switchMainTab(tab);
+            // 만약 솔루션 탭이고, 내부 메뉴(black 등)가 지정되어 있다면
+            if (tab === 'solution' && sol) {
+                // 데이터 로드와 탭 전환 타이밍 고려하여 약간의 지연 후 실행
+                setTimeout(() => openSolution(sol), 100); 
+            }
+        }
+
     }).catch(err => {
         console.error("초기화 실패:", err);
         const msg = document.getElementById('weeklyDeadlineMsg');
         if(msg) {
             msg.style.color = 'red';
             msg.innerText = "데이터 로드 실패";
-        }
-        
-        const params = new URLSearchParams(window.location.search);
-        const tab = params.get('tab');
-        const sol = params.get('sol');
-
-        if (tab) {
-            // 탭 전환
-            switchMainTab(tab);
-            // 만약 솔루션 탭이고, 내부 메뉴(black 등)가 지정되어 있다면
-            if (tab === 'solution' && sol) {
-                // 약간의 지연을 주어 데이터 로드 후 탭이 열리도록 함 (안전장치)
-                setTimeout(() => openSolution(sol), 100); 
-            }
         }
     });
 
