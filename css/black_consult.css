@@ -10,14 +10,16 @@ body.black-bg {
     margin: 0; 
 }
 
-/* --- [수정됨] 상단 헤더 (Full Width 디자인) --- */
+/* --- 상단 헤더 (Full Width 디자인) --- */
 .consult-header-bar { 
     width: 100%; 
+    height: 80px; /* 높이 고정 */
     border-bottom: 1px solid #333; 
-    background-color: #181818; /* 본문보다 살짝 밝게 */
-    position: sticky; top: 0; z-index: 1000; /* 상단 고정 */
+    background-color: #181818; 
+    position: sticky; top: 0; z-index: 1000;
+    display: flex; /* 내부 아이템 정렬용 */
+    align-items: center;
 }
-
 .header-inner {
     max-width: 1200px; 
     margin: 0 auto; 

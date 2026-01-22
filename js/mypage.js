@@ -67,6 +67,20 @@ document.addEventListener('DOMContentLoaded', () => {
             msg.style.color = 'red';
             msg.innerText = "데이터 로드 실패";
         }
+        
+        const params = new URLSearchParams(window.location.search);
+        const tab = params.get('tab');
+        const sol = params.get('sol');
+
+        if (tab) {
+            // 탭 전환
+            switchMainTab(tab);
+            // 만약 솔루션 탭이고, 내부 메뉴(black 등)가 지정되어 있다면
+            if (tab === 'solution' && sol) {
+                // 약간의 지연을 주어 데이터 로드 후 탭이 열리도록 함 (안전장치)
+                setTimeout(() => openSolution(sol), 100); 
+            }
+        }
     });
 
     setupUI();
