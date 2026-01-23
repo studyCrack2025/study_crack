@@ -1,7 +1,8 @@
-/* js/mypage.js */
+// js/mypage.js
 
-const MYPAGE_API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/";
-const UNIV_DATA_API_URL = "https://ftbrlbyaprizjcp5w7b2g5t6sq0srwem.lambda-url.ap-northeast-2.on.aws/";
+// API URL 변경
+const MYPAGE_API_URL = CONFIG.api.base; 
+const UNIV_DATA_API_URL = CONFIG.api.analysis; 
 
 // 전역 변수
 let currentUserTier = 'free';
@@ -10,11 +11,9 @@ let univData = [];
 let univMap = {};  
 let userQuantData = null; 
 let weeklyDataHistory = [];
-
-// 모달 상태 관리
 let currentSlotIndex = null;
 
-// === [중요] 헬퍼 함수 (최상단 배치) ===
+// 헬퍼 함수
 function getWeekOfMonth(date) {
     const start = new Date(date.getFullYear(), date.getMonth(), 1);
     const day = start.getDay() || 7; 
@@ -29,7 +28,6 @@ function getWeekTitle(date) {
     return `${yearShort}년 ${month}월 ${week}주차`; 
 }
 
-
 // 초기화
 document.addEventListener('DOMContentLoaded', () => {
     const accessToken = localStorage.getItem('accessToken');
@@ -41,36 +39,29 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // 1. [로딩 시작]
     setWeeklyLoadingStatus(true);
 
-    // 2. 데이터 병렬 로드
     Promise.all([
         fetchUserData(userId),
         fetchUnivData()
     ]).then(() => {
         console.log("🚀 모든 데이터 로드 완료");
         
-        // 3. UI 초기화 및 렌더링
         initUnivGrid(); 
         updateAnalysisUI();
         
-        // 4. [로딩 완료] 표시 및 상태 체크
         setWeeklyLoadingStatus(false);
         setTimeout(() => {
             checkWeeklyStatus(); 
         }, 500); 
 
-        // 5. [수정됨] URL 파라미터 확인 및 탭 이동 (성공 시 실행되도록 이동)
         const params = new URLSearchParams(window.location.search);
         const tab = params.get('tab');
         const sol = params.get('sol');
 
         if (tab) {
             switchMainTab(tab);
-            // 만약 솔루션 탭이고, 내부 메뉴(black 등)가 지정되어 있다면
             if (tab === 'solution' && sol) {
-                // 데이터 로드와 탭 전환 타이밍 고려하여 약간의 지연 후 실행
                 setTimeout(() => openSolution(sol), 100); 
             }
         }
@@ -95,22 +86,26 @@ function setWeeklyLoadingStatus(isLoading) {
 
     if (isLoading) {
         badge.innerText = '...';
-        badge.className = 'badge-status pending'; // 스타일 초기화
-        msg.style.color = '#3b82f6'; // 파란색
+        badge.className = 'badge-status pending'; 
+        msg.style.color = '#3b82f6'; 
         msg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 데이터 로딩중...';
     } else {
-        // 로드 완료 직후 보여줄 메시지
-        msg.style.color = '#10b981'; // 초록색
+        msg.style.color = '#10b981'; 
         msg.innerHTML = '<strong>✅ 로드 완료</strong>';
     }
 }
 
 // === 1. 유저 정보 불러오기 ===
 async function fetchUserData(userId) {
+    const token = localStorage.getItem('accessToken');
     try {
         const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'get_user', userId: userId })
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // ★ 토큰 추가
+            },
+            body: JSON.stringify({ type: 'get_user' }) 
         });
 
         if (!response.ok) throw new Error("서버 오류");
@@ -118,13 +113,15 @@ async function fetchUserData(userId) {
         const data = await response.json();
         
         renderUserInfo(data);
-        checkPaymentStatus(data.payments);
+        
+        // [변경] 서버에서 계산된 등급 적용
+        applyUserTier(data.computedTier || 'free'); 
+        
         updateSurveyStatus(data);
 
         if (data.targetUnivs) userTargetUnivs = data.targetUnivs;
         if (data.quantitative) userQuantData = data.quantitative;
         
-        // [중요] 주간 점검 기록 저장
         weeklyDataHistory = data.weeklyHistory || []; 
 
         if (typeof buildUnivMap === 'function') {
@@ -136,23 +133,49 @@ async function fetchUserData(userId) {
     }
 }
 
+// [신규] 등급 적용 헬퍼
+function applyUserTier(tier) {
+    currentUserTier = tier;
+    const profileBox = document.querySelector('.profile-summary');
+    
+    profileBox.classList.remove('tier-basic', 'tier-standard', 'tier-pro', 'tier-black');
+    if (tier !== 'free') profileBox.classList.add(`tier-${tier}`);
+
+    let badge = document.querySelector('.premium-badge');
+    if (tier !== 'free') {
+        if (!badge) {
+            badge = document.createElement('div');
+            badge.className = 'premium-badge';
+            profileBox.appendChild(badge);
+        }
+        badge.innerText = `${tier.toUpperCase()} MEMBER`;
+    } else if (badge) {
+        badge.remove();
+    }
+}
+
 // === 2. 대학 데이터 가져오기 ===
 async function fetchUnivData() {
+    const token = localStorage.getItem('accessToken');
     try {
         const response = await fetch(UNIV_DATA_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
             body: JSON.stringify({ type: 'get_univ_list_only' }) 
         });
 
         if (!response.ok) throw new Error(`서버 응답 오류`);
 
         const data = await response.json();
+        // 점수 없이 이름만 매핑
         univData = data; 
-        buildUnivMap(); // 대학 선택 모달 구성을 위한 맵핑
-        
-        // 주의: 여기서 updateAnalysisUI()를 호출하지 않습니다. 
-        // 분석은 별도의 API 콜로 처리하기 때문입니다.
+        univMap = {};
+        data.forEach(item => {
+            univMap[item.univName] = item.majors.map(m => ({ name: m }));
+        });
 
     } catch (e) {
         console.error("대학 데이터 로드 실패:", e);
@@ -162,75 +185,37 @@ async function fetchUnivData() {
 // === 계열 판단 및 데이터 가공 ===
 function buildUnivMap() {
     if (!univData || univData.length === 0) return;
-
     const userStream = determineUserStream(); 
-    console.log(`🎯 유저 계열 판정: ${userStream}`);
-
-    univMap = {};
-    
-    univData.forEach(item => {
-        const univName = item["대학명"];
-        if (!univName) return;
-
-        const majors = [];
-        const streams = item["데이터"]; 
-        
-        if (streams) {
-            const targetStreamData = streams[userStream]; 
-            if (targetStreamData && targetStreamData["전형별"] && Array.isArray(targetStreamData["전형별"])) {
-                targetStreamData["전형별"].forEach(dept => {
-                    majors.push({
-                        name: dept["학과명"],
-                        cut_pass: parseFloat(dept["합격권 추정"]) || 0,
-                        cut_70: parseFloat(dept["상위 70% 추정"]) || 0,
-                        stream: userStream 
-                    });
-                });
-            }
-        }
-
-        if (majors.length > 0) {
-            if (!univMap[univName]) univMap[univName] = [];
-            univMap[univName].push(...majors);
-        }
-    });
-    
+    // 여기서는 univMap이 fetchUnivData에서 이미 구축되므로 추가 로직 불필요할 수 있음
+    // (다만 기존 필터링 로직이 있다면 유지)
     updateAnalysisUI();
 }
 
 function determineUserStream() {
     if (!userQuantData) return '문과';
-
     const examPriorities = ['csat', 'sep', 'jun', 'oct', 'jul', 'mar', 'may'];
     let targetExam = null;
-
     for (const examName of examPriorities) {
         if (userQuantData[examName] && userQuantData[examName].math && userQuantData[examName].math.opt) {
             targetExam = userQuantData[examName];
             break; 
         }
     }
-
     if (!targetExam) return '문과';
-
     const mathOpt = targetExam.math.opt; 
     const inq1Name = targetExam.inq1?.name || "";
     const inq2Name = targetExam.inq2?.name || "";
-
     const isMathScience = (mathOpt === 'mi' || mathOpt === 'ki');
     const scienceRegex = /물리|화학|생명|지구/;
     const isInq1Science = scienceRegex.test(inq1Name);
     const isInq2Science = scienceRegex.test(inq2Name);
-
     if (isMathScience && isInq1Science && isInq2Science) return '이과';
     else return '문과';
 }
 
-// === UI 렌더링 ===
 function renderUserInfo(data) {
     document.getElementById('userNameDisplay').innerText = data.name || '이름 없음';
     document.getElementById('userEmailDisplay').innerText = data.email || '';
-    
     document.getElementById('profileName').value = data.name || '';
     document.getElementById('profilePhone').value = data.phone || '';
     document.getElementById('profileSchool').value = data.school || '';
@@ -238,37 +223,7 @@ function renderUserInfo(data) {
 }
 
 function checkPaymentStatus(payments) {
-    const profileBox = document.querySelector('.profile-summary');
-    let tier = 'free'; let tierClass = ''; let badgeText = '';
-
-    if (payments && payments.length > 0) {
-        const paidHistory = payments.filter(p => p.status === 'paid');
-        if (paidHistory.length > 0) {
-            paidHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
-            const latestPayment = paidHistory[0];
-            const productName = (latestPayment.product || "").toLowerCase();
-
-            if (productName.includes('black')) { tier = 'black'; tierClass = 'tier-black'; badgeText = 'BLACK MEMBER'; }
-            else if (productName.includes('pro')) { tier = 'pro'; tierClass = 'tier-pro'; badgeText = 'PRO MEMBER'; }
-            else if (productName.includes('standard')) { tier = 'standard'; tierClass = 'tier-standard'; badgeText = 'STANDARD MEMBER'; }
-            else { tier = 'basic'; tierClass = 'tier-basic'; badgeText = 'BASIC MEMBER'; }
-        }
-    }
-    currentUserTier = tier;
-    profileBox.classList.remove('tier-basic', 'tier-standard', 'tier-pro', 'tier-black');
-    if (tierClass) profileBox.classList.add(tierClass);
-
-    let badge = document.querySelector('.premium-badge');
-    if (tier !== 'free') {
-        if (!badge) {
-            badge = document.createElement('div');
-            badge.className = 'premium-badge';
-            profileBox.appendChild(badge);
-        }
-        badge.innerText = badgeText;
-    } else if (badge) {
-        badge.remove();
-    }
+    // [삭제] 이 로직은 이제 applyUserTier로 대체됨
 }
 
 function updateSurveyStatus(data) {
@@ -288,17 +243,14 @@ function updateSurveyStatus(data) {
     }
 }
 
-// === 탭 전환 ===
 function switchMainTab(tabName) {
     if (tabName === 'solution' && currentUserTier === 'free') {
         alert("유료 회원만 이용 가능합니다."); return;
     }
     document.querySelectorAll('.main-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-    
     if(event && event.currentTarget) event.currentTarget.classList.add('active');
     document.getElementById(`tab-${tabName}`).classList.add('active');
-
     if (tabName === 'solution') openSolution('univ');
 }
 
@@ -309,13 +261,10 @@ function openSolution(solType) {
     if (solType === 'black' && currentUserTier !== 'black') {
         alert("BLACK 회원 전용 공간입니다."); return;
     }
-
     document.querySelectorAll('.sol-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.sol-content').forEach(content => content.classList.remove('active'));
-    
     if(event && event.currentTarget) event.currentTarget.classList.add('active');
     document.getElementById(`sol-${solType}`).classList.add('active');
-
     if (solType === 'univ') {
         initUnivGrid(); 
         updateAnalysisUI(); 
@@ -326,12 +275,10 @@ function openSolution(solType) {
     }
 }
 
-// === 3. 목표 대학 설정 (그리드) ===
 function initUnivGrid() {
     const grid = document.getElementById('univGrid');
     if(!grid) return;
     grid.innerHTML = ''; 
-
     const tierLimits = { 'basic': 2, 'standard': 5, 'pro': 8, 'black': 8 };
     const limit = tierLimits[currentUserTier] || 2;
     const now = new Date();
@@ -381,7 +328,6 @@ function initUnivGrid() {
     }
 }
 
-// === 모달 (대학 선택) ===
 function openUnivSelectModal(index) {
     currentSlotIndex = index;
     const modal = document.getElementById('univSelectModal');
@@ -424,6 +370,7 @@ function showMajorStep(univName) {
     listContainer.innerHTML = '';
 
     const majors = univMap[univName] || [];
+    // majors는 이제 객체 배열[{name: "학과"}]이므로 정렬 로직 주의
     majors.sort((a,b) => a.name.localeCompare(b.name));
 
     majors.forEach(majorObj => {
@@ -464,9 +411,14 @@ async function saveTargetUnivs() {
     }
 
     const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('accessToken');
     try {
         const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
             body: JSON.stringify({ type: 'update_target_univs', userId: userId, data: userTargetUnivs })
         });
         
@@ -475,19 +427,16 @@ async function saveTargetUnivs() {
     } catch(e) { console.error(e); alert("통신 오류 발생"); }
 }
 
-// === 목표 대학 분석 UI 업데이트 (서버 사이드 계산 결과 렌더링) ===
 async function updateAnalysisUI() {
     const container = document.getElementById('univAnalysisResult');
     if (!container) return;
 
-    // 타겟 대학이 없는 경우
     const hasTargets = userTargetUnivs && userTargetUnivs.some(u => u && u.univ);
     if (!hasTargets) {
         container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px;">목표 대학을 설정하면 분석 결과가 나타납니다.</p>';
         return;
     }
     
-    // 로딩 표시
     container.innerHTML = `
         <div style="text-align:center; padding:40px; color:#64748b;">
             <i class="fas fa-circle-notch fa-spin" style="font-size:2rem; color:#3b82f6; margin-bottom:10px;"></i>
@@ -495,13 +444,15 @@ async function updateAnalysisUI() {
         </div>`;
 
     const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('accessToken');
 
     try {
-        // [수정됨] 서버에 분석 요청 (userId만 전송, 점수 계산 로직은 서버에 있음)
         const response = await fetch(UNIV_DATA_API_URL, {
             method: 'POST',
-            // API Gateway CORS 설정에 따라 mode: 'cors' 필요할 수 있음
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
             body: JSON.stringify({ type: 'analyze_my_targets', userId: userId })
         });
 
@@ -515,20 +466,15 @@ async function updateAnalysisUI() {
             return;
         }
 
-        // 결과 렌더링
         let html = '';
-        
         results.forEach((res, idx) => {
-            // 서버에서 받은 결과(is_safe)에 따라 색상 결정
-            // is_safe가 true면 초록색(안전), false면 빨간색(위험)
             const isSafe = res.is_safe;
-            const statusColor = isSafe ? '#10b981' : '#ef4444'; // Green vs Red
-            const bgBadge = isSafe ? '#ecfdf5' : '#fef2f2'; // 연한 배경
+            const statusColor = isSafe ? '#10b981' : '#ef4444';
+            const bgBadge = isSafe ? '#ecfdf5' : '#fef2f2'; 
             
-            // 점수 차이 텍스트 포맷팅 (+ 기호 붙이기)
             const diffVal = parseFloat(res.diff);
             const diffText = diffVal >= 0 ? `+${diffVal}` : diffVal;
-            const diffClass = diffVal >= 0 ? 'plus' : 'minus'; // CSS 클래스 (기존 스타일 유지)
+            const diffClass = diffVal >= 0 ? 'plus' : 'minus';
 
             html += `
             <div class="analysis-card">
@@ -566,7 +512,6 @@ async function updateAnalysisUI() {
                 </div>
             </div>`;
         });
-
         container.innerHTML = html;
 
     } catch (e) {
@@ -575,20 +520,9 @@ async function updateAnalysisUI() {
     }
 }
 
-// === [디버깅용] 주간 점검 상태 체크 ===
 function checkWeeklyStatus() {
-    console.log("--------------- [상태 체크 시작] ---------------");
-
-    // 1. 오늘 날짜 및 주차 계산 확인
     const today = new Date();
     const currentWeekTitle = getWeekTitle(today); 
-    console.log("📅 오늘 날짜 기준 타이틀:", currentWeekTitle);
-
-    // 2. DB 데이터 확인
-    console.log("📂 로드된 전체 기록(weeklyDataHistory):", weeklyDataHistory);
-
-    // 3. 데이터 매칭 시도 (공백 제거 후 비교)
-    // 안전장치: weeklyDataHistory가 null이면 빈 배열로 처리
     const history = Array.isArray(weeklyDataHistory) ? weeklyDataHistory : [];
     
     const thisWeekData = history.find(w => {
@@ -596,60 +530,39 @@ function checkWeeklyStatus() {
         return w.title.replace(/\s+/g, '').includes(currentWeekTitle.replace(/\s+/g, ''));
     });
 
-    console.log("🎯 이번 주 데이터 찾음?:", thisWeekData ? "YES (제출함)" : "NO (미제출)");
-
-    // 4. DOM 요소 확인
     const badge = document.getElementById('weeklyStatusBadge');
     const msg = document.getElementById('weeklyDeadlineMsg');
     const box = document.getElementById('weeklyBox');
 
-    if (!badge || !box || !msg) {
-        console.error("❌ HTML 요소를 찾을 수 없음! ID를 확인하세요. (weeklyStatusBadge, weeklyDeadlineMsg, weeklyBox)");
-        return;
-    }
+    if (!badge || !box || !msg) return;
 
-    // 5. 상태 반영
     if (thisWeekData) {
-        console.log("✅ 상태 변경: 제출완료");
         badge.className = 'badge-status submitted';
         badge.innerText = '✅ 제출완료';
     } else {
-        console.log("⬜ 상태 변경: 미제출");
         badge.className = 'badge-status pending';
         badge.innerText = '미제출';
     }
 
-    // 6. 마감 시간 체크
-    const day = today.getDay(); // 0:일요일
+    const day = today.getDay(); 
     const hour = today.getHours();
-    console.log(`⏰ 현재 요일: ${day} (0=일), 시각: ${hour}시`);
 
     if (day === 0 && hour >= 20) {
-        console.log("⛔ 마감 시간 초과 -> 잠금 처리");
         badge.className = 'badge-status locked';
         badge.innerText = '⛔ 마감됨';
-        
         msg.style.color = '#ef4444';
         msg.innerText = "수정 불가 (매주 일요일 20시 마감)";
-        
         box.classList.add('disabled');
         box.onclick = null; 
         box.setAttribute('onclick', ''); 
     } else {
-        console.log("🟢 마감 전 -> 활성 상태");
         msg.style.color = '#64748b'; 
         msg.innerText = "※ 일요일 20:00 마감";
-        
-        // 박스 활성화 (혹시 잠겨있었다면 해제)
         box.classList.remove('disabled');
-        // onclick 이벤트 복구 (HTML 속성에 있는 onclick을 JS로 재연결)
         box.onclick = openWeeklyCheckModal; 
     }
-    
-    console.log("--------------- [상태 체크 종료] ---------------");
 }
 
-// === 주간 학습 점검 모달 ===
 function openWeeklyCheckModal() {
     const today = new Date();
     if (today.getDay() === 0 && today.getHours() >= 20) {
@@ -663,7 +576,6 @@ function openWeeklyCheckModal() {
     document.getElementById('weeklyYear').innerText = yStr; 
     document.getElementById('weeklyDateDetail').innerText = `${mStr} ${wStr}`;
     
-    // 데이터 불러오기
     const thisWeekData = weeklyDataHistory.find(w => w.title && w.title.replace(/\s/g, '') === currentWeekTitle.replace(/\s/g, ''));
     
     if (thisWeekData) {
@@ -741,7 +653,6 @@ function loadWeeklyDataToForm(data) {
     }
 }
 
-// === 중요: 누락되었던 계산 및 UI 제어 함수들 ===
 function calcStudyRates() {
     const rows = document.querySelectorAll('#studyTimeBody tr');
     let sumPlan = 0, sumAct = 0;
@@ -792,7 +703,6 @@ function checkLength(el) {
     document.getElementById('currLen').innerText = el.value.length;
 }
 
-// === 제출 ===
 async function submitWeeklyCheck() {
     const totalPlan = parseFloat(document.getElementById('totalPlan').innerText);
     if (totalPlan === 0) { alert("학습 계획 시간을 입력해주세요."); return; }
@@ -802,7 +712,6 @@ async function submitWeeklyCheck() {
 
     if (mockType !== 'none') {
         const fileInput = document.getElementById('mockExamProof');
-        // 파일 검증 로직 (필요시 활성화)
         mockData.proofFile = fileInput.files.length > 0 ? fileInput.files[0].name : "file_uploaded"; 
         
         const scores = document.querySelectorAll('.mock-score');
@@ -841,12 +750,13 @@ async function submitWeeklyCheck() {
     }
 
     const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('accessToken');
     const today = new Date().toISOString();
     const title = getWeekTitle(new Date()); 
 
     const weeklyData = {
         date: today,
-        title: title, // 식별용 키
+        title: title, 
         studyTime: {
             details: studyData,
             totalPlan: document.getElementById('totalPlan').innerText,
@@ -863,6 +773,10 @@ async function submitWeeklyCheck() {
     try {
         const res = await fetch(MYPAGE_API_URL, {
             method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
             body: JSON.stringify({ type: 'save_weekly_check', userId, data: weeklyData })
         });
         if(res.ok) { 
@@ -875,7 +789,6 @@ async function submitWeeklyCheck() {
     } catch(e) { console.error(e); alert("제출 실패"); }
 }
 
-// === 심층 코칭 ===
 function openDeepCoachingModal() {
     if (currentUserTier !== 'pro') {
         if(currentUserTier === 'black') alert("BLACK 회원은 [FOR BLACK] 메뉴를 이용해주세요.");
@@ -905,11 +818,16 @@ async function submitDeepCoaching() {
     if(!confirm("심층 코칭을 요청하시겠습니까?")) return;
 
     const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('accessToken');
     const reqData = { date: new Date().toISOString(), plan: ans[0], direction: ans[1], subject: ans[2], etc: ans[3], status: 'pending' };
 
     try {
         const res = await fetch(MYPAGE_API_URL, {
             method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
             body: JSON.stringify({ type: 'save_deep_coaching', userId, data: reqData })
         });
         if(res.ok) { alert("요청이 접수되었습니다."); closeDeepModal(); }
@@ -917,7 +835,6 @@ async function submitDeepCoaching() {
     } catch(e) { console.error(e); alert("오류가 발생했습니다."); }
 }
 
-// === 기타 ===
 function initCoachLock() {
     const lockOverlay = document.getElementById('deepCoachingLock');
     if (['pro', 'black'].includes(currentUserTier)) { if(lockOverlay) lockOverlay.style.display = 'none'; } 
@@ -926,6 +843,7 @@ function initCoachLock() {
 
 async function saveProfile() {
     const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('accessToken');
     const newName = document.getElementById('profileName').value;
     const newPhone = document.getElementById('profilePhone').value;
     const newSchool = document.getElementById('profileSchool').value;
@@ -937,6 +855,10 @@ async function saveProfile() {
     try {
         const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
             body: JSON.stringify({ type: 'update_profile', userId, data: { name: newName, phone: newPhone, school: newSchool, email: newEmail } })
         });
         if(response.ok) { alert("회원 정보가 수정되었습니다."); location.reload(); } 
@@ -947,9 +869,14 @@ async function saveProfile() {
 async function handleDeleteAccount() {
     if (!confirm("정말로 탈퇴하시겠습니까?\n\n탈퇴 시 저장된 모든 데이터가 영구 삭제됩니다.")) return;
     const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('accessToken');
     try {
         const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
             body: JSON.stringify({ type: 'delete_user', userId })
         });
         if (response.ok) { alert("탈퇴가 완료되었습니다."); localStorage.clear(); sessionStorage.clear(); window.location.href = 'index.html'; } 

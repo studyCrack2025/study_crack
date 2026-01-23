@@ -3,7 +3,8 @@
 const urlParams = new URLSearchParams(window.location.search);
 const targetUserId = urlParams.get('uid');
 const adminId = localStorage.getItem('userId');
-const ADMIN_API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/";
+// API URL
+const ADMIN_API_URL = CONFIG.api.base;
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!targetUserId || !adminId) {
@@ -23,7 +24,6 @@ function switchTab(tabName) {
     if(event && event.currentTarget) event.currentTarget.classList.add('active');
 }
 
-// [보안] XSS 방지용 HTML 이스케이프 함수 (필수)
 function escapeHtml(text) {
     if (text === null || text === undefined) return '';
     return String(text)
@@ -35,9 +35,14 @@ function escapeHtml(text) {
 }
 
 async function loadStudentDetail() {
+    const token = localStorage.getItem('accessToken');
     try {
         const response = await fetch(ADMIN_API_URL, {
             method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // ★ 토큰 추가
+            },
             body: JSON.stringify({
                 type: 'admin_get_user_detail',
                 userId: adminId,
@@ -58,7 +63,6 @@ async function loadStudentDetail() {
 function renderData(s) {
     if (!s) return;
 
-    // 1. 기본 정보 (escapeHtml 적용)
     document.getElementById('viewName').innerText = s.name || '미입력';
     document.getElementById('viewEmail').innerText = s.email || '-';
     document.getElementById('viewSchool').innerText = s.school || '-';
@@ -66,16 +70,13 @@ function renderData(s) {
     document.getElementById('viewEmailFull').innerText = s.email || '-';
     document.getElementById('viewJoinDate').innerText = s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '-';
 
-    // 2. 뱃지 & 메모
     renderTierBadge(s.payments || []);
     updateAnalysisBadge(s.analysisStatus);
     document.getElementById('analysisEditor').value = s.analysisContent || '';
     document.getElementById('adminMemoInput').value = s.adminMemo || '';
 
-    // 3. 목표 대학 리스트
     renderTargetUnivs(s.targetUnivs || []);
 
-    // 4. 각 탭 데이터 렌더링
     renderQualitativeDetail(s.qualitative);
     renderQuantitativeDetail(s.quantitative);
     renderConsultHistory(s.weeklyHistory || [], s.deepCoachingHistory || []); 
@@ -97,7 +98,6 @@ function renderTargetUnivs(list) {
         div.className = 'target-univ-item';
         const dateStr = u.date ? new Date(u.date).toLocaleDateString() + ' 선택' : '날짜 정보 없음';
         
-        // [보안] innerHTML 사용 시 escapeHtml 적용
         div.innerHTML = `
             <div>
                 <strong>${idx+1}. ${escapeHtml(u.univ)}</strong>
@@ -109,7 +109,6 @@ function renderTargetUnivs(list) {
     });
 }
 
-// 상담/코칭 타임라인 (여기가 XSS 취약점이 가장 많은 곳이므로 주의)
 function renderConsultHistory(weekly, deep) {
     const container = document.getElementById('consultTimeline');
     container.innerHTML = '';
@@ -169,7 +168,6 @@ function renderConsultHistory(weekly, deep) {
                 detailsHtml += `</table>`;
             }
 
-            // [보안] 코멘트, 이유 등 사용자가 쓴 글은 모두 escapeHtml 처리
             const safeComment = escapeHtml(d.comment);
             const safeReasons = d.trend?.reasons ? d.trend.reasons.map(r => escapeHtml(r)).join(', ') : '';
 
@@ -178,13 +176,10 @@ function renderConsultHistory(weekly, deep) {
                     <span style="font-weight:bold; color:#2563eb;">총 달성률: ${d.studyTime?.totalRate || '0%'}</span> 
                     <span style="color:#64748b; font-size:0.9rem;">(계획 ${d.studyTime?.totalPlan || 0}H / 실제 ${d.studyTime?.totalAct || 0}H)</span>
                 </div>
-                
                 ${detailsHtml}
-
                 <div style="margin-top:10px; padding:10px; background:#fff; border-radius:6px; border:1px solid #e2e8f0;">
                     <strong>💬 코멘트:</strong> ${safeComment}
                 </div>
-
                 <div class="hidden-detail" id="detail-${idx}">
                     <p><strong>- 모의고사:</strong> ${d.mockExam?.type === 'none' ? '미응시' : `응시 (${escapeHtml(d.mockExam?.type)})`}</p>
                     ${d.mockExam?.type !== 'none' && d.mockExam?.scores ? 
@@ -199,7 +194,6 @@ function renderConsultHistory(weekly, deep) {
                 <div class="detail-toggle" onclick="toggleDetail('detail-${idx}')">상세 정보 더보기 ▼</div>
             `;
         } else {
-            // Deep Coaching
             contentHtml = `
                 <div><strong>[계획 점검]</strong> ${escapeHtml(d.plan)}</div>
                 <div style="margin-top:5px;"><strong>[방향성]</strong> ${escapeHtml(d.direction)}</div>
@@ -239,13 +233,11 @@ function toggleDetail(id) {
 function renderTierBadge(payments) {
     const area = document.getElementById('tierBadgeArea');
     let html = '<span class="tier-badge" style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1;">FREE USER</span>';
-    
     if (payments && payments.length > 0) {
         const paid = payments.filter(p => p.status === 'paid');
         if (paid.length > 0) {
             paid.sort((a, b) => new Date(b.date) - new Date(a.date));
             const last = (paid[0].product || "").toLowerCase();
-            
             if (last.includes('black')) html = '<span class="tier-badge" style="background: linear-gradient(to bottom right, #ffffff, #f8fafc); border: 2px solid #171717; color: #171717; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">BLACK TIER</span>';
             else if (last.includes('pro')) html = '<span class="tier-badge" style="background: linear-gradient(135deg, #F59E0B, #FCD34D); border: 2px solid #F59E0B; color: #78350f;">PRO TIER</span>';
             else if (last.includes('standard')) html = '<span class="tier-badge" style="background: linear-gradient(135deg, #94A3B8, #CBD5E1); border: 2px solid #64748B; color: #0F172A;">STANDARD TIER</span>';
@@ -265,8 +257,7 @@ function updateAnalysisBadge(status) {
 function renderQualitativeDetail(q) {
     const area = document.getElementById('qualContentArea');
     if (!q) { area.innerHTML = '<p style="text-align:center; color:#94a3b8;">데이터가 없습니다.</p>'; return; }
-    
-    const v = (val) => val ? escapeHtml(val) : '-'; // [보안] 여기도 escape
+    const v = (val) => val ? escapeHtml(val) : '-';
     let html = `<div class="qual-section"><div class="qual-head">📍 현재 상황</div><div class="qual-grid">
         <div class="qual-item"><span class="qual-label">신분</span><div>${v(q.status)}</div></div>
         <div class="qual-item"><span class="qual-label">계열</span><div>${v(q.stream)}</div></div>
@@ -316,11 +307,17 @@ function renderPayments(p) {
 
 async function saveAnalysis() {
     const content = document.getElementById('analysisEditor').value;
+    const token = localStorage.getItem('accessToken');
     if(!content.trim()) return alert("내용을 입력하세요");
     if(!confirm("저장하시겠습니까?")) return;
     try {
         await fetch(ADMIN_API_URL, {
-            method: 'POST', body: JSON.stringify({ type:'admin_save_analysis', userId:adminId, data:{targetUserId, content, status:'completed'} })
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ type:'admin_save_analysis', userId:adminId, data:{targetUserId, content, status:'completed'} })
         });
         alert("저장 완료"); updateAnalysisBadge('completed');
     } catch(e) { alert("저장 실패"); }
@@ -328,9 +325,15 @@ async function saveAnalysis() {
 
 async function saveAdminMemo() {
     const memo = document.getElementById('adminMemoInput').value;
+    const token = localStorage.getItem('accessToken');
     try {
         await fetch(ADMIN_API_URL, {
-            method:'POST', body:JSON.stringify({ type:'admin_update_memo', userId:adminId, data:{targetUserId, memo} })
+            method:'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body:JSON.stringify({ type:'admin_update_memo', userId:adminId, data:{targetUserId, memo} })
         });
         alert("메모 저장 완료");
     } catch(e) { alert("저장 실패"); }

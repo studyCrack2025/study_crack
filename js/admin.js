@@ -1,11 +1,12 @@
 // js/admin.js
 
-// [필수] 차트 플러그인 등록
 if (typeof ChartDataLabels !== 'undefined') {
     Chart.register(ChartDataLabels);
 }
 
-const ADMIN_API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/";
+// API URL
+const ADMIN_API_URL = CONFIG.api.base; 
+
 let salesChart = null;  
 let periodChart = null; 
 let rawPaymentData = []; 
@@ -14,24 +15,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const role = localStorage.getItem('userRole');
     const userId = localStorage.getItem('userId');
 
-    // 1. 관리자 권한 체크 (Client Side)
-    // 주의: 실제 보안은 API에서 이루어지지만, UX를 위해 튕겨냄
     if (!userId || role !== 'admin') {
         alert("관리자 권한이 없습니다.");
         window.location.href = 'index.html';
         return;
     }
 
-    // 2. 통계 로드
     loadAdminStats(userId);
-    
-    // 3. 학생 전체 목록 로드
     searchStudents(); 
 });
 
-// ==========================================
-// [UI] 사이드바 및 화면 전환
-// ==========================================
 function toggleSubmenu(id) {
     const el = document.getElementById(id);
     if (el) el.classList.toggle('open');
@@ -53,13 +46,15 @@ function showSection(sectionName) {
     }
 }
 
-// ==========================================
-// [API] 통계 데이터 로드 및 가공
-// ==========================================
 async function loadAdminStats(adminId) {
+    const token = localStorage.getItem('accessToken');
     try {
         const response = await fetch(ADMIN_API_URL, {
             method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // ★ 토큰 추가
+            },
             body: JSON.stringify({ type: 'admin_stats', userId: adminId })
         });
         
@@ -79,18 +74,14 @@ async function loadAdminStats(adminId) {
     }
 }
 
-// === 차트 업데이트 컨트롤러 ===
 function updateCharts() {
     const selector = document.getElementById('periodSelector');
     const periodType = selector ? selector.value : 'month';
-    
     const aggregated = aggregateData(rawPaymentData, periodType);
-    
     renderPeriodChart(aggregated.labels, aggregated.amounts);
     renderProductChart(aggregated.productCounts, aggregated.totalAmount);
 }
 
-// === 데이터 집계 로직 ===
 function aggregateData(payments, type) {
     const timeMap = {};
     const productMap = {};
@@ -113,10 +104,8 @@ function aggregateData(payments, type) {
         }
 
         timeMap[key] = (timeMap[key] || 0) + pay.amount;
-
         const prod = pay.product || "기타";
         productMap[prod] = (productMap[prod] || 0) + pay.amount;
-        
         total += pay.amount;
     });
 
@@ -133,10 +122,6 @@ function getWeekNumber(d) {
     return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
 }
 
-
-// ==========================================
-// [Chart.js] 차트 렌더링
-// ==========================================
 function renderPeriodChart(labels, data) {
     const ctx = document.getElementById('periodChart');
     if (!ctx) return;
@@ -213,12 +198,9 @@ function renderProductChart(productMap, total) {
     });
 }
 
-// ==========================================
-// [API] 학생 검색 및 상세페이지 이동
-// ==========================================
-
 async function searchStudents() {
     const adminId = localStorage.getItem('userId');
+    const token = localStorage.getItem('accessToken');
     const type = document.getElementById('searchType').value; 
     const keyword = document.getElementById('searchInput').value || ""; 
     const tbody = document.getElementById('studentListBody');
@@ -228,6 +210,10 @@ async function searchStudents() {
     try {
         const response = await fetch(ADMIN_API_URL, {
             method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
             body: JSON.stringify({
                 type: 'admin_search',
                 userId: adminId,
@@ -237,8 +223,6 @@ async function searchStudents() {
         
         let students = await response.json();
         
-        // [경고] 데이터가 많아지면 프론트엔드 필터링은 성능 저하 원인이 됨
-        // 추후 Backend에서 paid/unpaid 필터링을 지원하도록 수정 권장
         if (type === 'paid') {
             students = students.filter(s => 
                 s.payments && s.payments.some(p => p.status === 'paid')
@@ -257,9 +241,7 @@ async function searchStudents() {
         }
 
         students.forEach(s => {
-            // Tier 뱃지 결정 (함수 분리 필요하지만 일단 인라인 처리)
             let statusBadge = getTierBadgeHTML(s.payments);
-
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><strong>${escapeHtml(s.name) || '(이름없음)'}</strong></td>
@@ -286,8 +268,6 @@ function goToStudentDetail(targetUserId) {
     window.location.href = `admin_detail.html?uid=${targetUserId}`;
 }
 
-// [보안] XSS 방지용 HTML 이스케이프 함수
-// 관리자 페이지는 사용자 입력값을 그대로 보여주는 경우가 많아 이 함수가 필수입니다.
 function escapeHtml(text) {
     if (!text) return text;
     return text
@@ -298,7 +278,6 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
-// Tier 뱃지 생성 (중복 로직 최소화용 헬퍼)
 function getTierBadgeHTML(payments) {
     if (!payments || payments.length === 0) {
         return '<span style="color:#64748b; background:#f1f5f9; padding:4px 8px; border-radius:12px; font-size:0.8rem;">FREE</span>';

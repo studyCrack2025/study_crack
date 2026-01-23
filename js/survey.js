@@ -1,12 +1,10 @@
 // js/survey.js
 
-const SURVEY_API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/";
-// [주의] 데이터를 가져올 람다 함수(Analysis/Proxy) 주소
-const DATA_FETCH_URL = "https://ftbrlbyaprizjcp5w7b2g5t6sq0srwem.lambda-url.ap-northeast-2.on.aws/";
+// API 주소 변경
+const SURVEY_API_URL = CONFIG.api.base;       
+const DATA_FETCH_URL = CONFIG.api.analysis;   
 
 let examScores = {}; 
-
-console.log("🚀 [survey.js] Loaded (Secure Mode)");
 
 document.addEventListener('DOMContentLoaded', () => {
     const userId = localStorage.getItem('userId');
@@ -19,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchUserData(userId);
     setupUI();
     
-    // 자동 계산을 위한 이벤트 리스너 등록
+    // 자동 계산 리스너
     setupAutoCalculation();
     
     setTimeout(checkQualitativeForm, 500);
@@ -34,17 +32,14 @@ function openTab(tabName) {
 
 // ============================================================
 // 성적 자동 환산 요청 (서버로 요청)
-// 사용자가 점수를 입력하면 서버에서 등급/백분위를 받아옵니다.
 // ============================================================
 async function requestScoreConversion(type) {
-    // 1. 필요한 값 수집
     const month = document.getElementById('examSelect').value;
     let subjectKey = type;
     let scoreVal = 0;
     let optVal = "";
     let subNameVal = "";
     
-    // ID 매핑
     let stdId = "", pctId = "", grdId = "";
 
     if (type === 'kor') {
@@ -61,24 +56,28 @@ async function requestScoreConversion(type) {
         subNameVal = document.getElementById('inq2Name').value;
     }
 
-    // 값 유효성 확인
     const stdEl = document.getElementById(stdId);
-    if (!stdEl || !stdEl.value) return; // 점수가 없으면 요청 안함
+    if (!stdEl || !stdEl.value) return; 
     scoreVal = parseInt(stdEl.value);
 
-    // 2. 서버 요청
+    // [중요] 토큰 가져오기
+    const token = localStorage.getItem('accessToken');
+
     try {
-        // 로딩 중 표시 (사용자 경험 개선)
         const pctEl = document.getElementById(pctId);
         const grdEl = document.getElementById(grdId);
         if(pctEl) pctEl.placeholder = "...";
         if(grdEl) grdEl.placeholder = "...";
         
+        // [수정] 토큰 헤더 포함 전송
         const response = await fetch(DATA_FETCH_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
             body: JSON.stringify({
-                type: 'convert_score', // [중요] Analysis Lambda에 새로 만든 기능 호출
+                type: 'convert_score', 
                 month: month,
                 subject: subjectKey,
                 score: scoreVal,
@@ -89,9 +88,8 @@ async function requestScoreConversion(type) {
 
         if (!response.ok) throw new Error("Conversion failed");
         
-        const data = await response.json(); // { pct: "98", grd: "1" }
+        const data = await response.json(); 
         
-        // 3. 결과 적용
         if (data.pct && pctEl) pctEl.value = data.pct;
         if (data.grd && grdEl) grdEl.value = data.grd;
 
@@ -100,18 +98,12 @@ async function requestScoreConversion(type) {
     }
 }
 
-// 이벤트 리스너 설정
-// 입력 필드의 값이 변경(change)될 때마다 서버에 환산 요청
 function setupAutoCalculation() {
-    // 국어
     document.getElementById('korStd')?.addEventListener('change', () => requestScoreConversion('kor'));
-    // 수학 (점수 변경 시, 선택과목 변경 시)
     document.getElementById('mathStd')?.addEventListener('change', () => requestScoreConversion('math'));
     document.getElementById('mathOpt')?.addEventListener('change', () => requestScoreConversion('math')); 
-    // 탐구
     document.getElementById('inq1Std')?.addEventListener('change', () => requestScoreConversion('inq1'));
     document.getElementById('inq2Std')?.addEventListener('change', () => requestScoreConversion('inq2'));
-    // 탐구 과목명이 바뀌어도 재계산 필요할 수 있음
     document.getElementById('inq1Name')?.addEventListener('change', () => requestScoreConversion('inq1'));
     document.getElementById('inq2Name')?.addEventListener('change', () => requestScoreConversion('inq2'));
 }
@@ -148,7 +140,6 @@ function setupUI() {
     }
 }
 
-// === 유효성 검사 ===
 function checkQualitativeForm() {
     const saveBtn = document.getElementById('btnSaveQual');
     const container = document.getElementById('qualitative');
@@ -184,17 +175,22 @@ function checkQualitativeForm() {
 
 // === 데이터 로드 및 저장 ===
 async function fetchUserData(userId) {
+    const token = localStorage.getItem('accessToken');
     try {
         const response = await fetch(SURVEY_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'get_user', userId: userId })
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ type: 'get_user' }) // userId 생략 가능 (토큰에서 추출)
         });
         const data = await response.json();
 
         if (data.qualitative) fillQualitativeForm(data.qualitative);
         if (data.quantitative) {
             examScores = data.quantitative;
-            loadExamData(); // 화면에 뿌리기
+            loadExamData(); 
         }
     } catch (error) { console.error("데이터 로드 오류:", error); }
 }
@@ -238,6 +234,8 @@ function fillQualitativeForm(qual) {
 
 async function saveQualitative() {
     const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('accessToken');
+    
     let statusVal = document.querySelector('input[name="studentStatus"]:checked')?.value;
     if (statusVal === 'other') statusVal = document.getElementById('statusEtcInput').value;
 
@@ -265,6 +263,10 @@ async function saveQualitative() {
     try {
         const res = await fetch(SURVEY_API_URL, {
             method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
             body: JSON.stringify({ type: 'update_qual', userId, data })
         });
         if (res.ok) {
@@ -275,10 +277,8 @@ async function saveQualitative() {
     } catch (e) { alert("에러 발생: " + e.message); }
 }
 
-// 화면에 성적 불러오기
 function loadExamData() {
     const month = document.getElementById('examSelect').value;
-
     const d = examScores[month] || {};
     const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
 
@@ -300,6 +300,7 @@ function loadExamData() {
 
 async function saveQuantitative() {
     const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('accessToken');
     const month = document.getElementById('examSelect').value;
     const getVal = (id) => document.getElementById(id).value;
 
@@ -316,6 +317,10 @@ async function saveQuantitative() {
     try {
         const res = await fetch(SURVEY_API_URL, {
             method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
             body: JSON.stringify({ type: 'update_quan', userId, data: examScores })
         });
         if (res.ok) {

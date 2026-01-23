@@ -1,7 +1,8 @@
 // js/auth.js
 
-// API URL & Cognito 설정
-const API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/";
+// API URL 변경 (Gateway 사용)
+const API_URL = CONFIG.api.base; 
+
 const poolData = {
     UserPoolId: CONFIG.cognito.userPoolId,
     ClientId: CONFIG.cognito.clientId
@@ -21,16 +22,24 @@ let serverPhoneCode = "";
 document.addEventListener('DOMContentLoaded', () => {
     checkLoginStatus();
     
-    // 비밀번호 확인 리스너
     const pwInput = document.getElementById('password');
     const pwConfirmInput = document.getElementById('passwordConfirm');
     if(pwInput && pwConfirmInput) {
         pwInput.addEventListener('input', checkPasswordMatch);
         pwConfirmInput.addEventListener('input', checkPasswordMatch);
     }
+
+    const emailInput = document.getElementById('email');
+    if (emailInput && pwInput) {
+        emailInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') pwInput.focus();
+        });
+        pwInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleSignIn();
+        });
+    }
 });
 
-// 기타(etc) 입력창 토글 함수
 function toggleEtc(type, isShow) {
     let inputId = type === 'major' ? 'majorEtc' : 'referralEtc';
     const etcInput = document.getElementById(inputId);
@@ -44,7 +53,6 @@ function toggleEtc(type, isShow) {
     }
 }
 
-// 비밀번호 일치 확인
 function checkPasswordMatch() {
     const pw = document.getElementById('password').value;
     const confirm = document.getElementById('passwordConfirm').value;
@@ -59,13 +67,11 @@ function checkPasswordMatch() {
     }
 }
 
-// [수정 1] Cognito 에러 메시지 한글 변환 (로그인 실패 메시지 통일)
 function getErrorMessage(err) {
     switch (err.code) {
-        case "NotAuthorizedException": // 비밀번호 틀림
-        case "UserNotFoundException":  // 계정 없음
+        case "NotAuthorizedException": 
+        case "UserNotFoundException":  
             return "이메일 혹은 비밀번호가 정확하지 않습니다.";
-            
         case "UsernameExistsException": return "이미 가입된 이메일입니다.";
         case "InvalidParameterException": return "입력 정보가 올바르지 않습니다.";
         case "InvalidPasswordException": return "비밀번호는 8자 이상이어야 합니다.";
@@ -76,7 +82,6 @@ function getErrorMessage(err) {
     }
 }
 
-// 가입 버튼 활성화 업데이트
 function updateSubmitButton() {
     const btn = document.getElementById('finalSubmitBtn');
     if(!btn) return; 
@@ -105,9 +110,8 @@ function handleSendCode() {
     const name = document.getElementById('name').value;
     const gender = document.getElementById('gender').value;
     const birthdate = document.getElementById('birthdate').value;
-    let phone = document.getElementById('phone').value; // 전화번호 가져오기
+    let phone = document.getElementById('phone').value;
 
-    // 1. 유효성 검사
     if (!email || !password || !name || !birthdate || !phone) {
         alert("기본 정보(전화번호 포함)를 모두 입력해주세요.");
         return;
@@ -117,8 +121,6 @@ function handleSendCode() {
         return;
     }
 
-    // 2. 전화번호 포맷팅 (01012345678 -> +821012345678)
-    // Cognito는 국제 표준 포맷(E.164)을 원합니다.
     let cleanPhone = phone.replace(/-/g, '').trim();
     if (cleanPhone.startsWith('010')) {
         cleanPhone = '+82' + cleanPhone.substring(1);
@@ -126,14 +128,12 @@ function handleSendCode() {
         cleanPhone = '+82' + cleanPhone;
     }
 
-    // 3. Cognito로 보낼 속성 리스트 생성
     const attributeList = [
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'email', Value: email }),
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'name', Value: name }),
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'given_name', Value: name }),
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'gender', Value: gender }),
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'birthdate', Value: birthdate }),
-        // ★ [핵심 수정] 전화번호 속성 추가
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'phone_number', Value: cleanPhone })
     ];
 
@@ -141,11 +141,10 @@ function handleSendCode() {
     sendBtn.innerText = "전송 중...";
     sendBtn.disabled = true;
 
-    // 4. 회원가입 요청
     userPool.signUp(email, password, attributeList, null, function(err, result) {
         if (err) {
-            alert(getErrorMessage(err)); // 에러 메시지 출력
-            console.error("Cognito SignUp Error:", err); // 콘솔에 자세한 에러 출력
+            alert(getErrorMessage(err));
+            console.error("Cognito SignUp Error:", err);
             sendBtn.innerText = "인증번호 받기";
             sendBtn.disabled = false;
             return;
@@ -186,30 +185,21 @@ function handleVerify() {
 }
 
 // ==========================================
-// [Part C] 전화번호 인증 (Lambda) - 수정됨
+// [Part C] 전화번호 인증 (Lambda)
 // ==========================================
 let phoneTimerInterval;
 
 async function handleSendPhoneCode() {
     let phone = document.getElementById('phone').value;
     
-    // [수정 2] 전화번호 포맷팅 (010-1234-5678 -> +821012345678)
-    // AWS SNS는 국제 표준 포맷(E.164)을 가장 잘 인식합니다.
-    if (!phone) {
-        alert("전화번호를 입력해주세요.");
-        return;
-    }
+    if (!phone) { alert("전화번호를 입력해주세요."); return; }
 
-    // 하이픈 제거
     let cleanPhone = phone.replace(/-/g, '').trim();
-
-    // 010으로 시작하면 +8210으로 변환
     if (cleanPhone.startsWith('010')) {
         cleanPhone = '+82' + cleanPhone.substring(1); 
     } else if (cleanPhone.startsWith('10')) {
         cleanPhone = '+82' + cleanPhone;
     } else if (!cleanPhone.startsWith('+')) {
-        // 010이 아닌데 +가 없으면 한국 번호가 아닐 수 있음 (그대로 시도하거나 에러 처리)
         alert("휴대폰 번호 형식을 확인해주세요. (예: 01012345678)");
         return;
     }
@@ -219,11 +209,12 @@ async function handleSendPhoneCode() {
     btn.disabled = true;
 
     try {
+        // [중요] SMS 발송은 로그인 전이므로 토큰 없이 요청 (백엔드에서 SMS 타입은 토큰 체크 안함)
         const response = await fetch(API_URL, {
             method: 'POST',
             body: JSON.stringify({ 
                 type: 'send_sms_auth', 
-                phone: cleanPhone // 포맷팅된 번호 전송
+                phone: cleanPhone 
             })
         });
 
@@ -233,8 +224,8 @@ async function handleSendPhoneCode() {
         }
         
         const data = await response.json();
-        
         serverPhoneCode = data.authCode; 
+        
         alert(`인증번호가 발송되었습니다.`);
         document.getElementById('phoneVerifySection').classList.remove('hidden');
         btn.innerText = "재전송";
@@ -253,9 +244,7 @@ async function handleSendPhoneCode() {
 
 function handleVerifyPhone() {
     const inputCode = document.getElementById('phoneVerifyCode').value;
-    
-    // 문자열/숫자 비교 문제 방지를 위해 == 사용 (또는 String() 변환)
-    if (inputCode && String(inputCode).trim() == String(serverPhoneCode).trim()) {
+    if (inputCode && String(inputCode).trim() === String(serverPhoneCode).trim()) {
         alert("전화번호 인증이 완료되었습니다.");
         document.getElementById('phoneVerifySection').innerHTML = "<p class='text-success'>✅ 전화번호 인증 완료</p>";
         isPhoneVerified = true;
@@ -331,6 +320,8 @@ async function handleFinalSubmit() {
     }
 
     try {
+        // [중요] 회원가입 마무리는 아직 토큰이 없을 수 있음 -> body에 userId 포함
+        // (백엔드에서도 update_profile은 예외적으로 body.userId 허용 고려 필요)
         const response = await fetch(API_URL, {
             method: 'POST',
             body: JSON.stringify({
@@ -341,7 +332,7 @@ async function handleFinalSubmit() {
                     phone: phoneRaw,
                     school: school,
                     email: email,
-                    major: major,      
+                    major: major,       
                     referral: referral 
                 }
             })
@@ -394,7 +385,13 @@ function checkLoginStatus() {
 function handleSignOut() {
     const cognitoUser = userPool.getCurrentUser();
     if (cognitoUser != null) cognitoUser.signOut();
-    localStorage.clear();
+    
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('idToken');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userEmail');
+    
     alert("로그아웃 되었습니다.");
     window.location.href = 'index.html';
 }
@@ -402,6 +399,11 @@ function handleSignOut() {
 function handleSignIn() {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
+
+    if (!email || !password) {
+        alert("이메일과 비밀번호를 입력해주세요.");
+        return;
+    }
 
     const authData = { Username: email, Password: password };
     const authDetails = new AmazonCognitoIdentity.AuthenticationDetails(authData);
@@ -419,11 +421,19 @@ function handleSignIn() {
             localStorage.setItem('userEmail', email);
             localStorage.setItem('userId', userId);
             
+            // [중요] 토큰 헤더 포함해서 유저 정보 조회 (Authorization)
             fetch(API_URL, {
                 method: 'POST',
-                body: JSON.stringify({ type: 'get_user', userId: userId })
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}` // ★ 토큰 추가
+                },
+                body: JSON.stringify({ type: 'get_user' }) // userId는 토큰에서 꺼내므로 생략 가능
             })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error("User Info Load Failed");
+                return res.json();
+            })
             .then(data => {
                 if (data.role === 'admin') {
                     localStorage.setItem('userRole', 'admin');
@@ -436,14 +446,12 @@ function handleSignIn() {
                 }
             })
             .catch(err => {
-                console.error(err);
-                // DB 확인이 안 돼도 로그인 처리
+                console.error("Role Check Error:", err);
                 localStorage.setItem('userRole', 'student');
                 alert("로그인 성공!");
                 window.location.href = 'index.html';
             });
         },
-        // [수정] 실패 시 커스텀 에러 함수 호출
         onFailure: function(err) {
             alert(getErrorMessage(err));
         }
