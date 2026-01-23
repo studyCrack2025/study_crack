@@ -425,7 +425,7 @@
 /* [수정] 폼 컨테이너 너비 제한 (가로본능 방지) */
 .form-container {
     max-width: 480px; /* 적절한 너비로 제한 */
-    margin: 0; /* 왼쪽 정렬 */
+    margin: 0 auto;
 }
 
 .form-container h3 {
