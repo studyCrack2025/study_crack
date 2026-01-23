@@ -5,7 +5,7 @@
    ========================================= */
 .mypage-container {
     display: flex;
-    /* [수정] 전체 화면이 너무 넓어지지 않도록 제한 (비율 유지) */
+    /* 전체 화면이 너무 넓어지지 않도록 제한 (비율 유지) */
     max-width: 1200px; 
     margin: 50px auto;
     padding: 0 20px;
@@ -30,7 +30,7 @@
    2. 왼쪽 사이드바 (Profile Sidebar)
    ========================================= */
 .profile-summary {
-    width: 300px; /* 고정 너비 유지 */
+    width: 300px; /* 고정 너비 */
     background: white;
     padding: 30px;
     border-radius: 12px;
@@ -168,10 +168,10 @@
 .univ-sub-header h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: #1e293b; }
 .univ-sub-header p { margin: 0; font-size: 0.9rem; color: #64748b; }
 
-/* [수정] PC/모바일 공통 그리드 설정 (가로 스크롤 제거, 타일 배치) */
+/* PC/모바일 공통 그리드 설정 */
 .univ-grid {
     display: grid;
-    /* 공간이 부족하면 다음 줄로 넘어감 (타일 배치) */
+    /* 공간 부족 시 자동 줄바꿈 */
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
     gap: 15px; 
     margin-bottom: 20px;
@@ -181,12 +181,11 @@
 .univ-slot {
     border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; background: #f8fafc;
     position: relative; display: flex; flex-direction: column; gap: 8px;
-    min-width: 0; /* Flex Item 내부 오버플로우 방지 */
+    min-width: 0; 
 }
 .univ-slot label { font-size: 0.85rem; font-weight: bold; color: #334155; }
 .univ-slot .slot-msg { font-size: 0.8rem; color: #ef4444; font-weight: 500; margin-top: 5px; }
 
-/* 대학 선택 버튼 */
 .univ-select-btn {
     width: 100%; padding: 12px; 
     border: 1px solid #cbd5e1; border-radius: 6px; 
@@ -199,7 +198,6 @@
 .univ-select-btn span.placeholder { color: #94a3b8; }
 .univ-select-btn i { font-size: 0.8rem; color: #cbd5e1; }
 
-/* 비활성화 슬롯 */
 .univ-slot.locked-tier {
     background: #f1f5f9; opacity: 0.6; pointer-events: none; justify-content: center; align-items: center; border: 1px dashed #cbd5e1;
 }
@@ -255,7 +253,6 @@
 .diff-badge.plus { background: #dcfce7; color: #166534; }
 .diff-badge.minus { background: #fee2e2; color: #991b1b; }
 
-/* 파이 차트 */
 .chart-box { width: 200px; display: flex; flex-direction: column; align-items: center; }
 .pie-chart {
     width: 120px; height: 120px; border-radius: 50%;
@@ -278,7 +275,6 @@
 .coach-box { border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; position: relative; }
 .deep-coaching { border: 1px solid #cbd5e1; background: #f8fafc; }
 
-/* 락 오버레이 (Pro 이상) */
 .lock-overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(2px);
@@ -287,7 +283,6 @@
 }
 .lock-overlay i { font-size: 2rem; margin-bottom: 10px; color: #94a3b8; }
 
-/* 주간 학습 점검 모달 스타일 */
 .coach-box.clickable { cursor: pointer; transition: transform 0.2s, border-color 0.2s; }
 .coach-box.clickable:hover { border-color: #2563EB; transform: translateY(-3px); box-shadow: 0 4px 10px rgba(37,99,235,0.1); }
 .badge-std { background: #e0f2fe; color: #0284c7; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; margin-top: 5px; display: inline-block; }
@@ -303,19 +298,16 @@
 .badge-status.submitted { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
 .badge-status.locked { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
 
-/* 비활성화된 박스 */
 .coach-box.disabled { 
     opacity: 0.7; cursor: not-allowed; background-color: #f8fafc; border-color: #e2e8f0; 
 }
 .coach-box.disabled:hover { transform: none; box-shadow: none; border-color: #e2e8f0; }
 
-/* 점검 항목 공통 */
 .check-section { background: white; border: 1px solid #e2e8f0; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
 .check-section h4 { margin: 0 0 8px 0; color: #1e293b; font-size: 1.05rem; }
 .check-section .desc { font-size: 0.85rem; color: #64748b; margin-bottom: 15px; }
 .req { color: #ef4444; }
 
-/* 학습시간 테이블 */
 .table-wrap { overflow-x: auto; }
 .study-time-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .study-time-table th { background: #f1f5f9; padding: 8px; text-align: center; color: #475569; border-bottom: 2px solid #e2e8f0; }
@@ -339,14 +331,12 @@
 .total-row { background: #eff6ff; font-weight: bold; color: #2563eb; }
 .rate-txt { font-weight: bold; color: #334155; }
 
-/* 모의고사 입력 */
 .file-upload-box { border: 1px dashed #cbd5e1; padding: 15px; border-radius: 6px; margin-bottom: 15px; background: #fdfdfd; }
 .file-upload-box label { display: block; margin-bottom: 8px; font-size: 0.9rem; font-weight: bold; color: #475569; }
 .score-input-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
 .score-input-grid label { display: block; font-size: 0.8rem; text-align: center; margin-bottom: 4px; color: #64748b; }
 .score-input-grid input { width: 100%; padding: 8px; text-align: center; }
 
-/* 모의고사 타일형 디자인 */
 .mock-tile-group {
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px;
 }
@@ -361,14 +351,12 @@
 .mock-tile.selected { border-color: #2563EB; background-color: #eff6ff; }
 .mock-tile.selected .label { color: #2563EB; }
 
-/* 학업 추이 */
 .trend-radio-group { display: flex; gap: 15px; background: #f8fafc; padding: 10px; border-radius: 6px; justify-content: space-around; }
 .trend-radio-group label { cursor: pointer; font-weight: bold; color: #334155; }
 .sub-label { font-size: 0.9rem; font-weight: bold; color: #dc2626; display: block; margin-bottom: 8px; }
 .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; }
 .checkbox-group label { font-size: 0.9rem; cursor: pointer; }
 
-/* 코멘트 */
 #weekComment { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; resize: none; height: 80px; }
 .char-count { text-align: right; font-size: 0.8rem; color: #94a3b8; margin-top: 4px; }
 
@@ -401,10 +389,10 @@
 .benefit-list li { margin-bottom: 10px; }
 .benefit-list strong { color: #fcf6ba; margin-right: 8px; }
 
-/* [수정] 블랙 메뉴 그리드 - 기본 설정 (모바일/PC 공통 베이스) */
+/* 기본 메뉴 그리드 (모바일 1열 등 대응용) */
 .black-menu-grid { 
     display: grid; 
-    grid-template-columns: 1fr 1fr; /* 기본 2열 가로 배치 */
+    grid-template-columns: 1fr 1fr; 
     gap: 20px; 
 }
 
@@ -434,6 +422,12 @@
 .content-header h2 { margin-top: 0; color: #1e293b; }
 .content-header p { color: #64748b; margin-bottom: 30px; }
 
+/* [수정] 폼 컨테이너 너비 제한 (가로본능 방지) */
+.form-container {
+    max-width: 480px; /* 적절한 너비로 제한 */
+    margin: 0; /* 왼쪽 정렬 */
+}
+
 .form-container h3 {
     margin-top: 30px; margin-bottom: 15px;
     font-size: 1.1rem; color: #2563eb; border-bottom: 2px solid #f1f5f9;
@@ -459,21 +453,17 @@ input:focus { outline: none; border-color: #2563EB; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
 /* --- 심층 코칭(PRO) 스타일 --- */
-
-/* 1. 메인 박스 스타일 */
 .badge-pro { 
     background: linear-gradient(135deg, #f59e0b, #d97706); color: white; 
     padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; 
     margin-top: 8px; display: inline-block; box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
 }
 
-/* 2. PRO 전용 모달 레이아웃 */
 .pro-modal-content {
     max-width: 700px; height: 90vh; /* 조금 더 크게 */
     border-radius: 16px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.2);
 }
 
-/* 3. 헤더 디자인 (그라데이션) */
 .pro-modal-header {
     background: linear-gradient(135deg, #1e293b, #0f172a); /* 다크 네이비 */
     padding: 30px 25px; color: white;
@@ -487,7 +477,6 @@ input:focus { outline: none; border-color: #2563EB; }
 .pro-close { color: #64748b; font-size: 2rem; transition: color 0.2s; }
 .pro-close:hover { color: #fbbf24; }
 
-/* 4. 바디 & 카드 디자인 */
 .pro-body { background-color: #f1f5f9; padding: 30px !important; }
 
 .pro-input-card {
@@ -501,7 +490,6 @@ input:focus { outline: none; border-color: #2563EB; }
 .card-title i { color: #d97706; /* 앰버 아이콘 */ }
 .card-desc { font-size: 0.9rem; color: #64748b; margin-bottom: 15px; line-height: 1.4; }
 
-/* 5. 입력창 디자인 */
 .pro-textarea {
     width: 100%; height: 120px; padding: 15px;
     border: 1px solid #cbd5e1; border-radius: 8px;
@@ -513,7 +501,6 @@ input:focus { outline: none; border-color: #2563EB; }
     box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
 }
 
-/* 6. 하단 버튼 */
 .pro-footer { background: white; padding: 20px; text-align: right; border-top: 1px solid #e2e8f0; }
 .pro-btn {
     background: linear-gradient(135deg, #d97706, #b45309);
@@ -543,6 +530,7 @@ input:focus { outline: none; border-color: #2563EB; }
         padding: 20px; 
         min-height: auto; 
     }
+    .form-container { max-width: 100%; } /* 모바일은 꽉 차게 */
     
     .main-tabs { 
         gap: 10px; 
@@ -573,7 +561,7 @@ input:focus { outline: none; border-color: #2563EB; }
     }
     .black-theme { margin: 0; border-radius: 8px; }
     
-    /* [수정] 모바일에서는 세로로 1열 */
+    /* 모바일에서는 세로로 1열 */
     .black-menu-grid { grid-template-columns: 1fr; }
 }
 
@@ -587,7 +575,7 @@ input:focus { outline: none; border-color: #2563EB; }
         flex-direction: row; 
         align-items: flex-start;
         gap: 30px;
-        /* [수정] 전체 화면 너비 제한 */
+        /* 전체 화면 너비 제한 */
         max-width: 1200px; 
         margin: 40px auto;
         padding: 0 20px;
@@ -595,7 +583,6 @@ input:focus { outline: none; border-color: #2563EB; }
 
     /* 2. 사이드바 (프로필) 고정 너비 */
     .profile-summary {
-        /* [수정] 300px로 고정, 화면이 커져도 유지 */
         width: 300px;      
         min-width: 300px;  
         flex-shrink: 0;    
@@ -610,21 +597,30 @@ input:focus { outline: none; border-color: #2563EB; }
         width: 100%;
     }
 
-    /* 4. 목표 대학 설정 (가로 스크롤 제거 -> 타일형 그리드) */
+    /* 4. 목표 대학 설정 (가로 최대 2개 고정) */
     .univ-grid {
-        display: grid; /* [수정] Flex -> Grid */
-        /* [수정] 가로 최대 2개만 배치되도록 고정 */
+        display: grid; 
+        /* 무조건 2개까지만 배치 (3개 X) */
         grid-template-columns: repeat(2, 1fr); 
         gap: 15px;
-        overflow-x: visible; /* 스크롤 제거 */
+        overflow-x: visible; 
         padding-bottom: 0;
     }
     
-    /* 5. BLACK 메뉴 그리드 (가로 배치 원상복구) */
+    /* 5. BLACK 메뉴 그리드 (2열 가로 배치) */
     .black-menu-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr; /* [수정] 무조건 2열 가로 */
+        grid-template-columns: 1fr 1fr; 
         gap: 20px;
+    }
+
+    /* 6. 비밀번호 변경 필드 가로 배치 */
+    .password-section {
+        display: flex;
+        gap: 20px;
+    }
+    .password-section .form-group {
+        flex: 1;
     }
 
     /* 테이블 스크롤 */
