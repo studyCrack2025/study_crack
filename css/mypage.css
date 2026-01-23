@@ -5,7 +5,8 @@
    ========================================= */
 .mypage-container {
     display: flex;
-    max-width: 1000px;
+    /* [수정] 전체 화면이 너무 넓어지지 않도록 제한 (비율 유지) */
+    max-width: 1200px; 
     margin: 50px auto;
     padding: 0 20px;
     gap: 30px;
@@ -19,6 +20,8 @@
     border: 1px solid #e2e8f0;
     padding: 40px;
     min-height: 600px;
+    /* [수정] 컨텐츠 영역이 비정상적으로 넓어지는 것 방지 */
+    max-width: 100%; 
 }
 
 .divider { border: 0; border-top: 2px solid #f1f5f9; margin: 40px 0; }
@@ -28,14 +31,14 @@
    2. 왼쪽 사이드바 (Profile Sidebar)
    ========================================= */
 .profile-summary {
-    width: 300px;
+    width: 300px; /* [수정] 고정 너비 유지 */
     background: white;
     padding: 30px;
     border-radius: 12px;
     border: 1px solid #e2e8f0;
     text-align: center;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    flex-shrink: 0;
+    flex-shrink: 0; /* 찌그러짐 방지 */
     position: relative;
     transition: all 0.3s ease;
 }
@@ -166,12 +169,20 @@
 .univ-sub-header h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: #1e293b; }
 .univ-sub-header p { margin: 0; font-size: 0.9rem; color: #64748b; }
 
+/* [수정] PC/모바일 공통 그리드 설정 (가로 스크롤 제거, 타일 배치) */
 .univ-grid {
-    display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;
+    display: grid;
+    /* 공간이 부족하면 다음 줄로 넘어감 (타일 배치) */
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
+    gap: 15px; 
+    margin-bottom: 20px;
+    overflow-x: visible; /* 스크롤 제거 */
 }
+
 .univ-slot {
     border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; background: #f8fafc;
     position: relative; display: flex; flex-direction: column; gap: 8px;
+    min-width: 0; /* Flex Item 내부 오버플로우 방지 */
 }
 .univ-slot label { font-size: 0.85rem; font-weight: bold; color: #334155; }
 .univ-slot .slot-msg { font-size: 0.8rem; color: #ef4444; font-weight: 500; margin-top: 5px; }
@@ -391,8 +402,13 @@
 .benefit-list li { margin-bottom: 10px; }
 .benefit-list strong { color: #fcf6ba; margin-right: 8px; }
 
-/* 타일 메뉴 */
-.black-menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+/* [수정] 블랙 메뉴 그리드 - 기본 설정 (모바일/PC 공통 베이스) */
+.black-menu-grid { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; /* 기본 2열 가로 배치 */
+    gap: 20px; 
+}
+
 .black-tile {
     background: linear-gradient(145deg, #1a1a1a, #0d0d0d);
     border: 1px solid #333; border-radius: 12px; padding: 30px 20px;
@@ -509,12 +525,10 @@ input:focus { outline: none; border-color: #2563EB; }
 
 
 /* =========================================
-   9. 모바일 반응형 (Media Queries)
+   9. 반응형 미디어 쿼리 (Media Queries)
    ========================================= */
-/* =========================================================
-   1. 모바일 화면 설정 (기존 코드 유지)
-   : 화면이 좁을 때(768px 이하) 세로로 길게 배치
-   ========================================================= */
+
+/* [모바일] 768px 이하 (세로 배치) */
 @media (max-width: 768px) {
     .mypage-container { 
         flex-direction: column; 
@@ -523,7 +537,7 @@ input:focus { outline: none; border-color: #2563EB; }
     }
     .profile-summary { 
         width: 100%; 
-        margin-bottom: 20px; /* 사이드바와 본문 사이 간격 추가 */
+        margin-bottom: 20px; 
     }
     .content-area { 
         width: 100%; 
@@ -532,23 +546,22 @@ input:focus { outline: none; border-color: #2563EB; }
     }
     
     .main-tabs { 
-        gap: 10px; /* 간격 조정 */
-        overflow-x: auto; /* 탭 많으면 스크롤 */
+        gap: 10px; 
+        overflow-x: auto; 
         white-space: nowrap;
         padding-bottom: 5px;
     }
     .tab-btn { 
         font-size: 1rem; 
         padding: 10px 15px; 
-        flex: 0 0 auto; /* 탭 찌그러짐 방지 */
+        flex: 0 0 auto; 
     }
 
     .solution-menu { flex-wrap: wrap; gap: 10px; }
     .sol-btn { flex: 1 1 45%; font-size: 0.85rem; padding: 12px; }
     
     .univ-grid { 
-        display: grid; /* 모바일은 그냥 세로 리스트처럼 보이게 Grid 유지 */
-        grid-template-columns: 1fr; 
+        grid-template-columns: 1fr; /* 모바일: 1열 (타일) */
         gap: 15px;
     }
     
@@ -560,65 +573,62 @@ input:focus { outline: none; border-color: #2563EB; }
         padding-top: 20px; 
     }
     .black-theme { margin: 0; border-radius: 8px; }
+    
+    /* [수정] 모바일에서는 세로로 1열 */
     .black-menu-grid { grid-template-columns: 1fr; }
 }
 
 
-/* =========================================================
-   2. PC / 태블릿 화면 설정 (새로 추가됨)
-   : 화면이 넓을 때(769px 이상) 가로 스크롤 적용
-   ========================================================= */
+/* [PC/태블릿] 769px 이상 (가로 배치) */
 @media (min-width: 769px) {
     
-    /* 1. 전체 레이아웃 */
+    /* 1. 전체 레이아웃 (profile-summary 비율 조정 및 content-area 과도한 확장 방지) */
     .mypage-container {
         display: flex;
-        flex-direction: row; /* 가로 배치 */
+        flex-direction: row; 
         align-items: flex-start;
         gap: 30px;
-        max-width: 1400px;
+        /* [수정] 전체 화면 너비 제한 */
+        max-width: 1200px; 
         margin: 40px auto;
         padding: 0 20px;
     }
 
-    /* 2. 사이드바 (프로필) 너비 및 비율 고정 */
+    /* 2. 사이드바 (프로필) 고정 너비 */
     .profile-summary {
-        width: 500px;      /* 기본 너비를 좀 더 넓게 */
-        min-width: 300px;  /* 줄어들지 않도록 최소 너비 고정 */
-        flex-shrink: 0;    /* 플렉스 박스 내에서 찌그러짐 방지 */
-        position: sticky;  /* 스크롤 시 따라옴 */
+        /* [수정] 500px은 너무 넓어 300px로 고정, 화면이 커져도 유지 */
+        width: 300px;      
+        min-width: 300px;  
+        flex-shrink: 0;    
+        position: sticky;  
         top: 20px;
     }
 
     /* 3. 메인 콘텐츠 영역 */
     .content-area {
-        flex-grow: 1;      /* 남은 공간 차지 */
-        min-width: 0;      /* 내부 스크롤 생성을 위한 필수 속성 */
+        flex-grow: 1;      
+        min-width: 0;      
         width: 100%;
     }
 
-    /* 4. BLACK 메뉴 그리드 (반응형 자동 배치) */
+    /* 4. 목표 대학 설정 (가로 스크롤 제거 -> 타일형 그리드) */
+    .univ-grid {
+        display: grid; /* [수정] Flex -> Grid */
+        /* 공간에 따라 자동 줄바꿈 (최소 220px 확보) */
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
+        gap: 15px;
+        overflow-x: visible; /* 스크롤 제거 */
+        padding-bottom: 0;
+    }
+    
+    /* 5. BLACK 메뉴 그리드 (가로 배치 원상복구) */
     .black-menu-grid {
         display: grid;
-        /* 핵심: 공간이 350px 이상 있으면 가로로 늘리고, 없으면 세로로 떨어짐 */
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); 
+        grid-template-columns: 1fr 1fr; /* [수정] 무조건 2열 가로 */
         gap: 20px;
-        margin-top: 30px;
-        width: 100%;
     }
 
-    /* 기타 테이블/그리드 스크롤 설정 (기존 유지) */
-    .univ-grid {
-        display: flex;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        gap: 15px;
-        padding-bottom: 15px;
-    }
-    .univ-slot {
-        min-width: 240px;
-        flex: 0 0 auto;
-    }
+    /* 테이블 스크롤 */
     .score-table-box {
         overflow-x: auto;
         white-space: nowrap;
