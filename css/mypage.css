@@ -537,6 +537,7 @@ input:focus { outline: none; border-color: #2563EB; }
         overflow-x: auto; 
         white-space: nowrap;
         padding-bottom: 5px;
+        margin: 0 auto;
     }
     .tab-btn { 
         font-size: 1rem; 
