@@ -419,7 +419,10 @@
     text-align: center; padding: 40px; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1; color: #64748b;
 }
 
-.content-header h2 { margin-top: 0; margin: 0 auto; color: #1e293b; }
+.content-header {
+    text-align: center;
+}
+.content-header h2 { margin-top: 0; color: #1e293b; }
 .content-header p { color: #64748b; margin-bottom: 30px; }
 
 /* [수정] 폼 컨테이너 너비 제한 (가로본능 방지) */
