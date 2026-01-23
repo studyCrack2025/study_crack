@@ -533,11 +533,12 @@ input:focus { outline: none; border-color: #2563EB; }
     .form-container { max-width: 100%; } /* 모바일은 꽉 차게 */
     
     .main-tabs { 
+        display: flex;
+        justify-content: center;
         gap: 10px; 
         overflow-x: auto; 
         white-space: nowrap;
         padding-bottom: 5px;
-        margin: 0 auto;
     }
     .tab-btn { 
         font-size: 1rem; 
