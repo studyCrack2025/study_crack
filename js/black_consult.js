@@ -1,17 +1,31 @@
-/* js/black_consult.js */
-const API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/"; 
+// js/black_consult.js
+
+// API 주소 변경
+const API_URL = CONFIG.api.base;
 const userId = localStorage.getItem('userId');
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (!userId) { alert("로그인이 필요합니다."); window.location.href = 'login.html'; return; }
+    if (!userId) { 
+        alert("로그인이 필요합니다."); 
+        window.location.href = 'login.html'; 
+        return; 
+    }
     loadUserData();
     loadConsultHistory();
 });
 
 // 유저 정보 로드 (좌측 사이드바)
 async function loadUserData() {
+    const token = localStorage.getItem('accessToken');
     try {
-        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ type: 'get_user', userId }) });
+        const res = await fetch(API_URL, { 
+            method: 'POST', 
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // ★ 토큰 추가
+            },
+            body: JSON.stringify({ type: 'get_user' }) 
+        });
         const data = await res.json();
         
         document.getElementById('userName').innerText = data.name || 'User';
@@ -42,11 +56,19 @@ async function loadUserData() {
 // 상담 리스트 로드
 async function loadConsultHistory() {
     const list = document.getElementById('qnaList');
+    const token = localStorage.getItem('accessToken');
     try {
-        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ type: 'get_user', userId }) });
+        const res = await fetch(API_URL, { 
+            method: 'POST', 
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // ★ 토큰 추가
+            },
+            body: JSON.stringify({ type: 'get_user' }) 
+        });
         const data = await res.json();
         
-        const history = data.consultHistory || []; // DB에 저장될 키 이름
+        const history = data.consultHistory || []; 
         list.innerHTML = '';
 
         if (history.length === 0) {
@@ -62,22 +84,36 @@ async function loadConsultHistory() {
             const statusClass = item.reply ? 'replied' : 'pending';
             const statusText = item.reply ? '답변 완료' : '답변 대기중';
             
+            // XSS 방지 처리 (간단 버전)
+            const safeTitle = (item.title || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            const safeContent = (item.content || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            const safeReply = item.reply ? item.reply.replace(/</g, "&lt;").replace(/>/g, "&gt;") : "아직 답변이 등록되지 않았습니다.";
+
             const div = document.createElement('div');
             div.className = 'qna-item';
-            div.onclick = () => alert("상세 보기 기능은 준비중입니다.\n(내용: " + item.content + ")"); // 추후 상세 모달 연결
+            
+            // 클릭 시 답변 확인 (간이 모달 역할)
+            div.onclick = () => {
+                const replyMsg = item.reply 
+                    ? `[담당 컨설턴트 답변]\n${safeReply}` 
+                    : `[상태: 접수 완료]\n담당 컨설턴트가 내용을 확인 중입니다.`;
+                alert(`Q. ${safeTitle}\n\n${safeContent}\n\n------------------------\n${replyMsg}`);
+            };
+
             div.innerHTML = `
                 <div class="qna-header">
                     <span>[${item.category}] ${date}</span>
                     <span class="qna-status ${statusClass}">${statusText}</span>
                 </div>
-                <div class="qna-title">${item.title}</div>
-                <div class="qna-snippet">${item.content}</div>
+                <div class="qna-title">${safeTitle}</div>
+                <div class="qna-snippet">${safeContent}</div>
             `;
             list.appendChild(div);
         });
 
     } catch(e) { 
-        list.innerHTML = '로드 실패';
+        console.error(e);
+        list.innerHTML = '<p style="text-align:center; color:red;">내역을 불러오지 못했습니다.</p>';
     }
 }
 
@@ -90,6 +126,7 @@ async function submitConsult() {
     const category = document.getElementById('consultCategory').value;
     const title = document.getElementById('consultTitle').value;
     const content = document.getElementById('consultContent').value;
+    const token = localStorage.getItem('accessToken');
 
     if(!title || !content) return alert("제목과 내용을 모두 입력해주세요.");
     if(!confirm("상담을 신청하시겠습니까?")) return;
@@ -97,16 +134,25 @@ async function submitConsult() {
     const reqData = {
         date: new Date().toISOString(),
         category, title, content,
-        reply: null // 답변은 아직 없음
+        reply: null 
     };
 
     try {
-        await fetch(API_URL, {
+        const res = await fetch(API_URL, {
             method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // ★ 토큰 추가
+            },
             body: JSON.stringify({ type: 'save_consult_qna', userId, data: reqData })
         });
-        alert("신청되었습니다. 담당 컨설턴트가 곧 답변을 드릴 예정입니다.");
-        closeConsultModal();
-        loadConsultHistory(); // 리스트 갱신
-    } catch(e) { alert("전송 실패"); }
+        
+        if(res.ok) {
+            alert("신청되었습니다. 담당 컨설턴트가 곧 답변을 드릴 예정입니다.");
+            closeConsultModal();
+            loadConsultHistory(); // 리스트 갱신
+        } else {
+            throw new Error("저장 실패");
+        }
+    } catch(e) { alert("전송 실패: " + e.message); }
 }

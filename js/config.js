@@ -11,6 +11,9 @@ const CONFIG = {
         
         // StudyCrack_Analysis 람다로 연결되는 주소
         analysis: `${GATEWAY_URL}/analysis` 
+        
+        // StudyCrack_Payment 람다로 연결되는 주소
+        payment: `${GATEWAY_URL}/payment`
     },
     
     // 기존 Cognito 설정

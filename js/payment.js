@@ -1,10 +1,10 @@
 // js/payment.js
 
-// ★ 1. 유저 정보를 가져올 API URL
-const USER_API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/";
+// ★ 1. 유저 정보를 가져올 API URL (Gateway)
+const USER_API_URL = CONFIG.api.base;
 
-// ★ 2. 결제 요청용 API URL
-const PAYMENT_API_URL = "https://dh6pn3wcxl5dp2dsi4kubqiuau0qnblq.lambda-url.ap-northeast-2.on.aws/"; 
+// ★ 2. 결제 요청용 API URL 
+const PAYMENT_API_URL = CONFIG.api.payment;
 
 let selectedProductUrl = null;
 let selectedProductName = "";
@@ -40,10 +40,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 유저 정보 가져와서 채우기
 async function fetchUserInfo(userId) {
+    const token = localStorage.getItem('accessToken');
     try {
         const response = await fetch(USER_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'get_user', userId: userId })
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // ★ 토큰 추가
+            },
+            body: JSON.stringify({ type: 'get_user' }) // userId는 토큰에서 추출
         });
         
         if (response.ok) {
@@ -52,8 +57,8 @@ async function fetchUserInfo(userId) {
             if (data.name) document.getElementById('name').value = data.name;
             if (data.phone) document.getElementById('phone').value = data.phone;
             
-            // 이메일은 로컬스토리지 우선
-            const email = localStorage.getItem('userEmail');
+            // 이메일은 로컬스토리지 우선, 없으면 DB값
+            const email = localStorage.getItem('userEmail') || data.email;
             if (email) document.getElementById('email').value = email;
         }
     } catch (error) {
@@ -104,6 +109,7 @@ async function processPayment() {
     const email = document.getElementById('email').value;
     
     const userId = localStorage.getItem('userId') || 'guest';
+    const token = localStorage.getItem('accessToken');
 
     if (!name || !rawPhone || !email) {
         alert("필수 정보를 모두 입력해주세요.");
@@ -127,7 +133,12 @@ async function processPayment() {
         // DB에 신청 내역 저장
         const response = await fetch(PAYMENT_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                // 결제 API가 Gateway 뒤에 있다면 토큰 필요, 아니라면 무시됨
+                // 안전을 위해 일단 보냄
+                'Authorization': `Bearer ${token}` 
+            },
             body: JSON.stringify({
                 type: 'submit_form',
                 uniqueId: uniqueId,
