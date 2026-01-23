@@ -34,12 +34,14 @@ function openTab(tabName) {
 // 성적 자동 환산 요청 (서버로 요청)
 // ============================================================
 async function requestScoreConversion(type) {
+    // 1. 필요한 값 수집
     const month = document.getElementById('examSelect').value;
     let subjectKey = type;
     let scoreVal = 0;
     let optVal = "";
     let subNameVal = "";
     
+    // ID 매핑
     let stdId = "", pctId = "", grdId = "";
 
     if (type === 'kor') {
@@ -56,20 +58,27 @@ async function requestScoreConversion(type) {
         subNameVal = document.getElementById('inq2Name').value;
     }
 
+    // 값 유효성 확인
     const stdEl = document.getElementById(stdId);
     if (!stdEl || !stdEl.value) return; 
     scoreVal = parseInt(stdEl.value);
 
-    // [중요] 토큰 가져오기
+    // [추가] 점수가 너무 터무니없는 경우(예: 음수, 200점 초과 등) 1차 필터링
+    if (scoreVal < 0 || scoreVal > 200) {
+        alert("유효하지 않은 점수입니다. (0~200점 사이)");
+        stdEl.value = "";
+        return;
+    }
+
     const token = localStorage.getItem('accessToken');
 
     try {
+        // 로딩 표시
         const pctEl = document.getElementById(pctId);
         const grdEl = document.getElementById(grdId);
-        if(pctEl) pctEl.placeholder = "...";
-        if(grdEl) grdEl.placeholder = "...";
+        if(pctEl) pctEl.value = ""; pctEl.placeholder = "...";
+        if(grdEl) grdEl.value = ""; grdEl.placeholder = "...";
         
-        // [수정] 토큰 헤더 포함 전송
         const response = await fetch(DATA_FETCH_URL, {
             method: 'POST',
             headers: { 
@@ -90,11 +99,30 @@ async function requestScoreConversion(type) {
         
         const data = await response.json(); 
         
+        // [수정] 데이터 검증 로직 강화
+        if (data.error || (!data.pct && !data.grd)) {
+            // 서버에서 에러 메시지를 보냈거나, 결과값이 없는 경우
+            alert("입력하신 표준점수에 해당하는 등급/백분위 데이터가 없습니다.\n(범위를 벗어났거나 해당 점수가 존재하지 않음)");
+            
+            // 입력값 초기화 및 포커스
+            stdEl.value = "";
+            if(pctEl) pctEl.placeholder = "-";
+            if(grdEl) grdEl.placeholder = "-";
+            stdEl.focus();
+            return;
+        }
+        
+        // 정상 적용
         if (data.pct && pctEl) pctEl.value = data.pct;
         if (data.grd && grdEl) grdEl.value = data.grd;
 
     } catch (e) {
         console.error("환산 실패:", e);
+        alert("점수 환산 중 오류가 발생했습니다.");
+        const pctEl = document.getElementById(pctId);
+        const grdEl = document.getElementById(grdId);
+        if(pctEl) pctEl.placeholder = "오류";
+        if(grdEl) grdEl.placeholder = "오류";
     }
 }
 
