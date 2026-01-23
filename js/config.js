@@ -10,7 +10,7 @@ const CONFIG = {
         base: `${GATEWAY_URL}/api`,        
         
         // StudyCrack_Analysis 람다로 연결되는 주소
-        analysis: `${GATEWAY_URL}/analysis` 
+        analysis: `${GATEWAY_URL}/analysis`,
         
         // StudyCrack_Payment 람다로 연결되는 주소
         payment: `${GATEWAY_URL}/payment`
