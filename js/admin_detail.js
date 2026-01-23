@@ -3,7 +3,6 @@
 const urlParams = new URLSearchParams(window.location.search);
 const targetUserId = urlParams.get('uid');
 const adminId = localStorage.getItem('userId');
-// ADMIN_API_URL은 config.js에서 가져오거나 여기에 직접 선언
 const ADMIN_API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/";
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -22,6 +21,17 @@ function switchTab(tabName) {
     const target = document.getElementById('tab_' + tabName);
     if(target) target.classList.add('active');
     if(event && event.currentTarget) event.currentTarget.classList.add('active');
+}
+
+// [보안] XSS 방지용 HTML 이스케이프 함수 (필수)
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 async function loadStudentDetail() {
@@ -48,7 +58,7 @@ async function loadStudentDetail() {
 function renderData(s) {
     if (!s) return;
 
-    // 1. 기본 정보
+    // 1. 기본 정보 (escapeHtml 적용)
     document.getElementById('viewName').innerText = s.name || '미입력';
     document.getElementById('viewEmail').innerText = s.email || '-';
     document.getElementById('viewSchool').innerText = s.school || '-';
@@ -62,7 +72,7 @@ function renderData(s) {
     document.getElementById('analysisEditor').value = s.analysisContent || '';
     document.getElementById('adminMemoInput').value = s.adminMemo || '';
 
-    // 3. 목표 대학 리스트 (날짜 포함)
+    // 3. 목표 대학 리스트
     renderTargetUnivs(s.targetUnivs || []);
 
     // 4. 각 탭 데이터 렌더링
@@ -72,7 +82,6 @@ function renderData(s) {
     renderPayments(s.payments || []);
 }
 
-// [목표 대학 리스트 렌더링]
 function renderTargetUnivs(list) {
     const container = document.getElementById('viewTargetUnivList');
     container.innerHTML = '';
@@ -86,13 +95,13 @@ function renderTargetUnivs(list) {
     validList.forEach((u, idx) => {
         const div = document.createElement('div');
         div.className = 'target-univ-item';
-        // 날짜 포맷팅
         const dateStr = u.date ? new Date(u.date).toLocaleDateString() + ' 선택' : '날짜 정보 없음';
         
+        // [보안] innerHTML 사용 시 escapeHtml 적용
         div.innerHTML = `
             <div>
-                <strong>${idx+1}. ${u.univ}</strong>
-                <div class="major">${u.major}</div>
+                <strong>${idx+1}. ${escapeHtml(u.univ)}</strong>
+                <div class="major">${escapeHtml(u.major)}</div>
             </div>
             <div class="date">${dateStr}</div>
         `;
@@ -100,27 +109,24 @@ function renderTargetUnivs(list) {
     });
 }
 
-// 상담/코칭 타임라인 렌더링 (상세 데이터 포함)
+// 상담/코칭 타임라인 (여기가 XSS 취약점이 가장 많은 곳이므로 주의)
 function renderConsultHistory(weekly, deep) {
     const container = document.getElementById('consultTimeline');
     container.innerHTML = '';
 
     let allItems = [];
     
-    // 주간 데이터
     if (Array.isArray(weekly)) {
         weekly.forEach(w => {
             allItems.push({ type: 'weekly', date: w.date, title: w.title || '주간 학습 점검', data: w });
         });
     }
-    // 심층 데이터
     if (Array.isArray(deep)) {
         deep.forEach(d => {
             allItems.push({ type: 'deep', date: d.date, title: '심층 코칭 요청', data: d });
         });
     }
 
-    // 최신순 정렬 (날짜 내림차순)
     allItems.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     if (allItems.length === 0) {
@@ -135,11 +141,9 @@ function renderConsultHistory(weekly, deep) {
         const typeLabel = isWeekly ? 'WEEKLY CHECK' : 'DEEP COACHING';
         
         let contentHtml = '';
-        
+        const d = item.data;
+
         if (isWeekly) {
-            const d = item.data;
-            
-            // 과목별 상세 테이블 생성
             let detailsHtml = '';
             if (d.studyTime && Array.isArray(d.studyTime.details)) {
                 detailsHtml = `<table style="width:100%; font-size:0.85rem; border-collapse: collapse; margin-top:8px; margin-bottom:8px;">
@@ -152,12 +156,11 @@ function renderConsultHistory(weekly, deep) {
                 
                 d.studyTime.details.forEach(sub => {
                     const rate = sub.plan > 0 ? Math.min((sub.act / sub.plan) * 100, 100).toFixed(0) : 0;
-                    // 달성률 색상 (높으면 초록, 낮으면 빨강)
                     const color = rate >= 100 ? '#166534' : (rate >= 80 ? '#1e40af' : '#b91c1c');
                     
                     detailsHtml += `
                     <tr style="border-bottom:1px solid #f1f5f9;">
-                        <td style="padding:4px;">${sub.subject}</td>
+                        <td style="padding:4px;">${escapeHtml(sub.subject)}</td>
                         <td style="padding:4px; text-align:center;">${sub.plan}H</td>
                         <td style="padding:4px; text-align:center;">${sub.act}H</td>
                         <td style="padding:4px; text-align:center; font-weight:bold; color:${color};">${rate}%</td>
@@ -165,6 +168,10 @@ function renderConsultHistory(weekly, deep) {
                 });
                 detailsHtml += `</table>`;
             }
+
+            // [보안] 코멘트, 이유 등 사용자가 쓴 글은 모두 escapeHtml 처리
+            const safeComment = escapeHtml(d.comment);
+            const safeReasons = d.trend?.reasons ? d.trend.reasons.map(r => escapeHtml(r)).join(', ') : '';
 
             contentHtml = `
                 <div style="margin-bottom:8px;">
@@ -175,11 +182,11 @@ function renderConsultHistory(weekly, deep) {
                 ${detailsHtml}
 
                 <div style="margin-top:10px; padding:10px; background:#fff; border-radius:6px; border:1px solid #e2e8f0;">
-                    <strong>💬 코멘트:</strong> ${d.comment}
+                    <strong>💬 코멘트:</strong> ${safeComment}
                 </div>
 
                 <div class="hidden-detail" id="detail-${idx}">
-                    <p><strong>- 모의고사:</strong> ${d.mockExam?.type === 'none' ? '미응시' : `응시 (${d.mockExam?.type})`}</p>
+                    <p><strong>- 모의고사:</strong> ${d.mockExam?.type === 'none' ? '미응시' : `응시 (${escapeHtml(d.mockExam?.type)})`}</p>
                     ${d.mockExam?.type !== 'none' && d.mockExam?.scores ? 
                         `<p style="font-size:0.85rem; margin-left:10px; color:#475569;">
                             국:${d.mockExam.scores.kor} / 수:${d.mockExam.scores.math} / 영:${d.mockExam.scores.eng} / 
@@ -187,18 +194,18 @@ function renderConsultHistory(weekly, deep) {
                         </p>` : ''
                     }
                     <p><strong>- 학업 추이:</strong> ${d.trend?.status === 'up' ? '📈 상승' : (d.trend?.status === 'down' ? '📉 하락' : '➖ 유지')}</p>
-                    ${d.trend?.status === 'down' && d.trend?.reasons ? `<p style="font-size:0.85rem; margin-left:10px; color:#ef4444;">└ 원인: ${d.trend.reasons.join(', ')}</p>` : ''}
+                    ${d.trend?.status === 'down' && safeReasons ? `<p style="font-size:0.85rem; margin-left:10px; color:#ef4444;">└ 원인: ${safeReasons}</p>` : ''}
                 </div>
                 <div class="detail-toggle" onclick="toggleDetail('detail-${idx}')">상세 정보 더보기 ▼</div>
             `;
         } else {
-            const d = item.data;
+            // Deep Coaching
             contentHtml = `
-                <div><strong>[계획 점검]</strong> ${d.plan}</div>
-                <div style="margin-top:5px;"><strong>[방향성]</strong> ${d.direction}</div>
+                <div><strong>[계획 점검]</strong> ${escapeHtml(d.plan)}</div>
+                <div style="margin-top:5px;"><strong>[방향성]</strong> ${escapeHtml(d.direction)}</div>
                 <div class="hidden-detail" id="detail-${idx}">
-                    <p><strong>- 취약 과목:</strong> ${d.subject}</p>
-                    <p><strong>- 기타/멘탈:</strong> ${d.etc}</p>
+                    <p><strong>- 취약 과목:</strong> ${escapeHtml(d.subject)}</p>
+                    <p><strong>- 기타/멘탈:</strong> ${escapeHtml(d.etc)}</p>
                 </div>
                 <div class="detail-toggle" onclick="toggleDetail('detail-${idx}')">전체 내용 보기 ▼</div>
             `;
@@ -229,15 +236,16 @@ function toggleDetail(id) {
     }
 }
 
-// 기존 함수들 (Tier, Payment, Qual, Quan, Save)
 function renderTierBadge(payments) {
     const area = document.getElementById('tierBadgeArea');
     let html = '<span class="tier-badge" style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1;">FREE USER</span>';
+    
     if (payments && payments.length > 0) {
         const paid = payments.filter(p => p.status === 'paid');
         if (paid.length > 0) {
             paid.sort((a, b) => new Date(b.date) - new Date(a.date));
             const last = (paid[0].product || "").toLowerCase();
+            
             if (last.includes('black')) html = '<span class="tier-badge" style="background: linear-gradient(to bottom right, #ffffff, #f8fafc); border: 2px solid #171717; color: #171717; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">BLACK TIER</span>';
             else if (last.includes('pro')) html = '<span class="tier-badge" style="background: linear-gradient(135deg, #F59E0B, #FCD34D); border: 2px solid #F59E0B; color: #78350f;">PRO TIER</span>';
             else if (last.includes('standard')) html = '<span class="tier-badge" style="background: linear-gradient(135deg, #94A3B8, #CBD5E1); border: 2px solid #64748B; color: #0F172A;">STANDARD TIER</span>';
@@ -257,7 +265,8 @@ function updateAnalysisBadge(status) {
 function renderQualitativeDetail(q) {
     const area = document.getElementById('qualContentArea');
     if (!q) { area.innerHTML = '<p style="text-align:center; color:#94a3b8;">데이터가 없습니다.</p>'; return; }
-    const v = (val) => val ? val : '-';
+    
+    const v = (val) => val ? escapeHtml(val) : '-'; // [보안] 여기도 escape
     let html = `<div class="qual-section"><div class="qual-head">📍 현재 상황</div><div class="qual-grid">
         <div class="qual-item"><span class="qual-label">신분</span><div>${v(q.status)}</div></div>
         <div class="qual-item"><span class="qual-label">계열</span><div>${v(q.stream)}</div></div>
@@ -296,7 +305,7 @@ function renderPayments(p) {
         lastDateEl.innerText = new Date(sortedP[0].date).toLocaleDateString();
         sortedP.forEach(pay => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${pay.product}</td><td>${new Date(pay.date).toLocaleString()}</td><td style="text-align:right;">${parseInt(pay.amount).toLocaleString()}원</td>`;
+            tr.innerHTML = `<td>${escapeHtml(pay.product)}</td><td>${new Date(pay.date).toLocaleString()}</td><td style="text-align:right;">${parseInt(pay.amount).toLocaleString()}원</td>`;
             listBody.appendChild(tr);
         });
     } else {
