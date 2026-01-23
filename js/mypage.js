@@ -142,7 +142,7 @@ async function fetchUnivData() {
         const response = await fetch(UNIV_DATA_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'get_all_data' }) 
+            body: JSON.stringify({ type: 'get_univ_list_only' }) 
         });
 
         if (!response.ok) throw new Error(`서버 응답 오류`);
@@ -475,30 +475,32 @@ async function saveTargetUnivs() {
     } catch(e) { console.error(e); alert("통신 오류 발생"); }
 }
 
-// === 목표 대학 기본 분석 (디자인 복구) ===
+// === 목표 대학 분석 UI 업데이트 (서버 사이드 계산 결과 렌더링) ===
 async function updateAnalysisUI() {
     const container = document.getElementById('univAnalysisResult');
     if (!container) return;
 
-    const userId = localStorage.getItem('userId');
+    // 타겟 대학이 없는 경우
     const hasTargets = userTargetUnivs && userTargetUnivs.some(u => u && u.univ);
-
     if (!hasTargets) {
         container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px;">목표 대학을 설정하면 분석 결과가 나타납니다.</p>';
         return;
     }
-
-    // 1. 로딩 UI 표시
+    
+    // 로딩 표시
     container.innerHTML = `
         <div style="text-align:center; padding:40px; color:#64748b;">
             <i class="fas fa-circle-notch fa-spin" style="font-size:2rem; color:#3b82f6; margin-bottom:10px;"></i>
             <p>AI가 합격 가능성을 분석 중입니다...</p>
         </div>`;
 
+    const userId = localStorage.getItem('userId');
+
     try {
-        // 2. 서버에 분석 요청 (내 점수와 데이터를 보내지 않고, ID만 보냄 -> 보안 강화)
+        // [수정됨] 서버에 분석 요청 (userId만 전송, 점수 계산 로직은 서버에 있음)
         const response = await fetch(UNIV_DATA_API_URL, {
             method: 'POST',
+            // API Gateway CORS 설정에 따라 mode: 'cors' 필요할 수 있음
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ type: 'analyze_my_targets', userId: userId })
         });
@@ -506,8 +508,6 @@ async function updateAnalysisUI() {
         if (!response.ok) throw new Error("분석 API 호출 실패");
 
         const data = await response.json(); 
-        // 서버 응답 예시: { myScore: 385, results: [{ univ: "A대", status: "안정", diff: "+5.2", msg: "..." }, ...] }
-
         const { myScore, results } = data;
 
         if (!results || results.length === 0) {
@@ -515,41 +515,52 @@ async function updateAnalysisUI() {
             return;
         }
 
-        // 3. 결과 렌더링 (계산 로직 없이 받아온 텍스트를 그대로 표시)
+        // 결과 렌더링
         let html = '';
         
         results.forEach((res, idx) => {
-            // 서버에서 받은 boolean 값(is_safe)으로 색상 결정
-            const badgeClass = res.is_safe ? 'univ-badge-safe' : 'univ-badge-danger'; 
-            const diffColor = res.is_safe ? '#10b981' : '#ef4444'; // 초록 vs 빨강
-            const diffText = parseFloat(res.diff) >= 0 ? `+${res.diff}` : res.diff;
-
-            // 차트 색상도 서버 결과에 따라 단순화
-            const chartColor = res.is_safe ? '#10b981' : '#ef4444';
+            // 서버에서 받은 결과(is_safe)에 따라 색상 결정
+            // is_safe가 true면 초록색(안전), false면 빨간색(위험)
+            const isSafe = res.is_safe;
+            const statusColor = isSafe ? '#10b981' : '#ef4444'; // Green vs Red
+            const bgBadge = isSafe ? '#ecfdf5' : '#fef2f2'; // 연한 배경
+            
+            // 점수 차이 텍스트 포맷팅 (+ 기호 붙이기)
+            const diffVal = parseFloat(res.diff);
+            const diffText = diffVal >= 0 ? `+${diffVal}` : diffVal;
+            const diffClass = diffVal >= 0 ? 'plus' : 'minus'; // CSS 클래스 (기존 스타일 유지)
 
             html += `
             <div class="analysis-card">
                 <div class="analysis-header">
                     <h4>${idx+1}지망: ${res.univ} <small>${res.major}</small></h4>
-                    <span class="univ-badge" style="background:${res.is_safe ? '#ecfdf5' : '#fef2f2'}; color:${diffColor}; padding:4px 10px; border-radius:20px; font-size:0.8rem; font-weight:bold;">
+                    <span class="univ-badge" style="background:${bgBadge}; color:${statusColor}; padding:4px 10px; border-radius:20px; font-size:0.8rem; font-weight:bold; border:1px solid ${statusColor}">
                         ${res.status}
                     </span>
                 </div>
                 <div class="analysis-body">
                     <div class="score-table-box">
                         <table class="score-compare-table">
-                            <tr><th>내 점수</th><th>점수 차</th><th>AI 코멘트</th></tr>
+                            <tr><th>구분</th><th>결과</th><th>비고</th></tr>
                             <tr>
-                                <td class="score-val" style="color:#2563eb;">${myScore}</td>
-                                <td class="score-val"><span style="color:${diffColor}; font-weight:bold;">${diffText}</span></td>
-                                <td style="font-size:0.9rem; color:#475569;">${res.msg}</td>
+                                <td>판정</td>
+                                <td class="score-val" style="font-weight:bold; color:${statusColor}">${res.status}</td>
+                                <td style="font-size:0.85rem;">${res.msg}</td>
+                            </tr>
+                            <tr class="score-row highlight">
+                                <td>점수 차이</td>
+                                <td class="score-val"><span class="diff-badge ${diffClass}" style="color:${statusColor}">${diffText}</span></td>
+                                <td style="font-size:0.85rem; color:#64748b;">내 점수: ${myScore}</td>
                             </tr>
                         </table>
                     </div>
                     <div class="chart-box">
-                        <div class="pie-chart" style="background: conic-gradient(${chartColor} 0% 100%); opacity: 0.8;"></div>
-                        <div class="chart-legend" style="margin-top:5px; font-size:0.8rem; color:#64748b;">
-                            ${res.status}권
+                        <div class="pie-chart" style="background: conic-gradient(${statusColor} 0% 100%); opacity:0.9;"></div>
+                        <div class="chart-legend" style="margin-top:8px;">
+                            <div class="legend-item">
+                                <span class="color-dot" style="background:${statusColor}"></span>
+                                ${res.status}권
+                            </div>
                         </div>
                     </div>
                 </div>

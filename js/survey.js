@@ -1,25 +1,12 @@
 // js/survey.js
 
 const SURVEY_API_URL = "https://txbtj65lvfsbprfcfg6dlgruhm0iyjjg.lambda-url.ap-northeast-2.on.aws/";
-// [주의] 데이터를 가져올 람다 함수(S3 Proxy) 주소. 만약 mypage와 다르다면 수정 필요.
-// 같은 람다를 쓴다면 아래 주소를 사용하세요. (파일명은 요청시 보냄)
+// [주의] 데이터를 가져올 람다 함수(Analysis/Proxy) 주소
 const DATA_FETCH_URL = "https://ftbrlbyaprizjcp5w7b2g5t6sq0srwem.lambda-url.ap-northeast-2.on.aws/";
 
-// 시험별 참조할 데이터 파일 매핑 (미래 확장성 고려)
-const SCORE_FILE_MAP = {
-    'mar': '2026_KSAT_scoreboard.json',
-    'may': '2026_KSAT_scoreboard.json',
-    'jun': '2026_KSAT_scoreboard.json',
-    'jul': '2026_KSAT_scoreboard.json',
-    'sep': '2026_KSAT_scoreboard.json',
-    'oct': '2026_KSAT_scoreboard.json',
-    'csat': '2026_KSAT_scoreboard.json'
-};
-
 let examScores = {}; 
-let scoreDataMap = {}; // 로드된 성적표 데이터 (빠른 검색용)
 
-console.log("🚀 [survey.js] Loaded");
+console.log("🚀 [survey.js] Loaded (Secure Mode)");
 
 document.addEventListener('DOMContentLoaded', () => {
     const userId = localStorage.getItem('userId');
@@ -32,9 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchUserData(userId);
     setupUI();
     
-    // 초기 로딩 시 현재 선택된 시험의 데이터 가져오기
-    loadScoreboardData(); 
-
+    // 자동 계산을 위한 이벤트 리스너 등록
+    setupAutoCalculation();
+    
     setTimeout(checkQualitativeForm, 500);
 });
 
@@ -45,119 +32,88 @@ function openTab(tabName) {
     event.currentTarget.classList.add('active');
 }
 
-// === 데이터 로드 (성적표 JSON) ===
-async function loadScoreboardData() {
+// ============================================================
+// 성적 자동 환산 요청 (서버로 요청)
+// 사용자가 점수를 입력하면 서버에서 등급/백분위를 받아옵니다.
+// ============================================================
+async function requestScoreConversion(type) {
+    // 1. 필요한 값 수집
     const month = document.getElementById('examSelect').value;
-    const fileName = SCORE_FILE_MAP[month];
+    let subjectKey = type;
+    let scoreVal = 0;
+    let optVal = "";
+    let subNameVal = "";
+    
+    // ID 매핑
+    let stdId = "", pctId = "", grdId = "";
 
-    if (!fileName) {
-        console.warn("해당 시험에 대한 데이터 파일이 정의되지 않았습니다.");
-        return;
+    if (type === 'kor') {
+        stdId = "korStd"; pctId = "korPct"; grdId = "korGrd";
+        optVal = document.getElementById('koreanOpt').value;
+    } else if (type === 'math') {
+        stdId = "mathStd"; pctId = "mathPct"; grdId = "mathGrd";
+        optVal = document.getElementById('mathOpt').value;
+    } else if (type === 'inq1') {
+        stdId = "inq1Std"; pctId = "inq1Pct"; grdId = "inq1Grd";
+        subNameVal = document.getElementById('inq1Name').value;
+    } else if (type === 'inq2') {
+        stdId = "inq2Std"; pctId = "inq2Pct"; grdId = "inq2Grd";
+        subNameVal = document.getElementById('inq2Name').value;
     }
 
+    // 값 유효성 확인
+    const stdEl = document.getElementById(stdId);
+    if (!stdEl || !stdEl.value) return; // 점수가 없으면 요청 안함
+    scoreVal = parseInt(stdEl.value);
+
+    // 2. 서버 요청
     try {
-        console.log(`📥 성적 데이터 로드 중... (${fileName})`);
-        
-        // 람다에 'get_s3_file' 타입으로 요청 (람다가 이를 지원해야 함)
-        // 만약 람다가 파일명을 직접 받지 않는다면, 람다 코드를 수정하거나 
-        // 람다가 알아서 'type: get_scoreboard' 등으로 처리하도록 맞춰야 합니다.
-        // 여기서는 기존 fetchUnivData와 비슷한 방식으로 요청합니다.
+        // 로딩 중 표시 (사용자 경험 개선)
+        const pctEl = document.getElementById(pctId);
+        const grdEl = document.getElementById(grdId);
+        if(pctEl) pctEl.placeholder = "...";
+        if(grdEl) grdEl.placeholder = "...";
         
         const response = await fetch(DATA_FETCH_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                type: 'get_s3_file', // ★ Lambda에서 이 타입을 처리하도록 로직 추가 필요 (아래 설명 참조)
-                key: fileName 
+            body: JSON.stringify({
+                type: 'convert_score', // [중요] Analysis Lambda에 새로 만든 기능 호출
+                month: month,
+                subject: subjectKey,
+                score: scoreVal,
+                opt: optVal,
+                subName: subNameVal
             })
         });
 
-        if (!response.ok) throw new Error("서버 응답 오류");
-        const json = await response.json();
+        if (!response.ok) throw new Error("Conversion failed");
         
-        // 데이터 파싱 및 맵핑 (검색 속도 최적화)
-        parseScoreData(json);
+        const data = await response.json(); // { pct: "98", grd: "1" }
+        
+        // 3. 결과 적용
+        if (data.pct && pctEl) pctEl.value = data.pct;
+        if (data.grd && grdEl) grdEl.value = data.grd;
 
     } catch (e) {
-        console.error("성적 데이터 로드 실패:", e);
-        // 실패해도 입력은 가능해야 하므로 조용히 실패 처리
+        console.error("환산 실패:", e);
     }
 }
 
-// JSON 데이터를 검색하기 쉬운 구조로 변환
-function parseScoreData(jsonList) {
-    scoreDataMap = {}; // 초기화
-
-    // 구조: scoreDataMap[과목명][표준점수] = { pct, grd }
-    jsonList.forEach(area => {
-        if (area.데이터 && Array.isArray(area.데이터)) {
-            area.데이터.forEach(row => {
-                const subject = row["과목"];
-                const std = row["표준점수"];
-                
-                if (!scoreDataMap[subject]) {
-                    scoreDataMap[subject] = {};
-                }
-                
-                scoreDataMap[subject][std] = {
-                    pct: row["백분위(성적표)"],
-                    grd: row["등급(성적표)"]
-                };
-            });
-        }
-    });
-    console.log("✅ 성적 데이터 파싱 완료");
-}
-
-// === 자동 계산 로직 ===
-function calculateScore(type) {
-    // 1. 과목명 결정
-    let subjectName = "";
-    let stdInputId = "";
-    let pctInputId = "";
-    let grdInputId = "";
-
-    if (type === 'kor') {
-        subjectName = "국어"; // 국어는 선택과목 상관없이 공통 등급 산출이 일반적
-        stdInputId = "korStd"; pctInputId = "korPct"; grdInputId = "korGrd";
-    } else if (type === 'math') {
-        const opt = document.getElementById('mathOpt').value;
-        if (opt === 'mi') subjectName = "수학(미적)";
-        else if (opt === 'hwak') subjectName = "수학(확통)";
-        else if (opt === 'ki') subjectName = "수학(기하)";
-        else return; // 선택 안함
-        
-        stdInputId = "mathStd"; pctInputId = "mathPct"; grdInputId = "mathGrd";
-    } else if (type === 'inq1') {
-        subjectName = document.getElementById('inq1Name').value;
-        stdInputId = "inq1Std"; pctInputId = "inq1Pct"; grdInputId = "inq1Grd";
-    } else if (type === 'inq2') {
-        subjectName = document.getElementById('inq2Name').value;
-        stdInputId = "inq2Std"; pctInputId = "inq2Pct"; grdInputId = "inq2Grd";
-    }
-
-    if (!subjectName) return;
-
-    // 2. 표준점수 가져오기
-    const stdVal = parseInt(document.getElementById(stdInputId).value);
-    if (isNaN(stdVal)) {
-        // 비어있으면 초기화
-        document.getElementById(pctInputId).value = "";
-        document.getElementById(grdInputId).value = "";
-        return;
-    }
-
-    // 3. 데이터 조회 및 적용
-    if (scoreDataMap[subjectName] && scoreDataMap[subjectName][stdVal]) {
-        const data = scoreDataMap[subjectName][stdVal];
-        document.getElementById(pctInputId).value = data.pct;
-        document.getElementById(grdInputId).value = data.grd;
-    } else {
-        // 데이터가 없는 경우 (범위 벗어남 등)
-        console.warn(`데이터 없음: ${subjectName} - ${stdVal}점`);
-        document.getElementById(pctInputId).value = "";
-        document.getElementById(grdInputId).value = "";
-    }
+// 이벤트 리스너 설정
+// 입력 필드의 값이 변경(change)될 때마다 서버에 환산 요청
+function setupAutoCalculation() {
+    // 국어
+    document.getElementById('korStd')?.addEventListener('change', () => requestScoreConversion('kor'));
+    // 수학 (점수 변경 시, 선택과목 변경 시)
+    document.getElementById('mathStd')?.addEventListener('change', () => requestScoreConversion('math'));
+    document.getElementById('mathOpt')?.addEventListener('change', () => requestScoreConversion('math')); 
+    // 탐구
+    document.getElementById('inq1Std')?.addEventListener('change', () => requestScoreConversion('inq1'));
+    document.getElementById('inq2Std')?.addEventListener('change', () => requestScoreConversion('inq2'));
+    // 탐구 과목명이 바뀌어도 재계산 필요할 수 있음
+    document.getElementById('inq1Name')?.addEventListener('change', () => requestScoreConversion('inq1'));
+    document.getElementById('inq2Name')?.addEventListener('change', () => requestScoreConversion('inq2'));
 }
 
 // === UI 설정 ===
@@ -319,21 +275,15 @@ async function saveQualitative() {
     } catch (e) { alert("에러 발생: " + e.message); }
 }
 
-// 화면에 성적 불러오기 (및 자동 계산 트리거)
+// 화면에 성적 불러오기
 function loadExamData() {
     const month = document.getElementById('examSelect').value;
-    
-    // 시험 종류가 바뀌면 해당 데이터 파일을 다시 로드해야 함 (구조상 파일이 나뉘어져 있다면)
-    loadScoreboardData(); 
 
     const d = examScores[month] || {};
     const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
 
     setVal('koreanOpt', d.kor?.opt || 'none');
     setVal('korStd', d.kor?.std); 
-    // 저장된 값이 있더라도 자동계산이 우선인지, 저장값이 우선인지?
-    // 보통은 저장된 값을 보여주지만, 데이터 일관성을 위해 재계산하는 것이 좋을 수도 있음.
-    // 여기서는 저장된 값을 우선 보여줌.
     setVal('korPct', d.kor?.pct); setVal('korGrd', d.kor?.grd);
     
     setVal('mathOpt', d.math?.opt || 'none');
