@@ -67,7 +67,6 @@
 
             <div class="form-section">
                 <h4>📌 원서 가치관</h4>
-                
                 <label class="input-label">올해 반드시 대학을 가야 하나요? <span class="req">*</span></label>
                 <select id="mustGoCollege" required>
                     <option value="">선택하세요</option>
@@ -194,7 +193,7 @@
                                     <option value="un">언어와매체</option>
                                 </select>
                             </td>
-                            <td><input type="number" id="korStd" oninput="calculateScore('kor')"></td>
+                            <td><input type="number" id="korStd" onchange="requestScoreConversion('kor')"></td>
                             <td><input type="number" id="korPct" readonly class="readonly-input"></td>
                             <td><input type="number" id="korGrd" readonly class="readonly-input"></td>
                         </tr>
@@ -202,14 +201,14 @@
                         <tr>
                             <td>수학</td>
                             <td>
-                                <select id="mathOpt" onchange="calculateScore('math')">
+                                <select id="mathOpt" onchange="requestScoreConversion('math')">
                                     <option value="none">선택</option>
                                     <option value="hwak">확률과통계</option>
                                     <option value="mi">미적분</option>
                                     <option value="ki">기하</option>
                                 </select>
                             </td>
-                            <td><input type="number" id="mathStd" oninput="calculateScore('math')"></td>
+                            <td><input type="number" id="mathStd" onchange="requestScoreConversion('math')"></td>
                             <td><input type="number" id="mathPct" readonly class="readonly-input"></td>
                             <td><input type="number" id="mathGrd" readonly class="readonly-input"></td>
                         </tr>
@@ -233,7 +232,7 @@
                         <tr>
                             <td>탐구1</td>
                             <td>
-                                <select id="inq1Name" style="width: 100%;" onchange="calculateScore('inq1')">
+                                <select id="inq1Name" style="width: 100%;" onchange="requestScoreConversion('inq1')">
                                     <option value="">과목 선택</option>
                                     <optgroup label="사회탐구">
                                         <option value="생활과 윤리">생활과 윤리</option>
@@ -258,7 +257,7 @@
                                     </optgroup>
                                 </select>
                             </td>
-                            <td><input type="number" id="inq1Std" oninput="calculateScore('inq1')"></td>
+                            <td><input type="number" id="inq1Std" onchange="requestScoreConversion('inq1')"></td>
                             <td><input type="number" id="inq1Pct" readonly class="readonly-input"></td>
                             <td><input type="number" id="inq1Grd" readonly class="readonly-input"></td>
                         </tr>
@@ -266,7 +265,7 @@
                         <tr>
                             <td>탐구2</td>
                             <td>
-                                <select id="inq2Name" style="width: 100%;" onchange="calculateScore('inq2')">
+                                <select id="inq2Name" style="width: 100%;" onchange="requestScoreConversion('inq2')">
                                     <option value="">과목 선택</option>
                                     <optgroup label="사회탐구">
                                         <option value="생활과 윤리">생활과 윤리</option>
@@ -291,7 +290,7 @@
                                     </optgroup>
                                 </select>
                             </td>
-                            <td><input type="number" id="inq2Std" oninput="calculateScore('inq2')"></td>
+                            <td><input type="number" id="inq2Std" onchange="requestScoreConversion('inq2')"></td>
                             <td><input type="number" id="inq2Pct" readonly class="readonly-input"></td>
                             <td><input type="number" id="inq2Grd" readonly class="readonly-input"></td>
                         </tr>

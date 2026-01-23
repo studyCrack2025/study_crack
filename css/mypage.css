@@ -511,22 +511,130 @@ input:focus { outline: none; border-color: #2563EB; }
 /* =========================================
    9. 모바일 반응형 (Media Queries)
    ========================================= */
+/* =========================================================
+   1. 모바일 화면 설정 (기존 코드 유지)
+   : 화면이 좁을 때(768px 이하) 세로로 길게 배치
+   ========================================================= */
 @media (max-width: 768px) {
-    .mypage-container { flex-direction: column; padding: 10px; margin-top: 20px; }
-    .profile-summary { width: 100%; }
-    .content-area { width: 100%; padding: 20px; min-height: auto; }
+    .mypage-container { 
+        flex-direction: column; 
+        padding: 10px; 
+        margin-top: 20px; 
+    }
+    .profile-summary { 
+        width: 100%; 
+        margin-bottom: 20px; /* 사이드바와 본문 사이 간격 추가 */
+    }
+    .content-area { 
+        width: 100%; 
+        padding: 20px; 
+        min-height: auto; 
+    }
     
-    .main-tabs { gap: 20px; }
-    .tab-btn { font-size: 1rem; padding: 10px 5px; }
+    .main-tabs { 
+        gap: 10px; /* 간격 조정 */
+        overflow-x: auto; /* 탭 많으면 스크롤 */
+        white-space: nowrap;
+        padding-bottom: 5px;
+    }
+    .tab-btn { 
+        font-size: 1rem; 
+        padding: 10px 15px; 
+        flex: 0 0 auto; /* 탭 찌그러짐 방지 */
+    }
 
     .solution-menu { flex-wrap: wrap; gap: 10px; }
     .sol-btn { flex: 1 1 45%; font-size: 0.85rem; padding: 12px; }
     
-    .univ-grid { grid-template-columns: 1fr; }
+    .univ-grid { 
+        display: grid; /* 모바일은 그냥 세로 리스트처럼 보이게 Grid 유지 */
+        grid-template-columns: 1fr; 
+        gap: 15px;
+    }
+    
     .analysis-body { flex-direction: column; }
-    .chart-box { width: 100%; margin-top: 20px; border-top: 1px dashed #e2e8f0; padding-top: 20px; }
+    .chart-box { 
+        width: 100%; 
+        margin-top: 20px; 
+        border-top: 1px dashed #e2e8f0; 
+        padding-top: 20px; 
+    }
     .black-theme { margin: 0; border-radius: 8px; }
     .black-menu-grid { grid-template-columns: 1fr; }
+}
+
+
+/* =========================================================
+   2. PC / 태블릿 화면 설정 (새로 추가됨)
+   : 화면이 넓을 때(769px 이상) 가로 스크롤 적용
+   ========================================================= */
+@media (min-width: 769px) {
+    
+    /* 전체 레이아웃: 사이드바(왼쪽) + 콘텐츠(오른쪽) 가로 배치 */
+    .mypage-container {
+        display: flex;
+        flex-direction: row; /* 가로 정렬 */
+        align-items: flex-start;
+        gap: 30px;
+        max-width: 1400px; /* 너무 넓어지는 것 방지 */
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    /* 사이드바 고정 너비 */
+    .profile-summary {
+        width: 280px;      /* 너비 고정 */
+        flex-shrink: 0;    /* 줄어들지 않음 */
+        position: sticky;  /* 스크롤 내려도 따라오게 (선택사항) */
+        top: 20px;
+    }
+
+    /* 오른쪽 콘텐츠 영역 */
+    .content-area {
+        flex-grow: 1;      /* 남은 공간 다 차지 */
+        min-width: 0;      /* ★핵심: 내부 콘텐츠 넘침 시 스크롤 생성을 위해 필수 */
+        width: 100%;
+    }
+
+    /* ★ 목표 대학 리스트 가로 스크롤 적용 */
+    .univ-grid {
+        display: flex;           /* Flexbox로 변경 (가로 배치) */
+        flex-wrap: nowrap;       /* 줄바꿈 금지 -> 옆으로 계속 나열 */
+        overflow-x: auto;        /* 넘치면 가로 스크롤 생성 */
+        gap: 15px;               /* 카드 사이 간격 */
+        padding-bottom: 15px;    /* 스크롤바 공간 확보 */
+        
+        /* 스크롤바 디자인 (선택사항) */
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 transparent;
+    }
+
+    /* 대학 카드 하나의 크기 고정 */
+    .univ-slot {
+        min-width: 240px;  /* 카드가 240px 이하로 찌그러지지 않음 */
+        flex: 0 0 auto;    /* 크기 고정 */
+    }
+
+    /* 분석 결과 테이블 가로 스크롤 */
+    .score-table-box {
+        overflow-x: auto;
+        white-space: nowrap; /* 내용 줄바꿈 방지 */
+    }
+    
+    /* 웹킷 브라우저(크롬, 사파리) 스크롤바 예쁘게 */
+    .univ-grid::-webkit-scrollbar,
+    .score-table-box::-webkit-scrollbar {
+        height: 8px;
+    }
+    .univ-grid::-webkit-scrollbar-thumb,
+    .score-table-box::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1; /* 스크롤바 색상 */
+        border-radius: 4px;
+    }
+    .univ-grid::-webkit-scrollbar-track,
+    .score-table-box::-webkit-scrollbar-track {
+        background-color: transparent;
+    }
 }
 
 @media (max-width: 600px) {
