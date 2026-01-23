@@ -583,7 +583,7 @@ input:focus { outline: none; border-color: #2563EB; }
 
     /* 2. 사이드바 (프로필) 너비 및 비율 고정 */
     .profile-summary {
-        width: 300px;      /* 기본 너비를 좀 더 넓게 */
+        width: 500px;      /* 기본 너비를 좀 더 넓게 */
         min-width: 300px;  /* 줄어들지 않도록 최소 너비 고정 */
         flex-shrink: 0;    /* 플렉스 박스 내에서 찌그러짐 방지 */
         position: sticky;  /* 스크롤 시 따라옴 */
