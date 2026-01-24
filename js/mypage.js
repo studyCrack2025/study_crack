@@ -105,7 +105,7 @@ async function fetchUserData(userId) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}` // ★ 토큰 추가
             },
-            body: JSON.stringify({ type: 'get_user' }) 
+            body: JSON.stringify({ type: 'get_user', userId: safeUserId }) 
         });
 
         if (!response.ok) throw new Error("서버 오류");
@@ -133,7 +133,7 @@ async function fetchUserData(userId) {
     }
 }
 
-// [신규] 등급 적용 헬퍼
+// 등급 적용 헬퍼
 function applyUserTier(tier) {
     currentUserTier = tier;
     const profileBox = document.querySelector('.profile-summary');
