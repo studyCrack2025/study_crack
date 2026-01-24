@@ -16,9 +16,9 @@ AWS Serverless 아키텍처와 **API Gateway**를 기반으로 보안성과 확�
 * **AWS API Gateway**: REST API 엔드포인트 통합 관리, **CORS** 및 라우팅 처리
 * **AWS Cognito**: 사용자 인증 (User Pool), **Bearer Token** 기반 API 접근 제어 (Authorizer)
 * **AWS Lambda**: 비즈니스 로직 분리 및 마이크로서비스화
-* `StudyCrack_API`: 유저/관리자 데이터 CRUD, 상담 내역 관리
-* `StudyCrack_Analysis`: 표준점수 기반 백분위/등급 자동 산출 로직, 합격 확률 분석
-* `StudyCrack_Payment`: 결제 프로세싱, Google Sheet 로깅, 알림 발송 (Webhook 처리)
+  * `StudyCrack_API`: 유저/관리자 데이터 CRUD, 상담 내역 관리
+  * `StudyCrack_Analysis`: 표준점수 기반 백분위/등급 자동 산출 로직, 합격 확률 분석
+  * `StudyCrack_Payment`: 결제 프로세싱, Google Sheet 로깅, 알림 발송 (Webhook 처리)
 
 
 * **AWS DynamoDB**: NoSQL 데이터베이스 (유저 프로필, 성적, 상담, 결제 로그 통합 저장)
