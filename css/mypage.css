@@ -617,15 +617,10 @@ input:focus { outline: none; border-color: #2563EB; }
         max-width: 100%; /* 부모 넘침 방지 */
     }
     
-    /* 5. BLACK 메뉴 그리드 (가로 배치 / 자동 세로 전환) 
-       [수정 핵심] min(100%, 400px) 사용
-       - 화면이 넓을 때: 400px 이상 공간이 2개 나오면 가로 2열 배치
-       - 화면이 1014px 근처: 공간이 부족하므로 자동으로 세로 1열 전환
-       - 화면이 769px 근처: 100% 너비에 맞춤 (박스 뚫림 방지)
-    */
+    /* 5. BLACK 메뉴 그리드 (가로 배치 / 자동 세로 전환) */
     .black-menu-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); 
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); 
         gap: 20px;
     }
 
