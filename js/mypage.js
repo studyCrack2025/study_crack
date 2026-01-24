@@ -830,7 +830,7 @@ async function submitDeepCoaching() {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}` 
             },
-            body: JSON.stringify({ type: 'save_deep_coaching', userId, data: reqData })
+            body: JSON.stringify({ type: 'save_pro_coaching', userId, data: reqData })
         });
         if(res.ok) { alert("요청이 접수되었습니다."); closeDeepModal(); }
         else throw new Error("전송 실패");
