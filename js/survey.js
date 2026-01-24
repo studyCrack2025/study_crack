@@ -17,9 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchUserData(userId);
     setupUI();
     
-    // 자동 계산 리스너
-    setupAutoCalculation();
-    
     setTimeout(checkQualitativeForm, 500);
 });
 
@@ -124,16 +121,6 @@ async function requestScoreConversion(type) {
         if(pctEl) pctEl.placeholder = "오류";
         if(grdEl) grdEl.placeholder = "오류";
     }
-}
-
-function setupAutoCalculation() {
-    document.getElementById('korStd')?.addEventListener('change', () => requestScoreConversion('kor'));
-    document.getElementById('mathStd')?.addEventListener('change', () => requestScoreConversion('math'));
-    document.getElementById('mathOpt')?.addEventListener('change', () => requestScoreConversion('math')); 
-    document.getElementById('inq1Std')?.addEventListener('change', () => requestScoreConversion('inq1'));
-    document.getElementById('inq2Std')?.addEventListener('change', () => requestScoreConversion('inq2'));
-    document.getElementById('inq1Name')?.addEventListener('change', () => requestScoreConversion('inq1'));
-    document.getElementById('inq2Name')?.addEventListener('change', () => requestScoreConversion('inq2'));
 }
 
 // === UI 설정 ===
