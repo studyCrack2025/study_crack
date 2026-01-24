@@ -612,10 +612,10 @@ input:focus { outline: none; border-color: #2563EB; }
         padding-bottom: 0;
     }
     
-    /* 5. BLACK 메뉴 그리드 (2열 가로 배치) */
+    /* 5. BLACK 메뉴 그리드 (1014px 즈음부터 세로 배치) */
     .black-menu-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr; 
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); 
         gap: 20px;
     }
 
