@@ -98,6 +98,8 @@ function setWeeklyLoadingStatus(isLoading) {
 // === 1. 유저 정보 불러오기 ===
 async function fetchUserData(userId) {
     const token = localStorage.getItem('accessToken');
+    const safeUserId = userId || localStorage.getItem('userId');
+    
     try {
         const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
