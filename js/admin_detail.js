@@ -6,7 +6,7 @@ const adminId = localStorage.getItem('userId');
 // API URL
 const ADMIN_API_URL = CONFIG.api.base;
 
-// [NEW] 데이터 전역 저장 (필터링 및 탭 전환 시 재사용)
+// 데이터 전역 저장 (필터링 및 탭 전환 시 재사용)
 let currentStudentData = null;
 let currentTier = 'free';
 
@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initDateFilter(today.getFullYear(), today.getMonth() + 1);
 });
 
-// [NEW] 날짜 필터 초기화
+// 날짜 필터 초기화
 function initDateFilter(year, month) {
     const yearSel = document.getElementById('filterYear');
     const monthSel = document.getElementById('filterMonth');
@@ -166,11 +166,12 @@ function renderTierBadge(tier) {
     area.innerHTML = html;
 }
 
-// [NEW] 주간 점검 렌더링 (연/월 필터 적용)
+// 주간 점검 렌더링 (연/월 필터 적용)
 function renderWeeklyTab() {
     const container = document.getElementById('weeklyListContainer');
     container.innerHTML = '';
     
+    // 데이터 가져오기 (전역변수 활용)
     const weeklyHistory = currentStudentData.weeklyHistory || [];
     const selYear = document.getElementById('filterYear').value;
     const selMonth = document.getElementById('filterMonth').value;
@@ -193,6 +194,7 @@ function renderWeeklyTab() {
         const dateStr = new Date(d.date).toLocaleDateString();
         const safeComment = escapeHtml(d.comment);
         
+        // 1. 학습 시간 상세 테이블 생성
         let detailsHtml = '';
         if (d.studyTime && Array.isArray(d.studyTime.details)) {
             detailsHtml = `<table style="width:100%; font-size:0.85rem; border-collapse: collapse; margin-top:8px; margin-bottom:8px;">
@@ -217,6 +219,29 @@ function renderWeeklyTab() {
             detailsHtml += `</table>`;
         }
 
+        // 2. [추가] 플래너 파일 목록 HTML 생성
+        let plannerHtml = '';
+        if (d.plannerFiles && d.plannerFiles.length > 0) {
+            // 파일이 S3 URL이면 링크로, 아니면 텍스트로 표시
+            const fileList = d.plannerFiles.map(f => {
+                // S3 URL인지 단순 파일명인지 체크 (http로 시작하면 링크)
+                if (f.startsWith('http')) {
+                    return `<div>📄 <a href="${f}" target="_blank" style="color:#2563eb; text-decoration:underline;">첨부파일 보기</a></div>`;
+                } else {
+                    return `<div>📄 ${escapeHtml(f)} <small style="color:#94a3b8;">(미연동)</small></div>`;
+                }
+            }).join('');
+
+            plannerHtml = `
+            <div style="margin-top:10px; padding:10px; background:#fff; border-radius:6px; border:1px solid #e2e8f0;">
+                <strong style="display:block; margin-bottom:5px; font-size:0.9rem; color:#1e293b;">📸 플래너 인증 (${d.plannerFiles.length}장)</strong>
+                <div style="font-size:0.85rem; color:#475569; display:flex; flex-direction:column; gap:4px;">
+                    ${fileList}
+                </div>
+            </div>`;
+        }
+
+        // 3. 카드 전체 조립
         const card = document.createElement('div');
         card.className = 'timeline-card weekly';
         card.innerHTML = `
@@ -231,6 +256,7 @@ function renderWeeklyTab() {
                     <span style="color:#64748b; font-size:0.9rem;">(총 ${d.studyTime?.totalAct || 0}H 학습)</span>
                 </div>
                 ${detailsHtml}
+                ${plannerHtml}
                 <div style="margin-top:10px; padding:10px; background:#fff; border-radius:6px; border:1px solid #e2e8f0;">
                     <strong>💬 코멘트:</strong> ${safeComment}
                 </div>

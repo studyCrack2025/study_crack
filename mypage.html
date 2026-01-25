@@ -145,14 +145,14 @@
                         </div>
                         
                         <div class="coach-box deep-coaching clickable" onclick="openDeepCoachingModal()">
-                            <h3>🧐 심층 코칭</h3>
+                            <div class="deep-header">
+                                <h3>🧐 심층 코칭</h3>
+                                <span class="badge-pro">PRO Exclusive</span>
+                            </div>
+                            <p class="deep-desc">전문 컨설턴트와의 1:1 정밀 진단 & 솔루션</p>
                             <div class="lock-overlay" id="deepCoachingLock">
                                 <i class="fas fa-lock"></i>
                                 <p>PRO 버전 이상</p>
-                            </div>
-                            <div class="coach-content">
-                                <p>전문 컨설턴트와의 1:1 정밀 진단 & 솔루션</p>
-                                <span class="badge-pro">PRO Exclusive</span>
                             </div>
                         </div>
                     </div>
@@ -243,19 +243,13 @@
                             </thead>
                             <tbody id="studyTimeBody">
                                 <tr>
-                                    <td>
-                                        <span class="main-sub">국어</span>
-                                        <input type="text" class="sub-detail" placeholder="예: 언매">
-                                    </td>
+                                    <td><span class="main-sub">국어</span><input type="text" class="sub-detail" placeholder="예: 언매"></td>
                                     <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
                                     <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
                                     <td><span class="rate-txt">0%</span></td>
                                 </tr>
                                 <tr>
-                                    <td>
-                                        <span class="main-sub">수학</span>
-                                        <input type="text" class="sub-detail" placeholder="예: 미적">
-                                    </td>
+                                    <td><span class="main-sub">수학</span><input type="text" class="sub-detail" placeholder="예: 미적"></td>
                                     <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
                                     <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
                                     <td><span class="rate-txt">0%</span></td>
@@ -267,19 +261,13 @@
                                     <td><span class="rate-txt">0%</span></td>
                                 </tr>
                                 <tr>
-                                    <td>
-                                        <span class="main-sub">탐구1</span>
-                                        <input type="text" class="sub-detail" placeholder="과목명">
-                                    </td>
+                                    <td><span class="main-sub">탐구1</span><input type="text" class="sub-detail" placeholder="과목명"></td>
                                     <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
                                     <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
                                     <td><span class="rate-txt">0%</span></td>
                                 </tr>
                                 <tr>
-                                    <td>
-                                        <span class="main-sub">탐구2</span>
-                                        <input type="text" class="sub-detail" placeholder="과목명">
-                                    </td>
+                                    <td><span class="main-sub">탐구2</span><input type="text" class="sub-detail" placeholder="과목명"></td>
                                     <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
                                     <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
                                     <td><span class="rate-txt">0%</span></td>
@@ -304,23 +292,33 @@
                 </div>
 
                 <div class="check-section">
-                    <h4>2. 실전 모의고사 응시 여부 <span class="req">*</span></h4>
+                    <h4>2. 플래너 인증 <span class="req">*</span></h4>
+                    <p class="desc">이번 주 플래너 사진을 첨부해주세요. (최대 5장)</p>
+                    <div class="file-upload-wrapper">
+                        <label for="plannerUpload" class="file-upload-btn">
+                            <i class="fas fa-camera"></i> 사진 추가하기
+                        </label>
+                        <input type="file" id="plannerUpload" accept="image/*" multiple style="display:none;" onchange="handlePlannerFiles(this)">
+                        <div id="plannerFileList" class="file-list-box">
+                            <span class="placeholder-text">선택된 파일 없음</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="check-section">
+                    <h4>3. 실전 모의고사 응시 여부 <span class="req">*</span></h4>
                     <div class="mock-tile-group">
                         <div class="mock-tile selected" onclick="selectMockType('none', this)">
-                            <span class="icon">🚫</span>
-                            <span class="label">미응시</span>
+                            <span class="icon">🚫</span><span class="label">미응시</span>
                         </div>
                         <div class="mock-tile" onclick="selectMockType('school', this)">
-                            <span class="icon">🏫</span>
-                            <span class="label">교내</span>
+                            <span class="icon">🏫</span><span class="label">교내</span>
                         </div>
                         <div class="mock-tile" onclick="selectMockType('edu', this)">
-                            <span class="icon">🏛️</span>
-                            <span class="label">평가원/청</span>
+                            <span class="icon">🏛️</span><span class="label">평가원/청</span>
                         </div>
                         <div class="mock-tile" onclick="selectMockType('private', this)">
-                            <span class="icon">📝</span>
-                            <span class="label">사설</span>
+                            <span class="icon">📝</span><span class="label">사설</span>
                         </div>
                     </div>
                     <input type="hidden" id="mockExamType" value="none">
@@ -341,7 +339,7 @@
                 </div>
 
                 <div class="check-section">
-                    <h4>3. 최근 2주 학업 추이 <span class="req">*</span></h4>
+                    <h4>4. 최근 2주 학업 추이 <span class="req">*</span></h4>
                     <div class="trend-radio-group">
                         <label><input type="radio" name="studyTrend" value="up" onchange="toggleSlumpReason()"> 📈 상승</label>
                         <label><input type="radio" name="studyTrend" value="keep" onchange="toggleSlumpReason()"> ➖ 유지</label>
@@ -361,8 +359,7 @@
                 </div>
 
                 <div class="check-section">
-                    <h4>4. 이번 주 핵심 회고 <span class="req">*</span></h4>
-                    <p class="desc">공부하면서 가장 막혔던 한 가지만 적어주세요.</p>
+                    <h4>5. 이번 주 핵심 회고 <span class="req">*</span></h4>
                     <textarea id="weekComment" maxlength="200" placeholder="예: 수학 준킬러 문제 풀이 속도가 너무 느려서 고민이다. (200자 이내)" oninput="checkLength(this)"></textarea>
                     <div class="char-count"><span id="currLen">0</span>/200</div>
                 </div>
