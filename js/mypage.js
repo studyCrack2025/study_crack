@@ -12,6 +12,7 @@ let weeklyDataHistory = [];
 let currentSlotIndex = null;
 // 플래너 파일 저장용 전역 변수
 let currentPlannerFiles = []; 
+let originalPlannerFiles = [];
 
 function getWeekOfMonth(date) {
     const start = new Date(date.getFullYear(), date.getMonth(), 1);
@@ -494,8 +495,9 @@ function loadWeeklyDataToForm(data) {
         ta.value = data.comment;
         checkLength(ta);
     }
-    // [NEW] 플래너 파일 로드
+    // 플래너 파일 로드
     currentPlannerFiles = data.plannerFiles || [];
+    originalPlannerFiles = [...currentPlannerFiles];
     renderPlannerFiles();
 }
 
@@ -541,23 +543,34 @@ function toggleSlumpReason() {
 function checkLength(el) { document.getElementById('currLen').innerText = el.value.length; }
 
 async function submitWeeklyCheck() {
+    // 1. 유효성 검사 (학습 시간)
     const totalPlan = parseFloat(document.getElementById('totalPlan').innerText);
     if (totalPlan === 0) { alert("학습 계획 시간을 입력해주세요."); return; }
 
+    // 2. 모의고사 데이터 수집
     const mockType = document.getElementById('mockExamType').value;
     let mockData = { type: mockType, proofFile: null, scores: {} };
 
     if (mockType !== 'none') {
         const fileInput = document.getElementById('mockExamProof');
+        // 모의고사 사진은 일단 기존 로직 유지 (파일명만 저장) - 필요 시 여기도 S3 로직 적용 가능
         mockData.proofFile = fileInput.files.length > 0 ? fileInput.files[0].name : "file_uploaded"; 
         
         const scores = document.querySelectorAll('.mock-score');
-        mockData.scores = { kor: scores[0].value, math: scores[1].value, eng: scores[2].value, inq1: scores[3].value, inq2: scores[4].value };
+        mockData.scores = { 
+            kor: scores[0].value, 
+            math: scores[1].value, 
+            eng: scores[2].value, 
+            inq1: scores[3].value, 
+            inq2: scores[4].value 
+        };
     }
 
+    // 3. 코멘트 유효성 검사
     const comment = document.getElementById('weekComment').value.trim();
     if (!comment) { alert("핵심 회고를 작성해주세요."); return; }
 
+    // 4. 과목별 데이터 수집
     const studyRows = document.querySelectorAll('#studyTimeBody tr');
     let studyData = [];
     studyRows.forEach(row => {
@@ -578,6 +591,7 @@ async function submitWeeklyCheck() {
         if(plan > 0 || act > 0) studyData.push({ subject: subjName, plan, act });
     });
 
+    // 5. 추이 및 슬럼프 데이터 수집
     const trend = document.querySelector('input[name="studyTrend"]:checked')?.value || 'keep';
     let reasons = [];
     if(trend === 'down') {
@@ -588,28 +602,64 @@ async function submitWeeklyCheck() {
 
     if(!confirm("제출하시겠습니까?\n(수정 시 기존 데이터는 덮어씌워집니다)")) return;
 
-    // 플래너 사진 S3 업로드 로직
-    let finalFileUrls = [];
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('accessToken');
-
-    // 업로드 중 UI 표시
-    const submitBtn = document.querySelector('.save-btn'); // 모달 내 저장 버튼
+    const submitBtn = document.querySelector('.save-btn');
     const originalBtnText = submitBtn.innerText;
-    
-    if (currentPlannerFiles.length > 0) {
-        try {
-            submitBtn.disabled = true;
-            submitBtn.innerText = "사진 업로드 중... (잠시만 기다려주세요)";
 
-            for (const file of currentPlannerFiles) {
-                // 1. Presigned URL 요청
+    try {
+        // UI 로딩 상태 전환
+        submitBtn.disabled = true;
+        submitBtn.innerText = "데이터 처리 중...";
+
+        // ============================================================
+        // [A] 삭제된 파일 감지 및 S3 삭제 요청
+        // ============================================================
+        // originalPlannerFiles: 이전에 불러왔던 원본 파일 리스트 (문자열 URL들)
+        // currentPlannerFiles: 현재 화면에 있는 파일 리스트 (문자열 URL + 새로 추가된 File 객체 혼합)
+        
+        // 현재 리스트에서 "기존에 있던 URL"만 골라냄
+        const currentUrls = currentPlannerFiles.filter(f => typeof f === 'string');
+        
+        // 원본에는 있었는데, 현재 리스트에는 없는 URL -> 삭제 대상
+        const filesToDelete = originalPlannerFiles.filter(url => !currentUrls.includes(url));
+
+        if (filesToDelete.length > 0) {
+            submitBtn.innerText = "기존 파일 삭제 중...";
+            // 병렬로 삭제 요청 전송
+            await Promise.all(filesToDelete.map(url => 
+                fetch(MYPAGE_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ 
+                        type: 'delete_s3_file', 
+                        userId: userId, 
+                        data: { fileUrl: url } 
+                    })
+                })
+            ));
+        }
+
+        // ============================================================
+        // [B] 신규 파일 S3 업로드 로직
+        // ============================================================
+        // 최종적으로 DB에 저장될 URL 리스트 (기존 URL들은 유지)
+        let finalFileUrls = [...currentUrls]; 
+        
+        // 새로 추가된 파일(File 객체)만 골라내기
+        const newFiles = currentPlannerFiles.filter(f => typeof f !== 'string');
+
+        if (newFiles.length > 0) {
+            submitBtn.innerText = "새 사진 업로드 중... (잠시만 기다려주세요)";
+            
+            for (const file of newFiles) {
+                // 1. Presigned URL 발급 요청
                 const res = await fetch(MYPAGE_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ 
                         type: 'get_presigned_url', 
-                        userId: userId, // 토큰 실패 대비용
+                        userId: userId, 
                         data: { fileName: file.name, fileType: file.type } 
                     })
                 });
@@ -618,44 +668,41 @@ async function submitWeeklyCheck() {
                 const { uploadUrl, fileUrl } = await res.json();
 
                 // 2. S3로 직접 업로드 (PUT)
-                // 주의: 헤더에 Content-Type을 정확히 맞춰야 함
+                // Content-Type 헤더가 Presigned URL 생성 시점과 일치해야 함
                 await fetch(uploadUrl, {
                     method: 'PUT',
                     headers: { 'Content-Type': file.type },
                     body: file
                 });
 
-                // 3. 성공한 URL 저장
+                // 3. 업로드 성공한 URL을 최종 리스트에 추가
                 finalFileUrls.push(fileUrl);
             }
-        } catch (e) {
-            console.error("Upload Error:", e);
-            alert("사진 업로드 중 오류가 발생했습니다: " + e.message);
-            submitBtn.disabled = false;
-            submitBtn.innerText = originalBtnText;
-            return; // 중단
         }
-    }
 
-    const today = new Date().toISOString();
-    const title = getWeekTitle(new Date()); 
+        // ============================================================
+        // [C] 최종 데이터 DB 저장
+        // ============================================================
+        submitBtn.innerText = "저장 중...";
+        
+        const today = new Date().toISOString();
+        const title = getWeekTitle(new Date()); 
 
-    const weeklyData = {
-        date: today,
-        title: title, 
-        studyTime: {
-            details: studyData,
-            totalPlan: document.getElementById('totalPlan').innerText,
-            totalAct: document.getElementById('totalAct').innerText,
-            totalRate: document.getElementById('totalRate').innerText
-        },
-        mockExam: mockData,
-        trend: { status: trend, reasons: reasons },
-        comment: comment,
-        plannerFiles: finalFileUrls // [NEW] S3 URL 리스트 저장
-    };
+        const weeklyData = {
+            date: today,
+            title: title, 
+            studyTime: {
+                details: studyData, 
+                totalPlan: document.getElementById('totalPlan').innerText,
+                totalAct: document.getElementById('totalAct').innerText,
+                totalRate: document.getElementById('totalRate').innerText
+            },
+            mockExam: mockData,
+            trend: { status: trend, reasons: reasons },
+            comment: comment,
+            plannerFiles: finalFileUrls // 최종 정리된 URL 리스트 저장
+        };
 
-    try {
         const res = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             headers: { 
@@ -666,16 +713,18 @@ async function submitWeeklyCheck() {
         });
         
         if(res.ok) { 
-            alert("제출 완료되었습니다."); 
+            alert("제출 및 수정이 완료되었습니다."); 
             closeWeeklyModal(); 
             location.reload(); 
         } else {
             throw new Error("서버 응답 오류");
         }
+
     } catch(e) { 
-        console.error(e); 
-        alert("제출 실패"); 
+        console.error("Submit Error:", e); 
+        alert("처리 중 오류가 발생했습니다: " + e.message); 
     } finally {
+        // UI 원복
         submitBtn.disabled = false;
         submitBtn.innerText = originalBtnText;
     }
