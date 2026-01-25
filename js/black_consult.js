@@ -86,8 +86,8 @@ async function loadConsultHistory() {
         if (!res.ok) throw new Error("히스토리 로드 실패");
 
         const data = await res.json();
-        // 백엔드 응답에서 consultHistory가 없을 경우 빈 배열로 처리
-        const history = data.consultHistory || []; 
+        // 백엔드 응답에서 blackConsultHistory가 없을 경우 빈 배열로 처리
+        const history = data.blackConsultHistory || []; 
         list.innerHTML = '';
 
         if (history.length === 0) {
@@ -161,7 +161,7 @@ async function submitConsult() {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}` // ★ 토큰 추가
             },
-            body: JSON.stringify({ type: 'save_consult_qna', userId, data: reqData })
+            body: JSON.stringify({ type: 'save_black_consult', userId, data: reqData })
         });
         
         if(res.ok) {
