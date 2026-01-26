@@ -17,54 +17,21 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     
-    loadUserData(); // 사이드바 정보 로드
-    loadChat();     // 채팅 로드
-    pollingInterval = setInterval(loadChat, 3000); // 3초 폴링
+    loadChat();     
+    pollingInterval = setInterval(loadChat, 3000); 
 
-    // 이벤트 리스너
+    // 붙여넣기 (이미지)
     document.addEventListener('paste', handlePaste);
-    messageInput.addEventListener('keypress', (e) => {
+    
+    // Enter키 전송 (Shift+Enter는 줄바꿈)
+    messageInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
+            e.preventDefault(); // 줄바꿈 방지
             sendMessage();
         }
     });
 });
 
-// 1. 유저 정보 로드 (사이드바용)
-async function loadUserData() {
-    const token = localStorage.getItem('accessToken');
-    try {
-        const res = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'get_user', userId: userId })
-        });
-        if(res.ok) {
-            const data = await res.json();
-            document.getElementById('userName').innerText = data.name || 'User';
-            if (data.qualitative) {
-                document.getElementById('userStatus').innerText = data.qualitative.status || '-';
-                document.getElementById('userStream').innerText = data.qualitative.stream || '-';
-            }
-            const targetList = document.getElementById('userTargets');
-            targetList.innerHTML = '';
-            if (data.targetUnivs && data.targetUnivs.length > 0) {
-                data.targetUnivs.forEach((u, i) => {
-                    if (u && u.univ && i < 2) {
-                        const li = document.createElement('li');
-                        li.innerText = `${u.univ} ${u.major || ''}`;
-                        targetList.appendChild(li);
-                    }
-                });
-            } else {
-                targetList.innerHTML = '<li>설정된 목표 없음</li>';
-            }
-        }
-    } catch(e) { console.error("UserInfo Error:", e); }
-}
-
-// 2. 채팅 데이터 로드
 async function loadChat() {
     try {
         const token = localStorage.getItem('accessToken');
@@ -78,7 +45,6 @@ async function loadChat() {
             const data = await res.json();
             const chats = data.consultChat || [];
             
-            // 변경사항 있을 때만 렌더링
             if (JSON.stringify(chats) !== JSON.stringify(lastChatData)) {
                 lastChatData = chats;
                 renderChat(chats);
@@ -91,45 +57,48 @@ function renderChat(chats) {
     chatList.innerHTML = '';
     
     chats.forEach(msg => {
-        const isMe = msg.sender === 'user';
+        // ★ 중요: 보낸 사람이 'user'면 오른쪽(User), 아니면 왼쪽(Admin)
+        const isMe = msg.sender === 'user'; 
         const typeClass = isMe ? 'user' : 'admin';
-        const timeStr = new Date(msg.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
+        const timeStr = new Date(msg.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         let contentHtml = escapeHtml(msg.text).replace(/\n/g, '<br>');
         
-        // 파일 처리
+        // 파일 렌더링
         if (msg.file) {
-            const isImg = msg.file.match(/\.(jpg|jpeg|png|gif)$/i);
+            const isImg = msg.file.match(/\.(jpg|jpeg|png|gif|webp)$/i);
             if (isImg) {
+                // 이미지인 경우
                 contentHtml += `<br><img src="${msg.file}" class="chat-image" onclick="window.open('${msg.file}')">`;
             } else {
+                // 문서 파일인 경우 (PDF 등)
+                const fileName = decodeURIComponent(msg.file.split('/').pop().split('_').slice(1).join('_')); // 타임스탬프 제거 시도
                 contentHtml += `<br><a href="${msg.file}" target="_blank" class="file-attachment">
-                    <i class="fas fa-file-download file-icon"></i> <span class="file-name">첨부파일</span>
+                    <i class="fas fa-file-alt"></i> <span class="file-name">${fileName || '첨부파일'}</span>
                 </a>`;
             }
         }
 
-        const bubble = document.createElement('div');
-        bubble.className = `message ${typeClass}`;
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${typeClass}`;
         
         if (isMe) {
-            bubble.innerHTML = `<span class="msg-time">${timeStr}</span><div class="msg-bubble">${contentHtml}</div>`;
+            msgDiv.innerHTML = `<span class="msg-time">${timeStr}</span><div class="msg-bubble">${contentHtml}</div>`;
         } else {
-            bubble.innerHTML = `<div class="msg-bubble">${contentHtml}</div><span class="msg-time">${timeStr}</span>`;
+            msgDiv.innerHTML = `<div class="msg-bubble">${contentHtml}</div><span class="msg-time">${timeStr}</span>`;
         }
         
-        chatList.appendChild(bubble);
+        chatList.appendChild(msgDiv);
     });
 
     scrollToBottom();
 }
 
 function scrollToBottom() {
-    const container = document.getElementById('chatContainer'); // ID 수정
+    const container = document.getElementById('chatContainer');
     if(container) container.scrollTop = container.scrollHeight;
 }
 
-// 3. 메시지 전송 (400 에러 수정 포함)
 async function sendMessage() {
     const text = messageInput.value.trim();
     if (!text && !currentFile) return;
@@ -139,8 +108,8 @@ async function sendMessage() {
     let fileUrl = null;
 
     try {
-        // 파일 업로드 로직
         if (currentFile) {
+            // S3 URL 발급
             const presignRes = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -150,39 +119,37 @@ async function sendMessage() {
                     data: { fileName: currentFile.name, fileType: currentFile.type, folder: 'chat' } 
                 })
             });
+            if(!presignRes.ok) throw new Error("Upload URL Error");
             const { uploadUrl, fileUrl: s3Url } = await presignRes.json();
             
+            // S3 업로드
             await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': currentFile.type }, body: currentFile });
             fileUrl = s3Url;
         }
 
         const msgData = {
             id: Date.now().toString(),
-            sender: 'user',
+            sender: 'user', // ★ User가 보냄
             text: text,
             file: fileUrl,
             date: new Date().toISOString(),
             isRead: false
         };
 
-        // ★ [수정] userId를 targetUserId로도 명시적으로 전송하여 백엔드 혼동 방지
         await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
                 type: 'save_chat_message', 
                 userId: userId, 
-                data: { 
-                    targetUserId: userId, // 본인에게 쓰기 (Admin이 볼 때는 이 ID로 조회)
-                    message: msgData 
-                } 
+                data: { targetUserId: userId, message: msgData } 
             })
         });
 
         messageInput.value = '';
         messageInput.style.height = 'auto';
         clearFile();
-        loadChat(); // 즉시 갱신
+        loadChat(); 
 
     } catch(e) {
         alert("전송 실패: " + e.message);
@@ -192,14 +159,12 @@ async function sendMessage() {
     }
 }
 
-// 파일 선택 핸들러
 function handleFileSelect(input) {
     if (input.files && input.files[0]) {
         const file = input.files[0];
         if (file.size > 10 * 1024 * 1024) return alert("10MB 이하 파일만 가능합니다.");
-        
         currentFile = file;
-        document.getElementById('filePreview').style.display = 'inline-block';
+        document.getElementById('filePreview').style.display = 'inline-flex';
         document.getElementById('previewName').innerText = file.name;
     }
 }

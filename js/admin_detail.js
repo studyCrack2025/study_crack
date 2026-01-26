@@ -10,6 +10,8 @@ const ADMIN_API_URL = CONFIG.api.base;
 let currentStudentData = null;
 let currentTier = 'free';
 
+let currentAdminFile = null;
+
 document.addEventListener('DOMContentLoaded', () => {
     if (!targetUserId || !adminId) {
         alert("잘못된 접근입니다.");
@@ -285,15 +287,35 @@ function renderSpecialTab() {
     if (currentTier === 'black') {
         container.innerHTML = `
             <div class="admin-chat-wrapper">
+                <div class="admin-chat-header">
+                    <span>1:1 BLACK CONSULTING</span>
+                    <span class="chat-badge">LIVE</span>
+                </div>
                 <div class="chat-window" id="adminChatWindow">
                     </div>
                 <div class="chat-input-box">
-                    <textarea id="adminChatInput" placeholder="답변을 입력하세요..."></textarea>
-                    <button onclick="sendAdminChat()" class="chat-send-btn">전송</button>
+                    <div id="adminFilePreviewArea" style="display:none; margin-bottom:5px;"></div>
+                    <div class="input-row">
+                        <label for="adminFileInput" class="admin-file-btn"><i class="fas fa-paperclip"></i></label>
+                        <input type="file" id="adminFileInput" style="display:none;" onchange="handleAdminFile(this)">
+                        
+                        <textarea id="adminChatInput" placeholder="메시지를 입력하세요 (Enter: 전송, Shift+Enter: 줄바꿈)"></textarea>
+                        <button onclick="sendAdminChat()" id="btnAdminSend" class="chat-send-btn">전송</button>
+                    </div>
                 </div>
             </div>
         `;
-        renderAdminChat(); // 채팅 로드 및 읽음 처리
+        
+        // 엔터키 이벤트 바인딩
+        const input = document.getElementById('adminChatInput');
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendAdminChat();
+            }
+        });
+
+        renderAdminChat(); // 채팅 로드
         return;
     }
 
@@ -352,27 +374,45 @@ async function renderAdminChat() {
     const chats = currentStudentData.consultChat || [];
     const token = localStorage.getItem('accessToken');
 
+    chatWindow.innerHTML = ''; // 초기화
     let unreadExists = false;
+
+    if (chats.length === 0) {
+        chatWindow.innerHTML = '<div style="text-align:center; color:#94a3b8; margin-top:50px;">대화 내역이 없습니다.</div>';
+    }
 
     chats.forEach(msg => {
         const isMe = msg.sender === 'admin';
-        const typeClass = isMe ? 'me' : 'other'; // CSS 클래스: me(오른쪽), other(왼쪽)
+        const typeClass = isMe ? 'me' : 'other'; 
         const timeStr = new Date(msg.date).toLocaleString();
         
         let content = escapeHtml(msg.text).replace(/\n/g, '<br>');
-        if(msg.file) content += `<br><a href="${msg.file}" target="_blank">📄 첨부파일</a>`;
+        
+        // 파일 렌더링
+        if (msg.file) {
+            const isImg = msg.file.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+            if (isImg) {
+                content += `<br><img src="${msg.file}" class="admin-chat-img" onclick="window.open('${msg.file}')">`;
+            } else {
+                const fileName = decodeURIComponent(msg.file.split('/').pop().split('_').slice(1).join('_'));
+                content += `<br><a href="${msg.file}" target="_blank" class="admin-file-link">
+                    <i class="fas fa-file-download"></i> ${fileName || '첨부파일'}
+                </a>`;
+            }
+        }
 
         const div = document.createElement('div');
         div.className = `chat-bubble ${typeClass}`;
-        div.innerHTML = `<div class="msg-text">${content}</div><div class="msg-info">${timeStr} ${isMe && msg.isRead ? '(읽음)' : ''}</div>`;
+        div.innerHTML = `<div class="msg-text">${content}</div><div class="msg-info">${timeStr}</div>`;
         chatWindow.appendChild(div);
 
+        // 안 읽은 유저 메시지 체크
         if (msg.sender === 'user' && !msg.isRead) unreadExists = true;
     });
 
-    chatWindow.scrollTop = chatWindow.scrollHeight;
+    chatWindow.scrollTop = chatWindow.scrollHeight; // 스크롤 하단 이동
 
-    // 읽지 않은 메시지가 있으면 읽음 처리 요청
+    // 읽음 처리 (유저 메시지를 읽음으로)
     if (unreadExists) {
         await fetch(ADMIN_API_URL, {
             method: 'POST',
@@ -386,23 +426,66 @@ async function renderAdminChat() {
     }
 }
 
+// [NEW] 관리자 파일 선택
+function handleAdminFile(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (file.size > 10 * 1024 * 1024) return alert("10MB 이하만 가능합니다.");
+        currentAdminFile = file;
+        
+        const preview = document.getElementById('adminFilePreviewArea');
+        preview.style.display = 'block';
+        preview.innerHTML = `<span class="admin-file-preview">${file.name} <i class="fas fa-times" onclick="clearAdminFile()" style="cursor:pointer; margin-left:5px;"></i></span>`;
+    }
+}
+
+function clearAdminFile() {
+    currentAdminFile = null;
+    document.getElementById('adminFileInput').value = '';
+    document.getElementById('adminFilePreviewArea').style.display = 'none';
+}
+
 // 관리자 메시지 전송
 async function sendAdminChat() {
     const input = document.getElementById('adminChatInput');
     const text = input.value.trim();
-    if (!text) return;
+    if (!text && !currentAdminFile) return;
+
+    const btn = document.getElementById('btnAdminSend');
+    btn.disabled = true;
+    btn.innerText = '...';
 
     const token = localStorage.getItem('accessToken');
-    const msgData = {
-        id: Date.now().toString(),
-        sender: 'admin',
-        text: text,
-        file: null, // 관리자 파일 첨부는 추후 구현
-        date: new Date().toISOString(),
-        isRead: false
-    };
+    let fileUrl = null;
 
     try {
+        // 1. 파일 업로드 (있으면)
+        if (currentAdminFile) {
+            const presignRes = await fetch(ADMIN_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ 
+                    type: 'get_presigned_url', 
+                    userId: adminId, 
+                    data: { fileName: currentAdminFile.name, fileType: currentAdminFile.type, folder: 'chat' } 
+                })
+            });
+            const { uploadUrl, fileUrl: s3Url } = await presignRes.json();
+            
+            await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': currentAdminFile.type }, body: currentAdminFile });
+            fileUrl = s3Url;
+        }
+
+        // 2. 메시지 저장
+        const msgData = {
+            id: Date.now().toString(),
+            sender: 'admin', // ★ 관리자가 보냄
+            text: text,
+            file: fileUrl,
+            date: new Date().toISOString(),
+            isRead: false
+        };
+
         await fetch(ADMIN_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -413,9 +496,24 @@ async function sendAdminChat() {
             })
         });
         
+        // 초기화 및 리로드
         input.value = '';
-        loadStudentDetail(); // 데이터 갱신 (화면 리로드)
-    } catch(e) { alert("전송 실패"); }
+        clearAdminFile();
+        
+        // 전체 리로드 대신 데이터만 다시 불러와서 렌더링 (깜빡임 방지)
+        await loadStudentDetail(); 
+        
+        // 강제로 탭 다시 렌더링 (데이터가 갱신되었으므로)
+        renderAdminChat();
+
+    } catch(e) { 
+        console.error(e);
+        alert("전송 실패"); 
+    } finally {
+        btn.disabled = false;
+        btn.innerText = '전송';
+        input.focus();
+    }
 }
 
 // 모달 보기
