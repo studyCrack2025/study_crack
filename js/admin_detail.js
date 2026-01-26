@@ -3,14 +3,11 @@
 const urlParams = new URLSearchParams(window.location.search);
 const targetUserId = urlParams.get('uid');
 const adminId = localStorage.getItem('userId');
-// API URL
 const ADMIN_API_URL = CONFIG.api.base;
 
-// 데이터 전역 저장 (필터링 및 탭 전환 시 재사용)
 let currentStudentData = null;
 let currentTier = 'free';
-
-let currentAdminFile = null;
+let currentAdminFile = null; // 관리자 첨부파일
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!targetUserId || !adminId) {
@@ -20,7 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     loadStudentDetail();
     
-    // 주간 점검 필터 초기화 (현재 날짜 기준)
     const today = new Date();
     initDateFilter(today.getFullYear(), today.getMonth() + 1);
 });
@@ -47,18 +43,15 @@ function switchTab(tabName) {
     const target = document.getElementById('tab_' + tabName);
     if(target) target.classList.add('active');
     
-    // 이벤트 타겟을 찾아서 active 처리
     const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(`switchTab('${tabName}')`));
     if(btn) btn.classList.add('active');
 
-    // 탭 전환 시 데이터가 있다면 렌더링 함수 호출
     if (currentStudentData) {
         if (tabName === 'weekly') renderWeeklyTab();
         if (tabName === 'special') renderSpecialTab();
     }
 }
 
-// [NEW] 특별 상담 탭 접근 제어
 function trySwitchSpecialTab() {
     if (['basic', 'free', 'standard'].includes(currentTier)) {
         alert("PRO 또는 BLACK 등급 회원만 이용 가능한 메뉴입니다.");
@@ -82,10 +75,7 @@ async function loadStudentDetail() {
     try {
         const response = await fetch(ADMIN_API_URL, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` 
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'admin_get_user_detail',
                 userId: adminId,
@@ -96,7 +86,7 @@ async function loadStudentDetail() {
         if (!response.ok) throw new Error("Server Error");
         const data = await response.json();
         
-        currentStudentData = data; // 전역 저장
+        currentStudentData = data;
         renderData(data);
     } catch (e) {
         console.error(e);
@@ -114,11 +104,9 @@ function renderData(s) {
     document.getElementById('viewEmailFull').innerText = s.email || '-';
     document.getElementById('viewJoinDate').innerText = s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '-';
 
-    // 티어 렌더링 및 저장
     currentTier = calcTier(s.payments || []);
     renderTierBadge(currentTier);
     
-    // 특별 상담 버튼 스타일 처리
     const specialBtn = document.getElementById('btnSpecialTab');
     if (['basic', 'free', 'standard'].includes(currentTier)) {
         specialBtn.classList.add('disabled-tab');
@@ -136,12 +124,8 @@ function renderData(s) {
     renderQualitativeDetail(s.qualitative);
     renderQuantitativeDetail(s.quantitative);
     renderPayments(s.payments || []);
-    
-    // 초기 렌더링 시 주간/특별 탭 데이터 준비 (화면에 보이진 않아도)
-    // 실제 렌더링은 탭 클릭 시 수행됨
 }
 
-// 티어 계산 함수 분리
 function calcTier(payments) {
     if (!payments || payments.length === 0) return 'free';
     const paid = payments.filter(p => p.status === 'paid');
@@ -168,23 +152,20 @@ function renderTierBadge(tier) {
     area.innerHTML = html;
 }
 
-// 주간 점검 렌더링 (연/월 필터 적용)
+// 주간 점검 렌더링
 function renderWeeklyTab() {
     const container = document.getElementById('weeklyListContainer');
     container.innerHTML = '';
     
-    // 데이터 가져오기 (전역변수 활용)
     const weeklyHistory = currentStudentData.weeklyHistory || [];
     const selYear = document.getElementById('filterYear').value;
     const selMonth = document.getElementById('filterMonth').value;
 
-    // 필터링: 해당 연/월에 해당하는 데이터만
     const filtered = weeklyHistory.filter(w => {
         const d = new Date(w.date);
         return d.getFullYear() == selYear && (d.getMonth() + 1) == selMonth;
     });
 
-    // 날짜 오름차순 정렬 (1주차 -> 4주차)
     filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     if (filtered.length === 0) {
@@ -196,7 +177,6 @@ function renderWeeklyTab() {
         const dateStr = new Date(d.date).toLocaleDateString();
         const safeComment = escapeHtml(d.comment);
         
-        // 1. 학습 시간 상세 테이블 생성
         let detailsHtml = '';
         if (d.studyTime && Array.isArray(d.studyTime.details)) {
             detailsHtml = `<table style="width:100%; font-size:0.85rem; border-collapse: collapse; margin-top:8px; margin-bottom:8px;">
@@ -221,24 +201,16 @@ function renderWeeklyTab() {
             detailsHtml += `</table>`;
         }
 
-        // 2. 플래너 파일 목록 HTML 생성
         let plannerHtml = '';
         if (d.plannerFiles && d.plannerFiles.length > 0) {
-            // 파일이 S3 URL이면 링크로, 아니면 텍스트로 표시
             const fileList = d.plannerFiles.map(f => {
                 let fileName = f;
-                // URL이면 파일명만 추출
                 if (typeof f === 'string' && f.startsWith('http')) {
                     try {
                         fileName = decodeURIComponent(f.split('/').pop());
                         fileName = fileName.replace(/^\d+_/, '');
                     } catch(e) {}
-                    
-                    return `<div>
-                        📄 <a href="${f}" target="_blank" style="color:#2563eb; text-decoration:underline;">
-                            ${escapeHtml(fileName)}
-                        </a>
-                    </div>`;
+                    return `<div>📄 <a href="${f}" target="_blank" style="color:#2563eb; text-decoration:underline;">${escapeHtml(fileName)}</a></div>`;
                 } else {
                     return `<div>📄 ${escapeHtml(f)} <small style="color:#94a3b8;">(미연동)</small></div>`;
                 }
@@ -253,7 +225,6 @@ function renderWeeklyTab() {
             </div>`;
         }
 
-        // 3. 카드 전체 조립
         const card = document.createElement('div');
         card.className = 'timeline-card weekly';
         card.innerHTML = `
@@ -278,12 +249,12 @@ function renderWeeklyTab() {
     });
 }
 
-// [NEW] 특별 상담 렌더링 (Pro/Black)
+// [수정] 특별 상담 탭 렌더링
 function renderSpecialTab() {
     const container = document.getElementById('specialListContainer');
     container.innerHTML = '';
-    
-    // BLACK 회원이면 채팅 인터페이스 로드
+
+    // BLACK 회원은 채팅창 로드
     if (currentTier === 'black') {
         container.innerHTML = `
             <div class="admin-chat-wrapper">
@@ -306,75 +277,56 @@ function renderSpecialTab() {
             </div>
         `;
         
-        // 엔터키 이벤트 바인딩
+        // ★ [핵심] 한글 중복 전송 방지 이벤트 리스너 추가
         const input = document.getElementById('adminChatInput');
         input.addEventListener('keydown', (e) => {
+            // 한글 조합 중이면 함수 종료 (전송 막음)
+            if (e.isComposing) return;
+
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 sendAdminChat();
             }
         });
 
-        renderAdminChat(); // 채팅 로드
+        renderAdminChat();
         return;
     }
 
-    // ★ DB 변수명 수정: proCoachingHistory, blackConsultHistory
+    // PRO 회원은 기존 Deep Coaching 리스트
     const proHistory = currentStudentData.proCoachingHistory || [];
-    const blackHistory = currentStudentData.blackConsultHistory || [];
+    renderProHistory(proHistory, container);
+}
 
-    let items = [];
-
-    // ★ Black은 Black Consulting만, Pro는 Pro Coaching만 표시
-    if (currentTier === 'black') {
-        blackHistory.forEach(b => {
-            items.push({ type: 'black', date: b.date, title: b.title || '1:1 시크릿 컨설팅', data: b });
-        });
-    } else if (currentTier === 'pro') {
-        proHistory.forEach(d => {
-            items.push({ type: 'deep', date: d.date, title: '심층 코칭 요청', data: d });
-        });
-    }
-
-    // 최신순 정렬
-    items.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-    if (items.length === 0) {
-        container.innerHTML = '<div class="empty-msg" style="grid-column: 1/-1; text-align:center; padding:30px; color:#cbd5e1;">상담 내역이 없습니다.</div>';
+// PRO 회원 리스트 렌더링 함수 (기존 로직 분리)
+function renderProHistory(history, container) {
+    if (history.length === 0) {
+        container.innerHTML = '<div class="empty-msg" style="text-align:center; padding:30px; color:#cbd5e1;">상담 내역이 없습니다.</div>';
         return;
     }
-
-    items.forEach(item => {
-        const dateStr = new Date(item.date).toLocaleDateString();
-        const isDeep = item.type === 'deep';
-        const tagClass = isDeep ? 'deep' : 'black';
-        const tagName = isDeep ? 'PRO COACHING' : 'BLACK CONSULT'; // 이름 변경
-        
-        // 미리보기 생성
-        let preview = '';
-        if (isDeep) preview = item.data.plan || '내용 없음';
-        else preview = item.data.content || '내용 없음';
-
+    history.sort((a, b) => new Date(b.date) - new Date(a.date));
+    history.forEach(d => {
+        const dateStr = new Date(d.date).toLocaleDateString();
         const div = document.createElement('div');
-        div.className = `special-item ${tagClass}`;
-        div.onclick = () => showModal(item);
+        div.className = `special-item deep`;
+        div.onclick = () => showModal({ type: 'deep', title: '심층 코칭 요청', data: d, date: d.date });
         div.innerHTML = `
-            <span class="sp-tag ${tagClass}">${tagName}</span>
+            <span class="sp-tag deep">PRO COACHING</span>
             <span class="sp-date">${dateStr}</span>
-            <div class="sp-title">${item.title}</div>
-            <div class="sp-preview">${escapeHtml(preview)}</div>
+            <div class="sp-title">심층 코칭 요청</div>
+            <div class="sp-preview">${escapeHtml(d.plan || '내용 없음')}</div>
         `;
         container.appendChild(div);
     });
 }
 
-// 관리자 채팅 렌더링 및 읽음 처리
+// 관리자 채팅 렌더링
 async function renderAdminChat() {
     const chatWindow = document.getElementById('adminChatWindow');
     const chats = currentStudentData.consultChat || [];
     const token = localStorage.getItem('accessToken');
 
-    chatWindow.innerHTML = ''; // 초기화
+    chatWindow.innerHTML = '';
     let unreadExists = false;
 
     if (chats.length === 0) {
@@ -388,7 +340,6 @@ async function renderAdminChat() {
         
         let content = escapeHtml(msg.text).replace(/\n/g, '<br>');
         
-        // 파일 렌더링
         if (msg.file) {
             const isImg = msg.file.match(/\.(jpg|jpeg|png|gif|webp)$/i);
             if (isImg) {
@@ -406,13 +357,11 @@ async function renderAdminChat() {
         div.innerHTML = `<div class="msg-text">${content}</div><div class="msg-info">${timeStr}</div>`;
         chatWindow.appendChild(div);
 
-        // 안 읽은 유저 메시지 체크
         if (msg.sender === 'user' && !msg.isRead) unreadExists = true;
     });
 
-    chatWindow.scrollTop = chatWindow.scrollHeight; // 스크롤 하단 이동
+    chatWindow.scrollTop = chatWindow.scrollHeight;
 
-    // 읽음 처리 (유저 메시지를 읽음으로)
     if (unreadExists) {
         await fetch(ADMIN_API_URL, {
             method: 'POST',
@@ -426,7 +375,7 @@ async function renderAdminChat() {
     }
 }
 
-// [NEW] 관리자 파일 선택
+// 관리자 파일 선택
 function handleAdminFile(input) {
     if (input.files && input.files[0]) {
         const file = input.files[0];
@@ -459,7 +408,6 @@ async function sendAdminChat() {
     let fileUrl = null;
 
     try {
-        // 1. 파일 업로드 (있으면)
         if (currentAdminFile) {
             const presignRes = await fetch(ADMIN_API_URL, {
                 method: 'POST',
@@ -471,15 +419,13 @@ async function sendAdminChat() {
                 })
             });
             const { uploadUrl, fileUrl: s3Url } = await presignRes.json();
-            
             await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': currentAdminFile.type }, body: currentAdminFile });
             fileUrl = s3Url;
         }
 
-        // 2. 메시지 저장
         const msgData = {
             id: Date.now().toString(),
-            sender: 'admin', // ★ 관리자가 보냄
+            sender: 'admin',
             text: text,
             file: fileUrl,
             date: new Date().toISOString(),
@@ -496,15 +442,11 @@ async function sendAdminChat() {
             })
         });
         
-        // 초기화 및 리로드
         input.value = '';
         clearAdminFile();
         
-        // 전체 리로드 대신 데이터만 다시 불러와서 렌더링 (깜빡임 방지)
-        await loadStudentDetail(); 
-        
-        // 강제로 탭 다시 렌더링 (데이터가 갱신되었으므로)
-        renderAdminChat();
+        await loadStudentDetail(); // 데이터 갱신
+        renderAdminChat(); // 채팅창 다시 그리기
 
     } catch(e) { 
         console.error(e);
@@ -516,7 +458,7 @@ async function sendAdminChat() {
     }
 }
 
-// 모달 보기
+// 모달 로직
 function showModal(item) {
     const modal = document.getElementById('detailModal');
     const titleEl = document.getElementById('modalTitle');
@@ -526,29 +468,15 @@ function showModal(item) {
     titleEl.innerText = item.title;
     
     let html = '';
-    if (item.type === 'deep') {
-        html = `
-            <p><strong>📅 일시:</strong> ${new Date(item.date).toLocaleString()}</p>
-            <hr style="border:0; border-top:1px dashed #e2e8f0; margin:15px 0;">
-            <p><strong>1. 계획 점검:</strong><br>${escapeHtml(d.plan)}</p>
-            <p><strong>2. 방향성:</strong><br>${escapeHtml(d.direction)}</p>
-            <p><strong>3. 취약 과목:</strong><br>${escapeHtml(d.subject)}</p>
-            <p><strong>4. 기타/멘탈:</strong><br>${escapeHtml(d.etc)}</p>
-        `;
-    } else {
-        // Black Consult
-        html = `
-            <p><strong>📅 일시:</strong> ${new Date(item.date).toLocaleString()}</p>
-            <p><strong>📂 카테고리:</strong> ${d.category || '일반'}</p>
-            <hr style="border:0; border-top:1px dashed #e2e8f0; margin:15px 0;">
-            <p><strong>Q. 질문 내용:</strong><br>${escapeHtml(d.content)}</p>
-            <br>
-            <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
-                <strong>A. 답변:</strong><br>
-                ${d.reply ? escapeHtml(d.reply) : '<span style="color:#94a3b8;">(아직 답변이 등록되지 않았습니다)</span>'}
-            </div>
-        `;
-    }
+    // Deep Coaching Modal Content
+    html = `
+        <p><strong>📅 일시:</strong> ${new Date(item.date).toLocaleString()}</p>
+        <hr style="border:0; border-top:1px dashed #e2e8f0; margin:15px 0;">
+        <p><strong>1. 계획 점검:</strong><br>${escapeHtml(d.plan)}</p>
+        <p><strong>2. 방향성:</strong><br>${escapeHtml(d.direction)}</p>
+        <p><strong>3. 취약 과목:</strong><br>${escapeHtml(d.subject)}</p>
+        <p><strong>4. 기타/멘탈:</strong><br>${escapeHtml(d.etc)}</p>
+    `;
     
     contentEl.innerHTML = html;
     modal.style.display = 'flex';
@@ -560,9 +488,7 @@ function closeModal() {
     document.body.style.overflow = 'auto';
 }
 
-// 기존 렌더링 함수들 유지 (renderTargetUnivs, renderQualitativeDetail 등...)
-// (이전 코드에 있던 함수들 그대로 사용하시면 됩니다. 위에 renderData에서 호출 중)
-
+// 기타 렌더링 함수들 (renderTargetUnivs, renderQualitativeDetail 등)은 기존 코드 유지
 function renderTargetUnivs(list) {
     const container = document.getElementById('viewTargetUnivList');
     container.innerHTML = '';
@@ -584,11 +510,7 @@ function renderQualitativeDetail(q) {
     const area = document.getElementById('qualContentArea');
     if (!q) { area.innerHTML = '<p style="text-align:center; color:#94a3b8;">데이터가 없습니다.</p>'; return; }
     const v = (val) => val ? escapeHtml(val) : '-';
-    let html = `<div class="qual-section"><div class="qual-head">📍 현재 상황</div><div class="qual-grid">
-        <div class="qual-item"><span class="detail-label">신분</span><div>${v(q.status)}</div></div>
-        <div class="qual-item"><span class="detail-label">계열</span><div>${v(q.stream)}</div></div>
-        <div class="qual-item"><span class="detail-label">진로</span><div>${v(q.career)}</div></div></div></div>`;
-    area.innerHTML = html;
+    area.innerHTML = `<div class="qual-section"><div class="qual-head">📍 현재 상황</div><div class="qual-grid"><div class="qual-item"><span class="detail-label">신분</span><div>${v(q.status)}</div></div><div class="qual-item"><span class="detail-label">계열</span><div>${v(q.stream)}</div></div><div class="qual-item"><span class="detail-label">진로</span><div>${v(q.career)}</div></div></div></div>`;
 }
 
 function renderQuantitativeDetail(q) {
@@ -607,13 +529,6 @@ function renderQuantitativeDetail(q) {
         html += `</tbody></table></div><br>`;
     });
     area.innerHTML = html;
-}
-
-function updateAnalysisBadge(status) {
-    const badge = document.getElementById('analysisStatusBadge');
-    if(!badge) return;
-    if (status === 'completed') { badge.className = 'analysis-badge completed'; badge.innerHTML = '✅ 분석 리포트 발송 완료'; }
-    else { badge.className = 'analysis-badge pending'; badge.innerHTML = '⏳ 분석 대기중'; }
 }
 
 function renderPayments(p) {
@@ -636,6 +551,13 @@ function renderPayments(p) {
         totalEl.innerText = "0원"; lastDateEl.innerText = "-";
         listBody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:30px;">결제 내역 없음</td></tr>`;
     }
+}
+
+function updateAnalysisBadge(status) {
+    const badge = document.getElementById('analysisStatusBadge');
+    if(!badge) return;
+    if (status === 'completed') { badge.className = 'analysis-badge completed'; badge.innerHTML = '✅ 분석 리포트 발송 완료'; }
+    else { badge.className = 'analysis-badge pending'; badge.innerHTML = '⏳ 분석 대기중'; }
 }
 
 async function saveAnalysis() {

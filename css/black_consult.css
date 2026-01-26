@@ -6,7 +6,7 @@
 html, body {
     height: 100%; margin: 0; padding: 0;
     overflow: hidden; 
-    background-color: #050505; /* Deep Black */
+    background-color: #050505;
     color: #e0e0e0;
     font-family: 'Pretendard', sans-serif;
 }
@@ -16,7 +16,7 @@ body.black-bg {
     flex-direction: column;
 }
 
-/* --- 1. 헤더 --- */
+/* [헤더] */
 .consult-header-bar {
     width: 100%; height: 70px;
     border-bottom: 1px solid #222;
@@ -47,33 +47,28 @@ body.black-bg {
 }
 .exit-btn:hover { color: #d4af37; border-color: #d4af37; background: rgba(212, 175, 55, 0.1); }
 
-
-/* --- 2. 메인 컨테이너 (Grid Layout) --- */
+/* [메인 컨테이너] */
 .consult-container {
     flex: 1; 
     width: 100%; max-width: 1400px;
     margin: 0 auto;
     padding: 20px;
-    height: calc(100vh - 70px); /* 헤더 제외 높이 */
+    height: calc(100vh - 70px); 
     overflow: hidden; 
 }
 
 .consult-layout {
     display: grid;
-    grid-template-columns: 280px 1fr; /* 좌측 사이드바 | 우측 채팅창 */
+    grid-template-columns: 280px 1fr;
     gap: 20px;
     height: 100%;
 }
 
-
-/* --- 3. 좌측 사이드바 (정보창) --- */
+/* [좌측 사이드바] */
 .info-sidebar {
-    background: #1e1e1e; 
-    padding: 25px 20px;
-    border-radius: 12px; 
-    border: 1px solid #333;
-    height: 100%; 
-    overflow-y: auto;
+    background: #1e1e1e; padding: 25px 20px;
+    border-radius: 12px; border: 1px solid #333;
+    height: 100%; overflow-y: auto;
 }
 
 .user-card { text-align: center; margin-bottom: 25px; border-bottom: 1px solid #333; padding-bottom: 15px; }
@@ -90,24 +85,15 @@ body.black-bg {
 .target-list { list-style: none; padding: 0; margin: 0; }
 .target-list li { color: #ddd; font-size: 0.85rem; margin-bottom: 4px; padding-left: 8px; border-left: 2px solid #d4af37; }
 
-
-/* --- 4. 우측 채팅창 Wrapper --- */
+/* [우측 채팅창] */
 .chat-wrapper {
-    background: #161616; 
-    border: 1px solid #333; 
-    border-radius: 12px;
-    display: flex; 
-    flex-direction: column;
-    height: 100%; 
-    overflow: hidden; 
-    position: relative;
+    background: #161616; border: 1px solid #333; border-radius: 12px;
+    display: flex; flex-direction: column;
+    height: 100%; overflow: hidden; position: relative;
 }
 
-/* 채팅 헤더 (멘토 정보) */
 .chat-header-banner {
-    padding: 15px 25px; 
-    border-bottom: 1px solid #222; 
-    background: #1a1a1a;
+    padding: 15px 25px; border-bottom: 1px solid #222; background: #1a1a1a;
     display: flex; justify-content: space-between; align-items: center;
     flex-shrink: 0;
 }
@@ -116,163 +102,111 @@ body.black-bg {
 .mentor-name { font-weight: bold; color: #f5f5f5; font-size: 1rem; }
 .chat-info { font-size: 0.8rem; color: #666; }
 
-
-/* --- 5. 채팅 내용 영역 (스크롤) --- */
+/* [채팅 내용 영역] */
 .chat-container {
-    flex: 1; 
-    overflow-y: auto; 
+    flex: 1; overflow-y: auto; 
     padding: 20px 25px 40px 25px; 
     background-color: #080808;
     background-image: radial-gradient(#1a1a1a 1px, transparent 1px);
     background-size: 24px 24px;
     
-    /* ★ 핵심: Flex Column이어야 align-self가 좌우로 작동 */
     display: flex; 
     flex-direction: column; 
-    gap: 24px; /* 메시지 사이 간격 넓힘 */
+    gap: 24px; /* 말풍선 간격 시원하게 */
 }
 
-/* 안내 메시지 */
 .chat-notice {
-    align-self: center;
-    text-align: center; 
-    background: rgba(255,255,255,0.05); 
-    padding: 12px 20px;
+    align-self: center; text-align: center; 
+    background: rgba(255,255,255,0.05); padding: 12px 20px;
     border-radius: 12px; margin: 0 auto 20px; 
     font-size: 0.8rem; color: #888;
-    max-width: 80%; line-height: 1.5;
-    border: 1px solid #222;
+    max-width: 80%; line-height: 1.5; border: 1px solid #222;
 }
 
 /* 메시지 공통 */
 .message { 
-    display: flex; 
-    flex-direction: column; 
-    max-width: 75%; 
-    width: fit-content; 
-    position: relative; 
-    animation: fadeIn 0.2s ease-out;
+    display: flex; flex-direction: column; 
+    max-width: 75%; width: fit-content; 
+    position: relative; animation: fadeIn 0.2s ease-out;
 }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-/* ★ [User: 나] - 오른쪽 배치 */
+/* ★ [핵심] 메시지 좌우 배치 강제 (margin 방식) */
+
+/* User: 나 (오른쪽) */
 .message.user { 
-    align-self: flex-end;       /* 컨테이너 기준 오른쪽 끝 */
-    align-items: flex-end;      /* 내부 요소(시간 등) 오른쪽 정렬 */
+    margin-left: auto; /* 왼쪽 여백을 최대로 -> 오른쪽 끝 */
+    align-items: flex-end; 
 }
 .message.user .msg-bubble { 
-    background: linear-gradient(135deg, #d4af37, #b4941f); /* 고급 골드 */
+    background: linear-gradient(135deg, #d4af37, #b4941f); 
     color: #000; 
-    border-radius: 18px 18px 4px 18px; /* 말꼬리 */
+    border-radius: 18px 18px 4px 18px; 
     box-shadow: 0 4px 15px rgba(212, 175, 55, 0.15);
     font-weight: 500;
 }
 .message.user .msg-time { text-align: right; margin-right: 2px; }
 
-/* ★ [Admin: 멘토] - 왼쪽 배치 */
+/* Admin: 멘토 (왼쪽) */
 .message.admin { 
-    align-self: flex-start;     /* 컨테이너 기준 왼쪽 끝 */
-    align-items: flex-start;    /* 내부 요소 왼쪽 정렬 */
+    margin-right: auto; /* 오른쪽 여백을 최대로 -> 왼쪽 끝 */
+    align-items: flex-start;
 }
 .message.admin .msg-bubble { 
-    background: #1f1f1f; 
-    color: #e0e0e0; 
+    background: #1f1f1f; color: #e0e0e0; 
     border: 1px solid #333;
-    border-radius: 18px 18px 18px 4px; /* 말꼬리 */
+    border-radius: 18px 18px 18px 4px;
 }
 
 /* 말풍선 내부 */
 .msg-bubble {
-    padding: 12px 16px; 
-    font-size: 0.95rem; 
-    line-height: 1.5; 
-    word-break: break-word;
-    white-space: pre-wrap;
+    padding: 12px 16px; font-size: 0.95rem; 
+    line-height: 1.5; word-break: break-word; white-space: pre-wrap;
 }
 
-.msg-time { 
-    font-size: 0.7rem; color: #555; 
-    margin-top: 6px; min-width: 45px; 
-}
+.msg-time { font-size: 0.7rem; color: #555; margin-top: 6px; min-width: 45px; }
 
 /* 파일 첨부 */
-.chat-image { 
-    max-width: 240px; border-radius: 12px; margin-top: 8px; cursor: pointer; 
-    border: 2px solid rgba(255,255,255,0.1); 
-    transition: transform 0.2s;
-}
+.chat-image { max-width: 240px; border-radius: 12px; margin-top: 8px; cursor: pointer; border: 2px solid rgba(255,255,255,0.1); transition: transform 0.2s; }
 .chat-image:hover { transform: scale(1.02); }
 
-.file-attachment { 
-    display: flex; align-items: center; gap: 10px; 
-    text-decoration: none; padding: 10px 14px; 
-    border-radius: 10px; margin-top: 8px; font-size: 0.9rem; transition: 0.2s;
-}
+.file-attachment { display: flex; align-items: center; gap: 10px; text-decoration: none; padding: 10px 14px; border-radius: 10px; margin-top: 8px; font-size: 0.9rem; transition: 0.2s; }
 .message.user .file-attachment { background: rgba(0,0,0,0.1); color: #000; }
 .message.admin .file-attachment { background: rgba(255,255,255,0.05); color: #ccc; }
 
-
-/* --- 6. 입력창 영역 --- */
+/* [입력창 영역] */
 .chat-input-area {
-    background: #161616; 
-    padding: 15px 20px; 
-    border-top: 1px solid #222;
-    flex-shrink: 0;
-    padding-bottom: max(15px, env(safe-area-inset-bottom));
+    background: #161616; padding: 15px 20px; border-top: 1px solid #222;
+    flex-shrink: 0; padding-bottom: max(15px, env(safe-area-inset-bottom));
 }
 
-.file-preview { 
-    padding: 8px 12px; background: #1f1f1f; 
-    border-radius: 8px; margin-bottom: 10px; 
-    display: inline-flex; align-items: center; gap: 10px;
-    border: 1px solid #333;
-}
+.file-preview { padding: 8px 12px; background: #1f1f1f; border-radius: 8px; margin-bottom: 10px; display: inline-flex; align-items: center; gap: 10px; border: 1px solid #333; }
 .preview-box { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: #d4af37; }
 .preview-box button { background: none; border: none; color: #666; cursor: pointer; padding: 0; }
 
-.input-wrapper { 
-    display: flex; align-items: flex-end; gap: 12px; 
-    background: #1a1a1a; border-radius: 24px; 
-    padding: 10px 15px; border: 1px solid #333; 
-    transition: border 0.2s;
-}
+.input-wrapper { display: flex; align-items: flex-end; gap: 12px; background: #1a1a1a; border-radius: 24px; padding: 10px 15px; border: 1px solid #333; transition: border 0.2s; }
 .input-wrapper:focus-within { border-color: #444; }
 
 .attach-btn { color: #666; font-size: 1.3rem; padding: 5px; cursor: pointer; transition: 0.2s; }
 .attach-btn:hover { color: #d4af37; }
 
-#messageInput { 
-    flex: 1; background: none; border: none; color: white; 
-    font-size: 1rem; padding: 8px 0; resize: none; 
-    max-height: 120px; line-height: 1.5; outline: none; 
-}
+#messageInput { flex: 1; background: none; border: none; color: white; font-size: 1rem; padding: 8px 0; resize: none; max-height: 120px; line-height: 1.5; outline: none; }
 #messageInput::placeholder { color: #444; }
 
-.send-btn { 
-    background: #d4af37; color: #000; border: none; 
-    width: 38px; height: 38px; border-radius: 50%; 
-    display: flex; align-items: center; justify-content: center; 
-    cursor: pointer; font-size: 1rem; transition: 0.2s; flex-shrink: 0; 
-}
+.send-btn { background: #d4af37; color: #000; border: none; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1rem; transition: 0.2s; flex-shrink: 0; }
 .send-btn:hover { background: #fceba6; transform: scale(1.1); box-shadow: 0 0 10px rgba(212,175,55,0.4); }
 .send-btn:disabled { background: #333; color: #555; cursor: not-allowed; transform: none; box-shadow: none; }
 
-
-/* --- 7. 모바일 반응형 (768px 이하) --- */
+/* [모바일 반응형] */
 @media (max-width: 768px) {
-    /* 사이드바 숨기고 채팅창 전체화면 */
-    .consult-container { padding: 0; margin: 0; height: calc(100vh - 70px); }
+    .consult-container { padding: 0; margin: 0; height: calc(100vh - 60px); }
     .consult-layout { display: flex; flex-direction: column; gap: 0; }
-    
     .info-sidebar { display: none; }
-    
     .chat-wrapper { border: none; border-radius: 0; }
-    .chat-header-banner { padding: 12px 15px; }
+    .chat-header-banner { padding: 10px 15px; }
     .chat-info { display: none; }
-    
     .consult-header-bar { height: 60px; padding: 0 15px; }
-    .brand span { display: none; } /* 긴 텍스트 숨김 */
-    
+    .brand span { display: none; }
     .message { max-width: 85%; }
 }
