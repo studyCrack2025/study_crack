@@ -17,14 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     
-    // 초기 로드 및 폴링 시작
-    loadChat();
-    pollingInterval = setInterval(loadChat, 3000); // 3초마다 갱신
+    loadUserData(); // 사이드바 정보 로드
+    loadChat();     // 채팅 로드
+    pollingInterval = setInterval(loadChat, 3000); // 3초 폴링
 
-    // 붙여넣기 이벤트 (이미지)
+    // 이벤트 리스너
     document.addEventListener('paste', handlePaste);
-    
-    // 엔터키 전송 (Shift+Enter는 줄바꿈)
     messageInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -33,7 +31,40 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// 채팅 데이터 로드
+// 1. 유저 정보 로드 (사이드바용)
+async function loadUserData() {
+    const token = localStorage.getItem('accessToken');
+    try {
+        const res = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'get_user', userId: userId })
+        });
+        if(res.ok) {
+            const data = await res.json();
+            document.getElementById('userName').innerText = data.name || 'User';
+            if (data.qualitative) {
+                document.getElementById('userStatus').innerText = data.qualitative.status || '-';
+                document.getElementById('userStream').innerText = data.qualitative.stream || '-';
+            }
+            const targetList = document.getElementById('userTargets');
+            targetList.innerHTML = '';
+            if (data.targetUnivs && data.targetUnivs.length > 0) {
+                data.targetUnivs.forEach((u, i) => {
+                    if (u && u.univ && i < 2) {
+                        const li = document.createElement('li');
+                        li.innerText = `${u.univ} ${u.major || ''}`;
+                        targetList.appendChild(li);
+                    }
+                });
+            } else {
+                targetList.innerHTML = '<li>설정된 목표 없음</li>';
+            }
+        }
+    } catch(e) { console.error("UserInfo Error:", e); }
+}
+
+// 2. 채팅 데이터 로드
 async function loadChat() {
     try {
         const token = localStorage.getItem('accessToken');
@@ -47,12 +78,10 @@ async function loadChat() {
             const data = await res.json();
             const chats = data.consultChat || [];
             
-            // 데이터가 변경되었을 때만 렌더링 (깜빡임 방지)
+            // 변경사항 있을 때만 렌더링
             if (JSON.stringify(chats) !== JSON.stringify(lastChatData)) {
                 lastChatData = chats;
                 renderChat(chats);
-                // 읽음 처리 요청 (User가 봤으니 Admin 메시지를 읽음 처리할 필요는 없지만, 로직상 넣어둠)
-                // (실제로는 Admin이 볼 때 User 메시지를 읽음 처리함)
             }
         }
     } catch(e) { console.error("Chat Load Error:", e); }
@@ -61,7 +90,6 @@ async function loadChat() {
 function renderChat(chats) {
     chatList.innerHTML = '';
     
-    // 날짜별 그룹화 로직 등은 생략하고 단순 나열 (필요시 추가 가능)
     chats.forEach(msg => {
         const isMe = msg.sender === 'user';
         const typeClass = isMe ? 'user' : 'admin';
@@ -69,7 +97,7 @@ function renderChat(chats) {
         
         let contentHtml = escapeHtml(msg.text).replace(/\n/g, '<br>');
         
-        // 파일이 있는 경우
+        // 파일 처리
         if (msg.file) {
             const isImg = msg.file.match(/\.(jpg|jpeg|png|gif)$/i);
             if (isImg) {
@@ -83,7 +111,7 @@ function renderChat(chats) {
 
         const bubble = document.createElement('div');
         bubble.className = `message ${typeClass}`;
-        // 내 메시지: 시간 + 버블 / 상대 메시지: 버블 + 시간
+        
         if (isMe) {
             bubble.innerHTML = `<span class="msg-time">${timeStr}</span><div class="msg-bubble">${contentHtml}</div>`;
         } else {
@@ -93,16 +121,15 @@ function renderChat(chats) {
         chatList.appendChild(bubble);
     });
 
-    // 스크롤 맨 아래로
     scrollToBottom();
 }
 
 function scrollToBottom() {
-    const container = document.getElementById('chatContainer');
-    container.scrollTop = container.scrollHeight;
+    const container = document.getElementById('chatContainer'); // ID 수정
+    if(container) container.scrollTop = container.scrollHeight;
 }
 
-// 메시지 전송
+// 3. 메시지 전송 (400 에러 수정 포함)
 async function sendMessage() {
     const text = messageInput.value.trim();
     if (!text && !currentFile) return;
@@ -112,46 +139,50 @@ async function sendMessage() {
     let fileUrl = null;
 
     try {
-        // 1. 파일 업로드
+        // 파일 업로드 로직
         if (currentFile) {
-            // S3 Presigned URL 요청
             const presignRes = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ 
                     type: 'get_presigned_url', 
-                    userId: userId, // 토큰 실패 대비
+                    userId: userId, 
                     data: { fileName: currentFile.name, fileType: currentFile.type, folder: 'chat' } 
                 })
             });
             const { uploadUrl, fileUrl: s3Url } = await presignRes.json();
             
-            // S3 업로드
             await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': currentFile.type }, body: currentFile });
             fileUrl = s3Url;
         }
 
-        // 2. 메시지 저장
         const msgData = {
             id: Date.now().toString(),
-            sender: 'user', // 보낸 사람
+            sender: 'user',
             text: text,
             file: fileUrl,
             date: new Date().toISOString(),
             isRead: false
         };
 
+        // ★ [수정] userId를 targetUserId로도 명시적으로 전송하여 백엔드 혼동 방지
         await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'save_chat_message', userId, data: { message: msgData } })
+            body: JSON.stringify({ 
+                type: 'save_chat_message', 
+                userId: userId, 
+                data: { 
+                    targetUserId: userId, // 본인에게 쓰기 (Admin이 볼 때는 이 ID로 조회)
+                    message: msgData 
+                } 
+            })
         });
 
-        // 초기화 및 리로드
         messageInput.value = '';
         messageInput.style.height = 'auto';
         clearFile();
-        loadChat();
+        loadChat(); // 즉시 갱신
 
     } catch(e) {
         alert("전송 실패: " + e.message);
@@ -173,7 +204,6 @@ function handleFileSelect(input) {
     }
 }
 
-// 붙여넣기 핸들러
 function handlePaste(e) {
     const items = (e.clipboardData || e.originalEvent.clipboardData).items;
     for (let item of items) {
