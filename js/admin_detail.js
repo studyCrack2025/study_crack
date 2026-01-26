@@ -219,14 +219,24 @@ function renderWeeklyTab() {
             detailsHtml += `</table>`;
         }
 
-        // 2. [추가] 플래너 파일 목록 HTML 생성
+        // 2. 플래너 파일 목록 HTML 생성
         let plannerHtml = '';
         if (d.plannerFiles && d.plannerFiles.length > 0) {
             // 파일이 S3 URL이면 링크로, 아니면 텍스트로 표시
             const fileList = d.plannerFiles.map(f => {
-                // S3 URL인지 단순 파일명인지 체크 (http로 시작하면 링크)
-                if (f.startsWith('http')) {
-                    return `<div>📄 <a href="${f}" target="_blank" style="color:#2563eb; text-decoration:underline;">첨부파일 보기</a></div>`;
+                let fileName = f;
+                // URL이면 파일명만 추출
+                if (typeof f === 'string' && f.startsWith('http')) {
+                    try {
+                        fileName = decodeURIComponent(f.split('/').pop());
+                        fileName = fileName.replace(/^\d+_/, '');
+                    } catch(e) {}
+                    
+                    return `<div>
+                        📄 <a href="${f}" target="_blank" style="color:#2563eb; text-decoration:underline;">
+                            ${escapeHtml(fileName)}
+                        </a>
+                    </div>`;
                 } else {
                     return `<div>📄 ${escapeHtml(f)} <small style="color:#94a3b8;">(미연동)</small></div>`;
                 }

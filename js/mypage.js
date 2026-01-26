@@ -424,15 +424,54 @@ function handlePlannerFiles(input) {
 function renderPlannerFiles() {
     const list = document.getElementById('plannerFileList');
     list.innerHTML = '';
+    
     if (currentPlannerFiles.length === 0) {
         list.innerHTML = '<span class="placeholder-text">선택된 파일 없음</span>';
         return;
     }
+
     currentPlannerFiles.forEach((file, idx) => {
+        let fileName = "";
+        let fileLink = ""; // 미리보기 링크 (저장된 파일인 경우)
+
+        // Case 1: 새로 추가한 파일 (File 객체)
+        if (file instanceof File) {
+            fileName = file.name;
+        } 
+        // Case 2: DB에서 불러온 S3 URL (문자열)
+        else if (typeof file === 'string') {
+            // URL에서 파일명 추출 (디코딩 포함)
+            try {
+                // 전체 경로에서 마지막 '/' 뒤의 부분을 가져옴
+                const rawName = file.split('/').pop();
+                // URL 인코딩된 한글 등을 복원
+                fileName = decodeURIComponent(rawName);
+                
+                // 앞의 타임스탬프(숫자_)가 보기 싫으면 제거하는 로직
+                fileName = fileName.replace(/^\d+_/, '');
+                
+                fileLink = file; // URL 저장
+            } catch (e) {
+                fileName = file; // 에러 시 그냥 전체 출력
+            }
+        }
+
         const div = document.createElement('div');
         div.className = 'file-item';
-        // file.name으로 이름 표시
-        div.innerHTML = `<span>📄 ${file.name}</span><span class="file-remove" onclick="removePlannerFile(${idx})">x</span>`;
+        
+        // 저장된 파일이면 클릭해서 볼 수 있게 링크 제공
+        let nameDisplay = `<span>📄 ${fileName}</span>`;
+        if (fileLink) {
+            nameDisplay = `<a href="${fileLink}" target="_blank" style="text-decoration:none; color:#334155; display:flex; align-items:center; gap:5px;">
+                <span>📄 ${fileName}</span> 
+                <i class="fas fa-external-link-alt" style="font-size:0.7rem; color:#3b82f6;"></i>
+            </a>`;
+        }
+
+        div.innerHTML = `
+            ${nameDisplay}
+            <span class="file-remove" onclick="removePlannerFile(${idx})">x</span>
+        `;
         list.appendChild(div);
     });
 }
