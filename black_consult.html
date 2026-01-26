@@ -2,91 +2,54 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>1:1 Private Consulting - For Black</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>THE BLACK - Private Lounge</title>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/black_consult.css"> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/black_consult.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
 </head>
-<body class="black-bg">
-    <header class="consult-header-bar">
-        <div class="header-inner">
-            <div class="brand">THE BLACK <span style="font-weight:300; color:#888; font-size:0.9rem; margin-left:10px;">| Consulting Room</span></div>
-            <a href="mypage.html?tab=solution&sol=black" class="exit-btn">
-                나가기 <i class="fas fa-sign-out-alt"></i>
-            </a>
+<body class="black-chat-body">
+
+    <header class="chat-header">
+        <div class="header-left">
+            <a href="mypage.html?tab=solution&sol=black" class="back-link"><i class="fas fa-chevron-left"></i></a>
+            <div class="mentor-info">
+                <span class="mentor-name">JAY 컨설턴트</span>
+                <span class="status-dot online"></span>
+            </div>
+        </div>
+        <div class="header-right">
+            <span class="brand-logo">THE BLACK</span>
         </div>
     </header>
-    
-    <div class="consult-container">
-        <div class="consult-layout">
-            <aside class="info-sidebar">
-                <div class="user-card">
-                    <div class="user-avatar"><i class="fas fa-user"></i></div>
-                    <h3 id="userName">User</h3>
-                    <p class="user-tier">BLACK MEMBER</p>
-                </div>
-                <div class="info-group">
-                    <label>현재 신분</label>
-                    <div id="userStatus" class="info-val">-</div>
-                </div>
-                <div class="info-group">
-                    <label>희망 계열</label>
-                    <div id="userStream" class="info-val">-</div>
-                </div>
-                <div class="info-group">
-                    <label>목표 대학</label>
-                    <ul id="userTargets" class="target-list">
-                        <li>-</li>
-                    </ul>
-                </div>
-            </aside>
 
-            <main class="board-area">
-                <div class="mentor-banner">
-                    <div class="mentor-profile">
-                        <img src="assets/images/mentor_sample.png" onerror="this.src='https://placehold.co/80x80/333/d4af37?text=Mentor'" alt="Mentor">
-                        <div>
-                            <h2>전담 컨설턴트 <span style="color:#d4af37;">JAY</span></h2>
-                            <p>입시 전략 수석 연구원 | 전 대치동 S학원 입시센터장</p>
-                        </div>
-                    </div>
-                    <button class="write-btn" onclick="openConsultModal()">상담 신청하기</button>
-                </div>
-
-                <div class="qna-list-container">
-                    <h3>📂 상담 히스토리</h3>
-                    <div id="qnaList" class="qna-list">
-                        <div class="loading-msg">데이터를 불러오는 중입니다...</div>
-                    </div>
-                </div>
-            </main>
+    <main class="chat-container" id="chatContainer">
+        <div class="chat-notice">
+            <p>🔒 1:1 프라이빗 컨설팅 룸에 오신 것을 환영합니다.</p>
+            <p>입시, 학습, 멘탈 등 무엇이든 물어보세요.<br>최대 24시간 내에 답변드립니다.</p>
         </div>
-    </div>
+        
+        <div id="chatList"></div>
+    </main>
 
-    <div id="consultModal" class="modal">
-        <div class="modal-content black-modal">
-            <div class="modal-head">
-                <h3>1:1 시크릿 상담 신청</h3>
-                <span class="close-btn" onclick="closeConsultModal()">&times;</span>
-            </div>
-            <div class="modal-body">
-                <select id="consultCategory" class="black-input">
-                    <option value="성적">📉 성적/학습 분석</option>
-                    <option value="공부법">📖 과목별 공부법</option>
-                    <option value="입시">🏫 수시/정시 전략</option>
-                    <option value="멘탈">🧠 멘탈/슬럼프 관리</option>
-                    <option value="기타">💬 기타 문의</option>
-                </select>
-                <input type="text" id="consultTitle" class="black-input" placeholder="제목을 입력하세요 (30자 이내)">
-                <textarea id="consultContent" class="black-textarea" placeholder="구체적인 고민 내용을 적어주세요. 성적표나 관련 자료가 있다면 상세히 기술해주시면 좋습니다."></textarea>
-            </div>
-            <div class="modal-foot">
-                <button class="submit-btn" onclick="submitConsult()">작성 완료</button>
+    <footer class="chat-input-area">
+        <div class="file-preview" id="filePreview" style="display:none;">
+            <div class="preview-box">
+                <span id="previewName">image.png</span>
+                <button onclick="clearFile()"><i class="fas fa-times"></i></button>
             </div>
         </div>
-    </div>
-    
+        <div class="input-wrapper">
+            <label for="fileInput" class="attach-btn"><i class="fas fa-plus"></i></label>
+            <input type="file" id="fileInput" style="display:none;" onchange="handleFileSelect(this)">
+            
+            <textarea id="messageInput" rows="1" placeholder="메시지를 입력하세요..." oninput="autoResize(this)"></textarea>
+            
+            <button id="sendBtn" class="send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </footer>
+
     <script src="js/config.js"></script>
     <script src="js/black_consult.js"></script>
 </body>

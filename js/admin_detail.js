@@ -280,6 +280,22 @@ function renderWeeklyTab() {
 function renderSpecialTab() {
     const container = document.getElementById('specialListContainer');
     container.innerHTML = '';
+    
+    // BLACK 회원이면 채팅 인터페이스 로드
+    if (currentTier === 'black') {
+        container.innerHTML = `
+            <div class="admin-chat-wrapper">
+                <div class="chat-window" id="adminChatWindow">
+                    </div>
+                <div class="chat-input-box">
+                    <textarea id="adminChatInput" placeholder="답변을 입력하세요..."></textarea>
+                    <button onclick="sendAdminChat()" class="chat-send-btn">전송</button>
+                </div>
+            </div>
+        `;
+        renderAdminChat(); // 채팅 로드 및 읽음 처리
+        return;
+    }
 
     // ★ DB 변수명 수정: proCoachingHistory, blackConsultHistory
     const proHistory = currentStudentData.proCoachingHistory || [];
@@ -330,7 +346,79 @@ function renderSpecialTab() {
     });
 }
 
-// [NEW] 모달 보기
+// 관리자 채팅 렌더링 및 읽음 처리
+async function renderAdminChat() {
+    const chatWindow = document.getElementById('adminChatWindow');
+    const chats = currentStudentData.consultChat || [];
+    const token = localStorage.getItem('accessToken');
+
+    let unreadExists = false;
+
+    chats.forEach(msg => {
+        const isMe = msg.sender === 'admin';
+        const typeClass = isMe ? 'me' : 'other'; // CSS 클래스: me(오른쪽), other(왼쪽)
+        const timeStr = new Date(msg.date).toLocaleString();
+        
+        let content = escapeHtml(msg.text).replace(/\n/g, '<br>');
+        if(msg.file) content += `<br><a href="${msg.file}" target="_blank">📄 첨부파일</a>`;
+
+        const div = document.createElement('div');
+        div.className = `chat-bubble ${typeClass}`;
+        div.innerHTML = `<div class="msg-text">${content}</div><div class="msg-info">${timeStr} ${isMe && msg.isRead ? '(읽음)' : ''}</div>`;
+        chatWindow.appendChild(div);
+
+        if (msg.sender === 'user' && !msg.isRead) unreadExists = true;
+    });
+
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+    // 읽지 않은 메시지가 있으면 읽음 처리 요청
+    if (unreadExists) {
+        await fetch(ADMIN_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ 
+                type: 'mark_chat_read', 
+                userId: adminId, 
+                data: { targetUserId: targetUserId, sender: 'user' } 
+            })
+        });
+    }
+}
+
+// 관리자 메시지 전송
+async function sendAdminChat() {
+    const input = document.getElementById('adminChatInput');
+    const text = input.value.trim();
+    if (!text) return;
+
+    const token = localStorage.getItem('accessToken');
+    const msgData = {
+        id: Date.now().toString(),
+        sender: 'admin',
+        text: text,
+        file: null, // 관리자 파일 첨부는 추후 구현
+        date: new Date().toISOString(),
+        isRead: false
+    };
+
+    try {
+        await fetch(ADMIN_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ 
+                type: 'save_chat_message', 
+                userId: adminId, 
+                data: { targetUserId: targetUserId, message: msgData } 
+            })
+        });
+        
+        input.value = '';
+        loadStudentDetail(); // 데이터 갱신 (화면 리로드)
+    } catch(e) { alert("전송 실패"); }
+}
+
+// 모달 보기
 function showModal(item) {
     const modal = document.getElementById('detailModal');
     const titleEl = document.getElementById('modalTitle');

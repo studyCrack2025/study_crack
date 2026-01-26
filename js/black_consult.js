@@ -1,175 +1,201 @@
 // js/black_consult.js
 
-// API 주소 변경
 const API_URL = CONFIG.api.base;
 const userId = localStorage.getItem('userId');
+const chatList = document.getElementById('chatList');
+const messageInput = document.getElementById('messageInput');
+const sendBtn = document.getElementById('sendBtn');
+
+let currentFile = null;
+let lastChatData = [];
+let pollingInterval = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (!userId) { 
-        alert("로그인이 필요합니다."); 
-        window.location.href = 'login.html'; 
-        return; 
+    if (!userId) {
+        alert("로그인이 필요합니다.");
+        window.location.href = 'login.html';
+        return;
     }
-    loadUserData();
-    loadConsultHistory();
+    
+    // 초기 로드 및 폴링 시작
+    loadChat();
+    pollingInterval = setInterval(loadChat, 3000); // 3초마다 갱신
+
+    // 붙여넣기 이벤트 (이미지)
+    document.addEventListener('paste', handlePaste);
+    
+    // 엔터키 전송 (Shift+Enter는 줄바꿈)
+    messageInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
 });
 
-// 유저 정보 로드 (좌측 사이드바)
-async function loadUserData() {
-    const token = localStorage.getItem('accessToken');
-    const userId = localStorage.getItem('userId'); // userId가 있는지 확인
-    
+// 채팅 데이터 로드
+async function loadChat() {
     try {
-        const res = await fetch(API_URL, { 
-            method: 'POST', 
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            // 백엔드 검증 로직에 맞춰 userId를 포함해서 보냅니다.
-            body: JSON.stringify({ type: 'get_user', userId: userId }) 
-        });
-
-        if (!res.ok) throw new Error("유저 정보를 불러오는 데 실패했습니다.");
-
-        const data = await res.json();
-        console.log("로딩된 유저 데이터:", data); // 확인용 콘솔
-
-        // 1. 이름 및 티어 업데이트 (백엔드의 computedTier 반영)
-        document.getElementById('userName').innerText = data.name || 'User';
-        const tierElement = document.querySelector('.user-tier');
-        if (data.computedTier && tierElement) {
-            tierElement.innerText = `${data.computedTier.toUpperCase()} MEMBER`;
-        }
-        
-        // 2. 기초조사서 정보 매핑 (qualitative 객체 안전하게 접근)
-        if (data.qualitative) {
-            document.getElementById('userStatus').innerText = data.qualitative.status || '미입력';
-            document.getElementById('userStream').innerText = data.qualitative.stream || '미입력';
-        }
-        
-        // 3. 목표 대학 표시
-        const targetList = document.getElementById('userTargets');
-        targetList.innerHTML = '';
-        if (data.targetUnivs && data.targetUnivs.length > 0) {
-            data.targetUnivs.forEach((u, i) => {
-                if (u && u.univ && i < 2) { 
-                    const li = document.createElement('li');
-                    li.innerText = `${i+1}지망: ${u.univ} ${u.major || ''}`;
-                    targetList.appendChild(li);
-                }
-            });
-        } else {
-            targetList.innerHTML = '<li>설정된 목표 대학이 없습니다.</li>';
-        }
-    } catch(e) { 
-        console.error("loadUserData 에러:", e); 
-    }
-}
-
-// 상담 리스트 로드
-async function loadConsultHistory() {
-    const list = document.getElementById('qnaList');
-    const token = localStorage.getItem('accessToken');
-    const userId = localStorage.getItem('userId');
-
-    try {
-        const res = await fetch(API_URL, { 
-            method: 'POST', 
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ type: 'get_user', userId: userId }) 
-        });
-
-        if (!res.ok) throw new Error("히스토리 로드 실패");
-
-        const data = await res.json();
-        // 백엔드 응답에서 blackConsultHistory가 없을 경우 빈 배열로 처리
-        const history = data.blackConsultHistory || []; 
-        list.innerHTML = '';
-
-        if (history.length === 0) {
-            list.innerHTML = '<div style="text-align:center; padding:40px; color:#555;">상담 내역이 없습니다.<br>첫 상담을 신청해보세요.</div>';
-            return;
-        }
-
-        // 최신순 정렬
-        history.sort((a,b) => new Date(b.date) - new Date(a.date));
-
-        history.forEach(item => {
-            const date = new Date(item.date).toLocaleDateString();
-            const statusClass = item.reply ? 'replied' : 'pending';
-            const statusText = item.reply ? '답변 완료' : '답변 대기중';
-            
-            const safeTitle = (item.title || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            const safeContent = (item.content || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            const safeReply = item.reply ? item.reply.replace(/</g, "&lt;").replace(/>/g, "&gt;") : "아직 답변이 등록되지 않았습니다.";
-
-            const div = document.createElement('div');
-            div.className = 'qna-item';
-            
-            div.onclick = () => {
-                const replyMsg = item.reply 
-                    ? `[담당 컨설턴트 답변]\n${safeReply}` 
-                    : `[상태: 접수 완료]\n담당 컨설턴트가 내용을 확인 중입니다.`;
-                alert(`Q. ${safeTitle}\n\n${safeContent}\n\n------------------------\n${replyMsg}`);
-            };
-
-            div.innerHTML = `
-                <div class="qna-header">
-                    <span>[${item.category}] ${date}</span>
-                    <span class="qna-status ${statusClass}">${statusText}</span>
-                </div>
-                <div class="qna-title">${safeTitle}</div>
-                <div class="qna-snippet">${safeContent}</div>
-            `;
-            list.appendChild(div);
-        });
-
-    } catch(e) { 
-        console.error("loadConsultHistory 에러:", e);
-        list.innerHTML = '<p style="text-align:center; color:red;">내역을 불러오지 못했습니다.</p>';
-    }
-}
-
-// 모달 제어
-function openConsultModal() { document.getElementById('consultModal').style.display = 'block'; }
-function closeConsultModal() { document.getElementById('consultModal').style.display = 'none'; }
-
-// 상담 제출
-async function submitConsult() {
-    const category = document.getElementById('consultCategory').value;
-    const title = document.getElementById('consultTitle').value;
-    const content = document.getElementById('consultContent').value;
-    const token = localStorage.getItem('accessToken');
-
-    if(!title || !content) return alert("제목과 내용을 모두 입력해주세요.");
-    if(!confirm("상담을 신청하시겠습니까?")) return;
-
-    const reqData = {
-        date: new Date().toISOString(),
-        category, title, content,
-        reply: null 
-    };
-
-    try {
+        const token = localStorage.getItem('accessToken');
         const res = await fetch(API_URL, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` // ★ 토큰 추가
-            },
-            body: JSON.stringify({ type: 'save_black_consult', userId, data: reqData })
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'get_user', userId: userId })
         });
         
         if(res.ok) {
-            alert("신청되었습니다. 담당 컨설턴트가 곧 답변을 드릴 예정입니다.");
-            closeConsultModal();
-            loadConsultHistory(); // 리스트 갱신
-        } else {
-            throw new Error("저장 실패");
+            const data = await res.json();
+            const chats = data.consultChat || [];
+            
+            // 데이터가 변경되었을 때만 렌더링 (깜빡임 방지)
+            if (JSON.stringify(chats) !== JSON.stringify(lastChatData)) {
+                lastChatData = chats;
+                renderChat(chats);
+                // 읽음 처리 요청 (User가 봤으니 Admin 메시지를 읽음 처리할 필요는 없지만, 로직상 넣어둠)
+                // (실제로는 Admin이 볼 때 User 메시지를 읽음 처리함)
+            }
         }
-    } catch(e) { alert("전송 실패: " + e.message); }
+    } catch(e) { console.error("Chat Load Error:", e); }
+}
+
+function renderChat(chats) {
+    chatList.innerHTML = '';
+    
+    // 날짜별 그룹화 로직 등은 생략하고 단순 나열 (필요시 추가 가능)
+    chats.forEach(msg => {
+        const isMe = msg.sender === 'user';
+        const typeClass = isMe ? 'user' : 'admin';
+        const timeStr = new Date(msg.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        let contentHtml = escapeHtml(msg.text).replace(/\n/g, '<br>');
+        
+        // 파일이 있는 경우
+        if (msg.file) {
+            const isImg = msg.file.match(/\.(jpg|jpeg|png|gif)$/i);
+            if (isImg) {
+                contentHtml += `<br><img src="${msg.file}" class="chat-image" onclick="window.open('${msg.file}')">`;
+            } else {
+                contentHtml += `<br><a href="${msg.file}" target="_blank" class="file-attachment">
+                    <i class="fas fa-file-download file-icon"></i> <span class="file-name">첨부파일</span>
+                </a>`;
+            }
+        }
+
+        const bubble = document.createElement('div');
+        bubble.className = `message ${typeClass}`;
+        // 내 메시지: 시간 + 버블 / 상대 메시지: 버블 + 시간
+        if (isMe) {
+            bubble.innerHTML = `<span class="msg-time">${timeStr}</span><div class="msg-bubble">${contentHtml}</div>`;
+        } else {
+            bubble.innerHTML = `<div class="msg-bubble">${contentHtml}</div><span class="msg-time">${timeStr}</span>`;
+        }
+        
+        chatList.appendChild(bubble);
+    });
+
+    // 스크롤 맨 아래로
+    scrollToBottom();
+}
+
+function scrollToBottom() {
+    const container = document.getElementById('chatContainer');
+    container.scrollTop = container.scrollHeight;
+}
+
+// 메시지 전송
+async function sendMessage() {
+    const text = messageInput.value.trim();
+    if (!text && !currentFile) return;
+
+    sendBtn.disabled = true;
+    const token = localStorage.getItem('accessToken');
+    let fileUrl = null;
+
+    try {
+        // 1. 파일 업로드
+        if (currentFile) {
+            // S3 Presigned URL 요청
+            const presignRes = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ 
+                    type: 'get_presigned_url', 
+                    userId: userId, // 토큰 실패 대비
+                    data: { fileName: currentFile.name, fileType: currentFile.type, folder: 'chat' } 
+                })
+            });
+            const { uploadUrl, fileUrl: s3Url } = await presignRes.json();
+            
+            // S3 업로드
+            await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': currentFile.type }, body: currentFile });
+            fileUrl = s3Url;
+        }
+
+        // 2. 메시지 저장
+        const msgData = {
+            id: Date.now().toString(),
+            sender: 'user', // 보낸 사람
+            text: text,
+            file: fileUrl,
+            date: new Date().toISOString(),
+            isRead: false
+        };
+
+        await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'save_chat_message', userId, data: { message: msgData } })
+        });
+
+        // 초기화 및 리로드
+        messageInput.value = '';
+        messageInput.style.height = 'auto';
+        clearFile();
+        loadChat();
+
+    } catch(e) {
+        alert("전송 실패: " + e.message);
+    } finally {
+        sendBtn.disabled = false;
+        messageInput.focus();
+    }
+}
+
+// 파일 선택 핸들러
+function handleFileSelect(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (file.size > 10 * 1024 * 1024) return alert("10MB 이하 파일만 가능합니다.");
+        
+        currentFile = file;
+        document.getElementById('filePreview').style.display = 'inline-block';
+        document.getElementById('previewName').innerText = file.name;
+    }
+}
+
+// 붙여넣기 핸들러
+function handlePaste(e) {
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (let item of items) {
+        if (item.kind === 'file') {
+            const file = item.getAsFile();
+            handleFileSelect({ files: [file] });
+        }
+    }
+}
+
+function clearFile() {
+    currentFile = null;
+    document.getElementById('filePreview').style.display = 'none';
+    document.getElementById('fileInput').value = '';
+}
+
+function autoResize(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
