@@ -1,7 +1,11 @@
 // js/mypage.js
 
+// 기존 API (회원정보, 주간점검 등)
 const MYPAGE_API_URL = CONFIG.api.base; 
+// 대학 목록 조회용 API
 const UNIV_DATA_API_URL = CONFIG.api.analysis; 
+// 환산점수 계산 전용 Lambda URL
+const CALC_API_URL = CONFIG.api.calc;
 
 let currentUserTier = 'free';
 let userTargetUnivs = [null, null, null, null, null, null, null, null]; 
@@ -46,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ]).then(() => {
         console.log("🚀 모든 데이터 로드 완료");
         initUnivGrid(); 
-        updateAnalysisUI();
+        updateAnalysisUI(); // [중요] 여기서 계산 API 호출 시작
         setWeeklyLoadingStatus(false);
         setTimeout(() => { checkWeeklyStatus(); }, 500); 
 
@@ -139,7 +143,7 @@ async function fetchUnivData() {
 function buildUnivMap() {
     if (!univData || univData.length === 0) return;
     const userStream = determineUserStream(); 
-    updateAnalysisUI();
+    // updateAnalysisUI(); // fetchUserData 완료 후 Promise.all에서 호출하므로 중복 제거
 }
 
 function determineUserStream() {
@@ -313,37 +317,130 @@ async function saveTargetUnivs() {
     } catch(e) { console.error(e); alert("통신 오류 발생"); }
 }
 
+// ============================================================
+// ★ [수정됨] 환산점수 계산 API 연결
+// ============================================================
 async function updateAnalysisUI() {
     const container = document.getElementById('univAnalysisResult');
     if (!container) return;
-    const hasTargets = userTargetUnivs && userTargetUnivs.some(u => u && u.univ);
-    if (!hasTargets) { container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px;">목표 대학을 설정하면 분석 결과가 나타납니다.</p>'; return; }
     
-    container.innerHTML = `<div style="text-align:center; padding:40px; color:#64748b;"><i class="fas fa-circle-notch fa-spin" style="font-size:2rem; color:#3b82f6; margin-bottom:10px;"></i><p>AI가 합격 가능성을 분석 중입니다...</p></div>`;
-    const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('accessToken');
-    try {
-        const response = await fetch(UNIV_DATA_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'analyze_my_targets', userId: userId })
-        });
-        if (!response.ok) throw new Error("분석 API 호출 실패");
-        const data = await response.json(); 
-        const { myScore, results } = data;
-        if (!results || results.length === 0) { container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px;">분석할 데이터가 없거나 서버 오류입니다.</p>'; return; }
-        let html = '';
-        results.forEach((res, idx) => {
-            const isSafe = res.is_safe;
-            const statusColor = isSafe ? '#10b981' : '#ef4444';
-            const bgBadge = isSafe ? '#ecfdf5' : '#fef2f2'; 
-            const diffVal = parseFloat(res.diff);
-            const diffText = diffVal >= 0 ? `+${diffVal}` : diffVal;
-            const diffClass = diffVal >= 0 ? 'plus' : 'minus';
-            html += `<div class="analysis-card"><div class="analysis-header"><h4>${idx+1}지망: ${res.univ} <small>${res.major}</small></h4><span class="univ-badge" style="background:${bgBadge}; color:${statusColor}; padding:4px 10px; border-radius:20px; font-size:0.8rem; font-weight:bold; border:1px solid ${statusColor}">${res.status}</span></div><div class="analysis-body"><div class="score-table-box"><table class="score-compare-table"><tr><th>구분</th><th>결과</th><th>비고</th></tr><tr><td>판정</td><td class="score-val" style="font-weight:bold; color:${statusColor}">${res.status}</td><td style="font-size:0.85rem;">${res.msg}</td></tr><tr class="score-row highlight"><td>점수 차이</td><td class="score-val"><span class="diff-badge ${diffClass}" style="color:${statusColor}">${diffText}</span></td><td style="font-size:0.85rem; color:#64748b;">내 점수: ${myScore}</td></tr></table></div><div class="chart-box"><div class="pie-chart" style="background: conic-gradient(${statusColor} 0% 100%); opacity:0.9;"></div><div class="chart-legend" style="margin-top:8px;"><div class="legend-item"><span class="color-dot" style="background:${statusColor}"></span>${res.status}권</div></div></div></div></div>`;
-        });
-        container.innerHTML = html;
-    } catch (e) { console.error(e); container.innerHTML = '<p style="text-align:center; color:#ef4444; padding:30px;">분석 정보를 불러오는 중 오류가 발생했습니다.</p>'; }
+    // 설정된 목표 대학이 없으면 안내 메시지
+    const hasTargets = userTargetUnivs && userTargetUnivs.some(u => u && u.univ);
+    if (!hasTargets) { 
+        container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px;">목표 대학을 설정하면 분석 결과가 나타납니다.</p>'; 
+        return; 
+    }
+    
+    // 로딩 표시
+    container.innerHTML = `<div style="text-align:center; padding:40px; color:#64748b;"><i class="fas fa-circle-notch fa-spin" style="font-size:2rem; color:#3b82f6; margin-bottom:10px;"></i><p>AI가 환산 점수를 정밀 분석 중입니다...</p></div>`;
+
+    // 1. 현재 사용할 성적 데이터 확인 (기본값: 수능 csat)
+    // 실제 서비스에서는 사용자가 모의고사를 선택할 수 있게 하거나, 가장 최근 시험을 가져와야 함.
+    const examMode = "csat"; // (임시 고정)
+    const currentScoreData = userQuantData ? userQuantData[examMode] : null;
+
+    if (!currentScoreData) {
+        container.innerHTML = '<p style="text-align:center; color:#ef4444; padding:30px;">입력된 성적 데이터(수능/모의고사)가 없습니다.</p>';
+        return;
+    }
+
+    let html = '';
+
+    // 2. 각 목표 대학별로 계산 API 호출 (병렬 처리)
+    // userTargetUnivs 배열을 순회하며 Lambda 호출
+    const promises = userTargetUnivs.map(async (target, idx) => {
+        if (!target || !target.univ) return null; // 빈 슬롯 패스
+
+        try {
+            const res = await fetch(CALC_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    examMode: examMode,
+                    univ: target.univ,
+                    major: target.major,
+                    userScores: currentScoreData
+                })
+            });
+            
+            if (!res.ok) throw new Error("API Error");
+            const result = await res.json();
+            // 결과 객체: { univ, major, is_eligible, msg, score, detail }
+            return { idx, ...target, ...result };
+
+        } catch (e) {
+            console.error(`Calculation failed for ${target.univ}`, e);
+            return { idx, ...target, error: true };
+        }
+    });
+
+    // 3. 결과 렌더링
+    const results = await Promise.all(promises);
+
+    results.forEach(res => {
+        if (!res) return; // null(빈 슬롯) 건너뜀
+        
+        if (res.error) {
+            html += `
+            <div class="analysis-card" style="border-left: 4px solid #ef4444;">
+                <div class="analysis-header">
+                    <h4>${res.idx+1}지망: ${res.univ} <small>${res.major}</small></h4>
+                    <span class="univ-badge" style="background:#fef2f2; color:#ef4444;">분석 실패</span>
+                </div>
+                <div class="analysis-body">
+                    <p style="color:#64748b; font-size:0.9rem;">데이터를 불러올 수 없습니다. (지원하지 않는 대학이거나 오류 발생)</p>
+                </div>
+            </div>`;
+            return;
+        }
+
+        // 지원 가능 여부 태그
+        const eligibilityTag = res.is_eligible 
+            ? `<span class="univ-badge" style="background:#ecfdf5; color:#10b981; border:1px solid #10b981;">지원 가능</span>` 
+            : `<span class="univ-badge" style="background:#fef2f2; color:#ef4444; border:1px solid #ef4444;">지원 불가 (${res.msg})</span>`;
+
+        // 점수 표시 (지원 불가여도 점수는 보여줌)
+        const scoreDisplay = res.score ? `<strong>${res.score}점</strong>` : `<span style="color:#999;">-</span>`;
+
+        html += `
+        <div class="analysis-card">
+            <div class="analysis-header">
+                <h4>${res.idx+1}지망: ${res.univ} <small>${res.major}</small></h4>
+                ${eligibilityTag}
+            </div>
+            <div class="analysis-body">
+                <div class="score-table-box" style="flex:1;">
+                    <table class="score-compare-table">
+                        <tr>
+                            <th style="width:30%;">구분</th>
+                            <th>내 환산 점수</th>
+                            <th>반영 방식</th>
+                        </tr>
+                        <tr>
+                            <td>산출 결과</td>
+                            <td class="score-val" style="color:#2563eb; font-size:1.1rem;">${scoreDisplay}</td>
+                            <td style="font-size:0.85rem; color:#64748b;">
+                                ${res.detail.type} <br>
+                                <span style="font-size:0.75rem;">(${res.detail.formula})</span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="chart-box" style="width:120px; justify-content:center;">
+                    <div style="font-size:2.5rem; color:${res.is_eligible ? '#10b981' : '#ef4444'};">
+                        <i class="${res.is_eligible ? 'fas fa-check-circle' : 'fas fa-times-circle'}"></i>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    });
+
+    // 결과가 하나도 없으면 (모두 빈 슬롯이었던 경우)
+    if (html === '') {
+        html = '<p style="text-align:center; color:#94a3b8; padding:30px;">목표 대학을 설정해주세요.</p>';
+    }
+
+    container.innerHTML = html;
 }
 
 function checkWeeklyStatus() {

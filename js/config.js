@@ -13,7 +13,10 @@ const CONFIG = {
         analysis: `${GATEWAY_URL}/analysis`,
         
         // StudyCrack_Payment 람다로 연결되는 주소
-        payment: `${GATEWAY_URL}/payment`
+        payment: `${GATEWAY_URL}/payment`,
+        
+        // StudyCrack_ConversionScore 람다로 연결되는 주소
+        calc: `${GATEWAY_URL}/calculate`
     },
     
     // 기존 Cognito 설정
