@@ -1,6 +1,5 @@
 // js/survey.js
 
-// API 주소 변경
 const SURVEY_API_URL = CONFIG.api.base;       
 const DATA_FETCH_URL = CONFIG.api.analysis;   
 
@@ -28,17 +27,15 @@ function openTab(tabName) {
 }
 
 // ============================================================
-// 성적 자동 환산 요청 (서버로 요청)
+// 성적 자동 환산 요청
 // ============================================================
 async function requestScoreConversion(type) {
-    // 1. 필요한 값 수집
     const month = document.getElementById('examSelect').value;
     let subjectKey = type;
     let scoreVal = 0;
     let optVal = "";
     let subNameVal = "";
     
-    // ID 매핑
     let stdId = "", pctId = "", grdId = "";
 
     if (type === 'kor') {
@@ -55,12 +52,10 @@ async function requestScoreConversion(type) {
         subNameVal = document.getElementById('inq2Name').value;
     }
 
-    // 값 유효성 확인
     const stdEl = document.getElementById(stdId);
     if (!stdEl || !stdEl.value) return; 
     scoreVal = parseInt(stdEl.value);
 
-    // [추가] 점수가 너무 터무니없는 경우(예: 음수, 200점 초과 등) 1차 필터링
     if (scoreVal < 0 || scoreVal > 200) {
         alert("유효하지 않은 점수입니다. (0~200점 사이)");
         stdEl.value = "";
@@ -70,7 +65,6 @@ async function requestScoreConversion(type) {
     const token = localStorage.getItem('accessToken');
 
     try {
-        // 로딩 표시
         const pctEl = document.getElementById(pctId);
         const grdEl = document.getElementById(grdId);
         if(pctEl) pctEl.value = ""; pctEl.placeholder = "...";
@@ -96,12 +90,8 @@ async function requestScoreConversion(type) {
         
         const data = await response.json(); 
         
-        // [수정] 데이터 검증 로직 강화
         if (data.error || (!data.pct && !data.grd)) {
-            // 서버에서 에러 메시지를 보냈거나, 결과값이 없는 경우
             alert("입력하신 표준점수에 해당하는 등급/백분위 데이터가 없습니다.\n(범위를 벗어났거나 해당 점수가 존재하지 않음)");
-            
-            // 입력값 초기화 및 포커스
             stdEl.value = "";
             if(pctEl) pctEl.placeholder = "-";
             if(grdEl) grdEl.placeholder = "-";
@@ -109,17 +99,12 @@ async function requestScoreConversion(type) {
             return;
         }
         
-        // 정상 적용
         if (data.pct && pctEl) pctEl.value = data.pct;
         if (data.grd && grdEl) grdEl.value = data.grd;
 
     } catch (e) {
         console.error("환산 실패:", e);
         alert("점수 환산 중 오류가 발생했습니다.");
-        const pctEl = document.getElementById(pctId);
-        const grdEl = document.getElementById(grdId);
-        if(pctEl) pctEl.placeholder = "오류";
-        if(grdEl) grdEl.placeholder = "오류";
     }
 }
 
@@ -188,7 +173,7 @@ function checkQualitativeForm() {
     }
 }
 
-// === 데이터 로드 및 저장 ===
+// === 데이터 로드 ===
 async function fetchUserData(userId) {
     const token = localStorage.getItem('accessToken');
     try {
@@ -198,7 +183,7 @@ async function fetchUserData(userId) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}` 
             },
-            body: JSON.stringify({ type: 'get_user' }) // userId 생략 가능 (토큰에서 추출)
+            body: JSON.stringify({ type: 'get_user' })
         });
         const data = await response.json();
 
@@ -313,13 +298,17 @@ function loadExamData() {
     setVal('foreignName', d.foreign?.name); setVal('foreignGrd', d.foreign?.grd);
 }
 
+// ============================================================
+// 성적 저장 + restriction(제약조건) 자동 생성 로직 포함
+// ============================================================
 async function saveQuantitative() {
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('accessToken');
     const month = document.getElementById('examSelect').value;
     const getVal = (id) => document.getElementById(id).value;
 
-    examScores[month] = {
+    // 1. 기본 점수 데이터 수집
+    const currentData = {
         kor: { opt: getVal('koreanOpt'), std: getVal('korStd'), pct: getVal('korPct'), grd: getVal('korGrd') },
         math: { opt: getVal('mathOpt'), std: getVal('mathStd'), pct: getVal('mathPct'), grd: getVal('mathGrd') },
         eng: { grd: getVal('engGrd') }, 
@@ -328,6 +317,47 @@ async function saveQuantitative() {
         inq2: { name: getVal('inq2Name'), std: getVal('inq2Std'), pct: getVal('inq2Pct'), grd: getVal('inq2Grd') },
         foreign: { name: getVal('foreignName'), grd: getVal('foreignGrd') }
     };
+
+    // 2. restriction 자동 생성 로직
+    const restriction = ["자유선택"]; // 디폴트
+
+    // (A) 과탐 과목 리스트 (물화생지 1,2)
+    const sciSubjects = ["물원","화원","생원","지원","물투","화투","생투","지투"];
+    // (B) 사탐 과목 리스트 (나머지)
+    // 참고: html value가 한글로 되어있으므로 이에 맞춤
+    const socSubjects = ["생활과 윤리","윤리와 사상","한국지리","세계지리","동아시아사","세계사","경제","정치와 법","사회·문화"];
+
+    const inq1 = currentData.inq1.name;
+    const inq2 = currentData.inq2.name;
+    const mathOpt = currentData.math.opt; // mi(미적), ki(기하), geo(확통)
+    const foreignGrd = currentData.foreign.grd;
+
+    // 탐구 판별
+    const isSci1 = sciSubjects.includes(inq1);
+    const isSci2 = sciSubjects.includes(inq2);
+    const isSoc1 = socSubjects.includes(inq1);
+    const isSoc2 = socSubjects.includes(inq2);
+
+    const isSciAll = isSci1 && isSci2; // 탐구 2개 다 과탐
+    const isSocAll = isSoc1 && isSoc2; // 탐구 2개 다 사탐
+
+    // 수학 판별
+    const isMiKi = (mathOpt === 'mi' || mathOpt === 'ki'); // 미적 or 기하
+    const isGeo = (mathOpt === 'geo'); // 확통
+
+    // 조건별 추가
+    if (isSciAll) restriction.push("과탐 필수");
+    if (isMiKi) restriction.push("미적기하 필수");
+    if (isMiKi && isSciAll) restriction.push("미적기하+과탐 필수");
+    if (isGeo) restriction.push("확통 필수");
+    if (isGeo && isSocAll) restriction.push("확통+사탐 필수");
+    if (foreignGrd && parseInt(foreignGrd) > 0) restriction.push("제2외 필수");
+
+    // 3. 데이터 합치기 (restriction 필드 추가)
+    currentData.restriction = restriction;
+    
+    // 전역 변수에 저장
+    examScores[month] = currentData;
 
     try {
         const res = await fetch(SURVEY_API_URL, {
@@ -339,7 +369,7 @@ async function saveQuantitative() {
             body: JSON.stringify({ type: 'update_quan', userId, data: examScores })
         });
         if (res.ok) {
-            alert("성적 데이터가 저장되었습니다.\n마이페이지로 이동합니다.");
+            alert("성적 데이터가 저장되었습니다.\n(지원 가능 전형이 자동 계산되었습니다)\n\n마이페이지로 이동합니다.");
             window.location.href = 'mypage.html';
         }
     } catch (e) { alert("저장 실패"); }
