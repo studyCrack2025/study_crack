@@ -1,7 +1,7 @@
 // js/qna.js
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. FAQ 아코디언 로직
+    // 2. FAQ 아코디언 로직
     const faqItems = document.querySelectorAll('.faq-item');
     faqItems.forEach(item => {
         item.addEventListener('click', () => {
@@ -18,25 +18,59 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 2. 질문 내역 불러오기
+    // 3. 질문 내역 불러오기
     loadQnaHistory();
 
-    // 3. 폼 제출 핸들링
+    // 4. 폼 제출 핸들링
     const form = document.getElementById('qnaForm');
     if (form) {
         form.addEventListener('submit', handleQnaSubmit);
     }
 });
 
-// 질문하기 모달 열기/닫기
-function openQnaModal() { openModal('qna'); }
-function closeQnaModal() { closeModal('qna'); }
+// [1] 모달 제어 함수 (qna.js 내부에 직접 정의하여 오류 방지)
+function openModal(id) {
+    // id가 'qna'로 들어오면 'qna-modal'을 찾고, 'qna-detail-modal'처럼 전체 ID가 들어오면 그걸 찾음
+    let modal = document.getElementById(id);
+    if (!modal) {
+        modal = document.getElementById(id + '-modal');
+    }
+    
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    } else {
+        console.error(`Modal with ID '${id}' or '${id}-modal' not found.`);
+    }
+}
 
-// 질문 목록 조회 (수정됨: accessToken -> idToken, userId Body 추가)
+function closeModal(id) {
+    let modal = document.getElementById(id);
+    if (!modal) {
+        modal = document.getElementById(id + '-modal');
+    }
+    
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// 질문하기 모달 열기 (내부 함수 openModal 사용)
+function openQnaModal() {
+    openModal('qna'); 
+}
+
+// 질문하기 모달 닫기
+function closeQnaModal() {
+    closeModal('qna');
+}
+
+// 질문 목록 조회
 async function loadQnaHistory() {
     const grid = document.getElementById('qna-grid');
-    const idToken = localStorage.getItem('idToken'); // [수정] idToken
-    const userId = localStorage.getItem('userId'); 
+    const idToken = localStorage.getItem('idToken');
+    const userId = localStorage.getItem('userId');
 
     if (!idToken) {
         grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; padding:40px;">로그인 후 질문 내역을 확인할 수 있습니다.</p>';
@@ -47,17 +81,16 @@ async function loadQnaHistory() {
         const response = await fetch(CONFIG.api.base, {
             method: 'POST', 
             headers: {
-                'Authorization': `Bearer ${idToken}`, // [수정] Bearer Prefix 추가
+                'Authorization': `Bearer ${idToken}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ 
                 type: 'get_qna_list',
-                userId: userId // [중요] userId 명시
+                userId: userId
             })
         });
 
         if (response.status === 401) {
-            console.error("401 Unauthorized: 세션 만료");
             grid.innerHTML = '<p style="grid-column:1/-1; text-align:center;">로그인 세션이 만료되었습니다.</p>';
             return;
         }
@@ -96,6 +129,7 @@ async function loadQnaHistory() {
                 </div>
             `;
             
+            // 여기서 이제 정의된 openModal을 사용하는 openDetailModal 호출
             card.addEventListener('click', () => openDetailModal(item));
             grid.appendChild(card);
         });
@@ -106,9 +140,14 @@ async function loadQnaHistory() {
     }
 }
 
+// 상세 보기 모달 열기
 function openDetailModal(item) {
+    // 상세 모달 ID 확인 (qna.html에 id="qna-detail-modal"로 되어 있어야 함)
     const modal = document.getElementById('qna-detail-modal');
-    if(!modal) return;
+    if(!modal) {
+        console.error("Detail modal not found in DOM");
+        return;
+    }
 
     const catBadge = document.getElementById('detail-category');
     catBadge.className = `qna-badge badge-${item.category}`;
@@ -135,12 +174,15 @@ function openDetailModal(item) {
             </div>
         `;
     }
-    openModal('qna-detail');
+    
+    // 내부 정의된 openModal 사용
+    openModal('qna-detail-modal'); 
 }
 
+// 질문 제출
 async function handleQnaSubmit(e) {
     e.preventDefault();
-    const idToken = localStorage.getItem('idToken'); // [수정] idToken
+    const idToken = localStorage.getItem('idToken');
     const userId = localStorage.getItem('userId');
 
     if (!idToken) {
@@ -157,7 +199,7 @@ async function handleQnaSubmit(e) {
         const response = await fetch(CONFIG.api.base, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${idToken}`, // [수정] Bearer
+                'Authorization': `Bearer ${idToken}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -192,8 +234,9 @@ function getCategoryName(key) {
 
 // 모달 바깥 클릭 시 닫기
 window.onclick = function(event) {
-    const modal = document.getElementById('qna-modal');
-    if (event.target === modal) {
-        closeQnaModal();
+    // 클래스명으로 체크 (qna.html의 모달들)
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+        document.body.style.overflow = 'auto';
     }
 }
