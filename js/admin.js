@@ -274,25 +274,44 @@ async function searchStudents() {
             })
         });
         
-        let students = await response.json();
+        // [디버깅] 서버가 실제로 뭘 주는지 콘솔에서 확인하기 위함
+        const rawData = await response.json();
+        console.log("🔍 [Admin Search Result]:", rawData);
+
+        // [중요 수정] 데이터가 배열인지 확인 후 처리 (에러 방지)
+        let students = [];
+        if (Array.isArray(rawData)) {
+            students = rawData;
+        } else if (rawData.students && Array.isArray(rawData.students)) {
+            // 혹시 { students: [...] } 형태로 왔을 경우 대비
+            students = rawData.students;
+        } else {
+            console.error("❌ 데이터 형식이 배열이 아닙니다:", rawData);
+            // 배열이 아니면 빈 배열로 처리하여 forEach 에러 방지
+            students = [];
+        }
         
-        if (type === 'paid') {
-            students = students.filter(s => 
-                s.payments && s.payments.some(p => p.status === 'paid')
-            );
-        } else if (type === 'unpaid') {
-            students = students.filter(s => 
-                !s.payments || !s.payments.some(p => p.status === 'paid')
-            );
+        // 필터링 로직 (데이터가 있을 때만 수행)
+        if (students.length > 0) {
+            if (type === 'paid') {
+                students = students.filter(s => 
+                    s.payments && s.payments.some(p => p.status === 'paid')
+                );
+            } else if (type === 'unpaid') {
+                students = students.filter(s => 
+                    !s.payments || !s.payments.some(p => p.status === 'paid')
+                );
+            }
         }
 
         tbody.innerHTML = "";
         
-        if (!students || students.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>조건에 맞는 학생이 없습니다.</td></tr>";
+        if (students.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>조건에 맞는 학생이 없거나 데이터를 불러올 수 없습니다.</td></tr>";
             return;
         }
 
+        // 이제 students는 무조건 배열이므로 forEach가 안전함
         students.forEach(s => {
             let statusBadge = getTierBadgeHTML(s.payments);
             const tr = document.createElement('tr');
@@ -312,8 +331,8 @@ async function searchStudents() {
         });
 
     } catch (error) {
-        console.error(error);
-        tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>오류가 발생했습니다.</td></tr>";
+        console.error("Search Error:", error);
+        tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>오류가 발생했습니다. (콘솔 확인 필요)</td></tr>";
     }
 }
 
