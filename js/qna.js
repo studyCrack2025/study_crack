@@ -8,9 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const answer = item.querySelector('.faq-answer');
             const isActive = item.classList.contains('active');
             
-            // 기존 열린 것 닫기 (원하면 주석 해제)
-            // faqItems.forEach(i => { i.classList.remove('active'); i.querySelector('.faq-answer').style.maxHeight = null; });
-
             if (!isActive) {
                 item.classList.add('active');
                 answer.style.maxHeight = answer.scrollHeight + "px";
@@ -31,21 +28,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// 모달 제어 함수
+// 질문하기 모달 열기
 function openQnaModal() {
-    const modal = document.getElementById('qna-modal');
-    if(modal) {
-        modal.style.display = 'block';
-        document.body.style.overflow = 'hidden';
-    }
+    openModal('qna'); // script.js의 공통 함수 활용
 }
 
+// 질문하기 모달 닫기
 function closeQnaModal() {
-    const modal = document.getElementById('qna-modal');
-    if(modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto';
-    }
+    closeModal('qna');
 }
 
 // 질문 목록 조회 (Lambda 연동)
@@ -60,7 +50,7 @@ async function loadQnaHistory() {
 
     try {
         const response = await fetch(CONFIG.api.base, {
-            method: 'POST', // Lambda가 type에 따라 분기하므로 POST 사용
+            method: 'POST', 
             headers: {
                 'Authorization': idToken,
                 'Content-Type': 'application/json'
@@ -78,8 +68,11 @@ async function loadQnaHistory() {
             return;
         }
 
-        // 최대 6개만 표시 (2x3)
-        history.slice(0, 6).forEach(item => {
+        // 최신순 정렬
+        history.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        // 카드 생성
+        history.forEach(item => {
             const dateStr = new Date(item.createdAt).toLocaleDateString();
             const statusText = item.status === 'done' ? '답변완료' : '대기중';
             const statusClass = item.status === 'done' ? 'status-done' : 'status-waiting';
@@ -88,6 +81,9 @@ async function loadQnaHistory() {
 
             const card = document.createElement('div');
             card.className = 'qna-card';
+            // 커서 포인터 추가하여 클릭 가능함을 표시
+            card.style.cursor = 'pointer'; 
+            
             card.innerHTML = `
                 <div>
                     <span class="qna-badge ${badgeClass}">${categoryName}</span>
@@ -98,6 +94,10 @@ async function loadQnaHistory() {
                     <span class="${statusClass}">${statusText}</span>
                 </div>
             `;
+            
+            // [NEW] 클릭 시 상세 모달 띄우기 (item 전체 데이터를 넘김)
+            card.addEventListener('click', () => openDetailModal(item));
+            
             grid.appendChild(card);
         });
 
@@ -107,7 +107,49 @@ async function loadQnaHistory() {
     }
 }
 
-// 질문 제출 (Lambda 연동)
+// 상세 보기 모달 열기 및 데이터 바인딩
+function openDetailModal(item) {
+    const modal = document.getElementById('qna-detail-modal');
+    if(!modal) return;
+
+    // 1. 카테고리 & 날짜
+    const catBadge = document.getElementById('detail-category');
+    catBadge.className = `qna-badge badge-${item.category}`;
+    catBadge.textContent = getCategoryName(item.category);
+    
+    document.getElementById('detail-date').textContent = new Date(item.createdAt).toLocaleString();
+
+    // 2. 제목 & 질문 내용
+    document.getElementById('detail-title').textContent = item.title;
+    document.getElementById('detail-content').textContent = item.content;
+
+    // 3. 답변 영역 처리
+    const answerArea = document.getElementById('detail-answer-area');
+    if (item.status === 'done' && item.answer) {
+        // 답변이 있는 경우
+        answerArea.innerHTML = `
+            <div style="background:#eff6ff; padding:15px; border-radius:8px; border:1px solid #bfdbfe; color:#1e3a8a; white-space: pre-wrap;">
+                ${item.answer}
+                <div style="margin-top:10px; font-size:0.8rem; color:#60a5fa; text-align:right;">
+                    답변일: ${item.answeredAt ? new Date(item.answeredAt).toLocaleDateString() : '-'}
+                </div>
+            </div>
+        `;
+    } else {
+        // 답변이 없는 경우
+        answerArea.innerHTML = `
+            <div style="padding:20px; text-align:center; color:#94a3b8; background:#f1f5f9; border-radius:8px;">
+                ⏳ 현재 담당 컨설턴트가 내용을 확인하고 있습니다.<br>빠른 시일 내에 답변 드리겠습니다.
+            </div>
+        `;
+    }
+
+    // 모달 띄우기 (script.js의 openModal 활용 가능하지만 ID가 다르므로 직접 제어 or 공통함수 사용)
+    openModal('qna-detail');
+}
+
+
+// 질문 제출
 async function handleQnaSubmit(e) {
     e.preventDefault();
     const idToken = localStorage.getItem('idToken');

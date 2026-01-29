@@ -127,6 +127,33 @@
             </div>
         </div>
     </div>
+    
+    <div id="qna-detail-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 style="font-size: 1.2rem;">문의 상세 내역</h2>
+                <span class="close-btn" onclick="closeModal('qna-detail')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 25px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <span id="detail-category" class="qna-badge"></span>
+                        <span id="detail-date" style="font-size:0.85rem; color:#94a3b8;"></span>
+                    </div>
+                    <h3 id="detail-title" style="margin: 0 0 15px 0; font-size:1.3rem;"></h3>
+                    <p id="detail-content" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; white-space: pre-wrap;"></p>
+                </div>
+
+                <hr style="border: 0; border-top: 2px dashed #e2e8f0; margin: 20px 0;">
+
+                <div>
+                    <h4 style="margin-bottom: 10px; color: #1e293b;">답변 내용</h4>
+                    <div id="detail-answer-area">
+                        </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
