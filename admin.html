@@ -25,6 +25,12 @@
             <li class="menu-item">
                 <a href="#" onclick="showSection('students')">👥 학생 관리</a>
             </li>
+            <a href="#" onclick="toggleSubmenu('qna-submenu')">💬 질의 관리 ▾</a>
+                <ul id="qna-submenu" class="submenu">
+                    <li><a href="#" onclick="showQnaSection('done')">✅ 응답 완료</a></li>
+                    <li><a href="#" onclick="showQnaSection('read')">👁️ 읽음 (미응답)</a></li>
+                    <li><a href="#" onclick="showQnaSection('waiting')">🔴 읽지 않음</a></li>
+                </ul>
             <li class="menu-item logout">
                 <a href="#" onclick="handleSignOut()">로그아웃</a>
             </li>
@@ -109,6 +115,48 @@
                         <tr><td colspan="5" class="empty-msg">학생을 검색해주세요.</td></tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+        <div id="section-qna" class="content-section">
+            <h1 class="page-title">💬 질의 관리 <span id="qnaStatusTitle" style="font-size:1rem; color:#64748b;"></span></h1>
+            
+            <div style="text-align:right; margin-bottom:10px;">
+                <button onclick="loadAllQna()" style="padding:8px 15px; background:#fff; border:1px solid #cbd5e1; border-radius:6px; cursor:pointer;">🔄 새로고침</button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="student-table">
+                    <thead>
+                        <tr>
+                            <th style="width:100px;">상태</th>
+                            <th style="width:150px;">학생명</th>
+                            <th>제목</th>
+                            <th style="width:150px;">등록일</th>
+                            <th style="width:100px;">관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="qnaListBody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="reply-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close-btn" onclick="closeReplyModal()">&times;</span>
+                <h2 style="margin-top:0;">답변 작성</h2>
+            
+                <div style="background:#f8fafc; padding:15px; border-radius:8px; margin-bottom:20px;">
+                    <p style="font-size:0.9rem; color:#64748b; margin-bottom:5px;">질문 내용</p>
+                    <h4 id="replyModalTitle" style="margin:0 0 10px 0;"></h4>
+                    <p id="replyModalContent" style="white-space:pre-wrap; color:#334155;"></p>
+                </div>
+
+                <textarea id="replyInput" rows="6" placeholder="답변을 입력하세요..." style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; resize:none; margin-bottom:15px;"></textarea>
+            
+                <button onclick="submitReply()" style="width:100%; padding:15px; background:#3b82f6; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:1rem;">
+                    답변 전송하기
+                </button>
             </div>
         </div>
     </main>

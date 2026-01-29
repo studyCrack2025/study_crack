@@ -1,38 +1,55 @@
 // js/admin.js
 
+// 1. 차트 플러그인 등록
 if (typeof ChartDataLabels !== 'undefined') {
     Chart.register(ChartDataLabels);
 }
 
-// API URL
+// 2. 전역 변수 및 설정
 const ADMIN_API_URL = CONFIG.api.base; 
 
+// 차트 관련 변수
 let salesChart = null;  
 let periodChart = null; 
 let rawPaymentData = []; 
 
+// Q&A 관련 변수 (New)
+let allQnaData = []; // 서버에서 가져온 전체 질문 리스트
+let currentQnaFilter = 'waiting'; // 현재 탭 상태 (waiting | read | done)
+let currentReplyTarget = null; // 현재 답변 작성 중인 대상 {userId, qnaId}
+
+// 3. 초기화 (진입점)
 document.addEventListener('DOMContentLoaded', () => {
     const role = localStorage.getItem('userRole');
     const userId = localStorage.getItem('userId');
 
+    // 보안: 관리자 권한 체크
     if (!userId || role !== 'admin') {
         alert("관리자 권한이 없습니다.");
         window.location.href = 'index.html';
         return;
     }
 
+    // 초기 데이터 로드
     loadAdminStats(userId);
     searchStudents(); 
 });
+
+// ============================================================
+// [A] 네비게이션 및 UI 제어
+// ============================================================
 
 function toggleSubmenu(id) {
     const el = document.getElementById(id);
     if (el) el.classList.toggle('open');
 }
 
+// 메인 섹션 전환 (대시보드 / 학생관리)
 function showSection(sectionName) {
+    // 모든 섹션 숨기기
     document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
     
+    // 선택된 섹션 보이기
     if (sectionName === 'students') {
         document.getElementById('section-students').classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -46,6 +63,38 @@ function showSection(sectionName) {
     }
 }
 
+// [NEW] Q&A 섹션 전환 및 필터링
+function showQnaSection(filterStatus) {
+    // 다른 섹션 숨기기
+    document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
+    // Q&A 섹션 활성화
+    const qnaSection = document.getElementById('section-qna');
+    if (qnaSection) qnaSection.classList.add('active');
+    
+    // 필터 설정
+    currentQnaFilter = filterStatus;
+    
+    // 타이틀 변경
+    const titleMap = {
+        'waiting': '(읽지 않음)',
+        'read': '(읽었지만 미응답)',
+        'done': '(응답 완료)'
+    };
+    const titleEl = document.getElementById('qnaStatusTitle');
+    if(titleEl) titleEl.innerText = titleMap[filterStatus];
+
+    // 데이터 로드 또는 렌더링
+    if (allQnaData.length === 0) {
+        loadAllQna(); // 데이터가 없으면 서버에서 가져옴
+    } else {
+        renderQnaList(); // 있으면 바로 렌더링
+    }
+}
+
+// ============================================================
+// [B] 통계 및 차트 로직 (기존 유지)
+// ============================================================
+
 async function loadAdminStats(adminId) {
     const token = localStorage.getItem('accessToken');
     try {
@@ -53,7 +102,7 @@ async function loadAdminStats(adminId) {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` // ★ 토큰 추가
+                'Authorization': `Bearer ${token}` 
             },
             body: JSON.stringify({ type: 'admin_stats', userId: adminId })
         });
@@ -198,6 +247,10 @@ function renderProductChart(productMap, total) {
     });
 }
 
+// ============================================================
+// [C] 학생 관리 로직 (기존 유지)
+// ============================================================
+
 async function searchStudents() {
     const adminId = localStorage.getItem('userId');
     const token = localStorage.getItem('accessToken');
@@ -267,6 +320,216 @@ async function searchStudents() {
 function goToStudentDetail(targetUserId) {
     window.location.href = `admin_detail.html?uid=${targetUserId}`;
 }
+
+// ============================================================
+// [D] 질의 관리(Q&A) 로직 (NEW)
+// ============================================================
+
+// 1. 전체 질문 불러오기
+async function loadAllQna() {
+    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('accessToken');
+    const tbody = document.getElementById('qnaListBody');
+    
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px;">데이터를 불러오는 중...</td></tr>';
+    }
+
+    try {
+        const response = await fetch(ADMIN_API_URL, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ type: 'admin_get_all_qna', userId: userId })
+        });
+
+        if (!response.ok) throw new Error("로드 실패");
+        const data = await response.json();
+        
+        allQnaData = data.qnaList || [];
+        renderQnaList();
+
+    } catch (e) {
+        console.error(e);
+        alert("질의 목록을 불러오는데 실패했습니다.");
+    }
+}
+
+// 2. 목록 렌더링 (필터 적용)
+function renderQnaList() {
+    const tbody = document.getElementById('qnaListBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+
+    // 필터링 (waiting / read / done)
+    const filtered = allQnaData.filter(q => q.status === currentQnaFilter);
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-msg" style="text-align:center; padding:30px;">해당 상태의 문의가 없습니다.</td></tr>';
+        return;
+    }
+
+    filtered.forEach(q => {
+        const tr = document.createElement('tr');
+        const dateStr = new Date(q.createdAt).toLocaleDateString();
+        
+        // 버튼 로직 분기
+        let actionBtn = '';
+        
+        // (1) 읽지 않음 -> '읽음 처리' 버튼
+        if (q.status === 'waiting') {
+            actionBtn = `<button onclick="markAsRead('${q.userId}', '${q.id}')" style="background:#f59e0b; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">읽음 처리</button>`;
+        } 
+        // (2) 읽음(미응답) -> '답변하기' 버튼
+        else if (q.status === 'read') {
+            actionBtn = `<button onclick="openReplyModal('${q.userId}', '${q.id}')" style="background:#3b82f6; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">답변하기</button>`;
+        } 
+        // (3) 완료 -> 텍스트 표시 (수정 필요시 버튼 추가 가능)
+        else {
+            actionBtn = `<span style="color:#10b981; font-weight:bold;">완료됨</span>`;
+        }
+
+        // 행 클릭 시 상세 모달을 띄우려면 onclick 추가 가능 (여기서는 버튼 위주로 구성)
+        tr.innerHTML = `
+            <td>${getQnaStatusBadge(q.status)}</td>
+            <td>${escapeHtml(q.userName)}<br><span style="font-size:0.8rem; color:#94a3b8;">${q.userPhone || '-'}</span></td>
+            <td style="cursor:pointer;" onclick="openReplyModal('${q.userId}', '${q.id}', true)">
+                <strong>${escapeHtml(q.title)}</strong>
+                <div style="font-size:0.85rem; color:#64748b; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:300px;">
+                    ${escapeHtml(q.content)}
+                </div>
+            </td>
+            <td>${dateStr}</td>
+            <td>${actionBtn}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function getQnaStatusBadge(status) {
+    if (status === 'waiting') return '<span style="background:#fef2f2; color:#ef4444; padding:3px 8px; border-radius:10px; font-size:0.8rem; font-weight:bold;">안읽음</span>';
+    if (status === 'read') return '<span style="background:#fff7ed; color:#f97316; padding:3px 8px; border-radius:10px; font-size:0.8rem; font-weight:bold;">미응답</span>';
+    return '<span style="background:#ecfdf5; color:#10b981; padding:3px 8px; border-radius:10px; font-size:0.8rem; font-weight:bold;">완료</span>';
+}
+
+// 3. 읽음 처리
+async function markAsRead(targetUserId, qnaId) {
+    if(!confirm("이 문의를 '읽음' 상태로 변경하시겠습니까?")) return;
+
+    const token = localStorage.getItem('accessToken');
+    const adminId = localStorage.getItem('userId');
+
+    try {
+        const res = await fetch(ADMIN_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'admin_mark_qna_read',
+                userId: adminId,
+                data: { targetUserId, qnaId }
+            })
+        });
+
+        if (res.ok) {
+            // 로컬 데이터 갱신 (서버 재호출 최소화)
+            const item = allQnaData.find(q => q.id === qnaId);
+            if(item) item.status = 'read';
+            
+            // 화면 갱신 (waiting 목록에서 사라짐)
+            renderQnaList(); 
+        } else {
+            alert("처리 실패");
+        }
+    } catch(e) { console.error(e); alert("오류 발생"); }
+}
+
+// 4. 답변 모달 열기
+function openReplyModal(targetUserId, qnaId, isViewOnly = false) {
+    const item = allQnaData.find(q => q.id === qnaId);
+    if (!item) return;
+
+    currentReplyTarget = { targetUserId, qnaId };
+    
+    // 모달 내용 채우기
+    document.getElementById('replyModalTitle').innerText = item.title;
+    document.getElementById('replyModalContent').innerText = item.content;
+    
+    const replyInput = document.getElementById('replyInput');
+    const submitBtn = document.querySelector('#reply-modal button');
+
+    if (item.status === 'done' || isViewOnly) {
+        // 완료된 건이거나 제목 클릭해서 볼 때는 보기 전용
+        replyInput.value = item.answer || "(답변 내용 없음)";
+        replyInput.disabled = true;
+        submitBtn.style.display = 'none';
+    } else {
+        // 답변 작성 모드
+        replyInput.value = '';
+        replyInput.disabled = false;
+        submitBtn.style.display = 'block';
+    }
+
+    // 모달 표시 (CSS 클래스 제어)
+    const modal = document.getElementById('reply-modal');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeReplyModal() {
+    const modal = document.getElementById('reply-modal');
+    if (modal) modal.classList.add('hidden');
+    currentReplyTarget = null;
+}
+
+// 5. 답변 전송
+async function submitReply() {
+    const answer = document.getElementById('replyInput').value.trim();
+    if (!answer) { alert("답변 내용을 입력해주세요."); return; }
+    if (!currentReplyTarget) return;
+
+    if(!confirm("답변을 전송하시겠습니까?\n전송 후에는 수정할 수 없으며 학생에게 노출됩니다.")) return;
+
+    const token = localStorage.getItem('accessToken');
+    const adminId = localStorage.getItem('userId');
+
+    try {
+        const res = await fetch(ADMIN_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'admin_reply_qna',
+                userId: adminId,
+                data: {
+                    targetUserId: currentReplyTarget.targetUserId,
+                    qnaId: currentReplyTarget.qnaId,
+                    answer: answer
+                }
+            })
+        });
+
+        if (res.ok) {
+            alert("답변이 전송되었습니다.");
+            
+            // 로컬 데이터 갱신
+            const item = allQnaData.find(q => q.id === currentReplyTarget.qnaId);
+            if(item) {
+                item.status = 'done';
+                item.answer = answer;
+            }
+            
+            closeReplyModal();
+            renderQnaList(); // read 목록에서 사라짐 -> done으로 이동
+        } else {
+            alert("전송 실패");
+        }
+    } catch(e) { console.error(e); alert("오류 발생"); }
+}
+
+// ============================================================
+// [E] 유틸리티
+// ============================================================
 
 function escapeHtml(text) {
     if (!text) return text;
