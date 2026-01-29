@@ -17,7 +17,7 @@ html, body { height: 100vh; overflow: hidden; }
     color: white;
     display: flex; flex-direction: column;
     flex-shrink: 0;
-    transition: transform 0.3s ease; /* 모바일 메뉴 효과용 */
+    height: 100%; /* 전체 높이 */
 }
 
 .sidebar-header {
@@ -25,24 +25,77 @@ html, body { height: 100vh; overflow: hidden; }
     text-align: center;
     border-bottom: 1px solid #334155;
 }
-.sidebar-header h2 { margin: 0; font-size: 1.5rem; }
-.sidebar-header span { color: #3b82f6; font-size: 0.9rem; }
+.sidebar-header h2 { margin: 0; font-size: 1.5rem; color: #fff; }
+.sidebar-header span { color: #3b82f6; font-size: 0.9rem; font-weight: 500; }
 
-.menu { list-style: none; padding: 0; margin: 20px 0; overflow-y: auto; }
-.menu-item a {
-    display: block; padding: 15px 25px;
-    color: #cbd5e1; text-decoration: none;
-    transition: 0.3s; font-size: 1rem;
+/* 메뉴 리스트 */
+.menu { 
+    list-style: none; padding: 0; margin: 20px 0; 
+    overflow-y: auto; 
+    flex: 1; /* 남은 공간 차지 */
 }
-.menu-item a:hover { background-color: #334155; color: white; }
 
+.menu-item {
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+/* 메뉴 링크 스타일 */
+.menu-item > a {
+    display: flex; 
+    justify-content: space-between; /* 화살표 우측 정렬 */
+    align-items: center;
+    padding: 16px 25px;
+    color: #cbd5e1; 
+    text-decoration: none;
+    transition: all 0.2s ease; 
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.menu-item > a:hover { 
+    background-color: #334155; 
+    color: white; 
+    padding-left: 30px; /* 호버 시 살짝 밀리는 효과 */
+}
+
+/* 서브메뉴 (기본 숨김) */
 .submenu {
-    list-style: none; padding: 0;
-    background-color: #0f172a;
-    display: none;
+    list-style: none; 
+    padding: 0;
+    background-color: #0f172a; /* 더 어두운 배경 */
+    max-height: 0; /* 애니메이션용 */
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
 }
-.submenu.open { display: block; }
-.submenu a { padding-left: 45px; font-size: 0.9rem; color: #94a3b8; }
+
+/* 서브메뉴가 열렸을 때 */
+.submenu.open { 
+    max-height: 500px; /* 충분한 높이 지정 */
+    border-bottom: 1px solid #334155;
+}
+
+.submenu li a {
+    display: block;
+    padding: 12px 25px 12px 50px; /* 깊은 들여쓰기 */
+    font-size: 0.95rem; 
+    color: #94a3b8;
+    text-decoration: none;
+    transition: 0.2s;
+}
+
+.submenu li a:hover {
+    color: #60a5fa; /* 파란색 하이라이트 */
+    background-color: rgba(255,255,255,0.03);
+}
+
+/* 로그아웃 버튼 하단 고정 */
+.menu-item.logout {
+    margin-top: auto; /* 가능한 아래로 밀기 */
+    border-top: 1px solid #334155;
+    background-color: #1e293b;
+}
+.menu-item.logout a { color: #ef4444; }
+.menu-item.logout a:hover { background-color: #281e1e; color: #fca5a5; }
 
 /* 2. 메인 컨텐츠 스타일 */
 .main-content {
