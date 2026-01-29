@@ -55,7 +55,10 @@ async function loadQnaHistory() {
                 'Authorization': idToken,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ type: 'get_qna_list' })
+            body: JSON.stringify({ 
+                type: 'get_qna_list',
+                userId: userId
+            })
         });
 
         const data = await response.json();
