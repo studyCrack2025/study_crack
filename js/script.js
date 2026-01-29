@@ -64,7 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof checkLoginStatus === 'function') {
         checkLoginStatus();
     } else {
-        // auth.js가 없을 경우를 대비한 로그 (개발용)
         // console.warn('auth.js가 로드되지 않았습니다.'); 
     }
 
@@ -74,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
         myPageBtn.addEventListener('click', (e) => {
             e.preventDefault();
             const userId = localStorage.getItem('userId');
-            // 로그인 안 된 상태면 로그인 페이지로 (이중 안전장치)
+            // 로그인 안 된 상태면 로그인 페이지로
             if (!userId) {
                 alert("로그인이 필요합니다.");
                 window.location.href = 'login.html';
@@ -85,8 +84,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // (4) 로그아웃 버튼 클릭 이벤트
-    // 주의: HTML에서 onclick="handleSignOut()"을 쓰고 있다면 이 코드는 중복일 수 있으나,
-    // JS에서 제어하는 것이 더 안전하므로 유지합니다.
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', (e) => {
@@ -101,11 +98,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // (5) 스무스 스크롤 (네비게이션 메뉴 클릭 시 부드럽게 이동)
+    // (5) 스무스 스크롤
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
-            // nav-btn 클래스(로그인 버튼 등)가 아닌 경우에만 스크롤 작동
-            if (!this.classList.contains('nav-btn')) {
+            // nav-btn(로그인 등)이나 floating-qna-btn(QnA 이동)은 제외
+            if (!this.classList.contains('nav-btn') && !this.classList.contains('floating-qna-btn')) {
                 const href = this.getAttribute('href');
                 if (href.length > 1) { // 단순 '#' 링크 제외
                     const targetId = href.substring(1);

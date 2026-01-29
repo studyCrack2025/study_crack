@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스터디크랙 - 1:1 Q&A</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/qna.css"> <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <header>
+        <div class="logo-container">
+            <a href="index.html" style="display:flex; align-items:center; gap:10px;">
+                <img src="assets/images/study_cracked_logo.png" alt="Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                <span class="logo">StudyCrack</span>
+            </a>
+        </div>
+        <nav class="nav-links">
+            <a href="index.html#about">서비스 소개</a>
+            <a href="index.html#program">컨설팅 프로그램</a>
+            <a href="qna.html" class="active-link">1:1 문의</a> <a href="login.html" id="loginBtn" class="nav-btn">로그인 / 회원가입</a>
+            <a href="#" id="myPageBtn" class="nav-btn hidden">마이페이지</a>
+            <a href="#" id="logoutBtn" class="nav-btn hidden">로그아웃</a>
+        </nav>
+    </header>
+
+    <div class="roadmap-intro qna-header">
+        <h2>무엇이든 물어보세요</h2>
+        <p>
+            입시 전략에 정해진 답은 없지만, <strong>최선의 답</strong>은 있습니다.<br>
+            자주 묻는 질문을 확인하거나 컨설턴트에게 직접 질문을 남겨보세요.
+        </p>
+    </div>
+
+    <section class="section faq-section">
+        <div class="section-title">
+            <h2>자주 묻는 질문 (FAQ)</h2>
+        </div>
+        
+        <div class="faq-container">
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>Q. 분석 결과는 얼마나 정확한가요?</span>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>스터디크랙의 분석 엔진은 최근 3개년의 합격자 표본과 대학별 환산식을 기반으로 계산됩니다. 단순 등급이 아닌 대학별 실질 환산 점수를 사용하여 높은 정확도를 제공합니다.</p>
+                </div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>Q. 목표 대학을 중간에 변경할 수 있나요?</span>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>네, 가능합니다. Standard 플랜 이상 이용 시 마이페이지에서 목표 대학을 수정하면 즉시 새로운 분석 결과가 반영됩니다.</p>
+                </div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>Q. 환불 규정이 궁금합니다.</span>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>결제 후 분석 리포트가 생성되기 전까지는 전액 환불이 가능합니다. 리포트 생성 이후에는 콘텐츠 이용으로 간주되어 환불이 제한될 수 있습니다.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section history-section">
+        <div class="history-header">
+            <div>
+                <h2>내 질문 내역</h2>
+                <p>최근 문의하신 내역입니다.</p>
+            </div>
+            <button onclick="openQnaModal()" class="cta-button small-btn">
+                + 질문하기
+            </button>
+        </div>
+
+        <div id="qna-grid" class="qna-grid">
+            <div class="qna-card skeleton-card"></div>
+            <div class="qna-card skeleton-card"></div>
+        </div>
+    </section>
+
+    <footer id="contact">
+        <div class="footer-content">
+            <div class="company-name">스터디크랙 (Study Crack)</div>
+            <div class="company-info">
+                <p>대표자: 임태륭 | 사업자등록번호: 201-61-00623</p>
+                <p>고객센터: 010-4035-3745</p>
+            </div>
+            <p style="margin-top: 20px; font-size: 0.8rem;">&copy; 2026 Study Crack. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <div id="qna-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>1:1 문의 작성</h2>
+                <span class="close-btn" onclick="closeQnaModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="qnaForm">
+                    <div class="form-group">
+                        <label for="qTitle">제목</label>
+                        <input type="text" id="qTitle" required placeholder="제목을 입력하세요">
+                    </div>
+                    <div class="form-group">
+                        <label for="qCategory">유형</label>
+                        <select id="qCategory">
+                            <option value="consulting">입시 컨설팅</option>
+                            <option value="payment">결제/환불</option>
+                            <option value="system">시스템 오류</option>
+                            <option value="etc">기타</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="qContent">내용</label>
+                        <textarea id="qContent" rows="5" required placeholder="내용을 입력하세요"></textarea>
+                    </div>
+                    <button type="submit" class="cta-button full-width">문의 접수하기</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/qna.js"></script> </body>
+</html>

@@ -1,3 +1,5 @@
+/* css/style.css */
+
 /* =========================================
    1. 기본 설정 (Reset & Base)
    ========================================= */
@@ -44,24 +46,20 @@ header {
     font-weight: 800;
     color: #0F172A;
     z-index: 1;
-    display: inline; /* 중요: inline 요소로 설정 */
-    
-    /* 핵심: 줄바꿈 시 스타일을 복제하여 각 줄에 적용 */
+    display: inline;
     -webkit-box-decoration-break: clone;
     box-decoration-break: clone;
-    
-    /* 하이라이트가 글자 옆으로 너무 퍼지지 않도록 패딩 조절 */
     padding: 0 4px; 
 }
 
 .roadmap-intro p strong::after {
     content: '';
     position: absolute;
-    left: 0; /* 패딩 안쪽부터 시작 */
+    left: 0;
     bottom: 2px;
-    width: 100%; /* 패딩 포함한 전체 너비 */
+    width: 100%;
     height: 35%;
-    background-color: #bfdbfe; /* 연한 파란색 */
+    background-color: #bfdbfe;
     opacity: 0.6;
     z-index: -1;
     border-radius: 4px;
@@ -153,7 +151,7 @@ header {
 .hidden-details { display: none; }
 
 /* =========================================
-   5. 푸터 & 모달 (렉 수정 완료)
+   5. 푸터 & 모달
    ========================================= */
 footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size: 0.9rem; }
 .footer-content { max-width: 1200px; margin: 0 auto; }
@@ -162,10 +160,10 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 .legal-links span:hover { color: white; }
 .hidden { display: none !important; }
 
-/* --- [중요] 모달 최적화 스타일 --- */
+/* 모달 스타일 */
 .modal {
     display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%;
-    background-color: rgba(0,0,0,0.6); /* backdrop-filter 제거로 렉 해결 */
+    background-color: rgba(0,0,0,0.6); 
 }
 .modal-content {
     background-color: white; margin: 5% auto; padding: 30px; border-radius: 16px;
@@ -196,29 +194,64 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 .refund-box { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
 .privacy-contact { background: #f8fafc; padding: 10px; border-radius: 8px; font-size: 0.9rem; }
 
+/* =========================================
+   6. [추가] 플로팅 Q&A 버튼 스타일
+   ========================================= */
+.floating-qna-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 65px;
+    height: 65px;
+    background-color: #2563EB;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+    z-index: 9999; /* 화면 최상단 */
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.floating-qna-btn:hover {
+    transform: translateY(-5px) scale(1.05);
+    background-color: #1d4ed8;
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.5);
+}
+
+.qna-icon {
+    font-size: 2rem;
+    line-height: 1;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+}
 
 /* =========================================
-   6. 모바일 반응형 (최종 보정)
+   7. 모바일 반응형
    ========================================= */
 @media (max-width: 768px) {
-    /* 헤더 & 네비 */
     header { flex-direction: column; gap: 15px; padding: 15px; }
     .nav-links { flex-wrap: wrap; justify-content: center; gap: 15px; }
 
-    /* 인트로 섹션 */
     .roadmap-intro { padding: 50px 20px; }
     .roadmap-intro h2 { font-size: 1.7rem; line-height: 1.3; }
     .roadmap-intro p { font-size: 1rem; padding: 0 5px; }
 
-    /* 히어로 섹션 */
     .hero-grid { grid-template-columns: 1fr; gap: 30px; }
     
-    /* 커리큘럼 섹션 */
     .curriculum-header h2 { font-size: 1.8rem; }
     .course-summary { flex-direction: column; align-items: flex-start; gap: 15px; }
     .course-price { align-self: flex-end; }
     .course-details { padding: 0 20px 20px 20px; }
 
-    /* 모달 모바일 */
     .modal-content { margin: 10% auto; width: 95%; max-height: 70vh; padding: 20px; }
+    
+    /* 모바일에서 플로팅 버튼 위치 미세 조정 */
+    .floating-qna-btn {
+        bottom: 20px;
+        right: 20px;
+        width: 55px;
+        height: 55px;
+    }
+    .qna-icon { font-size: 1.6rem; }
 }
