@@ -14,7 +14,6 @@ let univMap = {};
 let userQuantData = null; 
 let weeklyDataHistory = [];
 let currentSlotIndex = null;
-// 플래너 파일 저장용 전역 변수
 let currentPlannerFiles = []; 
 let originalPlannerFiles = [];
 
@@ -33,10 +32,11 @@ function getWeekTitle(date) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const accessToken = localStorage.getItem('accessToken');
+    // [수정] accessToken 대신 idToken 사용 (Cognito 권장)
+    const idToken = localStorage.getItem('idToken'); 
     const userId = localStorage.getItem('userId');
 
-    if (!accessToken) {
+    if (!idToken) {
         alert("로그인이 필요합니다.");
         window.location.href = 'login.html';
         return;
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ]).then(() => {
         console.log("🚀 모든 데이터 로드 완료");
         initUnivGrid(); 
-        updateAnalysisUI(); // [중요] 여기서 계산 API 호출 시작
+        updateAnalysisUI(); 
         setWeeklyLoadingStatus(false);
         setTimeout(() => { checkWeeklyStatus(); }, 500); 
 
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }).catch(err => {
         console.error("초기화 실패:", err);
         const msg = document.getElementById('weeklyDeadlineMsg');
-        if(msg) { msg.style.color = 'red'; msg.innerText = "데이터 로드 실패"; }
+        if(msg) { msg.style.color = 'red'; msg.innerText = "데이터 로드 실패 (네트워크/인증)"; }
     });
 
     setupUI();
@@ -85,18 +85,22 @@ function setWeeklyLoadingStatus(isLoading) {
 }
 
 async function fetchUserData(userId) {
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem('idToken'); // [수정] idToken
     const safeUserId = userId || localStorage.getItem('userId'); 
     try {
         const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, // [수정] 토큰 헤더
+            // [수정] Body에 userId 명시 (401 방지)
             body: JSON.stringify({ type: 'get_user', userId: safeUserId }) 
         });
+        
+        if (response.status === 401) throw new Error("인증 실패 (401): 다시 로그인해주세요.");
         if (!response.ok) {
             const errJson = await response.json();
             throw new Error(errJson.error || "서버 오류");
         }
+        
         const data = await response.json();
         renderUserInfo(data);
         applyUserTier(data.computedTier || 'free'); 
@@ -105,7 +109,10 @@ async function fetchUserData(userId) {
         if (data.quantitative) userQuantData = data.quantitative;
         weeklyDataHistory = data.weeklyHistory || []; 
         if (typeof buildUnivMap === 'function') buildUnivMap();
-    } catch (error) { console.error("데이터 로드 중 오류:", error); }
+    } catch (error) { 
+        console.error("데이터 로드 중 오류:", error); 
+        if(error.message.includes("401")) { alert("세션이 만료되었습니다."); location.href='login.html'; }
+    }
 }
 
 function applyUserTier(tier) {
@@ -125,25 +132,29 @@ function applyUserTier(tier) {
 }
 
 async function fetchUnivData() {
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem('idToken'); // [수정] idToken
+    const userId = localStorage.getItem('userId');
     try {
         const response = await fetch(UNIV_DATA_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'get_univ_list_only' }) 
+            // [수정] type과 함께 userId를 반드시 전송
+            body: JSON.stringify({ type: 'get_univ_list_only', userId: userId }) 
         });
-        if (!response.ok) throw new Error(`서버 응답 오류`);
+        if (!response.ok) throw new Error(`서버 응답 오류: ${response.status}`);
         const data = await response.json();
-        univData = data; 
+        
+        // 백엔드 구조에 따라 바로 배열이 오거나, data.univs로 올 수 있음. 안전하게 처리.
+        univData = Array.isArray(data) ? data : (data.univs || []); 
+        
         univMap = {};
-        data.forEach(item => { univMap[item.univName] = item.majors.map(m => ({ name: m })); });
+        univData.forEach(item => { univMap[item.univName] = item.majors.map(m => ({ name: m })); });
     } catch (e) { console.error("대학 데이터 로드 실패:", e); }
 }
 
 function buildUnivMap() {
     if (!univData || univData.length === 0) return;
     const userStream = determineUserStream(); 
-    // updateAnalysisUI(); // fetchUserData 완료 후 Promise.all에서 호출하므로 중복 제거
 }
 
 function determineUserStream() {
@@ -306,7 +317,7 @@ async function saveTargetUnivs() {
         else { userTargetUnivs[i] = null; }
     }
     const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem('idToken'); // [수정] idToken
     try {
         const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
@@ -318,25 +329,21 @@ async function saveTargetUnivs() {
 }
 
 // ============================================================
-// ★ [수정됨] 환산점수 계산 API 연결
+// [수정됨] 환산점수 계산 API 연결
 // ============================================================
 async function updateAnalysisUI() {
     const container = document.getElementById('univAnalysisResult');
     if (!container) return;
     
-    // 설정된 목표 대학이 없으면 안내 메시지
     const hasTargets = userTargetUnivs && userTargetUnivs.some(u => u && u.univ);
     if (!hasTargets) { 
         container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px;">목표 대학을 설정하면 분석 결과가 나타납니다.</p>'; 
         return; 
     }
     
-    // 로딩 표시
     container.innerHTML = `<div style="text-align:center; padding:40px; color:#64748b;"><i class="fas fa-circle-notch fa-spin" style="font-size:2rem; color:#3b82f6; margin-bottom:10px;"></i><p>AI가 환산 점수를 정밀 분석 중입니다...</p></div>`;
 
-    // 1. 현재 사용할 성적 데이터 확인 (기본값: 수능 csat)
-    // 실제 서비스에서는 사용자가 모의고사를 선택할 수 있게 하거나, 가장 최근 시험을 가져와야 함.
-    const examMode = "csat"; // (임시 고정)
+    const examMode = "csat"; 
     const currentScoreData = userQuantData ? userQuantData[examMode] : null;
 
     if (!currentScoreData) {
@@ -345,17 +352,22 @@ async function updateAnalysisUI() {
     }
 
     let html = '';
+    const token = localStorage.getItem('idToken');
+    const userId = localStorage.getItem('userId');
 
-    // 2. 각 목표 대학별로 계산 API 호출 (병렬 처리)
-    // userTargetUnivs 배열을 순회하며 Lambda 호출
+    // 병렬 처리
     const promises = userTargetUnivs.map(async (target, idx) => {
-        if (!target || !target.univ) return null; // 빈 슬롯 패스
+        if (!target || !target.univ) return null; 
 
         try {
             const res = await fetch(CALC_API_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                // [수정] 헤더에 토큰 추가
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                // [수정] Body에 userId 추가
                 body: JSON.stringify({
+                    type: 'calculate_score', // 백엔드 분기를 위해 type 추가
+                    userId: userId,
                     examMode: examMode,
                     univ: target.univ,
                     major: target.major,
@@ -365,7 +377,6 @@ async function updateAnalysisUI() {
             
             if (!res.ok) throw new Error("API Error");
             const result = await res.json();
-            // 결과 객체: { univ, major, is_eligible, msg, score, detail }
             return { idx, ...target, ...result };
 
         } catch (e) {
@@ -374,11 +385,10 @@ async function updateAnalysisUI() {
         }
     });
 
-    // 3. 결과 렌더링
     const results = await Promise.all(promises);
 
     results.forEach(res => {
-        if (!res) return; // null(빈 슬롯) 건너뜀
+        if (!res) return; 
         
         if (res.error) {
             html += `
@@ -388,18 +398,16 @@ async function updateAnalysisUI() {
                     <span class="univ-badge" style="background:#fef2f2; color:#ef4444;">분석 실패</span>
                 </div>
                 <div class="analysis-body">
-                    <p style="color:#64748b; font-size:0.9rem;">데이터를 불러올 수 없습니다. (지원하지 않는 대학이거나 오류 발생)</p>
+                    <p style="color:#64748b; font-size:0.9rem;">데이터를 불러올 수 없습니다.</p>
                 </div>
             </div>`;
             return;
         }
 
-        // 지원 가능 여부 태그
         const eligibilityTag = res.is_eligible 
             ? `<span class="univ-badge" style="background:#ecfdf5; color:#10b981; border:1px solid #10b981;">지원 가능</span>` 
             : `<span class="univ-badge" style="background:#fef2f2; color:#ef4444; border:1px solid #ef4444;">지원 불가 (${res.msg})</span>`;
 
-        // 점수 표시 (지원 불가여도 점수는 보여줌)
         const scoreDisplay = res.score ? `<strong>${res.score}점</strong>` : `<span style="color:#999;">-</span>`;
 
         html += `
@@ -435,7 +443,6 @@ async function updateAnalysisUI() {
         </div>`;
     });
 
-    // 결과가 하나도 없으면 (모두 빈 슬롯이었던 경우)
     if (html === '') {
         html = '<p style="text-align:center; color:#94a3b8; padding:30px;">목표 대학을 설정해주세요.</p>';
     }
@@ -476,7 +483,6 @@ function openWeeklyCheckModal() {
     document.body.style.overflow = 'hidden';
 }
 
-// 리셋 함수 추가 (500 에러 해결)
 function resetWeeklyForm() {
     document.getElementById('weekComment').value = '';
     document.querySelectorAll('.plan-time, .act-time, .sub-detail, .custom-subj').forEach(i => i.value = '');
@@ -492,7 +498,6 @@ function resetWeeklyForm() {
     const radios = document.getElementsByName('studyTrend');
     if(radios.length) radios[0].checked = false;
     
-    // 플래너 초기화
     currentPlannerFiles = [];
     renderPlannerFiles();
 }
@@ -502,7 +507,6 @@ function closeWeeklyModal() {
     document.body.style.overflow = 'auto';
 }
 
-// 플래너 파일 핸들링
 function handlePlannerFiles(input) {
     if (input.files) {
         const files = Array.from(input.files);
@@ -511,13 +515,11 @@ function handlePlannerFiles(input) {
             input.value = ''; 
             return;
         }
-        // 파일 객체 자체를 push
         files.forEach(f => currentPlannerFiles.push(f)); 
         renderPlannerFiles();
     }
 }
 
-// 플래너 파일 목록 렌더링
 function renderPlannerFiles() {
     const list = document.getElementById('plannerFileList');
     list.innerHTML = '';
@@ -529,34 +531,25 @@ function renderPlannerFiles() {
 
     currentPlannerFiles.forEach((file, idx) => {
         let fileName = "";
-        let fileLink = ""; // 미리보기 링크 (저장된 파일인 경우)
+        let fileLink = ""; 
 
-        // Case 1: 새로 추가한 파일 (File 객체)
         if (file instanceof File) {
             fileName = file.name;
         } 
-        // Case 2: DB에서 불러온 S3 URL (문자열)
         else if (typeof file === 'string') {
-            // URL에서 파일명 추출 (디코딩 포함)
             try {
-                // 전체 경로에서 마지막 '/' 뒤의 부분을 가져옴
                 const rawName = file.split('/').pop();
-                // URL 인코딩된 한글 등을 복원
                 fileName = decodeURIComponent(rawName);
-                
-                // 앞의 타임스탬프(숫자_)가 보기 싫으면 제거하는 로직
                 fileName = fileName.replace(/^\d+_/, '');
-                
-                fileLink = file; // URL 저장
+                fileLink = file; 
             } catch (e) {
-                fileName = file; // 에러 시 그냥 전체 출력
+                fileName = file; 
             }
         }
 
         const div = document.createElement('div');
         div.className = 'file-item';
         
-        // 저장된 파일이면 클릭해서 볼 수 있게 링크 제공
         let nameDisplay = `<span>📄 ${fileName}</span>`;
         if (fileLink) {
             nameDisplay = `<a href="${fileLink}" target="_blank" style="text-decoration:none; color:#334155; display:flex; align-items:center; gap:5px;">
@@ -579,7 +572,6 @@ function removePlannerFile(idx) {
 }
 
 function loadWeeklyDataToForm(data) {
-    // 공부시간 로드
     if (data.studyTime && data.studyTime.details) {
         const rows = document.querySelectorAll('#studyTimeBody tr');
         data.studyTime.details.forEach((detail, idx) => {
@@ -596,7 +588,6 @@ function loadWeeklyDataToForm(data) {
         });
         calcStudyRates(); 
     }
-    // 모의고사 로드
     if (data.mockExam) {
         const targetTile = document.querySelector(`.mock-tile[onclick*="'${data.mockExam.type}'"]`);
         if(targetTile) selectMockType(data.mockExam.type, targetTile);
@@ -611,7 +602,6 @@ function loadWeeklyDataToForm(data) {
             }
         }
     }
-    // 추이 로드
     if (data.trend) {
         const radio = document.querySelector(`input[name="studyTrend"][value="${data.trend.status}"]`);
         if (radio) {
@@ -625,13 +615,11 @@ function loadWeeklyDataToForm(data) {
             }
         }
     }
-    // 코멘트 로드
     if (data.comment) {
         const ta = document.getElementById('weekComment');
         ta.value = data.comment;
         checkLength(ta);
     }
-    // 플래너 파일 로드
     currentPlannerFiles = data.plannerFiles || [];
     originalPlannerFiles = [...currentPlannerFiles];
     renderPlannerFiles();
@@ -679,17 +667,14 @@ function toggleSlumpReason() {
 function checkLength(el) { document.getElementById('currLen').innerText = el.value.length; }
 
 async function submitWeeklyCheck() {
-    // 1. 유효성 검사 (학습 시간)
     const totalPlan = parseFloat(document.getElementById('totalPlan').innerText);
     if (totalPlan === 0) { alert("학습 계획 시간을 입력해주세요."); return; }
 
-    // 2. 모의고사 데이터 수집
     const mockType = document.getElementById('mockExamType').value;
     let mockData = { type: mockType, proofFile: null, scores: {} };
 
     if (mockType !== 'none') {
         const fileInput = document.getElementById('mockExamProof');
-        // 모의고사 사진은 일단 기존 로직 유지 (파일명만 저장) - 필요 시 여기도 S3 로직 적용 가능
         mockData.proofFile = fileInput.files.length > 0 ? fileInput.files[0].name : "file_uploaded"; 
         
         const scores = document.querySelectorAll('.mock-score');
@@ -702,11 +687,9 @@ async function submitWeeklyCheck() {
         };
     }
 
-    // 3. 코멘트 유효성 검사
     const comment = document.getElementById('weekComment').value.trim();
     if (!comment) { alert("핵심 회고를 작성해주세요."); return; }
 
-    // 4. 과목별 데이터 수집
     const studyRows = document.querySelectorAll('#studyTimeBody tr');
     let studyData = [];
     studyRows.forEach(row => {
@@ -727,7 +710,6 @@ async function submitWeeklyCheck() {
         if(plan > 0 || act > 0) studyData.push({ subject: subjName, plan, act });
     });
 
-    // 5. 추이 및 슬럼프 데이터 수집
     const trend = document.querySelector('input[name="studyTrend"]:checked')?.value || 'keep';
     let reasons = [];
     if(trend === 'down') {
@@ -739,30 +721,19 @@ async function submitWeeklyCheck() {
     if(!confirm("제출하시겠습니까?\n(수정 시 기존 데이터는 덮어씌워집니다)")) return;
 
     const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem('idToken'); // [수정] idToken
     const submitBtn = document.querySelector('.save-btn');
     const originalBtnText = submitBtn.innerText;
 
     try {
-        // UI 로딩 상태 전환
         submitBtn.disabled = true;
         submitBtn.innerText = "데이터 처리 중...";
 
-        // ============================================================
-        // [A] 삭제된 파일 감지 및 S3 삭제 요청
-        // ============================================================
-        // originalPlannerFiles: 이전에 불러왔던 원본 파일 리스트 (문자열 URL들)
-        // currentPlannerFiles: 현재 화면에 있는 파일 리스트 (문자열 URL + 새로 추가된 File 객체 혼합)
-        
-        // 현재 리스트에서 "기존에 있던 URL"만 골라냄
         const currentUrls = currentPlannerFiles.filter(f => typeof f === 'string');
-        
-        // 원본에는 있었는데, 현재 리스트에는 없는 URL -> 삭제 대상
         const filesToDelete = originalPlannerFiles.filter(url => !currentUrls.includes(url));
 
         if (filesToDelete.length > 0) {
             submitBtn.innerText = "기존 파일 삭제 중...";
-            // 병렬로 삭제 요청 전송
             await Promise.all(filesToDelete.map(url => 
                 fetch(MYPAGE_API_URL, {
                     method: 'POST',
@@ -776,20 +747,13 @@ async function submitWeeklyCheck() {
             ));
         }
 
-        // ============================================================
-        // [B] 신규 파일 S3 업로드 로직
-        // ============================================================
-        // 최종적으로 DB에 저장될 URL 리스트 (기존 URL들은 유지)
         let finalFileUrls = [...currentUrls]; 
-        
-        // 새로 추가된 파일(File 객체)만 골라내기
         const newFiles = currentPlannerFiles.filter(f => typeof f !== 'string');
 
         if (newFiles.length > 0) {
             submitBtn.innerText = "새 사진 업로드 중... (잠시만 기다려주세요)";
             
             for (const file of newFiles) {
-                // 1. Presigned URL 발급 요청
                 const res = await fetch(MYPAGE_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -803,22 +767,15 @@ async function submitWeeklyCheck() {
                 if (!res.ok) throw new Error("업로드 URL 발급 실패");
                 const { uploadUrl, fileUrl } = await res.json();
 
-                // 2. S3로 직접 업로드 (PUT)
-                // Content-Type 헤더가 Presigned URL 생성 시점과 일치해야 함
                 await fetch(uploadUrl, {
                     method: 'PUT',
                     headers: { 'Content-Type': file.type },
                     body: file
                 });
-
-                // 3. 업로드 성공한 URL을 최종 리스트에 추가
                 finalFileUrls.push(fileUrl);
             }
         }
 
-        // ============================================================
-        // [C] 최종 데이터 DB 저장
-        // ============================================================
         submitBtn.innerText = "저장 중...";
         
         const today = new Date().toISOString();
@@ -836,7 +793,7 @@ async function submitWeeklyCheck() {
             mockExam: mockData,
             trend: { status: trend, reasons: reasons },
             comment: comment,
-            plannerFiles: finalFileUrls // 최종 정리된 URL 리스트 저장
+            plannerFiles: finalFileUrls 
         };
 
         const res = await fetch(MYPAGE_API_URL, {
@@ -860,7 +817,6 @@ async function submitWeeklyCheck() {
         console.error("Submit Error:", e); 
         alert("처리 중 오류가 발생했습니다: " + e.message); 
     } finally {
-        // UI 원복
         submitBtn.disabled = false;
         submitBtn.innerText = originalBtnText;
     }
@@ -891,7 +847,7 @@ async function submitDeepCoaching() {
     if(ans.every(a => a === "")) { alert("내용을 입력해주세요."); return; }
     if(!confirm("심층 코칭을 요청하시겠습니까?")) return;
     const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem('idToken'); // [수정] idToken
     const reqData = { date: new Date().toISOString(), plan: ans[0], direction: ans[1], subject: ans[2], etc: ans[3], status: 'pending' };
     try {
         const res = await fetch(MYPAGE_API_URL, {
@@ -911,7 +867,7 @@ function initCoachLock() {
 
 async function saveProfile() {
     const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem('idToken'); // [수정] idToken
     const newName = document.getElementById('profileName').value;
     const newPhone = document.getElementById('profilePhone').value;
     const newSchool = document.getElementById('profileSchool').value;
@@ -933,7 +889,7 @@ async function saveProfile() {
 async function handleDeleteAccount() {
     if (!confirm("정말로 탈퇴하시겠습니까?\n\n탈퇴 시 저장된 모든 데이터가 영구 삭제됩니다.")) return;
     const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem('idToken'); // [수정] idToken
     try {
         const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
