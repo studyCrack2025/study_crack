@@ -16,21 +16,32 @@
         </div>
         <ul class="menu">
             <li class="menu-item has-submenu">
-                <a href="#" onclick="toggleSubmenu('stats-submenu')">📊 통계 관리 ▾</a>
+                <a href="#" onclick="toggleSubmenu('stats-submenu')">
+                    <span>📊 통계 관리</span>
+                    <span class="arrow">▾</span>
+                </a>
                 <ul id="stats-submenu" class="submenu">
                     <li><a href="#" onclick="showSection('dashboard')">전체 요약</a></li>
                     <li><a href="#" onclick="showSection('sales-chart')">매출 분석</a></li>
                 </ul>
             </li>
+
             <li class="menu-item">
                 <a href="#" onclick="showSection('students')">👥 학생 관리</a>
             </li>
-            <a href="#" onclick="toggleSubmenu('qna-submenu')">💬 질의 관리 ▾</a>
+
+            <li class="menu-item has-submenu">
+                <a href="#" onclick="toggleSubmenu('qna-submenu')">
+                    <span>💬 질의 관리</span>
+                    <span class="arrow">▾</span>
+                </a>
                 <ul id="qna-submenu" class="submenu">
                     <li><a href="#" onclick="showQnaSection('done')">✅ 응답 완료</a></li>
                     <li><a href="#" onclick="showQnaSection('read')">👁️ 읽음 (미응답)</a></li>
                     <li><a href="#" onclick="showQnaSection('waiting')">🔴 읽지 않음</a></li>
                 </ul>
+            </li>
+
             <li class="menu-item logout">
                 <a href="#" onclick="handleSignOut()">로그아웃</a>
             </li>
