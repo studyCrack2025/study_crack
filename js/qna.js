@@ -42,6 +42,7 @@ function closeQnaModal() {
 async function loadQnaHistory() {
     const grid = document.getElementById('qna-grid');
     const idToken = localStorage.getItem('idToken');
+    const userId = localStorage.getItem('userId');
 
     if (!idToken) {
         grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; padding:40px;">로그인 후 질문 내역을 확인할 수 있습니다.</p>';
