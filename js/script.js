@@ -121,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // (6) black floating button 활성화
     showBlackButtonIfEligible();
+    setTimeout(showBlackButtonIfEligible, 500);
 });
 
 // BLACK 버튼 노출 로직

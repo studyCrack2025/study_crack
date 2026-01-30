@@ -435,6 +435,9 @@ function handleSignIn() {
                 return res.json();
             })
             .then(data => {
+                if (data.computedTier) {
+                    localStorage.setItem('userTier', data.computedTier);
+                }
                 if (data.role === 'admin') {
                     localStorage.setItem('userRole', 'admin');
                     alert("관리자 계정으로 로그인되었습니다.");
