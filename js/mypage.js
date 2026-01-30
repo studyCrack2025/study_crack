@@ -205,7 +205,7 @@ function switchMainTab(tabName) {
 
 function openSolution(solType) {
     if ((solType === 'sim' || solType === 'coach') && ['free', 'basic'].includes(currentUserTier)) { alert("Standard 버전 이상만 이용 가능합니다."); return; }
-    if (solType === 'black' && currentUserTier !== 'black') { alert("BLACK 회원 전용 공간입니다."); return; }
+//    if (solType === 'black' && currentUserTier !== 'black') { alert("BLACK 회원 전용 공간입니다."); return; }
     document.querySelectorAll('.sol-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.sol-content').forEach(content => content.classList.remove('active'));
     if(event && event.currentTarget) event.currentTarget.classList.add('active');

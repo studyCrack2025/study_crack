@@ -345,6 +345,28 @@
 .tile-arrow { margin-left: auto; color: #444; transition: 0.3s; }
 .black-tile:hover .tile-arrow { color: #d4af37; transform: translateX(5px); }
 
+/* BLACK 신청 버튼 스타일 */
+.black-cta-btn {
+    background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+    border: 1px solid #f59e0b;
+    color: white;
+    padding: 20px 40px;
+    font-size: 1.3rem;
+    font-weight: 800;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+    transition: all 0.3s ease;
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+}
+.black-cta-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(245, 158, 11, 0.6);
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+}
+
 /* =========================================
    8. 공통 폼 및 기타
    ========================================= */

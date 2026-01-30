@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLACK 멤버십 신청 - 스터디크랙</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/black_submission.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="black-wrapper">
+        <div class="black-container">
+            <div class="header-section">
+                <h2>BLACK MEMBERSHIP</h2>
+                <p>최상위 입시 전략을 위한 사전 설문</p>
+            </div>
+
+            <form id="blackForm">
+                <div class="form-section">
+                    <label class="section-label">1. 현재 학년을 선택해주세요.</label>
+                    <div class="radio-group">
+                        <label class="radio-box">
+                            <input type="radio" name="grade" value="under_h2">
+                            <span>고2 이하</span>
+                        </label>
+                        <label class="radio-box">
+                            <input type="radio" name="grade" value="h3">
+                            <span>고3 (현역)</span>
+                        </label>
+                        <label class="radio-box">
+                            <input type="radio" name="grade" value="n_students">
+                            <span>재수 이상 (N수)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <label class="section-label">2. BLACK 멤버십이 필요한 가장 큰 이유는 무엇인가요? (중복 가능)</label>
+                    <div class="checkbox-group">
+                        <label class="check-box">
+                            <input type="checkbox" name="reason" value="score_up">
+                            <span>단기간 성적 급상승 필요</span>
+                        </label>
+                        <label class="check-box">
+                            <input type="checkbox" name="reason" value="mentor">
+                            <span>확실한 학습 멘토/관리 필요</span>
+                        </label>
+                        <label class="check-box">
+                            <input type="checkbox" name="reason" value="consulting">
+                            <span>수시/정시 정밀 입시 컨설팅</span>
+                        </label>
+                        <label class="check-box">
+                            <input type="checkbox" name="reason" value="mental">
+                            <span>슬럼프 극복 및 멘탈 케어</span>
+                        </label>
+                        <label class="check-box">
+                            <input type="checkbox" name="reason" value="curriculum">
+                            <span>개인 맞춤 커리큘럼 설계</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <label class="section-label">3. 담당 컨설턴트에게 미리 전달하고 싶은 내용이 있다면 적어주세요.</label>
+                    <textarea id="userNote" maxlength="200" placeholder="현재 성적 상황이나 특별한 고민 등 (200자 미만)"></textarea>
+                    <div class="char-count"><span id="currLen">0</span>/200</div>
+                </div>
+
+                <div class="btn-area">
+                    <button type="button" class="cancel-btn" onclick="history.back()">뒤로가기</button>
+                    <button type="submit" class="submit-btn">BLACK 신청하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/black_submission.js"></script>
+</body>
+</html>
