@@ -1,5 +1,16 @@
 // js/qna.js
 
+// [보안] XSS 방지 함수 추가
+function escapeHtml(text) {
+    if (!text) return text;
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // 2. FAQ 아코디언 로직
     const faqItems = document.querySelectorAll('.faq-item');
@@ -28,9 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// [1] 모달 제어 함수 (qna.js 내부에 직접 정의하여 오류 방지)
+// [1] 모달 제어 함수
 function openModal(id) {
-    // id가 'qna'로 들어오면 'qna-modal'을 찾고, 'qna-detail-modal'처럼 전체 ID가 들어오면 그걸 찾음
     let modal = document.getElementById(id);
     if (!modal) {
         modal = document.getElementById(id + '-modal');
@@ -56,15 +66,9 @@ function closeModal(id) {
     }
 }
 
-// 질문하기 모달 열기 (내부 함수 openModal 사용)
-function openQnaModal() {
-    openModal('qna'); 
-}
-
-// 질문하기 모달 닫기
-function closeQnaModal() {
-    closeModal('qna');
-}
+// 질문하기 모달 열기/닫기
+function openQnaModal() { openModal('qna'); }
+function closeQnaModal() { closeModal('qna'); }
 
 // 질문 목록 조회
 async function loadQnaHistory() {
@@ -118,10 +122,11 @@ async function loadQnaHistory() {
             card.className = 'qna-card';
             card.style.cursor = 'pointer'; 
             
+            // [보안] escapeHtml 적용
             card.innerHTML = `
                 <div>
                     <span class="qna-badge ${badgeClass}">${categoryName}</span>
-                    <h3 class="qna-card-title">${item.title}</h3>
+                    <h3 class="qna-card-title">${escapeHtml(item.title)}</h3>
                 </div>
                 <div class="qna-meta">
                     <span>${dateStr}</span>
@@ -129,7 +134,6 @@ async function loadQnaHistory() {
                 </div>
             `;
             
-            // 여기서 이제 정의된 openModal을 사용하는 openDetailModal 호출
             card.addEventListener('click', () => openDetailModal(item));
             grid.appendChild(card);
         });
@@ -142,10 +146,9 @@ async function loadQnaHistory() {
 
 // 상세 보기 모달 열기
 function openDetailModal(item) {
-    // 상세 모달 ID 확인 (qna.html에 id="qna-detail-modal"로 되어 있어야 함)
     const modal = document.getElementById('qna-detail-modal');
     if(!modal) {
-        console.error("Detail modal not found in DOM");
+        console.error("Detail modal not found");
         return;
     }
 
@@ -154,14 +157,17 @@ function openDetailModal(item) {
     catBadge.textContent = getCategoryName(item.category);
     
     document.getElementById('detail-date').textContent = new Date(item.createdAt).toLocaleString();
+    
+    // [보안] textContent 사용 (안전)
     document.getElementById('detail-title').textContent = item.title;
     document.getElementById('detail-content').textContent = item.content;
 
     const answerArea = document.getElementById('detail-answer-area');
     if (item.status === 'done' && item.answer) {
+        // [보안] 답변 내용도 escapeHtml 적용
         answerArea.innerHTML = `
             <div style="background:#eff6ff; padding:15px; border-radius:8px; border:1px solid #bfdbfe; color:#1e3a8a; white-space: pre-wrap;">
-                ${item.answer}
+                ${escapeHtml(item.answer)}
                 <div style="margin-top:10px; font-size:0.8rem; color:#60a5fa; text-align:right;">
                     답변일: ${item.answeredAt ? new Date(item.answeredAt).toLocaleDateString() : '-'}
                 </div>
@@ -175,7 +181,6 @@ function openDetailModal(item) {
         `;
     }
     
-    // 내부 정의된 openModal 사용
     openModal('qna-detail-modal'); 
 }
 
@@ -205,11 +210,7 @@ async function handleQnaSubmit(e) {
             body: JSON.stringify({
                 type: 'save_qna',
                 userId: userId, 
-                data: {
-                    title: title,
-                    category: category,
-                    content: content
-                }
+                data: { title, category, content }
             })
         });
 
@@ -234,7 +235,6 @@ function getCategoryName(key) {
 
 // 모달 바깥 클릭 시 닫기
 window.onclick = function(event) {
-    // 클래스명으로 체크 (qna.html의 모달들)
     if (event.target.classList.contains('modal')) {
         event.target.style.display = 'none';
         document.body.style.overflow = 'auto';
