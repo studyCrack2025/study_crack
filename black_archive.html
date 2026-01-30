@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLACK ARCHIVE - StudyCrack</title>
+    
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/black_theme.css">
+    <link rel="stylesheet" href="css/black_archive.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="black-body">
+
+    <header class="black-header-bar">
+        <div class="logo-container">
+            <a href="black_index.html" style="text-decoration:none;">
+                <span class="logo gold-text">BLACK LOUNGE</span>
+            </a>
+        </div>
+        <nav class="nav-links black-nav">
+            <a href="black_consult.html">1:1 Consulting</a>
+            <a href="black_archive.html" class="active-gold">Archive</a>
+            <a href="black_community.html">Community</a>
+            <a href="index.html" class="nav-btn gold-btn">메인으로 돌아가기</a>
+        </nav>
+    </header>
+
+    <div class="archive-wrapper">
+        
+        <section class="archive-section">
+            <div class="section-header">
+                <h3>My Consultants</h3>
+                <p class="section-desc">내가 선택한 전담 멘토 (최대 3명)</p>
+            </div>
+            <div class="consultant-grid" id="myConsultantList">
+                </div>
+        </section>
+
+        <section class="archive-section">
+            <div class="section-header">
+                <h3>Column Archive</h3>
+                <div class="filter-box">
+                    <span class="active">전체</span>
+                    <span>학습법</span>
+                    <span>입시분석</span>
+                    <span>멘탈관리</span>
+                </div>
+            </div>
+            
+            <div class="column-archive-grid" id="columnArchiveGrid">
+                </div>
+            
+            <div class="load-more-container">
+                <button id="btnLoadMoreCol" class="gold-outline-btn" onclick="loadMoreColumns()">
+                    더보기 +
+                </button>
+            </div>
+        </section>
+
+        <section class="archive-section">
+            <div class="section-header">
+                <h3>University News</h3>
+            </div>
+            
+            <div class="news-layout">
+                <div class="univ-sidebar">
+                    <div class="univ-logo-grid" id="univLogoGrid">
+                        </div>
+                </div>
+
+                <div class="news-content-area">
+                    <div class="news-search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="newsSearchInput" placeholder="대학명 또는 키워드 검색..." onkeyup="filterNews()">
+                    </div>
+                    <ul class="news-list" id="newsList">
+                        </ul>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <footer class="black-footer">
+        <p>&copy; 2026 Study Crack BLACK. All rights reserved.</p>
+    </footer>
+
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/black_archive.js"></script>
+</body>
+</html>

@@ -215,6 +215,20 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
     filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
 }
 
+.floating-black-btn {
+    position: fixed; bottom: 110px; right: 30px; /* Q&A 버튼 위에 배치 */
+    width: 65px; height: 65px;
+    background: linear-gradient(135deg, #000 0%, #333 100%);
+    border: 2px solid #d4af37;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    z-index: 9999; transition: all 0.3s ease;
+    text-decoration: none;
+}
+.floating-black-btn:hover { transform: translateY(-5px) scale(1.05); box-shadow: 0 0 20px rgba(212, 175, 55, 0.6); }
+.black-icon { font-size: 1.8rem; }
+
 /* =========================================
    7. 모바일 반응형
    ========================================= */
@@ -243,4 +257,5 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
         height: 55px;
     }
     .qna-icon { font-size: 1.6rem; }
+    .floating-black-btn { bottom: 90px; right: 20px; width: 55px; height: 55px; }
 }

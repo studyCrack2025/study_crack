@@ -1,0 +1,147 @@
+/* css/black_archive.css */
+
+.active-gold { color: #d4af37 !important; font-weight: bold; border-bottom: 2px solid #d4af37; padding-bottom: 5px; }
+
+.archive-wrapper {
+    max-width: 1200px; margin: 0 auto; padding: 40px 20px;
+}
+
+.archive-section {
+    margin-bottom: 80px;
+}
+
+.section-desc {
+    color: #666; font-size: 0.9rem; margin-left: 15px; margin-bottom: 5px;
+}
+
+/* 1. 나만의 컨설턴트 */
+.consultant-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+}
+
+.consultant-card {
+    background: linear-gradient(145deg, #1a1a1a, #111);
+    border: 1px solid #333; border-radius: 12px;
+    padding: 25px; position: relative;
+    cursor: pointer; transition: 0.3s;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+}
+.consultant-card:hover {
+    border-color: #d4af37; transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+}
+
+.c-profile-img {
+    width: 80px; height: 80px; border-radius: 50%;
+    object-fit: cover; border: 2px solid #d4af37;
+    margin-bottom: 15px;
+}
+
+.c-info h4 { margin: 0 0 5px 0; color: #fff; font-size: 1.1rem; }
+.c-info span { color: #888; font-size: 0.85rem; }
+.c-tags { margin-top: 15px; display: flex; gap: 5px; justify-content: center; }
+.c-tag { background: #222; color: #aaa; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; }
+
+/* 설정 해제 버튼 (호버 시 등장) */
+.btn-remove-consultant {
+    position: absolute; top: 10px; right: 10px;
+    color: #ef4444; background: none; border: none;
+    font-size: 1.2rem; cursor: pointer; opacity: 0; transition: 0.2s;
+}
+.consultant-card:hover .btn-remove-consultant { opacity: 1; }
+
+/* 빈 슬롯 */
+.empty-slot {
+    border: 2px dashed #333; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 200px; cursor: pointer; transition: 0.2s;
+    background: rgba(255,255,255,0.02);
+}
+.empty-slot:hover { border-color: #666; background: rgba(255,255,255,0.05); }
+.plus-icon { font-size: 2rem; color: #444; }
+
+/* 2. 칼럼 아카이브 */
+.filter-box {
+    display: flex; gap: 15px; font-size: 0.9rem; color: #666;
+}
+.filter-box span { cursor: pointer; transition: 0.2s; }
+.filter-box span:hover, .filter-box span.active { color: #d4af37; font-weight: bold; }
+
+.column-archive-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+}
+
+/* 칼럼 카드 스타일 (black_index와 유사하지만 조금 더 심플하게) */
+.archive-col-card {
+    background: #111; border: 1px solid #222; border-radius: 8px;
+    overflow: hidden; cursor: pointer; transition: 0.3s;
+}
+.archive-col-card:hover { border-color: #d4af37; transform: translateY(-3px); }
+.ac-img { height: 120px; background: #222; }
+.ac-img img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
+.ac-body { padding: 15px; }
+.ac-title { font-size: 0.95rem; color: #ddd; margin: 0 0 10px 0; line-height: 1.4; height: 2.8em; overflow: hidden; }
+.ac-meta { font-size: 0.8rem; color: #666; display: flex; justify-content: space-between; }
+
+.load-more-container { text-align: center; margin-top: 30px; }
+.gold-outline-btn {
+    background: transparent; border: 1px solid #d4af37; color: #d4af37;
+    padding: 10px 30px; border-radius: 20px; cursor: pointer; font-weight: bold;
+    transition: 0.2s;
+}
+.gold-outline-btn:hover { background: #d4af37; color: #000; }
+
+/* 3. 대학별 뉴스 */
+.news-layout { display: flex; gap: 30px; }
+
+/* 좌측 로고 그리드 */
+.univ-sidebar { width: 300px; flex-shrink: 0; }
+.univ-logo-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    max-height: 500px; overflow-y: auto; padding-right: 5px;
+}
+.univ-tile {
+    background: #1a1a1a; border: 1px solid #333; border-radius: 8px;
+    padding: 15px; text-align: center; cursor: pointer; transition: 0.2s;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.univ-tile:hover, .univ-tile.active { border-color: #d4af37; background: #222; }
+.univ-logo-img { width: 50px; height: 50px; border-radius: 50%; background: #fff; object-fit: contain; padding: 2px; }
+.univ-name { font-size: 0.85rem; color: #ccc; }
+
+/* 우측 뉴스 리스트 */
+.news-content-area { flex: 1; }
+.news-search-bar {
+    display: flex; align-items: center; background: #1a1a1a;
+    border: 1px solid #333; border-radius: 8px; padding: 10px 15px; margin-bottom: 20px;
+}
+.news-search-bar i { color: #666; margin-right: 10px; }
+.news-search-bar input {
+    background: transparent; border: none; color: #fff; width: 100%; font-size: 1rem;
+}
+.news-search-bar input:focus { outline: none; }
+
+.news-list { list-style: none; padding: 0; margin: 0; }
+.news-item {
+    padding: 15px 0; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center;
+    cursor: pointer; transition: 0.2s;
+}
+.news-item:hover { background: rgba(255,255,255,0.02); padding-left: 10px; }
+.news-info { display: flex; flex-direction: column; gap: 5px; }
+.news-title { color: #ddd; font-size: 1rem; }
+.news-meta { color: #666; font-size: 0.8rem; }
+.news-arrow { color: #444; }
+
+/* 스크롤바 커스텀 */
+.univ-logo-grid::-webkit-scrollbar { width: 6px; }
+.univ-logo-grid::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+/* 모바일 */
+@media (max-width: 900px) {
+    .consultant-grid { grid-template-columns: 1fr; }
+    .column-archive-grid { grid-template-columns: 1fr 1fr; }
+    .news-layout { flex-direction: column; }
+    .univ-sidebar { width: 100%; }
+    .univ-logo-grid { display: flex; overflow-x: auto; padding-bottom: 10px; }
+    .univ-tile { min-width: 100px; }
+}

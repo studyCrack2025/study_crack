@@ -118,4 +118,29 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+    
+    // (6) black floating button 활성화
+    showBlackButtonIfEligible();
 });
+
+// BLACK 버튼 노출 로직
+function showBlackButtonIfEligible() {
+    const tier = localStorage.getItem('userTier'); // 로그인 시 저장했다고 가정
+    // 실제로는 API 호출해서 확인하는게 안전하지만, 일단 로컬 스토리지 기반 예시
+    if (tier === 'black') {
+        const btn = document.getElementById('blackThemeBtn');
+        if(btn) btn.classList.remove('hidden');
+    }
+}
+
+// BLACK 페이지 이동 전 권한 재확인
+async function checkBlackAccess() {
+    const userId = localStorage.getItem('userId');
+    // (선택) 여기서 API로 다시 티어 확인 가능
+    // 간단하게는 로컬 체크 후 이동
+    if (localStorage.getItem('userTier') === 'black') {
+        window.location.href = 'black_index.html';
+    } else {
+        alert("BLACK 회원 전용 공간입니다.");
+    }
+}

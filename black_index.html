@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLACK LOUNGE - StudyCrack</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/black_theme.css"> <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="black-body">
+
+    <header class="black-header-bar">
+        <div class="logo-container">
+            <span class="logo gold-text">BLACK LOUNGE</span>
+        </div>
+        <nav class="nav-links black-nav">
+            <a href="black_consult.html">1:1 Consulting</a>
+            <a href="black_archive.html">Archive</a>
+            <a href="black_community.html">Community</a>
+            <a href="index.html" class="nav-btn gold-btn">메인으로 돌아가기</a>
+        </nav>
+    </header>
+
+    <div class="black-intro-section">
+        <div class="intro-content">
+            <h2>대부분의 학생이 모르는 정보,<br><span class="gold-text">Black은 먼저 봅니다.</span></h2>
+            <p>
+                Black Lounge는 블랙 회원만 접근할 수 있는 정보 전용 공간입니다.<br>
+                누구나 쉽게 찾을 수 있는 자료, 이미 널리 퍼진 해석, 타 커뮤니티에 돌아다니는 정보는 다루지 않습니다.
+            </p>
+        </div>
+    </div>
+
+    <section class="section black-section">
+        <div class="section-header">
+            <h3>Secret Column</h3>
+            <a href="#" class="view-all-link">전체보기 →</a>
+        </div>
+
+        <div class="hero-column-grid">
+            <div class="hero-col-card" onclick="openColumnModal(1)">
+                <div class="badge-overlay">FOR BLACK ONLY</div>
+                <div class="col-content">
+                    <h4>2026 입결 총정리 :<br>어디서도 공개되지 않은 데이터</h4>
+                    <div class="col-meta">
+                        <span class="author">StudyCrack Official</span>
+                        <span class="date">2026.01.28</span>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-col-card" onclick="openColumnModal(2)">
+                <div class="badge-overlay">FOR BLACK ONLY</div>
+                <div class="col-content">
+                    <h4>의치한약수 합격선 예측:<br>변화된 표준점수의 비밀</h4>
+                    <div class="col-meta">
+                        <span class="author">StudyCrack Official</span>
+                        <span class="date">2026.01.25</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="column-list-grid" id="columnGrid">
+            <div class="col-card top-rank">
+                <div class="col-img-area">
+                    <img src="https://placehold.co/300x200/1a1a1a/FFF" alt="썸네일">
+                    <div class="consultant-badge"><img src="assets/images/badge_master.png" onerror="this.style.display='none'"> 🏅</div>
+                </div>
+                <div class="col-text-area">
+                    <h4 class="col-title">수학 1등급을 가르는 결정적 차이</h4>
+                    <div class="col-info">
+                        <span class="c-name">이태성 컨설턴트</span>
+                        <span class="like-btn" onclick="toggleLike(this)"><i class="far fa-heart"></i> 128</span>
+                    </div>
+                </div>
+            </div>
+            </div>
+    </section>
+
+    <footer class="black-footer">
+        <p>&copy; 2026 Study Crack BLACK. All rights reserved.</p>
+    </footer>
+
+    <div id="column-modal" class="modal">
+        <div class="modal-content black-modal-content">
+            <span class="close-btn white-close" onclick="closeColumnModal()">&times;</span>
+            <div id="modal-body-content">
+                </div>
+        </div>
+    </div>
+
+    <script src="js/black_ui.js"></script>
+</body>
+</html>
