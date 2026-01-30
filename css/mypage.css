@@ -266,7 +266,7 @@
 .check-section .desc { font-size: 0.85rem; color: #64748b; margin-bottom: 15px; }
 .req { color: #ef4444; }
 
-/* [NEW] 파일 업로드 스타일 */
+/* 파일 업로드 스타일 */
 .file-upload-wrapper { border: 1px dashed #cbd5e1; padding: 15px; border-radius: 8px; background: #fdfdfd; text-align: center; }
 .file-upload-btn { display: inline-block; padding: 8px 16px; background: #3b82f6; color: white; border-radius: 6px; font-size: 0.9rem; cursor: pointer; transition: 0.2s; }
 .file-upload-btn:hover { background: #2563eb; }
@@ -333,38 +333,60 @@
 .benefit-list li { margin-bottom: 10px; }
 .benefit-list strong { color: #fcf6ba; margin-right: 8px; }
 
-.black-menu-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
-.black-tile {
-    background: linear-gradient(145deg, #1a1a1a, #0d0d0d); border: 1px solid #333; border-radius: 12px; padding: 30px 20px;
-    display: flex; align-items: center; gap: 20px; cursor: pointer; transition: all 0.3s ease;
-}
-.black-tile:hover { transform: translateY(-5px); border-color: #d4af37; box-shadow: 0 10px 20px rgba(212, 175, 55, 0.15); }
-.tile-icon { font-size: 2rem; color: #d4af37; width: 50px; text-align: center; }
-.tile-info h4 { margin: 0 0 5px 0; font-size: 1.1rem; color: white; font-family: 'serif'; }
-.tile-info p { margin: 0; font-size: 0.85rem; color: #888; }
-.tile-arrow { margin-left: auto; color: #444; transition: 0.3s; }
-.black-tile:hover .tile-arrow { color: #d4af37; transform: translateX(5px); }
-
-/* BLACK 신청 버튼 스타일 */
-.black-cta-btn {
-    background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
-    border: 1px solid #f59e0b;
-    color: white;
-    padding: 20px 40px;
-    font-size: 1.3rem;
-    font-weight: 800;
-    border-radius: 50px;
-    cursor: pointer;
-    box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
-    transition: all 0.3s ease;
+/* 1. 버튼을 감싸는 컨테이너 (완벽한 중앙 정렬용) */
+.black-btn-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     width: 100%;
-    max-width: 500px;
-    text-align: center;
+    margin-top: 30px;
 }
+
+/* 2. 고급스러운 골드 테마 버튼 */
+.black-cta-btn {
+    background: linear-gradient(145deg, #1a1a1a, #0d0d0d); /* 은은한 블랙 배경 */
+    border: 1px solid #d4af37; /* 얇은 골드 테두리 */
+    color: #d4af37; /* 골드 텍스트 */
+    padding: 20px 50px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    font-family: 'serif'; /* 헤더와 통일감 있게 명조 계열 추천 (선택사항) */
+    border-radius: 4px; /* 둥근 알약 모양 -> 살짝 각진 사각형 (고급스러움) */
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); /* 그림자 */
+    transition: all 0.4s ease;
+    width: auto; /* 꽉 차지 않게 자동 너비 */
+    min-width: 300px;
+    text-align: center;
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 3. 호버 효과: 골드로 채워지면서 글자는 검정색으로 */
 .black-cta-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 30px rgba(245, 158, 11, 0.6);
-    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    background: #d4af37; /* 배경 골드 */
+    color: #000; /* 글자 블랙 */
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.4); /* 골드 빛 번짐 */
+    transform: translateY(-3px); /* 살짝 위로 부상 */
+    border-color: #d4af37;
+}
+
+/* 4. 버튼 내부 서브 텍스트 (작은 글씨) */
+.black-cta-btn span {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 400;
+    margin-top: 8px;
+    color: #888; /* 기본 회색 */
+    font-family: 'Noto Sans KR', sans-serif; /* 본문 폰트 */
+    letter-spacing: 0;
+    transition: color 0.4s ease;
+}
+
+/* 호버 시 서브 텍스트도 진하게 */
+.black-cta-btn:hover span {
+    color: #333;
 }
 
 /* =========================================
