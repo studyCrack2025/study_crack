@@ -10,11 +10,27 @@ let currentTier = 'free';
 let currentAdminFile = null; // 관리자 첨부파일
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. 잘못된 접근 차단 (기존 코드)
     if (!targetUserId || !adminId) {
         alert("잘못된 접근입니다.");
-        window.location.href = 'admin.html';
+        window.location.href = 'login.html'; // 로그인 페이지로 튕기는 게 더 안전함
         return;
     }
+    const backBtn = document.querySelector('.back-btn');
+    const userRole = localStorage.getItem('userRole');
+
+    if (backBtn) {
+        if (userRole === 'tutor') {
+            // 튜터라면: 튜터 마이페이지로 이동
+            backBtn.href = 'tutor_mypage.html?tab=students';
+            backBtn.innerText = '← 내 학생 목록으로';
+        } else {
+            // 관리자(또는 그 외)라면: 관리자 페이지로 이동
+            backBtn.href = 'admin.html';
+            backBtn.innerText = '← 목록으로 돌아가기';
+        }
+    }
+
     loadStudentDetail();
     
     const today = new Date();

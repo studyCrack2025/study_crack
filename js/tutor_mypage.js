@@ -4,7 +4,7 @@
 let tutorInfo = {};
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. 로그인 체크 (컨설턴트 권한 확인은 백엔드 응답 role로 처리)
+    // 로그인 체크 (컨설턴트 권한 확인은 백엔드 응답 role로 처리)
     checkLogin();
 });
 
@@ -18,11 +18,17 @@ async function checkLogin() {
         return;
     }
 
-    // 2. 내 정보 로드
+    // 내 정보 로드
     await loadTutorInfo(userId);
     
-    // 3. 탭 초기화
-    switchTab('info');
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get('tab');
+
+    if (tab === 'students') {
+        switchTab('students');
+    } else {
+        switchTab('info');
+    }
 }
 
 // 탭 전환
