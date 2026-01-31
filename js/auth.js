@@ -366,12 +366,12 @@ function checkLoginStatus() {
         if (accessToken) {
             loginBtn.classList.add('hidden');
             logoutBtn.classList.remove('hidden');
-            if (userRole === 'admin') {
-                if(myPageBtn) myPageBtn.classList.add('hidden');
-                if(adminBtn) adminBtn.classList.remove('hidden');
-            } else {
+            if (userRole === 'student') {
                 if(myPageBtn) myPageBtn.classList.remove('hidden');
                 if(adminBtn) adminBtn.classList.add('hidden');
+            } else {
+                if(myPageBtn) myPageBtn.classList.add('hidden');
+                if(adminBtn) adminBtn.classList.remove('hidden');
             }
         } else {
             loginBtn.classList.remove('hidden');
@@ -442,6 +442,10 @@ function handleSignIn() {
                     localStorage.setItem('userRole', 'admin');
                     alert("관리자 계정으로 로그인되었습니다.");
                     window.location.href = 'admin.html';
+                } else if (data.role === 'tutor') {
+                    localStorage.setItem('userRole', 'tutor');
+                    alert("튜터 계정으로 로그인되었습니다.");
+                    window.location.href = 'tutor_mypage.html';
                 } else {
                     localStorage.setItem('userRole', 'student');
                     alert("로그인 성공!");
