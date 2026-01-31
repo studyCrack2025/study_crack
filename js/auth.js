@@ -323,7 +323,7 @@ async function handleFinalSubmit() {
     try {
         // [중요] 회원가입 마무리는 아직 토큰이 없을 수 있음 -> body에 userId 포함
         // (백엔드에서도 update_profile은 예외적으로 body.userId 허용 고려 필요)
-        const response = await fetch(API_URL, {
+        const response = await fetch(AUTH_URL, {
             method: 'POST',
             body: JSON.stringify({
                 type: 'update_profile',
