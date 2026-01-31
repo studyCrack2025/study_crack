@@ -437,7 +437,6 @@ function handleSignIn() {
                 return res.json();
             })
             .then(data => {
-                console.log("서버 응답 데이터:", data);
                 if (data.computedTier) {
                     localStorage.setItem('userTier', data.computedTier);
                 }
