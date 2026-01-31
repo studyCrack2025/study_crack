@@ -1,7 +1,8 @@
 // js/auth.js
 
 // API URL 변경 (Gateway 사용)
-const API_URL = CONFIG.api.base; 
+const API_URL = CONFIG.api.base;
+const AUTH_URL = CONFIG.api.auth;
 
 const poolData = {
     UserPoolId: CONFIG.cognito.userPoolId,
@@ -210,7 +211,7 @@ async function handleSendPhoneCode() {
 
     try {
         // [중요] SMS 발송은 로그인 전이므로 토큰 없이 요청 (백엔드에서 SMS 타입은 토큰 체크 안함)
-        const response = await fetch(API_URL, {
+        const response = await fetch(AUTH_URL, {
             method: 'POST',
             body: JSON.stringify({ 
                 type: 'send_sms_auth', 

@@ -3,7 +3,7 @@
 // 기존 API (회원정보, 주간점검 등)
 const MYPAGE_API_URL = CONFIG.api.base; 
 // 대학 목록 조회용 API
-const UNIV_DATA_API_URL = CONFIG.api.analysis; 
+const UNIV_DATA_API_URL = CONFIG.api.analysis;
 // 환산점수 계산 전용 Lambda URL
 const CALC_API_URL = CONFIG.api.calc;
 
