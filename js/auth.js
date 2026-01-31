@@ -391,6 +391,7 @@ function handleSignOut() {
     localStorage.removeItem('userId');
     localStorage.removeItem('userRole');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('userTier');
     
     alert("로그아웃 되었습니다.");
     window.location.href = 'index.html';

@@ -126,20 +126,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // BLACK 버튼 노출 로직
 function showBlackButtonIfEligible() {
-    const tier = localStorage.getItem('userTier'); // 로그인 시 저장했다고 가정
-    // 실제로는 API 호출해서 확인하는게 안전하지만, 일단 로컬 스토리지 기반 예시
-    if (tier === 'black') {
-        const btn = document.getElementById('blackThemeBtn');
-        if(btn) btn.classList.remove('hidden');
+    const token = localStorage.getItem('accessToken'); 
+    const tier = localStorage.getItem('userTier'); 
+
+    const btn = document.getElementById('blackThemeBtn');
+    if (!btn) return;
+
+    // [핵심] 토큰이 '있고' AND 티어가 'black'일 때만 노출
+    if (token && tier === 'black') {
+        btn.classList.remove('hidden');
+    } else {
+        // 그 외의 경우(로그아웃 상태, black 아님 등)에는 무조건 숨김
+        btn.classList.add('hidden');
     }
 }
 
 // BLACK 페이지 이동 전 권한 재확인
 async function checkBlackAccess() {
-    const userId = localStorage.getItem('userId');
-    // (선택) 여기서 API로 다시 티어 확인 가능
-    // 간단하게는 로컬 체크 후 이동
-    if (localStorage.getItem('userTier') === 'black') {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+        alert("로그인이 필요한 서비스입니다.");
+        window.location.href = 'login.html';
+        return;
+    }
+
+    const tier = localStorage.getItem('userTier');
+    if (tier === 'black') {
         window.location.href = 'black_index.html';
     } else {
         alert("BLACK 회원 전용 공간입니다.");
