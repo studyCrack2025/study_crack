@@ -3,7 +3,7 @@
 const urlParams = new URLSearchParams(window.location.search);
 const targetUserId = urlParams.get('uid');
 const adminId = localStorage.getItem('userId');
-const ADMIN_API_URL = CONFIG.api.base;
+const API_URL = CONFIG.api.base;
 
 let currentStudentData = null;
 let currentTier = 'free';
@@ -68,7 +68,7 @@ function escapeHtml(text) {
 async function loadStudentDetail() {
     const token = localStorage.getItem('accessToken');
     try {
-        const response = await fetch(ADMIN_API_URL, {
+        const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
@@ -358,7 +358,7 @@ async function renderAdminChat() {
     chatWindow.scrollTop = chatWindow.scrollHeight;
 
     if (unreadExists) {
-        await fetch(ADMIN_API_URL, {
+        await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
@@ -404,7 +404,7 @@ async function sendAdminChat() {
 
     try {
         if (currentAdminFile) {
-            const presignRes = await fetch(ADMIN_API_URL, {
+            const presignRes = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ 
@@ -427,7 +427,7 @@ async function sendAdminChat() {
             isRead: false
         };
 
-        await fetch(ADMIN_API_URL, {
+        await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
@@ -561,7 +561,7 @@ async function saveAnalysis() {
     if(!content.trim()) return alert("내용을 입력하세요");
     if(!confirm("저장하시겠습니까?")) return;
     try {
-        await fetch(ADMIN_API_URL, {
+        await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type:'admin_save_analysis', userId:adminId, data:{targetUserId, content, status:'completed'} })
@@ -574,7 +574,7 @@ async function saveAdminMemo() {
     const memo = document.getElementById('adminMemoInput').value;
     const token = localStorage.getItem('accessToken');
     try {
-        await fetch(ADMIN_API_URL, {
+        await fetch(API_URL, {
             method:'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body:JSON.stringify({ type:'admin_update_memo', userId:adminId, data:{targetUserId, memo} })
