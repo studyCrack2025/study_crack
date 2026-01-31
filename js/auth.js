@@ -455,11 +455,12 @@ function handleSignIn() {
                 }
             })
             .catch(err => {
-                console.error("Role Check Error:", err);
-                localStorage.setItem('userRole', 'student');
-                alert("로그인 성공!");
-                window.location.href = 'index.html';
-            });
+                console.error("Role Check Error:", err);
+                // 🔍 [디버깅] 에러가 났을 때 무조건 학생으로 보내지 말고 경고 띄우기
+                alert("회원 정보 불러오기 실패! : " + err.message);
+                // localStorage.setItem('userRole', 'student'); // 일단 주석 처리
+                // window.location.href = 'index.html'; // 일단 주석 처리
+            });
         },
         onFailure: function(err) {
             alert(getErrorMessage(err));
