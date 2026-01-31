@@ -1,0 +1,49 @@
+/* css/tutor_mypage.css */
+
+.tutor-badge {
+    background: #1e293b; color: #fbbf24; 
+    padding: 5px 12px; border-radius: 20px; 
+    font-weight: bold; font-size: 0.8rem; 
+    margin-top: 10px; display: inline-block;
+}
+
+.tutor-intro-box textarea {
+    width: 100%; padding: 15px; 
+    border: 1px solid #cbd5e1; border-radius: 8px; 
+    resize: vertical; font-size: 0.95rem;
+}
+
+.small-btn {
+    padding: 8px 16px; border-radius: 6px; 
+    border: 1px solid #cbd5e1; background: white; 
+    cursor: pointer; font-weight: 600; font-size: 0.9rem;
+    transition: 0.2s;
+}
+.small-btn:hover { background: #f1f5f9; }
+.small-btn.blue-btn { background: #3b82f6; color: white; border: none; }
+.small-btn.blue-btn:hover { background: #2563eb; }
+
+/* 칼럼 리스트 스타일 */
+.column-list { display: flex; flex-direction: column; gap: 15px; }
+.my-column-item {
+    border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px;
+    background: #fff; cursor: pointer; transition: 0.2s;
+}
+.my-column-item:hover { border-color: #3b82f6; transform: translateY(-2px); }
+.col-item-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+.col-item-title { font-weight: bold; font-size: 1.1rem; color: #1e293b; }
+.col-item-date { color: #94a3b8; font-size: 0.85rem; }
+.col-item-preview { color: #64748b; font-size: 0.9rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* 학생 테이블 (admin.css 스타일 일부 차용) */
+.table-responsive { overflow-x: auto; }
+.student-table { width: 100%; border-collapse: collapse; min-width: 600px; }
+.student-table th { background: #f8fafc; padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; color: #475569; font-weight: 600; }
+.student-table td { padding: 12px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+.empty-msg { text-align: center; padding: 30px; color: #94a3b8; }
+
+.manage-btn {
+    padding: 6px 12px; background: #3b82f6; color: white; 
+    border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;
+}
+.manage-btn:hover { background: #2563eb; }
