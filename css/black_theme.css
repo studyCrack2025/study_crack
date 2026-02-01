@@ -20,6 +20,7 @@ body.black-body {
 .black-nav a:hover { color: #d4af37; }
 .gold-btn { border: 1px solid #d4af37; color: #d4af37 !important; padding: 8px 15px; border-radius: 4px; }
 .gold-btn:hover { background: #d4af37; color: #000 !important; }
+.active-gold { color: #d4af37 !important; font-weight: bold; border-bottom: 2px solid #d4af37; padding-bottom: 5px; }
 
 /* 인트로 */
 .black-intro-section {

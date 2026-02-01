@@ -1,6 +1,6 @@
 // js/black_community.js
 
-const API_URL = CONFIG.api.base;
+//const API_URL = CONFIG.api.base;
 let allPosts = [];
 let currentPage = 1;
 const itemsPerPage = 15;

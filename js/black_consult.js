@@ -18,13 +18,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     loadUserData(); 
-    loadChat();     
+    loadChat();      
     pollingInterval = setInterval(loadChat, 3000); 
 
     // 붙여넣기 (이미지)
     document.addEventListener('paste', handlePaste);
     
-    // ★ [핵심] 엔터키 전송 (한글 중복 방지)
+    // 엔터키 전송 (한글 중복 방지)
     messageInput.addEventListener('keydown', (e) => {
         // 한글 조합 중이면 함수 종료 (전송 안 함)
         if (e.isComposing) return;
@@ -96,7 +96,7 @@ function renderChat(chats) {
     chatList.innerHTML = '';
     
     chats.forEach(msg => {
-        // ★ [정렬 로직] sender가 'user'면 isMe = true (오른쪽 배치)
+        // sender가 'user'면 isMe = true (오른쪽 배치)
         const isMe = msg.sender === 'user'; 
         const typeClass = isMe ? 'user' : 'admin';
         
@@ -133,7 +133,6 @@ function renderChat(chats) {
 }
 
 function scrollToBottom() {
-    // ID가 chatContainer여야 함
     const container = document.getElementById('chatContainer');
     if(container) container.scrollTop = container.scrollHeight;
 }
@@ -170,7 +169,7 @@ async function sendMessage() {
 
         const msgData = {
             id: Date.now().toString(),
-            sender: 'user', // ★ 보내는 사람 = user
+            sender: 'user', 
             text: text,
             file: fileUrl,
             date: new Date().toISOString(),

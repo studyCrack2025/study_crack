@@ -1,7 +1,5 @@
 /* css/black_archive.css */
 
-.active-gold { color: #d4af37 !important; font-weight: bold; border-bottom: 2px solid #d4af37; padding-bottom: 5px; }
-
 .archive-wrapper {
     max-width: 1200px; margin: 0 auto; padding: 40px 20px;
 }

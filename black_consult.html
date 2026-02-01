@@ -4,16 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>THE BLACK - Private Lounge</title>
+    
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/black_consult.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
 </head>
 <body class="black-bg">
 
-    <header class="consult-header-bar">
+    <header class="black-header-bar">
         <div class="header-inner">
-            <div class="brand">THE BLACK <span style="font-weight:300; color:#888; font-size:0.9rem; margin-left:10px;">| Private Lounge</span></div>
+            <div class="logo-container">
+                <a href="black_index.html" style="text-decoration:none;">
+                    <span class="logo gold-text">BLACK LOUNGE</span>
+                    <span class="sub-logo">| Private Consulting</span>
+                </a>
+            </div>
             <a href="black_index.html" class="exit-btn">
                 나가기 <i class="fas fa-sign-out-alt"></i>
             </a>
@@ -27,18 +36,21 @@
                 <div class="user-card">
                     <div class="user-avatar"><i class="fas fa-user"></i></div>
                     <h3 id="userName">User</h3>
-                    <p class="user-tier">BLACK MEMBER</p>
+                    <p class="user-tier">BLACK MEMBERSHIP</p>
                 </div>
+                
+                <div class="sidebar-divider"></div>
+
                 <div class="info-group">
-                    <label>현재 신분</label>
+                    <label>Current Status</label>
                     <div id="userStatus" class="info-val">-</div>
                 </div>
                 <div class="info-group">
-                    <label>희망 계열</label>
+                    <label>Target Stream</label>
                     <div id="userStream" class="info-val">-</div>
                 </div>
                 <div class="info-group">
-                    <label>목표 대학</label>
+                    <label>Target Universities</label>
                     <ul id="userTargets" class="target-list">
                         <li>-</li>
                     </ul>
@@ -47,35 +59,50 @@
 
             <main class="chat-wrapper">
                 <div class="chat-header-banner">
-                    <div class="mentor-status">
-                        <span class="status-dot online"></span>
-                        <span class="mentor-name">JAY 전담 컨설턴트</span>
+                    <div class="mentor-profile">
+                        <div class="status-indicator">
+                            <span class="status-dot online"></span>
+                        </div>
+                        <div class="mentor-info">
+                            <span class="mentor-name">BLACK Head Consultant</span>
+                            <span class="mentor-role">전담 컨설턴트 JAY</span>
+                        </div>
                     </div>
-                    <div class="chat-info">평균 응답시간: 24시간 이내</div>
+                    <div class="chat-meta">
+                        <i class="far fa-clock"></i> 평균 응답: 24시간 이내
+                    </div>
                 </div>
 
                 <div class="chat-container" id="chatContainer">
                     <div class="chat-notice">
-                        <p>🔒 1:1 시크릿 컨설팅 룸입니다.</p>
-                        <p>입시, 학습, 멘탈 등 무엇이든 물어보세요.<br>모든 대화는 철저히 비밀이 보장됩니다.</p>
+                        <i class="fas fa-lock gold-icon"></i>
+                        <p><strong>1:1 Secret Consulting Room</strong></p>
+                        <p class="notice-desc">입시, 학습, 멘탈 케어 등 모든 대화는 철저히 비밀이 보장됩니다.</p>
                     </div>
-                    <div id="chatList"></div>
+                    <div id="chatList">
+                        </div>
                 </div>
 
                 <div class="chat-input-area">
                     <div class="file-preview" id="filePreview" style="display:none;">
                         <div class="preview-box">
+                            <i class="fas fa-image"></i>
                             <span id="previewName">image.png</span>
                             <button onclick="clearFile()"><i class="fas fa-times"></i></button>
                         </div>
                     </div>
+
                     <div class="input-wrapper">
-                        <label for="fileInput" class="attach-btn"><i class="fas fa-plus"></i></label>
+                        <label for="fileInput" class="attach-btn" title="파일 첨부">
+                            <i class="fas fa-paperclip"></i>
+                        </label>
                         <input type="file" id="fileInput" style="display:none;" onchange="handleFileSelect(this)">
                         
-                        <textarea id="messageInput" rows="1" placeholder="메시지를 입력하세요..." oninput="autoResize(this)"></textarea>
+                        <textarea id="messageInput" rows="1" placeholder="컨설턴트에게 메시지를 보내세요..." oninput="autoResize(this)"></textarea>
                         
-                        <button id="sendBtn" class="send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+                        <button id="sendBtn" class="send-btn" onclick="sendMessage()">
+                            <i class="fas fa-arrow-up"></i>
+                        </button>
                     </div>
                 </div>
             </main>
