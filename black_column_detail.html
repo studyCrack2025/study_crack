@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Column Detail - BLACK LOUNGE</title>
+    
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/black_theme.css">
+    <link rel="stylesheet" href="css/black_column_detail.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="black-body">
+
+    <header class="black-header-bar">
+        <div class="logo-container">
+            <a href="black_index.html" style="text-decoration:none;">
+                <span class="logo gold-text">BLACK LOUNGE</span>
+            </a>
+        </div>
+        <nav class="nav-links black-nav">
+            <a href="black_archive.html" class="nav-btn gold-btn">목록으로</a>
+        </nav>
+    </header>
+
+    <div class="detail-wrapper">
+        <div class="col-header">
+            <span class="col-badge" id="colBadge">PREMIUM COLUMN</span>
+            <h1 class="col-main-title" id="colTitle">Loading...</h1>
+            <div class="col-meta-info">
+                <span id="colAuthor">-</span>
+                <span id="colDate">-</span>
+                <span><i class="far fa-eye"></i> <span id="colViews">-</span></span>
+            </div>
+        </div>
+
+        <div class="col-body" id="colContent">
+            <div class="loading-spinner">칼럼 내용을 불러오는 중입니다...</div>
+        </div>
+
+        <div class="action-bar">
+            <button class="action-btn" id="btnLike" onclick="toggleLikeDetail()">
+                <i class="far fa-heart"></i> 좋아요 <span id="likeCount">0</span>
+            </button>
+            <button class="action-btn" id="btnSave" onclick="toggleSaveDetail()">
+                <i class="far fa-bookmark"></i> 저장하기
+            </button>
+        </div>
+
+        <div class="consultant-profile-card" onclick="goToConsultantPage()">
+            <img src="" alt="프로필" class="cp-img" id="cpImg" onerror="this.src='https://placehold.co/100x100/333/d4af37?text=C'">
+            <div class="cp-info">
+                <h4><span id="cpName">Consultant</span> <span id="cpBadge">EXPERT</span></h4>
+                <p class="cp-intro" id="cpIntro">전문가의 인사이트를 확인하세요.</p>
+                <ul class="cp-history" id="cpHistory">
+                    </ul>
+            </div>
+            <div class="cp-arrow">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+    </div>
+
+    <footer class="black-footer">
+        <p>&copy; 2026 Study Crack BLACK. All rights reserved.</p>
+    </footer>
+
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/black_column_detail.js"></script>
+</body>
+</html>

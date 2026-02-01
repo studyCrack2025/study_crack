@@ -87,10 +87,6 @@ body.black-body {
 .c-name { cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.2s; }
 .c-name:hover { color: #fff; }
 
-/* 모달 */
-.black-modal-content { background: #111; color: #ddd; border: 1px solid #333; }
-.white-close { color: #fff; }
-
 /* 반응형 */
 @media (max-width: 768px) {
     .hero-column-grid { grid-template-columns: 1fr; }

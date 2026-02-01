@@ -183,7 +183,7 @@ async function togglePickConsultant(e, name) {
 }
 
 // [6] 모달 관련
-function openColumnModal(id) {
+function openColumnPage(id) {
     const col = allColumns.find(c => c.id === id);
     if (!col) return;
 
@@ -213,11 +213,6 @@ function openColumnModal(id) {
     
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
-}
-
-function closeColumnModal() {
-    document.getElementById('column-modal').style.display = 'none';
-    document.body.style.overflow = 'auto';
 }
 
 window.onclick = function(event) {
