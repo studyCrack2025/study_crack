@@ -184,7 +184,7 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 .privacy-contact { background: #f8fafc; padding: 10px; border-radius: 8px; font-size: 0.9rem; }
 
 /* =========================================
-   6. [추가] 플로팅 Q&A 버튼 스타일
+   6. 플로팅 Q&A 버튼 스타일
    ========================================= */
 .floating-qna-btn {
     position: fixed;
@@ -217,20 +217,21 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 
 .floating-black-btn {
     position: fixed;
-    bottom: 110px; /* Q&A 버튼(30px) + 버튼높이(65px) + 여백(15px) */
+    bottom: 30px;
     right: 30px;
-    width: 65px;
-    height: 65px;
-    background: linear-gradient(135deg, #000 0%, #333 100%); /* 블랙 그라데이션 */
-    border: 2px solid #d4af37; /* 골드 테두리 */
+    width: 60px;
+    height: 60px;
+    background: #000; /* 완전 검정 */
+    border: 2px solid #d4af37; /* 금색 테두리 */
     border-radius: 50%;
     display: flex;
-    align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    z-index: 9999;
-    transition: all 0.3s ease;
+    align-items: center;
     text-decoration: none;
+    z-index: 9999;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    overflow: hidden; /* 쉬머 효과가 밖으로 나가지 않게 */
+    transition: transform 0.3s;
 }
 
 .floating-black-btn:hover {
@@ -238,8 +239,77 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
     box-shadow: 0 0 20px rgba(212, 175, 55, 0.6); /* 골드 빛 효과 */
 }
 
+.floating-black-btn.hidden {
+    display: none !important;
+}
+
 .black-icon {
-    font-size: 1.8rem;
+    font-size: 24px;
+    z-index: 2; /* 효과보다 위에 있어야 함 */
+    position: relative;
+}
+
+/* ✨ 금빛 일렁임(Shimmer) 애니메이션 효과 */
+.shimmer-effect {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        to right, 
+        transparent 0%, 
+        rgba(212, 175, 55, 0.4) 50%, 
+        transparent 100%
+    );
+    transform: skewX(-20deg) translateX(-150%);
+    animation: shimmer 3s infinite; /* 3초마다 반짝임 */
+    z-index: 1;
+}
+
+@keyframes shimmer {
+    0% { transform: skewX(-20deg) translateX(-150%); }
+    20% { transform: skewX(-20deg) translateX(150%); } /* 휙 지나감 */
+    100% { transform: skewX(-20deg) translateX(150%); } /* 대기 */
+}
+
+/* 💬 안내 말풍선 (가이드) */
+.black-guide-tooltip {
+    position: absolute;
+    right: 75px; /* 버튼 왼쪽으로 배치 */
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.85);
+    color: #d4af37; /* 금색 글씨 */
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-align: right;
+    white-space: nowrap;
+    line-height: 1.2;
+    border: 1px solid #d4af37;
+    pointer-events: none; /* 클릭 방해 안 함 */
+    
+    /* 등장 애니메이션 */
+    animation: fadeInRight 0.5s ease-out forwards;
+}
+
+/* 말풍선 꼬리 (오른쪽 화살표) */
+.black-guide-tooltip::after {
+    content: '';
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-left: 6px solid #d4af37;
+}
+
+@keyframes fadeInRight {
+    from { opacity: 0; transform: translate(-10px, -50%); }
+    to { opacity: 1; transform: translate(0, -50%); }
 }
 
 /* =========================================
@@ -278,5 +348,20 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
     }
     .black-icon {
         font-size: 1.5rem;
+    }
+    .black-guide-tooltip {
+        right: 50%;
+        top: -50px;
+        transform: translateX(50%);
+        text-align: center;
+    }
+    .black-guide-tooltip::after {
+        right: 50%;
+        top: 100%; /* 아래쪽 꼬리 */
+        transform: translateX(50%);
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-top: 6px solid #d4af37;
+        border-bottom: none;
     }
 }

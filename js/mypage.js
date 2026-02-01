@@ -886,28 +886,31 @@ async function saveProfile() {
     } catch (error) { alert("저장 중 오류가 발생했습니다."); }
 }
 
-// 페이지 로드 시 또는 유저 정보 로드 후 실행
 function checkBlackStatusForButton() {
     const tier = localStorage.getItem('userTier') || 'free';
     const btn = document.getElementById('btnBlackAction');
 
-    // 버튼이 화면에 있고, 유저가 BLACK 등급이라면
     if (btn && tier.toLowerCase() === 'black') {
         
-        // 1. 버튼 클릭 시 이동할 링크 변경 (신청페이지 -> 라운지)
+        // 1. 링크 변경
         btn.onclick = function() {
             window.location.href = 'black_index.html';
         };
 
-        // 2. 버튼 텍스트 및 디자인 변경
+        // 2. 텍스트 변경
+        // 💡 <span> 태그 안에 팁 내용을 추가했습니다.
         btn.innerHTML = `
             👑 BLACK LOUNGE 입장하기
-            <span>프라이빗 라운지 바로가기</span>
+            <span style="display:block; font-size:0.9rem; margin-top:5px; color:#555;">
+                프라이빗 라운지 바로가기<br>
+                (💡Tip: 메인화면 우측 하단 버튼으로도 바로 접속 가능합니다)
+            </span>
         `;
         
-        // (선택사항) 이미 회원이므로 강조 스타일을 조금 다르게 줄 수도 있음
-        btn.style.background = "linear-gradient(135deg, #FFF, #CCC)"; 
-        btn.style.color = "#000";
+        // 3. 스타일 변경 (실버/화이트 톤으로 고급스럽게)
+        btn.style.background = "linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)"; 
+        btn.style.color = "#1a1a1a";
+        btn.style.border = "1px solid #ccc";
     }
 }
 
