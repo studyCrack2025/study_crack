@@ -38,13 +38,6 @@ async function loadArchiveData() {
         
         allColumnsData = data.columns || [];
         renderColumnArchive(); 
-        
-        allNewsData = data.news || [];
-        if (allNewsData.length === 0) {
-            allNewsData = getDummyNews(); 
-        }
-        loadUnivNews(); 
-
     } catch (e) {
         console.error(e);
         alert("데이터를 불러오는 중 오류가 발생했습니다.");
