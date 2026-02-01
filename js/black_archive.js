@@ -1,6 +1,6 @@
 // js/black_archive.js
 
-const API_URL = CONFIG.api.base;
+//const API_URL = CONFIG.api.base;
 
 // [상태 변수]
 let allColumnsData = []; 
