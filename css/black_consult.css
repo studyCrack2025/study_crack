@@ -142,14 +142,17 @@ body.black-body {
 .message {
     display: flex; flex-direction: column;
     max-width: 70%; width: fit-content; position: relative;
+    /* align-self 제거하고 margin으로 제어합니다 */
 }
 
 /* User (나 - 오른쪽) */
 .message.user {
-    align-self: flex-end; align-items: flex-end;
+    margin-left: auto; /* 왼쪽 여백을 최대로 밀어서 오른쪽 배치 강제 */
+    align-items: flex-end;
 }
+
 .message.user .msg-bubble {
-    /* ★ 골드 그라데이션 적용 (테마 통일) */
+    /* 골드 그라데이션 적용 */
     background: linear-gradient(135deg, #d4af37, #b38728);
     color: #000;
     border-radius: 12px 12px 0 12px;
@@ -160,8 +163,10 @@ body.black-body {
 
 /* Admin (멘토 - 왼쪽) */
 .message.admin {
-    align-self: flex-start; align-items: flex-start;
+    margin-right: auto; /* 오른쪽 여백을 최대로 밀어서 왼쪽 배치 강제 */
+    align-items: flex-start;
 }
+
 .message.admin .msg-bubble {
     background: #1f1f1f;
     border: 1px solid #333;
