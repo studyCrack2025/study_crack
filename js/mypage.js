@@ -887,10 +887,9 @@ async function saveProfile() {
 }
 
 function checkBlackStatusForButton() {
-    const tier = localStorage.getItem('userTier') || 'free';
     const btn = document.getElementById('btnBlackAction');
 
-    if (btn && tier.toLowerCase() === 'black') {
+    if (btn && currentUserTier === 'black') {
         
         // 1. 링크 변경
         btn.onclick = function() {
