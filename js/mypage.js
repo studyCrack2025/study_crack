@@ -908,8 +908,8 @@ function checkBlackStatusForButton() {
         
         // 3. 스타일 변경 (실버/화이트 톤으로 고급스럽게)
         btn.style.background = "linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)"; 
-        btn.style.color = "#1a1a1a";
-        btn.style.border = "1px solid #ccc";
+        // btn.style.color = "#1a1a1a";
+        // btn.style.border = "1px solid #ccc";
     }
 }
 
