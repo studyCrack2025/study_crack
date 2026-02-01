@@ -2,29 +2,40 @@
 
 const urlParams = new URLSearchParams(window.location.search);
 const colId = urlParams.get('id');
-let currentData = null; // 현재 데이터 보관용
+let currentData = null; 
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // 1. ID 체크
     if(!colId) { 
-        alert("잘못된 접근입니다."); 
+        alert("잘못된 접근입니다. (ID 누락)"); 
         history.back(); 
         return; 
     }
+    
+    // 2. CONFIG 로드 체크
+    if (typeof CONFIG === 'undefined' || !CONFIG.api) {
+        console.error("Critical: config.js not loaded.");
+        alert("시스템 설정 로드 실패. 관리자에게 문의하세요.");
+        return;
+    }
+
     await loadColumnDetail();
 });
 
-// [1] 상세 정보 로드
 async function loadColumnDetail() {
     const userId = localStorage.getItem('userId');
-    // 토큰이 없으면 idToken이라도 쓰도록 처리 (Access Token 우선)
     const token = localStorage.getItem('accessToken') || localStorage.getItem('idToken');
-    
     const API_URL = CONFIG.api.base;
 
     try {
+        console.log(`[Debug] Requesting Column ID: ${colId}`);
+
         const res = await fetch(API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Authorization': `Bearer ${token}` 
+            },
             body: JSON.stringify({ 
                 type: 'get_column_detail', 
                 userId: userId, 
@@ -32,145 +43,138 @@ async function loadColumnDetail() {
             })
         });
         
+        // 에러 처리 강화
         if(!res.ok) {
-            const err = await res.json();
-            throw new Error(err.error || "데이터 로드 실패");
+            let errorMsg = "데이터 로드 실패";
+            try {
+                const errJson = await res.json();
+                errorMsg = errJson.error || errJson.message || errorMsg;
+            } catch (jsonErr) {
+                errorMsg = await res.text(); // JSON이 아닐 경우 텍스트로 읽음
+            }
+            throw new Error(`${res.status} Error: ${errorMsg}`);
         }
         
         const data = await res.json();
         currentData = data;
-        
         renderPage(data);
 
     } catch(e) {
-        console.error(e);
+        console.error("Load Error:", e);
+        // 화면에 에러 내용을 표시해서 원인을 바로 알 수 있게 함
         document.getElementById('colContent').innerHTML = 
-            '<div style="text-align:center; padding:50px;">칼럼을 불러올 수 없습니다.<br>잠시 후 다시 시도해주세요.</div>';
+            `<div style="text-align:center; padding:50px; color: #ff6b6b;">
+                <h3>데이터를 불러올 수 없습니다.</h3>
+                <p>${e.message}</p>
+            </div>`;
     }
 }
 
-// [2] 화면 렌더링
 function renderPage(data) {
-    const col = data.column;
-    const con = data.consultant;
-
-    // 헤더 정보
-    document.getElementById('colBadge').innerText = 
-        col.badge === 'master' ? '🏅 MASTER CLASS' : '🎓 PREMIUM COLUMN';
-    document.getElementById('colTitle').innerText = col.title;
-    document.getElementById('colAuthor').innerText = col.author;
-    document.getElementById('colDate').innerText = col.date;
-    document.getElementById('colViews').innerText = col.views || '0';
-    
-    // 본문 (HTML)
-    document.getElementById('colContent').innerHTML = col.content;
-
-    // 좋아요 버튼 초기 상태
-    const likeBtn = document.getElementById('btnLike');
-    document.getElementById('likeCount').innerText = col.likes;
-    if(col.isLiked) {
-        likeBtn.classList.add('active');
-        likeBtn.querySelector('i').classList.replace('far', 'fas');
+    if (!data.column) {
+        alert("칼럼 데이터가 비어있습니다.");
+        return;
     }
 
-    // 저장 버튼 초기 상태
+    const col = data.column;
+    const con = data.consultant || {}; // 컨설턴트 정보가 없어도 깨지지 않게 빈 객체 처리
+
+    // 헤더
+    const badgeElem = document.getElementById('colBadge');
+    if(badgeElem) badgeElem.innerText = col.badge === 'master' ? '🏅 MASTER CLASS' : '🎓 PREMIUM COLUMN';
+    
+    document.getElementById('colTitle').innerText = col.title || "제목 없음";
+    document.getElementById('colAuthor').innerText = col.author || "익명";
+    document.getElementById('colDate').innerText = col.date || "-";
+    document.getElementById('colViews').innerText = col.views || '0';
+    document.getElementById('colContent').innerHTML = col.content || "";
+
+    // 좋아요 버튼
+    const likeBtn = document.getElementById('btnLike');
+    const likeCountElem = document.getElementById('likeCount');
+    if(likeCountElem) likeCountElem.innerText = col.likes || 0;
+    
+    if(col.isLiked && likeBtn) {
+        likeBtn.classList.add('active');
+        likeBtn.querySelector('i').className = 'fas fa-heart';
+    }
+
+    // 저장 버튼
     const saveBtn = document.getElementById('btnSave');
-    if(col.isSaved) {
+    if(col.isSaved && saveBtn) {
         saveBtn.classList.add('active');
-        saveBtn.querySelector('i').classList.replace('far', 'fas');
+        saveBtn.querySelector('i').className = 'fas fa-bookmark';
         saveBtn.innerHTML = `<i class="fas fa-bookmark"></i> 저장됨`;
     }
 
-    // 컨설턴트 프로필
-    document.getElementById('cpImg').src = con.img;
-    document.getElementById('cpName').innerText = con.name;
-    document.getElementById('cpBadge').innerText = con.badge.toUpperCase();
-    document.getElementById('cpIntro').innerText = con.intro;
+    // 컨설턴트 프로필 (DOM 요소가 있는지 확인 후 넣기)
+    if(document.getElementById('cpImg')) document.getElementById('cpImg').src = con.img || "https://placehold.co/100x100";
+    if(document.getElementById('cpName')) document.getElementById('cpName').innerText = con.name || col.author;
+    if(document.getElementById('cpBadge')) document.getElementById('cpBadge').innerText = (con.badge || "EXPERT").toUpperCase();
+    if(document.getElementById('cpIntro')) document.getElementById('cpIntro').innerText = con.intro || "";
     
-    if(con.history && con.history.length > 0) {
-        const historyHtml = con.history.map(h => `<li>${h}</li>`).join('');
-        document.getElementById('cpHistory').innerHTML = historyHtml;
+    if(con.history && con.history.length > 0 && document.getElementById('cpHistory')) {
+        document.getElementById('cpHistory').innerHTML = con.history.map(h => `<li>${h}</li>`).join('');
     }
 }
 
-// [3] 좋아요 토글 (API 연동 포함)
 async function toggleLikeDetail() {
-    const btn = document.getElementById('btnLike');
-    const icon = btn.querySelector('i');
-    const countSpan = document.getElementById('likeCount');
-    let count = parseInt(countSpan.innerText);
-    const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('accessToken') || localStorage.getItem('idToken');
-
-    // 낙관적 UI 업데이트 (먼저 화면부터 바꿈)
-    let isLikedNow = false;
-    if(btn.classList.contains('active')) {
-        btn.classList.remove('active');
-        icon.classList.replace('fas', 'far');
-        count--;
-    } else {
-        btn.classList.add('active');
-        icon.classList.replace('far', 'fas');
-        count++;
-        isLikedNow = true;
-    }
-    countSpan.innerText = count;
-
-    // 서버 요청
-    try {
-        await fetch(CONFIG.api.base, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ 
-                type: 'toggle_column_like', 
-                userId: userId, 
-                data: { columnId: colId } 
-            })
-        });
-    } catch(e) {
-        console.error("좋아요 실패:", e);
-        // 실패 시 롤백 로직이 필요하지만 여기선 생략
-    }
+    await sendToggleRequest('toggle_column_like', 'btnLike', 'likeCount');
 }
 
-// [4] 저장 토글 (API 연동 포함)
 async function toggleSaveDetail() {
-    const btn = document.getElementById('btnSave');
+    await sendToggleRequest('toggle_column_save', 'btnSave');
+}
+
+// 중복 로직 통합 함수
+async function sendToggleRequest(type, btnId, countId = null) {
+    const btn = document.getElementById(btnId);
     const icon = btn.querySelector('i');
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('accessToken') || localStorage.getItem('idToken');
+    const API_URL = CONFIG.api.base;
+
+    // UI 낙관적 업데이트
+    const isActive = btn.classList.contains('active');
     
-    // 낙관적 UI 업데이트
-    if(btn.classList.contains('active')) {
+    if (isActive) {
         btn.classList.remove('active');
-        icon.classList.replace('fas', 'far');
-        btn.innerHTML = `<i class="far fa-bookmark"></i> 저장하기`;
-        alert("보관함에서 삭제되었습니다.");
+        // 아이콘 클래스 교체 (fa-heart/bookmark 등 상황에 맞게)
+        if(type.includes('like')) icon.className = 'far fa-heart';
+        else {
+            icon.className = 'far fa-bookmark';
+            btn.innerHTML = `<i class="far fa-bookmark"></i> 저장하기`;
+        }
+        
+        if (countId) {
+            const span = document.getElementById(countId);
+            span.innerText = Math.max(0, parseInt(span.innerText) - 1);
+        }
     } else {
         btn.classList.add('active');
-        icon.classList.replace('far', 'fas');
-        btn.innerHTML = `<i class="fas fa-bookmark"></i> 저장됨`;
-        alert("보관함에 저장되었습니다.");
+        if(type.includes('like')) icon.className = 'fas fa-heart';
+        else {
+            icon.className = 'fas fa-bookmark';
+            btn.innerHTML = `<i class="fas fa-bookmark"></i> 저장됨`;
+        }
+
+        if (countId) {
+            const span = document.getElementById(countId);
+            span.innerText = parseInt(span.innerText) + 1;
+        }
     }
 
-    // 서버 요청
     try {
-        await fetch(CONFIG.api.base, {
+        await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ 
-                type: 'toggle_column_save', 
-                userId: userId, 
-                data: { columnId: colId } 
-            })
+            body: JSON.stringify({ type, userId, data: { columnId: colId } })
         });
     } catch(e) {
-        console.error("저장 실패:", e);
+        console.error("Toggle Error:", e);
     }
 }
 
-// [5] 컨설턴트 페이지 이동
 function goToConsultantPage() {
-    if(!currentData || !currentData.consultant) return;
-    alert(`${currentData.consultant.name} 컨설턴트의 상세 페이지는 준비 중입니다.`);
+    alert("준비 중입니다.");
 }
