@@ -156,76 +156,6 @@ function loadMoreColumns() {
     renderColumnArchive();
 }
 
-// -------------------------------------------------------------
-// 4. 대학별 입시 뉴스 (보안 적용)
-// -------------------------------------------------------------
-function loadUnivNews() {
-    const logoGrid = document.getElementById('univLogoGrid');
-    const univs = ['서울대', '연세대', '고려대', '성균관대', '서강대', '한양대', '중앙대', '경희대'];
-    
-    logoGrid.innerHTML = '';
-    univs.forEach(univ => {
-        const div = document.createElement('div');
-        div.className = 'univ-tile';
-        div.onclick = () => filterNewsByUniv(div, univ);
-        div.innerHTML = `
-            <img src="https://placehold.co/50x50/fff/333?text=${encodeURIComponent(univ[0])}" class="univ-logo-img">
-            <span class="univ-name">${escapeHtml(univ)}</span>
-        `;
-        logoGrid.appendChild(div);
-    });
-
-    renderNewsList(allNewsData);
-}
-
-function filterNewsByUniv(element, univName) {
-    const tiles = document.querySelectorAll('.univ-tile');
-    tiles.forEach(t => t.classList.remove('active'));
-    element.classList.add('active');
-
-    document.getElementById('newsSearchInput').value = '';
-
-    const filtered = allNewsData.filter(n => n.univ === univName);
-    renderNewsList(filtered.length > 0 ? filtered : []); 
-}
-
-function filterNews() {
-    const keyword = document.getElementById('newsSearchInput').value.toLowerCase();
-    document.querySelectorAll('.univ-tile').forEach(t => t.classList.remove('active'));
-
-    const filtered = allNewsData.filter(n => 
-        n.title.toLowerCase().includes(keyword) || 
-        n.univ.includes(keyword)
-    );
-    renderNewsList(filtered);
-}
-
-function renderNewsList(data) {
-    const list = document.getElementById('newsList');
-    list.innerHTML = '';
-
-    if (data.length === 0) {
-        list.innerHTML = '<li style="padding:20px; text-align:center; color:#666;">관련 뉴스가 없습니다.</li>';
-        return;
-    }
-
-    data.forEach(item => {
-        const li = document.createElement('li');
-        li.className = 'news-item';
-        li.onclick = () => window.open(item.link || '#', '_blank'); 
-        
-        // [보안] escapeHtml 적용
-        li.innerHTML = `
-            <div class="news-info">
-                <span class="news-title">[${escapeHtml(item.univ)}] ${escapeHtml(item.title)}</span>
-                <span class="news-meta">${escapeHtml(item.date)}</span>
-            </div>
-            <i class="fas fa-chevron-right news-arrow"></i>
-        `;
-        list.appendChild(li);
-    });
-}
-
 // [5] 보안 유틸리티 함수 (XSS 방지)
 function escapeHtml(text) {
     if (!text) return text;
@@ -235,14 +165,4 @@ function escapeHtml(text) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
-}
-
-function getDummyNews() {
-    return [
-        { univ: '서울대', title: '[속보] 2026 서울대 정시 모집요강 주요 변경사항', date: '2026.01.29' },
-        { univ: '연세대', title: '연세대 논술전형 경쟁률 분석 및 예측', date: '2026.01.28' },
-        { univ: '고려대', title: '고려대 교과전형 최저학력기준 완화 소식', date: '2026.01.25' },
-        { univ: '성균관대', title: '성균관대 반도체시스템공학과 신설 안내', date: '2026.01.20' },
-        { univ: '전체', title: '주요 15개대 정시 이월 인원 발표', date: '2026.01.19' }
-    ];
 }

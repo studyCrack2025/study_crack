@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>University News - BLACK LOUNGE</title>
+    
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/black_theme.css">
+    <link rel="stylesheet" href="css/black_univ_news.css"> <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="black-body">
+
+    <header class="black-header-bar">
+        <div class="logo-container">
+            <a href="black_index.html" style="text-decoration:none;">
+                <span class="logo gold-text">BLACK LOUNGE</span>
+            </a>
+        </div>
+        <nav class="nav-links black-nav">
+            <a href="black_consult.html">1:1 Consulting</a>
+            <a href="black_archive.html">Archive</a>
+            <a href="black_univ_news.html" class="active-gold">Univ News</a> <a href="black_community.html">Community</a>
+            <a href="index.html" class="nav-btn gold-btn">메인으로 돌아가기</a>
+        </nav>
+    </header>
+
+    <div class="news-wrapper">
+        <div class="page-title-area">
+            <h2>University News</h2>
+            <p>상위권 대학 입시 속보와 주요 변경사항을 가장 빠르게 확인하세요.</p>
+        </div>
+
+        <div class="news-layout-container">
+            <aside class="univ-sidebar">
+                <div class="sidebar-header">Target Universities</div>
+                <div class="univ-logo-grid" id="univLogoGrid">
+                    </div>
+            </aside>
+
+            <main class="news-content-area">
+                <div class="news-search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="newsSearchInput" placeholder="제목, 내용 또는 대학명 검색..." onkeyup="filterNews()">
+                </div>
+
+                <div class="news-tags">
+                    <span class="news-tag active" onclick="filterByTag('all')">전체</span>
+                    <span class="news-tag" onclick="filterByTag('recruit')">모집요강</span>
+                    <span class="news-tag" onclick="filterByTag('interview')">면접/논술</span>
+                    <span class="news-tag" onclick="filterByTag('schedule')">일정변경</span>
+                    <span class="news-tag" onclick="filterByTag('analysis')">경쟁률분석</span>
+                </div>
+
+                <ul class="news-list" id="newsList">
+                    <li class="loading-item">뉴스를 불러오는 중입니다...</li>
+                </ul>
+                
+                <div class="pagination-area" id="pagination">
+                    </div>
+            </main>
+        </div>
+    </div>
+
+    <footer class="black-footer">
+        <p>&copy; 2026 Study Crack BLACK. All rights reserved.</p>
+    </footer>
+
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/black_univ_news.js"></script> </body>
+</html>

@@ -1,0 +1,222 @@
+/* black_univ_news.css */
+
+.news-wrapper {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 20px;
+    min-height: 80vh;
+}
+
+.page-title-area {
+    margin-bottom: 40px;
+    text-align: center;
+}
+
+.page-title-area h2 {
+    font-size: 2.5rem;
+    color: #cca43b; /* Gold */
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.page-title-area p {
+    color: #94a3b8;
+    font-size: 1rem;
+}
+
+/* 레이아웃: 좌측 사이드바 + 우측 콘텐츠 */
+.news-layout-container {
+    display: flex;
+    gap: 30px;
+}
+
+/* [좌측] 대학 로고 사이드바 */
+.univ-sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    background: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 20px;
+    height: fit-content;
+}
+
+.sidebar-header {
+    font-size: 1.1rem;
+    color: #e2e8f0;
+    margin-bottom: 15px;
+    font-weight: 600;
+    border-bottom: 1px solid #333;
+    padding-bottom: 10px;
+}
+
+.univ-logo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.univ-logo-item {
+    width: 100%;
+    aspect-ratio: 1;
+    background: #2a2a2a;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.univ-logo-item:hover, .univ-logo-item.active {
+    border-color: #cca43b;
+    background: #000;
+    transform: scale(1.05);
+}
+
+.univ-logo-item img {
+    width: 70%;
+    height: 70%;
+    object-fit: contain;
+    filter: grayscale(100%);
+    opacity: 0.7;
+    transition: 0.2s;
+}
+
+.univ-logo-item:hover img, .univ-logo-item.active img {
+    filter: grayscale(0%);
+    opacity: 1;
+}
+
+/* [우측] 뉴스 콘텐츠 영역 */
+.news-content-area {
+    flex: 1;
+}
+
+.news-search-bar {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.news-search-bar input {
+    width: 100%;
+    padding: 15px 20px 15px 45px;
+    background: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1rem;
+}
+
+.news-search-bar input:focus {
+    border-color: #cca43b;
+    outline: none;
+}
+
+.news-search-bar i {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+}
+
+/* 태그 필터 */
+.news-tags {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.news-tag {
+    padding: 6px 14px;
+    background: #2a2a2a;
+    color: #94a3b8;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.news-tag:hover, .news-tag.active {
+    background: #cca43b;
+    color: #000;
+    font-weight: 600;
+}
+
+/* 뉴스 리스트 */
+.news-list {
+    list-style: none;
+    padding: 0;
+}
+
+.news-item {
+    background: #171717;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    transition: 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.news-item:hover {
+    border-color: #cca43b;
+    background: #1e1e1e;
+    transform: translateY(-2px);
+}
+
+.news-info h4 {
+    color: #e2e8f0;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.news-info h4 .univ-badge {
+    background: #cca43b;
+    color: #000;
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.news-meta {
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.news-date {
+    margin-left: 10px;
+    color: #94a3b8;
+}
+
+.news-arrow {
+    color: #cca43b;
+    font-size: 1.2rem;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+    .news-layout-container {
+        flex-direction: column;
+    }
+    .univ-sidebar {
+        width: 100%;
+        overflow-x: auto;
+    }
+    .univ-logo-grid {
+        display: flex;
+        gap: 10px;
+    }
+    .univ-logo-item {
+        width: 50px;
+        height: 50px;
+        flex-shrink: 0;
+    }
+}

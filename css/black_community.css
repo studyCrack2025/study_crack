@@ -1,0 +1,242 @@
+/* css/black_community.css */
+
+.comm-wrapper {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 20px;
+    min-height: 80vh;
+}
+
+.page-title-area {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.page-title-area h2 {
+    font-family: 'Serif', sans-serif; /* 명조 계열 느낌 */
+    font-size: 2.5rem;
+    color: #cca43b;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+}
+
+.page-title-area p {
+    color: #94a3b8;
+    font-size: 1rem;
+}
+
+/* 툴바 (탭 & 검색) */
+.board-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 15px;
+}
+
+.board-tabs {
+    display: flex;
+    gap: 20px;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    color: #64748b;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: 500;
+    padding: 5px 0;
+    transition: 0.3s;
+}
+
+.tab-btn.active, .tab-btn:hover {
+    color: #cca43b;
+    border-bottom: 2px solid #cca43b;
+}
+
+.search-box {
+    position: relative;
+    width: 250px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 8px 30px 8px 10px;
+    background: #1e1e1e;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: white;
+}
+
+.search-box input:focus {
+    border-color: #cca43b;
+    outline: none;
+}
+
+.search-box i {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #888;
+}
+
+/* 게시판 테이블 */
+.board-container {
+    min-height: 500px;
+}
+
+.board-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.board-table thead th {
+    color: #cca43b;
+    font-weight: 500;
+    padding: 15px 0;
+    border-bottom: 1px solid #444;
+    text-align: center;
+}
+
+.board-table tbody td {
+    padding: 15px 10px;
+    border-bottom: 1px solid #2a2a2a;
+    color: #e2e8f0;
+    text-align: center;
+}
+
+/* 컬럼 너비 */
+.th-num { width: 80px; }
+.th-title { width: auto; } /* 제목은 가변 */
+.th-author { width: 120px; }
+.th-date { width: 100px; }
+.th-views { width: 80px; }
+
+/* 제목 정렬 및 스타일 */
+.board-table td.td-title {
+    text-align: left;
+    padding-left: 20px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.board-table td.td-title:hover {
+    color: #cca43b;
+    text-decoration: underline;
+}
+
+.comment-count {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    margin-left: 5px;
+}
+
+/* 공지사항 스타일 */
+.row-notice {
+    background-color: rgba(204, 164, 59, 0.05); /* 아주 연한 골드 배경 */
+}
+
+.row-notice .td-num {
+    color: #cca43b;
+    font-weight: bold;
+}
+
+.row-notice .td-title {
+    font-weight: 600;
+    color: #fff;
+}
+
+/* 하단 영역 */
+.board-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 30px;
+    position: relative;
+}
+
+.pagination {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+}
+
+.page-link {
+    color: #64748b;
+    text-decoration: none;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0 5px;
+}
+
+.page-link.active, .page-link:hover {
+    color: #cca43b;
+    font-weight: bold;
+}
+
+.write-btn {
+    margin-left: auto; /* 우측 정렬 */
+    background: #cca43b;
+    color: #000;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.write-btn:hover {
+    background: #b38f2d;
+}
+
+/* 로딩/없음 메시지 */
+.loading, .empty-msg {
+    color: #64748b;
+    padding: 50px 0 !important;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+    .th-num, .th-date, .th-views, 
+    .td-num, .td-date, .td-views {
+        display: none;
+    }
+    .board-table thead { display: none; } /* 모바일에서는 헤더 숨김 */
+    
+    .board-table tbody tr {
+        display: flex;
+        flex-direction: column;
+        padding: 15px;
+        border-bottom: 1px solid #333;
+    }
+    
+    .board-table td {
+        border: none;
+        padding: 2px 0;
+        text-align: left !important;
+    }
+    
+    .td-title {
+        font-size: 1.1rem;
+        margin-bottom: 5px;
+        padding-left: 0 !important;
+    }
+    
+    .td-author {
+        font-size: 0.9rem;
+        color: #888;
+    }
+    
+    .td-author::after {
+        content: attr(data-date); /* 모바일용 날짜 표시 */
+        margin-left: 10px;
+        font-size: 0.8rem;
+    }
+}
