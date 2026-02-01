@@ -10,16 +10,16 @@ let currentFile = null;
 let lastChatData = [];
 let pollingInterval = null;
 
-// [추가] 인증 에러 처리 함수 (무한 루프 방지)
+// [보안] 인증 에러 처리
 function handleAuthError() {
     console.warn("인증 실패: 세션 만료 또는 토큰 없음");
-    if (pollingInterval) clearInterval(pollingInterval); // ★ 중요: 반복 요청 중단
+    if (pollingInterval) clearInterval(pollingInterval);
     alert("세션이 만료되었습니다. 다시 로그인해주세요.");
     window.location.href = 'login.html';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. 초기 진입 시 토큰 체크
+    // 1. 토큰 체크
     const token = localStorage.getItem('accessToken');
     if (!userId || !token) {
         alert("로그인이 필요합니다.");
@@ -27,26 +27,26 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     
-    // 2. 데이터 로드 시작
+    // 2. 실행
     loadUserData(); 
     loadChat();      
-    
-    // 3. 폴링 시작 (3초마다 채팅 갱신)
     pollingInterval = setInterval(loadChat, 3000); 
 
-    // 이벤트 리스너들
+    // 이벤트 리스너
     document.addEventListener('paste', handlePaste);
     
-    messageInput.addEventListener('keydown', (e) => {
-        if (e.isComposing) return;
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    });
+    if(messageInput) {
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.isComposing) return;
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    }
 });
 
-// 1. 유저 정보 로드
+// 1. 유저 정보 및 멘토 이름 로드
 async function loadUserData() {
     const token = localStorage.getItem('accessToken');
     if (!token) return handleAuthError();
@@ -58,12 +58,12 @@ async function loadUserData() {
             body: JSON.stringify({ type: 'get_user', userId: userId })
         });
         
-        if (res.status === 401) return handleAuthError(); // ★ 401 체크
+        if (res.status === 401) return handleAuthError();
 
         if(res.ok) {
             const data = await res.json();
             
-            // 사이드바 정보 업데이트
+            // 사이드바
             const nameEl = document.getElementById('userName');
             if(nameEl) nameEl.innerText = data.name || 'User';
 
@@ -74,7 +74,6 @@ async function loadUserData() {
                 if(streamEl) streamEl.innerText = data.qualitative.stream || '-';
             }
             
-            // 목표 대학
             const targetList = document.getElementById('userTargets');
             if (targetList) {
                 targetList.innerHTML = '';
@@ -91,7 +90,7 @@ async function loadUserData() {
                 }
             }
 
-            // 멘토 이름 업데이트
+            // [디자인 통일] 멘토 이름 업데이트
             const mentorNameEl = document.getElementById('mentorNameDisplay');
             if (mentorNameEl) {
                 mentorNameEl.innerText = data.tutorName || "배정 중인 컨설턴트";
@@ -100,10 +99,10 @@ async function loadUserData() {
     } catch(e) { console.error("UserInfo Error:", e); }
 }
 
-// 2. 채팅 로드 (반복 호출됨)
+// 2. 채팅 로드
 async function loadChat() {
     const token = localStorage.getItem('accessToken');
-    if (!token) return; // 토큰 없으면 조용히 종료 (또는 에러 처리)
+    if (!token) return;
 
     try {
         const res = await fetch(API_URL, {
@@ -112,13 +111,12 @@ async function loadChat() {
             body: JSON.stringify({ type: 'get_user', userId: userId })
         });
         
-        if (res.status === 401) return handleAuthError(); // ★ 401 체크 -> 루프 중단
+        if (res.status === 401) return handleAuthError();
 
         if(res.ok) {
             const data = await res.json();
             const chats = data.consultChat || [];
             
-            // 변경사항 있을 때만 렌더링
             if (JSON.stringify(chats) !== JSON.stringify(lastChatData)) {
                 lastChatData = chats;
                 renderChat(chats);
@@ -182,7 +180,6 @@ async function sendMessage() {
     let fileUrl = null;
 
     try {
-        // 1. 파일 업로드
         if (currentFile) {
             const presignRes = await fetch(API_URL, {
                 method: 'POST',
@@ -202,7 +199,6 @@ async function sendMessage() {
             fileUrl = s3Url;
         }
 
-        // 2. 메시지 저장
         const msgData = {
             id: Date.now().toString(),
             sender: 'user', 
@@ -224,7 +220,6 @@ async function sendMessage() {
 
         if (saveRes.status === 401) return handleAuthError();
 
-        // 성공 시 초기화
         messageInput.value = '';
         messageInput.style.height = 'auto';
         clearFile();
@@ -234,7 +229,7 @@ async function sendMessage() {
         alert("전송 실패: " + e.message);
     } finally {
         sendBtn.disabled = false;
-        messageInput.focus();
+        if(messageInput) messageInput.focus();
     }
 }
 
@@ -244,8 +239,12 @@ function handleFileSelect(input) {
         if (file.size > 10 * 1024 * 1024) return alert("10MB 이하 파일만 가능합니다.");
         
         currentFile = file;
-        document.getElementById('filePreview').style.display = 'inline-flex';
-        document.getElementById('previewName').innerText = file.name;
+        const preview = document.getElementById('filePreview');
+        const nameEl = document.getElementById('previewName');
+        if(preview && nameEl) {
+            preview.style.display = 'inline-flex';
+            nameEl.innerText = file.name;
+        }
     }
 }
 
@@ -261,8 +260,10 @@ function handlePaste(e) {
 
 function clearFile() {
     currentFile = null;
-    document.getElementById('filePreview').style.display = 'none';
-    document.getElementById('fileInput').value = '';
+    const preview = document.getElementById('filePreview');
+    const input = document.getElementById('fileInput');
+    if(preview) preview.style.display = 'none';
+    if(input) input.value = '';
 }
 
 function autoResize(textarea) {
