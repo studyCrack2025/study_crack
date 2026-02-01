@@ -32,7 +32,7 @@ function getWeekTitle(date) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // [수정] accessToken 대신 idToken 사용 (Cognito 권장)
+    // accessToken 대신 idToken 사용 (Cognito 권장)
     const idToken = localStorage.getItem('idToken'); 
     const userId = localStorage.getItem('userId');
 
@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("🚀 모든 데이터 로드 완료");
         initUnivGrid(); 
         updateAnalysisUI(); 
+        checkBlackStatusForButton();
         setWeeklyLoadingStatus(false);
         setTimeout(() => { checkWeeklyStatus(); }, 500); 
 
@@ -888,7 +889,6 @@ async function saveProfile() {
 
 function checkBlackStatusForButton() {
     const btn = document.getElementById('btnBlackAction');
-
     if (btn && currentUserTier === 'black') {
         
         // 1. 링크 변경
