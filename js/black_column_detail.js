@@ -7,15 +7,14 @@ let currentData = null;
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. ID 체크
     if(!colId) { 
-        alert("잘못된 접근입니다. (ID 누락)"); 
+        alert("잘못된 접근입니다."); 
         history.back(); 
         return; 
     }
     
     // 2. CONFIG 로드 체크
     if (typeof CONFIG === 'undefined' || !CONFIG.api) {
-        console.error("Critical: config.js not loaded.");
-        alert("시스템 설정 로드 실패. 관리자에게 문의하세요.");
+        alert("일시적인 시스템 오류입니다. 페이지를 새로고침 해주세요.");
         return;
     }
 
@@ -27,9 +26,14 @@ async function loadColumnDetail() {
     const token = localStorage.getItem('accessToken') || localStorage.getItem('idToken');
     const API_URL = CONFIG.api.base;
 
-    try {
-        console.log(`[Debug] Requesting Column ID: ${colId}`);
+    // 인증 체크
+    if (!token || !userId) {
+        alert("로그인이 필요한 콘텐츠입니다.");
+        location.href = 'login.html';
+        return;
+    }
 
+    try {
         const res = await fetch(API_URL, {
             method: 'POST',
             headers: { 
@@ -43,43 +47,50 @@ async function loadColumnDetail() {
             })
         });
         
-        // 에러 처리 강화
         if(!res.ok) {
-            let errorMsg = "데이터 로드 실패";
-            try {
-                const errJson = await res.json();
-                errorMsg = errJson.error || errJson.message || errorMsg;
-            } catch (jsonErr) {
-                errorMsg = await res.text(); // JSON이 아닐 경우 텍스트로 읽음
-            }
-            throw new Error(`${res.status} Error: ${errorMsg}`);
+            throw new Error(`Server Error: ${res.status}`);
         }
         
         const data = await res.json();
+        
+        // 데이터 유효성 검사
+        if (!data.column) {
+            throw new Error("Column data is empty");
+        }
+
         currentData = data;
         renderPage(data);
 
     } catch(e) {
-        console.error("Load Error:", e);
-        // 화면에 에러 내용을 표시해서 원인을 바로 알 수 있게 함
-        document.getElementById('colContent').innerHTML = 
-            `<div style="text-align:center; padding:50px; color: #ff6b6b;">
-                <h3>데이터를 불러올 수 없습니다.</h3>
-                <p>${e.message}</p>
-            </div>`;
+        // [수정] 에러 발생 시 붉은색 글씨 대신 깔끔한 안내 UI 표시
+        renderDetailErrorState();
     }
 }
 
-function renderPage(data) {
-    if (!data.column) {
-        alert("칼럼 데이터가 비어있습니다.");
-        return;
+// [신규] 상세 페이지 에러 UI
+function renderDetailErrorState() {
+    const contentArea = document.getElementById('colContent');
+    if (contentArea) {
+        contentArea.innerHTML = `
+            <div style="text-align:center; padding:80px 0; color: #888;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 40px; margin-bottom: 20px; color: #d4af37;"></i>
+                <h3 style="color: #fff; margin-bottom: 10px;">내용을 불러올 수 없습니다.</h3>
+                <p>삭제된 칼럼이거나 일시적인 네트워크 오류일 수 있습니다.</p>
+                <button onclick="history.back()" style="margin-top: 20px; padding: 10px 25px; background: #333; color: #fff; border: 1px solid #555; cursor: pointer; border-radius: 4px;">
+                    목록으로 돌아가기
+                </button>
+            </div>
+        `;
     }
+    // 제목 등 다른 요소도 비우거나 기본값 처리
+    document.getElementById('colTitle').innerText = "로드 실패";
+}
 
+function renderPage(data) {
     const col = data.column;
-    const con = data.consultant || {}; // 컨설턴트 정보가 없어도 깨지지 않게 빈 객체 처리
+    const con = data.consultant || {}; 
 
-    // 헤더
+    // 헤더 정보
     const badgeElem = document.getElementById('colBadge');
     if(badgeElem) badgeElem.innerText = col.badge === 'master' ? '🏅 MASTER CLASS' : '🎓 PREMIUM COLUMN';
     
@@ -89,7 +100,7 @@ function renderPage(data) {
     document.getElementById('colViews').innerText = col.views || '0';
     document.getElementById('colContent').innerHTML = col.content || "";
 
-    // 좋아요 버튼
+    // 좋아요 버튼 상태
     const likeBtn = document.getElementById('btnLike');
     const likeCountElem = document.getElementById('likeCount');
     if(likeCountElem) likeCountElem.innerText = col.likes || 0;
@@ -99,7 +110,7 @@ function renderPage(data) {
         likeBtn.querySelector('i').className = 'fas fa-heart';
     }
 
-    // 저장 버튼
+    // 저장 버튼 상태
     const saveBtn = document.getElementById('btnSave');
     if(col.isSaved && saveBtn) {
         saveBtn.classList.add('active');
@@ -107,7 +118,7 @@ function renderPage(data) {
         saveBtn.innerHTML = `<i class="fas fa-bookmark"></i> 저장됨`;
     }
 
-    // 컨설턴트 프로필 (DOM 요소가 있는지 확인 후 넣기)
+    // 컨설턴트 프로필
     if(document.getElementById('cpImg')) document.getElementById('cpImg').src = con.img || "https://placehold.co/100x100";
     if(document.getElementById('cpName')) document.getElementById('cpName').innerText = con.name || col.author;
     if(document.getElementById('cpBadge')) document.getElementById('cpBadge').innerText = (con.badge || "EXPERT").toUpperCase();
@@ -129,17 +140,18 @@ async function toggleSaveDetail() {
 // 중복 로직 통합 함수
 async function sendToggleRequest(type, btnId, countId = null) {
     const btn = document.getElementById(btnId);
+    if (!btn) return;
+    
     const icon = btn.querySelector('i');
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('accessToken') || localStorage.getItem('idToken');
     const API_URL = CONFIG.api.base;
 
-    // UI 낙관적 업데이트
+    // UI 낙관적 업데이트 (Optimistic UI)
     const isActive = btn.classList.contains('active');
     
     if (isActive) {
         btn.classList.remove('active');
-        // 아이콘 클래스 교체 (fa-heart/bookmark 등 상황에 맞게)
         if(type.includes('like')) icon.className = 'far fa-heart';
         else {
             icon.className = 'far fa-bookmark';
@@ -171,10 +183,11 @@ async function sendToggleRequest(type, btnId, countId = null) {
             body: JSON.stringify({ type, userId, data: { columnId: colId } })
         });
     } catch(e) {
-        console.error("Toggle Error:", e);
+        // 기능 실패 시 조용히 처리 (사용자 경험 유지)
+        // 필요하다면 UI를 롤백하는 로직을 추가할 수 있음
     }
 }
 
 function goToConsultantPage() {
-    alert("준비 중입니다.");
+    alert("준비 중인 기능입니다.");
 }
