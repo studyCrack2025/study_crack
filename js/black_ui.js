@@ -20,12 +20,28 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // [1] 데이터 로드
+// js/black_ui.js 수정
+
 async function loadBlackData() {
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('idToken');
 
+    // [진단 1] 데이터가 진짜 있는지 눈으로 확인
+    console.log("=== [Debug] 데이터 확인 ===");
+    console.log("UserID:", userId); 
+    console.log("Token:", token ? token.substring(0, 10) + "..." : "없음");
+
     if (!token) {
-        alert("로그인이 필요합니다.");
+        alert("로그인이 필요합니다. (토큰 없음)");
+        location.href = 'login.html';
+        return;
+    }
+
+    // [진단 2] UserID가 없으면 멈춤 (401 원인 차단)
+    if (!userId) {
+        console.error("치명적 오류: UserID가 없습니다. 재로그인 필요.");
+        alert("회원 정보가 만료되었습니다. 다시 로그인해주세요.");
+        localStorage.clear(); // 꼬인 데이터 초기화
         location.href = 'login.html';
         return;
     }
@@ -37,7 +53,12 @@ async function loadBlackData() {
             body: JSON.stringify({ type: 'get_black_columns', userId: userId })
         });
 
-        if (!res.ok) throw new Error("데이터 로드 실패");
+        if (!res.ok) {
+            // [진단 3] 서버가 뭐라면서 거절했는지 확인
+            const errText = await res.text();
+            console.error(`서버 응답 에러 (${res.status}):`, errText);
+            throw new Error("데이터 로드 실패");
+        }
         
         const data = await res.json();
         allColumns = data.columns || [];
@@ -47,6 +68,10 @@ async function loadBlackData() {
 
     } catch (e) {
         console.error(e);
+        // 401이면 백엔드 배포 문제일 가능성이 높음
+        if (e.message.includes('401')) {
+            alert("서버 연결 오류: 잠시 후 다시 시도하거나, 관리자에게 문의하세요. (Backend Deploy 확인 필요)");
+        }
     }
 }
 
