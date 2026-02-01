@@ -198,7 +198,7 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
-    z-index: 9999; /* 화면 최상단 */
+    z-index: 9990; 
     transition: all 0.3s ease;
     text-decoration: none;
 }
@@ -228,7 +228,7 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
     justify-content: center;
     align-items: center;
     text-decoration: none;
-    z-index: 9999;
+    z-index: 9999; /* 화면 최상단 */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
     overflow: hidden; /* 쉬머 효과가 밖으로 나가지 않게 */
     transition: transform 0.3s;
@@ -341,7 +341,7 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
     }
     .qna-icon { font-size: 1.6rem; }
     .floating-black-btn {
-        bottom: 90px;
+        bottom: 90px !important;
         right: 20px;
         width: 55px;
         height: 55px;
