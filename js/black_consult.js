@@ -65,6 +65,12 @@ async function loadUserData() {
             } else {
                 targetList.innerHTML = '<li>설정된 목표 없음</li>';
             }
+            
+            const mentorNameEl = document.getElementById('mentorNameDisplay');
+            if (mentorNameEl) {
+                // DB에 tutorName이 있으면 그것을 쓰고, 없으면 기본값 표시
+                mentorNameEl.innerText = data.tutorName || "배정 중인 컨설턴트";
+            }
         }
     } catch(e) { console.error("UserInfo Error:", e); }
 }
