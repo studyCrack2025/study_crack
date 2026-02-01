@@ -1,6 +1,6 @@
 // js/black_univ_news.js
 
-const API_URL = CONFIG.api.base;
+//const API_URL = CONFIG.api.base;
 
 let allNews = []; // 전체 뉴스 데이터
 let currentFilter = { univ: null, tag: 'all', keyword: '' };

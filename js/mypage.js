@@ -901,7 +901,6 @@ function checkBlackStatusForButton() {
         btn.innerHTML = `
             👑 BLACK LOUNGE 입장하기
             <span style="display:block; font-size:0.9rem; margin-top:5px; color:#555;">
-                프라이빗 라운지 바로가기<br>
                 (💡Tip: 메인화면 우측 하단 버튼으로도 바로 접속 가능합니다)
             </span>
         `;
