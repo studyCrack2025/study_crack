@@ -75,12 +75,44 @@ async function loadBlackData() {
     }
 }
 
-// [2] 렌더링
 function renderColumns() {
-    const heroCols = allColumns.filter(c => c.isHero).slice(0, 2);
+    // 1. 데이터 분류 (히어로 vs 일반)
+    const heroCols = allColumns.filter(c => c.isHero).slice(0, 2); // 상단 2개
     let listCols = allColumns.filter(c => !c.isHero);
-    listCols.sort((a, b) => b.likes - a.likes); 
-    listCols = listCols.slice(0, 6); 
+    
+    // 2. 히어로 섹션 렌더링 (★ 추가된 부분)
+    const heroGrid = document.getElementById('heroGrid');
+    if (heroGrid && heroCols.length > 0) {
+        heroGrid.innerHTML = ''; // 로딩 스켈레톤 삭제
+        
+        heroCols.forEach(col => {
+            const safeTitle = escapeHtml(col.title);
+            const safeAuthor = escapeHtml(col.author);
+            const safeDate = escapeHtml(col.date);
+            const safeId = escapeHtml(col.id); // 진짜 ID 사용
+            
+            const card = document.createElement('div');
+            card.className = 'hero-col-card';
+            // ★ 진짜 ID를 넘겨줌
+            card.onclick = () => openColumnPage(safeId); 
+            
+            card.innerHTML = `
+                <div class="badge-overlay">FOR BLACK ONLY</div>
+                <div class="col-content">
+                    <h4>${safeTitle}</h4>
+                    <div class="col-meta">
+                        <span class="author">${safeAuthor}</span>
+                        <span class="date">${safeDate}</span>
+                    </div>
+                </div>
+            `;
+            heroGrid.appendChild(card);
+        });
+    }
+
+    // 3. 리스트 섹션 렌더링 (기존 로직 보강)
+    listCols.sort((a, b) => b.likes - a.likes); // 좋아요 순 정렬
+    listCols = listCols.slice(0, 6); // 최대 6개 노출
 
     const grid = document.getElementById('columnGrid');
     if (!grid) return;
@@ -90,20 +122,17 @@ function renderColumns() {
         const rankClass = index < 2 ? 'top-rank' : '';
         const likeClass = col.isLiked ? 'liked' : '';
         const saveClass = col.isSaved ? 'fas' : 'far';
-        
         const badgeImg = col.badge === 'master' ? '🏅' : (col.badge === 'platinum' ? '💠' : '🎖️');
 
-        const card = document.createElement('div');
-        card.className = `col-card ${rankClass}`;
-        
-        // [보안] 데이터 출력 시 escapeHtml 사용
-        // author, title 등 사용자 입력 가능성이 있는 모든 데이터 처리
         const safeAuthor = escapeHtml(col.author);
         const safeTitle = escapeHtml(col.title);
         const safeId = escapeHtml(col.id);
 
+        const card = document.createElement('div');
+        card.className = `col-card ${rankClass}`;
+        
         card.innerHTML = `
-            <div class="col-img-area" onclick="openColumnModal('${safeId}')">
+            <div class="col-img-area" onclick="openColumnPage('${safeId}')">
                 <img src="https://placehold.co/300x200/1a1a1a/FFF?text=${encodeURIComponent(col.author)}" alt="썸네일">
                 <div class="consultant-badge">${badgeImg} ${safeAuthor}</div>
                 <div class="save-btn-overlay" onclick="toggleSave(event, '${safeId}')">
@@ -111,7 +140,7 @@ function renderColumns() {
                 </div>
             </div>
             <div class="col-text-area">
-                <h4 class="col-title" onclick="openColumnModal('${safeId}')">${safeTitle}</h4>
+                <h4 class="col-title" onclick="openColumnPage('${safeId}')">${safeTitle}</h4>
                 <div class="col-info">
                     <span class="c-name" onclick="togglePickConsultant(event, '${safeAuthor}')">
                         ${safeAuthor} 
@@ -209,35 +238,11 @@ async function togglePickConsultant(e, name) {
 
 // [6] 모달 관련
 function openColumnPage(id) {
-    const col = allColumns.find(c => c.id === id);
-    if (!col) return;
-
-    const modal = document.getElementById('column-modal');
-    const content = document.getElementById('modal-body-content');
+    // id가 없으면 무시
+    if (!id) return;
     
-    // [보안] 상세 내용도 escapeHtml 적용 (단, content가 HTML 태그를 포함해야 한다면 별도의 Sanitizer 필요)
-    // 여기서는 텍스트 기반이라 가정하고 escapeHtml 적용. 
-    // 줄바꿈 처리를 위해 replace(/\n/g, '<br>') 정도만 허용
-    const safeContent = escapeHtml(col.content).replace(/\n/g, '<br>');
-
-    content.innerHTML = `
-        <div style="margin-bottom:20px; border-bottom:1px solid #333; padding-bottom:15px;">
-            <span style="color:#d4af37; font-size:0.9rem; font-weight:bold;">
-                ${col.badge === 'master' ? '🏅 MASTER CLASS' : '🎓 COLUMN'}
-            </span>
-            <h2 style="color:#fff; margin:10px 0;">${escapeHtml(col.title)}</h2>
-            <div style="display:flex; justify-content:space-between; color:#666; font-size:0.9rem;">
-                <span>Written by ${escapeHtml(col.author)}</span>
-                <span>${escapeHtml(col.date)}</span>
-            </div>
-        </div>
-        <div style="line-height:1.8; color:#ccc; font-size:1.05rem;">
-            ${safeContent}
-        </div>
-    `;
-    
-    modal.style.display = 'block';
-    document.body.style.overflow = 'hidden';
+    // 상세 페이지로 이동 (ID를 쿼리 파라미터로 전달)
+    window.location.href = `black_column_detail.html?id=${id}`;
 }
 
 window.onclick = function(event) {
