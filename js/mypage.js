@@ -348,10 +348,10 @@ async function saveTargetUnivs() {
 }
 
 // ============================================================
-// 목표대학 분석 UI 업데이트 (로그 강제 출력 버전)
+// 목표대학 분석 UI + 상세 로그(Conversion) 호출 로직
 // ============================================================
 async function updateAnalysisUI() {
-    console.clear(); // 콘솔 정리하고 시작
+    console.clear(); 
     console.log("🔥 [Start] 분석 UI 업데이트 시작");
 
     const container = document.getElementById('univAnalysisResult');
@@ -360,8 +360,8 @@ async function updateAnalysisUI() {
     // 1. 데이터 검증
     const hasTargets = userTargetUnivs && userTargetUnivs.some(u => u && u.univ);
     if (!hasTargets || !userQuantData) { 
-        console.warn("⚠️ 데이터 없음 (목표대학 또는 성적표 누락)");
-        container.innerHTML = '<p style="text-align:center; padding:30px; color:#999;">분석할 데이터가 없습니다.</p>'; 
+        console.warn("⚠️ 데이터 없음");
+        container.innerHTML = '<p>데이터가 없습니다.</p>'; 
         return; 
     }
 
@@ -369,32 +369,24 @@ async function updateAnalysisUI() {
     const availableExams = Object.keys(userQuantData).filter(key => userQuantData[key]);
     if (!availableExams.includes(currentExamMode) && availableExams.length > 0) currentExamMode = availableExams[0];
 
-    // 3. UI 리셋
-    container.innerHTML = `
-        <div class="analysis-controls" style="display:flex; justify-content:flex-end; margin-bottom:15px;">
-            <select onchange="changeExamMode(this.value)" style="padding:5px;">
-                ${availableExams.map(key => `<option value="${key}" ${key === currentExamMode ? 'selected' : ''}>${EXAM_NAMES[key] || key}</option>`).join('')}
-            </select>
-        </div>
-        <div id="analysisCardsContainer" style="text-align:center; padding:50px;">
-            <i class="fas fa-spinner fa-spin"></i> 분석 중...
-        </div>
-    `;
+    // UI 리셋
+    container.innerHTML = `<div id="analysisCardsContainer">분석 중...</div>`;
 
     const token = localStorage.getItem('idToken');
     const userId = localStorage.getItem('userId');
     const currentScoreData = userQuantData[currentExamMode];
 
-    // 4. 서버 요청 (analyze_my_targets -> StudyCrack_Analysis 호출)
-    // 주의: API Gateway 주소가 맞는지 확인 필수
     try {
-        console.log(`🚀 [요청] ${UNIV_DATA_API_URL} 로 전송 중...`);
-        
+        // ---------------------------------------------------------
+        // [Step 1] 빠른 진단 (Analysis 람다 호출) -> UI 그리기용
+        // ---------------------------------------------------------
+        console.log(`🚀 [Analysis] ${UNIV_DATA_API_URL} 요청 중...`);
+
         const res = await fetch(UNIV_DATA_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
-                type: 'analyze_my_targets', // 일괄 분석 요청
+                type: 'analyze_my_targets',
                 userId: userId,
                 targetUnivs: userTargetUnivs,
                 userScores: currentScoreData,
@@ -403,46 +395,56 @@ async function updateAnalysisUI() {
         });
 
         const data = await res.json();
-
-        // 1. 전체 서버 로그 (전역 로그) 출력
-        if (data.server_debug && data.server_debug.logs) {
-            console.groupCollapsed("🖨️ [Server Global Logs]");
-            data.server_debug.logs.forEach(log => console.log(log));
-            console.groupEnd();
-        }
-
-        // 2. 개별 대학 분석 로그 출력
-        if (data.results) {
-            console.group("📋 [개별 대학 분석 결과]");
-            data.results.forEach((r, i) => {
-                // Analysis 람다는 'calculation_log' 대신 'debug_info'를 줍니다.
-                const logMsg = r.debug_info || r.msg; 
-                
-                console.groupCollapsed(`${i+1}. ${r.univ} ${r.major} (${r.status})`);
-                console.log(`결과: ${r.status}`);
-                console.log(`환산점수: ${r.converted_score}`);
-                console.log(`메시지: ${r.msg}`);
-                
-                if (r.debug_info) {
-                    console.log(`🔧 디버그 정보: ${r.debug_info}`);
-                }
-                console.groupEnd();
-            });
-            console.groupEnd();
-        }
-        
-        // 에러 처리
-        if (data.error) throw new Error(data.error);
-
-        // 5. 결과 렌더링
         const results = data.results || [];
+
+        // UI 렌더링 (화면 표시)
         const cardsContainer = document.getElementById('analysisCardsContainer');
-        
-        if (results.length === 0) {
-             cardsContainer.innerHTML = '<p>결과가 없습니다.</p>';
-        } else {
-             cardsContainer.innerHTML = results.map(item => renderAnalysisCard(item)).join('');
-             console.log("✅ 렌더링 완료");
+        cardsContainer.innerHTML = results.length === 0 ? '<p>결과 없음</p>' : results.map(item => renderAnalysisCard(item)).join('');
+
+        // ---------------------------------------------------------
+        // [Step 2] 상세 로그 가져오기 (Conversion 람다 호출) -> 콘솔 출력용
+        // ---------------------------------------------------------
+        console.log("🕵️ [Deep Dive] 상세 계산 로직을 조회합니다...");
+
+        // ⚠️ [중요] 상세 계산용 URL은 별도로 설정하셔야 합니다 (StudyCrack_ConversionScore API Gateway)
+        // 만약 UNIV_DATA_API_URL과 같은 게이트웨이를 쓴다면 경로(resource)가 다를 것입니다.
+        const CONVERSION_API_URL = "https://your-api-gateway-url.com/conversion"; 
+
+        for (const target of results) {
+            if (!target.is_eligible) continue; // 지원 불가는 계산 생략
+
+            try {
+                const detailRes = await fetch(CONVERSION_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        univ: target.univ,
+                        major: target.major,
+                        userScores: currentScoreData,
+                        examMode: currentExamMode || 'csat'
+                    })
+                });
+
+                const detailData = await detailRes.json();
+
+                // 🔥 [콘솔 출력] 상세 계산 과정 로그
+                if (detailData.debug_logs && detailData.debug_logs.length > 0) {
+                    console.group(`🧮 [상세 계산] ${target.univ} ${target.major}`);
+                    
+                    detailData.debug_logs.forEach(logLine => {
+                         if(logLine.includes("최종점수")) console.log(`%c${logLine}`, "color: blue; font-weight: bold;");
+                         else if(logLine.includes("가중합")) console.log(`%c${logLine}`, "color: green;");
+                         else console.log(logLine);
+                    });
+
+                    console.log(`📌 최종 환산점수: ${detailData.score}`);
+                    console.log(`ℹ️ 적용 공식: ${detailData.detail?.formula}`);
+                    console.groupEnd();
+                }
+
+            } catch (innerErr) {
+                console.warn(`❌ ${target.univ} 상세 조회 실패:`, innerErr);
+            }
         }
 
     } catch (e) {
