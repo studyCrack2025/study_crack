@@ -387,7 +387,7 @@ async function updateAnalysisUI() {
     const currentScoreData = userQuantData[currentExamMode];
 
     try {
-        const res = await fetch(CALC_API_URL, {
+        const res = await fetch(UNIV_DATA_API_URL, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json', 
