@@ -54,14 +54,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     setWeeklyLoadingStatus(true);
+    console.log("🚀 [Init] 데이터 로딩 시작...");
 
-    Promise.all([
-        fetchUserData(userId),
-        fetchUnivData()
-    ]).then(() => {
-        console.log("🚀 모든 데이터 로드 완료");
+    // [수정] Promise.allSettled를 사용하여 하나가 실패해도 나머지는 실행되도록 변경
+    Promise.allSettled([
+        fetchUserData(userId).then(() => console.log("  - ✅ 회원정보 로드 완료")),
+        fetchUnivData().then(() => console.log("  - ✅ 대학목록 로드 완료"))
+    ]).then((results) => {
+        // 실패한 요청이 있는지 확인
+        results.forEach((res, idx) => {
+            if (res.status === 'rejected') {
+                console.error(`❌ [Critical] 초기 데이터 로드 실패 (Index ${idx}):`, res.reason);
+            }
+        });
+
+        console.log("🚀 [Init] 초기화 단계 진입");
         initUnivGrid(); 
+        
+        // 여기서 강제로 실행
+        console.log("🚀 [Init] 분석 UI 업데이트 호출");
         updateAnalysisUI(); 
+        
         checkBlackStatusForButton();
         setWeeklyLoadingStatus(false);
         setTimeout(() => { checkWeeklyStatus(); }, 500); 
@@ -75,10 +88,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => openSolution(sol), 100); 
             }
         }
-    }).catch(err => {
-        console.error("초기화 실패:", err);
-        const msg = document.getElementById('weeklyDeadlineMsg');
-        if(msg) { msg.style.color = 'red'; msg.innerText = "데이터 로드 실패 (네트워크/인증)"; }
     });
 
     setupUI();
