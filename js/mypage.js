@@ -348,7 +348,7 @@ async function saveTargetUnivs() {
 }
 
 // ============================================================
-// [디버깅] 목표대학 분석 UI 업데이트 (로그 강제 출력 버전)
+// 목표대학 분석 UI 업데이트 (로그 강제 출력 버전)
 // ============================================================
 async function updateAnalysisUI() {
     console.clear(); // 콘솔 정리하고 시작
@@ -404,15 +404,29 @@ async function updateAnalysisUI() {
 
         const data = await res.json();
 
-        // 🔥🔥🔥 [핵심] 서버 로그 강제 출력 파트 🔥🔥🔥
+        // 1. 전체 서버 로그 (전역 로그) 출력
+        if (data.server_debug && data.server_debug.logs) {
+            console.groupCollapsed("🖨️ [Server Global Logs]");
+            data.server_debug.logs.forEach(log => console.log(log));
+            console.groupEnd();
+        }
+
+        // 2. 개별 대학 분석 로그 출력
         if (data.results) {
-            console.group("🖨️ [서버 계산 과정 상세 로그]");
+            console.group("📋 [개별 대학 분석 결과]");
             data.results.forEach((r, i) => {
-                if (r.calculation_log && Array.isArray(r.calculation_log)) {
-                    console.groupCollapsed(`Examining ${i+1}: ${r.univ} ${r.major}`);
-                    r.calculation_log.forEach(logLine => console.log(logLine)); // 로그 한줄씩 출력
-                    console.groupEnd();
+                // Analysis 람다는 'calculation_log' 대신 'debug_info'를 줍니다.
+                const logMsg = r.debug_info || r.msg; 
+                
+                console.groupCollapsed(`${i+1}. ${r.univ} ${r.major} (${r.status})`);
+                console.log(`결과: ${r.status}`);
+                console.log(`환산점수: ${r.converted_score}`);
+                console.log(`메시지: ${r.msg}`);
+                
+                if (r.debug_info) {
+                    console.log(`🔧 디버그 정보: ${r.debug_info}`);
                 }
+                console.groupEnd();
             });
             console.groupEnd();
         }
