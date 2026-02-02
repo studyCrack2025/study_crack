@@ -348,57 +348,36 @@ async function saveTargetUnivs() {
 }
 
 // ============================================================
-// [디버깅] 목표대학 분석 UI 업데이트 (범인 찾기용)
+// [디버깅] 목표대학 분석 UI 업데이트 (로그 강제 출력 버전)
 // ============================================================
 async function updateAnalysisUI() {
-    console.log("🏃‍♂️ [Start] updateAnalysisUI 함수 시작됨");
+    console.clear(); // 콘솔 정리하고 시작
+    console.log("🔥 [Start] 분석 UI 업데이트 시작");
 
     const container = document.getElementById('univAnalysisResult');
-    if (!container) {
-        console.error("❌ [Error] 'univAnalysisResult' 컨테이너가 HTML에 없습니다.");
-        return;
-    }
+    if (!container) return;
     
-    // 1. 목표 대학 데이터 확인
-    console.log("🔍 [Check 1] 목표 대학 데이터 확인 중...", userTargetUnivs);
+    // 1. 데이터 검증
     const hasTargets = userTargetUnivs && userTargetUnivs.some(u => u && u.univ);
-    
-    if (!hasTargets) { 
-        console.warn("⚠️ [Stop] 설정된 목표 대학이 없습니다. 요청을 중단합니다.");
-        container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px;">목표 대학을 설정하면 분석 결과가 나타납니다.</p>'; 
+    if (!hasTargets || !userQuantData) { 
+        console.warn("⚠️ 데이터 없음 (목표대학 또는 성적표 누락)");
+        container.innerHTML = '<p style="text-align:center; padding:30px; color:#999;">분석할 데이터가 없습니다.</p>'; 
         return; 
     }
 
-    // 2. 성적 데이터 확인
-    console.log("🔍 [Check 2] 성적 데이터 확인 중...", userQuantData);
-    if (!userQuantData || Object.keys(userQuantData).length === 0) {
-        console.warn("⚠️ [Stop] 입력된 성적 데이터가 없습니다. 요청을 중단합니다.");
-        container.innerHTML = '<p style="text-align:center; color:#ef4444; padding:30px;">입력된 성적 데이터가 없습니다.</p>';
-        return;
-    }
+    // 2. 모드 설정
+    const availableExams = Object.keys(userQuantData).filter(key => userQuantData[key]);
+    if (!availableExams.includes(currentExamMode) && availableExams.length > 0) currentExamMode = availableExams[0];
 
-    // 3. 시험 모드 선택
-    const availableExams = Object.keys(userQuantData).filter(key => userQuantData[key] && (userQuantData[key].kor || userQuantData[key].math));
-    console.log("🔍 [Check 3] 가용한 시험 모드:", availableExams, "현재 선택:", currentExamMode);
-    
-    if (!availableExams.includes(currentExamMode) && availableExams.length > 0) {
-        console.log(`🔄 [Auto] 현재 모드(${currentExamMode}) 데이터가 없어 ${availableExams[0]}로 자동 변경합니다.`);
-        currentExamMode = availableExams[0];
-    }
-
-    // 4. UI 로딩 표시
+    // 3. UI 리셋
     container.innerHTML = `
-        <div class="analysis-controls" style="display:flex; justify-content:flex-end; margin-bottom:15px; align-items:center; gap:10px;">
-            <label style="font-size:0.9rem; color:#64748b;">분석 기준:</label>
-            <select id="examModeSelector" onchange="changeExamMode(this.value)" style="padding:5px 10px; border:1px solid #cbd5e1; border-radius:6px;">
+        <div class="analysis-controls" style="display:flex; justify-content:flex-end; margin-bottom:15px;">
+            <select onchange="changeExamMode(this.value)" style="padding:5px;">
                 ${availableExams.map(key => `<option value="${key}" ${key === currentExamMode ? 'selected' : ''}>${EXAM_NAMES[key] || key}</option>`).join('')}
             </select>
         </div>
-        <div id="analysisCardsContainer">
-            <div style="text-align:center; padding:50px;">
-                <i class="fas fa-spinner fa-spin" style="font-size:2rem; color:#3b82f6;"></i>
-                <p style="margin-top:10px; color:#64748b;">서버에 재계산을 요청 중입니다...</p>
-            </div>
+        <div id="analysisCardsContainer" style="text-align:center; padding:50px;">
+            <i class="fas fa-spinner fa-spin"></i> 분석 중...
         </div>
     `;
 
@@ -406,62 +385,55 @@ async function updateAnalysisUI() {
     const userId = localStorage.getItem('userId');
     const currentScoreData = userQuantData[currentExamMode];
 
-    // 5. 실제 요청 전송
-    console.log("🚀 [Fetch] 서버로 분석 요청을 보냅니다!");
-    console.log("   -> URL:", UNIV_DATA_API_URL);
-    console.log("   -> Payload:", JSON.stringify({
-        type: 'analyze_my_targets',
-        userId: userId,
-        targetUnivs: userTargetUnivs,
-        userScores: currentScoreData
-    }));
-
+    // 4. 서버 요청 (analyze_my_targets -> StudyCrack_Analysis 호출)
+    // 주의: API Gateway 주소가 맞는지 확인 필수
     try {
-        const res = await fetch(UNIV_DATA_API_URL, {
+        console.log(`🚀 [요청] ${CALC_API_URL} 로 전송 중...`);
+        
+        const res = await fetch(CALC_API_URL, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json', 
-                'Authorization': `Bearer ${token}` 
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
-                type: 'analyze_my_targets',
+                type: 'analyze_my_targets', // 일괄 분석 요청
                 userId: userId,
                 targetUnivs: userTargetUnivs,
-                userScores: currentScoreData
+                userScores: currentScoreData,
+                examMode: currentExamMode
             })
         });
-        
-        console.log("📩 [Response] 서버 응답 도착. 상태코드:", res.status);
 
-        if (!res.ok) {
-            const errText = await res.text();
-            throw new Error(`서버 에러 (${res.status}): ${errText}`);
+        const data = await res.json();
+
+        // 🔥🔥🔥 [핵심] 서버 로그 강제 출력 파트 🔥🔥🔥
+        if (data.results) {
+            console.group("🖨️ [서버 계산 과정 상세 로그]");
+            data.results.forEach((r, i) => {
+                if (r.calculation_log && Array.isArray(r.calculation_log)) {
+                    console.groupCollapsed(`Examining ${i+1}: ${r.univ} ${r.major}`);
+                    r.calculation_log.forEach(logLine => console.log(logLine)); // 로그 한줄씩 출력
+                    console.groupEnd();
+                }
+            });
+            console.groupEnd();
         }
         
-        const resultWrapper = await res.json();
-        console.log("📦 [Data] 받은 데이터:", resultWrapper); // 여기가 핵심입니다!
+        // 에러 처리
+        if (data.error) throw new Error(data.error);
 
-        const results = resultWrapper.results || [];
+        // 5. 결과 렌더링
+        const results = data.results || [];
         const cardsContainer = document.getElementById('analysisCardsContainer');
         
         if (results.length === 0) {
-             console.warn("⚠️ [Warning] 결과 배열이 비어있습니다.");
-             cardsContainer.innerHTML = '<p style="text-align:center; padding:30px;">분석할 데이터가 없습니다.</p>';
+             cardsContainer.innerHTML = '<p>결과가 없습니다.</p>';
         } else {
              cardsContainer.innerHTML = results.map(item => renderAnalysisCard(item)).join('');
-             console.log("✅ [Done] 카드 렌더링 완료");
+             console.log("✅ 렌더링 완료");
         }
 
     } catch (e) {
-        console.error("❌ [Error] 분석 요청 중 치명적 오류:", e);
-        const errContainer = document.getElementById('analysisCardsContainer');
-        if(errContainer) {
-            errContainer.innerHTML = `
-            <div style="text-align:center; padding:30px; color:#ef4444;">
-                <i class="fas fa-exclamation-triangle"></i><br>
-                오류 발생: ${e.message}
-            </div>`;
-        }
+        console.error("❌ 통신 에러:", e);
+        document.getElementById('analysisCardsContainer').innerHTML = `<p style="color:red;">오류: ${e.message}</p>`;
     }
 }
 
