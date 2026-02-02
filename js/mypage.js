@@ -4,8 +4,6 @@
 const MYPAGE_API_URL = CONFIG.api.base; 
 // 대학 목록 조회용 API
 const UNIV_DATA_API_URL = CONFIG.api.analysis;
-// 환산점수 계산 전용 Lambda URL
-const CALC_API_URL = CONFIG.api.calc;
 
 let currentUserTier = 'free';
 let userTargetUnivs = [null, null, null, null, null, null, null, null]; 
@@ -410,7 +408,7 @@ async function updateAnalysisUI() {
 
     // 5. 실제 요청 전송
     console.log("🚀 [Fetch] 서버로 분석 요청을 보냅니다!");
-    console.log("   -> URL:", CALC_API_URL);
+    console.log("   -> URL:", UNIV_DATA_API_URL);
     console.log("   -> Payload:", JSON.stringify({
         type: 'analyze_my_targets',
         userId: userId,
@@ -419,7 +417,7 @@ async function updateAnalysisUI() {
     }));
 
     try {
-        const res = await fetch(CALC_API_URL, {
+        const res = await fetch(UNIV_DATA_API_URL, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json', 
