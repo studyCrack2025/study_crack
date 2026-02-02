@@ -444,78 +444,79 @@ function changeExamMode(mode) {
     updateAnalysisUI(); // 재분석 요청
 }
 
-// 상세 분석 카드 HTML 생성 함수
+// 상세 분석 카드 HTML 생성 함수 (서버 데이터를 그대로 렌더링)
 function renderAnalysisCard(res) {
-    if (res.error) {
+    // 1. 에러 처리
+    if (res.error || res.status === '분석 불가') {
         return `
-        <div class="analysis-card" style="border-left: 4px solid #ef4444; margin-bottom:15px; background:#fff; border-radius:8px; padding:20px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+        <div class="analysis-card" style="border-left: 4px solid #94a3b8; margin-bottom:15px; background:#fff; border-radius:8px; padding:20px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
             <div class="analysis-header" style="margin-bottom:10px;">
-                <h4 style="margin:0;">${res.idx+1}지망: ${res.univ} <small style="color:#64748b;">${res.major}</small></h4>
-                <span class="univ-badge" style="background:#fef2f2; color:#ef4444; padding:2px 8px; border-radius:4px; font-size:0.8rem;">분석 실패</span>
+                <h4 style="margin:0;">${res.idx + 1}지망: ${res.univ} <small style="color:#64748b;">${res.major}</small></h4>
+                <span style="background:#f1f5f9; color:#64748b; padding:2px 8px; border-radius:4px; font-size:0.8rem;">분석 데이터 부족</span>
             </div>
-            <p style="color:#64748b; font-size:0.9rem; margin:0;">데이터를 불러올 수 없습니다.</p>
+            <p style="color:#64748b; font-size:0.9rem; margin:0;">${res.msg || '해당 학과의 작년 입시 데이터가 없습니다.'}</p>
         </div>`;
     }
 
-    // 1. 점수 및 커트라인 분석
-    const myScore = parseFloat(res.score || 0);
-    // 백엔드에서 예상컷(cutoff)을 주지 않을 경우를 대비해 eligibility로 추정하거나 '-' 표시
-    const expectedCut = res.cutoff ? parseFloat(res.cutoff) : (res.is_eligible ? myScore - 2 : myScore + 5); // (예시용 fallback 로직)
-    const diff = (myScore - expectedCut).toFixed(2);
-    
-    let diffTag = '';
-    if (diff > 0) diffTag = `<span style="color:#10b981; font-weight:bold;">(+${diff}) 안정권</span>`;
-    else if (diff > -3) diffTag = `<span style="color:#f59e0b; font-weight:bold;">(${diff}) 소신지원</span>`;
-    else diffTag = `<span style="color:#ef4444; font-weight:bold;">(${diff}) 위험</span>`;
-
-    // 2. 과목별 진단 로직 (반영비 기반 가벼운 진단)
-    // res.ratios가 { kor: 30, math: 40, ... } 형태로 온다고 가정
-    // userQuantData[currentExamMode]에 있는 등급과 비교하여 진단
-    const ratios = res.ratios || { kor: '-', math: '-', eng: '-', inq: '-' }; 
-    const subjectDiag = getSubjectDiagnostics(userQuantData[currentExamMode], ratios);
+    // 2. 서버에서 받은 컬러와 상태값 사용
+    const badgeStyle = `background:${res.color}15; color:${res.color}; border:1px solid ${res.color};`; // 배경은 연하게, 글자는 진하게
+    const scoreStyle = `color:${res.color}; font-weight:800; font-size:1.2rem;`;
 
     return `
-    <div class="analysis-card" style="margin-bottom:20px; background:#fff; border-radius:12px; padding:25px; box-shadow:0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+    <div class="analysis-card" style="margin-bottom:20px; background:#fff; border-radius:12px; padding:25px; box-shadow:0 4px 6px -1px rgba(0, 0, 0, 0.1); border-left: 5px solid ${res.color};">
         <div class="analysis-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:15px; margin-bottom:15px;">
             <h4 style="margin:0; font-size:1.1rem;">
-                <span style="color:#3b82f6; font-weight:800;">${res.idx+1}지망</span> ${res.univ} 
+                <span style="color:#64748b; font-weight:normal; font-size:0.9rem;">${res.idx + 1}지망</span> 
+                <span style="font-weight:bold; color:#333;">${res.univ}</span>
                 <span style="color:#64748b; font-weight:normal; font-size:0.95rem;">${res.major}</span>
             </h4>
-            ${res.is_eligible 
-                ? `<span style="background:#ecfdf5; color:#059669; padding:4px 12px; border-radius:20px; font-size:0.85rem; font-weight:bold;">지원 가능</span>` 
-                : `<span style="background:#fef2f2; color:#dc2626; padding:4px 12px; border-radius:20px; font-size:0.85rem; font-weight:bold;">지원 불가</span>`
-            }
+            <span style="${badgeStyle} padding:4px 12px; border-radius:20px; font-size:0.85rem; font-weight:bold;">
+                ${res.status}
+            </span>
         </div>
 
-        <div class="analysis-body" style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+        <div class="analysis-body" style="display:grid; grid-template-columns: 1.2fr 1fr; gap:20px;">
             <div class="score-summary">
-                <h5 style="margin:0 0 10px 0; font-size:0.9rem; color:#64748b;">📊 환산 점수 분석</h5>
+                <h5 style="margin:0 0 10px 0; font-size:0.9rem; color:#64748b;">📊 AI 환산 분석</h5>
                 <div style="background:#f8fafc; padding:15px; border-radius:8px;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                        <span>내 환산 점수</span>
-                        <span style="font-weight:bold; color:#1e293b; font-size:1.1rem;">${myScore.toFixed(2)}점</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <span style="font-size:0.9rem; color:#475569;">자체 환산 점수</span>
+                        <span style="${scoreStyle}">${res.converted_score}점</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                        <span>예상 커트라인</span>
-                        <span style="font-weight:bold; color:#64748b;">${expectedCut.toFixed(2)}점</span>
+                    
+                    <div style="width:100%; height:8px; background:#e2e8f0; border-radius:4px; margin:10px 0; position:relative; overflow:hidden;">
+                        <div style="position:absolute; left:0; top:0; height:100%; width:${Math.min((res.converted_score / 160) * 100, 100)}%; background:${res.color}; transition: width 1s;"></div>
                     </div>
-                    <div style="border-top:1px dashed #cbd5e1; margin:8px 0;"></div>
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span>점수 차이</span>
-                        ${diffTag}
+                    <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#94a3b8;">
+                        <span>0</span>
+                        <span>Pass(100)</span>
+                        <span>Top70(130)</span>
+                    </div>
+
+                    <div style="margin-top:12px; font-size:0.9rem; color:#334155; font-weight:500; text-align:right;">
+                        "${res.msg}"
                     </div>
                 </div>
-                <p style="font-size:0.8rem; color:#94a3b8; margin-top:5px;">* ${res.detail.type || '일반전형'} (${res.detail.formula || '표준점수'}) 기준</p>
             </div>
 
             <div class="subject-diagnosis">
-                <h5 style="margin:0 0 10px 0; font-size:0.9rem; color:#64748b;">⚖️ 과목별 반영비 진단</h5>
-                <div style="display:flex; flex-direction:column; gap:8px;">
-                    ${subjectDiag}
-                </div>
+                 <h5 style="margin:0 0 10px 0; font-size:0.9rem; color:#64748b;">⚖️ 과목별 유불리</h5>
+                 <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:15px; height:80%;">
+                    <p style="font-size:0.85rem; color:#64748b; line-height:1.6;">
+                        ${getSimpleAdvice(res.converted_score)}
+                    </p>
+                 </div>
             </div>
         </div>
     </div>`;
+}
+
+// 점수대에 따른 간단 조언 멘트 (프론트엔드용 헬퍼)
+function getSimpleAdvice(score) {
+    if (score >= 130) return "성적 여유가 충분합니다. <br>장학금이나 상위 학과 도전도 고려해보세요.";
+    if (score >= 100) return "합격권 내에 있습니다. <br>면접 등 남은 전형 요소가 있다면 실수만 줄이세요.";
+    if (score >= 85) return "추가 합격을 노려볼 수 있는 구간입니다. <br>경쟁률 추이를 끝까지 지켜봐야 합니다.";
+    return "현재 점수로는 합격이 어렵습니다. <br>반영비가 유리한 다른 대학을 찾아보시길 권장합니다.";
 }
 
 // 과목별 진단 헬퍼 함수
