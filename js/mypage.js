@@ -388,9 +388,9 @@ async function updateAnalysisUI() {
     // 4. 서버 요청 (analyze_my_targets -> StudyCrack_Analysis 호출)
     // 주의: API Gateway 주소가 맞는지 확인 필수
     try {
-        console.log(`🚀 [요청] ${CALC_API_URL} 로 전송 중...`);
+        console.log(`🚀 [요청] ${UNIV_DATA_API_URL} 로 전송 중...`);
         
-        const res = await fetch(CALC_API_URL, {
+        const res = await fetch(UNIV_DATA_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
