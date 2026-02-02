@@ -5,6 +5,8 @@ const MYPAGE_API_URL = CONFIG.api.base;
 // 대학 목록 조회용 API
 const UNIV_DATA_API_URL = CONFIG.api.analysis;
 
+const CONVERSION_API_URL = CONFIG.api.calc;
+
 let currentUserTier = 'free';
 let userTargetUnivs = [null, null, null, null, null, null, null, null]; 
 let univData = []; 
@@ -405,10 +407,6 @@ async function updateAnalysisUI() {
         // [Step 2] 상세 로그 가져오기 (Conversion 람다 호출) -> 콘솔 출력용
         // ---------------------------------------------------------
         console.log("🕵️ [Deep Dive] 상세 계산 로직을 조회합니다...");
-
-        // ⚠️ [중요] 상세 계산용 URL은 별도로 설정하셔야 합니다 (StudyCrack_ConversionScore API Gateway)
-        // 만약 UNIV_DATA_API_URL과 같은 게이트웨이를 쓴다면 경로(resource)가 다를 것입니다.
-        const CONVERSION_API_URL = "https://your-api-gateway-url.com/conversion"; 
 
         for (const target of results) {
             if (!target.is_eligible) continue; // 지원 불가는 계산 생략
