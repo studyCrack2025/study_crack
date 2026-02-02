@@ -341,32 +341,45 @@ async function saveTargetUnivs() {
 }
 
 // ============================================================
-// 목표대학 분석 UI 업데이트 (디버깅 강화 버전)
+// [디버깅] 목표대학 분석 UI 업데이트 (범인 찾기용)
 // ============================================================
 async function updateAnalysisUI() {
+    console.log("🏃‍♂️ [Start] updateAnalysisUI 함수 시작됨");
+
     const container = document.getElementById('univAnalysisResult');
-    if (!container) return;
+    if (!container) {
+        console.error("❌ [Error] 'univAnalysisResult' 컨테이너가 HTML에 없습니다.");
+        return;
+    }
     
-    // 1. 목표 대학 설정 여부 확인
+    // 1. 목표 대학 데이터 확인
+    console.log("🔍 [Check 1] 목표 대학 데이터 확인 중...", userTargetUnivs);
     const hasTargets = userTargetUnivs && userTargetUnivs.some(u => u && u.univ);
+    
     if (!hasTargets) { 
+        console.warn("⚠️ [Stop] 설정된 목표 대학이 없습니다. 요청을 중단합니다.");
         container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px;">목표 대학을 설정하면 분석 결과가 나타납니다.</p>'; 
         return; 
     }
 
     // 2. 성적 데이터 확인
+    console.log("🔍 [Check 2] 성적 데이터 확인 중...", userQuantData);
     if (!userQuantData || Object.keys(userQuantData).length === 0) {
+        console.warn("⚠️ [Stop] 입력된 성적 데이터가 없습니다. 요청을 중단합니다.");
         container.innerHTML = '<p style="text-align:center; color:#ef4444; padding:30px;">입력된 성적 데이터가 없습니다.</p>';
         return;
     }
 
-    // 3. 사용 가능한 시험 모드 자동 선택
+    // 3. 시험 모드 선택
     const availableExams = Object.keys(userQuantData).filter(key => userQuantData[key] && (userQuantData[key].kor || userQuantData[key].math));
+    console.log("🔍 [Check 3] 가용한 시험 모드:", availableExams, "현재 선택:", currentExamMode);
+    
     if (!availableExams.includes(currentExamMode) && availableExams.length > 0) {
+        console.log(`🔄 [Auto] 현재 모드(${currentExamMode}) 데이터가 없어 ${availableExams[0]}로 자동 변경합니다.`);
         currentExamMode = availableExams[0];
     }
 
-    // 4. UI 뼈대 생성 (로딩 표시)
+    // 4. UI 로딩 표시
     container.innerHTML = `
         <div class="analysis-controls" style="display:flex; justify-content:flex-end; margin-bottom:15px; align-items:center; gap:10px;">
             <label style="font-size:0.9rem; color:#64748b;">분석 기준:</label>
@@ -377,7 +390,7 @@ async function updateAnalysisUI() {
         <div id="analysisCardsContainer">
             <div style="text-align:center; padding:50px;">
                 <i class="fas fa-spinner fa-spin" style="font-size:2rem; color:#3b82f6;"></i>
-                <p style="margin-top:10px; color:#64748b;">AI 분석 엔진 가동 중...</p>
+                <p style="margin-top:10px; color:#64748b;">서버에 재계산을 요청 중입니다...</p>
             </div>
         </div>
     `;
@@ -386,8 +399,18 @@ async function updateAnalysisUI() {
     const userId = localStorage.getItem('userId');
     const currentScoreData = userQuantData[currentExamMode];
 
+    // 5. 실제 요청 전송
+    console.log("🚀 [Fetch] 서버로 분석 요청을 보냅니다!");
+    console.log("   -> URL:", CALC_API_URL);
+    console.log("   -> Payload:", JSON.stringify({
+        type: 'analyze_my_targets',
+        userId: userId,
+        targetUnivs: userTargetUnivs,
+        userScores: currentScoreData
+    }));
+
     try {
-        const res = await fetch(UNIV_DATA_API_URL, {
+        const res = await fetch(CALC_API_URL, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json', 
@@ -401,36 +424,37 @@ async function updateAnalysisUI() {
             })
         });
         
-        // [수정됨] 500 에러가 나더라도 서버가 보낸 메시지를 읽어서 출력함
+        console.log("📩 [Response] 서버 응답 도착. 상태코드:", res.status);
+
         if (!res.ok) {
-            const errorText = await res.text();
-            console.error("Server Error Details:", errorText); // 콘솔에 상세 에러 출력
-            throw new Error(`Server Error (${res.status}): ${errorText.substring(0, 100)}...`);
+            const errText = await res.text();
+            throw new Error(`서버 에러 (${res.status}): ${errText}`);
         }
         
         const resultWrapper = await res.json();
-        const results = resultWrapper.results || [];
-        
-        // [수정됨] 백엔드에서 Catch로 잡은 에러가 body로 들어올 경우 처리
-        if (resultWrapper.serverError) {
-             throw new Error(resultWrapper.serverError);
-        }
+        console.log("📦 [Data] 받은 데이터:", resultWrapper); // 여기가 핵심입니다!
 
+        const results = resultWrapper.results || [];
         const cardsContainer = document.getElementById('analysisCardsContainer');
+        
         if (results.length === 0) {
+             console.warn("⚠️ [Warning] 결과 배열이 비어있습니다.");
              cardsContainer.innerHTML = '<p style="text-align:center; padding:30px;">분석할 데이터가 없습니다.</p>';
         } else {
              cardsContainer.innerHTML = results.map(item => renderAnalysisCard(item)).join('');
+             console.log("✅ [Done] 카드 렌더링 완료");
         }
 
     } catch (e) {
-        console.error("Analysis Error:", e);
-        document.getElementById('analysisCardsContainer').innerHTML = `
+        console.error("❌ [Error] 분석 요청 중 치명적 오류:", e);
+        const errContainer = document.getElementById('analysisCardsContainer');
+        if(errContainer) {
+            errContainer.innerHTML = `
             <div style="text-align:center; padding:30px; color:#ef4444;">
                 <i class="fas fa-exclamation-triangle"></i><br>
-                분석 중 오류가 발생했습니다.<br>
-                <small>${e.message}</small>
+                오류 발생: ${e.message}
             </div>`;
+        }
     }
 }
 
