@@ -341,7 +341,7 @@ async function saveTargetUnivs() {
 }
 
 // ============================================================
-// 목표대학 분석 UI 업데이트 (단일 API 호출 방식)
+// 목표대학 분석 UI 업데이트 (디버깅 강화 버전)
 // ============================================================
 async function updateAnalysisUI() {
     const container = document.getElementById('univAnalysisResult');
@@ -387,7 +387,6 @@ async function updateAnalysisUI() {
     const currentScoreData = userQuantData[currentExamMode];
 
     try {
-        // [중요] 루프 없이 한 번에 요청 보냄
         const res = await fetch(CALC_API_URL, {
             method: 'POST',
             headers: { 
@@ -395,19 +394,28 @@ async function updateAnalysisUI() {
                 'Authorization': `Bearer ${token}` 
             },
             body: JSON.stringify({
-                type: 'analyze_my_targets', // 백엔드 로직과 일치
+                type: 'analyze_my_targets',
                 userId: userId,
-                targetUnivs: userTargetUnivs, // 전체 리스트 전송
-                userScores: currentScoreData  // 점수 전송
+                targetUnivs: userTargetUnivs,
+                userScores: currentScoreData
             })
         });
         
-        if (!res.ok) throw new Error(`Server Error (${res.status})`);
+        // [수정됨] 500 에러가 나더라도 서버가 보낸 메시지를 읽어서 출력함
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error("Server Error Details:", errorText); // 콘솔에 상세 에러 출력
+            throw new Error(`Server Error (${res.status}): ${errorText.substring(0, 100)}...`);
+        }
         
         const resultWrapper = await res.json();
         const results = resultWrapper.results || [];
         
-        // 카드 렌더링
+        // [수정됨] 백엔드에서 Catch로 잡은 에러가 body로 들어올 경우 처리
+        if (resultWrapper.serverError) {
+             throw new Error(resultWrapper.serverError);
+        }
+
         const cardsContainer = document.getElementById('analysisCardsContainer');
         if (results.length === 0) {
              cardsContainer.innerHTML = '<p style="text-align:center; padding:30px;">분석할 데이터가 없습니다.</p>';
