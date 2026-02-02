@@ -341,7 +341,7 @@ async function saveTargetUnivs() {
 }
 
 // ============================================================
-// 목표대학 분석 UI 업데이트 (시험 선택 + 상세 분석)
+// 목표대학 분석 UI 업데이트 (단일 API 호출 방식)
 // ============================================================
 async function updateAnalysisUI() {
     const container = document.getElementById('univAnalysisResult');
@@ -354,88 +354,76 @@ async function updateAnalysisUI() {
         return; 
     }
 
-    // 2. 성적 데이터 존재 여부 확인 및 드롭다운 구성
+    // 2. 성적 데이터 확인
     if (!userQuantData || Object.keys(userQuantData).length === 0) {
-        container.innerHTML = '<p style="text-align:center; color:#ef4444; padding:30px;">입력된 성적 데이터가 없습니다. [성적 관리] 탭에서 성적을 입력해주세요.</p>';
+        container.innerHTML = '<p style="text-align:center; color:#ef4444; padding:30px;">입력된 성적 데이터가 없습니다.</p>';
         return;
     }
 
-    // 3. UI 골격 생성 (컨트롤러 + 결과 영역)
-    // 기존 내용을 지우고 새로 그리기 전에, 로딩 중이 아니라면 컨트롤러 유지
-    // 편의상 매번 다시 그리는 방식으로 구현 (UX 개선 시 변경 가능)
-    
-    // 사용 가능한 시험 목록 추출
+    // 3. 사용 가능한 시험 모드 자동 선택
     const availableExams = Object.keys(userQuantData).filter(key => userQuantData[key] && (userQuantData[key].kor || userQuantData[key].math));
-    
-    // 만약 현재 선택된 모드에 데이터가 없으면 첫 번째 데이터로 변경
     if (!availableExams.includes(currentExamMode) && availableExams.length > 0) {
         currentExamMode = availableExams[0];
     }
 
-    // 드롭다운 HTML 생성
-    const selectorHtml = `
+    // 4. UI 뼈대 생성 (로딩 표시)
+    container.innerHTML = `
         <div class="analysis-controls" style="display:flex; justify-content:flex-end; margin-bottom:15px; align-items:center; gap:10px;">
             <label style="font-size:0.9rem; color:#64748b;">분석 기준:</label>
-            <select id="examModeSelector" onchange="changeExamMode(this.value)" style="padding:5px 10px; border:1px solid #cbd5e1; border-radius:6px; background:#fff;">
+            <select id="examModeSelector" onchange="changeExamMode(this.value)" style="padding:5px 10px; border:1px solid #cbd5e1; border-radius:6px;">
                 ${availableExams.map(key => `<option value="${key}" ${key === currentExamMode ? 'selected' : ''}>${EXAM_NAMES[key] || key}</option>`).join('')}
             </select>
         </div>
         <div id="analysisCardsContainer">
-            <div style="text-align:center; padding:40px; color:#64748b;">
-                <i class="fas fa-circle-notch fa-spin" style="font-size:2rem; color:#3b82f6; margin-bottom:10px;"></i>
-                <p><strong>${EXAM_NAMES[currentExamMode] || currentExamMode}</strong> 기준으로 분석 중입니다...</p>
+            <div style="text-align:center; padding:50px;">
+                <i class="fas fa-spinner fa-spin" style="font-size:2rem; color:#3b82f6;"></i>
+                <p style="margin-top:10px; color:#64748b;">AI 분석 엔진 가동 중...</p>
             </div>
         </div>
     `;
-    
-    container.innerHTML = selectorHtml;
-    const cardsContainer = document.getElementById('analysisCardsContainer');
 
-    const currentScoreData = userQuantData[currentExamMode];
     const token = localStorage.getItem('idToken');
     const userId = localStorage.getItem('userId');
+    const currentScoreData = userQuantData[currentExamMode];
 
-    // 4. API 호출 (병렬 처리)
-    const promises = userTargetUnivs.map(async (target, idx) => {
-        if (!target || !target.univ) return null; 
-
-        try {
-            const res = await fetch(CALC_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({
-                    type: 'calculate_score',
-                    userId: userId,
-                    examMode: currentExamMode, // [변경] 선택된 모드 전송
-                    univ: target.univ,
-                    major: target.major,
-                    userScores: currentScoreData
-                })
-            });
-            
-            if (!res.ok) throw new Error("API Error");
-            const result = await res.json();
-            return { idx, ...target, ...result };
-
-        } catch (e) {
-            console.error(`Calculation failed for ${target.univ}`, e);
-            return { idx, ...target, error: true };
+    try {
+        // [중요] 루프 없이 한 번에 요청 보냄
+        const res = await fetch(CALC_API_URL, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({
+                type: 'analyze_my_targets', // 백엔드 로직과 일치
+                userId: userId,
+                targetUnivs: userTargetUnivs, // 전체 리스트 전송
+                userScores: currentScoreData  // 점수 전송
+            })
+        });
+        
+        if (!res.ok) throw new Error(`Server Error (${res.status})`);
+        
+        const resultWrapper = await res.json();
+        const results = resultWrapper.results || [];
+        
+        // 카드 렌더링
+        const cardsContainer = document.getElementById('analysisCardsContainer');
+        if (results.length === 0) {
+             cardsContainer.innerHTML = '<p style="text-align:center; padding:30px;">분석할 데이터가 없습니다.</p>';
+        } else {
+             cardsContainer.innerHTML = results.map(item => renderAnalysisCard(item)).join('');
         }
-    });
 
-    const results = await Promise.all(promises);
-    let html = '';
-
-    results.forEach(res => {
-        if (!res) return; // 빈 슬롯
-        html += renderAnalysisCard(res); // [변경] 카드 렌더링 로직 분리
-    });
-
-    if (html === '') {
-        html = '<p style="text-align:center; color:#94a3b8; padding:30px;">분석 가능한 대학이 없습니다.</p>';
+    } catch (e) {
+        console.error("Analysis Error:", e);
+        document.getElementById('analysisCardsContainer').innerHTML = `
+            <div style="text-align:center; padding:30px; color:#ef4444;">
+                <i class="fas fa-exclamation-triangle"></i><br>
+                분석 중 오류가 발생했습니다.<br>
+                <small>${e.message}</small>
+            </div>`;
     }
-
-    cardsContainer.innerHTML = html;
 }
 
 // 시험 모드 변경 핸들러
