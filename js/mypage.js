@@ -770,23 +770,25 @@ function renderSimCards(data) {
         let bestSubj = '';
         let maxRise = -1;
         
-        ['kor', 'math', 'inq'].forEach(k => {
-            if (item.sim_data[k].diff > maxRise) {
+        // 탐구1, 2 포함 4개 과목 비교
+        ['kor', 'math', 'inq1', 'inq2'].forEach(k => {
+            if (item.sim_data[k] && item.sim_data[k].diff > maxRise) {
                 maxRise = item.sim_data[k].diff;
                 bestSubj = k;
             }
         });
 
-        const subjNames = { kor: '국어', math: '수학', inq: '탐구' };
-        
         const cardHtml = `
             <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:15px; box-shadow:0 2px 4px rgba(0,0,0,0.03);">
                 <div style="font-weight:bold; color:#334155; margin-bottom:10px; border-bottom:1px solid #f1f5f9; padding-bottom:8px;">
                     ${item.univ} <span style="font-weight:normal; font-size:0.85rem; color:#64748b;">${item.major}</span>
                 </div>
                 <div style="display:flex; flex-direction:column; gap:8px;">
-                    ${['kor', 'math', 'inq'].map(subj => {
+                    ${['kor', 'math', 'inq1', 'inq2'].map(subj => {
                         const info = item.sim_data[subj];
+                        // 데이터 없거나(미응시) 변동폭이 없으면 옅게 표시
+                        if (!info || info.msg === "응시 안 함") return ''; 
+
                         const isBest = (subj === bestSubj && info.diff > 0);
                         const rowBg = isBest ? '#eff6ff' : 'transparent';
                         const scoreColor = info.diff > 0 ? '#ef4444' : '#94a3b8';
@@ -794,12 +796,16 @@ function renderSimCards(data) {
                         return `
                         <div style="display:flex; justify-content:space-between; align-items:center; padding:6px; background:${rowBg}; border-radius:6px;">
                             <div style="display:flex; align-items:center; gap:5px;">
-                                <span style="font-size:0.9rem; font-weight:600; color:#475569;">${subjNames[subj]}</span>
+                                <span style="font-size:0.9rem; font-weight:600; color:#475569; width:60px; display:inline-block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                    ${info.name}
+                                </span>
                                 ${isBest ? '<span style="font-size:0.7rem; background:#3b82f6; color:#fff; padding:1px 4px; border-radius:3px;">추천</span>' : ''}
                             </div>
                             <div style="text-align:right;">
-                                <div style="font-size:0.9rem; font-weight:bold; color:${scoreColor};">${info.msg.replace('점 상승', '')} ${info.diff > 0 ? '▲' : ''}</div>
-                                <div style="font-size:0.7rem; color:#94a3b8;">${info.diff > 0 ? `(재환산 +${info.diff.toFixed(1)})` : ''}</div>
+                                <div style="font-size:0.9rem; font-weight:bold; color:${scoreColor};">
+                                    ${info.msg.replace('점 상승', '')} ${info.diff > 0 ? '▲' : ''}
+                                </div>
+                                ${info.diff > 0 ? `<div style="font-size:0.7rem; color:#94a3b8;">(실제 +${info.diff.toFixed(2)})</div>` : ''}
                             </div>
                         </div>`;
                     }).join('')}
