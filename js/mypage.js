@@ -714,22 +714,37 @@ function renderSimChart(data) {
     const container = document.getElementById('simChartBars');
     container.innerHTML = '';
 
+    // 대학 이름 줄이기 (예: 가천대학교 -> 가천대)
+    const shortName = (name) => name.replace('학교', '');
+
     data.forEach(item => {
         const heightPct = (item.base_ui_score / 250) * 100; // 250점 만점 기준 %
-        const color = item.base_ui_score >= 150 ? '#10b981' : (item.base_ui_score >= 100 ? '#3b82f6' : '#ef4444');
         
+        // 점수에 따른 색상 (150 이상 초록, 100 이상 파랑, 미만 빨강)
+        let color = '#ef4444'; // 위험
+        if (item.base_ui_score >= 150) color = '#10b981'; // 안정
+        else if (item.base_ui_score >= 100) color = '#3b82f6'; // 합격
+
         const html = `
-            <div style="display:flex; flex-direction:column; align-items:center; width:40px; height:100%; position:relative;">
-                <div style="flex-grow:1; display:flex; align-items:flex-end; width:100%;">
-                    <div style="width:100%; height:${Math.min(heightPct, 100)}%; background:${color}; border-radius:4px 4px 0 0; position:relative; transition: height 0.5s;">
-                        <span style="position:absolute; top:-20px; left:50%; transform:translateX(-50%); font-size:0.75rem; font-weight:bold; color:${color};">
+            <div style="display:flex; flex-direction:column; align-items:center; width:60px; height:100%; position:relative; margin: 0 5px;">
+                
+                <div style="flex-grow:1; display:flex; align-items:flex-end; width:100%; padding-bottom: 5px;">
+                    <div style="width:100%; height:${Math.min(heightPct, 100)}%; background:${color}; border-radius:6px 6px 0 0; position:relative; transition: height 0.5s; min-height: 4px;">
+                        <span style="position:absolute; top:-22px; left:50%; transform:translateX(-50%); font-size:0.8rem; font-weight:800; color:${color}; text-shadow: 0 1px 2px rgba(255,255,255,0.8);">
                             ${Math.round(item.base_ui_score)}
                         </span>
                     </div>
                 </div>
-                <div style="font-size:0.7rem; color:#475569; text-align:center; margin-top:5px; height:30px; line-height:1.1; overflow:hidden;">
-                    ${item.univ}<br>${item.major.substring(0,4)}..
+
+                <div style="height:40px; width:100%; text-align:center; display:flex; flex-direction:column; justify-content:flex-start; align-items:center;" title="${item.univ} ${item.major}">
+                    <div style="font-size:0.8rem; font-weight:700; color:#334155; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">
+                        ${shortName(item.univ)}
+                    </div>
+                    <div style="font-size:0.75rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">
+                        ${item.major}
+                    </div>
                 </div>
+
             </div>
         `;
         container.innerHTML += html;
