@@ -5,8 +5,6 @@ const MYPAGE_API_URL = CONFIG.api.base;
 // 대학 목록 조회용 API
 const UNIV_DATA_API_URL = CONFIG.api.analysis;
 
-const CONVERSION_API_URL = CONFIG.api.calc;
-
 let currentUserTier = 'free';
 let userTargetUnivs = [null, null, null, null, null, null, null, null]; 
 let univData = []; 
@@ -350,11 +348,11 @@ async function saveTargetUnivs() {
 }
 
 // ============================================================
-// 목표대학 분석 UI + 상세 로그(Conversion) 호출 로직
+// 목표대학 분석 UI (통합 Lambda 호출 버전)
 // ============================================================
 async function updateAnalysisUI() {
     console.clear(); 
-    console.log("🔥 [Start] 분석 UI 업데이트 시작");
+    console.log("🔥 [Start] 통합 분석 시작");
 
     const container = document.getElementById('univAnalysisResult');
     if (!container) return;
@@ -363,16 +361,21 @@ async function updateAnalysisUI() {
     const hasTargets = userTargetUnivs && userTargetUnivs.some(u => u && u.univ);
     if (!hasTargets || !userQuantData) { 
         console.warn("⚠️ 데이터 없음");
-        container.innerHTML = '<p>데이터가 없습니다.</p>'; 
+        container.innerHTML = '<div class="empty-state" style="text-align:center; padding:40px; color:#64748b;"><i class="fas fa-exclamation-circle"></i><br>목표 대학이나 성적표가 없습니다.</div>'; 
         return; 
     }
 
-    // 2. 모드 설정
+    // 2. 모드 설정 (성적표가 있는 모드로 자동 전환)
     const availableExams = Object.keys(userQuantData).filter(key => userQuantData[key]);
     if (!availableExams.includes(currentExamMode) && availableExams.length > 0) currentExamMode = availableExams[0];
 
-    // UI 리셋
-    container.innerHTML = `<div id="analysisCardsContainer">분석 중...</div>`;
+    // 3. UI 리셋 (로딩 화면)
+    container.innerHTML = `
+        <div id="analysisCardsContainer" style="padding:40px; text-align:center; color:#3b82f6;">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p style="margin-top:10px; font-weight:500;">정밀 환산 분석 중입니다...</p>
+            <span style="font-size:0.8rem; color:#94a3b8;">대학별 환산식 및 등급컷 데이터를 대조하고 있습니다.</span>
+        </div>`;
 
     const token = localStorage.getItem('idToken');
     const userId = localStorage.getItem('userId');
@@ -380,9 +383,9 @@ async function updateAnalysisUI() {
 
     try {
         // ---------------------------------------------------------
-        // [Step 1] 빠른 진단 (Analysis 람다 호출) -> UI 그리기용
+        // 통합 API 호출 (StudyCrack_Analysis)
         // ---------------------------------------------------------
-        console.log(`🚀 [Analysis] ${UNIV_DATA_API_URL} 요청 중...`);
+        console.log(`🚀 [요청] ${UNIV_DATA_API_URL}`);
 
         const res = await fetch(UNIV_DATA_API_URL, {
             method: 'POST',
@@ -397,193 +400,133 @@ async function updateAnalysisUI() {
         });
 
         const data = await res.json();
+        
+        // 1. 서버 전역 로그 출력 (디버깅용)
+        if (data.server_debug && data.server_debug.logs) {
+            console.groupCollapsed("🖥️ Server Debug Logs (Global)");
+            data.server_debug.logs.forEach(l => console.log(l));
+            console.groupEnd();
+        }
+
         const results = data.results || [];
 
-        // UI 렌더링 (화면 표시)
-        const cardsContainer = document.getElementById('analysisCardsContainer');
-        cardsContainer.innerHTML = results.length === 0 ? '<p>결과 없음</p>' : results.map(item => renderAnalysisCard(item)).join('');
-
-        // ---------------------------------------------------------
-        // [Step 2] 상세 로그 가져오기 (Conversion 람다 호출) -> 콘솔 출력용
-        // ---------------------------------------------------------
-        console.log("🕵️ [Deep Dive] 상세 계산 로직을 조회합니다...");
-
-        for (const target of results) {
-            if (!target.is_eligible) continue; // 지원 불가는 계산 생략
-
-            try {
-                const detailRes = await fetch(CONVERSION_API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        univ: target.univ,
-                        major: target.major,
-                        userScores: currentScoreData,
-                        examMode: currentExamMode || 'csat'
-                    })
+        // 2. 상세 계산 로그 출력 (유저가 콘솔에서 확인 가능)
+        console.group("🧮 대학별 상세 계산 내역");
+        results.forEach(r => {
+            if (r.calculation_log && r.calculation_log.length > 0) {
+                console.groupCollapsed(`${r.univ} ${r.major} (UI:${r.converted_score} / Real:${r.my_real_score?.toFixed(2)})`);
+                r.calculation_log.forEach(l => {
+                    if(l.includes("최종점수") || l.includes("내점수")) console.log(`%c${l}`, "color: blue; font-weight: bold;");
+                    else if(l.includes("가중합") || l.includes("Z:")) console.log(`%c${l}`, "color: green;");
+                    else if(l.includes("오류")) console.log(`%c${l}`, "color: red; font-weight: bold;");
+                    else console.log(l);
                 });
-
-                const detailData = await detailRes.json();
-
-                // 🔥 [콘솔 출력] 상세 계산 과정 로그
-                if (detailData.debug_logs && detailData.debug_logs.length > 0) {
-                    console.group(`🧮 [상세 계산] ${target.univ} ${target.major}`);
-                    
-                    detailData.debug_logs.forEach(logLine => {
-                         if(logLine.includes("최종점수")) console.log(`%c${logLine}`, "color: blue; font-weight: bold;");
-                         else if(logLine.includes("가중합")) console.log(`%c${logLine}`, "color: green;");
-                         else console.log(logLine);
-                    });
-
-                    console.log(`📌 최종 환산점수: ${detailData.score}`);
-                    console.log(`ℹ️ 적용 공식: ${detailData.detail?.formula}`);
-                    console.groupEnd();
-                }
-
-            } catch (innerErr) {
-                console.warn(`❌ ${target.univ} 상세 조회 실패:`, innerErr);
+                console.groupEnd();
             }
+        });
+        console.groupEnd();
+
+        // 3. UI 렌더링
+        const cardsContainer = document.getElementById('analysisCardsContainer');
+        
+        if (results.length === 0) {
+            cardsContainer.innerHTML = '<div style="text-align:center; padding:20px;">분석 결과가 없습니다.</div>';
+        } else {
+            cardsContainer.innerHTML = results.map(item => renderAnalysisCard(item)).join('');
         }
 
     } catch (e) {
         console.error("❌ 통신 에러:", e);
-        document.getElementById('analysisCardsContainer').innerHTML = `<p style="color:red;">오류: ${e.message}</p>`;
+        document.getElementById('analysisCardsContainer').innerHTML = `
+            <div style="text-align:center; padding:30px; color:#ef4444;">
+                <i class="fas fa-bug fa-2x"></i>
+                <p>분석 중 오류가 발생했습니다.<br><small>${e.message}</small></p>
+            </div>`;
     }
 }
 
-// 시험 모드 변경 핸들러
-function changeExamMode(mode) {
-    currentExamMode = mode;
-    updateAnalysisUI(); // 재분석 요청
-}
-
-// 상세 분석 카드 HTML 생성 함수 (서버 데이터를 그대로 렌더링)
+// ============================================================
+// [Helper] 상세 분석 카드 HTML 생성 함수
+// ============================================================
 function renderAnalysisCard(res) {
-    // 1. 에러 처리
-    if (res.error || res.status === '분석 불가') {
+    // 1. 에러/데이터 부족 처리
+    if (res.msg.includes("오류") || res.msg.includes("데이터 없음") || res.status === '분석 불가') {
         return `
         <div class="analysis-card" style="border-left: 4px solid #94a3b8; margin-bottom:15px; background:#fff; border-radius:8px; padding:20px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
             <div class="analysis-header" style="margin-bottom:10px;">
                 <h4 style="margin:0;">${res.idx + 1}지망: ${res.univ} <small style="color:#64748b;">${res.major}</small></h4>
-                <span style="background:#f1f5f9; color:#64748b; padding:2px 8px; border-radius:4px; font-size:0.8rem;">분석 데이터 부족</span>
+                <span style="background:#f1f5f9; color:#64748b; padding:2px 8px; border-radius:4px; font-size:0.8rem; margin-top:5px; display:inline-block;">데이터 부족</span>
             </div>
             <p style="color:#64748b; font-size:0.9rem; margin:0;">${res.msg || '해당 학과의 작년 입시 데이터가 없습니다.'}</p>
         </div>`;
     }
 
-    // 2. 서버에서 받은 컬러와 상태값 사용
-    const badgeStyle = `background:${res.color}15; color:${res.color}; border:1px solid ${res.color};`; // 배경은 연하게, 글자는 진하게
-    const scoreStyle = `color:${res.color}; font-weight:800; font-size:1.2rem;`;
+    // 2. 스타일 정의 (색상 등)
+    const badgeStyle = `background:${res.color}15; color:${res.color}; border:1px solid ${res.color};`; 
+    const scoreStyle = `color:${res.color}; font-weight:800; font-size:1.4rem;`;
 
+    // 3. 카드 HTML 구성
     return `
-    <div class="analysis-card" style="margin-bottom:20px; background:#fff; border-radius:12px; padding:25px; box-shadow:0 4px 6px -1px rgba(0, 0, 0, 0.1); border-left: 5px solid ${res.color};">
-        <div class="analysis-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:15px; margin-bottom:15px;">
-            <h4 style="margin:0; font-size:1.1rem;">
-                <span style="color:#64748b; font-weight:normal; font-size:0.9rem;">${res.idx + 1}지망</span> 
-                <span style="font-weight:bold; color:#333;">${res.univ}</span>
-                <span style="color:#64748b; font-weight:normal; font-size:0.95rem;">${res.major}</span>
-            </h4>
-            <span style="${badgeStyle} padding:4px 12px; border-radius:20px; font-size:0.85rem; font-weight:bold;">
-                ${res.status}
-            </span>
+    <div class="analysis-card" style="margin-bottom:20px; background:#fff; border-radius:12px; padding:25px; box-shadow:0 4px 10px rgba(0, 0, 0, 0.05); border-left: 6px solid ${res.color}; transition: transform 0.2s;">
+        <div class="analysis-header" style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:1px solid #f1f5f9; padding-bottom:15px; margin-bottom:15px;">
+            <div>
+                <span style="color:#64748b; font-size:0.85rem; display:block; margin-bottom:2px;">${res.idx + 1}지망</span>
+                <h4 style="margin:0; font-size:1.15rem; color:#1e293b;">${res.univ}</h4>
+                <div style="color:#64748b; font-size:0.95rem; margin-top:2px;">${res.major}</div>
+            </div>
+            <div style="text-align:right;">
+                <span style="${badgeStyle} padding:5px 12px; border-radius:20px; font-size:0.9rem; font-weight:bold; display:inline-block; margin-bottom:5px;">
+                    ${res.status}
+                </span>
+                <div style="font-size:0.8rem; color:${res.color}; font-weight:500;">${res.msg}</div>
+            </div>
         </div>
 
-        <div class="analysis-body" style="display:grid; grid-template-columns: 1.2fr 1fr; gap:20px;">
-            <div class="score-summary">
-                <h5 style="margin:0 0 10px 0; font-size:0.9rem; color:#64748b;">📊 AI 환산 분석</h5>
-                <div style="background:#f8fafc; padding:15px; border-radius:8px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <span style="font-size:0.9rem; color:#475569;">자체 환산 점수</span>
-                        <span style="${scoreStyle}">${res.converted_score}점</span>
-                    </div>
-                    
-                    <div style="width:100%; height:8px; background:#e2e8f0; border-radius:4px; margin:10px 0; position:relative; overflow:hidden;">
-                        <div style="position:absolute; left:0; top:0; height:100%; width:${Math.min((res.converted_score / 160) * 100, 100)}%; background:${res.color}; transition: width 1s;"></div>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#94a3b8;">
-                        <span>0</span>
-                        <span>Pass(100)</span>
-                        <span>Top70(130)</span>
-                    </div>
-
-                    <div style="margin-top:12px; font-size:0.9rem; color:#334155; font-weight:500; text-align:right;">
-                        "${res.msg}"
-                    </div>
+        <div class="analysis-body" style="display:grid; grid-template-columns: 1fr; gap:20px;">
+            
+            <div class="score-section">
+                <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;">
+                    <span style="font-size:0.9rem; color:#475569; font-weight:600;">AI 환산 진단점수</span>
+                    <span style="${scoreStyle}">${res.converted_score}<span style="font-size:1rem; font-weight:normal;">점</span></span>
+                </div>
+                
+                <div style="position:relative; height:24px; background:#f1f5f9; border-radius:12px; margin:10px 0 20px 0; overflow:hidden;">
+                    <div style="position:absolute; left:50%; top:0; bottom:0; width:2px; background:#cbd5e1; z-index:1;"></div> <div style="position:absolute; left:75%; top:0; bottom:0; width:2px; background:#cbd5e1; z-index:1;"></div> <div style="position:absolute; left:0; top:0; height:100%; width:${Math.min((res.converted_score / 200) * 100, 100)}%; background:linear-gradient(90deg, ${res.color}88, ${res.color}); border-radius:12px; transition: width 1s ease-out;"></div>
+                </div>
+                
+                <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#94a3b8; margin-top:-15px;">
+                    <span style="width:50%; text-align:left;">0</span>
+                    <span style="width:0; display:flex; justify-content:center;">합격(100)</span>
+                    <span style="width:0; display:flex; justify-content:center; transform:translateX(250%);">안정(150)</span>
+                    <span style="width:50%; text-align:right;">MAX</span>
                 </div>
             </div>
 
-            <div class="subject-diagnosis">
-                 <h5 style="margin:0 0 10px 0; font-size:0.9rem; color:#64748b;">⚖️ 과목별 유불리</h5>
-                 <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:15px; height:80%;">
-                    <p style="font-size:0.85rem; color:#64748b; line-height:1.6;">
-                        ${getSimpleAdvice(res.converted_score)}
-                    </p>
-                 </div>
+            <div class="advice-section" style="background:#f8fafc; border-radius:8px; padding:15px; border:1px solid #e2e8f0;">
+                <h5 style="margin:0 0 8px 0; font-size:0.9rem; color:#334155;">💡 합격 전략 코멘트</h5>
+                <p style="margin:0; font-size:0.9rem; color:#475569; line-height:1.5;">
+                    ${getSimpleAdvice(res.converted_score, res.status)}
+                </p>
+                ${res.my_real_score ? `<div style="margin-top:10px; font-size:0.8rem; color:#94a3b8; text-align:right;">* 대학 환산 총점: ${res.my_real_score.toFixed(2)}점</div>` : ''}
             </div>
+
         </div>
     </div>`;
 }
 
-// 점수대에 따른 간단 조언 멘트 (프론트엔드용 헬퍼)
-function getSimpleAdvice(score) {
-    if (score >= 130) return "성적 여유가 충분합니다. <br>장학금이나 상위 학과 도전도 고려해보세요.";
-    if (score >= 100) return "합격권 내에 있습니다. <br>면접 등 남은 전형 요소가 있다면 실수만 줄이세요.";
-    if (score >= 85) return "추가 합격을 노려볼 수 있는 구간입니다. <br>경쟁률 추이를 끝까지 지켜봐야 합니다.";
-    return "현재 점수로는 합격이 어렵습니다. <br>반영비가 유리한 다른 대학을 찾아보시길 권장합니다.";
+// [Helper] 점수대에 따른 조언 생성
+function getSimpleAdvice(score, status) {
+    if (score >= 150) return `<strong>매우 안정적인 지원</strong>입니다. <br>최초 합격이 유력하며, 장학금 혜택을 확인해보시거나 상위 대학에 소신 지원 카드를 섞는 전략을 추천합니다.`;
+    if (score >= 120) return `<strong>합격 가능성이 높습니다.</strong> <br>안정 지원 카드로 활용하기 좋으며, 경쟁률이 폭등하지 않는 한 무난한 합격이 예상됩니다.`;
+    if (score >= 100) return `<strong>적정 지원 구간</strong>입니다. <br>작년 합격 컷 부근 점수이며, 추합 가능성이 높습니다. 경쟁률 추이를 끝까지 모니터링하세요.`;
+    if (score >= 80) return `<strong>소신 지원이 필요</strong>합니다. <br>합격선보다 다소 낮지만, 학과 내 경쟁률 변화나 추합 변수에 따라 역전 가능성이 존재합니다.`;
+    return `<strong>상향 지원(위험)</strong>입니다. <br>점수 차이가 있습니다. 가/나/다군 조합을 고려하여 다른 안정 카드를 반드시 확보하시기 바랍니다.`;
 }
 
-// 과목별 진단 헬퍼 함수
-function getSubjectDiagnostics(scores, ratios) {
-    // scores: 유저 성적 (등급 등), ratios: 대학 반영비 (예: 30)
-    // 간단한 로직: 반영비가 높은데 등급이 낮으면 '미달', 반대면 '우수'
-    // 실제로는 백엔드에서 정밀 분석 값을 주는 게 좋지만, 여기선 프론트에서 약식 진단
-    
-    const subjects = [
-        { key: 'kor', label: '국어', scoreKey: 'kor' },
-        { key: 'math', label: '수학', scoreKey: 'math' },
-        { key: 'eng', label: '영어', scoreKey: 'eng' },
-        { key: 'inq', label: '탐구', scoreKey: 'inq1' } // 탐구는 평균 등으로 처리 필요하나 편의상 1과목
-    ];
-
-    let html = '';
-
-    subjects.forEach(sub => {
-        const ratio = parseFloat(ratios[sub.key]) || 0;
-        if (ratio === 0) return; // 반영 안 함
-
-        // 유저 등급 (score객체 구조에 따라 다름, 여기선 scores[key]가 등급이라 가정하거나 scores[key].grade)
-        // 기존 코드 구조상 scores.kor, scores.math 등이 문자열/숫자로 저장됨
-        let grade = 0;
-        if (typeof scores[sub.scoreKey] === 'object') grade = parseInt(scores[sub.scoreKey].grade || 9);
-        else grade = parseInt(scores[sub.scoreKey] || 9);
-
-        let status = '';
-        let color = '';
-
-        // 진단 로직 (예시)
-        // 반영비 30% 이상 & 1-2등급 -> 강점
-        // 반영비 30% 이상 & 4등급 이하 -> 위험
-        if (grade <= 2) {
-            status = '🟢 우수'; color = '#10b981';
-        } else if (grade <= 3) {
-            status = '🟡 적정'; color = '#f59e0b';
-        } else {
-            status = (ratio >= 30) ? '🔴 부족 (위험)' : '⚪ 부족 (영향↓)';
-            color = (ratio >= 30) ? '#ef4444' : '#94a3b8';
-        }
-
-        html += `
-        <div style="display:flex; justify-content:space-between; font-size:0.9rem; align-items:center;">
-            <div style="display:flex; align-items:center; gap:5px;">
-                <span style="background:#eff6ff; color:#3b82f6; padding:2px 6px; border-radius:4px; font-size:0.75rem;">${ratio}%</span>
-                <span>${sub.label}</span>
-            </div>
-            <span style="color:${color}; font-weight:500;">${status}</span>
-        </div>`;
-    });
-
-    if (html === '') return '<p style="font-size:0.85rem; color:#94a3b8;">반영비 정보가 없습니다.</p>';
-    return html;
+// [Helper] 시험 모드 변경 핸들러
+function changeExamMode(mode) {
+    currentExamMode = mode;
+    updateAnalysisUI(); // 변경된 모드로 재요청
 }
 
 function checkWeeklyStatus() {

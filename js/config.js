@@ -15,9 +15,6 @@ const CONFIG = {
         // StudyCrack_Payment 람다로 연결되는 주소
         payment: `${GATEWAY_URL}/payment`,
         
-        // StudyCrack_ConversionScore 람다로 연결되는 주소
-        calc: `${GATEWAY_URL}/calculate`,
-        
         // StudyCrack_Auth 람다로 연결되는 주소
         auth: `${GATEWAY_URL}/auth`
     },
