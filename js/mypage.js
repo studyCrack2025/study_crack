@@ -587,25 +587,44 @@ function getSimpleAdvice(score, status) {
 
 // 1. 시뮬레이션 탭 진입 시 초기화
 function initSimulation() {
+    console.group("🔍 [DEBUG] initSimulation 진입");
+    
     const listContainer = document.getElementById('simUnivList');
-    if (!listContainer) return;
+    if (!listContainer) {
+        console.warn("❌ simUnivList 컨테이너를 찾을 수 없음");
+        console.groupEnd();
+        return;
+    }
 
-    // DB에 Null 데이터가 섞여있을 경우를 대비해 유효한 데이터만 필터링
+    // 1. 원본 데이터 확인
+    console.log("1️⃣ 전역변수 userTargetUnivs:", userTargetUnivs);
+
+    // 2. 필터링 수행
     const validTargets = userTargetUnivs 
-        ? userTargetUnivs.filter(t => t && t.univ) // null이나 빈 객체 제거
+        ? userTargetUnivs.filter(t => {
+            const isValid = t && t.univ;
+            if (!isValid) console.warn("   ⚠️ Invalid Target 발견 (제외됨):", t);
+            return isValid;
+        }) 
         : [];
 
-    // 필터링 후에도 데이터가 없으면 안내 표시
+    // 3. 필터링 결과 확인
+    console.log(`2️⃣ 유효 데이터 개수: ${validTargets.length}개`, validTargets);
+
+    // 4. UI 렌더링 분기
     if (validTargets.length === 0) {
+        console.warn("🚨 유효한 대학 데이터가 0개입니다. 안내 메시지를 띄웁니다.");
         listContainer.innerHTML = `
             <div style="text-align:center; padding:30px 10px;">
                 <i class="fas fa-university" style="color:#cbd5e1; font-size:2rem; margin-bottom:10px;"></i>
                 <p style="font-size:0.9rem; color:#64748b;">목표 대학이 설정되지 않았습니다.<br>분석 탭에서 대학을 먼저 추가해주세요.</p>
             </div>`;
+        console.groupEnd();
         return;
     }
 
-    // 체크박스 생성 (validTargets 기준)
+    console.log("✅ 체크박스 리스트 렌더링 시작");
+    
     listContainer.innerHTML = validTargets.map((t, i) => `
         <label style="display:flex; align-items:center; gap:10px; padding:12px; border-radius:8px; cursor:pointer; transition:background 0.2s; border:1px solid transparent; margin-bottom:8px;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
             <input type="checkbox" class="sim-univ-check" value="${i}" checked onchange="runSimulationRender()" style="accent-color:#3b82f6; transform:scale(1.2);">
@@ -616,8 +635,9 @@ function initSimulation() {
         </label>
     `).join('');
 
-    // 최초 데이터 로드 (유효한 데이터가 있을 때만)
+    // 최초 데이터 로드
     fetchSimulationData();
+    console.groupEnd();
 }
 
 let cachedSimData = []; // 서버에서 받은 데이터 캐싱
