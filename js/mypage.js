@@ -786,18 +786,26 @@ function renderSimCards(data) {
                 <div style="display:flex; flex-direction:column; gap:8px;">
                     ${['kor', 'math', 'inq1', 'inq2'].map(subj => {
                         const info = item.sim_data[subj];
-                        // 데이터 없거나(미응시) 변동폭이 없으면 옅게 표시
-                        if (!info || info.msg === "응시 안 함") return ''; 
-
-                        const isBest = (subj === bestSubj && info.diff > 0);
-                        const rowBg = isBest ? '#eff6ff' : 'transparent';
-                        const scoreColor = info.diff > 0 ? '#ef4444' : '#94a3b8';
                         
+                        // [수정 1] 데이터가 아예 없으면 표시 안 함 (이건 유지)
+                        if (!info) return ''; 
+
+                        // [수정 2] "응시 안 함"이라도 일단 띄워서 확인 가능하게 변경
+                        const isInactive = (info.msg === "응시 안 함" || info.msg === "변동 없음 (반영X)");
+                        const isBest = (subj === bestSubj && info.diff > 0);
+                        
+                        const rowBg = isBest ? '#eff6ff' : (isInactive ? '#f8fafc' : 'transparent');
+                        const nameColor = isInactive ? '#cbd5e1' : '#475569';
+                        const scoreColor = info.diff > 0 ? '#ef4444' : (isInactive ? '#cbd5e1' : '#94a3b8');
+                        
+                        // 과목명 표시 (이름 없으면 키값 사용)
+                        const displayName = info.name || (subj.includes('inq') ? '탐구' : subj);
+
                         return `
                         <div style="display:flex; justify-content:space-between; align-items:center; padding:6px; background:${rowBg}; border-radius:6px;">
                             <div style="display:flex; align-items:center; gap:5px;">
-                                <span style="font-size:0.9rem; font-weight:600; color:#475569; width:60px; display:inline-block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                                    ${info.name}
+                                <span style="font-size:0.9rem; font-weight:600; color:${nameColor}; width:70px; display:inline-block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                    ${displayName}
                                 </span>
                                 ${isBest ? '<span style="font-size:0.7rem; background:#3b82f6; color:#fff; padding:1px 4px; border-radius:3px;">추천</span>' : ''}
                             </div>
