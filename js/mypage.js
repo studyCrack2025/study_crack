@@ -222,29 +222,31 @@ function switchMainTab(tabName) {
     if (tabName === 'solution') openSolution('univ');
 }
 
+// [솔루션] 서브 탭 전환 및 버튼 활성화 함수
 function openSolution(type) {
-    // 1. 모든 서브 콘텐츠 숨기기
+    // 1. 모든 콘텐츠 숨기기
     document.querySelectorAll('.sol-content').forEach(el => el.style.display = 'none');
     
-    // 2. 모든 서브 탭 버튼 비활성화
-    document.querySelectorAll('.sol-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
-
-    // 3. 선택한 콘텐츠 보이기
+    // 2. 선택한 콘텐츠 보이기
     const targetContent = document.getElementById(`sol-${type}`);
     if (targetContent) targetContent.style.display = 'block';
 
-    // 4. 선택한 버튼 활성화 (onclick 속성으로 찾기)
-    // 예: onclick="openSolution('sim')" 인 버튼을 찾아서 active 클래스 추가
-    const targetBtn = document.querySelector(`.sol-tabs .tab-btn[onclick*="'${type}'"]`);
-    if (targetBtn) targetBtn.classList.add('active');
-
-    // ✅ [핵심] 시뮬레이션 탭('sim')이 열릴 때 초기화 함수 실행
-    if (type === 'sim') {
-        console.log("📈 시뮬레이션 탭 진입 -> initSimulation() 실행");
-        // initSimulation 함수가 정의되어 있는지 확인 후 실행
-        if (typeof initSimulation === 'function') {
-            initSimulation();
+    // 3. [수정] 메뉴 버튼 하이라이트 로직
+    // 모든 버튼에서 active 제거
+    document.querySelectorAll('.solution-menu .sol-btn').forEach(btn => {
+        btn.classList.remove('active');
+        
+        // 현재 클릭된 타입(type)과 일치하는 버튼 찾아서 active 추가
+        // (onclick 속성 문자열에 type이 포함되어 있는지 확인)
+        if (btn.getAttribute('onclick').includes(`'${type}'`)) {
+            btn.classList.add('active');
         }
+    });
+
+    // 4. 시뮬레이션 탭일 경우 초기화 함수 실행
+    if (type === 'sim') {
+        console.log("📈 시뮬레이션 탭 진입");
+        if (typeof initSimulation === 'function') initSimulation();
     }
 }
 

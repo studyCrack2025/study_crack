@@ -1,4 +1,4 @@
-/* --- mypage.css --- */
+/* --- mypage.css (최종 수정본) --- */
 
 /* =========================================
    1. 전체 레이아웃 (Layout)
@@ -147,7 +147,6 @@
 .sol-content { display: none; }
 .sol-content.active { display: block; animation: fadeIn 0.3s; }
 
-
 /* =========================================
    4. 목표 대학 설정
    ========================================= */
@@ -220,73 +219,71 @@
 .color-dot { width: 10px; height: 10px; border-radius: 2px; }
 
 /* =========================================
-   6. 점수 시뮬레이션 헤더 디자인
+   6. 점수 시뮬레이션 헤더
    ========================================= */
-
-/* 헤더 컨테이너 */
-.sim-header {
-    margin-bottom: 25px;
-    border-bottom: 1px solid #f1f5f9; /* 하단 구분선 추가로 깔끔하게 */
-    padding-bottom: 15px;
+/* 헤더 컨테이너 (모든 솔루션 탭 공통) */
+.sol-header {
+    text-align: center;       /* 텍스트 가운데 정렬 */
+    margin-bottom: 30px;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;      /* Flex 아이템 가운데 정렬 */
 }
 
 /* 제목 (아이콘 + 텍스트) */
-.sim-title {
-    font-size: 1.6rem;
+.sol-title {
+    font-size: 1.8rem;
     font-weight: 800;
     color: #1e293b;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     display: flex;
     align-items: center;
-    gap: 12px; /* 아이콘과 텍스트 간격 */
+    justify-content: center;  /* 가로축 가운데 정렬 */
+    gap: 15px;                /* 아이콘과 텍스트 간격 */
 }
 
-/* 아이콘 박스 스타일 */
-.sim-icon-box {
+/* 아이콘 박스 공통 스타일 */
+.sol-icon-box {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 42px;
-    height: 42px;
-    background-color: #eff6ff; /* 연한 파란 배경 */
-    color: #3b82f6;            /* 파란 아이콘 */
-    border-radius: 12px;       /* 둥근 모서리 */
-    font-size: 1.2rem;
-    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1); /* 살짝 그림자 */
+    width: 50px;
+    height: 50px;
+    border-radius: 14px;
+    font-size: 1.4rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
 /* 설명 텍스트 */
-.sim-desc {
+.sol-desc {
     color: #64748b;
-    font-size: 1rem;
-    margin-left: 4px;
+    font-size: 1.05rem;
     line-height: 1.6;
     display: flex;
     align-items: center;
-    flex-wrap: wrap; /* 모바일에서 줄바꿈 허용 */
-    gap: 6px;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
-/* ⚡️ 딱 1문제 뱃지 (강조) */
-.sim-badge {
-    background-color: #e0f2fe; /* 아주 연한 하늘색 */
-    color: #0284c7;            /* 진한 하늘색 글자 */
+/* 뱃지 스타일 */
+.sol-badge {
     padding: 4px 10px;
     border-radius: 6px;
-    font-weight: 800;          /* 두꺼운 글씨 */
-    border: 1px solid #bae6fd; /* 테두리 */
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    display: inline-flex;
-    align-items: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    border: 1px solid transparent;
 }
 
-/* 부가 설명 (Standard 이상) */
-.sim-sub-text {
-    font-size: 0.85rem;
-    color: #94a3b8;
-    font-weight: 400;
-    margin-left: 2px;
-}
+/* --- 테마별 색상 설정 --- */
+.theme-univ .sol-icon-box { background: #eff6ff; color: #2563eb; } /* 목표대학 (파란색) */
+.theme-sim .sol-icon-box { background: #eff6ff; color: #3b82f6; } /* 시뮬레이션 (하늘색) */
+.theme-sim .sol-badge { background: #e0f2fe; color: #0284c7; border-color: #bae6fd; }
+.theme-coach .sol-icon-box { background: #fff7ed; color: #ea580c; } /* 코칭 (주황색) */
+.theme-black .sol-icon-box { background: #1f2937; color: #fbbf24; } /* BLACK (검정/골드) */
+.theme-black .sol-title { color: #000; } /* BLACK 타이틀은 검정 */
 
 /* =========================================
    7. 코칭 & 주간점검
@@ -294,7 +291,6 @@
 .coach-container { display: flex; flex-direction: column; gap: 20px; }
 .coach-box { border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; position: relative; }
 
-/* [변경] 심층 코칭 스타일 (Pro 느낌 강화) */
 .deep-coaching { 
     background: linear-gradient(135deg, #fffbeb 0%, #fff 100%); 
     border: 2px solid #f59e0b; /* Pro Color (Amber) */
@@ -401,7 +397,6 @@
 .benefit-list li { margin-bottom: 10px; }
 .benefit-list strong { color: #fcf6ba; margin-right: 8px; }
 
-/* 1. 버튼을 감싸는 컨테이너 (완벽한 중앙 정렬용) */
 .black-btn-container {
     display: flex;
     justify-content: center;
@@ -410,20 +405,19 @@
     margin-top: 30px;
 }
 
-/* 2. 고급스러운 골드 테마 버튼 */
 .black-cta-btn {
-    background: linear-gradient(145deg, #1a1a1a, #0d0d0d); /* 은은한 블랙 배경 */
-    border: 1px solid #d4af37; /* 얇은 골드 테두리 */
-    color: #d4af37; /* 골드 텍스트 */
+    background: linear-gradient(145deg, #1a1a1a, #0d0d0d); 
+    border: 1px solid #d4af37; 
+    color: #d4af37; 
     padding: 20px 50px;
     font-size: 1.2rem;
     font-weight: 700;
-    font-family: 'serif'; /* 헤더와 통일감 있게 명조 계열 추천 (선택사항) */
-    border-radius: 4px; /* 둥근 알약 모양 -> 살짝 각진 사각형 (고급스러움) */
+    font-family: 'serif'; 
+    border-radius: 4px; 
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); /* 그림자 */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); 
     transition: all 0.4s ease;
-    width: auto; /* 꽉 차지 않게 자동 너비 */
+    width: auto; 
     min-width: 300px;
     text-align: center;
     letter-spacing: 1px;
@@ -431,28 +425,25 @@
     overflow: hidden;
 }
 
-/* 3. 호버 효과: 골드로 채워지면서 글자는 검정색으로 */
 .black-cta-btn:hover {
-    background: #d4af37; /* 배경 골드 */
-    color: #000; /* 글자 블랙 */
-    box-shadow: 0 0 20px rgba(212, 175, 55, 0.4); /* 골드 빛 번짐 */
-    transform: translateY(-3px); /* 살짝 위로 부상 */
+    background: #d4af37; 
+    color: #000; 
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.4); 
+    transform: translateY(-3px); 
     border-color: #d4af37;
 }
 
-/* 4. 버튼 내부 서브 텍스트 (작은 글씨) */
 .black-cta-btn span {
     display: block;
     font-size: 0.85rem;
     font-weight: 400;
     margin-top: 8px;
-    color: #888; /* 기본 회색 */
-    font-family: 'Noto Sans KR', sans-serif; /* 본문 폰트 */
+    color: #888; 
+    font-family: 'Noto Sans KR', sans-serif; 
     letter-spacing: 0;
     transition: color 0.4s ease;
 }
 
-/* 호버 시 서브 텍스트도 진하게 */
 .black-cta-btn:hover span {
     color: #333;
 }
@@ -534,15 +525,7 @@ input:focus { outline: none; border-color: #2563EB; }
 @media (max-width: 600px) {
     .score-input-grid { grid-template-columns: repeat(3, 1fr); }
     .mock-tile-group { grid-template-columns: repeat(2, 1fr); }
-    .sim-title {
-        font-size: 1.3rem;
-    }
-    .sim-desc {
-        font-size: 0.9rem;
-        flex-direction: column; /* 뱃지와 텍스트 상하 배치 */
-        align-items: flex-start;
-    }
-    .sim-badge {
-        margin-bottom: 4px;
-    }
+    .sol-title { font-size: 1.3rem; }
+    .sol-desc { font-size: 0.9rem; flex-direction: column; align-items: center; }
+    .sol-badge { margin-bottom: 4px; }
 }
