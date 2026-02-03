@@ -222,15 +222,30 @@ function switchMainTab(tabName) {
     if (tabName === 'solution') openSolution('univ');
 }
 
-function openSolution(solType) {
-    if ((solType === 'sim' || solType === 'coach') && ['free', 'basic'].includes(currentUserTier)) { alert("Standard 버전 이상만 이용 가능합니다."); return; }
-//    if (solType === 'black' && currentUserTier !== 'black') { alert("BLACK 회원 전용 공간입니다."); return; }
-    document.querySelectorAll('.sol-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.sol-content').forEach(content => content.classList.remove('active'));
-    if(event && event.currentTarget) event.currentTarget.classList.add('active');
-    document.getElementById(`sol-${solType}`).classList.add('active');
-    if (solType === 'univ') { initUnivGrid(); updateAnalysisUI(); }
-    if (solType === 'coach') { initCoachLock(); checkWeeklyStatus(); }
+function openSolution(type) {
+    // 1. 모든 서브 콘텐츠 숨기기
+    document.querySelectorAll('.sol-content').forEach(el => el.style.display = 'none');
+    
+    // 2. 모든 서브 탭 버튼 비활성화
+    document.querySelectorAll('.sol-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
+
+    // 3. 선택한 콘텐츠 보이기
+    const targetContent = document.getElementById(`sol-${type}`);
+    if (targetContent) targetContent.style.display = 'block';
+
+    // 4. 선택한 버튼 활성화 (onclick 속성으로 찾기)
+    // 예: onclick="openSolution('sim')" 인 버튼을 찾아서 active 클래스 추가
+    const targetBtn = document.querySelector(`.sol-tabs .tab-btn[onclick*="'${type}'"]`);
+    if (targetBtn) targetBtn.classList.add('active');
+
+    // ✅ [핵심] 시뮬레이션 탭('sim')이 열릴 때 초기화 함수 실행
+    if (type === 'sim') {
+        console.log("📈 시뮬레이션 탭 진입 -> initSimulation() 실행");
+        // initSimulation 함수가 정의되어 있는지 확인 후 실행
+        if (typeof initSimulation === 'function') {
+            initSimulation();
+        }
+    }
 }
 
 function initUnivGrid() {
