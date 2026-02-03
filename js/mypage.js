@@ -16,14 +16,14 @@ let currentPlannerFiles = [];
 let originalPlannerFiles = [];
 
 let currentExamMode = 'csat'; 
-const EXAM_NAMES = {
-    'csat': '수능 (실채점)',
-    'sep': '9월 모의평가',
-    'jun': '6월 모의평가',
-    'oct': '10월 학력평가',
-    'jul': '7월 학력평가',
-    'mar': '3월 학력평가',
-    'may': '5월 학력평가'
+const EXAM_DISPLAY_NAMES = {
+    "csat": "대학수학능력시험 (수능)",
+    "sep": "9월 모의평가",
+    "jun": "6월 모의평가",
+    "jul": "7월 학력평가",
+    "oct": "10월 학력평가",
+    "mar": "3월 학력평가",
+    "may": "5월 학력평가"
 };
 
 function getWeekOfMonth(date) {
@@ -348,7 +348,7 @@ async function saveTargetUnivs() {
 }
 
 // ============================================================
-// 목표대학 분석 UI (통합 Lambda 호출 버전)
+// 목표대학 분석 UI (시험 선택 기능 추가됨)
 // ============================================================
 async function updateAnalysisUI() {
     console.clear(); 
@@ -357,24 +357,68 @@ async function updateAnalysisUI() {
     const container = document.getElementById('univAnalysisResult');
     if (!container) return;
     
-    // 1. 데이터 검증
+    // 1. 데이터 검증 & 사용 가능한 시험 찾기
     const hasTargets = userTargetUnivs && userTargetUnivs.some(u => u && u.univ);
-    if (!hasTargets || !userQuantData) { 
+    
+    // userQuantData 중에서 실제 점수 데이터가 있는 키만 추출
+    const availableExams = userQuantData ? Object.keys(userQuantData).filter(key => {
+        const data = userQuantData[key];
+        // 데이터가 존재하고, 과목 점수가 하나라도 있는지 확인 (빈 객체 제외)
+        return data && (data.kor || data.math || data.eng);
+    }) : [];
+
+    // 데이터가 아예 없거나 목표 대학이 없으면 중단
+    if (!hasTargets || availableExams.length === 0) { 
         console.warn("⚠️ 데이터 없음");
-        container.innerHTML = '<div class="empty-state" style="text-align:center; padding:40px; color:#64748b;"><i class="fas fa-exclamation-circle"></i><br>목표 대학이나 성적표가 없습니다.</div>'; 
+        container.innerHTML = `
+            <div class="empty-state" style="text-align:center; padding:40px; color:#64748b; background:#f8fafc; border-radius:12px;">
+                <i class="fas fa-exclamation-circle fa-2x" style="margin-bottom:10px; color:#94a3b8;"></i><br>
+                목표 대학을 설정하고<br>성적표를 입력해주세요.
+            </div>`; 
         return; 
     }
 
-    // 2. 모드 설정 (성적표가 있는 모드로 자동 전환)
-    const availableExams = Object.keys(userQuantData).filter(key => userQuantData[key]);
-    if (!availableExams.includes(currentExamMode) && availableExams.length > 0) currentExamMode = availableExams[0];
+    // 2. 현재 모드 설정 (유효하지 않으면 첫 번째 가용한 시험으로 강제 변경)
+    if (!currentExamMode || !availableExams.includes(currentExamMode)) {
+        // 우선순위: 수능 > 9월 > 6월 > 나머지 (역순 정렬 등 필요시 로직 추가 가능)
+        if (availableExams.includes('csat')) currentExamMode = 'csat';
+        else if (availableExams.includes('sep')) currentExamMode = 'sep';
+        else if (availableExams.includes('jun')) currentExamMode = 'jun';
+        else currentExamMode = availableExams[0];
+    }
 
-    // 3. UI 리셋 (로딩 화면)
-    container.innerHTML = `
-        <div id="analysisCardsContainer" style="padding:40px; text-align:center; color:#3b82f6;">
+    // 3. UI 골격 생성 (컨트롤 패널 + 결과 컨테이너)
+    // 여기가 핵심입니다: 드롭다운 메뉴를 결과창 위에 그립니다.
+    const selectorHTML = `
+        <div class="analysis-controls" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; background:#fff; padding:15px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); border:1px solid #e2e8f0;">
+            <div style="font-weight:700; color:#334155; font-size:1rem;">
+                <i class="fas fa-chart-pie" style="color:#3b82f6; margin-right:6px;"></i> 합격 예측 리포트
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <label for="examSelector" style="font-size:0.85rem; color:#64748b; font-weight:500;">기준 시험:</label>
+                <select id="examSelector" onchange="changeExamMode(this.value)" style="padding:6px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; color:#1e293b; outline:none; cursor:pointer; font-family:inherit; background-color:#f8fafc;">
+                    ${availableExams.map(key => `
+                        <option value="${key}" ${key === currentExamMode ? 'selected' : ''}>
+                            ${EXAM_DISPLAY_NAMES[key] || key.toUpperCase()}
+                        </option>
+                    `).join('')}
+                </select>
+            </div>
+        </div>
+        <div id="analysisCardsContainer"></div>
+    `;
+    
+    container.innerHTML = selectorHTML;
+    
+    // 로딩 표시 (카드 컨테이너 안에)
+    const cardsContainer = document.getElementById('analysisCardsContainer');
+    cardsContainer.innerHTML = `
+        <div style="padding:60px; text-align:center; color:#3b82f6;">
             <i class="fas fa-spinner fa-spin fa-2x"></i>
-            <p style="margin-top:10px; font-weight:500;">정밀 환산 분석 중입니다...</p>
-            <span style="font-size:0.8rem; color:#94a3b8;">대학별 환산식 및 등급컷 데이터를 대조하고 있습니다.</span>
+            <p style="margin-top:15px; font-weight:600; font-size:1rem;">
+                ${EXAM_DISPLAY_NAMES[currentExamMode] || currentExamMode} 기준으로<br>
+                정밀 환산 분석 중입니다...
+            </p>
         </div>`;
 
     const token = localStorage.getItem('idToken');
@@ -382,10 +426,7 @@ async function updateAnalysisUI() {
     const currentScoreData = userQuantData[currentExamMode];
 
     try {
-        // ---------------------------------------------------------
-        // 통합 API 호출 (StudyCrack_Analysis)
-        // ---------------------------------------------------------
-        console.log(`🚀 [요청] ${UNIV_DATA_API_URL}`);
+        console.log(`🚀 [요청] ${UNIV_DATA_API_URL} (Mode: ${currentExamMode})`);
 
         const res = await fetch(UNIV_DATA_API_URL, {
             method: 'POST',
@@ -400,49 +441,53 @@ async function updateAnalysisUI() {
         });
 
         const data = await res.json();
-        
-        // 1. 서버 전역 로그 출력 (디버깅용)
-        if (data.server_debug && data.server_debug.logs) {
-            console.groupCollapsed("🖥️ Server Debug Logs (Global)");
-            data.server_debug.logs.forEach(l => console.log(l));
-            console.groupEnd();
-        }
-
         const results = data.results || [];
 
-        // 2. 상세 계산 로그 출력 (유저가 콘솔에서 확인 가능)
-        console.group("🧮 대학별 상세 계산 내역");
+        // 상세 로그 출력
+        if (data.server_debug?.logs) {
+            // console.groupCollapsed("🖥️ Server Logs");
+            // data.server_debug.logs.forEach(l => console.log(l));
+            // console.groupEnd();
+        }
+
+        console.group(`🧮 [${currentExamMode}] 상세 계산 내역`);
         results.forEach(r => {
             if (r.calculation_log && r.calculation_log.length > 0) {
-                console.groupCollapsed(`${r.univ} ${r.major} (UI:${r.converted_score} / Real:${r.my_real_score?.toFixed(2)})`);
-                r.calculation_log.forEach(l => {
-                    if(l.includes("최종점수") || l.includes("내점수")) console.log(`%c${l}`, "color: blue; font-weight: bold;");
-                    else if(l.includes("가중합") || l.includes("Z:")) console.log(`%c${l}`, "color: green;");
-                    else if(l.includes("오류")) console.log(`%c${l}`, "color: red; font-weight: bold;");
-                    else console.log(l);
-                });
+                console.groupCollapsed(`${r.univ} ${r.major} (UI:${r.converted_score})`);
+                r.calculation_log.forEach(l => console.log(l));
                 console.groupEnd();
             }
         });
         console.groupEnd();
 
-        // 3. UI 렌더링
-        const cardsContainer = document.getElementById('analysisCardsContainer');
-        
+        // 4. 결과 렌더링
         if (results.length === 0) {
-            cardsContainer.innerHTML = '<div style="text-align:center; padding:20px;">분석 결과가 없습니다.</div>';
+            cardsContainer.innerHTML = `
+                <div style="text-align:center; padding:40px; color:#64748b;">
+                    <i class="far fa-folder-open fa-2x" style="margin-bottom:10px;"></i><br>
+                    분석 가능한 결과가 없습니다.<br>
+                    <small>입력하신 성적으로 지원 가능한 전형을 찾지 못했거나 데이터가 부족합니다.</small>
+                </div>`;
         } else {
             cardsContainer.innerHTML = results.map(item => renderAnalysisCard(item)).join('');
         }
 
     } catch (e) {
         console.error("❌ 통신 에러:", e);
-        document.getElementById('analysisCardsContainer').innerHTML = `
-            <div style="text-align:center; padding:30px; color:#ef4444;">
-                <i class="fas fa-bug fa-2x"></i>
+        cardsContainer.innerHTML = `
+            <div style="text-align:center; padding:30px; color:#ef4444; background:#fff; border-radius:8px;">
+                <i class="fas fa-bug fa-2x" style="margin-bottom:10px;"></i>
                 <p>분석 중 오류가 발생했습니다.<br><small>${e.message}</small></p>
             </div>`;
     }
+}
+
+// [Helper] 시험 모드 변경 핸들러
+// (HTML의 onchange 이벤트에서 호출됨)
+function changeExamMode(mode) {
+    console.log(`🔄 시험 모드 변경: ${mode}`);
+    currentExamMode = mode;
+    updateAnalysisUI(); // 변경된 모드로 재분석 요청
 }
 
 // ============================================================
@@ -531,15 +576,9 @@ function renderAnalysisCard(res) {
 function getSimpleAdvice(score, status) {
     if (score >= 150) return `<strong>매우 안정적인 지원</strong>입니다. <br>최초 합격이 유력하며, 장학금 혜택을 확인해보시거나 상위 대학에 소신 지원 카드를 섞는 전략을 추천합니다.`;
     if (score >= 120) return `<strong>합격 가능성이 높습니다.</strong> <br>안정 지원 카드로 활용하기 좋으며, 경쟁률이 폭등하지 않는 한 무난한 합격이 예상됩니다.`;
-    if (score >= 100) return `<strong>적정 지원 구간</strong>입니다. <br>작년 합격 컷 부근 점수이며, 추합 가능성이 높습니다. 경쟁률 추이를 끝까지 모니터링하세요.`;
+    if (score >= 100) return `<strong>적정 지원 구간</strong>입니다. <br>예상 합격 컷 부근 점수이며, 추합 가능성이 높습니다. 경쟁률 추이를 끝까지 모니터링하세요.`;
     if (score >= 80) return `<strong>소신 지원이 필요</strong>합니다. <br>합격선보다 다소 낮지만, 학과 내 경쟁률 변화나 추합 변수에 따라 역전 가능성이 존재합니다.`;
-    return `<strong>상향 지원(위험)</strong>입니다. <br>점수 차이가 있습니다. 가/나/다군 조합을 고려하여 다른 안정 카드를 반드시 확보하시기 바랍니다.`;
-}
-
-// [Helper] 시험 모드 변경 핸들러
-function changeExamMode(mode) {
-    currentExamMode = mode;
-    updateAnalysisUI(); // 변경된 모드로 재요청
+    return `<strong>상향 지원(위험)</strong>입니다. <br>점수 차이가 있습니다. 다양한 조합을 고려하여 다른 안정 카드를 반드시 확보하시기 바랍니다.`;
 }
 
 function checkWeeklyStatus() {
