@@ -712,35 +712,44 @@ function runSimulationRender() {
 // [렌더링] 막대 그래프
 function renderSimChart(data) {
     const container = document.getElementById('simChartBars');
+    
+    // 1. 컨테이너 스타일 보정 (라벨이 삐져나와도 잘리지 않도록)
+    // 부모인 chart-bg에 overflow: visible이 있어야 하고,
+    // 그 부모인 sim-chart-box에 라벨이 들어갈 하단 여백이 충분해야 함.
+    container.style.overflow = 'visible'; 
+    container.parentElement.style.overflow = 'visible'; 
+    container.parentElement.parentElement.style.paddingBottom = '60px'; // 하단 여백 강제 확보
+
     container.innerHTML = '';
 
-    // 대학 이름 줄이기 (예: 가천대학교 -> 가천대)
     const shortName = (name) => name.replace('학교', '');
 
     data.forEach(item => {
-        const heightPct = (item.base_ui_score / 250) * 100; // 250점 만점 기준 %
+        const heightPct = (item.base_ui_score / 250) * 100;
         
-        // 점수에 따른 색상 (150 이상 초록, 100 이상 파랑, 미만 빨강)
+        // 색상 로직
         let color = '#ef4444'; // 위험
         if (item.base_ui_score >= 150) color = '#10b981'; // 안정
         else if (item.base_ui_score >= 100) color = '#3b82f6'; // 합격
 
+        // [핵심 변경]
+        // 1. 전체 컬럼: relative
+        // 2. 막대(Bar): absolute bottom: 0 (바닥에 붙음)
+        // 3. 라벨(Label): absolute top: 100% (바닥 선 바로 아래 시작)
         const html = `
-            <div style="display:flex; flex-direction:column; align-items:center; width:60px; height:100%; position:relative; margin: 0 5px;">
+            <div style="position:relative; width:60px; height:100%; margin: 0 8px;">
                 
-                <div style="flex-grow:1; display:flex; align-items:flex-end; width:100%; padding-bottom: 5px;">
-                    <div style="width:100%; height:${Math.min(heightPct, 100)}%; background:${color}; border-radius:6px 6px 0 0; position:relative; transition: height 0.5s; min-height: 4px;">
-                        <span style="position:absolute; top:-22px; left:50%; transform:translateX(-50%); font-size:0.8rem; font-weight:800; color:${color}; text-shadow: 0 1px 2px rgba(255,255,255,0.8);">
-                            ${Math.round(item.base_ui_score)}
-                        </span>
-                    </div>
+                <div style="position:absolute; bottom:0; left:0; width:100%; height:${Math.min(heightPct, 100)}%; background:${color}; border-radius:6px 6px 0 0; transition: height 0.5s; min-height:4px; z-index:1;">
+                    <span style="position:absolute; top:-24px; left:50%; transform:translateX(-50%); font-size:0.85rem; font-weight:800; color:${color}; white-space:nowrap;">
+                        ${Math.round(item.base_ui_score)}
+                    </span>
                 </div>
 
-                <div style="height:40px; width:100%; text-align:center; display:flex; flex-direction:column; justify-content:flex-start; align-items:center;" title="${item.univ} ${item.major}">
-                    <div style="font-size:0.8rem; font-weight:700; color:#334155; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">
+                <div style="position:absolute; top:100%; left:50%; transform:translateX(-50%); width:80px; text-align:center; padding-top:8px; z-index:2;">
+                    <div style="font-size:0.85rem; font-weight:700; color:#334155; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                         ${shortName(item.univ)}
                     </div>
-                    <div style="font-size:0.75rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">
+                    <div style="font-size:0.75rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;">
                         ${item.major}
                     </div>
                 </div>
