@@ -590,24 +590,33 @@ function initSimulation() {
     const listContainer = document.getElementById('simUnivList');
     if (!listContainer) return;
 
-    // 분석 탭의 데이터가 없으면 안내 표시
-    if (!userTargetUnivs || userTargetUnivs.length === 0) {
-        listContainer.innerHTML = '<p style="font-size:0.9rem; color:#94a3b8;">목표 대학이 없습니다.</p>';
+    // DB에 Null 데이터가 섞여있을 경우를 대비해 유효한 데이터만 필터링
+    const validTargets = userTargetUnivs 
+        ? userTargetUnivs.filter(t => t && t.univ) // null이나 빈 객체 제거
+        : [];
+
+    // 필터링 후에도 데이터가 없으면 안내 표시
+    if (validTargets.length === 0) {
+        listContainer.innerHTML = `
+            <div style="text-align:center; padding:30px 10px;">
+                <i class="fas fa-university" style="color:#cbd5e1; font-size:2rem; margin-bottom:10px;"></i>
+                <p style="font-size:0.9rem; color:#64748b;">목표 대학이 설정되지 않았습니다.<br>분석 탭에서 대학을 먼저 추가해주세요.</p>
+            </div>`;
         return;
     }
 
-    // 체크박스 생성
-    listContainer.innerHTML = userTargetUnivs.map((t, i) => `
-        <label style="display:flex; align-items:center; gap:8px; padding:8px; border-radius:6px; cursor:pointer; hover:bg-gray-50;">
-            <input type="checkbox" class="sim-univ-check" value="${i}" checked onchange="runSimulationRender()">
+    // 체크박스 생성 (validTargets 기준)
+    listContainer.innerHTML = validTargets.map((t, i) => `
+        <label style="display:flex; align-items:center; gap:10px; padding:12px; border-radius:8px; cursor:pointer; transition:background 0.2s; border:1px solid transparent; margin-bottom:8px;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+            <input type="checkbox" class="sim-univ-check" value="${i}" checked onchange="runSimulationRender()" style="accent-color:#3b82f6; transform:scale(1.2);">
             <div style="font-size:0.9rem;">
-                <div style="font-weight:bold; color:#334155;">${t.univ}</div>
+                <div style="font-weight:700; color:#334155; margin-bottom:2px;">${t.univ}</div>
                 <div style="font-size:0.8rem; color:#64748b;">${t.major}</div>
             </div>
         </label>
     `).join('');
 
-    // 최초 데이터 로드
+    // 최초 데이터 로드 (유효한 데이터가 있을 때만)
     fetchSimulationData();
 }
 

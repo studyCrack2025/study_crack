@@ -219,9 +219,77 @@
 .legend-item { display: flex; align-items: center; gap: 4px; }
 .color-dot { width: 10px; height: 10px; border-radius: 2px; }
 
+/* =========================================
+   6. 점수 시뮬레이션 헤더 디자인
+   ========================================= */
+
+/* 헤더 컨테이너 */
+.sim-header {
+    margin-bottom: 25px;
+    border-bottom: 1px solid #f1f5f9; /* 하단 구분선 추가로 깔끔하게 */
+    padding-bottom: 15px;
+}
+
+/* 제목 (아이콘 + 텍스트) */
+.sim-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px; /* 아이콘과 텍스트 간격 */
+}
+
+/* 아이콘 박스 스타일 */
+.sim-icon-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    background-color: #eff6ff; /* 연한 파란 배경 */
+    color: #3b82f6;            /* 파란 아이콘 */
+    border-radius: 12px;       /* 둥근 모서리 */
+    font-size: 1.2rem;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1); /* 살짝 그림자 */
+}
+
+/* 설명 텍스트 */
+.sim-desc {
+    color: #64748b;
+    font-size: 1rem;
+    margin-left: 4px;
+    line-height: 1.6;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap; /* 모바일에서 줄바꿈 허용 */
+    gap: 6px;
+}
+
+/* ⚡️ 딱 1문제 뱃지 (강조) */
+.sim-badge {
+    background-color: #e0f2fe; /* 아주 연한 하늘색 */
+    color: #0284c7;            /* 진한 하늘색 글자 */
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 800;          /* 두꺼운 글씨 */
+    border: 1px solid #bae6fd; /* 테두리 */
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    display: inline-flex;
+    align-items: center;
+}
+
+/* 부가 설명 (Standard 이상) */
+.sim-sub-text {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    font-weight: 400;
+    margin-left: 2px;
+}
 
 /* =========================================
-   6. 코칭 & 주간점검
+   7. 코칭 & 주간점검
    ========================================= */
 .coach-container { display: flex; flex-direction: column; gap: 20px; }
 .coach-box { border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; position: relative; }
@@ -313,7 +381,7 @@
 
 
 /* =========================================
-   7. 기능: FOR BLACK 테마
+   8. 기능: FOR BLACK 테마
    ========================================= */
 .black-theme { 
     background: radial-gradient(circle at top right, #2a2a2a 0%, #000000 100%); 
@@ -390,7 +458,7 @@
 }
 
 /* =========================================
-   8. 공통 폼 및 기타
+   9. 공통 폼 및 기타
    ========================================= */
 .placeholder-box { text-align: center; padding: 40px; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1; color: #64748b; }
 .content-header { text-align: center; }
@@ -430,7 +498,7 @@ input:focus { outline: none; border-color: #2563EB; }
 .pro-btn:hover { background: linear-gradient(135deg, #b45309, #92400e); transform: translateY(-2px); }
 
 /* =========================================
-   9. 반응형 미디어 쿼리
+   10. 반응형 미디어 쿼리
    ========================================= */
 @media (max-width: 768px) {
     .mypage-container { flex-direction: column; padding: 10px; margin-top: 20px; }
@@ -466,4 +534,15 @@ input:focus { outline: none; border-color: #2563EB; }
 @media (max-width: 600px) {
     .score-input-grid { grid-template-columns: repeat(3, 1fr); }
     .mock-tile-group { grid-template-columns: repeat(2, 1fr); }
+    .sim-title {
+        font-size: 1.3rem;
+    }
+    .sim-desc {
+        font-size: 0.9rem;
+        flex-direction: column; /* 뱃지와 텍스트 상하 배치 */
+        align-items: flex-start;
+    }
+    .sim-badge {
+        margin-bottom: 4px;
+    }
 }
