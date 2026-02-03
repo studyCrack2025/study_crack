@@ -581,6 +581,167 @@ function getSimpleAdvice(score, status) {
     return `<strong>상향 지원(위험)</strong>입니다. <br>점수 차이가 있습니다. 다양한 조합을 고려하여 다른 안정 카드를 반드시 확보하시기 바랍니다.`;
 }
 
+// ============================================================
+// [기능] 점수 상승 시뮬레이션
+// ============================================================
+
+// 1. 시뮬레이션 탭 진입 시 초기화
+function initSimulation() {
+    const listContainer = document.getElementById('simUnivList');
+    if (!listContainer) return;
+
+    // 분석 탭의 데이터가 없으면 안내 표시
+    if (!userTargetUnivs || userTargetUnivs.length === 0) {
+        listContainer.innerHTML = '<p style="font-size:0.9rem; color:#94a3b8;">목표 대학이 없습니다.</p>';
+        return;
+    }
+
+    // 체크박스 생성
+    listContainer.innerHTML = userTargetUnivs.map((t, i) => `
+        <label style="display:flex; align-items:center; gap:8px; padding:8px; border-radius:6px; cursor:pointer; hover:bg-gray-50;">
+            <input type="checkbox" class="sim-univ-check" value="${i}" checked onchange="runSimulationRender()">
+            <div style="font-size:0.9rem;">
+                <div style="font-weight:bold; color:#334155;">${t.univ}</div>
+                <div style="font-size:0.8rem; color:#64748b;">${t.major}</div>
+            </div>
+        </label>
+    `).join('');
+
+    // 최초 데이터 로드
+    fetchSimulationData();
+}
+
+let cachedSimData = []; // 서버에서 받은 데이터 캐싱
+
+// 2. API 호출 (simulate_score_rise)
+async function fetchSimulationData() {
+    const chartArea = document.getElementById('simChartBars');
+    chartArea.innerHTML = '<div style="width:100%; text-align:center; padding-top:80px;"><i class="fas fa-spinner fa-spin"></i> 분석 중...</div>';
+
+    const token = localStorage.getItem('idToken');
+    const userId = localStorage.getItem('userId');
+    const scoreData = userQuantData[currentExamMode]; // 현재 선택된 모의고사 기준
+
+    try {
+        const res = await fetch(UNIV_DATA_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'simulate_score_rise',
+                userId: userId,
+                targetUnivs: userTargetUnivs,
+                userScores: scoreData,
+                examMode: currentExamMode
+            })
+        });
+
+        cachedSimData = await res.json();
+        runSimulationRender(); // 데이터 수신 후 렌더링
+
+    } catch (e) {
+        console.error("Sim Error:", e);
+        chartArea.innerHTML = '오류 발생';
+    }
+}
+
+// 3. 화면 렌더링 (체크박스 필터링 적용)
+function runSimulationRender() {
+    const checkboxes = document.querySelectorAll('.sim-univ-check:checked');
+    const selectedIndices = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    
+    // 선택된 대학 중, API 결과가 있는 것만 필터링
+    // (API 결과에는 univ, major 이름이 있으므로 userTargetUnivs[idx]와 매칭 필요)
+    // 간단하게 순서가 같다면 index로 매칭하거나, 이름으로 매칭
+    
+    const filteredData = cachedSimData.filter(d => {
+        // 캐시된 데이터 d가 선택된 목록에 있는지 확인 (대학명+학과명 매칭)
+        return selectedIndices.some(idx => {
+            const target = userTargetUnivs[idx];
+            return target.univ === d.univ && target.major === d.major;
+        });
+    });
+
+    renderSimChart(filteredData);
+    renderSimCards(filteredData);
+}
+
+// [렌더링] 막대 그래프
+function renderSimChart(data) {
+    const container = document.getElementById('simChartBars');
+    container.innerHTML = '';
+
+    data.forEach(item => {
+        const heightPct = (item.base_ui_score / 250) * 100; // 250점 만점 기준 %
+        const color = item.base_ui_score >= 150 ? '#10b981' : (item.base_ui_score >= 100 ? '#3b82f6' : '#ef4444');
+        
+        const html = `
+            <div style="display:flex; flex-direction:column; align-items:center; width:40px; height:100%; position:relative;">
+                <div style="flex-grow:1; display:flex; align-items:flex-end; width:100%;">
+                    <div style="width:100%; height:${Math.min(heightPct, 100)}%; background:${color}; border-radius:4px 4px 0 0; position:relative; transition: height 0.5s;">
+                        <span style="position:absolute; top:-20px; left:50%; transform:translateX(-50%); font-size:0.75rem; font-weight:bold; color:${color};">
+                            ${Math.round(item.base_ui_score)}
+                        </span>
+                    </div>
+                </div>
+                <div style="font-size:0.7rem; color:#475569; text-align:center; margin-top:5px; height:30px; line-height:1.1; overflow:hidden;">
+                    ${item.univ}<br>${item.major.substring(0,4)}..
+                </div>
+            </div>
+        `;
+        container.innerHTML += html;
+    });
+}
+
+// [렌더링] 과목별 상승 카드
+function renderSimCards(data) {
+    const container = document.getElementById('simCardArea');
+    container.innerHTML = '';
+
+    data.forEach(item => {
+        // 가장 효과가 좋은 과목 찾기
+        let bestSubj = '';
+        let maxRise = -1;
+        
+        ['kor', 'math', 'inq'].forEach(k => {
+            if (item.sim_data[k].diff > maxRise) {
+                maxRise = item.sim_data[k].diff;
+                bestSubj = k;
+            }
+        });
+
+        const subjNames = { kor: '국어', math: '수학', inq: '탐구' };
+        
+        const cardHtml = `
+            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:15px; box-shadow:0 2px 4px rgba(0,0,0,0.03);">
+                <div style="font-weight:bold; color:#334155; margin-bottom:10px; border-bottom:1px solid #f1f5f9; padding-bottom:8px;">
+                    ${item.univ} <span style="font-weight:normal; font-size:0.85rem; color:#64748b;">${item.major}</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    ${['kor', 'math', 'inq'].map(subj => {
+                        const info = item.sim_data[subj];
+                        const isBest = (subj === bestSubj && info.diff > 0);
+                        const rowBg = isBest ? '#eff6ff' : 'transparent';
+                        const scoreColor = info.diff > 0 ? '#ef4444' : '#94a3b8';
+                        
+                        return `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px; background:${rowBg}; border-radius:6px;">
+                            <div style="display:flex; align-items:center; gap:5px;">
+                                <span style="font-size:0.9rem; font-weight:600; color:#475569;">${subjNames[subj]}</span>
+                                ${isBest ? '<span style="font-size:0.7rem; background:#3b82f6; color:#fff; padding:1px 4px; border-radius:3px;">추천</span>' : ''}
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:0.9rem; font-weight:bold; color:${scoreColor};">${info.msg.replace('점 상승', '')} ${info.diff > 0 ? '▲' : ''}</div>
+                                <div style="font-size:0.7rem; color:#94a3b8;">${info.diff > 0 ? `(재환산 +${info.diff.toFixed(1)})` : ''}</div>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+        container.innerHTML += cardHtml;
+    });
+}
+
 function checkWeeklyStatus() {
     const today = new Date();
     const currentWeekTitle = getWeekTitle(today); 
