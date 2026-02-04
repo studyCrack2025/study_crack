@@ -277,6 +277,73 @@
     border: 1px solid transparent;
 }
 
+/* 전체 레이아웃 컨테이너 */
+.sim-container {
+    display: flex;
+    flex-direction: column; /* 무조건 세로 배치 */
+    gap: 24px;              /* 상하 간격 */
+    max-width: 800px;       /* PC에서 너무 넓어지지 않게 최대 폭 제한 */
+    margin: 0 auto;         /* 화면 중앙 정렬 */
+    width: 100%;
+}
+
+/* 공통 섹션 타이틀 스타일 */
+.sim-section-title {
+    margin: 0 0 15px 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* 1. 상단 컨트롤 패널 (대학 선택 영역) */
+.sim-sidebar {
+    width: 100%;
+    background: #f8fafc;    /* 연한 회색 배경으로 구역 구분 */
+    border-radius: 16px;
+    padding: 20px 25px;
+    border: 1px solid #e2e8f0;
+    /* 약간의 입체감 추가 */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02); 
+}
+
+/* 대학 리스트 박스 내부 */
+.sim-univ-list-box {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+
+/* 2. 메인 대시보드 (차트 영역) */
+.sim-dashboard {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* 차트 박스 디자인 */
+.sim-chart-box {
+    background: #fff;
+    border-radius: 16px;
+    padding: 30px;
+    border: 1px solid #e2e8f0;
+    /* 차트 영역은 좀 더 강조되게 그림자 추가 */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 
+                0 4px 6px -2px rgba(0, 0, 0, 0.025);
+    position: relative;
+}
+
+/* 내부 차트 배경 등은 기존 유지 */
+.chart-bg {
+    margin-top: 10px;
+    /* 모바일에서 차트가 너무 좁지 않게 최소 높이 보장 */
+    min-height: 200px; 
+}
+
 /* --- 테마별 색상 설정 --- */
 .theme-univ .sol-icon-box { background: #eff6ff; color: #2563eb; } /* 목표대학 (파란색) */
 .theme-sim .sol-icon-box { background: #eff6ff; color: #3b82f6; } /* 시뮬레이션 (하늘색) */
@@ -505,16 +572,6 @@ input:focus { outline: none; border-color: #2563EB; }
     .chart-box { width: 100%; margin-top: 20px; border-top: 1px dashed #e2e8f0; padding-top: 20px; }
     .black-theme { margin: 0; border-radius: 8px; }
     .black-menu-grid { grid-template-columns: 1fr; }
-    .sim-container {
-        flex-direction: column; /* 위아래로 쌓이게 변경 */
-    }
-    .sim-sidebar {
-        width: 100%;       /* 250px 고정 해제 -> 꽉 차게 */
-        margin-bottom: 10px; /* 아래 요소와 간격 살짝 추가 */
-    }
-    .sim-dashboard {
-        width: 100%;
-    }
 }
 
 @media (min-width: 769px) {
