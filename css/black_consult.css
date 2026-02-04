@@ -3,7 +3,11 @@
 /* [기본 설정] */
 html, body {
     height: 100%;
-    overflow: hidden; /* 전체 스크롤 방지 */
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* PC에서는 스크롤 방지 유지 */
+    position: fixed; /* 모바일에서 바디 스크롤 튀는 현상 방지 */
+    width: 100%;
 }
 
 /* body 배경색 강제 지정 (테마 통일) */
@@ -122,11 +126,23 @@ body.black-body {
 
 /* [채팅 컨텐츠] */
 .chat-container {
-    flex: 1; overflow-y: auto; padding: 20px 30px;
-    display: flex; flex-direction: column; gap: 20px;
-    /* 아주 미세한 패턴 배경 */
+    flex: 1; 
+    /* Flex 아이템이 내용물보다 작아질 수 있게 설정 (중요) */
+    min-height: 0; 
+    
+    overflow-y: auto; 
+    padding: 20px 30px;
+    display: flex; 
+    flex-direction: column; 
+    gap: 20px;
+    
+    /* 배경 설정 유지 */
     background-image: radial-gradient(#151515 1px, transparent 1px);
     background-size: 20px 20px;
+
+    /* [모바일 터치 스크롤 활성화] */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain; /* 상위 스크롤 간섭 방지 */
 }
 
 .chat-notice {
@@ -241,8 +257,17 @@ body.black-body {
 @media (max-width: 768px) {
     .consult-layout { grid-template-columns: 1fr; }
     .info-sidebar { display: none; } /* 모바일은 사이드바 숨김 */
-    .consult-container { padding: 0; height: calc(100vh - 60px); }
-    .chat-wrapper { border: none; border-radius: 0; }
+    .consult-container { 
+        padding: 0; 
+        height: 100%; /* calc(100vh - 60px) 대신 100% 사용 권장 */
+        max-height: 100%; /* 넘치는 것 방지 */
+    }
+    
+    .chat-wrapper { 
+        border: none; 
+        border-radius: 0; 
+        height: 100%; /* 부모 높이 상속 */
+    }
     .black-header-bar { padding: 10px 15px; }
     .message { max-width: 85%; }
 }
