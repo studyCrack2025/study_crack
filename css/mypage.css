@@ -505,6 +505,16 @@ input:focus { outline: none; border-color: #2563EB; }
     .chart-box { width: 100%; margin-top: 20px; border-top: 1px dashed #e2e8f0; padding-top: 20px; }
     .black-theme { margin: 0; border-radius: 8px; }
     .black-menu-grid { grid-template-columns: 1fr; }
+    .sim-container {
+        flex-direction: column; /* 위아래로 쌓이게 변경 */
+    }
+    .sim-sidebar {
+        width: 100%;       /* 250px 고정 해제 -> 꽉 차게 */
+        margin-bottom: 10px; /* 아래 요소와 간격 살짝 추가 */
+    }
+    .sim-dashboard {
+        width: 100%;
+    }
 }
 
 @media (min-width: 769px) {
