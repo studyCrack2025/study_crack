@@ -169,21 +169,24 @@
 
 /* 2. 새로운 페이지네이션 디자인 (화살표 + 입력창) */
 .board-footer {
+    position: relative; /* 자식 요소 절대 위치의 기준점 */
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end; /* 글쓰기 버튼을 우측 끝으로 보냄 */
     align-items: center;
     margin-top: 30px;
-    position: relative;
-    flex-wrap: wrap; /* 모바일에서 줄바꿈 허용 */
-    gap: 20px;
+    padding-bottom: 20px;
+    min-height: 40px; /* 높이 확보 */
 }
 
+/* 페이지네이션 컨트롤러 (PC: 정중앙 고정) */
 .pagination-control {
+    position: absolute; /* 흐름에서 제거하여 강제 이동 */
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%); /* 정확히 정중앙 좌표 계산 */
     display: flex;
     align-items: center;
     gap: 10px;
-    /* PC에서는 중앙 정렬을 위해 absolute 유지하거나 margin auto 사용 */
-    margin: 0 auto; 
 }
 
 .page-arrow {
@@ -235,7 +238,7 @@
 }
 
 .write-btn {
-    margin-left: auto; /* 우측 정렬 */
+    /* margin-left: auto;  <-- flex-end로 대체되었으므로 제거 */
     background: #cca43b;
     color: #000;
     border: none;
@@ -244,6 +247,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: 0.3s;
+    z-index: 10; /* 페이지네이션보다 위에 오도록 */
 }
 
 .write-btn:hover {
@@ -312,13 +316,17 @@
 
     /* 2. 푸터 (페이지네이션 & 글쓰기) 레이아웃 변경 */
     .board-footer {
-        flex-direction: column-reverse; /* 글쓰기 버튼을 위로 올리거나, 페이지네이션을 아래로 */
-        align-items: center;
+        flex-direction: column-reverse; /* 버튼 위, 페이지네이션 아래 */
+        justify-content: center;
         gap: 20px;
+        position: static; /* absolute 기준 해제 */
+        height: auto;
     }
 
+    /* 페이지네이션 위치 초기화 (정중앙 고정 해제) */
     .pagination-control {
-        margin: 0; /* absolute 제거 효과 */
+        position: static; 
+        transform: none;
         width: 100%;
         justify-content: center;
     }
