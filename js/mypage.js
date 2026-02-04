@@ -73,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("🚀 [Init] 분석 UI 업데이트 호출");
         updateAnalysisUI(); 
         
+        initCoachLock();
         checkBlackStatusForButton();
         setWeeklyLoadingStatus(false);
         setTimeout(() => { checkWeeklyStatus(); }, 500); 
@@ -1237,7 +1238,7 @@ async function submitDeepCoaching() {
 
 function initCoachLock() {
     const lockOverlay = document.getElementById('deepCoachingLock');
-    if (['pro', 'black'].includes(currentUserTier)) { if(lockOverlay) lockOverlay.style.display = 'none'; } 
+    if (['pro'].includes(currentUserTier)) { if(lockOverlay) lockOverlay.style.display = 'none'; } 
     else { if(lockOverlay) lockOverlay.style.display = 'flex'; }
 }
 
