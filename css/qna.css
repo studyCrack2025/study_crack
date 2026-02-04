@@ -168,7 +168,7 @@
 .modal {
     display: none;
     position: fixed;
-    z-index: 1000;
+    z-index: 9999;
     left: 0;
     top: 0;
     width: 100%;
@@ -263,6 +263,12 @@
     animation: pulse 1.5s infinite;
 }
 @keyframes pulse { 0% {opacity: 0.6;} 50% {opacity: 1;} 100% {opacity: 0.6;} }
+
+/* 모달 등장 애니메이션 */
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
 /* 모바일 대응 */
 @media (max-width: 768px) {
