@@ -37,8 +37,16 @@
 
 .board-tabs {
     display: flex;
-    gap: 20px;
+    gap: 15px;
+    overflow-x: auto; /* 내용 넘치면 가로 스크롤 */
+    white-space: nowrap; /* 글자 줄바꿈 방지 */
+    -webkit-overflow-scrolling: touch; /* 부드러운 스크롤 */
+    padding-bottom: 5px; /* 스크롤바 공간 확보 */
 }
+
+/* 스크롤바 숨기기 (선택사항) */
+.board-tabs::-webkit-scrollbar { height: 4px; }
+.board-tabs::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
 
 .tab-btn {
     background: none;
@@ -159,25 +167,71 @@
     position: relative;
 }
 
-.pagination {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
+/* 2. 새로운 페이지네이션 디자인 (화살표 + 입력창) */
+.board-footer {
     display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 30px;
+    position: relative;
+    flex-wrap: wrap; /* 모바일에서 줄바꿈 허용 */
+    gap: 20px;
+}
+
+.pagination-control {
+    display: flex;
+    align-items: center;
     gap: 10px;
+    /* PC에서는 중앙 정렬을 위해 absolute 유지하거나 margin auto 사용 */
+    margin: 0 auto; 
 }
 
-.page-link {
-    color: #64748b;
-    text-decoration: none;
-    font-size: 1rem;
-    cursor: pointer;
-    padding: 0 5px;
-}
-
-.page-link.active, .page-link:hover {
+.page-arrow {
+    background: #1e1e1e;
+    border: 1px solid #444;
     color: #cca43b;
+    width: 36px;
+    height: 36px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.page-arrow:hover {
+    border-color: #cca43b;
+    background: #333;
+}
+
+.page-input-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #1e1e1e;
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: 1px solid #444;
+}
+
+.page-input-box input {
+    width: 40px;
+    background: transparent;
+    border: none;
+    color: #fff;
+    text-align: center;
     font-weight: bold;
+    font-size: 1rem;
+    padding: 0;
+}
+
+.page-input-box input:focus { outline: none; border-bottom: 1px solid #cca43b; }
+
+.total-pages {
+    color: #64748b;
+    font-size: 0.9rem;
+    user-select: none;
 }
 
 .write-btn {
@@ -238,5 +292,41 @@
         content: attr(data-date); /* 모바일용 날짜 표시 */
         margin-left: 10px;
         font-size: 0.8rem;
+    }
+    
+    /* 1. 툴바 레이아웃 변경 */
+    .board-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+
+    .board-tabs {
+        width: 100%;
+        justify-content: flex-start; /* 왼쪽 정렬 후 스크롤 */
+    }
+
+    .search-box {
+        width: 100%; /* 검색창 꽉 차게 */
+    }
+
+    /* 2. 푸터 (페이지네이션 & 글쓰기) 레이아웃 변경 */
+    .board-footer {
+        flex-direction: column-reverse; /* 글쓰기 버튼을 위로 올리거나, 페이지네이션을 아래로 */
+        align-items: center;
+        gap: 20px;
+    }
+
+    .pagination-control {
+        margin: 0; /* absolute 제거 효과 */
+        width: 100%;
+        justify-content: center;
+    }
+
+    .write-btn {
+        width: 100%; /* 버튼 꽉 차게 */
+        margin-left: 0;
+        padding: 12px;
+        font-size: 1.05rem;
     }
 }

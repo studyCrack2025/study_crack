@@ -64,9 +64,22 @@
         </div>
 
         <div class="board-footer">
-            <div class="pagination" id="pagination">
+            <div class="pagination-control">
+                <button class="page-arrow" onclick="changePage('prev')">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="page-input-box">
+                    <input type="number" id="pageInput" value="1" min="1" onchange="jumpToPage(this)">
+                    <span class="total-pages" id="totalPages">/ 1</span>
                 </div>
-            <button class="write-btn" onclick="openWriteModal()">글쓰기 (Write)</button>
+                <button class="page-arrow" onclick="changePage('next')">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <button class="write-btn" onclick="openWriteModal()">
+                <i class="fas fa-pen"></i> 글쓰기
+            </button>
         </div>
     </div>
 
