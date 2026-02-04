@@ -1,10 +1,11 @@
 // js/black_community.js
 
-//const API_URL = CONFIG.api.base;
+// const API_URL = CONFIG.api.base;
 let allPosts = [];
 let currentPage = 1;
 const itemsPerPage = 15;
 let currentTab = 'all'; // all, free, info, qna
+let totalPageCount = 1; // 전체 페이지 수 (전역 관리)
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. 더미 데이터 생성 (백엔드 연동 전)
@@ -34,7 +35,6 @@ function renderBoard() {
     });
 
     // 2. 공지사항 상단 고정 정렬
-    // (더미 생성 시 이미 공지를 앞에 뒀지만, 안전하게 재정렬)
     filtered.sort((a, b) => {
         if (a.isNotice && !b.isNotice) return -1;
         if (!a.isNotice && b.isNotice) return 1;
@@ -43,7 +43,12 @@ function renderBoard() {
 
     // 3. 페이지네이션 계산
     const totalItems = filtered.length;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    totalPageCount = Math.ceil(totalItems / itemsPerPage);
+    if (totalPageCount === 0) totalPageCount = 1; // 최소 1페이지
+
+    // 현재 페이지가 범위를 벗어나지 않도록 보정
+    if (currentPage > totalPageCount) currentPage = totalPageCount;
+
     const startIdx = (currentPage - 1) * itemsPerPage;
     const endIdx = startIdx + itemsPerPage;
     const pageItems = filtered.slice(startIdx, endIdx);
@@ -51,7 +56,7 @@ function renderBoard() {
     // 4. HTML 생성
     if (pageItems.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">게시글이 없습니다.</td></tr>';
-        renderPagination(0);
+        updatePaginationUI();
         return;
     }
 
@@ -87,64 +92,87 @@ function renderBoard() {
         tbody.appendChild(tr);
     });
 
-    renderPagination(totalPages);
+    // 5. 페이지네이션 UI 업데이트 (숫자 나열 X, 입력창 방식 O)
+    updatePaginationUI();
 }
 
-// 페이지네이션 렌더링
-function renderPagination(totalPages) {
-    const container = document.getElementById('pagination');
-    container.innerHTML = '';
-    
-    if (totalPages <= 1) return;
+// 페이지네이션 UI 업데이트 (Input 방식)
+function updatePaginationUI() {
+    const input = document.getElementById('pageInput');
+    const totalSpan = document.getElementById('totalPages');
 
-    // 이전 버튼
-    if (currentPage > 1) {
-        container.innerHTML += `<a class="page-link" onclick="changePage(${currentPage - 1})">&lt;</a>`;
+    if (input) {
+        input.value = currentPage;
+        input.max = totalPageCount;
     }
-
-    // 페이지 번호 (최대 5개 표시 로직은 생략하고 단순하게)
-    for (let i = 1; i <= totalPages; i++) {
-        const activeClass = i === currentPage ? 'active' : '';
-        container.innerHTML += `<a class="page-link ${activeClass}" onclick="changePage(${i})">${i}</a>`;
-    }
-
-    // 다음 버튼
-    if (currentPage < totalPages) {
-        container.innerHTML += `<a class="page-link" onclick="changePage(${currentPage + 1})">&gt;</a>`;
+    if (totalSpan) {
+        totalSpan.innerText = `/ ${totalPageCount}`;
     }
 }
 
-// 이벤트 핸들러
-function changePage(page) {
-    currentPage = page;
+// 이전/다음 버튼 핸들러
+function changePage(direction) {
+    if (direction === 'prev') {
+        if (currentPage > 1) {
+            currentPage--;
+            renderBoard();
+        } else {
+            alert("첫 번째 페이지입니다.");
+        }
+    } else if (direction === 'next') {
+        if (currentPage < totalPageCount) {
+            currentPage++;
+            renderBoard();
+        } else {
+            alert("마지막 페이지입니다.");
+        }
+    }
+}
+
+// 페이지 직접 입력 핸들러
+function jumpToPage(inputElement) {
+    let val = parseInt(inputElement.value);
+
+    if (isNaN(val) || val < 1) {
+        val = 1;
+    } else if (val > totalPageCount) {
+        val = totalPageCount;
+    }
+
+    // 값 보정 후 이동
+    currentPage = val;
     renderBoard();
 }
 
+// 탭 필터링
 function filterBoard(tab) {
     currentTab = tab;
-    currentPage = 1; // 탭 변경 시 1페이지로
+    currentPage = 1; // 탭 변경 시 1페이지로 리셋
     
     // 버튼 스타일 변경
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active'); // event 객체 활용
+    if(event && event.target) event.target.classList.add('active'); 
     
     renderBoard();
 }
 
+// 검색 기능
 function searchPosts() {
     currentPage = 1;
     renderBoard();
 }
 
+// 글쓰기 모달 (준비중)
 function openWriteModal() {
     alert("현재 읽기 전용 모드입니다. (글쓰기 기능 준비 중)");
 }
 
+// 게시글 상세 보기 (준비중)
 function viewPost(id) {
     alert(`게시글 #${id} 상세 보기\n\n(상세 페이지 연결 준비 중입니다)`);
 }
 
-// 유틸리티
+// 유틸리티: 카테고리명 변환
 function getCatName(cat) {
     if (cat === 'free') return '자유';
     if (cat === 'info') return '정보';
@@ -152,11 +180,12 @@ function getCatName(cat) {
     return '기타';
 }
 
+// 유틸리티: 조회수 포맷팅 (1.2k 등)
 function formatViews(num) {
     return num >= 1000 ? (num / 1000).toFixed(1) + 'k' : num;
 }
 
-// 더미 데이터 생성기
+// 더미 데이터 생성기 (기존 유지)
 function generateDummyPosts() {
     const data = [];
     
