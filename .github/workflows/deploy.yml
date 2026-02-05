@@ -1,39 +1,28 @@
-name: Deploy to GitHub Pages
+name: Deploy to S3 and CloudFront
 
 on:
   push:
-    branches: ["main"]  # 브랜치명이 master라면 master로 수정하세요
-  workflow_dispatch:    # 수동 실행 버튼 활성화
-
-# 권한 설정 (배포를 위해 필수)
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-# ★ 핵심: 동시성 제어 (이전 배포가 안 끝났는데 새 배포가 오면 이전 것을 취소함)
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
+    branches:
+      - main  # 메인 브랜치에 푸시될 때 실행
 
 jobs:
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          path: '.' # index.html이 있는 위치 (루트라면 '.')
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2  # S3 버킷 리전
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Deploy to S3
+        run: |
+          aws s3 sync . s3://${{ secrets.S3_BUCKET_NAME }} --delete --exclude ".git/*" --exclude ".github/*"
+
+      - name: CloudFront Invalidation
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
