@@ -29,7 +29,7 @@ async function loadColumnDetail() {
     // 인증 체크
     if (!token || !userId) {
         alert("로그인이 필요한 콘텐츠입니다.");
-        location.href = 'login.html';
+        location.href = '/login';
         return;
     }
 

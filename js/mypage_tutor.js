@@ -1,4 +1,4 @@
-// js/tutor_mypage.js
+// js/mypage_tutor.js
 
 //const API_URL = CONFIG.api.base;
 let tutorInfo = {};
@@ -14,7 +14,7 @@ async function checkLogin() {
 
     if (!idToken || !userId) {
         alert("로그인이 필요합니다.");
-        location.href = 'login.html';
+        location.href = '/login';
         return;
     }
 
@@ -203,7 +203,7 @@ async function loadMyStudents() {
 
 function goToStudentDetail(targetId) {
     // admin_detail.html을 재사용 (단, 권한 체크 필요)
-    window.location.href = `admin_detail.html?uid=${targetId}`;
+    window.location.href = `/admin/detail?uid=${targetId}`;
 }
 
 // XSS 방지

@@ -15,7 +15,7 @@ function handleAuthError() {
     console.warn("인증 실패: 세션 만료 또는 토큰 없음");
     if (pollingInterval) clearInterval(pollingInterval);
     alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-    window.location.href = 'login.html';
+    window.location.href = '/login';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('accessToken');
     if (!userId || !token) {
         alert("로그인이 필요합니다.");
-        window.location.href = 'login.html';
+        window.location.href = '/login';
         return;
     }
     

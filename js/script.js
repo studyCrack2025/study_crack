@@ -76,9 +76,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // 로그인 안 된 상태면 로그인 페이지로
             if (!userId) {
                 alert("로그인이 필요합니다.");
-                window.location.href = 'login.html';
+                window.location.href = '/login';
             } else {
-                window.location.href = 'mypage.html';
+                window.location.href = '/mypage';
             }
         });
     }
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 // 비상시 수동 로그아웃 처리
                 localStorage.clear();
-                window.location.href = 'index.html';
+                window.location.href = '/index';
             }
         });
     }
@@ -146,13 +146,13 @@ async function checkBlackAccess() {
     const token = localStorage.getItem('accessToken');
     if (!token) {
         alert("로그인이 필요한 서비스입니다.");
-        window.location.href = 'login.html';
+        window.location.href = '/login';
         return;
     }
 
     const tier = localStorage.getItem('userTier');
     if (tier === 'black') {
-        window.location.href = 'black_index.html';
+        window.location.href = '/black';
     } else {
         alert("BLACK 회원 전용 공간입니다.");
     }

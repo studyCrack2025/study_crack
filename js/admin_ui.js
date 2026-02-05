@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 보안: 관리자 권한 체크
     if (!userId || role !== 'admin') {
         alert("관리자 권한이 없습니다.");
-        window.location.href = 'index.html';
+        window.location.href = '/';
         return;
     }
 
@@ -337,7 +337,7 @@ async function searchStudents() {
 }
 
 function goToStudentDetail(targetUserId) {
-    window.location.href = `admin_detail.html?uid=${targetUserId}`;
+    window.location.href = `/admin/detail?uid=${targetUserId}`;
 }
 
 // ============================================================

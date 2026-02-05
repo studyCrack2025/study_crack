@@ -19,7 +19,7 @@ async function loadArchiveData() {
 
     if (!token) {
         alert("로그인이 필요합니다.");
-        location.href = 'login.html';
+        location.href = '/login';
         return;
     }
 
@@ -56,7 +56,7 @@ function renderMyConsultants(consultants) {
             const data = consultants[i];
             const div = document.createElement('div');
             div.className = 'consultant-card';
-            div.onclick = () => location.href = 'black_consult.html';
+            div.onclick = () => location.href = '/black/consult';
             
             // [보안] 데이터 출력 시 escapeHtml 적용
             div.innerHTML = `

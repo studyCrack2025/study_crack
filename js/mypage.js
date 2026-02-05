@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!idToken) {
         alert("로그인이 필요합니다.");
-        window.location.href = 'login.html';
+        window.location.href = '/login';
         return;
     }
 
@@ -131,7 +131,10 @@ async function fetchUserData(userId) {
         if (typeof buildUnivMap === 'function') buildUnivMap();
     } catch (error) { 
         console.error("데이터 로드 중 오류:", error); 
-        if(error.message.includes("401")) { alert("세션이 만료되었습니다."); location.href='login.html'; }
+        if(error.message.includes("401")) { 
+            alert("세션이 만료되었습니다."); 
+            location.href='/login'; 
+        }
     }
 }
 
@@ -1269,7 +1272,7 @@ function checkBlackStatusForButton() {
         
         // 1. 링크 변경
         btn.onclick = function() {
-            window.location.href = 'black_index.html';
+            window.location.href = '/black';
         };
 
         // 2. 텍스트 변경
@@ -1298,7 +1301,7 @@ async function handleDeleteAccount() {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'delete_user', userId })
         });
-        if (response.ok) { alert("탈퇴가 완료되었습니다."); localStorage.clear(); sessionStorage.clear(); window.location.href = 'index.html'; } else { throw new Error("탈퇴 실패"); }
+        if (response.ok) { alert("탈퇴가 완료되었습니다."); localStorage.clear(); sessionStorage.clear(); window.location.href = '/index'; } else { throw new Error("탈퇴 실패"); }
     } catch (error) { alert("오류 발생"); }
 }
 

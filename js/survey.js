@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const userId = localStorage.getItem('userId');
     if (!userId) {
         alert("로그인이 필요합니다.");
-        window.location.href = 'login.html';
+        window.location.href = '/login';
         return;
     }
 
@@ -370,7 +370,7 @@ async function saveQuantitative() {
         });
         if (res.ok) {
             alert("성적 데이터가 저장되었습니다.\n(지원 가능 전형이 자동 계산되었습니다)\n\n마이페이지로 이동합니다.");
-            window.location.href = 'mypage.html';
+            window.location.href = '/mypage';
         }
     } catch (e) { alert("저장 실패"); }
 }

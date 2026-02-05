@@ -342,7 +342,7 @@ async function handleFinalSubmit() {
         if (!response.ok) throw new Error("DB 저장 실패");
         
         alert("회원가입이 성공적으로 완료되었습니다! 로그인 페이지로 이동합니다.");
-        window.location.href = 'login.html';
+        window.location.href = '/login';
 
     } catch (error) {
         console.error(error);
@@ -395,7 +395,7 @@ function handleSignOut() {
     localStorage.removeItem('userTier');
     
     alert("로그아웃 되었습니다.");
-    window.location.href = 'index.html';
+    window.location.href = '/';
 }
 
 function handleSignIn() {
@@ -443,15 +443,15 @@ function handleSignIn() {
                 if (data.role === 'admin') {
                     localStorage.setItem('userRole', 'admin');
                     alert("관리자 계정으로 로그인되었습니다.");
-                    window.location.href = 'admin.html';
+                    window.location.href = '/admin';
                 } else if (data.role === 'tutor') {
                     localStorage.setItem('userRole', 'tutor');
                     alert("튜터 계정으로 로그인되었습니다.");
-                    window.location.href = 'tutor_mypage.html';
+                    window.location.href = '/mypage/tutor';
                 } else {
                     localStorage.setItem('userRole', 'student');
                     alert("로그인 성공!");
-                    window.location.href = 'index.html';
+                    window.location.href = '/';
                 }
             })
             .catch(err => {
@@ -459,7 +459,7 @@ function handleSignIn() {
                 // 🔍 [디버깅] 에러가 났을 때 무조건 학생으로 보내지 말고 경고 띄우기
                 alert("회원 정보 불러오기 실패! : " + err.message);
                 // localStorage.setItem('userRole', 'student'); // 일단 주석 처리
-                // window.location.href = 'index.html'; // 일단 주석 처리
+                // window.location.href = '/'; // 일단 주석 처리
             });
         },
         onFailure: function(err) {

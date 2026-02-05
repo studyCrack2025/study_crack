@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 지금은 바로 성공 페이지로 이동
             
             // [중요] 파라미터 tier=black 전달 -> success.html에서 블랙 테마 적용됨
-            window.location.href = 'success.html?tier=black';
+            window.location.href = '/success?tier=black';
         });
     }
 });

@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (!userId) {
         alert("로그인이 필요합니다.");
-        window.location.href = 'login.html';
+        window.location.href = '/login';
         return;
     }
     
@@ -154,7 +154,7 @@ async function processPayment() {
         if (response.ok) {
             // BLACK 티어는 결제 없이 성공 페이지로
             if (selectedTier === 'black') {
-                window.location.href = `success.html?tier=black`;
+                window.location.href = `/success?tier=black`;
             } 
             // 나머지 티어는 결제 페이지로
             else if (selectedProductUrl) {

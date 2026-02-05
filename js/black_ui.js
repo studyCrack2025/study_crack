@@ -33,7 +33,7 @@ async function loadBlackData() {
 
     if (!token) {
         alert("로그인이 필요합니다. (토큰 없음)");
-        location.href = 'login.html';
+        location.href = '/login';
         return;
     }
 
@@ -42,7 +42,7 @@ async function loadBlackData() {
         console.error("치명적 오류: UserID가 없습니다. 재로그인 필요.");
         alert("회원 정보가 만료되었습니다. 다시 로그인해주세요.");
         localStorage.clear(); // 꼬인 데이터 초기화
-        location.href = 'login.html';
+        location.href = '/login';
         return;
     }
 
@@ -242,7 +242,7 @@ function openColumnPage(id) {
     if (!id) return;
     
     // 상세 페이지로 이동 (ID를 쿼리 파라미터로 전달)
-    window.location.href = `black_column_detail.html?id=${id}`;
+    window.location.href = `/black/column?id=${id}`;
 }
 
 window.onclick = function(event) {
