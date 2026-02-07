@@ -66,7 +66,7 @@ const COURSE_DATA = {
         desc: "상위 1%를 위한 프라이빗 컨설팅. 컨설턴트가 직접 전략에 개입합니다.",
         list: ["PRO 기능 전부 포함", "컨설턴트 직접 관리 및 입시 전략 수립", "시기별 우선 대응 및 시크릿 리포트", "BLACK 전용 라운지 접근 권한"],
         bg: "assets/backgrounds/bg_black.png", 
-        themeColor: "#ffffff"
+        themeColor: "#000000"
     }
 };
 
@@ -94,7 +94,9 @@ function selectCourse(tier) {
         `).join('');
 
         detailView.innerHTML = `
-            <span class="detail-badge" style="color:${data.themeColor === '#000000' ? '#fff' : data.themeColor}; background:#fff;">${tier.toUpperCase()}</span>
+            <span class="detail-badge" style="color:${data.themeColor}; background:#fff; border: 1px solid ${data.themeColor};">
+                ${tier.toUpperCase()}
+            </span>
             <h3 class="detail-title">${data.title}</h3>
             <div class="detail-price">${data.price}</div>
             <p class="detail-desc">${data.desc}</p>
