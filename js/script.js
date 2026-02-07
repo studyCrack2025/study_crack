@@ -232,11 +232,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }, { threshold: 0.15 });
     document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
-
-    // (2) 초기 코스 탭 설정 (Basic)
-    selectCourse('basic');
-
-    // (3) 후기 로드
+    
+    // (2) 후기 로드
     renderReviews();
 });
 
