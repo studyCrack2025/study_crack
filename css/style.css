@@ -367,8 +367,44 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 @media (max-width: 900px) {
     /* 인터랙티브 코스 모바일 최적화 */
     .curriculum-interactive-box { flex-direction: column-reverse; padding: 25px; }
-    .course-tab-nav { width: 100%; flex-direction: row; overflow-x: auto; padding-bottom: 10px; }
-    .course-tab-btn { min-width: 140px; flex-direction: column; text-align: center; padding: 15px; }
+    /* 1. 컨테이너: 가로 스크롤 제거 -> 2열 그리드로 변경 */
+    .course-tab-nav {
+        width: 100%;
+        display: grid !important;        /* Flex 대신 Grid 사용 */
+        grid-template-columns: 1fr 1fr;  /* 정확히 2등분 (2x2 배열) */
+        gap: 8px;                        /* 버튼 사이 간격 좁힘 */
+        overflow-x: visible;             /* 스크롤 제거 */
+        padding-bottom: 0;
+    }
+    /* 2. 버튼: 아이콘과 텍스트를 상하 배치로 변경 */
+    .course-tab-btn {
+        flex-direction: column;          /* 위: 아이콘, 아래: 텍스트 */
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 15px 10px;              /* 패딩을 줄여서 컴팩트하게 */
+        min-width: 0;                    /* 너비 제한 해제 */
+        gap: 6px;                        /* 아이콘과 텍스트 사이 간격 */
+        height: 100%;                    /* 높이 통일 */
+    }
+    /* 3. 아이콘: 모바일에 맞게 크기 축소 */
+    .tab-icon {
+        font-size: 1.6rem;               /* 기존 1.8rem -> 1.6rem */
+    }
+    /* 4. 텍스트 정보: 중앙 정렬 및 크기 조정 */
+    .tab-info {
+        align-items: center;             /* 텍스트 가운데 정렬 */
+        width: 100%;
+    }
+    .tab-name {
+        font-size: 0.95rem;              /* 제목 크기 살짝 축소 */
+        margin-bottom: 2px;
+    }
+    .tab-sub {
+        font-size: 0.75rem;              /* 설명 텍스트 작게 */
+        opacity: 0.8;
+        white-space: nowrap;             /* 줄바꿈 방지 (깔끔하게) */
+    }
     .detail-title { font-size: 1.6rem; }
 }
 
