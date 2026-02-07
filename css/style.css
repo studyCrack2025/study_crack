@@ -8,8 +8,13 @@ body { color: #333; line-height: 1.6; background-color: #f8fafc; overflow-x: hid
 a { text-decoration: none; color: inherit; cursor: pointer; }
 ul, ol { list-style: none; }
 
+/* 공통 애니메이션: 스크롤 리빌 (Scroll Reveal) */
+.scroll-reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s ease-out; }
+.scroll-reveal.visible { opacity: 1; transform: translateY(0); }
+
+
 /* =========================================
-   2. 헤더 영역
+   2. 헤더 영역 (Header)
    ========================================= */
 header { 
     display: flex; justify-content: space-between; align-items: center; 
@@ -24,8 +29,90 @@ header {
 .nav-links a { font-size: 0.95rem; color: #64748b; font-weight: 500; transition: color 0.2s; }
 .nav-links a:hover { color: #2563EB; font-weight: 600; }
 
+
 /* =========================================
-   3. 인트로 & 히어로 섹션
+   3. Message 섹션 (About) - [디자인 강화됨]
+   ========================================= */
+.message-section { 
+    /* 배경을 짙은 남색 그라데이션으로 변경하여 임팩트 강화 */
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    text-align: center; 
+    padding: 120px 5%; 
+    color: #fff; /* 글씨를 흰색으로 변경 */
+    border-top: none; 
+    border-bottom: none;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 배경에 은은한 패턴이나 빛 효과 추가 */
+.message-section::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%; width: 200%; height: 200%;
+    background: radial-gradient(circle, rgba(37,99,235,0.1) 0%, transparent 60%);
+    animation: pulse 10s infinite;
+}
+
+.message-content { 
+    max-width: 900px; margin: 0 auto; 
+    position: relative; z-index: 1;
+}
+
+.message-section h2 { 
+    font-size: 2.8rem; font-weight: 900; color: #fff; 
+    margin-bottom: 25px; line-height: 1.3; word-break: keep-all;
+    
+    /* 텍스트 강조 효과 (밑줄 형광펜 느낌) */
+    display: inline-block;
+    background: linear-gradient(to top, rgba(37, 99, 235, 0.8) 30%, transparent 30%);
+    padding: 0 10px;
+}
+
+.message-section h3 { 
+    font-size: 1.5rem; color: #60a5fa; /* 밝은 하늘색 */
+    font-weight: 700; margin-bottom: 40px; 
+    word-break: keep-all; opacity: 0.9;
+}
+
+.message-section p { 
+    font-size: 1.25rem; color: #cbd5e1; /* 연한 회색 */
+    line-height: 1.8; word-break: keep-all; font-weight: 400;
+}
+
+.message-section p strong {
+    color: #fff; font-weight: 700;
+    border-bottom: 2px solid #3b82f6;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 0.5; }
+}
+
+
+/* =========================================
+   4. Hero 섹션 (특징 카드)
+   ========================================= */
+.hero { background-color: white; padding: 80px 5%; text-align: center; }
+.hero-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+    gap: 40px; max-width: 1200px; margin: 0 auto 60px auto;
+}
+.hero-card {
+    text-align: left; padding: 30px; border-radius: 16px; 
+    background: #fff; border: 1px solid #f1f5f9; 
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: transform 0.3s ease;
+}
+.hero-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+.hero-icon { font-size: 2.5rem; margin-bottom: 20px; display: block; }
+.hero-card h3 { font-size: 1.4rem; font-weight: 800; color: #0F172A; margin-bottom: 15px; line-height: 1.4; word-break: keep-all;}
+.hero-card p { color: #64748b; line-height: 1.7; font-size: 1rem; word-break: keep-all; }
+
+
+/* =========================================
+   5. Roadmap Intro 섹션
    ========================================= */
 .roadmap-intro {
     text-align: center; padding: 90px 20px;
@@ -47,157 +134,162 @@ header {
     padding: 0 4px;
 }
 
-.hero { background-color: white; padding: 80px 5%; text-align: center; }
-.hero-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-    gap: 40px; max-width: 1200px; margin: 0 auto 60px auto;
-}
-.hero-card {
-    text-align: left; padding: 30px; border-radius: 16px; 
-    background: #fff; border: 1px solid #f1f5f9; 
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: transform 0.3s ease;
-}
-.hero-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-.hero-icon { font-size: 2.5rem; margin-bottom: 20px; display: block; }
-.hero-card h3 { font-size: 1.4rem; font-weight: 800; color: #0F172A; margin-bottom: 15px; line-height: 1.4; word-break: keep-all;}
-.hero-card p { color: #64748b; line-height: 1.7; font-size: 1rem; word-break: keep-all; }
-
-.cta-container { text-align: center; margin-top: 40px; }
-.cta-button { 
-    background: linear-gradient(135deg, #2563EB, #1d4ed8); color: white; 
-    padding: 18px 40px; border-radius: 50px; font-weight: 700; font-size: 1.1rem; 
-    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3); transition: all 0.3s ease; display: inline-block;
-}
-.cta-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4); }
 
 /* =========================================
-   4. About & Program 섹션 (기존 스타일 복구됨)
+   6. Review 섹션 (후기) - [배경 이미지 추가됨]
    ========================================= */
-.message-section { 
-    /* 배경을 짙은 남색 그라데이션으로 변경하여 임팩트 강화 */
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-    text-align: center; 
-    padding: 120px 5%; /* 여백을 좀 더 늘림 */
-    color: #fff; /* 글씨를 흰색으로 변경 */
-    border-top: none; 
-    border-bottom: none;
+.review-section {
+    padding: 100px 5%;
     position: relative;
-    overflow: hidden;
+    background-color: #f8fafc;
+    
+    /* 배경 이미지 및 오버레이 적용 */
+    background-image: linear-gradient(rgba(248, 250, 252, 0.9), rgba(248, 250, 252, 0.9)), url('/assets/backgrounds/bg_reviews.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+.section-header { text-align: center; margin-bottom: 50px; }
+.section-header h2 { font-size: 2.2rem; font-weight: 800; color: #0F172A; margin-bottom: 10px; line-height: 1.3; }
+.section-header p { color: #64748b; font-size: 1.1rem; }
+
+.review-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; max-width: 1200px; margin: 0 auto; }
+.review-card { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; transition: transform 0.3s; }
+.review-card:hover { transform: translateY(-5px); }
+.review-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.review-badge { background: #eff6ff; color: #2563eb; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
+.review-score { color: #f59e0b; font-size: 0.9rem; }
+.review-text { font-size: 1rem; color: #334155; line-height: 1.6; margin-bottom: 20px; min-height: 80px; }
+.review-author { display: flex; align-items: center; gap: 10px; border-top: 1px solid #f1f5f9; padding-top: 15px; }
+.review-avatar { width: 40px; height: 40px; background: #cbd5e1; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+.review-info div:first-child { font-weight: 700; color: #0F172A; font-size: 0.95rem; }
+.review-info div:last-child { font-size: 0.85rem; color: #64748b; }
+
+
+/* =========================================
+   7. Curriculum 섹션 (인터랙티브 탭)
+   ========================================= */
+.interactive-curriculum { 
+    position: relative; padding: 100px 5%; overflow: hidden; 
+    min-height: 700px; display: flex; align-items: center; justify-content: center; 
+    color: #fff; transition: background 0.5s ease; 
+}
+.curriculum-bg-overlay { 
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+    background-size: cover; background-position: center; background-repeat: no-repeat; z-index: 1; 
+    background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('/assets/backgrounds/bg_basic.png'); 
+    transition: background-image 0.5s ease-in-out; 
+}
+.curriculum-content-wrapper { position: relative; z-index: 2; max-width: 1100px; width: 100%; }
+
+.curriculum-header-text { text-align: center; margin-bottom: 50px; }
+.curriculum-header-text h2 { font-size: 2.5rem; font-weight: 800; margin-bottom: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+.curriculum-header-text p { font-size: 1.1rem; opacity: 0.9; }
+
+.curriculum-interactive-box { 
+    display: flex; gap: 40px; 
+    background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); 
+    border-radius: 24px; padding: 40px; 
+    border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 20px 40px rgba(0,0,0,0.3); 
 }
 
-/* 배경에 은은한 패턴이나 빛 효과 추가 (선택사항) */
-.message-section::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(37,99,235,0.1) 0%, transparent 60%);
-    animation: pulse 10s infinite;
+/* 탭 네비게이션 (우측) */
+.course-tab-nav { display: flex; flex-direction: column; gap: 15px; width: 280px; flex-shrink: 0; }
+.course-tab-btn { 
+    display: flex; align-items: center; gap: 15px; padding: 20px; 
+    background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); 
+    border-radius: 12px; cursor: pointer; transition: all 0.3s; text-align: left; color: rgba(255, 255, 255, 0.6); 
 }
-
-.message-content { 
-    max-width: 900px; 
-    margin: 0 auto; 
-    position: relative; /* z-index 적용을 위해 */
-    z-index: 1;
+.course-tab-btn:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
+.course-tab-btn.active { 
+    background: #fff; color: #0F172A; border-color: #fff; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2); transform: scale(1.02); 
 }
+.course-tab-btn.active .tab-info .tab-name { color: #0F172A; }
+.course-tab-btn.active .tab-sub { color: #64748b; }
 
-.message-section h2 { 
-    font-size: 2.8rem; /* 폰트 크기 키움 */
+.tab-icon { font-size: 1.8rem; }
+.tab-info { display: flex; flex-direction: column; }
+.tab-name { font-weight: 800; font-size: 1.1rem; }
+.tab-sub { font-size: 0.85rem; font-weight: 400; }
+
+/* 상세 뷰 (좌측) */
+.course-detail-view { flex-grow: 1; padding-right: 20px; animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.detail-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; margin-bottom: 15px; background: rgba(255,255,255,0.2); }
+.detail-title { font-size: 2rem; font-weight: 900; margin-bottom: 15px; }
+.detail-price { font-size: 1.5rem; font-weight: 700; margin-bottom: 25px; color: #fbbf24; }
+.detail-desc { font-size: 1.1rem; line-height: 1.7; margin-bottom: 30px; opacity: 0.9; }
+.detail-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.detail-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 1rem; line-height: 1.5; }
+.detail-list li i { color: #4ade80; margin-top: 4px; }
+
+
+/* =========================================
+   8. CTA & Footer 섹션
+   ========================================= */
+
+/* CTA 섹션 - 결제 유도 디자인 강화 */
+.cta-section { 
+    text-align: center; 
+    padding: 120px 20px; /* 여백을 키워 시원하게 */
+    background-color: #0f172a; /* 이미지 로드 실패 시 기본색 */
+    position: relative; 
+    
+    /* 배경 이미지 적용 및 어둡게 처리 (글씨 잘 보이게) */
+    background-image: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.9)), url('/assets/backgrounds/bg_cta.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+.cta-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+.cta-content h3 { 
+    font-size: 2.4rem; /* 타이틀 크기 확대 */
     font-weight: 900; 
-    color: #fff; 
-    margin-bottom: 25px; 
+    color: #fff; /* 흰색 텍스트 */
+    margin-bottom: 15px; 
     line-height: 1.3;
     word-break: keep-all;
-    
-    /* 텍스트 강조 효과 (밑줄 형광펜 느낌) */
-    display: inline-block;
-    background: linear-gradient(to top, rgba(37, 99, 235, 0.8) 30%, transparent 30%);
-    padding: 0 10px;
+    text-shadow: 0 4px 10px rgba(0,0,0,0.5); /* 텍스트 그림자 */
 }
-
-.message-section h3 { 
-    font-size: 1.5rem; 
-    color: #60a5fa; /* 밝은 하늘색으로 변경하여 가독성 확보 */
-    font-weight: 700; 
-    margin-bottom: 40px; 
-    word-break: keep-all; 
-    opacity: 0.9;
-}
-
-.message-section p { 
-    font-size: 1.25rem; 
+.cta-content p { 
     color: #cbd5e1; /* 연한 회색 */
-    line-height: 1.8; 
-    word-break: keep-all; 
-    font-weight: 400;
+    font-size: 1.15rem; 
+    margin-bottom: 45px; /* 버튼과의 간격 확보 */
+    word-break: keep-all;
+}
+.cta-container { 
+    text-align: center; 
+    margin-top: 0; 
 }
 
-.message-section p strong {
-    color: #fff;
-    font-weight: 700;
-    border-bottom: 2px solid #3b82f6; /* 파란색 밑줄 */
+/* CTA 버튼 - 클릭 유도 강화 (Glow Effect) */
+.cta-button { 
+    background: linear-gradient(135deg, #3b82f6, #2563EB); /* 밝은 블루 그라데이션 */
+    color: white; 
+    padding: 22px 60px; /* 버튼 크기 대폭 확대 (터치 영역 확보) */
+    border-radius: 50px; 
+    font-weight: 800; 
+    font-size: 1.25rem; 
+    
+    /* 빛나는 효과 (Glow) 추가 */
+    box-shadow: 0 0 25px rgba(59, 130, 246, 0.6); 
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+    display: inline-block;
+}
+.cta-button:hover { 
+    transform: translateY(-4px) scale(1.03); /* 살짝 떠오르며 커짐 */
+    box-shadow: 0 0 50px rgba(59, 130, 246, 0.9); /* 광채가 강해짐 */
+    background: linear-gradient(135deg, #60a5fa, #3b82f6);
 }
 
-/* 은은하게 빛나는 애니메이션 */
-@keyframes pulse {
-    0% { transform: scale(1); opacity: 0.5; }
-    50% { transform: scale(1.1); opacity: 0.8; }
-    100% { transform: scale(1); opacity: 0.5; }
-}
-
-.curriculum { background-color: white; padding: 100px 5%; }
-.curriculum-header { 
-    text-align: center; max-width: 900px; margin: 0 auto 60px auto; 
-    padding-bottom: 40px; border-bottom: 2px solid #f1f5f9; 
-}
-.curriculum-header h2 { font-size: 2.4rem; font-weight: 900; color: #0F172A; margin-bottom: 25px; letter-spacing: -1px; word-break: keep-all; }
-.curriculum-header p { font-size: 1.15rem; color: #475569; line-height: 1.8; word-break: keep-all; }
-
-.course-list { max-width: 900px; margin: 0 auto; }
-.course-item { 
-    background: white; border: 1px solid #e2e8f0; border-radius: 16px; 
-    margin-bottom: 20px; overflow: hidden; transition: all 0.3s ease; 
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-}
-.course-item.expandable { cursor: pointer; }
-.course-item.expandable:hover { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); transform: translateY(-2px); }
-
-.course-summary { 
-    padding: 25px 30px; display: flex; justify-content: space-between; align-items: center; background: #fff;
-}
-.course-title-group { display: flex; flex-direction: column; gap: 5px; }
-.course-name { font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
-.course-desc { font-size: 0.95rem; font-weight: 500; color: #64748b; margin-top: 5px; word-break: keep-all; }
-.course-price { font-weight: 700; font-size: 1.1rem; white-space: nowrap; }
-
-/* 티어별 색상 (기존 유지) */
-.course-item.tier-basic { border-left: 6px solid #059669; }
-.course-item.tier-basic .course-name, .course-item.tier-basic .course-price { color: #059669; }
-.course-item.tier-standard { border-left: 6px solid #2563EB; }
-.course-item.tier-standard .course-name, .course-item.tier-standard .course-price { color: #2563EB; }
-.course-item.tier-pro { border-left: 6px solid #E11D48; }
-.course-item.tier-pro .course-name, .course-item.tier-pro .course-price { color: #E11D48; }
-.course-item.tier-black { border-left: 6px solid #171717; background-color: #fafafa; }
-.course-item.tier-black .course-name, .course-item.tier-black .course-price { color: #171717; }
-
-.course-details { 
-    padding: 0 30px 30px 30px; color: #334155; border-top: 1px dashed #e2e8f0; 
-    animation: slideDown 0.3s ease-out;
-}
-@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-.course-details ol { margin-top: 20px; padding-left: 20px; list-style: decimal; }
-.course-details li { margin-bottom: 12px; line-height: 1.6; font-size: 0.95rem; }
-.course-details li strong { color: #0F172A; font-weight: 600; }
-.toggle-icon { font-size: 0.8rem; color: #cbd5e1; transition: transform 0.3s; }
-.course-item.active .toggle-icon { transform: rotate(180deg); color: #0F172A; }
-.hidden-details { display: none; }
-
-/* =========================================
-   5. 푸터 & 모달
-   ========================================= */
+/* 푸터 (기존 유지) */
 footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size: 0.9rem; }
 .footer-content { max-width: 1200px; margin: 0 auto; }
 .company-name { color: white; font-weight: bold; font-size: 1.1rem; margin-bottom: 10px; }
@@ -205,7 +297,11 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 .legal-links span:hover { color: white; }
 .hidden { display: none !important; }
 
-/* 모달 스타일 */
+
+/* =========================================
+   9. Modals & Floating Buttons
+   ========================================= */
+/* 모달 */
 .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); }
 .modal-content { background-color: white; margin: 5% auto; padding: 30px; border-radius: 16px; width: 90%; max-width: 600px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
 .modal-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 2px solid #f1f5f9; flex-shrink: 0; }
@@ -223,9 +319,7 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 .refund-box { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
 .privacy-contact { background: #f8fafc; padding: 10px; border-radius: 8px; font-size: 0.9rem; }
 
-/* =========================================
-   6. 플로팅 Q&A 버튼 스타일
-   ========================================= */
+/* 플로팅 버튼 */
 .floating-qna-btn {
     position: fixed; bottom: 30px; right: 30px; width: 65px; height: 65px;
     background-color: #2563EB; border-radius: 50%; display: flex; align-items: center; justify-content: center;
@@ -263,102 +357,36 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 }
 @keyframes fadeInRight { from { opacity: 0; transform: translate(-10px, -50%); } to { opacity: 1; transform: translate(0, -50%); } }
 
-/* =========================================
-   7. 모바일 반응형 (기존)
-   ========================================= */
-@media (max-width: 768px) {
-    header { flex-direction: column; gap: 15px; padding: 15px; }
-    .nav-links { flex-wrap: wrap; justify-content: center; gap: 15px; }
-    .roadmap-intro { padding: 50px 20px; }
-    .roadmap-intro h2 { font-size: 1.7rem; line-height: 1.3; }
-    .roadmap-intro p { font-size: 1rem; padding: 0 5px; }
-    .hero-grid { grid-template-columns: 1fr; gap: 30px; }
-    .curriculum-header h2 { font-size: 1.8rem; }
-    .course-summary { flex-direction: column; align-items: flex-start; gap: 15px; }
-    .course-price { align-self: flex-end; }
-    .course-details { padding: 0 20px 20px 20px; }
-    .modal-content { margin: 10% auto; width: 95%; max-height: 70vh; padding: 20px; }
-    .floating-qna-btn { bottom: 20px; right: 20px; width: 55px; height: 55px; }
-    .qna-icon { font-size: 1.6rem; }
-    .floating-black-btn { bottom: 90px !important; right: 20px; width: 55px; height: 55px; }
-    .black-icon { font-size: 1.5rem; }
-    .black-guide-tooltip { right: 50%; top: -50px; transform: translateX(50%); text-align: center; }
-    .black-guide-tooltip::after { right: 50%; top: 100%; transform: translateX(50%); border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #d4af37; border-bottom: none; }
-}
 
 /* =========================================
-   [NEW] 8. 추가된 기능 스타일 (후기, 스크롤, 새 커리큘럼 탭)
+   10. 모바일 반응형 (통합)
    ========================================= */
-
-/* 스크롤 애니메이션 (Scroll Reveal) */
-.scroll-reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s ease-out; }
-.scroll-reveal.visible { opacity: 1; transform: translateY(0); }
-
-/* 후기 섹션 (Reviews) */
-.review-section {
-    padding: 100px 5%;
-    position: relative;
-    background-color: #f8fafc; /* 기본 배경색 (이미지 없을 때 대비) */
-    
-    /* 배경 이미지 추가 */
-    background-image: linear-gradient(rgba(248, 250, 252, 0.9), rgba(248, 250, 252, 0.9)), url('/assets/backgrounds/bg_reviews.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-.section-header { text-align: center; margin-bottom: 50px; }
-.section-header h2 { font-size: 2.2rem; font-weight: 800; color: #0F172A; margin-bottom: 10px; line-height: 1.3; }
-.section-header p { color: #64748b; font-size: 1.1rem; }
-.review-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; max-width: 1200px; margin: 0 auto; }
-.review-card { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; transition: transform 0.3s; }
-.review-card:hover { transform: translateY(-5px); }
-.review-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-.review-badge { background: #eff6ff; color: #2563eb; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
-.review-score { color: #f59e0b; font-size: 0.9rem; }
-.review-text { font-size: 1rem; color: #334155; line-height: 1.6; margin-bottom: 20px; min-height: 80px; }
-.review-author { display: flex; align-items: center; gap: 10px; border-top: 1px solid #f1f5f9; padding-top: 15px; }
-.review-avatar { width: 40px; height: 40px; background: #cbd5e1; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
-.review-info div:first-child { font-weight: 700; color: #0F172A; font-size: 0.95rem; }
-.review-info div:last-child { font-size: 0.85rem; color: #64748b; }
-
-/* 인터랙티브 코스 (New Tab Design) */
-.interactive-curriculum { position: relative; padding: 100px 5%; overflow: hidden; min-height: 700px; display: flex; align-items: center; justify-content: center; color: #fff; transition: background 0.5s ease; }
-.curriculum-bg-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; background-repeat: no-repeat; z-index: 1; background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('/assets/backgrounds/bg_basic.png'); transition: background-image 0.5s ease-in-out; }
-.curriculum-content-wrapper { position: relative; z-index: 2; max-width: 1100px; width: 100%; }
-.curriculum-header-text { text-align: center; margin-bottom: 50px; }
-.curriculum-header-text h2 { font-size: 2.5rem; font-weight: 800; margin-bottom: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-.curriculum-header-text p { font-size: 1.1rem; opacity: 0.9; }
-.curriculum-interactive-box { display: flex; gap: 40px; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 24px; padding: 40px; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
-.course-tab-nav { display: flex; flex-direction: column; gap: 15px; width: 280px; flex-shrink: 0; }
-.course-tab-btn { display: flex; align-items: center; gap: 15px; padding: 20px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; cursor: pointer; transition: all 0.3s; text-align: left; color: rgba(255, 255, 255, 0.6); }
-.course-tab-btn:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
-.course-tab-btn.active { background: #fff; color: #0F172A; border-color: #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.2); transform: scale(1.02); }
-.course-tab-btn.active .tab-info .tab-name { color: #0F172A; }
-.course-tab-btn.active .tab-sub { color: #64748b; }
-.tab-icon { font-size: 1.8rem; }
-.tab-info { display: flex; flex-direction: column; }
-.tab-name { font-weight: 800; font-size: 1.1rem; }
-.tab-sub { font-size: 0.85rem; font-weight: 400; }
-.course-detail-view { flex-grow: 1; padding-right: 20px; animation: fadeIn 0.4s ease-out; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.detail-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; margin-bottom: 15px; background: rgba(255,255,255,0.2); }
-.detail-title { font-size: 2rem; font-weight: 900; margin-bottom: 15px; }
-.detail-price { font-size: 1.5rem; font-weight: 700; margin-bottom: 25px; color: #fbbf24; }
-.detail-desc { font-size: 1.1rem; line-height: 1.7; margin-bottom: 30px; opacity: 0.9; }
-.detail-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
-.detail-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 1rem; line-height: 1.5; }
-.detail-list li i { color: #4ade80; margin-top: 4px; }
-.cta-section { text-align: center; padding: 80px 20px; background: #fff; }
-.cta-content h3 { font-size: 1.8rem; font-weight: 800; color: #0F172A; margin-bottom: 10px; }
-.cta-content p { color: #64748b; margin-bottom: 30px; }
-
-/* 추가된 섹션 모바일 반응형 */
 @media (max-width: 900px) {
+    /* 인터랙티브 코스 모바일 최적화 */
     .curriculum-interactive-box { flex-direction: column-reverse; padding: 25px; }
     .course-tab-nav { width: 100%; flex-direction: row; overflow-x: auto; padding-bottom: 10px; }
     .course-tab-btn { min-width: 140px; flex-direction: column; text-align: center; padding: 15px; }
     .detail-title { font-size: 1.6rem; }
 }
+
 @media (max-width: 768px) {
+    header { flex-direction: column; gap: 15px; padding: 15px; }
+    .nav-links { flex-wrap: wrap; justify-content: center; gap: 15px; }
+    
+    .roadmap-intro { padding: 50px 20px; }
+    .roadmap-intro h2 { font-size: 1.7rem; line-height: 1.3; }
+    .roadmap-intro p { font-size: 1rem; padding: 0 5px; }
+    
+    .hero-grid { grid-template-columns: 1fr; gap: 30px; }
     .review-grid { grid-template-columns: 1fr; }
+    
+    .modal-content { margin: 10% auto; width: 95%; max-height: 70vh; padding: 20px; }
+    
+    .floating-qna-btn { bottom: 20px; right: 20px; width: 55px; height: 55px; }
+    .qna-icon { font-size: 1.6rem; }
+    .floating-black-btn { bottom: 90px !important; right: 20px; width: 55px; height: 55px; }
+    .black-icon { font-size: 1.5rem; }
+    
+    .black-guide-tooltip { right: 50%; top: -50px; transform: translateX(50%); text-align: center; }
+    .black-guide-tooltip::after { right: 50%; top: 100%; transform: translateX(50%); border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #d4af37; border-bottom: none; }
 }
