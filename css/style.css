@@ -40,18 +40,11 @@ header {
     font-size: 1.3rem; color: #334155; line-height: 1.7; 
     max-width: 840px; margin: 0 auto; word-break: keep-all; font-weight: 500;
 }
-
 .roadmap-intro p strong {
-    font-weight: 800;
-    color: #0F172A;
-    display: inline;
-    
+    font-weight: 800; color: #0F172A; display: inline;
     background: linear-gradient(to top, rgba(191, 219, 254, 0.6) 35%, transparent 35%);
-    
-    -webkit-box-decoration-break: clone;
-    box-decoration-break: clone;
-    
-    padding: 0 4px; /* 양옆 살짝 여백 */
+    -webkit-box-decoration-break: clone; box-decoration-break: clone;
+    padding: 0 4px;
 }
 
 .hero { background-color: white; padding: 80px 5%; text-align: center; }
@@ -78,7 +71,7 @@ header {
 .cta-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4); }
 
 /* =========================================
-   4. About & Program 섹션
+   4. About & Program 섹션 (기존 스타일 복구됨)
    ========================================= */
 .message-section { 
     background-color: #F8FAFC; text-align: center; padding: 100px 5%; 
@@ -114,16 +107,13 @@ header {
 .course-desc { font-size: 0.95rem; font-weight: 500; color: #64748b; margin-top: 5px; word-break: keep-all; }
 .course-price { font-weight: 700; font-size: 1.1rem; white-space: nowrap; }
 
-/* 티어별 색상 */
+/* 티어별 색상 (기존 유지) */
 .course-item.tier-basic { border-left: 6px solid #059669; }
 .course-item.tier-basic .course-name, .course-item.tier-basic .course-price { color: #059669; }
-
 .course-item.tier-standard { border-left: 6px solid #2563EB; }
 .course-item.tier-standard .course-name, .course-item.tier-standard .course-price { color: #2563EB; }
-
 .course-item.tier-pro { border-left: 6px solid #E11D48; }
 .course-item.tier-pro .course-name, .course-item.tier-pro .course-price { color: #E11D48; }
-
 .course-item.tier-black { border-left: 6px solid #171717; background-color: #fafafa; }
 .course-item.tier-black .course-name, .course-item.tier-black .course-price { color: #171717; }
 
@@ -150,31 +140,15 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 .hidden { display: none !important; }
 
 /* 모달 스타일 */
-.modal {
-    display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%;
-    background-color: rgba(0,0,0,0.6); 
-}
-.modal-content {
-    background-color: white; margin: 5% auto; padding: 30px; border-radius: 16px;
-    width: 90%; max-width: 600px; max-height: 80vh; 
-    display: flex; flex-direction: column;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-}
-.modal-header {
-    display: flex; justify-content: space-between; align-items: center;
-    padding-bottom: 15px; border-bottom: 2px solid #f1f5f9; flex-shrink: 0;
-}
+.modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); }
+.modal-content { background-color: white; margin: 5% auto; padding: 30px; border-radius: 16px; width: 90%; max-width: 600px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 2px solid #f1f5f9; flex-shrink: 0; }
 .modal-header h2 { margin: 0; font-size: 1.4rem; color: #1e293b; }
 .close-btn { font-size: 2rem; color: #94a3b8; cursor: pointer; line-height: 1; }
 .close-btn:hover { color: #ef4444; }
-
-.modal-body {
-    overflow-y: auto; padding-top: 20px; padding-right: 10px;
-    font-size: 0.95rem; line-height: 1.6; color: #475569; text-align: left;
-}
+.modal-body { overflow-y: auto; padding-top: 20px; padding-right: 10px; font-size: 0.95rem; line-height: 1.6; color: #475569; text-align: left; }
 .modal-body::-webkit-scrollbar { width: 5px; }
 .modal-body::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
-
 .modal-body h3 { margin: 25px 0 10px 0; font-size: 1.1rem; color: #0f172a; font-weight: 700; }
 .modal-body ul { list-style: disc; padding-left: 20px; margin-bottom: 15px; }
 .modal-body p { margin-bottom: 10px; }
@@ -187,181 +161,128 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
    6. 플로팅 Q&A 버튼 스타일
    ========================================= */
 .floating-qna-btn {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    width: 65px;
-    height: 65px;
-    background-color: #2563EB;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
-    z-index: 9990; 
-    transition: all 0.3s ease;
-    text-decoration: none;
+    position: fixed; bottom: 30px; right: 30px; width: 65px; height: 65px;
+    background-color: #2563EB; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4); z-index: 9990; transition: all 0.3s ease; text-decoration: none;
 }
-
-.floating-qna-btn:hover {
-    transform: translateY(-5px) scale(1.05);
-    background-color: #1d4ed8;
-    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.5);
-}
-
-.qna-icon {
-    font-size: 2rem;
-    line-height: 1;
-    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
-}
+.floating-qna-btn:hover { transform: translateY(-5px) scale(1.05); background-color: #1d4ed8; box-shadow: 0 8px 25px rgba(37, 99, 235, 0.5); }
+.qna-icon { font-size: 2rem; line-height: 1; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1)); }
 
 .floating-black-btn {
-    position: fixed;
-    bottom: 110px;
-    right: 30px;
-    width: 65px;
-    height: 65px;
-    background: #000; /* 완전 검정 */
-    border: 2px solid #d4af37; /* 금색 테두리 */
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-decoration: none;
-    z-index: 9999; /* 화면 최상단 */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-    overflow: hidden; /* 쉬머 효과가 밖으로 나가지 않게 */
-    transition: transform 0.3s;
+    position: fixed; bottom: 110px; right: 30px; width: 65px; height: 65px;
+    background: #000; border: 2px solid #d4af37; border-radius: 50%;
+    display: flex; justify-content: center; align-items: center; text-decoration: none;
+    z-index: 9999; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); overflow: hidden; transition: transform 0.3s;
 }
+.floating-black-btn:hover { transform: translateY(-5px) scale(1.05); box-shadow: 0 0 20px rgba(212, 175, 55, 0.6); }
+.floating-black-btn.hidden { display: none !important; }
+.black-icon { font-size: 24px; z-index: 2; position: relative; }
 
-.floating-black-btn:hover {
-    transform: translateY(-5px) scale(1.05);
-    box-shadow: 0 0 20px rgba(212, 175, 55, 0.6); /* 골드 빛 효과 */
-}
-
-.floating-black-btn.hidden {
-    display: none !important;
-}
-
-.black-icon {
-    font-size: 24px;
-    z-index: 2; /* 효과보다 위에 있어야 함 */
-    position: relative;
-}
-
-/* ✨ 금빛 일렁임(Shimmer) 애니메이션 효과 */
 .shimmer-effect {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-        to right, 
-        transparent 0%, 
-        rgba(212, 175, 55, 0.4) 50%, 
-        transparent 100%
-    );
-    transform: skewX(-20deg) translateX(-150%);
-    animation: shimmer 3s infinite; /* 3초마다 반짝임 */
-    z-index: 1;
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(to right, transparent 0%, rgba(212, 175, 55, 0.4) 50%, transparent 100%);
+    transform: skewX(-20deg) translateX(-150%); animation: shimmer 3s infinite; z-index: 1;
 }
+@keyframes shimmer { 0% { transform: skewX(-20deg) translateX(-150%); } 20% { transform: skewX(-20deg) translateX(150%); } 100% { transform: skewX(-20deg) translateX(150%); } }
 
-@keyframes shimmer {
-    0% { transform: skewX(-20deg) translateX(-150%); }
-    20% { transform: skewX(-20deg) translateX(150%); } /* 휙 지나감 */
-    100% { transform: skewX(-20deg) translateX(150%); } /* 대기 */
-}
-
-/* 💬 안내 말풍선 (가이드) */
 .black-guide-tooltip {
-    position: absolute;
-    right: 75px; /* 버튼 왼쪽으로 배치 */
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(0, 0, 0, 0.85);
-    color: #d4af37; /* 금색 글씨 */
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 0.8rem;
-    font-weight: bold;
-    text-align: right;
-    white-space: nowrap;
-    line-height: 1.2;
-    border: 1px solid #d4af37;
-    pointer-events: none; /* 클릭 방해 안 함 */
-    
-    /* 등장 애니메이션 */
-    animation: fadeInRight 0.5s ease-out forwards;
+    position: absolute; right: 75px; top: 50%; transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.85); color: #d4af37; padding: 8px 12px; border-radius: 8px;
+    font-size: 0.8rem; font-weight: bold; text-align: right; white-space: nowrap; line-height: 1.2;
+    border: 1px solid #d4af37; pointer-events: none; animation: fadeInRight 0.5s ease-out forwards;
 }
-
-/* 말풍선 꼬리 (오른쪽 화살표) */
 .black-guide-tooltip::after {
-    content: '';
-    position: absolute;
-    right: -6px;
-    top: 50%;
-    transform: translateY(-50%);
-    border-top: 6px solid transparent;
-    border-bottom: 6px solid transparent;
-    border-left: 6px solid #d4af37;
+    content: ''; position: absolute; right: -6px; top: 50%; transform: translateY(-50%);
+    border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-left: 6px solid #d4af37;
 }
-
-@keyframes fadeInRight {
-    from { opacity: 0; transform: translate(-10px, -50%); }
-    to { opacity: 1; transform: translate(0, -50%); }
-}
+@keyframes fadeInRight { from { opacity: 0; transform: translate(-10px, -50%); } to { opacity: 1; transform: translate(0, -50%); } }
 
 /* =========================================
-   7. 모바일 반응형
+   7. 모바일 반응형 (기존)
    ========================================= */
 @media (max-width: 768px) {
     header { flex-direction: column; gap: 15px; padding: 15px; }
     .nav-links { flex-wrap: wrap; justify-content: center; gap: 15px; }
-
     .roadmap-intro { padding: 50px 20px; }
     .roadmap-intro h2 { font-size: 1.7rem; line-height: 1.3; }
     .roadmap-intro p { font-size: 1rem; padding: 0 5px; }
-
     .hero-grid { grid-template-columns: 1fr; gap: 30px; }
-    
     .curriculum-header h2 { font-size: 1.8rem; }
     .course-summary { flex-direction: column; align-items: flex-start; gap: 15px; }
     .course-price { align-self: flex-end; }
     .course-details { padding: 0 20px 20px 20px; }
-
     .modal-content { margin: 10% auto; width: 95%; max-height: 70vh; padding: 20px; }
-    
-    /* 모바일에서 플로팅 버튼 위치 미세 조정 */
-    .floating-qna-btn {
-        bottom: 20px;
-        right: 20px;
-        width: 55px;
-        height: 55px;
-    }
+    .floating-qna-btn { bottom: 20px; right: 20px; width: 55px; height: 55px; }
     .qna-icon { font-size: 1.6rem; }
-    .floating-black-btn {
-        bottom: 90px !important;
-        right: 20px;
-        width: 55px;
-        height: 55px;
-    }
-    .black-icon {
-        font-size: 1.5rem;
-    }
-    .black-guide-tooltip {
-        right: 50%;
-        top: -50px;
-        transform: translateX(50%);
-        text-align: center;
-    }
-    .black-guide-tooltip::after {
-        right: 50%;
-        top: 100%; /* 아래쪽 꼬리 */
-        transform: translateX(50%);
-        border-left: 6px solid transparent;
-        border-right: 6px solid transparent;
-        border-top: 6px solid #d4af37;
-        border-bottom: none;
-    }
+    .floating-black-btn { bottom: 90px !important; right: 20px; width: 55px; height: 55px; }
+    .black-icon { font-size: 1.5rem; }
+    .black-guide-tooltip { right: 50%; top: -50px; transform: translateX(50%); text-align: center; }
+    .black-guide-tooltip::after { right: 50%; top: 100%; transform: translateX(50%); border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #d4af37; border-bottom: none; }
+}
+
+/* =========================================
+   [NEW] 8. 추가된 기능 스타일 (후기, 스크롤, 새 커리큘럼 탭)
+   ========================================= */
+
+/* 스크롤 애니메이션 (Scroll Reveal) */
+.scroll-reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s ease-out; }
+.scroll-reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* 후기 섹션 (Reviews) */
+.review-section { padding: 100px 5%; background-color: #f8fafc; }
+.section-header { text-align: center; margin-bottom: 50px; }
+.section-header h2 { font-size: 2.2rem; font-weight: 800; color: #0F172A; margin-bottom: 10px; line-height: 1.3; }
+.section-header p { color: #64748b; font-size: 1.1rem; }
+.review-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; max-width: 1200px; margin: 0 auto; }
+.review-card { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; transition: transform 0.3s; }
+.review-card:hover { transform: translateY(-5px); }
+.review-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.review-badge { background: #eff6ff; color: #2563eb; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
+.review-score { color: #f59e0b; font-size: 0.9rem; }
+.review-text { font-size: 1rem; color: #334155; line-height: 1.6; margin-bottom: 20px; min-height: 80px; }
+.review-author { display: flex; align-items: center; gap: 10px; border-top: 1px solid #f1f5f9; padding-top: 15px; }
+.review-avatar { width: 40px; height: 40px; background: #cbd5e1; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+.review-info div:first-child { font-weight: 700; color: #0F172A; font-size: 0.95rem; }
+.review-info div:last-child { font-size: 0.85rem; color: #64748b; }
+
+/* 인터랙티브 코스 (New Tab Design) */
+.interactive-curriculum { position: relative; padding: 100px 5%; overflow: hidden; min-height: 700px; display: flex; align-items: center; justify-content: center; color: #fff; transition: background 0.5s ease; }
+.curriculum-bg-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; background-repeat: no-repeat; z-index: 1; background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('/assets/backgrounds/bg_basic.png'); transition: background-image 0.5s ease-in-out; }
+.curriculum-content-wrapper { position: relative; z-index: 2; max-width: 1100px; width: 100%; }
+.curriculum-header-text { text-align: center; margin-bottom: 50px; }
+.curriculum-header-text h2 { font-size: 2.5rem; font-weight: 800; margin-bottom: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+.curriculum-header-text p { font-size: 1.1rem; opacity: 0.9; }
+.curriculum-interactive-box { display: flex; gap: 40px; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 24px; padding: 40px; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+.course-tab-nav { display: flex; flex-direction: column; gap: 15px; width: 280px; flex-shrink: 0; }
+.course-tab-btn { display: flex; align-items: center; gap: 15px; padding: 20px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; cursor: pointer; transition: all 0.3s; text-align: left; color: rgba(255, 255, 255, 0.6); }
+.course-tab-btn:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
+.course-tab-btn.active { background: #fff; color: #0F172A; border-color: #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.2); transform: scale(1.02); }
+.course-tab-btn.active .tab-info .tab-name { color: #0F172A; }
+.course-tab-btn.active .tab-sub { color: #64748b; }
+.tab-icon { font-size: 1.8rem; }
+.tab-info { display: flex; flex-direction: column; }
+.tab-name { font-weight: 800; font-size: 1.1rem; }
+.tab-sub { font-size: 0.85rem; font-weight: 400; }
+.course-detail-view { flex-grow: 1; padding-right: 20px; animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.detail-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; margin-bottom: 15px; background: rgba(255,255,255,0.2); }
+.detail-title { font-size: 2rem; font-weight: 900; margin-bottom: 15px; }
+.detail-price { font-size: 1.5rem; font-weight: 700; margin-bottom: 25px; color: #fbbf24; }
+.detail-desc { font-size: 1.1rem; line-height: 1.7; margin-bottom: 30px; opacity: 0.9; }
+.detail-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.detail-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 1rem; line-height: 1.5; }
+.detail-list li i { color: #4ade80; margin-top: 4px; }
+.cta-section { text-align: center; padding: 80px 20px; background: #fff; }
+.cta-content h3 { font-size: 1.8rem; font-weight: 800; color: #0F172A; margin-bottom: 10px; }
+.cta-content p { color: #64748b; margin-bottom: 30px; }
+
+/* 추가된 섹션 모바일 반응형 */
+@media (max-width: 900px) {
+    .curriculum-interactive-box { flex-direction: column-reverse; padding: 25px; }
+    .course-tab-nav { width: 100%; flex-direction: row; overflow-x: auto; padding-bottom: 10px; }
+    .course-tab-btn { min-width: 140px; flex-direction: column; text-align: center; padding: 15px; }
+    .detail-title { font-size: 1.6rem; }
+}
+@media (max-width: 768px) {
+    .review-grid { grid-template-columns: 1fr; }
 }
