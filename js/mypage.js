@@ -212,7 +212,8 @@ async function handleProfileUpload(input) {
             },
             body: JSON.stringify({
                 type: 'get_presigned_url',
-                data: {  // 👈 [중요] 이렇게 data로 감싸줘야 Lambda가 읽을 수 있음
+                userId: userId,
+                data: {
                     fileName: file.name,
                     fileType: file.type,
                     folder: 'profile' 
@@ -246,7 +247,8 @@ async function handleProfileUpload(input) {
             },
             body: JSON.stringify({
                 type: 'update_user_profile_image',
-                data: { // 👈 [중요] 여기도 data로 감싸기
+                userId: userId,
+                data: {
                     profileImageUrl: fileUrl
                 }
             })
