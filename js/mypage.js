@@ -283,10 +283,9 @@ async function handleProfileDelete() {
     const userId = localStorage.getItem('userId');
 
     try {
-        // [Step 1] S3 파일 삭제 (기존 람다 기능 재활용)
-        // 기본 샘플 이미지가 아닐 때만 삭제 요청
+        // [Step 1] S3 파일 삭제 요청
         if (!currentUrl.includes('placehold.co') && !currentUrl.includes('assets/images')) {
-            await fetch(MYPAGE_API_URL, {
+            const s3Res = await fetch(CONFIG.api.base, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -294,13 +293,15 @@ async function handleProfileDelete() {
                 },
                 body: JSON.stringify({
                     type: 'delete_s3_file',
-                    fileUrl: currentUrl
+                    data: { fileUrl: currentUrl } // data 객체에 담아서 전송
                 })
             });
+
+            if (s3Res.status === 401) throw new Error("로그인이 필요합니다.");
         }
 
-        // [Step 2] DB 프로필 정보 초기화 (null 혹은 빈 문자열로 업데이트)
-        await fetch(MYPAGE_API_URL, {
+        // [Step 2] DB 프로필 정보 삭제 (REMOVE)
+        const dbRes = await fetch(CONFIG.api.base, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
@@ -308,19 +309,28 @@ async function handleProfileDelete() {
             },
             body: JSON.stringify({
                 type: 'update_user_profile_image',
-                userId: userId,
-                profileImageUrl: '' // 빈 값 전송
+                data: { profileImageUrl: "" }, // 빈 값을 보내면 Lambda가 REMOVE 처리
+                userId: userId
             })
         });
+
+        if (!dbRes.ok) {
+            const err = await dbRes.json();
+            throw new Error(err.error || "DB 삭제 실패");
+        }
 
         // [성공] 화면 초기화
         imgElem.src = "assets/images/sample_profile.png"; 
         alert("프로필 사진이 삭제되었습니다.");
-        checkDeleteButtonVisibility("");
+        
+        // 삭제 버튼 숨기기
+        if (typeof checkDeleteButtonVisibility === 'function') {
+            checkDeleteButtonVisibility(""); 
+        }
 
     } catch (e) {
         console.error("삭제 실패:", e);
-        alert("삭제 중 오류가 발생했습니다.");
+        alert("삭제 중 오류가 발생했습니다: " + e.message);
     }
 }
 
