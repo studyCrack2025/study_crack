@@ -566,7 +566,6 @@ async function saveTargetUnivs() {
 // ============================================================
 async function updateAnalysisUI() {
     console.clear(); 
-    console.log("🔥 [Start] 통합 분석 시작");
 
     const container = document.getElementById('univAnalysisResult');
     if (!container) return;
@@ -591,6 +590,14 @@ async function updateAnalysisUI() {
             </div>`; 
         return; 
     }
+    
+    // 로딩 UI 표시 (데이터 가져오기 전)
+    container.innerHTML = `
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">최신 입시 데이터를 분석 중입니다...</div>
+        </div>
+    `;
 
     // 2. 현재 모드 설정 (유효하지 않으면 첫 번째 가용한 시험으로 강제 변경)
     if (!currentExamMode || !availableExams.includes(currentExamMode)) {
@@ -656,13 +663,6 @@ async function updateAnalysisUI() {
 
         const data = await res.json();
         const results = data.results || [];
-
-        // 상세 로그 출력
-        if (data.server_debug?.logs) {
-            // console.groupCollapsed("🖥️ Server Logs");
-            // data.server_debug.logs.forEach(l => console.log(l));
-            // console.groupEnd();
-        }
 
         console.group(`🧮 [${currentExamMode}] 상세 계산 내역`);
         results.forEach(r => {
