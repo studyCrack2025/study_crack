@@ -322,7 +322,7 @@ async function handleProfileDelete() {
         }
 
         // [성공] 화면 초기화
-        imgElem.src = "assets/images/sample_profile.png"; 
+        imgElem.src = "https://placehold.co/150x150?text=Profile"; 
         alert("프로필 사진이 삭제되었습니다.");
         
         // 삭제 버튼 숨기기
