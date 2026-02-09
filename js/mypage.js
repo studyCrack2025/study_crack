@@ -41,7 +41,6 @@ function getWeekTitle(date) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // accessToken 대신 idToken 사용 (Cognito 권장)
     const idToken = localStorage.getItem('idToken'); 
     const userId = localStorage.getItem('userId');
 
@@ -54,27 +53,34 @@ document.addEventListener('DOMContentLoaded', () => {
     setWeeklyLoadingStatus(true);
     console.log("🚀 [Init] 데이터 로딩 시작...");
 
-    // Promise.allSettled를 사용하여 하나가 실패해도 나머지는 실행되도록 변경
     Promise.allSettled([
-        fetchUserData(userId).then((userData) => {
-            console.log("  - ✅ 회원정보 로드 완료");
-            
-            // 유저 데이터에 저장된 프로필 이미지 URL이 있으면 화면에 표시
+        fetchUserData(userId).then(() => console.log("  - ✅ (기존) 회원정보 처리 완료")),
+        fetchUnivData().then(() => console.log("  - ✅ 대학목록 로드 완료")),
+        
+        fetch(MYPAGE_API_URL, { 
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Authorization': `Bearer ${idToken}` 
+            },
+            body: JSON.stringify({ type: 'get_user', userId: userId })
+        })
+        .then(res => res.json())
+        .then(userData => {
+            console.log("👤 [Profile] 프로필 사진 정보 확인");
             if (userData && userData.profileImage) {
                 const imgElem = document.getElementById('profileImg');
                 if (imgElem) {
                     imgElem.src = userData.profileImage;
-                    // 삭제 버튼 상태도 업데이트 (이미지 있으면 삭제 버튼 보이기)
+                    // 삭제 버튼 상태 업데이트
                     if (typeof checkDeleteButtonVisibility === 'function') {
                         checkDeleteButtonVisibility(userData.profileImage);
                     }
                 }
             }
-            return userData;
-        }),
-        fetchUnivData().then(() => console.log("  - ✅ 대학목록 로드 완료"))
+        })
+        
     ]).then((results) => {
-        // 실패한 요청이 있는지 확인
         results.forEach((res, idx) => {
             if (res.status === 'rejected') {
                 console.error(`❌ [Critical] 초기 데이터 로드 실패 (Index ${idx}):`, res.reason);
@@ -84,7 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("🚀 [Init] 초기화 단계 진입");
         initUnivGrid(); 
         
-        // 여기서 강제로 실행
         console.log("🚀 [Init] 분석 UI 업데이트 호출");
         updateAnalysisUI(); 
         
