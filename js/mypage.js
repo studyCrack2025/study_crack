@@ -54,9 +54,24 @@ document.addEventListener('DOMContentLoaded', () => {
     setWeeklyLoadingStatus(true);
     console.log("🚀 [Init] 데이터 로딩 시작...");
 
-    // [수정] Promise.allSettled를 사용하여 하나가 실패해도 나머지는 실행되도록 변경
+    // Promise.allSettled를 사용하여 하나가 실패해도 나머지는 실행되도록 변경
     Promise.allSettled([
-        fetchUserData(userId).then(() => console.log("  - ✅ 회원정보 로드 완료")),
+        fetchUserData(userId).then((userData) => {
+            console.log("  - ✅ 회원정보 로드 완료");
+            
+            // 유저 데이터에 저장된 프로필 이미지 URL이 있으면 화면에 표시
+            if (userData && userData.profileImage) {
+                const imgElem = document.getElementById('profileImg');
+                if (imgElem) {
+                    imgElem.src = userData.profileImage;
+                    // 삭제 버튼 상태도 업데이트 (이미지 있으면 삭제 버튼 보이기)
+                    if (typeof checkDeleteButtonVisibility === 'function') {
+                        checkDeleteButtonVisibility(userData.profileImage);
+                    }
+                }
+            }
+            return userData;
+        }),
         fetchUnivData().then(() => console.log("  - ✅ 대학목록 로드 완료"))
     ]).then((results) => {
         // 실패한 요청이 있는지 확인
@@ -152,6 +167,161 @@ function applyUserTier(tier) {
         }
         badge.innerText = `${tier.toUpperCase()} MEMBER`;
     } else if (badge) badge.remove();
+}
+
+// =========================================
+// [기능] 프로필 사진 관리 (업로드, 수정, 삭제)
+// =========================================
+
+// 1. 파일 선택창 열기
+function triggerFileUpload() {
+    document.getElementById('profileFileInput').click();
+}
+
+// 2. 파일 선택 시 업로드 프로세스 시작
+async function handleProfileUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    // 간단한 유효성 검사 (크기 5MB 제한)
+    if (file.size > 5 * 1024 * 1024) {
+        alert("파일 크기는 5MB 이하여야 합니다.");
+        return;
+    }
+
+    const token = localStorage.getItem('idToken');
+    const userId = localStorage.getItem('userId');
+    
+    // 로딩 표시 (이미지를 흐릿하게 하거나 스피너 표시 등)
+    const imgElem = document.getElementById('profileImg');
+    const originalSrc = imgElem.src;
+    imgElem.style.opacity = '0.5';
+
+    try {
+        // [Step 1] Presigned URL 발급 요청 (기존 람다 기능 재활용)
+        // folder: 'profile'로 지정하여 프로필 폴더에 저장
+        const presignRes = await fetch(MYPAGE_API_URL, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                type: 'get_presigned_url',
+                fileName: file.name,
+                fileType: file.type,
+                folder: 'profile' 
+            })
+        });
+
+        const presignData = await presignRes.json();
+        if (!presignRes.ok) throw new Error(presignData.error || "Presigned URL 발급 실패");
+
+        const { uploadUrl, fileUrl } = presignData;
+
+        // [Step 2] S3로 직접 파일 업로드 (PUT)
+        // *중요*: 헤더에 Content-Type을 정확히 넣어야 함
+        const s3Upload = await fetch(uploadUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': file.type },
+            body: file
+        });
+
+        if (!s3Upload.ok) throw new Error("S3 업로드 실패");
+
+        // [Step 3] DB에 이미지 링크 업데이트 (새로 구현할 람다 기능 호출)
+        const updateRes = await fetch(MYPAGE_API_URL, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                type: 'update_user_profile_image', // DB 업데이트용 타입
+                userId: userId,
+                profileImageUrl: fileUrl
+            })
+        });
+
+        if (!updateRes.ok) throw new Error("DB 업데이트 실패");
+
+        // [성공] 화면 갱신
+        imgElem.src = fileUrl;
+        alert("프로필 사진이 변경되었습니다.");
+        
+        // 기존 이미지가 샘플이 아니었다면 삭제 처리 로직을 추가할 수도 있음 (선택사항)
+        checkDeleteButtonVisibility(fileUrl);
+
+    } catch (e) {
+        console.error("프로필 업로드 에러:", e);
+        alert("사진 업로드 중 오류가 발생했습니다.");
+        imgElem.src = originalSrc; // 원복
+    } finally {
+        imgElem.style.opacity = '1';
+        input.value = ''; // 입력창 초기화 (같은 파일 다시 선택 가능하게)
+    }
+}
+
+// 3. 프로필 사진 삭제
+async function handleProfileDelete() {
+    if (!confirm("프로필 사진을 삭제하시겠습니까?")) return;
+
+    const imgElem = document.getElementById('profileImg');
+    const currentUrl = imgElem.src;
+    const token = localStorage.getItem('idToken');
+    const userId = localStorage.getItem('userId');
+
+    try {
+        // [Step 1] S3 파일 삭제 (기존 람다 기능 재활용)
+        // 기본 샘플 이미지가 아닐 때만 삭제 요청
+        if (!currentUrl.includes('placehold.co') && !currentUrl.includes('assets/images')) {
+            await fetch(MYPAGE_API_URL, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify({
+                    type: 'delete_s3_file',
+                    fileUrl: currentUrl
+                })
+            });
+        }
+
+        // [Step 2] DB 프로필 정보 초기화 (null 혹은 빈 문자열로 업데이트)
+        await fetch(MYPAGE_API_URL, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({
+                type: 'update_user_profile_image',
+                userId: userId,
+                profileImageUrl: '' // 빈 값 전송
+            })
+        });
+
+        // [성공] 화면 초기화
+        imgElem.src = "assets/images/sample_profile.png"; 
+        alert("프로필 사진이 삭제되었습니다.");
+        checkDeleteButtonVisibility("");
+
+    } catch (e) {
+        console.error("삭제 실패:", e);
+        alert("삭제 중 오류가 발생했습니다.");
+    }
+}
+
+// [유틸] 삭제 버튼 보이기/숨기기 처리
+function checkDeleteButtonVisibility(url) {
+    const deleteBtn = document.getElementById('deletePicBtn');
+    // URL이 있고, 기본 이미지가 아니면 삭제 버튼 노출
+    if (url && !url.includes('sample_profile') && !url.includes('placehold.co')) {
+        deleteBtn.classList.remove('hidden');
+    } else {
+        deleteBtn.classList.add('hidden');
+    }
 }
 
 async function fetchUnivData() {
