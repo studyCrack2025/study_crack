@@ -192,14 +192,13 @@ async function handleProfileUpload(input) {
     const token = localStorage.getItem('idToken');
     const userId = localStorage.getItem('userId');
     
-    // 로딩 표시 (이미지를 흐릿하게 하거나 스피너 표시 등)
+    // 로딩 표시
     const imgElem = document.getElementById('profileImg');
     const originalSrc = imgElem.src;
     imgElem.style.opacity = '0.5';
 
     try {
-        // [Step 1] Presigned URL 발급 요청 (기존 람다 기능 재활용)
-        // folder: 'profile'로 지정하여 프로필 폴더에 저장
+        // [Step 1] Presigned URL 발급 요청
         const presignRes = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             headers: { 
@@ -208,19 +207,23 @@ async function handleProfileUpload(input) {
             },
             body: JSON.stringify({
                 type: 'get_presigned_url',
-                fileName: file.name,
-                fileType: file.type,
-                folder: 'profile' 
+                data: {  // 👈 [중요] 이렇게 data로 감싸줘야 Lambda가 읽을 수 있음
+                    fileName: file.name,
+                    fileType: file.type,
+                    folder: 'profile' 
+                }
             })
         });
 
-        const presignData = await presignRes.json();
-        if (!presignRes.ok) throw new Error(presignData.error || "Presigned URL 발급 실패");
+        if (!presignRes.ok) {
+            const errData = await presignRes.json();
+            throw new Error(errData.error || "Presigned URL 발급 실패");
+        }
 
+        const presignData = await presignRes.json();
         const { uploadUrl, fileUrl } = presignData;
 
         // [Step 2] S3로 직접 파일 업로드 (PUT)
-        // *중요*: 헤더에 Content-Type을 정확히 넣어야 함
         const s3Upload = await fetch(uploadUrl, {
             method: 'PUT',
             headers: { 'Content-Type': file.type },
@@ -229,7 +232,7 @@ async function handleProfileUpload(input) {
 
         if (!s3Upload.ok) throw new Error("S3 업로드 실패");
 
-        // [Step 3] DB에 이미지 링크 업데이트 (새로 구현할 람다 기능 호출)
+        // [Step 3] DB에 이미지 링크 업데이트
         const updateRes = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             headers: { 
@@ -237,9 +240,10 @@ async function handleProfileUpload(input) {
                 'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-                type: 'update_user_profile_image', // DB 업데이트용 타입
-                userId: userId,
-                profileImageUrl: fileUrl
+                type: 'update_user_profile_image',
+                data: { // 👈 [중요] 여기도 data로 감싸기
+                    profileImageUrl: fileUrl
+                }
             })
         });
 
@@ -249,16 +253,18 @@ async function handleProfileUpload(input) {
         imgElem.src = fileUrl;
         alert("프로필 사진이 변경되었습니다.");
         
-        // 기존 이미지가 샘플이 아니었다면 삭제 처리 로직을 추가할 수도 있음 (선택사항)
-        checkDeleteButtonVisibility(fileUrl);
+        // 삭제 버튼이 있다면 보이게 처리
+        if (typeof checkDeleteButtonVisibility === 'function') {
+            checkDeleteButtonVisibility(fileUrl);
+        }
 
     } catch (e) {
         console.error("프로필 업로드 에러:", e);
-        alert("사진 업로드 중 오류가 발생했습니다.");
-        imgElem.src = originalSrc; // 원복
+        alert("사진 업로드 중 오류가 발생했습니다: " + e.message);
+        imgElem.src = originalSrc; // 실패 시 원복
     } finally {
         imgElem.style.opacity = '1';
-        input.value = ''; // 입력창 초기화 (같은 파일 다시 선택 가능하게)
+        input.value = ''; // 입력창 초기화
     }
 }
 
