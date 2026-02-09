@@ -1012,7 +1012,7 @@ function renderSimCards(data) {
                                 <div style="font-size:0.9rem; font-weight:bold; color:${scoreColor};">
                                     ${info.msg.replace('점 상승', '')} ${info.diff > 0 ? '▲' : ''}
                                 </div>
-                                ${info.diff > 0 ? `<div style="font-size:0.7rem; color:#94a3b8;">(실제 +${info.diff.toFixed(2)})</div>` : ''}
+                                ${info.diff > 0 ? `<div style="font-size:0.7rem; color:#94a3b8;">(변환전 +${info.diff.toFixed(2)})</div>` : ''}
                             </div>
                         </div>`;
                     }).join('')}
