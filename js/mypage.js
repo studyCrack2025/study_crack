@@ -253,8 +253,6 @@ function closeModal(modalId) {
 }
 
 // --- 이메일 변경 ---
-let emailTimerInterval;
-
 function openEmailModal() {
     document.getElementById('emailModal').classList.remove('hidden');
 }
