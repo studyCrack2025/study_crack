@@ -167,15 +167,20 @@ async function renderReviews() {
     } catch (e) { container.innerHTML = '<p>후기를 불러오지 못했습니다.</p>'; }
 }
 
-
 /* =========================================
-   [DOM 로드] 기존 기능 유지 + 신규 기능 추가
+   [DOM 로드]
    ========================================= */
 document.addEventListener('DOMContentLoaded', () => {
+    
+    // [1] 네비게이션 버튼 상태 업데이트 (로그인 여부 체크)
+    updateNavUI();
+
+    // 기존 checkLoginStatus가 있다면 실행 (토큰 만료 체크 등 보조 역할)
     if (typeof checkLoginStatus === 'function') {
         checkLoginStatus();
     }
 
+    // [2] 마이페이지 버튼 이벤트
     const myPageBtn = document.getElementById('myPageBtn');
     if (myPageBtn) {
         myPageBtn.addEventListener('click', (e) => {
@@ -190,39 +195,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // [3] 로그아웃 버튼 이벤트
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
+            
+            // 로그아웃 처리
+            localStorage.clear(); // 토큰 삭제
+            
             if (typeof handleSignOut === 'function') {
-                handleSignOut();
+                handleSignOut(); // AWS Cognito 등이 있다면 호출
             } else {
-                localStorage.clear();
+                alert("로그아웃 되었습니다.");
                 window.location.href = '/index';
             }
+            
+            // UI 즉시 갱신 (새로고침 전 깜빡임 방지)
+            updateNavUI(); 
         });
     }
 
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            if (!this.classList.contains('nav-btn') && !this.classList.contains('floating-qna-btn')) {
-                const href = this.getAttribute('href');
-                if (href.length > 1) {
-                    const targetId = href.substring(1);
-                    const targetElement = document.getElementById(targetId);
-                    if (targetElement) {
-                        e.preventDefault();
-                        targetElement.scrollIntoView({ behavior: 'smooth' });
-                    }
-                }
-            }
-        });
-    });
-
-    showBlackButtonIfEligible();
-    setTimeout(showBlackButtonIfEligible, 500);
+    // [4] 기타 기존 기능 (BLACK 버튼, 스크롤 애니메이션 등)
+    if (typeof showBlackButtonIfEligible === 'function') {
+        showBlackButtonIfEligible();
+        setTimeout(showBlackButtonIfEligible, 500);
+    }
     
-    // (1) 스크롤 애니메이션
+    // 스크롤 애니메이션
     const observer = new IntersectionObserver((entries, obs) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -233,10 +233,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { threshold: 0.15 });
     document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
     
-    // (2) 후기 로드
-    renderReviews();
+    // 후기 로드
+    if (typeof renderReviews === 'function') {
+        renderReviews();
+    }
 });
 
+
+/* =========================================
+   [함수] 네비게이션 UI 업데이트 (핵심 기능)
+   ========================================= */
+function updateNavUI() {
+    // 로그인 여부 판단 (토큰 존재 여부)
+    const isLoggedIn = !!localStorage.getItem('idToken');
+
+    // DOM 요소 가져오기
+    const btnAnalysis = document.getElementById('navAnalysis'); // 솔루션
+    const btnQna = document.getElementById('navQna');           // 문의
+    const btnLogin = document.getElementById('loginBtn');       // 로그인
+    const btnMyPage = document.getElementById('myPageBtn');     // 마이페이지
+    const btnLogout = document.getElementById('logoutBtn');     // 로그아웃
+
+    if (isLoggedIn) {
+        // [로그인 상태] -> 솔루션, 문의, 마이페이지, 로그아웃 보임 / 로그인 버튼 숨김
+        if (btnAnalysis) btnAnalysis.classList.remove('hidden');
+        if (btnQna) btnQna.classList.remove('hidden');
+        if (btnMyPage) btnMyPage.classList.remove('hidden');
+        if (btnLogout) btnLogout.classList.remove('hidden');
+        if (btnLogin) btnLogin.classList.add('hidden');
+    } else {
+        // [비로그인 상태] -> 솔루션, 문의, 마이페이지, 로그아웃 숨김 / 로그인 버튼 보임
+        if (btnAnalysis) btnAnalysis.classList.add('hidden');
+        if (btnQna) btnQna.classList.add('hidden');
+        if (btnMyPage) btnMyPage.classList.add('hidden');
+        if (btnLogout) btnLogout.classList.add('hidden');
+        if (btnLogin) btnLogin.classList.remove('hidden');
+    }
+}
 
 // -------------------------------------------
 // [기존 함수들] BLACK 버튼 로직 유지
