@@ -38,8 +38,7 @@ async function fetchUserData(userId) {
         
         const data = await response.json();
         renderUserInfo(data);
-        applyUserTier(data.computedTier || 'free'); 
-        updateSurveyStatus(data);
+        applyUserTier(data.computedTier || 'free');
         
         // 프로필 사진 로드
         if (data && data.profileImage) {

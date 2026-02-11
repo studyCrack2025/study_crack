@@ -93,7 +93,8 @@ async function fetchUserData(userId) {
         
         if (!response.ok) throw new Error("사용자 데이터 로드 실패");
         
-        const data = await response.json();
+        const rawData = await response.json();
+        const data = parseDynamoItem(rawData);
         
         // 상단 프로필 정보 렌더링
         renderUserInfo(data);
@@ -131,58 +132,116 @@ function applyUserTier(tier) {
     // 티어 배지 등 UI 업데이트 (필요 시 구현)
 }
 
+function parseDynamoItem(item) {
+    if (item === undefined || item === null) return null;
+
+    // 이미 파싱된 값이거나 원시 타입인 경우
+    if (typeof item !== 'object') return item;
+
+    // 1. DynamoDB 타입별 처리
+    if (item.S !== undefined) return item.S;
+    if (item.N !== undefined) return Number(item.N);
+    if (item.BOOL !== undefined) return item.BOOL;
+    if (item.NULL === true) return null; // NULL 타입 처리 추가
+
+    // 2. 리스트 (L) 재귀 파싱
+    if (item.L !== undefined) {
+        if (Array.isArray(item.L)) {
+            return item.L.map(parseDynamoItem);
+        }
+        return []; // 배열이 아니면 빈 배열 반환 (방어 코드)
+    }
+
+    // 3. 맵 (M) 재귀 파싱
+    if (item.M !== undefined) {
+        const obj = {};
+        for (const key in item.M) {
+            obj[key] = parseDynamoItem(item.M[key]);
+        }
+        return obj;
+    }
+
+    // 4. 래퍼가 없는 일반 객체인 경우 (또는 이미 파싱된 객체)
+    // 내부 속성 중에 DynamoDB 키가 있는지 확인하여 재귀적으로 파싱
+    const obj = {};
+    const keys = Object.keys(item);
+    if (keys.length === 0) return item; // 빈 객체
+
+    for (const key of keys) {
+        obj[key] = parseDynamoItem(item[key]);
+    }
+    return obj;
+}
+
 function updateSurveyStatus(data) {
     // ---------------------------
     // 1. 정성 데이터 (Qualitative)
     // ---------------------------
-    const qual = data.qualitative; // 정성 데이터 객체
-    const isQualDone = !!qual;     // 존재 여부
+    // 이미 파싱된 상태이므로 바로 접근 가능
+    const qual = data.qualitative;
+    const isQualDone = !!qual;
 
     const qualStatusEl = document.getElementById('qualStatus');
+    const qualGradeRow = document.getElementById('qualGradeRow');
     const qualStreamRow = document.getElementById('qualStreamRow');
     const qualTargetRow = document.getElementById('qualTargetRow');
-    
+
     if (isQualDone) {
-        // (1) 상태 표시
+        // (1) 작성 상태
         qualStatusEl.innerHTML = '<span style="color:#166534; font-weight:bold;">✅ 작성완료</span>';
-        
-        // (2) 희망 계열 (문과/이과 등)
-        // data.qualitative.group 값 사용 (예: humanities, natural)
-        // 값이 없으면 '-' 표시
-        const groupMap = { 
-            'humanities': '인문계열', 
-            'natural': '자연계열', 
-            'arts': '예체능', 
-            'undefined': '미정' 
+
+        // (2) 학년/신분
+        const statusVal = qual.status || '';
+        if (statusVal) {
+            document.getElementById('qualGrade').innerText = statusVal;
+            qualGradeRow.style.display = 'flex';
+        } else {
+            qualGradeRow.style.display = 'none';
+        }
+
+        // (3) 희망 계열
+        const groupMap = {
+            'humanities': '인문계열',
+            'natural': '자연계열',
+            'nature': '자연계열',  // nature 대응
+            'arts': '예체능',
+            'undefined': '미정'
         };
-        const groupKey = qual.group || 'undefined';
-        const groupName = groupMap[groupKey] || groupKey; // 매핑 없으면 그대로 출력
-        
+        const groupKey = qual.stream || 'undefined';
+        const groupName = groupMap[groupKey] || groupKey;
+
         document.getElementById('qualStream').innerText = groupName;
         qualStreamRow.style.display = 'flex';
 
-        // (3) 목표 대학 (1, 2지망)
-        // qual 데이터 내부에 target_univ_1 등이 있거나, userTargetUnivs 배열 사용
+        // (4) 목표 대학
         let targets = [];
-        if (qual.target_univ_1) targets.push(qual.target_univ_1);
-        if (qual.target_univ_2) targets.push(qual.target_univ_2);
-        
-        // 정성 데이터에 없으면 전역 타겟 대학에서 가져오기 (fallback)
+
+        // 이미 파싱된 일반 배열이므로 바로 사용 가능
+        if (Array.isArray(qual.targets)) {
+            // 빈 문자열("") 및 null 필터링
+            targets = qual.targets.filter(t => t && t.trim() !== "");
+        }
+
+        // 정성 데이터에 없으면 전역 설정에서 가져오기 (Fallback)
         if (targets.length === 0 && data.targetUnivs) {
-            if(data.targetUnivs[0]?.univ) targets.push(data.targetUnivs[0].univ);
-            if(data.targetUnivs[1]?.univ) targets.push(data.targetUnivs[1].univ);
+            data.targetUnivs.forEach(t => {
+                // targetUnivs 리스트에 null이 섞여있으므로 체크
+                if(t && t.univ) targets.push(t.univ);
+            });
         }
 
         if (targets.length > 0) {
-            document.getElementById('qualTarget').innerText = targets.join(', ');
+            // 최대 2개, 중복 제거
+            const uniqueTargets = [...new Set(targets)].slice(0, 2);
+            document.getElementById('qualTarget').innerText = uniqueTargets.join(', ');
             qualTargetRow.style.display = 'flex';
         } else {
             qualTargetRow.style.display = 'none';
         }
 
     } else {
-        // 미작성 상태
         qualStatusEl.innerHTML = '<span style="color:#991b1b; font-weight:bold;">❌ 미작성</span>';
+        qualGradeRow.style.display = 'none';
         qualStreamRow.style.display = 'none';
         qualTargetRow.style.display = 'none';
     }
@@ -190,43 +249,50 @@ function updateSurveyStatus(data) {
     // ---------------------------
     // 2. 정량 데이터 (Quantitative)
     // ---------------------------
-    const quan = data.quantitative || {};
-    // 실제 점수가 입력된 시험만 필터링 (국어 또는 수학 점수가 있는 경우)
-    const validExams = Object.keys(quan).filter(key => {
-        const d = quan[key];
-        return d && (d.kor || d.math);
-    });
-    const isQuanDone = validExams.length > 0;
+    const quan = data.quantitative;
+    const validExams = [];
 
+    if (quan) {
+        Object.keys(quan).forEach(key => {
+            const d = quan[key];
+            // 파싱된 데이터에서 점수 존재 여부 확인
+            if (d && (d.kor || d.math || d.eng)) {
+                validExams.push(key);
+            }
+        });
+    }
+
+    const isQuanDone = validExams.length > 0;
     const quanListEl = document.getElementById('quanDataList');
     const quanEmptyEl = document.getElementById('quanEmpty');
 
-    quanListEl.innerHTML = ''; // 초기화
+    quanListEl.innerHTML = '';
 
     if (isQuanDone) {
         quanEmptyEl.style.display = 'none';
-        
-        // 시험 순서 정렬 (3월 -> 수능 순)
+        // 시험 순서 정렬
         const sortOrder = ['mar', 'apr', 'may', 'jun', 'jul', 'sep', 'oct', 'csat'];
         validExams.sort((a, b) => sortOrder.indexOf(a) - sortOrder.indexOf(b));
 
-        // 최근 3개만 보여주기 (너무 길어짐 방지) or 전체 보여주기
-        // 여기서는 전체를 보여주되, 공간 부족 시 스크롤 되도록 CSS 처리 권장
         validExams.forEach(key => {
             const examData = quan[key];
-            const examName = EXAM_DISPLAY_NAMES[key] ? EXAM_DISPLAY_NAMES[key].split(' ')[0] : key.toUpperCase(); // "6월", "9월", "수능" 등 짧게
-            
-            // 점수 요약 (예: 국92 수88)
-            let scoreSummary = [];
-            if (examData.kor) scoreSummary.push(`국${examData.kor}`);
-            if (examData.math) {
-                // 수학은 구조가 {score:88, opt:'...'} 일 수도 있고 그냥 숫자일 수도 있음
-                const mScore = typeof examData.math === 'object' ? examData.math.score : examData.math;
-                if(mScore) scoreSummary.push(`수${mScore}`);
-            }
-            if (examData.eng) scoreSummary.push(`영${examData.eng}`);
+            const examName = EXAM_DISPLAY_NAMES[key] ? EXAM_DISPLAY_NAMES[key].split(' ')[0] : key.toUpperCase();
 
-            // 리스트 아이템 생성
+            let scoreSummary = [];
+            // 파싱된 데이터 사용
+            if (examData.kor) {
+                const val = examData.kor.grd || examData.kor.pct || examData.kor.std || '?';
+                scoreSummary.push(`국${val}`);
+            }
+            if (examData.math) {
+                const val = examData.math.grd || examData.math.pct || examData.math.std || '?';
+                scoreSummary.push(`수${val}`);
+            }
+            if (examData.eng) {
+                const val = examData.eng.grd || '?';
+                scoreSummary.push(`영${val}`);
+            }
+
             const li = document.createElement('li');
             li.innerHTML = `
                 <span class="label">${examName}</span>
@@ -234,26 +300,25 @@ function updateSurveyStatus(data) {
             `;
             quanListEl.appendChild(li);
         });
-
     } else {
         quanEmptyEl.style.display = 'block';
     }
 
     // ---------------------------
-    // 3. 전체 배지 상태 업데이트
+    // 3. 전체 배지 상태
     // ---------------------------
     const badge = document.getElementById('statusBadge');
     if(badge) {
         badge.className = 'status-badge';
-        if (isQualDone && isQuanDone) { 
-            badge.classList.add('complete'); 
-            badge.innerText = "분석 준비 완료"; 
-        } else if (isQualDone || isQuanDone) { 
-            badge.classList.add('partial'); 
-            badge.innerText = "데이터 부족"; 
-        } else { 
-            badge.classList.add('incomplete'); 
-            badge.innerText = "시작 필요"; 
+        if (isQualDone && isQuanDone) {
+            badge.classList.add('complete');
+            badge.innerText = "분석 준비 완료";
+        } else if (isQualDone || isQuanDone) {
+            badge.classList.add('partial');
+            badge.innerText = "데이터 부족";
+        } else {
+            badge.classList.add('incomplete');
+            badge.innerText = "시작 필요";
         }
     }
 }
