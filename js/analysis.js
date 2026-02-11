@@ -33,6 +33,14 @@ const EXAM_DISPLAY_NAMES = {
     "may": "5월 학력평가"
 };
 
+const SUBJECT_CODE_MAP = {
+    // 국어
+    'un': '언매', 'hj': '화작',
+    // 수학
+    'mi': '미적', 'ki': '기하', 'hw': '확통',
+    // 탐구는 보통 이름이 직접 들어오지만 코드로 올 경우를 대비해 필요시 추가
+};
+
 // ============================================================
 // [초기화] DOM 로드 시 실행
 // ============================================================
@@ -185,53 +193,58 @@ function applyUserTier(tier) {
 }
 
 function updateSurveyStatus(data) {
-    // 이미 파싱된 상태
+    // ---------------------------
+    // 1. 정성 데이터 (Qualitative)
+    // ---------------------------
     const qual = data.qualitative;
-    const isQualDone = !!qual;
+    const isQualDone = !!qual; 
 
     const qualStatusEl = document.getElementById('qualStatus');
     const qualGradeRow = document.getElementById('qualGradeRow');
     const qualStreamRow = document.getElementById('qualStreamRow');
     const qualTargetRow = document.getElementById('qualTargetRow');
-
+    
     if (isQualDone) {
         qualStatusEl.innerHTML = '<span style="color:#166534; font-weight:bold;">✅ 작성완료</span>';
-
+        
+        // (1) 학년
         const statusVal = qual.status || '';
         if (statusVal) {
             document.getElementById('qualGrade').innerText = statusVal;
             qualGradeRow.style.display = 'flex';
-        } else {
-            qualGradeRow.style.display = 'none';
-        }
+        } else { qualGradeRow.style.display = 'none'; }
 
-        const groupMap = { 
-            'humanities': '인문계열', 
-            'natural': '자연계열', 
-            'nature': '자연계열', 
-            'arts': '예체능', 
-            'undefined': '미정' 
-        };
+        // (2) 계열
+        const groupMap = { 'humanities': '인문', 'natural': '자연', 'nature': '자연', 'arts': '예체능', 'undefined': '미정' };
         const groupKey = qual.stream || 'undefined';
-        const groupName = groupMap[groupKey] || groupKey;
-
-        document.getElementById('qualStream').innerText = groupName;
+        document.getElementById('qualStream').innerText = groupMap[groupKey] || groupKey;
         qualStreamRow.style.display = 'flex';
 
+        // (3) 목표 대학 (1, 2지망 분리 표시)
         let targets = [];
         if (Array.isArray(qual.targets)) {
             targets = qual.targets.filter(t => t && t.trim() !== "");
         }
-
+        // Fallback
         if (targets.length === 0 && data.targetUnivs) {
-            data.targetUnivs.forEach(t => {
-                if(t && t.univ) targets.push(t.univ);
-            });
+            data.targetUnivs.forEach(t => { if(t && t.univ) targets.push(t.univ); });
         }
 
+        const targetContainer = document.getElementById('qualTargetContainer');
+        targetContainer.innerHTML = ''; // 초기화
+
         if (targets.length > 0) {
+            // 중복 제거 후 최대 2개
             const uniqueTargets = [...new Set(targets)].slice(0, 2);
-            document.getElementById('qualTarget').innerText = uniqueTargets.join(', ');
+            
+            let targetHtml = '';
+            if (uniqueTargets[0]) {
+                targetHtml += `<div class="target-row"><span class="target-badge first">1지망</span> ${escapeHtml(uniqueTargets[0])}</div>`;
+            }
+            if (uniqueTargets[1]) {
+                targetHtml += `<div class="target-row"><span class="target-badge second">2지망</span> ${escapeHtml(uniqueTargets[1])}</div>`;
+            }
+            targetContainer.innerHTML = targetHtml;
             qualTargetRow.style.display = 'flex';
         } else {
             qualTargetRow.style.display = 'none';
@@ -244,74 +257,103 @@ function updateSurveyStatus(data) {
         qualTargetRow.style.display = 'none';
     }
 
+    // ---------------------------
+    // 2. 정량 데이터 (Quantitative) - 상세 표시
+    // ---------------------------
     const quan = data.quantitative;
     const validExams = [];
-
+    
     if (quan) {
         Object.keys(quan).forEach(key => {
             const d = quan[key];
-            if (d && (d.kor || d.math || d.eng)) {
-                validExams.push(key);
-            }
+            if (d && (d.kor || d.math || d.eng)) validExams.push(key);
         });
     }
-
+    
     const isQuanDone = validExams.length > 0;
     const quanListEl = document.getElementById('quanDataList');
     const quanEmptyEl = document.getElementById('quanEmpty');
 
-    quanListEl.innerHTML = '';
+    quanListEl.innerHTML = ''; 
 
     if (isQuanDone) {
         quanEmptyEl.style.display = 'none';
         const sortOrder = ['mar', 'apr', 'may', 'jun', 'jul', 'sep', 'oct', 'csat'];
-        validExams.sort((a, b) => sortOrder.indexOf(a) - sortOrder.indexOf(b));
+        validExams.sort((a, b) => sortOrder.indexOf(b) - sortOrder.indexOf(a)); // 최신순 정렬 (b - a)
 
         validExams.forEach(key => {
             const examData = quan[key];
-            const examName = EXAM_DISPLAY_NAMES[key] ? EXAM_DISPLAY_NAMES[key].split(' ')[0] : key.toUpperCase();
+            const examName = EXAM_DISPLAY_NAMES[key] || key.toUpperCase();
+            
+            // 점수 포맷팅 헬퍼 함수
+            // 형태: 과목명(선택) | 표점 / 백분위 / 등급
+            const renderRow = (label, dataObj) => {
+                if (!dataObj) return '';
+                
+                // 선택과목 처리 (opt: "un" -> "언매")
+                let optStr = '';
+                if (dataObj.opt) {
+                    optStr = `<span class="opt-name">(${SUBJECT_CODE_MAP[dataObj.opt] || dataObj.opt})</span>`;
+                } else if (dataObj.name) {
+                    optStr = `<span class="opt-name">(${dataObj.name})</span>`;
+                }
 
-            let scoreSummary = [];
-            if (examData.kor) {
-                const val = examData.kor.grd || examData.kor.pct || examData.kor.std || '?';
-                scoreSummary.push(`국${val}`);
-            }
-            if (examData.math) {
-                const val = examData.math.grd || examData.math.pct || examData.math.std || '?';
-                scoreSummary.push(`수${val}`);
-            }
-            if (examData.eng) {
-                const val = examData.eng.grd || '?';
-                scoreSummary.push(`영${val}`);
-            }
+                // 점수 데이터 (std:표점, pct:백분위, grd:등급)
+                const std = dataObj.std || '-';
+                const pct = dataObj.pct ? dataObj.pct + '%' : '-';
+                const grd = dataObj.grd ? `<span class="grade-badge">${dataObj.grd}</span>` : '';
 
-            // [보안] 데이터 이스케이프 처리
-            const safeExamName = escapeHtml(examName);
-            const safeSummary = escapeHtml(scoreSummary.join(' '));
+                // 영어/한국사는 등급만 표시하는 경우가 많음
+                let valueStr = '';
+                if (label === '영어' || label === '한국사') {
+                    valueStr = `${grd}`;
+                } else {
+                    // 국수탐: 표점 / 백분위 / 등급
+                    valueStr = `${std} / ${pct} ${grd}`;
+                }
 
-            const li = document.createElement('li');
-            li.innerHTML = `
-                <span class="label">${safeExamName}</span>
-                <span class="data-summary">${safeSummary}</span>
+                return `
+                    <tr>
+                        <td width="65"><span class="subj-name">${label}</span></td>
+                        <td>
+                            ${optStr}
+                            <span class="score-values">${valueStr}</span>
+                        </td>
+                    </tr>
+                `;
+            };
+
+            let rowsHtml = '';
+            rowsHtml += renderRow('국어', examData.kor);
+            rowsHtml += renderRow('수학', examData.math);
+            rowsHtml += renderRow('영어', examData.eng);
+            rowsHtml += renderRow('탐구1', examData.inq1);
+            rowsHtml += renderRow('탐구2', examData.inq2);
+
+            const card = document.createElement('div');
+            card.className = 'score-card';
+            card.innerHTML = `
+                <div class="score-card-header">${escapeHtml(examName)}</div>
+                <table class="score-table">
+                    ${rowsHtml}
+                </table>
             `;
-            quanListEl.appendChild(li);
+            quanListEl.appendChild(card);
         });
     } else {
         quanEmptyEl.style.display = 'block';
     }
 
+    // 상태 배지 업데이트
     const badge = document.getElementById('statusBadge');
     if(badge) {
         badge.className = 'status-badge';
         if (isQualDone && isQuanDone) { 
-            badge.classList.add('complete'); 
-            badge.innerText = "분석 준비 완료"; 
+            badge.classList.add('complete'); badge.innerText = "분석 준비 완료"; 
         } else if (isQualDone || isQuanDone) { 
-            badge.classList.add('partial'); 
-            badge.innerText = "데이터 부족"; 
+            badge.classList.add('partial'); badge.innerText = "데이터 부족"; 
         } else { 
-            badge.classList.add('incomplete'); 
-            badge.innerText = "시작 필요"; 
+            badge.classList.add('incomplete'); badge.innerText = "시작 필요"; 
         }
     }
 }

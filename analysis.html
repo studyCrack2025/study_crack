@@ -53,20 +53,21 @@
     
     			<div class="status-detail-container">
         			<div class="detail-group">
-            			<h5 class="detail-title"><i class="fas fa-user-tag"></i> 정성 데이터</h5>
-            			<ul class="detail-list">
-                			<li><span class="label">상태:</span> <span id="qualStatus">-</span></li>
-                			<li id="qualGradeRow" style="display:none;">
-                    			<span class="label">학년/신분:</span> <span id="qualGrade" class="val-text">-</span>
-                			</li>
-                			<li id="qualStreamRow" style="display:none;">
-                    			<span class="label">희망계열:</span> <span id="qualStream" class="val-text">-</span>
-                			</li>
-                			<li id="qualTargetRow" style="display:none;">
-                    			<span class="label">목표대학:</span> <span id="qualTarget" class="val-text">-</span>
-                			</li>
-            			</ul>
-        			</div>
+            <h5 class="detail-title"><i class="fas fa-user-tag"></i> 정성 데이터</h5>
+            <ul class="detail-list">
+                <li><span class="label">상태:</span> <span id="qualStatus">-</span></li>
+                <li id="qualGradeRow" style="display:none;">
+                    <span class="label">학년/신분:</span> <span id="qualGrade" class="val-text">-</span>
+                </li>
+                <li id="qualStreamRow" style="display:none;">
+                    <span class="label">희망계열:</span> <span id="qualStream" class="val-text">-</span>
+                </li>
+                <li id="qualTargetRow" style="display:none; flex-direction: column; align-items: flex-start;">
+                    <span class="label" style="margin-bottom: 5px;">목표대학:</span> 
+                    <div id="qualTargetContainer" class="target-univ-box"></div>
+                </li>
+            </ul>
+        </div>
 
         			<div class="detail-group">
             			<h5 class="detail-title"><i class="fas fa-chart-bar"></i> 정량 데이터</h5>
