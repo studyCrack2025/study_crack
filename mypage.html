@@ -67,7 +67,8 @@
             </div>
             
             <div class="account-actions">
-                </div>
+                <button class="btn-delete-account" onclick="handleDeleteAccount()">회원 탈퇴</button>
+            </div>
         </aside>
 
         <main class="content-area">
@@ -118,13 +119,10 @@
                         <a href="#" onclick="openPasswordModal(); return false;" class="text-link">비밀번호 변경하기</a>
                     </div>
                 </div>
-
-                <div class="account-actions">
-                     <button class="btn-delete-account" onclick="handleDeleteAccount()">회원 탈퇴</button>
-                </div>
             </div>
         </main>
-    </div> <div id="emailModal" class="modal hidden">
+    </div> 
+    <div id="emailModal" class="modal hidden">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('emailModal')">&times;</span>
             <h3>이메일 변경</h3>
