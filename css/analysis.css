@@ -280,7 +280,7 @@
 .univ-sub-header { margin: 25px 0 15px 0; border-bottom: 1px dashed #e2e8f0; padding-bottom: 10px; }
 .univ-sub-header h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: #1e293b; }
 .univ-sub-header p { margin: 0; font-size: 0.9rem; color: #64748b; }
-.univ-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; overflow-x: visible; }
+.univ-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 20px; overflow-x: visible; }
 .univ-slot { border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; background: #f8fafc; position: relative; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .univ-slot label { font-size: 0.85rem; font-weight: bold; color: #334155; }
 .univ-slot .slot-msg { font-size: 0.8rem; color: #ef4444; font-weight: 500; margin-top: 5px; }
@@ -426,4 +426,10 @@
     .black-theme { margin: 0; border-radius: 8px; }
     .score-input-grid { grid-template-columns: repeat(3, 1fr); }
     .mock-tile-group { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 600px) {
+    .univ-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
