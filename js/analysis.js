@@ -149,6 +149,12 @@ async function fetchUserData(userId) {
             body: JSON.stringify({ type: 'get_user', userId: safeUserId }) 
         });
         
+        if (response.status === 401) {
+            alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+            window.location.href = '/login';
+            return;
+        }
+        
         if (!response.ok) throw new Error("사용자 데이터 로드 실패");
         
         // [중요] DB 데이터 파싱
@@ -367,6 +373,7 @@ async function fetchUnivData() {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'get_univ_list_only', userId: userId }) 
         });
+        
         if (!response.ok) throw new Error(`서버 응답 오류`);
         const data = await response.json();
         
