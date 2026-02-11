@@ -211,11 +211,9 @@ async function saveSingleField(field, value) {
         const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            // Lambda에서 'update_profile' 타입으로 받아 부분 업데이트 처리 필요
-            // 기존 update_profile 로직이 전체 덮어쓰기라면 Lambda 수정 없이 data 객체에 필요한 필드만 보내도 됨 (Lambda 구현에 따라 다름)
-            // 여기서는 Lambda가 유연하게 data 안의 필드만 업데이트한다고 가정
             body: JSON.stringify({ 
-                type: 'update_profile', 
+                // [변경] 기존 회원가입용 로직과 분리하기 위해 새로운 type 사용
+                type: 'update_member_info', 
                 userId, 
                 data: { [field]: value } 
             })
