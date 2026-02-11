@@ -184,6 +184,83 @@
     font-size: 0.75rem; margin-left: 4px;
 }
 
+/* 드롭다운 스타일 */
+.quan-select-wrapper {
+    margin-bottom: 10px;
+}
+.quan-dropdown {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: #334155;
+    background-color: #fff;
+    outline: none;
+    cursor: pointer;
+}
+.quan-dropdown:focus {
+    border-color: #3b82f6;
+}
+
+/* 사이드바용 점수 카드 (메인보다 조금 더 컴팩트하게) */
+.score-detail-view {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+/* 테이블 스타일 (기존 스타일 재활용하되 사이드바용 조정) */
+.side-score-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+.side-score-table td {
+    padding: 4px 0;
+    vertical-align: middle;
+    border-bottom: 1px dashed #f1f5f9;
+}
+.side-score-table tr:last-child td {
+    border-bottom: none;
+}
+
+.subj-label {
+    font-weight: 700;
+    color: #475569;
+    width: 35px; /* 공간 확보 */
+}
+
+.score-info {
+    text-align: right;
+    color: #334155;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+}
+
+.opt-badge {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-right: 4px;
+    font-weight: normal;
+}
+
+.grade-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    background-color: #1e293b;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    margin-left: 6px;
+    font-weight: bold;
+}
+
 /* 솔루션 헤더 */
 .sol-header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid #f1f5f9; padding-bottom: 20px; display: flex; flex-direction: column; align-items: center; }
 .sol-title { font-size: 1.8rem; font-weight: 800; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 15px; }

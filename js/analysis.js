@@ -264,11 +264,12 @@ function updateSurveyStatus(data) {
     }
 
     // ---------------------------
-    // 2. 정량 데이터 (Quantitative) - 상세 표시
+    // 2. 정량 데이터 (Quantitative) - 드롭다운 방식
     // ---------------------------
     const quan = data.quantitative;
     const validExams = [];
     
+    // 데이터가 존재하는 시험 찾기
     if (quan) {
         Object.keys(quan).forEach(key => {
             const d = quan[key];
@@ -277,77 +278,87 @@ function updateSurveyStatus(data) {
     }
     
     const isQuanDone = validExams.length > 0;
-    const quanListEl = document.getElementById('quanDataList');
+    
+    // 요소 가져오기
     const quanEmptyEl = document.getElementById('quanEmpty');
-
-    quanListEl.innerHTML = ''; 
+    const quanContentBox = document.getElementById('quanContentBox');
+    const selector = document.getElementById('sideQuanSelector');
+    const detailBox = document.getElementById('sideQuanDetail');
 
     if (isQuanDone) {
         quanEmptyEl.style.display = 'none';
+        quanContentBox.style.display = 'block';
+
+        // 1. 최신순 정렬 (수능 -> 3월)
         const sortOrder = ['mar', 'apr', 'may', 'jun', 'jul', 'sep', 'oct', 'csat'];
-        validExams.sort((a, b) => sortOrder.indexOf(b) - sortOrder.indexOf(a)); // 최신순 정렬 (b - a)
+        validExams.sort((a, b) => sortOrder.indexOf(b) - sortOrder.indexOf(a));
 
-        validExams.forEach(key => {
-            const examData = quan[key];
-            const examName = EXAM_DISPLAY_NAMES[key] || key.toUpperCase();
-            
-            // 점수 포맷팅 헬퍼 함수
-            // 형태: 과목명(선택) | 표점 / 백분위 / 등급
-            const renderRow = (label, dataObj) => {
-                if (!dataObj) return '';
-                
-                // 선택과목 처리 (opt: "un" -> "언매")
-                let optStr = '';
-                if (dataObj.opt) {
-                    optStr = `<span class="opt-name">(${SUBJECT_CODE_MAP[dataObj.opt] || dataObj.opt})</span>`;
-                } else if (dataObj.name) {
-                    optStr = `<span class="opt-name">(${dataObj.name})</span>`;
-                }
+        // 2. 드롭다운 옵션 생성
+        selector.innerHTML = validExams.map(key => {
+            const name = EXAM_DISPLAY_NAMES[key] || key.toUpperCase();
+            return `<option value="${key}">${name}</option>`;
+        }).join('');
 
-                // 점수 데이터 (std:표점, pct:백분위, grd:등급)
-                const std = dataObj.std || '-';
-                const pct = dataObj.pct ? dataObj.pct + '%' : '-';
-                const grd = dataObj.grd ? `<span class="grade-badge">${dataObj.grd}</span>` : '';
+        // 3. 상세 점수 렌더링 함수 (내부 함수)
+        const renderSideScore = (examKey) => {
+            const d = quan[examKey];
+            if (!d) return;
 
-                // 영어/한국사는 등급만 표시하는 경우가 많음
-                let valueStr = '';
+            // 행 렌더링 헬퍼
+            const makeRow = (label, obj) => {
+                if (!obj) return ''; // 데이터 없으면 빈 문자열
+
+                // 선택과목명
+                let optText = '';
+                if (obj.opt) optText = `<span class="opt-badge">(${SUBJECT_CODE_MAP[obj.opt] || obj.opt})</span>`;
+                else if (obj.name) optText = `<span class="opt-badge">(${obj.name})</span>`;
+
+                // 점수 데이터
+                const std = obj.std || '-';
+                const pct = obj.pct ? obj.pct + '%' : '-';
+                const grd = obj.grd ? `<span class="grade-circle">${obj.grd}</span>` : '';
+
+                // 영어/한국사는 등급만
+                let valStr = '';
                 if (label === '영어' || label === '한국사') {
-                    valueStr = `${grd}`;
+                    valStr = grd; 
                 } else {
-                    // 국수탐: 표점 / 백분위 / 등급
-                    valueStr = `${std} / ${pct} ${grd}`;
+                    valStr = `${std} / ${pct} ${grd}`;
                 }
 
                 return `
                     <tr>
-                        <td width="65"><span class="subj-name">${label}</span></td>
-                        <td>
-                            ${optStr}
-                            <span class="score-values">${valueStr}</span>
+                        <td class="subj-label">${label}</td>
+                        <td class="score-info">
+                            ${optText} ${valStr}
                         </td>
                     </tr>
                 `;
             };
 
-            let rowsHtml = '';
-            rowsHtml += renderRow('국어', examData.kor);
-            rowsHtml += renderRow('수학', examData.math);
-            rowsHtml += renderRow('영어', examData.eng);
-            rowsHtml += renderRow('탐구1', examData.inq1);
-            rowsHtml += renderRow('탐구2', examData.inq2);
+            // 테이블 조립
+            let html = '<table class="side-score-table">';
+            html += makeRow('국어', d.kor);
+            html += makeRow('수학', d.math);
+            html += makeRow('영어', d.eng);
+            html += makeRow('탐구1', d.inq1);
+            html += makeRow('탐구2', d.inq2);
+            html += '</table>';
 
-            const card = document.createElement('div');
-            card.className = 'score-card';
-            card.innerHTML = `
-                <div class="score-card-header">${escapeHtml(examName)}</div>
-                <table class="score-table">
-                    ${rowsHtml}
-                </table>
-            `;
-            quanListEl.appendChild(card);
-        });
+            detailBox.innerHTML = html;
+        };
+
+        // 4. 초기 렌더링 (가장 최신 시험)
+        renderSideScore(validExams[0]);
+
+        // 5. 이벤트 리스너 (변경 시 렌더링)
+        selector.onchange = (e) => {
+            renderSideScore(e.target.value);
+        };
+
     } else {
         quanEmptyEl.style.display = 'block';
+        quanContentBox.style.display = 'none';
     }
 
     // 상태 배지 업데이트

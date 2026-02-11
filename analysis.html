@@ -70,11 +70,17 @@
         </div>
 
         			<div class="detail-group">
-            			<h5 class="detail-title"><i class="fas fa-chart-bar"></i> 정량 데이터</h5>
-            			<div id="quanEmpty" class="empty-msg" style="display:none;">입력된 성적이 없습니다.</div>
-            			<ul class="detail-list" id="quanDataList">
-                			</ul>
-        			</div>
+    <h5 class="detail-title"><i class="fas fa-chart-bar"></i> 정량 데이터</h5>
+    
+    <div id="quanEmpty" class="empty-msg" style="display:none;">입력된 성적이 없습니다.</div>
+    
+    <div id="quanContentBox" style="display:none;">
+        <div class="quan-select-wrapper">
+            <select id="sideQuanSelector" class="quan-dropdown"></select>
+        </div>
+        <div id="sideQuanDetail" class="score-detail-view"></div>
+    </div>
+</div>
     			</div>
 
     			<a href="/survey" class="btn-go-survey">

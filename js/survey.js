@@ -369,8 +369,8 @@ async function saveQuantitative() {
             body: JSON.stringify({ type: 'update_quan', userId, data: examScores })
         });
         if (res.ok) {
-            alert("성적 데이터가 저장되었습니다.\n(지원 가능 전형이 자동 계산되었습니다)\n\n마이페이지로 이동합니다.");
-            window.location.href = '/mypage';
+            alert("성적 데이터가 저장되었습니다.\n(지원 가능 전형이 자동 계산되었습니다)\n\n솔루션 페이지로 이동합니다.");
+            window.location.href = '/analysis';
         }
     } catch (e) { alert("저장 실패"); }
 }
