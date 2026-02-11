@@ -94,16 +94,24 @@ function parseDynamoItem(item) {
     if (item === undefined || item === null) return null;
     if (typeof item !== 'object') return item;
 
+    // [🔥 핵심 수정] 배열이 들어오면 객체로 변환하지 말고 배열 그대로 매핑해서 반환
+    if (Array.isArray(item)) {
+        return item.map(parseDynamoItem);
+    }
+
+    // 1. DynamoDB 타입별 처리
     if (item.S !== undefined) return item.S;
     if (item.N !== undefined) return Number(item.N);
     if (item.BOOL !== undefined) return item.BOOL;
     if (item.NULL === true) return null;
-
+    
+    // 2. 리스트 (L)
     if (item.L !== undefined) {
         if (Array.isArray(item.L)) return item.L.map(parseDynamoItem);
         return [];
     }
-
+    
+    // 3. 맵 (M)
     if (item.M !== undefined) {
         const obj = {};
         for (const key in item.M) {
@@ -111,12 +119,10 @@ function parseDynamoItem(item) {
         }
         return obj;
     }
-
+    
+    // 4. 일반 객체 재귀 탐색 (Fallback)
     const obj = {};
-    const keys = Object.keys(item);
-    if (keys.length === 0) return item;
-
-    for (const key of keys) {
+    for (const key in item) {
         obj[key] = parseDynamoItem(item[key]);
     }
     return obj;
