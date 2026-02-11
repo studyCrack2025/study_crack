@@ -2,7 +2,11 @@
 
 const MYPAGE_API_URL = CONFIG.api.base; 
 let currentUserTier = 'free';
+let cognitoUser = null; // Cognito 유저 객체 전역 관리
 
+// ==========================================
+// [초기화] DOM 로드 및 데이터 페치
+// ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     const idToken = localStorage.getItem('idToken'); 
     const userId = localStorage.getItem('userId');
@@ -13,16 +17,36 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    // Cognito 유저 세션 초기화 (계정 변경 기능을 위해 필요)
+    initCognitoUser();
+
     // 1. 사용자 정보 불러오기
     fetchUserData(userId);
 
-    // 2. UI 초기화 (엔터키 이벤트 등)
+    // 2. UI 이벤트 리스너 등록
     setupUI();
 });
 
+// Cognito 유저 초기화
+function initCognitoUser() {
+    const poolData = { 
+        UserPoolId: CONFIG.cognito.userPoolId, 
+        ClientId: CONFIG.cognito.clientId 
+    };
+    const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+    const username = localStorage.getItem('username') || localStorage.getItem('email'); // 저장된 username 사용
+
+    if (username) {
+        cognitoUser = new AmazonCognitoIdentity.CognitoUser({
+            Username: username,
+            Pool: userPool
+        });
+    }
+}
+
 // [보안] XSS 방지용 이스케이프 함수
 function escapeHtml(text) {
-    if (text == null) return ""; // null 또는 undefined 처리
+    if (text == null) return "";
     return String(text)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
@@ -31,39 +55,33 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
-// DynamoDB 포맷 파싱 함수 (mypage에서도 필요할 수 있음)
+// DynamoDB 포맷 파싱 함수
 function parseDynamoItem(item) {
     if (item === undefined || item === null) return null;
     if (typeof item !== 'object') return item;
-
     if (item.S !== undefined) return item.S;
     if (item.N !== undefined) return Number(item.N);
     if (item.BOOL !== undefined) return item.BOOL;
     if (item.NULL === true) return null;
-    
     if (item.L !== undefined) {
         if (Array.isArray(item.L)) return item.L.map(parseDynamoItem);
         return [];
     }
-    
     if (item.M !== undefined) {
         const obj = {};
-        for (const key in item.M) {
-            obj[key] = parseDynamoItem(item.M[key]);
-        }
+        for (const key in item.M) obj[key] = parseDynamoItem(item.M[key]);
         return obj;
     }
-    
     const obj = {};
     const keys = Object.keys(item);
     if (keys.length === 0) return item;
-
-    for (const key of keys) {
-        obj[key] = parseDynamoItem(item[key]);
-    }
+    for (const key of keys) obj[key] = parseDynamoItem(item[key]);
     return obj;
 }
 
+// ==========================================
+// [데이터 로드] 유저 정보 가져오기
+// ==========================================
 async function fetchUserData(userId) {
     const token = localStorage.getItem('idToken');
     const safeUserId = userId || localStorage.getItem('userId'); 
@@ -80,18 +98,16 @@ async function fetchUserData(userId) {
             throw new Error(errJson.error || "서버 오류");
         }
         
-        // [중요] DynamoDB 포맷 파싱
         const rawData = await response.json();
         const data = parseDynamoItem(rawData);
 
         renderUserInfo(data);
         applyUserTier(data.computedTier || 'free');
         
-        // 프로필 사진 로드
         if (data && data.profileImage) {
             const imgElem = document.getElementById('profileImg');
             if (imgElem) {
-                imgElem.src = escapeHtml(data.profileImage); // URL도 이스케이프 (src 속성은 상대적으로 안전하지만 습관화)
+                imgElem.src = escapeHtml(data.profileImage);
                 checkDeleteButtonVisibility(data.profileImage);
             }
         }
@@ -105,21 +121,22 @@ async function fetchUserData(userId) {
 }
 
 function renderUserInfo(data) {
-    // 사이드바 정보 (escapeHtml 적용)
-    // innerText는 자동으로 이스케이프되지만, 명시적으로 처리
+    // 사이드바
     const nameEl = document.getElementById('userNameDisplay');
     const emailEl = document.getElementById('userEmailDisplay');
     
     if (nameEl) nameEl.innerText = data.name ? data.name : '이름 없음';
     if (emailEl) emailEl.innerText = data.email ? data.email : '';
     
-    // 폼 인풋 (value 속성은 스크립트 실행 위험이 적음)
+    // 폼 인풋
     const nameInput = document.getElementById('profileName');
     if(nameInput) {
         nameInput.value = data.name || '';
         document.getElementById('profilePhone').value = data.phone || '';
         document.getElementById('profileSchool').value = data.school || '';
-        document.getElementById('profileEmail').value = data.email || '';
+        // 이메일은 별도 표시
+        const currentEmailDisplay = document.getElementById('currentEmailDisplay');
+        if(currentEmailDisplay) currentEmailDisplay.innerText = data.email || '';
     }
 }
 
@@ -144,7 +161,204 @@ function applyUserTier(tier) {
     }
 }
 
-// [기능] 프로필 사진 관리 (업로드, 삭제)
+// ==========================================
+// [기능 1] 기본 인적사항 수정 (개별 토글)
+// ==========================================
+async function toggleEdit(fieldId, btn) {
+    const input = document.getElementById(fieldId);
+    
+    // 1. 수정 모드로 전환
+    if (input.disabled) {
+        input.disabled = false;
+        input.focus();
+        btn.innerText = "저장하기";
+        btn.classList.add('saving');
+    } 
+    // 2. 저장 수행
+    else {
+        const newValue = input.value.trim();
+        if (!newValue) { alert("내용을 입력해주세요."); return; }
+
+        // 필드별 매핑 (DB 컬럼명에 맞춤)
+        let dbField = '';
+        if (fieldId === 'profileName') dbField = 'name';
+        else if (fieldId === 'profilePhone') dbField = 'phone';
+        else if (fieldId === 'profileSchool') dbField = 'school';
+
+        // 저장 로직 실행
+        const success = await saveSingleField(dbField, newValue);
+        
+        if (success) {
+            alert("수정되었습니다.");
+            input.disabled = true;
+            btn.innerText = "수정하기";
+            btn.classList.remove('saving');
+            
+            // 이름 변경 시 사이드바 등 즉시 반영
+            if (dbField === 'name') {
+                const nameEl = document.getElementById('userNameDisplay');
+                if (nameEl) nameEl.innerText = newValue;
+            }
+        }
+    }
+}
+
+async function saveSingleField(field, value) {
+    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('idToken');
+    
+    try {
+        const response = await fetch(MYPAGE_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            // Lambda에서 'update_profile' 타입으로 받아 부분 업데이트 처리 필요
+            // 기존 update_profile 로직이 전체 덮어쓰기라면 Lambda 수정 없이 data 객체에 필요한 필드만 보내도 됨 (Lambda 구현에 따라 다름)
+            // 여기서는 Lambda가 유연하게 data 안의 필드만 업데이트한다고 가정
+            body: JSON.stringify({ 
+                type: 'update_profile', 
+                userId, 
+                data: { [field]: value } 
+            })
+        });
+        
+        if(response.ok) return true;
+        else throw new Error("저장 실패");
+    } catch (error) {
+        console.error(error);
+        alert("저장 중 오류가 발생했습니다.");
+        return false;
+    }
+}
+
+// ==========================================
+// [기능 2] 계정 정보 변경 (모달 & Cognito)
+// ==========================================
+
+// --- 모달 공통 ---
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+    // 초기화
+    if(modalId === 'emailModal') {
+        document.getElementById('step-email-input').classList.remove('hidden');
+        document.getElementById('step-email-verify').classList.add('hidden');
+        document.getElementById('newEmailInput').value = '';
+        document.getElementById('emailVerifyCode').value = '';
+        if(emailTimerInterval) clearInterval(emailTimerInterval);
+    }
+    if(modalId === 'passwordModal') {
+        document.getElementById('currentPassword').value = '';
+        document.getElementById('newChangePassword').value = '';
+        document.getElementById('newChangePasswordConfirm').value = '';
+    }
+}
+
+// --- 이메일 변경 ---
+let emailTimerInterval;
+
+function openEmailModal() {
+    document.getElementById('emailModal').classList.remove('hidden');
+}
+
+function requestEmailChange() {
+    const newEmail = document.getElementById('newEmailInput').value;
+    if (!newEmail || !newEmail.includes('@')) { alert("유효한 이메일을 입력해주세요."); return; }
+
+    // Cognito 속성 업데이트 요청
+    // 주의: Cognito 설정에서 이메일 변경 시 검증(Verify)을 요구하도록 되어 있어야 함
+    const attributeList = [
+        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'email', Value: newEmail })
+    ];
+
+    cognitoUser.updateAttributes(attributeList, function(err, result) {
+        if (err) {
+            alert("이메일 변경 요청 실패: " + (err.message || err));
+            return;
+        }
+        
+        // 성공 시 인증 단계로 이동
+        alert("인증번호가 전송되었습니다. 이메일을 확인해주세요.");
+        document.getElementById('step-email-input').classList.add('hidden');
+        document.getElementById('step-email-verify').classList.remove('hidden');
+        
+        // 타이머 시작
+        startTimer(5 * 60, 'emailTimer');
+    });
+}
+
+function verifyEmailChange() {
+    const code = document.getElementById('emailVerifyCode').value;
+    if (!code) { alert("인증코드를 입력해주세요."); return; }
+
+    // Cognito 속성 검증
+    cognitoUser.verifyAttribute('email', code, {
+        onSuccess: async function(result) {
+            alert("이메일이 성공적으로 변경되었습니다.");
+            
+            // DB에도 이메일 정보 동기화
+            const newEmail = document.getElementById('newEmailInput').value;
+            await saveSingleField('email', newEmail);
+            
+            closeModal('emailModal');
+            location.reload(); // 정보 갱신을 위해 새로고침
+        },
+        onFailure: function(err) {
+            alert("인증 실패: " + (err.message || err));
+        }
+    });
+}
+
+// --- 비밀번호 변경 ---
+function openPasswordModal() {
+    document.getElementById('passwordModal').classList.remove('hidden');
+}
+
+function changePassword() {
+    const oldPw = document.getElementById('currentPassword').value;
+    const newPw = document.getElementById('newChangePassword').value;
+    const confirmPw = document.getElementById('newChangePasswordConfirm').value;
+
+    if (!oldPw || !newPw) { alert("모든 항목을 입력해주세요."); return; }
+    if (newPw !== confirmPw) { alert("새 비밀번호가 일치하지 않습니다."); return; }
+    if (newPw.length < 8) { alert("비밀번호는 8자 이상이어야 합니다."); return; }
+
+    cognitoUser.changePassword(oldPw, newPw, function(err, result) {
+        if (err) {
+            alert("비밀번호 변경 실패: " + (err.message || err));
+            return;
+        }
+        alert("비밀번호가 변경되었습니다. 다시 로그인해주세요.");
+        handleSignOut(); // 보안을 위해 로그아웃
+    });
+}
+
+// 타이머 함수 (auth.js 참고)
+function startTimer(duration, displayId) {
+    let timer = duration, minutes, seconds;
+    const display = document.getElementById(displayId);
+    
+    if(emailTimerInterval) clearInterval(emailTimerInterval);
+    
+    emailTimerInterval = setInterval(function () {
+        minutes = parseInt(timer / 60, 10);
+        seconds = parseInt(timer % 60, 10);
+
+        minutes = minutes < 10 ? "0" + minutes : minutes;
+        seconds = seconds < 10 ? "0" + seconds : seconds;
+
+        display.textContent = minutes + ":" + seconds;
+
+        if (--timer < 0) {
+            clearInterval(emailTimerInterval);
+            display.textContent = "만료";
+            alert("인증 시간이 만료되었습니다. 다시 시도해주세요.");
+            closeModal('emailModal');
+        }
+    }, 1000);
+}
+
+// ==========================================
+// [기능 3] 프로필 사진 관리
+// ==========================================
 function triggerFileUpload() { document.getElementById('profileFileInput').click(); }
 
 async function handleProfileUpload(input) {
@@ -232,30 +446,9 @@ function checkDeleteButtonVisibility(url) {
     }
 }
 
-// [기능] 회원 정보 수정
-async function saveProfile() {
-    const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('idToken');
-    const newName = document.getElementById('profileName').value;
-    const newPhone = document.getElementById('profilePhone').value;
-    const newSchool = document.getElementById('profileSchool').value;
-    const newEmail = document.getElementById('profileEmail').value;
-    const newPw = document.getElementById('newPassword').value;
-    const confirmPw = document.getElementById('newPasswordConfirm').value;
-    
-    if (!newName) return alert("이름을 입력해주세요.");
-    if (newPw && newPw !== confirmPw) return alert("새 비밀번호가 일치하지 않습니다.");
-    
-    try {
-        const response = await fetch(MYPAGE_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'update_profile', userId, data: { name: newName, phone: newPhone, school: newSchool, email: newEmail } })
-        });
-        if(response.ok) { alert("회원 정보가 수정되었습니다."); location.reload(); } else { throw new Error("저장 실패"); }
-    } catch (error) { alert("저장 중 오류가 발생했습니다."); }
-}
-
+// ==========================================
+// [기능 4] 회원 탈퇴
+// ==========================================
 async function handleDeleteAccount() {
     if (!confirm("정말로 탈퇴하시겠습니까?\n\n탈퇴 시 저장된 모든 데이터가 영구 삭제됩니다.")) return;
     const userId = localStorage.getItem('userId');
@@ -266,13 +459,27 @@ async function handleDeleteAccount() {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'delete_user', userId })
         });
-        if (response.ok) { alert("탈퇴가 완료되었습니다."); localStorage.clear(); sessionStorage.clear(); window.location.href = '/index'; } else { throw new Error("탈퇴 실패"); }
+        if (response.ok) { 
+            alert("탈퇴가 완료되었습니다."); 
+            localStorage.clear(); sessionStorage.clear(); 
+            window.location.href = '/index'; 
+        } else { throw new Error("탈퇴 실패"); }
     } catch (error) { alert("오류 발생"); }
 }
 
+// 로그아웃 처리 (auth.js와 연동되거나 단독 사용)
+function handleSignOut() {
+    if (cognitoUser) cognitoUser.signOut();
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = '/login';
+}
+
 function setupUI() {
-    const pwConfirmInput = document.getElementById('newPasswordConfirm');
-    if (pwConfirmInput) {
-        pwConfirmInput.addEventListener('keypress', function (e) { if (e.key === 'Enter') saveProfile(); });
+    // 모달 닫기 이벤트 등
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.classList.add('hidden');
+        }
     }
 }

@@ -54,13 +54,13 @@
             <h2 id="userNameDisplay">-</h2>
             <p id="userEmailDisplay">-</p>
             
-            <div class="survey-status-box">
+            <div class="mypage-link-box">
                 <a href="/survey" class="btn-go-survey">
                     <i class="fas fa-clipboard-list"></i> 기초조사서 작성/수정하러 가기
                 </a>
             </div>
 
-            <div class="analysis-link-box">
+            <div class="mypage-link-box">
                 <a href="/analysis" class="btn-go-analysis">
                     <i class="fas fa-chart-pie"></i> 나만의 솔루션 보러가기
                 </a>
@@ -72,26 +72,105 @@
         </aside>
 
         <main class="content-area">
-            <div class="content-header">
-                <h2>내 정보 관리</h2>
-                <p>개인정보 및 계정 설정을 변경할 수 있습니다.</p>
+    <div class="content-header">
+        <h2>내 정보 관리</h2>
+        <p>개인정보 및 계정 설정을 변경할 수 있습니다.</p>
+    </div>
+    
+    <div class="form-container">
+        <h3>기본 인적사항</h3>
+        <div class="form-group row-group">
+            <div class="input-wrapper">
+                <label>이름</label>
+                <input type="text" id="profileName" disabled>
             </div>
-            
-            <div class="form-container">
-                <h3>기본 인적사항</h3>
-                <div class="form-group"><label>이름</label><input type="text" id="profileName"></div>
-                <div class="form-group"><label>전화번호</label><input type="tel" id="profilePhone"></div>
-                <div class="form-group"><label>학교</label><input type="text" id="profileSchool"></div>
-                
-                <h3>계정 정보 변경</h3>
-                <div class="form-group"><label>이메일</label><input type="email" id="profileEmail" placeholder="변경할 이메일 주소"></div>
-                <div class="password-section">
-                    <div class="form-group"><label>새 비밀번호</label><input type="password" id="newPassword" placeholder="변경 시에만 입력"></div>
-                    <div class="form-group"><label>새 비밀번호 확인</label><input type="password" id="newPasswordConfirm" placeholder="비밀번호 재입력"></div>
+            <button class="edit-btn" onclick="toggleEdit('profileName', this)">수정하기</button>
+        </div>
+
+        <div class="form-group row-group">
+            <div class="input-wrapper">
+                <label>전화번호</label>
+                <input type="tel" id="profilePhone" disabled>
+            </div>
+            <button class="edit-btn" onclick="toggleEdit('profilePhone', this)">수정하기</button>
+        </div>
+
+        <div class="form-group row-group">
+            <div class="input-wrapper">
+                <label>학교</label>
+                <input type="text" id="profileSchool" disabled>
+            </div>
+            <button class="edit-btn" onclick="toggleEdit('profileSchool', this)">수정하기</button>
+        </div>
+        
+        <hr class="divider">
+
+        <h3>계정 정보 변경</h3>
+        <div class="account-links">
+            <div class="link-item">
+                <span class="label">이메일</span>
+                <span class="value" id="currentEmailDisplay">loading...</span>
+                <a href="#" onclick="openEmailModal(); return false;" class="text-link">이메일 변경하기</a>
+            </div>
+            <div class="link-item">
+                <span class="label">비밀번호</span>
+                <span class="value">********</span>
+                <a href="#" onclick="openPasswordModal(); return false;" class="text-link">비밀번호 변경하기</a>
+            </div>
+        </div>
+
+        <div class="account-actions">
+             <button class="btn-delete-account" onclick="handleDeleteAccount()">회원 탈퇴</button>
+        </div>
+    </div>
+</main>
+
+<div id="emailModal" class="modal hidden">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('emailModal')">&times;</span>
+        <h3>이메일 변경</h3>
+        <p class="modal-desc">새로운 이메일 주소로 인증이 필요합니다.</p>
+        
+        <div id="step-email-input">
+            <div class="form-group">
+                <label>새 이메일 주소</label>
+                <input type="email" id="newEmailInput" placeholder="example@email.com">
+            </div>
+            <button class="modal-action-btn" onclick="requestEmailChange()">인증번호 전송</button>
+        </div>
+
+        <div id="step-email-verify" class="hidden">
+            <div class="form-group">
+                <label>인증번호</label>
+                <div class="verify-row">
+                    <input type="text" id="emailVerifyCode" placeholder="코드 6자리">
+                    <span id="emailTimer" class="timer">05:00</span>
                 </div>
-                <button class="save-btn" onclick="saveProfile()">회원 정보 수정 저장</button>
             </div>
-        </main>
+            <button class="modal-action-btn" onclick="verifyEmailChange()">인증 및 변경 완료</button>
+        </div>
+    </div>
+</div>
+
+<div id="passwordModal" class="modal hidden">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('passwordModal')">&times;</span>
+        <h3>비밀번호 변경</h3>
+        <div class="form-group">
+            <label>현재 비밀번호</label>
+            <input type="password" id="currentPassword">
+        </div>
+        <div class="form-group">
+            <label>새 비밀번호</label>
+            <input type="password" id="newChangePassword">
+        </div>
+        <div class="form-group">
+            <label>새 비밀번호 확인</label>
+            <input type="password" id="newChangePasswordConfirm">
+        </div>
+        <button class="modal-action-btn" onclick="changePassword()">비밀번호 변경</button>
+    </div>
+</div>
     </div>
 
     <script src="/js/config.js"></script>
