@@ -724,15 +724,15 @@ function renderAnalysisCard(res) {
                 
                 <div style="position:relative; width:100%; padding-bottom:20px;">
                     <div style="position:relative; height:12px; background:#f1f5f9; border-radius:6px; margin:10px 0; overflow:hidden;">
-                        <div style="position:absolute; left:40%; top:0; bottom:0; width:2px; background:#fff; border-left:1px dashed #cbd5e1; z-index:2;"></div>
+                        <div style="position:absolute; left:50%; top:0; bottom:0; width:2px; background:#fff; border-left:1px dashed #cbd5e1; z-index:2;"></div>
                         <div style="position:absolute; left:60%; top:0; bottom:0; width:2px; background:#fff; border-left:1px dashed #cbd5e1; z-index:2;"></div>
-                        <div style="position:absolute; left:0; top:0; height:100%; width:${Math.min((res.converted_score / 250) * 100, 100)}%; background:${res.color}; border-radius:6px; transition: width 1s ease-out; z-index:1;"></div>
+                        <div style="position:absolute; left:0; top:0; height:100%; width:${Math.min((res.converted_score / 200) * 100, 100)}%; background:${res.color}; border-radius:6px; transition: width 1s ease-out; z-index:1;"></div>
                     </div>
                     <div style="font-size:0.75rem; color:#94a3b8; height:15px;">
                         <span style="position:absolute; left:0; bottom:0;">0</span>
-                        <span style="position:absolute; left:40%; bottom:0; transform:translateX(-50%); color:#64748b; font-weight:600; white-space:nowrap;">합격(100)</span>
+                        <span style="position:absolute; left:50%; bottom:0; transform:translateX(-50%); color:#64748b; font-weight:600; white-space:nowrap;">합격(100)</span>
                         <span style="position:absolute; left:60%; bottom:0; transform:translateX(-50%); color:#64748b; font-weight:600; white-space:nowrap;">안정(120)</span>
-                        <span style="position:absolute; right:0; bottom:0;">MAX(250)</span>
+                        <span style="position:absolute; right:0; bottom:0;">MAX(200)</span>
                     </div>
                 </div>
             </div>
@@ -750,7 +750,7 @@ function renderAnalysisCard(res) {
 }
 
 function getSimpleAdvice(score, status) {
-    if (score >= 140) return `<strong>👑 최초 합격 / 장학금 유력</strong> 구간입니다. 더 높은 대학을 과감하게 상향 지원해보는 전략이 필요합니다.`;
+    if (score >= 145) return `<strong>👑 최초 합격 / 장학금 유력</strong> 구간입니다. 더 높은 대학을 과감하게 상향 지원해보는 전략이 필요합니다.`;
     if (score >= 125) return `<strong>매우 안정 (최초합 유력)</strong>입니다. 이 대학을 보험으로 두고 상향 지원 전략을 짜세요.`;
     if (score >= 112) return `<strong>합격 가능성이 높습니다. (안정)</strong> 무난한 합격이 예상됩니다.`;
     if (score >= 100) return `<strong>적정 지원 (추합권)</strong>입니다. 추가 합격 가능성이 높으며 경쟁률 변화를 주시해야 합니다.`;
@@ -840,7 +840,7 @@ function renderSimChart(data) {
     const shortName = (name) => name.replace('학교', '');
 
     data.forEach(item => {
-        const heightPct = (item.base_ui_score / 250) * 100;
+        const heightPct = (item.base_ui_score / 200) * 100;
         let color = '#ef4444'; 
         if (item.base_ui_score >= 120) color = '#10b981'; 
         else if (item.base_ui_score >= 100) color = '#3b82f6';
