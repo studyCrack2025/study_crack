@@ -78,6 +78,50 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// [보안] XSS 방지용 이스케이프 함수
+function escapeHtml(text) {
+    if (text == null) return ""; // null 또는 undefined 처리
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+// [유틸] DynamoDB JSON 파서
+function parseDynamoItem(item) {
+    if (item === undefined || item === null) return null;
+    if (typeof item !== 'object') return item;
+
+    if (item.S !== undefined) return item.S;
+    if (item.N !== undefined) return Number(item.N);
+    if (item.BOOL !== undefined) return item.BOOL;
+    if (item.NULL === true) return null;
+
+    if (item.L !== undefined) {
+        if (Array.isArray(item.L)) return item.L.map(parseDynamoItem);
+        return [];
+    }
+
+    if (item.M !== undefined) {
+        const obj = {};
+        for (const key in item.M) {
+            obj[key] = parseDynamoItem(item.M[key]);
+        }
+        return obj;
+    }
+
+    const obj = {};
+    const keys = Object.keys(item);
+    if (keys.length === 0) return item;
+
+    for (const key of keys) {
+        obj[key] = parseDynamoItem(item[key]);
+    }
+    return obj;
+}
+
 // ============================================================
 // [데이터 로드] 사용자 정보 & 대학 목록
 // ============================================================
@@ -93,6 +137,7 @@ async function fetchUserData(userId) {
         
         if (!response.ok) throw new Error("사용자 데이터 로드 실패");
         
+        // [중요] DB 데이터 파싱
         const rawData = await response.json();
         const data = parseDynamoItem(rawData);
         
@@ -112,7 +157,7 @@ async function fetchUserData(userId) {
         // 프로필 이미지 (사이드바)
         if (data && data.profileImage) {
             const imgElem = document.getElementById('profileImg');
-            if (imgElem) imgElem.src = data.profileImage;
+            if (imgElem) imgElem.src = escapeHtml(data.profileImage); // URL도 이스케이프
         }
     } catch (error) { 
         console.error("User Data Error:", error); 
@@ -123,61 +168,18 @@ async function fetchUserData(userId) {
 function renderUserInfo(data) {
     const nameEl = document.getElementById('userNameDisplay');
     const emailEl = document.getElementById('userEmailDisplay');
+    
+    // innerText는 자동 이스케이프되지만 명시적으로 처리해도 무방
     if(nameEl) nameEl.innerText = data.name || '이름 없음';
     if(emailEl) emailEl.innerText = data.email || '';
 }
 
 function applyUserTier(tier) {
     currentUserTier = tier;
-    // 티어 배지 등 UI 업데이트 (필요 시 구현)
-}
-
-function parseDynamoItem(item) {
-    if (item === undefined || item === null) return null;
-
-    // 이미 파싱된 값이거나 원시 타입인 경우
-    if (typeof item !== 'object') return item;
-
-    // 1. DynamoDB 타입별 처리
-    if (item.S !== undefined) return item.S;
-    if (item.N !== undefined) return Number(item.N);
-    if (item.BOOL !== undefined) return item.BOOL;
-    if (item.NULL === true) return null; // NULL 타입 처리 추가
-
-    // 2. 리스트 (L) 재귀 파싱
-    if (item.L !== undefined) {
-        if (Array.isArray(item.L)) {
-            return item.L.map(parseDynamoItem);
-        }
-        return []; // 배열이 아니면 빈 배열 반환 (방어 코드)
-    }
-
-    // 3. 맵 (M) 재귀 파싱
-    if (item.M !== undefined) {
-        const obj = {};
-        for (const key in item.M) {
-            obj[key] = parseDynamoItem(item.M[key]);
-        }
-        return obj;
-    }
-
-    // 4. 래퍼가 없는 일반 객체인 경우 (또는 이미 파싱된 객체)
-    // 내부 속성 중에 DynamoDB 키가 있는지 확인하여 재귀적으로 파싱
-    const obj = {};
-    const keys = Object.keys(item);
-    if (keys.length === 0) return item; // 빈 객체
-
-    for (const key of keys) {
-        obj[key] = parseDynamoItem(item[key]);
-    }
-    return obj;
 }
 
 function updateSurveyStatus(data) {
-    // ---------------------------
-    // 1. 정성 데이터 (Qualitative)
-    // ---------------------------
-    // 이미 파싱된 상태이므로 바로 접근 가능
+    // 이미 파싱된 상태
     const qual = data.qualitative;
     const isQualDone = !!qual;
 
@@ -187,10 +189,8 @@ function updateSurveyStatus(data) {
     const qualTargetRow = document.getElementById('qualTargetRow');
 
     if (isQualDone) {
-        // (1) 작성 상태
         qualStatusEl.innerHTML = '<span style="color:#166534; font-weight:bold;">✅ 작성완료</span>';
 
-        // (2) 학년/신분
         const statusVal = qual.status || '';
         if (statusVal) {
             document.getElementById('qualGrade').innerText = statusVal;
@@ -199,13 +199,12 @@ function updateSurveyStatus(data) {
             qualGradeRow.style.display = 'none';
         }
 
-        // (3) 희망 계열
-        const groupMap = {
-            'humanities': '인문계열',
-            'natural': '자연계열',
-            'nature': '자연계열',  // nature 대응
-            'arts': '예체능',
-            'undefined': '미정'
+        const groupMap = { 
+            'humanities': '인문계열', 
+            'natural': '자연계열', 
+            'nature': '자연계열', 
+            'arts': '예체능', 
+            'undefined': '미정' 
         };
         const groupKey = qual.stream || 'undefined';
         const groupName = groupMap[groupKey] || groupKey;
@@ -213,25 +212,18 @@ function updateSurveyStatus(data) {
         document.getElementById('qualStream').innerText = groupName;
         qualStreamRow.style.display = 'flex';
 
-        // (4) 목표 대학
         let targets = [];
-
-        // 이미 파싱된 일반 배열이므로 바로 사용 가능
         if (Array.isArray(qual.targets)) {
-            // 빈 문자열("") 및 null 필터링
             targets = qual.targets.filter(t => t && t.trim() !== "");
         }
 
-        // 정성 데이터에 없으면 전역 설정에서 가져오기 (Fallback)
         if (targets.length === 0 && data.targetUnivs) {
             data.targetUnivs.forEach(t => {
-                // targetUnivs 리스트에 null이 섞여있으므로 체크
                 if(t && t.univ) targets.push(t.univ);
             });
         }
 
         if (targets.length > 0) {
-            // 최대 2개, 중복 제거
             const uniqueTargets = [...new Set(targets)].slice(0, 2);
             document.getElementById('qualTarget').innerText = uniqueTargets.join(', ');
             qualTargetRow.style.display = 'flex';
@@ -246,16 +238,12 @@ function updateSurveyStatus(data) {
         qualTargetRow.style.display = 'none';
     }
 
-    // ---------------------------
-    // 2. 정량 데이터 (Quantitative)
-    // ---------------------------
     const quan = data.quantitative;
     const validExams = [];
 
     if (quan) {
         Object.keys(quan).forEach(key => {
             const d = quan[key];
-            // 파싱된 데이터에서 점수 존재 여부 확인
             if (d && (d.kor || d.math || d.eng)) {
                 validExams.push(key);
             }
@@ -270,7 +258,6 @@ function updateSurveyStatus(data) {
 
     if (isQuanDone) {
         quanEmptyEl.style.display = 'none';
-        // 시험 순서 정렬
         const sortOrder = ['mar', 'apr', 'may', 'jun', 'jul', 'sep', 'oct', 'csat'];
         validExams.sort((a, b) => sortOrder.indexOf(a) - sortOrder.indexOf(b));
 
@@ -279,7 +266,6 @@ function updateSurveyStatus(data) {
             const examName = EXAM_DISPLAY_NAMES[key] ? EXAM_DISPLAY_NAMES[key].split(' ')[0] : key.toUpperCase();
 
             let scoreSummary = [];
-            // 파싱된 데이터 사용
             if (examData.kor) {
                 const val = examData.kor.grd || examData.kor.pct || examData.kor.std || '?';
                 scoreSummary.push(`국${val}`);
@@ -293,10 +279,14 @@ function updateSurveyStatus(data) {
                 scoreSummary.push(`영${val}`);
             }
 
+            // [보안] 데이터 이스케이프 처리
+            const safeExamName = escapeHtml(examName);
+            const safeSummary = escapeHtml(scoreSummary.join(' '));
+
             const li = document.createElement('li');
             li.innerHTML = `
-                <span class="label">${examName}</span>
-                <span class="data-summary">${scoreSummary.join(' ')}</span>
+                <span class="label">${safeExamName}</span>
+                <span class="data-summary">${safeSummary}</span>
             `;
             quanListEl.appendChild(li);
         });
@@ -304,21 +294,18 @@ function updateSurveyStatus(data) {
         quanEmptyEl.style.display = 'block';
     }
 
-    // ---------------------------
-    // 3. 전체 배지 상태
-    // ---------------------------
     const badge = document.getElementById('statusBadge');
     if(badge) {
         badge.className = 'status-badge';
-        if (isQualDone && isQuanDone) {
-            badge.classList.add('complete');
-            badge.innerText = "분석 준비 완료";
-        } else if (isQualDone || isQuanDone) {
-            badge.classList.add('partial');
-            badge.innerText = "데이터 부족";
-        } else {
-            badge.classList.add('incomplete');
-            badge.innerText = "시작 필요";
+        if (isQualDone && isQuanDone) { 
+            badge.classList.add('complete'); 
+            badge.innerText = "분석 준비 완료"; 
+        } else if (isQualDone || isQuanDone) { 
+            badge.classList.add('partial'); 
+            badge.innerText = "데이터 부족"; 
+        } else { 
+            badge.classList.add('incomplete'); 
+            badge.innerText = "시작 필요"; 
         }
     }
 }
@@ -343,9 +330,7 @@ async function fetchUnivData() {
     } catch (e) { console.error("대학 데이터 로드 실패:", e); }
 }
 
-function buildUnivMap() {
-    // 필요 시 계열 구분 로직 추가
-}
+function buildUnivMap() {}
 
 // ============================================================
 // [UI 동작] 탭 전환
@@ -356,14 +341,10 @@ function openSolution(type) {
         return; 
     }
     
-    // 모든 콘텐츠 숨기기
     document.querySelectorAll('.sol-content').forEach(el => el.style.display = 'none');
-    
-    // 선택된 콘텐츠 보이기
     const targetContent = document.getElementById(`sol-${type}`);
     if (targetContent) targetContent.style.display = 'block';
 
-    // 메뉴 버튼 활성화 상태 변경
     document.querySelectorAll('.solution-menu .sol-btn').forEach(btn => {
         btn.classList.remove('active');
         if (btn.getAttribute('onclick').includes(`'${type}'`)) {
@@ -371,7 +352,6 @@ function openSolution(type) {
         }
     });
 
-    // 시뮬레이션 탭 진입 시 초기화
     if (type === 'sim') {
         initSimulation();
     }
@@ -399,7 +379,6 @@ function initUnivGrid() {
             let isLocked = false;
             let dateMsg = '';
             
-            // 2주 락 체크
             if (savedData.date) {
                 const savedDate = new Date(savedData.date);
                 const unlockDate = new Date(savedDate);
@@ -410,8 +389,12 @@ function initUnivGrid() {
                 }
             }
             
+            // [보안] 대학명/학과명 이스케이프 적용
+            const safeUniv = escapeHtml(savedData.univ);
+            const safeMajor = escapeHtml(savedData.major);
+
             const btnText = (savedData.univ && savedData.major) 
-                ? `<strong>${savedData.univ}</strong><br><small>${savedData.major}</small>` 
+                ? `<strong>${safeUniv}</strong><br><small>${safeMajor}</small>` 
                 : `<span class="placeholder">대학 및 학과를 선택하세요</span>`;
             
             const clickHandler = isLocked ? '' : `openUnivSelectModal(${i})`;
@@ -438,7 +421,6 @@ function initUnivGrid() {
     }
 }
 
-// 대학 선택 모달 열기
 function openUnivSelectModal(index) {
     currentSlotIndex = index;
     const modal = document.getElementById('univSelectModal');
@@ -453,7 +435,6 @@ function closeUnivModal() {
     currentSlotIndex = null;
 }
 
-// 1단계: 대학 목록 표시
 function showUnivStep() {
     document.getElementById('modalTitle').innerText = "대학 선택";
     document.getElementById('stepUnivList').style.display = 'grid';
@@ -466,13 +447,12 @@ function showUnivStep() {
     Object.keys(univMap).sort().forEach(univName => {
         const item = document.createElement('div');
         item.className = 'selection-item';
-        item.innerText = univName;
+        item.innerText = univName; // innerText는 자동 이스케이프
         item.onclick = () => showMajorStep(univName);
         listContainer.appendChild(item);
     });
 }
 
-// 2단계: 학과 목록 표시
 function showMajorStep(univName) {
     document.getElementById('modalTitle').innerText = `${univName} - 학과 선택`;
     document.getElementById('stepUnivList').style.display = 'none';
@@ -494,10 +474,8 @@ function showMajorStep(univName) {
     });
 }
 
-// 선택 완료
 function selectComplete(univ, major) {
     if (currentSlotIndex !== null) {
-        // 날짜는 저장 시점에 갱신
         userTargetUnivs[currentSlotIndex] = { univ: univ, major: major, date: null };
         initUnivGrid(); 
         updateAnalysisUI(); 
@@ -505,7 +483,6 @@ function selectComplete(univ, major) {
     closeUnivModal();
 }
 
-// 설정 저장 (2주 락 적용)
 async function saveTargetUnivs() {
     if(!confirm("저장하면 2주 동안 수정할 수 없습니다.\n정말 저장하시겠습니까?")) return;
     
@@ -514,12 +491,10 @@ async function saveTargetUnivs() {
     const tierLimits = { 'basic': 2, 'standard': 5, 'pro': 8, 'black': 8 };
     const limit = tierLimits[currentUserTier] || 2;
     
-    // 데이터 정리 (빈 슬롯 null 처리)
     while(newUnivs.length < 8) newUnivs.push(null);
     for(let i=0; i<limit; i++) {
         const currentData = userTargetUnivs[i];
         if (currentData && currentData.univ && currentData.major) { 
-            // 이미 날짜가 있으면 유지, 없으면 현재 시간 기록
             if (!currentData.date) currentData.date = nowISO; 
         } else { 
             userTargetUnivs[i] = null; 
@@ -569,13 +544,11 @@ async function updateAnalysisUI() {
         return; 
     }
     
-    // 기본 시험 모드 설정
     if (!currentExamMode || !availableExams.includes(currentExamMode)) {
         if (availableExams.includes('csat')) currentExamMode = 'csat';
         else currentExamMode = availableExams[0];
     }
 
-    // 컨트롤 UI 렌더링
     const selectorHTML = `
         <div class="analysis-controls" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; background:#fff; padding:15px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); border:1px solid #e2e8f0;">
             <div style="font-weight:700; color:#334155; font-size:1rem;">
@@ -642,29 +615,37 @@ function renderAnalysisCard(res) {
         return `
         <div class="analysis-card" style="border-left: 4px solid #94a3b8; margin-bottom:15px; background:#fff; border-radius:8px; padding:20px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
             <div class="analysis-header" style="margin-bottom:10px;">
-                <h4 style="margin:0;">${res.idx + 1}지망: ${res.univ} <small style="color:#64748b;">${res.major}</small></h4>
+                <h4 style="margin:0;">${escapeHtml(res.idx + 1)}지망: ${escapeHtml(res.univ)} <small style="color:#64748b;">${escapeHtml(res.major)}</small></h4>
                 <span style="background:#f1f5f9; color:#64748b; padding:2px 8px; border-radius:4px; font-size:0.8rem; margin-top:5px; display:inline-block;">데이터 부족</span>
             </div>
-            <p style="color:#64748b; font-size:0.9rem; margin:0;">${res.msg || '해당 학과의 작년 입시 데이터가 없습니다.'}</p>
+            <p style="color:#64748b; font-size:0.9rem; margin:0;">${escapeHtml(res.msg || '해당 학과의 작년 입시 데이터가 없습니다.')}</p>
         </div>`;
     }
 
     const badgeStyle = `background:${res.color}15; color:${res.color}; border:1px solid ${res.color};`; 
     const scoreStyle = `color:${res.color}; font-weight:800; font-size:1.5rem;`;
 
+    // [보안] 변수 이스케이프 처리
+    const safeIdx = escapeHtml(res.idx + 1);
+    const safeUniv = escapeHtml(res.univ);
+    const safeMajor = escapeHtml(res.major);
+    const safeStatus = escapeHtml(res.status);
+    const safeMsg = escapeHtml(res.msg);
+    const safeScore = escapeHtml(res.converted_score);
+
     return `
     <div class="analysis-card" style="margin-bottom:20px; background:#fff; border-radius:12px; padding:25px; box-shadow:0 4px 10px rgba(0, 0, 0, 0.05); border-left: 6px solid ${res.color}; transition: transform 0.2s;">
         <div class="analysis-header" style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:1px solid #f1f5f9; padding-bottom:15px; margin-bottom:15px;">
             <div>
-                <span style="color:#64748b; font-size:1.1rem; font-weight:800; display:block; margin-bottom:5px;">${res.idx + 1}지망</span>
-                <h4 style="margin:0; font-size:1.2rem; color:#1e293b; letter-spacing:-0.5px;">${res.univ}</h4>
-                <div style="color:#64748b; font-size:0.95rem; margin-top:2px;">${res.major}</div>
+                <span style="color:#64748b; font-size:1.1rem; font-weight:800; display:block; margin-bottom:5px;">${safeIdx}지망</span>
+                <h4 style="margin:0; font-size:1.2rem; color:#1e293b; letter-spacing:-0.5px;">${safeUniv}</h4>
+                <div style="color:#64748b; font-size:0.95rem; margin-top:2px;">${safeMajor}</div>
             </div>
             <div style="text-align:right;">
                 <span style="${badgeStyle} padding:6px 14px; border-radius:20px; font-size:0.9rem; font-weight:bold; display:inline-block; margin-bottom:5px;">
-                    ${res.status}
+                    ${safeStatus}
                 </span>
-                <div style="font-size:0.8rem; color:${res.color}; font-weight:600;">${res.msg}</div>
+                <div style="font-size:0.8rem; color:${res.color}; font-weight:600;">${safeMsg}</div>
             </div>
         </div>
 
@@ -672,7 +653,7 @@ function renderAnalysisCard(res) {
             <div class="score-section">
                 <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
                     <span style="font-size:0.95rem; color:#475569; font-weight:600;">AI 환산 진단점수</span>
-                    <span style="${scoreStyle}">${res.converted_score}<span style="font-size:1rem; font-weight:normal; margin-left:2px; color:#64748b;">점</span></span>
+                    <span style="${scoreStyle}">${safeScore}<span style="font-size:1rem; font-weight:normal; margin-left:2px; color:#64748b;">점</span></span>
                 </div>
                 
                 <div style="position:relative; width:100%; padding-bottom:20px;">
@@ -729,7 +710,9 @@ function initSimulation() {
     listContainer.innerHTML = validTargets.map((t, i) => `
         <label style="display:flex; align-items:center; gap:10px; padding:12px; border-radius:8px; cursor:pointer; margin-bottom:8px;">
             <input type="checkbox" class="sim-univ-check" value="${i}" checked onchange="runSimulationRender()" style="accent-color:#3b82f6;">
-            <div style="font-size:0.9rem; font-weight:700;">${t.univ} <span style="font-weight:normal; font-size:0.8rem;">${t.major}</span></div>
+            <div style="font-size:0.9rem; font-weight:700;">
+                ${escapeHtml(t.univ)} <span style="font-weight:normal; font-size:0.8rem;">${escapeHtml(t.major)}</span>
+            </div>
         </label>
     `).join('');
 
@@ -773,7 +756,6 @@ function runSimulationRender() {
     const filteredData = cachedSimData.filter(d => {
         return selectedIndices.some(idx => {
             const target = userTargetUnivs[idx];
-            // 대학명과 학과명으로 매칭
             return target.univ === d.univ && target.major === d.major;
         });
     });
@@ -797,16 +779,21 @@ function renderSimChart(data) {
         if (item.base_ui_score >= 150) color = '#10b981'; 
         else if (item.base_ui_score >= 100) color = '#3b82f6';
 
+        // [보안] 이스케이프 적용
+        const safeUniv = escapeHtml(shortName(item.univ));
+        const safeMajor = escapeHtml(item.major);
+        const safeScore = escapeHtml(Math.round(item.base_ui_score));
+
         const html = `
             <div style="position:relative; width:60px; height:100%; margin: 0 8px;">
                 <div style="position:absolute; bottom:0; left:0; width:100%; height:${Math.min(heightPct, 100)}%; background:${color}; border-radius:6px 6px 0 0; transition: height 0.5s; min-height:4px; z-index:1;">
                     <span style="position:absolute; top:-24px; left:50%; transform:translateX(-50%); font-size:0.85rem; font-weight:800; color:${color}; white-space:nowrap;">
-                        ${Math.round(item.base_ui_score)}
+                        ${safeScore}
                     </span>
                 </div>
                 <div style="position:absolute; top:100%; left:50%; transform:translateX(-50%); width:80px; text-align:center; padding-top:8px; z-index:2;">
-                    <div style="font-size:0.85rem; font-weight:700; color:#334155; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${shortName(item.univ)}</div>
-                    <div style="font-size:0.75rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;">${item.major}</div>
+                    <div style="font-size:0.85rem; font-weight:700; color:#334155; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeUniv}</div>
+                    <div style="font-size:0.75rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;">${safeMajor}</div>
                 </div>
             </div>
         `;
@@ -828,15 +815,20 @@ function renderSimCards(data) {
             }
         });
 
+        // [보안] 이스케이프
+        const safeUniv = escapeHtml(item.univ);
+        const safeMajor = escapeHtml(item.major);
+
         const cardHtml = `
             <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:15px; box-shadow:0 2px 4px rgba(0,0,0,0.03);">
                 <div style="font-weight:bold; color:#334155; margin-bottom:10px; border-bottom:1px solid #f1f5f9; padding-bottom:8px;">
-                    ${item.univ} <span style="font-weight:normal; font-size:0.85rem; color:#64748b;">${item.major}</span>
+                    ${safeUniv} <span style="font-weight:normal; font-size:0.85rem; color:#64748b;">${safeMajor}</span>
                 </div>
                 <div style="display:flex; flex-direction:column; gap:8px;">
                     ${['kor', 'math', 'inq1', 'inq2'].map(subj => {
                         const info = item.sim_data[subj];
                         if (!info) return ''; 
+                        
                         const isInactive = (info.msg === "응시 안 함" || info.msg === "변동 없음 (반영X)");
                         const isBest = (subj === bestSubj && info.diff > 0);
                         const rowBg = isBest ? '#eff6ff' : (isInactive ? '#f8fafc' : 'transparent');
@@ -844,15 +836,20 @@ function renderSimCards(data) {
                         const scoreColor = info.diff > 0 ? '#ef4444' : (isInactive ? '#cbd5e1' : '#94a3b8');
                         const displayName = info.name || (subj.includes('inq') ? '탐구' : subj);
 
+                        // [보안] 내부 데이터 이스케이프
+                        const safeName = escapeHtml(displayName);
+                        const safeMsg = escapeHtml(info.msg.replace('점 상승', ''));
+                        const safeDiff = info.diff > 0 ? `(변환전 +${info.diff.toFixed(2)})` : '';
+
                         return `
                         <div style="display:flex; justify-content:space-between; align-items:center; padding:6px; background:${rowBg}; border-radius:6px;">
                             <div style="display:flex; align-items:center; gap:5px;">
-                                <span style="font-size:0.9rem; font-weight:600; color:${nameColor}; width:70px; display:inline-block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${displayName}</span>
+                                <span style="font-size:0.9rem; font-weight:600; color:${nameColor}; width:70px; display:inline-block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${safeName}</span>
                                 ${isBest ? '<span style="font-size:0.7rem; background:#3b82f6; color:#fff; padding:1px 4px; border-radius:3px;">추천</span>' : ''}
                             </div>
                             <div style="text-align:right;">
-                                <div style="font-size:0.9rem; font-weight:bold; color:${scoreColor};">${info.msg.replace('점 상승', '')} ${info.diff > 0 ? '▲' : ''}</div>
-                                ${info.diff > 0 ? `<div style="font-size:0.7rem; color:#94a3b8;">(변환전 +${info.diff.toFixed(2)})</div>` : ''}
+                                <div style="font-size:0.9rem; font-weight:bold; color:${scoreColor};">${safeMsg} ${info.diff > 0 ? '▲' : ''}</div>
+                                <div style="font-size:0.7rem; color:#94a3b8;">${safeDiff}</div>
                             </div>
                         </div>`;
                     }).join('')}
@@ -1076,13 +1073,16 @@ function renderPlannerFiles() {
             } catch (e) { fileName = file; }
         }
 
+        // [보안] 파일명 이스케이프
+        const safeFileName = escapeHtml(fileName);
+
         const div = document.createElement('div');
         div.className = 'file-item';
         
-        let nameDisplay = `<span>📄 ${fileName}</span>`;
+        let nameDisplay = `<span>📄 ${safeFileName}</span>`;
         if (fileLink) {
             nameDisplay = `<a href="${fileLink}" target="_blank" style="text-decoration:none; color:#334155; display:flex; align-items:center; gap:5px;">
-                <span>📄 ${fileName}</span> 
+                <span>📄 ${safeFileName}</span> 
                 <i class="fas fa-external-link-alt" style="font-size:0.7rem; color:#3b82f6;"></i>
             </a>`;
         }
@@ -1184,7 +1184,6 @@ async function submitWeeklyCheck() {
         submitBtn.disabled = true;
         submitBtn.innerText = "데이터 처리 중...";
 
-        // 1. 기존 파일 삭제 처리
         const currentUrls = currentPlannerFiles.filter(f => typeof f === 'string');
         const filesToDelete = originalPlannerFiles.filter(url => !currentUrls.includes(url));
 
@@ -1199,7 +1198,6 @@ async function submitWeeklyCheck() {
             ));
         }
 
-        // 2. 새 파일 업로드 처리
         let finalFileUrls = [...currentUrls]; 
         const newFiles = currentPlannerFiles.filter(f => typeof f !== 'string');
 

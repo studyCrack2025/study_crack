@@ -20,6 +20,50 @@ document.addEventListener('DOMContentLoaded', () => {
     setupUI();
 });
 
+// [보안] XSS 방지용 이스케이프 함수
+function escapeHtml(text) {
+    if (text == null) return ""; // null 또는 undefined 처리
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+// DynamoDB 포맷 파싱 함수 (mypage에서도 필요할 수 있음)
+function parseDynamoItem(item) {
+    if (item === undefined || item === null) return null;
+    if (typeof item !== 'object') return item;
+
+    if (item.S !== undefined) return item.S;
+    if (item.N !== undefined) return Number(item.N);
+    if (item.BOOL !== undefined) return item.BOOL;
+    if (item.NULL === true) return null;
+    
+    if (item.L !== undefined) {
+        if (Array.isArray(item.L)) return item.L.map(parseDynamoItem);
+        return [];
+    }
+    
+    if (item.M !== undefined) {
+        const obj = {};
+        for (const key in item.M) {
+            obj[key] = parseDynamoItem(item.M[key]);
+        }
+        return obj;
+    }
+    
+    const obj = {};
+    const keys = Object.keys(item);
+    if (keys.length === 0) return item;
+
+    for (const key of keys) {
+        obj[key] = parseDynamoItem(item[key]);
+    }
+    return obj;
+}
+
 async function fetchUserData(userId) {
     const token = localStorage.getItem('idToken');
     const safeUserId = userId || localStorage.getItem('userId'); 
@@ -36,7 +80,10 @@ async function fetchUserData(userId) {
             throw new Error(errJson.error || "서버 오류");
         }
         
-        const data = await response.json();
+        // [중요] DynamoDB 포맷 파싱
+        const rawData = await response.json();
+        const data = parseDynamoItem(rawData);
+
         renderUserInfo(data);
         applyUserTier(data.computedTier || 'free');
         
@@ -44,7 +91,7 @@ async function fetchUserData(userId) {
         if (data && data.profileImage) {
             const imgElem = document.getElementById('profileImg');
             if (imgElem) {
-                imgElem.src = data.profileImage;
+                imgElem.src = escapeHtml(data.profileImage); // URL도 이스케이프 (src 속성은 상대적으로 안전하지만 습관화)
                 checkDeleteButtonVisibility(data.profileImage);
             }
         }
@@ -58,11 +105,15 @@ async function fetchUserData(userId) {
 }
 
 function renderUserInfo(data) {
-    // 사이드바 정보
-    document.getElementById('userNameDisplay').innerText = data.name || '이름 없음';
-    document.getElementById('userEmailDisplay').innerText = data.email || '';
+    // 사이드바 정보 (escapeHtml 적용)
+    // innerText는 자동으로 이스케이프되지만, 명시적으로 처리
+    const nameEl = document.getElementById('userNameDisplay');
+    const emailEl = document.getElementById('userEmailDisplay');
     
-    // 폼 인풋
+    if (nameEl) nameEl.innerText = data.name ? data.name : '이름 없음';
+    if (emailEl) emailEl.innerText = data.email ? data.email : '';
+    
+    // 폼 인풋 (value 속성은 스크립트 실행 위험이 적음)
     const nameInput = document.getElementById('profileName');
     if(nameInput) {
         nameInput.value = data.name || '';
@@ -75,17 +126,22 @@ function renderUserInfo(data) {
 function applyUserTier(tier) {
     currentUserTier = tier;
     const profileBox = document.querySelector('.profile-summary');
-    profileBox.classList.remove('tier-basic', 'tier-standard', 'tier-pro', 'tier-black');
-    if (tier !== 'free') profileBox.classList.add(`tier-${tier}`);
-    let badge = document.querySelector('.premium-badge');
-    if (tier !== 'free') {
-        if (!badge) {
-            badge = document.createElement('div');
-            badge.className = 'premium-badge';
-            profileBox.appendChild(badge);
+    if (profileBox) {
+        profileBox.classList.remove('tier-basic', 'tier-standard', 'tier-pro', 'tier-black');
+        if (tier !== 'free') profileBox.classList.add(`tier-${tier}`);
+        
+        let badge = document.querySelector('.premium-badge');
+        if (tier !== 'free') {
+            if (!badge) {
+                badge = document.createElement('div');
+                badge.className = 'premium-badge';
+                profileBox.appendChild(badge);
+            }
+            badge.innerText = `${tier.toUpperCase()} MEMBER`;
+        } else if (badge) {
+            badge.remove();
         }
-        badge.innerText = `${tier.toUpperCase()} MEMBER`;
-    } else if (badge) badge.remove();
+    }
 }
 
 // [기능] 프로필 사진 관리 (업로드, 삭제)
@@ -126,7 +182,7 @@ async function handleProfileUpload(input) {
         });
         if (!updateRes.ok) throw new Error("DB 업데이트 실패");
 
-        imgElem.src = fileUrl;
+        imgElem.src = escapeHtml(fileUrl);
         alert("프로필 사진이 변경되었습니다.");
         checkDeleteButtonVisibility(fileUrl);
 
