@@ -5,9 +5,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const faqItems = document.querySelectorAll('.faq-item');
     faqItems.forEach(item => {
         item.addEventListener('click', () => {
-            // 다른 열린 항목 닫기 (선택사항 - 하나만 열리게 하려면 주석 해제)
-            // faqItems.forEach(i => { if(i !== item) i.classList.remove('active'); i.querySelector('.faq-answer').style.maxHeight = null; });
-            
             item.classList.toggle('active');
             const answer = item.querySelector('.faq-answer');
             if (item.classList.contains('active')) {
@@ -25,31 +22,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('qnaForm');
     if (form) form.addEventListener('submit', handleQnaSubmit);
 
-    // 4. 모달 외부 클릭 시 닫기
-    window.onclick = function(event) {
+    // [수정 1] window.onclick 덮어쓰기 방지 -> addEventListener 사용
+    // script.js의 닫기 기능과 충돌하지 않도록 안전하게 이벤트 추가
+    window.addEventListener('click', function(event) {
         if (event.target.classList.contains('modal')) {
             event.target.style.display = 'none';
             document.body.style.overflow = 'auto'; // 스크롤 복구
         }
-    };
+    });
 });
 
-/* =========================================
-   [모달 제어 함수]
-   CSS에서 .modal이 display: none 상태이므로,
-   JS에서 display: flex로 변경하여 중앙 정렬 활성화
-   ========================================= */
-function openModal(id) {
+function openLocalModal(id) {
     const modal = document.getElementById(id);
     if (modal) {
-        modal.style.display = 'flex'; // flex로 켜야 중앙 정렬됨
+        modal.style.display = 'flex'; // QnA 모달은 flex로 켜야 중앙 정렬됨
         document.body.style.overflow = 'hidden'; // 배경 스크롤 방지
     } else {
         console.error(`Modal ID '${id}' not found.`);
     }
 }
 
-function closeModal(id) {
+function closeLocalModal(id) {
     const modal = document.getElementById(id);
     if (modal) {
         modal.style.display = 'none';
@@ -57,15 +50,15 @@ function closeModal(id) {
     }
 }
 
-// 편의용 래퍼 함수
-function openQnaModal() { openModal('qna-modal'); }
-function closeQnaModal() { closeModal('qna-modal'); }
-function closeDetailModal() { closeModal('qna-detail-modal'); }
+// 편의용 래퍼 함수 (내부에서 변경된 함수 이름 사용)
+function openQnaModal() { openLocalModal('qna-modal'); }
+function closeQnaModal() { closeLocalModal('qna-modal'); }
+function closeDetailModal() { closeLocalModal('qna-detail-modal'); }
 
 
 /* =========================================
    [API] 질문 목록 불러오기
-   DocumentFragment 사용하여 렌더링 성능 최적화
+   (이하 로직은 기존과 동일)
    ========================================= */
 async function loadQnaHistory() {
     const grid = document.getElementById('qna-grid');
@@ -89,7 +82,7 @@ async function loadQnaHistory() {
         const data = await response.json();
         const history = data.qnaHistory || [];
 
-        grid.innerHTML = ''; // 초기화
+        grid.innerHTML = ''; 
 
         if (history.length === 0) {
             grid.innerHTML = `
@@ -100,10 +93,7 @@ async function loadQnaHistory() {
             return;
         }
 
-        // [최적화] 가상 DOM(Fragment)에 먼저 담기
         const fragment = document.createDocumentFragment();
-
-        // 최신순 정렬
         history.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
         history.forEach(item => {
@@ -128,11 +118,12 @@ async function loadQnaHistory() {
                 <div class="qna-date">${dateStr}</div>
             `;
             
+            // 클릭 시 상세 모달 열기
             card.addEventListener('click', () => openDetailModal(item));
             fragment.appendChild(card);
         });
 
-        grid.appendChild(fragment); // 한 번에 DOM에 그리기 (렉 방지)
+        grid.appendChild(fragment);
 
     } catch (error) {
         console.error("Load Error:", error);
@@ -150,14 +141,12 @@ function openDetailModal(item) {
     const dateEl = document.getElementById('detail-date');
     const answerArea = document.getElementById('detail-answer-area');
 
-    // 데이터 주입
     titleEl.textContent = item.title;
-    contentEl.textContent = item.content; // escapeHtml 필요 없음 (textContent가 안전)
+    contentEl.textContent = item.content;
     catEl.textContent = getCategoryName(item.category);
     catEl.className = `badge badge-${item.category}`;
     dateEl.textContent = new Date(item.createdAt).toLocaleString();
 
-    // 답변 상태 처리
     if (item.status === 'done' && item.answer) {
         answerArea.innerHTML = `
             <div class="answer-box">
@@ -174,7 +163,8 @@ function openDetailModal(item) {
             </div>`;
     }
 
-    openModal('qna-detail-modal');
+    // [수정 3] 변경된 함수 이름 사용
+    openLocalModal('qna-detail-modal');
 }
 
 /* =========================================
@@ -184,7 +174,6 @@ async function handleQnaSubmit(e) {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
     
-    // 중복 클릭 방지
     if (btn.disabled) return;
     btn.disabled = true;
     btn.textContent = "처리 중...";
@@ -208,9 +197,12 @@ async function handleQnaSubmit(e) {
 
         if (response.ok) {
             alert("질문이 성공적으로 등록되었습니다.");
+            
+            // [수정 4] 변경된 함수 이름 사용
             closeQnaModal();
+            
             document.getElementById('qnaForm').reset();
-            loadQnaHistory(); // 목록 갱신
+            loadQnaHistory(); 
         } else {
             alert("등록에 실패했습니다. 다시 시도해주세요.");
         }
