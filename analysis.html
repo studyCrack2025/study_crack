@@ -13,7 +13,8 @@
     
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/mypage.css">
-    <link rel="stylesheet" href="/css/analysis.css"> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/analysis.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
@@ -46,13 +47,36 @@
             <p id="userEmailDisplay">-</p>
             
             <div class="survey-status-box">
-                <h4>기초조사서 상태</h4>
-                <div id="statusBadge" class="status-badge incomplete">로딩 중...</div>
-                <ul class="status-detail">
-                    <li>정성 데이터: <span id="qualStatus">-</span></li>
-                    <li>정량 데이터: <span id="quanStatus">-</span></li>
-                </ul>
-            </div>
+    			<h4><i class="fas fa-clipboard-list"></i> 기초조사서 리포트</h4>
+    
+    			<div id="statusBadge" class="status-badge incomplete">로딩 중...</div>
+    
+    			<div class="status-detail-container">
+        			<div class="detail-group">
+            			<h5 class="detail-title"><i class="fas fa-user-tag"></i> 정성 데이터</h5>
+            			<ul class="detail-list">
+                			<li><span class="label">상태:</span> <span id="qualStatus">-</span></li>
+                			<li id="qualStreamRow" style="display:none;">
+                    			<span class="label">희망계열:</span> <span id="qualStream" class="val-text">-</span>
+                			</li>
+                			<li id="qualTargetRow" style="display:none;">
+                    			<span class="label">목표대학:</span> <span id="qualTarget" class="val-text">-</span>
+                			</li>
+            			</ul>
+        			</div>
+
+        			<div class="detail-group">
+            			<h5 class="detail-title"><i class="fas fa-chart-bar"></i> 정량 데이터</h5>
+            			<div id="quanEmpty" class="empty-msg" style="display:none;">입력된 성적이 없습니다.</div>
+            			<ul class="detail-list" id="quanDataList">
+                			</ul>
+        			</div>
+    			</div>
+
+    			<a href="/survey" class="btn-go-survey">
+        			<i class="fas fa-pen-to-square"></i> 기초조사서 작성/수정
+    			</a>
+			</div>
         </aside>
 
         <main class="content-area">

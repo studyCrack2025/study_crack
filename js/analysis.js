@@ -132,20 +132,129 @@ function applyUserTier(tier) {
 }
 
 function updateSurveyStatus(data) {
-    const isQualDone = !!data.qualitative;
-    const isQuanDone = data.quantitative && Object.keys(data.quantitative).length > 0;
-    const badge = document.getElementById('statusBadge');
-    const q1 = document.getElementById('qualStatus');
-    const q2 = document.getElementById('quanStatus');
+    // ---------------------------
+    // 1. 정성 데이터 (Qualitative)
+    // ---------------------------
+    const qual = data.qualitative; // 정성 데이터 객체
+    const isQualDone = !!qual;     // 존재 여부
 
-    if(q1) q1.innerText = isQualDone ? "✅ 작성완료" : "❌ 미작성";
-    if(q2) q2.innerText = isQuanDone ? "✅ 작성완료" : "❌ 미작성";
+    const qualStatusEl = document.getElementById('qualStatus');
+    const qualStreamRow = document.getElementById('qualStreamRow');
+    const qualTargetRow = document.getElementById('qualTargetRow');
     
+    if (isQualDone) {
+        // (1) 상태 표시
+        qualStatusEl.innerHTML = '<span style="color:#166534; font-weight:bold;">✅ 작성완료</span>';
+        
+        // (2) 희망 계열 (문과/이과 등)
+        // data.qualitative.group 값 사용 (예: humanities, natural)
+        // 값이 없으면 '-' 표시
+        const groupMap = { 
+            'humanities': '인문계열', 
+            'natural': '자연계열', 
+            'arts': '예체능', 
+            'undefined': '미정' 
+        };
+        const groupKey = qual.group || 'undefined';
+        const groupName = groupMap[groupKey] || groupKey; // 매핑 없으면 그대로 출력
+        
+        document.getElementById('qualStream').innerText = groupName;
+        qualStreamRow.style.display = 'flex';
+
+        // (3) 목표 대학 (1, 2지망)
+        // qual 데이터 내부에 target_univ_1 등이 있거나, userTargetUnivs 배열 사용
+        let targets = [];
+        if (qual.target_univ_1) targets.push(qual.target_univ_1);
+        if (qual.target_univ_2) targets.push(qual.target_univ_2);
+        
+        // 정성 데이터에 없으면 전역 타겟 대학에서 가져오기 (fallback)
+        if (targets.length === 0 && data.targetUnivs) {
+            if(data.targetUnivs[0]?.univ) targets.push(data.targetUnivs[0].univ);
+            if(data.targetUnivs[1]?.univ) targets.push(data.targetUnivs[1].univ);
+        }
+
+        if (targets.length > 0) {
+            document.getElementById('qualTarget').innerText = targets.join(', ');
+            qualTargetRow.style.display = 'flex';
+        } else {
+            qualTargetRow.style.display = 'none';
+        }
+
+    } else {
+        // 미작성 상태
+        qualStatusEl.innerHTML = '<span style="color:#991b1b; font-weight:bold;">❌ 미작성</span>';
+        qualStreamRow.style.display = 'none';
+        qualTargetRow.style.display = 'none';
+    }
+
+    // ---------------------------
+    // 2. 정량 데이터 (Quantitative)
+    // ---------------------------
+    const quan = data.quantitative || {};
+    // 실제 점수가 입력된 시험만 필터링 (국어 또는 수학 점수가 있는 경우)
+    const validExams = Object.keys(quan).filter(key => {
+        const d = quan[key];
+        return d && (d.kor || d.math);
+    });
+    const isQuanDone = validExams.length > 0;
+
+    const quanListEl = document.getElementById('quanDataList');
+    const quanEmptyEl = document.getElementById('quanEmpty');
+
+    quanListEl.innerHTML = ''; // 초기화
+
+    if (isQuanDone) {
+        quanEmptyEl.style.display = 'none';
+        
+        // 시험 순서 정렬 (3월 -> 수능 순)
+        const sortOrder = ['mar', 'apr', 'may', 'jun', 'jul', 'sep', 'oct', 'csat'];
+        validExams.sort((a, b) => sortOrder.indexOf(a) - sortOrder.indexOf(b));
+
+        // 최근 3개만 보여주기 (너무 길어짐 방지) or 전체 보여주기
+        // 여기서는 전체를 보여주되, 공간 부족 시 스크롤 되도록 CSS 처리 권장
+        validExams.forEach(key => {
+            const examData = quan[key];
+            const examName = EXAM_DISPLAY_NAMES[key] ? EXAM_DISPLAY_NAMES[key].split(' ')[0] : key.toUpperCase(); // "6월", "9월", "수능" 등 짧게
+            
+            // 점수 요약 (예: 국92 수88)
+            let scoreSummary = [];
+            if (examData.kor) scoreSummary.push(`국${examData.kor}`);
+            if (examData.math) {
+                // 수학은 구조가 {score:88, opt:'...'} 일 수도 있고 그냥 숫자일 수도 있음
+                const mScore = typeof examData.math === 'object' ? examData.math.score : examData.math;
+                if(mScore) scoreSummary.push(`수${mScore}`);
+            }
+            if (examData.eng) scoreSummary.push(`영${examData.eng}`);
+
+            // 리스트 아이템 생성
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <span class="label">${examName}</span>
+                <span class="data-summary">${scoreSummary.join(' ')}</span>
+            `;
+            quanListEl.appendChild(li);
+        });
+
+    } else {
+        quanEmptyEl.style.display = 'block';
+    }
+
+    // ---------------------------
+    // 3. 전체 배지 상태 업데이트
+    // ---------------------------
+    const badge = document.getElementById('statusBadge');
     if(badge) {
         badge.className = 'status-badge';
-        if (isQualDone && isQuanDone) { badge.classList.add('complete'); badge.innerText = "작성 완료"; }
-        else if (isQualDone || isQuanDone) { badge.classList.add('partial'); badge.innerText = "작성 중"; }
-        else { badge.classList.add('incomplete'); badge.innerText = "미작성"; }
+        if (isQualDone && isQuanDone) { 
+            badge.classList.add('complete'); 
+            badge.innerText = "분석 준비 완료"; 
+        } else if (isQualDone || isQuanDone) { 
+            badge.classList.add('partial'); 
+            badge.innerText = "데이터 부족"; 
+        } else { 
+            badge.classList.add('incomplete'); 
+            badge.innerText = "시작 필요"; 
+        }
     }
 }
 

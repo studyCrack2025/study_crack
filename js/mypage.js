@@ -89,18 +89,6 @@ function applyUserTier(tier) {
     } else if (badge) badge.remove();
 }
 
-function updateSurveyStatus(data) {
-    const isQualDone = !!data.qualitative;
-    const isQuanDone = data.quantitative && Object.keys(data.quantitative).length > 0;
-    const badge = document.getElementById('statusBadge');
-    document.getElementById('qualStatus').innerText = isQualDone ? "✅ 작성완료" : "❌ 미작성";
-    document.getElementById('quanStatus').innerText = isQuanDone ? "✅ 작성완료" : "❌ 미작성";
-    badge.className = 'status-badge';
-    if (isQualDone && isQuanDone) { badge.classList.add('complete'); badge.innerText = "작성 완료"; }
-    else if (isQualDone || isQuanDone) { badge.classList.add('partial'); badge.innerText = "작성 중"; }
-    else { badge.classList.add('incomplete'); badge.innerText = "미작성"; }
-}
-
 // [기능] 프로필 사진 관리 (업로드, 삭제)
 function triggerFileUpload() { document.getElementById('profileFileInput').click(); }
 

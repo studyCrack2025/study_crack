@@ -21,6 +21,95 @@
 .sol-content.active { display: block; animation: fadeIn 0.3s; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
+/* 기초조사서 상태 박스 개선 */
+.survey-status-box h4 {
+    font-size: 1.1rem;
+    color: #1e293b;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.status-detail-container {
+    text-align: left;
+    margin-bottom: 20px;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #e2e8f0;
+}
+
+.detail-group {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px dashed #cbd5e1;
+}
+.detail-group:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.detail-title {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin: 0 0 8px 0;
+    font-weight: 700;
+}
+.detail-title i { margin-right: 5px; color: #3b82f6; }
+
+.detail-list {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.detail-list li {
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.detail-list .label {
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.detail-list .val-text {
+    color: #334155;
+    font-weight: 600;
+    text-align: right;
+    max-width: 140px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.detail-list .data-summary {
+    background: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+    font-size: 0.8rem;
+    color: #475569;
+}
+
+.empty-msg {
+    font-size: 0.8rem;
+    color: #cbd5e1;
+    text-align: center;
+    padding: 10px 0;
+}
+
+/* 버튼 아이콘 간격 */
+.btn-go-survey i {
+    margin-right: 6px;
+}
+
 /* 솔루션 헤더 */
 .sol-header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid #f1f5f9; padding-bottom: 20px; display: flex; flex-direction: column; align-items: center; }
 .sol-title { font-size: 1.8rem; font-weight: 800; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 15px; }
