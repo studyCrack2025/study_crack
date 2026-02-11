@@ -731,7 +731,7 @@ function renderAnalysisCard(res) {
                     <div style="font-size:0.75rem; color:#94a3b8; height:15px;">
                         <span style="position:absolute; left:0; bottom:0;">0</span>
                         <span style="position:absolute; left:40%; bottom:0; transform:translateX(-50%); color:#64748b; font-weight:600; white-space:nowrap;">합격(100)</span>
-                        <span style="position:absolute; left:60%; bottom:0; transform:translateX(-50%); color:#64748b; font-weight:600; white-space:nowrap;">안정(150)</span>
+                        <span style="position:absolute; left:60%; bottom:0; transform:translateX(-50%); color:#64748b; font-weight:600; white-space:nowrap;">안정(120)</span>
                         <span style="position:absolute; right:0; bottom:0;">MAX(250)</span>
                     </div>
                 </div>
@@ -842,7 +842,7 @@ function renderSimChart(data) {
     data.forEach(item => {
         const heightPct = (item.base_ui_score / 250) * 100;
         let color = '#ef4444'; 
-        if (item.base_ui_score >= 150) color = '#10b981'; 
+        if (item.base_ui_score >= 120) color = '#10b981'; 
         else if (item.base_ui_score >= 100) color = '#3b82f6';
 
         // [보안] 이스케이프 적용
