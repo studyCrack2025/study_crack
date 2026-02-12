@@ -189,9 +189,6 @@
 .tab-content { display: none; padding: 25px; animation: fadeIn 0.2s; }
 .tab-content.active { display: block; }
 
-/* -------------------------------------------------------------
-   [모달 디자인 개선 핵심] - 테이블 및 입력폼 스타일링
-   ------------------------------------------------------------- */
 /* 모달 크기 확장 및 스크롤바 스타일 */
 .check-modal-content { 
     max-width: 800px; /* [수정] 700 -> 800px 더 넓게 */
@@ -298,6 +295,52 @@
 .pro-textarea { width: 100%; height: 100px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; resize: none; font-size: 0.95rem; line-height: 1.5; transition: border 0.2s; }
 .pro-textarea:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
 .char-count { text-align: right; font-size: 0.85rem; color: #94a3b8; margin-top: 5px; }
+
+.save-btn {
+    display: block;
+    width: 100%;
+    padding: 16px 20px;
+    margin-top: 20px;
+    
+    /* 메인 컬러 (진한 파랑) */
+    background-color: #2563EB; 
+    color: white;
+    
+    border: none;
+    border-radius: 10px;
+    
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    /* 입체감을 위한 그림자 */
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+}
+
+/* 마우스 올렸을 때 (Hover) */
+.save-btn:hover {
+    background-color: #1d4ed8; /* 더 진한 파랑 */
+    transform: translateY(-2px); /* 살짝 위로 뜸 */
+    box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4);
+}
+
+/* 클릭 효과 (Active) */
+.save-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px -1px rgba(37, 99, 235, 0.3);
+}
+
+/* 비활성화 상태 (로딩 중 등) */
+.save-btn:disabled {
+    background-color: #cbd5e1; /* 회색 */
+    color: #64748b;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
 
 /* ============================================================
    [코칭 영역 등급 제한 잠금 스타일]
