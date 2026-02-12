@@ -1364,35 +1364,65 @@ function updateCharCount(el) {
 
 // [통합] 주간 점검 & 심층 코칭 제출
 async function submitWeeklyCheck() {
-    const totalPlan = parseFloat(document.getElementById('totalPlan').innerText);
+    // 1. 학습평가 데이터 수집
+    const totalPlanEl = document.getElementById('totalPlan');
+    if (!totalPlanEl) { alert("오류: 필수 요소를 찾을 수 없습니다. (totalPlan)"); return; }
+    
+    const totalPlan = parseFloat(totalPlanEl.innerText);
     if (totalPlan === 0) { 
         alert("학습 계획 시간을 입력해주세요."); 
         switchWeeklyTab('step1'); 
         return; 
     }
 
-    const q1 = document.getElementById('deepQ1').value.trim();
-    const q2 = document.getElementById('deepQ2').value.trim();
-    const q3 = document.getElementById('deepQ3').value.trim();
-    const q4 = document.getElementById('deepQ4').value.trim();
+    // 2. 심층 코칭 데이터 수집 (Safe Access)
+    const getVal = (id) => {
+        const el = document.getElementById(id);
+        return el ? el.value.trim() : "";
+    };
 
+    const q1 = getVal('deepQ1');
+    const q2 = getVal('deepQ2');
+    const q3 = getVal('deepQ3');
+    const q4 = getVal('deepQ4');
+
+    // 필수 입력 체크 (최소 1개 이상)
     if (!q1 && !q2 && !q3 && !q4) {
         alert("심층 코칭 질문을 최소 1개 이상 작성해주세요.");
         switchWeeklyTab('step2'); 
         return;
     }
 
-    const mockType = document.getElementById('mockExamType').value;
+    // 3. 모의고사 데이터 수집
+    const mockTypeEl = document.getElementById('mockExamType');
+    const mockType = mockTypeEl ? mockTypeEl.value : 'none';
+    
     let mockData = { type: mockType, proofFile: null, scores: {} };
+    
     if (mockType !== 'none') {
         const fileInput = document.getElementById('mockExamProof');
-        mockData.proofFile = fileInput.files.length > 0 ? fileInput.files[0].name : "file_uploaded"; 
-        const scores = document.querySelectorAll('.mock-score');
+        mockData.proofFile = (fileInput && fileInput.files.length > 0) ? fileInput.files[0].name : "file_uploaded"; 
+        
+        // 점수 수집 (요소 존재 확인)
+        const getScore = (id) => {
+            const el = document.getElementById(id);
+            return el ? el.value : "";
+        };
+        const getOpt = (id) => {
+            const el = document.getElementById(id);
+            return el ? el.value : "";
+        };
+
         mockData.scores = { 
-            kor: scores[0].value, math: scores[1].value, eng: scores[2].value, inq1: scores[3].value, inq2: scores[4].value 
+            kor: getScore('mockKorScore'), korOpt: getOpt('mockKorOpt'),
+            math: getScore('mockMathScore'), mathOpt: getOpt('mockMathOpt'),
+            eng: getScore('mockEngScore'),
+            inq1: getScore('mockInq1Score'), inq1Name: getScore('mockInq1Name'),
+            inq2: getScore('mockInq2Score'), inq2Name: getScore('mockInq2Name')
         };
     }
 
+    // 4. 학습 시간 상세 데이터 수집
     const studyRows = document.querySelectorAll('#studyTimeBody tr');
     let studyData = [];
     studyRows.forEach(row => {
@@ -1400,38 +1430,51 @@ async function submitWeeklyCheck() {
         const mainSub = row.querySelector('.main-sub');
         const detail = row.querySelector('.sub-detail');
         const custom = row.querySelector('.custom-subj');
+        
         if(mainSub) {
             subjName = mainSub.innerText;
             if(detail && detail.value) subjName += `(${detail.value.trim()})`;
         } else if(custom) {
             subjName = custom.value.trim() || "기타";
         }
-        const plan = parseFloat(row.querySelector('.plan-time').value) || 0;
-        const act = parseFloat(row.querySelector('.act-time').value) || 0;
+        
+        const planEl = row.querySelector('.plan-time');
+        const actEl = row.querySelector('.act-time');
+        const plan = planEl ? (parseFloat(planEl.value) || 0) : 0;
+        const act = actEl ? (parseFloat(actEl.value) || 0) : 0;
+        
         if(plan > 0 || act > 0) studyData.push({ subject: subjName, plan, act });
     });
 
-    const trend = document.querySelector('input[name="studyTrend"]:checked')?.value || 'keep';
+    // 5. 트렌드 및 사유 수집
+    const trendEl = document.querySelector('input[name="studyTrend"]:checked');
+    const trend = trendEl ? trendEl.value : 'keep';
+    
     let reasons = [];
     if(trend === 'down') {
         document.querySelectorAll('#slumpReasonBox input:checked').forEach(cb => reasons.push(cb.value));
-        const det = document.getElementById('slumpDetail').value;
-        if(det) reasons.push(det);
+        const detEl = document.getElementById('slumpDetail');
+        if(detEl && detEl.value) reasons.push(detEl.value);
     }
 
     if(!confirm("제출하시겠습니까?\n(제출 후 컨설턴트에게 전달됩니다)")) return;
 
+    // 6. 데이터 전송 준비
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('idToken'); 
     const submitBtn = document.querySelector('.save-btn');
-    const originalBtnText = submitBtn.innerText;
+    const originalBtnText = submitBtn ? submitBtn.innerText : "저장";
 
     try {
-        submitBtn.disabled = true;
-        submitBtn.innerText = "처리 중...";
+        if(submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerText = "처리 중...";
+        }
 
+        // 파일 업로드 로직 (기존 유지)
         const currentUrls = currentPlannerFiles.filter(f => typeof f === 'string');
         const filesToDelete = originalPlannerFiles.filter(url => !currentUrls.includes(url));
+        
         if (filesToDelete.length > 0) {
             await Promise.all(filesToDelete.map(url => 
                 fetch(MYPAGE_API_URL, {
@@ -1441,8 +1484,10 @@ async function submitWeeklyCheck() {
                 })
             ));
         }
+        
         let finalFileUrls = [...currentUrls]; 
         const newFiles = currentPlannerFiles.filter(f => typeof f !== 'string');
+        
         if (newFiles.length > 0) {
             for (const file of newFiles) {
                 const res = await fetch(MYPAGE_API_URL, {
@@ -1458,16 +1503,17 @@ async function submitWeeklyCheck() {
         }
 
         const today = new Date().toISOString();
-        const title = getWeekTitle(new Date()); 
+        // getWeekTitle 함수가 정의되어 있는지 확인
+        const title = (typeof getWeekTitle === 'function') ? getWeekTitle(new Date()) : "주간점검"; 
 
         const weeklyData = {
             date: today,
             title: title, 
             studyTime: {
                 details: studyData, 
-                totalPlan: document.getElementById('totalPlan').innerText,
-                totalAct: document.getElementById('totalAct').innerText,
-                totalRate: document.getElementById('totalRate').innerText
+                totalPlan: document.getElementById('totalPlan') ? document.getElementById('totalPlan').innerText : "0H",
+                totalAct: document.getElementById('totalAct') ? document.getElementById('totalAct').innerText : "0H",
+                totalRate: document.getElementById('totalRate') ? document.getElementById('totalRate').innerText : "0%"
             },
             mockExam: mockData,
             trend: { status: trend, reasons: reasons },
@@ -1493,8 +1539,10 @@ async function submitWeeklyCheck() {
         console.error("Submit Error:", e); 
         alert("처리 중 오류가 발생했습니다: " + e.message); 
     } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerText = originalBtnText;
+        if(submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = originalBtnText;
+        }
     }
 }
 
