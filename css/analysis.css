@@ -471,23 +471,33 @@
 .black-cta-btn:hover span { color: #333; }
 
 /* =========================================
-   [페이지 로딩 오버레이]
+   [섹션 로딩 오버레이: #sol-univ 전용]
    ========================================= */
+
+/* 오버레이가 갇힐 부모 컨테이너 설정 */
+#sol-univ {
+    position: relative; /* 자식(오버레이)의 기준점 */
+    min-height: 300px;  /* 로딩 중 내용이 없을 때 찌그러짐 방지 */
+}
+
 .page-loading-overlay {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(255, 255, 255, 0.95); /* 배경을 하얗게 덮음 */
-    z-index: 9999; /* 최상단 배치 */
+    
+    background-color: rgba(255, 255, 255, 0.95);
+    z-index: 50;      
+    
     display: flex;
     justify-content: center;
     align-items: center;
+    border-radius: 12px; 
     transition: opacity 0.4s ease, visibility 0.4s ease;
 }
 
-/* 로딩이 끝났을 때 숨김 처리를 위한 클래스 */
+/* 로딩이 끝났을 때 숨김 처리 */
 .page-loading-overlay.hidden {
     opacity: 0;
     visibility: hidden;
@@ -496,7 +506,7 @@
 
 .loading-content {
     text-align: center;
-    color: #2563EB; /* 메인 컬러 */
+    color: #2563EB;
 }
 
 .loading-content i {
