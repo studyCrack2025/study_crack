@@ -70,12 +70,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 초기화 로직 실행
         initUnivGrid(); 
-        updateAnalysisUI(); 
-        applyCoachTierLock();
+        updateAnalysisUI();
         checkBlackStatusForButton();
         
         setWeeklyLoadingStatus(false);
-        setTimeout(() => { checkWeeklyStatus(); }, 500); 
+        setTimeout(() => { 
+            checkWeeklyStatus();
+            applyCoachTierLock();
+        }, 500); 
+        
+        const loader = document.getElementById('pageLoadingOverlay');
+        if (loader) {
+            setTimeout(() => {
+                loader.classList.add('hidden');
+            }, 500);
+        }
 
         // URL 파라미터 확인 (?sol=sim 등)
         const params = new URLSearchParams(window.location.search);

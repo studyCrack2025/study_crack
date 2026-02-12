@@ -470,6 +470,53 @@
 .black-cta-btn span { display: block; font-size: 0.85rem; font-weight: 400; margin-top: 8px; color: #888; letter-spacing: 0; transition: color 0.4s ease; }
 .black-cta-btn:hover span { color: #333; }
 
+/* =========================================
+   [페이지 로딩 오버레이]
+   ========================================= */
+.page-loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.95); /* 배경을 하얗게 덮음 */
+    z-index: 9999; /* 최상단 배치 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+/* 로딩이 끝났을 때 숨김 처리를 위한 클래스 */
+.page-loading-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.loading-content {
+    text-align: center;
+    color: #2563EB; /* 메인 컬러 */
+}
+
+.loading-content i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    filter: drop-shadow(0 4px 6px rgba(37, 99, 235, 0.2));
+}
+
+.loading-content p {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #334155;
+    animation: pulseText 1.5s infinite ease-in-out;
+}
+
+@keyframes pulseText {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
 /* 모바일 대응 */
 @media (max-width: 768px) {
     .solution-menu { flex-wrap: wrap; gap: 10px; }
