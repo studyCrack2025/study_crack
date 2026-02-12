@@ -185,40 +185,47 @@
             </div>
 
             <div id="sol-coach" class="sol-content">
-                <div class="content-header sol-header theme-coach">
-                    <h2 class="sol-title">
-                        <div class="sol-icon-box"><i class="fas fa-chalkboard-teacher"></i></div>
-                        플래너 코칭
-                    </h2>
-                    <p class="sol-desc">
-                        주간 학습 계획을 점검하고, 전문가의 피드백을 받아보세요.
-                    </p>
-                </div>
+    <div class="content-header sol-header theme-coach">
+        <h2 class="sol-title">
+            <div class="sol-icon-box"><i class="fas fa-chalkboard-teacher"></i></div>
+            플래너 코칭
+        </h2>
+        <p class="sol-desc">
+            주간 학습 계획을 점검하고, 전문가의 피드백을 받아보세요.
+        </p>
+    </div>
 
-                <div class="coach-container">
-                    <div class="coach-box clickable" id="weeklyBox" onclick="openWeeklyCheckModal()">
-                        <h3>📅 주간 학습 점검</h3>
-                        <p>이번 주 학습 달성률과 상태를 점검합니다. (매주 월요일 리셋)</p>
-                        <div id="weeklyStatusInfo" style="margin-top:10px; font-size:0.85rem;">
-                            <span id="weeklyStatusBadge" class="badge-status pending">미제출</span>
-                            <span id="weeklyDeadlineMsg" style="color:#64748b; margin-left:5px;"></span>
-                        </div>
-                        <span class="badge-std">Standard 이상</span>
-                    </div>
-                    
-                    <div class="coach-box deep-coaching clickable" onclick="openDeepCoachingModal()">
-                        <div class="deep-header">
-                            <h3>🧐 심층 코칭</h3>
-                            <span class="badge-pro">PRO Exclusive</span>
-                        </div>
-                        <p class="deep-desc">전문 컨설턴트와의 1:1 정밀 진단 & 솔루션</p>
-                        <div class="lock-overlay" id="deepCoachingLock">
-                            <i class="fas fa-lock"></i>
-                            <p>PRO 버전 이상</p>
-                        </div>
-                    </div>
+    <div class="coach-container">
+        <div class="coach-box clickable" id="weeklyBox" onclick="openWeeklyCheckModal()">
+            <div class="box-header">
+                <h3>📅 금주 학습 점검 & 코칭 요청</h3>
+                <span id="weeklyStatusBadge" class="badge-status pending">미제출</span>
+            </div>
+            <p style="color:#475569; margin-top:5px; font-size:0.9rem;">
+                이번 주 학습 달성률을 점검하고 컨설턴트에게 코칭을 요청합니다.<br>
+                <span id="weeklyDeadlineMsg" style="font-size:0.8rem; color:#64748b;">(매주 일요일 20:00 마감)</span>
+            </p>
+        </div>
+        
+        <div class="coach-box feedback-box">
+            <div class="deep-header">
+                <h3>💌 주간학습 피드백</h3>
+                <span class="badge-std">Consultant Feedback</span>
+            </div>
+            <p class="deep-desc">지난 주차의 피드백을 확인해보세요.</p>
+            
+            <div class="feedback-history-area">
+                <div class="feedback-filter">
+                    <select id="feedbackYearMonth" onchange="renderFeedbackList()">
+                        </select>
+                </div>
+                <div id="feedbackList" class="feedback-list">
+                    <div class="empty-feedback">제출된 기록이 없습니다.</div>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
 
             <div id="sol-black" class="sol-content black-theme">
                 <div class="content-header sol-header theme-black">
@@ -270,32 +277,39 @@
     </div>
     
     <div id="weeklyCheckModal" class="modal">
-        <div class="modal-content check-modal-content">
-            <div class="modal-header">
-                <h2 id="weeklyTitle">
-                    <span id="weeklyYear">26년</span>
-                    <span id="weeklyDateDetail">00월 0주차</span>
-                    학습점검
-                </h2>
-                <span class="close-btn" onclick="closeWeeklyModal()">&times;</span>
-            </div>
-            <div class="modal-body scrollable">
+    <div class="modal-content check-modal-content">
+        <div class="modal-header" style="border-bottom:none; padding-bottom:10px;">
+            <h2 id="weeklyTitle" style="margin:0;">
+                <span id="weeklyYear">2026년</span>
+                <span id="weeklyDateDetail">2월 2주차</span>
+                학습점검
+            </h2>
+            <span class="close-btn" onclick="closeWeeklyModal()">&times;</span>
+        </div>
+
+        <div class="tab-menu">
+            <button class="tab-btn active" onclick="switchWeeklyTab('step1')">Step 1. 학습평가</button>
+            <button class="tab-btn" onclick="switchWeeklyTab('step2')">Step 2. 심층코칭</button>
+        </div>
+
+        <div class="modal-body scrollable">
+            <div id="tab-step1" class="tab-content active">
                 <div class="check-section">
                     <h4>1. 과목별 학습 달성률 <span class="req">*</span></h4>
                     <p class="desc">과목별 <strong>구체적인 과목명</strong>과 시간을 입력하세요.</p>
                     <div class="table-wrap">
                         <table class="study-time-table">
-                            <thead><tr><th>과목</th><th>계획(H)</th><th>실제(H)</th><th>달성률</th></tr></thead>
+                            <thead><tr><th>과목</th><th>세부과목</th><th>계획(H)</th><th>실제(H)</th><th>달성률</th></tr></thead>
                             <tbody id="studyTimeBody">
-                                <tr><td><span class="main-sub">국어</span><input type="text" class="sub-detail" placeholder="예: 언매"></td><td><input type="number" class="plan-time" oninput="calcStudyRates()"></td><td><input type="number" class="act-time" oninput="calcStudyRates()"></td><td><span class="rate-txt">0%</span></td></tr>
-                                <tr><td><span class="main-sub">수학</span><input type="text" class="sub-detail" placeholder="예: 미적"></td><td><input type="number" class="plan-time" oninput="calcStudyRates()"></td><td><input type="number" class="act-time" oninput="calcStudyRates()"></td><td><span class="rate-txt">0%</span></td></tr>
-                                <tr><td><span class="main-sub">영어</span></td><td><input type="number" class="plan-time" oninput="calcStudyRates()"></td><td><input type="number" class="act-time" oninput="calcStudyRates()"></td><td><span class="rate-txt">0%</span></td></tr>
-                                <tr><td><span class="main-sub">탐구1</span><input type="text" class="sub-detail" placeholder="과목명"></td><td><input type="number" class="plan-time" oninput="calcStudyRates()"></td><td><input type="number" class="act-time" oninput="calcStudyRates()"></td><td><span class="rate-txt">0%</span></td></tr>
-                                <tr><td><span class="main-sub">탐구2</span><input type="text" class="sub-detail" placeholder="과목명"></td><td><input type="number" class="plan-time" oninput="calcStudyRates()"></td><td><input type="number" class="act-time" oninput="calcStudyRates()"></td><td><span class="rate-txt">0%</span></td></tr>
-                                <tr><td><input type="text" placeholder="기타(한국사 등)" class="custom-subj"></td><td><input type="number" class="plan-time" oninput="calcStudyRates()"></td><td><input type="number" class="act-time" oninput="calcStudyRates()"></td><td><span class="rate-txt">0%</span></td></tr>
+                                <tr><td><span class="main-sub">국어</span></td><td><input type="text" class="sub-detail" placeholder="예: 언매"></td><td><input type="number" class="plan-time" oninput="calcStudyRates()"></td><td><input type="number" class="act-time" oninput="calcStudyRates()"></td><td><span class="rate-txt">0%</span></td></tr>
+                                <tr><td><span class="main-sub">수학</span></td><td><input type="text" class="sub-detail" placeholder="예: 미적"></td><td><input type="number" class="plan-time" oninput="calcStudyRates()"></td><td><input type="number" class="act-time" oninput="calcStudyRates()"></td><td><span class="rate-txt">0%</span></td></tr>
+                                <tr><td><span class="main-sub">영어</span></td><td><input type="text" class="sub-detail" disabled style="background:#f8fafc; border:none;"></td><td><input type="number" class="plan-time" oninput="calcStudyRates()"></td><td><input type="number" class="act-time" oninput="calcStudyRates()"></td><td><span class="rate-txt">0%</span></td></tr>
+                                <tr><td><span class="main-sub">탐구1</span></td><td><input type="text" class="sub-detail" placeholder="과목명"></td><td><input type="number" class="plan-time" oninput="calcStudyRates()"></td><td><input type="number" class="act-time" oninput="calcStudyRates()"></td><td><span class="rate-txt">0%</span></td></tr>
+                                <tr><td><span class="main-sub">탐구2</span></td><td><input type="text" class="sub-detail" placeholder="과목명"></td><td><input type="number" class="plan-time" oninput="calcStudyRates()"></td><td><input type="number" class="act-time" oninput="calcStudyRates()"></td><td><span class="rate-txt">0%</span></td></tr>
+                                <tr><td><input type="text" placeholder="기타" class="custom-subj"></td><td>-</td><td><input type="number" class="plan-time" oninput="calcStudyRates()"></td><td><input type="number" class="act-time" oninput="calcStudyRates()"></td><td><span class="rate-txt">0%</span></td></tr>
                             </tbody>
                             <tfoot>
-                                <tr class="total-row"><td>총합</td><td id="totalPlan">0H</td><td id="totalAct">0H</td><td id="totalRate">0%</td></tr>
+                                <tr class="total-row"><td colspan="2">총합</td><td id="totalPlan">0H</td><td id="totalAct">0H</td><td id="totalRate">0%</td></tr>
                             </tfoot>
                         </table>
                     </div>
@@ -339,7 +353,7 @@
                     <h4>4. 최근 2주 학업 추이 <span class="req">*</span></h4>
                     <div class="trend-radio-group">
                         <label><input type="radio" name="studyTrend" value="up" onchange="toggleSlumpReason()"> 📈 상승</label>
-                        <label><input type="radio" name="studyTrend" value="keep" onchange="toggleSlumpReason()"> ➖ 유지</label>
+                        <label><input type="radio" name="studyTrend" value="keep" onchange="toggleSlumpReason()" checked> ➖ 유지</label>
                         <label><input type="radio" name="studyTrend" value="down" onchange="toggleSlumpReason()"> 📉 하락</label>
                     </div>
                     <div id="slumpReasonBox" style="display:none; margin-top:15px; background:#fff1f2; padding:15px; border-radius:8px;">
@@ -353,59 +367,47 @@
                         <input type="text" id="slumpDetail" placeholder="구체적인 이유를 간단히 적어주세요." style="width:100%; margin-top:10px;">
                     </div>
                 </div>
+            </div> <div id="tab-step2" class="tab-content">
+                <div class="pro-body" style="padding:0;">
+                    <p style="color:#64748b; font-size:0.9rem; margin-bottom:20px;">
+                        <i class="fas fa-info-circle"></i> 전문가의 피드백을 받기 위한 심층 질문입니다. 구체적으로 작성할수록 정확한 솔루션을 받을 수 있습니다.
+                    </p>
 
-                <div class="check-section">
-                    <h4>5. 이번 주 핵심 회고 <span class="req">*</span></h4>
-                    <textarea id="weekComment" maxlength="200" placeholder="예: 수학 준킬러 문제 풀이 속도가 너무 느려서 고민이다. (200자 이내)" oninput="checkLength(this)"></textarea>
-                    <div class="char-count"><span id="currLen">0</span>/200</div>
+                    <div class="pro-input-card">
+                        <div class="card-title"><i class="fas fa-calendar-check"></i> 1. 학습 계획 점검</div>
+                        <p class="card-desc">현재 세우고 있는 계획의 문제점이나 확신이 없는 부분을 적어주세요.</p>
+                        <textarea id="deepQ1" class="pro-textarea" maxlength="200" placeholder="예: 하루 14시간 계획을 세우는데 자꾸 밀립니다. 현실적인 수정이 필요합니다." oninput="updateCharCount(this)"></textarea>
+                        <div class="char-count"><span>0</span>/200</div>
+                    </div>
+                    
+                    <div class="pro-input-card">
+                        <div class="card-title"><i class="fas fa-compass"></i> 2. 학습 방향성 설정</div>
+                        <p class="card-desc">현재 공부하고 있는 방향이 맞는지, 입시 전략과 일치하는지 고민을 적어주세요.</p>
+                        <textarea id="deepQ2" class="pro-textarea" maxlength="200" placeholder="예: 정시 파이터인데 내신 기간에 수능 공부 밸런스를 어떻게 잡아야 할까요?" oninput="updateCharCount(this)"></textarea>
+                        <div class="char-count"><span>0</span>/200</div>
+                    </div>
+                    
+                    <div class="pro-input-card">
+                        <div class="card-title"><i class="fas fa-book-open"></i> 3. 취약 과목 솔루션</div>
+                        <p class="card-desc">성적이 오르지 않는 특정 과목의 구체적인 증상을 적어주세요.</p>
+                        <textarea id="deepQ3" class="pro-textarea" maxlength="200" placeholder="예: 수학 준킬러에서 시간이 너무 오래 걸립니다. 기출 분석은 2회독 했습니다." oninput="updateCharCount(this)"></textarea>
+                        <div class="char-count"><span>0</span>/200</div>
+                    </div>
+                    
+                    <div class="pro-input-card">
+                        <div class="card-title"><i class="fas fa-comment-dots"></i> 4. 기타 멘탈 관리</div>
+                        <p class="card-desc">슬럼프, 불안감 등 학습 외적인 고민이 있다면 자유롭게 적어주세요.</p>
+                        <textarea id="deepQ4" class="pro-textarea" maxlength="200" placeholder="자유롭게 작성해주세요." oninput="updateCharCount(this)"></textarea>
+                        <div class="char-count"><span>0</span>/200</div>
+                    </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button class="save-btn" onclick="submitWeeklyCheck()">작성 완료 및 제출</button>
-            </div>
+            </div> </div>
+
+        <div class="modal-footer">
+            <button class="save-btn" onclick="submitWeeklyCheck()">작성 완료 및 제출</button>
         </div>
     </div>
-
-    <div id="deepCoachingModal" class="modal">
-        <div class="modal-content pro-modal-content">
-            <div class="pro-modal-header">
-                <div class="header-text">
-                    <h2>1:1 심층 컨설팅 요청</h2>
-                    <p>현재 고민을 구체적으로 적어주시면, 48-72시간 내에 전문 솔루션이 제공됩니다.</p>
-                </div>
-                <span class="close-btn pro-close" onclick="closeDeepModal()">&times;</span>
-            </div>
-            <div class="modal-body scrollable pro-body">
-                <div class="pro-input-card">
-                    <div class="card-title"><i class="fas fa-calendar-check"></i> 학습 계획 점검</div>
-                    <p class="card-desc">현재 세우고 있는 계획의 문제점이나 확신이 없는 부분을 적어주세요.</p>
-                    <textarea class="pro-textarea" maxlength="200" placeholder="예: 하루 14시간 계획을 세우는데 자꾸 밀립니다. 현실적인 수정이 필요합니다." oninput="updateCharCount(this)"></textarea>
-                    <div class="char-count"><span>0</span>/200</div>
-                </div>
-                <div class="pro-input-card">
-                    <div class="card-title"><i class="fas fa-compass"></i> 학습 방향성 설정</div>
-                    <p class="card-desc">현재 공부하고 있는 방향이 맞는지, 입시 전략과 일치하는지 고민을 적어주세요.</p>
-                    <textarea class="pro-textarea" maxlength="200" placeholder="예: 정시 파이터인데 내신 기간에 수능 공부 밸런스를 어떻게 잡아야 할까요?" oninput="updateCharCount(this)"></textarea>
-                    <div class="char-count"><span>0</span>/200</div>
-                </div>
-                <div class="pro-input-card">
-                    <div class="card-title"><i class="fas fa-book-open"></i> 취약 과목 솔루션</div>
-                    <p class="card-desc">성적이 오르지 않는 특정 과목의 구체적인 증상을 적어주세요.</p>
-                    <textarea class="pro-textarea" maxlength="200" placeholder="예: 수학 준킬러에서 시간이 너무 오래 걸립니다. 기출 분석은 2회독 했습니다." oninput="updateCharCount(this)"></textarea>
-                    <div class="char-count"><span>0</span>/200</div>
-                </div>
-                <div class="pro-input-card">
-                    <div class="card-title"><i class="fas fa-comment-dots"></i> 기타 멘탈 관리</div>
-                    <p class="card-desc">슬럼프, 불안감 등 학습 외적인 고민이 있다면 자유롭게 적어주세요.</p>
-                    <textarea class="pro-textarea" maxlength="200" placeholder="자유롭게 작성해주세요." oninput="updateCharCount(this)"></textarea>
-                    <div class="char-count"><span>0</span>/200</div>
-                </div>
-            </div>
-            <div class="modal-footer pro-footer">
-                <button class="save-btn pro-btn" onclick="submitDeepCoaching()">컨설팅 요청하기</button>
-            </div>
-        </div>
-    </div>
+</div>
 
     <script src="/js/config.js"></script>
     <script src="/js/auth.js"></script>

@@ -926,17 +926,32 @@ function renderSimCards(data) {
 }
 
 // ============================================================
-// [기능 4] 코칭 & 주간 학습 점검
+// [기능 4] 코칭 & 주간 학습 점검 (리팩토링)
 // ============================================================
+
+// 탭 전환 로직
+function switchWeeklyTab(step) {
+    // 탭 버튼 스타일 변경
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    if(step === 'step1') document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+    else document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+
+    // 콘텐츠 표시 변경
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    document.getElementById(`tab-${step}`).classList.add('active');
+}
+
 function setWeeklyLoadingStatus(isLoading) {
     const msg = document.getElementById('weeklyDeadlineMsg');
     const badge = document.getElementById('weeklyStatusBadge');
     if (!msg || !badge) return;
     if (isLoading) {
         badge.innerText = '...'; badge.className = 'badge-status pending'; 
-        msg.style.color = '#3b82f6'; msg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 데이터 로딩중...';
+        msg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 로딩중...';
     } else {
-        msg.style.color = '#10b981'; msg.innerHTML = '<strong>✅ 로드 완료</strong>';
+        msg.innerText = '(매주 일요일 20:00 마감)';
+        // 히스토리 로드 후 피드백 리스트 렌더링 호출
+        renderFeedbackList();
     }
 }
 
@@ -944,16 +959,17 @@ function checkWeeklyStatus() {
     const today = new Date();
     const currentWeekTitle = getWeekTitle(today); 
     const history = Array.isArray(weeklyDataHistory) ? weeklyDataHistory : [];
+    
+    // 이번 주 데이터 확인
     const thisWeekData = history.find(w => { 
         if(!w.title) return false; 
         return w.title.replace(/\s+/g, '').includes(currentWeekTitle.replace(/\s+/g, '')); 
     });
     
     const badge = document.getElementById('weeklyStatusBadge');
-    const msg = document.getElementById('weeklyDeadlineMsg');
     const box = document.getElementById('weeklyBox');
     
-    if (!badge || !box || !msg) return;
+    if (!badge || !box) return;
     
     if (thisWeekData) { 
         badge.className = 'badge-status submitted'; 
@@ -964,24 +980,76 @@ function checkWeeklyStatus() {
     }
     
     const day = today.getDay(); const hour = today.getHours();
+    // 일요일 20시 이후 잠금
     if (day === 0 && hour >= 20) { 
         badge.className = 'badge-status locked'; 
         badge.innerText = '⛔ 마감됨'; 
-        msg.style.color = '#ef4444'; 
-        msg.innerText = "수정 불가 (매주 일요일 20시 마감)"; 
         box.classList.add('disabled'); 
         box.onclick = null; 
-        box.setAttribute('onclick', ''); 
     } else { 
-        msg.style.color = '#64748b'; 
-        msg.innerText = "※ 일요일 20:00 마감"; 
         box.classList.remove('disabled'); 
         box.onclick = openWeeklyCheckModal; 
     }
 }
 
+// 주간학습 피드백 리스트 렌더링 (우측 박스)
+function renderFeedbackList() {
+    const history = Array.isArray(weeklyDataHistory) ? weeklyDataHistory : [];
+    const listContainer = document.getElementById('feedbackList');
+    const select = document.getElementById('feedbackYearMonth');
+    
+    if(!listContainer || !select) return;
+
+    // 1. 존재하는 연/월 추출 (Set으로 중복 제거)
+    const yearMonths = new Set();
+    history.forEach(h => {
+        // title 예시: "2026년 2월 2주차" -> "2026년 2월" 추출
+        const match = h.title.match(/(\d{4}년\s\d{1,2}월)/);
+        if(match) yearMonths.add(match[1]);
+    });
+
+    // 2. Select Box 채우기 (현재 없으면 이번달 추가)
+    const today = new Date();
+    const currentYM = `${today.getFullYear()}년 ${today.getMonth()+1}월`;
+    if(yearMonths.size === 0) yearMonths.add(currentYM);
+    
+    select.innerHTML = '';
+    Array.from(yearMonths).sort().reverse().forEach(ym => {
+        const option = document.createElement('option');
+        option.value = ym;
+        option.innerText = ym;
+        select.appendChild(option);
+    });
+    
+    // 현재 선택된 연월 (없으면 첫번째)
+    const selectedYM = select.value;
+
+    // 3. 리스트 렌더링
+    listContainer.innerHTML = '';
+    const filtered = history.filter(h => h.title.includes(selectedYM)).sort((a,b) => b.title.localeCompare(a.title));
+
+    if(filtered.length === 0) {
+        listContainer.innerHTML = '<div class="empty-feedback">제출된 기록이 없습니다.</div>';
+        return;
+    }
+
+    filtered.forEach(h => {
+        const div = document.createElement('div');
+        div.className = 'feedback-tile';
+        div.onclick = () => { document.getElementById('feedbackModal').style.display='block'; };
+        
+        // 제출 여부 확인 (코칭 답변이 있는지 등은 나중에 고도화)
+        div.innerHTML = `
+            <div class="fb-title">${h.title}</div>
+            <div class="fb-status"><i class="fas fa-check-circle"></i> 피드백 보기</div>
+        `;
+        listContainer.appendChild(div);
+    });
+}
+
 function openWeeklyCheckModal() {
     const today = new Date();
+    // 마감 체크
     if (today.getDay() === 0 && today.getHours() >= 20) { 
         alert("금주 학습 점검 제출이 마감되었습니다."); 
         return; 
@@ -990,13 +1058,16 @@ function openWeeklyCheckModal() {
     const modal = document.getElementById('weeklyCheckModal');
     const currentWeekTitle = getWeekTitle(today); 
     const [yStr, mStr, wStr] = currentWeekTitle.split(' '); 
-    document.getElementById('weeklyYear').innerText = yStr; 
+    document.getElementById('weeklyYear').innerText = yStr.replace('년',''); 
     document.getElementById('weeklyDateDetail').innerText = `${mStr} ${wStr}`;
     
     const thisWeekData = weeklyDataHistory.find(w => w.title && w.title.replace(/\s/g, '') === currentWeekTitle.replace(/\s/g, ''));
     
     if (thisWeekData) loadWeeklyDataToForm(thisWeekData); 
     else resetWeeklyForm(); 
+    
+    // 탭 초기화 (Step 1부터 표시)
+    switchWeeklyTab('step1');
     
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
@@ -1008,7 +1079,7 @@ function closeWeeklyModal() {
 }
 
 function resetWeeklyForm() {
-    document.getElementById('weekComment').value = '';
+    // [Step 1] 리셋
     document.querySelectorAll('.plan-time, .act-time, .sub-detail, .custom-subj').forEach(i => i.value = '');
     document.querySelectorAll('.rate-txt').forEach(s => s.innerText = '0%');
     document.getElementById('totalPlan').innerText = '0H';
@@ -1020,13 +1091,26 @@ function resetWeeklyForm() {
     document.querySelectorAll('#slumpReasonBox input').forEach(cb => cb.checked = false);
     document.getElementById('slumpReasonBox').style.display = 'none';
     const radios = document.getElementsByName('studyTrend');
-    if(radios.length) radios[0].checked = false;
+    if(radios.length) radios.length > 1 ? radios[1].checked = true : null; // 기본 '유지'
     
     currentPlannerFiles = [];
     renderPlannerFiles();
+
+    // [Step 2] 심층 코칭 리셋
+    ['deepQ1', 'deepQ2', 'deepQ3', 'deepQ4'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) {
+            el.value = '';
+            // 글자수 리셋
+            if(el.nextElementSibling && el.nextElementSibling.classList.contains('char-count')) {
+                el.nextElementSibling.querySelector('span').innerText = '0';
+            }
+        }
+    });
 }
 
 function loadWeeklyDataToForm(data) {
+    // [Step 1] 로드
     if (data.studyTime && data.studyTime.details) {
         const rows = document.querySelectorAll('#studyTimeBody tr');
         data.studyTime.details.forEach((detail, idx) => {
@@ -1070,146 +1154,63 @@ function loadWeeklyDataToForm(data) {
             }
         }
     }
-    if (data.comment) {
-        const ta = document.getElementById('weekComment');
-        ta.value = data.comment;
-        checkLength(ta);
+    
+    // [Step 2] 심층 코칭 답변 로드
+    // data.deepAnswers: [q1, q2, q3, q4] 순서
+    if (data.deepAnswers && Array.isArray(data.deepAnswers)) {
+        ['deepQ1', 'deepQ2', 'deepQ3', 'deepQ4'].forEach((id, idx) => {
+            const el = document.getElementById(id);
+            if(el) {
+                el.value = data.deepAnswers[idx] || '';
+                updateCharCount(el); // 글자수 업데이트
+            }
+        });
     }
+
     currentPlannerFiles = data.plannerFiles || [];
     originalPlannerFiles = [...currentPlannerFiles];
     renderPlannerFiles();
 }
 
-function calcStudyRates() {
-    const rows = document.querySelectorAll('#studyTimeBody tr');
-    let sumPlan = 0, sumAct = 0;
-    rows.forEach(row => {
-        const plan = parseFloat(row.querySelector('.plan-time').value) || 0;
-        const act = parseFloat(row.querySelector('.act-time').value) || 0;
-        sumPlan += plan; sumAct += act;
-        const rateTxt = row.querySelector('.rate-txt');
-        if (plan > 0) {
-            const rate = Math.min((act / plan) * 100, 100).toFixed(0);
-            rateTxt.innerText = `${rate}%`;
-            if(rate >= 100) rateTxt.style.color = '#10b981'; else if(rate >= 80) rateTxt.style.color = '#3b82f6'; else rateTxt.style.color = '#ef4444';
-        } else { rateTxt.innerText = '0%'; rateTxt.style.color = '#94a3b8'; }
-    });
-    document.getElementById('totalPlan').innerText = sumPlan.toFixed(1) + 'H';
-    document.getElementById('totalAct').innerText = sumAct.toFixed(1) + 'H';
-    const totalRate = sumPlan > 0 ? Math.min((sumAct / sumPlan) * 100, 100).toFixed(0) : 0;
-    document.getElementById('totalRate').innerText = `${totalRate}%`;
+// 글자수 카운트 함수 (통일)
+function updateCharCount(el) { 
+    const countSpan = el.parentElement.querySelector('.char-count span');
+    if(countSpan) countSpan.innerText = el.value.length; 
 }
 
-// 플래너 파일 핸들링
-function handlePlannerFiles(input) {
-    if (input.files) {
-        const files = Array.from(input.files);
-        if (currentPlannerFiles.length + files.length > 5) {
-            alert("최대 5장까지만 업로드 가능합니다.");
-            input.value = ''; 
-            return;
-        }
-        files.forEach(f => currentPlannerFiles.push(f)); 
-        renderPlannerFiles();
+// [통합] 주간 점검 & 심층 코칭 제출
+async function submitWeeklyCheck() {
+    // 1. 학습평가 데이터 수집
+    const totalPlan = parseFloat(document.getElementById('totalPlan').innerText);
+    if (totalPlan === 0) { 
+        alert("학습 계획 시간을 입력해주세요."); 
+        switchWeeklyTab('step1'); // 탭 이동
+        return; 
     }
-}
 
-function renderPlannerFiles() {
-    const list = document.getElementById('plannerFileList');
-    list.innerHTML = '';
-    
-    if (currentPlannerFiles.length === 0) {
-        list.innerHTML = '<span class="placeholder-text">선택된 파일 없음</span>';
+    // 2. 심층 코칭 데이터 수집
+    const q1 = document.getElementById('deepQ1').value.trim();
+    const q2 = document.getElementById('deepQ2').value.trim();
+    const q3 = document.getElementById('deepQ3').value.trim();
+    const q4 = document.getElementById('deepQ4').value.trim();
+
+    // 필수 입력 체크 (예: 최소 1개라도 입력해야 함)
+    if (!q1 && !q2 && !q3 && !q4) {
+        alert("심층 코칭 질문을 최소 1개 이상 작성해주세요.");
+        switchWeeklyTab('step2'); // 탭 이동
         return;
     }
 
-    currentPlannerFiles.forEach((file, idx) => {
-        let fileName = "";
-        let fileLink = ""; 
-
-        if (file instanceof File) {
-            fileName = file.name;
-        } 
-        else if (typeof file === 'string') {
-            try {
-                const rawName = file.split('/').pop();
-                fileName = decodeURIComponent(rawName);
-                fileName = fileName.replace(/^\d+_/, '');
-                fileLink = file; 
-            } catch (e) { fileName = file; }
-        }
-
-        // [보안] 파일명 이스케이프
-        const safeFileName = escapeHtml(fileName);
-
-        const div = document.createElement('div');
-        div.className = 'file-item';
-        
-        let nameDisplay = `<span>📄 ${safeFileName}</span>`;
-        if (fileLink) {
-            nameDisplay = `<a href="${fileLink}" target="_blank" style="text-decoration:none; color:#334155; display:flex; align-items:center; gap:5px;">
-                <span>📄 ${safeFileName}</span> 
-                <i class="fas fa-external-link-alt" style="font-size:0.7rem; color:#3b82f6;"></i>
-            </a>`;
-        }
-
-        div.innerHTML = `
-            ${nameDisplay}
-            <span class="file-remove" onclick="removePlannerFile(${idx})">x</span>
-        `;
-        list.appendChild(div);
-    });
-}
-
-function removePlannerFile(idx) {
-    currentPlannerFiles.splice(idx, 1);
-    renderPlannerFiles();
-}
-
-function selectMockType(type, element) {
-    document.getElementById('mockExamType').value = type;
-    document.querySelectorAll('.mock-tile').forEach(tile => tile.classList.remove('selected'));
-    element.classList.add('selected');
-    toggleMockExamFields();
-}
-
-function toggleMockExamFields() {
-    const type = document.getElementById('mockExamType').value;
-    const fields = document.getElementById('mockExamFields');
-    if (type === 'none') fields.style.display = 'none'; else fields.style.display = 'block';
-}
-
-function toggleSlumpReason() {
-    const trend = document.querySelector('input[name="studyTrend"]:checked')?.value;
-    const box = document.getElementById('slumpReasonBox');
-    if(trend === 'down') box.style.display = 'block'; else box.style.display = 'none';
-}
-
-function checkLength(el) { document.getElementById('currLen').innerText = el.value.length; }
-
-// 주간 점검 제출 (파일 S3 업로드 + DB 저장)
-async function submitWeeklyCheck() {
-    const totalPlan = parseFloat(document.getElementById('totalPlan').innerText);
-    if (totalPlan === 0) { alert("학습 계획 시간을 입력해주세요."); return; }
-
     const mockType = document.getElementById('mockExamType').value;
     let mockData = { type: mockType, proofFile: null, scores: {} };
-
     if (mockType !== 'none') {
         const fileInput = document.getElementById('mockExamProof');
         mockData.proofFile = fileInput.files.length > 0 ? fileInput.files[0].name : "file_uploaded"; 
         const scores = document.querySelectorAll('.mock-score');
         mockData.scores = { 
-            kor: scores[0].value, 
-            math: scores[1].value, 
-            eng: scores[2].value, 
-            inq1: scores[3].value, 
-            inq2: scores[4].value 
+            kor: scores[0].value, math: scores[1].value, eng: scores[2].value, inq1: scores[3].value, inq2: scores[4].value 
         };
     }
-
-    const comment = document.getElementById('weekComment').value.trim();
-    if (!comment) { alert("핵심 회고를 작성해주세요."); return; }
 
     const studyRows = document.querySelectorAll('#studyTimeBody tr');
     let studyData = [];
@@ -1218,14 +1219,12 @@ async function submitWeeklyCheck() {
         const mainSub = row.querySelector('.main-sub');
         const detail = row.querySelector('.sub-detail');
         const custom = row.querySelector('.custom-subj');
-
         if(mainSub) {
             subjName = mainSub.innerText;
             if(detail && detail.value) subjName += `(${detail.value.trim()})`;
         } else if(custom) {
             subjName = custom.value.trim() || "기타";
         }
-
         const plan = parseFloat(row.querySelector('.plan-time').value) || 0;
         const act = parseFloat(row.querySelector('.act-time').value) || 0;
         if(plan > 0 || act > 0) studyData.push({ subject: subjName, plan, act });
@@ -1239,7 +1238,7 @@ async function submitWeeklyCheck() {
         if(det) reasons.push(det);
     }
 
-    if(!confirm("제출하시겠습니까?\n(수정 시 기존 데이터는 덮어씌워집니다)")) return;
+    if(!confirm("제출하시겠습니까?\n(제출 후 컨설턴트에게 전달됩니다)")) return;
 
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('idToken'); 
@@ -1248,13 +1247,12 @@ async function submitWeeklyCheck() {
 
     try {
         submitBtn.disabled = true;
-        submitBtn.innerText = "데이터 처리 중...";
+        submitBtn.innerText = "처리 중...";
 
+        // 파일 처리 로직 (기존 유지)
         const currentUrls = currentPlannerFiles.filter(f => typeof f === 'string');
         const filesToDelete = originalPlannerFiles.filter(url => !currentUrls.includes(url));
-
         if (filesToDelete.length > 0) {
-            submitBtn.innerText = "기존 파일 삭제 중...";
             await Promise.all(filesToDelete.map(url => 
                 fetch(MYPAGE_API_URL, {
                     method: 'POST',
@@ -1263,38 +1261,23 @@ async function submitWeeklyCheck() {
                 })
             ));
         }
-
         let finalFileUrls = [...currentUrls]; 
         const newFiles = currentPlannerFiles.filter(f => typeof f !== 'string');
-
         if (newFiles.length > 0) {
-            submitBtn.innerText = "새 사진 업로드 중... (잠시만 기다려주세요)";
-            
             for (const file of newFiles) {
                 const res = await fetch(MYPAGE_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ 
-                        type: 'get_presigned_url', 
-                        userId: userId, 
-                        data: { fileName: file.name, fileType: file.type } 
-                    })
+                    body: JSON.stringify({ type: 'get_presigned_url', userId: userId, data: { fileName: file.name, fileType: file.type } })
                 });
-
                 if (!res.ok) throw new Error("업로드 URL 발급 실패");
                 const { uploadUrl, fileUrl } = await res.json();
-
-                await fetch(uploadUrl, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': file.type },
-                    body: file
-                });
+                await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
                 finalFileUrls.push(fileUrl);
             }
         }
 
-        submitBtn.innerText = "저장 중...";
-        
+        // 최종 데이터 생성
         const today = new Date().toISOString();
         const title = getWeekTitle(new Date()); 
 
@@ -1309,10 +1292,11 @@ async function submitWeeklyCheck() {
             },
             mockExam: mockData,
             trend: { status: trend, reasons: reasons },
-            comment: comment,
+            deepAnswers: [q1, q2, q3, q4], // [통합] 심층코칭 답변 저장
             plannerFiles: finalFileUrls 
         };
 
+        // Lambda 호출 (통합된 API)
         const res = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -1320,7 +1304,7 @@ async function submitWeeklyCheck() {
         });
         
         if(res.ok) { 
-            alert("제출 및 수정이 완료되었습니다."); 
+            alert("제출이 완료되었습니다."); 
             closeWeeklyModal(); 
             location.reload(); 
         } else {
@@ -1334,52 +1318,6 @@ async function submitWeeklyCheck() {
         submitBtn.disabled = false;
         submitBtn.innerText = originalBtnText;
     }
-}
-
-// 심층 코칭 (Pro/Black)
-function openDeepCoachingModal() {
-    if (currentUserTier !== 'pro') {
-        if(currentUserTier === 'black') alert("BLACK 회원은 [FOR BLACK] 메뉴를 이용해주세요.");
-        else alert("PRO 멤버십 전용 기능입니다.");
-        return;
-    }
-    const modal = document.getElementById('deepCoachingModal');
-    modal.querySelectorAll('textarea').forEach(el => { el.value = ''; el.nextElementSibling.innerText = '0/200'; });
-    modal.style.display = 'block';
-    document.body.style.overflow = 'hidden';
-}
-
-function closeDeepModal() {
-    document.getElementById('deepCoachingModal').style.display = 'none';
-    document.body.style.overflow = 'auto';
-}
-
-function updateCharCount(el) { el.parentElement.querySelector('.char-count span').innerText = el.value.length; }
-
-async function submitDeepCoaching() {
-    const textareas = document.querySelectorAll('#deepCoachingModal textarea');
-    const ans = Array.from(textareas).map(t => t.value.trim());
-    if(ans.every(a => a === "")) { alert("내용을 입력해주세요."); return; }
-    if(!confirm("심층 코칭을 요청하시겠습니까?")) return;
-    
-    const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('idToken'); 
-    const reqData = { date: new Date().toISOString(), plan: ans[0], direction: ans[1], subject: ans[2], etc: ans[3], status: 'pending' };
-    
-    try {
-        const res = await fetch(MYPAGE_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'save_pro_coaching', userId, data: reqData })
-        });
-        if(res.ok) { alert("요청이 접수되었습니다."); closeDeepModal(); } else throw new Error("전송 실패");
-    } catch(e) { console.error(e); alert("오류가 발생했습니다."); }
-}
-
-function initCoachLock() {
-    const lockOverlay = document.getElementById('deepCoachingLock');
-    if (['pro'].includes(currentUserTier)) { if(lockOverlay) lockOverlay.style.display = 'none'; } 
-    else { if(lockOverlay) lockOverlay.style.display = 'flex'; }
 }
 
 // ============================================================
