@@ -708,6 +708,20 @@ function renderAnalysisCard(res) {
     const safeMsg = escapeHtml(res.msg);
     const safeScore = escapeHtml(res.converted_score);
 
+    // [모바일 대응] 화면 너비 768px 이하 확인
+    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+    // 모바일일 경우 텍스트 위치 조정 (지그재그 배치)
+    const labelStyle = "position:absolute; bottom:0; transform:translateX(-50%); color:#64748b; font-weight:600; white-space:nowrap;";
+    
+    // 모바일에서는 '합격(100)'을 위로 올림 (bottom: 12px)
+    const passLabelStyle = isMobile 
+        ? `${labelStyle} bottom: 12px;` 
+        : labelStyle;
+    
+    // '안정(120)'은 그대로 둠
+    const stableLabelStyle = labelStyle; 
+
     return `
     <div class="analysis-card" style="margin-bottom:20px; background:#fff; border-radius:12px; padding:25px; box-shadow:0 4px 10px rgba(0, 0, 0, 0.05); border-left: 6px solid ${res.color}; transition: transform 0.2s;">
         <div class="analysis-header" style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:1px solid #f1f5f9; padding-bottom:15px; margin-bottom:15px;">
@@ -731,16 +745,23 @@ function renderAnalysisCard(res) {
                     <span style="${scoreStyle}">${safeScore}<span style="font-size:1rem; font-weight:normal; margin-left:2px; color:#64748b;">점</span></span>
                 </div>
                 
-                <div style="position:relative; width:100%; padding-bottom:20px;">
+                <div style="position:relative; width:100%; padding-bottom:30px;">
                     <div style="position:relative; height:12px; background:#f1f5f9; border-radius:6px; margin:10px 0; overflow:hidden;">
                         <div style="position:absolute; left:50%; top:0; bottom:0; width:2px; background:#fff; border-left:1px dashed #cbd5e1; z-index:2;"></div>
                         <div style="position:absolute; left:60%; top:0; bottom:0; width:2px; background:#fff; border-left:1px dashed #cbd5e1; z-index:2;"></div>
                         <div style="position:absolute; left:0; top:0; height:100%; width:${Math.min((res.converted_score / 200) * 100, 100)}%; background:${res.color}; border-radius:6px; transition: width 1s ease-out; z-index:1;"></div>
                     </div>
-                    <div style="font-size:0.75rem; color:#94a3b8; height:15px;">
+                    
+                    <div style="font-size:0.75rem; color:#94a3b8; height:25px; position: relative;">
                         <span style="position:absolute; left:0; bottom:0;">0</span>
-                        <span style="position:absolute; left:50%; bottom:0; transform:translateX(-50%); color:#64748b; font-weight:600; white-space:nowrap;">합격(100)</span>
-                        <span style="position:absolute; left:60%; bottom:0; transform:translateX(-50%); color:#64748b; font-weight:600; white-space:nowrap;">안정(120)</span>
+                        
+                        <span style="${passLabelStyle} left:50%;">
+                            합격(100)
+                            ${isMobile ? '<div style="height:8px; border-left:1px solid #cbd5e1; margin:0 auto;"></div>' : ''} 
+                        </span>
+                        
+                        <span style="${stableLabelStyle} left:60%;">안정(120)</span>
+                        
                         <span style="position:absolute; right:0; bottom:0;">MAX(200)</span>
                     </div>
                 </div>
