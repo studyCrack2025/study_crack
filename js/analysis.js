@@ -721,7 +721,7 @@ function renderAnalysisCard(res) {
         ? `${baseLabelStyle} bottom: 24px; color:#3b82f6;`  // 파란색 강조 및 위로 올림
         : `${baseLabelStyle} bottom: 0;`;
     
-    // '안정(120)'은 항상 바닥
+    // '안정(150)'은 항상 바닥
     const stableLabelStyle = `${baseLabelStyle} bottom: 0;`;
 
     // [지시선] 모바일에서만 '합격' 라벨 아래에 점선 표시
@@ -757,20 +757,20 @@ function renderAnalysisCard(res) {
                         <div style="position:absolute; left:50%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
                         <div style="position:absolute; left:60%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
                         
-                        <div style="position:absolute; left:0; top:0; height:100%; width:${Math.min((res.converted_score / 200) * 100, 100)}%; background:${res.color}; border-radius:6px; transition: width 1s ease-out; z-index:1;"></div>
+                        <div style="position:absolute; left:0; top:0; height:100%; width:${Math.min((res.converted_score / 250) * 100, 100)}%; background:${res.color}; border-radius:6px; transition: width 1s ease-out; z-index:1;"></div>
                     </div>
                     
                     <div style="font-size:0.75rem; color:#94a3b8; height:40px; position: relative;">
                         <span style="position:absolute; left:0; bottom:0;">0</span>
                         
-                        <span style="${passLabelStyle} left:50%;">
+                        <span style="${passLabelStyle} left:40%;">
                             합격(100)
                             ${guideLine}
                         </span>
                         
-                        <span style="${stableLabelStyle} left:60%;">안정(120)</span>
+                        <span style="${stableLabelStyle} left:60%;">안정(150)</span>
                         
-                        <span style="position:absolute; right:0; bottom:0;">MAX(200)</span>
+                        <span style="position:absolute; right:0; bottom:0;">MAX(250)</span>
                     </div>
                 </div>
             </div>
@@ -880,7 +880,7 @@ function renderSimChart(data) {
     data.forEach(item => {
         const heightPct = (item.base_ui_score / 200) * 100;
         let color = '#ef4444'; 
-        if (item.base_ui_score >= 120) color = '#10b981'; 
+        if (item.base_ui_score >= 150) color = '#10b981'; 
         else if (item.base_ui_score >= 100) color = '#3b82f6';
 
         // [보안] 이스케이프 적용
