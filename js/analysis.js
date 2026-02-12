@@ -754,7 +754,7 @@ function renderAnalysisCard(res) {
                 
                 <div style="position:relative; width:100%; padding-bottom:30px;">
                     <div style="position:relative; height:12px; background:#f1f5f9; border-radius:6px; margin:10px 0; overflow:visible;">
-                        <div style="position:absolute; left:50%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
+                        <div style="position:absolute; left:40%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
                         <div style="position:absolute; left:60%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
                         
                         <div style="position:absolute; left:0; top:0; height:100%; width:${Math.min((res.converted_score / 250) * 100, 100)}%; background:${res.color}; border-radius:6px; transition: width 1s ease-out; z-index:1;"></div>
