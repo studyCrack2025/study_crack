@@ -926,30 +926,40 @@ function renderSimCards(data) {
 }
 
 // ============================================================
-// [기능 4] 코칭 & 주간 학습 점검 (리팩토링)
+// [기능 4] 코칭 & 주간 학습 점검 (리팩토링 완료)
 // ============================================================
+
+// [유틸리티] 날짜/주차 계산 (필수 Helper)
+function getWeekOfMonth(date) {
+    const start = new Date(date.getFullYear(), date.getMonth(), 1);
+    const day = start.getDay() || 7; 
+    const diff = date.getDate() - 1 + (day - 1); 
+    return Math.floor(diff / 7) + 1;
+}
+
+function getWeekTitle(date) {
+    const yearShort = date.getFullYear().toString().slice(2);
+    const month = date.getMonth() + 1;
+    const week = getWeekOfMonth(date);
+    return `${yearShort}년 ${month}월 ${week}주차`; 
+}
+
+// ------------------------------------------------------------
 
 // 코칭 영역 등급 제한 (Blur 처리)
 function applyCoachTierLock() {
     const container = document.querySelector('.coach-container');
     if (!container) return;
 
-    // 허용 등급 목록 (Standard 이상)
     const allowedTiers = ['standard', 'pro', 'black'];
 
-    // [잠금 조건] 현재 등급이 허용 목록에 없으면 (Free, Basic 등)
+    // [잠금 조건]
     if (!allowedTiers.includes(currentUserTier)) {
-        
-        // 1. 컨테이너에 잠금 클래스 추가 (Blur 효과 발동)
         container.classList.add('tier-locked');
-        
-        // 부모에게 relative를 주어 오버레이 위치 잡기
         container.style.position = 'relative';
 
-        // 2. 이미 오버레이가 있다면 중복 생성 방지
         if (container.querySelector('.tier-lock-overlay')) return;
 
-        // 3. 안내 메시지 오버레이 생성
         const overlay = document.createElement('div');
         overlay.className = 'tier-lock-overlay';
         overlay.innerHTML = `
@@ -960,12 +970,12 @@ function applyCoachTierLock() {
                     주간 학습 점검 및 피드백 기능은<br>
                     <strong>Standard 등급 이상</strong>부터 이용 가능합니다.
                 </p>
-                </div>
+            </div>
         `;
         container.appendChild(overlay);
         
     } else {
-        // [해제 조건] 등급이 충족되면 잠금 해제 (동적 업데이트 대비)
+        // [해제 조건]
         container.classList.remove('tier-locked');
         const existingOverlay = container.querySelector('.tier-lock-overlay');
         if (existingOverlay) existingOverlay.remove();
@@ -974,12 +984,10 @@ function applyCoachTierLock() {
 
 // 탭 전환 로직
 function switchWeeklyTab(step) {
-    // 탭 버튼 스타일 변경
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     if(step === 'step1') document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
     else document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
 
-    // 콘텐츠 표시 변경
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
     document.getElementById(`tab-${step}`).classList.add('active');
 }
@@ -988,13 +996,13 @@ function setWeeklyLoadingStatus(isLoading) {
     const msg = document.getElementById('weeklyDeadlineMsg');
     const badge = document.getElementById('weeklyStatusBadge');
     if (!msg || !badge) return;
+    
     if (isLoading) {
         badge.innerText = '...'; badge.className = 'badge-status pending'; 
         msg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 로딩중...';
     } else {
         msg.innerText = '(매주 일요일 20:00 마감)';
-        // 히스토리 로드 후 피드백 리스트 렌더링 호출
-        renderFeedbackList();
+        renderFeedbackList(); // 로딩 완료 후 피드백 리스트 렌더링
     }
 }
 
@@ -1035,7 +1043,7 @@ function checkWeeklyStatus() {
     }
 }
 
-// 주간학습 피드백 리스트 렌더링 (우측 박스)
+// 주간학습 피드백 리스트 렌더링
 function renderFeedbackList() {
     const history = Array.isArray(weeklyDataHistory) ? weeklyDataHistory : [];
     const listContainer = document.getElementById('feedbackList');
@@ -1043,20 +1051,23 @@ function renderFeedbackList() {
     
     if(!listContainer || !select) return;
 
-    // 1. 존재하는 연/월 추출 (Set으로 중복 제거)
+    // 연/월 추출
     const yearMonths = new Set();
     history.forEach(h => {
-        // title 예시: "2026년 2월 2주차" -> "2026년 2월" 추출
         const match = h.title.match(/(\d{4}년\s\d{1,2}월)/);
         if(match) yearMonths.add(match[1]);
     });
 
-    // 2. Select Box 채우기 (현재 없으면 이번달 추가)
+    // 이번달 추가 (데이터가 없을 경우 대비)
     const today = new Date();
     const currentYM = `${today.getFullYear()}년 ${today.getMonth()+1}월`;
     if(yearMonths.size === 0) yearMonths.add(currentYM);
     
+    // Select Box 갱신
+    // (사용자가 이미 선택한 값이 있으면 유지하려 노력, 없으면 새로 렌더링)
+    const prevValue = select.value;
     select.innerHTML = '';
+    
     Array.from(yearMonths).sort().reverse().forEach(ym => {
         const option = document.createElement('option');
         option.value = ym;
@@ -1064,10 +1075,16 @@ function renderFeedbackList() {
         select.appendChild(option);
     });
     
-    // 현재 선택된 연월 (없으면 첫번째)
+    // 이전 선택값 복원 또는 디폴트 설정
+    if (prevValue && yearMonths.has(prevValue)) {
+        select.value = prevValue;
+    } else {
+        select.selectedIndex = 0;
+    }
+    
     const selectedYM = select.value;
 
-    // 3. 리스트 렌더링
+    // 리스트 렌더링
     listContainer.innerHTML = '';
     const filtered = history.filter(h => h.title.includes(selectedYM)).sort((a,b) => b.title.localeCompare(a.title));
 
@@ -1081,7 +1098,6 @@ function renderFeedbackList() {
         div.className = 'feedback-tile';
         div.onclick = () => { document.getElementById('feedbackModal').style.display='block'; };
         
-        // 제출 여부 확인 (코칭 답변이 있는지 등은 나중에 고도화)
         div.innerHTML = `
             <div class="fb-title">${h.title}</div>
             <div class="fb-status"><i class="fas fa-check-circle"></i> 피드백 보기</div>
@@ -1093,14 +1109,12 @@ function renderFeedbackList() {
 function openWeeklyCheckModal() {
     const allowedTiers = ['standard', 'pro', 'black'];
     
-    // 현재 유저 등급이 허용 목록에 없으면 차단
     if (!allowedTiers.includes(currentUserTier)) {
         alert("🔒 Standard 멤버십 이상 전용 기능입니다.\n멤버십 업그레이드 후 이용해주세요.");
         return;
     }
 
     const today = new Date();
-    // 마감 체크
     if (today.getDay() === 0 && today.getHours() >= 20) { 
         alert("금주 학습 점검 제출이 마감되었습니다."); 
         return; 
@@ -1117,7 +1131,6 @@ function openWeeklyCheckModal() {
     if (thisWeekData) loadWeeklyDataToForm(thisWeekData); 
     else resetWeeklyForm(); 
     
-    // 탭 초기화 (Step 1부터 표시)
     switchWeeklyTab('step1');
     
     modal.style.display = 'block';
@@ -1142,22 +1155,144 @@ function resetWeeklyForm() {
     document.querySelectorAll('#slumpReasonBox input').forEach(cb => cb.checked = false);
     document.getElementById('slumpReasonBox').style.display = 'none';
     const radios = document.getElementsByName('studyTrend');
-    if(radios.length) radios.length > 1 ? radios[1].checked = true : null; // 기본 '유지'
+    if(radios.length) radios.length > 1 ? radios[1].checked = true : null;
     
     currentPlannerFiles = [];
     renderPlannerFiles();
 
-    // [Step 2] 심층 코칭 리셋
+    // [Step 2] 리셋
     ['deepQ1', 'deepQ2', 'deepQ3', 'deepQ4'].forEach(id => {
         const el = document.getElementById(id);
         if(el) {
             el.value = '';
-            // 글자수 리셋
             if(el.nextElementSibling && el.nextElementSibling.classList.contains('char-count')) {
                 el.nextElementSibling.querySelector('span').innerText = '0';
             }
         }
     });
+}
+
+// --- 헬퍼 함수들 (UI Interaction) ---
+
+function selectMockType(type, element) {
+    document.getElementById('mockExamType').value = type;
+    document.querySelectorAll('.mock-tile').forEach(tile => tile.classList.remove('selected'));
+    element.classList.add('selected');
+    toggleMockExamFields();
+}
+
+function toggleMockExamFields() {
+    const type = document.getElementById('mockExamType').value;
+    const fields = document.getElementById('mockExamFields');
+    if (type === 'none') fields.style.display = 'none';
+    else fields.style.display = 'block';
+}
+
+function calcStudyRates() {
+    const rows = document.querySelectorAll('#studyTimeBody tr');
+    let sumPlan = 0, sumAct = 0;
+    
+    rows.forEach(row => {
+        const planInput = row.querySelector('.plan-time');
+        const actInput = row.querySelector('.act-time');
+        const rateTxt = row.querySelector('.rate-txt');
+        
+        if(!planInput || !actInput) return;
+
+        const plan = parseFloat(planInput.value) || 0;
+        const act = parseFloat(actInput.value) || 0;
+        
+        sumPlan += plan; 
+        sumAct += act;
+        
+        if (plan > 0) {
+            const rate = Math.min((act / plan) * 100, 100).toFixed(0);
+            rateTxt.innerText = `${rate}%`;
+            if(rate >= 100) rateTxt.style.color = '#10b981';
+            else if(rate >= 80) rateTxt.style.color = '#3b82f6';
+            else rateTxt.style.color = '#ef4444';
+        } else { 
+            rateTxt.innerText = '0%'; 
+            rateTxt.style.color = '#94a3b8'; 
+        }
+    });
+    
+    document.getElementById('totalPlan').innerText = sumPlan.toFixed(1) + 'H';
+    document.getElementById('totalAct').innerText = sumAct.toFixed(1) + 'H';
+    
+    const totalRate = sumPlan > 0 ? Math.min((sumAct / sumPlan) * 100, 100).toFixed(0) : 0;
+    document.getElementById('totalRate').innerText = `${totalRate}%`;
+}
+
+function handlePlannerFiles(input) {
+    if (input.files) {
+        const files = Array.from(input.files);
+        if (currentPlannerFiles.length + files.length > 5) {
+            alert("최대 5장까지만 업로드 가능합니다.");
+            input.value = ''; 
+            return;
+        }
+        files.forEach(f => currentPlannerFiles.push(f)); 
+        renderPlannerFiles();
+    }
+}
+
+function renderPlannerFiles() {
+    const list = document.getElementById('plannerFileList');
+    if(!list) return;
+    
+    list.innerHTML = '';
+    
+    if (currentPlannerFiles.length === 0) {
+        list.innerHTML = '<span class="placeholder-text">선택된 파일 없음</span>';
+        return;
+    }
+
+    currentPlannerFiles.forEach((file, idx) => {
+        let fileName = "";
+        let fileLink = ""; 
+
+        if (file instanceof File) {
+            fileName = file.name;
+        } else if (typeof file === 'string') {
+            try {
+                const rawName = file.split('/').pop();
+                fileName = decodeURIComponent(rawName);
+                fileName = fileName.replace(/^\d+_/, '');
+                fileLink = file; 
+            } catch (e) { fileName = file; }
+        }
+
+        const div = document.createElement('div');
+        div.className = 'file-item';
+        
+        let nameDisplay = `<span>📄 ${fileName}</span>`;
+        if (fileLink) {
+            nameDisplay = `<a href="${fileLink}" target="_blank" style="text-decoration:none; color:#334155; display:flex; align-items:center; gap:5px;">
+                <span>📄 ${fileName}</span> 
+                <i class="fas fa-external-link-alt" style="font-size:0.7rem; color:#3b82f6;"></i>
+            </a>`;
+        }
+
+        div.innerHTML = `
+            ${nameDisplay}
+            <span class="file-remove" onclick="removePlannerFile(${idx})">x</span>
+        `;
+        list.appendChild(div);
+    });
+}
+
+function removePlannerFile(idx) {
+    currentPlannerFiles.splice(idx, 1);
+    renderPlannerFiles();
+}
+
+function toggleSlumpReason() {
+    const trend = document.querySelector('input[name="studyTrend"]:checked')?.value;
+    const box = document.getElementById('slumpReasonBox');
+    
+    if(trend === 'down') box.style.display = 'block'; 
+    else box.style.display = 'none';
 }
 
 function loadWeeklyDataToForm(data) {
@@ -1206,14 +1341,13 @@ function loadWeeklyDataToForm(data) {
         }
     }
     
-    // [Step 2] 심층 코칭 답변 로드
-    // data.deepAnswers: [q1, q2, q3, q4] 순서
+    // [Step 2] 로드
     if (data.deepAnswers && Array.isArray(data.deepAnswers)) {
         ['deepQ1', 'deepQ2', 'deepQ3', 'deepQ4'].forEach((id, idx) => {
             const el = document.getElementById(id);
             if(el) {
                 el.value = data.deepAnswers[idx] || '';
-                updateCharCount(el); // 글자수 업데이트
+                updateCharCount(el); 
             }
         });
     }
@@ -1223,7 +1357,6 @@ function loadWeeklyDataToForm(data) {
     renderPlannerFiles();
 }
 
-// 글자수 카운트 함수 (통일)
 function updateCharCount(el) { 
     const countSpan = el.parentElement.querySelector('.char-count span');
     if(countSpan) countSpan.innerText = el.value.length; 
@@ -1231,24 +1364,21 @@ function updateCharCount(el) {
 
 // [통합] 주간 점검 & 심층 코칭 제출
 async function submitWeeklyCheck() {
-    // 1. 학습평가 데이터 수집
     const totalPlan = parseFloat(document.getElementById('totalPlan').innerText);
     if (totalPlan === 0) { 
         alert("학습 계획 시간을 입력해주세요."); 
-        switchWeeklyTab('step1'); // 탭 이동
+        switchWeeklyTab('step1'); 
         return; 
     }
 
-    // 2. 심층 코칭 데이터 수집
     const q1 = document.getElementById('deepQ1').value.trim();
     const q2 = document.getElementById('deepQ2').value.trim();
     const q3 = document.getElementById('deepQ3').value.trim();
     const q4 = document.getElementById('deepQ4').value.trim();
 
-    // 필수 입력 체크 (예: 최소 1개라도 입력해야 함)
     if (!q1 && !q2 && !q3 && !q4) {
         alert("심층 코칭 질문을 최소 1개 이상 작성해주세요.");
-        switchWeeklyTab('step2'); // 탭 이동
+        switchWeeklyTab('step2'); 
         return;
     }
 
@@ -1300,7 +1430,6 @@ async function submitWeeklyCheck() {
         submitBtn.disabled = true;
         submitBtn.innerText = "처리 중...";
 
-        // 파일 처리 로직 (기존 유지)
         const currentUrls = currentPlannerFiles.filter(f => typeof f === 'string');
         const filesToDelete = originalPlannerFiles.filter(url => !currentUrls.includes(url));
         if (filesToDelete.length > 0) {
@@ -1328,7 +1457,6 @@ async function submitWeeklyCheck() {
             }
         }
 
-        // 최종 데이터 생성
         const today = new Date().toISOString();
         const title = getWeekTitle(new Date()); 
 
@@ -1343,11 +1471,10 @@ async function submitWeeklyCheck() {
             },
             mockExam: mockData,
             trend: { status: trend, reasons: reasons },
-            deepAnswers: [q1, q2, q3, q4], // [통합] 심층코칭 답변 저장
+            deepAnswers: [q1, q2, q3, q4], 
             plannerFiles: finalFileUrls 
         };
 
-        // Lambda 호출 (통합된 API)
         const res = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
