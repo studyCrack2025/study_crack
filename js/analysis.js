@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 초기화 로직 실행
         initUnivGrid(); 
         updateAnalysisUI(); 
-        initCoachLock();
+        applyCoachTierLock();
         checkBlackStatusForButton();
         
         setWeeklyLoadingStatus(false);
@@ -929,6 +929,49 @@ function renderSimCards(data) {
 // [기능 4] 코칭 & 주간 학습 점검 (리팩토링)
 // ============================================================
 
+// 코칭 영역 등급 제한 (Blur 처리)
+function applyCoachTierLock() {
+    const container = document.querySelector('.coach-container');
+    if (!container) return;
+
+    // 허용 등급 목록 (Standard 이상)
+    const allowedTiers = ['standard', 'pro', 'black'];
+
+    // [잠금 조건] 현재 등급이 허용 목록에 없으면 (Free, Basic 등)
+    if (!allowedTiers.includes(currentUserTier)) {
+        
+        // 1. 컨테이너에 잠금 클래스 추가 (Blur 효과 발동)
+        container.classList.add('tier-locked');
+        
+        // 부모에게 relative를 주어 오버레이 위치 잡기
+        container.style.position = 'relative';
+
+        // 2. 이미 오버레이가 있다면 중복 생성 방지
+        if (container.querySelector('.tier-lock-overlay')) return;
+
+        // 3. 안내 메시지 오버레이 생성
+        const overlay = document.createElement('div');
+        overlay.className = 'tier-lock-overlay';
+        overlay.innerHTML = `
+            <div class="lock-message-box">
+                <i class="fas fa-lock"></i>
+                <h3>Standard 멤버십 전용</h3>
+                <p>
+                    주간 학습 점검 및 피드백 기능은<br>
+                    <strong>Standard 등급 이상</strong>부터 이용 가능합니다.
+                </p>
+                </div>
+        `;
+        container.appendChild(overlay);
+        
+    } else {
+        // [해제 조건] 등급이 충족되면 잠금 해제 (동적 업데이트 대비)
+        container.classList.remove('tier-locked');
+        const existingOverlay = container.querySelector('.tier-lock-overlay');
+        if (existingOverlay) existingOverlay.remove();
+    }
+}
+
 // 탭 전환 로직
 function switchWeeklyTab(step) {
     // 탭 버튼 스타일 변경
@@ -1048,6 +1091,14 @@ function renderFeedbackList() {
 }
 
 function openWeeklyCheckModal() {
+    const allowedTiers = ['standard', 'pro', 'black'];
+    
+    // 현재 유저 등급이 허용 목록에 없으면 차단
+    if (!allowedTiers.includes(currentUserTier)) {
+        alert("🔒 Standard 멤버십 이상 전용 기능입니다.\n멤버십 업그레이드 후 이용해주세요.");
+        return;
+    }
+
     const today = new Date();
     // 마감 체크
     if (today.getDay() === 0 && today.getHours() >= 20) { 
