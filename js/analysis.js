@@ -686,6 +686,7 @@ function changeExamMode(mode) {
 }
 
 function renderAnalysisCard(res) {
+    // 1. 데이터 부족/오류 처리
     if (res.msg.includes("오류") || res.msg.includes("데이터 없음") || res.status === '분석 불가') {
         return `
         <div class="analysis-card" style="border-left: 4px solid #94a3b8; margin-bottom:15px; background:#fff; border-radius:8px; padding:20px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
@@ -697,10 +698,10 @@ function renderAnalysisCard(res) {
         </div>`;
     }
 
+    // 2. 스타일 정의
     const badgeStyle = `background:${res.color}15; color:${res.color}; border:1px solid ${res.color};`; 
     const scoreStyle = `color:${res.color}; font-weight:800; font-size:1.5rem;`;
 
-    // [보안] 변수 이스케이프 처리
     const safeIdx = escapeHtml(res.idx + 1);
     const safeUniv = escapeHtml(res.univ);
     const safeMajor = escapeHtml(res.major);
@@ -708,19 +709,25 @@ function renderAnalysisCard(res) {
     const safeMsg = escapeHtml(res.msg);
     const safeScore = escapeHtml(res.converted_score);
 
-    // [모바일 대응] 화면 너비 768px 이하 확인
+    // [모바일 감지]
     const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
-    // 모바일일 경우 텍스트 위치 조정 (지그재그 배치)
-    const labelStyle = "position:absolute; bottom:0; transform:translateX(-50%); color:#64748b; font-weight:600; white-space:nowrap;";
-    
-    // 모바일에서는 '합격(100)'을 위로 올림 (bottom: 12px)
+    // 공통 텍스트 스타일
+    const baseLabelStyle = "position:absolute; transform:translateX(-50%); color:#64748b; font-weight:600; white-space:nowrap; font-size:0.75rem; line-height:1;";
+
+    // [위치 조정 로직]
+    // 모바일: '합격(100)'을 위로 22px 띄움 / PC: 바닥(0px)에 둠
     const passLabelStyle = isMobile 
-        ? `${labelStyle} bottom: 12px;` 
-        : labelStyle;
+        ? `${baseLabelStyle} bottom: 24px; color:#3b82f6;`  // 파란색 강조 및 위로 올림
+        : `${baseLabelStyle} bottom: 0;`;
     
-    // '안정(120)'은 그대로 둠
-    const stableLabelStyle = labelStyle; 
+    // '안정(120)'은 항상 바닥
+    const stableLabelStyle = `${baseLabelStyle} bottom: 0;`;
+
+    // [지시선] 모바일에서만 '합격' 라벨 아래에 점선 표시
+    const guideLine = isMobile 
+        ? `<div style="position:absolute; left:50%; bottom:-24px; width:1px; height:22px; border-left:1px dashed #3b82f6; transform:translateX(-50%); opacity:0.6;"></div>` 
+        : '';
 
     return `
     <div class="analysis-card" style="margin-bottom:20px; background:#fff; border-radius:12px; padding:25px; box-shadow:0 4px 10px rgba(0, 0, 0, 0.05); border-left: 6px solid ${res.color}; transition: transform 0.2s;">
@@ -746,18 +753,19 @@ function renderAnalysisCard(res) {
                 </div>
                 
                 <div style="position:relative; width:100%; padding-bottom:30px;">
-                    <div style="position:relative; height:12px; background:#f1f5f9; border-radius:6px; margin:10px 0; overflow:hidden;">
-                        <div style="position:absolute; left:50%; top:0; bottom:0; width:2px; background:#fff; border-left:1px dashed #cbd5e1; z-index:2;"></div>
-                        <div style="position:absolute; left:60%; top:0; bottom:0; width:2px; background:#fff; border-left:1px dashed #cbd5e1; z-index:2;"></div>
+                    <div style="position:relative; height:12px; background:#f1f5f9; border-radius:6px; margin:10px 0; overflow:visible;">
+                        <div style="position:absolute; left:50%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
+                        <div style="position:absolute; left:60%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
+                        
                         <div style="position:absolute; left:0; top:0; height:100%; width:${Math.min((res.converted_score / 200) * 100, 100)}%; background:${res.color}; border-radius:6px; transition: width 1s ease-out; z-index:1;"></div>
                     </div>
                     
-                    <div style="font-size:0.75rem; color:#94a3b8; height:25px; position: relative;">
+                    <div style="font-size:0.75rem; color:#94a3b8; height:40px; position: relative;">
                         <span style="position:absolute; left:0; bottom:0;">0</span>
                         
                         <span style="${passLabelStyle} left:50%;">
                             합격(100)
-                            ${isMobile ? '<div style="height:8px; border-left:1px solid #cbd5e1; margin:0 auto;"></div>' : ''} 
+                            ${guideLine}
                         </span>
                         
                         <span style="${stableLabelStyle} left:60%;">안정(120)</span>
