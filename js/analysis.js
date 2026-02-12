@@ -1123,7 +1123,7 @@ function openWeeklyCheckModal() {
     const modal = document.getElementById('weeklyCheckModal');
     const currentWeekTitle = getWeekTitle(today); 
     const [yStr, mStr, wStr] = currentWeekTitle.split(' '); 
-    document.getElementById('weeklyYear').innerText = yStr.replace('년',''); 
+    document.getElementById('weeklyYear').innerText = yStr;
     document.getElementById('weeklyDateDetail').innerText = `${mStr} ${wStr}`;
     
     const thisWeekData = weeklyDataHistory.find(w => w.title && w.title.replace(/\s/g, '') === currentWeekTitle.replace(/\s/g, ''));
@@ -1142,15 +1142,32 @@ function closeWeeklyModal() {
     document.body.style.overflow = 'auto';
 }
 
+// 폼 초기화 함수
 function resetWeeklyForm() {
-    // [Step 1] 리셋
+    // Step 1: 학습시간 초기화
     document.querySelectorAll('.plan-time, .act-time, .sub-detail, .custom-subj').forEach(i => i.value = '');
     document.querySelectorAll('.rate-txt').forEach(s => s.innerText = '0%');
     document.getElementById('totalPlan').innerText = '0H';
     document.getElementById('totalAct').innerText = '0H';
     document.getElementById('totalRate').innerText = '0%';
+    
+    // 모의고사 초기화 (ID 기반)
     selectMockType('none', document.querySelector('.mock-tile')); 
-    document.querySelectorAll('.mock-score').forEach(i => i.value = '');
+    const mockIds = [
+        'mockKorScore', 'mockKorOpt',
+        'mockMathScore', 'mockMathOpt',
+        'mockEngScore',
+        'mockInq1Score', 'mockInq1Name',
+        'mockInq2Score', 'mockInq2Name'
+    ];
+    mockIds.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.value = '';
+    });
+    const fileTxt = document.getElementById('mockFileNameDisplay');
+    if(fileTxt) { fileTxt.innerText = '선택된 파일 없음'; fileTxt.style.color = '#94a3b8'; }
+
+    // 트렌드 초기화
     document.getElementById('slumpDetail').value = '';
     document.querySelectorAll('#slumpReasonBox input').forEach(cb => cb.checked = false);
     document.getElementById('slumpReasonBox').style.display = 'none';
@@ -1160,7 +1177,7 @@ function resetWeeklyForm() {
     currentPlannerFiles = [];
     renderPlannerFiles();
 
-    // [Step 2] 리셋
+    // Step 2: 심층 코칭 초기화
     ['deepQ1', 'deepQ2', 'deepQ3', 'deepQ4'].forEach(id => {
         const el = document.getElementById(id);
         if(el) {
@@ -1295,8 +1312,9 @@ function toggleSlumpReason() {
     else box.style.display = 'none';
 }
 
+// 데이터 로드 함수
 function loadWeeklyDataToForm(data) {
-    // [Step 1] 로드
+    // 1. 학습 시간 (기존 로직 유지)
     if (data.studyTime && data.studyTime.details) {
         const rows = document.querySelectorAll('#studyTimeBody tr');
         data.studyTime.details.forEach((detail, idx) => {
@@ -1313,20 +1331,38 @@ function loadWeeklyDataToForm(data) {
         });
         calcStudyRates(); 
     }
+
+    // 2. 모의고사 데이터 로드 (핵심 수정)
     if (data.mockExam) {
+        // 타일 선택 상태 복원
         const targetTile = document.querySelector(`.mock-tile[onclick*="'${data.mockExam.type}'"]`);
         if(targetTile) selectMockType(data.mockExam.type, targetTile);
+        
+        // 점수 및 옵션 복원
         if (data.mockExam.scores) {
-            const inputs = document.querySelectorAll('.mock-score');
-            if(inputs.length > 0) {
-                inputs[0].value = data.mockExam.scores.kor || '';
-                inputs[1].value = data.mockExam.scores.math || '';
-                inputs[2].value = data.mockExam.scores.eng || '';
-                inputs[3].value = data.mockExam.scores.inq1 || '';
-                inputs[4].value = data.mockExam.scores.inq2 || '';
-            }
+            const s = data.mockExam.scores;
+            const setVal = (id, val) => {
+                const el = document.getElementById(id);
+                if(el) el.value = val || '';
+            };
+
+            setVal('mockKorScore', s.kor);
+            setVal('mockKorOpt', s.korOpt);
+            
+            setVal('mockMathScore', s.math);
+            setVal('mockMathOpt', s.mathOpt);
+            
+            setVal('mockEngScore', s.eng);
+            
+            setVal('mockInq1Score', s.inq1);
+            setVal('mockInq1Name', s.inq1Name);
+            
+            setVal('mockInq2Score', s.inq2);
+            setVal('mockInq2Name', s.inq2Name);
         }
     }
+
+    // 3. 트렌드 (기존 유지)
     if (data.trend) {
         const radio = document.querySelector(`input[name="studyTrend"][value="${data.trend.status}"]`);
         if (radio) {
@@ -1341,13 +1377,13 @@ function loadWeeklyDataToForm(data) {
         }
     }
     
-    // [Step 2] 로드
+    // 4. 심층 코칭 답변 (기존 유지)
     if (data.deepAnswers && Array.isArray(data.deepAnswers)) {
         ['deepQ1', 'deepQ2', 'deepQ3', 'deepQ4'].forEach((id, idx) => {
             const el = document.getElementById(id);
             if(el) {
                 el.value = data.deepAnswers[idx] || '';
-                updateCharCount(el); 
+                if(typeof updateCharCount === 'function') updateCharCount(el); 
             }
         });
     }
@@ -1362,11 +1398,12 @@ function updateCharCount(el) {
     if(countSpan) countSpan.innerText = el.value.length; 
 }
 
-// [통합] 주간 점검 & 심층 코칭 제출
+// 주간 점검 제출 함수
 async function submitWeeklyCheck() {
     // 1. 학습평가 데이터 수집
     const totalPlanEl = document.getElementById('totalPlan');
-    if (!totalPlanEl) { alert("오류: 필수 요소를 찾을 수 없습니다. (totalPlan)"); return; }
+    // 안전 장치: 요소가 없으면 중단
+    if (!totalPlanEl) { console.error("totalPlan 요소 없음"); return; }
     
     const totalPlan = parseFloat(totalPlanEl.innerText);
     if (totalPlan === 0) { 
@@ -1375,54 +1412,48 @@ async function submitWeeklyCheck() {
         return; 
     }
 
-    // 2. 심층 코칭 데이터 수집 (Safe Access)
-    const getVal = (id) => {
-        const el = document.getElementById(id);
-        return el ? el.value.trim() : "";
-    };
-
+    // 2. 심층 코칭 데이터 수집
+    const getVal = (id) => document.getElementById(id) ? document.getElementById(id).value.trim() : "";
+    
     const q1 = getVal('deepQ1');
     const q2 = getVal('deepQ2');
     const q3 = getVal('deepQ3');
     const q4 = getVal('deepQ4');
 
-    // 필수 입력 체크 (최소 1개 이상)
     if (!q1 && !q2 && !q3 && !q4) {
         alert("심층 코칭 질문을 최소 1개 이상 작성해주세요.");
         switchWeeklyTab('step2'); 
         return;
     }
 
-    // 3. 모의고사 데이터 수집
-    const mockTypeEl = document.getElementById('mockExamType');
-    const mockType = mockTypeEl ? mockTypeEl.value : 'none';
-    
+    // 3. 모의고사 데이터 수집 (ID 매핑 수정됨)
+    const mockType = document.getElementById('mockExamType').value;
     let mockData = { type: mockType, proofFile: null, scores: {} };
     
     if (mockType !== 'none') {
         const fileInput = document.getElementById('mockExamProof');
         mockData.proofFile = (fileInput && fileInput.files.length > 0) ? fileInput.files[0].name : "file_uploaded"; 
         
-        // 점수 수집 (요소 존재 확인)
-        const getScore = (id) => {
-            const el = document.getElementById(id);
-            return el ? el.value : "";
-        };
-        const getOpt = (id) => {
-            const el = document.getElementById(id);
-            return el ? el.value : "";
-        };
-
+        // [핵심 수정] HTML ID와 1:1 매핑하여 데이터 수집
         mockData.scores = { 
-            kor: getScore('mockKorScore'), korOpt: getOpt('mockKorOpt'),
-            math: getScore('mockMathScore'), mathOpt: getOpt('mockMathOpt'),
-            eng: getScore('mockEngScore'),
-            inq1: getScore('mockInq1Score'), inq1Name: getScore('mockInq1Name'),
-            inq2: getScore('mockInq2Score'), inq2Name: getScore('mockInq2Name')
+            // 국어
+            kor: getVal('mockKorScore'), 
+            korOpt: getVal('mockKorOpt'),
+            // 수학
+            math: getVal('mockMathScore'), 
+            mathOpt: getVal('mockMathOpt'),
+            // 영어
+            eng: getVal('mockEngScore'),
+            // 탐구1
+            inq1: getVal('mockInq1Score'), 
+            inq1Name: getVal('mockInq1Name'),
+            // 탐구2
+            inq2: getVal('mockInq2Score'), 
+            inq2Name: getVal('mockInq2Name')
         };
     }
 
-    // 4. 학습 시간 상세 데이터 수집
+    // 4. 학습 시간 상세 데이터 수집 (기존 유지)
     const studyRows = document.querySelectorAll('#studyTimeBody tr');
     let studyData = [];
     studyRows.forEach(row => {
@@ -1446,23 +1477,24 @@ async function submitWeeklyCheck() {
         if(plan > 0 || act > 0) studyData.push({ subject: subjName, plan, act });
     });
 
-    // 5. 트렌드 및 사유 수집
+    // 5. 트렌드 데이터
     const trendEl = document.querySelector('input[name="studyTrend"]:checked');
     const trend = trendEl ? trendEl.value : 'keep';
-    
     let reasons = [];
     if(trend === 'down') {
         document.querySelectorAll('#slumpReasonBox input:checked').forEach(cb => reasons.push(cb.value));
-        const detEl = document.getElementById('slumpDetail');
-        if(detEl && detEl.value) reasons.push(detEl.value);
+        const det = document.getElementById('slumpDetail').value;
+        if(det) reasons.push(det);
     }
 
-    if(!confirm("제출하시겠습니까?\n(제출 후 컨설턴트에게 전달됩니다)")) return;
+    if(!confirm("제출하시겠습니까?")) return;
 
-    // 6. 데이터 전송 준비
+    // 6. 서버 전송
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('idToken'); 
     const submitBtn = document.querySelector('.save-btn');
+    
+    // 버튼 텍스트 백업
     const originalBtnText = submitBtn ? submitBtn.innerText : "저장";
 
     try {
@@ -1471,10 +1503,9 @@ async function submitWeeklyCheck() {
             submitBtn.innerText = "처리 중...";
         }
 
-        // 파일 업로드 로직 (기존 유지)
+        // 파일 처리 로직 (기존 유지)
         const currentUrls = currentPlannerFiles.filter(f => typeof f === 'string');
         const filesToDelete = originalPlannerFiles.filter(url => !currentUrls.includes(url));
-        
         if (filesToDelete.length > 0) {
             await Promise.all(filesToDelete.map(url => 
                 fetch(MYPAGE_API_URL, {
@@ -1484,10 +1515,8 @@ async function submitWeeklyCheck() {
                 })
             ));
         }
-        
         let finalFileUrls = [...currentUrls]; 
         const newFiles = currentPlannerFiles.filter(f => typeof f !== 'string');
-        
         if (newFiles.length > 0) {
             for (const file of newFiles) {
                 const res = await fetch(MYPAGE_API_URL, {
@@ -1503,7 +1532,6 @@ async function submitWeeklyCheck() {
         }
 
         const today = new Date().toISOString();
-        // getWeekTitle 함수가 정의되어 있는지 확인
         const title = (typeof getWeekTitle === 'function') ? getWeekTitle(new Date()) : "주간점검"; 
 
         const weeklyData = {
@@ -1511,11 +1539,11 @@ async function submitWeeklyCheck() {
             title: title, 
             studyTime: {
                 details: studyData, 
-                totalPlan: document.getElementById('totalPlan') ? document.getElementById('totalPlan').innerText : "0H",
-                totalAct: document.getElementById('totalAct') ? document.getElementById('totalAct').innerText : "0H",
-                totalRate: document.getElementById('totalRate') ? document.getElementById('totalRate').innerText : "0%"
+                totalPlan: document.getElementById('totalPlan').innerText,
+                totalAct: document.getElementById('totalAct').innerText,
+                totalRate: document.getElementById('totalRate').innerText
             },
-            mockExam: mockData,
+            mockExam: mockData, // 위에서 수집한 mockData 사용
             trend: { status: trend, reasons: reasons },
             deepAnswers: [q1, q2, q3, q4], 
             plannerFiles: finalFileUrls 
