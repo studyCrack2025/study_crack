@@ -867,17 +867,25 @@ function setSimChartType(type) {
     renderSimChart();
 }
 
-// 4. 차트 렌더링
 function renderSimChart() {
     const container = document.getElementById('simChartArea');
     container.innerHTML = ''; // 초기화
     
     if (!cachedSimData || cachedSimData.length === 0) return;
 
-    // A. 기준선(Guide Line) 그리기 - 배경에 깔림
-    // 100점(40%), 150점(60%) 위치 표시 (MAX 250 기준)
-    const guide100 = `<div class="chart-guide-line" style="bottom: 40%;"><span class="chart-guide-label">합격(100)</span></div>`;
-    const guide150 = `<div class="chart-guide-line" style="bottom: 60%;"><span class="chart-guide-label">안정(150)</span></div>`;
+    // 그래프가 그려질 실제 높이 (전체 높이 - 하단 패딩 50px)
+    // CSS에서 .chart-canvas-area의 padding-bottom이 50px임
+    const graphHeight = container.clientHeight - 50; 
+
+    // A. 기준선(Guide Line) 그리기
+    
+    const pos100 = (100 / 250) * 100; // 40%
+    const pos150 = (150 / 250) * 100; // 60%
+
+    // bottom 값에 calc(50px + N%) 적용하여 패딩 위로 올림
+    const guide100 = `<div class="chart-guide-line" style="bottom: calc(50px + ${pos100}%);"><span class="chart-guide-label">합격(100)</span></div>`;
+    const guide150 = `<div class="chart-guide-line" style="bottom: calc(50px + ${pos150}%);"><span class="chart-guide-label">안정(150)</span></div>`;
+    
     container.insertAdjacentHTML('beforeend', guide100);
     container.insertAdjacentHTML('beforeend', guide150);
 
@@ -885,17 +893,16 @@ function renderSimChart() {
 
     // B. 막대 그래프 렌더링
     if (currentSimChartType === 'bar') {
-        // 아이템 개수가 적으면 가운데 정렬, 많으면 왼쪽 정렬
         container.style.justifyContent = data.length > 5 ? 'flex-start' : 'space-around';
 
         data.forEach((item, index) => {
-            // MAX 250점 기준 높이 퍼센트 계산
             const score = item.base_ui_score;
+            // 높이 퍼센트 (그래프 영역 내)
             const heightPct = Math.min((score / 250) * 100, 100);
             
-            let color = '#ef4444'; // 위험
-            if (score >= 150) color = '#10b981'; // 안정
-            else if (score >= 100) color = '#3b82f6'; // 합격(적정)
+            let color = '#ef4444'; 
+            if (score >= 150) color = '#10b981'; 
+            else if (score >= 100) color = '#3b82f6';
 
             const isActive = (index === selectedSimIndex) ? 'active' : '';
             const safeScore = Math.round(score);
@@ -919,18 +926,21 @@ function renderSimChart() {
             container.innerHTML += html;
         });
     } 
-    // C. 꺾은선 그래프 렌더링
+    // C. 꺾은선 그래프 렌더링 (SVG)
     else if (currentSimChartType === 'line') {
-        container.style.justifyContent = 'space-around'; // SVG는 항상 꽉 채움
+        container.style.justifyContent = 'space-around'; // 기본 중앙 정렬
 
-        // SVG 크기 계산 (스크롤 영역 전체 너비 사용)
-        // 만약 데이터가 많으면 최소 너비를 보장해서 가로 스크롤 되게 함
-        const minWidth = Math.max(container.clientWidth, data.length * 70); 
-        const width = minWidth;
-        const height = container.clientHeight; // 220px 등 CSS 높이
+        // SVG 크기
+        const width = Math.max(container.clientWidth, data.length * 80); 
+        const height = container.clientHeight; // 전체 높이 (패딩 포함)
         
-        // 여백 계산
-        const paddingX = 40; 
+        // 그래프 그릴 영역 (Y축)
+        // 상단 여백 30px, 하단 여백 50px 제외
+        const drawHeight = height - 80; 
+        const startY = 30; // 상단 시작점
+
+        // X축 간격
+        const paddingX = 50; 
         const stepX = (width - (paddingX * 2)) / (data.length - 1 || 1);
         
         let pathD = "";
@@ -939,8 +949,11 @@ function renderSimChart() {
         data.forEach((item, index) => {
             const x = paddingX + (index * stepX);
             const score = Math.min(item.base_ui_score, 250); 
-            // Y축 계산: (점수 / 250) * 높이 -> 바닥에서부터 올라와야 하므로 height - 값
-            const y = height - ((score / 250) * height); 
+            
+            // Y좌표: (상단여백) + (전체높이 - 점수비율높이)
+            // 점수가 250이면 y = startY (맨 위)
+            // 점수가 0이면 y = startY + drawHeight (맨 아래)
+            const y = startY + (drawHeight - (score / 250 * drawHeight));
             
             if (index === 0) pathD += `M ${x} ${y}`;
             else pathD += ` L ${x} ${y}`;
@@ -948,20 +961,21 @@ function renderSimChart() {
             const isActive = (index === selectedSimIndex) ? 'active' : '';
             const shortUniv = item.univ.replace('학교', '');
 
-            // 점 및 라벨
+            // SVG 요소 추가
             pointsHTML += `
-                <circle cx="${x}" cy="${y}" class="sim-line-point ${isActive}" onclick="selectSimUniv(${index})" />
-                <foreignObject x="${x - 40}" y="${height - 5}" width="80" height="60" style="overflow:visible;">
-                    <div xmlns="http://www.w3.org/1999/xhtml" class="sim-axis-label" style="position:static; text-align:center; transform:none;">
+                <foreignObject x="${x - 45}" y="${height - 45}" width="90" height="45" style="overflow:visible;">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="sim-axis-label" style="position:static; text-align:center; transform:none; padding-top:0;">
                         <span class="label-mobile">${index + 1}지망</span>
                         <span class="label-pc" style="font-size:0.75rem;">${index + 1}지망<br>${shortUniv}</span>
                     </div>
                 </foreignObject>
+
                 <text x="${x}" y="${y - 15}" text-anchor="middle" fill="#64748b" font-size="12" font-weight="bold">${Math.round(score)}</text>
+
+                <circle cx="${x}" cy="${y}" class="sim-line-point ${isActive}" onclick="selectSimUniv(${index})" />
             `;
         });
 
-        // SVG 생성 (width를 계산된 minWidth로 설정하여 스크롤 유도)
         const svgHTML = `
             <svg class="sim-line-svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
                 <path d="${pathD}" class="sim-line-path" />
@@ -969,8 +983,6 @@ function renderSimChart() {
             </svg>
         `;
         container.innerHTML += svgHTML;
-        
-        // 꺾은선일 때 컨테이너 정렬 풀기 (SVG가 크기 잡음)
         container.style.justifyContent = 'flex-start';
     }
 
