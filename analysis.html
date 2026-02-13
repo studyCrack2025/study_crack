@@ -146,48 +146,47 @@
             </div>
 
             <div id="sol-sim" class="sol-content">
-                <div class="content-header sol-header theme-sim">
-                    <h2 class="sol-title">
-                        <div class="sol-icon-box"><i class="fas fa-chart-line"></i></div>
-                        점수 상승 시뮬레이션
-                    </h2>
-                    <p class="sol-desc">
-                        <span class="sol-badge">⚡️ 딱 1문제</span>
-                        더 맞히면 합격 가능성이 얼마나 오를까요? 
-                        <span style="font-size:0.85rem; color:#94a3b8; font-weight:normal; margin-left:5px;">(Standard 이상)</span>
-                    </p>
-                </div>
-                
-                <div class="sim-container">
-                    <div class="sim-sidebar">
-                        <h4 class="sim-section-title">분석 대학 선택</h4>
-                        <div id="simUnivList" class="sim-univ-list-box">
-                            <p style="color:#94a3b8; font-size:0.9rem; margin: 0;">분석 탭에서 먼저 대학을 추가해주세요.</p>
-                        </div>
-                    </div>
-
-                    <div class="sim-dashboard">
-                        <div class="sim-chart-box">
-                            <h4 class="sim-section-title">📊 합격 가능성 위치 (0~250점)</h4>
-                            <div class="chart-bg" style="position: relative; height: 200px; border-left: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1; margin-left: 30px;">
-                                <div style="position: absolute; bottom: 40%; left: 0; right: 0; border-top: 2px dashed #94a3b8; opacity: 0.5;"></div>
-                                <span style="position: absolute; bottom: 40%; left: -35px; font-size: 0.75rem; color: #64748b;">합격<br>(100)</span>
-                                
-                                <div style="position: absolute; bottom: 60%; left: 0; right: 0; border-top: 2px dashed #10b981; opacity: 0.5;"></div>
-                                <span style="position: absolute; bottom: 60%; left: -35px; font-size: 0.75rem; color: #10b981;">안정<br>(150)</span>
-
-                                <div id="simChartBars" style="display: flex; justify-content: space-around; align-items: flex-end; height: 100%; padding: 0 20px;"></div>
-                            </div>
-                        </div>
-
-                        <div id="simCardArea" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;"></div>
-                        
-                        <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 10px; text-align: right;">
-                            * 시뮬레이션 기준: 국어/탐구 +3점, 수학 +4점 문항 1개 추가 정답 가정
-                        </p>
-                    </div>
-                </div>
+    <div class="content-header sol-header theme-sim">
+        <h2 class="sol-title">
+            <div class="sol-icon-box"><i class="fas fa-chart-line"></i></div>
+            점수 상승 시뮬레이션
+        </h2>
+        <p class="sol-desc">
+            <span class="sol-badge">⚡️ 딱 1문제</span>
+            더 맞히면 합격 가능성이 얼마나 오를까요? 
+            <span style="font-size:0.85rem; color:#94a3b8; font-weight:normal; margin-left:5px;">(Standard 이상)</span>
+        </p>
+    </div>
+    
+    <div class="sim-container-new">
+        <div class="sim-controls">
+            <div class="chart-toggle-group">
+                <button type="button" class="toggle-btn active" onclick="setSimChartType('bar')"><i class="fas fa-chart-bar"></i> 막대형</button>
+                <button type="button" class="toggle-btn" onclick="setSimChartType('line')"><i class="fas fa-bezier-curve"></i> 꺾은선형</button>
             </div>
+        </div>
+
+        <div class="sim-chart-wrapper">
+            <h4 class="sim-section-title">📊 합격 가능성 위치 (0~250점)</h4>
+            
+            <div class="chart-scroll-container">
+                <div class="chart-canvas-area" id="simChartArea">
+                    </div>
+            </div>
+            
+            <p style="text-align:center; color:#64748b; font-size:0.85rem; margin-top:10px;">
+                <i class="fas fa-hand-pointer"></i> 그래프를 클릭하여 상세 시뮬레이션을 확인하세요.
+            </p>
+        </div>
+
+        <div id="simDetailCard" class="sim-detail-card-area">
+            <div class="empty-sim-state">
+                <i class="fas fa-mouse-pointer"></i>
+                <p>위 그래프에서 대학을 선택해주세요.</p>
+            </div>
+        </div>
+    </div>
+</div>
 
             <div id="sol-coach" class="sol-content">
                 <div class="content-header sol-header theme-coach">

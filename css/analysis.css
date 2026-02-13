@@ -133,25 +133,261 @@
 .selection-item { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px 10px; text-align: center; cursor: pointer; font-size: 0.95rem; color: #334155; font-weight: 500; transition: all 0.2s; display: flex; align-items: center; justify-content: center; min-height: 50px; }
 .selection-item:hover { border-color: #2563EB; background: #eff6ff; color: #2563EB; }
 
-/* ============================================================
-   [기능 2 & 3: 분석 및 시뮬레이션]
-   ============================================================ */
-/* 로딩 애니메이션 */
-.loading-container { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 0; color: #64748b; background: rgba(255, 255, 255, 0.5); border-radius: 12px; }
-.loading-spinner { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top: 4px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
-.loading-text { font-size: 0.95rem; font-weight: 500; animation: pulse 1.5s infinite ease-in-out; }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+/* =========================================
+   점수 상승 시뮬레이션
+   ========================================= */
+.sim-container-new {
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
 
-/* 시뮬레이션 레이아웃 */
-.sim-container { display: flex; flex-direction: column; gap: 24px; max-width: 900px; margin: 0 auto; width: 100%; }
-.sim-section-title { margin: 0 0 15px 0; font-size: 1.05rem; font-weight: 700; color: #334155; display: flex; align-items: center; gap: 8px; }
-.sim-sidebar { width: 100%; background: #f8fafc; border-radius: 16px; padding: 20px 25px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02); }
-.sim-univ-list-box { display: flex; flex-direction: row; flex-wrap: wrap; gap: 10px; }
-.sim-univ-list-box > label { width: calc(50% - 5px) !important; flex-grow: 0; margin-bottom: 0 !important; box-sizing: border-box; }
-.sim-dashboard { width: 100%; display: flex; flex-direction: column; gap: 20px; }
-.sim-chart-box { background: #fff; border-radius: 16px; padding: 30px; border: 1px solid #e2e8f0; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); position: relative; }
-.chart-bg { margin-top: 10px; min-height: 200px; }
+/* 1. 컨트롤러 */
+.sim-controls {
+    display: flex;
+    justify-content: flex-end;
+}
+.chart-toggle-group {
+    background: #f1f5f9;
+    padding: 4px;
+    border-radius: 8px;
+    display: flex;
+    gap: 4px;
+}
+.toggle-btn {
+    border: none;
+    background: transparent;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: #64748b;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+.toggle-btn.active {
+    background: white;
+    color: #2563EB;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* 2. 차트 영역 */
+.sim-chart-wrapper {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+}
+.chart-scroll-container {
+    overflow-x: auto;
+    padding-bottom: 10px;
+    /* 스크롤바 커스텀 */
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+.chart-scroll-container::-webkit-scrollbar { height: 6px; }
+.chart-scroll-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+.chart-canvas-area {
+    position: relative;
+    height: 220px; /* 차트 높이 고정 */
+    min-width: 100%; /* 화면 꽉 차게 */
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around; /* 기본 간격 */
+    padding: 0 20px;
+    box-sizing: border-box;
+    border-bottom: 1px solid #cbd5e1;
+    /* 배경 그리드 라인 */
+    background-image: linear-gradient(#f1f5f9 1px, transparent 1px), linear-gradient(#f1f5f9 1px, transparent 1px);
+    background-size: 100% 40%, 100% 40%; /* 40% 지점(100점), 60% 지점(150점) 대략적 */
+    background-position: 0 60%, 0 40%; /* 위치 조정 */
+}
+
+/* 막대 그래프 스타일 */
+.sim-bar-item {
+    position: relative;
+    width: 50px;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+    flex: 0 0 auto; /* 줄어들지 않음 */
+    margin: 0 10px;
+}
+.sim-bar-item:hover { transform: translateY(-5px); }
+.sim-bar {
+    width: 100%;
+    background: #e2e8f0;
+    border-radius: 6px 6px 0 0;
+    position: relative;
+    transition: height 0.5s ease-out, background 0.3s;
+}
+/* 선택된 상태 (하이라이트) */
+.sim-bar-item.active .sim-bar {
+    background: #2563EB !important; /* 강제 파란색 */
+    box-shadow: 0 0 15px rgba(37, 99, 235, 0.4);
+}
+.sim-bar-item.active .sim-score-label {
+    color: #2563EB;
+    font-weight: 800;
+    font-size: 1rem;
+}
+
+/* 점수 라벨 */
+.sim-score-label {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
+/* X축 라벨 (학교/학과) */
+.sim-axis-label {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    text-align: center;
+    padding-top: 10px;
+    font-size: 0.8rem;
+    color: #475569;
+    line-height: 1.3;
+}
+/* 모바일/PC 라벨 제어 */
+.label-pc { display: block; }
+.label-mobile { display: none; font-weight: bold; color: #1e293b; }
+
+@media (max-width: 768px) {
+    .label-pc { display: none; }
+    .label-mobile { display: block; }
+    .sim-bar-item { width: 40px; margin: 0 15px; } /* 모바일 간격 */
+}
+
+/* 꺾은선 그래프 (SVG) */
+.sim-line-svg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none; /* 클릭은 아래 DOM 요소가 받음 */
+    z-index: 10;
+}
+.sim-line-path {
+    fill: none;
+    stroke: #2563EB;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 4px 3px rgba(37,99,235,0.3));
+    animation: dash 1s ease-out forwards;
+}
+.sim-line-point {
+    fill: #fff;
+    stroke: #2563EB;
+    stroke-width: 3;
+    r: 6;
+    cursor: pointer;
+    pointer-events: auto; /* 점은 클릭 가능 */
+    transition: r 0.2s, stroke-width 0.2s;
+}
+.sim-line-point:hover, .sim-line-point.active {
+    r: 9;
+    stroke: #1d4ed8;
+    fill: #eff6ff;
+}
+
+/* 3. 상세 분석 카드 */
+.sim-detail-card-area {
+    min-height: 200px;
+}
+.empty-sim-state {
+    background: #f8fafc;
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    height: 150px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+}
+.empty-sim-state i { font-size: 2rem; margin-bottom: 10px; }
+
+.sim-result-card {
+    background: #fff;
+    border: 1px solid #2563EB;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.15);
+    animation: slideUp 0.3s ease-out;
+}
+@keyframes slideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+.sim-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+.sim-univ-title { font-size: 1.2rem; font-weight: 800; color: #1e293b; }
+.sim-univ-dept { font-size: 0.95rem; color: #64748b; font-weight: normal; margin-left: 5px; }
+.sim-score-change { text-align: right; }
+.score-badge { font-size: 0.8rem; padding: 4px 8px; border-radius: 4px; background: #f1f5f9; color: #64748b; font-weight: 600; }
+.score-diff { font-size: 1.4rem; font-weight: 800; color: #2563EB; display: block; margin-top: 5px; }
+
+.sim-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 15px;
+}
+.sim-item {
+    background: #f8fafc;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    position: relative;
+    overflow: hidden;
+}
+.sim-item.best-pick {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+.sim-item.best-pick::after {
+    content: "추천";
+    position: absolute;
+    top: 0; right: 0;
+    background: #3b82f6;
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 0 0 0 6px;
+    font-weight: bold;
+}
+.sim-item-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; font-weight: 700; color: #334155; }
+.sim-item-body { font-size: 0.95rem; color: #475569; line-height: 1.4; }
+.sim-warning {
+    margin-top: 15px;
+    padding: 12px;
+    background: #fff1f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    color: #991b1b;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 
 /* ============================================================
    [기능 4: 코칭 및 주간 점검] + 모달 개선
