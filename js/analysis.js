@@ -1033,6 +1033,7 @@ function selectSimUniv(index) {
 }
 
 // 6. 상세 분석 카드 렌더링
+// 6. 상세 분석 카드 렌더링
 function renderDetailedSimCard() {
     const cardArea = document.getElementById('simDetailCard');
     
@@ -1044,6 +1045,15 @@ function renderDetailedSimCard() {
     const data = cachedSimData[selectedSimIndex];
     const currentScore = Math.round(data.base_ui_score);
     
+    // 🚨 [방어 로직] 현재 점수가 250점(MAX)이면 상승폭을 모두 0으로 강제 처리
+    if (currentScore >= 250) {
+        Object.keys(data.sim_data).forEach(key => {
+            if (data.sim_data[key]) {
+                data.sim_data[key].diff = 0;
+            }
+        });
+    }
+
     const getStatusText = (s) => {
         if (s >= 150) return "안정권"; 
         if (s >= 100) return "적정권"; 
@@ -1052,7 +1062,7 @@ function renderDetailedSimCard() {
     };
     const currentStatus = getStatusText(currentScore);
 
-    // 추천 과목 찾기
+    // 추천 과목 및 최대 상승폭 찾기
     let maxRise = 0;
     let bestSubjectKey = '';
     const subjects = [
@@ -1107,9 +1117,18 @@ function renderDetailedSimCard() {
         `;
     });
 
+    // 🚨 [추가된 로직] 점수 상황에 따른 동적 경고문구 출력
     let warningHTML = '';
     if (currentScore < 50) {
+        // 기존 유지: 애초에 차이가 너무 큰 경우
         warningHTML = `<div class="sim-warning"><i class="fas fa-exclamation-triangle"></i><div><strong>점수 차이가 큽니다.</strong><br>전형 변경을 고려해보세요.</div></div>`;
+    } 
+    else if (currentScore < 10 && (currentScore + maxRise) < 25) {
+        // [추가] 상승해도 여전히 매우 불합권인 경우
+        warningHTML = `<div class="sim-warning" style="background:#fff7ed; border-color:#fdba74; color:#c2410c;"><i class="fas fa-exclamation-circle"></i><div><strong>여전히 불합격권입니다.</strong><br>한 문제를 더 맞혀도 매우 어렵습니다. 다른 전형이나 대학을 함께 고려해보세요.</div></div>`;
+    } 
+    else if (currentScore >= 225 || (currentScore + maxRise) >= 250) {
+        warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><i class="fas fa-check-circle"></i><div><strong>이미 상당히 안정권입니다.</strong><br>한 문제를 더 맞혀도 합격 가능성에 유의미한 변화가 없습니다. 상위 대학 및 전형에 도전해보세요.</div></div>`;
     }
 
     cardArea.innerHTML = `
