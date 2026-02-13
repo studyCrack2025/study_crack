@@ -918,7 +918,6 @@ function renderSimChart() {
     if (currentSimChartType === 'bar') {
         data.forEach((item, index) => {
             const score = item.base_ui_score;
-            // 픽셀 기반 정확한 높이 계산
             const currentHeightPx = `${(score/250) * DRAW_HEIGHT}px`;
             
             let color = '#ef4444'; 
@@ -947,7 +946,6 @@ function renderSimChart() {
                 mainBarRadius = '0 0 0 0'; 
                 showOriginalLabel = false; 
 
-                // [해결포인트 1] .sim-bar 내부에 absolute로 배치하여 가로 넓이 퍼짐 방지
                 extensionHtml = `
                     <div style="position:absolute; bottom:100%; left:0; width:100%; height:${riseHeightPx}; background:rgba(245, 158, 11, 0.15); border:2px dashed #f59e0b; border-bottom:none; border-radius: 6px 6px 0 0; box-sizing:border-box; pointer-events:none;">
                          <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">
@@ -1000,20 +998,41 @@ function renderSimChart() {
 
         setTimeout(() => {
             const width = graphArea.clientWidth; 
-            const height = graphArea.clientHeight; // 260px
+            const height = graphArea.clientHeight; 
             
             let points = [];
             const labelItems = labelArea.querySelectorAll('.sim-label-item');
             const parentRect = graphArea.getBoundingClientRect();
             
-            // X축 중앙 정렬 완벽 보정
+            // 좌표 정보 설정
             labelItems.forEach((el, i) => {
                 const elRect = el.getBoundingClientRect();
                 const centerX = (elRect.left - parentRect.left) + (elRect.width / 2);
                 const score = Math.min(data[i].base_ui_score, 250);
-                
                 const y = height - ((score / 250) * DRAW_HEIGHT);
-                points.push({ x: centerX, y: y, score: Math.round(score), originalScore: data[i].base_ui_score });
+                
+                let maxRise = 0;
+                if (data[i].sim_data) {
+                    Object.values(data[i].sim_data).forEach(sub => { if (sub && sub.diff > maxRise) maxRise = sub.diff; });
+                }
+
+                const isActive = (i === selectedSimIndex);
+                // 점수 상승이 있는 선택된 지점인지 판별
+                const usePotential = isActive && maxRise > 0 && data[i].base_ui_score < 250;
+                const potentialScore = Math.min(data[i].base_ui_score + maxRise, 250);
+                const potY = height - ((potentialScore / 250) * DRAW_HEIGHT);
+
+                points.push({ 
+                    x: centerX, 
+                    y: y, // 원래 Y 위치
+                    score: Math.round(score), 
+                    originalScore: data[i].base_ui_score,
+                    isActive: isActive,
+                    maxRise: maxRise,
+                    isPotential: usePotential,
+                    currentY: usePotential ? potY : y, // 그릴 Y 위치 결정
+                    potentialScore: potentialScore
+                });
             });
 
             let solidPathD = "";     
@@ -1022,46 +1041,43 @@ function renderSimChart() {
             let potentialPointsHTML = "";
             let textsHTML = "";   
 
+            // 1. 선(Path) 생성: 선택된 지점 주변은 주황색 점선, 나머지는 파란 실선으로 아예 나눔
+            if (points.length > 1) {
+                for (let i = 0; i < points.length - 1; i++) {
+                    let p1 = points[i];
+                    let p2 = points[i+1];
+
+                    if (p1.isPotential || p2.isPotential) {
+                        potentialPathD += `M ${p1.x} ${p1.currentY} L ${p2.x} ${p2.currentY} `;
+                    } else {
+                        solidPathD += `M ${p1.x} ${p1.currentY} L ${p2.x} ${p2.currentY} `;
+                    }
+                }
+            } else if (points.length === 1) { // 그래프가 1개일 때 예외처리
+                let p = points[0];
+                if (p.isPotential) potentialPathD += `M ${p.x} ${p.y} L ${p.x} ${p.currentY} `;
+            }
+
+            // 2. 점과 텍스트 생성
             points.forEach((p, i) => {
-                if (i === 0) solidPathD += `M ${p.x} ${p.y}`;
-                else solidPathD += ` L ${p.x} ${p.y}`;
-
-                const isActive = (i === selectedSimIndex) ? 'active' : '';
-
-                let maxRise = 0;
-                if (data[i].sim_data) {
-                    Object.values(data[i].sim_data).forEach(sub => { if (sub && sub.diff > maxRise) maxRise = sub.diff; });
+                if (p.isPotential) {
+                    // 원래 파란 점은 그리지 않고(안보이게), 주황색 점을 확대(r:9px)해서 출력
+                    potentialPointsHTML += `<circle cx="${p.x}" cy="${p.currentY}" class="sim-line-point active" style="pointer-events:all; stroke:#f59e0b; fill:#fff7ed; r:9px;" onclick="selectSimUniv(${i})" />`;
+                    textsHTML += `<text x="${p.x}" y="${p.currentY - 20}" text-anchor="middle" fill="#d97706" font-size="12" font-weight="bold">${Math.round(p.potentialScore)} <tspan font-size="10">(+${p.maxRise.toFixed(1)})</tspan></text>`;
+                } else {
+                    // 선택되지 않은 지점이거나, 선택되었지만 점수 상승이 없을 때
+                    originalPointsHTML += `<circle cx="${p.x}" cy="${p.currentY}" class="sim-line-point ${p.isActive ? 'active' : ''}" style="pointer-events:all;" onclick="selectSimUniv(${i})" />`;
+                    textsHTML += `<text x="${p.x}" y="${p.currentY - 20}" text-anchor="middle" fill="#64748b" font-size="12" font-weight="bold">${p.score}</text>`;
                 }
-
-                let showOriginalText = true;
-
-                if (isActive && maxRise > 0 && p.originalScore < 250) {
-                    const potentialScore = Math.min(p.originalScore + maxRise, 250);
-                    const potY = height - ((potentialScore / 250) * DRAW_HEIGHT);
-                    showOriginalText = false; 
-
-                    if (i > 0) potentialPathD += `M ${points[i-1].x} ${points[i-1].y} L ${p.x} ${potY} `;
-                    if (i < points.length - 1) potentialPathD += `M ${p.x} ${potY} L ${points[i+1].x} ${points[i+1].y} `;
-                    if (points.length === 1) potentialPathD += `M ${p.x} ${p.y} L ${p.x} ${potY}`;
-
-                    potentialPointsHTML += `<circle cx="${p.x}" cy="${potY}" r="6" fill="#fff" stroke="#f59e0b" stroke-width="2" />`;
-                    textsHTML += `<text x="${p.x}" y="${potY - 20}" text-anchor="middle" fill="#d97706" font-size="12" font-weight="bold">${Math.round(potentialScore)} <tspan font-size="10">(+${maxRise.toFixed(1)})</tspan></text>`;
-                }
-
-                if (showOriginalText) {
-                    textsHTML += `<text x="${p.x}" y="${p.y - 20}" text-anchor="middle" fill="#64748b" font-size="12" font-weight="bold">${p.score}</text>`;
-                }
-                
-                originalPointsHTML += `<circle cx="${p.x}" cy="${p.y}" class="sim-line-point ${isActive}" onclick="selectSimUniv(${i})" style="pointer-events:all;" />`;
             });
 
-            // [해결포인트 2] SVG 렌더링 순서 재배치: 원래 선/점 -> 상승선/점 -> 텍스트 순으로 그림
+            // 3. SVG 렌더링 조립
             const svgHTML = `
                 <svg class="sim-line-svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="position:absolute; top:0; left:0; pointer-events:none;">
-                    <path d="${solidPathD}" class="sim-line-path" />
-                    ${originalPointsHTML}
-                    
                     <path d="${potentialPathD}" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,5" />
+                    <path d="${solidPathD}" class="sim-line-path" />
+                    
+                    ${originalPointsHTML}
                     ${potentialPointsHTML}
                     
                     ${textsHTML}
