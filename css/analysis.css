@@ -207,16 +207,17 @@
     min-width: 100%; /* 데이터 적을 땐 꽉 차게 */
 }
 
-/* [A] 그래프 그리는 영역 (상단) */
+/* [1] 그래프 영역: 오른쪽 패딩을 60px로 늘려 '라벨 들어갈 자리' 확보 */
 .chart-graph-area {
     position: relative;
-    height: 260px; /* 그래프 높이 고정 */
-    border-bottom: 2px solid #94a3b8; /* [중요] X축 0점 라인 (진하게) */
+    height: 260px;
+    border-bottom: 2px solid #cbd5e1;
     display: flex;
-    align-items: flex-end; /* 바닥 정렬 */
-    /* justify-content는 JS 제어 */
-    padding: 30px 20px 0 20px; /* 상단 여백(점수라벨용) + 좌우 여백 */
+    align-items: flex-end;
+    /* padding: 상 우 하 좌 */
+    padding: 30px 60px 0 20px; /* 오른쪽 20px -> 60px로 변경 */
     box-sizing: border-box;
+    gap: 10px;
 }
 
 /* 기준선 (점선) */
@@ -228,28 +229,35 @@
     pointer-events: none;
     width: 100%;
 }
-.chart-guide-label {
-    position: absolute;
-    left: 10px;
-    top: -20px;
-    font-size: 0.75rem;
-    color: #94a3b8;
-    font-weight: 600;
-    padding: 2px 4px;
-    background: rgba(255,255,255,0.8);
-}
-.guide-150 { border-top-color: #10b981; } 
-.guide-150 .chart-guide-label { color: #10b981; }
 
-/* [B] X축 라벨 영역 (하단) */
+/* [2] X축 라벨 영역: 위와 똑같이 맞춰서 줄이 어긋나지 않게 함 */
 .chart-label-area {
-    height: 100px; /* 텍스트 공간 충분히 확보 */
+    height: 100px;
     display: flex;
-    align-items: flex-start; /* 위쪽 정렬 */
-    /* justify-content는 JS 제어 (위와 동일하게 맞춤) */
-    padding: 15px 20px 0 20px; /* 그래프 영역과 좌우 패딩 일치 */
+    align-items: flex-start;
+    /* padding: 상 우 하 좌 */
+    padding: 10px 60px 0 20px; /* 오른쪽 20px -> 60px로 변경 */
+    gap: 10px;
     box-sizing: border-box;
 }
+
+/* [3] 기준선 라벨: 확보된 60px 빈 공간(오른쪽 끝)에 배치 */
+.chart-guide-label {
+    position: absolute;
+    left: auto;        /* 왼쪽 기준 해제 */
+    right: 5px;        /* 오른쪽 끝에 붙임 (패딩 공간 안쪽) */
+    top: -22px;        /* 선 바로 위 */
+    
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-align: right; /* 텍스트 우측 정렬 */
+    padding: 2px 0;
+    background: rgba(255, 255, 255, 0.8);
+    z-index: 10;
+}
+
+.guide-150 { border-top-color: #10b981; } 
+.guide-150 .chart-guide-label { color: #10b981; }
 
 /* 막대 아이템 & 라벨 아이템 공통 */
 .sim-bar-item, .sim-label-item {
