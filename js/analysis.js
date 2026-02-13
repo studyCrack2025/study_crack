@@ -912,12 +912,11 @@ function renderSimChart() {
     const data = cachedSimData;
     
     // ==================================================================================
-    // 3. 막대 그래프 렌더링 (수정: 상승분을 기존 막대 위에 자연스럽게 쌓기)
+    // 3. 막대 그래프 렌더링
     // ==================================================================================
     if (currentSimChartType === 'bar') {
         data.forEach((item, index) => {
             const score = item.base_ui_score;
-            // 현재 점수 막대 높이
             const currentHeightPx = `calc((100% - ${TOP_PADDING}px) * ${score/250})`;
             
             let color = '#ef4444'; 
@@ -928,30 +927,26 @@ function renderSimChart() {
             const safeScore = Math.round(score);
             const shortUniv = item.univ.replace('학교', '');
 
-            // [오버레이 계산]
             let maxRise = 0;
             if (item.sim_data) {
                 Object.values(item.sim_data).forEach(sub => { if (sub && sub.diff > maxRise) maxRise = sub.diff; });
             }
 
             let extensionHtml = '';
-            let mainBarRadius = '6px 6px 0 0'; // 기본 둥근 모서리
+            let mainBarRadius = '6px 6px 0 0'; 
             let showOriginalLabel = true;
 
-            // 활성화 & 상승 있음 & 250점 미만인 경우 -> 확장 막대 생성
             if (isActive && maxRise > 0 && score < 250) {
                 const potentialScore = Math.min(score + maxRise, 250);
-                const riseAmount = potentialScore - score; // 순수 상승분
-                // 상승분만큼의 높이 계산
+                const riseAmount = potentialScore - score; 
                 const riseHeightPx = `calc((100% - ${TOP_PADDING}px) * ${riseAmount/250})`;
                 
-                // 기존 막대 위 모서리를 직각으로 변경
-                mainBarRadius = '0 0 0 0';
-                showOriginalLabel = false; // 기존 점수 라벨 숨김
+                mainBarRadius = '0 0 0 0'; // 레고블록처럼 쌓기 위해 밑 막대의 위쪽 둥글기 제거
+                showOriginalLabel = false; 
 
-                // 상승분 점선 막대 (기존 막대 바로 위에 쌓임)
+                // [해결포인트 1] width:100% 대신 기존 .sim-bar 클래스를 그대로 사용하여 너비를 일치시킴!
                 extensionHtml = `
-                    <div class="sim-bar-extension" style="height:${riseHeightPx}; width:100%; background:rgba(245, 158, 11, 0.15); border:2px dashed #f59e0b; border-bottom:none; border-radius: 6px 6px 0 0; position:relative; box-sizing:border-box; z-index:3;">
+                    <div class="sim-bar" style="height:${riseHeightPx}; background:rgba(245, 158, 11, 0.15); border:2px dashed #f59e0b; border-bottom:none; border-radius: 6px 6px 0 0; box-sizing:border-box;">
                          <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">
                             ${Math.round(potentialScore)} (+${maxRise.toFixed(1)})
                          </span>
@@ -959,38 +954,35 @@ function renderSimChart() {
                 `;
             }
 
-            // [그래프 바 구조] Flex column을 이용해 확장 막대가 기존 막대 위에 자연스럽게 쌓이도록 배치
             const barHtml = `
                 <div class="sim-bar-item ${isActive}" onclick="selectSimUniv(${index})" style="display:flex; flex-direction:column; justify-content:flex-end;">
                     ${extensionHtml}
-                    <div class="sim-bar" style="height:${currentHeightPx}; background:${color}; border-radius:${mainBarRadius}; z-index:2; position:relative; flex: 0 0 auto;">
+                    <div class="sim-bar" style="height:${currentHeightPx}; background:${color}; border-radius:${mainBarRadius}; flex: 0 0 auto;">
                         <span class="sim-score-label" style="${showOriginalLabel ? '' : 'display:none;'}">${safeScore}</span>
                     </div>
                 </div>
             `;
             graphArea.insertAdjacentHTML('beforeend', barHtml);
 
-            // [하단 라벨]
             const labelHtml = `
                 <div class="sim-label-item" onclick="selectSimUniv(${index})">
                     <span class="label-mobile">${index + 1}지망</span>
-                    <span class="label-pc"><strong>${index + 1}지망</strong>${shortUniv}<br>${item.major}</span>
+                    <span class="label-pc"><strong>${index + 1}지망</strong><br>${shortUniv}<br>${item.major}</span>
                 </div>
             `;
             labelArea.insertAdjacentHTML('beforeend', labelHtml);
         });
     } 
     // ==================================================================================
-    // 4. 꺾은선 그래프 렌더링 (수정: 상승 지점을 양옆과 점선으로 연결)
+    // 4. 꺾은선 그래프 렌더링
     // ==================================================================================
     else if (currentSimChartType === 'line') {
-        // 라벨 먼저 렌더링
         data.forEach((item, index) => {
             const shortUniv = item.univ.replace('학교', '');
             labelArea.insertAdjacentHTML('beforeend', `
                 <div class="sim-label-item" onclick="selectSimUniv(${index})">
                     <span class="label-mobile">${index + 1}지망</span>
-                    <span class="label-pc"><strong>${index + 1}지망</strong>${shortUniv}<br>${item.major}</span>
+                    <span class="label-pc"><strong>${index + 1}지망</strong><br>${shortUniv}<br>${item.major}</span>
                 </div>
             `);
         });
@@ -1010,18 +1002,19 @@ function renderSimChart() {
                 points.push({ x: centerX, y: y, score: Math.round(score), originalScore: data[i].base_ui_score });
             });
 
-            let solidPathD = "";     // 실선 경로 (원래 점수)
-            let potentialPathD = ""; // 점선 경로 (상승 예상)
-            let elementsHTML = "";   // 점과 텍스트
+            // [해결포인트 2] SVG 렌더링 순서를 명확하게 분리 (선 -> 오버레이 원 -> 원래 원 -> 글자)
+            let solidPathD = "";     
+            let potentialPathD = ""; 
+            let originalPointsHTML = "";
+            let potentialPointsHTML = "";
+            let textsHTML = "";   
 
             points.forEach((p, i) => {
-                // 1. 기본 실선 그리기
                 if (i === 0) solidPathD += `M ${p.x} ${p.y}`;
                 else solidPathD += ` L ${p.x} ${p.y}`;
 
                 const isActive = (i === selectedSimIndex) ? 'active' : '';
 
-                // 2. 상승분 계산
                 let maxRise = 0;
                 if (data[i].sim_data) {
                     Object.values(data[i].sim_data).forEach(sub => { if (sub && sub.diff > maxRise) maxRise = sub.diff; });
@@ -1029,47 +1022,36 @@ function renderSimChart() {
 
                 let showOriginalText = true;
 
-                // 3. [핵심] 활성화된 상승 지점 & 연결선 그리기
                 if (isActive && maxRise > 0 && p.originalScore < 250) {
                     const potentialScore = Math.min(p.originalScore + maxRise, 250);
                     const potY = height - ((potentialScore / 250) * drawHeight);
-                    showOriginalText = false; // 원래 점수 텍스트 숨김
+                    showOriginalText = false; 
 
-                    // 이전 지점과 연결
-                    if (i > 0) {
-                        potentialPathD += `M ${points[i-1].x} ${points[i-1].y} L ${p.x} ${potY} `;
-                    }
-                    // 다음 지점과 연결
-                    if (i < points.length - 1) {
-                        // 이전 지점이 없었으면 Move To, 있었으면 Line To 이어가기
-                        potentialPathD += `${(i===0) ? 'M' : 'L'} ${p.x} ${potY} L ${points[i+1].x} ${points[i+1].y} `;
-                    }
-                    // 이웃이 없는 경우 (데이터 1개) -> 수직선 표시
-                    if (points.length === 1) {
-                         potentialPathD += `M ${p.x} ${p.y} L ${p.x} ${potY}`;
-                    }
+                    // 점선 경로
+                    if (i > 0) potentialPathD += `M ${points[i-1].x} ${points[i-1].y} L ${p.x} ${potY} `;
+                    if (i < points.length - 1) potentialPathD += `M ${p.x} ${potY} L ${points[i+1].x} ${points[i+1].y} `;
+                    if (points.length === 1) potentialPathD += `M ${p.x} ${p.y} L ${p.x} ${potY}`;
 
-                    // 상승 예상 지점 마커 및 텍스트
-                    elementsHTML += `
-                        <circle cx="${p.x}" cy="${potY}" r="6" fill="#fff" stroke="#f59e0b" stroke-width="2" style="z-index:25;" />
-                        <text x="${p.x}" y="${potY - 25}" text-anchor="middle" fill="#d97706" font-size="12" font-weight="bold" style="z-index:30;">
-                            ${Math.round(potentialScore)} (+${maxRise.toFixed(1)})
-                        </text>
-                    `;
+                    potentialPointsHTML += `<circle cx="${p.x}" cy="${potY}" r="6" fill="#fff" stroke="#f59e0b" stroke-width="2" />`;
+                    textsHTML += `<text x="${p.x}" y="${potY - 20}" text-anchor="middle" fill="#d97706" font-size="12" font-weight="bold">${Math.round(potentialScore)} (+${maxRise.toFixed(1)})</text>`;
                 }
 
-                // 4. 원래 지점 마커 및 텍스트
                 if (showOriginalText) {
-                     elementsHTML += `<text x="${p.x}" y="${p.y - 25}" text-anchor="middle" fill="#64748b" font-size="12" font-weight="bold">${p.score}</text>`;
+                    textsHTML += `<text x="${p.x}" y="${p.y - 20}" text-anchor="middle" fill="#64748b" font-size="12" font-weight="bold">${p.score}</text>`;
                 }
-                elementsHTML += `<circle cx="${p.x}" cy="${p.y}" class="sim-line-point ${isActive}" onclick="selectSimUniv(${i})" style="pointer-events:all; z-index:20;" />`;
+                
+                // 원래 점 (가장 위에 그려져야 하므로 별도 저장)
+                originalPointsHTML += `<circle cx="${p.x}" cy="${p.y}" class="sim-line-point ${isActive}" onclick="selectSimUniv(${i})" style="pointer-events:all;" />`;
             });
 
+            // SVG 조립 (선들이 먼저 바닥에 깔리고, 그 위에 점들, 그 위에 텍스트가 렌더링됨)
             const svgHTML = `
                 <svg class="sim-line-svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="position:absolute; top:0; left:0; pointer-events:none;">
                     <path d="${solidPathD}" class="sim-line-path" />
-                    <path d="${potentialPathD}" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,5" style="pointer-events:none;" />
-                    ${elementsHTML}
+                    <path d="${potentialPathD}" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,5" />
+                    ${potentialPointsHTML}
+                    ${originalPointsHTML}
+                    ${textsHTML}
                 </svg>
             `;
             graphArea.insertAdjacentHTML('beforeend', svgHTML);
