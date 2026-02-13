@@ -874,35 +874,44 @@ function renderSimChart() {
     
     if (!cachedSimData || cachedSimData.length === 0) return;
 
-    // 패딩 값 상수화 (CSS와 일치시켜야 함)
-    const BOTTOM_PADDING = 60; // 하단 패딩 (X축 라벨 공간)
-    const TOP_PADDING = 40;    // 상단 여백 (점수 라벨 공간)
-
-    // A. 기준선 (Guide Line)
-    const pos100 = (100 / 250); // 비율
-    const pos150 = (150 / 250); 
-
-    // [수정] 기준선 위치 계산: 전체 높이에서 상하단 패딩을 뺀 '순수 그래프 영역' 비율 + 하단 패딩
-    const guideStyle100 = `bottom: calc(${BOTTOM_PADDING}px + (100% - ${BOTTOM_PADDING + TOP_PADDING}px) * ${pos100});`;
-    const guideStyle150 = `bottom: calc(${BOTTOM_PADDING}px + (100% - ${BOTTOM_PADDING + TOP_PADDING}px) * ${pos150});`;
-
-    const guide100 = `<div class="chart-guide-line guide-100" style="${guideStyle100}"><span class="chart-guide-label">합격(100)</span></div>`;
-    const guide150 = `<div class="chart-guide-line guide-150" style="${guideStyle150}"><span class="chart-guide-label">안정(150)</span></div>`;
+    // 1. 컨테이너 구조 생성 (그래프 영역 / 라벨 영역 분리)
+    const wrapper = document.createElement('div');
+    wrapper.className = 'chart-inner-container';
     
-    container.insertAdjacentHTML('beforeend', guide100);
-    container.insertAdjacentHTML('beforeend', guide150);
+    const graphArea = document.createElement('div');
+    graphArea.className = 'chart-graph-area';
+    
+    const labelArea = document.createElement('div');
+    labelArea.className = 'chart-label-area';
+    
+    wrapper.appendChild(graphArea);
+    wrapper.appendChild(labelArea);
+    container.appendChild(wrapper);
+
+    // 2. 기준선 (Guide Line) - 그래프 영역 안에 그림
+    // 높이 계산: (점수 / 250) * 100% (graphArea는 flex-end이므로 bottom 기준)
+    const pos100 = (100 / 250) * 100;
+    const pos150 = (150 / 250) * 100;
+
+    const guide100 = `<div class="chart-guide-line guide-100" style="bottom: ${pos100}%;"><span class="chart-guide-label">합격(100)</span></div>`;
+    const guide150 = `<div class="chart-guide-line guide-150" style="bottom: ${pos150}%;"><span class="chart-guide-label">안정(150)</span></div>`;
+    
+    graphArea.insertAdjacentHTML('beforeend', guide100);
+    graphArea.insertAdjacentHTML('beforeend', guide150);
 
     const data = cachedSimData;
-
-    // B. 막대 그래프 렌더링
+    
+    // 정렬 모드: 데이터 적으면 균등분배, 많으면 왼쪽 정렬
+    const justifyMode = data.length > 5 ? 'flex-start' : 'space-around';
+    
+    // 3. 막대 그래프 렌더링
     if (currentSimChartType === 'bar') {
-        container.style.justifyContent = data.length > 5 ? 'flex-start' : 'space-around';
+        graphArea.style.justifyContent = justifyMode;
+        labelArea.style.justifyContent = justifyMode;
 
         data.forEach((item, index) => {
             const score = item.base_ui_score;
-            
-            // 막대 높이 계산 (순수 그래프 영역 기준 비율)
-            const heightCalc = `calc((100% - ${BOTTOM_PADDING + TOP_PADDING}px) * ${score/250})`;
+            const heightPct = Math.min((score / 250) * 100, 100);
             
             let color = '#ef4444'; 
             if (score >= 150) color = '#10b981'; 
@@ -912,78 +921,112 @@ function renderSimChart() {
             const safeScore = Math.round(score);
             const shortUniv = item.univ.replace('학교', '');
 
-            const html = `
+            // [그래프 바]
+            const barHtml = `
                 <div class="sim-bar-item ${isActive}" onclick="selectSimUniv(${index})">
-                    <div class="sim-bar" style="height:${heightCalc}; background:${color};">
+                    <div class="sim-bar" style="height:${heightPct}%; background:${color};">
                         <span class="sim-score-label">${safeScore}</span>
-                    </div>
-                    <div class="sim-axis-label">
-                        <span class="label-mobile">${index + 1}지망</span>
-                        <span class="label-pc">
-                            <strong>${index + 1}지망</strong><br>
-                            ${shortUniv}<br>
-                            ${item.major}
-                        </span>
                     </div>
                 </div>
             `;
-            container.innerHTML += html;
+            graphArea.insertAdjacentHTML('beforeend', barHtml);
+
+            // [하단 라벨]
+            const labelHtml = `
+                <div class="sim-label-item" onclick="selectSimUniv(${index})">
+                    <span class="label-mobile">${index + 1}지망</span>
+                    <span class="label-pc">
+                        <strong>${index + 1}지망</strong>
+                        ${shortUniv}<br>
+                        ${item.major}
+                    </span>
+                </div>
+            `;
+            labelArea.insertAdjacentHTML('beforeend', labelHtml);
         });
     } 
-    // C. 꺾은선 그래프 렌더링
+    // 4. 꺾은선 그래프 렌더링
     else if (currentSimChartType === 'line') {
-        container.style.justifyContent = 'space-around';
+        // SVG는 graphArea 전체를 덮음. 좌표 계산을 위해 크기 확보 필요.
+        labelArea.style.justifyContent = 'space-around'; // 기본
+        
+        // 데이터가 많으면 최소 너비를 강제로 늘려서 스크롤 되게 함
+        const minWidth = Math.max(container.clientWidth, data.length * 90);
+        if(data.length > 5) {
+            graphArea.style.minWidth = minWidth + 'px';
+            labelArea.style.minWidth = minWidth + 'px';
+            graphArea.style.justifyContent = 'flex-start'; 
+            labelArea.style.justifyContent = 'flex-start';
+        } else {
+            graphArea.style.justifyContent = 'space-around';
+            labelArea.style.justifyContent = 'space-around';
+        }
 
-        const width = Math.max(container.clientWidth, data.length * 80); 
-        const height = container.clientHeight; 
-        
-        // [중요] 실제 그래프가 그려질 영역 높이 (전체 - 패딩)
-        const graphAreaHeight = height - (BOTTOM_PADDING + TOP_PADDING);
-        
-        // 0점의 Y좌표 (바닥선 위치) = 전체높이 - 하단패딩
-        const zeroY = height - BOTTOM_PADDING;
-
-        const paddingX = 50; 
-        const stepX = (width - (paddingX * 2)) / (data.length - 1 || 1);
-        
-        let pathD = "";
-        let elementsHTML = "";
-        
+        // 라벨 먼저 렌더링 (자리 잡기 위해)
         data.forEach((item, index) => {
-            const x = (data.length > 1) ? paddingX + (index * stepX) : width / 2;
-            const score = Math.min(item.base_ui_score, 250); 
-            
-            // Y 좌표 계산: zeroY에서 점수 비율만큼 위로 이동(-)
-            const y = zeroY - ( (score / 250) * graphAreaHeight );
-            
-            if (index === 0) pathD += `M ${x} ${y}`;
-            else pathD += ` L ${x} ${y}`;
-
-            const isActive = (index === selectedSimIndex) ? 'active' : '';
             const shortUniv = item.univ.replace('학교', '');
-
-            elementsHTML += `
-                <foreignObject x="${x - 45}" y="${zeroY + 10}" width="90" height="50" style="overflow:visible;">
-                    <div xmlns="http://www.w3.org/1999/xhtml" class="sim-axis-label" style="position:static; text-align:center; transform:none; padding-top:0;">
-                        <span class="label-mobile">${index + 1}지망</span>
-                        <span class="label-pc" style="font-size:0.75rem;">${index + 1}지망<br>${shortUniv}</span>
-                    </div>
-                </foreignObject>
-
-                <text x="${x}" y="${y - 15}" text-anchor="middle" fill="#64748b" font-size="12" font-weight="bold">${Math.round(score)}</text>
-
-                <circle cx="${x}" cy="${y}" class="sim-line-point ${isActive}" onclick="selectSimUniv(${index})" />
+            const labelHtml = `
+                <div class="sim-label-item" onclick="selectSimUniv(${index})">
+                    <span class="label-mobile">${index + 1}지망</span>
+                    <span class="label-pc">
+                        <strong>${index + 1}지망</strong>
+                        ${shortUniv}<br>
+                        ${item.major}
+                    </span>
+                </div>
             `;
+            labelArea.insertAdjacentHTML('beforeend', labelHtml);
         });
 
-        const svgHTML = `
-            <svg class="sim-line-svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
-                <path d="${pathD}" class="sim-line-path" />
-                ${elementsHTML}
-            </svg>
-        `;
-        container.innerHTML += svgHTML;
-        container.style.justifyContent = 'flex-start';
+        // SVG 그리기 (setTimeout으로 DOM 렌더링 후 좌표 계산)
+        setTimeout(() => {
+            const width = graphArea.clientWidth; 
+            const height = graphArea.clientHeight; 
+            
+            // 상단 여백 (점수 라벨 공간)
+            const paddingTop = 30; 
+            const availHeight = height - paddingTop; // 0~250점이 그려질 높이
+
+            let points = [];
+            
+            // 라벨 아이템들의 중심 좌표를 기준으로 점 찍기
+            const labelItems = labelArea.querySelectorAll('.sim-label-item');
+            labelItems.forEach((el, i) => {
+                // 라벨의 중심 X 좌표 (graphArea 기준 상대 좌표)
+                const centerX = el.offsetLeft + (el.offsetWidth / 2);
+                const score = Math.min(data[i].base_ui_score, 250);
+                
+                // Y좌표: 바닥(height)에서 점수 비율만큼 위로
+                // 0점 = height (바닥선)
+                // 250점 = height - availHeight (상단 여백 위치)
+                const y = height - ((score / 250) * availHeight);
+                
+                points.push({ x: centerX, y: y, score: Math.round(score) });
+            });
+
+            let pathD = "";
+            let elementsHTML = "";
+
+            points.forEach((p, i) => {
+                if (i === 0) pathD += `M ${p.x} ${p.y}`;
+                else pathD += ` L ${p.x} ${p.y}`;
+
+                const isActive = (i === selectedSimIndex) ? 'active' : '';
+                
+                elementsHTML += `
+                    <text x="${p.x}" y="${p.y - 15}" text-anchor="middle" fill="#64748b" font-size="12" font-weight="bold">${p.score}</text>
+                    <circle cx="${p.x}" cy="${p.y}" class="sim-line-point ${isActive}" onclick="selectSimUniv(${i})" style="pointer-events:all;" />
+                `;
+            });
+
+            const svgHTML = `
+                <svg class="sim-line-svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="position:absolute; top:0; left:0; pointer-events:none;">
+                    <path d="${pathD}" class="sim-line-path" />
+                    ${elementsHTML}
+                </svg>
+            `;
+            graphArea.insertAdjacentHTML('beforeend', svgHTML);
+        }, 0);
     }
 
     renderDetailedSimCard();

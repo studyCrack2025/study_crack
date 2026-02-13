@@ -174,99 +174,94 @@
 }
 
 /* 2. 차트 영역 */
+/* 차트 전체 래퍼 */
 .sim-chart-wrapper {
     background: #fff;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
-    padding: 25px;
+    padding: 20px;
     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
-    position: relative;
-    min-height: 420px; 
+    min-height: 480px; /* 전체 높이 넉넉하게 */
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
 }
 
-.sim-section-title {
-    margin: 0 0 15px 0;
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: #334155;
-    position: relative;
-    z-index: 5;
-}
-
-/* 차트 스크롤 컨테이너 */
+/* 스크롤 컨테이너 (좌우 스크롤) */
 .chart-scroll-container {
-    width: 100%;
-    height: 320px; /* 높이 넉넉하게 */
+    flex: 1;
     overflow-x: auto;
     overflow-y: hidden;
     position: relative;
     scrollbar-width: thin;
-    padding-top: 40px; 
-    box-sizing: border-box;
+    padding-bottom: 10px;
 }
 
-/* 차트 캔버스 (그리드 및 그래프) */
-.chart-canvas-area {
-    position: relative;
-    height: 100%;
-    min-width: 100%;
+/* 차트 내부 컨테이너 (그래프 + X축 라벨) */
+.chart-inner-container {
     display: flex;
-    align-items: flex-end; /* 막대 그래프 바닥 정렬 */
-    /* justify-content는 JS에서 제어 */
-    padding: 0 40px;
-    box-sizing: border-box;
-    
-    /* [수정] 0점 기준선 (X축) 명확화 */
-    border-bottom: 2px solid #cbd5e1; 
-    
-    /* 아래쪽 패딩 (X축 라벨 공간 확보) */
-    padding-bottom: 60px; 
+    flex-direction: column; /* 위: 그래프, 아래: 라벨 (수직 분리) */
+    height: 360px; /* 전체 높이 고정 */
+    min-width: 100%;
 }
 
-/* 기준선 (가이드라인 - 점선) */
+/* [A] 그래프 그리는 영역 (상단) */
+.chart-graph-area {
+    position: relative;
+    height: 260px; /* 그래프 높이 고정 */
+    border-bottom: 2px solid #94a3b8; /* [중요] X축 0점 라인 (진하게) */
+    display: flex;
+    align-items: flex-end; /* 바닥 정렬 */
+    /* justify-content는 JS 제어 */
+    padding: 30px 40px 0 40px; /* 상단 여백(점수라벨용) + 좌우 여백 */
+    box-sizing: border-box;
+}
+
+/* 기준선 (점선) */
 .chart-guide-line {
     position: absolute;
     left: 0; right: 0;
-    border-top: 1px dashed #cbd5e1; /* 점선 */
+    border-top: 1px dashed #cbd5e1;
     z-index: 0;
     pointer-events: none;
     width: 100%;
 }
-
-/* 0점 기준선 (실선) - 필요시 추가 강조 */
-.chart-zero-line {
+.chart-guide-label {
     position: absolute;
-    left: 0; right: 0;
-    bottom: 60px; /* padding-bottom과 일치 */
-    border-top: 1px solid #94a3b8; /* 조금 더 진한 색 */
-    z-index: 1;
-    pointer-events: none;
+    left: 10px;
+    top: -20px;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-weight: 600;
+    padding: 2px 4px;
+    background: rgba(255,255,255,0.8);
 }
-
-/* 100점(합격) 라벨 색상 */
-.guide-100 .chart-guide-label { color: #94a3b8; } 
-/* 150점(안정) 라벨 색상 */
-.guide-150 { border-top-color: #10b981; } /* 초록색 점선 */
+.guide-150 { border-top-color: #10b981; } 
 .guide-150 .chart-guide-label { color: #10b981; }
 
-/* 막대 그래프 아이템 */
+/* [B] X축 라벨 영역 (하단) */
+.chart-label-area {
+    height: 100px; /* 텍스트 공간 충분히 확보 */
+    display: flex;
+    align-items: flex-start; /* 위쪽 정렬 */
+    /* justify-content는 JS 제어 (위와 동일하게 맞춤) */
+    padding: 15px 40px 0 40px; /* 그래프 영역과 좌우 패딩 일치 */
+    box-sizing: border-box;
+}
+
+/* 막대 아이템 (그래프 영역 내) */
 .sim-bar-item {
     position: relative;
     width: 50px;
     height: 100%; 
     display: flex;
-    align-items: flex-end; /* 바닥 정렬 */
+    align-items: flex-end;
     justify-content: center;
     cursor: pointer;
+    z-index: 5;
     transition: transform 0.2s;
-    flex: 0 0 auto;
-    margin: 0 20px;
-    z-index: 5; /* 기준선들보다 위에 */
-    
-    /* [중요] 막대가 padding-bottom 영역을 침범하지 않도록 함 */
-    padding-bottom: 60px; 
-    box-sizing: border-box; 
+    margin: 0 15px; /* 간격 */
+    flex-shrink: 0; /* 줄어들지 않음 */
 }
 .sim-bar-item:hover { transform: translateY(-5px); }
 
@@ -276,61 +271,55 @@
     border-radius: 6px 6px 0 0;
     position: relative;
     transition: height 0.5s ease-out;
-    /* 높이는 JS에서 %로 제어 */
 }
-
 .sim-bar-item.active .sim-bar {
     background: #2563EB !important;
-    box-shadow: 0 0 15px rgba(37, 99, 235, 0.3);
-}
-.sim-bar-item.active .sim-score-label {
-    color: #2563EB;
-    font-weight: 800;
-    font-size: 1rem;
+    box-shadow: 0 0 10px rgba(37, 99, 235, 0.3);
 }
 
-/* 점수 라벨 (막대 위) */
+/* 점수 라벨 */
 .sim-score-label {
     position: absolute;
-    top: -25px;
+    top: -22px;
     left: 50%;
     transform: translateX(-50%);
     font-size: 0.85rem;
     color: #64748b;
     font-weight: 600;
-    white-space: nowrap;
 }
+.sim-bar-item.active .sim-score-label { color: #2563EB; font-weight: 800; }
 
-/* X축 라벨 (공통) */
-.sim-axis-label {
-    position: absolute;
-    top: 100%; 
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100px;
+/* X축 텍스트 아이템 (라벨 영역 내) */
+.sim-label-item {
+    width: 50px; /* 막대와 동일 너비 */
     text-align: center;
-    padding-top: 12px;
     font-size: 0.8rem;
     color: #475569;
     line-height: 1.4;
+    cursor: pointer;
+    margin: 0 15px; /* 막대와 동일 간격 */
+    flex-shrink: 0;
 }
+.sim-label-item strong { color: #1e293b; display: block; margin-bottom: 2px; }
+
 .label-pc { display: block; }
-.label-mobile { display: none; font-weight: bold; color: #1e293b; }
+.label-mobile { display: none; font-weight: bold; }
 
 @media (max-width: 768px) {
     .label-pc { display: none; }
     .label-mobile { display: block; }
-    .sim-bar-item { width: 45px; margin: 0 10px; }
+    .sim-bar-item, .sim-label-item { width: 40px; margin: 0 10px; }
+    .chart-graph-area, .chart-label-area { padding-left: 20px; padding-right: 20px; }
 }
 
-/* 꺾은선 그래프 (SVG) */
+/* 꺾은선 SVG */
 .sim-line-svg {
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    pointer-events: none;
-    z-index: 10;
     overflow: visible;
+    z-index: 10;
+    pointer-events: none;
 }
 .sim-line-path {
     fill: none;
@@ -338,7 +327,7 @@
     stroke-width: 3;
     stroke-linecap: round;
     stroke-linejoin: round;
-    filter: drop-shadow(0 4px 4px rgba(37,99,235,0.2));
+    filter: drop-shadow(0 3px 3px rgba(37,99,235,0.2));
 }
 .sim-line-point {
     fill: #fff;
@@ -347,7 +336,7 @@
     r: 6;
     cursor: pointer;
     pointer-events: auto;
-    transition: r 0.2s, stroke-width 0.2s;
+    transition: r 0.2s;
 }
 .sim-line-point:hover, .sim-line-point.active {
     r: 9;
