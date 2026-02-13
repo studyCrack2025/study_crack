@@ -901,11 +901,6 @@ function renderSimChart() {
     const TOP_PADDING = 50; 
 
     // 2. 기준선 (Guide Line)
-    // 0점은 바닥(border-bottom)이므로 bottom: 0.
-    // 높이 비율은 (전체높이 - TOP_PADDING) 영역 내에서 계산해야 함.
-    // 하지만 CSS absolute bottom은 부모(260px) 기준임.
-    // 따라서 calc((100% - 50px) * 비율) 로 설정.
-    
     const pos100 = (100 / 250);
     const pos150 = (150 / 250);
 
@@ -924,7 +919,6 @@ function renderSimChart() {
     if (currentSimChartType === 'bar') {
         data.forEach((item, index) => {
             const score = item.base_ui_score;
-            // 막대 높이: 250점일 때 (100% - TOP_PADDING) 높이가 되어야 함.
             const heightCalc = `calc((100% - ${TOP_PADDING}px) * ${score/250})`;
             
             let color = '#ef4444'; 
@@ -935,10 +929,32 @@ function renderSimChart() {
             const safeScore = Math.round(score);
             const shortUniv = item.univ.replace('학교', '');
 
-            // [그래프 바]
+            // [추가] 오버레이(상승 점수) 로직 계산
+            let maxRise = 0;
+            if (item.sim_data) {
+                Object.values(item.sim_data).forEach(sub => {
+                    if (sub && sub.diff > maxRise) maxRise = sub.diff;
+                });
+            }
+
+            // 활성화된 막대이고, 오를 점수가 있으며, 현재 점수가 250점 미만일 때만 오버레이 표시
+            let potentialHtml = '';
+            if (isActive && maxRise > 0 && score < 250) {
+                const potentialScore = Math.min(score + maxRise, 250); // 최대 250점 제한
+                const potHeightCalc = `calc((100% - ${TOP_PADDING}px) * ${potentialScore/250})`;
+                
+                potentialHtml = `
+                    <div class="sim-bar" style="height:${potHeightCalc}; position:absolute; bottom:0; left:0; right:0; margin:0 auto; background:rgba(245, 158, 11, 0.15); border:2px dashed #f59e0b; border-bottom:none; z-index:1; box-sizing:border-box; pointer-events:none;">
+                        <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">+${maxRise.toFixed(1)}</span>
+                    </div>
+                `;
+            }
+
+            // [그래프 바] - potentialHtml(오버레이)를 뒤에 깔고, 원래 막대를 앞에 배치(z-index: 2)
             const barHtml = `
                 <div class="sim-bar-item ${isActive}" onclick="selectSimUniv(${index})">
-                    <div class="sim-bar" style="height:${heightCalc}; background:${color};">
+                    ${potentialHtml}
+                    <div class="sim-bar" style="height:${heightCalc}; background:${color}; z-index:2; position:relative;">
                         <span class="sim-score-label">${safeScore}</span>
                     </div>
                 </div>
@@ -961,7 +977,6 @@ function renderSimChart() {
     } 
     // 4. 꺾은선 그래프 렌더링
     else if (currentSimChartType === 'line') {
-        // 라벨 먼저 렌더링 (자리 잡기)
         data.forEach((item, index) => {
             const shortUniv = item.univ.replace('학교', '');
             const labelHtml = `
@@ -977,12 +992,9 @@ function renderSimChart() {
             labelArea.insertAdjacentHTML('beforeend', labelHtml);
         });
 
-        // SVG 그리기
         setTimeout(() => {
             const width = graphArea.clientWidth; 
-            const height = graphArea.clientHeight; // 260px
-            
-            // 실제 데이터가 그려질 높이 (바닥 ~ 상단여백 사이)
+            const height = graphArea.clientHeight; 
             const drawHeight = height - TOP_PADDING; 
 
             let points = [];
@@ -991,21 +1003,41 @@ function renderSimChart() {
             labelItems.forEach((el, i) => {
                 const centerX = el.offsetLeft + (el.offsetWidth / 2);
                 const score = Math.min(data[i].base_ui_score, 250);
-                
-                // Y좌표: 바닥(height)에서 점수 비율만큼 위로
                 const y = height - ((score / 250) * drawHeight);
                 
-                points.push({ x: centerX, y: y, score: Math.round(score) });
+                // 원본 점수(originalScore)도 같이 저장하여 나중에 계산 활용
+                points.push({ x: centerX, y: y, score: Math.round(score), originalScore: data[i].base_ui_score });
             });
 
             let pathD = "";
             let elementsHTML = "";
+            let potentialHTML = ""; // 오버레이 될 요소들
 
             points.forEach((p, i) => {
                 if (i === 0) pathD += `M ${p.x} ${p.y}`;
                 else pathD += ` L ${p.x} ${p.y}`;
 
                 const isActive = (i === selectedSimIndex) ? 'active' : '';
+
+                // [추가] 오버레이(상승 점수) 로직 계산
+                let maxRise = 0;
+                if (data[i].sim_data) {
+                    Object.values(data[i].sim_data).forEach(sub => {
+                        if (sub && sub.diff > maxRise) maxRise = sub.diff;
+                    });
+                }
+
+                // 활성화된 점이고, 오를 점수가 있으며, 현재 점수가 250점 미만일 때 꺾은선 상승분 표시
+                if (isActive && maxRise > 0 && p.originalScore < 250) {
+                    const potentialScore = Math.min(p.originalScore + maxRise, 250);
+                    const potY = height - ((potentialScore / 250) * drawHeight);
+                    
+                    potentialHTML += `
+                        <line x1="${p.x}" y1="${p.y}" x2="${p.x}" y2="${potY}" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4" />
+                        <circle cx="${p.x}" cy="${potY}" r="6" fill="#fff" stroke="#f59e0b" stroke-width="2" />
+                        <text x="${p.x}" y="${potY - 15}" text-anchor="middle" fill="#d97706" font-size="12" font-weight="bold">+${maxRise.toFixed(1)}</text>
+                    `;
+                }
                 
                 elementsHTML += `
                     <text x="${p.x}" y="${p.y - 25}" text-anchor="middle" fill="#64748b" font-size="12" font-weight="bold">${p.score}</text>
@@ -1016,6 +1048,7 @@ function renderSimChart() {
             const svgHTML = `
                 <svg class="sim-line-svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="position:absolute; top:0; left:0; pointer-events:none;">
                     <path d="${pathD}" class="sim-line-path" />
+                    ${potentialHTML}
                     ${elementsHTML}
                 </svg>
             `;
@@ -1032,7 +1065,6 @@ function selectSimUniv(index) {
     renderSimChart(); // 차트 다시 그려서 active 클래스 갱신
 }
 
-// 6. 상세 분석 카드 렌더링
 // 6. 상세 분석 카드 렌더링
 function renderDetailedSimCard() {
     const cardArea = document.getElementById('simDetailCard');
