@@ -197,12 +197,14 @@
     padding-bottom: 10px;
 }
 
-/* 차트 내부 컨테이너 (그래프 + X축 라벨) */
+/* 차트 내부 컨테이너 */
 .chart-inner-container {
     display: flex;
-    flex-direction: column; /* 위: 그래프, 아래: 라벨 (수직 분리) */
-    height: 360px; /* 전체 높이 고정 */
-    min-width: 100%;
+    flex-direction: column;
+    height: 360px;
+    /* min-width: 100% 제거 -> 내용물에 따라 늘어나도록 */
+    width: max-content; /* 내용물만큼 너비 확보 (스크롤 시 X축 끊김 방지) */
+    min-width: 100%; /* 데이터 적을 땐 꽉 차게 */
 }
 
 /* [A] 그래프 그리는 영역 (상단) */
@@ -213,7 +215,7 @@
     display: flex;
     align-items: flex-end; /* 바닥 정렬 */
     /* justify-content는 JS 제어 */
-    padding: 30px 40px 0 40px; /* 상단 여백(점수라벨용) + 좌우 여백 */
+    padding: 30px 20px 0 20px; /* 상단 여백(점수라벨용) + 좌우 여백 */
     box-sizing: border-box;
 }
 
@@ -245,24 +247,33 @@
     display: flex;
     align-items: flex-start; /* 위쪽 정렬 */
     /* justify-content는 JS 제어 (위와 동일하게 맞춤) */
-    padding: 15px 40px 0 40px; /* 그래프 영역과 좌우 패딩 일치 */
+    padding: 15px 20px 0 20px; /* 그래프 영역과 좌우 패딩 일치 */
     box-sizing: border-box;
 }
 
-/* 막대 아이템 (그래프 영역 내) */
-.sim-bar-item {
+/* 막대 아이템 & 라벨 아이템 공통 */
+.sim-bar-item, .sim-label-item {
     position: relative;
-    width: 50px;
-    height: 100%; 
+    /* [핵심] 공간 등분할 설정 */
+    flex: 1 1 0px; /* 균등하게 늘어남 */
+    width: auto;   /* 고정폭 제거 */
+    min-width: 60px; /* 최소 너비 (데이터 많으면 스크롤 유발) */
+    max-width: 100px; /* 너무 넓어짐 방지 */
+    
     display: flex;
-    align-items: flex-end;
     justify-content: center;
     cursor: pointer;
     z-index: 5;
-    transition: transform 0.2s;
-    margin: 0 15px; /* 간격 */
-    flex-shrink: 0; /* 줄어들지 않음 */
+    /* margin 제거 -> gap으로 대체 */
 }
+
+/* 막대 아이템 전용 */
+.sim-bar-item {
+    height: 100%; 
+    align-items: flex-end;
+    transition: transform 0.2s;
+}
+
 .sim-bar-item:hover { transform: translateY(-5px); }
 
 .sim-bar {
@@ -291,14 +302,10 @@
 
 /* X축 텍스트 아이템 (라벨 영역 내) */
 .sim-label-item {
-    width: 50px; /* 막대와 동일 너비 */
     text-align: center;
     font-size: 0.8rem;
     color: #475569;
     line-height: 1.4;
-    cursor: pointer;
-    margin: 0 15px; /* 막대와 동일 간격 */
-    flex-shrink: 0;
 }
 .sim-label-item strong { color: #1e293b; display: block; margin-bottom: 2px; }
 
@@ -308,8 +315,8 @@
 @media (max-width: 768px) {
     .label-pc { display: none; }
     .label-mobile { display: block; }
-    .sim-bar-item, .sim-label-item { width: 40px; margin: 0 10px; }
-    .chart-graph-area, .chart-label-area { padding-left: 20px; padding-right: 20px; }
+    .sim-bar-item, .sim-label-item { min-width: 50px; }
+    .chart-graph-area, .chart-label-area { padding-left: 10px; padding-right: 10px; gap: 5px; }
 }
 
 /* 꺾은선 SVG */

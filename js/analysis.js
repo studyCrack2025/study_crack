@@ -874,7 +874,7 @@ function renderSimChart() {
     
     if (!cachedSimData || cachedSimData.length === 0) return;
 
-    // 1. 컨테이너 구조 생성 (그래프 영역 / 라벨 영역 분리)
+    // 1. 컨테이너 구조 생성
     const wrapper = document.createElement('div');
     wrapper.className = 'chart-inner-container';
     
@@ -888,8 +888,7 @@ function renderSimChart() {
     wrapper.appendChild(labelArea);
     container.appendChild(wrapper);
 
-    // 2. 기준선 (Guide Line) - 그래프 영역 안에 그림
-    // 높이 계산: (점수 / 250) * 100% (graphArea는 flex-end이므로 bottom 기준)
+    // 2. 기준선 (Guide Line)
     const pos100 = (100 / 250) * 100;
     const pos150 = (150 / 250) * 100;
 
@@ -900,15 +899,9 @@ function renderSimChart() {
     graphArea.insertAdjacentHTML('beforeend', guide150);
 
     const data = cachedSimData;
-    
-    // 정렬 모드: 데이터 적으면 균등분배, 많으면 왼쪽 정렬
-    const justifyMode = data.length > 5 ? 'flex-start' : 'space-around';
-    
+
     // 3. 막대 그래프 렌더링
     if (currentSimChartType === 'bar') {
-        graphArea.style.justifyContent = justifyMode;
-        labelArea.style.justifyContent = justifyMode;
-
         data.forEach((item, index) => {
             const score = item.base_ui_score;
             const heightPct = Math.min((score / 250) * 100, 100);
@@ -947,21 +940,6 @@ function renderSimChart() {
     } 
     // 4. 꺾은선 그래프 렌더링
     else if (currentSimChartType === 'line') {
-        // SVG는 graphArea 전체를 덮음. 좌표 계산을 위해 크기 확보 필요.
-        labelArea.style.justifyContent = 'space-around'; // 기본
-        
-        // 데이터가 많으면 최소 너비를 강제로 늘려서 스크롤 되게 함
-        const minWidth = Math.max(container.clientWidth, data.length * 90);
-        if(data.length > 5) {
-            graphArea.style.minWidth = minWidth + 'px';
-            labelArea.style.minWidth = minWidth + 'px';
-            graphArea.style.justifyContent = 'flex-start'; 
-            labelArea.style.justifyContent = 'flex-start';
-        } else {
-            graphArea.style.justifyContent = 'space-around';
-            labelArea.style.justifyContent = 'space-around';
-        }
-
         // 라벨 먼저 렌더링 (자리 잡기 위해)
         data.forEach((item, index) => {
             const shortUniv = item.univ.replace('학교', '');
@@ -978,27 +956,25 @@ function renderSimChart() {
             labelArea.insertAdjacentHTML('beforeend', labelHtml);
         });
 
-        // SVG 그리기 (setTimeout으로 DOM 렌더링 후 좌표 계산)
+        // SVG 그리기 (DOM 렌더링 후 좌표 계산)
         setTimeout(() => {
             const width = graphArea.clientWidth; 
             const height = graphArea.clientHeight; 
             
-            // 상단 여백 (점수 라벨 공간)
+            // 상단 여백 (점수 라벨 공간 - CSS padding-top과 일치시킴)
             const paddingTop = 30; 
-            const availHeight = height - paddingTop; // 0~250점이 그려질 높이
+            const availHeight = height - paddingTop; 
 
             let points = [];
             
             // 라벨 아이템들의 중심 좌표를 기준으로 점 찍기
             const labelItems = labelArea.querySelectorAll('.sim-label-item');
             labelItems.forEach((el, i) => {
-                // 라벨의 중심 X 좌표 (graphArea 기준 상대 좌표)
+                // 라벨의 중심 X 좌표
                 const centerX = el.offsetLeft + (el.offsetWidth / 2);
                 const score = Math.min(data[i].base_ui_score, 250);
                 
-                // Y좌표: 바닥(height)에서 점수 비율만큼 위로
-                // 0점 = height (바닥선)
-                // 250점 = height - availHeight (상단 여백 위치)
+                // Y좌표 계산
                 const y = height - ((score / 250) * availHeight);
                 
                 points.push({ x: centerX, y: y, score: Math.round(score) });
@@ -1014,7 +990,7 @@ function renderSimChart() {
                 const isActive = (i === selectedSimIndex) ? 'active' : '';
                 
                 elementsHTML += `
-                    <text x="${p.x}" y="${p.y - 15}" text-anchor="middle" fill="#64748b" font-size="12" font-weight="bold">${p.score}</text>
+                    <text x="${p.x}" y="${p.y - 25}" text-anchor="middle" fill="#64748b" font-size="12" font-weight="bold">${p.score}</text>
                     <circle cx="${p.x}" cy="${p.y}" class="sim-line-point ${isActive}" onclick="selectSimUniv(${i})" style="pointer-events:all;" />
                 `;
             });
