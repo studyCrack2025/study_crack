@@ -867,24 +867,20 @@ function setSimChartType(type) {
     renderSimChart();
 }
 
+// 4. 차트 렌더링
 function renderSimChart() {
     const container = document.getElementById('simChartArea');
     container.innerHTML = ''; // 초기화
     
     if (!cachedSimData || cachedSimData.length === 0) return;
 
-    // 그래프가 그려질 실제 높이 (전체 높이 - 하단 패딩 50px)
-    // CSS에서 .chart-canvas-area의 padding-bottom이 50px임
-    const graphHeight = container.clientHeight - 50; 
-
-    // A. 기준선(Guide Line) 그리기
-    
+    // A. 기준선(Guide Line) 그리기    
     const pos100 = (100 / 250) * 100; // 40%
     const pos150 = (150 / 250) * 100; // 60%
 
-    // bottom 값에 calc(50px + N%) 적용하여 패딩 위로 올림
-    const guide100 = `<div class="chart-guide-line" style="bottom: calc(50px + ${pos100}%);"><span class="chart-guide-label">합격(100)</span></div>`;
-    const guide150 = `<div class="chart-guide-line" style="bottom: calc(50px + ${pos150}%);"><span class="chart-guide-label">안정(150)</span></div>`;
+    // bottom 값에 calc(60px + N%) 적용하여 패딩 위로 올림
+    const guide100 = `<div class="chart-guide-line" style="bottom: calc(60px + ${pos100}%);"><span class="chart-guide-label">합격(100)</span></div>`;
+    const guide150 = `<div class="chart-guide-line" style="bottom: calc(60px + ${pos150}%);"><span class="chart-guide-label">안정(150)</span></div>`;
     
     container.insertAdjacentHTML('beforeend', guide100);
     container.insertAdjacentHTML('beforeend', guide150);
@@ -935,9 +931,9 @@ function renderSimChart() {
         const height = container.clientHeight; // 전체 높이 (패딩 포함)
         
         // 그래프 그릴 영역 (Y축)
-        // 상단 여백 30px, 하단 여백 50px 제외
-        const drawHeight = height - 80; 
-        const startY = 30; // 상단 시작점
+        // 상단 여백 40px, 하단 여백 60px 제외
+        const drawHeight = height - 100; 
+        const startY = 40; // 상단 시작점
 
         // X축 간격
         const paddingX = 50; 
@@ -963,7 +959,7 @@ function renderSimChart() {
 
             // SVG 요소 추가
             pointsHTML += `
-                <foreignObject x="${x - 45}" y="${height - 45}" width="90" height="45" style="overflow:visible;">
+                <foreignObject x="${x - 45}" y="${height - 55}" width="90" height="50" style="overflow:visible;">
                     <div xmlns="http://www.w3.org/1999/xhtml" class="sim-axis-label" style="position:static; text-align:center; transform:none; padding-top:0;">
                         <span class="label-mobile">${index + 1}지망</span>
                         <span class="label-pc" style="font-size:0.75rem;">${index + 1}지망<br>${shortUniv}</span>
@@ -995,7 +991,7 @@ function selectSimUniv(index) {
     renderSimChart(); // 차트 다시 그려서 active 클래스 갱신
 }
 
-// 6. 상세 분석 카드 렌더링 (수정됨)
+// 6. 상세 분석 카드 렌더링
 function renderDetailedSimCard() {
     const cardArea = document.getElementById('simDetailCard');
     
@@ -1015,7 +1011,7 @@ function renderDetailedSimCard() {
     };
     const currentStatus = getStatusText(currentScore);
 
-    // [1] 최고 상승 점수 찾기 (추천 뱃지용)
+    // [1] 최고 상승 점수 찾기 (추천 뱃지용 - 단 1개만)
     let maxRise = 0;
     let bestSubjectKey = '';
     const subjects = [
@@ -1047,7 +1043,7 @@ function renderDetailedSimCard() {
         if (info.msg.includes("응시 안 함")) {
             desc = `<span style="color:#94a3b8;">미응시 과목입니다.</span>`;
         } else if (info.diff <= 0) {
-            desc = `<span style="color:#ef4444;">점수 변화 없음 (이미 만점 등)</span>`;
+            desc = `<span style="color:#ef4444;">점수 변화 없음 (이미 만점이거나 영향 미미)</span>`;
         } else {
             if (isBest) {
                 desc = `<span style="color:#2563EB; font-weight:bold;">가장 합격 상승에 유리합니다.</span>`;
@@ -1079,6 +1075,8 @@ function renderDetailedSimCard() {
     let warningHTML = '';
     if (currentScore < 50) {
         warningHTML = `<div class="sim-warning"><i class="fas fa-exclamation-triangle"></i><div><strong>점수 차이가 큽니다.</strong><br>전형 변경을 고려해보세요.</div></div>`;
+    } else if (currentScore >= 180) {
+        warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><i class="fas fa-check-circle"></i><div><strong>이미 충분히 안정권입니다.</strong><br>실수를 줄이는 보수적인 전략이 필요합니다.</div></div>`;
     }
 
     cardArea.innerHTML = `
