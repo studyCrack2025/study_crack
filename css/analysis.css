@@ -206,40 +206,44 @@
     box-sizing: border-box;
 }
 
-/* 차트 캔버스 */
+/* 차트 캔버스 (그리드 및 그래프) */
 .chart-canvas-area {
     position: relative;
     height: 100%;
     min-width: 100%;
     display: flex;
-    align-items: flex-end;
-    /* justify-content는 JS에서 동적 제어 (데이터 개수에 따라) */
+    align-items: flex-end; /* 막대 그래프 바닥 정렬 */
+    /* justify-content는 JS에서 제어 */
     padding: 0 40px;
     box-sizing: border-box;
-    border-bottom: 1px solid #cbd5e1;
-    padding-bottom: 60px; /* X축 라벨 공간 */
+    
+    /* [수정] 0점 기준선 (X축) 명확화 */
+    border-bottom: 2px solid #cbd5e1; 
+    
+    /* 아래쪽 패딩 (X축 라벨 공간 확보) */
+    padding-bottom: 60px; 
 }
 
-/* 기준선 (가이드라인) */
+/* 기준선 (가이드라인 - 점선) */
 .chart-guide-line {
     position: absolute;
     left: 0; right: 0;
-    border-top: 1px dashed #cbd5e1;
+    border-top: 1px dashed #cbd5e1; /* 점선 */
     z-index: 0;
     pointer-events: none;
     width: 100%;
 }
-/* 기준선 라벨 */
-.chart-guide-label {
+
+/* 0점 기준선 (실선) - 필요시 추가 강조 */
+.chart-zero-line {
     position: absolute;
-    left: 10px;
-    top: -20px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    background: rgba(255,255,255,0.8);
-    padding: 0 6px;
-    border-radius: 4px;
+    left: 0; right: 0;
+    bottom: 60px; /* padding-bottom과 일치 */
+    border-top: 1px solid #94a3b8; /* 조금 더 진한 색 */
+    z-index: 1;
+    pointer-events: none;
 }
+
 /* 100점(합격) 라벨 색상 */
 .guide-100 .chart-guide-label { color: #94a3b8; } 
 /* 150점(안정) 라벨 색상 */
@@ -249,16 +253,20 @@
 /* 막대 그래프 아이템 */
 .sim-bar-item {
     position: relative;
-    width: 60px; /* 막대 너비 고정 */
+    width: 50px;
     height: 100%; 
     display: flex;
-    align-items: flex-end;
+    align-items: flex-end; /* 바닥 정렬 */
     justify-content: center;
     cursor: pointer;
     transition: transform 0.2s;
     flex: 0 0 auto;
-    margin: 0 15px;
-    z-index: 2;
+    margin: 0 20px;
+    z-index: 5; /* 기준선들보다 위에 */
+    
+    /* [중요] 막대가 padding-bottom 영역을 침범하지 않도록 함 */
+    padding-bottom: 60px; 
+    box-sizing: border-box; 
 }
 .sim-bar-item:hover { transform: translateY(-5px); }
 
@@ -268,7 +276,9 @@
     border-radius: 6px 6px 0 0;
     position: relative;
     transition: height 0.5s ease-out;
+    /* 높이는 JS에서 %로 제어 */
 }
+
 .sim-bar-item.active .sim-bar {
     background: #2563EB !important;
     box-shadow: 0 0 15px rgba(37, 99, 235, 0.3);
@@ -317,10 +327,10 @@
 .sim-line-svg {
     position: absolute;
     top: 0; left: 0;
-    width: 100%; height: 100%; 
+    width: 100%; height: 100%;
     pointer-events: none;
     z-index: 10;
-    overflow: visible; 
+    overflow: visible;
 }
 .sim-line-path {
     fill: none;

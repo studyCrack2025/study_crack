@@ -874,34 +874,40 @@ function renderSimChart() {
     
     if (!cachedSimData || cachedSimData.length === 0) return;
 
-    // 데이터 개수가 적으면(5개 이하) 균등 분배(space-around), 많으면 왼쪽 정렬(flex-start)
-    // 단, 꺾은선(SVG)일 때는 항상 space-around로 간격을 잡고 그 안에서 그림
-    const alignMode = (cachedSimData.length > 5) ? 'flex-start' : 'space-around';
-    
-    // 막대 그래프일 때만 컨테이너 정렬 적용 (꺾은선은 SVG 내부 좌표로 제어)
-    if(currentSimChartType === 'bar') {
-        container.style.justifyContent = alignMode;
-    } else {
-        container.style.justifyContent = 'flex-start'; // SVG가 꽉 채우므로
-    }
+    // 패딩 값 상수화 (CSS와 일치시켜야 함)
+    const BOTTOM_PADDING = 60; // 하단 패딩 (X축 라벨 공간)
+    const TOP_PADDING = 40;    // 상단 여백 (점수 라벨 공간)
 
-    // A. 기준선 (Guide Line) - 100점, 150점
-    const pos100 = (100 / 250) * 100;
-    const pos150 = (150 / 250) * 100;
-    // padding-bottom: 60px을 고려하여 calc로 위치 보정
-    const guide100 = `<div class="chart-guide-line guide-100" style="bottom: calc(60px + ${pos100}%);"><span class="chart-guide-label">합격(100)</span></div>`;
-    const guide150 = `<div class="chart-guide-line guide-150" style="bottom: calc(60px + ${pos150}%);"><span class="chart-guide-label">안정(150)</span></div>`;
+    // A. 기준선 (Guide Line)
+    // 100점, 150점 위치 계산 (250점 만점 기준)
+    // bottom 위치는 (점수/250) * (전체높이 - 패딩) + 하단패딩
     
+    const pos100 = (100 / 250) * 100; // 40%
+    const pos150 = (150 / 250) * 100; // 60%
+
+    // 기준선 위치 계산: 전체 높이에서 상하단 패딩을 뺀 '순수 그래프 영역' 비율
+    const guideStyle100 = `bottom: calc(${BOTTOM_PADDING}px + (100% - ${BOTTOM_PADDING + TOP_PADDING}px) * ${100/250});`;
+    const guideStyle150 = `bottom: calc(${BOTTOM_PADDING}px + (100% - ${BOTTOM_PADDING + TOP_PADDING}px) * ${150/250});`;
+
+    const guide100 = `<div class="chart-guide-line" style="${guideStyle100}"><span class="chart-guide-label">합격(100)</span></div>`;
+    const guide150 = `<div class="chart-guide-line" style="${guideStyle150}"><span class="chart-guide-label">안정(150)</span></div>`;
+    
+    // 0점 기준선 (명시적 추가)
+    const zeroLine = `<div class="chart-zero-line"></div>`;
+
     container.insertAdjacentHTML('beforeend', guide100);
     container.insertAdjacentHTML('beforeend', guide150);
+    container.insertAdjacentHTML('beforeend', zeroLine);
 
     const data = cachedSimData;
 
     // B. 막대 그래프 렌더링
     if (currentSimChartType === 'bar') {
+        container.style.justifyContent = data.length > 5 ? 'flex-start' : 'space-around';
+
         data.forEach((item, index) => {
             const score = item.base_ui_score;
-            const heightPct = Math.min((score / 250) * 100, 100);
+            const heightCalc = `calc((100% - ${BOTTOM_PADDING + TOP_PADDING}px) * ${score/250})`;
             
             let color = '#ef4444'; 
             if (score >= 150) color = '#10b981'; 
@@ -913,7 +919,7 @@ function renderSimChart() {
 
             const html = `
                 <div class="sim-bar-item ${isActive}" onclick="selectSimUniv(${index})">
-                    <div class="sim-bar" style="height:${heightPct}%; background:${color};">
+                    <div class="sim-bar" style="height:${heightCalc}; background:${color};">
                         <span class="sim-score-label">${safeScore}</span>
                     </div>
                     <div class="sim-axis-label">
@@ -929,34 +935,34 @@ function renderSimChart() {
             container.innerHTML += html;
         });
     } 
-    // C. 꺾은선 그래프 렌더링 (SVG 좌표 정밀 계산)
+    // C. 꺾은선 그래프 렌더링 (SVG 좌표 정밀 보정)
     else if (currentSimChartType === 'line') {
-        // 컨테이너 전체 너비와 높이
-        // 데이터가 많으면 스크롤 되도록 최소 너비 보장
-        const minWidth = Math.max(container.clientWidth, data.length * 90); 
-        const width = minWidth;
+        container.style.justifyContent = 'space-around';
+
+        const width = Math.max(container.clientWidth, data.length * 80); 
         const height = container.clientHeight; 
         
-        // 그래프가 그려질 영역 (Y축)
-        // 상단 여백 40px, 하단 여백 60px (CSS와 일치)
-        const drawHeight = height - 100; 
-        const startY = 40; 
+        // [중요] 실제 그래프가 그려질 영역 높이 계산
+        // 전체높이 - (하단패딩 60 + 상단여백 40)
+        const graphAreaHeight = height - (BOTTOM_PADDING + TOP_PADDING);
+        
+        // 0점의 Y좌표 (바닥선 위치) = 전체높이 - 하단패딩
+        const zeroY = height - BOTTOM_PADDING;
 
-        // X축 간격 계산 (좌우 여백 40px 제외)
-        const paddingX = 40; 
-        // 데이터가 1개일 경우 가운데 정렬
-        const stepX = (data.length > 1) ? (width - (paddingX * 2)) / (data.length - 1) : 0;
+        const paddingX = 50; 
+        const stepX = (width - (paddingX * 2)) / (data.length - 1 || 1);
         
         let pathD = "";
         let elementsHTML = "";
         
         data.forEach((item, index) => {
-            // X 좌표: 1개면 정중앙, 아니면 등분
             const x = (data.length > 1) ? paddingX + (index * stepX) : width / 2;
-            
             const score = Math.min(item.base_ui_score, 250); 
-            // Y 좌표: 점수 비례 역순 (0점이 바닥)
-            const y = startY + (drawHeight - (score / 250 * drawHeight));
+            
+            // Y 좌표 계산: 
+            // 0점일 때 = zeroY
+            // 250점일 때 = zeroY - graphAreaHeight (즉, 상단 여백 위치)
+            const y = zeroY - ( (score / 250) * graphAreaHeight );
             
             if (index === 0) pathD += `M ${x} ${y}`;
             else pathD += ` L ${x} ${y}`;
@@ -965,8 +971,8 @@ function renderSimChart() {
             const shortUniv = item.univ.replace('학교', '');
 
             elementsHTML += `
-                <foreignObject x="${x - 50}" y="${height - 60}" width="100" height="60" style="overflow:visible;">
-                    <div xmlns="http://www.w3.org/1999/xhtml" class="sim-axis-label" style="position:static; text-align:center; transform:none; padding-top:10px;">
+                <foreignObject x="${x - 45}" y="${zeroY + 10}" width="90" height="50" style="overflow:visible;">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="sim-axis-label" style="position:static; text-align:center; transform:none; padding-top:0;">
                         <span class="label-mobile">${index + 1}지망</span>
                         <span class="label-pc" style="font-size:0.75rem;">${index + 1}지망<br>${shortUniv}</span>
                     </div>
@@ -985,6 +991,7 @@ function renderSimChart() {
             </svg>
         `;
         container.innerHTML += svgHTML;
+        container.style.justifyContent = 'flex-start';
     }
 
     renderDetailedSimCard();
