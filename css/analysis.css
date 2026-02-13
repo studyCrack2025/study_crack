@@ -277,7 +277,7 @@
 .sim-bar-item:hover { transform: translateY(-5px); }
 
 .sim-bar {
-    width: 100%;
+    width: 40px;
     background: #e2e8f0;
     border-radius: 6px 6px 0 0;
     position: relative;
@@ -315,8 +315,15 @@
 @media (max-width: 768px) {
     .label-pc { display: none; }
     .label-mobile { display: block; }
-    .sim-bar-item, .sim-label-item { min-width: 50px; }
-    .chart-graph-area, .chart-label-area { padding-left: 10px; padding-right: 10px; gap: 5px; }
+    
+    /* 모바일에서 막대 너비 축소 */
+    .sim-bar { width: 28px; } 
+    
+    /* 아이템 최소 너비 축소 (스크롤 덜 생기게 하거나 자연스럽게) */
+    .sim-bar-item, .sim-label-item { min-width: 45px; }
+    
+    /* 패딩 축소 */
+    .chart-graph-area, .chart-label-area { padding-left: 15px; padding-right: 15px; gap: 5px; }
 }
 
 /* 꺾은선 SVG */

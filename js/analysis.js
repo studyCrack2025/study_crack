@@ -888,23 +888,36 @@ function renderSimChart() {
     wrapper.appendChild(labelArea);
     container.appendChild(wrapper);
 
-    // 2. 기준선 (Guide Line)
-    const pos100 = (100 / 250) * 100;
-    const pos150 = (150 / 250) * 100;
+    // [상수 정의]
+    // 상단 여백: 점수 라벨(250점)이 천장에 닿지 않도록 충분히 확보 (50px)
+    const TOP_PADDING = 50; 
 
-    const guide100 = `<div class="chart-guide-line guide-100" style="bottom: ${pos100}%;"><span class="chart-guide-label">합격(100)</span></div>`;
-    const guide150 = `<div class="chart-guide-line guide-150" style="bottom: ${pos150}%;"><span class="chart-guide-label">안정(150)</span></div>`;
+    // 2. 기준선 (Guide Line)
+    // 0점은 바닥(border-bottom)이므로 bottom: 0.
+    // 높이 비율은 (전체높이 - TOP_PADDING) 영역 내에서 계산해야 함.
+    // 하지만 CSS absolute bottom은 부모(260px) 기준임.
+    // 따라서 calc((100% - 50px) * 비율) 로 설정.
+    
+    const pos100 = (100 / 250);
+    const pos150 = (150 / 250);
+
+    const guideStyle100 = `bottom: calc((100% - ${TOP_PADDING}px) * ${pos100});`;
+    const guideStyle150 = `bottom: calc((100% - ${TOP_PADDING}px) * ${pos150});`;
+
+    const guide100 = `<div class="chart-guide-line guide-100" style="${guideStyle100}"><span class="chart-guide-label">합격(100)</span></div>`;
+    const guide150 = `<div class="chart-guide-line guide-150" style="${guideStyle150}"><span class="chart-guide-label">안정(150)</span></div>`;
     
     graphArea.insertAdjacentHTML('beforeend', guide100);
     graphArea.insertAdjacentHTML('beforeend', guide150);
 
     const data = cachedSimData;
-
+    
     // 3. 막대 그래프 렌더링
     if (currentSimChartType === 'bar') {
         data.forEach((item, index) => {
             const score = item.base_ui_score;
-            const heightPct = Math.min((score / 250) * 100, 100);
+            // 막대 높이: 250점일 때 (100% - TOP_PADDING) 높이가 되어야 함.
+            const heightCalc = `calc((100% - ${TOP_PADDING}px) * ${score/250})`;
             
             let color = '#ef4444'; 
             if (score >= 150) color = '#10b981'; 
@@ -917,7 +930,7 @@ function renderSimChart() {
             // [그래프 바]
             const barHtml = `
                 <div class="sim-bar-item ${isActive}" onclick="selectSimUniv(${index})">
-                    <div class="sim-bar" style="height:${heightPct}%; background:${color};">
+                    <div class="sim-bar" style="height:${heightCalc}; background:${color};">
                         <span class="sim-score-label">${safeScore}</span>
                     </div>
                 </div>
@@ -940,7 +953,7 @@ function renderSimChart() {
     } 
     // 4. 꺾은선 그래프 렌더링
     else if (currentSimChartType === 'line') {
-        // 라벨 먼저 렌더링 (자리 잡기 위해)
+        // 라벨 먼저 렌더링 (자리 잡기)
         data.forEach((item, index) => {
             const shortUniv = item.univ.replace('학교', '');
             const labelHtml = `
@@ -956,26 +969,23 @@ function renderSimChart() {
             labelArea.insertAdjacentHTML('beforeend', labelHtml);
         });
 
-        // SVG 그리기 (DOM 렌더링 후 좌표 계산)
+        // SVG 그리기
         setTimeout(() => {
             const width = graphArea.clientWidth; 
-            const height = graphArea.clientHeight; 
+            const height = graphArea.clientHeight; // 260px
             
-            // 상단 여백 (점수 라벨 공간 - CSS padding-top과 일치시킴)
-            const paddingTop = 30; 
-            const availHeight = height - paddingTop; 
+            // 실제 데이터가 그려질 높이 (바닥 ~ 상단여백 사이)
+            const drawHeight = height - TOP_PADDING; 
 
             let points = [];
-            
-            // 라벨 아이템들의 중심 좌표를 기준으로 점 찍기
             const labelItems = labelArea.querySelectorAll('.sim-label-item');
+            
             labelItems.forEach((el, i) => {
-                // 라벨의 중심 X 좌표
                 const centerX = el.offsetLeft + (el.offsetWidth / 2);
                 const score = Math.min(data[i].base_ui_score, 250);
                 
-                // Y좌표 계산
-                const y = height - ((score / 250) * availHeight);
+                // Y좌표: 바닥(height)에서 점수 비율만큼 위로
+                const y = height - ((score / 250) * drawHeight);
                 
                 points.push({ x: centerX, y: y, score: Math.round(score) });
             });
