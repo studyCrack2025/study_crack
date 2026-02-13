@@ -458,10 +458,10 @@ function initUnivGrid() {
                 const savedDate = new Date(savedData.date);
                 const unlockDate = new Date(savedDate);
                 unlockDate.setDate(unlockDate.getDate() + 14);
-                if (now < unlockDate) { 
-                    isLocked = true; 
-                    dateMsg = `🔒 ${unlockDate.getMonth()+1}월 ${unlockDate.getDate()}일 이후 수정 가능`; 
-                }
+                // if (now < unlockDate) { 
+                //     isLocked = true; 
+                //     dateMsg = `🔒 ${unlockDate.getMonth()+1}월 ${unlockDate.getDate()}일 이후 수정 가능`; 
+                // }
             }
             
             // [보안] 대학명/학과명 이스케이프 적용
@@ -559,7 +559,7 @@ function selectComplete(univ, major) {
 }
 
 async function saveTargetUnivs() {
-    if(!confirm("저장하면 2주 동안 수정할 수 없습니다.\n정말 저장하시겠습니까?")) return;
+    // if(!confirm("저장하면 2주 동안 수정할 수 없습니다.\n정말 저장하시겠습니까?")) return;
     
     const newUnivs = [...userTargetUnivs]; 
     const nowISO = new Date().toISOString();
