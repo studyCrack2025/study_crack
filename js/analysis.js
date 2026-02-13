@@ -896,8 +896,9 @@ function renderSimChart() {
     wrapper.appendChild(labelArea);
     container.appendChild(wrapper);
 
-    // [상수 정의] TOP_PADDING: 50px
+    // [상수 정의] CSS의 chart-graph-area 높이(260)에서 상단 여백(50)을 뺀 실제 그리기 높이
     const TOP_PADDING = 50; 
+    const DRAW_HEIGHT = 210; 
 
     // 2. 기준선 (Guide Line)
     const pos100 = (100 / 250);
@@ -917,7 +918,8 @@ function renderSimChart() {
     if (currentSimChartType === 'bar') {
         data.forEach((item, index) => {
             const score = item.base_ui_score;
-            const currentHeightPx = `calc((100% - ${TOP_PADDING}px) * ${score/250})`;
+            // 픽셀 기반 정확한 높이 계산
+            const currentHeightPx = `${(score/250) * DRAW_HEIGHT}px`;
             
             let color = '#ef4444'; 
             if (score >= 150) color = '#10b981'; 
@@ -936,28 +938,29 @@ function renderSimChart() {
             let mainBarRadius = '6px 6px 0 0'; 
             let showOriginalLabel = true;
 
+            // 오버레이(상승분) 생성
             if (isActive && maxRise > 0 && score < 250) {
                 const potentialScore = Math.min(score + maxRise, 250);
                 const riseAmount = potentialScore - score; 
-                const riseHeightPx = `calc((100% - ${TOP_PADDING}px) * ${riseAmount/250})`;
+                const riseHeightPx = `${(riseAmount/250) * DRAW_HEIGHT}px`;
                 
-                mainBarRadius = '0 0 0 0'; // 레고블록처럼 쌓기 위해 밑 막대의 위쪽 둥글기 제거
+                mainBarRadius = '0 0 0 0'; 
                 showOriginalLabel = false; 
 
-                // [해결포인트 1] width:100% 대신 기존 .sim-bar 클래스를 그대로 사용하여 너비를 일치시킴!
+                // [해결포인트 1] .sim-bar 내부에 absolute로 배치하여 가로 넓이 퍼짐 방지
                 extensionHtml = `
-                    <div class="sim-bar" style="height:${riseHeightPx}; background:rgba(245, 158, 11, 0.15); border:2px dashed #f59e0b; border-bottom:none; border-radius: 6px 6px 0 0; box-sizing:border-box;">
+                    <div style="position:absolute; bottom:100%; left:0; width:100%; height:${riseHeightPx}; background:rgba(245, 158, 11, 0.15); border:2px dashed #f59e0b; border-bottom:none; border-radius: 6px 6px 0 0; box-sizing:border-box; pointer-events:none;">
                          <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">
-                            ${Math.round(potentialScore)} (+${maxRise.toFixed(1)})
+                            ${Math.round(potentialScore)} <span style="font-size:0.7rem;">(+${maxRise.toFixed(1)})</span>
                          </span>
                     </div>
                 `;
             }
 
             const barHtml = `
-                <div class="sim-bar-item ${isActive}" onclick="selectSimUniv(${index})" style="display:flex; flex-direction:column; justify-content:flex-end;">
-                    ${extensionHtml}
-                    <div class="sim-bar" style="height:${currentHeightPx}; background:${color}; border-radius:${mainBarRadius}; flex: 0 0 auto;">
+                <div class="sim-bar-item ${isActive}" onclick="selectSimUniv(${index})">
+                    <div class="sim-bar" style="height:${currentHeightPx}; background:${color}; border-radius:${mainBarRadius};">
+                        ${extensionHtml}
                         <span class="sim-score-label" style="${showOriginalLabel ? '' : 'display:none;'}">${safeScore}</span>
                     </div>
                 </div>
@@ -967,7 +970,11 @@ function renderSimChart() {
             const labelHtml = `
                 <div class="sim-label-item" onclick="selectSimUniv(${index})">
                     <span class="label-mobile">${index + 1}지망</span>
-                    <span class="label-pc"><strong>${index + 1}지망</strong><br>${shortUniv}<br>${item.major}</span>
+                    <span class="label-pc">
+                        <strong>${index + 1}지망</strong><br>
+                        ${shortUniv}<br>
+                        ${item.major}
+                    </span>
                 </div>
             `;
             labelArea.insertAdjacentHTML('beforeend', labelHtml);
@@ -982,27 +989,33 @@ function renderSimChart() {
             labelArea.insertAdjacentHTML('beforeend', `
                 <div class="sim-label-item" onclick="selectSimUniv(${index})">
                     <span class="label-mobile">${index + 1}지망</span>
-                    <span class="label-pc"><strong>${index + 1}지망</strong><br>${shortUniv}<br>${item.major}</span>
+                    <span class="label-pc">
+                        <strong>${index + 1}지망</strong><br>
+                        ${shortUniv}<br>
+                        ${item.major}
+                    </span>
                 </div>
             `);
         });
 
         setTimeout(() => {
             const width = graphArea.clientWidth; 
-            const height = graphArea.clientHeight; 
-            const drawHeight = height - TOP_PADDING; 
-
+            const height = graphArea.clientHeight; // 260px
+            
             let points = [];
             const labelItems = labelArea.querySelectorAll('.sim-label-item');
+            const parentRect = graphArea.getBoundingClientRect();
             
+            // X축 중앙 정렬 완벽 보정
             labelItems.forEach((el, i) => {
-                const centerX = el.offsetLeft + (el.offsetWidth / 2);
+                const elRect = el.getBoundingClientRect();
+                const centerX = (elRect.left - parentRect.left) + (elRect.width / 2);
                 const score = Math.min(data[i].base_ui_score, 250);
-                const y = height - ((score / 250) * drawHeight);
+                
+                const y = height - ((score / 250) * DRAW_HEIGHT);
                 points.push({ x: centerX, y: y, score: Math.round(score), originalScore: data[i].base_ui_score });
             });
 
-            // [해결포인트 2] SVG 렌더링 순서를 명확하게 분리 (선 -> 오버레이 원 -> 원래 원 -> 글자)
             let solidPathD = "";     
             let potentialPathD = ""; 
             let originalPointsHTML = "";
@@ -1024,33 +1037,33 @@ function renderSimChart() {
 
                 if (isActive && maxRise > 0 && p.originalScore < 250) {
                     const potentialScore = Math.min(p.originalScore + maxRise, 250);
-                    const potY = height - ((potentialScore / 250) * drawHeight);
+                    const potY = height - ((potentialScore / 250) * DRAW_HEIGHT);
                     showOriginalText = false; 
 
-                    // 점선 경로
                     if (i > 0) potentialPathD += `M ${points[i-1].x} ${points[i-1].y} L ${p.x} ${potY} `;
                     if (i < points.length - 1) potentialPathD += `M ${p.x} ${potY} L ${points[i+1].x} ${points[i+1].y} `;
                     if (points.length === 1) potentialPathD += `M ${p.x} ${p.y} L ${p.x} ${potY}`;
 
                     potentialPointsHTML += `<circle cx="${p.x}" cy="${potY}" r="6" fill="#fff" stroke="#f59e0b" stroke-width="2" />`;
-                    textsHTML += `<text x="${p.x}" y="${potY - 20}" text-anchor="middle" fill="#d97706" font-size="12" font-weight="bold">${Math.round(potentialScore)} (+${maxRise.toFixed(1)})</text>`;
+                    textsHTML += `<text x="${p.x}" y="${potY - 20}" text-anchor="middle" fill="#d97706" font-size="12" font-weight="bold">${Math.round(potentialScore)} <tspan font-size="10">(+${maxRise.toFixed(1)})</tspan></text>`;
                 }
 
                 if (showOriginalText) {
                     textsHTML += `<text x="${p.x}" y="${p.y - 20}" text-anchor="middle" fill="#64748b" font-size="12" font-weight="bold">${p.score}</text>`;
                 }
                 
-                // 원래 점 (가장 위에 그려져야 하므로 별도 저장)
                 originalPointsHTML += `<circle cx="${p.x}" cy="${p.y}" class="sim-line-point ${isActive}" onclick="selectSimUniv(${i})" style="pointer-events:all;" />`;
             });
 
-            // SVG 조립 (선들이 먼저 바닥에 깔리고, 그 위에 점들, 그 위에 텍스트가 렌더링됨)
+            // [해결포인트 2] SVG 렌더링 순서 재배치: 원래 선/점 -> 상승선/점 -> 텍스트 순으로 그림
             const svgHTML = `
                 <svg class="sim-line-svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="position:absolute; top:0; left:0; pointer-events:none;">
                     <path d="${solidPathD}" class="sim-line-path" />
+                    ${originalPointsHTML}
+                    
                     <path d="${potentialPathD}" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,5" />
                     ${potentialPointsHTML}
-                    ${originalPointsHTML}
+                    
                     ${textsHTML}
                 </svg>
             `;
