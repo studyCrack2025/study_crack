@@ -7,7 +7,7 @@ const MYPAGE_API_URL = CONFIG.api.base;       // 사용자 정보, 주간점검 
 const UNIV_DATA_API_URL = CONFIG.api.analysis; // 대학 분석, 시뮬레이션 등
 
 let currentUserTier = 'free';
-let userTargetUnivs = [null, null, null, null, null, null, null, null]; // 8슬롯
+let userTargetUnivs = [null, null, null, null, null, null]; // 6슬롯
 let univData = []; 
 let univMap = {};  
 let userQuantData = null; 
@@ -440,11 +440,11 @@ function initUnivGrid() {
     if(!grid) return;
     
     grid.innerHTML = ''; 
-    const tierLimits = { 'basic': 2, 'standard': 5, 'pro': 8, 'black': 8 };
+    const tierLimits = { 'basic': 2, 'standard': 4, 'pro': 6, 'black': 6 };
     const limit = tierLimits[currentUserTier] || 2;
     const now = new Date();
 
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 6; i++) {
         const isActive = i < limit;
         const savedData = userTargetUnivs[i] || { univ: '', major: '', date: null };
         const slotDiv = document.createElement('div');
@@ -563,10 +563,10 @@ async function saveTargetUnivs() {
     
     const newUnivs = [...userTargetUnivs]; 
     const nowISO = new Date().toISOString();
-    const tierLimits = { 'basic': 2, 'standard': 5, 'pro': 8, 'black': 8 };
+    const tierLimits = { 'basic': 2, 'standard': 4, 'pro': 6, 'black': 6 };
     const limit = tierLimits[currentUserTier] || 2;
     
-    while(newUnivs.length < 8) newUnivs.push(null);
+    while(newUnivs.length < 6) newUnivs.push(null);
     for(let i=0; i<limit; i++) {
         const currentData = userTargetUnivs[i];
         if (currentData && currentData.univ && currentData.major) { 
@@ -879,25 +879,18 @@ function renderSimChart() {
     const TOP_PADDING = 40;    // 상단 여백 (점수 라벨 공간)
 
     // A. 기준선 (Guide Line)
-    // 100점, 150점 위치 계산 (250점 만점 기준)
-    // bottom 위치는 (점수/250) * (전체높이 - 패딩) + 하단패딩
+    const pos100 = (100 / 250); // 비율
+    const pos150 = (150 / 250); 
+
+    // [수정] 기준선 위치 계산: 전체 높이에서 상하단 패딩을 뺀 '순수 그래프 영역' 비율 + 하단 패딩
+    const guideStyle100 = `bottom: calc(${BOTTOM_PADDING}px + (100% - ${BOTTOM_PADDING + TOP_PADDING}px) * ${pos100});`;
+    const guideStyle150 = `bottom: calc(${BOTTOM_PADDING}px + (100% - ${BOTTOM_PADDING + TOP_PADDING}px) * ${pos150});`;
+
+    const guide100 = `<div class="chart-guide-line guide-100" style="${guideStyle100}"><span class="chart-guide-label">합격(100)</span></div>`;
+    const guide150 = `<div class="chart-guide-line guide-150" style="${guideStyle150}"><span class="chart-guide-label">안정(150)</span></div>`;
     
-    const pos100 = (100 / 250) * 100; // 40%
-    const pos150 = (150 / 250) * 100; // 60%
-
-    // 기준선 위치 계산: 전체 높이에서 상하단 패딩을 뺀 '순수 그래프 영역' 비율
-    const guideStyle100 = `bottom: calc(${BOTTOM_PADDING}px + (100% - ${BOTTOM_PADDING + TOP_PADDING}px) * ${100/250});`;
-    const guideStyle150 = `bottom: calc(${BOTTOM_PADDING}px + (100% - ${BOTTOM_PADDING + TOP_PADDING}px) * ${150/250});`;
-
-    const guide100 = `<div class="chart-guide-line" style="${guideStyle100}"><span class="chart-guide-label">합격(100)</span></div>`;
-    const guide150 = `<div class="chart-guide-line" style="${guideStyle150}"><span class="chart-guide-label">안정(150)</span></div>`;
-    
-    // 0점 기준선 (명시적 추가)
-    const zeroLine = `<div class="chart-zero-line"></div>`;
-
     container.insertAdjacentHTML('beforeend', guide100);
     container.insertAdjacentHTML('beforeend', guide150);
-    container.insertAdjacentHTML('beforeend', zeroLine);
 
     const data = cachedSimData;
 
@@ -907,6 +900,8 @@ function renderSimChart() {
 
         data.forEach((item, index) => {
             const score = item.base_ui_score;
+            
+            // 막대 높이 계산 (순수 그래프 영역 기준 비율)
             const heightCalc = `calc((100% - ${BOTTOM_PADDING + TOP_PADDING}px) * ${score/250})`;
             
             let color = '#ef4444'; 
@@ -935,15 +930,14 @@ function renderSimChart() {
             container.innerHTML += html;
         });
     } 
-    // C. 꺾은선 그래프 렌더링 (SVG 좌표 정밀 보정)
+    // C. 꺾은선 그래프 렌더링
     else if (currentSimChartType === 'line') {
         container.style.justifyContent = 'space-around';
 
         const width = Math.max(container.clientWidth, data.length * 80); 
         const height = container.clientHeight; 
         
-        // [중요] 실제 그래프가 그려질 영역 높이 계산
-        // 전체높이 - (하단패딩 60 + 상단여백 40)
+        // [중요] 실제 그래프가 그려질 영역 높이 (전체 - 패딩)
         const graphAreaHeight = height - (BOTTOM_PADDING + TOP_PADDING);
         
         // 0점의 Y좌표 (바닥선 위치) = 전체높이 - 하단패딩
@@ -959,9 +953,7 @@ function renderSimChart() {
             const x = (data.length > 1) ? paddingX + (index * stepX) : width / 2;
             const score = Math.min(item.base_ui_score, 250); 
             
-            // Y 좌표 계산: 
-            // 0점일 때 = zeroY
-            // 250점일 때 = zeroY - graphAreaHeight (즉, 상단 여백 위치)
+            // Y 좌표 계산: zeroY에서 점수 비율만큼 위로 이동(-)
             const y = zeroY - ( (score / 250) * graphAreaHeight );
             
             if (index === 0) pathD += `M ${x} ${y}`;
