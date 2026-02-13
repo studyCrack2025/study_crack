@@ -896,30 +896,29 @@ function renderSimChart() {
     wrapper.appendChild(labelArea);
     container.appendChild(wrapper);
 
-    // [상수 정의]
-    // 상단 여백: 점수 라벨(250점)이 천장에 닿지 않도록 충분히 확보 (50px)
+    // [상수 정의] TOP_PADDING: 50px
     const TOP_PADDING = 50; 
 
     // 2. 기준선 (Guide Line)
     const pos100 = (100 / 250);
     const pos150 = (150 / 250);
-
     const guideStyle100 = `bottom: calc((100% - ${TOP_PADDING}px) * ${pos100});`;
     const guideStyle150 = `bottom: calc((100% - ${TOP_PADDING}px) * ${pos150});`;
-
     const guide100 = `<div class="chart-guide-line guide-100" style="${guideStyle100}"><span class="chart-guide-label">합격(100)</span></div>`;
     const guide150 = `<div class="chart-guide-line guide-150" style="${guideStyle150}"><span class="chart-guide-label">안정(150)</span></div>`;
-    
     graphArea.insertAdjacentHTML('beforeend', guide100);
     graphArea.insertAdjacentHTML('beforeend', guide150);
 
     const data = cachedSimData;
     
-    // 3. 막대 그래프 렌더링
+    // ==================================================================================
+    // 3. 막대 그래프 렌더링 (수정: 상승분을 기존 막대 위에 자연스럽게 쌓기)
+    // ==================================================================================
     if (currentSimChartType === 'bar') {
         data.forEach((item, index) => {
             const score = item.base_ui_score;
-            const heightCalc = `calc((100% - ${TOP_PADDING}px) * ${score/250})`;
+            // 현재 점수 막대 높이
+            const currentHeightPx = `calc((100% - ${TOP_PADDING}px) * ${score/250})`;
             
             let color = '#ef4444'; 
             if (score >= 150) color = '#10b981'; 
@@ -929,33 +928,43 @@ function renderSimChart() {
             const safeScore = Math.round(score);
             const shortUniv = item.univ.replace('학교', '');
 
-            // [추가] 오버레이(상승 점수) 로직 계산
+            // [오버레이 계산]
             let maxRise = 0;
             if (item.sim_data) {
-                Object.values(item.sim_data).forEach(sub => {
-                    if (sub && sub.diff > maxRise) maxRise = sub.diff;
-                });
+                Object.values(item.sim_data).forEach(sub => { if (sub && sub.diff > maxRise) maxRise = sub.diff; });
             }
 
-            // 활성화된 막대이고, 오를 점수가 있으며, 현재 점수가 250점 미만일 때만 오버레이 표시
-            let potentialHtml = '';
+            let extensionHtml = '';
+            let mainBarRadius = '6px 6px 0 0'; // 기본 둥근 모서리
+            let showOriginalLabel = true;
+
+            // 활성화 & 상승 있음 & 250점 미만인 경우 -> 확장 막대 생성
             if (isActive && maxRise > 0 && score < 250) {
-                const potentialScore = Math.min(score + maxRise, 250); // 최대 250점 제한
-                const potHeightCalc = `calc((100% - ${TOP_PADDING}px) * ${potentialScore/250})`;
+                const potentialScore = Math.min(score + maxRise, 250);
+                const riseAmount = potentialScore - score; // 순수 상승분
+                // 상승분만큼의 높이 계산
+                const riseHeightPx = `calc((100% - ${TOP_PADDING}px) * ${riseAmount/250})`;
                 
-                potentialHtml = `
-                    <div class="sim-bar" style="height:${potHeightCalc}; position:absolute; bottom:0; left:0; right:0; margin:0 auto; background:rgba(245, 158, 11, 0.15); border:2px dashed #f59e0b; border-bottom:none; z-index:1; box-sizing:border-box; pointer-events:none;">
-                        <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">+${maxRise.toFixed(1)}</span>
+                // 기존 막대 위 모서리를 직각으로 변경
+                mainBarRadius = '0 0 0 0';
+                showOriginalLabel = false; // 기존 점수 라벨 숨김
+
+                // 상승분 점선 막대 (기존 막대 바로 위에 쌓임)
+                extensionHtml = `
+                    <div class="sim-bar-extension" style="height:${riseHeightPx}; width:100%; background:rgba(245, 158, 11, 0.15); border:2px dashed #f59e0b; border-bottom:none; border-radius: 6px 6px 0 0; position:relative; box-sizing:border-box; z-index:3;">
+                         <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">
+                            ${Math.round(potentialScore)} (+${maxRise.toFixed(1)})
+                         </span>
                     </div>
                 `;
             }
 
-            // [그래프 바] - potentialHtml(오버레이)를 뒤에 깔고, 원래 막대를 앞에 배치(z-index: 2)
+            // [그래프 바 구조] Flex column을 이용해 확장 막대가 기존 막대 위에 자연스럽게 쌓이도록 배치
             const barHtml = `
-                <div class="sim-bar-item ${isActive}" onclick="selectSimUniv(${index})">
-                    ${potentialHtml}
-                    <div class="sim-bar" style="height:${heightCalc}; background:${color}; z-index:2; position:relative;">
-                        <span class="sim-score-label">${safeScore}</span>
+                <div class="sim-bar-item ${isActive}" onclick="selectSimUniv(${index})" style="display:flex; flex-direction:column; justify-content:flex-end;">
+                    ${extensionHtml}
+                    <div class="sim-bar" style="height:${currentHeightPx}; background:${color}; border-radius:${mainBarRadius}; z-index:2; position:relative; flex: 0 0 auto;">
+                        <span class="sim-score-label" style="${showOriginalLabel ? '' : 'display:none;'}">${safeScore}</span>
                     </div>
                 </div>
             `;
@@ -965,31 +974,25 @@ function renderSimChart() {
             const labelHtml = `
                 <div class="sim-label-item" onclick="selectSimUniv(${index})">
                     <span class="label-mobile">${index + 1}지망</span>
-                    <span class="label-pc">
-                        <strong>${index + 1}지망</strong>
-                        ${shortUniv}<br>
-                        ${item.major}
-                    </span>
+                    <span class="label-pc"><strong>${index + 1}지망</strong>${shortUniv}<br>${item.major}</span>
                 </div>
             `;
             labelArea.insertAdjacentHTML('beforeend', labelHtml);
         });
     } 
-    // 4. 꺾은선 그래프 렌더링
+    // ==================================================================================
+    // 4. 꺾은선 그래프 렌더링 (수정: 상승 지점을 양옆과 점선으로 연결)
+    // ==================================================================================
     else if (currentSimChartType === 'line') {
+        // 라벨 먼저 렌더링
         data.forEach((item, index) => {
             const shortUniv = item.univ.replace('학교', '');
-            const labelHtml = `
+            labelArea.insertAdjacentHTML('beforeend', `
                 <div class="sim-label-item" onclick="selectSimUniv(${index})">
                     <span class="label-mobile">${index + 1}지망</span>
-                    <span class="label-pc">
-                        <strong>${index + 1}지망</strong>
-                        ${shortUniv}<br>
-                        ${item.major}
-                    </span>
+                    <span class="label-pc"><strong>${index + 1}지망</strong>${shortUniv}<br>${item.major}</span>
                 </div>
-            `;
-            labelArea.insertAdjacentHTML('beforeend', labelHtml);
+            `);
         });
 
         setTimeout(() => {
@@ -1004,51 +1007,68 @@ function renderSimChart() {
                 const centerX = el.offsetLeft + (el.offsetWidth / 2);
                 const score = Math.min(data[i].base_ui_score, 250);
                 const y = height - ((score / 250) * drawHeight);
-                
-                // 원본 점수(originalScore)도 같이 저장하여 나중에 계산 활용
                 points.push({ x: centerX, y: y, score: Math.round(score), originalScore: data[i].base_ui_score });
             });
 
-            let pathD = "";
-            let elementsHTML = "";
-            let potentialHTML = ""; // 오버레이 될 요소들
+            let solidPathD = "";     // 실선 경로 (원래 점수)
+            let potentialPathD = ""; // 점선 경로 (상승 예상)
+            let elementsHTML = "";   // 점과 텍스트
 
             points.forEach((p, i) => {
-                if (i === 0) pathD += `M ${p.x} ${p.y}`;
-                else pathD += ` L ${p.x} ${p.y}`;
+                // 1. 기본 실선 그리기
+                if (i === 0) solidPathD += `M ${p.x} ${p.y}`;
+                else solidPathD += ` L ${p.x} ${p.y}`;
 
                 const isActive = (i === selectedSimIndex) ? 'active' : '';
 
-                // [추가] 오버레이(상승 점수) 로직 계산
+                // 2. 상승분 계산
                 let maxRise = 0;
                 if (data[i].sim_data) {
-                    Object.values(data[i].sim_data).forEach(sub => {
-                        if (sub && sub.diff > maxRise) maxRise = sub.diff;
-                    });
+                    Object.values(data[i].sim_data).forEach(sub => { if (sub && sub.diff > maxRise) maxRise = sub.diff; });
                 }
 
-                // 활성화된 점이고, 오를 점수가 있으며, 현재 점수가 250점 미만일 때 꺾은선 상승분 표시
+                let showOriginalText = true;
+
+                // 3. [핵심] 활성화된 상승 지점 & 연결선 그리기
                 if (isActive && maxRise > 0 && p.originalScore < 250) {
                     const potentialScore = Math.min(p.originalScore + maxRise, 250);
                     const potY = height - ((potentialScore / 250) * drawHeight);
-                    
-                    potentialHTML += `
-                        <line x1="${p.x}" y1="${p.y}" x2="${p.x}" y2="${potY}" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4" />
-                        <circle cx="${p.x}" cy="${potY}" r="6" fill="#fff" stroke="#f59e0b" stroke-width="2" />
-                        <text x="${p.x}" y="${potY - 15}" text-anchor="middle" fill="#d97706" font-size="12" font-weight="bold">+${maxRise.toFixed(1)}</text>
+                    showOriginalText = false; // 원래 점수 텍스트 숨김
+
+                    // 이전 지점과 연결
+                    if (i > 0) {
+                        potentialPathD += `M ${points[i-1].x} ${points[i-1].y} L ${p.x} ${potY} `;
+                    }
+                    // 다음 지점과 연결
+                    if (i < points.length - 1) {
+                        // 이전 지점이 없었으면 Move To, 있었으면 Line To 이어가기
+                        potentialPathD += `${(i===0) ? 'M' : 'L'} ${p.x} ${potY} L ${points[i+1].x} ${points[i+1].y} `;
+                    }
+                    // 이웃이 없는 경우 (데이터 1개) -> 수직선 표시
+                    if (points.length === 1) {
+                         potentialPathD += `M ${p.x} ${p.y} L ${p.x} ${potY}`;
+                    }
+
+                    // 상승 예상 지점 마커 및 텍스트
+                    elementsHTML += `
+                        <circle cx="${p.x}" cy="${potY}" r="6" fill="#fff" stroke="#f59e0b" stroke-width="2" style="z-index:25;" />
+                        <text x="${p.x}" y="${potY - 25}" text-anchor="middle" fill="#d97706" font-size="12" font-weight="bold" style="z-index:30;">
+                            ${Math.round(potentialScore)} (+${maxRise.toFixed(1)})
+                        </text>
                     `;
                 }
-                
-                elementsHTML += `
-                    <text x="${p.x}" y="${p.y - 25}" text-anchor="middle" fill="#64748b" font-size="12" font-weight="bold">${p.score}</text>
-                    <circle cx="${p.x}" cy="${p.y}" class="sim-line-point ${isActive}" onclick="selectSimUniv(${i})" style="pointer-events:all;" />
-                `;
+
+                // 4. 원래 지점 마커 및 텍스트
+                if (showOriginalText) {
+                     elementsHTML += `<text x="${p.x}" y="${p.y - 25}" text-anchor="middle" fill="#64748b" font-size="12" font-weight="bold">${p.score}</text>`;
+                }
+                elementsHTML += `<circle cx="${p.x}" cy="${p.y}" class="sim-line-point ${isActive}" onclick="selectSimUniv(${i})" style="pointer-events:all; z-index:20;" />`;
             });
 
             const svgHTML = `
                 <svg class="sim-line-svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="position:absolute; top:0; left:0; pointer-events:none;">
-                    <path d="${pathD}" class="sim-line-path" />
-                    ${potentialHTML}
+                    <path d="${solidPathD}" class="sim-line-path" />
+                    <path d="${potentialPathD}" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,5" style="pointer-events:none;" />
                     ${elementsHTML}
                 </svg>
             `;
