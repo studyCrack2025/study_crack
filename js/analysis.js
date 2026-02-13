@@ -870,17 +870,27 @@ function setSimChartType(type) {
 // 4. 차트 렌더링
 function renderSimChart() {
     const container = document.getElementById('simChartArea');
-    container.innerHTML = ''; // 초기화
+    container.innerHTML = ''; 
     
     if (!cachedSimData || cachedSimData.length === 0) return;
 
-    // A. 기준선(Guide Line) 그리기    
-    const pos100 = (100 / 250) * 100; // 40%
-    const pos150 = (150 / 250) * 100; // 60%
+    // 데이터 개수가 적으면(5개 이하) 균등 분배(space-around), 많으면 왼쪽 정렬(flex-start)
+    // 단, 꺾은선(SVG)일 때는 항상 space-around로 간격을 잡고 그 안에서 그림
+    const alignMode = (cachedSimData.length > 5) ? 'flex-start' : 'space-around';
+    
+    // 막대 그래프일 때만 컨테이너 정렬 적용 (꺾은선은 SVG 내부 좌표로 제어)
+    if(currentSimChartType === 'bar') {
+        container.style.justifyContent = alignMode;
+    } else {
+        container.style.justifyContent = 'flex-start'; // SVG가 꽉 채우므로
+    }
 
-    // bottom 값에 calc(60px + N%) 적용하여 패딩 위로 올림
-    const guide100 = `<div class="chart-guide-line" style="bottom: calc(60px + ${pos100}%);"><span class="chart-guide-label">합격(100)</span></div>`;
-    const guide150 = `<div class="chart-guide-line" style="bottom: calc(60px + ${pos150}%);"><span class="chart-guide-label">안정(150)</span></div>`;
+    // A. 기준선 (Guide Line) - 100점, 150점
+    const pos100 = (100 / 250) * 100;
+    const pos150 = (150 / 250) * 100;
+    // padding-bottom: 60px을 고려하여 calc로 위치 보정
+    const guide100 = `<div class="chart-guide-line guide-100" style="bottom: calc(60px + ${pos100}%);"><span class="chart-guide-label">합격(100)</span></div>`;
+    const guide150 = `<div class="chart-guide-line guide-150" style="bottom: calc(60px + ${pos150}%);"><span class="chart-guide-label">안정(150)</span></div>`;
     
     container.insertAdjacentHTML('beforeend', guide100);
     container.insertAdjacentHTML('beforeend', guide150);
@@ -889,11 +899,8 @@ function renderSimChart() {
 
     // B. 막대 그래프 렌더링
     if (currentSimChartType === 'bar') {
-        container.style.justifyContent = data.length > 5 ? 'flex-start' : 'space-around';
-
         data.forEach((item, index) => {
             const score = item.base_ui_score;
-            // 높이 퍼센트 (그래프 영역 내)
             const heightPct = Math.min((score / 250) * 100, 100);
             
             let color = '#ef4444'; 
@@ -922,33 +929,33 @@ function renderSimChart() {
             container.innerHTML += html;
         });
     } 
-    // C. 꺾은선 그래프 렌더링 (SVG)
+    // C. 꺾은선 그래프 렌더링 (SVG 좌표 정밀 계산)
     else if (currentSimChartType === 'line') {
-        container.style.justifyContent = 'space-around'; // 기본 중앙 정렬
-
-        // SVG 크기
-        const width = Math.max(container.clientWidth, data.length * 80); 
-        const height = container.clientHeight; // 전체 높이 (패딩 포함)
+        // 컨테이너 전체 너비와 높이
+        // 데이터가 많으면 스크롤 되도록 최소 너비 보장
+        const minWidth = Math.max(container.clientWidth, data.length * 90); 
+        const width = minWidth;
+        const height = container.clientHeight; 
         
-        // 그래프 그릴 영역 (Y축)
-        // 상단 여백 40px, 하단 여백 60px 제외
+        // 그래프가 그려질 영역 (Y축)
+        // 상단 여백 40px, 하단 여백 60px (CSS와 일치)
         const drawHeight = height - 100; 
-        const startY = 40; // 상단 시작점
+        const startY = 40; 
 
-        // X축 간격
-        const paddingX = 50; 
-        const stepX = (width - (paddingX * 2)) / (data.length - 1 || 1);
+        // X축 간격 계산 (좌우 여백 40px 제외)
+        const paddingX = 40; 
+        // 데이터가 1개일 경우 가운데 정렬
+        const stepX = (data.length > 1) ? (width - (paddingX * 2)) / (data.length - 1) : 0;
         
         let pathD = "";
-        let pointsHTML = "";
+        let elementsHTML = "";
         
         data.forEach((item, index) => {
-            const x = paddingX + (index * stepX);
-            const score = Math.min(item.base_ui_score, 250); 
+            // X 좌표: 1개면 정중앙, 아니면 등분
+            const x = (data.length > 1) ? paddingX + (index * stepX) : width / 2;
             
-            // Y좌표: (상단여백) + (전체높이 - 점수비율높이)
-            // 점수가 250이면 y = startY (맨 위)
-            // 점수가 0이면 y = startY + drawHeight (맨 아래)
+            const score = Math.min(item.base_ui_score, 250); 
+            // Y 좌표: 점수 비례 역순 (0점이 바닥)
             const y = startY + (drawHeight - (score / 250 * drawHeight));
             
             if (index === 0) pathD += `M ${x} ${y}`;
@@ -957,10 +964,9 @@ function renderSimChart() {
             const isActive = (index === selectedSimIndex) ? 'active' : '';
             const shortUniv = item.univ.replace('학교', '');
 
-            // SVG 요소 추가
-            pointsHTML += `
-                <foreignObject x="${x - 45}" y="${height - 55}" width="90" height="50" style="overflow:visible;">
-                    <div xmlns="http://www.w3.org/1999/xhtml" class="sim-axis-label" style="position:static; text-align:center; transform:none; padding-top:0;">
+            elementsHTML += `
+                <foreignObject x="${x - 50}" y="${height - 60}" width="100" height="60" style="overflow:visible;">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="sim-axis-label" style="position:static; text-align:center; transform:none; padding-top:10px;">
                         <span class="label-mobile">${index + 1}지망</span>
                         <span class="label-pc" style="font-size:0.75rem;">${index + 1}지망<br>${shortUniv}</span>
                     </div>
@@ -975,11 +981,10 @@ function renderSimChart() {
         const svgHTML = `
             <svg class="sim-line-svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
                 <path d="${pathD}" class="sim-line-path" />
-                ${pointsHTML}
+                ${elementsHTML}
             </svg>
         `;
         container.innerHTML += svgHTML;
-        container.style.justifyContent = 'flex-start';
     }
 
     renderDetailedSimCard();
@@ -1004,14 +1009,14 @@ function renderDetailedSimCard() {
     const currentScore = Math.round(data.base_ui_score);
     
     const getStatusText = (s) => {
-        if (s >= 150) return "안정권"; // 150 기준
-        if (s >= 100) return "적정권"; // 100 기준
+        if (s >= 150) return "안정권"; 
+        if (s >= 100) return "적정권"; 
         if (s >= 50) return "소신지원";
         return "위험";
     };
     const currentStatus = getStatusText(currentScore);
 
-    // [1] 최고 상승 점수 찾기 (추천 뱃지용 - 단 1개만)
+    // 추천 과목 찾기
     let maxRise = 0;
     let bestSubjectKey = '';
     const subjects = [
@@ -1029,7 +1034,6 @@ function renderDetailedSimCard() {
         }
     });
 
-    // [2] 카드 HTML 생성
     let subjectsHTML = '';
     subjects.forEach(sub => {
         const info = data.sim_data[sub.key];
@@ -1038,21 +1042,17 @@ function renderDetailedSimCard() {
         const diffVal = info.diff.toFixed(1);
         const isBest = (sub.key === bestSubjectKey && maxRise > 0);
         
-        // 설명 문구 생성
         let desc = '';
         if (info.msg.includes("응시 안 함")) {
             desc = `<span style="color:#94a3b8;">미응시 과목입니다.</span>`;
         } else if (info.diff <= 0) {
-            desc = `<span style="color:#ef4444;">점수 변화 없음 (이미 만점이거나 영향 미미)</span>`;
+            desc = `<span style="color:#ef4444;">점수 변화 없음 (만점 등)</span>`;
         } else {
-            if (isBest) {
-                desc = `<span style="color:#2563EB; font-weight:bold;">가장 합격 상승에 유리합니다.</span>`;
-            } else {
-                desc = `점수 상승으로 합격 가능성이 높아집니다.`;
-            }
+            desc = isBest 
+                ? `<strong>가장 합격 상승에 유리합니다.</strong>` 
+                : `점수 상승으로 합격 가능성이 높아집니다.`;
         }
 
-        // [수정] 원점수+N점 (회색 작게)
         const subText = info.diff > 0 ? `(원점수 +${info.raw_diff || 3}점)` : ``;
 
         subjectsHTML += `
@@ -1065,18 +1065,15 @@ function renderDetailedSimCard() {
                 </div>
                 <div class="sim-item-body">
                     <div>${desc}</div>
-                    <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">${subText}</div>
+                    <div style="font-size:0.75rem; color:#94a3b8; margin-top:4px;">${subText}</div>
                 </div>
             </div>
         `;
     });
 
-    // 경고 메시지
     let warningHTML = '';
     if (currentScore < 50) {
         warningHTML = `<div class="sim-warning"><i class="fas fa-exclamation-triangle"></i><div><strong>점수 차이가 큽니다.</strong><br>전형 변경을 고려해보세요.</div></div>`;
-    } else if (currentScore >= 180) {
-        warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><i class="fas fa-check-circle"></i><div><strong>이미 충분히 안정권입니다.</strong><br>실수를 줄이는 보수적인 전략이 필요합니다.</div></div>`;
     }
 
     cardArea.innerHTML = `
