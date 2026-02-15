@@ -86,7 +86,14 @@
                     </ul>
                 </div>
                 <div class="course-tab-nav">
-                    <button class="course-tab-btn active" data-tier="basic" onclick="selectCourse('basic')">
+                    <button class="course-tab-btn active" data-tier="mbti" onclick="selectCourse('mbti')">
+                        <div class="tab-icon">⁉️</div>
+                        <div class="tab-info">
+                            <span class="tab-name">학습법 MBTI</span>
+                            <span class="tab-sub">특성파악/확인</span>
+                        </div>
+                    </button>
+                    <button class="course-tab-btn" data-tier="basic" onclick="selectCourse('basic')">
                         <div class="tab-icon">🌱</div>
                         <div class="tab-info">
                             <span class="tab-name">BASIC</span>
@@ -104,14 +111,7 @@
                         <div class="tab-icon">🔥</div>
                         <div class="tab-info">
                             <span class="tab-name">PRO</span>
-                            <span class="tab-sub">최적화/코칭</span>
-                        </div>
-                    </button>
-                    <button class="course-tab-btn tab-black" data-tier="black" onclick="selectCourse('black')">
-                        <div class="tab-icon">👑</div>
-                        <div class="tab-info">
-                            <span class="tab-name">BLACK</span>
-                            <span class="tab-sub">직접 관리</span>
+                            <span class="tab-sub">최적화/개인별맞춤</span>
                         </div>
                     </button>
                 </div>

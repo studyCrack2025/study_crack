@@ -36,6 +36,14 @@ window.onclick = function(event) {
 
 // 코스 데이터
 const COURSE_DATA = {
+    mbti: {
+        title: "MBTI SOLUTION",
+        price: "무료",
+        desc: "탐구 MBTI 결과를 분석해 나의 학습 성향을 파악하고, 성적 상승을 위한 최적의 맞춤 공부법을 제안합니다.",
+        list: ["탐구 MBTI 기반 학습 성향 정밀 진단", "유형별 학습 강점 및 취약점 분석 리포트", "성향에 딱 맞는 과목별 맞춤 공부법 솔루션 제공"],
+        bg: "assets/backgrounds/bg_mbti.png",
+        themeColor: "#8B5CF6"
+    },
     basic: {
         title: "BASIC PLAN",
         price: "49,000원",
@@ -59,14 +67,6 @@ const COURSE_DATA = {
         list: ["STANDARD 포함 + 목표 대학 6곳 확장", "최소 점수 상승 조합 최적화 알고리즘", "내 점수에 가장 유리한 대학 역추적", "주 1회 심층 전략 코칭"],
         bg: "assets/backgrounds/bg_pro.png", 
         themeColor: "#E11D48"
-    },
-    black: {
-        title: "BLACK CLUB",
-        price: "가격 비공개 (문의)",
-        desc: "상위 1%를 위한 프라이빗 컨설팅. 컨설턴트가 직접 전략에 개입합니다.",
-        list: ["PRO 기능 전부 포함", "컨설턴트 직접 관리 및 입시 전략 수립", "시기별 우선 대응 및 시크릿 리포트", "BLACK 전용 라운지 접근 권한"],
-        bg: "assets/backgrounds/bg_black.png", 
-        themeColor: "#000000"
     }
 };
 
