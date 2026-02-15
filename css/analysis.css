@@ -365,7 +365,6 @@
    [모달 공통] & [수정 3] PRO 보고서 요청 모달 디자인 개선
    ============================================================ */
 .modal { display: none; position: fixed; z-index: 2000 !important; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
-
 .modal-content { background-color: white; margin: 5vh auto; border-radius: 12px; width: 95%; max-width: 500px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: modalSlideIn 0.3s ease-out; }
 @keyframes modalSlideIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 .modal-header { padding: 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
@@ -373,27 +372,37 @@
 .close-btn:hover { color: #ef4444; }
 .modal-footer { padding: 20px; border-top: 1px solid #e2e8f0; background: #fff; border-radius: 0 0 12px 12px; text-align: right; }
 
-/* PRO 모달 전용 스타일 */
-.pro-modal-content { background: #fff; margin: 10vh auto; border-radius: 16px; width: 90%; max-width: 500px; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); border: none; overflow: hidden; padding: 0; animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+/* pro-modal 전용 */
+.pro-modal-content { background: #fff; margin: 10vh auto; border-radius: 16px; width: 90%; max-width: 500px; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); border: none; overflow: hidden; padding: 0 !important; display: flex; flex-direction: column; animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 @keyframes modalSlideUp { from { opacity: 0; transform: translateY(20px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
-/* PRO 모달 헤더 */
-.modal-header-pro { background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; color: white; }
-.modal-header-pro h3 { margin: 0; font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 10px; letter-spacing: -0.02em; }
-.modal-header-pro .close-btn-pro { cursor: pointer; font-size: 1.5rem; opacity: 0.7; transition: all 0.2s; color: white; line-height: 1; background: rgba(255,255,255,0.1); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+/* 헤더: 진한 블루 그라데이션 */
+.modal-header-pro { background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); color: white; flex-shrink: 0; }
+.modal-header-pro h3 { margin: 0; font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 10px; letter-spacing: -0.02em; color: white; }
+.modal-header-pro .close-btn-pro { cursor: pointer; font-size: 1.5rem; opacity: 0.7; transition: all 0.2s; color: white; line-height: 1; background: rgba(255,255,255,0.1); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: none; }
 .modal-header-pro .close-btn-pro:hover { opacity: 1; background: rgba(255,255,255,0.2); transform: rotate(90deg); }
 
-/* PRO 모달 바디 */
-.modal-body-pro { padding: 24px; background: #fff; }
-.modal-desc { font-size: 0.95rem; color: #475569; margin-bottom: 20px; line-height: 1.6; }
+/* 바디: 흰색 배경 + 내부 패딩 */
+.modal-body-pro { padding: 24px; background: #fff; flex: 1; overflow-y: auto; }
+.modal-desc { font-size: 0.95rem; color: #475569; margin-bottom: 20px; line-height: 1.6; word-break: keep-all; }
 
-/* PRO 텍스트 영역 */
-.common-textarea { width: 100%; height: 150px; padding: 16px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #f8fafc; font-size: 0.95rem; line-height: 1.6; resize: none; transition: all 0.2s; box-sizing: border-box; font-family: inherit; }
-.common-textarea:focus { outline: none; background-color: #fff; border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+/* 텍스트 영역: 박스 사이징 적용하여 튀어나감 방지 */
+.common-textarea { width: 100%; height: 150px; padding: 16px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #f8fafc; font-size: 0.95rem; line-height: 1.6; resize: none; transition: all 0.2s; box-sizing: border-box; font-family: inherit; outline: none; }
+.common-textarea:focus { background-color: #fff; border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
 .common-textarea::placeholder { color: #94a3b8; }
+.char-count { text-align: right; font-size: 0.8rem; color: #64748b; margin-top: 8px; font-weight: 500; }
 
-/* PRO 모달 푸터 */
-.modal-footer-pro { padding: 16px 24px; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 12px; }
+/* 푸터: 회색톤 배경 + 우측 정렬 */
+.modal-footer-pro { padding: 16px 24px; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 12px; flex-shrink: 0; }
+
+/* 버튼 공통 */
+.btn-common { padding: 10px 20px; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; letter-spacing: -0.01em; }
+.btn-cancel { background: white; color: #64748b; border: 1px solid #cbd5e1; }
+.btn-cancel:hover { background: #f1f5f9; color: #334155; border-color: #94a3b8; }
+.btn-confirm { background: #2563eb; color: white; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); }
+.btn-confirm:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 6px 8px -1px rgba(37, 99, 235, 0.3); }
+
+.input-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #334155; }
 
 /* 공통 버튼 스타일 (모달용) */
 .btn-common { padding: 10px 20px; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; letter-spacing: -0.01em; }
