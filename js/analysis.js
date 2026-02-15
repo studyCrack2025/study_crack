@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 초기화 로직 실행
         initUnivGrid(); 
         updateAnalysisUI();
-        checkBlackStatusForButton();
+        initProSection();
         
         setWeeklyLoadingStatus(false);
         setTimeout(() => { 
@@ -1862,23 +1862,248 @@ async function submitWeeklyCheck() {
 }
 
 // ============================================================
-// [기능 5] BLACK 전용 버튼
+// [기능 5] PRO EXCLUSIVE 섹션 렌더링 (홍보 vs 대시보드)
 // ============================================================
-function checkBlackStatusForButton() {
-    const btn = document.getElementById('btnBlackAction');
-    if (btn && currentUserTier === 'black') {
-        btn.onclick = function() {
-            window.location.href = '/black';
-        };
-        btn.innerHTML = `
-            👑 BLACK LOUNGE 입장하기
-            <span style="display:block; font-size:0.9rem; margin-top:5px; color:#555;">
-                (💡Tip: 메인화면 우측 하단 버튼으로도 바로 접속 가능합니다)
-            </span>
-        `;
-        btn.style.background = "linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)"; 
+
+// 페이지 로드 시 호출 필요 (예: DOMContentLoaded 내부)
+function initProSection() {
+    const container = document.getElementById('sol-pro');
+    if (!container) return;
+
+    // currentUserTier는 전역 변수로 가정 (basic, standard, pro, black)
+    // PRO 이상(pro, black)이면 전용 페이지, 아니면 홍보 페이지
+    if (['pro', 'black'].includes(currentUserTier)) {
+        renderProDashboard(container);
+    } else {
+        renderProPromo(container);
     }
 }
+
+// 1. [홍보 페이지] Basic/Standard 유저 대상
+function renderProPromo(container) {
+    // 평가원 시험 자동 계산 (예시 로직)
+    const month = new Date().getMonth() + 1;
+    let nextExam = "6월 모의평가";
+    if (month >= 6 && month < 9) nextExam = "9월 모의평가";
+    else if (month >= 9 && month < 11) nextExam = "수능(CSAT)";
+    
+    container.innerHTML = `
+        <div class="pro-header">
+            <span class="pro-badge">PREMIUM STRATEGY</span>
+            <h2 class="pro-title">PRO EXCLUSIVE : 전략의 차이가 결과의 차이</h2>
+            <p class="pro-desc">데이터 기반 개인화된 맞춤 전략으로 합격 확률을 극대화하세요.</p>
+        </div>
+
+        <div class="pro-promo-grid">
+            <div class="pro-feature-card">
+                <span class="feat-icon">📅</span>
+                <span class="feat-title">Bi-weekly 리포트</span>
+                <p class="feat-desc">
+                    2주/1개월 단위 플래너 밀착 점검.<br>
+                    단순 기록 확인이 아닌, <strong>학습 밀도와 성취도</strong>를 정밀 평가합니다.
+                </p>
+            </div>
+            <div class="pro-feature-card">
+                <span class="feat-icon">🎯</span>
+                <span class="feat-title">실전 시험 완벽 대비</span>
+                <p class="feat-desc">
+                    가장 가까운 <strong>${nextExam}</strong> 대비 집중 가이드.<br>
+                    시기별 놓치지 말아야 할 체크포인트를 제공합니다.
+                </p>
+            </div>
+            <div class="pro-feature-card highlight">
+                <span class="feat-icon">⚡</span>
+                <span class="feat-title">최소 시간 상승 조합</span>
+                <p class="feat-desc">
+                    <strong>"무엇을 먼저 공부해야 할까?"</strong><br>
+                    현 점수와 과목 가중치를 분석해, 가장 적은 시간으로 목표 점수에 도달하는 최적의 학습 조합을 제시합니다.
+                </p>
+            </div>
+        </div>
+
+        <button onclick="location.href='/payment'" class="pro-cta-btn">
+            🚀 PRO 멤버십으로 업그레이드 하기
+            <div style="font-size:0.8rem; opacity:0.8; margin-top:5px; font-weight:400;">나만의 입시 전략 연구소 갖기</div>
+        </button>
+    `;
+}
+
+// 2. [전용 대시보드] Pro 이상 유저 대상
+function renderProDashboard(container) {
+    container.innerHTML = `
+        <div class="pro-header">
+            <div style="font-size:2rem; margin-bottom:10px;">🎓</div>
+            <h2 class="pro-title">PRO STRATEGY LOUNGE</h2>
+            <p class="pro-desc">
+                ${document.getElementById('userNameDisplay')?.innerText || '회원'}님을 위한 전략 보고서 센터입니다.<br>
+                정기적인 분석을 통해 흔들림 없는 수험 생활을 지원합니다.
+            </p>
+        </div>
+
+        <div class="pro-dashboard-layout">
+            <div class="dashboard-actions">
+                <div style="color:#bfdbfe; margin-bottom:15px; font-size:0.95rem;">
+                    💡 다음 정기 보고서 발송 예정일: <strong>매월 1일 / 15일</strong>
+                </div>
+                <button class="req-btn" onclick="openProReportModal()">
+                    <i class="fas fa-edit"></i> 이번 달 전략 보고서 요청하기
+                </button>
+            </div>
+
+            <div class="report-list-container">
+                <h4 style="color:white; margin:0 0 15px 0; border-left:4px solid #3b82f6; padding-left:10px;">
+                    📑 최근 분석 보고서
+                </h4>
+                <div id="proReportListArea">
+                    <div style="text-align:center; color:#64748b; padding:20px;">
+                        <i class="fas fa-spinner fa-spin"></i> 데이터 로딩 중...
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // 보고서 목록 로드 (가상 데이터 예시)
+    loadProReports();
+}
+
+// 보고서 목록 로드
+async function loadProReports() {
+    const listArea = document.getElementById('proReportListArea');
+    if (!listArea) return;
+
+    listArea.innerHTML = '<div style="text-align:center; color:#64748b; padding:20px;"><i class="fas fa-spinner fa-spin"></i> 데이터 로딩 중...</div>';
+
+    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('idToken');
+
+    try {
+        // [API 호출] get_pro_reports
+        const res = await fetch(MYPAGE_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'get_pro_reports',
+                userId: userId
+            })
+        });
+
+        if (!res.ok) throw new Error("서버 통신 실패");
+        
+        const data = await res.json();
+        // Lambda에서 { reports: [...] } 형태로 반환한다고 가정
+        const reports = data.reports || [];
+
+        if (reports.length === 0) {
+            listArea.innerHTML = `<div style="text-align:center; color:#94a3b8; padding:30px;">발행된 보고서가 없습니다.</div>`;
+            return;
+        }
+
+        let html = '<div class="report-grid">';
+        
+        reports.forEach(rep => {
+            // rep 구조: { id, title, date, url, type(first/second), month }
+            const typeBadge = rep.type === 'first' ? '상반기' : '하반기';
+            
+            // 날짜 포맷팅 (YYYY.MM.DD)
+            const dateObj = new Date(rep.date);
+            const dateStr = `${dateObj.getFullYear()}.${String(dateObj.getMonth()+1).padStart(2,'0')}.${String(dateObj.getDate()).padStart(2,'0')}`;
+
+            html += `
+                <div class="report-item" onclick="window.open('${rep.url}')">
+                    <div class="rep-info">
+                        <strong>${rep.month}월 ${typeBadge} 리포트</strong>
+                        <span>${dateStr} 발행</span>
+                    </div>
+                    <div class="rep-icon"><i class="fas fa-download"></i></div>
+                </div>
+            `;
+        });
+        html += `</div>`;
+        listArea.innerHTML = html;
+
+    } catch (e) {
+        console.error("Reports Load Error:", e);
+        listArea.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">데이터를 불러오지 못했습니다.</div>`;
+    }
+}
+
+// ------------------------------------------------------------
+// 모달 관련 기능
+// ------------------------------------------------------------
+function openProReportModal() {
+    const modal = document.getElementById('proReportModal');
+    const textarea = document.getElementById('proReportRequest');
+    if (modal) {
+        modal.style.display = 'block';
+        if(textarea) {
+            textarea.value = ''; // 초기화
+            textarea.focus();
+            updateCharCount(textarea); // 글자수 초기화
+        }
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeProModal() {
+    document.getElementById('proReportModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+async function submitProReport() {
+    const text = document.getElementById('proReportRequest').value;
+    if (text.trim().length < 10) {
+        alert("요청 사항을 10자 이상 구체적으로 적어주세요.");
+        return;
+    }
+
+    if (!confirm("작성하신 내용으로 보고서를 요청하시겠습니까?")) return;
+
+    const submitBtn = document.querySelector('.pro-submit-btn');
+    const originalText = submitBtn.innerText;
+    submitBtn.innerText = "처리 중...";
+    submitBtn.disabled = true;
+
+    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('idToken');
+
+    try {
+        // [API 호출] request_pro_report
+        const res = await fetch(MYPAGE_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'request_pro_report',
+                userId: userId,
+                requestText: text
+            })
+        });
+
+        if (res.ok) {
+            alert("요청이 정상적으로 접수되었습니다.\n담당 컨설턴트 확인 후 반영될 예정입니다.");
+            closeProModal();
+            // 입력창 초기화
+            document.getElementById('proReportRequest').value = ''; 
+        } else {
+            throw new Error("서버 응답 오류");
+        }
+
+    } catch (e) {
+        console.error("Submit Error:", e);
+        alert("요청 처리 중 오류가 발생했습니다.");
+    } finally {
+        submitBtn.innerText = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+// 글자수 세기 리스너 연결 (DOMContentLoaded 등에 추가)
+document.addEventListener('input', function(e) {
+    if(e.target.id === 'proReportRequest') {
+        const countSpan = e.target.parentElement.querySelector('.char-count span');
+        if(countSpan) countSpan.innerText = e.target.value.length;
+    }
+});
 
 // ============================================================
 // [유틸리티] 날짜/주차 계산 등

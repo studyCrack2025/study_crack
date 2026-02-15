@@ -101,8 +101,8 @@
                 <button class="sol-btn" onclick="openSolution('coach')">
                     <i class="fas fa-chalkboard-teacher"></i><span>플래너 코칭</span>
                 </button>
-                <button class="sol-btn black-btn" onclick="openSolution('black')">
-                    <i class="fas fa-crown"></i><span>FOR BLACK</span>
+                <button class="sol-btn black-btn" onclick="openSolution('pro')">
+                    <i class="fas fa-crown"></i><span>PRO EXCLUSIVE</span>
                 </button>
             </div>
 
@@ -197,7 +197,7 @@
                         플래너 코칭
                     </h2>
                     <p class="sol-desc">
-                        주간 학습 계획을 점검하고, 전문가의 피드백을 받아보세요.
+                        주간 학습 계획을 점검하고, 전문가의 피드백을 받아보세요.(Standard 이상)
                     </p>
                 </div>
 
@@ -233,35 +233,7 @@
                 </div>
             </div>
 
-            <div id="sol-black" class="sol-content black-theme">
-                <div class="content-header sol-header theme-black">
-                    <h2 class="sol-title">
-                        <div class="sol-icon-box"><i class="fas fa-crown"></i></div>
-                        THE BLACK : PRIVILEGE
-                    </h2>
-                    <p class="sol-desc">
-                        완벽 그 이상의 설계를 위한, 오직 당신만을 위한 프라이빗 라운지
-                    </p>
-                </div>
-                
-                <div class="black-intro-box">
-                    <div class="intro-text">
-                        <p class="highlight">"최상위 1%를 위한 입시의 본질을 꿰뚫다."</p>
-                        <ul class="benefit-list">
-                            <li><strong>Priority Care:</strong> 모든 질문에 대한 24시간 이내 최우선 답변 및 실시간 케어</li>
-                            <li><strong>Hyper-Personalized:</strong> 단순 조언을 넘어선, 개인별 입시/학습 정밀 로드맵 설계</li>
-                            <li><strong>Exclusive Network:</strong> 검증된 BLACK 회원들 간의 심도 있는 입시 정보 공유</li>
-                            <li><strong>Master's Insight:</strong> 스터디크랙 컨설턴트들이 제공하는 시크릿 칼럼 및 분석 자료</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="black-btn-container">
-                    <button id="btnBlackAction" onclick="location.href='/black_submission'" class="black-cta-btn">
-                        👑 MEMBERSHIP 신청하기
-                        <span>상위 1%를 위한 시크릿 컨설팅 시작</span>
-                    </button>
-                </div>
+            <div id="sol-pro" class="sol-content pro-theme">
             </div>
         </main>
     </div>
@@ -474,6 +446,26 @@
             </p>
         </div>
     </div>
+    
+    <div id="proReportModal" class="modal">
+        <div class="modal-content pro-modal-content">
+            <span class="close-btn" onclick="closeProModal()">&times;</span>
+            <h3 class="modal-title">📈 전략 보고서 요청</h3>
+            <p class="modal-subtitle">
+                현재 학습 상황이나 고민, 특별히 분석받고 싶은 내용을 적어주세요.<br>
+                담당 컨설턴트가 이를 반영하여 최적의 전략을 수립합니다.
+            </p>
+            <div class="input-group">
+                <label for="proReportRequest">요청 사항 (500자 이내)</label>
+                <textarea id="proReportRequest" class="common-textarea" maxlength="500" placeholder="예: 6월 모평 대비 수학 집중 전략이 필요합니다. 최근 기하 과목 점수가 정체기라 고민입니다."></textarea>
+                <div class="char-count"><span>0</span>/500</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeProModal()">취소</button>
+                <button class="btn-confirm pro-submit-btn" onclick="submitProReport()">보고서 요청하기</button>
+            </div>
+        </div>
+    </div> 
 
     <script src="/js/config.js"></script>
     <script src="/js/auth.js"></script>

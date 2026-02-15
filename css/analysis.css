@@ -752,18 +752,175 @@
 .lock-message-box h3 { margin: 0 0 8px 0; color: #1e293b; font-size: 1.2rem; }
 .lock-message-box p { margin: 0 0 20px 0; color: #64748b; font-size: 0.95rem; line-height: 1.5; }
 
-/* FOR BLACK 테마 */
-.black-theme { background: radial-gradient(circle at top right, #2a2a2a 0%, #000000 100%); padding: 40px; border-radius: 16px; color: white; border: 1px solid #333; box-shadow: 0 15px 40px rgba(0,0,0,0.6); }
-.black-intro-box { background: rgba(255,255,255,0.03); padding: 30px; border-radius: 12px; margin-bottom: 40px; border-left: 3px solid #d4af37; }
-.highlight { font-size: 1.1rem; color: #fff; font-style: italic; margin-bottom: 20px; text-align: center; font-weight: 600; }
-.benefit-list { list-style: none; padding: 0; color: #ccc; line-height: 1.8; font-size: 0.95rem; }
-.benefit-list li { margin-bottom: 10px; }
-.benefit-list strong { color: #fcf6ba; margin-right: 8px; }
-.black-btn-container { display: flex; justify-content: center; align-items: center; width: 100%; margin-top: 30px; }
-.black-cta-btn { background: linear-gradient(145deg, #1a1a1a, #0d0d0d); border: 1px solid #d4af37; color: #d4af37; padding: 20px 50px; font-size: 1.2rem; font-weight: 700; font-family: 'serif'; border-radius: 4px; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); transition: all 0.4s ease; width: auto; min-width: 300px; text-align: center; letter-spacing: 1px; }
-.black-cta-btn:hover { background: #d4af37; color: #000; box-shadow: 0 0 20px rgba(212, 175, 55, 0.4); transform: translateY(-3px); border-color: #d4af37; }
-.black-cta-btn span { display: block; font-size: 0.85rem; font-weight: 400; margin-top: 8px; color: #888; letter-spacing: 0; transition: color 0.4s ease; }
-.black-cta-btn:hover span { color: #333; }
+/* =========================================
+   [기능 5] PRO EXCLUSIVE 테마
+   ========================================= */
+.pro-theme {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); /* Deep Navy ~ Blue */
+    padding: 40px;
+    border-radius: 16px;
+    color: white;
+    border: 1px solid #3b82f6;
+    box-shadow: 0 10px 30px rgba(30, 58, 138, 0.25);
+    position: relative;
+    overflow: hidden;
+}
+
+/* 배경 장식 (은은한 패턴) */
+.pro-theme::before {
+    content: '';
+    position: absolute;
+    top: -50px; right: -50px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%);
+    z-index: 0;
+}
+
+/* 헤더 공통 */
+.pro-header {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 30px;
+    text-align: center;
+}
+.pro-badge {
+    display: inline-block;
+    background: #3b82f6;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 800;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+}
+.pro-title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin: 0 0 10px 0;
+    color: #fff;
+    letter-spacing: -0.5px;
+}
+.pro-desc {
+    color: #cbd5e1;
+    font-size: 1rem;
+    font-weight: 400;
+}
+
+/* ------------------------------------------------
+   [Type A] 홍보 페이지 (Basic/Standard용)
+   ------------------------------------------------ */
+.pro-promo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+    position: relative;
+    z-index: 1;
+}
+.pro-feature-card {
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    transition: transform 0.3s;
+}
+.pro-feature-card:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.1); }
+.feat-icon { font-size: 1.5rem; margin-bottom: 15px; display: block; }
+.feat-title { font-size: 1.1rem; font-weight: 700; color: #60a5fa; margin-bottom: 8px; display: block; }
+.feat-desc { font-size: 0.9rem; color: #e2e8f0; line-height: 1.5; margin: 0; }
+
+/* 최소시간 상승조합 강조 카드 */
+.pro-feature-card.highlight {
+    border: 1px solid #f59e0b;
+    background: linear-gradient(145deg, rgba(245, 158, 11, 0.1), transparent);
+}
+.pro-feature-card.highlight .feat-title { color: #fbbf24; }
+
+.pro-cta-btn {
+    display: block;
+    width: 100%;
+    max-width: 350px;
+    margin: 0 auto;
+    padding: 18px;
+    background: #3b82f6;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+    position: relative;
+    z-index: 1;
+}
+.pro-cta-btn:hover { background: #2563eb; transform: scale(1.02); }
+
+/* ------------------------------------------------
+   [Type B] 전용 대시보드 (Pro용)
+   ------------------------------------------------ */
+.pro-dashboard-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    position: relative;
+    z-index: 1;
+}
+.dashboard-actions {
+    text-align: center;
+    background: rgba(255,255,255,0.05);
+    padding: 25px;
+    border-radius: 12px;
+}
+.req-btn {
+    background: white;
+    color: #1e3a8a;
+    font-weight: 700;
+    padding: 12px 30px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+.req-btn:hover { background: #eff6ff; box-shadow: 0 0 15px rgba(255,255,255,0.3); }
+
+/* 리포트 리스트 스타일 */
+.report-list-container {
+    background: rgba(0,0,0,0.2);
+    border-radius: 12px;
+    padding: 20px;
+}
+.report-year-group { margin-bottom: 20px; }
+.report-year-title { font-size: 0.9rem; color: #94a3b8; margin-bottom: 10px; border-bottom: 1px solid #334155; padding-bottom: 5px; }
+.report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+
+.report-item {
+    background: #1e293b;
+    border: 1px solid #334155;
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: border-color 0.2s;
+    cursor: pointer;
+}
+.report-item:hover { border-color: #3b82f6; }
+.rep-info strong { display: block; color: #fff; font-size: 0.95rem; margin-bottom: 2px; }
+.rep-info span { font-size: 0.8rem; color: #94a3b8; }
+.rep-icon { color: #3b82f6; }
+
+/* 모달 스타일 추가 */
+.pro-modal-content { border-top: 4px solid #1e3a8a; }
+.pro-submit-btn { background: #1e3a8a; color: white; }
+.pro-submit-btn:hover { background: #172554; }
+.common-textarea {
+    width: 100%; height: 120px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; resize: none; font-size: 0.95rem; line-height: 1.5;
+}
+.input-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #334155; }
+.char-count { text-align: right; font-size: 0.8rem; color: #64748b; margin-top: 4px; }
 
 /* =========================================
    [섹션 로딩 오버레이: #sol-univ 전용]
