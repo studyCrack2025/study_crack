@@ -198,8 +198,17 @@ function initQuantitativeData(q) {
         container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:20px;">입력된 성적이 없습니다.</p>';
         return;
     }
-
-    const examNames = { 'mar':'3월 학평', 'jun':'6월 모평', 'sep':'9월 모평', 'csat':'수능' };
+    
+    const examNames = { 
+        'mar': '3월 학평', 
+        'apr': '4월 학평', 
+        'may': '5월 학평', 
+        'jun': '6월 모평', 
+        'jul': '7월 학평', 
+        'sep': '9월 모평', 
+        'oct': '10월 학평', 
+        'csat': '수능' 
+    };    
     const availableKeys = Object.keys(q).filter(k => q[k]);
     
     // 셀렉터 옵션 생성
@@ -257,10 +266,10 @@ function renderWeeklyTab() {
         return d.getFullYear() == selYear && (d.getMonth() + 1) == selMonth;
     });
 
-    filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
+    filtered.sort((a, b) => new Date(a.date) - new Date(b.date)); // 날짜 오름차순
 
     if (filtered.length === 0) {
-        container.innerHTML = '<div class="empty-msg" style="text-align:center; padding:30px; color:#cbd5e1;">해당 월의 리포트가 없습니다.</div>';
+        container.innerHTML = '<div class="empty-msg" style="text-align:center; padding:40px; color:#cbd5e1;">해당 월의 리포트가 없습니다.</div>';
         return;
     }
 
@@ -268,68 +277,105 @@ function renderWeeklyTab() {
         const dateStr = new Date(d.date).toLocaleDateString();
         const safeComment = escapeHtml(d.comment);
         
-        let detailsHtml = '';
+        // 1. 학습 시간 테이블 (Compact Design)
+        let studyHtml = '';
         if (d.studyTime && Array.isArray(d.studyTime.details)) {
-            detailsHtml = `<table style="width:100%; font-size:0.85rem; border-collapse: collapse; margin-top:8px; margin-bottom:8px;">
-                <tr style="background:#eef2ff; border-bottom:1px solid #dbeafe;">
-                    <th style="padding:4px; text-align:left;">과목</th>
-                    <th style="padding:4px; text-align:center;">계획</th>
-                    <th style="padding:4px; text-align:center;">실제</th>
-                    <th style="padding:4px; text-align:center;">달성</th>
-                </tr>`;
-            
+            let rows = '';
             d.studyTime.details.forEach(sub => {
                 const rate = sub.plan > 0 ? Math.min((sub.act / sub.plan) * 100, 100).toFixed(0) : 0;
-                const color = rate >= 100 ? '#166534' : (rate >= 80 ? '#1e40af' : '#b91c1c');
-                detailsHtml += `
-                <tr style="border-bottom:1px solid #f1f5f9;">
-                    <td style="padding:4px;">${escapeHtml(sub.subject)}</td>
-                    <td style="padding:4px; text-align:center;">${sub.plan}H</td>
-                    <td style="padding:4px; text-align:center;">${sub.act}H</td>
-                    <td style="padding:4px; text-align:center; font-weight:bold; color:${color};">${rate}%</td>
+                // 달성률 색상 (100%: 초록, 80%~: 파랑, 나머지: 회색/빨강)
+                const rateClass = rate >= 100 ? 'text-green' : (rate >= 80 ? 'text-blue' : 'text-gray');
+                rows += `
+                <tr>
+                    <td>${escapeHtml(sub.subject)}</td>
+                    <td class="text-center">${sub.plan}h</td>
+                    <td class="text-center">${sub.act}h</td>
+                    <td class="text-center font-bold ${rateClass}">${rate}%</td>
                 </tr>`;
             });
-            detailsHtml += `</table>`;
+            studyHtml = `
+                <div class="weekly-section">
+                    <div class="section-title"><i class="fas fa-clock"></i> 과목별 학습 달성도</div>
+                    <table class="compact-table">
+                        <thead><tr><th>과목</th><th>계획</th><th>실행</th><th>달성</th></tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            `;
         }
 
-        let plannerHtml = '';
-        if (d.plannerFiles && d.plannerFiles.length > 0) {
-            const fileList = d.plannerFiles.map(f => {
-                let fileName = f;
-                if (typeof f === 'string' && f.startsWith('http')) {
-                    try { fileName = decodeURIComponent(f.split('/').pop().replace(/^\d+_/, '')); } catch(e) {}
-                    return `<div>📄 <a href="${f}" target="_blank" style="color:#2563eb; text-decoration:underline;">${escapeHtml(fileName)}</a></div>`;
-                } else {
-                    return `<div>📄 ${escapeHtml(f)}</div>`;
-                }
+        // 2. 자가 점검 (Deep Answers + Trend)
+        let checkHtml = '';
+        if (d.deepAnswers && d.deepAnswers.length > 0) {
+            const listItems = d.deepAnswers.map(ans => `<li><i class="fas fa-check-circle text-blue"></i> ${escapeHtml(ans)}</li>`).join('');
+            checkHtml = `
+                <div class="weekly-section">
+                    <div class="section-title"><i class="fas fa-clipboard-check"></i> 금주 중점 점검 사항</div>
+                    <ul class="check-list">${listItems}</ul>
+                    ${d.trend ? `<div class="trend-badge ${d.trend.status === 'up' ? 'up' : (d.trend.status === 'down' ? 'down' : 'keep')}">
+                        학습 흐름: ${d.trend.status === 'up' ? '상승세 🔥' : (d.trend.status === 'down' ? '하락세 📉' : '유지중 -')}
+                    </div>` : ''}
+                </div>
+            `;
+        }
+
+        // 3. 주간 모의고사 (Mock Exam) - 데이터가 있을 때만 표시
+        let mockHtml = '';
+        if (d.mockExam && d.mockExam.scores) {
+            const s = d.mockExam.scores;
+            // 점수 표시 로직 (국/수/영/탐1/탐2)
+            const scoreItems = [
+                { l: '국어', v: s.kor },
+                { l: '수학', v: s.math },
+                { l: '영어', v: s.eng },
+                { l: s.inq1Name || '탐구1', v: s.inq1 },
+                { l: s.inq2Name || '탐구2', v: s.inq2 }
+            ].map(item => {
+                if(!item.v) return '';
+                return `<div class="score-pill"><span class="lbl">${item.l}</span><span class="val">${item.v}</span></div>`;
             }).join('');
 
-            plannerHtml = `
-            <div style="margin-top:10px; padding:10px; background:#fff; border-radius:6px; border:1px solid #e2e8f0;">
-                <strong style="display:block; margin-bottom:5px; font-size:0.9rem; color:#1e293b;">📸 플래너 인증</strong>
-                <div style="font-size:0.85rem; color:#475569; display:flex; flex-direction:column; gap:4px;">${fileList}</div>
-            </div>`;
+            mockHtml = `
+                <div class="weekly-mock-box">
+                    <div class="mock-header"><i class="fas fa-edit"></i> 주간 TEST 결과</div>
+                    <div class="score-pills-container">${scoreItems}</div>
+                </div>
+            `;
         }
 
+        // 4. 플래너 및 코멘트
+        let footerHtml = '';
+        const fileLinks = (d.plannerFiles || []).map((f, i) => {
+            let name = typeof f === 'string' ? decodeURIComponent(f.split('/').pop()) : `파일 ${i+1}`;
+            return `<a href="${f}" target="_blank" class="file-chip"><i class="fas fa-image"></i> ${name}</a>`;
+        }).join('');
+        
+        footerHtml = `
+            <div class="weekly-footer">
+                <div class="file-area">${fileLinks}</div>
+                ${d.comment ? `<div class="comment-box"><strong>💁‍♂️ 멘토 코멘트:</strong> ${safeComment}</div>` : ''}
+            </div>
+        `;
+
+        // 카드 조립
         const card = document.createElement('div');
-        card.className = 'timeline-card';
+        card.className = 'timeline-card weekly-new';
         card.innerHTML = `
-            <div class="card-top">
-                <span class="card-tag weekly">WEEKLY REPORT</span>
-                <span class="card-date">${dateStr}</span>
-            </div>
-            <div class="card-title">${d.title || (idx+1)+'주차 점검'}</div>
-            <div class="card-body">
-                <div style="margin-bottom:8px;">
-                    <span style="font-weight:bold; color:#2563eb;">총 달성률: ${d.studyTime?.totalRate || '0%'}</span> 
-                    <span style="color:#64748b; font-size:0.9rem;">(총 ${d.studyTime?.totalAct || 0}H 학습)</span>
+            <div class="card-header-row">
+                <div class="left">
+                    <span class="week-title">${d.title || (idx+1)+'주차 리포트'}</span>
+                    <span class="week-date">${dateStr}</span>
                 </div>
-                ${detailsHtml}
-                ${plannerHtml}
-                <div style="margin-top:10px; padding:10px; background:#fff; border-radius:6px; border:1px solid #e2e8f0;">
-                    <strong>💬 코멘트:</strong> ${safeComment}
+                <div class="right">
+                    <span class="total-rate-badge">총 달성률 ${d.studyTime?.totalRate || '0%'}</span>
                 </div>
             </div>
+            <div class="card-grid-body">
+                ${studyHtml}
+                ${checkHtml}
+            </div>
+            ${mockHtml}
+            ${footerHtml}
         `;
         container.appendChild(card);
     });
