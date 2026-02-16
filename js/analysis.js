@@ -979,13 +979,25 @@ function renderSimChart() {
         });
     } 
     // ==================================================================================
-    // 4. 꺾은선 그래프 렌더링 (수정: 250점 만점 캡 적용 + X축 라벨 위치 하향)
+    // 4. 꺾은선 그래프 렌더링 (수정: 실제 탐구 과목명 적용)
     // ==================================================================================
     else if (currentSimChartType === 'line') {
         // [설정] 그래프 색상 팔레트
         const PALETTE = ['#2563EB', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#64748B'];
         const SUBJECTS = ['kor', 'math', 'inq1', 'inq2'];
-        const SUBJ_LABELS = ['국어', '수학', '탐구1', '탐구2'];
+        
+        // [수정] 실제 탐구 과목명 동적 로딩
+        let labelInq1 = '탐구1';
+        let labelInq2 = '탐구2';
+        
+        // 데이터가 존재하면 첫 번째 지망의 시뮬레이션 정보에서 과목명을 가져옵니다.
+        // (사용자의 응시 과목은 모든 대학 지망에서 동일하므로 0번 인덱스만 확인하면 됩니다)
+        if (data.length > 0 && data[0].sim_data) {
+            if (data[0].sim_data.inq1 && data[0].sim_data.inq1.name) labelInq1 = data[0].sim_data.inq1.name;
+            if (data[0].sim_data.inq2 && data[0].sim_data.inq2.name) labelInq2 = data[0].sim_data.inq2.name;
+        }
+
+        const SUBJ_LABELS = ['국어', '수학', labelInq1, labelInq2];
 
         // 1. 최대 Y값 계산 (250점 제한을 적용한 유효 상승폭 기준)
         let maxDiff = 0;
@@ -997,7 +1009,7 @@ function renderSimChart() {
             SUBJECTS.forEach(subKey => {
                 if (item.sim_data && item.sim_data[subKey]) {
                     const rawDiff = item.sim_data[subKey].diff;
-                    // [핵심 수정] 실제 상승폭은 250점을 넘을 수 없음
+                    // 실제 상승폭은 250점을 넘을 수 없음
                     const effectiveDiff = Math.min(rawDiff, roomToGrow);
                     
                     if (effectiveDiff > maxDiff) maxDiff = effectiveDiff;
@@ -1036,7 +1048,7 @@ function renderSimChart() {
                 const color = PALETTE[univIdx % PALETTE.length];
                 const isActive = (univIdx === selectedSimIndex);
                 
-                // [핵심 수정] 현재 점수에 따른 상승폭 제한 계산
+                // 현재 점수에 따른 상승폭 제한 계산
                 const currentScore = item.base_ui_score;
                 const roomToGrow = Math.max(0, 250 - currentScore);
 
@@ -1051,7 +1063,7 @@ function renderSimChart() {
                     let effectiveRise = 0;
                     if (item.sim_data && item.sim_data[subKey]) {
                         const rawRise = item.sim_data[subKey].diff;
-                        // 250점 캡 적용 (rawRise가 12여도 roomToGrow가 5면 5로 제한)
+                        // 250점 캡 적용
                         effectiveRise = Math.min(rawRise, roomToGrow);
                     }
                     
@@ -1076,7 +1088,7 @@ function renderSimChart() {
                         pointsHTML += `<text x="${xPos}" y="${yPos - 10}" text-anchor="middle" fill="${color}" font-size="11" font-weight="bold">+${effectiveRise.toFixed(1)}</text>`;
                     }
 
-                    // [수정] X축 라벨 위치 하향 조정 (height - 10 -> height - 5)
+                    // X축 라벨 (과목명)
                     if (univIdx === 0) {
                         svgContent += `<text x="${xPos}" y="${height - 5}" text-anchor="middle" font-size="12" fill="#334155" font-weight="bold">${SUBJ_LABELS[subIdx]}</text>`;
                     }
@@ -1112,7 +1124,7 @@ function renderSimChart() {
 
         }, 0);
     }
-    
+        
     renderDetailedSimCard();
 }
 
