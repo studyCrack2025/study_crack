@@ -139,7 +139,7 @@
 .sim-chart-wrapper { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); min-height: 480px; box-sizing: border-box; display: flex; flex-direction: column; }
 .chart-scroll-container { flex: 1; overflow-x: auto; overflow-y: hidden; position: relative; scrollbar-width: thin; padding-bottom: 10px; }
 .chart-inner-container { display: flex; flex-direction: column; height: 360px; width: max-content; min-width: 100%; overflow: visible !important; }
-.mobile-legend-area { display: none; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 35px; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
+.mobile-legend-area { display: none; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 40px; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
 .mobile-legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: #475569; font-weight: 600; }
 
 /* 그래프 & 라벨 영역 */
