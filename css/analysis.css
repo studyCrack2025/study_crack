@@ -483,6 +483,9 @@
     .file-upload-box.small-type { flex-direction: column; align-items: flex-start; gap: 10px; }
     .upload-action { width: 100%; justify-content: space-between; }
     .score-input-grid.enhanced { grid-template-columns: repeat(3, 1fr); row-gap: 20px; }
+    
+    /* 모바일에서 주간 점검 헤더 세로 배치 (뱃지 줄바꿈) */
+    .coach-box .box-header { flex-direction: column; align-items: flex-start; gap: 8px; }
 }
 
 @media (min-width: 600px) {
