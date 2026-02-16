@@ -1,179 +1,246 @@
 // js/mypage_tutor.js
 
-//const API_URL = CONFIG.api.base;
+const MYPAGE_API_URL = CONFIG.api.base; 
 let tutorInfo = {};
+let cognitoUser = null; // Cognito 유저 객체 전역 관리
+let emailTimerInterval = null;
 
+// ==========================================
+// [초기화] DOM 로드 및 데이터 페치
+// ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    // 로그인 체크 (컨설턴트 권한 확인은 백엔드 응답 role로 처리)
-    checkLogin();
-});
-
-async function checkLogin() {
-    const idToken = localStorage.getItem('idToken');
+    const idToken = localStorage.getItem('idToken'); 
     const userId = localStorage.getItem('userId');
 
-    if (!idToken || !userId) {
+    if (!idToken) {
         alert("로그인이 필요합니다.");
-        location.href = '/login';
+        window.location.href = '/login';
         return;
     }
 
-    // 내 정보 로드
-    await loadTutorInfo(userId);
-    
+    // Cognito 초기화
+    initCognitoUser();
+
+    // 튜터 정보 로드
+    loadTutorInfo(userId);
+
+    // 탭 상태 확인 (URL 파라미터 or 기본값)
     const urlParams = new URLSearchParams(window.location.search);
     const tab = urlParams.get('tab');
+    if (tab === 'students') switchTab('students');
+    else if (tab === 'intro') switchTab('intro');
+    else switchTab('info');
 
-    if (tab === 'students') {
-        switchTab('students');
-    } else {
-        switchTab('info');
+    // 모달 외부 클릭 닫기 이벤트
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.classList.add('hidden');
+        }
+    }
+});
+
+// Cognito 유저 초기화 (mypage.js 로직 동일)
+function initCognitoUser() {
+    const poolData = { 
+        UserPoolId: CONFIG.cognito.userPoolId, 
+        ClientId: CONFIG.cognito.clientId 
+    };
+    const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+    const username = localStorage.getItem('username') || localStorage.getItem('email'); 
+
+    if (username) {
+        cognitoUser = new AmazonCognitoIdentity.CognitoUser({
+            Username: username,
+            Pool: userPool
+        });
     }
 }
 
-// 탭 전환
+// 탭 전환 함수
 function switchTab(tabName) {
+    // 모든 탭 버튼 비활성화
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    // 모든 탭 컨텐츠 숨김
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
     
-    // 클릭된 버튼 활성화 (event 객체 활용)
+    // 선택된 탭 활성화
     const btns = document.querySelectorAll('.tab-btn');
     if (tabName === 'info') btns[0].classList.add('active');
     else if (tabName === 'intro') { 
         btns[1].classList.add('active'); 
-        loadMyColumns(); // 칼럼 탭 클릭 시 로드
+        loadMyColumns(); // 칼럼 로드
     }
     else if (tabName === 'students') { 
         btns[2].classList.add('active'); 
-        loadMyStudents(); // 학생 탭 클릭 시 로드
+        loadMyStudents(); // 학생 로드
     }
 
-    document.getElementById(`tab-${tabName}`).classList.add('active');
+    const targetContent = document.getElementById(`tab-${tabName}`);
+    if(targetContent) targetContent.classList.add('active');
 }
 
-// 1. 내 정보 로드 및 렌더링
+// ==========================================
+// [기능 1] 튜터 정보 로드 및 프로필 관리
+// ==========================================
 async function loadTutorInfo(userId) {
     const token = localStorage.getItem('idToken');
     try {
-        const res = await fetch(API_URL, {
+        const res = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'get_user', userId: userId })
         });
         
         if (!res.ok) throw new Error("Load Failed");
-        const data = await res.json();
+        
+        // DynamoDB 포맷 파싱 (mypage.js에 있던 함수 내장)
+        const rawData = await res.json();
+        const data = parseDynamoItem(rawData);
         tutorInfo = data;
 
-        // UI 렌더링
-        document.getElementById('userNameDisplay').innerText = data.name;
-        document.getElementById('userEmailDisplay').innerText = data.email;
+        // 사이드바 렌더링
+        document.getElementById('userNameDisplay').innerText = data.name || '이름 없음';
+        document.getElementById('userEmailDisplay').innerText = data.email || '';
         
-        document.getElementById('profileName').value = data.name;
+        // 내 정보 탭 렌더링
+        document.getElementById('profileName').value = data.name || '';
         document.getElementById('profilePhone').value = data.phone || '';
-        document.getElementById('profileEmail').value = data.email;
-        
-        // 소개글 로드
+        document.getElementById('profileSchool').value = data.school || ''; // 소속/학교
+        document.getElementById('currentEmailDisplay').innerText = data.email || '';
+
+        // 소개글 렌더링
         if (data.bio) document.getElementById('tutorBio').value = data.bio;
+
+        // 프로필 이미지
+        if (data.profileImage) {
+            const imgElem = document.getElementById('profileImg');
+            imgElem.src = escapeHtml(data.profileImage);
+            checkDeleteButtonVisibility(data.profileImage);
+        }
 
     } catch (e) {
         console.error(e);
-        alert("정보를 불러오지 못했습니다.");
+        if(e.message.includes("401")) location.href='/login';
     }
 }
 
-// 정보 수정 저장
-async function saveTutorProfile() {
-    // 비밀번호 확인 등 로직은 mypage.js와 동일하게 구현 가능
-    const newPhone = document.getElementById('profilePhone').value;
-    const newEmail = document.getElementById('profileEmail').value;
+// 정보 수정 (개별 필드)
+async function toggleEdit(fieldId, btn) {
+    const input = document.getElementById(fieldId);
+    
+    // 1. 수정 모드로 전환
+    if (input.disabled) {
+        input.disabled = false;
+        input.focus();
+        btn.innerText = "저장하기";
+        btn.classList.add('saving');
+    } 
+    // 2. 저장 수행
+    else {
+        const newValue = input.value.trim();
+        if (!newValue) { alert("내용을 입력해주세요."); return; }
+
+        let dbField = '';
+        if (fieldId === 'profileName') dbField = 'name';
+        else if (fieldId === 'profilePhone') dbField = 'phone';
+        else if (fieldId === 'profileSchool') dbField = 'school';
+
+        const success = await saveSingleField(dbField, newValue);
+        
+        if (success) {
+            alert("수정되었습니다.");
+            input.disabled = true;
+            btn.innerText = "수정하기";
+            btn.classList.remove('saving');
+            
+            if (dbField === 'name') {
+                document.getElementById('userNameDisplay').innerText = newValue;
+            }
+        }
+    }
+}
+
+async function saveSingleField(field, value) {
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('idToken');
-
     try {
-        const res = await fetch(API_URL, {
+        const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
-                type: 'update_profile', 
-                userId: userId, 
-                data: { 
-                    name: tutorInfo.name, // 이름은 기존 값 유지
-                    phone: newPhone, 
-                    email: newEmail,
-                    school: tutorInfo.school || 'Tutor' // 학교 정보 등 유지
-                } 
+                type: 'update_member_info', 
+                userId, 
+                data: { [field]: value } 
             })
         });
-        if(res.ok) alert("수정되었습니다.");
-    } catch(e) { console.error(e); alert("오류 발생"); }
+        return response.ok;
+    } catch (error) {
+        console.error(error);
+        return false;
+    }
 }
 
-// 자기소개 저장
+// 자기소개(Bio) 저장
 async function saveTutorBio() {
     const bio = document.getElementById('tutorBio').value;
-    const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('idToken');
-
-    // (백엔드에 update_bio 타입 추가 필요하거나 update_profile에 bio 필드 추가 필요)
-    // 여기서는 update_profile을 확장해서 쓴다고 가정
-    // 실제로는 index.mjs의 update_profile 로직에 bio 필드 처리를 추가해야 합니다.
-    try {
-        // 임시로 custom_update 타입 사용 예시
-        alert("자기소개가 저장되었습니다. (백엔드 로직 연결 필요)");
-    } catch(e) { console.error(e); }
+    const success = await saveSingleField('bio', bio); // DB에 bio 컬럼 사용 가정
+    if(success) alert("소개가 저장되었습니다.");
+    else alert("저장 실패");
 }
 
-// 2. 칼럼 관련
-function openColumnModal() { openModal('column'); }
-function closeModal(type) { document.getElementById(type + '-modal').style.display = 'none'; }
+// ==========================================
+// [기능 2] 칼럼 관리 (수정됨)
+// ==========================================
+// 모달 열기
+function openColumnModal() { 
+    document.getElementById('columnModal').classList.remove('hidden'); 
+}
 
 async function loadMyColumns() {
     const list = document.getElementById('myColumnList');
-    // 백엔드 API 호출하여 내가 쓴 칼럼 가져오기 (author == 내이름)
-    // 현재는 더미
+    // TODO: 백엔드 API 연결 (type: 'get_tutor_columns')
+    // 현재는 더미 데이터 처리
     list.innerHTML = '<div class="empty-msg">작성된 칼럼이 없습니다.</div>';
 }
 
 async function submitColumn() {
     const title = document.getElementById('colTitle').value;
     const content = document.getElementById('colContent').value;
-    if(!title || !content) return alert("내용을 입력하세요.");
+    if(!title || !content) { alert("제목과 내용을 입력해주세요."); return; }
     
-    // API 호출 (save_column 등)
-    alert("칼럼이 등록되었습니다.");
-    closeModal('column');
-    loadMyColumns();
+    // TODO: 백엔드 API 전송 logic
+    alert("칼럼이 등록되었습니다. (DB 연결 필요)");
+    closeModal('columnModal');
 }
 
-// 3. 담당 학생 관리 (핵심 기능)
+// ==========================================
+// [기능 3] 학생 관리
+// ==========================================
 async function loadMyStudents() {
     const tbody = document.getElementById('myStudentListBody');
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">데이터 조회 중...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-msg"><i class="fas fa-spinner fa-spin"></i> 데이터 로딩 중...</td></tr>';
 
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('idToken');
-    const myName = tutorInfo.name; // 내 이름
+    const myName = tutorInfo.name || 'Tutor';
 
     try {
-        // [중요] admin_search API 재사용 (검색어 없이 전체 조회 후 필터링)
-        // 단, 보안상으로는 'get_my_students'라는 전용 API를 만드는 것이 좋음 (내 학생만 리턴하도록)
-        // 여기서는 기존 admin_search 로직을 활용하되, 백엔드에서 필터링하거나 
-        // 클라이언트에서 필터링 (보안 취약점 가능성 있음 -> 전용 API 권장)
-        
-        // [임시] tutor_get_students 타입 요청 (백엔드 추가 필요)
-        const response = await fetch(API_URL, {
+        // [API 호출] 담당 학생 리스트 가져오기
+        const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
-                type: 'tutor_get_students', // 백엔드에 이 타입 추가 필요
+                type: 'tutor_get_students', // 백엔드 구현 필요
                 userId: userId,
                 tutorName: myName 
             })
         });
 
-        if (!response.ok) throw new Error("Load Failed");
-        const students = await response.json();
+        // if (!response.ok) throw new Error("Load Failed");
+        // const students = await response.json();
+        
+        // [임시] 데이터가 없거나 에러 시 빈 화면 처리 (백엔드 미구현 대비)
+        const students = []; 
 
         tbody.innerHTML = '';
         if (!students || students.length === 0) {
@@ -188,33 +255,81 @@ async function loadMyStudents() {
                 <td>${escapeHtml(s.school || '-')}</td>
                 <td>${escapeHtml(s.phone || '-')}</td>
                 <td>${s.lastLogin ? new Date(s.lastLogin).toLocaleDateString() : '-'}</td>
-                <td>
-                    <button class="manage-btn" onclick="goToStudentDetail('${s.userid}')">상세관리</button>
-                </td>
+                <td><button class="manage-btn" onclick="alert('준비중')">상세관리</button></td>
             `;
             tbody.appendChild(tr);
         });
 
     } catch (e) {
         console.error(e);
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">데이터 로드 실패 (백엔드 API 확인 필요)</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">데이터 로드 실패</td></tr>';
     }
 }
 
-function goToStudentDetail(targetId) {
-    // admin_detail.html을 재사용 (단, 권한 체크 필요)
-    window.location.href = `/admin/detail?uid=${targetId}`;
+// ==========================================
+// [기능 4] 프로필 사진, 계정 변경 등 (공통 기능)
+// ==========================================
+// mypage.js의 로직들을 그대로 사용 (triggerFileUpload, handleProfileUpload, openEmailModal 등)
+// 중복을 피하기 위해 핵심 로직만 아래에 포함 (위 HTML에서는 mypage_tutor.js 하나만 로드하므로)
+
+function triggerFileUpload() { document.getElementById('profileFileInput').click(); }
+
+async function handleProfileUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+    /* (S3 업로드 로직 생략 - mypage.js와 동일하게 구현하면 됨) */
+    alert("기능 연결 필요 (mypage.js 참조)");
 }
 
-// XSS 방지
+function handleProfileDelete() {
+    if(!confirm("삭제하시겠습니까?")) return;
+    // ...
+}
+
+function checkDeleteButtonVisibility(url) {
+    const deleteBtn = document.getElementById('deletePicBtn');
+    if (url && !url.includes('sample_profile') && !url.includes('placehold.co')) {
+        deleteBtn.classList.remove('hidden');
+    } else {
+        deleteBtn.classList.add('hidden');
+    }
+}
+
+function handleDeleteAccount() {
+    if(!confirm("탈퇴하시겠습니까?")) return;
+    alert("관리자에게 문의해주세요.");
+}
+
+function handleSignOut() {
+    if (cognitoUser) cognitoUser.signOut();
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = '/login';
+}
+
+// 모달 닫기
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+}
+
+// 이메일/비밀번호 변경 함수들 (mypage.js에서 복사 필요)
+function openEmailModal() { document.getElementById('emailModal').classList.remove('hidden'); }
+function openPasswordModal() { document.getElementById('passwordModal').classList.remove('hidden'); }
+function requestEmailChange() { alert("이메일 변경 로직 구현 필요"); }
+function verifyEmailChange() { alert("인증 로직 구현 필요"); }
+function changePassword() { alert("비밀번호 변경 로직 구현 필요"); }
+
+// 유틸리티
 function escapeHtml(text) {
-    if (!text) return text;
+    if (text == null) return "";
     return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-// 모달 외부 클릭 닫기
-window.onclick = function(event) {
-    if (event.target.classList.contains('modal')) {
-        event.target.style.display = 'none';
-    }
+function parseDynamoItem(item) {
+    if (item === undefined || item === null) return null;
+    if (typeof item !== 'object') return item;
+    if (item.S !== undefined) return item.S;
+    if (item.N !== undefined) return Number(item.N);
+    // ... (나머지 파싱 로직)
+    return item; // 임시 반환
 }

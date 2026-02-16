@@ -20,12 +20,14 @@
     <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
 </head>
 <body>
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     <header>
         <div class="logo-container">
-            <div style="display: flex; align-items: center; gap: 10px;">
-    			<span class="logo">StudyCrack <span style="font-size:0.8rem; color:#3b82f6;">Partner</span></span>
-			</div>
+            <a href="/" style="display: flex; align-items: center; gap: 10px;">
+                <span class="logo">StudyCrack <span style="font-size:0.8rem; color:#3b82f6;">Partner</span></span>
+            </a>
         </div>
         <nav class="nav-links">
             <a href="#" onclick="handleSignOut()" class="nav-btn">로그아웃</a>
@@ -34,17 +36,31 @@
 
     <div class="mypage-container">
         
-        <aside class="profile-summary">
-            <div class="profile-pic-area">
-                <img src="https://placehold.co/150x150?text=Tutor" 
-                     onerror="this.src='assets/images/sample_profile.png'" 
-                     alt="프로필" class="profile-img" id="tutorProfileImg">
-                <button class="edit-pic-btn" onclick="alert('준비 중인 기능입니다.')">+</button>
+        <aside class="profile-summary tier-pro"> <div class="premium-badge">CONSULTANT</div>
+            
+            <div class="profile-pic-area" style="position: relative; display: inline-block;">
+                <img id="profileImg" 
+                    src="https://placehold.co/150x150?text=Tutor" 
+                    onerror="this.src='assets/images/sample_profile.png'" 
+                    alt="프로필" class="profile-img">
+
+                <button class="edit-pic-btn" onclick="triggerFileUpload()" title="사진 변경">
+                    <i class="fas fa-camera"></i>
+                </button>
+
+                <button id="deletePicBtn" class="delete-pic-btn hidden" onclick="handleProfileDelete()" title="사진 삭제">
+                    <i class="fas fa-trash"></i>
+                </button>
+
+                <input type="file" id="profileFileInput" accept="image/*" style="display: none;" onchange="handleProfileUpload(this)">
             </div>
             
             <h2 id="userNameDisplay">-</h2>
-            <p id="userEmailDisplay" style="font-size:0.9rem; color:#64748b;">-</p>
-            <div class="tutor-badge">CONSULTANT</div>
+            <p id="userEmailDisplay">-</p>
+            
+            <div class="account-actions">
+                <button class="btn-delete-account" onclick="handleDeleteAccount()">회원 탈퇴</button>
+            </div>
         </aside>
 
         <main class="content-area">
@@ -59,21 +75,49 @@
                     <h2>내 정보 관리</h2>
                     <p>개인정보 및 계정 설정을 변경할 수 있습니다.</p>
                 </div>
+                
                 <div class="form-container">
                     <h3>기본 인적사항</h3>
-                    <div class="form-group">
-                        <label>이름 <span style="font-size:0.8rem; color:#ef4444;">(수정 불가)</span></label>
-                        <input type="text" id="profileName" disabled style="background:#f1f5f9; cursor:not-allowed;">
-                    </div>
-                    <div class="form-group"><label>전화번호</label><input type="tel" id="profilePhone"></div>
                     
-                    <h3>계정 정보 변경</h3>
-                    <div class="form-group"><label>이메일</label><input type="email" id="profileEmail"></div>
-                    <div class="password-section">
-                        <div class="form-group"><label>새 비밀번호</label><input type="password" id="newPassword" placeholder="변경 시에만 입력"></div>
-                        <div class="form-group"><label>새 비밀번호 확인</label><input type="password" id="newPasswordConfirm" placeholder="비밀번호 재입력"></div>
+                    <div class="form-group row-group">
+                        <div class="input-wrapper">
+                            <label>이름</label>
+                            <input type="text" id="profileName" disabled>
+                        </div>
+                        <button class="edit-btn" onclick="toggleEdit('profileName', this)">수정하기</button>
                     </div>
-                    <button class="save-btn" onclick="saveTutorProfile()">정보 수정 저장</button>
+
+                    <div class="form-group row-group">
+                        <div class="input-wrapper">
+                            <label>전화번호</label>
+                            <input type="tel" id="profilePhone" disabled>
+                        </div>
+                        <button class="edit-btn" onclick="toggleEdit('profilePhone', this)">수정하기</button>
+                    </div>
+
+                    <div class="form-group row-group">
+                        <div class="input-wrapper">
+                            <label>소속/학교</label>
+                            <input type="text" id="profileSchool" disabled>
+                        </div>
+                        <button class="edit-btn" onclick="toggleEdit('profileSchool', this)">수정하기</button>
+                    </div>
+                    
+                    <hr class="divider">
+
+                    <h3>계정 정보 변경</h3>
+                    <div class="account-links">
+                        <div class="link-item">
+                            <span class="label">이메일</span>
+                            <span class="value" id="currentEmailDisplay">loading...</span>
+                            <a href="#" onclick="openEmailModal(); return false;" class="text-link">이메일 변경하기</a>
+                        </div>
+                        <div class="link-item">
+                            <span class="label">비밀번호</span>
+                            <span class="value">********</span>
+                            <a href="#" onclick="openPasswordModal(); return false;" class="text-link">비밀번호 변경하기</a>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -121,40 +165,76 @@
                             </tr>
                         </thead>
                         <tbody id="myStudentListBody">
-                            <tr><td colspan="5" class="empty-msg">학생 데이터를 불러오는 중...</td></tr>
+                            <tr><td colspan="5" class="empty-msg">데이터를 불러오는 중...</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
-
         </main>
+    </div> 
+
+    <div id="columnModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('columnModal')">&times;</span>
+            <h3>새 칼럼 작성</h3>
+            <div class="form-group">
+                <label>제목</label>
+                <input type="text" id="colTitle" placeholder="제목을 입력하세요">
+            </div>
+            <div class="form-group">
+                <label>내용</label>
+                <textarea id="colContent" class="common-textarea" style="height:200px;" placeholder="내용을 입력하세요"></textarea>
+            </div>
+            <button class="modal-action-btn" onclick="submitColumn()">등록하기</button>
+        </div>
     </div>
 
-    <div id="column-modal" class="modal">
+    <div id="emailModal" class="modal hidden">
         <div class="modal-content">
-            <div class="modal-header">
-                <h2>새 칼럼 작성</h2>
-                <span class="close-btn" onclick="closeModal('column')">&times;</span>
-            </div>
-            <div class="modal-body">
+            <span class="close-btn" onclick="closeModal('emailModal')">&times;</span>
+            <h3>이메일 변경</h3>
+            <div id="step-email-input">
                 <div class="form-group">
-                    <label>제목</label>
-                    <input type="text" id="colTitle" placeholder="제목을 입력하세요">
+                    <label>새 이메일 주소</label>
+                    <input type="email" id="newEmailInput" placeholder="example@email.com">
                 </div>
-                <div class="form-group">
-                    <label>내용</label>
-                    <textarea id="colContent" rows="10" placeholder="내용을 입력하세요"></textarea>
-                </div>
-                <button class="save-btn" onclick="submitColumn()">등록하기</button>
+                <button class="modal-action-btn" onclick="requestEmailChange()">인증번호 전송</button>
             </div>
+            <div id="step-email-verify" class="hidden">
+                <div class="form-group">
+                    <label>인증번호</label>
+                    <div class="verify-row">
+                        <input type="text" id="emailVerifyCode" placeholder="코드 6자리">
+                        <span id="emailTimer" class="timer">05:00</span>
+                    </div>
+                </div>
+                <button class="modal-action-btn" onclick="verifyEmailChange()">인증 및 변경 완료</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="passwordModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('passwordModal')">&times;</span>
+            <h3>비밀번호 변경</h3>
+            <div class="form-group">
+                <label>현재 비밀번호</label>
+                <input type="password" id="currentPassword">
+            </div>
+            <div class="form-group">
+                <label>새 비밀번호</label>
+                <input type="password" id="newChangePassword">
+            </div>
+            <div class="form-group">
+                <label>새 비밀번호 확인</label>
+                <input type="password" id="newChangePasswordConfirm">
+            </div>
+            <button class="modal-action-btn" onclick="changePassword()">비밀번호 변경</button>
         </div>
     </div>
 
     <script src="/js/config.js"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/mypage_tutor.js"></script>
-    
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 </body>
 </html>

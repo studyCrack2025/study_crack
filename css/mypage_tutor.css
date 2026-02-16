@@ -1,23 +1,22 @@
 /* ============================================================
    [튜터 페이지 전용 스타일]
-   설명: mypage.css를 베이스로 하되, 탭 메뉴와 학생 관리 등
-   튜터 전용 기능을 위한 스타일을 추가/오버라이드합니다.
+   설명: mypage.css를 오버라이드하여 튜터 전용 레이아웃 적용
    ============================================================ */
 
-/* 1. 탭 메뉴 스타일 (Tab Navigation) */
-/* HTML에 .main-tabs 구조가 있으나 스타일이 없어서 깨졌을 것임 */
+/* 1. 탭 메뉴 스타일 (왼쪽 쏠림 방지 및 간격 조정) */
 .main-tabs {
     display: flex;
     gap: 20px;
     margin-bottom: 30px;
     border-bottom: 2px solid #f1f5f9;
     padding-bottom: 0;
+    width: 100%; /* 전체 너비 사용 */
 }
 
 .tab-btn {
     background: none;
     border: none;
-    padding: 12px 5px;
+    padding: 12px 10px;
     font-size: 1.05rem;
     font-weight: 600;
     color: #94a3b8;
@@ -25,6 +24,7 @@
     position: relative;
     transition: all 0.3s ease;
     margin-bottom: -2px; /* border와 겹치게 */
+    flex: 0 0 auto; /* 내용만큼만 너비 차지 (원하면 flex: 1로 등분 가능) */
 }
 
 .tab-btn:hover {
@@ -36,7 +36,7 @@
     border-bottom: 2px solid #2563EB;
 }
 
-/* 탭 컨텐츠 영역 */
+/* 탭 콘텐츠 영역 */
 .tab-content {
     display: none; /* 기본 숨김 */
     animation: fadeIn 0.3s ease-out;
@@ -51,21 +51,7 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* 2. 사이드바 튜터 뱃지 */
-.tutor-badge {
-    display: inline-block;
-    background: #1e293b;
-    color: #fbbf24; /* Gold Color */
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-weight: 800;
-    font-size: 0.8rem;
-    margin-top: 15px;
-    letter-spacing: 0.5px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-/* 3. 소개글 작성 영역 (Intro Box) */
+/* 2. 소개글 작성 영역 (Intro Box) */
 .tutor-intro-box {
     background: #fff;
     border: 1px solid #e2e8f0;
@@ -80,6 +66,8 @@
     font-size: 1rem;
     color: #334155;
     margin-bottom: 10px;
+    border-bottom: none; /* mypage.css의 h3 스타일 오버라이드 */
+    padding-bottom: 0;
 }
 
 .tutor-intro-box textarea {
@@ -101,7 +89,7 @@
     background-color: #f8fafc;
 }
 
-/* 4. 칼럼 리스트 스타일 */
+/* 3. 칼럼 리스트 스타일 */
 .column-list {
     display: flex;
     flex-direction: column;
@@ -151,7 +139,7 @@
     text-overflow: ellipsis;
 }
 
-/* 5. 학생 관리 테이블 (Responsive Table) */
+/* 4. 학생 관리 테이블 */
 .table-responsive {
     overflow-x: auto;
     border: 1px solid #e2e8f0;
@@ -161,7 +149,7 @@
 .student-table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 600px; /* 가로 스크롤 트리거 */
+    min-width: 600px;
     background: white;
 }
 
@@ -210,7 +198,7 @@
     border-color: #2563eb;
 }
 
-/* 6. 공통 버튼 스타일 (mypage.css에 없는 소형 버튼들) */
+/* 5. 공통 버튼 스타일 (소형) */
 .small-btn {
     padding: 8px 16px;
     border-radius: 6px;
@@ -246,14 +234,29 @@
     color: #94a3b8;
     font-size: 0.95rem;
     background: #fdfdfd;
-    border-radius: 8px;
 }
 
-/* 모바일 대응 보완 */
+/* 텍스트 영역 공통 */
+.common-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    resize: none;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+.common-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+/* 모바일 대응 */
 @media (max-width: 768px) {
     .main-tabs {
         gap: 10px;
-        overflow-x: auto; /* 탭이 많으면 스크롤 */
+        overflow-x: auto;
         white-space: nowrap;
     }
     
