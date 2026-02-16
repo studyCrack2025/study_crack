@@ -6,14 +6,16 @@
 /* 1. 탭 메뉴 스타일 (왼쪽 쏠림 방지 및 간격 조정) */
 .main-tabs {
     display: flex;
-    gap: 20px;
+    gap: 0; /* 버튼이 꽉 차므로 갭 제거 (원하면 유지 가능) */
     margin-bottom: 30px;
     border-bottom: 2px solid #f1f5f9;
     padding-bottom: 0;
-    width: 100%; /* 전체 너비 사용 */
+    width: 100%;
 }
 
 .tab-btn {
+    flex: 1; /* [핵심] 공간을 균등하게 1:1:1로 차지하여 꽉 채움 */
+    text-align: center; /* 텍스트 가운데 정렬 */
     background: none;
     border: none;
     padding: 12px 10px;
@@ -23,17 +25,18 @@
     cursor: pointer;
     position: relative;
     transition: all 0.3s ease;
-    margin-bottom: -2px; /* border와 겹치게 */
-    flex: 0 0 auto; /* 내용만큼만 너비 차지 (원하면 flex: 1로 등분 가능) */
+    margin-bottom: -2px;
 }
 
 .tab-btn:hover {
     color: #334155;
+    background-color: #f8fafc; /* 호버 시 살짝 배경색 */
 }
 
 .tab-btn.active {
     color: #2563EB;
     border-bottom: 2px solid #2563EB;
+    background-color: transparent;
 }
 
 /* 탭 콘텐츠 영역 */
