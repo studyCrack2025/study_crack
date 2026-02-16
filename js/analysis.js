@@ -1984,7 +1984,7 @@ function renderProDashboard(container) {
     if (day <= 15) {
         targetDateStr = `${month + 1}월 15일`;
         deadlineStr = `${month + 1}월 13일`;
-        periodText = "상반기 정기 분석";
+        periodText = `${month + 1}월 상반기 정기 분석`;
         if (day > 13) isClosed = true;
     } 
     // 16일~말일 -> 목표: 다음 달 1일 / 마감: 말일-2일
@@ -1992,7 +1992,7 @@ function renderProDashboard(container) {
         const nextMonthVal = (month + 1) % 12 + 1; // 12월이면 1월로
         targetDateStr = `${nextMonthVal}월 1일`;
         deadlineStr = `${month + 1}월 ${lastDayOfMonth - 2}일`;
-        periodText = "하반기 정기 분석";
+        periodText = `${month}월 하반기 정기 분석`;
         if (day > (lastDayOfMonth - 2)) isClosed = true;
     }
 
