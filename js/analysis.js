@@ -889,6 +889,7 @@ function renderSimChart() {
     const graphArea = document.createElement('div');
     graphArea.className = 'chart-graph-area';
     
+    // [참고] 꺾은선일 때는 라벨을 SVG 안에 직접 그리므로 이 영역은 막대형에서만 주로 사용됨
     const labelArea = document.createElement('div');
     labelArea.className = 'chart-label-area';
     
@@ -896,32 +897,30 @@ function renderSimChart() {
     wrapper.appendChild(labelArea);
     container.appendChild(wrapper);
 
-    // [수정] 모바일 하단 범례용 컨테이너 (그래프+라벨 영역보다 더 아래에 위치)
+    // 모바일 하단 범례용 컨테이너
     const mobileLegendDiv = document.createElement('div');
     mobileLegendDiv.className = 'mobile-legend-area';
-    container.appendChild(mobileLegendDiv); // wrapper 바깥, chartArea 내부에 추가
+    container.appendChild(mobileLegendDiv);
 
-    // CSS의 .chart-graph-area 높이(260px)와 맞춤
-    // 중요: 꺾은선 그래프 0점 조정을 위해 JS 내부 패딩 로직을 분기처리함
+    // CSS 높이(260px) 기준
     const CONTAINER_HEIGHT = 260; 
-    
-    // [막대 그래프용 상수] 상단 여백만 둠
-    const TOP_PADDING = 50; 
     
     const data = cachedSimData;
     
     // ==================================================================================
-    // [TYPE: BAR] 막대 그래프
+    // [TYPE: BAR] 막대 그래프 (기존 로직 유지, 점선 복구됨)
     // ==================================================================================
     if (currentSimChartType === 'bar') {
-        // 1. 기준선 (Guide Line) - CSS에서 모바일은 display:none 처리됨
+        const TOP_PADDING = 50; 
+        
+        // 1. 기준선 (Guide Line)
         const pos100 = (100 / 250);
         const pos150 = (150 / 250);
         
-        // PC용 가이드라인 그리기 (모바일에서는 CSS로 숨겨짐)
         const guideStyle100 = `bottom: calc((100% - ${TOP_PADDING}px) * ${pos100});`;
         const guideStyle150 = `bottom: calc((100% - ${TOP_PADDING}px) * ${pos150});`;
         
+        // 모바일에서는 CSS로 .chart-guide-label만 숨겨지므로 선은 보임
         graphArea.insertAdjacentHTML('beforeend', 
             `<div class="chart-guide-line guide-100" style="${guideStyle100}"><span class="chart-guide-label">합격(100)</span></div>`
         );
@@ -929,7 +928,7 @@ function renderSimChart() {
             `<div class="chart-guide-line guide-150" style="${guideStyle150}"><span class="chart-guide-label">안정(150)</span></div>`
         );
 
-        // [추가] 모바일용 하단 범례 생성 (안정/합격)
+        // 하단 범례 (모바일용)
         mobileLegendDiv.innerHTML = `
             <div class="mobile-legend-item">
                 <div style="width:12px; height:2px; background:#10b981; margin-right:4px;"></div> 안정(150)
@@ -939,8 +938,8 @@ function renderSimChart() {
             </div>
         `;
 
-        // 2. 막대 생성 (기존 로직 유지)
-        const DRAW_HEIGHT_BAR = CONTAINER_HEIGHT - TOP_PADDING; // 막대그래프는 상단 여백 뺌
+        // 막대 그리기
+        const DRAW_HEIGHT_BAR = CONTAINER_HEIGHT - TOP_PADDING; 
 
         data.forEach((item, index) => {
             const score = item.base_ui_score;
@@ -954,7 +953,7 @@ function renderSimChart() {
             const safeScore = Math.round(score);
             const shortUniv = item.univ.replace('학교', '');
 
-            // 상승분(오버레이) 로직
+            // 상승분 로직
             let extensionHtml = '';
             let mainBarRadius = '6px 6px 0 0'; 
             let showOriginalLabel = true;
@@ -968,7 +967,6 @@ function renderSimChart() {
                 const potentialScore = Math.min(score + maxRise, 250);
                 const riseAmount = potentialScore - score; 
                 const riseHeightPx = `${(riseAmount/250) * DRAW_HEIGHT_BAR}px`;
-                
                 mainBarRadius = '0 0 0 0'; 
                 showOriginalLabel = false; 
 
@@ -981,7 +979,6 @@ function renderSimChart() {
                 `;
             }
 
-            // 막대 HTML
             const barHtml = `
                 <div class="sim-bar-item ${isActive}" onclick="selectSimUniv(${index})">
                     <div class="sim-bar" style="height:${currentHeightPx}; background:${color}; border-radius:${mainBarRadius};">
@@ -992,14 +989,11 @@ function renderSimChart() {
             `;
             graphArea.insertAdjacentHTML('beforeend', barHtml);
 
-            // 라벨 HTML
             const labelHtml = `
                 <div class="sim-label-item" onclick="selectSimUniv(${index})">
                     <span class="label-mobile">${index + 1}지망</span>
                     <span class="label-pc">
-                        <strong>${index + 1}지망</strong><br>
-                        ${shortUniv}<br>
-                        ${item.major}
+                        <strong>${index + 1}지망</strong><br>${shortUniv}<br>${item.major}
                     </span>
                 </div>
             `;
@@ -1007,23 +1001,21 @@ function renderSimChart() {
         });
     } 
     // ==================================================================================
-    // [TYPE: LINE] 꺾은선 그래프 (수정됨)
+    // [TYPE: LINE] 꺾은선 그래프 (수정됨: 0점 바닥 정렬)
     // ==================================================================================
     else if (currentSimChartType === 'line') {
         const PALETTE = ['#2563EB', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#64748B'];
         const SUBJECTS = ['kor', 'math', 'inq1', 'inq2'];
         
-        let labelInq1 = '탐구1';
-        let labelInq2 = '탐구2';
-        
+        // 탐구 과목명 로드
+        let labelInq1 = '탐구1', labelInq2 = '탐구2';
         if (data.length > 0 && data[0].sim_data) {
-            if (data[0].sim_data.inq1 && data[0].sim_data.inq1.name) labelInq1 = data[0].sim_data.inq1.name;
-            if (data[0].sim_data.inq2 && data[0].sim_data.inq2.name) labelInq2 = data[0].sim_data.inq2.name;
+            if (data[0].sim_data.inq1?.name) labelInq1 = data[0].sim_data.inq1.name;
+            if (data[0].sim_data.inq2?.name) labelInq2 = data[0].sim_data.inq2.name;
         }
-
         const SUBJ_LABELS = ['국어', '수학', labelInq1, labelInq2];
 
-        // Y값 계산
+        // Y값 최대치 계산
         let maxDiff = 0;
         data.forEach(item => {
             const currentScore = item.base_ui_score;
@@ -1035,55 +1027,53 @@ function renderSimChart() {
                 }
             });
         });
-        
         const Y_MAX = maxDiff > 0 ? maxDiff * 1.2 : 5;
 
         setTimeout(() => {
             const width = graphArea.clientWidth; 
-            const height = graphArea.clientHeight; // 260px (회색 바닥선까지의 높이)
+            const height = graphArea.clientHeight; // 컨테이너 높이 (약 260px)
             
-            // [핵심 수정] 0.0을 바닥선에 맞추기 위해 drawHeight를 컨테이너 전체 높이로 사용
-            const drawHeight = height; 
+            // [핵심 수정 1] 상단 패딩을 최소화하고, 그리기 높이를 컨테이너 전체로 설정
+            const PADDING_TOP = 20; // 최상단 점 잘림 방지용 여백
+            const drawHeight = height - PADDING_TOP; 
             const paddingLeft = 40; 
 
             let svgContent = '';
-            
-            // 1. PC용 범례 (기존 오버레이) - 모바일에서는 CSS로 숨겨짐
             let pcLegendHTML = '<div class="chart-legend-overlay">';
-            
-            // 2. 모바일용 범례 HTML 준비
             let mobileLegendHTML = '';
 
-            // 3. 배경 그리드
+            // [핵심 수정 2] 그리드 라인 그리기
+            // i=0일 때 val=0 이므로 yPos = drawHeight + PADDING_TOP = height (바닥)
             const gridCount = 5;
             for(let i=0; i<=gridCount; i++) {
                 const val = (Y_MAX / gridCount) * i;
-                // [수정] 바닥(0점)이 drawHeight(=260px) 위치가 되도록 계산
-                const yPos = drawHeight - ((val / Y_MAX) * drawHeight);
-                const safeY = isNaN(yPos) ? drawHeight : yPos;
+                const yPos = (drawHeight + PADDING_TOP) - ((val / Y_MAX) * drawHeight);
                 
-                // 0.0 라인은 이미 border-bottom이 있으므로 grid line 생략 가능하지만 옅게 표시
-                svgContent += `
-                    <line x1="${paddingLeft}" y1="${safeY}" x2="${width}" y2="${safeY}" class="y-grid-line" />
-                    <text x="${paddingLeft - 5}" y="${safeY}" class="y-grid-label">${val.toFixed(1)}</text>
-                `;
+                // 0점 라인은 CSS border-bottom과 겹치므로 그리지 않거나 아주 옅게 처리
+                if (i > 0) { 
+                    svgContent += `
+                        <line x1="${paddingLeft}" y1="${yPos}" x2="${width}" y2="${yPos}" class="y-grid-line" />
+                        <text x="${paddingLeft - 5}" y="${yPos}" class="y-grid-label">${val.toFixed(1)}</text>
+                    `;
+                } else {
+                    // 0.0 라벨만 표시 (선은 생략)
+                    svgContent += `<text x="${paddingLeft - 5}" y="${yPos}" class="y-grid-label">0.0</text>`;
+                }
             }
 
-            // 4. 데이터 라인 및 범례 생성
+            // 데이터 그리기
             data.forEach((item, univIdx) => {
                 const color = PALETTE[univIdx % PALETTE.length];
                 const isActive = (univIdx === selectedSimIndex);
                 const shortUniv = item.univ.replace('학교', '');
                 
-                // --- 범례 아이템 생성 ---
-                // (1) PC용
+                // 범례 생성 (PC/모바일)
                 pcLegendHTML += `
                     <div class="legend-item ${isActive ? 'active' : ''}" onclick="selectSimUniv(${univIdx})">
                         <div class="legend-color-dot" style="background:${color}; box-shadow:${isActive ? '0 0 0 2px '+color : 'none'}"></div>
                         <span>${univIdx+1}지망: ${shortUniv}</span>
                     </div>
                 `;
-                // (2) 모바일용 (동일한 디자인 사용)
                 mobileLegendHTML += `
                     <div class="mobile-legend-item ${isActive ? 'active' : ''}" onclick="selectSimUniv(${univIdx})" style="background:#fff; padding:4px 8px; border:1px solid #e2e8f0; border-radius:4px; cursor:pointer; ${isActive ? 'border-color:'+color : ''}">
                          <div style="width:10px; height:10px; border-radius:50%; background:${color}; margin-right:5px;"></div>
@@ -1091,7 +1081,6 @@ function renderSimChart() {
                     </div>
                 `;
 
-                // --- 그래프 패스 생성 ---
                 let pathD = '';
                 let pointsHTML = '';
                 
@@ -1102,26 +1091,24 @@ function renderSimChart() {
                         effectiveRise = Math.min(item.sim_data[subKey].diff, Math.max(0, 250 - item.base_ui_score));
                     }
                     
-                    // [수정] 0점일 때 yPos가 정확히 height(260)가 됨
-                    const yPos = drawHeight - ((effectiveRise / Y_MAX) * drawHeight);
+                    // [핵심 수정 3] Y 좌표 계산 (0점이면 정확히 바닥선에 위치)
+                    const yPos = (drawHeight + PADDING_TOP) - ((effectiveRise / Y_MAX) * drawHeight);
 
                     if (subIdx === 0) pathD += `M ${xPos} ${yPos}`;
                     else pathD += ` L ${xPos} ${yPos}`;
 
-                    // 점 그리기
-                    const rSize = isActive ? 6 : 3;
-                    pointsHTML += `<circle cx="${xPos}" cy="${yPos}" r="${rSize}" fill="${isActive ? '#fff' : color}" stroke="${color}" stroke-width="${isActive ? 2 : 1}" 
-                        style="cursor:pointer; z-index:${isActive ? 100 : 10}" 
-                        onclick="selectSimUniv(${univIdx})"/>`;
+                    // 점 찍기
+                    pointsHTML += `<circle cx="${xPos}" cy="${yPos}" r="${isActive ? 6 : 3}" fill="${isActive ? '#fff' : color}" stroke="${color}" stroke-width="${isActive ? 2 : 1}" 
+                        style="cursor:pointer; z-index:${isActive ? 100 : 10}" onclick="selectSimUniv(${univIdx})"/>`;
                     
                     if (isActive && effectiveRise > 0) {
                         pointsHTML += `<text x="${xPos}" y="${yPos - 10}" text-anchor="middle" fill="${color}" font-size="11" font-weight="bold">+${effectiveRise.toFixed(1)}</text>`;
                     }
 
-                    // [핵심 수정] X축 라벨(국어/수학)을 회색선(0점) 아래로 내림
-                    // y값을 height + 20 정도로 설정. SVG overflow가 visible이어야 보임.
+                    // [핵심 수정 4] 과목명 라벨을 바닥선(height) 아래로 내림
+                    // height + 25 위치에 그림 (CSS overflow:visible 덕분에 보임)
                     if (univIdx === 0) {
-                        svgContent += `<text x="${xPos}" y="${height + 25}" text-anchor="middle" font-size="12" fill="#334155" font-weight="bold">${SUBJ_LABELS[subIdx]}</text>`;
+                        svgContent += `<text x="${xPos}" y="${height + 30}" text-anchor="middle" font-size="12" fill="#334155" font-weight="bold">${SUBJ_LABELS[subIdx]}</text>`;
                     }
                 });
 
@@ -1130,12 +1117,9 @@ function renderSimChart() {
             });
 
             pcLegendHTML += '</div>';
-            
-            // 모바일 범례 삽입
             mobileLegendDiv.innerHTML = mobileLegendHTML;
 
-            // PC 범례 + SVG 삽입
-            // [주의] SVG 높이를 height + 40(라벨공간) 만큼 넉넉하게 주거나, overflow visible 활용
+            // SVG 높이를 넉넉하게 주어(height + 50) 라벨이 잘리지 않도록 함
             graphArea.innerHTML = `
                 ${pcLegendHTML}
                 <svg class="sim-line-svg" width="${width}" height="${height + 50}" viewBox="0 0 ${width} ${height + 50}" style="position:absolute; top:0; left:0; overflow:visible;">
