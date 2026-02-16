@@ -982,108 +982,119 @@ function renderSimChart() {
     // 4. 꺾은선 그래프 렌더링
     // ==================================================================================
     else if (currentSimChartType === 'line') {
-        data.forEach((item, index) => {
-            const shortUniv = item.univ.replace('학교', '');
-            labelArea.insertAdjacentHTML('beforeend', `
-                <div class="sim-label-item" onclick="selectSimUniv(${index})">
-                    <span class="label-mobile">${index + 1}지망</span>
-                    <span class="label-pc">
-                        <strong>${index + 1}지망</strong><br>
-                        ${shortUniv}<br>
-                        ${item.major}
-                    </span>
-                </div>
-            `);
-        });
+        // [설정] 그래프 색상 팔레트 (지망별 고유 색상)
+        const PALETTE = ['#2563EB', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#64748B'];
+        const SUBJECTS = ['kor', 'math', 'inq1', 'inq2'];
+        const SUBJ_LABELS = ['국어', '수학', '탐구1', '탐구2'];
 
+        // 1. 최대 Y값 계산 (점수 상승폭 기준, 여유 공간 확보)
+        let maxDiff = 0;
+        data.forEach(item => {
+            SUBJECTS.forEach(subKey => {
+                if (item.sim_data && item.sim_data[subKey]) {
+                    const val = item.sim_data[subKey].diff;
+                    if (val > maxDiff) maxDiff = val;
+                }
+            });
+        });
+        const Y_MAX = maxDiff > 0 ? maxDiff * 1.2 : 10; // 최소 10점 혹은 최대값의 1.2배
+
+        // SVG 그리기 준비
         setTimeout(() => {
             const width = graphArea.clientWidth; 
             const height = graphArea.clientHeight; 
-            
-            let points = [];
-            const labelItems = labelArea.querySelectorAll('.sim-label-item');
-            const parentRect = graphArea.getBoundingClientRect();
-            
-            // 좌표 정보 설정
-            labelItems.forEach((el, i) => {
-                const elRect = el.getBoundingClientRect();
-                const centerX = (elRect.left - parentRect.left) + (elRect.width / 2);
-                const score = Math.min(data[i].base_ui_score, 250);
-                const y = height - ((score / 250) * DRAW_HEIGHT);
-                
-                let maxRise = 0;
-                if (data[i].sim_data) {
-                    Object.values(data[i].sim_data).forEach(sub => { if (sub && sub.diff > maxRise) maxRise = sub.diff; });
-                }
+            const drawHeight = height - 40; // 하단 라벨 공간 확보
+            const paddingLeft = 40; // Y축 라벨 공간
 
-                const isActive = (i === selectedSimIndex);
-                // 점수 상승이 있는 선택된 지점인지 판별
-                const usePotential = isActive && maxRise > 0 && data[i].base_ui_score < 250;
-                const potentialScore = Math.min(data[i].base_ui_score + maxRise, 250);
-                const potY = height - ((potentialScore / 250) * DRAW_HEIGHT);
+            let svgContent = '';
+            let legendHTML = '<div class="chart-legend-overlay">';
 
-                points.push({ 
-                    x: centerX, 
-                    y: y, // 원래 Y 위치
-                    score: Math.round(score), 
-                    originalScore: data[i].base_ui_score,
-                    isActive: isActive,
-                    maxRise: maxRise,
-                    isPotential: usePotential,
-                    currentY: usePotential ? potY : y, // 그릴 Y 위치 결정
-                    potentialScore: potentialScore
-                });
-            });
-
-            let solidPathD = "";     
-            let potentialPathD = ""; 
-            let originalPointsHTML = "";
-            let potentialPointsHTML = "";
-            let textsHTML = "";   
-
-            // 1. 선(Path) 생성: 선택된 지점 주변은 주황색 점선, 나머지는 파란 실선으로 아예 나눔
-            if (points.length > 1) {
-                for (let i = 0; i < points.length - 1; i++) {
-                    let p1 = points[i];
-                    let p2 = points[i+1];
-
-                    if (p1.isPotential || p2.isPotential) {
-                        potentialPathD += `M ${p1.x} ${p1.currentY} L ${p2.x} ${p2.currentY} `;
-                    } else {
-                        solidPathD += `M ${p1.x} ${p1.currentY} L ${p2.x} ${p2.currentY} `;
-                    }
-                }
-            } else if (points.length === 1) { // 그래프가 1개일 때 예외처리
-                let p = points[0];
-                if (p.isPotential) potentialPathD += `M ${p.x} ${p.y} L ${p.x} ${p.currentY} `;
+            // 2. 배경 그리드 (Y축 눈금)
+            const gridCount = 5;
+            for(let i=0; i<=gridCount; i++) {
+                const val = (Y_MAX / gridCount) * i;
+                const yPos = drawHeight - ((val / Y_MAX) * drawHeight);
+                svgContent += `
+                    <line x1="${paddingLeft}" y1="${yPos}" x2="${width}" y2="${yPos}" class="y-grid-line" />
+                    <text x="${paddingLeft - 5}" y="${yPos}" class="y-grid-label">${val.toFixed(1)}</text>
+                `;
             }
 
-            // 2. 점과 텍스트 생성
-            points.forEach((p, i) => {
-                if (p.isPotential) {
-                    // 원래 파란 점은 그리지 않고(안보이게), 주황색 점을 확대(r:9px)해서 출력
-                    potentialPointsHTML += `<circle cx="${p.x}" cy="${p.currentY}" class="sim-line-point active" style="pointer-events:all; stroke:#f59e0b; fill:#fff7ed; r:9px;" onclick="selectSimUniv(${i})" />`;
-                    textsHTML += `<text x="${p.x}" y="${p.currentY - 20}" text-anchor="middle" fill="#d97706" font-size="12" font-weight="bold">${Math.round(p.potentialScore)} <tspan font-size="10">(+${p.maxRise.toFixed(1)})</tspan></text>`;
-                } else {
-                    // 선택되지 않은 지점이거나, 선택되었지만 점수 상승이 없을 때
-                    originalPointsHTML += `<circle cx="${p.x}" cy="${p.currentY}" class="sim-line-point ${p.isActive ? 'active' : ''}" style="pointer-events:all;" onclick="selectSimUniv(${i})" />`;
-                    textsHTML += `<text x="${p.x}" y="${p.currentY - 20}" text-anchor="middle" fill="#64748b" font-size="12" font-weight="bold">${p.score}</text>`;
-                }
+            // 3. 데이터 라인 그리기
+            data.forEach((item, univIdx) => {
+                const color = PALETTE[univIdx % PALETTE.length];
+                const isActive = (univIdx === selectedSimIndex);
+                
+                // 라인 포인트 계산
+                let pathD = '';
+                let pointsHTML = '';
+                
+                SUBJECTS.forEach((subKey, subIdx) => {
+                    // X축 간격 균등 분배
+                    const xPos = paddingLeft + ((width - paddingLeft) / SUBJECTS.length) * (subIdx + 0.5);
+                    
+                    // Y축 (상승폭)
+                    let riseVal = 0;
+                    if (item.sim_data && item.sim_data[subKey]) {
+                        riseVal = item.sim_data[subKey].diff;
+                    }
+                    const yPos = drawHeight - ((riseVal / Y_MAX) * drawHeight);
+
+                    if (subIdx === 0) pathD += `M ${xPos} ${yPos}`;
+                    else pathD += ` L ${xPos} ${yPos}`;
+
+                    // 포인트 (선택된 대학은 크게, 아니면 작게)
+                    const rSize = isActive ? 6 : 3;
+                    const strokeWidth = isActive ? 2 : 1;
+                    const fill = isActive ? '#fff' : color;
+                    
+                    // 포인트 클릭 이벤트 추가
+                    pointsHTML += `<circle cx="${xPos}" cy="${yPos}" r="${rSize}" fill="${fill}" stroke="${color}" stroke-width="${strokeWidth}" 
+                        style="cursor:pointer; transition:all 0.2s; z-index:${isActive ? 100 : 10}" 
+                        onclick="selectSimUniv(${univIdx})"/>`;
+                    
+                    // 활성화된 라인의 값 텍스트 표시
+                    if (isActive && riseVal > 0) {
+                        pointsHTML += `<text x="${xPos}" y="${yPos - 10}" text-anchor="middle" fill="${color}" font-size="11" font-weight="bold">+${riseVal.toFixed(1)}</text>`;
+                    }
+
+                    // X축 라벨 (한 번만 그리기)
+                    if (univIdx === 0) {
+                        svgContent += `<text x="${xPos}" y="${height - 10}" text-anchor="middle" font-size="12" fill="#334155" font-weight="bold">${SUBJ_LABELS[subIdx]}</text>`;
+                    }
+                });
+
+                // 라인 스타일
+                const lineOpacity = isActive ? 1 : 0.3;
+                const lineWidth = isActive ? 3 : 1.5;
+                const zIndex = isActive ? 50 : 1;
+
+                // SVG에 라인과 포인트 추가
+                svgContent += `<path d="${pathD}" fill="none" stroke="${color}" stroke-width="${lineWidth}" stroke-opacity="${lineOpacity}" style="transition:all 0.2s;" />`;
+                svgContent += pointsHTML;
+
+                // 범례(Legend) 아이템 추가
+                const shortUniv = item.univ.replace('학교', '');
+                legendHTML += `
+                    <div class="legend-item ${isActive ? 'active' : ''}" onclick="selectSimUniv(${univIdx})">
+                        <div class="legend-color-dot" style="background:${color}; box-shadow:${isActive ? '0 0 0 2px '+color : 'none'}"></div>
+                        <span>${univIdx+1}지망: ${shortUniv}</span>
+                    </div>
+                `;
             });
 
-            // 3. SVG 렌더링 조립
-            const svgHTML = `
-                <svg class="sim-line-svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="position:absolute; top:0; left:0; pointer-events:none;">
-                    <path d="${potentialPathD}" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,5" />
-                    <path d="${solidPathD}" class="sim-line-path" />
-                    
-                    ${originalPointsHTML}
-                    ${potentialPointsHTML}
-                    
-                    ${textsHTML}
+            legendHTML += '</div>';
+            
+            // 최종 SVG 조립
+            const fullSVG = `
+                ${legendHTML}
+                <svg class="sim-line-svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="position:absolute; top:0; left:0;">
+                    ${svgContent}
                 </svg>
             `;
-            graphArea.insertAdjacentHTML('beforeend', svgHTML);
+            
+            graphArea.innerHTML = fullSVG;
+
         }, 0);
     }
 

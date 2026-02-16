@@ -173,6 +173,22 @@
 .sim-line-point { fill: #fff; stroke: #2563EB; stroke-width: 3; r: 6; cursor: pointer; pointer-events: auto; transition: r 0.2s; }
 .sim-line-point:hover, .sim-line-point.active { r: 9; stroke: #1d4ed8; fill: #eff6ff; }
 
+/* 범례 (우측 상단 박스) */
+.chart-legend-overlay { position: absolute; top: 10px; right: 10px; background: rgba(255, 255, 255, 0.95); border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 5px; z-index: 20; max-height: 150px; overflow-y: auto; }
+
+.legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #64748b; cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: background 0.2s; }
+.legend-item:hover { background: #f1f5f9; }
+.legend-item.active { background: #eff6ff; color: #1e293b; font-weight: 700; }
+
+.legend-color-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid transparent; }
+
+/* 꺾은선 그래프용 X축 (과목명) */
+.subject-axis-label { position: absolute; bottom: -30px; transform: translateX(-50%); font-size: 0.85rem; color: #334155; font-weight: 600; text-align: center; }
+
+/* Y축 그리드 라인 */
+.y-grid-line { stroke: #e2e8f0; stroke-width: 1; stroke-dasharray: 4; }
+.y-grid-label { font-size: 0.75rem; fill: #94a3b8; text-anchor: end; alignment-baseline: middle; }
+
 /* 상세 분석 카드 */
 .sim-result-card { background: #fff; border: 1px solid #2563EB; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.15); margin-top: 20px; animation: slideUp 0.3s ease-out; }
 @keyframes slideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
