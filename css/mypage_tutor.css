@@ -92,6 +92,22 @@
     background-color: #f8fafc;
 }
 
+/* 컨설턴트 프로필 박스 테두리 및 그림자 */
+.profile-summary.tier-consultant {
+    border: 2px solid #1e3a8a; /* Deep Navy Blue */
+    box-shadow: 0 0 20px rgba(30, 58, 138, 0.2); /* 은은한 네이비 그림자 */
+    background: linear-gradient(to bottom, #ffffff, #f8fafc);
+}
+
+/* 컨설턴트 뱃지 스타일 */
+.profile-summary.tier-consultant .premium-badge {
+    background: linear-gradient(135deg, #1e3a8a, #3b82f6); /* Navy to Blue Gradient */
+    color: #ffffff;
+    border: 1px solid #1e3a8a;
+    box-shadow: 0 4px 6px rgba(30, 58, 138, 0.3);
+    letter-spacing: 1px; /* 글자 간격 넓혀서 가독성 확보 */
+}
+
 /* 3. 칼럼 리스트 스타일 */
 .column-list {
     display: flex;
