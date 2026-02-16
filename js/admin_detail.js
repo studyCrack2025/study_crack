@@ -307,7 +307,22 @@ function renderWeeklyTab() {
         // 2. 자가 점검 (Deep Answers + Trend)
         let checkHtml = '';
         if (d.deepAnswers && d.deepAnswers.length > 0) {
-            const listItems = d.deepAnswers.map(ans => `<li><i class="fas fa-check-circle text-blue"></i> ${escapeHtml(ans)}</li>`).join('');
+            // [핵심] 원래 질문 리스트 정의 (순서대로 매핑)
+            const QUESTIONS = ['학습 계획 점검', '학습 방향성 설정', '취약 과목 솔루션', '기타 멘탈 관리'];
+            
+            const listItems = d.deepAnswers.map((ans, i) => {
+                // 해당 인덱스의 질문 가져오기 (없으면 생략)
+                const questionLabel = QUESTIONS[i] ? `<span style="color:#1e293b; font-weight:800; margin-right:4px;">${QUESTIONS[i]}:</span>` : '';
+                
+                return `
+                <li>
+                    <i class="fas fa-check-circle text-blue" style="margin-top:4px; flex-shrink:0;"></i>
+                    <div style="flex:1;">
+                        ${questionLabel} ${escapeHtml(ans)}
+                    </div>
+                </li>`;
+            }).join('');
+
             checkHtml = `
                 <div class="weekly-section">
                     <div class="section-title"><i class="fas fa-clipboard-check"></i> 금주 중점 점검 사항</div>
