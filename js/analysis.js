@@ -1008,13 +1008,7 @@ function renderSimChart() {
         }
         const SUBJ_LABELS = ['국어', '수학', labelInq1, labelInq2];
 
-        // [중요] 컨테이너 스타일 강제 초기화 (CSS 충돌/Flex 늘어짐 방지)
-        // 높이를 260px로 고정하고, 패딩을 제거하여 좌표 계산의 오차를 없앱니다.
-        graphArea.style.height = '260px';
-        graphArea.style.flex = 'none'; // Flexbox에서 늘어나지 않도록 고정
-        graphArea.style.padding = '0 60px 0 20px'; // 좌우 여백만 유지
-        graphArea.style.boxSizing = 'border-box'; // 높이 계산 기준 통일
-
+        // Y값 최대치 계산
         let maxDiff = 0;
         data.forEach(item => {
             const currentScore = item.base_ui_score;
@@ -1028,43 +1022,59 @@ function renderSimChart() {
         });
         const Y_MAX = maxDiff > 0 ? maxDiff * 1.2 : 5;
 
+        // [중요] 렌더링 타이밍 이슈 방지를 위해 setTimeout 사용
         setTimeout(() => {
-            const width = graphArea.clientWidth || 300;
+            // 1. 모바일 여부 확인
+            const isMobile = window.innerWidth <= 768;
+
+            // 2. [스타일 강제 초기화] 외부 CSS 간섭 차단
+            // 높이를 260px로 고정 (CSS border-bottom이 260px 위치에 생김)
+            graphArea.style.height = '260px'; 
+            graphArea.style.minHeight = '260px';
+            graphArea.style.maxHeight = '260px';
+            graphArea.style.boxSizing = 'border-box';
             
-            // CSS에서 강제한 높이와 동일한 값 사용
-            const FIXED_HEIGHT = 260; 
-            const PADDING_TOP = 30; 
-            const AVAILABLE_HEIGHT = FIXED_HEIGHT - PADDING_TOP; 
-            const paddingLeft = 40; 
+            // [요청사항] 모바일이면 좌우 패딩을 줄여서 그래프를 넓힘
+            // PC: 좌60/우60, 모바일: 좌15/우15
+            const sidePadding = isMobile ? 15 : 60;
+            graphArea.style.padding = `0 ${sidePadding}px 0 ${sidePadding}px`; 
+
+            // 3. 그리기 치수 설정
+            const width = graphArea.clientWidth; // 패딩 제외 내부 너비
+            const GRAPH_BOTTOM_Y = 260; // 0.0점이 위치할 절대 Y좌표 (높이와 일치)
+            const GRAPH_TOP_Y = 30;     // 최고점이 위치할 Y좌표
+            const DRAW_H = GRAPH_BOTTOM_Y - GRAPH_TOP_Y; // 실제 그래프가 그려지는 높이
 
             let svgContent = '';
             let pcLegendHTML = '<div class="chart-legend-overlay">';
             let mobileLegendHTML = '';
 
-            // 1. 그리드 라인 그리기
-            // Y좌표 공식: 바닥(260) - (값의 비율 * 가용 높이)
+            // 4. 그리드 라인 그리기
             const gridCount = 5;
             for(let i=0; i<=gridCount; i++) {
                 const val = (Y_MAX / gridCount) * i;
-                const yPos = FIXED_HEIGHT - ((val / Y_MAX) * AVAILABLE_HEIGHT);
+                // 공식: 바닥(260) - (비율 * 그리기높이)
+                const yPos = GRAPH_BOTTOM_Y - ((val / Y_MAX) * DRAW_H);
                 
+                // 0점(i=0)은 바닥선과 겹치므로 라벨만 그림
                 if (i > 0) { 
                     svgContent += `
-                        <line x1="${paddingLeft}" y1="${yPos}" x2="${width}" y2="${yPos}" class="y-grid-line" />
-                        <text x="${paddingLeft - 5}" y="${yPos}" class="y-grid-label">${val.toFixed(1)}</text>
+                        <line x1="0" y1="${yPos}" x2="${width}" y2="${yPos}" class="y-grid-line" />
+                        <text x="-5" y="${yPos + 4}" class="y-grid-label" text-anchor="end" style="font-size:11px; fill:#94a3b8;">${val.toFixed(1)}</text>
                     `;
                 } else {
-                    // 0.0 라벨 (정확히 바닥 260px 위치에 표시)
-                    svgContent += `<text x="${paddingLeft - 5}" y="${FIXED_HEIGHT}" class="y-grid-label">0.0</text>`;
+                    // 0.0 라벨: yPos가 정확히 260이므로 바닥에 붙음
+                    svgContent += `<text x="-5" y="${yPos - 2}" class="y-grid-label" text-anchor="end" style="font-size:11px; fill:#94a3b8;">0.0</text>`;
                 }
             }
 
-            // 2. 데이터 그리기
+            // 5. 데이터 라인 그리기
             data.forEach((item, univIdx) => {
                 const color = PALETTE[univIdx % PALETTE.length];
                 const isActive = (univIdx === selectedSimIndex);
                 const shortUniv = item.univ.replace('학교', '');
                 
+                // 범례 생성
                 pcLegendHTML += `
                     <div class="legend-item ${isActive ? 'active' : ''}" onclick="selectSimUniv(${univIdx})">
                         <div class="legend-color-dot" style="background:${color}; box-shadow:${isActive ? '0 0 0 2px '+color : 'none'}"></div>
@@ -1081,29 +1091,35 @@ function renderSimChart() {
                 let pathD = '';
                 let pointsHTML = '';
                 
+                // X축 간격 계산 (패딩을 제외한 순수 너비를 등분)
+                const stepX = width / SUBJECTS.length;
+
                 SUBJECTS.forEach((subKey, subIdx) => {
-                    const xPos = paddingLeft + ((width - paddingLeft) / SUBJECTS.length) * (subIdx + 0.5);
+                    const xPos = (stepX * subIdx) + (stepX / 2);
+                    
                     let effectiveRise = 0;
                     if (item.sim_data && item.sim_data[subKey]) {
                         effectiveRise = Math.min(item.sim_data[subKey].diff, Math.max(0, 250 - item.base_ui_score));
                     }
                     
-                    // 0점일 때 yPos는 정확히 260이 됨
-                    const yPos = FIXED_HEIGHT - ((effectiveRise / Y_MAX) * AVAILABLE_HEIGHT);
+                    // Y좌표 계산 (그리드와 동일 공식)
+                    const yPos = GRAPH_BOTTOM_Y - ((effectiveRise / Y_MAX) * DRAW_H);
 
                     if (subIdx === 0) pathD += `M ${xPos} ${yPos}`;
                     else pathD += ` L ${xPos} ${yPos}`;
 
+                    // 포인트
                     pointsHTML += `<circle cx="${xPos}" cy="${yPos}" r="${isActive ? 6 : 3}" fill="${isActive ? '#fff' : color}" stroke="${color}" stroke-width="${isActive ? 2 : 1}" 
                         style="cursor:pointer; z-index:${isActive ? 100 : 10}" onclick="selectSimUniv(${univIdx})"/>`;
                     
                     if (isActive && effectiveRise > 0) {
-                        pointsHTML += `<text x="${xPos}" y="${yPos - 10}" text-anchor="middle" fill="${color}" font-size="11" font-weight="bold">+${effectiveRise.toFixed(1)}</text>`;
+                        pointsHTML += `<text x="${xPos}" y="${yPos - 12}" text-anchor="middle" fill="${color}" font-size="11" font-weight="bold">+${effectiveRise.toFixed(1)}</text>`;
                     }
 
-                    // 과목명 라벨 (바닥선 260px보다 25px 아래에 위치)
+                    // 과목명 라벨 (0.0선 아래로)
+                    // y=260(바닥) + 25px
                     if (univIdx === 0) {
-                        svgContent += `<text x="${xPos}" y="${FIXED_HEIGHT + 25}" text-anchor="middle" font-size="12" fill="#334155" font-weight="bold">${SUBJ_LABELS[subIdx]}</text>`;
+                        svgContent += `<text x="${xPos}" y="${GRAPH_BOTTOM_Y + 25}" text-anchor="middle" font-size="12" fill="#334155" font-weight="bold">${SUBJ_LABELS[subIdx]}</text>`;
                     }
                 });
 
@@ -1114,11 +1130,12 @@ function renderSimChart() {
             pcLegendHTML += '</div>';
             mobileLegendDiv.innerHTML = mobileLegendHTML;
 
-            // SVG 높이 설정 (그래프 260 + 라벨 공간 60 = 320px)
-            // overflow: visible 덕분에 잘리지 않음
+            // [핵심] SVG ViewBox 및 높이 설정
+            // height: 그래프(260) + 하단 텍스트 여유분(60) = 320
+            // overflow: visible이므로 좌표가 음수이거나 범위를 넘어도 보임
             graphArea.innerHTML = `
                 ${pcLegendHTML}
-                <svg class="sim-line-svg" width="${width}" height="${FIXED_HEIGHT + 60}" viewBox="0 0 ${width} ${FIXED_HEIGHT + 60}" style="position:absolute; top:0; left:0; overflow:visible;">
+                <svg class="sim-line-svg" width="100%" height="${GRAPH_BOTTOM_Y + 60}" viewBox="0 0 ${width} ${GRAPH_BOTTOM_Y + 60}" style="position:absolute; top:0; left:${sidePadding}px; overflow:visible;">
                     ${svgContent}
                 </svg>
             `;
