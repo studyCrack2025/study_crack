@@ -1968,6 +1968,50 @@ function renderProPromo(container) {
 
 // 2. [전용 대시보드] Pro 이상 유저 대상
 function renderProDashboard(container) {
+    // 날짜 계산 로직
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth(); // 0~11
+    const day = now.getDate();
+    const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+
+    let targetDateStr = "";
+    let deadlineStr = "";
+    let isClosed = false;
+    let periodText = "";
+
+    // 1~15일 사이 -> 목표: 이번 달 15일 / 마감: 13일
+    if (day <= 15) {
+        targetDateStr = `${month + 1}월 15일`;
+        deadlineStr = `${month + 1}월 13일`;
+        periodText = "상반기 정기 분석";
+        if (day > 13) isClosed = true;
+    } 
+    // 16일~말일 -> 목표: 다음 달 1일 / 마감: 말일-2일
+    else {
+        const nextMonthVal = (month + 1) % 12 + 1; // 12월이면 1월로
+        targetDateStr = `${nextMonthVal}월 1일`;
+        deadlineStr = `${month + 1}월 ${lastDayOfMonth - 2}일`;
+        periodText = "하반기 정기 분석";
+        if (day > (lastDayOfMonth - 2)) isClosed = true;
+    }
+
+    // 버튼 상태 결정
+    let btnHtml = '';
+    if (isClosed) {
+        btnHtml = `
+            <button class="req-btn disabled" disabled style="background:#e2e8f0; color:#94a3b8; cursor:not-allowed;">
+                <i class="fas fa-lock"></i> 접수 마감 (${deadlineStr} 까지)
+            </button>
+        `;
+    } else {
+        btnHtml = `
+            <button class="req-btn" onclick="openProReportModal()">
+                <i class="fas fa-edit"></i> ${targetDateStr} 보고서 요청하기
+            </button>
+        `;
+    }
+
     container.innerHTML = `
         <div class="pro-header">
             <div style="font-size:2rem; margin-bottom:10px;">🎓</div>
@@ -1981,11 +2025,10 @@ function renderProDashboard(container) {
         <div class="pro-dashboard-layout">
             <div class="dashboard-actions">
                 <div style="color:#bfdbfe; margin-bottom:15px; font-size:0.95rem;">
-                    💡 다음 정기 보고서 발송 예정일: <strong>매월 1일 / 15일</strong>
+                    💡 다음 리포트: <strong>${targetDateStr} (${periodText})</strong><br>
+                    <span style="font-size:0.85rem; opacity:0.8;">(요청 마감: ${deadlineStr} 23:59 까지)</span>
                 </div>
-                <button class="req-btn" onclick="openProReportModal()">
-                    <i class="fas fa-edit"></i> 이번 달 전략 보고서 요청하기
-                </button>
+                ${btnHtml}
             </div>
 
             <div class="report-list-container">
@@ -2001,7 +2044,6 @@ function renderProDashboard(container) {
         </div>
     `;
 
-    // 보고서 목록 로드 (가상 데이터 예시)
     loadProReports();
 }
 
@@ -2088,6 +2130,7 @@ function closeProModal() {
     document.body.style.overflow = 'auto';
 }
 
+// [API] PRO 보고서 요청 제출
 async function submitProReport() {
     const text = document.getElementById('proReportRequest').value;
     if (text.trim().length < 10) {
@@ -2095,7 +2138,7 @@ async function submitProReport() {
         return;
     }
 
-    if (!confirm("작성하신 내용으로 보고서를 요청하시겠습니까?")) return;
+    if (!confirm("작성하신 내용으로 보고서를 요청하시겠습니까?\n(제출 후에는 수정이 어렵습니다)")) return;
 
     const submitBtn = document.querySelector('.pro-submit-btn');
     const originalText = submitBtn.innerText;
@@ -2106,7 +2149,6 @@ async function submitProReport() {
     const token = localStorage.getItem('idToken');
 
     try {
-        // [API 호출] request_pro_report
         const res = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -2117,18 +2159,20 @@ async function submitProReport() {
             })
         });
 
+        const data = await res.json();
+
         if (res.ok) {
-            alert("요청이 정상적으로 접수되었습니다.\n담당 컨설턴트 확인 후 반영될 예정입니다.");
+            alert("요청이 정상적으로 접수되었습니다.\n담당 컨설턴트가 확인 후 반영할 예정입니다.");
             closeProModal();
-            // 입력창 초기화
             document.getElementById('proReportRequest').value = ''; 
         } else {
-            throw new Error("서버 응답 오류");
+            // 마감 등 에러 메시지 출력
+            throw new Error(data.msg || data.error || "서버 응답 오류");
         }
 
     } catch (e) {
         console.error("Submit Error:", e);
-        alert("요청 처리 중 오류가 발생했습니다.");
+        alert(e.message); // "이번 회차 보고서 요청이 마감되었습니다." 등의 메시지가 뜸
     } finally {
         submitBtn.innerText = originalText;
         submitBtn.disabled = false;
