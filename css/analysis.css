@@ -138,10 +138,12 @@
 /* 차트 영역 */
 .sim-chart-wrapper { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); min-height: 480px; box-sizing: border-box; display: flex; flex-direction: column; }
 .chart-scroll-container { flex: 1; overflow-x: auto; overflow-y: hidden; position: relative; scrollbar-width: thin; padding-bottom: 10px; }
-.chart-inner-container { display: flex; flex-direction: column; height: 360px; width: max-content; min-width: 100%; }
+.chart-inner-container { display: flex; flex-direction: column; height: 360px; width: max-content; min-width: 100%; overflow: visible !important; }
+.mobile-legend-area { display: none; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 15px; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
+.mobile-legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: #475569; font-weight: 600; }
 
 /* 그래프 & 라벨 영역 */
-.chart-graph-area { position: relative; height: 260px; border-bottom: 2px solid #cbd5e1; display: flex; align-items: flex-end; padding: 30px 60px 0 20px; box-sizing: border-box; gap: 10px; }
+.chart-graph-area { position: relative; height: 260px; border-bottom: 2px solid #cbd5e1; display: flex; align-items: flex-end; padding: 30px 60px 0 20px; box-sizing: border-box; gap: 10px; overflow: visible !important; z-index: 1;}
 .chart-label-area { height: 100px; display: flex; align-items: flex-start; padding: 10px 60px 0 20px; gap: 10px; box-sizing: border-box; }
 
 /* 기준선 */
@@ -466,6 +468,12 @@
     .sim-bar { width: 28px; } 
     .sim-bar-item, .sim-label-item { min-width: 45px; }
     .chart-graph-area, .chart-label-area { padding-left: 15px; padding-right: 15px; gap: 5px; }
+    .chart-guide-line, .chart-guide-label { display: none !important; }
+    .mobile-legend-area {
+        display: flex;
+    }
+    .chart-legend-overlay { display: none !important; }
+    .sim-chart-wrapper { padding-bottom: 20px; }
     
     /* 모달 */
     .check-modal-content { height: 95vh; max-height: 95vh; }
