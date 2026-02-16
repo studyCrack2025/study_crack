@@ -979,31 +979,39 @@ function renderSimChart() {
         });
     } 
     // ==================================================================================
-    // 4. 꺾은선 그래프 렌더링
+    // 4. 꺾은선 그래프 렌더링 (수정: 250점 만점 캡 적용 + X축 라벨 위치 하향)
     // ==================================================================================
     else if (currentSimChartType === 'line') {
-        // [설정] 그래프 색상 팔레트 (지망별 고유 색상)
+        // [설정] 그래프 색상 팔레트
         const PALETTE = ['#2563EB', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#64748B'];
         const SUBJECTS = ['kor', 'math', 'inq1', 'inq2'];
         const SUBJ_LABELS = ['국어', '수학', '탐구1', '탐구2'];
 
-        // 1. 최대 Y값 계산 (점수 상승폭 기준, 여유 공간 확보)
+        // 1. 최대 Y값 계산 (250점 제한을 적용한 유효 상승폭 기준)
         let maxDiff = 0;
         data.forEach(item => {
+            const currentScore = item.base_ui_score;
+            // 오를 수 있는 최대치 (여분 점수)
+            const roomToGrow = Math.max(0, 250 - currentScore);
+
             SUBJECTS.forEach(subKey => {
                 if (item.sim_data && item.sim_data[subKey]) {
-                    const val = item.sim_data[subKey].diff;
-                    if (val > maxDiff) maxDiff = val;
+                    const rawDiff = item.sim_data[subKey].diff;
+                    // [핵심 수정] 실제 상승폭은 250점을 넘을 수 없음
+                    const effectiveDiff = Math.min(rawDiff, roomToGrow);
+                    
+                    if (effectiveDiff > maxDiff) maxDiff = effectiveDiff;
                 }
             });
         });
-        const Y_MAX = maxDiff > 0 ? maxDiff * 1.2 : 10; // 최소 10점 혹은 최대값의 1.2배
+        
+        // Y축 최대값 설정 (최소 5점은 확보)
+        const Y_MAX = maxDiff > 0 ? maxDiff * 1.2 : 5;
 
-        // SVG 그리기 준비
         setTimeout(() => {
             const width = graphArea.clientWidth; 
             const height = graphArea.clientHeight; 
-            const drawHeight = height - 40; // 하단 라벨 공간 확보
+            const drawHeight = height - 40; // 하단 라벨 공간
             const paddingLeft = 40; // Y축 라벨 공간
 
             let svgContent = '';
@@ -1014,9 +1022,12 @@ function renderSimChart() {
             for(let i=0; i<=gridCount; i++) {
                 const val = (Y_MAX / gridCount) * i;
                 const yPos = drawHeight - ((val / Y_MAX) * drawHeight);
+                // 0점 라인은 맨 아래로
+                const safeY = isNaN(yPos) ? drawHeight : yPos;
+                
                 svgContent += `
-                    <line x1="${paddingLeft}" y1="${yPos}" x2="${width}" y2="${yPos}" class="y-grid-line" />
-                    <text x="${paddingLeft - 5}" y="${yPos}" class="y-grid-label">${val.toFixed(1)}</text>
+                    <line x1="${paddingLeft}" y1="${safeY}" x2="${width}" y2="${safeY}" class="y-grid-line" />
+                    <text x="${paddingLeft - 5}" y="${safeY}" class="y-grid-label">${val.toFixed(1)}</text>
                 `;
             }
 
@@ -1025,7 +1036,10 @@ function renderSimChart() {
                 const color = PALETTE[univIdx % PALETTE.length];
                 const isActive = (univIdx === selectedSimIndex);
                 
-                // 라인 포인트 계산
+                // [핵심 수정] 현재 점수에 따른 상승폭 제한 계산
+                const currentScore = item.base_ui_score;
+                const roomToGrow = Math.max(0, 250 - currentScore);
+
                 let pathD = '';
                 let pointsHTML = '';
                 
@@ -1033,47 +1047,49 @@ function renderSimChart() {
                     // X축 간격 균등 분배
                     const xPos = paddingLeft + ((width - paddingLeft) / SUBJECTS.length) * (subIdx + 0.5);
                     
-                    // Y축 (상승폭)
-                    let riseVal = 0;
+                    // Y축 (유효 상승폭)
+                    let effectiveRise = 0;
                     if (item.sim_data && item.sim_data[subKey]) {
-                        riseVal = item.sim_data[subKey].diff;
+                        const rawRise = item.sim_data[subKey].diff;
+                        // 250점 캡 적용 (rawRise가 12여도 roomToGrow가 5면 5로 제한)
+                        effectiveRise = Math.min(rawRise, roomToGrow);
                     }
-                    const yPos = drawHeight - ((riseVal / Y_MAX) * drawHeight);
+                    
+                    // 그래프 좌표 계산
+                    const yPos = drawHeight - ((effectiveRise / Y_MAX) * drawHeight);
 
                     if (subIdx === 0) pathD += `M ${xPos} ${yPos}`;
                     else pathD += ` L ${xPos} ${yPos}`;
 
-                    // 포인트 (선택된 대학은 크게, 아니면 작게)
+                    // 포인트 스타일
                     const rSize = isActive ? 6 : 3;
                     const strokeWidth = isActive ? 2 : 1;
                     const fill = isActive ? '#fff' : color;
+                    const zIndex = isActive ? 100 : 10;
                     
-                    // 포인트 클릭 이벤트 추가
                     pointsHTML += `<circle cx="${xPos}" cy="${yPos}" r="${rSize}" fill="${fill}" stroke="${color}" stroke-width="${strokeWidth}" 
-                        style="cursor:pointer; transition:all 0.2s; z-index:${isActive ? 100 : 10}" 
+                        style="cursor:pointer; transition:all 0.2s; z-index:${zIndex}" 
                         onclick="selectSimUniv(${univIdx})"/>`;
                     
-                    // 활성화된 라인의 값 텍스트 표시
-                    if (isActive && riseVal > 0) {
-                        pointsHTML += `<text x="${xPos}" y="${yPos - 10}" text-anchor="middle" fill="${color}" font-size="11" font-weight="bold">+${riseVal.toFixed(1)}</text>`;
+                    // 활성화된 라인의 값 텍스트 표시 (+N.N)
+                    if (isActive && effectiveRise > 0) {
+                        pointsHTML += `<text x="${xPos}" y="${yPos - 10}" text-anchor="middle" fill="${color}" font-size="11" font-weight="bold">+${effectiveRise.toFixed(1)}</text>`;
                     }
 
-                    // X축 라벨 (한 번만 그리기)
+                    // [수정] X축 라벨 위치 하향 조정 (height - 10 -> height - 5)
                     if (univIdx === 0) {
-                        svgContent += `<text x="${xPos}" y="${height - 10}" text-anchor="middle" font-size="12" fill="#334155" font-weight="bold">${SUBJ_LABELS[subIdx]}</text>`;
+                        svgContent += `<text x="${xPos}" y="${height - 5}" text-anchor="middle" font-size="12" fill="#334155" font-weight="bold">${SUBJ_LABELS[subIdx]}</text>`;
                     }
                 });
 
                 // 라인 스타일
-                const lineOpacity = isActive ? 1 : 0.3;
+                const lineOpacity = isActive ? 1 : 0.15; // 비활성 라인 더 연하게
                 const lineWidth = isActive ? 3 : 1.5;
-                const zIndex = isActive ? 50 : 1;
 
-                // SVG에 라인과 포인트 추가
                 svgContent += `<path d="${pathD}" fill="none" stroke="${color}" stroke-width="${lineWidth}" stroke-opacity="${lineOpacity}" style="transition:all 0.2s;" />`;
                 svgContent += pointsHTML;
 
-                // 범례(Legend) 아이템 추가
+                // 범례 아이템
                 const shortUniv = item.univ.replace('학교', '');
                 legendHTML += `
                     <div class="legend-item ${isActive ? 'active' : ''}" onclick="selectSimUniv(${univIdx})">
@@ -1085,7 +1101,6 @@ function renderSimChart() {
 
             legendHTML += '</div>';
             
-            // 최종 SVG 조립
             const fullSVG = `
                 ${legendHTML}
                 <svg class="sim-line-svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="position:absolute; top:0; left:0;">
@@ -1097,7 +1112,7 @@ function renderSimChart() {
 
         }, 0);
     }
-
+    
     renderDetailedSimCard();
 }
 
