@@ -169,13 +169,32 @@ html, body { height: auto !important; min-height: 100vh !important; overflow-y: 
 .close-modal { font-size: 1.5rem; cursor: pointer; color: #94a3b8; }
 .modal-body { padding: 25px; overflow-y: auto; line-height: 1.6; color: #334155; font-size: 0.95rem; white-space: pre-wrap; }
 
+/* [추가] 모의고사 뱃지 */
+.mock-type-badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; margin-left: 8px; vertical-align: middle; font-weight: normal; }
+.mock-type-badge.school { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+.mock-type-badge.edu { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.mock-type-badge.private { background: #f3e8ff; color: #6b21a8; border: 1px solid #d8b4fe; }
+
+/* [추가] 튜터 피드백 */
+.tutor-feedback-area { background: #f8fafc; border-top: 1px dashed #e2e8f0; padding: 20px; margin-top: 0; }
+.feedback-header { font-size: 0.95rem; font-weight: 800; color: #475569; margin-bottom: 15px; }
+.feedback-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.fb-item { display: flex; flex-direction: column; gap: 6px; }
+.fb-item.full { grid-column: 1 / -1; }
+.fb-item label { font-size: 0.85rem; color: #64748b; font-weight: 700; }
+.fb-item textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; resize: vertical; background: white; font-family: inherit; line-height: 1.4; }
+.fb-item textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
+.fb-item textarea:disabled { background: #f1f5f9; color: #475569; cursor: default; border-color: #e2e8f0; }
+.fb-save-btn { background: #3b82f6; color: white; border: none; padding: 8px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.fb-save-btn:hover { background: #2563eb; }
+@media (max-width: 768px) { .feedback-grid { grid-template-columns: 1fr; } }
 @media (max-width: 900px) {
-    .detail-container { grid-template-columns: 1fr; margin-top: 20px; padding: 0 15px 50px 15px; }
-    .profile-card { position: static; margin-bottom: 25px; }
-    .info-details-grid, .pay-summary-container, .qual-grid, .target-univ-list, .pro-item-grid { grid-template-columns: 1fr; }
-    .tab-content { padding: 20px; }
-    .info-header-card { flex-direction: column; text-align: center; }
-    .card-grid-body { grid-template-columns: 1fr; }
-    .weekly-section:first-child { border-right: none; border-bottom: 1px solid #f1f5f9; }
-    .weekly-mock-box { flex-direction: column; align-items: flex-start; gap: 10px; }
+	.detail-container { grid-template-columns: 1fr; margin-top: 20px; padding: 0 15px 50px 15px; }
+	.profile-card { position: static; margin-bottom: 25px; }
+	.info-details-grid, .pay-summary-container, .qual-grid, .target-univ-list, .pro-item-grid { grid-template-columns: 1fr; }
+	.tab-content { padding: 20px; }
+	.info-header-card { flex-direction: column; text-align: center; }
+	.card-grid-body { grid-template-columns: 1fr; }
+	.weekly-section:first-child { border-right: none; border-bottom: 1px solid #f1f5f9; }
+	.weekly-mock-box { flex-direction: column; align-items: flex-start; gap: 10px; }
 }

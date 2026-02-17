@@ -32,7 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
             backBtn.innerText = '← 목록으로 돌아가기';
         }
     }
-
+    
+    initRoleBasedView();
     loadStudentDetail();
     
     // 날짜 필터 초기화
@@ -40,6 +41,19 @@ document.addEventListener('DOMContentLoaded', () => {
     initDateFilter(today.getFullYear(), today.getMonth() + 1);
     initProDateFilter(today.getFullYear(), today.getMonth() + 1);
 });
+
+function initRoleBasedView() {
+    const userRole = localStorage.getItem('userRole');
+    
+    // 튜터라면 결제(pay), 분석(analysis) 탭 버튼 숨김
+    if (userRole === 'tutor') {
+        const btnPay = document.getElementById('btn-pay');
+        const btnAnalysis = document.getElementById('btn-analysis');
+        
+        if (btnPay) btnPay.style.display = 'none';
+        if (btnAnalysis) btnAnalysis.style.display = 'none';
+    }
+}
 
 // 공통 날짜 필터 (주간점검용)
 function initDateFilter(year, month) {
@@ -252,7 +266,7 @@ function renderSelectedScore() {
     container.innerHTML = html;
 }
 
-// [수정 4] 주간 점검 상세 렌더링 (mypage_tutor.js 수준의 디테일 적용)
+// [수정 4] 주간 점검 상세 렌더링
 function renderWeeklyTab() {
     const container = document.getElementById('weeklyListContainer');
     container.innerHTML = '';
@@ -260,13 +274,15 @@ function renderWeeklyTab() {
     const weeklyHistory = currentStudentData.weeklyHistory || [];
     const selYear = document.getElementById('filterYear').value;
     const selMonth = document.getElementById('filterMonth').value;
+    const userRole = localStorage.getItem('userRole'); // 권한 확인 (admin/tutor)
 
+    // 날짜 필터링 및 정렬
     const filtered = weeklyHistory.filter(w => {
         const d = new Date(w.date);
         return d.getFullYear() == selYear && (d.getMonth() + 1) == selMonth;
     });
 
-    filtered.sort((a, b) => new Date(a.date) - new Date(b.date)); // 날짜 오름차순
+    filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     if (filtered.length === 0) {
         container.innerHTML = '<div class="empty-msg" style="text-align:center; padding:40px; color:#cbd5e1;">해당 월의 리포트가 없습니다.</div>';
@@ -277,88 +293,85 @@ function renderWeeklyTab() {
         const dateStr = new Date(d.date).toLocaleDateString();
         const safeComment = escapeHtml(d.comment);
         
-        // 1. 학습 시간 테이블 (Compact Design)
-        let studyHtml = '';
+        // 1. 학습 시간 테이블
+        let studyHtml = ''; 
         if (d.studyTime && Array.isArray(d.studyTime.details)) {
-            let rows = '';
-            d.studyTime.details.forEach(sub => {
+             let rows = '';
+             d.studyTime.details.forEach(sub => {
                 const rate = sub.plan > 0 ? Math.min((sub.act / sub.plan) * 100, 100).toFixed(0) : 0;
-                // 달성률 색상 (100%: 초록, 80%~: 파랑, 나머지: 회색/빨강)
                 const rateClass = rate >= 100 ? 'text-green' : (rate >= 80 ? 'text-blue' : 'text-gray');
-                rows += `
-                <tr>
-                    <td>${escapeHtml(sub.subject)}</td>
-                    <td class="text-center">${sub.plan}h</td>
-                    <td class="text-center">${sub.act}h</td>
-                    <td class="text-center font-bold ${rateClass}">${rate}%</td>
-                </tr>`;
-            });
-            studyHtml = `
-                <div class="weekly-section">
-                    <div class="section-title"><i class="fas fa-clock"></i> 과목별 학습 달성도</div>
-                    <table class="compact-table">
-                        <thead><tr><th>과목</th><th>계획</th><th>실행</th><th>달성</th></tr></thead>
-                        <tbody>${rows}</tbody>
-                    </table>
-                </div>
-            `;
+                rows += `<tr><td>${escapeHtml(sub.subject)}</td><td class="text-center">${sub.plan}h</td><td class="text-center">${sub.act}h</td><td class="text-center font-bold ${rateClass}">${rate}%</td></tr>`;
+             });
+             studyHtml = `<div class="weekly-section"><div class="section-title"><i class="fas fa-clock"></i> 과목별 학습 달성도</div><table class="compact-table"><thead><tr><th>과목</th><th>계획</th><th>실행</th><th>달성</th></tr></thead><tbody>${rows}</tbody></table></div>`;
         }
 
-        // 2. 자가 점검 (Deep Answers + Trend)
+        // 2. 자가 점검 (Deep Answers)
         let checkHtml = '';
         if (d.deepAnswers && d.deepAnswers.length > 0) {
-            // [핵심] 원래 질문 리스트 정의 (순서대로 매핑)
             const QUESTIONS = ['학습 계획 점검', '학습 방향성 설정', '취약 과목 솔루션', '기타 멘탈 관리'];
-            
             const listItems = d.deepAnswers.map((ans, i) => {
-                // 해당 인덱스의 질문 가져오기 (없으면 생략)
-                const questionLabel = QUESTIONS[i] ? `<span style="color:#1e293b; font-weight:800; margin-right:4px;">${QUESTIONS[i]}:</span>` : '';
-                
-                return `
-                <li>
-                    <i class="fas fa-check-circle text-blue" style="margin-top:4px; flex-shrink:0;"></i>
-                    <div style="flex:1;">
-                        ${questionLabel} ${escapeHtml(ans)}
-                    </div>
-                </li>`;
+               const questionLabel = QUESTIONS[i] ? `<span style="color:#1e293b; font-weight:800; margin-right:4px;">${QUESTIONS[i]}:</span>` : '';
+               return `<li><i class="fas fa-check-circle text-blue" style="margin-top:4px; flex-shrink:0;"></i><div style="flex:1;">${questionLabel} ${escapeHtml(ans)}</div></li>`;
             }).join('');
-
-            checkHtml = `
-                <div class="weekly-section">
-                    <div class="section-title"><i class="fas fa-clipboard-check"></i> 금주 중점 점검 사항</div>
-                    <ul class="check-list">${listItems}</ul>
-                    ${d.trend ? `<div class="trend-badge ${d.trend.status === 'up' ? 'up' : (d.trend.status === 'down' ? 'down' : 'keep')}">
-                        학습 흐름: ${d.trend.status === 'up' ? '상승세 🔥' : (d.trend.status === 'down' ? '하락세 📉' : '유지중 -')}
-                    </div>` : ''}
-                </div>
-            `;
+            checkHtml = `<div class="weekly-section"><div class="section-title"><i class="fas fa-clipboard-check"></i> 금주 중점 점검 사항</div><ul class="check-list">${listItems}</ul>${d.trend ? `<div class="trend-badge ${d.trend.status === 'up' ? 'up' : (d.trend.status === 'down' ? 'down' : 'keep')}">학습 흐름: ${d.trend.status === 'up' ? '상승세 🔥' : (d.trend.status === 'down' ? '하락세 📉' : '유지중 -')}</div>` : ''}</div>`;
         }
 
-        // 3. 주간 모의고사 (Mock Exam) - 데이터가 있을 때만 표시
+        // 3. 주간 모의고사 결과 (뱃지 적용)
         let mockHtml = '';
         if (d.mockExam && d.mockExam.scores) {
             const s = d.mockExam.scores;
-            // 점수 표시 로직 (국/수/영/탐1/탐2)
+            // 타입별 라벨 및 스타일 클래스 매핑
+            const typeMap = { 'school': '교내', 'edu': '평가원/교육청', 'private': '사설' };
+            const typeLabel = typeMap[d.mockExam.type] || '기타'; 
+            const typeBadge = `<span class="mock-type-badge ${d.mockExam.type || ''}">${typeLabel}</span>`;
+
             const scoreItems = [
-                { l: '국어', v: s.kor },
-                { l: '수학', v: s.math },
-                { l: '영어', v: s.eng },
-                { l: s.inq1Name || '탐구1', v: s.inq1 },
-                { l: s.inq2Name || '탐구2', v: s.inq2 }
-            ].map(item => {
-                if(!item.v) return '';
-                return `<div class="score-pill"><span class="lbl">${item.l}</span><span class="val">${item.v}</span></div>`;
-            }).join('');
+                { l: '국어', v: s.kor }, { l: '수학', v: s.math }, { l: '영어', v: s.eng },
+                { l: s.inq1Name || '탐1', v: s.inq1 }, { l: s.inq2Name || '탐2', v: s.inq2 }
+            ].map(item => item.v ? `<div class="score-pill"><span class="lbl">${item.l}</span><span class="val">${item.v}</span></div>` : '').join('');
 
             mockHtml = `
                 <div class="weekly-mock-box">
-                    <div class="mock-header"><i class="fas fa-edit"></i> 주간 TEST 결과</div>
+                    <div class="mock-header">
+                        <i class="fas fa-edit"></i> 주간 모의고사 결과 ${typeBadge}
+                    </div>
                     <div class="score-pills-container">${scoreItems}</div>
                 </div>
             `;
         }
 
-        // 4. 플래너 및 코멘트
+        // 4. 주간 평가 응답 (튜터 피드백)
+        const fb = d.tutorFeedback || { achievement: '', mock: '', question: '' };
+        
+        // 권한 확인: 관리자는 읽기 전용(disabled), 튜터는 수정 가능
+        const isReadOnly = (userRole === 'admin') ? 'disabled' : '';
+        const btnDisplay = (userRole === 'admin') ? 'none' : 'inline-block';
+        const weekId = d.weekId || d.date; // 저장 시 사용할 키
+        
+        const feedbackHtml = `
+            <div class="tutor-feedback-area">
+                <div class="feedback-header">👩‍🏫 튜터 주간 평가 (Weekly Feedback)</div>
+                <div class="feedback-grid">
+                    <div class="fb-item">
+                        <label>학습 달성도 평가</label>
+                        <textarea id="fb_ach_${idx}" ${isReadOnly} placeholder="작성 대기중...">${escapeHtml(fb.achievement)}</textarea>
+                    </div>
+                    <div class="fb-item">
+                        <label>모의고사 결과 평가</label>
+                        <textarea id="fb_mock_${idx}" ${isReadOnly} placeholder="작성 대기중...">${escapeHtml(fb.mock)}</textarea>
+                    </div>
+                    <div class="fb-item full">
+                        <label>학생 개별 질문 응답</label>
+                        <textarea id="fb_q_${idx}" ${isReadOnly} placeholder="작성 대기중...">${escapeHtml(fb.question)}</textarea>
+                    </div>
+                </div>
+                <div style="text-align:right; margin-top:10px; display:${btnDisplay};">
+                    <button class="fb-save-btn" onclick="saveWeeklyFeedback('${weekId}', ${idx})">평가 저장</button>
+                </div>
+            </div>
+        `;
+
+        // 5. 플래너 파일 및 코멘트
         let footerHtml = '';
         const fileLinks = (d.plannerFiles || []).map((f, i) => {
             let name = typeof f === 'string' ? decodeURIComponent(f.split('/').pop()) : `파일 ${i+1}`;
@@ -368,11 +381,11 @@ function renderWeeklyTab() {
         footerHtml = `
             <div class="weekly-footer">
                 <div class="file-area">${fileLinks}</div>
-                ${d.comment ? `<div class="comment-box"><strong>💁‍♂️ 멘토 코멘트:</strong> ${safeComment}</div>` : ''}
+                ${d.comment ? `<div class="comment-box"><strong>💁‍♂️ 학생 코멘트:</strong> ${safeComment}</div>` : ''}
             </div>
         `;
 
-        // 카드 조립
+        // 최종 카드 조립
         const card = document.createElement('div');
         card.className = 'timeline-card weekly-new';
         card.innerHTML = `
@@ -391,9 +404,50 @@ function renderWeeklyTab() {
             </div>
             ${mockHtml}
             ${footerHtml}
+            ${feedbackHtml}
         `;
         container.appendChild(card);
     });
+}
+
+async function saveWeeklyFeedback(weekId, idx) {
+    const ach = document.getElementById(`fb_ach_${idx}`).value;
+    const mock = document.getElementById(`fb_mock_${idx}`).value;
+    const quest = document.getElementById(`fb_q_${idx}`).value;
+    
+    if(!confirm("주간 평가 내용을 저장하시겠습니까?")) return;
+
+    const token = localStorage.getItem('accessToken');
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'tutor_update_weekly_feedback', // 백엔드에서 이 타입을 처리해야 함
+                userId: adminId,
+                data: {
+                    targetUserId: targetUserId,
+                    weekId: weekId, // 또는 date
+                    feedback: {
+                        achievement: ach,
+                        mock: mock,
+                        question: quest
+                    }
+                }
+            })
+        });
+
+        if (response.ok) {
+            alert("평가가 저장되었습니다.");
+            // 데이터 갱신을 위해 리로드 또는 로컬 데이터 업데이트
+            // loadStudentDetail(); // 전체 리로드 대신 알림만 띄워도 무방
+        } else {
+            throw new Error("Server Error");
+        }
+    } catch(e) {
+        console.error(e);
+        alert("저장 중 오류가 발생했습니다.");
+    }
 }
 
 // [수정 6] FOR PRO 탭 렌더링 (1일~15일 / 16일~말일 분리)
