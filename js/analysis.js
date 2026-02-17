@@ -1435,21 +1435,32 @@ function renderFeedbackList() {
     filtered.forEach(h => {
         const div = document.createElement('div');
         div.className = 'feedback-tile';
-        
-        // [핵심] 튜터 피드백 데이터 확인 (tutorFeedback 객체가 있는지)
-        // Admin 페이지에서 저장한 구조: h.tutorFeedback = { achievement:..., mock:..., question:... }
-        const fb = h.tutorFeedback || {};
-        const hasFeedback = fb.achievement || fb.mock || fb.question; // 내용이 하나라도 있으면 피드백 있는 것으로 간주
-        
+
+        // [수정] 원본 데이터가 { "M": { ... } } 구조이므로 속성에 접근할 때 .M을 거쳐야 합니다.
+        const item = h.M ? h.M : h; 
+    
+        // tutorFeedback도 Map 형태이므로 .M으로 접근합니다.
+        const fbRaw = (item.tutorFeedback && item.tutorFeedback.M) ? item.tutorFeedback.M : null;
+    
+        // [핵심] 각 필드 내부의 .S (String) 값을 확인하여 피드백 유무를 판단합니다.
+        const hasFeedback = fbRaw && (
+            (fbRaw.achievement && fbRaw.achievement.S && fbRaw.achievement.S.trim() !== "") || 
+            (fbRaw.mock && fbRaw.mock.S && fbRaw.mock.S.trim() !== "") || 
+            (fbRaw.question && fbRaw.question.S && fbRaw.question.S.trim() !== "")
+        );
+
         // 상태에 따른 텍스트 및 스타일 설정
         const statusText = hasFeedback ? '피드백 도착 ✅' : '피드백 대기중 ⏳';
         const statusStyle = hasFeedback ? 'color:#166534; font-weight:bold;' : 'color:#94a3b8;';
 
-        // 클릭 시 상세 모달 열기 (데이터 h를 넘김)
+        // 클릭 시 상세 모달 열기 (데이터 h 전체를 넘김)
         div.onclick = () => { openFeedbackModal(h); };
-        
+    
+        // 타이틀 역시 .S 값을 가져와야 합니다.
+        const displayTitle = (item.title && item.title.S) ? item.title.S : (item.title || "주간 리포트");
+
         div.innerHTML = `
-            <div class="fb-title">${h.title}</div>
+            <div class="fb-title">${displayTitle}</div>
             <div class="fb-status" style="${statusStyle}">
                 ${statusText}
             </div>
@@ -1461,50 +1472,56 @@ function renderFeedbackList() {
 // [추가] 피드백 상세 모달 열기 및 데이터 바인딩
 function openFeedbackModal(data) {
     const modal = document.getElementById('feedbackModal');
-    // 모달 내부의 컨텐츠 영역 ID를 'modalContent'라고 가정 (없으면 HTML에 추가 필요)
     const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent'); 
 
-    if (!contentArea) {
-        console.error("Modal content area not found");
-        return;
-    }
+    if (!contentArea) return;
 
-    const fb = data.tutorFeedback || {};
+    // [중요] 원본 데이터(data.M)가 있는지, 아니면 변환된 데이터(data)인지 확인
+    const item = data.M ? data.M : data;
+    const fbRaw = item.tutorFeedback ? item.tutorFeedback.M : {};
+
+    // DynamoDB의 S(String) 값을 추출하는 헬퍼 함수
+    const getS = (obj) => {
+        if (!obj) return null;
+        return obj.S ? obj.S : (typeof obj === 'string' ? obj : null);
+    };
+
+    const achievement = getS(fbRaw.achievement);
+    const mock = getS(fbRaw.mock);
+    const question = getS(fbRaw.question);
     
-    // 줄바꿈 문자(\n)를 <br>로 변환하여 보기 좋게 만듦
     const formatText = (text) => text ? text.replace(/\n/g, '<br>') : '<span style="color:#cbd5e1;">(작성된 내용이 없습니다)</span>';
 
-    // 모달 내부 HTML 동적 생성
     const html = `
         <div class="feedback-detail-view">
             <h3 style="margin-bottom:20px; border-bottom:2px solid #f1f5f9; padding-bottom:10px; color:#1e293b;">
-                ${data.title}
+                ${getS(item.title) || "주간 리포트 피드백"}
             </h3>
 
             <div class="fb-section-box">
                 <h4 style="color:#2563eb; margin-bottom:8px;">📊 학습 달성도 평가</h4>
-                <div class="fb-text-content">${formatText(fb.achievement)}</div>
+                <div class="fb-text-content">${formatText(achievement)}</div>
             </div>
 
             <div class="fb-section-box">
                 <h4 style="color:#d97706; margin-bottom:8px;">📝 모의고사 피드백</h4>
-                <div class="fb-text-content">${formatText(fb.mock)}</div>
+                <div class="fb-text-content">${formatText(mock)}</div>
             </div>
 
             <div class="fb-section-box">
                 <h4 style="color:#059669; margin-bottom:8px;">💬 튜터 답변 (Q&A)</h4>
-                <div class="fb-text-content">${formatText(fb.question)}</div>
+                <div class="fb-text-content">${formatText(question)}</div>
             </div>
             
-            ${data.comment ? `
+            ${getS(item.comment) ? `
             <div style="margin-top:20px; padding-top:15px; border-top:1px dashed #e2e8f0; font-size:0.9rem; color:#64748b;">
-                <strong>💁 내가 남긴 코멘트:</strong> ${data.comment}
+                <strong>💁 내가 남긴 코멘트:</strong> ${getS(item.comment)}
             </div>` : ''}
         </div>
     `;
 
     contentArea.innerHTML = html;
-    modal.style.display = 'block'; // 또는 'flex' (기존 CSS에 맞게)
+    modal.style.display = 'block';
 }
 
 function openWeeklyCheckModal() {
