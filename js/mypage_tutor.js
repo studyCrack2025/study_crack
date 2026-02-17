@@ -90,8 +90,11 @@ async function loadTutorInfo(userId) {
         if (!res.ok) throw new Error("Load Failed");
         
         const rawData = await res.json();
+        console.log("Raw Data:", rawData); // [1] 원본 데이터 확인
+
         const data = parseDynamoItem(rawData);
-        tutorInfoData = data;
+        console.log("Parsed Data:", data); // [2] 파싱된 데이터 확인
+        console.log("Profile Image URL:", data.profileImage); // [3] URL 존재 여부 확인
 
         // 1. 기본 정보 렌더링
         if(document.getElementById('userNameDisplay')) document.getElementById('userNameDisplay').innerText = data.name || '이름 없음';
@@ -112,7 +115,7 @@ async function loadTutorInfo(userId) {
         if (data.profileImage) {
             const imgElem = document.getElementById('profileImg');
             if(imgElem) {
-                imgElem.src = escapeHtml(data.profileImage);
+                imgElem.src = data.profileImage;
                 checkDeleteButtonVisibility(data.profileImage);
             }
         }
