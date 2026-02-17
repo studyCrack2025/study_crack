@@ -1390,10 +1390,9 @@ function renderFeedbackList() {
     
     if(!listContainer || !select) return;
 
-    // 1. 연/월 추출 및 Select Box 구성 (기존 로직 유지)
+    // 1. 연/월 추출 및 Select Box 구성
     const yearMonths = new Set();
     history.forEach(h => {
-        // h.title 예시: "2024년 2월 3주차 주간 리포트"
         const match = h.title && h.title.match(/(\d{4}년\s\d{1,2}월)/);
         if(match) yearMonths.add(match[1]);
     });
@@ -1420,12 +1419,12 @@ function renderFeedbackList() {
     
     const selectedYM = select.value;
 
-    // 2. 리스트 렌더링 (수정됨)
+    // 2. 리스트 렌더링
     listContainer.innerHTML = '';
     
-    // 해당 월의 데이터 필터링
+    // 필터링 및 정렬
     const filtered = history.filter(h => h.title && h.title.includes(selectedYM))
-                            .sort((a,b) => b.title.localeCompare(a.title)); // 최신순 정렬
+                            .sort((a,b) => b.title.localeCompare(a.title));
 
     if(filtered.length === 0) {
         listContainer.innerHTML = '<div class="empty-feedback">제출된 기록이 없습니다.</div>';
@@ -1436,31 +1435,23 @@ function renderFeedbackList() {
         const div = document.createElement('div');
         div.className = 'feedback-tile';
 
-        // [수정] 원본 데이터가 { "M": { ... } } 구조이므로 속성에 접근할 때 .M을 거쳐야 합니다.
-        const item = h.M ? h.M : h; 
-    
-        // tutorFeedback도 Map 형태이므로 .M으로 접근합니다.
-        const fbRaw = (item.tutorFeedback && item.tutorFeedback.M) ? item.tutorFeedback.M : null;
-    
-        // [핵심] 각 필드 내부의 .S (String) 값을 확인하여 피드백 유무를 판단합니다.
-        const hasFeedback = fbRaw && (
-            (fbRaw.achievement && fbRaw.achievement.S && fbRaw.achievement.S.trim() !== "") || 
-            (fbRaw.mock && fbRaw.mock.S && fbRaw.mock.S.trim() !== "") || 
-            (fbRaw.question && fbRaw.question.S && fbRaw.question.S.trim() !== "")
+        // [수정 포인트] 이미 parseDynamoItem을 거쳤으므로 .M이나 .S가 없습니다.
+        const fb = h.tutorFeedback || {};
+        
+        // 필드 내부 값이 비어있지 않은지 확인
+        const hasFeedback = fb && (
+            (fb.achievement && String(fb.achievement).trim() !== "") || 
+            (fb.mock && String(fb.mock).trim() !== "") || 
+            (fb.question && String(fb.question).trim() !== "")
         );
 
-        // 상태에 따른 텍스트 및 스타일 설정
         const statusText = hasFeedback ? '피드백 도착 ✅' : '피드백 대기중 ⏳';
         const statusStyle = hasFeedback ? 'color:#166534; font-weight:bold;' : 'color:#94a3b8;';
 
-        // 클릭 시 상세 모달 열기 (데이터 h 전체를 넘김)
         div.onclick = () => { openFeedbackModal(h); };
-    
-        // 타이틀 역시 .S 값을 가져와야 합니다.
-        const displayTitle = (item.title && item.title.S) ? item.title.S : (item.title || "주간 리포트");
-
+        
         div.innerHTML = `
-            <div class="fb-title">${displayTitle}</div>
+            <div class="fb-title">${h.title || "주간 리포트"}</div>
             <div class="fb-status" style="${statusStyle}">
                 ${statusText}
             </div>
@@ -1476,46 +1467,38 @@ function openFeedbackModal(data) {
 
     if (!contentArea) return;
 
-    // [중요] 원본 데이터(data.M)가 있는지, 아니면 변환된 데이터(data)인지 확인
-    const item = data.M ? data.M : data;
-    const fbRaw = item.tutorFeedback ? item.tutorFeedback.M : {};
-
-    // DynamoDB의 S(String) 값을 추출하는 헬퍼 함수
-    const getS = (obj) => {
-        if (!obj) return null;
-        return obj.S ? obj.S : (typeof obj === 'string' ? obj : null);
-    };
-
-    const achievement = getS(fbRaw.achievement);
-    const mock = getS(fbRaw.mock);
-    const question = getS(fbRaw.question);
+    // [수정 포인트] 이미 파싱된 데이터이므로 직접 접근
+    const fb = data.tutorFeedback || {};
     
-    const formatText = (text) => text ? text.replace(/\n/g, '<br>') : '<span style="color:#cbd5e1;">(작성된 내용이 없습니다)</span>';
+    const formatText = (text) => {
+        if (!text) return '<span style="color:#cbd5e1;">(작성된 내용이 없습니다)</span>';
+        return String(text).replace(/\n/g, '<br>');
+    };
 
     const html = `
         <div class="feedback-detail-view">
             <h3 style="margin-bottom:20px; border-bottom:2px solid #f1f5f9; padding-bottom:10px; color:#1e293b;">
-                ${getS(item.title) || "주간 리포트 피드백"}
+                ${data.title || "주간 리포트 피드백"}
             </h3>
 
             <div class="fb-section-box">
                 <h4 style="color:#2563eb; margin-bottom:8px;">📊 학습 달성도 평가</h4>
-                <div class="fb-text-content">${formatText(achievement)}</div>
+                <div class="fb-text-content">${formatText(fb.achievement)}</div>
             </div>
 
             <div class="fb-section-box">
                 <h4 style="color:#d97706; margin-bottom:8px;">📝 모의고사 피드백</h4>
-                <div class="fb-text-content">${formatText(mock)}</div>
+                <div class="fb-text-content">${formatText(fb.mock)}</div>
             </div>
 
             <div class="fb-section-box">
                 <h4 style="color:#059669; margin-bottom:8px;">💬 튜터 답변 (Q&A)</h4>
-                <div class="fb-text-content">${formatText(question)}</div>
+                <div class="fb-text-content">${formatText(fb.question)}</div>
             </div>
             
-            ${getS(item.comment) ? `
+            ${data.comment ? `
             <div style="margin-top:20px; padding-top:15px; border-top:1px dashed #e2e8f0; font-size:0.9rem; color:#64748b;">
-                <strong>💁 내가 남긴 코멘트:</strong> ${getS(item.comment)}
+                <strong>💁 내가 남긴 코멘트:</strong> ${data.comment}
             </div>` : ''}
         </div>
     `;
