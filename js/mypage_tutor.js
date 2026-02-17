@@ -419,16 +419,35 @@ function checkDeleteButtonVisibility(url) {
 window.loadMyStudents = async function() {
     const tbody = document.getElementById('myStudentListBody');
     tbody.innerHTML = '<tr><td colspan="5" class="empty-msg"><i class="fas fa-spinner fa-spin"></i> 데이터 로딩 중...</td></tr>';
+    
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('idToken');
-    const myName = tutorInfoData.name || 'Tutor';
+
+    let myName = tutorInfoData.name;
+    
+    if (!myName) {
+        // 혹시 loadTutorInfo가 아직 안 끝났다면 화면의 이름이라도 가져옴
+        const nameDisplay = document.getElementById('userNameDisplay');
+        if (nameDisplay) myName = nameDisplay.innerText;
+    }
+
+    // 그래도 없으면 어쩔 수 없이 Tutor (이 경우엔 데이터 안 뜰 것임)
+    if (!myName || myName === '이름 없음') {
+        // 0.5초 뒤에 다시 시도 (재귀 호출로 타이밍 확보)
+        console.log("이름 데이터 로딩 대기 중...");
+        setTimeout(window.loadMyStudents, 500);
+        return;
+    }
 
     try {
+        console.log(`학생 조회 요청: TutorName = ${myName}`); // 디버깅용 로그
+
         const response = await fetch(TUTOR_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'tutor_get_students', userId: userId, tutorName: myName })
         });
+        
         if (!response.ok) throw new Error("Load Failed");
         const students = await response.json();
 
@@ -437,17 +456,20 @@ window.loadMyStudents = async function() {
             tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">배정된 학생이 없습니다.</td></tr>';
             return;
         }
+        
+        // ... (나머지 렌더링 코드는 동일) ...
         students.forEach(s => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><strong>${escapeHtml(s.name)}</strong></td>
-                <td>${escapeHtml(s.school || '-')}</td>
-                <td>${escapeHtml(s.phone || '-')}</td>
-                <td>${s.lastLogin ? new Date(s.lastLogin).toLocaleDateString() : '-'}</td>
-                <td><button class="manage-btn" onclick="goToStudentDetail('${s.userid}')">상세관리</button></td>
-            `;
-            tbody.appendChild(tr);
+             const tr = document.createElement('tr');
+             tr.innerHTML = `
+                 <td><strong>${escapeHtml(s.name)}</strong></td>
+                 <td>${escapeHtml(s.school || '-')}</td>
+                 <td>${escapeHtml(s.phone || '-')}</td>
+                 <td>${s.lastLogin ? new Date(s.lastLogin).toLocaleDateString() : '-'}</td>
+                 <td><button class="manage-btn" onclick="goToStudentDetail('${s.userid}')">상세관리</button></td>
+             `;
+             tbody.appendChild(tr);
         });
+
     } catch (e) {
         console.error(e);
         tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">데이터를 불러오지 못했습니다.</td></tr>';
