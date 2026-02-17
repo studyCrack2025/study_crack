@@ -1390,20 +1390,18 @@ function renderFeedbackList() {
     
     if(!listContainer || !select) return;
 
-    // 연/월 추출
+    // 1. 연/월 추출 및 Select Box 구성 (기존 로직 유지)
     const yearMonths = new Set();
     history.forEach(h => {
-        const match = h.title.match(/(\d{4}년\s\d{1,2}월)/);
+        // h.title 예시: "2024년 2월 3주차 주간 리포트"
+        const match = h.title && h.title.match(/(\d{4}년\s\d{1,2}월)/);
         if(match) yearMonths.add(match[1]);
     });
 
-    // 이번달 추가 (데이터가 없을 경우 대비)
     const today = new Date();
     const currentYM = `${today.getFullYear()}년 ${today.getMonth()+1}월`;
     if(yearMonths.size === 0) yearMonths.add(currentYM);
     
-    // Select Box 갱신
-    // (사용자가 이미 선택한 값이 있으면 유지하려 노력, 없으면 새로 렌더링)
     const prevValue = select.value;
     select.innerHTML = '';
     
@@ -1414,7 +1412,6 @@ function renderFeedbackList() {
         select.appendChild(option);
     });
     
-    // 이전 선택값 복원 또는 디폴트 설정
     if (prevValue && yearMonths.has(prevValue)) {
         select.value = prevValue;
     } else {
@@ -1423,9 +1420,12 @@ function renderFeedbackList() {
     
     const selectedYM = select.value;
 
-    // 리스트 렌더링
+    // 2. 리스트 렌더링 (수정됨)
     listContainer.innerHTML = '';
-    const filtered = history.filter(h => h.title.includes(selectedYM)).sort((a,b) => b.title.localeCompare(a.title));
+    
+    // 해당 월의 데이터 필터링
+    const filtered = history.filter(h => h.title && h.title.includes(selectedYM))
+                            .sort((a,b) => b.title.localeCompare(a.title)); // 최신순 정렬
 
     if(filtered.length === 0) {
         listContainer.innerHTML = '<div class="empty-feedback">제출된 기록이 없습니다.</div>';
@@ -1435,14 +1435,76 @@ function renderFeedbackList() {
     filtered.forEach(h => {
         const div = document.createElement('div');
         div.className = 'feedback-tile';
-        div.onclick = () => { document.getElementById('feedbackModal').style.display='block'; };
+        
+        // [핵심] 튜터 피드백 데이터 확인 (tutorFeedback 객체가 있는지)
+        // Admin 페이지에서 저장한 구조: h.tutorFeedback = { achievement:..., mock:..., question:... }
+        const fb = h.tutorFeedback || {};
+        const hasFeedback = fb.achievement || fb.mock || fb.question; // 내용이 하나라도 있으면 피드백 있는 것으로 간주
+        
+        // 상태에 따른 텍스트 및 스타일 설정
+        const statusText = hasFeedback ? '피드백 도착 ✅' : '피드백 대기중 ⏳';
+        const statusStyle = hasFeedback ? 'color:#166534; font-weight:bold;' : 'color:#94a3b8;';
+
+        // 클릭 시 상세 모달 열기 (데이터 h를 넘김)
+        div.onclick = () => { openFeedbackModal(h); };
         
         div.innerHTML = `
             <div class="fb-title">${h.title}</div>
-            <div class="fb-status"><i class="fas fa-check-circle"></i> 피드백 보기</div>
+            <div class="fb-status" style="${statusStyle}">
+                ${statusText}
+            </div>
         `;
         listContainer.appendChild(div);
     });
+}
+
+// [추가] 피드백 상세 모달 열기 및 데이터 바인딩
+function openFeedbackModal(data) {
+    const modal = document.getElementById('feedbackModal');
+    // 모달 내부의 컨텐츠 영역 ID를 'modalContent'라고 가정 (없으면 HTML에 추가 필요)
+    const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent'); 
+
+    if (!contentArea) {
+        console.error("Modal content area not found");
+        return;
+    }
+
+    const fb = data.tutorFeedback || {};
+    
+    // 줄바꿈 문자(\n)를 <br>로 변환하여 보기 좋게 만듦
+    const formatText = (text) => text ? text.replace(/\n/g, '<br>') : '<span style="color:#cbd5e1;">(작성된 내용이 없습니다)</span>';
+
+    // 모달 내부 HTML 동적 생성
+    const html = `
+        <div class="feedback-detail-view">
+            <h3 style="margin-bottom:20px; border-bottom:2px solid #f1f5f9; padding-bottom:10px; color:#1e293b;">
+                ${data.title}
+            </h3>
+
+            <div class="fb-section-box">
+                <h4 style="color:#2563eb; margin-bottom:8px;">📊 학습 달성도 평가</h4>
+                <div class="fb-text-content">${formatText(fb.achievement)}</div>
+            </div>
+
+            <div class="fb-section-box">
+                <h4 style="color:#d97706; margin-bottom:8px;">📝 모의고사 피드백</h4>
+                <div class="fb-text-content">${formatText(fb.mock)}</div>
+            </div>
+
+            <div class="fb-section-box">
+                <h4 style="color:#059669; margin-bottom:8px;">💬 튜터 답변 (Q&A)</h4>
+                <div class="fb-text-content">${formatText(fb.question)}</div>
+            </div>
+            
+            ${data.comment ? `
+            <div style="margin-top:20px; padding-top:15px; border-top:1px dashed #e2e8f0; font-size:0.9rem; color:#64748b;">
+                <strong>💁 내가 남긴 코멘트:</strong> ${data.comment}
+            </div>` : ''}
+        </div>
+    `;
+
+    contentArea.innerHTML = html;
+    modal.style.display = 'block'; // 또는 'flex' (기존 CSS에 맞게)
 }
 
 function openWeeklyCheckModal() {
