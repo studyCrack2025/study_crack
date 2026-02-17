@@ -1,12 +1,11 @@
 /* ============================================================
-   [튜터 페이지 전용 스타일]
-   설명: mypage.css를 오버라이드하여 튜터 전용 레이아웃 적용
+   [튜터 페이지 전용 스타일 - 수정본]
    ============================================================ */
 
-/* 1. 탭 메뉴 스타일 (왼쪽 쏠림 방지 및 간격 조정) */
+/* 1. 탭 메뉴 스타일 (2개 탭 균등 분할) */
 .main-tabs {
     display: flex;
-    gap: 0; /* 버튼이 꽉 차므로 갭 제거 (원하면 유지 가능) */
+    gap: 0;
     margin-bottom: 30px;
     border-bottom: 2px solid #f1f5f9;
     padding-bottom: 0;
@@ -14,11 +13,11 @@
 }
 
 .tab-btn {
-    flex: 1; /* [핵심] 공간을 균등하게 1:1:1로 차지하여 꽉 채움 */
-    text-align: center; /* 텍스트 가운데 정렬 */
+    flex: 1; /* 1:1 비율 */
+    text-align: center;
     background: none;
     border: none;
-    padding: 12px 10px;
+    padding: 14px 10px;
     font-size: 1.05rem;
     font-weight: 600;
     color: #94a3b8;
@@ -30,7 +29,7 @@
 
 .tab-btn:hover {
     color: #334155;
-    background-color: #f8fafc; /* 호버 시 살짝 배경색 */
+    background-color: #f8fafc;
 }
 
 .tab-btn.active {
@@ -39,139 +38,149 @@
     background-color: transparent;
 }
 
-/* 탭 콘텐츠 영역 */
 .tab-content {
-    display: none; /* 기본 숨김 */
+    display: none;
     animation: fadeIn 0.3s ease-out;
 }
-
-.tab-content.active {
-    display: block; /* 활성화 시 표시 */
-}
+.tab-content.active { display: block; }
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* 2. 소개글 작성 영역 (Intro Box) */
-.tutor-intro-box {
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 30px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-}
-
-.tutor-intro-box h3 {
-    margin-top: 0;
-    font-size: 1rem;
-    color: #334155;
-    margin-bottom: 10px;
-    border-bottom: none; /* mypage.css의 h3 스타일 오버라이드 */
-    padding-bottom: 0;
-}
-
-.tutor-intro-box textarea {
+/* 2. 사이드바 - 프로필 수정 버튼 */
+.profile-edit-btn {
+    margin-top: 15px;
     width: 100%;
-    padding: 15px;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    resize: vertical;
-    font-size: 0.95rem;
-    font-family: inherit;
-    line-height: 1.6;
-    outline: none;
-    transition: border 0.2s;
-    box-sizing: border-box;
-}
-
-.tutor-intro-box textarea:focus {
-    border-color: #2563EB;
-    background-color: #f8fafc;
-}
-
-/* 컨설턴트 프로필 박스 테두리 및 그림자 */
-.profile-summary.tier-consultant {
-    border: 2px solid #1e3a8a; /* Deep Navy Blue */
-    box-shadow: 0 0 20px rgba(30, 58, 138, 0.2); /* 은은한 네이비 그림자 */
-    background: linear-gradient(to bottom, #ffffff, #f8fafc);
-}
-
-/* 컨설턴트 뱃지 스타일 */
-.profile-summary.tier-consultant .premium-badge {
-    background: linear-gradient(135deg, #1e3a8a, #3b82f6); /* Navy to Blue Gradient */
-    color: #ffffff;
-    border: 1px solid #1e3a8a;
-    box-shadow: 0 4px 6px rgba(30, 58, 138, 0.3);
-    letter-spacing: 1px; /* 글자 간격 넓혀서 가독성 확보 */
-}
-
-/* 3. 칼럼 리스트 스타일 */
-.column-list {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.my-column-item {
-    border: 1px solid #e2e8f0;
-    padding: 20px;
-    border-radius: 8px;
-    background: #fff;
+    padding: 10px;
+    background-color: white;
+    border: 1px solid #3b82f6;
+    color: #3b82f6;
+    border-radius: 6px;
     cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
-.my-column-item:hover {
-    border-color: #3b82f6;
-    transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+.profile-edit-btn:hover {
+    background-color: #eff6ff;
 }
 
-.col-item-header {
+/* 3. 계약 및 정산 정보 스타일 */
+.deposit-section {
+    margin-top: 30px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.deposit-header {
+    background: #f8fafc;
+    padding: 15px 20px;
+    cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
-}
-
-.col-item-title {
     font-weight: 700;
-    font-size: 1.1rem;
     color: #1e293b;
+    transition: background 0.2s;
 }
 
-.col-item-date {
-    color: #94a3b8;
+.deposit-header:hover {
+    background: #f1f5f9;
+}
+
+.deposit-content {
+    padding: 20px;
+    background: #fff;
+    border-top: 1px solid #e2e8f0;
+    transition: all 0.3s ease-in-out;
+}
+
+/* 아코디언 애니메이션용 hidden 처리 */
+.deposit-content.hidden {
+    display: none;
+}
+
+.deposit-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+}
+
+.deposit-table th {
+    background: #eff6ff;
+    color: #1e3a8a;
+    padding: 10px;
     font-size: 0.85rem;
+    text-align: center;
+    border-bottom: 2px solid #dbeafe;
 }
 
-.col-item-preview {
+.deposit-table td {
+    padding: 12px 10px;
+    text-align: center;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.9rem;
+    color: #334155;
+}
+
+.deposit-note {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    text-align: right;
+    margin-top: 10px;
+}
+
+/* 4. 모달 스타일 확장 */
+.row-inputs {
+    display: flex;
+    gap: 15px;
+}
+.row-inputs .half {
+    flex: 1;
+}
+.modal-desc {
+    font-size: 0.9rem;
     color: #64748b;
-    font-size: 0.95rem;
-    line-height: 1.5;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    margin-bottom: 20px;
 }
 
-/* 4. 학생 관리 테이블 */
+.large-modal {
+    max-width: 500px; /* 모달 너비 조금 더 넓게 */
+}
+
+/* 컨설턴트 뱃지 등 기존 스타일 유지 */
+.profile-summary.tier-consultant {
+    border: 2px solid #1e3a8a;
+    box-shadow: 0 0 20px rgba(30, 58, 138, 0.2);
+    background: linear-gradient(to bottom, #ffffff, #f8fafc);
+}
+
+.profile-summary.tier-consultant .premium-badge {
+    background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+    color: #ffffff;
+    border: 1px solid #1e3a8a;
+}
+
+/* 5. 학생 관리 테이블 (기존 유지) */
 .table-responsive {
     overflow-x: auto;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
 }
-
 .student-table {
     width: 100%;
     border-collapse: collapse;
     min-width: 600px;
     background: white;
 }
-
 .student-table th {
     background: #f8fafc;
     padding: 15px;
@@ -182,7 +191,6 @@
     font-size: 0.9rem;
     white-space: nowrap;
 }
-
 .student-table td {
     padding: 15px;
     border-bottom: 1px solid #f1f5f9;
@@ -190,15 +198,6 @@
     vertical-align: middle;
     font-size: 0.95rem;
 }
-
-.student-table tr:last-child td {
-    border-bottom: none;
-}
-
-.student-table tr:hover td {
-    background-color: #f8fafc;
-}
-
 .manage-btn {
     padding: 6px 12px;
     background: #fff;
@@ -208,54 +207,16 @@
     cursor: pointer;
     font-size: 0.85rem;
     font-weight: 600;
-    transition: all 0.2s;
 }
+.manage-btn:hover { background: #2563eb; color: white; border-color: #2563eb; }
 
-.manage-btn:hover {
-    background: #2563eb;
-    color: white;
-    border-color: #2563eb;
-}
-
-/* 5. 공통 버튼 스타일 (소형) */
-.small-btn {
-    padding: 8px 16px;
-    border-radius: 6px;
-    border: 1px solid #cbd5e1;
-    background: white;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: #475569;
-    transition: all 0.2s;
-}
-
-.small-btn:hover {
-    background: #f1f5f9;
-    color: #1e293b;
-}
-
-.small-btn.blue-btn {
-    background: #3b82f6;
-    color: white;
-    border: 1px solid #3b82f6;
-}
-
-.small-btn.blue-btn:hover {
-    background: #2563eb;
-    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
-}
-
-/* 비어있을 때 메시지 */
+/* 공통 */
 .empty-msg {
     text-align: center;
     padding: 40px;
     color: #94a3b8;
-    font-size: 0.95rem;
     background: #fdfdfd;
 }
-
-/* 텍스트 영역 공통 */
 .common-textarea {
     width: 100%;
     padding: 12px;
@@ -266,25 +227,11 @@
     box-sizing: border-box;
     font-family: inherit;
 }
-.common-textarea:focus {
-    outline: none;
-    border-color: #3b82f6;
-}
+.hidden { display: none !important; }
 
 /* 모바일 대응 */
 @media (max-width: 768px) {
-    .main-tabs {
-        gap: 10px;
-        overflow-x: auto;
-        white-space: nowrap;
-    }
-    
-    .tab-btn {
-        padding: 10px 5px;
-        font-size: 0.95rem;
-    }
-    
-    .tutor-intro-box {
-        padding: 15px;
-    }
+    .main-tabs { overflow-x: auto; white-space: nowrap; }
+    .row-inputs { flex-direction: column; gap: 0; }
+    .deposit-table th, .deposit-table td { padding: 8px 5px; font-size: 0.8rem; }
 }

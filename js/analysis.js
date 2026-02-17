@@ -2006,7 +2006,7 @@ function renderProDashboard(container) {
         const nextMonthVal = (month + 1) % 12 + 1; // 12월이면 1월로
         targetDateStr = `${nextMonthVal}월 1일`;
         deadlineStr = `${month + 1}월 ${lastDayOfMonth - 2}일`;
-        periodText = `${month}월 하반기 정기 분석`;
+        periodText = `${month + 1}월 하반기 정기 분석`;
         if (day > (lastDayOfMonth - 2)) isClosed = true;
     }
 
