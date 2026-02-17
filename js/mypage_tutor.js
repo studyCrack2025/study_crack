@@ -80,10 +80,11 @@ window.switchTab = function(tabName) {
 async function loadTutorInfo(userId) {
     const token = localStorage.getItem('idToken');
     try {
+        // [변경] get_user -> get_tutor (튜터 전용 DB 조회)
         const res = await fetch(TUTOR_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'get_user', userId: userId })
+            body: JSON.stringify({ type: 'get_tutor', userId: userId })
         });
         
         if (!res.ok) throw new Error("Load Failed");
@@ -92,19 +93,19 @@ async function loadTutorInfo(userId) {
         const data = parseDynamoItem(rawData);
         tutorInfoData = data;
 
-        // 1. 사이드바 기본 정보
+        // 1. 기본 정보 렌더링
         if(document.getElementById('userNameDisplay')) document.getElementById('userNameDisplay').innerText = data.name || '이름 없음';
         if(document.getElementById('userEmailDisplay')) document.getElementById('userEmailDisplay').innerText = data.email || '';
         if(document.getElementById('currentEmailDisplay')) document.getElementById('currentEmailDisplay').innerText = data.email || '';
 
-        // 2. 모달 Input에 기존 데이터 미리 채우기 (닉네임, 학교, 전공 등)
+        // 2. 모달 Input (DB 필드명 매핑)
         if(document.getElementById('modalNickname')) document.getElementById('modalNickname').value = data.nickname || '';
         if(document.getElementById('modalSchool')) document.getElementById('modalSchool').value = data.school || '';
         if(document.getElementById('modalMajor')) document.getElementById('modalMajor').value = data.major || '';
         if(document.getElementById('modalStrengths')) document.getElementById('modalStrengths').value = data.strengths || '';
         if(document.getElementById('modalMessage')) document.getElementById('modalMessage').value = data.message || '';
 
-        // 3. 계좌번호 (암호화되어 있거나 숨겨져 있다고 가정)
+        // 3. 계좌번호 (암호화 가정)
         if(document.getElementById('accountNumber')) document.getElementById('accountNumber').value = data.accountNumber || '';
 
         // 4. 프로필 이미지
@@ -117,8 +118,8 @@ async function loadTutorInfo(userId) {
         }
 
     } catch (e) {
-        console.error(e);
-        if(e.message.includes("401")) window.location.href='/login';
+        console.error("Tutor Info Load Error:", e);
+        // 토큰 만료 시 로그인 페이지 이동 등의 처리
     }
 }
 
@@ -141,11 +142,12 @@ window.saveProfileModalData = async function() {
     const token = localStorage.getItem('idToken');
 
     try {
+        // [변경] type: 'update_tutor_profile_detail' 사용
         const response = await fetch(TUTOR_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
-                type: 'update_tutor_profile_detail', // 백엔드에서 이 타입 처리 필요
+                type: 'update_tutor_profile_detail', 
                 userId, 
                 data: { nickname, school, major, strengths, message } 
             })
@@ -154,18 +156,21 @@ window.saveProfileModalData = async function() {
         if (response.ok) {
             alert("프로필 정보가 저장되었습니다.");
             closeModal('profileModal');
-            // 로컬 데이터 업데이트
+            // 로컬 데이터 즉시 반영 (새로고침 없이)
             tutorInfoData.nickname = nickname;
             tutorInfoData.school = school;
             tutorInfoData.major = major;
             tutorInfoData.strengths = strengths;
             tutorInfoData.message = message;
+            
+            // 사이드바 이름 등도 필요시 업데이트
+            // document.getElementById('userNameDisplay').innerText = nickname || tutorInfoData.name; 
         } else {
-            alert("저장에 실패했습니다.");
+            alert("저장에 실패했습니다. 잠시 후 다시 시도해주세요.");
         }
     } catch (error) {
         console.error(error);
-        alert("오류가 발생했습니다.");
+        alert("통신 오류가 발생했습니다.");
     }
 }
 
@@ -221,44 +226,78 @@ window.toggleDepositHistory = function() {
 // 입금 내역 데이터 로드 (Mockup -> API 연동 필요)
 async function loadDepositHistoryData() {
     const tbody = document.getElementById('depositListBody');
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-msg"><i class="fas fa-spinner fa-spin"></i> 내역 조회 중...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="empty-msg"><i class="fas fa-spinner fa-spin"></i> 내역 조회 중...</td></tr>';
 
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('idToken');
 
     try {
-        // [TODO] 실제 API로 교체 필요
-        // const res = await fetch(...)
+        // [변경] type: 'get_tutor_payment_history' 호출
+        const response = await fetch(TUTOR_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ 
+                type: 'get_tutor_payment_history', 
+                userId: userId 
+            })
+        });
+
+        if (!response.ok) throw new Error("Payment History Load Failed");
         
-        // 더미 데이터 예시
-        setTimeout(() => {
-            const dummyData = [
-                { month: '2025-01', students: 3, gradeInfo: '고3(2), 고2(1)', amount: '900,000원', status: '입금완료' },
-                { month: '2024-12', students: 2, gradeInfo: '고3(2)', amount: '600,000원', status: '입금완료' }
-            ];
+        const rawList = await response.json();
+        // DynamoDB JSON 목록인 경우 파싱 필요, 일반 JSON이면 그대로 사용
+        // 여기서는 일반 JSON 배열 리턴된다고 가정하거나, 아래처럼 map으로 파싱
+        const list = Array.isArray(rawList) ? rawList.map(item => parseDynamoItem(item)) : [];
 
-            if (dummyData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">정산 내역이 없습니다.</td></tr>';
-                return;
-            }
+        tbody.innerHTML = '';
+        if (list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="empty-msg">정산 내역이 없습니다.</td></tr>';
+            return;
+        }
 
-            tbody.innerHTML = '';
-            dummyData.forEach(item => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${item.month}</td>
-                    <td>${item.students}명</td>
-                    <td>${item.gradeInfo}</td>
-                    <td style="font-weight:bold; color:#2563eb;">${item.amount}</td>
-                    <td><span style="color:green;">${item.status}</span></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }, 500); // 0.5초 딜레이 시뮬레이션
+        // 최신순 정렬 (SK 기준 역순)
+        list.sort((a, b) => (b.yearMonth || '').localeCompare(a.yearMonth || ''));
+
+        list.forEach(item => {
+            // 숫자 포맷팅 (콤마 추가)
+            const stdCount = Number(item.standardCount || 0);
+            const proCount = Number(item.proCount || 0);
+            const stdAmt = Number(item.standardAmount || 0).toLocaleString();
+            const proAmt = Number(item.proAmount || 0).toLocaleString();
+            const totalAmt = Number(item.totalAmount || 0).toLocaleString();
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${escapeHtml(item.yearMonth)}</strong></td>
+                <td>
+                    <div style="font-size:0.9rem;">
+                        <span style="color:#64748b;">Standard:</span> <strong>${stdCount}명</strong>
+                    </div>
+                    <div style="font-size:0.9rem;">
+                        <span style="color:#2563eb;">Pro:</span> <strong>${proCount}명</strong>
+                    </div>
+                </td>
+                <td>
+                    <div style="font-size:0.9rem;">
+                        <span style="color:#64748b;">Std:</span> ${stdAmt}원
+                    </div>
+                    <div style="font-size:0.9rem;">
+                        <span style="color:#2563eb;">Pro:</span> ${proAmt}원
+                    </div>
+                </td>
+                <td>
+                    <div style="font-weight:bold; color:#1e293b; font-size:1rem;">${totalAmt}원</div>
+                    <div style="font-size:0.8rem; color:${item.status === '입금완료' ? 'green' : '#f59e0b'}; margin-top:4px;">
+                        ${escapeHtml(item.status)}
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
 
     } catch (e) {
         console.error(e);
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">데이터 로드 실패</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="empty-msg">데이터를 불러오지 못했습니다.</td></tr>';
     }
 }
 
