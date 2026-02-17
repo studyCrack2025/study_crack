@@ -84,7 +84,7 @@ async function loadTutorInfo(userId) {
         const res = await fetch(TUTOR_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'get_tutor', userId: userId })
+            body: JSON.stringify({ type: 'tutor_get_user', userId: userId })
         });
         
         if (!res.ok) throw new Error("Load Failed");
@@ -147,7 +147,7 @@ window.saveProfileModalData = async function() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
-                type: 'update_tutor_profile_detail', 
+                type: 'tutor_update_profile_detail', 
                 userId, 
                 data: { nickname, school, major, strengths, message } 
             })
@@ -237,7 +237,7 @@ async function loadDepositHistoryData() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
-                type: 'get_tutor_payment_history', 
+                type: 'tutor_get_payment_history', 
                 userId: userId 
             })
         });
@@ -310,7 +310,7 @@ async function saveSingleField(field, value) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
-                type: 'update_member_info', // 혹은 update_account_info 등 별도 타입
+                type: 'tutor_update_member_info', // 혹은 update_account_info 등 별도 타입
                 userId, 
                 data: { [field]: value } 
             })
