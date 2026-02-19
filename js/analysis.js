@@ -1384,8 +1384,7 @@ function checkWeeklyStatus() {
 
 // 주간학습 피드백 리스트 렌더링
 function renderFeedbackList() {
-    // currentStudentData가 전역에 있다고 가정. (상황에 맞게 변수명 수정 요망)
-    const history = currentStudentData.weeklyHistory || [];
+    const history = Array.isArray(weeklyDataHistory) ? weeklyDataHistory : [];
     const listContainer = document.getElementById('feedbackList');
     const select = document.getElementById('feedbackYearMonth');
     
