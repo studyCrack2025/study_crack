@@ -1384,7 +1384,8 @@ function checkWeeklyStatus() {
 
 // 주간학습 피드백 리스트 렌더링
 function renderFeedbackList() {
-    const history = Array.isArray(weeklyDataHistory) ? weeklyDataHistory : [];
+    // currentStudentData가 전역에 있다고 가정. (상황에 맞게 변수명 수정 요망)
+    const history = currentStudentData.weeklyHistory || [];
     const listContainer = document.getElementById('feedbackList');
     const select = document.getElementById('feedbackYearMonth');
     
@@ -1393,12 +1394,13 @@ function renderFeedbackList() {
     // 1. 연/월 추출 및 Select Box 구성
     const yearMonths = new Set();
     history.forEach(h => {
-        const match = h.title && h.title.match(/(\d{4}년\s\d{1,2}월)/);
+        // "26년 2월 2주차" 등에서 "26년 2월" 추출
+        const match = h.title && h.title.match(/(\d{2,4}년\s\d{1,2}월)/);
         if(match) yearMonths.add(match[1]);
     });
 
     const today = new Date();
-    const currentYM = `${today.getFullYear()}년 ${today.getMonth()+1}월`;
+    const currentYM = `${String(today.getFullYear()).slice(2)}년 ${today.getMonth()+1}월`;
     if(yearMonths.size === 0) yearMonths.add(currentYM);
     
     const prevValue = select.value;
@@ -1422,9 +1424,9 @@ function renderFeedbackList() {
     // 2. 리스트 렌더링
     listContainer.innerHTML = '';
     
-    // 필터링 및 정렬
+    // 필터링 및 정렬 (최신순)
     const filtered = history.filter(h => h.title && h.title.includes(selectedYM))
-                            .sort((a,b) => b.title.localeCompare(a.title));
+                            .sort((a,b) => new Date(b.date) - new Date(a.date));
 
     if(filtered.length === 0) {
         listContainer.innerHTML = '<div class="empty-feedback">제출된 기록이 없습니다.</div>';
@@ -1435,18 +1437,19 @@ function renderFeedbackList() {
         const div = document.createElement('div');
         div.className = 'feedback-tile';
 
-        // [수정 포인트] 이미 parseDynamoItem을 거쳤으므로 .M이나 .S가 없습니다.
         const fb = h.tutorFeedback || {};
         
-        // 필드 내부 값이 비어있지 않은지 확인
+        // 새로 추가된 5가지 필드 중 하나라도 작성되어 있으면 피드백 완료로 간주
         const hasFeedback = fb && (
-            (fb.achievement && String(fb.achievement).trim() !== "") || 
-            (fb.mock && String(fb.mock).trim() !== "") || 
-            (fb.question && String(fb.question).trim() !== "")
+            (fb.priorityCheck && String(fb.priorityCheck).trim() !== "") || 
+            (fb.weakSubject && String(fb.weakSubject).trim() !== "") || 
+            (fb.nextWeekTop3 && String(fb.nextWeekTop3).trim() !== "") || 
+            (fb.planEvaluation && String(fb.planEvaluation).trim() !== "") ||
+            (fb.extraQuestion && String(fb.extraQuestion).trim() !== "")
         );
 
         const statusText = hasFeedback ? '피드백 도착 ✅' : '피드백 대기중 ⏳';
-        const statusStyle = hasFeedback ? 'color:#166534; font-weight:bold;' : 'color:#94a3b8;';
+        const statusStyle = hasFeedback ? 'color:#15803d; font-weight:bold;' : 'color:#94a3b8;';
 
         div.onclick = () => { openFeedbackModal(h); };
         
@@ -1460,51 +1463,88 @@ function renderFeedbackList() {
     });
 }
 
-// [추가] 피드백 상세 모달 열기 및 데이터 바인딩
+// 피드백 상세 모달 열기 및 문서 형식 데이터 바인딩
 function openFeedbackModal(data) {
-    const modal = document.getElementById('feedbackModal');
+    const modal = document.getElementById('feedbackModal'); // 모달 컨테이너 ID (환경에 맞게 수정)
     const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent'); 
 
     if (!contentArea) return;
 
-    // [수정 포인트] 이미 파싱된 데이터이므로 직접 접근
     const fb = data.tutorFeedback || {};
+    const consultantName = "담당 컨설턴트"; // DB에 튜터 이름이 있다면 data.tutorName 등으로 매핑
     
-    const formatText = (text) => {
-        if (!text) return '<span style="color:#cbd5e1;">(작성된 내용이 없습니다)</span>';
-        return String(text).replace(/\n/g, '<br>');
-    };
+    // 1. 학생 공부 진행 요약 만들기 (학생이 제출한 deepAnswers 활용)
+    let studentSummaryHtml = '<div class="doc-text"><span style="color:#94a3b8;">제출된 학생 요약 데이터가 없습니다.</span></div>';
+    if (data.deepAnswers && data.deepAnswers.length > 0) {
+        studentSummaryHtml = '<ul style="margin:0; padding-left:20px; line-height:1.7; color:#334155; font-size:0.95rem;">';
+        data.deepAnswers.forEach(ans => {
+            studentSummaryHtml += `<li>${escapeHtml(ans)}</li>`;
+        });
+        studentSummaryHtml += '</ul>';
+    } else if (data.studyTime && data.studyTime.totalRate) {
+        studentSummaryHtml = `<div class="doc-text">이번 주 총 학습 달성률: <strong>${data.studyTime.totalRate}%</strong></div>`;
+    }
 
+    // 워드 문서 형태의 HTML 구조
     const html = `
-        <div class="feedback-detail-view">
-            <h3 style="margin-bottom:20px; border-bottom:2px solid #f1f5f9; padding-bottom:10px; color:#1e293b;">
-                ${data.title || "주간 리포트 피드백"}
-            </h3>
+        <div class="modal-document">
+            <button class="btn-pdf" onclick="window.print()">🖨️ PDF 다운로드/인쇄</button>
 
-            <div class="fb-section-box">
-                <h4 style="color:#2563eb; margin-bottom:8px;">📊 학습 달성도 평가</h4>
-                <div class="fb-text-content">${formatText(fb.achievement)}</div>
+            <div class="doc-header">
+                <h2 class="doc-title">스터디크랙 - ${data.title || "주간 리포트"} 피드백</h2>
+                <div class="doc-meta">
+                    <div>작성일자: ${new Date(data.date).toLocaleDateString()}</div>
+                    <div>${consultantName}</div>
+                </div>
             </div>
 
-            <div class="fb-section-box">
-                <h4 style="color:#d97706; margin-bottom:8px;">📝 모의고사 피드백</h4>
-                <div class="fb-text-content">${formatText(fb.mock)}</div>
+            <div class="doc-section">
+                <div class="doc-section-title">📊 이번 주 학생 진행 사항 요약</div>
+                <div class="doc-box">
+                    ${studentSummaryHtml}
+                </div>
             </div>
 
-            <div class="fb-section-box">
-                <h4 style="color:#059669; margin-bottom:8px;">💬 튜터 답변 (Q&A)</h4>
-                <div class="fb-text-content">${formatText(fb.question)}</div>
+            <div class="doc-section">
+                <div class="doc-section-title">👩‍🏫 컨설턴트 주간 평가</div>
+                <div class="doc-box">
+                    <div class="doc-box-item">
+                        <strong>1. 이전 우선순위 이행 점검</strong>
+                        <div class="doc-text">${escapeHtml(fb.priorityCheck)}</div>
+                    </div>
+                    <div class="doc-box-item">
+                        <strong>2. 취약 과목 선정 및 개선 포인트</strong>
+                        <div class="doc-text">${escapeHtml(fb.weakSubject)}</div>
+                    </div>
+                    <div class="doc-box-item">
+                        <strong>3. 다음 주 핵심 과제 TOP3 및 근거</strong>
+                        <div class="doc-text">${escapeHtml(fb.nextWeekTop3)}</div>
+                    </div>
+                    <div class="doc-box-item">
+                        <strong>4. 플랜 진행 방향 제고 및 평가</strong>
+                        <div class="doc-text">${escapeHtml(fb.planEvaluation)}</div>
+                    </div>
+                </div>
             </div>
-            
-            ${data.comment ? `
-            <div style="margin-top:20px; padding-top:15px; border-top:1px dashed #e2e8f0; font-size:0.9rem; color:#64748b;">
-                <strong>💁 내가 남긴 코멘트:</strong> ${data.comment}
-            </div>` : ''}
+
+            <div class="doc-section">
+                <div class="doc-section-title">💬 심층 Q&A</div>
+                <div class="qna-pair">
+                    <div class="qna-student">
+                        <strong>💁 학생의 코멘트 및 질문</strong>
+                        <div class="doc-text">${escapeHtml(data.comment)}</div>
+                    </div>
+                    <div class="qna-tutor">
+                        <strong>👩‍🏫 컨설턴트의 답변</strong>
+                        <div class="doc-text">${escapeHtml(fb.extraQuestion)}</div>
+                    </div>
+                </div>
+            </div>
         </div>
     `;
 
     contentArea.innerHTML = html;
-    modal.style.display = 'block';
+    modal.style.display = 'block'; // UI 프레임워크에 맞게 모달 오픈 로직 조정 필요
 }
 
 function openWeeklyCheckModal() {

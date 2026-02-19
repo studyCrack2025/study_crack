@@ -294,12 +294,13 @@ function showCoachingGuideModal() {
                         <li><strong>학생 심층 코칭 입력</strong> (계획 점검 / 방향 고민 / 취약 과목 / 멘탈)</li>
                     </ul>
 
-                    <h4>3) 선생님께서 반드시 작성하셔야 하는 4개 항목 (주 1회)</h4>
+                    <h4>3) 선생님께서 반드시 작성하셔야 하는 5개 항목 (주 1회)</h4>
                     <ul>
                         <li><strong>이번 주 판단</strong> (우선순위 결론, 첫 상담하는 학생이면 선생님의 객관적 판단 우선)</li>
                         <li><strong>취약 과목 개입 포인트</strong></li>
                         <li><strong>다음 주 핵심 과제 Top 3와 그 개별적인 근거</strong></li>
                         <li><strong>플랜 조정</strong> (방향 / 속력)</li>
+                        <li><strong>심층 질문에 대한 추가 답변(어떤 질문에 대한 답변인지를 명시하고, 앞 항목 내용과 중복된다면 그렇다는 사실을 명시)</li>
                     </ul>
 
                     <h4>4) Standard 코칭 원칙 (최소 기준)</h4>
@@ -366,7 +367,7 @@ function renderWeeklyTab() {
                const questionLabel = QUESTIONS[i] ? `<span style="color:#1e293b; font-weight:800; margin-right:4px;">${QUESTIONS[i]}:</span>` : '';
                return `<li><i class="fas fa-check-circle text-blue" style="margin-top:4px; flex-shrink:0;"></i><div style="flex:1;">${questionLabel} ${escapeHtml(ans)}</div></li>`;
             }).join('');
-            checkHtml = `<div class="weekly-section"><div class="section-title"><i class="fas fa-clipboard-check"></i> 금주 중점 점검 사항</div><ul class="check-list">${listItems}</ul>${d.trend ? `<div class="trend-badge ${d.trend.status === 'up' ? 'up' : (d.trend.status === 'down' ? 'down' : 'keep')}">학습 흐름: ${d.trend.status === 'up' ? '상승세 🔥' : (d.trend.status === 'down' ? '하락세 📉' : '유지중 -')}</div>` : ''}</div>`;
+            checkHtml = `<div class="weekly-section"><div class="section-title"><i class="fas fa-clipboard-check"></i> 이번주 심층 질문</div><ul class="check-list">${listItems}</ul>${d.trend ? `<div class="trend-badge ${d.trend.status === 'up' ? 'up' : (d.trend.status === 'down' ? 'down' : 'keep')}">학습 흐름: ${d.trend.status === 'up' ? '상승세 🔥' : (d.trend.status === 'down' ? '하락세 📉' : '유지중 -')}</div>` : ''}</div>`;
         }
 
         // 3. 주간 모의고사 결과 (뱃지 적용)
@@ -429,6 +430,10 @@ function renderWeeklyTab() {
                     <div class="fb-item">
                         <label>4. 최종적인 플랜 진행방향 제고와 평가 (방향/속력에서 변화가 있는지) (최소 150자)</label>
                         <textarea id="fb_plan_${idx}" ${isReadOnly} placeholder="작성 대기중...">${escapeHtml(fb.planEvaluation || '')}</textarea>
+                    </div>
+                    <div class="fb-item">
+                        <label>5. 학생 심층 질문에 대한 추가 답변(필요시에, 최소 150자)</label>
+                        <textarea id="fb_extra_${idx}" ${isReadOnly} placeholder="작성 대기중...">${escapeHtml(fb.extraQuestion || '')}</textarea>
                     </div>
                 </div>
                 <div style="text-align:right; margin-top:20px; display:${btnDisplay};">
