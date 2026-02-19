@@ -294,12 +294,11 @@ function showCoachingGuideModal() {
                         <li><strong>학생 심층 코칭 입력</strong> (계획 점검 / 방향 고민 / 취약 과목 / 멘탈)</li>
                     </ul>
 
-                    <h4>3) 선생님께서 반드시 작성하셔야 하는 5개 항목 (주 1회)</h4>
+                    <h4>3) 선생님께서 반드시 작성하셔야 하는 4개 항목 (주 1회)</h4>
                     <ul>
                         <li><strong>이번 주 판단</strong> (우선순위 결론, 첫 상담하는 학생이면 선생님의 객관적 판단 우선)</li>
                         <li><strong>취약 과목 개입 포인트</strong></li>
-                        <li><strong>다음 주 핵심 과제 Top 3</strong></li>
-                        <li><strong>근거</strong> (왜 이것을 해야 성적이 오르는지 명시)</li>
+                        <li><strong>다음 주 핵심 과제 Top 3와 그 개별적인 근거</strong></li>
                         <li><strong>플랜 조정</strong> (방향 / 속력)</li>
                     </ul>
 
