@@ -267,6 +267,60 @@ function renderSelectedScore() {
 }
 
 // [수정 4] 주간 점검 상세 렌더링
+// 모달을 화면에 띄우는 함수
+function showCoachingGuideModal() {
+    // 이미 모달이 있다면 제거
+    const existingModal = document.getElementById('coachingGuideModal');
+    if (existingModal) existingModal.remove();
+
+    const modalHtml = `
+        <div id="coachingGuideModal" class="coaching-modal-overlay">
+            <div class="coaching-modal-content">
+                <div class="coaching-modal-header">
+                    <span>📋 Standard 코칭 운영 (필수)</span>
+                    <button class="coaching-modal-close" onclick="document.getElementById('coachingGuideModal').remove()">&times;</button>
+                </div>
+                <div class="coaching-modal-body">
+                    <h4>1) Standard의 역할</h4>
+                    <p>보편적인 SKY 합격생 루틴을 ‘기준점’으로 제시하고, 취약 과목이 무너지기 전에 보완하며, 학생의 방향과 속력을 주 1회 조정합니다.</p>
+                    
+                    <h4>2) 선생님께서 반드시 확인하셔야 할 데이터</h4>
+                    <ul>
+                        <li><strong>과목별 달성률</strong> (계획 시간 vs 실제 시간)</li>
+                        <li><strong>플래너 인증</strong> (사진)</li>
+                        <li><strong>실전 모의고사</strong> 응시 여부</li>
+                        <li><strong>성적표 인증</strong> (필수)</li>
+                        <li><strong>최근 2주 학업 추이</strong> (상승/유지/하락)</li>
+                        <li><strong>학생 심층 코칭 입력</strong> (계획 점검 / 방향 고민 / 취약 과목 / 멘탈)</li>
+                    </ul>
+
+                    <h4>3) 선생님께서 반드시 작성하셔야 하는 5개 항목 (주 1회)</h4>
+                    <ul>
+                        <li><strong>이번 주 판단</strong> (우선순위 결론, 첫 상담하는 학생이면 선생님의 객관적 판단 우선)</li>
+                        <li><strong>취약 과목 개입 포인트</strong></li>
+                        <li><strong>다음 주 핵심 과제 Top 3</strong></li>
+                        <li><strong>근거</strong> (왜 이것을 해야 성적이 오르는지 명시)</li>
+                        <li><strong>플랜 조정</strong> (방향 / 속력)</li>
+                    </ul>
+
+                    <h4>4) Standard 코칭 원칙 (최소 기준)</h4>
+                    <ul>
+                        <li>시간표형(분 단위) 강요를 금지하고, <strong>과제 중심</strong>으로 제시합니다.</li>
+                        <li><strong>취약 과목을 우선</strong>시합니다. (전 과목 균등 배분 금지)</li>
+                        <li><strong>실패를 전제</strong>합니다. (지키지 못한 계획을 죄책감으로 몰지 않습니다.)</li>
+                        <li>의지 탓을 금지하고, <strong>항상 판단 기준으로 설명</strong>합니다.</li>
+                    </ul>
+                </div>
+                <div style="text-align:right; margin-top:20px;">
+                    <button class="fb-save-btn" style="background:#475569;" onclick="document.getElementById('coachingGuideModal').remove()">확인했습니다</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+// 주간 점검 상세 렌더링
 function renderWeeklyTab() {
     const container = document.getElementById('weeklyListContainer');
     container.innerHTML = '';
@@ -320,7 +374,6 @@ function renderWeeklyTab() {
         let mockHtml = '';
         if (d.mockExam && d.mockExam.scores) {
             const s = d.mockExam.scores;
-            // 타입별 라벨 및 스타일 클래스 매핑
             const typeMap = { 'school': '교내', 'edu': '평가원/교육청', 'private': '사설' };
             const typeLabel = typeMap[d.mockExam.type] || '기타'; 
             const typeBadge = `<span class="mock-type-badge ${d.mockExam.type || ''}">${typeLabel}</span>`;
@@ -340,32 +393,46 @@ function renderWeeklyTab() {
             `;
         }
 
-        // 4. 주간 평가 응답 (튜터 피드백)
-        const fb = d.tutorFeedback || { achievement: '', mock: '', question: '' };
+        // 4. 주간 평가 응답 (4개 항목으로 전면 개편)
+        // 기존 데이터 호환을 위해 없으면 빈 문자열로 초기화
+        const fb = d.tutorFeedback || { 
+            priorityCheck: '', 
+            weakSubject: '', 
+            nextWeekTop3: '', 
+            planEvaluation: '' 
+        };
         
-        // 권한 확인: 관리자는 읽기 전용(disabled), 튜터는 수정 가능
         const isReadOnly = (userRole === 'admin') ? 'disabled' : '';
         const btnDisplay = (userRole === 'admin') ? 'none' : 'inline-block';
         const weekId = d.weekId || d.date; // 저장 시 사용할 키
         
         const feedbackHtml = `
             <div class="tutor-feedback-area">
-                <div class="feedback-header">👩‍🏫 튜터 주간 평가 (Weekly Feedback)</div>
+                <div class="feedback-header">
+                    <div>👩‍🏫 튜터 주간 평가 (Weekly Feedback)</div>
+                    <button class="coaching-guide-btn" onclick="showCoachingGuideModal()">
+                        <i class="fas fa-info-circle"></i> 코칭 작성시 주의사항
+                    </button>
+                </div>
                 <div class="feedback-grid">
                     <div class="fb-item">
-                        <label>학습 달성도 평가</label>
-                        <textarea id="fb_ach_${idx}" ${isReadOnly} placeholder="작성 대기중...">${escapeHtml(fb.achievement)}</textarea>
+                        <label>1. 저번주에 제안된 우선 순위에 맞게 이번주 공부를 진행했는지 (최소 150자)</label>
+                        <textarea id="fb_priority_${idx}" ${isReadOnly} placeholder="작성 대기중...">${escapeHtml(fb.priorityCheck || '')}</textarea>
                     </div>
                     <div class="fb-item">
-                        <label>모의고사 결과 평가</label>
-                        <textarea id="fb_mock_${idx}" ${isReadOnly} placeholder="작성 대기중...">${escapeHtml(fb.mock)}</textarea>
+                        <label>2. 취약 과목을 하나 선정하고 개선 포인트 잡기 (최소 150자)</label>
+                        <textarea id="fb_weak_${idx}" ${isReadOnly} placeholder="작성 대기중...">${escapeHtml(fb.weakSubject || '')}</textarea>
                     </div>
-                    <div class="fb-item full">
-                        <label>학생 개별 질문 응답</label>
-                        <textarea id="fb_q_${idx}" ${isReadOnly} placeholder="작성 대기중...">${escapeHtml(fb.question)}</textarea>
+                    <div class="fb-item">
+                        <label>3. 다음주에 진행해야할 핵심 과제 TOP3와 그 이유 (최소 150자, 각각 명시)</label>
+                        <textarea id="fb_top3_${idx}" ${isReadOnly} placeholder="작성 대기중...">${escapeHtml(fb.nextWeekTop3 || '')}</textarea>
+                    </div>
+                    <div class="fb-item">
+                        <label>4. 최종적인 플랜 진행방향 제고와 평가 (방향/속력에서 변화가 있는지) (최소 150자)</label>
+                        <textarea id="fb_plan_${idx}" ${isReadOnly} placeholder="작성 대기중...">${escapeHtml(fb.planEvaluation || '')}</textarea>
                     </div>
                 </div>
-                <div style="text-align:right; margin-top:10px; display:${btnDisplay};">
+                <div style="text-align:right; margin-top:20px; display:${btnDisplay};">
                     <button class="fb-save-btn" onclick="saveWeeklyFeedback('${weekId}', ${idx})">평가 저장</button>
                 </div>
             </div>
@@ -410,11 +477,14 @@ function renderWeeklyTab() {
     });
 }
 
+// 개편된 4개 항목을 전송하도록 수정된 함수
 async function saveWeeklyFeedback(weekId, idx) {
-    const ach = document.getElementById(`fb_ach_${idx}`).value;
-    const mock = document.getElementById(`fb_mock_${idx}`).value;
-    const quest = document.getElementById(`fb_q_${idx}`).value;
+    const priority = document.getElementById(`fb_priority_${idx}`).value;
+    const weak = document.getElementById(`fb_weak_${idx}`).value;
+    const top3 = document.getElementById(`fb_top3_${idx}`).value;
+    const plan = document.getElementById(`fb_plan_${idx}`).value;
     
+    // 유효성 검사 (글자수 제한 등을 추가하려면 이곳에 로직 추가 가능)
     if(!confirm("주간 평가 내용을 저장하시겠습니까?")) return;
 
     const token = localStorage.getItem('accessToken');
@@ -423,24 +493,24 @@ async function saveWeeklyFeedback(weekId, idx) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
-                type: 'tutor_update_weekly_feedback', // 백엔드에서 이 타입을 처리해야 함
-                userId: adminId,
+                type: 'tutor_update_weekly_feedback',
+                userId: adminId, 
                 data: {
                     targetUserId: targetUserId,
-                    weekId: weekId, // 또는 date
+                    weekId: weekId,
                     feedback: {
-                        achievement: ach,
-                        mock: mock,
-                        question: quest
+                        priorityCheck: priority,
+                        weakSubject: weak,
+                        nextWeekTop3: top3,
+                        planEvaluation: plan
                     }
                 }
             })
         });
 
         if (response.ok) {
-            alert("평가가 저장되었습니다.");
-            // 데이터 갱신을 위해 리로드 또는 로컬 데이터 업데이트
-            // loadStudentDetail(); // 전체 리로드 대신 알림만 띄워도 무방
+            alert("평가가 성공적으로 저장되었습니다.");
+            // 전체 리로드 없이 그대로 두거나 로컬 데이터 갱신
         } else {
             throw new Error("Server Error");
         }
