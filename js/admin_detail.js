@@ -393,13 +393,14 @@ function renderWeeklyTab() {
             `;
         }
 
-        // 4. 주간 평가 응답 (4개 항목으로 전면 개편)
+        // 4. 주간 평가 응답 (5개 항목으로 개편)
         // 기존 데이터 호환을 위해 없으면 빈 문자열로 초기화
         const fb = d.tutorFeedback || { 
             priorityCheck: '', 
             weakSubject: '', 
             nextWeekTop3: '', 
-            planEvaluation: '' 
+            planEvaluation: '',
+            extraQuestion: ''
         };
         
         const isReadOnly = (userRole === 'admin') ? 'disabled' : '';
@@ -487,6 +488,7 @@ async function saveWeeklyFeedback(weekId, idx) {
     const weak = document.getElementById(`fb_weak_${idx}`).value;
     const top3 = document.getElementById(`fb_top3_${idx}`).value;
     const plan = document.getElementById(`fb_plan_${idx}`).value;
+    const extra = document.getElementById(`fb_extra_${idx}`).value;
     
     // 유효성 검사 (글자수 제한 등을 추가하려면 이곳에 로직 추가 가능)
     if(!confirm("주간 평가 내용을 저장하시겠습니까?")) return;
@@ -506,7 +508,8 @@ async function saveWeeklyFeedback(weekId, idx) {
                         priorityCheck: priority,
                         weakSubject: weak,
                         nextWeekTop3: top3,
-                        planEvaluation: plan
+                        planEvaluation: plan,
+                        extraQuestion: extra
                     }
                 }
             })
