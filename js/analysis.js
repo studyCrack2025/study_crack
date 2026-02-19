@@ -1464,43 +1464,107 @@ function renderFeedbackList() {
 
 // 피드백 상세 모달 열기 및 문서 형식 데이터 바인딩
 function openFeedbackModal(data) {
-    const modal = document.getElementById('feedbackModal'); // 모달 컨테이너 ID (환경에 맞게 수정)
+    const modal = document.getElementById('feedbackModal');
     const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent'); 
 
     if (!contentArea) return;
 
     const fb = data.tutorFeedback || {};
-    const consultantName = "담당 컨설턴트"; // DB에 튜터 이름이 있다면 data.tutorName 등으로 매핑
     
-    // 1. 학생 공부 진행 요약 만들기 (학생이 제출한 deepAnswers 활용)
-    let studentSummaryHtml = '<div class="doc-text"><span style="color:#94a3b8;">제출된 학생 요약 데이터가 없습니다.</span></div>';
+    // 1. [체크] 피드백 데이터가 없는 경우 -> 대기중 화면 렌더링
+    const hasFeedback = fb && (
+        (fb.priorityCheck && String(fb.priorityCheck).trim() !== "") || 
+        (fb.weakSubject && String(fb.weakSubject).trim() !== "")
+    );
+
+    if (!hasFeedback) {
+        contentArea.innerHTML = `
+            <div class="pending-view">
+                <div class="pending-icon"><i class="fas fa-hourglass-half"></i></div>
+                <h2 style="color:#334155; margin-bottom:10px;">피드백 작성 대기중</h2>
+                <p style="color:#64748b; margin-bottom:30px;">
+                    담당 컨설턴트가 학생의 리포트를 꼼꼼히 분석하고 있습니다.<br>
+                    조금만 기다려주시면 알림을 보내드릴게요!
+                </p>
+                <button onclick="document.getElementById('feedbackModal').style.display='none'" 
+                        style="padding:10px 25px; background:#e2e8f0; border:none; border-radius:8px; font-weight:bold; color:#475569; cursor:pointer;">
+                    닫기
+                </button>
+            </div>
+        `;
+        modal.style.display = 'block';
+        return;
+    }
+
+    // -----------------------------------------------------------
+    // 피드백이 있는 경우 -> 정식 리포트 렌더링
+    // -----------------------------------------------------------
+    const consultantName = "담당 컨설턴트"; 
+    
+    // 2. [수정] 학생 진행 요약 (학습 시간 데이터 활용)
+    let summaryHtml = '';
+    if (data.studyTime) {
+        const totalPlan = data.studyTime.totalPlan || '0H';
+        const totalAct = data.studyTime.totalAct || '0H';
+        const totalRate = data.studyTime.totalRate || '0%';
+        
+        summaryHtml = `
+            <div style="display:flex; gap:20px; align-items:center; background:white; padding:15px; border-radius:8px;">
+                <div style="flex:1; text-align:center; border-right:1px solid #e2e8f0;">
+                    <div style="font-size:0.85rem; color:#64748b;">총 계획 시간</div>
+                    <div style="font-size:1.2rem; font-weight:800; color:#334155;">${totalPlan}</div>
+                </div>
+                <div style="flex:1; text-align:center; border-right:1px solid #e2e8f0;">
+                    <div style="font-size:0.85rem; color:#64748b;">총 실행 시간</div>
+                    <div style="font-size:1.2rem; font-weight:800; color:#2563eb;">${totalAct}</div>
+                </div>
+                <div style="flex:1; text-align:center;">
+                    <div style="font-size:0.85rem; color:#64748b;">달성률</div>
+                    <div style="font-size:1.2rem; font-weight:800; color:${parseInt(totalRate)>=80?'#16a34a':'#ef4444'};">${totalRate}</div>
+                </div>
+            </div>
+        `;
+    } else {
+        summaryHtml = '<span style="color:#94a3b8;">학습 시간 데이터가 없습니다.</span>';
+    }
+
+    // 3. [수정] 심층 Q&A 구성 (학생 질문들 + 튜터 추가 답변)
+    let deepQnaHtml = '';
     if (data.deepAnswers && data.deepAnswers.length > 0) {
-        studentSummaryHtml = '<ul style="margin:0; padding-left:20px; line-height:1.7; color:#334155; font-size:0.95rem;">';
+        deepQnaHtml += '<ul class="student-qna-list">';
         data.deepAnswers.forEach(ans => {
-            studentSummaryHtml += `<li>${escapeHtml(ans)}</li>`;
+            if(ans) deepQnaHtml += `<li>${escapeHtml(ans)}</li>`;
         });
-        studentSummaryHtml += '</ul>';
-    } else if (data.studyTime && data.studyTime.totalRate) {
-        studentSummaryHtml = `<div class="doc-text">이번 주 총 학습 달성률: <strong>${data.studyTime.totalRate}%</strong></div>`;
+        deepQnaHtml += '</ul>';
+    } else {
+        deepQnaHtml = '<div style="color:#94a3b8;">작성된 심층 질문이 없습니다.</div>';
     }
 
     // 워드 문서 형태의 HTML 구조
     const html = `
         <div class="modal-document">
-            <button class="btn-pdf" onclick="window.print()">🖨️ PDF 다운로드/인쇄</button>
+            <div class="doc-controls">
+                <button class="btn-pdf" onclick="window.print()">
+                    <i class="fas fa-print"></i> PDF 저장/인쇄
+                </button>
+                <button class="close-btn-doc" onclick="document.getElementById('feedbackModal').style.display='none'">
+                    &times;
+                </button>
+            </div>
 
             <div class="doc-header">
-                <h2 class="doc-title">스터디크랙 - ${data.title || "주간 리포트"} 피드백</h2>
+                <h2 class="doc-title">스터디크랙 - 주간 피드백</h2>
                 <div class="doc-meta">
-                    <div>작성일자: ${new Date(data.date).toLocaleDateString()}</div>
-                    <div>${consultantName}</div>
+                    <div>대상: ${data.title || "주간 리포트"}</div>
+                    <div>작성일: ${new Date(data.date).toLocaleDateString()}</div>
+                    <div>작성자: ${consultantName}</div>
                 </div>
             </div>
 
             <div class="doc-section">
-                <div class="doc-section-title">📊 이번 주 학생 진행 사항 요약</div>
+                <div class="doc-section-title">📊 이번 주 학습 요약</div>
                 <div class="doc-box">
-                    ${studentSummaryHtml}
+                    ${summaryHtml}
                 </div>
             </div>
 
@@ -1530,11 +1594,11 @@ function openFeedbackModal(data) {
                 <div class="doc-section-title">💬 심층 Q&A</div>
                 <div class="qna-pair">
                     <div class="qna-student">
-                        <strong>💁 학생의 코멘트 및 질문</strong>
-                        <div class="doc-text">${escapeHtml(data.comment)}</div>
+                        <strong>💁 학생의 고민 (심층 질문)</strong>
+                        ${deepQnaHtml}
                     </div>
                     <div class="qna-tutor">
-                        <strong>👩‍🏫 컨설턴트의 답변</strong>
+                        <strong>👩‍🏫 컨설턴트의 추가 코멘트</strong>
                         <div class="doc-text">${escapeHtml(fb.extraQuestion)}</div>
                     </div>
                 </div>
@@ -1543,7 +1607,7 @@ function openFeedbackModal(data) {
     `;
 
     contentArea.innerHTML = html;
-    modal.style.display = 'block'; // UI 프레임워크에 맞게 모달 오픈 로직 조정 필요
+    modal.style.display = 'block';
 }
 
 function openWeeklyCheckModal() {

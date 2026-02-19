@@ -1,10 +1,12 @@
 /* -- css/analysis.css -- */
 
 /* ============================================================
-   [기본 레이아웃 및 탭 메뉴]
+   [1] 기본 레이아웃, 탭 메뉴, 솔루션 헤더
    ============================================================ */
+/* 탭 메뉴 컨테이너 */
 .solution-menu { display: flex; gap: 12px; margin-bottom: 35px; width: 100%; flex-wrap: wrap; }
 
+/* 탭 버튼 스타일 */
 .sol-btn {
     flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
     padding: 15px 10px; border-radius: 10px; border: 1px solid #e2e8f0;
@@ -16,40 +18,35 @@
 .sol-btn.active { background: white; color: #2563EB; border: 2px solid #2563EB; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.1); }
 .sol-btn.active i { color: #2563EB; }
 
-/* [수정 1] PRO 버튼: Silver-Blue 스타일 적용 */
+/* PRO 버튼 (Silver-Blue 테마) */
 .sol-btn.pro-btn { 
-    background: linear-gradient(145deg, #ffffff, #f1f5f9); /* 실버 화이트 */
-    color: #334155; 
-    border: 1px solid #cbd5e1; 
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    background: linear-gradient(145deg, #ffffff, #f1f5f9); 
+    color: #334155; border: 1px solid #cbd5e1; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
-.sol-btn.pro-btn i { color: #3b82f6; } /* 사파이어 블루 */
-
+.sol-btn.pro-btn i { color: #3b82f6; }
 .sol-btn.pro-btn:hover {
     background: #fff; border-color: #3b82f6; color: #2563eb;
     transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
 }
-
 .sol-btn.pro-btn.active { 
-    /* 활성화 시: 진한 블루 배경 + 흰색 텍스트 */
     background: linear-gradient(135deg, #1e3a8a 0%, #172554 100%); 
-    color: #ffffff; border: 1px solid #1e3a8a;
-    box-shadow: 0 4px 15px rgba(30, 58, 138, 0.4); 
+    color: #ffffff; border: 1px solid #1e3a8a; box-shadow: 0 4px 15px rgba(30, 58, 138, 0.4); 
 }
 .sol-btn.pro-btn.active i { color: #93c5fd; }
 
+/* 콘텐츠 영역 전환 애니메이션 */
 .sol-content { display: none; }
 .sol-content.active { display: block; animation: fadeIn 0.3s; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-/* 솔루션 헤더 */
+/* 솔루션 페이지 공통 헤더 */
 .sol-header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid #f1f5f9; padding-bottom: 20px; display: flex; flex-direction: column; align-items: center; }
 .sol-title { font-size: 1.8rem; font-weight: 800; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 15px; }
 .sol-icon-box { display: flex; align-items: center; justify-content: center; width: 50px; height: 50px; border-radius: 14px; font-size: 1.4rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
 .sol-desc { color: #64748b; font-size: 1.05rem; line-height: 1.6; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
 .sol-badge { padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.9rem; border: 1px solid transparent; }
 
-/* 테마별 색상 */
+/* 테마별 색상 (아이콘 등) */
 .theme-univ .sol-icon-box { background: #eff6ff; color: #2563eb; }
 .theme-sim .sol-icon-box { background: #eff6ff; color: #3b82f6; }
 .theme-sim .sol-badge { background: #e0f2fe; color: #0284c7; border-color: #bae6fd; }
@@ -57,8 +54,9 @@
 .theme-black .sol-icon-box { background: #1f2937; color: #fbbf24; }
 .theme-black .sol-title { color: #000; }
 
+
 /* ============================================================
-   [기초조사서 상태 박스]
+   [2] 좌측 사이드바 (기초조사서 상태 & 점수)
    ============================================================ */
 .survey-status-box h4 { font-size: 1.1rem; color: #1e293b; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .status-detail-container { text-align: left; margin-bottom: 20px; background: #f8fafc; border-radius: 8px; padding: 15px; border: 1px solid #e2e8f0; }
@@ -70,19 +68,17 @@
 .detail-list li { font-size: 0.85rem; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
 .detail-list .label { color: #94a3b8; font-weight: 500; }
 .detail-list .val-text { color: #334155; font-weight: 600; text-align: right; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.detail-list .data-summary { background: white; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0; font-size: 0.8rem; color: #475569; }
 .empty-msg { font-size: 0.8rem; color: #cbd5e1; text-align: center; padding: 10px 0; }
 .btn-go-survey i { margin-right: 6px; }
 
-/* 목표 대학 1, 2지망 스타일 */
+/* 1, 2지망 표시 */
 .target-univ-box { width: 100%; display: flex; flex-direction: column; gap: 6px; }
 .target-row { display: flex; align-items: center; font-size: 0.9rem; color: #334155; background: #fff; padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0; }
 .target-badge { font-size: 0.75rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-right: 8px; white-space: nowrap; }
 .target-badge.first { background-color: #dbeafe; color: #1e40af; }
 .target-badge.second { background-color: #f3e8ff; color: #6b21a8; }
 
-/* 사이드바 점수 상세 */
-.score-detail-list { display: flex; flex-direction: column; gap: 12px; }
+/* 점수 상세 박스 */
 .quan-select-wrapper { margin-bottom: 10px; }
 .quan-dropdown { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; color: #334155; background-color: #fff; outline: none; cursor: pointer; }
 .quan-dropdown:focus { border-color: #3b82f6; }
@@ -95,12 +91,15 @@
 .opt-badge { font-size: 0.75rem; color: #94a3b8; margin-right: 4px; font-weight: normal; }
 .grade-circle { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background-color: #1e293b; color: #fff; border-radius: 50%; font-size: 0.7rem; margin-left: 6px; font-weight: bold; }
 
+
 /* ============================================================
-   [기능 1: 목표 대학 설정]
+   [3] 기능 1: 목표 대학 설정 & 분석
    ============================================================ */
 .univ-sub-header { margin: 25px 0 15px 0; border-bottom: 1px dashed #e2e8f0; padding-bottom: 10px; }
 .univ-sub-header h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: #1e293b; }
 .univ-sub-header p { margin: 0; font-size: 0.9rem; color: #64748b; }
+
+/* 대학 슬롯 그리드 */
 .univ-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
 .univ-slot { border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; background: #f8fafc; position: relative; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .univ-slot label { font-size: 0.85rem; font-weight: bold; color: #334155; }
@@ -108,17 +107,20 @@
 .univ-select-btn { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; color: #334155; text-align: left; cursor: pointer; font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
 .univ-select-btn:hover { border-color: #2563EB; color: #2563EB; }
 .univ-select-btn span.placeholder { color: #94a3b8; }
+
+/* 잠긴 슬롯 스타일 */
 .univ-slot.locked-tier { background: #f1f5f9; opacity: 0.6; pointer-events: none; justify-content: center; align-items: center; border: 1px dashed #cbd5e1; min-height: 100px; }
 .univ-slot.locked-tier::after { content: attr(data-msg); color: #94a3b8; font-weight: bold; font-size: 0.9rem; }
 .univ-slot.locked-tier label, .univ-slot.locked-tier button { display: none; }
 .warning-text { color: #ef4444; font-size: 0.9rem; background: #fef2f2; padding: 10px; border-radius: 6px; }
 
+/* 저장 버튼 */
 #btnSaveTarget { display: block; width: 100%; padding: 16px 20px; margin-top: 30px; background-color: #2563EB; color: white; border: none; border-radius: 10px; font-size: 1.05rem; font-weight: 700; letter-spacing: -0.5px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3); }
 #btnSaveTarget:hover { background-color: #1d4ed8; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4); }
 #btnSaveTarget:active { transform: translateY(0); box-shadow: 0 2px 4px -1px rgba(37, 99, 235, 0.3); }
 #btnSaveTarget:disabled { background-color: #cbd5e1; color: #64748b; cursor: not-allowed; transform: none; box-shadow: none; }
 
-/* 대학 선택 모달 (Selection) */
+/* 대학 선택 모달 내부 */
 .select-modal-content { max-width: 700px; height: 80vh; max-height: 600px; display: flex; flex-direction: column; }
 .selection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; padding: 20px; overflow-y: auto; flex: 1; }
 .selection-item { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px 10px; text-align: center; cursor: pointer; font-size: 0.95rem; color: #334155; font-weight: 500; transition: all 0.2s; display: flex; align-items: center; justify-content: center; min-height: 50px; }
@@ -126,16 +128,17 @@
 .back-step-btn { background: transparent; border: none; color: #64748b; font-weight: 600; cursor: pointer; font-size: 0.9rem; padding: 8px 12px; transition: color 0.2s; }
 .back-step-btn:hover { color: #2563EB; text-decoration: underline; }
 
-/* =========================================
-   [기능 3] 점수 상승 시뮬레이션
-   ========================================= */
+
+/* ============================================================
+   [4] 기능 2: 점수 상승 시뮬레이션
+   ============================================================ */
 .sim-container-new { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
 .sim-controls { display: flex; justify-content: flex-end; }
 .chart-toggle-group { background: #f1f5f9; padding: 4px; border-radius: 8px; display: flex; gap: 4px; }
 .toggle-btn { border: none; background: transparent; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; color: #64748b; cursor: pointer; font-weight: 600; transition: all 0.2s; }
 .toggle-btn.active { background: white; color: #2563EB; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
-/* 차트 영역 */
+/* 차트 컨테이너 */
 .sim-chart-wrapper { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); min-height: 480px; box-sizing: border-box; display: flex; flex-direction: column; }
 .chart-scroll-container { flex: 1; overflow-x: auto; overflow-y: hidden; position: relative; scrollbar-width: thin; padding-bottom: 10px; }
 .chart-inner-container { display: flex; flex-direction: column; height: 360px; width: max-content; min-width: 100%; overflow: visible !important; }
@@ -146,48 +149,38 @@
 .chart-graph-area { position: relative; height: 260px; border-bottom: 2px solid #cbd5e1; display: flex; align-items: flex-end; padding: 30px 60px 0 20px; padding-bottom: 0 !important; box-sizing: border-box; gap: 10px; overflow: visible !important; z-index: 1;}
 .chart-label-area { height: 100px; display: flex; align-items: flex-start; padding: 10px 60px 0 20px; gap: 10px; box-sizing: border-box; }
 
-/* 기준선 */
+/* 기준선 및 라벨 */
 .chart-guide-line { position: absolute; left: 0; right: 0; border-top: 1px dashed #cbd5e1; z-index: 0; pointer-events: none; width: 100%; }
 .chart-guide-label { position: absolute; left: auto; right: 5px; top: -22px; font-size: 0.75rem; font-weight: 700; text-align: right; padding: 2px 0; background: rgba(255, 255, 255, 0.8); z-index: 10; }
 .guide-150 { border-top-color: #10b981; } 
 .guide-150 .chart-guide-label { color: #10b981; }
 
-/* 막대 & 라벨 공통 */
+/* 막대 차트 스타일 */
 .sim-bar-item, .sim-label-item { position: relative; flex: 1 1 0px; width: auto; min-width: 60px; max-width: 100px; display: flex; justify-content: center; cursor: pointer; z-index: 5; }
 .sim-bar-item { height: 100%; align-items: flex-end; transition: transform 0.2s; }
 .sim-bar-item:hover { transform: translateY(-5px); }
-
-/* 막대 스타일 */
 .sim-bar { width: 40px; background: #e2e8f0; border-radius: 6px 6px 0 0; position: relative; transition: height 0.5s ease-out; }
 .sim-bar-item.active .sim-bar { background: #2563EB !important; box-shadow: 0 0 10px rgba(37, 99, 235, 0.3); }
 .sim-score-label { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); font-size: 0.85rem; color: #64748b; font-weight: 600; }
 .sim-bar-item.active .sim-score-label { color: #2563EB; font-weight: 800; }
 
-/* 라벨 텍스트 */
+/* 하단 라벨 */
 .sim-label-item { text-align: center; font-size: 0.8rem; color: #475569; line-height: 1.4; }
 .sim-label-item strong { color: #1e293b; display: block; margin-bottom: 2px; }
 .label-pc { display: block; }
 .label-mobile { display: none; font-weight: bold; }
 
-/* 꺾은선 SVG */
+/* 꺾은선 SVG & 범례 */
 .sim-line-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: visible; z-index: 10; pointer-events: none; }
 .sim-line-path { fill: none; stroke: #2563EB; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 3px 3px rgba(37,99,235,0.2)); }
 .sim-line-point { fill: #fff; stroke: #2563EB; stroke-width: 3; r: 6; cursor: pointer; pointer-events: auto; transition: r 0.2s; }
 .sim-line-point:hover, .sim-line-point.active { r: 9; stroke: #1d4ed8; fill: #eff6ff; }
-
-/* 범례 (우측 상단 박스) */
 .chart-legend-overlay { position: absolute; top: 10px; right: 10px; background: rgba(255, 255, 255, 0.95); border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 5px; z-index: 20; max-height: 150px; overflow-y: auto; }
-
 .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #64748b; cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: background 0.2s; }
 .legend-item:hover { background: #f1f5f9; }
 .legend-item.active { background: #eff6ff; color: #1e293b; font-weight: 700; }
-
 .legend-color-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid transparent; }
-
-/* 꺾은선 그래프용 X축 (과목명) */
 .subject-axis-label { position: absolute; bottom: -30px; transform: translateX(-50%); font-size: 0.85rem; color: #334155; font-weight: 600; text-align: center; }
-
-/* Y축 그리드 라인 */
 .y-grid-line { stroke: #e2e8f0; stroke-width: 1; stroke-dasharray: 4; }
 .y-grid-label { font-size: 0.75rem; fill: #94a3b8; text-anchor: end; alignment-baseline: middle; }
 
@@ -208,8 +201,9 @@
 .sim-item-body strong { color: #2563EB; }
 .sim-warning { margin-top: 20px; padding: 15px; background: #fff1f2; border: 1px solid #fecaca; border-radius: 8px; color: #991b1b; font-size: 0.9rem; display: flex; align-items: center; gap: 12px; }
 
+
 /* ============================================================
-   [기능 4: 코칭 및 주간 점검] + 모달 개선
+   [5] 기능 3: 코칭 및 주간 점검
    ============================================================ */
 .coach-container { display: flex; flex-direction: column; gap: 20px; }
 .coach-box { border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; position: relative; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s; }
@@ -223,64 +217,28 @@
 .badge-status.submitted { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
 .badge-status.locked { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
 
-/* 피드백 박스 */
+/* [수정] 피드백 박스 및 리스트 (잘림 방지 포함) */
 .feedback-box { border-left: 4px solid #8b5cf6; background: linear-gradient(to bottom right, #fbfbfe, #fff); }
 .feedback-history-area { margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 15px; }
 .feedback-filter select { padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; color: #334155; margin-bottom: 12px; width: 100%; max-width: 200px; }
-.feedback-list { display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; padding: 5px; margin: -5px; }
+.feedback-list { 
+    display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; 
+    /* 중요: hover 시 잘림 방지를 위한 패딩 처리 */
+    padding: 5px; margin: -5px; 
+}
 .feedback-tile { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
 .feedback-tile:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-color: #3b82f6; background: #f8fafc; }
 .feedback-tile .fb-title { font-weight: 700; color: #334155; font-size: 1rem; }
 .feedback-tile .fb-status { font-size: 0.9rem; }
 .empty-feedback { font-size: 0.9rem; color: #94a3b8; text-align: center; padding: 20px; }
 
-/* 모달 내부 문서(워드) 형식 스타일 */
-.modal-document { max-width: 850px; margin: 0 auto; background: #fff; padding: 40px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; color: #1e293b; border: 1px solid #e2e8f0; border-radius: 8px; position: relative; }
-.btn-pdf { position: absolute; top: 20px; right: 20px; background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
-.btn-pdf:hover { background: #2563eb; }
-.doc-header { border-bottom: 2px solid #334155; padding-bottom: 20px; margin-bottom: 30px; margin-top: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
-.doc-title { font-size: 1.8rem; font-weight: 800; color: #0f172a; margin: 0; }
-.doc-meta { font-size: 1rem; color: #475569; text-align: right; font-weight: 600; }
-.doc-section { margin-bottom: 35px; }
-.doc-section-title { font-size: 1.2rem; font-weight: 700; color: #1e293b; border-left: 5px solid #3b82f6; padding-left: 12px; margin-bottom: 15px; display: flex; align-items: center; }
-.doc-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin-bottom: 15px; }
-.doc-box-item { margin-bottom: 20px; }
-.doc-box-item:last-child { margin-bottom: 0; }
-.doc-box-item strong { display: block; color: #2563eb; margin-bottom: 8px; font-size: 1.05rem; }
-.doc-text { font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; color: #334155; }
-.qna-pair { background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 5px solid #16a34a; padding: 20px; border-radius: 8px; }
-.qna-student { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #86efac; }
-.qna-student strong { color: #b91c1c; display: block; margin-bottom: 8px; font-size: 1.05rem; }
-.qna-tutor strong { color: #15803d; display: block; margin-bottom: 8px; font-size: 1.05rem; }
-
-/* 모달 기본 스타일 */
-.custom-modal { position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
-.custom-modal-content { background-color: #fefefe; margin: 5% auto; padding: 0; border: 1px solid #888; width: 80%; max-width: 850px; border-radius: 8px; position: relative; min-height: 500px; }
-
-/* 인쇄(PDF 다운로드)용 미디어 쿼리 */
-@media print {
-    body * { visibility: hidden; }
-    #feedbackModal .modal-document, #feedbackModal .modal-document * { visibility: visible; }
-    #feedbackModal .modal-document { position: absolute; left: 0; top: 0; width: 100%; height: auto; padding: 20px; box-shadow: none; border: none; }
-    .btn-pdf, .modal-close-btn { display: none !important; }
-}
-
-/* 모달 내부 탭 메뉴 */
-.tab-menu { display: flex; border-bottom: 1px solid #e2e8f0; background: #f8fafc; margin-bottom: 0; border-radius: 12px 12px 0 0; overflow: hidden; }
-.tab-btn { flex: 1; padding: 15px; border: none; background: transparent; cursor: pointer; font-weight: bold; color: #64748b; border-bottom: 2px solid transparent; transition: 0.2s; font-size: 0.95rem; }
-.tab-btn:hover { color: #334155; background: #f1f5f9; }
-.tab-btn.active { color: #2563EB; border-bottom: 2px solid #2563EB; background: white; color: #2563EB; }
-.tab-content { display: none; padding: 25px; animation: fadeIn 0.2s; }
-.tab-content.active { display: block; }
-
-/* 주간점검 모달 (테이블, 입력폼) */
-.check-modal-content { max-width: 800px; height: 85vh; display: flex; flex-direction: column; padding: 0; }
-.modal-body.scrollable { overflow-y: auto; flex: 1; background: #fff; padding: 0; }
+/* 주간점검 입력 폼 (모달 내부) */
 .check-section { background: white; margin-bottom: 30px; }
 .check-section h4 { border-left: 4px solid #2563EB; padding-left: 12px; margin: 0 0 10px 0; color: #1e293b; font-size: 1.1rem; }
 .check-section .desc { font-size: 0.9rem; color: #64748b; margin: 0 0 15px 0; padding-left: 16px; }
 .req { color: #ef4444; margin-left: 4px; }
 
+/* 테이블, 파일업로드 등 Form 요소 */
 .table-wrap { overflow-x: auto; width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; }
 .study-time-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; min-width: 500px; }
 .study-time-table th { background: #f8fafc; padding: 12px 10px; text-align: center; color: #475569; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
@@ -292,7 +250,6 @@
 .rate-txt { font-weight: bold; color: #334155; }
 .total-row { background: #f0f9ff; font-weight: bold; color: #0369a1; }
 
-/* 파일 업로드 박스 (small-type) */
 .file-upload-box.small-type { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .upload-action { display: flex; align-items: center; gap: 10px; }
 #mockExamProof { display: none !important; }
@@ -300,7 +257,6 @@
 .mini-upload-btn:hover { background: #f1f5f9; border-color: #94a3b8; color: #1e293b; }
 .file-name-text { font-size: 0.8rem; color: #94a3b8; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* 플래너 업로드 (큰 박스) */
 .file-upload-wrapper { border: 2px dashed #cbd5e1; padding: 20px; border-radius: 8px; background: #fdfdfd; text-align: center; transition: background 0.2s; }
 .file-upload-wrapper:hover { background: #f8fafc; border-color: #94a3b8; }
 .file-upload-btn { display: inline-block; padding: 8px 16px; background: #3b82f6; color: white; border-radius: 6px; font-size: 0.9rem; cursor: pointer; transition: 0.2s; }
@@ -309,14 +265,12 @@
 .file-item { display: flex; justify-content: space-between; background: #f1f5f9; padding: 8px 12px; margin-bottom: 6px; border-radius: 6px; border: 1px solid #e2e8f0; }
 .file-remove { color: #ef4444; cursor: pointer; font-weight: bold; margin-left: 10px; }
 
-/* 모의고사 타일 */
 .mock-tile-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px; }
 .mock-tile { border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px 5px; text-align: center; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 5px; background: #fff; }
 .mock-tile:hover { border-color: #cbd5e1; transform: translateY(-2px); }
 .mock-tile.selected { border-color: #2563EB; background: #eff6ff; color: #2563EB; font-weight: bold; box-shadow: 0 2px 5px rgba(37, 99, 235, 0.1); }
 .mock-tile .icon { font-size: 1.2rem; margin-bottom: 4px; }
 
-/* 점수 입력 그리드 */
 .score-input-grid.enhanced { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 15px; }
 .score-item { display: flex; flex-direction: column; gap: 6px; }
 .score-item .main-label { text-align: center; font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 2px; }
@@ -331,6 +285,125 @@
 .trend-radio-group label { cursor: pointer; font-weight: 500; color: #334155; display: flex; align-items: center; gap: 6px; }
 .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin: 10px 0; }
 .sub-label { font-size: 0.9rem; font-weight: bold; color: #b91c1c; display: block; margin-bottom: 8px; }
+
+/* 코칭 등급 제한 오버레이 */
+.coach-container.tier-locked > .coach-box { filter: blur(5px); pointer-events: none; user-select: none; opacity: 0.6; }
+.tier-lock-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
+.lock-message-box { background: rgba(255, 255, 255, 0.95); padding: 30px 40px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); text-align: center; border: 1px solid #e2e8f0; animation: fadeIn 0.3s ease-out; }
+.lock-message-box i { font-size: 2.5rem; color: #94a3b8; margin-bottom: 15px; }
+.lock-message-box h3 { margin: 0 0 8px 0; color: #1e293b; font-size: 1.2rem; }
+.lock-message-box p { margin: 0 0 20px 0; color: #64748b; font-size: 0.95rem; line-height: 1.5; }
+
+
+/* ============================================================
+   [6] 피드백 문서/모달 디자인 (통합 및 수정됨)
+   ============================================================ */
+/* 1. 모달 배경 및 레이아웃 */
+.custom-modal { position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); }
+
+/* 2. 모달 컨텐츠 박스 (통합된 디자인 - 이중 테두리 제거) */
+.custom-modal-content { background-color: white; margin: 5vh auto; border-radius: 12px; width: 90%; max-width: 850px; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); border: none; }
+.custom-modal-content .close-btn { display: none; /* 문서 내부 닫기 버튼 사용 */ } 
+.modal-body { padding: 0; }
+
+/* 3. 모달 내부 문서(워드) 형식 스타일 */
+.modal-document { width: 100%; background: #fff; padding: 50px; box-sizing: border-box; border-radius: 12px; position: relative; min-height: 600px; }
+
+/* 문서 내부 헤더 컨트롤 (PDF버튼 + 닫기버튼) */
+.doc-controls { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; align-items: center; }
+.btn-pdf { 
+    background: #3b82f6; color: white; border: none; padding: 8px 16px; 
+    border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.9rem; 
+    display: flex; align-items: center; gap: 6px;
+}
+.btn-pdf:hover { background: #2563eb; }
+.close-btn-doc {
+    font-size: 1.8rem; color: #94a3b8; cursor: pointer; line-height: 1;
+    background: none; border: none; padding: 0 5px;
+}
+.close-btn-doc:hover { color: #ef4444; }
+
+/* 문서 타이틀 영역 */
+.doc-header { border-bottom: 2px solid #334155; padding-bottom: 20px; margin-bottom: 30px; margin-top: 30px; }
+.doc-title { font-size: 1.8rem; font-weight: 800; color: #0f172a; margin: 0 0 10px 0; }
+.doc-meta { font-size: 1rem; color: #475569; text-align: right; font-weight: 600; }
+
+/* 섹션 스타일 */
+.doc-section { margin-bottom: 40px; }
+.doc-section-title { font-size: 1.3rem; font-weight: 800; color: #1e293b; border-left: 6px solid #3b82f6; padding-left: 12px; margin-bottom: 20px; display: flex; align-items: center; }
+.doc-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 25px; border-radius: 12px; }
+.doc-box-item { margin-bottom: 20px; }
+.doc-box-item:last-child { margin-bottom: 0; }
+.doc-box-item strong { display: block; color: #2563eb; margin-bottom: 8px; font-size: 1.05rem; }
+.doc-text { font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; color: #334155; }
+
+/* 심층 QnA 리스트 및 페어 스타일 */
+.student-qna-list { list-style: none; padding: 0; margin: 0; }
+.student-qna-list li { margin-bottom: 12px; position: relative; padding-left: 20px; line-height: 1.6; color: #334155; }
+.student-qna-list li::before { content: "•"; color: #3b82f6; font-weight: bold; position: absolute; left: 0; font-size: 1.2rem; line-height: 1.4; }
+
+.qna-pair { background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 5px solid #16a34a; padding: 20px; border-radius: 8px; }
+.qna-student { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #86efac; }
+.qna-student strong { color: #b91c1c; display: block; margin-bottom: 8px; font-size: 1.05rem; }
+.qna-tutor strong { color: #15803d; display: block; margin-bottom: 8px; font-size: 1.05rem; }
+
+/* 피드백 대기중 화면 */
+.pending-view { text-align: center; padding: 80px 20px; }
+.pending-icon { font-size: 4rem; color: #cbd5e1; margin-bottom: 20px; animation: float 3s ease-in-out infinite; }
+@keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+
+
+/* ============================================================
+   [7] 기능 5: PRO EXCLUSIVE
+   ============================================================ */
+.pro-theme {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); /* Deep Navy ~ Blue */
+    padding: 40px; border-radius: 16px; color: white; border: 1px solid #3b82f6;
+    box-shadow: 0 10px 30px rgba(30, 58, 138, 0.25); position: relative; overflow: hidden;
+}
+.pro-theme::before {
+    content: ''; position: absolute; top: -50px; right: -50px; width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%); z-index: 0;
+}
+
+.pro-header { position: relative; z-index: 1; margin-bottom: 30px; text-align: center; }
+.pro-badge { display: inline-block; background: #3b82f6; color: white; font-size: 0.8rem; font-weight: 800; padding: 4px 12px; border-radius: 20px; margin-bottom: 10px; letter-spacing: 1px; }
+.pro-title { font-size: 1.8rem; font-weight: 800; margin: 0 0 10px 0; color: #fff; letter-spacing: -0.5px; }
+.pro-desc { color: #cbd5e1; font-size: 1rem; font-weight: 400; }
+
+.pro-cta-btn {
+    display: block; width: 100%; max-width: 400px; margin: 30px auto 0 auto; padding: 16px 24px;
+    background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%); 
+    color: #1e3a8a; border: 1px solid #bfdbfe;
+    font-size: 1.1rem; font-weight: 800; border-radius: 12px; cursor: pointer;
+    transition: all 0.3s ease; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); position: relative; z-index: 1; text-align: center;
+}
+.pro-cta-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(255, 255, 255, 0.2); background: #fff; border-color: #60a5fa; }
+.pro-cta-btn div { font-size: 0.85rem; color: #64748b; margin-top: 4px; font-weight: 500; }
+
+.pro-promo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 30px; position: relative; z-index: 1; }
+.pro-feature-card { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; transition: transform 0.3s; }
+.pro-feature-card:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.1); }
+.pro-feature-card.highlight { border: 1px solid #f59e0b; background: linear-gradient(145deg, rgba(245, 158, 11, 0.1), transparent); }
+.pro-feature-card.highlight .feat-title { color: #fbbf24; }
+.feat-icon { font-size: 1.5rem; margin-bottom: 15px; display: block; }
+.feat-title { font-size: 1.1rem; font-weight: 700; color: #60a5fa; margin-bottom: 8px; display: block; }
+.feat-desc { font-size: 0.9rem; color: #e2e8f0; line-height: 1.5; margin: 0; }
+
+.pro-dashboard-layout { display: flex; flex-direction: column; gap: 30px; position: relative; z-index: 1; }
+.dashboard-actions { text-align: center; background: rgba(255,255,255,0.05); padding: 25px; border-radius: 12px; }
+.req-btn { background: white; color: #1e3a8a; font-weight: 700; padding: 12px 30px; border-radius: 8px; border: none; cursor: pointer; font-size: 1rem; transition: all 0.2s; }
+.req-btn:hover { background: #eff6ff; box-shadow: 0 0 15px rgba(255,255,255,0.3); }
+
+.report-list-container { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 20px; }
+.report-year-group { margin-bottom: 20px; }
+.report-year-title { font-size: 0.9rem; color: #94a3b8; margin-bottom: 10px; border-bottom: 1px solid #334155; padding-bottom: 5px; }
+.report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.report-item { background: #1e293b; border: 1px solid #334155; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; transition: border-color 0.2s; cursor: pointer; }
+.report-item:hover { border-color: #3b82f6; }
+.rep-info strong { display: block; color: #fff; font-size: 0.95rem; margin-bottom: 2px; }
+.rep-info span { font-size: 0.8rem; color: #94a3b8; }
+.rep-icon { color: #3b82f6; }
 
 /* 심층 코칭 카드 */
 .pro-input-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
@@ -347,133 +420,69 @@
 .save-btn:active { transform: translateY(0); box-shadow: 0 2px 4px -1px rgba(37, 99, 235, 0.3); }
 .save-btn:disabled { background-color: #cbd5e1; color: #64748b; cursor: not-allowed; transform: none; box-shadow: none; }
 
-/* 코칭 등급 제한 */
-.coach-container.tier-locked > .coach-box { filter: blur(5px); pointer-events: none; user-select: none; opacity: 0.6; }
-.tier-lock-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
-.lock-message-box { background: rgba(255, 255, 255, 0.95); padding: 30px 40px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); text-align: center; border: 1px solid #e2e8f0; animation: fadeIn 0.3s ease-out; }
-.lock-message-box i { font-size: 2.5rem; color: #94a3b8; margin-bottom: 15px; }
-.lock-message-box h3 { margin: 0 0 8px 0; color: #1e293b; font-size: 1.2rem; }
-.lock-message-box p { margin: 0 0 20px 0; color: #64748b; font-size: 0.95rem; line-height: 1.5; }
-
-/* =========================================
-   [기능 5] PRO EXCLUSIVE 테마
-   ========================================= */
-.pro-theme {
-    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); /* Deep Navy ~ Blue */
-    padding: 40px; border-radius: 16px; color: white; border: 1px solid #3b82f6;
-    box-shadow: 0 10px 30px rgba(30, 58, 138, 0.25); position: relative; overflow: hidden;
-}
-.pro-theme::before {
-    content: ''; position: absolute; top: -50px; right: -50px; width: 200px; height: 200px;
-    background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%); z-index: 0;
-}
-
-/* PRO 헤더 */
-.pro-header { position: relative; z-index: 1; margin-bottom: 30px; text-align: center; }
-.pro-badge { display: inline-block; background: #3b82f6; color: white; font-size: 0.8rem; font-weight: 800; padding: 4px 12px; border-radius: 20px; margin-bottom: 10px; letter-spacing: 1px; }
-.pro-title { font-size: 1.8rem; font-weight: 800; margin: 0 0 10px 0; color: #fff; letter-spacing: -0.5px; }
-.pro-desc { color: #cbd5e1; font-size: 1rem; font-weight: 400; }
-
-/* [수정 2] PRO CTA 버튼 (Silver-Blue 스타일) */
-.pro-cta-btn {
-    display: block; width: 100%; max-width: 400px; margin: 30px auto 0 auto; padding: 16px 24px;
-    background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%); 
-    color: #1e3a8a; border: 1px solid #bfdbfe;
-    font-size: 1.1rem; font-weight: 800; border-radius: 12px; cursor: pointer;
-    transition: all 0.3s ease; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); position: relative; z-index: 1; text-align: center;
-}
-.pro-cta-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(255, 255, 255, 0.2); background: #fff; border-color: #60a5fa; }
-.pro-cta-btn div { font-size: 0.85rem; color: #64748b; margin-top: 4px; font-weight: 500; }
-
-/* PRO 홍보 그리드 */
-.pro-promo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 30px; position: relative; z-index: 1; }
-.pro-feature-card { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; transition: transform 0.3s; }
-.pro-feature-card:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.1); }
-.pro-feature-card.highlight { border: 1px solid #f59e0b; background: linear-gradient(145deg, rgba(245, 158, 11, 0.1), transparent); }
-.pro-feature-card.highlight .feat-title { color: #fbbf24; }
-.feat-icon { font-size: 1.5rem; margin-bottom: 15px; display: block; }
-.feat-title { font-size: 1.1rem; font-weight: 700; color: #60a5fa; margin-bottom: 8px; display: block; }
-.feat-desc { font-size: 0.9rem; color: #e2e8f0; line-height: 1.5; margin: 0; }
-
-/* PRO 대시보드 */
-.pro-dashboard-layout { display: flex; flex-direction: column; gap: 30px; position: relative; z-index: 1; }
-.dashboard-actions { text-align: center; background: rgba(255,255,255,0.05); padding: 25px; border-radius: 12px; }
-.req-btn { background: white; color: #1e3a8a; font-weight: 700; padding: 12px 30px; border-radius: 8px; border: none; cursor: pointer; font-size: 1rem; transition: all 0.2s; }
-.req-btn:hover { background: #eff6ff; box-shadow: 0 0 15px rgba(255,255,255,0.3); }
-
-/* 리포트 리스트 */
-.report-list-container { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 20px; }
-.report-year-group { margin-bottom: 20px; }
-.report-year-title { font-size: 0.9rem; color: #94a3b8; margin-bottom: 10px; border-bottom: 1px solid #334155; padding-bottom: 5px; }
-.report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
-.report-item { background: #1e293b; border: 1px solid #334155; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; transition: border-color 0.2s; cursor: pointer; }
-.report-item:hover { border-color: #3b82f6; }
-.rep-info strong { display: block; color: #fff; font-size: 0.95rem; margin-bottom: 2px; }
-.rep-info span { font-size: 0.8rem; color: #94a3b8; }
-.rep-icon { color: #3b82f6; }
 
 /* ============================================================
-   [모달 통합 디자인] (Standard & Pro Unified)
+   [8] 공통 모달 (일반 폼, 대학선택 등)
    ============================================================ */
-/* 1. 모달 배경 및 레이아웃 */
+/* 모달 배경 */
 .modal { display: none; position: fixed; z-index: 2000 !important; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
 
-/* 2. 모달 컨텐츠 박스 (공통) */
+/* 모달 컨텐츠 (공통) */
 .modal-content { 
     background-color: white; margin: 8vh auto; border-radius: 12px; width: 90%; max-width: 500px; 
     position: relative; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); 
-    display: flex; flex-direction: column; overflow: hidden; /* 헤더 배경 잘림 방지 */
+    display: flex; flex-direction: column; overflow: hidden; 
     animation: modalSlideIn 0.3s ease-out; 
 }
 @keyframes modalSlideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-/* 3. 헤더 (Header) */
+/* 모달 내부 구성요소 */
 .modal-header { padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; background: #fff; }
 .modal-title { margin: 0; font-size: 1.15rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 8px; }
 .close-btn { font-size: 1.8rem; cursor: pointer; color: #94a3b8; line-height: 1; transition: color 0.2s; background: transparent; border: none; }
 .close-btn:hover { color: #ef4444; }
-
-/* 4. 바디 (Body) */
 .modal-body { padding: 24px; background: #fff; flex: 1; overflow-y: auto; }
 .modal-desc { font-size: 0.95rem; color: #475569; margin-bottom: 20px; line-height: 1.6; word-break: keep-all; }
-
-/* 5. 푸터 (Footer) */
 .modal-footer { padding: 16px 24px; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 10px; }
 
-/* 6. 공통 폼 요소 (Textarea, Button) */
-.common-textarea { width: 100%; height: 140px; padding: 14px; border: 1px solid #cbd5e1; border-radius: 8px; background-color: #fff; font-size: 0.95rem; line-height: 1.6; resize: none; transition: all 0.2s; outline: none; font-family: inherit; }
-.common-textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-.common-textarea::placeholder { color: #94a3b8; }
-.char-count { text-align: right; font-size: 0.8rem; color: #64748b; margin-top: 6px; }
+/* 탭 메뉴 (모달 내부) */
+.tab-menu { display: flex; border-bottom: 1px solid #e2e8f0; background: #f8fafc; margin-bottom: 0; border-radius: 12px 12px 0 0; overflow: hidden; }
+.tab-btn { flex: 1; padding: 15px; border: none; background: transparent; cursor: pointer; font-weight: bold; color: #64748b; border-bottom: 2px solid transparent; transition: 0.2s; font-size: 0.95rem; }
+.tab-btn:hover { color: #334155; background: #f1f5f9; }
+.tab-btn.active { color: #2563EB; border-bottom: 2px solid #2563EB; background: white; color: #2563EB; }
+.tab-content { display: none; padding: 25px; animation: fadeIn 0.2s; }
+.tab-content.active { display: block; }
 
+/* 주간점검 모달 전용 */
+.check-modal-content { max-width: 800px; height: 85vh; display: flex; flex-direction: column; padding: 0; }
+.modal-body.scrollable { overflow-y: auto; flex: 1; background: #fff; padding: 0; }
+
+/* 공통 폼 버튼 */
 .btn-common { padding: 10px 20px; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; }
 .btn-cancel { background: white; color: #64748b; border: 1px solid #cbd5e1; }
 .btn-cancel:hover { background: #f1f5f9; color: #1e293b; border-color: #94a3b8; }
 .btn-confirm { background: #2563eb; color: white; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); }
 .btn-confirm:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 6px 8px -1px rgba(37, 99, 235, 0.3); }
+.common-textarea { width: 100%; height: 140px; padding: 14px; border: 1px solid #cbd5e1; border-radius: 8px; background-color: #fff; font-size: 0.95rem; line-height: 1.6; resize: none; transition: all 0.2s; outline: none; font-family: inherit; }
+.common-textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+.common-textarea::placeholder { color: #94a3b8; }
 
-/* ============================================================
-   [PRO 모달 전용 테마]
-   ============================================================ */
+/* PRO 모달 전용 테마 */
 .pro-modal-content { border: 1px solid #3b82f6; }
-
-/* PRO 헤더: 파란색 그라데이션 */
 .pro-modal-content .modal-header { background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); border-bottom: 1px solid rgba(255,255,255,0.1); }
 .pro-modal-content .modal-title { color: white; }
 .pro-modal-content .close-btn { color: rgba(255,255,255,0.7); }
 .pro-modal-content .close-btn:hover { color: white; transform: rotate(90deg); }
-
-/* PRO 바디: 옅은 배경색 */
 .pro-modal-content .modal-body { background: #f8fafc; }
 .pro-modal-content .common-textarea { background: white; border: 1px solid #e2e8f0; }
 .pro-modal-content .common-textarea:focus { border-color: #2563eb; }
-
-/* PRO 푸터: 흰색 배경 */
 .pro-modal-content .modal-footer { background: #fff; border-top: 1px solid #e2e8f0; }
 
-/* =========================================
-   [섹션 로딩 오버레이: #sol-univ 전용]
-   ========================================= */
+
+/* ============================================================
+   [9] 로딩 및 기타 유틸리티
+   ============================================================ */
+/* 섹션 로딩 오버레이: #sol-univ 전용 */
 #sol-univ { position: relative; min-height: 300px; }
 .page-loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.95); z-index: 50; display: flex; justify-content: center; align-items: center; border-radius: 12px; transition: opacity 0.4s ease, visibility 0.4s ease; }
 .page-loading-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
@@ -482,9 +491,35 @@
 .loading-content p { font-size: 1.1rem; font-weight: 700; color: #334155; animation: pulseText 1.5s infinite ease-in-out; }
 @keyframes pulseText { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-/* =========================================
-   [모바일 반응형]
-   ========================================= */
+/* 숫자 입력 스피너 제거 */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+
+/* ============================================================
+   [10] 모바일 반응형 및 인쇄 설정
+   ============================================================ */
+/* 인쇄(PDF 다운로드) - 3페이지 빈화면 버그 수정 */
+@media print {
+    /* 모든 요소 display: none으로 숨김 (공간 차지 X) */
+    body > * { display: none !important; }
+    
+    /* 모달만 표시 */
+    #feedbackModal { display: block !important; position: absolute; top: 0; left: 0; width: 100%; height: auto; z-index: 9999; background: white; }
+    #feedbackModal .custom-modal-content { box-shadow: none; margin: 0; width: 100%; max-width: 100%; border: none; }
+    #feedbackModal .modal-document { padding: 0; border: none; min-height: auto; }
+    
+    /* 버튼 컨트롤 숨김 */
+    .doc-controls { display: none !important; }
+    
+    /* 페이지 설정 */
+    @page { size: A4; margin: 20mm; }
+}
+
+/* 모바일 반응형 */
 @media (max-width: 768px) {
     .solution-menu { flex-wrap: wrap; gap: 10px; }
     .sol-btn { flex: 1 1 45%; font-size: 0.85rem; padding: 12px; }
@@ -521,10 +556,4 @@
 
 @media (min-width: 600px) {
     .univ-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
 }
