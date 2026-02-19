@@ -436,15 +436,11 @@
         </div>
     </div>
 
-    <div id="feedbackModal" class="modal">
-        <div class="modal-content" style="max-width:400px; text-align:center; padding:40px;">
+    <div id="feedbackModal" class="custom-modal" style="display:none;">
+        <div class="custom-modal-content">
             <span class="close-btn" onclick="document.getElementById('feedbackModal').style.display='none'">&times;</span>
-            <i class="fas fa-tools" style="font-size:3rem; color:#cbd5e1; margin-bottom:20px;"></i>
-            <h3>준비 중입니다.</h3>
-            <p style="color:#64748b;">
-                컨설턴트 피드백 시스템 업데이트 예정입니다.<br>
-                조금만 기다려주세요!
-            </p>
+        
+            <div id="modalContent" class="modal-body"></div>
         </div>
     </div>
     
