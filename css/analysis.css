@@ -502,25 +502,33 @@ input[type="number"]::-webkit-inner-spin-button {
 /* ============================================================
    [10] 모바일 반응형 및 인쇄 설정
    ============================================================ */
-/* 인쇄(PDF 다운로드) - 3페이지 빈화면 버그 수정 */
+
+/* 기본 상태: 모바일 전용 메시지는 숨김 */
+.mobile-only-msg { display: none; }
+
+/* 인쇄(PDF 다운로드) 설정 */
 @media print {
-    /* 모든 요소 display: none으로 숨김 (공간 차지 X) */
+    /* 배경의 모든 요소 숨김 */
     body > * { display: none !important; }
     
-    /* 모달만 표시 */
+    /* 모달 및 문서 컨테이너 강제 표시 */
     #feedbackModal { display: block !important; position: absolute; top: 0; left: 0; width: 100%; height: auto; z-index: 9999; background: white; }
     #feedbackModal .custom-modal-content { box-shadow: none; margin: 0; width: 100%; max-width: 100%; border: none; }
     #feedbackModal .modal-document { padding: 0; border: none; min-height: auto; }
     
-    /* 버튼 컨트롤 숨김 */
-    .doc-controls { display: none !important; }
+    /* [중요] 모바일에서 숨겨졌던 본문 내용을 인쇄 시에는 강제로 보이게 함 */
+    .report-content-body { display: block !important; }
+    
+    /* 모바일 안내 메시지와 버튼 컨트롤들은 인쇄 시 숨김 */
+    .mobile-only-msg, .doc-controls, .mobile-close-btn { display: none !important; }
     
     /* 페이지 설정 */
     @page { size: A4; margin: 20mm; }
 }
 
-/* 모바일 반응형 */
+/* 모바일 반응형 스타일 (768px 이하) */
 @media (max-width: 768px) {
+    /* 1. 레이아웃 조정 */
     .solution-menu { flex-wrap: wrap; gap: 10px; }
     .sol-btn { flex: 1 1 45%; font-size: 0.85rem; padding: 12px; }
     .univ-grid { grid-template-columns: 1fr; gap: 15px; }
@@ -549,9 +557,50 @@ input[type="number"]::-webkit-inner-spin-button {
     .file-upload-box.small-type { flex-direction: column; align-items: flex-start; gap: 10px; }
     .upload-action { width: 100%; justify-content: space-between; }
     .score-input-grid.enhanced { grid-template-columns: repeat(3, 1fr); row-gap: 20px; }
-    
-    /* 모바일에서 주간 점검 헤더 세로 배치 (뱃지 줄바꿈) */
     .coach-box .box-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+
+    /* [핵심] 피드백 리포트 모바일 뷰 최적화 */
+    .modal-document { padding: 30px 20px; min-height: auto; }
+    
+    /* 제목 크기 축소 */
+    .doc-title { font-size: 1.35rem !important; word-break: keep-all; line-height: 1.3; }
+    .doc-meta { font-size: 0.9rem; margin-top: 5px; }
+    
+    /* 상세 내용은 화면에서 숨김 (인쇄할 때만 보이게 됨) */
+    .report-content-body { display: none; }
+    .doc-controls { display: none; } /* PC용 상단 버튼 숨김 */
+
+    /* 모바일 전용 안내 박스 표시 */
+    .mobile-only-msg {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 40px 15px;
+        background: #f8fafc;
+        border-radius: 12px;
+        border: 1px dashed #cbd5e1;
+        margin-top: 30px;
+    }
+    .mobile-only-msg i { font-size: 3rem; color: #94a3b8; margin-bottom: 15px; }
+    .mobile-only-msg p { color: #64748b; font-size: 0.95rem; margin-bottom: 25px; line-height: 1.5; word-break: keep-all; }
+    
+    /* 모바일용 대형 PDF 버튼 */
+    .mobile-pdf-btn {
+        background: #3b82f6; color: white; border: none; padding: 14px 24px; width: 100%;
+        border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 1rem;
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2); transition: background 0.2s;
+    }
+    .mobile-pdf-btn:active { background: #2563eb; transform: translateY(2px); }
+    
+    /* 모바일용 닫기 버튼 */
+    .mobile-close-btn {
+        margin-top: 15px; width: 100%; padding: 12px;
+        background: white; border: 1px solid #cbd5e1;
+        border-radius: 8px; color: #64748b; font-weight: 600; font-size: 0.95rem;
+    }
 }
 
 @media (min-width: 600px) {

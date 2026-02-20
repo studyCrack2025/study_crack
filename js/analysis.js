@@ -1462,7 +1462,7 @@ function renderFeedbackList() {
     });
 }
 
-// 피드백 상세 모달 열기 및 문서 형식 데이터 바인딩
+// 피드백 상세 모달 열기 및 문서 형식 데이터 바인딩 (모바일 최적화 적용)
 function openFeedbackModal(data) {
     const modal = document.getElementById('feedbackModal');
     const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent'); 
@@ -1502,8 +1502,8 @@ function openFeedbackModal(data) {
     // -----------------------------------------------------------
     const consultantName = "담당 컨설턴트"; 
     
-    // 2. [수정] 이번 주 학생 진행 요약 (학습시간 + 모의고사 + 추이)
-    // (1) 학습 시간
+    // [데이터 가공]
+    // 1. 학습 시간 및 요약
     let studyTimeHtml = '<div style="color:#94a3b8; text-align:center;">데이터 없음</div>';
     if (data.studyTime) {
         const totalPlan = data.studyTime.totalPlan || '0H';
@@ -1520,13 +1520,12 @@ function openFeedbackModal(data) {
         `;
     }
 
-    // (2) 모의고사 정보
+    // 2. 모의고사 정보
     let examHtml = '<span style="color:#94a3b8;">응시 기록 없음</span>';
     if (data.mockExam && data.mockExam.type && data.mockExam.type !== 'none') {
         const typeMap = { 'school': '교내', 'edu': '평가원/교육청', 'private': '사설' };
         const typeName = typeMap[data.mockExam.type] || '기타';
         
-        // 점수 요약 (국수영합 등급이나 주요 점수 나열)
         let scoreSummary = [];
         const s = data.mockExam.scores || {};
         if(s.kor) scoreSummary.push(`국:${s.kor}`);
@@ -1539,7 +1538,7 @@ function openFeedbackModal(data) {
         examHtml = '<span style="color:#94a3b8;">이번 주 응시 없음</span>';
     }
 
-    // (3) 학습 추이
+    // 3. 학습 추이
     let trendHtml = '-';
     if (data.trend) {
         const t = data.trend.status;
@@ -1548,7 +1547,6 @@ function openFeedbackModal(data) {
         else trendHtml = '<span style="color:#64748b; font-weight:bold;">➖ 유지중</span>';
     }
 
-    // 요약 섹션 통합 HTML
     const summarySectionHtml = `
         <div style="display:grid; grid-template-columns: 1.2fr 1fr 0.8fr; gap:15px; align-items:center; background:white; padding:20px; border-radius:12px; border:1px solid #e2e8f0;">
             <div style="border-right:1px solid #f1f5f9; padding-right:15px;">
@@ -1566,12 +1564,11 @@ function openFeedbackModal(data) {
         </div>
     `;
 
-    // 3. [수정] 심층 Q&A 구성 (질문 카테고리 명시 및 스타일 개선)
+    // 4. 심층 Q&A 구성
     let deepQnaHtml = '';
     const QUESTION_CATEGORIES = ['학습 계획 점검', '학습 방향성 설정', '취약 과목 솔루션', '기타 멘탈 관리'];
     
     if (data.deepAnswers && data.deepAnswers.length > 0) {
-        // 기존 <ul> 대신 <div> 구조로 변경하여 불릿 포인트 충돌 방지
         deepQnaHtml += '<div style="display:flex; flex-direction:column; gap:12px;">';
         data.deepAnswers.forEach((ans, idx) => {
             if (ans && ans.trim() !== "") {
@@ -1589,7 +1586,7 @@ function openFeedbackModal(data) {
         deepQnaHtml = '<div style="color:#94a3b8; text-align:center; padding:10px;">작성된 심층 질문이 없습니다.</div>';
     }
 
-    // 워드 문서 형태의 HTML 구조 조립
+    // HTML 조립
     const html = `
         <div class="modal-document">
             <div class="doc-controls">
@@ -1610,49 +1607,64 @@ function openFeedbackModal(data) {
                 </div>
             </div>
 
-            <div class="doc-section">
-                <div class="doc-section-title">📊 이번 주 학습 요약</div>
-                <div class="doc-box" style="background:#f8fafc; border:none; padding:0;">
-                    ${summarySectionHtml}
-                </div>
+            <div class="mobile-only-msg">
+                <i class="fas fa-file-pdf"></i>
+                <p>
+                    상세 피드백 내용은 모바일 화면에 최적화되어 있지 않습니다.<br>
+                    <strong>PDF로 저장</strong>하여 편하게 확인하세요.
+                </p>
+                <button class="mobile-pdf-btn" onclick="window.print()">
+                    <i class="fas fa-download"></i> PDF 저장하기
+                </button>
+                <button class="mobile-close-btn" onclick="document.getElementById('feedbackModal').style.display='none'">
+                    닫기
+                </button>
             </div>
 
-            <div class="doc-section">
-                <div class="doc-section-title">👩‍🏫 컨설턴트 주간 평가</div>
-                <div class="doc-box">
-                    <div class="doc-box-item">
-                        <strong>1. 이전 우선순위 이행 점검</strong>
-                        <div class="doc-text">${escapeHtml(fb.priorityCheck)}</div>
-                    </div>
-                    <div class="doc-box-item">
-                        <strong>2. 취약 과목 선정 및 개선 포인트</strong>
-                        <div class="doc-text">${escapeHtml(fb.weakSubject)}</div>
-                    </div>
-                    <div class="doc-box-item">
-                        <strong>3. 다음 주 핵심 과제 TOP3 및 근거</strong>
-                        <div class="doc-text">${escapeHtml(fb.nextWeekTop3)}</div>
-                    </div>
-                    <div class="doc-box-item">
-                        <strong>4. 플랜 진행 방향 제고 및 평가</strong>
-                        <div class="doc-text">${escapeHtml(fb.planEvaluation)}</div>
+            <div class="report-content-body">
+                <div class="doc-section">
+                    <div class="doc-section-title">📊 이번 주 학습 요약</div>
+                    <div class="doc-box" style="background:#f8fafc; border:none; padding:0;">
+                        ${summarySectionHtml}
                     </div>
                 </div>
-            </div>
 
-            <div class="doc-section">
-                <div class="doc-section-title">💬 심층 Q&A</div>
-                <div class="qna-pair">
-                    <div class="qna-student">
-                        <strong style="margin-bottom:12px; display:block;">💁 학생의 고민 (심층 질문)</strong>
-                        ${deepQnaHtml}
-                    </div>
-                    <div class="qna-tutor" style="margin-top:20px; padding-top:20px; border-top:1px dashed #86efac;">
-                        <strong style="margin-bottom:12px; display:block;">👩‍🏫 컨설턴트의 추가 코멘트</strong>
-                        <div class="doc-text">${escapeHtml(fb.extraQuestion)}</div>
+                <div class="doc-section">
+                    <div class="doc-section-title">👩‍🏫 컨설턴트 주간 평가</div>
+                    <div class="doc-box">
+                        <div class="doc-box-item">
+                            <strong>1. 이전 우선순위 이행 점검</strong>
+                            <div class="doc-text">${escapeHtml(fb.priorityCheck)}</div>
+                        </div>
+                        <div class="doc-box-item">
+                            <strong>2. 취약 과목 선정 및 개선 포인트</strong>
+                            <div class="doc-text">${escapeHtml(fb.weakSubject)}</div>
+                        </div>
+                        <div class="doc-box-item">
+                            <strong>3. 다음 주 핵심 과제 TOP3 및 근거</strong>
+                            <div class="doc-text">${escapeHtml(fb.nextWeekTop3)}</div>
+                        </div>
+                        <div class="doc-box-item">
+                            <strong>4. 플랜 진행 방향 제고 및 평가</strong>
+                            <div class="doc-text">${escapeHtml(fb.planEvaluation)}</div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
+
+                <div class="doc-section">
+                    <div class="doc-section-title">💬 심층 Q&A</div>
+                    <div class="qna-pair">
+                        <div class="qna-student">
+                            <strong style="margin-bottom:12px; display:block;">💁 학생의 고민 (심층 질문)</strong>
+                            ${deepQnaHtml}
+                        </div>
+                        <div class="qna-tutor" style="margin-top:20px; padding-top:20px; border-top:1px dashed #86efac;">
+                            <strong style="margin-bottom:12px; display:block;">👩‍🏫 컨설턴트의 추가 코멘트</strong>
+                            <div class="doc-text">${escapeHtml(fb.extraQuestion)}</div>
+                        </div>
+                    </div>
+                </div>
+            </div> </div>
     `;
 
     contentArea.innerHTML = html;
