@@ -883,11 +883,8 @@ function renderSimChart() {
     const container = document.getElementById('simChartArea');
     if (!cachedSimData || cachedSimData.length === 0) return;
 
-    // 현재 모의고사 이름 가져오기 (예: '2025학년도 6월 모의평가')
-    // 전역 변수 examTitleMap이나 currentExamMode 활용 가정
-    const examName = (typeof examTitleMap !== 'undefined' && examTitleMap[currentExamMode]) 
-        ? examTitleMap[currentExamMode] 
-        : currentExamMode + " 기준";
+    // 현재 모의고사 이름 가져오기
+    const examName = EXAM_DISPLAY_NAMES[currentExamMode] || currentExamMode;
 
     // ==================================================================================
     // [TYPE: BAR] 막대 그래프 (기존 유지)
