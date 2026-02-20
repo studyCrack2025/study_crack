@@ -1610,8 +1610,8 @@ function openFeedbackModal(data) {
             <div class="mobile-only-msg">
                 <i class="fas fa-file-pdf"></i>
                 <p>
-                    상세 피드백 내용은 모바일 화면에 최적화되어 있지 않습니다.<br>
-                    <strong>PDF로 저장</strong>하여 편하게 확인하세요.
+                    상세 피드백 미리보기는 pc에서 확인해주세요.<br>
+                    <strong>PDF로 저장</strong>하여 확인해주세요.
                 </p>
                 <button class="mobile-pdf-btn" onclick="window.print()">
                     <i class="fas fa-download"></i> PDF 저장하기
