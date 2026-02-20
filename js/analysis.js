@@ -875,51 +875,52 @@ function setSimChartType(type) {
     renderSimChart();
 }
 
-// 4. 차트 렌더링
+// [전역 변수] 꺾은선 그래프 애니메이션 참조용
+let simSvgRefs = null;
+
+// 4. 차트 렌더링 (메인 함수)
 function renderSimChart() {
     const container = document.getElementById('simChartArea');
-    container.innerHTML = ''; 
-    
     if (!cachedSimData || cachedSimData.length === 0) return;
 
-    // 1. 컨테이너 구조 생성
-    const wrapper = document.createElement('div');
-    wrapper.className = 'chart-inner-container';
-    
-    const graphArea = document.createElement('div');
-    graphArea.className = 'chart-graph-area';
-    
-    const labelArea = document.createElement('div');
-    labelArea.className = 'chart-label-area';
-    
-    wrapper.appendChild(graphArea);
-    wrapper.appendChild(labelArea);
-    container.appendChild(wrapper);
-
-    // 모바일 하단 범례 컨테이너
-    const mobileLegendDiv = document.createElement('div');
-    mobileLegendDiv.className = 'mobile-legend-area';
-    container.appendChild(mobileLegendDiv);
-
-    // CSS 높이(260px) 기준 상수
-    const CONTAINER_HEIGHT = 260; 
-    const data = cachedSimData;
-    
-    // 모바일 체크
-    const isMobile = window.innerWidth <= 768;
-
     // ==================================================================================
-    // [TYPE: BAR] 막대 그래프
+    // [TYPE: BAR] 막대 그래프 (기존 로직 유지)
     // ==================================================================================
     if (currentSimChartType === 'bar') {
-        // [수정 1] 모바일/PC 패딩 분기 처리 (라벨과 줄 맞춤 해결)
+        simSvgRefs = null; // 꺾은선 참조 초기화
+        container.innerHTML = ''; // 컨테이너 비우기
+        container.style.overflow = 'visible'; // 막대용 오버플로우 설정
+
+        // 1. 컨테이너 구조 생성
+        const wrapper = document.createElement('div');
+        wrapper.className = 'chart-inner-container';
+        
+        const graphArea = document.createElement('div');
+        graphArea.className = 'chart-graph-area';
+        
+        const labelArea = document.createElement('div');
+        labelArea.className = 'chart-label-area';
+        
+        wrapper.appendChild(graphArea);
+        wrapper.appendChild(labelArea);
+        container.appendChild(wrapper);
+
+        // 모바일 하단 범례
+        const mobileLegendDiv = document.createElement('div');
+        mobileLegendDiv.className = 'mobile-legend-area';
+        container.appendChild(mobileLegendDiv);
+
+        const CONTAINER_HEIGHT = 260; 
+        const isMobile = window.innerWidth <= 768;
+
+        // 패딩 분기 처리
         if (isMobile) {
-            graphArea.style.padding = '30px 15px 0 15px'; // 모바일 CSS와 동일하게 맞춤
+            graphArea.style.padding = '30px 15px 0 15px';
         } else {
-            graphArea.style.padding = '30px 60px 0 20px'; // 기존 PC 패딩
+            graphArea.style.padding = '30px 60px 0 20px';
         }
         graphArea.style.paddingBottom = '0';
-        graphArea.style.height = 'auto'; // 막대는 높이 자동
+        graphArea.style.height = 'auto';
 
         const TOP_PADDING = 50; 
         const pos100 = (100 / 250);
@@ -946,7 +947,7 @@ function renderSimChart() {
 
         const DRAW_HEIGHT_BAR = CONTAINER_HEIGHT - TOP_PADDING; 
 
-        data.forEach((item, index) => {
+        cachedSimData.forEach((item, index) => {
             const score = item.base_ui_score;
             const currentHeightPx = `${(score/250) * DRAW_HEIGHT_BAR}px`;
             
@@ -1003,143 +1004,247 @@ function renderSimChart() {
         });
     } 
     // ==================================================================================
-    // [TYPE: LINE] 꺾은선 그래프 (수정: 높이 강제 고정 및 패딩 제거)
+    // [TYPE: LINE] 꺾은선 그래프 (완전 교체된 버전)
     // ==================================================================================
     else if (currentSimChartType === 'line') {
-        const PALETTE = ['#2563EB', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#64748B'];
-        const SUBJECTS = ['kor', 'math', 'inq1', 'inq2'];
-        
-        let labelInq1 = '탐구1', labelInq2 = '탐구2';
-        if (data.length > 0 && data[0].sim_data) {
-            if (data[0].sim_data.inq1?.name) labelInq1 = data[0].sim_data.inq1.name;
-            if (data[0].sim_data.inq2?.name) labelInq2 = data[0].sim_data.inq2.name;
+        // 1. 컨테이너 초기화 (최초 1회만 DOM 생성)
+        if (!document.getElementById('simLineWrapper')) {
+            container.innerHTML = '';
+            container.style.overflow = 'hidden';
+
+            const wrapper = document.createElement('div');
+            wrapper.id = 'simLineWrapper';
+            wrapper.className = 'sim-line-container';
+
+            // 상단: 차트 영역
+            const chartArea = document.createElement('div');
+            chartArea.className = 'sim-line-chart-area';
+
+            // 하단: 대학 선택 버튼 (스크롤)
+            const btnBox = document.createElement('div');
+            btnBox.className = 'sim-univ-scroll-box';
+
+            wrapper.appendChild(chartArea);
+            wrapper.appendChild(btnBox);
+            container.appendChild(wrapper);
+
+            // SVG 초기 구조 생성
+            initSimSvg(chartArea);
+            // 버튼 초기 생성
+            renderSimUnivButtons(btnBox);
         }
-        const SUBJ_LABELS = ['국어', '수학', labelInq1, labelInq2];
 
-        // [수정 2] 컨테이너 스타일 강제 초기화 (높이 260px 고정, 패딩 0)
-        graphArea.style.height = '260px';
-        graphArea.style.flex = 'none';
-        graphArea.style.padding = '0'; // 패딩 0으로 설정해 전체 너비 사용
-        graphArea.style.boxSizing = 'border-box';
-
-        let maxDiff = 0;
-        data.forEach(item => {
-            const currentScore = item.base_ui_score;
-            const roomToGrow = Math.max(0, 250 - currentScore);
-            SUBJECTS.forEach(subKey => {
-                if (item.sim_data && item.sim_data[subKey]) {
-                    const diff = Math.min(item.sim_data[subKey].diff, roomToGrow);
-                    if (diff > maxDiff) maxDiff = diff;
-                }
-            });
-        });
-        const Y_MAX = maxDiff > 0 ? maxDiff * 1.2 : 5;
-
-        setTimeout(() => {
-            // 패딩이 0이므로 clientWidth가 곧 전체 너비
-            const width = graphArea.clientWidth || 300;
-            
-            // [수정 3] 절대 좌표 기준점 설정
-            const FIXED_HEIGHT = 260; // 0.0점 위치 (바닥)
-            const PADDING_TOP = 40;   // 그래프 상단 여백
-            const DRAW_H = FIXED_HEIGHT - PADDING_TOP; // 그래프가 그려지는 실제 높이
-            
-            let svgContent = '';
-            let pcLegendHTML = '<div class="chart-legend-overlay">';
-            let mobileLegendHTML = '';
-
-            // 1. 그리드 라인 그리기
-            const gridCount = 5;
-            for(let i=0; i<=gridCount; i++) {
-                const val = (Y_MAX / gridCount) * i;
-                const yPos = FIXED_HEIGHT - ((val / Y_MAX) * DRAW_H);
-                
-                // 0점 라인은 CSS border-bottom과 겹치므로 숫자(0.0)만 그림
-                if (i > 0) { 
-                    svgContent += `
-                        <line x1="0" y1="${yPos}" x2="${width}" y2="${yPos}" class="y-grid-line" />
-                        <text x="5" y="${yPos - 5}" class="y-grid-label" text-anchor="start" style="font-size:11px;">${val.toFixed(1)}</text>
-                    `;
-                } else {
-                    // 0.0 라벨: yPos가 정확히 260이므로 바닥선 바로 위에 위치
-                    svgContent += `<text x="5" y="${yPos - 5}" class="y-grid-label" text-anchor="start" style="font-size:11px;">0.0</text>`;
-                }
-            }
-
-            // 2. 데이터 그리기
-            data.forEach((item, univIdx) => {
-                const color = PALETTE[univIdx % PALETTE.length];
-                const isActive = (univIdx === selectedSimIndex);
-                const shortUniv = item.univ.replace('학교', '');
-                
-                pcLegendHTML += `
-                    <div class="legend-item ${isActive ? 'active' : ''}" onclick="selectSimUniv(${univIdx})">
-                        <div class="legend-color-dot" style="background:${color}; box-shadow:${isActive ? '0 0 0 2px '+color : 'none'}"></div>
-                        <span>${univIdx+1}지망: ${shortUniv}</span>
-                    </div>
-                `;
-                mobileLegendHTML += `
-                    <div class="mobile-legend-item ${isActive ? 'active' : ''}" onclick="selectSimUniv(${univIdx})" style="background:#fff; padding:4px 8px; border:1px solid #e2e8f0; border-radius:4px; cursor:pointer; ${isActive ? 'border-color:'+color : ''}">
-                         <div style="width:10px; height:10px; border-radius:50%; background:${color}; margin-right:5px;"></div>
-                         <span>${univIdx+1}지망</span>
-                    </div>
-                `;
-
-                let pathD = '';
-                let pointsHTML = '';
-                
-                // [수정 4] X축 좌표 계산 (전체 너비를 4등분하여 중앙에 배치)
-                // 좌우 패딩 없이 넓게 쓰고, 모바일에서도 꽉 차게 보임
-                const sectionWidth = width / SUBJECTS.length;
-
-                SUBJECTS.forEach((subKey, subIdx) => {
-                    const xPos = (sectionWidth * subIdx) + (sectionWidth / 2);
-                    
-                    let effectiveRise = 0;
-                    if (item.sim_data && item.sim_data[subKey]) {
-                        effectiveRise = Math.min(item.sim_data[subKey].diff, Math.max(0, 250 - item.base_ui_score));
-                    }
-                    
-                    // Y좌표 계산 (0점이면 FIXED_HEIGHT인 260이 됨)
-                    const yPos = FIXED_HEIGHT - ((effectiveRise / Y_MAX) * DRAW_H);
-
-                    if (subIdx === 0) pathD += `M ${xPos} ${yPos}`;
-                    else pathD += ` L ${xPos} ${yPos}`;
-
-                    // 포인트
-                    pointsHTML += `<circle cx="${xPos}" cy="${yPos}" r="${isActive ? 6 : 3}" fill="${isActive ? '#fff' : color}" stroke="${color}" stroke-width="${isActive ? 2 : 1}" 
-                        style="cursor:pointer; z-index:${isActive ? 100 : 10}" onclick="selectSimUniv(${univIdx})"/>`;
-                    
-                    if (isActive && effectiveRise > 0) {
-                        pointsHTML += `<text x="${xPos}" y="${yPos - 12}" text-anchor="middle" fill="${color}" font-size="11" font-weight="bold">+${effectiveRise.toFixed(1)}</text>`;
-                    }
-
-                    // [수정 5] 과목명 라벨 (바닥선보다 30px 아래)
-                    if (univIdx === 0) {
-                        svgContent += `<text x="${xPos}" y="${FIXED_HEIGHT + 30}" text-anchor="middle" font-size="12" fill="#334155" font-weight="bold">${SUBJ_LABELS[subIdx]}</text>`;
-                    }
-                });
-
-                svgContent += `<path d="${pathD}" fill="none" stroke="${color}" stroke-width="${isActive ? 3 : 1.5}" stroke-opacity="${isActive ? 1 : 0.15}" />`;
-                svgContent += pointsHTML;
-            });
-
-            pcLegendHTML += '</div>';
-            mobileLegendDiv.innerHTML = mobileLegendHTML;
-
-            // [수정 6] SVG 높이 넉넉하게 설정 (라벨 공간 확보)
-            // overflow: visible 덕분에 잘리지 않음
-            graphArea.innerHTML = `
-                ${pcLegendHTML}
-                <svg class="sim-line-svg" width="${width}" height="${FIXED_HEIGHT + 60}" viewBox="0 0 ${width} ${FIXED_HEIGHT + 60}" style="position:absolute; top:0; left:0; overflow:visible;">
-                    ${svgContent}
-                </svg>
-            `;
-            
-        }, 0);
+        // 2. 데이터 업데이트 및 애니메이션 실행
+        updateSimLineGraph(selectedSimIndex || 0);
     }
     
+    // 상세 카드 렌더링 (공통)
     renderDetailedSimCard();
+}
+
+// [헬퍼 1] SVG 구조 생성 (초기화)
+function initSimSvg(targetDiv) {
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("class", "sim-svg-layer");
+    
+    // 1) 가이드 라인 (100, 150)
+    const g100 = createGuideGroup(ns, "#3b82f6", "100 합격");
+    const g150 = createGuideGroup(ns, "#10b981", "150 안정");
+
+    // 2) 데이터 패스 (꺾은선)
+    const path = document.createElementNS(ns, "path");
+    path.setAttribute("class", "sim-path");
+
+    // 3) 포인트 및 라벨 그룹
+    const points = [];
+    const labels = [];
+    const labelsGroup = document.createElementNS(ns, "g");
+    
+    // 4개 과목 포인트 미리 생성
+    for(let i=0; i<4; i++) {
+        const c = document.createElementNS(ns, "circle");
+        c.setAttribute("class", "sim-point");
+        
+        const t = document.createElementNS(ns, "text");
+        t.setAttribute("class", "sim-point-label");
+        
+        svg.appendChild(c); // 점
+        labelsGroup.appendChild(t); // 라벨
+        points.push(c);
+        labels.push(t);
+    }
+    
+    svg.appendChild(g100.g);
+    svg.appendChild(g150.g);
+    svg.appendChild(path);
+    svg.appendChild(labelsGroup);
+    targetDiv.appendChild(svg);
+
+    // X축 텍스트 (SVG 하단 절대위치)
+    const xAxis = document.createElement('div');
+    xAxis.style.cssText = "position:absolute; bottom:0; left:0; width:100%; display:flex; justify-content:space-around; padding-bottom:5px; pointer-events:none;";
+    ['국어', '수학', '탐구1', '탐구2'].forEach(txt => {
+        const sp = document.createElement('span');
+        sp.innerText = txt;
+        sp.style.cssText = "font-size:11px; color:#64748b; font-weight:600; width:40px; text-align:center;";
+        xAxis.appendChild(sp);
+    });
+    targetDiv.appendChild(xAxis);
+
+    // 전역 변수에 참조 저장
+    simSvgRefs = { svg, g100, g150, path, points, labels };
+}
+
+// [헬퍼 2] 가이드 라인 그룹 생성
+function createGuideGroup(ns, color, txt) {
+    const g = document.createElementNS(ns, "g");
+    const line = document.createElementNS(ns, "line");
+    line.setAttribute("class", "sim-guide-line");
+    line.setAttribute("stroke", color);
+    const text = document.createElementNS(ns, "text");
+    text.setAttribute("class", "sim-guide-text");
+    text.setAttribute("fill", color);
+    text.textContent = txt;
+    g.appendChild(line);
+    g.appendChild(text);
+    return { g, line, text };
+}
+
+// [헬퍼 3] 하단 대학 선택 버튼 생성
+function renderSimUnivButtons(targetDiv) {
+    targetDiv.innerHTML = '';
+    cachedSimData.forEach((d, i) => {
+        const btn = document.createElement('button');
+        btn.className = `univ-select-btn ${i === selectedSimIndex ? 'active' : ''}`;
+        btn.innerText = `${i+1}지망 ${d.univ.replace('학교','')}`;
+        btn.onclick = () => {
+            selectSimUniv(i); // 기존 함수 재활용하여 selectedSimIndex 갱신
+            // 버튼 스타일 갱신
+            const btns = targetDiv.querySelectorAll('.univ-select-btn');
+            btns.forEach((b, idx) => {
+                if (idx === i) {
+                    b.classList.add('active');
+                    b.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+                } else {
+                    b.classList.remove('active');
+                }
+            });
+        };
+        targetDiv.appendChild(btn);
+    });
+}
+
+// [헬퍼 4] 그래프 업데이트 (애니메이션 핵심 로직)
+function updateSimLineGraph(idx) {
+    if (!simSvgRefs) return;
+    const data = cachedSimData[idx];
+    if (!data) return;
+
+    // SVG 크기 측정 (반응형)
+    const svgRect = simSvgRefs.svg.getBoundingClientRect();
+    const W = svgRect.width || 300;
+    const H = (svgRect.height || 240) - 20; // 하단 라벨 공간(20px) 제외
+
+    // 1. 점수 데이터 추출
+    const keys = ['kor', 'math', 'inq1', 'inq2'];
+    const currentScore = data.base_ui_score;
+    const scores = keys.map(k => {
+        const rise = (data.sim_data && data.sim_data[k]) ? data.sim_data[k].diff : 0;
+        return Math.min(250, currentScore + rise);
+    });
+
+    // 2. Y축 동적 스케일링
+    let minS = Math.min(...scores);
+    let maxS = Math.max(...scores);
+    
+    // 조건: 너무 낮거나(25이하) 너무 높으면(225이상) 가이드 숨김
+    let showGuides = true;
+    if (minS >= 225 || maxS <= 25) showGuides = false;
+
+    // 뷰포트 범위 설정 (가이드 라인 포함 여부 결정)
+    let yMin = minS, yMax = maxS;
+    if (showGuides) {
+        yMin = Math.min(yMin, 100);
+        yMax = Math.max(yMax, 150);
+    }
+    
+    // 위아래 여백 20% 추가
+    const padding = (yMax - yMin) * 0.2 || 20;
+    yMin = Math.max(0, yMin - padding);
+    yMax = Math.min(250, yMax + padding);
+    const yRange = yMax - yMin || 1; // 0나누기 방지
+
+    // Y좌표 변환 함수
+    const getY = (score) => H - ((score - yMin) / yRange * H) + 10; // +10은 상단 여백
+
+    // 3. 가이드 라인 위치 업데이트
+    const updateGuide = (obj, val) => {
+        if (showGuides) {
+            obj.g.style.opacity = 1;
+            const y = getY(val);
+            obj.line.setAttribute("x1", 0);
+            obj.line.setAttribute("x2", W);
+            obj.line.setAttribute("y1", y);
+            obj.line.setAttribute("y2", y);
+            obj.text.setAttribute("x", W - 5);
+            obj.text.setAttribute("y", y - 4);
+        } else {
+            obj.g.style.opacity = 0;
+        }
+    };
+    updateGuide(simSvgRefs.g100, 100);
+    updateGuide(simSvgRefs.g150, 150);
+
+    // 4. 패스 & 포인트 업데이트
+    const sectionW = W / 4;
+    let d = "";
+    
+    // 최고/최저점 인덱스 찾기 (하이라이트용)
+    // 값이 모두 평평하면(차이가 없으면) 하이라이트 하지 않음
+    const isFlat = (minS === maxS);
+    const maxIdx = isFlat ? -1 : scores.indexOf(Math.max(...scores));
+    const minIdx = isFlat ? -1 : scores.indexOf(Math.min(...scores));
+
+    scores.forEach((s, i) => {
+        const cx = (sectionW * i) + (sectionW / 2);
+        const cy = getY(s);
+        
+        if (i === 0) d += `M ${cx} ${cy}`;
+        else d += ` L ${cx} ${cy}`;
+        
+        // 포인트 이동
+        simSvgRefs.points[i].setAttribute("cx", cx);
+        simSvgRefs.points[i].setAttribute("cy", cy);
+        
+        // 하이라이트 스타일 적용 (인라인 스타일 제어)
+        const pointEl = simSvgRefs.points[i];
+        const labelEl = simSvgRefs.labels[i];
+        
+        pointEl.style.fill = "#fff"; // 초기화
+        pointEl.style.stroke = "#2563EB"; // 초기화
+        labelEl.style.opacity = 0; // 초기화
+
+        if (!isFlat) {
+            if (i === maxIdx) { // 최고점 (초록)
+                pointEl.style.stroke = "#10b981"; 
+                labelEl.style.fill = "#10b981";
+                labelEl.style.opacity = 1;
+            }
+            if (i === minIdx) { // 최저점 (빨강)
+                pointEl.style.stroke = "#ef4444"; 
+                labelEl.style.fill = "#ef4444";
+                labelEl.style.opacity = 1;
+            }
+        }
+        
+        // 라벨 값 및 위치
+        labelEl.textContent = Math.round(s);
+        labelEl.setAttribute("x", cx);
+        labelEl.setAttribute("y", cy - 12);
+    });
+
+    simSvgRefs.path.setAttribute("d", d);
 }
 
 // 5. 대학 선택 시 동작

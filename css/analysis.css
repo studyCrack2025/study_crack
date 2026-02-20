@@ -170,19 +170,22 @@
 .label-pc { display: block; }
 .label-mobile { display: none; font-weight: bold; }
 
-/* 꺾은선 SVG & 범례 */
-.sim-line-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: visible; z-index: 10; pointer-events: none; }
-.sim-line-path { fill: none; stroke: #2563EB; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 3px 3px rgba(37,99,235,0.2)); }
-.sim-line-point { fill: #fff; stroke: #2563EB; stroke-width: 3; r: 6; cursor: pointer; pointer-events: auto; transition: r 0.2s; }
-.sim-line-point:hover, .sim-line-point.active { r: 9; stroke: #1d4ed8; fill: #eff6ff; }
-.chart-legend-overlay { position: absolute; top: 10px; right: 10px; background: rgba(255, 255, 255, 0.95); border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 5px; z-index: 20; max-height: 150px; overflow-y: auto; }
-.legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #64748b; cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: background 0.2s; }
-.legend-item:hover { background: #f1f5f9; }
-.legend-item.active { background: #eff6ff; color: #1e293b; font-weight: 700; }
-.legend-color-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid transparent; }
-.subject-axis-label { position: absolute; bottom: -30px; transform: translateX(-50%); font-size: 0.85rem; color: #334155; font-weight: 600; text-align: center; }
-.y-grid-line { stroke: #e2e8f0; stroke-width: 1; stroke-dasharray: 4; }
-.y-grid-label { font-size: 0.75rem; fill: #94a3b8; text-anchor: end; alignment-baseline: middle; }
+/* 꺾은선 그래프 전용 스타일 */
+.sim-line-container { width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden; }
+.sim-line-chart-area { flex:1; position:relative; min-height:240px; }
+.sim-univ-scroll-box { display:flex; gap:8px; padding:10px 5px; overflow-x:auto; border-top:1px solid #f1f5f9; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+.sim-univ-scroll-box::-webkit-scrollbar { display:none; }
+.univ-select-btn { white-space:nowrap; padding:8px 14px; border:1px solid #cbd5e1; border-radius:18px; background:#fff; color:#64748b; font-size:0.85rem; cursor:pointer; flex-shrink:0; transition:all 0.2s; }
+.univ-select-btn.active { background:#2563EB; color:#fff; border-color:#2563EB; font-weight:700; box-shadow:0 3px 6px rgba(37,99,235,0.2); }
+.sim-svg-layer { width:100%; height:100%; overflow:visible; display:block; }
+.sim-grid-line { stroke:#e2e8f0; stroke-width:1; stroke-dasharray:4; }
+.sim-guide-line { stroke-width:1.5; stroke-dasharray:3; opacity:0.7; transition:all 0.5s ease; }
+.sim-guide-text { font-size:10px; font-weight:bold; text-anchor:end; transition:all 0.5s ease; }
+.sim-path { fill:none; stroke:#2563EB; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; transition:d 0.5s cubic-bezier(0.4, 0, 0.2, 1); filter:drop-shadow(0 4px 3px rgba(37,99,235,0.2)); }
+.sim-point { r:5; fill:#fff; stroke:#2563EB; stroke-width:2.5; cursor:pointer; transition:all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+.sim-point:hover { r:8; }
+.sim-point-label { font-size:11px; fill:#1e293b; font-weight:700; text-anchor:middle; opacity:0; transition:all 0.3s; pointer-events:none; }
+.sim-point:hover + .sim-point-label, .sim-point.active + .sim-point-label { opacity:1; transform:translateY(-8px); }
 
 /* 상세 분석 카드 */
 .sim-result-card { background: #fff; border: 1px solid #2563EB; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.15); margin-top: 20px; animation: slideUp 0.3s ease-out; }
@@ -544,8 +547,10 @@ input[type="number"]::-webkit-inner-spin-button {
     .chart-graph-area, .chart-label-area { padding-left: 15px; padding-right: 15px; gap: 5px; }
     .chart-guide-label { display: none !important; }
     .mobile-legend-area { display: flex; }
-    .chart-legend-overlay { display: none !important; }
     .sim-chart-wrapper { padding-bottom: 20px; }
+    .sim-line-chart-area { min-height:220px; }
+    .sim-univ-scroll-box { padding:10px; }
+    .univ-select-btn { font-size:0.8rem; padding:6px 12px; }
     
     /* 모달 */
     .check-modal-content { height: 95vh; max-height: 95vh; }
