@@ -1058,7 +1058,7 @@ function initSimSvg(targetDiv) {
     const ns = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(ns, "svg");
     svg.setAttribute("class", "sim-svg-layer");
-    svg.style.overflow = "visible"; // [중요] 포인트 잘림 방지
+    svg.style.overflow = "visible";
     
     const guides = {
         g0: createGuideGroup(ns, "#cbd5e1", "0점"),
@@ -1077,6 +1077,7 @@ function initSimSvg(targetDiv) {
     for(let i=0; i<4; i++) {
         const c = document.createElementNS(ns, "circle");
         c.setAttribute("class", "sim-point");
+        c.setAttribute("r", "6");
         
         const t = document.createElementNS(ns, "text");
         t.setAttribute("class", "sim-point-label");
