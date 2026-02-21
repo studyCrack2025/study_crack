@@ -1060,6 +1060,9 @@ function initSimSvg(targetDiv) {
     svg.setAttribute("class", "sim-svg-layer");
     svg.style.overflow = "visible";
     
+    const isMobile = window.innerWidth <= 768;
+    const baseRadius = isMobile ? "4" : "6";
+    
     const guides = {
         g0: createGuideGroup(ns, "#cbd5e1", "0점"),
         g100: createGuideGroup(ns, "#3b82f6", "100 합격"),
@@ -1077,7 +1080,7 @@ function initSimSvg(targetDiv) {
     for(let i=0; i<4; i++) {
         const c = document.createElementNS(ns, "circle");
         c.setAttribute("class", "sim-point");
-        c.setAttribute("r", "6");
+        c.setAttribute("r", baseRadius);
         
         const t = document.createElementNS(ns, "text");
         t.setAttribute("class", "sim-point-label");
