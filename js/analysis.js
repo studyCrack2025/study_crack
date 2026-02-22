@@ -2341,17 +2341,23 @@ function renderProPromo(container) {
 // 2. [전용 대시보드] Pro 이상 유저 대상
 function renderProDashboard(container) {
     const now = new Date();
-    const year = now.getFullYear().toString().slice(2);
+    
+    // 1. 데이터 조회용 Key 생성 (예: 26MarPre)
+    const yearShort = now.getFullYear().toString().slice(2);
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const monthStr = monthNames[now.getMonth()];
     const day = now.getDate();
-    
-    // 1. 현재 타겟 Key 계산 (예: 26FebPre)
-    // 로직: 15일 이하면 Pre, 아니면 Post
     const suffix = day <= 15 ? 'Pre' : 'Post';
-    const currentKey = `${year}${monthStr}${suffix}`;
     
-    // 2. 마감일 계산
+    const currentKey = `${yearShort}${monthStr}${suffix}`; // DB 조회용 키
+    
+    // 2. 화면 표시용 날짜 문자열 생성 (예: 2026년 3월 상반기)
+    const displayYear = now.getFullYear();
+    const displayMonth = now.getMonth() + 1;
+    const displayPeriod = suffix === 'Pre' ? '상반기' : '하반기';
+    const displayDateStr = `${displayYear}년 ${displayMonth}월 ${displayPeriod}`;
+
+    // 3. 마감일 계산
     let deadlineDate;
     if (suffix === 'Pre') {
         deadlineDate = new Date(now.getFullYear(), now.getMonth(), 13, 23, 59, 59);
@@ -2363,19 +2369,14 @@ function renderProDashboard(container) {
     const isDeadlinePassed = now > deadlineDate;
     const deadlineStr = `${deadlineDate.getMonth()+1}월 ${deadlineDate.getDate()}일`;
 
-    // 3. 내 데이터에서 요청 여부 확인
-    // (이전에 loadProReports로 데이터를 가져왔다고 가정, 없으면 빈값)
-    // currentStudentData가 없거나 형식이 다를 수 있으므로 fetch 필요할 수 있음. 
-    // 여기선 loadProReports()가 호출되어 cachedProReports 전역변수에 담겼다고 가정.
-    
-    // UI 그리기
+    // 4. UI 그리기
     container.innerHTML = `
         <div class="pro-header">
             <div style="font-size:2rem; margin-bottom:10px;">🎓</div>
             <h2 class="pro-title">PRO STRATEGY LOUNGE</h2>
             <p class="pro-desc">
                 상위 1%를 위한 프리미엄 분석 센터입니다.<br>
-                ${currentKey} 회차 리포트 요청이 진행 중입니다.
+                <strong>${displayDateStr}</strong> 회차 리포트 요청이 진행 중입니다.
             </p>
         </div>
 
