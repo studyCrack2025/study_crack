@@ -527,7 +527,11 @@ async function saveWeeklyFeedback(weekId, idx) {
     }
 }
 
-// [수정 6] FOR PRO 탭 렌더링 (1일~15일 / 16일~말일 분리)
+// ============================================================
+// [기능 6] FOR PRO 탭 로직 (신규 워크플로우 적용)
+// ============================================================
+
+// 1. PRO 탭 렌더링 메인 함수
 function renderProTab() {
     const container = document.getElementById('proReportContainer');
     container.innerHTML = '';
@@ -535,49 +539,297 @@ function renderProTab() {
     const selYear = document.getElementById('proFilterYear').value;
     const selMonth = document.getElementById('proFilterMonth').value;
     
-    // DB에서 'proCoachingHistory'를 가져온다고 가정
+    // DB에서 가져온 데이터 (없으면 빈 배열)
     const history = currentStudentData.proCoachingHistory || [];
     
+    // 해당 연/월 데이터 필터링
     const currentMonthData = history.filter(h => {
         const d = new Date(h.date);
         return d.getFullYear() == selYear && (d.getMonth() + 1) == selMonth;
     });
 
+    // 상반기(1~15일), 하반기(16일~말일) 구분
     const firstHalf = currentMonthData.find(h => new Date(h.date).getDate() <= 15);
     const secondHalf = currentMonthData.find(h => new Date(h.date).getDate() > 15);
 
-    container.appendChild(createProPeriodBox(selMonth + '월 상반기 (1일~15일)', firstHalf));
-    container.appendChild(createProPeriodBox(selMonth + '월 하반기 (16일~말일)', secondHalf));
+    // 박스 생성 (ID 부여를 위해 식별자 전달)
+    container.appendChild(createProPeriodBox(selMonth + '월 상반기 (1일~15일)', firstHalf, `pro_${selYear}_${selMonth}_1`));
+    container.appendChild(createProPeriodBox(selMonth + '월 하반기 (16일~말일)', secondHalf, `pro_${selYear}_${selMonth}_2`));
 }
 
-function createProPeriodBox(title, data) {
+// 2. 기간별 박스 생성 함수 (핵심 로직)
+function createProPeriodBox(title, data, boxId) {
     const box = document.createElement('div');
     box.className = 'pro-period-section';
+    box.id = boxId;
     
-    const requestText = data ? escapeHtml(data.request) : '';
-    const reportText = data ? escapeHtml(data.report) : '';
+    // 데이터 안전 참조
+    const requestText = data ? escapeHtml(data.request) : null;
+    const isCompleted = data && data.status === 'completed'; // 작성 완료 여부
+    const isSent = data && data.status === 'sent'; // 최종 전송 여부
+
+    // [A] 학생 요청 사항 영역
+    const reqHtml = requestText 
+        ? `<div class="student-req-content">"${requestText}"</div>`
+        : `<div class="student-req-content" style="color:#94a3b8; font-style:italic;">(학생 요청 사항이 없습니다)</div>`;
+
+    // [B] 집필 영역 (4개 항목)
+    // 기존 작성 내용이 있으면 로드, 없으면 빈 값
+    const content = data && data.content ? data.content : { eval: '', dist: '', plan: '', qna: '' };
     
-    const reqContent = requestText || '<span class="pro-empty">학생 요청 사항이 없습니다.</span>';
-    const repContent = reportText || '<span class="pro-empty">작성된 리포트가 없습니다.</span>';
+    // 읽기 전용 모드인가? (보고서 전송 완료 시)
+    const readOnly = isSent ? 'disabled' : '';
+
+    const writeHtml = `
+        <div class="write-header">
+            <div class="write-title"><i class="fas fa-pen-nib"></i> 컨설턴트 집필 공간</div>
+            <button class="guide-btn" onclick="showProGuideModal()">
+                <i class="fas fa-info-circle"></i> 코칭 작성시 유의사항
+            </button>
+        </div>
+
+        <div class="pro-write-grid">
+            <div class="write-item">
+                <label class="write-label">1. 지난 2주간의 학습평가 (리스크/KPI)</label>
+                <textarea id="${boxId}_item1" class="write-textarea" placeholder="리스크/효율 KPI 기반으로 장단점을 평가해주세요." ${readOnly}>${content.eval}</textarea>
+                <button id="${boxId}_btn1" class="temp-save-btn" onclick="tempSaveProItem('${boxId}', 1)" ${isSent ? 'style="display:none"' : ''}>임시저장</button>
+            </div>
+            <div class="write-item">
+                <label class="write-label">2. 목표대학과의 거리 (ΔCut/기여도)</label>
+                <textarea id="${boxId}_item2" class="write-textarea" placeholder="ΔCut 및 과목별 기여도 기반으로 분석해주세요." ${readOnly}>${content.dist}</textarea>
+                <button id="${boxId}_btn2" class="temp-save-btn" onclick="tempSaveProItem('${boxId}', 2)" ${isSent ? 'style="display:none"' : ''}>임시저장</button>
+            </div>
+            <div class="write-item">
+                <label class="write-label">3. 중기 핵심 과제 Top2 & 장기 플랜</label>
+                <textarea id="${boxId}_item3" class="write-textarea" placeholder="중기 과제(KPI 인용) 및 장기 마일스톤을 제시해주세요." ${readOnly}>${content.plan}</textarea>
+                <button id="${boxId}_btn3" class="temp-save-btn" onclick="tempSaveProItem('${boxId}', 3)" ${isSent ? 'style="display:none"' : ''}>임시저장</button>
+            </div>
+            <div class="write-item">
+                <label class="write-label">4. 학생 요청 답변 (근거 포함)</label>
+                <textarea id="${boxId}_item4" class="write-textarea" placeholder="구체적인 근거를 들어 답변해주세요." ${readOnly}>${content.qna}</textarea>
+                <button id="${boxId}_btn4" class="temp-save-btn" onclick="tempSaveProItem('${boxId}', 4)" ${isSent ? 'style="display:none"' : ''}>임시저장</button>
+            </div>
+        </div>
+    `;
+
+    // [C] 액션 바 (상태에 따라 버튼 변경)
+    let actionHtml = '';
+    
+    if (isSent) {
+        // Case 1: 이미 전송됨 (수정 모드)
+        actionHtml = `
+            <div class="action-bar">
+                <button class="edit-report-btn show" onclick="enableProEdit('${boxId}')">
+                    <i class="fas fa-edit"></i> 내용 수정하기
+                </button>
+                <button class="admin-report-btn completed">
+                    <i class="fas fa-check-circle"></i> 보고서 전송 완료
+                </button>
+            </div>
+        `;
+    } else if (isCompleted) {
+        // Case 2: 작성 완료됨 (관리자 검수 대기) -> 관리자가 '보고서 생성' 누를 수 있음
+        actionHtml = `
+            <div class="action-bar">
+                <span style="color:#166534; font-weight:bold; font-size:0.9rem; margin-right:10px;">
+                    <i class="fas fa-check"></i> 컨설턴트 작성 완료됨
+                </span>
+                <button id="${boxId}_genBtn" class="admin-report-btn" onclick="generateProReport('${boxId}')">
+                    <i class="fas fa-magic"></i> 보고서 생성 및 전송
+                </button>
+            </div>
+        `;
+    } else {
+        // Case 3: 작성 중
+        actionHtml = `
+            <div class="action-bar">
+                <button id="${boxId}_completeBtn" class="complete-write-btn" onclick="completeProWriting('${boxId}')">
+                    작성 완료 (관리자에게 알림)
+                </button>
+            </div>
+        `;
+    }
 
     box.innerHTML = `
         <div class="pro-period-title">
             <span>${title}</span>
-            ${data ? `<span style="font-size:0.8rem; font-weight:normal; color:#64748b;">${new Date(data.date).toLocaleDateString()}</span>` : ''}
+            <span style="font-size:0.85rem; color:#64748b; font-weight:normal;">
+                ${data ? new Date(data.date).toLocaleDateString() : '데이터 없음'}
+            </span>
         </div>
-        <div class="pro-item-grid">
-            <div class="pro-box">
-                <div class="pro-box-label req"><i class="fas fa-question-circle"></i> 학생 특별 요청 사항</div>
-                <div class="pro-content">${reqContent}</div>
-            </div>
-            <div class="pro-box">
-                <div class="pro-box-label res"><i class="fas fa-file-alt"></i> 특별 보고서 (Admin 작성)</div>
-                <div class="pro-content">${repContent}</div>
-                ${data ? `<div style="text-align:right; margin-top:10px;"><button class="memo-btn" style="font-size:0.8rem; padding:5px 12px;" onclick="alert('보고서 수정 기능 준비중')">수정</button></div>` : ''}
+        
+        <div class="student-req-box">
+            <div class="student-req-label"><i class="fas fa-question-circle"></i> 학생 요청 사항</div>
+            ${reqHtml}
+        </div>
+
+        ${writeHtml}
+        ${actionHtml}
+    `;
+    
+    // 만약 이미 완료된 상태라면, 임시저장 버튼들을 '저장됨' 상태로 시각적 처리
+    if (isCompleted || isSent) {
+        setTimeout(() => {
+            const container = document.getElementById(boxId);
+            if(container) {
+                container.querySelectorAll('.temp-save-btn').forEach(btn => {
+                    btn.classList.add('saved');
+                    btn.innerText = '저장됨';
+                });
+            }
+        }, 0);
+    }
+
+    return box;
+}
+
+// ------------------------------------------------------------
+// [핸들러 함수들]
+// ------------------------------------------------------------
+
+// 1. 임시 저장
+function tempSaveProItem(boxId, itemIdx) {
+    const textarea = document.getElementById(`${boxId}_item${itemIdx}`);
+    const btn = document.getElementById(`${boxId}_btn${itemIdx}`);
+    
+    if (!textarea.value.trim()) {
+        alert("내용을 입력해주세요.");
+        return;
+    }
+
+    // (실제로는 여기서 DB에 부분 업데이트 API 호출)
+    // 여기서는 UI 이팩트만 처리
+    btn.classList.add('saved');
+    btn.innerText = '저장됨';
+    
+    checkProAllSaved(boxId);
+}
+
+// 2. 4개 항목 모두 저장되었는지 확인
+function checkProAllSaved(boxId) {
+    const container = document.getElementById(boxId);
+    const btns = container.querySelectorAll('.temp-save-btn');
+    const allSaved = Array.from(btns).every(b => b.classList.contains('saved'));
+    
+    const completeBtn = document.getElementById(`${boxId}_completeBtn`);
+    if (completeBtn) {
+        if (allSaved) {
+            completeBtn.classList.add('active');
+        } else {
+            completeBtn.classList.remove('active');
+        }
+    }
+}
+
+// 3. 작성 완료 (컨설턴트 -> 관리자)
+function completeProWriting(boxId) {
+    if (!confirm("작성을 완료하시겠습니까?\n완료 후 관리자에게 알림이 전송됩니다.")) return;
+    
+    // (API 호출: status = 'completed' 업데이트)
+    alert("관리자에게 작성이 완료되었음을 알렸습니다.");
+    
+    // 화면 갱신 (시뮬레이션: DOM을 직접 수정하여 관리자 모드 뷰로 변경)
+    const actionBar = document.querySelector(`#${boxId} .action-bar`);
+    actionBar.innerHTML = `
+        <span style="color:#166534; font-weight:bold; font-size:0.9rem; margin-right:10px;">
+            <i class="fas fa-check"></i> 컨설턴트 작성 완료됨
+        </span>
+        <button id="${boxId}_genBtn" class="admin-report-btn" onclick="generateProReport('${boxId}')">
+            <i class="fas fa-magic"></i> 보고서 생성 및 전송
+        </button>
+    `;
+}
+
+// 4. 보고서 생성 및 전송 (관리자)
+function generateProReport(boxId) {
+    const btn = document.getElementById(`${boxId}_genBtn`);
+    const originalText = btn.innerHTML;
+    
+    btn.innerText = "생성 중...";
+    btn.disabled = true;
+    
+    setTimeout(() => {
+        if(!confirm("감마(Gamma)를 통해 보고서를 생성하고 학생에게 전송하시겠습니까?")) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            return;
+        }
+        
+        // (API 호출: status = 'sent' 업데이트 및 알림 발송)
+        alert("보고서가 생성되어 학생에게 전송되었습니다.");
+        
+        // UI 변경: 전송 완료 상태 + 수정 버튼 활성화
+        const actionBar = document.querySelector(`#${boxId} .action-bar`);
+        actionBar.innerHTML = `
+            <button class="edit-report-btn show" onclick="enableProEdit('${boxId}')">
+                <i class="fas fa-edit"></i> 내용 수정하기
+            </button>
+            <button class="admin-report-btn completed">
+                <i class="fas fa-check-circle"></i> 보고서 전송 완료
+            </button>
+        `;
+        
+        // 텍스트 에어리어 비활성화
+        const container = document.getElementById(boxId);
+        container.querySelectorAll('textarea').forEach(t => t.disabled = true);
+        container.querySelectorAll('.temp-save-btn').forEach(b => b.style.display = 'none');
+        
+    }, 1000); // 1초 딜레이 시뮬레이션
+}
+
+// 5. 수정하기 (전송 후 다시 활성화)
+function enableProEdit(boxId) {
+    if(!confirm("이미 전송된 보고서입니다. 내용을 수정하시겠습니까?")) return;
+    
+    const container = document.getElementById(boxId);
+    container.querySelectorAll('textarea').forEach(t => t.disabled = false);
+    container.querySelectorAll('.temp-save-btn').forEach(b => b.style.display = 'inline-block');
+    
+    // 다시 '작성 완료' 단계 버튼으로 복구하거나, 바로 '재전송' 버튼을 띄울 수 있음.
+    // 여기서는 간단히 저장 버튼들을 다시 살리는 것으로 처리
+    alert("수정 모드로 전환되었습니다. 내용을 수정하고 '임시저장'을 다시 눌러주세요.");
+}
+
+// 6. Pro 코칭 가이드 모달
+function showProGuideModal() {
+    const modalHtml = `
+        <div id="proGuideModal" class="modal-overlay" onclick="if(event.target===this) this.remove()">
+            <div class="modal-window guide-modal-content">
+                <div class="modal-header">
+                    <h3>🏆 Pro 코칭 운영 가이드 (필수)</h3>
+                    <span class="close-modal" onclick="document.getElementById('proGuideModal').remove()">&times;</span>
+                </div>
+                <div class="modal-body guide-body">
+                    <h4>1) Pro의 역할</h4>
+                    <p>목표 대학 기준으로 <strong>최소 학습·최대 상승(효율)</strong> 관점에서 합격 가능성을 높이는 방향과 속력을 교정합니다.<br>(모든 근거는 반드시 지표로 제시합니다.)</p>
+                    
+                    <h4>2) 필수 확인 데이터 (근거 판단)</h4>
+                    <ul>
+                        <li><strong>목표 대학 컷까지 거리 (ΔCut):</strong> 현재 점수와 합격선 간의 격차</li>
+                        <li><strong>과목별 컷거리 기여도:</strong> 어떤 과목을 올리는 것이 가장 효율적인지 판단</li>
+                        <li><strong>리스크 과목:</strong> 무너질 때 전체 밸런스가 흔들리는 과목 식별</li>
+                        <li><strong>효율 KPI:</strong> 유효 학습 비중, 인강→적용 전환율, 오답 회수율, 실전 연동성 등</li>
+                    </ul>
+
+                    <h4>3) 필수 작성 4개 항목 가이드</h4>
+                    <ul>
+                        <li><strong>학습 평가:</strong> 리스크/효율 KPI를 기반으로 지난 2주의 장단점을 평가합니다.</li>
+                        <li><strong>목표 거리 확인:</strong> ΔCut 및 기여도를 기반으로 구체적인 개선 여부를 분석합니다.</li>
+                        <li><strong>핵심 과제 & 장기 플랜:</strong> 중기 과제는 지표(리스크/KPI 등)를 1개 이상 인용하며, 장기 플랜은 주요 마일스톤(평가원 일정 등)에 맞춰 예상치를 제시합니다.</li>
+                        <li><strong>학생 요청 답변:</strong> 반드시 수치적일 필요는 없으나, 구체적인 근거를 들어 명확히 답변합니다.</li>
+                    </ul>
+
+                    <h4>4) Pro 가드레일 (최소 기준)</h4>
+                    <ul>
+                        <li>코칭 내용에는 <strong>반드시 지표 근거</strong>가 포함되어야 합니다.</li>
+                        <li>Top 과제는 <strong>구체적 행동 유형</strong>(인강/문풀/오답/복습/실전)을 명시합니다.</li>
+                        <li><strong>합격 예측/보장 표현 금지:</strong> 합격률을 단정하거나 보장하는 문구는 엄격히 금지됩니다.</li>
+                    </ul>
+                </div>
             </div>
         </div>
     `;
-    return box;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
 
 // [Legacy / Backup] 삭제하지 않고 보존된 채팅 및 심층상담 관련 기능들
