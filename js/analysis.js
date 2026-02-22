@@ -2340,143 +2340,148 @@ function renderProPromo(container) {
 
 // 2. [전용 대시보드] Pro 이상 유저 대상
 function renderProDashboard(container) {
-    // 날짜 계산 로직
     const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth(); // 0~11
+    const year = now.getFullYear().toString().slice(2);
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthStr = monthNames[now.getMonth()];
     const day = now.getDate();
-    const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
-
-    let targetDateStr = "";
-    let deadlineStr = "";
-    let isClosed = false;
-    let periodText = "";
-
-    // 1~15일 사이 -> 목표: 이번 달 15일 / 마감: 13일
-    if (day <= 15) {
-        targetDateStr = `${month + 1}월 15일`;
-        deadlineStr = `${month + 1}월 13일`;
-        periodText = `${month + 1}월 상반기 정기 분석`;
-        if (day > 13) isClosed = true;
-    } 
-    // 16일~말일 -> 목표: 다음 달 1일 / 마감: 말일-2일
-    else {
-        const nextMonthVal = (month + 1) % 12 + 1; // 12월이면 1월로
-        targetDateStr = `${nextMonthVal}월 1일`;
-        deadlineStr = `${month + 1}월 ${lastDayOfMonth - 2}일`;
-        periodText = `${month + 1}월 하반기 정기 분석`;
-        if (day > (lastDayOfMonth - 2)) isClosed = true;
-    }
-
-    // 버튼 상태 결정
-    let btnHtml = '';
-    if (isClosed) {
-        btnHtml = `
-            <button class="req-btn disabled" disabled style="background:#e2e8f0; color:#94a3b8; cursor:not-allowed;">
-                <i class="fas fa-lock"></i> 접수 마감 (${deadlineStr} 까지)
-            </button>
-        `;
+    
+    // 1. 현재 타겟 Key 계산 (예: 26FebPre)
+    // 로직: 15일 이하면 Pre, 아니면 Post
+    const suffix = day <= 15 ? 'Pre' : 'Post';
+    const currentKey = `${year}${monthStr}${suffix}`;
+    
+    // 2. 마감일 계산
+    let deadlineDate;
+    if (suffix === 'Pre') {
+        deadlineDate = new Date(now.getFullYear(), now.getMonth(), 13, 23, 59, 59);
     } else {
-        btnHtml = `
-            <button class="req-btn" onclick="openProReportModal()">
-                <i class="fas fa-edit"></i> ${targetDateStr} 보고서 요청하기
-            </button>
-        `;
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        deadlineDate = new Date(now.getFullYear(), now.getMonth(), lastDay - 2, 23, 59, 59);
     }
+    
+    const isDeadlinePassed = now > deadlineDate;
+    const deadlineStr = `${deadlineDate.getMonth()+1}월 ${deadlineDate.getDate()}일`;
 
+    // 3. 내 데이터에서 요청 여부 확인
+    // (이전에 loadProReports로 데이터를 가져왔다고 가정, 없으면 빈값)
+    // currentStudentData가 없거나 형식이 다를 수 있으므로 fetch 필요할 수 있음. 
+    // 여기선 loadProReports()가 호출되어 cachedProReports 전역변수에 담겼다고 가정.
+    
+    // UI 그리기
     container.innerHTML = `
         <div class="pro-header">
             <div style="font-size:2rem; margin-bottom:10px;">🎓</div>
             <h2 class="pro-title">PRO STRATEGY LOUNGE</h2>
             <p class="pro-desc">
-                ${document.getElementById('userNameDisplay')?.innerText || '회원'}님을 위한 전략 보고서 센터입니다.<br>
-                정기적인 분석을 통해 흔들림 없는 수험 생활을 지원합니다.
+                상위 1%를 위한 프리미엄 분석 센터입니다.<br>
+                ${currentKey} 회차 리포트 요청이 진행 중입니다.
             </p>
         </div>
 
         <div class="pro-dashboard-layout">
             <div class="dashboard-actions">
                 <div style="color:#bfdbfe; margin-bottom:15px; font-size:0.95rem;">
-                    💡 다음 리포트: <strong>${targetDateStr} (${periodText})</strong><br>
-                    <span style="font-size:0.85rem; opacity:0.8;">(요청 마감: ${deadlineStr} 23:59 까지)</span>
+                    ⏳ 요청 마감: <strong>${deadlineStr}</strong> 까지
                 </div>
-                ${btnHtml}
+                <div id="requestBtnContainer">
+                    <button class="req-btn" onclick="openProReportModal()">
+                        <i class="fas fa-edit"></i> 분석 요청서 작성하기
+                    </button>
+                </div>
             </div>
 
             <div class="report-list-container">
                 <h4 style="color:white; margin:0 0 15px 0; border-left:4px solid #3b82f6; padding-left:10px;">
-                    📑 최근 분석 보고서
+                    📑 분석 보고서 보관함
                 </h4>
                 <div id="proReportListArea">
                     <div style="text-align:center; color:#64748b; padding:20px;">
-                        <i class="fas fa-spinner fa-spin"></i> 데이터 로딩 중...
+                        <i class="fas fa-spinner fa-spin"></i> 로딩 중...
                     </div>
                 </div>
             </div>
         </div>
     `;
 
-    loadProReports();
+    // 데이터 로드 후 버튼 상태 업데이트
+    loadProReports(currentKey, isDeadlinePassed);
 }
 
-// 보고서 목록 로드
-async function loadProReports() {
+let cachedProReports = []; // 전역 변수 추가
+
+async function loadProReports(currentKey, isDeadlinePassed) {
     const listArea = document.getElementById('proReportListArea');
-    if (!listArea) return;
-
-    listArea.innerHTML = '<div style="text-align:center; color:#64748b; padding:20px;"><i class="fas fa-spinner fa-spin"></i> 데이터 로딩 중...</div>';
-
+    const btnContainer = document.getElementById('requestBtnContainer');
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('idToken');
 
     try {
-        // [API 호출] get_pro_reports
         const res = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({
-                type: 'get_pro_reports',
-                userId: userId
-            })
+            body: JSON.stringify({ type: 'get_pro_reports', userId: userId, requesterRole: 'student' })
         });
-
-        if (!res.ok) throw new Error("서버 통신 실패");
-        
         const data = await res.json();
-        // Lambda에서 { reports: [...] } 형태로 반환한다고 가정
-        const reports = data.reports || [];
+        cachedProReports = data.reports || []; // [{key, request, reportLink, status}, ...]
 
-        if (reports.length === 0) {
+        // 1. 리스트 렌더링
+        if (cachedProReports.length === 0) {
             listArea.innerHTML = `<div style="text-align:center; color:#94a3b8; padding:30px;">발행된 보고서가 없습니다.</div>`;
-            return;
+        } else {
+            let html = '<div class="report-grid">';
+            cachedProReports.forEach(rep => {
+                // reportLink가 있어야만 클릭 가능
+                const isReady = rep.status === 'sent';
+                const statusBadge = isReady 
+                    ? '<span style="color:#4ade80; font-size:0.8rem;">● 열람 가능</span>' 
+                    : '<span style="color:#fbbf24; font-size:0.8rem;">● 분석중</span>';
+                
+                html += `
+                    <div class="report-item" onclick="${isReady ? `window.open('${rep.reportLink}')` : "alert('아직 분석 중입니다.')"}" style="cursor:${isReady?'pointer':'default'}">
+                        <div class="rep-info">
+                            <strong>${rep.key} 리포트</strong>
+                            ${statusBadge}
+                        </div>
+                        <div class="rep-icon"><i class="fas fa-download" style="color:${isReady?'#3b82f6':'#475569'}"></i></div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+            listArea.innerHTML = html;
         }
 
-        let html = '<div class="report-grid">';
-        
-        reports.forEach(rep => {
-            // rep 구조: { id, title, date, url, type(first/second), month }
-            const typeBadge = rep.type === 'first' ? '상반기' : '하반기';
-            
-            // 날짜 포맷팅 (YYYY.MM.DD)
-            const dateObj = new Date(rep.date);
-            const dateStr = `${dateObj.getFullYear()}.${String(dateObj.getMonth()+1).padStart(2,'0')}.${String(dateObj.getDate()).padStart(2,'0')}`;
+        // 2. 요청 버튼 상태 업데이트
+        const currentData = cachedProReports.find(r => r.key === currentKey);
+        const hasRequested = currentData && currentData.request;
 
-            html += `
-                <div class="report-item" onclick="window.open('${rep.url}')">
-                    <div class="rep-info">
-                        <strong>${rep.month}월 ${typeBadge} 리포트</strong>
-                        <span>${dateStr} 발행</span>
-                    </div>
-                    <div class="rep-icon"><i class="fas fa-download"></i></div>
-                </div>
+        if (isDeadlinePassed) {
+            btnContainer.innerHTML = `
+                <button class="req-btn disabled" disabled style="background:#e2e8f0; color:#94a3b8; cursor:not-allowed;">
+                    <i class="fas fa-lock"></i> 접수 마감됨
+                </button>
             `;
-        });
-        html += `</div>`;
-        listArea.innerHTML = html;
+        } else if (hasRequested) {
+            // 이미 요청함 -> 수정 모드
+            btnContainer.innerHTML = `
+                <button class="req-btn" style="background:#dcfce7; color:#166534; border:1px solid #86efac;" onclick="modifyProRequest()">
+                    <i class="fas fa-check-circle"></i> 요청 완료 (수정하기)
+                </button>
+            `;
+            // 요청 내용을 모달 textarea에 미리 채워넣기 위해 저장해둠
+            document.getElementById('proReportRequest').value = currentData.request;
+        } else {
+            // 요청 안 함 -> 기본 버튼 유지
+        }
 
     } catch (e) {
-        console.error("Reports Load Error:", e);
-        listArea.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">데이터를 불러오지 못했습니다.</div>`;
+        console.error(e);
+    }
+}
+
+function modifyProRequest() {
+    if(confirm("이미 제출된 요청사항을 수정하시겠습니까?")) {
+        openProReportModal();
     }
 }
 

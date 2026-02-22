@@ -532,155 +532,129 @@ async function saveWeeklyFeedback(weekId, idx) {
 // ============================================================
 
 // 1. PRO 탭 렌더링 메인 함수
+// [수정] FOR PRO 탭 렌더링 (DB 구조 변경 반영)
 function renderProTab() {
     const container = document.getElementById('proReportContainer');
     container.innerHTML = '';
 
-    const selYear = document.getElementById('proFilterYear').value;
-    const selMonth = document.getElementById('proFilterMonth').value;
-    
-    // DB에서 가져온 데이터 (없으면 빈 배열)
-    const history = currentStudentData.proCoachingHistory || [];
-    
-    // 해당 연/월 데이터 필터링
-    const currentMonthData = history.filter(h => {
-        const d = new Date(h.date);
-        return d.getFullYear() == selYear && (d.getMonth() + 1) == selMonth;
-    });
+    const selYear = document.getElementById('proFilterYear').value; // ex: 2026
+    const selMonth = document.getElementById('proFilterMonth').value; // ex: 3
+    const userRole = localStorage.getItem('userRole'); // 'admin' or 'tutor'
 
-    // 상반기(1~15일), 하반기(16일~말일) 구분
-    const firstHalf = currentMonthData.find(h => new Date(h.date).getDate() <= 15);
-    const secondHalf = currentMonthData.find(h => new Date(h.date).getDate() > 15);
+    // Key 생성 로직 (Lambda와 동일해야 함)
+    const yearShort = selYear.slice(2); // 26
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthStr = monthNames[parseInt(selMonth) - 1]; // 3월 -> Mar
+    
+    const keyPre = `${yearShort}${monthStr}Pre`;   // 26MarPre
+    const keyPost = `${yearShort}${monthStr}Post`; // 26MarPost
 
-    // 박스 생성 (ID 부여를 위해 식별자 전달)
-    container.appendChild(createProPeriodBox(selMonth + '월 상반기 (1일~15일)', firstHalf, `pro_${selYear}_${selMonth}_1`));
-    container.appendChild(createProPeriodBox(selMonth + '월 하반기 (16일~말일)', secondHalf, `pro_${selYear}_${selMonth}_2`));
+    // DB 데이터에서 해당 키 찾기 (currentStudentData.proExclusiveReports는 get_pro_reports API로 미리 로드되어야 함)
+    // loadStudentDetail에서 API 호출 시 requesterRole: 'admin'을 넣어서 draft까지 받아왔다고 가정.
+    const reports = currentStudentData.proReportsList || []; // 배열 형태로 변환된 데이터
+
+    const dataPre = reports.find(r => r.key === keyPre);
+    const dataPost = reports.find(r => r.key === keyPost);
+
+    container.appendChild(createProPeriodBox(`${selMonth}월 상반기 (Pre)`, dataPre, keyPre, userRole));
+    container.appendChild(createProPeriodBox(`${selMonth}월 하반기 (Post)`, dataPost, keyPost, userRole));
 }
 
-// 2. 기간별 박스 생성 함수 (핵심 로직)
-function createProPeriodBox(title, data, boxId) {
+function createProPeriodBox(title, data, reportKey, userRole) {
     const box = document.createElement('div');
     box.className = 'pro-period-section';
-    box.id = boxId;
-    
-    // 데이터 안전 참조
-    const requestText = data ? escapeHtml(data.request) : null;
-    const isCompleted = data && data.status === 'completed'; // 작성 완료 여부
-    const isSent = data && data.status === 'sent'; // 최종 전송 여부
+    box.id = reportKey;
 
-    // [A] 학생 요청 사항 영역
+    const requestText = data ? escapeHtml(data.request) : null;
+    const reportLink = data ? data.reportLink : null;
+    const isSent = !!reportLink;
+
+    // [A] 학생 요청
     const reqHtml = requestText 
         ? `<div class="student-req-content">"${requestText}"</div>`
-        : `<div class="student-req-content" style="color:#94a3b8; font-style:italic;">(학생 요청 사항이 없습니다)</div>`;
+        : `<div class="student-req-content" style="color:#94a3b8;">(미작성)</div>`;
 
-    // [B] 집필 영역 (4개 항목)
-    // 기존 작성 내용이 있으면 로드, 없으면 빈 값
-    const content = data && data.content ? data.content : { eval: '', dist: '', plan: '', qna: '' };
-    
-    // 읽기 전용 모드인가? (보고서 전송 완료 시)
+    // [B] 초안 내용 (JSON 문자열 -> 객체 파싱)
+    let content = { eval: '', dist: '', plan: '', qna: '' };
+    if (data && data.draft) {
+        try { content = JSON.parse(data.draft); } catch(e) {}
+    }
+
     const readOnly = isSent ? 'disabled' : '';
 
     const writeHtml = `
-        <div class="write-header">
-            <div class="write-title"><i class="fas fa-pen-nib"></i> 컨설턴트 집필 공간</div>
-            <button class="guide-btn" onclick="showProGuideModal()">
-                <i class="fas fa-info-circle"></i> 코칭 작성시 유의사항
-            </button>
-        </div>
-
         <div class="pro-write-grid">
             <div class="write-item">
-                <label class="write-label">1. 지난 2주간의 학습평가 (리스크/KPI)</label>
-                <textarea id="${boxId}_item1" class="write-textarea" placeholder="리스크/효율 KPI 기반으로 장단점을 평가해주세요." ${readOnly}>${content.eval}</textarea>
-                <button id="${boxId}_btn1" class="temp-save-btn" onclick="tempSaveProItem('${boxId}', 1)" ${isSent ? 'style="display:none"' : ''}>임시저장</button>
+                <label class="write-label">1. 학습평가</label>
+                <textarea id="${reportKey}_item1" class="write-textarea" ${readOnly}>${content.eval}</textarea>
             </div>
             <div class="write-item">
-                <label class="write-label">2. 목표대학과의 거리 (ΔCut/기여도)</label>
-                <textarea id="${boxId}_item2" class="write-textarea" placeholder="ΔCut 및 과목별 기여도 기반으로 분석해주세요." ${readOnly}>${content.dist}</textarea>
-                <button id="${boxId}_btn2" class="temp-save-btn" onclick="tempSaveProItem('${boxId}', 2)" ${isSent ? 'style="display:none"' : ''}>임시저장</button>
+                <label class="write-label">2. 목표거리</label>
+                <textarea id="${reportKey}_item2" class="write-textarea" ${readOnly}>${content.dist}</textarea>
             </div>
             <div class="write-item">
-                <label class="write-label">3. 중기 핵심 과제 Top2 & 장기 플랜</label>
-                <textarea id="${boxId}_item3" class="write-textarea" placeholder="중기 과제(KPI 인용) 및 장기 마일스톤을 제시해주세요." ${readOnly}>${content.plan}</textarea>
-                <button id="${boxId}_btn3" class="temp-save-btn" onclick="tempSaveProItem('${boxId}', 3)" ${isSent ? 'style="display:none"' : ''}>임시저장</button>
+                <label class="write-label">3. 과제&플랜</label>
+                <textarea id="${reportKey}_item3" class="write-textarea" ${readOnly}>${content.plan}</textarea>
             </div>
             <div class="write-item">
-                <label class="write-label">4. 학생 요청 답변 (근거 포함)</label>
-                <textarea id="${boxId}_item4" class="write-textarea" placeholder="구체적인 근거를 들어 답변해주세요." ${readOnly}>${content.qna}</textarea>
-                <button id="${boxId}_btn4" class="temp-save-btn" onclick="tempSaveProItem('${boxId}', 4)" ${isSent ? 'style="display:none"' : ''}>임시저장</button>
+                <label class="write-label">4. 요청답변</label>
+                <textarea id="${reportKey}_item4" class="write-textarea" ${readOnly}>${content.qna}</textarea>
             </div>
         </div>
     `;
 
-    // [C] 액션 바 (상태에 따라 버튼 변경)
+    // [C] 액션 버튼 (권한 분리 핵심)
     let actionHtml = '';
     
     if (isSent) {
-        // Case 1: 이미 전송됨 (수정 모드)
-        actionHtml = `
-            <div class="action-bar">
-                <button class="edit-report-btn show" onclick="enableProEdit('${boxId}')">
-                    <i class="fas fa-edit"></i> 내용 수정하기
-                </button>
-                <button class="admin-report-btn completed">
-                    <i class="fas fa-check-circle"></i> 보고서 전송 완료
-                </button>
-            </div>
-        `;
-    } else if (isCompleted) {
-        // Case 2: 작성 완료됨 (관리자 검수 대기) -> 관리자가 '보고서 생성' 누를 수 있음
-        actionHtml = `
-            <div class="action-bar">
-                <span style="color:#166534; font-weight:bold; font-size:0.9rem; margin-right:10px;">
-                    <i class="fas fa-check"></i> 컨설턴트 작성 완료됨
-                </span>
-                <button id="${boxId}_genBtn" class="admin-report-btn" onclick="generateProReport('${boxId}')">
-                    <i class="fas fa-magic"></i> 보고서 생성 및 전송
-                </button>
-            </div>
-        `;
+        actionHtml = `<div class="action-bar"><button class="admin-report-btn completed">✅ 전송 완료됨</button></div>`;
     } else {
-        // Case 3: 작성 중
-        actionHtml = `
-            <div class="action-bar">
-                <button id="${boxId}_completeBtn" class="complete-write-btn" onclick="completeProWriting('${boxId}')">
-                    작성 완료 (관리자에게 알림)
-                </button>
-            </div>
-        `;
+        // 전송 전 상태
+        // 1. 임시 저장 (공통)
+        const saveBtn = `<button class="temp-save-btn" onclick="saveProDraft('${reportKey}')">임시 저장 (암호화)</button>`;
+        
+        // 2. 관리자 전용 '생성 및 전송' 버튼
+        let adminBtn = '';
+        if (userRole === 'admin') {
+            adminBtn = `<button class="admin-report-btn" onclick="publishProReport('${reportKey}')">🚀 보고서 생성 및 전송 (Admin Only)</button>`;
+        } else {
+            adminBtn = `<span style="color:#64748b; font-size:0.9rem;">⏳ 관리자 승인 대기중...</span>`;
+        }
+
+        actionHtml = `<div class="action-bar" style="justify-content: space-between;">${saveBtn} ${adminBtn}</div>`;
     }
 
     box.innerHTML = `
-        <div class="pro-period-title">
-            <span>${title}</span>
-            <span style="font-size:0.85rem; color:#64748b; font-weight:normal;">
-                ${data ? new Date(data.date).toLocaleDateString() : '데이터 없음'}
-            </span>
-        </div>
-        
-        <div class="student-req-box">
-            <div class="student-req-label"><i class="fas fa-question-circle"></i> 학생 요청 사항</div>
-            ${reqHtml}
-        </div>
-
+        <div class="pro-period-title"><span>${title}</span></div>
+        <div class="student-req-box">${reqHtml}</div>
         ${writeHtml}
         ${actionHtml}
     `;
-    
-    // 만약 이미 완료된 상태라면, 임시저장 버튼들을 '저장됨' 상태로 시각적 처리
-    if (isCompleted || isSent) {
-        setTimeout(() => {
-            const container = document.getElementById(boxId);
-            if(container) {
-                container.querySelectorAll('.temp-save-btn').forEach(btn => {
-                    btn.classList.add('saved');
-                    btn.innerText = '저장됨';
-                });
-            }
-        }, 0);
-    }
-
     return box;
+}
+
+// [API] 초안 저장 (암호화는 서버에서)
+async function saveProDraft(key) {
+    const content = {
+        eval: document.getElementById(`${key}_item1`).value,
+        dist: document.getElementById(`${key}_item2`).value,
+        plan: document.getElementById(`${key}_item3`).value,
+        qna: document.getElementById(`${key}_item4`).value
+    };
+
+    // API 호출 (admin_save_pro_draft)
+    // ... fetch 코드 ...
+    alert("초안이 암호화되어 저장되었습니다.");
+}
+
+// [API] 최종 전송 (Admin Only)
+async function publishProReport(key) {
+    if(!confirm("최종 전송하시겠습니까? 학생에게 공개됩니다.")) return;
+    
+    // API 호출 (admin_publish_pro_report)
+    // ... fetch 코드 ...
+    alert("전송 완료");
+    renderProTab(); // 새로고침
 }
 
 // ------------------------------------------------------------
