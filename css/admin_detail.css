@@ -341,16 +341,12 @@ html, body { height: auto !important; min-height: 100vh !important; overflow-y: 
     display: flex; justify-content: space-between; align-items: center; 
 }
 
-/* 학생 요청 사항 박스 (Read Only) */
-.student-req-box {
-    background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; padding: 15px; margin-bottom: 25px;
-}
-.student-req-label {
-    font-size: 0.85rem; font-weight: 700; color: #b45309; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
-}
-.student-req-content {
-    font-size: 0.95rem; color: #451a03; line-height: 1.5; white-space: pre-wrap;
-}
+/* [수정] 학생 요청사항 박스 디자인 개선 */
+.student-req-card { background-color: #fff; border: 1px solid #cbd5e1; border-left: 5px solid #f59e0b; border-radius: 8px; padding: 0; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); overflow: hidden; }
+.req-header { background-color: #fffbeb; padding: 12px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 8px; }
+.req-title { font-size: 0.95rem; font-weight: 800; color: #92400e; margin: 0; }
+.req-content-area { padding: 20px; font-size: 0.95rem; color: #334155; line-height: 1.6; white-space: pre-wrap; }
+.req-empty { color: #94a3b8; font-style: italic; }
 
 /* 집필 영역 헤더 */
 .write-header {

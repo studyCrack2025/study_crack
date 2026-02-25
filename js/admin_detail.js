@@ -559,53 +559,67 @@ function renderProTab() {
     container.appendChild(createProPeriodBox(`${selMonth}월 하반기 (Post)`, dataPost, keyPost, userRole));
 }
 
-// [수정] 기간별 박스 생성 함수 (핵심 로직)
+// [수정] 기간별 박스 생성 함수 (디자인 개선 및 데이터 로드 강화)
 function createProPeriodBox(title, data, reportKey, userRole) {
     const box = document.createElement('div');
     box.className = 'pro-period-section';
     box.id = reportKey;
 
-    const requestText = data ? escapeHtml(data.request) : null;
+    // 1. 데이터 안전 참조 (데이터가 없으면 빈 객체 처리)
+    // requestText가 암호화되어 있다면 Lambda에서 이미 복호화해서 보냈어야 합니다.
+    // 만약 Lambda에서 복호화를 안 했다면 여기서 깨진 문자가 보일 수 있습니다.
+    const safeData = data || {};
+    const requestText = safeData.request ? escapeHtml(safeData.request) : null;
+    
     // 상태: pending(없음) -> drafting(작성중) -> completed(작성완료/검수대기) -> sent(전송됨)
-    const status = data ? data.status : 'pending';
-    const reportLink = data ? data.reportLink : null;
+    const status = safeData.status || 'pending';
+    const reportLink = safeData.reportLink || null;
 
-    // [A] 학생 요청 사항
+    // [A] 학생 요청 사항 (디자인 개선됨)
     const reqHtml = requestText 
-        ? `<div class="student-req-content">"${requestText}"</div>`
-        : `<div class="student-req-content" style="color:#94a3b8;">(미작성)</div>`;
+        ? `<div class="req-content-area">${requestText}</div>`
+        : `<div class="req-content-area req-empty">(학생이 작성한 추가 요청사항이 없습니다.)</div>`;
 
     // [B] 초안 내용 로드
     let content = { eval: '', dist: '', plan: '', qna: '' };
-    if (data && data.draft) {
-        try { content = JSON.parse(data.draft); } catch(e) {}
+    if (safeData.draft) {
+        try { content = JSON.parse(safeData.draft); } catch(e) { console.error("JSON Parse Error:", e); }
     }
 
     // [C] 상태별 UI 분기 처리
-    const isLocked = (status === 'completed' || status === 'sent'); // 튜터 입장에서 잠김
+    const isLocked = (status === 'completed' || status === 'sent'); 
     const isAdmin = (userRole === 'admin');
-    
-    // 관리자는 'completed' 상태에서도 수정 가능해야 함
     const readOnly = (isLocked && !isAdmin) ? 'disabled' : ''; 
 
     // 작성 폼 HTML
     const writeHtml = `
+        <div class="write-header">
+            <div class="write-title"><i class="fas fa-pen-nib"></i> 컨설턴트 집필 공간</div>
+            <button class="guide-btn" onclick="showProGuideModal()">
+                <i class="fas fa-info-circle"></i> 작성 가이드
+            </button>
+        </div>
+
         <div class="pro-write-grid">
             <div class="write-item">
-                <label class="write-label">1. 학습평가</label>
-                <textarea id="${reportKey}_item1" class="write-textarea" ${readOnly}>${content.eval}</textarea>
+                <label class="write-label">1. 지난 2주간의 학습평가 (리스크/KPI)</label>
+                <textarea id="${reportKey}_item1" class="write-textarea" ${readOnly} placeholder="리스크/효율 KPI 기반으로 장단점을 평가해주세요.">${content.eval}</textarea>
+                <button id="${reportKey}_btn1" class="temp-save-btn" onclick="tempSaveProItem('${reportKey}', 1)" ${isLocked ? 'style="display:none"' : ''}>임시저장</button>
             </div>
             <div class="write-item">
-                <label class="write-label">2. 목표거리</label>
-                <textarea id="${reportKey}_item2" class="write-textarea" ${readOnly}>${content.dist}</textarea>
+                <label class="write-label">2. 목표대학과의 거리 (ΔCut/기여도)</label>
+                <textarea id="${reportKey}_item2" class="write-textarea" ${readOnly} placeholder="ΔCut 및 과목별 기여도 기반으로 분석해주세요.">${content.dist}</textarea>
+                <button id="${reportKey}_btn2" class="temp-save-btn" onclick="tempSaveProItem('${reportKey}', 2)" ${isLocked ? 'style="display:none"' : ''}>임시저장</button>
             </div>
             <div class="write-item">
-                <label class="write-label">3. 과제&플랜</label>
-                <textarea id="${reportKey}_item3" class="write-textarea" ${readOnly}>${content.plan}</textarea>
+                <label class="write-label">3. 중기 핵심 과제 Top2 & 장기 플랜</label>
+                <textarea id="${reportKey}_item3" class="write-textarea" ${readOnly} placeholder="중기 과제(KPI 인용) 및 장기 마일스톤을 제시해주세요.">${content.plan}</textarea>
+                <button id="${reportKey}_btn3" class="temp-save-btn" onclick="tempSaveProItem('${reportKey}', 3)" ${isLocked ? 'style="display:none"' : ''}>임시저장</button>
             </div>
             <div class="write-item">
-                <label class="write-label">4. 요청답변</label>
-                <textarea id="${reportKey}_item4" class="write-textarea" ${readOnly}>${content.qna}</textarea>
+                <label class="write-label">4. 학생 요청 답변 (근거 포함)</label>
+                <textarea id="${reportKey}_item4" class="write-textarea" ${readOnly} placeholder="구체적인 근거를 들어 답변해주세요.">${content.qna}</textarea>
+                <button id="${reportKey}_btn4" class="temp-save-btn" onclick="tempSaveProItem('${reportKey}', 4)" ${isLocked ? 'style="display:none"' : ''}>임시저장</button>
             </div>
         </div>
     `;
@@ -614,24 +628,22 @@ function createProPeriodBox(title, data, reportKey, userRole) {
     let actionHtml = '';
 
     if (status === 'sent') {
-        // 1. 전송 완료 상태
         actionHtml = `
             <div class="action-bar">
                 <span style="color:#2563eb; font-weight:bold;">
-                    <i class="fas fa-check-circle"></i> 보고서 생성 완료 (${reportLink})
+                    <i class="fas fa-check-circle"></i> 보고서 생성 완료
                 </span>
-                ${isAdmin ? `<button class="edit-report-btn show" onclick="enableProEdit('${reportKey}')">수정하기</button>` : ''}
+                ${reportLink ? `<a href="${reportLink}" target="_blank" style="margin-left:10px; text-decoration:underline; color:#2563eb;">[링크 확인]</a>` : ''}
+                ${isAdmin ? `<button class="edit-report-btn show" onclick="enableProEdit('${reportKey}')" style="margin-left:auto;">수정하기</button>` : ''}
             </div>
         `;
     } 
     else if (status === 'completed') {
-        // 2. 작성 완료 (관리자 검수 대기)
         if (isAdmin) {
-            // 관리자: 수정하거나 최종 전송 가능
             actionHtml = `
                 <div class="action-bar" style="justify-content: space-between;">
-                    <span style="color:#166534; font-weight:bold;">
-                        <i class="fas fa-search"></i> 검수 대기중 (내용 수정 가능)
+                    <span style="color:#166534; font-weight:bold; display:flex; align-items:center; gap:5px;">
+                        <i class="fas fa-search"></i> 검수 대기중 <span style="font-size:0.8rem; font-weight:normal; color:#64748b;">(내용 수정 가능)</span>
                     </span>
                     <div style="display:flex; gap:10px;">
                         <button class="temp-save-btn" onclick="saveProDraft('${reportKey}')">수정 내용 저장</button>
@@ -642,7 +654,6 @@ function createProPeriodBox(title, data, reportKey, userRole) {
                 </div>
             `;
         } else {
-            // 튜터: 대기중 메시지
             actionHtml = `
                 <div class="action-bar">
                     <span style="color:#64748b; font-weight:bold;">
@@ -653,20 +664,37 @@ function createProPeriodBox(title, data, reportKey, userRole) {
         }
     } 
     else {
-        // 3. 작성 중 (Drafting / Pending)
+        // 작성 중 (Drafting / Pending)
+        // 임시저장 여부 체크 -> 완료 버튼 활성화 로직
+        const hasContent = content.eval && content.dist && content.plan && content.qna;
+        const btnClass = hasContent ? 'complete-write-btn active' : 'complete-write-btn';
+        
         actionHtml = `
-            <div class="action-bar" style="justify-content: space-between;">
-                <button class="temp-save-btn" onclick="saveProDraft('${reportKey}')">임시 저장</button>
-                <button class="complete-write-btn active" onclick="completeProWriting('${reportKey}')">
+            <div class="action-bar" style="justify-content: flex-end;">
+                <button id="${reportKey}_completeBtn" class="${btnClass}" onclick="completeProWriting('${reportKey}')">
                     작성 완료 (관리자 제출)
                 </button>
             </div>
         `;
     }
 
+    // 최종 조립
     box.innerHTML = `
-        <div class="pro-period-title"><span>${title}</span></div>
-        <div class="student-req-box">${reqHtml}</div>
+        <div class="pro-period-title">
+            <span>${title}</span>
+            <span style="font-size:0.85rem; color:#64748b; font-weight:normal;">
+                ${safeData.updatedAt ? new Date(safeData.updatedAt).toLocaleDateString() : '업데이트 없음'}
+            </span>
+        </div>
+        
+        <div class="student-req-card">
+            <div class="req-header">
+                <i class="fas fa-comment-dots" style="color:#f59e0b;"></i>
+                <h4 class="req-title">학생 요청사항</h4>
+            </div>
+            ${reqHtml}
+        </div>
+
         ${writeHtml}
         ${actionHtml}
     `;
