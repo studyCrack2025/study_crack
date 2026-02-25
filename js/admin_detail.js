@@ -136,6 +136,39 @@ async function loadStudentDetail() {
     }
 }
 
+// PRO 보고서 데이터 로드 함수
+async function loadProReportsForAdmin() {
+    const token = localStorage.getItem('accessToken');
+    // userRole은 전역변수나 로컬스토리지에서 가져옴
+    const userRole = localStorage.getItem('userRole'); 
+    
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'get_pro_reports',
+                userId: targetUserId, // 학생 ID
+                requesterRole: userRole // 'admin' or 'tutor' (초안 복호화 권한용)
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            // 받아온 보고서 배열을 전역 객체에 저장
+            currentStudentData.proReportsList = data.reports || [];
+            
+            // 만약 현재 탭이 'special'(Pro 탭)이면 화면 갱신
+            const specialTab = document.getElementById('tab_special');
+            if (specialTab && specialTab.classList.contains('active')) {
+                renderProTab();
+            }
+        }
+    } catch (e) {
+        console.error("Pro Reports Load Error:", e);
+    }
+}
+
 function renderData(s) {
     if (!s) return;
 
@@ -174,6 +207,8 @@ function renderData(s) {
     initQuantitativeData(s.quantitative);
     
     renderPayments(s.payments || []);
+    
+    loadProReportsForAdmin();
 }
 
 function calcTier(payments) {
