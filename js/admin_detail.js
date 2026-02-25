@@ -532,7 +532,6 @@ async function saveWeeklyFeedback(weekId, idx) {
 // ============================================================
 
 // 1. PRO 탭 렌더링 메인 함수
-// [수정] FOR PRO 탭 렌더링 (DB 구조 변경 반영)
 function renderProTab() {
     const container = document.getElementById('proReportContainer');
     container.innerHTML = '';
@@ -560,28 +559,36 @@ function renderProTab() {
     container.appendChild(createProPeriodBox(`${selMonth}월 하반기 (Post)`, dataPost, keyPost, userRole));
 }
 
+// [수정] 기간별 박스 생성 함수 (핵심 로직)
 function createProPeriodBox(title, data, reportKey, userRole) {
     const box = document.createElement('div');
     box.className = 'pro-period-section';
     box.id = reportKey;
 
     const requestText = data ? escapeHtml(data.request) : null;
+    // 상태: pending(없음) -> drafting(작성중) -> completed(작성완료/검수대기) -> sent(전송됨)
+    const status = data ? data.status : 'pending';
     const reportLink = data ? data.reportLink : null;
-    const isSent = !!reportLink;
 
-    // [A] 학생 요청
+    // [A] 학생 요청 사항
     const reqHtml = requestText 
         ? `<div class="student-req-content">"${requestText}"</div>`
         : `<div class="student-req-content" style="color:#94a3b8;">(미작성)</div>`;
 
-    // [B] 초안 내용 (JSON 문자열 -> 객체 파싱)
+    // [B] 초안 내용 로드
     let content = { eval: '', dist: '', plan: '', qna: '' };
     if (data && data.draft) {
         try { content = JSON.parse(data.draft); } catch(e) {}
     }
 
-    const readOnly = isSent ? 'disabled' : '';
+    // [C] 상태별 UI 분기 처리
+    const isLocked = (status === 'completed' || status === 'sent'); // 튜터 입장에서 잠김
+    const isAdmin = (userRole === 'admin');
+    
+    // 관리자는 'completed' 상태에서도 수정 가능해야 함
+    const readOnly = (isLocked && !isAdmin) ? 'disabled' : ''; 
 
+    // 작성 폼 HTML
     const writeHtml = `
         <div class="pro-write-grid">
             <div class="write-item">
@@ -603,25 +610,58 @@ function createProPeriodBox(title, data, reportKey, userRole) {
         </div>
     `;
 
-    // [C] 액션 버튼 (권한 분리 핵심)
+    // [D] 하단 액션 버튼 영역
     let actionHtml = '';
-    
-    if (isSent) {
-        actionHtml = `<div class="action-bar"><button class="admin-report-btn completed">✅ 전송 완료됨</button></div>`;
-    } else {
-        // 전송 전 상태
-        // 1. 임시 저장 (공통)
-        const saveBtn = `<button class="temp-save-btn" onclick="saveProDraft('${reportKey}')">임시 저장 (암호화)</button>`;
-        
-        // 2. 관리자 전용 '생성 및 전송' 버튼
-        let adminBtn = '';
-        if (userRole === 'admin') {
-            adminBtn = `<button class="admin-report-btn" onclick="publishProReport('${reportKey}')">🚀 보고서 생성 및 전송 (Admin Only)</button>`;
-        } else {
-            adminBtn = `<span style="color:#64748b; font-size:0.9rem;">⏳ 관리자 승인 대기중...</span>`;
-        }
 
-        actionHtml = `<div class="action-bar" style="justify-content: space-between;">${saveBtn} ${adminBtn}</div>`;
+    if (status === 'sent') {
+        // 1. 전송 완료 상태
+        actionHtml = `
+            <div class="action-bar">
+                <span style="color:#2563eb; font-weight:bold;">
+                    <i class="fas fa-check-circle"></i> 보고서 생성 완료 (${reportLink})
+                </span>
+                ${isAdmin ? `<button class="edit-report-btn show" onclick="enableProEdit('${reportKey}')">수정하기</button>` : ''}
+            </div>
+        `;
+    } 
+    else if (status === 'completed') {
+        // 2. 작성 완료 (관리자 검수 대기)
+        if (isAdmin) {
+            // 관리자: 수정하거나 최종 전송 가능
+            actionHtml = `
+                <div class="action-bar" style="justify-content: space-between;">
+                    <span style="color:#166534; font-weight:bold;">
+                        <i class="fas fa-search"></i> 검수 대기중 (내용 수정 가능)
+                    </span>
+                    <div style="display:flex; gap:10px;">
+                        <button class="temp-save-btn" onclick="saveProDraft('${reportKey}')">수정 내용 저장</button>
+                        <button class="admin-report-btn" onclick="publishProReport('${reportKey}')">
+                            <i class="fas fa-paper-plane"></i> 보고서 올리기 (전송)
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            // 튜터: 대기중 메시지
+            actionHtml = `
+                <div class="action-bar">
+                    <span style="color:#64748b; font-weight:bold;">
+                        <i class="fas fa-hourglass-half"></i> 관리자 승인 대기중...
+                    </span>
+                </div>
+            `;
+        }
+    } 
+    else {
+        // 3. 작성 중 (Drafting / Pending)
+        actionHtml = `
+            <div class="action-bar" style="justify-content: space-between;">
+                <button class="temp-save-btn" onclick="saveProDraft('${reportKey}')">임시 저장</button>
+                <button class="complete-write-btn active" onclick="completeProWriting('${reportKey}')">
+                    작성 완료 (관리자 제출)
+                </button>
+            </div>
+        `;
     }
 
     box.innerHTML = `
@@ -633,7 +673,7 @@ function createProPeriodBox(title, data, reportKey, userRole) {
     return box;
 }
 
-// [API] 초안 저장 (암호화는 서버에서)
+// [API] 임시 저장 (내용만 업데이트)
 async function saveProDraft(key) {
     const content = {
         eval: document.getElementById(`${key}_item1`).value,
@@ -642,19 +682,80 @@ async function saveProDraft(key) {
         qna: document.getElementById(`${key}_item4`).value
     };
 
-    // API 호출 (admin_save_pro_draft)
-    // ... fetch 코드 ...
-    alert("초안이 암호화되어 저장되었습니다.");
+    if(!content.eval && !content.dist) { alert("내용을 입력해주세요."); return; }
+
+    const token = localStorage.getItem('accessToken');
+    try {
+        await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'admin_save_pro_draft',
+                userId: adminId,
+                targetUserId: targetUserId,
+                reportKey: key,
+                draftContent: content
+            })
+        });
+        alert("임시 저장되었습니다.");
+    } catch(e) { alert("저장 실패"); }
 }
 
-// [API] 최종 전송 (Admin Only)
+// [API] 작성 완료 (상태 변경 -> completed)
+async function completeProWriting(key) {
+    // 1. 먼저 내용 저장
+    await saveProDraft(key);
+
+    if(!confirm("작성을 완료하고 관리자에게 제출하시겠습니까?\n제출 후에는 수정할 수 없습니다.")) return;
+
+    const token = localStorage.getItem('accessToken');
+    try {
+        await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'admin_complete_pro_writing',
+                userId: adminId,
+                targetUserId: targetUserId,
+                reportKey: key
+            })
+        });
+        alert("제출 완료되었습니다.");
+        renderProTab(); // UI 갱신
+    } catch(e) { alert("처리 실패"); }
+}
+
+// [API] 최종 보고서 생성 및 전송 (Admin Only)
 async function publishProReport(key) {
-    if(!confirm("최종 전송하시겠습니까? 학생에게 공개됩니다.")) return;
-    
-    // API 호출 (admin_publish_pro_report)
-    // ... fetch 코드 ...
-    alert("전송 완료");
-    renderProTab(); // 새로고침
+    const link = prompt("생성된 감마 보고서 링크를 입력해주세요:");
+    if (!link) return;
+
+    const token = localStorage.getItem('accessToken');
+    try {
+        await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'admin_publish_pro_report',
+                userId: adminId,
+                targetUserId: targetUserId,
+                reportKey: key,
+                reportLink: link
+            })
+        });
+        alert("전송이 완료되었습니다.");
+        renderProTab();
+    } catch(e) { alert("전송 실패"); }
+}
+
+// [기능] 수정 모드 활성화 (이미 전송된 건)
+function enableProEdit(key) {
+    if(!confirm("이미 전송된 보고서입니다. 수정하시겠습니까?")) return;
+    const container = document.getElementById(key);
+    container.querySelectorAll('textarea').forEach(t => t.disabled = false);
+    // 버튼을 저장 버튼으로 교체하는 등의 로직 필요 (간단히 새로고침 유도)
+    alert("수정 후 '수정 내용 저장' 버튼을 눌러주세요.");
+    // 실제로는 UI를 다시 그리는게 깔끔함 (status를 잠시 completed로 취급하여 렌더링 등)
 }
 
 // ------------------------------------------------------------
