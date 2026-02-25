@@ -174,6 +174,43 @@ function renderData(s) {
     initQuantitativeData(s.quantitative);
     
     renderPayments(s.payments || []);
+    
+    // 만약 PRO 회원이면, 추가로 Pro 보고서 목록도 로드 (get_pro_reports)
+    if (['pro', 'black'].includes(currentTier)) {
+        loadProReportsForAdmin();
+    }
+}
+
+// 관리자/튜터용 Pro 보고서 데이터 로드 함수
+async function loadProReportsForAdmin() {
+    const token = localStorage.getItem('accessToken');
+    const userRole = localStorage.getItem('userRole');
+    
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'get_pro_reports',
+                userId: targetUserId, // 학생 ID
+                requesterRole: userRole // 'admin' or 'tutor'
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            // currentStudentData에 proReportsList 필드로 추가 저장
+            currentStudentData.proReportsList = data.reports || [];
+            
+            // 만약 현재 탭이 special(PRO) 탭이면 리렌더링
+            const specialTab = document.getElementById('tab_special');
+            if (specialTab && specialTab.classList.contains('active')) {
+                renderProTab();
+            }
+        }
+    } catch (e) {
+        console.error("Pro Reports Load Error:", e);
+    }
 }
 
 function calcTier(payments) {
@@ -300,7 +337,7 @@ function showCoachingGuideModal() {
                         <li><strong>취약 과목 개입 포인트</strong></li>
                         <li><strong>다음 주 핵심 과제 Top 3와 그 개별적인 근거</strong></li>
                         <li><strong>플랜 조정</strong> (방향 / 속력)</li>
-                        <li><strong>심층 질문에 대한 추가 답변(어떤 질문에 대한 답변인지를 명시하고, 앞 항목 내용과 중복된다면 그렇다는 사실을 명시)</li>
+                        <li><strong>심층 질문에 대한 추가 답변</strong> (어떤 질문에 대한 답변인지를 명시하고, 앞 항목 내용과 중복된다면 그렇다는 사실을 명시)</li>
                     </ul>
 
                     <h4>4) Standard 코칭 원칙 (최소 기준)</h4>
@@ -548,9 +585,9 @@ function renderProTab() {
     const keyPre = `${yearShort}${monthStr}Pre`;   // 26MarPre
     const keyPost = `${yearShort}${monthStr}Post`; // 26MarPost
 
-    // DB 데이터에서 해당 키 찾기 (currentStudentData.proExclusiveReports는 get_pro_reports API로 미리 로드되어야 함)
-    // loadStudentDetail에서 API 호출 시 requesterRole: 'admin'을 넣어서 draft까지 받아왔다고 가정.
-    const reports = currentStudentData.proReportsList || []; // 배열 형태로 변환된 데이터
+    // DB 데이터에서 해당 키 찾기 (currentStudentData.proReportsList는 get_pro_reports API로 미리 로드됨)
+    // 없을 경우를 대비해 빈 배열 초기화
+    const reports = currentStudentData.proReportsList || []; 
 
     const dataPre = reports.find(r => r.key === keyPre);
     const dataPost = reports.find(r => r.key === keyPost);
@@ -590,22 +627,33 @@ function createProPeriodBox(title, data, reportKey, userRole) {
 
     // 작성 폼 HTML
     const writeHtml = `
+        <div class="write-header">
+            <div class="write-title"><i class="fas fa-pen-nib"></i> 컨설턴트 집필 공간</div>
+            <button class="guide-btn" onclick="showProGuideModal()">
+                <i class="fas fa-info-circle"></i> 코칭 작성시 유의사항
+            </button>
+        </div>
+
         <div class="pro-write-grid">
             <div class="write-item">
-                <label class="write-label">1. 학습평가</label>
-                <textarea id="${reportKey}_item1" class="write-textarea" ${readOnly}>${content.eval}</textarea>
+                <label class="write-label">1. 지난 2주간의 학습평가 (리스크/KPI)</label>
+                <textarea id="${reportKey}_item1" class="write-textarea" ${readOnly} placeholder="리스크/효율 KPI 기반으로 장단점을 평가해주세요.">${content.eval}</textarea>
+                <button id="${reportKey}_btn1" class="temp-save-btn" onclick="tempSaveProItem('${reportKey}', 1)" ${isLocked ? 'style="display:none"' : ''}>임시저장</button>
             </div>
             <div class="write-item">
-                <label class="write-label">2. 목표거리</label>
-                <textarea id="${reportKey}_item2" class="write-textarea" ${readOnly}>${content.dist}</textarea>
+                <label class="write-label">2. 목표대학과의 거리 (ΔCut/기여도)</label>
+                <textarea id="${reportKey}_item2" class="write-textarea" ${readOnly} placeholder="ΔCut 및 과목별 기여도 기반으로 분석해주세요.">${content.dist}</textarea>
+                <button id="${reportKey}_btn2" class="temp-save-btn" onclick="tempSaveProItem('${reportKey}', 2)" ${isLocked ? 'style="display:none"' : ''}>임시저장</button>
             </div>
             <div class="write-item">
-                <label class="write-label">3. 과제&플랜</label>
-                <textarea id="${reportKey}_item3" class="write-textarea" ${readOnly}>${content.plan}</textarea>
+                <label class="write-label">3. 중기 핵심 과제 Top2 & 장기 플랜</label>
+                <textarea id="${reportKey}_item3" class="write-textarea" ${readOnly} placeholder="중기 과제(KPI 인용) 및 장기 마일스톤을 제시해주세요.">${content.plan}</textarea>
+                <button id="${reportKey}_btn3" class="temp-save-btn" onclick="tempSaveProItem('${reportKey}', 3)" ${isLocked ? 'style="display:none"' : ''}>임시저장</button>
             </div>
             <div class="write-item">
-                <label class="write-label">4. 요청답변</label>
-                <textarea id="${reportKey}_item4" class="write-textarea" ${readOnly}>${content.qna}</textarea>
+                <label class="write-label">4. 학생 요청 답변 (근거 포함)</label>
+                <textarea id="${reportKey}_item4" class="write-textarea" ${readOnly} placeholder="구체적인 근거를 들어 답변해주세요.">${content.qna}</textarea>
+                <button id="${reportKey}_btn4" class="temp-save-btn" onclick="tempSaveProItem('${reportKey}', 4)" ${isLocked ? 'style="display:none"' : ''}>임시저장</button>
             </div>
         </div>
     `;
@@ -654,10 +702,12 @@ function createProPeriodBox(title, data, reportKey, userRole) {
     } 
     else {
         // 3. 작성 중 (Drafting / Pending)
+        // 임시저장 여부 체크 -> 완료 버튼 활성화 로직
+        const hasContent = content.eval && content.dist && content.plan && content.qna;
+        
         actionHtml = `
-            <div class="action-bar" style="justify-content: space-between;">
-                <button class="temp-save-btn" onclick="saveProDraft('${reportKey}')">임시 저장</button>
-                <button class="complete-write-btn active" onclick="completeProWriting('${reportKey}')">
+            <div class="action-bar" style="justify-content: flex-end;">
+                <button id="${reportKey}_completeBtn" class="complete-write-btn ${hasContent ? 'active' : ''}" onclick="completeProWriting('${reportKey}')">
                     작성 완료 (관리자 제출)
                 </button>
             </div>
@@ -666,23 +716,67 @@ function createProPeriodBox(title, data, reportKey, userRole) {
 
     box.innerHTML = `
         <div class="pro-period-title"><span>${title}</span></div>
-        <div class="student-req-box">${reqHtml}</div>
+        <div class="student-req-box">
+            <div class="student-req-label"><i class="fas fa-question-circle"></i> 학생 요청 사항</div>
+            ${reqHtml}
+        </div>
         ${writeHtml}
         ${actionHtml}
     `;
     return box;
 }
 
-// [API] 임시 저장 (내용만 업데이트)
-async function saveProDraft(key) {
+// ------------------------------------------------------------
+// [핸들러 함수들]
+// ------------------------------------------------------------
+
+// 1. 임시 저장
+async function tempSaveProItem(boxId, itemIdx) {
+    const textarea = document.getElementById(`${boxId}_item${itemIdx}`);
+    const btn = document.getElementById(`${boxId}_btn${itemIdx}`);
+    
+    if (!textarea.value.trim()) {
+        alert("내용을 입력해주세요.");
+        return;
+    }
+
+    // 전체 내용을 합쳐서 저장 (하나만 저장해도 전체 update)
+    await saveProDraft(boxId, true); // true: silent mode (알림창 X)
+
+    btn.classList.add('saved');
+    btn.innerText = '저장됨';
+    
+    checkProAllSaved(boxId);
+}
+
+// 2. 4개 항목 모두 저장되었는지 확인
+function checkProAllSaved(boxId) {
+    const container = document.getElementById(boxId);
+    const btns = container.querySelectorAll('.temp-save-btn');
+    const allSaved = Array.from(btns).every(b => b.classList.contains('saved'));
+    
+    // 혹은 내용이 다 차있는지로 판단
+    const areas = container.querySelectorAll('textarea');
+    const allFilled = Array.from(areas).every(t => t.value.trim().length > 0);
+
+    const completeBtn = document.getElementById(`${boxId}_completeBtn`);
+    if (completeBtn) {
+        if (allFilled) {
+            completeBtn.classList.add('active');
+        } else {
+            completeBtn.classList.remove('active');
+        }
+    }
+}
+
+// [API] 초안 저장 (암호화는 서버에서)
+async function saveProDraft(key, silent = false) {
     const content = {
         eval: document.getElementById(`${key}_item1`).value,
         dist: document.getElementById(`${key}_item2`).value,
         plan: document.getElementById(`${key}_item3`).value,
         qna: document.getElementById(`${key}_item4`).value
     };
-
-    if(!content.eval && !content.dist) { alert("내용을 입력해주세요."); return; }
 
     const token = localStorage.getItem('accessToken');
     try {
@@ -697,14 +791,14 @@ async function saveProDraft(key) {
                 draftContent: content
             })
         });
-        alert("임시 저장되었습니다.");
+        if(!silent) alert("저장되었습니다.");
     } catch(e) { alert("저장 실패"); }
 }
 
-// [API] 작성 완료 (상태 변경 -> completed)
+// 3. 작성 완료 (작성중 -> 작성완료/검수대기)
 async function completeProWriting(key) {
-    // 1. 먼저 내용 저장
-    await saveProDraft(key);
+    // 1. 내용 저장
+    await saveProDraft(key, true);
 
     if(!confirm("작성을 완료하고 관리자에게 제출하시겠습니까?\n제출 후에는 수정할 수 없습니다.")) return;
 
@@ -721,7 +815,9 @@ async function completeProWriting(key) {
             })
         });
         alert("제출 완료되었습니다.");
-        renderProTab(); // UI 갱신
+        
+        // 데이터 리로드 및 화면 갱신
+        loadProReportsForAdmin(); 
     } catch(e) { alert("처리 실패"); }
 }
 
@@ -744,125 +840,26 @@ async function publishProReport(key) {
             })
         });
         alert("전송이 완료되었습니다.");
-        renderProTab();
+        loadProReportsForAdmin(); 
     } catch(e) { alert("전송 실패"); }
 }
 
 // [기능] 수정 모드 활성화 (이미 전송된 건)
 function enableProEdit(key) {
-    if(!confirm("이미 전송된 보고서입니다. 수정하시겠습니까?")) return;
-    const container = document.getElementById(key);
-    container.querySelectorAll('textarea').forEach(t => t.disabled = false);
-    // 버튼을 저장 버튼으로 교체하는 등의 로직 필요 (간단히 새로고침 유도)
-    alert("수정 후 '수정 내용 저장' 버튼을 눌러주세요.");
-    // 실제로는 UI를 다시 그리는게 깔끔함 (status를 잠시 completed로 취급하여 렌더링 등)
-}
-
-// ------------------------------------------------------------
-// [핸들러 함수들]
-// ------------------------------------------------------------
-
-// 1. 임시 저장
-function tempSaveProItem(boxId, itemIdx) {
-    const textarea = document.getElementById(`${boxId}_item${itemIdx}`);
-    const btn = document.getElementById(`${boxId}_btn${itemIdx}`);
-    
-    if (!textarea.value.trim()) {
-        alert("내용을 입력해주세요.");
-        return;
-    }
-
-    // (실제로는 여기서 DB에 부분 업데이트 API 호출)
-    // 여기서는 UI 이팩트만 처리
-    btn.classList.add('saved');
-    btn.innerText = '저장됨';
-    
-    checkProAllSaved(boxId);
-}
-
-// 2. 4개 항목 모두 저장되었는지 확인
-function checkProAllSaved(boxId) {
-    const container = document.getElementById(boxId);
-    const btns = container.querySelectorAll('.temp-save-btn');
-    const allSaved = Array.from(btns).every(b => b.classList.contains('saved'));
-    
-    const completeBtn = document.getElementById(`${boxId}_completeBtn`);
-    if (completeBtn) {
-        if (allSaved) {
-            completeBtn.classList.add('active');
-        } else {
-            completeBtn.classList.remove('active');
-        }
-    }
-}
-
-// 3. 작성 완료 (컨설턴트 -> 관리자)
-function completeProWriting(boxId) {
-    if (!confirm("작성을 완료하시겠습니까?\n완료 후 관리자에게 알림이 전송됩니다.")) return;
-    
-    // (API 호출: status = 'completed' 업데이트)
-    alert("관리자에게 작성이 완료되었음을 알렸습니다.");
-    
-    // 화면 갱신 (시뮬레이션: DOM을 직접 수정하여 관리자 모드 뷰로 변경)
-    const actionBar = document.querySelector(`#${boxId} .action-bar`);
-    actionBar.innerHTML = `
-        <span style="color:#166534; font-weight:bold; font-size:0.9rem; margin-right:10px;">
-            <i class="fas fa-check"></i> 컨설턴트 작성 완료됨
-        </span>
-        <button id="${boxId}_genBtn" class="admin-report-btn" onclick="generateProReport('${boxId}')">
-            <i class="fas fa-magic"></i> 보고서 생성 및 전송
-        </button>
-    `;
-}
-
-// 4. 보고서 생성 및 전송 (관리자)
-function generateProReport(boxId) {
-    const btn = document.getElementById(`${boxId}_genBtn`);
-    const originalText = btn.innerHTML;
-    
-    btn.innerText = "생성 중...";
-    btn.disabled = true;
-    
-    setTimeout(() => {
-        if(!confirm("감마(Gamma)를 통해 보고서를 생성하고 학생에게 전송하시겠습니까?")) {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            return;
-        }
-        
-        // (API 호출: status = 'sent' 업데이트 및 알림 발송)
-        alert("보고서가 생성되어 학생에게 전송되었습니다.");
-        
-        // UI 변경: 전송 완료 상태 + 수정 버튼 활성화
-        const actionBar = document.querySelector(`#${boxId} .action-bar`);
-        actionBar.innerHTML = `
-            <button class="edit-report-btn show" onclick="enableProEdit('${boxId}')">
-                <i class="fas fa-edit"></i> 내용 수정하기
-            </button>
-            <button class="admin-report-btn completed">
-                <i class="fas fa-check-circle"></i> 보고서 전송 완료
-            </button>
-        `;
-        
-        // 텍스트 에어리어 비활성화
-        const container = document.getElementById(boxId);
-        container.querySelectorAll('textarea').forEach(t => t.disabled = true);
-        container.querySelectorAll('.temp-save-btn').forEach(b => b.style.display = 'none');
-        
-    }, 1000); // 1초 딜레이 시뮬레이션
-}
-
-// 5. 수정하기 (전송 후 다시 활성화)
-function enableProEdit(boxId) {
     if(!confirm("이미 전송된 보고서입니다. 내용을 수정하시겠습니까?")) return;
     
-    const container = document.getElementById(boxId);
+    const container = document.getElementById(key);
     container.querySelectorAll('textarea').forEach(t => t.disabled = false);
-    container.querySelectorAll('.temp-save-btn').forEach(b => b.style.display = 'inline-block');
     
-    // 다시 '작성 완료' 단계 버튼으로 복구하거나, 바로 '재전송' 버튼을 띄울 수 있음.
-    // 여기서는 간단히 저장 버튼들을 다시 살리는 것으로 처리
-    alert("수정 모드로 전환되었습니다. 내용을 수정하고 '임시저장'을 다시 눌러주세요.");
+    // 버튼 상태 복구
+    const btns = container.querySelectorAll('.temp-save-btn');
+    btns.forEach(b => {
+        b.style.display = 'inline-block';
+        b.innerText = '수정 저장';
+        b.classList.remove('saved');
+    });
+    
+    alert("수정 후 각 항목의 '수정 저장' 버튼을 눌러주세요.");
 }
 
 // 6. Pro 코칭 가이드 모달
