@@ -718,7 +718,7 @@ function createProPeriodBox(title, data, reportKey, userRole) {
         <div class="pro-period-title">
             <span>${title}</span>
             <span style="font-size:0.85rem; color:#64748b; font-weight:normal;">
-                ${safeData.updatedAt ? new Date(safeData.updatedAt).toLocaleDateString() : '업데이트 없음'}
+                ${safeData.updatedAt ? '(최종 요청: ' + new Date(safeData.updatedAt).toLocaleDateString() + ')' : '(요청 내역 없음)'}
             </span>
         </div>
         
