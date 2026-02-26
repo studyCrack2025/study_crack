@@ -765,57 +765,52 @@ function createProPeriodBox(title, data, reportKey, userRole) {
 
 // [API] 임시 저장
 async function saveProDraft(key, silent = false) {
-    console.log(`[DEBUG] saveProDraft 호출됨. Key: ${key}, Silent: ${silent}`);
-    
-    // 1. targetUserId 확인 (이게 null이면 절대 저장 안됨)
-    console.log(`[DEBUG] Target User ID:`, targetUserId);
-    console.log(`[DEBUG] Admin ID:`, adminId);
-
-    // 2. 내용 가져오기 확인
-    const item1 = document.getElementById(`${key}_item1`);
-    if (!item1) {
-        console.error(`[ERROR] ID가 ${key}_item1 인 요소를 찾을 수 없습니다. DOM 렌더링 문제.`);
-        return;
-    }
-    
+    // 1. [디버깅] 전송하려는 데이터가 진짜 있는지 JSON 문자열로 확인
     const content = {
-        eval: document.getElementById(`${key}_item1`).value,
-        dist: document.getElementById(`${key}_item2`).value,
-        plan: document.getElementById(`${key}_item3`).value,
-        qna: document.getElementById(`${key}_item4`).value
+        eval: document.getElementById(`${key}_item1`)?.value || "",
+        dist: document.getElementById(`${key}_item2`)?.value || "",
+        plan: document.getElementById(`${key}_item3`)?.value || "",
+        qna: document.getElementById(`${key}_item4`)?.value || ""
     };
-    console.log(`[DEBUG] 전송할 데이터 내용:`, content);
+    
+    console.log(`[DEBUG] Key: ${key}, UserID: ${targetUserId}`);
+    console.log(`[DEBUG] 전송 데이터(JSON):`, JSON.stringify(content)); // 이 로그가 비어있으면 안 됩니다!
 
-    // [수정] 기존의 엄격한 유효성 검사(1,2번 필수)를 삭제했습니다. 
-    // 이제 항목 중 하나라도 내용이 있으면 저장이 진행됩니다.
-    const hasAnyContent = Object.values(content).some(val => val.trim().length > 0);
-    if (!hasAnyContent) {
-        if(!silent) alert("저장할 내용이 없습니다.");
-        return; 
-    }
+    // 내용이 없으면 중단 (로그 확인용으로 잠시 주석 처리 해도 됨)
+    // const hasAnyContent = Object.values(content).some(val => val.trim().length > 0);
+    // if (!hasAnyContent) { console.warn("빈 내용이라 저장 안함"); return; }
 
     const token = localStorage.getItem('accessToken');
     
-    // fetch 요청
-    const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-            type: 'admin_save_pro_draft',
-            userId: adminId,
-            targetUserId: targetUserId,
-            reportKey: key,
-            draftContent: content
-        })
-    });
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'admin_save_pro_draft',
+                userId: adminId,
+                targetUserId: targetUserId,
+                reportKey: key,
+                draftContent: content
+            })
+        });
 
-    if (!response.ok) {
-        throw new Error("Server Response Not OK");
-    }
+        // 2. [디버깅] 서버 응답 내용을 뜯어봅니다.
+        const resData = await response.json();
+        
+        if (!response.ok) {
+            console.error("[SERVER ERROR DETAILS]:", resData); // 브라우저 콘솔에 빨간색으로 에러 표시
+            alert(`저장 실패! 에러: ${resData.error}\n(상세 내용은 콘솔 확인)`); // silent 상관없이 무조건 띄움
+            throw new Error(resData.error || "Server Response Not OK");
+        }
 
-    // [수정] silent가 true일 때(개별 임시저장)는 알림창을 띄우지 않음
-    if (!silent) {
-        alert("전체 내용이 저장되었습니다.");
+        console.log("[SUCCESS] 서버 응답:", resData);
+        if (!silent) alert("전체 내용이 저장되었습니다.");
+
+    } catch (e) {
+        console.error("[FETCH ERROR]:", e);
+        // 임시 저장이라도 에러는 알아야 하므로 alert 띄움
+        alert(`통신 오류 발생: ${e.message}`);
     }
 }
 
