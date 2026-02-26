@@ -763,8 +763,8 @@ function createProPeriodBox(title, data, reportKey, userRole) {
     return box;
 }
 
-// [API] 임시 저장 (내용만 업데이트)
-async function saveProDraft(key) {
+// [API] 임시 저장
+async function saveProDraft(key, silent = false) {
     const content = {
         eval: document.getElementById(`${key}_item1`).value,
         dist: document.getElementById(`${key}_item2`).value,
@@ -772,23 +772,37 @@ async function saveProDraft(key) {
         qna: document.getElementById(`${key}_item4`).value
     };
 
-    if(!content.eval && !content.dist) { alert("내용을 입력해주세요."); return; }
+    // [수정] 기존의 엄격한 유효성 검사(1,2번 필수)를 삭제했습니다. 
+    // 이제 항목 중 하나라도 내용이 있으면 저장이 진행됩니다.
+    const hasAnyContent = Object.values(content).some(val => val.trim().length > 0);
+    if (!hasAnyContent) {
+        if(!silent) alert("저장할 내용이 없습니다.");
+        return; 
+    }
 
     const token = localStorage.getItem('accessToken');
-    try {
-        await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({
-                type: 'admin_save_pro_draft',
-                userId: adminId,
-                targetUserId: targetUserId,
-                reportKey: key,
-                draftContent: content
-            })
-        });
-        alert("임시 저장되었습니다.");
-    } catch(e) { alert("저장 실패"); }
+    
+    // fetch 요청
+    const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+            type: 'admin_save_pro_draft',
+            userId: adminId,
+            targetUserId: targetUserId,
+            reportKey: key,
+            draftContent: content
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error("Server Response Not OK");
+    }
+
+    // [수정] silent가 true일 때(개별 임시저장)는 알림창을 띄우지 않음
+    if (!silent) {
+        alert("전체 내용이 저장되었습니다.");
+    }
 }
 
 // [API] 작성 완료 (상태 변경 -> completed)
@@ -857,32 +871,33 @@ async function tempSaveProItem(boxId, itemIdx) {
     const textarea = document.getElementById(`${boxId}_item${itemIdx}`);
     const btn = document.getElementById(`${boxId}_btn${itemIdx}`);
     
+    // 내용이 비어있으면 저장하지 않음
     if (!textarea.value.trim()) {
         alert("내용을 입력해주세요.");
         textarea.focus();
         return;
     }
 
-    // 버튼 로딩 상태 표시
+    // 버튼 상태: 저장 중...
     const originalText = btn.innerText;
     btn.innerText = "저장 중...";
     btn.disabled = true;
 
     try {
-        // [핵심] 실제 서버 저장 호출 (silent=true로 알림창 없이 저장)
-        await saveProDraft(boxId, true); 
+        // [핵심] 수정된 saveProDraft 호출 (silent=true)
+        await saveProDraft(boxId, true);
 
-        // 저장 성공 시 UI 변경
+        // 성공 시 UI 변경
         btn.classList.add('saved');
         btn.innerText = '저장됨';
-        btn.disabled = false; // 다시 누를 수 있게 할지, 막을지는 선택 (여기선 내용 변경 시 풀리므로 활성화 유지)
+        btn.disabled = false; // 다시 활성화 (내용 수정 감지 및 재저장 가능하도록)
         
-        // 전체 완료 여부 체크
+        // 4개 모두 저장되었는지 확인하여 '작성 완료' 버튼 활성화
         checkProAllSaved(boxId);
 
     } catch (e) {
-        console.error(e);
-        alert("저장에 실패했습니다. 다시 시도해주세요.");
+        console.error("Temp Save Error:", e);
+        alert("저장에 실패했습니다. 잠시 후 다시 시도해주세요.");
         btn.innerText = originalText;
         btn.disabled = false;
     }
