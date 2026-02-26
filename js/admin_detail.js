@@ -733,6 +733,33 @@ function createProPeriodBox(title, data, reportKey, userRole) {
         ${writeHtml}
         ${actionHtml}
     `;
+    
+    // [추가된 로직] 내용 변경 감지 리스너 (DOM에 추가된 직후 실행)
+    // setTimeout을 써서 DOM 렌더링 확보 후 실행
+    setTimeout(() => {
+        const container = document.getElementById(reportKey);
+        if (!container) return;
+
+        // 4개의 텍스트 에어리어에 대해 리스너 부착
+        for (let i = 1; i <= 4; i++) {
+            const area = document.getElementById(`${reportKey}_item${i}`);
+            const btn = document.getElementById(`${reportKey}_btn${i}`);
+            
+            if (area && btn) {
+                area.addEventListener('input', () => {
+                    // 내용이 바뀌면 '저장됨' 상태 해제 -> 다시 '임시저장'으로
+                    if (btn.classList.contains('saved')) {
+                        btn.classList.remove('saved');
+                        btn.innerText = '임시 저장';
+                        // 전체 완료 버튼도 비활성화
+                        const completeBtn = document.getElementById(`${reportKey}_completeBtn`);
+                        if (completeBtn) completeBtn.classList.remove('active');
+                    }
+                });
+            }
+        }
+    }, 0);
+    
     return box;
 }
 
@@ -826,21 +853,39 @@ function enableProEdit(key) {
 // ------------------------------------------------------------
 
 // 1. 임시 저장
-function tempSaveProItem(boxId, itemIdx) {
+async function tempSaveProItem(boxId, itemIdx) {
     const textarea = document.getElementById(`${boxId}_item${itemIdx}`);
     const btn = document.getElementById(`${boxId}_btn${itemIdx}`);
     
     if (!textarea.value.trim()) {
         alert("내용을 입력해주세요.");
+        textarea.focus();
         return;
     }
 
-    // (실제로는 여기서 DB에 부분 업데이트 API 호출)
-    // 여기서는 UI 이팩트만 처리
-    btn.classList.add('saved');
-    btn.innerText = '저장됨';
-    
-    checkProAllSaved(boxId);
+    // 버튼 로딩 상태 표시
+    const originalText = btn.innerText;
+    btn.innerText = "저장 중...";
+    btn.disabled = true;
+
+    try {
+        // [핵심] 실제 서버 저장 호출 (silent=true로 알림창 없이 저장)
+        await saveProDraft(boxId, true); 
+
+        // 저장 성공 시 UI 변경
+        btn.classList.add('saved');
+        btn.innerText = '저장됨';
+        btn.disabled = false; // 다시 누를 수 있게 할지, 막을지는 선택 (여기선 내용 변경 시 풀리므로 활성화 유지)
+        
+        // 전체 완료 여부 체크
+        checkProAllSaved(boxId);
+
+    } catch (e) {
+        console.error(e);
+        alert("저장에 실패했습니다. 다시 시도해주세요.");
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
 }
 
 // 2. 4개 항목 모두 저장되었는지 확인
