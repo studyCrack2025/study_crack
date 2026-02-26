@@ -765,12 +765,26 @@ function createProPeriodBox(title, data, reportKey, userRole) {
 
 // [API] 임시 저장
 async function saveProDraft(key, silent = false) {
+    console.log(`[DEBUG] saveProDraft 호출됨. Key: ${key}, Silent: ${silent}`);
+    
+    // 1. targetUserId 확인 (이게 null이면 절대 저장 안됨)
+    console.log(`[DEBUG] Target User ID:`, targetUserId);
+    console.log(`[DEBUG] Admin ID:`, adminId);
+
+    // 2. 내용 가져오기 확인
+    const item1 = document.getElementById(`${key}_item1`);
+    if (!item1) {
+        console.error(`[ERROR] ID가 ${key}_item1 인 요소를 찾을 수 없습니다. DOM 렌더링 문제.`);
+        return;
+    }
+    
     const content = {
         eval: document.getElementById(`${key}_item1`).value,
         dist: document.getElementById(`${key}_item2`).value,
         plan: document.getElementById(`${key}_item3`).value,
         qna: document.getElementById(`${key}_item4`).value
     };
+    console.log(`[DEBUG] 전송할 데이터 내용:`, content);
 
     // [수정] 기존의 엄격한 유효성 검사(1,2번 필수)를 삭제했습니다. 
     // 이제 항목 중 하나라도 내용이 있으면 저장이 진행됩니다.
