@@ -787,7 +787,7 @@ async function saveProDraft(key, silent = false) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
-                type: 'admin_save_pro_draft',
+                type: 'save_pro_draft',
                 userId: adminId,
                 targetUserId: targetUserId,
                 reportKey: key,
