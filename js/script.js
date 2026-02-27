@@ -172,6 +172,25 @@ async function renderReviews() {
    ========================================= */
 document.addEventListener('DOMContentLoaded', () => {
     
+    // 🔥 [핵심 수정] 권한 체크 및 리다이렉트
+    // 학생(Student) 및 비로그인 유저만 메인 페이지에 머물 수 있습니다.
+    const token = localStorage.getItem('idToken');
+    const userRole = localStorage.getItem('userRole');
+
+    if (token && userRole) {
+        if (userRole === 'tutor') {
+            alert("튜터 페이지로 이동합니다.");
+            window.location.href = '/mypage/tutor';
+            return; // 이후 스크립트 실행 중단
+        } else if (userRole === 'admin') {
+            alert("관리자 페이지로 이동합니다.");
+            window.location.href = '/admin';
+            return; // 이후 스크립트 실행 중단
+        }
+    }
+
+    // --- 아래는 Student 또는 비로그인 상태일 때만 실행됨 ---
+
     // [1] 네비게이션 버튼 상태 업데이트 (로그인 여부 체크)
     updateNavUI();
 
