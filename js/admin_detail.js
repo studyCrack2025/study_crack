@@ -594,23 +594,38 @@ function renderProTab() {
     container.appendChild(createProPeriodBox(`${selMonth}월 하반기 (Post)`, dataPost, keyPost, userRole));
 }
 
-// [수정] 기간별 박스 생성 함수 (디자인 개선 및 데이터 로드 강화)
+// [수정] 기간별 박스 생성 함수 (권한 및 상태별 제어 로직 강화)
 function createProPeriodBox(title, data, reportKey, userRole) {
     const box = document.createElement('div');
     box.className = 'pro-period-section';
     box.id = reportKey;
 
-    // 1. 데이터 안전 참조 (데이터가 없으면 빈 객체 처리)
-    // requestText가 암호화되어 있다면 Lambda에서 이미 복호화해서 보냈어야 합니다.
-    // 만약 Lambda에서 복호화를 안 했다면 여기서 깨진 문자가 보일 수 있습니다.
+    const isTutor = (userRole === 'tutor');
+    const isAdmin = (userRole === 'admin');
+
+    // 1. 데이터 안전 참조
     const safeData = data || {};
     const requestText = safeData.request ? escapeHtml(safeData.request) : null;
     
-    // 상태: pending(없음) -> drafting(작성중) -> completed(작성완료/검수대기) -> sent(전송됨)
+    // 상태: pending(없음) -> drafting(작성중) -> completed(튜터제출/검수대기) -> sent(전송됨)
     const status = safeData.status || 'pending';
     const reportLink = safeData.reportLink || null;
 
-    // [A] 학생 요청 사항 (디자인 개선됨)
+    // 2. 수정 권한(Editable) 판별 로직
+    // - 튜터: 아직 제출 안했을 때(pending/drafting)만 수정 가능
+    // - 관리자: 튜터가 제출한 후(completed)에만 수정 가능
+    let canEdit = false;
+    if (isTutor && (status === 'pending' || status === 'drafting')) {
+        canEdit = true;
+    } else if (isAdmin && status === 'completed') {
+        canEdit = true;
+    }
+
+    // HTML 속성 변수
+    const readOnlyAttr = canEdit ? '' : 'disabled';
+    const saveBtnStyle = canEdit ? '' : 'style="display:none"'; // 수정 불가능하면 임시저장 버튼 숨김
+
+    // [A] 학생 요청 사항
     const reqHtml = requestText 
         ? `<div class="req-content-area">${requestText}</div>`
         : `<div class="req-content-area req-empty">(학생이 작성한 추가 요청사항이 없습니다.)</div>`;
@@ -621,12 +636,7 @@ function createProPeriodBox(title, data, reportKey, userRole) {
         try { content = JSON.parse(safeData.draft); } catch(e) { console.error("JSON Parse Error:", e); }
     }
 
-    // [C] 상태별 UI 분기 처리
-    const isLocked = (status === 'completed' || status === 'sent'); 
-    const isAdmin = (userRole === 'admin');
-    const readOnly = (isLocked && !isAdmin) ? 'disabled' : ''; 
-
-    // 작성 폼 HTML
+    // [C] 작성 폼 HTML
     const writeHtml = `
         <div class="write-header">
             <div class="write-title"><i class="fas fa-pen-nib"></i> 컨설턴트 집필 공간</div>
@@ -638,79 +648,94 @@ function createProPeriodBox(title, data, reportKey, userRole) {
         <div class="pro-write-grid">
             <div class="write-item">
                 <label class="write-label">1. 지난 2주간의 학습평가 (리스크/KPI)</label>
-                <textarea id="${reportKey}_item1" class="write-textarea" ${readOnly} placeholder="리스크/효율 KPI 기반으로 장단점을 평가해주세요.">${content.eval}</textarea>
-                <button id="${reportKey}_btn1" class="temp-save-btn" onclick="tempSaveProItem('${reportKey}', 1)" ${isLocked ? 'style="display:none"' : ''}>임시저장</button>
+                <textarea id="${reportKey}_item1" class="write-textarea" ${readOnlyAttr} placeholder="리스크/효율 KPI 기반으로 장단점을 평가해주세요.">${content.eval}</textarea>
+                <button id="${reportKey}_btn1" class="temp-save-btn" onclick="tempSaveProItem('${reportKey}', 1)" ${saveBtnStyle}>임시저장</button>
             </div>
             <div class="write-item">
                 <label class="write-label">2. 목표대학과의 거리 (ΔCut/기여도)</label>
-                <textarea id="${reportKey}_item2" class="write-textarea" ${readOnly} placeholder="ΔCut 및 과목별 기여도 기반으로 분석해주세요.">${content.dist}</textarea>
-                <button id="${reportKey}_btn2" class="temp-save-btn" onclick="tempSaveProItem('${reportKey}', 2)" ${isLocked ? 'style="display:none"' : ''}>임시저장</button>
+                <textarea id="${reportKey}_item2" class="write-textarea" ${readOnlyAttr} placeholder="ΔCut 및 과목별 기여도 기반으로 분석해주세요.">${content.dist}</textarea>
+                <button id="${reportKey}_btn2" class="temp-save-btn" onclick="tempSaveProItem('${reportKey}', 2)" ${saveBtnStyle}>임시저장</button>
             </div>
             <div class="write-item">
                 <label class="write-label">3. 중기 핵심 과제 Top2 & 장기 플랜</label>
-                <textarea id="${reportKey}_item3" class="write-textarea" ${readOnly} placeholder="중기 과제(KPI 인용) 및 장기 마일스톤을 제시해주세요.">${content.plan}</textarea>
-                <button id="${reportKey}_btn3" class="temp-save-btn" onclick="tempSaveProItem('${reportKey}', 3)" ${isLocked ? 'style="display:none"' : ''}>임시저장</button>
+                <textarea id="${reportKey}_item3" class="write-textarea" ${readOnlyAttr} placeholder="중기 과제(KPI 인용) 및 장기 마일스톤을 제시해주세요.">${content.plan}</textarea>
+                <button id="${reportKey}_btn3" class="temp-save-btn" onclick="tempSaveProItem('${reportKey}', 3)" ${saveBtnStyle}>임시저장</button>
             </div>
             <div class="write-item">
                 <label class="write-label">4. 학생 요청 답변 (근거 포함)</label>
-                <textarea id="${reportKey}_item4" class="write-textarea" ${readOnly} placeholder="구체적인 근거를 들어 답변해주세요.">${content.qna}</textarea>
-                <button id="${reportKey}_btn4" class="temp-save-btn" onclick="tempSaveProItem('${reportKey}', 4)" ${isLocked ? 'style="display:none"' : ''}>임시저장</button>
+                <textarea id="${reportKey}_item4" class="write-textarea" ${readOnlyAttr} placeholder="구체적인 근거를 들어 답변해주세요.">${content.qna}</textarea>
+                <button id="${reportKey}_btn4" class="temp-save-btn" onclick="tempSaveProItem('${reportKey}', 4)" ${saveBtnStyle}>임시저장</button>
             </div>
         </div>
     `;
 
-    // [D] 하단 액션 버튼 영역
+    // [D] 하단 액션 버튼 영역 (상태 및 권한에 따른 분기)
     let actionHtml = '';
 
+    // 상황 1: 전송 완료됨 (Sent) -> 모두에게 읽기 전용 (관리자만 수정 가능 옵션)
     if (status === 'sent') {
         actionHtml = `
             <div class="action-bar">
                 <span style="color:#2563eb; font-weight:bold;">
-                    <i class="fas fa-check-circle"></i> 보고서 생성 완료
+                    <i class="fas fa-check-circle"></i> 보고서 제공 완료
                 </span>
-                ${reportLink ? `<a href="${reportLink}" target="_blank" style="margin-left:10px; text-decoration:underline; color:#2563eb;">[링크 확인]</a>` : ''}
-                ${isAdmin ? `<button class="edit-report-btn show" onclick="enableProEdit('${reportKey}')" style="margin-left:auto;">수정하기</button>` : ''}
+                ${reportLink ? `<a href="${reportLink}" target="_blank" style="margin-left:10px; text-decoration:underline; color:#2563eb;">[보고서 링크 확인]</a>` : ''}
+                ${isAdmin ? `<button class="edit-report-btn show" onclick="enableProEdit('${reportKey}')" style="margin-left:auto;">수정하기(관리자)</button>` : ''}
             </div>
         `;
     } 
+    // 상황 2: 튜터 제출 완료 / 관리자 검수 대기 (Completed)
     else if (status === 'completed') {
         if (isAdmin) {
+            // 관리자: 수정 가능 + 전송 버튼 노출
             actionHtml = `
                 <div class="action-bar" style="justify-content: space-between;">
                     <span style="color:#166534; font-weight:bold; display:flex; align-items:center; gap:5px;">
-                        <i class="fas fa-search"></i> 검수 대기중 <span style="font-size:0.8rem; font-weight:normal; color:#64748b;">(내용 수정 가능)</span>
+                        <i class="fas fa-search"></i> 튜터 제출 완료 <span style="font-size:0.8rem; font-weight:normal; color:#64748b;">(내용 검수 및 수정 후 전송하세요)</span>
                     </span>
                     <div style="display:flex; gap:10px;">
-                        <button class="temp-save-btn" onclick="saveProDraft('${reportKey}')">수정 내용 저장</button>
+                        <button class="temp-save-btn" onclick="saveProDraft('${reportKey}')">전체 저장</button>
                         <button class="admin-report-btn" onclick="publishProReport('${reportKey}')">
-                            <i class="fas fa-paper-plane"></i> 보고서 올리기 (전송)
+                            <i class="fas fa-paper-plane"></i> 검수 완료 및 리포트 전송
                         </button>
                     </div>
                 </div>
             `;
         } else {
+            // 튜터: 수정 불가 + 대기 메시지
             actionHtml = `
                 <div class="action-bar">
                     <span style="color:#64748b; font-weight:bold;">
-                        <i class="fas fa-hourglass-half"></i> 관리자 승인 대기중...
+                        <i class="fas fa-hourglass-half"></i> 관리자가 보고서를 검수하고 생성 중입니다. (수정 불가)
                     </span>
                 </div>
             `;
         }
     } 
+    // 상황 3: 작성 중 (Drafting / Pending)
     else {
-        // 작성 중 (Drafting / Pending)
-        // 임시저장 여부 체크 -> 완료 버튼 활성화 로직
-        const hasContent = content.eval && content.dist && content.plan && content.qna;
-        const btnClass = hasContent ? 'complete-write-btn active' : 'complete-write-btn';
-        
-        actionHtml = `
-            <div class="action-bar" style="justify-content: flex-end;">
-                <button id="${reportKey}_completeBtn" class="${btnClass}" onclick="completeProWriting('${reportKey}')">
-                    작성 완료 (관리자 제출)
-                </button>
-            </div>
-        `;
+        if (isTutor) {
+            // 튜터: 작성 가능 + 제출 버튼
+            const hasContent = content.eval && content.dist && content.plan && content.qna;
+            const btnClass = hasContent ? 'complete-write-btn active' : 'complete-write-btn';
+            
+            actionHtml = `
+                <div class="action-bar" style="justify-content: flex-end;">
+                    <button id="${reportKey}_completeBtn" class="${btnClass}" onclick="completeProWriting('${reportKey}')">
+                        작성 완료 (관리자에게 제출)
+                    </button>
+                </div>
+            `;
+        } else {
+            // 관리자: 수정 불가 + 대기 메시지
+            actionHtml = `
+                <div class="action-bar">
+                    <span style="color:#94a3b8; font-weight:bold;">
+                        <i class="fas fa-pen"></i> 튜터가 보고서 내용을 작성 중입니다...
+                    </span>
+                </div>
+            `;
+        }
     }
 
     // 최종 조립
@@ -718,7 +743,7 @@ function createProPeriodBox(title, data, reportKey, userRole) {
         <div class="pro-period-title">
             <span>${title}</span>
             <span style="font-size:0.85rem; color:#64748b; font-weight:normal;">
-                ${safeData.updatedAt ? '(최종 요청: ' + new Date(safeData.updatedAt).toLocaleDateString() + ')' : '(요청 내역 없음)'}
+                ${safeData.updatedAt ? '(업데이트: ' + new Date(safeData.updatedAt).toLocaleDateString() + ')' : ''}
             </span>
         </div>
         
@@ -734,31 +759,34 @@ function createProPeriodBox(title, data, reportKey, userRole) {
         ${actionHtml}
     `;
     
-    // [추가된 로직] 내용 변경 감지 리스너 (DOM에 추가된 직후 실행)
-    // setTimeout을 써서 DOM 렌더링 확보 후 실행
-    setTimeout(() => {
-        const container = document.getElementById(reportKey);
-        if (!container) return;
+    // [내용 변경 감지 리스너]
+    // 튜터가 작성 중일 때만, 혹은 관리자가 검수 중일 때만 동작하도록 함
+    if (canEdit) {
+        setTimeout(() => {
+            const container = document.getElementById(reportKey);
+            if (!container) return;
 
-        // 4개의 텍스트 에어리어에 대해 리스너 부착
-        for (let i = 1; i <= 4; i++) {
-            const area = document.getElementById(`${reportKey}_item${i}`);
-            const btn = document.getElementById(`${reportKey}_btn${i}`);
-            
-            if (area && btn) {
-                area.addEventListener('input', () => {
-                    // 내용이 바뀌면 '저장됨' 상태 해제 -> 다시 '임시저장'으로
-                    if (btn.classList.contains('saved')) {
-                        btn.classList.remove('saved');
-                        btn.innerText = '임시 저장';
-                        // 전체 완료 버튼도 비활성화
-                        const completeBtn = document.getElementById(`${reportKey}_completeBtn`);
-                        if (completeBtn) completeBtn.classList.remove('active');
-                    }
-                });
+            for (let i = 1; i <= 4; i++) {
+                const area = document.getElementById(`${reportKey}_item${i}`);
+                const btn = document.getElementById(`${reportKey}_btn${i}`);
+                
+                if (area && btn) {
+                    area.addEventListener('input', () => {
+                        if (btn.classList.contains('saved')) {
+                            btn.classList.remove('saved');
+                            btn.innerText = '임시 저장';
+                            
+                            // 튜터일 경우 작성 완료 버튼 비활성화 처리 연동
+                            if (isTutor) {
+                                const completeBtn = document.getElementById(`${reportKey}_completeBtn`);
+                                if (completeBtn) completeBtn.classList.remove('active');
+                            }
+                        }
+                    });
+                }
             }
-        }
-    }, 0);
+        }, 0);
+    }
     
     return box;
 }
@@ -772,13 +800,6 @@ async function saveProDraft(key, silent = false) {
         plan: document.getElementById(`${key}_item3`)?.value || "",
         qna: document.getElementById(`${key}_item4`)?.value || ""
     };
-    
-    console.log(`[DEBUG] Key: ${key}, UserID: ${targetUserId}`);
-    console.log(`[DEBUG] 전송 데이터(JSON):`, JSON.stringify(content)); // 이 로그가 비어있으면 안 됩니다!
-
-    // 내용이 없으면 중단 (로그 확인용으로 잠시 주석 처리 해도 됨)
-    // const hasAnyContent = Object.values(content).some(val => val.trim().length > 0);
-    // if (!hasAnyContent) { console.warn("빈 내용이라 저장 안함"); return; }
 
     const token = localStorage.getItem('accessToken');
     
@@ -840,7 +861,7 @@ async function completeProWriting(key) {
 
 // [API] 최종 보고서 생성 및 전송 (Admin Only)
 async function publishProReport(key) {
-    const link = prompt("생성된 감마 보고서 링크를 입력해주세요:");
+    const link = prompt("생성된 보고서 링크를 입력해주세요:");
     if (!link) return;
 
     const token = localStorage.getItem('accessToken');
