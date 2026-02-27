@@ -430,24 +430,36 @@ function handleSignIn() {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${accessToken}` // ★ 토큰 추가
                 },
-                body: JSON.stringify({ type: 'get_user' }) // userId는 토큰에서 꺼내므로 생략 가능
+                body: JSON.stringify({ type: 'get_user' }) 
             })
             .then(res => {
                 if (!res.ok) throw new Error("User Info Load Failed");
                 return res.json();
             })
             .then(data => {
+                // [추가] 이름을 로컬 스토리지에 저장 (다른 페이지에서 사용하기 위함)
+                if (data.name) {
+                    localStorage.setItem('userName', data.name);
+                }
+
                 if (data.computedTier) {
                     localStorage.setItem('userTier', data.computedTier);
                 }
+
                 if (data.role === 'admin') {
                     localStorage.setItem('userRole', 'admin');
                     alert("관리자 계정으로 로그인되었습니다.");
                     window.location.href = '/admin';
+
                 } else if (data.role === 'tutor') {
                     localStorage.setItem('userRole', 'tutor');
-                    alert("튜터 계정으로 로그인되었습니다.");
+                    
+                    // [수정] 튜터 실명으로 환영 메시지 출력
+                    const tutorName = data.name || '스터디크랙';
+                    alert(`${tutorName} 선생님, 안녕하세요.`);
+                    
                     window.location.href = '/mypage/tutor';
+
                 } else {
                     localStorage.setItem('userRole', 'student');
                     alert("로그인 성공!");
@@ -455,12 +467,9 @@ function handleSignIn() {
                 }
             })
             .catch(err => {
-                console.error("Role Check Error:", err);
-                // 🔍 [디버깅] 에러가 났을 때 무조건 학생으로 보내지 말고 경고 띄우기
+                console.error("Role Check Error:", err);
                 alert("회원 정보 불러오기 실패! : " + err.message);
-                // localStorage.setItem('userRole', 'student'); // 일단 주석 처리
-                // window.location.href = '/'; // 일단 주석 처리
-            });
+            });
         },
         onFailure: function(err) {
             alert(getErrorMessage(err));
