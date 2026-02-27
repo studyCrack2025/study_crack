@@ -8,7 +8,7 @@ let tutorTimerInterval = null;
 // ==========================================
 // [초기화] DOM 로드 및 데이터 페치
 // ==========================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const idToken = localStorage.getItem('idToken'); 
     const userId = localStorage.getItem('userId');
 
@@ -21,14 +21,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Cognito 초기화
     initTutorCognito();
 
-    // 튜터 정보 로드 (프로필, 계좌 등)
-    loadTutorInfo(userId);
+    // [핵심 수정 1] 튜터 정보를 먼저 확실하게 로드하고 기다립니다(await).
+    // 정보가 로드되어야 이름(tutorName)을 알 수 있고, 그래야 학생 목록을 조회할 수 있습니다.
+    await loadTutorInfo(userId);
 
-    // 탭 상태 확인
+    // 탭 상태 확인 (튜터 정보 로드 후 실행됨)
     const urlParams = new URLSearchParams(window.location.search);
     const tab = urlParams.get('tab');
-    if (tab === 'students') switchTab('students');
-    else switchTab('info'); // 기본값
+    
+    if (tab === 'students') {
+        switchTab('students');
+    } else {
+        switchTab('info'); // 기본값
+    }
 
     // 모달 외부 클릭 닫기 이벤트
     window.onclick = function(event) {
@@ -55,7 +60,7 @@ function initTutorCognito() {
     }
 }
 
-// 탭 전환 함수 (2개 탭만 처리)
+// 탭 전환 함수
 window.switchTab = function(tabName) {
     // UI 초기화
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -66,7 +71,8 @@ window.switchTab = function(tabName) {
     if (tabName === 'info' && btns[0]) btns[0].classList.add('active');
     else if (tabName === 'students' && btns[1]) { 
         btns[1].classList.add('active'); 
-        loadMyStudents(); // 학생 리스트 로드 트리거
+        // [핵심] 여기서 loadMyStudents 호출
+        loadMyStudents(); 
     }
 
     // 컨텐츠 표시
@@ -80,7 +86,6 @@ window.switchTab = function(tabName) {
 async function loadTutorInfo(userId) {
     const token = localStorage.getItem('idToken');
     try {
-        // [변경] get_user -> get_tutor (튜터 전용 DB 조회)
         const res = await fetch(TUTOR_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -89,22 +94,27 @@ async function loadTutorInfo(userId) {
         
         if (!res.ok) throw new Error("Load Failed");
         
-        const rawData = await res.json();
-        const data = parseDynamoItem(rawData);
+        // [수정] DocumentClient를 쓰면 이미 파싱된 JSON이 옴. 이중 파싱 방지.
+        let rawData = await res.json();
+        // 만약 DynamoDB JSON 포맷(.S, .N 등)이 남아있다면 파싱, 아니면 그대로 사용
+        const data = (rawData.S || rawData.N || rawData.M) ? parseDynamoItem(rawData) : rawData;
+
+        // 전역 변수에 저장 (학생 로드 시 사용됨)
+        tutorInfoData = data;
 
         // 1. 기본 정보 렌더링
         if(document.getElementById('userNameDisplay')) document.getElementById('userNameDisplay').innerText = data.name || '이름 없음';
         if(document.getElementById('userEmailDisplay')) document.getElementById('userEmailDisplay').innerText = data.email || '';
         if(document.getElementById('currentEmailDisplay')) document.getElementById('currentEmailDisplay').innerText = data.email || '';
 
-        // 2. 모달 Input (DB 필드명 매핑)
+        // 2. 모달 Input
         if(document.getElementById('modalNickname')) document.getElementById('modalNickname').value = data.nickname || '';
         if(document.getElementById('modalSchool')) document.getElementById('modalSchool').value = data.school || '';
         if(document.getElementById('modalMajor')) document.getElementById('modalMajor').value = data.major || '';
         if(document.getElementById('modalStrengths')) document.getElementById('modalStrengths').value = data.strengths || '';
         if(document.getElementById('modalMessage')) document.getElementById('modalMessage').value = data.message || '';
 
-        // 3. 계좌번호 (암호화 가정)
+        // 3. 계좌번호
         if(document.getElementById('accountNumber')) document.getElementById('accountNumber').value = data.accountNumber || '';
 
         // 4. 프로필 이미지
@@ -115,10 +125,11 @@ async function loadTutorInfo(userId) {
                 checkDeleteButtonVisibility(data.profileImage);
             }
         }
+        return true; // 성공 리턴
 
     } catch (e) {
         console.error("Tutor Info Load Error:", e);
-        // 토큰 만료 시 로그인 페이지 이동 등의 처리
+        return false; // 실패 리턴
     }
 }
 
@@ -129,7 +140,7 @@ window.openProfileModal = function() {
     document.getElementById('profileModal').classList.remove('hidden');
 }
 
-// 프로필 상세 정보 저장 (DB 연동)
+// 프로필 상세 정보 저장
 window.saveProfileModalData = async function() {
     const nickname = document.getElementById('modalNickname').value;
     const school = document.getElementById('modalSchool').value;
@@ -141,7 +152,6 @@ window.saveProfileModalData = async function() {
     const token = localStorage.getItem('idToken');
 
     try {
-        // [변경] type: 'update_tutor_profile_detail' 사용
         const response = await fetch(TUTOR_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -155,17 +165,15 @@ window.saveProfileModalData = async function() {
         if (response.ok) {
             alert("프로필 정보가 저장되었습니다.");
             closeModal('profileModal');
-            // 로컬 데이터 즉시 반영 (새로고침 없이)
+            
+            // 로컬 데이터 즉시 반영
             tutorInfoData.nickname = nickname;
             tutorInfoData.school = school;
             tutorInfoData.major = major;
             tutorInfoData.strengths = strengths;
             tutorInfoData.message = message;
-            
-            // 사이드바 이름 등도 필요시 업데이트
-            // document.getElementById('userNameDisplay').innerText = nickname || tutorInfoData.name; 
         } else {
-            alert("저장에 실패했습니다. 잠시 후 다시 시도해주세요.");
+            alert("저장에 실패했습니다.");
         }
     } catch (error) {
         console.error(error);
@@ -174,20 +182,18 @@ window.saveProfileModalData = async function() {
 }
 
 // ==========================================
-// [기능 3] 계좌번호 수정 및 입금 내역
+// [기능 3] 계좌번호 및 입금 내역
 // ==========================================
 window.toggleAccountEdit = async function(btn) {
     const input = document.getElementById('accountNumber');
     
     if (input.disabled) {
-        // 수정 모드 진입
         input.disabled = false;
-        input.type = 'text'; // 수정할 땐 보이게 (원하면 'password' 유지 가능)
+        input.type = 'text';
         input.focus();
         btn.innerText = "저장하기";
         btn.classList.add('saving');
     } else {
-        // 저장 요청
         const newAccount = input.value.trim();
         if (!newAccount) { alert("계좌번호를 입력해주세요."); return; }
 
@@ -196,7 +202,7 @@ window.toggleAccountEdit = async function(btn) {
         if (success) {
             alert("계좌 정보가 수정되었습니다.");
             input.disabled = true;
-            input.type = 'password'; // 다시 가리기
+            input.type = 'password';
             btn.innerText = "수정하기";
             btn.classList.remove('saving');
         } else {
@@ -205,7 +211,6 @@ window.toggleAccountEdit = async function(btn) {
     }
 }
 
-// 입금 내역 아코디언 토글
 window.toggleDepositHistory = function() {
     const area = document.getElementById('depositHistoryArea');
     const icon = document.getElementById('depositIcon');
@@ -214,7 +219,7 @@ window.toggleDepositHistory = function() {
         area.classList.remove('hidden');
         icon.classList.remove('fa-chevron-down');
         icon.classList.add('fa-chevron-up');
-        loadDepositHistoryData(); // 열릴 때 데이터 로드
+        loadDepositHistoryData();
     } else {
         area.classList.add('hidden');
         icon.classList.remove('fa-chevron-up');
@@ -222,7 +227,6 @@ window.toggleDepositHistory = function() {
     }
 }
 
-// 입금 내역 데이터 로드 (Mockup -> API 연동 필요)
 async function loadDepositHistoryData() {
     const tbody = document.getElementById('depositListBody');
     tbody.innerHTML = '<tr><td colspan="4" class="empty-msg"><i class="fas fa-spinner fa-spin"></i> 내역 조회 중...</td></tr>';
@@ -231,7 +235,6 @@ async function loadDepositHistoryData() {
     const token = localStorage.getItem('idToken');
 
     try {
-        // [변경] type: 'get_tutor_payment_history' 호출
         const response = await fetch(TUTOR_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -244,9 +247,11 @@ async function loadDepositHistoryData() {
         if (!response.ok) throw new Error("Payment History Load Failed");
         
         const rawList = await response.json();
-        // DynamoDB JSON 목록인 경우 파싱 필요, 일반 JSON이면 그대로 사용
-        // 여기서는 일반 JSON 배열 리턴된다고 가정하거나, 아래처럼 map으로 파싱
-        const list = Array.isArray(rawList) ? rawList.map(item => parseDynamoItem(item)) : [];
+        // 마찬가지로 이중 파싱 방지
+        let list = [];
+        if (Array.isArray(rawList)) {
+            list = rawList.map(item => (item.S || item.N || item.M) ? parseDynamoItem(item) : item);
+        }
 
         tbody.innerHTML = '';
         if (list.length === 0) {
@@ -254,11 +259,9 @@ async function loadDepositHistoryData() {
             return;
         }
 
-        // 최신순 정렬 (SK 기준 역순)
         list.sort((a, b) => (b.yearMonth || '').localeCompare(a.yearMonth || ''));
 
         list.forEach(item => {
-            // 숫자 포맷팅 (콤마 추가)
             const stdCount = Number(item.standardCount || 0);
             const proCount = Number(item.proCount || 0);
             const stdAmt = Number(item.standardAmount || 0).toLocaleString();
@@ -269,20 +272,12 @@ async function loadDepositHistoryData() {
             tr.innerHTML = `
                 <td><strong>${escapeHtml(item.yearMonth)}</strong></td>
                 <td>
-                    <div style="font-size:0.9rem;">
-                        <span style="color:#64748b;">Standard:</span> <strong>${stdCount}명</strong>
-                    </div>
-                    <div style="font-size:0.9rem;">
-                        <span style="color:#2563eb;">Pro:</span> <strong>${proCount}명</strong>
-                    </div>
+                    <div style="font-size:0.9rem;"><span style="color:#64748b;">Standard:</span> <strong>${stdCount}명</strong></div>
+                    <div style="font-size:0.9rem;"><span style="color:#2563eb;">Pro:</span> <strong>${proCount}명</strong></div>
                 </td>
                 <td>
-                    <div style="font-size:0.9rem;">
-                        <span style="color:#64748b;">Std:</span> ${stdAmt}원
-                    </div>
-                    <div style="font-size:0.9rem;">
-                        <span style="color:#2563eb;">Pro:</span> ${proAmt}원
-                    </div>
+                    <div style="font-size:0.9rem;"><span style="color:#64748b;">Std:</span> ${stdAmt}원</div>
+                    <div style="font-size:0.9rem;"><span style="color:#2563eb;">Pro:</span> ${proAmt}원</div>
                 </td>
                 <td>
                     <div style="font-weight:bold; color:#1e293b; font-size:1rem;">${totalAmt}원</div>
@@ -300,7 +295,6 @@ async function loadDepositHistoryData() {
     }
 }
 
-// 공통 필드 저장 (계좌번호 등)
 async function saveSingleField(field, value) {
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('idToken');
@@ -309,7 +303,7 @@ async function saveSingleField(field, value) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
-                type: 'tutor_update_member_info', // 혹은 update_account_info 등 별도 타입
+                type: 'tutor_update_member_info', 
                 userId, 
                 data: { [field]: value } 
             })
@@ -322,7 +316,7 @@ async function saveSingleField(field, value) {
 }
 
 // ==========================================
-// [기타] 프로필 사진, 학생 관리, 계정 관리 등 기존 기능 유지
+// [기타] 프로필 사진, 학생 관리, 계정 관리
 // ==========================================
 
 // [프로필 사진]
@@ -415,7 +409,7 @@ function checkDeleteButtonVisibility(url) {
     else deleteBtn.classList.add('hidden');
 }
 
-// [학생 관리]
+// [학생 관리] - 핵심 로직 수정됨
 window.loadMyStudents = async function() {
     const tbody = document.getElementById('myStudentListBody');
     tbody.innerHTML = '<tr><td colspan="5" class="empty-msg"><i class="fas fa-spinner fa-spin"></i> 데이터 로딩 중...</td></tr>';
@@ -423,25 +417,23 @@ window.loadMyStudents = async function() {
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('idToken');
 
+    // [핵심] loadTutorInfo가 완료되었으므로 tutorInfoData에 데이터가 있어야 합니다.
     let myName = tutorInfoData.name;
     
+    // 만약 데이터가 없으면(오류 등)
     if (!myName) {
-        // 혹시 loadTutorInfo가 아직 안 끝났다면 화면의 이름이라도 가져옴
+        console.error("Tutor name not found. Ensure loadTutorInfo completed.");
+        // DOM에서라도 긁어오기 (최후의 수단)
         const nameDisplay = document.getElementById('userNameDisplay');
-        if (nameDisplay) myName = nameDisplay.innerText;
+        if (nameDisplay && nameDisplay.innerText !== '이름 없음') myName = nameDisplay.innerText;
     }
 
-    // 그래도 없으면 어쩔 수 없이 Tutor (이 경우엔 데이터 안 뜰 것임)
     if (!myName || myName === '이름 없음') {
-        // 0.5초 뒤에 다시 시도 (재귀 호출로 타이밍 확보)
-        console.log("이름 데이터 로딩 대기 중...");
-        setTimeout(window.loadMyStudents, 500);
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">튜터 정보를 불러오지 못했습니다. 새로고침 해주세요.</td></tr>';
         return;
     }
 
     try {
-        console.log(`학생 조회 요청: TutorName = ${myName}`); // 디버깅용 로그
-
         const response = await fetch(TUTOR_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -457,7 +449,6 @@ window.loadMyStudents = async function() {
             return;
         }
         
-        // ... (나머지 렌더링 코드는 동일) ...
         students.forEach(s => {
              const tr = document.createElement('tr');
              tr.innerHTML = `
