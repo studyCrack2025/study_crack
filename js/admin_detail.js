@@ -837,26 +837,44 @@ async function saveProDraft(key, silent = false) {
 
 // [API] 작성 완료 (상태 변경 -> completed)
 async function completeProWriting(key) {
-    // 1. 먼저 내용 저장
-    await saveProDraft(key);
+    // 1. 먼저 현재 작성 내용을 저장
+    try {
+        await saveProDraft(key, true); // silent=true로 알림 없이 저장
+    } catch (e) {
+        alert("내용 저장 중 오류가 발생하여 제출을 중단합니다.");
+        return;
+    }
 
     if(!confirm("작성을 완료하고 관리자에게 제출하시겠습니까?\n제출 후에는 수정할 수 없습니다.")) return;
 
     const token = localStorage.getItem('accessToken');
     try {
-        await fetch(API_URL, {
+        const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
-                type: 'admin_complete_pro_writing',
-                userId: adminId,
-                targetUserId: targetUserId,
-                reportKey: key
+                type: 'complete_pro_writing',
+                userId: adminId,         // 요청자(튜터) ID
+                targetUserId: targetUserId, // 학생 ID
+                reportKey: key           // 리포트 키 (예: 26MarPost)
             })
         });
-        alert("제출 완료되었습니다.");
-        renderProTab(); // UI 갱신
-    } catch(e) { alert("처리 실패"); }
+
+        const resData = await response.json();
+
+        if (!response.ok) {
+            console.error("Complete Error:", resData);
+            throw new Error(resData.error || "Server Error");
+        }
+        
+        alert("제출이 완료되었습니다. 관리자가 검수를 시작합니다.");
+        
+        // [중요 수정] 화면만 다시 그리는 게 아니라, 서버에서 'completed'로 바뀐 데이터를 다시 가져와야 함!
+        await loadProReportsForAdmin(); 
+
+    } catch(e) { 
+        alert("처리 실패: " + e.message); 
+    }
 }
 
 // [API] 최종 보고서 생성 및 전송 (Admin Only)
@@ -870,7 +888,7 @@ async function publishProReport(key) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
-                type: 'admin_publish_pro_report',
+                type: 'publish_pro_report',
                 userId: adminId,
                 targetUserId: targetUserId,
                 reportKey: key,
