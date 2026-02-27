@@ -176,10 +176,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // 학생(Student) 및 비로그인 유저만 메인 페이지에 머물 수 있습니다.
     const token = localStorage.getItem('idToken');
     const userRole = localStorage.getItem('userRole');
+    
+    // 로컬 스토리지에서 이름 가져오기 (userName이 없으면 name, 그것도 없으면 '튜터'로 대체)
+    const userName = localStorage.getItem('userName') || localStorage.getItem('name') || '스터디크랙';
 
     if (token && userRole) {
         if (userRole === 'tutor') {
-            alert("튜터 페이지로 이동합니다.");
+            alert(`${userName} 선생님, 안녕하세요.`);
             window.location.href = '/mypage/tutor';
             return; // 이후 스크립트 실행 중단
         } else if (userRole === 'admin') {
