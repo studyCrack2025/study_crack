@@ -1164,20 +1164,42 @@ function renderSimUnivButtons(targetDiv) {
 // [헬퍼 4] 그래프 업데이트
 function updateSimLineGraph(idx) {
     if (!simSvgRefs) return;
+
+    // [중요] 반응형 대응을 위해 현재 보고 있는 idx를 전역 변수에 저장
+    window.lastSimGraphIdx = idx;
+
+    // [최초 1회 실행] 리사이즈 이벤트 리스너가 없으면 등록
+    if (!window.simGraphResizeHandler) {
+        window.simGraphResizeHandler = () => {
+            // 현재 활성화된 그래프가 있으면 다시 그리기
+            if (typeof window.lastSimGraphIdx !== 'undefined') {
+                updateSimLineGraph(window.lastSimGraphIdx);
+            }
+        };
+        window.addEventListener('resize', window.simGraphResizeHandler);
+    }
+
     const data = cachedSimData[idx];
     if (!data) return;
 
-    // 1. X축 텍스트 업데이트
+    // [해결 1] 물리적 픽셀 간격 넓히기
+    const TARGET_HEIGHT = 400; 
+    simSvgRefs.svg.parentNode.style.height = `${TARGET_HEIGHT}px`;
+    simSvgRefs.svg.parentNode.style.minHeight = `${TARGET_HEIGHT}px`;
+
+    // X축 텍스트 업데이트
     const realNames = ['국어', '수학'];
     realNames.push(data.sim_data.inq1?.name || '탐구1');
     realNames.push(data.sim_data.inq2?.name || '탐구2');
     simSvgRefs.xAxisTexts.forEach((span, i) => { span.innerText = realNames[i]; });
 
+    // 변경된 크기(W, H)를 다시 계산 (반응형의 핵심)
+    // getBoundingClientRect는 렌더링된 실제 픽셀 크기를 가져옵니다.
     const svgRect = simSvgRefs.svg.getBoundingClientRect();
-    const W = svgRect.width || 300;
-    const H = (svgRect.height || 240) - 25; 
+    const W = svgRect.width || 300; 
+    const H = (svgRect.height || TARGET_HEIGHT) - 30; // 하단 여백 약간 확보
 
-    // 2. 점수 데이터 추출
+    // 점수 계산
     const keys = ['kor', 'math', 'inq1', 'inq2'];
     const currentScore = data.base_ui_score;
     const scores = keys.map(k => {
@@ -1185,42 +1207,28 @@ function updateSimLineGraph(idx) {
         return Math.min(250, currentScore + rise);
     });
 
-    // 3. [수정됨] 50단위 스케일링 로직
+    // 50단위 스케일링 로직
+    const GAP = 50; 
     let minS = Math.min(...scores);
     let maxS = Math.max(...scores);
-    
-    // 점수들의 중앙값
     const centerScore = (minS + maxS) / 2;
     
-    // [변경] 간격을 50으로 설정
-    const GAP = 50; 
-    
-    // 중앙값에서 가장 가까운 50의 배수를 기준선(midLine)으로 잡음 (예: 100, 150, 200)
     let midLine = Math.round(centerScore / GAP) * GAP;
-    
-    // 위아래로 GAP(50)만큼 벌림
     let bottomLine = midLine - GAP;
     let topLine = midLine + GAP;
 
-    // [보정] 0점 미만이거나 250점 초과 시 강제 조정
-    // 만약 계산된 라인이 범위를 벗어나면 전체 틀을 위나 아래로 밈
-    if (bottomLine < 0) {
-        bottomLine = 0; midLine = 50; topLine = 100;
-    } else if (topLine > 250) {
-        topLine = 250; midLine = 200; bottomLine = 150;
-    }
+    if (bottomLine < 0) { bottomLine = 0; midLine = 50; topLine = 100; }
+    else if (topLine > 250) { topLine = 250; midLine = 200; bottomLine = 150; }
 
-    // Y축 그리기 범위 설정 (여백 포함)
-    // 간격이 넓으므로 여백도 조금 더 넉넉하게(20) 줌
+    // Y축 범위 설정 (여백 20)
     let yMin = bottomLine - 20;
     let yMax = topLine + 20;
-    
     const yRange = yMax - yMin || 1;
     const getY = (score) => H - ((score - yMin) / yRange * H) + 15;
 
-    // 4. 가이드 라인 그리기 (3줄: 하단, 중단, 상단)
+    // 가이드 라인 업데이트
     const targetGuides = [bottomLine, midLine, topLine];
-    const guideObjects = Object.values(simSvgRefs.guides); // g0, g100... 객체들
+    const guideObjects = Object.values(simSvgRefs.guides); 
 
     guideObjects.forEach((guideObj, i) => {
         if (i < 3) {
@@ -1229,24 +1237,21 @@ function updateSimLineGraph(idx) {
             
             guideObj.g.style.opacity = 1;
             
-            // 라인 위치
+            // 반응형 너비(W) 적용
             guideObj.line.setAttribute("x1", 0);
             guideObj.line.setAttribute("x2", W); 
             guideObj.line.setAttribute("y1", y);
             guideObj.line.setAttribute("y2", y);
             
-            // 텍스트 위치 및 값
             guideObj.text.setAttribute("x", W - 5);
             guideObj.text.setAttribute("y", y - 4);
             guideObj.text.textContent = val; 
-            
         } else {
-            // 4번째 남는 가이드 숨김
             guideObj.g.style.opacity = 0;
         }
     });
 
-    // 5. 패스(선) & 포인트(점) 그리기
+    // 패스 & 포인트 그리기
     const sectionW = W / 4;
     let d = "";
     
@@ -1255,6 +1260,7 @@ function updateSimLineGraph(idx) {
     const minIdx = isFlat ? -1 : scores.indexOf(minS);
 
     scores.forEach((s, i) => {
+        // X 좌표도 반응형 너비(sectionW)에 따라 재계산
         const cx = (sectionW * i) + (sectionW / 2);
         const cy = getY(s);
         
@@ -1267,34 +1273,31 @@ function updateSimLineGraph(idx) {
         const pointEl = simSvgRefs.points[i];
         const labelEl = simSvgRefs.labels[i];
         
-        // 스타일 초기화
+        // 스타일 리셋
         pointEl.style.fill = "#bfdbfe"; 
         pointEl.style.stroke = "#2563EB"; 
         labelEl.style.opacity = 0;
         labelEl.style.fontWeight = "normal";
-        labelEl.style.fill = "#1e293b"; // 기본 색상
+        labelEl.style.fill = "#1e293b";
 
-        // 최고/최저점 하이라이팅
         if (!isFlat) {
-            if (i === maxIdx) { // 최고점 (초록)
-                pointEl.style.fill = "#10b981"; 
-                pointEl.style.stroke = "#059669";
-                labelEl.style.fill = "#10b981";
-                labelEl.style.opacity = 1;
-                labelEl.style.fontWeight = "bold";
+            if (i === maxIdx) { 
+                pointEl.style.fill = "#10b981"; pointEl.style.stroke = "#059669";
+                labelEl.style.fill = "#10b981"; labelEl.style.opacity = 1; labelEl.style.fontWeight = "bold";
             }
-            if (i === minIdx) { // 최저점 (빨강)
-                pointEl.style.fill = "#ef4444"; 
-                pointEl.style.stroke = "#b91c1c";
-                labelEl.style.fill = "#ef4444";
-                labelEl.style.opacity = 1;
-                labelEl.style.fontWeight = "bold";
+            if (i === minIdx) { 
+                pointEl.style.fill = "#ef4444"; pointEl.style.stroke = "#b91c1c";
+                labelEl.style.fill = "#ef4444"; labelEl.style.opacity = 1; labelEl.style.fontWeight = "bold";
             }
         }
         
         labelEl.textContent = Math.round(s);
         labelEl.setAttribute("x", cx);
         labelEl.setAttribute("y", cy - 12);
+        
+        // 요소 순서 재배치 (선 위로 올리기)
+        pointEl.parentNode.appendChild(pointEl);
+        labelEl.parentNode.appendChild(labelEl);
     });
 
     simSvgRefs.path.setAttribute("d", d);
