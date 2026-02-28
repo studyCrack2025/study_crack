@@ -105,20 +105,15 @@ function selectCourse(tier) {
 /* =========================================
    3. 후기 데이터 로직 (에러 처리 강화)
    ========================================= */
-const MOCK_REVIEWS = [
-    { univ: "서울대", content: "불안했던 입시가 명확해졌습니다.", name: "김*수", score: "경영학과 합격" },
-    { univ: "연세대", content: "성적 분석이 정말 정교합니다.", name: "이*민", score: "경제학부 합격" },
-    { univ: "고려대", content: "효율적인 공부법을 찾았습니다.", name: "박*준", score: "통계학과 합격" }
-];
-
 async function getUserReviews() {
-    // API 주소가 없으면 바로 가짜 데이터 반환 (500 에러 방지용 임시 처리)
+    // 1. API 설정 확인 (설정 없으면 빈 배열 반환)
     if (!API_CONFIG.auth || API_CONFIG.auth.includes('YOUR_API')) {
-        console.warn("⚠️ API 설정이 없거나 500 에러 상태입니다. 임시 데이터를 표시합니다.");
-        return MOCK_REVIEWS;
+        console.error("❌ API 설정 오류: 유효한 API 주소가 없습니다.");
+        return []; // 가짜 데이터 대신 빈 배열 반환
     }
 
     const token = localStorage.getItem('idToken');
+
     try {
         const response = await fetch(API_CONFIG.auth, {
             method: 'POST',
@@ -129,15 +124,33 @@ async function getUserReviews() {
             body: JSON.stringify({ type: 'get_user_reviews' })
         });
 
-        if (!response.ok) throw new Error(`API 호출 실패: ${response.status}`);
+        if (!response.ok) {
+            throw new Error(`서버 응답 오류: ${response.status}`);
+        }
+
         const data = await response.json();
         
-        if (Array.isArray(data)) return data;
-        if (data.body && Array.isArray(JSON.parse(data.body))) return JSON.parse(data.body);
-        return MOCK_REVIEWS; // 형식이 맞지 않으면 가짜 데이터 반환
+        // 2. 데이터 형식 확인 및 반환
+        // Case A: 바로 배열이 오는 경우
+        if (Array.isArray(data)) {
+            return data;
+        } 
+        // Case B: AWS Lambda Proxy 응답 (body 안에 문자열로 들어있는 경우)
+        if (data.body) {
+            const parsedBody = JSON.parse(data.body);
+            if (Array.isArray(parsedBody)) {
+                return parsedBody;
+            }
+        }
+
+        // 형식이 맞지 않는 경우
+        console.warn("⚠️ 서버 응답 형식이 올바르지 않습니다:", data);
+        return [];
+
     } catch (error) {
-        console.error("❌ 후기 로드 중 오류 발생:", error);
-        return MOCK_REVIEWS; // 에러 발생 시 가짜 데이터 반환
+        // 3. 에러 발생 시 처리
+        console.error("❌ 후기 데이터 로드 실패 (실제 서버 에러):", error);
+        return []; // 에러 발생 시 MOCK_REVIEWS 대신 빈 배열 반환
     }
 }
 
