@@ -1203,7 +1203,7 @@ function updateSimLineGraph(idx) {
     const keys = ['kor', 'math', 'inq1', 'inq2'];
     const currentScore = data.base_ui_score;
     const scores = keys.map(k => {
-        const rise = (data.sim_data && data.sim_data[k]) ? data.sim_data[k].uidiff : 0;
+        const rise = (data.sim_data && data.sim_data[k]) ? data.sim_data[k].uiDiff : 0;
         return Math.min(250, currentScore + rise);
     });
 
@@ -1325,7 +1325,7 @@ function renderDetailedSimCard() {
     if (currentScore >= 250) {
         Object.keys(data.sim_data).forEach(key => {
             if (data.sim_data[key]) {
-                data.sim_data[key].uidiff = 0;
+                data.sim_data[key].uiDiff = 0;
             }
         });
     }
@@ -1350,8 +1350,8 @@ function renderDetailedSimCard() {
 
     subjects.forEach(sub => {
         const info = data.sim_data[sub.key];
-        if (info && info.uidiff > maxRise) {
-            maxRise = info.uidiff;
+        if (info && info.uiDiff > maxRise) {
+            maxRise = info.uiDiff;
             bestSubjectKey = sub.key;
         }
     });
@@ -1361,7 +1361,7 @@ function renderDetailedSimCard() {
         const info = data.sim_data[sub.key];
         if (!info) return;
 
-        const diffVal = info.uidiff.toFixed(1);
+        const diffVal = info.uiDiff.toFixed(1);
         const isBest = (sub.key === bestSubjectKey && maxRise > 0);
         
         let desc = '';
@@ -1382,7 +1382,7 @@ function renderDetailedSimCard() {
             <div class="sim-item ${isBest ? 'best-pick' : ''}">
                 <div class="sim-item-header">
                     <span>${info.name || sub.name} (+1문제)</span>
-                    <span style="color:${info.uidiff > 0 ? '#ef4444' : '#94a3b8'}">
+                    <span style="color:${info.uiDiff > 0 ? '#ef4444' : '#94a3b8'}">
                         +${diffVal}점
                     </span>
                 </div>
