@@ -1165,13 +1165,10 @@ function renderSimUnivButtons(targetDiv) {
 function updateSimLineGraph(idx) {
     if (!simSvgRefs) return;
 
-    // [중요] 반응형 대응을 위해 현재 보고 있는 idx를 전역 변수에 저장
+    // [반응형] 리사이즈 이벤트 등록
     window.lastSimGraphIdx = idx;
-
-    // [최초 1회 실행] 리사이즈 이벤트 리스너가 없으면 등록
     if (!window.simGraphResizeHandler) {
         window.simGraphResizeHandler = () => {
-            // 현재 활성화된 그래프가 있으면 다시 그리기
             if (typeof window.lastSimGraphIdx !== 'undefined') {
                 updateSimLineGraph(window.lastSimGraphIdx);
             }
@@ -1182,24 +1179,27 @@ function updateSimLineGraph(idx) {
     const data = cachedSimData[idx];
     if (!data) return;
 
-    // [해결 1] 물리적 픽셀 간격 넓히기
-    const TARGET_HEIGHT = 400; 
+    // -----------------------------------------------------------
+    // [CSS 강제 적용] 높이를 320px 정도로 고정 (너무 크면 모바일에서 깨짐)
+    // 이 높이 안에서 3개의 선이 꽉 차게 들어갑니다.
+    const TARGET_HEIGHT = 320; 
     simSvgRefs.svg.parentNode.style.height = `${TARGET_HEIGHT}px`;
     simSvgRefs.svg.parentNode.style.minHeight = `${TARGET_HEIGHT}px`;
+    // -----------------------------------------------------------
 
-    // X축 텍스트 업데이트
+    const svgEl = simSvgRefs.svg;
+    // clientWidth가 0이면(숨겨진 상태) 기본값 300 사용
+    const W = svgEl.clientWidth || 300; 
+    // 하단 라벨 들어갈 공간 30px 제외
+    const H = (svgEl.clientHeight || TARGET_HEIGHT) - 30; 
+
+    // 1. X축 텍스트 업데이트
     const realNames = ['국어', '수학'];
     realNames.push(data.sim_data.inq1?.name || '탐구1');
     realNames.push(data.sim_data.inq2?.name || '탐구2');
     simSvgRefs.xAxisTexts.forEach((span, i) => { span.innerText = realNames[i]; });
 
-    // 변경된 크기(W, H)를 다시 계산 (반응형의 핵심)
-    // getBoundingClientRect는 렌더링된 실제 픽셀 크기를 가져옵니다.
-    const svgRect = simSvgRefs.svg.getBoundingClientRect();
-    const W = svgRect.width || 300; 
-    const H = (svgRect.height || TARGET_HEIGHT) - 30; // 하단 여백 약간 확보
-
-    // 점수 계산
+    // 2. 점수 데이터
     const keys = ['kor', 'math', 'inq1', 'inq2'];
     const currentScore = data.base_ui_score;
     const scores = keys.map(k => {
@@ -1207,26 +1207,32 @@ function updateSimLineGraph(idx) {
         return Math.min(250, currentScore + rise);
     });
 
-    // 50단위 스케일링 로직
-    const GAP = 50; 
+    // 3. [핵심 수정] 25점 단위 설정
+    const GAP = 25; 
+    
     let minS = Math.min(...scores);
     let maxS = Math.max(...scores);
     const centerScore = (minS + maxS) / 2;
     
+    // 중앙값 기준 25점 단위 라인 잡기 (예: 125, 150, 175)
     let midLine = Math.round(centerScore / GAP) * GAP;
     let bottomLine = midLine - GAP;
     let topLine = midLine + GAP;
 
-    if (bottomLine < 0) { bottomLine = 0; midLine = 50; topLine = 100; }
-    else if (topLine > 250) { topLine = 250; midLine = 200; bottomLine = 150; }
+    // 0점 이하, 250점 이상 방지
+    if (bottomLine < 0) { bottomLine = 0; midLine = 25; topLine = 50; }
+    else if (topLine > 250) { topLine = 250; midLine = 225; bottomLine = 200; }
 
-    // Y축 범위 설정 (여백 20)
-    let yMin = bottomLine - 20;
-    let yMax = topLine + 20;
+    // 4. [여백 제거] Y축 그리기 범위 (Zoom-in)
+    // 이전에는 +-20을 줬지만, 이제는 타이트하게 +-12만 줍니다.
+    // 이렇게 해야 bottomLine이 바닥에 거의 붙어서 '밑에 남는 공간'이 사라집니다.
+    let yMin = bottomLine - 12;
+    let yMax = topLine + 12;
+    
     const yRange = yMax - yMin || 1;
     const getY = (score) => H - ((score - yMin) / yRange * H) + 15;
 
-    // 가이드 라인 업데이트
+    // 5. 가이드 라인 그리기
     const targetGuides = [bottomLine, midLine, topLine];
     const guideObjects = Object.values(simSvgRefs.guides); 
 
@@ -1237,7 +1243,6 @@ function updateSimLineGraph(idx) {
             
             guideObj.g.style.opacity = 1;
             
-            // 반응형 너비(W) 적용
             guideObj.line.setAttribute("x1", 0);
             guideObj.line.setAttribute("x2", W); 
             guideObj.line.setAttribute("y1", y);
@@ -1251,7 +1256,7 @@ function updateSimLineGraph(idx) {
         }
     });
 
-    // 패스 & 포인트 그리기
+    // 6. 패스 & 포인트 그리기
     const sectionW = W / 4;
     let d = "";
     
@@ -1260,7 +1265,6 @@ function updateSimLineGraph(idx) {
     const minIdx = isFlat ? -1 : scores.indexOf(minS);
 
     scores.forEach((s, i) => {
-        // X 좌표도 반응형 너비(sectionW)에 따라 재계산
         const cx = (sectionW * i) + (sectionW / 2);
         const cy = getY(s);
         
@@ -1273,7 +1277,6 @@ function updateSimLineGraph(idx) {
         const pointEl = simSvgRefs.points[i];
         const labelEl = simSvgRefs.labels[i];
         
-        // 스타일 리셋
         pointEl.style.fill = "#bfdbfe"; 
         pointEl.style.stroke = "#2563EB"; 
         labelEl.style.opacity = 0;
