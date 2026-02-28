@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (token && userRole) {
         if (userRole === 'tutor') {
-            alert(`${userName} 선생님, 안녕하세요.`);
+            alert(`${userName} 선생님 페이지로 이동합니다.`);
             window.location.href = '/mypage/tutor';
             return; // 이후 스크립트 실행 중단
         } else if (userRole === 'admin') {
