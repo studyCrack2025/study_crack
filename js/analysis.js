@@ -669,14 +669,6 @@ async function updateAnalysisUI() {
         const data = await res.json();
         const results = data.results || [];
         
-        if (data.server_debug && data.server_debug.logs) {
-            console.group("🟦 [서버 입시 분석 상세 로그]");
-            data.server_debug.logs.forEach(log => console.log(log));
-            console.groupEnd();
-        } else {
-            console.log("⚠️ 서버로부터 전달된 디버그 로그가 없습니다.");
-        }
-        
         if (results.length === 0) {
             cardsContainer.innerHTML = `<div style="text-align:center; padding:40px;">분석 가능한 결과가 없습니다.</div>`;
         } else {
@@ -1346,7 +1338,7 @@ function renderDetailedSimCard() {
                 : `점수 상승으로 합격 가능성이 높아집니다.`;
         }
 
-        const subText = info.diff > 0 ? `(원점수 +${info.raw_diff || 3}점)` : ``;
+        const subText = info.diff > 0 ? `(실점수 +${info.diff || 3}점)` : ``;
 
         subjectsHTML += `
             <div class="sim-item ${isBest ? 'best-pick' : ''}">
