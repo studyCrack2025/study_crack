@@ -974,7 +974,7 @@ function renderSimChart() {
             let showOriginalLabel = true;
             let maxRise = 0;
             if (item.sim_data) {
-                Object.values(item.sim_data).forEach(sub => { if (sub && sub.diff > maxRise) maxRise = sub.diff; });
+                Object.values(item.sim_data).forEach(sub => { if (sub && sub.uiDiff > maxRise) maxRise = sub.uiDiff; });
             }
 
             if (isActive && maxRise > 0 && score < 250) {
