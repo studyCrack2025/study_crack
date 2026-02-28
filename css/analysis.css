@@ -172,7 +172,7 @@
 
 /* 꺾은선 그래프 전용 스타일 */
 .sim-line-container { width:100%; height:100%; display:flex; flex-direction:column; overflow: visible !important; }
-.sim-line-chart-area { flex:1; position:relative; min-height:240px; overflow: visible !important; }
+.sim-line-chart-area { flex:1; position:relative; height:400px; min-height:400px; overflow: visible !important; }
 .sim-univ-scroll-box { display:flex; gap:8px; padding:10px 5px; overflow-x:auto; border-top:1px solid #f1f5f9; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
 .sim-univ-scroll-box { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 15px 0; width: 100%; box-sizing: border-box; }
 .univ-select-btn { width: 100%; display: flex; justify-content: center; align-items: center; gap: 6px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; color: #64748b; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; line-height: 1.2; }
