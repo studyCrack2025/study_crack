@@ -1338,8 +1338,9 @@ function renderDetailedSimCard() {
                 : `점수 상승으로 합격 가능성이 높아집니다.`;
         }
 
-        const subText = info.diff > 0 ? `(실점수 +${info.diff || 3}점)` : ``;
-
+        const subText = info.diff > 0 
+            ? `(실점수 +${(info.diff || 3.0).toFixed(2)}점)` 
+            : ``;
         subjectsHTML += `
             <div class="sim-item ${isBest ? 'best-pick' : ''}">
                 <div class="sim-item-header">
