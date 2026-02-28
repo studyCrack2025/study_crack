@@ -293,6 +293,36 @@ function updateNavUI() {
     }
 }
 
+/* =========================================
+   [New] Interactive Demo Logic
+   ========================================= */
+
+// 데모 단계 이동 함수
+function nextDemoStep(stepNumber) {
+    // 모든 스텝 숨기기
+    document.querySelectorAll('.demo-step').forEach(el => el.classList.remove('active'));
+    
+    // 해당 스텝 보이기
+    const nextStep = document.getElementById('demoStep' + stepNumber);
+    if (nextStep) {
+        nextStep.classList.add('active');
+    }
+}
+
+// 결과 뷰 순환 함수 (Step 4 내부에서 동작)
+let currentResultView = 1;
+function cycleResultView() {
+    // 현재 뷰 숨기기
+    document.getElementById('resultView' + currentResultView).classList.remove('active');
+    
+    // 다음 뷰 번호 계산 (1 -> 2 -> 3 -> 1)
+    currentResultView++;
+    if (currentResultView > 3) currentResultView = 1;
+    
+    // 다음 뷰 보이기
+    document.getElementById('resultView' + currentResultView).classList.add('active');
+}
+
 // -------------------------------------------
 // [기존 함수들] BLACK 버튼 로직 유지
 // -------------------------------------------
