@@ -1381,7 +1381,7 @@ function renderDetailedSimCard() {
         subjectsHTML += `
             <div class="sim-item ${isBest ? 'best-pick' : ''}">
                 <div class="sim-item-header">
-                    <span>${info.name || sub.name} (+1문제)</span>
+                    <span>${info.name || sub.name} (+1점)</span>
                     <span style="color:${info.uiDiff > 0 ? '#ef4444' : '#94a3b8'}">
                         +${diffVal}점
                     </span>
