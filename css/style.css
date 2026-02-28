@@ -267,8 +267,8 @@ header {
    5. Hero 섹션 (PPT 스타일)
    ========================================= */
 .hero { background-color: white; padding: 80px 5%; text-align: center; }
-.hero-header-ppt { text-align: center; margin-bottom: 60px; position: relative; }
-.hero-header-ppt h2 { font-size: 2.2rem; color: #0f172a; font-weight: 800; margin-bottom: 15px; }
+.hero-header-ppt { text-align: center; margin-bottom: 60px; position: relative; max-width: 900px; margin-left: auto; margin-right: auto; padding: 0 20px; }
+.hero-header-ppt h2 { font-size: 2.4rem; color: #0f172a; font-weight: 800; margin-bottom: 15px; line-height: 1.35; letter-spacing: -0.03em; word-break: keep-all; }
 
 .hero-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; }
 
@@ -477,6 +477,8 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
     .message-section p { font-size: 1rem; }
     
     .hero-grid { grid-template-columns: 1fr; gap: 30px; }
+    .hero-header-ppt { margin-bottom: 40px; }
+    .hero-header-ppt h2 { font-size: 1.65rem; line-height: 1.45; letter-spacing: -0.02em; }
     .review-grid { grid-template-columns: 1fr; }
     
     .modal-content { margin: 10% auto; width: 95%; max-height: 70vh; padding: 20px; }
