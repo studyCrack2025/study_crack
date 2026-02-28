@@ -450,6 +450,10 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 @media (max-width: 900px) {
     /* [수정] Message Section 모바일 대응 */
     .message-container { flex-direction: column; text-align: center; gap: 40px; }
+    .message-section {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.5) 100%), url('/assets/backgrounds/bg_message_mobile.png') no-repeat center center / cover;
+        padding: 80px 5%;
+    }
     .message-text-area { text-align: center; margin-bottom: 30px; }
     .dotted-line-connector::after { width: 80%; }
 
