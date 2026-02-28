@@ -223,6 +223,40 @@ header {
     100% { transform: scale(1); }
 }
 
+/* =========================================
+   [New] Demo Phone Frame - Card Styles
+   ========================================= */
+
+/* 데모 폰 안에서만 적용되는 카드 스타일 (기존 css 상속받되 크기 조정) */
+.demo-card.analysis-card {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05); /* 그림자 약간 축소 */
+    margin-bottom: 0; /* 슬라이드 안이라 마진 제거 */
+    height: 100%; /* 슬라이드 꽉 차게 */
+    display: flex;
+    flex-direction: column;
+}
+
+.demo-card .analysis-content-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* 내용을 수직 중앙 정렬 */
+}
+
+/* 폰 화면이 작으므로 글자 크기 강제 조정 */
+.demo-card .an-univ-name { font-size: 1.2rem !important; }
+.demo-card .an-my-score { font-size: 1.6rem !important; }
+
+/* 데모 화면의 슬라이드 레이아웃 보정 */
+.result-slide {
+    width: 100%;
+    height: 100%;
+    padding: 0; /* 패딩 제거 (내부 카드가 처리) */
+}
+
+/* 시뮬레이션 그래프가 슬라이드 밖으로 나가는 것 방지 */
+.result-slide svg { overflow: visible; }
+
 /* 결과 뷰 슬라이드 */
 .result-slide { display: none; text-align: center; height: 100%; flex-direction: column; justify-content: center; align-items: center; }
 .result-slide.active { display: flex; }
@@ -256,30 +290,6 @@ header {
     text-align: center;
     margin-bottom: 50px;
     position: relative;
-}
-.highlight-box {
-    display: inline-block;
-    background: #fef3c7;
-    border: 2px solid #f59e0b;
-    padding: 0 5px;
-    transform: skewX(-10deg);
-}
-.dotted-line-connector {
-    width: 2px;
-    height: 40px;
-    border-left: 3px dotted #94a3b8;
-    margin: 20px auto 0 auto;
-}
-.dotted-line-connector::after {
-    content: '';
-    display: block;
-    width: 200px;
-    height: 2px;
-    border-top: 3px dotted #94a3b8;
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
 }
 
 /* PPT 스타일 카드 */
