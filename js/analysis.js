@@ -917,8 +917,11 @@ function renderSimChart() {
         mobileLegendDiv.className = 'mobile-legend-area';
         container.appendChild(mobileLegendDiv);
 
-        // CSS 높이 기준 상수
+        // CSS 높이 기준 상수 (계산을 위해 상단으로 이동)
         const CONTAINER_HEIGHT = 260; 
+        const TOP_PADDING = 50; 
+        const DRAW_HEIGHT_BAR = CONTAINER_HEIGHT - TOP_PADDING; // 실제 그래프가 그려지는 높이 (210px)
+
         const isMobile = window.innerWidth <= 768;
 
         if (isMobile) {
@@ -929,12 +932,13 @@ function renderSimChart() {
         graphArea.style.paddingBottom = '0';
         graphArea.style.height = 'auto';
 
-        const TOP_PADDING = 50; 
-        const pos100 = (100 / 250);
-        const pos150 = (150 / 250);
+        // [수정 핵심] 가이드 라인 위치를 막대와 동일한 px 기준으로 계산
+        const pos100Px = (100 / 250) * DRAW_HEIGHT_BAR;
+        const pos150Px = (150 / 250) * DRAW_HEIGHT_BAR;
         
-        const guideStyle100 = `bottom: calc((100% - ${TOP_PADDING}px) * ${pos100});`;
-        const guideStyle150 = `bottom: calc((100% - ${TOP_PADDING}px) * ${pos150});`;
+        // CSS calc(%) 대신 고정 px 사용으로 오차 제거
+        const guideStyle100 = `bottom: ${pos100Px}px;`;
+        const guideStyle150 = `bottom: ${pos150Px}px;`;
         
         graphArea.insertAdjacentHTML('beforeend', 
             `<div class="chart-guide-line guide-100" style="${guideStyle100}"><span class="chart-guide-label">합격(100)</span></div>`
@@ -952,10 +956,9 @@ function renderSimChart() {
             </div>
         `;
 
-        const DRAW_HEIGHT_BAR = CONTAINER_HEIGHT - TOP_PADDING; 
-
         cachedSimData.forEach((item, index) => {
             const score = item.base_ui_score;
+            // 막대 높이 계산 (가이드 라인과 동일한 DRAW_HEIGHT_BAR 기준)
             const currentHeightPx = `${(score/250) * DRAW_HEIGHT_BAR}px`;
             
             let color = '#ef4444'; 
@@ -1009,7 +1012,7 @@ function renderSimChart() {
             `;
             labelArea.insertAdjacentHTML('beforeend', labelHtml);
         });
-    } 
+    }
     // ==================================================================================
     // [TYPE: LINE] 꺾은선 그래프
     // ==================================================================================
