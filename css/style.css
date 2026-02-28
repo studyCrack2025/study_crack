@@ -35,7 +35,7 @@ header {
    3. Message 섹션 (좌우 분할 & 데모)
    ========================================= */
 .message-section { 
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    background: url('/assets/backgrounds/bg_message.png') no-repeat center center / cover;
     padding: 120px 5%; 
     color: #fff; 
     position: relative; 
