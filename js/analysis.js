@@ -1180,20 +1180,21 @@ function updateSimLineGraph(idx) {
     if (!data) return;
 
     // -----------------------------------------------------------
-    // [CSS 강제 적용] 높이를 320px 정도로 고정 (너무 크면 모바일에서 깨짐)
-    // 이 높이 안에서 3개의 선이 꽉 차게 들어갑니다.
-    const TARGET_HEIGHT = 320; 
+    // [핵심 해결] 그래프 높이를 220px로 줄입니다.
+    // 25점 간격(Zoom-in)일 때 400px을 쓰면 점선 사이가 텅 비어 보입니다.
+    const TARGET_HEIGHT = 220; 
+    
+    // CSS와 충돌하지 않도록 강제로 높이 고정
     simSvgRefs.svg.parentNode.style.height = `${TARGET_HEIGHT}px`;
     simSvgRefs.svg.parentNode.style.minHeight = `${TARGET_HEIGHT}px`;
     // -----------------------------------------------------------
 
     const svgEl = simSvgRefs.svg;
-    // clientWidth가 0이면(숨겨진 상태) 기본값 300 사용
     const W = svgEl.clientWidth || 300; 
-    // 하단 라벨 들어갈 공간 30px 제외
+    // 하단 라벨(X축) 공간 30px 제외
     const H = (svgEl.clientHeight || TARGET_HEIGHT) - 30; 
 
-    // 1. X축 텍스트 업데이트
+    // 1. X축 텍스트
     const realNames = ['국어', '수학'];
     realNames.push(data.sim_data.inq1?.name || '탐구1');
     realNames.push(data.sim_data.inq2?.name || '탐구2');
@@ -1207,27 +1208,24 @@ function updateSimLineGraph(idx) {
         return Math.min(250, currentScore + rise);
     });
 
-    // 3. [핵심 수정] 25점 단위 설정
+    // 3. 25점 단위 가이드 라인 계산
     const GAP = 25; 
-    
     let minS = Math.min(...scores);
     let maxS = Math.max(...scores);
     const centerScore = (minS + maxS) / 2;
     
-    // 중앙값 기준 25점 단위 라인 잡기 (예: 125, 150, 175)
     let midLine = Math.round(centerScore / GAP) * GAP;
     let bottomLine = midLine - GAP;
     let topLine = midLine + GAP;
 
-    // 0점 이하, 250점 이상 방지
+    // 0~250 범위 제한
     if (bottomLine < 0) { bottomLine = 0; midLine = 25; topLine = 50; }
     else if (topLine > 250) { topLine = 250; midLine = 225; bottomLine = 200; }
 
-    // 4. [여백 제거] Y축 그리기 범위 (Zoom-in)
-    // 이전에는 +-20을 줬지만, 이제는 타이트하게 +-12만 줍니다.
-    // 이렇게 해야 bottomLine이 바닥에 거의 붙어서 '밑에 남는 공간'이 사라집니다.
-    let yMin = bottomLine - 12;
-    let yMax = topLine + 12;
+    // 4. [여백 최적화] 위아래 여백을 10점으로 줄임 (그래프 꽉 채우기)
+    // 여백을 줄여야 가장 아래 점선(예: 125)이 바닥에 가깝게 붙습니다.
+    let yMin = bottomLine - 10;
+    let yMax = topLine + 10;
     
     const yRange = yMax - yMin || 1;
     const getY = (score) => H - ((score - yMin) / yRange * H) + 15;
