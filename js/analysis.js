@@ -669,6 +669,10 @@ async function updateAnalysisUI() {
         const data = await res.json();
         const results = data.results || [];
         
+        if (data.server_debug) {
+            console.log('%c 🛠️ Server Debug Log:', 'background: #222; color: #bada55; font-size:12px;', data.server_debug);
+        }
+        
         if (results.length === 0) {
             cardsContainer.innerHTML = `<div style="text-align:center; padding:40px;">분석 가능한 결과가 없습니다.</div>`;
         } else {
