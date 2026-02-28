@@ -974,7 +974,7 @@ function renderSimChart() {
             let showOriginalLabel = true;
             let maxRise = 0;
             if (item.sim_data) {
-                Object.values(item.sim_data).forEach(sub => { if (sub && sub.diff > maxRise) maxRise = sub.diff; });
+                Object.values(item.sim_data).forEach(sub => { if (sub && sub.uidiff > maxRise) maxRise = sub.uidiff; });
             }
 
             if (isActive && maxRise > 0 && score < 250) {
@@ -1203,7 +1203,7 @@ function updateSimLineGraph(idx) {
     const keys = ['kor', 'math', 'inq1', 'inq2'];
     const currentScore = data.base_ui_score;
     const scores = keys.map(k => {
-        const rise = (data.sim_data && data.sim_data[k]) ? data.sim_data[k].diff : 0;
+        const rise = (data.sim_data && data.sim_data[k]) ? data.sim_data[k].uidiff : 0;
         return Math.min(250, currentScore + rise);
     });
 
@@ -1382,7 +1382,7 @@ function renderDetailedSimCard() {
             <div class="sim-item ${isBest ? 'best-pick' : ''}">
                 <div class="sim-item-header">
                     <span>${info.name || sub.name} (+1문제)</span>
-                    <span style="color:${info.diff > 0 ? '#ef4444' : '#94a3b8'}">
+                    <span style="color:${info.uidiff > 0 ? '#ef4444' : '#94a3b8'}">
                         +${diffVal}점
                     </span>
                 </div>
