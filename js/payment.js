@@ -85,11 +85,12 @@ function selectProduct(element, url, tier) {
 
     // 4. 버튼 텍스트 변경 (Black은 결제 없음)
     const btn = document.getElementById('submitBtn');
-    if (tier === 'black') {
-        btn.innerText = "상담 신청하기 (결제 없음)";
-    } else {
-        btn.innerText = "결제하기";
-    }
+    // if (tier === 'black') {
+    //     btn.innerText = "상담 신청하기 (결제 없음)";
+    // } else {
+    //     btn.innerText = "결제하기";
+    // }
+    btn.innerText = "결제하기";
 }
 
 // 전화번호 포맷팅 함수
@@ -153,11 +154,11 @@ async function processPayment() {
 
         if (response.ok) {
             // BLACK 티어는 결제 없이 성공 페이지로
-            if (selectedTier === 'black') {
-                window.location.href = `/success?tier=black`;
-            } 
+            // if (selectedTier === 'black') {
+            //     window.location.href = `/success?tier=black`;
+            // } 
             // 나머지 티어는 결제 페이지로
-            else if (selectedProductUrl) {
+            if (selectedProductUrl) {
                 window.location.href = `${selectedProductUrl}?client_reference_id=${uniqueId}&prefilled_email=${email}`;
             }
         } else {

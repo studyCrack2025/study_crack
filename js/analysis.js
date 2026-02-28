@@ -1396,11 +1396,7 @@ function renderDetailedSimCard() {
 
     // 🚨 [추가된 로직] 점수 상황에 따른 동적 경고문구 출력
     let warningHTML = '';
-    if (currentScore < 50) {
-        // 기존 유지: 애초에 차이가 너무 큰 경우
-        warningHTML = `<div class="sim-warning"><i class="fas fa-exclamation-triangle"></i><div><strong>점수 차이가 큽니다.</strong><br>전형 변경을 고려해보세요.</div></div>`;
-    } 
-    else if (currentScore < 10 && (currentScore + maxRise) < 25) {
+    if (currentScore < 10 && (currentScore + maxRise) < 25) {
         // [추가] 상승해도 여전히 매우 불합권인 경우
         warningHTML = `<div class="sim-warning" style="background:#fff7ed; border-color:#fdba74; color:#c2410c;"><i class="fas fa-exclamation-circle"></i><div><strong>여전히 불합격권입니다.</strong><br>한 문제를 더 맞혀도 매우 어렵습니다. 다른 전형이나 대학을 함께 고려해보세요.</div></div>`;
     } 

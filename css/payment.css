@@ -105,12 +105,12 @@ small { color: #64748b; font-size: 0.9rem; }
 }
 
 /* BLACK - Black */
-.tier-black .p-name, .tier-black .p-price { color: #171717 !important; }
+/* .tier-black .p-name, .tier-black .p-price { color: #171717 !important; }
 .product-option.tier-black { background-color: #fafafa; }
 .product-option.tier-black.selected { 
     box-shadow: 0 0 0 2px #171717 inset !important; 
     background-color: #e5e5e5 !important; 
-}
+} */
 
 
 /* 결제 버튼 */
