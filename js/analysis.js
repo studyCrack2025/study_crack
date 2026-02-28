@@ -1068,6 +1068,15 @@ function initSimSvg(targetDiv) {
     const path = document.createElementNS(ns, "path");
     path.setAttribute("class", "sim-path");
 
+    // [변경 1] 배경 요소(가이드, 선)를 먼저 붙입니다. (가장 밑에 깔림)
+    svg.appendChild(guides.g0.g);
+    svg.appendChild(guides.g100.g);
+    svg.appendChild(guides.g150.g);
+    svg.appendChild(guides.g250.g);
+    
+    // [변경 2] 선을 점보다 먼저 붙입니다.
+    svg.appendChild(path);
+
     const points = [];
     const labels = [];
     const labelsGroup = document.createElementNS(ns, "g");
@@ -1080,18 +1089,14 @@ function initSimSvg(targetDiv) {
         const t = document.createElementNS(ns, "text");
         t.setAttribute("class", "sim-point-label");
         
+        // [변경 3] 이제 점을 붙이면 선 위에 그려집니다.
         svg.appendChild(c); 
         labelsGroup.appendChild(t); 
         points.push(c);
         labels.push(t);
     }
     
-    svg.appendChild(guides.g0.g);
-    svg.appendChild(guides.g100.g);
-    svg.appendChild(guides.g150.g);
-    svg.appendChild(guides.g250.g);
-    
-    svg.appendChild(path);
+    // [변경 4] 라벨(텍스트)은 가장 위에 오도록 마지막에 붙입니다.
     svg.appendChild(labelsGroup);
     targetDiv.appendChild(svg);
 
