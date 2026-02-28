@@ -1158,7 +1158,7 @@ function renderSimUnivButtons(targetDiv) {
             });
         };
         targetDiv.appendChild(btn);
-    });x
+    });
 }
 
 // [헬퍼 4] 그래프 업데이트
@@ -1167,7 +1167,7 @@ function updateSimLineGraph(idx) {
     const data = cachedSimData[idx];
     if (!data) return;
 
-    // 1. X축 업데이트
+    // 1. X축 텍스트 업데이트
     const realNames = ['국어', '수학'];
     realNames.push(data.sim_data.inq1?.name || '탐구1');
     realNames.push(data.sim_data.inq2?.name || '탐구2');
@@ -1177,7 +1177,7 @@ function updateSimLineGraph(idx) {
     const W = svgRect.width || 300;
     const H = (svgRect.height || 240) - 25; 
 
-    // 2. 점수 계산
+    // 2. 점수 데이터 추출
     const keys = ['kor', 'math', 'inq1', 'inq2'];
     const currentScore = data.base_ui_score;
     const scores = keys.map(k => {
@@ -1185,68 +1185,68 @@ function updateSimLineGraph(idx) {
         return Math.min(250, currentScore + rise);
     });
 
-    // 3. [변경] 25단위 스케일링 로직 (3개 라인 노출)
+    // 3. [수정됨] 50단위 스케일링 로직
     let minS = Math.min(...scores);
     let maxS = Math.max(...scores);
     
-    // 점수들의 정중앙값 계산
+    // 점수들의 중앙값
     const centerScore = (minS + maxS) / 2;
     
-    // 중앙값에서 가장 가까운 25의 배수를 가운데 라인(midLine)으로 설정
-    let midLine = Math.round(centerScore / 25) * 25;
+    // [변경] 간격을 50으로 설정
+    const GAP = 50; 
     
-    // 위아래로 25점씩 배치
-    let bottomLine = midLine - 25;
-    let topLine = midLine + 25;
+    // 중앙값에서 가장 가까운 50의 배수를 기준선(midLine)으로 잡음 (예: 100, 150, 200)
+    let midLine = Math.round(centerScore / GAP) * GAP;
+    
+    // 위아래로 GAP(50)만큼 벌림
+    let bottomLine = midLine - GAP;
+    let topLine = midLine + GAP;
 
-    // [보정] 0~250 범위를 벗어나지 않도록 시프트
+    // [보정] 0점 미만이거나 250점 초과 시 강제 조정
+    // 만약 계산된 라인이 범위를 벗어나면 전체 틀을 위나 아래로 밈
     if (bottomLine < 0) {
-        bottomLine = 0; midLine = 25; topLine = 50;
+        bottomLine = 0; midLine = 50; topLine = 100;
     } else if (topLine > 250) {
-        topLine = 250; midLine = 225; bottomLine = 200;
+        topLine = 250; midLine = 200; bottomLine = 150;
     }
 
     // Y축 그리기 범위 설정 (여백 포함)
-    // 그래프가 가이드 라인을 살짝 넘어가도 잘리지 않도록 위아래 15점 정도 여유를 둠
-    let yMin = bottomLine - 15;
-    let yMax = topLine + 15;
+    // 간격이 넓으므로 여백도 조금 더 넉넉하게(20) 줌
+    let yMin = bottomLine - 20;
+    let yMax = topLine + 20;
     
     const yRange = yMax - yMin || 1;
     const getY = (score) => H - ((score - yMin) / yRange * H) + 15;
 
-    // 4. [변경] 가이드 라인 업데이트 (기존 객체 재활용)
-    // 보여줄 3개의 값 배열
+    // 4. 가이드 라인 그리기 (3줄: 하단, 중단, 상단)
     const targetGuides = [bottomLine, midLine, topLine];
-    
-    // 기존에 생성된 가이드 객체들을 배열로 변환 (g0, g100, g150, g250)
-    const guideObjects = Object.values(simSvgRefs.guides);
+    const guideObjects = Object.values(simSvgRefs.guides); // g0, g100... 객체들
 
     guideObjects.forEach((guideObj, i) => {
-        // 3개까지만 사용하고 나머지는 숨김
         if (i < 3) {
             const val = targetGuides[i];
             const y = getY(val);
             
             guideObj.g.style.opacity = 1;
             
-            // 라인 위치 이동
+            // 라인 위치
             guideObj.line.setAttribute("x1", 0);
             guideObj.line.setAttribute("x2", W); 
             guideObj.line.setAttribute("y1", y);
             guideObj.line.setAttribute("y2", y);
             
-            // 텍스트 위치 및 내용 업데이트 (중요: 값을 텍스트로 찍어줌)
+            // 텍스트 위치 및 값
             guideObj.text.setAttribute("x", W - 5);
             guideObj.text.setAttribute("y", y - 4);
-            guideObj.text.textContent = val; // 예: "125"
+            guideObj.text.textContent = val; 
             
         } else {
-            // 4번째 가이드(남는 것)는 숨김 처리
+            // 4번째 남는 가이드 숨김
             guideObj.g.style.opacity = 0;
         }
     });
 
-    // 5. 패스 & 포인트 그리기
+    // 5. 패스(선) & 포인트(점) 그리기
     const sectionW = W / 4;
     let d = "";
     
@@ -1267,20 +1267,23 @@ function updateSimLineGraph(idx) {
         const pointEl = simSvgRefs.points[i];
         const labelEl = simSvgRefs.labels[i];
         
+        // 스타일 초기화
         pointEl.style.fill = "#bfdbfe"; 
         pointEl.style.stroke = "#2563EB"; 
         labelEl.style.opacity = 0;
         labelEl.style.fontWeight = "normal";
+        labelEl.style.fill = "#1e293b"; // 기본 색상
 
+        // 최고/최저점 하이라이팅
         if (!isFlat) {
-            if (i === maxIdx) { // 최고점
+            if (i === maxIdx) { // 최고점 (초록)
                 pointEl.style.fill = "#10b981"; 
                 pointEl.style.stroke = "#059669";
                 labelEl.style.fill = "#10b981";
                 labelEl.style.opacity = 1;
                 labelEl.style.fontWeight = "bold";
             }
-            if (i === minIdx) { // 최저점
+            if (i === minIdx) { // 최저점 (빨강)
                 pointEl.style.fill = "#ef4444"; 
                 pointEl.style.stroke = "#b91c1c";
                 labelEl.style.fill = "#ef4444";
