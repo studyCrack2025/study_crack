@@ -134,37 +134,27 @@ async function fetchTutorInfo(tutorName, userTier) {
     const token = localStorage.getItem('idToken');
     
     try {
-        console.log(`%c[Frontend] 튜터 정보 요청 시작: "${tutorName}"`, 'color: blue; font-weight: bold;');
-
         const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
-                type: 'tutor_get_info_by_name', 
+                type: 'get_tutor_info', 
                 data: { tutorName: tutorName } 
             })
         });
 
-        const resData = await response.json();
-
-        // [핵심] 백엔드 로그 출력
-        if (resData.debugLogs) {
-            console.groupCollapsed('%c🚀 Backend Debug Logs (Click to expand)', 'background: #222; color: #bada55');
-            resData.debugLogs.forEach((log, index) => {
-                console.log(`%c[Step ${index + 1}] ${log.msg}`, 'font-weight: bold;', log.data || '');
-            });
-            console.groupEnd();
-        }
-
         if (response.ok) {
+            const resData = await response.json();
             currentTutorData = resData; 
+            
+            // 티어 확인 후 튜터 보기 버튼 표시 (Standard 이상)
             checkTutorButtonVisibility(userTier || 'free');
-            console.log("✅ 튜터 정보 로드 성공:", resData);
         } else {
-            console.warn("❌ 튜터 정보 로드 실패:", resData.error);
+            // 실패 시 조용히 넘어가거나, 필요하다면 최소한의 경고만 남김
+            console.warn("튜터 정보를 불러오지 못했습니다.");
         }
     } catch (e) {
-        console.error("fetchTutorInfo 실행 중 에러:", e);
+        console.error("fetchTutorInfo Error:", e);
     }
 }
 
