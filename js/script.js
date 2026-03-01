@@ -151,7 +151,7 @@ function selectCourse(tier) {
                 return `
                     <li class="clickable-item" ${clickHandler} title="클릭하여 확인하기">
                         <i class="fas fa-check-circle" style="color:${checkColor}"></i>
-                        <span style="border-bottom: 1px dashed rgba(255,255,255,0.5); padding-bottom: 2px;">${item.text}</span>
+                        <span>${item.text}</span>
                         <i class="fas fa-external-link-alt" style="font-size: 0.7em; margin-left: 5px; opacity: 0.7;"></i>
                     </li>
                 `;
