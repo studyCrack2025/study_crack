@@ -140,26 +140,51 @@
 
 /* 2. 튜터 모달 (프로필 카드 디자인) */
 .tutor-card {
-    max-width: 450px; /* 기존 모달보다 약간 넓게 */
+    background: white;
     width: 90%;
-    padding: 0; /* 내부 패딩 재설정 */
-    overflow: hidden; /* 배경색 등 넘침 방지 */
+    max-width: 420px; /* 모바일에서 너무 넓지 않게 조정 */
+    
+    /* [핵심] 모바일 스크롤 해결을 위한 설정 */
+    max-height: 85vh; /* 화면 높이의 85%까지만 차지 */
+    display: flex;    /* 내부 요소를 flex로 배치 */
+    flex-direction: column; /* 위(헤더) 아래(바디)로 정렬 */
+    
+    border-radius: 20px; /* 둥근 모서리 강화 */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    overflow: hidden; /* 자식 요소가 둥근 모서리 뚫고 나오는 것 방지 */
+    position: relative; /* 닫기 버튼 위치 기준점 */
 }
 
-/* 상단 헤더 (배경색 + 프로필 사진) */
+/* 상단 헤더 (배경색 + 프로필 사진) - 고정 영역 */
 .tutor-header {
-    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-    padding: 30px 20px;
+    background: linear-gradient(135deg, #f0f9ff 0%, #dbeafe 100%);
+    padding: 30px 20px 20px; /* 하단 패딩 약간 줄임 */
     text-align: center;
-    border-bottom: 1px solid #e0f2fe;
+    flex-shrink: 0; /* 스크롤 시에도 헤더가 찌그러지지 않게 고정 */
+    position: relative;
+}
+
+/* 닫기 버튼 스타일 개선 (헤더 우측 상단 고정) */
+.tutor-card .close-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    color: #64748b;
+    font-size: 2rem;
+    font-weight: normal;
+    z-index: 10;
+    transition: color 0.2s;
+}
+.tutor-card .close-btn:hover {
+    color: #1e293b;
 }
 
 .tutor-img-wrapper {
-    width: 100px; height: 100px;
-    margin: 0 auto 15px;
+    width: 90px; height: 90px; /* 사이즈 약간 조정 */
+    margin: 0 auto 12px;
     border-radius: 50%;
     border: 4px solid white;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1); /* 그림자 부드럽게 */
     overflow: hidden;
     background: white;
 }
@@ -168,18 +193,44 @@
 }
 
 .tutor-badge {
-    background: #2563eb; color: white;
-    font-size: 0.7rem; font-weight: bold;
-    padding: 4px 10px; border-radius: 12px;
+    background: #3b82f6; /* 색상 약간 밝게 */
+    color: white;
+    font-size: 0.7rem; font-weight: 700;
+    padding: 4px 10px; border-radius: 100px;
     text-transform: uppercase; letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 }
 
 .tutor-title h3 {
-    margin: 10px 0 5px;
-    font-size: 1.4rem; color: #1e293b;
+    margin: 12px 0 4px;
+    font-size: 1.3rem; 
+    color: #0f172a;
+    font-weight: 800;
 }
 .tutor-nick {
-    margin: 0; color: #64748b; font-size: 0.95rem;
+    margin: 0; color: #64748b; font-size: 0.9rem;
+}
+
+/* [핵심] 하단 상세 정보 - 스크롤 영역 */
+.tutor-body {
+    padding: 25px;
+    overflow-y: auto; /* 내용이 넘치면 스크롤 발생 */
+    background: #fff;
+    
+    /* 모바일 터치 스크롤 부드럽게 */
+    -webkit-overflow-scrolling: touch; 
+}
+
+/* 스크롤바 디자인 (크롬, 사파리 등) - 선택사항 */
+.tutor-body::-webkit-scrollbar {
+    width: 6px;
+}
+.tutor-body::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 3px;
+}
+.tutor-body::-webkit-scrollbar-track {
+    background-color: transparent;
 }
 
 /* 하단 상세 정보 */
@@ -336,6 +387,16 @@ input:focus { outline: none; border-color: #2563EB; }
     .content-area { width: 100%; padding: 20px; min-height: auto; }
     .form-container { max-width: 100%; }
     .password-section { display: block; }
+    .tutor-card {
+        width: 95%; /* 모바일에서 좌우 여백 줄임 */
+        max-height: 90vh; /* 높이 좀 더 확보 */
+    }
+    .tutor-header {
+        padding: 25px 15px 15px;
+    }
+    .tutor-body {
+        padding: 20px;
+    }
 }
 
 @media (min-width: 769px) {
