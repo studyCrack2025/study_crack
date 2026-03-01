@@ -122,6 +122,99 @@
     background: linear-gradient(135deg, #000000, #333333); color: #FFD700; border: 1px solid #444; 
 }
 
+/* 1. 사이드바 튜터 버튼 (청록색 계열로 차별화) */
+.btn-view-tutor {
+    display: block; width: 100%; padding: 12px;
+    background-color: #ecfdf5; color: #059669; /* Emerald Green */
+    text-decoration: none; border-radius: 6px;
+    font-weight: bold; font-size: 0.9rem;
+    border: 1px solid #a7f3d0;
+    transition: all 0.2s;
+}
+.btn-view-tutor:hover {
+    background-color: #d1fae5;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.btn-view-tutor i { margin-right: 6px; }
+
+/* 2. 튜터 모달 (프로필 카드 디자인) */
+.tutor-card {
+    max-width: 450px; /* 기존 모달보다 약간 넓게 */
+    width: 90%;
+    padding: 0; /* 내부 패딩 재설정 */
+    overflow: hidden; /* 배경색 등 넘침 방지 */
+}
+
+/* 상단 헤더 (배경색 + 프로필 사진) */
+.tutor-header {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    padding: 30px 20px;
+    text-align: center;
+    border-bottom: 1px solid #e0f2fe;
+}
+
+.tutor-img-wrapper {
+    width: 100px; height: 100px;
+    margin: 0 auto 15px;
+    border-radius: 50%;
+    border: 4px solid white;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    overflow: hidden;
+    background: white;
+}
+.tutor-img-wrapper img {
+    width: 100%; height: 100%; object-fit: cover;
+}
+
+.tutor-badge {
+    background: #2563eb; color: white;
+    font-size: 0.7rem; font-weight: bold;
+    padding: 4px 10px; border-radius: 12px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+.tutor-title h3 {
+    margin: 10px 0 5px;
+    font-size: 1.4rem; color: #1e293b;
+}
+.tutor-nick {
+    margin: 0; color: #64748b; font-size: 0.95rem;
+}
+
+/* 하단 상세 정보 */
+.tutor-body { padding: 25px 30px 35px; }
+
+.tutor-info-row {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; margin-bottom: 8px;
+    color: #334155; font-weight: 500; font-size: 1rem;
+}
+.tutor-info-row i { color: #94a3b8; }
+
+.tutor-section { margin-top: 25px; }
+.tutor-section label {
+    display: block; font-size: 0.85rem; font-weight: bold;
+    color: #94a3b8; margin-bottom: 8px; text-transform: uppercase;
+}
+
+.info-box {
+    background: #f8fafc; padding: 12px;
+    border-radius: 8px; border: 1px solid #e2e8f0;
+    color: #334155; font-size: 0.95rem; margin: 0;
+    line-height: 1.5;
+}
+
+.message-quote {
+    position: relative; margin: 0;
+    padding: 15px 20px;
+    background: #fdf2f8; /* 옅은 핑크 포인트 */
+    border-left: 4px solid #db2777;
+    border-radius: 4px;
+    color: #be185d; font-style: italic;
+    font-size: 0.95rem; line-height: 1.5;
+}
+
 /* 공통 폼 및 기타 */
 .content-header { text-align: center; }
 .content-header h2 { margin-top: 0; color: #1e293b; }

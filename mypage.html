@@ -66,6 +66,12 @@
                 </a>
             </div>
             
+            <div id="tutorBtnContainer" class="mypage-link-box hidden">
+                <a href="#" onclick="openTutorModal(); return false;" class="btn-view-tutor">
+                    <i class="fas fa-chalkboard-teacher"></i> 담당 컨설턴트 프로필 보기
+                </a>
+            </div>
+            
             <div class="account-actions">
                 <button class="btn-delete-account" onclick="handleDeleteAccount()">회원 탈퇴</button>
             </div>
@@ -168,6 +174,46 @@
             <button class="modal-action-btn" onclick="changePassword()">비밀번호 변경</button>
         </div>
     </div>
+    
+    <div id="tutorModal" class="modal hidden">
+    <div class="modal-content tutor-card">
+        <span class="close-btn" onclick="closeModal('tutorModal')">&times;</span>
+        
+        <div class="tutor-header">
+            <div class="tutor-img-wrapper">
+                <img id="tutorProfileImg" src="" alt="컨설턴트 프로필" onerror="this.src='assets/images/sample_profile.png'">
+            </div>
+            <div class="tutor-title">
+                <span class="tutor-badge">Dedicated Consultant</span>
+                <h3 id="tutorName">-</h3>
+                <p id="tutorNickname" class="tutor-nick">-</p>
+            </div>
+        </div>
+
+        <div class="tutor-body">
+            <div class="tutor-info-row">
+                <i class="fas fa-university"></i>
+                <span id="tutorSchoolMajor">-</span>
+            </div>
+            <div class="tutor-info-row">
+                <i class="fas fa-phone-alt"></i>
+                <span id="tutorPhone">-</span>
+            </div>
+
+            <div class="tutor-section">
+                <label>전문 분야 & 강점</label>
+                <p id="tutorStrengths" class="info-box">-</p>
+            </div>
+
+            <div class="tutor-section">
+                <label>한마디</label>
+                <blockquote id="tutorMessage" class="message-quote">
+                    -
+                </blockquote>
+            </div>
+        </div>
+    </div>
+</div>
 
     <script src="/js/config.js"></script>
     <script src="/js/auth.js"></script>

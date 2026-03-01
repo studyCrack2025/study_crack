@@ -3,6 +3,7 @@
 const MYPAGE_API_URL = CONFIG.api.base; 
 let currentUserTier = 'free';
 let cognitoUser = null; // Cognito 유저 객체 전역 관리
+let currentTutorData = null;
 
 // ==========================================
 // [초기화] DOM 로드 및 데이터 페치
@@ -84,57 +85,83 @@ function parseDynamoItem(item) {
 // ==========================================
 async function fetchUserData(userId) {
     const token = localStorage.getItem('idToken');
-    const safeUserId = userId || localStorage.getItem('userId'); 
+    const safeUserId = userId || localStorage.getItem('userId');
+    
     try {
+        // (1) 내 정보 가져오기
         const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'get_user', userId: safeUserId }) 
         });
         
-        if (response.status === 401) throw new Error("인증 실패 (401): 다시 로그인해주세요.");
-        if (!response.ok) {
-            const errJson = await response.json();
-            throw new Error(errJson.error || "서버 오류");
-        }
-        
+        if (!response.ok) throw new Error("서버 통신 오류");
         const rawData = await response.json();
-        const data = parseDynamoItem(rawData);
+        const userData = parseDynamoItem(rawData); // 내 정보 파싱
 
-        renderUserInfo(data);
-        applyUserTier(data.computedTier || 'free');
-        
-        if (data && data.profileImage) {
+        // (2) 내 정보 렌더링
+        renderUserInfo(userData);
+        applyUserTier(userData.computedTier || 'free');
+
+        // 프로필 이미지 처리
+        if (userData.profileImage) {
             const imgElem = document.getElementById('profileImg');
             if (imgElem) {
-                imgElem.src = escapeHtml(data.profileImage);
-                checkDeleteButtonVisibility(data.profileImage);
+                imgElem.src = escapeHtml(userData.profileImage);
+                checkDeleteButtonVisibility(userData.profileImage);
             }
         }
-    } catch (error) { 
-        console.error("데이터 로드 중 오류:", error); 
-        if(error.message.includes("401")) { 
-            alert("세션이 만료되었습니다."); 
-            location.href='/login'; 
+
+        // (3) [NEW] 튜터 정보가 있다면 추가로 가져오기
+        // 내 정보에 tutorName 필드가 있다고 가정
+        if (userData.tutorName) {
+            await fetchTutorInfo(userData.tutorName, userData.computedTier);
         }
+
+    } catch (error) { 
+        console.error("데이터 로드 실패:", error); 
+    }
+}
+
+async function fetchTutorInfo(tutorName, userTier) {
+    const token = localStorage.getItem('idToken');
+    
+    try {
+        const response = await fetch(MYPAGE_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ 
+                type: 'tutor_get_info_by_name',
+                data: { tutorName: tutorName } 
+            })
+        });
+
+        if (response.ok) {
+            const tutorData = await response.json(); // 이미 Lambda에서 필터링된 데이터
+            currentTutorData = tutorData; // 전역 변수에 저장
+            
+            // 티어 확인 후 버튼 표시 (standard 이상)
+            checkTutorButtonVisibility(userTier || 'free');
+        } else {
+            console.warn("튜터 정보를 찾을 수 없습니다.");
+        }
+    } catch (e) {
+        console.error("튜터 정보 로드 중 오류:", e);
     }
 }
 
 function renderUserInfo(data) {
-    // 사이드바
     const nameEl = document.getElementById('userNameDisplay');
     const emailEl = document.getElementById('userEmailDisplay');
     
     if (nameEl) nameEl.innerText = data.name ? data.name : '이름 없음';
     if (emailEl) emailEl.innerText = data.email ? data.email : '';
     
-    // 폼 인풋
     const nameInput = document.getElementById('profileName');
     if(nameInput) {
         nameInput.value = data.name || '';
         document.getElementById('profilePhone').value = data.phone || '';
         document.getElementById('profileSchool').value = data.school || '';
-        // 이메일은 별도 표시
         const currentEmailDisplay = document.getElementById('currentEmailDisplay');
         if(currentEmailDisplay) currentEmailDisplay.innerText = data.email || '';
     }
@@ -160,6 +187,7 @@ function applyUserTier(tier) {
         }
     }
 }
+
 
 // ==========================================
 // [기능 1] 기본 인적사항 수정 (개별 토글)
