@@ -130,92 +130,41 @@ async function fetchUserData(userId) {
     }
 }
 
-// ... (기존 코드)
-
-// 2. 튜터 정보 조회 (이름 기반)
-else if (type === 'tutor_get_info_by_name') {
-    const debugLogs = []; // 로그 수집용 배열
+async function fetchTutorInfo(tutorName, userTier) {
+    const token = localStorage.getItem('idToken');
     
-    // 로그 헬퍼 함수
-    const log = (msg, data = null) => {
-        console.log(msg, data ? JSON.stringify(data) : ''); // CloudWatch용
-        debugLogs.push({ msg, data }); // 프론트엔드 반환용
-    };
-
-    const requestData = JSON.parse(event.body || '{}');
-    // 공백 제거
-    const targetTutorName = requestData.data?.tutorName ? requestData.data.tutorName.trim() : null;
-
-    log("1. 요청 받은 튜터 이름(Trimmed)", targetTutorName);
-
-    if (!targetTutorName) {
-        return { 
-            statusCode: 400, 
-            headers: responseHeaders, 
-            body: JSON.stringify({ error: "Tutor Name Missing", debugLogs }) 
-        };
-    }
-
     try {
-        const params = {
-            TableName: TABLE_NAME,
-            FilterExpression: "#r = :roleVal AND #n = :nameVal",
-            ExpressionAttributeNames: {
-                "#r": "role",
-                "#n": "name"
-            },
-            ExpressionAttributeValues: {
-                ":roleVal": "tutor",
-                ":nameVal": targetTutorName
-            }
-        };
+        console.log(`%c[Frontend] 튜터 정보 요청 시작: "${tutorName}"`, 'color: blue; font-weight: bold;');
 
-        log("2. DynamoDB 검색 파라미터", params);
+        const response = await fetch(MYPAGE_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ 
+                type: 'tutor_get_info_by_name', 
+                data: { tutorName: tutorName } 
+            })
+        });
 
-        const command = new ScanCommand(params);
-        const result = await docClient.send(command);
+        const resData = await response.json();
 
-        log("3. 검색 결과 개수", result.Items ? result.Items.length : 0);
-
-        if (!result.Items || result.Items.length === 0) {
-            log("4. 결과 없음 - 실패");
-            return { 
-                statusCode: 404, 
-                headers: responseHeaders, 
-                body: JSON.stringify({ error: "Tutor not found", debugLogs }) 
-            };
+        // [핵심] 백엔드 로그 출력
+        if (resData.debugLogs) {
+            console.groupCollapsed('%c🚀 Backend Debug Logs (Click to expand)', 'background: #222; color: #bada55');
+            resData.debugLogs.forEach((log, index) => {
+                console.log(`%c[Step ${index + 1}] ${log.msg}`, 'font-weight: bold;', log.data || '');
+            });
+            console.groupEnd();
         }
 
-        // 결과 찾음
-        const tutorRaw = result.Items[0];
-        log("4. 찾은 원본 데이터", tutorRaw);
-
-        // 값 추출 헬퍼 (Raw JSON {S: "val"} 형태 대응)
-        const getVal = (val) => (val && val.S) ? val.S : val;
-
-        const safeTutorData = {
-            name: getVal(tutorRaw.name),
-            nickname: getVal(tutorRaw.nickname),
-            school: getVal(tutorRaw.school),
-            major: getVal(tutorRaw.major),
-            phone: getVal(tutorRaw.phone),
-            message: getVal(tutorRaw.message),
-            strengths: getVal(tutorRaw.strengths),
-            profileImage: getVal(tutorRaw.profileImage),
-            debugLogs: debugLogs // [중요] 디버그 로그 포함해서 반환
-        };
-
-        log("5. 최종 반환 데이터", safeTutorData);
-
-        responseBody = safeTutorData;
-
-    } catch (error) {
-        log("ERROR 발생", error.message);
-        return { 
-            statusCode: 500, 
-            headers: responseHeaders, 
-            body: JSON.stringify({ error: "DB Error", details: error.message, debugLogs }) 
-        };
+        if (response.ok) {
+            currentTutorData = resData; 
+            checkTutorButtonVisibility(userTier || 'free');
+            console.log("✅ 튜터 정보 로드 성공:", resData);
+        } else {
+            console.warn("❌ 튜터 정보 로드 실패:", resData.error);
+        }
+    } catch (e) {
+        console.error("fetchTutorInfo 실행 중 에러:", e);
     }
 }
 
