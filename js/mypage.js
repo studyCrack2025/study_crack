@@ -130,30 +130,92 @@ async function fetchUserData(userId) {
     }
 }
 
-async function fetchTutorInfo(tutorName, userTier) {
-    const token = localStorage.getItem('idToken');
-    
-    try {
-        const response = await fetch(MYPAGE_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ 
-                type: 'tutor_get_info_by_name',
-                data: { tutorName: tutorName } 
-            })
-        });
+// ... (기존 코드)
 
-        if (response.ok) {
-            const tutorData = await response.json(); // 이미 Lambda에서 필터링된 데이터
-            currentTutorData = tutorData; // 전역 변수에 저장
-            
-            // 티어 확인 후 버튼 표시 (standard 이상)
-            checkTutorButtonVisibility(userTier || 'free');
-        } else {
-            console.warn("튜터 정보를 찾을 수 없습니다.");
+// 2. 튜터 정보 조회 (이름 기반)
+else if (type === 'tutor_get_info_by_name') {
+    const debugLogs = []; // 로그 수집용 배열
+    
+    // 로그 헬퍼 함수
+    const log = (msg, data = null) => {
+        console.log(msg, data ? JSON.stringify(data) : ''); // CloudWatch용
+        debugLogs.push({ msg, data }); // 프론트엔드 반환용
+    };
+
+    const requestData = JSON.parse(event.body || '{}');
+    // 공백 제거
+    const targetTutorName = requestData.data?.tutorName ? requestData.data.tutorName.trim() : null;
+
+    log("1. 요청 받은 튜터 이름(Trimmed)", targetTutorName);
+
+    if (!targetTutorName) {
+        return { 
+            statusCode: 400, 
+            headers: responseHeaders, 
+            body: JSON.stringify({ error: "Tutor Name Missing", debugLogs }) 
+        };
+    }
+
+    try {
+        const params = {
+            TableName: TABLE_NAME,
+            FilterExpression: "#r = :roleVal AND #n = :nameVal",
+            ExpressionAttributeNames: {
+                "#r": "role",
+                "#n": "name"
+            },
+            ExpressionAttributeValues: {
+                ":roleVal": "tutor",
+                ":nameVal": targetTutorName
+            }
+        };
+
+        log("2. DynamoDB 검색 파라미터", params);
+
+        const command = new ScanCommand(params);
+        const result = await docClient.send(command);
+
+        log("3. 검색 결과 개수", result.Items ? result.Items.length : 0);
+
+        if (!result.Items || result.Items.length === 0) {
+            log("4. 결과 없음 - 실패");
+            return { 
+                statusCode: 404, 
+                headers: responseHeaders, 
+                body: JSON.stringify({ error: "Tutor not found", debugLogs }) 
+            };
         }
-    } catch (e) {
-        console.error("튜터 정보 로드 중 오류:", e);
+
+        // 결과 찾음
+        const tutorRaw = result.Items[0];
+        log("4. 찾은 원본 데이터", tutorRaw);
+
+        // 값 추출 헬퍼 (Raw JSON {S: "val"} 형태 대응)
+        const getVal = (val) => (val && val.S) ? val.S : val;
+
+        const safeTutorData = {
+            name: getVal(tutorRaw.name),
+            nickname: getVal(tutorRaw.nickname),
+            school: getVal(tutorRaw.school),
+            major: getVal(tutorRaw.major),
+            phone: getVal(tutorRaw.phone),
+            message: getVal(tutorRaw.message),
+            strengths: getVal(tutorRaw.strengths),
+            profileImage: getVal(tutorRaw.profileImage),
+            debugLogs: debugLogs // [중요] 디버그 로그 포함해서 반환
+        };
+
+        log("5. 최종 반환 데이터", safeTutorData);
+
+        responseBody = safeTutorData;
+
+    } catch (error) {
+        log("ERROR 발생", error.message);
+        return { 
+            statusCode: 500, 
+            headers: responseHeaders, 
+            body: JSON.stringify({ error: "DB Error", details: error.message, debugLogs }) 
+        };
     }
 }
 
