@@ -515,3 +515,23 @@ function setupUI() {
         }
     }
 }
+
+// ==========================================
+// [기능 5] 튜터 프로필 보기 버튼 제어
+// ==========================================
+function checkTutorButtonVisibility(tier) {
+    const btnContainer = document.getElementById('tutorBtnContainer');
+    
+    // 1. 버튼 컨테이너가 HTML에 있는지 확인 (없으면 에러 방지)
+    if (!btnContainer) return;
+
+    // 2. 조건 확인: (Standard 이상 등급) AND (튜터 데이터 존재)
+    // 'black' 티어도 있다면 포함
+    const allowedTiers = ['standard', 'pro', 'black']; 
+    
+    if (allowedTiers.includes(tier) && currentTutorData) {
+        btnContainer.classList.remove('hidden'); // 버튼 보이기
+    } else {
+        btnContainer.classList.add('hidden'); // 버튼 숨기기
+    }
+}
