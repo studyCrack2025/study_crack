@@ -338,11 +338,10 @@ header {
 
 /* 1. 클릭 가능한 리스트 아이템 스타일 */
 .detail-list li.clickable-item { display: flex; align-items: flex-start; gap: 8px; width: 100%; margin-bottom: 8px; cursor: pointer; }
-.detail-list li.clickable-item span { position: relative; flex: 1; min-width: 0; white-space: normal; word-break: keep-all; line-height: 1.5; border-bottom: 1px dashed rgba(255, 255, 255, 0.4); padding-bottom: 2px; transition: all 0.2s; text-decoration: none; }
+.detail-list li.clickable-item span { position: relative; flex: 0 1 auto; min-width: 0; white-space: normal; word-break: keep-all; line-height: 1.5; border-bottom: 1px dashed rgba(255, 255, 255, 0.4); padding-bottom: 2px; transition: all 0.2s; text-decoration: none; }
 .detail-list li.clickable-item:hover span { color: #fff; border-bottom-color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.5); }
 .detail-list li.clickable-item i { transition: transform 0.2s; margin-top: 4px; flex-shrink: 0; }
-.detail-list li.clickable-item:hover i { transform: scale(1.2); }orm: scale(1.2);
-}
+.detail-list li.clickable-item:hover i { transform: scale(1.2); }
 
 /* 2. 기능 미리보기 슬라이드 패널 (PC: 오른쪽에서 슬라이드) */
 .curriculum-interactive-box { position: relative; overflow: hidden; }
