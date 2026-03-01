@@ -337,103 +337,23 @@ header {
 /* style.css 추가 코드 */
 
 /* 1. 클릭 가능한 리스트 아이템 스타일 */
-.detail-list li.clickable-item {
-    cursor: pointer;
-    text-decoration: underline;
-    text-underline-offset: 4px;
-    text-decoration-color: rgba(255, 255, 255, 0.4);
-    transition: all 0.2s;
-}
-.detail-list li.clickable-item:hover {
-    color: #fff;
-    text-decoration-color: #fff;
-    text-shadow: 0 0 8px rgba(255,255,255,0.5);
-}
-.detail-list li.clickable-item i {
-    transition: transform 0.2s;
-}
-.detail-list li.clickable-item:hover i {
-    transform: scale(1.2);
+.detail-list li.clickable-item { display: flex; align-items: flex-start; gap: 8px; width: 100%; margin-bottom: 8px; cursor: pointer; }
+.detail-list li.clickable-item span { position: relative; flex: 1; min-width: 0; white-space: normal; word-break: keep-all; line-height: 1.5; border-bottom: 1px dashed rgba(255, 255, 255, 0.4); padding-bottom: 2px; transition: all 0.2s; text-decoration: none; }
+.detail-list li.clickable-item:hover span { color: #fff; border-bottom-color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.5); }
+.detail-list li.clickable-item i { transition: transform 0.2s; margin-top: 4px; flex-shrink: 0; }
+.detail-list li.clickable-item:hover i { transform: scale(1.2); }orm: scale(1.2);
 }
 
 /* 2. 기능 미리보기 슬라이드 패널 (PC: 오른쪽에서 슬라이드) */
-.curriculum-interactive-box {
-    position: relative; /* 패널 위치 기준점 */
-    overflow: hidden;   /* 패널이 박스 밖으로 나가지 않게 */
-}
-
-.feature-preview-panel {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 60%; /* PC에서는 오른쪽 60% 덮음 */
-    height: 100%;
-    background: rgba(15, 23, 42, 0.95); /* 아주 진한 남색 배경 */
-    backdrop-filter: blur(10px);
-    border-left: 1px solid rgba(255, 255, 255, 0.1);
-    transform: translateX(110%); /* 기본적으로 오른쪽으로 숨김 */
-    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-    z-index: 20;
-    display: flex;
-    flex-direction: column;
-    padding: 30px;
-    box-shadow: -10px 0 30px rgba(0,0,0,0.5);
-}
-
-.feature-preview-panel.active {
-    transform: translateX(0); /* 활성화 시 보임 */
-}
-
-.preview-close-btn {
-    align-self: flex-end;
-    background: none;
-    border: none;
-    color: #94a3b8;
-    font-size: 2rem;
-    cursor: pointer;
-    line-height: 1;
-    margin-bottom: 10px;
-    transition: color 0.2s;
-}
-.preview-close-btn:hover {
-    color: #fff;
-}
-
-.preview-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-.preview-content h4 {
-    font-size: 1.2rem;
-    color: #fff;
-    margin-bottom: 20px;
-    font-weight: 700;
-    border-bottom: 1px solid rgba(255,255,255,0.2);
-    padding-bottom: 10px;
-}
-
-.preview-img-wrapper {
-    flex: 1;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0,0,0,0.3);
-    border-radius: 12px;
-    overflow: hidden;
-    padding: 10px;
-}
-
-.preview-img-wrapper img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-}
+.curriculum-interactive-box { position: relative; overflow: hidden; }
+.feature-preview-panel { position: absolute; top: 0; right: 0; width: 60%; height: 100%; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); border-left: 1px solid rgba(255, 255, 255, 0.1); transform: translateX(110%); transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1); z-index: 20; display: flex; flex-direction: column; padding: 30px; box-shadow: -10px 0 30px rgba(0,0,0,0.5); }
+.feature-preview-panel.active { transform: translateX(0); }
+.preview-close-btn { align-self: flex-end; background: none; border: none; color: #94a3b8; font-size: 2rem; cursor: pointer; line-height: 1; margin-bottom: 10px; transition: color 0.2s; }
+.preview-close-btn:hover { color: #fff; }
+.preview-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.preview-content h4 { font-size: 1.2rem; color: #fff; margin-bottom: 20px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; }
+.preview-img-wrapper { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); border-radius: 12px; overflow: hidden; padding: 10px; }
+.preview-img-wrapper img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
 
 
 /* =========================================
