@@ -115,7 +115,14 @@ async function fetchUserData(userId) {
         // (3) [NEW] 튜터 정보가 있다면 추가로 가져오기
         // 내 정보에 tutorName 필드가 있다고 가정
         if (userData.tutorName) {
-            await fetchTutorInfo(userData.tutorName, userData.computedTier);
+            // [디버깅] 여기에 로그를 추가해서 콘솔창(F12)을 확인하세요.
+            console.log("학생 데이터에 저장된 튜터 이름:", `"${userData.tutorName}"`); // 따옴표를 넣어 공백 여부 확인
+            
+            // 공백이 있다면 제거하고 요청
+            const cleanTutorName = userData.tutorName.trim();
+            await fetchTutorInfo(cleanTutorName, userData.computedTier);
+        } else {
+            console.log("학생 데이터에 tutorName 필드가 없습니다.");
         }
 
     } catch (error) { 
