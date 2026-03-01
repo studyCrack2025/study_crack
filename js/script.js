@@ -57,7 +57,6 @@ const COURSE_DATA = {
         desc: "내 점수와 목표 대학 합격선 사이의 거리를 정밀하게 진단합니다.",
         list: [
             { text: "개인 성적 및 목표 대학 환산점수 계산" },
-            // 클릭 시 feat_basic_1.png (모바일은 feat_basic_mobile_1.png) 띄움
             { 
                 text: "합격 컷 대비 거리 분석 (위험도 경고)", 
                 action: "preview", 
@@ -74,7 +73,6 @@ const COURSE_DATA = {
         desc: "어떤 과목을 공부해야 점수가 가장 빨리 오르는지 분석하고 관리합니다.",
         list: [
             { text: "BASIC 포함 + 목표 대학 3곳 확장" },
-            // 각각 feat_standard_1, 2, 3 연결 (오타 보정: basic_3 -> standard_3로 가정)
             { 
                 text: "과목별 1점당 환산 기울기(효율) 계산", 
                 action: "preview", 
@@ -182,36 +180,57 @@ function selectCourse(tier) {
 
 function openFeaturePreview(imgBase, title) {
     const panel = document.getElementById('featurePreviewPanel');
-    const previewImg = document.getElementById('previewImage');
     const previewTitle = document.getElementById('previewTitle');
+    
+    // 이미지 감싸는 부모 요소 선택
+    const imgWrapper = document.querySelector('.preview-img-wrapper');
 
-    if (!panel || !previewImg) return;
+    if (!panel || !imgWrapper) return;
+
+    // [중요] 매번 클릭할 때마다 이미지 태그를 새로 리셋합니다.
+    // (이전에 에러가 나서 텍스트로 바뀌어 있을 수 있기 때문입니다)
+    imgWrapper.innerHTML = '<img id="previewImage" src="" alt="기능 예시 이미지" style="width:100%; height:100%; object-fit:contain;">';
+    
+    // 리셋된 이미지 태그 다시 선택
+    const previewImg = document.getElementById('previewImage');
 
     // 모바일 감지 (화면 너비 900px 이하)
     const isMobile = window.innerWidth <= 900;
     
-    // 이미지 경로 생성: feat_basic_1 -> feat_basic_mobile_1.png
+    // 이미지 경로 생성 로직
     let imgPath = "";
     if (isMobile) {
-        // "feat_standard_1" -> "feat_standard_mobile_1.png" 형식으로 변환
-        // 마지막 숫자 앞이나 끝에 _mobile을 붙임
+        // 예: feat_basic_1 -> feat_basic_mobile_1.png
         const parts = imgBase.split('_');
-        const number = parts.pop(); // 마지막 숫자 분리 (예: '1')
-        const base = parts.join('_'); // 나머지 (예: 'feat_standard')
+        const number = parts.pop(); 
+        const base = parts.join('_'); 
         imgPath = `assets/features/${base}_mobile_${number}.png`;
     } else {
+        // 예: feat_basic_1.png
         imgPath = `assets/features/${imgBase}.png`;
     }
 
-    // 내용 설정
-    previewImg.src = imgPath;
-    previewImg.onerror = function() {
-        this.src = ''; // 이미지 로드 실패 시 깨진 아이콘 숨김
-        alert("이미지를 불러올 수 없습니다.\n경로: " + imgPath);
-    };
+    // 제목 설정
     if(previewTitle) previewTitle.innerText = title;
 
-    // 패널 열기
+    // [핵심] 이미지 로드 실패 시 alert 대신 UI 변경
+    previewImg.onerror = function() {
+        // 콘솔에만 에러 로그 남김 (사용자 방해 X)
+        console.log("이미지 로드 실패, 대체 화면 표시: " + imgPath);
+        
+        // 이미지 태그를 안내 문구로 교체
+        imgWrapper.innerHTML = `
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:rgba(255,255,255,0.5); gap:15px;">
+                <i class="fas fa-image" style="font-size:3rem;"></i>
+                <span style="font-size:0.95rem;">이미지를 준비 중입니다.</span>
+            </div>
+        `;
+    };
+
+    // 이미지 경로 할당 (이 시점에 로딩 시작)
+    previewImg.src = imgPath;
+
+    // 패널 열기 애니메이션
     panel.classList.add('active');
 }
 
