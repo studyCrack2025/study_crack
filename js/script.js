@@ -36,12 +36,18 @@ window.onclick = function(event) {
 /* =========================================
    2. 커리큘럼 탭 로직
    ========================================= */
+   
 const COURSE_DATA = {
     mbti: {
         title: "MBTI SOLUTION",
         price: "무료",
         desc: "탐구 MBTI 결과를 분석해 나의 학습 성향을 파악하고, 성적 상승을 위한 최적의 맞춤 공부법을 제안합니다.",
-        list: ["탐구 MBTI 기반 학습 성향 정밀 진단", "유형별 학습 강점 및 취약점 분석 리포트", "성향에 딱 맞는 과목별 맞춤 공부법 솔루션 제공"],
+        // MBTI는 클릭 기능 없음 (기존 유지)
+        list: [
+            { text: "탐구 MBTI 기반 학습 성향 정밀 진단" },
+            { text: "유형별 학습 강점 및 취약점 분석 리포트" },
+            { text: "성향에 딱 맞는 과목별 맞춤 공부법 솔루션 제공" }
+        ],
         bg: "assets/backgrounds/bg_mbti.png",
         themeColor: "#8B5CF6"
     },
@@ -49,7 +55,16 @@ const COURSE_DATA = {
         title: "BASIC PLAN",
         price: "49,000원",
         desc: "내 점수와 목표 대학 합격선 사이의 거리를 정밀하게 진단합니다.",
-        list: ["개인 성적 및 목표 대학 환산점수 계산", "합격 컷 대비 거리 분석 (위험도 경고)", "목표 대학별 '효자 과목' 발굴"],
+        list: [
+            { text: "개인 성적 및 목표 대학 환산점수 계산" },
+            // 클릭 시 feat_basic_1.png (모바일은 feat_basic_mobile_1.png) 띄움
+            { 
+                text: "합격 컷 대비 거리 분석 (위험도 경고)", 
+                action: "preview", 
+                imgBase: "feat_basic_1" 
+            },
+            { text: "목표 대학별 '효자 과목' 발굴" }
+        ],
         bg: "assets/backgrounds/bg_basic.png",
         themeColor: "#059669"
     },
@@ -57,7 +72,25 @@ const COURSE_DATA = {
         title: "STANDARD PLAN",
         price: "월 149,000원",
         desc: "어떤 과목을 공부해야 점수가 가장 빨리 오르는지 분석하고 관리합니다.",
-        list: ["BASIC 포함 + 목표 대학 3곳 확장", "과목별 1점당 환산 기울기(효율) 계산", "점수 상승 시뮬레이션 제공", "주 1회 전략 실행 학습 플래너 코칭"],
+        list: [
+            { text: "BASIC 포함 + 목표 대학 3곳 확장" },
+            // 각각 feat_standard_1, 2, 3 연결 (오타 보정: basic_3 -> standard_3로 가정)
+            { 
+                text: "과목별 1점당 환산 기울기(효율) 계산", 
+                action: "preview", 
+                imgBase: "feat_standard_1" 
+            },
+            { 
+                text: "점수 상승 시뮬레이션 제공", 
+                action: "preview", 
+                imgBase: "feat_standard_2" 
+            },
+            { 
+                text: "주 1회 전략 실행 학습 플래너 코칭", 
+                action: "preview", 
+                imgBase: "feat_standard_3" 
+            }
+        ],
         bg: "assets/backgrounds/bg_standard.png",
         themeColor: "#2563EB"
     },
@@ -65,7 +98,18 @@ const COURSE_DATA = {
         title: "PRO PLAN",
         price: "월 299,000원",
         desc: "최소한의 공부량으로 합격하기 위한 최적의 조합을 설계합니다.",
-        list: ["STANDARD 포함 + 목표 대학 6곳 확장", "최소 점수 상승 조합 최적화 알고리즘", "내 점수에 가장 유리한 대학 역추적", "주 1회 심층 전략 코칭"],
+        list: [
+            { text: "STANDARD 포함 + 목표 대학 6곳 확장" },
+            { text: "최소 점수 상승 조합 최적화 알고리즘" },
+            { text: "내 점수에 가장 유리한 대학 역추적" },
+            { text: "주 1회 심층 전략 코칭" },
+            // PRO 전용 추가 링크 (다운로드 기능)
+            { 
+                text: "PRO 전용 보고서 미리보기 📄", 
+                action: "download", 
+                file: "assets/features/feat_pro_report.pdf" 
+            }
+        ],
         bg: "assets/backgrounds/bg_pro.png",
         themeColor: "#E11D48"
     }
@@ -75,20 +119,54 @@ function selectCourse(tier) {
     const data = COURSE_DATA[tier];
     if (!data) return;
 
+    // 탭 활성화 처리
     document.querySelectorAll('.course-tab-btn').forEach(btn => btn.classList.remove('active'));
     const activeBtn = document.querySelector(`.course-tab-btn[data-tier="${tier}"]`);
     if(activeBtn) activeBtn.classList.add('active');
 
+    // 배경 이미지 변경
     const overlay = document.querySelector('.curriculum-bg-overlay');
     if (overlay) {
         overlay.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.8)), url('${data.bg}')`;
     }
 
+    // 프리뷰 패널 닫기 (탭 변경 시 초기화)
+    closeFeaturePreview();
+
+    // 상세 내용 렌더링
     const detailView = document.getElementById('courseDetailView');
     if (detailView) {
-        const listHtml = data.list.map(item => `
-            <li><i class="fas fa-check-circle" style="color:${tier === 'black' ? '#d4af37' : '#4ade80'}"></i><span>${item}</span></li>
-        `).join('');
+        // 리스트 아이템 HTML 생성
+        const listHtml = data.list.map(item => {
+            const checkColor = tier === 'black' ? '#d4af37' : '#4ade80';
+            
+            // 액션이 있는 경우 (Preview 또는 Download)
+            if (item.action) {
+                // onclick 핸들러 생성
+                let clickHandler = "";
+                if (item.action === "preview") {
+                    clickHandler = `onclick="openFeaturePreview('${item.imgBase}', '${item.text}')"`;
+                } else if (item.action === "download") {
+                    clickHandler = `onclick="downloadProReport('${item.file}')"`;
+                }
+
+                return `
+                    <li class="clickable-item" ${clickHandler} title="클릭하여 확인하기">
+                        <i class="fas fa-check-circle" style="color:${checkColor}"></i>
+                        <span style="border-bottom: 1px dashed rgba(255,255,255,0.5); padding-bottom: 2px;">${item.text}</span>
+                        <i class="fas fa-external-link-alt" style="font-size: 0.7em; margin-left: 5px; opacity: 0.7;"></i>
+                    </li>
+                `;
+            } else {
+                // 일반 항목
+                return `
+                    <li>
+                        <i class="fas fa-check-circle" style="color:${checkColor}"></i>
+                        <span>${item.text}</span>
+                    </li>
+                `;
+            }
+        }).join('');
 
         detailView.innerHTML = `
             <span class="detail-badge" style="color:${data.themeColor}; background:#fff; border: 1px solid ${data.themeColor};">
@@ -101,6 +179,63 @@ function selectCourse(tier) {
         `;
     }
 }
+
+function openFeaturePreview(imgBase, title) {
+    const panel = document.getElementById('featurePreviewPanel');
+    const previewImg = document.getElementById('previewImage');
+    const previewTitle = document.getElementById('previewTitle');
+
+    if (!panel || !previewImg) return;
+
+    // 모바일 감지 (화면 너비 900px 이하)
+    const isMobile = window.innerWidth <= 900;
+    
+    // 이미지 경로 생성: feat_basic_1 -> feat_basic_mobile_1.png
+    let imgPath = "";
+    if (isMobile) {
+        // "feat_standard_1" -> "feat_standard_mobile_1.png" 형식으로 변환
+        // 마지막 숫자 앞이나 끝에 _mobile을 붙임
+        const parts = imgBase.split('_');
+        const number = parts.pop(); // 마지막 숫자 분리 (예: '1')
+        const base = parts.join('_'); // 나머지 (예: 'feat_standard')
+        imgPath = `assets/features/${base}_mobile_${number}.png`;
+    } else {
+        imgPath = `assets/features/${imgBase}.png`;
+    }
+
+    // 내용 설정
+    previewImg.src = imgPath;
+    previewImg.onerror = function() {
+        this.src = ''; // 이미지 로드 실패 시 깨진 아이콘 숨김
+        alert("이미지를 불러올 수 없습니다.\n경로: " + imgPath);
+    };
+    if(previewTitle) previewTitle.innerText = title;
+
+    // 패널 열기
+    panel.classList.add('active');
+}
+
+function closeFeaturePreview() {
+    const panel = document.getElementById('featurePreviewPanel');
+    if (panel) {
+        panel.classList.remove('active');
+    }
+}
+
+function downloadProReport(filePath) {
+    const confirmDownload = confirm("PRO 전용 분석 보고서 샘플을 다운로드 하시겠습니까?");
+    
+    if (confirmDownload) {
+        // 가상의 링크를 생성하여 다운로드 트리거
+        const link = document.createElement('a');
+        link.href = filePath;
+        link.download = 'StudyCrack_Pro_Report_Sample.pdf'; // 다운로드될 파일명
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
+
 
 /* =========================================
    3. 후기 데이터 로직 (에러 처리 강화)
@@ -248,6 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. UI 업데이트
     updateNavUI();
     renderReviews();
+    selectCourse('mbti');
 
     // 3. 버튼 이벤트 연결
     const myPageBtn = document.getElementById('myPageBtn');
