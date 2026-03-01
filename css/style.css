@@ -337,7 +337,7 @@ header {
 /* style.css 추가 코드 */
 
 /* 1. 클릭 가능한 리스트 아이템 스타일 */
-.detail-list li.clickable-item { display: flex; align-items: flex-start; gap: 8px; width: 100%; margin-bottom: 8px; cursor: pointer; }
+.detail-list li.clickable-item { display: flex; align-items: flex-start; gap: 8px; width: 100%; cursor: pointer; }
 .detail-list li.clickable-item span { flex: 1; min-width: 0; white-space: normal; word-break: keep-all; overflow-wrap: anywhere; line-height: 1.5; text-decoration: underline; text-decoration-style: dashed; text-decoration-color: rgba(255, 255, 255, 0.4); text-underline-offset: 4px; text-decoration-thickness: 1px; border-bottom: none; background-image: none; padding-bottom: 0; transition: all 0.2s; }
 .detail-list li.clickable-item:hover span { color: #fff; text-decoration-color: #fff; text-shadow: 0 0 8px rgba(255, 255, 255, 0.5); }
 .detail-list li.clickable-item i { transition: transform 0.2s; margin-top: 4px; flex-shrink: 0; }
