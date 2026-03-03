@@ -104,85 +104,56 @@ function updateSubmitButton() {
 // ==========================================
 let emailTimerInterval;
 
-function handleSendCode() {
+// [수정] 이메일 인증번호 발송 (Cognito signUp 호출 제거)
+async function handleSendCode() {
     const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const passwordConfirm = document.getElementById('passwordConfirm').value;
-    const name = document.getElementById('name').value;
-    const gender = document.getElementById('gender').value;
-    const birthdate = document.getElementById('birthdate').value;
-    let phone = document.getElementById('phone').value;
-
-    if (!email || !password || !name || !birthdate || !phone) {
-        alert("기본 정보(전화번호 포함)를 모두 입력해주세요.");
-        return;
-    }
-    if (password !== passwordConfirm) {
-        alert("비밀번호가 일치하지 않습니다.");
-        return;
-    }
-
-    let cleanPhone = phone.replace(/-/g, '').trim();
-    if (cleanPhone.startsWith('010')) {
-        cleanPhone = '+82' + cleanPhone.substring(1);
-    } else if (cleanPhone.startsWith('10')) {
-        cleanPhone = '+82' + cleanPhone;
-    }
-
-    const attributeList = [
-        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'email', Value: email }),
-        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'name', Value: name }),
-        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'given_name', Value: name }),
-        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'gender', Value: gender }),
-        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'birthdate', Value: birthdate }),
-        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'phone_number', Value: cleanPhone })
-    ];
+    if (!email) { alert("이메일을 입력해주세요."); return; }
 
     const sendBtn = document.getElementById('sendCodeBtn');
     sendBtn.innerText = "전송 중...";
     sendBtn.disabled = true;
 
-    userPool.signUp(email, password, attributeList, null, function(err, result) {
-        if (err) {
-            alert(getErrorMessage(err));
-            console.error("Cognito SignUp Error:", err);
-            sendBtn.innerText = "인증번호 받기";
-            sendBtn.disabled = false;
-            return;
-        }
+    try {
+        const response = await fetch(AUTH_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'send_email_auth', email: email })
+        });
 
-        tempUserId = result.userSub; 
-        alert("인증번호가 발송되었습니다. 이메일을 확인해주세요.");
+        if (!response.ok) throw new Error("발송 실패");
         
+        alert("이메일로 인증번호가 발송되었습니다.");
         document.getElementById('verifySection').classList.remove('hidden');
+        startTimer(5 * 60, 'timer', emailTimerInterval);
+    } catch (e) {
+        alert("이메일 발송에 실패했습니다.");
+    } finally {
         sendBtn.innerText = "재전송";
         sendBtn.disabled = false;
-        document.getElementById('email').disabled = true; 
-        
-        startTimer(5 * 60, 'timer', emailTimerInterval); 
-    });
+    }
 }
 
-function handleVerify() {
+// [수정] 이메일 인증번호 확인
+async function handleVerify() {
     const email = document.getElementById('email').value;
     const code = document.getElementById('verifyCode').value;
 
-    if (!code) { alert("인증코드를 입력해주세요."); return; }
+    try {
+        const response = await fetch(AUTH_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'verify_code', email: email, code: code })
+        });
+        const result = await response.json();
 
-    const userData = { Username: email, Pool: userPool };
-    const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
-
-    cognitoUser.confirmRegistration(code, true, function(err, result) {
-        if (err) {
-            alert(getErrorMessage(err));
-            return;
+        if (result.success) {
+            alert("이메일 인증 성공!");
+            isEmailVerified = true;
+            document.getElementById('verifySection').innerHTML = "<p class='text-success'>✅ 이메일 인증 완료</p>";
+            document.getElementById('email').disabled = true;
+            updateSubmitButton();
+        } else {
+            alert("인증번호가 일치하지 않습니다.");
         }
-        
-        alert("이메일 인증이 완료되었습니다.");
-        document.getElementById('verifySection').innerHTML = "<p class='text-success'>✅ 이메일 인증 완료</p>";
-        isEmailVerified = true;
-        updateSubmitButton();
-    });
+    } catch (e) { alert("확인 중 오류 발생"); }
 }
 
 // ==========================================
@@ -225,7 +196,6 @@ async function handleSendPhoneCode() {
         }
         
         const data = await response.json();
-        serverPhoneCode = data.authCode; 
         
         alert(`인증번호가 발송되었습니다.`);
         document.getElementById('phoneVerifySection').classList.remove('hidden');
@@ -243,15 +213,34 @@ async function handleSendPhoneCode() {
     }
 }
 
-function handleVerifyPhone() {
+async function handleVerifyPhone() {
+    const phone = document.getElementById('phone').value.replace(/-/g, '').trim();
     const inputCode = document.getElementById('phoneVerifyCode').value;
-    if (inputCode && String(inputCode).trim() === String(serverPhoneCode).trim()) {
-        alert("전화번호 인증이 완료되었습니다.");
-        document.getElementById('phoneVerifySection').innerHTML = "<p class='text-success'>✅ 전화번호 인증 완료</p>";
-        isPhoneVerified = true;
-        updateSubmitButton(); 
-    } else {
-        alert("인증번호가 일치하지 않습니다.");
+
+    if (!inputCode) { alert("인증코드를 입력해주세요."); return; }
+
+    try {
+        const response = await fetch(AUTH_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'verify_sms_code',
+                phone: phone,
+                code: inputCode
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert("전화번호 인증이 완료되었습니다.");
+            document.getElementById('phoneVerifySection').innerHTML = "<p class='text-success'>✅ 전화번호 인증 완료</p>";
+            isPhoneVerified = true;
+            updateSubmitButton();
+        } else {
+            alert("인증번호가 일치하지 않거나 만료되었습니다.");
+        }
+    } catch (error) {
+        alert("인증 확인 중 오류가 발생했습니다.");
     }
 }
 
@@ -291,11 +280,28 @@ function startTimer(duration, displayId, intervalVar) {
 // ==========================================
 
 async function handleFinalSubmit() {
+    // 1. 사전 검증
     if (!isEmailVerified || !isPhoneVerified) {
         alert("이메일과 전화번호 인증을 모두 완료해주세요.");
         return;
     }
 
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const passwordConfirm = document.getElementById('passwordConfirm').value;
+    const name = document.getElementById('name').value;
+    const gender = document.getElementById('gender').value;
+    const birthdate = document.getElementById('birthdate').value;
+    const phoneRaw = document.getElementById('phone').value;
+    const school = document.getElementById('school').value;
+
+    // 2. 비밀번호 재확인
+    if (password !== passwordConfirm) {
+        alert("비밀번호가 일치하지 않습니다.");
+        return;
+    }
+
+    // 3. 라디오 버튼 값 추출 (계열 및 유입경로)
     const majorRadio = document.querySelector('input[name="major"]:checked');
     const referralRadio = document.querySelector('input[name="referral"]:checked');
 
@@ -310,44 +316,67 @@ async function handleFinalSubmit() {
     let referral = referralRadio.value;
     if (referral === 'etc') referral = document.getElementById('referralEtc').value;
 
-    const name = document.getElementById('name').value;
-    const phoneRaw = document.getElementById('phone').value;
-    const school = document.getElementById('school').value;
-    const email = document.getElementById('email').value;
-
-    if (!tempUserId) {
-        alert("오류: 회원 식별 정보가 없습니다. 새로고침 후 다시 시도해주세요.");
-        return;
+    // 4. 전화번호 형식 변환 (+82)
+    let cleanPhone = phoneRaw.replace(/-/g, '').trim();
+    if (cleanPhone.startsWith('010')) {
+        cleanPhone = '+82' + cleanPhone.substring(1);
+    } else if (cleanPhone.startsWith('10')) {
+        cleanPhone = '+82' + cleanPhone;
     }
 
-    try {
-        // [중요] 회원가입 마무리는 아직 토큰이 없을 수 있음 -> body에 userId 포함
-        // (백엔드에서도 update_profile은 예외적으로 body.userId 허용 고려 필요)
-        const response = await fetch(AUTH_URL, {
-            method: 'POST',
-            body: JSON.stringify({
-                type: 'update_profile',
-                userId: tempUserId,
-                data: {
-                    name: name,
-                    phone: phoneRaw,
-                    school: school,
-                    email: email,
-                    major: major,       
-                    referral: referral 
-                }
-            })
-        });
+    // 5. Cognito 전송용 속성 설정
+    const attributeList = [
+        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'email', Value: email }),
+        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'name', Value: name }),
+        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'gender', Value: gender }),
+        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'birthdate', Value: birthdate }),
+        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'phone_number', Value: cleanPhone })
+    ];
 
-        if (!response.ok) throw new Error("DB 저장 실패");
-        
-        alert("회원가입이 성공적으로 완료되었습니다! 로그인 페이지로 이동합니다.");
-        window.location.href = '/login';
+    const submitBtn = document.getElementById('finalSubmitBtn');
+    submitBtn.innerText = "가입 처리 중...";
+    submitBtn.disabled = true;
 
-    } catch (error) {
-        console.error(error);
-        alert("회원가입 마무리 중 오류가 발생했습니다. 관리자에게 문의하세요.");
-    }
+    // 6. Cognito 회원가입 실행
+    userPool.signUp(email, password, attributeList, null, async function(err, result) {
+        if (err) {
+            alert(getErrorMessage(err));
+            submitBtn.innerText = "회원가입 완료";
+            submitBtn.disabled = false;
+            return;
+        }
+
+        const userSub = result.userSub; // Cognito에서 생성된 유니크 ID
+
+        // 7. 성공 시 우리 DB(DynamoDB)에 추가 정보 저장
+        try {
+            const response = await fetch(AUTH_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    type: 'update_profile',
+                    userId: userSub,
+                    data: {
+                        name: name,
+                        email: email,
+                        phone: phoneRaw,
+                        school: school,
+                        major: major,
+                        referral: referral,
+                        gender: gender,
+                        birthdate: birthdate
+                    }
+                })
+            });
+
+            if (!response.ok) throw new Error("DB 저장 실패");
+
+            alert("회원가입이 성공적으로 완료되었습니다! 로그인 해주세요.");
+            window.location.href = '/login';
+        } catch (error) {
+            console.error(error);
+            alert("계정은 생성되었으나 상세 정보 저장 중 오류가 발생했습니다. 관리자에게 문의하세요.");
+        }
+    });
 }
 
 // ==========================================
