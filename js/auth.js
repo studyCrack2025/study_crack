@@ -214,17 +214,24 @@ async function handleSendPhoneCode() {
 }
 
 async function handleVerifyPhone() {
-    const phone = document.getElementById('phone').value.replace(/-/g, '').trim();
-    const inputCode = document.getElementById('phoneVerifyCode').value;
+    let phone = document.getElementById('phone').value.replace(/-/g, '').trim();
+    
+    if (phone.startsWith('010')) {
+        phone = '+82' + phone.substring(1);
+    } else if (phone.startsWith('10')) {
+        phone = '+82' + phone;
+    }
+    // 이제 phone은 '+821012345678' 형태가 됩니다.
 
+    const inputCode = document.getElementById('phoneVerifyCode').value;
     if (!inputCode) { alert("인증코드를 입력해주세요."); return; }
 
     try {
         const response = await fetch(AUTH_URL, {
             method: 'POST',
             body: JSON.stringify({
-                type: 'verify_sms_code',
-                phone: phone,
+                type: 'verify_sms_code', // Lambda에서 이 타입으로 처리하는지 확인
+                phone: phone,          // 변환된 +82 번호 전송
                 code: inputCode
             })
         });
