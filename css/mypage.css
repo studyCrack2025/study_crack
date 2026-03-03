@@ -380,23 +380,69 @@ input:focus { outline: none; border-color: #2563EB; }
 .delete-pic-btn i { font-size: 14px; }
 .hidden { display: none !important; }
 
-/* 반응형 미디어 쿼리 */
+/* =========================================
+   모바일 반응형 (다이어트 적용)
+   ========================================= */
 @media (max-width: 768px) {
-    .mypage-container { flex-direction: column; padding: 10px; margin-top: 20px; }
-    .profile-summary { width: 100%; margin-bottom: 20px; }
-    .content-area { width: 100%; padding: 20px; min-height: auto; }
+    /* 1. 전체 컨테이너 및 섹션 정렬 다이어트 */
+    .mypage-container { 
+        flex-direction: column; 
+        padding: 0 15px; 
+        margin-top: 20px; 
+        gap: 15px; /* 30px -> 15px: 사이드바와 본문 사이 간격 축소 */
+    }
+    
+    .profile-summary { 
+        width: 100%; 
+        padding: 20px; /* 30px -> 20px */
+        margin-bottom: 0; /* gap으로 제어하므로 margin 제거 */
+    }
+    
+    .content-area { 
+        width: 100%; 
+        padding: 25px 20px; /* 40px -> 25px/20px */
+        min-height: auto; 
+    }
+
+    /* 2. 프로필 이미지 크기 및 텍스트 축소 */
+    .profile-pic-area { width: 100px; height: 100px; margin-bottom: 10px; }
+    .status-badge { padding: 4px 12px; font-size: 0.8rem; margin: 10px 0; }
+    
+    /* 3. 본문 폼 영역 및 타이틀 크기 조정 */
     .form-container { max-width: 100%; }
+    .content-header h2 { font-size: 1.5rem; margin-bottom: 5px; }
+    .content-header p { font-size: 0.95rem; margin-bottom: 20px; }
+    
+    .form-container h3 { font-size: 1rem; margin-top: 25px; margin-bottom: 12px; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { font-size: 0.9rem; margin-bottom: 6px; }
+    input[type="text"], input[type="tel"], input[type="email"], input[type="password"] { 
+        padding: 10px; font-size: 0.95rem; 
+    }
+    
+    /* 4. 가로 배치 폼 (인풋 + 버튼) 버튼 크기 최적화 */
+    .edit-btn { height: 41px; padding: 8px 12px; font-size: 0.85rem; }
     .password-section { display: block; }
+    
+    /* 5. 계정 링크 박스 다이어트 */
+    .account-links { gap: 10px; margin-bottom: 20px; }
+    .link-item { padding: 12px; }
+    .link-item .label { width: 70px; font-size: 0.9rem; }
+    .link-item .value { font-size: 0.9rem; }
+    
+    /* 6. 모달(튜터 및 일반 팝업) 여백 다이어트 */
     .tutor-card {
-        width: 95%; /* 모바일에서 좌우 여백 줄임 */
-        max-height: 90vh; /* 높이 좀 더 확보 */
+        width: 95%; 
+        max-height: 90vh; 
     }
-    .tutor-header {
-        padding: 25px 15px 15px;
-    }
-    .tutor-body {
-        padding: 20px;
-    }
+    .tutor-header { padding: 20px 15px 15px; }
+    .tutor-img-wrapper { width: 80px; height: 80px; }
+    .tutor-title h3 { font-size: 1.15rem; }
+    .tutor-body { padding: 15px 20px 25px; }
+    
+    .modal-content { padding: 25px 20px; }
+    .modal-content h3 { font-size: 1.15rem; }
+    .modal-action-btn { padding: 10px; font-size: 0.95rem; }
 }
 
 @media (min-width: 769px) {

@@ -3,6 +3,8 @@
 /* ============================================================
    [1] 기본 레이아웃, 탭 메뉴, 솔루션 헤더
    ============================================================ */
+.active-link { color: #2563EB !important; font-weight: 700 !important; }   
+
 /* 탭 메뉴 컨테이너 */
 .solution-menu { display: flex; gap: 12px; margin-bottom: 35px; width: 100%; flex-wrap: wrap; }
 
@@ -531,86 +533,109 @@ input[type="number"]::-webkit-inner-spin-button {
     @page { size: A4; margin: 20mm; }
 }
 
-/* 모바일 반응형 스타일 (768px 이하) */
 @media (max-width: 768px) {
-    /* 1. 레이아웃 조정 */
-    .solution-menu { flex-wrap: wrap; gap: 10px; }
-    .sol-btn { flex: 1 1 45%; font-size: 0.85rem; padding: 12px; }
-    .univ-grid { grid-template-columns: 1fr; gap: 15px; }
-    .sim-univ-list-box { flex-direction: column; }
-    .sim-univ-list-box > label { width: 100%; }
-    .mock-tile-group { grid-template-columns: repeat(2, 1fr); }
+    /* =======================================
+       1. 메인 헤더 & 네비게이션 탭 다이어트
+       ======================================= */
+    .sol-header { margin-bottom: 20px; padding-bottom: 15px; }
+    .sol-title { font-size: 1.5rem; gap: 10px; margin-bottom: 10px; }
+    .sol-icon-box { width: 40px; height: 40px; font-size: 1.2rem; border-radius: 10px; }
+    .sol-desc { font-size: 0.9rem; }
     
-    /* 차트 */
-    .label-pc { display: none; }
-    .label-mobile { display: block; }
-    .sim-bar { width: 28px; } 
-    .sim-bar-item, .sim-label-item { min-width: 45px; }
-    .chart-graph-area, .chart-label-area { padding-left: 15px; padding-right: 15px; gap: 5px; }
-    .chart-graph-area { padding-top: 10px !important; }
-    .chart-guide-label { display: none !important; }
-    .mobile-legend-area { display: flex; }
-    .sim-chart-wrapper { padding-bottom: 20px; }
-    .sim-line-chart-area { min-height: 260px; overflow: visible !important; margin: 10px 0; }
-    .sim-univ-scroll-box { flex-direction: column; gap: 8px; padding: 10px 0; overflow-x: hidden; grid-template-columns: 1fr; }
-    .univ-select-btn { width: 100%; text-align: center; border-radius: 8px; padding: 14px; font-size: 0.95rem; }
+    .solution-menu { flex-wrap: wrap; gap: 8px; margin-bottom: 25px; }
+    .sol-btn { flex: 1 1 45%; font-size: 0.85rem; padding: 10px 5px; min-width: 0; }
+    .sol-btn i { font-size: 1.1rem; margin-bottom: 5px; }
+
+    /* =======================================
+       2. 카드 및 박스 UI 여백 다이어트
+       ======================================= */
+    .univ-grid { grid-template-columns: 1fr; gap: 12px; }
+    .univ-slot { padding: 15px 12px; gap: 6px; }
+    .univ-select-btn { padding: 12px 10px; font-size: 0.9rem; }
     
-    /* 모달 */
+    .sim-chart-wrapper { padding: 15px; padding-bottom: 20px; min-height: auto; }
+    .sim-result-card { padding: 15px; margin-top: 15px; }
+    .sim-univ-title { font-size: 1.1rem; }
+    .score-diff { font-size: 1.2rem; }
+    
+    .coach-box { padding: 15px; }
+    .coach-box .box-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .feedback-tile { padding: 12px 15px; }
+
+    /* =======================================
+       3. PRO 테마 섹션 축소
+       ======================================= */
+    .pro-theme { padding: 25px 20px; border-radius: 12px; }
+    .pro-title { font-size: 1.5rem; }
+    .pro-desc { font-size: 0.9rem; }
+    .pro-cta-btn { padding: 14px 20px; font-size: 1rem; margin-top: 20px; }
+    .pro-feature-card { padding: 15px; }
+    .pro-input-card { padding: 15px; margin-bottom: 15px; }
+    
+    #btnSaveTarget, .save-btn { padding: 14px 20px; font-size: 1rem; margin-top: 20px; }
+
+    /* =======================================
+       4. 공통 모달 및 폼 요소 다이어트
+       ======================================= */
+    .modal-content { margin: 10vh auto; width: 95%; max-width: none; }
+    .modal-header { padding: 15px 20px; }
+    .modal-title { font-size: 1.05rem; }
+    .modal-body { padding: 15px 20px; }
+    .modal-footer { padding: 12px 20px; }
+    
+    .tab-btn { padding: 12px 10px; font-size: 0.85rem; }
+    .tab-content { padding: 15px; }
+    
+    /* 주간점검 폼 최적화 */
     .check-modal-content { height: 95vh; max-height: 95vh; }
     .study-time-table th, .study-time-table td { padding: 8px 4px; font-size: 0.85rem; }
     .study-time-table input { font-size: 0.85rem; padding: 6px; }
-    .pro-modal-content { width: 95%; margin: 5vh auto; }
     
-    /* 파일 업로드 및 그리드 */
-    .file-upload-box.small-type { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .file-upload-box.small-type { flex-direction: column; align-items: flex-start; gap: 10px; padding: 10px; }
     .upload-action { width: 100%; justify-content: space-between; }
-    .score-input-grid.enhanced { grid-template-columns: repeat(3, 1fr); row-gap: 20px; }
-    .coach-box .box-header { flex-direction: column; align-items: flex-start; gap: 8px; }
-
-    /* [핵심] 피드백 리포트 모바일 뷰 최적화 */
-    .modal-document { padding: 30px 20px; min-height: auto; }
     
-    /* 제목 크기 축소 */
-    .doc-title { font-size: 1.35rem !important; word-break: keep-all; line-height: 1.3; }
-    .doc-meta { font-size: 0.9rem; margin-top: 5px; }
-    
-    /* 상세 내용은 화면에서 숨김 (인쇄할 때만 보이게 됨) */
-    .report-content-body { display: none; }
-    .doc-controls { display: none; } /* PC용 상단 버튼 숨김 */
+    /* 성적 입력 그리드 (4칸->2칸, 5칸->3칸) */
+    .mock-tile-group { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .mock-tile { padding: 10px 5px; }
+    .score-input-grid.enhanced { grid-template-columns: repeat(3, 1fr); row-gap: 15px; column-gap: 8px; }
 
-    /* 모바일 전용 안내 박스 표시 */
+    /* =======================================
+       5. 차트 모바일 전용 설정 (기존 레이아웃 조정)
+       ======================================= */
+    .label-pc { display: none; }
+    .label-mobile { display: block; }
+    .sim-bar { width: 28px; } 
+    .sim-bar-item, .sim-label-item { min-width: 40px; }
+    .chart-graph-area, .chart-label-area { padding-left: 10px; padding-right: 10px; gap: 5px; }
+    .chart-graph-area { padding-top: 10px !important; height: 200px; } /* 차트 높이 축소 */
+    .chart-guide-label { display: none !important; }
+    .mobile-legend-area { display: flex; margin-top: 20px; }
+    .sim-line-chart-area { min-height: 220px; overflow: visible !important; margin: 10px 0; }
+    .sim-univ-scroll-box { flex-direction: column; gap: 8px; padding: 10px 0; overflow-x: hidden; grid-template-columns: 1fr; }
+
+    /* =======================================
+       6. 피드백 리포트(문서) 뷰 최적화
+       ======================================= */
+    .modal-document { padding: 25px 15px; min-height: auto; }
+    .doc-title { font-size: 1.25rem !important; word-break: keep-all; line-height: 1.3; }
+    .doc-meta { font-size: 0.85rem; margin-top: 5px; }
+    
+    .report-content-body { display: none; } /* 모바일 화면에선 숨기고 인쇄 시에만 표시 */
+    .doc-controls { display: none; }
+    
     .mobile-only-msg {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        padding: 40px 15px;
-        background: #f8fafc;
-        border-radius: 12px;
-        border: 1px dashed #cbd5e1;
-        margin-top: 30px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        text-align: center; padding: 30px 15px; background: #f8fafc; border-radius: 12px;
+        border: 1px dashed #cbd5e1; margin-top: 20px;
     }
-    .mobile-only-msg i { font-size: 3rem; color: #94a3b8; margin-bottom: 15px; }
-    .mobile-only-msg p { color: #64748b; font-size: 0.95rem; margin-bottom: 25px; line-height: 1.5; word-break: keep-all; }
+    .mobile-only-msg i { font-size: 2.5rem; color: #94a3b8; margin-bottom: 10px; }
+    .mobile-only-msg p { color: #64748b; font-size: 0.9rem; margin-bottom: 20px; line-height: 1.5; word-break: keep-all; }
     
-    /* 모바일용 대형 PDF 버튼 */
-    .mobile-pdf-btn {
-        background: #3b82f6; color: white; border: none; padding: 14px 24px; width: 100%;
-        border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 1rem;
-        display: flex; align-items: center; justify-content: center; gap: 8px;
-        box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2); transition: background 0.2s;
-    }
-    .mobile-pdf-btn:active { background: #2563eb; transform: translateY(2px); }
-    
-    /* 모바일용 닫기 버튼 */
-    .mobile-close-btn {
-        margin-top: 15px; width: 100%; padding: 12px;
-        background: white; border: 1px solid #cbd5e1;
-        border-radius: 8px; color: #64748b; font-weight: 600; font-size: 0.95rem;
-    }
+    .mobile-pdf-btn { width: 100%; padding: 12px 20px; font-size: 0.95rem; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; }
+    .mobile-close-btn { width: 100%; padding: 12px; font-size: 0.9rem; background: white; border: 1px solid #cbd5e1; border-radius: 8px; color: #64748b; font-weight: 600; }
 }
 
-@media (min-width: 600px) {
+@media (min-width: 600px) and (max-width: 768px) {
+    /* 태블릿급 화면에서는 대학 슬롯 2개 유지 */
     .univ-grid { grid-template-columns: repeat(2, 1fr); }
 }

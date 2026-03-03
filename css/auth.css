@@ -163,3 +163,93 @@ input[type="text"], input[type="email"], input[type="password"], input[type="tel
 
 .auth-links { margin-top: 15px; font-size: 0.9rem; text-align: center; }
 .auth-links a { color: #64748b; text-decoration: underline; }
+
+/* =========================================
+   [모바일 반응형 필수 교정 및 다이어트]
+   ========================================= */
+@media (max-width: 768px) {
+    /* 기본 레이아웃 다이어트 */
+    body.auth-body { 
+        padding: 15px; 
+        align-items: flex-start; /* 모바일에서 키보드가 올라올 때 화면 가림 방지 */
+        padding-top: 5vh; 
+    }
+    
+    .auth-card { 
+        padding: 25px 20px; 
+        border-radius: 10px; 
+    }
+    
+    .auth-logo { 
+        font-size: 1.3rem; 
+        margin-bottom: 15px; 
+    }
+
+    /* 섹션 구분선 및 라벨 크기 축소 */
+    .section-title { 
+        font-size: 1rem; 
+        margin-bottom: 12px; 
+        padding-bottom: 8px; 
+    }
+    .input-label { 
+        font-size: 0.85rem; 
+        margin-bottom: 4px; 
+    }
+
+    /* 입력창 공통 스타일 축소 */
+    input[type="text"], input[type="email"], input[type="password"], input[type="tel"], input[type="date"], select {
+        padding: 10px; 
+        font-size: 0.95rem; 
+        margin-bottom: 12px; 
+        height: 42px; /* 46px -> 42px로 높이 축소 */
+    }
+
+    /* 입력창 + 버튼 세트 (한 줄 정렬) */
+    .input-with-btn { 
+        gap: 8px; 
+        margin-bottom: 12px; 
+    }
+    .small-btn, .verify-confirm-btn { 
+        padding: 0 12px; 
+        font-size: 0.85rem; 
+        height: 42px; /* 입력창 높이와 동일하게 축소 */
+    }
+
+    /* 인증 박스 스타일 */
+    .verify-box { 
+        padding: 12px; 
+        margin-bottom: 12px; 
+    }
+    .verify-box p { 
+        font-size: 0.8rem; 
+    }
+
+    /* 라디오 버튼 그룹 */
+    .radio-group { 
+        gap: 12px; 
+        margin-bottom: 8px; 
+    }
+    .radio-group label { 
+        font-size: 0.9rem; 
+    }
+
+    /* 메시지 박스 */
+    .msg-box { 
+        font-size: 0.8rem; 
+        margin-bottom: 12px; 
+        margin-top: -6px; 
+    }
+
+    /* 메인 버튼 스타일 */
+    .auth-btn { 
+        padding: 12px; 
+        font-size: 1rem; 
+        margin-top: 10px; 
+    }
+    
+    /* 하단 링크 */
+    .auth-links { 
+        font-size: 0.85rem; 
+        margin-top: 15px; 
+    }
+}

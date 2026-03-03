@@ -136,3 +136,41 @@ small { color: #64748b; font-size: 0.9rem; }
     background-color: #94a3b8; 
     cursor: not-allowed; 
 }
+
+/* =========================================
+   모바일 반응형 (다이어트 적용)
+   ========================================= */
+@media (max-width: 768px) {
+    /* 1. 메인 컨테이너 여백 및 둥글기 축소 */
+    .payment-container { 
+        margin: 20px 15px; /* 상하 여백을 대폭 줄이고 좌우 꽉 차지 않게 15px 띄움 */
+        padding: 25px 20px; /* 40px -> 25px/20px로 다이어트 */
+        border-radius: 12px;
+    }
+
+    /* 2. 입력 폼 간격 및 텍스트 크기 축소 */
+    .form-group { margin-bottom: 15px; }
+    .form-group label { font-size: 0.9rem; margin-bottom: 6px; }
+    .form-group input { padding: 10px 12px; font-size: 0.95rem; }
+
+    /* 3. 상품 선택 영역 여백 축소 */
+    .product-selection { margin: 20px 0; gap: 10px; }
+    .product-option { padding: 15px; border-radius: 10px; }
+
+    /* 4. 상품명 및 가격 텍스트 조정 */
+    .product-header { 
+        /* 모바일 기기 폭이 좁을 때 텍스트가 겹치지 않도록 세로 정렬로 변경할 수도 있지만, 
+           우선은 글자 크기만 살짝 줄여서 한 줄에 나오도록 유지합니다. */
+        align-items: center; 
+    }
+    .p-name { font-size: 1rem; }
+    .p-price { font-size: 0.95rem; }
+    small { font-size: 0.8rem; display: block; margin-top: 4px; }
+
+    /* 5. 결제 버튼 크기 최적화 */
+    .btn-pay { 
+        padding: 15px; 
+        font-size: 1.05rem; 
+        margin-top: 15px; 
+    }
+}

@@ -131,8 +131,49 @@ footer { background: white; padding: 40px 20px; text-align: center; border-top: 
 
 /* 모바일 대응 */
 @media (max-width: 768px) {
+    /* 기존 유지 내용 */
     .history-header { flex-direction: column; align-items: flex-start; gap: 15px; }
     .btn-ask { width: 100%; justify-content: center; }
-    .qna-grid { grid-template-columns: 1fr; }
-    .modal-content { max-height: 85vh; width: 95%; }
+    .qna-grid { grid-template-columns: 1fr; gap: 15px; } /* gap도 20px -> 15px 축소 */
+    .modal-content { max-height: 85vh; width: 95%; margin: 5% auto; }
+
+    /* 1. 전체 섹션 상하 여백(Padding) 대폭 축소 */
+    .qna-header-section { padding: 50px 20px; }
+    .faq-section { padding: 40px 20px; }
+    .history-section { padding: 40px 20px; }
+
+    /* 2. 주요 제목 텍스트 크기 축소 */
+    .header-content h2 { font-size: 1.6rem; margin-bottom: 10px; }
+    .header-content p { font-size: 0.95rem; }
+    .section-title { margin-bottom: 30px; }
+    .section-title h2 { font-size: 1.5rem; }
+    .history-header h2 { font-size: 1.4rem; margin-bottom: 0; }
+
+    /* 3. FAQ 리스트 내부 여백 및 폰트 축소 */
+    .faq-question { padding: 15px; font-size: 0.95rem; }
+    .faq-answer p { padding: 15px; font-size: 0.9rem; }
+
+    /* 4. 내 질문 내역 카드(qna-card) 다이어트 */
+    .qna-card { 
+        padding: 20px; /* 25px -> 20px */
+        height: auto;  /* [중요] 모바일에서는 고정 200px 해제 */
+        min-height: 140px; /* 내용이 적어도 카드가 너무 납작해지지 않게 최소치만 부여 */
+    }
+    .qna-title { font-size: 1rem; margin-bottom: 15px; margin-top: 10px; }
+    .card-top { margin-bottom: 5px; }
+
+    /* 5. 모달 팝업 내부 여백 다이어트 */
+    .modal-header { padding: 15px 20px; }
+    .modal-header h2 { font-size: 1.15rem; }
+    .modal-body { padding: 20px; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { font-size: 0.85rem; margin-bottom: 6px; }
+    .form-group input, .form-group select, .form-group textarea { padding: 10px; font-size: 0.9rem; }
+    .modal-footer { padding: 15px 20px; }
+    .btn-submit { padding: 12px; font-size: 0.95rem; }
+
+    /* 6. 모달 상세 보기 텍스트 다이어트 */
+    #detail-title { font-size: 1.15rem; margin-bottom: 10px; }
+    .content-box { padding: 15px; font-size: 0.95rem; margin-bottom: 20px; }
+    .answer-box { padding: 15px; font-size: 0.95rem; }
 }
