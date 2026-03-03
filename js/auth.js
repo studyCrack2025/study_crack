@@ -351,41 +351,42 @@ async function handleFinalSubmit() {
     // 6. Cognito 회원가입 실행
     userPool.signUp(email, password, attributeList, null, async function(err, result) {
         if (err) {
-            alert(getErrorMessage(err));
+            alert(err.message || "가입 중 오류 발생");
             submitBtn.innerText = "회원가입 완료";
             submitBtn.disabled = false;
             return;
         }
 
-        const userSub = result.userSub; // Cognito에서 생성된 유니크 ID
+        const userSub = result.userSub; // Cognito sub ID
 
-        // 7. 성공 시 우리 DB(DynamoDB)에 추가 정보 저장
+        // 7. 성공 시 Lambda 호출 (승인 + DB 저장 한 번에!)
         try {
             const response = await fetch(AUTH_URL, {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    type: 'update_profile',
+                    type: 'update_profile', // Lambda의 동일한 타입 호출
                     userId: userSub,
                     data: {
-                        name: name,
-                        email: email,
-                        phone: phoneRaw,
-                        school: school,
-                        major: major,
-                        referral: referral,
-                        gender: gender,
-                        birthdate: birthdate
+                        name: document.getElementById('name').value,
+                        email: document.getElementById('email').value,
+                        phone: document.getElementById('phone').value.replace(/-/g, '').trim(),
+                        school: document.getElementById('school').value,
+                        major: document.querySelector('input[name="major"]:checked')?.value,
+                        referral: document.querySelector('input[name="referral"]:checked')?.value,
+                        gender: document.getElementById('gender').value,
+                        birthdate: document.getElementById('birthdate').value
                     }
                 })
             });
 
-            if (!response.ok) throw new Error("DB 저장 실패");
+            if (!response.ok) throw new Error("계정 승인 및 DB 저장 실패");
 
-            alert("회원가입이 성공적으로 완료되었습니다! 로그인 해주세요.");
+            alert("회원가입이 완료되었습니다! 이제 바로 로그인이 가능합니다.");
             window.location.href = '/login';
         } catch (error) {
             console.error(error);
-            alert("계정은 생성되었으나 상세 정보 저장 중 오류가 발생했습니다. 관리자에게 문의하세요.");
+            alert("계정은 생성되었으나 활성화에 실패했습니다. 관리자에게 문의하세요.");
         }
     });
 }
