@@ -277,13 +277,25 @@ input[type="date"] {
 
     /* 입력창 + 버튼 세트 (한 줄 정렬) */
     .input-with-btn { 
+        display: flex;
+        align-items: center; /* 수직 중앙 정렬 확실히 지정 */
         gap: 8px; 
         margin-bottom: 12px; 
     }
+    
+    /* 🚨 [핵심] 인풋 하단에 들어간 여백 때문에 틀어지는 현상 강제 제거 */
+    .input-with-btn input {
+        margin-bottom: 0 !important; 
+    }
+
     .small-btn, .verify-confirm-btn { 
         padding: 0 12px; 
         font-size: 0.85rem; 
         height: 42px; /* 입력창 높이와 동일하게 축소 */
+        margin: 0 !important; /* 버튼에도 혹시 모를 여백 강제 제거 */
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     /* 인증 박스 스타일 */
