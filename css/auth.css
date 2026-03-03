@@ -228,18 +228,51 @@ input[type="date"] {
         height: 42px; /* 46px -> 42px로 높이 축소 */
     }
 
-    /* iOS/Safari에서 placeholder 텍스트(연/월/일) 세로 정렬 보정 */
-    input[type="date"]::-webkit-date-and-time-value {
-        text-align: left;
-        margin: 0;
-        padding: 0;
+    /* 1. 성별 & 생년월일 부모 컨테이너 (무조건 가로로 반반 유지) */
+    .form-row { 
+        display: flex !important;
+        flex-direction: row !important; /* 밑으로 떨어짐 방지 (무조건 가로배치) */
+        flex-wrap: nowrap !important; /* 줄바꿈 절대 금지 */
+        gap: 10px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    
+    .form-row > div {
+        flex: 1 !important;
+        min-width: 0 !important; 
+        width: 50% !important; /* 정확히 반반 비율 강제 할당 */
+        box-sizing: border-box !important;
     }
 
-    /* (선택) 안드로이드 등에서 캘린더 아이콘이 너무 크거나 안 맞을 때 보정 */
-    input[type="date"]::-webkit-calendar-picker-indicator {
-        background-color: transparent;
-        cursor: pointer;
-        opacity: 0.6; /* 아이콘 색상을 살짝 부드럽게 */
+    /* 2. 👑 생년월일(Date) 뚱뚱해짐 + 튀어나감 완벽 방지 (강제 진압) */
+    input[type="date"], 
+    input[type="date"].styled-input {
+        -webkit-appearance: none !important;
+        appearance: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 42px !important;      /* 뚱뚱해지는 높이 42px로 강제 고정 */
+        min-height: 42px !important;  
+        line-height: 40px !important; /* 텍스트 수직 중앙 정렬 */
+        padding: 0 10px !important;   /* 브라우저 자체 패딩 무시 */
+        box-sizing: border-box !important;
+        background-color: #fff !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 6px !important;
+        font-size: 0.95rem !important;
+        margin-bottom: 12px !important;
+        display: block !important;
+        overflow: hidden !important;  /* 내부 달력 요소가 밖으로 밀어내는 것 차단 */
+    }
+
+    /* 3. iOS 내부 텍스트 위치 쏠림 보정 */
+    input[type="date"]::-webkit-date-and-time-value {
+        text-align: left !important;
+        height: 42px !important;
+        line-height: 42px !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
     /* 입력창 + 버튼 세트 (한 줄 정렬) */
