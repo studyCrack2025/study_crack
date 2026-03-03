@@ -333,12 +333,15 @@ async function handleFinalSubmit() {
 
     // 5. Cognito 전송용 속성 설정
     const attributeList = [
-        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'email', Value: email }),
-        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'given_name', Value: name }),
-        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'formatted', Value: name }),
+        // [필수 항목들]
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'gender', Value: gender }),
-        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'birthdate', Value: birthdate }),
-        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'phone_number', Value: cleanPhone })
+        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'given_name', Value: name }),
+        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'name', Value: name }),
+        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'phone_number', Value: cleanPhone }),
+
+        // [선택 사항이지만 데이터가 있으므로 포함]
+        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'email', Value: email }),
+        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'birthdate', Value: birthdate })
     ];
 
     const submitBtn = document.getElementById('finalSubmitBtn');
