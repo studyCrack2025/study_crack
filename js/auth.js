@@ -371,7 +371,7 @@ async function handleFinalSubmit() {
                         name: document.getElementById('name').value,
                         email: document.getElementById('email').value,
                         phone: document.getElementById('phone').value.replace(/-/g, '').trim(),
-                        school: document.getElementById('school').value,
+                        promoCode: document.getElementById('promoCode').value,
                         major: document.querySelector('input[name="major"]:checked')?.value,
                         referral: document.querySelector('input[name="referral"]:checked')?.value,
                         gender: document.getElementById('gender').value,
