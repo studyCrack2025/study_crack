@@ -230,7 +230,7 @@ async function handleVerifyPhone() {
         const response = await fetch(AUTH_URL, {
             method: 'POST',
             body: JSON.stringify({
-                type: 'verify_sms_code', // Lambda에서 이 타입으로 처리하는지 확인
+                type: 'verify_code', // Lambda에서 이 타입으로 처리하는지 확인
                 phone: phone,          // 변환된 +82 번호 전송
                 code: inputCode
             })
