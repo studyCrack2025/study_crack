@@ -500,29 +500,80 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 }
 
 @media (max-width: 768px) {
+    /* 기존 유지: 헤더 및 메시지 섹션 배경 */
     header { flex-direction: column; gap: 15px; padding: 15px; }
     .nav-links { flex-wrap: wrap; justify-content: center; gap: 15px; }
-    
     .message-section {
         background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.5) 100%), url('/assets/backgrounds/bg_message_mobile.png') no-repeat center center / cover;
-        padding: 80px 5%;
     }
-    .message-section h2 { font-size: 2rem; line-height: 1.5; background: linear-gradient(to top, rgba(37, 99, 235, 0.8) 40%, transparent 40%); }
-    .message-section p { font-size: 1rem; }
-    
     .hero { background-image: url('/assets/backgrounds/bg_hero_mobile.png'); }
-    .hero-grid { grid-template-columns: 1fr; gap: 30px; }
+
+    /* =======================================
+       1. 전체 섹션 여백(Padding) 대폭 축소
+       ======================================= */
+    .message-section { padding: 60px 5%; }
+    .hero { padding: 60px 5%; }
+    .interactive-curriculum { padding: 60px 5%; min-height: auto; }
+    .review-section { padding: 60px 5%; }
+    .cta-section { padding: 80px 20px; }
+
+    /* =======================================
+       2. 주요 제목(h2, h3) 및 텍스트 크기 축소
+       ======================================= */
+    .message-section h2 { font-size: 1.8rem; line-height: 1.4; background: linear-gradient(to top, rgba(37, 99, 235, 0.8) 40%, transparent 40%); }
+    .message-section p { font-size: 1rem; }
+    .message-text-area h3 { font-size: 1.2rem; margin-bottom: 20px; }
+
     .hero-header-ppt { margin-bottom: 40px; }
-    .hero-header-ppt h2 { font-size: 1.65rem; line-height: 1.45; letter-spacing: -0.02em; }
-    .review-grid { grid-template-columns: 1fr; }
+    .hero-header-ppt h2 { font-size: 1.6rem; line-height: 1.4; letter-spacing: -0.02em; }
+
+    .curriculum-header-text h2 { font-size: 1.8rem; margin-bottom: 15px; }
+    .curriculum-header-text p { font-size: 0.95rem; }
     
-    .modal-content { margin: 10% auto; width: 95%; max-height: 70vh; padding: 20px; }
+    .section-header h2 { font-size: 1.8rem; margin-bottom: 15px; }
+    .section-header p { font-size: 0.95rem; }
+
+    .cta-content h3 { font-size: 1.8rem; }
+    .cta-content p { font-size: 1rem; margin-bottom: 30px; }
+    .cta-button { padding: 16px 40px; font-size: 1.1rem; }
+
+    /* =======================================
+       3. 대학/전공 점수 산출 데모 폰 프레임 축소
+       ======================================= */
+    .demo-phone-frame {
+        width: 100%;
+        max-width: 300px; /* 기존 340px에서 축소 */
+        height: 500px;    /* 기존 560px에서 축소 */
+        margin: 0 auto;
+    }
+
+    /* =======================================
+       4. 카드 UI (PPT, 리뷰, 커리큘럼) 내부 여백 축소
+       ======================================= */
+    .hero-grid { grid-template-columns: 1fr; gap: 20px; }
+    .ppt-card h3 { font-size: 1.1rem; padding: 0 15px; margin-bottom: 10px; }
+    .card-icon-top { font-size: 2rem; margin: 20px 0 10px 0; }
+    .card-body-text { padding: 0 15px 20px 15px; font-size: 0.9rem; }
+
+    .review-grid { grid-template-columns: 1fr; gap: 15px; }
+    .review-card { padding: 20px; }
+
+    .curriculum-interactive-box { padding: 20px; gap: 20px; }
+    .detail-title { font-size: 1.4rem; margin-bottom: 10px; }
+    .detail-desc { font-size: 0.95rem; margin-bottom: 20px; }
+    .detail-badge { font-size: 0.8rem; padding: 4px 10px; }
+
+    /* =======================================
+       5. 모달 및 플로팅 버튼 크기 축소
+       ======================================= */
+    .modal-content { margin: 10% auto; width: 90%; max-height: 70vh; padding: 20px; }
     
-    .floating-qna-btn { bottom: 20px; right: 20px; width: 55px; height: 55px; }
-    .qna-icon { font-size: 1.6rem; }
-    .floating-black-btn { bottom: 90px !important; right: 20px; width: 55px; height: 55px; }
-    .black-icon { font-size: 1.5rem; }
+    .floating-qna-btn { bottom: 20px; right: 20px; width: 50px; height: 50px; }
+    .qna-icon { font-size: 1.4rem; }
     
-    .black-guide-tooltip { right: 50%; top: -50px; transform: translateX(50%); text-align: center; }
+    .floating-black-btn { bottom: 85px !important; right: 20px; width: 50px; height: 50px; }
+    .black-icon { font-size: 1.3rem; }
+    
+    .black-guide-tooltip { right: 50%; top: -40px; transform: translateX(50%); text-align: center; font-size: 0.75rem; }
     .black-guide-tooltip::after { right: 50%; top: 100%; transform: translateX(50%); border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #d4af37; border-bottom: none; }
 }
