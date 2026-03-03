@@ -335,6 +335,7 @@ async function handleFinalSubmit() {
     const attributeList = [
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'email', Value: email }),
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'given_name', Value: name }),
+        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'formatted', Value: name }),
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'gender', Value: gender }),
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'birthdate', Value: birthdate }),
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'phone_number', Value: cleanPhone })
