@@ -44,6 +44,19 @@ body.auth-body {
     display: block;
 }
 
+/* =========================================
+   [중요] 성별 & 생년월일 가로 배치 (공통)
+   ========================================= */
+.form-row { 
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+.form-row > div {
+    flex: 1;
+    min-width: 0; /* 브라우저 기본 너비 고집을 꺾고 강제로 반반 비율에 맞춤 */
+}
+
 /* 입력창 공통 스타일 */
 input[type="text"], input[type="email"], input[type="password"], input[type="tel"], input[type="date"], select {
     width: 100%;
@@ -54,6 +67,17 @@ input[type="text"], input[type="email"], input[type="password"], input[type="tel
     margin-bottom: 15px;
     box-sizing: border-box;
     height: 46px; /* 높이 통일 */
+}
+
+/* 생년월일(date) 공통 강제 보정 */
+input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background-color: #fff;
+    line-height: 1.5;
+    display: block;
+    max-width: 100%;
+    min-width: 0;
 }
 
 /* 입력창 + 버튼 세트 (한 줄 정렬) */
@@ -197,22 +221,11 @@ input[type="text"], input[type="email"], input[type="password"], input[type="tel
     }
 
     /* 입력창 공통 스타일 축소 */
-    input[type="text"], input[type="email"], input[type="password"], input[type="tel"], select {
+    input[type="text"], input[type="email"], input[type="password"], input[type="tel"], select, input[type="date"] {
         padding: 10px; 
         font-size: 0.95rem; 
         margin-bottom: 12px; 
         height: 42px; /* 46px -> 42px로 높이 축소 */
-    }
-    
-    input[type="date"] {
-        -webkit-appearance: none; /* 아이폰(iOS) 둥근 테두리 등 기본 스타일 제거 */
-        appearance: none;
-        background-color: #fff; /* 배경색이 투명해지는 현상 방지 */
-        height: 42px; /* 다른 텍스트 입력창과 높이 강제 통일 */
-        line-height: 1.5; /* 텍스트 위로 쏠림 방지 */
-        padding: 10px 12px;
-        display: block;
-        width: 100%;
     }
 
     /* iOS/Safari에서 placeholder 텍스트(연/월/일) 세로 정렬 보정 */
