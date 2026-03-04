@@ -300,7 +300,9 @@ async function handleFinalSubmit() {
     const gender = document.getElementById('gender').value;
     const birthdate = document.getElementById('birthdate').value;
     const phoneRaw = document.getElementById('phone').value;
-    const school = document.getElementById('school').value;
+    
+    // 대신 promoCode를 여기서 미리 가져오면 깔끔합니다.
+    const promoCode = document.getElementById('promoCode').value;
 
     // 2. 비밀번호 재확인
     if (password !== passwordConfirm) {
@@ -333,13 +335,10 @@ async function handleFinalSubmit() {
 
     // 5. Cognito 전송용 속성 설정
     const attributeList = [
-        // [필수 항목들]
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'gender', Value: gender }),
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'given_name', Value: name }),
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'name', Value: name }),
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'phone_number', Value: cleanPhone }),
-
-        // [선택 사항이지만 데이터가 있으므로 포함]
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'email', Value: email }),
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'birthdate', Value: birthdate })
     ];
@@ -357,7 +356,7 @@ async function handleFinalSubmit() {
             return;
         }
 
-        const userSub = result.userSub; // Cognito sub ID
+        const userSub = result.userSub;
 
         // 7. 성공 시 Lambda 호출 (승인 + DB 저장 한 번에!)
         try {
@@ -365,17 +364,17 @@ async function handleFinalSubmit() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    type: 'update_profile', // Lambda의 동일한 타입 호출
+                    type: 'update_profile', 
                     userId: userSub,
                     data: {
-                        name: document.getElementById('name').value,
-                        email: document.getElementById('email').value,
-                        phone: document.getElementById('phone').value.replace(/-/g, '').trim(),
-                        promoCode: document.getElementById('promoCode').value,
-                        major: document.querySelector('input[name="major"]:checked')?.value,
-                        referral: document.querySelector('input[name="referral"]:checked')?.value,
-                        gender: document.getElementById('gender').value,
-                        birthdate: document.getElementById('birthdate').value
+                        name: name,
+                        email: email,
+                        phone: cleanPhone.replace('+82', '0'), // 필요에 따라 원래 번호 포맷으로 DB 저장
+                        promoCode: promoCode, // 위에서 선언한 변수 사용
+                        major: major,
+                        referral: referral,
+                        gender: gender,
+                        birthdate: birthdate
                     }
                 })
             });
@@ -390,6 +389,7 @@ async function handleFinalSubmit() {
         }
     });
 }
+
 
 // ==========================================
 // [Part F] 로그인 및 로그아웃

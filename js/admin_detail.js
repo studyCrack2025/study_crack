@@ -687,35 +687,55 @@ function createTextAreaHtml(key, idx, label, val, readOnly, btnStyle) {
     `;
 }
 
-// (헬퍼) 하단 액션바 HTML 생성기
+// (헬퍼) 하단 액션바 HTML 생성기 (PDF 첨부 및 4단계 검수 플로우 적용)
 function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent) {
-    if (status === 'sent') {
+    
+    // 4단계: published 또는 sent (최종 학생 전송 완료)
+    if (status === 'published' || status === 'sent') { 
         return `
             <div class="action-bar">
-                <span style="color:#2563eb; font-weight:bold;"><i class="fas fa-check-circle"></i> 보고서 제공 완료</span>
-                ${reportLink ? `<a href="${reportLink}" target="_blank" style="margin-left:10px; text-decoration:underline; color:#2563eb;">[링크 확인]</a>` : ''}
+                <span style="color:#2563eb; font-weight:bold;"><i class="fas fa-check-circle"></i> 학생에게 리포트 전송 완료</span>
+                ${reportLink ? `<a href="${reportLink}" target="_blank" style="margin-left:10px; text-decoration:underline; color:#2563eb; font-weight:bold;"><i class="fas fa-file-pdf"></i> 첨부된 PDF 확인</a>` : ''}
                 ${isAdmin ? `<button class="edit-report-btn show" onclick="enableProEdit('${key}')" style="margin-left:auto;">수정하기(관리자)</button>` : ''}
             </div>`;
     } 
     
-    if (status === 'completed') {
-        if (isAdmin) {
+    // 3단계: tutor_review (관리자 PDF 첨부 완료 -> 튜터 최종 검수 대기)
+    if (status === 'tutor_review') {
+        if (isTutor) {
             return `
-                <div class="action-bar" style="justify-content: space-between;">
-                    <span style="color:#166534; font-weight:bold; display:flex; align-items:center; gap:5px;">
-                        <i class="fas fa-search"></i> 튜터 제출 완료 <span style="font-size:0.8rem; color:#64748b;">(검수 및 수정 후 전송)</span>
-                    </span>
-                    <div style="display:flex; gap:10px;">
-                        <button class="temp-save-btn" onclick="saveProDraft('${key}')">전체 저장</button>
-                        <button class="admin-report-btn" onclick="publishProReport('${key}')"><i class="fas fa-paper-plane"></i> 리포트 전송</button>
+                <div class="action-bar" style="justify-content: space-between; background: #eff6ff; padding: 15px; border-radius: 8px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="color:#1e3a8a; font-weight:bold;"><i class="fas fa-search"></i> 관리자가 PDF를 첨부했습니다. 검수 후 전송해주세요.</span>
+                        ${reportLink ? `<a href="${reportLink}" target="_blank" style="text-decoration:underline; color:#2563eb;"><i class="fas fa-file-pdf"></i> PDF 보기</a>` : ''}
                     </div>
+                    <button class="admin-report-btn completed" style="background:#166534;" onclick="publishProReportToStudent('${key}')">최종 학생에게 전송</button>
                 </div>`;
         } else {
-            return `<div class="action-bar"><span style="color:#64748b; font-weight:bold;"><i class="fas fa-hourglass-half"></i> 관리자 검수 및 생성 중 (수정 불가)</span></div>`;
+            return `<div class="action-bar"><span style="color:#f59e0b; font-weight:bold;"><i class="fas fa-clock"></i> 튜터 최종 검수 및 전송 대기 중...</span></div>`;
         }
     }
 
-    // Default: Drafting / Pending
+    // 2단계: admin_review 또는 completed (튜터 작성 완료 -> 관리자 확인 및 PDF 첨부)
+    if (status === 'admin_review' || status === 'completed') { 
+        if (isAdmin) {
+            return `
+                <div class="action-bar" style="flex-direction: column; align-items: stretch; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px;">
+                    <div style="display:flex; justify-content: space-between; align-items: center;">
+                        <span style="color:#166534; font-weight:bold;"><i class="fas fa-check"></i> 튜터 제출 완료 (검수 후 PDF를 첨부해주세요)</span>
+                        <button class="temp-save-btn" onclick="saveProDraft('${key}')">텍스트 변경사항 저장</button>
+                    </div>
+                    <div style="display:flex; gap: 10px; align-items: center; justify-content: flex-end; border-top: 1px dashed #cbd5e1; padding-top: 15px;">
+                        <input type="file" id="pdfFile_${key}" accept=".pdf" style="font-size:0.9rem; padding: 5px;">
+                        <button class="admin-report-btn" onclick="requestTutorReview('${key}')"><i class="fas fa-upload"></i> 튜터에게 검수 요청</button>
+                    </div>
+                </div>`;
+        } else {
+            return `<div class="action-bar"><span style="color:#64748b; font-weight:bold;"><i class="fas fa-hourglass-half"></i> 관리자 검수 및 PDF 생성 중...</span></div>`;
+        }
+    }
+
+    // 1단계: drafting 또는 pending (기본 작성 중)
     if (isTutor) {
         const btnClass = hasContent ? 'complete-write-btn active' : 'complete-write-btn';
         return `
@@ -725,6 +745,75 @@ function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent) {
     } else {
         return `<div class="action-bar"><span style="color:#94a3b8; font-weight:bold;"><i class="fas fa-pen"></i> 튜터 작성 중...</span></div>`;
     }
+}
+
+/**
+ * [API Action] 관리자 -> PDF 첨부 후 튜터에게 검수 요청
+ */
+async function requestTutorReview(key) {
+    const fileInput = document.getElementById(`pdfFile_${key}`);
+    if (!fileInput.files || fileInput.files.length === 0) {
+        return alert("PDF 파일을 먼저 첨부해주세요.");
+    }
+
+    const file = fileInput.files[0];
+    if (file.type !== 'application/pdf') {
+        return alert("PDF 파일만 업로드 가능합니다.");
+    }
+
+    if(!confirm("첨부한 PDF 파일로 튜터에게 최종 검수를 요청하시겠습니까?")) return;
+
+    // TODO: 실제 S3 파일 업로드 로직이 들어가야 합니다. (현재는 파일명으로 가짜 링크 생성)
+    // const uploadedPdfUrl = await uploadPdfToS3(file);
+    const uploadedPdfUrl = "https://s3.amazonaws.com/your-bucket/" + encodeURIComponent(file.name); 
+
+    const token = localStorage.getItem('accessToken');
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'admin_request_tutor_review', 
+                userId: adminId,
+                targetUserId: targetUserId,
+                reportKey: key,
+                reportLink: uploadedPdfUrl,
+                status: 'tutor_review' // 튜터 검수 단계로 상태 변경
+            })
+        });
+
+        if (!response.ok) throw new Error("Server Error");
+
+        alert("튜터에게 검수 요청이 전송되었습니다.");
+        await loadProReportsForAdmin(); // 화면 갱신
+    } catch(e) { alert("요청 전송 실패: " + e.message); }
+}
+
+/**
+ * [API Action] 튜터 -> 최종 검수 완료 및 학생에게 전송
+ */
+async function publishProReportToStudent(key) {
+    if(!confirm("최종 검수를 마치고 학생에게 리포트를 전송하시겠습니까? 전송 후에는 수정할 수 없습니다.")) return;
+
+    const token = localStorage.getItem('accessToken');
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'tutor_publish_report', 
+                userId: adminId,
+                targetUserId: targetUserId,
+                reportKey: key,
+                status: 'published' // 학생 열람 가능 상태
+            })
+        });
+
+        if (!response.ok) throw new Error("Server Error");
+
+        alert("학생에게 최종 전송이 완료되었습니다.");
+        await loadProReportsForAdmin(); // 화면 갱신
+    } catch(e) { alert("전송 실패: " + e.message); }
 }
 
 // (헬퍼) 내용 존재 여부 확인
