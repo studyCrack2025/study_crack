@@ -772,31 +772,25 @@ async function requestTutorReview(key) {
     btn.disabled = true;
 
     try {
-        // 1단계: 기존 get_presigned_url 람다 호출 (규격에 맞춤)
+        // 1단계: S3 업로드 주소 발급
         const urlResponse = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'get_presigned_url',
-                userId: adminId, // 람다의 !userId 통과용
+                userId: adminId,
                 data: {
                     fileName: encodeURIComponent(file.name),
                     fileType: file.type,
-                    // S3 폴더명에 학생 ID를 넣어 관리하기 편하게 만듦
                     folder: `pro_reports/${targetUserId}` 
                 }
             })
         });
 
-        if (!urlResponse.ok) {
-            const errData = await urlResponse.json();
-            throw new Error(errData.error || "업로드 주소 발급 실패");
-        }
-        
-        // 람다에서 반환해주는 변수명 추출
+        if (!urlResponse.ok) throw new Error("업로드 주소 발급 실패");
         const { uploadUrl, fileUrl } = await urlResponse.json();
 
-        // 2단계: 발급받은 URL로 직접 PUT 전송 (S3 업로드)
+        // 2단계: S3에 파일 업로드
         const uploadResult = await fetch(uploadUrl, {
             method: 'PUT',
             headers: { 'Content-Type': file.type },
@@ -805,24 +799,23 @@ async function requestTutorReview(key) {
 
         if (!uploadResult.ok) throw new Error("S3 파일 업로드 실패");
 
-        // 3단계: 업로드 성공 후, 최종 주소(fileUrl)를 DB에 저장 (튜터 검수 요청)
+        // 3단계: DB 업데이트 (🚨 수정됨: payload를 data 객체 안으로 래핑)
         const dbResponse = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'admin_request_tutor_review', 
                 userId: adminId,
-                targetUserId: targetUserId,
-                reportKey: key,
-                reportLink: fileUrl, // 버킷에 안전하게 올라간 최종 URL
-                status: 'tutor_review' // 튜터 검수 단계로 상태 변경
+                data: {
+                    targetUserId: targetUserId,
+                    reportKey: key,
+                    reportLink: fileUrl,
+                    status: 'tutor_review'
+                }
             })
         });
 
-        if (!dbResponse.ok) {
-            const errData = await dbResponse.json();
-            throw new Error(errData.error || "DB 업데이트 실패");
-        }
+        if (!dbResponse.ok) throw new Error("DB 업데이트 실패");
 
         alert("파일 업로드 및 튜터 검수 요청이 완료되었습니다.");
         await loadProReportsForAdmin(); // 화면 갱신
@@ -831,7 +824,6 @@ async function requestTutorReview(key) {
         console.error(e);
         alert("요청 전송 실패: " + e.message); 
     } finally {
-        // 버튼 원상복구
         btn.innerHTML = originalBtnText;
         btn.disabled = false;
     }
@@ -845,15 +837,18 @@ async function publishProReportToStudent(key) {
 
     const token = localStorage.getItem('accessToken');
     try {
+        // 🚨 수정됨: payload를 data 객체 안으로 래핑
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'tutor_publish_report', 
                 userId: adminId,
-                targetUserId: targetUserId,
-                reportKey: key,
-                status: 'published' // 학생 열람 가능 상태
+                data: {
+                    targetUserId: targetUserId,
+                    reportKey: key,
+                    status: 'published'
+                }
             })
         });
 
