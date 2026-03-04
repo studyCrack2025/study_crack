@@ -2570,17 +2570,19 @@ async function submitProReport() {
         const data = await res.json();
 
         if (res.ok) {
-            alert("요청이 정상적으로 접수되었습니다.\n담당 컨설턴트가 확인 후 반영할 예정입니다.");
+            alert(data.msg || "요청이 정상적으로 접수되었습니다.");
             closeProModal();
             document.getElementById('proReportRequest').value = ''; 
         } else {
-            // 마감 등 에러 메시지 출력
-            throw new Error(data.msg || data.error || "서버 응답 오류");
+            // [수정] 서버에서 보낸 msg가 있으면 쓰고, 없으면 기본 한글 메시지 출력
+            const errorMsg = data.msg || "요청 처리 중 오류가 발생했습니다.";
+            throw new Error(errorMsg);
         }
 
     } catch (e) {
         console.error("Submit Error:", e);
-        alert(e.message); // "이번 회차 보고서 요청이 마감되었습니다." 등의 메시지가 뜸
+        // e.message에 이미 위에서 정의한 한글 메시지가 담겨 있습니다.
+        alert(e.message); 
     } finally {
         submitBtn.innerText = originalText;
         submitBtn.disabled = false;
