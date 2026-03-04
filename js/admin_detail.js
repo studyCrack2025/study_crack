@@ -7,7 +7,6 @@ const API_URL = CONFIG.api.base;
 
 let currentStudentData = null;
 let currentTier = 'free';
-let currentAdminFile = null; // (Legacy) 채팅 첨부파일
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. 잘못된 접근 차단
@@ -44,14 +43,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function initRoleBasedView() {
     const userRole = localStorage.getItem('userRole');
-    
-    // 튜터라면 결제(pay), 분석(analysis) 탭 버튼 숨김
     if (userRole === 'tutor') {
         const btnPay = document.getElementById('btn-pay');
-        const btnAnalysis = document.getElementById('btn-analysis');
-        
         if (btnPay) btnPay.style.display = 'none';
-        if (btnAnalysis) btnAnalysis.style.display = 'none';
     }
 }
 
@@ -172,6 +166,7 @@ async function loadProReportsForAdmin() {
 function renderData(s) {
     if (!s) return;
 
+    // 1. 기본 인적사항
     document.getElementById('viewName').innerText = s.name || '미입력';
     document.getElementById('viewEmail').innerText = s.email || '-';
     document.getElementById('viewSchool').innerText = s.school || '-';
@@ -179,16 +174,16 @@ function renderData(s) {
     document.getElementById('viewEmailFull').innerText = s.email || '-';
     document.getElementById('viewJoinDate').innerText = s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '-';
 
-    // [수정 2] 프로필 사진 로드
+    // 2. 프로필 사진 로드
     const profileImg = document.getElementById('studentProfileImg');
     if(s.profileImage) {
         profileImg.src = s.profileImage;
     }
 
+    // 3. 티어 뱃지 및 PRO 탭 노출 제어
     currentTier = calcTier(s.payments || []);
     renderTierBadge(currentTier);
     
-    // [수정 6] PRO 탭 노출 제어
     const specialBtn = document.getElementById('btn-special');
     if (['pro', 'black'].includes(currentTier)) {
         specialBtn.style.display = 'inline-block';
@@ -196,14 +191,30 @@ function renderData(s) {
         specialBtn.style.display = 'none';
     }
 
+    // 4. 종합 분석 리포트 상태, 내용, UI 렌더링
     updateAnalysisBadge(s.analysisStatus);
-    document.getElementById('analysisEditor').value = s.analysisContent || '';
-    document.getElementById('adminMemoInput').value = s.adminMemo || '';
+    
+    // [수정된 부분] 에디터 값 세팅 및 권한/상태에 따른 잠금 처리
+    const editor = document.getElementById('analysisEditor');
+    editor.value = s.analysisContent || '';
+    
+    const userRole = localStorage.getItem('userRole');
+    if (userRole === 'tutor' || s.analysisStatus === 'published') {
+        editor.disabled = true;
+        editor.style.backgroundColor = '#f1f5f9'; // 비활성화 시각적 피드백
+    } else {
+        editor.disabled = false;
+        editor.style.backgroundColor = '#fcfcfc'; // 입력 가능 상태
+    }
 
+    document.getElementById('adminMemoInput').value = s.adminMemo || '';
+    renderAnalysisActionArea(s.analysisStatus, s.analysisFile);
+
+    // 5. 기타 데이터 렌더링
     renderTargetUnivs(s.targetUnivs || []);
     renderQualitativeDetail(s.qualitative);
     
-    // [수정 3] 성적 데이터 초기화 (드롭다운 빌드)
+    // 성적 데이터 초기화 (드롭다운 빌드)
     initQuantitativeData(s.quantitative);
     
     renderPayments(s.payments || []);
@@ -971,35 +982,6 @@ async function completeProWriting(key) {
 }
 
 /**
- * 5. [API Action] 관리자 최종 전송
- * - type: 'publish_pro_report'
- */
-async function publishProReport(key) {
-    const link = prompt("생성된 보고서 링크를 입력하세요:");
-    if (!link) return;
-
-    const token = localStorage.getItem('accessToken');
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({
-                type: 'publish_pro_report', // Lambda 허용 이름
-                userId: adminId,
-                targetUserId: targetUserId,
-                reportKey: key,
-                reportLink: link
-            })
-        });
-
-        if (!response.ok) throw new Error("Server Error");
-
-        alert("전송 완료되었습니다.");
-        await loadProReportsForAdmin(); // 화면 갱신
-    } catch(e) { alert("전송 실패: " + e.message); }
-}
-
-/**
  * 6. [UI Action] 관리자 수정 모드 활성화 (전송 후)
  */
 function enableProEdit(key) {
@@ -1050,11 +1032,144 @@ function showProGuideModal() {
     document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
 
-// [Legacy / Backup] 기존 유지 함수들
-function renderAdminChat() { console.log('Chat render (Legacy)'); }
-function sendAdminChat() { console.log('Chat send (Legacy)'); }
-function handleAdminFile(input) { console.log('File handle (Legacy)'); }
-function clearAdminFile() { currentAdminFile = null; }
+// ----------------------------------------------------
+// [종합 분석 리포트(tab_analysis) 전용 통신 및 UI 함수]
+// ----------------------------------------------------
+
+function renderAnalysisActionArea(status, fileUrl) {
+    const area = document.getElementById('analysisActionArea');
+    if (!area) return;
+    const userRole = localStorage.getItem('userRole');
+    const isAdmin = (userRole === 'admin');
+    const isTutor = (userRole === 'tutor');
+
+    let html = '';
+
+    if (status === 'published') { // 3단계: 최종 학생 노출
+        html = `
+            <div class="action-bar" style="background:#f8fafc; padding:15px; border-radius:8px;">
+                <span style="color:#2563eb; font-weight:bold;"><i class="fas fa-check-circle"></i> 학생에게 리포트 최종 전송 완료</span>
+                ${fileUrl ? `<a href="${fileUrl}" target="_blank" style="margin-left:15px; text-decoration:underline; color:#2563eb;"><i class="fas fa-file-pdf"></i> PDF 확인</a>` : ''}
+            </div>`;
+    } else if (status === 'tutor_review') { // 2단계: 튜터 검수 대기
+        if (isTutor) {
+            html = `
+                <div class="action-bar" style="justify-content: space-between; background: #eff6ff; padding: 15px; border-radius: 8px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="color:#1e3a8a; font-weight:bold;"><i class="fas fa-search"></i> 관리자가 PDF를 첨부했습니다. 검수 후 최종 전송해주세요.</span>
+                        ${fileUrl ? `<a href="${fileUrl}" target="_blank" style="text-decoration:underline; color:#2563eb;"><i class="fas fa-file-pdf"></i> PDF 보기</a>` : ''}
+                    </div>
+                    <button class="admin-report-btn completed" style="background:#166534;" onclick="publishAnalysisToStudent()">최종 학생에게 전송</button>
+                </div>`;
+        } else {
+            html = `<div class="action-bar"><span style="color:#f59e0b; font-weight:bold;"><i class="fas fa-clock"></i> 튜터 최종 검수 및 전송 대기 중...</span></div>`;
+        }
+    } else { // 1단계: 관리자 작성 단계 (draft, pending)
+        if (isAdmin) {
+            html = `
+                <div class="action-bar" style="flex-direction: column; align-items: stretch; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px;">
+                    <div style="display:flex; justify-content: space-between; align-items: center;">
+                        <span style="color:#1e293b; font-weight:bold;"><i class="fas fa-edit"></i> 텍스트 입력 및 PDF 첨부 (학생 미노출)</span>
+                        <button class="temp-save-btn" onclick="saveAnalysisDraft()">텍스트 임시저장</button>
+                    </div>
+                    <div style="display:flex; gap: 10px; align-items: center; justify-content: flex-end; border-top: 1px dashed #cbd5e1; padding-top: 15px;">
+                        <input type="file" id="analysisPdfFile" accept=".pdf" style="font-size:0.9rem; padding: 5px;">
+                        <button class="admin-report-btn" onclick="requestAnalysisTutorReview()"><i class="fas fa-upload"></i> PDF 업로드 및 튜터 검수 요청</button>
+                    </div>
+                </div>`;
+        } else {
+            html = `<div class="action-bar"><span style="color:#64748b; font-weight:bold;"><i class="fas fa-hourglass-half"></i> 관리자가 리포트 작성/첨부 중입니다...</span></div>`;
+        }
+    }
+    area.innerHTML = html;
+}
+
+// 텍스트만 조용히 DB에 임시 저장
+async function saveAnalysisDraft() {
+    const content = document.getElementById('analysisEditor').value;
+    const token = localStorage.getItem('accessToken');
+    try {
+        await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type:'admin_save_analysis', userId:adminId, data:{targetUserId, content, status:'draft'} })
+        });
+        alert("텍스트 임시저장 완료");
+    } catch(e) { alert("저장 실패"); }
+}
+
+// PDF S3 업로드 + 튜터에게 핑 날리기
+async function requestAnalysisTutorReview() {
+    const fileInput = document.getElementById('analysisPdfFile');
+    if (!fileInput.files || fileInput.files.length === 0) return alert("PDF 파일을 첨부해주세요.");
+    
+    const file = fileInput.files[0];
+    if (file.type !== 'application/pdf') return alert("PDF 파일만 가능합니다.");
+    if (!confirm("PDF 업로드 후 튜터에게 검수를 요청하시겠습니까?")) return;
+
+    const token = localStorage.getItem('accessToken');
+    const btn = event.currentTarget;
+    const origText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 업로드 중...';
+    btn.disabled = true;
+
+    try {
+        // 1. 보안 URL 발급 (기존 람다 활용)
+        const urlRes = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'get_presigned_url',
+                userId: adminId,
+                data: { fileName: encodeURIComponent(file.name), fileType: file.type, folder: `analysis/${targetUserId}` }
+            })
+        });
+        if (!urlRes.ok) throw new Error("업로드 주소 발급 실패");
+        const { uploadUrl, fileUrl } = await urlRes.json();
+
+        // 2. 브라우저에서 S3로 직접 파일 쏘기
+        const uploadRes = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+        if (!uploadRes.ok) throw new Error("S3 파일 업로드 실패");
+
+        // 3. DB 상태 업데이트 (튜터 검수로 넘기기)
+        const content = document.getElementById('analysisEditor').value;
+        const dbRes = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'admin_save_analysis', 
+                userId: adminId,
+                data: { targetUserId, content, analysisFile: fileUrl, status: 'tutor_review' }
+            })
+        });
+        if (!dbRes.ok) throw new Error("DB 업데이트 실패");
+
+        alert("파일 업로드 및 튜터 검수 요청 완료!");
+        await loadStudentDetail(); // 화면 리로드
+    } catch(e) { alert("요청 실패: " + e.message); }
+    finally { btn.innerHTML = origText; btn.disabled = false; }
+}
+
+// 튜터가 확인 후 최종적으로 학생 열람 권한 승인
+async function publishAnalysisToStudent() {
+    if(!confirm("최종 검수를 마치고 학생에게 리포트를 전송하시겠습니까? (이후 학생 앱에 노출됩니다)")) return;
+    const token = localStorage.getItem('accessToken');
+    try {
+        const dbRes = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'tutor_publish_analysis', 
+                userId: adminId,
+                data: { targetUserId, status: 'published' }
+            })
+        });
+        if (!dbRes.ok) throw new Error("DB 업데이트 실패");
+        
+        alert("학생에게 최종 전송 완료!");
+        await loadStudentDetail();
+    } catch(e) { alert("전송 실패: " + e.message); }
+}
 
 function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
 function showModal(title, contentHtml) {
@@ -1113,23 +1228,25 @@ function renderPayments(p) {
 function updateAnalysisBadge(status) {
     const badge = document.getElementById('analysisStatusBadge');
     if(!badge) return;
-    if (status === 'completed') { badge.className = 'analysis-badge completed'; badge.innerHTML = '✅ 분석 리포트 발송 완료'; }
-    else { badge.className = 'analysis-badge pending'; badge.innerHTML = '⏳ 분석 대기중'; }
-}
-
-async function saveAnalysis() {
-    const content = document.getElementById('analysisEditor').value;
-    const token = localStorage.getItem('accessToken');
-    if(!content.trim()) return alert("내용을 입력하세요");
-    if(!confirm("저장하시겠습니까?")) return;
-    try {
-        await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type:'admin_save_analysis', userId:adminId, data:{targetUserId, content, status:'completed'} })
-        });
-        alert("저장 완료"); updateAnalysisBadge('completed');
-    } catch(e) { alert("저장 실패"); }
+    
+    if (status === 'published') { 
+        badge.className = 'analysis-badge completed'; 
+        badge.innerHTML = '✅ 학생 전송 완료'; 
+    } else if (status === 'tutor_review') { 
+        // 튜터가 검수 중일 때 눈에 띄게 표시
+        badge.className = 'analysis-badge pending'; 
+        badge.innerHTML = '🔍 튜터 검수 대기중'; 
+        badge.style.borderColor = '#3b82f6';
+        badge.style.color = '#3b82f6';
+        badge.style.backgroundColor = '#eff6ff';
+    } else { 
+        badge.className = 'analysis-badge pending'; 
+        badge.innerHTML = '⏳ 리포트 작성중'; 
+        // 스타일 원상복구
+        badge.style.borderColor = '#e2e8f0';
+        badge.style.color = '#64748b';
+        badge.style.backgroundColor = '#f8fafc';
+    }
 }
 
 async function saveAdminMemo() {
