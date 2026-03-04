@@ -191,34 +191,18 @@ function renderData(s) {
         specialBtn.style.display = 'none';
     }
 
-    // 4. 종합 분석 리포트 상태, 내용, UI 렌더링
-    updateAnalysisBadge(s.analysisStatus);
-    
-    // [수정된 부분] 에디터 값 세팅 및 권한/상태에 따른 잠금 처리
-    const editor = document.getElementById('analysisEditor');
-    editor.value = s.analysisContent || '';
-    
-    const userRole = localStorage.getItem('userRole');
-    if (userRole === 'tutor' || s.analysisStatus === 'published') {
-        editor.disabled = true;
-        editor.style.backgroundColor = '#f1f5f9'; // 비활성화 시각적 피드백
-    } else {
-        editor.disabled = false;
-        editor.style.backgroundColor = '#fcfcfc'; // 입력 가능 상태
-    }
-
+    // 4. 관리자 메모 렌더링
     document.getElementById('adminMemoInput').value = s.adminMemo || '';
-    renderAnalysisActionArea(s.analysisStatus, s.analysisFile);
 
     // 5. 기타 데이터 렌더링
     renderTargetUnivs(s.targetUnivs || []);
     renderQualitativeDetail(s.qualitative);
     
-    // 성적 데이터 초기화 (드롭다운 빌드)
+    // 6. 성적 데이터 초기화 (드롭다운 빌드)
     initQuantitativeData(s.quantitative);
-    
     renderPayments(s.payments || []);
     
+    // 7. PRO 보고서 로드
     loadProReportsForAdmin();
 }
 
