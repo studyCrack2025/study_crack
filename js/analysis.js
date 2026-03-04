@@ -2441,6 +2441,28 @@ function renderProDashboard(container) {
 
 let cachedProReports = []; // 전역 변수 추가
 
+// 1. [신규 추가] 26MarPre -> "26년 3월 전반기" 로 예쁘게 바꿔주는 변환 함수
+function formatReportKey(key) {
+    if (!key || key.length < 7) return key; // 예외 처리
+
+    const yearStr = key.substring(0, 2);  // "26"
+    const monthStr = key.substring(2, 5); // "Mar"
+    const periodStr = key.substring(5);   // "Pre" 또는 "Post"
+
+    const monthMap = {
+        'Jan': '1월', 'Feb': '2월', 'Mar': '3월', 'Apr': '4월', 'May': '5월', 'Jun': '6월',
+        'Jul': '7월', 'Aug': '8월', 'Sep': '9월', 'Oct': '10월', 'Nov': '11월', 'Dec': '12월'
+    };
+
+    const year = `${yearStr}년`;
+    const month = monthMap[monthStr] || monthStr;
+    const period = periodStr === 'Pre' ? '전반기' : (periodStr === 'Post' ? '후반기' : periodStr);
+
+    return `${year} ${month} ${period}`;
+}
+
+
+// 2. [수정된 함수] 학생용 PRO 리포트 로드 함수
 async function loadProReports(currentKey, isDeadlinePassed) {
     const listArea = document.getElementById('proReportListArea');
     const btnContainer = document.getElementById('requestBtnContainer');
@@ -2462,16 +2484,22 @@ async function loadProReports(currentKey, isDeadlinePassed) {
         } else {
             let html = '<div class="report-grid">';
             cachedProReports.forEach(rep => {
-                // reportLink가 있어야만 클릭 가능
-                const isReady = rep.status === 'sent';
+                
+                // 🚨 핵심 수정 1: 튜터가 최종 전송한 'published' 상태일 때만 열람 가능하도록 수정!
+                // (과거에 이미 발송된 'sent' 상태의 보고서도 열람 가능하도록 호환성 유지)
+                const isReady = (rep.status === 'published' || rep.status === 'sent');
+                
                 const statusBadge = isReady 
                     ? '<span style="color:#4ade80; font-size:0.8rem;">● 열람 가능</span>' 
                     : '<span style="color:#fbbf24; font-size:0.8rem;">● 분석중</span>';
                 
+                // 🚨 핵심 수정 2: 포맷팅 함수를 사용해 예쁜 이름으로 출력
+                const formattedName = formatReportKey(rep.key);
+                
                 html += `
-                    <div class="report-item" onclick="${isReady ? `window.open('${rep.reportLink}')` : "alert('아직 분석 중입니다.')"}" style="cursor:${isReady?'pointer':'default'}">
+                    <div class="report-item" onclick="${isReady ? `window.open('${rep.reportLink}')` : "alert('튜터가 리포트를 최종 검수 중입니다. 잠시만 기다려주세요.')"}" style="cursor:${isReady?'pointer':'default'}">
                         <div class="rep-info">
-                            <strong>${rep.key} 리포트</strong>
+                            <strong>${formattedName} 보고서</strong>
                             ${statusBadge}
                         </div>
                         <div class="rep-icon"><i class="fas fa-download" style="color:${isReady?'#3b82f6':'#475569'}"></i></div>
@@ -2482,7 +2510,7 @@ async function loadProReports(currentKey, isDeadlinePassed) {
             listArea.innerHTML = html;
         }
 
-        // 2. 요청 버튼 상태 업데이트
+        // 2. 요청 버튼 상태 업데이트 (이 부분은 기존과 동일)
         const currentData = cachedProReports.find(r => r.key === currentKey);
         const hasRequested = currentData && currentData.request;
 
@@ -2499,7 +2527,6 @@ async function loadProReports(currentKey, isDeadlinePassed) {
                     <i class="fas fa-check-circle"></i> 요청 완료 (수정하기)
                 </button>
             `;
-            // 요청 내용을 모달 textarea에 미리 채워넣기 위해 저장해둠
             document.getElementById('proReportRequest').value = currentData.request;
         } else {
             // 요청 안 함 -> 기본 버튼 유지
