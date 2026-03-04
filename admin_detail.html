@@ -63,7 +63,6 @@
                     <button class="tab-btn" onclick="switchTab('special')" id="btn-special" style="display:none;">🏆 FOR PRO</button>
                     
                     <button class="tab-btn" onclick="switchTab('pay')" id="btn-pay">결제 내역</button>
-                    <button class="tab-btn highlight" onclick="switchTab('analysis')" id="btn-analysis">📊 분석 리포트</button>
                 </div>
 
                 <div id="tab_info" class="tab-content active">
@@ -172,18 +171,6 @@
                             <tbody id="viewPaymentList"></tbody>
                         </table>
                     </div>
-                </div>
-
-                <div id="tab_analysis" class="tab-content">
-                    <div class="analysis-header">
-                        <h3>종합 분석 리포트 작성</h3>
-                        <span class="analysis-guide">※ 저장 버튼을 누르면 학생에게 '분석 완료' 알림이 전송됩니다.</span>
-                    </div>
-                    <textarea id="analysisEditor" class="analysis-editor" placeholder="[분석 가이드]..."></textarea>
-                    <button onclick="saveAnalysis()" class="save-analysis-btn">✅ 분석 완료 및 저장 (학생에게 알림)</button>
-
-                    <textarea id="analysisEditor" class="analysis-editor" placeholder="[분석 가이드]..."></textarea>
-                    <div id="analysisActionArea" style="margin-top: 20px;"></div>
                 </div>
             </div>
         </main>

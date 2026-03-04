@@ -574,21 +574,17 @@ async function saveWeeklyFeedback(weekId, idx) {
 }
 
 // ============================================================
-// [기능 6] FOR PRO 탭 로직 (Clean & Organized)
+// [기능] FOR PRO 탭 로직
 // ============================================================
 
-/**
- * 1. [렌더링] PRO 탭 메인 렌더링 함수
- */
 function renderProTab() {
     const container = document.getElementById('proReportContainer');
     container.innerHTML = '';
 
     const selYear = document.getElementById('proFilterYear').value;
     const selMonth = document.getElementById('proFilterMonth').value;
-    const userRole = localStorage.getItem('userRole'); // 'admin' or 'tutor'
+    const userRole = localStorage.getItem('userRole');
 
-    // Key 생성 로직 (예: 26MarPre, 26MarPost)
     const yearShort = selYear.slice(2);
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const monthStr = monthNames[parseInt(selMonth) - 1];
@@ -596,19 +592,14 @@ function renderProTab() {
     const keyPre = `${yearShort}${monthStr}Pre`;
     const keyPost = `${yearShort}${monthStr}Post`;
 
-    // 데이터 찾기
     const reports = currentStudentData.proReportsList || [];
     const dataPre = reports.find(r => r.key === keyPre);
     const dataPost = reports.find(r => r.key === keyPost);
 
-    // 박스 생성 및 추가
     container.appendChild(createProPeriodBox(`${selMonth}월 상반기 (Pre)`, dataPre, keyPre, userRole));
     container.appendChild(createProPeriodBox(`${selMonth}월 하반기 (Post)`, dataPost, keyPost, userRole));
 }
 
-/**
- * 2. [렌더링] 기간별 박스(Pre/Post) UI 생성 함수
- */
 function createProPeriodBox(title, data, reportKey, userRole) {
     const box = document.createElement('div');
     box.className = 'pro-period-section';
@@ -617,39 +608,31 @@ function createProPeriodBox(title, data, reportKey, userRole) {
     const isTutor = (userRole === 'tutor');
     const isAdmin = (userRole === 'admin');
 
-    // 데이터 안전 참조
     const safeData = data || {};
     const requestText = safeData.request ? escapeHtml(safeData.request) : null;
-    const status = safeData.status || 'pending'; // pending -> drafting -> completed -> sent
+    const status = safeData.status || 'pending'; // pending -> drafting -> completed(admin_review) -> tutor_review -> published
     const reportLink = safeData.reportLink || null;
 
-    // [권한 로직] 수정 가능 여부 판단
     let canEdit = false;
     if (isTutor && (status === 'pending' || status === 'drafting')) canEdit = true;
-    else if (isAdmin && status === 'completed') canEdit = true;
+    else if (isAdmin && (status === 'completed' || status === 'admin_review')) canEdit = true;
 
-    // UI 상태 설정
     const readOnlyAttr = canEdit ? '' : 'disabled';
     const saveBtnStyle = canEdit ? '' : 'style="display:none"';
 
-    // [A] 학생 요청 사항
     const reqHtml = requestText 
         ? `<div class="req-content-area">${requestText}</div>`
         : `<div class="req-content-area req-empty">(학생이 작성한 추가 요청사항이 없습니다.)</div>`;
 
-    // [B] 초안 내용 파싱
     let content = { eval: '', dist: '', plan: '', qna: '' };
     if (safeData.draft) {
         try { content = JSON.parse(safeData.draft); } catch(e) { console.error("JSON Parse Error:", e); }
     }
 
-    // [C] 작성 폼 HTML
     const writeHtml = `
         <div class="write-header">
             <div class="write-title"><i class="fas fa-pen-nib"></i> 컨설턴트 집필 공간</div>
-            <button class="guide-btn" onclick="showProGuideModal()">
-                <i class="fas fa-info-circle"></i> 작성 가이드
-            </button>
+            <button class="guide-btn" onclick="showProGuideModal()"><i class="fas fa-info-circle"></i> 작성 가이드</button>
         </div>
         <div class="pro-write-grid">
             ${createTextAreaHtml(reportKey, 1, "1. 지난 2주간의 학습평가 (리스크/KPI)", content.eval, readOnlyAttr, saveBtnStyle)}
@@ -659,10 +642,8 @@ function createProPeriodBox(title, data, reportKey, userRole) {
         </div>
     `;
 
-    // [D] 하단 액션 버튼 (상태별 분기)
     let actionHtml = getActionHtml(status, isTutor, isAdmin, reportLink, reportKey, hasContent(content));
 
-    // 최종 조립
     box.innerHTML = `
         <div class="pro-period-title">
             <span>${title}</span>
@@ -681,13 +662,11 @@ function createProPeriodBox(title, data, reportKey, userRole) {
         ${actionHtml}
     `;
 
-    // 변경 감지 리스너 부착 (수정 가능할 때만)
     if (canEdit) attachInputListeners(reportKey, isTutor);
 
     return box;
 }
 
-// (헬퍼) 텍스트 영역 생성기
 function createTextAreaHtml(key, idx, label, val, readOnly, btnStyle) {
     return `
         <div class="write-item">
@@ -698,10 +677,10 @@ function createTextAreaHtml(key, idx, label, val, readOnly, btnStyle) {
     `;
 }
 
-// (헬퍼) 하단 액션바 HTML 생성기 (PDF 첨부 및 4단계 검수 플로우 적용)
+// 🚨 FOR PRO 탭용: 4단계 검수 UI
 function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent) {
     
-    // 4단계: published 또는 sent (최종 학생 전송 완료)
+    // 단계 4: 학생에게 최종 전송 완료
     if (status === 'published' || status === 'sent') { 
         return `
             <div class="action-bar">
@@ -711,7 +690,7 @@ function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent) {
             </div>`;
     } 
     
-    // 3단계: tutor_review (관리자 PDF 첨부 완료 -> 튜터 최종 검수 대기)
+    // 단계 3: 관리자 PDF 첨부 완료 -> 튜터 최종 확인 대기
     if (status === 'tutor_review') {
         if (isTutor) {
             return `
@@ -727,8 +706,8 @@ function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent) {
         }
     }
 
-    // 2단계: admin_review 또는 completed (튜터 작성 완료 -> 관리자 확인 및 PDF 첨부)
-    if (status === 'admin_review' || status === 'completed') { 
+    // 단계 2: 튜터 작성 완료 -> 관리자 확인 및 PDF 첨부
+    if (status === 'completed' || status === 'admin_review') { 
         if (isAdmin) {
             return `
                 <div class="action-bar" style="flex-direction: column; align-items: stretch; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px;">
@@ -738,15 +717,15 @@ function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent) {
                     </div>
                     <div style="display:flex; gap: 10px; align-items: center; justify-content: flex-end; border-top: 1px dashed #cbd5e1; padding-top: 15px;">
                         <input type="file" id="pdfFile_${key}" accept=".pdf" style="font-size:0.9rem; padding: 5px;">
-                        <button class="admin-report-btn" onclick="requestTutorReview('${key}')"><i class="fas fa-upload"></i> 튜터에게 검수 요청</button>
+                        <button class="admin-report-btn" onclick="requestTutorReview('${key}')"><i class="fas fa-upload"></i> PDF 업로드 및 튜터 검수 요청</button>
                     </div>
                 </div>`;
         } else {
-            return `<div class="action-bar"><span style="color:#64748b; font-weight:bold;"><i class="fas fa-hourglass-half"></i> 관리자 검수 및 PDF 생성 중...</span></div>`;
+            return `<div class="action-bar"><span style="color:#64748b; font-weight:bold;"><i class="fas fa-hourglass-half"></i> 관리자 검수 및 PDF 첨부 중...</span></div>`;
         }
     }
 
-    // 1단계: drafting 또는 pending (기본 작성 중)
+    // 단계 1: 튜터 작성 중
     if (isTutor) {
         const btnClass = hasContent ? 'complete-write-btn active' : 'complete-write-btn';
         return `
@@ -758,32 +737,23 @@ function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent) {
     }
 }
 
-/**
- * [API Action] 관리자 -> PDF 첨부 후 튜터에게 검수 요청
- */
+// 🚨 FOR PRO 탭용: 관리자가 PDF 업로드 후 튜터에게 핑 날리기
 async function requestTutorReview(key) {
     const fileInput = document.getElementById(`pdfFile_${key}`);
-    if (!fileInput.files || fileInput.files.length === 0) {
-        return alert("PDF 파일을 먼저 첨부해주세요.");
-    }
+    if (!fileInput.files || fileInput.files.length === 0) return alert("PDF 파일을 먼저 첨부해주세요.");
 
     const file = fileInput.files[0];
-    if (file.type !== 'application/pdf') {
-        return alert("PDF 파일만 업로드 가능합니다.");
-    }
-
+    if (file.type !== 'application/pdf') return alert("PDF 파일만 업로드 가능합니다.");
     if (!confirm("첨부한 PDF 파일을 업로드하고 튜터에게 최종 검수를 요청하시겠습니까?")) return;
 
     const token = localStorage.getItem('accessToken');
     const btn = event.currentTarget;
     const originalBtnText = btn.innerHTML;
     
-    // UI 버튼 비활성화 (중복 클릭 방지)
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 업로드 중...';
     btn.disabled = true;
 
     try {
-        // 1단계: S3 업로드 주소 발급
         const urlResponse = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -801,7 +771,6 @@ async function requestTutorReview(key) {
         if (!urlResponse.ok) throw new Error("업로드 주소 발급 실패");
         const { uploadUrl, fileUrl } = await urlResponse.json();
 
-        // 2단계: S3에 파일 업로드
         const uploadResult = await fetch(uploadUrl, {
             method: 'PUT',
             headers: { 'Content-Type': file.type },
@@ -810,26 +779,20 @@ async function requestTutorReview(key) {
 
         if (!uploadResult.ok) throw new Error("S3 파일 업로드 실패");
 
-        // 3단계: DB 업데이트 (🚨 수정됨: payload를 data 객체 안으로 래핑)
         const dbResponse = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'admin_request_tutor_review', 
                 userId: adminId,
-                data: {
-                    targetUserId: targetUserId,
-                    reportKey: key,
-                    reportLink: fileUrl,
-                    status: 'tutor_review'
-                }
+                data: { targetUserId: targetUserId, reportKey: key, reportLink: fileUrl, status: 'tutor_review' }
             })
         });
 
         if (!dbResponse.ok) throw new Error("DB 업데이트 실패");
 
         alert("파일 업로드 및 튜터 검수 요청이 완료되었습니다.");
-        await loadProReportsForAdmin(); // 화면 갱신
+        await loadProReportsForAdmin(); 
 
     } catch(e) { 
         console.error(e);
@@ -840,40 +803,31 @@ async function requestTutorReview(key) {
     }
 }
 
-/**
- * [API Action] 튜터 -> 최종 검수 완료 및 학생에게 전송
- */
+// 🚨 FOR PRO 탭용: 튜터가 확인 후 학생에게 최종 전송
 async function publishProReportToStudent(key) {
     if(!confirm("최종 검수를 마치고 학생에게 리포트를 전송하시겠습니까? 전송 후에는 수정할 수 없습니다.")) return;
 
     const token = localStorage.getItem('accessToken');
     try {
-        // 🚨 수정됨: payload를 data 객체 안으로 래핑
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'tutor_publish_report', 
                 userId: adminId,
-                data: {
-                    targetUserId: targetUserId,
-                    reportKey: key,
-                    status: 'published'
-                }
+                data: { targetUserId: targetUserId, reportKey: key, status: 'published' }
             })
         });
 
         if (!response.ok) throw new Error("Server Error");
 
         alert("학생에게 최종 전송이 완료되었습니다.");
-        await loadProReportsForAdmin(); // 화면 갱신
+        await loadProReportsForAdmin(); 
     } catch(e) { alert("전송 실패: " + e.message); }
 }
 
-// (헬퍼) 내용 존재 여부 확인
 function hasContent(c) { return c.eval && c.dist && c.plan && c.qna; }
 
-// (헬퍼) 리스너 부착
 function attachInputListeners(key, isTutor) {
     setTimeout(() => {
         const container = document.getElementById(key);
@@ -897,10 +851,6 @@ function attachInputListeners(key, isTutor) {
     }, 0);
 }
 
-/**
- * 3. [API Action] 임시 저장 (개별/전체)
- * - type: 'save_pro_draft'
- */
 async function tempSaveProItem(boxId, itemIdx) {
     const btn = document.getElementById(`${boxId}_btn${itemIdx}`);
     const originalText = btn.innerText;
@@ -909,12 +859,11 @@ async function tempSaveProItem(boxId, itemIdx) {
     btn.disabled = true;
 
     try {
-        await saveProDraft(boxId, true); // Silent save
-        
+        await saveProDraft(boxId, true);
         btn.classList.add('saved');
         btn.innerText = '저장됨';
         btn.disabled = false;
-        checkProAllSaved(boxId); // 전체 완료 버튼 활성화 체크
+        checkProAllSaved(boxId);
     } catch (e) {
         alert("저장 실패");
         btn.innerText = originalText;
@@ -935,7 +884,7 @@ async function saveProDraft(key, silent = false) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
-            type: 'save_pro_draft', // Lambda의 허용 리스트에 있는 이름
+            type: 'save_pro_draft', 
             userId: adminId,
             targetUserId: targetUserId,
             reportKey: key,
@@ -943,18 +892,10 @@ async function saveProDraft(key, silent = false) {
         })
     });
 
-    if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Save Failed");
-    }
-
+    if (!response.ok) throw new Error("Save Failed");
     if (!silent) alert("저장되었습니다.");
 }
 
-/**
- * 4. [API Action] 튜터 작성 완료 (제출)
- * - type: 'complete_pro_writing'
- */
 async function completeProWriting(key) {
     try { await saveProDraft(key, true); } catch (e) { return alert("내용 저장 실패로 중단합니다."); }
 
@@ -966,7 +907,7 @@ async function completeProWriting(key) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
-                type: 'complete_pro_writing', // Lambda 허용 이름
+                type: 'complete_pro_writing',
                 userId: adminId,
                 targetUserId: targetUserId,
                 reportKey: key
@@ -976,14 +917,11 @@ async function completeProWriting(key) {
         if (!response.ok) throw new Error("Server Error");
         
         alert("제출 완료되었습니다. 관리자 검수 단계로 넘어갑니다.");
-        await loadProReportsForAdmin(); // 화면 갱신
+        await loadProReportsForAdmin(); 
 
     } catch(e) { alert("오류 발생: " + e.message); }
 }
 
-/**
- * 6. [UI Action] 관리자 수정 모드 활성화 (전송 후)
- */
 function enableProEdit(key) {
     if(!confirm("이미 전송된 보고서입니다. 내용을 수정하시겠습니까?")) return;
     const container = document.getElementById(key);
@@ -992,9 +930,6 @@ function enableProEdit(key) {
     alert("수정 모드입니다. 수정 후 '전체 저장' 하세요.");
 }
 
-/**
- * 7. [Helper] 전체 저장 여부 확인 (UI용)
- */
 function checkProAllSaved(boxId) {
     const container = document.getElementById(boxId);
     const btns = container.querySelectorAll('.temp-save-btn');
@@ -1007,9 +942,6 @@ function checkProAllSaved(boxId) {
     }
 }
 
-/**
- * 8. [Modal] 가이드 모달 표시
- */
 function showProGuideModal() {
     const modalHtml = `
         <div id="proGuideModal" class="modal-overlay" onclick="if(event.target===this) this.remove()">
@@ -1032,144 +964,9 @@ function showProGuideModal() {
     document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
 
-// ----------------------------------------------------
-// [종합 분석 리포트(tab_analysis) 전용 통신 및 UI 함수]
-// ----------------------------------------------------
-
-function renderAnalysisActionArea(status, fileUrl) {
-    const area = document.getElementById('analysisActionArea');
-    if (!area) return;
-    const userRole = localStorage.getItem('userRole');
-    const isAdmin = (userRole === 'admin');
-    const isTutor = (userRole === 'tutor');
-
-    let html = '';
-
-    if (status === 'published') { // 3단계: 최종 학생 노출
-        html = `
-            <div class="action-bar" style="background:#f8fafc; padding:15px; border-radius:8px;">
-                <span style="color:#2563eb; font-weight:bold;"><i class="fas fa-check-circle"></i> 학생에게 리포트 최종 전송 완료</span>
-                ${fileUrl ? `<a href="${fileUrl}" target="_blank" style="margin-left:15px; text-decoration:underline; color:#2563eb;"><i class="fas fa-file-pdf"></i> PDF 확인</a>` : ''}
-            </div>`;
-    } else if (status === 'tutor_review') { // 2단계: 튜터 검수 대기
-        if (isTutor) {
-            html = `
-                <div class="action-bar" style="justify-content: space-between; background: #eff6ff; padding: 15px; border-radius: 8px;">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <span style="color:#1e3a8a; font-weight:bold;"><i class="fas fa-search"></i> 관리자가 PDF를 첨부했습니다. 검수 후 최종 전송해주세요.</span>
-                        ${fileUrl ? `<a href="${fileUrl}" target="_blank" style="text-decoration:underline; color:#2563eb;"><i class="fas fa-file-pdf"></i> PDF 보기</a>` : ''}
-                    </div>
-                    <button class="admin-report-btn completed" style="background:#166534;" onclick="publishAnalysisToStudent()">최종 학생에게 전송</button>
-                </div>`;
-        } else {
-            html = `<div class="action-bar"><span style="color:#f59e0b; font-weight:bold;"><i class="fas fa-clock"></i> 튜터 최종 검수 및 전송 대기 중...</span></div>`;
-        }
-    } else { // 1단계: 관리자 작성 단계 (draft, pending)
-        if (isAdmin) {
-            html = `
-                <div class="action-bar" style="flex-direction: column; align-items: stretch; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px;">
-                    <div style="display:flex; justify-content: space-between; align-items: center;">
-                        <span style="color:#1e293b; font-weight:bold;"><i class="fas fa-edit"></i> 텍스트 입력 및 PDF 첨부 (학생 미노출)</span>
-                        <button class="temp-save-btn" onclick="saveAnalysisDraft()">텍스트 임시저장</button>
-                    </div>
-                    <div style="display:flex; gap: 10px; align-items: center; justify-content: flex-end; border-top: 1px dashed #cbd5e1; padding-top: 15px;">
-                        <input type="file" id="analysisPdfFile" accept=".pdf" style="font-size:0.9rem; padding: 5px;">
-                        <button class="admin-report-btn" onclick="requestAnalysisTutorReview()"><i class="fas fa-upload"></i> PDF 업로드 및 튜터 검수 요청</button>
-                    </div>
-                </div>`;
-        } else {
-            html = `<div class="action-bar"><span style="color:#64748b; font-weight:bold;"><i class="fas fa-hourglass-half"></i> 관리자가 리포트 작성/첨부 중입니다...</span></div>`;
-        }
-    }
-    area.innerHTML = html;
-}
-
-// 텍스트만 조용히 DB에 임시 저장
-async function saveAnalysisDraft() {
-    const content = document.getElementById('analysisEditor').value;
-    const token = localStorage.getItem('accessToken');
-    try {
-        await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type:'admin_save_analysis', userId:adminId, data:{targetUserId, content, status:'draft'} })
-        });
-        alert("텍스트 임시저장 완료");
-    } catch(e) { alert("저장 실패"); }
-}
-
-// PDF S3 업로드 + 튜터에게 핑 날리기
-async function requestAnalysisTutorReview() {
-    const fileInput = document.getElementById('analysisPdfFile');
-    if (!fileInput.files || fileInput.files.length === 0) return alert("PDF 파일을 첨부해주세요.");
-    
-    const file = fileInput.files[0];
-    if (file.type !== 'application/pdf') return alert("PDF 파일만 가능합니다.");
-    if (!confirm("PDF 업로드 후 튜터에게 검수를 요청하시겠습니까?")) return;
-
-    const token = localStorage.getItem('accessToken');
-    const btn = event.currentTarget;
-    const origText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 업로드 중...';
-    btn.disabled = true;
-
-    try {
-        // 1. 보안 URL 발급 (기존 람다 활용)
-        const urlRes = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({
-                type: 'get_presigned_url',
-                userId: adminId,
-                data: { fileName: encodeURIComponent(file.name), fileType: file.type, folder: `analysis/${targetUserId}` }
-            })
-        });
-        if (!urlRes.ok) throw new Error("업로드 주소 발급 실패");
-        const { uploadUrl, fileUrl } = await urlRes.json();
-
-        // 2. 브라우저에서 S3로 직접 파일 쏘기
-        const uploadRes = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
-        if (!uploadRes.ok) throw new Error("S3 파일 업로드 실패");
-
-        // 3. DB 상태 업데이트 (튜터 검수로 넘기기)
-        const content = document.getElementById('analysisEditor').value;
-        const dbRes = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({
-                type: 'admin_save_analysis', 
-                userId: adminId,
-                data: { targetUserId, content, analysisFile: fileUrl, status: 'tutor_review' }
-            })
-        });
-        if (!dbRes.ok) throw new Error("DB 업데이트 실패");
-
-        alert("파일 업로드 및 튜터 검수 요청 완료!");
-        await loadStudentDetail(); // 화면 리로드
-    } catch(e) { alert("요청 실패: " + e.message); }
-    finally { btn.innerHTML = origText; btn.disabled = false; }
-}
-
-// 튜터가 확인 후 최종적으로 학생 열람 권한 승인
-async function publishAnalysisToStudent() {
-    if(!confirm("최종 검수를 마치고 학생에게 리포트를 전송하시겠습니까? (이후 학생 앱에 노출됩니다)")) return;
-    const token = localStorage.getItem('accessToken');
-    try {
-        const dbRes = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({
-                type: 'tutor_publish_analysis', 
-                userId: adminId,
-                data: { targetUserId, status: 'published' }
-            })
-        });
-        if (!dbRes.ok) throw new Error("DB 업데이트 실패");
-        
-        alert("학생에게 최종 전송 완료!");
-        await loadStudentDetail();
-    } catch(e) { alert("전송 실패: " + e.message); }
-}
+// ============================================================
+// 기타 공통 UI (모달, 표 렌더링 등)
+// ============================================================
 
 function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
 function showModal(title, contentHtml) {
@@ -1222,30 +1019,6 @@ function renderPayments(p) {
     } else {
         totalEl.innerText = "0원"; lastDateEl.innerText = "-";
         listBody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:30px;">결제 내역 없음</td></tr>`;
-    }
-}
-
-function updateAnalysisBadge(status) {
-    const badge = document.getElementById('analysisStatusBadge');
-    if(!badge) return;
-    
-    if (status === 'published') { 
-        badge.className = 'analysis-badge completed'; 
-        badge.innerHTML = '✅ 학생 전송 완료'; 
-    } else if (status === 'tutor_review') { 
-        // 튜터가 검수 중일 때 눈에 띄게 표시
-        badge.className = 'analysis-badge pending'; 
-        badge.innerHTML = '🔍 튜터 검수 대기중'; 
-        badge.style.borderColor = '#3b82f6';
-        badge.style.color = '#3b82f6';
-        badge.style.backgroundColor = '#eff6ff';
-    } else { 
-        badge.className = 'analysis-badge pending'; 
-        badge.innerHTML = '⏳ 리포트 작성중'; 
-        // 스타일 원상복구
-        badge.style.borderColor = '#e2e8f0';
-        badge.style.color = '#64748b';
-        badge.style.backgroundColor = '#f8fafc';
     }
 }
 
