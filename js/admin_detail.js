@@ -761,15 +761,52 @@ async function requestTutorReview(key) {
         return alert("PDF 파일만 업로드 가능합니다.");
     }
 
-    if(!confirm("첨부한 PDF 파일로 튜터에게 최종 검수를 요청하시겠습니까?")) return;
-
-    // TODO: 실제 S3 파일 업로드 로직이 들어가야 합니다. (현재는 파일명으로 가짜 링크 생성)
-    // const uploadedPdfUrl = await uploadPdfToS3(file);
-    const uploadedPdfUrl = "https://s3.amazonaws.com/your-bucket/" + encodeURIComponent(file.name); 
+    if (!confirm("첨부한 PDF 파일을 업로드하고 튜터에게 최종 검수를 요청하시겠습니까?")) return;
 
     const token = localStorage.getItem('accessToken');
+    const btn = event.currentTarget;
+    const originalBtnText = btn.innerHTML;
+    
+    // UI 버튼 비활성화 (중복 클릭 방지)
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 업로드 중...';
+    btn.disabled = true;
+
     try {
-        const response = await fetch(API_URL, {
+        // 1단계: 기존 get_presigned_url 람다 호출 (규격에 맞춤)
+        const urlResponse = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'get_presigned_url',
+                userId: adminId, // 람다의 !userId 통과용
+                data: {
+                    fileName: encodeURIComponent(file.name),
+                    fileType: file.type,
+                    // S3 폴더명에 학생 ID를 넣어 관리하기 편하게 만듦
+                    folder: `pro_reports/${targetUserId}` 
+                }
+            })
+        });
+
+        if (!urlResponse.ok) {
+            const errData = await urlResponse.json();
+            throw new Error(errData.error || "업로드 주소 발급 실패");
+        }
+        
+        // 람다에서 반환해주는 변수명 추출
+        const { uploadUrl, fileUrl } = await urlResponse.json();
+
+        // 2단계: 발급받은 URL로 직접 PUT 전송 (S3 업로드)
+        const uploadResult = await fetch(uploadUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': file.type },
+            body: file
+        });
+
+        if (!uploadResult.ok) throw new Error("S3 파일 업로드 실패");
+
+        // 3단계: 업로드 성공 후, 최종 주소(fileUrl)를 DB에 저장 (튜터 검수 요청)
+        const dbResponse = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
@@ -777,16 +814,27 @@ async function requestTutorReview(key) {
                 userId: adminId,
                 targetUserId: targetUserId,
                 reportKey: key,
-                reportLink: uploadedPdfUrl,
+                reportLink: fileUrl, // 버킷에 안전하게 올라간 최종 URL
                 status: 'tutor_review' // 튜터 검수 단계로 상태 변경
             })
         });
 
-        if (!response.ok) throw new Error("Server Error");
+        if (!dbResponse.ok) {
+            const errData = await dbResponse.json();
+            throw new Error(errData.error || "DB 업데이트 실패");
+        }
 
-        alert("튜터에게 검수 요청이 전송되었습니다.");
+        alert("파일 업로드 및 튜터 검수 요청이 완료되었습니다.");
         await loadProReportsForAdmin(); // 화면 갱신
-    } catch(e) { alert("요청 전송 실패: " + e.message); }
+
+    } catch(e) { 
+        console.error(e);
+        alert("요청 전송 실패: " + e.message); 
+    } finally {
+        // 버튼 원상복구
+        btn.innerHTML = originalBtnText;
+        btn.disabled = false;
+    }
 }
 
 /**
@@ -932,7 +980,7 @@ async function completeProWriting(key) {
  * - type: 'publish_pro_report'
  */
 async function publishProReport(key) {
-    const link = prompt("생성된 보고서(Gamma) 링크를 입력하세요:");
+    const link = prompt("생성된 보고서 링크를 입력하세요:");
     if (!link) return;
 
     const token = localStorage.getItem('accessToken');
