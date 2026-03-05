@@ -36,6 +36,10 @@
             <li class="menu-item">
                 <a href="#" onclick="showSection('students')">👥 학생 관리</a>
             </li>
+            
+            <li class="menu-item">
+                <a href="#" onclick="showSection('tutors')">👨‍🏫 튜터 관리</a>
+            </li>
 
             <li class="menu-item has-submenu">
                 <a href="#" onclick="toggleSubmenu('qna-submenu')">
@@ -47,6 +51,13 @@
                     <li><a href="#" onclick="showQnaSection('read')">👁️ 읽음 (미응답)</a></li>
                     <li><a href="#" onclick="showQnaSection('waiting')">🔴 읽지 않음</a></li>
                 </ul>
+            </li>
+            
+            <li class="menu-item">
+                <a href="#" onclick="showSection('notifications')">
+                    <span>🔔 알림 센터</span>
+                    <span id="notiBadge" style="display:none; background:#ef4444; color:white; border-radius:50%; padding:2px 8px; font-size:0.8rem; font-weight:bold;">0</span>
+                </a>
             </li>
 
             <li class="menu-item logout">
@@ -135,6 +146,14 @@
                 </table>
             </div>
         </div>
+        
+        <div id="section-tutors" class="content-section">
+            <h1 class="page-title">👨‍🏫 튜터별 학생 관리</h1>
+            <div class="tutor-list-container" id="tutorListBody">
+                <p style="text-align:center; color:#94a3b8; padding:30px;">튜터 정보를 불러오는 중...</p>
+            </div>
+        </div>
+        
         <div id="section-qna" class="content-section">
             <h1 class="page-title">💬 질의 관리 <span id="qnaStatusTitle" style="font-size:1rem; color:#64748b;"></span></h1>
             
@@ -156,6 +175,16 @@
                     <tbody id="qnaListBody">
                         </tbody>
                 </table>
+            </div>
+        </div>
+        
+        <div id="section-notifications" class="content-section">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                <h1 class="page-title" style="margin:0;">🔔 알림 센터</h1>
+                <button onclick="markAllNotiAsRead()" style="padding:8px 15px; background:#fff; border:1px solid #cbd5e1; border-radius:6px; cursor:pointer;">전체 읽음 처리</button>
+            </div>
+            <div class="noti-list-container" id="notiListBody">
+                <p style="text-align:center; color:#94a3b8; padding:30px;">알림을 불러오는 중...</p>
             </div>
         </div>
         

@@ -1,4 +1,4 @@
-// js/admin.js
+// js/admin_ui.js
 
 // 1. 차트 플러그인 등록
 if (typeof ChartDataLabels !== 'undefined') {
@@ -32,7 +32,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 초기 데이터 로드
     loadAdminStats(userId);
-    searchStudents(); 
+    fetchUnreadNotiCount();
+    
+    // 검색창에서 엔터키 누르면 검색 실행
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchStudents();
+            }
+        });
+    }
 });
 
 // ============================================================
@@ -63,36 +73,39 @@ function showSection(sectionName) {
     }
 }
 
-// [NEW] Q&A 섹션 전환 및 필터링
-function showQnaSection(filterStatus) {
-    // 다른 섹션 숨기기
+// 메인 섹션 전환 (대시보드 / 학생관리 / 튜터관리 / 알림 등)
+function showSection(sectionName) {
+    // 모든 섹션 숨기기
     document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
-    // Q&A 섹션 활성화
-    const qnaSection = document.getElementById('section-qna');
-    if (qnaSection) qnaSection.classList.add('active');
     
-    // 필터 설정
-    currentQnaFilter = filterStatus;
-    
-    // 타이틀 변경
-    const titleMap = {
-        'waiting': '(읽지 않음)',
-        'read': '(읽었지만 미응답)',
-        'done': '(응답 완료)'
-    };
-    const titleEl = document.getElementById('qnaStatusTitle');
-    if(titleEl) titleEl.innerText = titleMap[filterStatus];
-
-    // 데이터 로드 또는 렌더링
-    if (allQnaData.length === 0) {
-        loadAllQna(); // 데이터가 없으면 서버에서 가져옴
-    } else {
-        renderQnaList(); // 있으면 바로 렌더링
+    // 선택된 섹션 보이기
+    if (sectionName === 'students') {
+        document.getElementById('section-students').classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } 
+    else if (sectionName === 'dashboard') {
+        document.getElementById('section-dashboard').classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } 
+    else if (sectionName === 'sales-chart') { // 기존 로직 완벽 복구
+        document.getElementById('section-dashboard').classList.add('active');
+        const anchor = document.getElementById('chart-section-anchor');
+        if (anchor) anchor.scrollIntoView({ behavior: 'smooth' });
+    } 
+    else if (sectionName === 'tutors') { // [NEW] 튜터 관리 탭
+        document.getElementById('section-tutors').classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        loadTutorStats(); // 데이터 로드
+    } 
+    else if (sectionName === 'notifications') { // [NEW] 알림 탭
+        document.getElementById('section-notifications').classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        loadNotifications(); // 데이터 로드
     }
 }
 
 // ============================================================
-// [B] 통계 및 차트 로직 (기존 유지)
+// [B] 통계 및 차트 로직
 // ============================================================
 
 async function loadAdminStats(adminId) {
@@ -248,7 +261,7 @@ function renderProductChart(productMap, total) {
 }
 
 // ============================================================
-// [C] 학생 관리 로직 (기존 유지)
+// [C] 학생 관리 로직
 // ============================================================
 
 async function searchStudents() {
@@ -290,6 +303,9 @@ async function searchStudents() {
             // 배열이 아니면 빈 배열로 처리하여 forEach 에러 방지
             students = [];
         }
+        
+        // role이 'tutor'나 'admin'인 유저를 제외하고 순수 학생만 남김
+        students = students.filter(s => s.role !== 'admin' && s.role !== 'tutor');
         
         // 필터링 로직 (데이터가 있을 때만 수행)
         if (students.length > 0) {
@@ -341,7 +357,7 @@ function goToStudentDetail(targetUserId) {
 }
 
 // ============================================================
-// [D] 질의 관리(Q&A) 로직 (NEW)
+// [D] 질의 관리(Q&A) 로직
 // ============================================================
 
 // 1. 전체 질문 불러오기
@@ -547,7 +563,153 @@ async function submitReply() {
 }
 
 // ============================================================
-// [E] 유틸리티
+// [E] 튜터 관리 로직
+// ============================================================
+async function loadTutorStats() {
+    const token = localStorage.getItem('accessToken');
+    const container = document.getElementById('tutorListBody');
+    container.innerHTML = '<p style="text-align:center;">데이터를 불러오는 중...</p>';
+
+    try {
+        const response = await fetch(ADMIN_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'admin_get_tutor_stats' })
+        });
+        if (!response.ok) throw new Error("로드 실패");
+        const data = await response.json();
+        
+        container.innerHTML = '';
+        if (data.tutors.length === 0) {
+            container.innerHTML = '<p style="text-align:center;">등록된 튜터가 없습니다.</p>';
+            return;
+        }
+
+        data.tutors.forEach(t => {
+            const card = document.createElement('div');
+            card.className = 'tutor-card';
+            card.innerHTML = `
+                <div class="tutor-header" onclick="toggleTutorDetail(this)">
+                    <div class="tutor-info-main">
+                        <span class="tutor-badge">Tutor</span>
+                        <span class="tutor-name">${escapeHtml(t.nickname)}</span>
+                    </div>
+                    <div class="tutor-arrow"><i class="fas fa-chevron-down"></i></div>
+                </div>
+                <div class="tutor-details">
+                    <div class="tutor-grid">
+                        <div>
+                            <p><strong>실명:</strong> ${escapeHtml(t.name) || '-'}</p>
+                            <p><strong>학교:</strong> ${escapeHtml(t.school) || '-'}</p>
+                            <p><strong>계약일:</strong> ${t.createdAt ? new Date(t.createdAt).toLocaleDateString() : '-'}</p>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <div class="tutor-stat-box" style="flex:1;">
+                                PRO/BLACK 학생
+                                <strong style="color:#ef4444;">${t.proCount}명</strong>
+                            </div>
+                            <div class="tutor-stat-box" style="flex:1;">
+                                STANDARD 학생
+                                <strong style="color:#3b82f6;">${t.stdCount}명</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    } catch(e) { container.innerHTML = '<p style="text-align:center; color:red;">오류 발생</p>'; }
+}
+
+function toggleTutorDetail(el) {
+    el.classList.toggle('active');
+    const details = el.nextElementSibling;
+    details.classList.toggle('open');
+}
+
+// ============================================================
+// [F] 알림 시스템 로직
+// ============================================================
+async function fetchUnreadNotiCount() {
+    const token = localStorage.getItem('accessToken');
+    try {
+        const response = await fetch(ADMIN_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'admin_get_notifications' })
+        });
+        const data = await response.json();
+        const unreadCount = (data.notifications || []).filter(n => !n.isRead).length;
+        
+        const badge = document.getElementById('notiBadge');
+        if (unreadCount > 0) {
+            badge.style.display = 'inline-block';
+            badge.innerText = unreadCount;
+        } else {
+            badge.style.display = 'none';
+        }
+    } catch(e) {}
+}
+
+async function loadNotifications() {
+    const token = localStorage.getItem('accessToken');
+    const container = document.getElementById('notiListBody');
+    container.innerHTML = '<p style="text-align:center;">알림을 불러오는 중...</p>';
+
+    try {
+        const response = await fetch(ADMIN_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'admin_get_notifications' })
+        });
+        const data = await response.json();
+        
+        container.innerHTML = '';
+        if (!data.notifications || data.notifications.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#94a3b8;">최근 알림이 없습니다.</p>';
+            return;
+        }
+
+        data.notifications.forEach(n => {
+            const card = document.createElement('div');
+            card.className = `noti-item ${n.isRead ? '' : 'unread'}`;
+            card.innerHTML = `
+                <div>
+                    <div class="noti-time">${new Date(n.createdAt).toLocaleString()}</div>
+                    <div class="noti-tags">
+                        <span class="tag-tutor">👨‍🏫 ${escapeHtml(n.tutorName)}</span>
+                        <span class="tag-student">🎓 ${escapeHtml(n.studentName)}</span>
+                    </div>
+                    <div class="noti-text">${escapeHtml(n.message)}</div>
+                </div>
+                ${!n.isRead ? `<button class="noti-btn" onclick="markAsReadNoti('${n.id}')">확인</button>` : ''}
+            `;
+            container.appendChild(card);
+        });
+        
+        fetchUnreadNotiCount(); // 뱃지 동기화
+    } catch(e) { container.innerHTML = '<p style="text-align:center; color:red;">오류 발생</p>'; }
+}
+
+async function markAsReadNoti(notiId) {
+    const token = localStorage.getItem('accessToken');
+    try {
+        await fetch(ADMIN_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'admin_read_notification', data: { notiId } })
+        });
+        loadNotifications(); // 리로드
+    } catch(e) { alert('처리 실패'); }
+}
+
+async function markAllNotiAsRead() {
+    if(!confirm("모든 알림을 읽음 처리하시겠습니까?")) return;
+    await markAsReadNoti('all');
+}
+
+// ============================================================
+// [G] 유틸리티
 // ============================================================
 
 function escapeHtml(text) {
