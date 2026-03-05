@@ -505,7 +505,12 @@ window.fetchTutorNotifications = async function() {
         const listArea = document.getElementById('tutorNotiList');
         listArea.innerHTML = '';
         if (notis.length === 0) {
-            listArea.innerHTML = '<p style="text-align:center; color:#94a3b8; margin-top:20px;">새로운 알림이 없습니다.</p>';
+            listArea.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 250px; color: #94a3b8;">
+                    <i class="far fa-bell-slash" style="font-size: 2.5rem; margin-bottom: 15px; opacity: 0.5;"></i>
+                    <span style="font-size: 0.95rem;">새로운 알림이 없습니다.</span>
+                </div>
+            `;
             return;
         }
 
