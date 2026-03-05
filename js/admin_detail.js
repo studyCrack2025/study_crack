@@ -626,7 +626,7 @@ function createProPeriodBox(title, data, reportKey, userRole) {
         </div>
     `;
 
-    let actionHtml = getActionHtml(status, isTutor, isAdmin, reportLink, reportKey, hasContent(content));
+    let actionHtml = getActionHtml(status, isTutor, isAdmin, reportLink, reportKey, hasContent(content), safeData.rejectReason);
 
     box.innerHTML = `
         <div class="pro-period-title">
@@ -662,7 +662,8 @@ function createTextAreaHtml(key, idx, label, val, readOnly, btnStyle) {
 }
 
 // 🚨 FOR PRO 탭용: 4단계 검수 UI
-function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent) {
+// 🚨 FOR PRO 탭용: 4단계 검수 UI
+function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent, rejectReason = '') {
     
     // 단계 4: 학생에게 최종 전송 완료
     if (status === 'published' || status === 'sent') { 
@@ -674,38 +675,45 @@ function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent) {
             </div>`;
     } 
     
-    // 단계 3: 관리자 PDF 첨부 완료 -> 튜터 최종 확인 대기
+    // 🔥 단계 3: 튜터 최종 검수 단계 (여기에 버튼 2개를 배치합니다!)
     if (status === 'tutor_review') {
         if (isTutor) {
             return `
-                <div class="action-bar" style="justify-content: space-between; background: #eff6ff; padding: 15px; border-radius: 8px;">
+                <div class="action-bar" style="flex-direction: column; align-items: stretch; gap: 15px; background: #eff6ff; padding: 20px; border-radius: 8px; border: 1px solid #bfdbfe;">
                     <div style="display:flex; align-items:center; gap:10px;">
-                        <span style="color:#1e3a8a; font-weight:bold;"><i class="fas fa-search"></i> 관리자가 PDF를 첨부했습니다. 검수 후 전송해주세요.</span>
-                        ${reportLink ? `<a href="${reportLink}" target="_blank" style="text-decoration:underline; color:#2563eb;"><i class="fas fa-file-pdf"></i> PDF 보기</a>` : ''}
+                        <span style="color:#1e3a8a; font-weight:bold; font-size:1.05rem;"><i class="fas fa-search"></i> 관리자가 PDF 첨부를 완료했습니다. 최종 검수를 진행해주세요.</span>
+                        ${reportLink ? `<a href="${reportLink}" target="_blank" style="background:#fff; padding:6px 12px; border-radius:6px; border:1px solid #bfdbfe; text-decoration:none; color:#2563eb; font-weight:bold;"><i class="fas fa-file-pdf"></i> 첨부된 PDF 확인하기</a>` : ''}
                     </div>
-                    <button class="admin-report-btn completed" style="background:#166534;" onclick="publishProReportToStudent('${key}')">최종 학생에게 전송</button>
+                    <div style="display:flex; gap: 10px; justify-content: flex-end; margin-top:10px;">
+                        <button class="edit-report-btn show" style="border-color:#ef4444; color:#ef4444;" onclick="requestAdminRereview('${key}')"><i class="fas fa-undo"></i> 관리자에게 재검토 요청</button>
+                        <button class="admin-report-btn completed" style="background:#166534;" onclick="publishProReportToStudent('${key}')"><i class="fas fa-paper-plane"></i> 이상 없음 (학생에게 최종 전송)</button>
+                    </div>
                 </div>`;
         } else {
-            return `<div class="action-bar"><span style="color:#f59e0b; font-weight:bold;"><i class="fas fa-clock"></i> 튜터 최종 검수 및 전송 대기 중...</span></div>`;
+            return `<div class="action-bar"><span style="color:#f59e0b; font-weight:bold;"><i class="fas fa-clock"></i> 튜터가 리포트 내용과 PDF를 최종 검수 중입니다...</span></div>`;
         }
     }
 
     // 단계 2: 튜터 작성 완료 -> 관리자 확인 및 PDF 첨부
     if (status === 'completed' || status === 'admin_review') { 
         if (isAdmin) {
+            // 튜터가 반려(재검토 요청)했을 경우 사유를 띄워줌
+            const rejectHtml = rejectReason ? `<div style="background:#fef2f2; color:#b91c1c; padding:10px; border-radius:6px; margin-bottom:15px; font-weight:bold;">🚨 [튜터 재검토 요청 사유] ${escapeHtml(rejectReason)}</div>` : '';
+            
             return `
                 <div class="action-bar" style="flex-direction: column; align-items: stretch; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px;">
+                    ${rejectHtml}
                     <div style="display:flex; justify-content: space-between; align-items: center;">
-                        <span style="color:#166534; font-weight:bold;"><i class="fas fa-check"></i> 튜터 제출 완료 (검수 후 PDF를 첨부해주세요)</span>
+                        <span style="color:#166534; font-weight:bold;"><i class="fas fa-check"></i> 튜터 제출 완료 (수정 및 PDF를 첨부해주세요)</span>
                         <button class="temp-save-btn" onclick="saveProDraft('${key}')">텍스트 변경사항 저장</button>
                     </div>
                     <div style="display:flex; gap: 10px; align-items: center; justify-content: flex-end; border-top: 1px dashed #cbd5e1; padding-top: 15px;">
                         <input type="file" id="pdfFile_${key}" accept=".pdf" style="font-size:0.9rem; padding: 5px;">
-                        <button class="admin-report-btn" onclick="requestTutorReview('${key}')"><i class="fas fa-upload"></i> PDF 업로드 및 튜터 검수 요청</button>
+                        <button class="admin-report-btn" onclick="requestTutorReview('${key}')"><i class="fas fa-upload"></i> PDF 업로드 및 튜터에게 검수 요청</button>
                     </div>
                 </div>`;
         } else {
-            return `<div class="action-bar"><span style="color:#64748b; font-weight:bold;"><i class="fas fa-hourglass-half"></i> 관리자 검수 및 PDF 첨부 중...</span></div>`;
+            return `<div class="action-bar"><span style="color:#64748b; font-weight:bold;"><i class="fas fa-hourglass-half"></i> 관리자 확인 및 PDF 첨부 작업 중...</span></div>`;
         }
     }
 
@@ -719,6 +727,38 @@ function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent) {
     } else {
         return `<div class="action-bar"><span style="color:#94a3b8; font-weight:bold;"><i class="fas fa-pen"></i> 튜터 작성 중...</span></div>`;
     }
+}
+
+// 🔥 튜터가 관리자에게 재검토를 요청하는 함수
+async function requestAdminRereview(key) {
+    const reason = prompt("관리자에게 수정/재검토를 요청할 내용(오타, PDF 변경 등)을 상세히 적어주세요:");
+    
+    // 취소를 누르거나 내용을 안 적었으면 중단
+    if (reason === null) return; 
+    if (reason.trim() === '') return alert("재검토 요청 사유를 입력해주세요.");
+
+    const token = localStorage.getItem('accessToken');
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'tutor_reject_report', 
+                userId: adminId,
+                data: { 
+                    targetUserId: targetUserId, 
+                    reportKey: key, 
+                    status: 'admin_review', // 다시 관리자 단계로 되돌림
+                    rejectReason: reason // 사유 첨부
+                }
+            })
+        });
+
+        if (!response.ok) throw new Error("Server Error");
+
+        alert("관리자에게 재검토 요청이 전달되었습니다.");
+        await loadProReportsForAdmin(); 
+    } catch(e) { alert("요청 실패: " + e.message); }
 }
 
 // 🚨 FOR PRO 탭용: 관리자가 PDF 업로드 후 튜터에게 핑 날리기
