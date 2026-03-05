@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 초기 데이터 로드
     loadAdminStats(userId);
+    searchStudents();
     fetchUnreadNotiCount();
     
     // 검색창에서 엔터키 누르면 검색 실행
