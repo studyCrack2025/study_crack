@@ -144,7 +144,7 @@
                                 <th>이름</th>
                                 <th>학교</th>
                                 <th>연락처</th>
-                                <th>최근 접속</th>
+                                <th>유료 등급</th>
                                 <th>관리</th>
                             </tr>
                         </thead>
@@ -234,6 +234,21 @@
                 <input type="password" id="newChangePasswordConfirm">
             </div>
             <button class="modal-action-btn" onclick="changePassword()">비밀번호 변경</button>
+        </div>
+    </div>
+    
+    <div id="tutorNotiFab" class="noti-fab" onclick="toggleTutorNotiPanel()">
+        <i class="fas fa-bell"></i>
+        <span id="tutorNotiBadge" class="noti-badge" style="display:none;">0</span>
+    </div>
+
+    <div id="tutorNotiPanel" class="noti-panel hidden">
+        <div class="noti-panel-header">
+            <h3>🔔 알림 센터</h3>
+            <button onclick="markAllTutorNotiRead()">전체 읽음</button>
+        </div>
+        <div id="tutorNotiList" class="noti-panel-body">
+            <p style="text-align:center; color:#94a3b8; margin-top:20px;">알림을 불러오는 중...</p>
         </div>
     </div>
 

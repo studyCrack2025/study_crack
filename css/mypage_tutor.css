@@ -1,5 +1,5 @@
 /* ============================================================
-   [튜터 페이지 전용 스타일 - 수정본]
+   [튜터 페이지 전용 스타일]
    ============================================================ */
 
 /* 1. 탭 메뉴 스타일 (2개 탭 균등 분할) */
@@ -229,6 +229,51 @@
 }
 .hidden { display: none !important; }
 
+/* 유료 등급 뱃지 */
+.tier-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; }
+.tier-pro { background: #fef3c7; color: #92400e; }
+.tier-standard { background: #e2e8f0; color: #334155; }
+.tier-free { background: #f1f5f9; color: #94a3b8; font-weight: normal; }
+
+/* 플로팅 알림 버튼 (FAB) */
+.noti-fab {
+    position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px;
+    background-color: #3b82f6; color: white; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    z-index: 1000; transition: transform 0.2s;
+}
+.noti-fab:hover { transform: scale(1.05); }
+.noti-badge {
+    position: absolute; top: -5px; right: -5px; background: #ef4444; color: white;
+    font-size: 0.75rem; font-weight: bold; width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; border: 2px solid white;
+}
+
+/* 알림 패널 */
+.noti-panel {
+    position: fixed; bottom: 100px; right: 30px; width: 350px; max-height: 500px;
+    background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    display: flex; flex-direction: column; z-index: 999; overflow: hidden;
+    border: 1px solid #e2e8f0; transition: opacity 0.3s, transform 0.3s;
+}
+.noti-panel.hidden { opacity: 0; pointer-events: none; transform: translateY(10px); }
+.noti-panel-header {
+    background: #f8fafc; padding: 15px; border-bottom: 1px solid #e2e8f0;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.noti-panel-header h3 { margin: 0; font-size: 1rem; color: #1e293b; }
+.noti-panel-header button { background: none; border: none; color: #3b82f6; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
+.noti-panel-body { overflow-y: auto; padding: 10px; flex: 1; }
+
+.tutor-noti-item { padding: 15px; border-bottom: 1px solid #f1f5f9; display: flex; flex-direction: column; gap: 5px; cursor: pointer; }
+.tutor-noti-item:hover { background: #f8fafc; }
+.tutor-noti-item.unread { border-left: 3px solid #3b82f6; background: #eff6ff; }
+.tutor-noti-meta { font-size: 0.75rem; color: #64748b; display: flex; justify-content: space-between; }
+.tutor-noti-sender { font-weight: bold; color: #2563eb; }
+.tutor-noti-msg { font-size: 0.9rem; color: #1e293b; line-height: 1.4; }
+
 /* 모바일 대응 */
 @media (max-width: 768px) {
     /* 1. 탭 메뉴: 좌우 스크롤 방식 (기존 유지하되 간격 좁힘) */
@@ -284,4 +329,7 @@
         padding: 10px;
         font-size: 0.9rem;
     }
+    
+    .noti-panel { width: calc(100% - 40px); right: 20px; bottom: 90px; }
+    .noti-fab { bottom: 20px; right: 20px; width: 50px; height: 50px; font-size: 1.2rem; }
 }

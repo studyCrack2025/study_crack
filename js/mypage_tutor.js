@@ -21,9 +21,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Cognito 초기화
     initTutorCognito();
 
-    // [핵심 수정 1] 튜터 정보를 먼저 확실하게 로드하고 기다립니다(await).
-    // 정보가 로드되어야 이름(tutorName)을 알 수 있고, 그래야 학생 목록을 조회할 수 있습니다.
+    // 튜터 정보를 먼저 확실하게 로드하고 기다립니다(await).
     await loadTutorInfo(userId);
+    fetchTutorNotifications();
 
     // 탭 상태 확인 (튜터 정보 로드 후 실행됨)
     const urlParams = new URLSearchParams(window.location.search);
@@ -409,24 +409,14 @@ function checkDeleteButtonVisibility(url) {
     else deleteBtn.classList.add('hidden');
 }
 
-// [학생 관리] - 핵심 로직 수정됨
+// [학생 관리]
 window.loadMyStudents = async function() {
     const tbody = document.getElementById('myStudentListBody');
     tbody.innerHTML = '<tr><td colspan="5" class="empty-msg"><i class="fas fa-spinner fa-spin"></i> 데이터 로딩 중...</td></tr>';
     
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('idToken');
-
-    // [핵심] loadTutorInfo가 완료되었으므로 tutorInfoData에 데이터가 있어야 합니다.
-    let myName = tutorInfoData.name;
-    
-    // 만약 데이터가 없으면(오류 등)
-    if (!myName) {
-        console.error("Tutor name not found. Ensure loadTutorInfo completed.");
-        // DOM에서라도 긁어오기 (최후의 수단)
-        const nameDisplay = document.getElementById('userNameDisplay');
-        if (nameDisplay && nameDisplay.innerText !== '이름 없음') myName = nameDisplay.innerText;
-    }
+    let myName = tutorInfoData.name || document.getElementById('userNameDisplay')?.innerText;
 
     if (!myName || myName === '이름 없음') {
         tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">튜터 정보를 불러오지 못했습니다. 새로고침 해주세요.</td></tr>';
@@ -450,23 +440,111 @@ window.loadMyStudents = async function() {
         }
         
         students.forEach(s => {
+             // 🔥 결제 데이터를 기반으로 유료 등급 계산
+             let tier = 'FREE';
+             let tierClass = 'tier-free';
+             if (s.payments && s.payments.length > 0) {
+                 const paid = s.payments.filter(p => p.status === 'paid').sort((a,b) => new Date(b.date) - new Date(a.date));
+                 if (paid.length > 0) {
+                     const prod = (paid[0].product || "").toLowerCase();
+                     if (prod.includes('pro') || prod.includes('black')) { tier = 'PRO'; tierClass = 'tier-pro'; }
+                     else if (prod.includes('standard')) { tier = 'STANDARD'; tierClass = 'tier-standard'; }
+                 }
+             }
+
              const tr = document.createElement('tr');
              tr.innerHTML = `
                  <td><strong>${escapeHtml(s.name)}</strong></td>
                  <td>${escapeHtml(s.school || '-')}</td>
                  <td>${escapeHtml(s.phone || '-')}</td>
-                 <td>${s.lastLogin ? new Date(s.lastLogin).toLocaleDateString() : '-'}</td>
-                 <td><button class="manage-btn" onclick="goToStudentDetail('${s.userid}')">상세관리</button></td>
+                 <td><span class="tier-badge ${tierClass}">${tier}</span></td> <td><button class="manage-btn" onclick="goToStudentDetail('${s.userid}')">상세관리</button></td>
              `;
              tbody.appendChild(tr);
         });
 
     } catch (e) {
-        console.error(e);
         tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">데이터를 불러오지 못했습니다.</td></tr>';
     }
 }
-window.goToStudentDetail = function(studentId) { window.location.href = `/admin/detail?uid=${studentId}`; }
+
+window.goToStudentDetail = function(studentId) { 
+    window.location.href = `/admin/detail?uid=${studentId}`; 
+}
+
+// 튜터 알림(Notification) 기능
+window.toggleTutorNotiPanel = function() {
+    const panel = document.getElementById('tutorNotiPanel');
+    panel.classList.toggle('hidden');
+    if (!panel.classList.contains('hidden')) {
+        fetchTutorNotifications(); // 열 때 최신화
+    }
+}
+
+window.fetchTutorNotifications = async function() {
+    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('idToken');
+    
+    try {
+        const response = await fetch(TUTOR_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'tutor_get_notifications', userId: userId })
+        });
+        const data = await response.json();
+        const notis = data.notifications || [];
+        
+        const unreadCount = notis.filter(n => !n.isRead).length;
+        const badge = document.getElementById('tutorNotiBadge');
+        if (unreadCount > 0) {
+            badge.style.display = 'flex';
+            badge.innerText = unreadCount;
+        } else {
+            badge.style.display = 'none';
+        }
+
+        const listArea = document.getElementById('tutorNotiList');
+        listArea.innerHTML = '';
+        if (notis.length === 0) {
+            listArea.innerHTML = '<p style="text-align:center; color:#94a3b8; margin-top:20px;">새로운 알림이 없습니다.</p>';
+            return;
+        }
+
+        notis.forEach(n => {
+            const div = document.createElement('div');
+            div.className = `tutor-noti-item ${n.isRead ? '' : 'unread'}`;
+            // 클릭 시 읽음 처리
+            div.onclick = () => { if (!n.isRead) markTutorNotiAsRead(n.id); };
+            
+            div.innerHTML = `
+                <div class="tutor-noti-meta">
+                    <span class="tutor-noti-sender">보낸사람: ${escapeHtml(n.senderName)}</span>
+                    <span>${new Date(n.createdAt).toLocaleDateString()}</span>
+                </div>
+                <div class="tutor-noti-msg">${escapeHtml(n.message)}</div>
+            `;
+            listArea.appendChild(div);
+        });
+
+    } catch (e) { console.error(e); }
+}
+
+window.markTutorNotiAsRead = async function(notiId) {
+    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('idToken');
+    try {
+        await fetch(TUTOR_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'tutor_read_notification', userId: userId, data: { notiId: notiId } })
+        });
+        fetchTutorNotifications();
+    } catch(e) {}
+}
+
+window.markAllTutorNotiRead = async function() {
+    if(!confirm("모든 알림을 읽음 처리하시겠습니까?")) return;
+    await markTutorNotiAsRead('all');
+}
 
 // [계정 관리 및 모달 유틸]
 window.handleSignOut = function() {
