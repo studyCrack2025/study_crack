@@ -462,9 +462,11 @@ function updateNavUI() {
         if (btnMyPage) btnMyPage.classList.remove('hidden');
         if (btnLogout) btnLogout.classList.remove('hidden');
         if (btnLogin) btnLogin.classList.add('hidden');
-        if (userRole !== 'admin' && userRole !== 'tutor' && btnNoti) {
-            btnNoti.classList.remove('hidden');
-            fetchStudentNotifications();
+        if (userRole !== 'admin' && userRole !== 'tutor') {
+            if (btnNoti) {
+                btnNoti.classList.remove('hidden');
+                fetchStudentNotifications();
+            }
         }
     } else {
         if (btnAnalysis) btnAnalysis.classList.add('hidden');
