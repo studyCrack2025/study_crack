@@ -374,15 +374,48 @@
             <p class="copyright">&copy; 2026 Study Crack. All rights reserved.</p>
         </div>
     </footer>
+    
+    <div id="studentNotiFab" class="floating-noti-btn hidden" onclick="toggleStudentNotiPanel()">
+        <i class="fas fa-bell"></i>
+        <span id="studentNotiBadge" class="noti-badge" style="display:none;">0</span>
+    </div>
+
+    <div id="studentNotiPanel" class="noti-panel hidden">
+        <div class="noti-panel-header">
+            <h3>🔔 내 알림</h3>
+            <button onclick="markAllStudentNotiRead()">전체 읽음</button>
+        </div>
+        <div id="studentNotiList" class="noti-panel-body">
+            </div>
+    </div>
+
+    <div id="noticeDetailModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📢 공지사항</h2>
+                <span class="close-btn" onclick="closeModal('noticeDetail')">&times;</span>
+            </div>
+            <div class="modal-body" style="padding-top: 10px;">
+                <h3 id="noticeModalTitle" style="margin-top: 0; color: #1e293b; font-size: 1.2rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px;">제목</h3>
+                <p id="noticeModalDate" style="font-size: 0.85rem; color: #94a3b8; text-align: right; margin-top: 5px; margin-bottom: 20px;">날짜</p>
+                <div id="noticeModalContent" style="white-space: pre-wrap; color: #334155; line-height: 1.6; font-size: 1rem;">
+                    공지 내용이 여기에 표시됩니다.
+                </div>
+                <div style="text-align: center; margin-top: 30px;">
+                    <button onclick="closeModal('noticeDetail')" style="padding: 10px 30px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">확인</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <a href="/qna" class="floating-qna-btn" title="1:1 문의">
         <span class="qna-icon">💬</span>
     </a>
-    <a href="#" onclick="checkBlackAccess()" id="blackThemeBtn" class="floating-black-btn hidden" title="BLACK LOUNGE">
+    <!-- <a href="#" onclick="checkBlackAccess()" id="blackThemeBtn" class="floating-black-btn hidden" title="BLACK LOUNGE">
         <div class="shimmer-effect"></div>
         <span class="black-icon">👑</span>
         <span class="black-guide-tooltip">BLACK<br>LOUNGE</span>
-    </a>
+    </a> -->
 
     <div id="terms-modal" class="modal">
         <div class="modal-content">

@@ -460,39 +460,158 @@ function updateNavUI() {
         if (btnMyPage) btnMyPage.classList.remove('hidden');
         if (btnLogout) btnLogout.classList.remove('hidden');
         if (btnLogin) btnLogin.classList.add('hidden');
+        if (userRole !== 'admin' && userRole !== 'tutor' && btnNoti) {
+            btnNoti.classList.remove('hidden');
+            fetchStudentNotifications();
+        }
     } else {
         if (btnAnalysis) btnAnalysis.classList.add('hidden');
         if (btnQna) btnQna.classList.add('hidden');
         if (btnMyPage) btnMyPage.classList.add('hidden');
         if (btnLogout) btnLogout.classList.add('hidden');
         if (btnLogin) btnLogin.classList.remove('hidden');
+        if (btnNoti) btnNoti.classList.add('hidden');
     }
 }
 
-function showBlackButtonIfEligible() {
-    const token = localStorage.getItem('accessToken'); 
-    const tier = localStorage.getItem('userTier'); 
-    const btn = document.getElementById('blackThemeBtn');
-    if (!btn) return;
-
-    if (token && tier === 'black') {
-        btn.classList.remove('hidden');
-    } else {
-        btn.classList.add('hidden');
+// ============================================================
+// [NEW] 학생 알림 시스템 및 액션 라우팅
+// ============================================================
+window.toggleStudentNotiPanel = function() {
+    const panel = document.getElementById('studentNotiPanel');
+    panel.classList.toggle('hidden');
+    if (!panel.classList.contains('hidden')) {
+        fetchStudentNotifications();
     }
 }
 
-function checkBlackAccess() {
+window.fetchStudentNotifications = async function() {
+    const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('accessToken');
-    if (!token) {
-        alert("로그인이 필요한 서비스입니다.");
-        window.location.href = '/login';
-        return;
-    }
-    const tier = localStorage.getItem('userTier');
-    if (tier === 'black') {
-        window.location.href = '/black';
-    } else {
-        alert("BLACK 회원 전용 공간입니다.");
+    if (!userId || !token) return;
+
+    try {
+        // API_CONFIG.auth가 아니라 base URL을 사용해야 함
+        const response = await fetch(API_CONFIG.auth, { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'student_get_notifications', userId: userId })
+        });
+        const data = await response.json();
+        const notis = data.notifications || [];
+        
+        // 뱃지 갱신
+        const unreadCount = notis.filter(n => !n.isRead).length;
+        const badge = document.getElementById('studentNotiBadge');
+        if (badge) {
+            badge.style.display = unreadCount > 0 ? 'flex' : 'none';
+            badge.innerText = unreadCount;
+        }
+
+        // 목록 렌더링
+        const listArea = document.getElementById('studentNotiList');
+        listArea.innerHTML = '';
+        
+        if (notis.length === 0) {
+            listArea.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 250px; color: #94a3b8;">
+                    <i class="far fa-bell-slash" style="font-size: 2.5rem; margin-bottom: 15px; opacity: 0.5;"></i>
+                    <span style="font-size: 0.95rem;">새로운 알림이 없습니다.</span>
+                </div>
+            `;
+            return;
+        }
+
+        notis.forEach(n => {
+            const div = document.createElement('div');
+            div.className = `student-noti-item ${n.isRead ? '' : 'unread'}`;
+            
+            // 알림 클릭 시: 1. 읽음 처리 -> 2. 해당 페이지/모달 띄우기
+            div.onclick = async () => {
+                if (!n.isRead) await markStudentNotiRead(n.id);
+                handleNotiAction(n);
+            };
+            
+            div.innerHTML = `
+                <div class="student-noti-title">${escapeHtml(n.message)}</div>
+                <div class="student-noti-time">${new Date(n.createdAt).toLocaleString()}</div>
+            `;
+            listArea.appendChild(div);
+        });
+
+    } catch (e) { console.error("Noti Fetch Error:", e); }
+}
+
+async function markStudentNotiRead(notiId) {
+    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('accessToken');
+    try {
+        await fetch(API_CONFIG.auth, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'student_read_notification', userId: userId, data: { notiId: notiId } })
+        });
+        fetchStudentNotifications(); // 읽음 처리 후 뱃지/목록 갱신
+    } catch(e) {}
+}
+
+window.markAllStudentNotiRead = async function() {
+    if(!confirm("모든 알림을 읽음 처리하시겠습니까?")) return;
+    await markStudentNotiRead('all');
+}
+
+// 🔥 알림 타입에 따른 화면 이동 / 모달 띄우기 처리
+function handleNotiAction(noti) {
+    toggleStudentNotiPanel(); // 알림창 닫기
+
+    if (noti.actionType === 'weekly_report') {
+        // 주간 리포트 도착 -> Analysis 페이지의 플래너 탭으로 이동
+        // (Analysis 페이지 내부의 탭 변수명에 맞게 tab=weekly 또는 tab=planner로 지정)
+        window.location.href = '/analysis?tab=weekly'; 
+    } 
+    else if (noti.actionType === 'pro_report') {
+        // PRO 리포트 도착 -> Analysis 페이지의 PRO 탭으로 이동
+        window.location.href = '/analysis?tab=special'; 
+    } 
+    else if (noti.actionType === 'admin_notice') {
+        // 관리자 전체 공지 -> 모달 띄우기
+        document.getElementById('noticeModalTitle').innerText = noti.title || "공지사항";
+        document.getElementById('noticeModalDate').innerText = new Date(noti.createdAt).toLocaleDateString();
+        document.getElementById('noticeModalContent').innerText = noti.detail || "내용이 없습니다.";
+        
+        const modal = document.getElementById('noticeDetailModal');
+        if(modal) {
+            modal.classList.remove('hidden');
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
     }
 }
+
+// function showBlackButtonIfEligible() {
+//     const token = localStorage.getItem('accessToken'); 
+//     const tier = localStorage.getItem('userTier'); 
+//     const btn = document.getElementById('blackThemeBtn');
+//     if (!btn) return;
+// 
+//     if (token && tier === 'black') {
+//         btn.classList.remove('hidden');
+//     } else {
+//         btn.classList.add('hidden');
+//     }
+// }
+// 
+// function checkBlackAccess() {
+//     const token = localStorage.getItem('accessToken');
+//     if (!token) {
+//         alert("로그인이 필요한 서비스입니다.");
+//         window.location.href = '/login';
+//         return;
+//     }
+//     const tier = localStorage.getItem('userTier');
+//     if (tier === 'black') {
+//         window.location.href = '/black';
+//     } else {
+//         alert("BLACK 회원 전용 공간입니다.");
+//     }
+// }
