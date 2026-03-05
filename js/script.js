@@ -448,11 +448,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function updateNavUI() {
     const isLoggedIn = !!localStorage.getItem('idToken');
+    const userRole = localStorage.getItem('userRole');
     const btnAnalysis = document.getElementById('navAnalysis');
     const btnQna = document.getElementById('navQna');
     const btnLogin = document.getElementById('loginBtn');
     const btnMyPage = document.getElementById('myPageBtn');
     const btnLogout = document.getElementById('logoutBtn');
+    const btnNoti = document.getElementById('studentNotiFab');
 
     if (isLoggedIn) {
         if (btnAnalysis) btnAnalysis.classList.remove('hidden');
