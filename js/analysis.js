@@ -92,6 +92,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sol) { 
             setTimeout(() => openSolution(sol), 100); 
         }
+        
+        // 주소창에 ?tab=pro 가 있다면 openSolution('pro')가 실행됨
+        const targetTab = urlParams.get('tab');
+        if (targetTab) {
+            openSolution(targetTab);         
+        }
     });
 });
 
@@ -2598,7 +2604,10 @@ async function submitProReport() {
 
         if (res.ok) {
             alert(data.msg || "요청이 정상적으로 접수되었습니다.");
-            window.location.reload();
+            
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', 'pro'); // type이 'pro'이므로 이렇게 세팅
+            window.location.href = url.toString();
         } else {
             // [수정] 서버에서 보낸 msg가 있으면 쓰고, 없으면 기본 한글 메시지 출력
             const errorMsg = data.msg || "요청 처리 중 오류가 발생했습니다.";

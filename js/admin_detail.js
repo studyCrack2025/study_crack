@@ -863,6 +863,16 @@ async function saveProDraft(key, silent = false) {
         qna: document.getElementById(`${key}_item4`)?.value || ""
     };
 
+    // 🔥 핵심 추가: 현재 리포트의 상태를 확인해서, 강제로 처음으로 돌아가는 것을 막습니다.
+    const report = currentStudentData.proReportsList.find(r => r.key === key);
+    let currentStatus = report ? (report.status || 'drafting') : 'drafting';
+    
+    // 이제 막 시작한 'pending' 상태일 때만 'drafting'으로 바꾸고, 
+    // 이미 완료된 'completed', 'admin_review' 등의 상태라면 그 상태를 그대로 유지시킵니다.
+    if (currentStatus === 'pending') {
+        currentStatus = 'drafting';
+    }
+
     const token = localStorage.getItem('accessToken');
     const response = await fetch(API_URL, {
         method: 'POST',
@@ -872,7 +882,8 @@ async function saveProDraft(key, silent = false) {
             userId: adminId,
             targetUserId: targetUserId,
             reportKey: key,
-            draftContent: content
+            draftContent: content,
+            status: currentStatus // 🔥 백엔드에 유지해야 할 상태값을 전달
         })
     });
 
