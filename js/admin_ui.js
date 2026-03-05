@@ -600,13 +600,13 @@ async function loadTutorStats() {
                 <div class="tutor-details">
                     <div class="tutor-grid">
                         <div>
-                            <p><strong>실명:</strong> ${escapeHtml(t.name) || '-'}</p>
+                            <p><strong>본명:</strong> ${escapeHtml(t.name) || '-'}</p>
                             <p><strong>학교:</strong> ${escapeHtml(t.school) || '-'}</p>
-                            <p><strong>계약일:</strong> ${t.createdAt ? new Date(t.createdAt).toLocaleDateString() : '-'}</p>
+                            <p><strong>계약시작일:</strong> ${t.createdAt ? new Date(t.createdAt).toLocaleDateString() : '-'}</p>
                         </div>
                         <div style="display:flex; gap:10px;">
                             <div class="tutor-stat-box" style="flex:1;">
-                                PRO/BLACK 학생
+                                PRO 학생
                                 <strong style="color:#ef4444;">${t.proCount}명</strong>
                             </div>
                             <div class="tutor-stat-box" style="flex:1;">
