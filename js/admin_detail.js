@@ -662,7 +662,6 @@ function createTextAreaHtml(key, idx, label, val, readOnly, btnStyle) {
 }
 
 // 🚨 FOR PRO 탭용: 4단계 검수 UI
-// 🚨 FOR PRO 탭용: 4단계 검수 UI
 function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent, rejectReason = '') {
     
     // 단계 4: 학생에게 최종 전송 완료
@@ -675,7 +674,7 @@ function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent, re
             </div>`;
     } 
     
-    // 🔥 단계 3: 튜터 최종 검수 단계 (여기에 버튼 2개를 배치합니다!)
+    // 단계 3: 튜터 최종 검수 단계 
     if (status === 'tutor_review') {
         if (isTutor) {
             return `
@@ -694,12 +693,15 @@ function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent, re
         }
     }
 
-    // 단계 2: 튜터 작성 완료 -> 관리자 확인 및 PDF 첨부
+    // 🔥 단계 2: 튜터 작성 완료 -> 관리자 확인 및 PDF 첨부 (수정됨)
     if (status === 'completed' || status === 'admin_review') { 
         if (isAdmin) {
-            // 튜터가 반려(재검토 요청)했을 경우 사유를 띄워줌
-            const rejectHtml = rejectReason ? `<div style="background:#fef2f2; color:#b91c1c; padding:10px; border-radius:6px; margin-bottom:15px; font-weight:bold;">🚨 [튜터 재검토 요청 사유] ${escapeHtml(rejectReason)}</div>` : '';
+            // 튜터 반려 사유 표시
+            const rejectHtml = rejectReason ? `<div style="background:#fef2f2; color:#b91c1c; padding:10px; border-radius:6px; margin-bottom:15px; font-weight:bold; font-size: 0.95rem;">🚨 [튜터 재검토 요청 사유]<br><span style="font-weight:normal;">${escapeHtml(rejectReason)}</span></div>` : '';
             
+            // 기존 업로드된 PDF 링크 표시
+            const existingPdfHtml = reportLink ? `<div style="margin-bottom: 10px; font-size: 0.9rem; color: #475569;">현재 첨부된 파일: <a href="${reportLink}" target="_blank" style="color:#2563eb; text-decoration:underline;">기존 PDF 확인</a></div>` : '';
+
             return `
                 <div class="action-bar" style="flex-direction: column; align-items: stretch; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px;">
                     ${rejectHtml}
@@ -707,6 +709,7 @@ function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent, re
                         <span style="color:#166534; font-weight:bold;"><i class="fas fa-check"></i> 튜터 제출 완료 (수정 및 PDF를 첨부해주세요)</span>
                         <button class="temp-save-btn" onclick="saveProDraft('${key}')">텍스트 변경사항 저장</button>
                     </div>
+                    ${existingPdfHtml}
                     <div style="display:flex; gap: 10px; align-items: center; justify-content: flex-end; border-top: 1px dashed #cbd5e1; padding-top: 15px;">
                         <input type="file" id="pdfFile_${key}" accept=".pdf" style="font-size:0.9rem; padding: 5px;">
                         <button class="admin-report-btn" onclick="requestTutorReview('${key}')"><i class="fas fa-upload"></i> PDF 업로드 및 튜터에게 검수 요청</button>
@@ -730,12 +733,48 @@ function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent, re
 }
 
 // 🔥 튜터가 관리자에게 재검토를 요청하는 함수
-async function requestAdminRereview(key) {
-    const reason = prompt("관리자에게 수정/재검토를 요청할 내용(오타, PDF 변경 등)을 상세히 적어주세요:");
+function requestAdminRereview(key) {
+    // 1. 모달 배경 생성
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.id = 'rejectReasonModalOverlay';
+    overlay.onclick = function(e) {
+        if (e.target === overlay) closeRejectModal();
+    };
+
+    // 2. 모달 컨텐츠 생성
+    const modalHtml = `
+        <div class="modal-window" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>⚠️ 재검토 요청 사유 입력</h3>
+                <span class="close-modal" onclick="closeRejectModal()">&times;</span>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <p style="font-size:0.9rem; color:#64748b; margin-bottom:15px;">관리자에게 수정이나 재검토를 요청할 내용(오타, PDF 변경 등)을 상세히 적어주세요.</p>
+                <textarea id="rejectReasonText" style="width: 100%; height: 120px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; resize: vertical; font-family: inherit;" placeholder="예) 3페이지 오타 수정 부탁드립니다."></textarea>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button onclick="closeRejectModal()" style="background: white; border: 1px solid #cbd5e1; color: #475569; padding: 10px 16px; border-radius: 8px; cursor: pointer; margin-right: 10px;">취소</button>
+                    <button onclick="submitRejectReason('${key}')" style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">재검토 요청 보내기</button>
+                </div>
+            </div>
+        </div>
+    `;
     
-    // 취소를 누르거나 내용을 안 적었으면 중단
-    if (reason === null) return; 
-    if (reason.trim() === '') return alert("재검토 요청 사유를 입력해주세요.");
+    overlay.innerHTML = modalHtml;
+    document.body.appendChild(overlay);
+}
+
+function closeRejectModal() {
+    const modal = document.getElementById('rejectReasonModalOverlay');
+    if (modal) modal.remove();
+}
+
+async function submitRejectReason(key) {
+    const reasonText = document.getElementById('rejectReasonText').value;
+    if (reasonText.trim() === '') {
+        alert('재검토 요청 사유를 입력해주세요.');
+        return;
+    }
 
     const token = localStorage.getItem('accessToken');
     try {
@@ -748,8 +787,8 @@ async function requestAdminRereview(key) {
                 data: { 
                     targetUserId: targetUserId, 
                     reportKey: key, 
-                    status: 'admin_review', // 다시 관리자 단계로 되돌림
-                    rejectReason: reason // 사유 첨부
+                    status: 'admin_review', 
+                    rejectReason: reasonText 
                 }
             })
         });
@@ -757,8 +796,11 @@ async function requestAdminRereview(key) {
         if (!response.ok) throw new Error("Server Error");
 
         alert("관리자에게 재검토 요청이 전달되었습니다.");
+        closeRejectModal(); // 성공 시 모달 닫기
         await loadProReportsForAdmin(); 
-    } catch(e) { alert("요청 실패: " + e.message); }
+    } catch(e) { 
+        alert("요청 실패: " + e.message); 
+    }
 }
 
 // 🚨 FOR PRO 탭용: 관리자가 PDF 업로드 후 튜터에게 핑 날리기
