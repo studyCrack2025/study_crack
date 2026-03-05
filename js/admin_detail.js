@@ -734,38 +734,42 @@ function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent, re
 
 // 🔥 튜터가 관리자에게 재검토를 요청하는 함수
 function requestAdminRereview(key) {
-    // 1. 모달 배경 생성
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-    overlay.id = 'rejectReasonModalOverlay';
-    overlay.onclick = function(e) {
-        if (e.target === overlay) closeRejectModal();
-    };
+    // 이미 띄워진 모달이 있다면 제거
+    const existingModal = document.getElementById('rejectReasonModal');
+    if (existingModal) existingModal.remove();
 
-    // 2. 모달 컨텐츠 생성
+    // 기존 Q&A 모달과 동일한 구조(.modal, .modal-content, .close-btn) 사용
     const modalHtml = `
-        <div class="modal-window" style="max-width: 500px;">
-            <div class="modal-header">
-                <h3>⚠️ 재검토 요청 사유 입력</h3>
-                <span class="close-modal" onclick="closeRejectModal()">&times;</span>
-            </div>
-            <div class="modal-body" style="padding: 20px;">
-                <p style="font-size:0.9rem; color:#64748b; margin-bottom:15px;">관리자에게 수정이나 재검토를 요청할 내용(오타, PDF 변경 등)을 상세히 적어주세요.</p>
-                <textarea id="rejectReasonText" style="width: 100%; height: 120px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; resize: vertical; font-family: inherit;" placeholder="예) 3페이지 오타 수정 부탁드립니다."></textarea>
-                <div style="text-align: right; margin-top: 20px;">
-                    <button onclick="closeRejectModal()" style="background: white; border: 1px solid #cbd5e1; color: #475569; padding: 10px 16px; border-radius: 8px; cursor: pointer; margin-right: 10px;">취소</button>
-                    <button onclick="submitRejectReason('${key}')" style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">재검토 요청 보내기</button>
+        <div id="rejectReasonModal" class="modal" style="display: flex;">
+            <div class="modal-content" style="max-width: 500px; padding: 25px;">
+                <span class="close-btn" onclick="closeRejectModal()">&times;</span>
+                
+                <h2 style="margin-top: 0; color: #1e293b; font-size: 1.4rem; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i> 재검토 요청
+                </h2>
+                
+                <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <p style="margin: 0; font-size: 0.9rem; color: #991b1b; line-height: 1.5;">
+                        관리자에게 수정이나 재검토를 요청할 내용을 상세히 적어주세요.<br>
+                        (이 내용은 관리자 페이지에 빨간색 경고로 표시됩니다)
+                    </p>
+                </div>
+
+                <textarea id="rejectReasonText" rows="5" style="width: 100%; padding: 15px; border: 1px solid #cbd5e1; border-radius: 8px; resize: none; font-family: inherit; font-size: 0.95rem; margin-bottom: 20px; box-sizing: border-box;" placeholder="예) 3페이지 오타 수정 부탁드립니다."></textarea>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="closeRejectModal()" style="padding: 12px 0; background: white; border: 1px solid #cbd5e1; color: #475569; border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1;">취소</button>
+                    <button onclick="submitRejectReason('${key}')" style="padding: 12px 0; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; flex: 2;">요청 보내기</button>
                 </div>
             </div>
         </div>
     `;
     
-    overlay.innerHTML = modalHtml;
-    document.body.appendChild(overlay);
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
 
 function closeRejectModal() {
-    const modal = document.getElementById('rejectReasonModalOverlay');
+    const modal = document.getElementById('rejectReasonModal');
     if (modal) modal.remove();
 }
 
