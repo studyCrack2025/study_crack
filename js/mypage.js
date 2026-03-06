@@ -531,12 +531,7 @@ function checkTutorButtonVisibility(tier) {
     
     if (allowedTiers.includes(tier) && currentTutorData) {
         btnContainer.classList.remove('hidden'); // 버튼 보이기
-    } else {
-        btnContainer.classList.add('hidden'); // 버튼 숨기기
-    }
-}
-
-// ==========================================
+    } else {// ==========================================
 // [기능 6] 튜터 모달 열기 (데이터 바인딩)
 // ==========================================
 function openTutorModal() {
@@ -562,6 +557,52 @@ function openTutorModal() {
     setContext('tutorSchoolMajor', schoolInfo || '학교 정보 없음');
 
     setContext('tutorPhone', tutor.phone || '비공개');
+    setContext('tutorStrengths', tutor.strengths);
+    
+    // 메시지는 따옴표 장식
+    const msgEl = document.getElementById('tutorMessage');
+    if (msgEl) msgEl.innerText = tutor.message ? `"${tutor.message}"` : '"함께 목표를 달성해봅시다!"';
+
+    // 3. 프로필 이미지 처리
+    const imgEl = document.getElementById('tutorProfileImg');
+    if (imgEl) {
+        // 이미지가 있으면 그 URL, 없으면 기본 이미지
+        imgEl.src = tutor.profileImage ? escapeHtml(tutor.profileImage) : 'assets/images/sample_profile.png';
+    }
+
+    // 4. 모달 표시 (hidden 클래스 제거)
+    const modal = document.getElementById('tutorModal');
+    if (modal) modal.classList.remove('hidden');
+}
+        btnContainer.classList.add('hidden'); // 버튼 숨기기
+    }
+}
+
+// ==========================================
+// [기능 6] 튜터 모달 열기 (데이터 바인딩)
+// ==========================================
+function openTutorModal() {
+    // 1. 데이터 확인
+    if (!currentTutorData) {
+        alert("튜터 정보가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.");
+        return;
+    }
+    
+    const tutor = currentTutorData;
+
+    // 2. 텍스트 데이터 바인딩
+    const setContext = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = text || '-';
+    };
+
+    // 닉네임(tutor.nickname)을 메인 이름 요소에 바인딩
+    setContext('tutorName', tutor.nickname);
+    
+    // 학교 + 전공 합쳐서 표시
+    const schoolInfo = [tutor.school, tutor.major].filter(Boolean).join(' ');
+    setContext('tutorSchoolMajor', schoolInfo || '학교 정보 없음');
+
     setContext('tutorStrengths', tutor.strengths);
     
     // 메시지는 따옴표 장식
