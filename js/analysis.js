@@ -1189,16 +1189,19 @@ function updateSimLineGraph(idx) {
     const data = cachedSimData[idx];
     if (!data) return;
 
+    // 그래프 상하 높이 설정
     const TARGET_HEIGHT = 260; 
     
-    // CSS와 충돌하지 않도록 강제로 높이 고정
+    // 부모 컨테이너 높이 강제 고정
     simSvgRefs.svg.parentNode.style.height = `${TARGET_HEIGHT}px`;
     simSvgRefs.svg.parentNode.style.minHeight = `${TARGET_HEIGHT}px`;
-    
+
     const svgEl = simSvgRefs.svg;
     const W = svgEl.clientWidth || 300; 
-    // 하단 라벨(X축) 공간 30px 제외
-    const H = (svgEl.clientHeight || TARGET_HEIGHT) - 30; 
+    
+    // 🚀 [핵심 수정] 브라우저 Reflow 지연으로 인해 예전 높이(180)를 읽어오는 현상 방지.
+    // clientHeight에 의존하지 않고 TARGET_HEIGHT를 직접 계산에 사용합니다.
+    const H = TARGET_HEIGHT - 30; 
 
     // 1. X축 텍스트
     const realNames = ['국어', '수학'];
@@ -1229,7 +1232,6 @@ function updateSimLineGraph(idx) {
     else if (topLine > 250) { topLine = 250; midLine = 225; bottomLine = 200; }
 
     // 4. [여백 최적화] 위아래 여백을 10점으로 줄임 (그래프 꽉 채우기)
-    // 여백을 줄여야 가장 아래 점선(예: 125)이 바닥에 가깝게 붙습니다.
     let yMin = bottomLine - 10;
     let yMax = topLine + 10;
     
