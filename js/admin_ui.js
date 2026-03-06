@@ -738,6 +738,7 @@ async function loadTutorListForNotice() {
 
         // 순수 학생만 남기기
         students = students.filter(u => u.role !== 'admin' && u.role !== 'tutor');
+        globalUserList = [...tutors, ...students];
         
         let html = `
             <div class="quick-select-box">
