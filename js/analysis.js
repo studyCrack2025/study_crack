@@ -1189,11 +1189,14 @@ function updateSimLineGraph(idx) {
     const data = cachedSimData[idx];
     if (!data) return;
 
+    // -----------------------------------------------------------
+    // [핵심 해결] 그래프 높이를 180px로 줄입니다.
     const TARGET_HEIGHT = 180; 
     
     // CSS와 충돌하지 않도록 강제로 높이 고정
     simSvgRefs.svg.parentNode.style.height = `${TARGET_HEIGHT}px`;
     simSvgRefs.svg.parentNode.style.minHeight = `${TARGET_HEIGHT}px`;
+    // -----------------------------------------------------------
 
     const svgEl = simSvgRefs.svg;
     const W = svgEl.clientWidth || 300; 
@@ -1214,46 +1217,56 @@ function updateSimLineGraph(idx) {
         return Math.min(250, currentScore + rise);
     });
 
-    // 🚀 [수정 포인트 1] 동적 스케일을 제거하고 0~250점 고정 스케일 적용
-    const yRange = 250;
+    // 3. 25점 단위 가이드 라인 계산
+    const GAP = 25; 
+    let minS = Math.min(...scores);
+    let maxS = Math.max(...scores);
+    const centerScore = (minS + maxS) / 2;
     
-    // getY 함수: 화면 그리기 높이(H) 내에서 250점 만점 기준으로 퍼센티지 좌표 계산
-    // +15는 상단 패딩값 (포인트 라벨이 잘리지 않도록)
-    const getY = (score) => H - ((score / yRange) * H) + 15;
+    let midLine = Math.round(centerScore / GAP) * GAP;
+    let bottomLine = midLine - GAP;
+    let topLine = midLine + GAP;
 
-    // 🚀 [수정 포인트 2] 가이드 라인 0, 100, 150, 250에 완벽 고정
-    const targetGuides = [0, 100, 150, 250];
-    const guideKeys = ['g0', 'g100', 'g150', 'g250']; // initSimSvg에서 이미 생성된 가이드 객체들
+    // 0~250 범위 제한
+    if (bottomLine < 0) { bottomLine = 0; midLine = 25; topLine = 50; }
+    else if (topLine > 250) { topLine = 250; midLine = 225; bottomLine = 200; }
 
-    guideKeys.forEach((key, i) => {
-        const guideObj = simSvgRefs.guides[key];
-        const val = targetGuides[i];
-        const y = getY(val);
-        
-        guideObj.g.style.opacity = 1; // 모든 가이드라인 표시
-        
-        guideObj.line.setAttribute("x1", 0);
-        guideObj.line.setAttribute("x2", W); 
-        guideObj.line.setAttribute("y1", y);
-        guideObj.line.setAttribute("y2", y);
-        
-        guideObj.text.setAttribute("x", W - 5);
-        guideObj.text.setAttribute("y", y - 4);
-        
-        // 텍스트 라벨 유지
-        let labelText = val;
-        if (val === 100) labelText = "100 합격";
-        if (val === 150) labelText = "150 안정";
-        if (val === 250) labelText = "250 만점";
-        guideObj.text.textContent = labelText; 
+    // 4. [여백 최적화] 위아래 여백을 10점으로 줄임 (그래프 꽉 채우기)
+    // 여백을 줄여야 가장 아래 점선(예: 125)이 바닥에 가깝게 붙습니다.
+    let yMin = bottomLine - 10;
+    let yMax = topLine + 10;
+    
+    const yRange = yMax - yMin || 1;
+    const getY = (score) => H - ((score - yMin) / yRange * H) + 15;
+
+    // 5. 가이드 라인 그리기
+    const targetGuides = [bottomLine, midLine, topLine];
+    const guideObjects = Object.values(simSvgRefs.guides); 
+
+    guideObjects.forEach((guideObj, i) => {
+        if (i < 3) {
+            const val = targetGuides[i];
+            const y = getY(val);
+            
+            guideObj.g.style.opacity = 1;
+            
+            guideObj.line.setAttribute("x1", 0);
+            guideObj.line.setAttribute("x2", W); 
+            guideObj.line.setAttribute("y1", y);
+            guideObj.line.setAttribute("y2", y);
+            
+            guideObj.text.setAttribute("x", W - 5);
+            guideObj.text.setAttribute("y", y - 4);
+            guideObj.text.textContent = val; 
+        } else {
+            guideObj.g.style.opacity = 0;
+        }
     });
 
     // 6. 패스 & 포인트 그리기
     const sectionW = W / 4;
     let d = "";
     
-    const minS = Math.min(...scores);
-    const maxS = Math.max(...scores);
     const isFlat = (minS === maxS);
     const maxIdx = isFlat ? -1 : scores.indexOf(maxS);
     const minIdx = isFlat ? -1 : scores.indexOf(minS);
