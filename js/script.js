@@ -570,12 +570,11 @@ function handleNotiAction(noti) {
 
     if (noti.actionType === 'weekly_report') {
         // 주간 리포트 도착 -> Analysis 페이지의 플래너 탭으로 이동
-        // (Analysis 페이지 내부의 탭 변수명에 맞게 tab=weekly 또는 tab=planner로 지정)
-        window.location.href = '/analysis?tab=weekly'; 
+        window.location.href = '/analysis?tab=coach'; 
     } 
     else if (noti.actionType === 'pro_report') {
         // PRO 리포트 도착 -> Analysis 페이지의 PRO 탭으로 이동
-        window.location.href = '/analysis?tab=special'; 
+        window.location.href = '/analysis?tab=pro'; 
     } 
     else if (noti.actionType === 'admin_notice') {
         // 관리자 전체 공지 -> 모달 띄우기
