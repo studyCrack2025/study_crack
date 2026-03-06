@@ -597,7 +597,7 @@ function openTutorModal() {
     };
 
     // 닉네임(tutor.nickname)을 메인 이름 요소에 바인딩
-    setContext('tutorName', tutor.nickname);
+    setContext('tutorNickname', tutor.nickname);
     
     // 학교 + 전공 합쳐서 표시
     const schoolInfo = [tutor.school, tutor.major].filter(Boolean).join(' ');
