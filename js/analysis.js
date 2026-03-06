@@ -905,11 +905,9 @@ function renderSimChart() {
         // 1. 컨테이너 구조 생성
         const wrapper = document.createElement('div');
         wrapper.className = 'chart-inner-container';
-        // 막대그래프 높이 자동 조절 (배지 포함 위해)
         wrapper.style.height = 'auto'; 
         wrapper.style.minHeight = '360px';
 
-        // [추가] 막대그래프 상단 배지 삽입
         wrapper.insertAdjacentHTML('beforeend', getBadgeHTML());
         
         const graphArea = document.createElement('div');
@@ -922,33 +920,30 @@ function renderSimChart() {
         wrapper.appendChild(labelArea);
         container.appendChild(wrapper);
 
-        // 모바일 하단 범례
         const mobileLegendDiv = document.createElement('div');
         mobileLegendDiv.className = 'mobile-legend-area';
         container.appendChild(mobileLegendDiv);
 
-        // CSS 높이 기준 상수 (계산을 위해 상단으로 이동)
-        const CONTAINER_HEIGHT = 260; 
-        const TOP_PADDING = 50; 
-        const DRAW_HEIGHT_BAR = CONTAINER_HEIGHT - TOP_PADDING; // 실제 그래프가 그려지는 높이 (210px)
-
         const isMobile = window.innerWidth <= 768;
 
+        // 🚀 [수정 포인트] 픽셀(px) 계산을 제거하고 퍼센트(%) 기준으로 변경
+        const MAX_SCORE = 250; // 0~250점 고정 스케일
+
+        // [중요] % 비율을 정확히 맞추기 위해 내부 padding-top을 없애고 margin-top으로 여백 확보
         if (isMobile) {
-            graphArea.style.padding = '30px 15px 0 15px';
+            graphArea.style.padding = '0 15px 0 15px';
+            graphArea.style.marginTop = '40px'; 
+            graphArea.style.height = '200px'; 
         } else {
-            graphArea.style.padding = '30px 60px 0 20px';
+            graphArea.style.padding = '0 60px 0 20px';
+            graphArea.style.marginTop = '50px'; 
+            graphArea.style.height = '260px'; 
         }
         graphArea.style.paddingBottom = '0';
-        graphArea.style.height = 'auto';
 
-        // [수정 핵심] 가이드 라인 위치를 막대와 동일한 px 기준으로 계산
-        const pos100Px = (100 / 250) * DRAW_HEIGHT_BAR;
-        const pos150Px = (150 / 250) * DRAW_HEIGHT_BAR;
-        
-        // CSS calc(%) 대신 고정 px 사용으로 오차 제거
-        const guideStyle100 = `bottom: ${pos100Px}px;`;
-        const guideStyle150 = `bottom: ${pos150Px}px;`;
+        // 2. 가이드 라인을 무조건 250점 대비 퍼센트(%)로 배치
+        const guideStyle100 = `bottom: ${(100 / MAX_SCORE) * 100}%;`;
+        const guideStyle150 = `bottom: ${(150 / MAX_SCORE) * 100}%;`;
         
         graphArea.insertAdjacentHTML('beforeend', 
             `<div class="chart-guide-line guide-100" style="${guideStyle100}"><span class="chart-guide-label">합격(100)</span></div>`
@@ -968,8 +963,9 @@ function renderSimChart() {
 
         cachedSimData.forEach((item, index) => {
             const score = item.base_ui_score;
-            // 막대 높이 계산 (가이드 라인과 동일한 DRAW_HEIGHT_BAR 기준)
-            const currentHeightPx = `${(score/250) * DRAW_HEIGHT_BAR}px`;
+            
+            // 3. 막대의 높이 또한 250점 대비 퍼센트(%)로 그리기
+            const currentHeightPct = `${(score / MAX_SCORE) * 100}%`;
             
             let color = '#ef4444'; 
             if (score >= 150) color = '#10b981'; 
@@ -987,14 +983,18 @@ function renderSimChart() {
                 Object.values(item.sim_data).forEach(sub => { if (sub && sub.uiDiff > maxRise) maxRise = sub.uiDiff; });
             }
 
-            if (isActive && maxRise > 0 && score < 250) {
-                const potentialScore = Math.min(score + maxRise, 250);
+            if (isActive && maxRise > 0 && score < MAX_SCORE) {
+                const potentialScore = Math.min(score + maxRise, MAX_SCORE);
                 const riseAmount = potentialScore - score; 
-                const riseHeightPx = `${(riseAmount/250) * DRAW_HEIGHT_BAR}px`;
+                
+                // 4. 상승분 막대는 메인 막대(부모) 내부에 위치하므로, 현재 점수 대비 비율로 계산
+                const safeScoreForMath = Math.max(score, 0.01); // 0으로 나누기 에러 방지
+                const riseHeightPct = `${(riseAmount / safeScoreForMath) * 100}%`;
+                
                 mainBarRadius = '0 0 0 0'; 
                 showOriginalLabel = false; 
                 extensionHtml = `
-                    <div style="position:absolute; bottom:100%; left:0; width:100%; height:${riseHeightPx}; background:rgba(245, 158, 11, 0.15); border:2px dashed #f59e0b; border-bottom:none; border-radius: 6px 6px 0 0; box-sizing:border-box; pointer-events:none;">
+                    <div style="position:absolute; bottom:100%; left:0; width:100%; height:${riseHeightPct}; background:rgba(245, 158, 11, 0.15); border:2px dashed #f59e0b; border-bottom:none; border-radius: 6px 6px 0 0; box-sizing:border-box; pointer-events:none;">
                          <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">
                             ${Math.round(potentialScore)} <span style="font-size:0.7rem;">(+${maxRise.toFixed(1)})</span>
                          </span>
@@ -1004,7 +1004,7 @@ function renderSimChart() {
 
             const barHtml = `
                 <div class="sim-bar-item ${isActive}" onclick="selectSimUniv(${index})">
-                    <div class="sim-bar" style="height:${currentHeightPx}; background:${color}; border-radius:${mainBarRadius};">
+                    <div class="sim-bar" style="height:${currentHeightPct}; background:${color}; border-radius:${mainBarRadius};">
                         ${extensionHtml}
                         <span class="sim-score-label" style="${showOriginalLabel ? '' : 'display:none;'}">${safeScore}</span>
                     </div>
