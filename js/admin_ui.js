@@ -700,33 +700,99 @@ async function markAllNotiAsRead() {
 }
 
 // ============================================================
-// [G] 관리자 공지 발송 로직
+// [H] 관리자 공지 발송 로직 (체크박스 트리 버전)
 // ============================================================
-let globalUserList = []; // 전체 유저 임시 저장
+let globalUserList = [];
 
-// 1. 튜터 옵션 생성 및 전체 유저 캐싱
+// 1. 유저 목록 가져와서 체크박스 트리 렌더링
 async function loadTutorListForNotice() {
     const token = localStorage.getItem('accessToken');
     try {
-        // 어차피 검색 로직에 쓰던 거 재활용 (전체 유저 가져오기 - 파라미터 없이 쏨)
         const res = await fetch(ADMIN_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'admin_search', userId: localStorage.getItem('userId'), data: {} })
         });
-        const users = await res.json();
-        globalUserList = Array.isArray(users) ? users : []; // 람다에서 role 포함시켜주기로 한 그 데이터
+        globalUserList = await res.json();
+        if(!Array.isArray(globalUserList)) globalUserList = [];
 
-        // 튜터만 뽑아서 select에 넣기
         const tutors = globalUserList.filter(u => u.role === 'tutor');
-        const optGroup = document.getElementById('tutorOptGroup');
-        if (optGroup) {
-            optGroup.innerHTML = '';
-            tutors.forEach(t => {
-                optGroup.innerHTML += `<option value="tutor_${t.name}">${t.nickname}(${t.name})의 학생들</option>`;
+        const students = globalUserList.filter(u => u.role !== 'admin' && u.role !== 'tutor');
+        
+        let html = `
+            <div class="quick-select-box">
+                <strong>⚡ 빠른 선택:</strong>
+                <label><input type="checkbox" onchange="toggleAllCheckboxes(this)"> 싹 다 전체</label>
+                <label><input type="checkbox" onchange="toggleByClass('is-tutor', this)"> 튜터 전체</label>
+                <label><input type="checkbox" onchange="toggleByClass('is-pro', this)"> PRO 전체</label>
+                <label><input type="checkbox" onchange="toggleByClass('is-standard', this)"> STANDARD 전체</label>
+            </div>
+        `;
+
+        // (1) 튜터 및 소속 학생들
+        tutors.forEach(t => {
+            const myStus = students.filter(s => s.tutorName === t.name);
+            html += `
+                <div class="tree-group">
+                    <div class="tree-parent">
+                        <label><input type="checkbox" class="is-tutor target-chk" value="${t.userid}" onchange="toggleChildren(this)"> 👨‍🏫 ${t.nickname} (${t.name}) - 튜터</label>
+                    </div>
+                    <div class="tree-children">
+            `;
+            myStus.forEach(s => {
+                const tier = (getTierBadgeHTML(s.payments).match(/>(.*?)<\/span>/) || [])[1] || 'FREE';
+                const tierClass = tier.toLowerCase();
+                html += `<label><input type="checkbox" class="is-${tierClass} target-chk" value="${s.userid}"> 🎓 ${s.name} (${tier})</label>`;
             });
+            html += `</div></div>`;
+        });
+
+        // (2) BASIC 학생 그룹 (튜터가 없는 경우 포함)
+        const basicStus = students.filter(s => {
+            const tier = (getTierBadgeHTML(s.payments).match(/>(.*?)<\/span>/) || [])[1] || 'FREE';
+            return tier.toLowerCase() === 'basic';
+        });
+        if(basicStus.length > 0) {
+            html += `<div class="tree-group">
+                <div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> 🌱 BASIC 등급 학생 모음</label></div>
+                <div class="tree-children">`;
+            basicStus.forEach(s => {
+                html += `<label><input type="checkbox" class="is-basic target-chk" value="${s.userid}"> 🎓 ${s.name}</label>`;
+            });
+            html += `</div></div>`;
         }
-    } catch(e) { console.error("User Load Error:", e); }
+
+        // (3) FREE 학생 그룹
+        const freeStus = students.filter(s => {
+            const tier = (getTierBadgeHTML(s.payments).match(/>(.*?)<\/span>/) || [])[1] || 'FREE';
+            return tier.toLowerCase() === 'free';
+        });
+        if(freeStus.length > 0) {
+            html += `<div class="tree-group">
+                <div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> ☁️ FREE 등급 학생 모음</label></div>
+                <div class="tree-children">`;
+            freeStus.forEach(s => {
+                html += `<label><input type="checkbox" class="is-free target-chk" value="${s.userid}"> 🎓 ${s.name}</label>`;
+            });
+            html += `</div></div>`;
+        }
+
+        document.getElementById('noticeTargetCheckboxes').innerHTML = html;
+    } catch(e) { console.error(e); }
+}
+
+// 체크박스 유틸리티 함수
+window.toggleChildren = function(parentChk) {
+    const children = parentChk.closest('.tree-group').querySelectorAll('.tree-children input[type="checkbox"]');
+    children.forEach(child => child.checked = parentChk.checked);
+}
+window.toggleAllCheckboxes = function(chk) {
+    document.querySelectorAll('#noticeTargetCheckboxes input[type="checkbox"]').forEach(c => c.checked = chk.checked);
+}
+window.toggleByClass = function(className, chk) {
+    document.querySelectorAll('#noticeTargetCheckboxes .' + className).forEach(c => {
+        c.checked = chk.checked;
+    });
 }
 
 // 2. 그룹 선택 시 세부 타겟팅 리스트업
@@ -760,14 +826,19 @@ function loadTargetUsers() {
 
 // 3. 폼 검증 및 전송
 async function sendAdminNotice() {
-    const group = document.getElementById('noticeTargetGroup').value;
-    const specificUser = document.getElementById('noticeTargetUser').value;
+    // 체크된 모든 사람의 userid 배열화
+    const checkedBoxes = document.querySelectorAll('.target-chk:checked');
+    const targetUserIds = Array.from(checkedBoxes).map(b => b.value);
+    
+    // 중복 제거
+    const uniqueTargetIds = [...new Set(targetUserIds)];
+
     const title = document.getElementById('noticeTitle').value.trim();
     const content = document.getElementById('noticeContent').value.trim();
 
-    if (!group) { alert("수신 그룹을 선택해주세요."); return; }
+    if (uniqueTargetIds.length === 0) { alert("발송할 대상을 한 명 이상 선택해주세요."); return; }
     if (!title || !content) { alert("제목과 내용을 모두 입력해주세요."); return; }
-    if (!confirm("공지를 발송하시겠습니까? (취소 불가)")) return;
+    if (!confirm(`총 ${uniqueTargetIds.length}명에게 공지를 발송하시겠습니까?`)) return;
 
     const token = localStorage.getItem('accessToken');
     const adminId = localStorage.getItem('userId');
@@ -780,8 +851,7 @@ async function sendAdminNotice() {
                 type: 'admin_send_notice',
                 userId: adminId,
                 data: {
-                    targetGroup: group, // 'all', 'pro', 'tutor_홍길동' 등
-                    targetUser: specificUser, // 'all' 또는 특정 'userid'
+                    targetUserIds: uniqueTargetIds, // 🚨 배열로 통째로 보냄
                     title: title,
                     content: content
                 }
@@ -789,10 +859,12 @@ async function sendAdminNotice() {
         });
 
         if (res.ok) {
-            alert("공지 발송이 완료되었습니다.");
+            alert("공지 발송 및 기록 저장이 완료되었습니다.");
             document.getElementById('noticeTitle').value = '';
             document.getElementById('noticeContent').value = '';
-            switchNotiTab('inbox'); // 보낸 후 수신함으로 이동
+            // 발송 후 체크박스 초기화
+            document.querySelectorAll('#noticeTargetCheckboxes input[type="checkbox"]').forEach(c => c.checked = false);
+            switchNotiTab('inbox');
         } else {
             alert("발송 실패");
         }

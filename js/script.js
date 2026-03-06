@@ -582,7 +582,7 @@ function handleNotiAction(noti) {
         document.getElementById('noticeModalDate').innerText = new Date(noti.createdAt).toLocaleDateString();
         document.getElementById('noticeModalContent').innerText = noti.detail || "내용이 없습니다.";
         
-        const modal = document.getElementById('noticeDetailModal');
+        const modal = document.getElementById('noticeDetail-modal');
         if(modal) {
             modal.classList.remove('hidden');
             modal.style.display = 'block';

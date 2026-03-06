@@ -162,6 +162,40 @@ canvas { width: 100% !important; height: 100% !important; }
 .noti-tab-btn:hover:not(.active) { color: #1e293b; }
 .noti-tab-content { animation: fadeIn 0.3s; }
 
+/* 공지 발송 체크박스 트리 UI */
+.checkbox-container { border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; max-height: 350px; overflow-y: auto; background: #f8fafc; }
+.quick-select-box { padding-bottom: 15px; border-bottom: 1px dashed #cbd5e1; margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; font-size: 0.95rem; }
+.quick-select-box label { display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: bold; color: #3b82f6; background: #eff6ff; padding: 6px 12px; border-radius: 6px; }
+.tree-group { margin-bottom: 20px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+.tree-parent { font-weight: bold; background: #f1f5f9; padding: 12px 15px; color: #1e293b; border-bottom: 1px solid #e2e8f0; }
+.tree-parent label, .tree-children label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.tree-children { padding: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9rem; color: #475569; }
+
+/* 알림 센터 & 공지 발송 모듈 스타일 */
+.noti-header-area { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; }
+.noti-action-bar { text-align: right; margin-bottom: 10px; }
+.noti-read-all-btn { padding: 6px 12px; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; color: #475569; }
+.noti-read-all-btn:hover { background: #f8fafc; color: #1e293b; }
+.noti-send-container { background: white; padding: 30px; border-radius: 12px; border: 1px solid #e2e8f0; }
+.noti-send-title { margin-top: 0; color: #1e293b; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 25px; }
+.noti-form-group { margin-bottom: 20px; }
+.noti-form-label { display: block; font-weight: bold; color: #475569; margin-bottom: 8px; }
+.noti-input, .noti-textarea { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; font-family: inherit; font-size: 0.95rem; transition: border-color 0.2s; }
+.noti-input:focus, .noti-textarea:focus { border-color: #3b82f6; outline: none; }
+.noti-textarea { resize: vertical; }
+.noti-submit-area { text-align: right; margin-top: 30px; }
+.noti-submit-btn { padding: 15px 40px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1.05rem; cursor: pointer; transition: background 0.2s; }
+.noti-submit-btn:hover { background: #2563eb; }
+.checkbox-container { border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; max-height: 350px; overflow-y: auto; background: #f8fafc; }
+.quick-select-box { padding-bottom: 15px; border-bottom: 1px dashed #cbd5e1; margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; font-size: 0.95rem; }
+.quick-select-box label { display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: bold; color: #3b82f6; background: #eff6ff; padding: 6px 12px; border-radius: 6px; transition: background 0.2s; }
+.quick-select-box label:hover { background: #dbeafe; }
+.tree-group { margin-bottom: 20px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+.tree-parent { font-weight: bold; background: #f1f5f9; padding: 12px 15px; color: #1e293b; border-bottom: 1px solid #e2e8f0; }
+.tree-parent label, .tree-children label { display: flex; align-items: center; gap: 8px; cursor: pointer; transition: color 0.2s; }
+.tree-parent label:hover, .tree-children label:hover { color: #3b82f6; }
+.tree-children { padding: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9rem; color: #475569; }
+
 /* 테이블 스크롤 처리용 래퍼 추가 */
 .table-responsive {
     width: 100%; overflow-x: auto; /* 가로 스크롤 허용 */
@@ -240,4 +274,8 @@ canvas { width: 100% !important; height: 100% !important; }
     /* 8. 모달창 다이어트 */
     .modal-content { padding: 20px; width: 95%; max-height: 85vh; }
     .close-btn { top: 10px; right: 15px; font-size: 1.5rem; }
+    
+    .tree-children { grid-template-columns: 1fr; } 
+    .noti-header-area { flex-direction: column; align-items: flex-start; gap: 15px; } 
+    .noti-submit-btn { width: 100%; padding: 15px; } 
 }

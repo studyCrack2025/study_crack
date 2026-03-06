@@ -475,6 +475,16 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 .student-noti-title { font-size: 0.9rem; font-weight: bold; color: #1e293b; margin-bottom: 5px; }
 .student-noti-time { font-size: 0.75rem; color: #94a3b8; }
 
+/* 공지사항 모달 전용 스타일 */
+.notice-modal { max-width: 500px; }
+.notice-body { padding-top: 10px; }
+.notice-title { margin-top: 0; color: #1e293b; font-size: 1.2rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; }
+.notice-date { font-size: 0.85rem; color: #94a3b8; text-align: right; margin-top: 5px; margin-bottom: 20px; }
+.notice-content { white-space: pre-wrap; color: #334155; line-height: 1.6; font-size: 1rem; }
+.notice-btn-wrap { text-align: center; margin-top: 30px; }
+.notice-btn { padding: 10px 30px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+.notice-btn:hover { background: #2563eb; }
+
 /* .floating-black-btn {
     position: fixed; bottom: 190px; right: 30px; width: 65px; height: 65px;
     background: #000; border: 2px solid #d4af37; border-radius: 50%;

@@ -389,20 +389,20 @@
             </div>
     </div>
 
-    <div id="noticeDetailModal" class="modal hidden">
-        <div class="modal-content">
+    <div id="noticeDetail-modal" class="modal hidden">
+        <div class="modal-content notice-modal">
             <div class="modal-header">
                 <h2>📢 공지사항</h2>
                 <span class="close-btn" onclick="closeModal('noticeDetail')">&times;</span>
             </div>
-            <div class="modal-body" style="padding-top: 10px;">
-                <h3 id="noticeModalTitle" style="margin-top: 0; color: #1e293b; font-size: 1.2rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px;">제목</h3>
-                <p id="noticeModalDate" style="font-size: 0.85rem; color: #94a3b8; text-align: right; margin-top: 5px; margin-bottom: 20px;">날짜</p>
-                <div id="noticeModalContent" style="white-space: pre-wrap; color: #334155; line-height: 1.6; font-size: 1rem;">
+            <div class="modal-body notice-body">
+                <h3 id="noticeModalTitle" class="notice-title">제목</h3>
+                <p id="noticeModalDate" class="notice-date">날짜</p>
+                <div id="noticeModalContent" class="notice-content">
                     공지 내용이 여기에 표시됩니다.
                 </div>
-                <div style="text-align: center; margin-top: 30px;">
-                    <button onclick="closeModal('noticeDetail')" style="padding: 10px 30px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">확인</button>
+                <div class="notice-btn-wrap">
+                    <button onclick="closeModal('noticeDetail')" class="notice-btn">확인</button>
                 </div>
             </div>
         </div>
