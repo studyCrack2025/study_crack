@@ -53,11 +53,19 @@
                 </ul>
             </li>
             
-            <li class="menu-item">
-                <a href="#" onclick="showSection('notifications')">
-                    <span>🔔 알림 센터</span>
-                    <span id="notiBadge" style="display:none; background:#ef4444; color:white; border-radius:50%; padding:2px 8px; font-size:0.8rem; font-weight:bold;">0</span>
+            <li class="menu-item has-submenu">
+                <a href="#" onclick="toggleSubmenu('noti-submenu')">
+                    <div style="display: flex; align-items: center;">
+                        <span>🔔 알림 관리</span>
+                        <span id="notiBadge" style="display:none; background:#ef4444; color:white; border-radius:50%; padding:2px 8px; font-size:0.8rem; font-weight:bold; margin-left:8px;">0</span>
+                    </div>
+                    <span class="arrow">▾</span>
                 </a>
+                <ul id="noti-submenu" class="submenu">
+                    <li><a href="#" onclick="showNotiMenu('inbox')">📥 수신함</a></li>
+                    <li><a href="#" onclick="showNotiMenu('send')">📢 새 공지 발송</a></li>
+                    <li><a href="#" onclick="showNotiMenu('sent')">📤 보낸 공지함</a></li>
+                </ul>
             </li>
 
             <li class="menu-item logout">
@@ -179,15 +187,9 @@
         </div>
         
         <div id="section-notifications" class="content-section">
-            <div class="noti-header-area">
-                <h1 class="page-title" style="margin:0;">🔔 알림 센터</h1>
-                <div class="noti-tabs">
-                    <button id="tabBtn-inbox" class="noti-tab-btn active" onclick="switchNotiTab('inbox')">수신함</button>
-                    <button id="tabBtn-send" class="noti-tab-btn" onclick="switchNotiTab('send')">공지 발송</button>
-                </div>
-            </div>
+            <h1 id="notiPageTitle" class="page-title">📥 알림 수신함</h1>
 
-            <div id="notiTab-inbox" class="noti-tab-content active">
+            <div id="notiTab-inbox" class="noti-tab-content">
                 <div class="noti-action-bar">
                     <button onclick="markAllNotiAsRead()" class="noti-read-all-btn">전체 읽음 처리</button>
                 </div>
@@ -196,7 +198,7 @@
                 </div>
             </div>
 
-            <div id="notiTab-send" class="noti-tab-content noti-send-container hidden">
+            <div id="notiTab-send" class="noti-tab-content noti-send-container hidden" style="display:none;">
                 <h3 class="noti-send-title">📢 새로운 공지사항 작성</h3>
                 
                 <div class="form-group noti-form-group">
@@ -220,6 +222,12 @@
                     <button onclick="sendAdminNotice()" class="noti-submit-btn">
                         <i class="fas fa-paper-plane"></i> 선택한 인원에게 발송
                     </button>
+                </div>
+            </div>
+
+            <div id="notiTab-sent" class="noti-tab-content" style="display:none;">
+                <div class="noti-list-container" id="sentNotiListBody">
+                    <p class="empty-msg">보낸 공지를 불러오는 중...</p>
                 </div>
             </div>
         </div>

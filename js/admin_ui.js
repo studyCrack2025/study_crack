@@ -895,6 +895,7 @@ async function sendAdminNotice() {
             // 발송 후 체크박스 초기화
             document.querySelectorAll('#noticeTargetCheckboxes input[type="checkbox"]').forEach(c => c.checked = false);
             switchNotiTab('inbox');
+            showNotiMenu('sent');
         } else {
             alert("발송 실패");
         }
@@ -902,7 +903,85 @@ async function sendAdminNotice() {
 }
 
 // ============================================================
-// [H] 유틸리티
+// [H] 알림 센터 사이드바 메뉴 제어 및 보낸 공지함
+// ============================================================
+
+// 사이드바에서 알림 하위 메뉴 클릭 시 실행
+window.showNotiMenu = function(tabName) {
+    // 1. 메인 섹션을 '알림 센터'로 강제 활성화
+    document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
+    document.getElementById('section-notifications').classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // 2. 내부 화면 끄기
+    document.getElementById('notiTab-inbox').style.display = 'none';
+    document.getElementById('notiTab-send').style.display = 'none';
+    document.getElementById('notiTab-sent').style.display = 'none';
+
+    const titleEl = document.getElementById('notiPageTitle');
+
+    // 3. 선택된 메뉴에 맞춰 화면 켜기 및 데이터 로드
+    if (tabName === 'inbox') {
+        document.getElementById('notiTab-inbox').style.display = 'block';
+        titleEl.innerText = '📥 알림 수신함';
+        loadNotifications(); // 기존 수신함 로드
+    } else if (tabName === 'send') {
+        document.getElementById('notiTab-send').style.display = 'block';
+        titleEl.innerText = '📢 새 공지 발송';
+        loadTutorListForNotice(); // 트리 메뉴 로드
+    } else if (tabName === 'sent') {
+        document.getElementById('notiTab-sent').style.display = 'block';
+        titleEl.innerText = '📤 보낸 공지함';
+        loadSentNotices(); // 보낸 내역 로드
+    }
+};
+
+// 보낸 공지함 데이터 불러오기 및 렌더링
+window.loadSentNotices = async function() {
+    const token = localStorage.getItem('accessToken');
+    const container = document.getElementById('sentNotiListBody');
+    container.innerHTML = '<p class="empty-msg">보낸 공지를 불러오는 중...</p>';
+
+    try {
+        // 기존 수신함 API를 호출하면 이제 람다가 sentNotices도 같이 줍니다.
+        const response = await fetch(ADMIN_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'admin_get_notifications' })
+        });
+        const data = await response.json();
+        
+        container.innerHTML = '';
+        const sentList = data.sentNotices || [];
+        
+        // 최신순(내림차순) 정렬
+        sentList.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        if (sentList.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding: 30px;">보낸 공지가 없습니다.</p>';
+            return;
+        }
+
+        sentList.forEach(n => {
+            const card = document.createElement('div');
+            card.className = `noti-item`; // 안읽음 처리가 필요 없으므로 unread 클래스 제거
+            card.innerHTML = `
+                <div style="width: 100%;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div class="noti-time">${new Date(n.createdAt).toLocaleString()}</div>
+                        <div class="noti-tags"><span class="tag-tutor" style="background:#f1f5f9; color:#475569;">👥 발송 대상: ${n.targetCount}명</span></div>
+                    </div>
+                    <div style="font-weight:bold; margin-top:8px; color:#1e293b; font-size:1.1rem;">${escapeHtml(n.title)}</div>
+                    <div class="noti-text" style="margin-top:10px; white-space:pre-wrap; background:#f8fafc; padding:15px; border-radius:8px; font-size:0.95rem; border:1px solid #e2e8f0;">${escapeHtml(n.detail)}</div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    } catch(e) { container.innerHTML = '<p style="text-align:center; color:red;">오류 발생</p>'; }
+};
+
+// ============================================================
+// [I] 유틸리티
 // ============================================================
 
 function escapeHtml(text) {
