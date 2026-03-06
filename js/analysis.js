@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // 주소창에 ?tab=pro 가 있다면 openSolution('pro')가 실행됨
-        const targetTab = urlParams.get('tab');
+        const targetTab = params.get('tab');
         if (targetTab) {
             openSolution(targetTab);         
         }
