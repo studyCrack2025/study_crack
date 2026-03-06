@@ -856,19 +856,26 @@ function loadTargetUsers() {
 
 // 3. 폼 검증 및 전송
 async function sendAdminNotice() {
-    // 체크된 모든 사람의 userid 배열화
     const checkedBoxes = document.querySelectorAll('.target-chk:checked');
-    const targetUserIds = Array.from(checkedBoxes).map(b => b.value);
-    
-    // 중복 제거
-    const uniqueTargetIds = [...new Set(targetUserIds)];
+    const targetUserIds = [...new Set(Array.from(checkedBoxes).map(b => b.value))];
 
     const title = document.getElementById('noticeTitle').value.trim();
     const content = document.getElementById('noticeContent').value.trim();
 
-    if (uniqueTargetIds.length === 0) { alert("발송할 대상을 한 명 이상 선택해주세요."); return; }
+    if (targetUserIds.length === 0) { alert("발송할 대상을 한 명 이상 선택해주세요."); return; }
     if (!title || !content) { alert("제목과 내용을 모두 입력해주세요."); return; }
-    if (!confirm(`총 ${uniqueTargetIds.length}명에게 공지를 발송하시겠습니까?`)) return;
+    if (!confirm(`총 ${targetUserIds.length}명에게 공지를 발송하시겠습니까?`)) return;
+
+    // 🔥 [핵심 추가] globalUserList를 활용해 선택된 ID들의 이름을 찾아내어 문자열로 만듭니다.
+    const targetNamesList = targetUserIds.map(uid => {
+        const user = globalUserList.find(u => u.userid === uid);
+        return user ? (user.name || user.nickname || '알수없음') : '알수없음';
+    });
+    
+    let targetNamesDisplay = targetNamesList.slice(0, 5).join(', ');
+    if (targetNamesList.length > 5) {
+        targetNamesDisplay += ` 외 ${targetNamesList.length - 5}명`;
+    }
 
     const token = localStorage.getItem('accessToken');
     const adminId = localStorage.getItem('userId');
@@ -881,9 +888,10 @@ async function sendAdminNotice() {
                 type: 'admin_send_notice',
                 userId: adminId,
                 data: {
-                    targetUserIds: uniqueTargetIds, // 🚨 배열로 통째로 보냄
+                    targetUserIds: targetUserIds, 
                     title: title,
-                    content: content
+                    content: content,
+                    targetNamesDisplay: targetNamesDisplay // 🚨 람다로 이름 문자열도 같이 보냅니다!
                 }
             })
         });
@@ -892,10 +900,9 @@ async function sendAdminNotice() {
             alert("공지 발송 및 기록 저장이 완료되었습니다.");
             document.getElementById('noticeTitle').value = '';
             document.getElementById('noticeContent').value = '';
-            // 발송 후 체크박스 초기화
             document.querySelectorAll('#noticeTargetCheckboxes input[type="checkbox"]').forEach(c => c.checked = false);
-            switchNotiTab('inbox');
-            showNotiMenu('sent');
+            
+            showNotiMenu('sent'); // 전송 완료 후 보낸 공지함으로 이동
         } else {
             alert("발송 실패");
         }
