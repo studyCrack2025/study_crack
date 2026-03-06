@@ -479,7 +479,7 @@ function updateNavUI() {
 }
 
 // ============================================================
-// [NEW] 학생 알림 시스템 및 액션 라우팅
+// 학생 알림 시스템 및 액션 라우팅
 // ============================================================
 window.toggleStudentNotiPanel = function() {
     const panel = document.getElementById('studentNotiPanel');
@@ -496,7 +496,7 @@ window.fetchStudentNotifications = async function() {
 
     try {
         // API_CONFIG.auth가 아니라 base URL을 사용해야 함
-        const response = await fetch(API_CONFIG.auth, { 
+        const response = await fetch(API_CONFIG.base, { 
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'student_get_notifications', userId: userId })
@@ -550,7 +550,7 @@ async function markStudentNotiRead(notiId) {
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('accessToken');
     try {
-        await fetch(API_CONFIG.auth, {
+        await fetch(API_CONFIG.base, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'student_read_notification', userId: userId, data: { notiId: notiId } })
