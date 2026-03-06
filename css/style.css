@@ -465,7 +465,7 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 .noti-panel-header h3 { margin: 0; font-size: 1.05rem; color: #1e293b; }
 .noti-panel-header button { background: none; border: none; color: #64748b; font-size: 0.8rem; cursor: pointer; text-decoration: underline; }
 .noti-panel-header button:hover { color: #3b82f6; }
-.noti-panel-body { overflow-y: auto; flex: 1; padding: 0; }
+.noti-panel-body { overflow-y: auto; flex: 1; padding: 0; min-height: 100px; }
 
 .student-noti-item {
     padding: 15px 20px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.2s;

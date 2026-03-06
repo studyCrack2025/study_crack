@@ -592,6 +592,19 @@ function handleNotiAction(noti) {
     }
 }
 
+// ============================================================
+// [유틸리티] 특수문자 변환 (해킹 방지)
+// ============================================================
+function escapeHtml(text) {
+    if (text == null) return "";
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 // function showBlackButtonIfEligible() {
 //     const token = localStorage.getItem('accessToken'); 
 //     const tier = localStorage.getItem('userTier'); 
