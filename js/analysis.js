@@ -1189,15 +1189,12 @@ function updateSimLineGraph(idx) {
     const data = cachedSimData[idx];
     if (!data) return;
 
-    // -----------------------------------------------------------
-    // [핵심 해결] 그래프 높이를 180px로 줄입니다.
-    const TARGET_HEIGHT = 180; 
+    const TARGET_HEIGHT = 260; 
     
     // CSS와 충돌하지 않도록 강제로 높이 고정
     simSvgRefs.svg.parentNode.style.height = `${TARGET_HEIGHT}px`;
     simSvgRefs.svg.parentNode.style.minHeight = `${TARGET_HEIGHT}px`;
-    // -----------------------------------------------------------
-
+    
     const svgEl = simSvgRefs.svg;
     const W = svgEl.clientWidth || 300; 
     // 하단 라벨(X축) 공간 30px 제외
