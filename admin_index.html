@@ -179,12 +179,64 @@
         </div>
         
         <div id="section-notifications" class="content-section">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom: 20px;">
                 <h1 class="page-title" style="margin:0;">🔔 알림 센터</h1>
-                <button onclick="markAllNotiAsRead()" style="padding:8px 15px; background:#fff; border:1px solid #cbd5e1; border-radius:6px; cursor:pointer;">전체 읽음 처리</button>
+                <div class="noti-tabs">
+                    <button id="tabBtn-inbox" class="noti-tab-btn active" onclick="switchNotiTab('inbox')">수신함</button>
+                    <button id="tabBtn-send" class="noti-tab-btn" onclick="switchNotiTab('send')">공지 발송</button>
+                </div>
             </div>
-            <div class="noti-list-container" id="notiListBody">
-                <p style="text-align:center; color:#94a3b8; padding:30px;">알림을 불러오는 중...</p>
+
+            <div id="notiTab-inbox" class="noti-tab-content active">
+                <div style="text-align:right; margin-bottom:10px;">
+                    <button onclick="markAllNotiAsRead()" style="padding:6px 12px; background:#fff; border:1px solid #cbd5e1; border-radius:6px; cursor:pointer;">전체 읽음 처리</button>
+                </div>
+                <div class="noti-list-container" id="notiListBody">
+                    <p style="text-align:center; color:#94a3b8; padding:30px;">알림을 불러오는 중...</p>
+                </div>
+            </div>
+
+            <div id="notiTab-send" class="noti-tab-content" style="display:none; background:white; padding:30px; border-radius:12px; border:1px solid #e2e8f0;">
+                <h3 style="margin-top:0; color:#1e293b; border-bottom:1px solid #f1f5f9; padding-bottom:15px;">📢 새로운 공지사항 작성</h3>
+                
+                <div class="form-group" style="margin-bottom:20px;">
+                    <label style="display:block; font-weight:bold; color:#475569; margin-bottom:8px;">1. 수신 대상 선택</label>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <select id="noticeTargetGroup" onchange="loadTargetUsers()" style="padding:10px; border-radius:6px; border:1px solid #cbd5e1; flex:1; max-width:200px;">
+                            <option value="">그룹 선택...</option>
+                            <option value="all">전체 (튜터+모든학생)</option>
+                            <option value="all_tutor">전체 튜터</option>
+                            <option value="all_student">전체 학생</option>
+                            <optgroup label="등급별 학생">
+                                <option value="pro">PRO 등급 학생</option>
+                                <option value="standard">STANDARD 등급 학생</option>
+                                <option value="basic">BASIC 등급 학생</option>
+                                <option value="free">FREE 등급 학생</option>
+                            </optgroup>
+                            <optgroup label="특정 튜터의 학생" id="tutorOptGroup">
+                                </optgroup>
+                        </select>
+                        <select id="noticeTargetUser" style="padding:10px; border-radius:6px; border:1px solid #cbd5e1; flex:2;">
+                            <option value="all">해당 그룹 전체에게 보내기</option>
+                            </select>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:20px;">
+                    <label style="display:block; font-weight:bold; color:#475569; margin-bottom:8px;">2. 공지 제목</label>
+                    <input type="text" id="noticeTitle" placeholder="제목을 입력하세요." style="width:100%; padding:12px; border-radius:6px; border:1px solid #cbd5e1; box-sizing:border-box;">
+                </div>
+
+                <div class="form-group" style="margin-bottom:20px;">
+                    <label style="display:block; font-weight:bold; color:#475569; margin-bottom:8px;">3. 공지 내용</label>
+                    <textarea id="noticeContent" rows="8" placeholder="상세 내용을 입력하세요." style="width:100%; padding:12px; border-radius:6px; border:1px solid #cbd5e1; resize:vertical; box-sizing:border-box; font-family:inherit;"></textarea>
+                </div>
+
+                <div style="text-align:right; margin-top:30px;">
+                    <button onclick="sendAdminNotice()" style="padding:15px 40px; background:#3b82f6; color:white; border:none; border-radius:8px; font-weight:bold; font-size:1.05rem; cursor:pointer;">
+                        <i class="fas fa-paper-plane"></i> 공지 발송하기
+                    </button>
+                </div>
             </div>
         </div>
         

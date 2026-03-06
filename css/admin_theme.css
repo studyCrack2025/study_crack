@@ -155,6 +155,13 @@ canvas { width: 100% !important; height: 100% !important; }
 .noti-btn { padding: 6px 12px; background: white; border: 1px solid #cbd5e1; border-radius: 4px; cursor: pointer; font-size: 0.85rem; }
 .noti-btn:hover { background: #f1f5f9; }
 
+/* 공지 발송 탭 스타일 */
+.noti-tabs { display: flex; background: #e2e8f0; border-radius: 8px; overflow: hidden; padding: 4px; }
+.noti-tab-btn { padding: 8px 20px; border: none; background: transparent; color: #64748b; font-weight: bold; cursor: pointer; border-radius: 6px; transition: 0.2s; }
+.noti-tab-btn.active { background: white; color: #1e293b; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.noti-tab-btn:hover:not(.active) { color: #1e293b; }
+.noti-tab-content { animation: fadeIn 0.3s; }
+
 /* 테이블 스크롤 처리용 래퍼 추가 */
 .table-responsive {
     width: 100%; overflow-x: auto; /* 가로 스크롤 허용 */

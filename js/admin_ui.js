@@ -55,25 +55,6 @@ function toggleSubmenu(id) {
     if (el) el.classList.toggle('open');
 }
 
-// 메인 섹션 전환 (대시보드 / 학생관리)
-function showSection(sectionName) {
-    // 모든 섹션 숨기기
-    document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
-    
-    // 선택된 섹션 보이기
-    if (sectionName === 'students') {
-        document.getElementById('section-students').classList.add('active');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else if (sectionName === 'dashboard') {
-        document.getElementById('section-dashboard').classList.add('active');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else if (sectionName === 'sales-chart') {
-        document.getElementById('section-dashboard').classList.add('active');
-        const anchor = document.getElementById('chart-section-anchor');
-        if (anchor) anchor.scrollIntoView({ behavior: 'smooth' });
-    }
-}
-
 // 메인 섹션 전환 (대시보드 / 학생관리 / 튜터관리 / 알림 등)
 function showSection(sectionName) {
     // 모든 섹션 숨기기
@@ -93,15 +74,16 @@ function showSection(sectionName) {
         const anchor = document.getElementById('chart-section-anchor');
         if (anchor) anchor.scrollIntoView({ behavior: 'smooth' });
     } 
-    else if (sectionName === 'tutors') { // [NEW] 튜터 관리 탭
+    else if (sectionName === 'tutors') { // 튜터 관리 탭
         document.getElementById('section-tutors').classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
         loadTutorStats(); // 데이터 로드
     } 
-    else if (sectionName === 'notifications') { // [NEW] 알림 탭
+    else if (sectionName === 'notifications') { // 알림 탭
         document.getElementById('section-notifications').classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
         loadNotifications(); // 데이터 로드
+        loadTutorListForNotice();
     }
 }
 
@@ -631,6 +613,14 @@ function toggleTutorDetail(el) {
 // ============================================================
 // [F] 알림 시스템 로직
 // ============================================================
+function switchNotiTab(tabName) {
+    document.querySelectorAll('.noti-tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('tabBtn-' + tabName).classList.add('active');
+    
+    document.getElementById('notiTab-inbox').style.display = (tabName === 'inbox') ? 'block' : 'none';
+    document.getElementById('notiTab-send').style.display = (tabName === 'send') ? 'block' : 'none';
+}
+
 async function fetchUnreadNotiCount() {
     const token = localStorage.getItem('accessToken');
     try {
@@ -710,7 +700,107 @@ async function markAllNotiAsRead() {
 }
 
 // ============================================================
-// [G] 유틸리티
+// [G] 관리자 공지 발송 로직
+// ============================================================
+let globalUserList = []; // 전체 유저 임시 저장
+
+// 1. 튜터 옵션 생성 및 전체 유저 캐싱
+async function loadTutorListForNotice() {
+    const token = localStorage.getItem('accessToken');
+    try {
+        // 어차피 검색 로직에 쓰던 거 재활용 (전체 유저 가져오기 - 파라미터 없이 쏨)
+        const res = await fetch(ADMIN_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'admin_search', userId: localStorage.getItem('userId'), data: {} })
+        });
+        const users = await res.json();
+        globalUserList = Array.isArray(users) ? users : []; // 람다에서 role 포함시켜주기로 한 그 데이터
+
+        // 튜터만 뽑아서 select에 넣기
+        const tutors = globalUserList.filter(u => u.role === 'tutor');
+        const optGroup = document.getElementById('tutorOptGroup');
+        if (optGroup) {
+            optGroup.innerHTML = '';
+            tutors.forEach(t => {
+                optGroup.innerHTML += `<option value="tutor_${t.name}">${t.nickname}(${t.name})의 학생들</option>`;
+            });
+        }
+    } catch(e) { console.error("User Load Error:", e); }
+}
+
+// 2. 그룹 선택 시 세부 타겟팅 리스트업
+function loadTargetUsers() {
+    const groupVal = document.getElementById('noticeTargetGroup').value;
+    const userSelect = document.getElementById('noticeTargetUser');
+    userSelect.innerHTML = '<option value="all">해당 그룹 전체에게 보내기</option>';
+    
+    if (!groupVal || groupVal === 'all' || groupVal === 'all_tutor' || groupVal === 'all_student') return;
+
+    let filtered = [];
+    
+    // 등급별 분류
+    if (['pro', 'standard', 'basic', 'free'].includes(groupVal)) {
+        filtered = globalUserList.filter(u => u.role !== 'admin' && u.role !== 'tutor');
+        filtered = filtered.filter(s => {
+            const tier = (getTierBadgeHTML(s.payments).match(/>(.*?)<\/span>/) || [])[1] || 'FREE';
+            return tier.toLowerCase() === groupVal;
+        });
+    } 
+    // 특정 튜터의 학생 분류
+    else if (groupVal.startsWith('tutor_')) {
+        const tName = groupVal.replace('tutor_', '');
+        filtered = globalUserList.filter(u => u.role !== 'admin' && u.role !== 'tutor' && u.tutorName === tName);
+    }
+
+    filtered.forEach(u => {
+        userSelect.innerHTML += `<option value="${u.userid}">${u.name} (${u.email || '-'})</option>`;
+    });
+}
+
+// 3. 폼 검증 및 전송
+async function sendAdminNotice() {
+    const group = document.getElementById('noticeTargetGroup').value;
+    const specificUser = document.getElementById('noticeTargetUser').value;
+    const title = document.getElementById('noticeTitle').value.trim();
+    const content = document.getElementById('noticeContent').value.trim();
+
+    if (!group) { alert("수신 그룹을 선택해주세요."); return; }
+    if (!title || !content) { alert("제목과 내용을 모두 입력해주세요."); return; }
+    if (!confirm("공지를 발송하시겠습니까? (취소 불가)")) return;
+
+    const token = localStorage.getItem('accessToken');
+    const adminId = localStorage.getItem('userId');
+
+    try {
+        const res = await fetch(ADMIN_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'admin_send_notice',
+                userId: adminId,
+                data: {
+                    targetGroup: group, // 'all', 'pro', 'tutor_홍길동' 등
+                    targetUser: specificUser, // 'all' 또는 특정 'userid'
+                    title: title,
+                    content: content
+                }
+            })
+        });
+
+        if (res.ok) {
+            alert("공지 발송이 완료되었습니다.");
+            document.getElementById('noticeTitle').value = '';
+            document.getElementById('noticeContent').value = '';
+            switchNotiTab('inbox'); // 보낸 후 수신함으로 이동
+        } else {
+            alert("발송 실패");
+        }
+    } catch(e) { alert("서버 오류 발생"); }
+}
+
+// ============================================================
+// [H] 유틸리티
 // ============================================================
 
 function escapeHtml(text) {
