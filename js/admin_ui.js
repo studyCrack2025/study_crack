@@ -707,38 +707,59 @@ let globalUserList = [];
 // 1. 유저 목록 가져와서 체크박스 트리 렌더링
 async function loadTutorListForNotice() {
     const token = localStorage.getItem('accessToken');
+    const adminId = localStorage.getItem('userId');
+    
     try {
-        const res = await fetch(ADMIN_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'admin_search', userId: localStorage.getItem('userId'), data: {} })
-        });
-        globalUserList = await res.json();
-        if(!Array.isArray(globalUserList)) globalUserList = [];
+        // 🔥 [핵심 수정] 튜터 목록 API와 학생 검색 API를 동시에 확실하게 호출합니다!
+        const [tutorRes, studentRes] = await Promise.all([
+            fetch(ADMIN_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ type: 'admin_get_tutor_stats' })
+            }),
+            fetch(ADMIN_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ type: 'admin_search', userId: adminId, data: {} })
+            })
+        ]);
 
-        const tutors = globalUserList.filter(u => u.role === 'tutor');
-        const students = globalUserList.filter(u => u.role !== 'admin' && u.role !== 'tutor');
+        const tutorData = await tutorRes.json();
+        const studentData = await studentRes.json();
+
+        // 튜터 데이터 세팅
+        const tutors = tutorData.tutors || [];
+
+        // 학생 데이터 세팅 (배열 형태 호환성 보장)
+        let students = [];
+        if (Array.isArray(studentData)) students = studentData;
+        else if (studentData.students && Array.isArray(studentData.students)) students = studentData.students;
+        else if (studentData.Items) students = studentData.Items;
+
+        // 순수 학생만 남기기
+        students = students.filter(u => u.role !== 'admin' && u.role !== 'tutor');
         
         let html = `
             <div class="quick-select-box">
                 <strong>⚡ 빠른 선택:</strong>
                 <label><input type="checkbox" onchange="toggleAllCheckboxes(this)"> 싹 다 전체</label>
-                <label><input type="checkbox" onchange="toggleByClass('is-tutor', this)"> 튜터 전체</label>
+                <label><input type="checkbox" onchange="toggleByClass('is-tutor', this)"> 튜터(선생님) 전체</label>
                 <label><input type="checkbox" onchange="toggleByClass('is-pro', this)"> PRO 전체</label>
                 <label><input type="checkbox" onchange="toggleByClass('is-standard', this)"> STANDARD 전체</label>
             </div>
         `;
 
-        // 🔥 [추가] 2열 배치를 위한 그리드 래퍼 시작
         html += `<div class="tree-grid-container">`;
 
         // (1) 튜터 및 소속 학생들 그룹
         tutors.forEach(t => {
+            // 학생의 tutorName과 튜터의 name이 일치하는 학생 필터링
             const myStus = students.filter(s => s.tutorName === t.name);
+            
             html += `
                 <div class="tree-group">
                     <div class="tree-parent">
-                        <label><input type="checkbox" class="is-tutor target-chk" value="${t.userid}" onchange="toggleChildren(this)"> 👨‍🏫 ${t.nickname} 튜터 그룹</label>
+                        <label><input type="checkbox" class="is-tutor target-chk" value="${t.userid}" onchange="toggleChildren(this)"> 👨‍🏫 ${t.nickname} (${t.name}) 튜터 그룹</label>
                     </div>
                     <div class="tree-children">
             `;
@@ -784,11 +805,10 @@ async function loadTutorListForNotice() {
             html += `</div></div>`;
         }
 
-        // 🔥 [추가] 그리드 래퍼 종료
         html += `</div>`;
 
         document.getElementById('noticeTargetCheckboxes').innerHTML = html;
-    } catch(e) { console.error(e); }
+    } catch(e) { console.error("Notice Box Render Error:", e); }
 }
 
 // 체크박스 유틸리티 함수
