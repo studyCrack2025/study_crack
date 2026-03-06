@@ -66,6 +66,8 @@ header {
 .message-text-area p { font-size: 1.25rem; color: #cbd5e1; line-height: 1.8; font-weight: 400; }
 .message-text-area strong { color: #fff; font-weight: 700; border-bottom: 2px solid #3b82f6; }
 
+.message-cta-wrap { margin-top: 45px; }
+
 /* [우측] 데모 폰 영역 */
 .message-demo-area { flex: 1; display: flex; justify-content: center; min-width: 320px; }
 
