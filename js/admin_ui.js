@@ -729,32 +729,39 @@ async function loadTutorListForNotice() {
             </div>
         `;
 
-        // (1) 튜터 및 소속 학생들
+        // 🔥 [추가] 2열 배치를 위한 그리드 래퍼 시작
+        html += `<div class="tree-grid-container">`;
+
+        // (1) 튜터 및 소속 학생들 그룹
         tutors.forEach(t => {
             const myStus = students.filter(s => s.tutorName === t.name);
             html += `
                 <div class="tree-group">
                     <div class="tree-parent">
-                        <label><input type="checkbox" class="is-tutor target-chk" value="${t.userid}" onchange="toggleChildren(this)"> 👨‍🏫 ${t.nickname} (${t.name}) - 튜터</label>
+                        <label><input type="checkbox" class="is-tutor target-chk" value="${t.userid}" onchange="toggleChildren(this)"> 👨‍🏫 ${t.nickname} 튜터 그룹</label>
                     </div>
                     <div class="tree-children">
             `;
-            myStus.forEach(s => {
-                const tier = (getTierBadgeHTML(s.payments).match(/>(.*?)<\/span>/) || [])[1] || 'FREE';
-                const tierClass = tier.toLowerCase();
-                html += `<label><input type="checkbox" class="is-${tierClass} target-chk" value="${s.userid}"> 🎓 ${s.name} (${tier})</label>`;
-            });
+            if (myStus.length === 0) {
+                html += `<span style="color:#94a3b8; font-size:0.85rem; padding-left:5px;">소속 학생 없음</span>`;
+            } else {
+                myStus.forEach(s => {
+                    const tier = (getTierBadgeHTML(s.payments).match(/>(.*?)<\/span>/) || [])[1] || 'FREE';
+                    const tierClass = tier.toLowerCase();
+                    html += `<label><input type="checkbox" class="is-${tierClass} target-chk" value="${s.userid}"> 🎓 ${s.name} (${tier})</label>`;
+                });
+            }
             html += `</div></div>`;
         });
 
-        // (2) BASIC 학생 그룹 (튜터가 없는 경우 포함)
+        // (2) BASIC 학생 그룹 (담당 튜터가 없는 미배정 인원만)
         const basicStus = students.filter(s => {
             const tier = (getTierBadgeHTML(s.payments).match(/>(.*?)<\/span>/) || [])[1] || 'FREE';
-            return tier.toLowerCase() === 'basic';
+            return tier.toLowerCase() === 'basic' && !s.tutorName;
         });
         if(basicStus.length > 0) {
             html += `<div class="tree-group">
-                <div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> 🌱 BASIC 등급 학생 모음</label></div>
+                <div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> 🌱 BASIC (미배정) 모음</label></div>
                 <div class="tree-children">`;
             basicStus.forEach(s => {
                 html += `<label><input type="checkbox" class="is-basic target-chk" value="${s.userid}"> 🎓 ${s.name}</label>`;
@@ -762,20 +769,23 @@ async function loadTutorListForNotice() {
             html += `</div></div>`;
         }
 
-        // (3) FREE 학생 그룹
+        // (3) FREE 학생 그룹 (담당 튜터가 없는 미배정 인원만)
         const freeStus = students.filter(s => {
             const tier = (getTierBadgeHTML(s.payments).match(/>(.*?)<\/span>/) || [])[1] || 'FREE';
-            return tier.toLowerCase() === 'free';
+            return tier.toLowerCase() === 'free' && !s.tutorName;
         });
         if(freeStus.length > 0) {
             html += `<div class="tree-group">
-                <div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> ☁️ FREE 등급 학생 모음</label></div>
+                <div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> ☁️ FREE (미배정) 모음</label></div>
                 <div class="tree-children">`;
             freeStus.forEach(s => {
                 html += `<label><input type="checkbox" class="is-free target-chk" value="${s.userid}"> 🎓 ${s.name}</label>`;
             });
             html += `</div></div>`;
         }
+
+        // 🔥 [추가] 그리드 래퍼 종료
+        html += `</div>`;
 
         document.getElementById('noticeTargetCheckboxes').innerHTML = html;
     } catch(e) { console.error(e); }
