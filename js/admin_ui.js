@@ -964,12 +964,20 @@ window.loadSentNotices = async function() {
 
         sentList.forEach(n => {
             const card = document.createElement('div');
-            card.className = `noti-item`; // 안읽음 처리가 필요 없으므로 unread 클래스 제거
+            card.className = `noti-item`; 
+            
+            // 만약 과거에 보내서 이름 기록(targetNames)이 없는 공지라면 기존처럼 명수만 표시
+            const targetText = n.targetNames ? n.targetNames : `${n.targetCount}명`;
+
             card.innerHTML = `
                 <div style="width: 100%;">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <div class="noti-time">${new Date(n.createdAt).toLocaleString()}</div>
-                        <div class="noti-tags"><span class="tag-tutor" style="background:#f1f5f9; color:#475569;">👥 발송 대상: ${n.targetCount}명</span></div>
+                        <div class="noti-tags">
+                            <span class="tag-tutor" style="background:#f1f5f9; color:#475569;">
+                                👥 수신: ${escapeHtml(targetText)} (총 ${n.targetCount}명)
+                            </span>
+                        </div>
                     </div>
                     <div style="font-weight:bold; margin-top:8px; color:#1e293b; font-size:1.1rem;">${escapeHtml(n.title)}</div>
                     <div class="noti-text" style="margin-top:10px; white-space:pre-wrap; background:#f8fafc; padding:15px; border-radius:8px; font-size:0.95rem; border:1px solid #e2e8f0;">${escapeHtml(n.detail)}</div>
