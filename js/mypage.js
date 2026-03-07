@@ -4,7 +4,6 @@ const MYPAGE_API_URL = CONFIG.api.base;
 let currentUserTier = 'free';
 let cognitoUser = null; // Cognito 유저 객체 전역 관리
 let currentTutorData = null;
-let emailTimerInterval = null;
 
 // ==========================================
 // [초기화] DOM 로드 및 데이터 페치
