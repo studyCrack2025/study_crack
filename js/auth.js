@@ -33,8 +33,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const emailInput = document.getElementById('email');
     if (emailInput && pwInput) {
         emailInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') pwInput.focus();
+            if (e.key === 'Enter') handleSignIn(); 
         });
+
         pwInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') handleSignIn();
         });
