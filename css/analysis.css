@@ -302,12 +302,12 @@
 
 
 /* ============================================================
-   [6] 피드백 문서/모달 디자인 (통합 및 수정됨)
+   [6] 피드백 문서/모달 디자인
    ============================================================ */
 /* 1. 모달 배경 및 레이아웃 */
 .custom-modal { position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); }
 
-/* 2. 모달 컨텐츠 박스 (통합된 디자인 - 이중 테두리 제거) */
+/* 2. 모달 컨텐츠 박스 */
 .custom-modal-content { background-color: white; margin: 5vh auto; border-radius: 12px; width: 90%; max-width: 850px; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); border: none; }
 .custom-modal-content .close-btn { display: none; /* 문서 내부 닫기 버튼 사용 */ } 
 .modal-body { padding: 0; }
@@ -342,6 +342,10 @@
 .doc-box-item:last-child { margin-bottom: 0; }
 .doc-box-item strong { display: block; color: #2563eb; margin-bottom: 8px; font-size: 1.05rem; }
 .doc-text { font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; color: #334155; }
+.add-row-btn { background: none; border: none; color: #2563eb; cursor: pointer; margin-left: 5px; font-size: 0.95rem; }
+.add-row-btn:hover { color: #1d4ed8; }
+.delete-row-btn { background: none; border: none; color: #ef4444; cursor: pointer; margin-left: 5px; font-size: 0.95rem;}
+.delete-row-btn:hover { color: #dc2626; }
 
 /* 심층 QnA 리스트 및 페어 스타일 */
 .student-qna-list { list-style: none; padding: 0; margin: 0; }

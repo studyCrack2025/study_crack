@@ -55,16 +55,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     setWeeklyLoadingStatus(true);
-    console.log("🚀 [Analysis] 데이터 로딩 시작...");
+    // console.log("🚀 [Analysis] 데이터 로딩 시작...");
 
     // 병렬 데이터 로드
     Promise.allSettled([
-        fetchUserData(userId).then(() => console.log("  - ✅ 회원정보 로드 완료")),
-        fetchUnivData().then(() => console.log("  - ✅ 대학 목록 로드 완료"))
+        fetchUserData(userId),
+        fetchUnivData()
     ]).then((results) => {
         results.forEach((res, idx) => {
             if (res.status === 'rejected') {
-                console.error(`❌ 데이터 로드 실패 (Index ${idx}):`, res.reason);
+                // console.error(`❌ 데이터 로드 실패 (Index ${idx}):`, res.reason);
             }
         });
 
@@ -674,10 +674,6 @@ async function updateAnalysisUI() {
         });
         const data = await res.json();
         const results = data.results || [];
-        
-        if (data.server_debug) {
-            console.log('%c 🛠️ Server Debug Log:', 'background: #222; color: #bada55; font-size:12px;', data.server_debug);
-        }
         
         if (results.length === 0) {
             cardsContainer.innerHTML = `<div style="text-align:center; padding:40px;">분석 가능한 결과가 없습니다.</div>`;
@@ -2185,7 +2181,7 @@ async function submitWeeklyCheck() {
         };
     }
 
-    // 4. 학습 시간 상세 데이터 수집 (기존 유지)
+    // 4. 학습 시간 상세 데이터 수집
     const studyRows = document.querySelectorAll('#studyTimeBody tr');
     let studyData = [];
     studyRows.forEach(row => {
@@ -2195,7 +2191,8 @@ async function submitWeeklyCheck() {
         const custom = row.querySelector('.custom-subj');
         
         if(mainSub) {
-            subjName = mainSub.innerText;
+            // 동적으로 추가된 행의 '↳' 기호와 공백을 깔끔하게 제거
+            subjName = mainSub.innerText.replace('↳', '').trim();
             if(detail && detail.value) subjName += `(${detail.value.trim()})`;
         } else if(custom) {
             subjName = custom.value.trim() || "기타";
@@ -2206,6 +2203,7 @@ async function submitWeeklyCheck() {
         const plan = planEl ? (parseFloat(planEl.value) || 0) : 0;
         const act = actEl ? (parseFloat(actEl.value) || 0) : 0;
         
+        // 계획이나 실제 공부 시간이 0 이상 입력된 경우만 배열에 담기
         if(plan > 0 || act > 0) studyData.push({ subject: subjName, plan, act });
     });
 
@@ -2304,6 +2302,45 @@ async function submitWeeklyCheck() {
             submitBtn.innerText = originalBtnText;
         }
     }
+}
+
+// 과목 행 동적 추가 함수
+function addSubjectRow(btn, subject) {
+    const tr = btn.closest('tr');
+    const newRow = document.createElement('tr');
+    newRow.innerHTML = `
+        <td>
+            <span class="main-sub" style="color:#94a3b8; font-size:0.9rem;">↳ ${subject}</span>
+        </td>
+        <td><input type="text" class="sub-detail" placeholder="세부과목"></td>
+        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
+        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
+        <td style="display:flex; align-items:center; justify-content:center; gap:5px; height:100%; border:none;">
+            <span class="rate-txt">0%</span>
+            <button type="button" class="delete-row-btn" onclick="this.closest('tr').remove(); calcStudyRates();"><i class="fas fa-minus-circle"></i></button>
+        </td>
+    `;
+    tr.insertAdjacentElement('afterend', newRow);
+}
+
+// 기타 행 동적 추가 함수
+function addCustomRow(btn) {
+    const tr = btn.closest('tr');
+    const newRow = document.createElement('tr');
+    newRow.innerHTML = `
+        <td>
+            <span style="color:#94a3b8; font-size:0.9rem;">↳ </span>
+            <input type="text" placeholder="기타" class="custom-subj" style="width: 70%;">
+        </td>
+        <td>-</td>
+        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
+        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
+        <td style="display:flex; align-items:center; justify-content:center; gap:5px; height:100%; border:none;">
+            <span class="rate-txt">0%</span>
+            <button type="button" class="delete-row-btn" onclick="this.closest('tr').remove(); calcStudyRates();"><i class="fas fa-minus-circle"></i></button>
+        </td>
+    `;
+    tr.insertAdjacentElement('afterend', newRow);
 }
 
 // ============================================================
