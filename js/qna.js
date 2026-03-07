@@ -172,7 +172,7 @@ function openDetailModal(item) {
    ========================================= */
 async function handleQnaSubmit(e) {
     e.preventDefault();
-    const btn = e.target.querySelector('button[type="submit"]');
+    const btn = document.querySelector('button[form="qnaForm"]');
     
     if (btn.disabled) return;
     btn.disabled = true;
