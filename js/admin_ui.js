@@ -754,7 +754,7 @@ async function loadTutorListForNotice() {
 
         // (1) 튜터 및 소속 학생들 그룹
         tutors.forEach(t => {
-            // 학생의 tutorName과 튜터의 name이 일치하는 학생 필터링
+            // 학생의 tutorName과 튜터의 nickname이 일치하는 학생 필터링
             const myStus = students.filter(s => s.tutorName === t.nickname);
             
             html += `
