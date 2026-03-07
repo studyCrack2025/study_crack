@@ -389,7 +389,7 @@ function renderWeeklyTab() {
              studyHtml = `<div class="weekly-section"><div class="section-title"><i class="fas fa-clock"></i> 과목별 학습 달성도 (총 달성률: <span style="color:#2563eb;">${d.studyTime.totalRate || '0%'}</span>)</div><table class="compact-table"><thead><tr><th>과목</th><th>계획</th><th>실행</th><th>달성</th></tr></thead><tbody>${rows}</tbody></table></div>`;
         }
 
-        // 2. 자가 점검 (Deep Answers)
+        // 2. 자가 점검 (Deep Answers) & 학습 흐름(Trend) 렌더링
         let checkHtml = '';
         if (d.deepAnswers && d.deepAnswers.length > 0) {
             const QUESTIONS = ['학습 계획 점검', '학습 방향성 설정', '취약 과목 솔루션', '기타 멘탈 관리'];
@@ -397,10 +397,44 @@ function renderWeeklyTab() {
                const questionLabel = QUESTIONS[i] ? `<span style="color:#1e293b; font-weight:800; margin-right:4px;">${QUESTIONS[i]}:</span>` : '';
                return `<li><i class="fas fa-check-circle text-blue" style="margin-top:4px; flex-shrink:0;"></i><div style="flex:1;">${questionLabel} ${escapeHtml(ans)}</div></li>`;
             }).join('');
-            checkHtml = `<div class="weekly-section"><div class="section-title"><i class="fas fa-clipboard-check"></i> 이번주 심층 질문</div><ul class="check-list">${listItems}</ul>${d.trend ? `<div class="trend-badge ${d.trend.status === 'up' ? 'up' : (d.trend.status === 'down' ? 'down' : 'keep')}">학습 흐름: ${d.trend.status === 'up' ? '상승세 🔥' : (d.trend.status === 'down' ? '하락세 📉' : '유지중 -')}</div>` : ''}</div>`;
+
+            // 🔥 [수정 1] 학습 흐름 상세 사유(reasons) 렌더링 추가
+            let trendHtml = '';
+            if (d.trend) {
+                const statusMap = { 'up': '상승세 🔥', 'down': '하락세 📉', 'keep': '유지중 -' };
+                const statusText = statusMap[d.trend.status] || '유지중 -';
+                let reasonHtml = '';
+                
+                // 하락세(down)이고 사유가 존재할 때만 사유 박스 추가
+                if (d.trend.status === 'down' && Array.isArray(d.trend.reasons) && d.trend.reasons.length > 0) {
+                    const reasonMap = {
+                        'overplan': '계획 과다',
+                        'sense': '실전 감각 저하',
+                        'condition': '컨디션/건강',
+                        'etc': '기타'
+                    };
+                    // 영어 코드를 한글로 변환, 매핑 안된 커스텀 텍스트는 그대로 출력
+                    const translatedReasons = d.trend.reasons.map(r => reasonMap[r] || r).join(', ');
+                    reasonHtml = `
+                        <div style="font-size: 0.85rem; color: #dc2626; margin-top: 8px; padding: 8px 12px; background: #fef2f2; border-radius: 6px; display: inline-block; font-weight: normal; border: 1px solid #fecaca;">
+                            ⚠️ <strong>원인:</strong> ${escapeHtml(translatedReasons)}
+                        </div>
+                    `;
+                }
+                
+                // 트렌드 뱃지가 위아래로 나열되도록 flex-direction 설정
+                trendHtml = `
+                    <div class="trend-badge ${d.trend.status || 'keep'}" style="display: flex; flex-direction: column; align-items: flex-start;">
+                        <div style="font-weight: bold;">학습 흐름: ${statusText}</div>
+                        ${reasonHtml}
+                    </div>
+                `;
+            }
+
+            checkHtml = `<div class="weekly-section"><div class="section-title"><i class="fas fa-clipboard-check"></i> 이번주 심층 질문</div><ul class="check-list">${listItems}</ul>${trendHtml}</div>`;
         }
 
-        // 3. 주간 모의고사 결과 (🚨 첨부파일 링크 추가 완료)
+        // 3. 주간 모의고사 결과
         let mockHtml = '';
         if (d.mockExam && d.mockExam.scores) {
             const s = d.mockExam.scores;
@@ -413,12 +447,12 @@ function renderWeeklyTab() {
                 { l: s.inq1Name || '탐1', v: s.inq1 }, { l: s.inq2Name || '탐2', v: s.inq2 }
             ].map(item => item.v ? `<div class="score-pill"><span class="lbl">${item.l}</span><span class="val">${item.v}</span></div>` : '').join('');
 
-            // [추가된 부분] 성적표 이미지 원본 보기 버튼
+            // 🔥 [수정 2] 원본 보기 버튼 글자 줄바꿈 방지 (white-space: nowrap 추가)
             let proofHtml = '';
             if (d.mockExam.proofFile && d.mockExam.proofFile.startsWith('http')) {
                 proofHtml = `
                     <div style="margin-top:15px; padding-top:15px; border-top:1px dashed #e2e8f0; text-align:right;">
-                        <a href="${d.mockExam.proofFile}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; background:#eff6ff; color:#2563eb; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:bold; transition:all 0.2s;">
+                        <a href="${d.mockExam.proofFile}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; background:#eff6ff; color:#2563eb; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:bold; transition:all 0.2s; white-space:nowrap;">
                             <i class="fas fa-file-invoice"></i> 📝 모의고사 성적표 원본 보기
                         </a>
                     </div>
@@ -436,7 +470,7 @@ function renderWeeklyTab() {
             `;
         }
 
-        // 4. 플래너 파일 및 코멘트 (🚨 디자인 대폭 개편 완료)
+        // 4. 플래너 파일 및 코멘트
         let footerHtml = '';
         const hasFiles = d.plannerFiles && d.plannerFiles.length > 0;
         const hasComment = !!d.comment;
@@ -445,7 +479,6 @@ function renderWeeklyTab() {
             let fileLinks = '';
             if (hasFiles) {
                 fileLinks = d.plannerFiles.map((f, i) => {
-                    // S3 URL에서 타임스탬프(1772895802606_) 부분을 떼어내고 진짜 파일명만 예쁘게 추출합니다.
                     let rawName = typeof f === 'string' ? decodeURIComponent(f.split('/').pop()) : `파일 ${i+1}`;
                     let cleanName = rawName.includes('_') ? rawName.split('_').slice(1).join('_') : rawName;
                     
