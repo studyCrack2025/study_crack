@@ -1,5 +1,7 @@
 /* --- css/mypage.css --- */
 
+.active-link { color: #2563EB !important; font-weight: 700 !important; }  
+
 /* 1. 전체 레이아웃 (Layout) */
 .mypage-container {
     display: flex;
