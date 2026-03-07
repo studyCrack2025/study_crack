@@ -42,7 +42,7 @@ function initCognitoUser() {
         // 유저의 세션을 활성화(토큰 갱신 및 검증)시킵니다.
         cognitoUser.getSession(function(err, session) {
             if (err) {
-                console.error("Cognito 세션 갱신 실패:", err);
+                // console.error("Cognito 세션 갱신 실패:", err);
                 // 필요하다면 여기서 로그아웃 처리를 할 수 있습니다.
             }
         });
@@ -127,19 +127,16 @@ async function fetchUserData(userId) {
 
         // (3) [NEW] 튜터 정보가 있다면 추가로 가져오기
         // 내 정보에 tutorName 필드가 있다고 가정
-        if (userData.tutorName) {
-            // [디버깅] 여기에 로그를 추가해서 콘솔창(F12)을 확인하세요.
-            console.log("학생 데이터에 저장된 튜터 이름:", `"${userData.tutorName}"`); // 따옴표를 넣어 공백 여부 확인
-            
+        if (userData.tutorName) {            
             // 공백이 있다면 제거하고 요청
             const cleanTutorName = userData.tutorName.trim();
             await fetchTutorInfo(cleanTutorName, userData.computedTier);
         } else {
-            console.log("학생 데이터에 tutorName 필드가 없습니다.");
+            // console.log("학생 데이터에 tutorName 필드가 없습니다.");
         }
 
     } catch (error) { 
-        console.error("데이터 로드 실패:", error); 
+        // console.error("데이터 로드 실패:", error); 
     }
 }
 
@@ -164,10 +161,10 @@ async function fetchTutorInfo(tutorName, userTier) {
             checkTutorButtonVisibility(userTier || 'free');
         } else {
             // 실패 시 조용히 넘어가거나, 필요하다면 최소한의 경고만 남김
-            console.warn("튜터 정보를 불러오지 못했습니다.");
+            // console.warn("튜터 정보를 불러오지 못했습니다.");
         }
     } catch (e) {
-        console.error("fetchTutorInfo Error:", e);
+        // console.error("fetchTutorInfo Error:", e);
     }
 }
 
@@ -271,7 +268,7 @@ async function saveSingleField(field, value) {
         if(response.ok) return true;
         else throw new Error("저장 실패");
     } catch (error) {
-        console.error(error);
+        // console.error(error);
         alert("저장 중 오류가 발생했습니다.");
         return false;
     }
@@ -451,7 +448,8 @@ async function handleProfileUpload(input) {
         checkDeleteButtonVisibility(fileUrl);
 
     } catch (e) {
-        console.error(e); alert("사진 업로드 중 오류가 발생했습니다.");
+        // console.error(e); 
+        alert("사진 업로드 중 오류가 발생했습니다.");
         imgElem.src = originalSrc;
     } finally {
         imgElem.style.opacity = '1'; input.value = '';
@@ -484,7 +482,10 @@ async function handleProfileDelete() {
         alert("프로필 사진이 삭제되었습니다.");
         checkDeleteButtonVisibility("");
 
-    } catch (e) { console.error(e); alert("삭제 실패"); }
+    } catch (e) { 
+        // console.error(e); 
+        alert("삭제 실패"); 
+    }
 }
 
 function checkDeleteButtonVisibility(url) {
