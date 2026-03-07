@@ -25,6 +25,7 @@ header {
 .logo-container { display: flex; align-items: center; gap: 10px; }
 .logo-container img { height: 40px; width: auto; }
 .logo { font-size: 1.5rem; font-weight: 800; color: #0F172A; letter-spacing: -0.5px; }
+.logo-link { display: flex; align-items: center; gap: 10px; }
 
 .nav-links { display: flex; align-items: center; gap: 25px; }
 .nav-links a { font-size: 0.95rem; color: #64748b; font-weight: 500; transition: color 0.2s; }
