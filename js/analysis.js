@@ -2260,6 +2260,35 @@ async function submitWeeklyCheck() {
                 finalFileUrls.push(fileUrl);
             }
         }
+        
+        if (mockData.type !== 'none') {
+            const mockFileInput = document.getElementById('mockExamProof');
+            
+            // 새 파일이 선택된 경우에만 S3 업로드 진행
+            if (mockFileInput && mockFileInput.files.length > 0) {
+                const mFile = mockFileInput.files[0];
+                const mRes = await fetch(MYPAGE_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    // Lambda가 처리할 수 있도록 folder를 'mock_exams'로 지정
+                    body: JSON.stringify({ type: 'get_presigned_url', userId: userId, data: { fileName: mFile.name, fileType: mFile.type, folder: 'mock_exams' } })
+                });
+                
+                if (!mRes.ok) throw new Error("모의고사 파일 업로드 URL 발급 실패");
+                
+                const { uploadUrl, fileUrl } = await mRes.json();
+                await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': mFile.type }, body: mFile });
+                
+                // S3에 올라간 진짜 URL을 데이터에 덮어씌움
+                mockData.proofFile = fileUrl; 
+            } else if (!mockData.proofFile || mockData.proofFile === "file_uploaded") {
+                // 파일도 없고 기존 URL도 없는 경우 (필수값 체크)
+                alert("모의고사 성적 인증 사진을 첨부해주세요.");
+                switchWeeklyTab('step1'); // 탭 이동
+                if(submitBtn) { submitBtn.disabled = false; submitBtn.innerText = originalBtnText; }
+                return; // 🚨 함수 완전 종료
+            }
+        }
 
         const today = new Date().toISOString();
         const title = (typeof getWeekTitle === 'function') ? getWeekTitle(new Date()) : "주간점검"; 
@@ -2301,6 +2330,20 @@ async function submitWeeklyCheck() {
             submitBtn.disabled = false;
             submitBtn.innerText = originalBtnText;
         }
+    }
+}
+
+// 모의고사 파일 선택 시 파일명 표시
+function updateMockFileName(input) {
+    const display = document.getElementById('mockFileNameDisplay');
+    if (input.files && input.files.length > 0) {
+        display.textContent = input.files[0].name;
+        display.style.color = "#2563eb"; // 선택 시 파란색으로 강조
+        display.style.fontWeight = "bold";
+    } else {
+        display.textContent = "선택된 파일 없음";
+        display.style.color = "#94a3b8";
+        display.style.fontWeight = "normal";
     }
 }
 
