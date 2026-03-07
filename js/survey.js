@@ -277,10 +277,32 @@ async function saveQualitative() {
     } catch (e) { alert("에러 발생: " + e.message); }
 }
 
+const TO_KOREAN = {
+    'hwa': '화작', 'un': '언매',
+    'hwak': '확통', 'mi': '미적', 'ki': '기하',
+    '물원': '물1', '화원': '화1', '생원': '생1', '지원': '지1',
+    '물투': '물2', '화투': '화2', '생투': '생2', '지투': '지2'
+};
+
+const TO_HTML_VALUE = {
+    '화작': 'hwa', '언매': 'un',
+    '확통': 'hwak', '미적': 'mi', '기하': 'ki',
+    '물1': '물원', '화1': '화원', '생1': '생원', '지1': '지원',
+    '물2': '물투', '화2': '화투', '생2': '생투', '지2': '지투'
+};
+
 function loadExamData() {
     const month = document.getElementById('examSelect').value;
     const d = examScores[month] || {};
-    const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
+    
+    // 역변환 로직이 추가된 setVal 함수
+    const setVal = (id, val) => { 
+        const el = document.getElementById(id); 
+        if(el) {
+            // DB에 저장된 예쁜 한글(예: '확통')이 들어오면 HTML용('hwak')으로 변환
+            el.value = TO_HTML_VALUE[val] || val || ''; 
+        }
+    };
 
     setVal('koreanOpt', d.kor?.opt || 'none');
     setVal('korStd', d.kor?.std); 
@@ -299,7 +321,7 @@ function loadExamData() {
 }
 
 // ============================================================
-// 성적 저장 + restriction(제약조건) 자동 생성 로직 포함
+// 성적 저장 + restriction(제약조건) 자동 생성 로직 (한글로 DB 저장)
 // ============================================================
 async function saveQuantitative() {
     const userId = localStorage.getItem('userId');
@@ -307,56 +329,51 @@ async function saveQuantitative() {
     const month = document.getElementById('examSelect').value;
     const getVal = (id) => document.getElementById(id).value;
 
-    // 1. 기본 점수 데이터 수집
+    // 1. 선택된 드롭다운 값을 가져오기
+    const korOpt = getVal('koreanOpt');
+    const mathOpt = getVal('mathOpt');
+    const inq1Name = getVal('inq1Name');
+    const inq2Name = getVal('inq2Name');
+
+    // 2. DB에 넣기 직전에 예쁜 한글명으로 변환해서 currentData 구성
     const currentData = {
-        kor: { opt: getVal('koreanOpt'), std: getVal('korStd'), pct: getVal('korPct'), grd: getVal('korGrd') },
-        math: { opt: getVal('mathOpt'), std: getVal('mathStd'), pct: getVal('mathPct'), grd: getVal('mathGrd') },
+        kor: { opt: TO_KOREAN[korOpt] || korOpt, std: getVal('korStd'), pct: getVal('korPct'), grd: getVal('korGrd') },
+        math: { opt: TO_KOREAN[mathOpt] || mathOpt, std: getVal('mathStd'), pct: getVal('mathPct'), grd: getVal('mathGrd') },
         eng: { grd: getVal('engGrd') }, 
         hist: { grd: getVal('histGrd') },
-        inq1: { name: getVal('inq1Name'), std: getVal('inq1Std'), pct: getVal('inq1Pct'), grd: getVal('inq1Grd') },
-        inq2: { name: getVal('inq2Name'), std: getVal('inq2Std'), pct: getVal('inq2Pct'), grd: getVal('inq2Grd') },
+        inq1: { name: TO_KOREAN[inq1Name] || inq1Name, std: getVal('inq1Std'), pct: getVal('inq1Pct'), grd: getVal('inq1Grd') },
+        inq2: { name: TO_KOREAN[inq2Name] || inq2Name, std: getVal('inq2Std'), pct: getVal('inq2Pct'), grd: getVal('inq2Grd') },
         foreign: { name: getVal('foreignName'), grd: getVal('foreignGrd') }
     };
 
-    // 2. restriction 자동 생성 로직
-    const restriction = ["자유선택"]; // 디폴트
+    // 3. restriction 자동 생성 로직
+    const restriction = ["자유선택"]; 
 
-    // (A) 과탐 과목 리스트 (물화생지 1,2)
-    const sciSubjects = ["물원","화원","생원","지원","물투","화투","생투","지투"];
-    // (B) 사탐 과목 리스트 (나머지)
-    // 참고: html value가 한글로 되어있으므로 이에 맞춤
+    // (A) 과탐 과목 리스트 (물원 -> 물1 형식으로 업데이트)
+    const sciSubjects = ["물1","화1","생1","지1","물2","화2","생2","지2"];
     const socSubjects = ["생활과 윤리","윤리와 사상","한국지리","세계지리","동아시아사","세계사","경제","정치와 법","사회·문화"];
 
     const inq1 = currentData.inq1.name;
     const inq2 = currentData.inq2.name;
-    const mathOpt = currentData.math.opt; // mi(미적), ki(기하), geo(확통)
+    const mathVal = currentData.math.opt; 
     const foreignGrd = currentData.foreign.grd;
 
-    // 탐구 판별
-    const isSci1 = sciSubjects.includes(inq1);
-    const isSci2 = sciSubjects.includes(inq2);
-    const isSoc1 = socSubjects.includes(inq1);
-    const isSoc2 = socSubjects.includes(inq2);
+    const isSciAll = sciSubjects.includes(inq1) && sciSubjects.includes(inq2);
+    const isSocAll = socSubjects.includes(inq1) && socSubjects.includes(inq2);
 
-    const isSciAll = isSci1 && isSci2; // 탐구 2개 다 과탐
-    const isSocAll = isSoc1 && isSoc2; // 탐구 2개 다 사탐
+    // 수학 판별 (한글 기준으로 판별)
+    const isMiKi = (mathVal === '미적' || mathVal === '기하'); 
+    const isHwak = (mathVal === '확통'); // 🚨 기존 버그(geo) 픽스 완료!
 
-    // 수학 판별
-    const isMiKi = (mathOpt === 'mi' || mathOpt === 'ki'); // 미적 or 기하
-    const isGeo = (mathOpt === 'geo'); // 확통
-
-    // 조건별 추가
     if (isSciAll) restriction.push("과탐 필수");
     if (isMiKi) restriction.push("미적기하 필수");
     if (isMiKi && isSciAll) restriction.push("미적기하+과탐 필수");
-    if (isGeo) restriction.push("확통 필수");
-    if (isGeo && isSocAll) restriction.push("확통+사탐 필수");
+    if (isHwak) restriction.push("확통 필수");
+    if (isHwak && isSocAll) restriction.push("확통+사탐 필수");
     if (foreignGrd && parseInt(foreignGrd) > 0) restriction.push("제2외 필수");
 
-    // 3. 데이터 합치기 (restriction 필드 추가)
     currentData.restriction = restriction;
     
-    // 전역 변수에 저장
     examScores[month] = currentData;
 
     try {
