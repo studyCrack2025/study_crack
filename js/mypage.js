@@ -4,6 +4,7 @@ const MYPAGE_API_URL = CONFIG.api.base;
 let currentUserTier = 'free';
 let cognitoUser = null; // Cognito 유저 객체 전역 관리
 let currentTutorData = null;
+let emailTimerInterval = null;
 
 // ==========================================
 // [초기화] DOM 로드 및 데이터 페치
@@ -28,20 +29,33 @@ document.addEventListener('DOMContentLoaded', () => {
     setupUI();
 });
 
-// Cognito 유저 초기화
 function initCognitoUser() {
     const poolData = { 
         UserPoolId: CONFIG.cognito.userPoolId, 
         ClientId: CONFIG.cognito.clientId 
     };
     const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
-    const username = localStorage.getItem('username') || localStorage.getItem('email'); // 저장된 username 사용
-
-    if (username) {
-        cognitoUser = new AmazonCognitoIdentity.CognitoUser({
-            Username: username,
-            Pool: userPool
+    
+    // 현재 세션에 남아있는 유저를 가져옵니다.
+    cognitoUser = userPool.getCurrentUser();
+    
+    if (cognitoUser != null) {
+        // 유저의 세션을 활성화(토큰 갱신 및 검증)시킵니다.
+        cognitoUser.getSession(function(err, session) {
+            if (err) {
+                console.error("Cognito 세션 갱신 실패:", err);
+                // 필요하다면 여기서 로그아웃 처리를 할 수 있습니다.
+            }
         });
+    } else {
+        // 객체 복구가 안 될 경우를 대비한 fallback (기존 로직)
+        const username = localStorage.getItem('username') || localStorage.getItem('email');
+        if (username) {
+            cognitoUser = new AmazonCognitoIdentity.CognitoUser({
+                Username: username,
+                Pool: userPool
+            });
+        }
     }
 }
 
@@ -330,6 +344,11 @@ function verifyEmailChange() {
             const newEmail = document.getElementById('newEmailInput').value;
             await saveSingleField('email', newEmail);
             
+            localStorage.setItem('email', newEmail); 
+            if(localStorage.getItem('username') && localStorage.getItem('username').includes('@')) {
+                localStorage.setItem('username', newEmail);
+            }
+            
             closeModal('emailModal');
             location.reload(); // 정보 갱신을 위해 새로고침
         },
@@ -521,68 +540,21 @@ function setupUI() {
 // ==========================================
 function checkTutorButtonVisibility(tier) {
     const btnContainer = document.getElementById('tutorBtnContainer');
-    
-    // 1. 버튼 컨테이너가 HTML에 있는지 확인 (없으면 에러 방지)
     if (!btnContainer) return;
 
-    // 2. 조건 확인: (Standard 이상 등급) AND (튜터 데이터 존재)
-    // 'black' 티어도 있다면 포함
     const allowedTiers = ['standard', 'pro', 'black']; 
     
     if (allowedTiers.includes(tier) && currentTutorData) {
         btnContainer.classList.remove('hidden'); // 버튼 보이기
-    } else {// ==========================================
-// [기능 6] 튜터 모달 열기 (데이터 바인딩)
-// ==========================================
-function openTutorModal() {
-    // 1. 데이터 확인
-    if (!currentTutorData) {
-        alert("튜터 정보가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.");
-        return;
-    }
-    
-    const tutor = currentTutorData;
-
-    // 2. 텍스트 데이터 바인딩
-    const setContext = (id, text) => {
-        const el = document.getElementById(id);
-        if (el) el.innerText = text || '-';
-    };
-
-    setContext('tutorName', tutor.name);
-    setContext('tutorNickname', tutor.nickname);
-    
-    // 학교 + 전공 합쳐서 표시
-    const schoolInfo = [tutor.school, tutor.major].filter(Boolean).join(' ');
-    setContext('tutorSchoolMajor', schoolInfo || '학교 정보 없음');
-
-    setContext('tutorPhone', tutor.phone || '비공개');
-    setContext('tutorStrengths', tutor.strengths);
-    
-    // 메시지는 따옴표 장식
-    const msgEl = document.getElementById('tutorMessage');
-    if (msgEl) msgEl.innerText = tutor.message ? `"${tutor.message}"` : '"함께 목표를 달성해봅시다!"';
-
-    // 3. 프로필 이미지 처리
-    const imgEl = document.getElementById('tutorProfileImg');
-    if (imgEl) {
-        // 이미지가 있으면 그 URL, 없으면 기본 이미지
-        imgEl.src = tutor.profileImage ? escapeHtml(tutor.profileImage) : 'assets/images/sample_profile.png';
-    }
-
-    // 4. 모달 표시 (hidden 클래스 제거)
-    const modal = document.getElementById('tutorModal');
-    if (modal) modal.classList.remove('hidden');
-}
+    } else {
         btnContainer.classList.add('hidden'); // 버튼 숨기기
     }
 }
 
 // ==========================================
-// [기능 6] 튜터 모달 열기 (데이터 바인딩)
+// [기능 6] 튜터 모달 열기 
 // ==========================================
 function openTutorModal() {
-    // 1. 데이터 확인
     if (!currentTutorData) {
         alert("튜터 정보가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.");
         return;
@@ -590,33 +562,26 @@ function openTutorModal() {
     
     const tutor = currentTutorData;
 
-    // 2. 텍스트 데이터 바인딩
     const setContext = (id, text) => {
         const el = document.getElementById(id);
         if (el) el.innerText = text || '-';
     };
 
-    // 닉네임(tutor.nickname)을 메인 이름 요소에 바인딩
     setContext('tutorNickname', tutor.nickname);
     
-    // 학교 + 전공 합쳐서 표시
     const schoolInfo = [tutor.school, tutor.major].filter(Boolean).join(' ');
     setContext('tutorSchoolMajor', schoolInfo || '학교 정보 없음');
 
     setContext('tutorStrengths', tutor.strengths);
     
-    // 메시지는 따옴표 장식
     const msgEl = document.getElementById('tutorMessage');
     if (msgEl) msgEl.innerText = tutor.message ? `"${tutor.message}"` : '"함께 목표를 달성해봅시다!"';
 
-    // 3. 프로필 이미지 처리
     const imgEl = document.getElementById('tutorProfileImg');
     if (imgEl) {
-        // 이미지가 있으면 그 URL, 없으면 기본 이미지
         imgEl.src = tutor.profileImage ? escapeHtml(tutor.profileImage) : 'assets/images/sample_profile.png';
     }
 
-    // 4. 모달 표시 (hidden 클래스 제거)
     const modal = document.getElementById('tutorModal');
     if (modal) modal.classList.remove('hidden');
 }
