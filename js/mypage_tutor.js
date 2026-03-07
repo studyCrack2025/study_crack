@@ -416,7 +416,7 @@ window.loadMyStudents = async function() {
     
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('idToken');
-    let myName = tutorInfoData.name || document.getElementById('userNameDisplay')?.innerText;
+    let myName = tutorInfoData.nickname || document.getElementById('userNameDisplay')?.innerText;
 
     if (!myName || myName === '이름 없음') {
         tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">튜터 정보를 불러오지 못했습니다. 새로고침 해주세요.</td></tr>';

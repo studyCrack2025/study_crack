@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-KNHVMTR5');</script>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>환영합니다 - 스터디크랙</title>
+    
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* 가입 완료 페이지 전용 심플 스타일 */
+        body {
+            background-color: #f8fafc; /* 부드러운 배경색 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .welcome-card {
+            background: white;
+            padding: 50px 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            border: 1px solid #e2e8f0;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #2563EB;
+            letter-spacing: -0.5px;
+            margin-bottom: 30px;
+            display: inline-block;
+        }
+
+        /* 성공 체크 아이콘 애니메이션 */
+        .success-icon {
+            font-size: 5rem;
+            color: #10b981; /* 에메랄드 그린 */
+            margin-bottom: 20px;
+            animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .welcome-title {
+            color: #1e293b;
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            margin-top: 0;
+        }
+
+        .welcome-desc {
+            color: #64748b;
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 35px;
+            word-break: keep-all;
+        }
+
+        .welcome-desc strong {
+            color: #334155;
+        }
+
+        .btn-go-login {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background-color: #2563EB;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1.05rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+        }
+
+        .btn-go-login:hover {
+            background-color: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-go-home {
+            display: inline-block;
+            margin-top: 20px;
+            color: #94a3b8;
+            text-decoration: underline;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .btn-go-home:hover {
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+    <div class="welcome-card">
+        <div class="logo">StudyCrack</div>
+        
+        <i class="fas fa-check-circle success-icon"></i>
+        
+        <h1 class="welcome-title">회원가입이<br>완료되었습니다!</h1>
+        <p class="welcome-desc">
+            스터디크랙의 회원이 되신 것을 환영합니다.<br>
+            지금 바로 로그인하여 <strong>나만의 맞춤 입시 전략</strong>을<br>확인해보세요.
+        </p>
+        
+        <a href="/login" class="btn-go-login">로그인 페이지로 이동하기</a>
+        
+        <a href="/" class="btn-go-home">메인 화면으로 돌아가기</a>
+    </div>
+
+</body>
+</html>

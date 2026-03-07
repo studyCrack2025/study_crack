@@ -22,8 +22,14 @@ document.addEventListener('DOMContentLoaded', () => {
 function openTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById(tabName).classList.add('active');
-    event.currentTarget.classList.add('active');
+    
+    // 1. 콘텐츠 탭 활성화
+    const targetContent = document.getElementById(tabName);
+    if (targetContent) targetContent.classList.add('active');
+    
+    // 2. 버튼 탭 활성화 (이벤트 대신 요소 속성으로 직접 찾기)
+    const targetBtn = document.querySelector(`.tab-btn[onclick="openTab('${tabName}')"]`);
+    if (targetBtn) targetBtn.classList.add('active');
 }
 
 // ============================================================
@@ -274,7 +280,7 @@ async function saveQualitative() {
             openTab('quantitative');
             window.scrollTo(0,0);
         }
-    } catch (e) { alert("에러 발생: " + e.message); }
+    } catch (e) { alert("저장 중 일시적인 문제가 발생했습니다. 닫고 다시 시도해주세요."); }
 }
 
 const TO_KOREAN = {

@@ -534,6 +534,14 @@ function setupUI() {
             event.target.classList.add('hidden');
         }
     }
+    
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault(); // a 태그의 기본 동작(페이지 맨 위로 튕기는 현상) 방지
+            handleSignOut();
+        });
+    }
 }
 
 // ==========================================

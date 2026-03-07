@@ -381,9 +381,7 @@ async function handleFinalSubmit() {
             });
 
             if (!response.ok) throw new Error("계정 승인 및 DB 저장 실패");
-
-            alert("회원가입이 완료되었습니다! 이제 바로 로그인이 가능합니다.");
-            window.location.href = '/login';
+            window.location.href = '/welcome';
         } catch (error) {
             console.error(error);
             alert("계정은 생성되었으나 활성화에 실패했습니다. 관리자에게 문의하세요.");
