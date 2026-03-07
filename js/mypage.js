@@ -9,26 +9,22 @@ let currentTutorData = null;
 // [초기화] DOM 로드 및 데이터 페치
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. 기본 토큰 존재 여부만 1차 확인
     const idToken = localStorage.getItem('idToken'); 
-    const userId = localStorage.getItem('userId');
-
     if (!idToken) {
         alert("로그인이 필요합니다.");
         window.location.href = '/login';
         return;
     }
 
-    // Cognito 유저 세션 초기화 (계정 변경 기능을 위해 필요)
-    initCognitoUser();
+    // 2. 세션 갱신 및 데이터 페치를 순차적으로 실행
+    initCognitoAndFetchData();
 
-    // 1. 사용자 정보 불러오기
-    fetchUserData(userId);
-
-    // 2. UI 이벤트 리스너 등록
+    // 3. UI 이벤트 리스너 등록
     setupUI();
 });
 
-function initCognitoUser() {
+function initCognitoAndFetchData() {
     const poolData = { 
         UserPoolId: CONFIG.cognito.userPoolId, 
         ClientId: CONFIG.cognito.clientId 
@@ -39,22 +35,27 @@ function initCognitoUser() {
     cognitoUser = userPool.getCurrentUser();
     
     if (cognitoUser != null) {
-        // 유저의 세션을 활성화(토큰 갱신 및 검증)시킵니다.
+        // getSession은 토큰이 만료되었으면 자동으로 Refresh Token을 사용해 새 토큰을 받아옵니다.
         cognitoUser.getSession(function(err, session) {
             if (err) {
-                // console.error("Cognito 세션 갱신 실패:", err);
-                // 필요하다면 여기서 로그아웃 처리를 할 수 있습니다.
+                // console.error("세션 갱신 실패:", err);
+                alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+                handleSignOut(); // 에러 시 깔끔하게 로그아웃
+                return;
             }
+
+            // ★ 핵심: 갱신된 따끈따끈한 새 토큰을 가져와서 로컬스토리지에 덮어씌웁니다!
+            const freshIdToken = session.getIdToken().getJwtToken();
+            localStorage.setItem('idToken', freshIdToken);
+
+            // 이제 새 토큰이 보장된 상태이므로 안전하게 데이터를 불러옵니다.
+            const userId = localStorage.getItem('userId');
+            fetchUserData(userId);
         });
     } else {
-        // 객체 복구가 안 될 경우를 대비한 fallback (기존 로직)
-        const username = localStorage.getItem('username') || localStorage.getItem('email');
-        if (username) {
-            cognitoUser = new AmazonCognitoIdentity.CognitoUser({
-                Username: username,
-                Pool: userPool
-            });
-        }
+        // 유저 객체를 아예 복구할 수 없는 경우
+        alert("로그인 정보가 유효하지 않습니다.");
+        handleSignOut();
     }
 }
 
