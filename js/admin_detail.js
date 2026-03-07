@@ -375,7 +375,7 @@ function renderWeeklyTab() {
 
     filtered.forEach((d, idx) => {
         const dateStr = new Date(d.date).toLocaleDateString();
-        const safeComment = escapeHtml(d.comment);
+        const safeComment = d.comment ? escapeHtml(d.comment) : '';
         
         // 1. 학습 시간 테이블
         let studyHtml = ''; 
@@ -386,7 +386,7 @@ function renderWeeklyTab() {
                 const rateClass = rate >= 100 ? 'text-green' : (rate >= 80 ? 'text-blue' : 'text-gray');
                 rows += `<tr><td>${escapeHtml(sub.subject)}</td><td class="text-center">${sub.plan}h</td><td class="text-center">${sub.act}h</td><td class="text-center font-bold ${rateClass}">${rate}%</td></tr>`;
              });
-             studyHtml = `<div class="weekly-section"><div class="section-title"><i class="fas fa-clock"></i> 과목별 학습 달성도</div><table class="compact-table"><thead><tr><th>과목</th><th>계획</th><th>실행</th><th>달성</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+             studyHtml = `<div class="weekly-section"><div class="section-title"><i class="fas fa-clock"></i> 과목별 학습 달성도 (총 달성률: <span style="color:#2563eb;">${d.studyTime.totalRate || '0%'}</span>)</div><table class="compact-table"><thead><tr><th>과목</th><th>계획</th><th>실행</th><th>달성</th></tr></thead><tbody>${rows}</tbody></table></div>`;
         }
 
         // 2. 자가 점검 (Deep Answers)
@@ -400,7 +400,7 @@ function renderWeeklyTab() {
             checkHtml = `<div class="weekly-section"><div class="section-title"><i class="fas fa-clipboard-check"></i> 이번주 심층 질문</div><ul class="check-list">${listItems}</ul>${d.trend ? `<div class="trend-badge ${d.trend.status === 'up' ? 'up' : (d.trend.status === 'down' ? 'down' : 'keep')}">학습 흐름: ${d.trend.status === 'up' ? '상승세 🔥' : (d.trend.status === 'down' ? '하락세 📉' : '유지중 -')}</div>` : ''}</div>`;
         }
 
-        // 3. 주간 모의고사 결과 (뱃지 적용)
+        // 3. 주간 모의고사 결과 (🚨 첨부파일 링크 추가 완료)
         let mockHtml = '';
         if (d.mockExam && d.mockExam.scores) {
             const s = d.mockExam.scores;
@@ -413,29 +413,73 @@ function renderWeeklyTab() {
                 { l: s.inq1Name || '탐1', v: s.inq1 }, { l: s.inq2Name || '탐2', v: s.inq2 }
             ].map(item => item.v ? `<div class="score-pill"><span class="lbl">${item.l}</span><span class="val">${item.v}</span></div>` : '').join('');
 
+            // [추가된 부분] 성적표 이미지 원본 보기 버튼
+            let proofHtml = '';
+            if (d.mockExam.proofFile && d.mockExam.proofFile.startsWith('http')) {
+                proofHtml = `
+                    <div style="margin-top:15px; padding-top:15px; border-top:1px dashed #e2e8f0; text-align:right;">
+                        <a href="${d.mockExam.proofFile}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; background:#eff6ff; color:#2563eb; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:bold; transition:all 0.2s;">
+                            <i class="fas fa-file-invoice"></i> 📝 모의고사 성적표 원본 보기
+                        </a>
+                    </div>
+                `;
+            }
+
             mockHtml = `
                 <div class="weekly-mock-box">
                     <div class="mock-header">
                         <i class="fas fa-edit"></i> 주간 모의고사 결과 ${typeBadge}
                     </div>
                     <div class="score-pills-container">${scoreItems}</div>
+                    ${proofHtml}
                 </div>
             `;
         }
 
-        // 4. 주간 평가 응답 (5개 항목으로 개편)
-        // 기존 데이터 호환을 위해 없으면 빈 문자열로 초기화
-        const fb = d.tutorFeedback || { 
-            priorityCheck: '', 
-            weakSubject: '', 
-            nextWeekTop3: '', 
-            planEvaluation: '',
-            extraQuestion: ''
-        };
-        
+        // 4. 플래너 파일 및 코멘트 (🚨 디자인 대폭 개편 완료)
+        let footerHtml = '';
+        const hasFiles = d.plannerFiles && d.plannerFiles.length > 0;
+        const hasComment = !!d.comment;
+
+        if (hasFiles || hasComment) {
+            let fileLinks = '';
+            if (hasFiles) {
+                fileLinks = d.plannerFiles.map((f, i) => {
+                    // S3 URL에서 타임스탬프(1772895802606_) 부분을 떼어내고 진짜 파일명만 예쁘게 추출합니다.
+                    let rawName = typeof f === 'string' ? decodeURIComponent(f.split('/').pop()) : `파일 ${i+1}`;
+                    let cleanName = rawName.includes('_') ? rawName.split('_').slice(1).join('_') : rawName;
+                    
+                    return `
+                        <a href="${f}" target="_blank" class="file-chip" style="display:inline-flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; padding:8px 14px; border-radius:20px; text-decoration:none; font-size:0.85rem; margin:0 8px 8px 0; transition:all 0.2s;">
+                            <i class="fas fa-paperclip" style="color:#64748b;"></i> ${cleanName}
+                        </a>`;
+                }).join('');
+            }
+
+            footerHtml = `
+                <div class="weekly-section planner-auth-section" style="margin-top:20px; padding-top:20px; border-top:1px solid #e2e8f0; background:#ffffff;">
+                    ${hasFiles ? `
+                    <div class="section-title" style="margin-bottom:15px; font-weight:bold; color:#1e293b;">
+                        <i class="fas fa-camera-retro" style="color:#10b981;"></i> 주간 플래너 인증 사진
+                    </div>
+                    <div class="file-area" style="display:flex; flex-wrap:wrap;">${fileLinks}</div>
+                    ` : ''}
+                    
+                    ${hasComment ? `
+                    <div class="comment-box" style="margin-top:${hasFiles ? '15px' : '0'}; background:#f1f5f9; padding:15px; border-radius:8px; color:#334155; font-size:0.95rem;">
+                        <strong style="color:#2563eb;"><i class="fas fa-comment-dots"></i> 학생 전달사항:</strong>
+                        <div style="margin-top:8px; line-height:1.6;">${safeComment}</div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // 5. 주간 평가 응답 (튜터 피드백)
+        const fb = d.tutorFeedback || { priorityCheck: '', weakSubject: '', nextWeekTop3: '', planEvaluation: '', extraQuestion: '' };
         const isReadOnly = (userRole === 'admin') ? 'disabled' : '';
         const btnDisplay = (userRole === 'admin') ? 'none' : 'inline-block';
-        const weekId = d.weekId || d.date; // 저장 시 사용할 키
+        const weekId = d.weekId || d.date;
         
         const feedbackHtml = `
             <div class="tutor-feedback-area">
@@ -473,20 +517,6 @@ function renderWeeklyTab() {
             </div>
         `;
 
-        // 5. 플래너 파일 및 코멘트
-        let footerHtml = '';
-        const fileLinks = (d.plannerFiles || []).map((f, i) => {
-            let name = typeof f === 'string' ? decodeURIComponent(f.split('/').pop()) : `파일 ${i+1}`;
-            return `<a href="${f}" target="_blank" class="file-chip"><i class="fas fa-image"></i> ${name}</a>`;
-        }).join('');
-        
-        footerHtml = `
-            <div class="weekly-footer">
-                <div class="file-area">${fileLinks}</div>
-                ${d.comment ? `<div class="comment-box"><strong>💁‍♂️ 학생 코멘트:</strong> ${safeComment}</div>` : ''}
-            </div>
-        `;
-
         // 최종 카드 조립
         const card = document.createElement('div');
         card.className = 'timeline-card weekly-new';
@@ -495,9 +525,6 @@ function renderWeeklyTab() {
                 <div class="left">
                     <span class="week-title">${d.title || (idx+1)+'주차 리포트'}</span>
                     <span class="week-date">${dateStr}</span>
-                </div>
-                <div class="right">
-                    <span class="total-rate-badge">총 달성률 ${d.studyTime?.totalRate || '0%'}</span>
                 </div>
             </div>
             <div class="card-grid-body">
