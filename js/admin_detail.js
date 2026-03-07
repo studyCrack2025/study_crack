@@ -510,8 +510,9 @@ function renderWeeklyTab() {
 
         // 5. 주간 평가 응답 (튜터 피드백)
         const fb = d.tutorFeedback || { priorityCheck: '', weakSubject: '', nextWeekTop3: '', planEvaluation: '', extraQuestion: '' };
-        const isReadOnly = (userRole === 'admin') ? 'disabled' : '';
-        const btnDisplay = (userRole === 'admin') ? 'none' : 'inline-block';
+        const hasFeedback = fb.priorityCheck && fb.priorityCheck.trim() !== '';
+        const isReadOnly = (userRole === 'admin' || hasFeedback) ? 'disabled' : '';
+        const btnDisplay = (userRole === 'admin' || hasFeedback) ? 'none' : 'inline-block';        
         const weekId = d.weekId || d.date;
         
         const feedbackHtml = `
@@ -572,19 +573,34 @@ function renderWeeklyTab() {
     });
 }
 
-// 개편된 4개 항목을 전송하도록 수정된 함수
+// 개편된 5개 항목을 전송하도록 수정된 함수
 async function saveWeeklyFeedback(weekId, idx) {
-    const priority = document.getElementById(`fb_priority_${idx}`).value;
-    const weak = document.getElementById(`fb_weak_${idx}`).value;
-    const top3 = document.getElementById(`fb_top3_${idx}`).value;
-    const plan = document.getElementById(`fb_plan_${idx}`).value;
-    const extra = document.getElementById(`fb_extra_${idx}`).value;
+    // 요소들을 먼저 가져옵니다 (잠금 처리를 위해)
+    const priorityEl = document.getElementById(`fb_priority_${idx}`);
+    const weakEl = document.getElementById(`fb_weak_${idx}`);
+    const top3El = document.getElementById(`fb_top3_${idx}`);
+    const planEl = document.getElementById(`fb_plan_${idx}`);
+    const extraEl = document.getElementById(`fb_extra_${idx}`);
+
+    const priority = priorityEl.value.trim();
+    const weak = weakEl.value.trim();
+    const top3 = top3El.value.trim();
+    const plan = planEl.value.trim();
+    const extra = extraEl.value.trim();
     
-    // 유효성 검사 (글자수 제한 등을 추가하려면 이곳에 로직 추가 가능)
-    if(!confirm("주간 평가 내용을 저장하시겠습니까?")) return;
+    // 1. 유효성 검사 및 수정 불가 경고창 추가
+    if(!confirm("주간 평가를 저장하시겠습니까?\n🚨 저장 완료 후에는 내용을 다시 수정할 수 없습니다.")) return;
 
     const token = localStorage.getItem('accessToken');
+    // 버튼 요소를 찾아 상태를 변경 (중복 클릭 방지)
+    const saveBtn = priorityEl.closest('.tutor-feedback-area').querySelector('.fb-save-btn');
+    
     try {
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerText = "저장 중...";
+        }
+
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -607,13 +623,33 @@ async function saveWeeklyFeedback(weekId, idx) {
 
         if (response.ok) {
             alert("평가가 성공적으로 저장되었습니다.");
-            // 전체 리로드 없이 그대로 두거나 로컬 데이터 갱신
+            
+            // 2. 저장 완료 후 텍스트 박스 수정 불가(disabled) 처리
+            priorityEl.disabled = true;
+            weakEl.disabled = true;
+            top3El.disabled = true;
+            planEl.disabled = true;
+            extraEl.disabled = true;
+
+            // 3. 저장 버튼 완전 비활성화 및 회색 처리
+            if (saveBtn) {
+                saveBtn.innerText = "저장 완료";
+                saveBtn.style.backgroundColor = "#94a3b8"; // 회색
+                saveBtn.style.color = "#ffffff";
+                saveBtn.style.cursor = "not-allowed";
+                saveBtn.style.boxShadow = "none";
+            }
         } else {
             throw new Error("Server Error");
         }
     } catch(e) {
         console.error(e);
         alert("저장 중 오류가 발생했습니다.");
+        // 에러 발생 시 다시 저장할 수 있도록 버튼 원상복구
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerText = "평가 저장";
+        }
     }
 }
 
