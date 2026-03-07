@@ -9,101 +9,211 @@
     
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>신청 완료 - 스터디크랙</title>
+    <title>결제 완료 - 스터디크랙</title>
     
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    
     <style>
-        .success-container {
-            max-width: 600px;
-            margin: 100px auto;
-            text-align: center;
-            padding: 50px 30px;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        /* 결제 완료 페이지 전용 심플 스타일 */
+        body {
+            background-color: #f8fafc; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
         }
-        .icon { font-size: 4rem; margin-bottom: 20px; display: block; }
-        .success-title { font-size: 1.8rem; color: #0F172A; margin-bottom: 15px; word-break: keep-all;}
-        .success-msg { color: #4b5563; line-height: 1.6; margin-bottom: 30px; word-break: keep-all;}
-        
-        /* [수정] 버튼 스타일: 기초조사서 작성 유도 */
-        .btn-survey {
+
+        .success-card {
+            background: white;
+            padding: 50px 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            border: 1px solid #e2e8f0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 카드 상단에 얇은 포인트 컬러 라인 */
+        .card-top-line {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 6px;
+            background: #2563eb;
+            transition: background 0.3s ease;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #2563EB;
+            letter-spacing: -0.5px;
+            margin-bottom: 25px;
             display: inline-block;
-            padding: 15px 35px;
+        }
+
+        /* 결제 성공 아이콘 */
+        .receipt-icon {
+            font-size: 4.5rem;
+            color: #10b981;
+            margin-bottom: 15px;
+            animation: floatUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        /* 동적 티어 뱃지 */
+        .tier-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            margin-bottom: 15px;
+            color: white;
+        }
+
+        .success-title {
+            color: #1e293b;
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            margin-top: 0;
+            word-break: keep-all;
+        }
+
+        .success-desc {
+            color: #64748b;
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 35px;
+            word-break: keep-all;
+        }
+
+        .btn-action {
+            display: block;
+            width: 100%;
+            padding: 16px;
             background-color: #2563EB;
             color: white;
             text-decoration: none;
-            border-radius: 50px;
+            border-radius: 8px;
             font-weight: bold;
-            font-size: 1.1rem;
-            transition: background 0.3s, transform 0.2s;
-            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
-            margin-bottom: 15px;
+            font-size: 1.05rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0, 0.1);
         }
-        .btn-survey:hover { background-color: #1d4ed8; transform: translateY(-2px); }
 
-        .btn-home-link {
-            display: block;
-            color: #64748b;
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0, 0.15);
+            opacity: 0.9;
+        }
+
+        .btn-home {
+            display: inline-block;
+            margin-top: 20px;
+            color: #94a3b8;
             text-decoration: underline;
             font-size: 0.9rem;
-            cursor: pointer;
+            transition: color 0.2s;
         }
-        
-        /* Black 테마용 스타일 */
-        .black-theme .icon { color: #171717; }
-        .black-theme .btn-survey { background-color: #171717; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .black-theme .btn-survey:hover { background-color: #333; }
+        .btn-home:hover { color: #64748b; }
     </style>
 </head>
 <body>
-    <header>
-        <div class="logo-container">
-            <a href="/" style="display: flex; align-items: center; gap: 10px;">
-                <span class="logo">StudyCrack</span>
-            </a>
-        </div>
-    </header>
 
-    <div class="success-container" id="successBox">
-        <span class="icon" id="successIcon">✅</span>
-        <h2 class="success-title" id="successTitle">결제가 성공적으로 완료되었습니다!</h2>
-        <p class="success-msg" id="successMsg">
-            스터디크랙의 컨설팅 멤버가 되신 것을 환영합니다.<br>
-            정확한 상담을 위해 <strong>기초조사서</strong>를 먼저 작성해주세요.
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+    <div class="success-card">
+        <div id="topLine" class="card-top-line"></div>
+        
+        <div class="logo">StudyCrack</div>
+        <br>
+        
+        <i class="fas fa-file-invoice-dollar receipt-icon"></i>
+        <br>
+
+        <div id="tierBadge" class="tier-badge" style="background:#2563eb;">BASIC PLAN</div>
+        
+        <h1 class="success-title">결제가<br>완료되었습니다!</h1>
+        
+        <p id="successDesc" class="success-desc">
+            기본적인 입시 분석 솔루션을<br>바로 확인해 보세요.
         </p>
         
-        <a href="/survey" class="btn-survey">기초조사서 작성하기 →</a>
-        <a href="/" class="btn-home-link">나중에 작성하고 메인으로 가기</a>
+        <a id="actionBtn" href="/analysis" class="btn-action" style="background:#2563eb;">나만의 솔루션 보러가기</a>
+        
+        <a href="/" class="btn-home">메인 화면으로 돌아가기</a>
     </div>
 
     <script>
-        // 페이지 로드 시 URL 파라미터 확인
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. URL 파라미터에서 tier 값 추출 (기본값: basic)
             const urlParams = new URLSearchParams(window.location.search);
-            const tier = urlParams.get('tier');
+            const tier = (urlParams.get('tier') || 'basic').toLowerCase();
 
-            // BLACK 티어일 경우 메시지 변경
-            if (tier === 'black') {
-                const box = document.getElementById('successBox');
-                const title = document.getElementById('successTitle');
-                const msg = document.getElementById('successMsg');
-                const icon = document.getElementById('successIcon');
+            // 2. DOM 요소 가져오기
+            const badge = document.getElementById('tierBadge');
+            const desc = document.getElementById('successDesc');
+            const btn = document.getElementById('actionBtn');
+            const topLine = document.getElementById('topLine');
 
-                // 스타일 및 텍스트 변경
-                box.classList.add('black-theme'); 
-                icon.innerHTML = '👑'; 
-                title.innerText = "BLACK 멤버십 신청이 완료되었습니다.";
-                msg.innerHTML = `
-                    스터디크랙 BLACK 멤버십을 이용해 주셔서 감사합니다.<br>
-                    최고의 결과를 위해 <strong>상세 기초조사서</strong> 작성이 필요합니다.<br>
-                    지금 바로 입력을 시작해주세요.
-                `;
-            }
+            // 3. 티어별 데이터 세팅 (마이페이지 프리미엄 뱃지 색상에 맞춤)
+            const tierConfig = {
+                'basic': {
+                    name: 'BASIC PLAN',
+                    color: '#3B82F6', // 파란색
+                    desc: '베이직 플랜 결제가 완료되었습니다.<br>지금 바로 <strong>나만의 입시 솔루션</strong>을 확인해보세요.',
+                    btnText: '나만의 솔루션 보러가기',
+                    btnLink: '/analysis'
+                },
+                'standard': {
+                    name: 'STANDARD PLAN',
+                    color: '#64748B', // 슬레이트(회색)
+                    desc: '스탠다드 플랜 결제가 완료되었습니다.<br>기초조사서를 작성하고 <strong>무제한 합격 예측</strong>을 이용해보세요.',
+                    btnText: '기초조사서 작성하기',
+                    btnLink: '/survey'
+                },
+                'pro': {
+                    name: 'PRO PLAN',
+                    color: '#F59E0B', // 앰버(금색)
+                    desc: '프로 플랜 결제가 완료되었습니다.<br>배정된 <strong>전담 컨설턴트</strong>와 함께 완벽한 입시 전략을 세워보세요.',
+                    btnText: '마이페이지로 이동하기',
+                    btnLink: '/mypage'
+                },
+                'black': {
+                    name: 'BLACK PLAN',
+                    color: '#171717', // 검은색
+                    desc: '블랙 플랜 결제가 완료되었습니다.<br>최상위권 도약을 위한 <strong>프리미엄 밀착 관리</strong>가 시작됩니다.',
+                    btnText: '마이페이지로 이동하기',
+                    btnLink: '/mypage'
+                }
+            };
+
+            // 매칭되는 티어가 없으면 basic으로 처리
+            const config = tierConfig[tier] || tierConfig['basic'];
+
+            // 4. 화면 업데이트
+            badge.innerText = config.name;
+            badge.style.background = config.color;
+            topLine.style.background = config.color;
+            
+            desc.innerHTML = config.desc;
+            
+            btn.innerText = config.btnText;
+            btn.href = config.btnLink;
+            btn.style.background = config.color;
         });
     </script>
-    
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 </body>
 </html>
