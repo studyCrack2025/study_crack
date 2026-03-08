@@ -326,12 +326,25 @@ async function handleFinalSubmit() {
     let referral = referralRadio.value;
     if (referral === 'etc') referral = document.getElementById('referralEtc').value;
 
-    // 4. 전화번호 형식 변환 (+82)
-    let cleanPhone = phoneRaw.replace(/-/g, '').trim();
+    // 4. 전화번호 형식 변환
+    let onlyNumbers = phoneRaw.replace(/[^0-9]/g, ''); // 사용자가 어떻게 입력했든 숫자만 쏙 빼냅니다.
+
+    // 4-1. Cognito 가입용 (+82 포맷)
+    let cleanPhone = onlyNumbers;
     if (cleanPhone.startsWith('010')) {
         cleanPhone = '+82' + cleanPhone.substring(1);
     } else if (cleanPhone.startsWith('10')) {
         cleanPhone = '+82' + cleanPhone;
+    }
+
+    // 4-2. DB 저장용 (010-XXXX-XXXX 포맷 강제 적용)
+    let dbFormattedPhone = onlyNumbers;
+    if (onlyNumbers.length === 11) {
+        // 11자리 번호 (ex: 01012345678 -> 010-1234-5678)
+        dbFormattedPhone = onlyNumbers.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+    } else if (onlyNumbers.length === 10) {
+        // 예전 10자리 번호 예외 처리 (ex: 0111234567 -> 011-123-4567)
+        dbFormattedPhone = onlyNumbers.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
     }
 
     // 5. Cognito 전송용 속성 설정
@@ -370,7 +383,7 @@ async function handleFinalSubmit() {
                     data: {
                         name: name,
                         email: email,
-                        phone: cleanPhone.replace('+82', '0'), // 필요에 따라 원래 번호 포맷으로 DB 저장
+                        phone: dbFormattedPhone,
                         promoCode: promoCode, // 위에서 선언한 변수 사용
                         major: major,
                         referral: referral,
