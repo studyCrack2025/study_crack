@@ -203,6 +203,15 @@ async function fetchUserData(userId) {
 
 function fillQualitativeForm(qual) {
     if (!qual) return;
+    
+    // 이전 영어 데이터를 한글로 매핑해주기 위한 호환성 딕셔너리
+    const LEGACY_MAP = {
+        'humanities': '인문사회', 'business': '상경계열', 'nature': '자연/공학', 'medical': '의치한약수', 'nursing': '간호', 'education': '사범/교대', 'art': '예체능', 'etc': '기타',
+        'yes': '예 (필수)', 'no': '아니오 (재수 가능)',
+        'univ': '대학 간판 중요', 'major': '학과 전공 중요', 'balance': '균형 있게 고려',
+        'low': '낮음', 'mid': '중간', 'high': '높음'
+    };
+
     if (qual.status) {
         const radio = document.querySelector(`input[name="studentStatus"][value="${qual.status}"]`);
         if (radio) radio.checked = true;
@@ -213,22 +222,37 @@ function fillQualitativeForm(qual) {
             if(etc) { etc.style.display = 'block'; etc.value = qual.status; }
         }
     }
+    
     const ids = {
-        'targetStream': qual.stream, 'careerPath': qual.career,
-        'mustGoCollege': qual.values?.mustGo, 'priorityType': qual.values?.priority,
+        'highSchool': qual.school, // [추가] 출신 학교 불러오기
+        'targetStream': LEGACY_MAP[qual.stream] || qual.stream,
+        'careerPath': qual.career,
+        'mustGoCollege': LEGACY_MAP[qual.values?.mustGo] || qual.values?.mustGo,
+        'priorityType': LEGACY_MAP[qual.values?.priority] || qual.values?.priority,
         'appStrategy': qual.values?.strategy, 'worstScenario': qual.values?.worst,
         'regionRange': qual.values?.region, 'crossApply': qual.values?.cross,
         'groupGa': qual.candidates?.ga, 'groupNa': qual.candidates?.na, 'groupDa': qual.candidates?.da,
         'mostWanted': qual.candidates?.most, 'leastWanted': qual.candidates?.least,
         'selfAssessment': qual.candidates?.self,
-        'parentOpinion': qual.parents?.opinion, 'parentInfluence': qual.parents?.influence,
+        'parentOpinion': qual.parents?.opinion, 'parentInfluence': LEGACY_MAP[qual.parents?.influence] || qual.parents?.influence,
         'transferPlan': qual.special?.transfer, 'teachingCert': qual.special?.teaching,
         'etcConsultingInfo': qual.special?.etc
     };
+    
     for (const [id, val] of Object.entries(ids)) {
         const el = document.getElementById(id);
         if (el) el.value = val || '';
     }
+    
+    // [추가] 불러온 학교 이름이 '검정고시'면 체크박스 ON
+    if (qual.school === '검정고시') {
+        const gedCheck = document.getElementById('isGed');
+        if(gedCheck) {
+            gedCheck.checked = true;
+            toggleSchoolInput();
+        }
+    }
+
     if (qual.targets) {
         qual.targets.forEach((val, idx) => {
             const input = document.getElementById(`target${idx+1}`);
@@ -236,6 +260,22 @@ function fillQualitativeForm(qual) {
         });
     }
     checkQualitativeForm();
+}
+
+function toggleSchoolInput() {
+    const isGed = document.getElementById('isGed').checked;
+    const hsInput = document.getElementById('highSchool');
+    
+    if (isGed) {
+        hsInput.value = "검정고시";
+        hsInput.disabled = true;
+        hsInput.removeAttribute('required');
+    } else {
+        if (hsInput.value === "검정고시") hsInput.value = "";
+        hsInput.disabled = false;
+        hsInput.setAttribute('required', 'true');
+    }
+    checkQualitativeForm(); // 저장 버튼 상태 즉시 업데이트
 }
 
 async function saveQualitative() {
@@ -247,6 +287,7 @@ async function saveQualitative() {
 
     const data = {
         status: statusVal,
+        school: document.getElementById('highSchool').value,
         stream: document.getElementById('targetStream').value,
         career: document.getElementById('careerPath').value,
         values: {

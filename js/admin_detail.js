@@ -281,14 +281,26 @@ function renderSelectedScore() {
     const d = q[key];
     const subjects = [{k:'kor',n:'국어'}, {k:'math',n:'수학'}, {k:'eng',n:'영어'}, {k:'inq1',n:'탐1'}, {k:'inq2',n:'탐2'}];
     
+    // <th> 태그에 text-align: center 추가
     let html = `<div class="score-exam-block" style="margin-top:15px;">
         <table class="score-table">
-            <thead><tr><th>과목</th><th>표점</th><th>등급</th></tr></thead>
+            <thead>
+                <tr>
+                    <th style="text-align: center;">과목</th>
+                    <th style="text-align: center;">표점</th>
+                    <th style="text-align: center;">등급</th>
+                </tr>
+            </thead>
             <tbody>`;
             
+    // <td> 태그에도 text-align: center 추가
     subjects.forEach(sub => {
         if(d[sub.k]) {
-            html += `<tr><td>${sub.n}</td><td>${d[sub.k].std||'-'}</td><td>${d[sub.k].grd||'-'}</td></tr>`;
+            html += `<tr>
+                <td style="text-align: center;">${sub.n}</td>
+                <td style="text-align: center;">${d[sub.k].std||'-'}</td>
+                <td style="text-align: center;">${d[sub.k].grd||'-'}</td>
+            </tr>`;
         }
     });
     
@@ -296,7 +308,6 @@ function renderSelectedScore() {
     container.innerHTML = html;
 }
 
-// [수정 4] 주간 점검 상세 렌더링
 // 모달을 화면에 띄우는 함수
 function showCoachingGuideModal() {
     // 이미 모달이 있다면 제거
@@ -1174,7 +1185,7 @@ function renderQualitativeDetail(q) {
     const area = document.getElementById('qualContentArea');
     if (!q) { area.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px;">데이터가 없습니다.</p>'; return; }
     const v = (val) => val ? escapeHtml(val) : '-';
-    area.innerHTML = `<div class="qual-section"><div class="qual-head">📍 현재 상황</div><div class="qual-grid"><div class="qual-item"><span class="detail-label">신분</span><div>${v(q.status)}</div></div><div class="qual-item"><span class="detail-label">계열</span><div>${v(q.stream)}</div></div><div class="qual-item"><span class="detail-label">진로</span><div>${v(q.career)}</div></div></div></div>`;
+    area.innerHTML = `<div class="qual-section"><div class="qual-head">📍 현재 상황</div><div class="qual-grid"><div class="qual-item"><span class="detail-label">학년</span><div>${v(q.status)}</div></div><div class="qual-item"><span class="detail-label">희망계열</span><div>${v(q.stream)}</div></div><div class="qual-item"><span class="detail-label">희망진로</span><div>${v(q.career)}</div></div></div></div>`;
 }
 
 function renderPayments(p) {

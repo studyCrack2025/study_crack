@@ -45,8 +45,8 @@
                 <h3>학생 현황 및 진로 설계</h3>
                 <span class="required-note">* 표시는 필수 입력 항목입니다.</span>
             </div>
-            
-            <label class="input-label">현재 상태 <span class="req">*</span></label>
+
+            <label class="input-label">현재 학년 <span class="req">*</span></label>
             <div class="radio-group" id="statusRadioGroup">
                 <label><input type="radio" name="studentStatus" value="고1-2" required> 고1/2 재학</label>
                 <label><input type="radio" name="studentStatus" value="고3"> 고3 재학</label>
@@ -56,17 +56,24 @@
             </div>
             <input type="text" id="statusEtcInput" class="hidden-input" placeholder="상태 직접 입력" style="display:none;">
 
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 15px;">
+                <label class="input-label" style="margin-bottom: 0;">출신 학교 <span class="req">*</span></label>
+                <label style="font-size: 0.9rem; color: #475569; display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                    <input type="checkbox" id="isGed" onchange="toggleSchoolInput()"> 검정고시
+                </label>
+            </div>
+            <input type="text" id="highSchool" placeholder="예: 서울고등학교" required style="margin-top: 8px;">
             <label class="input-label">희망 계열 <span class="req">*</span></label>
             <select id="targetStream" required>
                 <option value="">선택하세요</option>
-                <option value="humanities">인문사회</option>
-                <option value="business">상경계열</option>
-                <option value="nature">자연/공학</option>
-                <option value="medical">의치한약수</option>
-                <option value="nursing">간호</option>
-                <option value="education">사범/교대</option>
-                <option value="art">예체능</option>
-                <option value="etc">기타</option>
+                <option value="인문사회">인문사회</option>
+                <option value="상경계열">상경계열</option>
+                <option value="자연/공학">자연/공학</option>
+                <option value="의치한약수">의치한약수</option>
+                <option value="간호">간호</option>
+                <option value="사범/교대">사범/교대</option>
+                <option value="예체능">예체능</option>
+                <option value="기타">기타</option>
             </select>
 
             <label class="input-label">희망 진로</label>
@@ -77,18 +84,18 @@
                 <label class="input-label">올해 반드시 대학을 가야 하나요? <span class="req">*</span></label>
                 <select id="mustGoCollege" required>
                     <option value="">선택하세요</option>
-                    <option value="yes">예 (필수)</option>
-                    <option value="no">아니오 (재수 가능)</option>
+                    <option value="예 (필수)">예 (필수)</option>
+                    <option value="아니오 (재수 가능)">아니오 (재수 가능)</option>
                 </select>
 
                 <label class="input-label">우선순위 <span class="req">*</span></label>
                 <select id="priorityType" required>
                     <option value="">선택하세요</option>
-                    <option value="univ">대학 간판 중요</option>
-                    <option value="major">학과 전공 중요</option>
-                    <option value="balance">균형 있게 고려</option>
+                    <option value="대학 간판 중요">대학 간판 중요</option>
+                    <option value="학과 전공 중요">학과 전공 중요</option>
+                    <option value="균형 있게 고려">균형 있게 고려</option>
                 </select>
-
+                
                 <label class="input-label">조합 허용 범위 <span class="req">*</span></label>
                 <input type="text" id="appStrategy" placeholder="예: 1상향 1적정 1안정" required>
 
