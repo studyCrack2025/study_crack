@@ -486,9 +486,11 @@ function checkMbtiReport(data) {
         mbti += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
     }
     
+    const uppercaseMbti = mbti.toUpperCase();
+    
     container.innerHTML = `
         <button onclick="downloadMbtiReport()" id="mbtiDownBtn" class="btn-go-survey" style="background-color: #10b981; color: white; border: none; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
-            <i class="fas fa-file-download"></i> [${mbti}] 보고서 다운받기
+            <i class="fas fa-file-download"></i> [${uppercaseMbti}] 보고서 다운받기
         </button>
     `;
 }
