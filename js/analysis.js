@@ -446,7 +446,7 @@ function initUnivGrid() {
     if(!grid) return;
     
     grid.innerHTML = ''; 
-    const tierLimits = { 'basic': 2, 'standard': 4, 'pro': 6, 'black': 6 };
+    const tierLimits = { 'basic': 2, 'standard': 4, 'pro': 6};
     const limit = tierLimits[currentUserTier] || 2;
     const now = new Date();
 
@@ -494,7 +494,7 @@ function initUnivGrid() {
             `;
             grid.appendChild(slotDiv);
         } else {
-            let requiredTier = (i < 5) ? 'Standard' : 'PRO/BLACK';
+            let requiredTier = (i < 4) ? 'Standard' : 'PRO';
             slotDiv.className = 'univ-slot locked-tier';
             slotDiv.setAttribute('data-msg', `${requiredTier} 이상`);
             grid.appendChild(slotDiv);
@@ -569,7 +569,7 @@ async function saveTargetUnivs() {
     
     const newUnivs = [...userTargetUnivs]; 
     const nowISO = new Date().toISOString();
-    const tierLimits = { 'basic': 2, 'standard': 4, 'pro': 6, 'black': 6 };
+    const tierLimits = { 'basic': 2, 'standard': 4, 'pro': 6};
     const limit = tierLimits[currentUserTier] || 2;
     
     while(newUnivs.length < 6) newUnivs.push(null);
