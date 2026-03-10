@@ -196,9 +196,9 @@ async function handleSendPhoneCode() {
     btn.disabled = true;
 
     try {
-        // [중요] SMS 발송은 로그인 전이므로 토큰 없이 요청 (백엔드에서 SMS 타입은 토큰 체크 안함)
         const response = await fetch(AUTH_URL, {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 type: 'send_sms_auth', 
                 phone: cleanPhone 
@@ -207,10 +207,8 @@ async function handleSendPhoneCode() {
 
         if (!response.ok) {
             const errData = await response.json();
-            throw new Error(errData.message || "SMS 발송 실패");
+            throw new Error(errData.message || errData.error || "SMS 발송 실패");
         }
-        
-        const data = await response.json();
         
         alert(`인증번호가 발송되었습니다.`);
         document.getElementById('phoneVerifySection').classList.remove('hidden');
@@ -222,7 +220,7 @@ async function handleSendPhoneCode() {
 
     } catch (error) {
         console.error(error);
-        alert("인증번호 발송에 실패했습니다. (관리자에게 문의하세요)");
+        alert(error.message);
         btn.innerText = "인증번호 전송";
         btn.disabled = false;
     }
