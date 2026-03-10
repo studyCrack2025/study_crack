@@ -181,6 +181,9 @@ async function fetchUserData(userId) {
         applyUserTier(data.computedTier || 'free'); 
         updateSurveyStatus(data);
         
+        checkMbtiReport(data);
+        applyFreeTierLock();
+        
         // 전역 변수 설정
         if (data.targetUnivs) userTargetUnivs = data.targetUnivs;
         if (data.quantitative) userQuantData = data.quantitative;
@@ -416,12 +419,7 @@ function buildUnivMap() {}
 // ============================================================
 // [UI 동작] 탭 전환
 // ============================================================
-function openSolution(type) {
-    if (currentUserTier === 'free') { 
-        alert("유료 회원만 이용 가능합니다."); 
-        return; 
-    }
-    
+function openSolution(type) {    
     document.querySelectorAll('.sol-content').forEach(el => el.style.display = 'none');
     const targetContent = document.getElementById(`sol-${type}`);
     if (targetContent) targetContent.style.display = 'block';
@@ -435,6 +433,104 @@ function openSolution(type) {
 
     if (type === 'sim') {
         initSimulation();
+    }
+}
+
+function applyFreeTierLock() {
+    if (currentUserTier === 'free') {
+        // 모든 솔루션 탭 콘텐츠에 블러 오버레이 씌우기
+        document.querySelectorAll('.sol-content').forEach(content => {
+            content.style.position = 'relative';
+            
+            // 이미 오버레이가 생성되어 있다면 건너뜀
+            if (content.querySelector('.free-lock-overlay')) return;
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'free-lock-overlay';
+            
+            // 동적 스타일 및 마크업
+            overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
+            
+            overlay.innerHTML = `
+                <div style="background: white; padding: 40px 50px; border-radius: 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center; border: 1px solid #e2e8f0; max-width: 90%;">
+                    <i class="fas fa-lock" style="font-size: 3rem; color: #94a3b8; margin-bottom: 20px;"></i>
+                    <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 1.4rem;">유료회원 전용 기능입니다</h3>
+                    <p style="color: #64748b; font-size: 1rem; margin-bottom: 25px; line-height: 1.6;">
+                        나만의 목표대학 정밀 분석 및 점수 시뮬레이션은<br>
+                        <strong>Standard 멤버십</strong> 이상부터 이용 가능합니다.
+                    </p>
+                    <button onclick="location.href='/payment'" style="padding: 14px 35px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1.05rem; cursor: pointer; transition: background 0.2s;">
+                        🚀 멤버십 알아보기
+                    </button>
+                </div>
+            `;
+            content.appendChild(overlay);
+        });
+    }
+}
+
+function checkMbtiReport(data) {
+    const container = document.getElementById('mbtiReportContainer');
+    if (!container) return;
+    
+    const promo = data.promoCode; 
+    
+    if (!promo || !promo.includes("-STC") || data.mbtiReportDownloaded) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let hex = promo.replace("-STC", "").replace("-", "");
+    let mbti = '';
+    for (let i = 0; i < hex.length; i += 2) {
+        mbti += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+    }
+    
+    container.innerHTML = `
+        <button onclick="downloadMbtiReport()" id="mbtiDownBtn" class="btn-go-survey" style="background-color: #10b981; color: white; border: none; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
+            <i class="fas fa-file-download"></i> [${mbti}] 보고서 다운받기
+        </button>
+    `;
+}
+
+async function downloadMbtiReport() {
+    if (!confirm("해당 MBTI 리포트는 1회만 다운로드 가능합니다.\n지금 다운로드 하시겠습니까?")) return;
+    
+    const btn = document.getElementById('mbtiDownBtn');
+    if (btn) {
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 발급 중...`;
+        btn.disabled = true;
+    }
+
+    const token = localStorage.getItem('idToken');
+    const userId = localStorage.getItem('userId');
+
+    try {
+        const res = await fetch(MYPAGE_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'get_mbti_report', userId: userId })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+            alert("다운로드가 시작되었습니다.");
+            const link = document.createElement('a');
+            link.href = data.downloadUrl;
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            const container = document.getElementById('mbtiReportContainer');
+            if (container) container.innerHTML = ''; 
+        } else {
+            alert(data.error || "보고서 발급에 실패했습니다.");
+            if (btn) { btn.innerHTML = `<i class="fas fa-file-download"></i> 보고서 다운받기`; btn.disabled = false; }
+        }
+    } catch (e) {
+        alert("서버 통신 오류가 발생했습니다.");
+        if (btn) { btn.innerHTML = `<i class="fas fa-file-download"></i> 보고서 다운받기`; btn.disabled = false; }
     }
 }
 

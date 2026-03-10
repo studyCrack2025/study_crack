@@ -408,7 +408,12 @@ async function handleFinalSubmit() {
             });
 
             if (!response.ok) throw new Error("계정 승인 및 DB 저장 실패");
-            window.location.href = '/welcome';
+            
+            if (promoCode) {
+                window.location.href = `/welcome?promo=${encodeURIComponent(promoCode)}`;
+            } else {
+                window.location.href = '/welcome';
+            }
         } catch (error) {
             console.error(error);
             alert("계정은 생성되었으나 활성화에 실패했습니다. 관리자에게 문의하세요.");

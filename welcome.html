@@ -134,5 +134,28 @@
         <a href="/" class="btn-go-home">메인 화면으로 돌아가기</a>
     </div>
 
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            let promo = urlParams.get('promo') || localStorage.getItem('signupPromo');
+            
+            if (promo && promo.includes("-STC")) {
+                let hex = promo.replace("-STC", "").replace("-", "");
+                let mbti = '';
+                for (let i = 0; i < hex.length; i += 2) {
+                    mbti += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+                }
+                
+                // 로그인 버튼 바로 아래에 동적으로 버튼 삽입
+                const btnHtml = `
+                    <a href="/analysis" class="btn-go-login" style="margin-top: 15px; background-color: #10b981; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
+                        <i class="fas fa-file-pdf"></i> [${mbti}] 보고서 받으러 가기
+                    </a>
+                `;
+                const loginBtn = document.querySelector('.btn-go-login');
+                if(loginBtn) loginBtn.insertAdjacentHTML('afterend', btnHtml);
+            }
+        });
+    </script>
 </body>
 </html>
