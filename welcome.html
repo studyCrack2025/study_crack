@@ -124,6 +124,16 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
+            const userId = localStorage.getItem('userId');
+            if (userId) {
+                window.dataLayer = window.dataLayer || [];
+                window.dataLayer.push({
+                    'user_id': userId
+                });
+                console.log("사용자 ID가 GTM으로 전송되었습니다."); // 확인용 로그 (나중에 지우셔도 됩니다)
+            }
+
+            // 기존 프로모션 코드(MBTI) 처리 로직
             const urlParams = new URLSearchParams(window.location.search);
             let promo = urlParams.get('promo') || localStorage.getItem('signupPromo');
             
