@@ -40,6 +40,20 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.key === 'Enter') handleSignIn();
         });
     }
+
+    // URL에서 promo 파라미터 확인 후 프로모션 코드 자동 입력
+    const urlParams = new URLSearchParams(window.location.search);
+    const promoParam = urlParams.get('promo');
+    
+    if (promoParam) {
+        const promoInput = document.getElementById('promoCode');
+        if (promoInput) {
+            promoInput.value = promoParam;
+            // 코드를 임의로 수정하지 못하게 막고 싶다면 아래 두 줄을 유지하세요.
+            promoInput.readOnly = true; 
+            promoInput.style.backgroundColor = '#f1f5f9'; 
+        }
+    }
 });
 
 function toggleEtc(type, isShow) {

@@ -349,7 +349,16 @@
             document.getElementById('cta-btn').addEventListener('click', (e) => {
                 e.preventDefault();
                 alert('회원가입이 필요합니다');
-                window.location.href = '/signup';
+                
+                // 🔥 현재 페이지의 mbti 파라미터를 가져와서 회원가입 URL에 붙여줍니다.
+                const urlParams = new URLSearchParams(window.location.search);
+                const mbtiParam = urlParams.get('mbti') || ''; 
+                
+                if (mbtiParam) {
+                    window.location.href = `/signup?promo=${mbtiParam.toUpperCase()}`;
+                } else {
+                    window.location.href = '/signup';
+                }
             });
         });
     </script>
