@@ -398,7 +398,7 @@ async function handleFinalSubmit() {
                         name: name,
                         email: email,
                         phone: dbFormattedPhone,
-                        promoCode: promoCode, // 위에서 선언한 변수 사용
+                        promoCode: promoCode, 
                         major: major,
                         referral: referral,
                         gender: gender,
@@ -409,11 +409,40 @@ async function handleFinalSubmit() {
 
             if (!response.ok) throw new Error("계정 승인 및 DB 저장 실패");
             
-            if (promoCode) {
-                window.location.href = `/welcome?promo=${encodeURIComponent(promoCode)}`;
-            } else {
-                window.location.href = '/welcome';
-            }
+            // 가입 완료 즉시 '자동 로그인'을 백그라운드에서 실행합니다.
+            const authData = { Username: email, Password: password };
+            const authDetails = new AmazonCognitoIdentity.AuthenticationDetails(authData);
+            const cognitoUserToAuth = new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool });
+
+            cognitoUserToAuth.authenticateUser(authDetails, {
+                onSuccess: function(authResult) {
+                    // 로그인 토큰을 브라우저에 저장
+                    localStorage.setItem('accessToken', authResult.getAccessToken().getJwtToken());
+                    localStorage.setItem('idToken', authResult.getIdToken().getJwtToken());
+                    localStorage.setItem('userId', authResult.getIdToken().payload.sub);
+                    localStorage.setItem('userEmail', email);
+                    
+                    const isTutor = (promoCode === "studycrack_1111");
+                    localStorage.setItem('userRole', isTutor ? 'tutor' : 'student');
+
+                    // 이미 로그인(토큰 발급)이 완료된 상태로 Welcome 페이지 이동!
+                    if (promoCode) {
+                        window.location.href = `/welcome?promo=${encodeURIComponent(promoCode)}`;
+                    } else {
+                        window.location.href = '/welcome';
+                    }
+                },
+                onFailure: function(err) {
+                    // 혹시라도 자동 로그인이 실패하면 기존처럼 수동 로그인하도록 Welcome 이동
+                    console.error("Auto Login Failed:", err);
+                    if (promoCode) {
+                        window.location.href = `/welcome?promo=${encodeURIComponent(promoCode)}`;
+                    } else {
+                        window.location.href = '/welcome';
+                    }
+                }
+            });
+
         } catch (error) {
             console.error(error);
             alert("계정은 생성되었으나 활성화에 실패했습니다. 관리자에게 문의하세요.");

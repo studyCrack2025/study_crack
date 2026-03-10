@@ -18,7 +18,7 @@
     <style>
         /* 가입 완료 페이지 전용 심플 스타일 */
         body {
-            background-color: #f8fafc; /* 부드러운 배경색 */
+            background-color: #f8fafc; 
             display: flex;
             align-items: center;
             justify-content: center;
@@ -49,7 +49,7 @@
         /* 성공 체크 아이콘 애니메이션 */
         .success-icon {
             font-size: 5rem;
-            color: #10b981; /* 에메랄드 그린 */
+            color: #10b981; 
             margin-bottom: 20px;
             animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
@@ -79,7 +79,8 @@
             color: #334155;
         }
 
-        .btn-go-login {
+        /* 메인으로 가기 버튼 스타일 */
+        .btn-go-main {
             display: block;
             width: 100%;
             padding: 16px;
@@ -91,25 +92,13 @@
             font-size: 1.05rem;
             transition: all 0.2s ease;
             box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+            box-sizing: border-box;
         }
 
-        .btn-go-login:hover {
+        .btn-go-main:hover {
             background-color: #1d4ed8;
             transform: translateY(-2px);
             box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3);
-        }
-
-        .btn-go-home {
-            display: inline-block;
-            margin-top: 20px;
-            color: #94a3b8;
-            text-decoration: underline;
-            font-size: 0.9rem;
-            transition: color 0.2s;
-        }
-
-        .btn-go-home:hover {
-            color: #64748b;
         }
     </style>
 </head>
@@ -126,12 +115,11 @@
         <h1 class="welcome-title">회원가입이<br>완료되었습니다!</h1>
         <p class="welcome-desc">
             스터디크랙의 회원이 되신 것을 환영합니다.<br>
-            지금 바로 로그인하여 <strong>나만의 맞춤 입시 전략</strong>을<br>확인해보세요.
+            지금 바로 <strong>나만의 맞춤 입시 전략</strong>을<br>확인해보세요.
         </p>
         
-        <a href="/login" class="btn-go-login">로그인 페이지로 이동하기</a>
+        <a href="/" class="btn-go-main">메인 페이지로 이동하기</a>
         
-        <a href="/" class="btn-go-home">메인 화면으로 돌아가기</a>
     </div>
 
     <script>
@@ -140,20 +128,21 @@
             let promo = urlParams.get('promo') || localStorage.getItem('signupPromo');
             
             if (promo && promo.includes("-STC")) {
+                // 16진수 암호화 해독 로직
                 let hex = promo.replace("-STC", "").replace("-", "");
                 let mbti = '';
                 for (let i = 0; i < hex.length; i += 2) {
                     mbti += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
                 }
                 
-                // 로그인 버튼 바로 아래에 동적으로 버튼 삽입
+                // 메인 버튼 바로 아래에 MBTI 리포트 다운로드 버튼 삽입
                 const btnHtml = `
-                    <a href="/analysis" class="btn-go-login" style="margin-top: 15px; background-color: #10b981; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
+                    <a href="/analysis" class="btn-go-main" style="margin-top: 15px; background-color: #10b981; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
                         <i class="fas fa-file-pdf"></i> [${mbti}] 보고서 받으러 가기
                     </a>
                 `;
-                const loginBtn = document.querySelector('.btn-go-login');
-                if(loginBtn) loginBtn.insertAdjacentHTML('afterend', btnHtml);
+                const mainBtn = document.querySelector('.btn-go-main');
+                if(mainBtn) mainBtn.insertAdjacentHTML('afterend', btnHtml);
             }
         });
     </script>
