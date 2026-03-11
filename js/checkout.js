@@ -2,7 +2,7 @@
 
 // 1. 가격 및 설명 매핑 데이터
 const TIER_DATA = {
-    'basic': { price: 49000, desc: '현재 위치 진단 및 전략 수립 (1회성)' },
+    'basic': { price: 49000, desc: '현재 위치 진단 및 전략 수립' },
     'standard': { price: 149000, desc: '월간 학습 코칭 (플래닝) 정기구독' },
     'pro': { price: 299000, desc: '최소 노력 최대 효율, 맞춤 전략 재설계 정기구독' }
 };
