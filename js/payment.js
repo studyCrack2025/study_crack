@@ -103,71 +103,31 @@ function formatPhoneNumber(rawPhone) {
     return cleaned.replace(/^(\d{2,3})(\d{3,4})(\d{4})$/, `$1-$2-$3`);
 }
 
-// 결제 및 신청 처리 함수
+// js/payment.js - processPayment 부분만 교체
 async function processPayment() {
     const name = document.getElementById('name').value;
     const rawPhone = document.getElementById('phone').value;
     const email = document.getElementById('email').value;
-    
-    const userId = localStorage.getItem('userId') || 'guest';
-    const token = localStorage.getItem('accessToken');
 
     if (!name || !rawPhone || !email) {
-        alert("필수 정보를 모두 입력해주세요.");
-        return;
+        alert("필수 정보를 모두 입력해주세요."); return;
     }
     if (!selectedTier) {
-        alert("신청할 프로그램을 선택해주세요.");
-        return;
+        alert("신청할 프로그램을 선택해주세요."); return;
     }
 
     const formattedPhone = formatPhoneNumber(rawPhone);
-    const btn = document.getElementById('submitBtn');
-    const originalBtnText = btn.innerText;
+
+    const checkoutData = {
+        name: name,
+        phone: formattedPhone,
+        email: email,
+        tier: selectedTier,
+        productName: selectedProductName
+    };
     
-    btn.innerText = "처리 중...";
-    btn.disabled = true;
-
-    const uniqueId = 'ORD-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
-
-    try {
-        // DB에 신청 내역 저장
-        const response = await fetch(PAYMENT_API_URL, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                // 결제 API가 Gateway 뒤에 있다면 토큰 필요, 아니라면 무시됨
-                // 안전을 위해 일단 보냄
-                'Authorization': `Bearer ${token}` 
-            },
-            body: JSON.stringify({
-                type: 'submit_form',
-                uniqueId: uniqueId,
-                name: name,
-                phone: formattedPhone,
-                email: email,
-                product: selectedProductName,
-                tier: selectedTier,
-                userId: userId 
-            })
-        });
-
-        if (response.ok) {
-            // BLACK 티어는 결제 없이 성공 페이지로
-            // if (selectedTier === 'black') {
-            //     window.location.href = `/success?tier=black`;
-            // } 
-            // 나머지 티어는 결제 페이지로
-            if (selectedProductUrl) {
-                window.location.href = `${selectedProductUrl}?client_reference_id=${uniqueId}&prefilled_email=${email}`;
-            }
-        } else {
-            throw new Error('Server response not ok');
-        }
-    } catch (error) {
-        console.error("Error:", error);
-        alert("오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-        btn.disabled = false;
-        btn.innerText = originalBtnText;
-    }
+    localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
+    
+    // 새 결제 페이지로 이동
+    window.location.href = '/checkout';
 }

@@ -1,0 +1,168 @@
+/* css/checkout.css */
+
+.checkout-body {
+    background-color: #f1f5f9;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.checkout-wrapper {
+    display: flex;
+    max-width: 950px;
+    width: 90%;
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+    overflow: hidden;
+    margin: 40px 0;
+}
+
+/* 왼쪽 패널 (상품 요약) */
+.order-summary-panel {
+    flex: 1;
+    background-color: #0f172a; /* 고급스러운 다크 네이비 */
+    color: white;
+    padding: 50px 40px;
+    display: flex;
+    flex-direction: column;
+}
+
+.btn-back {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.95rem;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 40px;
+    text-align: left;
+    transition: color 0.2s;
+}
+.btn-back:hover { color: white; }
+
+.brand-logo {
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: #3b82f6;
+    display: block;
+    margin-bottom: 20px;
+}
+
+.summary-title { margin: 0 0 30px 0; font-size: 1.8rem; }
+
+.product-info-box {
+    background: rgba(255,255,255,0.05);
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+}
+
+.chk-p-name { font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; color: #f8fafc; }
+.chk-p-desc { font-size: 0.95rem; color: #94a3b8; line-height: 1.5; }
+
+.price-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 30px;
+    margin-bottom: 30px;
+}
+
+.chk-price { font-size: 1.8rem; color: #fff; }
+
+.billing-notice {
+    font-size: 0.85rem;
+    color: #64748b;
+    line-height: 1.5;
+    background: rgba(0,0,0,0.2);
+    padding: 15px;
+    border-radius: 8px;
+}
+
+/* 오른쪽 패널 (결제 폼) */
+.payment-form-panel {
+    flex: 1.3;
+    padding: 50px;
+    background: #ffffff;
+}
+
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 2px dashed #f1f5f9;
+}
+
+.form-header h3 { margin: 0; font-size: 1.4rem; color: #1e293b; }
+
+.secure-badge {
+    background: #f0fdf4;
+    color: #16a34a;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; font-size: 0.9rem; font-weight: 600; color: #475569; margin-bottom: 8px; }
+
+.input-with-icon { position: relative; }
+.input-with-icon i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem; }
+.input-with-icon input { padding-left: 45px; }
+
+input {
+    width: 100%;
+    padding: 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+
+.form-row-multi { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+.pwd-input-wrap { display: flex; align-items: center; gap: 10px; }
+.pwd-input-wrap input { width: 70px !important; text-align: center; }
+.pwd-mask { font-size: 1.5rem; color: #475569; letter-spacing: 2px; line-height: 1; margin-top: 8px; }
+
+.terms-agree { margin: 30px 0; font-size: 0.9rem; color: #475569; }
+.terms-agree label { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.terms-agree input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+
+.btn-checkout {
+    width: 100%;
+    padding: 18px;
+    background: #2563EB;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.15rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+}
+.btn-checkout:hover { background: #1d4ed8; transform: translateY(-2px); }
+.btn-checkout:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
+
+/* 모바일 1단 배치 */
+@media (max-width: 768px) {
+    .checkout-wrapper { flex-direction: column; margin: 0; width: 100%; border-radius: 0; }
+    .order-summary-panel { padding: 30px 25px; }
+    .payment-form-panel { padding: 30px 25px; }
+    .form-row-multi { gap: 10px; }
+    .btn-back { margin-bottom: 20px; }
+    .summary-title { margin-bottom: 20px; }
+}
