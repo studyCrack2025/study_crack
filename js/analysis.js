@@ -2588,17 +2588,21 @@ function renderProPromo(container) {
 
 // [헬퍼] 주차 기반 보고서 키 생성기
 function generateReportKey(dateObj) {
-    const year = dateObj.getFullYear().toString().slice(2); // 26
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const monthStr = monthNames[dateObj.getMonth()];
+    const year = dateObj.getFullYear().toString().slice(2); // "26"
     
-    // 정확한 주차 계산 (해당 월의 몇 번째 주인지)
+    // 월을 무조건 2자리 숫자로 (예: 4월 -> "04")
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0'); 
+    
+    // 해당 월의 정확한 주차 계산
     const startOfMonth = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
     const dayOfWeek = startOfMonth.getDay(); 
     const offsetDate = dateObj.getDate() + dayOfWeek - 1;
-    const weekNum = Math.floor(offsetDate / 7) + 1;
+    
+    // 주차를 무조건 2자리 숫자로 (예: 2주차 -> "02")
+    const weekNum = String(Math.floor(offsetDate / 7) + 1).padStart(2, '0'); 
 
-    return `${year}${monthStr}W${weekNum}`; 
+    // 최종 결합 (영문 없이 숫자만 결합)
+    return `${year}${month}${weekNum}`; // 결과: "260402"
 }
 
 // [헬퍼] 키를 화면 표시용 문자열로 변환
