@@ -116,13 +116,6 @@
 .profile-summary.tier-standard .premium-badge { background: linear-gradient(135deg, #94A3B8, #CBD5E1); color: #0F172A; }
 .profile-summary.tier-pro { border: 2px solid #F59E0B; box-shadow: 0 0 20px rgba(245, 158, 11, 0.25); }
 .profile-summary.tier-pro .premium-badge { background: linear-gradient(135deg, #F59E0B, #FCD34D); color: #78350f; }
-.profile-summary.tier-black { 
-    border: 2px solid #171717; box-shadow: 0 0 20px rgba(0, 0, 0, 0.3); 
-    background: linear-gradient(to bottom right, #ffffff, #f8fafc); 
-}
-.profile-summary.tier-black .premium-badge { 
-    background: linear-gradient(135deg, #000000, #333333); color: #FFD700; border: 1px solid #444; 
-}
 
 /* 1. 사이드바 튜터 버튼 (청록색 계열로 차별화) */
 .btn-view-tutor {
