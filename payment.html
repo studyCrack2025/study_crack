@@ -9,10 +9,11 @@
     
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>스터디크랙 - 컨설팅 신청</title>
+    <title>스터디크랙 - 멤버십 신청</title>
     
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/payment.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -25,8 +26,20 @@
     </header>
 
     <div class="payment-container">
-        <h2 style="text-align: center; margin-bottom: 30px;">목표 달성을 위한 플랜 선택</h2>
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h2 style="margin: 0 0 10px 0; color: #1e293b;">멤버십 플랜 선택</h2>
+            <p style="margin: 0; color: #64748b; font-size: 0.95rem;">나에게 딱 맞는 스터디크랙 솔루션을 시작해보세요.</p>
+        </div>
         
+        <div id="activeSubBanner" class="active-sub-banner" style="display: none;">
+            <div class="sub-icon"><i class="fas fa-crown"></i></div>
+            <div class="sub-details">
+                <span class="sub-label">현재 이용 중인 플랜</span>
+                <strong id="activeSubName" class="sub-name">-</strong>
+                <span id="activeSubDate" class="sub-date">-</span>
+            </div>
+        </div>
+
         <form id="paymentForm">
             <div class="form-group">
                 <label for="name">이름 (학생 본인)</label>
@@ -70,14 +83,15 @@
 
             </div>
 
+            <div id="tierMessageWrap" class="tier-message-wrap" style="display: none;">
+                <div id="tierMessageText"></div>
+            </div>
+
             <button type="button" class="btn-pay" id="submitBtn" onclick="processPayment()">결제하기</button>
         </form>
     </div>
 
-    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
     <script src="/js/config.js"></script>
-    <script src="/js/auth.js"></script>
     <script src="/js/payment.js"></script>
     
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"

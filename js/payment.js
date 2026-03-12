@@ -1,44 +1,27 @@
 // js/payment.js
 
-// ★ 1. 유저 정보를 가져올 API URL (Gateway)
 const USER_API_URL = CONFIG.api.base;
-
-// ★ 2. 결제 요청용 API URL 
 const PAYMENT_API_URL = CONFIG.api.payment;
 
-let selectedProductUrl = null;
 let selectedProductName = "";
-let selectedTier = null; // 'basic', 'standard', 'pro', 'black'
+let selectedTier = null; 
 
-// 페이지 로드 후 실행
+// 티어 비교를 위한 전역 변수
+const TIER_LEVELS = { 'free': 0, 'basic': 1, 'standard': 2, 'pro': 3 };
+let globalCurrentTier = 'free';
+let globalDaysLeft = 0;
+
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. 로그인 체크 및 유저 정보 로드
     const userId = localStorage.getItem('userId');
-    
     if (!userId) {
         alert("로그인이 필요합니다.");
         window.location.href = '/login';
         return;
     }
-    
-    // 유저 정보 가져오기 실행 (userId가 있을 때만)
-    if (userId) {
-        fetchUserInfo(userId);
-    }
-
-    // 전화번호 포맷팅 리스너
-    const phoneInput = document.getElementById('phone');
-    if (phoneInput) {
-        phoneInput.addEventListener('input', (e) => {
-            const val = e.target.value.replace(/[^0-9]/g, '');
-            if (val.length >= 4) {
-                e.target.value = val.replace(/^(\d{2,3})(\d{3,4})(\d{4})$/, `$1-$2-$3`);
-            }
-        });
-    }
+    fetchUserInfo(userId);
 });
 
-// 유저 정보 가져와서 채우기
+// 유저 정보 가져오기 및 티어 계산
 async function fetchUserInfo(userId) {
     const token = localStorage.getItem('accessToken');
     try {
@@ -46,64 +29,121 @@ async function fetchUserInfo(userId) {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` // ★ 토큰 추가
+                'Authorization': `Bearer ${token}` 
             },
-            body: JSON.stringify({ type: 'get_user' }) // userId는 토큰에서 추출
+            body: JSON.stringify({ type: 'get_user' }) 
         });
         
         if (response.ok) {
             const data = await response.json();
-            // 데이터 채우기
+            
             if (data.name) document.getElementById('name').value = data.name;
             if (data.phone) document.getElementById('phone').value = data.phone;
-            
-            // 이메일은 로컬스토리지 우선, 없으면 DB값
             const email = localStorage.getItem('userEmail') || data.email;
             if (email) document.getElementById('email').value = email;
+
+            // 프론트엔드에서 남은 기간 및 티어 계산
+            calculateUserTierDisplay(data);
         }
     } catch (error) {
         console.error("유저 정보 로드 실패:", error);
     }
 }
 
-// ★ [수정됨] 상품 선택 함수
+// 구독 기간 계산 헬퍼
+function calculateUserTierDisplay(data) {
+    globalCurrentTier = data.computedTier || 'free';
+
+    if (globalCurrentTier !== 'free' && data.payments && data.payments.length > 0) {
+        // 가장 최근 결제내역 찾기
+        const paid = data.payments.filter(p => p.status === 'paid').sort((a,b) => new Date(b.date) - new Date(a.date));
+        
+        if (paid.length > 0) {
+            const payDate = new Date(paid[0].date);
+            const expireDate = new Date(payDate.getTime() + (28 * 24 * 60 * 60 * 1000)); // 28일 더하기
+            const now = new Date();
+            
+            globalDaysLeft = Math.ceil((expireDate - now) / (1000 * 60 * 60 * 24));
+            
+            // 상단 배너 표시
+            const banner = document.getElementById('activeSubBanner');
+            document.getElementById('activeSubName').innerText = globalCurrentTier.toUpperCase();
+            document.getElementById('activeSubDate').innerText = `${expireDate.getFullYear()}년 ${expireDate.getMonth()+1}월 ${expireDate.getDate()}일까지 유효`;
+            banner.style.display = 'flex';
+
+            // 선택 박스에 '현재 이용 중' 뱃지 달기
+            const currentOptionObj = document.querySelector(`.tier-${globalCurrentTier}`);
+            if (currentOptionObj) {
+                currentOptionObj.classList.add('is-current-tier');
+                const badge = document.createElement('div');
+                badge.className = 'current-tier-badge';
+                badge.innerText = '현재 이용 중';
+                currentOptionObj.appendChild(badge);
+            }
+        }
+    }
+}
+
+// 상품 선택 로직
 function selectProduct(element, url, tier) {
-    // 1. 스타일 초기화 및 선택
     document.querySelectorAll('.product-option').forEach(el => el.classList.remove('selected'));
     element.classList.add('selected');
 
-    // 2. 데이터 저장
-    selectedProductUrl = url;
     selectedTier = tier;
-    
-    // 3. 상품명 추출 (HTML 구조 변경에 맞게 수정)
-    // <span class="p-name">BASIC</span> 형태에서 텍스트 추출
     const nameSpan = element.querySelector('.p-name');
-    if (nameSpan) {
-        selectedProductName = nameSpan.innerText;
-    }
+    if (nameSpan) selectedProductName = nameSpan.innerText;
 
-    // 4. 버튼 텍스트 변경 (Black은 결제 없음)
+    // 티어 등급 판별 로직
+    const selectedLevel = TIER_LEVELS[selectedTier];
+    const currentLevel = TIER_LEVELS[globalCurrentTier];
+
+    const msgWrap = document.getElementById('tierMessageWrap');
+    const msgText = document.getElementById('tierMessageText');
     const btn = document.getElementById('submitBtn');
-    // if (tier === 'black') {
-    //     btn.innerText = "상담 신청하기 (결제 없음)";
-    // } else {
-    //     btn.innerText = "결제하기";
-    // }
+
+    // 기본 상태로 초기화
+    msgWrap.style.display = 'none';
+    msgWrap.className = 'tier-message-wrap'; // warning 클래스 제거용
+    btn.disabled = false;
     btn.innerText = "결제하기";
+
+    // Free 유저는 모든 플랜 결제 가능하므로 무시
+    if (currentLevel > 0) {
+        
+        if (selectedLevel === currentLevel) {
+            // 1. 동일한 티어 선택 시
+            msgWrap.style.display = 'block';
+            msgText.innerHTML = `<i class="fas fa-check-circle" style="color:#10b981;"></i> 회원님이 현재 이용 중인 플랜입니다.`;
+            btn.disabled = true;
+            btn.innerText = "현재 이용 중인 플랜";
+
+        } else if (selectedLevel < currentLevel) {
+            // 2. 하위 티어 선택 시 (경고)
+            msgWrap.style.display = 'block';
+            msgWrap.classList.add('warning');
+            msgText.innerHTML = `<i class="fas fa-exclamation-triangle"></i> 이미 <strong>${globalCurrentTier.toUpperCase()}</strong> 등급 회원입니다. 아래 등급을 구독하실 경우 기존 혜택에 불이익이 발생할 수 있습니다.`;
+            btn.disabled = true;
+            btn.innerText = "하위 플랜 선택 불가";
+
+        } else if (selectedLevel > currentLevel) {
+            // 3. 상위 티어 선택 시 (업그레이드 안내)
+            msgWrap.style.display = 'block';
+            msgText.innerHTML = `<i class="fas fa-info-circle" style="color:#3b82f6;"></i> 기존 구독 기간이 <strong>${globalDaysLeft}일</strong> 남았습니다.<br><strong>${selectedTier.toUpperCase()}</strong> 등급으로 업그레이드를 원하시면 <strong>[1:1 문의]</strong>에 남겨주세요. 빠르게 차액 결제 및 전환을 도와드리겠습니다.`;
+            btn.disabled = true;
+            btn.innerText = "업그레이드 불가 (문의 요망)";
+        }
+    }
 }
 
-// 전화번호 포맷팅 함수
 function formatPhoneNumber(rawPhone) {
     let cleaned = rawPhone.replace(/[^0-9]/g, '');
-    // 010 등으로 시작하게 보정
     if (cleaned.startsWith('10') && cleaned.length === 10) {
         cleaned = '0' + cleaned;
     }
     return cleaned.replace(/^(\d{2,3})(\d{3,4})(\d{4})$/, `$1-$2-$3`);
 }
 
-// js/payment.js - processPayment 부분만 교체
+// 결제 데이터 세팅 및 페이지 이동 (Checkout 연동)
 async function processPayment() {
     const name = document.getElementById('name').value;
     const rawPhone = document.getElementById('phone').value;
@@ -128,6 +168,6 @@ async function processPayment() {
     
     localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
     
-    // 새 결제 페이지로 이동
+    // 이전 스텝에서 만든 checkout.html 페이지로 이동
     window.location.href = '/checkout';
 }

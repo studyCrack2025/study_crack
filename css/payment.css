@@ -40,6 +40,50 @@
     border-color: #2563EB;
 }
 
+/* 상단 구독 상태 배너 */
+.active-sub-banner {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    padding: 20px 25px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    color: white;
+    box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+    animation: fadeIn 0.5s ease;
+}
+
+.active-sub-banner .sub-icon {
+    font-size: 2rem;
+    color: #fbbf24; /* 골드 색상 */
+}
+
+.active-sub-banner .sub-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.active-sub-banner .sub-label {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-bottom: 3px;
+    font-weight: 600;
+}
+
+.active-sub-banner .sub-name {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #f8fafc;
+    letter-spacing: 1px;
+}
+
+.active-sub-banner .sub-date {
+    font-size: 0.85rem;
+    color: #cbd5e1;
+    margin-top: 5px;
+}
+
 /* 상품 선택 영역 */
 .product-selection { 
     display: flex; 
@@ -104,15 +148,6 @@ small { color: #64748b; font-size: 0.9rem; }
     background-color: #fff1f2 !important; 
 }
 
-/* BLACK - Black */
-/* .tier-black .p-name, .tier-black .p-price { color: #171717 !important; }
-.product-option.tier-black { background-color: #fafafa; }
-.product-option.tier-black.selected { 
-    box-shadow: 0 0 0 2px #171717 inset !important; 
-    background-color: #e5e5e5 !important; 
-} */
-
-
 /* 결제 버튼 */
 .btn-pay { 
     width: 100%; 
@@ -135,6 +170,52 @@ small { color: #64748b; font-size: 0.9rem; }
 .btn-pay:disabled { 
     background-color: #94a3b8; 
     cursor: not-allowed; 
+}
+
+/* 현재 이용 중인 상품 박스 하이라이트 */
+.product-option.is-current-tier {
+    border: 2px solid #334155;
+    background-color: #f8fafc;
+}
+
+.current-tier-badge {
+    position: absolute;
+    top: -12px;
+    right: 15px;
+    background: #334155;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 4px 10px;
+    border-radius: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* 안내/경고 말풍선 메시지 */
+.tier-message-wrap {
+    background-color: #f8fafc;
+    border-left: 4px solid #3b82f6;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #334155;
+    animation: fadeInDown 0.3s ease forwards;
+}
+
+.tier-message-wrap.warning {
+    border-left-color: #ef4444;
+    background-color: #fef2f2;
+}
+
+.tier-message-wrap i {
+    margin-right: 6px;
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* =========================================
