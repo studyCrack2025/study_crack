@@ -674,7 +674,6 @@ function formatReportKey(key) {
     // 키가 없거나 포맷(6자리, 예: 260402)에 맞지 않으면 원본 반환
     if (!key || key.length !== 6) return key;
 
-    // "260402" -> 년, 월, 주차 추출
     const yStr = key.substring(0, 2); // "26"
     const mStr = parseInt(key.substring(2, 4), 10); // "04" -> 4
     const wStr = parseInt(key.substring(4, 6), 10); // "02" -> 2

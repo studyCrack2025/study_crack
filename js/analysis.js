@@ -2603,26 +2603,14 @@ function generateReportKey(dateObj) {
 
 // [헬퍼] 키를 화면 표시용 문자열로 변환
 function formatReportKey(key) {
-    if (!key || key.length < 7) return key;
+    // 키가 없거나 6자리 숫자(예: 260402)가 아니면 원본 그대로 반환
+    if (!key || key.length !== 6) return key;
 
-    const yearStr = key.substring(0, 2);  // "26"
-    const monthStr = key.substring(2, 5); // "Mar"
-    const periodStr = key.substring(5);   // "W2" 또는 "Pre"
+    const yStr = key.substring(0, 2); // "26"
+    const mStr = parseInt(key.substring(2, 4), 10); // "04" -> 4
+    const wStr = parseInt(key.substring(4, 6), 10); // "02" -> 2
 
-    const monthMap = {
-        'Jan': '1월', 'Feb': '2월', 'Mar': '3월', 'Apr': '4월', 'May': '5월', 'Jun': '6월',
-        'Jul': '7월', 'Aug': '8월', 'Sep': '9월', 'Oct': '10월', 'Nov': '11월', 'Dec': '12월'
-    };
-
-    const year = `20${yearStr}년`;
-    const month = monthMap[monthStr] || monthStr;
-    
-    let period = periodStr;
-    if (periodStr === 'Pre') period = '전반기';
-    else if (periodStr === 'Post') period = '후반기';
-    else if (periodStr.startsWith('W')) period = `${periodStr.replace('W', '')}주차`;
-
-    return `${year} ${month} ${period} PRO 분석`;
+    return `20${yStr}년 ${mStr}월 ${wStr}주차 PRO 분석`;
 }
 
 // ------------------------------------------------------------
