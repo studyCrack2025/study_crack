@@ -52,13 +52,17 @@
 .theme-sim .sol-icon-box { background: #eff6ff; color: #3b82f6; }
 .theme-sim .sol-badge { background: #e0f2fe; color: #0284c7; border-color: #bae6fd; }
 .theme-coach .sol-icon-box { background: #fff7ed; color: #ea580c; }
-.theme-black .sol-icon-box { background: #1f2937; color: #fbbf24; }
-.theme-black .sol-title { color: #000; }
 
 
 /* ============================================================
    [2] 좌측 사이드바 (기초조사서 상태 & 점수)
    ============================================================ */
+
+.user-tier-badge { display: inline-block; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 800; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); letter-spacing: 0.5px; }
+.tier-badge-free { background-color: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+.tier-badge-basic { background-color: #ecfdf5; color: #059669; border: 1px solid #10b981; }
+.tier-badge-standard { background-color: #eff6ff; color: #2563eb; border: 1px solid #3b82f6; }
+.tier-badge-pro { background-color: #fff1f2; color: #e11d48; border: 1px solid #f43f5e; }
 .survey-status-box h4 { font-size: 1.1rem; color: #1e293b; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .status-detail-container { text-align: left; margin-bottom: 20px; background: #f8fafc; border-radius: 8px; padding: 15px; border: 1px solid #e2e8f0; }
 .detail-group { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #cbd5e1; }

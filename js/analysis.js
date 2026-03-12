@@ -92,8 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sol) { 
             setTimeout(() => openSolution(sol), 100); 
         }
-        
-        // 주소창에 ?tab=pro 가 있다면 openSolution('pro')가 실행됨
+
         const targetTab = params.get('tab');
         if (targetTab) {
             openSolution(targetTab);         
@@ -195,7 +194,7 @@ async function fetchUserData(userId) {
         // 프로필 이미지 (사이드바)
         if (data && data.profileImage) {
             const imgElem = document.getElementById('profileImg');
-            if (imgElem) imgElem.src = escapeHtml(data.profileImage); // URL도 이스케이프
+            if (imgElem) imgElem.src = escapeHtml(data.profileImage);
         }
     } catch (error) { 
         console.error("User Data Error:", error); 
@@ -205,11 +204,36 @@ async function fetchUserData(userId) {
 
 function renderUserInfo(data) {
     const nameEl = document.getElementById('userNameDisplay');
-    const emailEl = document.getElementById('userEmailDisplay');
+    const tierBadgeEl = document.getElementById('userTierBadge');
     
-    // innerText는 자동 이스케이프되지만 명시적으로 처리해도 무방
-    if(nameEl) nameEl.innerText = data.name || '이름 없음';
-    if(emailEl) emailEl.innerText = data.email || '';
+    // 1. 이름 렌더링
+    if (nameEl) nameEl.innerText = data.name || '이름 없음';
+    
+    // 2. 이메일 대신 티어 뱃지 렌더링
+    if (tierBadgeEl) {
+        const tier = data.computedTier || 'free';
+        let tierText = 'FREE';
+        let tierClass = 'tier-badge-free';
+        let iconHtml = '';
+
+        if (tier === 'basic') { 
+            tierText = 'BASIC'; 
+            tierClass = 'tier-badge-basic'; 
+        }
+        else if (tier === 'standard') { 
+            tierText = 'STANDARD'; 
+            tierClass = 'tier-badge-standard'; 
+            iconHtml = '<i class="fas fa-gem" style="margin-right:4px;"></i>';
+        }
+        else if (tier === 'pro') { 
+            tierText = 'PRO'; 
+            tierClass = 'tier-badge-pro'; 
+            iconHtml = '<i class="fas fa-crown" style="margin-right:4px;"></i>';
+        }
+
+        tierBadgeEl.className = `user-tier-badge ${tierClass}`;
+        tierBadgeEl.innerHTML = `${iconHtml}${tierText} 멤버십`;
+    }
 }
 
 function applyUserTier(tier) {
@@ -2667,7 +2691,7 @@ async function loadProReports(currentKey, isDeadlinePassed) {
             body: JSON.stringify({ type: 'get_pro_reports', userId: userId, requesterRole: 'student' })
         });
         const data = await res.json();
-        cachedProReports = data.reports || []; // [{key, request, reportLink, status}, ...]
+        cachedProReports = data.reports || [];
 
         // 1. 리스트 렌더링
         if (cachedProReports.length === 0) {
