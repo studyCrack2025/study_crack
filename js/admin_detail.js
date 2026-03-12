@@ -185,7 +185,7 @@ function renderData(s) {
     renderTierBadge(currentTier);
     
     const specialBtn = document.getElementById('btn-special');
-    if (['pro', 'black'].includes(currentTier)) {
+    if (['pro'].includes(currentTier)) {
         specialBtn.style.display = 'inline-block';
     } else {
         specialBtn.style.display = 'none';
@@ -214,7 +214,6 @@ function calcTier(payments) {
     paid.sort((a, b) => new Date(b.date) - new Date(a.date));
     const last = (paid[0].product || "").toLowerCase();
     
-    if (last.includes('black')) return 'black';
     if (last.includes('pro')) return 'pro';
     if (last.includes('standard')) return 'standard';
     return 'basic';
@@ -223,8 +222,7 @@ function calcTier(payments) {
 function renderTierBadge(tier) {
     const area = document.getElementById('tierBadgeArea');
     let html = '';
-    if (tier === 'black') html = '<span class="tier-badge" style="background: linear-gradient(to bottom right, #ffffff, #f8fafc); border: 2px solid #171717; color: #171717; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">BLACK TIER</span>';
-    else if (tier === 'pro') html = '<span class="tier-badge" style="background: linear-gradient(135deg, #F59E0B, #FCD34D); border: 2px solid #F59E0B; color: #78350f;">PRO TIER</span>';
+    if (tier === 'pro') html = '<span class="tier-badge" style="background: linear-gradient(135deg, #F59E0B, #FCD34D); border: 2px solid #F59E0B; color: #78350f;">PRO TIER</span>';
     else if (tier === 'standard') html = '<span class="tier-badge" style="background: linear-gradient(135deg, #94A3B8, #CBD5E1); border: 2px solid #64748B; color: #0F172A;">STANDARD TIER</span>';
     else if (tier === 'basic') html = '<span class="tier-badge" style="background: linear-gradient(135deg, #3B82F6, #60A5FA); border: 2px solid #3B82F6; color: white;">BASIC TIER</span>';
     else html = '<span class="tier-badge" style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1;">FREE USER</span>';
@@ -232,7 +230,7 @@ function renderTierBadge(tier) {
     area.innerHTML = html;
 }
 
-// [수정 3] 성적 데이터: 드롭다운 초기화 및 렌더링
+// 성적 데이터: 드롭다운 초기화 및 렌더링
 function initQuantitativeData(q) {
     const selector = document.getElementById('scoreExamFilter');
     const container = document.getElementById('viewScoreTable');
@@ -584,7 +582,6 @@ function renderWeeklyTab() {
     });
 }
 
-// 개편된 5개 항목을 전송하도록 수정된 함수
 async function saveWeeklyFeedback(weekId, idx) {
     // 요소들을 먼저 가져옵니다 (잠금 처리를 위해)
     const priorityEl = document.getElementById(`fb_priority_${idx}`);
@@ -668,27 +665,42 @@ async function saveWeeklyFeedback(weekId, idx) {
 // [기능] FOR PRO 탭 로직
 // ============================================================
 
+// ============================================================
+// [기능] FOR PRO 탭 로직 (주차별 동적 렌더링으로 변경됨)
+// ============================================================
+
+// [공통 헬퍼] 키를 화면 표시용 문자열로 변환
+function formatReportKey(key) {
+    // 키가 없거나 포맷(6자리, 예: 260402)에 맞지 않으면 원본 반환
+    if (!key || key.length !== 6) return key;
+
+    // "260402" -> 년, 월, 주차 추출
+    const yStr = key.substring(0, 2); // "26"
+    const mStr = parseInt(key.substring(2, 4), 10); // "04" -> 4
+    const wStr = parseInt(key.substring(4, 6), 10); // "02" -> 2
+
+    return `20${yStr}년 ${mStr}월 ${wStr}주차 PRO 분석`;
+}
+
 function renderProTab() {
     const container = document.getElementById('proReportContainer');
     container.innerHTML = '';
 
-    const selYear = document.getElementById('proFilterYear').value;
-    const selMonth = document.getElementById('proFilterMonth').value;
     const userRole = localStorage.getItem('userRole');
-
-    const yearShort = selYear.slice(2);
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const monthStr = monthNames[parseInt(selMonth) - 1];
-    
-    const keyPre = `${yearShort}${monthStr}Pre`;
-    const keyPost = `${yearShort}${monthStr}Post`;
-
     const reports = currentStudentData.proReportsList || [];
-    const dataPre = reports.find(r => r.key === keyPre);
-    const dataPost = reports.find(r => r.key === keyPost);
+    
+    if (reports.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:50px; color:#94a3b8; background:#f8fafc; border-radius:8px;">학생이 아직 작성한 PRO 리포트 요청서가 없습니다.</div>`;
+        return;
+    }
 
-    container.appendChild(createProPeriodBox(`${selMonth}월 상반기 (Pre)`, dataPre, keyPre, userRole));
-    container.appendChild(createProPeriodBox(`${selMonth}월 하반기 (Post)`, dataPost, keyPost, userRole));
+    // 키(문자열)를 기준으로 최신순 정렬 (예: "260402" > "260301" > "26MarPre")
+    reports.sort((a, b) => b.key.localeCompare(a.key));
+
+    reports.forEach(reportData => {
+        const displayTitle = formatReportKey(reportData.key);
+        container.appendChild(createProPeriodBox(displayTitle, reportData, reportData.key, userRole));
+    });
 }
 
 function createProPeriodBox(title, data, reportKey, userRole) {
@@ -701,7 +713,7 @@ function createProPeriodBox(title, data, reportKey, userRole) {
 
     const safeData = data || {};
     const requestText = safeData.request ? escapeHtml(safeData.request) : null;
-    const status = safeData.status || 'pending'; // pending -> drafting -> completed(admin_review) -> tutor_review -> published
+    const status = safeData.status || 'pending'; 
     const reportLink = safeData.reportLink || null;
 
     let canEdit = false;
@@ -726,7 +738,7 @@ function createProPeriodBox(title, data, reportKey, userRole) {
             <button class="guide-btn" onclick="showProGuideModal()"><i class="fas fa-info-circle"></i> 작성 가이드</button>
         </div>
         <div class="pro-write-grid">
-            ${createTextAreaHtml(reportKey, 1, "1. 지난 2주간의 학습평가 (리스크/KPI)", content.eval, readOnlyAttr, saveBtnStyle)}
+            ${createTextAreaHtml(reportKey, 1, "1. 지난 기간의 학습평가 (리스크/KPI)", content.eval, readOnlyAttr, saveBtnStyle)}
             ${createTextAreaHtml(reportKey, 2, "2. 목표대학과의 거리 (ΔCut/기여도)", content.dist, readOnlyAttr, saveBtnStyle)}
             ${createTextAreaHtml(reportKey, 3, "3. 중기 핵심 과제 Top2 & 장기 플랜", content.plan, readOnlyAttr, saveBtnStyle)}
             ${createTextAreaHtml(reportKey, 4, "4. 학생 요청 답변 (근거 포함)", content.qna, readOnlyAttr, saveBtnStyle)}
@@ -739,7 +751,7 @@ function createProPeriodBox(title, data, reportKey, userRole) {
         <div class="pro-period-title">
             <span>${title}</span>
             <span style="font-size:0.85rem; color:#64748b; font-weight:normal;">
-                ${safeData.updatedAt ? '(업데이트: ' + new Date(safeData.updatedAt).toLocaleDateString() + ')' : ''}
+                ${safeData.updatedAt ? '(최근 저장: ' + new Date(safeData.updatedAt).toLocaleString() + ')' : ''}
             </span>
         </div>
         <div class="student-req-card">
@@ -768,7 +780,7 @@ function createTextAreaHtml(key, idx, label, val, readOnly, btnStyle) {
     `;
 }
 
-// 🚨 FOR PRO 탭용: 4단계 검수 UI
+// FOR PRO 탭용: 4단계 검수 UI
 function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent, rejectReason = '') {
     
     // 단계 4: 학생에게 최종 전송 완료
@@ -914,7 +926,7 @@ async function submitRejectReason(key) {
     }
 }
 
-// 🚨 FOR PRO 탭용: 관리자가 PDF 업로드 후 튜터에게 핑 날리기
+// FOR PRO 탭용: 관리자가 PDF 업로드 후 튜터에게 핑 날리기
 async function requestTutorReview(key) {
     const fileInput = document.getElementById(`pdfFile_${key}`);
     if (!fileInput.files || fileInput.files.length === 0) return alert("PDF 파일을 먼저 첨부해주세요.");
@@ -980,7 +992,7 @@ async function requestTutorReview(key) {
     }
 }
 
-// 🚨 FOR PRO 탭용: 튜터가 확인 후 학생에게 최종 전송
+// FOR PRO 탭용: 튜터가 확인 후 학생에게 최종 전송
 async function publishProReportToStudent(key) {
     if(!confirm("최종 검수를 마치고 학생에게 리포트를 전송하시겠습니까? 전송 후에는 수정할 수 없습니다.")) return;
 
@@ -1056,7 +1068,7 @@ async function saveProDraft(key, silent = false) {
         qna: document.getElementById(`${key}_item4`)?.value || ""
     };
 
-    // 🔥 핵심 추가: 현재 리포트의 상태를 확인해서, 강제로 처음으로 돌아가는 것을 막습니다.
+    // 현재 리포트의 상태를 확인해서, 강제로 처음으로 돌아가는 것을 막습니다.
     const report = currentStudentData.proReportsList.find(r => r.key === key);
     let currentStatus = report ? (report.status || 'drafting') : 'drafting';
     
