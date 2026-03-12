@@ -708,6 +708,10 @@ async function updateAnalysisUI() {
     const container = document.getElementById('univAnalysisResult');
     if (!container) return;
     
+    if (currentUserTier === 'free') {
+        return; 
+    }
+    
     const hasTargets = userTargetUnivs && userTargetUnivs.some(u => u && u.univ);
     const availableExams = userQuantData ? Object.keys(userQuantData).filter(key => {
         const data = userQuantData[key];
@@ -911,6 +915,10 @@ let selectedSimIndex = null; // 현재 선택된 대학 인덱스
 
 // 1. 초기화 (체크박스 생성 X, 바로 데이터 로드)
 function initSimulation() {
+    if (currentUserTier === 'free') {
+        return;
+    }
+    
     // 목표 대학이 없으면 안내 표시
     const validTargets = userTargetUnivs ? userTargetUnivs.filter(t => t && t.univ) : [];
     if (validTargets.length === 0) {
