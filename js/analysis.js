@@ -7,6 +7,7 @@ const MYPAGE_API_URL = CONFIG.api.base;       // 사용자 정보, 주간점검 
 const UNIV_DATA_API_URL = CONFIG.api.analysis; // 대학 분석, 시뮬레이션 등
 
 let currentUserTier = 'free';
+let userRecentPaymentDate = null;
 let userTargetUnivs = [null, null, null, null, null, null]; // 6슬롯
 let univData = []; 
 let univMap = {};  
@@ -174,6 +175,13 @@ async function fetchUserData(userId) {
         // [중요] DB 데이터 파싱
         const rawData = await response.json();
         const data = parseDynamoItem(rawData);
+        
+        if (data.payments && Array.isArray(data.payments)) {
+            const paid = data.payments.filter(p => p.status === 'paid').sort((a,b) => new Date(b.date) - new Date(a.date));
+            if (paid.length > 0 && paid[0].date) {
+                userRecentPaymentDate = new Date(paid[0].date);
+            }
+        }
         
         // 상단 프로필 정보 렌더링
         renderUserInfo(data);
@@ -1456,7 +1464,7 @@ function renderDetailedSimCard() {
     const data = cachedSimData[selectedSimIndex];
     const currentScore = Math.round(data.base_ui_score);
     
-    // 🚨 [방어 로직] 현재 점수가 250점(MAX)이면 상승폭을 모두 0으로 강제 처리
+    // 현재 점수가 250점(MAX)이면 상승폭을 모두 0으로 강제 처리
     if (currentScore >= 250) {
         Object.keys(data.sim_data).forEach(key => {
             if (data.sim_data[key]) {
@@ -1575,8 +1583,6 @@ function getWeekTitle(date) {
     const week = getWeekOfMonth(date);
     return `${yearShort}년 ${month}월 ${week}주차`; 
 }
-
-// ------------------------------------------------------------
 
 // 코칭 영역 등급 제한 (Blur 처리)
 function applyCoachTierLock() {
@@ -1965,7 +1971,7 @@ function openFeedbackModal(data) {
 }
 
 function openWeeklyCheckModal() {
-    const allowedTiers = ['standard', 'pro', 'black'];
+    const allowedTiers = ['standard', 'pro'];
     
     if (!allowedTiers.includes(currentUserTier)) {
         alert("🔒 Standard 멤버십 이상 전용 기능입니다.\n멤버십 업그레이드 후 이용해주세요.");
@@ -2416,7 +2422,7 @@ async function submitWeeklyCheck() {
                 alert("모의고사 성적 인증 사진을 첨부해주세요.");
                 switchWeeklyTab('step1'); // 탭 이동
                 if(submitBtn) { submitBtn.disabled = false; submitBtn.innerText = originalBtnText; }
-                return; // 🚨 함수 완전 종료
+                return;
             }
         }
 
@@ -2520,14 +2526,12 @@ function addCustomRow(btn) {
 // [기능 5] PRO EXCLUSIVE 섹션 렌더링 (홍보 vs 대시보드)
 // ============================================================
 
-// 페이지 로드 시 호출 필요 (예: DOMContentLoaded 내부)
+// 페이지 로드 시 호출 필요
 function initProSection() {
     const container = document.getElementById('sol-pro');
     if (!container) return;
 
-    // currentUserTier는 전역 변수로 가정 (basic, standard, pro, black)
-    // PRO 이상(pro, black)이면 전용 페이지, 아니면 홍보 페이지
-    if (['pro', 'black'].includes(currentUserTier)) {
+    if (['pro'].includes(currentUserTier)) {
         renderProDashboard(container);
     } else {
         renderProPromo(container);
@@ -2536,7 +2540,6 @@ function initProSection() {
 
 // 1. [홍보 페이지] Basic/Standard 유저 대상
 function renderProPromo(container) {
-    // 평가원 시험 자동 계산 (예시 로직)
     const month = new Date().getMonth() + 1;
     let nextExam = "6월 모의평가";
     if (month >= 6 && month < 9) nextExam = "9월 모의평가";
@@ -2583,36 +2586,70 @@ function renderProPromo(container) {
     `;
 }
 
-// 2. [전용 대시보드] Pro 이상 유저 대상
-function renderProDashboard(container) {
-    const now = new Date();
-    
-    // 1. 데이터 조회용 Key 생성 (예: 26MarPre)
-    const yearShort = now.getFullYear().toString().slice(2);
+// [헬퍼] 주차 기반 보고서 키 생성기
+function generateReportKey(dateObj) {
+    const year = dateObj.getFullYear().toString().slice(2); // 26
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const monthStr = monthNames[now.getMonth()];
-    const day = now.getDate();
-    const suffix = day <= 15 ? 'Pre' : 'Post';
+    const monthStr = monthNames[dateObj.getMonth()];
     
-    const currentKey = `${yearShort}${monthStr}${suffix}`; // DB 조회용 키
-    
-    // 2. 화면 표시용 날짜 문자열 생성 (예: 2026년 3월 상반기)
-    const displayYear = now.getFullYear();
-    const displayMonth = now.getMonth() + 1;
-    const displayPeriod = suffix === 'Pre' ? '상반기' : '하반기';
-    const displayDateStr = `${displayYear}년 ${displayMonth}월 ${displayPeriod}`;
+    // 정확한 주차 계산 (해당 월의 몇 번째 주인지)
+    const startOfMonth = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
+    const dayOfWeek = startOfMonth.getDay(); 
+    const offsetDate = dateObj.getDate() + dayOfWeek - 1;
+    const weekNum = Math.floor(offsetDate / 7) + 1;
 
-    // 3. 마감일 계산
-    let deadlineDate;
-    if (suffix === 'Pre') {
-        deadlineDate = new Date(now.getFullYear(), now.getMonth(), 13, 23, 59, 59);
-    } else {
-        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-        deadlineDate = new Date(now.getFullYear(), now.getMonth(), lastDay - 2, 23, 59, 59);
-    }
+    return `${year}${monthStr}W${weekNum}`; 
+}
+
+// [헬퍼] 키를 화면 표시용 문자열로 변환
+function formatReportKey(key) {
+    if (!key || key.length < 7) return key;
+
+    const yearStr = key.substring(0, 2);  // "26"
+    const monthStr = key.substring(2, 5); // "Mar"
+    const periodStr = key.substring(5);   // "W2" 또는 "Pre"
+
+    const monthMap = {
+        'Jan': '1월', 'Feb': '2월', 'Mar': '3월', 'Apr': '4월', 'May': '5월', 'Jun': '6월',
+        'Jul': '7월', 'Aug': '8월', 'Sep': '9월', 'Oct': '10월', 'Nov': '11월', 'Dec': '12월'
+    };
+
+    const year = `20${yearStr}년`;
+    const month = monthMap[monthStr] || monthStr;
     
+    let period = periodStr;
+    if (periodStr === 'Pre') period = '전반기';
+    else if (periodStr === 'Post') period = '후반기';
+    else if (periodStr.startsWith('W')) period = `${periodStr.replace('W', '')}주차`;
+
+    return `${year} ${month} ${period} PRO 분석`;
+}
+
+// ------------------------------------------------------------
+// 2. [전용 대시보드] Pro 이상 유저 대상
+// ------------------------------------------------------------
+async function renderProDashboard(container) {
+    const now = new Date();
+    const currentKey = generateReportKey(now); // 예: 26AprW2
+    const displayDateStr = formatReportKey(currentKey).replace(" PRO 분석", ""); // "2026년 4월 2주차"
+    
+    // 1. 유저의 최근 결제일 가져오기
+    let paymentDate = userRecentPaymentDate || new Date();
+
+    // 2. 마감일 계산 로직: 결제일 + 최소 7일 경과 후 '돌아오는 일요일' 자정
+    let deadlineDate = new Date(paymentDate);
+    deadlineDate.setDate(deadlineDate.getDate() + 7); // 무조건 최소 7일은 보장
+    const daysToSunday = (7 - deadlineDate.getDay()) % 7; // 일요일까지 남은 일수 (일=0, 월=6...)
+    deadlineDate.setDate(deadlineDate.getDate() + daysToSunday);
+    deadlineDate.setHours(23, 59, 59, 999);
+
+    // 3. 발송일 계산: 마감일(일요일) + 3일 = 돌아오는 수요일
+    let releaseDate = new Date(deadlineDate);
+    releaseDate.setDate(releaseDate.getDate() + 3);
+
     const isDeadlinePassed = now > deadlineDate;
-    const deadlineStr = `${deadlineDate.getMonth()+1}월 ${deadlineDate.getDate()}일`;
+    const deadlineStr = `${deadlineDate.getMonth() + 1}월 ${deadlineDate.getDate()}일(일) 자정`;
+    const releaseStr = `${releaseDate.getMonth() + 1}월 ${releaseDate.getDate()}일(수)`;
 
     // 4. UI 그리기
     container.innerHTML = `
@@ -2623,6 +2660,9 @@ function renderProDashboard(container) {
                 상위 1%를 위한 프리미엄 분석 센터입니다.<br>
                 <strong>${displayDateStr}</strong> 회차 리포트 요청이 진행 중입니다.
             </p>
+            <div style="margin-top:10px; font-size:0.85rem; color:#cbd5e1;">
+                <i class="fas fa-bell" style="color:#fbbf24;"></i> 리포트는 <strong>${releaseStr}</strong>에 일괄 발송됩니다.
+            </div>
         </div>
 
         <div class="pro-dashboard-layout">
@@ -2650,34 +2690,12 @@ function renderProDashboard(container) {
         </div>
     `;
 
-    // 데이터 로드 후 버튼 상태 업데이트
     loadProReports(currentKey, isDeadlinePassed);
 }
 
-let cachedProReports = []; // 전역 변수 추가
+let cachedProReports = []; 
 
-// 1. [신규 추가] 26MarPre -> "26년 3월 전반기" 로 예쁘게 바꿔주는 변환 함수
-function formatReportKey(key) {
-    if (!key || key.length < 7) return key; // 예외 처리
-
-    const yearStr = key.substring(0, 2);  // "26"
-    const monthStr = key.substring(2, 5); // "Mar"
-    const periodStr = key.substring(5);   // "Pre" 또는 "Post"
-
-    const monthMap = {
-        'Jan': '1월', 'Feb': '2월', 'Mar': '3월', 'Apr': '4월', 'May': '5월', 'Jun': '6월',
-        'Jul': '7월', 'Aug': '8월', 'Sep': '9월', 'Oct': '10월', 'Nov': '11월', 'Dec': '12월'
-    };
-
-    const year = `${yearStr}년`;
-    const month = monthMap[monthStr] || monthStr;
-    const period = periodStr === 'Pre' ? '전반기' : (periodStr === 'Post' ? '후반기' : periodStr);
-
-    return `${year} ${month} ${period}`;
-}
-
-
-// 2. [수정된 함수] 학생용 PRO 리포트 로드 함수
+// 3. 학생용 PRO 리포트 로드 함수
 async function loadProReports(currentKey, isDeadlinePassed) {
     const listArea = document.getElementById('proReportListArea');
     const btnContainer = document.getElementById('requestBtnContainer');
@@ -2693,28 +2711,22 @@ async function loadProReports(currentKey, isDeadlinePassed) {
         const data = await res.json();
         cachedProReports = data.reports || [];
 
-        // 1. 리스트 렌더링
         if (cachedProReports.length === 0) {
             listArea.innerHTML = `<div style="text-align:center; color:#94a3b8; padding:30px;">발행된 보고서가 없습니다.</div>`;
         } else {
             let html = '<div class="report-grid">';
             cachedProReports.forEach(rep => {
-                
-                // 🚨 핵심 수정 1: 튜터가 최종 전송한 'published' 상태일 때만 열람 가능하도록 수정!
-                // (과거에 이미 발송된 'sent' 상태의 보고서도 열람 가능하도록 호환성 유지)
                 const isReady = (rep.status === 'published' || rep.status === 'sent');
-                
                 const statusBadge = isReady 
                     ? '<span style="color:#4ade80; font-size:0.8rem;">● 열람 가능</span>' 
                     : '<span style="color:#fbbf24; font-size:0.8rem;">● 분석중</span>';
                 
-                // 🚨 핵심 수정 2: 포맷팅 함수를 사용해 예쁜 이름으로 출력
                 const formattedName = formatReportKey(rep.key);
                 
                 html += `
                     <div class="report-item" onclick="${isReady ? `window.open('${rep.reportLink}')` : "alert('튜터가 리포트를 최종 검수 중입니다. 잠시만 기다려주세요.')"}" style="cursor:${isReady?'pointer':'default'}">
                         <div class="rep-info">
-                            <strong>${formattedName} 보고서</strong>
+                            <strong>${formattedName}</strong>
                             ${statusBadge}
                         </div>
                         <div class="rep-icon"><i class="fas fa-download" style="color:${isReady?'#3b82f6':'#475569'}"></i></div>
@@ -2725,7 +2737,6 @@ async function loadProReports(currentKey, isDeadlinePassed) {
             listArea.innerHTML = html;
         }
 
-        // 2. 요청 버튼 상태 업데이트 (이 부분은 기존과 동일)
         const currentData = cachedProReports.find(r => r.key === currentKey);
         const hasRequested = currentData && currentData.request;
 
@@ -2736,19 +2747,17 @@ async function loadProReports(currentKey, isDeadlinePassed) {
                 </button>
             `;
         } else if (hasRequested) {
-            // 이미 요청함 -> 수정 모드
             btnContainer.innerHTML = `
                 <button class="req-btn" style="background:#dcfce7; color:#166534; border:1px solid #86efac;" onclick="modifyProRequest()">
                     <i class="fas fa-check-circle"></i> 요청 완료 (수정하기)
                 </button>
             `;
             document.getElementById('proReportRequest').value = currentData.request;
-        } else {
-            // 요청 안 함 -> 기본 버튼 유지
         }
 
     } catch (e) {
         console.error(e);
+        listArea.innerHTML = `<div style="text-align:center; color:#ef4444; padding:20px;">데이터를 불러오는 중 오류가 발생했습니다.</div>`;
     }
 }
 
@@ -2758,18 +2767,15 @@ function modifyProRequest() {
     }
 }
 
-// ------------------------------------------------------------
-// 모달 관련 기능
-// ------------------------------------------------------------
 function openProReportModal() {
     const modal = document.getElementById('proReportModal');
     const textarea = document.getElementById('proReportRequest');
     if (modal) {
         modal.style.display = 'block';
         if(textarea) {
-            textarea.value = ''; // 초기화
+            textarea.value = ''; 
             textarea.focus();
-            updateCharCount(textarea); // 글자수 초기화
+            updateCharCount(textarea); 
         }
         document.body.style.overflow = 'hidden';
     }
@@ -2780,7 +2786,7 @@ function closeProModal() {
     document.body.style.overflow = 'auto';
 }
 
-// [API] PRO 보고서 요청 제출
+// PRO 보고서 요청 제출
 async function submitProReport() {
     const text = document.getElementById('proReportRequest').value;
     if (text.trim().length < 10) {
@@ -2813,19 +2819,15 @@ async function submitProReport() {
 
         if (res.ok) {
             alert(data.msg || "요청이 정상적으로 접수되었습니다.");
-            
             const url = new URL(window.location.href);
-            url.searchParams.set('tab', 'pro'); // type이 'pro'이므로 이렇게 세팅
+            url.searchParams.set('tab', 'pro'); 
             window.location.href = url.toString();
         } else {
-            // [수정] 서버에서 보낸 msg가 있으면 쓰고, 없으면 기본 한글 메시지 출력
             const errorMsg = data.msg || "요청 처리 중 오류가 발생했습니다.";
             throw new Error(errorMsg);
         }
 
     } catch (e) {
-        console.error("Submit Error:", e);
-        // e.message에 이미 위에서 정의한 한글 메시지가 담겨 있습니다.
         alert(e.message); 
     } finally {
         submitBtn.innerText = originalText;
@@ -2833,7 +2835,6 @@ async function submitProReport() {
     }
 }
 
-// 글자수 세기 리스너 연결 (DOMContentLoaded 등에 추가)
 document.addEventListener('input', function(e) {
     if(e.target.id === 'proReportRequest') {
         const countSpan = e.target.parentElement.querySelector('.char-count span');
