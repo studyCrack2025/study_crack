@@ -393,7 +393,7 @@ header {
 .planner-right { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 30px; position: relative; z-index: 1; }
 .feat-item { position: relative; display: flex; align-items: flex-start; gap: 20px; padding: 15px; border-radius: 12px; transition: all 0.3s ease; cursor: default; }
 .feat-item:hover { background: #fff; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); z-index: 2; }
-.feat-connector { position: absolute; left: -80px; top: 35px; width: 80px; height: 2px; background: repeating-linear-gradient(to right, #cbd5e1 0, #cbd5e1 6px, transparent 6px, transparent 12px); z-index: -1; transition: all 0.3s ease; } /* z-index를 -1로 내려 선을 숨김 */
+.feat-connector { position: absolute; left: -100px; top: 35px; width: 100px; height: 2px; background: repeating-linear-gradient(to right, #cbd5e1 0, #cbd5e1 6px, transparent 6px, transparent 12px); z-index: -1; transition: all 0.3s ease; } /* left와 width를 조정하여 꺾인 부분을 더 오른쪽으로 이동 */
 .feat-item:hover .feat-connector { background: #3b82f6; }
 .feat-item.pro-feat-item:hover .feat-connector { background: #f59e0b; }
 .feat-num { position: relative; z-index: 2; width: 40px; height: 40px; background: #f1f5f9; color: #64748b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 900; flex-shrink: 0; transition: all 0.3s ease; }
@@ -569,13 +569,30 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
         transform: translateY(0); /* 위로 올라옴 */
     }
     
-    .planner-container { flex-direction: column; gap: 40px; }
+    .planner-container { flex-direction: column; gap: 30px; }
     .feat-connector, .mockup-dot { display: none; }
     .planner-left, .planner-right { width: 100%; }
-    .planner-header h2 { font-size: 1.8rem; }
-    .feat-item { padding: 0; gap: 15px; }
+    .planner-header h2 { font-size: 1.35rem; }
+    .planner-header p { font-size: 0.825rem; }
+    .feat-item { padding: 0; gap: 11.25px; }
     .feat-item:hover { background: transparent; box-shadow: none; }
     .feat-item:hover .feat-num { transform: none; }
+    .mockup-ui { border-radius: 12px; }
+    .mockup-header { padding: 11.25px 15px; font-size: 0.75rem; gap: 7.5px; }
+    .mockup-body { padding: 15px; gap: 11.25px; }
+    .mockup-block { padding: 11.25px; border-radius: 7.5px; }
+    .mockup-block h5 { font-size: 0.7125rem; margin-bottom: 7.5px; }
+    .mock-chart { height: 9px; border-radius: 4.5px; gap: 1.5px; }
+    .mock-list { font-size: 0.6375rem; gap: 4.5px; }
+    .mock-progress-container { height: 6px; border-radius: 3px; margin-bottom: 3.75px; }
+    .mock-progress-fill { border-radius: 3px; }
+    .mock-note { font-size: 0.6rem; }
+    .pro-note { padding: 7.5px; border-left-width: 2.25px; border-radius: 3px; }
+    .planner-right { gap: 22.5px; }
+    .feat-num { width: 30px; height: 30px; font-size: 0.9rem; }
+    .feat-text h4 { font-size: 0.8625rem; margin-bottom: 6px; gap: 6px; }
+    .feat-text p { font-size: 0.7125rem; line-height: 1.2; }
+    .pro-badge-sm { font-size: 0.5625rem; padding: 2.25px 6px; border-radius: 3px; }
 }
 
 @media (max-width: 768px) {
