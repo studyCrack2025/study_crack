@@ -358,108 +358,23 @@ header {
 .preview-img-wrapper img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
 
 /* =========================================
-   [NEW] Planner Promo 섹션
+   7. Planner Promo 섹션
    ========================================= */
-.planner-section {
-    padding: 100px 5%;
-    background-color: #f8fafc;
-    border-top: 1px solid #e2e8f0;
-}
-
-.planner-header {
-    text-align: center;
-    margin-bottom: 60px;
-}
-
-.planner-header h2 {
-    font-size: 2.2rem;
-    font-weight: 800;
-    color: #0f172a;
-    margin-bottom: 10px;
-}
-
-.planner-header p {
-    font-size: 1.1rem;
-    color: #64748b;
-}
-
-.planner-container {
-    display: flex;
-    max-width: 1200px;
-    margin: 0 auto;
-    align-items: center;
-    gap: 80px; /* 좌우 간격 넓게 배치 */
-}
+.planner-section { padding: 100px 5%; background-color: #f8fafc; border-top: 1px solid #e2e8f0; }
+.planner-header { text-align: center; margin-bottom: 60px; }
+.planner-header h2 { font-size: 2.2rem; font-weight: 800; color: #0f172a; margin-bottom: 10px; }
+.planner-header p { font-size: 1.1rem; color: #64748b; }
+.planner-container { display: flex; max-width: 1200px; margin: 0 auto; align-items: center; gap: 80px; }
 
 /* 좌측 Mockup UI */
-.planner-left {
-    flex: 1;
-    position: relative;
-    z-index: 2;
-}
-
-.mockup-ui {
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1);
-    border: 1px solid #e2e8f0;
-    overflow: hidden;
-}
-
-.mockup-header {
-    background: #0f172a;
-    color: #fff;
-    padding: 15px 20px;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.mockup-body {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.mockup-block {
-    position: relative;
-    padding: 15px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    transition: all 0.3s ease;
-}
-
-/* 모의고사 UI 호버 활성화 효과 */
-.mockup-block.active {
-    background: #eff6ff;
-    border-color: #3b82f6;
-    transform: scale(1.02);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-}
-
-.mockup-block.pro-block.active {
-    background: #fffbeb;
-    border-color: #f59e0b;
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
-}
-
-/* Mockup 연결 점 */
-.mockup-dot {
-    position: absolute;
-    right: -21px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 12px;
-    height: 12px;
-    background: #cbd5e1;
-    border-radius: 50%;
-    transition: all 0.3s ease;
-    z-index: 5;
-}
-
+.planner-left { flex: 1; position: relative; z-index: 10; } /* z-index를 높여서 선을 덮음 */
+.mockup-ui { background: #fff; border-radius: 16px; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; overflow: hidden; }
+.mockup-header { background: #0f172a; color: #fff; padding: 15px 20px; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+.mockup-body { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+.mockup-block { position: relative; padding: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; transition: all 0.3s ease; z-index: 5; }
+.mockup-block.active { background: #eff6ff; border-color: #3b82f6; transform: scale(1.02); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15); z-index: 10; }
+.mockup-block.pro-block.active { background: #fffbeb; border-color: #f59e0b; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15); }
+.mockup-dot { position: absolute; right: -21px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; background: #cbd5e1; border-radius: 50%; transition: all 0.3s ease; z-index: 5; }
 .mockup-block.active .mockup-dot { background: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.2); }
 .mockup-block.pro-block.active .mockup-dot { background: #f59e0b; box-shadow: 0 0 0 4px rgba(245,158,11,0.2); }
 
@@ -475,89 +390,22 @@ header {
 .pro-note { background: #fffbeb; padding: 10px; border-left: 3px solid #f59e0b; border-radius: 4px; color: #78350f; }
 
 /* 우측 특징 리스트 */
-.planner-right {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 30px;
-}
-
-.feat-item {
-    position: relative;
-    display: flex;
-    align-items: flex-start;
-    gap: 20px;
-    padding: 15px;
-    border-radius: 12px;
-    transition: all 0.3s ease;
-    cursor: default;
-}
-
-.feat-item:hover { background: #fff; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
-
-/* 지시선 (점선) */
-.feat-connector {
-    position: absolute;
-    left: -80px; /* 좌측 공간으로 선 연장 */
-    top: 35px;
-    width: 80px;
-    height: 2px;
-    background: repeating-linear-gradient(to right, #cbd5e1 0, #cbd5e1 6px, transparent 6px, transparent 12px);
-    z-index: 1;
-    transition: all 0.3s ease;
-}
-
-.feat-item:hover .feat-connector {
-    background: #3b82f6; /* 호버 시 실선 또는 진한 점선으로 변경 */
-}
-.feat-item.pro-feat-item:hover .feat-connector {
-    background: #f59e0b;
-}
-
-.feat-num {
-    position: relative;
-    z-index: 2;
-    width: 40px;
-    height: 40px;
-    background: #f1f5f9;
-    color: #64748b;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    font-weight: 900;
-    flex-shrink: 0;
-    transition: all 0.3s ease;
-}
-
+.planner-right { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 30px; position: relative; z-index: 1; }
+.feat-item { position: relative; display: flex; align-items: flex-start; gap: 20px; padding: 15px; border-radius: 12px; transition: all 0.3s ease; cursor: default; }
+.feat-item:hover { background: #fff; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); z-index: 2; }
+.feat-connector { position: absolute; left: -80px; top: 35px; width: 80px; height: 2px; background: repeating-linear-gradient(to right, #cbd5e1 0, #cbd5e1 6px, transparent 6px, transparent 12px); z-index: -1; transition: all 0.3s ease; } /* z-index를 -1로 내려 선을 숨김 */
+.feat-item:hover .feat-connector { background: #3b82f6; }
+.feat-item.pro-feat-item:hover .feat-connector { background: #f59e0b; }
+.feat-num { position: relative; z-index: 2; width: 40px; height: 40px; background: #f1f5f9; color: #64748b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 900; flex-shrink: 0; transition: all 0.3s ease; }
 .feat-item:hover .feat-num { background: #3b82f6; color: white; transform: scale(1.1); }
 .feat-item.pro-feat-item:hover .feat-num { background: linear-gradient(135deg, #F59E0B, #FCD34D); color: #78350f; }
-
 .feat-text h4 { font-size: 1.15rem; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
 .feat-text p { font-size: 0.95rem; color: #64748b; line-height: 1.6; }
 .pro-badge-sm { background: linear-gradient(135deg, #F59E0B, #FCD34D); color: #78350f; font-size: 0.75rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; }
 
 
-/* 반응형: 모바일 (900px 이하) */
-@media (max-width: 900px) {
-    .planner-container { flex-direction: column; gap: 40px; }
-    
-    /* 모바일에서는 선과 튀어나온 점을 숨깁니다 */
-    .feat-connector { display: none; }
-    .mockup-dot { display: none; }
-
-    .planner-left, .planner-right { width: 100%; }
-    .planner-header h2 { font-size: 1.8rem; }
-    .feat-item { padding: 0; gap: 15px; }
-    .feat-item:hover { background: transparent; box-shadow: none; }
-    .feat-item:hover .feat-num { transform: none; }
-}
-
-
 /* =========================================
-   7. Review 섹션
+   8. Review 섹션
    ========================================= */
 .review-section {
     padding: 100px 5%; position: relative; background-color: #f8fafc;
@@ -582,7 +430,7 @@ header {
 
 
 /* =========================================
-   8. CTA & Footer 섹션
+   9. CTA & Footer 섹션
    ========================================= */
 .cta-section { 
     text-align: center; padding: 160px 20px; background-color: #0f172a; position: relative;
@@ -608,7 +456,7 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 
 
 /* =========================================
-   9. Modals & Floating Buttons
+   10. Modals & Floating Buttons
    ========================================= */
 .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); }
 .modal-content { background-color: white; margin: 5% auto; padding: 30px; border-radius: 16px; width: 90%; max-width: 600px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
@@ -686,41 +534,12 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 .notice-btn { padding: 10px 30px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
 .notice-btn:hover { background: #2563eb; }
 
-/* .floating-black-btn {
-    position: fixed; bottom: 190px; right: 30px; width: 65px; height: 65px;
-    background: #000; border: 2px solid #d4af37; border-radius: 50%;
-    display: flex; justify-content: center; align-items: center; text-decoration: none;
-    z-index: 9999; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); overflow: hidden; transition: transform 0.3s;
-}
-.floating-black-btn:hover { transform: translateY(-5px) scale(1.05); box-shadow: 0 0 20px rgba(212, 175, 55, 0.6); }
-.floating-black-btn.hidden { display: none !important; }
-.black-icon { font-size: 24px; z-index: 2; position: relative; }
-
-.shimmer-effect {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background: linear-gradient(to right, transparent 0%, rgba(212, 175, 55, 0.4) 50%, transparent 100%);
-    transform: skewX(-20deg) translateX(-150%); animation: shimmer 3s infinite; z-index: 1;
-}
-@keyframes shimmer { 0% { transform: skewX(-20deg) translateX(-150%); } 20% { transform: skewX(-20deg) translateX(150%); } 100% { transform: skewX(-20deg) translateX(150%); } }
-
-.black-guide-tooltip {
-    position: absolute; right: 75px; top: 50%; transform: translateY(-50%);
-    background: rgba(0, 0, 0, 0.85); color: #d4af37; padding: 8px 12px; border-radius: 8px;
-    font-size: 0.8rem; font-weight: bold; text-align: right; white-space: nowrap; line-height: 1.2;
-    border: 1px solid #d4af37; pointer-events: none; animation: fadeInRight 0.5s ease-out forwards;
-}
-.black-guide-tooltip::after {
-    content: ''; position: absolute; right: -6px; top: 50%; transform: translateY(-50%);
-    border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-left: 6px solid #d4af37;
-}
-@keyframes fadeInRight { from { opacity: 0; transform: translate(-10px, -50%); } to { opacity: 1; transform: translate(0, -50%); } } */
-
 
 /* =========================================
-   10. 모바일 반응형 (통합)
+   11. 모바일 반응형 (통합)
    ========================================= */
 @media (max-width: 900px) {
-    /* [수정] Message Section 모바일 대응 */
+    /* Message Section 모바일 대응 */
     .message-container { flex-direction: column; text-align: center; gap: 40px; }
     .message-text-area { text-align: center; margin-bottom: 30px; }
     .dotted-line-connector::after { width: 80%; }
@@ -749,6 +568,14 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
     .feature-preview-panel.active {
         transform: translateY(0); /* 위로 올라옴 */
     }
+    
+    .planner-container { flex-direction: column; gap: 40px; }
+    .feat-connector, .mockup-dot { display: none; }
+    .planner-left, .planner-right { width: 100%; }
+    .planner-header h2 { font-size: 1.8rem; }
+    .feat-item { padding: 0; gap: 15px; }
+    .feat-item:hover { background: transparent; box-shadow: none; }
+    .feat-item:hover .feat-num { transform: none; }
 }
 
 @media (max-width: 768px) {
