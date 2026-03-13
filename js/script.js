@@ -187,8 +187,7 @@ function openFeaturePreview(imgBase, title) {
 
     if (!panel || !imgWrapper) return;
 
-    // [중요] 매번 클릭할 때마다 이미지 태그를 새로 리셋합니다.
-    // (이전에 에러가 나서 텍스트로 바뀌어 있을 수 있기 때문입니다)
+    // 매번 클릭할 때마다 이미지 태그를 새로 리셋합니다.
     imgWrapper.innerHTML = '<img id="previewImage" src="" alt="기능 예시 이미지" style="width:100%; height:100%; object-fit:contain;">';
     
     // 리셋된 이미지 태그 다시 선택
@@ -213,7 +212,7 @@ function openFeaturePreview(imgBase, title) {
     // 제목 설정
     if(previewTitle) previewTitle.innerText = title;
 
-    // [핵심] 이미지 로드 실패 시 alert 대신 UI 변경
+    // 이미지 로드 실패 시 alert 대신 UI 변경
     previewImg.onerror = function() {
         // 콘솔에만 에러 로그 남김 (사용자 방해 X)
         console.log("이미지 로드 실패, 대체 화면 표시: " + imgPath);
@@ -257,7 +256,7 @@ function downloadProReport(filePath) {
 
 
 /* =========================================
-   3. 후기 데이터 로직 (에러 처리 강화)
+   3. 후기 데이터 로직
    ========================================= */
 async function getUserReviews() {
     // 1. API 설정 확인 (설정 없으면 빈 배열 반환)
@@ -338,7 +337,7 @@ async function renderReviews() {
 }
 
 /* =========================================
-   4. 인터랙티브 데모 로직 (ReferenceError 해결)
+   4. 인터랙티브 데모 로직
    ========================================= */
 
 // 전역 스코프에 함수 정의 (HTML onclick에서 접근 가능하도록)
@@ -604,30 +603,17 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
-// function showBlackButtonIfEligible() {
-//     const token = localStorage.getItem('accessToken'); 
-//     const tier = localStorage.getItem('userTier'); 
-//     const btn = document.getElementById('blackThemeBtn');
-//     if (!btn) return;
-// 
-//     if (token && tier === 'black') {
-//         btn.classList.remove('hidden');
-//     } else {
-//         btn.classList.add('hidden');
-//     }
-// }
-// 
-// function checkBlackAccess() {
-//     const token = localStorage.getItem('accessToken');
-//     if (!token) {
-//         alert("로그인이 필요한 서비스입니다.");
-//         window.location.href = '/login';
-//         return;
-//     }
-//     const tier = localStorage.getItem('userTier');
-//     if (tier === 'black') {
-//         window.location.href = '/black';
-//     } else {
-//         alert("BLACK 회원 전용 공간입니다.");
-//     }
-// }
+// 플래너 섹션 호버 인터랙션
+function hoverMockup(index) {
+    const targetBlock = document.getElementById('mock-' + index);
+    if(targetBlock) {
+        targetBlock.classList.add('active');
+    }
+}
+
+function leaveMockup(index) {
+    const targetBlock = document.getElementById('mock-' + index);
+    if(targetBlock) {
+        targetBlock.classList.remove('active');
+    }
+}
