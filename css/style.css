@@ -362,8 +362,8 @@ header {
    ========================================= */
 .planner-section { padding: 100px 5%; background-color: #f8fafc; background-image: url('/assets/backgrounds/bg_planner.png'); background-size: cover; background-position: top center; background-repeat: no-repeat; border-top: 1px solid #e2e8f0; }
 .planner-header { text-align: center; margin-bottom: 60px; }
-.planner-header h2 { font-size: 2.2rem; font-weight: 800; color: #0f172a; margin-bottom: 10px; }
-.planner-header p { font-size: 1.1rem; color: #64748b; }
+.planner-header h2 { font-size: 2.2rem; font-weight: 800; color: #0f172a; margin-bottom: 10px; text-shadow: 0 2px 4px rgba(255, 255, 255, 0.9), 0 0 15px rgba(255, 255, 255, 1); }
+.planner-header p { font-size: 1.1rem; color: #334155; font-weight: 500; text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9), 0 0 10px rgba(255, 255, 255, 0.8); }
 .planner-container { display: flex; max-width: 1200px; margin: 0 auto; align-items: center; gap: 80px; }
 
 /* 좌측 Mockup UI */
