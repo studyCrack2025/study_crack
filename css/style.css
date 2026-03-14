@@ -367,7 +367,7 @@ header {
 .planner-container { display: flex; max-width: 1200px; margin: 0 auto; align-items: center; gap: 80px; }
 
 /* 좌측 Mockup UI */
-.planner-left { flex: 1; position: relative; z-index: 10; } /* z-index를 높여서 선을 덮음 */
+.planner-left { flex: 1; position: relative; z-index: 1; }
 .mockup-ui { background: #fff; border-radius: 16px; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; overflow: hidden; }
 .mockup-header { background: #0f172a; color: #fff; padding: 15px 20px; font-weight: bold; display: flex; align-items: center; gap: 10px; }
 .mockup-body { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
@@ -377,8 +377,6 @@ header {
 .mockup-dot { position: absolute; right: -21px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; background: #cbd5e1; border-radius: 50%; transition: all 0.3s ease; z-index: 5; }
 .mockup-block.active .mockup-dot { background: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.2); }
 .mockup-block.pro-block.active .mockup-dot { background: #f59e0b; box-shadow: 0 0 0 4px rgba(245,158,11,0.2); }
-
-/* Mockup 내부 디테일 */
 .mockup-block h5 { margin: 0 0 10px 0; font-size: 0.95rem; color: #1e293b; }
 .mock-chart { display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px; }
 .mock-chart .bar { height: 100%; color: transparent; font-size: 0; }
@@ -390,10 +388,10 @@ header {
 .pro-note { background: #fffbeb; padding: 10px; border-left: 3px solid #f59e0b; border-radius: 4px; color: #78350f; }
 
 /* 우측 특징 리스트 */
-.planner-right { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 30px; position: relative; z-index: 1; }
+.planner-right { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 30px; position: relative; z-index: 2; }
 .feat-item { position: relative; display: flex; align-items: flex-start; gap: 20px; padding: 15px; border-radius: 12px; transition: all 0.3s ease; cursor: default; }
-.feat-item:hover { background: #fff; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); z-index: 2; }
-.feat-connector { position: absolute; left: -100px; top: 35px; width: 100px; height: 2px; background: repeating-linear-gradient(to right, #cbd5e1 0, #cbd5e1 6px, transparent 6px, transparent 12px); z-index: -1; transition: all 0.3s ease; } /* left와 width를 조정하여 꺾인 부분을 더 오른쪽으로 이동 */
+.feat-item:hover { background: #fff; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); z-index: 5; }
+.feat-connector { position: absolute; left: -50px; top: 35px; width: 50px; height: 2px; background: repeating-linear-gradient(to right, #cbd5e1 0, #cbd5e1 6px, transparent 6px, transparent 12px); z-index: -1; transition: all 0.3s ease; }
 .feat-item:hover .feat-connector { background: #3b82f6; }
 .feat-item.pro-feat-item:hover .feat-connector { background: #f59e0b; }
 .feat-num { position: relative; z-index: 2; width: 40px; height: 40px; background: #f1f5f9; color: #64748b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 900; flex-shrink: 0; transition: all 0.3s ease; }
