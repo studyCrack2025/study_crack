@@ -360,7 +360,7 @@ header {
 /* =========================================
    7. Planner Promo 섹션
    ========================================= */
-.planner-section { padding: 100px 5%; background-color: #f8fafc; border-top: 1px solid #e2e8f0; }
+.planner-section { padding: 100px 5%; background-color: #f8fafc; background-image: url('/assets/backgrounds/bg_planner.png'); border-top: 1px solid #e2e8f0; }
 .planner-header { text-align: center; margin-bottom: 60px; }
 .planner-header h2 { font-size: 2.2rem; font-weight: 800; color: #0f172a; margin-bottom: 10px; }
 .planner-header p { font-size: 1.1rem; color: #64748b; }
@@ -567,7 +567,8 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
         transform: translateY(0); /* 위로 올라옴 */
     }
     
-.planner-container { flex-direction: column; gap: 30px; }
+    .planner-section { background-image: url('/assets/backgrounds/bg_planner_mobile.png'); }
+    .planner-container { flex-direction: column; gap: 30px; }
     .feat-connector, .mockup-dot { display: none; }
     .planner-left, .planner-right { width: 100%; }
     .planner-header h2 { font-size: 1.6rem; }
