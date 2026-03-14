@@ -366,11 +366,9 @@ header {
 .planner-header p { font-size: 1.1rem; color: #64748b; }
 .planner-container { display: flex; max-width: 1200px; margin: 0 auto; align-items: center; gap: 80px; }
 
-.planner-left { flex: 1; position: relative; z-index: 2; }
-.planner-right { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 30px; position: relative; z-index: 1; }
-
+/* 좌측 Mockup UI */
+.planner-left { flex: 1; position: relative; z-index: 10; }
 .mockup-ui { background: #fff; border-radius: 16px; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; overflow: visible; position: relative; }
-/* 헤더 부분의 위쪽 둥근 모서리를 따로 처리 */
 .mockup-header { background: #0f172a; color: #fff; padding: 15px 20px; font-weight: bold; display: flex; align-items: center; gap: 10px; border-radius: 15px 15px 0 0; }
 .mockup-body { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
 
@@ -378,10 +376,12 @@ header {
 .mockup-block.active { background: #eff6ff; border-color: #3b82f6; transform: scale(1.02); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15); z-index: 10; }
 .mockup-block.pro-block.active { background: #fffbeb; border-color: #f59e0b; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15); }
 
+/* 목업 옆에 튀어나오는 점 */
 .mockup-dot { position: absolute; right: -26px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; background: #cbd5e1; border-radius: 50%; transition: all 0.3s ease; z-index: 15; }
 .mockup-block.active .mockup-dot { background: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.2); }
 .mockup-block.pro-block.active .mockup-dot { background: #f59e0b; box-shadow: 0 0 0 4px rgba(245,158,11,0.2); }
 
+/* Mockup 내부 디테일 */
 .mockup-block h5 { margin: 0 0 10px 0; font-size: 0.95rem; color: #1e293b; }
 .mock-chart { display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px; }
 .mock-chart .bar { height: 100%; color: transparent; font-size: 0; }
@@ -392,39 +392,27 @@ header {
 .mock-note { font-size: 0.8rem; color: #64748b; margin: 0; }
 .pro-note { background: #fffbeb; padding: 10px; border-left: 3px solid #f59e0b; border-radius: 4px; color: #78350f; }
 
-.feat-item { position: relative; display: flex; align-items: flex-start; gap: 20px; padding: 15px; border-radius: 12px; transition: all 0.3s ease; cursor: default; z-index: 5; }
-.feat-item:hover { background: #fff; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); z-index: 5; }
+/* 우측 특징 리스트 */
+.planner-right { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 30px; position: relative; z-index: 5; }
+.feat-item { position: relative; display: flex; align-items: flex-start; gap: 20px; padding: 15px; border-radius: 12px; transition: all 0.3s ease; cursor: default; }
+.feat-item:hover { background: #fff; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
 
 .feat-connector { 
     position: absolute; 
-    right: calc(100% - 20px); /* 동그라미 번호의 중심 부근에서 출발 */
-    top: 20px; /* 번호의 세로 중앙 */
-    width: 40px; /* 전체 80px 간격의 딱 절반(40px)까지만 이동! */
-    height: 35px; /* 아래/위로 꺾이는 길이 */
-    border-bottom: 2px dashed #cbd5e1; 
-    border-left: 2px dashed #cbd5e1; 
-    border-bottom-left-radius: 8px; /* 꺾이는 부분 라운드 처리 */
-    z-index: -1; /* 기본 상태에서는 뒤로 숨김 */
+    right: 100%; /* 박스의 완전히 왼쪽 끝에서부터 출발 (하얀 배경과 절대 안 겹침) */
+    top: 35px; /* 숫자 동그라미의 정중앙 높이 */
+    width: 80px; /* 가운데 빈 공간(gap: 80px)만큼만 선이 그려짐 */
+    border-top: 2px dashed #cbd5e1; /* 깔끔한 점선 하나만 사용 */
+    z-index: 1; 
     transition: all 0.3s ease; 
 }
-.feat-connector::before { 
-    content: ''; 
-    position: absolute; 
-    right: 100%; /* 세로선 위치에서 다시 출발 */
-    top: -2px; /* 세로선 상단 */
-    width: 40px; /* 남은 절반(40px)만큼 이동해 목업 점에 닿음 */
-    border-top: 2px dashed #cbd5e1; 
-    transition: all 0.3s ease; 
-}
-.feat-item:hover .feat-connector { z-index: 10; border-color: #3b82f6; border-style: solid; }
-.feat-item:hover .feat-connector::before { border-color: #3b82f6; border-style: solid; }
-.feat-item.pro-feat-item:hover .feat-connector { border-color: #f59e0b; }
-.feat-item.pro-feat-item:hover .feat-connector::before { border-color: #f59e0b; }
+.feat-item:hover .feat-connector { border-top-color: #3b82f6; border-top-style: solid; }
+.feat-item.pro-feat-item:hover .feat-connector { border-top-color: #f59e0b; border-top-style: solid; }
 
-.feat-num { position: relative; z-index: 5; width: 40px; height: 40px; background: #f1f5f9; color: #64748b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 900; flex-shrink: 0; transition: all 0.3s ease; }
+.feat-num { position: relative; z-index: 2; width: 40px; height: 40px; background: #f1f5f9; color: #64748b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 900; flex-shrink: 0; transition: all 0.3s ease; }
 .feat-item:hover .feat-num { background: #3b82f6; color: white; transform: scale(1.1); }
 .feat-item.pro-feat-item:hover .feat-num { background: linear-gradient(135deg, #F59E0B, #FCD34D); color: #78350f; }
-.feat-text { position: relative; z-index: 5; }
+.feat-text { position: relative; z-index: 2; }
 .feat-text h4 { font-size: 1.15rem; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
 .feat-text p { font-size: 0.95rem; color: #64748b; line-height: 1.6; }
 .pro-badge-sm { background: linear-gradient(135deg, #F59E0B, #FCD34D); color: #78350f; font-size: 0.75rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; }
