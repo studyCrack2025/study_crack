@@ -388,9 +388,9 @@ header {
 
 /* 우측 특징 리스트 (시각적 동기화 적용) */
 .planner-right { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 30px; position: relative; z-index: 5; }
-.feat-item { position: relative; display: flex; align-items: flex-start; gap: 20px; padding: 15px; border-radius: 12px; border: 1px solid transparent; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
-.feat-item:hover { background: #fff; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border-color: #e2e8f0; transform: translateX(-15px); }
-.feat-item.pro-feat-item:hover { border-color: #fde68a; background: #fffbeb; }
+.feat-item { position: relative; display: flex; align-items: flex-start; gap: 20px; padding: 15px; border-radius: 12px; background: #fff; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+.feat-item:hover { border-color: #93c5fd; box-shadow: 0 0 20px rgba(59, 130, 246, 0.15); transform: translateX(-15px); }
+.feat-item.pro-feat-item:hover { border-color: #fcd34d; background: #fffbeb; box-shadow: 0 0 20px rgba(245, 158, 11, 0.15); }
 
 .feat-num { position: relative; z-index: 2; width: 40px; height: 40px; background: #f1f5f9; color: #64748b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 900; flex-shrink: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .feat-item:hover .feat-num { background: #3b82f6; color: white; transform: scale(1.1); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2); }
@@ -400,7 +400,7 @@ header {
 .feat-text { position: relative; z-index: 2; }
 .feat-text h4 { font-size: 1.15rem; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
 .feat-text p { font-size: 0.95rem; color: #64748b; line-height: 1.6; }
-.pro-badge-sm { background: linear-gradient(135deg, #F59E0B, #FCD34D); color: #78350f; font-size: 0.75rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; }
+.pro-badge-sm { background: linear-gradient(135deg, #F59E0B, #FCD34D); color: #78350f; font-size: 0.75rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; }
 
 /* =========================================
    8. Review 섹션
@@ -572,9 +572,9 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
     .planner-left, .planner-right { width: 100%; }
     .planner-header h2 { font-size: 1.6rem; }
     .planner-header p { font-size: 0.95rem; }
-    .feat-item { padding: 0; gap: 11.25px; }
-    .feat-item:hover { background: transparent; box-shadow: none; }
-    .feat-item:hover .feat-num { transform: none; }
+    .feat-item { padding: 0; gap: 11.25px; border: none; background: transparent; box-shadow: none; }
+    .feat-item:hover { background: transparent; box-shadow: none; border-color: transparent; transform: none; }
+    .feat-item:hover .feat-num { transform: none; box-shadow: none; }
     .mockup-ui { border-radius: 12px; }
     .mockup-header { padding: 11.25px 15px; font-size: 0.75rem; gap: 7.5px; }
     .mockup-body { padding: 15px; gap: 11.25px; }
