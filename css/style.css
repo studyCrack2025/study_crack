@@ -567,14 +567,13 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
         transform: translateY(0); /* 위로 올라옴 */
     }
     
-    .planner-container { flex-direction: column; gap: 30px; }
+.planner-container { flex-direction: column; gap: 30px; }
     .feat-connector, .mockup-dot { display: none; }
     .planner-left, .planner-right { width: 100%; }
     .planner-header h2 { font-size: 1.6rem; }
     .planner-header p { font-size: 0.95rem; }
-    .feat-item { padding: 0; gap: 11.25px; border: none; background: transparent; box-shadow: none; }
-    .feat-item:hover { background: transparent; box-shadow: none; border-color: transparent; transform: none; }
-    .feat-item:hover .feat-num { transform: none; box-shadow: none; }
+    .feat-item { padding: 12px; gap: 12px; }
+    .feat-item:hover { transform: translateY(-3px); } 
     .mockup-ui { border-radius: 12px; }
     .mockup-header { padding: 11.25px 15px; font-size: 0.75rem; gap: 7.5px; }
     .mockup-body { padding: 15px; gap: 11.25px; }
