@@ -586,7 +586,7 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
     .mock-progress-fill { border-radius: 3px; }
     .mock-note { font-size: 0.6rem; }
     .pro-note { padding: 7.5px; border-left-width: 2.25px; border-radius: 3px; }
-    .planner-right { gap: 22.5px; }
+    .planner-right { gap: 12px; }
     .feat-num { width: 30px; height: 30px; font-size: 0.9rem; }
     .feat-text h4 { font-size: 0.8625rem; margin-bottom: 6px; gap: 6px; }
     .feat-text p { font-size: 0.7125rem; line-height: 1.2; }
