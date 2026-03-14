@@ -393,11 +393,33 @@ header {
 .pro-note { background: #fffbeb; padding: 10px; border-left: 3px solid #f59e0b; border-radius: 4px; color: #78350f; }
 
 .feat-item { position: relative; display: flex; align-items: flex-start; gap: 20px; padding: 15px; border-radius: 12px; transition: all 0.3s ease; cursor: default; z-index: 5; }
-.feat-item:hover { background: #fff; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); z-index: 10; }
+.feat-item:hover { background: #fff; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); z-index: 5; }
 
-.feat-connector { position: absolute; left: -140px; top: 35px; width: 150px; height: 2px; background: repeating-linear-gradient(to right, #cbd5e1 0, #cbd5e1 6px, transparent 6px, transparent 12px); z-index: -1; transition: all 0.3s ease; }
-.feat-item:hover .feat-connector { background: #3b82f6; }
-.feat-item.pro-feat-item:hover .feat-connector { background: #f59e0b; }
+.feat-connector { 
+    position: absolute; 
+    right: calc(100% - 20px); /* 동그라미 번호의 중심 부근에서 출발 */
+    top: 20px; /* 번호의 세로 중앙 */
+    width: 40px; /* 전체 80px 간격의 딱 절반(40px)까지만 이동! */
+    height: 35px; /* 아래/위로 꺾이는 길이 */
+    border-bottom: 2px dashed #cbd5e1; 
+    border-left: 2px dashed #cbd5e1; 
+    border-bottom-left-radius: 8px; /* 꺾이는 부분 라운드 처리 */
+    z-index: -1; /* 기본 상태에서는 뒤로 숨김 */
+    transition: all 0.3s ease; 
+}
+.feat-connector::before { 
+    content: ''; 
+    position: absolute; 
+    right: 100%; /* 세로선 위치에서 다시 출발 */
+    top: -2px; /* 세로선 상단 */
+    width: 40px; /* 남은 절반(40px)만큼 이동해 목업 점에 닿음 */
+    border-top: 2px dashed #cbd5e1; 
+    transition: all 0.3s ease; 
+}
+.feat-item:hover .feat-connector { z-index: 10; border-color: #3b82f6; border-style: solid; }
+.feat-item:hover .feat-connector::before { border-color: #3b82f6; border-style: solid; }
+.feat-item.pro-feat-item:hover .feat-connector { border-color: #f59e0b; }
+.feat-item.pro-feat-item:hover .feat-connector::before { border-color: #f59e0b; }
 
 .feat-num { position: relative; z-index: 5; width: 40px; height: 40px; background: #f1f5f9; color: #64748b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 900; flex-shrink: 0; transition: all 0.3s ease; }
 .feat-item:hover .feat-num { background: #3b82f6; color: white; transform: scale(1.1); }
