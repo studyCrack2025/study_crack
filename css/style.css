@@ -376,9 +376,6 @@ header {
 .mockup-block.active { background: #eff6ff; border-color: #3b82f6; transform: scale(1.02); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15); z-index: 10; }
 .mockup-block.pro-block.active { background: #fffbeb; border-color: #f59e0b; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15); }
 
-.mockup-block.active { background: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.2); }
-.mockup-block.pro-block.active { background: #f59e0b; box-shadow: 0 0 0 4px rgba(245,158,11,0.2); }
-
 .mockup-block h5 { margin: 0 0 10px 0; font-size: 0.95rem; color: #1e293b; }
 .mock-chart { display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px; }
 .mock-chart .bar { height: 100%; color: transparent; font-size: 0; }
