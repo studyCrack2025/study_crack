@@ -572,8 +572,8 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
     .planner-container { flex-direction: column; gap: 30px; }
     .feat-connector, .mockup-dot { display: none; }
     .planner-left, .planner-right { width: 100%; }
-    .planner-header h2 { font-size: 1.35rem; }
-    .planner-header p { font-size: 0.825rem; }
+    .planner-header h2 { font-size: 1.6rem; }
+    .planner-header p { font-size: 0.95rem; }
     .feat-item { padding: 0; gap: 11.25px; }
     .feat-item:hover { background: transparent; box-shadow: none; }
     .feat-item:hover .feat-num { transform: none; }
