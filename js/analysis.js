@@ -1877,7 +1877,7 @@ function openFeedbackModal(data) {
         data.deepAnswers.forEach((ans, idx) => {
             if (ans && ans.trim() !== "") {
                 deepQnaHtml += `
-                    <div style="margin-bottom:15px;">
+                    <div style="margin-bottom:15px; page-break-inside: avoid;">
                         <strong style="color:#b91c1c; font-size:0.9rem; display:block; margin-bottom:4px;">Q${idx+1}. ${QUESTION_CATEGORIES[idx]}</strong>
                         <div style="color:#334155; font-size:0.95rem; padding-left:10px; border-left:3px solid #fecaca;">${escapeHtml(ans)}</div>
                     </div>`;
@@ -1887,11 +1887,14 @@ function openFeedbackModal(data) {
         deepQnaHtml = '<div style="color:#94a3b8; padding:10px 0;">작성된 심층 질문이 없습니다.</div>';
     }
 
+    // [모바일 판단]
+    const isMobile = window.innerWidth <= 768;
+
     // -----------------------------------------------------------
-    // [HTML 조립 파트] PDF 캡처 및 모바일 숨김 최적화 적용
+    // [HTML 조립 파트] 
     // -----------------------------------------------------------
     const html = `
-        <div class="modal-document" id="pdfTargetDocument">
+        <div class="modal-document" id="pdfTargetDocument" style="${isMobile ? 'display:none;' : ''}">
             <div class="doc-controls" data-html2canvas-ignore="true">
                 <button class="btn-pdf" onclick="downloadReportPDF('${data.title || "주간리포트"}')"><i class="fas fa-file-pdf"></i> PDF 파일 다운로드</button>
                 <button class="close-btn-doc" onclick="document.getElementById('feedbackModal').style.display='none'">&times;</button>
@@ -1982,12 +1985,14 @@ function openFeedbackModal(data) {
                         </div>
                     </div>
                 </div>
-            </div> <div class="mobile-only-msg" data-html2canvas-ignore="true">
-                <i class="fas fa-file-pdf"></i>
-                <p>모바일 화면에서는 레이아웃이 제한적입니다.<br><strong>PDF 파일로 다운로드</strong>하여 PC와 동일한 보고서 포맷으로 확인하세요.</p>
-                <button class="mobile-pdf-btn" onclick="downloadReportPDF('${data.title || "주간리포트"}')"><i class="fas fa-download"></i> PDF 다운로드</button>
-                <button class="mobile-close-btn" onclick="document.getElementById('feedbackModal').style.display='none'">닫기</button>
-            </div>
+            </div> </div>
+        
+        <div class="mobile-only-msg" id="mobileMsgBox" style="${isMobile ? 'display:flex;' : 'display:none;'}">
+            <i class="fas fa-file-pdf"></i>
+            <h3 style="margin:0 0 10px 0; color:#1e293b;">리포트 도착 완료!</h3>
+            <p>모바일에서는 전체 레이아웃 확인이 어렵습니다.<br><strong>PDF 파일로 다운로드</strong>하여 PC와 동일한 프리미엄 포맷으로 확인하세요.</p>
+            <button class="mobile-pdf-btn" onclick="downloadReportPDF('${data.title || "주간리포트"}')"><i class="fas fa-download"></i> PDF 다운로드</button>
+            <button class="mobile-close-btn" onclick="document.getElementById('feedbackModal').style.display='none'">닫기</button>
         </div>
     `;
 
@@ -1996,30 +2001,33 @@ function openFeedbackModal(data) {
 }
 
 // ============================================================
-// PDF 다운로드 기능 (html2pdf 라이브러리 사용)
+// PDF 다운로드 기능 (html2pdf 라이브러리 사용 & 페이지 잘림 방지)
 // ============================================================
 function downloadReportPDF(reportTitle) {
     const element = document.getElementById('pdfTargetDocument');
-    const wrapper = document.getElementById('reportContentWrapper');
     
     if (!element) return;
 
-    // 모바일 환경 등에서 래퍼가 숨겨져 있다면(display:none), PDF 캡처를 위해 임시로 보이게 처리
-    const isHidden = window.getComputedStyle(wrapper).display === 'none';
-    if (isHidden) {
-        wrapper.style.display = 'block';
+    // 모바일 환경 대응: 숨겨진 원본 문서를 캡처용으로 강제 노출 및 사이즈 고정
+    const originalDisplay = element.style.display;
+    if (originalDisplay === 'none') {
+        element.style.display = 'block';
+        element.style.position = 'absolute';
+        element.style.left = '-9999px'; // 화면에 안 보이게 밀어냄
+        element.style.width = '900px';  // PC 사이즈 강제 고정
     }
 
     // 파일명 공백 치환
     const fileName = `스터디크랙_${reportTitle.replace(/\s+/g, '_')}.pdf`;
 
-    // html2pdf 옵션 설정 (해상도, 마진 조절)
+    // html2pdf 옵션 설정 (페이지 넘김 잘림 방지 속성 CSS 활용)
     const opt = {
-        margin:       10, 
+        margin:       15, 
         filename:     fileName,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        image:        { type: 'jpeg', quality: 1.0 },
+        html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:    { mode: ['css', 'legacy'] } // CSS의 page-break-inside: avoid; 속성을 최우선으로 인식
     };
 
     // 버튼 로딩 UI 변경
@@ -2032,8 +2040,11 @@ function downloadReportPDF(reportTitle) {
     // PDF 생성 및 다운로드 실행
     html2pdf().set(opt).from(element).save().then(() => {
         // PDF 생성 완료 후 원상 복구
-        if (isHidden) {
-            wrapper.style.display = ''; // 다시 CSS(display:none)를 따르도록 비움
+        if (originalDisplay === 'none') {
+            element.style.display = 'none';
+            element.style.position = 'relative';
+            element.style.left = '0';
+            element.style.width = '100%';
         }
         btns.forEach(btn => {
             if (btn.classList.contains('mobile-pdf-btn')) {
