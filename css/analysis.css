@@ -316,45 +316,47 @@
 .custom-modal-content .close-btn { display: none; } 
 .modal-body { padding: 0; }
 
-/* 문서(워드) 형식 바탕 + 워터마크 로고 */
+/* 문서(워드) 형식 바탕 (좌우 여백 축소) */
 .modal-document { 
-    width: 100%; background: #ffffff; padding: 50px; box-sizing: border-box; border-radius: 16px; 
+    width: 100%; background: #ffffff; padding: 40px 30px; box-sizing: border-box; border-radius: 16px; 
     position: relative; min-height: 800px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); z-index: 1; 
 }
-/* 워터마크 로고 삽입 */
-.modal-document::before {
+
+/* 🎯 워터마크 로고: ::before 대신 ::after를 써서 모든 요소 '위'에 덮어씌움 */
+.modal-document::after {
     content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
     background-image: url('/assets/backgrounds/bg_studycrack_logo.png');
-    background-repeat: no-repeat; background-position: center 40%; background-size: 450px;
-    opacity: 0.04; z-index: -1; pointer-events: none;
+    background-repeat: no-repeat; background-position: center 40%; background-size: 500px;
+    opacity: 0.06; z-index: 9999; /* 맨 위로 */
+    pointer-events: none; /* 클릭이나 드래그 방해 안 함 */
 }
 
 /* 문서 상단 컨트롤 */
-.doc-controls { position: absolute; top: 20px; right: 25px; display: flex; gap: 10px; align-items: center; }
+.doc-controls { position: absolute; top: 15px; right: 25px; display: flex; gap: 10px; align-items: center; z-index: 10000; }
 .btn-pdf { background: #1e293b; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
 .btn-pdf:hover { background: #0f172a; transform: translateY(-2px); }
 .close-btn-doc { font-size: 2rem; color: #94a3b8; cursor: pointer; line-height: 1; background: none; border: none; padding: 0 5px; transition: 0.2s; }
 .close-btn-doc:hover { color: #ef4444; }
 
-/* 리포트 헤더 (제목) - PDF 호환성을 위해 솔리드 컬러 및 박스 디자인 적용 */
-.doc-header { border-bottom: 3px solid #1e293b; padding-bottom: 20px; margin-bottom: 30px; margin-top: 10px; display: flex; justify-content: space-between; align-items: flex-end; page-break-inside: avoid; }
+/* 리포트 헤더 (제목) */
+.doc-header { border-bottom: 3px solid #1e293b; padding-bottom: 15px; margin-bottom: 25px; margin-top: 10px; display: flex; justify-content: space-between; align-items: flex-end; page-break-inside: avoid; }
 .doc-subtitle { font-size: 0.85rem; font-weight: 800; color: #3b82f6; letter-spacing: 1px; margin: 0 0 5px 0; display: inline-block; background: #eff6ff; padding: 3px 8px; border-radius: 4px; }
 .doc-title { font-size: 2.2rem; font-weight: 900; color: #0f172a; margin: 5px 0 0 0; letter-spacing: -1px; }
 .doc-meta { font-size: 0.95rem; color: #64748b; text-align: right; font-weight: 600; line-height: 1.6; }
 .doc-meta strong { color: #1e293b; }
 
 /* 1:1 매칭 박스 디자인 */
-.doc-matched-box { background: rgba(255,255,255,0.85); border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 15px -3px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 30px; transition: transform 0.2s, box-shadow 0.2s; page-break-inside: avoid !important; }
+.doc-matched-box { background: rgba(255,255,255,0.85); border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 15px -3px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 25px; transition: transform 0.2s, box-shadow 0.2s; page-break-inside: avoid !important; }
 .doc-matched-box:hover { box-shadow: 0 10px 25px -5px rgba(0,0,0,0.08); border-color: #cbd5e1; }
-.doc-matched-header { background: #f8fafc; padding: 16px 20px; border-bottom: 1px solid #e2e8f0; font-weight: 800; font-size: 1.1rem; color: #1e293b; display: flex; align-items: center; gap: 10px; page-break-inside: avoid; }
+.doc-matched-header { background: #f8fafc; padding: 14px 20px; border-bottom: 1px solid #e2e8f0; font-weight: 800; font-size: 1.1rem; color: #1e293b; display: flex; align-items: center; gap: 10px; page-break-inside: avoid; }
 .doc-matched-header i { color: #3b82f6; font-size: 1.2rem; }
 
 .doc-matched-body { display: flex; flex-direction: column; }
 @media (min-width: 768px) { .doc-matched-body { flex-direction: row; } }
 
 /* 학생 데이터 (좌측) / 튜터 피드백 (우측) */
-.doc-student-data { flex: 1; padding: 25px; border-bottom: 1px solid #e2e8f0; position: relative; }
-.doc-tutor-feedback { flex: 1.2; padding: 25px; background: #fafafa; position: relative; }
+.doc-student-data { flex: 1; padding: 20px; border-bottom: 1px solid #e2e8f0; position: relative; }
+.doc-tutor-feedback { flex: 1.2; padding: 20px; background: #fafafa; position: relative; }
 @media (min-width: 768px) {
     .doc-student-data { border-bottom: none; border-right: 1px dashed #cbd5e1; }
 }
@@ -366,10 +368,9 @@
 
 .doc-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-bottom: 10px; page-break-inside: auto; }
 .doc-table tr { page-break-inside: avoid; page-break-after: auto; }
-.doc-table th, .doc-table td { padding: 10px 5px; border-bottom: 1px solid #f1f5f9; text-align: center; }
+.doc-table th, .doc-table td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; }
 .doc-table th { color: #94a3b8; font-weight: 600; font-size: 0.8rem; }
 .doc-table tr:last-child td { border-bottom: none; }
-
 .doc-text { font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; color: #334155; }
 
 /* 심층 QnA 섹션 */
@@ -377,6 +378,25 @@
 .qna-student { background: #fff1f2; padding: 18px; border-radius: 8px; border: 1px solid #fecaca; }
 .qna-tutor { background: #f0fdf4; padding: 18px; border-radius: 8px; border: 1px solid #bbf7d0; }
 
+/* 🎯 모바일 화면 제어 (JS 대신 CSS에서 완벽히 통제) */
+.mobile-only-msg { display: none; }
+
+@media (max-width: 768px) {
+    /* 모바일에서는 원본 리포트 숨김 (PDF 변환 중에는 .pdf-rendering 클래스가 붙어 강제 표시됨) */
+    .modal-document:not(.pdf-rendering) { display: none !important; }
+    
+    /* 모바일에서는 다운로드 안내창만 표시 */
+    .mobile-only-msg {
+        display: flex !important; flex-direction: column; align-items: center; justify-content: center;
+        text-align: center; padding: 40px 20px; background: #ffffff; border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1); margin: 20px auto; width: 100%; max-width: 320px;
+    }
+    .mobile-only-msg i { font-size: 3rem; color: #3b82f6; margin-bottom: 15px; }
+    .mobile-only-msg h3 { margin: 0 0 10px 0; color: #1e293b; font-size: 1.4rem; }
+    .mobile-only-msg p { color: #64748b; font-size: 0.95rem; margin-bottom: 25px; line-height: 1.5; word-break: keep-all; }
+    .mobile-pdf-btn { width: 100%; padding: 14px 20px; font-size: 1.05rem; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; cursor: pointer; }
+    .mobile-close-btn { width: 100%; padding: 14px; font-size: 1rem; background: #f1f5f9; border: none; border-radius: 8px; color: #475569; font-weight: 700; cursor: pointer; }
+}
 
 /* ============================================================
    [7] 기능 5: PRO EXCLUSIVE
