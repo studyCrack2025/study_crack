@@ -2000,17 +2000,14 @@ function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
 
-    // 요소를 복제한 뒤 .pdf-rendering 클래스 추가
     const printNode = reportElement.cloneNode(true);
     printNode.classList.add('pdf-rendering');
 
-    // 1. 화면에 보이지 않는 투명한 iframe 생성
+    // 1. 화면에 보이지 않는 투명한 iframe 생성 (PC 해상도 강제)
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
-    iframe.style.left = '-9999px'; // 화면 밖으로 완전히 치움
+    iframe.style.left = '-9999px'; 
     iframe.style.top = '0';
-    
-    // 💡 [핵심 1] iframe 자체의 물리적 너비를 PC 해상도로 강제
     iframe.style.width = '1024px'; 
     iframe.style.height = '100vh';
     iframe.style.border = 'none';
@@ -2021,7 +2018,7 @@ function downloadReportPDF(reportTitle) {
         .map(link => `<link rel="stylesheet" href="${link.href}">`)
         .join('');
 
-    // 3. iframe 내부에 리포트 HTML과 인쇄 전용 스타일 삽입
+    // 3. iframe 내부에 HTML과 인쇄 전용 CSS 삽입
     const iframeDoc = iframe.contentWindow.document;
     iframeDoc.open();
     iframeDoc.write(`
@@ -2029,44 +2026,33 @@ function downloadReportPDF(reportTitle) {
         <html lang="ko">
         <head>
             <title>스터디크랙_${reportTitle}</title>
-            
             <meta name="viewport" content="width=1024">
-            
             ${styleLinks}
             <style>
-                @page { margin: 20mm 10mm 10mm 10mm; } 
+                /* ✅ 1. 브라우저 기본 URL(머리글/바닥글) 강제 제거 */
+                @page { margin: 0; } 
 
-                /* 💡 [핵심 3] body 너비까지 1024px로 못박아서 모바일에서 페이지가 중간에 끊기는 현상 차단 */
                 body { 
                     width: 1024px !important;
                     background: white !important; 
-                    margin: 0; padding: 0; 
+                    /* @page margin이 0이므로, body 패딩으로 상/우/하/좌 여백을 물리적으로 줍니다 */
+                    padding: 20mm 10mm 10mm 10mm !important; 
+                    box-sizing: border-box !important;
+                    margin: 0; 
                     -webkit-print-color-adjust: exact; 
                     print-color-adjust: exact; 
+                    position: relative; /* JS 워터마크 기준점 */
                 }
                 
-                * { box-shadow: none !important; } /* 그림자 버그 제거 */
+                * { box-shadow: none !important; }
 
-                /* 매 페이지마다 로고 반복 출력 */
-                body::before {
-                    content: "";
-                    position: fixed; 
-                    top: 0; left: 0; right: 0; bottom: 0;
-                    background-image: url('/assets/backgrounds/bg_studycrack_logo.png');
-                    background-repeat: no-repeat;
-                    background-position: center center;
-                    background-size: 500px;
-                    opacity: 0.06;
-                    z-index: 9999;
-                    pointer-events: none;
-                }
-
+                /* 불필요한 컨트롤 버튼 및 모바일 안내창 숨김 */
                 .modal-document::after { display: none !important; }
                 .doc-controls, .mobile-only-msg { display: none !important; }
                 
                 .modal-document {
                     width: 100% !important;
-                    padding: 40px !important; /* 모바일의 좁은 패딩 무시, PC 패딩 적용 */
+                    padding: 40px !important; 
                     box-sizing: border-box !important;
                 }
 
@@ -2076,29 +2062,28 @@ function downloadReportPDF(reportTitle) {
                     margin-bottom: 20px !important; 
                     display: block !important; 
                     width: 100% !important;
+                    position: relative;
+                    z-index: 10;
                 }
                 
-                /* ✅ 수정 1: 1~3번째 박스는 PC처럼 무조건 '좌우 배치' */
+                /* 1~3번 박스는 PC처럼 무조건 좌우 배치 */
                 .doc-matched-box:not(:last-child) .doc-matched-body { 
                     display: flex !important; 
                     flex-direction: row !important; 
-                    flex-wrap: nowrap !important; /* 줄바꿈 방지 */
+                    flex-wrap: nowrap !important; 
                 }
-                
-                /* 좌우 배치 시 칸 나누기 설정 복구 */
                 .doc-matched-box:not(:last-child) .doc-student-data { 
                     border-bottom: none !important; 
                     border-right: 1px dashed #cbd5e1 !important; 
                     flex: 1 1 45% !important; 
                     box-sizing: border-box !important;
                 }
-
                 .doc-matched-box:not(:last-child) .doc-tutor-feedback { 
                     flex: 1 1 55% !important; 
                     box-sizing: border-box !important;
                 }
 
-                /* ✅ 수정 2: 4번째 심층 Q&A 박스는 무조건 '상하 배치' */
+                /* 마지막 4번 심층 Q&A 박스는 무조건 상하 배치 */
                 .doc-matched-box:last-child .doc-matched-body {
                     display: flex !important;
                     flex-direction: column !important;
@@ -2116,6 +2101,39 @@ function downloadReportPDF(reportTitle) {
 
     // 4. 외부 스타일 로딩 대기 후 인쇄 실행
     setTimeout(() => {
+        // ✅ 2. 모바일 로고 버그 우회: 문서 높이를 계산해 A4 높이마다 강제로 로고 박아넣기
+        const bodyHeight = iframeDoc.body.scrollHeight;
+        const a4Height = 1122; // A4 용지 1장 높이 (약 1122px)
+        const totalPages = Math.max(Math.ceil(bodyHeight / a4Height), 3); // 최소 3장 분량 보장
+        
+        const watermarkWrapper = iframeDoc.createElement('div');
+        watermarkWrapper.style.position = 'absolute';
+        watermarkWrapper.style.top = '0';
+        watermarkWrapper.style.left = '0';
+        watermarkWrapper.style.width = '100%';
+        watermarkWrapper.style.height = '100%';
+        watermarkWrapper.style.zIndex = '1'; // 본문 배경색보다는 위, 본문 내용보다는 아래
+        watermarkWrapper.style.pointerEvents = 'none';
+        watermarkWrapper.style.overflow = 'hidden';
+
+        for (let i = 0; i < totalPages; i++) {
+            const logo = iframeDoc.createElement('div');
+            logo.style.position = 'absolute';
+            // 각 페이지의 정중앙 높이 계산 (페이지 번호 * A4높이 + A4반절)
+            logo.style.top = `${(i * a4Height) + (a4Height / 2)}px`;
+            logo.style.left = '50%';
+            logo.style.transform = 'translate(-50%, -50%)';
+            logo.style.width = '500px';
+            logo.style.height = '500px';
+            logo.style.backgroundImage = "url('/assets/backgrounds/bg_studycrack_logo.png')";
+            logo.style.backgroundSize = 'contain';
+            logo.style.backgroundRepeat = 'no-repeat';
+            logo.style.backgroundPosition = 'center';
+            logo.style.opacity = '0.06';
+            watermarkWrapper.appendChild(logo);
+        }
+        iframeDoc.body.appendChild(watermarkWrapper);
+
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
         setTimeout(() => document.body.removeChild(iframe), 1000);
