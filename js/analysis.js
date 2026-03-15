@@ -2000,18 +2000,19 @@ function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
 
+    // 요소를 복제한 뒤 .pdf-rendering 클래스 추가
     const printNode = reportElement.cloneNode(true);
     printNode.classList.add('pdf-rendering');
 
     // 1. 화면에 보이지 않는 투명한 iframe 생성
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '1200px'; 
+    iframe.style.left = '-9999px'; // 화면 밖으로 완전히 치움
+    iframe.style.top = '0';
+    
+    // 💡 [핵심 1] iframe 자체의 물리적 너비를 PC 해상도로 강제
+    iframe.style.width = '1024px'; 
     iframe.style.height = '100vh';
-    iframe.style.zIndex = '-1'; 
-    iframe.style.opacity = '0'; // 화면엔 안 보이지만 브라우저 렌더링 트리에 포함되도록 처리
     iframe.style.border = 'none';
     document.body.appendChild(iframe);
 
@@ -2028,27 +2029,28 @@ function downloadReportPDF(reportTitle) {
         <html lang="ko">
         <head>
             <title>스터디크랙_${reportTitle}</title>
+            
+            <meta name="viewport" content="width=1024">
+            
             ${styleLinks}
             <style>
-                /* ✅ 1. 상단 여백 추가 (상단 20mm, 우/하/좌 10mm) */
                 @page { margin: 20mm 10mm 10mm 10mm; } 
 
+                /* 💡 [핵심 3] body 너비까지 1024px로 못박아서 모바일에서 페이지가 중간에 끊기는 현상 차단 */
                 body { 
+                    width: 1024px !important;
                     background: white !important; 
                     margin: 0; padding: 0; 
                     -webkit-print-color-adjust: exact; 
                     print-color-adjust: exact; 
                 }
                 
-                /* ✅ 2. 그림자 제거 (마지막 페이지 검은 번짐 방지) */
-                * {
-                    box-shadow: none !important;
-                }
+                * { box-shadow: none !important; } /* 그림자 버그 제거 */
 
-                /* ✅ 3. 매 페이지마다 로고 반복 출력 (position: fixed 활용) */
+                /* 매 페이지마다 로고 반복 출력 */
                 body::before {
                     content: "";
-                    position: fixed; /* 핵심: fixed로 설정하면 인쇄 시 모든 페이지에 반복됩니다 */
+                    position: fixed; 
                     top: 0; left: 0; right: 0; bottom: 0;
                     background-image: url('/assets/backgrounds/bg_studycrack_logo.png');
                     background-repeat: no-repeat;
@@ -2059,33 +2061,49 @@ function downloadReportPDF(reportTitle) {
                     pointer-events: none;
                 }
 
-                /* 기존에 1페이지에만 나오던 absolute 로고는 인쇄 시 겹치지 않게 숨김 */
                 .modal-document::after { display: none !important; }
-
-                /* 불필요한 컨트롤 버튼 및 안내창 숨김 */
                 .doc-controls, .mobile-only-msg { display: none !important; }
                 
-                /* ✅ 4. 모바일 잘림 방지 및 PC 레이아웃 강제 유지 */
+                .modal-document {
+                    width: 100% !important;
+                    padding: 40px !important; /* 모바일의 좁은 패딩 무시, PC 패딩 적용 */
+                    box-sizing: border-box !important;
+                }
+
                 .doc-matched-box { 
                     page-break-inside: avoid !important; 
                     break-inside: avoid !important; 
                     margin-bottom: 20px !important; 
                     display: block !important; 
+                    width: 100% !important;
                 }
                 
-                /* 모바일에서 세로로 쌓이는 것을 막고 강제로 좌우 배치 */
-                .doc-matched-body { 
+                /* ✅ 수정 1: 1~3번째 박스는 PC처럼 무조건 '좌우 배치' */
+                .doc-matched-box:not(:last-child) .doc-matched-body { 
                     display: flex !important; 
                     flex-direction: row !important; 
+                    flex-wrap: nowrap !important; /* 줄바꿈 방지 */
                 }
                 
-                /* 좌우 배치 시 가운데 점선 구분선 복구 */
-                .doc-student-data { 
+                /* 좌우 배치 시 칸 나누기 설정 복구 */
+                .doc-matched-box:not(:last-child) .doc-student-data { 
                     border-bottom: none !important; 
                     border-right: 1px dashed #cbd5e1 !important; 
+                    flex: 1 1 45% !important; 
+                    box-sizing: border-box !important;
+                }
+
+                .doc-matched-box:not(:last-child) .doc-tutor-feedback { 
+                    flex: 1 1 55% !important; 
+                    box-sizing: border-box !important;
+                }
+
+                /* ✅ 수정 2: 4번째 심층 Q&A 박스는 무조건 '상하 배치' */
+                .doc-matched-box:last-child .doc-matched-body {
+                    display: flex !important;
+                    flex-direction: column !important;
                 }
                 
-                /* 모바일에서 작아지는 제목 폰트 크기 강제 복구 */
                 .doc-title { font-size: 2.2rem !important; }
             </style>
         </head>
@@ -2096,14 +2114,12 @@ function downloadReportPDF(reportTitle) {
     `);
     iframeDoc.close();
 
-    // 4. 외부 스타일(CSS)이 완전히 로드될 수 있도록 대기 후 인쇄 실행
+    // 4. 외부 스타일 로딩 대기 후 인쇄 실행
     setTimeout(() => {
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
-        
-        // 인쇄 창이 닫히면 iframe 찌꺼기 청소
         setTimeout(() => document.body.removeChild(iframe), 1000);
-    }, 800); // 렌더링 여유 시간 0.8초 확보
+    }, 800); 
 }
 
 function openWeeklyCheckModal() {
