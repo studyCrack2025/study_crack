@@ -2032,17 +2032,37 @@ function downloadReportPDF(reportTitle) {
             <title>스터디크랙_${reportTitle}</title>
             ${styleLinks}
             <style>
-                @page { margin: 10mm; } 
+                /* ✅ 1. 상단 여백 추가 (상단 20mm, 우/하/좌 10mm) */
+                @page { margin: 20mm 10mm 10mm 10mm; } 
+
                 body { 
                     background: white !important; 
                     margin: 0; padding: 0; 
                     -webkit-print-color-adjust: exact; 
                     print-color-adjust: exact; 
                 }
+
+                /* ✅ 2. 매 페이지마다 로고 반복 출력 (position: fixed 활용) */
+                body::before {
+                    content: "";
+                    position: fixed; /* 핵심: fixed로 설정하면 인쇄 시 모든 페이지에 반복됩니다 */
+                    top: 0; left: 0; right: 0; bottom: 0;
+                    background-image: url('/assets/backgrounds/bg_studycrack_logo.png');
+                    background-repeat: no-repeat;
+                    background-position: center center;
+                    background-size: 500px;
+                    opacity: 0.06;
+                    z-index: 9999;
+                    pointer-events: none;
+                }
+
+                /* 기존에 1페이지에만 나오던 absolute 로고는 인쇄 시 겹치지 않게 숨김 */
+                .modal-document::after { display: none !important; }
+
                 /* 불필요한 컨트롤 버튼 및 안내창 숨김 */
                 .doc-controls, .mobile-only-msg { display: none !important; }
                 
-                /* 박스 내용이 잘려서 다음 장으로 어정쩡하게 넘어가는 현상 방지 */
+                /* 박스 내용이 잘려서 다음 장으로 넘어가는 현상 방지 */
                 .doc-matched-box { 
                     page-break-inside: avoid !important; 
                     break-inside: avoid !important; 
