@@ -529,38 +529,6 @@ input[type="number"]::-webkit-inner-spin-button {
 /* 기본 상태: 모바일 전용 메시지는 숨김 */
 .mobile-only-msg { display: none; }
 
-/* 인쇄(PDF 다운로드) 설정 */
-@media print {
-    /* 1. 바탕 웹사이트 숨기고 모달(보고서)만 강제 표시 (기존 필수 로직) */
-    body > * { display: none !important; }
-    body { background: white; }
-    #feedbackModal { display: block !important; position: absolute; top: 0; left: 0; width: 100%; height: auto; z-index: 9999; background: white; }
-    #feedbackModal .custom-modal-content { box-shadow: none; margin: 0; width: 100%; max-width: 100%; border: none; background: transparent; }
-    
-    /* 2. 문서 여백 제거 */
-    .modal-document { box-shadow: none; border: none; padding: 0; min-height: auto; }
-    
-    /* 3. 불필요한 UI(버튼, 모바일 안내문) 숨김 */
-    .doc-controls, .mobile-only-msg, .mobile-close-btn { display: none !important; }
-    
-    /* 4. 워터마크 로고 강제 인쇄 (새로운 로직) */
-    .modal-document::before { 
-        opacity: 0.05 !important; 
-        -webkit-print-color-adjust: exact; 
-        print-color-adjust: exact; 
-    }
-    
-    /* 5. 박스가 페이지 중간에 잘리는 것 방지 및 배경색 강제 인쇄 (새로운 로직) */
-    .doc-matched-box { page-break-inside: avoid; border: 1px solid #cbd5e1 !important; }
-    .doc-matched-header, .doc-tutor-feedback, .doc-badge, .qna-student, .qna-tutor {
-        -webkit-print-color-adjust: exact; 
-        print-color-adjust: exact; 
-    }
-    
-    /* 6. 페이지 규격 유지 */
-    @page { size: A4; margin: 20mm; }
-}
-
 @media (max-width: 768px) {
     /* =======================================
        1. 메인 헤더 & 네비게이션 탭 다이어트
