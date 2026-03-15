@@ -1996,6 +1996,9 @@ function openFeedbackModal(data) {
 // ============================================================
 // PDF 다운로드 기능
 // ============================================================
+// ============================================================
+// PDF 다운로드 기능 (이슈 픽스 버전)
+// ============================================================
 function downloadReportPDF(reportTitle) {
     const originalElement = document.getElementById('pdfTargetDocument');
     if (!originalElement) return;
@@ -2006,25 +2009,28 @@ function downloadReportPDF(reportTitle) {
         btn.disabled = true;
     });
 
-    // 1. 원본 요소 복제 및 모바일용 강제 렌더링 클래스 추가
+    // 1. 원본 요소 복제 및 클래스 추가
     const clone = originalElement.cloneNode(true);
     clone.classList.add('pdf-rendering');
     clone.id = 'pdfClone';
 
-    // 2. 화면 뒤로 숨기는 Wrapper 생성 (크기를 0으로 만들지 않고 맨 뒤로 보냄)
+    // 2. 래퍼(Wrapper) 생성: absolute 대신 fixed를 써서 스크롤 밀림 현상 원천 차단
     const wrapper = document.createElement('div');
-    wrapper.style.position = 'absolute'; 
+    wrapper.style.position = 'fixed'; 
     wrapper.style.top = '0';
-    // 모바일 등 좁은 화면에서도 왼쪽으로 밀리지 않도록 좌표 고정
-    wrapper.style.left = '0'; 
+    wrapper.style.left = '0';
     wrapper.style.width = '900px'; 
-    // 기존 콘텐츠(배경) 뒤로 숨기기 위해 z-index 음수 사용
-    wrapper.style.zIndex = '-1'; 
+    wrapper.style.zIndex = '-9999'; // 화면 밖/뒤로 완전히 숨김
+    wrapper.style.backgroundColor = '#ffffff';
+    wrapper.style.margin = '0';
+    wrapper.style.padding = '0';
 
-    // 3. 복제본 스타일 설정
+    // 3. 복제본 스타일 강제 고정 (반응형에 의해 크기가 틀어지는 것 방지)
     clone.style.position = 'relative';
     clone.style.width = '900px'; 
-    clone.style.backgroundColor = '#ffffff';
+    clone.style.margin = '0'; 
+    clone.style.boxSizing = 'border-box';
+    clone.style.boxShadow = 'none'; // PDF 변환 시 그림자 때문에 잘리는 현상 방지
 
     // 4. 불필요한 UI 요소 숨김 처리
     const mobileMsg = clone.querySelector('.mobile-only-msg');
@@ -2038,21 +2044,21 @@ function downloadReportPDF(reportTitle) {
 
     const fileName = `스터디크랙_${reportTitle.replace(/\s+/g, '_')}.pdf`;
 
-    // 6. html2pdf 핵심 옵션 추가
+    // 6. 핵심! html2pdf 옵션 수정
     const opt = {
-        // [수정] 상하 여백만 10mm 부여, 좌우는 원래 너비(900px)에 맞춤
         margin:       [10, 0, 10, 0], 
         filename:     fileName,
         image:        { type: 'jpeg', quality: 1.0 },
-        // [핵심] 박스/텍스트가 페이지 중간에서 잘리지 않도록 강제
-        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }, 
+        // [수정] avoid-all 제거: 이게 들어가면 큰 박스가 통째로 넘어가면서 빈 여백과 겹침 현상을 유발합니다.
+        pagebreak:    { mode: ['css', 'legacy'] }, 
         html2canvas:  {
             scale: 2,
             useCORS: true,
             letterRendering: true,
-            windowWidth: 900, 
-            width: 900, // html2canvas가 900px 전체를 캡처하도록 고정
-            scrollY: 0,
+            width: 900,         // 명시적 캡처 너비
+            windowWidth: 900,   // 가상 윈도우 너비 고정
+            scrollX: 0,         // [가장 중요] X축 스크롤을 0으로 강제하여 옆으로 밀림 방지
+            scrollY: 0,         // Y축 스크롤 강제 초기화
             backgroundColor: '#ffffff'
         },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -2060,27 +2066,30 @@ function downloadReportPDF(reportTitle) {
 
     // 7. 렌더링 여유 시간 확보 후 실행
     setTimeout(() => {
-        html2pdf().set(opt).from(clone).save().then(() => {
-            if (document.body.contains(wrapper)) {
-                document.body.removeChild(wrapper);
-            }
-            btns.forEach(btn => {
-                if (btn.classList.contains('mobile-pdf-btn')) {
-                    btn.innerHTML = '<i class="fas fa-download"></i> PDF 다운로드';
-                } else {
-                    btn.innerHTML = '<i class="fas fa-file-pdf"></i> PDF 파일 다운로드';
-                }
-                btn.disabled = false;
-            });
+        // [수정] clone 대신 wrapper 전체를 캡처의 타겟으로 잡으면 좌표가 훨씬 안정적입니다.
+        html2pdf().set(opt).from(wrapper).save().then(() => {
+            cleanUp(wrapper, btns);
         }).catch(err => {
             console.error("PDF 생성 오류:", err);
             alert("PDF 다운로드 중 문제가 발생했습니다.");
-            if (document.body.contains(wrapper)) {
-                document.body.removeChild(wrapper);
-            }
-            btns.forEach(btn => { btn.disabled = false; });
+            cleanUp(wrapper, btns);
         });
     }, 500); 
+}
+
+// 후처리 유틸리티 함수
+function cleanUp(wrapper, btns) {
+    if (document.body.contains(wrapper)) {
+        document.body.removeChild(wrapper);
+    }
+    btns.forEach(btn => {
+        if (btn.classList.contains('mobile-pdf-btn')) {
+            btn.innerHTML = '<i class="fas fa-download"></i> PDF 다운로드';
+        } else {
+            btn.innerHTML = '<i class="fas fa-file-pdf"></i> PDF 파일 다운로드';
+        }
+        btn.disabled = false;
+    });
 }
 
 function openWeeklyCheckModal() {
