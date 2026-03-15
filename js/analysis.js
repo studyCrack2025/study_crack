@@ -2006,23 +2006,27 @@ function downloadReportPDF(reportTitle) {
         btn.disabled = true;
     });
 
-    // 1. 원본 요소 복제
+    // 1. 원본 요소 복제 및 모바일 display:none 우회용 클래스 추가
     const clone = originalElement.cloneNode(true);
-
-    // 2. 모바일 CSS(display: none) 우회를 위해 클래스 '강제 추가' (가장 핵심적인 수정)
     clone.classList.add('pdf-rendering');
-
-    // 3. 브라우저가 렌더링은 하되, 사용자 눈에는 안 보이게 처리 (-9999px 절대 금지)
     clone.id = 'pdfClone';
-    clone.style.position = 'absolute';
-    clone.style.top = '0';
-    clone.style.left = '0';
+
+    // 2. 새로운 은닉 컨테이너 생성 (-9999px 및 opacity 이슈 완벽 해결)
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'fixed'; // 스크롤 위치에 영향받지 않도록 고정
+    wrapper.style.top = '0';
+    wrapper.style.left = '0';
+    wrapper.style.width = '0'; // 크기를 0으로 만들어 화면 노출 차단
+    wrapper.style.height = '0';
+    wrapper.style.overflow = 'hidden'; 
+    wrapper.style.zIndex = '-9999';
+
+    // 3. 복제본 스타일 설정 (완전한 불투명도 유지)
+    clone.style.position = 'relative'; // 부모(wrapper) 안에서 정상적인 흐름 유지
     clone.style.width = '900px'; // 데스크톱 뷰 사이즈 강제 유지
     clone.style.backgroundColor = '#ffffff';
-    clone.style.zIndex = '-9999';
-    clone.style.opacity = '0.01'; // visibility:hidden이나 display:none을 쓰면 무조건 백지가 뜹니다.
-    clone.style.pointerEvents = 'none'; // 뒤에 숨어있으므로 터치 간섭 방지
-    
+    clone.style.opacity = '1'; // [핵심] 투명도는 무조건 1이어야 내용이 캡처됨
+
     // 4. 불필요한 UI 요소 숨김 처리
     const mobileMsg = clone.querySelector('.mobile-only-msg');
     if (mobileMsg) mobileMsg.style.display = 'none';
@@ -2030,8 +2034,9 @@ function downloadReportPDF(reportTitle) {
     const controls = clone.querySelector('.doc-controls');
     if (controls) controls.style.display = 'none';
 
-    // 5. DOM에 부착 (body 최상단)
-    document.body.appendChild(clone);
+    // 5. DOM에 부착
+    wrapper.appendChild(clone);
+    document.body.appendChild(wrapper);
 
     const fileName = `스터디크랙_${reportTitle.replace(/\s+/g, '_')}.pdf`;
 
@@ -2043,18 +2048,20 @@ function downloadReportPDF(reportTitle) {
             scale: 2,
             useCORS: true,
             letterRendering: true,
-            windowWidth: 900, // html2canvas에 900px 뷰포트라고 강제 인식
-            scrollY: 0
+            windowWidth: 900, 
+            width: 900,       // [핵심] 캡처 너비 강제 고정
+            scrollY: 0,
+            backgroundColor: '#ffffff' // 배경 투명화로 인한 오류 방지
         },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    // 6. DOM이 완전히 렌더링될 시간(300ms) 부여 후 PDF 생성
+    // 6. 렌더링 안정성을 위해 폰트/이미지 로딩 대기 시간을 약간 늘림 (300ms -> 500ms)
     setTimeout(() => {
         html2pdf().set(opt).from(clone).save().then(() => {
-            // 완료 후 복제본 깔끔하게 삭제
-            if (document.body.contains(clone)) {
-                document.body.removeChild(clone);
+            // 완료 후 복제본 래퍼 통째로 삭제
+            if (document.body.contains(wrapper)) {
+                document.body.removeChild(wrapper);
             }
 
             // 버튼 상태 복구
@@ -2069,11 +2076,12 @@ function downloadReportPDF(reportTitle) {
         }).catch(err => {
             console.error("PDF 생성 오류:", err);
             alert("PDF 다운로드 중 문제가 발생했습니다.");
-            if (document.body.contains(clone)) {
-                document.body.removeChild(clone);
+            if (document.body.contains(wrapper)) {
+                document.body.removeChild(wrapper);
             }
+            btns.forEach(btn => { btn.disabled = false; });
         });
-    }, 300); 
+    }, 500); 
 }
 
 function openWeeklyCheckModal() {
