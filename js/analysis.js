@@ -2006,31 +2006,29 @@ function downloadReportPDF(reportTitle) {
         btn.disabled = true;
     });
 
-    // 1. 원본 요소 복제 및 모바일 display:none 우회용 클래스 추가
+    // 1. 원본 요소 복제 및 모바일용 강제 렌더링 클래스 추가
     const clone = originalElement.cloneNode(true);
     clone.classList.add('pdf-rendering');
     clone.id = 'pdfClone';
 
-    // 2. 새로운 은닉 컨테이너 생성 (-9999px 및 opacity 이슈 완벽 해결)
+    // 2. 화면 뒤로 숨기는 Wrapper 생성 (크기를 0으로 만들지 않고 맨 뒤로 보냄)
     const wrapper = document.createElement('div');
-    wrapper.style.position = 'fixed'; // 스크롤 위치에 영향받지 않도록 고정
+    wrapper.style.position = 'absolute'; 
     wrapper.style.top = '0';
-    wrapper.style.left = '0';
-    wrapper.style.width = '0'; // 크기를 0으로 만들어 화면 노출 차단
-    wrapper.style.height = '0';
-    wrapper.style.overflow = 'hidden'; 
-    wrapper.style.zIndex = '-9999';
+    // 모바일 등 좁은 화면에서도 왼쪽으로 밀리지 않도록 좌표 고정
+    wrapper.style.left = '0'; 
+    wrapper.style.width = '900px'; 
+    // 기존 콘텐츠(배경) 뒤로 숨기기 위해 z-index 음수 사용
+    wrapper.style.zIndex = '-1'; 
 
-    // 3. 복제본 스타일 설정 (완전한 불투명도 유지)
-    clone.style.position = 'relative'; // 부모(wrapper) 안에서 정상적인 흐름 유지
-    clone.style.width = '900px'; // 데스크톱 뷰 사이즈 강제 유지
+    // 3. 복제본 스타일 설정
+    clone.style.position = 'relative';
+    clone.style.width = '900px'; 
     clone.style.backgroundColor = '#ffffff';
-    clone.style.opacity = '1'; // [핵심] 투명도는 무조건 1이어야 내용이 캡처됨
 
     // 4. 불필요한 UI 요소 숨김 처리
     const mobileMsg = clone.querySelector('.mobile-only-msg');
     if (mobileMsg) mobileMsg.style.display = 'none';
-
     const controls = clone.querySelector('.doc-controls');
     if (controls) controls.style.display = 'none';
 
@@ -2040,31 +2038,32 @@ function downloadReportPDF(reportTitle) {
 
     const fileName = `스터디크랙_${reportTitle.replace(/\s+/g, '_')}.pdf`;
 
+    // 6. html2pdf 핵심 옵션 추가
     const opt = {
-        margin:       10,
+        // [수정] 상하 여백만 10mm 부여, 좌우는 원래 너비(900px)에 맞춤
+        margin:       [10, 0, 10, 0], 
         filename:     fileName,
         image:        { type: 'jpeg', quality: 1.0 },
+        // [핵심] 박스/텍스트가 페이지 중간에서 잘리지 않도록 강제
+        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }, 
         html2canvas:  {
             scale: 2,
             useCORS: true,
             letterRendering: true,
             windowWidth: 900, 
-            width: 900,       // [핵심] 캡처 너비 강제 고정
+            width: 900, // html2canvas가 900px 전체를 캡처하도록 고정
             scrollY: 0,
-            backgroundColor: '#ffffff' // 배경 투명화로 인한 오류 방지
+            backgroundColor: '#ffffff'
         },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    // 6. 렌더링 안정성을 위해 폰트/이미지 로딩 대기 시간을 약간 늘림 (300ms -> 500ms)
+    // 7. 렌더링 여유 시간 확보 후 실행
     setTimeout(() => {
         html2pdf().set(opt).from(clone).save().then(() => {
-            // 완료 후 복제본 래퍼 통째로 삭제
             if (document.body.contains(wrapper)) {
                 document.body.removeChild(wrapper);
             }
-
-            // 버튼 상태 복구
             btns.forEach(btn => {
                 if (btn.classList.contains('mobile-pdf-btn')) {
                     btn.innerHTML = '<i class="fas fa-download"></i> PDF 다운로드';
