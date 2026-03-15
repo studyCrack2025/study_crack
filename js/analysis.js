@@ -1994,28 +1994,36 @@ function openFeedbackModal(data) {
 }
 
 // ============================================================
-// PDF 다운로드 기능 (html2pdf 라이브러리 사용 & 페이지 잘림 방지)
+// PDF 다운로드 기능
 // ============================================================
 function downloadReportPDF(reportTitle) {
     const element = document.getElementById('pdfTargetDocument');
     
     if (!element) return;
 
-    // 🎯 핵심: 모바일에서 CSS로 숨겨진(.modal-document) 리포트를 
-    // 화면 밖으로 치우고 강제로 펼쳐서 PDF 렌더링 엔진에 먹여줌
+    // 1. 렌더링 클래스 추가 (display: block으로 전환)
     element.classList.add('pdf-rendering');
+    
+    // 오프스크린(-9999px) 핵 제거. 모바일 화면에서 잠깐 넓어지는 것이 
+    // PDF가 깨지는 것보다 안전합니다. (UX를 위해 opacity: 0.01 처리도 방법입니다)
+    element.style.width = '900px'; 
     element.style.position = 'absolute';
-    element.style.left = '-9999px';
     element.style.top = '0';
-    element.style.width = '900px'; // 모바일에서도 PC 사이즈(900px) 규격으로 고정하여 캡처
+    element.style.left = '0';
+    element.style.zIndex = '-1'; // 사용자가 다운로드 중 화면을 터치하지 못하게 뒤로 보냄
 
     const fileName = `스터디크랙_${reportTitle.replace(/\s+/g, '_')}.pdf`;
 
     const opt = {
-        margin:       10, // 여백 조절 (위아래 여유)
+        margin:       10, 
         filename:     fileName,
         image:        { type: 'jpeg', quality: 1.0 },
-        html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+        html2canvas:  { 
+            scale: 2, 
+            useCORS: true, 
+            letterRendering: true,
+            windowWidth: 900 // html2canvas가 강제로 900px 해상도로 인식하게 만듦
+        },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak:    { mode: ['css', 'legacy'] }
     };
@@ -2026,23 +2034,30 @@ function downloadReportPDF(reportTitle) {
         btn.disabled = true;
     });
 
-    html2pdf().set(opt).from(element).save().then(() => {
-        // PDF 생성 끝나면 원래 상태로 복구
-        element.classList.remove('pdf-rendering');
-        element.style.position = '';
-        element.style.left = '';
-        element.style.top = '';
-        element.style.width = '';
+    // 2. 브라우저가 DOM을 다시 그릴 시간을 줍니다 (0.15초 대기)
+    setTimeout(() => {
+        html2pdf().set(opt).from(element).save().then(() => {
+            // PDF 생성 끝나면 원래 상태로 완벽히 복구
+            element.classList.remove('pdf-rendering');
+            element.style.width = '';
+            element.style.position = '';
+            element.style.top = '';
+            element.style.left = '';
+            element.style.zIndex = '';
 
-        btns.forEach(btn => {
-            if (btn.classList.contains('mobile-pdf-btn')) {
-                btn.innerHTML = '<i class="fas fa-download"></i> PDF 다운로드';
-            } else {
-                btn.innerHTML = '<i class="fas fa-file-pdf"></i> PDF 파일 다운로드';
-            }
-            btn.disabled = false;
+            btns.forEach(btn => {
+                if (btn.classList.contains('mobile-pdf-btn')) {
+                    btn.innerHTML = '<i class="fas fa-download"></i> PDF 다운로드';
+                } else {
+                    btn.innerHTML = '<i class="fas fa-file-pdf"></i> PDF 파일 다운로드';
+                }
+                btn.disabled = false;
+            });
+        }).catch(err => {
+            console.error("PDF 생성 오류:", err);
+            alert("PDF 다운로드 중 문제가 발생했습니다.");
         });
-    });
+    }, 150);
 }
 
 function openWeeklyCheckModal() {
