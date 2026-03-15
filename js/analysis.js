@@ -1761,7 +1761,7 @@ function renderFeedbackList() {
     });
 }
 
-// 피드백 상세 모달 열기 및 문서 형식 데이터 바인딩
+// 피드백 상세 모달 열기 및 문서 형식 데이터 바인딩 (맞춤형 보고서 형식)
 function openFeedbackModal(data) {
     const modal = document.getElementById('feedbackModal');
     const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent'); 
@@ -1796,7 +1796,7 @@ function openFeedbackModal(data) {
     // -----------------------------------------------------------
     const consultantName = "담당 수석 컨설턴트"; 
     
-    // (A) 과목별 학습 시간 디테일 테이블 생성
+    // (A) 과목별 학습 시간 디테일 테이블 생성 (세부 과목 분리)
     let detailRows = '';
     let totalPlan = '0H', totalAct = '0H', totalRate = '0%';
     
@@ -1812,9 +1812,19 @@ function openFeedbackModal(data) {
                 const rate = plan > 0 ? Math.min((act / plan) * 100, 100).toFixed(0) : 0;
                 const rateColor = rate >= 80 ? '#10b981' : (rate >= 50 ? '#f59e0b' : '#ef4444');
                 
+                // "국어(언매)" 형태에서 메인 과목과 세부 과목 분리
+                let mainSub = d.subject;
+                let detailSub = "-";
+                const match = d.subject.match(/^(.*?)\s*\((.*?)\)$/);
+                if(match) {
+                    mainSub = match[1];
+                    detailSub = match[2];
+                }
+                
                 detailRows += `
                     <tr>
-                        <td style="text-align:left; font-weight:700; color:#334155;">${escapeHtml(d.subject)}</td>
+                        <td style="text-align:left; font-weight:700; color:#334155;">${escapeHtml(mainSub)}</td>
+                        <td style="color:#64748b; font-size:0.85rem; font-weight:600;">${escapeHtml(detailSub)}</td>
                         <td>${plan}H</td>
                         <td style="color:#2563eb; font-weight:bold;">${act}H</td>
                         <td style="color:${rateColor}; font-weight:800;">${rate}%</td>
@@ -1822,7 +1832,7 @@ function openFeedbackModal(data) {
             });
         }
     }
-    if (!detailRows) detailRows = `<tr><td colspan="4" style="color:#94a3b8; padding:20px;">상세 학습 기록이 없습니다.</td></tr>`;
+    if (!detailRows) detailRows = `<tr><td colspan="5" style="color:#94a3b8; padding:20px;">상세 학습 기록이 없습니다.</td></tr>`;
 
     // (B) 모의고사 데이터 생성
     let examHtml = '';
@@ -1877,9 +1887,8 @@ function openFeedbackModal(data) {
         deepQnaHtml = '<div style="color:#94a3b8; padding:10px 0;">작성된 심층 질문이 없습니다.</div>';
     }
 
-
     // -----------------------------------------------------------
-    // [HTML 조립 파트] 1:1 매칭 레이아웃 적용
+    // [HTML 조립 파트] 들여쓰기 버그 수정 적용 (한 줄 밀착)
     // -----------------------------------------------------------
     const html = `
         <div class="modal-document">
@@ -1890,7 +1899,8 @@ function openFeedbackModal(data) {
 
             <div class="doc-header">
                 <div>
-                    <h2 class="doc-title">주간 맞춤 전략 리포트</h2>
+                    <span class="doc-subtitle">PREMIUM STRATEGY</span>
+                    <h2 class="doc-title">스터디크랙 주간 전략리포트</h2>
                 </div>
                 <div class="doc-meta">
                     <div>대상: <strong>${data.title || "주간 리포트"}</strong></div>
@@ -1905,7 +1915,7 @@ function openFeedbackModal(data) {
                     <div class="doc-student-data">
                         <span class="doc-badge">학생 리포트</span>
                         <table class="doc-table">
-                            <thead><tr><th>과목</th><th>계획</th><th>실제</th><th>달성률</th></tr></thead>
+                            <thead><tr><th>과목</th><th>세부 내용</th><th>계획</th><th>실제</th><th>달성률</th></tr></thead>
                             <tbody>${detailRows}</tbody>
                         </table>
                         <div style="margin-top:15px; text-align:right; font-size:0.9rem; color:#64748b; font-weight:700; background:#f8fafc; padding:8px; border-radius:6px;">
@@ -1951,13 +1961,9 @@ function openFeedbackModal(data) {
                     <div class="doc-tutor-feedback">
                         <span class="doc-badge tutor-badge">Consultant 코멘트</span>
                         <h4 style="margin:0 0 10px 0; font-size:1rem; color:#1e293b;">이번 주 플랜 종합 평가</h4>
-                        <div class="doc-text" style="margin-bottom:20px; padding-bottom:20px; border-bottom:1px dashed #cbd5e1;">
-                            ${escapeHtml(fb.planEvaluation) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}
-                        </div>
+                        <div class="doc-text" style="margin-bottom:20px; padding-bottom:20px; border-bottom:1px dashed #cbd5e1;">${escapeHtml(fb.planEvaluation) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}</div>
                         <h4 style="margin:0 0 10px 0; font-size:1rem; color:#2563eb;"><i class="fas fa-flag-checkered"></i> 다음 주 핵심 과제 TOP 3</h4>
-                        <div class="doc-text">
-                            ${escapeHtml(fb.nextWeekTop3) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}
-                        </div>
+                        <div class="doc-text">${escapeHtml(fb.nextWeekTop3) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}</div>
                     </div>
                 </div>
             </div>

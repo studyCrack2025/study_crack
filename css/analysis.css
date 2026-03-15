@@ -337,8 +337,9 @@
 .close-btn-doc:hover { color: #ef4444; }
 
 /* 리포트 헤더 (제목) */
-.doc-header { border-bottom: 3px solid #1e293b; padding-bottom: 25px; margin-bottom: 35px; margin-top: 10px; display: flex; justify-content: space-between; align-items: flex-end; }
-.doc-title { font-size: 2.2rem; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: -1px; }
+.doc-header { border-bottom: 3px solid #1e293b; padding-bottom: 20px; margin-bottom: 30px; margin-top: 10px; display: flex; justify-content: space-between; align-items: flex-end; }
+.doc-subtitle { font-size: 0.85rem; font-weight: 800; color: #3b82f6; letter-spacing: 1px; margin: 0 0 5px 0; display: block; }
+.doc-title { font-size: 2.2rem; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: -1px; background: linear-gradient(90deg, #0f172a, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .doc-meta { font-size: 0.95rem; color: #64748b; text-align: right; font-weight: 600; line-height: 1.6; }
 .doc-meta strong { color: #1e293b; }
 
