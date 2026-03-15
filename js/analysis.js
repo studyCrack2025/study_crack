@@ -1994,7 +1994,7 @@ function openFeedbackModal(data) {
 }
 
 // ============================================================
-// PDF 다운로드 기능 (Iframe을 이용한 깔끔한 네이티브 인쇄)
+// PDF 다운로드 기능
 // ============================================================
 function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
@@ -2003,8 +2003,11 @@ function downloadReportPDF(reportTitle) {
     // 1. 화면에 보이지 않는 투명한 iframe 생성
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
+    
+    // ✅ FIX 1: 너비가 0이면 모바일 CSS가 덮어씌워지므로 PC 너비로 고정 후 화면 밖으로 숨김
+    iframe.style.width = '1200px'; 
+    iframe.style.height = '100vh';
+    iframe.style.left = '-9999px'; 
     iframe.style.border = 'none';
     document.body.appendChild(iframe);
 
@@ -2038,6 +2041,11 @@ function downloadReportPDF(reportTitle) {
                     page-break-inside: avoid !important; 
                     break-inside: avoid !important; 
                     margin-bottom: 20px; 
+                }
+
+                /* ✅ FIX 2: 인쇄 모드에서는 강제로 PC 레이아웃이 보이도록 락 해제 */
+                .modal-document { 
+                    display: block !important; 
                 }
             </style>
         </head>
