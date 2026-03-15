@@ -2000,8 +2000,6 @@ function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
 
-    // 💡 [핵심 해결] 요소를 복제한 뒤, CSS 주석에 명시된 대로 .pdf-rendering 클래스를 달아줍니다.
-    // 이렇게 하면 모바일 환경(인쇄 너비)에서도 display: none이 적용되지 않습니다.
     const printNode = reportElement.cloneNode(true);
     printNode.classList.add('pdf-rendering');
 
@@ -2041,8 +2039,13 @@ function downloadReportPDF(reportTitle) {
                     -webkit-print-color-adjust: exact; 
                     print-color-adjust: exact; 
                 }
+                
+                /* ✅ 2. 그림자 제거 (마지막 페이지 검은 번짐 방지) */
+                * {
+                    box-shadow: none !important;
+                }
 
-                /* ✅ 2. 매 페이지마다 로고 반복 출력 (position: fixed 활용) */
+                /* ✅ 3. 매 페이지마다 로고 반복 출력 (position: fixed 활용) */
                 body::before {
                     content: "";
                     position: fixed; /* 핵심: fixed로 설정하면 인쇄 시 모든 페이지에 반복됩니다 */
@@ -2062,12 +2065,28 @@ function downloadReportPDF(reportTitle) {
                 /* 불필요한 컨트롤 버튼 및 안내창 숨김 */
                 .doc-controls, .mobile-only-msg { display: none !important; }
                 
-                /* 박스 내용이 잘려서 다음 장으로 넘어가는 현상 방지 */
+                /* ✅ 4. 모바일 잘림 방지 및 PC 레이아웃 강제 유지 */
                 .doc-matched-box { 
                     page-break-inside: avoid !important; 
                     break-inside: avoid !important; 
-                    margin-bottom: 20px; 
+                    margin-bottom: 20px !important; 
+                    display: block !important; 
                 }
+                
+                /* 모바일에서 세로로 쌓이는 것을 막고 강제로 좌우 배치 */
+                .doc-matched-body { 
+                    display: flex !important; 
+                    flex-direction: row !important; 
+                }
+                
+                /* 좌우 배치 시 가운데 점선 구분선 복구 */
+                .doc-student-data { 
+                    border-bottom: none !important; 
+                    border-right: 1px dashed #cbd5e1 !important; 
+                }
+                
+                /* 모바일에서 작아지는 제목 폰트 크기 강제 복구 */
+                .doc-title { font-size: 2.2rem !important; }
             </style>
         </head>
         <body>
