@@ -2006,30 +2006,31 @@ function downloadReportPDF(reportTitle) {
         btn.disabled = true;
     });
 
-    // 1. 원본 요소를 복제합니다 (이벤트 리스너 제외, 구조만 복제)
+    // 1. 원본 요소 복제
     const clone = originalElement.cloneNode(true);
 
-    // 2. 부모 모달의 CSS 간섭을 차단하기 위해 body에 직접 붙일 준비를 합니다.
+    // 2. 모바일 CSS(display: none) 우회를 위해 클래스 '강제 추가' (가장 핵심적인 수정)
+    clone.classList.add('pdf-rendering');
+
+    // 3. 브라우저가 렌더링은 하되, 사용자 눈에는 안 보이게 처리 (-9999px 절대 금지)
     clone.id = 'pdfClone';
     clone.style.position = 'absolute';
-    clone.style.top = '-9999px'; // 사용자 화면에 보이지 않게 저 멀리 위로 날림
+    clone.style.top = '0';
     clone.style.left = '0';
-    clone.style.width = '900px'; // 모바일 기기라도 무조건 PC 사이즈 900px로 강제 고정
-    clone.style.backgroundColor = '#ffffff'; // 투명 배경 방지
-    clone.style.display = 'block'; // 미디어 쿼리에서 display:none 되는 것 방지
-    clone.style.zIndex = '-100';
+    clone.style.width = '900px'; // 데스크톱 뷰 사이즈 강제 유지
+    clone.style.backgroundColor = '#ffffff';
+    clone.style.zIndex = '-9999';
+    clone.style.opacity = '0.01'; // visibility:hidden이나 display:none을 쓰면 무조건 백지가 뜹니다.
+    clone.style.pointerEvents = 'none'; // 뒤에 숨어있으므로 터치 간섭 방지
     
-    // 복제본의 기존 모바일 전용 클래스들 제거 (안전장치)
-    clone.classList.remove('pdf-rendering'); 
-
-    // 복제본 내부에서 PDF에 보이면 안 되는 버튼/메시지 강제 숨김
+    // 4. 불필요한 UI 요소 숨김 처리
     const mobileMsg = clone.querySelector('.mobile-only-msg');
     if (mobileMsg) mobileMsg.style.display = 'none';
 
     const controls = clone.querySelector('.doc-controls');
     if (controls) controls.style.display = 'none';
 
-    // 3. body의 최상단 자식으로 추가 (기존 CSS 상속 끊어내기)
+    // 5. DOM에 부착 (body 최상단)
     document.body.appendChild(clone);
 
     const fileName = `스터디크랙_${reportTitle.replace(/\s+/g, '_')}.pdf`;
@@ -2040,24 +2041,23 @@ function downloadReportPDF(reportTitle) {
         image:        { type: 'jpeg', quality: 1.0 },
         html2canvas:  {
             scale: 2,
-            useCORS: true,           // 외부 폰트/이미지 렌더링 허용
+            useCORS: true,
             letterRendering: true,
-            windowWidth: 900,        // html2canvas 엔진에 900px 환경이라고 인식시킴
-            scrollY: 0               // 모바일 스크롤 위치 때문에 상단이 잘려 하얗게 나오는 현상 방지
+            windowWidth: 900, // html2canvas에 900px 뷰포트라고 강제 인식
+            scrollY: 0
         },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak:    { mode: ['css', 'legacy'] }
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    // 4. 브라우저가 DOM을 그리고 폰트/이미지를 불러올 시간을 넉넉히(300ms) 줍니다.
+    // 6. DOM이 완전히 렌더링될 시간(300ms) 부여 후 PDF 생성
     setTimeout(() => {
         html2pdf().set(opt).from(clone).save().then(() => {
-            // PDF 다운로드가 완료되면 복제본 삭제
+            // 완료 후 복제본 깔끔하게 삭제
             if (document.body.contains(clone)) {
                 document.body.removeChild(clone);
             }
 
-            // 버튼 상태 원상 복구
+            // 버튼 상태 복구
             btns.forEach(btn => {
                 if (btn.classList.contains('mobile-pdf-btn')) {
                     btn.innerHTML = '<i class="fas fa-download"></i> PDF 다운로드';
