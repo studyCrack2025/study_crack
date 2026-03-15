@@ -1761,7 +1761,7 @@ function renderFeedbackList() {
     });
 }
 
-// 피드백 상세 모달 열기 및 문서 형식 데이터 바인딩 (모바일 최적화 적용)
+// 피드백 상세 모달 열기 및 문서 형식 데이터 바인딩
 function openFeedbackModal(data) {
     const modal = document.getElementById('feedbackModal');
     const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent'); 
@@ -1770,200 +1770,219 @@ function openFeedbackModal(data) {
 
     const fb = data.tutorFeedback || {};
     
-    // 1. [체크] 피드백 데이터가 없는 경우 -> 대기중 화면 렌더링
+    // 1. [체크] 피드백 데이터 확인
     const hasFeedback = fb && (
         (fb.priorityCheck && String(fb.priorityCheck).trim() !== "") || 
-        (fb.weakSubject && String(fb.weakSubject).trim() !== "") ||
+        (fb.weakSubject && String(fb.weakSubject).trim() !== "") || 
+        (fb.nextWeekTop3 && String(fb.nextWeekTop3).trim() !== "") || 
+        (fb.planEvaluation && String(fb.planEvaluation).trim() !== "") ||
         (fb.extraQuestion && String(fb.extraQuestion).trim() !== "")
     );
 
     if (!hasFeedback) {
         contentArea.innerHTML = `
-            <div class="pending-view">
-                <div class="pending-icon"><i class="fas fa-hourglass-half"></i></div>
-                <h2 style="color:#334155; margin-bottom:10px;">피드백 작성 대기중</h2>
-                <p style="color:#64748b; margin-bottom:30px;">
-                    담당 컨설턴트가 학생의 리포트를 꼼꼼히 분석하고 있습니다.<br>
-                    조금만 기다려주시면 알림을 보내드릴게요!
-                </p>
-                <button onclick="document.getElementById('feedbackModal').style.display='none'" 
-                        style="padding:10px 25px; background:#e2e8f0; border:none; border-radius:8px; font-weight:bold; color:#475569; cursor:pointer;">
-                    닫기
-                </button>
-            </div>
-        `;
+            <div class="pending-view" style="background:#fff; padding:100px 20px; border-radius:16px;">
+                <div class="pending-icon" style="font-size:4rem; color:#cbd5e1; margin-bottom:20px;"><i class="fas fa-hourglass-half"></i></div>
+                <h2 style="color:#1e293b; margin-bottom:10px; font-weight:800;">피드백 작성 대기중</h2>
+                <p style="color:#64748b; margin-bottom:30px;">담당 컨설턴트가 학생의 리포트를 꼼꼼히 분석하고 있습니다.</p>
+                <button onclick="document.getElementById('feedbackModal').style.display='none'" style="padding:12px 30px; background:#f1f5f9; border:none; border-radius:8px; font-weight:bold; color:#475569; cursor:pointer;">닫기</button>
+            </div>`;
         modal.style.display = 'block';
         return;
     }
 
     // -----------------------------------------------------------
-    // 피드백이 있는 경우 -> 정식 리포트 렌더링
+    // [데이터 가공 파트]
     // -----------------------------------------------------------
-    const consultantName = "담당 컨설턴트"; 
+    const consultantName = "담당 수석 컨설턴트"; 
     
-    // [데이터 가공]
-    // 1. 학습 시간 및 요약
-    let studyTimeHtml = '<div style="color:#94a3b8; text-align:center;">데이터 없음</div>';
+    // (A) 과목별 학습 시간 디테일 테이블 생성
+    let detailRows = '';
+    let totalPlan = '0H', totalAct = '0H', totalRate = '0%';
+    
     if (data.studyTime) {
-        const totalPlan = data.studyTime.totalPlan || '0H';
-        const totalAct = data.studyTime.totalAct || '0H';
-        const totalRate = data.studyTime.totalRate || '0%';
-        const rateColor = parseInt(totalRate) >= 80 ? '#16a34a' : (parseInt(totalRate) >= 50 ? '#d97706' : '#ef4444');
+        totalPlan = data.studyTime.totalPlan || '0H';
+        totalAct = data.studyTime.totalAct || '0H';
+        totalRate = data.studyTime.totalRate || '0%';
         
-        studyTimeHtml = `
-            <div style="display:flex; justify-content:space-around; align-items:center; text-align:center;">
-                <div><div style="font-size:0.8rem; color:#64748b;">계획</div><div style="font-weight:700; color:#334155;">${totalPlan}</div></div>
-                <div><div style="font-size:0.8rem; color:#64748b;">실행</div><div style="font-weight:700; color:#2563eb;">${totalAct}</div></div>
-                <div><div style="font-size:0.8rem; color:#64748b;">달성률</div><div style="font-weight:800; color:${rateColor};">${totalRate}</div></div>
-            </div>
-        `;
+        if (data.studyTime.details && data.studyTime.details.length > 0) {
+            data.studyTime.details.forEach(d => {
+                const plan = parseFloat(d.plan) || 0;
+                const act = parseFloat(d.act) || 0;
+                const rate = plan > 0 ? Math.min((act / plan) * 100, 100).toFixed(0) : 0;
+                const rateColor = rate >= 80 ? '#10b981' : (rate >= 50 ? '#f59e0b' : '#ef4444');
+                
+                detailRows += `
+                    <tr>
+                        <td style="text-align:left; font-weight:700; color:#334155;">${escapeHtml(d.subject)}</td>
+                        <td>${plan}H</td>
+                        <td style="color:#2563eb; font-weight:bold;">${act}H</td>
+                        <td style="color:${rateColor}; font-weight:800;">${rate}%</td>
+                    </tr>`;
+            });
+        }
     }
+    if (!detailRows) detailRows = `<tr><td colspan="4" style="color:#94a3b8; padding:20px;">상세 학습 기록이 없습니다.</td></tr>`;
 
-    // 2. 모의고사 정보
-    let examHtml = '<span style="color:#94a3b8;">응시 기록 없음</span>';
+    // (B) 모의고사 데이터 생성
+    let examHtml = '';
     if (data.mockExam && data.mockExam.type && data.mockExam.type !== 'none') {
         const typeMap = { 'school': '교내', 'edu': '평가원/교육청', 'private': '사설' };
         const typeName = typeMap[data.mockExam.type] || '기타';
         
-        let scoreSummary = [];
+        let scoreDetails = '';
         const s = data.mockExam.scores || {};
-        if(s.kor) scoreSummary.push(`국:${s.kor}`);
-        if(s.math) scoreSummary.push(`수:${s.math}`);
-        if(s.eng) scoreSummary.push(`영:${s.eng}`);
+        if(s.kor) scoreDetails += `<div style="margin-bottom:6px;"><span style="color:#64748b; font-size:0.85rem;">국어 (${s.korOpt||'-'})</span> <strong style="float:right; color:#1e293b;">${s.kor}</strong></div>`;
+        if(s.math) scoreDetails += `<div style="margin-bottom:6px;"><span style="color:#64748b; font-size:0.85rem;">수학 (${s.mathOpt||'-'})</span> <strong style="float:right; color:#1e293b;">${s.math}</strong></div>`;
+        if(s.eng) scoreDetails += `<div style="margin-bottom:6px;"><span style="color:#64748b; font-size:0.85rem;">영어</span> <strong style="float:right; color:#1e293b;">${s.eng}</strong></div>`;
+        if(s.inq1) scoreDetails += `<div style="margin-bottom:6px;"><span style="color:#64748b; font-size:0.85rem;">${s.inq1Name||'탐구1'}</span> <strong style="float:right; color:#1e293b;">${s.inq1}</strong></div>`;
+        if(s.inq2) scoreDetails += `<div style="margin-bottom:6px;"><span style="color:#64748b; font-size:0.85rem;">${s.inq2Name||'탐구2'}</span> <strong style="float:right; color:#1e293b;">${s.inq2}</strong></div>`;
         
-        const scoreStr = scoreSummary.length > 0 ? scoreSummary.join(', ') : '점수 상세 확인';
-        examHtml = `<strong>${typeName} 모의고사</strong><br><span style="font-size:0.85rem; color:#64748b;">(${scoreStr})</span>`;
+        examHtml = `
+            <div style="font-weight:800; font-size:1.1rem; color:#1e293b; margin-bottom:15px; border-bottom:2px solid #e2e8f0; padding-bottom:8px;">${typeName} 모의고사</div>
+            <div style="text-align:left; padding:0 10px;">${scoreDetails || '<div style="color:#94a3b8; text-align:center;">상세 점수 미입력</div>'}</div>`;
     } else {
-        examHtml = '<span style="color:#94a3b8;">이번 주 응시 없음</span>';
+        examHtml = `<div style="color:#94a3b8; padding:30px 0; font-weight:600;"><i class="fas fa-ban" style="margin-bottom:10px; font-size:1.5rem;"></i><br>이번 주 응시 기록 없음</div>`;
     }
 
-    // 3. 학습 추이
-    let trendHtml = '-';
+    // (C) 학습 추이 데이터 생성
+    let trendHtml = '-', trendReasonsHtml = '';
     if (data.trend) {
         const t = data.trend.status;
-        if(t === 'up') trendHtml = '<span style="color:#16a34a; font-weight:bold;">📈 상승세</span>';
-        else if(t === 'down') trendHtml = '<span style="color:#ef4444; font-weight:bold;">📉 하락세</span>';
-        else trendHtml = '<span style="color:#64748b; font-weight:bold;">➖ 유지중</span>';
+        if(t === 'up') trendHtml = '<span style="color:#10b981;"><i class="fas fa-arrow-trend-up"></i> 상승세</span>';
+        else if(t === 'down') trendHtml = '<span style="color:#ef4444;"><i class="fas fa-arrow-trend-down"></i> 하락세</span>';
+        else trendHtml = '<span style="color:#64748b;"><i class="fas fa-minus"></i> 유지중</span>';
+        
+        if (data.trend.reasons && data.trend.reasons.length > 0) {
+            trendReasonsHtml = `<strong>하락 요인:</strong> ${data.trend.reasons.map(r => escapeHtml(r)).join(', ')}`;
+        } else {
+            trendReasonsHtml = '학생이 체크한 특이사항이 없습니다.';
+        }
     }
 
-    const summarySectionHtml = `
-        <div style="display:grid; grid-template-columns: 1.2fr 1fr 0.8fr; gap:15px; align-items:center; background:white; padding:20px; border-radius:12px; border:1px solid #e2e8f0;">
-            <div style="border-right:1px solid #f1f5f9; padding-right:15px;">
-                <div style="font-size:0.9rem; font-weight:bold; color:#1e293b; margin-bottom:10px;">⏱️ 학습 시간</div>
-                ${studyTimeHtml}
-            </div>
-            <div style="border-right:1px solid #f1f5f9; padding-right:15px; text-align:center;">
-                <div style="font-size:0.9rem; font-weight:bold; color:#1e293b; margin-bottom:8px;">📝 시험 응시</div>
-                <div style="font-size:0.95rem;">${examHtml}</div>
-            </div>
-            <div style="text-align:center;">
-                <div style="font-size:0.9rem; font-weight:bold; color:#1e293b; margin-bottom:8px;">📊 최근 추이</div>
-                <div style="font-size:1rem;">${trendHtml}</div>
-            </div>
-        </div>
-    `;
-
-    // 4. 심층 Q&A 구성
+    // (D) 심층 Q&A
     let deepQnaHtml = '';
     const QUESTION_CATEGORIES = ['학습 계획 점검', '학습 방향성 설정', '취약 과목 솔루션', '기타 멘탈 관리'];
-    
-    if (data.deepAnswers && data.deepAnswers.length > 0) {
-        deepQnaHtml += '<div style="display:flex; flex-direction:column; gap:12px;">';
+    if (data.deepAnswers && data.deepAnswers.some(ans => ans && ans.trim() !== "")) {
         data.deepAnswers.forEach((ans, idx) => {
             if (ans && ans.trim() !== "") {
-                const category = QUESTION_CATEGORIES[idx] || `질문 ${idx+1}`;
                 deepQnaHtml += `
-                    <div style="background:white; padding:12px; border-radius:8px; border:1px solid #f1f5f9;">
-                        <span style="display:inline-block; background:#eff6ff; color:#2563eb; font-size:0.8rem; font-weight:bold; padding:2px 8px; border-radius:4px; margin-bottom:6px;">${category}</span>
-                        <div style="font-size:0.95rem; color:#334155; line-height:1.5;">${escapeHtml(ans)}</div>
-                    </div>
-                `;
+                    <div style="margin-bottom:15px;">
+                        <strong style="color:#b91c1c; font-size:0.9rem; display:block; margin-bottom:4px;">Q${idx+1}. ${QUESTION_CATEGORIES[idx]}</strong>
+                        <div style="color:#334155; font-size:0.95rem; padding-left:10px; border-left:3px solid #fecaca;">${escapeHtml(ans)}</div>
+                    </div>`;
             }
         });
-        deepQnaHtml += '</div>';
     } else {
-        deepQnaHtml = '<div style="color:#94a3b8; text-align:center; padding:10px;">작성된 심층 질문이 없습니다.</div>';
+        deepQnaHtml = '<div style="color:#94a3b8; padding:10px 0;">작성된 심층 질문이 없습니다.</div>';
     }
 
-    // HTML 조립
+
+    // -----------------------------------------------------------
+    // [HTML 조립 파트] 1:1 매칭 레이아웃 적용
+    // -----------------------------------------------------------
     const html = `
         <div class="modal-document">
             <div class="doc-controls">
-                <button class="btn-pdf" onclick="window.print()">
-                    <i class="fas fa-print"></i> PDF 저장/인쇄
-                </button>
-                <button class="close-btn-doc" onclick="document.getElementById('feedbackModal').style.display='none'">
-                    &times;
-                </button>
+                <button class="btn-pdf" onclick="window.print()"><i class="fas fa-print"></i> 리포트 인쇄/PDF</button>
+                <button class="close-btn-doc" onclick="document.getElementById('feedbackModal').style.display='none'">&times;</button>
             </div>
 
             <div class="doc-header">
-                <h2 class="doc-title">스터디크랙 - 주간 피드백</h2>
+                <div>
+                    <h2 class="doc-title">주간 맞춤 전략 리포트</h2>
+                </div>
                 <div class="doc-meta">
-                    <div>대상: ${data.title || "주간 리포트"}</div>
-                    <div>작성일: ${new Date(data.date).toLocaleDateString()}</div>
-                    <div>작성자: ${consultantName}</div>
+                    <div>대상: <strong>${data.title || "주간 리포트"}</strong></div>
+                    <div>발행일: <strong>${new Date(data.date).toLocaleDateString()}</strong></div>
+                    <div>분석: <strong>${consultantName}</strong></div>
+                </div>
+            </div>
+
+            <div class="doc-matched-box">
+                <div class="doc-matched-header"><i class="fas fa-clock"></i> 1. 학습 목표 이행 평가</div>
+                <div class="doc-matched-body">
+                    <div class="doc-student-data">
+                        <span class="doc-badge">학생 리포트</span>
+                        <table class="doc-table">
+                            <thead><tr><th>과목</th><th>계획</th><th>실제</th><th>달성률</th></tr></thead>
+                            <tbody>${detailRows}</tbody>
+                        </table>
+                        <div style="margin-top:15px; text-align:right; font-size:0.9rem; color:#64748b; font-weight:700; background:#f8fafc; padding:8px; border-radius:6px;">
+                            총 달성률 <span style="color:#2563eb; font-size:1.1rem; margin-left:5px;">${totalRate}</span> 
+                            <span style="font-weight:normal; font-size:0.8rem;">(${totalAct} / ${totalPlan})</span>
+                        </div>
+                    </div>
+                    <div class="doc-tutor-feedback">
+                        <span class="doc-badge tutor-badge">Consultant 코멘트</span>
+                        <h4 style="margin:0 0 10px 0; font-size:1rem; color:#1e293b;">이전 우선순위 점검 결과</h4>
+                        <div class="doc-text">${escapeHtml(fb.priorityCheck) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="doc-matched-box">
+                <div class="doc-matched-header"><i class="fas fa-bullseye"></i> 2. 실전 성취도 & 취약점 분석</div>
+                <div class="doc-matched-body">
+                    <div class="doc-student-data">
+                        <span class="doc-badge">시험 성적</span>
+                        <div style="padding:15px; background:#f8fafc; border-radius:12px; text-align:center; border:1px solid #e2e8f0; height:calc(100% - 50px); display:flex; flex-direction:column; justify-content:center;">
+                            ${examHtml}
+                        </div>
+                    </div>
+                    <div class="doc-tutor-feedback">
+                        <span class="doc-badge tutor-badge">Consultant 코멘트</span>
+                        <h4 style="margin:0 0 10px 0; font-size:1rem; color:#1e293b;">취약 과목 진단 및 개선 포인트</h4>
+                        <div class="doc-text">${escapeHtml(fb.weakSubject) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="doc-matched-box">
+                <div class="doc-matched-header"><i class="fas fa-route"></i> 3. 총평 및 Next Step</div>
+                <div class="doc-matched-body">
+                    <div class="doc-student-data">
+                        <span class="doc-badge">학생 컨디션 평가</span>
+                        <div style="margin-bottom:15px; font-weight:900; font-size:1.3rem; text-align:center; padding:15px; background:#f8fafc; border-radius:8px;">${trendHtml}</div>
+                        <div style="font-size:0.85rem; color:#64748b; background:#fff1f2; border:1px solid #fecaca; padding:12px; border-radius:8px;">
+                            ${trendReasonsHtml}
+                        </div>
+                    </div>
+                    <div class="doc-tutor-feedback">
+                        <span class="doc-badge tutor-badge">Consultant 코멘트</span>
+                        <h4 style="margin:0 0 10px 0; font-size:1rem; color:#1e293b;">이번 주 플랜 종합 평가</h4>
+                        <div class="doc-text" style="margin-bottom:20px; padding-bottom:20px; border-bottom:1px dashed #cbd5e1;">
+                            ${escapeHtml(fb.planEvaluation) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}
+                        </div>
+                        <h4 style="margin:0 0 10px 0; font-size:1rem; color:#2563eb;"><i class="fas fa-flag-checkered"></i> 다음 주 핵심 과제 TOP 3</h4>
+                        <div class="doc-text">
+                            ${escapeHtml(fb.nextWeekTop3) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="doc-matched-box">
+                <div class="doc-matched-header" style="background:#fff;"><i class="fas fa-comments"></i> 4. 심층 Q&A 솔루션</div>
+                <div class="doc-matched-body" style="flex-direction:column; padding:25px; gap:20px; border-top:1px solid #e2e8f0;">
+                    <div class="qna-student">
+                        <span class="doc-badge" style="background:#fef2f2; color:#ef4444; border-color:#fecaca;">학생의 심층 질문</span>
+                        ${deepQnaHtml}
+                    </div>
+                    <div class="qna-tutor">
+                        <span class="doc-badge tutor-badge" style="background:#f0fdf4; color:#16a34a; border-color:#bbf7d0;">Consultant 추가 코멘트</span>
+                        <div class="doc-text">${escapeHtml(fb.extraQuestion) || '<span style="color:#94a3b8">추가 코멘트가 없습니다.</span>'}</div>
+                    </div>
                 </div>
             </div>
 
             <div class="mobile-only-msg">
                 <i class="fas fa-file-pdf"></i>
-                <p>
-                    상세 피드백 미리보기는 pc에서 확인해주세요.<br>
-                    <strong>PDF로 저장</strong>하여 확인해주세요.
-                </p>
-                <button class="mobile-pdf-btn" onclick="window.print()">
-                    <i class="fas fa-download"></i> PDF 저장하기
-                </button>
-                <button class="mobile-close-btn" onclick="document.getElementById('feedbackModal').style.display='none'">
-                    닫기
-                </button>
+                <p>모바일에서는 화면이 작을 수 있습니다.<br><strong>PDF로 저장</strong>하여 원본 포맷으로 확인하세요.</p>
+                <button class="mobile-pdf-btn" onclick="window.print()"><i class="fas fa-download"></i> PDF 뷰어로 보기</button>
+                <button class="mobile-close-btn" onclick="document.getElementById('feedbackModal').style.display='none'">닫기</button>
             </div>
-
-            <div class="report-content-body">
-                <div class="doc-section">
-                    <div class="doc-section-title">📊 이번 주 학습 요약</div>
-                    <div class="doc-box" style="background:#f8fafc; border:none; padding:0;">
-                        ${summarySectionHtml}
-                    </div>
-                </div>
-
-                <div class="doc-section">
-                    <div class="doc-section-title">👩‍🏫 컨설턴트 주간 평가</div>
-                    <div class="doc-box">
-                        <div class="doc-box-item">
-                            <strong>1. 이전 우선순위 이행 점검</strong>
-                            <div class="doc-text">${escapeHtml(fb.priorityCheck)}</div>
-                        </div>
-                        <div class="doc-box-item">
-                            <strong>2. 취약 과목 선정 및 개선 포인트</strong>
-                            <div class="doc-text">${escapeHtml(fb.weakSubject)}</div>
-                        </div>
-                        <div class="doc-box-item">
-                            <strong>3. 다음 주 핵심 과제 TOP3 및 근거</strong>
-                            <div class="doc-text">${escapeHtml(fb.nextWeekTop3)}</div>
-                        </div>
-                        <div class="doc-box-item">
-                            <strong>4. 플랜 진행 방향 제고 및 평가</strong>
-                            <div class="doc-text">${escapeHtml(fb.planEvaluation)}</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="doc-section">
-                    <div class="doc-section-title">💬 심층 Q&A</div>
-                    <div class="qna-pair">
-                        <div class="qna-student">
-                            <strong style="margin-bottom:12px; display:block;">💁 학생의 고민 (심층 질문)</strong>
-                            ${deepQnaHtml}
-                        </div>
-                        <div class="qna-tutor" style="margin-top:20px; padding-top:20px; border-top:1px dashed #86efac;">
-                            <strong style="margin-bottom:12px; display:block;">👩‍🏫 컨설턴트의 추가 코멘트</strong>
-                            <div class="doc-text">${escapeHtml(fb.extraQuestion)}</div>
-                        </div>
-                    </div>
-                </div>
-            </div> </div>
+        </div>
     `;
 
     contentArea.innerHTML = html;

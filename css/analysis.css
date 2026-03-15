@@ -308,63 +308,71 @@
 /* ============================================================
    [6] 피드백 문서/모달 디자인
    ============================================================ */
-/* 1. 모달 배경 및 레이아웃 */
-.custom-modal { position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); }
+/* 모달 배경 및 레이아웃 */
+.custom-modal { position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(15, 23, 42, 0.8); backdrop-filter: blur(6px); }
 
-/* 2. 모달 컨텐츠 박스 */
-.custom-modal-content { background-color: white; margin: 5vh auto; border-radius: 12px; width: 90%; max-width: 850px; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); border: none; }
-.custom-modal-content .close-btn { display: none; /* 문서 내부 닫기 버튼 사용 */ } 
+/* 모달 컨텐츠 박스 */
+.custom-modal-content { background-color: transparent; margin: 3vh auto; border-radius: 12px; width: 95%; max-width: 900px; position: relative; border: none; }
+.custom-modal-content .close-btn { display: none; } 
 .modal-body { padding: 0; }
 
-/* 3. 모달 내부 문서(워드) 형식 스타일 */
-.modal-document { width: 100%; background: #fff; padding: 50px; box-sizing: border-box; border-radius: 12px; position: relative; min-height: 600px; }
+/* 문서(워드) 형식 바탕 + 워터마크 로고 */
+.modal-document { 
+    width: 100%; background: #ffffff; padding: 50px; box-sizing: border-box; border-radius: 16px; 
+    position: relative; min-height: 800px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); z-index: 1; 
+}
+/* 워터마크 로고 삽입 */
+.modal-document::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url('/assets/backgrounds/bg_studycrack_logo.png');
+    background-repeat: no-repeat; background-position: center 40%; background-size: 450px;
+    opacity: 0.04; z-index: -1; pointer-events: none;
+}
 
-/* 문서 내부 헤더 컨트롤 (PDF버튼 + 닫기버튼) */
-.doc-controls { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; align-items: center; }
-.btn-pdf { 
-    background: #3b82f6; color: white; border: none; padding: 8px 16px; 
-    border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.9rem; 
-    display: flex; align-items: center; gap: 6px;
-}
-.btn-pdf:hover { background: #2563eb; }
-.close-btn-doc {
-    font-size: 1.8rem; color: #94a3b8; cursor: pointer; line-height: 1;
-    background: none; border: none; padding: 0 5px;
-}
+/* 문서 상단 컨트롤 */
+.doc-controls { position: absolute; top: 20px; right: 25px; display: flex; gap: 10px; align-items: center; }
+.btn-pdf { background: #1e293b; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+.btn-pdf:hover { background: #0f172a; transform: translateY(-2px); }
+.close-btn-doc { font-size: 2rem; color: #94a3b8; cursor: pointer; line-height: 1; background: none; border: none; padding: 0 5px; transition: 0.2s; }
 .close-btn-doc:hover { color: #ef4444; }
 
-/* 문서 타이틀 영역 */
-.doc-header { border-bottom: 2px solid #334155; padding-bottom: 20px; margin-bottom: 30px; margin-top: 30px; }
-.doc-title { font-size: 1.8rem; font-weight: 800; color: #0f172a; margin: 0 0 10px 0; }
-.doc-meta { font-size: 1rem; color: #475569; text-align: right; font-weight: 600; }
+/* 리포트 헤더 (제목) */
+.doc-header { border-bottom: 3px solid #1e293b; padding-bottom: 25px; margin-bottom: 35px; margin-top: 10px; display: flex; justify-content: space-between; align-items: flex-end; }
+.doc-title { font-size: 2.2rem; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: -1px; }
+.doc-meta { font-size: 0.95rem; color: #64748b; text-align: right; font-weight: 600; line-height: 1.6; }
+.doc-meta strong { color: #1e293b; }
 
-/* 섹션 스타일 */
-.doc-section { margin-bottom: 40px; }
-.doc-section-title { font-size: 1.3rem; font-weight: 800; color: #1e293b; border-left: 6px solid #3b82f6; padding-left: 12px; margin-bottom: 20px; display: flex; align-items: center; }
-.doc-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 25px; border-radius: 12px; }
-.doc-box-item { margin-bottom: 20px; }
-.doc-box-item:last-child { margin-bottom: 0; }
-.doc-box-item strong { display: block; color: #2563eb; margin-bottom: 8px; font-size: 1.05rem; }
+/* 1:1 매칭 박스 디자인 (Planner Promo 스타일 차용) */
+.doc-matched-box { background: rgba(255,255,255,0.85); border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 15px -3px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 30px; transition: transform 0.2s, box-shadow 0.2s; }
+.doc-matched-box:hover { box-shadow: 0 10px 25px -5px rgba(0,0,0,0.08); border-color: #cbd5e1; }
+.doc-matched-header { background: #f8fafc; padding: 16px 20px; border-bottom: 1px solid #e2e8f0; font-weight: 800; font-size: 1.1rem; color: #1e293b; display: flex; align-items: center; gap: 10px; }
+.doc-matched-header i { color: #3b82f6; font-size: 1.2rem; }
+
+.doc-matched-body { display: flex; flex-direction: column; }
+@media (min-width: 768px) { .doc-matched-body { flex-direction: row; } }
+
+/* 학생 데이터 (좌측) / 튜터 피드백 (우측) */
+.doc-student-data { flex: 1; padding: 25px; border-bottom: 1px solid #e2e8f0; position: relative; }
+.doc-tutor-feedback { flex: 1.2; padding: 25px; background: #fafafa; position: relative; }
+@media (min-width: 768px) {
+    .doc-student-data { border-bottom: none; border-right: 1px dashed #cbd5e1; }
+}
+
+/* 뱃지 및 테이블 */
+.doc-badge { display: inline-block; padding: 4px 10px; background: #f1f5f9; color: #475569; border-radius: 6px; font-size: 0.8rem; font-weight: 800; margin-bottom: 15px; letter-spacing: -0.5px; border: 1px solid #e2e8f0; }
+.doc-badge.tutor-badge { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+.doc-badge.qna-badge { background: #fdf4ff; color: #c026d3; border-color: #e879f9; }
+
+.doc-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-bottom: 10px; }
+.doc-table th, .doc-table td { padding: 10px 5px; border-bottom: 1px solid #f1f5f9; text-align: center; }
+.doc-table th { color: #94a3b8; font-weight: 600; font-size: 0.8rem; }
+.doc-table tr:last-child td { border-bottom: none; }
 .doc-text { font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; color: #334155; }
-.add-row-btn { background: none; border: none; color: #2563eb; cursor: pointer; margin-left: 5px; font-size: 0.95rem; }
-.add-row-btn:hover { color: #1d4ed8; }
-.delete-row-btn { background: none; border: none; color: #ef4444; cursor: pointer; margin-left: 5px; font-size: 0.95rem;}
-.delete-row-btn:hover { color: #dc2626; }
 
-/* 심층 QnA 리스트 및 페어 스타일 */
-.student-qna-list { list-style: none; padding: 0; margin: 0; }
-.student-qna-list li { margin-bottom: 12px; position: relative; padding-left: 20px; line-height: 1.6; color: #334155; }
-.student-qna-list li::before { content: "•"; color: #3b82f6; font-weight: bold; position: absolute; left: 0; font-size: 1.2rem; line-height: 1.4; }
-
-.qna-pair { background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 5px solid #16a34a; padding: 20px; border-radius: 8px; }
-.qna-student { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #86efac; }
-.qna-student strong { color: #b91c1c; display: block; margin-bottom: 8px; font-size: 1.05rem; }
-.qna-tutor strong { color: #15803d; display: block; margin-bottom: 8px; font-size: 1.05rem; }
-
-/* 피드백 대기중 화면 */
-.pending-view { text-align: center; padding: 80px 20px; }
-.pending-icon { font-size: 4rem; color: #cbd5e1; margin-bottom: 20px; animation: float 3s ease-in-out infinite; }
-@keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+/* 심층 QnA 섹션 */
+.qna-pair-container { display: flex; flex-direction: column; gap: 20px; }
+.qna-student { background: #fff1f2; padding: 18px; border-radius: 8px; border: 1px solid #fecaca; }
+.qna-tutor { background: #f0fdf4; padding: 18px; border-radius: 8px; border: 1px solid #bbf7d0; }
 
 
 /* ============================================================
@@ -522,21 +530,33 @@ input[type="number"]::-webkit-inner-spin-button {
 
 /* 인쇄(PDF 다운로드) 설정 */
 @media print {
-    /* 배경의 모든 요소 숨김 */
+    /* 1. 바탕 웹사이트 숨기고 모달(보고서)만 강제 표시 (기존 필수 로직) */
     body > * { display: none !important; }
-    
-    /* 모달 및 문서 컨테이너 강제 표시 */
+    body { background: white; }
     #feedbackModal { display: block !important; position: absolute; top: 0; left: 0; width: 100%; height: auto; z-index: 9999; background: white; }
-    #feedbackModal .custom-modal-content { box-shadow: none; margin: 0; width: 100%; max-width: 100%; border: none; }
-    #feedbackModal .modal-document { padding: 0; border: none; min-height: auto; }
+    #feedbackModal .custom-modal-content { box-shadow: none; margin: 0; width: 100%; max-width: 100%; border: none; background: transparent; }
     
-    /* [중요] 모바일에서 숨겨졌던 본문 내용을 인쇄 시에는 강제로 보이게 함 */
-    .report-content-body { display: block !important; }
+    /* 2. 문서 여백 제거 */
+    .modal-document { box-shadow: none; border: none; padding: 0; min-height: auto; }
     
-    /* 모바일 안내 메시지와 버튼 컨트롤들은 인쇄 시 숨김 */
-    .mobile-only-msg, .doc-controls, .mobile-close-btn { display: none !important; }
+    /* 3. 불필요한 UI(버튼, 모바일 안내문) 숨김 */
+    .doc-controls, .mobile-only-msg, .mobile-close-btn { display: none !important; }
     
-    /* 페이지 설정 */
+    /* 4. 워터마크 로고 강제 인쇄 (새로운 로직) */
+    .modal-document::before { 
+        opacity: 0.05 !important; 
+        -webkit-print-color-adjust: exact; 
+        print-color-adjust: exact; 
+    }
+    
+    /* 5. 박스가 페이지 중간에 잘리는 것 방지 및 배경색 강제 인쇄 (새로운 로직) */
+    .doc-matched-box { page-break-inside: avoid; border: 1px solid #cbd5e1 !important; }
+    .doc-matched-header, .doc-tutor-feedback, .doc-badge, .qna-student, .qna-tutor {
+        -webkit-print-color-adjust: exact; 
+        print-color-adjust: exact; 
+    }
+    
+    /* 6. 페이지 규격 유지 */
     @page { size: A4; margin: 20mm; }
 }
 
