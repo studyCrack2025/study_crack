@@ -551,6 +551,78 @@ input[type="number"]::-webkit-inner-spin-button {
 /* 기본 상태: 모바일 전용 메시지는 숨김 */
 .mobile-only-msg { display: none; }
 
+@media print {
+    /* 1. 배경 그래픽 및 색상을 인쇄 시에도 강제로 유지 (매우 중요) */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* 2. 인쇄에 필요 없는 모든 UI 숨기기 (헤더, 사이드바, 뒷배경 등) */
+    header, 
+    .mypage-container > aside, 
+    .solution-menu, 
+    .page-loading-overlay,
+    .modal:not(#feedbackModal) {
+        display: none !important;
+    }
+
+    /* 3. 모달 뒷배경(어두운 블러) 제거 및 기본 여백 초기화 */
+    body, html {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+    }
+
+    #feedbackModal {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        background: transparent !important;
+        display: block !important; 
+    }
+
+    /* 4. 문서 컨테이너를 A4 규격에 맞게 리셋 */
+    .custom-modal-content {
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .modal-document {
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        min-height: auto !important;
+    }
+
+    /* 5. 다운로드 버튼, 닫기 버튼, 모바일 안내문 등 숨기기 */
+    .doc-controls, 
+    .mobile-only-msg, 
+    .btn-pdf {
+        display: none !important;
+    }
+
+    /* 6. ★핵심★ 박스 요소가 페이지 중간에 반토막 나는 현상 방지 */
+    .doc-matched-box, 
+    .qna-pair-container, 
+    .doc-header {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        margin-bottom: 20px !important; /* 인쇄 시 간격 약간 조정 */
+    }
+    
+    /* 인쇄용 배경 워터마크(로고) 투명도 조절 */
+    .modal-document::after {
+        opacity: 0.03 !important; 
+    }
+}
+
 @media (max-width: 768px) {
     /* =======================================
        1. 메인 헤더 & 네비게이션 탭 다이어트
