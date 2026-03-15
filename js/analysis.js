@@ -1993,8 +1993,70 @@ function openFeedbackModal(data) {
     modal.style.display = 'block';
 }
 
+// ============================================================
+// PDF 다운로드 기능 (Iframe을 이용한 깔끔한 네이티브 인쇄)
+// ============================================================
 function downloadReportPDF(reportTitle) {
-    window.print();
+    const reportElement = document.getElementById('pdfTargetDocument');
+    if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
+
+    // 1. 화면에 보이지 않는 투명한 iframe 생성
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    document.body.appendChild(iframe);
+
+    // 2. 현재 사이트의 CSS를 그대로 가져오기
+    const styleLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+        .map(link => `<link rel="stylesheet" href="${link.href}">`)
+        .join('');
+
+    // 3. iframe 내부에 리포트 HTML과 인쇄 전용 스타일 욱여넣기
+    const iframeDoc = iframe.contentWindow.document;
+    iframeDoc.open();
+    iframeDoc.write(`
+        <!DOCTYPE html>
+        <html lang="ko">
+        <head>
+            <title>스터디크랙_${reportTitle}</title>
+            ${styleLinks}
+            <style>
+                @page { margin: 10mm; } /* PDF 기본 여백 */
+                body { 
+                    background: white !important; 
+                    margin: 0; padding: 0; 
+                    -webkit-print-color-adjust: exact; 
+                    print-color-adjust: exact; 
+                }
+                /* 다운로드 버튼 등 불필요한 UI 숨김 */
+                .doc-controls, .mobile-only-msg { display: none !important; }
+                
+                /* 박스 중간이 반토막 나서 다음 장으로 넘어가는 것 방지 */
+                .doc-matched-box { 
+                    page-break-inside: avoid !important; 
+                    break-inside: avoid !important; 
+                    margin-bottom: 20px; 
+                }
+            </style>
+        </head>
+        <body>
+            ${reportElement.outerHTML}
+        </body>
+        </html>
+    `);
+    iframeDoc.close();
+
+    // 4. 스타일 로딩이 끝난 후 인쇄 실행
+    iframe.onload = () => {
+        setTimeout(() => {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+            // 인쇄 창이 닫히면 iframe 찌꺼기 제거
+            setTimeout(() => document.body.removeChild(iframe), 1000);
+        }, 500); // 렌더링 여유 시간 확보
+    };
 }
 
 function openWeeklyCheckModal() {
