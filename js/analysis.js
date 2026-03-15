@@ -2010,10 +2010,9 @@ function downloadReportPDF(reportTitle) {
     iframe.style.left = '-9999px'; // 화면 밖으로 완전히 치움
     iframe.style.top = '0';
     
-    // 💡 [핵심 1] iframe 크기를 PC 뷰포트 및 A4 비율에 강제로 맞춤
-    // 모바일에서 100vh를 쓰면 핸드폰 화면 높이로 잘려서 로고가 짤립니다.
+    // 💡 [핵심 1] iframe 자체의 물리적 너비를 PC 해상도로 강제
     iframe.style.width = '1024px'; 
-    iframe.style.height = '1448px'; // 1024px 너비에 맞춘 A4 세로 비율
+    iframe.style.height = '100vh';
     iframe.style.border = 'none';
     document.body.appendChild(iframe);
 
@@ -2035,25 +2034,20 @@ function downloadReportPDF(reportTitle) {
             
             ${styleLinks}
             <style>
-                /* 💡 [핵심 2] URL 제거를 위해 @page margin을 0으로 설정 */
-                @page { margin: 0; } 
+                @page { margin: 20mm 10mm 10mm 10mm; } 
 
+                /* 💡 [핵심 3] body 너비까지 1024px로 못박아서 모바일에서 페이지가 중간에 끊기는 현상 차단 */
                 body { 
                     width: 1024px !important;
                     background: white !important; 
-                    
-                    /* @page margin이 0이므로, body에 직접 여백(상20mm, 우하좌10mm)을 줍니다 */
-                    padding: 20mm 10mm 10mm 10mm !important; 
-                    box-sizing: border-box !important;
-                    margin: 0; 
-                    
+                    margin: 0; padding: 0; 
                     -webkit-print-color-adjust: exact; 
                     print-color-adjust: exact; 
                 }
                 
-                * { box-shadow: none !important; } /* 마지막 페이지 그림자 버그 제거 */
+                * { box-shadow: none !important; } /* 그림자 버그 제거 */
 
-                /* 💡 사용자가 만족했던 원래 로고 코드 그대로 유지! */
+                /* 매 페이지마다 로고 반복 출력 */
                 body::before {
                     content: "";
                     position: fixed; 
@@ -2072,7 +2066,7 @@ function downloadReportPDF(reportTitle) {
                 
                 .modal-document {
                     width: 100% !important;
-                    padding: 40px !important; 
+                    padding: 40px !important; /* 모바일의 좁은 패딩 무시, PC 패딩 적용 */
                     box-sizing: border-box !important;
                 }
 
@@ -2084,12 +2078,14 @@ function downloadReportPDF(reportTitle) {
                     width: 100% !important;
                 }
                 
+                /* ✅ 수정 1: 1~3번째 박스는 PC처럼 무조건 '좌우 배치' */
                 .doc-matched-box:not(:last-child) .doc-matched-body { 
                     display: flex !important; 
                     flex-direction: row !important; 
-                    flex-wrap: nowrap !important; 
+                    flex-wrap: nowrap !important; /* 줄바꿈 방지 */
                 }
                 
+                /* 좌우 배치 시 칸 나누기 설정 복구 */
                 .doc-matched-box:not(:last-child) .doc-student-data { 
                     border-bottom: none !important; 
                     border-right: 1px dashed #cbd5e1 !important; 
@@ -2102,6 +2098,7 @@ function downloadReportPDF(reportTitle) {
                     box-sizing: border-box !important;
                 }
 
+                /* ✅ 수정 2: 4번째 심층 Q&A 박스는 무조건 '상하 배치' */
                 .doc-matched-box:last-child .doc-matched-body {
                     display: flex !important;
                     flex-direction: column !important;
