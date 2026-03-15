@@ -2000,14 +2000,20 @@ function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
 
+    // 💡 [핵심 해결] 요소를 복제한 뒤, CSS 주석에 명시된 대로 .pdf-rendering 클래스를 달아줍니다.
+    // 이렇게 하면 모바일 환경(인쇄 너비)에서도 display: none이 적용되지 않습니다.
+    const printNode = reportElement.cloneNode(true);
+    printNode.classList.add('pdf-rendering');
+
     // 1. 화면에 보이지 않는 투명한 iframe 생성
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
-    
-    // ✅ FIX 1: 너비가 0이면 모바일 CSS가 덮어씌워지므로 PC 너비로 고정 후 화면 밖으로 숨김
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
     iframe.style.width = '1200px'; 
     iframe.style.height = '100vh';
-    iframe.style.left = '-9999px'; 
+    iframe.style.zIndex = '-1'; 
+    iframe.style.opacity = '0'; // 화면엔 안 보이지만 브라우저 렌더링 트리에 포함되도록 처리
     iframe.style.border = 'none';
     document.body.appendChild(iframe);
 
@@ -2016,7 +2022,7 @@ function downloadReportPDF(reportTitle) {
         .map(link => `<link rel="stylesheet" href="${link.href}">`)
         .join('');
 
-    // 3. iframe 내부에 리포트 HTML과 인쇄 전용 스타일 욱여넣기
+    // 3. iframe 내부에 리포트 HTML과 인쇄 전용 스타일 삽입
     const iframeDoc = iframe.contentWindow.document;
     iframeDoc.open();
     iframeDoc.write(`
@@ -2026,45 +2032,39 @@ function downloadReportPDF(reportTitle) {
             <title>스터디크랙_${reportTitle}</title>
             ${styleLinks}
             <style>
-                @page { margin: 10mm; } /* PDF 기본 여백 */
+                @page { margin: 10mm; } 
                 body { 
                     background: white !important; 
                     margin: 0; padding: 0; 
                     -webkit-print-color-adjust: exact; 
                     print-color-adjust: exact; 
                 }
-                /* 다운로드 버튼 등 불필요한 UI 숨김 */
+                /* 불필요한 컨트롤 버튼 및 안내창 숨김 */
                 .doc-controls, .mobile-only-msg { display: none !important; }
                 
-                /* 박스 중간이 반토막 나서 다음 장으로 넘어가는 것 방지 */
+                /* 박스 내용이 잘려서 다음 장으로 어정쩡하게 넘어가는 현상 방지 */
                 .doc-matched-box { 
                     page-break-inside: avoid !important; 
                     break-inside: avoid !important; 
                     margin-bottom: 20px; 
                 }
-
-                /* ✅ FIX 2: 인쇄 모드에서는 강제로 PC 레이아웃이 보이도록 락 해제 */
-                .modal-document { 
-                    display: block !important; 
-                }
             </style>
         </head>
         <body>
-            ${reportElement.outerHTML}
+            ${printNode.outerHTML}
         </body>
         </html>
     `);
     iframeDoc.close();
 
-    // 4. 스타일 로딩이 끝난 후 인쇄 실행
-    iframe.onload = () => {
-        setTimeout(() => {
-            iframe.contentWindow.focus();
-            iframe.contentWindow.print();
-            // 인쇄 창이 닫히면 iframe 찌꺼기 제거
-            setTimeout(() => document.body.removeChild(iframe), 1000);
-        }, 500); // 렌더링 여유 시간 확보
-    };
+    // 4. 외부 스타일(CSS)이 완전히 로드될 수 있도록 대기 후 인쇄 실행
+    setTimeout(() => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        
+        // 인쇄 창이 닫히면 iframe 찌꺼기 청소
+        setTimeout(() => document.body.removeChild(iframe), 1000);
+    }, 800); // 렌더링 여유 시간 0.8초 확보
 }
 
 function openWeeklyCheckModal() {
