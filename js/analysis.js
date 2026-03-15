@@ -2003,7 +2003,6 @@ function downloadReportPDF(reportTitle) {
     const printNode = reportElement.cloneNode(true);
     printNode.classList.add('pdf-rendering');
 
-    // 1. 화면에 보이지 않는 투명한 iframe 생성 (PC 해상도 강제)
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
     iframe.style.left = '-9999px'; 
@@ -2013,12 +2012,10 @@ function downloadReportPDF(reportTitle) {
     iframe.style.border = 'none';
     document.body.appendChild(iframe);
 
-    // 2. 현재 사이트의 CSS를 그대로 가져오기
     const styleLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
         .map(link => `<link rel="stylesheet" href="${link.href}">`)
         .join('');
 
-    // 3. iframe 내부에 HTML과 인쇄 전용 CSS 삽입
     const iframeDoc = iframe.contentWindow.document;
     iframeDoc.open();
     iframeDoc.write(`
@@ -2030,43 +2027,63 @@ function downloadReportPDF(reportTitle) {
             ${styleLinks}
             <style>
                 /* ✅ 1. 브라우저 기본 URL(머리글/바닥글) 강제 제거 */
-                @page { margin: 0; } 
+                @page { 
+                    margin: 0; 
+                } 
 
                 body { 
                     width: 1024px !important;
                     background: white !important; 
-                    /* @page margin이 0이므로, body 패딩으로 상/우/하/좌 여백을 물리적으로 줍니다 */
-                    padding: 20mm 10mm 10mm 10mm !important; 
-                    box-sizing: border-box !important;
-                    margin: 0; 
+                    margin: 0; padding: 0; 
                     -webkit-print-color-adjust: exact; 
                     print-color-adjust: exact; 
-                    position: relative; /* JS 워터마크 기준점 */
                 }
                 
+                /* @page 여백을 없앴으므로, 문서 자체에 안전 여백 부여 */
+                .modal-document {
+                    width: 100% !important;
+                    padding: 20mm 15mm !important; 
+                    box-sizing: border-box !important;
+                }
+
                 * { box-shadow: none !important; }
 
-                /* 불필요한 컨트롤 버튼 및 모바일 안내창 숨김 */
+                /* 기존 전체 배경 로고 등 불필요 요소 숨김 */
                 .modal-document::after { display: none !important; }
                 .doc-controls, .mobile-only-msg { display: none !important; }
                 
-                .modal-document {
-                    width: 100% !important;
-                    padding: 40px !important; 
-                    box-sizing: border-box !important;
-                }
-
                 .doc-matched-box { 
                     page-break-inside: avoid !important; 
                     break-inside: avoid !important; 
-                    margin-bottom: 20px !important; 
+                    margin-bottom: 25px !important; 
                     display: block !important; 
                     width: 100% !important;
+                    position: relative; /* 워터마크 기준점 */
+                    background-color: transparent !important;
+                }
+
+                /* ✅ 2. 모바일 로고 잘림 완벽 방지: 각 컨텐츠 박스 내부에 워터마크 삽입 */
+                /* 박스가 잘리지 않으므로 로고도 절대 잘리지 않음 */
+                .doc-matched-box::before {
+                    content: "";
+                    position: absolute;
+                    top: 0; left: 0; right: 0; bottom: 0;
+                    background-image: url('/assets/backgrounds/bg_studycrack_logo.png');
+                    background-repeat: no-repeat;
+                    background-position: center center;
+                    background-size: 350px; /* 박스 크기에 맞게 사이즈 조정 */
+                    opacity: 0.05;
+                    z-index: 0;
+                    pointer-events: none;
+                }
+
+                /* 내용물이 로고 위로 오도록 z-index 조정 */
+                .doc-matched-header, .doc-matched-body {
                     position: relative;
-                    z-index: 10;
+                    z-index: 1;
                 }
                 
-                /* 1~3번 박스는 PC처럼 무조건 좌우 배치 */
+                /* ✅ 3. 1~3번 박스는 PC처럼 무조건 좌우 배치 */
                 .doc-matched-box:not(:last-child) .doc-matched-body { 
                     display: flex !important; 
                     flex-direction: row !important; 
@@ -2083,7 +2100,7 @@ function downloadReportPDF(reportTitle) {
                     box-sizing: border-box !important;
                 }
 
-                /* 마지막 4번 심층 Q&A 박스는 무조건 상하 배치 */
+                /* ✅ 4. 마지막 심층 Q&A 박스는 무조건 상하 배치 복구 */
                 .doc-matched-box:last-child .doc-matched-body {
                     display: flex !important;
                     flex-direction: column !important;
@@ -2099,41 +2116,7 @@ function downloadReportPDF(reportTitle) {
     `);
     iframeDoc.close();
 
-    // 4. 외부 스타일 로딩 대기 후 인쇄 실행
     setTimeout(() => {
-        // ✅ 2. 모바일 로고 버그 우회: 문서 높이를 계산해 A4 높이마다 강제로 로고 박아넣기
-        const bodyHeight = iframeDoc.body.scrollHeight;
-        const a4Height = 1122; // A4 용지 1장 높이 (약 1122px)
-        const totalPages = Math.max(Math.ceil(bodyHeight / a4Height), 3); // 최소 3장 분량 보장
-        
-        const watermarkWrapper = iframeDoc.createElement('div');
-        watermarkWrapper.style.position = 'absolute';
-        watermarkWrapper.style.top = '0';
-        watermarkWrapper.style.left = '0';
-        watermarkWrapper.style.width = '100%';
-        watermarkWrapper.style.height = '100%';
-        watermarkWrapper.style.zIndex = '1'; // 본문 배경색보다는 위, 본문 내용보다는 아래
-        watermarkWrapper.style.pointerEvents = 'none';
-        watermarkWrapper.style.overflow = 'hidden';
-
-        for (let i = 0; i < totalPages; i++) {
-            const logo = iframeDoc.createElement('div');
-            logo.style.position = 'absolute';
-            // 각 페이지의 정중앙 높이 계산 (페이지 번호 * A4높이 + A4반절)
-            logo.style.top = `${(i * a4Height) + (a4Height / 2)}px`;
-            logo.style.left = '50%';
-            logo.style.transform = 'translate(-50%, -50%)';
-            logo.style.width = '500px';
-            logo.style.height = '500px';
-            logo.style.backgroundImage = "url('/assets/backgrounds/bg_studycrack_logo.png')";
-            logo.style.backgroundSize = 'contain';
-            logo.style.backgroundRepeat = 'no-repeat';
-            logo.style.backgroundPosition = 'center';
-            logo.style.opacity = '0.06';
-            watermarkWrapper.appendChild(logo);
-        }
-        iframeDoc.body.appendChild(watermarkWrapper);
-
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
         setTimeout(() => document.body.removeChild(iframe), 1000);
