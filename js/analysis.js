@@ -1997,36 +1997,8 @@ function openFeedbackModal(data) {
 // PDF 다운로드 기능
 // ============================================================
 function downloadReportPDF(reportTitle) {
-    const element = document.getElementById('pdfTargetDocument');
-    
-    if (!element) return;
-
-    // 1. 렌더링 클래스 추가 (display: block으로 전환)
-    element.classList.add('pdf-rendering');
-    
-    // 오프스크린(-9999px) 핵 제거. 모바일 화면에서 잠깐 넓어지는 것이 
-    // PDF가 깨지는 것보다 안전합니다. (UX를 위해 opacity: 0.01 처리도 방법입니다)
-    element.style.width = '900px'; 
-    element.style.position = 'absolute';
-    element.style.top = '0';
-    element.style.left = '0';
-    element.style.zIndex = '-1'; // 사용자가 다운로드 중 화면을 터치하지 못하게 뒤로 보냄
-
-    const fileName = `스터디크랙_${reportTitle.replace(/\s+/g, '_')}.pdf`;
-
-    const opt = {
-        margin:       10, 
-        filename:     fileName,
-        image:        { type: 'jpeg', quality: 1.0 },
-        html2canvas:  { 
-            scale: 2, 
-            useCORS: true, 
-            letterRendering: true,
-            windowWidth: 900 // html2canvas가 강제로 900px 해상도로 인식하게 만듦
-        },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak:    { mode: ['css', 'legacy'] }
-    };
+    const originalElement = document.getElementById('pdfTargetDocument');
+    if (!originalElement) return;
 
     const btns = document.querySelectorAll('.btn-pdf, .mobile-pdf-btn');
     btns.forEach(btn => {
@@ -2034,17 +2006,58 @@ function downloadReportPDF(reportTitle) {
         btn.disabled = true;
     });
 
-    // 2. 브라우저가 DOM을 다시 그릴 시간을 줍니다 (0.15초 대기)
-    setTimeout(() => {
-        html2pdf().set(opt).from(element).save().then(() => {
-            // PDF 생성 끝나면 원래 상태로 완벽히 복구
-            element.classList.remove('pdf-rendering');
-            element.style.width = '';
-            element.style.position = '';
-            element.style.top = '';
-            element.style.left = '';
-            element.style.zIndex = '';
+    // 1. 원본 요소를 복제합니다 (이벤트 리스너 제외, 구조만 복제)
+    const clone = originalElement.cloneNode(true);
 
+    // 2. 부모 모달의 CSS 간섭을 차단하기 위해 body에 직접 붙일 준비를 합니다.
+    clone.id = 'pdfClone';
+    clone.style.position = 'absolute';
+    clone.style.top = '-9999px'; // 사용자 화면에 보이지 않게 저 멀리 위로 날림
+    clone.style.left = '0';
+    clone.style.width = '900px'; // 모바일 기기라도 무조건 PC 사이즈 900px로 강제 고정
+    clone.style.backgroundColor = '#ffffff'; // 투명 배경 방지
+    clone.style.display = 'block'; // 미디어 쿼리에서 display:none 되는 것 방지
+    clone.style.zIndex = '-100';
+    
+    // 복제본의 기존 모바일 전용 클래스들 제거 (안전장치)
+    clone.classList.remove('pdf-rendering'); 
+
+    // 복제본 내부에서 PDF에 보이면 안 되는 버튼/메시지 강제 숨김
+    const mobileMsg = clone.querySelector('.mobile-only-msg');
+    if (mobileMsg) mobileMsg.style.display = 'none';
+
+    const controls = clone.querySelector('.doc-controls');
+    if (controls) controls.style.display = 'none';
+
+    // 3. body의 최상단 자식으로 추가 (기존 CSS 상속 끊어내기)
+    document.body.appendChild(clone);
+
+    const fileName = `스터디크랙_${reportTitle.replace(/\s+/g, '_')}.pdf`;
+
+    const opt = {
+        margin:       10,
+        filename:     fileName,
+        image:        { type: 'jpeg', quality: 1.0 },
+        html2canvas:  {
+            scale: 2,
+            useCORS: true,           // 외부 폰트/이미지 렌더링 허용
+            letterRendering: true,
+            windowWidth: 900,        // html2canvas 엔진에 900px 환경이라고 인식시킴
+            scrollY: 0               // 모바일 스크롤 위치 때문에 상단이 잘려 하얗게 나오는 현상 방지
+        },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:    { mode: ['css', 'legacy'] }
+    };
+
+    // 4. 브라우저가 DOM을 그리고 폰트/이미지를 불러올 시간을 넉넉히(300ms) 줍니다.
+    setTimeout(() => {
+        html2pdf().set(opt).from(clone).save().then(() => {
+            // PDF 다운로드가 완료되면 복제본 삭제
+            if (document.body.contains(clone)) {
+                document.body.removeChild(clone);
+            }
+
+            // 버튼 상태 원상 복구
             btns.forEach(btn => {
                 if (btn.classList.contains('mobile-pdf-btn')) {
                     btn.innerHTML = '<i class="fas fa-download"></i> PDF 다운로드';
@@ -2056,8 +2069,11 @@ function downloadReportPDF(reportTitle) {
         }).catch(err => {
             console.error("PDF 생성 오류:", err);
             alert("PDF 다운로드 중 문제가 발생했습니다.");
+            if (document.body.contains(clone)) {
+                document.body.removeChild(clone);
+            }
         });
-    }, 150);
+    }, 300); 
 }
 
 function openWeeklyCheckModal() {
