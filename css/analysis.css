@@ -470,28 +470,23 @@
    [8] 공통 모달 (일반 폼, 대학선택 등)
    ============================================================ */
 /* 모달 배경 */
-.modal { display: none; position: fixed; z-index: 2000 !important; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
+.modal { display: none; position: fixed; z-index: 2000 !important; left: 0; top: 0; width: 100%; height: 100%; height: -webkit-fill-available; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
 
 /* 모달 컨텐츠 (공통) */
-.modal-content { 
-    background-color: white; margin: 8vh auto; border-radius: 12px; width: 90%; max-width: 500px; 
-    position: relative; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); 
-    display: flex; flex-direction: column; overflow: hidden; 
-    animation: modalSlideIn 0.3s ease-out; 
-}
+.modal-content { background-color: white; margin: 8vh auto; border-radius: 12px; width: 90%; max-width: 500px; position: relative; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); display: flex; flex-direction: column; overflow: hidden; animation: modalSlideIn 0.3s ease-out; max-height: 85vh; max-height: calc(-webkit-fill-available * 0.85); }
 @keyframes modalSlideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
 /* 모달 내부 구성요소 */
-.modal-header { padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; background: #fff; }
+.modal-header { padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; background: #fff; flex-shrink: 0; }
 .modal-title { margin: 0; font-size: 1.15rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 8px; }
 .close-btn { font-size: 1.8rem; cursor: pointer; color: #94a3b8; line-height: 1; transition: color 0.2s; background: transparent; border: none; }
 .close-btn:hover { color: #ef4444; }
-.modal-body { padding: 24px; background: #fff; flex: 1; overflow-y: auto; }
+.modal-body { padding: 24px; background: #fff; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .modal-desc { font-size: 0.95rem; color: #475569; margin-bottom: 20px; line-height: 1.6; word-break: keep-all; }
-.modal-footer { padding: 16px 24px; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 10px; }
+.modal-footer { padding: 16px 24px; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; z-index: 10; }
 
 /* 탭 메뉴 (모달 내부) */
-.tab-menu { display: flex; border-bottom: 1px solid #e2e8f0; background: #f8fafc; margin-bottom: 0; border-radius: 12px 12px 0 0; overflow: hidden; }
+.tab-menu { display: flex; border-bottom: 1px solid #e2e8f0; background: #f8fafc; margin-bottom: 0; border-radius: 12px 12px 0 0; overflow: hidden; flex-shrink: 0; }
 .tab-btn { flex: 1; padding: 15px; border: none; background: transparent; cursor: pointer; font-weight: bold; color: #64748b; border-bottom: 2px solid transparent; transition: 0.2s; font-size: 0.95rem; }
 .tab-btn:hover { color: #334155; background: #f1f5f9; }
 .tab-btn.active { color: #2563EB; border-bottom: 2px solid #2563EB; background: white; color: #2563EB; }
@@ -595,27 +590,19 @@ input[type="number"]::-webkit-inner-spin-button {
     /* =======================================
        4. 공통 모달 및 폼 요소 다이어트
        ======================================= */
-    .modal-content { margin: 10vh auto; width: 95%; max-width: none; }
+    .modal { align-items: flex-end; padding: 0; }
+    .modal-content { margin: 0; width: 100%; max-width: none; border-radius: 16px 16px 0 0; max-height: 92vh; max-height: calc(-webkit-fill-available * 0.92); animation: slideUpBottom 0.3s ease-out; }
+    @keyframes slideUpBottom { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .modal-header { padding: 15px 20px; }
     .modal-title { font-size: 1.05rem; }
     .modal-body { padding: 15px 20px; }
-    .modal-footer { padding: 12px 20px; }
-    
+    .modal-footer { padding: 12px 20px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid #e2e8f0; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); position: sticky; bottom: 0; }
+    .save-btn, .btn-confirm, .btn-cancel { width: 100%; margin-top: 0; padding: 14px; font-size: 1rem; }
     .tab-btn { padding: 12px 10px; font-size: 0.85rem; }
-    .tab-content { padding: 15px; }
+    .tab-content { padding: 15px; padding-bottom: 25px; }
     
     /* 주간점검 폼 최적화 */
     .check-modal-content { height: 95vh; max-height: 95vh; }
-    .study-time-table th, .study-time-table td { padding: 8px 4px; font-size: 0.85rem; }
-    .study-time-table input { font-size: 0.85rem; padding: 6px; }
-    
-    .file-upload-box.small-type { flex-direction: column; align-items: flex-start; gap: 10px; padding: 10px; }
-    .upload-action { width: 100%; justify-content: space-between; }
-    
-    /* 성적 입력 그리드 (4칸->2칸, 5칸->3칸) */
-    .mock-tile-group { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-    .mock-tile { padding: 10px 5px; }
-    .score-input-grid.enhanced { grid-template-columns: repeat(3, 1fr); row-gap: 15px; column-gap: 8px; }
 
     /* =======================================
        5. 차트 모바일 전용 설정 (기존 레이아웃 조정)
