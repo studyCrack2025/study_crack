@@ -590,19 +590,20 @@ input[type="number"]::-webkit-inner-spin-button {
     /* =======================================
        4. 공통 모달 및 폼 요소 다이어트
        ======================================= */
-    .modal { align-items: flex-end; padding: 0; }
-    .modal-content { margin: 0; width: 100%; max-width: none; border-radius: 16px 16px 0 0; max-height: 92vh; max-height: calc(-webkit-fill-available * 0.92); animation: slideUpBottom 0.3s ease-out; }
+    .modal { display: none; position: fixed; z-index: 2000 !important; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background-color: rgba(15, 23, 42, 0.6); }
+    .modal:not(.hidden) { display: block !important; }
+    .modal-content { position: absolute; bottom: 0; left: 0; margin: 0; width: 100%; max-width: 100%; border-radius: 16px 16px 0 0; max-height: 92vh; max-height: 92dvh; display: flex; flex-direction: column; animation: slideUpBottom 0.3s ease-out; }
     @keyframes slideUpBottom { from { transform: translateY(100%); } to { transform: translateY(0); } }
-    .modal-header { padding: 15px 20px; }
+    .modal-header { padding: 15px 20px; flex-shrink: 0; }
     .modal-title { font-size: 1.05rem; }
-    .modal-body { padding: 15px 20px; }
-    .modal-footer { padding: 12px 20px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid #e2e8f0; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); position: sticky; bottom: 0; }
+    .modal-body { padding: 15px 20px; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .modal-footer { padding: 12px 20px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid #e2e8f0; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); position: relative; flex-shrink: 0; z-index: 10; }
     .save-btn, .btn-confirm, .btn-cancel { width: 100%; margin-top: 0; padding: 14px; font-size: 1rem; }
     .tab-btn { padding: 12px 10px; font-size: 0.85rem; }
     .tab-content { padding: 15px; padding-bottom: 25px; }
     
     /* 주간점검 폼 최적화 */
-    .check-modal-content { height: 95vh; max-height: 95vh; }
+    .check-modal-content { height: 95vh; height: 95dvh; max-height: 95dvh; }
 
     /* =======================================
        5. 차트 모바일 전용 설정 (기존 레이아웃 조정)
