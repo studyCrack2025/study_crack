@@ -247,6 +247,30 @@ canvas { width: 100% !important; height: 100% !important; }
     margin: 2px; border: 1px solid #cbd5e1; 
 }
 
+/* ============================================================
+   [튜터 매칭 관리 시스템 UI]
+   ============================================================ */
+.match-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+.match-card { background: #fff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: space-between; }
+.match-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 15px; }
+.match-card-name { font-size: 1.15rem; font-weight: 800; color: #1e293b; margin: 0 0 5px 0; }
+.match-card-date { font-size: 0.8rem; color: #94a3b8; }
+.match-select-box { display: flex; gap: 10px; align-items: center; }
+.match-select-box select { flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; }
+.match-btn { background: #2563eb; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+.match-btn:hover { background: #1d4ed8; }
+
+.change-wizard-container { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; background: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0; }
+.wizard-step { display: flex; flex-direction: column; gap: 10px; }
+.wizard-step label { font-weight: 800; color: #334155; font-size: 0.95rem; }
+.wizard-step select { padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; outline: none; }
+.wizard-step select:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
+
+@media (max-width: 768px) {
+    .match-grid { grid-template-columns: 1fr; }
+    .change-wizard-container { grid-template-columns: 1fr; gap: 15px; padding: 15px; }
+}
+
 
 /* =========================================
    [모바일 반응형 다이어트 & 최적화]

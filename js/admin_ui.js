@@ -44,6 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    
+    setTimeout(() => loadMatchingData(true), 1500);
 });
 
 // ============================================================
@@ -786,7 +788,7 @@ async function markAllNotiAsRead() {
 }
 
 // ============================================================
-// [H] 관리자 공지 발송 로직 (체크박스 트리 버전)
+// [H] 관리자 공지 발송 로직
 // ============================================================
 let globalUserList = [];
 
@@ -1083,7 +1085,219 @@ window.loadSentNotices = async function() {
 };
 
 // ============================================================
-// [I] 유틸리티
+// [I] 튜터 매칭 시스템 로직
+// ============================================================
+let globalUnmatchedStudents = [];
+let globalTutorsForMatch = [];
+let globalAllStudentsForMatch = [];
+
+// 매칭 섹션 탭 전환
+function switchMatchingTab(tabName) {
+    document.getElementById('matchTab_new').style.display = tabName === 'new' ? 'block' : 'none';
+    document.getElementById('matchTab_change').style.display = tabName === 'change' ? 'block' : 'none';
+    
+    document.getElementById('btn-match-new').classList.toggle('active', tabName === 'new');
+    document.getElementById('btn-match-change').classList.toggle('active', tabName === 'change');
+}
+
+// 매칭에 필요한 전체 데이터 로드 (백그라운드 뱃지용으로도 호출됨)
+async function loadMatchingData(isSilent = false) {
+    const token = localStorage.getItem('accessToken');
+    const adminId = localStorage.getItem('userId');
+    
+    if (!isSilent) document.getElementById('newMatchList').innerHTML = '<p>데이터를 불러오는 중...</p>';
+
+    try {
+        const [tutorRes, studentRes] = await Promise.all([
+            fetch(ADMIN_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ type: 'admin_get_tutor_stats' })
+            }),
+            fetch(ADMIN_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ type: 'admin_search', userId: adminId, data: {} })
+            })
+        ]);
+
+        const tutorData = await tutorRes.json();
+        const studentData = await studentRes.json();
+
+        globalTutorsForMatch = tutorData.tutors || [];
+        
+        let allUsers = Array.isArray(studentData) ? studentData : (studentData.students || studentData.Items || []);
+        globalAllStudentsForMatch = allUsers.filter(u => u.role !== 'admin' && u.role !== 'tutor');
+
+        // 신규 매칭 대상 필터링: 결제 내역 상 Standard/Pro 인데 tutorName이 없는 학생
+        globalUnmatchedStudents = globalAllStudentsForMatch.filter(s => {
+            if (s.tutorName) return false; // 이미 튜터가 있으면 제외
+            const tier = (getTierBadgeHTML(s.payments).match(/>(.*?)<\/span>/) || [])[1] || 'FREE';
+            const tierLower = tier.toLowerCase();
+            return tierLower === 'standard' || tierLower === 'pro';
+        });
+
+        // 뱃지 업데이트
+        const badge = document.getElementById('matchingBadge');
+        const countText = document.getElementById('newMatchCount');
+        if (badge && countText) {
+            countText.innerText = `(${globalUnmatchedStudents.length})`;
+            if (globalUnmatchedStudents.length > 0) {
+                badge.style.display = 'inline-block';
+                badge.innerText = globalUnmatchedStudents.length;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        if (!isSilent) {
+            renderNewMatchingList();
+            initTutorChangeSelects();
+        }
+
+    } catch (e) { console.error("Matching Data Load Error:", e); }
+}
+
+// [신규 매칭] 화면 렌더링
+function renderNewMatchingList() {
+    const container = document.getElementById('newMatchList');
+    container.innerHTML = '';
+
+    if (globalUnmatchedStudents.length === 0) {
+        container.innerHTML = '<div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: #94a3b8; background: #f8fafc; border-radius: 8px;">현재 신규 매칭 대기 중인 학생이 없습니다.</div>';
+        return;
+    }
+
+    // 튜터 옵션 HTML 생성
+    const tutorOptions = globalTutorsForMatch.map(t => `<option value="${t.nickname}">${t.nickname} (${t.name}) - 배정 ${t.totalStudents}명</option>`).join('');
+
+    globalUnmatchedStudents.forEach(s => {
+        const tierBadge = getTierBadgeHTML(s.payments);
+        const card = document.createElement('div');
+        card.className = 'match-card';
+        card.innerHTML = `
+            <div class="match-card-header">
+                <div>
+                    <h4 class="match-card-name">${escapeHtml(s.name)}</h4>
+                    <div class="match-card-date">결제/가입일: ${new Date(s.createdAt).toLocaleDateString()}</div>
+                </div>
+                <div>${tierBadge}</div>
+            </div>
+            <div class="match-select-box">
+                <select id="select_tutor_${s.userid}">
+                    <option value="">튜터 선택...</option>
+                    ${tutorOptions}
+                </select>
+                <button class="match-btn" onclick="executeMatching('${s.userid}', false)">배정하기</button>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+// [튜터 변경] 초기 드롭다운 셋업
+function initTutorChangeSelects() {
+    const oldSel = document.getElementById('changeOldTutor');
+    const newSel = document.getElementById('changeNewTutor');
+    
+    let options = '<option value="">선택하세요</option>';
+    globalTutorsForMatch.forEach(t => {
+        options += `<option value="${t.nickname}">${t.nickname} (${t.name})</option>`;
+    });
+
+    oldSel.innerHTML = options;
+    newSel.innerHTML = options;
+}
+
+// [튜터 변경] 기존 튜터 선택 시 소속 학생 목록 업데이트
+function updateChangeStudentList() {
+    const oldTutorName = document.getElementById('changeOldTutor').value;
+    const stuSel = document.getElementById('changeStudent');
+    
+    if (!oldTutorName) {
+        stuSel.innerHTML = '<option value="">먼저 튜터를 선택하세요</option>';
+        return;
+    }
+
+    const myStus = globalAllStudentsForMatch.filter(s => s.tutorName === oldTutorName);
+    
+    if (myStus.length === 0) {
+        stuSel.innerHTML = '<option value="">배정된 학생이 없습니다.</option>';
+        return;
+    }
+
+    let stuOptions = '<option value="">학생을 선택하세요</option>';
+    myStus.forEach(s => {
+        const tier = (getTierBadgeHTML(s.payments).match(/>(.*?)<\/span>/) || [])[1] || 'FREE';
+        stuOptions += `<option value="${s.userid}" data-name="${escapeHtml(s.name)}">${escapeHtml(s.name)} (${tier})</option>`;
+    });
+    
+    stuSel.innerHTML = stuOptions;
+}
+
+// [튜터 변경] 변경 검토 버튼 클릭 시 재확인 로직
+function confirmTutorChange() {
+    const oldTutor = document.getElementById('changeOldTutor').value;
+    const stuSel = document.getElementById('changeStudent');
+    const studentId = stuSel.value;
+    const studentName = stuSel.options[stuSel.selectedIndex]?.text || '';
+    const newTutor = document.getElementById('changeNewTutor').value;
+
+    if (!oldTutor || !studentId || !newTutor) return alert("모든 항목을 선택해 주세요.");
+    if (oldTutor === newTutor) return alert("현재 튜터와 변경할 튜터가 동일합니다.");
+
+    const confirmMsg = `🚨 [튜터 변경 최종 확인]\n\n학생: ${studentName}\n기존 튜터: ${oldTutor} 선생님\n변경 튜터: ${newTutor} 선생님\n\n정말로 튜터를 변경하시겠습니까? 이 작업은 즉시 반영됩니다.`;
+    
+    if (confirm(confirmMsg)) {
+        executeMatching(studentId, true, newTutor, oldTutor);
+    }
+}
+
+// 매칭/변경 실행 (백엔드 API 호출)
+async function executeMatching(studentId, isChange, newTutorArg = null, oldTutorArg = null) {
+    const newTutorName = isChange ? newTutorArg : document.getElementById(`select_tutor_${studentId}`).value;
+    
+    if (!newTutorName) return alert("튜터를 선택해주세요.");
+
+    const token = localStorage.getItem('accessToken');
+    const adminId = localStorage.getItem('userId');
+
+    try {
+        const res = await fetch(ADMIN_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'admin_assign_tutor',
+                userId: adminId,
+                data: {
+                    targetUserId: studentId,
+                    newTutorName: newTutorName,
+                    isChange: isChange,
+                    oldTutorName: oldTutorArg
+                }
+            })
+        });
+
+        if (res.ok) {
+            alert(isChange ? "튜터가 성공적으로 변경되었습니다." : "튜터 배정이 완료되었습니다.");
+            
+            // 변경 UI 초기화
+            if (isChange) {
+                document.getElementById('changeOldTutor').value = '';
+                document.getElementById('changeStudent').innerHTML = '<option value="">먼저 튜터를 선택하세요</option>';
+                document.getElementById('changeNewTutor').value = '';
+            }
+            
+            // 리스트 갱신
+            await loadMatchingData(); 
+        } else {
+            alert("처리에 실패했습니다.");
+        }
+    } catch(e) { console.error(e); alert("통신 오류 발생"); }
+}
+
+// ============================================================
+// [J] 유틸리티
 // ============================================================
 
 function escapeHtml(text) {
