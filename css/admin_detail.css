@@ -432,10 +432,17 @@ html, body { height: auto !important; min-height: 100vh !important; overflow-y: 
 .guide-body strong { color: #2563eb; }
 
 /* ============================================================
-   [모바일 반응형 및 다이어트 (기존 미디어 쿼리 통합 대체)]
+   전역 박스 사이징
+   ============================================================ */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+/* ============================================================
+   모바일 반응형 및 다이어트
    ============================================================ */
 
-/* 태블릿 크기 (900px 이하) - 레이아웃 1단 분리 */
+/* 태블릿 크기 (900px 이하) */
 @media (max-width: 900px) {
     .detail-container { grid-template-columns: 1fr; margin-top: 20px; padding: 0 15px 40px 15px; gap: 20px; }
     .profile-card { position: static; margin-bottom: 0; }
@@ -446,46 +453,64 @@ html, body { height: auto !important; min-height: 100vh !important; overflow-y: 
     .info-header-card { flex-direction: column; text-align: center; }
 }
 
-/* 모바일 크기 (768px 이하) - 여백 및 크기 다이어트 */
+/* 모바일 크기 (768px 이하) */
 @media (max-width: 768px) {
-    /* 1. 상단바 및 프로필 다이어트 */
-    .admin-header-bar { padding: 12px 15px; }
+    /* 1. 상단바 유연하게 세로 배치 (로고/버튼 겹침 방지) */
+    .admin-header-bar { flex-direction: column; gap: 12px; align-items: flex-start; padding: 15px; }
+    .back-btn { width: 100%; text-align: center; padding: 10px; }
+
+    /* 2. 프로필 및 뱃지 다이어트 */
     .profile-card { padding: 20px 15px; }
     .profile-img { width: 90px; height: 90px; margin-bottom: 10px; }
     .profile-name { font-size: 1.3rem; }
     .tier-badge { margin-bottom: 15px; padding: 4px 12px; font-size: 0.8rem; }
     .analysis-status-box { margin-top: 15px; padding-top: 15px; }
 
-    /* 2. 탭 버튼 및 컨텐츠 영역 */
-    .tabs { padding: 0 5px; }
-    .tab-btn { padding: 12px 15px; font-size: 0.9rem; }
+    /* 3. 탭 버튼 및 컨텐츠 영역 */
+    .tabs { padding: 0; }
+    .tab-btn { padding: 12px 10px; font-size: 0.9rem; flex-shrink: 0; }
     .tab-content { padding: 20px 15px; }
     .tab-card { min-height: auto; } /* 700px 고정 해제 */
 
-    /* 3. 각종 카드/박스 내부 여백 축소 */
+    /* 4. 각종 카드/박스 내부 여백 축소 */
     .memo-card, .info-header-card, .univ-summary-section, .pro-period-section { padding: 15px; }
-    .detail-item { padding: 15px; }
+    .detail-item { padding: 15px; flex-direction: column; align-items: flex-start; gap: 8px; }
     .card-header-row, .weekly-section, .weekly-mock-box, .weekly-footer { padding: 15px; }
     .pro-box { padding: 12px; }
     .req-content-area { padding: 15px; }
+    .score-pills-container { justify-content: flex-start; }
 
-    /* 4. 폼, 에디터, 채팅창 모바일 최적화 */
+    /* 5. 폼, 에디터, 채팅창 모바일 최적화 */
     .feedback-grid { grid-template-columns: 1fr; }
-    .analysis-editor { height: 300px; padding: 15px; } /* 450px -> 300px 축소 */
-    .admin-chat-wrapper { height: 500px; } /* 600px -> 500px 축소 */
+    .fb-item textarea, .write-textarea { font-size: 1rem; /* iOS 자동확대 방지 */ }
+    .analysis-editor { height: 300px; padding: 15px; } 
+    .admin-chat-wrapper { height: 500px; } 
     .chat-window { padding: 15px; }
     #adminChatInput { height: 45px; padding: 10px; }
     .chat-send-btn { height: 45px; width: 60px; }
 
-    /* 5. 하단 액션 버튼 풀사이즈로 변경 (PRO 리포트 등) */
+    /* 6. JS에서 인라인으로 주입된 강제 가로배치(Flex) 무력화 및 세로 정렬 */
+    .action-bar > div[style*="display:flex"] {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+    }
+    .action-bar > div > button,
+    .action-bar > div > a {
+        width: 100% !important;
+        margin-left: 0 !important;
+        text-align: center;
+        justify-content: center;
+    }
     .action-bar { flex-direction: column; gap: 10px; align-items: stretch; padding-top: 15px; }
-    .action-bar button { width: 100%; justify-content: center; padding: 14px; }
+    .action-bar button { width: 100%; justify-content: center; padding: 14px; margin: 0 !important; }
 
-    /* 6. 넓은 테이블 패딩 다이어트 (가로 스크롤 확보) */
+    /* 7. 테이블 및 가로 스크롤 확보 */
+    .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .payment-table-modern th, .payment-table-modern td, 
     .score-table th, .score-table td { padding: 10px 12px; font-size: 0.85rem; }
 
-    /* 7. 모달 창 최적화 */
+    /* 8. 모달 창 최적화 */
     .modal-window, .coaching-modal-content, .guide-modal-content { width: 95%; max-height: 90vh; }
     .coaching-modal-content { padding: 20px 15px; }
     .modal-header { padding: 15px 20px; }
