@@ -127,6 +127,13 @@ small { color: #64748b; font-size: 0.9rem; }
 
 /* --- [중요] 상품별 컬러 강제 적용 --- */
 
+/* TRIAL - Purple */
+.tier-trial .p-name, .tier-trial .p-price { color: #8B5CF6 !important; }
+.product-option.tier-trial.selected { 
+    box-shadow: 0 0 0 2px #8B5CF6 inset !important; 
+    background-color: #f5f3ff !important; 
+}
+
 /* BASIC - Green */
 .tier-basic .p-name, .tier-basic .p-price { color: #059669 !important; }
 .product-option.tier-basic.selected { 

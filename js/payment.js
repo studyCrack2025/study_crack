@@ -44,9 +44,47 @@ async function fetchUserInfo(userId) {
 
             // 프론트엔드에서 남은 기간 및 티어 계산
             calculateUserTierDisplay(data);
+            
+            if (data.promoCode) {
+                validatePromoCode(data.promoCode);
+            }
         }
     } catch (error) {
         console.error("유저 정보 로드 실패:", error);
+    }
+}
+
+async function validatePromoCode(code) {
+    const token = localStorage.getItem('accessToken');
+    try {
+        const response = await fetch(USER_API_URL, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ 
+                type: 'validate_promo_code',
+                data: { promoCode: code } 
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            
+            // 백엔드에서 isValid: true를 뱉어내면 체험단 메뉴 노출
+            if (result.isValid) {
+                const trialOption = document.getElementById('trialOption');
+                if(trialOption) trialOption.style.display = 'block'; 
+
+                TIER_LEVELS['trial'] = 1; 
+                TIER_LEVELS['basic'] = 2;
+                TIER_LEVELS['standard'] = 3;
+                TIER_LEVELS['pro'] = 4;
+            }
+        }
+    } catch (error) {
+        console.error("프로모션 코드 검증 API 호출 실패", error);
     }
 }
 
@@ -169,5 +207,9 @@ async function processPayment() {
     localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
     
     // 이전 스텝에서 만든 checkout.html 페이지로 이동
-    window.location.href = '/checkout';
+    if (selectedTier === 'trial') {
+        window.location.href = '/checkout-transfer'; // 새로 만들 페이지
+    } else {
+        window.location.href = '/checkout';
+    }
 }

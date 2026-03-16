@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>체험단 결제 - 스터디크랙</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/checkout.css"> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* 계좌이체 전용 인라인 스타일 (필요시 css로 이동) */
+        .transfer-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .bank-name { font-size: 1.1rem; color: #64748b; margin-bottom: 5px; }
+        .account-number { font-size: 1.8rem; font-weight: 900; color: #1e293b; letter-spacing: 1px; margin-bottom: 5px; }
+        .account-holder { font-size: 1rem; color: #3b82f6; font-weight: 600; }
+        
+        .warning-box {
+            background: #fff1f2;
+            border-left: 4px solid #e11d48;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            color: #be123c;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        .warning-box strong { font-size: 1.05rem; }
+    </style>
+</head>
+<body class="checkout-body">
+    <div class="checkout-wrapper">
+        <div class="order-summary-panel">
+            <button class="btn-back" onclick="history.back()"><i class="fas fa-arrow-left"></i> 뒤로가기</button>
+            <div class="summary-content">
+                <span class="brand-logo">StudyCrack</span>
+                <h2 class="summary-title">주문 요약</h2>
+                <div class="product-info-box">
+                    <div id="chkProductName" class="chk-p-name">멤버십 불러오는 중...</div>
+                    <div id="chkProductDesc" class="chk-p-desc">...</div>
+                </div>
+                <div class="price-line">
+                    <span>결제 금액</span>
+                    <span id="chkPrice" class="chk-price">0원</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="payment-form-panel">
+            <div class="form-header">
+                <h3>무통장 입금 안내</h3>
+                <span class="secure-badge" style="background: #eff6ff; color: #2563EB;"><i class="fas fa-money-check-alt"></i> 체험단 전용 결제</span>
+            </div>
+
+            <div class="transfer-box">
+                <div class="bank-name">토스뱅크</div>
+                <div class="account-number">1002-4680-1752</div>
+                <div class="account-holder">예금주 : 스터디크랙</div>
+            </div>
+
+            <div class="warning-box">
+                <i class="fas fa-exclamation-triangle"></i> 주의사항<br>
+                반드시 회원가입 시 입력하신 <strong><span id="depositName">본인 이름</span></strong>으로 입금해 주세요. 입금자명이 다를 경우 승인이 지연될 수 있습니다.
+            </div>
+
+            <p style="text-align: center; color: #64748b; font-size: 0.9rem; margin-bottom: 20px;">
+                위 계좌로 송금을 완료하신 후, 아래 버튼을 눌러주세요.
+            </p>
+
+            <button type="button" class="btn-checkout" id="btnTransferComplete" onclick="submitTransfer()">
+                송금 완료했습니다
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const TIER_DATA = {
+            'trial': { price: 19000, desc: '낮은 비용으로 PRO의 모든 기능을 1개월 체험' } 
+        };
+        const USER_API_URL = CONFIG.api.base;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const dataStr = localStorage.getItem('checkoutData');
+            if (!dataStr) {
+                alert("결제 정보가 없습니다.");
+                window.location.href = '/payment';
+                return;
+            }
+
+            const checkoutData = JSON.parse(dataStr);
+            const tierInfo = TIER_DATA[checkoutData.tier];
+
+            document.getElementById('chkProductName').innerText = checkoutData.productName;
+            document.getElementById('chkProductDesc').innerText = tierInfo.desc;
+            document.getElementById('chkPrice').innerText = tierInfo.price.toLocaleString() + '원';
+            document.getElementById('depositName').innerText = checkoutData.name;
+        });
+
+        // 이체 완료 요청 함수
+        async function submitTransfer() {
+            const btn = document.getElementById('btnTransferComplete');
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 입금 확인 요청 중...`;
+            btn.disabled = true;
+
+            const token = localStorage.getItem('accessToken');
+
+            try {
+                const response = await fetch(USER_API_URL, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({ type: 'submit_trial_transfer' }) // Lambda 연동
+                });
+
+                if (response.ok) {
+                    // 성공 시 우측 폼 영역을 '완료 화면'으로 교체
+                    showSuccessScreen();
+                } else {
+                    alert("요청 처리 중 문제가 발생했습니다. 1:1 문의를 남겨주세요.");
+                    btn.innerHTML = `송금 완료했습니다`;
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                alert("통신 오류가 발생했습니다. 네트워크 상태를 확인해주세요.");
+                btn.innerHTML = `송금 완료했습니다`;
+                btn.disabled = false;
+            }
+        }
+
+        // 성공 시 띄워줄 화면 렌더링 함수
+        function showSuccessScreen() {
+            const panel = document.querySelector('.payment-form-panel');
+            
+            // 기존 내용을 없애고 감사 메시지와 버튼을 주입합니다.
+            panel.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px; animation: fadeInDown 0.5s ease;">
+                    <i class="fas fa-check-circle" style="font-size: 4rem; color: #10b981; margin-bottom: 25px;"></i>
+                    <h2 style="color: #1e293b; margin-bottom: 15px; font-size: 1.8rem;">이체 확인 요청 완료!</h2>
+                    
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 25px; margin-bottom: 30px;">
+                        <p style="color: #475569; font-size: 1.05rem; line-height: 1.6; margin: 0;">
+                            <strong>체험단으로 참여해주셔서 진심으로 감사합니다.</strong><br><br>
+                            관리자가 입금 내역을 명단에서 확인하는 즉시 승인 처리되며,<br>
+                            승인 완료 시 <strong style="color: #2563EB;">PRO 등급의 모든 기능</strong>을<br>자유롭게 이용해 보실 수 있습니다.
+                        </p>
+                    </div>
+
+                    <button onclick="window.location.href='/'" class="btn-checkout" style="max-width: 300px; margin: 0 auto;">
+                        <i class="fas fa-home"></i> 메인 페이지로 이동
+                    </button>
+                </div>
+            `;
+            
+            // localStorage의 checkoutData 삭제 (결제 프로세스 종료)
+            localStorage.removeItem('checkoutData');
+        }
+    </script>
+</body>
+</html>
