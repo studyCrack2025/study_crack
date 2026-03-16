@@ -2696,33 +2696,24 @@ function renderProPromo(container) {
         <div class="pro-header">
             <span class="pro-badge">PREMIUM STRATEGY</span>
             <h2 class="pro-title">PRO EXCLUSIVE : 최소 학습, 최대 효율</h2>
-            <p class="pro-desc">추상적인 조언은 배제합니다. 데이터와 KPI 기반으로 목표 대학을 향한 최단 경로를 설계하세요.</p>
+            <p class="pro-desc">추상적인 조언은 배제합니다. 데이터 기반으로 목표 대학을 향한 최단 경로를 설계하세요.</p>
         </div>
 
         <div class="pro-promo-grid">
             <div class="pro-feature-card">
                 <span class="feat-icon">📊</span>
-                <span class="feat-title">KPI 기반 학습 정밀 평가</span>
-                <p class="feat-desc">
-                    단순히 책상에 앉아있던 시간은 중요하지 않습니다.<br>
-                    <strong>유효 학습 시간, 오답 회수율</strong> 등 객관적인 지표를 통해 학습의 진짜 밀도를 진단합니다.
-                </p>
+                <span class="feat-title">학습 정밀 진단</span>
+                <p class="feat-desc">단순한 착석 시간이 아닌 <strong>유효 학습 시간, 오답 회수율</strong> 등 객관적 지표로 학습 밀도를 진단합니다.</p>
             </div>
             <div class="pro-feature-card">
                 <span class="feat-icon">🎯</span>
-                <span class="feat-title">합격 거리(ΔCut) 및 기여도 분석</span>
-                <p class="feat-desc">
-                    목표 대학 합격선까지 정확히 몇 점이 부족한지 파악하고,<br>
-                    현재 시점에서 점수 상승 <strong>기여도가 가장 높은 타겟 과목</strong>을 날카롭게 짚어냅니다.
-                </p>
+                <span class="feat-title">합격 기여도 분석</span>
+                <p class="feat-desc">목표 대학 합격선까지의 부족한 점수(ΔCut)를 파악하고, 점수 상승 <strong>기여도가 가장 높은 과목</strong>을 짚어냅니다.</p>
             </div>
             <div class="pro-feature-card highlight">
                 <span class="feat-icon">⚡</span>
-                <span class="feat-title">명확한 핵심 과제 (Next Step)</span>
-                <p class="feat-desc">
-                    "조금 더 집중하세요" 같은 막연한 멘트는 없습니다.<br>
-                    특정 인강 수강, 실전 모의고사 응시 등 당장 실행해야 할 <strong>구체적인 행동 지침</strong>만을 제시합니다.
-                </p>
+                <span class="feat-title">명확한 Next Step</span>
+                <p class="feat-desc">막연한 조언 대신 특정 인강 수강, 실전 모의고사 등 당장 실행해야 할 <strong>구체적인 행동 지침</strong>을 제시합니다.</p>
             </div>
         </div>
 

@@ -426,8 +426,8 @@
 .pro-cta-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(255, 255, 255, 0.2); background: #fff; border-color: #60a5fa; }
 .pro-cta-btn div { font-size: 0.85rem; color: #64748b; margin-top: 4px; font-weight: 500; }
 
-.pro-promo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; position: relative; z-index: 1; word-break: keep-all; }
-.pro-feature-card { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; transition: transform 0.3s; }
+.pro-promo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; position: relative; z-index: 1; align-items: stretch; }
+.pro-feature-card { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 25px 20px; transition: transform 0.3s; display: flex; flex-direction: column; word-break: keep-all; }
 .pro-feature-card:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.1); }
 .pro-feature-card.highlight { border: 1px solid #f59e0b; background: linear-gradient(145deg, rgba(245, 158, 11, 0.1), transparent); }
 .pro-feature-card.highlight .feat-title { color: #fbbf24; }
@@ -579,12 +579,25 @@ input[type="number"]::-webkit-inner-spin-button {
        3. PRO 테마 섹션 축소
        ======================================= */
     .pro-theme { padding: 25px 20px; border-radius: 12px; width: 100%; box-sizing: border-box; }
-    .pro-promo-grid { grid-template-columns: 1fr; gap: 15px; }
+    .pro-promo-grid { grid-template-columns: 1fr; gap: 12px; }
     .pro-title { font-size: 1.5rem; }
     .pro-desc { font-size: 0.9rem; }
     .pro-cta-btn { padding: 14px 20px; font-size: 1rem; margin-top: 20px; }
-    .pro-feature-card { padding: 15px; }
+    .pro-feature-card { 
+        display: grid; 
+        grid-template-columns: auto 1fr; 
+        grid-template-rows: auto auto; 
+        column-gap: 15px; 
+        row-gap: 5px; 
+        padding: 18px 20px; 
+        align-items: start; 
+        text-align: left; 
+    }
     .pro-input-card { padding: 15px; margin-bottom: 15px; }
+    
+    .feat-icon { grid-column: 1; grid-row: 1 / 3; margin-bottom: 0; font-size: 1.8rem; margin-top: 2px; }
+    .feat-title { grid-column: 2; grid-row: 1; margin-bottom: 0; font-size: 1.05rem; }
+    .feat-desc { grid-column: 2; grid-row: 2; font-size: 0.85rem; line-height: 1.5; margin: 0; }
     
     #btnSaveTarget, .save-btn { padding: 14px 20px; font-size: 1rem; margin-top: 20px; }
 
