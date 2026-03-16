@@ -440,24 +440,21 @@ window.loadMyStudents = async function() {
         }
         
         students.forEach(s => {
-             // 🔥 결제 데이터를 기반으로 유료 등급 계산
-             let tier = 'FREE';
+             // 🔥 [핵심 수정] 백엔드에서 넘어온 s.tier 값을 직접 활용합니다.
+             let tier = (s.tier || 'FREE').toUpperCase();
              let tierClass = 'tier-free';
-             if (s.payments && s.payments.length > 0) {
-                 const paid = s.payments.filter(p => p.status === 'paid').sort((a,b) => new Date(b.date) - new Date(a.date));
-                 if (paid.length > 0) {
-                     const prod = (paid[0].product || "").toLowerCase();
-                     if (prod.includes('pro') || prod.includes('black')) { tier = 'PRO'; tierClass = 'tier-pro'; }
-                     else if (prod.includes('standard')) { tier = 'STANDARD'; tierClass = 'tier-standard'; }
-                 }
-             }
+             
+             if (tier === 'PRO') tierClass = 'tier-pro';
+             else if (tier === 'STANDARD') tierClass = 'tier-standard';
+             else if (tier === 'BASIC') tierClass = 'tier-basic';
 
              const tr = document.createElement('tr');
              tr.innerHTML = `
                  <td><strong>${escapeHtml(s.name)}</strong></td>
                  <td>${escapeHtml(s.school || '-')}</td>
                  <td>${escapeHtml(s.phone || '-')}</td>
-                 <td><span class="tier-badge ${tierClass}">${tier}</span></td> <td><button class="manage-btn" onclick="goToStudentDetail('${s.userid}')">상세관리</button></td>
+                 <td><span class="tier-badge ${tierClass}">${tier}</span></td>
+                 <td><button class="manage-btn" onclick="goToStudentDetail('${s.userid}')">상세관리</button></td>
              `;
              tbody.appendChild(tr);
         });

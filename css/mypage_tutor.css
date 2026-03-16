@@ -281,6 +281,30 @@
 .tutor-noti-sender { font-weight: bold; color: #2563eb; }
 .tutor-noti-msg { font-size: 0.9rem; color: #1e293b; line-height: 1.4; }
 
+.modal-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-action-btn {
+    width: 100%;
+    padding: 16px;
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 25px;
+    transition: background-color 0.2s;
+    flex-shrink: 0;
+}
+
+.modal-action-btn:hover {
+    background-color: #2563eb;
+}
+
 /* 모바일 대응 */
 @media (max-width: 768px) {
     /* 1. 탭 메뉴: 좌우 스크롤 방식 (기존 유지하되 간격 좁힘) */
@@ -339,4 +363,18 @@
     
     .noti-panel { width: calc(100% - 40px); right: 20px; bottom: 90px; }
     .noti-fab { bottom: 20px; right: 20px; width: 50px; height: 50px; font-size: 1.2rem; }
+    
+    .modal-content { 
+        padding: 25px 20px; /* 위아래 여백을 넉넉히 주어 버튼이 뚫고 나가지 않게 조절 */
+        max-height: 85vh; 
+        overflow-y: auto; 
+    }
+    .large-modal {
+        width: 90%; 
+    }
+    .modal-action-btn {
+        padding: 14px;
+        font-size: 1rem;
+        margin-top: 20px;
+    }
 }
