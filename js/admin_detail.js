@@ -1142,24 +1142,54 @@ function checkProAllSaved(boxId) {
 }
 
 function showProGuideModal() {
+    // 이미 열려있는 모달이 있다면 제거
+    const existingModal = document.getElementById('proGuideModal');
+    if (existingModal) existingModal.remove();
+
     const modalHtml = `
         <div id="proGuideModal" class="modal-overlay" onclick="if(event.target===this) this.remove()">
-            <div class="modal-window guide-modal-content">
-                <div class="modal-header">
-                    <h3>🏆 Pro 코칭 운영 가이드</h3>
-                    <span class="close-modal" onclick="document.getElementById('proGuideModal').remove()">&times;</span>
+            <div class="modal-window guide-modal-content" style="max-height: 85vh; overflow: hidden; display: flex; flex-direction: column;">
+                <div class="modal-header" style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0; color: #1e293b; font-size: 1.25rem; font-weight: 800;">🏆 Pro 코칭 운영 가이드 (필수)</h3>
+                    <span class="close-modal" onclick="document.getElementById('proGuideModal').remove()" style="cursor: pointer; font-size: 1.5rem; color: #94a3b8;">&times;</span>
                 </div>
-                <div class="modal-body guide-body">
-                    <p><strong>핵심:</strong> 목표 대학 기준 '최소 학습·최대 효율' 전략 제시</p>
+                
+                <div class="modal-body guide-body" style="overflow-y: auto; padding: 25px; font-size: 0.95rem; line-height: 1.6; color: #334155;">
+                    <h4>1) Pro의 역할</h4>
+                    <p style="margin-top: 0; margin-bottom: 20px;">목표 대학 기준으로 <strong>'최소 학습·최대 상승(효율)'</strong> 관점에서 합격 가능성을 높이는 방향과 속력을 교정합니다. (모든 근거는 반드시 지표로 제시해야 합니다.)</p>
+
+                    <h4>2) 선생님께서 추가로 반드시 확인하셔야 할 데이터 (근거 판단)</h4>
                     <ul>
-                        <li><strong>학습 평가:</strong> KPI(유효학습, 오답회수율 등) 기반 평가</li>
-                        <li><strong>목표 거리:</strong> ΔCut 및 과목별 기여도 분석</li>
-                        <li><strong>핵심 과제:</strong> 구체적 행동(인강/실전 등) 명시</li>
-                        <li><strong>금지:</strong> 막연한 합격 보장 멘트 금지</li>
+                        <li><strong>목표 대학 컷까지의 거리</strong> (컷거리 ΔCut)</li>
+                        <li><strong>과목별 컷거리 기여도</strong> (어느 과목의 효율이 가장 큰지 판단)</li>
+                        <li><strong>리스크 과목</strong> (무너질 때 전체 등급이 흔들리는 핵심 과목)</li>
+                        <li><strong>효율 KPI</strong> (유효 학습 비중 / 인강→적용 전환율 / 오답 회수율 / 실전 연동성)</li>
                     </ul>
+
+                    <h4>3) 반드시 작성하셔야 하는 4개 항목 (지표 근거 인용 필수)</h4>
+                    <ul>
+                        <li><strong>지난 기간의 학습 평가:</strong> 리스크 및 효율 KPI를 기반으로 학생의 장단점을 명확히 평가합니다.</li>
+                        <li><strong>목표 대학과의 거리 (ΔCut/기여도):</strong> ΔCut 및 과목별 기여도 데이터를 기반으로 개선 여부를 구체적으로 분석합니다.</li>
+                        <li><strong>중기 핵심 과제 Top 2 & 장기 플랜:</strong> 중기 과제 제시 시 ΔCut, 기여도, 리스크, KPI 중 최소 1개 이상을 인용해야 합니다. 장기 플랜은 추세 그래프 등을 활용하여 주요 마일스톤(평가원 모의고사 일정 등)에 맞춘 예상치를 제시합니다.</li>
+                        <li><strong>학생 요청 사항 답변:</strong> 반드시 수치적일 필요는 없으나, 구체적이고 논리적인 근거를 들어 답변을 제공합니다.</li>
+                    </ul>
+
+                    <h4>4) Pro 코칭 원칙 (가드레일)</h4>
+                    <ul style="margin-bottom: 0;">
+                        <li>코칭 내용에는 <strong>반드시 지표 근거가 포함</strong>되어야 합니다.</li>
+                        <li>핵심 과제 제시 시 구체적인 행동 유형(인강 / 문제풀이 / 오답 / 복습 / 실전)을 <strong>명확히 명시</strong>합니다.</li>
+                        <li>막연한 합격 예측이나 보장 표현(합격률 단정, 무조건 합격 등)은 <strong>절대 금지</strong>합니다.</li>
+                    </ul>
+                    
+                    <div style="text-align: right; margin-top: 25px; padding-top: 15px; border-top: 1px dashed #e2e8f0;">
+                        <button onclick="document.getElementById('proGuideModal').remove()" style="background: #1e3a8a; color: white; border: none; padding: 10px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: background 0.2s;">
+                            숙지했습니다
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>`;
+        
     document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
 
