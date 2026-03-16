@@ -2692,48 +2692,43 @@ function initProSection() {
 
 // 1. [홍보 페이지] Basic/Standard 유저 대상
 function renderProPromo(container) {
-    const month = new Date().getMonth() + 1;
-    let nextExam = "6월 모의평가";
-    if (month >= 6 && month < 9) nextExam = "9월 모의평가";
-    else if (month >= 9 && month < 11) nextExam = "수능(CSAT)";
-    
     container.innerHTML = `
         <div class="pro-header">
             <span class="pro-badge">PREMIUM STRATEGY</span>
-            <h2 class="pro-title">PRO EXCLUSIVE : 전략의 차이가 결과의 차이</h2>
-            <p class="pro-desc">데이터 기반 개인화된 맞춤 전략으로 합격 확률을 극대화하세요.</p>
+            <h2 class="pro-title">PRO EXCLUSIVE : 최소 학습, 최대 효율</h2>
+            <p class="pro-desc">추상적인 조언은 배제합니다. 데이터와 KPI 기반으로 목표 대학을 향한 최단 경로를 설계하세요.</p>
         </div>
 
         <div class="pro-promo-grid">
             <div class="pro-feature-card">
-                <span class="feat-icon">📅</span>
-                <span class="feat-title">Bi-weekly 리포트</span>
+                <span class="feat-icon">📊</span>
+                <span class="feat-title">KPI 기반 학습 정밀 평가</span>
                 <p class="feat-desc">
-                    2주/1개월 단위 플래너 밀착 점검.<br>
-                    단순 기록 확인이 아닌, <strong>학습 밀도와 성취도</strong>를 정밀 평가합니다.
+                    단순히 책상에 앉아있던 시간은 중요하지 않습니다.<br>
+                    <strong>유효 학습 시간, 오답 회수율</strong> 등 객관적인 지표를 통해 학습의 진짜 밀도를 진단합니다.
                 </p>
             </div>
             <div class="pro-feature-card">
                 <span class="feat-icon">🎯</span>
-                <span class="feat-title">실전 시험 완벽 대비</span>
+                <span class="feat-title">합격 거리(ΔCut) 및 기여도 분석</span>
                 <p class="feat-desc">
-                    가장 가까운 <strong>${nextExam}</strong> 대비 집중 가이드.<br>
-                    시기별 놓치지 말아야 할 체크포인트를 제공합니다.
+                    목표 대학 합격선까지 정확히 몇 점이 부족한지 파악하고,<br>
+                    현재 시점에서 점수 상승 <strong>기여도가 가장 높은 타겟 과목</strong>을 날카롭게 짚어냅니다.
                 </p>
             </div>
             <div class="pro-feature-card highlight">
                 <span class="feat-icon">⚡</span>
-                <span class="feat-title">최소 시간 상승 조합</span>
+                <span class="feat-title">명확한 핵심 과제 (Next Step)</span>
                 <p class="feat-desc">
-                    <strong>"무엇을 먼저 공부해야 할까?"</strong><br>
-                    현 점수와 과목 가중치를 분석해, 가장 적은 시간으로 목표 점수에 도달하는 최적의 학습 조합을 제시합니다.
+                    "조금 더 집중하세요" 같은 막연한 멘트는 없습니다.<br>
+                    특정 인강 수강, 실전 모의고사 응시 등 당장 실행해야 할 <strong>구체적인 행동 지침</strong>만을 제시합니다.
                 </p>
             </div>
         </div>
 
         <button onclick="location.href='/payment'" class="pro-cta-btn">
             🚀 PRO 멤버십으로 업그레이드 하기
-            <div style="font-size:0.8rem; opacity:0.8; margin-top:5px; font-weight:400;">나만의 입시 전략 연구소 갖기</div>
+            <div style="font-size:0.8rem; opacity:0.8; margin-top:5px; font-weight:400;">데이터 기반 1:1 맞춤 컨설팅 시작하기</div>
         </button>
     `;
 }
