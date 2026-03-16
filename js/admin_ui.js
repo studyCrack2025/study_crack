@@ -87,6 +87,26 @@ function showSection(sectionName) {
     }
 }
 
+// 질의 관리(Q&A) 전용 섹션 전환 및 필터링 함수
+window.showQnaSection = function(status) {
+    // 1. 화면을 Q&A 섹션으로 전환
+    showSection('qna'); 
+    
+    // 2. 현재 필터 상태 업데이트
+    currentQnaFilter = status; 
+    
+    // 3. 상단 타이틀 텍스트 변경
+    const titleMap = {
+        'done': '✅ 응답 완료',
+        'read': '👁️ 읽음 (미응답)',
+        'waiting': '🔴 읽지 않음'
+    };
+    document.getElementById('qnaStatusTitle').innerText = `- ${titleMap[status]}`;
+    
+    // 4. 데이터 로드 및 렌더링
+    loadAllQna(); 
+};
+
 // ============================================================
 // [B] 통계 및 차트 로직
 // ============================================================
