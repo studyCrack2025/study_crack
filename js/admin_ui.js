@@ -85,6 +85,10 @@ function showSection(sectionName) {
         loadNotifications(); // 데이터 로드
         loadTutorListForNotice();
     }
+    else if (sectionName === 'qna') {
+        document.getElementById('section-qna').classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 }
 
 // 질의 관리(Q&A) 전용 섹션 전환 및 필터링 함수
@@ -596,25 +600,42 @@ async function loadTutorStats() {
                     <div class="tutor-info-main">
                         <span class="tutor-badge">Tutor</span>
                         <span class="tutor-name">${escapeHtml(t.nickname)}</span>
+                        <span style="font-size:0.85rem; color:#94a3b8; margin-left:8px;">(총 ${t.totalStudents}명)</span>
                     </div>
                     <div class="tutor-arrow"><i class="fas fa-chevron-down"></i></div>
                 </div>
                 <div class="tutor-details">
-                    <div class="tutor-grid">
+                    <div class="tutor-grid" style="margin-bottom:15px; padding-bottom:15px; border-bottom:1px dashed #e2e8f0;">
                         <div>
                             <p><strong>본명:</strong> ${escapeHtml(t.name) || '-'}</p>
                             <p><strong>학교:</strong> ${escapeHtml(t.school) || '-'}</p>
                             <p><strong>계약시작일:</strong> ${t.createdAt ? new Date(t.createdAt).toLocaleDateString() : '-'}</p>
                         </div>
-                        <div style="display:flex; gap:10px;">
-                            <div class="tutor-stat-box" style="flex:1;">
-                                PRO 학생
-                                <strong style="color:#ef4444;">${t.proCount}명</strong>
+                    </div>
+                    
+                    <div class="tutor-tier-accordions">
+                        <div class="tier-acc-group">
+                            <div class="tier-acc-header pro" onclick="toggleTierList(this)">
+                                <span>🔥 PRO 학생</span>
+                                <strong>${t.proCount}명 <i class="fas fa-chevron-down"></i></strong>
                             </div>
-                            <div class="tutor-stat-box" style="flex:1;">
-                                STANDARD 학생
-                                <strong style="color:#3b82f6;">${t.stdCount}명</strong>
+                            <div class="tier-acc-content">${generateStudentListHtml(t.proStudents, '현재 담당 중인 PRO 학생이 없습니다.')}</div>
+                        </div>
+                        
+                        <div class="tier-acc-group">
+                            <div class="tier-acc-header std" onclick="toggleTierList(this)">
+                                <span>📘 STANDARD 학생</span>
+                                <strong>${t.stdCount}명 <i class="fas fa-chevron-down"></i></strong>
                             </div>
+                            <div class="tier-acc-content">${generateStudentListHtml(t.stdStudents, '현재 담당 중인 STANDARD 학생이 없습니다.')}</div>
+                        </div>
+                        
+                        <div class="tier-acc-group">
+                            <div class="tier-acc-header exp" onclick="toggleTierList(this)">
+                                <span>⏳ 구독 만료 / 대기 학생</span>
+                                <strong>${t.freeCount}명 <i class="fas fa-chevron-down"></i></strong>
+                            </div>
+                            <div class="tier-acc-content">${generateStudentListHtml(t.freeStudents, '만료되거나 대기 중인 학생이 없습니다.')}</div>
                         </div>
                     </div>
                 </div>
@@ -624,10 +645,55 @@ async function loadTutorStats() {
     } catch(e) { container.innerHTML = '<p style="text-align:center; color:red;">오류 발생</p>'; }
 }
 
+// 헬퍼 함수: 티어별 학생 리스트 테이블 HTML 생성
+function generateStudentListHtml(students, emptyMsg) {
+    if (!students || students.length === 0) return `<div class="tier-student-empty">${emptyMsg}</div>`;
+    
+    let html = `<div class="table-responsive"><table class="tier-student-table">
+        <thead><tr><th>이름</th><th>최초 가입일</th><th>마지막 결제일</th><th>누적 결제 이력</th></tr></thead>
+        <tbody>`;
+    
+    students.forEach(s => {
+        const jDate = s.joinDate ? new Date(s.joinDate).toLocaleDateString() : '-';
+        const lDate = s.lastPayDate ? new Date(s.lastPayDate).toLocaleDateString() : '<span style="color:#ef4444;">결제 없음</span>';
+        
+        const pays = Object.entries(s.payCounts || {})
+            .map(([prod, cnt]) => `<span class="pay-badge">${prod} ${cnt}회</span>`)
+            .join(' ') || '-';
+
+        html += `<tr>
+            <td><strong>${escapeHtml(s.name)}</strong></td>
+            <td>${jDate}</td>
+            <td>${lDate}</td>
+            <td>${pays}</td>
+        </tr>`;
+    });
+    html += `</tbody></table></div>`;
+    return html;
+}
+
+// 튜터 메인 아코디언 토글
 function toggleTutorDetail(el) {
     el.classList.toggle('active');
     const details = el.nextElementSibling;
     details.classList.toggle('open');
+    // 내부 리스트가 길어질 수 있으므로 열렸을 때는 높이 제한 해제
+    if(details.classList.contains('open')) {
+        details.style.maxHeight = 'none';
+    } else {
+        details.style.maxHeight = null;
+    }
+}
+
+// 내부 티어별 명단 커튼 토글
+window.toggleTierList = function(headerEl) {
+    headerEl.classList.toggle('active');
+    const content = headerEl.nextElementSibling;
+    if (content.style.maxHeight) {
+        content.style.maxHeight = null;
+    } else {
+        content.style.maxHeight = content.scrollHeight + "px";
+    }
 }
 
 // ============================================================
