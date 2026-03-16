@@ -1142,22 +1142,21 @@ function checkProAllSaved(boxId) {
 }
 
 function showProGuideModal() {
-    // 이미 열려있는 모달이 있다면 제거
+    // 이미 모달이 있다면 제거
     const existingModal = document.getElementById('proGuideModal');
     if (existingModal) existingModal.remove();
 
     const modalHtml = `
-        <div id="proGuideModal" class="modal-overlay" onclick="if(event.target===this) this.remove()">
-            <div class="modal-window guide-modal-content" style="max-height: 85vh; overflow: hidden; display: flex; flex-direction: column;">
-                <div class="modal-header" style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;">
-                    <h3 style="margin: 0; color: #1e293b; font-size: 1.25rem; font-weight: 800;">🏆 Pro 코칭 운영 가이드 (필수)</h3>
-                    <span class="close-modal" onclick="document.getElementById('proGuideModal').remove()" style="cursor: pointer; font-size: 1.5rem; color: #94a3b8;">&times;</span>
+        <div id="proGuideModal" class="coaching-modal-overlay">
+            <div class="coaching-modal-content">
+                <div class="coaching-modal-header">
+                    <span>🏆 Pro 코칭 운영 가이드 (필수)</span>
+                    <button class="coaching-modal-close" onclick="document.getElementById('proGuideModal').remove()">&times;</button>
                 </div>
-                
-                <div class="modal-body guide-body" style="overflow-y: auto; padding: 25px; font-size: 0.95rem; line-height: 1.6; color: #334155;">
+                <div class="coaching-modal-body">
                     <h4>1) Pro의 역할</h4>
-                    <p style="margin-top: 0; margin-bottom: 20px;">목표 대학 기준으로 <strong>'최소 학습·최대 상승(효율)'</strong> 관점에서 합격 가능성을 높이는 방향과 속력을 교정합니다. (모든 근거는 반드시 지표로 제시해야 합니다.)</p>
-
+                    <p>목표 대학 기준으로 '최소 학습·최대 상승(효율)' 관점에서 합격 가능성을 높이는 방향과 속력을 교정합니다. (모든 근거는 반드시 지표로 제시해야 합니다.)</p>
+                    
                     <h4>2) 선생님께서 추가로 반드시 확인하셔야 할 데이터 (근거 판단)</h4>
                     <ul>
                         <li><strong>목표 대학 컷까지의 거리</strong> (컷거리 ΔCut)</li>
@@ -1175,21 +1174,18 @@ function showProGuideModal() {
                     </ul>
 
                     <h4>4) Pro 코칭 원칙 (가드레일)</h4>
-                    <ul style="margin-bottom: 0;">
+                    <ul>
                         <li>코칭 내용에는 <strong>반드시 지표 근거가 포함</strong>되어야 합니다.</li>
-                        <li>핵심 과제 제시 시 구체적인 행동 유형(인강 / 문제풀이 / 오답 / 복습 / 실전)을 <strong>명확히 명시</strong>합니다.</li>
+                        <li>핵심 과제 제시 시 구체적인 행동 유형(인강 / 문풀 / 오답 / 복습 / 실전)을 <strong>명확히 명시</strong>합니다.</li>
                         <li>막연한 합격 예측이나 보장 표현(합격률 단정, 무조건 합격 등)은 <strong>절대 금지</strong>합니다.</li>
                     </ul>
-                    
-                    <div style="text-align: right; margin-top: 25px; padding-top: 15px; border-top: 1px dashed #e2e8f0;">
-                        <button onclick="document.getElementById('proGuideModal').remove()" style="background: #1e3a8a; color: white; border: none; padding: 10px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: background 0.2s;">
-                            숙지했습니다
-                        </button>
-                    </div>
+                </div>
+                <div style="text-align:right; margin-top:20px;">
+                    <button class="fb-save-btn" style="background:#475569;" onclick="document.getElementById('proGuideModal').remove()">확인했습니다</button>
                 </div>
             </div>
-        </div>`;
-        
+        </div>
+    `;
     document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
 
