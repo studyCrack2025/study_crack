@@ -213,71 +213,91 @@ canvas { width: 100% !important; height: 100% !important; }
 
 
 /* =========================================
-   [모바일 반응형]
+   [모바일 반응형 다이어트 & 최적화]
    ========================================= */
 @media (max-width: 900px) {
-    /* 1. 스크롤 잠금 해제 및 레이아웃 세로 정렬 */
-    html, body { height: auto; overflow-y: auto; }
+    /* 1. 스크롤 잠금 해제 및 전체 레이아웃 세로 정렬 */
+    html, body { height: auto; overflow-y: auto; overflow-x: hidden; }
     .admin-wrapper { flex-direction: column; }
     
-    /* 2. 사이드바 다이어트 (상단 스와이프 네비게이션 형태로 변경) */
-    .sidebar { width: 100%; height: auto; }
-    .sidebar-header { padding: 15px 20px; }
-    .sidebar-header h2 { font-size: 1.3rem; }
+    /* 2. 모바일 메뉴 (스와이프 네비게이션) */
+    .sidebar { width: 100%; height: auto; display: block; }
+    .sidebar-header { padding: 15px 20px; text-align: left; display: flex; align-items: center; justify-content: space-between;}
+    .sidebar-header h2 { font-size: 1.3rem; display: inline-block; margin: 0; }
     
     .menu { 
         display: flex; 
         overflow-x: auto; 
         background: #0f172a; 
         padding: 0; 
-        white-space: nowrap; /* 모바일에서 메뉴가 가로로 나열되도록 */
+        white-space: nowrap; 
         -webkit-overflow-scrolling: touch;
+        /* 스크롤바 숨기기 (선택사항) */
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
     }
+    .menu::-webkit-scrollbar { display: none; } /* Chrome, Safari, Opera */
+    
     .menu-item { border: none; flex-shrink: 0; }
-    .menu-item > a { padding: 12px 16px; font-size: 0.9rem; }
+    .menu-item > a { padding: 12px 16px; font-size: 0.95rem; }
     
-    /* 모바일 서브메뉴: 상단 메뉴바 아래에 레이어로 띄움 */
+    /* 모바일 서브메뉴: 드롭다운 대신 메뉴 바로 아래 자연스럽게 열리도록 수정 */
     .submenu { 
-        display: none; position: absolute; top: auto; left: 0; 
-        background: #1e293b; width: 100%; z-index: 100; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.2); 
+        position: static; /* absolute 해제 */
+        background: #1e293b; 
+        width: 100%; 
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); 
     }
-    .submenu.open { display: block; max-height: none; }
-    
-    /* 3. 메인 컨텐츠 여백 및 타이틀 축소 */
+    .submenu li a { padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .submenu.open { max-height: none; } /* 모바일에서는 max-height 제한 해제 */
+
+    /* 3. 메인 컨텐츠 영역 */
     .main-content { padding: 15px; height: auto; overflow: visible; width: 100%; }
-    .page-title { margin-bottom: 20px; font-size: 1.4rem; }
+    .page-title { margin-bottom: 20px; font-size: 1.3rem; }
     
-    /* 4. 대시보드 요약 카드 다이어트 */
+    /* 4. 대시보드 카드 */
     .stats-cards { grid-template-columns: 1fr; gap: 12px; margin-bottom: 20px; }
-    .card { padding: 15px; border-left-width: 4px; }
-    .card h3 { font-size: 0.85rem; margin-bottom: 5px; }
-    .card p { font-size: 1.6rem; }
+    .card { padding: 15px 20px; border-left-width: 4px; display: flex; justify-content: space-between; align-items: center; }
+    .card h3 { font-size: 0.95rem; margin: 0; }
+    .card p { font-size: 1.4rem; margin: 0; }
     
-    /* 5. 차트 영역 다이어트 (화면 뚫림 방지 및 높이 조절) */
+    /* 5. 차트 영역 다이어트 */
     .charts-row { flex-direction: column; gap: 15px; }
     .chart-container { min-width: 0; width: 100%; padding: 15px; }
-    .chart-container h3 { font-size: 0.95rem; margin-bottom: 10px; }
-    .chart-wrapper { height: 240px; } /* 모바일에서 차트가 화면을 너무 많이 차지하지 않도록 높이 축소 */
+    .chart-container h3 { font-size: 1rem; margin-bottom: 10px; }
+    .chart-wrapper { height: 260px; } /* 모바일 차트 높이 확보 */
+    #chart-section-anchor > div[style*="display: flex"] { flex-direction: column; align-items: flex-start !important; gap: 10px; }
+    #periodSelector { width: 100%; } /* 셀렉트 박스 풀사이즈 */
     
-    /* 6. 검색창 다이어트 */
-    .search-wrapper { flex-direction: column; padding: 12px; gap: 8px; margin-bottom: 15px; }
+    /* 6. 검색창 최적화 */
+    .search-wrapper { flex-direction: column; padding: 15px; gap: 10px; margin-bottom: 15px; }
     .search-wrapper select, .search-wrapper input, .search-wrapper button { 
-        width: 100%; padding: 10px; font-size: 0.9rem; 
+        width: 100%; padding: 12px; font-size: 0.95rem; 
     }
     
-    /* 7. 학생 관리 테이블 다이어트 (가로 스크롤 확보) */
-    .student-table th, .student-table td { 
-        padding: 10px 8px; /* 15px -> 10px/8px로 줄여 한 화면에 더 많은 열이 보이도록 */
-        font-size: 0.85rem; 
+    /* 7. 공통 테이블 가로 스크롤 (핵심) */
+    .table-responsive { 
+        width: 100%; 
+        overflow-x: auto; 
+        -webkit-overflow-scrolling: touch; 
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
+    .student-table { min-width: 600px; /* 테이블 최소 너비 강제 확보 */ }
+    .student-table th, .student-table td { padding: 12px 10px; font-size: 0.9rem; }
     
-    /* 8. 모달창 다이어트 */
-    .modal-content { padding: 20px; width: 95%; max-height: 85vh; }
-    .close-btn { top: 10px; right: 15px; font-size: 1.5rem; }
+    /* 8. 모달 최적화 */
+    .modal-content { width: 95%; max-height: 90vh; padding: 20px; border-radius: 12px; }
+    .close-btn { top: 10px; right: 15px; font-size: 1.8rem; }
+    #replyInput { height: 120px; } /* 답변 입력창 높이 조절 */
     
-    .tree-children { grid-template-columns: 1fr; } 
-    .tree-grid-container { grid-template-columns: 1fr; }
+    /* 9. 공지 발송 (체크박스 트리) 영역 */
+    .tree-grid-container { grid-template-columns: 1fr; gap: 15px; }
+    .tree-children { grid-template-columns: 1fr; padding: 10px 15px; gap: 12px; } /* 1단으로 나열 */
     .noti-header-area { flex-direction: column; align-items: flex-start; gap: 15px; } 
-    .noti-submit-btn { width: 100%; padding: 15px; } 
+    .noti-send-container { padding: 20px 15px; }
+    .noti-submit-btn { width: 100%; padding: 14px; font-size: 1rem; } 
+    .quick-select-box { flex-direction: column; align-items: stretch; gap: 8px; }
+    .quick-select-box label { justify-content: center; }
 }
