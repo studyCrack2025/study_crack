@@ -250,27 +250,51 @@ canvas { width: 100% !important; height: 100% !important; }
 /* ============================================================
    [튜터 매칭 관리 시스템 UI]
    ============================================================ */
-.match-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-.match-card { background: #fff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: space-between; }
-.match-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 15px; }
-.match-card-name { font-size: 1.15rem; font-weight: 800; color: #1e293b; margin: 0 0 5px 0; }
-.match-card-date { font-size: 0.8rem; color: #94a3b8; }
-.match-select-box { display: flex; gap: 10px; align-items: center; }
-.match-select-box select { flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; }
-.match-btn { background: #2563eb; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; }
-.match-btn:hover { background: #1d4ed8; }
 
-.change-wizard-container { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; background: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0; }
-.wizard-step { display: flex; flex-direction: column; gap: 10px; }
-.wizard-step label { font-weight: 800; color: #334155; font-size: 0.95rem; }
-.wizard-step select { padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; outline: none; }
-.wizard-step select:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
+/* 매칭 탭 공통 및 안내 박스 */
+.matching-tab-card { background: white; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+.match-count-badge { display: inline-block; background: #fee2e2; color: #ef4444; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; margin-left: 5px; }
 
+.matching-info-box { background: #eff6ff; border: 1px solid #bfdbfe; padding: 15px 20px; border-radius: 10px; color: #1e3a8a; font-size: 0.95rem; margin-bottom: 25px; display: flex; align-items: center; gap: 10px; }
+.matching-info-box.warning { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+.matching-info-box i { font-size: 1.1rem; }
+
+/* 신규 매칭 카드 (그리드 레이아웃) */
+.match-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; }
+.match-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: all 0.3s ease; display: flex; flex-direction: column; justify-content: space-between; }
+.match-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px -5px rgba(0,0,0,0.08); border-color: #cbd5e1; }
+
+.match-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 20px; }
+.match-card-name { font-size: 1.25rem; font-weight: 900; color: #0f172a; margin: 0 0 6px 0; letter-spacing: -0.5px; }
+.match-card-date { font-size: 0.85rem; color: #64748b; display: flex; align-items: center; gap: 5px; }
+
+.match-select-box { display: flex; gap: 12px; align-items: center; }
+.match-select-box select { flex: 1; padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; font-weight: 500; color: #334155; outline: none; transition: border-color 0.2s, box-shadow 0.2s; cursor: pointer; }
+.match-select-box select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+
+.match-btn { background: #3b82f6; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: 0.2s; white-space: nowrap; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3); }
+.match-btn:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4); }
+
+/* 튜터 변경 위저드 (스텝퍼 형태) */
+.change-wizard-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; background: #fff; padding: 30px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+.wizard-step { display: flex; flex-direction: column; gap: 12px; position: relative; }
+.wizard-step label { font-weight: 800; color: #1e293b; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+.step-num { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: #e2e8f0; color: #475569; border-radius: 50%; font-size: 0.8rem; font-weight: 900; }
+
+.wizard-step select { width: 100%; padding: 14px 16px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 1rem; font-weight: 500; color: #334155; outline: none; transition: 0.2s; cursor: pointer; background-color: #f8fafc; }
+.wizard-step select:focus { border-color: #3b82f6; background-color: #fff; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+
+/* 세련된 위험 버튼 */
+.wizard-action-area { text-align: right; margin-top: 30px; padding-top: 20px; border-top: 1px dashed #e2e8f0; }
+.btn-danger-modern { background: #ef4444; color: white; border: none; padding: 15px 30px; border-radius: 10px; font-size: 1.05rem; font-weight: 800; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.25); display: inline-flex; align-items: center; gap: 8px; }
+.btn-danger-modern:hover { background: #dc2626; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(239, 68, 68, 0.35); }
+
+/* 모바일 대응 추가 */
 @media (max-width: 768px) {
     .match-grid { grid-template-columns: 1fr; }
-    .change-wizard-container { grid-template-columns: 1fr; gap: 15px; padding: 15px; }
+    .change-wizard-container { grid-template-columns: 1fr; gap: 20px; padding: 20px; }
+    .wizard-action-area button { width: 100%; justify-content: center; }
 }
-
 
 /* =========================================
    [모바일 반응형 다이어트 & 최적화]

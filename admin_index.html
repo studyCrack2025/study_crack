@@ -263,51 +263,55 @@
         <div id="section-matching" class="content-section">
             <h1 class="page-title">🤝 튜터 매칭 관리</h1>
             
-            <div class="tab-card">
-                <div class="tabs" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 10px;">
+            <div class="tab-card matching-tab-card">
+                <div class="tabs">
                     <button class="tab-btn active" onclick="switchMatchingTab('new')" id="btn-match-new">
-                        신규 매칭 대기 <span id="newMatchCount" style="color:#ef4444; font-weight:bold;">(0)</span>
+                        신규 매칭 대기 <span id="newMatchCount" class="match-count-badge">0</span>
                     </button>
-                    <button class="tab-btn" onclick="switchMatchingTab('change')" id="btn-match-change">튜터 변경</button>
+                    <button class="tab-btn" onclick="switchMatchingTab('change')" id="btn-match-change">
+                        튜터 변경
+                    </button>
                 </div>
 
-                <div id="matchTab_new" class="tab-content active" style="padding: 25px;">
-                    <div style="margin-bottom: 20px; color: #475569; font-size: 0.95rem;">
-                        <i class="fas fa-info-circle" style="color:#3b82f6;"></i> STANDARD 또는 PRO 결제를 완료했으나 아직 담당 튜터가 배정되지 않은 학생 명단입니다.
+                <div id="matchTab_new" class="tab-content active" style="padding: 30px;">
+                    <div class="matching-info-box">
+                        <i class="fas fa-info-circle text-blue"></i> 
+                        <strong>STANDARD 또는 PRO 결제</strong>를 완료했으나 아직 담당 튜터가 배정되지 않은 학생 명단입니다.
                     </div>
                     <div class="match-grid" id="newMatchList">
                         </div>
                 </div>
 
-                <div id="matchTab_change" class="tab-content" style="padding: 25px; display: none;">
-                    <div style="margin-bottom: 25px; color: #475569; font-size: 0.95rem;">
-                        <i class="fas fa-exclamation-triangle" style="color:#f59e0b;"></i> 이미 튜터가 배정된 학생의 담당 튜터를 변경합니다. 신중하게 진행해 주세요.
+                <div id="matchTab_change" class="tab-content" style="padding: 30px; display: none;">
+                    <div class="matching-info-box warning">
+                        <i class="fas fa-exclamation-triangle text-red"></i> 
+                        이미 튜터가 배정된 학생의 <strong>담당 튜터를 변경</strong>합니다. 학생의 학습 흐름에 영향을 줄 수 있으니 신중하게 진행해 주세요.
                     </div>
                     
                     <div class="change-wizard-container">
                         <div class="wizard-step">
-                            <label>1. 현재 담당 튜터 선택</label>
+                            <label><span class="step-num">1</span> 현재 담당 튜터</label>
                             <select id="changeOldTutor" onchange="updateChangeStudentList()">
                                 <option value="">튜터를 선택하세요</option>
                             </select>
                         </div>
                         <div class="wizard-step">
-                            <label>2. 변경할 학생 선택</label>
+                            <label><span class="step-num">2</span> 변경할 학생</label>
                             <select id="changeStudent">
                                 <option value="">먼저 튜터를 선택하세요</option>
                             </select>
                         </div>
                         <div class="wizard-step">
-                            <label>3. 새롭게 배정할 튜터</label>
+                            <label><span class="step-num">3</span> 새롭게 배정할 튜터</label>
                             <select id="changeNewTutor">
                                 <option value="">새 튜터를 선택하세요</option>
                             </select>
                         </div>
                     </div>
                     
-                    <div style="text-align: right; margin-top: 30px;">
-                        <button class="btn-checkout" onclick="confirmTutorChange()" style="max-width: 250px; background: #ef4444;">
-                            변경 사항 검토하기
+                    <div class="wizard-action-area">
+                        <button class="btn-danger-modern" onclick="confirmTutorChange()">
+                            <i class="fas fa-exchange-alt"></i> 변경 사항 검토하기
                         </button>
                     </div>
                 </div>
