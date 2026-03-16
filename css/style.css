@@ -8,6 +8,10 @@ body { color: #333; line-height: 1.6; background-color: #f8fafc; overflow-x: hid
 a { text-decoration: none; color: inherit; cursor: pointer; }
 ul, ol { list-style: none; }
 
+:root {
+    color-scheme: light;
+}
+
 /* 공통 애니메이션 */
 .scroll-reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s ease-out; will-change: opacity, transform;}
 .scroll-reveal.visible { opacity: 1; transform: translateY(0); }

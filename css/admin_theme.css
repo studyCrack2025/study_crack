@@ -1,5 +1,8 @@
 /* css/admin_theme.css */
 
+/* 🚀 브라우저 강제 다크모드 방지 및 라이트모드 고정 */
+:root { color-scheme: light; }
+
 /* 기본 설정 */
 * { box-sizing: border-box; }
 body { margin: 0; font-family: 'Noto Sans KR', sans-serif; background-color: #f1f5f9; }
