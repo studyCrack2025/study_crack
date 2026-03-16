@@ -57,12 +57,35 @@ function toggleSubmenu(id) {
     if (el) el.classList.toggle('open');
 }
 
-// 메인 섹션 전환 (대시보드 / 학생관리 / 튜터관리 / 알림 등)
+// 메인 섹션 전환 및 사이드바 Active 스타일 적용
 function showSection(sectionName) {
-    // 모든 섹션 숨기기
+    // 1. 모든 메인 화면 섹션 숨기기
     document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
     
-    // 선택된 섹션 보이기
+    // 2. 사이드바 메뉴 시각적 Active 상태 업데이트
+    document.querySelectorAll('.menu-item > a').forEach(el => {
+        el.style.backgroundColor = '';
+        el.style.color = '';
+    });
+    document.querySelectorAll('.submenu li a').forEach(el => {
+        el.style.color = '';
+    });
+    
+    // 클릭된 요소 찾아서 시각적 효과 부여 (꼼수: onclick 속성 문자열 검사)
+    const clickedLink = document.querySelector(`a[onclick*="showSection('${sectionName}')"]`) || 
+                        document.querySelector(`a[onclick*="showQnaSection"]`) ||
+                        document.querySelector(`a[onclick*="showNotiMenu"]`);
+    if (clickedLink) {
+        if (clickedLink.closest('.submenu')) {
+            clickedLink.style.color = '#60a5fa'; // 서브메뉴 액티브 색상
+            clickedLink.closest('.has-submenu').querySelector('a').style.color = '#60a5fa'; // 부모 메뉴 하이라이트
+        } else {
+            clickedLink.style.backgroundColor = '#334155'; // 메인메뉴 액티브 배경
+            clickedLink.style.color = 'white'; // 메인메뉴 액티브 글자
+        }
+    }
+    
+    // 3. 선택된 섹션 화면에 보이기
     if (sectionName === 'students') {
         document.getElementById('section-students').classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -71,25 +94,31 @@ function showSection(sectionName) {
         document.getElementById('section-dashboard').classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     } 
-    else if (sectionName === 'sales-chart') { // 기존 로직 완벽 복구
+    else if (sectionName === 'sales-chart') {
         document.getElementById('section-dashboard').classList.add('active');
         const anchor = document.getElementById('chart-section-anchor');
         if (anchor) anchor.scrollIntoView({ behavior: 'smooth' });
     } 
-    else if (sectionName === 'tutors') { // 튜터 관리 탭
+    else if (sectionName === 'tutors') {
         document.getElementById('section-tutors').classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        loadTutorStats(); // 데이터 로드
+        loadTutorStats(); 
     } 
-    else if (sectionName === 'notifications') { // 알림 탭
+    else if (sectionName === 'notifications') {
         document.getElementById('section-notifications').classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        loadNotifications(); // 데이터 로드
+        loadNotifications(); 
         loadTutorListForNotice();
     }
     else if (sectionName === 'qna') {
         document.getElementById('section-qna').classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    // 🔥 [수정 1] 튜터 매칭 탭 연결 추가
+    else if (sectionName === 'matching') {
+        document.getElementById('section-matching').classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        loadMatchingData(); // 매칭 데이터 로드 호출
     }
 }
 
