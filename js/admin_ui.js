@@ -62,30 +62,32 @@ function showSection(sectionName) {
     // 1. 모든 메인 화면 섹션 숨기기
     document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
     
-    // 2. 사이드바 메뉴 시각적 Active 상태 업데이트
+    // 2. 사이드바 메뉴 시각적 Active 상태 초기화
     document.querySelectorAll('.menu-item > a').forEach(el => {
         el.style.backgroundColor = '';
-        el.style.color = '';
+        el.style.color = '#cbd5e1'; // 기본 글자색
     });
     document.querySelectorAll('.submenu li a').forEach(el => {
-        el.style.color = '';
+        el.style.color = '#94a3b8'; // 서브메뉴 기본 글자색
     });
     
-    // 클릭된 요소 찾아서 시각적 효과 부여 (꼼수: onclick 속성 문자열 검사)
+    // 3. 클릭된 요소 찾아서 시각적 효과 부여
     const clickedLink = document.querySelector(`a[onclick*="showSection('${sectionName}')"]`) || 
                         document.querySelector(`a[onclick*="showQnaSection"]`) ||
                         document.querySelector(`a[onclick*="showNotiMenu"]`);
+                        
     if (clickedLink) {
         if (clickedLink.closest('.submenu')) {
             clickedLink.style.color = '#60a5fa'; // 서브메뉴 액티브 색상
-            clickedLink.closest('.has-submenu').querySelector('a').style.color = '#60a5fa'; // 부모 메뉴 하이라이트
+            const parentMenu = clickedLink.closest('.has-submenu').querySelector('a');
+            if(parentMenu) parentMenu.style.color = '#60a5fa'; // 부모 메뉴 하이라이트
         } else {
             clickedLink.style.backgroundColor = '#334155'; // 메인메뉴 액티브 배경
             clickedLink.style.color = 'white'; // 메인메뉴 액티브 글자
         }
     }
     
-    // 3. 선택된 섹션 화면에 보이기
+    // 4. 선택된 섹션 화면에 보이기
     if (sectionName === 'students') {
         document.getElementById('section-students').classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -114,7 +116,6 @@ function showSection(sectionName) {
         document.getElementById('section-qna').classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    // 🔥 [수정 1] 튜터 매칭 탭 연결 추가
     else if (sectionName === 'matching') {
         document.getElementById('section-matching').classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
