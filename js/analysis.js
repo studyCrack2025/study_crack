@@ -2771,12 +2771,11 @@ function initProSection() {
     }
 }
 
-// 1. [홍보 페이지] Basic/Standard 유저 대상
 function renderProPromo(container) {
     container.innerHTML = `
         <div class="pro-header">
             <span class="pro-badge">PREMIUM STRATEGY</span>
-            <h2 class="pro-title">PRO EXCLUSIVE : 최소 학습, 최대 효율</h2>
+            <h2 class="pro-title">PRO EXCLUSIVE :<br>최소 학습, 최대 효율</h2>
             <p class="pro-desc">추상적인 조언은 배제합니다. 데이터 기반으로 목표 대학을 향한 최단 경로를 설계하세요.</p>
         </div>
 
@@ -2799,7 +2798,7 @@ function renderProPromo(container) {
         </div>
 
         <button onclick="location.href='/payment'" class="pro-cta-btn">
-            🚀 PRO 멤버십으로 업그레이드 하기
+            🚀 PRO 멤버십으로<br>업그레이드 하기
             <div style="font-size:0.8rem; opacity:0.8; margin-top:5px; font-weight:400;">데이터 기반 1:1 맞춤 컨설팅 시작하기</div>
         </button>
     `;
