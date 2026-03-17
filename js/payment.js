@@ -1,5 +1,3 @@
-// js/payment.js
-
 const USER_API_URL = CONFIG.api.base;
 const PAYMENT_API_URL = CONFIG.api.payment;
 
@@ -7,9 +5,10 @@ let selectedProductName = "";
 let selectedTier = null; 
 
 // 티어 비교를 위한 전역 변수
-const TIER_LEVELS = { 'free': 0, 'basic': 1, 'standard': 2, 'pro': 3 };
+const TIER_LEVELS = { 'free': 0, 'trial': 1, 'basic': 2, 'standard': 3, 'pro': 4 };
 let globalCurrentTier = 'free';
 let globalDaysLeft = 0;
+let globalExpireDate = null; // 기존 만료일(새로운 시작일) 저장용
 
 document.addEventListener('DOMContentLoaded', () => {
     const userId = localStorage.getItem('userId');
@@ -76,11 +75,6 @@ async function validatePromoCode(code) {
             if (result.isValid) {
                 const trialOption = document.getElementById('trialOption');
                 if(trialOption) trialOption.style.display = 'block'; 
-
-                TIER_LEVELS['trial'] = 1; 
-                TIER_LEVELS['basic'] = 2;
-                TIER_LEVELS['standard'] = 3;
-                TIER_LEVELS['pro'] = 4;
             }
         }
     } catch (error) {
@@ -102,11 +96,18 @@ function calculateUserTierDisplay(data) {
             const now = new Date();
             
             globalDaysLeft = Math.ceil((expireDate - now) / (1000 * 60 * 60 * 24));
+            globalExpireDate = expireDate;
             
             // 상단 배너 표시
             const banner = document.getElementById('activeSubBanner');
             document.getElementById('activeSubName').innerText = globalCurrentTier.toUpperCase();
-            document.getElementById('activeSubDate').innerText = `${expireDate.getFullYear()}년 ${expireDate.getMonth()+1}월 ${expireDate.getDate()}일까지 유효`;
+            
+            // Basic은 무기한이므로 텍스트 다르게 처리
+            if (globalCurrentTier === 'basic') {
+                document.getElementById('activeSubDate').innerText = '평생 이용 가능';
+            } else {
+                document.getElementById('activeSubDate').innerText = `${expireDate.getFullYear()}년 ${expireDate.getMonth()+1}월 ${expireDate.getDate()}일까지 유효`;
+            }
             banner.style.display = 'flex';
 
             // 선택 박스에 '현재 이용 중' 뱃지 달기
@@ -122,7 +123,7 @@ function calculateUserTierDisplay(data) {
     }
 }
 
-// 상품 선택 로직
+// 상품 선택 로직 (7일 연장 및 Basic 업그레이드 조건 반영)
 function selectProduct(element, url, tier) {
     document.querySelectorAll('.product-option').forEach(el => el.classList.remove('selected'));
     element.classList.add('selected');
@@ -131,7 +132,6 @@ function selectProduct(element, url, tier) {
     const nameSpan = element.querySelector('.p-name');
     if (nameSpan) selectedProductName = nameSpan.innerText;
 
-    // 티어 등급 판별 로직
     const selectedLevel = TIER_LEVELS[selectedTier];
     const currentLevel = TIER_LEVELS[globalCurrentTier];
 
@@ -139,36 +139,61 @@ function selectProduct(element, url, tier) {
     const msgText = document.getElementById('tierMessageText');
     const btn = document.getElementById('submitBtn');
 
-    // 기본 상태로 초기화
+    // 초기화
     msgWrap.style.display = 'none';
-    msgWrap.className = 'tier-message-wrap'; // warning 클래스 제거용
+    msgWrap.className = 'tier-message-wrap'; 
     btn.disabled = false;
     btn.innerText = "결제하기";
 
-    // Free 유저는 모든 플랜 결제 가능하므로 무시
     if (currentLevel > 0) {
-        
-        if (selectedLevel === currentLevel) {
-            // 1. 동일한 티어 선택 시
-            msgWrap.style.display = 'block';
-            msgText.innerHTML = `<i class="fas fa-check-circle" style="color:#10b981;"></i> 회원님이 현재 이용 중인 플랜입니다.`;
-            btn.disabled = true;
-            btn.innerText = "현재 이용 중인 플랜";
-
-        } else if (selectedLevel < currentLevel) {
-            // 2. 하위 티어 선택 시 (경고)
-            msgWrap.style.display = 'block';
-            msgWrap.classList.add('warning');
-            msgText.innerHTML = `<i class="fas fa-exclamation-triangle"></i> 이미 <strong>${globalCurrentTier.toUpperCase()}</strong> 등급 회원입니다. 아래 등급을 구독하실 경우 기존 혜택에 불이익이 발생할 수 있습니다.`;
-            btn.disabled = true;
-            btn.innerText = "하위 플랜 선택 불가";
-
-        } else if (selectedLevel > currentLevel) {
-            // 3. 상위 티어 선택 시 (업그레이드 안내)
-            msgWrap.style.display = 'block';
-            msgText.innerHTML = `<i class="fas fa-info-circle" style="color:#3b82f6;"></i> 기존 구독 기간이 <strong>${globalDaysLeft}일</strong> 남았습니다.<br><strong>${selectedTier.toUpperCase()}</strong> 등급으로 업그레이드를 원하시면 <strong>[1:1 문의]</strong>에 남겨주세요. 빠르게 차액 결제 및 전환을 도와드리겠습니다.`;
-            btn.disabled = true;
-            btn.innerText = "업그레이드 불가 (문의 요망)";
+        // 1. Basic 유저인 경우 (업그레이드 무조건 허용)
+        if (globalCurrentTier === 'basic') {
+            if (selectedLevel === currentLevel) {
+                msgWrap.style.display = 'block';
+                msgText.innerHTML = `<i class="fas fa-check-circle" style="color:#10b981;"></i> 이미 평생 이용 가능한 BASIC 플랜을 보유하고 있습니다.`;
+                btn.disabled = true;
+                btn.innerText = "현재 이용 중인 플랜";
+            } else if (selectedLevel > currentLevel) {
+                msgWrap.style.display = 'block';
+                msgWrap.classList.add('warning'); // 노란색/빨간색 경고창
+                msgText.innerHTML = `<i class="fas fa-exclamation-circle"></i> <strong>업그레이드 안내:</strong> 결제 시 기존 BASIC 등급의 잔여 목표대학 설정 횟수는 <strong>무제한으로 전환되며 소멸</strong>됩니다.`;
+                btn.innerText = "업그레이드 결제하기";
+            }
+        } 
+        // 2. Standard / Pro 유저인 경우 (7일 제한 로직 적용)
+        else if (globalCurrentTier === 'standard' || globalCurrentTier === 'pro') {
+            if (selectedLevel < currentLevel) {
+                msgWrap.style.display = 'block';
+                msgWrap.classList.add('warning');
+                msgText.innerHTML = `<i class="fas fa-exclamation-triangle"></i> 이미 <strong>${globalCurrentTier.toUpperCase()}</strong> 등급 회원입니다. 하위 등급 결제는 불가합니다.`;
+                btn.disabled = true;
+                btn.innerText = "하위 플랜 선택 불가";
+            } else if (selectedLevel === currentLevel) {
+                // 동일 티어 연장 (7일 이하 남았을 때만 허용)
+                if (globalDaysLeft <= 7 && globalDaysLeft > 0) {
+                    msgWrap.style.display = 'block';
+                    msgText.innerHTML = `<i class="fas fa-info-circle" style="color:#3b82f6;"></i> 기존 구독 기간이 <strong>${globalDaysLeft}일</strong> 남았습니다.<br>지금 결제하시면 기존 만료일 이후로 4주가 연장됩니다.`;
+                    btn.innerText = "연장 결제하기";
+                } else {
+                    msgWrap.style.display = 'block';
+                    msgWrap.classList.add('warning');
+                    msgText.innerHTML = `<i class="fas fa-clock"></i> 기존 구독 기간이 <strong>${globalDaysLeft}일</strong> 남았습니다. 연장 결제는 만료 7일 전부터 가능합니다.`;
+                    btn.disabled = true;
+                    btn.innerText = "연장 결제 기간 아님";
+                }
+            } else if (selectedLevel > currentLevel) {
+                // 상위 티어로 업그레이드 (Standard -> Pro)
+                if (globalDaysLeft <= 7 && globalDaysLeft > 0) {
+                    msgWrap.style.display = 'block';
+                    msgText.innerHTML = `<i class="fas fa-info-circle" style="color:#3b82f6;"></i> 기존 구독 기간이 <strong>${globalDaysLeft}일</strong> 남았습니다.<br>지금 결제하시면 기존 만료일 이후로 <strong>PRO</strong> 혜택이 적용됩니다.`;
+                    btn.innerText = "예약 업그레이드 결제";
+                } else {
+                    msgWrap.style.display = 'block';
+                    msgText.innerHTML = `<i class="fas fa-info-circle" style="color:#3b82f6;"></i> 구독 기간이 <strong>${globalDaysLeft}일</strong> 남았습니다.<br>즉시 업그레이드를 원하시면 <strong>[1:1 문의]</strong>에 남겨주세요. 차액 결제를 도와드립니다.`;
+                    btn.disabled = true;
+                    btn.innerText = "업그레이드 불가 (문의 요망)";
+                }
+            }
         }
     }
 }
@@ -181,7 +206,7 @@ function formatPhoneNumber(rawPhone) {
     return cleaned.replace(/^(\d{2,3})(\d{3,4})(\d{4})$/, `$1-$2-$3`);
 }
 
-// 결제 데이터 세팅 및 페이지 이동 (Checkout 연동)
+// 결제 데이터 세팅 및 페이지 이동 (시작일 계산 포함)
 async function processPayment() {
     const name = document.getElementById('name').value;
     const rawPhone = document.getElementById('phone').value;
@@ -196,19 +221,26 @@ async function processPayment() {
 
     const formattedPhone = formatPhoneNumber(rawPhone);
 
+    // [핵심] 결제 시작일(effectiveStartDate) 설정 로직
+    let startDate = new Date();
+    // Standard/Pro 연장 또는 예약 업그레이드 시, 시작일을 만료일로 지정
+    if ((globalCurrentTier === 'standard' || globalCurrentTier === 'pro') && globalDaysLeft <= 7 && globalDaysLeft > 0 && globalExpireDate) {
+        startDate = globalExpireDate;
+    }
+
     const checkoutData = {
         name: name,
         phone: formattedPhone,
         email: email,
         tier: selectedTier,
-        productName: selectedProductName
+        productName: selectedProductName,
+        effectiveStartDate: startDate.toISOString() // 체크아웃으로 전달!
     };
     
     localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
     
-    // 이전 스텝에서 만든 checkout.html 페이지로 이동
     if (selectedTier === 'trial') {
-        window.location.href = '/checkout-transfer'; // 새로 만들 페이지
+        window.location.href = '/checkout-transfer'; 
     } else {
         window.location.href = '/checkout';
     }

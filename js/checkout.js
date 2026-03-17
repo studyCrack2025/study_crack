@@ -1,10 +1,9 @@
-// js/checkout.js
-
 // 1. 가격 및 설명 매핑 데이터
 const TIER_DATA = {
     'basic': { price: 49000, desc: '현재 위치 진단 및 전략 수립' },
     'standard': { price: 149000, desc: '월간 학습 코칭 (플래닝) 정기구독' },
-    'pro': { price: 299000, desc: '최소 노력 최대 효율, 맞춤 전략 재설계 정기구독' }
+    'pro': { price: 299000, desc: '최소 노력 최대 효율, 맞춤 전략 재설계 정기구독' },
+    'trial': { price: 30000, desc: 'PRO 등급 한 달 완벽 체험' }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -32,17 +31,36 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('chkPrice').innerText = formattedPrice;
     document.getElementById('btnPayAmount').innerText = formattedPrice;
 
-    // 4. 다음 결제일 계산 (한 달 뒤)
-    const nextDate = new Date();
-    nextDate.setMonth(nextDate.getMonth() + 1);
-    const month = nextDate.getMonth() + 1;
-    const date = nextDate.getDate();
+    // 4. 시작일(effective) 및 다음 결제일 계산
+    const effectiveStart = new Date(checkoutData.effectiveStartDate || new Date());
+    const nextDate = new Date(effectiveStart);
+    nextDate.setDate(nextDate.getDate() + 28); // 4주(28일) 뒤
+
+    const startM = effectiveStart.getMonth() + 1;
+    const startD = effectiveStart.getDate();
+    const nextM = nextDate.getMonth() + 1;
+    const nextD = nextDate.getDate();
     
-    // BASIC은 1회성이므로 안내문구 숨김 처리
-    if (checkoutData.tier === 'basic') {
-        document.querySelector('.billing-notice').style.display = 'none';
+    const noticeBox = document.querySelector('.billing-notice');
+
+    // BASIC, TRIAL은 1회성이므로 안내문구 숨김 처리
+    if (checkoutData.tier === 'basic' || checkoutData.tier === 'trial') {
+        noticeBox.style.display = 'none';
     } else {
-        document.getElementById('chkNextDate').innerText = `${month}월 ${date}일`;
+        const now = new Date();
+        // effectiveStart가 현재보다 미래라면 (연장 결제)
+        if (effectiveStart > now) {
+            noticeBox.innerHTML = `
+                <i class="fas fa-info-circle" style="color:#3b82f6;"></i> 예약 결제 안내<br>
+                새로운 구독은 기존 만료일인 <strong>${startM}월 ${startD}일</strong>부터 적용되며,<br>
+                다음 정기 결제일은 <strong>${nextM}월 ${nextD}일</strong>입니다.
+            `;
+        } else {
+            // 즉시 시작하는 경우
+            noticeBox.innerHTML = `
+                <i class="fas fa-info-circle"></i> 다음 결제일은 4주 뒤인 <strong>${nextM}월 ${nextD}일</strong>입니다. 언제든 해지 가능합니다.
+            `;
+        }
     }
 
     // 5. 카드 폼 자동 포맷팅 리스너 등록
@@ -99,7 +117,7 @@ async function submitCheckout() {
          TODO: 백엔드 연동 단계에서 아래 데이터를 Lambda로 전송합니다.
          {
              type: "create_nicepay_billing",
-             user: checkoutData,
+             user: checkoutData, // 여기에 effectiveStartDate가 포함되어 있습니다.
              card: { num: cNum, exp: cExp, pwd: cPwd, dob: cDob }
          }
         */
