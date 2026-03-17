@@ -639,46 +639,40 @@ function updateQuotaUI() {
     if (!container) return;
 
     if (currentUserTier === 'standard' || currentUserTier === 'pro') {
-        container.innerHTML = `
-            <div class="quota-info-box" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;">
-                <span><i class="fas fa-check-circle"></i> Standard/Pro 멤버십 혜택</span>
-                <span style="font-weight:bold;">목표대학 무제한 설정 가능</span>
-            </div>`;
+        container.innerHTML = `<div class="quota-info-box" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534; flex-wrap:wrap; gap:8px;">
+            <span><i class="fas fa-check-circle"></i> Standard/Pro 멤버십 혜택</span>
+            <span style="font-weight:bold;">목표대학 무제한 설정 가능</span>
+        </div>`;
         return;
     }
 
-    // Basic, Free 유저 처리
-    const isWarning = univChangeRemaining < 10; // 10회 미만: 색상 위기감 조성
-    const isUpsell = univChangeRemaining <= 5;  // 5회 이하: 업셀링 배너 노출
-    const isZero = univChangeRemaining <= 0;    // 0회: 소진 및 경고 극대화
+    const isWarning = univChangeRemaining < 10;
+    const isUpsell = univChangeRemaining <= 5;
+    const isZero = univChangeRemaining <= 0;
 
-    // 배경색과 텍스트 색상 분기
     let boxStyle = '';
-    let textColor = '#2563eb'; // 기본 파란색
+    let textColor = '#2563eb';
     
-    if (isZero) {
-        boxStyle = 'background:#fef2f2; border-color:#fecaca;';
-        textColor = '#ef4444'; // 빨간색
-    } else if (isWarning) {
-        boxStyle = 'background:#fff7ed; border-color:#fed7aa;';
-        textColor = '#ea580c'; // 주황색
-    }
+    if (isZero) { boxStyle = 'background:#fef2f2; border-color:#fecaca;'; textColor = '#ef4444'; }
+    else if (isWarning) { boxStyle = 'background:#fff7ed; border-color:#fed7aa;'; textColor = '#ea580c'; }
 
-    let html = `
-        <div class="quota-info-box" style="${boxStyle}">
-            <span><i class="fas fa-ticket-alt"></i> 목표대학 설정 잔여 횟수</span>
-            <span><strong class="remain-count" style="font-size: 1.2rem; color:${textColor};">${univChangeRemaining}</strong> / 30회</span>
-        </div>`;
+    let html = `<div class="quota-info-box" style="${boxStyle} flex-wrap:wrap; gap:8px;">
+        <span><i class="fas fa-ticket-alt"></i> 목표대학 설정 잔여 횟수</span>
+        <span><strong class="remain-count" style="font-size:1.2rem; color:${textColor};">${univChangeRemaining}</strong> / 30회</span>
+    </div>`;
 
-    // 5회 이하부터 업셀링 배너 렌더링
     if (isUpsell) {
-        html += `
-        <div class="upgrade-promo-banner" style="${isZero ? 'border-color:#ef4444; background:#fef2f2;' : 'border-color:#fb923c; background:#fffaf0;'}">
-            <p>
-                ${isZero ? '⛔ <strong>목표대학 설정 횟수가 모두 소진되었습니다!</strong>' : `⚠️ <strong>설정 가능 횟수가 ${univChangeRemaining}회밖에 남지 않았습니다!</strong>`}<br>
-                Standard 멤버십으로 업그레이드하고 <strong>무제한 대학 분석</strong>을 이용해보세요.
-            </p>
-            <button class="upgrade-btn-small" style="${isZero ? 'background:#ef4444;' : 'background:#ea580c;'}" onclick="location.href='/payment'">멤버십 알아보기</button>
+        const bannerStyle = isZero ? 'border-color:#ef4444; background:#fef2f2;' : 'border-color:#fb923c; background:#fffaf0;';
+        const btnStyle = isZero ? 'background:#ef4444;' : 'background:#ea580c;';
+        const msg = isZero ? '⛔ <strong>목표대학 설정 횟수가 모두 소진되었습니다!</strong>' : `⚠️ <strong>설정 가능 횟수가 ${univChangeRemaining}회밖에 남지 않았습니다!</strong>`;
+        
+        html += `<div class="upgrade-promo-banner" style="${bannerStyle} flex-wrap:wrap; gap:12px;">
+            <div style="flex:1; min-width:240px; word-break:keep-all;">
+                <p style="margin:0; font-size:0.9rem; line-height:1.5;">
+                    ${msg}<br>Standard 멤버십으로 업그레이드하고 <strong>무제한 대학 분석</strong>을 이용해보세요.
+                </p>
+            </div>
+            <button class="upgrade-btn-small" style="${btnStyle} margin:0; flex:1; min-width:140px; padding:12px;" onclick="location.href='/payment'">멤버십 알아보기</button>
         </div>`;
     }
     
