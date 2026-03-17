@@ -602,16 +602,15 @@ input[type="number"]::-webkit-inner-spin-button {
        3. PRO 테마 섹션 축소
        ======================================= */
     .pro-theme { padding: 25px 20px; border-radius: 12px; width: 100%; box-sizing: border-box; }
-    .pro-promo-grid { grid-template-columns: 1fr; gap: 12px; }
-    .pro-title { font-size: 1.5rem; }
-    .pro-desc { font-size: 0.9rem; }
-    .pro-cta-btn { padding: 14px 20px; font-size: 1rem; margin-top: 20px; }
-    /* 🚀 핵심: 2단 그리드(아이콘 1열, 텍스트 2열)로 가로형 리스트 구현 */
-    .pro-feature-card { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 15px; row-gap: 5px; padding: 18px 20px; align-items: start; text-align: left; }
+    .pro-promo-grid { grid-template-columns: 1fr; gap: 15px; }
+    .pro-title { font-size: 1.4rem; word-break: keep-all; line-height: 1.3; }
+    .pro-desc { font-size: 0.9rem; word-break: keep-all; line-height: 1.5; margin-bottom: 20px; }
+    .pro-cta-btn { padding: 14px 20px; font-size: 1rem; margin-top: 20px; width: 100%; box-sizing: border-box; }
+    .pro-feature-card { display: grid; grid-template-columns: min-content 1fr; grid-template-rows: auto auto; column-gap: 15px; row-gap: 5px; padding: 18px 20px; align-items: start; text-align: left; word-break: break-word; }
     .pro-input-card { padding: 15px; margin-bottom: 15px; }
-    .feat-icon { grid-column: 1; grid-row: 1 / 3; margin-bottom: 0; font-size: 1.8rem; margin-top: 2px; }
-    .feat-title { grid-column: 2; grid-row: 1; margin-bottom: 0; font-size: 1.05rem; }
-    .feat-desc { grid-column: 2; grid-row: 2; font-size: 0.85rem; line-height: 1.5; margin: 0; }
+    .feat-icon { grid-column: 1; grid-row: 1 / 3; margin-bottom: 0; font-size: 2rem; margin-top: 2px; }
+    .feat-title { grid-column: 2; grid-row: 1; margin-bottom: 0; font-size: 1.05rem; line-height: 1.3; }
+    .feat-desc { grid-column: 2; grid-row: 2; font-size: 0.85rem; line-height: 1.5; margin: 0; white-space: normal; }
     #btnSaveTarget, .save-btn { padding: 14px 20px; font-size: 1rem; margin-top: 20px; }
 
     /* =======================================
