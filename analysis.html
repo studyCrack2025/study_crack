@@ -122,12 +122,14 @@
                 </div>
                 
                 <div class="univ-sub-header">
-                    <h3>1. 목표대학 설정</h3>
-                    <p class="warning-text">⚠️ 목표 대학 설정 시 <strong>2주간 수정이 불가능</strong>합니다.</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h3 style="margin: 0;">1. 목표대학 설정</h3>
+                    </div>
+                    <div id="univQuotaContainer"></div>
                 </div>
-                
+
                 <div class="univ-grid" id="univGrid"></div>
-                <button id="btnSaveTarget" class="save-btn" onclick="saveTargetUnivs()">설정 저장하기 (2주 락 적용)</button>
+                <button id="btnSaveTarget" class="save-btn" onclick="saveTargetUnivs()">목표 대학 저장하기</button>
 
                 <hr class="divider">
 

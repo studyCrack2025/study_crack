@@ -7,6 +7,7 @@ const MYPAGE_API_URL = CONFIG.api.base;       // 사용자 정보, 주간점검 
 const UNIV_DATA_API_URL = CONFIG.api.analysis; // 대학 분석, 시뮬레이션 등
 
 let currentUserTier = 'free';
+let univChangeRemaining = 30;
 let userRecentPaymentDate = null;
 let userTargetUnivs = [null, null, null, null, null, null]; // 6슬롯
 let univData = []; 
@@ -195,6 +196,7 @@ async function fetchUserData(userId) {
         if (data.targetUnivs) userTargetUnivs = data.targetUnivs;
         if (data.quantitative) userQuantData = data.quantitative;
         weeklyDataHistory = data.weeklyHistory || []; 
+        univChangeRemaining = data.univChangeRemaining !== undefined ? data.univChangeRemaining : 30;
         
         // 대학 매핑 빌드
         if (typeof buildUnivMap === 'function') buildUnivMap();
@@ -632,6 +634,40 @@ function initUnivGrid() {
     }
 }
 
+function updateQuotaUI() {
+    const container = document.getElementById('univQuotaContainer');
+    if (!container) return;
+
+    if (currentUserTier === 'standard' || currentUserTier === 'pro') {
+        container.innerHTML = `
+            <div class="quota-info-box" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;">
+                <span><i class="fas fa-check-circle"></i> Standard/Pro 멤버십 혜택</span>
+                <span style="font-weight:bold;">목표대학 무제한 변경 가능</span>
+            </div>`;
+        return;
+    }
+
+    // Basic, Free 유저
+    const isWarning = univChangeRemaining < 5;
+    let html = `
+        <div class="quota-info-box ${isWarning ? 'warning' : ''}">
+            <span><i class="fas fa-ticket-alt"></i> 목표대학 변경 가능 횟수 (슬롯 당 1회 차감)</span>
+            <span>남은 횟수: <span class="remain-count">${univChangeRemaining}</span> / 30회</span>
+        </div>`;
+
+    if (isWarning) {
+        html += `
+        <div class="upgrade-promo-banner">
+            <p>
+                ⚠️ <strong>남은 횟수가 ${univChangeRemaining}회 뿐입니다!</strong><br>
+                Standard 멤버십으로 업그레이드하고 <strong>무제한 대학 분석</strong>을 이용해보세요.
+            </p>
+            <button class="upgrade-btn-small" onclick="location.href='/payment'">멤버십 알아보기</button>
+        </div>`;
+    }
+    container.innerHTML = html;
+}
+
 function openUnivSelectModal(index) {
     currentSlotIndex = index;
     const modal = document.getElementById('univSelectModal');
@@ -695,20 +731,23 @@ function selectComplete(univ, major) {
 }
 
 async function saveTargetUnivs() {
-    // if(!confirm("저장하면 2주 동안 수정할 수 없습니다.\n정말 저장하시겠습니까?")) return;
-    
+    // 저장 확인 메시지만 티어별로 다르게 출력
+    if (currentUserTier === 'free' || currentUserTier === 'basic') {
+        if(!confirm("목표 대학을 저장하시겠습니까?\n(변경된 대학 수만큼 남은 횟수에서 차감됩니다.)")) return;
+    } else {
+        if(!confirm("목표 대학을 저장하시겠습니까?")) return;
+    }
+
     const newUnivs = [...userTargetUnivs]; 
     const nowISO = new Date().toISOString();
-    const tierLimits = { 'basic': 2, 'standard': 4, 'pro': 6};
-    const limit = tierLimits[currentUserTier] || 2;
     
+    // 무조건 6칸 채워서 보내기
     while(newUnivs.length < 6) newUnivs.push(null);
-    for(let i=0; i<limit; i++) {
-        const currentData = userTargetUnivs[i];
-        if (currentData && currentData.univ && currentData.major) { 
-            if (!currentData.date) currentData.date = nowISO; 
+    for(let i = 0; i < 6; i++) {
+        if (newUnivs[i] && newUnivs[i].univ && newUnivs[i].major) { 
+            if (!newUnivs[i].date) newUnivs[i].date = nowISO; 
         } else { 
-            userTargetUnivs[i] = null; 
+            newUnivs[i] = null; 
         }
     }
     
@@ -719,17 +758,23 @@ async function saveTargetUnivs() {
         const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'update_target_univs', userId: userId, data: userTargetUnivs })
+            body: JSON.stringify({ type: 'update_target_univs', userId: userId, data: newUnivs })
         });
+        
+        const resData = await response.json();
+        
         if(response.ok) { 
-            alert("저장되었습니다."); 
+            const msg = resData.changedCount > 0 
+                ? `저장되었습니다. (차감 횟수: ${resData.changedCount}회, 남은 횟수: ${resData.remainCount}회)` 
+                : "저장되었습니다. (변경된 내용 없음)";
+            alert(msg); 
             location.reload(); 
         } else { 
-            throw new Error("저장 실패"); 
+            // 서버에서 "횟수 부족" 400 에러를 던지면 여기서 잡힘
+            throw new Error(resData.error || "저장 실패"); 
         }
     } catch(e) { 
-        console.error(e); 
-        alert("통신 오류 발생"); 
+        alert(e.message || "통신 오류 발생"); 
     }
 }
 

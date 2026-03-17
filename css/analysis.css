@@ -104,6 +104,30 @@
 .univ-sub-header h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: #1e293b; }
 .univ-sub-header p { margin: 0; font-size: 0.9rem; color: #64748b; }
 
+/* --- 목표대학 횟수 차감 및 업그레이드 배너 --- */
+.quota-info-box {
+    background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px 16px;
+    border-radius: 8px; display: flex; justify-content: space-between; 
+    align-items: center; margin-bottom: 15px; font-size: 0.95rem; color: #334155;
+}
+.quota-info-box .remain-count { font-weight: 900; color: #2563eb; font-size: 1.1rem; }
+.quota-info-box.warning .remain-count { color: #ef4444; }
+
+.upgrade-promo-banner {
+    background: linear-gradient(135deg, #eff6ff, #dbeafe); border: 1px solid #bfdbfe;
+    padding: 15px 20px; border-radius: 8px; margin-bottom: 15px; 
+    display: flex; align-items: center; justify-content: space-between;
+    animation: fadeIn 0.3s ease-in-out;
+}
+.upgrade-promo-banner p { margin: 0; color: #1e3a8a; font-size: 0.9rem; line-height: 1.5; }
+.upgrade-promo-banner strong { color: #1d4ed8; }
+.upgrade-btn-small {
+    background: #2563eb; color: white; padding: 10px 16px; border-radius: 6px;
+    font-size: 0.85rem; font-weight: bold; border: none; cursor: pointer; 
+    white-space: nowrap; margin-left: 15px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);
+}
+.upgrade-btn-small:hover { background: #1d4ed8; transform: translateY(-1px); }
+
 /* 대학 슬롯 그리드 */
 .univ-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
 .univ-slot { border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; background: #f8fafc; position: relative; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
