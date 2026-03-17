@@ -198,6 +198,8 @@ async function fetchUserData(userId) {
         weeklyDataHistory = data.weeklyHistory || []; 
         univChangeRemaining = data.univChangeRemaining !== undefined ? data.univChangeRemaining : 30;
         
+        updateQuotaUI();
+        
         // 대학 매핑 빌드
         if (typeof buildUnivMap === 'function') buildUnivMap();
         
@@ -646,22 +648,30 @@ function updateQuotaUI() {
     }
 
     // Basic, Free 유저 처리
-    const isWarning = univChangeRemaining < 10; // 10회 미만일 때 경고
-    const isZero = univChangeRemaining <= 0;    // 0회 소진 상태
+    const isWarning = univChangeRemaining < 10; // 10회 미만: 색상 위기감 조성
+    const isUpsell = univChangeRemaining <= 5;  // 5회 이하: 업셀링 배너 노출
+    const isZero = univChangeRemaining <= 0;    // 0회: 소진 및 경고 극대화
 
-    // 배경색과 테두리 색상으로 위기감 조성
+    // 배경색과 텍스트 색상 분기
     let boxStyle = '';
-    if (isZero) boxStyle = 'background:#fef2f2; border-color:#fecaca;';
-    else if (isWarning) boxStyle = 'background:#fff7ed; border-color:#fed7aa;';
+    let textColor = '#2563eb'; // 기본 파란색
+    
+    if (isZero) {
+        boxStyle = 'background:#fef2f2; border-color:#fecaca;';
+        textColor = '#ef4444'; // 빨간색
+    } else if (isWarning) {
+        boxStyle = 'background:#fff7ed; border-color:#fed7aa;';
+        textColor = '#ea580c'; // 주황색
+    }
 
     let html = `
-        <div class="quota-info-box ${isWarning ? 'warning' : ''}" style="${boxStyle}">
+        <div class="quota-info-box" style="${boxStyle}">
             <span><i class="fas fa-ticket-alt"></i> 목표대학 설정 잔여 횟수</span>
-            <span><strong class="remain-count" style="font-size: 1.2rem; ${isWarning ? 'color:#ef4444;' : 'color:#2563eb;'}">${univChangeRemaining}</strong> / 30회</span>
+            <span><strong class="remain-count" style="font-size: 1.2rem; color:${textColor};">${univChangeRemaining}</strong> / 30회</span>
         </div>`;
 
-    // 10회 미만부터 업셀링 배너 표시
-    if (isWarning) {
+    // 5회 이하부터 업셀링 배너 렌더링
+    if (isUpsell) {
         html += `
         <div class="upgrade-promo-banner" style="${isZero ? 'border-color:#ef4444; background:#fef2f2;' : 'border-color:#fb923c; background:#fffaf0;'}">
             <p>
