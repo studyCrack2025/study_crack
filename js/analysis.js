@@ -573,69 +573,68 @@ async function downloadMbtiReport() {
 // ============================================================
 // [기능 1] 목표대학 설정
 // ============================================================
+// 1. 기존 initUnivGrid() 함수 전체를 아래 코드로 교체하세요.
 function initUnivGrid() {
     const grid = document.getElementById('univGrid');
     if(!grid) return;
     
     grid.innerHTML = ''; 
-    const tierLimits = { 'basic': 2, 'standard': 4, 'pro': 6};
-    const limit = tierLimits[currentUserTier] || 2;
-    const now = new Date();
+    
+    const isQuotaZero = (currentUserTier === 'free' || currentUserTier === 'basic') && (univChangeRemaining <= 0);
 
     for (let i = 0; i < 6; i++) {
-        const isActive = i < limit;
         const savedData = userTargetUnivs[i] || { univ: '', major: '', date: null };
         const slotDiv = document.createElement('div');
         
-        if (isActive) {
-            slotDiv.className = 'univ-slot';
-            let isLocked = false;
-            let dateMsg = '';
-            
-            if (savedData.date) {
-                const savedDate = new Date(savedData.date);
-                const unlockDate = new Date(savedDate);
-                unlockDate.setDate(unlockDate.getDate() + 14);
-                // if (now < unlockDate) { 
-                //     isLocked = true; 
-                //     dateMsg = `🔒 ${unlockDate.getMonth()+1}월 ${unlockDate.getDate()}일 이후 수정 가능`; 
-                // }
-            }
-            
-            // [보안] 대학명/학과명 이스케이프 적용
-            const safeUniv = escapeHtml(savedData.univ);
-            const safeMajor = escapeHtml(savedData.major);
+        slotDiv.className = 'univ-slot';
+        slotDiv.style.position = 'relative'; // 삭제 버튼 위치 조정을 위해 필수
+        
+        const safeUniv = escapeHtml(savedData.univ);
+        const safeMajor = escapeHtml(savedData.major);
+        const hasData = !!(savedData.univ && savedData.major); // 데이터 존재 여부
+        
+        const btnText = hasData
+            ? `<strong>${safeUniv}</strong><br><small>${safeMajor}</small>` 
+            : `<span class="placeholder">대학 및 학과를 선택하세요</span>`;
+        
+        // 횟수가 0이면 대학 변경(클릭)만 막음 (삭제는 가능)
+        const clickHandler = isQuotaZero ? '' : `openUnivSelectModal(${i})`;
+        const cursorStyle = isQuotaZero ? 'cursor:not-allowed; opacity:0.8; background-color:#f1f5f9;' : '';
+        const iconHtml = isQuotaZero ? '<i class="fas fa-lock" style="color:#ef4444;"></i>' : '<i class="fas fa-chevron-right"></i>';
 
-            const btnText = (savedData.univ && savedData.major) 
-                ? `<strong>${safeUniv}</strong><br><small>${safeMajor}</small>` 
-                : `<span class="placeholder">대학 및 학과를 선택하세요</span>`;
-            
-            const clickHandler = isLocked ? '' : `openUnivSelectModal(${i})`;
-            const disabledAttr = isLocked ? 'disabled' : '';
-            const cursorStyle = isLocked ? 'background-color:#f3f4f6; cursor:not-allowed;' : '';
-            const iconHtml = isLocked ? '<i class="fas fa-lock" style="color:#ef4444;"></i>' : '<i class="fas fa-chevron-right"></i>';
-            const msgHtml = isLocked ? `<span class="slot-msg">${dateMsg}</span>` : '';
+        // 대학이 설정되어 있을 때만 '삭제' 버튼 표시
+        const deleteBtnHtml = hasData 
+            ? `<button class="univ-delete-btn" onclick="clearUnivSlot(${i})" title="대학 삭제"><i class="fas fa-times"></i></button>` 
+            : '';
 
-            slotDiv.innerHTML = `
-                <label>지망 ${i+1}</label>
-                <button type="button" class="univ-select-btn" onclick="${clickHandler}" ${disabledAttr} style="${cursorStyle}">
-                    <div>${btnText}</div>
-                    ${iconHtml}
-                </button>
-                ${msgHtml}
-            `;
-            grid.appendChild(slotDiv);
-        } else {
-            let requiredTier = (i < 4) ? 'Standard' : 'PRO';
-            slotDiv.className = 'univ-slot locked-tier';
-            slotDiv.setAttribute('data-msg', `${requiredTier} 이상`);
-            grid.appendChild(slotDiv);
-        }
+        slotDiv.innerHTML = `
+            <label>지망 ${i+1}</label>
+            ${deleteBtnHtml}
+            <button type="button" class="univ-select-btn" onclick="${clickHandler}" style="${cursorStyle}" ${isQuotaZero ? 'disabled' : ''}>
+                <div style="text-align: left;">${btnText}</div>
+                ${iconHtml}
+            </button>
+        `;
+        grid.appendChild(slotDiv);
     }
 }
 
+function clearUnivSlot(index) {
+    const isBasic = (currentUserTier === 'free' || currentUserTier === 'basic');
+    const msg = isBasic 
+        ? `${index + 1}지망 대학을 삭제하시겠습니까?\n(대학을 삭제하는 것은 횟수가 차감되지 않습니다.\n삭제 후 하단의 '저장하기'를 눌러야 반영됩니다.)`
+        : `${index + 1}지망 대학을 삭제하시겠습니까?\n(삭제 후 하단의 '저장하기'를 눌러야 반영됩니다.)`;
+
+    if (confirm(msg)) {
+        userTargetUnivs[index] = null; // 해당 슬롯 비우기
+        initUnivGrid(); // 화면 즉시 다시 그리기
+    }
+}
+
+// 횟수 상태를 화면에 그려주는 함수 (0회일 때 버튼 잠금 포함)
 function updateQuotaUI() {
     const container = document.getElementById('univQuotaContainer');
+    const saveBtn = document.getElementById('btnSaveTarget');
     if (!container) return;
 
     if (currentUserTier === 'standard' || currentUserTier === 'pro') {
@@ -644,28 +643,52 @@ function updateQuotaUI() {
                 <span><i class="fas fa-check-circle"></i> Standard/Pro 멤버십 혜택</span>
                 <span style="font-weight:bold;">목표대학 무제한 변경 가능</span>
             </div>`;
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerText = "목표 대학 저장하기";
+            saveBtn.style.backgroundColor = "";
+            saveBtn.style.cursor = "";
+        }
         return;
     }
 
-    // Basic, Free 유저
-    const isWarning = univChangeRemaining < 5;
+    // Basic, Free 유저 처리
+    const isWarning = univChangeRemaining <= 5; // 5회 이하부터 경고 및 배너
+    const isZero = univChangeRemaining <= 0;    // 0회 소진 상태
+
     let html = `
-        <div class="quota-info-box ${isWarning ? 'warning' : ''}">
+        <div class="quota-info-box ${isWarning ? 'warning' : ''}" style="${isZero ? 'background:#fef2f2; border-color:#fecaca;' : ''}">
             <span><i class="fas fa-ticket-alt"></i> 목표대학 변경 가능 횟수 (슬롯 당 1회 차감)</span>
             <span>남은 횟수: <span class="remain-count">${univChangeRemaining}</span> / 30회</span>
         </div>`;
 
+    // 5회 이하 남았을 때 업셀링 배너 표시
     if (isWarning) {
         html += `
-        <div class="upgrade-promo-banner">
+        <div class="upgrade-promo-banner" style="${isZero ? 'border-color:#ef4444; background:#fef2f2;' : ''}">
             <p>
-                ⚠️ <strong>남은 횟수가 ${univChangeRemaining}회 뿐입니다!</strong><br>
+                ${isZero ? '⛔ <strong>목표대학 변경 횟수가 모두 소진되었습니다!</strong>' : `⚠️ <strong>남은 횟수가 ${univChangeRemaining}회 뿐입니다!</strong>`}<br>
                 Standard 멤버십으로 업그레이드하고 <strong>무제한 대학 분석</strong>을 이용해보세요.
             </p>
-            <button class="upgrade-btn-small" onclick="location.href='/payment'">멤버십 알아보기</button>
+            <button class="upgrade-btn-small" style="${isZero ? 'background:#ef4444;' : ''}" onclick="location.href='/payment'">멤버십 알아보기</button>
         </div>`;
     }
     container.innerHTML = html;
+
+    // 횟수가 0이면 저장 버튼 완전히 비활성화
+    if (saveBtn) {
+        if (isZero) {
+            saveBtn.disabled = true;
+            saveBtn.innerText = "변경 횟수 소진됨";
+            saveBtn.style.backgroundColor = "#cbd5e1";
+            saveBtn.style.cursor = "not-allowed";
+        } else {
+            saveBtn.disabled = false;
+            saveBtn.innerText = "목표 대학 저장하기";
+            saveBtn.style.backgroundColor = "";
+            saveBtn.style.cursor = "";
+        }
+    }
 }
 
 function openUnivSelectModal(index) {

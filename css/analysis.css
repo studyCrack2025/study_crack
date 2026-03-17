@@ -137,6 +137,10 @@
 .univ-select-btn:hover { border-color: #2563EB; color: #2563EB; }
 .univ-select-btn span.placeholder { color: #94a3b8; }
 
+/* --- 목표대학 슬롯 삭제 버튼 --- */
+.univ-delete-btn { position: absolute; top: 12px; right: 12px; background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.75rem; transition: all 0.2s ease; z-index: 10; }
+.univ-delete-btn:hover { background: #ef4444; color: white; transform: scale(1.1); }
+
 /* 잠긴 슬롯 스타일 */
 .univ-slot.locked-tier { background: #f1f5f9; opacity: 0.6; pointer-events: none; justify-content: center; align-items: center; border: 1px dashed #cbd5e1; min-height: 100px; }
 .univ-slot.locked-tier::after { content: attr(data-msg); color: #94a3b8; font-weight: bold; font-size: 0.9rem; }
