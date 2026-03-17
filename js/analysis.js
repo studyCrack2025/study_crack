@@ -631,64 +631,48 @@ function clearUnivSlot(index) {
     }
 }
 
-// 횟수 상태를 화면에 그려주는 함수 (0회일 때 버튼 잠금 포함)
+// 횟수 상태를 화면에 그려주는 함수
 function updateQuotaUI() {
     const container = document.getElementById('univQuotaContainer');
-    const saveBtn = document.getElementById('btnSaveTarget');
     if (!container) return;
 
     if (currentUserTier === 'standard' || currentUserTier === 'pro') {
         container.innerHTML = `
             <div class="quota-info-box" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;">
                 <span><i class="fas fa-check-circle"></i> Standard/Pro 멤버십 혜택</span>
-                <span style="font-weight:bold;">목표대학 무제한 변경 가능</span>
+                <span style="font-weight:bold;">목표대학 무제한 설정 가능</span>
             </div>`;
-        if (saveBtn) {
-            saveBtn.disabled = false;
-            saveBtn.innerText = "목표 대학 저장하기";
-            saveBtn.style.backgroundColor = "";
-            saveBtn.style.cursor = "";
-        }
         return;
     }
 
     // Basic, Free 유저 처리
-    const isWarning = univChangeRemaining <= 5; // 5회 이하부터 경고 및 배너
+    const isWarning = univChangeRemaining < 10; // 10회 미만일 때 경고
     const isZero = univChangeRemaining <= 0;    // 0회 소진 상태
 
+    // 배경색과 테두리 색상으로 위기감 조성
+    let boxStyle = '';
+    if (isZero) boxStyle = 'background:#fef2f2; border-color:#fecaca;';
+    else if (isWarning) boxStyle = 'background:#fff7ed; border-color:#fed7aa;';
+
     let html = `
-        <div class="quota-info-box ${isWarning ? 'warning' : ''}" style="${isZero ? 'background:#fef2f2; border-color:#fecaca;' : ''}">
-            <span><i class="fas fa-ticket-alt"></i> 목표대학 변경 가능 횟수 (슬롯 당 1회 차감)</span>
-            <span>남은 횟수: <span class="remain-count">${univChangeRemaining}</span> / 30회</span>
+        <div class="quota-info-box ${isWarning ? 'warning' : ''}" style="${boxStyle}">
+            <span><i class="fas fa-ticket-alt"></i> 목표대학 설정 잔여 횟수</span>
+            <span><strong class="remain-count" style="font-size: 1.2rem; ${isWarning ? 'color:#ef4444;' : 'color:#2563eb;'}">${univChangeRemaining}</strong> / 30회</span>
         </div>`;
 
-    // 5회 이하 남았을 때 업셀링 배너 표시
+    // 10회 미만부터 업셀링 배너 표시
     if (isWarning) {
         html += `
-        <div class="upgrade-promo-banner" style="${isZero ? 'border-color:#ef4444; background:#fef2f2;' : ''}">
+        <div class="upgrade-promo-banner" style="${isZero ? 'border-color:#ef4444; background:#fef2f2;' : 'border-color:#fb923c; background:#fffaf0;'}">
             <p>
-                ${isZero ? '⛔ <strong>목표대학 변경 횟수가 모두 소진되었습니다!</strong>' : `⚠️ <strong>남은 횟수가 ${univChangeRemaining}회 뿐입니다!</strong>`}<br>
+                ${isZero ? '⛔ <strong>목표대학 설정 횟수가 모두 소진되었습니다!</strong>' : `⚠️ <strong>설정 가능 횟수가 ${univChangeRemaining}회밖에 남지 않았습니다!</strong>`}<br>
                 Standard 멤버십으로 업그레이드하고 <strong>무제한 대학 분석</strong>을 이용해보세요.
             </p>
-            <button class="upgrade-btn-small" style="${isZero ? 'background:#ef4444;' : ''}" onclick="location.href='/payment'">멤버십 알아보기</button>
+            <button class="upgrade-btn-small" style="${isZero ? 'background:#ef4444;' : 'background:#ea580c;'}" onclick="location.href='/payment'">멤버십 알아보기</button>
         </div>`;
     }
+    
     container.innerHTML = html;
-
-    // 횟수가 0이면 저장 버튼 완전히 비활성화
-    if (saveBtn) {
-        if (isZero) {
-            saveBtn.disabled = true;
-            saveBtn.innerText = "변경 횟수 소진됨";
-            saveBtn.style.backgroundColor = "#cbd5e1";
-            saveBtn.style.cursor = "not-allowed";
-        } else {
-            saveBtn.disabled = false;
-            saveBtn.innerText = "목표 대학 저장하기";
-            saveBtn.style.backgroundColor = "";
-            saveBtn.style.cursor = "";
-        }
-    }
 }
 
 function openUnivSelectModal(index) {
@@ -1013,16 +997,35 @@ let currentSimChartType = 'bar'; // 'bar' or 'line'
 let cachedSimData = [];
 let selectedSimIndex = null; // 현재 선택된 대학 인덱스
 
-// 1. 초기화 (체크박스 생성 X, 바로 데이터 로드)
+// 1. 초기화
 function initSimulation() {
     if (currentUserTier === 'free') {
         return;
     }
     
-    // 목표 대학이 없으면 안내 표시
+    const chartArea = document.getElementById('simChartArea');
+    if (!userQuantData || Object.keys(userQuantData).length === 0) {
+        chartArea.innerHTML = 
+            `<div style="width:100%; height:100%; min-height: 200px; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px; color:#94a3b8;">
+                <i class="fas fa-exclamation-circle fa-2x" style="color:#cbd5e1;"></i>
+                <span style="font-weight:600;">성적 데이터를 먼저 입력해야 시뮬레이션을 실행할 수 있습니다.</span>
+            </div>`;
+        return;
+    }
+    
+    if (!currentExamMode || !userQuantData[currentExamMode]) {
+        const availableExams = Object.keys(userQuantData).filter(k => userQuantData[k] && (userQuantData[k].kor || userQuantData[k].math || userQuantData[k].eng));
+        if (availableExams.length > 0) {
+            currentExamMode = availableExams[0];
+        } else {
+            chartArea.innerHTML = `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8;">유효한 성적 데이터가 없습니다.</div>`;
+            return;
+        }
+    }
+
     const validTargets = userTargetUnivs ? userTargetUnivs.filter(t => t && t.univ) : [];
     if (validTargets.length === 0) {
-        document.getElementById('simChartArea').innerHTML = 
+        chartArea.innerHTML = 
             `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8;">목표 대학을 먼저 설정해주세요.</div>`;
         return;
     }
