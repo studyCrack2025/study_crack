@@ -1170,12 +1170,14 @@ function renderSimChart() {
         </div>
     `;
 
-    // 🚀 [추가] 막대그래프 확장(흰색) 전용 CSS (파란색 간섭 100% 차단)
+    // 막대그래프 확장(흰색) 및 모바일 터치 깜빡임 방지 전용 CSS
     if (!document.getElementById('simExtensionStyle')) {
         const style = document.createElement('style');
         style.id = 'simExtensionStyle';
         style.innerHTML = `
             .sim-extension-bar { width: 40px; background: #ffffff !important; border: 2px dashed #f59e0b; border-bottom: none; border-radius: 6px 6px 0 0; box-sizing: border-box; pointer-events: none; z-index: 2; position: absolute; }
+            /* 🚀 모바일 터치 시 발생하는 회색 음영 깜빡임 완벽 제거 */
+            .sim-bar-item, .sim-label-item { -webkit-tap-highlight-color: transparent; }
             @media (max-width: 768px) { .sim-extension-bar { width: 28px; } }
         `;
         document.head.appendChild(style);
@@ -1187,124 +1189,126 @@ function renderSimChart() {
     if (currentSimChartType === 'bar') {
         simSvgRefs = null;
 
-        // 🚀 [핵심 수정] 빈 껍데기를 화면에 먼저 붙이지 않고, 메모리에서 모두 완성한 뒤 붙입니다.
-        const wrapper = document.createElement('div');
-        wrapper.className = 'chart-inner-container';
-        wrapper.style.height = 'auto'; 
-        wrapper.style.minHeight = '360px';
+        // 🚀 [핵심] DOM이 없을 때만 딱 한 번 HTML을 생성! (클릭 시 새로고침 깜빡임 방지)
+        if (!document.getElementById('simBarWrapper')) {
+            container.innerHTML = ''; 
+            container.style.overflow = 'visible';
 
-        wrapper.insertAdjacentHTML('beforeend', getBadgeHTML());
-        
-        const graphArea = document.createElement('div');
-        graphArea.className = 'chart-graph-area';
-        
-        const labelArea = document.createElement('div');
-        labelArea.className = 'chart-label-area';
+            const wrapper = document.createElement('div');
+            wrapper.id = 'simBarWrapper';
+            wrapper.className = 'chart-inner-container';
+            wrapper.style.height = 'auto'; 
+            wrapper.style.minHeight = '360px';
 
-        const isMobile = window.innerWidth <= 768;
-        const MAX_SCORE = 250; 
-
-        if (isMobile) {
-            graphArea.style.padding = '40px 15px 0 15px';
-            graphArea.style.height = '240px'; 
-        } else {
-            graphArea.style.padding = '50px 60px 0 20px';
-            graphArea.style.height = '310px'; 
-        }
-        graphArea.style.paddingBottom = '0';
-
-        // 🚀 HTML 텍스트를 담을 변수 (여기다 다 모은 뒤 한 번에 삽입)
-        let graphHtml = '';
-        let labelHtml = '';
-
-        const guideStyle100 = `bottom: ${(100 / MAX_SCORE) * 100}%;`;
-        const guideStyle150 = `bottom: ${(150 / MAX_SCORE) * 100}%;`;
-        
-        graphHtml += `<div class="chart-guide-line guide-100" style="${guideStyle100}"><span class="chart-guide-label">합격(100)</span></div>`;
-        graphHtml += `<div class="chart-guide-line guide-150" style="${guideStyle150}"><span class="chart-guide-label">안정(150)</span></div>`;
-
-        cachedSimData.forEach((item, index) => {
-            const score = item.base_ui_score;
-            const currentHeightPct = `${(score / MAX_SCORE) * 100}%`;
+            wrapper.insertAdjacentHTML('beforeend', getBadgeHTML());
             
-            let color = '#ef4444'; 
-            if (score >= 150) color = '#10b981'; 
-            else if (score >= 100) color = '#3b82f6';
-
-            const isActive = (index === selectedSimIndex) ? 'active' : '';
-            const safeScore = Math.round(score);
-            const shortUniv = item.univ.replace('학교', '');
-
-            let extensionHtml = '';
-            let mainBarRadius = '6px 6px 0 0'; 
-            let showOriginalLabel = true;
-            let maxRise = 0;
+            const graphArea = document.createElement('div');
+            graphArea.className = 'chart-graph-area';
             
-            if (item.sim_data) {
-                Object.values(item.sim_data).forEach(sub => { if (sub && sub.uiDiff > maxRise) maxRise = sub.uiDiff; });
+            const labelArea = document.createElement('div');
+            labelArea.className = 'chart-label-area';
+
+            const isMobile = window.innerWidth <= 768;
+            const MAX_SCORE = 250; 
+
+            // 🚀 [스케일 픽스] padding-top을 완전히 제거하고 margin-top 적용. 
+            // 이로써 막대의 %와 점선의 %가 완벽히 동일한 좌표계를 공유하게 됨
+            if (isMobile) {
+                graphArea.style.padding = '0 15px'; // top, bottom 패딩 0
+                graphArea.style.marginTop = '40px'; 
+                graphArea.style.height = '200px'; 
+            } else {
+                graphArea.style.padding = '0 60px 0 20px'; // top, bottom 패딩 0
+                graphArea.style.marginTop = '50px'; 
+                graphArea.style.height = '260px'; 
             }
 
-            if (isActive && maxRise > 0 && score < MAX_SCORE) {
-                const potentialScore = Math.min(score + maxRise, MAX_SCORE);
-                const riseAmount = potentialScore - score; 
+            let graphHtml = '';
+            let labelHtml = '';
+
+            const guideStyle100 = `bottom: ${(100 / MAX_SCORE) * 100}%;`;
+            const guideStyle150 = `bottom: ${(150 / MAX_SCORE) * 100}%;`;
+            
+            graphHtml += `<div class="chart-guide-line guide-100" style="${guideStyle100}"><span class="chart-guide-label">합격(100)</span></div>`;
+            graphHtml += `<div class="chart-guide-line guide-150" style="${guideStyle150}"><span class="chart-guide-label">안정(150)</span></div>`;
+
+            cachedSimData.forEach((item, index) => {
+                const score = item.base_ui_score;
+                const currentHeightPct = `${(score / MAX_SCORE) * 100}%`;
                 
-                const riseHeightPct = `${(riseAmount / MAX_SCORE) * 100}%`;
-                mainBarRadius = '0 0 0 0'; 
-                showOriginalLabel = false; 
+                let color = '#ef4444'; 
+                if (score >= 150) color = '#10b981'; 
+                else if (score >= 100) color = '#3b82f6';
+
+                const safeScore = Math.round(score);
+                const shortUniv = item.univ.replace('학교', '');
+
+                let extensionHtml = '';
+                let maxRise = 0;
                 
-                extensionHtml = `
-                    <div class="sim-extension-bar" style="bottom:${currentHeightPct}; height:${riseHeightPct};">
-                         <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">
-                            ${Math.round(potentialScore)} <span style="font-size:0.7rem;">(+${maxRise.toFixed(1)})</span>
-                         </span>
+                if (item.sim_data) {
+                    Object.values(item.sim_data).forEach(sub => { if (sub && sub.uiDiff > maxRise) maxRise = sub.uiDiff; });
+                }
+
+                // 🚀 클릭 안해도 상승분(주황선) HTML은 미리 다 그려두되, display:none으로 숨겨둠
+                if (maxRise > 0 && score < MAX_SCORE) {
+                    const potentialScore = Math.min(score + maxRise, MAX_SCORE);
+                    const riseAmount = potentialScore - score; 
+                    const riseHeightPct = `${(riseAmount / MAX_SCORE) * 100}%`;
+                    
+                    extensionHtml = `
+                        <div class="sim-extension-bar" style="bottom:${currentHeightPct}; height:${riseHeightPct}; display:none;">
+                             <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">
+                                ${Math.round(potentialScore)} <span style="font-size:0.7rem;">(+${maxRise.toFixed(1)})</span>
+                             </span>
+                        </div>
+                    `;
+                }
+
+                graphHtml += `
+                    <div class="sim-bar-item" onclick="selectSimUniv(${index})">
+                        <div style="position:relative; height:100%; width:100%; display:flex; justify-content:center;">
+                            <div class="sim-bar" style="position:absolute; bottom:0; height:${currentHeightPct}; background:${color}; border-radius:6px 6px 0 0; z-index:1;">
+                                <span class="sim-score-label">${safeScore}</span>
+                            </div>
+                            ${extensionHtml}
+                        </div>
                     </div>
                 `;
-            }
 
-            // 🚀 모바일 터치 시 회색 박스 생기는 현상 방지 (-webkit-tap-highlight-color)
-            graphHtml += `
-                <div class="sim-bar-item ${isActive}" onclick="selectSimUniv(${index})" style="-webkit-tap-highlight-color: transparent;">
-                    <div style="position:relative; height:100%; width:100%; display:flex; justify-content:center;">
-                        <div class="sim-bar" style="position:absolute; bottom:0; height:${currentHeightPct}; background:${color}; border-radius:${mainBarRadius}; z-index:1;">
-                            <span class="sim-score-label" style="${showOriginalLabel ? '' : 'display:none;'}">${safeScore}</span>
-                        </div>
-                        ${extensionHtml}
+                labelHtml += `
+                    <div class="sim-label-item" onclick="selectSimUniv(${index})">
+                        <span class="label-mobile">${index + 1}지망</span>
+                        <span class="label-pc">
+                            <strong>${index + 1}지망</strong><br>${shortUniv}<br>${item.major}
+                        </span>
                     </div>
+                `;
+            });
+
+            graphArea.innerHTML = graphHtml;
+            labelArea.innerHTML = labelHtml;
+
+            wrapper.appendChild(graphArea);
+            wrapper.appendChild(labelArea);
+
+            const mobileLegendDiv = document.createElement('div');
+            mobileLegendDiv.className = 'mobile-legend-area';
+            mobileLegendDiv.innerHTML = `
+                <div class="mobile-legend-item">
+                    <div style="width:12px; height:2px; background:#10b981; margin-right:4px;"></div> 안정(150)
+                </div>
+                <div class="mobile-legend-item">
+                    <div style="width:12px; height:2px; background:#3b82f6; margin-right:4px;"></div> 합격(100)
                 </div>
             `;
 
-            labelHtml += `
-                <div class="sim-label-item" onclick="selectSimUniv(${index})" style="-webkit-tap-highlight-color: transparent;">
-                    <span class="label-mobile">${index + 1}지망</span>
-                    <span class="label-pc">
-                        <strong>${index + 1}지망</strong><br>${shortUniv}<br>${item.major}
-                    </span>
-                </div>
-            `;
-        });
-
-        // 🚀 다 모아진 HTML을 단 한 번만 주입
-        graphArea.innerHTML = graphHtml;
-        labelArea.innerHTML = labelHtml;
-
-        wrapper.appendChild(graphArea);
-        wrapper.appendChild(labelArea);
-
-        const mobileLegendDiv = document.createElement('div');
-        mobileLegendDiv.className = 'mobile-legend-area';
-        mobileLegendDiv.innerHTML = `
-            <div class="mobile-legend-item">
-                <div style="width:12px; height:2px; background:#10b981; margin-right:4px;"></div> 안정(150)
-            </div>
-            <div class="mobile-legend-item">
-                <div style="width:12px; height:2px; background:#3b82f6; margin-right:4px;"></div> 합격(100)
-            </div>
-        `;
-
-        // 화면 갱신 (여기서 찰나의 깜빡임 없이 통째로 부드럽게 교체됨)
-        container.innerHTML = ''; 
-        container.appendChild(wrapper);
-        container.appendChild(mobileLegendDiv);
+            container.appendChild(wrapper);
+            container.appendChild(mobileLegendDiv);
+        }
+        
+        // 🚀 클릭 시 전체를 렌더링하지 않고, 이 헬퍼 함수를 통해 속성만 변경 (새로고침 현상 원천 차단)
+        updateSimBarGraph(selectedSimIndex || 0);
     }
     // ==================================================================================
     // [TYPE: LINE] 꺾은선 그래프
@@ -1337,6 +1341,33 @@ function renderSimChart() {
     }
     
     renderDetailedSimCard();
+}
+
+// 막대를 클릭할 때 DOM을 부수지 않고 디자인만 매끄럽게 교체합니다.
+function updateSimBarGraph(idx) {
+    const items = document.querySelectorAll('.sim-bar-item');
+    
+    items.forEach((item, i) => {
+        const extBar = item.querySelector('.sim-extension-bar');
+        const mainBar = item.querySelector('.sim-bar');
+        const scoreLabel = item.querySelector('.sim-score-label');
+        
+        if (i === idx) {
+            item.classList.add('active');
+            if (extBar) {
+                extBar.style.display = 'block'; // 숨겨둔 주황선 노출
+                if (mainBar) mainBar.style.borderRadius = '0 0 0 0'; // 모서리 직각으로
+                if (scoreLabel) scoreLabel.style.display = 'none'; // 점수 텍스트 숨김
+            }
+        } else {
+            item.classList.remove('active');
+            if (extBar) {
+                extBar.style.display = 'none'; // 주황선 숨김
+            }
+            if (mainBar) mainBar.style.borderRadius = '6px 6px 0 0';
+            if (scoreLabel) scoreLabel.style.display = '';
+        }
+    });
 }
 
 // [헬퍼 1] SVG 구조 생성
@@ -1605,7 +1636,19 @@ function updateSimLineGraph(idx) {
 // 5. 대학 선택 시 동작
 function selectSimUniv(index) {
     selectedSimIndex = index;
-    renderSimChart(); // 차트 다시 그려서 active 클래스 갱신
+    if (currentSimChartType === 'bar') {
+        updateSimBarGraph(index);
+    } else if (currentSimChartType === 'line') {
+        updateSimLineGraph(index);
+        
+        // 꺾은선일 때 하단 버튼 Active 상태 부드럽게 업데이트
+        const btns = document.querySelectorAll('.sim-univ-scroll-box .univ-select-btn');
+        btns.forEach((b, idx) => {
+            if (idx === index) b.classList.add('active');
+            else b.classList.remove('active');
+        });
+    }
+    renderDetailedSimCard(); 
 }
 
 // 6. 상세 분석 카드 렌더링
