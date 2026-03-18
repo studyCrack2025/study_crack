@@ -2075,11 +2075,12 @@ function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
 
-    // 요소를 복제한 뒤 .pdf-rendering 클래스 추가
     const printNode = reportElement.cloneNode(true);
     printNode.classList.add('pdf-rendering');
 
-    // 1. 화면에 보이지 않는 투명한 iframe 생성
+    // 1. 모바일 환경 감지
+    const isMobile = window.innerWidth <= 768;
+
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
     iframe.style.left = '-9999px'; 
@@ -2089,10 +2090,24 @@ function downloadReportPDF(reportTitle) {
     iframe.style.border = 'none';
     document.body.appendChild(iframe);
 
-    // 2. 현재 사이트의 CSS를 가져오되, 로드 완료 이벤트를 추적하기 위해 스크립트로 구성
     const styleLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
         .map(link => `<link rel="stylesheet" href="${link.href}">`)
         .join('');
+
+    // 2. 모바일 전용 축소 CSS 생성
+    const mobilePrintCSS = isMobile ? `
+        body {
+            zoom: 0.7 !important; /* 웹킷 기반 브라우저 70% 축소 */
+        }
+        /* zoom이 지원되지 않는 일부 환경을 위한 Fallback */
+        @supports not (zoom: 0.7) {
+            body {
+                transform: scale(0.7);
+                transform-origin: top left;
+                width: 1462px !important; /* 1024 / 0.7 : 레이아웃 깨짐 방지 */
+            }
+        }
+    ` : '';
 
     const iframeDoc = iframe.contentWindow.document;
     iframeDoc.open();
@@ -2148,6 +2163,7 @@ function downloadReportPDF(reportTitle) {
                     width: 100% !important;
                 }
                 
+                /* PC 2단 레이아웃 강제 유지 */
                 .doc-matched-box:not(:last-child) .doc-matched-body { 
                     display: flex !important; 
                     flex-direction: row !important; 
@@ -2172,12 +2188,14 @@ function downloadReportPDF(reportTitle) {
                 }
                 
                 .doc-title { font-size: 2.2rem !important; }
+
+                /* 3. 주입된 모바일 전용 CSS 반영 */
+                ${mobilePrintCSS}
             </style>
         </head>
         <body>
             ${printNode.outerHTML}
             <script>
-                // 리소스(이미지, CSS 등)가 모두 로드된 후 인쇄 트리거
                 window.onload = function() {
                     window.focus();
                     window.print();
@@ -2188,19 +2206,17 @@ function downloadReportPDF(reportTitle) {
     `);
     iframeDoc.close();
 
-    // 3. 인쇄 대화상자가 닫히거나 인쇄가 완료된 후 iframe 정리
     iframe.contentWindow.onafterprint = function() {
         if (document.body.contains(iframe)) {
             document.body.removeChild(iframe);
         }
     };
     
-    // 만약 onafterprint를 지원하지 않는 극히 일부 브라우저를 대비한 안전망
     setTimeout(() => {
         if (document.body.contains(iframe)) {
             document.body.removeChild(iframe);
         }
-    }, 60000);
+    }, 60000); 
 }
 
 function openWeeklyCheckModal() {
