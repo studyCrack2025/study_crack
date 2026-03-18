@@ -1271,7 +1271,7 @@ function renderSimChart() {
                 
                 // 모바일/PC 반응형 너비 유지를 위해 class="sim-bar" 재사용
                 extensionHtml = `
-                    <div class="sim-bar" style="position:absolute; bottom:${currentHeightPct}; height:${riseHeightPct}; background:rgba(245, 158, 11, 0.15); border:2px dashed #f59e0b; border-bottom:none; border-radius: 6px 6px 0 0; box-sizing:border-box; pointer-events:none; z-index:2;">
+                    <div class="sim-bar" style="position:absolute; bottom:${currentHeightPct}; height:${riseHeightPct}; background:#ffffff; border:2px dashed #f59e0b; border-bottom:none; border-radius: 6px 6px 0 0; box-sizing:border-box; pointer-events:none; z-index:2;">
                          <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">
                             ${Math.round(potentialScore)} <span style="font-size:0.7rem;">(+${maxRise.toFixed(1)})</span>
                          </span>
@@ -1359,13 +1359,13 @@ function initSimSvg(targetDiv) {
     const path = document.createElementNS(ns, "path");
     path.setAttribute("class", "sim-path");
 
-    // [변경 1] 배경 요소(가이드, 선)를 먼저 붙입니다. (가장 밑에 깔림)
-    svg.appendChild(guides.g0.g);
+    svg.appendChild(guides.gBottom.g);
+    svg.appendChild(guides.gMid.g);
+    svg.appendChild(guides.gTop.g);
     svg.appendChild(guides.g100.g);
     svg.appendChild(guides.g150.g);
-    svg.appendChild(guides.g250.g);
     
-    // [변경 2] 선을 점보다 먼저 붙입니다.
+    // 선을 점보다 먼저 붙입니다.
     svg.appendChild(path);
 
     const points = [];
@@ -1380,14 +1380,13 @@ function initSimSvg(targetDiv) {
         const t = document.createElementNS(ns, "text");
         t.setAttribute("class", "sim-point-label");
         
-        // [변경 3] 이제 점을 붙이면 선 위에 그려집니다.
         svg.appendChild(c); 
         labelsGroup.appendChild(t); 
         points.push(c);
         labels.push(t);
     }
     
-    // [변경 4] 라벨(텍스트)은 가장 위에 오도록 마지막에 붙입니다.
+    // 라벨(텍스트)은 가장 위에 오도록 마지막에 붙입니다.
     svg.appendChild(labelsGroup);
     targetDiv.appendChild(svg);
 
