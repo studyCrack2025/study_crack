@@ -1842,21 +1842,21 @@ async function renderPdfToImages(pdfUrl, containerId) {
     if (!container) return;
 
     try {
+        container.classList.add('is-rendering');
+
         // PDF.js 워커 설정
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        // PDF 문서 불러오기
         const loadingTask = pdfjsLib.getDocument(pdfUrl);
         const pdf = await loadingTask.promise;
         
-        container.innerHTML = ''; // 로딩 메시지 제거
+        // 조각(Fragment)을 만들어 이미지를 모두 모은 뒤 한 번에 출력
+        const fragment = document.createDocumentFragment();
 
-        // PDF의 모든 페이지를 순회하며 이미지(img)로 변환
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
             const page = await pdf.getPage(pageNum);
-            const viewport = page.getViewport({ scale: 1.5 }); // 1.5배 고해상도 렌더링
+            const viewport = page.getViewport({ scale: 1.5 }); // 1.5배 고해상도
 
-            // 1. 임시 캔버스에 PDF 페이지 그리기
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             canvas.height = viewport.height;
@@ -1864,7 +1864,6 @@ async function renderPdfToImages(pdfUrl, containerId) {
 
             await page.render({ canvasContext: ctx, viewport: viewport }).promise;
 
-            // 2. 캔버스를 <img> 태그(Base64)로 변환 (window.print() 호환성을 위해 필수!)
             const img = document.createElement('img');
             img.src = canvas.toDataURL('image/png');
             img.style.maxWidth = '100%';
@@ -1875,8 +1874,12 @@ async function renderPdfToImages(pdfUrl, containerId) {
             img.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
             img.style.display = 'block';
 
-            container.appendChild(img);
+            fragment.appendChild(img);
         }
+        
+        container.innerHTML = ''; 
+        container.appendChild(fragment); // 한 번에 삽입
+
     } catch (error) {
         console.error('PDF Render Error:', error);
         container.innerHTML = `
@@ -1884,6 +1887,8 @@ async function renderPdfToImages(pdfUrl, containerId) {
                 PDF를 화면에 불러오지 못했습니다.<br>
                 <a href="${pdfUrl}" target="_blank" style="color:#2563eb; text-decoration:underline;">원본 PDF 열기</a>
             </div>`;
+    } finally {
+        container.classList.remove('is-rendering'); 
     }
 }
 
@@ -2178,14 +2183,13 @@ function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
 
-    // 1. PDF.js 로딩 스피너가 아직 돌고 있는지 확인 (변환 대기)
-    const spinner = reportElement.querySelector('.pdf-loading-spinner');
-    if (spinner) {
-        alert("튜터의 첨부 문서를 고화질 이미지로 변환 중입니다.\n로딩이 끝나면 다시 클릭해주세요.");
+    // 1. PDF.js 로딩 스피너가 돌거나 렌더링 중인지 확인
+    if (reportElement.querySelector('.pdf-loading-spinner') || reportElement.querySelector('.is-rendering')) {
+        alert("튜터의 첨부 문서를 고화질 이미지로 변환 중입니다.\n화면에 문서가 모두 나타난 후 다시 클릭해주세요.");
         return;
     }
 
-    // 2. 현재 화면의 DOM을 깊은 복사
+    // 2. DOM 객체를 깊은 복사
     const printNode = reportElement.cloneNode(true);
     printNode.classList.add('pdf-rendering');
 
@@ -2217,6 +2221,7 @@ function downloadReportPDF(reportTitle) {
 
     const iframeDoc = iframe.contentWindow.document;
     iframeDoc.open();
+    // 🚨 텍스트(문자열) 출력 방식은 뼈대 HTML만 그리도록 최소화합니다.
     iframeDoc.write(`
         <!DOCTYPE html>
         <html lang="ko">
@@ -2239,19 +2244,6 @@ function downloadReportPDF(reportTitle) {
                 
                 * { box-shadow: none !important; }
 
-                body::before {
-                    content: "";
-                    position: fixed; 
-                    top: 0; left: 0; right: 0; bottom: 0;
-                    background-image: url('/assets/backgrounds/bg_studycrack_logo.png');
-                    background-repeat: no-repeat;
-                    background-position: center center;
-                    background-size: 500px;
-                    opacity: 0.06;
-                    z-index: 9999;
-                    pointer-events: none;
-                }
-
                 .modal-document::after { display: none !important; }
                 .doc-controls, .mobile-only-msg { display: none !important; }
                 
@@ -2268,21 +2260,19 @@ function downloadReportPDF(reportTitle) {
                     clear: both !important; 
                 }
                 
-                /* ✅ 1~4번 박스는 페이지 안 잘리게 보호 */
                 .doc-matched-box:not(:last-child) {
                     page-break-inside: avoid !important; 
                     break-inside: avoid !important; 
                 }
 
-                /* ✅ 각각의 이미지는 페이지 중간에서 반갈죽 되지 않도록 보호 */
+                /* 🚨 핵심: 큰 이미지가 백지로 튕기는 현상 원천 차단 */
                 .doc-matched-box img {
-                    page-break-inside: avoid !important;
-                    break-inside: avoid !important;
-                    display: block;
-                    max-width: 100%;
+                    display: block !important;
+                    max-width: 100% !important;
+                    page-break-inside: auto !important; 
+                    break-inside: auto !important;
                 }
 
-                /* PC 2단 레이아웃 강제 유지 (마지막 5번 박스와 QnA 박스 제외) */
                 .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-matched-body { 
                     display: flex !important; 
                     flex-direction: row !important; 
@@ -2306,50 +2296,47 @@ function downloadReportPDF(reportTitle) {
                     display: flex !important;
                     flex-direction: column !important;
                 }
-                
-                .doc-title { font-size: 2.2rem !important; }
 
                 ${mobilePrintCSS}
             </style>
         </head>
-        <body>
-            ${printNode.outerHTML}
-            <script>
-                // 🚀 3. 모든 이미지(Base64 PDF 포함)가 완전히 렌더링될 때까지 기다렸다가 인쇄
-                window.onload = function() {
-                    const imgs = document.querySelectorAll('img');
-                    let loadedCount = 0;
-                    
-                    function checkAllImagesLoaded() {
-                        if (loadedCount >= imgs.length) {
-                            // 브라우저 렌더링 큐가 비워지도록 약간의 딜레이 부여
-                            setTimeout(function() {
-                                window.focus();
-                                window.print();
-                            }, 300);
-                        }
-                    }
-
-                    if (imgs.length === 0) {
-                        checkAllImagesLoaded();
-                    } else {
-                        imgs.forEach(img => {
-                            if (img.complete) {
-                                loadedCount++;
-                            } else {
-                                img.onload = () => { loadedCount++; checkAllImagesLoaded(); };
-                                img.onerror = () => { loadedCount++; checkAllImagesLoaded(); }; // 에러난 이미지는 무시하고 진행
-                            }
-                        });
-                        // 혹시 이미 다 캐싱되어서 이벤트가 안 탈 경우를 대비
-                        checkAllImagesLoaded(); 
-                    }
-                };
-            </script>
+        <body id="print-body">
         </body>
         </html>
     `);
     iframeDoc.close();
+
+    // 🚨 핵심: 수십 메가바이트의 Base64를 문자열로 넘기지 않고 JS 노드로 직접 꽂아 넣음
+    iframeDoc.getElementById('print-body').appendChild(printNode);
+
+    // 🚨 핵심: 복사된 이미지들이 인쇄 엔진 메모리에 모두 올라갈 때까지 대기
+    const imgs = iframeDoc.querySelectorAll('img');
+    let loadedCount = 0;
+    
+    function checkAllImagesLoaded() {
+        if (loadedCount >= imgs.length) {
+            // 브라우저 렌더링 큐 처리를 위해 추가로 0.5초 여유 딜레이 부여
+            setTimeout(function() {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            }, 500); 
+        }
+    }
+
+    if (imgs.length === 0) {
+        checkAllImagesLoaded();
+    } else {
+        imgs.forEach(img => {
+            if (img.complete) {
+                loadedCount++;
+            } else {
+                img.onload = () => { loadedCount++; checkAllImagesLoaded(); };
+                img.onerror = () => { loadedCount++; checkAllImagesLoaded(); };
+            }
+        });
+        // 혹시 캐시 처리로 인해 이벤트가 무시될 경우를 위한 안전장치
+        checkAllImagesLoaded(); 
+    }
 
     iframe.contentWindow.onafterprint = function() {
         if (document.body.contains(iframe)) {
