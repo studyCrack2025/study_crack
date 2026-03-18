@@ -1488,12 +1488,11 @@ function updateSimLineGraph(idx) {
         return Math.min(250, currentScore + rise);
     });
 
-    // 3. 🚀 [핵심 로직] 간격(GAP) 동적 계산 및 Y축 완전 고정 맵핑
+    // 3. 간격(GAP) 동적 계산 및 Y축 완전 고정 맵핑
     let minS = Math.min(...scores);
     let maxS = Math.max(...scores);
     const scoreDiff = maxS - minS;
 
-    // 편차에 따라 GAP을 25, 50, 100, 125 단위로 픽스
     let GAP = 25;
     if (scoreDiff > 160) GAP = 125;
     else if (scoreDiff > 90) GAP = 100;
@@ -1502,20 +1501,17 @@ function updateSimLineGraph(idx) {
     let centerScore = (minS + maxS) / 2;
     let midLine = Math.round(centerScore / 25) * 25;
 
-    // 점수가 기준선을 벗어나지 않게 midLine 보호 조정
     if (midLine + GAP < maxS) midLine += 25;
     if (midLine - GAP > minS) midLine -= 25;
 
-    // 0~250 범위를 절대 벗어나지 않게 잠금
     if (midLine - GAP < 0) midLine = GAP;
     if (midLine + GAP > 250) midLine = 250 - GAP;
 
-    // 🚀 화면 픽셀 좌표 강제 고정 (무슨 일이 있어도 이 위치에 렌더링됨)
     const midY = 130; 
-    const pixelPerGap = 90; // 중앙선(130)에서 상하단선(40, 220)까지의 픽셀 간격
+    const pixelPerGap = 90; 
     const getY = (score) => midY - ((score - midLine) / GAP) * pixelPerGap;
 
-    // 4. 가이드 라인 그리기 (고정 합격/안정 라인 포함)
+    // 4. 가이드 라인 그리기
     const targetGuides = [
         { obj: simSvgRefs.guides.gBottom, val: midLine - GAP, isFixed: false },
         { obj: simSvgRefs.guides.gMid, val: midLine, isFixed: false },
@@ -1527,7 +1523,6 @@ function updateSimLineGraph(idx) {
     targetGuides.forEach(guide => {
         const { obj, val, isFixed, label } = guide;
         
-        // 기준선이 차트의 렌더링 시야 범위 안에 있을 때만 그림
         if (val >= midLine - GAP && val <= midLine + GAP) {
             obj.g.style.opacity = 1;
             const y = getY(val);
@@ -1544,7 +1539,6 @@ function updateSimLineGraph(idx) {
                 obj.text.textContent = label;
                 obj.line.style.opacity = 1;
             } else {
-                // 고정선(100/150)과 겹치면 유동선(회색)은 숨겨서 텍스트 중복 방지
                 if (val === 100 || val === 150) {
                     obj.text.textContent = "";
                     obj.line.style.opacity = 0;
@@ -1599,9 +1593,7 @@ function updateSimLineGraph(idx) {
         labelEl.textContent = Math.round(s);
         labelEl.setAttribute("x", cx);
         labelEl.setAttribute("y", cy - 12);
-        
-        pointEl.parentNode.appendChild(pointEl);
-        labelEl.parentNode.appendChild(labelEl);
+
     });
 
     simSvgRefs.path.setAttribute("d", d);
