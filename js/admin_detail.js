@@ -571,6 +571,11 @@ function renderWeeklyTab() {
                         <label>5. 학생 심층 질문에 대한 추가 답변(필요시에, 최소 150자)</label>
                         <textarea id="fb_extra_${idx}" ${isReadOnly} placeholder="작성 대기중...">${escapeHtml(fb.extraQuestion || '')}</textarea>
                     </div>
+                    <div class="fb-item">
+                        <label>6. 주간 플래너 코칭 이미지 첨부</label>
+                        ${imageInputHtml}
+                        ${tutorImageHtml}
+                    </div>
                 </div>
                 <div style="text-align:right; margin-top:20px; display:${btnDisplay};">
                     <button class="fb-save-btn" onclick="saveWeeklyFeedback('${weekId}', ${idx})">평가 저장</button>

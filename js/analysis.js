@@ -1851,7 +1851,8 @@ function openFeedbackModal(data) {
         (fb.weakSubject && String(fb.weakSubject).trim() !== "") || 
         (fb.nextWeekTop3 && String(fb.nextWeekTop3).trim() !== "") || 
         (fb.planEvaluation && String(fb.planEvaluation).trim() !== "") ||
-        (fb.extraQuestion && String(fb.extraQuestion).trim() !== "")
+        (fb.extraQuestion && String(fb.extraQuestion).trim() !== "") ||
+        (fb.tutorImage && String(fb.tutorImage).trim() !== "")
     );
 
     if (!hasFeedback) {
@@ -1957,6 +1958,21 @@ function openFeedbackModal(data) {
     } else {
         deepQnaHtml = '<div style="color:#94a3b8; padding:10px 0;">작성된 심층 질문이 없습니다.</div>';
     }
+    
+    let tutorImageBlockHtml = '';
+    if (fb.tutorImage && String(fb.tutorImage).trim() !== "") {
+        tutorImageBlockHtml = `
+            <div class="doc-matched-box" style="page-break-inside: avoid;">
+                <div class="doc-matched-header" style="background:#fff;"><i class="fas fa-image"></i> 5. 주간 플래너 코칭 & 첨삭</div>
+                <div class="doc-matched-body" style="flex-direction:column; padding:25px; gap:15px; border-top:1px solid #e2e8f0;">
+                    <span class="doc-badge tutor-badge" style="background:#f0fdf4; color:#16a34a; border-color:#bbf7d0; align-self:flex-start;">Consultant 첨부 이미지</span>
+                    <div style="text-align:center; padding: 10px 0;">
+                        <img src="${escapeHtml(fb.tutorImage)}" alt="튜터 플래너 코칭" style="max-width:100%; height:auto; border-radius:8px; border:1px solid #cbd5e1; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
+                    </div>
+                </div>
+            </div>
+        `;
+    }
 
     // -----------------------------------------------------------
     // [HTML 조립 파트] 
@@ -2054,6 +2070,8 @@ function openFeedbackModal(data) {
                 </div>
             </div>
         </div>
+        
+        ${tutorImageBlockHtml}
 
         <div class="mobile-only-msg" id="mobileMsgBox">
             <i class="fas fa-file-pdf"></i>
