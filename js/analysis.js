@@ -14,6 +14,8 @@ let univData = [];
 let univMap = {};  
 let userQuantData = null; 
 let weeklyDataHistory = [];
+let currentSelectStep = 'univ';
+let selectedUnivForMajor = '';
 
 // 대학 선택 모달 관련
 let currentSlotIndex = null;
@@ -684,6 +686,11 @@ function openUnivSelectModal(index) {
     const modal = document.getElementById('univSelectModal');
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
+    
+    // 검색창 초기화
+    const searchInput = document.getElementById('univSearchInput');
+    if(searchInput) searchInput.value = '';
+    
     showUnivStep();
 }
 
@@ -691,45 +698,106 @@ function closeUnivModal() {
     document.getElementById('univSelectModal').style.display = 'none';
     document.body.style.overflow = 'auto';
     currentSlotIndex = null;
+    selectedUnivForMajor = '';
 }
 
 function showUnivStep() {
+    currentSelectStep = 'univ';
+    selectedUnivForMajor = '';
+    
     document.getElementById('modalTitle').innerText = "대학 선택";
     document.getElementById('stepUnivList').style.display = 'grid';
     document.getElementById('stepMajorList').style.display = 'none';
     document.getElementById('modalFooter').style.display = 'none';
     
+    // 검색 플레이스홀더 변경 및 입력창 비우기
+    const searchInput = document.getElementById('univSearchInput');
+    if(searchInput) {
+        searchInput.placeholder = "대학명 검색 (예: 서울대, 연세)";
+        searchInput.value = '';
+    }
+    
+    renderUnivList(''); // 검색어 없이 전체 리스트 렌더링
+}
+
+function showMajorStep(univName) {
+    currentSelectStep = 'major';
+    selectedUnivForMajor = univName;
+    
+    document.getElementById('modalTitle').innerText = `${univName} - 학과 선택`;
+    document.getElementById('stepUnivList').style.display = 'none';
+    document.getElementById('stepMajorList').style.display = 'grid';
+    document.getElementById('modalFooter').style.display = 'flex';
+    
+    // 검색 플레이스홀더 변경 및 입력창 비우기
+    const searchInput = document.getElementById('univSearchInput');
+    if(searchInput) {
+        searchInput.placeholder = "학과명 검색 (예: 컴퓨터, 경영)";
+        searchInput.value = '';
+    }
+    
+    renderMajorList(univName, ''); // 검색어 없이 전체 리스트 렌더링
+}
+
+function handleModalSearch(e) {
+    const text = e.target.value.trim().toLowerCase();
+    if (currentSelectStep === 'univ') {
+        renderUnivList(text);
+    } else if (currentSelectStep === 'major') {
+        renderMajorList(selectedUnivForMajor, text);
+    }
+}
+
+function renderUnivList(filterText) {
     const listContainer = document.getElementById('stepUnivList');
     listContainer.innerHTML = '';
     
-    Object.keys(univMap).sort().forEach(univName => {
+    const allUnivs = Object.keys(univMap).sort();
+    const filteredUnivs = allUnivs.filter(u => u.toLowerCase().includes(filterText));
+    
+    if (filteredUnivs.length === 0) {
+        listContainer.innerHTML = '<div class="empty-search-result"><i class="fas fa-search" style="font-size:2.5rem; color:#cbd5e1;"></i>찾으시는 대학이 없습니다.</div>';
+        return;
+    }
+
+    filteredUnivs.forEach(univName => {
         const item = document.createElement('div');
         item.className = 'selection-item';
-        item.innerText = univName; // innerText는 자동 이스케이프
+        item.innerHTML = highlightSearchText(escapeHtml(univName), filterText);
         item.onclick = () => showMajorStep(univName);
         listContainer.appendChild(item);
     });
 }
 
-function showMajorStep(univName) {
-    document.getElementById('modalTitle').innerText = `${univName} - 학과 선택`;
-    document.getElementById('stepUnivList').style.display = 'none';
-    document.getElementById('stepMajorList').style.display = 'grid';
-    document.getElementById('modalFooter').style.display = 'block';
-    
+function renderMajorList(univName, filterText) {
     const listContainer = document.getElementById('stepMajorList');
     listContainer.innerHTML = '';
     
     const majors = univMap[univName] || [];
-    majors.sort((a,b) => a.name.localeCompare(b.name));
+    const filteredMajors = [...majors]
+        .sort((a,b) => a.name.localeCompare(b.name))
+        .filter(m => m.name.toLowerCase().includes(filterText));
     
-    majors.forEach(majorObj => {
+    if (filteredMajors.length === 0) {
+        listContainer.innerHTML = '<div class="empty-search-result"><i class="fas fa-search" style="font-size:2.5rem; color:#cbd5e1;"></i>찾으시는 학과가 없습니다.</div>';
+        return;
+    }
+
+    filteredMajors.forEach(majorObj => {
         const item = document.createElement('div');
         item.className = 'selection-item';
-        item.innerText = majorObj.name;
+        item.innerHTML = highlightSearchText(escapeHtml(majorObj.name), filterText);
         item.onclick = () => selectComplete(univName, majorObj.name);
         listContainer.appendChild(item);
     });
+}
+
+// 텍스트 하이라이트 유틸리티 (검색된 키워드 파란색으로 강조)
+function highlightSearchText(text, keyword) {
+    if (!keyword) return text;
+    // 정규식으로 대소문자 구분 없이 검색어 찾기
+    const regex = new RegExp(`(${keyword})`, 'gi');
+    return text.replace(regex, '<span style="color:#2563EB; font-weight:900;">$1</span>');
 }
 
 function selectComplete(univ, major) {

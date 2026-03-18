@@ -254,7 +254,12 @@
                 <h2 id="modalTitle">대학 선택</h2>
                 <span class="close-btn" onclick="closeUnivModal()">&times;</span>
             </div>
-            <div class="modal-body">
+            
+            <div class="modal-search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="univSearchInput" class="modal-search-input" placeholder="대학명 검색 (예: 서울대, 연세)" oninput="handleModalSearch(event)">
+            </div>
+            <div class="modal-body with-search">
                 <div id="stepUnivList" class="selection-grid"></div>
                 <div id="stepMajorList" class="selection-grid" style="display:none;"></div>
             </div>
