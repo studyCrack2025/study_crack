@@ -1226,8 +1226,8 @@ function renderSimChart() {
             let graphHtml = '';
             let labelHtml = '';
 
-            const guideStyle100 = `bottom: ${(100 / MAX_SCORE) * 100}%;`;
-            const guideStyle150 = `bottom: ${(150 / MAX_SCORE) * 100}%;`;
+            const guideStyle100 = `bottom: ${(100 / MAX_SCORE) * 100}%; border-top-color: #3b82f6;`;
+            const guideStyle150 = `bottom: ${(150 / MAX_SCORE) * 100}%; border-top-color: #10b981;`;
             
             graphHtml += `<div class="chart-guide-line guide-100" style="${guideStyle100}"><span class="chart-guide-label">합격(100)</span></div>`;
             graphHtml += `<div class="chart-guide-line guide-150" style="${guideStyle150}"><span class="chart-guide-label">안정(150)</span></div>`;
