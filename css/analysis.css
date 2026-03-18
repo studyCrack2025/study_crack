@@ -600,7 +600,10 @@ input[type="number"]::-webkit-inner-spin-button {
     .sim-chart-wrapper { padding: 15px; padding-bottom: 20px; min-height: auto; }
     .sim-result-card { padding: 15px; margin-top: 15px; }
     .sim-univ-title { font-size: 1.1rem; }
-    .score-diff { font-size: 1.2rem; }
+    .score-diff { font-size: 1.2rem; margin-top: 0; }
+    
+    .sim-card-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .sim-score-change { width: 100%; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px; border-radius: 8px; box-sizing: border-box; }
     
     .coach-box { padding: 15px; }
     .coach-box .box-header { flex-direction: column; align-items: flex-start; gap: 8px; }
