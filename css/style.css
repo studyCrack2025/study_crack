@@ -670,4 +670,33 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
     
     .floating-noti-btn { bottom: 85px; right: 20px; width: 50px; height: 50px; font-size: 1.2rem; }
     .noti-panel { width: calc(100% - 40px); right: 20px; bottom: 145px; max-height: 400px; }
+    
+    /* =======================================
+       6. 모바일 데모 result-slide 폰트 및 그래프 깨짐 해결
+       ======================================= */
+    .demo-card .analysis-content-wrapper { padding: 12px; }
+    .demo-card .an-univ-name { font-size: 1.1rem !important; }
+    .demo-card .an-my-score { font-size: 1.4rem !important; }
+    .an-major-name { font-size: 0.8rem; }
+    .an-status-badge { padding: 4px 8px; font-size: 0.8rem; }
+    
+    .an-score-row { margin-bottom: 5px; }
+    .an-progress-container { margin-top: 10px; margin-bottom: 10px; }
+    .an-advice-box { padding: 10px; }
+    .an-advice-text { font-size: 0.75rem; }
+
+    /* 시뮬레이션 막대 그래프 (View 2) 모바일 축소 */
+    .sim-bar-container { gap: 10px; height: 100px; margin-top: 10px; }
+    .sim-bar-graph { width: 30px; }
+    .h-60 { height: 45px; }
+    .h-100 { height: 80px; }
+    .sim-bar-label { font-size: 0.7rem; }
+    .sim-summary { font-size: 0.75rem; margin-top: 10px; }
+    .sim-bar-badge { font-size: 0.6rem; top: -20px; padding: 2px 4px; }
+
+    /* 시뮬레이션 라인 그래프 (View 3) 모바일 축소 */
+    .sim-line-wrapper { height: 100px; margin-top: 10px; }
+    .sim-x-axis { font-size: 0.55rem; gap: 2px; }
+    .sim-x-axis span { letter-spacing: -0.5px; } /* 글자 겹침 방지 자간 축소 */
+    .guide-label { font-size: 0.6rem; top: -14px; }
 }
