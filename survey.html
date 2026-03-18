@@ -131,8 +131,14 @@
             <div class="form-section">
                 <h4>📌 희망 대학 및 학과 (최종 요약)</h4>
                 <div class="target-uni-list">
-                    <input type="text" id="target1" placeholder="1지망 (예: 서울대 컴퓨터공학과)" required>
-                    <input type="text" id="target2" placeholder="2지망 (필수)" required>
+                    <div style="position: relative;">
+                        <input type="text" id="target1" placeholder="1지망 (예: 서울대 컴퓨터공학과)" required style="padding-right: 25px;">
+                        <span class="req" style="position: absolute; right: 15px; top: 12px; font-size: 1.2rem;">*</span>
+                    </div>
+                    <div style="position: relative;">
+                        <input type="text" id="target2" placeholder="2지망 (필수)" required style="padding-right: 25px;">
+                        <span class="req" style="position: absolute; right: 15px; top: 12px; font-size: 1.2rem;">*</span>
+                    </div>
                     <p class="warning-text">* 1,2지망은 신중히 입력해주세요</p>
                     <input type="text" id="target3" placeholder="3지망">
                     <input type="text" id="target4" placeholder="4지망">
@@ -201,22 +207,22 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td>국어</td>
-                            <td>
+                            <td data-label="과목">국어</td>
+                            <td data-label="선택과목">
                                 <select id="koreanOpt">
                                     <option value="none">선택</option>
                                     <option value="hwa">화법과작문</option>
                                     <option value="un">언어와매체</option>
                                 </select>
                             </td>
-                            <td><input type="number" id="korStd" onchange="requestScoreConversion('kor')"></td>
-                            <td><input type="number" id="korPct" readonly class="readonly-input"></td>
-                            <td><input type="number" id="korGrd" readonly class="readonly-input"></td>
+                            <td data-label="표준점수"><input type="number" id="korStd" onchange="requestScoreConversion('kor')"></td>
+                            <td data-label="백분위"><input type="number" id="korPct" readonly class="readonly-input"></td>
+                            <td data-label="등급"><input type="number" id="korGrd" readonly class="readonly-input"></td>
                         </tr>
 
                         <tr>
-                            <td>수학</td>
-                            <td>
+                            <td data-label="과목">수학</td>
+                            <td data-label="선택과목">
                                 <select id="mathOpt" onchange="requestScoreConversion('math')">
                                     <option value="none">선택</option>
                                     <option value="hwak">확률과통계</option>
@@ -224,30 +230,30 @@
                                     <option value="ki">기하</option>
                                 </select>
                             </td>
-                            <td><input type="number" id="mathStd" onchange="requestScoreConversion('math')"></td>
-                            <td><input type="number" id="mathPct" readonly class="readonly-input"></td>
-                            <td><input type="number" id="mathGrd" readonly class="readonly-input"></td>
+                            <td data-label="표준점수"><input type="number" id="mathStd" onchange="requestScoreConversion('math')"></td>
+                            <td data-label="백분위"><input type="number" id="mathPct" readonly class="readonly-input"></td>
+                            <td data-label="등급"><input type="number" id="mathGrd" readonly class="readonly-input"></td>
                         </tr>
 
                         <tr>
-                            <td>영어</td>
+                            <td data-label="과목">영어</td>
                             <td class="disabled-cell"></td>
                             <td class="disabled-cell"></td>
                             <td class="disabled-cell"></td>
-                            <td><input type="number" id="engGrd"></td>
+                            <td data-label="등급"><input type="number" id="engGrd"></td>
                         </tr>
 
                         <tr>
-                            <td>한국사</td>
+                            <td data-label="과목">한국사</td>
                             <td class="disabled-cell"></td>
                             <td class="disabled-cell"></td>
                             <td class="disabled-cell"></td>
-                            <td><input type="number" id="histGrd"></td>
+                            <td data-label="등급"><input type="number" id="histGrd"></td>
                         </tr>
 
                         <tr>
-                            <td>탐구1</td>
-                            <td>
+                            <td data-label="과목">탐구1</td>
+                            <td data-label="선택과목">
                                 <select id="inq1Name" style="width: 100%;" onchange="requestScoreConversion('inq1')">
                                     <option value="">과목 선택</option>
                                     <optgroup label="사회탐구">
@@ -273,14 +279,14 @@
                                     </optgroup>
                                 </select>
                             </td>
-                            <td><input type="number" id="inq1Std" onchange="requestScoreConversion('inq1')"></td>
-                            <td><input type="number" id="inq1Pct" readonly class="readonly-input"></td>
-                            <td><input type="number" id="inq1Grd" readonly class="readonly-input"></td>
+                            <td data-label="표준점수"><input type="number" id="inq1Std" onchange="requestScoreConversion('inq1')"></td>
+                            <td data-label="백분위"><input type="number" id="inq1Pct" readonly class="readonly-input"></td>
+                            <td data-label="등급"><input type="number" id="inq1Grd" readonly class="readonly-input"></td>
                         </tr>
 
                         <tr>
-                            <td>탐구2</td>
-                            <td>
+                            <td data-label="과목">탐구2</td>
+                            <td data-label="선택과목">
                                 <select id="inq2Name" style="width: 100%;" onchange="requestScoreConversion('inq2')">
                                     <option value="">과목 선택</option>
                                     <optgroup label="사회탐구">
@@ -306,14 +312,14 @@
                                     </optgroup>
                                 </select>
                             </td>
-                            <td><input type="number" id="inq2Std" onchange="requestScoreConversion('inq2')"></td>
-                            <td><input type="number" id="inq2Pct" readonly class="readonly-input"></td>
-                            <td><input type="number" id="inq2Grd" readonly class="readonly-input"></td>
+                            <td data-label="표준점수"><input type="number" id="inq2Std" onchange="requestScoreConversion('inq2')"></td>
+                            <td data-label="백분위"><input type="number" id="inq2Pct" readonly class="readonly-input"></td>
+                            <td data-label="등급"><input type="number" id="inq2Grd" readonly class="readonly-input"></td>
                         </tr>
 
                         <tr>
-                            <td>제2외</td>
-                            <td>
+                            <td data-label="과목">제2외</td>
+                            <td data-label="선택과목">
                                 <select id="foreignName" style="width: 100%;">
                                     <option value="">응시 안함</option>
                                     <option value="독일어Ⅰ">독일어Ⅰ</option>
@@ -329,7 +335,7 @@
                             </td>
                             <td class="disabled-cell"></td>
                             <td class="disabled-cell"></td>
-                            <td><input type="number" id="foreignGrd" placeholder="등급"></td>
+                            <td data-label="등급"><input type="number" id="foreignGrd" placeholder="등급"></td>
                         </tr>
                     </tbody>
                 </table>

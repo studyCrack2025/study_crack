@@ -187,11 +187,74 @@ input:focus, select:focus, textarea:focus {
     .tab-content { padding: 25px 15px; }
     .tab-btn { padding: 15px 5px; font-size: 0.95rem; }
     
-    .score-table th, .score-table td { padding: 5px; }
-    .score-table input, .score-table select { font-size: 14px; padding: 0; }
-    
     .exam-selector { flex-direction: column; align-items: flex-start; gap: 10px; }
     .exam-selector select { width: 100%; }
     
     input, select, textarea { font-size: 16px !important; } /* iOS 줌 방지 */
+
+    /* === [개선됨] 모바일 카드형 점수 입력 UI === */
+    .table-responsive {
+        border: none;
+        box-shadow: none;
+        background: transparent;
+        overflow-x: visible;
+    }
+    
+    .score-table thead { display: none; } /* 테이블 헤더 숨김 */
+    
+    .score-table, .score-table tbody, .score-table tr, .score-table td {
+        display: block; width: 100%;
+    }
+    
+    /* 각 과목을 하나의 카드로 만듦 */
+    .score-table tr {
+        margin-bottom: 20px;
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        background: #fff;
+        padding: 5px 15px 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    }
+    
+    .score-table td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border: none !important;
+        border-bottom: 1px dashed #e2e8f0 !important;
+        padding: 12px 0 !important;
+        height: auto;
+    }
+    .score-table td:last-child { border-bottom: none !important; }
+    
+    /* 과목명(국어, 수학 등) 강조 헤더 역할 */
+    .score-table td:first-child {
+        justify-content: center;
+        background: #f1f5f9;
+        margin: 10px -15px 15px -15px; /* 카드 바깥으로 여백 채우기 */
+        padding: 12px !important;
+        font-size: 1.1rem;
+        border-radius: 8px;
+        width: auto;
+        border-bottom: none !important;
+    }
+    
+    /* data-label 속성을 읽어와서 좌측 라벨 생성 */
+    .score-table td:not(:first-child)::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: #475569;
+        font-size: 0.95rem;
+    }
+    
+    /* 입력 필드는 우측 정렬로 깔끔하게 */
+    .score-table input, .score-table select {
+        width: 60%;
+        text-align: right;
+        text-align-last: right;
+        background-color: #f8fafc;
+    }
+    
+    /* 불필요한 빈 칸(영어, 한국사 등)은 모바일에서 아예 숨김 처리 */
+    .disabled-cell { display: none !important; }
 }
