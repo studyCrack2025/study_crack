@@ -2041,7 +2041,7 @@ function openFeedbackModal(data) {
 
         // 그림자/겹침 현상 해결을 위해 스타일 분리 (clear: both, margin-top 하드코딩)
         tutorFileBlockHtml = `
-            <div class="doc-matched-box" style="page-break-inside: avoid; clear: both; display: block; margin-top: 30px; float: none; position: relative;">
+            <div class="doc-matched-box" style="page-break-inside: auto; clear: both; display: block; margin-top: 30px; float: none; position: relative;">
                 <div class="doc-matched-header" style="background:#f8fafc; border-bottom:1px solid #e2e8f0; padding:15px 20px; font-weight:800;">
                     <i class="fas fa-paperclip" style="color:#3b82f6;"></i> 5. 주간 플래너 코칭 & 첨삭
                 </div>
@@ -2181,11 +2181,11 @@ function downloadReportPDF(reportTitle) {
     // 1. PDF.js 로딩 스피너가 아직 돌고 있는지 확인 (변환 대기)
     const spinner = reportElement.querySelector('.pdf-loading-spinner');
     if (spinner) {
-        alert("튜터의 첨부 PDF 파일을 이미지로 변환 중입니다.\n잠시 후 다시 클릭해주세요.");
+        alert("튜터의 첨부 문서를 고화질 이미지로 변환 중입니다.\n로딩이 끝나면 다시 클릭해주세요.");
         return;
     }
 
-    // 2. 현재 화면의 DOM을 깊은 복사 (이때 PDF.js가 그려둔 <img> 태그들까지 통째로 복사됨)
+    // 2. 현재 화면의 DOM을 깊은 복사
     const printNode = reportElement.cloneNode(true);
     printNode.classList.add('pdf-rendering');
 
@@ -2205,9 +2205,7 @@ function downloadReportPDF(reportTitle) {
         .join('');
 
     const mobilePrintCSS = isMobile ? `
-        body {
-            zoom: 0.7 !important;
-        }
+        body { zoom: 0.7 !important; }
         @supports not (zoom: 0.7) {
             body {
                 transform: scale(0.7);
@@ -2264,14 +2262,27 @@ function downloadReportPDF(reportTitle) {
                 }
 
                 .doc-matched-box { 
-                    page-break-inside: avoid !important; 
-                    break-inside: avoid !important; 
                     margin-bottom: 20px !important; 
                     display: block !important; 
                     width: 100% !important;
-                    clear: both !important; /* 확실한 겹침 방지 */
+                    clear: both !important; 
                 }
                 
+                /* ✅ 1~4번 박스는 페이지 안 잘리게 보호 */
+                .doc-matched-box:not(:last-child) {
+                    page-break-inside: avoid !important; 
+                    break-inside: avoid !important; 
+                }
+
+                /* ✅ 각각의 이미지는 페이지 중간에서 반갈죽 되지 않도록 보호 */
+                .doc-matched-box img {
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
+                    display: block;
+                    max-width: 100%;
+                }
+
+                /* PC 2단 레이아웃 강제 유지 (마지막 5번 박스와 QnA 박스 제외) */
                 .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-matched-body { 
                     display: flex !important; 
                     flex-direction: row !important; 
@@ -2290,7 +2301,6 @@ function downloadReportPDF(reportTitle) {
                     box-sizing: border-box !important;
                 }
 
-                /* 4번 QnA 박스와 5번 첨부파일 박스는 무조건 상하 배치 */
                 .doc-matched-box:last-child .doc-matched-body,
                 .doc-matched-box:nth-last-child(2) .doc-matched-body {
                     display: flex !important;
@@ -2305,13 +2315,35 @@ function downloadReportPDF(reportTitle) {
         <body>
             ${printNode.outerHTML}
             <script>
-                // 3. 모든 이미지 로드 대기 후 인쇄
+                // 🚀 3. 모든 이미지(Base64 PDF 포함)가 완전히 렌더링될 때까지 기다렸다가 인쇄
                 window.onload = function() {
-                    // HTML 안에 있는 모든 img 태그(PDF.js가 만든 것 포함)가 로드될 때까지 0.5초 추가 여유 대기
-                    setTimeout(function() {
-                        window.focus();
-                        window.print();
-                    }, 500);
+                    const imgs = document.querySelectorAll('img');
+                    let loadedCount = 0;
+                    
+                    function checkAllImagesLoaded() {
+                        if (loadedCount >= imgs.length) {
+                            // 브라우저 렌더링 큐가 비워지도록 약간의 딜레이 부여
+                            setTimeout(function() {
+                                window.focus();
+                                window.print();
+                            }, 300);
+                        }
+                    }
+
+                    if (imgs.length === 0) {
+                        checkAllImagesLoaded();
+                    } else {
+                        imgs.forEach(img => {
+                            if (img.complete) {
+                                loadedCount++;
+                            } else {
+                                img.onload = () => { loadedCount++; checkAllImagesLoaded(); };
+                                img.onerror = () => { loadedCount++; checkAllImagesLoaded(); }; // 에러난 이미지는 무시하고 진행
+                            }
+                        });
+                        // 혹시 이미 다 캐싱되어서 이벤트가 안 탈 경우를 대비
+                        checkAllImagesLoaded(); 
+                    }
                 };
             </script>
         </body>
