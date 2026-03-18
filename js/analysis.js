@@ -3,8 +3,8 @@
 // ============================================================
 // [설정] API 및 상수 정의
 // ============================================================
-const MYPAGE_API_URL = CONFIG.api.base;       // 사용자 정보, 주간점검 저장 등
-const UNIV_DATA_API_URL = CONFIG.api.analysis; // 대학 분석, 시뮬레이션 등
+const MYPAGE_API_URL = CONFIG.api.base;
+const UNIV_DATA_API_URL = CONFIG.api.analysis;
 
 let currentUserTier = 'free';
 let univChangeRemaining = 30;
@@ -2082,21 +2082,18 @@ function downloadReportPDF(reportTitle) {
     // 1. 화면에 보이지 않는 투명한 iframe 생성
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
-    iframe.style.left = '-9999px'; // 화면 밖으로 완전히 치움
+    iframe.style.left = '-9999px'; 
     iframe.style.top = '0';
-    
-    // 💡 [핵심 1] iframe 자체의 물리적 너비를 PC 해상도로 강제
     iframe.style.width = '1024px'; 
     iframe.style.height = '100vh';
     iframe.style.border = 'none';
     document.body.appendChild(iframe);
 
-    // 2. 현재 사이트의 CSS를 그대로 가져오기
+    // 2. 현재 사이트의 CSS를 가져오되, 로드 완료 이벤트를 추적하기 위해 스크립트로 구성
     const styleLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
         .map(link => `<link rel="stylesheet" href="${link.href}">`)
         .join('');
 
-    // 3. iframe 내부에 리포트 HTML과 인쇄 전용 스타일 삽입
     const iframeDoc = iframe.contentWindow.document;
     iframeDoc.open();
     iframeDoc.write(`
@@ -2104,14 +2101,13 @@ function downloadReportPDF(reportTitle) {
         <html lang="ko">
         <head>
             <title>스터디크랙_${reportTitle}</title>
-            
             <meta name="viewport" content="width=1024">
-            
+            <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
             ${styleLinks}
             <style>
                 @page { margin: 20mm 10mm 10mm 10mm; } 
 
-                /* 💡 [핵심 3] body 너비까지 1024px로 못박아서 모바일에서 페이지가 중간에 끊기는 현상 차단 */
                 body { 
                     width: 1024px !important;
                     background: white !important; 
@@ -2120,9 +2116,8 @@ function downloadReportPDF(reportTitle) {
                     print-color-adjust: exact; 
                 }
                 
-                * { box-shadow: none !important; } /* 그림자 버그 제거 */
+                * { box-shadow: none !important; }
 
-                /* 매 페이지마다 로고 반복 출력 */
                 body::before {
                     content: "";
                     position: fixed; 
@@ -2141,7 +2136,7 @@ function downloadReportPDF(reportTitle) {
                 
                 .modal-document {
                     width: 100% !important;
-                    padding: 40px !important; /* 모바일의 좁은 패딩 무시, PC 패딩 적용 */
+                    padding: 40px !important;
                     box-sizing: border-box !important;
                 }
 
@@ -2153,14 +2148,12 @@ function downloadReportPDF(reportTitle) {
                     width: 100% !important;
                 }
                 
-                /* ✅ 수정 1: 1~3번째 박스는 PC처럼 무조건 '좌우 배치' */
                 .doc-matched-box:not(:last-child) .doc-matched-body { 
                     display: flex !important; 
                     flex-direction: row !important; 
-                    flex-wrap: nowrap !important; /* 줄바꿈 방지 */
+                    flex-wrap: nowrap !important;
                 }
                 
-                /* 좌우 배치 시 칸 나누기 설정 복구 */
                 .doc-matched-box:not(:last-child) .doc-student-data { 
                     border-bottom: none !important; 
                     border-right: 1px dashed #cbd5e1 !important; 
@@ -2173,7 +2166,6 @@ function downloadReportPDF(reportTitle) {
                     box-sizing: border-box !important;
                 }
 
-                /* ✅ 수정 2: 4번째 심층 Q&A 박스는 무조건 '상하 배치' */
                 .doc-matched-box:last-child .doc-matched-body {
                     display: flex !important;
                     flex-direction: column !important;
@@ -2184,17 +2176,31 @@ function downloadReportPDF(reportTitle) {
         </head>
         <body>
             ${printNode.outerHTML}
+            <script>
+                // 리소스(이미지, CSS 등)가 모두 로드된 후 인쇄 트리거
+                window.onload = function() {
+                    window.focus();
+                    window.print();
+                };
+            </script>
         </body>
         </html>
     `);
     iframeDoc.close();
 
-    // 4. 외부 스타일 로딩 대기 후 인쇄 실행
+    // 3. 인쇄 대화상자가 닫히거나 인쇄가 완료된 후 iframe 정리
+    iframe.contentWindow.onafterprint = function() {
+        if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+        }
+    };
+    
+    // 만약 onafterprint를 지원하지 않는 극히 일부 브라우저를 대비한 안전망
     setTimeout(() => {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-        setTimeout(() => document.body.removeChild(iframe), 1000);
-    }, 800); 
+        if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+        }
+    }, 60000);
 }
 
 function openWeeklyCheckModal() {
