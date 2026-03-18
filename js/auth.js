@@ -94,7 +94,7 @@ function getErrorMessage(err) {
         case "CodeMismatchException": return "인증 코드가 일치하지 않습니다.";
         case "LimitExceededException": return "요청 횟수 초과. 잠시 후 시도하세요.";
         case "UserNotConfirmedException": return "이메일 인증이 완료되지 않은 계정입니다.";
-        default: return "오류 발생: " + (err.message || err.code);
+        default: return "알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해주세요. (" + (err.code || "") + ")";
     }
 }
 
@@ -378,7 +378,7 @@ async function handleFinalSubmit() {
     // 6. Cognito 회원가입 실행
     userPool.signUp(email, password, attributeList, null, async function(err, result) {
         if (err) {
-            alert(err.message || "가입 중 오류 발생");
+            alert(getErrorMessage(err)); 
             submitBtn.innerText = "회원가입 완료";
             submitBtn.disabled = false;
             return;
@@ -534,11 +534,10 @@ function handleSignIn() {
                 body: JSON.stringify({ type: 'get_user' }) 
             })
             .then(res => {
-                if (!res.ok) throw new Error("User Info Load Failed");
+                if (!res.ok) throw new Error("회원 정보를 불러오지 못했습니다.");
                 return res.json();
             })
             .then(data => {
-                // [추가] 이름을 로컬 스토리지에 저장 (다른 페이지에서 사용하기 위함)
                 if (data.name) {
                     localStorage.setItem('userName', data.name);
                 }
