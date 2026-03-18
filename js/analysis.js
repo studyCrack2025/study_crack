@@ -1453,7 +1453,6 @@ function renderSimUnivButtons(targetDiv) {
 function updateSimLineGraph(idx) {
     if (!simSvgRefs) return;
 
-    // 리사이즈 이벤트 등록
     window.lastSimGraphIdx = idx;
     if (!window.simGraphResizeHandler) {
         window.simGraphResizeHandler = () => {
@@ -1469,14 +1468,12 @@ function updateSimLineGraph(idx) {
 
     const TARGET_HEIGHT = 260; 
     
-    // 부모 컨테이너 높이 강제 고정
     simSvgRefs.svg.parentNode.style.height = `${TARGET_HEIGHT}px`;
     simSvgRefs.svg.parentNode.style.minHeight = `${TARGET_HEIGHT}px`;
 
     const svgEl = simSvgRefs.svg;
     const W = svgEl.clientWidth || 300; 
-    const H = TARGET_HEIGHT - 30; 
-
+    
     // 1. X축 텍스트
     const realNames = ['국어', '수학'];
     realNames.push(data.sim_data.inq1?.name || '탐구1');
@@ -1491,55 +1488,47 @@ function updateSimLineGraph(idx) {
         return Math.min(250, currentScore + rise);
     });
 
-    // 3. 점수 편차에 따른 동적 GAP 간격 계산 (25, 50, 100, 125 단위 고정)
+    // 3. 🚀 [핵심 로직] 간격(GAP) 동적 계산 및 Y축 완전 고정 맵핑
     let minS = Math.min(...scores);
     let maxS = Math.max(...scores);
     const scoreDiff = maxS - minS;
 
+    // 편차에 따라 GAP을 25, 50, 100, 125 단위로 픽스
     let GAP = 25;
-    if (scoreDiff > 200) GAP = 125;
-    else if (scoreDiff > 100) GAP = 100;
-    else if (scoreDiff > 50) GAP = 50;
+    if (scoreDiff > 160) GAP = 125;
+    else if (scoreDiff > 90) GAP = 100;
+    else if (scoreDiff > 40) GAP = 50;
     
     let centerScore = (minS + maxS) / 2;
     let midLine = Math.round(centerScore / 25) * 25;
 
-    // 점수가 기준선을 이탈하지 않도록 midLine 보정
-    if (midLine - GAP > minS) midLine = minS + GAP;
-    if (midLine + GAP < maxS) midLine = maxS - GAP;
-    midLine = Math.round(midLine / 5) * 5;
+    // 점수가 기준선을 벗어나지 않게 midLine 보호 조정
+    if (midLine + GAP < maxS) midLine += 25;
+    if (midLine - GAP > minS) midLine -= 25;
 
-    let bottomLine = midLine - GAP;
-    let topLine = midLine + GAP;
+    // 0~250 범위를 절대 벗어나지 않게 잠금
+    if (midLine - GAP < 0) midLine = GAP;
+    if (midLine + GAP > 250) midLine = 250 - GAP;
 
-    // 0~250 범위 절대 제한
-    if (bottomLine < 0) { bottomLine = 0; midLine = GAP; topLine = GAP * 2; }
-    if (topLine > 250) { topLine = 250; midLine = 250 - GAP; bottomLine = 250 - GAP * 2; }
+    // 🚀 화면 픽셀 좌표 강제 고정 (무슨 일이 있어도 이 위치에 렌더링됨)
+    const midY = 130; 
+    const pixelPerGap = 90; // 중앙선(130)에서 상하단선(40, 220)까지의 픽셀 간격
+    const getY = (score) => midY - ((score - midLine) / GAP) * pixelPerGap;
 
-    // 4. 화면 여백(yMin, yMax)을 가이드라인에 완벽하게 맞춤
-    let yMin = bottomLine - 10;
-    let yMax = topLine + 10;
-
-    if (yMin < 0) yMin = 0;
-    if (yMax > 250) yMax = 250;
-
-    const yRange = yMax - yMin || 1;
-    const getY = (score) => H - ((score - yMin) / yRange * H) + 15;
-
-    // 5. 가이드 라인 그리기 (고정 합격/안정 라인 포함)
+    // 4. 가이드 라인 그리기 (고정 합격/안정 라인 포함)
     const targetGuides = [
-        { obj: simSvgRefs.guides.gBottom, val: bottomLine, isFixed: false },
+        { obj: simSvgRefs.guides.gBottom, val: midLine - GAP, isFixed: false },
         { obj: simSvgRefs.guides.gMid, val: midLine, isFixed: false },
-        { obj: simSvgRefs.guides.gTop, val: topLine, isFixed: false },
-        { obj: simSvgRefs.guides.g100, val: 100, isFixed: true },
-        { obj: simSvgRefs.guides.g150, val: 150, isFixed: true }
+        { obj: simSvgRefs.guides.gTop, val: midLine + GAP, isFixed: false },
+        { obj: simSvgRefs.guides.g100, val: 100, isFixed: true, label: "100 합격" },
+        { obj: simSvgRefs.guides.g150, val: 150, isFixed: true, label: "150 안정" }
     ];
 
     targetGuides.forEach(guide => {
-        const { obj, val, isFixed } = guide;
+        const { obj, val, isFixed, label } = guide;
         
-        // 해당 기준선이 현재 차트 시야 범위(yMin ~ yMax)에 들어올 때만 그림
-        if (val >= yMin && val <= yMax) {
+        // 기준선이 차트의 렌더링 시야 범위 안에 있을 때만 그림
+        if (val >= midLine - GAP && val <= midLine + GAP) {
             obj.g.style.opacity = 1;
             const y = getY(val);
             
@@ -1551,12 +1540,17 @@ function updateSimLineGraph(idx) {
             obj.text.setAttribute("x", W - 5);
             obj.text.setAttribute("y", y - 4);
             
-            // 유동선(회색)의 경우, 고정선(100/150)과 겹치면 글자를 숨김
-            if (!isFixed) {
+            if (isFixed) {
+                obj.text.textContent = label;
+                obj.line.style.opacity = 1;
+            } else {
+                // 고정선(100/150)과 겹치면 유동선(회색)은 숨겨서 텍스트 중복 방지
                 if (val === 100 || val === 150) {
                     obj.text.textContent = "";
+                    obj.line.style.opacity = 0;
                 } else {
                     obj.text.textContent = val;
+                    obj.line.style.opacity = 0.5;
                 }
             }
         } else {
@@ -1564,7 +1558,7 @@ function updateSimLineGraph(idx) {
         }
     });
 
-    // 6. 패스 & 포인트 그리기
+    // 5. 꺾은선 패스 & 점 그리기
     const sectionW = W / 4;
     let d = "";
     
@@ -1606,7 +1600,6 @@ function updateSimLineGraph(idx) {
         labelEl.setAttribute("x", cx);
         labelEl.setAttribute("y", cy - 12);
         
-        // 요소 순서 재배치 (선 위로 올리기)
         pointEl.parentNode.appendChild(pointEl);
         labelEl.parentNode.appendChild(labelEl);
     });
