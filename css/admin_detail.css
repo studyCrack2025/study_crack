@@ -265,6 +265,30 @@ html, body { height: auto !important; min-height: 100vh !important; overflow-y: 
     background: #2563eb;
 }
 
+/* 튜터 피드백 이미지 첨부 스타일 */
+.fb-image-upload-box {
+    border: 1px dashed #cbd5e1;
+    padding: 15px;
+    background: #fff;
+    border-radius: 8px;
+    margin-top: 5px;
+}
+.fb-image-upload-box input[type="file"] {
+    font-size: 0.9rem;
+    color: #475569;
+}
+.fb-uploaded-preview {
+    margin-top: 10px;
+    display: inline-block;
+    position: relative;
+}
+.fb-uploaded-preview img {
+    max-width: 250px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
 /* =========================================
    [2] 코칭 가이드 모달 스타일
    ========================================= */

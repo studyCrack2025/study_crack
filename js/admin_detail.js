@@ -407,7 +407,7 @@ function renderWeeklyTab() {
                return `<li><i class="fas fa-check-circle text-blue" style="margin-top:4px; flex-shrink:0;"></i><div style="flex:1;">${questionLabel} ${escapeHtml(ans)}</div></li>`;
             }).join('');
 
-            // 🔥 [수정 1] 학습 흐름 상세 사유(reasons) 렌더링 추가
+            // 학습 흐름 상세 사유(reasons) 렌더링 추가
             let trendHtml = '';
             if (d.trend) {
                 const statusMap = { 'up': '상승세 🔥', 'down': '하락세 📉', 'keep': '유지중 -' };
@@ -456,7 +456,7 @@ function renderWeeklyTab() {
                 { l: s.inq1Name || '탐1', v: s.inq1 }, { l: s.inq2Name || '탐2', v: s.inq2 }
             ].map(item => item.v ? `<div class="score-pill"><span class="lbl">${item.l}</span><span class="val">${item.v}</span></div>` : '').join('');
 
-            // 🔥 [수정 2] 원본 보기 버튼 글자 줄바꿈 방지 (white-space: nowrap 추가)
+            // 원본 보기 버튼 글자 줄바꿈 방지
             let proofHtml = '';
             if (d.mockExam.proofFile && d.mockExam.proofFile.startsWith('http')) {
                 proofHtml = `
@@ -524,6 +524,24 @@ function renderWeeklyTab() {
         const btnDisplay = (userRole === 'admin' || hasFeedback) ? 'none' : 'inline-block';        
         const weekId = d.weekId || d.date;
         
+        let tutorImageHtml = '';
+        if (fb.tutorImage) {
+            tutorImageHtml = `
+                <div class="fb-uploaded-preview">
+                    <a href="${fb.tutorImage}" target="_blank">
+                        <img src="${fb.tutorImage}" alt="코칭 이미지">
+                    </a>
+                </div>
+            `;
+        }
+
+        const imageInputHtml = isReadOnly ? '' : `
+            <div class="fb-image-upload-box">
+                <input type="file" id="fb_image_${idx}" accept="image/*">
+                <div style="font-size:0.8rem; color:#94a3b8; margin-top:5px;">* 첨삭된 플래너나 참고용 이미지를 첨부하세요 (선택 사항)</div>
+            </div>
+        `;
+        
         const feedbackHtml = `
             <div class="tutor-feedback-area">
                 <div class="feedback-header">
@@ -583,12 +601,12 @@ function renderWeeklyTab() {
 }
 
 async function saveWeeklyFeedback(weekId, idx) {
-    // 요소들을 먼저 가져옵니다 (잠금 처리를 위해)
     const priorityEl = document.getElementById(`fb_priority_${idx}`);
     const weakEl = document.getElementById(`fb_weak_${idx}`);
     const top3El = document.getElementById(`fb_top3_${idx}`);
     const planEl = document.getElementById(`fb_plan_${idx}`);
     const extraEl = document.getElementById(`fb_extra_${idx}`);
+    const imageInput = document.getElementById(`fb_image_${idx}`);
 
     const priority = priorityEl.value.trim();
     const weak = weakEl.value.trim();
@@ -596,19 +614,51 @@ async function saveWeeklyFeedback(weekId, idx) {
     const plan = planEl.value.trim();
     const extra = extraEl.value.trim();
     
-    // 1. 유효성 검사 및 수정 불가 경고창 추가
     if(!confirm("주간 평가를 저장하시겠습니까?\n🚨 저장 완료 후에는 내용을 다시 수정할 수 없습니다.")) return;
 
     const token = localStorage.getItem('accessToken');
-    // 버튼 요소를 찾아 상태를 변경 (중복 클릭 방지)
     const saveBtn = priorityEl.closest('.tutor-feedback-area').querySelector('.fb-save-btn');
     
     try {
         if (saveBtn) {
             saveBtn.disabled = true;
-            saveBtn.innerText = "저장 중...";
+            saveBtn.innerText = "이미지 업로드 및 저장 중..."; // 텍스트 변경
         }
 
+        // 1. 이미지가 선택된 경우 S3에 먼저 업로드
+        let tutorImageUrl = "";
+        if (imageInput && imageInput.files.length > 0) {
+            const file = imageInput.files[0];
+            
+            const urlResponse = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    type: 'get_presigned_url',
+                    userId: adminId,
+                    data: {
+                        fileName: encodeURIComponent(file.name),
+                        fileType: file.type,
+                        folder: 'tutor_feedbacks' 
+                    }
+                })
+            });
+
+            if (!urlResponse.ok) throw new Error("이미지 업로드 주소 발급 실패");
+            const { uploadUrl, fileUrl } = await urlResponse.json();
+
+            // S3 실제 업로드
+            const uploadResult = await fetch(uploadUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': file.type },
+                body: file
+            });
+
+            if (!uploadResult.ok) throw new Error("S3 이미지 업로드 실패");
+            tutorImageUrl = fileUrl; // 성공 시 URL 할당
+        }
+
+        // 2. 텍스트 + 이미지 URL을 DB에 저장 요청
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -623,7 +673,8 @@ async function saveWeeklyFeedback(weekId, idx) {
                         weakSubject: weak,
                         nextWeekTop3: top3,
                         planEvaluation: plan,
-                        extraQuestion: extra
+                        extraQuestion: extra,
+                        tutorImage: tutorImageUrl
                     }
                 }
             })
@@ -632,28 +683,28 @@ async function saveWeeklyFeedback(weekId, idx) {
         if (response.ok) {
             alert("평가가 성공적으로 저장되었습니다.");
             
-            // 2. 저장 완료 후 텍스트 박스 수정 불가(disabled) 처리
             priorityEl.disabled = true;
             weakEl.disabled = true;
             top3El.disabled = true;
             planEl.disabled = true;
             extraEl.disabled = true;
+            if (imageInput) imageInput.disabled = true; // 🚀 이미지 인풋도 비활성화
 
-            // 3. 저장 버튼 완전 비활성화 및 회색 처리
             if (saveBtn) {
                 saveBtn.innerText = "저장 완료";
-                saveBtn.style.backgroundColor = "#94a3b8"; // 회색
+                saveBtn.style.backgroundColor = "#94a3b8";
                 saveBtn.style.color = "#ffffff";
                 saveBtn.style.cursor = "not-allowed";
                 saveBtn.style.boxShadow = "none";
             }
+            
+            location.reload(); 
         } else {
             throw new Error("Server Error");
         }
     } catch(e) {
         console.error(e);
-        alert("저장 중 오류가 발생했습니다.");
-        // 에러 발생 시 다시 저장할 수 있도록 버튼 원상복구
+        alert("저장 중 오류가 발생했습니다: " + e.message);
         if (saveBtn) {
             saveBtn.disabled = false;
             saveBtn.innerText = "평가 저장";
@@ -663,10 +714,6 @@ async function saveWeeklyFeedback(weekId, idx) {
 
 // ============================================================
 // [기능] FOR PRO 탭 로직
-// ============================================================
-
-// ============================================================
-// [기능] FOR PRO 탭 로직 (주차별 동적 렌더링으로 변경됨)
 // ============================================================
 
 // [공통 헬퍼] 키를 화면 표시용 문자열로 변환
