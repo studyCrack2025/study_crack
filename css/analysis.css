@@ -542,50 +542,12 @@
 .pro-modal-content .modal-footer { background: #fff; border-top: 1px solid #e2e8f0; }
 
 /* --- 대학/학과 검색창 스타일 --- */
-.modal-search-box {
-    padding: 15px 24px 0 24px;
-    position: relative;
-    background: #fff;
-    flex-shrink: 0;
-}
-.modal-search-box i {
-    position: absolute;
-    left: 40px;
-    top: 30px;
-    color: #94a3b8;
-    font-size: 1rem;
-}
-.modal-search-input {
-    width: 100%;
-    padding: 14px 15px 14px 42px;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    color: #334155;
-    transition: all 0.2s;
-    box-sizing: border-box;
-    background-color: #f8fafc;
-}
-.modal-search-input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    background-color: #fff;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-.modal-body.with-search {
-    padding-top: 15px; /* 검색창과 리스트 사이 간격 좁히기 */
-}
-.empty-search-result {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 40px 20px;
-    color: #64748b;
-    font-size: 0.95rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-}
+.modal-search-box { padding: 15px 24px 0 24px; position: relative; background: #fff; flex-shrink: 0; }
+.modal-search-box i { position: absolute; left: 42px; top: 31px; color: #94a3b8; font-size: 1rem; z-index: 5; }
+.modal-search-input { width: 100%; padding: 14px 15px 14px 46px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; color: #334155; transition: all 0.2s; box-sizing: border-box; background-color: #f8fafc; position: relative; }
+.modal-search-input:focus { outline: none; border-color: #3b82f6; background-color: #fff; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+.modal-body.with-search { padding-top: 15px; }
+.empty-search-result { grid-column: 1 / -1; text-align: center; padding: 40px 20px; color: #64748b; font-size: 0.95rem; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 
 
 /* ============================================================
