@@ -1836,6 +1836,57 @@ function renderFeedbackList() {
     });
 }
 
+// PDF 파일을 고화질 이미지 리스트로 변환하여 HTML에 삽입하는 함수
+async function renderPdfToImages(pdfUrl, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    try {
+        // PDF.js 워커 설정
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // PDF 문서 불러오기
+        const loadingTask = pdfjsLib.getDocument(pdfUrl);
+        const pdf = await loadingTask.promise;
+        
+        container.innerHTML = ''; // 로딩 메시지 제거
+
+        // PDF의 모든 페이지를 순회하며 이미지(img)로 변환
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 1.5 }); // 1.5배 고해상도 렌더링
+
+            // 1. 임시 캔버스에 PDF 페이지 그리기
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+            // 2. 캔버스를 <img> 태그(Base64)로 변환 (window.print() 호환성을 위해 필수!)
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL('image/png');
+            img.style.maxWidth = '100%';
+            img.style.height = 'auto';
+            img.style.marginBottom = '15px';
+            img.style.borderRadius = '8px';
+            img.style.border = '1px solid #cbd5e1';
+            img.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
+            img.style.display = 'block';
+
+            container.appendChild(img);
+        }
+    } catch (error) {
+        console.error('PDF Render Error:', error);
+        container.innerHTML = `
+            <div style="color:#ef4444; padding:20px; text-align:center; background:#fef2f2; border-radius:8px;">
+                PDF를 화면에 불러오지 못했습니다.<br>
+                <a href="${pdfUrl}" target="_blank" style="color:#2563eb; text-decoration:underline;">원본 PDF 열기</a>
+            </div>`;
+    }
+}
+
 // 피드백 상세 모달 열기 및 문서 형식 데이터 바인딩 (맞춤형 보고서 형식)
 function openFeedbackModal(data) {
     const modal = document.getElementById('feedbackModal');
@@ -1960,32 +2011,42 @@ function openFeedbackModal(data) {
     }
     
     let tutorFileBlockHtml = '';
+    const uniqueContainerId = `pdf-render-${Date.now()}`; // 고유 ID 부여
+    let isPdfFile = false;
+    let actualPdfUrl = "";
+
     if (fb.tutorImage && String(fb.tutorImage).trim() !== "") {
-        const isPdf = fb.tutorImage.toLowerCase().includes('.pdf');
+        isPdfFile = fb.tutorImage.toLowerCase().includes('.pdf');
+        actualPdfUrl = fb.tutorImage;
         
         let fileDisplayHtml = '';
-        if (isPdf) {
+        if (isPdfFile) {
+            // PDF인 경우: 변환될 공간(div)만 만들어두고 JS로 이미지를 밀어넣음
             fileDisplayHtml = `
-                <div style="text-align:center; padding: 20px 0;">
-                    <a href="${escapeHtml(fb.tutorImage)}" target="_blank" style="display:inline-flex; align-items:center; gap:8px; background:#eff6ff; color:#2563eb; padding:12px 24px; border-radius:8px; text-decoration:none; font-size:1.05rem; font-weight:bold; border:1px solid #bfdbfe;">
-                        <i class="fas fa-file-pdf"></i> 튜터 코칭 PDF 확인하기 (클릭)
-                    </a>
-                    <div style="font-size:0.85rem; color:#64748b; margin-top:8px;">* PDF 파일은 별도의 창에서 열립니다.</div>
+                <div id="${uniqueContainerId}" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+                    <div style="padding: 40px 0; color:#3b82f6; font-weight:bold;">
+                        <i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom:10px;"></i><br>
+                        튜터의 첨삭 PDF 문서를 불러오는 중입니다...
+                    </div>
                 </div>
             `;
         } else {
+            // 이미지인 경우: 바로 렌더링
             fileDisplayHtml = `
                 <div style="text-align:center; padding: 10px 0;">
-                    <img src="${escapeHtml(fb.tutorImage)}" alt="튜터 플래너 코칭" style="max-width:100%; height:auto; border-radius:8px; border:1px solid #cbd5e1; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
+                    <img src="${escapeHtml(fb.tutorImage)}" alt="튜터 플래너 코칭" style="max-width:100%; height:auto; border-radius:8px; border:1px solid #cbd5e1; box-shadow:0 4px 10px rgba(0,0,0,0.05); display:block; margin: 0 auto;">
                 </div>
             `;
         }
 
+        // 그림자/겹침 현상 해결을 위해 스타일 분리 (clear: both, margin-top 하드코딩)
         tutorFileBlockHtml = `
-            <div class="doc-matched-box" style="page-break-inside: avoid;">
-                <div class="doc-matched-header" style="background:#fff;"><i class="fas fa-paperclip"></i> 5. 주간 플래너 코칭 & 첨삭</div>
-                <div class="doc-matched-body" style="flex-direction:column; padding:25px; gap:15px; border-top:1px solid #e2e8f0;">
-                    <span class="doc-badge tutor-badge" style="background:#f0fdf4; color:#16a34a; border-color:#bbf7d0; align-self:flex-start;">Consultant 첨부 자료</span>
+            <div class="doc-matched-box" style="page-break-inside: avoid; clear: both; display: block; margin-top: 25px; background: #fff;">
+                <div class="doc-matched-header" style="background:#f8fafc; border-bottom:1px solid #e2e8f0; padding:15px 20px; font-weight:800;">
+                    <i class="fas fa-paperclip" style="color:#3b82f6;"></i> 5. 주간 플래너 코칭 & 첨삭
+                </div>
+                <div class="doc-matched-body" style="flex-direction:column; padding:25px; gap:15px;">
+                    <span class="doc-badge tutor-badge" style="background:#eff6ff; color:#2563eb; border-color:#bfdbfe; align-self:flex-start;">Consultant 첨부 자료</span>
                     ${fileDisplayHtml}
                 </div>
             </div>
@@ -2102,6 +2163,12 @@ function openFeedbackModal(data) {
 
     contentArea.innerHTML = html;
     modal.style.display = 'block';
+    
+    if (isPdfFile) {
+        setTimeout(() => {
+            renderPdfToImages(actualPdfUrl, uniqueContainerId);
+        }, 100);
+    }
 }
 
 // ============================================================
