@@ -187,14 +187,12 @@ input:focus, select:focus, textarea:focus {
     .tab-content { padding: 25px 15px; }
     .tab-btn { padding: 15px 5px; font-size: 0.95rem; }
     
-    /* ==============================
-       [수정 1] 정성 데이터 탭 제목 중앙/상하 정렬
-       ============================== */
+    /* 정성 데이터 탭 제목 중앙/상하 정렬 */
     .section-title {
         flex-direction: column;
         align-items: center;
         text-align: center;
-        gap: 12px; /* 제목과 안내문구 사이 간격 */
+        gap: 12px;
     }
     .section-title h3 { margin: 0; }
     
@@ -203,14 +201,18 @@ input:focus, select:focus, textarea:focus {
     
     input, select, textarea { font-size: 16px !important; } /* iOS 줌 방지 */
 
-    /* ==============================
-       [수정 2] 모바일 카드형 점수 입력 UI 레이아웃 픽스
-       ============================== */
+    /* 모바일 카드형 점수 입력 UI 레이아웃 픽스 */
     .table-responsive {
         border: none;
         box-shadow: none;
         background: transparent;
         overflow-x: visible;
+    }
+    
+    /* [수정] PC버전의 650px 최소 너비를 해제하여 모바일 화면을 뚫고 나가지 않게 함 */
+    .score-table { 
+        min-width: 0; 
+        width: 100%;
     }
     
     .score-table thead { display: none; } /* 테이블 헤더 숨김 */
@@ -226,7 +228,7 @@ input:focus, select:focus, textarea:focus {
         border: 1px solid #e2e8f0;
         border-radius: 12px;
         background: #fff;
-        overflow: hidden; /* 헤더 배경이 둥근 모서리를 덮지 않도록 깔끔하게 자름 */
+        overflow: hidden;
         box-shadow: 0 4px 10px rgba(0,0,0,0.03);
     }
     
@@ -236,7 +238,7 @@ input:focus, select:focus, textarea:focus {
         justify-content: space-between;
         border: none !important;
         border-bottom: 1px solid #f1f5f9 !important;
-        padding: 12px 15px !important; /* 내부 여백 통일 */
+        padding: 12px 15px !important;
         height: auto;
         gap: 10px;
     }
@@ -265,21 +267,15 @@ input:focus, select:focus, textarea:focus {
     /* 입력 필드 (우측 정렬 및 크기 제어) */
     .score-table input, .score-table select {
         width: 100%;
-        max-width: 150px; /* 창이 너무 길어지지 않게 적절히 제한 */
+        max-width: 140px; /* 150px에서 소폭 축소하여 여유 확보 */
         text-align: right;
-        border: 1px solid #e2e8f0; /* 테두리 살리기 */
-        background-color: #fff; /* 이상한 회색 배경 제거 */
+        text-align-last: right; /* [수정] direction: rtl 대신 안전한 속성 사용 */
+        border: 1px solid #e2e8f0;
+        background-color: #fff;
         border-radius: 6px;
         padding: 0 10px;
         height: 40px;
-    }
-
-    /* select 텍스트 우측 정렬 꼼수 (iOS 대응) */
-    .score-table select {
-        direction: rtl; /* 텍스트를 오른쪽으로 밀어냄 */
-    }
-    .score-table select option {
-        direction: ltr; /* 옵션 리스트는 정상적으로 좌측 정렬되게 유지 */
+        box-sizing: border-box; /* 패딩 포함 크기 계산 */
     }
     
     /* 자동 계산 필드는 클릭 안 되는 느낌을 주기 위해 살짝 회색 처리 */
