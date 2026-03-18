@@ -56,7 +56,8 @@ const COURSE_DATA = {
         price: "49,000원",
         desc: "내 점수와 목표 대학 합격선 사이의 거리를 정밀하게 진단합니다.",
         list: [
-            { text: "개인 성적 및 목표 대학 환산점수 계산" },
+            // 수정: 목표 대학 최대 18개 명시
+            { text: "개인 성적 및 목표 대학 환산점수 계산 (최대 18개)" },
             { 
                 text: "합격 컷 대비 거리 분석 (위험도 경고)", 
                 action: "preview", 
@@ -72,7 +73,7 @@ const COURSE_DATA = {
         price: "월 149,000원",
         desc: "어떤 과목을 공부해야 점수가 가장 빨리 오르는지 분석하고 관리합니다.",
         list: [
-            { text: "BASIC 포함 + 목표 대학 3곳 확장" },
+            { text: "목표 대학 무제한" },
             { 
                 text: "과목별 1점당 환산 기울기(효율) 계산", 
                 action: "preview", 
@@ -83,8 +84,9 @@ const COURSE_DATA = {
                 action: "preview", 
                 imgBase: "feat_standard_2" 
             },
+            // 수정: 플래너 제공 문구 추가
             { 
-                text: "주 1회 전략 실행 학습 플래너 코칭", 
+                text: "주 1회 전략 실행 학습 플래너 코칭 및 플래너 제공", 
                 action: "preview", 
                 imgBase: "feat_standard_3" 
             }
@@ -97,10 +99,11 @@ const COURSE_DATA = {
         price: "월 299,000원",
         desc: "최소한의 공부량으로 합격하기 위한 최적의 조합을 설계합니다.",
         list: [
-            { text: "STANDARD 포함 + 목표 대학 6곳 확장" },
+            { text: "STANDARD 포함" },
             { text: "최소 점수 상승 조합 최적화 알고리즘" },
             { text: "내 점수에 가장 유리한 대학 역추적" },
-            { text: "주 1회 심층 전략 코칭" },
+            // 수정: 플래너 제공 문구 추가
+            { text: "주 1회 심층 전략 코칭 및 플래너 제공" },
             // PRO 전용 추가 링크 (다운로드 기능)
             { 
                 text: "PRO 전용 보고서 미리보기 📄", 
