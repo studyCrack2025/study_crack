@@ -524,21 +524,33 @@ function renderWeeklyTab() {
         const btnDisplay = (userRole === 'admin' || hasFeedback) ? 'none' : 'inline-block';        
         const weekId = d.weekId || d.date;
         
-        let tutorImageHtml = '';
-        if (fb.tutorImage) {
-            tutorImageHtml = `
-                <div class="fb-uploaded-preview">
-                    <a href="${fb.tutorImage}" target="_blank">
-                        <img src="${fb.tutorImage}" alt="코칭 이미지">
-                    </a>
-                </div>
-            `;
+        let tutorFileHtml = '';
+        if (fb.tutorImage && String(fb.tutorImage).trim() !== "") {
+            const isPdf = fb.tutorImage.toLowerCase().includes('.pdf'); // PDF 여부 확인
+            
+            if (isPdf) {
+                tutorFileHtml = `
+                    <div class="fb-uploaded-preview" style="margin-top:10px;">
+                        <a href="${escapeHtml(fb.tutorImage)}" target="_blank" style="display:inline-flex; align-items:center; gap:8px; background:#eff6ff; color:#2563eb; padding:10px 16px; border-radius:8px; text-decoration:none; font-weight:bold; border:1px solid #bfdbfe; transition: 0.2s;">
+                            <i class="fas fa-file-pdf"></i> 첨부된 PDF 파일 보기
+                        </a>
+                    </div>
+                `;
+            } else {
+                tutorFileHtml = `
+                    <div class="fb-uploaded-preview" style="margin-top:10px;">
+                        <a href="${escapeHtml(fb.tutorImage)}" target="_blank">
+                            <img src="${escapeHtml(fb.tutorImage)}" alt="코칭 첨부파일" style="max-width:250px; border-radius:8px; border:1px solid #e2e8f0; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+                        </a>
+                    </div>
+                `;
+            }
         }
 
         const imageInputHtml = isReadOnly ? '' : `
             <div class="fb-image-upload-box">
-                <input type="file" id="fb_image_${idx}" accept="image/*">
-                <div style="font-size:0.8rem; color:#94a3b8; margin-top:5px;">* 첨삭된 플래너나 참고용 이미지를 첨부하세요 (선택 사항)</div>
+                <input type="file" id="fb_image_${idx}" accept="image/*, application/pdf">
+                <div style="font-size:0.8rem; color:#94a3b8; margin-top:5px;">* 첨삭된 플래너 이미지나 참고용 PDF를 첨부하세요 (선택 사항)</div>
             </div>
         `;
         
@@ -574,7 +586,7 @@ function renderWeeklyTab() {
                     <div class="fb-item">
                         <label>6. 주간 플래너 코칭 이미지 첨부</label>
                         ${imageInputHtml}
-                        ${tutorImageHtml}
+                        ${tutorFileHtml}
                     </div>
                 </div>
                 <div style="text-align:right; margin-top:20px; display:${btnDisplay};">

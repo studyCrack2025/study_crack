@@ -1959,16 +1959,34 @@ function openFeedbackModal(data) {
         deepQnaHtml = '<div style="color:#94a3b8; padding:10px 0;">작성된 심층 질문이 없습니다.</div>';
     }
     
-    let tutorImageBlockHtml = '';
+    let tutorFileBlockHtml = '';
     if (fb.tutorImage && String(fb.tutorImage).trim() !== "") {
-        tutorImageBlockHtml = `
+        const isPdf = fb.tutorImage.toLowerCase().includes('.pdf');
+        
+        let fileDisplayHtml = '';
+        if (isPdf) {
+            fileDisplayHtml = `
+                <div style="text-align:center; padding: 20px 0;">
+                    <a href="${escapeHtml(fb.tutorImage)}" target="_blank" style="display:inline-flex; align-items:center; gap:8px; background:#eff6ff; color:#2563eb; padding:12px 24px; border-radius:8px; text-decoration:none; font-size:1.05rem; font-weight:bold; border:1px solid #bfdbfe;">
+                        <i class="fas fa-file-pdf"></i> 튜터 코칭 PDF 확인하기 (클릭)
+                    </a>
+                    <div style="font-size:0.85rem; color:#64748b; margin-top:8px;">* PDF 파일은 별도의 창에서 열립니다.</div>
+                </div>
+            `;
+        } else {
+            fileDisplayHtml = `
+                <div style="text-align:center; padding: 10px 0;">
+                    <img src="${escapeHtml(fb.tutorImage)}" alt="튜터 플래너 코칭" style="max-width:100%; height:auto; border-radius:8px; border:1px solid #cbd5e1; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
+                </div>
+            `;
+        }
+
+        tutorFileBlockHtml = `
             <div class="doc-matched-box" style="page-break-inside: avoid;">
-                <div class="doc-matched-header" style="background:#fff;"><i class="fas fa-image"></i> 5. 주간 플래너 코칭 & 첨삭</div>
+                <div class="doc-matched-header" style="background:#fff;"><i class="fas fa-paperclip"></i> 5. 주간 플래너 코칭 & 첨삭</div>
                 <div class="doc-matched-body" style="flex-direction:column; padding:25px; gap:15px; border-top:1px solid #e2e8f0;">
-                    <span class="doc-badge tutor-badge" style="background:#f0fdf4; color:#16a34a; border-color:#bbf7d0; align-self:flex-start;">Consultant 첨부 이미지</span>
-                    <div style="text-align:center; padding: 10px 0;">
-                        <img src="${escapeHtml(fb.tutorImage)}" alt="튜터 플래너 코칭" style="max-width:100%; height:auto; border-radius:8px; border:1px solid #cbd5e1; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
-                    </div>
+                    <span class="doc-badge tutor-badge" style="background:#f0fdf4; color:#16a34a; border-color:#bbf7d0; align-self:flex-start;">Consultant 첨부 자료</span>
+                    ${fileDisplayHtml}
                 </div>
             </div>
         `;
@@ -2071,7 +2089,7 @@ function openFeedbackModal(data) {
             </div>
         </div>
         
-        ${tutorImageBlockHtml}
+        ${tutorFileBlockHtml}
 
         <div class="mobile-only-msg" id="mobileMsgBox">
             <i class="fas fa-file-pdf"></i>
