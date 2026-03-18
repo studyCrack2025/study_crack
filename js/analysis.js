@@ -2023,8 +2023,8 @@ function openFeedbackModal(data) {
         if (isPdfFile) {
             // PDF인 경우: 변환될 공간(div)만 만들어두고 JS로 이미지를 밀어넣음
             fileDisplayHtml = `
-                <div id="${uniqueContainerId}" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
-                    <div style="padding: 40px 0; color:#3b82f6; font-weight:bold;">
+                <div id="pdf-render-box" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+                    <div style="padding: 40px 0; color:#3b82f6; font-weight:bold;" class="pdf-loading-spinner">
                         <i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom:10px;"></i><br>
                         튜터의 첨삭 PDF 문서를 불러오는 중입니다...
                     </div>
@@ -2041,7 +2041,7 @@ function openFeedbackModal(data) {
 
         // 그림자/겹침 현상 해결을 위해 스타일 분리 (clear: both, margin-top 하드코딩)
         tutorFileBlockHtml = `
-            <div class="doc-matched-box" style="page-break-inside: avoid; clear: both; display: block; margin-top: 25px; background: #fff;">
+            <div class="doc-matched-box" style="page-break-inside: avoid; clear: both; display: block; margin-top: 30px; float: none; position: relative;">
                 <div class="doc-matched-header" style="background:#f8fafc; border-bottom:1px solid #e2e8f0; padding:15px 20px; font-weight:800;">
                     <i class="fas fa-paperclip" style="color:#3b82f6;"></i> 5. 주간 플래너 코칭 & 첨삭
                 </div>
@@ -2178,10 +2178,17 @@ function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
 
+    // 1. PDF.js 로딩 스피너가 아직 돌고 있는지 확인 (변환 대기)
+    const spinner = reportElement.querySelector('.pdf-loading-spinner');
+    if (spinner) {
+        alert("튜터의 첨부 PDF 파일을 이미지로 변환 중입니다.\n잠시 후 다시 클릭해주세요.");
+        return;
+    }
+
+    // 2. 현재 화면의 DOM을 깊은 복사 (이때 PDF.js가 그려둔 <img> 태그들까지 통째로 복사됨)
     const printNode = reportElement.cloneNode(true);
     printNode.classList.add('pdf-rendering');
 
-    // 1. 모바일 환경 감지
     const isMobile = window.innerWidth <= 768;
 
     const iframe = document.createElement('iframe');
@@ -2197,17 +2204,15 @@ function downloadReportPDF(reportTitle) {
         .map(link => `<link rel="stylesheet" href="${link.href}">`)
         .join('');
 
-    // 2. 모바일 전용 축소 CSS 생성
     const mobilePrintCSS = isMobile ? `
         body {
-            zoom: 0.7 !important; /* 웹킷 기반 브라우저 70% 축소 */
+            zoom: 0.7 !important;
         }
-        /* zoom이 지원되지 않는 일부 환경을 위한 Fallback */
         @supports not (zoom: 0.7) {
             body {
                 transform: scale(0.7);
                 transform-origin: top left;
-                width: 1462px !important; /* 1024 / 0.7 : 레이아웃 깨짐 방지 */
+                width: 1462px !important;
             }
         }
     ` : '';
@@ -2264,44 +2269,49 @@ function downloadReportPDF(reportTitle) {
                     margin-bottom: 20px !important; 
                     display: block !important; 
                     width: 100% !important;
+                    clear: both !important; /* 확실한 겹침 방지 */
                 }
                 
-                /* PC 2단 레이아웃 강제 유지 */
-                .doc-matched-box:not(:last-child) .doc-matched-body { 
+                .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-matched-body { 
                     display: flex !important; 
                     flex-direction: row !important; 
                     flex-wrap: nowrap !important;
                 }
                 
-                .doc-matched-box:not(:last-child) .doc-student-data { 
+                .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-student-data { 
                     border-bottom: none !important; 
                     border-right: 1px dashed #cbd5e1 !important; 
                     flex: 1 1 45% !important; 
                     box-sizing: border-box !important;
                 }
 
-                .doc-matched-box:not(:last-child) .doc-tutor-feedback { 
+                .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-tutor-feedback { 
                     flex: 1 1 55% !important; 
                     box-sizing: border-box !important;
                 }
 
-                .doc-matched-box:last-child .doc-matched-body {
+                /* 4번 QnA 박스와 5번 첨부파일 박스는 무조건 상하 배치 */
+                .doc-matched-box:last-child .doc-matched-body,
+                .doc-matched-box:nth-last-child(2) .doc-matched-body {
                     display: flex !important;
                     flex-direction: column !important;
                 }
                 
                 .doc-title { font-size: 2.2rem !important; }
 
-                /* 3. 주입된 모바일 전용 CSS 반영 */
                 ${mobilePrintCSS}
             </style>
         </head>
         <body>
             ${printNode.outerHTML}
             <script>
+                // 3. 모든 이미지 로드 대기 후 인쇄
                 window.onload = function() {
-                    window.focus();
-                    window.print();
+                    // HTML 안에 있는 모든 img 태그(PDF.js가 만든 것 포함)가 로드될 때까지 0.5초 추가 여유 대기
+                    setTimeout(function() {
+                        window.focus();
+                        window.print();
+                    }, 500);
                 };
             </script>
         </body>
