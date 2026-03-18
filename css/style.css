@@ -182,18 +182,6 @@ header {
 .an-marker.highlight .an-marker-label { font-weight: 700; }
 .an-advice-box { border-radius: 12px; padding: 15px; display: flex; gap: 10px; align-items: flex-start; }
 .an-advice-text { font-size: 0.85rem; line-height: 1.5; color: #334155; text-align: left; }
-.result-slide svg { overflow: visible; width: 100%; height: 100%; }
-.sim-bar-container { display: flex; justify-content: center; align-items: flex-end; height: 120px; gap: 30px; margin-top: 30px; }
-.sim-bar-box .sim-bar-title { margin-bottom: 30px; }
-.sim-bar-badge { top: -28px; left: 50%; transform: translateX(-50%); z-index: 2; }
-.sim-bar-box:nth-child(1) .sim-bar-label { border-color: #3b82f6; }
-.sim-line-wrapper { position: relative; height: auto; aspect-ratio: 250 / 120; width: 100%; max-width: 260px; margin: 20px auto 0; border-left: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1; }
-.sim-x-axis { position: relative; height: 40px; display: block !important; margin-top: 15px; max-width: 260px; margin-left: auto; margin-right: auto; }
-.sim-x-axis span { position: absolute; top: 0; width: max-content; white-space: nowrap; text-align: center; line-height: 1.3; transform: translateX(-50%); font-size: 0.7rem; }
-.sim-x-axis span:nth-child(1) { left: 8%; }
-.sim-x-axis span:nth-child(2) { left: 36%; }
-.sim-x-axis span:nth-child(3) { left: 64%; }
-.sim-x-axis span:nth-child(4) { left: 92%; }
 
 /* =========================================
    [ADDITION] Index.html 인라인 스타일 대체용
@@ -265,7 +253,18 @@ header {
 .sim-path-line { fill: none; stroke: #8b5cf6; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .sim-dot { fill: #fff; stroke: #8b5cf6; stroke-width: 2; }
 .sim-dot.active { fill: #10b981; stroke: #fff; }
-.sim-x-axis { display: flex; justify-content: space-around; font-size: 0.7rem; color: #64748b; margin-top: 5px; }
+.result-slide svg { overflow: visible; width: 100%; height: 100%; }
+.sim-bar-container { display: flex; justify-content: center; align-items: flex-end; height: 120px; gap: 30px; margin-top: 30px; }
+.sim-bar-box .sim-bar-title { margin-bottom: 30px; }
+.sim-bar-badge { top: -28px; left: 50%; transform: translateX(-50%); z-index: 2; }
+.sim-bar-box:nth-child(1) .sim-bar-label { border-color: #3b82f6; }
+.sim-line-wrapper { position: relative; height: auto; aspect-ratio: 250 / 120; width: 100%; max-width: 260px; margin: 20px auto 0; border-left: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1; }
+.sim-x-axis { position: relative; height: 40px; display: block !important; margin-top: 15px; max-width: 260px; margin-left: auto; margin-right: auto; }
+.sim-x-axis span { position: absolute; top: 0; width: max-content; white-space: nowrap; text-align: center; line-height: 1.3; transform: translateX(-50%); font-size: 0.7rem; }
+.sim-x-axis span:nth-child(1) { left: 8%; }
+.sim-x-axis span:nth-child(2) { left: 36%; }
+.sim-x-axis span:nth-child(3) { left: 64%; }
+.sim-x-axis span:nth-child(4) { left: 92%; }
 
 
 /* =========================================
@@ -689,6 +688,12 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
     .sim-summary { font-size: 0.75rem; margin-top: 10px; }
     .sim-bar-badge { font-size: 0.6rem; top: -24px; padding: 2px 4px; }
     .sim-line-wrapper { height: auto; margin-top: 10px; }
-    .sim-x-axis { height: 30px; margin-top: 10px; }
-    .sim-x-axis span { font-size: 0.55rem; letter-spacing: -0.5px; }
+    .sim-x-axis { height: 45px; margin-top: 5px; }
+    .sim-x-axis span { 
+        font-size: 0.6rem; 
+        letter-spacing: -0.5px; 
+        white-space: normal;
+        width: 45px; 
+        line-height: 1.2;
+    }
 }
