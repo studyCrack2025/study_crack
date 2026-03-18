@@ -2023,7 +2023,7 @@ function openFeedbackModal(data) {
         if (isPdfFile) {
             // PDF인 경우: 변환될 공간(div)만 만들어두고 JS로 이미지를 밀어넣음
             fileDisplayHtml = `
-                <div id="pdf-render-box" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+                <div id="${uniqueContainerId}" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
                     <div style="padding: 40px 0; color:#3b82f6; font-weight:bold;" class="pdf-loading-spinner">
                         <i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom:10px;"></i><br>
                         튜터의 첨삭 PDF 문서를 불러오는 중입니다...
