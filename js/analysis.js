@@ -1241,7 +1241,6 @@ function renderSimChart() {
         cachedSimData.forEach((item, index) => {
             const score = item.base_ui_score;
             
-            // 3. 막대의 높이 또한 250점 대비 퍼센트(%)로 그리기
             const currentHeightPct = `${(score / MAX_SCORE) * 100}%`;
             
             let color = '#ef4444'; 
@@ -1264,14 +1263,15 @@ function renderSimChart() {
                 const potentialScore = Math.min(score + maxRise, MAX_SCORE);
                 const riseAmount = potentialScore - score; 
                 
-                // 4. 상승분 막대는 메인 막대(부모) 내부에 위치하므로, 현재 점수 대비 비율로 계산
-                const safeScoreForMath = Math.max(score, 0.01); // 0으로 나누기 에러 방지
-                const riseHeightPct = `${(riseAmount / safeScoreForMath) * 100}%`;
+                // 🚀 [수정 1] 상승분 막대 높이를 MAX_SCORE(250) 기준으로 계산 (찌그러짐 완벽 방지)
+                const riseHeightPct = `${(riseAmount / MAX_SCORE) * 100}%`;
                 
                 mainBarRadius = '0 0 0 0'; 
                 showOriginalLabel = false; 
+                
+                // 모바일/PC 반응형 너비 유지를 위해 class="sim-bar" 재사용
                 extensionHtml = `
-                    <div style="position:absolute; bottom:100%; left:0; width:100%; height:${riseHeightPct}; background:rgba(245, 158, 11, 0.15); border:2px dashed #f59e0b; border-bottom:none; border-radius: 6px 6px 0 0; box-sizing:border-box; pointer-events:none;">
+                    <div class="sim-bar" style="position:absolute; bottom:${currentHeightPct}; height:${riseHeightPct}; background:rgba(245, 158, 11, 0.15); border:2px dashed #f59e0b; border-bottom:none; border-radius: 6px 6px 0 0; box-sizing:border-box; pointer-events:none; z-index:2;">
                          <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">
                             ${Math.round(potentialScore)} <span style="font-size:0.7rem;">(+${maxRise.toFixed(1)})</span>
                          </span>
@@ -1279,11 +1279,14 @@ function renderSimChart() {
                 `;
             }
 
+            // 🚀 컨테이너 구조 개선: 두 막대를 독립적으로 배치
             const barHtml = `
                 <div class="sim-bar-item ${isActive}" onclick="selectSimUniv(${index})">
-                    <div class="sim-bar" style="height:${currentHeightPct}; background:${color}; border-radius:${mainBarRadius};">
+                    <div style="position:relative; height:100%; width:100%; display:flex; justify-content:center;">
+                        <div class="sim-bar" style="position:absolute; bottom:0; height:${currentHeightPct}; background:${color}; border-radius:${mainBarRadius}; z-index:1;">
+                            <span class="sim-score-label" style="${showOriginalLabel ? '' : 'display:none;'}">${safeScore}</span>
+                        </div>
                         ${extensionHtml}
-                        <span class="sim-score-label" style="${showOriginalLabel ? '' : 'display:none;'}">${safeScore}</span>
                     </div>
                 </div>
             `;
@@ -1346,10 +1349,11 @@ function initSimSvg(targetDiv) {
     const baseRadius = isMobile ? "4" : "6";
     
     const guides = {
-        g0: createGuideGroup(ns, "#cbd5e1", "0점"),
+        gBottom: createGuideGroup(ns, "#cbd5e1", ""),
+        gMid: createGuideGroup(ns, "#cbd5e1", ""),
+        gTop: createGuideGroup(ns, "#cbd5e1", ""),
         g100: createGuideGroup(ns, "#3b82f6", "100 합격"),
-        g150: createGuideGroup(ns, "#10b981", "150 안정"),
-        g250: createGuideGroup(ns, "#cbd5e1", "250 만점")
+        g150: createGuideGroup(ns, "#10b981", "150 안정")
     };
 
     const path = document.createElementNS(ns, "path");
@@ -1452,7 +1456,7 @@ function renderSimUnivButtons(targetDiv) {
 function updateSimLineGraph(idx) {
     if (!simSvgRefs) return;
 
-    // [반응형] 리사이즈 이벤트 등록
+    // 리사이즈 이벤트 등록
     window.lastSimGraphIdx = idx;
     if (!window.simGraphResizeHandler) {
         window.simGraphResizeHandler = () => {
@@ -1476,8 +1480,7 @@ function updateSimLineGraph(idx) {
     const svgEl = simSvgRefs.svg;
     const W = svgEl.clientWidth || 300; 
     
-    // 🚀 [핵심 수정] 브라우저 Reflow 지연으로 인해 예전 높이(180)를 읽어오는 현상 방지.
-    // clientHeight에 의존하지 않고 TARGET_HEIGHT를 직접 계산에 사용합니다.
+    // 브라우저 Reflow 지연으로 인해 예전 높이(180)를 읽어오는 현상 방지.
     const H = TARGET_HEIGHT - 30; 
 
     // 1. X축 텍스트
@@ -1494,48 +1497,70 @@ function updateSimLineGraph(idx) {
         return Math.min(250, currentScore + rise);
     });
 
-    // 3. 25점 단위 가이드 라인 계산
-    const GAP = 25; 
+    // 3. 점수 간격(GAP) 계산
     let minS = Math.min(...scores);
     let maxS = Math.max(...scores);
-    const centerScore = (minS + maxS) / 2;
+    const scoreDiff = maxS - minS;
+
+    // 최고점-최저점 차이가 50 이상이면 GAP을 50으로 변경 (레이아웃 이탈 방지)
+    const GAP = scoreDiff >= 50 ? 50 : 25;
     
+    const centerScore = (minS + maxS) / 2;
     let midLine = Math.round(centerScore / GAP) * GAP;
     let bottomLine = midLine - GAP;
     let topLine = midLine + GAP;
 
     // 0~250 범위 제한
-    if (bottomLine < 0) { bottomLine = 0; midLine = 25; topLine = 50; }
-    else if (topLine > 250) { topLine = 250; midLine = 225; bottomLine = 200; }
+    if (bottomLine < 0) { bottomLine = 0; midLine = GAP; topLine = GAP * 2; }
+    else if (topLine > 250) { topLine = 250; midLine = 250 - GAP; bottomLine = 250 - GAP * 2; }
 
-    // 4. [여백 최적화] 위아래 여백을 10점으로 줄임 (그래프 꽉 채우기)
-    let yMin = bottomLine - 10;
-    let yMax = topLine + 10;
-    
+    // 4. [여백 최적화] Y축 최소/최대 범위를 선이 차트를 절대 벗어나지 않게 동적 조절
+    let yMin = Math.min(bottomLine, minS) - 10;
+    let yMax = Math.max(topLine, maxS) + 10;
+
+    if (yMin < 0) yMin = 0;
+    if (yMax > 250) yMax = 250;
+
     const yRange = yMax - yMin || 1;
     const getY = (score) => H - ((score - yMin) / yRange * H) + 15;
 
     // 5. 가이드 라인 그리기
-    const targetGuides = [bottomLine, midLine, topLine];
-    const guideObjects = Object.values(simSvgRefs.guides); 
+    const targetGuides = [
+        { obj: simSvgRefs.guides.gBottom, val: bottomLine, isFixed: false },
+        { obj: simSvgRefs.guides.gMid, val: midLine, isFixed: false },
+        { obj: simSvgRefs.guides.gTop, val: topLine, isFixed: false },
+        { obj: simSvgRefs.guides.g100, val: 100, isFixed: true },
+        { obj: simSvgRefs.guides.g150, val: 150, isFixed: true }
+    ];
 
-    guideObjects.forEach((guideObj, i) => {
-        if (i < 3) {
-            const val = targetGuides[i];
+    targetGuides.forEach(guide => {
+        const { obj, val, isFixed } = guide;
+        
+        // 화면(yMin ~ yMax) 안에 들어오는 경우에만 노출
+        if (val >= yMin && val <= yMax) {
+            obj.g.style.opacity = 1;
             const y = getY(val);
             
-            guideObj.g.style.opacity = 1;
+            obj.line.setAttribute("x1", 0);
+            obj.line.setAttribute("x2", W); 
+            obj.line.setAttribute("y1", y);
+            obj.line.setAttribute("y2", y);
             
-            guideObj.line.setAttribute("x1", 0);
-            guideObj.line.setAttribute("x2", W); 
-            guideObj.line.setAttribute("y1", y);
-            guideObj.line.setAttribute("y2", y);
+            obj.text.setAttribute("x", W - 5);
+            obj.text.setAttribute("y", y - 4);
             
-            guideObj.text.setAttribute("x", W - 5);
-            guideObj.text.setAttribute("y", y - 4);
-            guideObj.text.textContent = val; 
+            // 유동선(회색)의 경우
+            if (!isFixed) {
+                // 100점이나 150점과 완전히 겹치는 경우 글자를 숨겨 텍스트 중첩 방지
+                if (val === 100 || val === 150) {
+                    obj.text.textContent = "";
+                } else {
+                    obj.text.textContent = val;
+                }
+            }
+            // 고정선(100/150)은 initSimSvg에서 세팅한 "100 합격" 텍스트 유지
         } else {
-            guideObj.g.style.opacity = 0;
+            obj.g.style.opacity = 0;
         }
     });
 
