@@ -259,25 +259,24 @@ header {
 .sim-bar-badge { top: -28px; left: 50%; transform: translateX(-50%); z-index: 2; }
 .sim-bar-box:nth-child(1) .sim-bar-label { border-color: #3b82f6; }
 .sim-line-wrapper { position: relative; height: auto; aspect-ratio: 250 / 120; width: 100%; max-width: 260px; margin: 20px auto 0; border-left: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1; }
-/* 교체할 새 코드 */
 .sim-x-axis {
     display: flex;
-    justify-content: space-between; /* 4개의 항목을 양끝과 중앙에 균등하게 배치 */
+    justify-content: space-between;
     width: 100%;
     max-width: 260px;
     margin: 10px auto 0;
-    padding: 0 8%; /* 좌우 여백을 통해 SVG 그래프의 1번째, 4번째 점과 위치를 동기화 */
+    padding: 0 14%;
     box-sizing: border-box;
 }
 
 .sim-x-axis span {
-    width: 60px; /* 텍스트가 표시될 충분한 공간 확보 */
-    margin: 0 -30px; /* 너비의 절반만큼 음수 마진을 주어 레이아웃상 가로 0px로 만듦 -> 점과 정확히 중앙 정렬됨 */
+    width: 60px; 
+    margin: 0 -30px;
     text-align: center;
     font-size: 0.65rem;
     line-height: 1.3;
     color: #64748b;
-    word-break: keep-all; /* 띄어쓰기 기준으로 자연스럽게 두 줄로 줄바꿈 허용 */
+    word-break: keep-all;
 }
 
 /* =========================================
