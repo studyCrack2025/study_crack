@@ -155,6 +155,10 @@ small { color: #64748b; font-size: 0.9rem; }
     background-color: #fff1f2 !important; 
 }
 
+.tier-basic .p-price { display: flex; align-items: baseline; gap: 6px; }
+.tier-basic .original-price { font-size: 0.85rem; font-weight: 400; text-decoration: line-through; color: #94a3b8 !important; }
+.tier-basic .discount-price { font-size: 1.15rem; font-weight: 800; color: #059669 !important; }
+
 /* 결제 버튼 */
 .btn-pay { 
     width: 100%; 
