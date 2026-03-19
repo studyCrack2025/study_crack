@@ -233,7 +233,7 @@ header {
 .sim-bar-box { text-align: center; }
 .sim-bar-title { font-weight: bold; color: #64748b; font-size: 0.8rem; margin-bottom: 5px; }
 .sim-bar-box .sim-bar-title { font-weight: bold; color: #64748b; font-size: 0.8rem; margin-bottom: 8px !important; }
-.sim-bar-badge { position: absolute; top: 2px !important; left: 65%; background: #fff; border: 1px solid #10b981; color: #10b981; font-size: 0.7rem; padding: 3px 8px; border-radius: 12px; font-weight: 800; white-space: nowrap; z-index: 2; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+.sim-bar-badge { position: absolute; top: 5px !important; left: 65%; background: #fff; border: 1px solid #10b981; color: #10b981; font-size: 0.7rem; padding: 3px 8px; border-radius: 12px; font-weight: 800; white-space: nowrap; z-index: 2; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 .sim-bar-graph { width: 40px; border-radius: 6px 6px 0 0; margin: 0 auto; position: relative; }
 .bar-gray { background: #cbd5e1; }
 .bar-green { background: #10b981; }

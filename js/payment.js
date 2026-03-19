@@ -239,9 +239,14 @@ async function processPayment() {
     
     localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
     
+    // [수정된 부분] 임시로 모든 결제를 무통장 입금(checkout-transfer)으로 라우팅
+    // 추후 카드결제/PG사 연동 복구 시 아래 주석 해제 후 변경 필요
+    /*
     if (selectedTier === 'trial') {
         window.location.href = '/checkout-transfer'; 
     } else {
         window.location.href = '/checkout';
     }
+    */
+    window.location.href = '/checkout-transfer';
 }

@@ -6,11 +6,14 @@
     <meta name="color-scheme" content="light">
     <meta name="facebook-domain-verification" content="55eup0qlw7p4hdgj5hyv2fsmhksvoj" />
     
-    <title>체험단 결제 - 스터디크랙</title>
+    <title>무통장 입금 결제 - 스터디크랙</title>
+    
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/checkout.css"> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/checkout.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <style>
-        /* 계좌이체 전용 인라인 스타일 (필요시 css로 이동) */
+        /* 계좌이체 전용 인라인 스타일 */
         .transfer-box {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
@@ -34,6 +37,17 @@
             line-height: 1.5;
         }
         .warning-box strong { font-size: 1.05rem; }
+
+        /* 동적 뱃지 기본 스타일 보완 */
+        .secure-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
     </style>
 </head>
 <body class="checkout-body">
@@ -49,7 +63,7 @@
                 </div>
                 <div class="price-line">
                     <span>결제 금액</span>
-                    <span id="chkPrice" class="chk-price">30,000원</span>
+                    <span id="chkPrice" class="chk-price">0원</span>
                 </div>
             </div>
         </div>
@@ -57,7 +71,9 @@
         <div class="payment-form-panel">
             <div class="form-header">
                 <h3>무통장 입금 안내</h3>
-                <span class="secure-badge" style="background: #eff6ff; color: #2563EB;"><i class="fas fa-money-check-alt"></i> 체험단 전용 결제</span>
+                <span id="planBadge" class="secure-badge" style="background: #e2e8f0; color: #475569;">
+                    <i class="fas fa-spinner fa-spin"></i> 로딩중
+                </span>
             </div>
 
             <div class="transfer-box">
@@ -83,10 +99,32 @@
     
     <script src="/js/config.js"></script>
     <script>
+        // 1. 모든 티어에 대한 가격, 설명, 디자인(색상) 데이터 통합 세팅
         const TIER_DATA = {
-            'trial': { price: 30000, desc: '낮은 비용으로 PRO의 모든 기능을 1개월 체험' } 
+            'basic': { 
+                name: 'BASIC', price: 25000, 
+                desc: '나만의 입시 분석 솔루션 기본 제공',
+                color: '#2563EB', bg: '#eff6ff', icon: 'fa-check-circle'
+            },
+            'standard': { 
+                name: 'STANDARD', price: 149000, 
+                desc: '기초조사서 작성 및 무제한 합격 예측',
+                color: '#475569', bg: '#f1f5f9', icon: 'fa-chart-bar'
+            },
+            'pro': { 
+                name: 'PRO', price: 299000, 
+                desc: '전담 컨설턴트 1:1 밀착 배정 및 완벽 전략',
+                color: '#D97706', bg: '#fffbeb', icon: 'fa-crown'
+            },
+            'trial': { 
+                name: '체험단', price: 30000, 
+                desc: '낮은 비용으로 PRO의 모든 기능을 1개월 체험',
+                color: '#7C3AED', bg: '#f5f3ff', icon: 'fa-gem'
+            }
         };
+
         const USER_API_URL = CONFIG.api.base;
+        let currentTier = 'basic'; // 전역 변수로 저장해 리다이렉트 시 활용
 
         document.addEventListener('DOMContentLoaded', () => {
             const dataStr = localStorage.getItem('checkoutData');
@@ -97,12 +135,22 @@
             }
 
             const checkoutData = JSON.parse(dataStr);
-            const tierInfo = TIER_DATA[checkoutData.tier];
+            currentTier = checkoutData.tier || 'basic';
+            
+            // 만약 TIER_DATA에 없는 값이 들어오면 basic으로 기본 처리
+            const tierInfo = TIER_DATA[currentTier] || TIER_DATA['basic'];
 
+            // 좌측 요약 정보 업데이트
             document.getElementById('chkProductName').innerText = checkoutData.productName;
             document.getElementById('chkProductDesc').innerText = tierInfo.desc;
             document.getElementById('chkPrice').innerText = tierInfo.price.toLocaleString() + '원';
             document.getElementById('depositName').innerText = checkoutData.name;
+
+            // 우측 상단 동적 뱃지 업데이트 (플랜에 맞는 색상과 텍스트 적용)
+            const badge = document.getElementById('planBadge');
+            badge.style.color = tierInfo.color;
+            badge.style.background = tierInfo.bg;
+            badge.innerHTML = `<i class="fas ${tierInfo.icon}"></i> ${tierInfo.name} 결제`;
         });
 
         // 이체 완료 요청 함수
@@ -120,12 +168,17 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}` 
                     },
-                    body: JSON.stringify({ type: 'submit_trial_transfer' }) // Lambda 연동
+                    // Lambda 연동 시 어떤 플랜의 입금 요청인지 백엔드도 알아야 하므로 tier 정보 같이 전송 (필요시 백엔드 스펙에 맞게 수정)
+                    body: JSON.stringify({ 
+                        type: 'submit_transfer',
+                        tier: currentTier
+                    }) 
                 });
 
                 if (response.ok) {
-                    // 성공 시 우측 폼 영역을 '완료 화면'으로 교체
-                    showSuccessScreen();
+                    // [핵심 변경사항] 화면 교체 로직(showSuccessScreen)을 지우고, Success 페이지로 리다이렉트
+                    localStorage.removeItem('checkoutData'); // 결제 정보 초기화
+                    window.location.href = `/success?tier=${currentTier}`;
                 } else {
                     alert("요청 처리 중 문제가 발생했습니다. 1:1 문의를 남겨주세요.");
                     btn.innerHTML = `송금 완료했습니다`;
@@ -136,34 +189,6 @@
                 btn.innerHTML = `송금 완료했습니다`;
                 btn.disabled = false;
             }
-        }
-
-        // 성공 시 띄워줄 화면 렌더링 함수
-        function showSuccessScreen() {
-            const panel = document.querySelector('.payment-form-panel');
-            
-            // 기존 내용을 없애고 감사 메시지와 버튼을 주입합니다.
-            panel.innerHTML = `
-                <div style="text-align: center; padding: 40px 20px; animation: fadeInDown 0.5s ease;">
-                    <i class="fas fa-check-circle" style="font-size: 4rem; color: #10b981; margin-bottom: 25px;"></i>
-                    <h2 style="color: #1e293b; margin-bottom: 15px; font-size: 1.8rem;">이체 확인 요청 완료!</h2>
-                    
-                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 25px; margin-bottom: 30px;">
-                        <p style="color: #475569; font-size: 1.05rem; line-height: 1.6; margin: 0;">
-                            <strong>체험단으로 참여해주셔서 진심으로 감사합니다.</strong><br><br>
-                            관리자가 입금 내역을 명단에서 확인하는 즉시 승인 처리되며,<br>
-                            승인 완료 시 <strong style="color: #2563EB;">PRO 등급의 모든 기능</strong>을<br>자유롭게 이용해 보실 수 있습니다.
-                        </p>
-                    </div>
-
-                    <button onclick="window.location.href='/'" class="btn-checkout" style="max-width: 300px; margin: 0 auto;">
-                        <i class="fas fa-home"></i> 메인 페이지로 이동
-                    </button>
-                </div>
-            `;
-            
-            // localStorage의 checkoutData 삭제 (결제 프로세스 종료)
-            localStorage.removeItem('checkoutData');
         }
     </script>
 </body>
