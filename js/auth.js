@@ -144,7 +144,8 @@ function getErrorMessage(err) {
             return "이메일 혹은 비밀번호가 정확하지 않습니다.";
         case "UsernameExistsException": return "이미 가입된 이메일입니다.";
         case "InvalidParameterException": return "입력 정보가 올바르지 않습니다.";
-        case "InvalidPasswordException": return "비밀번호는 8자 이상이어야 합니다.";
+        case "InvalidPasswordException": 
+            return "비밀번호는 영문 대문자, 소문자, 숫자, 특수문자를 각각 최소 1개 이상 포함하여 8자 이상으로 설정해야 합니다.";
         case "CodeMismatchException": return "인증 코드가 일치하지 않습니다.";
         case "LimitExceededException": return "요청 횟수 초과. 잠시 후 시도하세요.";
         case "UserNotConfirmedException": return "이메일 인증이 완료되지 않은 계정입니다.";
@@ -388,13 +389,21 @@ async function handleFinalSubmit() {
     // 대신 promoCode를 여기서 미리 가져오면 깔끔합니다.
     const promoCode = document.getElementById('promoCode').value;
 
-    // 2. 비밀번호 재확인
+    // 2. 비밀번호 강도 정규식 검사
+    const pwRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!pwRegex.test(password)) {
+        alert("비밀번호 조건을 확인해주세요.\n(영문 대/소문자, 숫자, 특수문자 포함 8자 이상)");
+        document.getElementById('password').focus();
+        return;
+    }
+    
+    // 3. 비밀번호 재확인
     if (password !== passwordConfirm) {
         alert("비밀번호가 일치하지 않습니다.");
         return;
     }
 
-    // 3. 라디오 버튼 값 추출 (계열 및 유입경로)
+    // 4. 라디오 버튼 값 추출 (계열 및 유입경로)
     const majorRadio = document.querySelector('input[name="major"]:checked');
     const referralRadio = document.querySelector('input[name="referral"]:checked');
 
@@ -409,10 +418,10 @@ async function handleFinalSubmit() {
     let referral = referralRadio.value;
     if (referral === 'etc') referral = document.getElementById('referralEtc').value;
 
-    // 4. 전화번호 형식 변환
+    // 5. 전화번호 형식 변환
     let onlyNumbers = phoneRaw.replace(/[^0-9]/g, ''); // 사용자가 어떻게 입력했든 숫자만 쏙 빼냅니다.
 
-    // 4-1. Cognito 가입용 (+82 포맷)
+    // 5-1. Cognito 가입용 (+82 포맷)
     let cleanPhone = onlyNumbers;
     if (cleanPhone.startsWith('010')) {
         cleanPhone = '+82' + cleanPhone.substring(1);
@@ -420,7 +429,7 @@ async function handleFinalSubmit() {
         cleanPhone = '+82' + cleanPhone;
     }
 
-    // 4-2. DB 저장용 (010-XXXX-XXXX 포맷 강제 적용)
+    // 5-2. DB 저장용 (010-XXXX-XXXX 포맷 강제 적용)
     let dbFormattedPhone = onlyNumbers;
     if (onlyNumbers.length === 11) {
         // 11자리 번호 (ex: 01012345678 -> 010-1234-5678)
@@ -430,7 +439,7 @@ async function handleFinalSubmit() {
         dbFormattedPhone = onlyNumbers.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
     }
 
-    // 5. Cognito 전송용 속성 설정
+    // 6. Cognito 전송용 속성 설정
     const attributeList = [
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'gender', Value: gender }),
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'given_name', Value: name }),
@@ -444,7 +453,7 @@ async function handleFinalSubmit() {
     submitBtn.innerText = "가입 처리 중...";
     submitBtn.disabled = true;
 
-    // 6. Cognito 회원가입 실행
+    // 7. Cognito 회원가입 실행
     userPool.signUp(email, password, attributeList, null, async function(err, result) {
         if (err) {
             alert(getErrorMessage(err)); 
@@ -455,7 +464,7 @@ async function handleFinalSubmit() {
 
         const userSub = result.userSub;
 
-        // 7. 성공 시 Lambda 호출 (승인 + DB 저장 한 번에!)
+        // 8. 성공 시 Lambda 호출
         try {
             const response = await fetch(AUTH_URL, {
                 method: 'POST',
