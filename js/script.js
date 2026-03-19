@@ -620,3 +620,16 @@ function leaveMockup(index) {
         targetBlock.classList.remove('active');
     }
 }
+
+window.toggleMockupMobile = function(index) {
+    if (window.innerWidth > 768) return; // PC 화면에서는 작동 안 함
+    
+    const blocks = document.querySelectorAll('.mockup-block');
+    blocks.forEach((block, i) => {
+        if (i + 1 === index) {
+            block.classList.toggle('active-expand');
+        } else {
+            block.classList.remove('active-expand'); // 다른 항목은 닫힘
+        }
+    });
+};

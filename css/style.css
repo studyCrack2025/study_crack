@@ -352,8 +352,6 @@ header {
 .tab-name { font-weight: 800; font-size: 1.1rem; }
 .tab-sub { font-size: 0.85rem; font-weight: 400; }
 
-/* style.css 추가 코드 */
-
 /* 1. 클릭 가능한 리스트 아이템 스타일 */
 .detail-list li.clickable-item { display: flex; align-items: flex-start; gap: 8px; width: 100%; cursor: pointer; }
 .detail-list li.clickable-item span { flex: 1; min-width: 0; white-space: normal; word-break: keep-all; overflow-wrap: anywhere; line-height: 1.5; text-decoration: underline; text-decoration-style: dashed; text-decoration-color: rgba(255, 255, 255, 0.4); text-underline-offset: 4px; text-decoration-thickness: 1px; border-bottom: none; background-image: none; padding-bottom: 0; transition: all 0.2s; }
@@ -400,6 +398,8 @@ header {
 .mock-progress-fill { height: 100%; background: #10b981; border-radius: 4px; }
 .mock-note { font-size: 0.8rem; color: #64748b; margin: 0; }
 .pro-note { background: #fffbeb; padding: 10px; border-left: 3px solid #f59e0b; border-radius: 4px; color: #78350f; }
+
+.mobile-desc-box { display: none; }
 
 /* 우측 특징 리스트 (시각적 동기화 적용) */
 .planner-right { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 30px; position: relative; z-index: 5; }
@@ -607,8 +607,6 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
     .pro-badge-sm { font-size: 0.5625rem; padding: 2.25px 6px; border-radius: 3px; }
 }
 
-@media (max-width: 768px) {    }
-
 @media (max-width: 768px) {
     /* 기존 유지: 헤더 및 메시지 섹션 배경 */
     header { flex-direction: column; gap: 15px; padding: 15px; }
@@ -688,7 +686,7 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
     .noti-panel { width: calc(100% - 40px); right: 20px; bottom: 145px; max-height: 400px; }
     
     /* =======================================
-       6. 모바일 데모 result-slide 폰트 및 그래프 깨짐 해결
+       6. 모바일 데모 result-slide
        ======================================= */
     .demo-card .analysis-content-wrapper { padding: 12px; }
     .demo-card .an-univ-name { font-size: 1.1rem !important; }
@@ -706,4 +704,16 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
     .sim-bar-label { font-size: 0.7rem; }
     .sim-summary { font-size: 0.75rem; margin-top: 10px; }
     .sim-line-wrapper { height: auto; margin-top: 10px; }
+    
+    /* =======================================
+       7. planner promo 섹션
+       ======================================= */
+    .planner-section { background-image: linear-gradient(rgba(248, 250, 252, 0.9), rgba(248, 250, 252, 0.9)), url('/assets/backgrounds/bg_planner_mobile.png') !important; } 
+    .planner-right { display: none !important; } 
+    .mockup-block { cursor: pointer; transition: all 0.3s ease; } 
+    .mockup-block.active-expand { transform: scale(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-color: #3b82f6; z-index: 10; margin: 15px 0; } 
+    .mockup-block.pro-block.active-expand { border-color: #f59e0b; box-shadow: 0 10px 20px rgba(245, 158, 11, 0.15); } 
+    .mockup-block.active-expand .mobile-desc-box { display: block; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #cbd5e1; animation: fadeIn 0.3s; } 
+    .mobile-desc-box h4 { font-size: 1.1rem; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; } 
+    .mobile-desc-box p { font-size: 1rem; color: #475569; line-height: 1.5; word-break: keep-all; } 
 }
