@@ -163,11 +163,20 @@ function selectProduct(element, url, tier) {
         // 2. Standard / Pro 유저인 경우 (7일 제한 로직 적용)
         else if (globalCurrentTier === 'standard' || globalCurrentTier === 'pro') {
             if (selectedLevel < currentLevel) {
-                msgWrap.style.display = 'block';
-                msgWrap.classList.add('warning');
-                msgText.innerHTML = `<i class="fas fa-exclamation-triangle"></i> 이미 <strong>${globalCurrentTier.toUpperCase()}</strong> 등급 회원입니다. 하위 등급 결제는 불가합니다.`;
-                btn.disabled = true;
-                btn.innerText = "하위 플랜 선택 불가";
+                // 다운그레이드: 7일 이하 남았을 때만 허용
+                if (globalDaysLeft <= 7 && globalDaysLeft > 0) {
+                    msgWrap.style.display = 'block';
+                    msgWrap.classList.add('warning');
+                    msgText.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <strong>다운그레이드 주의:</strong> 기존 만료일 이후부터는 <strong>${globalCurrentTier.toUpperCase()}</strong> 전용 혜택을 이용하실 수 없습니다. 계속 진행하시겠습니까?`;
+                    btn.disabled = false;
+                    btn.innerText = "하위 플랜으로 예약 결제";
+                } else {
+                    msgWrap.style.display = 'block';
+                    msgWrap.classList.add('warning');
+                    msgText.innerHTML = `<i class="fas fa-clock"></i> 기존 구독 기간이 <strong>${globalDaysLeft}일</strong> 남았습니다. 하위 플랜으로의 변경은 만료 7일 전부터 가능합니다.`;
+                    btn.disabled = true;
+                    btn.innerText = "플랜 변경 기간 아님";
+                }
             } else if (selectedLevel === currentLevel) {
                 // 동일 티어 연장 (7일 이하 남았을 때만 허용)
                 if (globalDaysLeft <= 7 && globalDaysLeft > 0) {
