@@ -33,13 +33,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // 엔터키 지원 코드들
     const emailInput = document.getElementById('email');
     if (emailInput && pwInput) {
-        emailInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleSignIn(); 
-        });
-
-        pwInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleSignIn();
-        });
+        // 로그인 페이지 등에서 사용
+        const triggerSignIn = (e) => { if (e.key === 'Enter') handleSignIn(); };
+        emailInput.addEventListener('keypress', triggerSignIn);
+        pwInput.addEventListener('keypress', triggerSignIn);
     }
     
     const findEmailName = document.getElementById('findEmailName');
@@ -67,6 +64,27 @@ document.addEventListener('DOMContentLoaded', () => {
         forgotPwConfirm.addEventListener('keypress', triggerConfirmReset);
     }
 
+    // --- 약관 동의 로직 통합 ---
+    const chkAll = document.getElementById('chkAll');
+    const chkRequired = document.querySelectorAll('.chk-required');
+
+    if (chkAll) {
+        chkAll.addEventListener('change', (e) => {
+            chkRequired.forEach(chk => {
+                chk.checked = e.target.checked;
+            });
+            updateSubmitButton(); // 버튼 상태 갱신
+        });
+    }
+
+    chkRequired.forEach(chk => {
+        chk.addEventListener('change', () => {
+            const allChecked = Array.from(chkRequired).every(c => c.checked);
+            if (chkAll) chkAll.checked = allChecked;
+            updateSubmitButton(); // 버튼 상태 갱신
+        });
+    });
+
     // URL에서 promo 파라미터 확인 후 프로모션 코드 자동 입력
     const urlParams = new URLSearchParams(window.location.search);
     const promoParam = urlParams.get('promo');
@@ -75,12 +93,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const promoInput = document.getElementById('promoCode');
         if (promoInput) {
             promoInput.value = promoParam;
-            // 코드를 임의로 수정하지 못하게 막고 싶다면 아래 두 줄을 유지하세요.
             promoInput.readOnly = true; 
             promoInput.style.backgroundColor = '#f1f5f9'; 
         }
     }
 });
+
+// 모달 제어 함수
+window.openTermModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.remove('hidden');
+};
+
+window.closeTermModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.add('hidden');
+};
 
 function toggleEtc(type, isShow) {
     let inputId = type === 'major' ? 'majorEtc' : 'referralEtc';
@@ -128,7 +156,13 @@ function updateSubmitButton() {
     const btn = document.getElementById('finalSubmitBtn');
     if(!btn) return; 
 
-    if (isEmailVerified && isPhoneVerified) {
+    const chkRequired = document.querySelectorAll('.chk-required');
+    let allTermsChecked = true;
+    if (chkRequired.length > 0) {
+        allTermsChecked = Array.from(chkRequired).every(c => c.checked);
+    }
+
+    if (isEmailVerified && isPhoneVerified && allTermsChecked) {
         btn.disabled = false;
         btn.style.backgroundColor = "#2563EB";
         btn.innerText = "회원가입 완료";
@@ -137,6 +171,7 @@ function updateSubmitButton() {
         btn.style.backgroundColor = "#ccc";
         if (!isEmailVerified) btn.innerText = "이메일 인증을 완료해주세요";
         else if (!isPhoneVerified) btn.innerText = "전화번호 인증을 완료해주세요";
+        else if (!allTermsChecked) btn.innerText = "필수 약관에 모두 동의해주세요";
     }
 }
 
@@ -333,6 +368,14 @@ async function handleFinalSubmit() {
         alert("이메일과 전화번호 인증을 모두 완료해주세요.");
         return;
     }
+    
+    const chkRequired = document.querySelectorAll('.chk-required');
+    const allTermsAgreed = Array.from(chkRequired).every(chk => chk.checked);
+
+    if (!allTermsAgreed) {
+        alert("모든 필수 약관에 동의하셔야 가입이 가능합니다.");
+        return;
+    }
 
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
@@ -428,7 +471,8 @@ async function handleFinalSubmit() {
                         major: major,
                         referral: referral,
                         gender: gender,
-                        birthdate: birthdate
+                        birthdate: birthdate,
+                        termsAgreed: true
                     }
                 })
             });
