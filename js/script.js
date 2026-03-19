@@ -53,7 +53,7 @@ const COURSE_DATA = {
     },
     basic: {
         title: "BASIC PLAN",
-        price: "49,000원",
+        price: `<span class="original-price">49,000원</span> <span class="discount-price">특별 할인가 <strong class="highlight-price">25,000원</strong></span>`,        
         desc: "내 점수와 목표 대학 합격선 사이의 거리를 정밀하게 진단합니다.",
         list: [
             // 수정: 목표 대학 최대 18개 명시
