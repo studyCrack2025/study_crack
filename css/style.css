@@ -559,9 +559,9 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 
     /* Curriculum */
     .curriculum-interactive-box { flex-direction: column-reverse; padding: 25px; }
-    .course-tab-nav { display: flex !important; flex-wrap: nowrap !important; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; gap: 12px; padding-bottom: 15px; margin: 0 -25px; padding-left: 25px; padding-right: 25px; } 
-    .course-tab-nav::-webkit-scrollbar { display: none; } 
-    .course-tab-btn { flex: 0 0 75% !important; scroll-snap-align: center; scroll-snap-stop: always; } 
+    .course-tab-nav { display: flex !important; flex-direction: row !important; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; gap: 12px; padding-bottom: 15px; margin: 0 -25px; padding-left: 25px; padding-right: 25px; }
+    .course-tab-nav::-webkit-scrollbar { display: none; }
+    .course-tab-btn { flex: 0 0 75% !important; scroll-snap-align: center; scroll-snap-stop: always; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 15px 10px; min-width: 0; gap: 6px; height: 100%; }
     .tab-icon { font-size: 1.6rem; }
     .tab-info { align-items: center; width: 100%; }
     .tab-name { font-size: 0.95rem; margin-bottom: 2px; }
