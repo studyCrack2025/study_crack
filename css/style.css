@@ -607,6 +607,8 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
     .pro-badge-sm { font-size: 0.5625rem; padding: 2.25px 6px; border-radius: 3px; }
 }
 
+@media (max-width: 768px) {    }
+
 @media (max-width: 768px) {
     /* 기존 유지: 헤더 및 메시지 섹션 배경 */
     header { flex-direction: column; gap: 15px; padding: 15px; }
@@ -656,15 +658,18 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
     }
 
     /* =======================================
-       4. 카드 UI (PPT, 리뷰, 커리큘럼) 내부 여백 축소
+       4. 카드 UI (PPT, 리뷰, 커리큘럼)
        ======================================= */
-    .hero-grid { grid-template-columns: 1fr; gap: 20px; }
+    .hero-grid { display: flex !important; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; gap: 15px; padding-bottom: 20px; margin: 0 -5%; padding-left: 5%; padding-right: 5%; } 
+    .hero-grid::-webkit-scrollbar { display: none; }
+    .ppt-card { flex: 0 0 85%; scroll-snap-align: center; scroll-snap-stop: always; }
     .ppt-card h3 { font-size: 1.1rem; padding: 0 15px; margin-bottom: 10px; }
     .card-icon-top { font-size: 2rem; margin: 20px 0 10px 0; }
     .card-body-text { padding: 0 15px 20px 15px; font-size: 0.9rem; }
 
-    .review-grid { grid-template-columns: 1fr; gap: 15px; }
-    .review-card { padding: 20px; }
+    .review-grid { display: flex !important; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; gap: 15px; padding-bottom: 20px; margin: 0 -5%; padding-left: 5%; padding-right: 5%; } 
+    .review-grid::-webkit-scrollbar { display: none; } 
+    .review-card { flex: 0 0 85%; scroll-snap-align: center; scroll-snap-stop: always; }
 
     .curriculum-interactive-box { padding: 20px; gap: 20px; }
     .detail-title { font-size: 1.4rem; margin-bottom: 10px; }
