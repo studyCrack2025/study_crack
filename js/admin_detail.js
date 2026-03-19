@@ -1326,7 +1326,7 @@ async function renderTargetUnivs(list, quantData) {
             const box = document.getElementById(`sim-box-${idx}`);
             const data = simData[idx]; 
 
-            if (data && data.base_ui_score && data.sim_data) {
+            if (data && typeof data.base_ui_score !== 'undefined' && data.sim_data) {
                 const currentScore = data.base_ui_score.toFixed(2);
                 
                 // +1점 시 최대 점수 상승폭 과목 찾기
