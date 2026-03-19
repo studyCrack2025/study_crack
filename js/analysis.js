@@ -2277,9 +2277,8 @@ function openFeedbackModal(data) {
                     </div>
                 </div>
             </div>
+            ${tutorFileBlockHtml}
         </div>
-        
-        ${tutorFileBlockHtml}
 
         <div class="mobile-only-msg" id="mobileMsgBox">
             <i class="fas fa-file-pdf"></i>
