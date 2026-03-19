@@ -588,3 +588,124 @@ function handleSignIn() {
         }
     });
 }
+
+// ==========================================
+// [Part G] 이메일/비밀번호 찾기 로직
+// ==========================================
+
+// 모달 열기/닫기 유틸리티
+function openAuthModal(modalId) {
+    document.getElementById(modalId).classList.remove('hidden');
+}
+
+function closeAuthModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+    // 데이터 초기화
+    if(modalId === 'forgotPwModal') {
+        document.getElementById('forgotPwStep1').classList.remove('hidden');
+        document.getElementById('forgotPwStep2').classList.add('hidden');
+        document.getElementById('forgotPwEmail').value = '';
+        document.getElementById('forgotPwCode').value = '';
+        document.getElementById('forgotPwNew').value = '';
+        document.getElementById('forgotPwConfirm').value = '';
+        const btn = document.getElementById('reqResetBtn');
+        btn.innerText = "인증 코드 받기";
+        btn.disabled = false;
+    } else if (modalId === 'findEmailModal') {
+        document.getElementById('findEmailName').value = '';
+        document.getElementById('findEmailPhone').value = '';
+        document.getElementById('foundEmailResult').classList.add('hidden');
+    }
+}
+
+// 1. 비밀번호 찾기
+function requestPasswordReset() {
+    const email = document.getElementById('forgotPwEmail').value.trim();
+    if(!email) { alert("이메일을 입력해주세요."); return; }
+
+    const btn = document.getElementById('reqResetBtn');
+    btn.innerText = "발송 중...";
+    btn.disabled = true;
+
+    const userData = { Username: email, Pool: userPool };
+    const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+
+    cognitoUser.forgotPassword({
+        onSuccess: function (data) {
+        },
+        onFailure: function(err) {
+            alert(getErrorMessage(err));
+            btn.innerText = "인증 코드 받기";
+            btn.disabled = false;
+        },
+        inputVerificationCode: function(data) {
+            // 정상적으로 메일이 발송되면 이 콜백을 탑니다.
+            alert("비밀번호 재설정 코드가 이메일로 발송되었습니다.");
+            document.getElementById('forgotPwStep1').classList.add('hidden');
+            document.getElementById('forgotPwStep2').classList.remove('hidden');
+        }
+    });
+}
+
+// 2. 비밀번호 찾기
+function confirmPasswordReset() {
+    const email = document.getElementById('forgotPwEmail').value.trim();
+    const code = document.getElementById('forgotPwCode').value.trim();
+    const newPw = document.getElementById('forgotPwNew').value;
+    const confirmPw = document.getElementById('forgotPwConfirm').value;
+
+    if(!code || !newPw || !confirmPw) { alert("모든 항목을 입력해주세요."); return; }
+    if(newPw !== confirmPw) { alert("비밀번호가 일치하지 않습니다."); return; }
+    if(newPw.length < 8) { alert("비밀번호는 8자 이상이어야 합니다."); return; }
+
+    const userData = { Username: email, Pool: userPool };
+    const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+
+    cognitoUser.confirmPassword(code, newPw, {
+        onSuccess: function() {
+            alert("비밀번호가 성공적으로 변경되었습니다. 새 비밀번호로 로그인해주세요.");
+            closeAuthModal('forgotPwModal');
+            document.getElementById('password').value = ''; // 메인 로그인 창 비번 비우기
+        },
+        onFailure: function(err) {
+            alert("비밀번호 변경 실패: " + getErrorMessage(err));
+        }
+    });
+}
+
+// 3. 이메일 찾기
+async function handleFindEmail() {
+    const name = document.getElementById('findEmailName').value.trim();
+    const phoneRaw = document.getElementById('findEmailPhone').value.replace(/[^0-9]/g, '');
+
+    if (!name || !phoneRaw) { alert("이름과 전화번호를 모두 입력해주세요."); return; }
+
+    // 전화번호 포맷 통일 (+82)
+    let phone = phoneRaw;
+    if (phone.startsWith('010')) phone = '+82' + phone.substring(1);
+    else if (phone.startsWith('10')) phone = '+82' + phone;
+
+    try {
+        const response = await fetch(AUTH_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'find_email', name: name, phone: phone })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const resultBox = document.getElementById('foundEmailResult');
+            
+            if (data.email) {
+                // 보안을 위해 일부 마스킹 처리해서 보여주는 것이 좋습니다
+                resultBox.innerHTML = `회원님의 이메일은 <strong>${data.email}</strong> 입니다.`;
+                resultBox.classList.remove('hidden');
+            } else {
+                alert("입력하신 정보와 일치하는 계정을 찾을 수 없습니다.");
+            }
+        } else {
+            alert("입력하신 정보와 일치하는 계정을 찾을 수 없습니다.");
+        }
+    } catch (e) {
+        alert("통신 중 오류가 발생했습니다. 잠시 후 시도해주세요.");
+    }
+}
