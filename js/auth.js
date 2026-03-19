@@ -507,7 +507,7 @@ async function handleFinalSubmit() {
                     window.dataLayer = window.dataLayer || [];
                     window.dataLayer.push({
                         event: "login",
-                        userid: currentUserId
+                        userid: userId
                     });
                     
                     // 이미 로그인(토큰 발급)이 완료된 상태로 Welcome 페이지 이동!
