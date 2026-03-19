@@ -29,7 +29,8 @@ document.addEventListener('DOMContentLoaded', () => {
         pwInput.addEventListener('input', checkPasswordMatch);
         pwConfirmInput.addEventListener('input', checkPasswordMatch);
     }
-
+    
+    // 엔터키 지원 코드들
     const emailInput = document.getElementById('email');
     if (emailInput && pwInput) {
         emailInput.addEventListener('keypress', (e) => {
@@ -39,6 +40,31 @@ document.addEventListener('DOMContentLoaded', () => {
         pwInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') handleSignIn();
         });
+    }
+    
+    const findEmailName = document.getElementById('findEmailName');
+    const findEmailPhone = document.getElementById('findEmailPhone');
+    if (findEmailName && findEmailPhone) {
+        const triggerFindEmail = (e) => { if (e.key === 'Enter') handleFindEmail(); };
+        findEmailName.addEventListener('keypress', triggerFindEmail);
+        findEmailPhone.addEventListener('keypress', triggerFindEmail);
+    }
+
+    const forgotPwEmail = document.getElementById('forgotPwEmail');
+    if (forgotPwEmail) {
+        forgotPwEmail.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') requestPasswordReset();
+        });
+    }
+    
+    const forgotPwCode = document.getElementById('forgotPwCode');
+    const forgotPwNew = document.getElementById('forgotPwNew');
+    const forgotPwConfirm = document.getElementById('forgotPwConfirm');
+    if (forgotPwCode && forgotPwNew && forgotPwConfirm) {
+        const triggerConfirmReset = (e) => { if (e.key === 'Enter') confirmPasswordReset(); };
+        forgotPwCode.addEventListener('keypress', triggerConfirmReset);
+        forgotPwNew.addEventListener('keypress', triggerConfirmReset);
+        forgotPwConfirm.addEventListener('keypress', triggerConfirmReset);
     }
 
     // URL에서 promo 파라미터 확인 후 프로모션 코드 자동 입력
