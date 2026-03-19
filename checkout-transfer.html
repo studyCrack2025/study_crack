@@ -168,23 +168,24 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}` 
                     },
-                    // Lambda 연동 시 어떤 플랜의 입금 요청인지 백엔드도 알아야 하므로 tier 정보 같이 전송 (필요시 백엔드 스펙에 맞게 수정)
                     body: JSON.stringify({ 
-                        type: 'submit_transfer',
+                        type: 'submit_trial_transfer',
                         tier: currentTier
                     }) 
                 });
 
                 if (response.ok) {
-                    // [핵심 변경사항] 화면 교체 로직(showSuccessScreen)을 지우고, Success 페이지로 리다이렉트
                     localStorage.removeItem('checkoutData'); // 결제 정보 초기화
                     window.location.href = `/success?tier=${currentTier}`;
                 } else {
+                    const errData = await response.json();
+                    console.error("서버 에러:", errData);
                     alert("요청 처리 중 문제가 발생했습니다. 1:1 문의를 남겨주세요.");
                     btn.innerHTML = `송금 완료했습니다`;
                     btn.disabled = false;
                 }
             } catch (error) {
+                console.error("통신 에러:", error);
                 alert("통신 오류가 발생했습니다. 네트워크 상태를 확인해주세요.");
                 btn.innerHTML = `송금 완료했습니다`;
                 btn.disabled = false;
