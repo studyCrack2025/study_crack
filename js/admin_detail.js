@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // 2. Back 버튼 처리 (튜터/관리자 분기) - [수정됨: 절대경로 적용]
+    // 2. Back 버튼 처리 (튜터/관리자 분기)
     const backBtn = document.querySelector('.back-btn');
     const userRole = localStorage.getItem('userRole');
 
@@ -1284,9 +1284,73 @@ function renderTargetUnivs(list) {
 
 function renderQualitativeDetail(q) {
     const area = document.getElementById('qualContentArea');
-    if (!q) { area.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px;">데이터가 없습니다.</p>'; return; }
+    if (!q) { 
+        area.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px;">데이터가 없습니다.</p>'; 
+        return; 
+    }
+    
+    // 값이 없으면 '-' 출력하는 헬퍼 함수
     const v = (val) => val ? escapeHtml(val) : '-';
-    area.innerHTML = `<div class="qual-section"><div class="qual-head">📍 현재 상황</div><div class="qual-grid"><div class="qual-item"><span class="detail-label">학년</span><div>${v(q.status)}</div></div><div class="qual-item"><span class="detail-label">희망계열</span><div>${v(q.stream)}</div></div><div class="qual-item"><span class="detail-label">희망진로</span><div>${v(q.career)}</div></div></div></div>`;
+    
+    area.innerHTML = `
+        <div class="qual-section">
+            <div class="qual-head">📍 현재 상황</div>
+            <div class="qual-grid">
+                <div class="qual-item"><span class="detail-label">학년</span><div>${v(q.status?.S)}</div></div>
+                <div class="qual-item"><span class="detail-label">출신 학교</span><div>${v(q.school?.S)}</div></div>
+                <div class="qual-item"><span class="detail-label">희망계열</span><div>${v(q.stream?.S)}</div></div>
+                <div class="qual-item"><span class="detail-label">희망진로</span><div>${v(q.career?.S)}</div></div>
+            </div>
+        </div>
+
+        <div class="qual-section">
+            <div class="qual-head">📍 원서 가치관</div>
+            <div class="qual-grid">
+                <div class="qual-item"><span class="detail-label">필수 진학 여부</span><div>${v(q.values?.M?.mustGo?.S)}</div></div>
+                <div class="qual-item"><span class="detail-label">우선순위</span><div>${v(q.values?.M?.priority?.S)}</div></div>
+                <div class="qual-item"><span class="detail-label">지원 전략</span><div>${v(q.values?.M?.strategy?.S)}</div></div>
+                <div class="qual-item"><span class="detail-label">지역 범위</span><div>${v(q.values?.M?.region?.S)}</div></div>
+                <div class="qual-item"><span class="detail-label">최악의 시나리오</span><div>${v(q.values?.M?.worst?.S)}</div></div>
+                <div class="qual-item"><span class="detail-label">교차지원 가능 여부</span><div>${v(q.values?.M?.cross?.S)}</div></div>
+            </div>
+        </div>
+
+        <div class="qual-section">
+            <div class="qual-head">📍 대학 후보군 상세</div>
+            <div class="qual-grid">
+                <div class="qual-item"><span class="detail-label">가군 관심 대학</span><div>${v(q.candidates?.M?.ga?.S)}</div></div>
+                <div class="qual-item"><span class="detail-label">나군 관심 대학</span><div>${v(q.candidates?.M?.na?.S)}</div></div>
+                <div class="qual-item"><span class="detail-label">다군 관심 대학</span><div>${v(q.candidates?.M?.da?.S)}</div></div>
+                <div class="qual-item"><span class="detail-label">1순위 희망 대학 (이유)</span><div>${v(q.candidates?.M?.most?.S)}</div></div>
+                <div class="qual-item"><span class="detail-label">기피 대학 (이유)</span><div>${v(q.candidates?.M?.least?.S)}</div></div>
+                <div class="qual-item"><span class="detail-label">본인 감각 (상/적/안)</span><div>${v(q.candidates?.M?.self?.S)}</div></div>
+            </div>
+        </div>
+
+        <div class="qual-section">
+            <div class="qual-head">📍 최종 희망 대학 리스트</div>
+            <div class="qual-grid">
+                ${q.targets?.L ? q.targets.L.map((t, i) => `<div class="qual-item"><span class="detail-label">${i+1}지망</span><div>${v(t.S)}</div></div>`).join('') : '<div class="qual-item">데이터 없음</div>'}
+            </div>
+        </div>
+
+        <div class="qual-section">
+            <div class="qual-head">📍 부모님 / 환경 요인</div>
+            <div class="qual-grid">
+                <div class="qual-item"><span class="detail-label">부모님 의견 영향도</span><div>${v(q.parents?.M?.influence?.S)}</div></div>
+                <div class="qual-item"><span class="detail-label">부모님 추천/반대 대학</span><div>${v(q.parents?.M?.opinion?.S)}</div></div>
+            </div>
+        </div>
+
+        <div class="qual-section">
+            <div class="qual-head">📍 특이사항</div>
+            <div class="qual-grid">
+                <div class="qual-item"><span class="detail-label">편입 계획</span><div>${v(q.special?.M?.transfer?.S)}</div></div>
+                <div class="qual-item"><span class="detail-label">교직 이수</span><div>${v(q.special?.M?.teaching?.S)}</div></div>
+                <div class="qual-item" style="grid-column: 1 / -1;"><span class="detail-label">기타 멘토에게 하고 싶은 말</span><div>${v(q.special?.M?.etc?.S)}</div></div>
+            </div>
+        </div>
+    `;
 }
 
 function renderPayments(p) {
