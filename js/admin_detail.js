@@ -195,7 +195,7 @@ function renderData(s) {
     document.getElementById('adminMemoInput').value = s.adminMemo || '';
 
     // 5. 기타 데이터 렌더링
-    renderTargetUnivs(s.targetUnivs || []);
+    renderTargetUnivs(s.targetUnivs || [], s.quantitative);
     renderQualitativeDetail(s.qualitative);
     
     // 6. 성적 데이터 초기화 (드롭다운 빌드)
@@ -1265,21 +1265,109 @@ function showModal(title, contentHtml) {
     modal.style.display = 'flex';
 }
 
-function renderTargetUnivs(list) {
+async function renderTargetUnivs(list, quantData) {
     const container = document.getElementById('viewTargetUnivList');
     container.innerHTML = '';
     const validList = list.filter(u => u && u.univ);
+    
     if (validList.length === 0) {
         container.innerHTML = '<p style="color:#94a3b8;">설정된 목표 대학이 없습니다.</p>';
         return;
     }
+
+    // 📌 하드코딩: 3월 학평 기준 설정
+    const examMode = 'mar';
+    const hasMarScore = quantData && quantData[examMode] && (quantData[examMode].kor || quantData[examMode].math || quantData[examMode].eng);
+
+    // 1. 카드 레이아웃 및 로딩 상태 먼저 그리기
     validList.forEach((u, idx) => {
         const div = document.createElement('div');
         div.className = 'target-univ-item';
         const dateStr = u.date ? new Date(u.date).toLocaleDateString() + ' 선택' : '날짜 정보 없음';
-        div.innerHTML = `<div><strong>${idx+1}. ${escapeHtml(u.univ)}</strong><div class="major">${escapeHtml(u.major)}</div></div><div class="date">${dateStr}</div>`;
+
+        div.innerHTML = `
+            <div style="display:flex; flex-direction:column; gap:5px;">
+                <strong>${idx+1}. ${escapeHtml(u.univ)}</strong>
+                <div class="major">${escapeHtml(u.major)}</div>
+            </div>
+            <div class="sim-summary-box empty" id="sim-box-${idx}">
+                ${hasMarScore 
+                    ? '<div style="text-align:center; padding:10px; color:#3b82f6;"><i class="fas fa-spinner fa-spin"></i> 분석 중...</div>' 
+                    : '<div class="sim-exam-label" style="color:#94a3b8;"><i class="fas fa-exclamation-circle"></i> 3월 학평 기준</div><div style="font-size:0.8rem; color:#94a3b8; text-align:center; padding:5px 0;">성적 데이터 없음</div>'}
+            </div>
+            <div class="date">${dateStr}</div>
+        `;
         container.appendChild(div);
     });
+
+    // 2. 3월 성적이 없으면 API 호출 생략
+    if (!hasMarScore) return;
+
+    // 3. 성적이 존재하면 실제 분석 API 호출
+    try {
+        const token = localStorage.getItem('accessToken');
+        const res = await fetch(CONFIG.api.analysis, { // analysis.js와 동일한 엔드포인트 사용
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'simulate_score_rise',
+                userId: targetUserId, // 관리자 토큰이지만 분석 대상은 학생(targetUserId)
+                targetUnivs: validList,
+                userScores: quantData[examMode],
+                examMode: examMode
+            })
+        });
+
+        if (!res.ok) throw new Error("시뮬레이션 분석 실패");
+        const simData = await res.json();
+
+        // 4. API 응답 데이터를 기반으로 UI 업데이트
+        validList.forEach((u, idx) => {
+            const box = document.getElementById(`sim-box-${idx}`);
+            const data = simData[idx]; 
+
+            if (data && data.base_ui_score && data.sim_data) {
+                const currentScore = data.base_ui_score.toFixed(2);
+                
+                // +1점 시 최대 점수 상승폭 과목 찾기
+                let maxRise = 0;
+                let bestSubName = '-';
+                const subjects = [
+                    { key: 'kor', name: '국어' },
+                    { key: 'math', name: '수학' },
+                    { key: 'inq1', name: data.sim_data.inq1?.name || '탐구1' },
+                    { key: 'inq2', name: data.sim_data.inq2?.name || '탐구2' }
+                ];
+
+                subjects.forEach(sub => {
+                    const info = data.sim_data[sub.key];
+                    if (info && info.uiDiff > maxRise) {
+                        maxRise = info.uiDiff;
+                        bestSubName = sub.name;
+                    }
+                });
+
+                // 성공적으로 데이터를 찾은 경우 박스 채우기
+                box.className = 'sim-summary-box';
+                box.innerHTML = `
+                    <div class="sim-exam-label"><i class="fas fa-bolt"></i> 3월 학평 기준 시뮬레이션</div>
+                    <div class="sim-score-row"><span>현재 환산</span><strong>${currentScore}점</strong></div>
+                    <div class="sim-score-row"><span>+1문제 효율</span><span class="sim-highlight">${bestSubName} (+${maxRise.toFixed(2)}점)</span></div>
+                `;
+            } else {
+                // 지원 불가거나 분석 데이터가 누락된 경우
+                box.innerHTML = `<div style="font-size:0.8rem; color:#ef4444; text-align:center; padding:5px 0;">분석 데이터 부족 (지원 불가 등)</div>`;
+            }
+        });
+
+    } catch (e) {
+        console.error("Simulation API Error:", e);
+        // 에러 발생 시 모든 박스를 에러 상태로 변경
+        validList.forEach((u, idx) => {
+            const box = document.getElementById(`sim-box-${idx}`);
+            if (box) box.innerHTML = `<div style="font-size:0.8rem; color:#ef4444; text-align:center; padding:5px 0;">분석 서버 오류</div>`;
+        });
+    }
 }
 
 function renderQualitativeDetail(q) {
