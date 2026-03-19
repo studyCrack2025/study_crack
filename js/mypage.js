@@ -404,6 +404,14 @@ function startTimer(duration, displayId) {
     }, 1000);
 }
 
+// 로그아웃 처리 (auth.js와 연동되거나 단독 사용)
+function handleSignOut() {
+    if (cognitoUser) cognitoUser.signOut();
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = '/login';
+}
+
 // ==========================================
 // [기능 3] 프로필 사진 관리
 // ==========================================
@@ -501,46 +509,79 @@ function checkDeleteButtonVisibility(url) {
 // ==========================================
 // [기능 4] 회원 탈퇴
 // ==========================================
-async function handleDeleteAccount() {
-    if (!confirm("정말로 탈퇴하시겠습니까?\n\n탈퇴 시 저장된 모든 데이터가 영구 삭제됩니다.")) return;
+
+// 1. 탈퇴 버튼 클릭 시 단순 알림창이 아닌 '비밀번호 확인 모달'을 띄웁니다.
+function handleDeleteAccount() {
+    document.getElementById('deleteAccountPassword').value = ''; // 모달 열 때마다 비밀번호 입력칸 초기화
+    document.getElementById('deleteAccountModal').classList.remove('hidden');
+}
+
+// 2. 모달에서 '탈퇴합니다' 버튼을 눌렀을 때 실행되는 로직
+function executeDeleteAccount() {
+    const password = document.getElementById('deleteAccountPassword').value;
+    
+    if (!password) {
+        alert("비밀번호를 입력해주세요.");
+        return;
+    }
+
+    if (!cognitoUser) {
+        alert("유저 세션이 만료되었습니다. 다시 로그인해주세요.");
+        window.location.href = '/login';
+        return;
+    }
+
+    // 로딩 상태 표시 (중복 클릭 방지)
+    const btn = document.querySelector('#deleteAccountModal .danger-btn');
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 비밀번호 확인 중...`;
+    btn.disabled = true;
+
+    // Cognito를 통해 현재 비밀번호가 일치하는지(본인인지) 검증합니다.
+    const authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails({
+        Username: cognitoUser.getUsername(),
+        Password: password,
+    });
+
+    cognitoUser.authenticateUser(authenticationDetails, {
+        onSuccess: async function (result) {
+            // 비밀번호 검증이 완벽하게 통과되면 실제 DB 삭제 API를 호출합니다.
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 데이터 삭제 중...`;
+            await processBackendDeletion();
+        },
+        onFailure: function (err) {
+            // 비밀번호가 틀렸을 경우
+            alert("비밀번호가 일치하지 않습니다. 다시 확인해주세요.");
+            btn.innerText = "네, 모든 데이터를 삭제하고 탈퇴합니다";
+            btn.disabled = false;
+        }
+    });
+}
+
+// 3. 실제 백엔드(DB, Cognito)에서 데이터를 지우는 통신 로직
+async function processBackendDeletion() {
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('idToken');
+    
     try {
         const response = await fetch(MYPAGE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'delete_user', userId })
         });
+        
         if (response.ok) { 
-            alert("탈퇴가 완료되었습니다."); 
-            localStorage.clear(); sessionStorage.clear(); 
-            window.location.href = '/index'; 
-        } else { throw new Error("탈퇴 실패"); }
-    } catch (error) { alert("오류 발생"); }
-}
-
-// 로그아웃 처리 (auth.js와 연동되거나 단독 사용)
-function handleSignOut() {
-    if (cognitoUser) cognitoUser.signOut();
-    localStorage.clear();
-    sessionStorage.clear();
-    window.location.href = '/login';
-}
-
-function setupUI() {
-    // 모달 닫기 이벤트 등
-    window.onclick = function(event) {
-        if (event.target.classList.contains('modal')) {
-            event.target.classList.add('hidden');
+            alert("회원 탈퇴가 정상적으로 완료되었습니다. 그동안 스터디크랙을 이용해 주셔서 감사합니다."); 
+            localStorage.clear(); 
+            sessionStorage.clear(); 
+            window.location.href = '/'; // 탈퇴 완료 후 메인 페이지로 이동
+        } else { 
+            throw new Error("탈퇴 처리 실패"); 
         }
-    }
-    
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', (e) => {
-            e.preventDefault(); // a 태그의 기본 동작(페이지 맨 위로 튕기는 현상) 방지
-            handleSignOut();
-        });
+    } catch (error) { 
+        alert("서버 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+        const btn = document.querySelector('#deleteAccountModal .danger-btn');
+        btn.innerText = "네, 모든 데이터를 삭제하고 탈퇴합니다";
+        btn.disabled = false;
     }
 }
 
@@ -557,6 +598,23 @@ function checkTutorButtonVisibility(tier) {
         btnContainer.classList.remove('hidden'); // 버튼 보이기
     } else {
         btnContainer.classList.add('hidden'); // 버튼 숨기기
+    }
+}
+
+function setupUI() {
+    // 모달 닫기 이벤트 등
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.classList.add('hidden');
+        }
+    }
+    
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault(); // a 태그의 기본 동작(페이지 맨 위로 튕기는 현상) 방지
+            handleSignOut();
+        });
     }
 }
 
