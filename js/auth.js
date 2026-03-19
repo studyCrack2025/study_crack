@@ -619,7 +619,7 @@ function closeAuthModal(modalId) {
 }
 
 // 1. 비밀번호 찾기
-function requestPasswordReset() {
+async function requestPasswordReset() {
     const email = document.getElementById('forgotPwEmail').value.trim();
     if(!email) { alert("이메일을 입력해주세요."); return; }
 
@@ -627,28 +627,31 @@ function requestPasswordReset() {
     btn.innerText = "발송 중...";
     btn.disabled = true;
 
-    const userData = { Username: email, Pool: userPool };
-    const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+    try {
+        const response = await fetch(AUTH_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'send_pw_reset_code', email: email })
+        });
 
-    cognitoUser.forgotPassword({
-        onSuccess: function (data) {
-        },
-        onFailure: function(err) {
-            alert(getErrorMessage(err));
-            btn.innerText = "인증 코드 받기";
-            btn.disabled = false;
-        },
-        inputVerificationCode: function(data) {
-            // 정상적으로 메일이 발송되면 이 콜백을 탑니다.
+        if (response.ok) {
             alert("비밀번호 재설정 코드가 이메일로 발송되었습니다.");
             document.getElementById('forgotPwStep1').classList.add('hidden');
             document.getElementById('forgotPwStep2').classList.remove('hidden');
+        } else {
+            const data = await response.json();
+            alert(data.error || "가입되지 않은 이메일입니다.");
+            btn.innerText = "인증 코드 받기";
+            btn.disabled = false;
         }
-    });
+    } catch (e) {
+        alert("통신 중 오류가 발생했습니다.");
+        btn.innerText = "인증 코드 받기";
+        btn.disabled = false;
+    }
 }
 
-// 2. 비밀번호 찾기
-function confirmPasswordReset() {
+// 2. 비밀번호 재설정 확정
+async function confirmPasswordReset() {
     const email = document.getElementById('forgotPwEmail').value.trim();
     const code = document.getElementById('forgotPwCode').value.trim();
     const newPw = document.getElementById('forgotPwNew').value;
@@ -658,19 +661,23 @@ function confirmPasswordReset() {
     if(newPw !== confirmPw) { alert("비밀번호가 일치하지 않습니다."); return; }
     if(newPw.length < 8) { alert("비밀번호는 8자 이상이어야 합니다."); return; }
 
-    const userData = { Username: email, Pool: userPool };
-    const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+    try {
+        const response = await fetch(AUTH_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'reset_password', email: email, code: code, newPassword: newPw })
+        });
 
-    cognitoUser.confirmPassword(code, newPw, {
-        onSuccess: function() {
+        if (response.ok) {
             alert("비밀번호가 성공적으로 변경되었습니다. 새 비밀번호로 로그인해주세요.");
             closeAuthModal('forgotPwModal');
-            document.getElementById('password').value = ''; // 메인 로그인 창 비번 비우기
-        },
-        onFailure: function(err) {
-            alert("비밀번호 변경 실패: " + getErrorMessage(err));
+            document.getElementById('password').value = ''; 
+        } else {
+            const data = await response.json();
+            alert(data.error || "인증코드가 일치하지 않거나 만료되었습니다.");
         }
-    });
+    } catch (e) {
+        alert("통신 중 오류가 발생했습니다.");
+    }
 }
 
 // 3. 이메일 찾기
@@ -680,15 +687,17 @@ async function handleFindEmail() {
 
     if (!name || !phoneRaw) { alert("이름과 전화번호를 모두 입력해주세요."); return; }
 
-    // 전화번호 포맷 통일 (+82)
-    let phone = phoneRaw;
-    if (phone.startsWith('010')) phone = '+82' + phone.substring(1);
-    else if (phone.startsWith('10')) phone = '+82' + phone;
+    let dbFormattedPhone = phoneRaw;
+    if (phoneRaw.length === 11) {
+        dbFormattedPhone = phoneRaw.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+    } else if (phoneRaw.length === 10) {
+        dbFormattedPhone = phoneRaw.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+    }
 
     try {
         const response = await fetch(AUTH_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'find_email', name: name, phone: phone })
+            body: JSON.stringify({ type: 'find_email', name: name, phone: dbFormattedPhone })
         });
         
         if (response.ok) {
@@ -696,7 +705,6 @@ async function handleFindEmail() {
             const resultBox = document.getElementById('foundEmailResult');
             
             if (data.email) {
-                // 보안을 위해 일부 마스킹 처리해서 보여주는 것이 좋습니다
                 resultBox.innerHTML = `회원님의 이메일은 <strong>${data.email}</strong> 입니다.`;
                 resultBox.classList.remove('hidden');
             } else {
