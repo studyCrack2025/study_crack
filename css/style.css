@@ -550,36 +550,25 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 /* =========================================
    11. 모바일 반응형 (통합)
    ========================================= */
+   
 @media (max-width: 900px) {
     /* Message Section 모바일 대응 */
     .message-container { flex-direction: column; text-align: center; gap: 40px; }
     .message-text-area { text-align: center; margin-bottom: 30px; }
     .dotted-line-connector::after { width: 80%; }
 
-    /* [유지] Curriculum */
+    /* Curriculum */
     .curriculum-interactive-box { flex-direction: column-reverse; padding: 25px; }
-    .course-tab-nav { width: 100%; display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px; overflow-x: visible; padding-bottom: 0; }
-    .course-tab-btn { flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 15px 10px; min-width: 0; gap: 6px; height: 100%; }
+    .course-tab-nav { display: flex !important; flex-wrap: nowrap !important; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; gap: 12px; padding-bottom: 15px; margin: 0 -25px; padding-left: 25px; padding-right: 25px; } 
+    .course-tab-nav::-webkit-scrollbar { display: none; } 
+    .course-tab-btn { flex: 0 0 75% !important; scroll-snap-align: center; scroll-snap-stop: always; } 
     .tab-icon { font-size: 1.6rem; }
     .tab-info { align-items: center; width: 100%; }
     .tab-name { font-size: 0.95rem; margin-bottom: 2px; }
     .tab-sub { font-size: 0.75rem; opacity: 0.8; white-space: nowrap; }
     .detail-title { font-size: 1.6rem; }
-    .feature-preview-panel {
-        width: 100%;
-        height: 100%;
-        top: auto;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        border-left: none;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        transform: translateY(110%); /* 아래로 숨김 */
-    }
-
-    .feature-preview-panel.active {
-        transform: translateY(0); /* 위로 올라옴 */
-    }
+    .feature-preview-panel { width: 100%; height: 100%; top: auto; bottom: 0; left: 0; right: 0; border-left: none; border-top: 1px solid rgba(255, 255, 255, 0.1); transform: translateY(110%); }
+    .feature-preview-panel.active { transform: translateY(0); }
     
     .planner-section { background-image: url('/assets/backgrounds/bg_planner_mobile.png'); }
     .planner-container { flex-direction: column; gap: 30px; }
@@ -608,7 +597,7 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 }
 
 @media (max-width: 768px) {
-    /* 기존 유지: 헤더 및 메시지 섹션 배경 */
+    /* 헤더 및 메시지 섹션 배경 */
     header { flex-direction: column; gap: 15px; padding: 15px; }
     .nav-links { flex-wrap: wrap; justify-content: center; gap: 15px; }
     .message-section {
