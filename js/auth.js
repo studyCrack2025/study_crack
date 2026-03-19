@@ -424,7 +424,13 @@ async function handleFinalSubmit() {
                     
                     const isTutor = (promoCode === "studycrack_1111");
                     localStorage.setItem('userRole', isTutor ? 'tutor' : 'student');
-
+                    
+                    window.dataLayer = window.dataLayer || [];
+                    window.dataLayer.push({
+                        event: "login",
+                        userid: currentUserId
+                    });
+                    
                     // 이미 로그인(토큰 발급)이 완료된 상태로 Welcome 페이지 이동!
                     if (promoCode) {
                         window.location.href = `/welcome?promo=${encodeURIComponent(promoCode)}`;
@@ -523,6 +529,12 @@ function handleSignIn() {
             localStorage.setItem('idToken', idToken.getJwtToken());
             localStorage.setItem('userEmail', email);
             localStorage.setItem('userId', userId);
+            
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({
+                event: "login",
+                userid: userId
+            });
             
             // [중요] 토큰 헤더 포함해서 유저 정보 조회 (Authorization)
             fetch(API_URL, {
