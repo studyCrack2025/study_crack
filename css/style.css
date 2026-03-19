@@ -706,14 +706,18 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
     .sim-line-wrapper { height: auto; margin-top: 10px; }
     
     /* =======================================
-       7. planner promo 섹션
+       7. planner promo 모바일 섹션
        ======================================= */
     .planner-section { background-image: linear-gradient(rgba(248, 250, 252, 0.9), rgba(248, 250, 252, 0.9)), url('/assets/backgrounds/bg_planner_mobile.png') !important; } 
     .planner-right { display: none !important; } 
     .mockup-block { cursor: pointer; transition: all 0.3s ease; } 
-    .mockup-block.active-expand { transform: scale(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-color: #3b82f6; z-index: 10; margin: 15px 0; } 
+    .mockup-block h5 { font-size: 0.85rem; margin-bottom: 8px; } 
+    .mock-list { font-size: 0.75rem; gap: 6px; } 
+    .mock-note { font-size: 0.7rem; } 
+    .mock-chart { height: 12px; } 
+    .mockup-block.active-expand { transform: scale(1.08); box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-color: #3b82f6; z-index: 10; margin: 15px 0; } 
     .mockup-block.pro-block.active-expand { border-color: #f59e0b; box-shadow: 0 10px 20px rgba(245, 158, 11, 0.15); } 
-    .mockup-block.active-expand .mobile-desc-box { display: block; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #cbd5e1; animation: fadeIn 0.3s; } 
-    .mobile-desc-box h4 { font-size: 1.1rem; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; } 
-    .mobile-desc-box p { font-size: 1rem; color: #475569; line-height: 1.5; word-break: keep-all; } 
+    .mockup-block.active-expand .mobile-desc-box { display: block; margin-top: 12px; padding-top: 12px; border-top: 1px dashed #cbd5e1; animation: fadeIn 0.3s; } 
+    .mobile-desc-box h4 { font-size: 0.85rem; color: #1e293b; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; word-break: keep-all; overflow-wrap: break-word; } 
+    .mobile-desc-box p { font-size: 0.75rem; color: #475569; line-height: 1.4; margin: 0; word-break: keep-all; overflow-wrap: break-word; }
 }
