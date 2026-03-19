@@ -159,6 +159,8 @@ small { color: #64748b; font-size: 0.9rem; }
 .tier-basic .original-price { font-size: 0.85rem; font-weight: 400; text-decoration: line-through; color: #94a3b8 !important; }
 .tier-basic .discount-price { font-size: 1.15rem; font-weight: 800; color: #059669 !important; }
 
+.best-badge { position: absolute; top: -12px; right: 20px; background: #2563EB; color: #fff; font-size: 0.75rem; font-weight: 800; padding: 4px 12px; border-radius: 20px; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3); letter-spacing: 0.5px; z-index: 10; }
+
 /* 결제 버튼 */
 .btn-pay { 
     width: 100%; 
