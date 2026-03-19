@@ -569,6 +569,7 @@ input[type="number"]::-webkit-inner-spin-button {
     margin: 0;
 }
 
+
 /* ============================================================
    [10] 모바일 반응형 및 인쇄 설정
    ============================================================ */
@@ -612,13 +613,11 @@ input[type="number"]::-webkit-inner-spin-button {
        3. PRO 테마 섹션 축소
        ======================================= */
     .pro-theme { padding: 25px 20px; border-radius: 12px; width: 100%; box-sizing: border-box; }
-    .pro-promo-grid { display: flex !important; flex-wrap: nowrap !important; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; gap: 15px; padding-bottom: 20px; margin: 0 -5%; padding-left: 5%; padding-right: 5%; }
-    .pro-promo-grid::-webkit-scrollbar { display: none; }
-    .pro-feature-card { flex: 0 0 85% !important; scroll-snap-align: center; scroll-snap-stop: always; display: flex !important; flex-direction: column !important; align-items: flex-start !important; text-align: left !important; word-break: keep-all; overflow-wrap: break-word; }
-    }
+    .pro-promo-grid { grid-template-columns: 1fr; gap: 15px; }
     .pro-title { font-size: 1.4rem; word-break: keep-all; line-height: 1.3; }
     .pro-desc { font-size: 0.9rem; word-break: keep-all; line-height: 1.5; margin-bottom: 20px; }
     .pro-cta-btn { padding: 14px 20px; font-size: 1rem; margin-top: 20px; width: 100%; box-sizing: border-box; }
+    .pro-feature-card { display: grid; grid-template-columns: min-content 1fr; grid-template-rows: auto auto; column-gap: 15px; row-gap: 5px; padding: 18px 20px; align-items: start; text-align: left; word-break: break-word; }
     .pro-input-card { padding: 15px; margin-bottom: 15px; }
     .feat-icon { grid-column: 1; grid-row: 1 / 3; margin-bottom: 0; font-size: 2rem; margin-top: 2px; }
     .feat-title { grid-column: 2; grid-row: 1; margin-bottom: 0; font-size: 1.05rem; line-height: 1.3; }
