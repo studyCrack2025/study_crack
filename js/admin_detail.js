@@ -1306,12 +1306,12 @@ async function renderTargetUnivs(list, quantData) {
     // 3. 성적이 존재하면 실제 분석 API 호출
     try {
         const token = localStorage.getItem('accessToken');
-        const res = await fetch(CONFIG.api.analysis, { // analysis.js와 동일한 엔드포인트 사용
+        const res = await fetch(CONFIG.api.analysis, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'simulate_score_rise',
-                userId: targetUserId, // 관리자 토큰이지만 분석 대상은 학생(targetUserId)
+                userId: targetUserId,
                 targetUnivs: validList,
                 userScores: quantData[examMode],
                 examMode: examMode
@@ -1352,17 +1352,15 @@ async function renderTargetUnivs(list, quantData) {
                 box.innerHTML = `
                     <div class="sim-exam-label"><i class="fas fa-bolt"></i> 3월 학평 기준 시뮬레이션</div>
                     <div class="sim-score-row"><span>현재 환산</span><strong>${currentScore}점</strong></div>
-                    <div class="sim-score-row"><span>+1문제 효율</span><span class="sim-highlight">${bestSubName} (+${maxRise.toFixed(2)}점)</span></div>
+                    <div class="sim-score-row"><span>+1점 효율</span><span class="sim-highlight">${bestSubName} (+${maxRise.toFixed(2)}점)</span></div>
                 `;
             } else {
-                // 지원 불가거나 분석 데이터가 누락된 경우
                 box.innerHTML = `<div style="font-size:0.8rem; color:#ef4444; text-align:center; padding:5px 0;">분석 데이터 부족 (지원 불가 등)</div>`;
             }
         });
 
     } catch (e) {
         console.error("Simulation API Error:", e);
-        // 에러 발생 시 모든 박스를 에러 상태로 변경
         validList.forEach((u, idx) => {
             const box = document.getElementById(`sim-box-${idx}`);
             if (box) box.innerHTML = `<div style="font-size:0.8rem; color:#ef4444; text-align:center; padding:5px 0;">분석 서버 오류</div>`;
