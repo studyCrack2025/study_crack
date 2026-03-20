@@ -367,12 +367,12 @@ function updateSurveyStatus(data) {
                 // 선택과목명
                 let optText = '';
                 if (obj.opt) optText = `<span class="opt-badge">(${SUBJECT_CODE_MAP[obj.opt] || obj.opt})</span>`;
-                else if (obj.name) optText = `<span class="opt-badge">(${obj.name})</span>`;
+                else if (obj.name) optText = `<span class="opt-badge">(${escapeHtml(obj.name)})</span>`;
 
                 // 점수 데이터
-                const std = obj.std || '-';
-                const pct = obj.pct ? obj.pct + '%' : '-';
-                const grd = obj.grd ? `<span class="grade-circle">${obj.grd}</span>` : '';
+                const std = escapeHtml(obj.std) || '-';
+                const pct = obj.pct ? escapeHtml(obj.pct) + '%' : '-';
+                const grd = obj.grd ? `<span class="grade-circle">${escapeHtml(obj.grd)}</span>` : '';
 
                 // 영어/한국사는 등급만
                 let valStr = '';
@@ -795,11 +795,10 @@ function renderMajorList(univName, filterText) {
 // 텍스트 하이라이트 유틸리티 (검색된 키워드 파란색으로 강조)
 function highlightSearchText(text, keyword) {
     if (!keyword) return text;
-    // 정규식으로 대소문자 구분 없이 검색어 찾기
-    const regex = new RegExp(`(${keyword})`, 'gi');
+    const safeKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${safeKeyword})`, 'gi');
     return text.replace(regex, '<span style="color:#2563EB; font-weight:900;">$1</span>');
 }
-
 function selectComplete(univ, major) {
     if (currentSlotIndex !== null) {
         userTargetUnivs[currentSlotIndex] = { univ: univ, major: major, date: null };
@@ -1280,7 +1279,7 @@ function renderSimChart() {
                     <div class="sim-label-item" onclick="selectSimUniv(${index})">
                         <span class="label-mobile">${index + 1}지망</span>
                         <span class="label-pc">
-                            <strong>${index + 1}지망</strong><br>${shortUniv}<br>${item.major}
+                            <strong>${index + 1}지망</strong><br>${escapeHtml(shortUniv)}<br>${escapeHtml(item.major)}
                         </span>
                     </div>
                 `;
@@ -1464,8 +1463,8 @@ function renderSimUnivButtons(targetDiv) {
         const deptName = d.major || '학부';
         
         btn.innerHTML = `
-            <span style="font-weight:700;">${univName}</span>
-            <span style="font-size:0.85em; opacity:0.9;">${deptName}</span>
+            <span style="font-weight:700;">${escapeHtml(univName)}</span>
+            <span style="font-size:0.85em; opacity:0.9;">${escapeHtml(deptName)}</span>
         `;
         
         btn.onclick = () => {
@@ -1723,7 +1722,7 @@ function renderDetailedSimCard() {
         subjectsHTML += `
             <div class="sim-item ${isBest ? 'best-pick' : ''}">
                 <div class="sim-item-header">
-                    <span>${info.name || sub.name} (+1점)</span>
+                    <span>${escapeHtml(info.name || sub.name)} (+1점)</span>
                     <span style="color:${info.uiDiff > 0 ? '#ef4444' : '#94a3b8'}">
                         +${diffVal}점
                     </span>
@@ -1750,8 +1749,8 @@ function renderDetailedSimCard() {
         <div class="sim-result-card">
             <div class="sim-card-header">
                 <div>
-                    <span class="sim-univ-title">${data.univ}</span>
-                    <span class="sim-univ-dept">${data.major}</span>
+                    <span class="sim-univ-title">${escapeHtml(data.univ)}</span>
+                    <span class="sim-univ-dept">${escapeHtml(data.major)}</span>
                 </div>
                 <div class="sim-score-change">
                     <span class="score-badge">현재: ${currentStatus}</span>
@@ -1951,7 +1950,7 @@ function renderFeedbackList() {
         div.onclick = () => { openFeedbackModal(h); };
         
         div.innerHTML = `
-            <div class="fb-title">${h.title || "주간 리포트"}</div>
+            <div class="fb-title">${escapeHtml(h.title) || "주간 리포트"}</div>
             <div class="fb-status" style="${statusStyle}">
                 ${statusText}
             </div>
@@ -2094,11 +2093,11 @@ function openFeedbackModal(data) {
         
         let scoreDetails = '';
         const s = data.mockExam.scores || {};
-        if(s.kor) scoreDetails += `<div style="margin-bottom:6px;"><span style="color:#64748b; font-size:0.85rem;">국어 (${s.korOpt||'-'})</span> <strong style="float:right; color:#1e293b;">${s.kor}</strong></div>`;
-        if(s.math) scoreDetails += `<div style="margin-bottom:6px;"><span style="color:#64748b; font-size:0.85rem;">수학 (${s.mathOpt||'-'})</span> <strong style="float:right; color:#1e293b;">${s.math}</strong></div>`;
-        if(s.eng) scoreDetails += `<div style="margin-bottom:6px;"><span style="color:#64748b; font-size:0.85rem;">영어</span> <strong style="float:right; color:#1e293b;">${s.eng}</strong></div>`;
-        if(s.inq1) scoreDetails += `<div style="margin-bottom:6px;"><span style="color:#64748b; font-size:0.85rem;">${s.inq1Name||'탐구1'}</span> <strong style="float:right; color:#1e293b;">${s.inq1}</strong></div>`;
-        if(s.inq2) scoreDetails += `<div style="margin-bottom:6px;"><span style="color:#64748b; font-size:0.85rem;">${s.inq2Name||'탐구2'}</span> <strong style="float:right; color:#1e293b;">${s.inq2}</strong></div>`;
+        if(s.kor) scoreDetails += `<div style="margin-bottom:6px;"><span style="color:#64748b; font-size:0.85rem;">국어 (${escapeHtml(s.korOpt||'-')})</span> <strong style="float:right; color:#1e293b;">${escapeHtml(s.kor)}</strong></div>`;
+        if(s.math) scoreDetails += `<div style="margin-bottom:6px;"><span style="color:#64748b; font-size:0.85rem;">수학 (${escapeHtml(s.mathOpt||'-')})</span> <strong style="float:right; color:#1e293b;">${escapeHtml(s.math)}</strong></div>`;
+        if(s.eng) scoreDetails += `<div style="margin-bottom:6px;"><span style="color:#64748b; font-size:0.85rem;">영어</span> <strong style="float:right; color:#1e293b;">${escapeHtml(s.eng)}</strong></div>`;
+        if(s.inq1) scoreDetails += `<div style="margin-bottom:6px;"><span style="color:#64748b; font-size:0.85rem;">${escapeHtml(s.inq1Name||'탐구1')}</span> <strong style="float:right; color:#1e293b;">${escapeHtml(s.inq1)}</strong></div>`;
+        if(s.inq2) scoreDetails += `<div style="margin-bottom:6px;"><span style="color:#64748b; font-size:0.85rem;">${escapeHtml(s.inq2Name||'탐구2')}</span> <strong style="float:right; color:#1e293b;">${escapeHtml(s.inq2)}</strong></div>`;
         
         examHtml = `
             <div style="font-weight:800; font-size:1.1rem; color:#1e293b; margin-bottom:15px; border-bottom:2px solid #e2e8f0; padding-bottom:8px;">${typeName} 모의고사</div>
@@ -2186,10 +2185,12 @@ function openFeedbackModal(data) {
     // [HTML 조립 파트] 
     // -----------------------------------------------------------
     // 🎯 주의: JS에서 display:none 같은 인라인 스타일 억지 적용을 모두 제거했습니다. CSS가 처리합니다.
+    const safeTitleForJs = escapeHtml(data.title || "주간 리포트").replace(/'/g, "\\'");
+    
     const html = `
         <div class="modal-document" id="pdfTargetDocument">
             <div class="doc-controls" data-html2canvas-ignore="true">
-                <button class="btn-pdf" onclick="downloadReportPDF('${data.title || "주간리포트"}')"><i class="fas fa-file-pdf"></i> PDF 파일 다운로드</button>
+                <button class="btn-pdf" onclick="downloadReportPDF('${safeTitleForJs}')"><i class="fas fa-file-pdf"></i> PDF 파일 다운로드</button>
                 <button class="close-btn-doc" onclick="document.getElementById('feedbackModal').style.display='none'">&times;</button>
             </div>
 
@@ -2199,7 +2200,7 @@ function openFeedbackModal(data) {
                     <h2 class="doc-title">스터디크랙 주간 전략리포트</h2>
                 </div>
                 <div class="doc-meta">
-                    <div>대상: <strong>${data.title || "주간 리포트"}</strong></div>
+                    <div>대상: <strong>${escapeHtml(data.title || "주간 리포트")}</strong></div>
                     <div>발행일: <strong>${new Date(data.date).toLocaleDateString()}</strong></div>
                     <div>분석: <strong>${consultantName}</strong></div>
                 </div>
@@ -2284,7 +2285,7 @@ function openFeedbackModal(data) {
             <i class="fas fa-file-pdf"></i>
             <h3 style="margin:0 0 10px 0; color:#1e293b;">리포트 도착 완료!</h3>
             <p>모바일에서는 전체 레이아웃 확인이 어렵습니다.<br><strong>PDF 파일로 다운로드</strong>하여 PC와 동일한 프리미엄 포맷으로 확인하세요.</p>
-            <button class="mobile-pdf-btn" onclick="downloadReportPDF('${data.title || "주간리포트"}')"><i class="fas fa-download"></i> PDF 다운로드</button>
+            <button class="mobile-pdf-btn" onclick="downloadReportPDF('${safeTitleForJs}')"><i class="fas fa-download"></i> PDF 다운로드</button>
             <button class="mobile-close-btn" onclick="document.getElementById('feedbackModal').style.display='none'">닫기</button>
         </div>
     `;
@@ -2651,10 +2652,10 @@ function renderPlannerFiles() {
         const div = document.createElement('div');
         div.className = 'file-item';
         
-        let nameDisplay = `<span>📄 ${fileName}</span>`;
+        let nameDisplay = `<span>📄 ${escapeHtml(fileName)}</span>`;
         if (fileLink) {
             nameDisplay = `<a href="${fileLink}" target="_blank" style="text-decoration:none; color:#334155; display:flex; align-items:center; gap:5px;">
-                <span>📄 ${fileName}</span> 
+                <span>📄 ${escapeHtml(fileName)}</span> 
                 <i class="fas fa-external-link-alt" style="font-size:0.7rem; color:#3b82f6;"></i>
             </a>`;
         }
@@ -2916,8 +2917,21 @@ async function submitWeeklyCheck() {
                 
                 if (!mRes.ok) throw new Error("모의고사 파일 업로드 URL 발급 실패");
                 
-                const { uploadUrl, fileUrl } = await mRes.json();
-                await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': mFile.type }, body: mFile });
+                const { uploadUrl, fields, fileUrl } = await mRes.json();
+                const formData = new FormData();
+
+                Object.entries(fields).forEach(([key, value]) => {
+                    formData.append(key, value);
+                });
+                formData.append('file', mFile); 
+                const uploadRes = await fetch(uploadUrl, { 
+                    method: 'POST', 
+                    body: formData 
+                });
+
+                if (!uploadRes.ok) {
+                    throw new Error("S3 업로드 실패: 파일 용량이 5MB를 초과했거나 잘못된 형식입니다.");
+                }
                 
                 // S3에 올라간 진짜 URL을 데이터에 덮어씌움
                 mockData.proofFile = fileUrl; 
@@ -2993,7 +3007,7 @@ function addSubjectRow(btn, subject) {
     const newRow = document.createElement('tr');
     newRow.innerHTML = `
         <td>
-            <span class="main-sub" style="color:#94a3b8; font-size:0.9rem;">↳ ${subject}</span>
+            <span class="main-sub" style="color:#94a3b8; font-size:0.9rem;">↳ ${escapeHtml(subject)}</span>
         </td>
         <td><input type="text" class="sub-detail" placeholder="세부과목"></td>
         <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
