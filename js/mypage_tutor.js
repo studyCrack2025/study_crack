@@ -344,15 +344,26 @@ window.handleProfileUpload = async function(input) {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'get_presigned_url',
-                // userId 제거
                 data: { fileName: file.name, fileType: file.type, folder: 'profile' }
             })
         });
         if (!presignRes.ok) throw new Error("업로드 URL 발급 실패");
-        const { uploadUrl, fileUrl } = await presignRes.json();
+        
+        // 🚨 [수정 1] fields 추출 추가
+        const { uploadUrl, fileUrl, fields } = await presignRes.json();
 
-        // 2. S3 Upload (유지)
-        const s3Upload = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+        // 🚨 [수정 2] FormData 생성 및 POST 방식으로 S3 업로드
+        const formData = new FormData();
+        Object.entries(fields).forEach(([key, value]) => {
+            formData.append(key, value);
+        });
+        formData.append('file', file); // 파일은 무조건 맨 마지막에 추가
+
+        const s3Upload = await fetch(uploadUrl, { 
+            method: 'POST', // PUT -> POST
+            body: formData  // 헤더 없이 전송
+        });
+        
         if (!s3Upload.ok) throw new Error("S3 업로드 실패");
 
         // 3. DB Update
@@ -361,7 +372,6 @@ window.handleProfileUpload = async function(input) {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
                 type: 'update_user_profile_image', 
-                // userId 제거
                 data: { profileImageUrl: fileUrl } 
             })
         });

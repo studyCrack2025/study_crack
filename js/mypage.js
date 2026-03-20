@@ -430,13 +430,12 @@ async function handleProfileUpload(input) {
     imgElem.style.opacity = '0.5';
 
     try {
-        // 1. Presigned URL 발급
+        // 1. Presigned URL 및 검증 필드(fields) 발급
         const presignRes = await fetch(FILE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'get_presigned_url',
-                // userId 제거: 백엔드에서 토큰을 통해 추출함
                 data: { 
                     fileName: file.name, 
                     fileType: file.type, 
@@ -446,14 +445,20 @@ async function handleProfileUpload(input) {
         });
 
         if (!presignRes.ok) throw new Error("Presigned URL 발급 실패");
-        const { uploadUrl, fileUrl } = await presignRes.json();
+        
+        const { uploadUrl, fileUrl, fields } = await presignRes.json();
 
-        // 2. S3 업로드
-        const s3Upload = await fetch(uploadUrl, { 
-            method: 'PUT', 
-            headers: { 'Content-Type': file.type }, 
-            body: file 
+        const formData = new FormData();
+        Object.entries(fields).forEach(([key, value]) => {
+            formData.append(key, value);
         });
+        // 주의: S3 정책상 'file' 데이터는 무조건 맨 마지막에 append 되어야 합니다.
+        formData.append('file', file);
+        const s3Upload = await fetch(uploadUrl, { 
+            method: 'POST', 
+            body: formData 
+        });
+        
         if (!s3Upload.ok) throw new Error("S3 업로드 실패");
 
         // 3. DB 업데이트
@@ -462,7 +467,6 @@ async function handleProfileUpload(input) {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
                 type: 'update_user_profile_image', 
-                // userId 제거
                 data: { profileImageUrl: fileUrl } 
             })
         });
@@ -473,7 +477,7 @@ async function handleProfileUpload(input) {
         checkDeleteButtonVisibility(fileUrl);
 
     } catch (e) {
-        console.error("Upload Error:", e); // 디버깅을 위해 콘솔 로그 부활
+        console.error("Upload Error:", e);
         alert("사진 업로드 중 오류가 발생했습니다.");
         imgElem.src = originalSrc;
     } finally {
