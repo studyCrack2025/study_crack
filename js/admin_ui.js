@@ -6,7 +6,8 @@ if (typeof ChartDataLabels !== 'undefined') {
 }
 
 // 2. 전역 변수 및 설정
-const ADMIN_API_URL = CONFIG.api.base; 
+const ADMIN_API_URL = CONFIG.api.base;
+const NOTI_API_URL = CONFIG.api.noti;
 
 // 차트 관련 변수
 let salesChart = null;  
@@ -742,7 +743,7 @@ function switchNotiTab(tabName) {
 async function fetchUnreadNotiCount() {
     const token = localStorage.getItem('accessToken');
     try {
-        const response = await fetch(ADMIN_API_URL, {
+        const response = await fetch(NOTI_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'admin_get_notifications' })
@@ -766,7 +767,7 @@ async function loadNotifications() {
     container.innerHTML = '<p style="text-align:center;">알림을 불러오는 중...</p>';
 
     try {
-        const response = await fetch(ADMIN_API_URL, {
+        const response = await fetch(NOTI_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'admin_get_notifications' })
@@ -796,19 +797,19 @@ async function loadNotifications() {
             container.appendChild(card);
         });
         
-        fetchUnreadNotiCount(); // 뱃지 동기화
+        fetchUnreadNotiCount();
     } catch(e) { container.innerHTML = '<p style="text-align:center; color:red;">오류 발생</p>'; }
 }
 
 async function markAsReadNoti(notiId) {
     const token = localStorage.getItem('accessToken');
     try {
-        await fetch(ADMIN_API_URL, {
+        await fetch(NOTI_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'admin_read_notification', data: { notiId } })
         });
-        loadNotifications(); // 리로드
+        loadNotifications(); 
     } catch(e) { alert('처리 실패'); }
 }
 
@@ -985,7 +986,6 @@ async function sendAdminNotice() {
     if (!title || !content) { alert("제목과 내용을 모두 입력해주세요."); return; }
     if (!confirm(`총 ${targetUserIds.length}명에게 공지를 발송하시겠습니까?`)) return;
 
-    // 🔥 [핵심 추가] globalUserList를 활용해 선택된 ID들의 이름을 찾아내어 문자열로 만듭니다.
     const targetNamesList = targetUserIds.map(uid => {
         const user = globalUserList.find(u => u.userid === uid);
         return user ? (user.name || user.nickname || '알수없음') : '알수없음';
@@ -997,20 +997,18 @@ async function sendAdminNotice() {
     }
 
     const token = localStorage.getItem('accessToken');
-    const adminId = localStorage.getItem('userId');
 
     try {
-        const res = await fetch(ADMIN_API_URL, {
+        const res = await fetch(NOTI_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'admin_send_notice',
-                userId: adminId,
                 data: {
                     targetUserIds: targetUserIds, 
                     title: title,
                     content: content,
-                    targetNamesDisplay: targetNamesDisplay // 🚨 람다로 이름 문자열도 같이 보냅니다!
+                    targetNamesDisplay: targetNamesDisplay
                 }
             })
         });
@@ -1020,8 +1018,7 @@ async function sendAdminNotice() {
             document.getElementById('noticeTitle').value = '';
             document.getElementById('noticeContent').value = '';
             document.querySelectorAll('#noticeTargetCheckboxes input[type="checkbox"]').forEach(c => c.checked = false);
-            
-            showNotiMenu('sent'); // 전송 완료 후 보낸 공지함으로 이동
+            showNotiMenu('sent'); 
         } else {
             alert("발송 실패");
         }
@@ -1069,8 +1066,7 @@ window.loadSentNotices = async function() {
     container.innerHTML = '<p class="empty-msg">보낸 공지를 불러오는 중...</p>';
 
     try {
-        // 기존 수신함 API를 호출하면 이제 람다가 sentNotices도 같이 줍니다.
-        const response = await fetch(ADMIN_API_URL, {
+        const response = await fetch(NOTI_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'admin_get_notifications' })
@@ -1079,8 +1075,6 @@ window.loadSentNotices = async function() {
         
         container.innerHTML = '';
         const sentList = data.sentNotices || [];
-        
-        // 최신순(내림차순) 정렬
         sentList.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
 
         if (sentList.length === 0) {
@@ -1091,8 +1085,6 @@ window.loadSentNotices = async function() {
         sentList.forEach(n => {
             const card = document.createElement('div');
             card.className = `noti-item`; 
-            
-            // 만약 과거에 보내서 이름 기록(targetNames)이 없는 공지라면 기존처럼 명수만 표시
             const targetText = n.targetNames ? n.targetNames : `${n.targetCount}명`;
 
             card.innerHTML = `

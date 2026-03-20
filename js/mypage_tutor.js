@@ -2,6 +2,7 @@
 
 var TUTOR_API_URL = CONFIG.api.base;
 const FILE_API_URL = CONFIG.api.file;
+const NOTI_API_URL = CONFIG.api.noti;
 
 let tutorInfoData = {};
 let tutorCognitoUser = null; 
@@ -505,14 +506,13 @@ window.toggleTutorNotiPanel = function() {
 }
 
 window.fetchTutorNotifications = async function() {
-    const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('idToken');
     
     try {
-        const response = await fetch(TUTOR_API_URL, {
+        const response = await fetch(NOTI_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'tutor_get_notifications', userId: userId })
+            body: JSON.stringify({ type: 'tutor_get_notifications' })
         });
         const data = await response.json();
         const notis = data.notifications || [];
@@ -541,7 +541,6 @@ window.fetchTutorNotifications = async function() {
         notis.forEach(n => {
             const div = document.createElement('div');
             div.className = `tutor-noti-item ${n.isRead ? '' : 'unread'}`;
-            // 클릭 시 읽음 처리
             div.onclick = () => { if (!n.isRead) markTutorNotiAsRead(n.id); };
             
             div.innerHTML = `
@@ -558,13 +557,12 @@ window.fetchTutorNotifications = async function() {
 }
 
 window.markTutorNotiAsRead = async function(notiId) {
-    const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('idToken');
     try {
-        await fetch(TUTOR_API_URL, {
+        await fetch(NOTI_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'tutor_read_notification', userId: userId, data: { notiId: notiId } })
+            body: JSON.stringify({ type: 'tutor_read_notification', data: { notiId: notiId } })
         });
         fetchTutorNotifications();
     } catch(e) {}

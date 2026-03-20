@@ -1,11 +1,10 @@
+// js/script.js
+
 /* =========================================
    1. 전역 설정 및 유틸리티
    ========================================= */
-
-// API 설정 (config.js가 없을 경우를 대비한 기본값 포함)
-const API_CONFIG = (typeof CONFIG !== 'undefined' && CONFIG.api) ? CONFIG.api : {
-    auth: 'YOUR_API_ENDPOINT_HERE' // 실제 API 주소가 없다면 빈 문자열
-};
+const AUTH_API_URL = CONFIG.api.auth;
+const NOTI_API_URL = CONFIG.api.noti;
 
 // 모달 열기
 function openModal(type) {
@@ -262,16 +261,10 @@ function downloadProReport(filePath) {
    3. 후기 데이터 로직
    ========================================= */
 async function getUserReviews() {
-    // 1. API 설정 확인 (설정 없으면 빈 배열 반환)
-    if (!API_CONFIG.auth || API_CONFIG.auth.includes('YOUR_API')) {
-        console.error("❌ API 설정 오류: 유효한 API 주소가 없습니다.");
-        return []; // 가짜 데이터 대신 빈 배열 반환
-    }
-
     const token = localStorage.getItem('idToken');
 
     try {
-        const response = await fetch(API_CONFIG.auth, {
+        const response = await fetch(AUTH_API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -492,21 +485,18 @@ window.toggleStudentNotiPanel = function() {
 }
 
 window.fetchStudentNotifications = async function() {
-    const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('accessToken');
-    if (!userId || !token) return;
+    if (!token) return;
 
     try {
-        // API_CONFIG.auth가 아니라 base URL을 사용해야 함
-        const response = await fetch(API_CONFIG.base, { 
+        const response = await fetch(NOTI_API_URL, { 
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'student_get_notifications', userId: userId })
+            body: JSON.stringify({ type: 'student_get_notifications' }) 
         });
         const data = await response.json();
         const notis = data.notifications || [];
         
-        // 뱃지 갱신
         const unreadCount = notis.filter(n => !n.isRead).length;
         const badge = document.getElementById('studentNotiBadge');
         if (badge) {
@@ -514,7 +504,6 @@ window.fetchStudentNotifications = async function() {
             badge.innerText = unreadCount;
         }
 
-        // 목록 렌더링
         const listArea = document.getElementById('studentNotiList');
         listArea.innerHTML = '';
         
@@ -531,33 +520,28 @@ window.fetchStudentNotifications = async function() {
         notis.forEach(n => {
             const div = document.createElement('div');
             div.className = `student-noti-item ${n.isRead ? '' : 'unread'}`;
-            
-            // 알림 클릭 시: 1. 읽음 처리 -> 2. 해당 페이지/모달 띄우기
             div.onclick = async () => {
                 if (!n.isRead) await markStudentNotiRead(n.id);
                 handleNotiAction(n);
             };
-            
             div.innerHTML = `
                 <div class="student-noti-title">${escapeHtml(n.message)}</div>
                 <div class="student-noti-time">${new Date(n.createdAt).toLocaleString()}</div>
             `;
             listArea.appendChild(div);
         });
-
     } catch (e) { console.error("Noti Fetch Error:", e); }
 }
 
 async function markStudentNotiRead(notiId) {
-    const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('accessToken');
     try {
-        await fetch(API_CONFIG.base, {
+        await fetch(NOTI_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'student_read_notification', userId: userId, data: { notiId: notiId } })
+            body: JSON.stringify({ type: 'student_read_notification', data: { notiId: notiId } })
         });
-        fetchStudentNotifications(); // 읽음 처리 후 뱃지/목록 갱신
+        fetchStudentNotifications(); 
     } catch(e) {}
 }
 

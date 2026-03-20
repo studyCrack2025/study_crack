@@ -10,7 +10,10 @@ const CONFIG = {
         base: `${GATEWAY_URL}/api`,
         
         // 파일 서비스 전용 엔드포인트
-        file: `${GATEWAY_URL}/api/file`,     
+        file: `${GATEWAY_URL}/api/file`,
+        
+        // 알림 전용 엔드포인트
+        noti: `${GATEWAY_URL}/api/noti`,  
         
         // StudyCrack_Analysis 람다로 연결되는 주소
         analysis: `${GATEWAY_URL}/analysis`,
