@@ -322,14 +322,16 @@ async function saveSingleField(field, value) {
 // ==========================================
 
 // [프로필 사진]
-window.triggerFileUpload = function() { document.getElementById('profileFileInput').click(); }
+window.triggerFileUpload = function(){ 
+    document.getElementById('profileFileInput').click(); 
+}
+
 window.handleProfileUpload = async function(input) {
     const file = input.files[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) { alert("파일 크기는 5MB 이하여야 합니다."); return; }
 
     const token = localStorage.getItem('idToken');
-    const userId = localStorage.getItem('userId');
     const imgElem = document.getElementById('profileImg');
     const originalSrc = imgElem.src;
     
@@ -342,14 +344,14 @@ window.handleProfileUpload = async function(input) {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'get_presigned_url',
-                userId: userId,
+                // userId 제거
                 data: { fileName: file.name, fileType: file.type, folder: 'profile' }
             })
         });
         if (!presignRes.ok) throw new Error("업로드 URL 발급 실패");
         const { uploadUrl, fileUrl } = await presignRes.json();
 
-        // 2. S3 Upload
+        // 2. S3 Upload (유지)
         const s3Upload = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
         if (!s3Upload.ok) throw new Error("S3 업로드 실패");
 
@@ -359,7 +361,7 @@ window.handleProfileUpload = async function(input) {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
                 type: 'update_user_profile_image', 
-                userId: userId, 
+                // userId 제거
                 data: { profileImageUrl: fileUrl } 
             })
         });
@@ -384,25 +386,38 @@ window.handleProfileDelete = async function() {
     const imgElem = document.getElementById('profileImg');
     const currentUrl = imgElem.src;
     const token = localStorage.getItem('idToken');
-    const userId = localStorage.getItem('userId');
 
     try {
+        // 1. S3 파일 삭제
         if (!currentUrl.includes('placehold.co') && !currentUrl.includes('assets/images')) {
             await fetch(FILE_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ type: 'delete_s3_file', data: { fileUrl: currentUrl } })
+                body: JSON.stringify({ 
+                    type: 'delete_s3_file', 
+                    data: { fileUrl: currentUrl } 
+                })
             });
         }
+        
+        // 2. DB 업데이트 (프로필 이미지 지우기)
         await fetch(FILE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'update_user_profile_image', userId: userId, data: { profileImageUrl: "" } })
+            body: JSON.stringify({ 
+                type: 'update_user_profile_image', 
+                // userId 제거, data 객체 구조화
+                data: { profileImageUrl: "" } 
+            })
         });
+        
         imgElem.src = "https://placehold.co/150x150?text=Profile"; 
         alert("삭제되었습니다.");
         checkDeleteButtonVisibility("");
-    } catch (e) { console.error(e); alert("삭제 실패"); }
+    } catch (e) { 
+        console.error(e); 
+        alert("삭제 실패"); 
+    }
 }
 
 function checkDeleteButtonVisibility(url) {

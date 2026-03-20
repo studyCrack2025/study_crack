@@ -425,32 +425,46 @@ async function handleProfileUpload(input) {
     if (file.size > 5 * 1024 * 1024) { alert("파일 크기는 5MB 이하여야 합니다."); return; }
 
     const token = localStorage.getItem('idToken');
-    const userId = localStorage.getItem('userId');
     const imgElem = document.getElementById('profileImg');
     const originalSrc = imgElem.src;
     imgElem.style.opacity = '0.5';
 
     try {
+        // 1. Presigned URL 발급
         const presignRes = await fetch(FILE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'get_presigned_url',
-                userId: userId,
-                data: { fileName: file.name, fileType: file.type, folder: 'profile' }
+                // userId 제거: 백엔드에서 토큰을 통해 추출함
+                data: { 
+                    fileName: file.name, 
+                    fileType: file.type, 
+                    folder: 'profile' 
+                }
             })
         });
 
         if (!presignRes.ok) throw new Error("Presigned URL 발급 실패");
         const { uploadUrl, fileUrl } = await presignRes.json();
 
-        const s3Upload = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+        // 2. S3 업로드
+        const s3Upload = await fetch(uploadUrl, { 
+            method: 'PUT', 
+            headers: { 'Content-Type': file.type }, 
+            body: file 
+        });
         if (!s3Upload.ok) throw new Error("S3 업로드 실패");
 
+        // 3. DB 업데이트
         const updateRes = await fetch(FILE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'update_user_profile_image', userId: userId, data: { profileImageUrl: fileUrl } })
+            body: JSON.stringify({ 
+                type: 'update_user_profile_image', 
+                // userId 제거
+                data: { profileImageUrl: fileUrl } 
+            })
         });
         if (!updateRes.ok) throw new Error("DB 업데이트 실패");
 
@@ -459,11 +473,12 @@ async function handleProfileUpload(input) {
         checkDeleteButtonVisibility(fileUrl);
 
     } catch (e) {
-        // console.error(e); 
+        console.error("Upload Error:", e); // 디버깅을 위해 콘솔 로그 부활
         alert("사진 업로드 중 오류가 발생했습니다.");
         imgElem.src = originalSrc;
     } finally {
-        imgElem.style.opacity = '1'; input.value = '';
+        imgElem.style.opacity = '1'; 
+        input.value = '';
     }
 }
 
@@ -472,29 +487,39 @@ async function handleProfileDelete() {
     const imgElem = document.getElementById('profileImg');
     const currentUrl = imgElem.src;
     const token = localStorage.getItem('idToken');
-    const userId = localStorage.getItem('userId');
 
     try {
         if (!currentUrl.includes('placehold.co') && !currentUrl.includes('assets/images')) {
-            await fetch(FILE_API_URL, {
+            // 파일 삭제
+            const delRes = await fetch(FILE_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ type: 'delete_s3_file', data: { fileUrl: currentUrl } })
+                body: JSON.stringify({ 
+                    type: 'delete_s3_file', 
+                    data: { fileUrl: currentUrl } 
+                })
             });
+            if (!delRes.ok) throw new Error("S3 파일 삭제 실패");
         }
+        
+        // DB 업데이트 (삭제 처리)
         const dbRes = await fetch(FILE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'update_user_profile_image', data: { profileImageUrl: "" }, userId: userId })
+            body: JSON.stringify({ 
+                type: 'update_user_profile_image', 
+                data: { profileImageUrl: "" } 
+            })
         });
 
-        if (!dbRes.ok) throw new Error("DB 삭제 실패");
+        if (!dbRes.ok) throw new Error("DB 프로필 삭제 실패");
+        
         imgElem.src = "https://placehold.co/150x150?text=Profile"; 
         alert("프로필 사진이 삭제되었습니다.");
         checkDeleteButtonVisibility("");
 
     } catch (e) { 
-        // console.error(e); 
+        console.error("Delete Error:", e); 
         alert("삭제 실패"); 
     }
 }
