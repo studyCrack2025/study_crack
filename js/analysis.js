@@ -5,6 +5,8 @@
 // ============================================================
 const MYPAGE_API_URL = CONFIG.api.base;
 const UNIV_DATA_API_URL = CONFIG.api.analysis;
+const FILE_API_URL = CONFIG.api.file;
+const REPORT_API_URL = CONFIG.api.report;
 
 let currentUserTier = 'free';
 let univChangeRemaining = 30;
@@ -543,13 +545,12 @@ async function downloadMbtiReport() {
     }
 
     const token = localStorage.getItem('idToken');
-    const userId = localStorage.getItem('userId');
 
     try {
-        const res = await fetch(MYPAGE_API_URL, {
+        const res = await fetch(REPORT_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'get_mbti_report', userId: userId })
+            body: JSON.stringify({ type: 'get_mbti_report' })
         });
         const data = await res.json();
 
@@ -2861,11 +2862,8 @@ async function submitWeeklyCheck() {
     if(!confirm("제출하시겠습니까?")) return;
 
     // 6. 서버 전송
-    const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('idToken'); 
     const submitBtn = document.querySelector('.save-btn');
-    
-    // 버튼 텍스트 백업
     const originalBtnText = submitBtn ? submitBtn.innerText : "저장";
 
     try {
@@ -2874,15 +2872,15 @@ async function submitWeeklyCheck() {
             submitBtn.innerText = "처리 중...";
         }
 
-        // 파일 처리 로직 (기존 유지)
+        // 파일 처리 로직 (이 부분은 파일 서비스이므로 FILE_API_URL을 사용하도록 변경하는 것이 좋습니다)
         const currentUrls = currentPlannerFiles.filter(f => typeof f === 'string');
         const filesToDelete = originalPlannerFiles.filter(url => !currentUrls.includes(url));
         if (filesToDelete.length > 0) {
             await Promise.all(filesToDelete.map(url => 
-                fetch(MYPAGE_API_URL, {
+                fetch(FILE_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ type: 'delete_s3_file', userId: userId, data: { fileUrl: url } })
+                    body: JSON.stringify({ type: 'delete_s3_file', data: { fileUrl: url } })
                 })
             ));
         }
@@ -2890,55 +2888,45 @@ async function submitWeeklyCheck() {
         const newFiles = currentPlannerFiles.filter(f => typeof f !== 'string');
         if (newFiles.length > 0) {
             for (const file of newFiles) {
-                const res = await fetch(MYPAGE_API_URL, {
+                const res = await fetch(FILE_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ type: 'get_presigned_url', userId: userId, data: { fileName: file.name, fileType: file.type } })
+                    body: JSON.stringify({ type: 'get_presigned_url', data: { fileName: file.name, fileType: file.type } })
                 });
                 if (!res.ok) throw new Error("업로드 URL 발급 실패");
-                const { uploadUrl, fileUrl } = await res.json();
-                await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+                const { uploadUrl, fileUrl, fields } = await res.json();
+                
+                const formData = new FormData();
+                Object.entries(fields || {}).forEach(([k, v]) => formData.append(k, v));
+                formData.append('file', file);
+                await fetch(uploadUrl, { method: 'POST', body: formData });
+                
                 finalFileUrls.push(fileUrl);
             }
         }
         
         if (mockData.type !== 'none') {
             const mockFileInput = document.getElementById('mockExamProof');
-            
-            // 새 파일이 선택된 경우에만 S3 업로드 진행
             if (mockFileInput && mockFileInput.files.length > 0) {
                 const mFile = mockFileInput.files[0];
-                const mRes = await fetch(MYPAGE_API_URL, {
+                const mRes = await fetch(FILE_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    // Lambda가 처리할 수 있도록 folder를 'mock_exams'로 지정
-                    body: JSON.stringify({ type: 'get_presigned_url', userId: userId, data: { fileName: mFile.name, fileType: mFile.type, folder: 'mock_exams' } })
+                    body: JSON.stringify({ type: 'get_presigned_url', data: { fileName: mFile.name, fileType: mFile.type, folder: 'mock_exams' } })
                 });
-                
                 if (!mRes.ok) throw new Error("모의고사 파일 업로드 URL 발급 실패");
-                
                 const { uploadUrl, fields, fileUrl } = await mRes.json();
-                const formData = new FormData();
-
-                Object.entries(fields).forEach(([key, value]) => {
-                    formData.append(key, value);
-                });
-                formData.append('file', mFile); 
-                const uploadRes = await fetch(uploadUrl, { 
-                    method: 'POST', 
-                    body: formData 
-                });
-
-                if (!uploadRes.ok) {
-                    throw new Error("S3 업로드 실패: 파일 용량이 5MB를 초과했거나 잘못된 형식입니다.");
-                }
                 
-                // S3에 올라간 진짜 URL을 데이터에 덮어씌움
+                const formData = new FormData();
+                Object.entries(fields || {}).forEach(([k, v]) => formData.append(k, v));
+                formData.append('file', mFile); 
+                const uploadRes = await fetch(uploadUrl, { method: 'POST', body: formData });
+                if (!uploadRes.ok) throw new Error("S3 업로드 실패");
+                
                 mockData.proofFile = fileUrl; 
             } else if (!mockData.proofFile || mockData.proofFile === "file_uploaded") {
-                // 파일도 없고 기존 URL도 없는 경우 (필수값 체크)
                 alert("모의고사 성적 인증 사진을 첨부해주세요.");
-                switchWeeklyTab('step1'); // 탭 이동
+                switchWeeklyTab('step1'); 
                 if(submitBtn) { submitBtn.disabled = false; submitBtn.innerText = originalBtnText; }
                 return;
             }
@@ -2956,16 +2944,16 @@ async function submitWeeklyCheck() {
                 totalAct: document.getElementById('totalAct').innerText,
                 totalRate: document.getElementById('totalRate').innerText
             },
-            mockExam: mockData, // 위에서 수집한 mockData 사용
+            mockExam: mockData,
             trend: { status: trend, reasons: reasons },
             deepAnswers: [q1, q2, q3, q4], 
             plannerFiles: finalFileUrls 
         };
 
-        const res = await fetch(MYPAGE_API_URL, {
+        const res = await fetch(REPORT_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'save_weekly_check', userId, data: weeklyData })
+            body: JSON.stringify({ type: 'save_weekly_check', data: weeklyData })
         });
         
         if(res.ok) { 
@@ -2980,10 +2968,7 @@ async function submitWeeklyCheck() {
         console.error("Submit Error:", e); 
         alert("처리 중 오류가 발생했습니다: " + e.message); 
     } finally {
-        if(submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerText = originalBtnText;
-        }
+        if(submitBtn) { submitBtn.disabled = false; submitBtn.innerText = originalBtnText; }
     }
 }
 
@@ -3198,10 +3183,10 @@ async function loadProReports(currentKey, isDeadlinePassed) {
     const token = localStorage.getItem('idToken');
 
     try {
-        const res = await fetch(MYPAGE_API_URL, {
+        const res = await fetch(REPORT_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'get_pro_reports', userId: userId, requesterRole: 'student' })
+            body: JSON.stringify({ type: 'get_pro_reports', data: { requesterRole: 'student' } })
         });
         const data = await res.json();
         cachedProReports = data.reports || [];
@@ -3300,13 +3285,12 @@ async function submitProReport() {
     const token = localStorage.getItem('idToken');
 
     try {
-        const res = await fetch(MYPAGE_API_URL, {
+        const res = await fetch(REPORT_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'request_pro_report',
-                userId: userId,
-                requestText: text
+                data: { requestText: text }
             })
         });
 

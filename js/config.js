@@ -1,4 +1,4 @@
-// js/config.js (설정 파일 분리)
+// js/config.js
 
 // 통합 API Gateway 주소
 const GATEWAY_URL = "https://ft35jsftc1.execute-api.ap-northeast-2.amazonaws.com";
@@ -17,6 +17,9 @@ const CONFIG = {
         
         // Qna 전용 엔드포인트
         qna: `${GATEWAY_URL}/api/qna`,
+        
+        // 리포트 전용 엔드포인트
+        report: `${GATEWAY_URL}/api/report`,
         
         // StudyCrack_Analysis 람다로 연결되는 주소
         analysis: `${GATEWAY_URL}/analysis`,

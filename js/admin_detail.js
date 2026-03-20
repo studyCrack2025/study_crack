@@ -3,7 +3,10 @@
 const urlParams = new URLSearchParams(window.location.search);
 const targetUserId = urlParams.get('uid');
 const adminId = localStorage.getItem('userId');
+
 const API_URL = CONFIG.api.base;
+const REPORT_API_URL = CONFIG.api.report;
+const FILE_API_URL = CONFIG.api.file;
 
 let currentStudentData = null;
 let currentTier = 'free';
@@ -130,37 +133,193 @@ async function loadStudentDetail() {
     }
 }
 
-// PRO 보고서 데이터 로드 함수
+// 1. PRO 보고서 데이터 로드
 async function loadProReportsForAdmin() {
     const token = localStorage.getItem('accessToken');
-    // userRole은 전역변수나 로컬스토리지에서 가져옴
     const userRole = localStorage.getItem('userRole'); 
     
     try {
-        const response = await fetch(API_URL, {
+        const response = await fetch(REPORT_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'get_pro_reports',
-                userId: targetUserId, // 학생 ID
-                requesterRole: userRole // 'admin' or 'tutor' (초안 복호화 권한용)
+                data: { targetUserId: targetUserId, requesterRole: userRole } 
             })
         });
         
         if (response.ok) {
             const data = await response.json();
-            // 받아온 보고서 배열을 전역 객체에 저장
             currentStudentData.proReportsList = data.reports || [];
             
-            // 만약 현재 탭이 'special'(Pro 탭)이면 화면 갱신
             const specialTab = document.getElementById('tab_special');
             if (specialTab && specialTab.classList.contains('active')) {
                 renderProTab();
             }
         }
-    } catch (e) {
-        console.error("Pro Reports Load Error:", e);
+    } catch (e) { console.error("Pro Reports Load Error:", e); }
+}
+
+// 2. 튜터가 관리자에게 재검토 요청
+async function submitRejectReason(key) {
+    const reasonText = document.getElementById('rejectReasonText').value;
+    if (reasonText.trim() === '') { alert('재검토 요청 사유를 입력해주세요.'); return; }
+
+    const token = localStorage.getItem('accessToken');
+    try {
+        const response = await fetch(REPORT_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'tutor_reject_report', 
+                data: { targetUserId: targetUserId, reportKey: key, status: 'admin_review', rejectReason: reasonText }
+            })
+        });
+
+        if (!response.ok) throw new Error("Server Error");
+
+        alert("관리자에게 재검토 요청이 전달되었습니다.");
+        closeRejectModal(); 
+        await loadProReportsForAdmin(); 
+    } catch(e) { alert("요청 실패: " + e.message); }
+}
+
+// 3. 관리자가 PDF 업로드 후 튜터에게 핑 날리기
+async function requestTutorReview(key) {
+    const fileInput = document.getElementById(`pdfFile_${key}`);
+    if (!fileInput.files || fileInput.files.length === 0) return alert("PDF 파일을 먼저 첨부해주세요.");
+
+    const file = fileInput.files[0];
+    if (file.type !== 'application/pdf') return alert("PDF 파일만 업로드 가능합니다.");
+    if (!confirm("첨부한 PDF 파일을 업로드하고 튜터에게 최종 검수를 요청하시겠습니까?")) return;
+
+    const token = localStorage.getItem('accessToken');
+    const btn = event.currentTarget;
+    const originalBtnText = btn.innerHTML;
+    
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 업로드 중...';
+    btn.disabled = true;
+
+    try {
+        // [수정] FILE_API_URL 사용 및 userId 루트에서 제거
+        const urlResponse = await fetch(FILE_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'get_presigned_url',
+                data: { fileName: encodeURIComponent(file.name), fileType: file.type, folder: `pro_reports` }
+            })
+        });
+
+        if (!urlResponse.ok) throw new Error("업로드 주소 발급 실패");
+        const { uploadUrl, fileUrl, fields } = await urlResponse.json();
+
+        // [수정] FormData 방식으로 S3 업로드 (400 에러 해결)
+        const formData = new FormData();
+        Object.entries(fields || {}).forEach(([k, v]) => formData.append(k, v));
+        formData.append('file', file);
+
+        const uploadResult = await fetch(uploadUrl, { method: 'POST', body: formData });
+        if (!uploadResult.ok) throw new Error("S3 파일 업로드 실패");
+
+        // [수정] REPORT_API_URL 사용 및 DB 업데이트
+        const dbResponse = await fetch(REPORT_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'admin_request_tutor_review', 
+                data: { targetUserId: targetUserId, reportKey: key, reportLink: fileUrl, status: 'tutor_review' }
+            })
+        });
+
+        if (!dbResponse.ok) throw new Error("DB 업데이트 실패");
+
+        alert("파일 업로드 및 튜터 검수 요청이 완료되었습니다.");
+        await loadProReportsForAdmin(); 
+
+    } catch(e) { 
+        console.error(e);
+        alert("요청 전송 실패: " + e.message); 
+    } finally {
+        btn.innerHTML = originalBtnText;
+        btn.disabled = false;
     }
+}
+
+// 4. 튜터가 확인 후 학생에게 최종 전송
+async function publishProReportToStudent(key) {
+    if(!confirm("최종 검수를 마치고 학생에게 리포트를 전송하시겠습니까? 전송 후에는 수정할 수 없습니다.")) return;
+
+    const token = localStorage.getItem('accessToken');
+    try {
+        const response = await fetch(REPORT_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'tutor_publish_report', 
+                data: { targetUserId: targetUserId, reportKey: key, status: 'published' }
+            })
+        });
+
+        if (!response.ok) throw new Error("Server Error");
+
+        alert("학생에게 최종 전송이 완료되었습니다.");
+        await loadProReportsForAdmin(); 
+    } catch(e) { alert("전송 실패: " + e.message); }
+}
+
+// 5. PRO 리포트 초안 임시 저장
+async function saveProDraft(key, silent = false) {
+    const content = {
+        eval: document.getElementById(`${key}_item1`)?.value || "",
+        dist: document.getElementById(`${key}_item2`)?.value || "",
+        plan: document.getElementById(`${key}_item3`)?.value || "",
+        qna: document.getElementById(`${key}_item4`)?.value || ""
+    };
+
+    const report = currentStudentData.proReportsList.find(r => r.key === key);
+    let currentStatus = report ? (report.status || 'drafting') : 'drafting';
+    
+    if (currentStatus === 'pending') {
+        currentStatus = 'drafting';
+    }
+
+    const token = localStorage.getItem('accessToken');
+    const response = await fetch(REPORT_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+            type: 'save_pro_draft', 
+            data: { targetUserId: targetUserId, reportKey: key, draftContent: content, status: currentStatus } 
+        })
+    });
+
+    if (!response.ok) throw new Error("Save Failed");
+    if (!silent) alert("저장되었습니다.");
+}
+
+// 6. PRO 리포트 튜터 작성 완료
+async function completeProWriting(key) {
+    try { await saveProDraft(key, true); } catch (e) { return alert("내용 저장 실패로 중단합니다."); }
+
+    if(!confirm("작성을 완료하고 관리자에게 제출하시겠습니까?")) return;
+
+    const token = localStorage.getItem('accessToken');
+    try {
+        const response = await fetch(REPORT_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'complete_pro_writing',
+                data: { targetUserId: targetUserId, reportKey: key }
+            })
+        });
+
+        if (!response.ok) throw new Error("Server Error");
+        
+        alert("제출 완료되었습니다. 관리자 검수 단계로 넘어갑니다.");
+        await loadProReportsForAdmin(); 
+    } catch(e) { alert("오류 발생: " + e.message); }
 }
 
 function renderData(s) {
@@ -955,129 +1114,6 @@ function closeRejectModal() {
     if (modal) modal.remove();
 }
 
-async function submitRejectReason(key) {
-    const reasonText = document.getElementById('rejectReasonText').value;
-    if (reasonText.trim() === '') {
-        alert('재검토 요청 사유를 입력해주세요.');
-        return;
-    }
-
-    const token = localStorage.getItem('accessToken');
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({
-                type: 'tutor_reject_report', 
-                userId: adminId,
-                data: { 
-                    targetUserId: targetUserId, 
-                    reportKey: key, 
-                    status: 'admin_review', 
-                    rejectReason: reasonText 
-                }
-            })
-        });
-
-        if (!response.ok) throw new Error("Server Error");
-
-        alert("관리자에게 재검토 요청이 전달되었습니다.");
-        closeRejectModal(); // 성공 시 모달 닫기
-        await loadProReportsForAdmin(); 
-    } catch(e) { 
-        alert("요청 실패: " + e.message); 
-    }
-}
-
-// FOR PRO 탭용: 관리자가 PDF 업로드 후 튜터에게 핑 날리기
-async function requestTutorReview(key) {
-    const fileInput = document.getElementById(`pdfFile_${key}`);
-    if (!fileInput.files || fileInput.files.length === 0) return alert("PDF 파일을 먼저 첨부해주세요.");
-
-    const file = fileInput.files[0];
-    if (file.type !== 'application/pdf') return alert("PDF 파일만 업로드 가능합니다.");
-    if (!confirm("첨부한 PDF 파일을 업로드하고 튜터에게 최종 검수를 요청하시겠습니까?")) return;
-
-    const token = localStorage.getItem('accessToken');
-    const btn = event.currentTarget;
-    const originalBtnText = btn.innerHTML;
-    
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 업로드 중...';
-    btn.disabled = true;
-
-    try {
-        const urlResponse = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({
-                type: 'get_presigned_url',
-                userId: adminId,
-                data: {
-                    fileName: encodeURIComponent(file.name),
-                    fileType: file.type,
-                    folder: `pro_reports/${targetUserId}` 
-                }
-            })
-        });
-
-        if (!urlResponse.ok) throw new Error("업로드 주소 발급 실패");
-        const { uploadUrl, fileUrl } = await urlResponse.json();
-
-        const uploadResult = await fetch(uploadUrl, {
-            method: 'PUT',
-            headers: { 'Content-Type': file.type },
-            body: file
-        });
-
-        if (!uploadResult.ok) throw new Error("S3 파일 업로드 실패");
-
-        const dbResponse = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({
-                type: 'admin_request_tutor_review', 
-                userId: adminId,
-                data: { targetUserId: targetUserId, reportKey: key, reportLink: fileUrl, status: 'tutor_review' }
-            })
-        });
-
-        if (!dbResponse.ok) throw new Error("DB 업데이트 실패");
-
-        alert("파일 업로드 및 튜터 검수 요청이 완료되었습니다.");
-        await loadProReportsForAdmin(); 
-
-    } catch(e) { 
-        console.error(e);
-        alert("요청 전송 실패: " + e.message); 
-    } finally {
-        btn.innerHTML = originalBtnText;
-        btn.disabled = false;
-    }
-}
-
-// FOR PRO 탭용: 튜터가 확인 후 학생에게 최종 전송
-async function publishProReportToStudent(key) {
-    if(!confirm("최종 검수를 마치고 학생에게 리포트를 전송하시겠습니까? 전송 후에는 수정할 수 없습니다.")) return;
-
-    const token = localStorage.getItem('accessToken');
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({
-                type: 'tutor_publish_report', 
-                userId: adminId,
-                data: { targetUserId: targetUserId, reportKey: key, status: 'published' }
-            })
-        });
-
-        if (!response.ok) throw new Error("Server Error");
-
-        alert("학생에게 최종 전송이 완료되었습니다.");
-        await loadProReportsForAdmin(); 
-    } catch(e) { alert("전송 실패: " + e.message); }
-}
-
 function hasContent(c) { return c.eval && c.dist && c.plan && c.qna; }
 
 function attachInputListeners(key, isTutor) {
@@ -1121,68 +1157,6 @@ async function tempSaveProItem(boxId, itemIdx) {
         btn.innerText = originalText;
         btn.disabled = false;
     }
-}
-
-async function saveProDraft(key, silent = false) {
-    const content = {
-        eval: document.getElementById(`${key}_item1`)?.value || "",
-        dist: document.getElementById(`${key}_item2`)?.value || "",
-        plan: document.getElementById(`${key}_item3`)?.value || "",
-        qna: document.getElementById(`${key}_item4`)?.value || ""
-    };
-
-    // 현재 리포트의 상태를 확인해서, 강제로 처음으로 돌아가는 것을 막습니다.
-    const report = currentStudentData.proReportsList.find(r => r.key === key);
-    let currentStatus = report ? (report.status || 'drafting') : 'drafting';
-    
-    // 이제 막 시작한 'pending' 상태일 때만 'drafting'으로 바꾸고, 
-    // 이미 완료된 'completed', 'admin_review' 등의 상태라면 그 상태를 그대로 유지시킵니다.
-    if (currentStatus === 'pending') {
-        currentStatus = 'drafting';
-    }
-
-    const token = localStorage.getItem('accessToken');
-    const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-            type: 'save_pro_draft', 
-            userId: adminId,
-            targetUserId: targetUserId,
-            reportKey: key,
-            draftContent: content,
-            status: currentStatus // 🔥 백엔드에 유지해야 할 상태값을 전달
-        })
-    });
-
-    if (!response.ok) throw new Error("Save Failed");
-    if (!silent) alert("저장되었습니다.");
-}
-
-async function completeProWriting(key) {
-    try { await saveProDraft(key, true); } catch (e) { return alert("내용 저장 실패로 중단합니다."); }
-
-    if(!confirm("작성을 완료하고 관리자에게 제출하시겠습니까?")) return;
-
-    const token = localStorage.getItem('accessToken');
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({
-                type: 'complete_pro_writing',
-                userId: adminId,
-                targetUserId: targetUserId,
-                reportKey: key
-            })
-        });
-
-        if (!response.ok) throw new Error("Server Error");
-        
-        alert("제출 완료되었습니다. 관리자 검수 단계로 넘어갑니다.");
-        await loadProReportsForAdmin(); 
-
-    } catch(e) { alert("오류 발생: " + e.message); }
 }
 
 function enableProEdit(key) {
