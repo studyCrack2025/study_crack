@@ -505,9 +505,10 @@ async function handleFinalSubmit() {
                     localStorage.setItem('userRole', isTutor ? 'tutor' : 'student');
                     
                     window.dataLayer = window.dataLayer || [];
+                    const currentUserId = authResult.getIdToken().payload.sub; 
                     window.dataLayer.push({
                         event: "login",
-                        userid: userId
+                        user_id: currentUserId
                     });
                     
                     // 이미 로그인(토큰 발급)이 완료된 상태로 Welcome 페이지 이동!
@@ -520,11 +521,13 @@ async function handleFinalSubmit() {
                 onFailure: function(err) {
                     // 혹시라도 자동 로그인이 실패하면 기존처럼 수동 로그인하도록 Welcome 이동
                     console.error("Auto Login Failed:", err);
-                    if (promoCode) {
-                        window.location.href = `/welcome?promo=${encodeURIComponent(promoCode)}`;
-                    } else {
-                        window.location.href = '/welcome';
-                    }
+                    setTimeout(() => {
+                        if (promoCode) {
+                            window.location.href = `/welcome?promo=${encodeURIComponent(promoCode)}`;
+                        } else {
+                            window.location.href = '/welcome';
+                        }
+                    }, 300);
                 }
             });
 
@@ -612,7 +615,7 @@ function handleSignIn() {
             window.dataLayer = window.dataLayer || [];
             window.dataLayer.push({
                 event: "login",
-                userid: userId
+                user_id: userId
             });
             
             // [중요] 토큰 헤더 포함해서 유저 정보 조회 (Authorization)
