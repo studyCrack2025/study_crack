@@ -8,6 +8,7 @@ if (typeof ChartDataLabels !== 'undefined') {
 // 2. 전역 변수 및 설정
 const ADMIN_API_URL = CONFIG.api.base;
 const NOTI_API_URL = CONFIG.api.noti;
+const QNA_API_URL = CONFIG.api.qna;
 
 // 차트 관련 변수
 let salesChart = null;  
@@ -402,7 +403,6 @@ function goToStudentDetail(targetUserId) {
 
 // 1. 전체 질문 불러오기
 async function loadAllQna() {
-    const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('accessToken');
     const tbody = document.getElementById('qnaListBody');
     
@@ -411,13 +411,13 @@ async function loadAllQna() {
     }
 
     try {
-        const response = await fetch(ADMIN_API_URL, {
+        const response = await fetch(QNA_API_URL, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ type: 'admin_get_all_qna', userId: userId })
+            body: JSON.stringify({ type: 'admin_get_all_qna' }) 
         });
 
         if (!response.ok) throw new Error("로드 실패");
@@ -495,25 +495,20 @@ async function markAsRead(targetUserId, qnaId) {
     if(!confirm("이 문의를 '읽음' 상태로 변경하시겠습니까?")) return;
 
     const token = localStorage.getItem('accessToken');
-    const adminId = localStorage.getItem('userId');
 
     try {
-        const res = await fetch(ADMIN_API_URL, {
+        const res = await fetch(QNA_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'admin_mark_qna_read',
-                userId: adminId,
-                data: { targetUserId, qnaId }
+                data: { targetUserId, qnaId } // data 안의 구조만 유지
             })
         });
 
         if (res.ok) {
-            // 로컬 데이터 갱신 (서버 재호출 최소화)
             const item = allQnaData.find(q => q.id === qnaId);
             if(item) item.status = 'read';
-            
-            // 화면 갱신 (waiting 목록에서 사라짐)
             renderQnaList(); 
         } else {
             alert("처리 실패");
@@ -567,15 +562,13 @@ async function submitReply() {
     if(!confirm("답변을 전송하시겠습니까?\n전송 후에는 수정할 수 없으며 학생에게 노출됩니다.")) return;
 
     const token = localStorage.getItem('accessToken');
-    const adminId = localStorage.getItem('userId');
 
     try {
-        const res = await fetch(ADMIN_API_URL, {
+        const res = await fetch(QNA_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'admin_reply_qna',
-                userId: adminId,
                 data: {
                     targetUserId: currentReplyTarget.targetUserId,
                     qnaId: currentReplyTarget.qnaId,
@@ -586,16 +579,13 @@ async function submitReply() {
 
         if (res.ok) {
             alert("답변이 전송되었습니다.");
-            
-            // 로컬 데이터 갱신
             const item = allQnaData.find(q => q.id === currentReplyTarget.qnaId);
             if(item) {
                 item.status = 'done';
                 item.answer = answer;
             }
-            
             closeReplyModal();
-            renderQnaList(); // read 목록에서 사라짐 -> done으로 이동
+            renderQnaList(); 
         } else {
             alert("전송 실패");
         }

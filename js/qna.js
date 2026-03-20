@@ -1,5 +1,7 @@
 // js/qna.js
 
+const QNA_API_URL = CONFIG.api.qna; 
+
 document.addEventListener('DOMContentLoaded', () => {
     // 1. FAQ 아코디언 로직
     const faqItems = document.querySelectorAll('.faq-item');
@@ -23,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (form) form.addEventListener('submit', handleQnaSubmit);
 
     // [수정 1] window.onclick 덮어쓰기 방지 -> addEventListener 사용
-    // script.js의 닫기 기능과 충돌하지 않도록 안전하게 이벤트 추가
     window.addEventListener('click', function(event) {
         if (event.target.classList.contains('modal')) {
             event.target.style.display = 'none';
@@ -50,20 +51,17 @@ function closeLocalModal(id) {
     }
 }
 
-// 편의용 래퍼 함수 (내부에서 변경된 함수 이름 사용)
+// 편의용 래퍼 함수
 function openQnaModal() { openLocalModal('qna-modal'); }
 function closeQnaModal() { closeLocalModal('qna-modal'); }
 function closeDetailModal() { closeLocalModal('qna-detail-modal'); }
 
-
 /* =========================================
    [API] 질문 목록 불러오기
-   (이하 로직은 기존과 동일)
    ========================================= */
 async function loadQnaHistory() {
     const grid = document.getElementById('qna-grid');
     const idToken = localStorage.getItem('idToken');
-    const userId = localStorage.getItem('userId');
 
     if (!idToken) {
         grid.innerHTML = '<div style="text-align:center; padding:40px; color:#64748b;">로그인 후 이용 가능한 서비스입니다.</div>';
@@ -71,10 +69,10 @@ async function loadQnaHistory() {
     }
 
     try {
-        const response = await fetch(CONFIG.api.base, {
+        const response = await fetch(QNA_API_URL, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'get_qna_list', userId: userId })
+            body: JSON.stringify({ type: 'get_qna_list' }) 
         });
 
         if (!response.ok) throw new Error("API Response Error");
@@ -163,7 +161,6 @@ function openDetailModal(item) {
             </div>`;
     }
 
-    // [수정 3] 변경된 함수 이름 사용
     openLocalModal('qna-detail-modal');
 }
 
@@ -179,18 +176,16 @@ async function handleQnaSubmit(e) {
     btn.textContent = "처리 중...";
 
     const idToken = localStorage.getItem('idToken');
-    const userId = localStorage.getItem('userId');
     const title = document.getElementById('qTitle').value;
     const category = document.getElementById('qCategory').value;
     const content = document.getElementById('qContent').value;
 
     try {
-        const response = await fetch(CONFIG.api.base, {
+        const response = await fetch(QNA_API_URL, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 type: 'save_qna',
-                userId: userId, 
                 data: { title, category, content }
             })
         });
@@ -198,9 +193,7 @@ async function handleQnaSubmit(e) {
         if (response.ok) {
             alert("질문이 성공적으로 등록되었습니다.");
             
-            // [수정 4] 변경된 함수 이름 사용
             closeQnaModal();
-            
             document.getElementById('qnaForm').reset();
             loadQnaHistory(); 
         } else {

@@ -13,7 +13,10 @@ const CONFIG = {
         file: `${GATEWAY_URL}/api/file`,
         
         // 알림 전용 엔드포인트
-        noti: `${GATEWAY_URL}/api/noti`,  
+        noti: `${GATEWAY_URL}/api/noti`,
+        
+        // Qna 전용 엔드포인트
+        qna: `${GATEWAY_URL}/api/qna`,
         
         // StudyCrack_Analysis 람다로 연결되는 주소
         analysis: `${GATEWAY_URL}/analysis`,
