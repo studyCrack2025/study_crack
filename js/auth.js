@@ -11,10 +11,8 @@ const poolData = {
 const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 
 // 전역 변수
-let tempUserId = ""; 
 let isPhoneVerified = false; 
-let isEmailVerified = false; 
-let serverPhoneCode = ""; 
+let isEmailVerified = false;
 
 // ==========================================
 // [Part A] 초기화 및 유틸리티
@@ -476,6 +474,7 @@ async function handleFinalSubmit() {
                         name: name,
                         email: email,
                         phone: dbFormattedPhone,
+                        cognitoPhone: cleanPhone,
                         promoCode: promoCode, 
                         major: major,
                         referral: referral,
@@ -501,8 +500,7 @@ async function handleFinalSubmit() {
                     localStorage.setItem('userId', authResult.getIdToken().payload.sub);
                     localStorage.setItem('userEmail', email);
                     
-                    const isTutor = (promoCode === "studycrack_1111");
-                    localStorage.setItem('userRole', isTutor ? 'tutor' : 'student');
+                    localStorage.setItem('userRole', 'student');
                     
                     window.dataLayer = window.dataLayer || [];
                     const currentUserId = authResult.getIdToken().payload.sub; 
@@ -569,6 +567,31 @@ function checkLoginStatus() {
             if(adminBtn) adminBtn.classList.add('hidden');
             logoutBtn.classList.add('hidden');
         }
+    }
+    
+    if (accessToken) {
+        fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({ type: 'get_user' }) 
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.role && data.role !== userRole) {
+                console.warn("Security Event: LocalStorage role mismatch detected. Correcting...");
+                localStorage.setItem('userRole', data.role); // 진짜 역할로 덮어쓰기
+                window.location.reload(); // 조작된 UI 초기화
+            }
+        })
+        .catch(err => {
+            console.warn("Session expired or invalid. Logging out silently.");
+            // alert 띄우지 않고 조용히 로컬 스토리지 비우고 새로고침
+            localStorage.clear();
+            window.location.href = '/';
+        });
     }
 }
 
@@ -662,7 +685,7 @@ function handleSignIn() {
             })
             .catch(err => {
                 console.error("Role Check Error:", err);
-                alert("회원 정보 불러오기 실패! : " + err.message);
+                alert("회원 정보 연동에 실패했습니다. 네트워크 상태를 확인하거나 잠시 후 다시 시도해주세요.");
             });
         },
         onFailure: function(err) {
@@ -787,7 +810,14 @@ async function handleFindEmail() {
             const resultBox = document.getElementById('foundEmailResult');
             
             if (data.email) {
-                resultBox.innerHTML = `회원님의 이메일은 <strong>${data.email}</strong> 입니다.`;
+                resultBox.innerHTML = '';
+                resultBox.appendChild(document.createTextNode("회원님의 이메일은 "));
+    
+                const strongTag = document.createElement('strong');
+                strongTag.textContent = data.email;
+                resultBox.appendChild(strongTag);
+    
+                resultBox.appendChild(document.createTextNode(" 입니다."));
                 resultBox.classList.remove('hidden');
             } else {
                 alert("입력하신 정보와 일치하는 계정을 찾을 수 없습니다.");
