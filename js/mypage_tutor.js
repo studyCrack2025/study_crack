@@ -1,6 +1,8 @@
 // js/mypage_tutor.js
 
-var TUTOR_API_URL = CONFIG.api.base; 
+var TUTOR_API_URL = CONFIG.api.base;
+const FILE_API_URL = CONFIG.api.file;
+
 let tutorInfoData = {};
 let tutorCognitoUser = null; 
 let tutorTimerInterval = null;
@@ -335,7 +337,7 @@ window.handleProfileUpload = async function(input) {
 
     try {
         // 1. Presigned URL
-        const presignRes = await fetch(TUTOR_API_URL, {
+        const presignRes = await fetch(FILE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
@@ -352,7 +354,7 @@ window.handleProfileUpload = async function(input) {
         if (!s3Upload.ok) throw new Error("S3 업로드 실패");
 
         // 3. DB Update
-        const updateRes = await fetch(TUTOR_API_URL, {
+        const updateRes = await fetch(FILE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
@@ -386,13 +388,13 @@ window.handleProfileDelete = async function() {
 
     try {
         if (!currentUrl.includes('placehold.co') && !currentUrl.includes('assets/images')) {
-            await fetch(TUTOR_API_URL, {
+            await fetch(FILE_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ type: 'delete_s3_file', data: { fileUrl: currentUrl } })
             });
         }
-        await fetch(TUTOR_API_URL, {
+        await fetch(FILE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'update_user_profile_image', userId: userId, data: { profileImageUrl: "" } })

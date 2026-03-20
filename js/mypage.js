@@ -1,6 +1,8 @@
 // js/mypage.js
 
 const MYPAGE_API_URL = CONFIG.api.base; 
+const FILE_API_URL = CONFIG.api.file;
+
 let currentUserTier = 'free';
 let cognitoUser = null; // Cognito 유저 객체 전역 관리
 let currentTutorData = null;
@@ -429,7 +431,7 @@ async function handleProfileUpload(input) {
     imgElem.style.opacity = '0.5';
 
     try {
-        const presignRes = await fetch(MYPAGE_API_URL, {
+        const presignRes = await fetch(FILE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
@@ -445,7 +447,7 @@ async function handleProfileUpload(input) {
         const s3Upload = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
         if (!s3Upload.ok) throw new Error("S3 업로드 실패");
 
-        const updateRes = await fetch(MYPAGE_API_URL, {
+        const updateRes = await fetch(FILE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'update_user_profile_image', userId: userId, data: { profileImageUrl: fileUrl } })
@@ -474,13 +476,13 @@ async function handleProfileDelete() {
 
     try {
         if (!currentUrl.includes('placehold.co') && !currentUrl.includes('assets/images')) {
-            await fetch(CONFIG.api.base, {
+            await fetch(FILE_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ type: 'delete_s3_file', data: { fileUrl: currentUrl } })
             });
         }
-        const dbRes = await fetch(CONFIG.api.base, {
+        const dbRes = await fetch(FILE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'update_user_profile_image', data: { profileImageUrl: "" }, userId: userId })

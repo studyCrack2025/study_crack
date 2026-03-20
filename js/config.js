@@ -7,7 +7,10 @@ const CONFIG = {
     // API 경로 설정 (Gateway 하나로 통합됨)
     api: {
         // StudyCrack_API 람다로 연결되는 주소
-        base: `${GATEWAY_URL}/api`,        
+        base: `${GATEWAY_URL}/api`,
+        
+        // 파일 서비스 전용 엔드포인트
+        file: `${GATEWAY_URL}/api/file`,     
         
         // StudyCrack_Analysis 람다로 연결되는 주소
         analysis: `${GATEWAY_URL}/analysis`,
