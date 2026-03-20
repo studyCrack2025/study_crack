@@ -58,44 +58,58 @@
             </div>
 
             <h3>신청할 프로그램 선택</h3>
-            <div class="product-selection">
-            
-                <div id="trialOption" class="product-option tier-trial" style="display: none;" onclick="selectProduct(this, null, 'trial')">
-                    <div class="product-header">
-                        <span class="p-name">TRIAL (체험단 전용)</span>
-                        <span class="p-price">30,000원</span> </div>
-                    <small>가장 합리적인 비용으로 PRO 등급의 모든 기능을 한 달간 완벽하게 체험해보세요.</small>
-                </div>
-                
-                <div class="product-option tier-basic" onclick="selectProduct(this, null, 'basic')">
-                    <div class="product-header">
-                        <span class="p-name">BASIC</span>
-                        <span class="p-price">
-                            <span class="original-price">49,000원</span>
-                            <span class="discount-price">25,000원</span>
-                        </span>
-                    </div>
-                    <small>AI 기반 목표대학 합격 진단 및 점수 상승 시뮬레이션</small>
-                </div>
+            <div class="product-selection pricing-table-container">
+    <div class="pricing-col labels-col">
+        <div class="p-header-space"></div>
+        <div class="f-row">합격 시뮬레이션</div>
+        <div class="f-row">주간 플래너</div>
+        <div class="f-row">프리미엄 보고서</div>
+    </div>
 
-                <div class="product-option tier-standard" onclick="selectProduct(this, null, 'standard')">
-                    <div class="best-badge">BEST 추천</div>
-                    <div class="product-header">
-                        <span class="p-name">STANDARD</span>
-                        <span class="p-price">4주 149,000원</span>
-                    </div>
-                    <small>[Basic 혜택 포함] 매주 진행되는 플래너 점검 및 전문 컨설턴트 1:1 피드백</small>
-                </div>
+    <div id="trialOption" class="product-option tier-trial" style="display: none;" onclick="selectProduct(this, null, 'trial')">
+        <div class="product-header">
+            <span class="p-name">TRIAL</span>
+            <span class="p-price">30,000원</span>
+        </div>
+        <div class="f-row">O<br><small>(무제한)</small></div>
+        <div class="f-row">O</div>
+        <div class="f-row">O</div>
+    </div>
 
-                <div class="product-option tier-pro" onclick="selectProduct(this, null, 'pro')">
-                    <div class="product-header">
-                        <span class="p-name">PRO</span>
-                        <span class="p-price">4주 299,000원</span>
-                    </div>
-                    <small>[Standard 혜택 포함] 상위 1%를 위한 프리미엄 심층 분석 리포트 발간</small>
-                </div>
+    <div class="product-option tier-basic" onclick="selectProduct(this, null, 'basic')">
+        <div class="product-header">
+            <span class="p-name">BASIC</span>
+            <span class="p-price">
+                <span class="original-price">49,000</span><br>
+                <span class="discount-price">25,000원</span>
+            </span>
+        </div>
+        <div class="f-row">O<br><small>(최대 18곳)</small></div>
+        <div class="f-row text-muted">X</div>
+        <div class="f-row text-muted">X</div>
+    </div>
 
-            </div>
+    <div class="product-option tier-standard" onclick="selectProduct(this, null, 'standard')">
+        <div class="best-badge">BEST 추천</div>
+        <div class="product-header">
+            <span class="p-name">STANDARD</span>
+            <span class="p-price">149,000원<br><small>/4주</small></span>
+        </div>
+        <div class="f-row">O</div>
+        <div class="f-row">O</div>
+        <div class="f-row text-muted">X</div>
+    </div>
+
+    <div class="product-option tier-pro" onclick="selectProduct(this, null, 'pro')">
+        <div class="product-header">
+            <span class="p-name">PRO</span>
+            <span class="p-price">299,000원<br><small>/4주</small></span>
+        </div>
+        <div class="f-row">O</div>
+        <div class="f-row">O</div>
+        <div class="f-row">O</div>
+    </div>
+</div>
 
             <div id="tierMessageWrap" class="tier-message-wrap" style="display: none;">
                 <div id="tierMessageText"></div>

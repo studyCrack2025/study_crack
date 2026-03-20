@@ -1,5 +1,8 @@
 /* css/payment.css */
 
+/* =========================================
+   1. 공통 레이아웃 및 폼 요소
+   ========================================= */
 .payment-container { 
     max-width: 600px; 
     margin: 50px auto; 
@@ -40,7 +43,9 @@
     border-color: #2563EB;
 }
 
-/* 상단 구독 상태 배너 */
+/* =========================================
+   2. 상단 구독 상태 배너
+   ========================================= */
 .active-sub-banner {
     display: flex;
     align-items: center;
@@ -84,113 +89,179 @@
     margin-top: 5px;
 }
 
-/* 상품 선택 영역 */
-.product-selection { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 15px; 
-    margin: 30px 0; 
+/* =========================================
+   3. 요금표 그리드 레이아웃 (Grid Table)
+   ========================================= */
+.pricing-table-container {
+    display: grid;
+    /* Trial이 숨김 처리되면 자동으로 남은 열들이 늘어나며 맞춤 정렬됨 */
+    grid-template-columns: 85px repeat(auto-fit, minmax(0, 1fr));
+    gap: 8px;
+    margin: 20px 0 30px 0;
+    align-items: end;
 }
 
-.product-option { 
-    border: 1px solid #e2e8f0; 
-    border-radius: 12px; 
-    padding: 20px; 
-    cursor: pointer; 
-    transition: all 0.2s; 
+/* 왼쪽 기능명 라벨 컬럼 */
+.pricing-col.labels-col {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.p-header-space { 
+    height: 100px; /* 상품 헤더 높이만큼 여백 */
+}
+
+/* 표 내부 열 (기능 유무 O/X) */
+.f-row {
+    height: 55px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #334155;
+}
+
+.f-row small {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+.labels-col .f-row {
+    align-items: flex-start;
+    border-bottom: none;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #64748b;
+    padding-left: 4px;
+}
+
+.text-muted { 
+    color: #cbd5e1; 
+    font-weight: 400; 
+}
+
+/* =========================================
+   4. 개별 상품 카드 및 헤더 디자인
+   ========================================= */
+.product-option {
+    display: block; 
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
     background-color: white;
     position: relative;
+    text-align: center;
+    padding: 0;
+    overflow: hidden;
 }
 
-.product-option:hover { 
-    transform: translateY(-2px); 
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
+.product-option .f-row:last-child {
+    border-bottom: none;
 }
 
-/* 선택된 상태 공통 */
-.product-option.selected { 
-    background-color: #f8fafc; 
+.product-header {
+    padding: 15px 5px;
+    height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-bottom: 1px solid #e2e8f0;
+    background-color: #f8fafc;
+    transition: background-color 0.2s;
 }
 
-/* 내부 텍스트 스타일 */
-.product-header { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    margin-bottom: 5px; 
+.p-name { 
+    font-weight: 800; 
+    font-size: 1.05rem; 
+    margin-bottom: 4px; 
 }
 
-.p-name { font-weight: 800; font-size: 1.1rem; }
-.p-price { font-weight: 700; font-size: 1rem; }
-small { color: #64748b; font-size: 0.9rem; }
-
-
-/* --- [중요] 상품별 컬러 강제 적용 --- */
-
-/* TRIAL - Purple */
-.tier-trial .p-name, .tier-trial .p-price { color: #8B5CF6 !important; }
-.product-option.tier-trial.selected { 
-    box-shadow: 0 0 0 2px #8B5CF6 inset !important; 
-    background-color: #f5f3ff !important; 
-}
-
-/* BASIC - Green */
-.tier-basic .p-name, .tier-basic .p-price { color: #059669 !important; }
-.product-option.tier-basic.selected { 
-    box-shadow: 0 0 0 2px #059669 inset !important; 
-    background-color: #ecfdf5 !important; 
-}
-
-/* STANDARD - Blue */
-.tier-standard .p-name, .tier-standard .p-price { color: #2563EB !important; }
-.product-option.tier-standard.selected { 
-    box-shadow: 0 0 0 2px #2563EB inset !important; 
-    background-color: #eff6ff !important; 
-}
-
-/* PRO - Red */
-.tier-pro .p-name, .tier-pro .p-price { color: #E11D48 !important; }
-.product-option.tier-pro.selected { 
-    box-shadow: 0 0 0 2px #E11D48 inset !important; 
-    background-color: #fff1f2 !important; 
-}
-
-.tier-basic .p-price { display: flex; align-items: baseline; gap: 6px; }
-.tier-basic .original-price { font-size: 0.85rem; font-weight: 400; text-decoration: line-through; color: #94a3b8 !important; }
-.tier-basic .discount-price { font-size: 1.15rem; font-weight: 800; color: #059669 !important; }
-
-.best-badge { position: absolute; top: -12px; right: 20px; background: #2563EB; color: #fff; font-size: 0.75rem; font-weight: 800; padding: 4px 12px; border-radius: 20px; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3); letter-spacing: 0.5px; z-index: 10; }
-
-/* 결제 버튼 */
-.btn-pay { 
-    width: 100%; 
-    padding: 18px; 
-    background-color: #2563EB; 
-    color: white; 
-    border: none; 
-    border-radius: 8px; 
-    font-size: 1.1rem; 
+.p-price { 
     font-weight: 700; 
-    cursor: pointer; 
-    margin-top: 20px; 
-    transition: background 0.3s;
+    font-size: 1rem; 
+    line-height: 1.2; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    gap: 2px; 
 }
 
-.btn-pay:hover { 
-    background-color: #1d4ed8; 
+.p-price small { 
+    font-size: 0.75rem; 
+    color: #64748b; 
+    font-weight: 500; 
 }
 
-.btn-pay:disabled { 
-    background-color: #94a3b8; 
-    cursor: not-allowed; 
+.original-price { 
+    font-size: 0.75rem; 
+    text-decoration: line-through; 
+    color: #94a3b8; 
 }
 
-/* 현재 이용 중인 상품 박스 하이라이트 */
+.discount-price { 
+    font-size: 1.15rem; 
+    font-weight: 800; 
+}
+
+/* =========================================
+   5. 플랜별 브랜드 컬러 및 선택(Selected) 효과
+   ========================================= */
+/* 브랜드 컬러 지정 */
+.tier-trial .p-name, .tier-trial .p-price { color: #8B5CF6; }
+.tier-basic .p-name, .tier-basic .p-price, .tier-basic .discount-price { color: #059669; }
+.tier-standard .p-name, .tier-standard .p-price { color: #2563EB; }
+.tier-pro .p-name, .tier-pro .p-price { color: #E11D48; }
+
+/* 선택된 상태 기본 스타일 */
+.product-option.selected {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px rgba(0,0,0,0.05);
+}
+.product-option.selected .product-header { 
+    background-color: transparent; 
+}
+
+/* 선택된 티어별 테두리 및 배경색 적용 */
+.product-option.tier-trial.selected { border-color: #8B5CF6; background-color: #f5f3ff; }
+.product-option.tier-basic.selected { border-color: #059669; background-color: #ecfdf5; }
+.product-option.tier-standard.selected { border-color: #2563EB; background-color: #eff6ff; }
+.product-option.tier-pro.selected { border-color: #E11D48; background-color: #fff1f2; }
+
+/* 현재 이용 중인 상품 하이라이트 */
 .product-option.is-current-tier {
     border: 2px solid #334155;
     background-color: #f8fafc;
 }
 
+/* =========================================
+   6. 뱃지, 말풍선 메시지 및 결제 버튼
+   ========================================= */
+/* BEST 추천 뱃지 */
+.best-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #2563EB;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 4px 12px;
+    border-radius: 20px;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+    z-index: 10;
+    white-space: nowrap;
+}
+
+/* 현재 이용 중 뱃지 */
 .current-tier-badge {
     position: absolute;
     top: -12px;
@@ -226,45 +297,74 @@ small { color: #64748b; font-size: 0.9rem; }
     margin-right: 6px;
 }
 
+/* 하단 결제 버튼 */
+.btn-pay { 
+    width: 100%; 
+    padding: 18px; 
+    background-color: #2563EB; 
+    color: white; 
+    border: none; 
+    border-radius: 8px; 
+    font-size: 1.1rem; 
+    font-weight: 700; 
+    cursor: pointer; 
+    margin-top: 20px; 
+    transition: background 0.3s;
+}
+
+.btn-pay:hover { 
+    background-color: #1d4ed8; 
+}
+
+.btn-pay:disabled { 
+    background-color: #94a3b8; 
+    cursor: not-allowed; 
+}
+
+/* =========================================
+   7. 애니메이션 및 모바일 반응형 처리
+   ========================================= */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
 @keyframes fadeInDown {
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* =========================================
-   모바일 반응형 (다이어트 적용)
-   ========================================= */
 @media (max-width: 768px) {
-    /* 1. 메인 컨테이너 여백 및 둥글기 축소 */
+    /* 레이아웃 다이어트 */
     .payment-container { 
-        margin: 20px 15px; /* 상하 여백을 대폭 줄이고 좌우 꽉 차지 않게 15px 띄움 */
-        padding: 25px 20px; /* 40px -> 25px/20px로 다이어트 */
-        border-radius: 12px;
+        margin: 20px 15px; 
+        padding: 25px 20px; 
+        border-radius: 12px; 
     }
-
-    /* 2. 입력 폼 간격 및 텍스트 크기 축소 */
+    
     .form-group { margin-bottom: 15px; }
     .form-group label { font-size: 0.9rem; margin-bottom: 6px; }
     .form-group input { padding: 10px 12px; font-size: 0.95rem; }
-
-    /* 3. 상품 선택 영역 여백 축소 */
-    .product-selection { margin: 20px 0; gap: 10px; }
-    .product-option { padding: 15px; border-radius: 10px; }
-
-    /* 4. 상품명 및 가격 텍스트 조정 */
-    .product-header { 
-        /* 모바일 기기 폭이 좁을 때 텍스트가 겹치지 않도록 세로 정렬로 변경할 수도 있지만, 
-           우선은 글자 크기만 살짝 줄여서 한 줄에 나오도록 유지합니다. */
-        align-items: center; 
+    
+    /* 표 모바일 축소 최적화 */
+    .pricing-table-container {
+        grid-template-columns: 65px repeat(3, minmax(0, 1fr));
+        gap: 6px;
     }
-    .p-name { font-size: 1rem; }
-    .p-price { font-size: 0.95rem; }
-    small { font-size: 0.8rem; display: block; margin-top: 4px; }
-
-    /* 5. 결제 버튼 크기 최적화 */
-    .btn-pay { 
-        padding: 15px; 
-        font-size: 1.05rem; 
-        margin-top: 15px; 
-    }
+    
+    .p-header-space { height: 85px; }
+    .product-header { height: 85px; padding: 10px 2px; }
+    
+    .labels-col .f-row { font-size: 0.7rem; letter-spacing: -0.5px; }
+    
+    .p-name { font-size: 0.85rem; }
+    .p-price { font-size: 0.85rem; }
+    .discount-price { font-size: 0.95rem; }
+    
+    .f-row { font-size: 0.9rem; height: 50px; }
+    .f-row small { font-size: 0.65rem; }
+    
+    .best-badge { font-size: 0.65rem; padding: 3px 8px; top: -10px; }
+    
+    .btn-pay { padding: 15px; font-size: 1.05rem; margin-top: 15px; }
 }
