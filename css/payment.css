@@ -250,7 +250,7 @@
 /* BEST 추천 뱃지 */
 .best-badge {
     position: absolute;
-    top: -12px;
+    top: -8px;
     left: 50%;
     transform: translateX(-50%);
     background: #2563EB;
@@ -267,7 +267,7 @@
 /* 현재 이용 중 뱃지 */
 .current-tier-badge {
     position: absolute;
-    top: -12px;
+    top: -8px;
     right: 15px;
     background: #334155;
     color: white;
