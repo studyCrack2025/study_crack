@@ -1,7 +1,7 @@
 // js/auth.js
 
 // API URL 변경 (Gateway 사용)
-const API_URL = CONFIG.api.base;
+const USER_API_URL = CONFIG.api.user;
 const AUTH_URL = CONFIG.api.auth;
 
 const poolData = {
@@ -570,7 +570,7 @@ function checkLoginStatus() {
     }
     
     if (accessToken) {
-        fetch(API_URL, {
+        fetch(USER_API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -642,7 +642,7 @@ function handleSignIn() {
             });
             
             // [중요] 토큰 헤더 포함해서 유저 정보 조회 (Authorization)
-            fetch(API_URL, {
+            fetch(USER_API_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
