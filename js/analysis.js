@@ -931,6 +931,10 @@ async function updateAnalysisUI() {
             })
         });
         const data = await res.json();
+        
+        // 임시 로그 출력
+        console.log("🎯 [서버 정밀 계산 로그]\n", data.server_debug?.logs.join("\n"));
+        
         const results = data.results || [];
         
         if (results.length === 0) {
