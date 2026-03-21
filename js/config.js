@@ -5,9 +5,9 @@ const GATEWAY_URL = "https://ft35jsftc1.execute-api.ap-northeast-2.amazonaws.com
 
 const CONFIG = {
     // API 경로 설정 (Gateway 하나로 통합됨)
-    api: {
-        // StudyCrack_API 람다로 연결되는 주소
-        base: `${GATEWAY_URL}/api`,
+    api: {        
+        // 유저 전용 엔드포인트
+        user: `${GATEWAY_URL}/api/user`,
         
         // 관리자/튜터 전용 엔드포인트
         admin: `${GATEWAY_URL}/api/admin`,

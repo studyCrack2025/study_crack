@@ -3,7 +3,7 @@
 // ============================================================
 // [설정] API 및 상수 정의
 // ============================================================
-const MYPAGE_API_URL = CONFIG.api.base;
+const MYPAGE_API_URL = CONFIG.api.user;
 const UNIV_DATA_API_URL = CONFIG.api.analysis;
 const FILE_API_URL = CONFIG.api.file;
 const REPORT_API_URL = CONFIG.api.report;

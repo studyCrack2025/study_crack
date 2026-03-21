@@ -1,4 +1,6 @@
-const USER_API_URL = CONFIG.api.base;
+// js/payment.js
+
+const USER_API_URL = CONFIG.api.user;
 const PAYMENT_API_URL = CONFIG.api.payment;
 
 let selectedProductName = "";
@@ -22,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 유저 정보 가져오기 및 티어 계산
 async function fetchUserInfo(userId) {
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem('idToken') || localStorage.getItem('accessToken');
     try {
         const response = await fetch(USER_API_URL, {
             method: 'POST',
@@ -44,7 +46,7 @@ async function fetchUserInfo(userId) {
             // 프론트엔드에서 남은 기간 및 티어 계산
             calculateUserTierDisplay(data);
             
-            if (data.promoCode) {
+            if (data.promoCode && data.promoCode.trim().length > 4) {
                 validatePromoCode(data.promoCode);
             }
         }
@@ -54,7 +56,7 @@ async function fetchUserInfo(userId) {
 }
 
 async function validatePromoCode(code) {
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem('idToken') || localStorage.getItem('accessToken');
     try {
         const response = await fetch(USER_API_URL, {
             method: 'POST',

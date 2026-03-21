@@ -1,6 +1,6 @@
 // js/mypage.js
 
-const MYPAGE_API_URL = CONFIG.api.base; 
+const USER_API_URL = CONFIG.api.user; 
 const FILE_API_URL = CONFIG.api.file;
 
 let currentUserTier = 'free';
@@ -101,14 +101,13 @@ function parseDynamoItem(item) {
 // ==========================================
 async function fetchUserData(userId) {
     const token = localStorage.getItem('idToken');
-    const safeUserId = userId || localStorage.getItem('userId');
     
     try {
         // (1) 내 정보 가져오기
-        const response = await fetch(MYPAGE_API_URL, {
+        const response = await fetch(USER_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'get_user', userId: safeUserId }) 
+            body: JSON.stringify({ type: 'get_user' }) 
         });
         
         if (!response.ok) throw new Error("서버 통신 오류");
@@ -147,7 +146,7 @@ async function fetchTutorInfo(tutorName, userTier) {
     const token = localStorage.getItem('idToken');
     
     try {
-        const response = await fetch(MYPAGE_API_URL, {
+        const response = await fetch(USER_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
@@ -253,17 +252,14 @@ async function toggleEdit(fieldId, btn) {
 }
 
 async function saveSingleField(field, value) {
-    const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('idToken');
     
     try {
-        const response = await fetch(MYPAGE_API_URL, {
+        const response = await fetch(USER_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
-                // [변경] 기존 회원가입용 로직과 분리하기 위해 새로운 type 사용
                 type: 'update_member_info', 
-                userId, 
                 data: { [field]: value } 
             })
         });
@@ -590,14 +586,13 @@ function executeDeleteAccount() {
 
 // 3. 실제 백엔드(DB, Cognito)에서 데이터를 지우는 통신 로직
 async function processBackendDeletion() {
-    const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('idToken');
     
     try {
-        const response = await fetch(MYPAGE_API_URL, {
+        const response = await fetch(USER_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'delete_user', userId })
+            body: JSON.stringify({ type: 'delete_user' })
         });
         
         if (response.ok) { 

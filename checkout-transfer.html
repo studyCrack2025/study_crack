@@ -123,7 +123,7 @@
             }
         };
 
-        const USER_API_URL = CONFIG.api.base;
+        const USER_API_URL = CONFIG.api.user;
         let currentTier = 'basic'; // 전역 변수로 저장해 리다이렉트 시 활용
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -159,7 +159,7 @@
             btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 입금 확인 요청 중...`;
             btn.disabled = true;
 
-            const token = localStorage.getItem('accessToken');
+            const token = localStorage.getItem('idToken') || localStorage.getItem('accessToken');
 
             try {
                 const response = await fetch(USER_API_URL, {
@@ -170,8 +170,8 @@
                     },
                     body: JSON.stringify({ 
                         type: 'submit_trial_transfer',
-                        tier: currentTier
-                    }) 
+                        data: { tier: currentTier }
+                    })
                 });
 
                 if (response.ok) {

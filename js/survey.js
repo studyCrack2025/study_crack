@@ -1,6 +1,6 @@
 // js/survey.js
 
-const SURVEY_API_URL = CONFIG.api.base;       
+const USER_API_URL = CONFIG.api.user;       
 const DATA_FETCH_URL = CONFIG.api.analysis;   
 
 let examScores = {}; 
@@ -68,7 +68,7 @@ async function requestScoreConversion(type) {
         return;
     }
 
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem('idToken') || localStorage.getItem('accessToken');
 
     try {
         const pctEl = document.getElementById(pctId);
@@ -181,9 +181,9 @@ function checkQualitativeForm() {
 
 // === 데이터 로드 ===
 async function fetchUserData(userId) {
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem('idToken') || localStorage.getItem('accessToken');
     try {
-        const response = await fetch(SURVEY_API_URL, {
+        const response = await fetch(USER_API_URL, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
@@ -280,7 +280,7 @@ function toggleSchoolInput() {
 
 async function saveQualitative() {
     const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem('idToken') || localStorage.getItem('accessToken');
     
     let statusVal = document.querySelector('input[name="studentStatus"]:checked')?.value;
     if (statusVal === 'other') statusVal = document.getElementById('statusEtcInput').value;
@@ -308,13 +308,10 @@ async function saveQualitative() {
     };
 
     try {
-        const res = await fetch(SURVEY_API_URL, {
+        const res = await fetch(USER_API_URL, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` 
-            },
-            body: JSON.stringify({ type: 'update_qual', userId, data })
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'update_qual', data: data })
         });
         if (res.ok) {
             alert("저장되었습니다! 다음으로 '성적 입력' 탭을 작성해주세요.");
@@ -372,7 +369,7 @@ function loadExamData() {
 // ============================================================
 async function saveQuantitative() {
     const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem('idToken') || localStorage.getItem('accessToken');
     const month = document.getElementById('examSelect').value;
     const getVal = (id) => document.getElementById(id).value;
 
@@ -410,7 +407,7 @@ async function saveQuantitative() {
 
     // 수학 판별 (한글 기준으로 판별)
     const isMiKi = (mathVal === '미적' || mathVal === '기하'); 
-    const isHwak = (mathVal === '확통'); // 🚨 기존 버그(geo) 픽스 완료!
+    const isHwak = (mathVal === '확통');
 
     if (isSciAll) restriction.push("과탐 필수");
     if (isMiKi) restriction.push("미적기하 필수");
@@ -424,13 +421,10 @@ async function saveQuantitative() {
     examScores[month] = currentData;
 
     try {
-        const res = await fetch(SURVEY_API_URL, {
+        const res = await fetch(USER_API_URL, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` 
-            },
-            body: JSON.stringify({ type: 'update_quan', userId, data: examScores })
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'update_quan', data: examScores })
         });
         if (res.ok) {
             alert("성적 데이터가 저장되었습니다.\n(지원 가능 전형이 자동 계산되었습니다)\n\n솔루션 페이지로 이동합니다.");

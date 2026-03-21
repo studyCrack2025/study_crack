@@ -126,13 +126,18 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
+            // [추가] XSS 방어용 함수
+            function escapeHtml(text) {
+                if (!text) return "";
+                return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+            }
+
             const userId = localStorage.getItem('userId');
             if (userId) {
                 window.dataLayer = window.dataLayer || [];
                 window.dataLayer.push({
                     'user_id': userId
                 });
-                console.log("사용자 ID가 GTM으로 전송되었습니다."); // 확인용 로그 (나중에 지우셔도 됩니다)
             }
 
             // 기존 프로모션 코드(MBTI) 처리 로직
@@ -149,10 +154,13 @@
                 
                 const uppercaseMbti = mbti.toUpperCase();
                 
+                // 🚨 [핵심 수정] 해독된 글자를 화면에 넣기 전에 안전하게 변환
+                const safeMbti = escapeHtml(uppercaseMbti);
+                
                 // 메인 버튼 바로 아래에 MBTI 리포트 다운로드 버튼 삽입
                 const btnHtml = `
                     <a href="/analysis" class="btn-go-main" style="margin-top: 15px; background-color: #10b981; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
-                        <i class="fas fa-file-pdf"></i> [${uppercaseMbti}] 보고서 받으러 가기
+                        <i class="fas fa-file-pdf"></i> [${safeMbti}] 보고서 받으러 가기
                     </a>
                 `;
                 const mainBtn = document.querySelector('.btn-go-main');
