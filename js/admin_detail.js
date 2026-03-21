@@ -798,7 +798,7 @@ async function saveWeeklyFeedback(weekId, idx) {
     try {
         if (saveBtn) {
             saveBtn.disabled = true;
-            saveBtn.innerText = "이미지 업로드 및 저장 중..."; // 텍스트 변경
+            saveBtn.innerText = "이미지 업로드 및 저장 중..."; 
         }
 
         // 1. 이미지가 선택된 경우 S3에 먼저 업로드
@@ -806,12 +806,11 @@ async function saveWeeklyFeedback(weekId, idx) {
         if (imageInput && imageInput.files.length > 0) {
             const file = imageInput.files[0];
             
-            const urlResponse = await fetch(API_URL, {
+            const urlResponse = await fetch(FILE_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({
                     type: 'get_presigned_url',
-                    userId: adminId,
                     data: {
                         fileName: encodeURIComponent(file.name),
                         fileType: file.type,
@@ -821,20 +820,22 @@ async function saveWeeklyFeedback(weekId, idx) {
             });
 
             if (!urlResponse.ok) throw new Error("이미지 업로드 주소 발급 실패");
-            const { uploadUrl, fileUrl } = await urlResponse.json();
+            
+            const { uploadUrl, fileUrl, fields } = await urlResponse.json();
+            const formData = new FormData();
+            Object.entries(fields || {}).forEach(([k, v]) => formData.append(k, v));
+            formData.append('file', file);
 
-            // S3 실제 업로드
             const uploadResult = await fetch(uploadUrl, {
-                method: 'PUT',
-                headers: { 'Content-Type': file.type },
-                body: file
+                method: 'POST',
+                body: formData
             });
 
             if (!uploadResult.ok) throw new Error("S3 이미지 업로드 실패");
             tutorImageUrl = fileUrl; // 성공 시 URL 할당
         }
 
-        // 2. 텍스트 + 이미지 URL을 DB에 저장 요청
+        // 2. 텍스트 + 이미지 URL을 DB에 저장 요청 (이 부분은 아직 분리 전이므로 API_URL 유지)
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -864,7 +865,7 @@ async function saveWeeklyFeedback(weekId, idx) {
             top3El.disabled = true;
             planEl.disabled = true;
             extraEl.disabled = true;
-            if (imageInput) imageInput.disabled = true; // 🚀 이미지 인풋도 비활성화
+            if (imageInput) imageInput.disabled = true; 
 
             if (saveBtn) {
                 saveBtn.innerText = "저장 완료";
