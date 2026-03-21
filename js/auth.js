@@ -272,13 +272,13 @@ async function handleSendPhoneCode() {
         
         const data = await response.json();
         
-        alert(`인증번호가 발송되었습니다.`);
+        alert(`인증번호가 발송되었습니다. 5분 이내에 입력해주세요.`);
         document.getElementById('phoneVerifySection').classList.remove('hidden');
         btn.innerText = "재전송";
         btn.disabled = false;
         document.getElementById('phone').disabled = true;
 
-        startTimer(3 * 60, 'phoneTimer', phoneTimerInterval);
+        startTimer(5 * 60, 'phoneTimer', phoneTimerInterval);
 
     } catch (error) {
         console.error(error);
