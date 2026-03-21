@@ -1,6 +1,4 @@
-// js/survey.js
-
-const USER_API_URL = CONFIG.api.user;       
+// js/survey.js      
 const DATA_FETCH_URL = CONFIG.api.analysis;   
 
 let examScores = {}; 
