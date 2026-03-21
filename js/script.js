@@ -325,8 +325,10 @@ async function renderReviews() {
             </div>
             <p class="review-text">"${escapeHtml(review.content)}"</p>
             <div class="review-author">
-                <div class="review-avatar">$${escapeHtml(review.name).charAt(0)}</div>
-                <div class="review-info"><div>${escapeHtml(review.name)}</div>
+                <div class="review-avatar">${escapeHtml(review.name).charAt(0)}</div>
+                <div class="review-info">
+                    <div>${escapeHtml(review.name)}</div>
+                </div>
             </div>
         </div>
     `).join('');
