@@ -201,11 +201,11 @@
 
             try {
                 // UserCore API의 validate_promo_code 호출
-                const res = await fetch(CONFIG.api.user, {
+                const res = await fetch(CONFIG.api.auth, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        type: 'validate_promo_code',
+                        type: 'validate_tutor_promo_code',
                         data: { promoCode: code }
                     })
                 });
