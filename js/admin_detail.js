@@ -836,12 +836,11 @@ async function saveWeeklyFeedback(weekId, idx) {
         }
 
         // 2. 텍스트 + 이미지 URL을 DB에 저장 요청 (이 부분은 아직 분리 전이므로 API_URL 유지)
-        const response = await fetch(API_URL, {
+        const response = await fetch(REPORT_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'tutor_update_weekly_feedback',
-                userId: adminId, 
                 data: {
                     targetUserId: targetUserId,
                     weekId: weekId,
