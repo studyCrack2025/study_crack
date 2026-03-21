@@ -4,7 +4,7 @@ const urlParams = new URLSearchParams(window.location.search);
 const targetUserId = urlParams.get('uid');
 const adminId = localStorage.getItem('userId');
 
-const API_URL = CONFIG.api.base;
+const API_URL = CONFIG.api.admin;
 const REPORT_API_URL = CONFIG.api.report;
 const FILE_API_URL = CONFIG.api.file;
 
@@ -194,8 +194,13 @@ async function requestTutorReview(key) {
     if (!confirm("첨부한 PDF 파일을 업로드하고 튜터에게 최종 검수를 요청하시겠습니까?")) return;
 
     const token = localStorage.getItem('accessToken');
-    const btn = event.currentTarget;
-    const originalBtnText = btn.innerHTML;
+    const btn = document.getElementById(`pdf_upload_btn_${key}`);
+    let originalBtnText = "";
+    if (btn) {
+        originalBtnText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 업로드 중...';
+        btn.disabled = true;
+    }
     
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 업로드 중...';
     btn.disabled = true;
@@ -835,7 +840,7 @@ async function saveWeeklyFeedback(weekId, idx) {
             tutorImageUrl = fileUrl; // 성공 시 URL 할당
         }
 
-        // 2. 텍스트 + 이미지 URL을 DB에 저장 요청 (이 부분은 아직 분리 전이므로 API_URL 유지)
+        // 2. 텍스트 + 이미지 URL을 DB에 저장 요청
         const response = await fetch(REPORT_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -1053,7 +1058,7 @@ function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent, re
                     ${existingPdfHtml}
                     <div style="display:flex; gap: 10px; align-items: center; justify-content: flex-end; border-top: 1px dashed #cbd5e1; padding-top: 15px;">
                         <input type="file" id="pdfFile_${key}" accept=".pdf" style="font-size:0.9rem; padding: 5px;">
-                        <button class="admin-report-btn" onclick="requestTutorReview('${key}')"><i class="fas fa-upload"></i> PDF 업로드 및 튜터에게 검수 요청</button>
+                        <button id="pdf_upload_btn_${key}" class="admin-report-btn" onclick="requestTutorReview('${key}')"><i class="fas fa-upload"></i> PDF 업로드 및 튜터에게 검수 요청</button>
                     </div>
                 </div>`;
         } else {
@@ -1164,7 +1169,7 @@ function enableProEdit(key) {
     const container = document.getElementById(key);
     container.querySelectorAll('textarea').forEach(t => t.disabled = false);
     container.querySelectorAll('.temp-save-btn').forEach(b => b.style.display = 'inline-block');
-    alert("수정 모드입니다. 수정 후 '전체 저장' 하세요.");
+    alert("수정 모드입니다. 수정 후 각 항목의 '임시저장' 버튼을 눌러서 덮어씌워주세요.");
 }
 
 function checkProAllSaved(boxId) {

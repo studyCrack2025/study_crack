@@ -1,6 +1,6 @@
 // js/mypage_tutor.js
 
-var TUTOR_API_URL = CONFIG.api.base;
+const TUTOR_API_URL = CONFIG.api.admin;
 const FILE_API_URL = CONFIG.api.file;
 const NOTI_API_URL = CONFIG.api.noti;
 

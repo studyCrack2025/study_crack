@@ -9,6 +9,9 @@ const CONFIG = {
         // StudyCrack_API 람다로 연결되는 주소
         base: `${GATEWAY_URL}/api`,
         
+        // 관리자/튜터 전용 엔드포인트
+        admin: `${GATEWAY_URL}/api/admin`,
+        
         // 파일 서비스 전용 엔드포인트
         file: `${GATEWAY_URL}/api/file`,
         

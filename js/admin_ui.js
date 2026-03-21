@@ -6,7 +6,7 @@ if (typeof ChartDataLabels !== 'undefined') {
 }
 
 // 2. 전역 변수 및 설정
-const ADMIN_API_URL = CONFIG.api.base;
+const ADMIN_API_URL = CONFIG.api.admin;
 const NOTI_API_URL = CONFIG.api.noti;
 const QNA_API_URL = CONFIG.api.qna;
 

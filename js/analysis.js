@@ -3280,10 +3280,8 @@ async function submitProReport() {
     const originalText = submitBtn.innerText;
     submitBtn.innerText = "처리 중...";
     submitBtn.disabled = true;
-
-    const userId = localStorage.getItem('userId');
+    
     const token = localStorage.getItem('idToken');
-
     try {
         const res = await fetch(REPORT_API_URL, {
             method: 'POST',
