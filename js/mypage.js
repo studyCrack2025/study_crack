@@ -1,6 +1,4 @@
 // js/mypage.js
-
-const USER_API_URL = CONFIG.api.user; 
 const FILE_API_URL = CONFIG.api.file;
 
 let currentUserTier = 'free';
