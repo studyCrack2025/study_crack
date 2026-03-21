@@ -189,8 +189,8 @@
         async function verifyTutorCode() {
             const codeInput = document.getElementById('tutorAuthCode');
             const btn = document.getElementById('verifyCodeBtn');
-            const code = codeInput.value.trim();
-
+			const code = codeInput.value.trim().toUpperCase();
+			
             if (!code) {
                 alert("인증 코드를 입력해주세요.");
                 return;
