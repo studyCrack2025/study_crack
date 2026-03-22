@@ -61,7 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     setWeeklyLoadingStatus(true);
-    // console.log("🚀 [Analysis] 데이터 로딩 시작...");
 
     // 병렬 데이터 로드
     Promise.allSettled([
@@ -70,7 +69,6 @@ document.addEventListener('DOMContentLoaded', () => {
     ]).then((results) => {
         results.forEach((res, idx) => {
             if (res.status === 'rejected') {
-                // console.error(`❌ 데이터 로드 실패 (Index ${idx}):`, res.reason);
             }
         });
 
@@ -213,7 +211,6 @@ async function fetchUserData(userId) {
             if (imgElem) imgElem.src = escapeHtml(data.profileImage);
         }
     } catch (error) { 
-        console.error("User Data Error:", error); 
         if(error.message.includes("401")) { location.href='/login'; }
     }
 }
@@ -843,9 +840,18 @@ async function saveTargetUnivs() {
         const resData = await response.json();
         
         if(response.ok) { 
-            const msg = resData.changedCount > 0 
-                ? `저장되었습니다. (차감 횟수: ${resData.changedCount}회, 남은 횟수: ${resData.remainCount}회)` 
-                : "저장되었습니다. (변경된 내용 없음)";
+            let msg = "";
+            
+            // ▼ 완료 메시지도 티어별로 분기 처리 ▼
+            if (currentUserTier === 'free' || currentUserTier === 'basic') {
+                msg = resData.changedCount > 0 
+                    ? `저장되었습니다. (차감 횟수: ${resData.changedCount}회, 남은 횟수: ${resData.remainCount}회)` 
+                    : "저장되었습니다. (변경된 내용 없음)";
+            } else {
+                // STANDARD, PRO 등 횟수 제한이 없는 티어
+                msg = "목표 대학이 성공적으로 저장되었습니다.";
+            }
+            
             alert(msg); 
             location.reload(); 
         } else { 
@@ -930,11 +936,7 @@ async function updateAnalysisUI() {
                 examMode: currentExamMode
             })
         });
-        const data = await res.json();
-        
-        // 임시 로그 출력
-        console.log("🎯 [서버 정밀 계산 로그]\n", data.server_debug?.logs.join("\n"));
-        
+        const data = await res.json();        
         const results = data.results || [];
         
         if (results.length === 0) {
@@ -2009,7 +2011,7 @@ async function renderPdfToImages(pdfUrl, containerId) {
         container.appendChild(fragment); // 한 번에 삽입
 
     } catch (error) {
-        console.error('PDF Render Error:', error);
+        console.error('PDF 랜더링 에러:', error);
         container.innerHTML = `
             <div style="color:#ef4444; padding:20px; text-align:center; background:#fef2f2; border-radius:8px;">
                 PDF를 화면에 불러오지 못했습니다.<br>
