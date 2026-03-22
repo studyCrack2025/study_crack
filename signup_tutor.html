@@ -384,12 +384,12 @@
 
                 if (data.isValid && data.role === 'tutor') {
                     validatedTutorCode = code;
-                    alert("파트너 인증이 완료되었습니다. 가입 폼을 작성해주세요.");
+                    alert("튜터 인증이 완료되었습니다. 가입 폼을 작성해주세요.");
                     
                     document.getElementById('codePhase').classList.add('hidden');
                     document.getElementById('formPhase').classList.remove('hidden');
                 } else {
-                    alert("유효하지 않은 파트너 코드이거나 권한이 없습니다.");
+                    alert("유효하지 않은 튜터 코드이거나 권한이 없습니다.");
                     codeInput.value = '';
                 }
             } catch (e) {
@@ -517,7 +517,7 @@
 
                     if (!response.ok) throw new Error("계정 승인 및 DB 저장 실패");
                     
-                    alert("파트너 가입이 성공적으로 완료되었습니다! 로그인 페이지로 이동합니다.");
+                    alert("튜터 가입이 성공적으로 완료되었습니다! 로그인 페이지로 이동합니다.");
                     window.location.href = '/login';
 
                 } catch (error) {

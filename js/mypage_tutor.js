@@ -109,6 +109,8 @@ async function loadTutorInfo(userId) {
         if(document.getElementById('userNameDisplay')) document.getElementById('userNameDisplay').innerText = data.name || '이름 없음';
         if(document.getElementById('userEmailDisplay')) document.getElementById('userEmailDisplay').innerText = data.email || '';
         if(document.getElementById('currentEmailDisplay')) document.getElementById('currentEmailDisplay').innerText = data.email || '';
+        if(document.getElementById('profileMaxStudents')) document.getElementById('profileMaxStudents').value = data.maxStudents || '';
+        tutorInfoData.withdrawalStatus = data.withdrawalStatus || 'none';
 
         // 2. 모달 Input
         if(document.getElementById('modalNickname')) document.getElementById('modalNickname').value = data.nickname || '';
@@ -572,6 +574,163 @@ window.markAllTutorNotiRead = async function() {
     if(!confirm("모든 알림을 읽음 처리하시겠습니까?")) return;
     await markTutorNotiAsRead('all');
 }
+
+// [수용 가능 학생 수 수정 기능]
+window.toggleEditMaxStudents = async function(btn) {
+    const input = document.getElementById('profileMaxStudents');
+    if (input.disabled) {
+        input.disabled = false;
+        input.focus();
+        btn.innerText = "저장하기";
+        btn.classList.add('saving');
+    } else {
+        const newValue = parseInt(input.value);
+        if (!newValue || newValue < 1 || newValue > 15) {
+            alert("수용 가능 학생 수는 1~15명 사이로 입력해주세요.");
+            return;
+        }
+        
+        // saveSingleField 활용하여 DB 업데이트
+        const success = await saveSingleField('maxStudents', newValue);
+        if (success) {
+            alert("수용 가능 학생 수가 수정되었습니다.");
+            input.disabled = true;
+            btn.innerText = "수정하기";
+            btn.classList.remove('saving');
+            tutorInfoData.maxStudents = newValue;
+        } else {
+            alert("수정에 실패했습니다. 다시 시도해주세요.");
+        }
+    }
+};
+
+// [튜터 탈퇴 모달 열기] - 상태에 따라 1단계/2단계 구분
+window.openTutorWithdrawalModal = function() {
+    // 폼 초기화
+    document.getElementById('withdrawalReqPassword').value = '';
+    document.getElementById('withdrawalFinalPassword').value = '';
+    document.getElementById('withdrawalReason').value = '';
+
+    const reqForm = document.getElementById('withdrawalRequestForm');
+    const finalForm = document.getElementById('withdrawalFinalForm');
+
+    // 관리자가 승인한 상태면 2단계 폼 표시
+    if (tutorInfoData.withdrawalStatus === 'approved') {
+        reqForm.classList.add('hidden');
+        finalForm.classList.remove('hidden');
+    } else {
+        reqForm.classList.remove('hidden');
+        finalForm.classList.add('hidden');
+        
+        if (tutorInfoData.withdrawalStatus === 'pending') {
+            const reqBtn = reqForm.querySelector('button');
+            reqBtn.innerText = "승인 대기 중 (재요청하기)";
+        }
+    }
+    document.getElementById('tutorWithdrawalModal').classList.remove('hidden');
+};
+
+// [탈퇴 1단계] 관리자에게 승인 요청 (알림 전송)
+window.requestTutorWithdrawal = function() {
+    const password = document.getElementById('withdrawalReqPassword').value;
+    const reason = document.getElementById('withdrawalReason').value.trim();
+
+    if (!password || !reason) {
+        alert("비밀번호와 사유를 모두 입력해주세요.");
+        return;
+    }
+
+    const btn = document.querySelector('#withdrawalRequestForm .danger-btn');
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 요청 중...`;
+    btn.disabled = true;
+
+    // Cognito 본인 인증 후 알림 발송
+    const authDetails = new AmazonCognitoIdentity.AuthenticationDetails({
+        Username: tutorCognitoUser.getUsername(),
+        Password: password
+    });
+
+    tutorCognitoUser.authenticateUser(authDetails, {
+        onSuccess: async function(result) {
+            try {
+                const token = localStorage.getItem('idToken');
+                
+                // 1. 상태 업데이트 (pending)
+                await saveSingleField('withdrawalStatus', 'pending');
+                tutorInfoData.withdrawalStatus = 'pending';
+
+                // 2. 관리자에게 Noti 발송 (Notification Lambda 호출)
+                await fetch(NOTI_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ 
+                        type: 'tutor_request_withdrawal',
+                        data: { reason: reason, tutorName: tutorInfoData.name } 
+                    })
+                });
+                
+                alert("관리자에게 탈퇴 승인 요청이 전송되었습니다. 정산 및 인수인계 확인 후 승인 알림이 발송됩니다.");
+                closeModal('tutorWithdrawalModal');
+
+            } catch (e) {
+                alert("요청 중 오류가 발생했습니다.");
+            } finally {
+                btn.innerText = "탈퇴 승인 요청하기";
+                btn.disabled = false;
+            }
+        },
+        onFailure: function(err) {
+            alert("비밀번호가 일치하지 않습니다.");
+            btn.innerText = "탈퇴 승인 요청하기";
+            btn.disabled = false;
+        }
+    });
+};
+
+// [탈퇴 2단계] 최종 탈퇴 진행 (일반 회원탈퇴 API 호출)
+window.executeTutorWithdrawal = function() {
+    const password = document.getElementById('withdrawalFinalPassword').value;
+    if (!password) { alert("비밀번호를 입력해주세요."); return; }
+
+    const btn = document.querySelector('#withdrawalFinalForm .danger-btn');
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 데이터 삭제 중...`;
+    btn.disabled = true;
+
+    const authDetails = new AmazonCognitoIdentity.AuthenticationDetails({
+        Username: tutorCognitoUser.getUsername(),
+        Password: password
+    });
+
+    tutorCognitoUser.authenticateUser(authDetails, {
+        onSuccess: async function(result) {
+            try {
+                const token = localStorage.getItem('idToken');
+                // 기존 학생 탈퇴 때 사용하는 범용 삭제 API 사용
+                const res = await fetch(CONFIG.api.user, { // 유저 API 엔드포인트
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ type: 'delete_user' })
+                });
+
+                if (res.ok) {
+                    alert("튜터 파트너십 해지 및 탈퇴가 완료되었습니다. 그동안 감사했습니다.");
+                    handleSignOut();
+                } else {
+                    throw new Error("탈퇴 실패");
+                }
+            } catch (e) {
+                alert("탈퇴 처리 중 오류가 발생했습니다.");
+                btn.innerText = "네, 모든 데이터를 삭제하고 탈퇴합니다";
+                btn.disabled = false;
+            }
+        },
+        onFailure: function(err) {
+            alert("비밀번호가 일치하지 않습니다.");
+            btn.innerText = "네, 모든 데이터를 삭제하고 탈퇴합니다";
+            btn.disabled = false;
+        }
+    });
+};
 
 // [계정 관리 및 모달 유틸]
 window.handleSignOut = function() {
