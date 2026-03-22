@@ -959,7 +959,7 @@ function renderAnalysisCard(res) {
     // 1. 데이터 부족/오류 처리
     if (res.msg.includes("오류") || res.msg.includes("데이터 없음") || res.status === '분석 불가') {
         return `
-        <div class="analysis-card" style="border-left: 4px solid #94a3b8; margin-bottom:15px; background:#fff; border-radius:8px; padding:20px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+        <div class="analysis-card" style="border-left-color: #94a3b8;">
             <div class="analysis-header" style="margin-bottom:10px;">
                 <h4 style="margin:0;">${escapeHtml(res.idx + 1)}지망: ${escapeHtml(res.univ)} <small style="color:#64748b;">${escapeHtml(res.major)}</small></h4>
                 <span style="background:#f1f5f9; color:#64748b; padding:2px 8px; border-radius:4px; font-size:0.8rem; margin-top:5px; display:inline-block;">데이터 부족</span>
@@ -968,9 +968,9 @@ function renderAnalysisCard(res) {
         </div>`;
     }
 
-    // 2. 스타일 정의
-    const badgeStyle = `background:${res.color}15; color:${res.color}; border:1px solid ${res.color};`; 
-    const scoreStyle = `color:${res.color}; font-weight:800; font-size:1.5rem;`;
+    // 2. 스타일 정의 및 데이터 이스케이프
+    const badgeStyle = `background: ${res.color}15; color: ${res.color}; border: 1px solid ${res.color};`; 
+    const scoreStyle = `color: ${res.color}; font-weight: 800; font-size: 1.5rem;`;
 
     const safeIdx = escapeHtml(res.idx + 1);
     const safeUniv = escapeHtml(res.univ);
@@ -979,28 +979,12 @@ function renderAnalysisCard(res) {
     const safeMsg = escapeHtml(res.msg);
     const safeScore = escapeHtml(res.converted_score);
 
-    // [모바일 감지]
-    const isMobile = window.matchMedia("(max-width: 768px)").matches;
-
-    // 공통 텍스트 스타일
-    const baseLabelStyle = "position:absolute; transform:translateX(-50%); color:#64748b; font-weight:600; white-space:nowrap; font-size:0.75rem; line-height:1;";
-
-    // [위치 조정 로직]
-    // 모바일: '합격(100)'을 위로 22px 띄움 / PC: 바닥(0px)에 둠
-    const passLabelStyle = isMobile 
-        ? `${baseLabelStyle} bottom: 24px; color:#3b82f6;`  // 파란색 강조 및 위로 올림
-        : `${baseLabelStyle} bottom: 0;`;
-    
-    // '안정(150)'은 항상 바닥
-    const stableLabelStyle = `${baseLabelStyle} bottom: 0;`;
-
-    // [지시선] 모바일에서만 '합격' 라벨 아래에 점선 표시
-    const guideLine = isMobile 
-        ? `<div style="position:absolute; left:50%; bottom:-24px; width:1px; height:22px; border-left:1px dashed #3b82f6; transform:translateX(-50%); opacity:0.6;"></div>` 
-        : '';
+    // 하드코딩 되어있던 MAX 점수를 상수로 분리
+    const MAX_SCORE = 250;
+    const barWidth = Math.min((res.converted_score / MAX_SCORE) * 100, 100);
 
     return `
-    <div class="analysis-card" style="margin-bottom:20px; background:#fff; border-radius:12px; padding:25px; box-shadow:0 4px 10px rgba(0, 0, 0, 0.05); border-left: 6px solid ${res.color}; transition: transform 0.2s;">
+    <div class="analysis-card" style="border-left-color: ${res.color};">
         <div class="analysis-header" style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:1px solid #f1f5f9; padding-bottom:15px; margin-bottom:15px;">
             <div>
                 <span style="color:#64748b; font-size:1.1rem; font-weight:800; display:block; margin-bottom:5px;">${safeIdx}지망</span>
@@ -1022,25 +1006,19 @@ function renderAnalysisCard(res) {
                     <span style="${scoreStyle}">${safeScore}<span style="font-size:1rem; font-weight:normal; margin-left:2px; color:#64748b;">점</span></span>
                 </div>
                 
-                <div style="position:relative; width:100%; padding-bottom:30px;">
-                    <div style="position:relative; height:12px; background:#f1f5f9; border-radius:6px; margin:10px 0; overflow:visible;">
+                <div class="score-bar-container">
+                    <div class="score-bar-bg">
                         <div style="position:absolute; left:40%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
                         <div style="position:absolute; left:60%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
                         
-                        <div style="position:absolute; left:0; top:0; height:100%; width:${Math.min((res.converted_score / 250) * 100, 100)}%; background:${res.color}; border-radius:6px; transition: width 1s ease-out; z-index:1;"></div>
+                        <div class="score-bar-fill" style="width: ${barWidth}%; background: ${res.color};"></div>
                     </div>
                     
-                    <div style="font-size:0.75rem; color:#94a3b8; height:40px; position: relative;">
-                        <span style="position:absolute; left:0; bottom:0;">0</span>
-                        
-                        <span style="${passLabelStyle} left:40%;">
-                            합격(100)
-                            ${guideLine}
-                        </span>
-                        
-                        <span style="${stableLabelStyle} left:60%;">안정(150)</span>
-                        
-                        <span style="position:absolute; right:0; bottom:0;">MAX(250)</span>
+                    <div class="score-labels">
+                        <span class="label-min">0</span>
+                        <span class="label-pass">합격(100)</span>
+                        <span class="label-stable">안정(150)</span>
+                        <span class="label-max">MAX(${MAX_SCORE})</span>
                     </div>
                 </div>
             </div>
