@@ -67,24 +67,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const chkRequired = document.querySelectorAll('.chk-required');
     const chkOptional = document.querySelectorAll('.chk-optional');
 
+    // 1. 전체 동의 체크박스를 클릭했을 때
     if (chkAll) {
         chkAll.addEventListener('change', (e) => {
-            chkRequired.forEach(chk => {
-                chk.checked = e.target.checked;
-            });
-            chkOptional.forEach(chk => {
-                chk.checked = e.target.checked;
-            });
-            updateSubmitButton(); // 버튼 상태 갱신
+            const isChecked = e.target.checked;
+            chkRequired.forEach(chk => { chk.checked = isChecked; });
+            chkOptional.forEach(chk => { chk.checked = isChecked; });
+            updateSubmitButton(); // 가입 버튼 상태 갱신
         });
     }
 
+    // 2. 개별 약관(필수 or 선택)을 클릭했을 때 '전체 동의' 상태 업데이트 함수
+    const updateChkAllState = () => {
+        const allRequiredChecked = Array.from(chkRequired).every(c => c.checked);
+        const allOptionalChecked = Array.from(chkOptional).every(c => c.checked);
+        
+        // 필수 약관과 선택 약관이 모두 체크되어야만 전체 동의 체크
+        if (chkAll) {
+            chkAll.checked = allRequiredChecked && allOptionalChecked;
+        }
+        
+        updateSubmitButton(); // 가입 버튼 상태 갱신
+    };
+
+    // 3. 필수 약관과 선택 약관 모두에 클릭 이벤트 리스너 달기
     chkRequired.forEach(chk => {
-        chk.addEventListener('change', () => {
-            const allChecked = Array.from(chkRequired).every(c => c.checked);
-            if (chkAll) chkAll.checked = allChecked;
-            updateSubmitButton(); // 버튼 상태 갱신
-        });
+        chk.addEventListener('change', updateChkAllState);
+    });
+
+    chkOptional.forEach(chk => {
+        chk.addEventListener('change', updateChkAllState);
     });
 
     // URL에서 promo 파라미터 확인 후 프로모션 코드 자동 입력
