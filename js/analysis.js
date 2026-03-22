@@ -2373,12 +2373,15 @@ function downloadReportPDF(reportTitle) {
                     break-inside: avoid !important; 
                 }
 
-                /* 🚨 핵심: 큰 이미지가 백지로 튕기는 현상 원천 차단 */
+                /* 🚨 외과 수술 픽스: 이미지가 A4 세로 길이를 넘지 않게 압축(max-height)하고, 허리에서 잘리지 않게(avoid) 방어합니다. */
                 .doc-matched-box img {
                     display: block !important;
                     max-width: 100% !important;
-                    page-break-inside: auto !important; 
-                    break-inside: auto !important;
+                    max-height: 220mm !important; /* A4 인쇄 가능 영역을 넘지 않도록 강제 제한 */
+                    object-fit: contain !important; /* 비율 깨짐 방지 */
+                    margin: 0 auto !important; /* 중앙 정렬 */
+                    page-break-inside: avoid !important; /* 이미지 자체가 쪼개지는 것 방지 */
+                    break-inside: avoid !important;
                 }
 
                 .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-matched-body { 
