@@ -65,10 +65,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 약관 동의 로직 통합 ---
     const chkAll = document.getElementById('chkAll');
     const chkRequired = document.querySelectorAll('.chk-required');
+    const chkOptional = document.querySelectorAll('.chk-optional');
 
     if (chkAll) {
         chkAll.addEventListener('change', (e) => {
             chkRequired.forEach(chk => {
+                chk.checked = e.target.checked;
+            });
+            chkOptional.forEach(chk => {
                 chk.checked = e.target.checked;
             });
             updateSubmitButton(); // 버튼 상태 갱신
@@ -384,6 +388,9 @@ async function handleFinalSubmit() {
     const birthdate = document.getElementById('birthdate').value;
     const phoneRaw = document.getElementById('phone').value;
     
+    const chkMarketingEl = document.getElementById('chkMarketing');
+    const marketingAgreed = chkMarketingEl ? chkMarketingEl.checked : false;
+    
     // 대신 promoCode를 여기서 미리 가져오면 깔끔합니다.
     const promoCode = document.getElementById('promoCode').value;
 
@@ -480,7 +487,8 @@ async function handleFinalSubmit() {
                         referral: referral,
                         gender: gender,
                         birthdate: birthdate,
-                        termsAgreed: true
+                        termsAgreed: true,
+                        marketingAgreed: marketingAgreed
                     }
                 })
             });

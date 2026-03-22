@@ -156,6 +156,10 @@
                     <label><input type="checkbox" class="chk-required"> (필수) 개인정보 처리 서약서 동의</label>
                     <a href="#" onclick="openTermModal('termModal4'); return false;">전문보기</a>
                 </div>
+                <div class="terms-item">
+                    <label><input type="checkbox" id="chkMarketing" class="chk-optional"> (선택) 마케팅 정보 수신 동의</label>
+                    <a href="#" onclick="openTermModal('termModal5'); return false;">전문보기</a>
+                </div>
             </div>
 
             <button id="finalSubmitBtn" class="auth-btn tutor-submit-btn" onclick="handleTutorFinalSubmit()" disabled>이메일/전화번호 인증을 완료해주세요</button>
@@ -350,6 +354,27 @@
 서약자는 위 내용을 이해하고 준수할 것을 서약한다.</div>
         </div>
     </div>
+    
+    <div id="termModal5" class="modal hidden">
+        <div class="modal-content term-modal-content">
+            <span class="close-btn" onclick="closeTermModal('termModal5')">&times;</span>
+            <h3 class="tutor-modal-title">마케팅 정보 수신 동의</h3>
+            <div class="term-text-box">“스터디크랙”(이하 “회사”)는 「정보통신망 이용촉진 및 정보보호 등에 관한 법률」 및 「개인정보 보호법」 등 관계 법령에 따라 광고성 정보를 전송하기 위해 이용자의 사전 동의를 받고 있습니다.
+
+1. 목적 
+- 이메일 및 문자(SMS/LMS)를 통한 광고성 정보 전송 
+- 스터디크랙 서비스, 이벤트, 혜택, 맞춤 입시 전략 및 합격 사례 안내 
+
+2. 이용 항목 
+- 휴대폰번호, 이메일주소 
+
+3. 보유 및 이용 기간 
+- 회원 탈퇴 또는 동의 철회 시까지 
+
+※ 본 동의는 선택 사항이며, 동의하지 않아도 서비스 이용에는 제한이 없습니다. 
+※ 이용자는 언제든지 수신 거부를 할 수 있습니다.</div>
+        </div>
+    </div>
 
     <script src="/js/config.js"></script>
     <script src="/js/auth.js"></script> 
@@ -425,6 +450,7 @@
             
             const maxStudents = document.getElementById('maxStudents').value;
             const maxHours = document.getElementById('maxHours').value;
+            const marketingAgreed = document.getElementById('chkMarketing').checked;
 
             if (!maxStudents || !maxHours) {
                 alert("수용 가능 학생 수와 주간 최대 할애 시간을 입력해주세요.");
@@ -508,6 +534,7 @@
                                 gender: gender,
                                 birthdate: birthdate,
                                 termsAgreed: true,
+                                marketingAgreed: marketingAgreed,
                                 role: 'tutor', 
                                 maxStudents: parseInt(maxStudents),
                                 maxHours: parseInt(maxHours)
