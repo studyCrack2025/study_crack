@@ -2329,7 +2329,7 @@ function downloadReportPDF(reportTitle) {
 
     const iframeDoc = iframe.contentWindow.document;
     iframeDoc.open();
-    // 🚨 텍스트(문자열) 출력 방식은 뼈대 HTML만 그리도록 최소화합니다.
+    
     iframeDoc.write(`
         <!DOCTYPE html>
         <html lang="ko">
@@ -2366,43 +2366,49 @@ function downloadReportPDF(reportTitle) {
                     display: block !important; 
                     width: 100% !important;
                     clear: both !important; 
-                }
-                
-                .doc-matched-box:not(:last-child) {
-                    page-break-inside: avoid !important; 
-                    break-inside: avoid !important; 
+                    /* 기본적으로 박스 쪼개짐 방지 */
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
                 }
 
-                /* 🚨 핵심: 큰 이미지가 백지로 튕기는 현상 원천 차단 */
+                /* 🚨 핵심 수정 1: 이미지가 들어간 마지막 박스들은 쪼개짐을 허용 (유령 빈공간 방지) */
+                .doc-matched-box:last-of-type,
+                .doc-matched-box:nth-last-of-type(2) {
+                    page-break-inside: auto !important; 
+                    break-inside: auto !important; 
+                }
+
+                /* 큰 이미지가 백지로 튕기는 현상 방지 */
                 .doc-matched-box img {
                     display: block !important;
                     max-width: 100% !important;
-                    page-break-inside: auto !important; 
-                    break-inside: auto !important;
+                    margin: 0 auto !important;
+                    page-break-inside: avoid !important; /* 이미지 자체는 반갈죽 안되게 */
+                    break-inside: avoid !important;
                 }
 
-                .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-matched-body { 
+                .doc-matched-box:not(:last-of-type):not(:nth-last-of-type(2)) .doc-matched-body { 
                     display: flex !important; 
                     flex-direction: row !important; 
                     flex-wrap: nowrap !important;
                 }
                 
-                .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-student-data { 
+                .doc-matched-box:not(:last-of-type):not(:nth-last-of-type(2)) .doc-student-data { 
                     border-bottom: none !important; 
                     border-right: 1px dashed #cbd5e1 !important; 
                     flex: 1 1 45% !important; 
                     box-sizing: border-box !important;
                 }
 
-                .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-tutor-feedback { 
+                .doc-matched-box:not(:last-of-type):not(:nth-last-of-type(2)) .doc-tutor-feedback { 
                     flex: 1 1 55% !important; 
                     box-sizing: border-box !important;
                 }
 
-                .doc-matched-box:last-child .doc-matched-body,
-                .doc-matched-box:nth-last-child(2) .doc-matched-body {
-                    display: flex !important;
-                    flex-direction: column !important;
+                /* 🚨 핵심 수정 2: 하단 QnA 및 이미지 박스는 Flex 대신 Block 사용 (인쇄 밀림 버그 방지) */
+                .doc-matched-box:last-of-type .doc-matched-body,
+                .doc-matched-box:nth-last-of-type(2) .doc-matched-body {
+                    display: block !important; 
                 }
 
                 ${mobilePrintCSS}
@@ -2414,16 +2420,14 @@ function downloadReportPDF(reportTitle) {
     `);
     iframeDoc.close();
 
-    // 🚨 핵심: 수십 메가바이트의 Base64를 문자열로 넘기지 않고 JS 노드로 직접 꽂아 넣음
     iframeDoc.getElementById('print-body').appendChild(printNode);
 
-    // 🚨 핵심: 복사된 이미지들이 인쇄 엔진 메모리에 모두 올라갈 때까지 대기
+    // 이미지 로딩 대기 로직
     const imgs = iframeDoc.querySelectorAll('img');
     let loadedCount = 0;
     
     function checkAllImagesLoaded() {
         if (loadedCount >= imgs.length) {
-            // 브라우저 렌더링 큐 처리를 위해 추가로 0.5초 여유 딜레이 부여
             setTimeout(function() {
                 iframe.contentWindow.focus();
                 iframe.contentWindow.print();
@@ -2442,7 +2446,6 @@ function downloadReportPDF(reportTitle) {
                 img.onerror = () => { loadedCount++; checkAllImagesLoaded(); };
             }
         });
-        // 혹시 캐시 처리로 인해 이벤트가 무시될 경우를 위한 안전장치
         checkAllImagesLoaded(); 
     }
 
