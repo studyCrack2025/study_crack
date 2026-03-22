@@ -355,19 +355,6 @@
     <script src="/js/auth.js"></script> 
     
     <script>
-        // 전역 약관 전체 동의 체크박스 제어 (추가)
-        document.getElementById('chkAll').addEventListener('change', function() {
-            const isChecked = this.checked;
-            document.querySelectorAll('.chk-required').forEach(chk => chk.checked = isChecked);
-        });
-
-        document.querySelectorAll('.chk-required').forEach(chk => {
-            chk.addEventListener('change', function() {
-                const allChecked = Array.from(document.querySelectorAll('.chk-required')).every(c => c.checked);
-                document.getElementById('chkAll').checked = allChecked;
-            });
-        });
-
         let validatedTutorCode = "";
 
         async function verifyTutorCode() {
@@ -449,6 +436,14 @@
                 return;
             }
 
+            // [추가됨] 비밀번호 강도 정규식 검사 (auth.js와 동일)
+            const pwRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+            if (!pwRegex.test(password)) {
+                alert("비밀번호 조건을 확인해주세요.\n(영문 대/소문자, 숫자, 특수문자 포함 8자 이상)");
+                document.getElementById('password').focus();
+                return;
+            }
+
             if (password !== passwordConfirm) {
                 alert("비밀번호가 일치하지 않습니다.");
                 return;
@@ -489,7 +484,8 @@
 
                     alert(koreanErrorMsg); 
                     
-                    submitBtn.innerText = "이메일/전화번호 인증을 완료해주세요";
+                    // [수정됨] 에러 발생 시 버튼 텍스트를 정상적으로 복구
+                    submitBtn.innerText = "파트너 가입 완료";
                     submitBtn.disabled = false;
                     return;
                 }
