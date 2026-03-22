@@ -646,7 +646,7 @@ window.toggleEditMaxHours = async function(btn) {
 
 
 // ==========================================
-// [기능 8] 파트너십 해지 (2단계 회원 탈퇴)
+// [기능 8] 튜터 파트너십 해지 (2단계 회원 탈퇴)
 // ==========================================
 
 window.openTutorWithdrawalModal = function() {
@@ -719,7 +719,7 @@ window.requestTutorWithdrawal = function() {
                     })
                 });
                 
-                alert("관리자에게 파트너십 해지 요청이 전송되었습니다.\n정산 및 인수인계 확인 후 승인 알림이 발송됩니다.");
+                alert("관리자에게 튜터 파트너십 해지 요청이 전송되었습니다.\n정산 및 인수인계 확인 후 승인 알림이 발송됩니다.");
                 closeModal('tutorWithdrawalModal');
 
             } catch (e) {
@@ -767,7 +767,7 @@ window.executeTutorWithdrawal = function() {
                 });
 
                 if (res.ok) {
-                    alert("파트너십 해지 및 탈퇴가 완료되었습니다. 그동안 함께해주셔서 감사합니다.");
+                    alert("튜터 파트너십 해지 및 탈퇴가 완료되었습니다. 그동안 함께해주셔서 감사합니다.");
                     handleSignOut();
                 } else {
                     throw new Error("탈퇴 실패");
