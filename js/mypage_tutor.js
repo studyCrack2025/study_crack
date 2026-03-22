@@ -53,13 +53,19 @@ function initTutorCognito() {
         ClientId: CONFIG.cognito.clientId 
     };
     const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
-    const username = localStorage.getItem('username') || localStorage.getItem('email'); 
-
-    if (username) {
-        tutorCognitoUser = new AmazonCognitoIdentity.CognitoUser({
-            Username: username,
-            Pool: userPool
-        });
+    
+    // 1. 현재 캐시된 유저를 먼저 가져옵니다.
+    tutorCognitoUser = userPool.getCurrentUser();
+    
+    // 2. 만약 못 가져왔다면 localStorage에 저장된 userEmail을 사용해 수동 생성합니다.
+    if (!tutorCognitoUser) {
+        const userEmail = localStorage.getItem('userEmail'); // 키값 수정
+        if (userEmail) {
+            tutorCognitoUser = new AmazonCognitoIdentity.CognitoUser({
+                Username: userEmail,
+                Pool: userPool
+            });
+        }
     }
 }
 
@@ -674,6 +680,12 @@ window.requestTutorWithdrawal = function() {
         alert("비밀번호와 사유를 모두 입력해주세요.");
         return;
     }
+    
+    if (!tutorCognitoUser) {
+        alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+        handleSignOut();
+        return;
+    }
 
     const btn = document.querySelector('#withdrawalRequestForm .danger-btn');
     btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 요청 중...`;
@@ -722,6 +734,12 @@ window.requestTutorWithdrawal = function() {
 window.executeTutorWithdrawal = function() {
     const password = document.getElementById('withdrawalFinalPassword').value;
     if (!password) { alert("비밀번호를 입력해주세요."); return; }
+    
+    if (!tutorCognitoUser) {
+        alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+        handleSignOut();
+        return;
+    }
 
     const btn = document.querySelector('#withdrawalFinalForm .danger-btn');
     btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 데이터 삭제 중...`;
