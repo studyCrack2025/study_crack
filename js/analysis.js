@@ -979,7 +979,6 @@ function renderAnalysisCard(res) {
     const safeMsg = escapeHtml(res.msg);
     const safeScore = escapeHtml(res.converted_score);
 
-    // 하드코딩 되어있던 MAX 점수를 상수로 분리
     const MAX_SCORE = 250;
     const barWidth = Math.min((res.converted_score / MAX_SCORE) * 100, 100);
 
@@ -1016,9 +1015,9 @@ function renderAnalysisCard(res) {
                     
                     <div class="score-labels">
                         <span class="label-min">0</span>
-                        <span class="label-pass">합격(100)</span>
-                        <span class="label-stable">안정(150)</span>
-                        <span class="label-max">MAX(${MAX_SCORE})</span>
+                        <span class="label-pass">합격<span class="m-line">(100)</span></span>
+                        <span class="label-stable">안정<span class="m-line">(150)</span></span>
+                        <span class="label-max">MAX<span class="m-line">(${MAX_SCORE})</span></span>
                     </div>
                 </div>
             </div>
