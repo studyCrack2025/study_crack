@@ -650,25 +650,31 @@ window.toggleEditMaxHours = async function(btn) {
 // ==========================================
 
 window.openTutorWithdrawalModal = function() {
-    document.getElementById('withdrawalReqPassword').value = '';
-    document.getElementById('withdrawalFinalPassword').value = '';
-    document.getElementById('withdrawalReason').value = '';
+    // 폼 안의 인풋들 초기화
+    if(document.getElementById('withdrawalReqPassword')) document.getElementById('withdrawalReqPassword').value = '';
+    if(document.getElementById('withdrawalFinalPassword')) document.getElementById('withdrawalFinalPassword').value = '';
+    if(document.getElementById('withdrawalReason')) document.getElementById('withdrawalReason').value = '';
 
     const reqForm = document.getElementById('withdrawalRequestForm');
+    const pendingForm = document.getElementById('withdrawalPendingForm');
     const finalForm = document.getElementById('withdrawalFinalForm');
 
+    // DB에 저장된 탈퇴 상태(withdrawalStatus)에 따른 화면 제어
     if (tutorInfoData.withdrawalStatus === 'approved') {
         reqForm.classList.add('hidden');
-        finalForm.classList.remove('hidden');
-    } else {
-        reqForm.classList.remove('hidden');
+        pendingForm.classList.add('hidden');
+        finalForm.classList.remove('hidden'); // 2단계 비번 입력창 표시
+    } else if (tutorInfoData.withdrawalStatus === 'pending') {
+        reqForm.classList.add('hidden');
+        pendingForm.classList.remove('hidden'); // 대기중 메시지만 표시
         finalForm.classList.add('hidden');
-        
-        if (tutorInfoData.withdrawalStatus === 'pending') {
-            const reqBtn = reqForm.querySelector('button');
-            reqBtn.innerText = "승인 대기 중 (재요청하기)";
-        }
+    } else {
+        // 'none' 이거나 아예 값이 없을 때 (최초 요청)
+        reqForm.classList.remove('hidden'); // 사유 작성 폼 표시
+        pendingForm.classList.add('hidden');
+        finalForm.classList.add('hidden');
     }
+    
     document.getElementById('tutorWithdrawalModal').classList.remove('hidden');
 };
 

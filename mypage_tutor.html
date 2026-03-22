@@ -36,58 +36,58 @@
     <div class="mypage-container">
         
         <aside class="profile-summary tier-consultant"> 
-    <div class="premium-badge">TUTOR</div>
-    
-    <div class="profile-pic-area" style="position: relative; display: inline-block;">
-        <img id="profileImg" 
-            src="https://placehold.co/150x150?text=Tutor" 
-            onerror="this.onerror=null; this.src='https://placehold.co/150x150?text=NoImage';" 
-            alt="프로필" class="profile-img">
+            <div class="premium-badge">TUTOR</div>
+            
+            <div class="profile-pic-area tutor-profile-pic">
+                <img id="profileImg" 
+                    src="https://placehold.co/150x150?text=Tutor" 
+                    onerror="this.onerror=null; this.src='https://placehold.co/150x150?text=NoImage';" 
+                    alt="프로필" class="profile-img">
 
-        <button class="edit-pic-btn" onclick="triggerFileUpload()" title="사진 변경">
-            <i class="fas fa-camera"></i>
-        </button>
+                <button class="edit-pic-btn" onclick="triggerFileUpload()" title="사진 변경">
+                    <i class="fas fa-camera"></i>
+                </button>
 
-        <button id="deletePicBtn" class="delete-pic-btn hidden" onclick="handleProfileDelete()" title="사진 삭제">
-            <i class="fas fa-trash"></i>
-        </button>
+                <button id="deletePicBtn" class="delete-pic-btn hidden" onclick="handleProfileDelete()" title="사진 삭제">
+                    <i class="fas fa-trash"></i>
+                </button>
 
-        <input type="file" id="profileFileInput" accept="image/*" style="display: none;" onchange="handleProfileUpload(this)">
-    </div>
-    
-    <h2 id="userNameDisplay">-</h2>
-    <p id="userEmailDisplay">-</p>
-    
-    <button class="profile-edit-btn" onclick="openProfileModal()">
-        <i class="fas fa-user-edit"></i> 내 프로필 소개 설정
-    </button>
-
-    <hr style="margin: 25px 0 20px; border: 0; border-top: 1px solid #e2e8f0;">
-    
-    <div class="sidebar-info-box" style="text-align: left;">
-        <div class="form-group" style="margin-bottom: 15px;">
-            <label style="font-size: 0.85rem; color: #64748b; margin-bottom: 5px; display: block; font-weight: bold;">최대 희망 학생 수 (명)</label>
-            <div style="display: flex; gap: 8px;">
-                <input type="number" id="profileMaxStudents" max="15" min="1" disabled style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;">
-                <button class="edit-btn" onclick="toggleEditMaxStudents(this)" style="height: auto; padding: 0 15px; font-size: 0.8rem; white-space: nowrap;">수정</button>
+                <input type="file" id="profileFileInput" accept="image/*" class="hidden-file-input" onchange="handleProfileUpload(this)">
             </div>
-        </div>
+            
+            <h2 id="userNameDisplay">-</h2>
+            <p id="userEmailDisplay">-</p>
+            
+            <button class="profile-edit-btn" onclick="openProfileModal()">
+                <i class="fas fa-user-edit"></i> 내 프로필 소개 설정
+            </button>
 
-        <div class="form-group" style="margin-bottom: 20px;">
-            <label style="font-size: 0.85rem; color: #64748b; margin-bottom: 5px; display: block; font-weight: bold;">주 최대 근무가능 시간 (시간)</label>
-            <div style="display: flex; gap: 8px;">
-                <input type="number" id="profileMaxHours" min="1" disabled style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;">
-                <button class="edit-btn" onclick="toggleEditMaxHours(this)" style="height: auto; padding: 0 15px; font-size: 0.8rem; white-space: nowrap;">수정</button>
+            <hr class="sidebar-divider">
+            
+            <div class="sidebar-info-box">
+                <div class="form-group sidebar-form-group">
+                    <label class="sidebar-info-label">최대 희망 학생 수 (명)</label>
+                    <div class="sidebar-input-group">
+                        <input type="number" id="profileMaxStudents" max="15" min="1" disabled class="sidebar-info-input">
+                        <button class="edit-btn sidebar-edit-btn" onclick="toggleEditMaxStudents(this)">수정</button>
+                    </div>
+                </div>
+
+                <div class="form-group sidebar-form-group last">
+                    <label class="sidebar-info-label">주 최대 근무가능 시간 (시간)</label>
+                    <div class="sidebar-input-group">
+                        <input type="number" id="profileMaxHours" min="1" disabled class="sidebar-info-input">
+                        <button class="edit-btn sidebar-edit-btn" onclick="toggleEditMaxHours(this)">수정</button>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <div style="text-align: center; margin-top: 10px;">
-        <button class="btn-delete-account" onclick="openTutorWithdrawalModal()" style="background: none; border: none; color: #94a3b8; font-size: 0.85rem; text-decoration: underline; cursor: pointer;">
-            튜터 파트너십 해지 (회원탈퇴)
-        </button>
-    </div>
-    </aside>
+            <div class="sidebar-action-area">
+                <button class="btn-delete-account tutor-delete-btn" onclick="openTutorWithdrawalModal()">
+                    튜터 파트너십 해지 (회원탈퇴)
+                </button>
+            </div>
+        </aside>
 
         <main class="content-area">
             <div class="main-tabs">
@@ -263,43 +263,49 @@
     </div>
     
     <div id="tutorWithdrawalModal" class="modal hidden">
-    <div class="modal-content delete-modal">
-        <span class="close-btn" onclick="closeModal('tutorWithdrawalModal')">&times;</span>
-        <h3>튜터 파트너십 해지 (회원 탈퇴)</h3>
-        
-        <div id="withdrawalRequestForm">
-            <div class="warning-box" style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
-                <strong style="color: #7f1d1d; display: block; margin-bottom: 5px;"><i class="fas fa-exclamation-triangle"></i> 파트너십 해지 안내</strong>
-                <span style="font-size: 0.9rem; color: #991b1b;">담당 학생 인수인계 및 정산 처리를 위해 <strong>관리자 승인</strong>이 필요합니다. 사유를 제출하시면 관리자 확인 후 탈퇴 승인 알림을 보내드립니다.</span>
+        <div class="modal-content delete-modal">
+            <span class="close-btn" onclick="closeModal('tutorWithdrawalModal')">&times;</span>
+            <h3>튜터 파트너십 해지 (회원 탈퇴)</h3>
+            
+            <div id="withdrawalRequestForm">
+                <div class="warning-box withdrawal-warning">
+                    <strong><i class="fas fa-exclamation-triangle"></i> 파트너십 해지 안내</strong>
+                    <span>담당 학생 인수인계 및 정산 처리를 위해 <strong>관리자 승인</strong>이 필요합니다. 사유를 제출하시면 관리자 확인 후 탈퇴 승인 알림을 보내드립니다.</span>
+                </div>
+                <div class="form-group">
+                    <label>비밀번호 확인</label>
+                    <input type="password" id="withdrawalReqPassword" placeholder="현재 비밀번호 입력">
+                </div>
+                <div class="form-group">
+                    <label>해지(탈퇴) 사유</label>
+                    <textarea id="withdrawalReason" class="common-textarea" rows="3" placeholder="탈퇴 사유를 간략히 적어주세요."></textarea>
+                </div>
+                <button class="modal-action-btn danger-btn" onclick="requestTutorWithdrawal()">탈퇴 승인 요청하기</button>
             </div>
-            <div class="form-group">
-                <label>비밀번호 확인</label>
-                <input type="password" id="withdrawalReqPassword" placeholder="현재 비밀번호 입력">
-            </div>
-            <div class="form-group">
-                <label>해지(탈퇴) 사유</label>
-                <textarea id="withdrawalReason" class="common-textarea" rows="3" placeholder="탈퇴 사유를 간략히 적어주세요."></textarea>
-            </div>
-            <button class="modal-action-btn danger-btn" onclick="requestTutorWithdrawal()" style="background: #ef4444;">탈퇴 승인 요청하기</button>
-        </div>
 
-        <div id="withdrawalFinalForm" class="hidden">
-            <div class="warning-box" style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
-                <strong style="color: #7f1d1d; display: block; margin-bottom: 5px;"><i class="fas fa-check-circle"></i> 관리자 승인 완료</strong>
-                <span style="font-size: 0.9rem; color: #991b1b;">파트너십 해지 요청이 승인되었습니다. 아래 비밀번호를 다시 입력하시면 <strong style="text-decoration:underline;">모든 데이터가 즉시 삭제</strong>되며 복구할 수 없습니다.</span>
+            <div id="withdrawalPendingForm" class="hidden">
+                <i class="fas fa-hourglass-half pending-icon"></i>
+                <h4 class="pending-title">관리자 승인 대기중입니다...</h4>
+                <p class="pending-desc">정산 내역 및 인수인계 사항을 확인한 후 승인 처리됩니다.<br>승인이 완료되면 알림을 통해 안내해 드립니다.</p>
             </div>
-            <div class="form-group">
-                <label>비밀번호 확인</label>
-                <input type="password" id="withdrawalFinalPassword" placeholder="현재 비밀번호 입력">
+
+            <div id="withdrawalFinalForm" class="hidden">
+                <div class="warning-box withdrawal-warning">
+                    <strong><i class="fas fa-check-circle"></i> 관리자 승인 완료</strong>
+                    <span>파트너십 해지 요청이 승인되었습니다. 아래 비밀번호를 다시 입력하시면 <strong style="text-decoration:underline;">모든 데이터가 즉시 삭제</strong>되며 복구할 수 없습니다.</span>
+                </div>
+                <div class="form-group">
+                    <label>비밀번호 확인</label>
+                    <input type="password" id="withdrawalFinalPassword" placeholder="현재 비밀번호 입력">
+                </div>
+                <button class="modal-action-btn danger-btn" onclick="executeTutorWithdrawal()">네, 모든 데이터를 삭제하고 탈퇴합니다</button>
             </div>
-            <button class="modal-action-btn danger-btn" onclick="executeTutorWithdrawal()" style="background: #ef4444;">네, 모든 데이터를 삭제하고 탈퇴합니다</button>
         </div>
     </div>
-</div>
     
     <div id="tutorNotiFab" class="noti-fab" onclick="toggleTutorNotiPanel()">
         <i class="fas fa-bell"></i>
-        <span id="tutorNotiBadge" class="noti-badge" style="display:none;">0</span>
+        <span id="tutorNotiBadge" class="noti-badge">0</span>
     </div>
 
     <div id="tutorNotiPanel" class="noti-panel hidden">
@@ -308,7 +314,7 @@
             <button onclick="markAllTutorNotiRead()">전체 읽음</button>
         </div>
         <div id="tutorNotiList" class="noti-panel-body">
-            <p style="text-align:center; color:#94a3b8; margin-top:20px;">알림을 불러오는 중...</p>
+            <p class="noti-loading-text">알림을 불러오는 중...</p>
         </div>
     </div>
     

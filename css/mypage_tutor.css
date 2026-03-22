@@ -77,6 +77,124 @@
     background-color: #eff6ff;
 }
 
+/* 프로필 관련 설정 */
+.tutor-profile-pic { position: relative; display: inline-block; }
+.hidden-file-input { display: none; }
+
+/* 사이드바 커스텀 */
+.sidebar-divider {
+    margin: 25px 0 20px;
+    border: 0;
+    border-top: 1px solid #e2e8f0;
+}
+
+.sidebar-info-box { text-align: left; }
+.sidebar-form-group { margin-bottom: 15px; }
+.sidebar-form-group.last { margin-bottom: 20px; }
+
+.sidebar-info-label {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-bottom: 5px;
+    display: block;
+    font-weight: bold;
+}
+
+.sidebar-input-group {
+    display: flex;
+    gap: 8px;
+}
+
+.sidebar-info-input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.sidebar-edit-btn {
+    height: auto;
+    padding: 0 15px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.sidebar-action-area {
+    text-align: center;
+    margin-top: 10px;
+}
+
+.tutor-delete-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.tutor-delete-btn:hover {
+    color: #ef4444;
+}
+
+/* 튜터 탈퇴 모달 커스텀 */
+.withdrawal-warning {
+    background: #fef2f2;
+    border-left: 4px solid #ef4444;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+.withdrawal-warning strong {
+    color: #7f1d1d;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.withdrawal-warning span {
+    font-size: 0.9rem;
+    color: #991b1b;
+}
+
+.danger-btn {
+    background-color: #ef4444 !important;
+}
+
+#withdrawalPendingForm {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.pending-icon {
+    font-size: 3rem;
+    color: #f59e0b;
+    margin-bottom: 20px;
+}
+
+.pending-title {
+    color: #475569;
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+    margin-top: 0;
+}
+
+.pending-desc {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* 알림 센터 UI */
+#tutorNotiBadge { display: none; }
+.noti-loading-text {
+    text-align: center;
+    color: #94a3b8;
+    margin-top: 20px;
+}
+
 /* 3. 계약 및 정산 정보 스타일 */
 .deposit-section {
     margin-top: 30px;

@@ -618,12 +618,31 @@ async function loadTutorStats() {
         data.tutors.forEach(t => {
             const card = document.createElement('div');
             card.className = 'tutor-card';
+            
+            // 탈퇴 상태에 따른 UI 분기
+            let withdrawalUI = '';
+            if (t.withdrawalStatus === 'pending') {
+                withdrawalUI = `
+                    <div style="margin-top:15px; padding:12px; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; display:flex; justify-content:space-between; align-items:center;">
+                        <span style="color:#991b1b; font-size:0.9rem;"><strong>⚠️ 파트너십 해지(탈퇴) 요청 대기 중</strong></span>
+                        <button onclick="approveTutorWithdrawal('${t.userid}')" style="padding:6px 12px; background:#ef4444; color:white; border:none; border-radius:4px; cursor:pointer; font-size:0.85rem; font-weight:bold;">요청 승인하기</button>
+                    </div>
+                `;
+            } else if (t.withdrawalStatus === 'approved') {
+                withdrawalUI = `
+                    <div style="margin-top:15px; padding:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px;">
+                        <span style="color:#475569; font-size:0.9rem;"><strong>✅ 탈퇴 승인 완료</strong> (튜터의 최종 확인 및 탈퇴 대기 중)</span>
+                    </div>
+                `;
+            }
+
             card.innerHTML = `
                 <div class="tutor-header" onclick="toggleTutorDetail(this)">
                     <div class="tutor-info-main">
                         <span class="tutor-badge">Tutor</span>
                         <span class="tutor-name">${escapeHtml(t.nickname)}</span>
                         <span style="font-size:0.85rem; color:#94a3b8; margin-left:8px;">(총 ${t.totalStudents}명)</span>
+                        ${t.withdrawalStatus === 'pending' ? '<span style="color:#ef4444; font-size:0.8rem; font-weight:bold; margin-left:5px;">[탈퇴요청]</span>' : ''}
                     </div>
                     <div class="tutor-arrow"><i class="fas fa-chevron-down"></i></div>
                 </div>
@@ -634,9 +653,14 @@ async function loadTutorStats() {
                             <p><strong>학교:</strong> ${escapeHtml(t.school) || '-'}</p>
                             <p><strong>계약시작일:</strong> ${t.createdAt ? new Date(t.createdAt).toLocaleDateString() : '-'}</p>
                         </div>
+                        <div>
+                            <p><strong>최대 학생 수:</strong> <span style="color:#2563eb; font-weight:bold;">${t.maxStudents ? t.maxStudents + '명' : '미설정'}</span></p>
+                            <p><strong>주 최대 시간:</strong> <span style="color:#2563eb; font-weight:bold;">${t.maxHours ? t.maxHours + '시간' : '미설정'}</span></p>
+                            <p><strong>입금 계좌:</strong> ${escapeHtml(t.accountNumber) || '<span style="color:#94a3b8">미등록</span>'}</p>
+                        </div>
                     </div>
                     
-                    <div class="tutor-tier-accordions">
+                    ${withdrawalUI} <div class="tutor-tier-accordions" style="${t.withdrawalStatus ? 'margin-top:20px;' : ''}">
                         <div class="tier-acc-group">
                             <div class="tier-acc-header pro" onclick="toggleTierList(this)">
                                 <span>🔥 PRO 학생</span>
@@ -668,6 +692,36 @@ async function loadTutorStats() {
     } catch(e) { container.innerHTML = '<p style="text-align:center; color:red;">오류 발생</p>'; }
 }
 
+// 튜터 탈퇴 승인 처리 함수
+window.approveTutorWithdrawal = async function(tutorId) {
+    // 이벤트 버블링 방지 (아코디언이 열리고 닫히는 현상 방지)
+    if (event) event.stopPropagation();
+
+    if (!confirm("이 튜터의 파트너십 해지(탈퇴)를 승인하시겠습니까?\n승인 시 튜터에게 알림이 전송되며, 튜터가 직접 최종 탈퇴 처리를 진행하게 됩니다.")) return;
+
+    const token = localStorage.getItem('accessToken');
+    try {
+        const res = await fetch(NOTI_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'admin_approve_withdrawal',
+                data: { tutorId: tutorId }
+            })
+        });
+
+        if (res.ok) {
+            alert("탈퇴 승인이 완료되었습니다. 해당 튜터에게 알림이 발송되었습니다.");
+            loadTutorStats(); // 리스트 새로고침
+        } else {
+            alert("승인 처리 중 오류가 발생했습니다.");
+        }
+    } catch (e) {
+        console.error(e);
+        alert("서버 통신 중 오류가 발생했습니다.");
+    }
+};
+
 // 헬퍼 함수: 티어별 학생 리스트 테이블 HTML 생성
 function generateStudentListHtml(students, emptyMsg) {
     if (!students || students.length === 0) return `<div class="tier-student-empty">${emptyMsg}</div>`;
@@ -696,7 +750,7 @@ function generateStudentListHtml(students, emptyMsg) {
 }
 
 // 튜터 메인 아코디언 토글
-function toggleTutorDetail(el) {
+window.toggleTutorDetail = function(el) {
     el.classList.toggle('active');
     const details = el.nextElementSibling;
     details.classList.toggle('open');
@@ -710,6 +764,9 @@ function toggleTutorDetail(el) {
 
 // 내부 티어별 명단 커튼 토글
 window.toggleTierList = function(headerEl) {
+    // 이벤트 버블링 방지
+    if (event) event.stopPropagation();
+    
     headerEl.classList.toggle('active');
     const content = headerEl.nextElementSibling;
     if (content.style.maxHeight) {
