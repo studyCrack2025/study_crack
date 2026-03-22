@@ -35,32 +35,59 @@
 
     <div class="mypage-container">
         
-        <aside class="profile-summary tier-consultant"> <div class="premium-badge">TUTOR</div>
-            
-            <div class="profile-pic-area" style="position: relative; display: inline-block;">
-                <img id="profileImg" 
-                    src="https://placehold.co/150x150?text=Tutor" 
-                    onerror="this.onerror=null; this.src='https://placehold.co/150x150?text=NoImage';" 
-                    alt="프로필" class="profile-img">
+        <aside class="profile-summary tier-consultant"> 
+    <div class="premium-badge">TUTOR</div>
+    
+    <div class="profile-pic-area" style="position: relative; display: inline-block;">
+        <img id="profileImg" 
+            src="https://placehold.co/150x150?text=Tutor" 
+            onerror="this.onerror=null; this.src='https://placehold.co/150x150?text=NoImage';" 
+            alt="프로필" class="profile-img">
 
-                <button class="edit-pic-btn" onclick="triggerFileUpload()" title="사진 변경">
-                    <i class="fas fa-camera"></i>
-                </button>
+        <button class="edit-pic-btn" onclick="triggerFileUpload()" title="사진 변경">
+            <i class="fas fa-camera"></i>
+        </button>
 
-                <button id="deletePicBtn" class="delete-pic-btn hidden" onclick="handleProfileDelete()" title="사진 삭제">
-                    <i class="fas fa-trash"></i>
-                </button>
+        <button id="deletePicBtn" class="delete-pic-btn hidden" onclick="handleProfileDelete()" title="사진 삭제">
+            <i class="fas fa-trash"></i>
+        </button>
 
-                <input type="file" id="profileFileInput" accept="image/*" style="display: none;" onchange="handleProfileUpload(this)">
+        <input type="file" id="profileFileInput" accept="image/*" style="display: none;" onchange="handleProfileUpload(this)">
+    </div>
+    
+    <h2 id="userNameDisplay">-</h2>
+    <p id="userEmailDisplay">-</p>
+    
+    <button class="profile-edit-btn" onclick="openProfileModal()">
+        <i class="fas fa-user-edit"></i> 내 프로필 소개 설정
+    </button>
+
+    <hr style="margin: 25px 0 20px; border: 0; border-top: 1px solid #e2e8f0;">
+    
+    <div class="sidebar-info-box" style="text-align: left;">
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label style="font-size: 0.85rem; color: #64748b; margin-bottom: 5px; display: block; font-weight: bold;">최대 희망 학생 수 (명)</label>
+            <div style="display: flex; gap: 8px;">
+                <input type="number" id="profileMaxStudents" max="15" min="1" disabled style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;">
+                <button class="edit-btn" onclick="toggleEditMaxStudents(this)" style="height: auto; padding: 0 15px; font-size: 0.8rem; white-space: nowrap;">수정</button>
             </div>
-            
-            <h2 id="userNameDisplay">-</h2>
-            <p id="userEmailDisplay">-</p>
-            
-            <button class="profile-edit-btn" onclick="openProfileModal()">
-                <i class="fas fa-user-edit"></i> 내 프로필 소개 설정
-            </button>
-        </aside>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-size: 0.85rem; color: #64748b; margin-bottom: 5px; display: block; font-weight: bold;">주 최대 근무가능 시간 (시간)</label>
+            <div style="display: flex; gap: 8px;">
+                <input type="number" id="profileMaxHours" min="1" disabled style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;">
+                <button class="edit-btn" onclick="toggleEditMaxHours(this)" style="height: auto; padding: 0 15px; font-size: 0.8rem; white-space: nowrap;">수정</button>
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 10px;">
+        <button class="btn-delete-account" onclick="openTutorWithdrawalModal()" style="background: none; border: none; color: #94a3b8; font-size: 0.85rem; text-decoration: underline; cursor: pointer;">
+            튜터 파트너십 해지 (회원탈퇴)
+        </button>
+    </div>
+    </aside>
 
         <main class="content-area">
             <div class="main-tabs">
@@ -126,19 +153,6 @@
                             </div>
                         </div>
                     </div>
-                    <div class="form-group row-group">
-    <div class="input-wrapper">
-        <label>수용 가능 학생 수 (최대 15명)</label>
-        <input type="number" id="profileMaxStudents" max="15" min="1" disabled>
-    </div>
-    <button class="edit-btn" onclick="toggleEditMaxStudents(this)">수정하기</button>
-</div>
-
-<div class="account-actions" style="margin-top: 50px; text-align: right; border-top: 1px solid #e2e8f0; padding-top: 20px;">
-    <button class="btn-delete-account" onclick="openTutorWithdrawalModal()" style="background: none; border: none; color: #94a3b8; text-decoration: underline; cursor: pointer;">
-        튜터 파트너십 해지 (회원탈퇴)
-    </button>
-</div>
                 </div>
             </div>
 
