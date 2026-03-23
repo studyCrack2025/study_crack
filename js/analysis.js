@@ -2301,15 +2301,30 @@ function downloadReportPDF(reportTitle) {
     const printNode = reportElement.cloneNode(true);
     printNode.classList.add('pdf-rendering');
 
-    // 3. 인쇄용 iframe 생성 (삼성 인터넷 우회를 위해 뷰포트를 꽉 채우고 맨 뒤로 숨김)
+    // 🔥 [핵심 수정] 삼성 인터넷 브라우저만 콕 집어서 감지
+    const isSamsungBrowser = /SamsungBrowser/i.test(navigator.userAgent);
+
     const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed'; 
-    iframe.style.top = '0';
-    iframe.style.left = '0';
-    iframe.style.width = '100vw';    
-    iframe.style.height = '100vh';   
-    iframe.style.zIndex = '-9999';   
-    iframe.style.opacity = '0';      
+    
+    // 3. 인쇄용 iframe 생성 (브라우저별 분기 처리)
+    if (isSamsungBrowser) {
+        // [삼성 인터넷 전용] 무시되지 않도록 화면 꽉 채우고 맨 뒤로 숨김
+        iframe.style.position = 'fixed';
+        iframe.style.top = '0';
+        iframe.style.left = '0';
+        iframe.style.width = '100vw';
+        iframe.style.height = '100vh';
+        iframe.style.zIndex = '-9999';
+        iframe.style.opacity = '0';
+    } else {
+        // [PC / 사파리 / 타 브라우저용] 기존에 멀쩡하게 작동하던 안전한 방식
+        iframe.style.position = 'absolute';
+        iframe.style.width = '1px';
+        iframe.style.height = '1px';
+        iframe.style.top = '-9999px';
+        iframe.style.left = '-9999px';
+    }
+    
     iframe.style.pointerEvents = 'none';
     iframe.style.border = 'none';
     document.body.appendChild(iframe);
@@ -2359,24 +2374,67 @@ function downloadReportPDF(reportTitle) {
     // 복사한 리포트 DOM 삽입
     iframeDoc.getElementById('print-body').appendChild(printNode);
 
-    // 6. [핵심 수정] 타임아웃 지연 제거 및 동기적 호출에 가깝게 변경
-    // 브라우저 렌더링 트리에 iframe 문서가 반영될 수 있도록 딱 한 프레임(약 16ms)만 넘깁니다.
-    requestAnimationFrame(() => {
-        try {
-            iframe.contentWindow.focus();
-            iframe.contentWindow.print();
-        } catch (e) {
-            console.error("인쇄 실행 실패:", e);
-            alert("인쇄를 실행할 수 없거나 브라우저에서 차단했습니다.");
-        }
-    });
+    // 6. 이미지 로딩 완료 체크 및 인쇄 실행 로직
+    const imgs = iframeDoc.querySelectorAll('img');
+    let loadedCount = 0;
+    let isPrinted = false; 
+    
+    function triggerPrint() {
+        if (isPrinted) return;
+        isPrinted = true;
+        
+        // 삼성 인터넷은 팝업 차단에 민감하므로 딜레이를 줄이고, PC 등은 안정성을 위해 500ms 유지
+        const delay = isSamsungBrowser ? 150 : 500;
+        
+        setTimeout(function() {
+            try {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            } catch (e) {
+                console.error("인쇄 실행 실패:", e);
+                alert("인쇄를 실행할 수 없습니다. 브라우저 설정을 확인해 주세요.");
+            }
+        }, delay); 
+    }
 
-    // 7. 인쇄 프로세스가 진행되는 동안 화면이 깨지지 않도록 충분한 시간을 두고 iframe 정리
+    function checkAllImagesLoaded() {
+        if (loadedCount >= imgs.length) {
+            triggerPrint();
+        }
+    }
+
+    if (imgs.length === 0) {
+        triggerPrint();
+    } else {
+        imgs.forEach(img => {
+            if (img.complete) {
+                loadedCount++; 
+            } else {
+                img.onload = () => { loadedCount++; checkAllImagesLoaded(); };
+                img.onerror = () => { loadedCount++; checkAllImagesLoaded(); };
+            }
+        });
+        
+        checkAllImagesLoaded();
+
+        // 네트워크 지연 대비 최후의 안전망
+        setTimeout(() => {
+            triggerPrint();
+        }, 1500);
+    }
+
+    // 8. 사용 완료된 iframe 메모리에서 정리
+    iframe.contentWindow.onafterprint = function() {
+        if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+        }
+    };
+    
     setTimeout(() => {
         if (document.body.contains(iframe)) {
             document.body.removeChild(iframe);
         }
-    }, 15000); 
+    }, 60000); 
 }
 
 function openWeeklyCheckModal() {
