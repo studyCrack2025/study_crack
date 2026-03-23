@@ -89,7 +89,10 @@
             <h4 class="section-title tutor-section-title">2. 개인 정보</h4>
 
             <label class="input-label">이름 (실명)</label>
-            <input type="text" id="name" placeholder="홍길동" required>
+            <input type="text" id="name" placeholder="김크랙" required>
+            
+            <label class="input-label">닉네임 (학생들에게 보여질 이름)</label>
+            <input type="text" id="nickname" placeholder="예: 스터디멘토" required>
 
             <div class="form-row">
                 <div>
@@ -444,6 +447,7 @@
             const password = document.getElementById('password').value; 
             const passwordConfirm = document.getElementById('passwordConfirm').value;
             const name = document.getElementById('name').value.trim();
+            const nickname = document.getElementById('nickname').value.trim();
             const gender = document.getElementById('gender').value;
             const birthdate = document.getElementById('birthdate').value;
             const phoneRaw = document.getElementById('phone').value;
@@ -454,6 +458,12 @@
 
             if (!maxStudents || !maxHours) {
                 alert("수용 가능 학생 수와 주간 최대 할애 시간을 입력해주세요.");
+                return;
+            }
+            
+            if (!nickname) {
+                alert("학생들에게 보여질 닉네임을 입력해주세요.");
+                document.getElementById('nickname').focus();
                 return;
             }
 
@@ -527,6 +537,7 @@
                             userId: userSub,
                             data: {
                                 name: name,
+                                nickname: nickname,
                                 email: email,
                                 phone: dbFormattedPhone,
                                 cognitoPhone: cleanPhone,
