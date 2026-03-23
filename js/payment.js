@@ -232,7 +232,7 @@ async function processPayment() {
 
     const formattedPhone = formatPhoneNumber(rawPhone);
 
-    // [핵심] 결제 시작일(effectiveStartDate) 설정 로직
+    // 결제 시작일(effectiveStartDate) 설정 로직
     let startDate = new Date();
     // Standard/Pro 연장 또는 예약 업그레이드 시, 시작일을 만료일로 지정
     if ((globalCurrentTier === 'standard' || globalCurrentTier === 'pro') && globalDaysLeft <= 7 && globalDaysLeft > 0 && globalExpireDate) {
@@ -250,7 +250,7 @@ async function processPayment() {
     
     localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
     
-    // [수정된 부분] 임시로 모든 결제를 무통장 입금(checkout-transfer)으로 라우팅
+    // 임시로 모든 결제를 무통장 입금(checkout-transfer)으로 라우팅
     // 추후 카드결제/PG사 연동 복구 시 아래 주석 해제 후 변경 필요
     /*
     if (selectedTier === 'trial') {
