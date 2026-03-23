@@ -2293,87 +2293,90 @@ async function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
 
-    // 1. PDF.js 렌더링 중복 실행 방지
+    // 1. PDF.js 로딩 중복 실행 방지
     if (reportElement.querySelector('.pdf-loading-spinner') || reportElement.querySelector('.is-rendering')) {
         alert("튜터의 첨부 문서를 고화질 이미지로 변환 중입니다.\n화면에 문서가 모두 나타난 후 다시 클릭해주세요.");
         return;
     }
 
-    // 2. 화면 깜빡임을 완벽히 가려줄 "전체 화면 로딩 오버레이" 생성
-    const overlay = document.createElement('div');
-    overlay.style.position = 'fixed';
-    overlay.style.top = '0';
-    overlay.style.left = '0';
-    overlay.style.width = '100vw';
-    overlay.style.height = '100vh';
-    overlay.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
-    overlay.style.backdropFilter = 'blur(5px)';
-    overlay.style.zIndex = '999999'; // 화면 가장 맨 앞에 배치
-    overlay.style.display = 'flex';
-    overlay.style.flexDirection = 'column';
-    overlay.style.alignItems = 'center';
-    overlay.style.justifyContent = 'center';
-    overlay.innerHTML = `
+    // 2. 화면 깜빡임과 레이아웃 붕괴를 완벽히 가려줄 "전체 화면 로딩 오버레이" 생성
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.95); z-index:999999; display:flex; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(5px);';
+    loadingOverlay.innerHTML = `
         <i class="fas fa-spinner fa-spin fa-3x" style="color:#2563eb; margin-bottom:20px;"></i>
-        <h2 style="color:#1e293b; margin:0 0 10px 0; font-weight:800;">PDF 리포트 생성 중...</h2>
-        <p style="color:#64748b; font-size:1rem; margin:0;">고화질 렌더링 작업으로 인해 몇 초 정도 소요될 수 있습니다.</p>
+        <h2 style="color:#1e293b; font-weight:800; margin-bottom:10px;">PDF 리포트 생성 중...</h2>
+        <p style="color:#64748b;">고화질 렌더링 작업으로 인해 몇 초 정도 소요될 수 있습니다.</p>
     `;
-    document.body.appendChild(overlay);
+    document.body.appendChild(loadingOverlay);
 
-    // 3. 기존 모달의 스크롤(overflow) 간섭을 피하기 위해 노드 복제
-    const printNode = reportElement.cloneNode(true);
-    printNode.classList.add('pdf-rendering'); // 모바일 display:none 방지용 클래스
+    // 3. 인쇄에 방해되는 내부 UI 요소(다운로드 버튼 등) 일시 숨김
+    const controls = reportElement.querySelector('.doc-controls');
+    const mobileMsg = reportElement.querySelector('.mobile-only-msg');
+    if (controls) controls.style.display = 'none';
+    if (mobileMsg) mobileMsg.style.display = 'none';
 
-    // 불필요한 UI(버튼 등) 제거
-    const controls = printNode.querySelector('.doc-controls');
-    const mobileMsg = printNode.querySelector('.mobile-only-msg');
-    if (controls) controls.remove();
-    if (mobileMsg) mobileMsg.remove();
-
-    // 4. 인쇄 전용 컨테이너 세팅 (오버레이 바로 뒤에 숨겨서 유저 눈엔 안 보임!)
-    const container = document.createElement('div');
-    container.style.position = 'absolute';
-    container.style.top = '0';
-    container.style.left = '0';
-    container.style.width = '1024px'; // PC 데스크탑 뷰 강제 유지
-    container.style.backgroundColor = '#ffffff';
-    container.style.zIndex = '999998'; // 오버레이(999999) 보다 1 낮게 설정하여 가림
+    // 🚨 4. [핵심] 부모 모달의 overflow(잘림) 버그를 막기 위한 DOM 조작
+    const modal = document.getElementById('feedbackModal');
+    const modalContent = modal.querySelector('.custom-modal-content');
+    const modalBody = document.getElementById('modalContent');
     
-    container.appendChild(printNode);
-    document.body.appendChild(container);
+    // 작업 완료 후 복구하기 위해 기존 스타일 백업
+    const origModalStyle = modal.style.cssText;
+    const origContentStyle = modalContent.style.cssText;
+    const origBodyStyle = modalBody.style.cssText;
+    const origReportWidth = reportElement.style.width;
 
-    // 스크롤 위치 오류를 방지하기 위해 강제로 최상단 이동 (저장 후 원상복구됨)
-    const originalScrollY = window.scrollY;
-    window.scrollTo(0, 0);
+    // html2canvas가 전체 문서를 정상적으로 읽을 수 있도록 스크롤 제한 강제 해제
+    modal.style.overflow = 'visible';
+    modalContent.style.overflow = 'visible';
+    modalContent.style.maxHeight = 'none';
+    modalBody.style.overflow = 'visible';
+    modalBody.style.maxHeight = 'none';
+    
+    // 모바일에서도 A4 비율(PC뷰)을 유지하도록 원본 요소의 너비를 강제 확장
+    reportElement.style.width = '1024px';
+    reportElement.classList.add('pdf-rendering');
+
+    // 브라우저가 변경된 레이아웃을 다시 그릴 수 있도록 0.3초 대기 (백지 화면 방지 필수 코드)
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     try {
         // html2pdf 옵션 설정
         const opt = {
             margin:       [10, 10, 10, 10], 
             filename:     `스터디크랙_${reportTitle}.pdf`,
-            image:        { type: 'jpeg', quality: 1.0 }, // 최고 화질 세팅
+            image:        { type: 'jpeg', quality: 1.0 }, // 최고 화질
             html2canvas:  { 
                 scale: 2, 
                 useCORS: true, 
-                scrollY: 0, 
+                scrollY: 0,
                 scrollX: 0,
                 windowWidth: 1024 
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } 
+            pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
         };
 
         // PDF 생성 및 저장 대기
-        await html2pdf().set(opt).from(container).save();
+        await html2pdf().set(opt).from(reportElement).save();
 
     } catch (error) {
         console.error("PDF 생성 실패:", error);
-        alert("PDF 생성 중 알 수 없는 오류가 발생했습니다.");
+        alert("PDF 생성 중 오류가 발생했습니다.");
     } finally {
-        // 5. 작업이 끝나면 생성했던 컨테이너와 오버레이 흔적 없이 삭제
-        document.body.removeChild(container);
-        document.body.removeChild(overlay);
-        window.scrollTo(0, originalScrollY); // 스크롤 원상 복구
+        // 5. 숨겼던 요소 및 모든 스타일 완벽히 원상 복구
+        if (controls) controls.style.display = '';
+        if (mobileMsg) mobileMsg.style.display = '';
+        
+        reportElement.style.width = origReportWidth;
+        reportElement.classList.remove('pdf-rendering');
+        
+        modal.style.cssText = origModalStyle;
+        modalContent.style.cssText = origContentStyle;
+        modalBody.style.cssText = origBodyStyle;
+
+        // 생성했던 로딩창 제거
+        document.body.removeChild(loadingOverlay);
     }
 }
 
