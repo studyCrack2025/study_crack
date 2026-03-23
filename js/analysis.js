@@ -2287,143 +2287,99 @@ function openFeedbackModal(data) {
 }
 
 // ============================================================
-// PDF 다운로드 기능 (격리 샌드박스 & 이미지 프리로드 기법)
+// PDF 다운로드 기능
 // ============================================================
-
-function getWatermarkImage() {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = 'Anonymous';
-        img.src = '/assets/backgrounds/bg_studycrack_logo.png?t=' + new Date().getTime();
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            ctx.globalAlpha = 0.05;
-            ctx.drawImage(img, 0, 0);
-            resolve({ dataUrl: canvas.toDataURL('image/png'), width: img.width, height: img.height });
-        };
-        img.onerror = () => resolve(null);
-    });
-}
-
 async function downloadReportPDF(reportTitle) {
-    const originalElement = document.getElementById('pdfTargetDocument');
-    if (!originalElement) return alert('리포트 내용을 찾을 수 없습니다.');
+    const reportElement = document.getElementById('pdfTargetDocument');
+    if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
 
-    if (originalElement.querySelector('.pdf-loading-spinner')) {
-        alert("이미지 렌더링 중입니다. 잠시 후 다시 시도해주세요.");
-        return;
-    }
-
-    // 1. 유저 시야를 가단 완벽한 차단막 생성 (z-index: 999999)
+    // 1. 유저 시야를 가리는 로딩 화면 띄우기
     const loadingOverlay = document.createElement('div');
     loadingOverlay.id = 'pdf-loading-overlay';
     loadingOverlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.98); z-index:999999; display:flex; flex-direction:column; align-items:center; justify-content:center;';
     loadingOverlay.innerHTML = `
         <i class="fas fa-spinner fa-spin fa-3x" style="color:#2563eb; margin-bottom:20px;"></i>
-        <h2 style="color:#1e293b; font-weight:800; margin-bottom:10px;">PDF 리포트 생성 중...</h2>
-        <p style="color:#64748b;">이미지 및 레이아웃을 최적화하고 있습니다. 잠시만 기다려주세요.</p>
+        <h2 style="color:#1e293b; font-weight:800; margin-bottom:10px;">프리미엄 PDF 리포트 생성 중...</h2>
+        <p style="color:#64748b;">서버에서 고화질 PDF를 렌더링하고 있습니다. 잠시만 기다려주세요.</p>
     `;
     document.body.appendChild(loadingOverlay);
 
-    // 2. 격리된 샌드박스 생성 (화면 밖이 아닌, 차단막 바로 뒤에 배치하여 브라우저가 강제로 Paint 하도록 유도)
-    const sandbox = document.createElement('div');
-    sandbox.id = 'pdf-sandbox';
-    sandbox.innerHTML = originalElement.innerHTML;
-    document.body.appendChild(sandbox);
-
-    // 불필요한 UI 삭제 (복제본 내부)
-    const controls = sandbox.querySelector('.doc-controls');
-    const mobileMsg = sandbox.querySelector('.mobile-only-msg');
-    if (controls) controls.remove();
-    if (mobileMsg) mobileMsg.remove();
-
-    // 3. PDF 전용 완전 독립 CSS 주입 (유저 요청 규칙: 한 줄 작성 적용)
-    const style = document.createElement('style');
-    style.innerHTML = `
-        #pdf-sandbox { position: absolute; top: 0; left: 0; width: 800px; background: #ffffff; z-index: 999998; padding: 40px; box-sizing: border-box; color: #000; font-family: 'Noto Sans KR', sans-serif; }
-        #pdf-sandbox::after { display: none !important; }
-        #pdf-sandbox .doc-matched-box { page-break-inside: avoid !important; margin-bottom: 30px !important; display: block !important; width: 100% !important; clear: both !important; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
-        #pdf-sandbox .doc-header { page-break-inside: avoid !important; margin-bottom: 25px; border-bottom: 3px solid #1e293b; padding-bottom: 15px; }
-        #pdf-sandbox .doc-matched-header { background: #f8fafc; padding: 14px 20px; border-bottom: 1px solid #e2e8f0; font-weight: 800; font-size: 1.1rem; }
-        #pdf-sandbox .doc-matched-body { display: table !important; width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; }
-        #pdf-sandbox .doc-student-data { display: table-cell !important; vertical-align: top !important; width: 45% !important; border-right: 1px dashed #cbd5e1 !important; border-bottom: none !important; padding: 20px; }
-        #pdf-sandbox .doc-tutor-feedback { display: table-cell !important; vertical-align: top !important; width: 55% !important; padding: 20px; background: #fafafa; }
-        #pdf-sandbox img { page-break-inside: avoid !important; max-width: 100% !important; display: block !important; margin: 0 auto 15px auto !important; height: auto !important; }
-        #pdf-sandbox .qna-pair-container { display: block !important; page-break-inside: avoid !important; }
-        #pdf-sandbox .doc-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 10px; }
-        #pdf-sandbox .doc-table th { padding: 8px 4px; border-bottom: 1px solid #e2e8f0; color: #64748b; }
-        #pdf-sandbox .doc-table td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; }
-    `;
-    sandbox.appendChild(style);
-
-    // 스크롤 최상단 이동 (캡처 기준점 보정)
-    const originalScrollY = window.scrollY;
-    window.scrollTo(0, 0);
-
     try {
-        // 4. [가장 중요한 단계] 샌드박스 내부의 모든 이미지가 100% 렌더링될 때까지 대기
-        const images = sandbox.querySelectorAll('img');
-        const imageLoadPromises = Array.from(images).map(img => {
-            return new Promise((resolve) => {
-                if (img.complete && img.naturalHeight !== 0) return resolve();
-                img.onload = () => resolve();
-                img.onerror = () => resolve(); // 에러가 나도 진행되도록 처리
-            });
-        });
-        
-        await Promise.all(imageLoadPromises);
+        // 2. 백엔드에 보낼 순수 HTML 템플릿 조립
+        // 기존 CSS 링크와 리포트 내용만 깔끔하게 담습니다.
+        const rawHtml = `
+            <!DOCTYPE html>
+            <html lang="ko">
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    /* 폰트 및 기본 리셋 */
+                    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+                    body { font-family: 'Noto Sans KR', sans-serif; background: #fff; color: #333; margin: 0; padding: 0; }
+                    
+                    /* 백엔드 크롬 엔진이 A4 사이즈를 완벽히 인식하도록 강제 설정 */
+                    .report-wrapper { width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
+                    
+                    /* 불필요한 버튼 삭제 */
+                    .doc-controls, .mobile-only-msg { display: none !important; }
+                    
+                    /* 페이지 잘림 방지 필수 CSS */
+                    .doc-matched-box { page-break-inside: avoid; break-inside: avoid; margin-bottom: 30px; border: 1px solid #e2e8f0; border-radius: 8px; }
+                    .doc-matched-body { display: table; width: 100%; box-sizing: border-box; }
+                    .doc-student-data { display: table-cell; width: 45%; vertical-align: top; border-right: 1px dashed #cbd5e1; padding: 20px; }
+                    .doc-tutor-feedback { display: table-cell; width: 55%; vertical-align: top; padding: 20px; background: #fafafa; }
+                    img { max-width: 100%; page-break-inside: avoid; display: block; margin: 0 auto; }
+                    
+                    ${document.getElementById('pdf-style-fix') ? document.getElementById('pdf-style-fix').innerHTML : ''}
+                </style>
+            </head>
+            <body>
+                <img src="https://your-domain.com/assets/backgrounds/bg_studycrack_logo.png" 
+                     style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:300px; opacity:0.05; z-index:-1;">
+                
+                <div class="report-wrapper">
+                    ${reportElement.innerHTML}
+                </div>
+            </body>
+            </html>
+        `;
 
-        // DOM 레이아웃 재계산을 위한 최종 휴식 (백지 및 잘림 완벽 방어)
-        await new Promise(resolve => setTimeout(resolve, 800));
-
-        const logoData = await getWatermarkImage();
-
-        // 5. PDF 렌더링 실행 (샌드박스를 타겟으로)
-        const opt = {
-            margin:       [15, 0, 15, 0], 
-            filename:     `스터디크랙_${reportTitle}.pdf`,
-            image:        { type: 'jpeg', quality: 1.0 },
-            html2canvas:  { 
-                scale: 2, 
-                useCORS: true,
-                scrollY: 0,
-                scrollX: 0,
-                windowWidth: 800, // 샌드박스 가로 크기와 정확히 일치시킴
-                letterRendering: true
+        // 3. 서버(API Gateway)로 HTML 스트링 전송
+        const token = localStorage.getItem('idToken');
+        const response = await fetch('https://your-api-gateway-url.com/generate-pdf', { // 실제 배포될 API 엔드포인트 입력
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak:    { mode: ['css', 'legacy'] }
-        };
+            body: JSON.stringify({
+                title: reportTitle,
+                html: rawHtml
+            })
+        });
 
-        await html2pdf().set(opt).from(sandbox).toPdf().get('pdf').then((pdf) => {
-            const totalPages = pdf.internal.getNumberOfPages();
-            for (let i = 1; i <= totalPages; i++) {
-                pdf.setPage(i);
-                if (logoData) {
-                    const targetWidth = 70; 
-                    const targetHeight = (logoData.height / logoData.width) * targetWidth; 
-                    const xPos = (210 - targetWidth) / 2;
-                    const yPos = (297 - targetHeight) / 2;
-                    pdf.addImage(logoData.dataUrl, 'PNG', xPos, yPos, targetWidth, targetHeight);
-                }
-            }
-        }).save();
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            // 4. 서버에서 생성된 PDF 다운로드 링크 열기
+            const link = document.createElement('a');
+            link.href = data.downloadUrl;
+            link.target = '_blank';
+            link.download = `스터디크랙_${reportTitle}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } else {
+            throw new Error(data.error || "PDF 생성에 실패했습니다.");
+        }
 
     } catch (error) {
-        console.error("PDF 생성 실패:", error);
-        alert("PDF 생성 중 오류가 발생했습니다.");
+        console.error("PDF Download Error:", error);
+        alert("PDF 생성 중 오류가 발생했습니다: " + error.message);
     } finally {
-        // 6. 무조건 실행되는 클린업: 샌드박스 파괴 및 시야 복구
-        if (sandbox && sandbox.parentNode) {
-            sandbox.parentNode.removeChild(sandbox);
-        }
         if (loadingOverlay && loadingOverlay.parentNode) {
             loadingOverlay.parentNode.removeChild(loadingOverlay);
         }
-        window.scrollTo(0, originalScrollY);
     }
 }
 
