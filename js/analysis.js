@@ -2287,7 +2287,7 @@ function openFeedbackModal(data) {
 }
 
 // ============================================================
-// PDF 다운로드 기능 (내용물 75% 축소 및 양옆 잘림 완벽 해결)
+// PDF 다운로드 기능 (크기 축소 및 양옆 잘림 CSS 충돌 완벽 해결)
 // ============================================================
 async function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
@@ -2298,7 +2298,7 @@ async function downloadReportPDF(reportTitle) {
         return;
     }
 
-    // 로딩 오버레이 띄우기
+    // 로딩 오버레이 띄우기 (화면 가림막)
     const loadingOverlay = document.createElement('div');
     loadingOverlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.95); z-index:999999; display:flex; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(5px);';
     loadingOverlay.innerHTML = `
@@ -2308,7 +2308,6 @@ async function downloadReportPDF(reportTitle) {
     `;
     document.body.appendChild(loadingOverlay);
 
-    // 불필요한 UI 숨김
     const controls = reportElement.querySelector('.doc-controls');
     const mobileMsg = reportElement.querySelector('.mobile-only-msg');
     if (controls) controls.style.display = 'none';
@@ -2318,35 +2317,38 @@ async function downloadReportPDF(reportTitle) {
     const modalContent = modal.querySelector('.custom-modal-content');
     const modalBody = document.getElementById('modalContent');
     
-    // 원상 복구를 위한 기존 스타일 백업
+    // 원상 복구를 위한 기존 스타일 백업 (cssText로 통째로 백업)
     const origModalStyle = modal.style.cssText;
     const origContentStyle = modalContent.style.cssText;
     const origBodyStyle = modalBody.style.cssText;
-    
-    const origReportWidth = reportElement.style.width;
-    const origReportMaxWidth = reportElement.style.maxWidth;
-    const origReportZoom = reportElement.style.zoom;
+    const origReportStyle = reportElement.style.cssText;
 
-    // 모달 스크롤 및 크기 제한 해제 (잘림 방지)
+    // 🚨 1. 양옆 잘림의 주범인 '중앙 정렬' 강제 해제 (좌측 상단에 딱 붙임)
+    modal.style.justifyContent = 'flex-start';
+    modal.style.alignItems = 'flex-start';
     modal.style.overflow = 'visible';
+
+    // 🚨 2. 부모 컨테이너(custom-modal-content)가 900px로 옥죄는 것 강제 해제
+    modalContent.style.maxWidth = 'none';
+    modalContent.style.width = 'auto';
+    modalContent.style.margin = '0'; // 중앙 정렬용 마진 해제
     modalContent.style.overflow = 'visible';
     modalContent.style.maxHeight = 'none';
-    modalContent.style.maxWidth = 'none'; // 🚨 부모 CSS가 짓누르는 것 해제
+
     modalBody.style.overflow = 'visible';
     modalBody.style.maxHeight = 'none';
     
-    // 🚨 [핵심 해결 포인트]
-    reportElement.style.width = '1024px';       // 가장 안정적인 너비인 1024px로 원복
-    reportElement.style.maxWidth = 'none';      // CSS 제약 완벽 해제
-    reportElement.style.zoom = '0.75';          // 내용물만 75% 비율로 깔끔하게 축소!
+    // 🚨 3. 리포트 본문을 1150px로 넓힘 (A4 폭에 들어가면 약 75%로 자동 축소됨)
+    reportElement.style.width = '1150px';
+    reportElement.style.margin = '0';
     reportElement.classList.add('pdf-rendering');
 
-    // 렌더링이 안정화될 수 있도록 약간 대기
+    // 변경된 레이아웃이 화면에 적용될 수 있도록 0.3초 대기
     await new Promise(resolve => setTimeout(resolve, 300));
 
     try {
         const opt = {
-            margin:       [15, 10, 15, 10], 
+            margin:       [10, 10, 10, 10], 
             filename:     `스터디크랙_${reportTitle}.pdf`,
             image:        { type: 'jpeg', quality: 1.0 }, 
             html2canvas:  { 
@@ -2354,7 +2356,7 @@ async function downloadReportPDF(reportTitle) {
                 useCORS: true, 
                 scrollY: 0,
                 scrollX: 0,
-                windowWidth: 1024 // 1024로 맞춤
+                windowWidth: 1150 // 🚨 요소 너비와 똑같이 1150으로 맞춰서 빈 공간/잘림 방지
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
             pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } 
@@ -2369,10 +2371,8 @@ async function downloadReportPDF(reportTitle) {
         if (controls) controls.style.display = '';
         if (mobileMsg) mobileMsg.style.display = '';
         
-        // 조작했던 스타일 모두 원상복구
-        reportElement.style.width = origReportWidth;
-        reportElement.style.maxWidth = origReportMaxWidth;
-        reportElement.style.zoom = origReportZoom;
+        // 🚨 4. 건드렸던 모든 스타일을 원래대로 완벽하게 복구
+        reportElement.style.cssText = origReportStyle;
         reportElement.classList.remove('pdf-rendering');
         
         modal.style.cssText = origModalStyle;
