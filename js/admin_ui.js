@@ -181,6 +181,8 @@ function updateCharts() {
     const selector = document.getElementById('periodSelector');
     const periodType = selector ? selector.value : 'month';
     const aggregated = aggregateData(rawPaymentData, periodType);
+    
+    // 라인 차트와 원형 차트 동시 업데이트
     renderPeriodChart(aggregated.labels, aggregated.amounts);
     renderProductChart(aggregated.productCounts, aggregated.totalAmount);
 }
@@ -188,34 +190,50 @@ function updateCharts() {
 function aggregateData(payments, type) {
     const timeMap = {};
     const productMap = {};
-    let total = 0;
+    let totalForPeriod = 0;
+
+    // 현재 기준 날짜 설정 (필터링용)
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+    const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    const oneQuarterAgo = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
 
     payments.forEach(pay => {
         const date = new Date(pay.date);
         let key = "";
+        let isIncludedInPieChart = false;
 
+        // 1. 라인 차트용 데이터 그룹화 (기존 로직 유지)
         if (type === 'week') {
             const year = date.getFullYear();
             const week = getWeekNumber(date);
             key = `${year}-W${week}`; 
+            if (date >= oneWeekAgo) isIncludedInPieChart = true; // 원형 차트용 필터
         } else if (type === 'month') {
             key = pay.date.substring(0, 7); 
+            if (date >= oneMonthAgo) isIncludedInPieChart = true;
         } else if (type === 'quarter') {
             const year = date.getFullYear();
             const q = Math.floor(date.getMonth() / 3) + 1;
             key = `${year}-Q${q}`; 
+            if (date >= oneQuarterAgo) isIncludedInPieChart = true;
         }
 
+        // 라인 차트 데이터 누적
         timeMap[key] = (timeMap[key] || 0) + pay.amount;
-        const prod = pay.product || "기타";
-        productMap[prod] = (productMap[prod] || 0) + pay.amount;
-        total += pay.amount;
+
+        // 2. 선택된 기간 내의 결제만 원형 차트(상품 비율)에 반영!
+        if (isIncludedInPieChart) {
+            const prod = pay.product || "기타";
+            productMap[prod] = (productMap[prod] || 0) + pay.amount;
+            totalForPeriod += pay.amount;
+        }
     });
 
     const labels = Object.keys(timeMap).sort();
     const amounts = labels.map(k => timeMap[k]);
 
-    return { labels, amounts, productCounts: productMap, totalAmount: total };
+    return { labels, amounts, productCounts: productMap, totalAmount: totalForPeriod };
 }
 
 function getWeekNumber(d) {
