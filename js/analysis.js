@@ -2292,8 +2292,8 @@ async function downloadReportPDF(reportTitle) {
                 <style>
                     body { font-family: 'Noto Sans KR', sans-serif; background: #fff; color: #333; margin: 0; padding: 0; }
                     
-                    /* 🔥 수정 1: 4/5 크기 축소 (zoom: 0.8) 및 가로폭 고정 */
-                    .report-wrapper { width: 1000px; transform: scale(0.8); transform-origin: top left; margin: 0 auto; background: #fff; padding: 40px; box-sizing: border-box; }
+                    /* 🔥 수정 1: 4/5 크기 축소 (zoom: 0.85) 및 가로폭 고정 */
+                    .report-wrapper { width: 1000px; transform: scale(0.85); transform-origin: top left; margin: 0 auto; background: #fff; padding: 40px; box-sizing: border-box; }
                     
                     /* PDF 다운 버튼 등 불필요 UI 강제 숨김 */
                     .doc-controls, .mobile-only-msg { display: none !important; }
