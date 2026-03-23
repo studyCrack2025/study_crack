@@ -2,6 +2,39 @@
 
 const QNA_API_URL = CONFIG.api.qna; 
 
+// 💡 공통 apiFetch 함수 (accessToken 기반 통합 및 401 예외 처리)
+async function apiFetch(url, options = {}) {
+    const token = localStorage.getItem('accessToken');
+    const defaultHeaders = {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` })
+    };
+
+    options.headers = { ...defaultHeaders, ...options.headers };
+
+    try {
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                const currentPath = window.location.pathname;
+                if (!['/login', '/signup', '/'].includes(currentPath)) {
+                    alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = '/login'; 
+                }
+                return Promise.reject(new Error("Auth expired")); 
+            }
+            throw new Error(`서버 통신 오류 (상태 코드: ${response.status})`);
+        }
+        return response;
+    } catch (error) {
+        console.error("API 통신 실패:", error);
+        throw error; 
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // 1. FAQ 아코디언 로직
     const faqItems = document.querySelectorAll('.faq-item');
@@ -24,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('qnaForm');
     if (form) form.addEventListener('submit', handleQnaSubmit);
 
-    // [수정 1] window.onclick 덮어쓰기 방지 -> addEventListener 사용
+    // window.onclick 덮어쓰기 방지 -> addEventListener 사용
     window.addEventListener('click', function(event) {
         if (event.target.classList.contains('modal')) {
             event.target.style.display = 'none';
@@ -61,21 +94,18 @@ function closeDetailModal() { closeLocalModal('qna-detail-modal'); }
    ========================================= */
 async function loadQnaHistory() {
     const grid = document.getElementById('qna-grid');
-    const idToken = localStorage.getItem('idToken');
+    const token = localStorage.getItem('accessToken');
 
-    if (!idToken) {
+    if (!token) {
         grid.innerHTML = '<div style="text-align:center; padding:40px; color:#64748b;">로그인 후 이용 가능한 서비스입니다.</div>';
         return;
     }
 
     try {
-        const response = await fetch(QNA_API_URL, {
+        const response = await apiFetch(QNA_API_URL, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ type: 'get_qna_list' }) 
         });
-
-        if (!response.ok) throw new Error("API Response Error");
 
         const data = await response.json();
         const history = data.qnaHistory || [];
@@ -124,8 +154,10 @@ async function loadQnaHistory() {
         grid.appendChild(fragment);
 
     } catch (error) {
-        console.error("Load Error:", error);
-        grid.innerHTML = '<div style="text-align:center; padding:20px;">불러오기 실패</div>';
+        if (error.message !== "Auth expired") {
+            console.error("Q&A Load Error:", error);
+            grid.innerHTML = '<div style="text-align:center; padding:20px;">질문 내역을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</div>';
+        }
     }
 }
 
@@ -175,33 +207,30 @@ async function handleQnaSubmit(e) {
     btn.disabled = true;
     btn.textContent = "처리 중...";
 
-    const idToken = localStorage.getItem('idToken');
     const title = document.getElementById('qTitle').value;
     const category = document.getElementById('qCategory').value;
     const content = document.getElementById('qContent').value;
 
     try {
-        const response = await fetch(QNA_API_URL, {
+        await apiFetch(QNA_API_URL, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 type: 'save_qna',
                 data: { title, category, content }
             })
         });
 
-        if (response.ok) {
-            alert("질문이 성공적으로 등록되었습니다.");
-            
-            closeQnaModal();
-            document.getElementById('qnaForm').reset();
-            loadQnaHistory(); 
-        } else {
-            alert("등록에 실패했습니다. 다시 시도해주세요.");
-        }
+        alert("질문이 성공적으로 등록되었습니다.");
+        
+        closeQnaModal();
+        document.getElementById('qnaForm').reset();
+        loadQnaHistory(); 
+        
     } catch (error) {
-        console.error("Submit Error:", error);
-        alert("네트워크 오류가 발생했습니다.");
+        if (error.message !== "Auth expired") {
+            console.error("Submit Error:", error);
+            alert("등록에 실패했습니다. 통신 상태를 확인하고 다시 시도해주세요.");
+        }
     } finally {
         btn.disabled = false;
         btn.textContent = "문의 접수하기";
@@ -219,10 +248,10 @@ function getCategoryName(key) {
     return map[key] || '기타';
 }
 
-// [유틸] XSS 방지
+// [유틸] 💡 한층 강력해진 XSS 방어
 function escapeHtml(text) {
-    if (!text) return "";
-    return text
+    if (text === null || text === undefined) return ""; 
+    return String(text) 
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
