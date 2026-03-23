@@ -2289,14 +2289,16 @@ function openFeedbackModal(data) {
 // ============================================================
 // PDF 다운로드 기능
 // ============================================================
-// ============================================================
-// PDF 다운로드 기능 (서버 사이드 렌더링 API 호출 방식)
-// ============================================================
 async function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
 
-    // 1. 유저 시야를 가리는 로딩 화면 띄우기 (클라이언트 성능 저하 없음)
+    // ※ 주의: 첨부파일이 이미지로 렌더링 중일 때 누르면 로딩 스피너가 인쇄됩니다.
+    if (reportElement.querySelector('.pdf-loading-spinner')) {
+        alert("첨부파일(이미지)을 불러오는 중입니다. 잠시 후 화면에 이미지가 뜨면 다시 클릭해주세요.");
+        return;
+    }
+
     const loadingOverlay = document.createElement('div');
     loadingOverlay.id = 'pdf-loading-overlay';
     loadingOverlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.98); z-index:999999; display:flex; flex-direction:column; align-items:center; justify-content:center;';
@@ -2308,34 +2310,37 @@ async function downloadReportPDF(reportTitle) {
     document.body.appendChild(loadingOverlay);
 
     try {
-        // 2. 백엔드(Lambda)로 보낼 깨끗한 HTML 템플릿 조립
         const rawHtml = `
             <!DOCTYPE html>
             <html lang="ko">
             <head>
                 <meta charset="UTF-8">
                 <base href="https://studycrack.co.kr">
+                <link rel="preconnect" href="https://fonts.googleapis.com">
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
                 <style>
-                    /* 기본 폰트 설정 */
-                    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
                     body { font-family: 'Noto Sans KR', sans-serif; background: #fff; color: #333; margin: 0; padding: 0; }
-                    
-                    /* A4 규격에 맞게 너비를 800px로 고정 (서버 렌더링 기준) */
                     .report-wrapper { width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
-                    
-                    /* PDF에 안 나와야 할 버튼 숨김 */
                     .doc-controls, .mobile-only-msg { display: none !important; }
                     
-                    /* 🔥 페이지 잘림 방지를 위한 핵심 Table 레이아웃 강제 변환 */
+                    /* 레이아웃 유지 */
                     .doc-matched-box { page-break-inside: avoid; break-inside: avoid; margin-bottom: 30px; border: 1px solid #e2e8f0; border-radius: 8px; }
                     .doc-matched-body { display: table; width: 100%; box-sizing: border-box; }
                     .doc-student-data { display: table-cell; width: 45%; vertical-align: top; border-right: 1px dashed #cbd5e1; padding: 20px; }
                     .doc-tutor-feedback { display: table-cell; width: 55%; vertical-align: top; padding: 20px; background: #fafafa; }
                     
-                    /* 이미지 잘림 방지 및 가운데 정렬 */
-                    img { max-width: 100%; page-break-inside: avoid; break-inside: avoid; display: block; margin: 0 auto; }
+                    /* 🔥 이미지 잘림 완벽 방지: 높이가 A4(297mm)를 넘으면 한 장에 쏙 들어가게 축소 */
+                    img { 
+                        max-width: 100% !important; 
+                        max-height: 260mm !important; 
+                        object-fit: contain !important;
+                        page-break-inside: avoid !important; 
+                        break-inside: avoid !important;
+                        display: block !important; 
+                        margin: 0 auto 15px auto !important; 
+                    }
                     
-                    /* 테이블 테두리 설정 (리포트 내 표) */
                     .doc-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 10px; }
                     .doc-table th { padding: 8px 4px; border-bottom: 1px solid #e2e8f0; color: #64748b; }
                     .doc-table td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; }
@@ -2343,7 +2348,7 @@ async function downloadReportPDF(reportTitle) {
             </head>
             <body>
                 <img src="https://studycrack.co.kr/assets/backgrounds/bg_studycrack_logo.png" 
-                     style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:300px; opacity:0.05; z-index:-1;">
+                     style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:300px; opacity:0.05; z-index:-1; max-height:none !important;">
                 
                 <div class="report-wrapper">
                     ${reportElement.innerHTML}
@@ -2353,8 +2358,6 @@ async function downloadReportPDF(reportTitle) {
         `;
 
         const token = localStorage.getItem('idToken');
-        
-        // 3. 서버(AWS API Gateway)로 요청 보내기
         const pdfApiUrl = 'https://ft35jsftc1.execute-api.ap-northeast-2.amazonaws.com/generate-pdf'; 
 
         const response = await fetch(pdfApiUrl, { 
@@ -2372,11 +2375,10 @@ async function downloadReportPDF(reportTitle) {
         const data = await response.json();
 
         if (response.ok && data.success) {
-            // 4. 서버가 S3에 저장하고 준 링크로 자동 다운로드 실행
             const link = document.createElement('a');
             link.href = data.downloadUrl;
             link.target = '_blank';
-            link.download = `스터디크랙_${reportTitle}.pdf`; // 파일명 지정
+            link.download = `스터디크랙_${reportTitle}.pdf`; 
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -2388,7 +2390,6 @@ async function downloadReportPDF(reportTitle) {
         console.error("PDF Download Error:", error);
         alert("PDF 생성 중 오류가 발생했습니다: " + error.message);
     } finally {
-        // 성공하든 에러가 나든 무조건 로딩 화면은 없앰
         if (loadingOverlay && loadingOverlay.parentNode) {
             loadingOverlay.parentNode.removeChild(loadingOverlay);
         }
