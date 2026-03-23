@@ -154,25 +154,38 @@ async function loadAdminStats(adminId) {
     try {
         const response = await fetch(ADMIN_API_URL, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` 
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'admin_stats', userId: adminId })
         });
         
         if (!response.ok) throw new Error("서버 오류");
         const data = await response.json();
         
-        document.getElementById('totalUsers').innerText = `${data.totalUsers}명`;
+        // 1. undefined 오류 수정 및 기본 지표 바인딩
+        document.getElementById('totalStudents').innerText = `${data.totalStudents || 0}명`; 
         document.getElementById('totalRevenue').innerText = `${(data.totalRevenue || 0).toLocaleString()}원`;
         document.getElementById('monthlyRevenue').innerText = `${(data.monthlyRevenue || 0).toLocaleString()}원`;
+
+        // 2. 신규 심층 지표 바인딩 (데이터가 있을 경우에만)
+        if(data.advancedStats) {
+            document.getElementById('avgSubscription').innerText = `${data.advancedStats.avgSubscriptionMonths}개월`;
+            document.getElementById('arpu').innerText = `${data.advancedStats.arpu.toLocaleString()}원`;
+            document.getElementById('referralRate').innerText = `${data.advancedStats.referralRate}%`;
+            document.getElementById('upsellDays').innerText = `${data.advancedStats.upsell.avgUpsellDays}일`;
+
+            // 업셀링 건수 상세 내역
+            const up = data.advancedStats.upsell;
+            document.getElementById('upsellDetail').innerHTML = `
+                <div style="font-size:0.9rem; color:#475569; margin-bottom:4px;">🌱 Basic ➔ 📘 Std: <b>${up.basicToStd}건</b></div>
+                <div style="font-size:0.9rem; color:#475569; margin-bottom:4px;">📘 Std ➔ 🔥 Pro: <b>${up.stdToPro}건</b></div>
+                <div style="font-size:0.9rem; color:#475569;">🌱 Basic ➔ 🔥 Pro: <b>${up.basicToPro}건</b></div>
+            `;
+        }
 
         rawPaymentData = data.allPayments || [];
         updateCharts();
 
     } catch (error) {
-        console.error(error);
         alert("통계 정보를 불러오지 못했습니다.");
     }
 }
@@ -345,17 +358,12 @@ async function searchStudents() {
                 data: { searchType: type, keyword: keyword } 
             })
         });
-        
-        // [디버깅] 서버가 실제로 뭘 주는지 콘솔에서 확인하기 위함
-        const rawData = await response.json();
-        console.log("🔍 [Admin Search Result]:", rawData);
 
-        // [중요 수정] 데이터가 배열인지 확인 후 처리 (에러 방지)
+        // 데이터가 배열인지 확인 후 처리
         let students = [];
         if (Array.isArray(rawData)) {
             students = rawData;
         } else if (rawData.students && Array.isArray(rawData.students)) {
-            // 혹시 { students: [...] } 형태로 왔을 경우 대비
             students = rawData.students;
         } else {
             console.error("❌ 데이터 형식이 배열이 아닙니다:", rawData);
