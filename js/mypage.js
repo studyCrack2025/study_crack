@@ -251,7 +251,6 @@ async function saveSingleField(field, value) {
 // ==========================================
 // [기능 2] 계정 정보 변경 (모달 & Cognito)
 // ==========================================
-let emailTimerInterval; // 이메일 타이머용 변수 추가
 
 function closeModal(modalId) {
     document.getElementById(modalId).classList.add('hidden');
