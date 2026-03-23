@@ -12,6 +12,36 @@ let globalCurrentTier = 'free';
 let globalDaysLeft = 0;
 let globalExpireDate = null; // 기존 만료일(새로운 시작일) 저장용
 
+// 💡 공통 apiFetch 함수 (accessToken 기반 통합 및 401 예외 처리)
+async function apiFetch(url, options = {}) {
+    const token = localStorage.getItem('accessToken');
+    const defaultHeaders = {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` })
+    };
+
+    options.headers = { ...defaultHeaders, ...options.headers };
+
+    try {
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/login'; 
+                return Promise.reject(new Error("Auth expired")); 
+            }
+            throw new Error(`서버 통신 오류 (상태 코드: ${response.status})`);
+        }
+        return response;
+    } catch (error) {
+        console.error("API 통신 실패:", error);
+        throw error; 
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const userId = localStorage.getItem('userId');
     if (!userId) {
@@ -24,63 +54,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 유저 정보 가져오기 및 티어 계산
 async function fetchUserInfo(userId) {
-    const token = localStorage.getItem('idToken') || localStorage.getItem('accessToken');
     try {
-        const response = await fetch(USER_API_URL, {
+        const response = await apiFetch(USER_API_URL, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` 
-            },
             body: JSON.stringify({ type: 'get_user' }) 
         });
         
-        if (response.ok) {
-            const data = await response.json();
-            
-            if (data.name) document.getElementById('name').value = data.name;
-            if (data.phone) document.getElementById('phone').value = data.phone;
-            const email = localStorage.getItem('userEmail') || data.email;
-            if (email) document.getElementById('email').value = email;
+        const data = await response.json();
+        
+        if (data.name) document.getElementById('name').value = data.name;
+        if (data.phone) document.getElementById('phone').value = data.phone;
+        const email = localStorage.getItem('userEmail') || data.email;
+        if (email) document.getElementById('email').value = email;
 
-            // 프론트엔드에서 남은 기간 및 티어 계산
-            calculateUserTierDisplay(data);
-            
-            if (data.promoCode && data.promoCode.trim().length > 4) {
-                validatePromoCode(data.promoCode);
-            }
+        // 프론트엔드에서 남은 기간 및 티어 계산
+        calculateUserTierDisplay(data);
+        
+        if (data.promoCode && data.promoCode.trim().length > 4) {
+            validatePromoCode(data.promoCode);
         }
     } catch (error) {
-        console.error("유저 정보 로드 실패:", error);
+        if (error.message !== "Auth expired") console.error("유저 정보 로드 실패:", error);
     }
 }
 
 async function validatePromoCode(code) {
-    const token = localStorage.getItem('idToken') || localStorage.getItem('accessToken');
     try {
-        const response = await fetch(USER_API_URL, {
+        const response = await apiFetch(USER_API_URL, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` 
-            },
             body: JSON.stringify({ 
                 type: 'validate_promo_code',
                 data: { promoCode: code } 
             })
         });
         
-        if (response.ok) {
-            const result = await response.json();
-            
-            // 백엔드에서 isValid: true를 뱉어내면 체험단 메뉴 노출
-            if (result.isValid) {
-                const trialOption = document.getElementById('trialOption');
-                if(trialOption) trialOption.style.display = 'block'; 
-            }
+        const result = await response.json();
+        
+        // 백엔드에서 isValid: true를 뱉어내면 체험단 메뉴 노출
+        if (result.isValid) {
+            const trialOption = document.getElementById('trialOption');
+            if(trialOption) trialOption.style.display = 'block'; 
         }
     } catch (error) {
-        console.error("프로모션 코드 검증 API 호출 실패", error);
+        if (error.message !== "Auth expired") console.error("프로모션 코드 검증 API 호출 실패", error);
     }
 }
 
@@ -209,12 +225,13 @@ function selectProduct(element, url, tier) {
     }
 }
 
+// 💡 auth.js의 완벽한 10/11자리 정규식으로 통일
 function formatPhoneNumber(rawPhone) {
     let cleaned = rawPhone.replace(/[^0-9]/g, '');
     if (cleaned.startsWith('10') && cleaned.length === 10) {
         cleaned = '0' + cleaned;
     }
-    return cleaned.replace(/^(\d{2,3})(\d{3,4})(\d{4})$/, `$1-$2-$3`);
+    return cleaned.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/, "$1-$2-$3");
 }
 
 // 결제 데이터 세팅 및 페이지 이동 (시작일 계산 포함)
