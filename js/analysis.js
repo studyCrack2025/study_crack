@@ -1993,7 +1993,7 @@ async function renderPdfToImages(pdfUrl, containerId) {
     }
 }
 
-// 2. 피드백 모달 오픈 (혼란을 주는 모바일 숨김창 완전 제거 및 페이지 잘림 허용 클래스 추가)
+// 2. 피드백 모달 오픈
 function openFeedbackModal(data) {
     const modal = document.getElementById('feedbackModal');
     const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent'); 
@@ -2001,6 +2001,8 @@ function openFeedbackModal(data) {
     if (!contentArea) return;
 
     const fb = data.tutorFeedback || {};
+    
+    // [체크] 피드백 데이터 확인
     const hasFeedback = fb && (
         (fb.priorityCheck && String(fb.priorityCheck).trim() !== "") || 
         (fb.weakSubject && String(fb.weakSubject).trim() !== "") || 
@@ -2142,9 +2144,9 @@ function openFeedbackModal(data) {
             `;
         }
 
-        // 🔥 여기가 핵심! 다중 이미지 첨부 시 페이지가 찢어지는 것을 방지하기 위해 allow-page-break 클래스 추가
+        // 🔥 자르기 금지 복구 (page-break-inside: avoid)
         tutorFileBlockHtml = `
-            <div class="doc-matched-box allow-page-break" style="page-break-inside: auto; break-inside: auto; clear: both; display: block; margin-top: 30px; float: none; position: relative;">
+            <div class="doc-matched-box" style="page-break-inside: avoid; break-inside: avoid; clear: both; display: block; margin-top: 30px; float: none; position: relative;">
                 <div class="doc-matched-header" style="background:#f8fafc; border-bottom:1px solid #e2e8f0; padding:15px 20px; font-weight:800;">
                     <i class="fas fa-paperclip" style="color:#3b82f6;"></i> 5. 주간 플래너 코칭 & 첨삭
                 </div>
@@ -2158,7 +2160,6 @@ function openFeedbackModal(data) {
 
     const safeTitleForJs = escapeHtml(data.title || "주간 리포트").replace(/'/g, "\\'");
     
-    // 모바일 전용 숨김/다운로드 유도창 HTML 전체 삭제 처리
     const html = `
         <div class="modal-document" id="pdfTargetDocument">
             <div class="doc-controls" data-html2canvas-ignore="true">
@@ -2264,7 +2265,7 @@ function openFeedbackModal(data) {
     }
 }
 
-// 3. 서버(API Gateway)로 완벽한 HTML 구조체를 쏘는 다운로드 기능
+// 3. PDF 다운로드 기능 (이미지 크기 강제 제어 및 잘림 완벽 방지)
 async function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
@@ -2285,7 +2286,6 @@ async function downloadReportPDF(reportTitle) {
     document.body.appendChild(loadingOverlay);
 
     try {
-        // 🔥 서버 렌더링용 완벽 격리 HTML 구조 조립 (기존 디자인 CSS 100% 반영)
         const rawHtml = `
             <!DOCTYPE html>
             <html lang="ko">
@@ -2295,23 +2295,41 @@ async function downloadReportPDF(reportTitle) {
                 <link rel="preconnect" href="https://fonts.googleapis.com">
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
                 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-                <link rel="stylesheet" href="https://studycrack.co.kr/css/style.css">
-                <link rel="stylesheet" href="https://studycrack.co.kr/css/analysis.css">
-                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
                 <style>
                     body { background: #fff !important; }
+                    /* 전체 크기 80% (0.8) 축소 유지 */
+                    .report-wrapper { width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; box-sizing: border-box; zoom: 0.8; }
+                    
                     .modal-document { box-shadow: none !important; min-height: auto !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; }
                     .doc-controls { display: none !important; }
-                    .doc-matched-box { page-break-inside: avoid; break-inside: avoid; }
                     
-                    /* 🔥 다중 이미지 페이지 잘림 방지 (핵심) */
-                    .allow-page-break { page-break-inside: auto !important; break-inside: auto !important; }
-                    img { page-break-inside: avoid !important; break-inside: avoid !important; max-width: 100% !important; }
+                    /* 🔥 박스 찢어짐 원천 차단 */
+                    .doc-matched-box { page-break-inside: avoid !important; break-inside: avoid !important; margin-bottom: 30px; border: 1px solid #e2e8f0; border-radius: 8px; }
+                    
+                    /* 🔥 핵심: 이미지를 A4 한 장 높이(200mm) 안으로 강제 축소하여 빈 페이지 밀림 현상 방지 */
+                    img { 
+                        page-break-inside: avoid !important; 
+                        break-inside: avoid !important; 
+                        max-width: 100% !important; 
+                        max-height: 200mm !important; /* A4 용지 안정권 높이 */
+                        object-fit: contain !important; /* 비율 유지하면서 크기 줄이기 */
+                        display: block !important;
+                        margin: 0 auto 15px auto !important;
+                    }
+                    
+                    .doc-matched-body { display: table; width: 100%; box-sizing: border-box; }
+                    .doc-student-data { display: table-cell; width: 45%; vertical-align: top; border-right: 1px dashed #cbd5e1; padding: 20px; }
+                    .doc-tutor-feedback { display: table-cell; width: 55%; vertical-align: top; padding: 20px; background: #fafafa; }
+                    .doc-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 10px; }
+                    .doc-table th { padding: 8px 4px; border-bottom: 1px solid #e2e8f0; color: #64748b; }
+                    .doc-table td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; }
                 </style>
             </head>
             <body>
-                <img src="https://studycrack.co.kr/assets/backgrounds/bg_studycrack_logo.png" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:400px; opacity:0.04; z-index:-1;">
-                ${reportElement.innerHTML}
+                <img src="https://studycrack.co.kr/assets/backgrounds/bg_studycrack_logo.png" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:400px; opacity:0.04; z-index:-1; max-height:none !important;">
+                <div class="report-wrapper">
+                    ${reportElement.innerHTML}
+                </div>
             </body>
             </html>
         `;
