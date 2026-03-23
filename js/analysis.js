@@ -2301,14 +2301,15 @@ function downloadReportPDF(reportTitle) {
     const printNode = reportElement.cloneNode(true);
     printNode.classList.add('pdf-rendering');
 
-    const isMobile = window.innerWidth <= 768;
-
+    // 💡 [수정 1] 모바일 인쇄 엔진이 무시하지 않도록 안전한 위치에 숨김
     const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.left = '-9999px'; 
+    iframe.style.position = 'absolute';
+    iframe.style.width = '1px';
+    iframe.style.height = '1px';
     iframe.style.top = '0';
-    iframe.style.width = '1024px'; 
-    iframe.style.height = '100vh';
+    iframe.style.left = '0';
+    iframe.style.opacity = '0';
+    iframe.style.pointerEvents = 'none';
     iframe.style.border = 'none';
     document.body.appendChild(iframe);
 
@@ -2316,20 +2317,11 @@ function downloadReportPDF(reportTitle) {
         .map(link => `<link rel="stylesheet" href="${link.href}">`)
         .join('');
 
-    const mobilePrintCSS = isMobile ? `
-        body { zoom: 0.7 !important; }
-        @supports not (zoom: 0.7) {
-            body {
-                transform: scale(0.7);
-                transform-origin: top left;
-                width: 1462px !important;
-            }
-        }
-    ` : '';
-
     const iframeDoc = iframe.contentWindow.document;
     iframeDoc.open();
-    // 🚨 텍스트(문자열) 출력 방식은 뼈대 HTML만 그리도록 최소화합니다.
+    
+    // 💡 [수정 2] 모바일 강제 스케일링(zoom/transform) 제거 및 @page 설정
+    // 브라우저가 알아서 1024px 너비를 A4 사이즈에 맞게 축소 인쇄합니다.
     iframeDoc.write(`
         <!DOCTYPE html>
         <html lang="ko">
@@ -2340,75 +2332,23 @@ function downloadReportPDF(reportTitle) {
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
             ${styleLinks}
             <style>
-                @page { margin: 20mm 10mm 10mm 10mm; } 
-
-                body { 
-                    width: 1024px !important;
-                    background: white !important; 
-                    margin: 0; padding: 0; 
-                    -webkit-print-color-adjust: exact; 
-                    print-color-adjust: exact; 
-                }
-                
+                @page { size: A4 portrait; margin: 15mm 10mm; }
+                body { width: 1024px !important; background: white !important; margin: 0 auto; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 * { box-shadow: none !important; }
-
                 .modal-document::after { display: none !important; }
                 .doc-controls, .mobile-only-msg { display: none !important; }
+                .modal-document { width: 100% !important; padding: 40px !important; box-sizing: border-box !important; }
+                .doc-matched-box { margin-bottom: 20px !important; display: block !important; width: 100% !important; clear: both !important; }
+                .doc-matched-box:not(:last-child) { page-break-inside: avoid !important; break-inside: avoid !important; }
                 
-                .modal-document {
-                    width: 100% !important;
-                    padding: 40px !important;
-                    box-sizing: border-box !important;
-                }
-
-                .doc-matched-box { 
-                    margin-bottom: 20px !important; 
-                    display: block !important; 
-                    width: 100% !important;
-                    clear: both !important; 
-                }
+                /* 이미지 넘침 및 잘림 방지 */
+                .doc-matched-box img { display: block !important; max-width: 100% !important; max-height: 220mm !important; object-fit: contain !important; margin: 0 auto !important; page-break-inside: avoid !important; break-inside: avoid !important; }
                 
-                .doc-matched-box:not(:last-child) {
-                    page-break-inside: avoid !important; 
-                    break-inside: avoid !important; 
-                }
-
-                /* 🚨 외과 수술 픽스: 이미지가 A4 세로 길이를 넘지 않게 압축(max-height)하고, 허리에서 잘리지 않게(avoid) 방어합니다. */
-                .doc-matched-box img {
-                    display: block !important;
-                    max-width: 100% !important;
-                    max-height: 220mm !important; /* A4 인쇄 가능 영역을 넘지 않도록 강제 제한 */
-                    object-fit: contain !important; /* 비율 깨짐 방지 */
-                    margin: 0 auto !important; /* 중앙 정렬 */
-                    page-break-inside: avoid !important; /* 이미지 자체가 쪼개지는 것 방지 */
-                    break-inside: avoid !important;
-                }
-
-                .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-matched-body { 
-                    display: flex !important; 
-                    flex-direction: row !important; 
-                    flex-wrap: nowrap !important;
-                }
+                .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-matched-body { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; }
+                .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-student-data { border-bottom: none !important; border-right: 1px dashed #cbd5e1 !important; flex: 1 1 45% !important; box-sizing: border-box !important; }
+                .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-tutor-feedback { flex: 1 1 55% !important; box-sizing: border-box !important; }
                 
-                .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-student-data { 
-                    border-bottom: none !important; 
-                    border-right: 1px dashed #cbd5e1 !important; 
-                    flex: 1 1 45% !important; 
-                    box-sizing: border-box !important;
-                }
-
-                .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-tutor-feedback { 
-                    flex: 1 1 55% !important; 
-                    box-sizing: border-box !important;
-                }
-
-                .doc-matched-box:last-child .doc-matched-body,
-                .doc-matched-box:nth-last-child(2) .doc-matched-body {
-                    display: flex !important;
-                    flex-direction: column !important;
-                }
-
-                ${mobilePrintCSS}
+                .doc-matched-box:last-child .doc-matched-body, .doc-matched-box:nth-last-child(2) .doc-matched-body { display: flex !important; flex-direction: column !important; }
             </style>
         </head>
         <body id="print-body">
@@ -2417,25 +2357,33 @@ function downloadReportPDF(reportTitle) {
     `);
     iframeDoc.close();
 
-    // 🚨 핵심: 수십 메가바이트의 Base64를 문자열로 넘기지 않고 JS 노드로 직접 꽂아 넣음
     iframeDoc.getElementById('print-body').appendChild(printNode);
 
-    // 🚨 핵심: 복사된 이미지들이 인쇄 엔진 메모리에 모두 올라갈 때까지 대기
+    // 💡 [수정 3] 이미지 로딩 대기 로직 강화
     const imgs = iframeDoc.querySelectorAll('img');
     let loadedCount = 0;
     
-    function checkAllImagesLoaded() {
-        if (loadedCount >= imgs.length) {
-            // 브라우저 렌더링 큐 처리를 위해 추가로 0.5초 여유 딜레이 부여
-            setTimeout(function() {
+    function triggerPrint() {
+        // 모바일 렌더링 큐 처리를 위한 충분한 딜레이 (500ms -> 800ms)
+        setTimeout(function() {
+            try {
                 iframe.contentWindow.focus();
                 iframe.contentWindow.print();
-            }, 500); 
+            } catch (e) {
+                console.error("Print execution failed:", e);
+                alert("인쇄를 실행할 수 없습니다. 브라우저 설정을 확인해 주세요.");
+            }
+        }, 800); 
+    }
+
+    function checkAllImagesLoaded() {
+        if (loadedCount >= imgs.length) {
+            triggerPrint();
         }
     }
 
     if (imgs.length === 0) {
-        checkAllImagesLoaded();
+        triggerPrint();
     } else {
         imgs.forEach(img => {
             if (img.complete) {
@@ -2445,16 +2393,20 @@ function downloadReportPDF(reportTitle) {
                 img.onerror = () => { loadedCount++; checkAllImagesLoaded(); };
             }
         });
-        // 혹시 캐시 처리로 인해 이벤트가 무시될 경우를 위한 안전장치
-        checkAllImagesLoaded(); 
+        // 혹시 캐시 문제로 onload 이벤트가 누락될 경우를 대비한 안전망
+        setTimeout(() => {
+            if (loadedCount < imgs.length) triggerPrint(); 
+        }, 3000);
     }
 
+    // 인쇄 완료 후 iframe 정리
     iframe.contentWindow.onafterprint = function() {
         if (document.body.contains(iframe)) {
             document.body.removeChild(iframe);
         }
     };
     
+    // iOS 등 일부 환경에서 onafterprint가 안 탈출을 대비한 타이머
     setTimeout(() => {
         if (document.body.contains(iframe)) {
             document.body.removeChild(iframe);
