@@ -2318,26 +2318,28 @@ async function downloadReportPDF(reportTitle) {
         return;
     }
 
-    // 1. 로딩 화면
+    // 1. 시각적 방해를 막기 위한 로딩 화면
     const loadingOverlay = document.createElement('div');
     loadingOverlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.95); z-index:999999; display:flex; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(5px);';
     loadingOverlay.innerHTML = `
         <i class="fas fa-spinner fa-spin fa-3x" style="color:#2563eb; margin-bottom:20px;"></i>
         <h2 style="color:#1e293b; font-weight:800; margin-bottom:10px;">PDF 리포트 생성 중...</h2>
-        <p style="color:#64748b;">(페이지 최적화 및 고화질 변환 중)</p>
+        <p style="color:#64748b;">(레이아웃 최적화 및 고화질 변환 중)</p>
     `;
     document.body.appendChild(loadingOverlay);
 
+    // 불필요한 UI 숨김
     const controls = reportElement.querySelector('.doc-controls');
     const mobileMsg = reportElement.querySelector('.mobile-only-msg');
     if (controls) controls.style.display = 'none';
     if (mobileMsg) mobileMsg.style.display = 'none';
 
+    // DOM 요소 가져오기
     const modal = document.getElementById('feedbackModal');
     const modalContent = modal.querySelector('.custom-modal-content');
     const modalBody = document.getElementById('modalContent');
 
-    // 복구를 위한 기존 스타일 백업
+    // 🌟 원상 복구를 위한 기존 스타일 백업
     const backupStyles = {
         modal: modal.style.cssText,
         content: modalContent.style.cssText,
@@ -2345,15 +2347,16 @@ async function downloadReportPDF(reportTitle) {
         report: reportElement.style.cssText
     };
 
-    // 모달 제한 해제
-    modal.style.cssText += 'justify-content: flex-start !important; align-items: flex-start !important; overflow: visible !important;';
-    modalContent.style.cssText += 'max-width: none !important; width: auto !important; margin: 0 !important; overflow: visible !important; max-height: none !important;';
-    modalBody.style.cssText += 'overflow: visible !important; max-height: none !important; padding: 0 !important;';
+    // 🚨 [핵심 해결 1] 왼쪽/오른쪽 잘림 방지 (모달 좌표 초기화)
+    // 모달의 중앙 정렬을 강제로 풀고 화면 최상단 좌측(0,0)에 딱 붙입니다.
+    modal.style.cssText += 'position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; justify-content: flex-start !important; align-items: flex-start !important; padding: 0 !important; margin: 0 !important; overflow: visible !important;';
+    modalContent.style.cssText += 'position: absolute !important; top: 0 !important; left: 0 !important; max-width: none !important; width: 100% !important; margin: 0 !important; transform: none !important; overflow: visible !important;';
+    modalBody.style.cssText += 'padding: 0 !important; overflow: visible !important;';
 
-    // 🚨 수정 포인트 1: 너비를 1366px -> 800px로 변경. A4 세로 비율에 가장 안정적인 픽셀입니다.
-    reportElement.style.cssText += 'width: 800px !important; max-width: 800px !important; margin: 0 auto !important; padding: 30px !important; box-sizing: border-box !important;';
+    // 🚨 [핵심 해결 1] 캡처할 타겟 문서 역시 800px로 고정하고 좌측 여백을 없앱니다.
+    reportElement.style.cssText += 'position: relative !important; top: 0 !important; left: 0 !important; width: 800px !important; max-width: 800px !important; margin: 0 !important; padding: 30px 40px !important; box-sizing: border-box !important; background: #ffffff !important;';
 
-    // 🚨 수정 포인트 2: PDF 변환 시에만 Flex를 Block으로 강제 전환하여 요소 중간이 찢어지는 현상 방지
+    // 🚨 [핵심 해결 2] 첨부 이미지 잘림 방지 및 페이지 넘김 최적화 CSS 강제 주입
     const styleFix = document.createElement('style');
     styleFix.id = 'pdf-style-fix';
     styleFix.innerHTML = `
@@ -2366,7 +2369,8 @@ async function downloadReportPDF(reportTitle) {
             width: 100% !important;
         }
         .doc-header { page-break-inside: avoid !important; break-inside: avoid !important; }
-        /* Flex 레이아웃 강제 해제 (페이지 찢어짐의 주범) */
+        
+        /* Flex 레이아웃이 페이지 계산을 망치는 것을 방지 */
         .doc-matched-body { display: block !important; width: 100% !important; }
         .doc-student-data, .doc-tutor-feedback { 
             display: block !important; 
@@ -2375,22 +2379,29 @@ async function downloadReportPDF(reportTitle) {
             border-bottom: 1px dashed #cbd5e1 !important;
             border-right: none !important;
         }
+        
+        /* 🔥 5번 항목 등 첨부 이미지(img)가 페이지 중간에 잘리는 현상 방지 */
+        #pdfTargetDocument img {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            max-width: 100% !important;
+            display: block !important;
+        }
     `;
-    reportElement.appendChild(styleFix);
+    document.head.appendChild(styleFix);
 
+    // 스크롤 최상단 고정
     const originalScrollY = window.scrollY;
     window.scrollTo(0, 0);
 
-    // DOM 렌더링 대기
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // 브라우저가 새 레이아웃을 렌더링할 시간을 넉넉히 줍니다. (백지 방지)
+    await new Promise(resolve => setTimeout(resolve, 600));
 
     try {
         const logoData = await getWatermarkImage();
 
-        // 🚨 수정 포인트 3: html2pdf 옵션 조정
-        // margin 좌우를 0으로 주고, DOM 자체의 padding(위에서 설정한 30px)으로 좌우 여백을 컨트롤해야 캔버스 스케일링 시 짤리지 않습니다.
         const opt = {
-            margin:       [15, 0, 15, 0], 
+            margin:       [15, 0, 15, 0], // 상/하 여백만 남기고 좌/우는 DOM padding으로 해결
             filename:     `스터디크랙_${reportTitle}.pdf`,
             image:        { type: 'jpeg', quality: 1.0 },
             html2canvas:  { 
@@ -2398,7 +2409,7 @@ async function downloadReportPDF(reportTitle) {
                 useCORS: true,
                 scrollY: 0,
                 scrollX: 0,
-                windowWidth: 800 // DOM 너비와 동일하게 설정
+                windowWidth: 800 // 타겟 문서와 동일하게 맞춤
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
             pagebreak:    { mode: ['css', 'legacy'] }
@@ -2410,7 +2421,7 @@ async function downloadReportPDF(reportTitle) {
             for (let i = 1; i <= totalPages; i++) {
                 pdf.setPage(i);
                 if (logoData) {
-                    const targetWidth = 70; // 로고 적정 너비
+                    const targetWidth = 70; 
                     const targetHeight = (logoData.height / logoData.width) * targetWidth; 
                     
                     const xPos = (210 - targetWidth) / 2;
@@ -2425,13 +2436,14 @@ async function downloadReportPDF(reportTitle) {
         console.error("PDF 생성 실패:", error);
         alert("PDF 생성 중 오류가 발생했습니다.");
     } finally {
+        // UI 원상 복구
         if (controls) controls.style.display = '';
         if (mobileMsg) mobileMsg.style.display = '';
         
         const injectedStyle = document.getElementById('pdf-style-fix');
         if (injectedStyle) injectedStyle.remove();
 
-        // 스타일 원상 복구
+        // 🌟 백업해둔 기존 스타일로 완벽하게 되돌림
         modal.style.cssText = backupStyles.modal;
         modalContent.style.cssText = backupStyles.content;
         modalBody.style.cssText = backupStyles.body;
