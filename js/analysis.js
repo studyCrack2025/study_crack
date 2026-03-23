@@ -2289,11 +2289,14 @@ function openFeedbackModal(data) {
 // ============================================================
 // PDF 다운로드 기능
 // ============================================================
+// ============================================================
+// PDF 다운로드 기능 (서버 사이드 렌더링 API 호출 방식)
+// ============================================================
 async function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
 
-    // 1. 유저 시야를 가리는 로딩 화면 띄우기
+    // 1. 유저 시야를 가리는 로딩 화면 띄우기 (클라이언트 성능 저하 없음)
     const loadingOverlay = document.createElement('div');
     loadingOverlay.id = 'pdf-loading-overlay';
     loadingOverlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.98); z-index:999999; display:flex; flex-direction:column; align-items:center; justify-content:center;';
@@ -2305,36 +2308,41 @@ async function downloadReportPDF(reportTitle) {
     document.body.appendChild(loadingOverlay);
 
     try {
-        // 2. 백엔드에 보낼 순수 HTML 템플릿 조립
-        // 기존 CSS 링크와 리포트 내용만 깔끔하게 담습니다.
+        // 2. 백엔드(Lambda)로 보낼 깨끗한 HTML 템플릿 조립
         const rawHtml = `
             <!DOCTYPE html>
             <html lang="ko">
             <head>
                 <meta charset="UTF-8">
+                <base href="https://studycrack.co.kr">
                 <style>
-                    /* 폰트 및 기본 리셋 */
+                    /* 기본 폰트 설정 */
                     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
                     body { font-family: 'Noto Sans KR', sans-serif; background: #fff; color: #333; margin: 0; padding: 0; }
                     
-                    /* 백엔드 크롬 엔진이 A4 사이즈를 완벽히 인식하도록 강제 설정 */
+                    /* A4 규격에 맞게 너비를 800px로 고정 (서버 렌더링 기준) */
                     .report-wrapper { width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
                     
-                    /* 불필요한 버튼 삭제 */
+                    /* PDF에 안 나와야 할 버튼 숨김 */
                     .doc-controls, .mobile-only-msg { display: none !important; }
                     
-                    /* 페이지 잘림 방지 필수 CSS */
+                    /* 🔥 페이지 잘림 방지를 위한 핵심 Table 레이아웃 강제 변환 */
                     .doc-matched-box { page-break-inside: avoid; break-inside: avoid; margin-bottom: 30px; border: 1px solid #e2e8f0; border-radius: 8px; }
                     .doc-matched-body { display: table; width: 100%; box-sizing: border-box; }
                     .doc-student-data { display: table-cell; width: 45%; vertical-align: top; border-right: 1px dashed #cbd5e1; padding: 20px; }
                     .doc-tutor-feedback { display: table-cell; width: 55%; vertical-align: top; padding: 20px; background: #fafafa; }
-                    img { max-width: 100%; page-break-inside: avoid; display: block; margin: 0 auto; }
                     
-                    ${document.getElementById('pdf-style-fix') ? document.getElementById('pdf-style-fix').innerHTML : ''}
+                    /* 이미지 잘림 방지 및 가운데 정렬 */
+                    img { max-width: 100%; page-break-inside: avoid; break-inside: avoid; display: block; margin: 0 auto; }
+                    
+                    /* 테이블 테두리 설정 (리포트 내 표) */
+                    .doc-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 10px; }
+                    .doc-table th { padding: 8px 4px; border-bottom: 1px solid #e2e8f0; color: #64748b; }
+                    .doc-table td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; }
                 </style>
             </head>
             <body>
-                <img src="https://your-domain.com/assets/backgrounds/bg_studycrack_logo.png" 
+                <img src="https://studycrack.co.kr/assets/backgrounds/bg_studycrack_logo.png" 
                      style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:300px; opacity:0.05; z-index:-1;">
                 
                 <div class="report-wrapper">
@@ -2344,9 +2352,12 @@ async function downloadReportPDF(reportTitle) {
             </html>
         `;
 
-        // 3. 서버(API Gateway)로 HTML 스트링 전송
         const token = localStorage.getItem('idToken');
-        const response = await fetch('https://your-api-gateway-url.com/generate-pdf', { // 실제 배포될 API 엔드포인트 입력
+        
+        // 3. 서버(AWS API Gateway)로 요청 보내기
+        const pdfApiUrl = 'https://ft35jsftc1.execute-api.ap-northeast-2.amazonaws.com/generate-pdf'; 
+
+        const response = await fetch(pdfApiUrl, { 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -2361,22 +2372,23 @@ async function downloadReportPDF(reportTitle) {
         const data = await response.json();
 
         if (response.ok && data.success) {
-            // 4. 서버에서 생성된 PDF 다운로드 링크 열기
+            // 4. 서버가 S3에 저장하고 준 링크로 자동 다운로드 실행
             const link = document.createElement('a');
             link.href = data.downloadUrl;
             link.target = '_blank';
-            link.download = `스터디크랙_${reportTitle}.pdf`;
+            link.download = `스터디크랙_${reportTitle}.pdf`; // 파일명 지정
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         } else {
-            throw new Error(data.error || "PDF 생성에 실패했습니다.");
+            throw new Error(data.error || "서버에서 PDF를 생성하지 못했습니다.");
         }
 
     } catch (error) {
         console.error("PDF Download Error:", error);
         alert("PDF 생성 중 오류가 발생했습니다: " + error.message);
     } finally {
+        // 성공하든 에러가 나든 무조건 로딩 화면은 없앰
         if (loadingOverlay && loadingOverlay.parentNode) {
             loadingOverlay.parentNode.removeChild(loadingOverlay);
         }
