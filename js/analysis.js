@@ -2301,18 +2301,17 @@ function downloadReportPDF(reportTitle) {
     const printNode = reportElement.cloneNode(true);
     printNode.classList.add('pdf-rendering');
 
-    // 💡 [수정 1] 모바일 인쇄 엔진이 무시하지 않도록 안전한 위치에 숨김
+    // 3. 인쇄용 iframe 생성 (모바일에서도 안전하게 숨기기 위해 투명도 대신 좌표 이동)
     const iframe = document.createElement('iframe');
     iframe.style.position = 'absolute';
     iframe.style.width = '1px';
     iframe.style.height = '1px';
-    iframe.style.top = '0';
-    iframe.style.left = '0';
-    iframe.style.opacity = '0';
+    iframe.style.top = '-9999px'; 
     iframe.style.pointerEvents = 'none';
     iframe.style.border = 'none';
     document.body.appendChild(iframe);
 
+    // 4. 현재 페이지의 CSS 가져오기
     const styleLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
         .map(link => `<link rel="stylesheet" href="${link.href}">`)
         .join('');
@@ -2320,8 +2319,7 @@ function downloadReportPDF(reportTitle) {
     const iframeDoc = iframe.contentWindow.document;
     iframeDoc.open();
     
-    // 💡 [수정 2] 모바일 강제 스케일링(zoom/transform) 제거 및 @page 설정
-    // 브라우저가 알아서 1024px 너비를 A4 사이즈에 맞게 축소 인쇄합니다.
+    // 5. 모바일/PC 통합 인쇄용 HTML 뼈대 작성
     iframeDoc.write(`
         <!DOCTYPE html>
         <html lang="ko">
@@ -2336,19 +2334,17 @@ function downloadReportPDF(reportTitle) {
                 body { width: 1024px !important; background: white !important; margin: 0 auto; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 * { box-shadow: none !important; }
                 .modal-document::after { display: none !important; }
-                .doc-controls, .mobile-only-msg { display: none !important; }
+                .doc-controls { display: none !important; }
+                .mobile-only-msg { display: none !important; }
                 .modal-document { width: 100% !important; padding: 40px !important; box-sizing: border-box !important; }
                 .doc-matched-box { margin-bottom: 20px !important; display: block !important; width: 100% !important; clear: both !important; }
                 .doc-matched-box:not(:last-child) { page-break-inside: avoid !important; break-inside: avoid !important; }
-                
-                /* 이미지 넘침 및 잘림 방지 */
                 .doc-matched-box img { display: block !important; max-width: 100% !important; max-height: 220mm !important; object-fit: contain !important; margin: 0 auto !important; page-break-inside: avoid !important; break-inside: avoid !important; }
-                
                 .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-matched-body { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; }
                 .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-student-data { border-bottom: none !important; border-right: 1px dashed #cbd5e1 !important; flex: 1 1 45% !important; box-sizing: border-box !important; }
                 .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-tutor-feedback { flex: 1 1 55% !important; box-sizing: border-box !important; }
-                
-                .doc-matched-box:last-child .doc-matched-body, .doc-matched-box:nth-last-child(2) .doc-matched-body { display: flex !important; flex-direction: column !important; }
+                .doc-matched-box:last-child .doc-matched-body { display: flex !important; flex-direction: column !important; }
+                .doc-matched-box:nth-last-child(2) .doc-matched-body { display: flex !important; flex-direction: column !important; }
             </style>
         </head>
         <body id="print-body">
@@ -2357,23 +2353,28 @@ function downloadReportPDF(reportTitle) {
     `);
     iframeDoc.close();
 
+    // 복사한 리포트 DOM 삽입
     iframeDoc.getElementById('print-body').appendChild(printNode);
 
-    // 💡 [수정 3] 이미지 로딩 대기 로직 강화
+    // 6. 이미지 로딩 완료 체크 및 인쇄 실행 로직 (버그 수정 완료)
     const imgs = iframeDoc.querySelectorAll('img');
     let loadedCount = 0;
+    let isPrinted = false; // 중복 인쇄 방지 플래그
     
     function triggerPrint() {
-        // 모바일 렌더링 큐 처리를 위한 충분한 딜레이 (500ms -> 800ms)
+        if (isPrinted) return;
+        isPrinted = true;
+        
+        // CSS가 렌더링될 아주 짧은 시간(250ms)만 부여해 팝업 차단 회피
         setTimeout(function() {
             try {
                 iframe.contentWindow.focus();
                 iframe.contentWindow.print();
             } catch (e) {
-                console.error("Print execution failed:", e);
+                console.error("인쇄 실행 실패:", e);
                 alert("인쇄를 실행할 수 없습니다. 브라우저 설정을 확인해 주세요.");
             }
-        }, 800); 
+        }, 250); 
     }
 
     function checkAllImagesLoaded() {
@@ -2387,26 +2388,30 @@ function downloadReportPDF(reportTitle) {
     } else {
         imgs.forEach(img => {
             if (img.complete) {
-                loadedCount++;
+                loadedCount++; // 즉시 완료된 이미지 카운트
             } else {
                 img.onload = () => { loadedCount++; checkAllImagesLoaded(); };
                 img.onerror = () => { loadedCount++; checkAllImagesLoaded(); };
             }
         });
-        // 혹시 캐시 문제로 onload 이벤트가 누락될 경우를 대비한 안전망
+        
+        // 🔥 여기가 핵심! Base64 이미지처럼 이미 다 로드된 상태일 경우 루프가 끝나자마자 바로 호출
+        checkAllImagesLoaded();
+
+        // 7. 네트워크 지연 대비 최후의 안전망 (1.5초 후 강제 실행)
         setTimeout(() => {
-            if (loadedCount < imgs.length) triggerPrint(); 
-        }, 3000);
+            triggerPrint();
+        }, 1500);
     }
 
-    // 인쇄 완료 후 iframe 정리
+    // 8. 사용 완료된 iframe 메모리에서 정리
     iframe.contentWindow.onafterprint = function() {
         if (document.body.contains(iframe)) {
             document.body.removeChild(iframe);
         }
     };
     
-    // iOS 등 일부 환경에서 onafterprint가 안 탈출을 대비한 타이머
+    // 모바일 등에서 onafterprint 이벤트가 씹히는 경우 대비
     setTimeout(() => {
         if (document.body.contains(iframe)) {
             document.body.removeChild(iframe);
