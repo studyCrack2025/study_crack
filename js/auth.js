@@ -14,6 +14,40 @@ const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 let isPhoneVerified = false; 
 let isEmailVerified = false;
 
+// 💡 [Auth 전용] 무한 루프 방지가 적용된 글로벌 apiFetch
+async function apiFetch(url, options = {}) {
+    const token = localStorage.getItem('accessToken');
+    const defaultHeaders = {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` })
+    };
+
+    options.headers = { ...defaultHeaders, ...options.headers };
+
+    try {
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                // 현재 페이지가 로그인/회원가입/메인 페이지가 아닐 때만 튕겨냄 (무한 루프 방지)
+                const currentPath = window.location.pathname;
+                if (!['/login', '/signup', '/'].includes(currentPath)) {
+                    alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = '/login'; 
+                }
+                return Promise.reject(new Error("Auth expired")); 
+            }
+            throw new Error(`서버 통신 오류 (상태 코드: ${response.status})`);
+        }
+        return response;
+    } catch (error) {
+        console.error("API 통신 실패:", error);
+        throw error; 
+    }
+}
+
 // ==========================================
 // [Part A] 초기화 및 유틸리티
 // ==========================================
@@ -31,7 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 엔터키 지원 코드들
     const emailInput = document.getElementById('email');
     if (emailInput && pwInput) {
-        // 로그인 페이지 등에서 사용
         const triggerSignIn = (e) => { if (e.key === 'Enter') handleSignIn(); };
         emailInput.addEventListener('keypress', triggerSignIn);
         pwInput.addEventListener('keypress', triggerSignIn);
@@ -67,39 +100,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const chkRequired = document.querySelectorAll('.chk-required');
     const chkOptional = document.querySelectorAll('.chk-optional');
 
-    // 1. 전체 동의 체크박스를 클릭했을 때
     if (chkAll) {
         chkAll.addEventListener('change', (e) => {
             const isChecked = e.target.checked;
             chkRequired.forEach(chk => { chk.checked = isChecked; });
             chkOptional.forEach(chk => { chk.checked = isChecked; });
-            updateSubmitButton(); // 가입 버튼 상태 갱신
+            updateSubmitButton(); 
         });
     }
 
-    // 2. 개별 약관(필수 or 선택)을 클릭했을 때 '전체 동의' 상태 업데이트 함수
     const updateChkAllState = () => {
         const allRequiredChecked = Array.from(chkRequired).every(c => c.checked);
         const allOptionalChecked = Array.from(chkOptional).every(c => c.checked);
         
-        // 필수 약관과 선택 약관이 모두 체크되어야만 전체 동의 체크
         if (chkAll) {
             chkAll.checked = allRequiredChecked && allOptionalChecked;
         }
         
-        updateSubmitButton(); // 가입 버튼 상태 갱신
+        updateSubmitButton(); 
     };
 
-    // 3. 필수 약관과 선택 약관 모두에 클릭 이벤트 리스너 달기
-    chkRequired.forEach(chk => {
-        chk.addEventListener('change', updateChkAllState);
-    });
+    chkRequired.forEach(chk => chk.addEventListener('change', updateChkAllState));
+    chkOptional.forEach(chk => chk.addEventListener('change', updateChkAllState));
 
-    chkOptional.forEach(chk => {
-        chk.addEventListener('change', updateChkAllState);
-    });
-
-    // URL에서 promo 파라미터 확인 후 프로모션 코드 자동 입력
+    // URL 프로모션 코드 자동 입력
     const urlParams = new URLSearchParams(window.location.search);
     const promoParam = urlParams.get('promo');
     
@@ -113,7 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// 모달 제어 함수
 window.openTermModal = function(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) modal.classList.remove('hidden');
@@ -159,7 +182,7 @@ function getErrorMessage(err) {
         case "UsernameExistsException": return "이미 가입된 이메일입니다.";
         case "InvalidParameterException": return "입력 정보가 올바르지 않습니다.";
         case "InvalidPasswordException": 
-            return "비밀번호는 영문 대문자, 소문자, 숫자, 특수문자를 각각 최소 1개 이상 포함하여 8자 이상으로 설정해야 합니다.";
+            return "비밀번호는 영문 대/소문자, 숫자, 특수문자를 각각 최소 1개 이상 포함하여 8자 이상으로 설정해야 합니다.";
         case "CodeMismatchException": return "인증 코드가 일치하지 않습니다.";
         case "LimitExceededException": return "요청 횟수 초과. 잠시 후 시도하세요.";
         case "UserNotConfirmedException": return "이메일 인증이 완료되지 않은 계정입니다.";
@@ -191,11 +214,10 @@ function updateSubmitButton() {
 }
 
 // ==========================================
-// [Part B] 이메일 인증 (Cognito)
+// [Part B] 이메일 인증 (Cognito) - 퍼블릭 API (일반 fetch 유지)
 // ==========================================
 let emailTimerInterval;
 
-// [수정] 이메일 인증번호 발송 (Cognito signUp 호출 제거)
 async function handleSendCode() {
     const email = document.getElementById('email').value;
     if (!email) { alert("이메일을 입력해주세요."); return; }
@@ -223,7 +245,6 @@ async function handleSendCode() {
     }
 }
 
-// [수정] 이메일 인증번호 확인
 async function handleVerify() {
     const email = document.getElementById('email').value;
     const code = document.getElementById('verifyCode').value;
@@ -248,7 +269,7 @@ async function handleVerify() {
 }
 
 // ==========================================
-// [Part C] 전화번호 인증 (Lambda)
+// [Part C] 전화번호 인증 (Lambda) - 퍼블릭 API (일반 fetch 유지)
 // ==========================================
 let phoneTimerInterval;
 
@@ -272,21 +293,15 @@ async function handleSendPhoneCode() {
     btn.disabled = true;
 
     try {
-        // [중요] SMS 발송은 로그인 전이므로 토큰 없이 요청 (백엔드에서 SMS 타입은 토큰 체크 안함)
         const response = await fetch(AUTH_URL, {
             method: 'POST',
-            body: JSON.stringify({ 
-                type: 'send_sms_auth', 
-                phone: cleanPhone 
-            })
+            body: JSON.stringify({ type: 'send_sms_auth', phone: cleanPhone })
         });
 
         if (!response.ok) {
             const errData = await response.json();
             throw new Error(errData.message || "SMS 발송 실패");
         }
-        
-        const data = await response.json();
         
         alert(`인증번호가 발송되었습니다. 5분 이내에 입력해주세요.`);
         document.getElementById('phoneVerifySection').classList.remove('hidden');
@@ -312,7 +327,6 @@ async function handleVerifyPhone() {
     } else if (phone.startsWith('10')) {
         phone = '+82' + phone;
     }
-    // 이제 phone은 '+821012345678' 형태가 됩니다.
 
     const inputCode = document.getElementById('phoneVerifyCode').value;
     if (!inputCode) { alert("인증코드를 입력해주세요."); return; }
@@ -321,8 +335,8 @@ async function handleVerifyPhone() {
         const response = await fetch(AUTH_URL, {
             method: 'POST',
             body: JSON.stringify({
-                type: 'verify_code', // Lambda에서 이 타입으로 처리하는지 확인
-                phone: phone,          // 변환된 +82 번호 전송
+                type: 'verify_code', 
+                phone: phone,          
                 code: inputCode
             })
         });
@@ -378,7 +392,6 @@ function startTimer(duration, displayId, intervalVar) {
 // ==========================================
 
 async function handleFinalSubmit() {
-    // 1. 사전 검증
     if (!isEmailVerified || !isPhoneVerified) {
         alert("이메일과 전화번호 인증을 모두 완료해주세요.");
         return;
@@ -402,11 +415,8 @@ async function handleFinalSubmit() {
     
     const chkMarketingEl = document.getElementById('chkMarketing');
     const marketingAgreed = chkMarketingEl ? chkMarketingEl.checked : false;
-    
-    // 대신 promoCode를 여기서 미리 가져오면 깔끔합니다.
-    const promoCode = document.getElementById('promoCode').value;
+    const promoCode = document.getElementById('promoCode') ? document.getElementById('promoCode').value : "";
 
-    // 2. 비밀번호 강도 정규식 검사
     const pwRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!pwRegex.test(password)) {
         alert("비밀번호 조건을 확인해주세요.\n(영문 대/소문자, 숫자, 특수문자 포함 8자 이상)");
@@ -414,13 +424,11 @@ async function handleFinalSubmit() {
         return;
     }
     
-    // 3. 비밀번호 재확인
     if (password !== passwordConfirm) {
         alert("비밀번호가 일치하지 않습니다.");
         return;
     }
 
-    // 4. 라디오 버튼 값 추출 (계열 및 유입경로)
     const majorRadio = document.querySelector('input[name="major"]:checked');
     const referralRadio = document.querySelector('input[name="referral"]:checked');
 
@@ -435,8 +443,7 @@ async function handleFinalSubmit() {
     let referral = referralRadio.value;
     if (referral === 'etc') referral = document.getElementById('referralEtc').value;
 
-    // 5. 전화번호 형식 변환
-    let onlyNumbers = phoneRaw.replace(/[^0-9]/g, ''); // 사용자가 어떻게 입력했든 숫자만 쏙 빼냅니다.
+    let onlyNumbers = phoneRaw.replace(/[^0-9]/g, ''); 
 
     // 5-1. Cognito 가입용 (+82 포맷)
     let cleanPhone = onlyNumbers;
@@ -446,17 +453,9 @@ async function handleFinalSubmit() {
         cleanPhone = '+82' + cleanPhone;
     }
 
-    // 5-2. DB 저장용 (010-XXXX-XXXX 포맷 강제 적용)
-    let dbFormattedPhone = onlyNumbers;
-    if (onlyNumbers.length === 11) {
-        // 11자리 번호 (ex: 01012345678 -> 010-1234-5678)
-        dbFormattedPhone = onlyNumbers.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
-    } else if (onlyNumbers.length === 10) {
-        // 예전 10자리 번호 예외 처리 (ex: 0111234567 -> 011-123-4567)
-        dbFormattedPhone = onlyNumbers.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
-    }
+    // 💡 5-2. DB 저장용 개선된 정규식 (10자리, 11자리 모두 완벽 호환)
+    let dbFormattedPhone = onlyNumbers.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/, "$1-$2-$3");
 
-    // 6. Cognito 전송용 속성 설정
     const attributeList = [
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'gender', Value: gender }),
         new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'given_name', Value: name }),
@@ -470,7 +469,6 @@ async function handleFinalSubmit() {
     submitBtn.innerText = "가입 처리 중...";
     submitBtn.disabled = true;
 
-    // 7. Cognito 회원가입 실행
     userPool.signUp(email, password, attributeList, null, async function(err, result) {
         if (err) {
             alert(getErrorMessage(err)); 
@@ -481,8 +479,8 @@ async function handleFinalSubmit() {
 
         const userSub = result.userSub;
 
-        // 8. 성공 시 Lambda 호출
         try {
+            // 회원가입 직후이므로 토큰 없이 일반 fetch 사용 (안전)
             const response = await fetch(AUTH_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -507,29 +505,24 @@ async function handleFinalSubmit() {
 
             if (!response.ok) throw new Error("계정 승인 및 DB 저장 실패");
             
-            // 가입 완료 즉시 '자동 로그인'을 백그라운드에서 실행합니다.
             const authData = { Username: email, Password: password };
             const authDetails = new AmazonCognitoIdentity.AuthenticationDetails(authData);
             const cognitoUserToAuth = new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool });
 
             cognitoUserToAuth.authenticateUser(authDetails, {
                 onSuccess: function(authResult) {
-                    // 로그인 토큰을 브라우저에 저장
                     localStorage.setItem('accessToken', authResult.getAccessToken().getJwtToken());
                     localStorage.setItem('idToken', authResult.getIdToken().getJwtToken());
                     localStorage.setItem('userId', authResult.getIdToken().payload.sub);
                     localStorage.setItem('userEmail', email);
-                    
                     localStorage.setItem('userRole', 'student');
                     
                     window.dataLayer = window.dataLayer || [];
-                    const currentUserId = authResult.getIdToken().payload.sub; 
                     window.dataLayer.push({
                         event: "login",
-                        user_id: currentUserId
+                        user_id: authResult.getIdToken().payload.sub
                     });
                     
-                    // 이미 로그인(토큰 발급)이 완료된 상태로 Welcome 페이지 이동!
                     if (promoCode) {
                         window.location.href = `/welcome?promo=${encodeURIComponent(promoCode)}`;
                     } else {
@@ -537,7 +530,6 @@ async function handleFinalSubmit() {
                     }
                 },
                 onFailure: function(err) {
-                    // 혹시라도 자동 로그인이 실패하면 기존처럼 수동 로그인하도록 Welcome 이동
                     console.error("Auto Login Failed:", err);
                     setTimeout(() => {
                         if (promoCode) {
@@ -555,7 +547,6 @@ async function handleFinalSubmit() {
         }
     });
 }
-
 
 // ==========================================
 // [Part F] 로그인 및 로그아웃
@@ -590,27 +581,26 @@ function checkLoginStatus() {
     }
     
     if (accessToken) {
-        fetch(USER_API_URL, {
+        // 💡 로그인 여부를 확인하는 곳이므로 apiFetch 사용
+        apiFetch(USER_API_URL, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${accessToken}`
-            },
             body: JSON.stringify({ type: 'get_user' }) 
         })
         .then(res => res.json())
         .then(data => {
             if (data.role && data.role !== userRole) {
                 console.warn("Security Event: LocalStorage role mismatch detected. Correcting...");
-                localStorage.setItem('userRole', data.role); // 진짜 역할로 덮어쓰기
-                window.location.reload(); // 조작된 UI 초기화
+                localStorage.setItem('userRole', data.role); 
+                window.location.reload(); 
             }
         })
         .catch(err => {
-            console.warn("Session expired or invalid. Logging out silently.");
-            // alert 띄우지 않고 조용히 로컬 스토리지 비우고 새로고침
-            localStorage.clear();
-            window.location.href = '/';
+            if (err.message !== "Auth expired") {
+                console.warn("Session invalid. Logging out silently.");
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/';
+            }
         });
     }
 }
@@ -619,12 +609,8 @@ function handleSignOut() {
     const cognitoUser = userPool.getCurrentUser();
     if (cognitoUser != null) cognitoUser.signOut();
     
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('idToken');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('userTier');
+    localStorage.clear();
+    sessionStorage.clear();
     
     alert("로그아웃 되었습니다.");
     window.location.href = '/';
@@ -661,42 +647,25 @@ function handleSignIn() {
                 user_id: userId
             });
             
-            // [중요] 토큰 헤더 포함해서 유저 정보 조회 (Authorization)
-            fetch(USER_API_URL, {
+            // 💡 로그인 완료 직후 권한 정보 획득 (apiFetch 사용)
+            apiFetch(USER_API_URL, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${accessToken}` // ★ 토큰 추가
-                },
                 body: JSON.stringify({ type: 'get_user' }) 
             })
-            .then(res => {
-                if (!res.ok) throw new Error("회원 정보를 불러오지 못했습니다.");
-                return res.json();
-            })
+            .then(res => res.json())
             .then(data => {
-                if (data.name) {
-                    localStorage.setItem('userName', data.name);
-                }
-
-                if (data.computedTier) {
-                    localStorage.setItem('userTier', data.computedTier);
-                }
+                if (data.name) localStorage.setItem('userName', data.name);
+                if (data.computedTier) localStorage.setItem('userTier', data.computedTier);
 
                 if (data.role === 'admin') {
                     localStorage.setItem('userRole', 'admin');
                     alert("관리자 계정으로 로그인되었습니다.");
                     window.location.href = '/admin';
-
                 } else if (data.role === 'tutor') {
                     localStorage.setItem('userRole', 'tutor');
-                    
-                    // [수정] 튜터 실명으로 환영 메시지 출력
                     const tutorName = data.name || '스터디크랙';
                     alert(`${tutorName} 선생님, 안녕하세요.`);
-                    
                     window.location.href = '/mypage/tutor';
-
                 } else {
                     localStorage.setItem('userRole', 'student');
                     alert("로그인 성공!");
@@ -704,8 +673,10 @@ function handleSignIn() {
                 }
             })
             .catch(err => {
-                console.error("Role Check Error:", err);
-                alert("회원 정보 연동에 실패했습니다. 네트워크 상태를 확인하거나 잠시 후 다시 시도해주세요.");
+                if (err.message !== "Auth expired") {
+                    console.error("Role Check Error:", err);
+                    alert("회원 정보 연동에 실패했습니다. 네트워크 상태를 확인하거나 잠시 후 다시 시도해주세요.");
+                }
             });
         },
         onFailure: function(err) {
@@ -715,17 +686,15 @@ function handleSignIn() {
 }
 
 // ==========================================
-// [Part G] 이메일/비밀번호 찾기 로직
+// [Part G] 이메일/비밀번호 찾기 로직 (퍼블릭 API)
 // ==========================================
 
-// 모달 열기/닫기 유틸리티
 function openAuthModal(modalId) {
     document.getElementById(modalId).classList.remove('hidden');
 }
 
 function closeAuthModal(modalId) {
     document.getElementById(modalId).classList.add('hidden');
-    // 데이터 초기화
     if(modalId === 'forgotPwModal') {
         document.getElementById('forgotPwStep1').classList.remove('hidden');
         document.getElementById('forgotPwStep2').classList.add('hidden');
@@ -743,7 +712,6 @@ function closeAuthModal(modalId) {
     }
 }
 
-// 1. 비밀번호 찾기
 async function requestPasswordReset() {
     const email = document.getElementById('forgotPwEmail').value.trim();
     if(!email) { alert("이메일을 입력해주세요."); return; }
@@ -775,7 +743,6 @@ async function requestPasswordReset() {
     }
 }
 
-// 2. 비밀번호 재설정 확정
 async function confirmPasswordReset() {
     const email = document.getElementById('forgotPwEmail').value.trim();
     const code = document.getElementById('forgotPwCode').value.trim();
@@ -805,19 +772,14 @@ async function confirmPasswordReset() {
     }
 }
 
-// 3. 이메일 찾기
 async function handleFindEmail() {
     const name = document.getElementById('findEmailName').value.trim();
     const phoneRaw = document.getElementById('findEmailPhone').value.replace(/[^0-9]/g, '');
 
     if (!name || !phoneRaw) { alert("이름과 전화번호를 모두 입력해주세요."); return; }
 
-    let dbFormattedPhone = phoneRaw;
-    if (phoneRaw.length === 11) {
-        dbFormattedPhone = phoneRaw.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
-    } else if (phoneRaw.length === 10) {
-        dbFormattedPhone = phoneRaw.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
-    }
+    // 💡 휴대폰 번호 찾기 정규식 통일
+    let dbFormattedPhone = phoneRaw.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/, "$1-$2-$3");
 
     try {
         const response = await fetch(AUTH_URL, {
@@ -834,7 +796,7 @@ async function handleFindEmail() {
                 resultBox.appendChild(document.createTextNode("회원님의 이메일은 "));
     
                 const strongTag = document.createElement('strong');
-                strongTag.textContent = data.email;
+                strongTag.textContent = data.email; // XSS 방지 처리
                 resultBox.appendChild(strongTag);
     
                 resultBox.appendChild(document.createTextNode(" 입니다."));
