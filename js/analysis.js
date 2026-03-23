@@ -2287,7 +2287,7 @@ function openFeedbackModal(data) {
 }
 
 // ============================================================
-// PDF 다운로드 기능 (크로스 브라우징 완벽 지원)
+// PDF 다운로드 기능 (크로스 브라우징 및 백색화면 완벽 해결)
 // ============================================================
 async function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
@@ -2299,30 +2299,37 @@ async function downloadReportPDF(reportTitle) {
         return;
     }
 
-    // 2. 모달 내부에 있어서 스크롤이 잘리는 현상을 방지하기 위해 복제본 생성
+    // 2. DOM 객체를 깊은 복사
     const printNode = reportElement.cloneNode(true);
     
-    // 복제된 노드를 화면에 배치하되, 맨 뒤로 숨겨서 사용자 눈에 안 보이게 처리
-    const container = document.createElement('div');
-    container.style.position = 'absolute';
-    container.style.left = '0';          // 🚨 수정됨: -9999px 대신 0으로 설정
-    container.style.top = '0';
-    container.style.width = '1024px';    // PC 데스크탑 뷰 강제
-    container.style.zIndex = '-9999';    // 🚨 추가됨: 화면 맨 뒤로 숨김
-    container.style.background = 'white';
-    container.style.padding = '40px';
-    container.style.boxSizing = 'border-box';
+    // 🚨 [핵심 해결 1] CSS의 display:none을 무력화하기 위해 필수 클래스 추가!
+    printNode.classList.add('pdf-rendering');
     
-    // 버튼이나 모바일 경고창 등 불필요한 UI 제거
+    // 버튼이나 모바일 안내창 등 불필요한 UI 제거
     const controls = printNode.querySelector('.doc-controls');
     const mobileMsg = printNode.querySelector('.mobile-only-msg');
     if(controls) controls.remove();
     if(mobileMsg) mobileMsg.remove();
 
+    // 3. 복제된 노드를 담을 컨테이너 세팅
+    const container = document.createElement('div');
+    container.style.position = 'absolute';
+    container.style.left = '0';
+    container.style.top = '0';
+    container.style.width = '1024px';    // PC 데스크탑 뷰 강제
+    
+    // 🚨 [핵심 해결 2] z-index를 1000으로 설정.
+    // 현재 떠있는 모달창(z-index: 2000) 뒤에 숨겨져서 사용자 눈에는 
+    // 보이지 않지만, 바닥(body)보다는 위에 있어 하얗게 가려지지 않습니다.
+    container.style.zIndex = '1000'; 
+    container.style.background = 'white';
+    container.style.padding = '40px';
+    container.style.boxSizing = 'border-box';
+
     container.appendChild(printNode);
     document.body.appendChild(container);
 
-    // 버튼 상태 변경
+    // 4. 버튼 상태 변경 (로딩 애니메이션)
     const pdfBtns = document.querySelectorAll('.btn-pdf, .mobile-pdf-btn');
     const originalTexts = [];
     pdfBtns.forEach((btn, i) => {
@@ -2339,9 +2346,9 @@ async function downloadReportPDF(reportTitle) {
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { 
                 scale: 2, // 해상도 2배 (고화질)
-                useCORS: true, // 외부 이미지(S3 등) 렌더링 허용 (필수)
+                useCORS: true, // 외부 이미지(S3 등) 렌더링 허용
                 scrollY: 0,
-                windowWidth: 1024 // 🚨 추가됨: 모바일에서도 1024px 뷰포트를 강제로 인식시킴
+                windowWidth: 1024 // 모바일에서도 1024px 사이즈를 강제로 인식시킴
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
             pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } // 페이지 잘림 방지
@@ -2354,7 +2361,7 @@ async function downloadReportPDF(reportTitle) {
         console.error("PDF 생성 실패:", error);
         alert("PDF 생성 중 오류가 발생했습니다.");
     } finally {
-        // 복제된 컨테이너 삭제 및 버튼 상태 복구
+        // 5. 복제된 임시 컨테이너 삭제 및 버튼 상태 복구
         document.body.removeChild(container);
         pdfBtns.forEach((btn, i) => {
             btn.innerHTML = originalTexts[i];
