@@ -2302,12 +2302,13 @@ async function downloadReportPDF(reportTitle) {
     // 2. 모달 내부에 있어서 스크롤이 잘리는 현상을 방지하기 위해 복제본 생성
     const printNode = reportElement.cloneNode(true);
     
-    // 복제된 노드를 화면 밖(보이지 않는 곳)에 A4 비율(가로 1024px)로 고정하여 렌더링
+    // 복제된 노드를 화면에 배치하되, 맨 뒤로 숨겨서 사용자 눈에 안 보이게 처리
     const container = document.createElement('div');
     container.style.position = 'absolute';
-    container.style.left = '-9999px';
+    container.style.left = '0';          // 🚨 수정됨: -9999px 대신 0으로 설정
     container.style.top = '0';
-    container.style.width = '1024px'; // PC 데스크탑 뷰 강제
+    container.style.width = '1024px';    // PC 데스크탑 뷰 강제
+    container.style.zIndex = '-9999';    // 🚨 추가됨: 화면 맨 뒤로 숨김
     container.style.background = 'white';
     container.style.padding = '40px';
     container.style.boxSizing = 'border-box';
@@ -2339,7 +2340,8 @@ async function downloadReportPDF(reportTitle) {
             html2canvas:  { 
                 scale: 2, // 해상도 2배 (고화질)
                 useCORS: true, // 외부 이미지(S3 등) 렌더링 허용 (필수)
-                scrollY: 0 
+                scrollY: 0,
+                windowWidth: 1024 // 🚨 추가됨: 모바일에서도 1024px 뷰포트를 강제로 인식시킴
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
             pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } // 페이지 잘림 방지
