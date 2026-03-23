@@ -2293,80 +2293,87 @@ async function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
 
-    // 1. PDF.js 로딩 스피너가 돌거나 렌더링 중인지 확인
+    // 1. PDF.js 렌더링 중복 실행 방지
     if (reportElement.querySelector('.pdf-loading-spinner') || reportElement.querySelector('.is-rendering')) {
         alert("튜터의 첨부 문서를 고화질 이미지로 변환 중입니다.\n화면에 문서가 모두 나타난 후 다시 클릭해주세요.");
         return;
     }
 
-    // 2. DOM 객체를 깊은 복사
+    // 2. 화면 깜빡임을 완벽히 가려줄 "전체 화면 로딩 오버레이" 생성
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+    overlay.style.backdropFilter = 'blur(5px)';
+    overlay.style.zIndex = '999999'; // 화면 가장 맨 앞에 배치
+    overlay.style.display = 'flex';
+    overlay.style.flexDirection = 'column';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.innerHTML = `
+        <i class="fas fa-spinner fa-spin fa-3x" style="color:#2563eb; margin-bottom:20px;"></i>
+        <h2 style="color:#1e293b; margin:0 0 10px 0; font-weight:800;">PDF 리포트 생성 중...</h2>
+        <p style="color:#64748b; font-size:1rem; margin:0;">고화질 렌더링 작업으로 인해 몇 초 정도 소요될 수 있습니다.</p>
+    `;
+    document.body.appendChild(overlay);
+
+    // 3. 기존 모달의 스크롤(overflow) 간섭을 피하기 위해 노드 복제
     const printNode = reportElement.cloneNode(true);
-    
-    // 🚨 [핵심 해결 1] CSS의 display:none을 무력화하기 위해 필수 클래스 추가!
-    printNode.classList.add('pdf-rendering');
-    
-    // 버튼이나 모바일 안내창 등 불필요한 UI 제거
+    printNode.classList.add('pdf-rendering'); // 모바일 display:none 방지용 클래스
+
+    // 불필요한 UI(버튼 등) 제거
     const controls = printNode.querySelector('.doc-controls');
     const mobileMsg = printNode.querySelector('.mobile-only-msg');
-    if(controls) controls.remove();
-    if(mobileMsg) mobileMsg.remove();
+    if (controls) controls.remove();
+    if (mobileMsg) mobileMsg.remove();
 
-    // 3. 복제된 노드를 담을 컨테이너 세팅
+    // 4. 인쇄 전용 컨테이너 세팅 (오버레이 바로 뒤에 숨겨서 유저 눈엔 안 보임!)
     const container = document.createElement('div');
     container.style.position = 'absolute';
-    container.style.left = '0';
     container.style.top = '0';
-    container.style.width = '1024px';    // PC 데스크탑 뷰 강제
+    container.style.left = '0';
+    container.style.width = '1024px'; // PC 데스크탑 뷰 강제 유지
+    container.style.backgroundColor = '#ffffff';
+    container.style.zIndex = '999998'; // 오버레이(999999) 보다 1 낮게 설정하여 가림
     
-    // 🚨 [핵심 해결 2] z-index를 1000으로 설정.
-    // 현재 떠있는 모달창(z-index: 2000) 뒤에 숨겨져서 사용자 눈에는 
-    // 보이지 않지만, 바닥(body)보다는 위에 있어 하얗게 가려지지 않습니다.
-    container.style.zIndex = '1000'; 
-    container.style.background = 'white';
-    container.style.padding = '40px';
-    container.style.boxSizing = 'border-box';
-
     container.appendChild(printNode);
     document.body.appendChild(container);
 
-    // 4. 버튼 상태 변경 (로딩 애니메이션)
-    const pdfBtns = document.querySelectorAll('.btn-pdf, .mobile-pdf-btn');
-    const originalTexts = [];
-    pdfBtns.forEach((btn, i) => {
-        originalTexts[i] = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PDF 생성 중...';
-        btn.disabled = true;
-    });
+    // 스크롤 위치 오류를 방지하기 위해 강제로 최상단 이동 (저장 후 원상복구됨)
+    const originalScrollY = window.scrollY;
+    window.scrollTo(0, 0);
 
     try {
         // html2pdf 옵션 설정
         const opt = {
-            margin:       [10, 10, 10, 10], // 상, 우, 하, 좌 마진 (mm)
+            margin:       [10, 10, 10, 10], 
             filename:     `스터디크랙_${reportTitle}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
+            image:        { type: 'jpeg', quality: 1.0 }, // 최고 화질 세팅
             html2canvas:  { 
-                scale: 2, // 해상도 2배 (고화질)
-                useCORS: true, // 외부 이미지(S3 등) 렌더링 허용
-                scrollY: 0,
-                windowWidth: 1024 // 모바일에서도 1024px 사이즈를 강제로 인식시킴
+                scale: 2, 
+                useCORS: true, 
+                scrollY: 0, 
+                scrollX: 0,
+                windowWidth: 1024 
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } // 페이지 잘림 방지
+            pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } 
         };
 
-        // PDF 생성 및 다운로드 대기
+        // PDF 생성 및 저장 대기
         await html2pdf().set(opt).from(container).save();
 
     } catch (error) {
         console.error("PDF 생성 실패:", error);
-        alert("PDF 생성 중 오류가 발생했습니다.");
+        alert("PDF 생성 중 알 수 없는 오류가 발생했습니다.");
     } finally {
-        // 5. 복제된 임시 컨테이너 삭제 및 버튼 상태 복구
+        // 5. 작업이 끝나면 생성했던 컨테이너와 오버레이 흔적 없이 삭제
         document.body.removeChild(container);
-        pdfBtns.forEach((btn, i) => {
-            btn.innerHTML = originalTexts[i];
-            btn.disabled = false;
-        });
+        document.body.removeChild(overlay);
+        window.scrollTo(0, originalScrollY); // 스크롤 원상 복구
     }
 }
 
