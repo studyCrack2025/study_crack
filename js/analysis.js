@@ -2287,98 +2287,122 @@ function openFeedbackModal(data) {
 }
 
 // ============================================================
-// PDF 다운로드 기능 (크기 축소 및 양옆 잘림 CSS 충돌 완벽 해결)
+// PDF 다운로드 기능 (크기축소, 뚝 끊김 방지, 워터마크 매 페이지 삽입 완벽 해결)
 // ============================================================
+
+// [보조 함수] S3 워터마크 이미지를 가져와 투명한 Base64 데이터로 변환
+function getWatermarkImage() {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        // 캐시 우회를 위해 쿼리스트링 추가
+        img.src = '/assets/backgrounds/bg_studycrack_logo.png?t=' + new Date().getTime();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.globalAlpha = 0.05; // 🎯 워터마크 투명도 (아주 연하게)
+            ctx.drawImage(img, 0, 0);
+            resolve({ dataUrl: canvas.toDataURL('image/png'), width: img.width, height: img.height });
+        };
+        img.onerror = () => resolve(null);
+    });
+}
+
 async function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
 
-    if (reportElement.querySelector('.pdf-loading-spinner') || reportElement.querySelector('.is-rendering')) {
-        alert("튜터의 첨부 문서를 고화질 이미지로 변환 중입니다.\n화면에 문서가 모두 나타난 후 다시 클릭해주세요.");
+    if (reportElement.querySelector('.pdf-loading-spinner')) {
+        alert("튜터 첨부파일을 렌더링 중입니다. 잠시 후 다시 클릭해주세요.");
         return;
     }
 
-    // 로딩 오버레이 띄우기 (화면 가림막)
+    // 1. 유저 눈을 가려줄 로딩 오버레이
     const loadingOverlay = document.createElement('div');
     loadingOverlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.95); z-index:999999; display:flex; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(5px);';
     loadingOverlay.innerHTML = `
         <i class="fas fa-spinner fa-spin fa-3x" style="color:#2563eb; margin-bottom:20px;"></i>
         <h2 style="color:#1e293b; font-weight:800; margin-bottom:10px;">PDF 리포트 생성 중...</h2>
-        <p style="color:#64748b;">고화질 렌더링 작업으로 인해 몇 초 정도 소요될 수 있습니다.</p>
+        <p style="color:#64748b;">(용량에 따라 최대 10초 정도 소요될 수 있습니다)</p>
     `;
     document.body.appendChild(loadingOverlay);
 
-    const controls = reportElement.querySelector('.doc-controls');
-    const mobileMsg = reportElement.querySelector('.mobile-only-msg');
-    if (controls) controls.style.display = 'none';
-    if (mobileMsg) mobileMsg.style.display = 'none';
+    // 2. CSS 간섭을 피할 캡처 전용 거대 컨테이너 생성 (1024px)
+    const printContainer = document.createElement('div');
+    // 화면 뒤(z-index: 1000)에 두지만, 오버레이(999999)가 가려주어 유저에겐 안 보임
+    printContainer.style.cssText = 'position:absolute; top:0; left:0; width:1024px; background:#ffffff; z-index:1000; padding:40px; box-sizing:border-box;';
 
-    const modal = document.getElementById('feedbackModal');
-    const modalContent = modal.querySelector('.custom-modal-content');
-    const modalBody = document.getElementById('modalContent');
-    
-    // 원상 복구를 위한 기존 스타일 백업 (cssText로 통째로 백업)
-    const origModalStyle = modal.style.cssText;
-    const origContentStyle = modalContent.style.cssText;
-    const origBodyStyle = modalBody.style.cssText;
-    const origReportStyle = reportElement.style.cssText;
+    // 3. 리포트 복제 및 불필요 요소 제거
+    const clone = reportElement.cloneNode(true);
+    const controls = clone.querySelector('.doc-controls');
+    const mobileMsg = clone.querySelector('.mobile-only-msg');
+    if (controls) controls.remove();
+    if (mobileMsg) mobileMsg.remove();
 
-    // 🚨 1. 양옆 잘림의 주범인 '중앙 정렬' 강제 해제 (좌측 상단에 딱 붙임)
-    modal.style.justifyContent = 'flex-start';
-    modal.style.alignItems = 'flex-start';
-    modal.style.overflow = 'visible';
+    // 🚨 [핵심 1 & 2] 기존 엉망이었던 CSS 워터마크 강제 삭제 + 상자 뚝 잘림 방지 스타일 주입
+    const styleFix = document.createElement('style');
+    styleFix.innerHTML = `
+        /* 기존 CSS 워터마크 삭제 */
+        .modal-document::after { display: none !important; }
+        /* 뚝 끊김 방지: 박스 내부에서 페이지 넘어가는 것 금지 */
+        .doc-matched-box { page-break-inside: avoid !important; break-inside: avoid !important; margin-bottom: 30px !important; }
+        /* 전체 문서 제약 해제 */
+        .modal-document { padding: 0 !important; min-height: auto !important; }
+    `;
+    clone.appendChild(styleFix);
+    printContainer.appendChild(clone);
+    document.body.appendChild(printContainer);
 
-    // 🚨 2. 부모 컨테이너(custom-modal-content)가 900px로 옥죄는 것 강제 해제
-    modalContent.style.maxWidth = 'none';
-    modalContent.style.width = 'auto';
-    modalContent.style.margin = '0'; // 중앙 정렬용 마진 해제
-    modalContent.style.overflow = 'visible';
-    modalContent.style.maxHeight = 'none';
-
-    modalBody.style.overflow = 'visible';
-    modalBody.style.maxHeight = 'none';
-    
-    // 🚨 3. 리포트 본문을 1150px로 넓힘 (A4 폭에 들어가면 약 75%로 자동 축소됨)
-    reportElement.style.width = '1150px';
-    reportElement.style.margin = '0';
-    reportElement.classList.add('pdf-rendering');
-
-    // 변경된 레이아웃이 화면에 적용될 수 있도록 0.3초 대기
+    // 렌더링 안정화 딜레이
     await new Promise(resolve => setTimeout(resolve, 300));
 
     try {
+        // 워터마크 이미지 미리 가져오기
+        const logoData = await getWatermarkImage();
+
+        // 🚨 [핵심 3] html2pdf 옵션 설정
         const opt = {
-            margin:       [10, 10, 10, 10], 
+            margin:       [15, 10, 15, 10], // 상/하 여백을 줘서 숨통 트이기
             filename:     `스터디크랙_${reportTitle}.pdf`,
             image:        { type: 'jpeg', quality: 1.0 }, 
             html2canvas:  { 
                 scale: 2, 
-                useCORS: true, 
-                scrollY: 0,
-                scrollX: 0,
-                windowWidth: 1150 // 🚨 요소 너비와 똑같이 1150으로 맞춰서 빈 공간/잘림 방지
+                useCORS: true,
+                windowWidth: 1024 // 1024 도화지를 A4(210mm)에 구겨넣어 자연스럽게 75% 축소 유도
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } 
+            // pagebreak 모듈을 적극 개입시켜 박스가 썰리는 현상 방지
+            pagebreak:    { mode: ['css', 'legacy'], avoid: ['.doc-matched-box', '.doc-header'] }
         };
 
-        await html2pdf().set(opt).from(reportElement).save();
+        // PDF 생성 -> 매 페이지 워터마크 삽입 -> 최종 저장
+        await html2pdf().set(opt).from(printContainer).toPdf().get('pdf').then((pdf) => {
+            const totalPages = pdf.internal.getNumberOfPages();
+            
+            // 🚨 [핵심 4] 생성된 PDF의 "모든 페이지"를 순회하며 정중앙에 로고 도장 찍기
+            for (let i = 1; i <= totalPages; i++) {
+                pdf.setPage(i);
+                if (logoData) {
+                    // A4 너비: 210mm, 높이: 297mm
+                    const targetWidth = 140; // 로고 너비를 140mm로 설정
+                    const targetHeight = (logoData.height / logoData.width) * targetWidth; // 비율에 맞게 높이 계산
+                    
+                    const xPos = (210 - targetWidth) / 2;
+                    const yPos = (297 - targetHeight) / 2;
+                    
+                    pdf.addImage(logoData.dataUrl, 'PNG', xPos, yPos, targetWidth, targetHeight);
+                }
+            }
+        }).save();
 
     } catch (error) {
         console.error("PDF 생성 실패:", error);
         alert("PDF 생성 중 오류가 발생했습니다.");
     } finally {
-        if (controls) controls.style.display = '';
-        if (mobileMsg) mobileMsg.style.display = '';
-        
-        // 🚨 4. 건드렸던 모든 스타일을 원래대로 완벽하게 복구
-        reportElement.style.cssText = origReportStyle;
-        reportElement.classList.remove('pdf-rendering');
-        
-        modal.style.cssText = origModalStyle;
-        modalContent.style.cssText = origContentStyle;
-        modalBody.style.cssText = origBodyStyle;
-
+        // 청소: 작업용 컨테이너와 오버레이 폐기
+        document.body.removeChild(printContainer);
         document.body.removeChild(loadingOverlay);
     }
 }
