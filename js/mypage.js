@@ -1,5 +1,4 @@
 // js/mypage.js
-const USER_API_URL = CONFIG.api.user; // API URL 누락분 추가
 const FILE_API_URL = CONFIG.api.file;
 
 let currentUserTier = 'free';
