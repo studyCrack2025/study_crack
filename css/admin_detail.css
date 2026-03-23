@@ -57,14 +57,29 @@ html, body { height: auto !important; min-height: 100vh !important; overflow-y: 
 .detail-label { color: #94a3b8; font-size: 0.85rem; font-weight: 600; }
 .detail-value { font-size: 1.05rem; font-weight: 600; color: #334155; }
 
-/* 목표 대학 */
-.univ-summary-section { margin-top: 30px; background: white; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0; }
-.univ-summary-section h4 { margin: 0 0 15px 0; color: #1e293b; font-size: 1.1rem; }
-.target-univ-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
-.target-univ-item { background: #f8fafc; border: 1px solid #cbd5e1; padding: 15px; border-radius: 8px; color: #334155; display: flex; flex-direction: column; gap: 5px; }
-.target-univ-item strong { font-size: 1rem; color: #1e293b; }
-.target-univ-item .major { font-size: 0.85rem; color: #64748b; }
-.target-univ-item .date { font-size: 0.75rem; color: #94a3b8; margin-top: 5px; border-top: 1px dashed #e2e8f0; padding-top: 5px; }
+/* 목표 대학 요약 섹션 컨테이너 */
+.univ-summary-section { margin-top: 30px; background: #ffffff; padding: 30px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+.univ-summary-section h4 { margin: 0 0 20px 0; color: #0f172a; font-size: 1.2rem; font-weight: 800; }
+.target-univ-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
+
+/* 개별 대학 카드 디자인 및 호버 효과 */
+.target-univ-item { background: #ffffff; border: 1px solid #e2e8f0; border-left: 4px solid #3b82f6; padding: 20px; border-radius: 12px; color: #334155; display: flex; flex-direction: column; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02); transition: all 0.25s ease; position: relative; }
+.target-univ-item:hover { transform: translateY(-4px); box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.08); border-color: #cbd5e1; }
+
+/* 타이포그래피 및 뱃지 스타일 */
+.target-univ-item strong { font-size: 1.15rem; color: #1e293b; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; }
+.target-univ-item .major { font-size: 0.85rem; color: #475569; font-weight: 600; background: #f1f5f9; padding: 5px 10px; border-radius: 6px; align-self: flex-start; margin-bottom: 15px; border: 1px solid #e2e8f0; }
+.target-univ-item .date { font-size: 0.75rem; color: #94a3b8; margin-top: auto; border-top: 1px dashed #e2e8f0; padding-top: 12px; display: flex; align-items: center; justify-content: flex-end; font-weight: 500; }
+
+/* 시뮬레이션 결과 박스 (JS 연동) */
+.sim-summary-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 15px; }
+.sim-summary-box.empty { background: transparent; border: 1px dashed #cbd5e1; }
+.sim-exam-label { font-size: 0.75rem; color: #64748b; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 4px; }
+.sim-score-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 6px; }
+.sim-score-row:last-child { margin-bottom: 0; }
+.sim-score-row span { color: #64748b; font-weight: 500; }
+.sim-score-row strong { color: #1e293b; font-weight: 800; }
+.sim-highlight { color: #ef4444; font-weight: 700; background: #fef2f2; padding: 3px 8px; border-radius: 6px; border: 1px solid #fecaca; }
 
 /* [주간 점검 & 성적] */
 .consult-header { margin-bottom: 25px; border-bottom: 2px solid #f1f5f9; padding-bottom: 15px; }
