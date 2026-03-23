@@ -2377,7 +2377,7 @@ function downloadReportPDF(reportTitle) {
                 console.error("인쇄 실행 실패:", e);
                 alert("인쇄를 실행할 수 없습니다. 브라우저 설정을 확인해 주세요.");
             }
-        }, 250); 
+        }, 500); 
     }
 
     function checkAllImagesLoaded() {
