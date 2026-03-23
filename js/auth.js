@@ -32,7 +32,6 @@ async function apiFetch(url, options = {}) {
                 // 현재 페이지가 로그인/회원가입/메인 페이지가 아닐 때만 튕겨냄 (무한 루프 방지)
                 const currentPath = window.location.pathname;
                 if (!['/login', '/signup', '/'].includes(currentPath)) {
-                    alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
                     localStorage.clear();
                     sessionStorage.clear();
                     window.location.href = '/login'; 

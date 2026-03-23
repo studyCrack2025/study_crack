@@ -2145,7 +2145,6 @@ function openFeedbackModal(data) {
                     <i class="fas fa-paperclip" style="color:#3b82f6;"></i> 5. 주간 플래너 코칭 & 첨삭
                 </div>
                 <div class="doc-matched-body allow-page-break-body" style="padding:25px;">
-                    <span class="doc-badge tutor-badge">Consultant 첨부 자료</span><br><br>
                     ${fileDisplayHtml}
                 </div>
             </div>
@@ -2319,9 +2318,6 @@ async function downloadReportPDF(reportTitle) {
                     .doc-matched-body { display: table; width: 100%; box-sizing: border-box; }
                     .doc-student-data { display: table-cell; width: 45%; vertical-align: top; padding: 20px; border-right: 1px dashed #cbd5e1; }
                     .doc-tutor-feedback { display: table-cell; width: 55%; vertical-align: top; padding: 20px; background: #fafafa; border-radius: 0 0 12px 0; }
-                    
-                    .doc-badge { display: inline-block; padding: 4px 10px; background: #f1f5f9; color: #475569; border-radius: 6px; font-size: 0.8rem; font-weight: 800; margin-bottom: 15px; border: 1px solid #e2e8f0; }
-                    .tutor-badge { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
                     
                     .doc-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-bottom: 10px; }
                     .doc-table th { padding: 8px 4px; border-bottom: 1px solid #e2e8f0; color: #94a3b8; }
