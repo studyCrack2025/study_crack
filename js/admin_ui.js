@@ -236,7 +236,9 @@ async function loadAdminStats(adminId) {
                         <tr>
                             <td><strong>${escapeHtml(s.name)}</strong><br><span style="font-size:0.8rem; color:#94a3b8;">${escapeHtml(s.email)}</span></td>
                             <td style="font-weight:bold; color:#1e293b;">${s.totalPaid.toLocaleString()}원</td>
-                            <td>${s.monthsActive}개월</td>
+                            
+                            <td>${s.weeksActive}주</td>
+                            
                             <td>${upsellHtml}</td>
                             <td style="text-align:center;">${refHtml}</td>
                         </tr>
