@@ -2287,7 +2287,7 @@ function openFeedbackModal(data) {
 }
 
 // ============================================================
-// PDF 다운로드 기능 (백지오류, 크기축소, 워터마크 사이즈 완벽 해결)
+// PDF 다운로드 기능 (근본적 Clone & Table 변환 기법 적용)
 // ============================================================
 
 // [보조 함수] S3 워터마크 이미지 로드 및 투명도 조절
@@ -2310,98 +2310,121 @@ function getWatermarkImage() {
 }
 
 async function downloadReportPDF(reportTitle) {
-    const reportElement = document.getElementById('pdfTargetDocument');
-    if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
+    const originalElement = document.getElementById('pdfTargetDocument');
+    if (!originalElement) return alert('리포트 내용을 찾을 수 없습니다.');
 
-    if (reportElement.querySelector('.pdf-loading-spinner')) {
+    if (originalElement.querySelector('.pdf-loading-spinner')) {
         alert("렌더링 중입니다. 잠시 후 다시 클릭해주세요.");
         return;
     }
 
-    // 1. 시각적 방해를 막기 위한 로딩 화면
+    // 1. 로딩 화면 띄우기
     const loadingOverlay = document.createElement('div');
     loadingOverlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.95); z-index:999999; display:flex; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(5px);';
     loadingOverlay.innerHTML = `
         <i class="fas fa-spinner fa-spin fa-3x" style="color:#2563eb; margin-bottom:20px;"></i>
         <h2 style="color:#1e293b; font-weight:800; margin-bottom:10px;">PDF 리포트 생성 중...</h2>
-        <p style="color:#64748b;">(레이아웃 최적화 및 고화질 변환 중)</p>
+        <p style="color:#64748b;">(A4 규격 변환 및 고화질 렌더링 중)</p>
     `;
     document.body.appendChild(loadingOverlay);
 
-    // 불필요한 UI 숨김
-    const controls = reportElement.querySelector('.doc-controls');
-    const mobileMsg = reportElement.querySelector('.mobile-only-msg');
-    if (controls) controls.style.display = 'none';
-    if (mobileMsg) mobileMsg.style.display = 'none';
+    // 2. 근본적 해결책: 문서 복제(Clone)
+    // 부모 모달의 CSS 영향을 받지 않도록 문서를 통째로 복사하여 독립적으로 만듭니다.
+    const clone = originalElement.cloneNode(true);
+    clone.id = 'pdfCloneDocument';
+    
+    // 복제본에서 불필요한 버튼 및 모바일 메세지 제거
+    const controls = clone.querySelector('.doc-controls');
+    const mobileMsg = clone.querySelector('.mobile-only-msg');
+    if (controls) controls.remove();
+    if (mobileMsg) mobileMsg.remove();
 
-    // DOM 요소 가져오기
-    const modal = document.getElementById('feedbackModal');
-    const modalContent = modal.querySelector('.custom-modal-content');
-    const modalBody = document.getElementById('modalContent');
+    // 3. A4 규격(약 800px)에 맞춰 화면 밖(최상단 0,0)에 깨끗하게 펼침 (좌측 잘림 원천 차단)
+    clone.style.cssText = `
+        position: absolute !important;
+        top: -9999px !important; /* 유저 눈에 보이지 않게 화면 위로 숨김 */
+        left: 0 !important;
+        width: 800px !important; 
+        max-width: 800px !important;
+        margin: 0 !important;
+        padding: 40px !important;
+        background: #ffffff !important;
+        box-sizing: border-box !important;
+        z-index: -1 !important;
+    `;
 
-    // 🌟 원상 복구를 위한 기존 스타일 백업
-    const backupStyles = {
-        modal: modal.style.cssText,
-        content: modalContent.style.cssText,
-        body: modalBody.style.cssText,
-        report: reportElement.style.cssText
-    };
-
-    // 🚨 [핵심 해결 1] 왼쪽/오른쪽 잘림 방지 (모달 좌표 초기화)
-    // 모달의 중앙 정렬을 강제로 풀고 화면 최상단 좌측(0,0)에 딱 붙입니다.
-    modal.style.cssText += 'position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; justify-content: flex-start !important; align-items: flex-start !important; padding: 0 !important; margin: 0 !important; overflow: visible !important;';
-    modalContent.style.cssText += 'position: absolute !important; top: 0 !important; left: 0 !important; max-width: none !important; width: 100% !important; margin: 0 !important; transform: none !important; overflow: visible !important;';
-    modalBody.style.cssText += 'padding: 0 !important; overflow: visible !important;';
-
-    // 🚨 [핵심 해결 1] 캡처할 타겟 문서 역시 800px로 고정하고 좌측 여백을 없앱니다.
-    reportElement.style.cssText += 'position: relative !important; top: 0 !important; left: 0 !important; width: 800px !important; max-width: 800px !important; margin: 0 !important; padding: 30px 40px !important; box-sizing: border-box !important; background: #ffffff !important;';
-
-    // 🚨 [핵심 해결 2] 첨부 이미지 잘림 방지 및 페이지 넘김 최적화 CSS 강제 주입
+    // 4. Flexbox의 저주를 풀고 Table 레이아웃으로 강제 변환하는 CSS 주입
+    // (html2canvas는 Flexbox의 페이지 넘김을 인식하지 못하지만 Table 구조는 완벽하게 인식합니다)
     const styleFix = document.createElement('style');
-    styleFix.id = 'pdf-style-fix';
     styleFix.innerHTML = `
-        .modal-document::after { display: none !important; }
-        .doc-matched-box { 
+        #pdfCloneDocument::after { display: none !important; }
+        
+        #pdfCloneDocument .doc-matched-box { 
             page-break-inside: avoid !important; 
             break-inside: avoid !important; 
-            margin-bottom: 25px !important; 
+            margin-bottom: 30px !important; 
             display: block !important; 
             width: 100% !important;
+            clear: both !important;
         }
-        .doc-header { page-break-inside: avoid !important; break-inside: avoid !important; }
+        #pdfCloneDocument .doc-header { 
+            page-break-inside: avoid !important; 
+            break-inside: avoid !important; 
+        }
         
-        /* Flex 레이아웃이 페이지 계산을 망치는 것을 방지 */
-        .doc-matched-body { display: block !important; width: 100% !important; }
-        .doc-student-data, .doc-tutor-feedback { 
-            display: block !important; 
+        /* 🔥 핵심: Flex 컨테이너를 Table로, 내부 요소를 Table-cell로 강제 변환 */
+        #pdfCloneDocument .doc-matched-body { 
+            display: table !important; 
             width: 100% !important; 
-            box-sizing: border-box !important; 
-            border-bottom: 1px dashed #cbd5e1 !important;
-            border-right: none !important;
+            border-collapse: collapse !important;
+            table-layout: fixed !important;
+        }
+        #pdfCloneDocument .doc-student-data, 
+        #pdfCloneDocument .doc-tutor-feedback { 
+            display: table-cell !important; 
+            vertical-align: top !important; 
+            float: none !important;
+        }
+        #pdfCloneDocument .doc-student-data { 
+            width: 45% !important; 
+            border-right: 1px dashed #cbd5e1 !important; 
+            border-bottom: none !important;
+        }
+        #pdfCloneDocument .doc-tutor-feedback { 
+            width: 55% !important; 
         }
         
-        /* 🔥 5번 항목 등 첨부 이미지(img)가 페이지 중간에 잘리는 현상 방지 */
-        #pdfTargetDocument img {
+        /* 5번 항목 등 이미지가 페이지 중간에 잘리는 현상 방지 */
+        #pdfCloneDocument img {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
             max-width: 100% !important;
             display: block !important;
+            margin: 0 auto !important;
+        }
+        
+        /* Q&A 섹션도 안전하게 Block으로 처리 */
+        #pdfCloneDocument .qna-pair-container {
+            display: block !important;
         }
     `;
-    document.head.appendChild(styleFix);
+    clone.appendChild(styleFix);
 
-    // 스크롤 최상단 고정
+    // 복제된 완벽한 문서를 body 최상단에 몰래 붙임
+    document.body.appendChild(clone);
+
+    // 혹시 모를 캡처 꼬임을 방지하기 위해 브라우저 스크롤을 최상단으로 임시 이동
     const originalScrollY = window.scrollY;
     window.scrollTo(0, 0);
 
-    // 브라우저가 새 레이아웃을 렌더링할 시간을 넉넉히 줍니다. (백지 방지)
-    await new Promise(resolve => setTimeout(resolve, 600));
+    // 복제된 DOM과 이미지가 완전히 렌더링되도록 충분한 시간(800ms) 대기
+    await new Promise(resolve => setTimeout(resolve, 800));
 
     try {
         const logoData = await getWatermarkImage();
 
         const opt = {
-            margin:       [15, 0, 15, 0], // 상/하 여백만 남기고 좌/우는 DOM padding으로 해결
+            margin:       [15, 0, 15, 0], 
             filename:     `스터디크랙_${reportTitle}.pdf`,
             image:        { type: 'jpeg', quality: 1.0 },
             html2canvas:  { 
@@ -2409,13 +2432,14 @@ async function downloadReportPDF(reportTitle) {
                 useCORS: true,
                 scrollY: 0,
                 scrollX: 0,
-                windowWidth: 800 // 타겟 문서와 동일하게 맞춤
+                windowWidth: 800 // 복제본의 width와 동일하게 매칭
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
             pagebreak:    { mode: ['css', 'legacy'] }
         };
 
-        await html2pdf().set(opt).from(reportElement).toPdf().get('pdf').then((pdf) => {
+        // 원본(originalElement)이 아닌 복제본(clone)을 타겟으로 PDF 생성!
+        await html2pdf().set(opt).from(clone).toPdf().get('pdf').then((pdf) => {
             const totalPages = pdf.internal.getNumberOfPages();
             
             for (let i = 1; i <= totalPages; i++) {
@@ -2436,21 +2460,15 @@ async function downloadReportPDF(reportTitle) {
         console.error("PDF 생성 실패:", error);
         alert("PDF 생성 중 오류가 발생했습니다.");
     } finally {
-        // UI 원상 복구
-        if (controls) controls.style.display = '';
-        if (mobileMsg) mobileMsg.style.display = '';
-        
-        const injectedStyle = document.getElementById('pdf-style-fix');
-        if (injectedStyle) injectedStyle.remove();
-
-        // 🌟 백업해둔 기존 스타일로 완벽하게 되돌림
-        modal.style.cssText = backupStyles.modal;
-        modalContent.style.cssText = backupStyles.content;
-        modalBody.style.cssText = backupStyles.body;
-        reportElement.style.cssText = backupStyles.report;
-
+        // 모든 작업이 끝나면 복제본 삭제 및 원래 스크롤 위치 복구
+        if (clone.parentNode) {
+            clone.parentNode.removeChild(clone);
+        }
         window.scrollTo(0, originalScrollY);
-        document.body.removeChild(loadingOverlay);
+        
+        if (loadingOverlay.parentNode) {
+            loadingOverlay.parentNode.removeChild(loadingOverlay);
+        }
     }
 }
 
