@@ -487,7 +487,7 @@
 
             let onlyNumbers = phoneRaw.replace(/[^0-9]/g, ''); 
             let cleanPhone = onlyNumbers.startsWith('010') ? '+82' + onlyNumbers.substring(1) : '+82' + onlyNumbers;
-            let dbFormattedPhone = onlyNumbers.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+            let dbFormattedPhone = onlyNumbers.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/, "$1-$2-$3");
 
             const attributeList = [
                 new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'gender', Value: gender }),
