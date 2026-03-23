@@ -2318,7 +2318,7 @@ async function downloadReportPDF(reportTitle) {
         return;
     }
 
-    // 1. 유저 눈을 완벽히 가려줄 로딩 화면 (화면 캡처 과정을 숨김)
+    // 1. 로딩 화면
     const loadingOverlay = document.createElement('div');
     loadingOverlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.95); z-index:999999; display:flex; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(5px);';
     loadingOverlay.innerHTML = `
@@ -2328,18 +2328,16 @@ async function downloadReportPDF(reportTitle) {
     `;
     document.body.appendChild(loadingOverlay);
 
-    // 불필요한 UI 임시 숨김
     const controls = reportElement.querySelector('.doc-controls');
     const mobileMsg = reportElement.querySelector('.mobile-only-msg');
     if (controls) controls.style.display = 'none';
     if (mobileMsg) mobileMsg.style.display = 'none';
 
-    // 🚨 2. 백지 오류 원인이던 CloneNode 방식을 폐기하고, 원본 DOM의 제약을 직접 풉니다.
     const modal = document.getElementById('feedbackModal');
     const modalContent = modal.querySelector('.custom-modal-content');
     const modalBody = document.getElementById('modalContent');
 
-    // 작업 후 완벽한 복구를 위해 기존 스타일 문자열 백업
+    // 복구를 위한 기존 스타일 백업
     const backupStyles = {
         modal: modal.style.cssText,
         content: modalContent.style.cssText,
@@ -2347,57 +2345,72 @@ async function downloadReportPDF(reportTitle) {
         report: reportElement.style.cssText
     };
 
-    // 부모 모달들이 화면을 짓누르는 것을 강제 해제 (overflow, max-width 무력화)
+    // 모달 제한 해제
     modal.style.cssText += 'justify-content: flex-start !important; align-items: flex-start !important; overflow: visible !important;';
     modalContent.style.cssText += 'max-width: none !important; width: auto !important; margin: 0 !important; overflow: visible !important; max-height: none !important;';
     modalBody.style.cssText += 'overflow: visible !important; max-height: none !important; padding: 0 !important;';
 
-    // 리포트 도화지 자체를 1366px로 확장 (A4에 담길 때 자동으로 75% 비율로 축소됨)
-    reportElement.style.cssText += 'width: 1366px !important; max-width: none !important; margin: 0 !important; padding: 40px 60px !important;';
+    // 🚨 수정 포인트 1: 너비를 1366px -> 800px로 변경. A4 세로 비율에 가장 안정적인 픽셀입니다.
+    reportElement.style.cssText += 'width: 800px !important; max-width: 800px !important; margin: 0 auto !important; padding: 30px !important; box-sizing: border-box !important;';
 
-    // 🚨 3. CSS 워터마크 삭제 및 뚝 끊김 방지(page-break-inside) 강제 주입
+    // 🚨 수정 포인트 2: PDF 변환 시에만 Flex를 Block으로 강제 전환하여 요소 중간이 찢어지는 현상 방지
     const styleFix = document.createElement('style');
     styleFix.id = 'pdf-style-fix';
     styleFix.innerHTML = `
         .modal-document::after { display: none !important; }
-        .doc-matched-box { page-break-inside: avoid !important; break-inside: avoid !important; margin-bottom: 30px !important; display: block !important; }
+        .doc-matched-box { 
+            page-break-inside: avoid !important; 
+            break-inside: avoid !important; 
+            margin-bottom: 25px !important; 
+            display: block !important; 
+            width: 100% !important;
+        }
         .doc-header { page-break-inside: avoid !important; break-inside: avoid !important; }
+        /* Flex 레이아웃 강제 해제 (페이지 찢어짐의 주범) */
+        .doc-matched-body { display: block !important; width: 100% !important; }
+        .doc-student-data, .doc-tutor-feedback { 
+            display: block !important; 
+            width: 100% !important; 
+            box-sizing: border-box !important; 
+            border-bottom: 1px dashed #cbd5e1 !important;
+            border-right: none !important;
+        }
     `;
     reportElement.appendChild(styleFix);
 
-    // 스크롤 최상단 고정 (캡처 꼬임 방지)
     const originalScrollY = window.scrollY;
     window.scrollTo(0, 0);
 
-    // 브라우저가 확장된 1366px 레이아웃을 다시 그릴 수 있도록 0.5초 대기 (백지 방지 핵심)
+    // DOM 렌더링 대기
     await new Promise(resolve => setTimeout(resolve, 500));
 
     try {
         const logoData = await getWatermarkImage();
 
+        // 🚨 수정 포인트 3: html2pdf 옵션 조정
+        // margin 좌우를 0으로 주고, DOM 자체의 padding(위에서 설정한 30px)으로 좌우 여백을 컨트롤해야 캔버스 스케일링 시 짤리지 않습니다.
         const opt = {
-            margin:       [15, 10, 15, 10], 
+            margin:       [15, 0, 15, 0], 
             filename:     `스터디크랙_${reportTitle}.pdf`,
-            image:        { type: 'jpeg', quality: 1.0 }, 
+            image:        { type: 'jpeg', quality: 1.0 },
             html2canvas:  { 
                 scale: 2, 
                 useCORS: true,
                 scrollY: 0,
                 scrollX: 0,
-                windowWidth: 1366 // 위에서 강제한 DOM 사이즈와 일치시킴
+                windowWidth: 800 // DOM 너비와 동일하게 설정
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
             pagebreak:    { mode: ['css', 'legacy'] }
         };
 
-        // 🚨 4. PDF 생성 및 워터마크 크기 수정 (140 -> 70으로 축소)
         await html2pdf().set(opt).from(reportElement).toPdf().get('pdf').then((pdf) => {
             const totalPages = pdf.internal.getNumberOfPages();
             
             for (let i = 1; i <= totalPages; i++) {
                 pdf.setPage(i);
                 if (logoData) {
-                    const targetWidth = 70; // 로고 너비를 70mm로 적당하게 조절
+                    const targetWidth = 70; // 로고 적정 너비
                     const targetHeight = (logoData.height / logoData.width) * targetWidth; 
                     
                     const xPos = (210 - targetWidth) / 2;
@@ -2412,14 +2425,13 @@ async function downloadReportPDF(reportTitle) {
         console.error("PDF 생성 실패:", error);
         alert("PDF 생성 중 오류가 발생했습니다.");
     } finally {
-        // UI 복구
         if (controls) controls.style.display = '';
         if (mobileMsg) mobileMsg.style.display = '';
         
         const injectedStyle = document.getElementById('pdf-style-fix');
         if (injectedStyle) injectedStyle.remove();
 
-        // 조작했던 원본 DOM 스타일을 백업본으로 완벽히 원상복구
+        // 스타일 원상 복구
         modal.style.cssText = backupStyles.modal;
         modalContent.style.cssText = backupStyles.content;
         modalBody.style.cssText = backupStyles.body;
