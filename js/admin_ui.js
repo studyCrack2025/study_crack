@@ -98,6 +98,10 @@ function showSection(sectionName) {
         document.getElementById('section-dashboard').classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     } 
+    else if (sectionName === 'advanced-stats') {
+        document.getElementById('section-advanced-stats').classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
     else if (sectionName === 'sales-chart') {
         document.getElementById('section-dashboard').classList.add('active');
         const anchor = document.getElementById('chart-section-anchor');
@@ -161,25 +165,38 @@ async function loadAdminStats(adminId) {
         if (!response.ok) throw new Error("서버 오류");
         const data = await response.json();
         
-        // 1. undefined 오류 수정 및 기본 지표 바인딩
+        // 1. 핵심 지표 3개 바인딩
         document.getElementById('totalStudents').innerText = `${data.totalStudents || 0}명`; 
         document.getElementById('totalRevenue').innerText = `${(data.totalRevenue || 0).toLocaleString()}원`;
         document.getElementById('monthlyRevenue').innerText = `${(data.monthlyRevenue || 0).toLocaleString()}원`;
 
-        // 2. 신규 심층 지표 바인딩 (데이터가 있을 경우에만)
-        if(data.advancedStats) {
-            document.getElementById('avgSubscription').innerText = `${data.advancedStats.avgSubscriptionMonths}개월`;
-            document.getElementById('arpu').innerText = `${data.advancedStats.arpu.toLocaleString()}원`;
-            document.getElementById('referralRate').innerText = `${data.advancedStats.referralRate}%`;
-            document.getElementById('upsellDays').innerText = `${data.advancedStats.upsell.avgUpsellDays}일`;
+        // 2. 심층 지표 상세 표(엑셀 형태) 렌더링
+        const tbody = document.getElementById('advancedStatsTableBody');
+        if (tbody && data.studentDetails) {
+            tbody.innerHTML = '';
+            if (data.studentDetails.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">결제 내역이 있는 학생이 없습니다.</td></tr>';
+            } else {
+                data.studentDetails.forEach(s => {
+                    const refHtml = s.referral === 'O' 
+                        ? '<span style="color:#3b82f6; font-weight:bold;">O</span>' 
+                        : '<span style="color:#94a3b8;">X</span>';
+                    
+                    const upsellHtml = s.upsellPath.includes('➔') 
+                        ? `<span style="color:#f59e0b; font-weight:bold;">${s.upsellPath}</span>` 
+                        : `<span style="color:#64748b;">${s.upsellPath}</span>`;
 
-            // 업셀링 건수 상세 내역
-            const up = data.advancedStats.upsell;
-            document.getElementById('upsellDetail').innerHTML = `
-                <div style="font-size:0.9rem; color:#475569; margin-bottom:4px;">🌱 Basic ➔ 📘 Std: <b>${up.basicToStd}건</b></div>
-                <div style="font-size:0.9rem; color:#475569; margin-bottom:4px;">📘 Std ➔ 🔥 Pro: <b>${up.stdToPro}건</b></div>
-                <div style="font-size:0.9rem; color:#475569;">🌱 Basic ➔ 🔥 Pro: <b>${up.basicToPro}건</b></div>
-            `;
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${escapeHtml(s.name)}</strong><br><span style="font-size:0.8rem; color:#94a3b8;">${escapeHtml(s.email)}</span></td>
+                            <td style="font-weight:bold; color:#1e293b;">${s.totalPaid.toLocaleString()}원</td>
+                            <td>${s.monthsActive}개월</td>
+                            <td>${upsellHtml}</td>
+                            <td style="text-align:center;">${refHtml}</td>
+                        </tr>
+                    `;
+                });
+            }
         }
 
         rawPaymentData = data.allPayments || [];
@@ -220,8 +237,9 @@ function aggregateData(payments, type) {
         if (type === 'week') {
             const year = date.getFullYear();
             const week = getWeekNumber(date);
-            key = `${year}-W${week}`; 
-            if (date >= oneWeekAgo) isIncludedInPieChart = true; // 원형 차트용 필터
+            const weekStr = week.toString().padStart(2, '0');
+            key = `${year}-W${weekStr}`; 
+            if (date >= oneWeekAgo) isIncludedInPieChart = true;
         } else if (type === 'month') {
             key = pay.date.substring(0, 7); 
             if (date >= oneMonthAgo) isIncludedInPieChart = true;

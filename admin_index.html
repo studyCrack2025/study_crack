@@ -35,8 +35,8 @@
                     <span class="arrow">▾</span>
                 </a>
                 <ul id="stats-submenu" class="submenu">
-                    <li><a href="#" onclick="showSection('dashboard')">전체 요약</a></li>
-                    <li><a href="#" onclick="showSection('sales-chart')">매출 분석</a></li>
+                    <li><a href="#" onclick="showSection('dashboard')">전체 요약 및 차트</a></li>
+                    <li><a href="#" onclick="showSection('advanced-stats')">심층 지표 상세 (표)</a></li>
                 </ul>
             </li>
 
@@ -97,7 +97,7 @@
             
             <div class="stats-cards">
                 <div class="card">
-                    <h3>총 가입 학생 (순수)</h3>
+                    <h3>총 가입 학생</h3>
                     <p id="totalStudents">0명</p>
                 </div>
                 <div class="card">
@@ -109,35 +109,7 @@
                     <p id="monthlyRevenue">0원</p>
                 </div>
             </div>
-
-            <div class="stats-cards">
-                <div class="card advance-card">
-                    <h3>회원 평균 이용 기간</h3>
-                    <p id="avgSubscription" class="text-blue">0개월</p>
-                </div>
-                <div class="card advance-card">
-                    <h3>고객 1인당 평균 매출 (ARPU)</h3>
-                    <p id="arpu" class="text-green">0원</p>
-                </div>
-                <div class="card advance-card">
-                    <h3>레퍼럴(추천) 이용 비율</h3>
-                    <p id="referralRate" class="text-purple">0%</p>
-                </div>
-            </div>
-
-            <div class="stats-cards" style="grid-template-columns: 1fr 1.5fr;">
-                <div class="card advance-card">
-                    <h3>평균 업셀링 소요 기간</h3>
-                    <p id="upsellDays" class="text-orange">0일</p>
-                </div>
-                <div class="card advance-card" style="display: flex; flex-direction: column; justify-content: center;">
-                    <h3>단계별 업셀링 전환 건수</h3>
-                    <div id="upsellDetail" style="margin-top: 15px; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                        데이터 로딩 중...
-                    </div>
-                </div>
-            </div>
-
+            
             <hr class="section-divider" style="margin: 40px 0; border: 0; border-top: 2px dashed #cbd5e1;">
 
             <div id="chart-section-anchor">
@@ -165,6 +137,31 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+        
+        <div id="section-advanced-stats" class="content-section">
+            <h1 class="page-title">📈 심층 지표 상세 데이터 (학생별)</h1>
+            <div class="matching-info-box" style="margin-bottom: 20px;">
+                <i class="fas fa-info-circle"></i> 
+                평균 이용 기간, 객단가(ARPU), 업셀링 내역이 어떻게 계산되었는지 개별 학생 데이터로 확인하실 수 있습니다.
+            </div>
+            
+            <div class="table-responsive">
+                <table class="student-table">
+                    <thead>
+                        <tr>
+                            <th>학생명 (이메일)</th>
+                            <th>누적 결제액 (객단가 기여)</th>
+                            <th>총 이용 개월 (LTV)</th>
+                            <th>업셀링 진행 경로</th>
+                            <th style="text-align:center;">레퍼럴(추천) 유입</th>
+                        </tr>
+                    </thead>
+                    <tbody id="advancedStatsTableBody">
+                        <tr><td colspan="5" class="empty-msg">데이터를 불러오는 중입니다...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
