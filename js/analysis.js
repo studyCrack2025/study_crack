@@ -2287,22 +2287,21 @@ function openFeedbackModal(data) {
 }
 
 // ============================================================
-// PDF 다운로드 기능 (크기축소, 뚝 끊김 방지, 워터마크 매 페이지 삽입 완벽 해결)
+// PDF 다운로드 기능 (백지오류, 크기축소, 워터마크 사이즈 완벽 해결)
 // ============================================================
 
-// [보조 함수] S3 워터마크 이미지를 가져와 투명한 Base64 데이터로 변환
+// [보조 함수] S3 워터마크 이미지 로드 및 투명도 조절
 function getWatermarkImage() {
     return new Promise((resolve) => {
         const img = new Image();
         img.crossOrigin = 'Anonymous';
-        // 캐시 우회를 위해 쿼리스트링 추가
         img.src = '/assets/backgrounds/bg_studycrack_logo.png?t=' + new Date().getTime();
         img.onload = () => {
             const canvas = document.createElement('canvas');
             canvas.width = img.width;
             canvas.height = img.height;
             const ctx = canvas.getContext('2d');
-            ctx.globalAlpha = 0.05; // 🎯 워터마크 투명도 (아주 연하게)
+            ctx.globalAlpha = 0.05; // 연한 투명도 유지
             ctx.drawImage(img, 0, 0);
             resolve({ dataUrl: canvas.toDataURL('image/png'), width: img.width, height: img.height });
         };
@@ -2315,79 +2314,91 @@ async function downloadReportPDF(reportTitle) {
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
 
     if (reportElement.querySelector('.pdf-loading-spinner')) {
-        alert("튜터 첨부파일을 렌더링 중입니다. 잠시 후 다시 클릭해주세요.");
+        alert("렌더링 중입니다. 잠시 후 다시 클릭해주세요.");
         return;
     }
 
-    // 1. 유저 눈을 가려줄 로딩 오버레이
+    // 1. 유저 눈을 완벽히 가려줄 로딩 화면 (화면 캡처 과정을 숨김)
     const loadingOverlay = document.createElement('div');
     loadingOverlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.95); z-index:999999; display:flex; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(5px);';
     loadingOverlay.innerHTML = `
         <i class="fas fa-spinner fa-spin fa-3x" style="color:#2563eb; margin-bottom:20px;"></i>
         <h2 style="color:#1e293b; font-weight:800; margin-bottom:10px;">PDF 리포트 생성 중...</h2>
-        <p style="color:#64748b;">(용량에 따라 최대 10초 정도 소요될 수 있습니다)</p>
+        <p style="color:#64748b;">(페이지 최적화 및 고화질 변환 중)</p>
     `;
     document.body.appendChild(loadingOverlay);
 
-    // 2. CSS 간섭을 피할 캡처 전용 거대 컨테이너 생성 (1024px)
-    const printContainer = document.createElement('div');
-    // 화면 뒤(z-index: 1000)에 두지만, 오버레이(999999)가 가려주어 유저에겐 안 보임
-    printContainer.style.cssText = 'position:absolute; top:0; left:0; width:1024px; background:#ffffff; z-index:1000; padding:40px; box-sizing:border-box;';
+    // 불필요한 UI 임시 숨김
+    const controls = reportElement.querySelector('.doc-controls');
+    const mobileMsg = reportElement.querySelector('.mobile-only-msg');
+    if (controls) controls.style.display = 'none';
+    if (mobileMsg) mobileMsg.style.display = 'none';
 
-    // 3. 리포트 복제 및 불필요 요소 제거
-    const clone = reportElement.cloneNode(true);
-    const controls = clone.querySelector('.doc-controls');
-    const mobileMsg = clone.querySelector('.mobile-only-msg');
-    if (controls) controls.remove();
-    if (mobileMsg) mobileMsg.remove();
+    // 🚨 2. 백지 오류 원인이던 CloneNode 방식을 폐기하고, 원본 DOM의 제약을 직접 풉니다.
+    const modal = document.getElementById('feedbackModal');
+    const modalContent = modal.querySelector('.custom-modal-content');
+    const modalBody = document.getElementById('modalContent');
 
-    // 🚨 [핵심 1 & 2] 기존 엉망이었던 CSS 워터마크 강제 삭제 + 상자 뚝 잘림 방지 스타일 주입
+    // 작업 후 완벽한 복구를 위해 기존 스타일 문자열 백업
+    const backupStyles = {
+        modal: modal.style.cssText,
+        content: modalContent.style.cssText,
+        body: modalBody.style.cssText,
+        report: reportElement.style.cssText
+    };
+
+    // 부모 모달들이 화면을 짓누르는 것을 강제 해제 (overflow, max-width 무력화)
+    modal.style.cssText += 'justify-content: flex-start !important; align-items: flex-start !important; overflow: visible !important;';
+    modalContent.style.cssText += 'max-width: none !important; width: auto !important; margin: 0 !important; overflow: visible !important; max-height: none !important;';
+    modalBody.style.cssText += 'overflow: visible !important; max-height: none !important; padding: 0 !important;';
+
+    // 리포트 도화지 자체를 1366px로 확장 (A4에 담길 때 자동으로 75% 비율로 축소됨)
+    reportElement.style.cssText += 'width: 1366px !important; max-width: none !important; margin: 0 !important; padding: 40px 60px !important;';
+
+    // 🚨 3. CSS 워터마크 삭제 및 뚝 끊김 방지(page-break-inside) 강제 주입
     const styleFix = document.createElement('style');
+    styleFix.id = 'pdf-style-fix';
     styleFix.innerHTML = `
-        /* 기존 CSS 워터마크 삭제 */
         .modal-document::after { display: none !important; }
-        /* 뚝 끊김 방지: 박스 내부에서 페이지 넘어가는 것 금지 */
-        .doc-matched-box { page-break-inside: avoid !important; break-inside: avoid !important; margin-bottom: 30px !important; }
-        /* 전체 문서 제약 해제 */
-        .modal-document { padding: 0 !important; min-height: auto !important; }
+        .doc-matched-box { page-break-inside: avoid !important; break-inside: avoid !important; margin-bottom: 30px !important; display: block !important; }
+        .doc-header { page-break-inside: avoid !important; break-inside: avoid !important; }
     `;
-    clone.appendChild(styleFix);
-    printContainer.appendChild(clone);
-    document.body.appendChild(printContainer);
+    reportElement.appendChild(styleFix);
 
-    // 렌더링 안정화 딜레이
-    await new Promise(resolve => setTimeout(resolve, 300));
+    // 스크롤 최상단 고정 (캡처 꼬임 방지)
+    const originalScrollY = window.scrollY;
+    window.scrollTo(0, 0);
+
+    // 브라우저가 확장된 1366px 레이아웃을 다시 그릴 수 있도록 0.5초 대기 (백지 방지 핵심)
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     try {
-        // 워터마크 이미지 미리 가져오기
         const logoData = await getWatermarkImage();
 
-        // 🚨 [핵심 3] html2pdf 옵션 설정
         const opt = {
-            margin:       [15, 10, 15, 10], // 상/하 여백을 줘서 숨통 트이기
+            margin:       [15, 10, 15, 10], 
             filename:     `스터디크랙_${reportTitle}.pdf`,
             image:        { type: 'jpeg', quality: 1.0 }, 
             html2canvas:  { 
                 scale: 2, 
                 useCORS: true,
-                windowWidth: 1024 // 1024 도화지를 A4(210mm)에 구겨넣어 자연스럽게 75% 축소 유도
+                scrollY: 0,
+                scrollX: 0,
+                windowWidth: 1366 // 위에서 강제한 DOM 사이즈와 일치시킴
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            // pagebreak 모듈을 적극 개입시켜 박스가 썰리는 현상 방지
-            pagebreak:    { mode: ['css', 'legacy'], avoid: ['.doc-matched-box', '.doc-header'] }
+            pagebreak:    { mode: ['css', 'legacy'] }
         };
 
-        // PDF 생성 -> 매 페이지 워터마크 삽입 -> 최종 저장
-        await html2pdf().set(opt).from(printContainer).toPdf().get('pdf').then((pdf) => {
+        // 🚨 4. PDF 생성 및 워터마크 크기 수정 (140 -> 70으로 축소)
+        await html2pdf().set(opt).from(reportElement).toPdf().get('pdf').then((pdf) => {
             const totalPages = pdf.internal.getNumberOfPages();
             
-            // 🚨 [핵심 4] 생성된 PDF의 "모든 페이지"를 순회하며 정중앙에 로고 도장 찍기
             for (let i = 1; i <= totalPages; i++) {
                 pdf.setPage(i);
                 if (logoData) {
-                    // A4 너비: 210mm, 높이: 297mm
-                    const targetWidth = 140; // 로고 너비를 140mm로 설정
-                    const targetHeight = (logoData.height / logoData.width) * targetWidth; // 비율에 맞게 높이 계산
+                    const targetWidth = 70; // 로고 너비를 70mm로 적당하게 조절
+                    const targetHeight = (logoData.height / logoData.width) * targetWidth; 
                     
                     const xPos = (210 - targetWidth) / 2;
                     const yPos = (297 - targetHeight) / 2;
@@ -2401,8 +2412,20 @@ async function downloadReportPDF(reportTitle) {
         console.error("PDF 생성 실패:", error);
         alert("PDF 생성 중 오류가 발생했습니다.");
     } finally {
-        // 청소: 작업용 컨테이너와 오버레이 폐기
-        document.body.removeChild(printContainer);
+        // UI 복구
+        if (controls) controls.style.display = '';
+        if (mobileMsg) mobileMsg.style.display = '';
+        
+        const injectedStyle = document.getElementById('pdf-style-fix');
+        if (injectedStyle) injectedStyle.remove();
+
+        // 조작했던 원본 DOM 스타일을 백업본으로 완벽히 원상복구
+        modal.style.cssText = backupStyles.modal;
+        modalContent.style.cssText = backupStyles.content;
+        modalBody.style.cssText = backupStyles.body;
+        reportElement.style.cssText = backupStyles.report;
+
+        window.scrollTo(0, originalScrollY);
         document.body.removeChild(loadingOverlay);
     }
 }
