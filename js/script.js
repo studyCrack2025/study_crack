@@ -27,7 +27,7 @@ async function apiFetch(url, options = {}) {
                 window.location.href = '/login'; 
                 return Promise.reject(new Error("Auth expired")); 
             }
-            throw new Error(`HTTP Error: ${response.status}`);
+            throw new Error(`서버 통신 오류 (상태 코드: ${response.status})`);
         }
         return response;
     } catch (error) {
@@ -222,7 +222,6 @@ function openFeaturePreview(imgBase, title) {
     if(previewTitle) previewTitle.innerText = title;
 
     previewImg.onerror = function() {
-        console.log("이미지 로드 실패, 대체 화면 표시: " + imgPath);
         imgWrapper.innerHTML = `
             <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:rgba(255,255,255,0.5); gap:15px;">
                 <i class="fas fa-image" style="font-size:3rem;"></i>
