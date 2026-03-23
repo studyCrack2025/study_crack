@@ -6,6 +6,36 @@
 const AUTH_API_URL = CONFIG.api.auth;
 const NOTI_API_URL = CONFIG.api.noti;
 
+// 💡 공통 apiFetch 함수 (accessToken 기반 통합)
+async function apiFetch(url, options = {}) {
+    const token = localStorage.getItem('accessToken');
+    const defaultHeaders = {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` })
+    };
+
+    options.headers = { ...defaultHeaders, ...options.headers };
+
+    try {
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/login'; 
+                return Promise.reject(new Error("Auth expired")); 
+            }
+            throw new Error(`HTTP Error: ${response.status}`);
+        }
+        return response;
+    } catch (error) {
+        console.error("API 통신 실패:", error);
+        throw error; 
+    }
+}
+
 // 모달 열기
 function openModal(type) {
     const modal = document.getElementById(type + '-modal');
@@ -41,7 +71,6 @@ const COURSE_DATA = {
         title: "MBTI SOLUTION",
         price: "무료",
         desc: "탐구 MBTI 결과를 분석해 나의 학습 성향을 파악하고, 성적 상승을 위한 최적의 맞춤 공부법을 제안합니다.",
-        // MBTI는 클릭 기능 없음 (기존 유지)
         list: [
             { text: "탐구 MBTI 기반 학습 성향 정밀 진단" },
             { text: "유형별 학습 강점 및 취약점 분석 리포트" },
@@ -55,7 +84,6 @@ const COURSE_DATA = {
         price: `<span class="original-price">49,000원</span> <span class="discount-price">특별 할인가 <strong class="highlight-price">25,000원</strong></span>`,        
         desc: "내 점수와 목표 대학 합격선 사이의 거리를 정밀하게 진단합니다.",
         list: [
-            // 수정: 목표 대학 최대 18개 명시
             { text: "개인 성적 및 목표 대학 환산점수 계산 (최대 18개)" },
             { 
                 text: "합격 컷 대비 거리 분석 (위험도 경고)", 
@@ -83,7 +111,6 @@ const COURSE_DATA = {
                 action: "preview", 
                 imgBase: "feat_standard_2" 
             },
-            // 수정: 플래너 제공 문구 추가
             { 
                 text: "주 1회 전략 실행 학습 플래너 코칭 및 플래너 제공", 
                 action: "preview", 
@@ -101,9 +128,7 @@ const COURSE_DATA = {
             { text: "STANDARD 포함" },
             { text: "최소 점수 상승 조합 최적화 알고리즘" },
             { text: "내 점수에 가장 유리한 대학 역추적" },
-            // 수정: 플래너 제공 문구 추가
             { text: "주 1회 심층 전략 코칭 및 플래너 제공" },
-            // PRO 전용 추가 링크 (다운로드 기능)
             { 
                 text: "PRO 전용 보고서 미리보기 📄", 
                 action: "download", 
@@ -119,30 +144,23 @@ function selectCourse(tier) {
     const data = COURSE_DATA[tier];
     if (!data) return;
 
-    // 탭 활성화 처리
     document.querySelectorAll('.course-tab-btn').forEach(btn => btn.classList.remove('active'));
     const activeBtn = document.querySelector(`.course-tab-btn[data-tier="${tier}"]`);
     if(activeBtn) activeBtn.classList.add('active');
 
-    // 배경 이미지 변경
     const overlay = document.querySelector('.curriculum-bg-overlay');
     if (overlay) {
         overlay.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.8)), url('${data.bg}')`;
     }
 
-    // 프리뷰 패널 닫기 (탭 변경 시 초기화)
     closeFeaturePreview();
 
-    // 상세 내용 렌더링
     const detailView = document.getElementById('courseDetailView');
     if (detailView) {
-        // 리스트 아이템 HTML 생성
         const listHtml = data.list.map(item => {
             const checkColor = tier === 'black' ? '#d4af37' : '#4ade80';
             
-            // 액션이 있는 경우 (Preview 또는 Download)
             if (item.action) {
-                // onclick 핸들러 생성
                 let clickHandler = "";
                 if (item.action === "preview") {
                     clickHandler = `onclick="openFeaturePreview('${item.imgBase}', '${item.text}')"`;
@@ -158,7 +176,6 @@ function selectCourse(tier) {
                     </li>
                 `;
             } else {
-                // 일반 항목
                 return `
                     <li>
                         <i class="fas fa-check-circle" style="color:${checkColor}"></i>
@@ -183,43 +200,29 @@ function selectCourse(tier) {
 function openFeaturePreview(imgBase, title) {
     const panel = document.getElementById('featurePreviewPanel');
     const previewTitle = document.getElementById('previewTitle');
-    
-    // 이미지 감싸는 부모 요소 선택
     const imgWrapper = document.querySelector('.preview-img-wrapper');
 
     if (!panel || !imgWrapper) return;
 
-    // 매번 클릭할 때마다 이미지 태그를 새로 리셋합니다.
     imgWrapper.innerHTML = '<img id="previewImage" src="" alt="기능 예시 이미지" style="width:100%; height:100%; object-fit:contain;">';
-    
-    // 리셋된 이미지 태그 다시 선택
     const previewImg = document.getElementById('previewImage');
 
-    // 모바일 감지 (화면 너비 900px 이하)
     const isMobile = window.innerWidth <= 900;
     
-    // 이미지 경로 생성 로직
     let imgPath = "";
     if (isMobile) {
-        // 예: feat_basic_1 -> feat_basic_mobile_1.png
         const parts = imgBase.split('_');
         const number = parts.pop(); 
         const base = parts.join('_'); 
         imgPath = `assets/features/${base}_mobile_${number}.png`;
     } else {
-        // 예: feat_basic_1.png
         imgPath = `assets/features/${imgBase}.png`;
     }
 
-    // 제목 설정
     if(previewTitle) previewTitle.innerText = title;
 
-    // 이미지 로드 실패 시 alert 대신 UI 변경
     previewImg.onerror = function() {
-        // 콘솔에만 에러 로그 남김 (사용자 방해 X)
         console.log("이미지 로드 실패, 대체 화면 표시: " + imgPath);
-        
-        // 이미지 태그를 안내 문구로 교체
         imgWrapper.innerHTML = `
             <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:rgba(255,255,255,0.5); gap:15px;">
                 <i class="fas fa-image" style="font-size:3rem;"></i>
@@ -228,10 +231,7 @@ function openFeaturePreview(imgBase, title) {
         `;
     };
 
-    // 이미지 경로 할당 (이 시점에 로딩 시작)
     previewImg.src = imgPath;
-
-    // 패널 열기 애니메이션
     panel.classList.add('active');
 }
 
@@ -246,10 +246,9 @@ function downloadProReport(filePath) {
     const confirmDownload = confirm("PRO 전용 분석 보고서 샘플을 다운로드 하시겠습니까?");
     
     if (confirmDownload) {
-        // 가상의 링크를 생성하여 다운로드 트리거
         const link = document.createElement('a');
         link.href = filePath;
-        link.download = 'StudyCrack_Pro_Report_Sample.pdf'; // 다운로드될 파일명
+        link.download = 'StudyCrack_Pro_Report_Sample.pdf'; 
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -261,30 +260,18 @@ function downloadProReport(filePath) {
    3. 후기 데이터 로직
    ========================================= */
 async function getUserReviews() {
-    const token = localStorage.getItem('idToken');
-
     try {
-        const response = await fetch(AUTH_API_URL, {
+        const response = await apiFetch(AUTH_API_URL, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
             body: JSON.stringify({ type: 'get_user_reviews' })
         });
 
-        if (!response.ok) {
-            throw new Error(`서버 응답 오류: ${response.status}`);
-        }
-
         const data = await response.json();
         
-        // 2. 데이터 형식 확인 및 반환
-        // Case A: 바로 배열이 오는 경우
         if (Array.isArray(data)) {
             return data;
         } 
-        // Case B: AWS Lambda Proxy 응답 (body 안에 문자열로 들어있는 경우)
+        
         if (data.body) {
             const parsedBody = JSON.parse(data.body);
             if (Array.isArray(parsedBody)) {
@@ -292,14 +279,12 @@ async function getUserReviews() {
             }
         }
 
-        // 형식이 맞지 않는 경우
         console.warn("⚠️ 서버 응답 형식이 올바르지 않습니다:", data);
         return [];
 
     } catch (error) {
-        // 3. 에러 발생 시 처리
-        console.error("❌ 후기 데이터 로드 실패 (실제 서버 에러):", error);
-        return []; // 에러 발생 시 MOCK_REVIEWS 대신 빈 배열 반환
+        if (error.message !== "Auth expired") console.error("❌ 후기 데이터 로드 실패:", error);
+        return []; 
     }
 }
 
@@ -307,7 +292,6 @@ async function renderReviews() {
     const container = document.getElementById('reviewContainer');
     if (!container) return;
     
-    // 로딩 표시
     container.innerHTML = '<p style="text-align:center;">후기를 불러오는 중...</p>';
 
     const reviews = await getUserReviews();
@@ -337,24 +321,19 @@ async function renderReviews() {
 /* =========================================
    4. 인터랙티브 데모 로직
    ========================================= */
-
-// 전역 스코프에 함수 정의 (HTML onclick에서 접근 가능하도록)
 window.nextDemoStep = function(stepNumber) {
-    // 모든 스텝 숨기기
     document.querySelectorAll('.demo-step').forEach(el => el.classList.remove('active'));
     
-    // 해당 스텝 보이기
     const nextStep = document.getElementById('demoStep' + stepNumber);
     if (nextStep) {
         nextStep.classList.add('active');
-        nextStep.style.animation = 'none'; // 애니메이션 리셋
-        nextStep.offsetHeight; /* trigger reflow */
+        nextStep.style.animation = 'none';
+        nextStep.offsetHeight; 
         nextStep.style.animation = 'slideUp 0.4s ease-out';
     }
 };
 
 window.cycleResultView = function() {
-    // 현재 활성화된 뷰 찾기
     const activeSlide = document.querySelector('.result-slide.active');
     let currentId = 1;
     
@@ -363,11 +342,9 @@ window.cycleResultView = function() {
         activeSlide.classList.remove('active');
     }
     
-    // 다음 뷰 번호 계산
     let nextId = currentId + 1;
     if (nextId > 3) nextId = 1;
     
-    // 다음 뷰 보이기
     const nextSlide = document.getElementById('resultView' + nextId);
     if (nextSlide) {
         nextSlide.classList.add('active');
@@ -379,8 +356,8 @@ window.cycleResultView = function() {
    ========================================= */
 document.addEventListener('DOMContentLoaded', () => {
     
-    // 1. 권한 체크
-    const token = localStorage.getItem('idToken');
+    // 1. 권한 체크 (accessToken으로 통일)
+    const token = localStorage.getItem('accessToken');
     const userRole = localStorage.getItem('userRole');
     const userName = localStorage.getItem('userName') || '회원';
 
@@ -421,6 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
         logoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
             localStorage.clear();
+            sessionStorage.clear(); // 세션스토리지도 안전하게 클리어
             alert("로그아웃 되었습니다.");
             window.location.href = '/';
         });
@@ -444,8 +422,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function updateNavUI() {
-    const isLoggedIn = !!localStorage.getItem('idToken');
+    // 💡 accessToken 기준으로 로그인 여부 판단
+    const isLoggedIn = !!localStorage.getItem('accessToken');
     const userRole = localStorage.getItem('userRole');
+    
     const btnAnalysis = document.getElementById('navAnalysis');
     const btnQna = document.getElementById('navQna');
     const btnLogin = document.getElementById('loginBtn');
@@ -487,15 +467,12 @@ window.toggleStudentNotiPanel = function() {
 }
 
 window.fetchStudentNotifications = async function() {
-    const token = localStorage.getItem('accessToken');
-    if (!token) return;
-
     try {
-        const response = await fetch(NOTI_API_URL, { 
+        const response = await apiFetch(NOTI_API_URL, { 
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'student_get_notifications' }) 
         });
+        
         const data = await response.json();
         const notis = data.notifications || [];
         
@@ -532,19 +509,21 @@ window.fetchStudentNotifications = async function() {
             `;
             listArea.appendChild(div);
         });
-    } catch (e) { console.error("Noti Fetch Error:", e); }
+    } catch (e) { 
+        if (e.message !== "Auth expired") console.error("Noti Fetch Error:", e); 
+    }
 }
 
 async function markStudentNotiRead(notiId) {
-    const token = localStorage.getItem('accessToken');
     try {
-        await fetch(NOTI_API_URL, {
+        await apiFetch(NOTI_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'student_read_notification', data: { notiId: notiId } })
         });
         fetchStudentNotifications(); 
-    } catch(e) {}
+    } catch(e) {
+        if (e.message !== "Auth expired") console.error("Noti Read Update Error");
+    }
 }
 
 window.markAllStudentNotiRead = async function() {
@@ -557,15 +536,12 @@ function handleNotiAction(noti) {
     toggleStudentNotiPanel(); // 알림창 닫기
 
     if (noti.actionType === 'weekly_report') {
-        // 주간 리포트 도착 -> Analysis 페이지의 플래너 탭으로 이동
         window.location.href = '/analysis?tab=coach'; 
     } 
     else if (noti.actionType === 'pro_report') {
-        // PRO 리포트 도착 -> Analysis 페이지의 PRO 탭으로 이동
         window.location.href = '/analysis?tab=pro'; 
     } 
     else if (noti.actionType === 'admin_notice') {
-        // 관리자 전체 공지 -> 모달 띄우기
         document.getElementById('noticeModalTitle').innerText = noti.title || "공지사항";
         document.getElementById('noticeModalDate').innerText = new Date(noti.createdAt).toLocaleDateString();
         document.getElementById('noticeModalContent').innerText = noti.detail || "내용이 없습니다.";
@@ -582,9 +558,10 @@ function handleNotiAction(noti) {
 // ============================================================
 // [유틸리티] 특수문자 변환 (해킹 방지)
 // ============================================================
+// 💡 한층 더 강력해진 escapeHtml 적용
 function escapeHtml(text) {
-    if (text == null) return "";
-    return String(text)
+    if (text === null || text === undefined) return ""; 
+    return String(text) 
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
