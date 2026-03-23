@@ -1943,26 +1943,23 @@ function renderFeedbackList() {
     });
 }
 
-// PDF 파일을 고화질 이미지 리스트로 변환하여 HTML에 삽입하는 함수
+// 1. PDF 파일을 고화질 이미지 리스트로 변환 (용량 초과 방지를 위해 JPEG 압축 적용)
 async function renderPdfToImages(pdfUrl, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
     try {
         container.classList.add('is-rendering');
-
-        // PDF.js 워커 설정
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
         const loadingTask = pdfjsLib.getDocument(pdfUrl);
         const pdf = await loadingTask.promise;
-        
-        // 조각(Fragment)을 만들어 이미지를 모두 모은 뒤 한 번에 출력
         const fragment = document.createDocumentFragment();
 
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
             const page = await pdf.getPage(pageNum);
-            const viewport = page.getViewport({ scale: 1.5 }); // 1.5배 고해상도
+            // 스케일 조절: API Gateway 10MB 제한 돌파를 위해 최적화된 1.2 배율 사용
+            const viewport = page.getViewport({ scale: 1.2 }); 
 
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
@@ -1972,7 +1969,8 @@ async function renderPdfToImages(pdfUrl, containerId) {
             await page.render({ canvasContext: ctx, viewport: viewport }).promise;
 
             const img = document.createElement('img');
-            img.src = canvas.toDataURL('image/png');
+            // PNG 대신 JPEG(품질 0.8)를 사용하여 Base64 용량을 대폭 축소
+            img.src = canvas.toDataURL('image/jpeg', 0.8);
             img.style.maxWidth = '100%';
             img.style.height = 'auto';
             img.style.marginBottom = '15px';
@@ -1985,21 +1983,17 @@ async function renderPdfToImages(pdfUrl, containerId) {
         }
         
         container.innerHTML = ''; 
-        container.appendChild(fragment); // 한 번에 삽입
+        container.appendChild(fragment);
 
     } catch (error) {
         console.error('PDF 랜더링 에러:', error);
-        container.innerHTML = `
-            <div style="color:#ef4444; padding:20px; text-align:center; background:#fef2f2; border-radius:8px;">
-                PDF를 화면에 불러오지 못했습니다.<br>
-                <a href="${pdfUrl}" target="_blank" style="color:#2563eb; text-decoration:underline;">원본 PDF 열기</a>
-            </div>`;
+        container.innerHTML = `<div style="color:#ef4444; padding:20px; text-align:center;">PDF를 화면에 불러오지 못했습니다.</div>`;
     } finally {
         container.classList.remove('is-rendering'); 
     }
 }
 
-// 피드백 상세 모달 열기 및 문서 형식 데이터 바인딩 (맞춤형 보고서 형식)
+// 2. 피드백 모달 오픈 (혼란을 주는 모바일 숨김창 완전 제거 및 페이지 잘림 허용 클래스 추가)
 function openFeedbackModal(data) {
     const modal = document.getElementById('feedbackModal');
     const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent'); 
@@ -2007,8 +2001,6 @@ function openFeedbackModal(data) {
     if (!contentArea) return;
 
     const fb = data.tutorFeedback || {};
-    
-    // 1. [체크] 피드백 데이터 확인
     const hasFeedback = fb && (
         (fb.priorityCheck && String(fb.priorityCheck).trim() !== "") || 
         (fb.weakSubject && String(fb.weakSubject).trim() !== "") || 
@@ -2123,7 +2115,7 @@ function openFeedbackModal(data) {
     }
     
     let tutorFileBlockHtml = '';
-    const uniqueContainerId = `pdf-render-${Date.now()}`; // 고유 ID 부여
+    const uniqueContainerId = `pdf-render-${Date.now()}`; 
     let isPdfFile = false;
     let actualPdfUrl = "";
 
@@ -2133,7 +2125,6 @@ function openFeedbackModal(data) {
         
         let fileDisplayHtml = '';
         if (isPdfFile) {
-            // PDF인 경우: 변환될 공간(div)만 만들어두고 JS로 이미지를 밀어넣음
             fileDisplayHtml = `
                 <div id="${uniqueContainerId}" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
                     <div style="padding: 40px 0; color:#3b82f6; font-weight:bold;" class="pdf-loading-spinner">
@@ -2143,9 +2134,7 @@ function openFeedbackModal(data) {
                 </div>
             `;
         } else {
-            // 이미지인 경우: 바로 렌더링
             const noCacheUrl = `${escapeHtml(fb.tutorImage)}?t=${new Date().getTime()}`;
-            
             fileDisplayHtml = `
                 <div style="text-align:center; padding: 10px 0;">
                     <img src="${noCacheUrl}" crossorigin="anonymous" alt="튜터 플래너 코칭" style="max-width:100%; height:auto; border-radius:8px; border:1px solid #cbd5e1; box-shadow:0 4px 10px rgba(0,0,0,0.05); display:block; margin: 0 auto;">
@@ -2153,9 +2142,9 @@ function openFeedbackModal(data) {
             `;
         }
 
-        // 그림자/겹침 현상 해결을 위해 스타일 분리 (clear: both, margin-top 하드코딩)
+        // 🔥 여기가 핵심! 다중 이미지 첨부 시 페이지가 찢어지는 것을 방지하기 위해 allow-page-break 클래스 추가
         tutorFileBlockHtml = `
-            <div class="doc-matched-box" style="page-break-inside: auto; clear: both; display: block; margin-top: 30px; float: none; position: relative;">
+            <div class="doc-matched-box allow-page-break" style="page-break-inside: auto; break-inside: auto; clear: both; display: block; margin-top: 30px; float: none; position: relative;">
                 <div class="doc-matched-header" style="background:#f8fafc; border-bottom:1px solid #e2e8f0; padding:15px 20px; font-weight:800;">
                     <i class="fas fa-paperclip" style="color:#3b82f6;"></i> 5. 주간 플래너 코칭 & 첨삭
                 </div>
@@ -2167,12 +2156,9 @@ function openFeedbackModal(data) {
         `;
     }
 
-    // -----------------------------------------------------------
-    // [HTML 조립 파트] 
-    // -----------------------------------------------------------
-    // 🎯 주의: JS에서 display:none 같은 인라인 스타일 억지 적용을 모두 제거했습니다. CSS가 처리합니다.
     const safeTitleForJs = escapeHtml(data.title || "주간 리포트").replace(/'/g, "\\'");
     
+    // 모바일 전용 숨김/다운로드 유도창 HTML 전체 삭제 처리
     const html = `
         <div class="modal-document" id="pdfTargetDocument">
             <div class="doc-controls" data-html2canvas-ignore="true">
@@ -2266,14 +2252,6 @@ function openFeedbackModal(data) {
             </div>
             ${tutorFileBlockHtml}
         </div>
-
-        <div class="mobile-only-msg" id="mobileMsgBox">
-            <i class="fas fa-file-pdf"></i>
-            <h3 style="margin:0 0 10px 0; color:#1e293b;">리포트 도착 완료!</h3>
-            <p>모바일에서는 전체 레이아웃 확인이 어렵습니다.<br><strong>PDF 파일로 다운로드</strong>하여 PC와 동일한 프리미엄 포맷으로 확인하세요.</p>
-            <button class="mobile-pdf-btn" onclick="downloadReportPDF('${safeTitleForJs}')"><i class="fas fa-download"></i> PDF 다운로드</button>
-            <button class="mobile-close-btn" onclick="document.getElementById('feedbackModal').style.display='none'">닫기</button>
-        </div>
     `;
 
     contentArea.innerHTML = html;
@@ -2286,16 +2264,13 @@ function openFeedbackModal(data) {
     }
 }
 
-// ============================================================
-// PDF 다운로드 기능
-// ============================================================
+// 3. 서버(API Gateway)로 완벽한 HTML 구조체를 쏘는 다운로드 기능
 async function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
 
-    // ※ 주의: 첨부파일이 이미지로 렌더링 중일 때 누르면 로딩 스피너가 인쇄됩니다.
     if (reportElement.querySelector('.pdf-loading-spinner')) {
-        alert("첨부파일(이미지)을 불러오는 중입니다. 잠시 후 화면에 이미지가 뜨면 다시 클릭해주세요.");
+        alert("첨부파일 렌더링 중입니다. 잠시 후 이미지가 모두 뜨면 다시 시도해주세요.");
         return;
     }
 
@@ -2310,6 +2285,7 @@ async function downloadReportPDF(reportTitle) {
     document.body.appendChild(loadingOverlay);
 
     try {
+        // 🔥 서버 렌더링용 완벽 격리 HTML 구조 조립 (기존 디자인 CSS 100% 반영)
         const rawHtml = `
             <!DOCTYPE html>
             <html lang="ko">
@@ -2318,41 +2294,24 @@ async function downloadReportPDF(reportTitle) {
                 <base href="https://studycrack.co.kr">
                 <link rel="preconnect" href="https://fonts.googleapis.com">
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-                <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+                <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+                <link rel="stylesheet" href="https://studycrack.co.kr/css/style.css">
+                <link rel="stylesheet" href="https://studycrack.co.kr/css/analysis.css">
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
                 <style>
-                    body { font-family: 'Noto Sans KR', sans-serif; background: #fff; color: #333; margin: 0; padding: 0; }
-                    .report-wrapper { width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
-                    .doc-controls, .mobile-only-msg { display: none !important; }
+                    body { background: #fff !important; }
+                    .modal-document { box-shadow: none !important; min-height: auto !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; }
+                    .doc-controls { display: none !important; }
+                    .doc-matched-box { page-break-inside: avoid; break-inside: avoid; }
                     
-                    /* 레이아웃 유지 */
-                    .doc-matched-box { page-break-inside: avoid; break-inside: avoid; margin-bottom: 30px; border: 1px solid #e2e8f0; border-radius: 8px; }
-                    .doc-matched-body { display: table; width: 100%; box-sizing: border-box; }
-                    .doc-student-data { display: table-cell; width: 45%; vertical-align: top; border-right: 1px dashed #cbd5e1; padding: 20px; }
-                    .doc-tutor-feedback { display: table-cell; width: 55%; vertical-align: top; padding: 20px; background: #fafafa; }
-                    
-                    /* 🔥 이미지 잘림 완벽 방지: 높이가 A4(297mm)를 넘으면 한 장에 쏙 들어가게 축소 */
-                    img { 
-                        max-width: 100% !important; 
-                        max-height: 260mm !important; 
-                        object-fit: contain !important;
-                        page-break-inside: avoid !important; 
-                        break-inside: avoid !important;
-                        display: block !important; 
-                        margin: 0 auto 15px auto !important; 
-                    }
-                    
-                    .doc-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 10px; }
-                    .doc-table th { padding: 8px 4px; border-bottom: 1px solid #e2e8f0; color: #64748b; }
-                    .doc-table td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; }
+                    /* 🔥 다중 이미지 페이지 잘림 방지 (핵심) */
+                    .allow-page-break { page-break-inside: auto !important; break-inside: auto !important; }
+                    img { page-break-inside: avoid !important; break-inside: avoid !important; max-width: 100% !important; }
                 </style>
             </head>
             <body>
-                <img src="https://studycrack.co.kr/assets/backgrounds/bg_studycrack_logo.png" 
-                     style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:300px; opacity:0.05; z-index:-1; max-height:none !important;">
-                
-                <div class="report-wrapper">
-                    ${reportElement.innerHTML}
-                </div>
+                <img src="https://studycrack.co.kr/assets/backgrounds/bg_studycrack_logo.png" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:400px; opacity:0.04; z-index:-1;">
+                ${reportElement.innerHTML}
             </body>
             </html>
         `;
