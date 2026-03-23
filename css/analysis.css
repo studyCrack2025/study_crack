@@ -563,6 +563,23 @@ input[type="number"]::-webkit-inner-spin-button {
 /* ============================================================
    [10] 모바일 반응형 및 인쇄 설정
    ============================================================ */
+   
+/* 🎯 모바일 화면 제어 */
+.mobile-only-msg { display: none; }
+
+@media (max-width: 768px) {
+    .modal-document { display: none !important; }
+    .mobile-only-msg {
+        display: flex !important; flex-direction: column; align-items: center; justify-content: center;
+        text-align: center; padding: 40px 20px; background: #ffffff; border-radius: 12px;
+        margin: 0 auto; width: 100%; box-sizing: border-box;
+    }
+    .mobile-only-msg i { font-size: 3rem; color: #3b82f6; margin-bottom: 15px; }
+    .mobile-only-msg h3 { margin: 0 0 10px 0; color: #1e293b; font-size: 1.4rem; }
+    .mobile-only-msg p { color: #64748b; font-size: 0.95rem; margin-bottom: 25px; line-height: 1.5; word-break: keep-all; }
+    .mobile-pdf-btn { width: 100%; padding: 14px 20px; font-size: 1.05rem; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; cursor: pointer; }
+    .mobile-close-btn { width: 100%; padding: 14px; font-size: 1rem; background: #f1f5f9; border: none; border-radius: 8px; color: #475569; font-weight: 700; cursor: pointer; }
+}
 
 @media (max-width: 768px) {
     /* =======================================

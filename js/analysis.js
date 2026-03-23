@@ -2001,6 +2001,8 @@ function openFeedbackModal(data) {
     if (!contentArea) return;
 
     const fb = data.tutorFeedback || {};
+    
+    // [체크] 피드백 데이터 확인
     const hasFeedback = fb && (
         (fb.priorityCheck && String(fb.priorityCheck).trim() !== "") || 
         (fb.weakSubject && String(fb.weakSubject).trim() !== "") || 
@@ -2024,6 +2026,7 @@ function openFeedbackModal(data) {
 
     const consultantName = "담당 수석 컨설턴트"; 
     
+    // (A) 과목별 학습 시간 디테일 테이블
     let detailRows = '';
     let totalPlan = '0H', totalAct = '0H', totalRate = '0%';
     
@@ -2060,6 +2063,7 @@ function openFeedbackModal(data) {
     }
     if (!detailRows) detailRows = `<tr><td colspan="5" style="color:#94a3b8; padding:20px;">상세 학습 기록이 없습니다.</td></tr>`;
 
+    // (B) 모의고사 데이터
     let examHtml = '';
     if (data.mockExam && data.mockExam.type && data.mockExam.type !== 'none') {
         const typeMap = { 'school': '교내', 'edu': '평가원/교육청', 'private': '사설' };
@@ -2080,6 +2084,7 @@ function openFeedbackModal(data) {
         examHtml = `<div style="color:#94a3b8; padding:30px 0; font-weight:600;"><i class="fas fa-ban" style="margin-bottom:10px; font-size:1.5rem;"></i><br>이번 주 응시 기록 없음</div>`;
     }
 
+    // (C) 학습 추이 데이터
     let trendHtml = '-', trendReasonsHtml = '';
     if (data.trend) {
         const t = data.trend.status;
@@ -2094,6 +2099,7 @@ function openFeedbackModal(data) {
         }
     }
 
+    // (D) 심층 Q&A
     let deepQnaHtml = '';
     const QUESTION_CATEGORIES = ['학습 계획 점검', '학습 방향성 설정', '취약 과목 솔루션', '기타 멘탈 관리'];
     if (data.deepAnswers && data.deepAnswers.some(ans => ans && ans.trim() !== "")) {
@@ -2138,14 +2144,14 @@ function openFeedbackModal(data) {
             `;
         }
 
-        // 🔥 수정: 다중 이미지가 페이지에 밀리지 않도록 allow-page-break 적용
+        // 🔥 [Fix 2] 배지 늘어짐 해결: .doc-matched-body 클래스를 제거하고 일반 div 블록 사용
         tutorFileBlockHtml = `
-            <div class="doc-matched-box allow-page-break" style="margin-top: 30px;">
-                <div class="doc-matched-header">
+            <div class="doc-matched-box allow-page-break" style="page-break-inside: auto; break-inside: auto; clear: both; display: block; margin-top: 30px; float: none; position: relative;">
+                <div class="doc-matched-header" style="background:#f8fafc; border-bottom:1px solid #e2e8f0; padding:15px 20px; font-weight:800;">
                     <i class="fas fa-paperclip" style="color:#3b82f6;"></i> 5. 주간 플래너 코칭 & 첨삭
                 </div>
-                <div class="doc-matched-body allow-page-break-body" style="padding:25px;">
-                    <span class="doc-badge tutor-badge">Consultant 첨부 자료</span><br><br>
+                <div style="padding:25px;">
+                    <span class="doc-badge tutor-badge" style="background:#eff6ff; color:#2563eb; border-color:#bfdbfe; display:inline-block; margin-bottom:15px;">Consultant 첨부 자료</span>
                     ${fileDisplayHtml}
                 </div>
             </div>
@@ -2154,7 +2160,7 @@ function openFeedbackModal(data) {
 
     const safeTitleForJs = escapeHtml(data.title || "주간 리포트").replace(/'/g, "\\'");
     
-    // 🔥 "모바일에서는 전체 레이아웃 어쩌고..." 하는 안내창 HTML 통째로 삭제 완료!
+    // 🔥 [Fix 1] 모바일용 버튼/안내창 다시 추가 (모바일 화면일 때 이 창이 뜹니다)
     const html = `
         <div class="modal-document" id="pdfTargetDocument">
             <div class="doc-controls" data-html2canvas-ignore="true">
@@ -2248,6 +2254,14 @@ function openFeedbackModal(data) {
             </div>
             ${tutorFileBlockHtml}
         </div>
+        
+        <div class="mobile-only-msg" id="mobileMsgBox">
+            <i class="fas fa-file-pdf"></i>
+            <h3 style="margin:0 0 10px 0; color:#1e293b;">리포트 도착 완료!</h3>
+            <p>모바일 화면에서는 전체 레이아웃 확인이 어렵습니다.<br><strong>PDF 파일로 다운로드</strong>하여 PC와 동일한 프리미엄 포맷으로 확인하세요.</p>
+            <button class="mobile-pdf-btn" onclick="downloadReportPDF('${safeTitleForJs}')"><i class="fas fa-download"></i> PDF 다운로드</button>
+            <button class="mobile-close-btn" onclick="document.getElementById('feedbackModal').style.display='none'">닫기</button>
+        </div>
     `;
 
     contentArea.innerHTML = html;
@@ -2260,13 +2274,13 @@ function openFeedbackModal(data) {
     }
 }
 
-// 3. 서버(API Gateway)로 완벽한 HTML 구조체를 쏘는 다운로드 기능
+// PDF 다운로드 기능
 async function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
 
     if (reportElement.querySelector('.pdf-loading-spinner')) {
-        alert("첨부파일(이미지) 렌더링 중입니다. 이미지가 모두 표시되면 다시 클릭해주세요.");
+        alert("첨부파일 렌더링 중입니다. 잠시 후 이미지가 모두 뜨면 다시 시도해주세요.");
         return;
     }
 
@@ -2281,62 +2295,46 @@ async function downloadReportPDF(reportTitle) {
     document.body.appendChild(loadingOverlay);
 
     try {
-        // 🔥 핵심: 외부 CSS 로드 실패(뼈대만 남는 현상)를 막기 위해 PDF 전용 필수 CSS를 하드코딩
         const rawHtml = `
             <!DOCTYPE html>
             <html lang="ko">
             <head>
                 <meta charset="UTF-8">
                 <base href="https://studycrack.co.kr">
-                <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+                <link rel="preconnect" href="https://fonts.googleapis.com">
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
                 <style>
-                    body { font-family: 'Noto Sans KR', sans-serif; background: #fff; color: #333; margin: 0; padding: 0; }
+                    body { background: #fff !important; margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; color: #333; }
                     
-                    /* 🔥 수정 1: 크기 축소 (zoom: 0.9) 및 가로폭 고정 */
-                    .report-wrapper { width: 1000px; transform: scale(0.9); transform-origin: top left; margin: 0 auto; background: #fff; padding: 40px; box-sizing: border-box; }
+                    /* 🔥 서버에서 모바일 CSS 무시하고 무조건 PC 사이즈 렌더링 강제 */
+                    .modal-document { display: block !important; }
+                    .mobile-only-msg { display: none !important; }
                     
-                    /* PDF 다운 버튼 등 불필요 UI 강제 숨김 */
-                    .doc-controls, .mobile-only-msg { display: none !important; }
+                    /* 전체 크기 80% 축소 */
+                    .report-wrapper { width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; box-sizing: border-box; zoom: 0.8; }
                     
-                    /* 🔥 모달 디자인 100% 수동 복구 (서버 렌더링용) */
-                    .doc-header { border-bottom: 3px solid #1e293b; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
-                    .doc-subtitle { font-size: 0.85rem; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 5px; }
-                    .doc-title { font-size: 2.2rem; font-weight: 900; color: #0f172a; margin: 0; }
-                    .doc-meta { font-size: 0.95rem; color: #64748b; text-align: right; line-height: 1.6; }
+                    .doc-controls { display: none !important; }
+                    .doc-matched-box { page-break-inside: avoid !important; break-inside: avoid !important; margin-bottom: 30px; border: 1px solid #e2e8f0; border-radius: 8px; }
                     
-                    .doc-matched-box { border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 30px; background: #fff; page-break-inside: avoid; break-inside: avoid; }
-                    .doc-matched-header { background: #f8fafc; padding: 14px 20px; border-bottom: 1px solid #e2e8f0; font-weight: 800; font-size: 1.1rem; color: #1e293b; border-radius: 12px 12px 0 0; }
-                    
-                    /* 🔥 Table 구조를 사용하여 좌우 찢어짐 원천 차단 */
-                    .doc-matched-body { display: table; width: 100%; box-sizing: border-box; }
-                    .doc-student-data { display: table-cell; width: 45%; vertical-align: top; padding: 20px; border-right: 1px dashed #cbd5e1; }
-                    .doc-tutor-feedback { display: table-cell; width: 55%; vertical-align: top; padding: 20px; background: #fafafa; border-radius: 0 0 12px 0; }
-                    
-                    .doc-badge { display: inline-block; padding: 4px 10px; background: #f1f5f9; color: #475569; border-radius: 6px; font-size: 0.8rem; font-weight: 800; margin-bottom: 15px; border: 1px solid #e2e8f0; }
-                    .tutor-badge { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
-                    
-                    .doc-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-bottom: 10px; }
-                    .doc-table th { padding: 8px 4px; border-bottom: 1px solid #e2e8f0; color: #94a3b8; }
-                    .doc-table td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; }
-                    
-                    .qna-pair-container { display: block; margin-bottom: 15px; }
-                    .qna-student { background: #fff1f2; padding: 18px; border-radius: 8px; border: 1px solid #fecaca; margin-bottom: 15px; }
-                    .qna-tutor { background: #f0fdf4; padding: 18px; border-radius: 8px; border: 1px solid #bbf7d0; }
-                    
-                    /* 🔥 수정 2: 5번 첨부파일 박스는 페이지 찢어짐(넘김) 허용 */
                     .allow-page-break { page-break-inside: auto !important; break-inside: auto !important; }
-                    .allow-page-break-body { display: block !important; }
                     
-                    /* 🔥 개별 이미지 크기를 A4 안정권(250mm)으로 강제 제한하여 빈 페이지 밀림 완벽 억제 */
                     img { 
                         page-break-inside: avoid !important; 
                         break-inside: avoid !important; 
                         max-width: 100% !important; 
                         max-height: 250mm !important; 
-                        object-fit: contain !important; 
-                        display: block !important; 
-                        margin: 0 auto 15px auto !important; 
+                        object-fit: contain !important;
+                        display: block !important;
+                        margin: 0 auto 15px auto !important;
                     }
+                    
+                    .doc-matched-body { display: table; width: 100%; box-sizing: border-box; }
+                    .doc-student-data { display: table-cell; width: 45%; vertical-align: top; border-right: 1px dashed #cbd5e1; padding: 20px; }
+                    .doc-tutor-feedback { display: table-cell; width: 55%; vertical-align: top; padding: 20px; background: #fafafa; }
+                    .doc-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 10px; }
+                    .doc-table th { padding: 8px 4px; border-bottom: 1px solid #e2e8f0; color: #64748b; }
+                    .doc-table td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; }
                 </style>
             </head>
             <body>
@@ -2353,8 +2351,14 @@ async function downloadReportPDF(reportTitle) {
 
         const response = await fetch(pdfApiUrl, { 
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ title: reportTitle, html: rawHtml })
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                title: reportTitle,
+                html: rawHtml
+            })
         });
 
         const data = await response.json();
