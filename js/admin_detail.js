@@ -11,6 +11,37 @@ const FILE_API_URL = CONFIG.api.file;
 let currentStudentData = null;
 let currentTier = 'free';
 
+// 💡 공통 apiFetch 함수 (다른 파일과 동일하게 적용)
+async function apiFetch(url, options = {}) {
+    const token = localStorage.getItem('accessToken');
+    const defaultHeaders = {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` })
+    };
+
+    options.headers = { ...defaultHeaders, ...options.headers };
+
+    try {
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('userId');
+                localStorage.removeItem('userRole');
+                window.location.href = '/login'; 
+                return Promise.reject(new Error("Auth expired")); 
+            }
+            throw new Error(`HTTP Error: ${response.status}`);
+        }
+        return response;
+    } catch (error) {
+        console.error("API 통신 실패:", error);
+        throw error; 
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // 1. 잘못된 접근 차단
     if (!targetUserId || !adminId) {
@@ -25,11 +56,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (backBtn) {
         if (userRole === 'tutor') {
-            // 튜터라면: 튜터 마이페이지로 이동 (절대 경로)
             backBtn.href = '/mypage/tutor?tab=students';
             backBtn.innerText = '← 내 학생 목록으로';
         } else {
-            // 관리자라면: 관리자 페이지로 이동
             backBtn.href = '/admin';
             backBtn.innerText = '← 목록으로 돌아가기';
         }
@@ -92,7 +121,7 @@ function switchTab(tabName) {
     const target = document.getElementById('tab_' + tabName);
     if(target) target.classList.add('active');
     
-    // [수정] ID로 버튼 찾아서 active 클래스 추가
+    // ID로 버튼 찾아서 active 클래스 추가
     const btnId = (tabName === 'special') ? 'btn-special' : 'btn-' + tabName;
     const btn = document.getElementById(btnId);
     if(btn) btn.classList.add('active');
@@ -110,11 +139,9 @@ function escapeHtml(text) {
 }
 
 async function loadStudentDetail() {
-    const token = localStorage.getItem('accessToken');
     try {
-        const response = await fetch(API_URL, {
+        const response = await apiFetch(API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'admin_get_user_detail',
                 userId: adminId,
@@ -122,42 +149,37 @@ async function loadStudentDetail() {
             })
         });
 
-        if (!response.ok) throw new Error("Server Error");
         const data = await response.json();
-        
         currentStudentData = data;
         renderData(data);
     } catch (e) {
-        console.error(e);
-        alert("데이터 로드 실패");
+        if (e.message !== "Auth expired") alert("학생 상세 데이터를 불러오지 못했습니다.");
     }
 }
 
 // 1. PRO 보고서 데이터 로드
 async function loadProReportsForAdmin() {
-    const token = localStorage.getItem('accessToken');
     const userRole = localStorage.getItem('userRole'); 
     
     try {
-        const response = await fetch(REPORT_API_URL, {
+        const response = await apiFetch(REPORT_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'get_pro_reports',
                 data: { targetUserId: targetUserId, requesterRole: userRole } 
             })
         });
         
-        if (response.ok) {
-            const data = await response.json();
-            currentStudentData.proReportsList = data.reports || [];
-            
-            const specialTab = document.getElementById('tab_special');
-            if (specialTab && specialTab.classList.contains('active')) {
-                renderProTab();
-            }
+        const data = await response.json();
+        currentStudentData.proReportsList = data.reports || [];
+        
+        const specialTab = document.getElementById('tab_special');
+        if (specialTab && specialTab.classList.contains('active')) {
+            renderProTab();
         }
-    } catch (e) { console.error("Pro Reports Load Error:", e); }
+    } catch (e) { 
+        if (e.message !== "Auth expired") console.error("Pro Reports Load Error:", e); 
+    }
 }
 
 // 2. 튜터가 관리자에게 재검토 요청
@@ -165,23 +187,21 @@ async function submitRejectReason(key) {
     const reasonText = document.getElementById('rejectReasonText').value;
     if (reasonText.trim() === '') { alert('재검토 요청 사유를 입력해주세요.'); return; }
 
-    const token = localStorage.getItem('accessToken');
     try {
-        const response = await fetch(REPORT_API_URL, {
+        await apiFetch(REPORT_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'tutor_reject_report', 
                 data: { targetUserId: targetUserId, reportKey: key, status: 'admin_review', rejectReason: reasonText }
             })
         });
 
-        if (!response.ok) throw new Error("Server Error");
-
         alert("관리자에게 재검토 요청이 전달되었습니다.");
         closeRejectModal(); 
         await loadProReportsForAdmin(); 
-    } catch(e) { alert("요청 실패: " + e.message); }
+    } catch(e) { 
+        if (e.message !== "Auth expired") alert("재검토 요청 전송에 실패했습니다."); 
+    }
 }
 
 // 3. 관리자가 PDF 업로드 후 튜터에게 핑 날리기
@@ -193,58 +213,47 @@ async function requestTutorReview(key) {
     if (file.type !== 'application/pdf') return alert("PDF 파일만 업로드 가능합니다.");
     if (!confirm("첨부한 PDF 파일을 업로드하고 튜터에게 최종 검수를 요청하시겠습니까?")) return;
 
-    const token = localStorage.getItem('accessToken');
     const btn = document.getElementById(`pdf_upload_btn_${key}`);
-    let originalBtnText = "";
-    if (btn) {
-        originalBtnText = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 업로드 중...';
-        btn.disabled = true;
-    }
+    if (!btn) return;
     
+    const originalBtnText = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 업로드 중...';
     btn.disabled = true;
 
     try {
-        // [수정] FILE_API_URL 사용 및 userId 루트에서 제거
-        const urlResponse = await fetch(FILE_API_URL, {
+        // 1단계: Presigned URL 발급 (apiFetch 사용 O)
+        const urlResponse = await apiFetch(FILE_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'get_presigned_url',
                 data: { fileName: encodeURIComponent(file.name), fileType: file.type, folder: `pro_reports` }
             })
         });
 
-        if (!urlResponse.ok) throw new Error("업로드 주소 발급 실패");
         const { uploadUrl, fileUrl, fields } = await urlResponse.json();
 
-        // [수정] FormData 방식으로 S3 업로드 (400 에러 해결)
         const formData = new FormData();
         Object.entries(fields || {}).forEach(([k, v]) => formData.append(k, v));
         formData.append('file', file);
 
+        // 💡 2단계: S3 실제 업로드 (apiFetch 절대 사용 금지! 순수 fetch 유지)
         const uploadResult = await fetch(uploadUrl, { method: 'POST', body: formData });
         if (!uploadResult.ok) throw new Error("S3 파일 업로드 실패");
 
-        // [수정] REPORT_API_URL 사용 및 DB 업데이트
-        const dbResponse = await fetch(REPORT_API_URL, {
+        // 3단계: DB 업데이트 (apiFetch 사용 O)
+        await apiFetch(REPORT_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'admin_request_tutor_review', 
                 data: { targetUserId: targetUserId, reportKey: key, reportLink: fileUrl, status: 'tutor_review' }
             })
         });
 
-        if (!dbResponse.ok) throw new Error("DB 업데이트 실패");
-
         alert("파일 업로드 및 튜터 검수 요청이 완료되었습니다.");
         await loadProReportsForAdmin(); 
 
     } catch(e) { 
-        console.error(e);
-        alert("요청 전송 실패: " + e.message); 
+        if (e.message !== "Auth expired") alert("업로드 및 요청 실패: 서버 상태를 확인해주세요."); 
     } finally {
         btn.innerHTML = originalBtnText;
         btn.disabled = false;
@@ -255,22 +264,20 @@ async function requestTutorReview(key) {
 async function publishProReportToStudent(key) {
     if(!confirm("최종 검수를 마치고 학생에게 리포트를 전송하시겠습니까? 전송 후에는 수정할 수 없습니다.")) return;
 
-    const token = localStorage.getItem('accessToken');
     try {
-        const response = await fetch(REPORT_API_URL, {
+        await apiFetch(REPORT_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'tutor_publish_report', 
                 data: { targetUserId: targetUserId, reportKey: key, status: 'published' }
             })
         });
 
-        if (!response.ok) throw new Error("Server Error");
-
         alert("학생에게 최종 전송이 완료되었습니다.");
         await loadProReportsForAdmin(); 
-    } catch(e) { alert("전송 실패: " + e.message); }
+    } catch(e) { 
+        if (e.message !== "Auth expired") alert("리포트 전송에 실패했습니다."); 
+    }
 }
 
 // 5. PRO 리포트 초안 임시 저장
@@ -289,42 +296,42 @@ async function saveProDraft(key, silent = false) {
         currentStatus = 'drafting';
     }
 
-    const token = localStorage.getItem('accessToken');
-    const response = await fetch(REPORT_API_URL, {
+    await apiFetch(REPORT_API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
             type: 'save_pro_draft', 
             data: { targetUserId: targetUserId, reportKey: key, draftContent: content, status: currentStatus } 
         })
     });
 
-    if (!response.ok) throw new Error("Save Failed");
     if (!silent) alert("저장되었습니다.");
 }
 
 // 6. PRO 리포트 튜터 작성 완료
 async function completeProWriting(key) {
-    try { await saveProDraft(key, true); } catch (e) { return alert("내용 저장 실패로 중단합니다."); }
+    try { 
+        await saveProDraft(key, true); 
+    } catch (e) { 
+        if (e.message !== "Auth expired") alert("내용 저장 실패로 중단합니다."); 
+        return; 
+    }
 
     if(!confirm("작성을 완료하고 관리자에게 제출하시겠습니까?")) return;
 
-    const token = localStorage.getItem('accessToken');
     try {
-        const response = await fetch(REPORT_API_URL, {
+        await apiFetch(REPORT_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'complete_pro_writing',
                 data: { targetUserId: targetUserId, reportKey: key }
             })
         });
-
-        if (!response.ok) throw new Error("Server Error");
         
         alert("제출 완료되었습니다. 관리자 검수 단계로 넘어갑니다.");
         await loadProReportsForAdmin(); 
-    } catch(e) { alert("오류 발생: " + e.message); }
+    } catch(e) { 
+        if (e.message !== "Auth expired") alert("제출 중 오류가 발생했습니다."); 
+    }
 }
 
 function renderData(s) {
@@ -417,14 +424,12 @@ function initQuantitativeData(q) {
     };    
     const availableKeys = Object.keys(q).filter(k => q[k]);
     
-    // 셀렉터 옵션 생성
     selector.innerHTML = '';
     availableKeys.forEach(key => {
         const label = examNames[key] || key;
         selector.innerHTML += `<option value="${key}">${label}</option>`;
     });
 
-    // 기본적으로 첫 번째(가장 최신일 확률 높음 or 키 순서) 선택
     if (availableKeys.length > 0) {
         renderSelectedScore();
     }
@@ -443,7 +448,6 @@ function renderSelectedScore() {
     const d = q[key];
     const subjects = [{k:'kor',n:'국어'}, {k:'math',n:'수학'}, {k:'eng',n:'영어'}, {k:'inq1',n:'탐1'}, {k:'inq2',n:'탐2'}];
     
-    // <th> 태그에 text-align: center 추가
     let html = `<div class="score-exam-block" style="margin-top:15px;">
         <table class="score-table">
             <thead>
@@ -455,7 +459,6 @@ function renderSelectedScore() {
             </thead>
             <tbody>`;
             
-    // <td> 태그에도 text-align: center 추가
     subjects.forEach(sub => {
         if(d[sub.k]) {
             html += `<tr>
@@ -470,9 +473,7 @@ function renderSelectedScore() {
     container.innerHTML = html;
 }
 
-// 모달을 화면에 띄우는 함수
 function showCoachingGuideModal() {
-    // 이미 모달이 있다면 제거
     const existingModal = document.getElementById('coachingGuideModal');
     if (existingModal) existingModal.remove();
 
@@ -523,7 +524,6 @@ function showCoachingGuideModal() {
     document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
 
-// 주간 점검 상세 렌더링
 function renderWeeklyTab() {
     const container = document.getElementById('weeklyListContainer');
     container.innerHTML = '';
@@ -531,9 +531,8 @@ function renderWeeklyTab() {
     const weeklyHistory = currentStudentData.weeklyHistory || [];
     const selYear = document.getElementById('filterYear').value;
     const selMonth = document.getElementById('filterMonth').value;
-    const userRole = localStorage.getItem('userRole'); // 권한 확인 (admin/tutor)
+    const userRole = localStorage.getItem('userRole'); 
 
-    // 날짜 필터링 및 정렬
     const filtered = weeklyHistory.filter(w => {
         const d = new Date(w.date);
         return d.getFullYear() == selYear && (d.getMonth() + 1) == selMonth;
@@ -550,7 +549,6 @@ function renderWeeklyTab() {
         const dateStr = new Date(d.date).toLocaleDateString();
         const safeComment = d.comment ? escapeHtml(d.comment) : '';
         
-        // 1. 학습 시간 테이블
         let studyHtml = ''; 
         if (d.studyTime && Array.isArray(d.studyTime.details)) {
              let rows = '';
@@ -562,7 +560,6 @@ function renderWeeklyTab() {
              studyHtml = `<div class="weekly-section"><div class="section-title"><i class="fas fa-clock"></i> 과목별 학습 달성도 (총 달성률: <span style="color:#2563eb;">${d.studyTime.totalRate || '0%'}</span>)</div><div class="table-responsive"><table class="compact-table"><thead><tr><th>과목</th><th>계획</th><th>실행</th><th>달성</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
         }
 
-        // 2. 자가 점검 (Deep Answers) & 학습 흐름(Trend) 렌더링
         let checkHtml = '';
         if (d.deepAnswers && d.deepAnswers.length > 0) {
             const QUESTIONS = ['학습 계획 점검', '학습 방향성 설정', '취약 과목 솔루션', '기타 멘탈 관리'];
@@ -571,14 +568,12 @@ function renderWeeklyTab() {
                return `<li><i class="fas fa-check-circle text-blue" style="margin-top:4px; flex-shrink:0;"></i><div style="flex:1;">${questionLabel} ${escapeHtml(ans)}</div></li>`;
             }).join('');
 
-            // 학습 흐름 상세 사유(reasons) 렌더링 추가
             let trendHtml = '';
             if (d.trend) {
                 const statusMap = { 'up': '상승세 🔥', 'down': '하락세 📉', 'keep': '유지중 -' };
                 const statusText = statusMap[d.trend.status] || '유지중 -';
                 let reasonHtml = '';
                 
-                // 하락세(down)이고 사유가 존재할 때만 사유 박스 추가
                 if (d.trend.status === 'down' && Array.isArray(d.trend.reasons) && d.trend.reasons.length > 0) {
                     const reasonMap = {
                         'overplan': '계획 과다',
@@ -586,7 +581,6 @@ function renderWeeklyTab() {
                         'condition': '컨디션/건강',
                         'etc': '기타'
                     };
-                    // 영어 코드를 한글로 변환, 매핑 안된 커스텀 텍스트는 그대로 출력
                     const translatedReasons = d.trend.reasons.map(r => reasonMap[r] || r).join(', ');
                     reasonHtml = `
                         <div style="font-size: 0.85rem; color: #dc2626; margin-top: 8px; padding: 8px 12px; background: #fef2f2; border-radius: 6px; display: inline-block; font-weight: normal; border: 1px solid #fecaca;">
@@ -595,7 +589,6 @@ function renderWeeklyTab() {
                     `;
                 }
                 
-                // 트렌드 뱃지가 위아래로 나열되도록 flex-direction 설정
                 trendHtml = `
                     <div class="trend-badge ${d.trend.status || 'keep'}" style="display: flex; flex-direction: column; align-items: flex-start;">
                         <div style="font-weight: bold;">학습 흐름: ${statusText}</div>
@@ -607,7 +600,6 @@ function renderWeeklyTab() {
             checkHtml = `<div class="weekly-section"><div class="section-title"><i class="fas fa-clipboard-check"></i> 이번주 심층 질문</div><ul class="check-list">${listItems}</ul>${trendHtml}</div>`;
         }
 
-        // 3. 주간 모의고사 결과
         let mockHtml = '';
         if (d.mockExam && d.mockExam.scores) {
             const s = d.mockExam.scores;
@@ -620,7 +612,6 @@ function renderWeeklyTab() {
                 { l: s.inq1Name || '탐1', v: s.inq1 }, { l: s.inq2Name || '탐2', v: s.inq2 }
             ].map(item => item.v ? `<div class="score-pill"><span class="lbl">${item.l}</span><span class="val">${item.v}</span></div>` : '').join('');
 
-            // 원본 보기 버튼 글자 줄바꿈 방지
             let proofHtml = '';
             if (d.mockExam.proofFile && d.mockExam.proofFile.startsWith('http')) {
                 proofHtml = `
@@ -643,7 +634,6 @@ function renderWeeklyTab() {
             `;
         }
 
-        // 4. 플래너 파일 및 코멘트
         let footerHtml = '';
         const hasFiles = d.plannerFiles && d.plannerFiles.length > 0;
         const hasComment = !!d.comment;
@@ -681,7 +671,6 @@ function renderWeeklyTab() {
             `;
         }
 
-        // 5. 주간 평가 응답 (튜터 피드백)
         const fb = d.tutorFeedback || { priorityCheck: '', weakSubject: '', nextWeekTop3: '', planEvaluation: '', extraQuestion: '' };
         const hasFeedback = fb.priorityCheck && fb.priorityCheck.trim() !== '';
         const isReadOnly = (userRole === 'admin' || hasFeedback) ? 'disabled' : '';
@@ -690,7 +679,7 @@ function renderWeeklyTab() {
         
         let tutorFileHtml = '';
         if (fb.tutorImage && String(fb.tutorImage).trim() !== "") {
-            const isPdf = fb.tutorImage.toLowerCase().includes('.pdf'); // PDF 여부 확인
+            const isPdf = fb.tutorImage.toLowerCase().includes('.pdf'); 
             
             if (isPdf) {
                 tutorFileHtml = `
@@ -759,7 +748,6 @@ function renderWeeklyTab() {
             </div>
         `;
 
-        // 최종 카드 조립
         const card = document.createElement('div');
         card.className = 'timeline-card weekly-new';
         card.innerHTML = `
@@ -797,7 +785,6 @@ async function saveWeeklyFeedback(weekId, idx) {
     
     if(!confirm("주간 평가를 저장하시겠습니까?\n🚨 저장 완료 후에는 내용을 다시 수정할 수 없습니다.")) return;
 
-    const token = localStorage.getItem('accessToken');
     const saveBtn = priorityEl.closest('.tutor-feedback-area').querySelector('.fb-save-btn');
     
     try {
@@ -806,14 +793,13 @@ async function saveWeeklyFeedback(weekId, idx) {
             saveBtn.innerText = "이미지 업로드 및 저장 중..."; 
         }
 
-        // 1. 이미지가 선택된 경우 S3에 먼저 업로드
         let tutorImageUrl = "";
         if (imageInput && imageInput.files.length > 0) {
             const file = imageInput.files[0];
             
-            const urlResponse = await fetch(FILE_API_URL, {
+            // 💡 S3 업로드용 주소 요청 (apiFetch 사용 O)
+            const urlResponse = await apiFetch(FILE_API_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({
                     type: 'get_presigned_url',
                     data: {
@@ -824,26 +810,21 @@ async function saveWeeklyFeedback(weekId, idx) {
                 })
             });
 
-            if (!urlResponse.ok) throw new Error("이미지 업로드 주소 발급 실패");
-            
             const { uploadUrl, fileUrl, fields } = await urlResponse.json();
             const formData = new FormData();
             Object.entries(fields || {}).forEach(([k, v]) => formData.append(k, v));
             formData.append('file', file);
 
-            const uploadResult = await fetch(uploadUrl, {
-                method: 'POST',
-                body: formData
-            });
+            // 💡 실제 파일 S3 업로드 (순수 fetch 사용 필수!)
+            const uploadResult = await fetch(uploadUrl, { method: 'POST', body: formData });
 
             if (!uploadResult.ok) throw new Error("S3 이미지 업로드 실패");
-            tutorImageUrl = fileUrl; // 성공 시 URL 할당
+            tutorImageUrl = fileUrl; 
         }
 
-        // 2. 텍스트 + 이미지 URL을 DB에 저장 요청
-        const response = await fetch(REPORT_API_URL, {
+        // DB에 저장 요청 (apiFetch 사용 O)
+        await apiFetch(REPORT_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'tutor_update_weekly_feedback',
                 data: {
@@ -861,31 +842,27 @@ async function saveWeeklyFeedback(weekId, idx) {
             })
         });
 
-        if (response.ok) {
-            alert("평가가 성공적으로 저장되었습니다.");
-            
-            priorityEl.disabled = true;
-            weakEl.disabled = true;
-            top3El.disabled = true;
-            planEl.disabled = true;
-            extraEl.disabled = true;
-            if (imageInput) imageInput.disabled = true; 
+        alert("평가가 성공적으로 저장되었습니다.");
+        
+        priorityEl.disabled = true;
+        weakEl.disabled = true;
+        top3El.disabled = true;
+        planEl.disabled = true;
+        extraEl.disabled = true;
+        if (imageInput) imageInput.disabled = true; 
 
-            if (saveBtn) {
-                saveBtn.innerText = "저장 완료";
-                saveBtn.style.backgroundColor = "#94a3b8";
-                saveBtn.style.color = "#ffffff";
-                saveBtn.style.cursor = "not-allowed";
-                saveBtn.style.boxShadow = "none";
-            }
-            
-            location.reload(); 
-        } else {
-            throw new Error("Server Error");
+        if (saveBtn) {
+            saveBtn.innerText = "저장 완료";
+            saveBtn.style.backgroundColor = "#94a3b8";
+            saveBtn.style.color = "#ffffff";
+            saveBtn.style.cursor = "not-allowed";
+            saveBtn.style.boxShadow = "none";
         }
+        
+        location.reload(); 
     } catch(e) {
         console.error(e);
-        alert("저장 중 오류가 발생했습니다: " + e.message);
+        if (e.message !== "Auth expired") alert("저장 중 오류가 발생했습니다: 서버 상태를 확인해주세요.");
         if (saveBtn) {
             saveBtn.disabled = false;
             saveBtn.innerText = "평가 저장";
@@ -897,14 +874,12 @@ async function saveWeeklyFeedback(weekId, idx) {
 // [기능] FOR PRO 탭 로직
 // ============================================================
 
-// [공통 헬퍼] 키를 화면 표시용 문자열로 변환
 function formatReportKey(key) {
-    // 키가 없거나 포맷(6자리, 예: 260402)에 맞지 않으면 원본 반환
     if (!key || key.length !== 6) return key;
 
-    const yStr = key.substring(0, 2); // "26"
-    const mStr = parseInt(key.substring(2, 4), 10); // "04" -> 4
-    const wStr = parseInt(key.substring(4, 6), 10); // "02" -> 2
+    const yStr = key.substring(0, 2); 
+    const mStr = parseInt(key.substring(2, 4), 10); 
+    const wStr = parseInt(key.substring(4, 6), 10); 
 
     return `20${yStr}년 ${mStr}월 ${wStr}주차 PRO 분석`;
 }
@@ -921,7 +896,6 @@ function renderProTab() {
         return;
     }
 
-    // 키(문자열)를 기준으로 최신순 정렬 (예: "260402" > "260301" > "26MarPre")
     reports.sort((a, b) => b.key.localeCompare(a.key));
 
     reports.forEach(reportData => {
@@ -1039,13 +1013,10 @@ function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent, re
         }
     }
 
-    // 🔥 단계 2: 튜터 작성 완료 -> 관리자 확인 및 PDF 첨부 (수정됨)
+    // 단계 2: 튜터 작성 완료 -> 관리자 확인 및 PDF 첨부
     if (status === 'completed' || status === 'admin_review') { 
         if (isAdmin) {
-            // 튜터 반려 사유 표시
             const rejectHtml = rejectReason ? `<div style="background:#fef2f2; color:#b91c1c; padding:10px; border-radius:6px; margin-bottom:15px; font-weight:bold; font-size: 0.95rem;">🚨 [튜터 재검토 요청 사유]<br><span style="font-weight:normal;">${escapeHtml(rejectReason)}</span></div>` : '';
-            
-            // 기존 업로드된 PDF 링크 표시
             const existingPdfHtml = reportLink ? `<div style="margin-bottom: 10px; font-size: 0.9rem; color: #475569;">현재 첨부된 파일: <a href="${reportLink}" target="_blank" style="color:#2563eb; text-decoration:underline;">기존 PDF 확인</a></div>` : '';
 
             return `
@@ -1078,13 +1049,10 @@ function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent, re
     }
 }
 
-// 🔥 튜터가 관리자에게 재검토를 요청하는 함수
 function requestAdminRereview(key) {
-    // 이미 띄워진 모달이 있다면 제거
     const existingModal = document.getElementById('rejectReasonModal');
     if (existingModal) existingModal.remove();
 
-    // 기존 Q&A 모달과 동일한 구조(.modal, .modal-content, .close-btn) 사용
     const modalHtml = `
         <div id="rejectReasonModal" class="modal" style="display: flex;">
             <div class="modal-content" style="max-width: 500px; padding: 25px;">
@@ -1158,7 +1126,7 @@ async function tempSaveProItem(boxId, itemIdx) {
         btn.disabled = false;
         checkProAllSaved(boxId);
     } catch (e) {
-        alert("저장 실패");
+        if (e.message !== "Auth expired") alert("임시 저장에 실패했습니다.");
         btn.innerText = originalText;
         btn.disabled = false;
     }
@@ -1185,7 +1153,6 @@ function checkProAllSaved(boxId) {
 }
 
 function showProGuideModal() {
-    // 이미 모달이 있다면 제거
     const existingModal = document.getElementById('proGuideModal');
     if (existingModal) existingModal.remove();
 
@@ -1254,11 +1221,9 @@ async function renderTargetUnivs(list, quantData) {
         return;
     }
 
-    // 📌 하드코딩: 3월 학평 기준 설정
     const examMode = 'mar';
     const hasMarScore = quantData && quantData[examMode] && (quantData[examMode].kor || quantData[examMode].math || quantData[examMode].eng);
 
-    // 1. 카드 레이아웃 및 로딩 상태 먼저 그리기
     validList.forEach((u, idx) => {
         const div = document.createElement('div');
         div.className = 'target-univ-item';
@@ -1279,15 +1244,11 @@ async function renderTargetUnivs(list, quantData) {
         container.appendChild(div);
     });
 
-    // 2. 3월 성적이 없으면 API 호출 생략
     if (!hasMarScore) return;
 
-    // 3. 성적이 존재하면 실제 분석 API 호출
     try {
-        const token = localStorage.getItem('accessToken');
-        const res = await fetch(CONFIG.api.analysis, {
+        const res = await apiFetch(CONFIG.api.analysis, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'simulate_score_rise',
                 userId: targetUserId,
@@ -1297,10 +1258,8 @@ async function renderTargetUnivs(list, quantData) {
             })
         });
 
-        if (!res.ok) throw new Error("시뮬레이션 분석 실패");
         const simData = await res.json();
 
-        // 4. API 응답 데이터를 기반으로 UI 업데이트
         validList.forEach((u, idx) => {
             const box = document.getElementById(`sim-box-${idx}`);
             const data = simData[idx]; 
@@ -1308,7 +1267,6 @@ async function renderTargetUnivs(list, quantData) {
             if (data && typeof data.base_ui_score !== 'undefined' && data.sim_data) {
                 const currentScore = data.base_ui_score.toFixed(2);
                 
-                // +1점 시 최대 점수 상승폭 과목 찾기
                 let maxRise = 0;
                 let bestSubName = '-';
                 const subjects = [
@@ -1326,7 +1284,6 @@ async function renderTargetUnivs(list, quantData) {
                     }
                 });
 
-                // 성공적으로 데이터를 찾은 경우 박스 채우기
                 box.className = 'sim-summary-box';
                 box.innerHTML = `
                     <div class="sim-exam-label"><i class="fas fa-bolt"></i> 3월 학평 기준 시뮬레이션</div>
@@ -1354,7 +1311,6 @@ function renderQualitativeDetail(q) {
         return; 
     }
     
-    // 값이 없으면 '-' 출력하는 헬퍼 함수
     const v = (val) => val ? escapeHtml(val) : '-';
     
     area.innerHTML = `
@@ -1442,13 +1398,13 @@ function renderPayments(p) {
 
 async function saveAdminMemo() {
     const memo = document.getElementById('adminMemoInput').value;
-    const token = localStorage.getItem('accessToken');
     try {
-        await fetch(API_URL, {
+        await apiFetch(API_URL, {
             method:'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body:JSON.stringify({ type:'admin_update_memo', userId:adminId, data:{targetUserId, memo} })
         });
         alert("메모 저장 완료");
-    } catch(e) { alert("저장 실패"); }
+    } catch(e) { 
+        if (e.message !== "Auth expired") alert("저장 실패"); 
+    }
 }
