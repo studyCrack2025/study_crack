@@ -376,6 +376,8 @@ async function searchStudents() {
                 data: { searchType: type, keyword: keyword } 
             })
         });
+        
+        const rawData = await response.json();
 
         // 데이터가 배열인지 확인 후 처리
         let students = [];
