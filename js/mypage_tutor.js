@@ -8,14 +8,42 @@ let tutorInfoData = {};
 let tutorCognitoUser = null; 
 let tutorTimerInterval = null;
 
+// 💡 공통 apiFetch 함수
+async function apiFetch(url, options = {}) {
+    const token = localStorage.getItem('accessToken');
+    const defaultHeaders = {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` })
+    };
+
+    options.headers = { ...defaultHeaders, ...options.headers };
+
+    try {
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
+                handleSignOut(); // 하단에 정의된 로그아웃 및 스토리지 클리어 함수 호출
+                return Promise.reject(new Error("Auth expired")); 
+            }
+            throw new Error(`HTTP Error: ${response.status}`);
+        }
+        return response;
+    } catch (error) {
+        console.error("API 통신 실패:", error);
+        throw error; 
+    }
+}
+
 // ==========================================
 // [초기화] DOM 로드 및 데이터 페치
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
-    const idToken = localStorage.getItem('idToken'); 
+    const accessToken = localStorage.getItem('accessToken'); 
     const userId = localStorage.getItem('userId');
 
-    if (!idToken) {
+    if (!accessToken) {
         alert("로그인이 필요합니다.");
         window.location.href = '/login';
         return;
@@ -59,7 +87,7 @@ function initTutorCognito() {
     
     // 2. 만약 못 가져왔다면 localStorage에 저장된 userEmail을 사용해 수동 생성합니다.
     if (!tutorCognitoUser) {
-        const userEmail = localStorage.getItem('userEmail'); // 키값 수정
+        const userEmail = localStorage.getItem('userEmail'); 
         if (userEmail) {
             tutorCognitoUser = new AmazonCognitoIdentity.CognitoUser({
                 Username: userEmail,
@@ -80,7 +108,6 @@ window.switchTab = function(tabName) {
     if (tabName === 'info' && btns[0]) btns[0].classList.add('active');
     else if (tabName === 'students' && btns[1]) { 
         btns[1].classList.add('active'); 
-        // [핵심] 여기서 loadMyStudents 호출
         loadMyStudents(); 
     }
 
@@ -93,22 +120,15 @@ window.switchTab = function(tabName) {
 // [기능 1] 튜터 정보 로드 (프로필 & 계좌)
 // ==========================================
 async function loadTutorInfo(userId) {
-    const token = localStorage.getItem('idToken');
     try {
-        const res = await fetch(TUTOR_API_URL, {
+        const res = await apiFetch(TUTOR_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'tutor_get_user', userId: userId })
         });
         
-        if (!res.ok) throw new Error("Load Failed");
-        
-        // [수정] DocumentClient를 쓰면 이미 파싱된 JSON이 옴. 이중 파싱 방지.
         let rawData = await res.json();
-        // 만약 DynamoDB JSON 포맷(.S, .N 등)이 남아있다면 파싱, 아니면 그대로 사용
         const data = (rawData.S || rawData.N || rawData.M) ? parseDynamoItem(rawData) : rawData;
 
-        // 전역 변수에 저장 (학생 로드 시 사용됨)
         tutorInfoData = data;
 
         // 1. 기본 정보 렌더링
@@ -139,11 +159,11 @@ async function loadTutorInfo(userId) {
                 checkDeleteButtonVisibility(data.profileImage);
             }
         }
-        return true; // 성공 리턴
+        return true; 
 
     } catch (e) {
-        console.error("Tutor Info Load Error:", e);
-        return false; // 실패 리턴
+        if (e.message !== "Auth expired") console.error("Tutor Info Load Error:", e);
+        return false; 
     }
 }
 
@@ -154,7 +174,6 @@ window.openProfileModal = function() {
     document.getElementById('profileModal').classList.remove('hidden');
 }
 
-// 프로필 상세 정보 저장
 window.saveProfileModalData = async function() {
     const nickname = document.getElementById('modalNickname').value;
     const school = document.getElementById('modalSchool').value;
@@ -163,12 +182,10 @@ window.saveProfileModalData = async function() {
     const message = document.getElementById('modalMessage').value;
 
     const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('idToken');
 
     try {
-        const response = await fetch(TUTOR_API_URL, {
+        await apiFetch(TUTOR_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
                 type: 'tutor_update_profile_detail', 
                 userId, 
@@ -176,22 +193,17 @@ window.saveProfileModalData = async function() {
             })
         });
 
-        if (response.ok) {
-            alert("프로필 정보가 저장되었습니다.");
-            closeModal('profileModal');
-            
-            // 로컬 데이터 즉시 반영
-            tutorInfoData.nickname = nickname;
-            tutorInfoData.school = school;
-            tutorInfoData.major = major;
-            tutorInfoData.strengths = strengths;
-            tutorInfoData.message = message;
-        } else {
-            alert("저장에 실패했습니다.");
-        }
+        alert("프로필 정보가 저장되었습니다.");
+        closeModal('profileModal');
+        
+        tutorInfoData.nickname = nickname;
+        tutorInfoData.school = school;
+        tutorInfoData.major = major;
+        tutorInfoData.strengths = strengths;
+        tutorInfoData.message = message;
+        
     } catch (error) {
-        console.error(error);
-        alert("통신 오류가 발생했습니다.");
+        if (error.message !== "Auth expired") alert("저장에 실패했습니다.");
     }
 }
 
@@ -246,22 +258,17 @@ async function loadDepositHistoryData() {
     tbody.innerHTML = '<tr><td colspan="4" class="empty-msg"><i class="fas fa-spinner fa-spin"></i> 내역 조회 중...</td></tr>';
 
     const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('idToken');
 
     try {
-        const response = await fetch(TUTOR_API_URL, {
+        const response = await apiFetch(TUTOR_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
                 type: 'tutor_get_payment_history', 
                 userId: userId 
             })
         });
-
-        if (!response.ok) throw new Error("Payment History Load Failed");
         
         const rawList = await response.json();
-        // 마찬가지로 이중 파싱 방지
         let list = [];
         if (Array.isArray(rawList)) {
             list = rawList.map(item => (item.S || item.N || item.M) ? parseDynamoItem(item) : item);
@@ -304,27 +311,24 @@ async function loadDepositHistoryData() {
         });
 
     } catch (e) {
-        console.error(e);
-        tbody.innerHTML = '<tr><td colspan="4" class="empty-msg">데이터를 불러오지 못했습니다.</td></tr>';
+        if (e.message !== "Auth expired") tbody.innerHTML = '<tr><td colspan="4" class="empty-msg">데이터를 불러오지 못했습니다.</td></tr>';
     }
 }
 
 async function saveSingleField(field, value) {
     const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('idToken');
     try {
-        const response = await fetch(TUTOR_API_URL, {
+        await apiFetch(TUTOR_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
                 type: 'tutor_update_member_info', 
                 userId, 
                 data: { [field]: value } 
             })
         });
-        return response.ok;
+        return true;
     } catch (error) {
-        console.error(error);
+        if (error.message !== "Auth expired") console.error(error);
         return false;
     }
 }
@@ -333,7 +337,6 @@ async function saveSingleField(field, value) {
 // [기타] 프로필 사진, 학생 관리, 계정 관리
 // ==========================================
 
-// [프로필 사진]
 window.triggerFileUpload = function(){ 
     document.getElementById('profileFileInput').click(); 
 }
@@ -343,59 +346,52 @@ window.handleProfileUpload = async function(input) {
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) { alert("파일 크기는 5MB 이하여야 합니다."); return; }
 
-    const token = localStorage.getItem('idToken');
     const imgElem = document.getElementById('profileImg');
     const originalSrc = imgElem.src;
     
     imgElem.style.opacity = '0.5';
 
     try {
-        // 1. Presigned URL
-        const presignRes = await fetch(FILE_API_URL, {
+        // 1. Presigned URL (apiFetch 사용)
+        const presignRes = await apiFetch(FILE_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'get_presigned_url',
                 data: { fileName: file.name, fileType: file.type, folder: 'profile' }
             })
         });
-        if (!presignRes.ok) throw new Error("업로드 URL 발급 실패");
         
-        // 🚨 [수정 1] fields 추출 추가
         const { uploadUrl, fileUrl, fields } = await presignRes.json();
 
-        // 🚨 [수정 2] FormData 생성 및 POST 방식으로 S3 업로드
         const formData = new FormData();
         Object.entries(fields).forEach(([key, value]) => {
             formData.append(key, value);
         });
-        formData.append('file', file); // 파일은 무조건 맨 마지막에 추가
+        formData.append('file', file);
 
+        // 💡 2. S3 실제 업로드 (apiFetch 절대 사용 금지! 순수 fetch 유지)
         const s3Upload = await fetch(uploadUrl, { 
-            method: 'POST', // PUT -> POST
-            body: formData  // 헤더 없이 전송
+            method: 'POST', 
+            body: formData  
         });
         
         if (!s3Upload.ok) throw new Error("S3 업로드 실패");
 
-        // 3. DB Update
-        const updateRes = await fetch(FILE_API_URL, {
+        // 3. DB Update (apiFetch 사용)
+        await apiFetch(FILE_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
                 type: 'update_user_profile_image', 
                 data: { profileImageUrl: fileUrl } 
             })
         });
-        if (!updateRes.ok) throw new Error("업데이트 실패");
 
         imgElem.src = escapeHtml(fileUrl);
         alert("프로필 사진이 변경되었습니다.");
         checkDeleteButtonVisibility(fileUrl);
 
     } catch (e) {
-        console.error(e);
-        alert("오류: " + e.message);
+        if (e.message !== "Auth expired") alert("오류: " + e.message);
         imgElem.src = originalSrc;
     } finally {
         imgElem.style.opacity = '1'; 
@@ -407,14 +403,12 @@ window.handleProfileDelete = async function() {
     if (!confirm("프로필 사진을 삭제하시겠습니까?")) return;
     const imgElem = document.getElementById('profileImg');
     const currentUrl = imgElem.src;
-    const token = localStorage.getItem('idToken');
 
     try {
         // 1. S3 파일 삭제
         if (!currentUrl.includes('placehold.co') && !currentUrl.includes('assets/images')) {
-            await fetch(FILE_API_URL, {
+            await apiFetch(FILE_API_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ 
                     type: 'delete_s3_file', 
                     data: { fileUrl: currentUrl } 
@@ -422,13 +416,11 @@ window.handleProfileDelete = async function() {
             });
         }
         
-        // 2. DB 업데이트 (프로필 이미지 지우기)
-        await fetch(FILE_API_URL, {
+        // 2. DB 업데이트
+        await apiFetch(FILE_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
                 type: 'update_user_profile_image', 
-                // userId 제거, data 객체 구조화
                 data: { profileImageUrl: "" } 
             })
         });
@@ -437,8 +429,7 @@ window.handleProfileDelete = async function() {
         alert("삭제되었습니다.");
         checkDeleteButtonVisibility("");
     } catch (e) { 
-        console.error(e); 
-        alert("삭제 실패"); 
+        if (e.message !== "Auth expired") alert("삭제 실패"); 
     }
 }
 
@@ -454,7 +445,6 @@ window.loadMyStudents = async function() {
     tbody.innerHTML = '<tr><td colspan="5" class="empty-msg"><i class="fas fa-spinner fa-spin"></i> 데이터 로딩 중...</td></tr>';
     
     const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('idToken');
     let myName = tutorInfoData.nickname || document.getElementById('userNameDisplay')?.innerText;
 
     if (!myName || myName === '이름 없음') {
@@ -463,13 +453,11 @@ window.loadMyStudents = async function() {
     }
 
     try {
-        const response = await fetch(TUTOR_API_URL, {
+        const response = await apiFetch(TUTOR_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'tutor_get_students', userId: userId, tutorName: myName })
         });
         
-        if (!response.ok) throw new Error("Load Failed");
         const students = await response.json();
 
         tbody.innerHTML = '';
@@ -479,7 +467,6 @@ window.loadMyStudents = async function() {
         }
         
         students.forEach(s => {
-             // 🔥 [핵심 수정] 백엔드에서 넘어온 s.tier 값을 직접 활용합니다.
              let tier = (s.tier || 'FREE').toUpperCase();
              let tierClass = 'tier-free';
              
@@ -499,7 +486,7 @@ window.loadMyStudents = async function() {
         });
 
     } catch (e) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">데이터를 불러오지 못했습니다.</td></tr>';
+        if (e.message !== "Auth expired") tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">데이터를 불러오지 못했습니다.</td></tr>';
     }
 }
 
@@ -512,17 +499,14 @@ window.toggleTutorNotiPanel = function() {
     const panel = document.getElementById('tutorNotiPanel');
     panel.classList.toggle('hidden');
     if (!panel.classList.contains('hidden')) {
-        fetchTutorNotifications(); // 열 때 최신화
+        fetchTutorNotifications(); 
     }
 }
 
 window.fetchTutorNotifications = async function() {
-    const token = localStorage.getItem('idToken');
-    
     try {
-        const response = await fetch(NOTI_API_URL, {
+        const response = await apiFetch(NOTI_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'tutor_get_notifications' })
         });
         const data = await response.json();
@@ -564,15 +548,15 @@ window.fetchTutorNotifications = async function() {
             listArea.appendChild(div);
         });
 
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+        if (e.message !== "Auth expired") console.error(e); 
+    }
 }
 
 window.markTutorNotiAsRead = async function(notiId) {
-    const token = localStorage.getItem('idToken');
     try {
-        await fetch(NOTI_API_URL, {
+        await apiFetch(NOTI_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'tutor_read_notification', data: { notiId: notiId } })
         });
         fetchTutorNotifications();
@@ -585,10 +569,8 @@ window.markAllTutorNotiRead = async function() {
 }
 
 // ==========================================
-// [기능 7] 사이드바 활동 정보 (학생 수, 시간) 관리
+// [기능 7] 사이드바 활동 정보 관리
 // ==========================================
-
-// [최대 희망 학생 수 수정]
 window.toggleEditMaxStudents = async function(btn) {
     const input = document.getElementById('profileMaxStudents');
     if (input.disabled) {
@@ -616,7 +598,6 @@ window.toggleEditMaxStudents = async function(btn) {
     }
 };
 
-// [주 최대 근무가능 시간 수정]
 window.toggleEditMaxHours = async function(btn) {
     const input = document.getElementById('profileMaxHours');
     if (input.disabled) {
@@ -648,9 +629,7 @@ window.toggleEditMaxHours = async function(btn) {
 // ==========================================
 // [기능 8] 튜터 파트너십 해지 (2단계 회원 탈퇴)
 // ==========================================
-
 window.openTutorWithdrawalModal = function() {
-    // 폼 안의 인풋들 초기화
     if(document.getElementById('withdrawalReqPassword')) document.getElementById('withdrawalReqPassword').value = '';
     if(document.getElementById('withdrawalFinalPassword')) document.getElementById('withdrawalFinalPassword').value = '';
     if(document.getElementById('withdrawalReason')) document.getElementById('withdrawalReason').value = '';
@@ -659,18 +638,16 @@ window.openTutorWithdrawalModal = function() {
     const pendingForm = document.getElementById('withdrawalPendingForm');
     const finalForm = document.getElementById('withdrawalFinalForm');
 
-    // DB에 저장된 탈퇴 상태(withdrawalStatus)에 따른 화면 제어
     if (tutorInfoData.withdrawalStatus === 'approved') {
         reqForm.classList.add('hidden');
         pendingForm.classList.add('hidden');
-        finalForm.classList.remove('hidden'); // 2단계 비번 입력창 표시
+        finalForm.classList.remove('hidden'); 
     } else if (tutorInfoData.withdrawalStatus === 'pending') {
         reqForm.classList.add('hidden');
-        pendingForm.classList.remove('hidden'); // 대기중 메시지만 표시
+        pendingForm.classList.remove('hidden'); 
         finalForm.classList.add('hidden');
     } else {
-        // 'none' 이거나 아예 값이 없을 때 (최초 요청)
-        reqForm.classList.remove('hidden'); // 사유 작성 폼 표시
+        reqForm.classList.remove('hidden'); 
         pendingForm.classList.add('hidden');
         finalForm.classList.add('hidden');
     }
@@ -705,14 +682,11 @@ window.requestTutorWithdrawal = function() {
     tutorCognitoUser.authenticateUser(authDetails, {
         onSuccess: async function(result) {
             try {
-                const token = localStorage.getItem('idToken');
-                
                 await saveSingleField('withdrawalStatus', 'pending');
                 tutorInfoData.withdrawalStatus = 'pending';
 
-                await fetch(NOTI_API_URL, {
+                await apiFetch(NOTI_API_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ 
                         type: 'tutor_request_withdrawal',
                         data: { reason: reason, tutorName: tutorInfoData.name } 
@@ -723,7 +697,7 @@ window.requestTutorWithdrawal = function() {
                 closeModal('tutorWithdrawalModal');
 
             } catch (e) {
-                alert("요청 중 오류가 발생했습니다.");
+                if (e.message !== "Auth expired") alert("요청 중 오류가 발생했습니다.");
             } finally {
                 btn.innerText = "탈퇴 승인 요청하기";
                 btn.disabled = false;
@@ -759,21 +733,16 @@ window.executeTutorWithdrawal = function() {
     tutorCognitoUser.authenticateUser(authDetails, {
         onSuccess: async function(result) {
             try {
-                const token = localStorage.getItem('idToken');
-                const res = await fetch(CONFIG.api.user, { // 유저 탈퇴 범용 API
+                await apiFetch(CONFIG.api.user, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ type: 'delete_user' })
                 });
 
-                if (res.ok) {
-                    alert("튜터 파트너십 해지 및 탈퇴가 완료되었습니다. 그동안 함께해주셔서 감사합니다.");
-                    handleSignOut();
-                } else {
-                    throw new Error("탈퇴 실패");
-                }
+                alert("튜터 파트너십 해지 및 탈퇴가 완료되었습니다. 그동안 함께해주셔서 감사합니다.");
+                handleSignOut();
+                
             } catch (e) {
-                alert("탈퇴 처리 중 오류가 발생했습니다.");
+                if (e.message !== "Auth expired") alert("탈퇴 처리 중 오류가 발생했습니다.");
                 btn.innerText = "네, 모든 데이터를 삭제하고 탈퇴합니다";
                 btn.disabled = false;
             }
@@ -818,10 +787,17 @@ function startTutorTimer(duration, displayId) {
     }, 1000);
 }
 
+// 💡 보완된 전역 escapeHtml 함수
 function escapeHtml(text) {
-    if (text == null) return "";
-    return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    if (text === null || text === undefined) return ""; 
+    return String(text) 
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
+
 function parseDynamoItem(item) {
     if (item === undefined || item === null) return null;
     if (typeof item !== 'object') return item;
