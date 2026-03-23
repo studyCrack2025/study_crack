@@ -2301,35 +2301,71 @@ function downloadReportPDF(reportTitle) {
     const printNode = reportElement.cloneNode(true);
     printNode.classList.add('pdf-rendering');
 
-    // 🔥 [핵심 수정] 삼성 인터넷 브라우저만 콕 집어서 감지
+    // 🔥 [핵심] 삼성 인터넷 브라우저만 콕 집어서 감지
     const isSamsungBrowser = /SamsungBrowser/i.test(navigator.userAgent);
 
-    const iframe = document.createElement('iframe');
-    
-    // 3. 인쇄용 iframe 생성 (브라우저별 분기 처리)
     if (isSamsungBrowser) {
-        // [삼성 인터넷 전용] 무시되지 않도록 화면 꽉 채우고 맨 뒤로 숨김
-        iframe.style.position = 'fixed';
-        iframe.style.top = '0';
-        iframe.style.left = '0';
-        iframe.style.width = '100vw';
-        iframe.style.height = '100vh';
-        iframe.style.zIndex = '-9999';
-        iframe.style.opacity = '0';
-    } else {
-        // [PC / 사파리 / 타 브라우저용] 기존에 멀쩡하게 작동하던 안전한 방식
-        iframe.style.position = 'absolute';
-        iframe.style.width = '1px';
-        iframe.style.height = '1px';
-        iframe.style.top = '-9999px';
-        iframe.style.left = '-9999px';
+        // [삼성 인터넷 전용] Iframe 인쇄를 무시하므로, 메인 화면 위에 인쇄용 레이어를 덮어씌움
+        const printOverlay = document.createElement('div');
+        printOverlay.id = 'samsung-print-overlay';
+        printOverlay.appendChild(printNode);
+        document.body.appendChild(printOverlay);
+
+        const printStyle = document.createElement('style');
+        printStyle.id = 'samsung-print-style';
+        printStyle.innerHTML = `
+            @media screen {
+                #samsung-print-overlay { display: none !important; }
+            }
+            @media print {
+                /* 기존 화면(메인, 모달 등) 전부 숨기기 */
+                body > *:not(#samsung-print-overlay) { display: none !important; }
+                body { background: white !important; margin: 0; padding: 0; }
+                
+                /* 복사한 인쇄용 레이어만 1024px 너비로 보여주기 */
+                #samsung-print-overlay { display: block !important; width: 1024px !important; background: white !important; }
+                
+                /* 기존에 사용하던 A4 최적화 스타일 그대로 적용 */
+                @page { size: A4 portrait; margin: 15mm 10mm; }
+                * { box-shadow: none !important; }
+                .modal-document::after { display: none !important; }
+                .doc-controls, .mobile-only-msg { display: none !important; }
+                .modal-document { width: 100% !important; padding: 40px !important; box-sizing: border-box !important; }
+                .doc-matched-box { margin-bottom: 20px !important; display: block !important; width: 100% !important; clear: both !important; page-break-inside: avoid !important; break-inside: avoid !important; }
+                .doc-matched-box img { display: block !important; max-width: 100% !important; max-height: 220mm !important; object-fit: contain !important; margin: 0 auto !important; page-break-inside: avoid !important; break-inside: avoid !important; }
+                .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-matched-body { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; }
+                .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-student-data { border-bottom: none !important; border-right: 1px dashed #cbd5e1 !important; flex: 1 1 45% !important; box-sizing: border-box !important; }
+                .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-tutor-feedback { flex: 1 1 55% !important; box-sizing: border-box !important; }
+                .doc-matched-box:last-child .doc-matched-body, .doc-matched-box:nth-last-child(2) .doc-matched-body { display: flex !important; flex-direction: column !important; }
+            }
+        `;
+        document.head.appendChild(printStyle);
+
+        // 팝업 차단기 발동 전에 즉시 메인 윈도우 인쇄 실행
+        window.print();
+
+        // 인쇄 창이 닫힌 후 오버레이 깨끗하게 삭제
+        setTimeout(() => {
+            if (document.getElementById('samsung-print-overlay')) document.getElementById('samsung-print-overlay').remove();
+            if (document.getElementById('samsung-print-style')) document.getElementById('samsung-print-style').remove();
+        }, 2000);
+
+        return; // 삼성 인터넷은 여기서 처리 끝!
     }
-    
+
+    // ==============================================================
+    // [PC / 사파리 등] 기존에 완벽하게 작동하던 Iframe 방식 원상복구
+    // ==============================================================
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.width = '1px';
+    iframe.style.height = '1px';
+    iframe.style.top = '-9999px';
+    iframe.style.left = '-9999px';
     iframe.style.pointerEvents = 'none';
     iframe.style.border = 'none';
     document.body.appendChild(iframe);
 
-    // 4. 현재 페이지의 CSS 가져오기
     const styleLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
         .map(link => `<link rel="stylesheet" href="${link.href}">`)
         .join('');
@@ -2337,7 +2373,6 @@ function downloadReportPDF(reportTitle) {
     const iframeDoc = iframe.contentWindow.document;
     iframeDoc.open();
     
-    // 5. 모바일/PC 통합 인쇄용 HTML 뼈대 작성
     iframeDoc.write(`
         <!DOCTYPE html>
         <html lang="ko">
@@ -2371,10 +2406,8 @@ function downloadReportPDF(reportTitle) {
     `);
     iframeDoc.close();
 
-    // 복사한 리포트 DOM 삽입
     iframeDoc.getElementById('print-body').appendChild(printNode);
 
-    // 6. 이미지 로딩 완료 체크 및 인쇄 실행 로직
     const imgs = iframeDoc.querySelectorAll('img');
     let loadedCount = 0;
     let isPrinted = false; 
@@ -2382,10 +2415,6 @@ function downloadReportPDF(reportTitle) {
     function triggerPrint() {
         if (isPrinted) return;
         isPrinted = true;
-        
-        // 삼성 인터넷은 팝업 차단에 민감하므로 딜레이를 줄이고, PC 등은 안정성을 위해 500ms 유지
-        const delay = isSamsungBrowser ? 150 : 500;
-        
         setTimeout(function() {
             try {
                 iframe.contentWindow.focus();
@@ -2394,7 +2423,7 @@ function downloadReportPDF(reportTitle) {
                 console.error("인쇄 실행 실패:", e);
                 alert("인쇄를 실행할 수 없습니다. 브라우저 설정을 확인해 주세요.");
             }
-        }, delay); 
+        }, 500); 
     }
 
     function checkAllImagesLoaded() {
@@ -2417,13 +2446,11 @@ function downloadReportPDF(reportTitle) {
         
         checkAllImagesLoaded();
 
-        // 네트워크 지연 대비 최후의 안전망
         setTimeout(() => {
             triggerPrint();
         }, 1500);
     }
 
-    // 8. 사용 완료된 iframe 메모리에서 정리
     iframe.contentWindow.onafterprint = function() {
         if (document.body.contains(iframe)) {
             document.body.removeChild(iframe);
