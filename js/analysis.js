@@ -2144,9 +2144,11 @@ function openFeedbackModal(data) {
             `;
         } else {
             // 이미지인 경우: 바로 렌더링
+            const noCacheUrl = `${escapeHtml(fb.tutorImage)}?t=${new Date().getTime()}`;
+            
             fileDisplayHtml = `
                 <div style="text-align:center; padding: 10px 0;">
-                    <img src="${escapeHtml(fb.tutorImage)}" alt="튜터 플래너 코칭" style="max-width:100%; height:auto; border-radius:8px; border:1px solid #cbd5e1; box-shadow:0 4px 10px rgba(0,0,0,0.05); display:block; margin: 0 auto;">
+                    <img src="${noCacheUrl}" crossorigin="anonymous" alt="튜터 플래너 코칭" style="max-width:100%; height:auto; border-radius:8px; border:1px solid #cbd5e1; box-shadow:0 4px 10px rgba(0,0,0,0.05); display:block; margin: 0 auto;">
                 </div>
             `;
         }
