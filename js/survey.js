@@ -1,7 +1,52 @@
 // js/survey.js      
+const USER_API_URL = CONFIG.api.user; // 💡 USER API URL 추가
 const DATA_FETCH_URL = CONFIG.api.analysis;   
 
 let examScores = {}; 
+
+// 💡 공통 apiFetch 함수 (accessToken 기반 통합 및 401 예외 처리)
+async function apiFetch(url, options = {}) {
+    const token = localStorage.getItem('accessToken');
+    const defaultHeaders = {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` })
+    };
+
+    options.headers = { ...defaultHeaders, ...options.headers };
+
+    try {
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                const currentPath = window.location.pathname;
+                if (!['/login', '/signup', '/'].includes(currentPath)) {
+                    alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = '/login'; 
+                }
+                return Promise.reject(new Error("Auth expired")); 
+            }
+            throw new Error(`서버 통신 오류 (상태 코드: ${response.status})`);
+        }
+        return response;
+    } catch (error) {
+        console.error("API 통신 실패:", error);
+        throw error; 
+    }
+}
+
+// 💡 한층 더 강력해진 escapeHtml 적용 (XSS 방어)
+function escapeHtml(text) {
+    if (text === null || text === undefined) return ""; 
+    return String(text) 
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     const userId = localStorage.getItem('userId');
@@ -21,11 +66,9 @@ function openTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     
-    // 1. 콘텐츠 탭 활성화
     const targetContent = document.getElementById(tabName);
     if (targetContent) targetContent.classList.add('active');
     
-    // 2. 버튼 탭 활성화 (이벤트 대신 요소 속성으로 직접 찾기)
     const targetBtn = document.querySelector(`.tab-btn[onclick="openTab('${tabName}')"]`);
     if (targetBtn) targetBtn.classList.add('active');
 }
@@ -66,20 +109,15 @@ async function requestScoreConversion(type) {
         return;
     }
 
-    const token = localStorage.getItem('idToken') || localStorage.getItem('accessToken');
-
     try {
         const pctEl = document.getElementById(pctId);
         const grdEl = document.getElementById(grdId);
         if(pctEl) pctEl.value = ""; pctEl.placeholder = "...";
         if(grdEl) grdEl.value = ""; grdEl.placeholder = "...";
         
-        const response = await fetch(DATA_FETCH_URL, {
+        // 💡 apiFetch 적용 (토큰 자동 주입 및 401 처리)
+        const response = await apiFetch(DATA_FETCH_URL, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` 
-            },
             body: JSON.stringify({
                 type: 'convert_score', 
                 month: month,
@@ -90,8 +128,6 @@ async function requestScoreConversion(type) {
             })
         });
 
-        if (!response.ok) throw new Error("Conversion failed");
-        
         const data = await response.json(); 
         
         if (data.error || (!data.pct && !data.grd)) {
@@ -107,8 +143,10 @@ async function requestScoreConversion(type) {
         if (data.grd && grdEl) grdEl.value = data.grd;
 
     } catch (e) {
-        console.error("환산 실패:", e);
-        alert("점수 환산 중 오류가 발생했습니다.");
+        if (e.message !== "Auth expired") {
+            console.error("환산 실패:", e);
+            alert("점수 환산 중 오류가 발생했습니다.");
+        }
     }
 }
 
@@ -179,14 +217,10 @@ function checkQualitativeForm() {
 
 // === 데이터 로드 ===
 async function fetchUserData(userId) {
-    const token = localStorage.getItem('idToken') || localStorage.getItem('accessToken');
     try {
-        const response = await fetch(USER_API_URL, {
+        // 💡 apiFetch 적용
+        const response = await apiFetch(USER_API_URL, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` 
-            },
             body: JSON.stringify({ type: 'get_user' })
         });
         const data = await response.json();
@@ -196,7 +230,9 @@ async function fetchUserData(userId) {
             examScores = data.quantitative;
             loadExamData(); 
         }
-    } catch (error) { console.error("데이터 로드 오류:", error); }
+    } catch (error) { 
+        if (error.message !== "Auth expired") console.error("데이터 로드 오류:", error); 
+    }
 }
 
 function fillQualitativeForm(qual) {
@@ -222,7 +258,7 @@ function fillQualitativeForm(qual) {
     }
     
     const ids = {
-        'highSchool': qual.school, // [추가] 출신 학교 불러오기
+        'highSchool': qual.school, 
         'targetStream': LEGACY_MAP[qual.stream] || qual.stream,
         'careerPath': qual.career,
         'mustGoCollege': LEGACY_MAP[qual.values?.mustGo] || qual.values?.mustGo,
@@ -273,13 +309,10 @@ function toggleSchoolInput() {
         hsInput.disabled = false;
         hsInput.setAttribute('required', 'true');
     }
-    checkQualitativeForm(); // 저장 버튼 상태 즉시 업데이트
+    checkQualitativeForm(); 
 }
 
 async function saveQualitative() {
-    const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('idToken') || localStorage.getItem('accessToken');
-    
     let statusVal = document.querySelector('input[name="studentStatus"]:checked')?.value;
     if (statusVal === 'other') statusVal = document.getElementById('statusEtcInput').value;
 
@@ -306,17 +339,19 @@ async function saveQualitative() {
     };
 
     try {
-        const res = await fetch(USER_API_URL, {
+        // 💡 apiFetch 적용
+        await apiFetch(USER_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'update_qual', data: data })
         });
-        if (res.ok) {
-            alert("저장되었습니다! 다음으로 '성적 입력' 탭을 작성해주세요.");
-            openTab('quantitative');
-            window.scrollTo(0,0);
-        }
-    } catch (e) { alert("저장 중 일시적인 문제가 발생했습니다. 닫고 다시 시도해주세요."); }
+        
+        alert("저장되었습니다! 다음으로 '성적 입력' 탭을 작성해주세요.");
+        openTab('quantitative');
+        window.scrollTo(0,0);
+        
+    } catch (e) { 
+        if (e.message !== "Auth expired") alert("저장 중 일시적인 문제가 발생했습니다. 닫고 다시 시도해주세요."); 
+    }
 }
 
 const TO_KOREAN = {
@@ -337,11 +372,9 @@ function loadExamData() {
     const month = document.getElementById('examSelect').value;
     const d = examScores[month] || {};
     
-    // 역변환 로직이 추가된 setVal 함수
     const setVal = (id, val) => { 
         const el = document.getElementById(id); 
         if(el) {
-            // DB에 저장된 예쁜 한글(예: '확통')이 들어오면 HTML용('hwak')으로 변환
             el.value = TO_HTML_VALUE[val] || val || ''; 
         }
     };
@@ -366,18 +399,14 @@ function loadExamData() {
 // 성적 저장 + restriction(제약조건) 자동 생성 로직 (한글로 DB 저장)
 // ============================================================
 async function saveQuantitative() {
-    const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('idToken') || localStorage.getItem('accessToken');
     const month = document.getElementById('examSelect').value;
     const getVal = (id) => document.getElementById(id).value;
 
-    // 1. 선택된 드롭다운 값을 가져오기
     const korOpt = getVal('koreanOpt');
     const mathOpt = getVal('mathOpt');
     const inq1Name = getVal('inq1Name');
     const inq2Name = getVal('inq2Name');
 
-    // 2. DB에 넣기 직전에 예쁜 한글명으로 변환해서 currentData 구성
     const currentData = {
         kor: { opt: TO_KOREAN[korOpt] || korOpt, std: getVal('korStd'), pct: getVal('korPct'), grd: getVal('korGrd') },
         math: { opt: TO_KOREAN[mathOpt] || mathOpt, std: getVal('mathStd'), pct: getVal('mathPct'), grd: getVal('mathGrd') },
@@ -388,10 +417,8 @@ async function saveQuantitative() {
         foreign: { name: getVal('foreignName'), grd: getVal('foreignGrd') }
     };
 
-    // 3. restriction 자동 생성 로직
     const restriction = ["자유선택"]; 
 
-    // (A) 과탐 과목 리스트 (물원 -> 물1 형식으로 업데이트)
     const sciSubjects = ["물1","화1","생1","지1","물2","화2","생2","지2"];
     const socSubjects = ["생활과 윤리","윤리와 사상","한국지리","세계지리","동아시아사","세계사","경제","정치와 법","사회·문화"];
 
@@ -403,7 +430,6 @@ async function saveQuantitative() {
     const isSciAll = sciSubjects.includes(inq1) && sciSubjects.includes(inq2);
     const isSocAll = socSubjects.includes(inq1) && socSubjects.includes(inq2);
 
-    // 수학 판별 (한글 기준으로 판별)
     const isMiKi = (mathVal === '미적' || mathVal === '기하'); 
     const isHwak = (mathVal === '확통');
 
@@ -419,14 +445,16 @@ async function saveQuantitative() {
     examScores[month] = currentData;
 
     try {
-        const res = await fetch(USER_API_URL, {
+        // 💡 apiFetch 적용
+        await apiFetch(USER_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'update_quan', data: examScores })
         });
-        if (res.ok) {
-            alert("성적 데이터가 저장되었습니다.\n(지원 가능 전형이 자동 계산되었습니다)\n\n솔루션 페이지로 이동합니다.");
-            window.location.href = '/analysis';
-        }
-    } catch (e) { alert("저장 실패"); }
+        
+        alert("성적 데이터가 저장되었습니다.\n(지원 가능 전형이 자동 계산되었습니다)\n\n솔루션 페이지로 이동합니다.");
+        window.location.href = '/analysis';
+        
+    } catch (e) { 
+        if (e.message !== "Auth expired") alert("저장 실패"); 
+    }
 }
