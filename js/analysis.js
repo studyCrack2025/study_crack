@@ -2287,7 +2287,7 @@ function openFeedbackModal(data) {
 }
 
 // ============================================================
-// PDF 다운로드 (백지 오류 완벽 해결 & 75% 자동 축소)
+// PDF 다운로드 기능 (내용물 75% 축소 및 양옆 잘림 완벽 해결)
 // ============================================================
 async function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
@@ -2298,94 +2298,88 @@ async function downloadReportPDF(reportTitle) {
         return;
     }
 
-    // 1. 기존 CSS 충돌을 피해 캡처 작업을 진행할 '독립된 오버레이' 생성
-    const overlay = document.createElement('div');
-    overlay.style.position = 'fixed';
-    overlay.style.top = '0';
-    overlay.style.left = '0';
-    overlay.style.width = '100vw';
-    overlay.style.height = '100vh';
-    overlay.style.zIndex = '999999'; // 화면 맨 앞으로 가져옴
-    overlay.style.backgroundColor = '#ffffff';
-
-    // 2. 리포트 원본을 복제하여 오버레이 안에 삽입
-    const printNode = reportElement.cloneNode(true);
-    printNode.classList.add('pdf-rendering');
-    
-    // 불필요한 버튼 등 제거
-    const controls = printNode.querySelector('.doc-controls');
-    const mobileMsg = printNode.querySelector('.mobile-only-msg');
-    if (controls) controls.remove();
-    if (mobileMsg) mobileMsg.remove();
-
-    // 🚨 3. [핵심] 정확히 75% 축소를 위한 마법의 해상도 조작 (1024 / 0.75 ≈ 1366px)
-    printNode.style.width = '1366px'; 
-    printNode.style.margin = '0';
-    printNode.style.padding = '40px 30px'; // 여백을 고정하여 내부 콘텐츠가 온전히 1366px을 쓰도록 강제
-    printNode.style.boxSizing = 'border-box';
-    printNode.style.position = 'absolute';
-    printNode.style.top = '0';
-    printNode.style.left = '0';
-    printNode.style.zIndex = '1'; // 오버레이 안에서 가장 바닥에 위치
-
-    // 4. 유저 눈에 복제된 거대한 화면이 보이지 않도록 가려주는 가림막 (흰색 배경)
-    const cover = document.createElement('div');
-    cover.style.position = 'absolute';
-    cover.style.top = '0';
-    cover.style.left = '0';
-    cover.style.width = '100%';
-    cover.style.height = '100%';
-    cover.style.backgroundColor = '#ffffff';
-    cover.style.zIndex = '5'; // 복제본(1)보다 위에 덮음
-
-    // 5. 로딩창 UI (제일 위에 표시)
-    const loadingUI = document.createElement('div');
-    loadingUI.style.position = 'absolute';
-    loadingUI.style.top = '50%';
-    loadingUI.style.left = '50%';
-    loadingUI.style.transform = 'translate(-50%, -50%)';
-    loadingUI.style.zIndex = '10';
-    loadingUI.style.textAlign = 'center';
-    loadingUI.innerHTML = `
+    // 로딩 오버레이 띄우기
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.95); z-index:999999; display:flex; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(5px);';
+    loadingOverlay.innerHTML = `
         <i class="fas fa-spinner fa-spin fa-3x" style="color:#2563eb; margin-bottom:20px;"></i>
         <h2 style="color:#1e293b; font-weight:800; margin-bottom:10px;">PDF 리포트 생성 중...</h2>
-        <p style="color:#64748b; font-weight:600;">(레이아웃 최적화 및 고화질 변환 중)</p>
+        <p style="color:#64748b;">고화질 렌더링 작업으로 인해 몇 초 정도 소요될 수 있습니다.</p>
     `;
+    document.body.appendChild(loadingOverlay);
 
-    // 조립 후 body에 부착
-    overlay.appendChild(printNode);
-    overlay.appendChild(cover);
-    overlay.appendChild(loadingUI);
-    document.body.appendChild(overlay);
+    // 불필요한 UI 숨김
+    const controls = reportElement.querySelector('.doc-controls');
+    const mobileMsg = reportElement.querySelector('.mobile-only-msg');
+    if (controls) controls.style.display = 'none';
+    if (mobileMsg) mobileMsg.style.display = 'none';
 
-    // 브라우저가 복제된 DOM을 완전히 그릴 수 있도록 0.3초 여유 부여 (백지 방지용)
+    const modal = document.getElementById('feedbackModal');
+    const modalContent = modal.querySelector('.custom-modal-content');
+    const modalBody = document.getElementById('modalContent');
+    
+    // 원상 복구를 위한 기존 스타일 백업
+    const origModalStyle = modal.style.cssText;
+    const origContentStyle = modalContent.style.cssText;
+    const origBodyStyle = modalBody.style.cssText;
+    
+    const origReportWidth = reportElement.style.width;
+    const origReportMaxWidth = reportElement.style.maxWidth;
+    const origReportZoom = reportElement.style.zoom;
+
+    // 모달 스크롤 및 크기 제한 해제 (잘림 방지)
+    modal.style.overflow = 'visible';
+    modalContent.style.overflow = 'visible';
+    modalContent.style.maxHeight = 'none';
+    modalContent.style.maxWidth = 'none'; // 🚨 부모 CSS가 짓누르는 것 해제
+    modalBody.style.overflow = 'visible';
+    modalBody.style.maxHeight = 'none';
+    
+    // 🚨 [핵심 해결 포인트]
+    reportElement.style.width = '1024px';       // 가장 안정적인 너비인 1024px로 원복
+    reportElement.style.maxWidth = 'none';      // CSS 제약 완벽 해제
+    reportElement.style.zoom = '0.75';          // 내용물만 75% 비율로 깔끔하게 축소!
+    reportElement.classList.add('pdf-rendering');
+
+    // 렌더링이 안정화될 수 있도록 약간 대기
     await new Promise(resolve => setTimeout(resolve, 300));
 
     try {
         const opt = {
-            margin:       [10, 10, 10, 10], 
+            margin:       [15, 10, 15, 10], 
             filename:     `스터디크랙_${reportTitle}.pdf`,
-            image:        { type: 'jpeg', quality: 1.0 },
+            image:        { type: 'jpeg', quality: 1.0 }, 
             html2canvas:  { 
                 scale: 2, 
                 useCORS: true, 
                 scrollY: 0,
                 scrollX: 0,
-                windowWidth: 1366 // 🚨 여기서도 1366px로 맞춰줍니다.
+                windowWidth: 1024 // 1024로 맞춤
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
             pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } 
         };
 
-        // 캡처 엔진은 커버(cover)를 무시하고 타겟(printNode)만 쏙 뽑아서 캡처합니다.
-        await html2pdf().set(opt).from(printNode).save();
+        await html2pdf().set(opt).from(reportElement).save();
 
     } catch (error) {
         console.error("PDF 생성 실패:", error);
         alert("PDF 생성 중 오류가 발생했습니다.");
     } finally {
-        // 작업 완료 후 흔적 없이 삭제
-        document.body.removeChild(overlay);
+        if (controls) controls.style.display = '';
+        if (mobileMsg) mobileMsg.style.display = '';
+        
+        // 조작했던 스타일 모두 원상복구
+        reportElement.style.width = origReportWidth;
+        reportElement.style.maxWidth = origReportMaxWidth;
+        reportElement.style.zoom = origReportZoom;
+        reportElement.classList.remove('pdf-rendering');
+        
+        modal.style.cssText = origModalStyle;
+        modalContent.style.cssText = origContentStyle;
+        modalBody.style.cssText = origBodyStyle;
+
+        document.body.removeChild(loadingOverlay);
     }
 }
 
