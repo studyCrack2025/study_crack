@@ -2303,10 +2303,13 @@ function downloadReportPDF(reportTitle) {
 
     // 3. 인쇄용 iframe 생성 (모바일에서도 안전하게 숨기기 위해 투명도 대신 좌표 이동)
     const iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute';
-    iframe.style.width = '1px';
-    iframe.style.height = '1px';
-    iframe.style.top = '-9999px'; 
+    iframe.style.position = 'fixed'; // absolute 대신 fixed로 뷰포트 고정
+    iframe.style.top = '0';
+    iframe.style.left = '0';
+    iframe.style.width = '100vw';    // 삼성 인터넷이 무시하지 않도록 꽉 채움
+    iframe.style.height = '100vh';   // 전체 높이 확보
+    iframe.style.zIndex = '-9999';   // 현재 화면 맨 뒤로 숨김 (유저 눈엔 안 보임)
+    iframe.style.opacity = '0';      // 완전 투명하게
     iframe.style.pointerEvents = 'none';
     iframe.style.border = 'none';
     document.body.appendChild(iframe);
