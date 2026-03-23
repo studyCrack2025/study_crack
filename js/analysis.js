@@ -2301,15 +2301,15 @@ function downloadReportPDF(reportTitle) {
     const printNode = reportElement.cloneNode(true);
     printNode.classList.add('pdf-rendering');
 
-    // 3. 인쇄용 iframe 생성 (모바일에서도 안전하게 숨기기 위해 투명도 대신 좌표 이동)
+    // 3. 인쇄용 iframe 생성 (삼성 인터넷 우회를 위해 뷰포트를 꽉 채우고 맨 뒤로 숨김)
     const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed'; // absolute 대신 fixed로 뷰포트 고정
+    iframe.style.position = 'fixed'; 
     iframe.style.top = '0';
     iframe.style.left = '0';
-    iframe.style.width = '100vw';    // 삼성 인터넷이 무시하지 않도록 꽉 채움
-    iframe.style.height = '100vh';   // 전체 높이 확보
-    iframe.style.zIndex = '-9999';   // 현재 화면 맨 뒤로 숨김 (유저 눈엔 안 보임)
-    iframe.style.opacity = '0';      // 완전 투명하게
+    iframe.style.width = '100vw';    
+    iframe.style.height = '100vh';   
+    iframe.style.zIndex = '-9999';   
+    iframe.style.opacity = '0';      
     iframe.style.pointerEvents = 'none';
     iframe.style.border = 'none';
     document.body.appendChild(iframe);
@@ -2359,67 +2359,24 @@ function downloadReportPDF(reportTitle) {
     // 복사한 리포트 DOM 삽입
     iframeDoc.getElementById('print-body').appendChild(printNode);
 
-    // 6. 이미지 로딩 완료 체크 및 인쇄 실행 로직 (버그 수정 완료)
-    const imgs = iframeDoc.querySelectorAll('img');
-    let loadedCount = 0;
-    let isPrinted = false; // 중복 인쇄 방지 플래그
-    
-    function triggerPrint() {
-        if (isPrinted) return;
-        isPrinted = true;
-        
-        // CSS가 렌더링될 아주 짧은 시간(250ms)만 부여해 팝업 차단 회피
-        setTimeout(function() {
-            try {
-                iframe.contentWindow.focus();
-                iframe.contentWindow.print();
-            } catch (e) {
-                console.error("인쇄 실행 실패:", e);
-                alert("인쇄를 실행할 수 없습니다. 브라우저 설정을 확인해 주세요.");
-            }
-        }, 500); 
-    }
-
-    function checkAllImagesLoaded() {
-        if (loadedCount >= imgs.length) {
-            triggerPrint();
+    // 6. [핵심 수정] 타임아웃 지연 제거 및 동기적 호출에 가깝게 변경
+    // 브라우저 렌더링 트리에 iframe 문서가 반영될 수 있도록 딱 한 프레임(약 16ms)만 넘깁니다.
+    requestAnimationFrame(() => {
+        try {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+        } catch (e) {
+            console.error("인쇄 실행 실패:", e);
+            alert("인쇄를 실행할 수 없거나 브라우저에서 차단했습니다.");
         }
-    }
+    });
 
-    if (imgs.length === 0) {
-        triggerPrint();
-    } else {
-        imgs.forEach(img => {
-            if (img.complete) {
-                loadedCount++; // 즉시 완료된 이미지 카운트
-            } else {
-                img.onload = () => { loadedCount++; checkAllImagesLoaded(); };
-                img.onerror = () => { loadedCount++; checkAllImagesLoaded(); };
-            }
-        });
-        
-        // 🔥 여기가 핵심! Base64 이미지처럼 이미 다 로드된 상태일 경우 루프가 끝나자마자 바로 호출
-        checkAllImagesLoaded();
-
-        // 7. 네트워크 지연 대비 최후의 안전망 (1.5초 후 강제 실행)
-        setTimeout(() => {
-            triggerPrint();
-        }, 1500);
-    }
-
-    // 8. 사용 완료된 iframe 메모리에서 정리
-    iframe.contentWindow.onafterprint = function() {
-        if (document.body.contains(iframe)) {
-            document.body.removeChild(iframe);
-        }
-    };
-    
-    // 모바일 등에서 onafterprint 이벤트가 씹히는 경우 대비
+    // 7. 인쇄 프로세스가 진행되는 동안 화면이 깨지지 않도록 충분한 시간을 두고 iframe 정리
     setTimeout(() => {
         if (document.body.contains(iframe)) {
             document.body.removeChild(iframe);
         }
-    }, 60000); 
+    }, 15000); 
 }
 
 function openWeeklyCheckModal() {
