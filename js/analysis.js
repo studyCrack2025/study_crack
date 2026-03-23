@@ -2285,9 +2285,9 @@ function openFeedbackModal(data) {
 }
 
 // ============================================================
-// PDF 다운로드 기능
+// PDF 다운로드 기능 (크로스 브라우징 완벽 지원)
 // ============================================================
-function downloadReportPDF(reportTitle) {
+async function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
 
@@ -2297,171 +2297,66 @@ function downloadReportPDF(reportTitle) {
         return;
     }
 
-    // 2. DOM 객체를 깊은 복사
+    // 2. 모달 내부에 있어서 스크롤이 잘리는 현상을 방지하기 위해 복제본 생성
     const printNode = reportElement.cloneNode(true);
-    printNode.classList.add('pdf-rendering');
-
-    // 🔥 [핵심] 삼성 인터넷 브라우저만 콕 집어서 감지
-    const isSamsungBrowser = /SamsungBrowser/i.test(navigator.userAgent);
-
-    if (isSamsungBrowser) {
-        // [삼성 인터넷 전용] Iframe 인쇄를 무시하므로, 메인 화면 위에 인쇄용 레이어를 덮어씌움
-        const printOverlay = document.createElement('div');
-        printOverlay.id = 'samsung-print-overlay';
-        printOverlay.appendChild(printNode);
-        document.body.appendChild(printOverlay);
-
-        const printStyle = document.createElement('style');
-        printStyle.id = 'samsung-print-style';
-        printStyle.innerHTML = `
-            @media screen {
-                #samsung-print-overlay { display: none !important; }
-            }
-            @media print {
-                /* 기존 화면(메인, 모달 등) 전부 숨기기 */
-                body > *:not(#samsung-print-overlay) { display: none !important; }
-                body { background: white !important; margin: 0; padding: 0; }
-                
-                /* 복사한 인쇄용 레이어만 1024px 너비로 보여주기 */
-                #samsung-print-overlay { display: block !important; width: 1024px !important; background: white !important; }
-                
-                /* 기존에 사용하던 A4 최적화 스타일 그대로 적용 */
-                @page { size: A4 portrait; margin: 15mm 10mm; }
-                * { box-shadow: none !important; }
-                .modal-document::after { display: none !important; }
-                .doc-controls, .mobile-only-msg { display: none !important; }
-                .modal-document { width: 100% !important; padding: 40px !important; box-sizing: border-box !important; }
-                .doc-matched-box { margin-bottom: 20px !important; display: block !important; width: 100% !important; clear: both !important; page-break-inside: avoid !important; break-inside: avoid !important; }
-                .doc-matched-box img { display: block !important; max-width: 100% !important; max-height: 220mm !important; object-fit: contain !important; margin: 0 auto !important; page-break-inside: avoid !important; break-inside: avoid !important; }
-                .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-matched-body { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; }
-                .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-student-data { border-bottom: none !important; border-right: 1px dashed #cbd5e1 !important; flex: 1 1 45% !important; box-sizing: border-box !important; }
-                .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-tutor-feedback { flex: 1 1 55% !important; box-sizing: border-box !important; }
-                .doc-matched-box:last-child .doc-matched-body, .doc-matched-box:nth-last-child(2) .doc-matched-body { display: flex !important; flex-direction: column !important; }
-            }
-        `;
-        document.head.appendChild(printStyle);
-
-        // 팝업 차단기 발동 전에 즉시 메인 윈도우 인쇄 실행
-        window.print();
-
-        // 인쇄 창이 닫힌 후 오버레이 깨끗하게 삭제
-        setTimeout(() => {
-            if (document.getElementById('samsung-print-overlay')) document.getElementById('samsung-print-overlay').remove();
-            if (document.getElementById('samsung-print-style')) document.getElementById('samsung-print-style').remove();
-        }, 2000);
-
-        return; // 삼성 인터넷은 여기서 처리 끝!
-    }
-
-    // ==============================================================
-    // [PC / 사파리 등] 기존에 완벽하게 작동하던 Iframe 방식 원상복구
-    // ==============================================================
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute';
-    iframe.style.width = '1px';
-    iframe.style.height = '1px';
-    iframe.style.top = '-9999px';
-    iframe.style.left = '-9999px';
-    iframe.style.pointerEvents = 'none';
-    iframe.style.border = 'none';
-    document.body.appendChild(iframe);
-
-    const styleLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
-        .map(link => `<link rel="stylesheet" href="${link.href}">`)
-        .join('');
-
-    const iframeDoc = iframe.contentWindow.document;
-    iframeDoc.open();
     
-    iframeDoc.write(`
-        <!DOCTYPE html>
-        <html lang="ko">
-        <head>
-            <title>스터디크랙_${reportTitle}</title>
-            <meta name="viewport" content="width=1024">
-            <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-            ${styleLinks}
-            <style>
-                @page { size: A4 portrait; margin: 15mm 10mm; }
-                body { width: 1024px !important; background: white !important; margin: 0 auto; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                * { box-shadow: none !important; }
-                .modal-document::after { display: none !important; }
-                .doc-controls { display: none !important; }
-                .mobile-only-msg { display: none !important; }
-                .modal-document { width: 100% !important; padding: 40px !important; box-sizing: border-box !important; }
-                .doc-matched-box { margin-bottom: 20px !important; display: block !important; width: 100% !important; clear: both !important; }
-                .doc-matched-box:not(:last-child) { page-break-inside: avoid !important; break-inside: avoid !important; }
-                .doc-matched-box img { display: block !important; max-width: 100% !important; max-height: 220mm !important; object-fit: contain !important; margin: 0 auto !important; page-break-inside: avoid !important; break-inside: avoid !important; }
-                .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-matched-body { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; }
-                .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-student-data { border-bottom: none !important; border-right: 1px dashed #cbd5e1 !important; flex: 1 1 45% !important; box-sizing: border-box !important; }
-                .doc-matched-box:not(:last-child):not(:nth-last-child(2)) .doc-tutor-feedback { flex: 1 1 55% !important; box-sizing: border-box !important; }
-                .doc-matched-box:last-child .doc-matched-body { display: flex !important; flex-direction: column !important; }
-                .doc-matched-box:nth-last-child(2) .doc-matched-body { display: flex !important; flex-direction: column !important; }
-            </style>
-        </head>
-        <body id="print-body">
-        </body>
-        </html>
-    `);
-    iframeDoc.close();
-
-    iframeDoc.getElementById('print-body').appendChild(printNode);
-
-    const imgs = iframeDoc.querySelectorAll('img');
-    let loadedCount = 0;
-    let isPrinted = false; 
+    // 복제된 노드를 화면 밖(보이지 않는 곳)에 A4 비율(가로 1024px)로 고정하여 렌더링
+    const container = document.createElement('div');
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+    container.style.top = '0';
+    container.style.width = '1024px'; // PC 데스크탑 뷰 강제
+    container.style.background = 'white';
+    container.style.padding = '40px';
+    container.style.boxSizing = 'border-box';
     
-    function triggerPrint() {
-        if (isPrinted) return;
-        isPrinted = true;
-        setTimeout(function() {
-            try {
-                iframe.contentWindow.focus();
-                iframe.contentWindow.print();
-            } catch (e) {
-                console.error("인쇄 실행 실패:", e);
-                alert("인쇄를 실행할 수 없습니다. 브라우저 설정을 확인해 주세요.");
-            }
-        }, 500); 
-    }
+    // 버튼이나 모바일 경고창 등 불필요한 UI 제거
+    const controls = printNode.querySelector('.doc-controls');
+    const mobileMsg = printNode.querySelector('.mobile-only-msg');
+    if(controls) controls.remove();
+    if(mobileMsg) mobileMsg.remove();
 
-    function checkAllImagesLoaded() {
-        if (loadedCount >= imgs.length) {
-            triggerPrint();
-        }
-    }
+    container.appendChild(printNode);
+    document.body.appendChild(container);
 
-    if (imgs.length === 0) {
-        triggerPrint();
-    } else {
-        imgs.forEach(img => {
-            if (img.complete) {
-                loadedCount++; 
-            } else {
-                img.onload = () => { loadedCount++; checkAllImagesLoaded(); };
-                img.onerror = () => { loadedCount++; checkAllImagesLoaded(); };
-            }
+    // 버튼 상태 변경
+    const pdfBtns = document.querySelectorAll('.btn-pdf, .mobile-pdf-btn');
+    const originalTexts = [];
+    pdfBtns.forEach((btn, i) => {
+        originalTexts[i] = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PDF 생성 중...';
+        btn.disabled = true;
+    });
+
+    try {
+        // html2pdf 옵션 설정
+        const opt = {
+            margin:       [10, 10, 10, 10], // 상, 우, 하, 좌 마진 (mm)
+            filename:     `스터디크랙_${reportTitle}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { 
+                scale: 2, // 해상도 2배 (고화질)
+                useCORS: true, // 외부 이미지(S3 등) 렌더링 허용 (필수)
+                scrollY: 0 
+            },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } // 페이지 잘림 방지
+        };
+
+        // PDF 생성 및 다운로드 대기
+        await html2pdf().set(opt).from(container).save();
+
+    } catch (error) {
+        console.error("PDF 생성 실패:", error);
+        alert("PDF 생성 중 오류가 발생했습니다.");
+    } finally {
+        // 복제된 컨테이너 삭제 및 버튼 상태 복구
+        document.body.removeChild(container);
+        pdfBtns.forEach((btn, i) => {
+            btn.innerHTML = originalTexts[i];
+            btn.disabled = false;
         });
-        
-        checkAllImagesLoaded();
-
-        setTimeout(() => {
-            triggerPrint();
-        }, 1500);
     }
-
-    iframe.contentWindow.onafterprint = function() {
-        if (document.body.contains(iframe)) {
-            document.body.removeChild(iframe);
-        }
-    };
-    
-    setTimeout(() => {
-        if (document.body.contains(iframe)) {
-            document.body.removeChild(iframe);
-        }
-    }, 60000); 
 }
 
 function openWeeklyCheckModal() {
