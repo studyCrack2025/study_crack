@@ -233,16 +233,14 @@ async function loadAdminStats(adminId) {
                         : `<span style="color:#64748b;">${safeUpsellPath}</span>`;
 
                     tbody.innerHTML += `
-                        <tr>
-                            <td><strong>${escapeHtml(s.name)}</strong><br><span style="font-size:0.8rem; color:#94a3b8;">${escapeHtml(s.email)}</span></td>
-                            <td style="font-weight:bold; color:#1e293b;">${s.totalPaid.toLocaleString()}원</td>
-                            
-                            <td>${s.weeksActive}주</td>
-                            
-                            <td>${upsellHtml}</td>
-                            <td style="text-align:center;">${refHtml}</td>
-                        </tr>
-                    `;
+    <tr>
+        <td data-label="학생명 (이메일)"><strong>${escapeHtml(s.name)}</strong><br><span style="font-size:0.8rem; color:#94a3b8;">${escapeHtml(s.email)}</span></td>
+        <td data-label="누적 결제액" style="font-weight:bold; color:#1e293b;">${s.totalPaid.toLocaleString()}원</td>
+        <td data-label="총 이용 기간">${s.weeksActive}주</td>
+        <td data-label="업셀링 경로">${upsellHtml}</td>
+        <td data-label="레퍼럴 유입" style="text-align:center;">${refHtml}</td>
+    </tr>
+`;
                 });
             }
         }
@@ -460,17 +458,14 @@ async function searchStudents() {
             let statusBadge = getTierBadgeHTML(s.payments);
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><strong>${escapeHtml(s.name) || '(이름없음)'}</strong></td>
-                <td>${escapeHtml(s.email) || '-'}</td>
-                <td>${escapeHtml(s.school) || '-'}</td>
-                <td>${statusBadge}</td>
-                <td>
-                    <button style="padding:6px 12px; background:#3b82f6; color:white; border:none; border-radius:4px; cursor:pointer;" 
-                            onclick="goToStudentDetail('${s.userid}')">
-                        상세관리
-                    </button>
-                </td>
-            `;
+    <td data-label="이름"><strong>${escapeHtml(s.name) || '(이름없음)'}</strong></td>
+    <td data-label="이메일">${escapeHtml(s.email) || '-'}</td>
+    <td data-label="학교">${escapeHtml(s.school) || '-'}</td>
+    <td data-label="상태">${statusBadge}</td>
+    <td data-label="관리">
+        <button style="padding:6px 12px; background:#3b82f6; color:white; border:none; border-radius:4px; cursor:pointer;" onclick="goToStudentDetail('${s.userid}')">상세관리</button>
+    </td>
+`;
             tbody.appendChild(tr);
         });
 
@@ -551,17 +546,15 @@ function renderQnaList() {
         }
 
         tr.innerHTML = `
-            <td>${getQnaStatusBadge(q.status)}</td>
-            <td>${escapeHtml(q.userName)}<br><span style="font-size:0.8rem; color:#94a3b8;">${q.userPhone || '-'}</span></td>
-            <td style="cursor:pointer;" onclick="openReplyModal('${q.userId}', '${q.id}', true)">
-                <strong>${escapeHtml(q.title)}</strong>
-                <div style="font-size:0.85rem; color:#64748b; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:300px;">
-                    ${escapeHtml(q.content)}
-                </div>
-            </td>
-            <td>${dateStr}</td>
-            <td>${actionBtn}</td>
-        `;
+    <td data-label="상태">${getQnaStatusBadge(q.status)}</td>
+    <td data-label="학생명">${escapeHtml(q.userName)}<br><span style="font-size:0.8rem; color:#94a3b8;">${q.userPhone || '-'}</span></td>
+    <td data-label="제목" style="cursor:pointer;" onclick="openReplyModal('${q.userId}', '${q.id}', true)">
+        <strong>${escapeHtml(q.title)}</strong>
+        <div style="font-size:0.85rem; color:#64748b; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:300px;">${escapeHtml(q.content)}</div>
+    </td>
+    <td data-label="등록일">${dateStr}</td>
+    <td data-label="관리">${actionBtn}</td>
+`;
         tbody.appendChild(tr);
     });
 }
@@ -801,11 +794,11 @@ function generateStudentListHtml(students, emptyMsg) {
             .join(' ') || '-';
 
         html += `<tr>
-            <td><strong>${escapeHtml(s.name)}</strong></td>
-            <td>${jDate}</td>
-            <td>${lDate}</td>
-            <td>${pays}</td>
-        </tr>`;
+    <td data-label="이름"><strong>${escapeHtml(s.name)}</strong></td>
+    <td data-label="최초 가입일">${jDate}</td>
+    <td data-label="마지막 결제일">${lDate}</td>
+    <td data-label="결제 이력">${pays}</td>
+</tr>`;
     });
     html += `</tbody></table></div>`;
     return html;
@@ -831,6 +824,17 @@ window.toggleTierList = function(headerEl) {
         content.style.maxHeight = null;
     } else {
         content.style.maxHeight = content.scrollHeight + "px";
+    }
+}
+
+window.toggleNoticeTree = function(iconEl) {
+    const childrenBlock = iconEl.closest('.tree-group').querySelector('.tree-children');
+    if (childrenBlock.style.display === 'none') {
+        childrenBlock.style.display = 'grid'; // 데스크탑 2단, 모바일 1단 유지용
+        iconEl.style.transform = 'rotate(180deg)';
+    } else {
+        childrenBlock.style.display = 'none';
+        iconEl.style.transform = 'rotate(0deg)';
     }
 }
 
@@ -973,12 +977,13 @@ async function loadTutorListForNotice() {
             const myStus = students.filter(s => s.tutorName === t.nickname);
             
             html += `
-                <div class="tree-group">
-                    <div class="tree-parent">
-                        <label><input type="checkbox" class="is-tutor target-chk" value="${t.userid}" onchange="toggleChildren(this)"> 👨‍🏫 ${t.nickname} (${t.name}) 튜터 그룹</label>
-                    </div>
-                    <div class="tree-children">
-            `;
+    <div class="tree-group">
+        <div class="tree-parent" style="display:flex; justify-content:space-between; align-items:center;">
+            <label><input type="checkbox" class="is-tutor target-chk" value="${t.userid}" onchange="toggleChildren(this)"> 👨‍🏫 ${t.nickname} (${t.name}) 튜터 그룹</label>
+            <i class="fas fa-chevron-down" style="cursor:pointer; padding:10px 5px; color:#94a3b8; transition:transform 0.3s;" onclick="toggleNoticeTree(this)"></i>
+        </div>
+        <div class="tree-children" style="display:none;">
+`;
             if (myStus.length === 0) {
                 html += `<span style="color:#94a3b8; font-size:0.85rem; padding-left:5px;">소속 학생 없음</span>`;
             } else {
