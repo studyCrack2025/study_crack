@@ -433,18 +433,17 @@
     .deposit-section { margin-top: 20px; }
     .deposit-header { padding: 12px 15px; font-size: 0.95rem; word-break: keep-all; }
     .deposit-content { padding: 15px; }
-    .table-responsive { box-shadow: none; margin-bottom: 20px; border: none; overflow-x: hidden; width: 100%; }
+    .table-responsive { box-shadow: none; margin-bottom: 20px; border: none; overflow-x: hidden; }
     .deposit-table thead, .student-table thead { display: none; }
-    .deposit-table, .student-table { display: block; width: 100%; box-sizing: border-box; }
-    .deposit-table tbody, .student-table tbody { display: block; width: 100%; }
-    .deposit-table tr, .student-table tr { display: block; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: 100%; box-sizing: border-box; overflow: hidden; }
-    .deposit-table td, .student-table td { position: relative; padding: 12px 15px 12px 35%; display: block; text-align: left; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; word-break: break-word; min-height: 24px; box-sizing: border-box; }
+    .deposit-table, .deposit-table tbody, .deposit-table tr, .deposit-table td, .student-table, .student-table tbody, .student-table tr, .student-table td { display: block; width: 100%; min-width: 0; box-sizing: border-box; }
+    .deposit-table tr, .student-table tr { margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 5px 10px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .deposit-table td, .student-table td { display: flex; justify-content: space-between; align-items: center; padding: 12px 5px; border-bottom: 1px solid #f1f5f9; text-align: right; font-size: 0.9rem; word-break: break-word; }
     .deposit-table td:last-child, .student-table td:last-child { border-bottom: none; }
-    .deposit-table td::before, .student-table td::before { content: attr(data-label); position: absolute; left: 15px; top: 12px; width: 30%; padding-right: 10px; white-space: nowrap; text-align: left; font-weight: 600; color: #64748b; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; }
-    .deposit-table td > div { display: flex; flex-direction: column; align-items: flex-start; margin-top: 5px; }
+    .deposit-table td::before, .student-table td::before { content: attr(data-label); font-weight: 600; color: #64748b; text-align: left; padding-right: 15px; flex-shrink: 0; }
+    .deposit-table td > div { display: flex; flex-direction: column; align-items: flex-end; }
     .sidebar-info-input { min-height: 44px; font-size: 1rem; }
     .sidebar-edit-btn { min-height: 44px; display: inline-flex; align-items: center; word-break: keep-all; }
-    .manage-btn { min-height: 44px; padding: 0 16px; display: inline-flex; align-items: center; justify-content: center; word-break: keep-all; width: 100%; margin-top: 5px; }
+    .manage-btn { min-height: 44px; padding: 0 16px; display: inline-flex; align-items: center; justify-content: center; word-break: keep-all; }
     .large-modal { max-width: 100%; width: 90%; }
     .common-textarea { padding: 10px; font-size: 0.9rem; }
     .noti-panel { width: calc(100% - 40px); right: 20px; bottom: 90px; }
