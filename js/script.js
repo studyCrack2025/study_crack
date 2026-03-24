@@ -178,6 +178,25 @@ function initMobileCourses() {
             }
         }).join('');
 
+        // 💡 [수정/추가] 모바일에도 MBTI 1회성 링크 로직 추가
+        let extraBtnHtml = "";
+        if (tier === 'mbti') {
+            const isLoggedIn = !!localStorage.getItem('accessToken');
+            const userPromo = localStorage.getItem('promoCode') || ''; 
+            const hasUsedPromo = /^[0-9A-F]{4}-[0-9A-F]{4}-STC$/.test(userPromo);
+            
+            if (isLoggedIn && !hasUsedPromo) {
+                extraBtnHtml = `
+                    <div style="margin-top: 25px; padding: 15px; background: #f5f3ff; border: 1px dashed #8b5cf6; border-radius: 8px; text-align: center;">
+                        <p style="margin: 0 0 10px 0; color: #6d28d9; font-weight: bold; font-size: 0.9rem;">🎁 회원 전용 혜택</p>
+                        <a href="/download/mbti" onclick="event.stopPropagation();" style="display: inline-block; background: #8b5cf6; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: 0.2s;">
+                            나만의 맞춤 공부법 PDF 무료 다운로드(1회)
+                        </a>
+                    </div>
+                `;
+            }
+        }
+
         // 3. 버튼 내부 HTML 재구성 (요약부 + 숨겨진 확장부)
         btn.innerHTML = `
             <div class="tab-summary-wrap">
@@ -188,7 +207,7 @@ function initMobileCourses() {
             <div class="mobile-detail-box">
                 <p class="detail-desc">${data.desc}</p>
                 <ul class="detail-list">${listHtml}</ul>
-            </div>
+                ${extraBtnHtml} </div>
         `;
     });
 }
