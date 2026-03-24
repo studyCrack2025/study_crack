@@ -106,7 +106,7 @@
                 const token = localStorage.getItem('accessToken');
                 const userId = localStorage.getItem('userId');
 
-                // 백엔드에 promoCode 업데이트 요청 (1회성 소모 처리)
+                // 백엔드에 promoCode 업데이트 및 URL 요청
                 const res = await fetch(CONFIG.api.user, { 
                     method: 'POST',
                     headers: {
@@ -115,24 +115,21 @@
                     },
                     body: JSON.stringify({
                         type: 'update_mbti_promo',
-                        data: { targetUserId: userId, promoCode: code }
+                        data: { targetUserId: userId, promoCode: code, mbtiResult: mbtiResult } // mbtiResult 전송
                     })
                 });
 
-                if (!res.ok) throw new Error("이미 사용되었거나 통신 오류가 발생했습니다.");
+                const responseData = await res.json();
+                if (!res.ok) throw new Error(responseData.error || "오류가 발생했습니다.");
 
-                // 로컬 스토리지 업데이트 (즉각적인 재접근 차단)
+                // 로컬 스토리지 업데이트
                 localStorage.setItem('promoCode', code);
 
                 alert(`${mbtiResult} 유형 솔루션 다운로드를 시작합니다!\n이제 이 혜택은 다시 사용할 수 없습니다.`);
                 
-                // 실제 S3 다운로드 링크로 이동
-                const s3Url = `https://your-s3-bucket-url.amazonaws.com/study-crack-pre-uploads/mbti/MBTI-${mbtiResult}.pdf`;
+                // 💡 백엔드에서 생성해준 1분짜리 안전한 링크로 이동
+                window.open(responseData.downloadUrl, '_blank');
                 
-                // 새 창으로 열어서 다운로드 유도
-                window.open(s3Url, '_blank');
-                
-                // 완료 후 메인 페이지로 이동
                 setTimeout(() => { window.location.href = '/'; }, 1000);
 
             } catch (e) {
