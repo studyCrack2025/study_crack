@@ -463,9 +463,11 @@ async function searchStudents() {
     <td data-label="학교">${escapeHtml(s.school) || '-'}</td>
     <td data-label="상태">${statusBadge}</td>
     <td data-label="관리">
-        <button style="padding:6px 12px; background:#3b82f6; color:white; border:none; border-radius:4px; cursor:pointer;" onclick="goToStudentDetail('${s.userid}')">상세관리</button>
-        <button style="padding:6px 12px; background:#10b981; color:white; border:none; border-radius:4px; cursor:pointer; flex:1;" onclick="openGrantTierModal('${s.userid}', '${escapeHtml(s.name)}')">등급UP</button>
-        <button style="padding:6px 12px; background:#ef4444; color:white; border:none; border-radius:4px; cursor:pointer; flex:1;" onclick="openForceDeleteModal('${s.userid}', '${escapeHtml(s.name)}')">강제탈퇴</button>
+        <div class="action-buttons">
+            <button class="btn-detail" onclick="goToStudentDetail('${s.userid}')">상세관리</button>
+            <button class="btn-up" onclick="openGrantTierModal('${s.userid}', '${escapeHtml(s.name)}')">등급UP</button>
+            <button class="btn-del" onclick="openForceDeleteModal('${s.userid}', '${escapeHtml(s.name)}')">강제탈퇴</button>
+        </div>
     </td>
 `;
             tbody.appendChild(tr);
