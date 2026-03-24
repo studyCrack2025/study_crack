@@ -291,22 +291,22 @@ async function loadDepositHistoryData() {
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><strong>${escapeHtml(item.yearMonth)}</strong></td>
-                <td>
-                    <div style="font-size:0.9rem;"><span style="color:#64748b;">Standard:</span> <strong>${stdCount}명</strong></div>
-                    <div style="font-size:0.9rem;"><span style="color:#2563eb;">Pro:</span> <strong>${proCount}명</strong></div>
-                </td>
-                <td>
-                    <div style="font-size:0.9rem;"><span style="color:#64748b;">Std:</span> ${stdAmt}원</div>
-                    <div style="font-size:0.9rem;"><span style="color:#2563eb;">Pro:</span> ${proAmt}원</div>
-                </td>
-                <td>
-                    <div style="font-weight:bold; color:#1e293b; font-size:1rem;">${totalAmt}원</div>
-                    <div style="font-size:0.8rem; color:${item.status === '입금완료' ? 'green' : '#f59e0b'}; margin-top:4px;">
-                        ${escapeHtml(item.status)}
-                    </div>
-                </td>
-            `;
+    <td data-label="정산 월"><strong>${escapeHtml(item.yearMonth)}</strong></td>
+    <td data-label="유료 등급별 학생 수">
+        <div style="font-size:0.9rem;"><span style="color:#64748b;">Standard:</span> <strong>${stdCount}명</strong></div>
+        <div style="font-size:0.9rem;"><span style="color:#2563eb;">Pro:</span> <strong>${proCount}명</strong></div>
+    </td>
+    <td data-label="등급별 정산 금액">
+        <div style="font-size:0.9rem;"><span style="color:#64748b;">Std:</span> ${stdAmt}원</div>
+        <div style="font-size:0.9rem;"><span style="color:#2563eb;">Pro:</span> ${proAmt}원</div>
+    </td>
+    <td data-label="총 지급액 / 상태">
+        <div style="font-weight:bold; color:#1e293b; font-size:1rem;">${totalAmt}원</div>
+        <div style="font-size:0.8rem; color:${item.status === '입금완료' ? 'green' : '#f59e0b'}; margin-top:4px;">
+            ${escapeHtml(item.status)}
+        </div>
+    </td>
+`;
             tbody.appendChild(tr);
         });
 
@@ -476,12 +476,12 @@ window.loadMyStudents = async function() {
 
              const tr = document.createElement('tr');
              tr.innerHTML = `
-                 <td><strong>${escapeHtml(s.name)}</strong></td>
-                 <td>${escapeHtml(s.school || '-')}</td>
-                 <td>${escapeHtml(s.phone || '-')}</td>
-                 <td><span class="tier-badge ${tierClass}">${tier}</span></td>
-                 <td><button class="manage-btn" onclick="goToStudentDetail('${s.userid}')">상세관리</button></td>
-             `;
+    <td data-label="이름"><strong>${escapeHtml(s.name)}</strong></td>
+    <td data-label="학교">${escapeHtml(s.school || '-')}</td>
+    <td data-label="연락처">${escapeHtml(s.phone || '-')}</td>
+    <td data-label="유료 등급"><span class="tier-badge ${tierClass}">${tier}</span></td>
+    <td data-label="관리"><button class="manage-btn" onclick="goToStudentDetail('${s.userid}')">상세관리</button></td>
+`;
              tbody.appendChild(tr);
         });
 
