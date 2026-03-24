@@ -2388,6 +2388,7 @@ async function downloadReportPDF(reportTitle) {
 // 전역 변수 추가
 let currentMobileStep = 0;
 let wizardSteps = [];
+let wizardResizeHandler = null;
 
 // 기존 함수 수정
 function openWeeklyCheckModal() {
