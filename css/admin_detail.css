@@ -511,7 +511,11 @@ html, body { height: auto !important; min-height: 100vh !important; overflow-y: 
 	.tab-card { width: 100%; box-sizing: border-box; min-height: auto; background: white; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-bottom: 20px; }
 	.tabs { position: sticky; top: 60px; z-index: 100; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px 8px 0 0; padding: 0; width: 100%; box-sizing: border-box; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; display: flex; }
 	.tab-btn { padding: 14px 15px; font-size: 0.95rem; flex-shrink: 0; }
-	.tab-content { padding: 20px 0; width: 100%; box-sizing: border-box; }
+	.tab-content { padding: 20px 15px; width: 100%; box-sizing: border-box; }
+	
+	.consult-header { margin-bottom: 20px; padding-bottom: 15px; }
+	.consult-header h3 { font-size: 1.15rem; margin: 0 0 5px 0; color: #1e293b; }
+	.consult-header p { font-size: 0.85rem; }
 	
 	/* [핵심] 테이블이 컨테이너를 뚫고 나가는 현상 방지 */
 	.payment-table-modern, .score-table, .compact-table { min-width: 0 !important; width: 100% !important; box-sizing: border-box; display: block; }
