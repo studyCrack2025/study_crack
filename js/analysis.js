@@ -2563,14 +2563,15 @@ function toggleMockExamFields() {
     else fields.style.display = 'block';
 }
 
+// 달성률 계산 로직 (카드형 UI 대응)
 function calcStudyRates() {
-    const rows = document.querySelectorAll('#studyTimeBody tr');
+    const cards = document.querySelectorAll('.subject-card');
     let sumPlan = 0, sumAct = 0;
     
-    rows.forEach(row => {
-        const planInput = row.querySelector('.plan-time');
-        const actInput = row.querySelector('.act-time');
-        const rateTxt = row.querySelector('.rate-txt');
+    cards.forEach(card => {
+        const planInput = card.querySelector('.plan-time');
+        const actInput = card.querySelector('.act-time');
+        const rateTxt = card.querySelector('.rate-txt');
         
         if(!planInput || !actInput) return;
 
@@ -2588,7 +2589,7 @@ function calcStudyRates() {
             else rateTxt.style.color = '#ef4444';
         } else { 
             rateTxt.innerText = '0%'; 
-            rateTxt.style.color = '#94a3b8'; 
+            rateTxt.style.color = '#334155'; 
         }
     });
     
@@ -2597,6 +2598,37 @@ function calcStudyRates() {
     
     const totalRate = sumPlan > 0 ? Math.min((sumAct / sumPlan) * 100, 100).toFixed(0) : 0;
     document.getElementById('totalRate').innerText = `${totalRate}%`;
+}
+
+// 새로운 과목 카드 동적 추가
+function addSubjectCard() {
+    const list = document.getElementById('studyTimeList');
+    const newCard = document.createElement('div');
+    newCard.className = 'subject-card';
+    newCard.innerHTML = `
+        <div class="card-header">
+            <input type="text" class="custom-subj" placeholder="과목명 직접 입력" style="border:none; border-bottom:2px solid #3b82f6; font-weight:800; font-size:1.05rem; outline:none; width:60%; color:#1e293b; padding:2px;">
+            <button type="button" class="btn-del-card" onclick="this.closest('.subject-card').remove(); calcStudyRates();"><i class="fas fa-times"></i> 삭제</button>
+        </div>
+        <div class="card-body">
+            <input type="text" class="sub-detail" placeholder="세부과목 (선택사항)">
+            <div class="time-inputs">
+                <div class="input-group">
+                    <label>계획(H)</label>
+                    <input type="number" class="plan-time" oninput="calcStudyRates()">
+                </div>
+                <div class="input-group">
+                    <label>실제(H)</label>
+                    <input type="number" class="act-time" oninput="calcStudyRates()">
+                </div>
+                <div class="rate-display">
+                    <label>달성률</label>
+                    <span class="rate-txt">0%</span>
+                </div>
+            </div>
+        </div>
+    `;
+    list.appendChild(newCard);
 }
 
 function handlePlannerFiles(input) {
@@ -2972,45 +3004,6 @@ function updateMockFileName(input) {
         display.style.color = "#94a3b8";
         display.style.fontWeight = "normal";
     }
-}
-
-// 과목 행 동적 추가 함수
-function addSubjectRow(btn, subject) {
-    const tr = btn.closest('tr');
-    const newRow = document.createElement('tr');
-    newRow.innerHTML = `
-        <td>
-            <span class="main-sub" style="color:#94a3b8; font-size:0.9rem;">↳ ${escapeHtml(subject)}</span>
-        </td>
-        <td><input type="text" class="sub-detail" placeholder="세부과목"></td>
-        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
-        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
-        <td style="display:flex; align-items:center; justify-content:center; gap:5px; height:100%; border:none;">
-            <span class="rate-txt">0%</span>
-            <button type="button" class="delete-row-btn" onclick="this.closest('tr').remove(); calcStudyRates();"><i class="fas fa-minus-circle"></i></button>
-        </td>
-    `;
-    tr.insertAdjacentElement('afterend', newRow);
-}
-
-// 기타 행 동적 추가 함수
-function addCustomRow(btn) {
-    const tr = btn.closest('tr');
-    const newRow = document.createElement('tr');
-    newRow.innerHTML = `
-        <td>
-            <span style="color:#94a3b8; font-size:0.9rem;">↳ </span>
-            <input type="text" placeholder="기타" class="custom-subj" style="width: 70%;">
-        </td>
-        <td>-</td>
-        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
-        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
-        <td style="display:flex; align-items:center; justify-content:center; gap:5px; height:100%; border:none;">
-            <span class="rate-txt">0%</span>
-            <button type="button" class="delete-row-btn" onclick="this.closest('tr').remove(); calcStudyRates();"><i class="fas fa-minus-circle"></i></button>
-        </td>
-    `;
-    tr.insertAdjacentElement('afterend', newRow);
 }
 
 // ============================================================

@@ -295,66 +295,95 @@
                     <div class="check-section wizard-step">
                         <h4>1. 과목별 학습 달성률 <span class="req">*</span></h4>
                         <p class="desc">과목별 <strong>구체적인 과목명</strong>과 시간을 입력하세요.</p>
-                        <div class="table-wrap">
-                            <table class="study-time-table">
-                                <thead><tr><th>과목</th><th>세부과목</th><th>계획(H)</th><th>실제(H)</th><th>달성률</th></tr></thead>
-                                <tbody id="studyTimeBody">
-                                    <tr>
-                                        <td>
-                                            <span class="main-sub">국어</span>
-                                            <button type="button" class="add-row-btn" onclick="addSubjectRow(this, '국어')" title="과목 추가"><i class="fas fa-plus-circle"></i></button>
-                                        </td>
-                                        <td><input type="text" class="sub-detail" placeholder="예: 언매"></td>
-                                        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
-                                        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
-                                        <td><span class="rate-txt">0%</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <span class="main-sub">수학</span>
-                                            <button type="button" class="add-row-btn" onclick="addSubjectRow(this, '수학')" title="과목 추가"><i class="fas fa-plus-circle"></i></button>
-                                        </td>
-                                        <td><input type="text" class="sub-detail" placeholder="예: 미적"></td>
-                                        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
-                                        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
-                                        <td><span class="rate-txt">0%</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td><span class="main-sub">영어</span></td>
-                                        <td><input type="text" class="sub-detail" disabled style="background:#f8fafc; border:none;"></td>
-                                        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
-                                        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
-                                        <td><span class="rate-txt">0%</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td><span class="main-sub">탐구1</span></td>
-                                        <td><input type="text" class="sub-detail" placeholder="과목명"></td>
-                                        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
-                                        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
-                                        <td><span class="rate-txt">0%</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td><span class="main-sub">탐구2</span></td>
-                                        <td><input type="text" class="sub-detail" placeholder="과목명"></td>
-                                        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
-                                        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
-                                        <td><span class="rate-txt">0%</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <input type="text" placeholder="기타" class="custom-subj" style="width: 70%;">
-                                            <button type="button" class="add-row-btn" onclick="addCustomRow(this)" title="기타 추가"><i class="fas fa-plus-circle"></i></button>
-                                        </td>
-                                        <td>-</td>
-                                        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
-                                        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
-                                        <td><span class="rate-txt">0%</span></td>
-                                    </tr>
-                                </tbody>
-                                <tfoot>
-                                    <tr class="total-row"><td colspan="2">총합</td><td id="totalPlan">0H</td><td id="totalAct">0H</td><td id="totalRate">0%</td></tr>
-                                </tfoot>
-                            </table>
+                        
+                        <div id="studyTimeList" class="subject-card-list">
+                            <div class="subject-card">
+                                <div class="card-header">
+                                    <span class="main-sub">국어</span>
+                                </div>
+                                <div class="card-body">
+                                    <input type="text" class="sub-detail" placeholder="세부과목 (예: 언매)">
+                                    <div class="time-inputs">
+                                        <div class="input-group">
+                                            <label>계획(H)</label>
+                                            <input type="number" class="plan-time" oninput="calcStudyRates()">
+                                        </div>
+                                        <div class="input-group">
+                                            <label>실제(H)</label>
+                                            <input type="number" class="act-time" oninput="calcStudyRates()">
+                                        </div>
+                                        <div class="rate-display">
+                                            <label>달성률</label>
+                                            <span class="rate-txt">0%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="subject-card">
+                                <div class="card-header">
+                                    <span class="main-sub">수학</span>
+                                </div>
+                                <div class="card-body">
+                                    <input type="text" class="sub-detail" placeholder="세부과목 (예: 미적)">
+                                    <div class="time-inputs">
+                                        <div class="input-group">
+                                            <label>계획(H)</label>
+                                            <input type="number" class="plan-time" oninput="calcStudyRates()">
+                                        </div>
+                                        <div class="input-group">
+                                            <label>실제(H)</label>
+                                            <input type="number" class="act-time" oninput="calcStudyRates()">
+                                        </div>
+                                        <div class="rate-display">
+                                            <label>달성률</label>
+                                            <span class="rate-txt">0%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="subject-card">
+                                <div class="card-header">
+                                    <span class="main-sub">영어</span>
+                                </div>
+                                <div class="card-body">
+                                    <input type="text" class="sub-detail" disabled value="공통" style="background:#f8fafc; border:none;">
+                                    <div class="time-inputs">
+                                        <div class="input-group">
+                                            <label>계획(H)</label>
+                                            <input type="number" class="plan-time" oninput="calcStudyRates()">
+                                        </div>
+                                        <div class="input-group">
+                                            <label>실제(H)</label>
+                                            <input type="number" class="act-time" oninput="calcStudyRates()">
+                                        </div>
+                                        <div class="rate-display">
+                                            <label>달성률</label>
+                                            <span class="rate-txt">0%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn-add-card" onclick="addSubjectCard()">
+                            <i class="fas fa-plus"></i> 새로운 과목 추가
+                        </button>
+
+                        <div class="total-summary-box">
+                            <div class="summary-item">
+                                <span>총 계획</span>
+                                <strong id="totalPlan">0H</strong>
+                            </div>
+                            <div class="summary-item">
+                                <span>총 실제</span>
+                                <strong id="totalAct" style="color:#2563eb;">0H</strong>
+                            </div>
+                            <div class="summary-item total-rate">
+                                <span>총 달성률</span>
+                                <strong id="totalRate">0%</strong>
+                            </div>
                         </div>
                     </div>
 

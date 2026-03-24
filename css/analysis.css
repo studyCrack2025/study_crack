@@ -350,6 +350,29 @@
 /* 모달 배경 및 레이아웃 */
 .custom-modal { position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(15, 23, 42, 0.8); backdrop-filter: blur(6px); }
 
+/* PC 환경의 카드 레이아웃 기본 스타일 (모바일 뿐만 아니라 PC에서도 예쁘게 보이도록 밖으로 뺐습니다) */
+.subject-card-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 15px; }
+.subject-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+.subject-card .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed #e2e8f0; }
+.subject-card .main-sub { font-weight: 800; color: #1e293b; font-size: 1.05rem; }
+.subject-card .btn-del-card { background: #fef2f2; border: 1px solid #fecaca; color: #ef4444; border-radius: 6px; padding: 4px 8px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
+.subject-card .btn-del-card:hover { background: #ef4444; color: #fff; }
+.subject-card .sub-detail { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem; margin-bottom: 10px; box-sizing: border-box; }
+.subject-card .time-inputs { display: flex; gap: 10px; align-items: flex-end; }
+.subject-card .input-group { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.subject-card .input-group label { font-size: 0.8rem; color: #64748b; font-weight: 600; }
+.subject-card .input-group input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center; font-size: 1rem; box-sizing: border-box; }
+.subject-card .rate-display { flex: 0.8; display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center; background: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0; }
+.subject-card .rate-display label { font-size: 0.8rem; color: #64748b; font-weight: 600; }
+.subject-card .rate-txt { font-size: 1.1rem; font-weight: 800; color: #334155; }
+.btn-add-card { width: 100%; padding: 12px; background: #f8fafc; border: 2px dashed #cbd5e1; color: #64748b; border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; margin-bottom: 15px; }
+.btn-add-card:hover { background: #eff6ff; border-color: #3b82f6; color: #3b82f6; }
+.total-summary-box { display: flex; justify-content: space-between; background: #f0f9ff; padding: 15px; border-radius: 10px; border: 1px solid #bae6fd; }
+.summary-item { display: flex; flex-direction: column; align-items: center; gap: 5px; flex: 1; }
+.summary-item span { font-size: 0.85rem; color: #0369a1; font-weight: 600; }
+.summary-item strong { font-size: 1.2rem; color: #0f172a; }
+.summary-item.total-rate strong { color: #1d4ed8; font-size: 1.3rem; }
+
 /* 모달 컨텐츠 박스 */
 .custom-modal-content { background-color: transparent; margin: 3vh auto; border-radius: 12px; width: 95%; max-width: 900px; position: relative; border: none; }
 .custom-modal-content .close-btn { display: none; } 
@@ -567,22 +590,21 @@ input[type="number"]::-webkit-inner-spin-button {
 /* 🎯 모바일 화면 제어 */
 .mobile-only-msg { display: none; }
 
+@keyframes fadeInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideUpBottom { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
 @media (max-width: 768px) {
+    /* =======================================
+       0. 모바일 마법사(Wizard) 모드 전용 스타일 및 안내창
+       ======================================= */
     .modal-document { display: none !important; }
-    .mobile-only-msg {
-        display: flex !important; flex-direction: column; align-items: center; justify-content: center;
-        text-align: center; padding: 40px 20px; background: #ffffff; border-radius: 12px;
-        margin: 0 auto; width: 100%; box-sizing: border-box;
-    }
+    .mobile-only-msg { display: flex !important; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 20px; background: #ffffff; border-radius: 12px; margin: 0 auto; width: 100%; box-sizing: border-box; }
     .mobile-only-msg i { font-size: 3rem; color: #3b82f6; margin-bottom: 15px; }
     .mobile-only-msg h3 { margin: 0 0 10px 0; color: #1e293b; font-size: 1.4rem; }
     .mobile-only-msg p { color: #64748b; font-size: 0.95rem; margin-bottom: 25px; line-height: 1.5; word-break: keep-all; }
     .mobile-pdf-btn { width: 100%; padding: 14px 20px; font-size: 1.05rem; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; cursor: pointer; }
     .mobile-close-btn { width: 100%; padding: 14px; font-size: 1rem; background: #f1f5f9; border: none; border-radius: 8px; color: #475569; font-weight: 700; cursor: pointer; }
-}
 
-@media (max-width: 768px) {
-    /* 모바일 마법사(Wizard) 모드 전용 스타일 */
     .mobile-wizard-mode .tab-menu { display: none !important; }
     .mobile-wizard-mode .tab-content { display: block !important; padding: 10px 0 !important; }
     .mobile-wizard-mode .pro-body { padding: 0 15px !important; }
@@ -598,17 +620,11 @@ input[type="number"]::-webkit-inner-spin-button {
     .mobile-wizard-mode input[type="number"] { font-size: 1rem; padding: 12px; }
     .mobile-wizard-mode select { font-size: 1rem; padding: 12px; }
     .mobile-wizard-mode textarea { font-size: 1rem; padding: 12px; }
-    .mobile-wizard-mode .study-time-table th { font-size: 0.95rem; }
-    .mobile-wizard-mode .study-time-table td { font-size: 1rem; }
     .mobile-wizard-mode #weeklyModalFooter { display: flex; gap: 10px; justify-content: space-between; }
     .mobile-wizard-mode #wizardPrevBtn { flex: 1; margin-top: 0; }
     .mobile-wizard-mode #wizardNextBtn { flex: 2; margin-top: 0; }
     .mobile-wizard-mode #wizardSubmitBtn { flex: 2; margin-top: 0; }
-}
 
-@keyframes fadeInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-
-@media (max-width: 768px) {
     /* =======================================
        1. 메인 헤더 & 네비게이션 탭 다이어트
        ======================================= */
@@ -665,7 +681,6 @@ input[type="number"]::-webkit-inner-spin-button {
        ======================================= */
     .modal { position: fixed; z-index: 2000 !important; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background-color: rgba(15, 23, 42, 0.6); }
     .modal-content { position: absolute; bottom: 0; left: 0; margin: 0; width: 100%; max-width: 100%; border-radius: 16px 16px 0 0; max-height: 92vh; max-height: 92dvh; display: flex; flex-direction: column; animation: slideUpBottom 0.3s ease-out; }
-    @keyframes slideUpBottom { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .modal-header { padding: 15px 20px; flex-shrink: 0; }
     .modal-title { font-size: 1.05rem; }
     .modal-body { padding: 15px 20px; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
