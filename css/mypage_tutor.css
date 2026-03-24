@@ -423,74 +423,29 @@
 
 /* 모바일 대응 */
 @media (max-width: 768px) {
-    /* 1. 탭 메뉴: 좌우 스크롤 방식 (기존 유지하되 간격 좁힘) */
-    .main-tabs { 
-        overflow-x: auto; 
-        white-space: nowrap; 
-        margin-bottom: 20px; 
-    }
-    .tab-btn { 
-        padding: 10px 12px; 
-        font-size: 0.95rem; 
-    }
-
-    /* 2. 모달 폼 그룹 (가로 배치를 세로 배치로 변경) */
-    .row-inputs { 
-        flex-direction: column; 
-        gap: 15px; /* 세로 배치일 때 요소 간 간격 확보 */
-    }
-
-    /* 3. 계약 및 정산 정보 (아코디언) */
-    .deposit-section { 
-        margin-top: 20px; 
-    }
-    .deposit-header { 
-        padding: 12px 15px; 
-        font-size: 0.95rem; 
-    }
-    .deposit-content { 
-        padding: 15px; 
-    }
-
-    /* 4. 테이블 패딩 및 폰트 축소 */
-    .deposit-table th, .deposit-table td { 
-        padding: 10px 5px; 
-        font-size: 0.85rem; 
-    }
-    .student-table th {
-        padding: 10px;
-        font-size: 0.85rem;
-    }
-    .student-table td {
-        padding: 10px;
-        font-size: 0.9rem;
-    }
-
-    /* 5. 모달 크기 최적화 (가로 폭 제한 해제) */
-    .large-modal { 
-        max-width: 100%; 
-    }
-    
-    /* 6. 공통 텍스트 영역 */
-    .common-textarea {
-        padding: 10px;
-        font-size: 0.9rem;
-    }
-    
+    body { padding-bottom: 80px; }
+    .mypage-container { display: flex; flex-direction: column; padding: 10px; }
+    .profile-summary { margin-bottom: 20px; width: 100%; box-sizing: border-box; }
+    .content-area { width: 100%; box-sizing: border-box; }
+    .main-tabs { overflow-x: auto; white-space: nowrap; margin-bottom: 15px; position: sticky; top: 0; background: white; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .tab-btn { padding: 10px 12px; font-size: 0.95rem; min-height: 48px; }
+    .row-inputs { flex-direction: column; gap: 15px; }
+    .deposit-section { margin-top: 20px; }
+    .deposit-header { padding: 12px 15px; font-size: 0.95rem; word-break: keep-all; }
+    .deposit-content { padding: 15px; }
+    .table-responsive { -webkit-overflow-scrolling: touch; box-shadow: inset -10px 0 10px -10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    .deposit-table { min-width: 500px; word-break: keep-all; }
+    .deposit-table th, .deposit-table td { padding: 10px 5px; font-size: 0.85rem; word-break: keep-all; }
+    .student-table { min-width: 500px; word-break: keep-all; }
+    .student-table th { padding: 10px; font-size: 0.85rem; word-break: keep-all; }
+    .student-table td { padding: 10px; font-size: 0.9rem; word-break: keep-all; }
+    .sidebar-info-input { min-height: 44px; font-size: 1rem; }
+    .sidebar-edit-btn { min-height: 44px; display: inline-flex; align-items: center; word-break: keep-all; }
+    .manage-btn { min-height: 44px; padding: 0 16px; display: inline-flex; align-items: center; justify-content: center; word-break: keep-all; }
+    .large-modal { max-width: 100%; width: 90%; }
+    .common-textarea { padding: 10px; font-size: 0.9rem; }
     .noti-panel { width: calc(100% - 40px); right: 20px; bottom: 90px; }
     .noti-fab { bottom: 20px; right: 20px; width: 50px; height: 50px; font-size: 1.2rem; }
-    
-    .modal-content { 
-        padding: 25px 20px; /* 위아래 여백을 넉넉히 주어 버튼이 뚫고 나가지 않게 조절 */
-        max-height: 85vh; 
-        overflow-y: auto; 
-    }
-    .large-modal {
-        width: 90%; 
-    }
-    .modal-action-btn {
-        padding: 14px;
-        font-size: 1rem;
-        margin-top: 20px;
-    }
+    .modal-content { padding: 25px 20px; max-height: 85vh; overflow-y: auto; }
+    .modal-action-btn { padding: 14px; font-size: 1rem; margin-top: 20px; word-break: keep-all; }
 }
