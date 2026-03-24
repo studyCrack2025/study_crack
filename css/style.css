@@ -564,8 +564,8 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 
     /* Curriculum */
     .course-tab-nav { display: flex !important; flex-direction: column !important; overflow: visible !important; gap: 15px !important; padding-bottom: 0 !important; margin: 0 !important; width: 100% !important; box-sizing: border-box; }
-    .course-tab-btn { flex: none !important; width: 100% !important; display: flex !important; flex-direction: column !important; align-items: flex-start !important; padding: 18px 20px !important; height: auto !important; background: rgba(255, 255, 255, 0.35) !important; border: 1px solid rgba(255, 255, 255, 0.4) !important; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 12px; }
-    .course-tab-btn.active-expand { background: rgba(255, 255, 255, 0.6) !important; box-shadow: 0 10px 25px rgba(0,0,0,0.3) !important; transform: scale(1.02) !important; }
+    .course-tab-btn { flex: none !important; width: 100% !important; display: flex !important; flex-direction: column !important; align-items: flex-start !important; padding: 18px 20px !important; height: auto !important; background: rgba(255, 255, 255, 0.15) !important; border: 1px solid rgba(255, 255, 255, 0.2) !important; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 12px; }
+    .course-tab-btn.active-expand { background: rgba(255, 255, 255, 0.3) !important; box-shadow: 0 10px 25px rgba(0,0,0,0.3) !important; transform: scale(1.02) !important; }
     .course-tab-btn[data-tier="mbti"].active-expand { border-color: #8B5CF6 !important; }
     .course-tab-btn[data-tier="basic"].active-expand { border-color: #059669 !important; }
     .course-tab-btn[data-tier="standard"].active-expand { border-color: #3b82f6 !important; }
