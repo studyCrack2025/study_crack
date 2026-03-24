@@ -464,6 +464,7 @@ async function searchStudents() {
     <td data-label="상태">${statusBadge}</td>
     <td data-label="관리">
         <button style="padding:6px 12px; background:#3b82f6; color:white; border:none; border-radius:4px; cursor:pointer;" onclick="goToStudentDetail('${s.userid}')">상세관리</button>
+        <button style="padding:6px 12px; background:#10b981; color:white; border:none; border-radius:4px; cursor:pointer; flex:1;" onclick="openGrantTierModal('${s.userid}', '${escapeHtml(s.name)}')">등급UP</button>
         <button style="padding:6px 12px; background:#ef4444; color:white; border:none; border-radius:4px; cursor:pointer; flex:1;" onclick="openForceDeleteModal('${s.userid}', '${escapeHtml(s.name)}')">강제탈퇴</button>
     </td>
 `;
@@ -1452,8 +1453,57 @@ window.executeForceDelete = async function() {
     }
 };
 
+// ==========================================
+// [K] 임의 등급(결제 내역) 부여 로직
+// ==========================================
+window.openGrantTierModal = function(userId, userName) {
+    document.getElementById('gtUserId').value = userId;
+    document.getElementById('gtUserName').innerText = userName || "이름없음";
+    document.getElementById('gtAmount').value = "0"; // 기본값 무료
+    
+    const modal = document.getElementById('grantTier-modal');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex'; 
+};
+
+window.closeGrantTierModal = function() {
+    const modal = document.getElementById('grantTier-modal');
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+};
+
+window.executeGrantTier = async function() {
+    const userId = document.getElementById('gtUserId').value;
+    const tier = document.getElementById('gtProductTier').value;
+    const amount = document.getElementById('gtAmount').value;
+
+    if (!confirm(`해당 학생에게 [${tier}] 등급을 강제로 부여하시겠습니까?\n이 내역은 장부 및 통계에 기록됩니다.`)) return;
+
+    try {
+        await apiFetch(ADMIN_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'admin_grant_tier',
+                userId: localStorage.getItem('userId'),
+                data: {
+                    targetUserId: userId,
+                    productTier: tier,
+                    amount: amount
+                }
+            })
+        });
+
+        alert("등급 부여가 완료되었습니다.");
+        closeGrantTierModal();
+        searchStudents(); // 변경된 등급 뱃지 확인을 위해 학생 목록 새로고침
+        
+    } catch (e) {
+        if (e.message !== "Auth expired") alert("등급 부여 처리 중 오류가 발생했습니다.");
+    }
+};
+
 // ============================================================
-// [K] 유틸리티
+// [L] 유틸리티
 // ============================================================
 
 function escapeHtml(text) {
