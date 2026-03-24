@@ -2416,30 +2416,41 @@ function openWeeklyCheckModal() {
     if (thisWeekData) loadWeeklyDataToForm(thisWeekData); 
     else resetWeeklyForm(); 
     
-    // ------------------------------------------------
-    // [추가된 로직] 모바일/PC 분기 처리
-    // ------------------------------------------------
-    const isMobile = window.innerWidth <= 768;
-    
-    if (isMobile) {
-        // 모바일: 마법사(Wizard) 모드 켬
-        modalContent.classList.add('mobile-wizard-mode');
-        // .check-section과 .pro-input-card를 모두 수집하여 스텝으로 만듦
-        wizardSteps = Array.from(modal.querySelectorAll('.check-section, .pro-input-card'));
-        currentMobileStep = 0;
-        updateMobileWizardUI();
-    } else {
-        // PC: 기존 탭 모드 유지
-        modalContent.classList.remove('mobile-wizard-mode');
-        document.getElementById('mobileWizardProgress').style.display = 'none';
-        document.getElementById('wizardPrevBtn').style.display = 'none';
-        document.getElementById('wizardNextBtn').style.display = 'none';
-        document.getElementById('wizardSubmitBtn').style.display = 'block';
-        document.getElementById('wizardSubmitBtn').style.width = '100%';
-        switchWeeklyTab('step1'); 
+    // 모바일/PC UI를 세팅하는 부분을 내부 함수로 분리해서 재사용 가능하게 만듭니다.
+    function applyModalLayout() {
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+            modalContent.classList.add('mobile-wizard-mode');
+            wizardSteps = Array.from(modal.querySelectorAll('.check-section, .pro-input-card'));
+            // 화면을 돌렸을 때 현재 스텝을 유지하거나 0으로 초기화
+            if(currentMobileStep >= wizardSteps.length) currentMobileStep = 0; 
+            updateMobileWizardUI();
+        } else {
+            modalContent.classList.remove('mobile-wizard-mode');
+            document.getElementById('mobileWizardProgress').style.display = 'none';
+            document.getElementById('wizardPrevBtn').style.display = 'none';
+            document.getElementById('wizardNextBtn').style.display = 'none';
+            document.getElementById('wizardSubmitBtn').style.display = 'block';
+            document.getElementById('wizardSubmitBtn').style.width = '100%';
+            
+            // PC화면으로 바뀌면 숨겨졌던 탭 콘텐츠가 다 보여야 하므로 스텝1 탭을 강제 활성화
+            switchWeeklyTab('step1'); 
+        }
     }
-    // ------------------------------------------------
-    
+
+    // 최초 실행
+    applyModalLayout();
+
+    // 화면 크기 변경 시 레이아웃 재적용 (모달이 열려있을 때만 동작)
+    if (!wizardResizeHandler) {
+        wizardResizeHandler = () => {
+            if (modal.style.display === 'block') {
+                applyModalLayout();
+            }
+        };
+        window.addEventListener('resize', wizardResizeHandler);
+    }
+
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
 }
