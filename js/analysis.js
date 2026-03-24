@@ -809,21 +809,27 @@ function selectComplete(univ, major) {
 async function saveTargetUnivs() {
     // 저장 확인 메시지만 티어별로 다르게 출력
     if (currentUserTier === 'free' || currentUserTier === 'basic') {
-        if(!confirm("목표 대학을 저장하시겠습니까?\n(변경된 대학 수만큼 남은 횟수에서 차감됩니다.)")) return;
+        if(!confirm("목표 대학을 저장하시겠습니까?\n(새로 등록/변경된 대학 수만큼 남은 횟수에서 차감됩니다.)")) return;
     } else {
         if(!confirm("목표 대학을 저장하시겠습니까?")) return;
     }
 
-    const newUnivs = [...userTargetUnivs]; 
     const nowISO = new Date().toISOString();
     
-    // 무조건 6칸 채워서 보내기
-    while(newUnivs.length < 6) newUnivs.push(null);
+    // 💡 [핵심 수정] 깊은 복사(Deep Copy)를 통해 원본 오염 방지 및 완전한 6칸 배열 생성
+    const newUnivs = [];
     for(let i = 0; i < 6; i++) {
-        if (newUnivs[i] && newUnivs[i].univ && newUnivs[i].major) { 
-            if (!newUnivs[i].date) newUnivs[i].date = nowISO; 
+        const slot = userTargetUnivs[i];
+        if (slot && slot.univ && slot.major) { 
+            // 유효한 대학/학과 정보가 있으면 복사
+            newUnivs.push({
+                univ: slot.univ,
+                major: slot.major,
+                date: slot.date ? slot.date : nowISO // 날짜가 없으면 현재 시간 주입
+            });
         } else { 
-            newUnivs[i] = null; 
+            // 정보가 비어있으면 null로 통일
+            newUnivs.push(null); 
         }
     }
     
