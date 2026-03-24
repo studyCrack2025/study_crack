@@ -2722,19 +2722,25 @@ function toggleSlumpReason() {
 
 // 데이터 로드 함수
 function loadWeeklyDataToForm(data) {
-    // 1. 학습 시간 (기존 로직 유지)
+    // 1. 학습 시간
     if (data.studyTime && data.studyTime.details) {
-        const rows = document.querySelectorAll('#studyTimeBody tr');
+        const cards = document.querySelectorAll('.subject-card');
         data.studyTime.details.forEach((detail, idx) => {
-            if (rows[idx]) {
-                rows[idx].querySelector('.plan-time').value = detail.plan;
-                rows[idx].querySelector('.act-time').value = detail.act;
-                const detailInput = rows[idx].querySelector('.sub-detail');
-                const customInput = rows[idx].querySelector('.custom-subj');
+            if (cards[idx]) {
+                const planInput = cards[idx].querySelector('.plan-time');
+                const actInput = cards[idx].querySelector('.act-time');
+                const detailInput = cards[idx].querySelector('.sub-detail');
+                const customInput = cards[idx].querySelector('.custom-subj');
+
+                if (planInput) planInput.value = detail.plan;
+                if (actInput) actInput.value = detail.act;
+                
                 if (detail.subject.includes('(') && detailInput) {
                     const match = detail.subject.match(/\((.*?)\)/);
                     if(match) detailInput.value = match[1];
-                } else if (customInput) customInput.value = detail.subject;
+                } else if (customInput) {
+                    customInput.value = detail.subject;
+                }
             }
         });
         calcStudyRates(); 
@@ -2862,13 +2868,14 @@ async function submitWeeklyCheck() {
     }
 
     // 4. 학습 시간 상세 데이터 수집
-    const studyRows = document.querySelectorAll('#studyTimeBody tr');
+    const studyCards = document.querySelectorAll('.subject-card');
     let studyData = [];
-    studyRows.forEach(row => {
+    
+    studyCards.forEach(card => {
         let subjName = "";
-        const mainSub = row.querySelector('.main-sub');
-        const detail = row.querySelector('.sub-detail');
-        const custom = row.querySelector('.custom-subj');
+        const mainSub = card.querySelector('.main-sub');
+        const detail = card.querySelector('.sub-detail');
+        const custom = card.querySelector('.custom-subj');
         
         if(mainSub) {
             // 동적으로 추가된 행의 '↳' 기호와 공백을 깔끔하게 제거
@@ -2878,8 +2885,8 @@ async function submitWeeklyCheck() {
             subjName = custom.value.trim() || "기타";
         }
         
-        const planEl = row.querySelector('.plan-time');
-        const actEl = row.querySelector('.act-time');
+        const planEl = card.querySelector('.plan-time');
+        const actEl = card.querySelector('.act-time');
         const plan = planEl ? (parseFloat(planEl.value) || 0) : 0;
         const act = actEl ? (parseFloat(actEl.value) || 0) : 0;
         
