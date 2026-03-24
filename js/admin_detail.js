@@ -506,7 +506,7 @@ function showCoachingGuideModal() {
                         <li><strong>취약 과목 개입 포인트</strong></li>
                         <li><strong>다음 주 핵심 과제 Top 3와 그 개별적인 근거</strong></li>
                         <li><strong>플랜 조정</strong> (방향 / 속력)</li>
-                        <li><strong>심층 질문에 대한 추가 답변(어떤 질문에 대한 답변인지를 명시하고, 앞 항목 내용과 중복된다면 그렇다는 사실을 명시)</li>
+                        <li><strong>심층 질문에 대한 추가 답변</strong> (어떤 질문에 대한 답변인지를 명시하고, 앞 항목 내용과 중복된다면 그렇다는 사실을 명시)</li>
                     </ul>
 
                     <h4>4) Standard 코칭 원칙 (최소 기준)</h4>
@@ -514,7 +514,14 @@ function showCoachingGuideModal() {
                         <li>시간표형(분 단위) 강요를 금지하고, <strong>과제 중심</strong>으로 제시합니다.</li>
                         <li><strong>취약 과목을 우선</strong>시합니다. (전 과목 균등 배분 금지)</li>
                         <li><strong>실패를 전제</strong>합니다. (지키지 못한 계획을 죄책감으로 몰지 않습니다.)</li>
-                        <li>의지 탓을 금지하고, <strong>항상 판단 기준으로 설명</strong>합니다.</li>
+                        <li><strong>의지 탓을 금지</strong>하고, 항상 판단 기준으로 설명합니다.</li>
+                    </ul>
+
+                    <h4>5) 리포트 제출 기한 및 유의사항 🚨</h4>
+                    <ul>
+                        <li>학생들의 주간 점검 제출은 <strong>매주 일요일 20:00</strong>에 마감됩니다.</li>
+                        <li>작성해주신 피드백 리포트는 그 다음 날인 <strong>월요일 16:00</strong>에 학생들에게 일괄 제공됩니다.</li>
+                        <li>따라서 학생 제출 직후 급하게 작성하시기보다는, <strong>월요일 16:00 이전까지 시간적 여유를 가지고 꼼꼼하게 작성</strong>해 주시기를 부탁드립니다.</li>
                     </ul>
                 </div>
                 <div style="text-align:right; margin-top:20px;">
@@ -1207,6 +1214,13 @@ function showProGuideModal() {
                         <li>코칭 내용에는 <strong>반드시 지표 근거가 포함</strong>되어야 합니다.</li>
                         <li>핵심 과제 제시 시 구체적인 행동 유형(인강 / 문풀 / 오답 / 복습 / 실전)을 <strong>명확히 명시</strong>합니다.</li>
                         <li>막연한 합격 예측이나 보장 표현(합격률 단정, 무조건 합격 등)은 <strong>절대 금지</strong>합니다.</li>
+                    </ul>
+
+                    <h4>5) 리포트 제출 기한 및 유의사항 🚨</h4>
+                    <ul>
+                        <li>학생에게 Pro 리포트가 최종 제공되는 기한은 학생 제출 마감일의 3일 뒤인 <strong>수요일</strong>입니다.</li>
+                        <li>선생님께서 작성해주신 리포트는 <strong>관리자 측의 최종 검수(재확인) 작업</strong>을 거친 후 발송됩니다.</li>
+                        <li>따라서 원활한 검수 및 적각적인 발송을 위해 가급적 <strong>수요일 18:00 이전까지 작성을 완료하여 제출</strong>해 주시기 바랍니다.</li>
                     </ul>
                 </div>
                 <div style="text-align:right; margin-top:20px;">
