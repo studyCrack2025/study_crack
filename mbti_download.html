@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MBTI 솔루션 다운로드 - StudyCrack</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .download-container { background: white; max-width: 500px; width: 90%; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; }
+        .logo { font-size: 1.5rem; font-weight: 800; color: #1e293b; margin-bottom: 30px; display: block; text-decoration: none; }
+        .step-box { background: #f1f5f9; padding: 25px; border-radius: 12px; margin-bottom: 20px; text-align: left; }
+        .step-title { font-size: 1.05rem; font-weight: 700; color: #3b82f6; margin: 0 0 10px 0; }
+        .survey-btn { display: block; text-align: center; background: #1e293b; color: white; text-decoration: none; padding: 12px; border-radius: 8px; font-weight: bold; transition: 0.2s; }
+        .survey-btn:hover { background: #334155; }
+        .code-input { width: 100%; padding: 14px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 1.1rem; text-align: center; letter-spacing: 2px; text-transform: uppercase; box-sizing: border-box; outline: none; transition: 0.2s; font-weight: bold; }
+        .code-input:focus { border-color: #8b5cf6; }
+        .download-btn { width: 100%; padding: 15px; margin-top: 10px; background: #8b5cf6; color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .download-btn:hover { background: #7c3aed; }
+        .download-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <div class="download-container">
+        <a href="/" class="logo">StudyCrack</a>
+        <h2 style="margin-top: 0; color: #1e293b;">솔루션 PDF 다운로드</h2>
+        <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 30px;">탐구 MBTI 검사를 진행하고<br>마지막에 발급되는 코드를 입력해주세요.</p>
+
+        <div class="step-box">
+            <h4 class="step-title">Step 1. 검사 진행하기</h4>
+            <p style="font-size: 0.9rem; color: #475569; margin-bottom: 15px;">새 창에서 검사를 완료하고 코드를 복사하세요.</p>
+            <a href="https://smore.im/quiz/8eEbDy4qTf" target="_blank" class="survey-btn">📝 탐구 MBTI 검사하러 가기</a>
+        </div>
+
+        <div class="step-box">
+            <h4 class="step-title">Step 2. 발급 코드 입력</h4>
+            <p style="font-size: 0.9rem; color: #475569; margin-bottom: 15px;">검사 결과 페이지 하단의 11자리 코드 입력</p>
+            <input type="text" id="promoInput" class="code-input" placeholder="XXXX-XXXX-STC" maxlength="13">
+            <button id="downloadBtn" class="download-btn" onclick="verifyAndDownload()">PDF 다운로드 및 코드 적용</button>
+        </div>
+    </div>
+
+    <script src="/js/config.js"></script>
+    <script>
+        // 1. 접근 차단 가드레일
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('accessToken');
+            const userPromo = localStorage.getItem('promoCode') || '';
+            
+            if (!token) {
+                alert("로그인이 필요한 페이지입니다.");
+                window.location.href = '/login';
+                return;
+            }
+            
+            if (/^[0-9A-F]{4}-[0-9A-F]{4}-STC$/.test(userPromo)) {
+                alert("이미 무료 다운로드 혜택을 이용하셨습니다. (계정당 1회 제한)");
+                window.location.href = '/';
+            }
+        });
+
+        // 2. 입력 포맷팅 (자동 하이픈)
+        const promoInput = document.getElementById('promoInput');
+        promoInput.addEventListener('input', function(e) {
+            let val = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+            if (val.length > 4) val = val.substring(0, 4) + '-' + val.substring(4);
+            if (val.length > 9) val = val.substring(0, 9) + '-' + val.substring(9);
+            e.target.value = val;
+        });
+
+        // 3. 디코딩 및 다운로드 처리
+        async function verifyAndDownload() {
+            const btn = document.getElementById('downloadBtn');
+            const code = promoInput.value.trim();
+            
+            if (!/^[0-9A-F]{4}-[0-9A-F]{4}-STC$/.test(code)) {
+                return alert("올바른 형태의 코드가 아닙니다. (예: 434D-4446-STC)");
+            }
+
+            const hexStr = code.replace(/-/g, '').replace('STC', '');
+            let mbtiResult = '';
+            for(let i = 0; i < 8; i += 2) {
+                mbtiResult += String.fromCharCode(parseInt(hexStr.substr(i, 2), 16));
+            }
+
+            // 역산 결과 알파벳이 4자리가 맞는지 최소 검증
+            if (!/^[A-Z]{4}$/.test(mbtiResult)) {
+                return alert("유효하지 않은 코드입니다.");
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 처리 중...';
+
+            try {
+                const token = localStorage.getItem('accessToken');
+                const userId = localStorage.getItem('userId');
+
+                // 백엔드에 promoCode 업데이트 요청 (1회성 소모 처리)
+                const res = await fetch(CONFIG.api.user, { // 유저 정보를 다루는 API 엔드포인트
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        type: 'update_mbti_promo',
+                        data: { targetUserId: userId, promoCode: code }
+                    })
+                });
+
+                if (!res.ok) throw new Error("이미 사용되었거나 통신 오류가 발생했습니다.");
+
+                // 로컬 스토리지 업데이트 (즉각적인 재접근 차단)
+                localStorage.setItem('promoCode', code);
+
+                alert(`${mbtiResult} 유형 솔루션 다운로드를 시작합니다!\n이제 이 혜택은 다시 사용할 수 없습니다.`);
+                
+                // 실제 S3 다운로드 링크로 이동 (S3 주소 형식에 맞게 교체)
+                const s3Url = `https://your-s3-bucket-url.amazonaws.com/study-crack-pre-uploads/mbti/MBTI-${mbtiResult}.pdf`;
+                
+                // 새 창으로 열어서 다운로드 유도
+                const downloadWindow = window.open(s3Url, '_blank');
+                
+                // 완료 후 메인 페이지로 이동
+                setTimeout(() => { window.location.href = '/'; }, 1000);
+
+            } catch (e) {
+                alert(e.message);
+                btn.disabled = false;
+                btn.innerHTML = 'PDF 다운로드 및 코드 적용';
+            }
+        }
+    </script>
+</body>
+</html>

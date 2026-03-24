@@ -193,7 +193,6 @@ function initMobileCourses() {
     });
 }
 
-// 데스크탑/모바일을 모두 지원하는 selectCourse 로직
 function selectCourse(tier) {
     const data = COURSE_DATA[tier];
     if (!data) return;
@@ -253,15 +252,35 @@ function selectCourse(tier) {
                 }
             }).join('');
 
-            detailView.innerHTML = `
-                <span class="detail-badge" style="color:${data.themeColor}; background:#fff; border: 1px solid ${data.themeColor};">
-                    ${tier.toUpperCase()}
-                </span>
-                <h3 class="detail-title">${data.title}</h3>
-                <div class="detail-price">${data.price}</div>
-                <p class="detail-desc">${data.desc}</p>
-                <ul class="detail-list">${listHtml}</ul>
-            `;
+            let extraBtnHtml = "";
+        if (tier === 'mbti') {
+            const isLoggedIn = !!localStorage.getItem('accessToken');
+            const userPromo = localStorage.getItem('promoCode') || ''; // 로그인 시 localStorage에 저장해뒀다고 가정
+            
+            // 프로모 코드가 'XXXX-XXXX-STC' 형태가 아닐 때만 노출
+            const hasUsedPromo = /^[0-9A-F]{4}-[0-9A-F]{4}-STC$/.test(userPromo);
+            
+            if (isLoggedIn && !hasUsedPromo) {
+                extraBtnHtml = `
+                    <div style="margin-top: 25px; padding: 15px; background: #f5f3ff; border: 1px dashed #8b5cf6; border-radius: 8px; text-align: center;">
+                        <p style="margin: 0 0 10px 0; color: #6d28d9; font-weight: bold; font-size: 0.9rem;">🎁 로그인 회원 전용 1회성 혜택</p>
+                        <a href="/mbti-download" style="display: inline-block; background: #8b5cf6; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: 0.2s;">
+                            나만의 맞춤 공부법 PDF 무료 다운로드
+                        </a>
+                    </div>
+                `;
+            }
+        }
+
+        detailView.innerHTML = `
+            <span class="detail-badge" style="color:${data.themeColor}; background:#fff; border: 1px solid ${data.themeColor};">
+                ${tier.toUpperCase()}
+            </span>
+            <h3 class="detail-title">${data.title}</h3>
+            <div class="detail-price">${data.price}</div>
+            <p class="detail-desc">${data.desc}</p>
+            <ul class="detail-list">${listHtml}</ul>
+            ${extraBtnHtml} `;
         }
     }
 }
