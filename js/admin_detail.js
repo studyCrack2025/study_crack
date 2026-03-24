@@ -309,6 +309,15 @@ async function saveProDraft(key, silent = false) {
 
 // 6. PRO 리포트 튜터 작성 완료
 async function completeProWriting(key) {
+    const e1 = document.getElementById(`${key}_item1`)?.value || "";
+    const e2 = document.getElementById(`${key}_item2`)?.value || "";
+    const e3 = document.getElementById(`${key}_item3`)?.value || "";
+    const e4 = document.getElementById(`${key}_item4`)?.value || "";
+    
+    if(e1.length < 200 || e2.length < 200 || e3.length < 200 || e4.length < 200) {
+        return alert("PRO 리포트의 1~4번 모든 항목은 각각 최소 200자 이상 작성해야 제출할 수 있습니다.");
+    }
+    
     try { 
         await saveProDraft(key, true); 
     } catch (e) { 
@@ -441,8 +450,7 @@ function renderSelectedScore() {
     const q = currentStudentData.quantitative;
 
     if (!key || !q[key]) {
-        container.innerHTML = '';
-        return;
+        container.innerHTML = ''; return;
     }
 
     const d = q[key];
@@ -450,21 +458,15 @@ function renderSelectedScore() {
     
     let html = `<div class="score-exam-block" style="margin-top:15px;">
         <table class="score-table">
-            <thead>
-                <tr>
-                    <th style="text-align: center;">과목</th>
-                    <th style="text-align: center;">표점</th>
-                    <th style="text-align: center;">등급</th>
-                </tr>
-            </thead>
+            <thead><tr><th style="text-align: center;">과목</th><th style="text-align: center;">표점</th><th style="text-align: center;">등급</th></tr></thead>
             <tbody>`;
             
     subjects.forEach(sub => {
         if(d[sub.k]) {
             html += `<tr>
-                <td style="text-align: center;">${sub.n}</td>
-                <td style="text-align: center;">${d[sub.k].std||'-'}</td>
-                <td style="text-align: center;">${d[sub.k].grd||'-'}</td>
+                <td data-label="과목" style="text-align: center;">${sub.n}</td>
+                <td data-label="표점" style="text-align: center;">${d[sub.k].std||'-'}</td>
+                <td data-label="등급" style="text-align: center;">${d[sub.k].grd||'-'}</td>
             </tr>`;
         }
     });
@@ -551,14 +553,14 @@ function renderWeeklyTab() {
         
         let studyHtml = ''; 
         if (d.studyTime && Array.isArray(d.studyTime.details)) {
-             let rows = '';
-             d.studyTime.details.forEach(sub => {
-                const rate = sub.plan > 0 ? Math.min((sub.act / sub.plan) * 100, 100).toFixed(0) : 0;
-                const rateClass = rate >= 100 ? 'text-green' : (rate >= 80 ? 'text-blue' : 'text-gray');
-                rows += `<tr><td>${escapeHtml(sub.subject)}</td><td class="text-center">${sub.plan}h</td><td class="text-center">${sub.act}h</td><td class="text-center font-bold ${rateClass}">${rate}%</td></tr>`;
-             });
-             studyHtml = `<div class="weekly-section"><div class="section-title"><i class="fas fa-clock"></i> 과목별 학습 달성도 (총 달성률: <span style="color:#2563eb;">${d.studyTime.totalRate || '0%'}</span>)</div><div class="table-responsive"><table class="compact-table"><thead><tr><th>과목</th><th>계획</th><th>실행</th><th>달성</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
-        }
+     let rows = '';
+     d.studyTime.details.forEach(sub => {
+        const rate = sub.plan > 0 ? Math.min((sub.act / sub.plan) * 100, 100).toFixed(0) : 0;
+        const rateClass = rate >= 100 ? 'text-green' : (rate >= 80 ? 'text-blue' : 'text-gray');
+        rows += `<tr><td data-label="과목">${escapeHtml(sub.subject)}</td><td data-label="계획" class="text-center">${sub.plan}h</td><td data-label="실행" class="text-center">${sub.act}h</td><td data-label="달성" class="text-center font-bold ${rateClass}">${rate}%</td></tr>`;
+     });
+     studyHtml = `<div class="weekly-section"><div class="section-title"><i class="fas fa-clock"></i> 과목별 학습 달성도 (총 달성률: <span style="color:#2563eb;">${d.studyTime.totalRate || '0%'}</span>)</div><div class="table-responsive"><table class="compact-table"><thead><tr><th>과목</th><th>계획</th><th>실행</th><th>달성</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
 
         let checkHtml = '';
         if (d.deepAnswers && d.deepAnswers.length > 0) {
@@ -707,46 +709,50 @@ function renderWeeklyTab() {
             </div>
         `;
         
-        const feedbackHtml = `
-            <div class="tutor-feedback-area">
-                <div class="feedback-header">
-                    <div>👩‍🏫 튜터 주간 평가 (Weekly Feedback)</div>
-                    <button class="coaching-guide-btn" onclick="showCoachingGuideModal()">
-                        <i class="fas fa-info-circle"></i> 코칭 작성시 주의사항
-                    </button>
-                </div>
-                <div class="feedback-grid">
-                    <div class="fb-item">
-                        <label>1. 저번주에 제안된 우선 순위에 맞게 이번주 공부를 진행했는지 (최소 150자)</label>
-                        <textarea id="fb_priority_${idx}" ${isReadOnly} placeholder="작성 대기중...">${escapeHtml(fb.priorityCheck || '')}</textarea>
-                    </div>
-                    <div class="fb-item">
-                        <label>2. 취약 과목을 하나 선정하고 개선 포인트 잡기 (최소 150자)</label>
-                        <textarea id="fb_weak_${idx}" ${isReadOnly} placeholder="작성 대기중...">${escapeHtml(fb.weakSubject || '')}</textarea>
-                    </div>
-                    <div class="fb-item">
-                        <label>3. 다음주에 진행해야할 핵심 과제 TOP3와 그 이유 (최소 150자, 각각 명시)</label>
-                        <textarea id="fb_top3_${idx}" ${isReadOnly} placeholder="작성 대기중...">${escapeHtml(fb.nextWeekTop3 || '')}</textarea>
-                    </div>
-                    <div class="fb-item">
-                        <label>4. 최종적인 플랜 진행방향 제고와 평가 (방향/속력에서 변화가 있는지) (최소 150자)</label>
-                        <textarea id="fb_plan_${idx}" ${isReadOnly} placeholder="작성 대기중...">${escapeHtml(fb.planEvaluation || '')}</textarea>
-                    </div>
-                    <div class="fb-item">
-                        <label>5. 학생 심층 질문에 대한 추가 답변(필요시에, 최소 150자)</label>
-                        <textarea id="fb_extra_${idx}" ${isReadOnly} placeholder="작성 대기중...">${escapeHtml(fb.extraQuestion || '')}</textarea>
-                    </div>
-                    <div class="fb-item">
-                        <label>6. 주간 플래너 코칭 이미지 첨부</label>
-                        ${imageInputHtml}
-                        ${tutorFileHtml}
-                    </div>
-                </div>
-                <div style="text-align:right; margin-top:20px; display:${btnDisplay};">
-                    <button class="fb-save-btn" onclick="saveWeeklyFeedback('${weekId}', ${idx})">평가 저장</button>
-                </div>
+        const getLen = (val) => (val || '').length;
+const feedbackHtml = `
+    <div class="tutor-feedback-area">
+        <div class="feedback-header">
+            <div>👩‍🏫 튜터 주간 평가 (Weekly Feedback)</div>
+            <button class="coaching-guide-btn" onclick="showCoachingGuideModal()"><i class="fas fa-info-circle"></i> 코칭 가이드</button>
+        </div>
+        <div class="feedback-grid">
+            <div class="fb-item">
+                <label>1. 우선 순위 진행 평가 (최소 150자)</label>
+                <textarea id="fb_priority_${idx}" ${isReadOnly} placeholder="최소 150자 이상 입력..." oninput="updateCharCount(this, 'count_p_${idx}', 150)">${escapeHtml(fb.priorityCheck || '')}</textarea>
+                <div id="count_p_${idx}" class="char-count ${getLen(fb.priorityCheck) >= 150 ? 'valid':''}">${getLen(fb.priorityCheck)} / 최소 150자</div>
             </div>
-        `;
+            <div class="fb-item">
+                <label>2. 취약 과목 개선 포인트 (최소 150자)</label>
+                <textarea id="fb_weak_${idx}" ${isReadOnly} placeholder="최소 150자 이상 입력..." oninput="updateCharCount(this, 'count_w_${idx}', 150)">${escapeHtml(fb.weakSubject || '')}</textarea>
+                <div id="count_w_${idx}" class="char-count ${getLen(fb.weakSubject) >= 150 ? 'valid':''}">${getLen(fb.weakSubject)} / 최소 150자</div>
+            </div>
+            <div class="fb-item">
+                <label>3. 다음주 핵심 과제 TOP3 (최소 150자)</label>
+                <textarea id="fb_top3_${idx}" ${isReadOnly} placeholder="최소 150자 이상 입력..." oninput="updateCharCount(this, 'count_t_${idx}', 150)">${escapeHtml(fb.nextWeekTop3 || '')}</textarea>
+                <div id="count_t_${idx}" class="char-count ${getLen(fb.nextWeekTop3) >= 150 ? 'valid':''}">${getLen(fb.nextWeekTop3)} / 최소 150자</div>
+            </div>
+            <div class="fb-item">
+                <label>4. 최종 플랜 진행방향 (최소 150자)</label>
+                <textarea id="fb_plan_${idx}" ${isReadOnly} placeholder="최소 150자 이상 입력..." oninput="updateCharCount(this, 'count_pl_${idx}', 150)">${escapeHtml(fb.planEvaluation || '')}</textarea>
+                <div id="count_pl_${idx}" class="char-count ${getLen(fb.planEvaluation) >= 150 ? 'valid':''}">${getLen(fb.planEvaluation)} / 최소 150자</div>
+            </div>
+            <div class="fb-item">
+                <label>5. 추가 심층 답변 (선택, 작성시 최소 150자)</label>
+                <textarea id="fb_extra_${idx}" ${isReadOnly} placeholder="내용 작성 시 최소 150자 이상 입력..." oninput="updateCharCount(this, 'count_e_${idx}', 150)">${escapeHtml(fb.extraQuestion || '')}</textarea>
+                <div id="count_e_${idx}" class="char-count ${getLen(fb.extraQuestion) >= 150 || getLen(fb.extraQuestion) === 0 ? 'valid':''}">${getLen(fb.extraQuestion)} / 최소 150자 (선택)</div>
+            </div>
+            <div class="fb-item">
+                <label>6. 플래너 코칭 이미지 첨부</label>
+                ${imageInputHtml}
+                ${tutorFileHtml}
+            </div>
+        </div>
+        <div style="text-align:right; margin-top:20px; display:${btnDisplay};">
+            <button class="fb-save-btn" onclick="saveWeeklyFeedback('${weekId}', ${idx})">평가 저장 및 완료</button>
+        </div>
+    </div>
+`;
 
         const card = document.createElement('div');
         card.className = 'timeline-card weekly-new';
@@ -782,6 +788,13 @@ async function saveWeeklyFeedback(weekId, idx) {
     const top3 = top3El.value.trim();
     const plan = planEl.value.trim();
     const extra = extraEl.value.trim();
+    
+    if (priority.length < 150 || weak.length < 150 || top3.length < 150 || plan.length < 150) {
+        return alert("1~4번 항목은 각각 최소 150자 이상 작성해야 저장할 수 있습니다.");
+    }
+    if (extra.length > 0 && extra.length < 150) {
+        return alert("5번 추가 답변 항목은 작성하실 경우 최소 150자 이상이어야 합니다.");
+    }
     
     if(!confirm("주간 평가를 저장하시겠습니까?\n🚨 저장 완료 후에는 내용을 다시 수정할 수 없습니다.")) return;
 
@@ -972,11 +985,17 @@ function createProPeriodBox(title, data, reportKey, userRole) {
 }
 
 function createTextAreaHtml(key, idx, label, val, readOnly, btnStyle) {
+    const minLen = 200;
+    const len = val ? val.length : 0;
+    const validClass = len >= minLen ? 'valid' : '';
     return `
         <div class="write-item">
             <label class="write-label">${label}</label>
-            <textarea id="${key}_item${idx}" class="write-textarea" ${readOnly} placeholder="내용을 입력하세요.">${val}</textarea>
-            <button id="${key}_btn${idx}" class="temp-save-btn" onclick="tempSaveProItem('${key}', ${idx})" ${btnStyle}>임시저장</button>
+            <textarea id="${key}_item${idx}" class="write-textarea" ${readOnly} placeholder="최소 ${minLen}자 이상 상세히 입력해주세요." oninput="updateCharCount(this, '${key}_count${idx}', ${minLen})">${val}</textarea>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+                <div id="${key}_count${idx}" class="char-count ${validClass}">${len} / 최소 ${minLen}자</div>
+                <button id="${key}_btn${idx}" class="temp-save-btn" onclick="tempSaveProItem('${key}', ${idx})" ${btnStyle}>임시저장</button>
+            </div>
         </div>
     `;
 }
@@ -1211,6 +1230,18 @@ function showModal(title, contentHtml) {
     modal.style.display = 'flex';
 }
 
+window.updateCharCount = function(textarea, countId, minLength) {
+    const countEl = document.getElementById(countId);
+    if(!countEl) return;
+    const len = textarea.value.length;
+    countEl.innerText = `${len} / 최소 ${minLength}자`;
+    if (len >= minLength) {
+        countEl.classList.add('valid');
+    } else {
+        countEl.classList.remove('valid');
+    }
+};
+
 async function renderTargetUnivs(list, quantData) {
     const container = document.getElementById('viewTargetUnivList');
     container.innerHTML = '';
@@ -1387,7 +1418,7 @@ function renderPayments(p) {
         lastDateEl.innerText = new Date(sortedP[0].date).toLocaleDateString();
         sortedP.forEach(pay => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${escapeHtml(pay.product)}</td><td>${new Date(pay.date).toLocaleString()}</td><td style="text-align:right;">${parseInt(pay.amount).toLocaleString()}원</td>`;
+            tr.innerHTML = `<td data-label="결제 상품">${escapeHtml(pay.product)}</td><td data-label="결제 일시">${new Date(pay.date).toLocaleString()}</td><td data-label="금액" style="text-align:right;">${parseInt(pay.amount).toLocaleString()}원</td>`;
             listBody.appendChild(tr);
         });
     } else {

@@ -192,6 +192,10 @@ html, body { height: auto !important; min-height: 100vh !important; overflow-y: 
 .mock-type-badge.edu { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
 .mock-type-badge.private { background: #f3e8ff; color: #6b21a8; border: 1px solid #d8b4fe; }
 
+/* 실시간 글자수 상태 CSS */
+.char-count { font-size: 0.8rem; color: #ef4444; font-weight: bold; margin-top: 4px; transition: color 0.2s; text-align: right; }
+.char-count.valid { color: #10b981; }
+
 /* =========================================
    [1] 튜터 주간 평가 (Weekly Feedback) 스타일
    ========================================= */
@@ -382,7 +386,7 @@ html, body { height: auto !important; min-height: 100vh !important; overflow-y: 
     display: flex; justify-content: space-between; align-items: center; 
 }
 
-/* [수정] 학생 요청사항 박스 디자인 개선 */
+/* 학생 요청사항 박스 디자인 개선 */
 .student-req-card { background-color: #fff; border: 1px solid #cbd5e1; border-left: 5px solid #f59e0b; border-radius: 8px; padding: 0; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); overflow: hidden; }
 .req-header { background-color: #fffbeb; padding: 12px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 8px; }
 .req-title { font-size: 0.95rem; font-weight: 800; color: #92400e; margin: 0; }
@@ -492,66 +496,39 @@ html, body { height: auto !important; min-height: 100vh !important; overflow-y: 
     .info-header-card { flex-direction: column; text-align: center; }
 }
 
-/* 모바일 크기 (768px 이하) */
+/* 모바일 크기 (768px 이하) - 완전 최적화본 */
 @media (max-width: 768px) {
-    /* 1. 상단바 유연하게 세로 배치 (로고/버튼 겹침 방지) */
-    .admin-header-bar { flex-direction: column; gap: 12px; align-items: flex-start; padding: 15px; }
-    .back-btn { width: 100%; text-align: center; padding: 10px; }
-
-    /* 2. 프로필 및 뱃지 다이어트 */
-    .profile-card { padding: 20px 15px; }
-    .profile-img { width: 90px; height: 90px; margin-bottom: 10px; }
-    .profile-name { font-size: 1.3rem; }
-    .tier-badge { margin-bottom: 15px; padding: 4px 12px; font-size: 0.8rem; }
-    .analysis-status-box { margin-top: 15px; padding-top: 15px; }
-
-    /* 3. 탭 버튼 및 컨텐츠 영역 */
-    .tabs { padding: 0; }
-    .tab-btn { padding: 12px 10px; font-size: 0.9rem; flex-shrink: 0; }
-    .tab-content { padding: 20px 15px; }
-    .tab-card { min-height: auto; } /* 700px 고정 해제 */
-
-    /* 4. 각종 카드/박스 내부 여백 축소 */
-    .memo-card, .info-header-card, .univ-summary-section, .pro-period-section { padding: 15px; }
-    .detail-item { padding: 15px; flex-direction: column; align-items: flex-start; gap: 8px; }
-    .card-header-row, .weekly-section, .weekly-mock-box, .weekly-footer { padding: 15px; }
-    .pro-box { padding: 12px; }
-    .req-content-area { padding: 15px; }
-    .score-pills-container { justify-content: flex-start; }
-
-    /* 5. 폼, 에디터, 채팅창 모바일 최적화 */
-    .feedback-grid { grid-template-columns: 1fr; }
-    .fb-item textarea, .write-textarea { font-size: 1rem; /* iOS 자동확대 방지 */ }
-    .analysis-editor { height: 300px; padding: 15px; } 
-    .admin-chat-wrapper { height: 500px; } 
-    .chat-window { padding: 15px; }
-    #adminChatInput { height: 45px; padding: 10px; }
-    .chat-send-btn { height: 45px; width: 60px; }
-
-    /* 6. JS에서 인라인으로 주입된 강제 가로배치(Flex) 무력화 및 세로 정렬 */
-    .action-bar > div[style*="display:flex"] {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        gap: 10px !important;
-    }
-    .action-bar > div > button,
-    .action-bar > div > a {
-        width: 100% !important;
-        margin-left: 0 !important;
-        text-align: center;
-        justify-content: center;
-    }
-    .action-bar { flex-direction: column; gap: 10px; align-items: stretch; padding-top: 15px; }
-    .action-bar button { width: 100%; justify-content: center; padding: 14px; margin: 0 !important; }
-
-    /* 7. 테이블 및 가로 스크롤 확보 */
-    .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .payment-table-modern th, .payment-table-modern td, 
-    .score-table th, .score-table td { padding: 10px 12px; font-size: 0.85rem; }
-
-    /* 8. 모달 창 최적화 */
-    .modal-window, .coaching-modal-content, .guide-modal-content { width: 95%; max-height: 90vh; }
-    .coaching-modal-content { padding: 20px 15px; }
-    .modal-header { padding: 15px 20px; }
-    .modal-body { padding: 15px 20px; }
+	.admin-header-bar { flex-direction: column; gap: 12px; align-items: flex-start; padding: 15px; position: sticky; top: 0; z-index: 1001; }
+	.back-btn { width: 100%; text-align: center; padding: 10px; }
+	.profile-card { padding: 20px 15px; }
+	.profile-img { width: 90px; height: 90px; margin-bottom: 10px; }
+	.profile-name { font-size: 1.3rem; }
+	.tier-badge { margin-bottom: 15px; padding: 4px 12px; font-size: 0.8rem; }
+	.analysis-status-box { margin-top: 15px; padding-top: 15px; }
+	.tab-card { min-height: auto; overflow: visible; }
+	.tabs { padding: 0; position: sticky; top: 65px; z-index: 100; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+	.tab-btn { padding: 14px 10px; font-size: 0.9rem; flex-shrink: 0; }
+	.tab-content { padding: 20px 15px; }
+	.memo-card, .info-header-card, .univ-summary-section, .pro-period-section { padding: 15px; }
+	.detail-item { padding: 15px; flex-direction: column; align-items: flex-start; gap: 8px; }
+	.card-header-row, .weekly-section, .weekly-mock-box, .weekly-footer { padding: 15px; }
+	.pro-box { padding: 12px; }
+	.req-content-area { padding: 15px; }
+	.score-pills-container { justify-content: flex-start; }
+	.feedback-grid { grid-template-columns: 1fr; gap: 25px; }
+	.fb-item textarea, .write-textarea { font-size: 1rem; min-height: 150px; }
+	.action-bar > div[style*="display:flex"] { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
+	.action-bar > div > button, .action-bar > div > a { width: 100% !important; margin-left: 0 !important; text-align: center; justify-content: center; }
+	.action-bar { flex-direction: column; gap: 12px; align-items: stretch; padding-top: 20px; margin-top: 10px; }
+	.action-bar button { width: 100%; justify-content: center; padding: 16px; margin: 0 !important; font-size: 1rem; }
+	.admin-report-btn.completed { background: #166534; box-shadow: 0 4px 6px rgba(22, 101, 52, 0.2); }
+	.edit-report-btn.show { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
+	.table-responsive { width: 100%; overflow-x: hidden; box-shadow: none; background: transparent; }
+	.payment-table-modern thead, .score-table thead, .compact-table thead { display: none; }
+	.payment-table-modern tr, .score-table tr, .compact-table tr { display: block; margin-bottom: 12px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+	.payment-table-modern td, .score-table td, .compact-table td { position: relative; display: block; text-align: right; padding: 12px 15px 12px 40%; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; min-height: 24px; box-sizing: border-box; }
+	.payment-table-modern td:last-child, .score-table td:last-child, .compact-table td:last-child { border-bottom: none; }
+	.payment-table-modern td::before, .score-table td::before, .compact-table td::before { content: attr(data-label); position: absolute; left: 15px; top: 12px; font-weight: 700; color: #64748b; }
+	.modal-window, .coaching-modal-content, .guide-modal-content { width: 95%; max-height: 90vh; }
+	.coaching-modal-content, .modal-header, .modal-body { padding: 20px 15px; }
 }
