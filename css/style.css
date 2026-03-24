@@ -370,6 +370,11 @@ header {
 .preview-img-wrapper { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); border-radius: 12px; overflow: hidden; padding: 10px; }
 .preview-img-wrapper img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
 
+/* 프로그램 섹션 JS 동적 생성 요소 (PC용 기본 숨김 설정) */
+.tab-summary-wrap { display: flex; align-items: center; gap: 15px; width: 100%; text-align: left; }
+.tab-price-mobile { display: none; }
+.mobile-detail-box { display: none !important; }
+
 /* =========================================
    7. Planner Promo 섹션
    ========================================= */
@@ -558,15 +563,27 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
     .dotted-line-connector::after { width: 80%; }
 
     /* Curriculum */
-    .curriculum-interactive-box { flex-direction: column-reverse; padding: 20px; overflow: hidden; }
-    .course-tab-nav { display: flex !important; flex-direction: row !important; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; gap: 20px; padding-bottom: 10px; margin: 0; width: 100%; box-sizing: border-box; }
-    .course-tab-nav::-webkit-scrollbar { display: none; }
-    .course-tab-btn { flex: 0 0 80% !important; scroll-snap-align: center; scroll-snap-stop: always; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 25px 15px; min-width: 0; gap: 10px; height: auto; box-sizing: border-box; }
-    
-    .tab-icon { font-size: 1.6rem; }
-    .tab-info { align-items: center; width: 100%; }
-    .tab-name { font-size: 0.95rem; margin-bottom: 2px; }
-    .tab-sub { font-size: 0.75rem; opacity: 0.8; white-space: nowrap; }
+    .course-tab-nav { display: flex !important; flex-direction: column !important; overflow: visible !important; gap: 15px !important; padding-bottom: 0 !important; margin: 0 !important; width: 100% !important; box-sizing: border-box; }
+    .course-tab-btn { flex: none !important; width: 100% !important; display: flex !important; flex-direction: column !important; align-items: flex-start !important; padding: 18px 20px !important; height: auto !important; background: rgba(255, 255, 255, 0.05) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 12px; }
+    .course-tab-btn.active-expand { background: rgba(255, 255, 255, 0.1) !important; box-shadow: 0 10px 25px rgba(0,0,0,0.3) !important; transform: scale(1.02) !important; }
+    .course-tab-btn[data-tier="mbti"].active-expand { border-color: #8B5CF6 !important; }
+    .course-tab-btn[data-tier="basic"].active-expand { border-color: #059669 !important; }
+    .course-tab-btn[data-tier="standard"].active-expand { border-color: #3b82f6 !important; }
+    .course-tab-btn[data-tier="pro"].active-expand { border-color: #E11D48 !important; }
+    .tab-summary-wrap { justify-content: space-between; align-items: center; }
+    .tab-info { flex: 1; min-width: 0; }
+    .tab-name { font-size: 1.05rem; margin-bottom: 2px; }
+    .tab-sub { font-size: 0.8rem; }
+    .tab-price-mobile { display: block; font-size: 0.95rem; font-weight: 800; color: #fbbf24; text-align: right; white-space: nowrap; }
+    .tab-price-mobile .original-price { font-size: 0.75rem; display: block; opacity: 0.7; }
+    .tab-price-mobile .discount-price { font-size: 0.85rem; display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2; }
+    .tab-price-mobile .highlight-price { font-size: 1.15rem; }
+    .course-tab-btn.active-expand .mobile-detail-box { display: block !important; }
+    .mobile-detail-box { display: none !important; width: 100%; margin-top: 15px; padding-top: 15px; border-top: 1px dashed rgba(255, 255, 255, 0.2); animation: fadeIn 0.3s ease-out; }
+    .mobile-detail-box .detail-desc { font-size: 0.85rem; color: #cbd5e1; margin-bottom: 12px; line-height: 1.5; }
+    .mobile-detail-box .detail-list { gap: 10px; display: flex; flex-direction: column; }
+    .mobile-detail-box .detail-list li { font-size: 0.85rem; color: #fff; }
+    .course-detail-view { display: none !important; }
     .detail-title { font-size: 1.6rem; }
     .feature-preview-panel { width: 100%; height: 100%; top: auto; bottom: 0; left: 0; right: 0; border-left: none; border-top: 1px solid rgba(255, 255, 255, 0.1); transform: translateY(110%); }
     .feature-preview-panel.active { transform: translateY(0); }

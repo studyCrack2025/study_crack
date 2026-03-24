@@ -140,60 +140,129 @@ const COURSE_DATA = {
     }
 };
 
-function selectCourse(tier) {
-    const data = COURSE_DATA[tier];
-    if (!data) return;
+// 프로그램 모바일 아코디언 DOM 초기화 함수
+function initMobileCourses() {
+    document.querySelectorAll('.course-tab-btn').forEach(btn => {
+        const tier = btn.getAttribute('data-tier');
+        const data = COURSE_DATA[tier];
+        if (!data) return;
 
-    document.querySelectorAll('.course-tab-btn').forEach(btn => btn.classList.remove('active'));
-    const activeBtn = document.querySelector(`.course-tab-btn[data-tier="${tier}"]`);
-    if(activeBtn) activeBtn.classList.add('active');
+        // 1. 기존 내용(아이콘, 텍스트) 추출
+        const iconHtml = btn.querySelector('.tab-icon').outerHTML;
+        const infoHtml = btn.querySelector('.tab-info').outerHTML;
 
-    const overlay = document.querySelector('.curriculum-bg-overlay');
-    if (overlay) {
-        overlay.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.8)), url('${data.bg}')`;
-    }
-
-    closeFeaturePreview();
-
-    const detailView = document.getElementById('courseDetailView');
-    if (detailView) {
+        // 2. 상세 리스트 HTML 생성
         const listHtml = data.list.map(item => {
-            const checkColor = tier === 'black' ? '#d4af37' : '#4ade80';
-            
+            const checkColor = data.themeColor;
             if (item.action) {
                 let clickHandler = "";
                 if (item.action === "preview") {
-                    clickHandler = `onclick="openFeaturePreview('${item.imgBase}', '${item.text}')"`;
+                    clickHandler = `onclick="event.stopPropagation(); openFeaturePreview('${item.imgBase}', '${item.text}')"`;
                 } else if (item.action === "download") {
-                    clickHandler = `onclick="downloadProReport('${item.file}')"`;
+                    clickHandler = `onclick="event.stopPropagation(); downloadProReport('${item.file}')"`;
                 }
-
                 return `
-                    <li class="clickable-item" ${clickHandler} title="클릭하여 확인하기">
-                        <i class="fas fa-check-circle" style="color:${checkColor}"></i>
-                        <span>${item.text}</span>
-                        <i class="fas fa-external-link-alt" style="font-size: 0.7em; margin-left: 5px; opacity: 0.7;"></i>
+                    <li class="clickable-item" ${clickHandler} title="클릭하여 확인하기" style="display:flex; align-items:flex-start; gap:8px;">
+                        <i class="fas fa-check-circle" style="color:${checkColor}; margin-top:3px;"></i>
+                        <span style="flex:1; word-break:keep-all;">${item.text}</span>
+                        <i class="fas fa-external-link-alt" style="font-size: 0.7em; margin-left: 5px; opacity: 0.7; margin-top:5px;"></i>
                     </li>
                 `;
             } else {
                 return `
-                    <li>
-                        <i class="fas fa-check-circle" style="color:${checkColor}"></i>
-                        <span>${item.text}</span>
+                    <li style="display:flex; align-items:flex-start; gap:8px;">
+                        <i class="fas fa-check-circle" style="color:${checkColor}; margin-top:3px;"></i>
+                        <span style="flex:1; word-break:keep-all;">${item.text}</span>
                     </li>
                 `;
             }
         }).join('');
 
-        detailView.innerHTML = `
-            <span class="detail-badge" style="color:${data.themeColor}; background:#fff; border: 1px solid ${data.themeColor};">
-                ${tier.toUpperCase()}
-            </span>
-            <h3 class="detail-title">${data.title}</h3>
-            <div class="detail-price">${data.price}</div>
-            <p class="detail-desc">${data.desc}</p>
-            <ul class="detail-list">${listHtml}</ul>
+        // 3. 버튼 내부 HTML 재구성 (요약부 + 숨겨진 확장부)
+        btn.innerHTML = `
+            <div class="tab-summary-wrap">
+                ${iconHtml}
+                ${infoHtml}
+                <div class="tab-price-mobile">${data.price}</div>
+            </div>
+            <div class="mobile-detail-box">
+                <p class="detail-desc">${data.desc}</p>
+                <ul class="detail-list">${listHtml}</ul>
+            </div>
         `;
+    });
+}
+
+// 데스크탑/모바일을 모두 지원하는 selectCourse 로직
+function selectCourse(tier) {
+    const data = COURSE_DATA[tier];
+    if (!data) return;
+
+    const isMobile = window.innerWidth <= 900;
+    const activeBtn = document.querySelector(`.course-tab-btn[data-tier="${tier}"]`);
+
+    // 배경 업데이트 (공통)
+    const overlay = document.querySelector('.curriculum-bg-overlay');
+    if (overlay) {
+        overlay.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.8)), url('${data.bg}')`;
+    }
+    closeFeaturePreview();
+
+    if (isMobile) {
+        // [모바일] Planner 스타일 아코디언 토글
+        if (activeBtn.classList.contains('active-expand')) {
+            activeBtn.classList.remove('active-expand', 'active');
+        } else {
+            document.querySelectorAll('.course-tab-btn').forEach(btn => {
+                btn.classList.remove('active-expand', 'active');
+            });
+            activeBtn.classList.add('active-expand', 'active');
+        }
+    } else {
+        // [데스크탑] 탭 활성화 및 우측 디테일 뷰 렌더링
+        document.querySelectorAll('.course-tab-btn').forEach(btn => {
+            btn.classList.remove('active', 'active-expand');
+        });
+        if(activeBtn) activeBtn.classList.add('active', 'active-expand');
+
+        const detailView = document.getElementById('courseDetailView');
+        if (detailView) {
+            const listHtml = data.list.map(item => {
+                const checkColor = data.themeColor;
+                if (item.action) {
+                    let clickHandler = "";
+                    if (item.action === "preview") {
+                        clickHandler = `onclick="openFeaturePreview('${item.imgBase}', '${item.text}')"`;
+                    } else if (item.action === "download") {
+                        clickHandler = `onclick="downloadProReport('${item.file}')"`;
+                    }
+                    return `
+                        <li class="clickable-item" ${clickHandler} title="클릭하여 확인하기">
+                            <i class="fas fa-check-circle" style="color:${checkColor}"></i>
+                            <span>${item.text}</span>
+                            <i class="fas fa-external-link-alt" style="font-size: 0.7em; margin-left: 5px; opacity: 0.7;"></i>
+                        </li>
+                    `;
+                } else {
+                    return `
+                        <li>
+                            <i class="fas fa-check-circle" style="color:${checkColor}"></i>
+                            <span>${item.text}</span>
+                        </li>
+                    `;
+                }
+            }).join('');
+
+            detailView.innerHTML = `
+                <span class="detail-badge" style="color:${data.themeColor}; background:#fff; border: 1px solid ${data.themeColor};">
+                    ${tier.toUpperCase()}
+                </span>
+                <h3 class="detail-title">${data.title}</h3>
+                <div class="detail-price">${data.price}</div>
+                <p class="detail-desc">${data.desc}</p>
+                <ul class="detail-list">${listHtml}</ul>
+            `;
+        }
     }
 }
 
@@ -375,6 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. UI 업데이트
     updateNavUI();
     renderReviews();
+    initMobileCourses();
     selectCourse('mbti');
 
     // 3. 버튼 이벤트 연결
