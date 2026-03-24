@@ -273,11 +273,14 @@
     <div id="weeklyCheckModal" class="modal">
         <div class="modal-content check-modal-content">
             <div class="modal-header" style="border-bottom:none; padding-bottom:10px;">
-                <h2 id="weeklyTitle" style="margin:0;">
-                    <span id="weeklyYear">2026년</span>
-                    <span id="weeklyDateDetail">1월 1주차</span>
-                    학습점검
-                </h2>
+                <div style="display:flex; flex-direction:column; gap:5px;">
+                    <h2 id="weeklyTitle" style="margin:0;">
+                        <span id="weeklyYear">2026년</span>
+                        <span id="weeklyDateDetail">1월 1주차</span>
+                        학습점검
+                    </h2>
+                    <div id="mobileWizardProgress" style="display:none; font-size:0.85rem; color:#3b82f6; font-weight:bold;"></div>
+                </div>
                 <span class="close-btn" onclick="closeWeeklyModal()">&times;</span>
             </div>
 
@@ -288,65 +291,66 @@
 
             <div class="modal-body scrollable">
                 <div id="tab-step1" class="tab-content active">
-                    <div class="check-section">
+                    
+                    <div class="check-section wizard-step">
                         <h4>1. 과목별 학습 달성률 <span class="req">*</span></h4>
                         <p class="desc">과목별 <strong>구체적인 과목명</strong>과 시간을 입력하세요.</p>
                         <div class="table-wrap">
                             <table class="study-time-table">
                                 <thead><tr><th>과목</th><th>세부과목</th><th>계획(H)</th><th>실제(H)</th><th>달성률</th></tr></thead>
                                 <tbody id="studyTimeBody">
-    <tr>
-        <td>
-            <span class="main-sub">국어</span>
-            <button type="button" class="add-row-btn" onclick="addSubjectRow(this, '국어')" title="과목 추가"><i class="fas fa-plus-circle"></i></button>
-        </td>
-        <td><input type="text" class="sub-detail" placeholder="예: 언매"></td>
-        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
-        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
-        <td><span class="rate-txt">0%</span></td>
-    </tr>
-    <tr>
-        <td>
-            <span class="main-sub">수학</span>
-            <button type="button" class="add-row-btn" onclick="addSubjectRow(this, '수학')" title="과목 추가"><i class="fas fa-plus-circle"></i></button>
-        </td>
-        <td><input type="text" class="sub-detail" placeholder="예: 미적"></td>
-        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
-        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
-        <td><span class="rate-txt">0%</span></td>
-    </tr>
-    <tr>
-        <td><span class="main-sub">영어</span></td>
-        <td><input type="text" class="sub-detail" disabled style="background:#f8fafc; border:none;"></td>
-        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
-        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
-        <td><span class="rate-txt">0%</span></td>
-    </tr>
-    <tr>
-        <td><span class="main-sub">탐구1</span></td>
-        <td><input type="text" class="sub-detail" placeholder="과목명"></td>
-        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
-        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
-        <td><span class="rate-txt">0%</span></td>
-    </tr>
-    <tr>
-        <td><span class="main-sub">탐구2</span></td>
-        <td><input type="text" class="sub-detail" placeholder="과목명"></td>
-        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
-        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
-        <td><span class="rate-txt">0%</span></td>
-    </tr>
-    <tr>
-        <td>
-            <input type="text" placeholder="기타" class="custom-subj" style="width: 70%;">
-            <button type="button" class="add-row-btn" onclick="addCustomRow(this)" title="기타 추가"><i class="fas fa-plus-circle"></i></button>
-        </td>
-        <td>-</td>
-        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
-        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
-        <td><span class="rate-txt">0%</span></td>
-    </tr>
-</tbody>
+                                    <tr>
+                                        <td>
+                                            <span class="main-sub">국어</span>
+                                            <button type="button" class="add-row-btn" onclick="addSubjectRow(this, '국어')" title="과목 추가"><i class="fas fa-plus-circle"></i></button>
+                                        </td>
+                                        <td><input type="text" class="sub-detail" placeholder="예: 언매"></td>
+                                        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
+                                        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
+                                        <td><span class="rate-txt">0%</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <span class="main-sub">수학</span>
+                                            <button type="button" class="add-row-btn" onclick="addSubjectRow(this, '수학')" title="과목 추가"><i class="fas fa-plus-circle"></i></button>
+                                        </td>
+                                        <td><input type="text" class="sub-detail" placeholder="예: 미적"></td>
+                                        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
+                                        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
+                                        <td><span class="rate-txt">0%</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="main-sub">영어</span></td>
+                                        <td><input type="text" class="sub-detail" disabled style="background:#f8fafc; border:none;"></td>
+                                        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
+                                        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
+                                        <td><span class="rate-txt">0%</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="main-sub">탐구1</span></td>
+                                        <td><input type="text" class="sub-detail" placeholder="과목명"></td>
+                                        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
+                                        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
+                                        <td><span class="rate-txt">0%</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="main-sub">탐구2</span></td>
+                                        <td><input type="text" class="sub-detail" placeholder="과목명"></td>
+                                        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
+                                        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
+                                        <td><span class="rate-txt">0%</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <input type="text" placeholder="기타" class="custom-subj" style="width: 70%;">
+                                            <button type="button" class="add-row-btn" onclick="addCustomRow(this)" title="기타 추가"><i class="fas fa-plus-circle"></i></button>
+                                        </td>
+                                        <td>-</td>
+                                        <td><input type="number" class="plan-time" oninput="calcStudyRates()"></td>
+                                        <td><input type="number" class="act-time" oninput="calcStudyRates()"></td>
+                                        <td><span class="rate-txt">0%</span></td>
+                                    </tr>
+                                </tbody>
                                 <tfoot>
                                     <tr class="total-row"><td colspan="2">총합</td><td id="totalPlan">0H</td><td id="totalAct">0H</td><td id="totalRate">0%</td></tr>
                                 </tfoot>
@@ -354,7 +358,7 @@
                         </div>
                     </div>
 
-                    <div class="check-section">
+                    <div class="check-section wizard-step">
                         <h4>2. 플래너 인증 <span class="req">*</span></h4>
                         <p class="desc">이번 주 플래너 사진을 첨부해주세요. (최대 5장)</p>
                         <div class="file-upload-wrapper">
@@ -364,7 +368,7 @@
                         </div>
                     </div>
 
-                    <div class="check-section">
+                    <div class="check-section wizard-step">
                         <h4>3. 실전 모의고사 응시 여부 <span class="req">*</span></h4>
                         <p class="desc">여러개를 응시했다면 대표하는 1개만 입력해주세요.</p>
                         <div class="mock-tile-group">
@@ -376,7 +380,6 @@
                         <input type="hidden" id="mockExamType" value="none">
                         
                         <div id="mockExamFields" style="display:none; margin-top:20px;">
-                            
                             <div class="file-upload-box small-type">
                                 <div class="upload-header">
                                     <span class="upload-label">📝 성적 인증 사진 (필수)</span>
@@ -433,7 +436,7 @@
                         </div>
                     </div>
 
-                    <div class="check-section">
+                    <div class="check-section wizard-step">
                         <h4>4. 최근 2주 학업 추이 <span class="req">*</span></h4>
                         <div class="trend-radio-group">
                             <label><input type="radio" name="studyTrend" value="up" onchange="toggleSlumpReason()"> 📈 상승</label>
@@ -455,32 +458,32 @@
                 
                 <div id="tab-step2" class="tab-content">
                     <div class="pro-body" style="padding:0;">
-                        <p style="color:#64748b; font-size:0.9rem; margin-bottom:20px;">
+                        <p class="pro-intro-text" style="color:#64748b; font-size:0.9rem; margin-bottom:20px;">
                             <i class="fas fa-info-circle"></i> 전문가의 피드백을 받기 위한 심층 질문입니다. 구체적으로 작성할수록 정확한 솔루션과 <strong>맞춤 작성된 주간 플래너</strong>를 받을 수 있습니다.
                         </p>
 
-                        <div class="pro-input-card">
+                        <div class="pro-input-card wizard-step">
                             <div class="card-title"><i class="fas fa-calendar-check"></i> 1. 학습 계획 점검</div>
                             <p class="card-desc">현재 세우고 있는 계획의 문제점이나 확신이 없는 부분을 적어주세요.</p>
                             <textarea id="deepQ1" class="pro-textarea" maxlength="200" placeholder="예: 하루 14시간 계획을 세우는데 자꾸 밀립니다. 현실적인 수정이 필요합니다." oninput="updateCharCount(this)"></textarea>
                             <div class="char-count"><span>0</span>/200</div>
                         </div>
                         
-                        <div class="pro-input-card">
+                        <div class="pro-input-card wizard-step">
                             <div class="card-title"><i class="fas fa-compass"></i> 2. 학습 방향성 설정</div>
                             <p class="card-desc">현재 공부하고 있는 방향이 맞는지, 입시 전략과 일치하는지 고민을 적어주세요.</p>
                             <textarea id="deepQ2" class="pro-textarea" maxlength="200" placeholder="예: 정시 파이터인데 내신 기간에 수능 공부 밸런스를 어떻게 잡아야 할까요?" oninput="updateCharCount(this)"></textarea>
                             <div class="char-count"><span>0</span>/200</div>
                         </div>
                         
-                        <div class="pro-input-card">
+                        <div class="pro-input-card wizard-step">
                             <div class="card-title"><i class="fas fa-book-open"></i> 3. 취약 과목 솔루션</div>
                             <p class="card-desc">성적이 오르지 않는 특정 과목의 구체적인 증상을 적어주세요.</p>
                             <textarea id="deepQ3" class="pro-textarea" maxlength="200" placeholder="예: 수학 준킬러에서 시간이 너무 오래 걸립니다. 기출 분석은 2회독 했습니다." oninput="updateCharCount(this)"></textarea>
                             <div class="char-count"><span>0</span>/200</div>
                         </div>
                         
-                        <div class="pro-input-card">
+                        <div class="pro-input-card wizard-step">
                             <div class="card-title"><i class="fas fa-comment-dots"></i> 4. 기타 멘탈 관리</div>
                             <p class="card-desc">슬럼프, 불안감 등 학습 외적인 고민이 있다면 자유롭게 적어주세요.</p>
                             <textarea id="deepQ4" class="pro-textarea" maxlength="200" placeholder="자유롭게 작성해주세요." oninput="updateCharCount(this)"></textarea>
@@ -490,8 +493,11 @@
                 </div> 
             </div>
 
-            <div class="modal-footer">
-                <button class="save-btn" onclick="submitWeeklyCheck()">작성 완료 및 제출</button>
+            <div class="modal-footer" id="weeklyModalFooter" style="display:flex; gap:10px; justify-content:space-between;">
+                <button class="btn-common btn-cancel" id="wizardPrevBtn" onclick="prevMobileStep()" style="display:none; margin-top:0; width:100%;">이전</button>
+                <button class="save-btn" id="wizardNextBtn" onclick="nextMobileStep()" style="display:none; margin-top:0; width:100%;">다음 단계로</button>
+                
+                <button class="save-btn" id="wizardSubmitBtn" onclick="submitWeeklyCheck()" style="margin-top:0; width:100%;">작성 완료 및 제출</button>
             </div>
         </div>
     </div>

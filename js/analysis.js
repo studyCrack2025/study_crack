@@ -2385,6 +2385,11 @@ async function downloadReportPDF(reportTitle) {
     }
 }
 
+// 전역 변수 추가
+let currentMobileStep = 0;
+let wizardSteps = [];
+
+// 기존 함수 수정
 function openWeeklyCheckModal() {
     const allowedTiers = ['standard', 'pro'];
     
@@ -2400,6 +2405,7 @@ function openWeeklyCheckModal() {
     }
     
     const modal = document.getElementById('weeklyCheckModal');
+    const modalContent = modal.querySelector('.check-modal-content');
     const currentWeekTitle = getWeekTitle(today); 
     const [yStr, mStr, wStr] = currentWeekTitle.split(' '); 
     document.getElementById('weeklyYear').innerText = yStr;
@@ -2410,10 +2416,83 @@ function openWeeklyCheckModal() {
     if (thisWeekData) loadWeeklyDataToForm(thisWeekData); 
     else resetWeeklyForm(); 
     
-    switchWeeklyTab('step1');
+    // ------------------------------------------------
+    // [추가된 로직] 모바일/PC 분기 처리
+    // ------------------------------------------------
+    const isMobile = window.innerWidth <= 768;
+    
+    if (isMobile) {
+        // 모바일: 마법사(Wizard) 모드 켬
+        modalContent.classList.add('mobile-wizard-mode');
+        // .check-section과 .pro-input-card를 모두 수집하여 스텝으로 만듦
+        wizardSteps = Array.from(modal.querySelectorAll('.check-section, .pro-input-card'));
+        currentMobileStep = 0;
+        updateMobileWizardUI();
+    } else {
+        // PC: 기존 탭 모드 유지
+        modalContent.classList.remove('mobile-wizard-mode');
+        document.getElementById('mobileWizardProgress').style.display = 'none';
+        document.getElementById('wizardPrevBtn').style.display = 'none';
+        document.getElementById('wizardNextBtn').style.display = 'none';
+        document.getElementById('wizardSubmitBtn').style.display = 'block';
+        document.getElementById('wizardSubmitBtn').style.width = '100%';
+        switchWeeklyTab('step1'); 
+    }
+    // ------------------------------------------------
     
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
+}
+
+// 새롭게 추가할 헬퍼 함수들
+function updateMobileWizardUI() {
+    // 모든 스텝에서 active-step 클래스 제거 후, 현재 스텝에만 추가
+    wizardSteps.forEach((step, idx) => {
+        if (idx === currentMobileStep) step.classList.add('active-step');
+        else step.classList.remove('active-step');
+    });
+
+    // 상단 진행률 업데이트
+    const progressEl = document.getElementById('mobileWizardProgress');
+    progressEl.style.display = 'block';
+    progressEl.innerText = `${currentMobileStep + 1} / ${wizardSteps.length} 단계`;
+
+    // 하단 버튼 제어
+    const prevBtn = document.getElementById('wizardPrevBtn');
+    const nextBtn = document.getElementById('wizardNextBtn');
+    const submitBtn = document.getElementById('wizardSubmitBtn');
+
+    if (currentMobileStep === 0) {
+        prevBtn.style.display = 'none';
+        nextBtn.style.display = 'block';
+        submitBtn.style.display = 'none';
+    } else if (currentMobileStep === wizardSteps.length - 1) {
+        prevBtn.style.display = 'block';
+        nextBtn.style.display = 'none';
+        submitBtn.style.display = 'block';
+    } else {
+        prevBtn.style.display = 'block';
+        nextBtn.style.display = 'block';
+        submitBtn.style.display = 'none';
+    }
+    
+    // 다음 스텝 이동 시 스크롤을 맨 위로 올려줌
+    const modalBody = document.querySelector('.check-modal-content .modal-body.scrollable');
+    if (modalBody) modalBody.scrollTop = 0;
+}
+
+function nextMobileStep() {
+    if (currentMobileStep < wizardSteps.length - 1) {
+        currentMobileStep++;
+        updateMobileWizardUI();
+    }
+}
+
+function prevMobileStep() {
+    if (currentMobileStep > 0) {
+        currentMobileStep--;
+        updateMobileWizardUI();
+    }
 }
 
 function closeWeeklyModal() {

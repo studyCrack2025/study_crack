@@ -582,6 +582,33 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 @media (max-width: 768px) {
+    /* 모바일 마법사(Wizard) 모드 전용 스타일 */
+    .mobile-wizard-mode .tab-menu { display: none !important; }
+    .mobile-wizard-mode .tab-content { display: block !important; padding: 10px 0 !important; }
+    .mobile-wizard-mode .pro-body { padding: 0 15px !important; }
+    .mobile-wizard-mode .pro-body > p { display: none; }
+    .mobile-wizard-mode .check-section { display: none; margin-bottom: 0; padding: 15px; border: none; box-shadow: none; }
+    .mobile-wizard-mode .pro-input-card { display: none; margin-bottom: 0; padding: 15px; border: none; box-shadow: none; }
+    .mobile-wizard-mode .active-step { display: block !important; animation: fadeInRight 0.3s ease-out; }
+    .mobile-wizard-mode .check-section h4 { font-size: 1.25rem; margin-bottom: 12px; }
+    .mobile-wizard-mode .card-title { font-size: 1.25rem; margin-bottom: 12px; }
+    .mobile-wizard-mode .check-section .desc { font-size: 1rem; color: #475569; margin-bottom: 20px; line-height: 1.5; }
+    .mobile-wizard-mode .card-desc { font-size: 1rem; color: #475569; margin-bottom: 20px; line-height: 1.5; }
+    .mobile-wizard-mode input[type="text"] { font-size: 1rem; padding: 12px; }
+    .mobile-wizard-mode input[type="number"] { font-size: 1rem; padding: 12px; }
+    .mobile-wizard-mode select { font-size: 1rem; padding: 12px; }
+    .mobile-wizard-mode textarea { font-size: 1rem; padding: 12px; }
+    .mobile-wizard-mode .study-time-table th { font-size: 0.95rem; }
+    .mobile-wizard-mode .study-time-table td { font-size: 1rem; }
+    .mobile-wizard-mode #weeklyModalFooter { display: flex; gap: 10px; justify-content: space-between; }
+    .mobile-wizard-mode #wizardPrevBtn { flex: 1; margin-top: 0; }
+    .mobile-wizard-mode #wizardNextBtn { flex: 2; margin-top: 0; }
+    .mobile-wizard-mode #wizardSubmitBtn { flex: 2; margin-top: 0; }
+}
+
+@keyframes fadeInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+@media (max-width: 768px) {
     /* =======================================
        1. 메인 헤더 & 네비게이션 탭 다이어트
        ======================================= */
