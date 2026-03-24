@@ -540,6 +540,18 @@ function handleNotiAction(noti) {
     else if (noti.actionType === 'pro_report') {
         window.location.href = '/analysis?tab=pro'; 
     } 
+    else if (noti.actionType === 'qna_reply') {
+        document.getElementById('noticeModalTitle').innerText = noti.title || "답변 완료";
+        document.getElementById('noticeModalDate').innerText = new Date(noti.createdAt).toLocaleDateString();
+        document.getElementById('noticeModalContent').innerText = noti.detail || "마이페이지 Q&A에서 확인해주세요.";
+        
+        const modal = document.getElementById('noticeDetail-modal');
+        if(modal) {
+            modal.classList.remove('hidden');
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+    }
     else if (noti.actionType === 'admin_notice') {
         document.getElementById('noticeModalTitle').innerText = noti.title || "공지사항";
         document.getElementById('noticeModalDate').innerText = new Date(noti.createdAt).toLocaleDateString();

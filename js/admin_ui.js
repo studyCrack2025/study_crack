@@ -464,6 +464,7 @@ async function searchStudents() {
     <td data-label="상태">${statusBadge}</td>
     <td data-label="관리">
         <button style="padding:6px 12px; background:#3b82f6; color:white; border:none; border-radius:4px; cursor:pointer;" onclick="goToStudentDetail('${s.userid}')">상세관리</button>
+        <button style="padding:6px 12px; background:#ef4444; color:white; border:none; border-radius:4px; cursor:pointer; flex:1;" onclick="openForceDeleteModal('${s.userid}', '${escapeHtml(s.name)}')">강제탈퇴</button>
     </td>
 `;
             tbody.appendChild(tr);
@@ -641,6 +642,18 @@ async function submitReply() {
                 }
             })
         });
+        
+        const qnaTitle = document.getElementById('replyModalTitle').innerText;
+        await apiFetch(NOTI_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'admin_notify_qna_reply',
+                data: {
+                    targetUserId: currentReplyTarget.targetUserId,
+                    qnaTitle: qnaTitle
+                }
+            })
+        }).catch(e => console.error("알림 전송 실패(무시됨):", e));
 
         alert("답변이 전송되었습니다.");
         const item = allQnaData.find(q => q.id === currentReplyTarget.qnaId);
@@ -1385,8 +1398,62 @@ async function executeMatching(studentId, isChange, newTutorArg = null, oldTutor
     }
 }
 
+// ==========================================
+// [J] 강제 탈퇴 이중 확인 및 실행 로직
+// ==========================================
+window.openForceDeleteModal = function(userId, userName) {
+    document.getElementById('fdUserId').value = userId;
+    document.getElementById('fdUserName').innerText = userName || "이름없음";
+    document.getElementById('fdReason').value = '';
+    document.getElementById('fdConfirmText').value = '';
+
+    const modal = document.getElementById('forceDelete-modal');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex'; // 가운데 정렬을 위해 flex 적용
+};
+
+window.closeForceDeleteModal = function() {
+    const modal = document.getElementById('forceDelete-modal');
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+};
+
+window.executeForceDelete = async function() {
+    const userId = document.getElementById('fdUserId').value;
+    const reason = document.getElementById('fdReason').value.trim();
+    const confirmText = document.getElementById('fdConfirmText').value.trim();
+
+    if (!reason) return alert("탈퇴 사유를 반드시 입력해주세요.");
+    
+    // 이중 보안 체크
+    if (confirmText !== "강제 탈퇴 확인했습니다") {
+        return alert("동의 확인 문구를 정확히 띄어쓰기까지 맞춰서 입력해주세요.");
+    }
+
+    if (!confirm("마지막 확인입니다. 정말 삭제하시겠습니까? 데이터 복구는 불가능합니다.")) return;
+
+    try {
+        // 백엔드 (관리자 API)에 강제 탈퇴 요청
+        await apiFetch(ADMIN_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'admin_force_delete_user',
+                userId: localStorage.getItem('userId'), // 요청하는 관리자 ID
+                data: { targetUserId: userId, reason: reason }
+            })
+        });
+
+        alert("강제 탈퇴 처리가 완료되었습니다.");
+        closeForceDeleteModal();
+        searchStudents(); // 목록 새로고침
+        
+    } catch (e) {
+        if (e.message !== "Auth expired") alert("탈퇴 처리 중 오류가 발생했습니다. (백엔드 admin_force_delete_user API가 준비되었는지 확인하세요)");
+    }
+};
+
 // ============================================================
-// [J] 유틸리티
+// [K] 유틸리티
 // ============================================================
 
 function escapeHtml(text) {
