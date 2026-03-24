@@ -508,7 +508,7 @@ html, body { height: auto !important; min-height: 100vh !important; overflow-y: 
 	.tier-badge { margin-bottom: 15px; padding: 4px 12px; font-size: 0.8rem; }
 	.analysis-status-box { margin-top: 15px; padding-top: 15px; }
 	.main-content-area { width: 100%; box-sizing: border-box; display: block; }
-	.tab-card { width: 100%; box-sizing: border-box; min-height: auto; overflow: hidden; border: none; box-shadow: none; background: transparent; }
+	.tab-card { width: 100%; box-sizing: border-box; min-height: auto; background: white; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-bottom: 20px; }
 	.tabs { position: sticky; top: 60px; z-index: 100; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px 8px 0 0; padding: 0; width: 100%; box-sizing: border-box; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; display: flex; }
 	.tab-btn { padding: 14px 15px; font-size: 0.95rem; flex-shrink: 0; }
 	.tab-content { padding: 20px 0; width: 100%; box-sizing: border-box; }
