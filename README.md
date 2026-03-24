@@ -1,128 +1,122 @@
-# 🎓 StudyCrack (스터디크랙) - 입시 컨설팅 플랫폼
+실제 디렉토리 구조를 보니 **학생용 기능뿐만 아니라 튜터(Tutor) 전용 페이지와 관리자 세부 기능, 그리고 결제/비밀번호 변경 등 훨씬 방대하고 구체적인 기능들**이 포함되어 있네요! 
 
-**StudyCrack**은 수험생을 위한 **1:1 맞춤형 입시 컨설팅 및 학습 관리 웹 플랫폼**입니다.
-AWS Serverless 아키텍처와 **API Gateway**를 기반으로 보안성과 확장성을 강화하였으며, 멤버십 등급(Basic~Black)에 따른 차별화된 솔루션과 정밀한 성적 분석 시스템을 제공합니다.
+터미널로 뽑아주신 실제 파일 트리를 완벽하게 반영하고, 기능 설명도 훨씬 빵빵하게 채워 넣은 **최종 완성본 README**입니다. 오늘 날짜(2026년 3월 24일)도 하단에 업데이트해 두었습니다. 
+
+이 코드를 그대로 복사해서 `README.md`에 붙여넣으시면 됩니다.
+
+---
+
+```markdown
+# 🎓 StudyCrack (스터디크랙) - 데이터 기반 입시 컨설팅 플랫폼
+
+**StudyCrack**은 수험생과 입시 전문가(Tutor)를 연결해주는 **1:1 맞춤형 입시 컨설팅 및 학습 관리 웹 플랫폼**입니다.
+AWS Serverless 아키텍처와 **API Gateway**를 기반으로 설계되어 강력한 보안성과 확장성을 자랑하며, 학생의 멤버십 등급(Basic, Standard, Pro)에 따라 정밀한 AI 성적 분석과 주간 플래너 첨삭 등 차별화된 입시 솔루션을 제공합니다.
+
+---
 
 ## 🛠 Tech Stack (기술 스택)
 
 ### Frontend
-
-* **HTML5 / CSS3**: 반응형 웹 디자인 (Mobile, Tablet, Desktop 대응), Flex/Grid 레이아웃 최적화
-* **JavaScript (ES6+)**: `Vanilla JS` 기반 SPA 로직 구현, `fetch` API를 활용한 비동기 통신
-* **Chart.js**: 관리자 대시보드 및 성적 분석 시각화
+* **HTML5 / CSS3**: 반응형 웹 디자인 (Mobile, Tablet, Desktop), 모바일 마법사(Wizard) UI 및 다크/라이트 테마 제어
+* **JavaScript (ES6+)**: `Vanilla JS` 기반의 가벼운 SPA 라우팅 및 모달 제어, `fetch` API를 활용한 비동기 통신
+* **Libraries**: `Chart.js` (데이터 시각화), `PDF.js` & `html2pdf.js` (피드백 리포트 PDF 렌더링 및 다운로드)
 
 ### Backend (AWS Serverless)
+* **AWS API Gateway**: REST API 엔드포인트 통합 관리, CORS 및 라우팅 처리
+* **AWS Cognito**: 사용자 인증(User Pool) 및 Bearer Token 기반 API 접근 제어
+* **AWS Lambda**: 비즈니스 로직 처리 (유저 관리, 결제, 성적 환산, 매칭 로직 등 마이크로서비스 연동)
+* **AWS DynamoDB**: NoSQL 데이터베이스 (유저 프로필, 성적, 주간 학습 기록, 결제 로그 통합 저장)
+* **AWS S3**: 학생 플래너 이미지 및 모의고사 성적표 등 정적 파일 스토리지
 
-* **AWS API Gateway**: REST API 엔드포인트 통합 관리, **CORS** 및 라우팅 처리
-* **AWS Cognito**: 사용자 인증 (User Pool), **Bearer Token** 기반 API 접근 제어 (Authorizer)
-* **AWS Lambda**: 비즈니스 로직 분리 및 마이크로서비스화
-  * `StudyCrack_API`: 유저/관리자 데이터 CRUD, 상담 내역 관리
-  * `StudyCrack_Analysis`: 표준점수 기반 백분위/등급 자동 산출 로직, 합격 확률 분석
-  * `StudyCrack_Payment`: 결제 프로세싱, Google Sheet 로깅, 알림 발송 (Webhook 처리)
-
-
-* **AWS DynamoDB**: NoSQL 데이터베이스 (유저 프로필, 성적, 상담, 결제 로그 통합 저장)
-* **AWS SES**: 관리자 알림 및 마케팅 메일 발송
-
-### External Tools
-
-* **Stripe**: 신용카드 결제 및 Webhook 연동 (테스트용 임시)
-* **Google Sheets API**: 주문 대장 실시간 백업
-* **Solapi (CoolSMS)**: SMS/알림톡 발송
+### External Integration
+* **Stripe / 무통장입금**: 신용카드 결제 및 Webhook 연동 (결제 자동화)
+* **Solapi (CoolSMS) / AWS SES**: 관리자 알림, 카카오 알림톡 및 마케팅 메일 발송
 
 ---
 
 ## ✨ Key Features (주요 기능)
 
-### 1. 사용자(학생) 시스템 & 보안
+### 1. 👨‍🎓 사용자(학생) 서비스
+* **목표 대학 설정 및 시뮬레이션 (`analysis.html`)**: 내 환산 점수와 목표 대학 입결을 비교하고, 과목별 점수 상승 시 합격 확률 변화를 차트로 시뮬레이션
+* **주간 학습 점검 및 코칭 (`mypage.html`)**: 매주 플래너와 학습 달성률을 입력하고, 전문가의 심층 코칭 리포트를 PDF 형태로 제공받는 기능
+* **기초조사서 (`survey.html`)**: 성적(정량) 및 진로/가치관(정성) 데이터를 입력하여 컨설팅의 기초 자료로 활용
+* **결제 시스템 (`checkout.html`, `payment.html`)**: 멤버십(Basic, Standard, Pro) 결제 및 무통장 입금 연동
 
-* **API Gateway 보안 연동**: 모든 API 요청 시 Cognito Access Token 검증을 통한 비인가 접근 차단
-* **중앙 집중식 설정 관리**: `config.js`를 통한 API 엔드포인트 및 환경 변수 통합 관리
+### 2. 👨‍🏫 전문가(튜터) 서비스
+* **튜터 전용 공간 (`mypage_tutor.html`, `signup_tutor.html`)**: 컨설턴트 가입 및 전용 마이페이지 제공
+* **학생 매칭 및 리포트 작성**: 배정된 학생의 주간 학습 데이터를 확인하고 피드백 리포트를 작성하여 전달
 
-### 2. 마이페이지 & 솔루션 (My Page)
-
-* **반응형 대시보드**: PC/모바일 환경에 따라 최적화된 Grid/Flex 레이아웃 (가로 스크롤 방지 및 타일 배치)
-* **내 정보 관리**: 개인정보 수정 및 비밀번호 변경 (UI/UX 개선)
-* **나만의 솔루션 (Tab System)**:
-* **목표 대학 설정**: 1~8지망 대학/학과 설정 및 **2주간 수정 잠금(Lock)** 로직 적용
-* **플래너 코칭**: 주간 학습 점검(달성률 계산) 및 심층 코칭(Pro 이상) 모달 구현
-* **입시 분석**: 내 점수와 목표 대학 입결 비교 분석 및 합격 가능성 시각화
-
-
-
-### 3. 기초조사서 (Survey & Analysis)
-
-* **정성 데이터**: 진로, 가치관, 부모님 의견 등 심층 설문
-* **정량 데이터 (성적)**:
-* 서버 사이드 계산(`StudyCrack_Analysis`)을 통한 표준점수 → 백분위/등급 자동 변환
-* 입력 데이터 유효성 검증 및 예외 처리
-
-
-
-### 4. 멤버십 & 결제 (Payment)
-
-* **4단계 티어 시스템**: Basic, Standard, Pro, **Black** (결제 내역 기반 자동 등급 산정)
-* **BLACK 전용 라운지**: 최상위 회원을 위한 프라이빗 컨설팅 및 커뮤니티 UI 제공
-* **Stripe 결제**: 결제 성공 시 DB 자동 업데이트 및 알림 발송
-
-### 5. 관리자 (Admin)
-
-* **대시보드**: 매출 통계, 가입자 현황 실시간 차트 제공
-* **회원 관리**: 검색 필터링, 유료/무료 회원 배지 식별
-* **상세 관리 (Detail)**: 학생별 상담 내역(Timeline), 기초조사서 열람, 관리자 메모 기능
+### 3. ⚙️ 관리자(Admin) 시스템
+* **통합 대시보드 (`admin_index.html`)**: 결제 현황, 신규 가입자, 튜터-학생 매칭 현황 등 전체 지표 시각화
+* **학생 상세 관리 (`admin_detail.html`)**: 특정 학생의 성적 추이, 상담 히스토리, 결제 내역 등을 심층 조회하고 관리 (강제 탈퇴, 등급 UP 등)
+* **Q&A 및 알림 관리 (`qna.html`)**: 1:1 문의 응대 및 전체/타겟 유저 대상 공지 발송 시스템
 
 ---
 
-## 📂 Project Structure (폴더 구조)
+## 📂 Project Structure (디렉토리 구조)
 
-```bash
+프로젝트는 역할과 도메인에 따라 직관적으로 분리되어 있습니다.
+
+```text
 StudyCrack/
 ├── index.html                  # 메인 랜딩 페이지
-├── login.html / signup.html    # 인증 (로그인/회원가입)
-├── mypage.html                 # [UPDATE] 통합 마이페이지 (정보수정 + 솔루션 탭)
-├── survey.html                 # [UPDATE] 기초조사서 (실시간 환산 로직 적용)
-├── payment.html                # 결제 페이지
-├── success.html                # 결제 완료 페이지
-├── black_consult.html          # [NEW] BLACK 전용 1:1 컨설팅
-├── black_community.html        # [NEW] BLACK 전용 라운지
-├── admin.html                  # 관리자 대시보드
-├── admin_detail.html           # [NEW] 학생 상세 관리 페이지
+├── login.html                  # 사용자 로그인
+├── signup.html                 # 일반 학생 회원가입
+├── signup_tutor.html           # 전문가(튜터) 전용 회원가입
+├── welcome.html                # 가입 환영 및 온보딩 페이지
+├── change-password.html        # 비밀번호 변경
 │
-├── css/                        # 스타일시트
-│   ├── style.css               # 공통 스타일 (반응형, 레이아웃)
-│   ├── mypage.css              # [UPDATE] 마이페이지 전용 (Grid, Modal, Black Theme)
-│   ├── survey.css              # 조사서 폼 스타일
-│   ├── admin.css               # 관리자 전용 스타일
-│   └── ...
+├── mypage.html                 # 학생 마이페이지 (정보 관리)
+├── analysis.html               # [핵심] 입시 분석 및 솔루션 (목표대학, 시뮬레이션, 코칭)
+├── survey.html                 # 학생 기초조사서 및 성적 입력 폼
+├── qna.html                    # 1:1 고객센터 및 문의
 │
-├── js/                         # 비즈니스 로직
-│   ├── config.js               # [NEW] API Gateway URL 및 Cognito 설정 통합
-│   ├── auth.js                 # [UPDATE] Token 기반 인증 및 헤더 처리
-│   ├── mypage.js               # [UPDATE] 솔루션 탭, 모달 제어, 분석 API 연동
-│   ├── survey.js               # [UPDATE] 성적 서버 계산 요청 및 예외 처리
-│   ├── payment.js              # 결제 및 Gateway 연동
-│   ├── black_consult.js        # [NEW] BLACK 컨설팅 로직
-│   ├── admin.js                # 관리자 통계/검색
-│   └── admin_detail.js         # [NEW] 학생 상세 정보 로드
+├── payment.html                # 멤버십 안내 및 결제 선택
+├── checkout.html               # 카드 결제 연동 페이지
+├── checkout-transfer.html      # 무통장 입금 안내 페이지
+├── success.html                # 결제 완료 처리
+├── promo.html                  # 프로모션 및 이벤트 페이지
 │
-└── assets/                     # 이미지 및 리소스
-
+├── mypage_tutor.html           # 튜터 전용 마이페이지 및 학생 관리
+├── admin_index.html            # 총괄 관리자 대시보드
+├── admin_detail.html           # 관리자용 학생 상세 관리 페이지
+│
+├── css/                        # 도메인별 스타일시트
+│   ├── style.css               # 공통 스타일, GNB/Footer, 타이포그래피
+│   ├── analysis.css            # 분석 솔루션 전용 (차트, 마법사 UI 등)
+│   ├── auth.css                # 로그인/회원가입 관련
+│   ├── admin_theme.css         # 관리자 페이지 공통 레이아웃
+│   ├── admin_detail.css        # 관리자 상세 페이지
+│   ├── mypage.css              # 학생 마이페이지
+│   ├── mypage_tutor.css        # 튜터 마이페이지
+│   └── payment.css, survey.css, qna.css, checkout.css 등
+│
+├── js/                         # 도메인별 비즈니스 로직
+│   ├── config.js               # 전역 설정 (API URL, 상수 등)
+│   ├── auth.js                 # Cognito 토큰 발급 및 세션 검증
+│   ├── script.js               # 공통 UI 제어 및 이벤트 리스너
+│   ├── analysis.js             # [핵심] 분석 로직, 차트 렌더링, 모바일 위저드 UI
+│   ├── admin_ui.js             # 관리자 화면 동적 제어
+│   ├── admin_detail.js         # 관리자 상세 데이터 Fetch 및 DOM 조작
+│   ├── mypage_tutor.js         # 튜터 시스템 API 연동
+│   └── survey.js, payment.js, qna.js, checkout.js 등
+│
+└── assets/                     # 정적 리소스
+    ├── backgrounds/            # 배경 및 워터마크 이미지
+    ├── features/               # 기능 설명용 일러스트/아이콘
+    ├── fonts/                  # 웹 폰트 파일
+    └── images/                 # 로고 및 범용 이미지
 ```
 
 ---
 
-## 💾 Data & Logic Flow (데이터 흐름)
+## 🔐 Security & Operations (보안 및 운영)
 
-1. **API 요청 (Request)**: 클라이언트(`fetch`) → `Authorization` 헤더(JWT) 포함 → **API Gateway**
-2. **보안 검사 (Auth)**: Gateway Authorizer가 Cognito 토큰 검증 → (성공 시) Lambda로 라우팅
-3. **비즈니스 로직**:
-* `GET/POST /api`: 유저 정보 조회, 상담 저장 (DynamoDB)
-* `POST /analysis`: 표준점수 수신 → 변환 테이블 참조 → 등급/백분위 반환
-* `POST /payment`: 결제 요청 → Stripe 처리 → Webhook(Gateway Bypass) → DB 업데이트
-
-
-4. **응답 (Response)**: Lambda 처리 결과(JSON) → Gateway → 클라이언트 UI 렌더링
+* **인증 인가**: AWS Cognito `idToken`을 활용하여 클라이언트에서 모든 API 요청 헤더에 Authorization 포함. API Gateway Authorizer가 유효성 검증.
+* **XSS 방지**: 데이터 바인딩 시 `escapeHtml` 등 자체 이스케이프 함수를 거쳐 DOM에 주입하여 프론트엔드 취약점 최소화.
+* **DynamoDB 파서 적용**: 서버에서 넘어오는 AWS DynamoDB 특유의 데이터 포맷(N, S, M, L)을 클라이언트용 순수 JSON 객체로 자동 파싱(`parseDynamoItem`)하여 사용 편의성 증대.
 
 ---
 
-> **📅 Last Updated:** 2026. 01. 24 (토) - API Gateway Migration & UI Overhaul Completed
+> **📅 Last Updated:** 2026년 3월 24일 (화) - 디렉토리 구조화 및 모바일 위저드 UI / 카드 레이아웃 개편 완료
+```
