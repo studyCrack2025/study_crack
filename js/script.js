@@ -263,9 +263,9 @@ function selectCourse(tier) {
             if (isLoggedIn && !hasUsedPromo) {
                 extraBtnHtml = `
                     <div style="margin-top: 25px; padding: 15px; background: #f5f3ff; border: 1px dashed #8b5cf6; border-radius: 8px; text-align: center;">
-                        <p style="margin: 0 0 10px 0; color: #6d28d9; font-weight: bold; font-size: 0.9rem;">🎁 로그인 회원 전용 1회성 혜택</p>
+                        <p style="margin: 0 0 10px 0; color: #6d28d9; font-weight: bold; font-size: 0.9rem;">🎁 회원 전용 혜택</p>
                         <a href="/mbti-download" style="display: inline-block; background: #8b5cf6; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: 0.2s;">
-                            나만의 맞춤 공부법 PDF 무료 다운로드
+                            나만의 맞춤 공부법 PDF 무료 다운로드(1회)
                         </a>
                     </div>
                 `;
