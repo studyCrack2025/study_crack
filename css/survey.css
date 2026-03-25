@@ -181,6 +181,24 @@ input:focus, select:focus, textarea:focus {
     background-color: #cbd5e1; cursor: not-allowed; transform: none; box-shadow: none; color: #64748b;
 }
 
+/* =========================================
+   개인정보 동의 박스 및 모달 스타일
+   ========================================= */
+.consent-box { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px 20px; margin: 25px 0; }
+.consent-label { display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer; }
+.consent-label input[type="checkbox"] { width: 18px; height: 18px; margin: 0; cursor: pointer; }
+.consent-text { font-size: 0.95rem; color: #1e293b; font-weight: 600; }
+.consent-link { font-size: 0.8rem; color: #64748b; text-decoration: underline; cursor: pointer; white-space: nowrap; margin-left: auto; }
+.consent-link:hover { color: #2563eb; }
+
+/* 모달 공통 및 약관 텍스트 박스 */
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; justify-content: center; align-items: center; }
+.modal.hidden { display: none !important; }
+.term-modal-content { background: white; padding: 25px; border-radius: 12px; width: 550px; max-width: 90%; position: relative; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: left; }
+.close-btn { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; color: #94a3b8; line-height: 1; }
+.close-btn:hover { color: #ef4444; }
+.term-text-box { flex: 1; overflow-y: auto; background: #f1f5f9; padding: 15px; border-radius: 8px; font-size: 0.85rem; line-height: 1.6; color: #334155; white-space: pre-wrap; border: 1px solid #cbd5e1; }
+
 /* 모바일 대응 */
 @media (max-width: 768px) {
     .survey-container { padding: 0 15px 40px; margin-top: 20px; }
