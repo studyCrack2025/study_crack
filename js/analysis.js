@@ -942,7 +942,8 @@ async function updateAnalysisUI() {
                 examMode: currentExamMode
             })
         });
-        const data = await res.json();        
+        const data = await res.json();
+        console.log("🎓 대학 분석 결과 및 서버 로그:", data);        
         const results = data.results || [];
         
         if (results.length === 0) {
