@@ -14,7 +14,7 @@ const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 let isPhoneVerified = false; 
 let isEmailVerified = false;
 
-// 💡 [Auth 전용] 무한 루프 방지가 적용된 글로벌 apiFetch
+// 무한 루프 방지가 적용된 글로벌 apiFetch
 async function apiFetch(url, options = {}) {
     const token = localStorage.getItem('accessToken');
     const defaultHeaders = {
@@ -212,8 +212,26 @@ function updateSubmitButton() {
     }
 }
 
+// 약관 모달 열기
+window.openTermModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden'; // 모달 떴을 때 배경 스크롤 방지
+    }
+};
+
+// 약관 모달 닫기
+window.closeTermModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = ''; // 배경 스크롤 복구
+    }
+};
+
 // ==========================================
-// [Part B] 이메일 인증 (Cognito) - 퍼블릭 API (일반 fetch 유지)
+// [Part B] 이메일 인증 (Cognito)
 // ==========================================
 let emailTimerInterval;
 
@@ -268,7 +286,7 @@ async function handleVerify() {
 }
 
 // ==========================================
-// [Part C] 전화번호 인증 (Lambda) - 퍼블릭 API (일반 fetch 유지)
+// [Part C] 전화번호 인증 (Lambda)
 // ==========================================
 let phoneTimerInterval;
 
@@ -387,7 +405,7 @@ function startTimer(duration, displayId, intervalVar) {
 }
 
 // ==========================================
-// [Part E] 최종 회원가입 (DB 저장)
+// [Part E] 최종 회원가입 
 // ==========================================
 
 async function handleFinalSubmit() {
@@ -685,7 +703,7 @@ function handleSignIn() {
 }
 
 // ==========================================
-// [Part G] 이메일/비밀번호 찾기 로직 (퍼블릭 API)
+// [Part G] 이메일/비밀번호 찾기 로직 
 // ==========================================
 
 function openAuthModal(modalId) {
