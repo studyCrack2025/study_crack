@@ -184,9 +184,15 @@
 
         <div id="quantitative" class="tab-content">
             <div class="section-title">
-                <h3>모의고사 / 수능 성적 입력</h3>
+                <h3>모의고사 / 수능 예상 성적 입력</h3>
             </div>
-            <p class="guide-text">시험을 선택하고 <strong>표준점수</strong>를 입력하면 백분위와 등급이 자동 계산됩니다.</p>
+            
+            <div class="notice-box" style="background-color: #fffbeb; color: #b45309; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b; margin-bottom: 20px; font-size: 0.95rem; line-height: 1.5;">
+                <strong>[안내]</strong> 본 점수표는 2026년 3월 학평 직후 공개된 입시기관 예상 등급컷을 바탕으로 스터디크랙이 산출한 비공식 추정치입니다.<br>
+                공식 성적표 발표 후 실제 표준점수·백분위와 차이가 있을 수 있으며, 상담 참고용으로만 제공됩니다.
+            </div>
+
+            <p class="guide-text">시험을 선택하고 <strong>원점수</strong>를 입력하면 표준점수, 백분위, 등급이 자동 계산됩니다.</p>
 
             <div class="exam-selector">
                 <label>시험 선택:</label>
@@ -207,6 +213,7 @@
                         <tr>
                             <th>과목</th>
                             <th>선택과목</th>
+                            <th>원점수</th>
                             <th>표준점수</th>
                             <th>백분위</th>
                             <th>등급</th>
@@ -216,13 +223,14 @@
                         <tr>
                             <td data-label="과목">국어</td>
                             <td data-label="선택과목">
-                                <select id="koreanOpt">
+                                <select id="koreanOpt" onchange="requestScoreConversion('kor')">
                                     <option value="none">선택</option>
                                     <option value="hwa">화법과작문</option>
                                     <option value="un">언어와매체</option>
                                 </select>
                             </td>
-                            <td data-label="표준점수"><input type="number" id="korStd" onchange="requestScoreConversion('kor')"></td>
+                            <td data-label="원점수"><input type="number" id="korRaw" onchange="requestScoreConversion('kor')" placeholder="입력"></td>
+                            <td data-label="표준점수"><input type="number" id="korStd" readonly class="readonly-input"></td>
                             <td data-label="백분위"><input type="number" id="korPct" readonly class="readonly-input"></td>
                             <td data-label="등급"><input type="number" id="korGrd" readonly class="readonly-input"></td>
                         </tr>
@@ -237,7 +245,8 @@
                                     <option value="ki">기하</option>
                                 </select>
                             </td>
-                            <td data-label="표준점수"><input type="number" id="mathStd" onchange="requestScoreConversion('math')"></td>
+                            <td data-label="원점수"><input type="number" id="mathRaw" onchange="requestScoreConversion('math')" placeholder="입력"></td>
+                            <td data-label="표준점수"><input type="number" id="mathStd" readonly class="readonly-input"></td>
                             <td data-label="백분위"><input type="number" id="mathPct" readonly class="readonly-input"></td>
                             <td data-label="등급"><input type="number" id="mathGrd" readonly class="readonly-input"></td>
                         </tr>
@@ -247,11 +256,13 @@
                             <td class="disabled-cell"></td>
                             <td class="disabled-cell"></td>
                             <td class="disabled-cell"></td>
+                            <td class="disabled-cell"></td>
                             <td data-label="등급"><input type="number" id="engGrd"></td>
                         </tr>
 
                         <tr>
                             <td data-label="과목">한국사</td>
+                            <td class="disabled-cell"></td>
                             <td class="disabled-cell"></td>
                             <td class="disabled-cell"></td>
                             <td class="disabled-cell"></td>
@@ -279,14 +290,15 @@
                                         <option value="화원">화학Ⅰ</option>
                                         <option value="생원">생명과학Ⅰ</option>
                                         <option value="지원">지구과학Ⅰ</option>
-                                        <option value="물투">물리학Ⅱ</option>
+                                        <!-- <option value="물투">물리학Ⅱ</option>
                                         <option value="화투">화학Ⅱ</option>
                                         <option value="생투">생명과학Ⅱ</option>
-                                        <option value="지투">지구과학Ⅱ</option>
+                                        <option value="지투">지구과학Ⅱ</option> -->
                                     </optgroup>
                                 </select>
                             </td>
-                            <td data-label="표준점수"><input type="number" id="inq1Std" onchange="requestScoreConversion('inq1')"></td>
+                            <td data-label="원점수"><input type="number" id="inq1Raw" onchange="requestScoreConversion('inq1')" placeholder="입력"></td>
+                            <td data-label="표준점수"><input type="number" id="inq1Std" readonly class="readonly-input"></td>
                             <td data-label="백분위"><input type="number" id="inq1Pct" readonly class="readonly-input"></td>
                             <td data-label="등급"><input type="number" id="inq1Grd" readonly class="readonly-input"></td>
                         </tr>
@@ -312,19 +324,20 @@
                                         <option value="화원">화학Ⅰ</option>
                                         <option value="생원">생명과학Ⅰ</option>
                                         <option value="지원">지구과학Ⅰ</option>
-                                        <option value="물투">물리학Ⅱ</option>
+                                        <!-- <option value="물투">물리학Ⅱ</option>
                                         <option value="화투">화학Ⅱ</option>
                                         <option value="생투">생명과학Ⅱ</option>
-                                        <option value="지투">지구과학Ⅱ</option>
+                                        <option value="지투">지구과학Ⅱ</option> -->
                                     </optgroup>
                                 </select>
                             </td>
-                            <td data-label="표준점수"><input type="number" id="inq2Std" onchange="requestScoreConversion('inq2')"></td>
+                            <td data-label="원점수"><input type="number" id="inq2Raw" onchange="requestScoreConversion('inq2')" placeholder="입력"></td>
+                            <td data-label="표준점수"><input type="number" id="inq2Std" readonly class="readonly-input"></td>
                             <td data-label="백분위"><input type="number" id="inq2Pct" readonly class="readonly-input"></td>
                             <td data-label="등급"><input type="number" id="inq2Grd" readonly class="readonly-input"></td>
                         </tr>
 
-                        <tr>
+                        <!-- <tr>
                             <td data-label="과목">제2외</td>
                             <td data-label="선택과목">
                                 <select id="foreignName" style="width: 100%;">
@@ -342,10 +355,12 @@
                             </td>
                             <td class="disabled-cell"></td>
                             <td class="disabled-cell"></td>
+                            <td class="disabled-cell"></td>
                             <td data-label="등급"><input type="number" id="foreignGrd" placeholder="등급"></td>
-                        </tr>
+                        </tr> -->
                     </tbody>
                 </table>
+                <p style="text-align: right; font-size: 0.85rem; color: #64748b; margin-top: 10px; margin-right: 15px;">* 공식 성적표 발표 후 업데이트 예정</p>
             </div>
 
             <button class="save-btn" onclick="saveQuantitative()">선택한 시험 성적 저장</button>

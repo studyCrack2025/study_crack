@@ -82,46 +82,51 @@ async function requestScoreConversion(type) {
     let optVal = "";
     let subNameVal = "";
     
-    let stdId = "", pctId = "", grdId = "";
+    // 원점수(rawId)와 표준점수(stdId) 매핑 변경
+    let rawId = "", stdId = "", pctId = "", grdId = "";
 
     if (type === 'kor') {
-        stdId = "korStd"; pctId = "korPct"; grdId = "korGrd";
+        rawId = "korRaw"; stdId = "korStd"; pctId = "korPct"; grdId = "korGrd";
         optVal = document.getElementById('koreanOpt').value;
     } else if (type === 'math') {
-        stdId = "mathStd"; pctId = "mathPct"; grdId = "mathGrd";
+        rawId = "mathRaw"; stdId = "mathStd"; pctId = "mathPct"; grdId = "mathGrd";
         optVal = document.getElementById('mathOpt').value;
     } else if (type === 'inq1') {
-        stdId = "inq1Std"; pctId = "inq1Pct"; grdId = "inq1Grd";
+        rawId = "inq1Raw"; stdId = "inq1Std"; pctId = "inq1Pct"; grdId = "inq1Grd";
         subNameVal = document.getElementById('inq1Name').value;
     } else if (type === 'inq2') {
-        stdId = "inq2Std"; pctId = "inq2Pct"; grdId = "inq2Grd";
+        rawId = "inq2Raw"; stdId = "inq2Std"; pctId = "inq2Pct"; grdId = "inq2Grd";
         subNameVal = document.getElementById('inq2Name').value;
     }
 
-    const stdEl = document.getElementById(stdId);
-    if (!stdEl || !stdEl.value) return; 
-    scoreVal = parseInt(stdEl.value);
+    const rawEl = document.getElementById(rawId);
+    if (!rawEl || !rawEl.value) return; 
+    scoreVal = parseInt(rawEl.value);
 
-    if (scoreVal < 0 || scoreVal > 200) {
-        alert("유효하지 않은 점수입니다. (0~200점 사이)");
-        stdEl.value = "";
+    // 원점수 방어 로직 (국수 최대 100점)
+    if (scoreVal < 0 || scoreVal > 100) {
+        alert("유효하지 않은 원점수입니다.");
+        rawEl.value = "";
         return;
     }
 
     try {
+        const stdEl = document.getElementById(stdId);
         const pctEl = document.getElementById(pctId);
         const grdEl = document.getElementById(grdId);
-        if(pctEl) pctEl.value = ""; pctEl.placeholder = "...";
-        if(grdEl) grdEl.value = ""; grdEl.placeholder = "...";
         
-        // 💡 apiFetch 적용 (토큰 자동 주입 및 401 처리)
+        if(stdEl) { stdEl.value = ""; stdEl.placeholder = "..."; }
+        if(pctEl) { pctEl.value = ""; pctEl.placeholder = "..."; }
+        if(grdEl) { grdEl.value = ""; grdEl.placeholder = "..."; }
+        
+        // 💡 apiFetch 적용
         const response = await apiFetch(DATA_FETCH_URL, {
             method: 'POST',
             body: JSON.stringify({
                 type: 'convert_score', 
                 month: month,
                 subject: subjectKey,
-                score: scoreVal,
+                score: scoreVal, // 이제 원점수가 전송됨
                 opt: optVal,
                 subName: subNameVal
             })
@@ -129,15 +134,17 @@ async function requestScoreConversion(type) {
 
         const data = await response.json(); 
         
-        if (data.error || (!data.pct && !data.grd)) {
-            alert("입력하신 표준점수에 해당하는 등급/백분위 데이터가 없습니다.\n(범위를 벗어났거나 해당 점수가 존재하지 않음)");
-            stdEl.value = "";
+        if (data.error || (!data.std && !data.pct && !data.grd)) {
+            alert("입력하신 원점수에 해당하는 데이터가 없습니다.\n(선택과목을 먼저 지정했는지 확인해주세요)");
+            rawEl.value = "";
+            if(stdEl) stdEl.placeholder = "-";
             if(pctEl) pctEl.placeholder = "-";
             if(grdEl) grdEl.placeholder = "-";
-            stdEl.focus();
+            rawEl.focus();
             return;
         }
         
+        if (data.std && stdEl) stdEl.value = data.std;
         if (data.pct && pctEl) pctEl.value = data.pct;
         if (data.grd && grdEl) grdEl.value = data.grd;
 
@@ -397,23 +404,22 @@ function loadExamData() {
     };
 
     setVal('koreanOpt', d.kor?.opt || 'none');
-    setVal('korStd', d.kor?.std); 
-    setVal('korPct', d.kor?.pct); setVal('korGrd', d.kor?.grd);
+    setVal('korRaw', d.kor?.raw); setVal('korStd', d.kor?.std); setVal('korPct', d.kor?.pct); setVal('korGrd', d.kor?.grd);
     
     setVal('mathOpt', d.math?.opt || 'none');
-    setVal('mathStd', d.math?.std); setVal('mathPct', d.math?.pct); setVal('mathGrd', d.math?.grd);
+    setVal('mathRaw', d.math?.raw); setVal('mathStd', d.math?.std); setVal('mathPct', d.math?.pct); setVal('mathGrd', d.math?.grd);
     
     setVal('engGrd', d.eng?.grd); 
     setVal('histGrd', d.hist?.grd);
     
-    setVal('inq1Name', d.inq1?.name); setVal('inq1Std', d.inq1?.std); setVal('inq1Pct', d.inq1?.pct); setVal('inq1Grd', d.inq1?.grd);
-    setVal('inq2Name', d.inq2?.name); setVal('inq2Std', d.inq2?.std); setVal('inq2Pct', d.inq2?.pct); setVal('inq2Grd', d.inq2?.grd);
+    setVal('inq1Name', d.inq1?.name); setVal('inq1Raw', d.inq1?.raw); setVal('inq1Std', d.inq1?.std); setVal('inq1Pct', d.inq1?.pct); setVal('inq1Grd', d.inq1?.grd);
+    setVal('inq2Name', d.inq2?.name); setVal('inq2Raw', d.inq2?.raw); setVal('inq2Std', d.inq2?.std); setVal('inq2Pct', d.inq2?.pct); setVal('inq2Grd', d.inq2?.grd);
     
     setVal('foreignName', d.foreign?.name); setVal('foreignGrd', d.foreign?.grd);
 }
 
 // ============================================================
-// 성적 저장 + restriction(제약조건) 자동 생성 로직 (한글로 DB 저장)
+// 성적 저장
 // ============================================================
 async function saveQuantitative() {
     const month = document.getElementById('examSelect').value;
@@ -425,12 +431,12 @@ async function saveQuantitative() {
     const inq2Name = getVal('inq2Name');
 
     const currentData = {
-        kor: { opt: TO_KOREAN[korOpt] || korOpt, std: getVal('korStd'), pct: getVal('korPct'), grd: getVal('korGrd') },
-        math: { opt: TO_KOREAN[mathOpt] || mathOpt, std: getVal('mathStd'), pct: getVal('mathPct'), grd: getVal('mathGrd') },
+        kor: { opt: TO_KOREAN[korOpt] || korOpt, raw: getVal('korRaw'), std: getVal('korStd'), pct: getVal('korPct'), grd: getVal('korGrd') },
+        math: { opt: TO_KOREAN[mathOpt] || mathOpt, raw: getVal('mathRaw'), std: getVal('mathStd'), pct: getVal('mathPct'), grd: getVal('mathGrd') },
         eng: { grd: getVal('engGrd') }, 
         hist: { grd: getVal('histGrd') },
-        inq1: { name: TO_KOREAN[inq1Name] || inq1Name, std: getVal('inq1Std'), pct: getVal('inq1Pct'), grd: getVal('inq1Grd') },
-        inq2: { name: TO_KOREAN[inq2Name] || inq2Name, std: getVal('inq2Std'), pct: getVal('inq2Pct'), grd: getVal('inq2Grd') },
+        inq1: { name: TO_KOREAN[inq1Name] || inq1Name, raw: getVal('inq1Raw'), std: getVal('inq1Std'), pct: getVal('inq1Pct'), grd: getVal('inq1Grd') },
+        inq2: { name: TO_KOREAN[inq2Name] || inq2Name, raw: getVal('inq2Raw'), std: getVal('inq2Std'), pct: getVal('inq2Pct'), grd: getVal('inq2Grd') },
         foreign: { name: getVal('foreignName'), grd: getVal('foreignGrd') }
     };
 
@@ -462,7 +468,6 @@ async function saveQuantitative() {
     examScores[month] = currentData;
 
     try {
-        // 💡 apiFetch 적용
         await apiFetch(USER_API_URL, {
             method: 'POST',
             body: JSON.stringify({ type: 'update_quan', data: examScores })
