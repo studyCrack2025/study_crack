@@ -212,24 +212,6 @@ function updateSubmitButton() {
     }
 }
 
-// 약관 모달 열기
-window.openTermModal = function(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden'; // 모달 떴을 때 배경 스크롤 방지
-    }
-};
-
-// 약관 모달 닫기
-window.closeTermModal = function(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.add('hidden');
-        document.body.style.overflow = ''; // 배경 스크롤 복구
-    }
-};
-
 // ==========================================
 // [Part B] 이메일 인증 (Cognito)
 // ==========================================
