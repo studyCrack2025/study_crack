@@ -3225,6 +3225,8 @@ async function loadProReports(currentKey, isDeadlinePassed) {
 
         const currentData = cachedProReports.find(r => r.key === currentKey);
         const hasRequested = currentData && currentData.request;
+        
+        window.currentProRequestText = hasRequested ? currentData.request : '';
 
         if (isDeadlinePassed) {
             btnContainer.innerHTML = `
@@ -3238,7 +3240,6 @@ async function loadProReports(currentKey, isDeadlinePassed) {
                     <i class="fas fa-check-circle"></i> 요청 완료 (수정하기)
                 </button>
             `;
-            document.getElementById('proReportRequest').value = currentData.request;
         }
 
     } catch (e) {
@@ -3249,17 +3250,25 @@ async function loadProReports(currentKey, isDeadlinePassed) {
 
 function modifyProRequest() {
     if(confirm("이미 제출된 요청사항을 수정하시겠습니까?")) {
-        openProReportModal();
+        // 1. 현재 주차의 데이터를 찾아서 기존 텍스트를 추출합니다.
+        const now = new Date();
+        const currentKey = generateReportKey(now); 
+        const currentData = cachedProReports.find(r => r.key === currentKey);
+        
+        // 2. 기존 텍스트가 있으면 모달 열기 함수로 넘겨줍니다.
+        const existingText = currentData && currentData.request ? currentData.request : '';
+        openProReportModal(existingText);
     }
 }
 
-function openProReportModal() {
+function openProReportModal(existingText = '') {
     const modal = document.getElementById('proReportModal');
     const textarea = document.getElementById('proReportRequest');
+    
     if (modal) {
         modal.style.display = 'block';
         if(textarea) {
-            textarea.value = ''; 
+            textarea.value = typeof existingText === 'string' ? existingText : ''; 
             textarea.focus();
             updateCharCount(textarea); 
         }
