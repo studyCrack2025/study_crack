@@ -61,6 +61,18 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #2563EB
 .score-table select { text-align-last: center; cursor: pointer; }
 .disabled-cell { background-color: #f8fafc; background-image: linear-gradient(45deg, #f1f5f9 25%, transparent 25%, transparent 50%, #f1f5f9 50%, #f1f5f9 75%, transparent 75%, transparent); background-size: 10px 10px; }
 
+@media (min-width: 769px) {
+    .score-table th:nth-child(1), .score-table td:nth-child(1) { width: 10%; }
+    .score-table th:nth-child(2), .score-table td:nth-child(2) { width: 26%; }
+    .score-table th:nth-child(3), .score-table td:nth-child(3) { width: 16%; }
+    .score-table th:nth-child(4), .score-table td:nth-child(4) { width: 16%; }
+    .score-table th:nth-child(5), .score-table td:nth-child(5) { width: 16%; }
+    .score-table th:nth-child(6), .score-table td:nth-child(6) { width: 16%; }
+    .score-table input, .score-table select { height: 42px; line-height: 42px; padding: 0; margin: 0; display: block; box-sizing: border-box; }
+}
+.score-table input[type="number"]::-webkit-outer-spin-button, .score-table input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.score-table input[type="number"] { -moz-appearance: textfield; }
+
 /* =========================================================
    5. 버튼 및 모달/약관 (Buttons & Modals)
 ========================================================= */
