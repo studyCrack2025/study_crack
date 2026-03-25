@@ -1220,7 +1220,7 @@ function showProGuideModal() {
                     <ul>
                         <li>학생에게 Pro 리포트가 최종 제공되는 기한은 학생 제출 마감일의 3일 뒤인 <strong>수요일</strong>입니다.</li>
                         <li>선생님께서 작성해주신 리포트는 <strong>관리자 측의 최종 검수(재확인) 작업</strong>을 거친 후 발송됩니다.</li>
-                        <li>따라서 원활한 검수 및 적각적인 발송을 위해 가급적 <strong>수요일 18:00 이전까지 작성을 완료하여 제출</strong>해 주시기 바랍니다.</li>
+                        <li>따라서 원활한 검수 및 적각적인 발송을 위해 가급적 <strong>수요일 16:00 이전까지 작성을 완료하여 제출</strong>해 주시기 바랍니다.</li>
                     </ul>
                 </div>
                 <div style="text-align:right; margin-top:20px;">
