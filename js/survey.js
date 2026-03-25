@@ -423,7 +423,12 @@ function loadExamData() {
 // ============================================================
 async function saveQuantitative() {
     const month = document.getElementById('examSelect').value;
-    const getVal = (id) => document.getElementById(id).value;
+    
+    // 💡 [수정됨] HTML에 아이디가 없어도 에러를 내지 않고 빈 문자열("")을 반환하는 안전한 함수
+    const getVal = (id) => {
+        const el = document.getElementById(id);
+        return el ? el.value : "";
+    };
 
     const korOpt = getVal('koreanOpt');
     const mathOpt = getVal('mathOpt');
