@@ -48,7 +48,14 @@
     animation: fadeIn 0.3s ease-out;
 }
 .tab-content.active { display: block; }
-.account-warning { font-size: 0.8rem; color: #ef4444; margin-top: 6px; margin-bottom: 0; }
+.account-warning { 
+    font-size: 0.8rem; 
+    color: #ef4444; 
+    margin-top: 6px; 
+    margin-bottom: 0; 
+    word-break: keep-all;
+    line-height: 1.4;
+}
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(5px); }
