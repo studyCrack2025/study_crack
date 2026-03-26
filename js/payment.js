@@ -262,19 +262,10 @@ async function processPayment() {
         email: email,
         tier: selectedTier,
         productName: selectedProductName,
-        effectiveStartDate: startDate.toISOString() // 체크아웃으로 전달!
+        effectiveStartDate: startDate.toISOString(),
+        userId: localStorage.getItem('userId') 
     };
-    
+
     localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
-    
-    // 임시로 모든 결제를 무통장 입금(checkout-transfer)으로 라우팅
-    // 추후 카드결제/PG사 연동 복구 시 아래 주석 해제 후 변경 필요
-    /*
-    if (selectedTier === 'trial') {
-        window.location.href = '/checkout-transfer'; 
-    } else {
-        window.location.href = '/checkout';
-    }
-    */
-    window.location.href = '/checkout-transfer';
+    window.location.href = '/checkout'; 
 }

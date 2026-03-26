@@ -1,5 +1,6 @@
 // 1. 가격 및 설명 매핑 데이터
 const TIER_DATA = {
+    'test': { price: 100, desc: '시스템 연동 테스트용 결제' },
     'basic': { price: 49000, desc: '현재 위치 진단 및 전략 수립' },
     'standard': { price: 149000, desc: '월간 학습 코칭 (플래닝) 정기구독' },
     'pro': { price: 299000, desc: '최소 노력 최대 효율, 맞춤 전략 재설계 정기구독' },
@@ -86,7 +87,7 @@ function setupCardFormatters() {
     });
 }
 
-// 6. 최종 결제(빌링키 발급) 요청 모의 함수
+// 6. 최종 결제(빌링키 발급) 실제 API 요청 함수
 async function submitCheckout() {
     const agree = document.getElementById('agreeTerms').checked;
     if (!agree) {
@@ -112,26 +113,49 @@ async function submitCheckout() {
 
     try {
         const checkoutData = JSON.parse(localStorage.getItem('checkoutData'));
+        const token = localStorage.getItem('accessToken');
 
-        /*
-         TODO: 백엔드 연동 단계에서 아래 데이터를 Lambda로 전송합니다.
-         {
-             type: "create_nicepay_billing",
-             user: checkoutData, // 여기에 effectiveStartDate가 포함되어 있습니다.
-             card: { num: cNum, exp: cExp, pwd: cPwd, dob: cDob }
-         }
-        */
+        if (!token) {
+            alert("로그인이 만료되었습니다. 다시 로그인해 주세요.");
+            window.location.href = '/login';
+            return;
+        }
 
-        console.log("나이스페이 빌링키 요청 준비 완료:", checkoutData);
+        const response = await fetch(CONFIG.api.payment, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                type: "create_nicepay_billing",
+                user: checkoutData,
+                card: { 
+                    num: cNum, 
+                    exp: cExp, 
+                    pwd: cPwd, 
+                    dob: cDob 
+                }
+            })
+        });
 
-        setTimeout(() => {
-            alert("프론트엔드 UI 구축 완료! 백엔드 NICEPAY 연동 대기중...");
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            // 결제(빌링키 발급) 완벽 성공
+            localStorage.removeItem('checkoutData'); // 보안 및 정리 차원에서 로컬스토리지 삭제
+            alert("결제가 성공적으로 완료되었습니다!");
+            window.location.href = '/success.html'; // 성공 페이지나 마이페이지로 리다이렉트
+        } else {
+            // 승인 거절 (잔액 부족, 카드 번호 오류 등)
+            alert("결제 실패: " + (result.message || "카드 정보를 다시 확인해주세요."));
             btn.disabled = false;
             btn.innerHTML = originalBtnText;
-        }, 1500);
+        }
 
     } catch (error) {
-        alert("결제 처리 중 오류가 발생했습니다.");
+        console.error("Payment Request Error:", error);
+        alert("서버와 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
         btn.disabled = false;
         btn.innerHTML = originalBtnText;
     }
