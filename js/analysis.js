@@ -2074,11 +2074,14 @@ function openFeedbackModal(data) {
         
         let scoreDetails = '';
         const s = data.mockExam.scores || {};
-        if(s.kor) scoreDetails += `<div style="margin-bottom:6px;"><span style="color:#64748b; font-size:0.85rem;">국어 (${escapeHtml(s.korOpt||'-')})</span> <strong style="float:right; color:#1e293b;">${escapeHtml(s.kor)}</strong></div>`;
-        if(s.math) scoreDetails += `<div style="margin-bottom:6px;"><span style="color:#64748b; font-size:0.85rem;">수학 (${escapeHtml(s.mathOpt||'-')})</span> <strong style="float:right; color:#1e293b;">${escapeHtml(s.math)}</strong></div>`;
-        if(s.eng) scoreDetails += `<div style="margin-bottom:6px;"><span style="color:#64748b; font-size:0.85rem;">영어</span> <strong style="float:right; color:#1e293b;">${escapeHtml(s.eng)}</strong></div>`;
-        if(s.inq1) scoreDetails += `<div style="margin-bottom:6px;"><span style="color:#64748b; font-size:0.85rem;">${escapeHtml(s.inq1Name||'탐구1')}</span> <strong style="float:right; color:#1e293b;">${escapeHtml(s.inq1)}</strong></div>`;
-        if(s.inq2) scoreDetails += `<div style="margin-bottom:6px;"><span style="color:#64748b; font-size:0.85rem;">${escapeHtml(s.inq2Name||'탐구2')}</span> <strong style="float:right; color:#1e293b;">${escapeHtml(s.inq2)}</strong></div>`;
+        
+        // 👇 이 부분 교체 (float:right 제거하고 display:flex 적용)
+        const rowStyle = "margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;";
+        if(s.kor) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">국어 (${escapeHtml(s.korOpt||'-')})</span> <strong style="color:#1e293b;">${escapeHtml(s.kor)}</strong></div>`;
+        if(s.math) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">수학 (${escapeHtml(s.mathOpt||'-')})</span> <strong style="color:#1e293b;">${escapeHtml(s.math)}</strong></div>`;
+        if(s.eng) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">영어</span> <strong style="color:#1e293b;">${escapeHtml(s.eng)}</strong></div>`;
+        if(s.inq1) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">${escapeHtml(s.inq1Name||'탐구1')}</span> <strong style="color:#1e293b;">${escapeHtml(s.inq1)}</strong></div>`;
+        if(s.inq2) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">${escapeHtml(s.inq2Name||'탐구2')}</span> <strong style="color:#1e293b;">${escapeHtml(s.inq2)}</strong></div>`;
         
         examHtml = `
             <div style="font-weight:800; font-size:1.1rem; color:#1e293b; margin-bottom:15px; border-bottom:2px solid #e2e8f0; padding-bottom:8px;">${typeName} 모의고사</div>
@@ -2090,9 +2093,11 @@ function openFeedbackModal(data) {
     let trendHtml = '-', trendReasonsHtml = '';
     if (data.trend) {
         const t = data.trend.status;
-        if(t === 'up') trendHtml = '<span style="color:#10b981;"><i class="fas fa-arrow-trend-up"></i> 상승세</span>';
-        else if(t === 'down') trendHtml = '<span style="color:#ef4444;"><i class="fas fa-arrow-trend-down"></i> 하락세</span>';
-        else trendHtml = '<span style="color:#64748b;"><i class="fas fa-minus"></i> 유지중</span>';
+        
+        // 👇 이 부분 교체 (아이콘과 글씨 상하 중앙 정렬)
+        if(t === 'up') trendHtml = '<span style="color:#10b981; display:flex; align-items:center; justify-content:center; gap:6px;"><i class="fas fa-arrow-trend-up"></i> 상승세</span>';
+        else if(t === 'down') trendHtml = '<span style="color:#ef4444; display:flex; align-items:center; justify-content:center; gap:6px;"><i class="fas fa-arrow-trend-down"></i> 하락세</span>';
+        else trendHtml = '<span style="color:#64748b; display:flex; align-items:center; justify-content:center; gap:6px;"><i class="fas fa-minus"></i> 유지중</span>';
         
         if (data.trend.reasons && data.trend.reasons.length > 0) {
             trendReasonsHtml = `<strong>하락 요인:</strong> ${data.trend.reasons.map(r => escapeHtml(r)).join(', ')}`;
@@ -2325,10 +2330,14 @@ async function downloadReportPDF(reportTitle) {
                     .doc-student-data { display: table-cell; width: 45%; vertical-align: top; padding: 20px; border-right: 1px dashed #cbd5e1; }
                     .doc-tutor-feedback { display: table-cell; width: 55%; vertical-align: top; padding: 20px; background: #fafafa; border-radius: 0 0 12px 0; }
                     
-                    .doc-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-bottom: 10px; }
-                    .doc-table th { padding: 8px 4px; border-bottom: 1px solid #e2e8f0; color: #94a3b8; }
-                    .doc-table td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; }
-                    
+                    /* 테이블 상하 중앙 정렬 추가 */
+                    .doc-table th { padding: 8px 4px; border-bottom: 1px solid #e2e8f0; color: #94a3b8; vertical-align: middle; }
+                    .doc-table td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; vertical-align: middle; }
+
+                    /* 🔥 빠져있던 뱃지(Badge) 디자인 복구 */
+                    .doc-badge { display: inline-block; padding: 4px 10px; background: #f1f5f9; color: #475569; border-radius: 6px; font-size: 0.8rem; font-weight: 800; margin-bottom: 15px; letter-spacing: -0.5px; border: 1px solid #e2e8f0; }
+                    .doc-badge.tutor-badge { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+
                     .qna-pair-container { display: block; margin-bottom: 15px; }
                     .qna-student { background: #fff1f2; padding: 18px; border-radius: 8px; border: 1px solid #fecaca; margin-bottom: 15px; }
                     .qna-tutor { background: #f0fdf4; padding: 18px; border-radius: 8px; border: 1px solid #bbf7d0; }
