@@ -2129,7 +2129,7 @@ function openFeedbackModal(data) {
         let fileDisplayHtml = '';
         if (isPdfFile) {
             fileDisplayHtml = `
-                <div id="${uniqueContainerId}" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+                <div id="${uniqueContainerId}" style="width: 100%; display: block; text-align: center;">
                     <div style="padding: 40px 0; color:#3b82f6; font-weight:bold;" class="pdf-loading-spinner">
                         <i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom:10px;"></i><br>
                         튜터의 첨삭 PDF 문서를 불러오는 중입니다...
@@ -2306,22 +2306,21 @@ async function downloadReportPDF(reportTitle) {
                 <style>
                     body { font-family: 'Noto Sans KR', sans-serif; background: #fff; color: #333; margin: 0; padding: 0; }
                     
-                    /* 🔥 수정 1: 크기 축소 (zoom: 0.9) 및 가로폭 고정 */
-                    .report-wrapper { width: 1000px; transform: scale(0.9); transform-origin: top left; margin: 0 auto; background: #fff; padding: 40px; box-sizing: border-box; }
+                    /* 🔥 해결 1: transform 제거하고 A4 비율에 맞게 width 제어 */
+                    .report-wrapper { width: 100%; max-width: 900px; margin: 0 auto; background: #fff; padding: 30px; box-sizing: border-box; }
                     
                     /* PDF 다운 버튼 등 불필요 UI 강제 숨김 */
                     .doc-controls, .mobile-only-msg { display: none !important; }
                     
-                    /* 🔥 모달 디자인 100% 수동 복구 (서버 렌더링용) */
                     .doc-header { border-bottom: 3px solid #1e293b; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
                     .doc-subtitle { font-size: 0.85rem; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 5px; }
                     .doc-title { font-size: 2.2rem; font-weight: 900; color: #0f172a; margin: 0; }
                     .doc-meta { font-size: 0.95rem; color: #64748b; text-align: right; line-height: 1.6; }
                     
+                    /* 기본 박스는 쪼개지지 않도록 방어 */
                     .doc-matched-box { border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 30px; background: #fff; page-break-inside: avoid; break-inside: avoid; }
                     .doc-matched-header { background: #f8fafc; padding: 14px 20px; border-bottom: 1px solid #e2e8f0; font-weight: 800; font-size: 1.1rem; color: #1e293b; border-radius: 12px 12px 0 0; }
                     
-                    /* 🔥 Table 구조를 사용하여 좌우 찢어짐 원천 차단 */
                     .doc-matched-body { display: table; width: 100%; box-sizing: border-box; }
                     .doc-student-data { display: table-cell; width: 45%; vertical-align: top; padding: 20px; border-right: 1px dashed #cbd5e1; }
                     .doc-tutor-feedback { display: table-cell; width: 55%; vertical-align: top; padding: 20px; background: #fafafa; border-radius: 0 0 12px 0; }
@@ -2334,11 +2333,17 @@ async function downloadReportPDF(reportTitle) {
                     .qna-student { background: #fff1f2; padding: 18px; border-radius: 8px; border: 1px solid #fecaca; margin-bottom: 15px; }
                     .qna-tutor { background: #f0fdf4; padding: 18px; border-radius: 8px; border: 1px solid #bbf7d0; }
                     
-                    /* 🔥 수정 2: 5번 첨부파일 박스는 페이지 찢어짐(넘김) 허용 */
-                    .allow-page-break { page-break-inside: auto !important; break-inside: auto !important; }
+                    /* 🔥 해결 2: 5번 첨부파일 박스는 무조건 '새 페이지'에서 시작하도록 강제 */
+                    .allow-page-break { 
+                        page-break-before: always !important; 
+                        break-before: page !important; 
+                        page-break-inside: auto !important; 
+                        break-inside: auto !important; 
+                        margin-top: 0 !important; 
+                    }
                     .allow-page-break-body { display: block !important; }
                     
-                    /* 🔥 개별 이미지 크기를 A4 안정권(250mm)으로 강제 제한하여 빈 페이지 밀림 완벽 억제 */
+                    /* 🔥 이미지 자체도 겹치지 않고 블록으로 깔끔하게 떨어지도록 처리 */
                     img { 
                         page-break-inside: avoid !important; 
                         break-inside: avoid !important; 
