@@ -990,7 +990,10 @@ async function loadTutorListForNotice() {
         html += `<div class="tree-grid-container">`;
 
         tutors.forEach(t => {
-            const myStus = students.filter(s => s.tutorName === t.nickname);
+            const myStus = students.filter(s => {
+                if (!s.tutorName) return false;
+                return s.tutorName === t.nickname || s.tutorName === t.name;
+            });
             
             html += `
     <div class="tree-group">
