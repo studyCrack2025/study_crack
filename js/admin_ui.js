@@ -643,13 +643,17 @@ async function loadTutorListForNotice() {
         let html = `<div class="quick-select-box"><strong>⚡ 빠른 선택:</strong><label><input type="checkbox" onchange="toggleAllCheckboxes(this)"> 싹 다 전체</label><label><input type="checkbox" onchange="toggleByClass('is-tutor', this)"> 튜터(선생님) 전체</label><label><input type="checkbox" onchange="toggleByClass('is-pro', this)"> PRO 전체</label><label><input type="checkbox" onchange="toggleByClass('is-standard', this)"> STANDARD 전체</label></div><div class="tree-grid-container">`;
 
         tutors.forEach(t => {
-            const matchedStudentNames = [...(t.proStudents || []), ...(t.stdStudents || []), ...(t.freeStudents || [])]
-                .map(student => student?.name || '')
-                .filter(name => name !== '');
-            const myStus = students.filter(s => matchedStudentNames.includes(s.name));
+            const myStus = students.filter(s => {
+                if (!s.tutorName) return false;
+                const targetTutor = s.tutorName.trim();
+                return targetTutor === (t.nickname || '').trim() || targetTutor === (t.name || '').trim();
+            });
+
             html += `<div class="tree-group"><div class="tree-parent" style="display:flex; justify-content:space-between; align-items:center;"><label><input type="checkbox" class="is-tutor target-chk" value="${t.userid}" onchange="toggleChildren(this)"> 👨‍🏫 ${t.nickname} (${t.name}) 튜터 그룹</label><i class="fas fa-chevron-down" style="cursor:pointer; padding:10px 5px; color:#94a3b8; transition:transform 0.3s;" onclick="toggleNoticeTree(this)"></i></div><div class="tree-children" style="display:none;">`;
-            if (myStus.length === 0) { html += `<span style="color:#94a3b8; font-size:0.85rem; padding-left:5px;">소속 학생 없음</span>`; } 
-            else {
+            
+            if (myStus.length === 0) { 
+                html += `<span style="color:#94a3b8; font-size:0.85rem; padding-left:5px;">소속 학생 없음</span>`; 
+            } else {
                 myStus.forEach(s => {
                     const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE';
                     const tierClass = tier.toLowerCase();
