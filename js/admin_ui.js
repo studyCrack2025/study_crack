@@ -359,11 +359,11 @@ function renderQnaList() {
     filtered.forEach(q => {
         const tr = document.createElement('tr'); const dateStr = new Date(q.createdAt).toLocaleDateString();
         let actionBtn = '';
-        if (q.status === 'waiting') actionBtn = `<button onclick="markAsRead('${q.userId}', '${q.id}')" style="background:#f59e0b; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">읽음 처리</button>`;
-        else if (q.status === 'read') actionBtn = `<button onclick="openReplyModal('${q.userId}', '${q.id}')" style="background:#3b82f6; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">답변하기</button>`;
+        if (q.status === 'waiting') actionBtn = `<button onclick="markAsRead('${q.userid}', '${q.qnaId}')" style="background:#f59e0b; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">읽음 처리</button>`;
+        else if (q.status === 'read') actionBtn = `<button onclick="openReplyModal('${q.userid}', '${q.qnaId}')" style="background:#3b82f6; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">답변하기</button>`;
         else actionBtn = `<span style="color:#10b981; font-weight:bold;">완료됨</span>`;
 
-        tr.innerHTML = `<td data-label="상태">${getQnaStatusBadge(q.status)}</td><td data-label="학생명">${escapeHtml(q.userName)}<br><span style="font-size:0.8rem; color:#94a3b8;">${q.userPhone || '-'}</span></td><td data-label="제목" style="cursor:pointer;" onclick="openReplyModal('${q.userId}', '${q.id}', true)"><strong>${escapeHtml(q.title)}</strong><div style="font-size:0.85rem; color:#64748b; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:300px;">${escapeHtml(q.content)}</div></td><td data-label="등록일">${dateStr}</td><td data-label="관리">${actionBtn}</td>`;
+        tr.innerHTML = `<td data-label="상태">${getQnaStatusBadge(q.status)}</td><td data-label="학생명">${escapeHtml(q.userName)}<br><span style="font-size:0.8rem; color:#94a3b8;">${q.userPhone || '-'}</span></td><td data-label="제목" style="cursor:pointer;" onclick="openReplyModal('${q.userid}', '${q.qnaId}', true)"><strong>${escapeHtml(q.title)}</strong><div style="font-size:0.85rem; color:#64748b; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:300px;">${escapeHtml(q.content)}</div></td><td data-label="등록일">${dateStr}</td><td data-label="관리">${actionBtn}</td>`;
         tbody.appendChild(tr);
     });
 }
@@ -378,9 +378,13 @@ async function markAsRead(targetUserId, qnaId) {
     if(!confirm("이 문의를 '읽음' 상태로 변경하시겠습니까?")) return;
     try {
         await apiFetch(QNA_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_mark_qna_read', data: { targetUserId, qnaId } }) });
-        const item = allQnaData.find(q => q.id === qnaId); if(item) item.status = 'read';
+        const item = allQnaData.find(q => q.qnaId === qnaId); 
+        if(item) item.status = 'read';
+        
         renderQnaList(); 
-    } catch(e) { if (e.message !== "Auth expired") alert("상태 업데이트에 실패했습니다. 네트워크 연결을 확인해주세요."); }
+    } catch(e) { 
+        if (e.message !== "Auth expired") alert("상태 업데이트에 실패했습니다. 네트워크 연결을 확인해주세요."); 
+    }
 }
 
 function openReplyModal(targetUserId, qnaId, isViewOnly = false) {
@@ -529,7 +533,16 @@ async function loadNotifications() {
         if (!data.notifications || data.notifications.length === 0) { container.innerHTML = '<p style="text-align:center; color:#94a3b8;">최근 알림이 없습니다.</p>'; return; }
         data.notifications.forEach(n => {
             const card = document.createElement('div'); card.className = `noti-item ${n.isRead ? '' : 'unread'}`;
-            card.innerHTML = `<div><div class="noti-time">${new Date(n.createdAt).toLocaleString()}</div><div class="noti-tags"><span class="tag-tutor">👨‍🏫 ${escapeHtml(n.tutorName)}</span><span class="tag-student">🎓 ${escapeHtml(n.studentName)}</span></div><div class="noti-text">${escapeHtml(n.message)}</div></div>${!n.isRead ? `<button class="noti-btn" onclick="markAsReadNoti('${n.id}')">확인</button>` : ''}`;
+            card.innerHTML = `
+    <div style="width: 100%;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+            <div class="noti-time" style="font-size: 0.85rem; color: #94a3b8;">${new Date(n.createdAt).toLocaleString()}</div>
+            ${!n.isRead ? `<button class="noti-btn" onclick="markAsReadNoti('${n.id}')" style="background:#f59e0b; color:white; border:none; padding:4px 10px; border-radius:4px; font-size:0.8rem; cursor:pointer;">확인</button>` : '<span style="color:#10b981; font-size:0.8rem; font-weight:bold;">읽음</span>'}
+        </div>
+        <div style="font-weight:bold; color:#1e293b; font-size:1.05rem; margin-bottom:4px;">${escapeHtml(n.title || n.message)}</div>
+        ${n.detail ? `<div class="noti-text" style="color:#475569; font-size:0.95rem; line-height:1.4;">${escapeHtml(n.detail)}</div>` : ''}
+    </div>
+            `;
             container.appendChild(card);
         });
         fetchUnreadNotiCount();
@@ -581,7 +594,7 @@ window.loadSentNotices = async function() {
 
 let globalUserList = [];
 
-// 💡 [수정] 공지 수신자 트리도 새로운 뱃지 로직(currentSubscription) 사용
+// 공지 수신자 트리도 새로운 뱃지 로직(currentSubscription) 사용
 async function loadTutorListForNotice() {
     const adminId = localStorage.getItem('userId');
     try {
@@ -599,7 +612,9 @@ async function loadTutorListForNotice() {
         let html = `<div class="quick-select-box"><strong>⚡ 빠른 선택:</strong><label><input type="checkbox" onchange="toggleAllCheckboxes(this)"> 싹 다 전체</label><label><input type="checkbox" onchange="toggleByClass('is-tutor', this)"> 튜터(선생님) 전체</label><label><input type="checkbox" onchange="toggleByClass('is-pro', this)"> PRO 전체</label><label><input type="checkbox" onchange="toggleByClass('is-standard', this)"> STANDARD 전체</label></div><div class="tree-grid-container">`;
 
         tutors.forEach(t => {
-            const matchedStudentNames = [...(t.proStudents || []), ...(t.stdStudents || []), ...(t.freeStudents || [])].map(student => student.name);
+            const matchedStudentNames = [...(t.proStudents || []), ...(t.stdStudents || []), ...(t.freeStudents || [])]
+                .map(student => student?.name || '')
+                .filter(name => name !== '');
             const myStus = students.filter(s => matchedStudentNames.includes(s.name));
             html += `<div class="tree-group"><div class="tree-parent" style="display:flex; justify-content:space-between; align-items:center;"><label><input type="checkbox" class="is-tutor target-chk" value="${t.userid}" onchange="toggleChildren(this)"> 👨‍🏫 ${t.nickname} (${t.name}) 튜터 그룹</label><i class="fas fa-chevron-down" style="cursor:pointer; padding:10px 5px; color:#94a3b8; transition:transform 0.3s;" onclick="toggleNoticeTree(this)"></i></div><div class="tree-children" style="display:none;">`;
             if (myStus.length === 0) { html += `<span style="color:#94a3b8; font-size:0.85rem; padding-left:5px;">소속 학생 없음</span>`; } 
@@ -717,11 +732,29 @@ function renderNewMatchingList() {
     const tutorOptions = globalTutorsForMatch.map(t => `<option value="${t.nickname}">${t.nickname} (${t.name}) - 배정 ${t.totalStudents}명</option>`).join('');
 
     globalUnmatchedStudents.forEach(s => {
-        const tierBadge = getTierBadgeHTML(s);
-        const card = document.createElement('div'); card.className = 'match-card';
-        card.innerHTML = `<div class="match-card-header"><div><h4 class="match-card-name">${escapeHtml(s.name)}</h4><div class="match-card-date">가입일: ${new Date(s.createdAt).toLocaleDateString()}</div></div><div>${tierBadge}</div></div><div class="match-select-box"><select id="select_tutor_${s.userid}"><option value="">튜터 선택...</option>${tutorOptions}</select><button class="match-btn" onclick="executeMatching('${s.userid}', false)">배정하기</button></div>`;
-        container.appendChild(card);
-    });
+    const tierBadge = getTierBadgeHTML(s);
+    const card = document.createElement('div'); 
+    card.className = 'match-card';
+    card.style.cssText = "background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 15px;";
+    
+    card.innerHTML = `
+        <div class="match-card-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
+            <div>
+                <h4 class="match-card-name" style="margin:0 0 5px 0; font-size:1.1rem; color:#1e293b;">${escapeHtml(s.name)}</h4>
+                <div class="match-card-date" style="font-size:0.85rem; color:#94a3b8;">가입일: ${new Date(s.createdAt).toLocaleDateString()}</div>
+            </div>
+            <div>${tierBadge}</div>
+        </div>
+        <div class="match-select-box" style="display:flex; gap:10px;">
+            <select id="select_tutor_${s.userid}" style="flex:1; padding:8px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.9rem;">
+                <option value="">튜터 선택...</option>
+                ${tutorOptions}
+            </select>
+            <button class="match-btn" onclick="executeMatching('${s.userid}', false)" style="background:#3b82f6; color:white; border:none; padding:8px 15px; border-radius:4px; font-weight:bold; cursor:pointer;">배정하기</button>
+        </div>
+    `;
+    container.appendChild(card);
+});
 }
 
 function initTutorChangeSelects() {
