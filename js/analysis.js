@@ -1681,11 +1681,14 @@ function showMobileDownloadModal(downloadUrl, reportTitle) {
     btn.href = downloadUrl;
     btn.download = `스터디크랙_${reportTitle}.pdf`;
 
-    // 모달 띄우기
-    modal.classList.remove('hidden');
-    setTimeout(() => {
-        modal.style.display = window.innerWidth <= 768 ? 'block' : 'flex';
-    }, 10);
+    void modal.offsetWidth;
+
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+        });
+    });
 }
 
 let currentMobileStep = 0; let wizardSteps = []; let wizardResizeHandler = null;
