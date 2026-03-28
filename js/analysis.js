@@ -1584,6 +1584,9 @@ async function downloadReportPDF(reportTitle) {
     loadingOverlay.innerHTML = `<i class="fas fa-spinner fa-spin fa-3x" style="color:#2563eb; margin-bottom:20px;"></i><h2 style="color:#1e293b; font-weight:800; margin-bottom:10px;">프리미엄 PDF 리포트 생성 중...</h2><p style="color:#64748b;">서버에서 고화질 PDF를 렌더링하고 있습니다. 잠시만 기다려주세요.</p>`;
     document.body.appendChild(loadingOverlay);
 
+    // 다운로드 URL을 임시 저장할 변수
+    let finalDownloadUrl = null;
+
     try {
         const rawHtml = `
             <!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><base href="https://studycrack.co.kr">
@@ -1626,25 +1629,35 @@ async function downloadReportPDF(reportTitle) {
         const data = await response.json();
 
         if (response.ok && data.success) {
-            // 모바일 환경 감지 후 분기 처리
-            const isMobile = window.innerWidth <= 768;
-            
-            if (isMobile) {
-                // 모바일이면 모달 띄우기
-                showMobileDownloadModal(data.downloadUrl, reportTitle);
-            } else {
-                // PC면 즉시 다운로드 실행
-                const link = document.createElement('a'); 
-                link.href = data.downloadUrl; 
-                link.target = '_blank'; 
-                link.download = `스터디크랙_${reportTitle}.pdf`; 
-                document.body.appendChild(link); 
-                link.click(); 
-                document.body.removeChild(link);
-            }
+            // 당장 모달을 띄우지 않고 URL만 저장해 둡니다.
+            finalDownloadUrl = data.downloadUrl;
         } else { throw new Error(data.error || "서버에서 PDF를 생성하지 못했습니다."); }
     } catch (error) { alert("PDF 생성 중 오류가 발생했습니다: " + error.message); } 
-    finally { if (loadingOverlay && loadingOverlay.parentNode) loadingOverlay.parentNode.removeChild(loadingOverlay); }
+    finally { 
+        // 1. 가장 먼저 로딩 오버레이를 화면에서 완벽하게 지웁니다.
+        if (loadingOverlay && loadingOverlay.parentNode) {
+            loadingOverlay.parentNode.removeChild(loadingOverlay);
+        }
+
+        // 2. DOM 레이아웃 계산이 끝날 수 있도록 아주 잠깐(50ms) 기다린 후 모달을 띄웁니다.
+        if (finalDownloadUrl) {
+            setTimeout(() => {
+                const isMobile = window.innerWidth <= 768; // CSS 모바일 기준과 일치
+                
+                if (isMobile) {
+                    showMobileDownloadModal(finalDownloadUrl, reportTitle);
+                } else {
+                    const link = document.createElement('a'); 
+                    link.href = finalDownloadUrl; 
+                    link.target = '_blank'; 
+                    link.download = `스터디크랙_${reportTitle}.pdf`; 
+                    document.body.appendChild(link); 
+                    link.click(); 
+                    document.body.removeChild(link);
+                }
+            }, 50);
+        }
+    }
 }
 
 function showMobileDownloadModal(downloadUrl, reportTitle) {
@@ -1681,14 +1694,8 @@ function showMobileDownloadModal(downloadUrl, reportTitle) {
     btn.href = downloadUrl;
     btn.download = `스터디크랙_${reportTitle}.pdf`;
 
-    void modal.offsetWidth;
-
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            modal.classList.remove('hidden');
-            modal.style.display = 'flex';
-        });
-    });
+    // 원래 하셨던 대로 직관적인 flex 속성만 부여합니다.
+    modal.style.display = 'flex';
 }
 
 let currentMobileStep = 0; let wizardSteps = []; let wizardResizeHandler = null;
