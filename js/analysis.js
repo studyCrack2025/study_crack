@@ -1649,23 +1649,28 @@ async function downloadReportPDF(reportTitle) {
 
 function showMobileDownloadModal(downloadUrl, reportTitle) {
     let modal = document.getElementById('mobilePdfModal');
-    
-    // 모달 DOM이 없으면 동적으로 생성하여 body에 추가
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'mobilePdfModal';
         modal.className = 'modal'; 
+
         modal.innerHTML = `
-            <div class="modal-content" style="max-width: 350px; text-align: center; padding: 30px;">
-                <span class="close-btn" onclick="document.getElementById('mobilePdfModal').style.display='none'">&times;</span>
-                <i class="fas fa-file-pdf" style="font-size: 3rem; color: #ef4444; margin-bottom: 15px;"></i>
-                <h2 style="margin-top: 0; font-size: 1.3rem; color: #1e293b;">PDF 준비 완료</h2>
-                <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 25px; line-height: 1.5; word-break: keep-all;">
-                    리포트 생성이 완료되었습니다.<br>모바일 환경에서는 아래 버튼을 눌러 리포트를 열거나 기기에 저장해주세요.
-                </p>
-                <a id="mobilePdfDownloadBtn" href="#" target="_blank" style="display: block; width: 100%; padding: 15px; background: #3b82f6; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 1rem; box-sizing: border-box; transition: background 0.2s;">
-                    리포트 열기 / 다운로드
-                </a>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title"><i class="fas fa-file-pdf" style="color: #ef4444;"></i> PDF 준비 완료</h3>
+                    <button class="close-btn" onclick="document.getElementById('mobilePdfModal').style.display='none'">&times;</button>
+                </div>
+                <div class="modal-body" style="text-align: center; padding: 40px 20px;">
+                    <p class="modal-desc" style="margin: 0; color: #475569; font-weight: 500;">
+                        리포트 생성이 성공적으로 완료되었습니다.<br>
+                        아래 버튼을 눌러 기기에 저장하거나 확인해 주세요.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <a id="mobilePdfDownloadBtn" href="#" target="_blank" class="btn-common btn-confirm" style="display: flex; align-items: center; justify-content: center; width: 100%; text-decoration: none; padding: 15px; font-size: 1.05rem;">
+                        리포트 열기 / 다운로드
+                    </a>
+                </div>
             </div>
         `;
         document.body.appendChild(modal);
