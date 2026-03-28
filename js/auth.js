@@ -123,10 +123,7 @@ function handleRoleSuccess(role, isLoginEvent, userName = '회원') {
         window.location.href = '/mypage/tutor';
     } else {
         alert("로그인 성공!");
-        const promoInput = document.getElementById('promoCode');
-        const promoCode = promoInput ? promoInput.value : "";
-        if (promoCode) window.location.href = `/welcome?promo=${encodeURIComponent(promoCode)}`;
-        else window.location.href = '/welcome';
+        window.location.href = '/';
     }
 }
 
