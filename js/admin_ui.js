@@ -649,7 +649,14 @@ async function loadTutorListForNotice() {
                 return targetTutor === (t.nickname || '').trim() || targetTutor === (t.name || '').trim();
             });
 
-            html += `<div class="tree-group"><div class="tree-parent" style="display:flex; justify-content:space-between; align-items:center;"><label><input type="checkbox" class="is-tutor target-chk" value="${t.userid}" onchange="toggleChildren(this)"> 👨‍🏫 ${t.nickname} (${t.name}) 튜터 그룹</label><i class="fas fa-chevron-down" style="cursor:pointer; padding:10px 5px; color:#94a3b8; transition:transform 0.3s;" onclick="toggleNoticeTree(this)"></i></div><div class="tree-children" style="display:none;">`;
+            html += `
+                <div class="tree-group">
+                    <div class="tree-parent" style="display:flex; justify-content:space-between; align-items:center;">
+                        <label><input type="checkbox" class="is-tutor target-chk" value="${t.userid}" onchange="toggleChildren(this)"> 👨‍🏫 ${t.nickname} (${t.name}) 튜터 그룹</label>
+                        <i class="fas fa-chevron-down" style="cursor:pointer; padding:10px 5px; color:#94a3b8; transition:transform 0.3s; transform: rotate(180deg);" onclick="toggleNoticeTree(this)"></i>
+                    </div>
+                    <div class="tree-children" style="display:grid;">
+            `;
             
             if (myStus.length === 0) { 
                 html += `<span style="color:#94a3b8; font-size:0.85rem; padding-left:5px;">소속 학생 없음</span>`; 
