@@ -1627,7 +1627,7 @@ async function downloadReportPDF(reportTitle) {
 
         if (response.ok && data.success) {
             // 모바일 환경 감지 후 분기 처리
-            const isMobile = window.innerWidth <= 900;
+            const isMobile = window.innerWidth <= 768;
             
             if (isMobile) {
                 // 모바일이면 모달 띄우기
