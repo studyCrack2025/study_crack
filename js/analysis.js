@@ -1589,6 +1589,7 @@ async function downloadReportPDF(reportTitle) {
             <!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><base href="https://studycrack.co.kr">
             <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
             <style>
+                html { font-size: 90%; }
                 body { font-family: 'Noto Sans KR', sans-serif; background: #fff; color: #333; margin: 0; padding: 0; }
                 .report-wrapper { width: 100%; max-width: 900px; margin: 0 auto; background: #fff; padding: 30px; box-sizing: border-box; }
                 .doc-controls, .mobile-only-msg { display: none !important; }
