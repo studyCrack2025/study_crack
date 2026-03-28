@@ -1591,7 +1591,7 @@ async function downloadReportPDF(reportTitle) {
             <style>
                 html { font-size: 90%; }
                 body { font-family: 'Noto Sans KR', sans-serif; background: #fff; color: #333; margin: 0; padding: 0; }
-                .report-wrapper { width: 100%; max-width: 900px; margin: 0 auto; background: #fff; padding: 30px; box-sizing: border-box; }
+                .report-wrapper { width: 100%; max-width: 900px; margin: 0 auto; background: transparent; padding: 30px; box-sizing: border-box; }
                 .doc-controls, .mobile-only-msg { display: none !important; }
                 .doc-header { border-bottom: 3px solid #1e293b; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
                 .doc-subtitle { font-size: 0.85rem; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 5px; }
@@ -1613,7 +1613,7 @@ async function downloadReportPDF(reportTitle) {
                 .allow-page-break-body { display: block !important; }
                 img { page-break-inside: avoid !important; break-inside: avoid !important; max-width: 100% !important; max-height: 250mm !important; object-fit: contain !important; display: block !important; margin: 0 auto 15px auto !important; }
             </style></head>
-            <body><img src="https://studycrack.co.kr/assets/backgrounds/bg_studycrack_logo.png" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:400px; opacity:0.04; z-index:-1; max-height:none !important;">
+            <body><img src="https://studycrack.co.kr/assets/backgrounds/bg_studycrack_logo.png" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:500px; opacity:0.08; z-index:9999; pointer-events:none; max-height:none !important;">
                 <div class="report-wrapper">${reportElement.innerHTML}</div>
             </body></html>
         `;
