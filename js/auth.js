@@ -14,7 +14,7 @@ const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 let isPhoneVerified = false; 
 let isEmailVerified = false;
 
-// 무한 루프 방지 및 헤더 병합 에러 방지가 적용된 글로벌 apiFetch
+// 💡 무한 루프 방지 및 헤더 병합 에러 방지가 적용된 글로벌 apiFetch
 async function apiFetch(url, options = {}) {
     const token = localStorage.getItem('accessToken');
     const defaultHeaders = {
@@ -22,7 +22,6 @@ async function apiFetch(url, options = {}) {
         ...(token && { 'Authorization': `Bearer ${token}` })
     };
 
-    // options.headers가 없을 때를 대비한 방어 코드
     options.headers = { ...defaultHeaders, ...(options.headers || {}) };
 
     try {
@@ -30,7 +29,6 @@ async function apiFetch(url, options = {}) {
 
         if (!response.ok) {
             if (response.status === 401 || response.status === 403) {
-                // 현재 페이지가 로그인/회원가입/메인 페이지가 아닐 때만 튕겨냄 (무한 루프 방지)
                 const currentPath = window.location.pathname;
                 if (!['/login', '/signup', '/'].includes(currentPath)) {
                     localStorage.clear();
@@ -48,6 +46,101 @@ async function apiFetch(url, options = {}) {
     }
 }
 
+// 💡 [핵심 보안/버그 패치] 분리된 DB 구조에 맞춘 스마트 권한 식별 함수
+async function resolveUserIdentity(isLoginEvent = false) {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    try {
+        // 1. 학생/튜터 테이블 먼저 찌르기 (UserCore)
+        const userRes = await fetch(USER_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'get_user' })
+        });
+
+        if (userRes.ok) {
+            const data = await userRes.json();
+            if (data.name) localStorage.setItem('userName', data.name);
+            if (data.computedTier) localStorage.setItem('userTier', data.computedTier);
+            
+            const role = data.role || 'student';
+            handleRoleSuccess(role, isLoginEvent, data.name);
+            return;
+        }
+
+        // 2. 만약 404/403 에러가 났다면 관리자(Admin)인지 프로빙 (AdminCore)
+        if (userRes.status === 404 || userRes.status === 403) {
+            const adminRes = await fetch(CONFIG.api.admin, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ type: 'admin_stats' })
+            });
+
+            if (adminRes.ok) {
+                localStorage.setItem('userName', '관리자');
+                handleRoleSuccess('admin', isLoginEvent, '관리자');
+                return;
+            }
+        }
+
+        // 어디에도 없으면 진짜 에러
+        throw new Error("계정 정보를 데이터베이스에서 찾을 수 없습니다.");
+
+    } catch (error) {
+        console.error("Identity Resolve Error:", error);
+        if (isLoginEvent) {
+            alert("회원 정보 연동에 실패했습니다. 관리자에게 문의해주세요.");
+            handleSignOut(true); // 조용히 로그아웃
+        } else {
+            console.warn("Session invalid. Logging out silently.");
+            handleSignOut(true);
+        }
+    }
+}
+
+// 식별 성공 시 후처리 함수
+function handleRoleSuccess(role, isLoginEvent, userName = '회원') {
+    const currentLocalRole = localStorage.getItem('userRole');
+    
+    // 백그라운드 갱신인 경우 (새로고침 시)
+    if (!isLoginEvent) {
+        if (currentLocalRole !== role) {
+            console.warn("Security Event: LocalStorage role mismatch detected. Correcting...");
+            localStorage.setItem('userRole', role);
+            window.location.reload();
+        }
+        return;
+    }
+
+    // 실제 로그인 이벤트인 경우
+    localStorage.setItem('userRole', role);
+    if (role === 'admin') {
+        alert("관리자 계정으로 로그인되었습니다.");
+        window.location.href = '/admin';
+    } else if (role === 'tutor') {
+        alert(`${userName} 선생님, 안녕하세요.`);
+        window.location.href = '/mypage/tutor';
+    } else {
+        alert("로그인 성공!");
+        const promoInput = document.getElementById('promoCode');
+        const promoCode = promoInput ? promoInput.value : "";
+        if (promoCode) window.location.href = `/welcome?promo=${encodeURIComponent(promoCode)}`;
+        else window.location.href = '/welcome';
+    }
+}
+
+// 💡 XSS 방지용 이스케이프 함수
+function escapeHtml(text) {
+    if (text == null) return ""; 
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 // ==========================================
 // [Part A] 초기화 및 유틸리티
 // ==========================================
@@ -62,7 +155,6 @@ document.addEventListener('DOMContentLoaded', () => {
         pwConfirmInput.addEventListener('input', checkPasswordMatch);
     }
     
-    // 엔터키 지원 코드들
     const emailInput = document.getElementById('email');
     if (emailInput && pwInput) {
         const triggerSignIn = (e) => { if (e.key === 'Enter') handleSignIn(); };
@@ -95,7 +187,6 @@ document.addEventListener('DOMContentLoaded', () => {
         forgotPwConfirm.addEventListener('keypress', triggerConfirmReset);
     }
 
-    // --- 약관 동의 로직 통합 ---
     const chkAll = document.getElementById('chkAll');
     const chkRequired = document.querySelectorAll('.chk-required');
     const chkOptional = document.querySelectorAll('.chk-optional');
@@ -112,18 +203,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateChkAllState = () => {
         const allRequiredChecked = Array.from(chkRequired).every(c => c.checked);
         const allOptionalChecked = Array.from(chkOptional).every(c => c.checked);
-        
-        if (chkAll) {
-            chkAll.checked = allRequiredChecked && allOptionalChecked;
-        }
-        
+        if (chkAll) chkAll.checked = allRequiredChecked && allOptionalChecked;
         updateSubmitButton(); 
     };
 
     chkRequired.forEach(chk => chk.addEventListener('change', updateChkAllState));
     chkOptional.forEach(chk => chk.addEventListener('change', updateChkAllState));
 
-    // URL 프로모션 코드 자동 입력
     const urlParams = new URLSearchParams(window.location.search);
     const promoParam = urlParams.get('promo');
     
@@ -136,24 +222,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 💡 [수정] 모달 바깥 클릭 시 초기화 로직을 태우기 위해 이벤트 리스너 추가
     window.addEventListener('click', function(event) {
         if (event.target.classList.contains('modal-overlay')) {
             closeAuthModal(event.target.id);
         }
     });
 });
-
-// 💡 [추가] XSS 방지용 이스케이프 함수
-function escapeHtml(text) {
-    if (text == null) return ""; 
-    return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
 
 window.openTermModal = function(modalId) {
     const modal = document.getElementById(modalId);
@@ -463,7 +537,6 @@ async function handleFinalSubmit() {
 
     let onlyNumbers = phoneRaw.replace(/[^0-9]/g, ''); 
 
-    // 5-1. Cognito 가입용 (+82 포맷)
     let cleanPhone = onlyNumbers;
     if (cleanPhone.startsWith('010')) {
         cleanPhone = '+82' + cleanPhone.substring(1);
@@ -471,7 +544,6 @@ async function handleFinalSubmit() {
         cleanPhone = '+82' + cleanPhone;
     }
 
-    // 5-2. DB 저장용 
     let dbFormattedPhone = onlyNumbers.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/, "$1-$2-$3");
 
     const attributeList = [
@@ -498,7 +570,6 @@ async function handleFinalSubmit() {
         const userSub = result.userSub;
 
         try {
-            // 회원가입 직후이므로 토큰 없이 일반 fetch 사용 (안전)
             const response = await fetch(AUTH_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -541,20 +612,14 @@ async function handleFinalSubmit() {
                         user_id: authResult.getIdToken().payload.sub
                     });
                     
-                    if (promoCode) {
-                        window.location.href = `/welcome?promo=${encodeURIComponent(promoCode)}`;
-                    } else {
-                        window.location.href = '/welcome';
-                    }
+                    // 신규 가입 시 스마트 라우팅 태우기
+                    resolveUserIdentity(true);
                 },
                 onFailure: function(err) {
                     console.error("Auto Login Failed:", err);
                     setTimeout(() => {
-                        if (promoCode) {
-                            window.location.href = `/welcome?promo=${encodeURIComponent(promoCode)}`;
-                        } else {
-                            window.location.href = '/welcome';
-                        }
+                        if (promoCode) window.location.href = `/welcome?promo=${encodeURIComponent(promoCode)}`;
+                        else window.location.href = '/welcome';
                     }, 300);
                 }
             });
@@ -599,38 +664,20 @@ function checkLoginStatus() {
     }
     
     if (accessToken) {
-        apiFetch(USER_API_URL, {
-            method: 'POST',
-            body: JSON.stringify({ type: 'get_user' }) 
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.role && data.role !== userRole) {
-                console.warn("Security Event: LocalStorage role mismatch detected. Correcting...");
-                localStorage.setItem('userRole', data.role); 
-                window.location.reload(); 
-            }
-        })
-        .catch(err => {
-            if (err.message !== "Auth expired") {
-                console.warn("Session invalid. Logging out silently.");
-                localStorage.clear();
-                sessionStorage.clear();
-                window.location.href = '/';
-            }
-        });
+        // 💡 [핵심] 조용히 백그라운드에서 신분(Role)을 재확인
+        resolveUserIdentity(false);
     }
 }
 
-function handleSignOut() {
+function handleSignOut(silent = false) {
     const cognitoUser = userPool.getCurrentUser();
     if (cognitoUser != null) cognitoUser.signOut();
     
     localStorage.clear();
     sessionStorage.clear();
     
-    alert("로그아웃 되었습니다.");
-    window.location.href = '/';
+    if (!silent) alert("로그아웃 되었습니다.");
+    window.location.href = '/login';
 }
 
 function handleSignIn() {
@@ -664,36 +711,8 @@ function handleSignIn() {
                 user_id: userId
             });
             
-            apiFetch(USER_API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ type: 'get_user' }) 
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.name) localStorage.setItem('userName', data.name);
-                if (data.computedTier) localStorage.setItem('userTier', data.computedTier);
-
-                if (data.role === 'admin') {
-                    localStorage.setItem('userRole', 'admin');
-                    alert("관리자 계정으로 로그인되었습니다.");
-                    window.location.href = '/admin';
-                } else if (data.role === 'tutor') {
-                    localStorage.setItem('userRole', 'tutor');
-                    const tutorName = data.name || '스터디크랙';
-                    alert(`${tutorName} 선생님, 안녕하세요.`);
-                    window.location.href = '/mypage/tutor';
-                } else {
-                    localStorage.setItem('userRole', 'student');
-                    alert("로그인 성공!");
-                    window.location.href = '/';
-                }
-            })
-            .catch(err => {
-                if (err.message !== "Auth expired") {
-                    console.error("Role Check Error:", err);
-                    alert("회원 정보 연동에 실패했습니다. 네트워크 상태를 확인하거나 잠시 후 다시 시도해주세요.");
-                }
-            });
+            // 💡 [핵심] 로그인 이벤트와 함께 스마트 라우팅 시작
+            resolveUserIdentity(true);
         },
         onFailure: function(err) {
             alert(getErrorMessage(err));
@@ -714,7 +733,6 @@ window.closeAuthModal = function(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) modal.classList.add('hidden');
     
-    // 💡 [버그 픽스] 닫을 때 상태 및 입력창 초기화
     if(modalId === 'forgotPwModal') {
         document.getElementById('forgotPwStep1').classList.remove('hidden');
         document.getElementById('forgotPwStep2').classList.add('hidden');
@@ -814,7 +832,6 @@ async function handleFindEmail() {
                 resultBox.appendChild(document.createTextNode("회원님의 이메일은 "));
     
                 const strongTag = document.createElement('strong');
-                // 💡 [보안 패치] escapeHtml을 한 번 더 씌워서 DOM 조작 방어
                 strongTag.textContent = escapeHtml(data.email); 
                 resultBox.appendChild(strongTag);
     
