@@ -46,13 +46,13 @@ async function apiFetch(url, options = {}) {
     }
 }
 
-// 💡 [핵심 보안/버그 패치] 분리된 DB 구조에 맞춘 스마트 권한 식별 함수
+// 분리된 DB 구조에 맞춘 스마트 권한 식별 함수
 async function resolveUserIdentity(isLoginEvent = false) {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
 
     try {
-        // 1. 학생/튜터 테이블 먼저 찌르기 (UserCore)
+        // 단일 API 호출로 학생, 튜터, 관리자 신원을 한 번에 파악 (가장 안전한 방식)
         const userRes = await fetch(USER_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -61,30 +61,20 @@ async function resolveUserIdentity(isLoginEvent = false) {
 
         if (userRes.ok) {
             const data = await userRes.json();
-            if (data.name) localStorage.setItem('userName', data.name);
+            
+            // 관리자의 경우 name 속성이 없을 수 있으므로 방어 코드 추가
+            const userName = data.name || (data.role === 'admin' ? '관리자' : '알수없음');
+            localStorage.setItem('userName', userName);
+            
             if (data.computedTier) localStorage.setItem('userTier', data.computedTier);
             
+            // 백엔드에서 내려준 명확한 role을 사용
             const role = data.role || 'student';
-            handleRoleSuccess(role, isLoginEvent, data.name);
+            handleRoleSuccess(role, isLoginEvent, userName);
             return;
         }
 
-        // 2. 만약 404/403 에러가 났다면 관리자(Admin)인지 프로빙 (AdminCore)
-        if (userRes.status === 404 || userRes.status === 403) {
-            const adminRes = await fetch(CONFIG.api.admin, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ type: 'admin_stats' })
-            });
-
-            if (adminRes.ok) {
-                localStorage.setItem('userName', '관리자');
-                handleRoleSuccess('admin', isLoginEvent, '관리자');
-                return;
-            }
-        }
-
-        // 어디에도 없으면 진짜 에러
+        // 404/403 등 userRes가 실패한 경우 곧바로 에러 처리
         throw new Error("계정 정보를 데이터베이스에서 찾을 수 없습니다.");
 
     } catch (error) {
