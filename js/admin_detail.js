@@ -162,7 +162,7 @@ function parseDynamoItem(item) {
     return obj;
 }
 
-// 💡 [핵심] 분리된 API를 병렬로 호출하여 데이터를 모으는 함수
+// 분리된 API를 병렬로 호출하여 데이터를 모으는 함수
 async function loadAllStudentData() {
     try {
         // 1. 학생 기본 정보 (AdminCore)
@@ -387,6 +387,19 @@ function renderTierBadge(tier) {
     else if (tier === 'basic') html = '<span class="tier-badge" style="background: linear-gradient(135deg, #3B82F6, #60A5FA); border: 2px solid #3B82F6; color: white;">BASIC TIER</span>';
     else html = '<span class="tier-badge" style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1;">FREE USER</span>';
     area.innerHTML = html;
+}
+
+function formatReportKey(key) {
+    if (!key) return "알 수 없는 리포트";
+    
+    // 예: '2024-W10' -> '2024년 10주차 PRO 리포트'
+    const match = key.match(/^(\d{4})-W(\d{1,2})$/);
+    if (match) {
+        return `${match[1]}년 ${match[2]}주차 PRO 리포트`;
+    }
+    
+    // 패턴이 안 맞으면 그대로 출력
+    return key;
 }
 
 function initQuantitativeData(q) {
