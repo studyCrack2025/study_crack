@@ -388,18 +388,30 @@ async function markAsRead(targetUserId, qnaId) {
 }
 
 function openReplyModal(targetUserId, qnaId, isViewOnly = false) {
-    const item = allQnaData.find(q => q.id === qnaId); if (!item) return;
+    // 💡 수정됨: q.id -> q.qnaId
+    const item = allQnaData.find(q => q.qnaId === qnaId); 
+    if (!item) return; 
+    
     currentReplyTarget = { targetUserId, qnaId };
     
-    document.getElementById('replyModalTitle').innerText = item.title; document.getElementById('replyModalContent').innerText = item.content;
-    const replyInput = document.getElementById('replyInput'); const submitBtn = document.querySelector('#reply-modal button');
+    document.getElementById('replyModalTitle').innerText = item.title; 
+    document.getElementById('replyModalContent').innerText = item.content;
+    const replyInput = document.getElementById('replyInput'); 
+    const submitBtn = document.querySelector('#reply-modal button');
 
-    if (item.status === 'done' || isViewOnly) { replyInput.value = item.answer || "(답변 내용 없음)"; replyInput.disabled = true; submitBtn.style.display = 'none'; } 
-    else { replyInput.value = ''; replyInput.disabled = false; submitBtn.style.display = 'block'; }
-    const modal = document.getElementById('reply-modal'); if (modal) modal.classList.remove('hidden');
+    if (item.status === 'done' || isViewOnly) { 
+        replyInput.value = item.answer || "(답변 내용 없음)"; 
+        replyInput.disabled = true; 
+        submitBtn.style.display = 'none'; 
+    } else { 
+        replyInput.value = ''; 
+        replyInput.disabled = false; 
+        submitBtn.style.display = 'block'; 
+    }
+    
+    const modal = document.getElementById('reply-modal'); 
+    if (modal) modal.classList.remove('hidden');
 }
-
-function closeReplyModal() { const modal = document.getElementById('reply-modal'); if (modal) modal.classList.add('hidden'); currentReplyTarget = null; }
 
 async function submitReply() {
     const answer = document.getElementById('replyInput').value.trim();
@@ -407,15 +419,35 @@ async function submitReply() {
     if (!currentReplyTarget || !confirm("답변을 전송하시겠습니까?\n전송 후에는 수정할 수 없으며 학생에게 노출됩니다.")) return;
 
     try {
-        await apiFetch(QNA_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_reply_qna', data: { targetUserId: currentReplyTarget.targetUserId, qnaId: currentReplyTarget.qnaId, answer: answer } }) });
+        await apiFetch(QNA_API_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ type: 'admin_reply_qna', data: { targetUserId: currentReplyTarget.targetUserId, qnaId: currentReplyTarget.qnaId, answer: answer } }) 
+        });
+        
         const qnaTitle = document.getElementById('replyModalTitle').innerText;
-        await apiFetch(NOTI_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_notify_qna_reply', data: { targetUserId: currentReplyTarget.targetUserId, qnaTitle: qnaTitle } }) }).catch(e => {});
+        await apiFetch(NOTI_API_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ type: 'admin_notify_qna_reply', data: { targetUserId: currentReplyTarget.targetUserId, qnaTitle: qnaTitle } }) 
+        }).catch(e => {});
 
         alert("답변이 전송되었습니다.");
-        const item = allQnaData.find(q => q.id === currentReplyTarget.qnaId); if(item) { item.status = 'done'; item.answer = answer; }
-        closeReplyModal(); renderQnaList(); 
-    } catch(e) { if (e.message !== "Auth expired") alert("답변 전송 중 문제가 발생했습니다. 작성하신 내용을 복사한 뒤 창을 새로고침 해주세요."); }
+        
+        // 💡 수정됨: q.id -> q.qnaId
+        const item = allQnaData.find(q => q.qnaId === currentReplyTarget.qnaId); 
+        if(item) { 
+            item.status = 'done'; 
+            item.answer = answer; 
+        }
+        
+        closeReplyModal(); 
+        renderQnaList(); 
+    } catch(e) { 
+        if (e.message !== "Auth expired") alert("답변 전송 중 문제가 발생했습니다. 작성하신 내용을 복사한 뒤 창을 새로고침 해주세요."); 
+    }
 }
+
+function closeReplyModal() { const modal = document.getElementById('reply-modal'); if (modal) modal.classList.add('hidden'); currentReplyTarget = null; }
+
 
 // ============================================================
 // [E] 튜터 관리 로직
