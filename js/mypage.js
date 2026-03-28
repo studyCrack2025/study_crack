@@ -103,7 +103,7 @@ function initCognitoAndFetchData() {
 // ==========================================
 async function fetchUserData(userId) {
     try {
-        // 1. 내 정보 가져오기 (apiFetch 사용)
+        // 1. 내 정보 가져오기
         const response = await apiFetch(USER_API_URL, {
             method: 'POST',
             body: JSON.stringify({ type: 'get_user' }) 
@@ -124,9 +124,10 @@ async function fetchUserData(userId) {
             }
         }
 
-        // 3. 튜터 정보가 있다면 추가로 가져오기
+        // 튜터 정보 조회 로직 업데이트
         if (userData.tutorName) {            
             const cleanTutorName = userData.tutorName.trim();
+            // 백엔드가 요구하는 정확한 파라미터명(tutorName)으로 감싸서 전달
             await fetchTutorInfo(cleanTutorName, userData.computedTier);
         }
 
@@ -141,9 +142,18 @@ async function fetchTutorInfo(tutorName, userTier) {
             method: 'POST',
             body: JSON.stringify({ 
                 type: 'get_tutor_info', 
-                data: { tutorName: tutorName } 
+                // 백엔드의 NicknameIndex 검색을 위해 정확한 키워드 전달
+                data: { tutorName: String(tutorName) } 
             })
         });
+
+        // 404 등 정상적인 에러 응답 처리 (튜터가 삭제되었거나 매칭 전인 경우)
+        if (!response.ok) {
+            console.warn(`튜터 정보를 불러올 수 없습니다. (${response.status})`);
+            currentTutorData = null;
+            checkTutorButtonVisibility(userTier || 'free');
+            return;
+        }
 
         const resData = await response.json();
         currentTutorData = resData; 

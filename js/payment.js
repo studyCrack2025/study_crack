@@ -12,7 +12,7 @@ let globalCurrentTier = 'free';
 let globalDaysLeft = 0;
 let globalExpireDate = null; // 기존 만료일(새로운 시작일) 저장용
 
-// 💡 공통 apiFetch 함수 (accessToken 기반 통합 및 401 예외 처리)
+// 💡 공통 apiFetch 함수
 async function apiFetch(url, options = {}) {
     const token = localStorage.getItem('accessToken');
     const defaultHeaders = {
@@ -20,7 +20,7 @@ async function apiFetch(url, options = {}) {
         ...(token && { 'Authorization': `Bearer ${token}` })
     };
 
-    options.headers = { ...defaultHeaders, ...options.headers };
+    options.headers = { ...defaultHeaders, ...(options.headers || {}) };
 
     try {
         const response = await fetch(url, options);
@@ -40,6 +40,17 @@ async function apiFetch(url, options = {}) {
         console.error("API 통신 실패:", error);
         throw error; 
     }
+}
+
+// 💡 [추가] XSS 방어 유틸리티 (필드 렌더링 시 안전성 확보)
+function escapeHtml(text) {
+    if (text == null) return ""; 
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -62,10 +73,10 @@ async function fetchUserInfo(userId) {
         
         const data = await response.json();
         
-        if (data.name) document.getElementById('name').value = data.name;
-        if (data.phone) document.getElementById('phone').value = data.phone;
+        if (data.name) document.getElementById('name').value = escapeHtml(data.name);
+        if (data.phone) document.getElementById('phone').value = escapeHtml(data.phone);
         const email = localStorage.getItem('userEmail') || data.email;
-        if (email) document.getElementById('email').value = email;
+        if (email) document.getElementById('email').value = escapeHtml(email);
 
         // 프론트엔드에서 남은 기간 및 티어 계산
         calculateUserTierDisplay(data);
@@ -100,16 +111,15 @@ async function validatePromoCode(code) {
     }
 }
 
-// 구독 기간 계산 헬퍼
+// 💡 [핵심 수정] 분리된 구조(currentSubscription) 기반의 구독 기간 계산 헬퍼
 function calculateUserTierDisplay(data) {
     globalCurrentTier = data.computedTier || 'free';
 
-    if (globalCurrentTier !== 'free' && data.payments && data.payments.length > 0) {
-        // 가장 최근 결제내역 찾기
-        const paid = data.payments.filter(p => p.status === 'paid').sort((a,b) => new Date(b.date) - new Date(a.date));
+    // 1. 활성화된 구독 객체 파싱 (배열 검색 삭제)
+    if (globalCurrentTier !== 'free' && data.currentSubscription && data.currentSubscription.status === 'active') {
+        const payDate = new Date(data.currentSubscription.startDate);
         
-        if (paid.length > 0) {
-            const payDate = new Date(paid[0].date);
+        if (!isNaN(payDate)) { // 유효한 날짜인지 검증
             const expireDate = new Date(payDate.getTime() + (28 * 24 * 60 * 60 * 1000)); // 28일 더하기
             const now = new Date();
             
@@ -148,7 +158,7 @@ function selectProduct(element, url, tier) {
 
     selectedTier = tier;
     const nameSpan = element.querySelector('.p-name');
-    if (nameSpan) selectedProductName = nameSpan.innerText;
+    if (nameSpan) selectedProductName = escapeHtml(nameSpan.innerText);
 
     const selectedLevel = TIER_LEVELS[selectedTier];
     const currentLevel = TIER_LEVELS[globalCurrentTier];
@@ -225,7 +235,6 @@ function selectProduct(element, url, tier) {
     }
 }
 
-// 💡 auth.js의 완벽한 10/11자리 정규식으로 통일
 function formatPhoneNumber(rawPhone) {
     let cleaned = rawPhone.replace(/[^0-9]/g, '');
     if (cleaned.startsWith('10') && cleaned.length === 10) {

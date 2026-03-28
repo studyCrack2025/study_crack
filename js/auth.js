@@ -14,7 +14,7 @@ const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 let isPhoneVerified = false; 
 let isEmailVerified = false;
 
-// 무한 루프 방지가 적용된 글로벌 apiFetch
+// 무한 루프 방지 및 헤더 병합 에러 방지가 적용된 글로벌 apiFetch
 async function apiFetch(url, options = {}) {
     const token = localStorage.getItem('accessToken');
     const defaultHeaders = {
@@ -22,7 +22,8 @@ async function apiFetch(url, options = {}) {
         ...(token && { 'Authorization': `Bearer ${token}` })
     };
 
-    options.headers = { ...defaultHeaders, ...options.headers };
+    // options.headers가 없을 때를 대비한 방어 코드
+    options.headers = { ...defaultHeaders, ...(options.headers || {}) };
 
     try {
         const response = await fetch(url, options);
@@ -134,7 +135,25 @@ document.addEventListener('DOMContentLoaded', () => {
             promoInput.style.backgroundColor = '#f1f5f9'; 
         }
     }
+
+    // 💡 [수정] 모달 바깥 클릭 시 초기화 로직을 태우기 위해 이벤트 리스너 추가
+    window.addEventListener('click', function(event) {
+        if (event.target.classList.contains('modal-overlay')) {
+            closeAuthModal(event.target.id);
+        }
+    });
 });
+
+// 💡 [추가] XSS 방지용 이스케이프 함수
+function escapeHtml(text) {
+    if (text == null) return ""; 
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 
 window.openTermModal = function(modalId) {
     const modal = document.getElementById(modalId);
@@ -452,7 +471,7 @@ async function handleFinalSubmit() {
         cleanPhone = '+82' + cleanPhone;
     }
 
-    // 💡 5-2. DB 저장용 개선된 정규식 (10자리, 11자리 모두 완벽 호환)
+    // 5-2. DB 저장용 
     let dbFormattedPhone = onlyNumbers.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/, "$1-$2-$3");
 
     const attributeList = [
@@ -580,7 +599,6 @@ function checkLoginStatus() {
     }
     
     if (accessToken) {
-        // 💡 로그인 여부를 확인하는 곳이므로 apiFetch 사용
         apiFetch(USER_API_URL, {
             method: 'POST',
             body: JSON.stringify({ type: 'get_user' }) 
@@ -646,7 +664,6 @@ function handleSignIn() {
                 user_id: userId
             });
             
-            // 💡 로그인 완료 직후 권한 정보 획득 (apiFetch 사용)
             apiFetch(USER_API_URL, {
                 method: 'POST',
                 body: JSON.stringify({ type: 'get_user' }) 
@@ -688,12 +705,16 @@ function handleSignIn() {
 // [Part G] 이메일/비밀번호 찾기 로직 
 // ==========================================
 
-function openAuthModal(modalId) {
-    document.getElementById(modalId).classList.remove('hidden');
-}
+window.openAuthModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.remove('hidden');
+};
 
-function closeAuthModal(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
+window.closeAuthModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.add('hidden');
+    
+    // 💡 [버그 픽스] 닫을 때 상태 및 입력창 초기화
     if(modalId === 'forgotPwModal') {
         document.getElementById('forgotPwStep1').classList.remove('hidden');
         document.getElementById('forgotPwStep2').classList.add('hidden');
@@ -702,14 +723,13 @@ function closeAuthModal(modalId) {
         document.getElementById('forgotPwNew').value = '';
         document.getElementById('forgotPwConfirm').value = '';
         const btn = document.getElementById('reqResetBtn');
-        btn.innerText = "인증 코드 받기";
-        btn.disabled = false;
+        if (btn) { btn.innerText = "인증 코드 받기"; btn.disabled = false; }
     } else if (modalId === 'findEmailModal') {
         document.getElementById('findEmailName').value = '';
         document.getElementById('findEmailPhone').value = '';
         document.getElementById('foundEmailResult').classList.add('hidden');
     }
-}
+};
 
 async function requestPasswordReset() {
     const email = document.getElementById('forgotPwEmail').value.trim();
@@ -777,7 +797,6 @@ async function handleFindEmail() {
 
     if (!name || !phoneRaw) { alert("이름과 전화번호를 모두 입력해주세요."); return; }
 
-    // 💡 휴대폰 번호 찾기 정규식 통일
     let dbFormattedPhone = phoneRaw.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/, "$1-$2-$3");
 
     try {
@@ -795,7 +814,8 @@ async function handleFindEmail() {
                 resultBox.appendChild(document.createTextNode("회원님의 이메일은 "));
     
                 const strongTag = document.createElement('strong');
-                strongTag.textContent = data.email; // XSS 방지 처리
+                // 💡 [보안 패치] escapeHtml을 한 번 더 씌워서 DOM 조작 방어
+                strongTag.textContent = escapeHtml(data.email); 
                 resultBox.appendChild(strongTag);
     
                 resultBox.appendChild(document.createTextNode(" 입니다."));

@@ -594,7 +594,14 @@ window.toggleStudentNotiPanel = function() {
     }
 }
 
+// 알림 중복 호출 방지를 위한 Lock 변수 추가
+let isFetchingNoti = false; 
+
 window.fetchStudentNotifications = async function() {
+    // 이미 요청 중이면 무시 (API 연타 방어)
+    if (isFetchingNoti) return; 
+    isFetchingNoti = true;
+
     try {
         const response = await apiFetch(NOTI_API_URL, { 
             method: 'POST',
@@ -628,9 +635,10 @@ window.fetchStudentNotifications = async function() {
             const div = document.createElement('div');
             div.className = `student-noti-item ${n.isRead ? '' : 'unread'}`;
             div.onclick = async () => {
-                if (!n.isRead) await markStudentNotiRead(n.id);
+                if (!n.isRead) await markStudentNotiRead(n.id); // 💡 새 구조의 id도 정상 호환됨
                 handleNotiAction(n);
             };
+            // 💡 [보안] XSS 방어를 위해 escapeHtml 필수 유지
             div.innerHTML = `
                 <div class="student-noti-title">${escapeHtml(n.message)}</div>
                 <div class="student-noti-time">${new Date(n.createdAt).toLocaleString()}</div>
@@ -639,6 +647,46 @@ window.fetchStudentNotifications = async function() {
         });
     } catch (e) { 
         if (e.message !== "Auth expired") console.error("Noti Fetch Error:", e); 
+    } finally {
+        // 💡 통신이 끝나면 Lock 해제
+        isFetchingNoti = false;
+    }
+}
+
+// 알림 타입에 따른 화면 이동 / 모달 띄우기 처리
+function handleNotiAction(noti) {
+    toggleStudentNotiPanel(); // 알림창 닫기
+
+    if (noti.actionType === 'weekly_report') {
+        window.location.href = '/analysis?tab=coach'; 
+    } 
+    else if (noti.actionType === 'pro_report') {
+        window.location.href = '/analysis?tab=pro'; 
+    } 
+    else if (noti.actionType === 'qna_reply') {
+        // 모달창에 들어가는 데이터도 escapeHtml로 감싸서 XSS 공격 방어
+        document.getElementById('noticeModalTitle').innerText = escapeHtml(noti.title) || "답변 완료";
+        document.getElementById('noticeModalDate').innerText = new Date(noti.createdAt).toLocaleDateString();
+        document.getElementById('noticeModalContent').innerText = escapeHtml(noti.detail) || "마이페이지 Q&A에서 확인해주세요.";
+        
+        const modal = document.getElementById('noticeDetail-modal');
+        if(modal) {
+            modal.classList.remove('hidden');
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+    }
+    else if (noti.actionType === 'admin_notice') {
+        document.getElementById('noticeModalTitle').innerText = escapeHtml(noti.title) || "공지사항";
+        document.getElementById('noticeModalDate').innerText = new Date(noti.createdAt).toLocaleDateString();
+        document.getElementById('noticeModalContent').innerText = escapeHtml(noti.detail) || "내용이 없습니다.";
+        
+        const modal = document.getElementById('noticeDetail-modal');
+        if(modal) {
+            modal.classList.remove('hidden');
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
     }
 }
 
@@ -659,46 +707,10 @@ window.markAllStudentNotiRead = async function() {
     await markStudentNotiRead('all');
 }
 
-// 🔥 알림 타입에 따른 화면 이동 / 모달 띄우기 처리
-function handleNotiAction(noti) {
-    toggleStudentNotiPanel(); // 알림창 닫기
-
-    if (noti.actionType === 'weekly_report') {
-        window.location.href = '/analysis?tab=coach'; 
-    } 
-    else if (noti.actionType === 'pro_report') {
-        window.location.href = '/analysis?tab=pro'; 
-    } 
-    else if (noti.actionType === 'qna_reply') {
-        document.getElementById('noticeModalTitle').innerText = noti.title || "답변 완료";
-        document.getElementById('noticeModalDate').innerText = new Date(noti.createdAt).toLocaleDateString();
-        document.getElementById('noticeModalContent').innerText = noti.detail || "마이페이지 Q&A에서 확인해주세요.";
-        
-        const modal = document.getElementById('noticeDetail-modal');
-        if(modal) {
-            modal.classList.remove('hidden');
-            modal.style.display = 'block';
-            document.body.style.overflow = 'hidden';
-        }
-    }
-    else if (noti.actionType === 'admin_notice') {
-        document.getElementById('noticeModalTitle').innerText = noti.title || "공지사항";
-        document.getElementById('noticeModalDate').innerText = new Date(noti.createdAt).toLocaleDateString();
-        document.getElementById('noticeModalContent').innerText = noti.detail || "내용이 없습니다.";
-        
-        const modal = document.getElementById('noticeDetail-modal');
-        if(modal) {
-            modal.classList.remove('hidden');
-            modal.style.display = 'block';
-            document.body.style.overflow = 'hidden';
-        }
-    }
-}
-
 // ============================================================
 // [유틸리티] 특수문자 변환 (해킹 방지)
 // ============================================================
-// 💡 한층 더 강력해진 escapeHtml 적용
+// 한층 더 강력해진 escapeHtml 적용
 function escapeHtml(text) {
     if (text === null || text === undefined) return ""; 
     return String(text) 
