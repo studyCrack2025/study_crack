@@ -1683,7 +1683,9 @@ function showMobileDownloadModal(downloadUrl, reportTitle) {
 
     // 모달 띄우기
     modal.classList.remove('hidden');
-    modal.style.display = 'flex';
+    setTimeout(() => {
+        modal.style.display = window.innerWidth <= 768 ? 'block' : 'flex';
+    }, 10);
 }
 
 let currentMobileStep = 0; let wizardSteps = []; let wizardResizeHandler = null;
