@@ -388,7 +388,6 @@ async function markAsRead(targetUserId, qnaId) {
 }
 
 function openReplyModal(targetUserId, qnaId, isViewOnly = false) {
-    // 💡 수정됨: q.id -> q.qnaId
     const item = allQnaData.find(q => q.qnaId === qnaId); 
     if (!item) return; 
     

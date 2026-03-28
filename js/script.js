@@ -664,17 +664,7 @@ function handleNotiAction(noti) {
         window.location.href = '/analysis?tab=pro'; 
     } 
     else if (noti.actionType === 'qna_reply') {
-        // 모달창에 들어가는 데이터도 escapeHtml로 감싸서 XSS 공격 방어
-        document.getElementById('noticeModalTitle').innerText = escapeHtml(noti.title) || "답변 완료";
-        document.getElementById('noticeModalDate').innerText = new Date(noti.createdAt).toLocaleDateString();
-        document.getElementById('noticeModalContent').innerText = escapeHtml(noti.detail) || "마이페이지 Q&A에서 확인해주세요.";
-        
-        const modal = document.getElementById('noticeDetail-modal');
-        if(modal) {
-            modal.classList.remove('hidden');
-            modal.style.display = 'block';
-            document.body.style.overflow = 'hidden';
-        }
+        window.location.href = '/qna';
     }
     else if (noti.actionType === 'admin_notice') {
         document.getElementById('noticeModalTitle').innerText = escapeHtml(noti.title) || "공지사항";
