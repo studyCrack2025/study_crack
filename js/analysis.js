@@ -1589,8 +1589,7 @@ async function downloadReportPDF(reportTitle) {
             <!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><base href="https://studycrack.co.kr">
             <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
             <style>
-                html { font-size: 90%; }
-                body { font-family: 'Noto Sans KR', sans-serif; background: #fff; color: #333; margin: 0; padding: 0; }
+                body { font-family: 'Noto Sans KR', sans-serif; background: #fff; color: #333; margin: 0; padding: 0; zoom: 0.9; }
                 .report-wrapper { width: 100%; max-width: 900px; margin: 0 auto; background: transparent; padding: 30px; box-sizing: border-box; }
                 .doc-controls, .mobile-only-msg { display: none !important; }
                 .doc-header { border-bottom: 3px solid #1e293b; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
@@ -1627,11 +1626,59 @@ async function downloadReportPDF(reportTitle) {
         const data = await response.json();
 
         if (response.ok && data.success) {
-            const link = document.createElement('a'); link.href = data.downloadUrl; link.target = '_blank'; link.download = `스터디크랙_${reportTitle}.pdf`; 
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            // 모바일 환경 감지 후 분기 처리
+            const isMobile = window.innerWidth <= 900;
+            
+            if (isMobile) {
+                // 모바일이면 모달 띄우기
+                showMobileDownloadModal(data.downloadUrl, reportTitle);
+            } else {
+                // PC면 즉시 다운로드 실행
+                const link = document.createElement('a'); 
+                link.href = data.downloadUrl; 
+                link.target = '_blank'; 
+                link.download = `스터디크랙_${reportTitle}.pdf`; 
+                document.body.appendChild(link); 
+                link.click(); 
+                document.body.removeChild(link);
+            }
         } else { throw new Error(data.error || "서버에서 PDF를 생성하지 못했습니다."); }
     } catch (error) { alert("PDF 생성 중 오류가 발생했습니다: " + error.message); } 
     finally { if (loadingOverlay && loadingOverlay.parentNode) loadingOverlay.parentNode.removeChild(loadingOverlay); }
+}
+
+function showMobileDownloadModal(downloadUrl, reportTitle) {
+    let modal = document.getElementById('mobilePdfModal');
+    
+    // 모달 DOM이 없으면 동적으로 생성하여 body에 추가
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'mobilePdfModal';
+        modal.className = 'modal'; 
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 350px; text-align: center; padding: 30px;">
+                <span class="close-btn" onclick="document.getElementById('mobilePdfModal').style.display='none'">&times;</span>
+                <i class="fas fa-file-pdf" style="font-size: 3rem; color: #ef4444; margin-bottom: 15px;"></i>
+                <h2 style="margin-top: 0; font-size: 1.3rem; color: #1e293b;">PDF 준비 완료</h2>
+                <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 25px; line-height: 1.5; word-break: keep-all;">
+                    리포트 생성이 완료되었습니다.<br>모바일 환경에서는 아래 버튼을 눌러 리포트를 열거나 기기에 저장해주세요.
+                </p>
+                <a id="mobilePdfDownloadBtn" href="#" target="_blank" style="display: block; width: 100%; padding: 15px; background: #3b82f6; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 1rem; box-sizing: border-box; transition: background 0.2s;">
+                    리포트 열기 / 다운로드
+                </a>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    // URL 및 파일명 세팅
+    const btn = document.getElementById('mobilePdfDownloadBtn');
+    btn.href = downloadUrl;
+    btn.download = `스터디크랙_${reportTitle}.pdf`;
+
+    // 모달 띄우기
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
 }
 
 let currentMobileStep = 0; let wizardSteps = []; let wizardResizeHandler = null;
