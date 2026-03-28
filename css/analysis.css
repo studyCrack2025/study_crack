@@ -562,9 +562,15 @@
 .modal-body.with-search { padding-top: 15px; }
 .empty-search-result { grid-column: 1 / -1; text-align: center; padding: 40px 20px; color: #64748b; font-size: 0.95rem; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 
+/* =======================================
+   [9] 모바일 전용 PDF 다운로드 모달 예외 처리
+   ======================================= */
+#mobilePdfModal { align-items: center !important; justify-content: center !important; }
+#mobilePdfModal .modal-content { position: relative !important; bottom: auto !important; left: auto !important; margin: 0 auto !important; width: 90% !important; max-width: 350px !important; border-radius: 16px !important; animation: fadeIn 0.3s ease-out !important; box-sizing: border-box; }
+
 
 /* ============================================================
-   [9] 로딩 및 기타 유틸리티
+   [10] 로딩 및 기타 유틸리티
    ============================================================ */
 /* 섹션 로딩 오버레이: #sol-univ 전용 */
 #sol-univ { position: relative; min-height: 300px; }
@@ -584,7 +590,7 @@ input[type="number"]::-webkit-inner-spin-button {
 
 
 /* ============================================================
-   [10] 모바일 반응형 및 인쇄 설정
+   [11] 모바일 반응형 및 인쇄 설정
    ============================================================ */
    
 /* 🎯 모바일 화면 제어 */
