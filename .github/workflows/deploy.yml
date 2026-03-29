@@ -30,9 +30,9 @@ jobs:
       - name: Set Environment Variables for PROD
         if: github.ref == 'refs/heads/main'
         run: |
-          echo "AWS_ROLE_ARN=arn:aws:iam::본인AWS계정ID:role/StudyCrack-GitHubActions-ProdRole" >> $GITHUB_ENV
+          echo "AWS_ROLE_ARN=arn:aws:iam::235270182853:role/StudyCrack-GitHubActions-ProdRole" >> $GITHUB_ENV
           echo "S3_BUCKET=studycrack.co.kr" >> $GITHUB_ENV
-          echo "CF_DIST_ID=운영용CloudFront아이디" >> $GITHUB_ENV
+          echo "CF_DIST_ID=EV58SGU5XCI3O" >> $GITHUB_ENV
 
       # 3. AWS 자격 증명 설정 (기존 Access Key 방식에서 안전한 OIDC 방식으로 대체)
       - name: Configure AWS credentials
