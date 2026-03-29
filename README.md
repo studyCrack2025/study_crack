@@ -5,6 +5,41 @@ AWS Serverless 아키텍처와 **API Gateway**를 기반으로 설계되어 강�
 
 ---
 
+## 🚀 Deployment & CI/CD (배포 및 환경 분리 파이프라인)
+
+안정적인 무중단 서비스 운영과 안전한 테스트를 위해, 프론트엔드와 백엔드 모두 **개발(Dev)**과 **운영(Prod)** 환경으로 완벽하게 분리되어 있습니다.
+
+### 1. Frontend 배포 파이프라인 (GitHub Actions)
+GitHub Repository의 브랜치(Branch) 관리를 통해 S3 버킷과 CloudFront로 자동 배포됩니다. AWS 인증은 보안이 강화된 **OIDC(OpenID Connect)** 방식을 사용합니다.
+
+* **개발 환경 (`dev` 브랜치)**
+  * `dev` 브랜치에 코드가 푸시되면 GitHub Actions가 작동하여 **개발용 S3 버킷**(`dev.studycrack.co.kr`)으로 자동 배포합니다.
+  * 테스트 URL(`https://d17e...cloudfront.net`)에서 실제 유저에게 영향을 주지 않고 UI 및 API 통신을 미리 검증할 수 있습니다.
+* **운영 환경 (`main` 브랜치)**
+  * 개발 환경에서 검증이 끝난 코드를 `main` 브랜치로 **Merge(병합)**하면, **운영용 S3 버킷**(`studycrack.co.kr`)으로 자동 배포되고 CloudFront 캐시가 즉시 무효화됩니다.
+
+### 2. Backend 환경 분리 (API Gateway & Lambda)
+API Gateway의 **스테이지(Stage)**와 Lambda의 **별칭(Alias)**을 결합하여 완벽한 백엔드 라우팅 체계를 구축했습니다.
+
+* **Lambda 버전 관리 및 별칭**
+  * `DEV` 별칭: 항상 코드의 최신 상태(`$LATEST`)를 가리킵니다. 개발 중인 코드가 즉시 반영됩니다.
+  * `PROD` 별칭: 테스트가 완료되어 고정된 '특정 버전(예: 버전 1, 버전 2)'만을 가리킵니다.
+* **API Gateway 동적 라우팅**
+  * 통합 요청(Integration Request)에 함수 이름을 직접 명시하지 않고, 동적 변수(`${stageVariables.lambdaAlias}`)를 사용합니다.
+  * 프론트엔드에서 `/dev/` 경로로 요청하면 `DEV` 별칭의 람다가, `/prod/` 경로로 요청하면 `PROD` 별칭의 람다가 실행됩니다.
+
+### 3. 스마트 라우팅 (Smart API Routing)
+프론트엔드 코드(`js/config.js`)는 현재 실행 중인 도메인(`window.location.hostname`)을 스스로 감지합니다. 로컬 PC나 개발용 도메인에서 접속 시 자동으로 API 주소에 `/dev/`를 삽입하고, 공식 운영 도메인 접속 시 `/prod/`를 삽입하여 코드를 수정할 필요 없이 안전하게 API를 호출합니다.
+
+### 📌 표준 개발 및 업데이트 워크플로우
+1. **[개발]** 로컬에서 작업한 코드를 GitHub `dev` 브랜치에 푸시합니다. Lambda 코드는 콘솔에서 수정 및 저장(`$LATEST`)합니다.
+2. **[검증]** 개발용 도메인에 접속하여 새 기능과 API가 정상 작동하는지 테스트합니다.
+3. **[백엔드 배포]** Lambda 콘솔에서 [새 버전 발행]을 클릭하여 코드를 고정하고, `PROD` 별칭이 해당 새 버전을 가리키도록 수정합니다.
+4. **[프론트엔드 배포]** GitHub에서 `dev` 브랜치를 `main` 브랜치로 Merge 하면 유저 화면에 업데이트가 릴리즈됩니다.
+5. **[긴급 롤백]** 백엔드에 치명적인 오류 발생 시, Lambda `PROD` 별칭을 이전 버전으로 변경하여 단 10초 만에 롤백합니다. 프론트엔드는 GitHub에서 이전 커밋으로 Revert 합니다.
+
+---
+
 ## 🛠 Tech Stack (기술 스택)
 
 ### Frontend
@@ -109,4 +144,4 @@ StudyCrack/
 
 ---
 
-> **📅 Last Updated:** 2026년 3월 24일 (화) - 디렉토리 구조화 및 모바일 위저드 UI / 카드 레이아웃 개편 완료
+> **📅 Last Updated:** 2026년 3월 30일 (월) - 자동 배포(CI/CD) 및 Dev/Prod 환경 분리 아키텍처 적용 완료
