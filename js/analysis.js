@@ -1566,6 +1566,20 @@ function openFeedbackModal(data) {
             </div>
             ${tutorFileBlockHtml}
         </div>
+
+        <div class="mobile-only-msg" style="display:none;">
+            <i class="fas fa-file-pdf" style="font-size:3rem; color:#3b82f6; margin-bottom:15px;"></i>
+            <h3 style="margin:0 0 10px 0; color:#1e293b; font-size:1.4rem;">주간 리포트 도착</h3>
+            <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px; line-height:1.5; word-break:keep-all;">
+                모바일에서는 쾌적한 열람을 위해<br>PDF 변환 후 다운로드를 지원합니다.
+            </p>
+            <button onclick="downloadReportPDF('${safeTitleForJs}')" class="mobile-pdf-btn">
+                <i class="fas fa-magic"></i> 리포트 PDF 생성하기
+            </button>
+            <button class="mobile-close-btn" onclick="document.getElementById('feedbackModal').style.display='none'">
+                닫기
+            </button>
+        </div>
     `;
 
     contentArea.innerHTML = html;
