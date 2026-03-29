@@ -1663,39 +1663,21 @@ async function downloadReportPDF(reportTitle) {
 }
 
 function showMobileDownloadModal(downloadUrl, reportTitle) {
-    let modal = document.getElementById('mobilePdfModal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'mobilePdfModal';
-        modal.className = 'modal'; 
+    const modal = document.getElementById('mobilePdfModal');
+    if (!modal) return; // HTML에 박혀있으므로 무조건 통과됨
 
-        modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title"><i class="fas fa-file-pdf" style="color: #ef4444;"></i> PDF 준비 완료</h3>
-                    <button class="close-btn" onclick="document.getElementById('mobilePdfModal').style.display='none';">&times;</button>
-                </div>
-                <div class="modal-body" style="text-align: center; padding: 40px 20px;">
-                    <p class="modal-desc" style="margin: 0; color: #475569; font-weight: 500;">
-                        리포트 생성이 성공적으로 완료되었습니다.<br>
-                        아래 버튼을 눌러 기기에 저장하거나 확인해 주세요.
-                    </p>
-                </div>
-                <div class="modal-footer">
-                    <a id="mobilePdfDownloadBtn" href="#" target="_blank" class="btn-common btn-confirm" style="display: flex; align-items: center; justify-content: center; width: 100%; text-decoration: none; padding: 15px; font-size: 1.05rem;">
-                        리포트 열기 / 다운로드
-                    </a>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    }
-
+    // URL 및 파일명 세팅
     const btn = document.getElementById('mobilePdfDownloadBtn');
-    btn.href = downloadUrl;
-    btn.download = `스터디크랙_${reportTitle}.pdf`;
+    if (btn) {
+        btn.href = downloadUrl;
+        btn.download = `스터디크랙_${reportTitle}.pdf`;
+    }
+    
+    const feedbackModal = document.getElementById('feedbackModal');
+    if (feedbackModal) feedbackModal.style.display = 'none';
 
-    modal.style.display = 'block';
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
 }
 
 let currentMobileStep = 0; let wizardSteps = []; let wizardResizeHandler = null;

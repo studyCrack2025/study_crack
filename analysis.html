@@ -567,6 +567,26 @@
         </div>
     </div>
     
+    <div id="mobilePdfModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-file-pdf" style="color: #ef4444;"></i> PDF 준비 완료</h3>
+                <button class="close-btn" onclick="document.getElementById('mobilePdfModal').style.display='none'; document.body.style.overflow='auto';">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: 40px 20px;">
+                <p class="modal-desc" style="margin: 0; color: #475569; font-weight: 500;">
+                    리포트 생성이 성공적으로 완료되었습니다.<br>
+                    아래 버튼을 눌러 기기에 저장하거나 확인해 주세요.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <a id="mobilePdfDownloadBtn" href="#" target="_blank" class="btn-common btn-confirm" style="display: flex; align-items: center; justify-content: center; width: 100%; text-decoration: none; padding: 15px; font-size: 1.05rem;">
+                    리포트 열기 / 다운로드
+                </a>
+            </div>
+        </div>
+    </div>
+    
     <script src="/js/config.js"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/analysis.js"></script> 

@@ -596,26 +596,9 @@ input[type="number"]::-webkit-inner-spin-button {
 @media (max-width: 768px) {
     /* =======================================
        0. 모바일 마법사(Wizard) 모드 전용 스타일 및 안내창
-       ======================================= */
-    /* 원래 모바일에서 띄우던 안내 메시지 숨김 */
-    .mobile-only-msg { 
-        display: none !important; 
-    }
-    
-    /* 숨겨놨던 PC용 문서 컨테이너 강제 노출 */
-    .modal-document { 
-        display: block !important; 
-        position: relative !important;
-        z-index: 10000 !important;
-        width: 100% !important;
-        height: auto !important;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch;
-        background: #ffffff;
-    }   
-    
-    /* .modal-document { display: none !important; }
-    .mobile-only-msg { display: flex !important; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 20px; background: #ffffff; border-radius: 12px; margin: 0 auto; width: 100%; box-sizing: border-box; } */
+       ======================================= */    
+    .modal-document { display: none !important; }
+    .mobile-only-msg { display: flex !important; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 20px; background: #ffffff; border-radius: 12px; margin: 0 auto; width: 100%; box-sizing: border-box; }
     .mobile-only-msg i { font-size: 3rem; color: #3b82f6; margin-bottom: 15px; }
     .mobile-only-msg h3 { margin: 0 0 10px 0; color: #1e293b; font-size: 1.4rem; }
     .mobile-only-msg p { color: #64748b; font-size: 0.95rem; margin-bottom: 25px; line-height: 1.5; word-break: keep-all; }
