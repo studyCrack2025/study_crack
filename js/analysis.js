@@ -1634,16 +1634,18 @@ async function downloadReportPDF(reportTitle) {
         } else { throw new Error(data.error || "서버에서 PDF를 생성하지 못했습니다."); }
     } catch (error) { alert("PDF 생성 중 오류가 발생했습니다: " + error.message); } 
     finally { 
-        // 1. 가장 먼저 로딩 오버레이를 화면에서 완벽하게 지웁니다.
+        // 1. 로딩 오버레이 제거
         if (loadingOverlay && loadingOverlay.parentNode) {
             loadingOverlay.parentNode.removeChild(loadingOverlay);
         }
 
-        // 2. DOM 레이아웃 계산이 끝날 수 있도록 아주 잠깐(50ms) 기다린 후 모달을 띄웁니다.
         if (finalDownloadUrl) {
             setTimeout(() => {
-                const isMobile = window.innerWidth <= 768; // CSS 모바일 기준과 일치
+                const isMobile = window.innerWidth <= 768; 
                 
+                const feedbackModal = document.getElementById('feedbackModal');
+                if (feedbackModal) feedbackModal.style.display = 'none';
+
                 if (isMobile) {
                     showMobileDownloadModal(finalDownloadUrl, reportTitle);
                 } else {
@@ -1666,7 +1668,7 @@ function showMobileDownloadModal(downloadUrl, reportTitle) {
         modal = document.createElement('div');
         modal.id = 'mobilePdfModal';
         modal.className = 'modal'; 
-        
+
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
@@ -1693,9 +1695,7 @@ function showMobileDownloadModal(downloadUrl, reportTitle) {
     btn.href = downloadUrl;
     btn.download = `스터디크랙_${reportTitle}.pdf`;
 
-    modal.style.setProperty('z-index', '10005', 'important'); 
-    
-    modal.style.setProperty('display', 'block', 'important'); 
+    modal.style.display = 'block';
 }
 
 let currentMobileStep = 0; let wizardSteps = []; let wizardResizeHandler = null;
