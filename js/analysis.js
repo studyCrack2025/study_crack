@@ -1667,26 +1667,11 @@ function showMobileDownloadModal(downloadUrl, reportTitle) {
         modal.id = 'mobilePdfModal';
         modal.className = 'modal'; 
         
-        // --- 동적 Z-index 계산 로직 시작 ---
-        const openModals = document.querySelectorAll('.modal, .custom-modal');
-        let highestZ = 2000; // 시스템 기본 모달 계층 값
-
-        openModals.forEach(m => {
-            const z = parseInt(window.getComputedStyle(m).zIndex, 10);
-            if (!isNaN(z) && z > highestZ) {
-                highestZ = z;
-            }
-        });
-
-        // 현재 화면에 뜬 가장 높은 모달보다 10 높게 설정하여 안전하게 최상단 배치
-        modal.style.zIndex = highestZ + 10; 
-        // --- 동적 Z-index 계산 로직 끝 ---
-
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
                     <h3 class="modal-title"><i class="fas fa-file-pdf" style="color: #ef4444;"></i> PDF 준비 완료</h3>
-                    <button class="close-btn" onclick="document.getElementById('mobilePdfModal').style.display='none'; document.body.style.overflow='auto';">&times;</button>
+                    <button class="close-btn" onclick="document.getElementById('mobilePdfModal').style.display='none';">&times;</button>
                 </div>
                 <div class="modal-body" style="text-align: center; padding: 40px 20px;">
                     <p class="modal-desc" style="margin: 0; color: #475569; font-weight: 500;">
@@ -1704,16 +1689,13 @@ function showMobileDownloadModal(downloadUrl, reportTitle) {
         document.body.appendChild(modal);
     }
 
-    // URL 및 파일명 세팅
     const btn = document.getElementById('mobilePdfDownloadBtn');
     btn.href = downloadUrl;
     btn.download = `스터디크랙_${reportTitle}.pdf`;
 
-    // Flex 충돌로 인한 튕김 현상 방지를 위해 block 사용
-    modal.style.display = 'block';
+    modal.style.setProperty('z-index', '10005', 'important'); 
     
-    // 모달 활성화 시 배경 뷰포트 스크롤 방지
-    document.body.style.overflow = 'hidden';
+    modal.style.setProperty('display', 'block', 'important'); 
 }
 
 let currentMobileStep = 0; let wizardSteps = []; let wizardResizeHandler = null;
