@@ -1,28 +1,52 @@
-name: Deploy to S3 and CloudFront
+name: Deploy to S3 and CloudFront (Secure OIDC)
 
 on:
   push:
     branches:
-      - main  # 메인 브랜치에 푸시될 때 실행
+      - main
+      - dev
+
+# OIDC 임시 토큰 발급을 위해 반드시 필요한 권한입니다.
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
+      # 1. DEV 환경 변수 설정 (dev 브랜치 푸시 시 실행)
+      - name: Set Environment Variables for DEV
+        if: github.ref == 'refs/heads/dev'
+        run: |
+          echo "AWS_ROLE_ARN=arn:aws:iam::본인AWS계정ID:role/StudyCrack-GitHubActions-DevRole" >> $GITHUB_ENV
+          echo "S3_BUCKET=dev.studycrack.co.kr" >> $GITHUB_ENV
+          echo "CF_DIST_ID=개발용CloudFront아이디" >> $GITHUB_ENV
+
+      # 2. PROD 환경 변수 설정 (main 브랜치 푸시 시 실행)
+      - name: Set Environment Variables for PROD
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "AWS_ROLE_ARN=arn:aws:iam::본인AWS계정ID:role/StudyCrack-GitHubActions-ProdRole" >> $GITHUB_ENV
+          echo "S3_BUCKET=studycrack.co.kr" >> $GITHUB_ENV
+          echo "CF_DIST_ID=운영용CloudFront아이디" >> $GITHUB_ENV
+
+      # 3. AWS 자격 증명 설정 (기존 Access Key 방식에서 안전한 OIDC 방식으로 대체)
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-northeast-2  # S3 버킷 리전
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ap-northeast-2
 
+      # 4. S3 버킷으로 파일 동기화
       - name: Deploy to S3
         run: |
-          aws s3 sync . s3://${{ secrets.S3_BUCKET_NAME }} --delete --exclude ".git/*" --exclude ".github/*"
+          aws s3 sync . s3://${{ env.S3_BUCKET }} --delete --exclude ".git/*" --exclude ".github/*"
 
+      # 5. CloudFront 캐시 무효화 (업데이트 즉시 반영)
       - name: CloudFront Invalidation
         run: |
-          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+          aws cloudfront create-invalidation --distribution-id ${{ env.CF_DIST_ID }} --paths "/*"
