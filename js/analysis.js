@@ -1676,7 +1676,7 @@ function showMobileDownloadModal(downloadUrl, reportTitle) {
     const feedbackModal = document.getElementById('feedbackModal');
     if (feedbackModal) feedbackModal.style.display = 'none';
 
-    modal.style.display = 'flex';
+    modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
 }
 
