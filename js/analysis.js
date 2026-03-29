@@ -1574,7 +1574,7 @@ function openFeedbackModal(data) {
                 모바일에서는 쾌적한 열람을 위해<br>PDF 변환 후 다운로드를 지원합니다.
             </p>
             <button onclick="downloadReportPDF('${safeTitleForJs}')" class="mobile-pdf-btn">
-                <i class="fas fa-magic"></i> 리포트 PDF 생성하기
+                <i class="fas fa-magic" style="color: #ffffff !important; font-size: 1.1rem !important; margin-bottom: 0 !important;"></i> 리포트 PDF 생성하기
             </button>
             <button class="mobile-close-btn" onclick="document.getElementById('feedbackModal').style.display='none'">
                 닫기
