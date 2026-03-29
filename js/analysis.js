@@ -1584,7 +1584,6 @@ async function downloadReportPDF(reportTitle) {
     loadingOverlay.innerHTML = `<i class="fas fa-spinner fa-spin fa-3x" style="color:#2563eb; margin-bottom:20px;"></i><h2 style="color:#1e293b; font-weight:800; margin-bottom:10px;">프리미엄 PDF 리포트 생성 중...</h2><p style="color:#64748b;">서버에서 고화질 PDF를 렌더링하고 있습니다. 잠시만 기다려주세요.</p>`;
     document.body.appendChild(loadingOverlay);
 
-    // 다운로드 URL을 임시 저장할 변수
     let finalDownloadUrl = null;
 
     try {
@@ -1629,55 +1628,42 @@ async function downloadReportPDF(reportTitle) {
         const data = await response.json();
 
         if (response.ok && data.success) {
-            // 당장 모달을 띄우지 않고 URL만 저장해 둡니다.
             finalDownloadUrl = data.downloadUrl;
         } else { throw new Error(data.error || "서버에서 PDF를 생성하지 못했습니다."); }
     } catch (error) { alert("PDF 생성 중 오류가 발생했습니다: " + error.message); } 
     finally { 
-        // 1. 로딩 오버레이 제거
         if (loadingOverlay && loadingOverlay.parentNode) {
             loadingOverlay.parentNode.removeChild(loadingOverlay);
         }
 
         if (finalDownloadUrl) {
-            setTimeout(() => {
-                const isMobile = window.innerWidth <= 768; 
-                
-                const feedbackModal = document.getElementById('feedbackModal');
-                if (feedbackModal) feedbackModal.style.display = 'none';
-
-                if (isMobile) {
-                    showMobileDownloadModal(finalDownloadUrl, reportTitle);
-                } else {
-                    const link = document.createElement('a'); 
-                    link.href = finalDownloadUrl; 
-                    link.target = '_blank'; 
-                    link.download = `스터디크랙_${reportTitle}.pdf`; 
-                    document.body.appendChild(link); 
-                    link.click(); 
-                    document.body.removeChild(link);
+            const isMobile = window.innerWidth <= 768; 
+            
+            if (isMobile) {
+                // 💡 [유저 솔루션 적용] 기존 feedbackModal의 컨텐츠를 모바일 메시지로 갈아치웁니다.
+                const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent');
+                if (contentArea) {
+                    contentArea.innerHTML = `
+                        <div class="mobile-only-msg" style="display:flex !important; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px 20px; background:#ffffff; border-radius:12px; margin:0 auto; width:100%; box-sizing:border-box;">
+                            <i class="fas fa-file-pdf" style="font-size:3rem; color:#ef4444; margin-bottom:15px;"></i>
+                            <h3 style="margin:0 0 10px 0; color:#1e293b; font-size:1.4rem;">PDF 준비 완료</h3>
+                            <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px; line-height:1.5; word-break:keep-all;">리포트 생성이 성공적으로 완료되었습니다.<br>아래 버튼을 눌러 기기에 저장하거나 확인해 주세요.</p>
+                            <a href="${finalDownloadUrl}" download="스터디크랙_${reportTitle}.pdf" target="_blank" class="mobile-pdf-btn" style="width:100%; padding:14px 20px; font-size:1.05rem; background:#3b82f6; color:white; border:none; border-radius:8px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:10px; cursor:pointer; text-decoration:none;">리포트 열기 / 다운로드</a>
+                            <button class="mobile-close-btn" onclick="document.getElementById('feedbackModal').style.display='none'" style="width:100%; padding:14px; font-size:1rem; background:#f1f5f9; border:none; border-radius:8px; color:#475569; font-weight:700; cursor:pointer;">닫기</button>
+                        </div>
+                    `;
                 }
-            }, 50);
+            } else {
+                const link = document.createElement('a'); 
+                link.href = finalDownloadUrl; 
+                link.target = '_blank'; 
+                link.download = `스터디크랙_${reportTitle}.pdf`; 
+                document.body.appendChild(link); 
+                link.click(); 
+                document.body.removeChild(link);
+            }
         }
     }
-}
-
-function showMobileDownloadModal(downloadUrl, reportTitle) {
-    const modal = document.getElementById('mobilePdfModal');
-    if (!modal) return; // HTML에 박혀있으므로 무조건 통과됨
-
-    // URL 및 파일명 세팅
-    const btn = document.getElementById('mobilePdfDownloadBtn');
-    if (btn) {
-        btn.href = downloadUrl;
-        btn.download = `스터디크랙_${reportTitle}.pdf`;
-    }
-    
-    const feedbackModal = document.getElementById('feedbackModal');
-    if (feedbackModal) feedbackModal.style.display = 'none';
-
-    modal.style.display = 'block';
-    document.body.style.overflow = 'hidden';
 }
 
 let currentMobileStep = 0; let wizardSteps = []; let wizardResizeHandler = null;
