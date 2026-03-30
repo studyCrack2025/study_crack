@@ -545,7 +545,8 @@ function renderWeeklyTab() {
         }
 
         const fb = d.tutorFeedback || { priorityCheck: '', weakSubject: '', nextWeekTop3: '', planEvaluation: '', extraQuestion: '' };
-        
+        const weeklyKey = d.date;
+
         // 카드 조립 (기존 DOM 구조 유지)
         const card = document.createElement('div');
         card.className = 'timeline-card weekly-new';
@@ -555,18 +556,160 @@ function renderWeeklyTab() {
             </div>
             <div class="card-grid-body">${studyHtml}${checkHtml}</div>
             ${mockHtml}${footerHtml}
-            <div class="tutor-feedback-area">
-                <div class="feedback-header"><div>👩‍🏫 튜터 코멘트</div></div>
-                <div class="doc-text" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-top:10px;">
-                    ${escapeHtml(fb.priorityCheck) ? `<strong>우선순위 점검:</strong> ${escapeHtml(fb.priorityCheck)}<br><br>` : ''}
-                    ${escapeHtml(fb.weakSubject) ? `<strong>취약 과목 진단:</strong> ${escapeHtml(fb.weakSubject)}<br><br>` : ''}
-                    ${escapeHtml(fb.nextWeekTop3) ? `<strong>다음 주 목표:</strong> ${escapeHtml(fb.nextWeekTop3)}` : '<span style="color:#94a3b8">튜터가 코멘트를 작성하지 않았습니다.</span>'}
-                </div>
-            </div>
+            ${renderWeeklyFeedbackArea(weeklyKey, fb)}
         `;
         container.appendChild(card);
     });
 }
+
+// ==========================================
+// 주간 리포트 - 튜터 코멘트 영역 렌더링
+// ==========================================
+const WEEKLY_FB_FIELDS = [
+    { key: 'priorityCheck',  label: '이번 주 우선순위 점검',        placeholder: '이번 주 학습 목표 이행 여부와 우선순위를 평가해주세요.' },
+    { key: 'weakSubject',    label: '취약 과목 진단 및 개입 포인트', placeholder: '취약 과목에 대한 구체적인 진단과 개선 방향을 작성해주세요.' },
+    { key: 'nextWeekTop3',   label: '다음 주 핵심 과제 Top3',        placeholder: '다음 주에 집중해야 할 핵심 과제 3가지를 작성해주세요.' },
+    { key: 'planEvaluation', label: '플랜 평가 및 조정',             placeholder: '이번 주 플랜 달성률을 평가하고 조정 방향을 제시해주세요.' },
+    { key: 'extraQuestion',  label: '심층 질문 답변',                placeholder: '학생의 심층 질문에 대한 답변을 근거와 함께 작성해주세요.' },
+];
+const WEEKLY_FB_MIN = 150;
+
+function weeklyIdKey(weeklyKey) {
+    return weeklyKey.replace(/[^a-zA-Z0-9]/g, '_');
+}
+
+function renderWeeklyFeedbackArea(weeklyKey, fb) {
+    const userRole = localStorage.getItem('userRole');
+    const submitted = fb.submitted === true;
+    if (userRole === 'tutor') {
+        return submitted ? createWeeklyFbReadOnly(fb, true) : createWeeklyFbInput(weeklyKey, fb);
+    }
+    return createWeeklyFbReadOnly(fb, false);
+}
+
+function createWeeklyFbReadOnly(fb, isLockedTutor) {
+    const hasAny = WEEKLY_FB_FIELDS.some(f => fb[f.key] && String(fb[f.key]).trim() !== '');
+    const lockedBadge = isLockedTutor
+        ? '<span style="font-size:0.8rem; color:#16a34a; font-weight:bold; background:#f0fdf4; padding:3px 10px; border-radius:20px; border:1px solid #bbf7d0;">✅ 최종 전송 완료 · 수정 불가</span>'
+        : '';
+    const content = hasAny
+        ? WEEKLY_FB_FIELDS.map(f => fb[f.key] && String(fb[f.key]).trim() !== ''
+            ? `<div style="margin-bottom:14px;"><strong>${f.label}:</strong><div style="margin-top:4px; line-height:1.6; white-space:pre-wrap;">${escapeHtml(fb[f.key])}</div></div>`
+            : '').join('')
+        : '<span style="color:#94a3b8">튜터가 코멘트를 작성하지 않았습니다.</span>';
+    return `
+        <div class="tutor-feedback-area">
+            <div class="feedback-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <div>👩‍🏫 튜터 코멘트</div>${lockedBadge}
+            </div>
+            <div class="doc-text" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-top:10px;">${content}</div>
+        </div>`;
+}
+
+function createWeeklyFbInput(weeklyKey, fb) {
+    const idk = weeklyIdKey(weeklyKey);
+    const fieldsHtml = WEEKLY_FB_FIELDS.map(f => {
+        const val = fb[f.key] || '';
+        const len = val.length;
+        const validClass = len >= WEEKLY_FB_MIN ? 'valid' : '';
+        return `
+        <div class="write-item" style="margin-bottom:15px;">
+            <label class="write-label">${f.label}</label>
+            <textarea id="wfb_${idk}_${f.key}" class="write-textarea"
+                placeholder="${f.placeholder} (최소 ${WEEKLY_FB_MIN}자)"
+                oninput="updateCharCount(this,'wfb_cnt_${idk}_${f.key}',${WEEKLY_FB_MIN})"
+            >${escapeHtml(val)}</textarea>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+                <div id="wfb_cnt_${idk}_${f.key}" class="char-count ${validClass}">${len} / 최소 ${WEEKLY_FB_MIN}자</div>
+                <button id="wfb_btn_${idk}_${f.key}" class="temp-save-btn"
+                    onclick="tempSaveWeeklyField('${weeklyKey}','${f.key}')">임시저장</button>
+            </div>
+        </div>`;
+    }).join('');
+    return `
+        <div class="tutor-feedback-area" id="wfb_area_${idk}">
+            <div class="feedback-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <div>👩‍🏫 튜터 코멘트 작성</div>
+                <button class="guide-btn" onclick="showCoachingGuideModal()"><i class="fas fa-info-circle"></i> 작성 가이드</button>
+            </div>
+            ${fieldsHtml}
+            <div style="text-align:right; margin-top:10px;">
+                <button id="wfb_submit_${idk}" class="complete-write-btn"
+                    onclick="submitWeeklyFeedback('${weeklyKey}')">최종 전송 (학생에게 전달)</button>
+            </div>
+        </div>`;
+}
+
+window.tempSaveWeeklyField = async function(weeklyKey, fieldName) {
+    const idk = weeklyIdKey(weeklyKey);
+    const btn = document.getElementById(`wfb_btn_${idk}_${fieldName}`);
+    const textarea = document.getElementById(`wfb_${idk}_${fieldName}`);
+    if (!btn || !textarea) return;
+
+    const val = textarea.value.trim();
+    if (val.length < WEEKLY_FB_MIN) {
+        alert(`최소 ${WEEKLY_FB_MIN}자 이상 입력해주세요. (현재 ${val.length}자)`);
+        return;
+    }
+
+    const originalText = btn.innerText;
+    btn.innerText = '저장 중...'; btn.disabled = true;
+
+    const feedback = {};
+    WEEKLY_FB_FIELDS.forEach(f => {
+        const el = document.getElementById(`wfb_${idk}_${f.key}`);
+        feedback[f.key] = el ? el.value : '';
+    });
+
+    try {
+        await apiFetch(REPORT_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'tutor_save_weekly_draft', data: { targetUserId, reportDate: weeklyKey, tutorFeedback: feedback } })
+        });
+        btn.classList.add('saved'); btn.innerText = '저장됨'; btn.disabled = false;
+    } catch (e) {
+        if (e.message !== 'Auth expired') alert('임시 저장에 실패했습니다.');
+        btn.innerText = originalText; btn.disabled = false;
+    }
+};
+
+window.submitWeeklyFeedback = async function(weeklyKey) {
+    const idk = weeklyIdKey(weeklyKey);
+
+    // 전체 필드 최소 글자 검증
+    for (const f of WEEKLY_FB_FIELDS) {
+        const el = document.getElementById(`wfb_${idk}_${f.key}`);
+        if (!el || el.value.trim().length < WEEKLY_FB_MIN) {
+            alert(`'${f.label}' 항목을 최소 ${WEEKLY_FB_MIN}자 이상 입력해주세요.`);
+            return;
+        }
+    }
+
+    if (!confirm('최종 전송 후에는 더 이상 수정할 수 없습니다.\n학생에게 코멘트를 전달하시겠습니까?')) return;
+
+    const feedback = {};
+    WEEKLY_FB_FIELDS.forEach(f => {
+        const el = document.getElementById(`wfb_${idk}_${f.key}`);
+        feedback[f.key] = el ? el.value : '';
+    });
+    feedback.submitted = true;
+
+    const submitBtn = document.getElementById(`wfb_submit_${idk}`);
+    if (submitBtn) { submitBtn.innerText = '전송 중...'; submitBtn.disabled = true; }
+
+    try {
+        await apiFetch(REPORT_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'tutor_submit_weekly_feedback', data: { targetUserId, reportDate: weeklyKey, tutorFeedback: feedback } })
+        });
+        alert('학생에게 코멘트가 전달되었습니다.');
+        const area = document.getElementById(`wfb_area_${idk}`);
+        if (area) area.outerHTML = createWeeklyFbReadOnly(feedback, true);
+    } catch (e) {
+        if (e.message !== 'Auth expired') alert('전송에 실패했습니다.');
+        if (submitBtn) { submitBtn.innerText = '최종 전송 (학생에게 전달)'; submitBtn.disabled = false; }
+    }
+};
 
 function renderProTab() {
     const container = document.getElementById('proReportContainer');
