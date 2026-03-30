@@ -15,10 +15,10 @@
         
         <div class="section-title">1. 관리자 계정 로그인</div>
         <div class="form-group">
-            <input type="email" id="setupEmail" placeholder="관리자 이메일">
+            <input type="email" id="setupEmail" placeholder="관리자 이메일" onkeydown="if(event.key==='Enter') loginAndGetSecret()">
         </div>
         <div class="form-group">
-            <input type="password" id="setupPassword" placeholder="비밀번호">
+            <input type="password" id="setupPassword" placeholder="비밀번호" onkeydown="if(event.key==='Enter') loginAndGetSecret()">
         </div>
         <button class="auth-btn" onclick="loginAndGetSecret()" style="background-color: #1e293b; margin-bottom: 20px;">시크릿 키 발급받기</button>
 
@@ -34,7 +34,7 @@
             <div class="section-title">3. 최종 확인 (매핑)</div>
             <p style="font-size: 0.9rem; color: #475569; margin-bottom: 10px; text-align: left;">앱에 나타난 6자리 숫자를 입력하여 연동을 완료합니다.</p>
             <div class="form-group">
-                <input type="text" id="totpCode" placeholder="6자리 인증 코드" maxlength="6" style="text-align: center; font-size: 1.2rem; letter-spacing: 5px;">
+                <input type="text" id="totpCode" placeholder="6자리 인증 코드" maxlength="6" style="text-align: center; font-size: 1.2rem; letter-spacing: 5px;" onkeydown="if(event.key==='Enter') verifyAndEnableMFA()">
             </div>
             <button class="auth-btn" onclick="verifyAndEnableMFA()">연동 완료 및 MFA 활성화</button>
         </div>
@@ -65,7 +65,8 @@
                     });
                 },
                 onFailure: function(err) { alert("로그인 실패: " + err.message); },
-                mfaRequired: function() { alert("이미 MFA가 설정되어 작동 중인 계정입니다!"); }
+                mfaRequired: function() { alert("이미 MFA가 설정되어 작동 중인 계정입니다!"); },
+                totpRequired: function() { alert("이미 MFA가 설정되어 작동 중인 계정입니다!"); }
             });
         }
 
