@@ -425,6 +425,8 @@
     margin-top: 25px;
     transition: background-color 0.2s;
     flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
 }
 
 .modal-action-btn:hover {
