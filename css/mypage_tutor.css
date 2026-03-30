@@ -409,6 +409,7 @@
 .modal-content {
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
 }
 
 .modal-action-btn {
