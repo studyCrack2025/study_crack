@@ -55,7 +55,7 @@
         <div id="mfaStep" class="auth-form hidden">
             <div class="mfa-icon">🔒</div>
             <p style="font-size: 0.9rem; color: #475569; margin-bottom: 20px;">
-                등록된 기기(앱) 또는 SMS로 발송된<br><strong>6자리 인증 코드</strong>를 입력해주세요.
+                등록된 기기의 authenticator의<br><strong>6자리 인증 코드</strong>를 입력해주세요.
             </p>
             <div class="form-group">
                 <input type="text" id="mfaCode" placeholder="인증 코드 6자리" maxlength="6" style="text-align: center; font-size: 1.2rem; letter-spacing: 5px; font-weight: bold;" required>
@@ -129,16 +129,15 @@
                 alert("6자리 인증 코드를 정확히 입력해주세요.");
                 return;
             }
-
-            // MFA 코드 AWS 전송
+            
             globalCognitoUser.sendMFACode(mfaCode, {
                 onSuccess: function(result) {
                     processAdminSuccess(result);
                 },
                 onFailure: function(err) {
-                    alert("인증 코드가 틀렸거나 만료되었습니다.");
+                    alert("인증 코드가 틀렸거나 만료되었습니다.\n(" + err.message + ")");
                 }
-            });
+            }, 'SOFTWARE_TOKEN_MFA');
         }
 
         function cancelMFA() {
