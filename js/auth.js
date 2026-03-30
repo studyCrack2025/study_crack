@@ -46,13 +46,43 @@ async function apiFetch(url, options = {}) {
     }
 }
 
-// 분리된 DB 구조에 맞춘 스마트 권한 식별 함수
+// JWT 토큰을 브라우저에서 안전하게 해독하는 헬퍼 함수
+function getPayloadFromToken(token) {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        return JSON.parse(decodeURIComponent(window.atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join('')));
+    } catch (e) {
+        return {};
+    }
+}
+
+// 분리된 DB 구조에 맞춘 스마트 권한 식별 함수 (토큰 1차 검증 + DB 2차 검증)
 async function resolveUserIdentity(isLoginEvent = false) {
     const token = localStorage.getItem('accessToken');
-    if (!token) return;
+    const idToken = localStorage.getItem('idToken');
+    if (!token || !idToken) return;
 
     try {
-        // 단일 API 호출로 학생, 튜터, 관리자 신원을 한 번에 파악 (가장 안전한 방식)
+        // 1. JWT 토큰을 직접 해독하여 신분(Role)을 파악!
+        const payload = getPayloadFromToken(idToken);
+        const groups = payload['cognito:groups'] || [];
+        
+        let role = 'student';
+        if (groups.includes('Admins')) role = 'admin';
+        else if (groups.includes('Tutors')) role = 'tutor';
+
+        // 2. 관리자나 튜터라면 불필요한 DB 조회(Student 테이블) 없이 바로 패스
+        if (role === 'admin' || role === 'tutor') {
+            const userName = payload.name || payload.given_name || (role === 'admin' ? '관리자' : '선생님');
+            localStorage.setItem('userName', userName);
+            handleRoleSuccess(role, isLoginEvent, userName);
+            return;
+        }
+
+        // 3. 일반 학생인 경우에만 기존처럼 UserCore에서 세부 정보(결제 티어 등)를 가져옴
         const userRes = await fetch(USER_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -61,27 +91,20 @@ async function resolveUserIdentity(isLoginEvent = false) {
 
         if (userRes.ok) {
             const data = await userRes.json();
-            
-            // 관리자의 경우 name 속성이 없을 수 있으므로 방어 코드 추가
-            const userName = data.name || (data.role === 'admin' ? '관리자' : '알수없음');
+            const userName = data.name || '학생';
             localStorage.setItem('userName', userName);
-            
             if (data.computedTier) localStorage.setItem('userTier', data.computedTier);
             
-            // 백엔드에서 내려준 명확한 role을 사용
-            const role = data.role || 'student';
-            handleRoleSuccess(role, isLoginEvent, userName);
-            return;
+            handleRoleSuccess('student', isLoginEvent, userName);
+        } else {
+            throw new Error("계정 정보를 데이터베이스에서 찾을 수 없습니다.");
         }
-
-        // 404/403 등 userRes가 실패한 경우 곧바로 에러 처리
-        throw new Error("계정 정보를 데이터베이스에서 찾을 수 없습니다.");
 
     } catch (error) {
         console.error("Identity Resolve Error:", error);
         if (isLoginEvent) {
             alert("회원 정보 연동에 실패했습니다. 관리자에게 문의해주세요.");
-            handleSignOut(true); // 조용히 로그아웃
+            handleSignOut(true); 
         } else {
             console.warn("Session invalid. Logging out silently.");
             handleSignOut(true);
