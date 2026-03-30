@@ -92,7 +92,15 @@ async function resolveUserIdentity(isLoginEvent = false) {
 // 식별 성공 시 후처리 함수
 function handleRoleSuccess(role, isLoginEvent, userName = '회원') {
     const currentLocalRole = localStorage.getItem('userRole');
-    
+
+    // 💡 일반 로그인 창에서 관리자 계정 접근 원천 차단
+    if (isLoginEvent && role === 'admin') {
+        alert("보안 정책에 따라 관리자는 일반 로그인 페이지를 사용할 수 없습니다.\n관리자 전용 로그인 페이지를 이용해주세요.");
+        handleSignOut(true);
+        window.location.href = '/';
+        return;
+    }
+
     // 백그라운드 갱신인 경우 (새로고침 시)
     if (!isLoginEvent) {
         if (currentLocalRole !== role) {
@@ -103,12 +111,9 @@ function handleRoleSuccess(role, isLoginEvent, userName = '회원') {
         return;
     }
 
-    // 실제 로그인 이벤트인 경우
+    // 실제 일반/튜터 유저 로그인 이벤트인 경우
     localStorage.setItem('userRole', role);
-    if (role === 'admin') {
-        alert("관리자 계정으로 로그인되었습니다.");
-        window.location.href = '/admin';
-    } else if (role === 'tutor') {
+    if (role === 'tutor') {
         alert(`${userName} 선생님, 안녕하세요.`);
         window.location.href = '/mypage/tutor';
     } else {
