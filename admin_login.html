@@ -99,20 +99,27 @@
 
             globalCognitoUser.authenticateUser(authDetails, {
                 onSuccess: function(result) {
-                    // MFA가 안 걸려있는 경우 바로 성공 처리
                     processAdminSuccess(result);
                 },
                 onFailure: function(err) {
                     alert("인증 실패: " + (err.message || "이메일 또는 비밀번호가 틀렸습니다."));
                 },
+                // SMS MFA가 걸려있을 때 호출됨
                 mfaRequired: function(codeDeliveryDetails) {
-                    // 💡 [핵심] MFA 코드가 필요한 경우 자동으로 이 콜백이 실행됨!
-                    document.getElementById('formTitle').innerText = "2단계 인증 (MFA)";
-                    document.getElementById('loginStep').classList.add('hidden');
-                    document.getElementById('mfaStep').classList.remove('hidden');
-                    document.getElementById('mfaCode').focus();
+                    showMFAInput();
+                },
+                totpRequired: function(secretCode) {
+                    showMFAInput();
                 }
             });
+        }
+
+        // MFA 입력창을 띄우는 중복 코드를 함수로 분리
+        function showMFAInput() {
+            document.getElementById('formTitle').innerText = "2단계 인증 (MFA)";
+            document.getElementById('loginStep').classList.add('hidden');
+            document.getElementById('mfaStep').classList.remove('hidden');
+            document.getElementById('mfaCode').focus();
         }
 
         // Step 2: MFA 코드 검증
