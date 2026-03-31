@@ -996,7 +996,7 @@ function showProGuideModal() {
 }
 
 function showCoachingGuideModal() {
-    const existingModal = document.getElementById(‘coachingGuideModal’);
+    const existingModal = document.getElementById('coachingGuideModal');
     if (existingModal) existingModal.remove();
 
     const modalHtml = `
@@ -1004,11 +1004,11 @@ function showCoachingGuideModal() {
             <div class="coaching-modal-content">
                 <div class="coaching-modal-header">
                     <span>📋 Standard 코칭 운영 (필수)</span>
-                    <button class="coaching-modal-close" onclick="document.getElementById(‘coachingGuideModal’).remove()">&times;</button>
+                    <button class="coaching-modal-close" onclick="document.getElementById('coachingGuideModal').remove()">&times;</button>
                 </div>
                 <div class="coaching-modal-body">
                     <h4>1) Standard의 역할</h4>
-                    <p>보편적인 SKY 합격생 루틴을 ‘기준점’으로 제시하고, 취약 과목이 무너지기 전에 보완하며, 학생의 방향과 속력을 주 1회 조정합니다.</p>
+                    <p>보편적인 SKY 합격생 루틴을 '기준점'으로 제시하고, 취약 과목이 무너지기 전에 보완하며, 학생의 방향과 속력을 주 1회 조정합니다.</p>
 
                     <h4>2) 선생님께서 반드시 확인하셔야 할 데이터</h4>
                     <ul>
@@ -1045,12 +1045,12 @@ function showCoachingGuideModal() {
                     </ul>
                 </div>
                 <div style="text-align:right; margin-top:20px;">
-                    <button class="fb-save-btn" style="background:#475569;" onclick="document.getElementById(‘coachingGuideModal’).remove()">확인했습니다</button>
+                    <button class="fb-save-btn" style="background:#475569;" onclick="document.getElementById('coachingGuideModal').remove()">확인했습니다</button>
                 </div>
             </div>
         </div>
     `;
-    document.body.insertAdjacentHTML(‘beforeend’, modalHtml);
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
 
 function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
