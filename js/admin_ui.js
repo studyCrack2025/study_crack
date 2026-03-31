@@ -483,9 +483,9 @@ async function loadTutorStats() {
                     </div>
                     ${withdrawalUI}
                     <div class="tutor-tier-accordions" style="${t.withdrawalStatus ? 'margin-top:20px;' : ''}">
-                        <div class="tier-acc-group"><div class="tier-acc-header pro" onclick="toggleTierList(this)"><span>🔥 PRO 학생</span><strong>${t.proCount}명 <i class="fas fa-chevron-down"></i></strong></div><div class="tier-acc-content">${generateStudentListHtml(t.proStudents, '현재 담당 중인 PRO 학생이 없습니다.')}</div></div>
-                        <div class="tier-acc-group"><div class="tier-acc-header std" onclick="toggleTierList(this)"><span>📘 STANDARD 학생</span><strong>${t.stdCount}명 <i class="fas fa-chevron-down"></i></strong></div><div class="tier-acc-content">${generateStudentListHtml(t.stdStudents, '현재 담당 중인 STANDARD 학생이 없습니다.')}</div></div>
-                        <div class="tier-acc-group"><div class="tier-acc-header exp" onclick="toggleTierList(this)"><span>⏳ 구독 만료 / 대기 학생</span><strong>${t.freeCount}명 <i class="fas fa-chevron-down"></i></strong></div><div class="tier-acc-content">${generateStudentListHtml(t.freeStudents, '만료되거나 대기 중인 학생이 없습니다.')}</div></div>
+                        <div class="tier-acc-group"><div class="tier-acc-header pro" onclick="toggleTierList(this)"><span>🔥 PRO 학생</span><strong>${t.proCount}명 <i class="fas fa-chevron-down"></i></strong></div><div class="tier-acc-content">${generateStudentListHtml(t.proStudents, '현재 담당 중인 PRO 학생이 없습니다.', 'pro')}</div></div>
+                        <div class="tier-acc-group"><div class="tier-acc-header std" onclick="toggleTierList(this)"><span>📘 STANDARD 학생</span><strong>${t.stdCount}명 <i class="fas fa-chevron-down"></i></strong></div><div class="tier-acc-content">${generateStudentListHtml(t.stdStudents, '현재 담당 중인 STANDARD 학생이 없습니다.', 'standard')}</div></div>
+                        <div class="tier-acc-group"><div class="tier-acc-header exp" onclick="toggleTierList(this)"><span>⏳ 구독 만료 / 대기 학생</span><strong>${t.freeCount}명 <i class="fas fa-chevron-down"></i></strong></div><div class="tier-acc-content">${generateStudentListHtml(t.freeStudents, '만료되거나 대기 중인 학생이 없습니다.', 'free')}</div></div>
                     </div>
                 </div>
             `;
@@ -505,14 +505,36 @@ window.approveTutorWithdrawal = async function(tutorId) {
     } catch (e) { if (e.message !== "Auth expired") alert("서버 통신 중 오류가 발생했습니다."); }
 };
 
-function generateStudentListHtml(students, emptyMsg) {
+function reportBadge(status) {
+    if (!status) return '<span class="report-badge none">-</span>';
+    if (status.tutorSubmitted) return '<span class="report-badge done">✅ 완료</span>';
+    if (status.studentSubmitted) return '<span class="report-badge pending">🕐 피드백 대기</span>';
+    return '<span class="report-badge missing">❌ 미작성</span>';
+}
+
+function generateStudentListHtml(students, emptyMsg, tier = 'free') {
     if (!students || students.length === 0) return `<div class="tier-student-empty">${emptyMsg}</div>`;
-    let html = `<div class="table-responsive"><table class="tier-student-table"><thead><tr><th>이름</th><th>최초 가입일</th><th>마지막 결제일</th><th>누적 결제 이력</th></tr></thead><tbody>`;
+    const showWeekly = tier === 'standard' || tier === 'pro';
+    const showPro = tier === 'pro';
+
+    let headers = '<th>이름</th><th>최초 가입일</th><th>마지막 결제일</th>';
+    if (showWeekly) headers += '<th>주간 보고서 (이번 주)</th>';
+    if (showPro)    headers += '<th>PRO 보고서 (2주 이내)</th>';
+    headers += '<th>누적 결제 이력</th>';
+
+    let html = `<div class="table-responsive"><table class="tier-student-table"><thead><tr>${headers}</tr></thead><tbody>`;
     students.forEach(s => {
         const jDate = s.joinDate ? new Date(s.joinDate).toLocaleDateString() : '-';
         const lDate = s.lastPayDate ? new Date(s.lastPayDate).toLocaleDateString() : '<span style="color:#ef4444;">결제 없음</span>';
         const pays = Object.entries(s.payCounts || {}).map(([prod, cnt]) => `<span class="pay-badge">${prod} ${cnt}회</span>`).join(' ') || '-';
-        html += `<tr><td data-label="이름"><strong>${escapeHtml(s.name)}</strong></td><td data-label="최초 가입일">${jDate}</td><td data-label="마지막 결제일">${lDate}</td><td data-label="결제 이력">${pays}</td></tr>`;
+        let row = `<tr>
+            <td data-label="이름"><strong>${escapeHtml(s.name)}</strong></td>
+            <td data-label="최초 가입일">${jDate}</td>
+            <td data-label="마지막 결제일">${lDate}</td>`;
+        if (showWeekly) row += `<td data-label="주간 보고서">${reportBadge(s.weeklyStatus)}</td>`;
+        if (showPro)    row += `<td data-label="PRO 보고서">${reportBadge(s.proStatus)}</td>`;
+        row += `<td data-label="결제 이력">${pays}</td></tr>`;
+        html += row;
     });
     html += `</tbody></table></div>`;
     return html;
