@@ -761,6 +761,8 @@ window.closeAuthModal = function(modalId) {
         document.getElementById('findEmailName').value = '';
         document.getElementById('findEmailPhone').value = '';
         document.getElementById('foundEmailResult').classList.add('hidden');
+        const findBtn = document.querySelector('#findEmailModal .auth-btn');
+        if (findBtn) findBtn.classList.remove('hidden');
     }
 };
 
@@ -843,6 +845,7 @@ async function handleFindEmail() {
 
             resultBox.appendChild(document.createTextNode(" 입니다."));
             resultBox.classList.remove('hidden');
+            document.querySelector('#findEmailModal .auth-btn').classList.add('hidden');
         } else {
             alert("입력하신 정보와 일치하는 계정을 찾을 수 없습니다.");
         }
