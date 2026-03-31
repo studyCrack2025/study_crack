@@ -589,7 +589,7 @@ async function loadNotifications() {
             card.innerHTML = `
     <div style="width: 100%;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
-            <div class="noti-time" style="font-size: 0.85rem; color: #94a3b8;">${new Date(n.createdAt).toLocaleString()}</div>
+            <div class="noti-time" style="font-size: 0.85rem; color: #94a3b8;">${new Date(n.createdAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}</div>
             ${!n.isRead ? `<button class="noti-btn" onclick="markAsReadNoti('${n.id}')" style="background:#f59e0b; color:white; border:none; padding:4px 10px; border-radius:4px; font-size:0.8rem; cursor:pointer;">확인</button>` : '<span style="color:#10b981; font-size:0.8rem; font-weight:bold;">읽음</span>'}
         </div>
         <div style="font-weight:bold; color:#1e293b; font-size:1.05rem; margin-bottom:4px;">${escapeHtml(n.title || n.message)}</div>
@@ -639,7 +639,7 @@ window.loadSentNotices = async function() {
         if (sentList.length === 0) { container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding: 30px;">보낸 공지가 없습니다.</p>'; return; }
         sentList.forEach(n => {
             const card = document.createElement('div'); card.className = `noti-item`; const targetText = n.targetNames ? n.targetNames : `${n.targetCount}명`;
-            card.innerHTML = `<div style="width: 100%;"><div style="display:flex; justify-content:space-between; align-items:center;"><div class="noti-time">${new Date(n.createdAt).toLocaleString()}</div><div class="noti-tags"><span class="tag-tutor" style="background:#f1f5f9; color:#475569;">👥 수신: ${escapeHtml(targetText)} (총 ${n.targetCount}명)</span></div></div><div style="font-weight:bold; margin-top:8px; color:#1e293b; font-size:1.1rem;">${escapeHtml(n.title)}</div><div class="noti-text" style="margin-top:10px; white-space:pre-wrap; background:#f8fafc; padding:15px; border-radius:8px; font-size:0.95rem; border:1px solid #e2e8f0;">${escapeHtml(n.detail)}</div></div>`;
+            card.innerHTML = `<div style="width: 100%;"><div style="display:flex; justify-content:space-between; align-items:center;"><div class="noti-time">${new Date(n.createdAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}</div><div class="noti-tags"><span class="tag-tutor" style="background:#f1f5f9; color:#475569;">👥 수신: ${escapeHtml(targetText)} (총 ${n.targetCount}명)</span></div></div><div style="font-weight:bold; margin-top:8px; color:#1e293b; font-size:1.1rem;">${escapeHtml(n.title)}</div><div class="noti-text" style="margin-top:10px; white-space:pre-wrap; background:#f8fafc; padding:15px; border-radius:8px; font-size:0.95rem; border:1px solid #e2e8f0;">${escapeHtml(n.detail)}</div></div>`;
             container.appendChild(card);
         });
     } catch(e) { if (e.message !== "Auth expired") container.innerHTML = '<p style="text-align:center; color:red;">오류 발생</p>'; }
