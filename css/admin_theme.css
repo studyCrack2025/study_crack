@@ -363,7 +363,7 @@ canvas { width: 100% !important; height: 100% !important; }
     .student-table, .tier-student-table { display: block; width: 100%; box-sizing: border-box; }
     .student-table tbody, .tier-student-table tbody { display: block; width: 100%; }
     .student-table tr, .tier-student-table tr { display: block; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: 100%; box-sizing: border-box; overflow: hidden; }
-    .student-table td, .tier-student-table td { position: relative; padding: 12px 15px 12px 35%; display: block; text-align: left; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; word-break: break-word; min-height: 24px; box-sizing: border-box; }
+    .student-table td, .tier-student-table td { position: relative; padding: 12px 15px 12px 35%; display: block; text-align: left; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; word-break: break-word; white-space: normal; min-height: 24px; box-sizing: border-box; }
     .student-table td:last-child, .tier-student-table td:last-child { border-bottom: none; }
     .student-table td::before, .tier-student-table td::before { content: attr(data-label); position: absolute; left: 15px; top: 12px; width: 30%; padding-right: 10px; white-space: nowrap; text-align: left; font-weight: 600; color: #64748b; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; }
     .student-table td[data-label="관리"], .tier-student-table td[data-label="관리"] { padding-left: 15px; }
