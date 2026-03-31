@@ -948,15 +948,47 @@ function showProGuideModal() {
     const modalHtml = `
         <div id="proGuideModal" class="coaching-modal-overlay">
             <div class="coaching-modal-content">
-                <div class="coaching-modal-header"><span>🏆 Pro 코칭 운영 가이드 (필수)</span><button class="coaching-modal-close" onclick="document.getElementById('proGuideModal').remove()">&times;</button></div>
-                <div class="coaching-modal-body">
-                    <h4>1) Pro의 역할</h4><p>목표 대학 기준으로 '최소 학습·최대 상승(효율)' 관점에서 합격 가능성을 높이는 방향과 속력을 교정합니다.</p>
-                    <h4>2) 확인 필수 데이터</h4><ul><li>목표 대학 컷까지의 거리 (ΔCut)</li><li>과목별 기여도</li><li>리스크 과목</li><li>효율 KPI</li></ul>
-                    <h4>3) 작성 4개 항목</h4><ul><li>지난 기간의 학습 평가</li><li>목표대학과의 거리</li><li>중기 핵심 과제 Top 2 & 장기 플랜</li><li>학생 요청 사항 답변</li></ul>
-                    <h4>4) 코칭 원칙</h4><ul><li>지표 근거 필수</li><li>구체적인 행동 유형 명시</li><li>합격 예측 단정 금지</li></ul>
-                    <h4>5) 제출 기한 🚨</h4><ul><li>학생에게는 마감 3일 뒤인 <strong>수요일</strong>에 발송됩니다.</li><li>원활한 검수를 위해 <strong>수요일 16:00 이전</strong>에 작성 완료 바랍니다.</li></ul>
+                <div class="coaching-modal-header">
+                    <span>🏆 Pro 코칭 운영 가이드 (필수)</span>
+                    <button class="coaching-modal-close" onclick="document.getElementById('proGuideModal').remove()">&times;</button>
                 </div>
-                <div style="text-align:right; margin-top:20px;"><button class="fb-save-btn" style="background:#475569;" onclick="document.getElementById('proGuideModal').remove()">확인했습니다</button></div>
+                <div class="coaching-modal-body">
+                    <h4>1) Pro의 역할</h4>
+                    <p>목표 대학 기준으로 '최소 학습·최대 상승(효율)' 관점에서 합격 가능성을 높이는 방향과 속력을 교정합니다. (모든 근거는 반드시 지표로 제시해야 합니다.)</p>
+
+                    <h4>2) 선생님께서 추가로 반드시 확인하셔야 할 데이터 (근거 판단)</h4>
+                    <ul>
+                        <li><strong>목표 대학 컷까지의 거리</strong> (컷거리 ΔCut)</li>
+                        <li><strong>과목별 컷거리 기여도</strong> (어느 과목의 효율이 가장 큰지 판단)</li>
+                        <li><strong>리스크 과목</strong> (무너질 때 전체 등급이 흔들리는 핵심 과목)</li>
+                        <li><strong>효율 KPI</strong> (유효 학습 비중 / 인강→적용 전환율 / 오답 회수율 / 실전 연동성)</li>
+                    </ul>
+
+                    <h4>3) 반드시 작성하셔야 하는 4개 항목 (지표 근거 인용 필수)</h4>
+                    <ul>
+                        <li><strong>지난 기간의 학습 평가:</strong> 리스크 및 효율 KPI를 기반으로 학생의 장단점을 명확히 평가합니다.</li>
+                        <li><strong>목표 대학과의 거리 (ΔCut/기여도):</strong> ΔCut 및 과목별 기여도 데이터를 기반으로 개선 여부를 구체적으로 분석합니다.</li>
+                        <li><strong>중기 핵심 과제 Top 2 & 장기 플랜:</strong> 중기 과제 제시 시 ΔCut, 기여도, 리스크, KPI 중 최소 1개 이상을 인용해야 합니다. 장기 플랜은 추세 그래프 등을 활용하여 주요 마일스톤(평가원 모의고사 일정 등)에 맞춘 예상치를 제시합니다.</li>
+                        <li><strong>학생 요청 사항 답변:</strong> 반드시 수치적일 필요는 없으나, 구체적이고 논리적인 근거를 들어 답변을 제공합니다.</li>
+                    </ul>
+
+                    <h4>4) Pro 코칭 원칙 (가드레일)</h4>
+                    <ul>
+                        <li>코칭 내용에는 <strong>반드시 지표 근거가 포함</strong>되어야 합니다.</li>
+                        <li>핵심 과제 제시 시 구체적인 행동 유형(인강 / 문풀 / 오답 / 복습 / 실전)을 <strong>명확히 명시</strong>합니다.</li>
+                        <li>막연한 합격 예측이나 보장 표현(합격률 단정, 무조건 합격 등)은 <strong>절대 금지</strong>합니다.</li>
+                    </ul>
+
+                    <h4>5) 리포트 제출 기한 및 유의사항 🚨</h4>
+                    <ul>
+                        <li>학생에게 Pro 리포트가 최종 제공되는 기한은 학생 제출 마감일의 3일 뒤인 <strong>수요일</strong>입니다.</li>
+                        <li>선생님께서 작성해주신 리포트는 <strong>관리자 측의 최종 검수(재확인) 작업</strong>을 거친 후 발송됩니다.</li>
+                        <li>따라서 원활한 검수 및 적시적인 발송을 위해 가급적 <strong>수요일 16:00 이전까지 작성을 완료하여 제출</strong>해 주시기 바랍니다.</li>
+                    </ul>
+                </div>
+                <div style="text-align:right; margin-top:20px;">
+                    <button class="fb-save-btn" style="background:#475569;" onclick="document.getElementById('proGuideModal').remove()">확인했습니다</button>
+                </div>
             </div>
         </div>
     `;
@@ -964,25 +996,61 @@ function showProGuideModal() {
 }
 
 function showCoachingGuideModal() {
-    const existingModal = document.getElementById('coachingGuideModal');
+    const existingModal = document.getElementById(‘coachingGuideModal’);
     if (existingModal) existingModal.remove();
 
     const modalHtml = `
         <div id="coachingGuideModal" class="coaching-modal-overlay">
             <div class="coaching-modal-content">
-                <div class="coaching-modal-header"><span>📋 Standard 코칭 운영 (필수)</span><button class="coaching-modal-close" onclick="document.getElementById('coachingGuideModal').remove()">&times;</button></div>
-                <div class="coaching-modal-body">
-                    <h4>1) Standard 역할</h4><p>보편적인 SKY 합격생 루틴을 ‘기준점’으로 제시하고, 방향과 속력을 주 1회 조정합니다.</p>
-                    <h4>2) 확인 필수 데이터</h4><ul><li>과목별 달성률</li><li>플래너 및 성적표 인증</li><li>학업 추이</li></ul>
-                    <h4>3) 작성 필수 항목</h4><ul><li>이번 주 판단</li><li>취약 과목 개입 포인트</li><li>다음 주 핵심 과제 Top 3</li><li>플랜 조정</li><li>심층 질문 답변</li></ul>
-                    <h4>4) 코칭 원칙</h4><ul><li>과제 중심 제시</li><li>취약 과목 우선</li><li>실패 전제 및 의지 탓 금지</li></ul>
-                    <h4>5) 제출 기한 🚨</h4><ul><li>학생 마감: 매주 일요일 20:00</li><li>리포트 발송: 매주 월요일 16:00</li><li><strong>월요일 16:00 이전까지 작성</strong> 바랍니다.</li></ul>
+                <div class="coaching-modal-header">
+                    <span>📋 Standard 코칭 운영 (필수)</span>
+                    <button class="coaching-modal-close" onclick="document.getElementById(‘coachingGuideModal’).remove()">&times;</button>
                 </div>
-                <div style="text-align:right; margin-top:20px;"><button class="fb-save-btn" style="background:#475569;" onclick="document.getElementById('coachingGuideModal').remove()">확인했습니다</button></div>
+                <div class="coaching-modal-body">
+                    <h4>1) Standard의 역할</h4>
+                    <p>보편적인 SKY 합격생 루틴을 ‘기준점’으로 제시하고, 취약 과목이 무너지기 전에 보완하며, 학생의 방향과 속력을 주 1회 조정합니다.</p>
+
+                    <h4>2) 선생님께서 반드시 확인하셔야 할 데이터</h4>
+                    <ul>
+                        <li><strong>과목별 달성률</strong> (계획 시간 vs 실제 시간)</li>
+                        <li><strong>플래너 인증</strong> (사진)</li>
+                        <li><strong>실전 모의고사</strong> 응시 여부</li>
+                        <li><strong>성적표 인증</strong> (필수)</li>
+                        <li><strong>최근 2주 학업 추이</strong> (상승/유지/하락)</li>
+                        <li><strong>학생 심층 코칭 입력</strong> (계획 점검 / 방향 고민 / 취약 과목 / 멘탈)</li>
+                    </ul>
+
+                    <h4>3) 선생님께서 반드시 작성하셔야 하는 5개 항목 (주 1회)</h4>
+                    <ul>
+                        <li><strong>이번 주 판단</strong> (우선순위 결론, 첫 상담하는 학생이면 선생님의 객관적 판단 우선)</li>
+                        <li><strong>취약 과목 개입 포인트</strong></li>
+                        <li><strong>다음 주 핵심 과제 Top 3와 그 개별적인 근거</strong></li>
+                        <li><strong>플랜 조정</strong> (방향 / 속력)</li>
+                        <li><strong>심층 질문에 대한 추가 답변</strong> (어떤 질문에 대한 답변인지를 명시하고, 앞 항목 내용과 중복된다면 그렇다는 사실을 명시)</li>
+                    </ul>
+
+                    <h4>4) Standard 코칭 원칙 (최소 기준)</h4>
+                    <ul>
+                        <li>시간표형(분 단위) 강요를 금지하고, <strong>과제 중심</strong>으로 제시합니다.</li>
+                        <li><strong>취약 과목을 우선</strong>시합니다. (전 과목 균등 배분 금지)</li>
+                        <li><strong>실패를 전제</strong>합니다. (지키지 못한 계획을 죄책감으로 몰지 않습니다.)</li>
+                        <li><strong>의지 탓을 금지</strong>하고, 항상 판단 기준으로 설명합니다.</li>
+                    </ul>
+
+                    <h4>5) 리포트 제출 기한 및 유의사항 🚨</h4>
+                    <ul>
+                        <li>학생들의 주간 점검 제출은 <strong>매주 일요일 20:00</strong>에 마감됩니다.</li>
+                        <li>작성해주신 피드백 리포트는 그 다음 날인 <strong>월요일 16:00</strong>에 학생들에게 일괄 제공됩니다.</li>
+                        <li>따라서 학생 제출 직후 급하게 작성하시기보다는, <strong>월요일 16:00 이전까지 시간적 여유를 가지고 꼼꼼하게 작성</strong>해 주시기를 부탁드립니다.</li>
+                    </ul>
+                </div>
+                <div style="text-align:right; margin-top:20px;">
+                    <button class="fb-save-btn" style="background:#475569;" onclick="document.getElementById(‘coachingGuideModal’).remove()">확인했습니다</button>
+                </div>
             </div>
         </div>
     `;
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    document.body.insertAdjacentHTML(‘beforeend’, modalHtml);
 }
 
 function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
