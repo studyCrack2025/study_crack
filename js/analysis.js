@@ -1253,7 +1253,18 @@ function getWeekTitle(date) {
     const yearShort = date.getFullYear().toString().slice(2);
     const month = date.getMonth() + 1;
     const week = getWeekOfMonth(date);
-    return `${yearShort}년 ${month}월 ${week}주차`; 
+    return `${yearShort}년 ${month}월 ${week}주차`;
+}
+
+// 백엔드 generateWeekId()와 동일한 로직 — DB weekId 일관성 유지
+function generateWeekId(dateObj) {
+    const year = dateObj.getFullYear().toString().slice(2);
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const startOfMonth = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
+    const dayOfWeek = startOfMonth.getDay();
+    const offsetDate = dateObj.getDate() + dayOfWeek - 1;
+    const weekNum = String(Math.floor(offsetDate / 7) + 1).padStart(2, '0');
+    return `${year}${month}${weekNum}`;
 }
 
 function applyCoachTierLock() {
@@ -1691,9 +1702,11 @@ function openWeeklyCheckModal() {
     const currentWeekTitle = getWeekTitle(today); const [yStr, mStr, wStr] = currentWeekTitle.split(' '); 
     document.getElementById('weeklyYear').innerText = yStr; document.getElementById('weeklyDateDetail').innerText = `${mStr} ${wStr}`;
     
-    // 💡 분리된 weeklyDataHistory 사용
-    const thisWeekData = weeklyDataHistory.find(w => w.title && w.title.replace(/\s/g, '') === currentWeekTitle.replace(/\s/g, ''));
-    if (thisWeekData) loadWeeklyDataToForm(thisWeekData); else resetWeeklyForm(); 
+    // weekId 기준 우선 탐색, 없으면 title로 fallback (구 데이터 호환)
+    const currentWeekId = generateWeekId(today);
+    const thisWeekData = weeklyDataHistory.find(w => w.weekId === currentWeekId)
+        || weeklyDataHistory.find(w => w.title && w.title.replace(/\s/g, '') === currentWeekTitle.replace(/\s/g, ''));
+    if (thisWeekData) loadWeeklyDataToForm(thisWeekData); else resetWeeklyForm();
     
     function applyModalLayout() {
         const isMobile = window.innerWidth <= 768;
@@ -1888,8 +1901,10 @@ async function submitWeeklyCheck() {
             }
         }
 
-        const today = new Date().toISOString(); const title = (typeof getWeekTitle === 'function') ? getWeekTitle(new Date()) : "주간점검"; 
-        const weeklyData = { date: today, title: title, studyTime: { details: studyData, totalPlan: document.getElementById('totalPlan').innerText, totalAct: document.getElementById('totalAct').innerText, totalRate: document.getElementById('totalRate').innerText }, mockExam: mockData, trend: { status: trend, reasons: reasons }, deepAnswers: [q1, q2, q3, q4], plannerFiles: finalFileUrls };
+        const today = new Date().toISOString();
+        const title = (typeof getWeekTitle === 'function') ? getWeekTitle(new Date()) : "주간점검";
+        const weekId = generateWeekId(new Date());
+        const weeklyData = { weekId, date: today, title: title, studyTime: { details: studyData, totalPlan: document.getElementById('totalPlan').innerText, totalAct: document.getElementById('totalAct').innerText, totalRate: document.getElementById('totalRate').innerText }, mockExam: mockData, trend: { status: trend, reasons: reasons }, deepAnswers: [q1, q2, q3, q4], plannerFiles: finalFileUrls };
 
         const res = await fetch(REPORT_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ type: 'save_weekly_check', data: weeklyData }) });
         if(res.ok) { alert("제출이 완료되었습니다."); closeWeeklyModal(); location.reload(); } else { throw new Error("서버 응답 오류"); }
