@@ -100,8 +100,8 @@ async function submitCheckout() {
     const cPwd = document.getElementById('cardPwd').value;
     const cDob = document.getElementById('cardAuthDob').value;
 
-    if (cNum.length < 15 || cExp.length !== 4 || cPwd.length !== 2 || cDob.length < 6) {
-        alert("신용카드 정보를 정확하게 입력해주세요.");
+    if (cNum.length < 15 || cExp.length !== 4 || cPwd.length !== 2 || cDob.length !== 6) {
+        alert("신용카드 정보를 정확하게 입력해주세요.\n생년월일은 6자리(YYMMDD)로 입력해주세요. 예) 1999년 1월 1일 → 990101");
         return;
     }
 
