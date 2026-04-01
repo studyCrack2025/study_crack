@@ -138,6 +138,29 @@ function escapeHtml(text) {
     return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
+function formatReportKey(key, isPro = true) {
+    if (!key) return "알 수 없는 리포트";
+    
+    // 1. 6자리 숫자 형식 처리 (예: 260401 -> 26년 4월 1주차)
+    if (key.length === 6 && /^\d+$/.test(key)) {
+        const yy = key.substring(0, 2);
+        const mm = parseInt(key.substring(2, 4));
+        const ww = parseInt(key.substring(4, 6));
+        const suffix = isPro ? " PRO 리포트" : "";
+        return `${yy}년 ${mm}월 ${ww}주차${suffix}`;
+    }
+    
+    // 2. 기존 하이픈 형식 처리 (예: 2024-W10 -> 2024년 10주차)
+    const match = key.match(/^(\d{4})-W(\d{1,2})$/);
+    if (match) {
+        const suffix = isPro ? " PRO 리포트" : "";
+        return `${match[1]}년 ${match[2]}주차${suffix}`;
+    }
+    
+    // 패턴이 안 맞으면 그대로 출력
+    return key;
+}
+
 function parseDynamoItem(item) {
     if (item === undefined || item === null) return null;
     if (typeof item !== 'object') return item;
@@ -469,6 +492,8 @@ function renderWeeklyTab() {
         const dateStr = new Date(d.date).toLocaleDateString();
         const safeComment = d.comment ? escapeHtml(d.comment) : '';
         
+        const displayTitle = formatReportKey(d.weekId, false) || d.title || (idx + 1) + '주차 리포트';
+        
         let studyHtml = ''; 
         if (d.studyTime && Array.isArray(d.studyTime.details)) {
             let rows = '';
@@ -563,11 +588,13 @@ function renderWeeklyTab() {
         card.className = 'timeline-card weekly-new';
         card.innerHTML = `
             <div class="card-header-row">
-                <div class="left"><span class="week-title">${d.title || (idx+1)+'주차 리포트'}</span><span class="week-date">${dateStr}</span></div>
+                <div class="left">
+                    <span class="week-title">${displayTitle}</span> <span class="week-date">${dateStr}</span>
+                </div>
             </div>
             <div class="card-grid-body">${studyHtml}${checkHtml}</div>
             ${mockHtml}${footerHtml}
-            ${renderWeeklyFeedbackArea(weeklyKey, fb)}
+            ${renderWeeklyFeedbackArea(d.weekId || d.date, fb)}
         `;
         container.appendChild(card);
     });
