@@ -8,6 +8,20 @@ const TIER_DATA = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    // ?test=1 파라미터가 있으면 100원 테스트 데이터 자동 세팅
+    if (new URLSearchParams(window.location.search).get('test') === '1') {
+        const testData = {
+            name: localStorage.getItem('userName') || '테스트',
+            phone: '010-0000-0000',
+            email: localStorage.getItem('userEmail') || 'test@studycrack.co.kr',
+            tier: 'test',
+            productName: 'TEST (100원)',
+            effectiveStartDate: new Date().toISOString(),
+            userId: localStorage.getItem('userId')
+        };
+        localStorage.setItem('checkoutData', JSON.stringify(testData));
+    }
+
     // 2. payment.js에서 넘어온 임시 데이터 불러오기
     const dataStr = localStorage.getItem('checkoutData');
     if (!dataStr) {
