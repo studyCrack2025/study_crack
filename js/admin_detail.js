@@ -612,20 +612,31 @@ function createWeeklyFbInput(weeklyKey, fb) {
         const val = fb[f.key] || '';
         const len = val.replace(/\s/g, '').length;
         const validClass = len >= WEEKLY_FB_MIN ? 'valid' : '';
+        
+        // 💡 UX 개선: 작성 중이던 내용이 글자 수를 충족하면 이미 '저장됨' 상태로 렌더링
+        const isSaved = len >= WEEKLY_FB_MIN;
+        const btnClass = isSaved ? 'temp-save-btn saved' : 'temp-save-btn';
+        const btnText = isSaved ? '저장됨' : '임시저장';
+
         return `
         <div class="write-item" style="margin-bottom:15px;">
             <label class="write-label">${f.label}</label>
             <textarea id="wfb_${idk}_${f.key}" class="write-textarea"
                 placeholder="${f.placeholder} (최소 ${WEEKLY_FB_MIN}자)"
-                oninput="updateCharCount(this,'wfb_cnt_${idk}_${f.key}',${WEEKLY_FB_MIN})"
+                oninput="updateCharCount(this,'wfb_cnt_${idk}_${f.key}',${WEEKLY_FB_MIN}); handleWeeklyInput('${idk}', '${f.key}');"
             >${escapeHtml(val)}</textarea>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
                 <div id="wfb_cnt_${idk}_${f.key}" class="char-count ${validClass}">${len} / 최소 ${WEEKLY_FB_MIN}자</div>
-                <button id="wfb_btn_${idk}_${f.key}" class="temp-save-btn"
-                    onclick="tempSaveWeeklyField('${weeklyKey}','${f.key}')">임시저장</button>
+                <button id="wfb_btn_${idk}_${f.key}" class="${btnClass}"
+                    onclick="tempSaveWeeklyField('${weeklyKey}','${f.key}')">${btnText}</button>
             </div>
         </div>`;
     }).join('');
+
+    // 초기 렌더링 시 모든 필드가 작성되어 있다면 바로 전송 버튼 활성화
+    const allPreSaved = WEEKLY_FB_FIELDS.every(f => (fb[f.key] || '').replace(/\s/g, '').length >= WEEKLY_FB_MIN);
+    const submitBtnClass = allPreSaved ? 'complete-write-btn active' : 'complete-write-btn';
+
     return `
         <div class="tutor-feedback-area" id="wfb_area_${idk}">
             <div class="feedback-header" style="display:flex; justify-content:space-between; align-items:center;">
@@ -634,11 +645,39 @@ function createWeeklyFbInput(weeklyKey, fb) {
             </div>
             ${fieldsHtml}
             <div style="text-align:right; margin-top:10px;">
-                <button id="wfb_submit_${idk}" class="complete-write-btn"
+                <button id="wfb_submit_${idk}" class="${submitBtnClass}"
                     onclick="submitWeeklyFeedback('${weeklyKey}')">최종 전송 (학생에게 전달)</button>
             </div>
         </div>`;
 }
+
+// 💡 신규 함수: 입력 발생 시 '저장됨' 상태 해제 및 버튼 비활성화
+window.handleWeeklyInput = function(idk, key) {
+    const btn = document.getElementById(`wfb_btn_${idk}_${key}`);
+    if (btn && btn.classList.contains('saved')) {
+        btn.classList.remove('saved');
+        btn.innerText = '임시저장';
+    }
+    checkWeeklyAllSaved(idk);
+};
+
+// 💡 신규 함수: 모든 임시저장 버튼이 'saved' 클래스를 가졌는지 확인하고 전송 버튼 활성화
+window.checkWeeklyAllSaved = function(idk) {
+    const area = document.getElementById(`wfb_area_${idk}`);
+    if (!area) return;
+    
+    const btns = area.querySelectorAll('.temp-save-btn');
+    const allSaved = Array.from(btns).every(b => b.classList.contains('saved'));
+    
+    const submitBtn = document.getElementById(`wfb_submit_${idk}`);
+    if (submitBtn) {
+        if (allSaved) {
+            submitBtn.classList.add('active');
+        } else {
+            submitBtn.classList.remove('active');
+        }
+    }
+};
 
 window.tempSaveWeeklyField = async function(weeklyKey, fieldName) {
     const idk = weeklyIdKey(weeklyKey);
@@ -668,6 +707,10 @@ window.tempSaveWeeklyField = async function(weeklyKey, fieldName) {
             body: JSON.stringify({ type: 'tutor_save_weekly_draft', data: { targetUserId, reportDate: weeklyKey, tutorFeedback: feedback } })
         });
         btn.classList.add('saved'); btn.innerText = '저장됨'; btn.disabled = false;
+        
+        // 💡 임시 저장 성공 후 전체 완료 여부 체크
+        checkWeeklyAllSaved(idk);
+        
     } catch (e) {
         if (e.message !== 'Auth expired') alert('임시 저장에 실패했습니다.');
         btn.innerText = originalText; btn.disabled = false;
@@ -677,7 +720,6 @@ window.tempSaveWeeklyField = async function(weeklyKey, fieldName) {
 window.submitWeeklyFeedback = async function(weeklyKey) {
     const idk = weeklyIdKey(weeklyKey);
 
-    // 전체 필드 최소 글자 검증
     for (const f of WEEKLY_FB_FIELDS) {
         const el = document.getElementById(`wfb_${idk}_${f.key}`);
         if (!el || el.value.replace(/\s/g, '').length < WEEKLY_FB_MIN) {
