@@ -832,9 +832,10 @@ function getSimpleAdvice(score, status) {
 // ============================================================
 // [기능 3] 점수 상승 시뮬레이션
 // ============================================================
-let currentSimChartType = 'bar'; 
+let currentSimChartType = 'bar';
 let cachedSimData = [];
-let selectedSimIndex = null; 
+let simDisplayList = []; // 원본 userTargetUnivs 순서 기준으로 지원불가 포함한 표시용 배열
+let selectedSimIndex = null;
 
 function initSimulation() {
     if (currentUserTier === 'free') return;
@@ -878,9 +879,21 @@ async function fetchSimulationData() {
             body: JSON.stringify({ type: 'simulate_score_rise', userId, targetUnivs: userTargetUnivs, userScores: scoreData, examMode: currentExamMode })
         });
         cachedSimData = await res.json();
-        
-        if (cachedSimData.length > 0) selectedSimIndex = 0;
-        renderSimChart(); 
+
+        // 원본 userTargetUnivs 순서 기준으로 지원불가 포함한 표시용 배열 구성
+        simDisplayList = [];
+        (userTargetUnivs || []).forEach((target, originalIdx) => {
+            if (!target || !target.univ) return;
+            const simItem = cachedSimData.find(d => d && d.univ === target.univ && d.major === target.major);
+            if (simItem) {
+                simDisplayList.push({ ...simItem, originalIdx });
+            } else {
+                simDisplayList.push({ ineligible: true, univ: target.univ, major: target.major, originalIdx });
+            }
+        });
+
+        if (simDisplayList.length > 0) selectedSimIndex = 0;
+        renderSimChart();
         
     } catch (e) { 
         chartArea.innerHTML = '데이터 로드 실패'; 
@@ -900,7 +913,7 @@ let simSvgRefs = null;
 
 function renderSimChart() {
     const container = document.getElementById('simChartArea');
-    if (!cachedSimData || cachedSimData.length === 0) return;
+    if (!simDisplayList || simDisplayList.length === 0) return;
 
     const examName = EXAM_DISPLAY_NAMES[currentExamMode] || currentExamMode;
     const getBadgeHTML = () => `<div class="sim-info-badge"><span><i class="fas fa-history"></i> ${examName} 기준</span></div>`;
@@ -945,23 +958,44 @@ function renderSimChart() {
             graphHtml += `<div class="chart-guide-line guide-100" style="${guideStyle100}"><span class="chart-guide-label">합격(100)</span></div>`;
             graphHtml += `<div class="chart-guide-line guide-150" style="${guideStyle150}"><span class="chart-guide-label">안정(150)</span></div>`;
 
-            cachedSimData.forEach((item, index) => {
+            simDisplayList.forEach((item, index) => {
+                const choiceNum = item.originalIdx + 1;
+                const shortUniv = item.univ.replace('학교', '');
+
+                if (item.ineligible) {
+                    // 지원 불가 항목: 낮은 빗금 바로 표시
+                    graphHtml += `
+                        <div class="sim-bar-item" onclick="selectSimUniv(${index})">
+                            <div style="position:relative; height:100%; width:100%; display:flex; justify-content:center;">
+                                <div class="sim-bar" style="position:absolute; bottom:0; height:8%; background:repeating-linear-gradient(45deg,#fca5a5,#fca5a5 4px,#fee2e2 4px,#fee2e2 8px); border:1px dashed #ef4444; border-radius:6px 6px 0 0; z-index:1; display:flex; align-items:flex-start; justify-content:center;">
+                                    <span class="sim-score-label" style="color:#ef4444; font-size:0.65rem; white-space:nowrap; padding-top:2px;">불가</span>
+                                </div>
+                            </div>
+                        </div>`;
+                    labelHtml += `
+                        <div class="sim-label-item" onclick="selectSimUniv(${index})">
+                            <span class="label-mobile">${choiceNum}지망</span>
+                            <span class="label-pc"><strong>${choiceNum}지망</strong><br>${escapeHtml(shortUniv)}<br><span style="color:#ef4444; font-size:0.75em;">지원불가</span></span>
+                        </div>`;
+                    return;
+                }
+
                 const score = item.base_ui_score;
                 const currentHeightPct = `${(score / MAX_SCORE) * 100}%`;
-                
-                let color = '#ef4444'; 
+
+                let color = '#ef4444';
                 if (score >= 150) color = '#10b981'; else if (score >= 100) color = '#3b82f6';
-                const safeScore = Math.round(score); const shortUniv = item.univ.replace('학교', '');
+                const safeScore = Math.round(score);
 
                 let extensionHtml = ''; let maxRise = 0;
-                
+
                 if (item.sim_data) { Object.values(item.sim_data).forEach(sub => { if (sub && sub.uiDiff > maxRise) maxRise = sub.uiDiff; }); }
 
                 if (maxRise > 0 && score < MAX_SCORE) {
                     const potentialScore = Math.min(score + maxRise, MAX_SCORE);
-                    const riseAmount = potentialScore - score; 
+                    const riseAmount = potentialScore - score;
                     const riseHeightPct = `${(riseAmount / MAX_SCORE) * 100}%`;
-                    
+
                     extensionHtml = `
                         <div class="sim-extension-bar" style="bottom:${currentHeightPct}; height:${riseHeightPct}; display:none;">
                              <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">
@@ -982,8 +1016,8 @@ function renderSimChart() {
 
                 labelHtml += `
                     <div class="sim-label-item" onclick="selectSimUniv(${index})">
-                        <span class="label-mobile">${index + 1}지망</span>
-                        <span class="label-pc"><strong>${index + 1}지망</strong><br>${escapeHtml(shortUniv)}<br>${escapeHtml(item.major)}</span>
+                        <span class="label-mobile">${choiceNum}지망</span>
+                        <span class="label-pc"><strong>${choiceNum}지망</strong><br>${escapeHtml(shortUniv)}<br>${escapeHtml(item.major)}</span>
                     </div>`;
             });
 
@@ -1084,12 +1118,14 @@ function createGuideGroup(ns, color, txt) {
 
 function renderSimUnivButtons(targetDiv) {
     targetDiv.innerHTML = '';
-    cachedSimData.forEach((d, i) => {
+    simDisplayList.forEach((d, i) => {
         const btn = document.createElement('div'); btn.className = `univ-select-btn ${i === selectedSimIndex ? 'active' : ''}`;
         const univName = d.univ.replace('학교', ''); const deptName = d.major || '학부';
-        btn.innerHTML = `<span style="font-weight:700;">${escapeHtml(univName)}</span><span style="font-size:0.85em; opacity:0.9;">${escapeHtml(deptName)}</span>`;
+        const choiceNum = d.originalIdx + 1;
+        const ineligibleMark = d.ineligible ? ' <span style="color:#ef4444; font-size:0.8em;">(지원불가)</span>' : '';
+        btn.innerHTML = `<span style="font-weight:700;">${choiceNum}지망 ${escapeHtml(univName)}${ineligibleMark}</span><span style="font-size:0.85em; opacity:0.9;">${escapeHtml(deptName)}</span>`;
         btn.onclick = () => {
-            selectSimUniv(i); 
+            selectSimUniv(i);
             targetDiv.querySelectorAll('.univ-select-btn').forEach((b, idx) => { if (idx === i) b.classList.add('active'); else b.classList.remove('active'); });
         };
         targetDiv.appendChild(btn);
@@ -1104,8 +1140,10 @@ function updateSimLineGraph(idx) {
         window.addEventListener('resize', window.simGraphResizeHandler);
     }
 
-    const data = cachedSimData[idx];
-    if (!data) return;
+    const item = simDisplayList[idx];
+    if (!item) return;
+    if (item.ineligible) { simSvgRefs.svg.parentNode.style.height = '80px'; simSvgRefs.path.setAttribute("d", ""); simSvgRefs.points.forEach(p => { p.setAttribute("cx", -999); p.setAttribute("cy", -999); }); return; }
+    const data = item;
 
     const TARGET_HEIGHT = 260; 
     simSvgRefs.svg.parentNode.style.height = `${TARGET_HEIGHT}px`; simSvgRefs.svg.parentNode.style.minHeight = `${TARGET_HEIGHT}px`;
@@ -1183,9 +1221,15 @@ function selectSimUniv(index) {
 
 function renderDetailedSimCard() {
     const cardArea = document.getElementById('simDetailCard');
-    if (selectedSimIndex === null || !cachedSimData[selectedSimIndex]) { cardArea.innerHTML = `<div class="empty-sim-state"><p>대학을 선택해주세요.</p></div>`; return; }
+    if (selectedSimIndex === null || !simDisplayList[selectedSimIndex]) { cardArea.innerHTML = `<div class="empty-sim-state"><p>대학을 선택해주세요.</p></div>`; return; }
 
-    const data = cachedSimData[selectedSimIndex];
+    const item = simDisplayList[selectedSimIndex];
+    if (item.ineligible) {
+        const choiceNum = item.originalIdx + 1;
+        cardArea.innerHTML = `<div class="sim-result-card"><div class="sim-card-header"><div><span class="sim-univ-title">${escapeHtml(item.univ)}</span><span class="sim-univ-dept">${escapeHtml(item.major)}</span></div><div class="sim-score-change"><span class="score-badge" style="background:#fee2e2; color:#ef4444;">${choiceNum}지망</span></div></div><div style="padding:20px; text-align:center; color:#ef4444; font-weight:600;"><i class="fas fa-ban" style="font-size:1.5rem; margin-bottom:10px; display:block;"></i>지원 불가 대학입니다.<div style="font-size:0.85rem; color:#94a3b8; font-weight:400; margin-top:8px;">필수 과목 미응시 또는 자격 미충족으로 인해<br>분석 데이터를 제공할 수 없습니다.</div></div></div>`;
+        return;
+    }
+    const data = item;
     const currentScore = Math.round(data.base_ui_score);
     
     if (currentScore >= 250) { Object.keys(data.sim_data).forEach(key => { if (data.sim_data[key]) data.sim_data[key].uiDiff = 0; }); }

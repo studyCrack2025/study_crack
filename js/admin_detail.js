@@ -309,8 +309,8 @@ async function completeProWriting(key) {
     const e1 = document.getElementById(`${key}_item1`)?.value || ""; const e2 = document.getElementById(`${key}_item2`)?.value || "";
     const e3 = document.getElementById(`${key}_item3`)?.value || ""; const e4 = document.getElementById(`${key}_item4`)?.value || "";
     
-    if(e1.length < 200 || e2.length < 200 || e3.length < 200 || e4.length < 200) {
-        return alert("PRO 리포트의 1~4번 모든 항목은 각각 최소 200자 이상 작성해야 제출할 수 있습니다.");
+    if([e1,e2,e3,e4].some(v => v.replace(/\s/g, '').length < 200)) {
+        return alert("PRO 리포트의 1~4번 모든 항목은 각각 최소 200자 이상 작성해야 제출할 수 있습니다. (공백 제외)");
     }
     try { await saveProDraft(key, true); } catch (e) { if (e.message !== "Auth expired") alert("내용 저장 실패로 중단합니다."); return; }
     if(!confirm("작성을 완료하고 관리자에게 제출하시겠습니까?")) return;
@@ -610,7 +610,7 @@ function createWeeklyFbInput(weeklyKey, fb) {
     const idk = weeklyIdKey(weeklyKey);
     const fieldsHtml = WEEKLY_FB_FIELDS.map(f => {
         const val = fb[f.key] || '';
-        const len = val.length;
+        const len = val.replace(/\s/g, '').length;
         const validClass = len >= WEEKLY_FB_MIN ? 'valid' : '';
         return `
         <div class="write-item" style="margin-bottom:15px;">
@@ -646,9 +646,10 @@ window.tempSaveWeeklyField = async function(weeklyKey, fieldName) {
     const textarea = document.getElementById(`wfb_${idk}_${fieldName}`);
     if (!btn || !textarea) return;
 
-    const val = textarea.value.trim();
-    if (val.length < WEEKLY_FB_MIN) {
-        alert(`최소 ${WEEKLY_FB_MIN}자 이상 입력해주세요. (현재 ${val.length}자)`);
+    const val = textarea.value;
+    const valLen = val.replace(/\s/g, '').length;
+    if (valLen < WEEKLY_FB_MIN) {
+        alert(`최소 ${WEEKLY_FB_MIN}자 이상 입력해주세요. (현재 ${valLen}자, 공백 제외)`);
         return;
     }
 
@@ -679,8 +680,8 @@ window.submitWeeklyFeedback = async function(weeklyKey) {
     // 전체 필드 최소 글자 검증
     for (const f of WEEKLY_FB_FIELDS) {
         const el = document.getElementById(`wfb_${idk}_${f.key}`);
-        if (!el || el.value.trim().length < WEEKLY_FB_MIN) {
-            alert(`'${f.label}' 항목을 최소 ${WEEKLY_FB_MIN}자 이상 입력해주세요.`);
+        if (!el || el.value.replace(/\s/g, '').length < WEEKLY_FB_MIN) {
+            alert(`'${f.label}' 항목을 최소 ${WEEKLY_FB_MIN}자 이상 입력해주세요. (공백 제외)`);
             return;
         }
     }
@@ -794,7 +795,7 @@ function createProPeriodBox(title, data, reportKey, userRole) {
 }
 
 function createTextAreaHtml(key, idx, label, val, readOnly, btnStyle) {
-    const minLen = 200; const len = val ? val.length : 0; const validClass = len >= minLen ? 'valid' : '';
+    const minLen = 200; const len = val ? val.replace(/\s/g, '').length : 0; const validClass = len >= minLen ? 'valid' : '';
     return `
         <div class="write-item">
             <label class="write-label">${label}</label>
@@ -1064,7 +1065,7 @@ function showModal(title, contentHtml) {
 window.updateCharCount = function(textarea, countId, minLength) {
     const countEl = document.getElementById(countId);
     if(!countEl) return;
-    const len = textarea.value.length;
+    const len = textarea.value.replace(/\s/g, '').length;
     countEl.innerText = `${len} / 최소 ${minLength}자`;
     if (len >= minLength) countEl.classList.add('valid'); else countEl.classList.remove('valid');
 };
@@ -1072,7 +1073,10 @@ window.updateCharCount = function(textarea, countId, minLength) {
 async function renderTargetUnivs(list, quantData) {
     const container = document.getElementById('viewTargetUnivList');
     container.innerHTML = '';
-    const validList = list.filter(u => u && u.univ);
+
+    // 원본 list의 인덱스(originalIdx)를 보존한 유효 항목 목록 구성
+    const validList = [];
+    list.forEach((u, originalIdx) => { if (u && u.univ) validList.push({ ...u, originalIdx }); });
     if (validList.length === 0) { container.innerHTML = '<p style="color:#94a3b8;">설정된 목표 대학이 없습니다.</p>'; return; }
 
     const examMode = 'mar';
@@ -1081,9 +1085,10 @@ async function renderTargetUnivs(list, quantData) {
     validList.forEach((u, idx) => {
         const div = document.createElement('div'); div.className = 'target-univ-item';
         const dateStr = u.date ? new Date(u.date).toLocaleDateString() + ' 선택' : '날짜 정보 없음';
+        const choiceNum = u.originalIdx + 1;
 
         div.innerHTML = `
-            <div style="display:flex; flex-direction:column; gap:5px;"><strong>${idx+1}. ${escapeHtml(u.univ)}</strong><div class="major">${escapeHtml(u.major)}</div></div>
+            <div style="display:flex; flex-direction:column; gap:5px;"><strong>${choiceNum}지망. ${escapeHtml(u.univ)}</strong><div class="major">${escapeHtml(u.major)}</div></div>
             <div class="sim-summary-box empty" id="sim-box-${idx}">${hasMarScore ? '<div style="text-align:center; padding:10px; color:#3b82f6;"><i class="fas fa-spinner fa-spin"></i> 분석 중...</div>' : '<div class="sim-exam-label" style="color:#94a3b8;"><i class="fas fa-exclamation-circle"></i> 3월 학평 기준</div><div style="font-size:0.8rem; color:#94a3b8; text-align:center; padding:5px 0;">성적 데이터 없음</div>'}</div>
             <div class="date">${dateStr}</div>
         `;
@@ -1100,7 +1105,11 @@ async function renderTargetUnivs(list, quantData) {
         const simData = await res.json();
 
         validList.forEach((u, idx) => {
-            const box = document.getElementById(`sim-box-${idx}`); const data = simData[idx]; 
+            const box = document.getElementById(`sim-box-${idx}`);
+            // API가 지원불가 항목을 제외하고 반환할 수 있으므로 univ+major로 매칭
+            const data = Array.isArray(simData)
+                ? simData.find(d => d && d.univ === u.univ && d.major === u.major)
+                : simData[idx];
             if (data && typeof data.base_ui_score !== 'undefined' && data.sim_data) {
                 const currentScore = data.base_ui_score.toFixed(2);
                 let maxRise = 0; let bestSubName = '-';
@@ -1109,7 +1118,7 @@ async function renderTargetUnivs(list, quantData) {
                 subjects.forEach(sub => { const info = data.sim_data[sub.key]; if (info && info.uiDiff > maxRise) { maxRise = info.uiDiff; bestSubName = sub.name; } });
                 box.className = 'sim-summary-box';
                 box.innerHTML = `<div class="sim-exam-label"><i class="fas fa-bolt"></i> 3월 학평 기준 시뮬레이션</div><div class="sim-score-row"><span>현재 환산</span><strong>${currentScore}점</strong></div><div class="sim-score-row"><span>+1점 효율</span><span class="sim-highlight">${bestSubName} (+${maxRise.toFixed(2)}점)</span></div>`;
-            } else { box.innerHTML = `<div style="font-size:0.8rem; color:#ef4444; text-align:center; padding:5px 0;">분석 데이터 부족 (지원 불가 등)</div>`; }
+            } else { box.innerHTML = `<div style="font-size:0.8rem; color:#ef4444; text-align:center; padding:5px 0;"><i class="fas fa-ban" style="margin-right:4px;"></i>지원 불가 (분석 데이터 없음)</div>`; }
         });
     } catch (e) { console.error("Simulation API Error:", e); validList.forEach((u, idx) => { const box = document.getElementById(`sim-box-${idx}`); if (box) box.innerHTML = `<div style="font-size:0.8rem; color:#ef4444; text-align:center; padding:5px 0;">분석 서버 오류</div>`; }); }
 }
