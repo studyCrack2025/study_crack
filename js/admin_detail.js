@@ -1176,7 +1176,7 @@ function renderPayments(p) {
 async function saveAdminMemo() {
     const memo = document.getElementById('adminMemoInput').value;
     try {
-        await apiFetch(API_URL, { method:'POST', body:JSON.stringify({ type:'admin_update_memo', userId:adminId, data:{targetUserId, memo} }) });
+        await apiFetch(REPORT_API_URL, { method:'POST', body:JSON.stringify({ type:'save_shared_memo', data:{targetUserId, memo} }) });
         alert("메모 저장 완료");
     } catch(e) { if (e.message !== "Auth expired") alert("저장 실패"); }
 }
