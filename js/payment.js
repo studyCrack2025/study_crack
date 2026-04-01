@@ -301,7 +301,8 @@ function processPayment() {
             userId: userId,
             tier: selectedTier,
             productName: selectedProductName,
-            effectiveStartDate: startDate.toISOString()
+            effectiveStartDate: startDate.toISOString(),
+            siteOrigin: window.location.origin
         }),
         fnError: function(result) {
             console.error('[NicePay Error]', result);
