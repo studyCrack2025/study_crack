@@ -1440,275 +1440,299 @@ function renderFeedbackList() {
     });
 }
 
+async function renderPdfToImages(pdfUrl, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    try {
+        container.classList.add('is-rendering');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        const loadingTask = pdfjsLib.getDocument(pdfUrl);
+        const pdf = await loadingTask.promise;
+        const fragment = document.createDocumentFragment();
+
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 1.0 }); 
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.height = viewport.height; canvas.width = viewport.width;
+
+            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL('image/jpeg', 0.8);
+            img.style.cssText = 'max-width:100%; height:auto; margin-bottom:15px; border-radius:8px; border:1px solid #cbd5e1; box-shadow:0 2px 8px rgba(0,0,0,0.05); display:block;';
+            fragment.appendChild(img);
+        }
+        container.innerHTML = ''; container.appendChild(fragment);
+    } catch (error) {
+        container.innerHTML = `<div style="color:#ef4444; padding:20px; text-align:center;">PDF를 화면에 불러오지 못했습니다.</div>`;
+    } finally {
+        container.classList.remove('is-rendering'); 
+    }
+}
+
 function openFeedbackModal(data) {
-    const modal = document.getElementById('feedbackModal');
-    const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent'); 
-    if (!contentArea) return;
+    const modal = document.getElementById('feedbackModal');
+    const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent'); 
+    if (!contentArea) return;
 
-    const fb = data.tutorFeedback || {};
-    const hasFeedback = fb && (
-        (fb.priorityCheck && String(fb.priorityCheck).trim() !== "") || 
-        (fb.weakSubject && String(fb.weakSubject).trim() !== "") || 
-        (fb.nextWeekTop3 && String(fb.nextWeekTop3).trim() !== "") || 
-        (fb.planEvaluation && String(fb.planEvaluation).trim() !== "") ||
-        (fb.extraQuestion && String(fb.extraQuestion).trim() !== "") ||
-        (fb.tutorImage && String(fb.tutorImage).trim() !== "")
-    );
+    const fb = data.tutorFeedback || {};
+    const hasFeedback = fb && (
+        (fb.priorityCheck && String(fb.priorityCheck).trim() !== "") || 
+        (fb.weakSubject && String(fb.weakSubject).trim() !== "") || 
+        (fb.nextWeekTop3 && String(fb.nextWeekTop3).trim() !== "") || 
+        (fb.planEvaluation && String(fb.planEvaluation).trim() !== "") ||
+        (fb.extraQuestion && String(fb.extraQuestion).trim() !== "") ||
+        (fb.tutorImage && String(fb.tutorImage).trim() !== "")
+    );
 
-    if (!hasFeedback) {
-        contentArea.innerHTML = `
-            <div class="pending-view" style="background:#fff; padding:100px 20px; border-radius:16px;">
-                <div class="pending-icon" style="font-size:4rem; color:#cbd5e1; margin-bottom:20px;"><i class="fas fa-hourglass-half"></i></div>
-                <h2 style="color:#1e293b; margin-bottom:10px; font-weight:800;">피드백 작성 대기중</h2>
-                <p style="color:#64748b; margin-bottom:30px;">담당 컨설턴트가 학생의 리포트를 꼼꼼히 분석하고 있습니다.</p>
-                <button onclick="document.getElementById('feedbackModal').style.display='none'" style="padding:12px 30px; background:#f1f5f9; border:none; border-radius:8px; font-weight:bold; color:#475569; cursor:pointer;">닫기</button>
-            </div>`;
-        modal.style.display = 'block';
-        return;
-    }
+    if (!hasFeedback) {
+        contentArea.innerHTML = `
+            <div class="pending-view" style="background:#fff; padding:100px 20px; border-radius:16px;">
+                <div class="pending-icon" style="font-size:4rem; color:#cbd5e1; margin-bottom:20px;"><i class="fas fa-hourglass-half"></i></div>
+                <h2 style="color:#1e293b; margin-bottom:10px; font-weight:800;">피드백 작성 대기중</h2>
+                <p style="color:#64748b; margin-bottom:30px;">담당 컨설턴트가 학생의 리포트를 꼼꼼히 분석하고 있습니다.</p>
+                <button onclick="document.getElementById('feedbackModal').style.display='none'" style="padding:12px 30px; background:#f1f5f9; border:none; border-radius:8px; font-weight:bold; color:#475569; cursor:pointer;">닫기</button>
+            </div>`;
+        modal.style.display = 'block';
+        return;
+    }
 
-    const consultantName = "담당 수석 컨설턴트"; 
-    let detailRows = ''; let totalPlan = '0H', totalAct = '0H', totalRate = '0%';
-    
-    if (data.studyTime) {
-        totalPlan = data.studyTime.totalPlan || '0H'; totalAct = data.studyTime.totalAct || '0H'; totalRate = data.studyTime.totalRate || '0%';
-        if (data.studyTime.details && data.studyTime.details.length > 0) {
-            data.studyTime.details.forEach(d => {
-                const plan = parseFloat(d.plan) || 0; const act = parseFloat(d.act) || 0;
-                const rate = plan > 0 ? Math.min((act / plan) * 100, 100).toFixed(0) : 0;
-                const rateColor = rate >= 80 ? '#10b981' : (rate >= 50 ? '#f59e0b' : '#ef4444');
-                
-                let mainSub = d.subject; let detailSub = "-";
-                const match = d.subject.match(/^(.*?)\s*\((.*?)\)$/);
-                if(match) { mainSub = match[1]; detailSub = match[2]; }
-                
-                detailRows += `<tr><td style="text-align:left; font-weight:700; color:#334155;">${escapeHtml(mainSub)}</td><td style="color:#64748b; font-size:0.85rem; font-weight:600;">${escapeHtml(detailSub)}</td><td>${plan}H</td><td style="color:#2563eb; font-weight:bold;">${act}H</td><td style="color:${rateColor}; font-weight:800;">${rate}%</td></tr>`;
-            });
-        }
-    }
-    if (!detailRows) detailRows = `<tr><td colspan="5" style="color:#94a3b8; padding:20px;">상세 학습 기록이 없습니다.</td></tr>`;
+    const consultantName = "담당 수석 컨설턴트"; 
+    let detailRows = ''; let totalPlan = '0H', totalAct = '0H', totalRate = '0%';
+    
+    if (data.studyTime) {
+        totalPlan = data.studyTime.totalPlan || '0H'; totalAct = data.studyTime.totalAct || '0H'; totalRate = data.studyTime.totalRate || '0%';
+        if (data.studyTime.details && data.studyTime.details.length > 0) {
+            data.studyTime.details.forEach(d => {
+                const plan = parseFloat(d.plan) || 0; const act = parseFloat(d.act) || 0;
+                const rate = plan > 0 ? Math.min((act / plan) * 100, 100).toFixed(0) : 0;
+                const rateColor = rate >= 80 ? '#10b981' : (rate >= 50 ? '#f59e0b' : '#ef4444');
+                
+                let mainSub = d.subject; let detailSub = "-";
+                const match = d.subject.match(/^(.*?)\s*\((.*?)\)$/);
+                if(match) { mainSub = match[1]; detailSub = match[2]; }
+                
+                detailRows += `<tr><td style="text-align:left; font-weight:700; color:#334155;">${escapeHtml(mainSub)}</td><td style="color:#64748b; font-size:0.85rem; font-weight:600;">${escapeHtml(detailSub)}</td><td>${plan}H</td><td style="color:#2563eb; font-weight:bold;">${act}H</td><td style="color:${rateColor}; font-weight:800;">${rate}%</td></tr>`;
+            });
+        }
+    }
+    if (!detailRows) detailRows = `<tr><td colspan="5" style="color:#94a3b8; padding:20px;">상세 학습 기록이 없습니다.</td></tr>`;
 
-    let examHtml = '';
-    if (data.mockExam && data.mockExam.type && data.mockExam.type !== 'none') {
-        const typeMap = { 'school': '교내', 'edu': '평가원/교육청', 'private': '사설' };
-        const typeName = typeMap[data.mockExam.type] || '기타';
-        let scoreDetails = ''; const s = data.mockExam.scores || {};
-        const rowStyle = "margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;";
-        if(s.kor) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">국어 (${escapeHtml(s.korOpt||'-')})</span> <strong style="color:#1e293b;">${escapeHtml(s.kor)}</strong></div>`;
-        if(s.math) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">수학 (${escapeHtml(s.mathOpt||'-')})</span> <strong style="color:#1e293b;">${escapeHtml(s.math)}</strong></div>`;
-        if(s.eng) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">영어</span> <strong style="color:#1e293b;">${escapeHtml(s.eng)}</strong></div>`;
-        if(s.inq1) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">${escapeHtml(s.inq1Name||'탐구1')}</span> <strong style="color:#1e293b;">${escapeHtml(s.inq1)}</strong></div>`;
-        if(s.inq2) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">${escapeHtml(s.inq2Name||'탐구2')}</span> <strong style="color:#1e293b;">${escapeHtml(s.inq2)}</strong></div>`;
-        examHtml = `<div style="font-weight:800; font-size:1.1rem; color:#1e293b; margin-bottom:15px; border-bottom:2px solid #e2e8f0; padding-bottom:8px;">${typeName} 모의고사</div><div style="text-align:left; padding:0 10px;">${scoreDetails || '<div style="color:#94a3b8; text-align:center;">상세 점수 미입력</div>'}</div>`;
-    } else {
-        examHtml = `<div style="color:#94a3b8; padding:30px 0; font-weight:600;"><i class="fas fa-ban" style="margin-bottom:10px; font-size:1.5rem;"></i><br>이번 주 응시 기록 없음</div>`;
-    }
+    let examHtml = '';
+    if (data.mockExam && data.mockExam.type && data.mockExam.type !== 'none') {
+        const typeMap = { 'school': '교내', 'edu': '평가원/교육청', 'private': '사설' };
+        const typeName = typeMap[data.mockExam.type] || '기타';
+        let scoreDetails = ''; const s = data.mockExam.scores || {};
+        const rowStyle = "margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;";
+        if(s.kor) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">국어 (${escapeHtml(s.korOpt||'-')})</span> <strong style="color:#1e293b;">${escapeHtml(s.kor)}</strong></div>`;
+        if(s.math) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">수학 (${escapeHtml(s.mathOpt||'-')})</span> <strong style="color:#1e293b;">${escapeHtml(s.math)}</strong></div>`;
+        if(s.eng) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">영어</span> <strong style="color:#1e293b;">${escapeHtml(s.eng)}</strong></div>`;
+        if(s.inq1) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">${escapeHtml(s.inq1Name||'탐구1')}</span> <strong style="color:#1e293b;">${escapeHtml(s.inq1)}</strong></div>`;
+        if(s.inq2) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">${escapeHtml(s.inq2Name||'탐구2')}</span> <strong style="color:#1e293b;">${escapeHtml(s.inq2)}</strong></div>`;
+        examHtml = `<div style="font-weight:800; font-size:1.1rem; color:#1e293b; margin-bottom:15px; border-bottom:2px solid #e2e8f0; padding-bottom:8px;">${typeName} 모의고사</div><div style="text-align:left; padding:0 10px;">${scoreDetails || '<div style="color:#94a3b8; text-align:center;">상세 점수 미입력</div>'}</div>`;
+    } else {
+        examHtml = `<div style="color:#94a3b8; padding:30px 0; font-weight:600;"><i class="fas fa-ban" style="margin-bottom:10px; font-size:1.5rem;"></i><br>이번 주 응시 기록 없음</div>`;
+    }
 
-    let trendHtml = '-', trendReasonsHtml = '';
-    if (data.trend) {
-        const t = data.trend.status;
-        if(t === 'up') trendHtml = '<span style="color:#10b981; display:flex; align-items:center; justify-content:center; gap:6px;"><i class="fas fa-arrow-trend-up"></i> 상승세</span>';
-        else if(t === 'down') trendHtml = '<span style="color:#ef4444; display:flex; align-items:center; justify-content:center; gap:6px;"><i class="fas fa-arrow-trend-down"></i> 하락세</span>';
-        else trendHtml = '<span style="color:#64748b; display:flex; align-items:center; justify-content:center; gap:6px;"><i class="fas fa-minus"></i> 유지중</span>';
-        
-        if (data.trend.reasons && data.trend.reasons.length > 0) trendReasonsHtml = `<strong>하락 요인:</strong> ${data.trend.reasons.map(r => escapeHtml(r)).join(', ')}`;
-        else trendReasonsHtml = '학생이 체크한 특이사항이 없습니다.';
-    }
+    let trendHtml = '-', trendReasonsHtml = '';
+    if (data.trend) {
+        const t = data.trend.status;
+        if(t === 'up') trendHtml = '<span style="color:#10b981; display:flex; align-items:center; justify-content:center; gap:6px;"><i class="fas fa-arrow-trend-up"></i> 상승세</span>';
+        else if(t === 'down') trendHtml = '<span style="color:#ef4444; display:flex; align-items:center; justify-content:center; gap:6px;"><i class="fas fa-arrow-trend-down"></i> 하락세</span>';
+        else trendHtml = '<span style="color:#64748b; display:flex; align-items:center; justify-content:center; gap:6px;"><i class="fas fa-minus"></i> 유지중</span>';
+        
+        if (data.trend.reasons && data.trend.reasons.length > 0) trendReasonsHtml = `<strong>하락 요인:</strong> ${data.trend.reasons.map(r => escapeHtml(r)).join(', ')}`;
+        else trendReasonsHtml = '학생이 체크한 특이사항이 없습니다.';
+    }
 
-    let deepQnaHtml = '';
-    const QUESTION_CATEGORIES = ['학습 계획 점검', '학습 방향성 설정', '취약 과목 솔루션', '기타 멘탈 관리'];
-    if (data.deepAnswers && data.deepAnswers.some(ans => ans && ans.trim() !== "")) {
-        data.deepAnswers.forEach((ans, idx) => {
-            if (ans && ans.trim() !== "") {
-                deepQnaHtml += `<div style="margin-bottom:15px; page-break-inside: avoid;"><strong style="color:#b91c1c; font-size:0.9rem; display:block; margin-bottom:4px;">Q${idx+1}. ${QUESTION_CATEGORIES[idx]}</strong><div style="color:#334155; font-size:0.95rem; padding-left:10px; border-left:3px solid #fecaca;">${escapeHtml(ans)}</div></div>`;
-            }
-        });
-    } else {
-        deepQnaHtml = '<div style="color:#94a3b8; padding:10px 0;">작성된 심층 질문이 없습니다.</div>';
-    }
-    
-    let tutorFileBlockHtml = '';
-    let isPdfFile = false; let actualPdfUrl = "";
+    let deepQnaHtml = '';
+    const QUESTION_CATEGORIES = ['학습 계획 점검', '학습 방향성 설정', '취약 과목 솔루션', '기타 멘탈 관리'];
+    if (data.deepAnswers && data.deepAnswers.some(ans => ans && ans.trim() !== "")) {
+        data.deepAnswers.forEach((ans, idx) => {
+            if (ans && ans.trim() !== "") {
+                deepQnaHtml += `<div style="margin-bottom:15px; page-break-inside: avoid;"><strong style="color:#b91c1c; font-size:0.9rem; display:block; margin-bottom:4px;">Q${idx+1}. ${QUESTION_CATEGORIES[idx]}</strong><div style="color:#334155; font-size:0.95rem; padding-left:10px; border-left:3px solid #fecaca;">${escapeHtml(ans)}</div></div>`;
+            }
+        });
+    } else {
+        deepQnaHtml = '<div style="color:#94a3b8; padding:10px 0;">작성된 심층 질문이 없습니다.</div>';
+    }
+    
+    let tutorFileBlockHtml = '';
+    const uniqueContainerId = `pdf-render-${Date.now()}`; 
+    let isPdfFile = false; let actualPdfUrl = "";
 
-    if (fb.tutorImage && String(fb.tutorImage).trim() !== "") {
-        isPdfFile = fb.tutorImage.toLowerCase().includes('.pdf');
-        actualPdfUrl = fb.tutorImage;
-        let fileDisplayHtml = '';
-        
-        if (isPdfFile) {
-            fileDisplayHtml = `
-                <div id="attachedPdfData" data-pdf-url="${actualPdfUrl}" style="text-align:center; padding: 40px 0; background:#f8fafc; border-radius:8px; border:1px solid #cbd5e1;">
-                    <i class="fas fa-file-pdf" style="font-size:3rem; color:#ef4444; margin-bottom:10px;"></i>
-                    <h3 style="margin:0; color:#1e293b;">튜터 첨삭 PDF 첨부됨</h3>
-                    <p style="color:#64748b; font-size:0.9rem;">(다운로드 시 리포트 뒷장에 병합됩니다)</p>
-                </div>`;
-        } else {
-            const noCacheUrl = `${escapeHtml(fb.tutorImage)}?t=${new Date().getTime()}`;
-            fileDisplayHtml = `<div style="text-align:center; padding: 10px 0;"><img src="${noCacheUrl}" crossorigin="anonymous" alt="튜터 플래너 코칭" style="max-width:100%; height:auto; border-radius:8px; border:1px solid #cbd5e1; display:block; margin: 0 auto;"></div>`;
-        }
-        tutorFileBlockHtml = `<div class="doc-matched-box allow-page-break" style="margin-top: 30px;"><div class="doc-matched-header"><i class="fas fa-paperclip" style="color:#3b82f6;"></i> 5. 주간 플래너 코칭 & 첨삭</div><div class="doc-matched-body allow-page-break-body" style="padding:25px;">${fileDisplayHtml}</div></div>`;
-    }
+    if (fb.tutorImage && String(fb.tutorImage).trim() !== "") {
+        isPdfFile = fb.tutorImage.toLowerCase().includes('.pdf');
+        actualPdfUrl = fb.tutorImage;
+        let fileDisplayHtml = '';
+        if (isPdfFile) {
+            fileDisplayHtml = `<div id="${uniqueContainerId}" style="width: 100%; display: block; text-align: center;"><div style="padding: 40px 0; color:#3b82f6; font-weight:bold;" class="pdf-loading-spinner"><i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom:10px;"></i><br>튜터의 첨삭 PDF 문서를 불러오는 중입니다...</div></div>`;
+        } else {
+            const noCacheUrl = `${escapeHtml(fb.tutorImage)}?t=${new Date().getTime()}`;
+            fileDisplayHtml = `<div style="text-align:center; padding: 10px 0;"><img src="${noCacheUrl}" crossorigin="anonymous" alt="튜터 플래너 코칭" style="max-width:100%; height:auto; border-radius:8px; border:1px solid #cbd5e1; display:block; margin: 0 auto;"></div>`;
+        }
+        tutorFileBlockHtml = `<div class="doc-matched-box allow-page-break" style="margin-top: 30px;"><div class="doc-matched-header"><i class="fas fa-paperclip" style="color:#3b82f6;"></i> 5. 주간 플래너 코칭 & 첨삭</div><div class="doc-matched-body allow-page-break-body" style="padding:25px;">${fileDisplayHtml}</div></div>`;
+    }
 
-    const safeTitleForJs = escapeHtml(data.title || "주간 리포트").replace(/'/g, "\\'");
-    
-    const html = `
-        <div class="modal-document" id="pdfTargetDocument">
-            <div class="doc-controls" data-html2canvas-ignore="true">
-                <button class="btn-pdf" onclick="downloadReportPDF('${safeTitleForJs}')"><i class="fas fa-file-pdf"></i> PDF 파일 다운로드</button>
-                <button class="close-btn-doc" onclick="document.getElementById('feedbackModal').style.display='none'">&times;</button>
-            </div>
-            <div class="doc-header">
-                <div><span class="doc-subtitle">PREMIUM STRATEGY</span><h2 class="doc-title">스터디크랙 주간 전략리포트</h2></div>
-                <div class="doc-meta"><div>대상: <strong>${escapeHtml(data.title || "주간 리포트")}</strong></div><div>발행일: <strong>${new Date(data.date).toLocaleDateString()}</strong></div><div>분석: <strong>${consultantName}</strong></div></div>
-            </div>
-            <div class="doc-matched-box">
-                <div class="doc-matched-header"><i class="fas fa-clock"></i> 1. 학습 목표 이행 평가</div>
-                <div class="doc-matched-body">
-                    <div class="doc-student-data"><span class="doc-badge">학생 리포트</span><table class="doc-table"><thead><tr><th>과목</th><th>세부 내용</th><th>계획</th><th>실제</th><th>달성률</th></tr></thead><tbody>${detailRows}</tbody></table><div style="margin-top:15px; text-align:right; font-size:0.9rem; color:#64748b; font-weight:700; background:#f8fafc; padding:8px; border-radius:6px;">총 달성률 <span style="color:#2563eb; font-size:1.1rem; margin-left:5px;">${totalRate}</span> <span style="font-weight:normal; font-size:0.8rem;">(${totalAct} / ${totalPlan})</span></div></div>
-                    <div class="doc-tutor-feedback"><span class="doc-badge tutor-badge">Consultant 코멘트</span><h4 style="margin:0 0 10px 0; font-size:1rem; color:#1e293b;">이전 우선순위 점검 결과</h4><div class="doc-text">${escapeHtml(fb.priorityCheck) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}</div></div>
-                </div>
-            </div>
-            <div class="doc-matched-box">
-                <div class="doc-matched-header"><i class="fas fa-bullseye"></i> 2. 실전 성취도 & 취약점 분석</div>
-                <div class="doc-matched-body">
-                    <div class="doc-student-data"><span class="doc-badge">시험 성적</span><div style="padding:15px; background:#f8fafc; border-radius:12px; text-align:center; border:1px solid #e2e8f0; height:calc(100% - 50px); display:flex; flex-direction:column; justify-content:center;">${examHtml}</div></div>
-                    <div class="doc-tutor-feedback"><span class="doc-badge tutor-badge">Consultant 코멘트</span><h4 style="margin:0 0 10px 0; font-size:1rem; color:#1e293b;">취약 과목 진단 및 개선 포인트</h4><div class="doc-text">${escapeHtml(fb.weakSubject) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}</div></div>
-                </div>
-            </div>
-            <div class="doc-matched-box">
-                <div class="doc-matched-header"><i class="fas fa-route"></i> 3. 총평 및 Next Step</div>
-                <div class="doc-matched-body">
-                    <div class="doc-student-data"><span class="doc-badge">학생 컨디션 평가</span><div style="margin-bottom:15px; font-weight:900; font-size:1.3rem; text-align:center; padding:15px; background:#f8fafc; border-radius:8px;">${trendHtml}</div><div style="font-size:0.85rem; color:#64748b; background:#fff1f2; border:1px solid #fecaca; padding:12px; border-radius:8px;">${trendReasonsHtml}</div></div>
-                    <div class="doc-tutor-feedback"><span class="doc-badge tutor-badge">Consultant 코멘트</span><h4 style="margin:0 0 10px 0; font-size:1rem; color:#1e293b;">이번 주 플랜 종합 평가</h4><div class="doc-text" style="margin-bottom:20px; padding-bottom:20px; border-bottom:1px dashed #cbd5e1;">${escapeHtml(fb.planEvaluation) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}</div><h4 style="margin:0 0 10px 0; font-size:1rem; color:#2563eb;"><i class="fas fa-flag-checkered"></i> 다음 주 핵심 과제 TOP 3</h4><div class="doc-text">${escapeHtml(fb.nextWeekTop3) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}</div></div>
-                </div>
-            </div>
-            <div class="doc-matched-box">
-                <div class="doc-matched-header" style="background:#fff;"><i class="fas fa-comments"></i> 4. 심층 Q&A 솔루션</div>
-                <div class="doc-matched-body" style="flex-direction:column; padding:25px; gap:20px; border-top:1px solid #e2e8f0;">
-                    <div class="qna-student"><span class="doc-badge" style="background:#fef2f2; color:#ef4444; border-color:#fecaca;">학생의 심층 질문</span>${deepQnaHtml}</div>
-                    <div class="qna-tutor"><span class="doc-badge tutor-badge" style="background:#f0fdf4; color:#16a34a; border-color:#bbf7d0;">Consultant 추가 코멘트</span><div class="doc-text">${escapeHtml(fb.extraQuestion) || '<span style="color:#94a3b8">추가 코멘트가 없습니다.</span>'}</div></div>
-                </div>
-            </div>
-            ${tutorFileBlockHtml}
-        </div>
+    const safeTitleForJs = escapeHtml(data.title || "주간 리포트").replace(/'/g, "\\'");
+    
+    const html = `
+        <div class="modal-document" id="pdfTargetDocument">
+            <div class="doc-controls" data-html2canvas-ignore="true">
+                <button class="btn-pdf" onclick="downloadReportPDF('${safeTitleForJs}')"><i class="fas fa-file-pdf"></i> PDF 파일 다운로드</button>
+                <button class="close-btn-doc" onclick="document.getElementById('feedbackModal').style.display='none'">&times;</button>
+            </div>
+            <div class="doc-header">
+                <div><span class="doc-subtitle">PREMIUM STRATEGY</span><h2 class="doc-title">스터디크랙 주간 전략리포트</h2></div>
+                <div class="doc-meta"><div>대상: <strong>${escapeHtml(data.title || "주간 리포트")}</strong></div><div>발행일: <strong>${new Date(data.date).toLocaleDateString()}</strong></div><div>분석: <strong>${consultantName}</strong></div></div>
+            </div>
+            <div class="doc-matched-box">
+                <div class="doc-matched-header"><i class="fas fa-clock"></i> 1. 학습 목표 이행 평가</div>
+                <div class="doc-matched-body">
+                    <div class="doc-student-data"><span class="doc-badge">학생 리포트</span><table class="doc-table"><thead><tr><th>과목</th><th>세부 내용</th><th>계획</th><th>실제</th><th>달성률</th></tr></thead><tbody>${detailRows}</tbody></table><div style="margin-top:15px; text-align:right; font-size:0.9rem; color:#64748b; font-weight:700; background:#f8fafc; padding:8px; border-radius:6px;">총 달성률 <span style="color:#2563eb; font-size:1.1rem; margin-left:5px;">${totalRate}</span> <span style="font-weight:normal; font-size:0.8rem;">(${totalAct} / ${totalPlan})</span></div></div>
+                    <div class="doc-tutor-feedback"><span class="doc-badge tutor-badge">Consultant 코멘트</span><h4 style="margin:0 0 10px 0; font-size:1rem; color:#1e293b;">이전 우선순위 점검 결과</h4><div class="doc-text">${escapeHtml(fb.priorityCheck) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}</div></div>
+                </div>
+            </div>
+            <div class="doc-matched-box">
+                <div class="doc-matched-header"><i class="fas fa-bullseye"></i> 2. 실전 성취도 & 취약점 분석</div>
+                <div class="doc-matched-body">
+                    <div class="doc-student-data"><span class="doc-badge">시험 성적</span><div style="padding:15px; background:#f8fafc; border-radius:12px; text-align:center; border:1px solid #e2e8f0; height:calc(100% - 50px); display:flex; flex-direction:column; justify-content:center;">${examHtml}</div></div>
+                    <div class="doc-tutor-feedback"><span class="doc-badge tutor-badge">Consultant 코멘트</span><h4 style="margin:0 0 10px 0; font-size:1rem; color:#1e293b;">취약 과목 진단 및 개선 포인트</h4><div class="doc-text">${escapeHtml(fb.weakSubject) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}</div></div>
+                </div>
+            </div>
+            <div class="doc-matched-box">
+                <div class="doc-matched-header"><i class="fas fa-route"></i> 3. 총평 및 Next Step</div>
+                <div class="doc-matched-body">
+                    <div class="doc-student-data"><span class="doc-badge">학생 컨디션 평가</span><div style="margin-bottom:15px; font-weight:900; font-size:1.3rem; text-align:center; padding:15px; background:#f8fafc; border-radius:8px;">${trendHtml}</div><div style="font-size:0.85rem; color:#64748b; background:#fff1f2; border:1px solid #fecaca; padding:12px; border-radius:8px;">${trendReasonsHtml}</div></div>
+                    <div class="doc-tutor-feedback"><span class="doc-badge tutor-badge">Consultant 코멘트</span><h4 style="margin:0 0 10px 0; font-size:1rem; color:#1e293b;">이번 주 플랜 종합 평가</h4><div class="doc-text" style="margin-bottom:20px; padding-bottom:20px; border-bottom:1px dashed #cbd5e1;">${escapeHtml(fb.planEvaluation) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}</div><h4 style="margin:0 0 10px 0; font-size:1rem; color:#2563eb;"><i class="fas fa-flag-checkered"></i> 다음 주 핵심 과제 TOP 3</h4><div class="doc-text">${escapeHtml(fb.nextWeekTop3) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}</div></div>
+                </div>
+            </div>
+            <div class="doc-matched-box">
+                <div class="doc-matched-header" style="background:#fff;"><i class="fas fa-comments"></i> 4. 심층 Q&A 솔루션</div>
+                <div class="doc-matched-body" style="flex-direction:column; padding:25px; gap:20px; border-top:1px solid #e2e8f0;">
+                    <div class="qna-student"><span class="doc-badge" style="background:#fef2f2; color:#ef4444; border-color:#fecaca;">학생의 심층 질문</span>${deepQnaHtml}</div>
+                    <div class="qna-tutor"><span class="doc-badge tutor-badge" style="background:#f0fdf4; color:#16a34a; border-color:#bbf7d0;">Consultant 추가 코멘트</span><div class="doc-text">${escapeHtml(fb.extraQuestion) || '<span style="color:#94a3b8">추가 코멘트가 없습니다.</span>'}</div></div>
+                </div>
+            </div>
+            ${tutorFileBlockHtml}
+        </div>
 
-        <div class="mobile-only-msg" style="display:none;">
-            <i class="fas fa-file-pdf" style="font-size:3rem; color:#3b82f6; margin-bottom:15px;"></i>
-            <h3 style="margin:0 0 10px 0; color:#1e293b; font-size:1.4rem;">주간 리포트 도착</h3>
-            <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px; line-height:1.5; word-break:keep-all;">
-                모바일에서는 쾌적한 열람을 위해<br>PDF 변환 후 다운로드를 지원합니다.
-            </p>
-            <button onclick="downloadReportPDF('${safeTitleForJs}')" class="mobile-pdf-btn">
-                <i class="fas fa-magic" style="color: #ffffff !important; font-size: 1.1rem !important; margin-bottom: 0 !important;"></i> 리포트 PDF 생성하기
-            </button>
-            <button class="mobile-close-btn" onclick="document.getElementById('feedbackModal').style.display='none'">
-                닫기
-            </button>
-        </div>
-    `;
+        <div class="mobile-only-msg" style="display:none;">
+            <i class="fas fa-file-pdf" style="font-size:3rem; color:#3b82f6; margin-bottom:15px;"></i>
+            <h3 style="margin:0 0 10px 0; color:#1e293b; font-size:1.4rem;">주간 리포트 도착</h3>
+            <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px; line-height:1.5; word-break:keep-all;">
+                모바일에서는 쾌적한 열람을 위해<br>PDF 변환 후 다운로드를 지원합니다.
+            </p>
+            <button onclick="downloadReportPDF('${safeTitleForJs}')" class="mobile-pdf-btn">
+                <i class="fas fa-magic" style="color: #ffffff !important; font-size: 1.1rem !important; margin-bottom: 0 !important;"></i> 리포트 PDF 생성하기
+            </button>
+            <button class="mobile-close-btn" onclick="document.getElementById('feedbackModal').style.display='none'">
+                닫기
+            </button>
+        </div>
+    `;
 
-    contentArea.innerHTML = html;
-    modal.style.display = 'block';
+    contentArea.innerHTML = html;
+    modal.style.display = 'block';
+    if (isPdfFile) setTimeout(() => { renderPdfToImages(actualPdfUrl, uniqueContainerId); }, 100);
 }
 
 async function downloadReportPDF(reportTitle) {
-    const reportElement = document.getElementById('pdfTargetDocument');
-    if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
+    const reportElement = document.getElementById('pdfTargetDocument');
+    if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
+    if (reportElement.querySelector('.pdf-loading-spinner')) return alert("첨부파일(이미지) 렌더링 중입니다. 이미지가 모두 표시되면 다시 클릭해주세요.");
 
-    const attachedPdfEl = reportElement.querySelector('#attachedPdfData');
-    const attachedPdfUrl = attachedPdfEl ? attachedPdfEl.getAttribute('data-pdf-url') : null;
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.id = 'pdf-loading-overlay';
+    loadingOverlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.98); z-index:999999; display:flex; flex-direction:column; align-items:center; justify-content:center;';
+    loadingOverlay.innerHTML = `<i class="fas fa-spinner fa-spin fa-3x" style="color:#2563eb; margin-bottom:20px;"></i><h2 style="color:#1e293b; font-weight:800; margin-bottom:10px;">프리미엄 PDF 리포트 생성 중...</h2><p style="color:#64748b;">서버에서 고화질 PDF를 렌더링하고 있습니다. 잠시만 기다려주세요.</p>`;
+    document.body.appendChild(loadingOverlay);
 
-    const loadingOverlay = document.createElement('div');
-    loadingOverlay.id = 'pdf-loading-overlay';
-    loadingOverlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.98); z-index:999999; display:flex; flex-direction:column; align-items:center; justify-content:center;';
-    loadingOverlay.innerHTML = `<i class="fas fa-spinner fa-spin fa-3x" style="color:#2563eb; margin-bottom:20px;"></i><h2 style="color:#1e293b; font-weight:800; margin-bottom:10px;">프리미엄 PDF 리포트 생성 중...</h2><p style="color:#64748b;">서버에서 고화질 PDF를 렌더링하고 병합하고 있습니다. 잠시만 기다려주세요.</p>`;
-    document.body.appendChild(loadingOverlay);
+    let finalDownloadUrl = null;
 
-    let finalDownloadUrl = null;
+    try {
+        const rawHtml = `
+            <!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><base href="https://studycrack.co.kr">
+            <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+            <style>
+                body { font-family: 'Noto Sans KR', sans-serif; background: #fff; color: #333; margin: 0; padding: 0; zoom: 0.9; }
+                .report-wrapper { width: 100%; max-width: 900px; margin: 0 auto; background: transparent; padding: 30px; box-sizing: border-box; }
+                .doc-controls, .mobile-only-msg { display: none !important; }
+                .doc-header { border-bottom: 3px solid #1e293b; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
+                .doc-subtitle { font-size: 0.85rem; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 5px; }
+                .doc-title { font-size: 2.2rem; font-weight: 900; color: #0f172a; margin: 0; }
+                .doc-meta { font-size: 0.95rem; color: #64748b; text-align: right; line-height: 1.6; }
+                .doc-matched-box { border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 30px; background: #fff; page-break-inside: avoid; break-inside: avoid; }
+                .doc-matched-header { background: #f8fafc; padding: 14px 20px; border-bottom: 1px solid #e2e8f0; font-weight: 800; font-size: 1.1rem; color: #1e293b; border-radius: 12px 12px 0 0; }
+                .doc-matched-body { display: table; width: 100%; box-sizing: border-box; }
+                .doc-student-data { display: table-cell; width: 45%; vertical-align: top; padding: 20px; border-right: 1px dashed #cbd5e1; }
+                .doc-tutor-feedback { display: table-cell; width: 55%; vertical-align: top; padding: 20px; background: #fafafa; border-radius: 0 0 12px 0; }
+                .doc-table th { padding: 8px 4px; border-bottom: 1px solid #e2e8f0; color: #94a3b8; vertical-align: middle; }
+                .doc-table td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; vertical-align: middle; }
+                .doc-badge { display: inline-block; padding: 4px 10px; background: #f1f5f9; color: #475569; border-radius: 6px; font-size: 0.8rem; font-weight: 800; margin-bottom: 15px; letter-spacing: -0.5px; border: 1px solid #e2e8f0; }
+                .doc-badge.tutor-badge { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+                .qna-pair-container { display: block; margin-bottom: 15px; }
+                .qna-student { background: #fff1f2; padding: 18px; border-radius: 8px; border: 1px solid #fecaca; margin-bottom: 15px; }
+                .qna-tutor { background: #f0fdf4; padding: 18px; border-radius: 8px; border: 1px solid #bbf7d0; }
+                .allow-page-break { page-break-before: always !important; break-before: page !important; page-break-inside: auto !important; break-inside: auto !important; margin-top: 0 !important; }
+                .allow-page-break-body { display: block !important; }
+                img { page-break-inside: avoid !important; break-inside: avoid !important; max-width: 100% !important; max-height: 250mm !important; object-fit: contain !important; display: block !important; margin: 0 auto 15px auto !important; }
+            </style></head>
+            <body><img src="https://studycrack.co.kr/assets/backgrounds/bg_studycrack_logo.png" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:500px; opacity:0.08; z-index:9999; pointer-events:none; max-height:none !important;">
+                <div class="report-wrapper">${reportElement.innerHTML}</div>
+            </body></html>
+        `;
 
-    try {
-        const rawHtml = `
-            <!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><base href="https://studycrack.co.kr">
-            <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
-            <style>
-                body { font-family: 'Noto Sans KR', sans-serif; background: #fff; color: #333; margin: 0; padding: 0; zoom: 0.9; }
-                .report-wrapper { width: 100%; max-width: 900px; margin: 0 auto; background: transparent; padding: 30px; box-sizing: border-box; }
-                .doc-controls, .mobile-only-msg { display: none !important; }
-                .doc-header { border-bottom: 3px solid #1e293b; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
-                .doc-subtitle { font-size: 0.85rem; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 5px; }
-                .doc-title { font-size: 2.2rem; font-weight: 900; color: #0f172a; margin: 0; }
-                .doc-meta { font-size: 0.95rem; color: #64748b; text-align: right; line-height: 1.6; }
-                .doc-matched-box { border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 30px; background: #fff; page-break-inside: avoid; break-inside: avoid; }
-                .doc-matched-header { background: #f8fafc; padding: 14px 20px; border-bottom: 1px solid #e2e8f0; font-weight: 800; font-size: 1.1rem; color: #1e293b; border-radius: 12px 12px 0 0; }
-                .doc-matched-body { display: table; width: 100%; box-sizing: border-box; }
-                .doc-student-data { display: table-cell; width: 45%; vertical-align: top; padding: 20px; border-right: 1px dashed #cbd5e1; }
-                .doc-tutor-feedback { display: table-cell; width: 55%; vertical-align: top; padding: 20px; background: #fafafa; border-radius: 0 0 12px 0; }
-                .doc-table th { padding: 8px 4px; border-bottom: 1px solid #e2e8f0; color: #94a3b8; vertical-align: middle; }
-                .doc-table td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; vertical-align: middle; }
-                .doc-badge { display: inline-block; padding: 4px 10px; background: #f1f5f9; color: #475569; border-radius: 6px; font-size: 0.8rem; font-weight: 800; margin-bottom: 15px; letter-spacing: -0.5px; border: 1px solid #e2e8f0; }
-                .doc-badge.tutor-badge { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
-                .qna-pair-container { display: block; margin-bottom: 15px; }
-                .qna-student { background: #fff1f2; padding: 18px; border-radius: 8px; border: 1px solid #fecaca; margin-bottom: 15px; }
-                .qna-tutor { background: #f0fdf4; padding: 18px; border-radius: 8px; border: 1px solid #bbf7d0; }
-                .allow-page-break { page-break-before: always !important; break-before: page !important; page-break-inside: auto !important; break-inside: auto !important; margin-top: 0 !important; }
-                .allow-page-break-body { display: block !important; }
-                img { page-break-inside: avoid !important; break-inside: avoid !important; max-width: 100% !important; max-height: 250mm !important; object-fit: contain !important; display: block !important; margin: 0 auto 15px auto !important; }
-            </style></head>
-            <body><img src="https://studycrack.co.kr/assets/backgrounds/bg_studycrack_logo.png" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:500px; opacity:0.08; z-index:9999; pointer-events:none; max-height:none !important;">
-                <div class="report-wrapper">${reportElement.innerHTML}</div>
-            </body></html>
-        `;
+        const token = localStorage.getItem('idToken');
+        const pdfApiUrl = 'https://ft35jsftc1.execute-api.ap-northeast-2.amazonaws.com/generate-pdf'; 
+        const response = await fetch(pdfApiUrl, { 
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ title: reportTitle, html: rawHtml })
+        });
+        const data = await response.json();
 
-        const token = localStorage.getItem('idToken');
-        const pdfApiUrl = 'https://ft35jsftc1.execute-api.ap-northeast-2.amazonaws.com/generate-pdf'; 
-        
-        const response = await fetch(pdfApiUrl, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ 
-                title: reportTitle, 
-                html: rawHtml,
-                attachedPdfUrl: attachedPdfUrl 
-            })
-        });
-        const data = await response.json();
+        if (response.ok && data.success) {
+            finalDownloadUrl = data.downloadUrl;
+        } else { throw new Error(data.error || "서버에서 PDF를 생성하지 못했습니다."); }
+    } catch (error) { alert("PDF 생성 중 오류가 발생했습니다: " + error.message); } 
+    finally { 
+        if (loadingOverlay && loadingOverlay.parentNode) {
+            loadingOverlay.parentNode.removeChild(loadingOverlay);
+        }
 
-        if (response.ok && data.success) {
-            finalDownloadUrl = data.downloadUrl;
-        } else { throw new Error(data.error || "서버에서 PDF를 생성하지 못했습니다."); }
-    } catch (error) { alert("PDF 생성 중 오류가 발생했습니다: " + error.message); } 
-    finally { 
-        if (loadingOverlay && loadingOverlay.parentNode) {
-            loadingOverlay.parentNode.removeChild(loadingOverlay);
-        }
-
-        if (finalDownloadUrl) {
-            const isMobile = window.innerWidth <= 768; 
-            
-            if (isMobile) {
-                const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent');
-                if (contentArea) {
-                    contentArea.innerHTML = `
-                        <div class="mobile-only-msg" style="display:flex !important; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px 20px; background:#ffffff; border-radius:12px; margin:0 auto; width:100%; box-sizing:border-box;">
-                            <i class="fas fa-file-pdf" style="font-size:3rem; color:#ef4444; margin-bottom:15px;"></i>
-                            <h3 style="margin:0 0 10px 0; color:#1e293b; font-size:1.4rem;">PDF 준비 완료</h3>
-                            <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px; line-height:1.5; word-break:keep-all;">리포트 생성이 성공적으로 완료되었습니다.<br>아래 버튼을 눌러 기기에 저장하거나 확인해 주세요.</p>
-                            <a href="${finalDownloadUrl}" download="스터디크랙_${reportTitle}.pdf" target="_blank" class="mobile-pdf-btn" style="width:100%; padding:14px 20px; font-size:1.05rem; background:#3b82f6; color:white; border:none; border-radius:8px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:10px; cursor:pointer; text-decoration:none;">리포트 열기 / 다운로드</a>
-                            <button class="mobile-close-btn" onclick="document.getElementById('feedbackModal').style.display='none'" style="width:100%; padding:14px; font-size:1rem; background:#f1f5f9; border:none; border-radius:8px; color:#475569; font-weight:700; cursor:pointer;">닫기</button>
-                        </div>
-                    `;
-                }
-            } else {
-                const link = document.createElement('a'); 
-                link.href = finalDownloadUrl; 
-                link.target = '_blank'; 
-                link.download = `스터디크랙_${reportTitle}.pdf`; 
-                document.body.appendChild(link); 
-                link.click(); 
-                document.body.removeChild(link);
-            }
-        }
-    }
+        if (finalDownloadUrl) {
+            const isMobile = window.innerWidth <= 768; 
+            
+            if (isMobile) {
+                // 💡 [유저 솔루션 적용] 기존 feedbackModal의 컨텐츠를 모바일 메시지로 갈아치웁니다.
+                const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent');
+                if (contentArea) {
+                    contentArea.innerHTML = `
+                        <div class="mobile-only-msg" style="display:flex !important; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px 20px; background:#ffffff; border-radius:12px; margin:0 auto; width:100%; box-sizing:border-box;">
+                            <i class="fas fa-file-pdf" style="font-size:3rem; color:#ef4444; margin-bottom:15px;"></i>
+                            <h3 style="margin:0 0 10px 0; color:#1e293b; font-size:1.4rem;">PDF 준비 완료</h3>
+                            <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px; line-height:1.5; word-break:keep-all;">리포트 생성이 성공적으로 완료되었습니다.<br>아래 버튼을 눌러 기기에 저장하거나 확인해 주세요.</p>
+                            <a href="${finalDownloadUrl}" download="스터디크랙_${reportTitle}.pdf" target="_blank" class="mobile-pdf-btn" style="width:100%; padding:14px 20px; font-size:1.05rem; background:#3b82f6; color:white; border:none; border-radius:8px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:10px; cursor:pointer; text-decoration:none;">리포트 열기 / 다운로드</a>
+                            <button class="mobile-close-btn" onclick="document.getElementById('feedbackModal').style.display='none'" style="width:100%; padding:14px; font-size:1rem; background:#f1f5f9; border:none; border-radius:8px; color:#475569; font-weight:700; cursor:pointer;">닫기</button>
+                        </div>
+                    `;
+                }
+            } else {
+                const link = document.createElement('a'); 
+                link.href = finalDownloadUrl; 
+                link.target = '_blank'; 
+                link.download = `스터디크랙_${reportTitle}.pdf`; 
+                document.body.appendChild(link); 
+                link.click(); 
+                document.body.removeChild(link);
+            }
+        }
+    }
 }
 
 let currentMobileStep = 0; let wizardSteps = []; let wizardResizeHandler = null;
