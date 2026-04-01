@@ -1440,41 +1440,6 @@ function renderFeedbackList() {
     });
 }
 
-async function renderPdfToImages(pdfUrl, containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
-    try {
-        container.classList.add('is-rendering');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-        const loadingTask = pdfjsLib.getDocument(pdfUrl);
-        const pdf = await loadingTask.promise;
-        const fragment = document.createDocumentFragment();
-
-        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-            const page = await pdf.getPage(pageNum);
-            const viewport = page.getViewport({ scale: 1.0 }); 
-
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.height = viewport.height; canvas.width = viewport.width;
-
-            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-
-            const img = document.createElement('img');
-            img.src = canvas.toDataURL('image/jpeg', 0.8);
-            img.style.cssText = 'max-width:100%; height:auto; margin-bottom:15px; border-radius:8px; border:1px solid #cbd5e1; box-shadow:0 2px 8px rgba(0,0,0,0.05); display:block;';
-            fragment.appendChild(img);
-        }
-        container.innerHTML = ''; container.appendChild(fragment);
-    } catch (error) {
-        container.innerHTML = `<div style="color:#ef4444; padding:20px; text-align:center;">PDF를 화면에 불러오지 못했습니다.</div>`;
-    } finally {
-        container.classList.remove('is-rendering'); 
-    }
-}
-
 function openFeedbackModal(data) {
     const modal = document.getElementById('feedbackModal');
     const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent'); 
@@ -1563,15 +1528,20 @@ function openFeedbackModal(data) {
     }
     
     let tutorFileBlockHtml = '';
-    const uniqueContainerId = `pdf-render-${Date.now()}`; 
     let isPdfFile = false; let actualPdfUrl = "";
 
     if (fb.tutorImage && String(fb.tutorImage).trim() !== "") {
         isPdfFile = fb.tutorImage.toLowerCase().includes('.pdf');
         actualPdfUrl = fb.tutorImage;
         let fileDisplayHtml = '';
+        
         if (isPdfFile) {
-            fileDisplayHtml = `<div id="${uniqueContainerId}" style="width: 100%; display: block; text-align: center;"><div style="padding: 40px 0; color:#3b82f6; font-weight:bold;" class="pdf-loading-spinner"><i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom:10px;"></i><br>튜터의 첨삭 PDF 문서를 불러오는 중입니다...</div></div>`;
+            fileDisplayHtml = `
+                <div id="attachedPdfData" data-pdf-url="${actualPdfUrl}" style="text-align:center; padding: 40px 0; background:#f8fafc; border-radius:8px; border:1px solid #cbd5e1;">
+                    <i class="fas fa-file-pdf" style="font-size:3rem; color:#ef4444; margin-bottom:10px;"></i>
+                    <h3 style="margin:0; color:#1e293b;">튜터 첨삭 PDF 첨부됨</h3>
+                    <p style="color:#64748b; font-size:0.9rem;">(다운로드 시 리포트 뒷장에 병합됩니다)</p>
+                </div>`;
         } else {
             const noCacheUrl = `${escapeHtml(fb.tutorImage)}?t=${new Date().getTime()}`;
             fileDisplayHtml = `<div style="text-align:center; padding: 10px 0;"><img src="${noCacheUrl}" crossorigin="anonymous" alt="튜터 플래너 코칭" style="max-width:100%; height:auto; border-radius:8px; border:1px solid #cbd5e1; display:block; margin: 0 auto;"></div>`;
@@ -1639,18 +1609,19 @@ function openFeedbackModal(data) {
 
     contentArea.innerHTML = html;
     modal.style.display = 'block';
-    if (isPdfFile) setTimeout(() => { renderPdfToImages(actualPdfUrl, uniqueContainerId); }, 100);
 }
 
 async function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
-    if (reportElement.querySelector('.pdf-loading-spinner')) return alert("첨부파일(이미지) 렌더링 중입니다. 이미지가 모두 표시되면 다시 클릭해주세요.");
+
+    const attachedPdfEl = reportElement.querySelector('#attachedPdfData');
+    const attachedPdfUrl = attachedPdfEl ? attachedPdfEl.getAttribute('data-pdf-url') : null;
 
     const loadingOverlay = document.createElement('div');
     loadingOverlay.id = 'pdf-loading-overlay';
     loadingOverlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.98); z-index:999999; display:flex; flex-direction:column; align-items:center; justify-content:center;';
-    loadingOverlay.innerHTML = `<i class="fas fa-spinner fa-spin fa-3x" style="color:#2563eb; margin-bottom:20px;"></i><h2 style="color:#1e293b; font-weight:800; margin-bottom:10px;">프리미엄 PDF 리포트 생성 중...</h2><p style="color:#64748b;">서버에서 고화질 PDF를 렌더링하고 있습니다. 잠시만 기다려주세요.</p>`;
+    loadingOverlay.innerHTML = `<i class="fas fa-spinner fa-spin fa-3x" style="color:#2563eb; margin-bottom:20px;"></i><h2 style="color:#1e293b; font-weight:800; margin-bottom:10px;">프리미엄 PDF 리포트 생성 중...</h2><p style="color:#64748b;">서버에서 고화질 PDF를 렌더링하고 병합하고 있습니다. 잠시만 기다려주세요.</p>`;
     document.body.appendChild(loadingOverlay);
 
     let finalDownloadUrl = null;
@@ -1690,9 +1661,15 @@ async function downloadReportPDF(reportTitle) {
 
         const token = localStorage.getItem('idToken');
         const pdfApiUrl = 'https://ft35jsftc1.execute-api.ap-northeast-2.amazonaws.com/generate-pdf'; 
+        
         const response = await fetch(pdfApiUrl, { 
-            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ title: reportTitle, html: rawHtml })
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ 
+                title: reportTitle, 
+                html: rawHtml,
+                attachedPdfUrl: attachedPdfUrl 
+            })
         });
         const data = await response.json();
 
@@ -1709,7 +1686,6 @@ async function downloadReportPDF(reportTitle) {
             const isMobile = window.innerWidth <= 768; 
             
             if (isMobile) {
-                // 💡 [유저 솔루션 적용] 기존 feedbackModal의 컨텐츠를 모바일 메시지로 갈아치웁니다.
                 const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent');
                 if (contentArea) {
                     contentArea.innerHTML = `
