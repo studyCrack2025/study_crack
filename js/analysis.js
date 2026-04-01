@@ -1882,49 +1882,132 @@ function loadWeeklyDataToForm(data) {
 
 function updateCharCount(el) { const countSpan = el.parentElement.querySelector('.char-count span'); if(countSpan) countSpan.innerText = el.value.length; }
 
-async function submitWeeklyCheck() {
-    const totalPlanEl = document.getElementById('totalPlan'); if (!totalPlanEl) return;
-    const totalPlan = parseFloat(totalPlanEl.innerText); if (totalPlan === 0) { alert("학습 계획 시간을 입력해주세요."); switchWeeklyTab('step1'); return; }
-
-    const getVal = (id) => document.getElementById(id) ? document.getElementById(id).value.trim() : "";
-    const q1 = getVal('deepQ1'); const q2 = getVal('deepQ2'); const q3 = getVal('deepQ3'); const q4 = getVal('deepQ4');
-    if (!q1 && !q2 && !q3 && !q4) { alert("심층 코칭 질문을 최소 1개 이상 작성해주세요."); switchWeeklyTab('step2'); return; }
-
-    const mockType = document.getElementById('mockExamType').value; let mockData = { type: mockType, proofFile: null, scores: {} };
-    if (mockType !== 'none') {
-        const fileInput = document.getElementById('mockExamProof'); mockData.proofFile = (fileInput && fileInput.files.length > 0) ? fileInput.files[0].name : "file_uploaded"; 
-        mockData.scores = { kor: getVal('mockKorScore'), korOpt: getVal('mockKorOpt'), math: getVal('mockMathScore'), mathOpt: getVal('mockMathOpt'), eng: getVal('mockEngScore'), inq1: getVal('mockInq1Score'), inq1Name: getVal('mockInq1Name'), inq2: getVal('mockInq2Score'), inq2Name: getVal('mockInq2Name') };
+// 모바일/PC 화면 전환을 통합으로 처리하는 헬퍼 함수
+function forceMoveToStep(mobileIdx, tabId) {
+    const modalContent = document.querySelector('.check-modal-content');
+    if (modalContent && modalContent.classList.contains('mobile-wizard-mode')) {
+        currentMobileStep = mobileIdx;
+        if (typeof updateMobileWizardUI === 'function') updateMobileWizardUI();
+    } else {
+        if (typeof switchWeeklyTab === 'function') switchWeeklyTab(tabId);
     }
+}
 
-    const studyCards = document.querySelectorAll('.subject-card'); let studyData = [];
-    studyCards.forEach(card => {
-        let subjName = ""; const mainSub = card.querySelector('.main-sub'); const detail = card.querySelector('.sub-detail'); const custom = card.querySelector('.custom-subj');
-        if(mainSub) { subjName = mainSub.innerText.replace('↳', '').trim(); if(detail && detail.value) subjName += `(${detail.value.trim()})`; } 
-        else if(custom) { subjName = custom.value.trim() || "기타"; }
-        const planEl = card.querySelector('.plan-time'); const actEl = card.querySelector('.act-time');
-        const plan = planEl ? (parseFloat(planEl.value) || 0) : 0; const act = actEl ? (parseFloat(actEl.value) || 0) : 0;
-        if(plan > 0 || act > 0) studyData.push({ subject: subjName, plan, act });
-    });
+async function submitWeeklyCheck() {
+    const submitBtn = document.querySelector('.save-btn'); 
+    const originalBtnText = submitBtn ? submitBtn.innerText : "저장";
 
-    const trendEl = document.querySelector('input[name="studyTrend"]:checked'); const trend = trendEl ? trendEl.value : 'keep'; let reasons = [];
-    if(trend === 'down') { document.querySelectorAll('#slumpReasonBox input:checked').forEach(cb => reasons.push(cb.value)); const det = document.getElementById('slumpDetail').value; if(det) reasons.push(det); }
-
-    if(!confirm("제출하시겠습니까?")) return;
-
-    const token = localStorage.getItem('idToken'); const submitBtn = document.querySelector('.save-btn'); const originalBtnText = submitBtn ? submitBtn.innerText : "저장";
     try {
-        if(submitBtn) { submitBtn.disabled = true; submitBtn.innerText = "처리 중..."; }
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.innerText = "처리 중..."; }
 
-        const currentUrls = currentPlannerFiles.filter(f => typeof f === 'string'); const filesToDelete = originalPlannerFiles.filter(url => !currentUrls.includes(url));
-        if (filesToDelete.length > 0) { await Promise.all(filesToDelete.map(url => fetch(FILE_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ type: 'delete_s3_file', data: { fileUrl: url } }) }))); }
-        let finalFileUrls = [...currentUrls]; const newFiles = currentPlannerFiles.filter(f => typeof f !== 'string');
+        const totalPlanEl = document.getElementById('totalPlan'); 
+        if (!totalPlanEl) {
+            alert("시스템 오류: 학습 계획 시간 요소를 찾을 수 없습니다.");
+            return;
+        }
+
+        const totalPlan = parseFloat(totalPlanEl.innerText); 
+        if (isNaN(totalPlan) || totalPlan === 0) { 
+            alert("학습 계획 시간을 1시간 이상 입력해주세요."); 
+            forceMoveToStep(0, 'step1');
+            return; 
+        }
+
+        const getVal = (id) => document.getElementById(id) ? document.getElementById(id).value.trim() : "";
+        const q1 = getVal('deepQ1'), q2 = getVal('deepQ2'), q3 = getVal('deepQ3'), q4 = getVal('deepQ4');
+        if (!q1 && !q2 && !q3 && !q4) { 
+            alert("심층 코칭 질문을 최소 1개 이상 작성해주세요."); 
+            forceMoveToStep(1, 'step2');
+            return; 
+        }
+
+        // 요소가 존재하지 않을 때를 대비한 안전한 값 추출
+        const mockExamTypeEl = document.getElementById('mockExamType');
+        const mockType = mockExamTypeEl ? mockExamTypeEl.value : 'none';
+        
+        let mockData = { type: mockType, proofFile: null, scores: {} };
+        if (mockType !== 'none') {
+            const fileInput = document.getElementById('mockExamProof');
+            mockData.proofFile = (fileInput && fileInput.files.length > 0) ? fileInput.files[0].name : "file_uploaded"; 
+            mockData.scores = { 
+                kor: getVal('mockKorScore'), korOpt: getVal('mockKorOpt'), 
+                math: getVal('mockMathScore'), mathOpt: getVal('mockMathOpt'), 
+                eng: getVal('mockEngScore'), 
+                inq1: getVal('mockInq1Score'), inq1Name: getVal('mockInq1Name'), 
+                inq2: getVal('mockInq2Score'), inq2Name: getVal('mockInq2Name') 
+            };
+        }
+
+        const studyCards = document.querySelectorAll('.subject-card'); 
+        let studyData = [];
+        studyCards.forEach(card => {
+            let subjName = ""; 
+            const mainSub = card.querySelector('.main-sub'); 
+            const detail = card.querySelector('.sub-detail'); 
+            const custom = card.querySelector('.custom-subj');
+            
+            if (mainSub) { 
+                subjName = mainSub.innerText.replace('↳', '').trim(); 
+                if(detail && detail.value) subjName += `(${detail.value.trim()})`; 
+            } else if (custom) { 
+                subjName = custom.value.trim() || "기타"; 
+            }
+            
+            const planEl = card.querySelector('.plan-time'); 
+            const actEl = card.querySelector('.act-time');
+            const plan = planEl ? (parseFloat(planEl.value) || 0) : 0; 
+            const act = actEl ? (parseFloat(actEl.value) || 0) : 0;
+            
+            if (plan > 0 || act > 0) studyData.push({ subject: subjName, plan, act });
+        });
+
+        const trendEl = document.querySelector('input[name="studyTrend"]:checked'); 
+        const trend = trendEl ? trendEl.value : 'keep'; 
+        let reasons = [];
+        if (trend === 'down') { 
+            document.querySelectorAll('#slumpReasonBox input:checked').forEach(cb => reasons.push(cb.value)); 
+            const det = document.getElementById('slumpDetail');
+            if(det && det.value) reasons.push(det.value); 
+        }
+
+        if (!confirm("제출하시겠습니까?")) return;
+
+        const token = localStorage.getItem('idToken'); 
+
+        const currentUrls = currentPlannerFiles.filter(f => typeof f === 'string'); 
+        const filesToDelete = originalPlannerFiles.filter(url => !currentUrls.includes(url));
+        
+        if (filesToDelete.length > 0) { 
+            await Promise.all(filesToDelete.map(url => fetch(FILE_API_URL, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                body: JSON.stringify({ type: 'delete_s3_file', data: { fileUrl: url } }) 
+            }))); 
+        }
+        
+        let finalFileUrls = [...currentUrls]; 
+        const newFiles = currentPlannerFiles.filter(f => typeof f !== 'string');
+        
         if (newFiles.length > 0) {
             for (const file of newFiles) {
-                const res = await fetch(FILE_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ type: 'get_presigned_url', data: { fileName: file.name, fileType: file.type, folder: 'planner' } }) });
-                if (!res.ok) throw new Error("업로드 URL 발급 실패");
+                // 🔒 [보안] 파일명 살균 (Sanitization) 처리 적용
+                const secureFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`;
+
+                const res = await fetch(FILE_API_URL, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    body: JSON.stringify({ type: 'get_presigned_url', data: { fileName: secureFileName, fileType: file.type, folder: 'planner' } }) 
+                });
+                
+                if (!res.ok) throw new Error("플래너 업로드 URL 발급 실패");
                 const { uploadUrl, fileUrl, fields } = await res.json();
-                const formData = new FormData(); Object.entries(fields || {}).forEach(([k, v]) => formData.append(k, v)); formData.append('file', file);
-                await fetch(uploadUrl, { method: 'POST', body: formData }); finalFileUrls.push(fileUrl);
+                const formData = new FormData(); 
+                
+                Object.entries(fields || {}).forEach(([k, v]) => formData.append(k, v)); 
+                formData.append('file', file);
+                
+                await fetch(uploadUrl, { method: 'POST', body: formData }); 
+                finalFileUrls.push(fileUrl);
             }
         }
         
@@ -1932,28 +2015,74 @@ async function submitWeeklyCheck() {
             const mockFileInput = document.getElementById('mockExamProof');
             if (mockFileInput && mockFileInput.files.length > 0) {
                 const mFile = mockFileInput.files[0];
-                const mRes = await fetch(FILE_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ type: 'get_presigned_url', data: { fileName: mFile.name, fileType: mFile.type, folder: 'mock_exams' } }) });
-                if (!mRes.ok) throw new Error("모의고사 파일 업로드 URL 발급 실패");
+                // 🔒 [보안] 파일명 살균 (Sanitization) 처리 적용
+                const secureMockName = `mock_${Date.now()}_${mFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`;
+
+                const mRes = await fetch(FILE_API_URL, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    body: JSON.stringify({ type: 'get_presigned_url', data: { fileName: secureMockName, fileType: mFile.type, folder: 'mock_exams' } }) 
+                });
+                
+                if (!mRes.ok) throw new Error("모의고사 성적표 업로드 URL 발급 실패");
                 const { uploadUrl, fields, fileUrl } = await mRes.json();
-                const formData = new FormData(); Object.entries(fields || {}).forEach(([k, v]) => formData.append(k, v)); formData.append('file', mFile); 
+                
+                const formData = new FormData(); 
+                Object.entries(fields || {}).forEach(([k, v]) => formData.append(k, v)); 
+                formData.append('file', mFile); 
+                
                 const uploadRes = await fetch(uploadUrl, { method: 'POST', body: formData });
-                if (!uploadRes.ok) throw new Error("S3 업로드 실패");
+                if (!uploadRes.ok) throw new Error("모의고사 S3 업로드 실패");
+                
                 mockData.proofFile = fileUrl; 
             } else if (!mockData.proofFile || mockData.proofFile === "file_uploaded") {
-                alert("모의고사 성적 인증 사진을 첨부해주세요."); switchWeeklyTab('step1'); 
-                if(submitBtn) { submitBtn.disabled = false; submitBtn.innerText = originalBtnText; } return;
+                alert("모의고사 성적 인증 사진을 첨부해주세요."); 
+                forceMoveToStep(0, 'step1'); 
+                return;
             }
         }
 
         const today = new Date().toISOString();
         const title = (typeof getWeekTitle === 'function') ? getWeekTitle(new Date()) : "주간점검";
         const weekId = generateWeekId(new Date());
-        const weeklyData = { weekId, date: today, title: title, studyTime: { details: studyData, totalPlan: document.getElementById('totalPlan').innerText, totalAct: document.getElementById('totalAct').innerText, totalRate: document.getElementById('totalRate').innerText }, mockExam: mockData, trend: { status: trend, reasons: reasons }, deepAnswers: [q1, q2, q3, q4], plannerFiles: finalFileUrls };
+        
+        const weeklyData = { 
+            weekId, date: today, title: title, 
+            studyTime: { 
+                details: studyData, 
+                totalPlan: document.getElementById('totalPlan') ? document.getElementById('totalPlan').innerText : '0H', 
+                totalAct: document.getElementById('totalAct') ? document.getElementById('totalAct').innerText : '0H', 
+                totalRate: document.getElementById('totalRate') ? document.getElementById('totalRate').innerText : '0%' 
+            }, 
+            mockExam: mockData, 
+            trend: { status: trend, reasons: reasons }, 
+            deepAnswers: [q1, q2, q3, q4], 
+            plannerFiles: finalFileUrls 
+        };
 
-        const res = await fetch(REPORT_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ type: 'save_weekly_check', data: weeklyData }) });
-        if(res.ok) { alert("제출이 완료되었습니다."); closeWeeklyModal(); location.reload(); } else { throw new Error("서버 응답 오류"); }
-    } catch(e) { console.error("Submit Error:", e); alert("처리 중 오류가 발생했습니다: " + e.message); } 
-    finally { if(submitBtn) { submitBtn.disabled = false; submitBtn.innerText = originalBtnText; } }
+        const res = await fetch(REPORT_API_URL, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+            body: JSON.stringify({ type: 'save_weekly_check', data: weeklyData }) 
+        });
+        
+        if (res.ok) { 
+            alert("제출이 완료되었습니다."); 
+            closeWeeklyModal(); 
+            location.reload(); 
+        } else { 
+            throw new Error("서버 응답 오류가 발생했습니다."); 
+        }
+        
+    } catch(e) { 
+        console.error("Submit Error:", e); 
+        alert("처리 중 오류가 발생했습니다: " + e.message); 
+    } finally { 
+        if (submitBtn) { 
+            submitBtn.disabled = false; 
+            submitBtn.innerText = originalBtnText; 
+        } 
+    }
 }
 
 function updateMockFileName(input) {
