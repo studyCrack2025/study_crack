@@ -251,8 +251,11 @@ function formatPhoneNumber(rawPhone) {
     return cleaned.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/, "$1-$2-$3");
 }
 
-// 결제 데이터 세팅 및 페이지 이동 (시작일 계산 포함)
-async function processPayment() {
+// 티어별 결제 금액 (서버 사이드 TIER_PRICES 와 동일하게 유지)
+const TIER_PRICES_KRW = { 'trial': 30000, 'basic': 25000, 'standard': 149000, 'pro': 299000 };
+
+// NicePay JS SDK 결제창 호출
+function processPayment() {
     const name = document.getElementById('name').value;
     const rawPhone = document.getElementById('phone').value;
     const email = document.getElementById('email').value;
@@ -265,6 +268,7 @@ async function processPayment() {
     }
 
     const formattedPhone = formatPhoneNumber(rawPhone);
+    const userId = localStorage.getItem('userId');
 
     // 결제 시작일(effectiveStartDate) 설정 로직
     // 현재 구독이 유효한 경우 → 잔여 기간 보존을 위해 기존 만료일부터 새 구독 시작
@@ -274,16 +278,30 @@ async function processPayment() {
         startDate = globalExpireDate;
     }
 
-    const checkoutData = {
-        name: name,
-        phone: formattedPhone,
-        email: email,
-        tier: selectedTier,
-        productName: selectedProductName,
-        effectiveStartDate: startDate.toISOString(),
-        userId: localStorage.getItem('userId') 
-    };
+    const amount = TIER_PRICES_KRW[selectedTier];
+    if (!amount) { alert("유효하지 않은 상품입니다."); return; }
 
-    localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
-    window.location.href = '/checkout'; 
+    const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+
+    AUTHNICE.requestPay({
+        clientId: CONFIG.nicepay.clientId,
+        method: 'card',
+        orderId: orderId,
+        amount: amount,
+        goodsName: `스터디크랙 ${selectedProductName} 멤버십`,
+        buyerName: name,
+        buyerEmail: email,
+        buyerTel: formattedPhone,
+        returnUrl: CONFIG.api.payment_return,
+        mallReserved: JSON.stringify({
+            userId: userId,
+            tier: selectedTier,
+            productName: selectedProductName,
+            effectiveStartDate: startDate.toISOString()
+        }),
+        fnError: function(result) {
+            console.error('[NicePay Error]', result);
+            alert('결제 창 오류: ' + (result.errorMsg || '알 수 없는 오류'));
+        }
+    });
 }
