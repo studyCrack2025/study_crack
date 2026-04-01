@@ -790,35 +790,40 @@ async function loadMatchingData(isSilent = false) {
 }
 
 function renderNewMatchingList() {
-    const container = document.getElementById('newMatchList'); container.innerHTML = '';
-    if (globalUnmatchedStudents.length === 0) { container.innerHTML = '<div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: #94a3b8; background: #f8fafc; border-radius: 8px;">현재 신규 매칭 대기 중인 학생이 없습니다.</div>'; return; }
+    const container = document.getElementById('newMatchList'); 
+    container.innerHTML = '';
+    
+    if (globalUnmatchedStudents.length === 0) { 
+        container.innerHTML = '<div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: #94a3b8; background: #f8fafc; border-radius: 8px;">현재 신규 매칭 대기 중인 학생이 없습니다.</div>'; 
+        return; 
+    }
 
     const tutorOptions = globalTutorsForMatch.map(t => `<option value="${t.nickname}">${t.nickname} (${t.name}) - 배정 ${t.totalStudents}명</option>`).join('');
 
     globalUnmatchedStudents.forEach(s => {
-    const tierBadge = getTierBadgeHTML(s);
-    const card = document.createElement('div'); 
-    card.className = 'match-card';
-    card.style.cssText = "background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 15px;";
-    
-    card.innerHTML = `
-        <div class="match-card-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
-            <div>
-                <h4 class="match-card-name" style="margin:0 0 5px 0; font-size:1.1rem; color:#1e293b;">${escapeHtml(s.name)}</h4>
-                <div class="match-card-date" style="font-size:0.85rem; color:#94a3b8;">가입일: ${new Date(s.createdAt).toLocaleDateString()}</div>
+        const tierBadge = getTierBadgeHTML(s);
+        const card = document.createElement('div'); 
+        card.className = 'match-card';
+        card.style.cssText = "background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 15px;";
+        
+        card.innerHTML = `
+            <div class="match-card-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
+                <div>
+                    <h4 class="match-card-name" style="margin:0 0 5px 0; font-size:1.1rem; color:#1e293b;">${escapeHtml(s.name)}</h4>
+                    <div class="match-card-date" style="font-size:0.85rem; color:#94a3b8;">가입일: ${new Date(s.createdAt).toLocaleDateString()}</div>
+                </div>
+                <div>${tierBadge}</div>
             </div>
-            <div>${tierBadge}</div>
-        </div>
-        <div class="match-select-box" style="display:flex; gap:10px;">
-            <select id="select_tutor_${s.userid}" style="flex:1; padding:8px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.9rem;">
-                <option value="">튜터 선택...</option>
-                ${tutorOptions}
-            </select>
-            <button class="match-btn" onclick="executeMatching('${s.userid}', false)" style="background:#3b82f6; color:white; border:none; padding:8px 15px; border-radius:4px; font-weight:bold; cursor:pointer;">배정하기</button>
-        </div>
-    `;
-    container.appendChild(card);
-});
+            <div class="match-select-box" style="display:flex; gap:10px;">
+                <select id="select_tutor_${s.userid}" style="flex:1; padding:8px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.9rem;">
+                    <option value="">튜터 선택...</option>
+                    ${tutorOptions}
+                </select>
+                <button class="match-btn" onclick="executeMatching('${s.userid}', false)" style="background:#3b82f6; color:white; border:none; padding:8px 15px; border-radius:4px; font-weight:bold; cursor:pointer;">배정하기</button>
+            </div>
+        `;
+        container.appendChild(card);
+    });
 }
 
 function initTutorChangeSelects() {
