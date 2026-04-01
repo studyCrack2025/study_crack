@@ -60,6 +60,11 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = '/login';
         return;
     }
+    // ?test=1 파라미터가 있을 때만 100원 TEST 옵션 노출
+    if (new URLSearchParams(window.location.search).get('test') === '1') {
+        const testOption = document.getElementById('testOption');
+        if (testOption) testOption.style.display = 'block';
+    }
     fetchUserInfo(userId);
 });
 
@@ -252,7 +257,7 @@ function formatPhoneNumber(rawPhone) {
 }
 
 // 티어별 결제 금액 (서버 사이드 TIER_PRICES 와 동일하게 유지)
-const TIER_PRICES_KRW = { 'trial': 30000, 'basic': 25000, 'standard': 149000, 'pro': 299000 };
+const TIER_PRICES_KRW = { 'test': 100, 'trial': 30000, 'basic': 25000, 'standard': 149000, 'pro': 299000 };
 
 // NicePay JS SDK 결제창 호출
 function processPayment() {
