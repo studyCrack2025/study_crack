@@ -7,15 +7,13 @@ const adminId = localStorage.getItem('userId');
 const API_URL = CONFIG.api.admin;
 const REPORT_API_URL = CONFIG.api.report;
 const FILE_API_URL = CONFIG.api.file;
-// 💡 결제 내역 전용 API 주소를 위한 상수 (기존 Auth나 Payment 람다 등에 연결된 주소)
 const PAYMENT_API_URL = CONFIG.api.payment || CONFIG.api.admin; 
 
 let currentStudentData = null;
 let currentTier = 'free';
-let currentPaymentsData = []; // 분리된 결제 데이터 보관용
-let currentWeeklyData = [];   // 분리된 주간 리포트 데이터 보관용
+let currentPaymentsData = []; 
+let currentWeeklyData = [];   
 
-// 💡 공통 apiFetch 함수
 async function apiFetch(url, options = {}) {
     const token = localStorage.getItem('accessToken');
     const defaultHeaders = {
@@ -27,7 +25,6 @@ async function apiFetch(url, options = {}) {
 
     try {
         const response = await fetch(url, options);
-
         if (!response.ok) {
             if (response.status === 401 || response.status === 403) {
                 alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
@@ -47,14 +44,12 @@ async function apiFetch(url, options = {}) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. 잘못된 접근 차단
     if (!targetUserId || !adminId) {
         alert("잘못된 접근입니다.");
         window.location.href = '/login';
         return;
     }
 
-    // 2. Back 버튼 처리
     const backBtn = document.querySelector('.back-btn');
     const userRole = localStorage.getItem('userRole');
 
@@ -69,12 +64,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     initRoleBasedView();
-    // 💡 분리된 데이터를 병렬로 모두 불러오는 새 함수 호출
     loadAllStudentData();
     
     const today = new Date();
     initDateFilter(today.getFullYear(), today.getMonth() + 1);
     initProDateFilter(today.getFullYear(), today.getMonth() + 1);
+
+    // 💡 [버그 수정] 드롭다운 변경 시 리스트 갱신 이벤트 리스너 추가
+    const filterYear = document.getElementById('filterYear');
+    const filterMonth = document.getElementById('filterMonth');
+    if (filterYear) filterYear.addEventListener('change', renderWeeklyTab);
+    if (filterMonth) filterMonth.addEventListener('change', renderWeeklyTab);
+
+    const proFilterYear = document.getElementById('proFilterYear');
+    const proFilterMonth = document.getElementById('proFilterMonth');
+    if (proFilterYear) proFilterYear.addEventListener('change', renderProTab);
+    if (proFilterMonth) proFilterMonth.addEventListener('change', renderProTab);
 });
 
 function initRoleBasedView() {
@@ -126,7 +131,6 @@ function switchTab(tabName) {
     const btn = document.getElementById(btnId);
     if(btn) btn.classList.add('active');
 
-    // 특수 탭 렌더링 호출
     if (currentStudentData) {
         if (tabName === 'weekly') renderWeeklyTab();
         if (tabName === 'special') renderProTab();
@@ -141,7 +145,6 @@ function escapeHtml(text) {
 function formatReportKey(key, isPro = true) {
     if (!key) return "알 수 없는 리포트";
     
-    // 1. 6자리 숫자 형식 처리 (예: 260401 -> 26년 4월 1주차)
     if (key.length === 6 && /^\d+$/.test(key)) {
         const yy = key.substring(0, 2);
         const mm = parseInt(key.substring(2, 4));
@@ -150,14 +153,12 @@ function formatReportKey(key, isPro = true) {
         return `${yy}년 ${mm}월 ${ww}주차${suffix}`;
     }
     
-    // 2. 기존 하이픈 형식 처리 (예: 2024-W10 -> 2024년 10주차)
     const match = key.match(/^(\d{4})-W(\d{1,2})$/);
     if (match) {
         const suffix = isPro ? " PRO 리포트" : "";
         return `${match[1]}년 ${match[2]}주차${suffix}`;
     }
     
-    // 패턴이 안 맞으면 그대로 출력
     return key;
 }
 
@@ -185,10 +186,8 @@ function parseDynamoItem(item) {
     return obj;
 }
 
-// 분리된 API를 병렬로 호출하여 데이터를 모으는 함수
 async function loadAllStudentData() {
     try {
-        // 1. 학생 기본 정보 (AdminCore)
         const detailPromise = apiFetch(API_URL, {
             method: 'POST',
             body: JSON.stringify({
@@ -196,7 +195,6 @@ async function loadAllStudentData() {
             })
         }).then(res => res.json());
 
-        // 2. 주간 리포트 (ReportCore)
         const weeklyPromise = apiFetch(REPORT_API_URL, {
             method: 'POST',
             body: JSON.stringify({
@@ -204,8 +202,6 @@ async function loadAllStudentData() {
             })
         }).then(res => res.json()).catch(() => ({ weeklyReports: [] }));
 
-        // 3. 결제 내역 (AdminCore 또는 PaymentCore에 라우팅 구현 가정)
-        // 백엔드 AdminCore의 'admin_get_payments' API 호출 (없다면 추가 필요)
         const paymentPromise = apiFetch(API_URL, {
             method: 'POST',
             body: JSON.stringify({
@@ -249,7 +245,7 @@ async function loadProReportsForAdmin() {
 }
 
 // -----------------------------------------------------------
-// 튜터/관리자 인터랙션 함수들 (API 통신 로직 변경 없음)
+// 튜터/관리자 인터랙션 함수들 
 // -----------------------------------------------------------
 async function submitRejectReason(key) {
     const reasonText = document.getElementById('rejectReasonText').value;
@@ -363,12 +359,10 @@ function renderData(s) {
     const profileImg = document.getElementById('studentProfileImg');
     if(s.profileImage) profileImg.src = s.profileImage;
 
-    // 💡 [핵심] 분리된 스키마에 맞춰 currentSubscription 정보를 우선 확인
     currentTier = 'free';
     if (s.currentSubscription && s.currentSubscription.status === 'active') {
         currentTier = (s.currentSubscription.tier || "free").toLowerCase();
     } else {
-        // Fallback: 혹시나 남아있을 수 있는 payments 배열 확인 (이관 과도기용)
         currentTier = calcTierFromLegacy(currentPaymentsData || []);
     }
 
@@ -385,7 +379,6 @@ function renderData(s) {
     
     initQuantitativeData(s.quantitative);
     
-    // 💡 분리해서 불러온 결제 데이터 렌더링
     renderPayments(currentPaymentsData);
     
     loadProReportsForAdmin();
@@ -410,19 +403,6 @@ function renderTierBadge(tier) {
     else if (tier === 'basic') html = '<span class="tier-badge" style="background: linear-gradient(135deg, #3B82F6, #60A5FA); border: 2px solid #3B82F6; color: white;">BASIC TIER</span>';
     else html = '<span class="tier-badge" style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1;">FREE USER</span>';
     area.innerHTML = html;
-}
-
-function formatReportKey(key) {
-    if (!key) return "알 수 없는 리포트";
-    
-    // 예: '2024-W10' -> '2024년 10주차 PRO 리포트'
-    const match = key.match(/^(\d{4})-W(\d{1,2})$/);
-    if (match) {
-        return `${match[1]}년 ${match[2]}주차 PRO 리포트`;
-    }
-    
-    // 패턴이 안 맞으면 그대로 출력
-    return key;
 }
 
 function initQuantitativeData(q) {
@@ -471,14 +451,28 @@ function renderWeeklyTab() {
     const container = document.getElementById('weeklyListContainer');
     container.innerHTML = '';
     
-    // 원본 데이터가 아닌 병렬 로딩된 주간 리포트 데이터 배열 사용
     const weeklyHistory = currentWeeklyData || [];
-    const selYear = document.getElementById('filterYear').value;
-    const selMonth = document.getElementById('filterMonth').value;
+    const selYear = document.getElementById('filterYear')?.value;
+    const selMonth = document.getElementById('filterMonth')?.value;
 
+    // 💡 1. 필터링 로직 수정: weekId('260401') 형식에서 년/월을 정확히 뽑아내어 드롭다운 값과 비교
     const filtered = weeklyHistory.filter(w => {
-        const d = new Date(w.date);
-        return d.getFullYear() == selYear && (d.getMonth() + 1) == selMonth;
+        const keyMatch = w.weekId?.match(/^(\d{2})(\d{2})\d{2}$/);
+        let y = null, m = null;
+        
+        if (keyMatch) {
+            y = "20" + keyMatch[1]; // '26' -> '2026'
+            m = parseInt(keyMatch[2], 10).toString(); // '04' -> '4' (0 없애기)
+        } else if (w.date) {
+            const d = new Date(w.date);
+            y = d.getFullYear().toString();
+            m = (d.getMonth() + 1).toString();
+        }
+        
+        const yearMatch = !selYear || y === selYear;
+        const monthMatch = !selMonth || m === selMonth;
+        
+        return yearMatch && monthMatch;
     });
 
     filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -492,6 +486,7 @@ function renderWeeklyTab() {
         const dateStr = new Date(d.date).toLocaleDateString();
         const safeComment = d.comment ? escapeHtml(d.comment) : '';
         
+        // 💡 2. 제목 렌더링 수정: formatReportKey 적용
         const displayTitle = formatReportKey(d.weekId, false) || d.title || (idx + 1) + '주차 리포트';
         
         let studyHtml = ''; 
@@ -570,7 +565,7 @@ function renderWeeklyTab() {
 
         const fb = d.tutorFeedback || { priorityCheck: '', weakSubject: '', nextWeekTop3: '', planEvaluation: '', extraQuestion: '' };
         
-        // 💡 [핵심 수정] d.date 대신 DB의 정확한 weekId(또는 백업 생성)를 사용합니다.
+        // 💡 3. 키값 설정 로직 (안전장치 포함)
         let weeklyKey = d.weekId;
         if (!weeklyKey) {
             const dateObj = new Date(d.date);
@@ -583,7 +578,6 @@ function renderWeeklyTab() {
             weeklyKey = `${year}${month}${weekNum}`;
         }
 
-        // 카드 조립
         const card = document.createElement('div');
         card.className = 'timeline-card weekly-new';
         card.innerHTML = `
@@ -594,7 +588,7 @@ function renderWeeklyTab() {
             </div>
             <div class="card-grid-body">${studyHtml}${checkHtml}</div>
             ${mockHtml}${footerHtml}
-            ${renderWeeklyFeedbackArea(d.weekId || d.date, fb)}
+            ${renderWeeklyFeedbackArea(weeklyKey, fb)}
         `;
         container.appendChild(card);
     });
@@ -651,7 +645,6 @@ function createWeeklyFbInput(weeklyKey, fb) {
         const len = val.replace(/\s/g, '').length;
         const validClass = len >= WEEKLY_FB_MIN ? 'valid' : '';
         
-        // 💡 UX 개선: 작성 중이던 내용이 글자 수를 충족하면 이미 '저장됨' 상태로 렌더링
         const isSaved = len >= WEEKLY_FB_MIN;
         const btnClass = isSaved ? 'temp-save-btn saved' : 'temp-save-btn';
         const btnText = isSaved ? '저장됨' : '임시저장';
@@ -671,7 +664,6 @@ function createWeeklyFbInput(weeklyKey, fb) {
         </div>`;
     }).join('');
 
-    // 초기 렌더링 시 모든 필드가 작성되어 있다면 바로 전송 버튼 활성화
     const allPreSaved = WEEKLY_FB_FIELDS.every(f => (fb[f.key] || '').replace(/\s/g, '').length >= WEEKLY_FB_MIN);
     const submitBtnClass = allPreSaved ? 'complete-write-btn active' : 'complete-write-btn';
 
@@ -689,7 +681,6 @@ function createWeeklyFbInput(weeklyKey, fb) {
         </div>`;
 }
 
-// 💡 신규 함수: 입력 발생 시 '저장됨' 상태 해제 및 버튼 비활성화
 window.handleWeeklyInput = function(idk, key) {
     const btn = document.getElementById(`wfb_btn_${idk}_${key}`);
     if (btn && btn.classList.contains('saved')) {
@@ -699,7 +690,6 @@ window.handleWeeklyInput = function(idk, key) {
     checkWeeklyAllSaved(idk);
 };
 
-// 💡 신규 함수: 모든 임시저장 버튼이 'saved' 클래스를 가졌는지 확인하고 전송 버튼 활성화
 window.checkWeeklyAllSaved = function(idk) {
     const area = document.getElementById(`wfb_area_${idk}`);
     if (!area) return;
@@ -746,7 +736,6 @@ window.tempSaveWeeklyField = async function(weeklyKey, fieldName) {
         });
         btn.classList.add('saved'); btn.innerText = '저장됨'; btn.disabled = false;
         
-        // 💡 임시 저장 성공 후 전체 완료 여부 체크
         checkWeeklyAllSaved(idk);
         
     } catch (e) {
@@ -792,6 +781,7 @@ window.submitWeeklyFeedback = async function(weeklyKey) {
     }
 };
 
+// 💡 [버그 수정] PRO 리포트 필터링 로직 추가
 function renderProTab() {
     const container = document.getElementById('proReportContainer');
     container.innerHTML = '';
@@ -799,15 +789,47 @@ function renderProTab() {
     const userRole = localStorage.getItem('userRole');
     const reports = currentStudentData.proReportsList || [];
     
+    // 💡 선택된 필터 연도/월 가져오기
+    const selYear = document.getElementById('proFilterYear')?.value;
+    const selMonth = document.getElementById('proFilterMonth')?.value;
+
     if (reports.length === 0) {
         container.innerHTML = `<div style="text-align:center; padding:50px; color:#94a3b8; background:#f8fafc; border-radius:8px;">학생이 아직 작성한 PRO 리포트 요청서가 없습니다.</div>`;
         return;
     }
 
-    reports.sort((a, b) => b.key.localeCompare(a.key));
+    // 💡 필터 로직 추가: reportKey (예: 260401 또는 2024-W10) 기준으로 필터링
+    const filtered = reports.filter(r => {
+        const keyMatch = r.key?.match(/^(\d{2})(\d{2})\d{2}$/); // 신규 포맷 260401
+        const oldMatch = r.key?.match(/^(\d{4})-W(\d{1,2})$/); // 구 포맷 2024-W10
+        let y = null, m = null;
 
-    reports.forEach(reportData => {
-        const displayTitle = formatReportKey(reportData.key);
+        if (keyMatch) {
+            y = "20" + keyMatch[1]; // '26' -> '2026'
+            m = parseInt(keyMatch[2], 10).toString(); // '04' -> '4'
+        } else if (oldMatch) {
+            y = oldMatch[1];
+            // 구 포맷은 정확한 월을 알기 어려워 업데이트 날짜로 추정
+            const d = r.updatedAt ? new Date(r.updatedAt) : new Date();
+            m = (d.getMonth() + 1).toString();
+        }
+
+        const yearMatch = !selYear || y === selYear;
+        const monthMatch = !selMonth || m === selMonth;
+        
+        return yearMatch && monthMatch;
+    });
+
+    if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-msg" style="text-align:center; padding:40px; color:#cbd5e1;">해당 월의 PRO 리포트가 없습니다.</div>';
+        return;
+    }
+
+    // 최신순 정렬
+    filtered.sort((a, b) => b.key.localeCompare(a.key));
+
+    filtered.forEach(reportData => {
+        const displayTitle = formatReportKey(reportData.key, true);
         container.appendChild(createProPeriodBox(displayTitle, reportData, reportData.key, userRole));
     });
 }
@@ -1154,7 +1176,6 @@ async function renderTargetUnivs(list, quantData) {
     const container = document.getElementById('viewTargetUnivList');
     container.innerHTML = '';
 
-    // 원본 list의 인덱스(originalIdx)를 보존한 유효 항목 목록 구성
     const validList = [];
     list.forEach((u, originalIdx) => { if (u && u.univ) validList.push({ ...u, originalIdx }); });
     if (validList.length === 0) { container.innerHTML = '<p style="color:#94a3b8;">설정된 목표 대학이 없습니다.</p>'; return; }
@@ -1186,7 +1207,6 @@ async function renderTargetUnivs(list, quantData) {
 
         validList.forEach((u, idx) => {
             const box = document.getElementById(`sim-box-${idx}`);
-            // API가 지원불가 항목을 제외하고 반환할 수 있으므로 univ+major로 매칭
             const data = Array.isArray(simData)
                 ? simData.find(d => d && d.univ === u.univ && d.major === u.major)
                 : simData[idx];
