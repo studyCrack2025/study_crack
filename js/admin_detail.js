@@ -1176,7 +1176,15 @@ function renderPayments(p) {
 async function saveAdminMemo() {
     const memo = document.getElementById('adminMemoInput').value;
     try {
-        await apiFetch(REPORT_API_URL, { method:'POST', body:JSON.stringify({ type:'save_shared_memo', data:{targetUserId, memo} }) });
+        await apiFetch(API_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ 
+                type: 'admin_update_memo', 
+                data: { targetUserId: targetUserId, memo: memo } 
+            }) 
+        });
         alert("메모 저장 완료");
-    } catch(e) { if (e.message !== "Auth expired") alert("저장 실패"); }
+    } catch(e) { 
+        if (e.message !== "Auth expired") alert("저장 실패: 서버 응답을 확인해주세요."); 
+    }
 }
