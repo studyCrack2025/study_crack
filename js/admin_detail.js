@@ -444,7 +444,6 @@ function renderSelectedScore() {
     container.innerHTML = html;
 }
 
-// 💡 [핵심] 분리되어 저장된 currentWeeklyData를 사용하도록 변경
 function renderWeeklyTab() {
     const container = document.getElementById('weeklyListContainer');
     container.innerHTML = '';
@@ -545,9 +544,21 @@ function renderWeeklyTab() {
         }
 
         const fb = d.tutorFeedback || { priorityCheck: '', weakSubject: '', nextWeekTop3: '', planEvaluation: '', extraQuestion: '' };
-        const weeklyKey = d.date;
+        
+        // 💡 [핵심 수정] d.date 대신 DB의 정확한 weekId(또는 백업 생성)를 사용합니다.
+        let weeklyKey = d.weekId;
+        if (!weeklyKey) {
+            const dateObj = new Date(d.date);
+            const year = dateObj.getFullYear().toString().slice(2);
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const startOfMonth = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
+            const dayOfWeek = startOfMonth.getDay();
+            const offsetDate = dateObj.getDate() + dayOfWeek - 1;
+            const weekNum = String(Math.floor(offsetDate / 7) + 1).padStart(2, '0');
+            weeklyKey = `${year}${month}${weekNum}`;
+        }
 
-        // 카드 조립 (기존 DOM 구조 유지)
+        // 카드 조립
         const card = document.createElement('div');
         card.className = 'timeline-card weekly-new';
         card.innerHTML = `
