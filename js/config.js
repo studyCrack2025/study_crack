@@ -38,14 +38,13 @@ const CONFIG = {
         // StudyCrack_Auth 람다로 연결되는 주소
         auth: `${GATEWAY_URL}/auth`,
 
-        // NicePay returnUrl 콜백 (JWT 없는 공개 라우트 — API Gateway에서 별도 설정 필요)
+        // NicePay returnUrl 콜백
         payment_return: `${GATEWAY_URL}/payment-return`
     },
 
     // NicePay 설정
     nicepay: {
-        // ⚠️ 나이스페이 가맹점관리자에서 발급한 운영계 Client Key 로 교체 필요
-        clientId: 'PROD_YOUR_CLIENT_KEY_HERE'
+        clientId: 'R2_18437f7c0352412ba94071b9af6895fd'
     },
     
     // 기존 Cognito 설정
