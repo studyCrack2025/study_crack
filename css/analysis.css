@@ -385,8 +385,8 @@
 .doc-matched-header { background: #f8fafc; padding: 14px 20px; border-bottom: 1px solid #e2e8f0; font-weight: 800; font-size: 1.1rem; color: #1e293b; display: flex; align-items: center; gap: 10px; page-break-inside: avoid; }
 .doc-matched-header i { color: #3b82f6; font-size: 1.2rem; }
 .doc-matched-body { display: flex; flex-direction: row; width: 100%; box-sizing: border-box; }
-.doc-student-data { flex: 1; padding: 20px; border-bottom: none; border-right: 1px dashed #e2e8f0; position: relative; }
-.doc-tutor-feedback { flex: 1.2; padding: 20px; background: #fafafa; position: relative; }
+.doc-student-data { flex: 2; min-width: 0; padding: 20px; border-bottom: none; border-right: 1px dashed #e2e8f0; position: relative; word-break: break-word; overflow-wrap: break-word; }
+.doc-tutor-feedback { flex: 3; min-width: 0; padding: 20px; background: #fafafa; position: relative; word-break: break-word; overflow-wrap: break-word; }
 .doc-badge { display: inline-block; padding: 4px 10px; background: #f1f5f9; color: #475569; border-radius: 6px; font-size: 0.8rem; font-weight: 800; margin-bottom: 15px; letter-spacing: -0.5px; border: 1px solid #e2e8f0; }
 .doc-badge.tutor-badge { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
 .doc-badge.qna-badge { background: #fdf4ff; color: #c026d3; border-color: #e879f9; }
@@ -395,7 +395,7 @@
 .doc-table th, .doc-table td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; }
 .doc-table th { color: #94a3b8; font-weight: 600; font-size: 0.8rem; }
 .doc-table tr:last-child td { border-bottom: none; }
-.doc-text { font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; color: #334155; }
+.doc-text { font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; color: #334155; word-break: break-word; overflow-wrap: break-word; max-width: 100%; box-sizing: border-box; }
 .qna-pair-container { display: flex; flex-direction: column; gap: 20px; page-break-inside: avoid; }
 .qna-student { background: #fff1f2; padding: 18px; border-radius: 8px; border: 1px solid #fecaca; margin-bottom: 15px; }
 .qna-tutor { background: #f0fdf4; padding: 18px; border-radius: 8px; border: 1px solid #bbf7d0; }
