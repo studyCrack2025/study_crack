@@ -1695,7 +1695,7 @@ function openFeedbackModal(data) {
     }
     
     let tutorFileBlockHtml = '';
-    const uniqueContainerId = \`pdf-render-\${Date.now()}\`; 
+    const uniqueContainerId = `pdf-render-${Date.now()}`; 
     let isPdfFile = false; let actualPdfUrl = "";
 
     if (fb.tutorImage && String(fb.tutorImage).trim() !== "") {
@@ -1704,55 +1704,55 @@ function openFeedbackModal(data) {
         let fileDisplayHtml = '';
         
         if (isPdfFile) {
-            fileDisplayHtml = \`<div id="\${uniqueContainerId}" style="width: 100%; display: block; text-align: center;"><div style="padding: 40px 0; color:#3b82f6; font-weight:bold;" class="pdf-loading-spinner"><i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom:10px;"></i><br>튜터의 첨삭 PDF 문서를 불러오는 중입니다...</div></div>\`;
+            fileDisplayHtml = `<div id="${uniqueContainerId}" style="width: 100%; display: block; text-align: center;"><div style="padding: 40px 0; color:#3b82f6; font-weight:bold;" class="pdf-loading-spinner"><i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom:10px;"></i><br>튜터의 첨삭 PDF 문서를 불러오는 중입니다...</div></div>`;
         } else {
-            const noCacheUrl = \`\${escapeHtml(fb.tutorImage)}?t=\${new Date().getTime()}\`;
-            fileDisplayHtml = \`<div style="text-align:center; padding: 10px 0;"><img src="\${noCacheUrl}" crossorigin="anonymous" alt="튜터 플래너 코칭" style="max-width:100%; height:auto; border-radius:8px; border:1px solid #cbd5e1; display:block; margin: 0 auto;"></div>\`;
+            const noCacheUrl = `${escapeHtml(fb.tutorImage)}?t=${new Date().getTime()}`;
+            fileDisplayHtml = `<div style="text-align:center; padding: 10px 0;"><img src="${noCacheUrl}" crossorigin="anonymous" alt="튜터 플래너 코칭" style="max-width:100%; height:auto; border-radius:8px; border:1px solid #cbd5e1; display:block; margin: 0 auto;"></div>`;
         }
-        tutorFileBlockHtml = \`<div class="doc-matched-box allow-page-break" style="margin-top: 30px;"><div class="doc-matched-header"><i class="fas fa-paperclip" style="color:#3b82f6;"></i> 5. 주간 플래너 코칭 & 첨삭</div><div class="doc-matched-body allow-page-break-body" style="padding:25px;">\${fileDisplayHtml}</div></div>\`;
+        tutorFileBlockHtml = `<div class="doc-matched-box allow-page-break" style="margin-top: 30px;"><div class="doc-matched-header"><i class="fas fa-paperclip" style="color:#3b82f6;"></i> 5. 주간 플래너 코칭 & 첨삭</div><div class="doc-matched-body allow-page-break-body" style="padding:25px;">${fileDisplayHtml}</div></div>`;
     }
 
     const safeTitleForJs = escapeHtml(data.title || "주간 리포트").replace(/'/g, "\\'");
     
-    const html = \`
+    const html = `
         <div class="modal-document" id="pdfTargetDocument">
             <div class="doc-controls" data-html2canvas-ignore="true">
-                <button class="btn-pdf" onclick="downloadReportPDF('\${safeTitleForJs}')"><i class="fas fa-file-pdf"></i> PDF 파일 다운로드</button>
+                <button class="btn-pdf" onclick="downloadReportPDF('${safeTitleForJs}')"><i class="fas fa-file-pdf"></i> PDF 파일 다운로드</button>
                 <button class="close-btn-doc" onclick="document.getElementById('feedbackModal').style.display='none'">&times;</button>
             </div>
             <div class="doc-header">
                 <div><span class="doc-subtitle">PREMIUM STRATEGY</span><h2 class="doc-title">스터디크랙 주간 전략리포트</h2></div>
-                <div class="doc-meta"><div>대상: <strong>\${escapeHtml(data.title || "주간 리포트")}</strong></div><div>발행일: <strong>\${new Date(data.date).toLocaleDateString()}</strong></div><div>분석: <strong>\${consultantName}</strong></div></div>
+                <div class="doc-meta"><div>대상: <strong>${escapeHtml(data.title || "주간 리포트")}</strong></div><div>발행일: <strong>${new Date(data.date).toLocaleDateString()}</strong></div><div>분석: <strong>${consultantName}</strong></div></div>
             </div>
             <div class="doc-matched-box">
                 <div class="doc-matched-header"><i class="fas fa-clock"></i> 1. 학습 목표 이행 평가</div>
                 <div class="doc-matched-body">
-                    <div class="doc-student-data"><span class="doc-badge">학생 리포트</span><table class="doc-table"><thead><tr><th>과목</th><th>세부 내용</th><th>계획</th><th>실제</th><th>달성률</th></tr></thead><tbody>\${detailRows}</tbody></table><div style="margin-top:15px; text-align:right; font-size:0.9rem; color:#64748b; font-weight:700; background:#f8fafc; padding:8px; border-radius:6px;">총 달성률 <span style="color:#2563eb; font-size:1.1rem; margin-left:5px;">\${totalRate}</span> <span style="font-weight:normal; font-size:0.8rem;">(\${totalAct} / \${totalPlan})</span></div></div>
-                    <div class="doc-tutor-feedback"><span class="doc-badge tutor-badge">Consultant 코멘트</span><h4 style="margin:0 0 10px 0; font-size:1rem; color:#1e293b;">이전 우선순위 점검 결과</h4><div class="doc-text">\${escapeHtml(fb.priorityCheck) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}</div></div>
+                    <div class="doc-student-data"><span class="doc-badge">학생 리포트</span><table class="doc-table"><thead><tr><th>과목</th><th>세부 내용</th><th>계획</th><th>실제</th><th>달성률</th></tr></thead><tbody>${detailRows}</tbody></table><div style="margin-top:15px; text-align:right; font-size:0.9rem; color:#64748b; font-weight:700; background:#f8fafc; padding:8px; border-radius:6px;">총 달성률 <span style="color:#2563eb; font-size:1.1rem; margin-left:5px;">${totalRate}</span> <span style="font-weight:normal; font-size:0.8rem;">(${totalAct} / ${totalPlan})</span></div></div>
+                    <div class="doc-tutor-feedback"><span class="doc-badge tutor-badge">Consultant 코멘트</span><h4 style="margin:0 0 10px 0; font-size:1rem; color:#1e293b;">이전 우선순위 점검 결과</h4><div class="doc-text">${escapeHtml(fb.priorityCheck) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}</div></div>
                 </div>
             </div>
             <div class="doc-matched-box">
                 <div class="doc-matched-header"><i class="fas fa-bullseye"></i> 2. 실전 성취도 & 취약점 분석</div>
                 <div class="doc-matched-body">
-                    <div class="doc-student-data"><span class="doc-badge">시험 성적</span><div style="padding:15px; background:#f8fafc; border-radius:12px; text-align:center; border:1px solid #e2e8f0; height:calc(100% - 50px); display:flex; flex-direction:column; justify-content:center;">\${examHtml}</div></div>
-                    <div class="doc-tutor-feedback"><span class="doc-badge tutor-badge">Consultant 코멘트</span><h4 style="margin:0 0 10px 0; font-size:1rem; color:#1e293b;">취약 과목 진단 및 개선 포인트</h4><div class="doc-text">\${escapeHtml(fb.weakSubject) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}</div></div>
+                    <div class="doc-student-data"><span class="doc-badge">시험 성적</span><div style="padding:15px; background:#f8fafc; border-radius:12px; text-align:center; border:1px solid #e2e8f0; height:calc(100% - 50px); display:flex; flex-direction:column; justify-content:center;">${examHtml}</div></div>
+                    <div class="doc-tutor-feedback"><span class="doc-badge tutor-badge">Consultant 코멘트</span><h4 style="margin:0 0 10px 0; font-size:1rem; color:#1e293b;">취약 과목 진단 및 개선 포인트</h4><div class="doc-text">${escapeHtml(fb.weakSubject) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}</div></div>
                 </div>
             </div>
             <div class="doc-matched-box">
                 <div class="doc-matched-header"><i class="fas fa-route"></i> 3. 총평 및 Next Step</div>
                 <div class="doc-matched-body">
-                    <div class="doc-student-data"><span class="doc-badge">학생 컨디션 평가</span><div style="margin-bottom:15px; font-weight:900; font-size:1.3rem; text-align:center; padding:15px; background:#f8fafc; border-radius:8px;">\${trendHtml}</div><div style="font-size:0.85rem; color:#64748b; background:#fff1f2; border:1px solid #fecaca; padding:12px; border-radius:8px;">\${trendReasonsHtml}</div></div>
-                    <div class="doc-tutor-feedback"><span class="doc-badge tutor-badge">Consultant 코멘트</span><h4 style="margin:0 0 10px 0; font-size:1rem; color:#1e293b;">이번 주 플랜 종합 평가</h4><div class="doc-text" style="margin-bottom:20px; padding-bottom:20px; border-bottom:1px dashed #cbd5e1;">\${escapeHtml(fb.planEvaluation) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}</div><h4 style="margin:0 0 10px 0; font-size:1rem; color:#2563eb;"><i class="fas fa-flag-checkered"></i> 다음 주 핵심 과제 TOP 3</h4><div class="doc-text">\${escapeHtml(fb.nextWeekTop3) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}</div></div>
+                    <div class="doc-student-data"><span class="doc-badge">학생 컨디션 평가</span><div style="margin-bottom:15px; font-weight:900; font-size:1.3rem; text-align:center; padding:15px; background:#f8fafc; border-radius:8px;">${trendHtml}</div><div style="font-size:0.85rem; color:#64748b; background:#fff1f2; border:1px solid #fecaca; padding:12px; border-radius:8px;">${trendReasonsHtml}</div></div>
+                    <div class="doc-tutor-feedback"><span class="doc-badge tutor-badge">Consultant 코멘트</span><h4 style="margin:0 0 10px 0; font-size:1rem; color:#1e293b;">이번 주 플랜 종합 평가</h4><div class="doc-text" style="margin-bottom:20px; padding-bottom:20px; border-bottom:1px dashed #cbd5e1;">${escapeHtml(fb.planEvaluation) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}</div><h4 style="margin:0 0 10px 0; font-size:1rem; color:#2563eb;"><i class="fas fa-flag-checkered"></i> 다음 주 핵심 과제 TOP 3</h4><div class="doc-text">${escapeHtml(fb.nextWeekTop3) || '<span style="color:#94a3b8">관련 코멘트 없음</span>'}</div></div>
                 </div>
             </div>
             <div class="doc-matched-box">
                 <div class="doc-matched-header" style="background:#fff;"><i class="fas fa-comments"></i> 4. 심층 Q&A 솔루션</div>
                 <div class="doc-matched-body" style="flex-direction:column; padding:25px; gap:20px; border-top:1px solid #e2e8f0;">
-                    <div class="qna-student"><span class="doc-badge" style="background:#fef2f2; color:#ef4444; border-color:#fecaca;">학생의 심층 질문</span>\${deepQnaHtml}</div>
-                    <div class="qna-tutor"><span class="doc-badge tutor-badge" style="background:#f0fdf4; color:#16a34a; border-color:#bbf7d0;">Consultant 추가 코멘트</span><div class="doc-text">\${escapeHtml(fb.extraQuestion) || '<span style="color:#94a3b8">추가 코멘트가 없습니다.</span>'}</div></div>
+                    <div class="qna-student"><span class="doc-badge" style="background:#fef2f2; color:#ef4444; border-color:#fecaca;">학생의 심층 질문</span>${deepQnaHtml}</div>
+                    <div class="qna-tutor"><span class="doc-badge tutor-badge" style="background:#f0fdf4; color:#16a34a; border-color:#bbf7d0;">Consultant 추가 코멘트</span><div class="doc-text">${escapeHtml(fb.extraQuestion) || '<span style="color:#94a3b8">추가 코멘트가 없습니다.</span>'}</div></div>
                 </div>
             </div>
-            \${tutorFileBlockHtml}
+            ${tutorFileBlockHtml}
         </div>
 
         <div class="mobile-only-msg" style="display:none;">
@@ -1761,14 +1761,14 @@ function openFeedbackModal(data) {
             <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px; line-height:1.5; word-break:keep-all;">
                 모바일에서는 쾌적한 열람을 위해<br>PDF 변환 후 다운로드를 지원합니다.
             </p>
-            <button onclick="downloadReportPDF('\${safeTitleForJs}')" class="mobile-pdf-btn">
+            <button onclick="downloadReportPDF('${safeTitleForJs}')" class="mobile-pdf-btn">
                 <i class="fas fa-magic" style="color: #ffffff !important; font-size: 1.1rem !important; margin-bottom: 0 !important;"></i> 리포트 PDF 생성하기
             </button>
             <button class="mobile-close-btn" onclick="document.getElementById('feedbackModal').style.display='none'">
                 닫기
             </button>
         </div>
-    \`;
+    `;
 
     contentArea.innerHTML = html;
     modal.style.display = 'block';
