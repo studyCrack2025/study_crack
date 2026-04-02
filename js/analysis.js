@@ -597,7 +597,6 @@ function applySafeHighlight(container, text, keyword) {
     });
 }
 
-// 1. 모달 여는 함수 수정
 function openUnivSelectModal(index) {
     currentSlotIndex = index;
     const modal = document.getElementById('univSelectModal');
@@ -610,12 +609,10 @@ function openUnivSelectModal(index) {
     const searchInput = document.getElementById('univSearchInput');
     if(searchInput) searchInput.value = '';
 
-    // 모달 애니메이션이 버벅대지 않도록 스피너를 먼저 띄우고 렌더링을 뒤로 미룸!
     document.getElementById('stepUnivList').innerHTML = '<div style="padding:50px; text-align:center; color:#94a3b8; grid-column: 1/-1;"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>대학 목록을 불러오는 중...</div>';
     showUnivStep(true); 
 }
 
-// 2. showUnivStep 수정 (isDeferred 파라미터 추가)
 function showUnivStep(isDeferred = false) {
     currentSelectStep = 'univ'; selectedUnivForMajor = '';
     document.getElementById('modalTitle').innerText = "대학 선택";
@@ -635,13 +632,15 @@ function showUnivStep(isDeferred = false) {
     }
 }
 
-// 3. showMajorStep 수정 (학과 목록 넘어갈 때도 딜레이 방지)
 function showMajorStep(univName) {
     currentSelectStep = 'major'; selectedUnivForMajor = univName;
     document.getElementById('modalTitle').innerText = `${univName} - 학과 선택`;
     document.getElementById('stepUnivList').style.display = 'none';
+    
     const listEl = document.getElementById('stepMajorList');
     listEl.style.display = 'grid';
+    listEl.style.pointerEvents = 'none'; 
+    
     document.getElementById('modalFooter').style.display = 'flex';
 
     const searchInput = document.getElementById('univSearchInput');
@@ -649,7 +648,14 @@ function showMajorStep(univName) {
 
     // 학과 리스트도 렌더링 전 스피너 먼저 보여주기
     listEl.innerHTML = '<div style="padding:50px; text-align:center; color:#94a3b8; grid-column: 1/-1;"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>학과 목록을 불러오는 중...</div>';
-    setTimeout(() => { renderMajorList(univName, ''); }, 30);
+    
+    setTimeout(() => { 
+        renderMajorList(univName, ''); 
+        setTimeout(() => { 
+            listEl.style.pointerEvents = 'auto'; 
+        }, 300);
+        
+    }, 30);
 }
 
 function renderUnivList(filterText) {
