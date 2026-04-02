@@ -132,6 +132,16 @@ function parseDynamoItem(item) {
     return obj;
 }
 
+function preventGhostClickInModal() {
+    const modalContent = document.querySelector('.select-modal-content');
+    if (modalContent) {
+        modalContent.style.pointerEvents = 'none'; // 클릭 임시 차단
+        setTimeout(() => {
+            modalContent.style.pointerEvents = 'auto'; // 300ms 후 클릭 복구
+        }, 300);
+    }
+}
+
 // ============================================================
 // [데이터 로드] 사용자 정보 & 리포트 데이터
 // ============================================================
@@ -553,32 +563,24 @@ function updateQuotaUI() {
     container.innerHTML = html;
 }
 
-function openUnivSelectModal(index) {
-    currentSlotIndex = index;
-    const modal = document.getElementById('univSelectModal');
-    modal.style.display = 'block';
-    document.body.style.overflow = 'hidden';
-    
-    // 🔥 고스트 클릭 차단: 투명 방어막(Shield)을 화면 전체에 덮어버립니다.
-    let shield = document.getElementById('ghost-shield');
-    if(!shield) {
-        shield = document.createElement('div');
-        shield.id = 'ghost-shield';
-        shield.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:999999; background:transparent;';
-        document.body.appendChild(shield);
-    }
-    shield.style.display = 'block';
-    setTimeout(() => { shield.style.display = 'none'; }, 400); // 0.4초 뒤 제거
-    
-    const searchInput = document.getElementById('univSearchInput');
-    if(searchInput) searchInput.value = '';
-    showUnivStep();
-}
-
 function closeUnivModal() {
     document.getElementById('univSelectModal').style.display = 'none';
     document.body.style.overflow = 'auto';
     currentSlotIndex = null; selectedUnivForMajor = '';
+}
+
+function openUnivSelectModal(index) {
+    currentSlotIndex = index;
+    const modal = document.getElementById('univSelectModal');
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden'; 
+    
+    // 🔥 화면 전체를 덮던 ghost-shield 로직 삭제 및 새 함수 적용
+    preventGhostClickInModal();
+    
+    const searchInput = document.getElementById('univSearchInput');
+    if(searchInput) searchInput.value = '';
+    showUnivStep();
 }
 
 function showUnivStep() {
@@ -589,9 +591,8 @@ function showUnivStep() {
     document.getElementById('stepMajorList').style.display = 'none';
     document.getElementById('modalFooter').style.display = 'none';
     
-    // 🔥 탭 전환 시 고스트 클릭 차단
-    let shield = document.getElementById('ghost-shield');
-    if(shield) { shield.style.display = 'block'; setTimeout(() => { shield.style.display = 'none'; }, 400); }
+    // 🔥 기존 ghost-shield 로직 삭제 및 새 함수 적용
+    preventGhostClickInModal();
     
     const searchInput = document.getElementById('univSearchInput');
     if(searchInput) { searchInput.placeholder = "대학명 검색 (예: 서울대, 연세)"; searchInput.value = ''; }
@@ -606,9 +607,8 @@ function showMajorStep(univName) {
     listEl.style.display = 'grid';
     document.getElementById('modalFooter').style.display = 'flex';
     
-    // 🔥 탭 전환 시 고스트 클릭 차단
-    let shield = document.getElementById('ghost-shield');
-    if(shield) { shield.style.display = 'block'; setTimeout(() => { shield.style.display = 'none'; }, 400); }
+    // 🔥 기존 ghost-shield 로직 삭제 및 새 함수 적용
+    preventGhostClickInModal();
     
     const searchInput = document.getElementById('univSearchInput');
     if(searchInput) { searchInput.placeholder = "학과명 검색 (예: 컴퓨터, 경영)"; searchInput.value = ''; }
