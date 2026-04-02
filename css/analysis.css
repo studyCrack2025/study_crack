@@ -129,7 +129,7 @@
 .upgrade-btn-small:hover { background: #1d4ed8; transform: translateY(-1px); }
 
 /* 대학 슬롯 그리드 */
-.univ-grid { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
+.univ-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
 .univ-slot { border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; background: #f8fafc; position: relative; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .univ-slot label { font-size: 0.85rem; font-weight: bold; color: #334155; }
 .univ-slot .slot-msg { font-size: 0.8rem; color: #ef4444; font-weight: 500; margin-top: 5px; }
@@ -184,8 +184,8 @@
 .toggle-btn.active { background: white; color: #2563EB; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
 /* 차트 컨테이너 */
-.sim-chart-wrapper { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); min-height: 480px; box-sizing: border-box; display: flex; flex-direction: column; }
-.chart-scroll-container { flex: 1; overflow-x: auto; overflow-y: hidden; position: relative; scrollbar-width: thin; padding-bottom: 10px; }
+.sim-chart-wrapper { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); display: block; height: auto; box-sizing: border-box; }
+.chart-scroll-container { overflow-x: auto; overflow-y: hidden; position: relative; scrollbar-width: thin; padding-bottom: 10px; display: block; }
 .chart-inner-container { display: flex; flex-direction: column; height: 360px; width: max-content; min-width: 100%; overflow: visible !important; }
 .mobile-legend-area { display: none; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 40px; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
 .mobile-legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: #475569; font-weight: 600; }
@@ -216,8 +216,8 @@
 .label-mobile { display: none; font-weight: bold; }
 
 /* 꺾은선 그래프 전용 스타일 */
-.sim-line-container { width:100%; height:100%; display:flex; flex-direction:column; overflow: visible !important; }
-.sim-line-chart-area { flex:1; position:relative; height:180px; min-height:180px; overflow: visible !important; }
+.sim-line-container { width: 100%; height: auto; display: block; overflow: visible !important; }
+.sim-line-chart-area { position: relative; height: 220px; min-height: auto; overflow: visible !important; }
 .sim-univ-scroll-box{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; padding:15px 0; width:100%; box-sizing:border-box }
 .univ-select-btn { width: 100%; display: flex; justify-content: center; align-items: center; gap: 6px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; color: #64748b; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; line-height: 1.2; }
 .univ-select-btn.active { background: #2563EB; color: #fff; border-color: #2563EB; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); font-weight: 600; }
@@ -236,7 +236,7 @@
 /* 상세 분석 카드 */
 .sim-result-card { background: #fff; border: 1px solid #2563EB; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.15); margin-top: 20px; animation: slideUp 0.3s ease-out; }
 @keyframes slideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-.sim-card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 20px; }
+.sim-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 20px; }
 .sim-univ-title { font-size: 1.2rem; font-weight: 800; color: #1e293b; }
 .sim-univ-dept { font-size: 0.95rem; color: #64748b; font-weight: normal; margin-left: 5px; }
 .score-badge { font-size: 0.8rem; padding: 4px 8px; border-radius: 4px; background: #f1f5f9; color: #64748b; font-weight: 600; }

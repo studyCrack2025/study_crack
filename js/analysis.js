@@ -1123,7 +1123,12 @@ function renderSimUnivButtons(targetDiv) {
         const univName = d.univ.replace('학교', ''); const deptName = d.major || '학부';
         const choiceNum = d.originalIdx + 1;
         const ineligibleMark = d.ineligible ? ' <span style="color:#ef4444; font-size:0.8em;">(지원불가)</span>' : '';
-        btn.innerHTML = `<span style="font-weight:700;">${choiceNum}지망 ${escapeHtml(univName)}${ineligibleMark}</span><span style="font-size:0.85em; opacity:0.9;">${escapeHtml(deptName)}</span>`;
+        btn.innerHTML = `
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                <span style="font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; text-align:center;">${choiceNum}지망 ${escapeHtml(univName)}${ineligibleMark}</span>
+                <span style="font-size:0.85em; opacity:0.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; text-align:center;">${escapeHtml(deptName)}</span>
+            </div>
+        `;
         btn.onclick = () => {
             selectSimUniv(i);
             targetDiv.querySelectorAll('.univ-select-btn').forEach((b, idx) => { if (idx === i) b.classList.add('active'); else b.classList.remove('active'); });
@@ -1226,8 +1231,8 @@ function renderDetailedSimCard() {
     const item = simDisplayList[selectedSimIndex];
     if (item.ineligible) {
         const choiceNum = item.originalIdx + 1;
-        cardArea.innerHTML = `<div class="sim-result-card"><div class="sim-card-header"><div><span class="sim-univ-title">${escapeHtml(item.univ)}</span><span class="sim-univ-dept">${escapeHtml(item.major)}</span></div><div class="sim-score-change"><span class="score-badge" style="background:#fee2e2; color:#ef4444;">${choiceNum}지망</span></div></div><div style="padding:20px; text-align:center; color:#ef4444; font-weight:600;"><i class="fas fa-ban" style="font-size:1.5rem; margin-bottom:10px; display:block;"></i>지원 불가 대학입니다.<div style="font-size:0.85rem; color:#94a3b8; font-weight:400; margin-top:8px;">필수 과목 미응시 또는 자격 미충족으로 인해<br>분석 데이터를 제공할 수 없습니다.</div></div></div>`;
-        return;
+        cardArea.innerHTML = `<div class="sim-result-card"><div class="sim-card-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;"><div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;"><span class="sim-univ-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; line-height:1.2;">${escapeHtml(item.univ)}</span><span class="sim-univ-dept" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; line-height:1.2; margin-left:0;">${escapeHtml(item.major)}</span></div><div class="sim-score-change" style="flex-shrink:0;"><span class="score-badge" style="background:#fee2e2; color:#ef4444; white-space:nowrap;">${choiceNum}지망</span></div></div><div style="padding:20px; text-align:center; color:#ef4444; font-weight:600;"><i class="fas fa-ban" style="font-size:1.5rem; margin-bottom:10px; display:block;"></i>지원 불가 대학입니다.<div style="font-size:0.85rem; color:#94a3b8; font-weight:400; margin-top:8px;">필수 과목 미응시 또는 자격 미충족으로 인해<br>분석 데이터를 제공할 수 없습니다.</div></div></div>`;
+        return;
     }
     const data = item;
     const currentScore = Math.round(data.base_ui_score);
@@ -1272,15 +1277,21 @@ function renderDetailedSimCard() {
     }
 
     cardArea.innerHTML = `
-        <div class="sim-result-card">
-            <div class="sim-card-header">
-                <div><span class="sim-univ-title">${escapeHtml(data.univ)}</span><span class="sim-univ-dept">${escapeHtml(data.major)}</span></div>
-                <div class="sim-score-change"><span class="score-badge">현재: ${currentStatus}</span><span class="score-diff">${currentScore}점</span></div>
-            </div>
-            <div class="sim-grid">${subjectsHTML}</div>
-            ${warningHTML}
-        </div>
-    `;
+        <div class="sim-result-card">
+            <div class="sim-card-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; border-bottom:1px solid #f1f5f9; padding-bottom:15px; margin-bottom:20px;">
+                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+                    <span class="sim-univ-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; line-height:1.2;">${escapeHtml(data.univ)}</span>
+                    <span class="sim-univ-dept" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; line-height:1.2; margin-left:0;">${escapeHtml(data.major)}</span>
+                </div>
+                <div class="sim-score-change" style="flex-shrink: 0; text-align: right; display:flex; flex-direction:column; gap:4px;">
+                    <span class="score-badge" style="white-space:nowrap; display:inline-block;">현재: ${currentStatus}</span>
+                    <span class="score-diff" style="white-space:nowrap; display:block; margin-top:0;">${currentScore}점</span>
+                </div>
+            </div>
+            <div class="sim-grid">${subjectsHTML}</div>
+            ${warningHTML}
+        </div>
+    `;
 }
 
 // ============================================================
