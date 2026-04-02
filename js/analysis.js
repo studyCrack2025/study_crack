@@ -2170,7 +2170,11 @@ async function submitWeeklyCheck() {
             
             if (mainSub) { 
                 subjName = mainSub.innerText.replace('↳', '').trim(); 
-                if(detail && detail.value) subjName += `(${detail.value.trim()})`; 
+                if(detail) {
+    				const detailVal = detail.value.trim();
+    				// 값이 있으면 그 값을 쓰고, 없으면 기본값인 '공통'을 붙여줍니다.
+    				subjName += `(${detailVal ? detailVal : '공통'})`;
+				}
             } else if (custom) { 
                 subjName = custom.value.trim() || "기타"; 
             }
