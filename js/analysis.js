@@ -20,6 +20,8 @@ let cachedProReports = [];  // 💡 이제 별도 API로 받아옴
 let currentSelectStep = 'univ';
 let selectedUnivForMajor = '';
 
+let scrollPosition = 0;
+
 // 대학 선택 모달 관련
 let currentSlotIndex = null;
 
@@ -554,22 +556,30 @@ function updateQuotaUI() {
 }
 
 function closeUnivModal() {
-    document.getElementById('univSelectModal').style.display = 'none';
-    document.body.style.overflow = 'auto';
-    currentSlotIndex = null; selectedUnivForMajor = '';
+    document.getElementById('univSelectModal').style.display = 'none';
+    
+    // 🔥 옛날 방식 삭제하고, iOS 스크롤 복구 로직 적용
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('top');
+    window.scrollTo(0, scrollPosition);
+
+    currentSlotIndex = null; selectedUnivForMajor = '';
 }
 
-// 1. 모달 여는 함수 수정 (렌더링 지연)
+// 1. 모달 여는 함수 수정
 function openUnivSelectModal(index) {
     currentSlotIndex = index;
     const modal = document.getElementById('univSelectModal');
     modal.style.display = 'block';
-    document.body.style.overflow = 'hidden';
+    scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+
+    document.body.classList.add('modal-open');
+    document.body.style.top = `-${scrollPosition}px`;
 
     const searchInput = document.getElementById('univSearchInput');
     if(searchInput) searchInput.value = '';
 
-    // 🔥 핵심: 모달 애니메이션이 버벅대지 않도록 스피너를 먼저 띄우고 렌더링을 뒤로 미룸!
+    // 모달 애니메이션이 버벅대지 않도록 스피너를 먼저 띄우고 렌더링을 뒤로 미룸!
     document.getElementById('stepUnivList').innerHTML = '<div style="padding:50px; text-align:center; color:#94a3b8; grid-column: 1/-1;"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>대학 목록을 불러오는 중...</div>';
     showUnivStep(true); 
 }
