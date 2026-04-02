@@ -360,11 +360,6 @@
 .btn-add-card:hover { background: #eff6ff; border-color: #3b82f6; }
 .btn-del-card { background: #fff1f2; color: #e11d48; border: 1px solid #fecdd3; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
 
-.custom-subj { border: none; border-bottom: 2px solid #3b82f6; font-weight: 800; font-size: 1.05rem; outline: none; width: 65%; color: #1e293b; padding: 2px; background: transparent; }
-.custom-subj:focus { border-bottom-color: #2563eb; background: #eff6ff; }
-.btn-del-card { background: #fff1f2; color: #e11d48; border: 1px solid #fecdd3; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: all 0.2s; }
-.btn-del-card:hover { background: #e11d48; color: #fff; }
-
 
 /* ============================================================
    [6] 피드백 문서/모달 디자인

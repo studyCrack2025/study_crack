@@ -624,17 +624,26 @@ function createWeeklyFbReadOnly(fb, isLockedTutor) {
     const lockedBadge = isLockedTutor
         ? '<span style="font-size:0.8rem; color:#16a34a; font-weight:bold; background:#f0fdf4; padding:3px 10px; border-radius:20px; border:1px solid #bbf7d0;">✅ 최종 전송 완료 · 수정 불가</span>'
         : '';
+        
     const content = hasAny
         ? WEEKLY_FB_FIELDS.map(f => fb[f.key] && String(fb[f.key]).trim() !== ''
             ? `<div style="margin-bottom:14px;"><strong>${f.label}:</strong><div style="margin-top:4px; line-height:1.6; white-space:pre-wrap;">${escapeHtml(fb[f.key])}</div></div>`
             : '').join('')
         : '<span style="color:#94a3b8">튜터가 코멘트를 작성하지 않았습니다.</span>';
+
+    const fileHtml = fb.tutorImage 
+        ? `<div style="margin-top:15px; border-top:1px dashed #cbd5e1; padding-top:15px;"><strong>📎 첨삭 플래너 / 추가 자료:</strong><br><a href="${escapeHtml(fb.tutorImage)}" target="_blank" style="display:inline-block; margin-top:8px; background:#eff6ff; color:#2563eb; padding:8px 16px; border-radius:6px; text-decoration:none; font-weight:bold;"><i class="fas fa-file-download"></i> 첨부 파일 확인하기</a></div>` 
+        : '';
+
     return `
         <div class="tutor-feedback-area">
             <div class="feedback-header" style="display:flex; justify-content:space-between; align-items:center;">
                 <div>👩‍🏫 튜터 코멘트</div>${lockedBadge}
             </div>
-            <div class="doc-text" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-top:10px;">${content}</div>
+            <div class="doc-text" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-top:10px;">
+                ${content}
+                ${fileHtml}
+            </div>
         </div>`;
 }
 
@@ -667,6 +676,11 @@ function createWeeklyFbInput(weeklyKey, fb) {
     const allPreSaved = WEEKLY_FB_FIELDS.every(f => (fb[f.key] || '').replace(/\s/g, '').length >= WEEKLY_FB_MIN);
     const submitBtnClass = allPreSaved ? 'complete-write-btn active' : 'complete-write-btn';
 
+    // 💡 [추가] 이미 업로드된 파일이 있다면 미리보기 제공
+    const existingFileHtml = fb.tutorImage 
+        ? `<div style="margin-bottom:10px; font-size:0.85rem; color:#2563eb; background:#eff6ff; padding:8px 12px; border-radius:6px; border:1px solid #bfdbfe;"><i class="fas fa-file-check"></i> 현재 첨부된 파일: <a href="${escapeHtml(fb.tutorImage)}" target="_blank" style="text-decoration:underline; font-weight:bold;">보기</a></div>` 
+        : '';
+
     return `
         <div class="tutor-feedback-area" id="wfb_area_${idk}">
             <div class="feedback-header" style="display:flex; justify-content:space-between; align-items:center;">
@@ -674,6 +688,17 @@ function createWeeklyFbInput(weeklyKey, fb) {
                 <button class="guide-btn" onclick="showCoachingGuideModal()"><i class="fas fa-info-circle"></i> 작성 가이드</button>
             </div>
             ${fieldsHtml}
+            
+            <div class="write-item" style="margin-bottom:15px; padding-top: 15px; border-top: 1px dashed #e2e8f0;">
+                <label class="write-label">첨삭 플래너 / 추가 자료 (선택)</label>
+                ${existingFileHtml}
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <input type="file" id="wfb_file_${idk}" accept="image/*,.pdf" style="font-size:0.9rem; padding:5px; border:1px solid #cbd5e1; border-radius:6px; flex:1; background:#fff;">
+                    <button id="wfb_file_btn_${idk}" class="temp-save-btn" onclick="uploadWeeklyTutorFile('${weeklyKey}')" style="white-space:nowrap;"><i class="fas fa-upload"></i> 업로드</button>
+                </div>
+                <p style="font-size:0.8rem; color:#94a3b8; margin-top:5px;">* 이미지(jpg, png) 또는 PDF 파일만 업로드 가능합니다. (학생에게 리포트와 함께 전달됩니다)</p>
+            </div>
+
             <div style="text-align:right; margin-top:10px;">
                 <button id="wfb_submit_${idk}" class="${submitBtnClass}"
                     onclick="submitWeeklyFeedback('${weeklyKey}')">최종 전송 (학생에게 전달)</button>
@@ -707,6 +732,63 @@ window.checkWeeklyAllSaved = function(idk) {
     }
 };
 
+window.uploadWeeklyTutorFile = async function(weeklyKey) {
+    const idk = weeklyIdKey(weeklyKey);
+    const fileInput = document.getElementById(`wfb_file_${idk}`);
+    if (!fileInput.files || fileInput.files.length === 0) return alert("업로드할 파일을 선택해주세요.");
+    
+    const file = fileInput.files[0];
+    const btn = document.getElementById(`wfb_file_btn_${idk}`);
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 업로드 중...';
+    btn.disabled = true;
+
+    try {
+        // 1. S3 Presigned URL 발급
+        const urlResponse = await apiFetch(FILE_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'get_presigned_url', data: { fileName: encodeURIComponent(file.name), fileType: file.type, folder: 'tutor_feedback' } })
+        });
+        const { uploadUrl, fileUrl, fields } = await urlResponse.json();
+        
+        // 2. S3 직접 업로드
+        const formData = new FormData();
+        Object.entries(fields || {}).forEach(([k, v]) => formData.append(k, v));
+        formData.append('file', file);
+
+        const uploadResult = await fetch(uploadUrl, { method: 'POST', body: formData });
+        if (!uploadResult.ok) throw new Error("S3 업로드 실패");
+
+        // 3. 현재 입력된 텍스트 코멘트도 함께 모아서 DB 임시저장
+        const feedback = {};
+        WEEKLY_FB_FIELDS.forEach(f => {
+            const el = document.getElementById(`wfb_${idk}_${f.key}`);
+            feedback[f.key] = el ? el.value : '';
+        });
+        feedback.tutorImage = fileUrl; // 새로 업로드된 URL 포함
+
+        // 4. 로컬 데이터 갱신 (저장 시 덮어씌워지지 않게 메모리 유지)
+        const reportData = currentWeeklyData.find(w => w.weekId === weeklyKey || w.date === weeklyKey);
+        if (reportData) {
+            if (!reportData.tutorFeedback) reportData.tutorFeedback = {};
+            reportData.tutorFeedback.tutorImage = fileUrl;
+        }
+
+        await apiFetch(REPORT_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'tutor_save_weekly_draft', data: { targetUserId, reportDate: weeklyKey, tutorFeedback: feedback } })
+        });
+        
+        alert("파일이 성공적으로 업로드되었습니다.");
+        renderWeeklyTab(); // UI 갱신 (새로운 첨부파일 표시)
+
+    } catch (e) {
+        if (e.message !== "Auth expired") alert("파일 업로드에 실패했습니다.");
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+};
+
 window.tempSaveWeeklyField = async function(weeklyKey, fieldName) {
     const idk = weeklyIdKey(weeklyKey);
     const btn = document.getElementById(`wfb_btn_${idk}_${fieldName}`);
@@ -723,11 +805,16 @@ window.tempSaveWeeklyField = async function(weeklyKey, fieldName) {
     const originalText = btn.innerText;
     btn.innerText = '저장 중...'; btn.disabled = true;
 
+    // 기존 데이터 메모리에서 파일 URL 가져오기
+    const reportData = currentWeeklyData.find(w => w.weekId === weeklyKey || w.date === weeklyKey) || {};
+    const existingFb = reportData.tutorFeedback || {};
+
     const feedback = {};
     WEEKLY_FB_FIELDS.forEach(f => {
         const el = document.getElementById(`wfb_${idk}_${f.key}`);
         feedback[f.key] = el ? el.value : '';
     });
+    feedback.tutorImage = existingFb.tutorImage || ''; // 기존 파일 URL 유지
 
     try {
         await apiFetch(REPORT_API_URL, {
@@ -735,9 +822,7 @@ window.tempSaveWeeklyField = async function(weeklyKey, fieldName) {
             body: JSON.stringify({ type: 'tutor_save_weekly_draft', data: { targetUserId, reportDate: weeklyKey, tutorFeedback: feedback } })
         });
         btn.classList.add('saved'); btn.innerText = '저장됨'; btn.disabled = false;
-        
         checkWeeklyAllSaved(idk);
-        
     } catch (e) {
         if (e.message !== 'Auth expired') alert('임시 저장에 실패했습니다.');
         btn.innerText = originalText; btn.disabled = false;
@@ -757,11 +842,16 @@ window.submitWeeklyFeedback = async function(weeklyKey) {
 
     if (!confirm('최종 전송 후에는 더 이상 수정할 수 없습니다.\n학생에게 코멘트를 전달하시겠습니까?')) return;
 
+    // 기존 데이터 메모리에서 파일 URL 가져오기
+    const reportData = currentWeeklyData.find(w => w.weekId === weeklyKey || w.date === weeklyKey) || {};
+    const existingFb = reportData.tutorFeedback || {};
+
     const feedback = {};
     WEEKLY_FB_FIELDS.forEach(f => {
         const el = document.getElementById(`wfb_${idk}_${f.key}`);
         feedback[f.key] = el ? el.value : '';
     });
+    feedback.tutorImage = existingFb.tutorImage || ''; // 기존 파일 URL 유지
     feedback.submitted = true;
 
     const submitBtn = document.getElementById(`wfb_submit_${idk}`);
@@ -773,23 +863,24 @@ window.submitWeeklyFeedback = async function(weeklyKey) {
             body: JSON.stringify({ type: 'tutor_submit_weekly_feedback', data: { targetUserId, reportDate: weeklyKey, tutorFeedback: feedback } })
         });
         alert('학생에게 코멘트가 전달되었습니다.');
+        
+        // 제출 후 폼을 읽기 전용으로 전환
         const area = document.getElementById(`wfb_area_${idk}`);
         if (area) area.outerHTML = createWeeklyFbReadOnly(feedback, true);
+        
     } catch (e) {
         if (e.message !== 'Auth expired') alert('전송에 실패했습니다.');
         if (submitBtn) { submitBtn.innerText = '최종 전송 (학생에게 전달)'; submitBtn.disabled = false; }
     }
 };
 
-// 💡 [버그 수정] PRO 리포트 필터링 로직 추가
 function renderProTab() {
     const container = document.getElementById('proReportContainer');
     container.innerHTML = '';
 
     const userRole = localStorage.getItem('userRole');
     const reports = currentStudentData.proReportsList || [];
-    
-    // 💡 선택된 필터 연도/월 가져오기
+
     const selYear = document.getElementById('proFilterYear')?.value;
     const selMonth = document.getElementById('proFilterMonth')?.value;
 
