@@ -1799,13 +1799,23 @@ async function downloadReportPDF(reportTitle) {
     let finalDownloadUrl = null;
 
     try {
-        // 💡 [핵심 해결책] DOM을 복제하여, 렌더링된 무거운 Base64 이미지 영역을 싹 비우고 보냅니다.
-        // 백엔드에서 attachedPdfUrl을 통해 원본을 병합하므로 프론트에서 보낼 필요가 없습니다. (6MB 제한 회피)
         const clonedReport = reportElement.cloneNode(true);
-        const pdfViewerContainer = clonedReport.querySelector('.allow-page-break-body');
+        const attachedPdfDataEl = clonedReport.querySelector('#attachedPdfData');
         
-        if (pdfViewerContainer && attachedPdfUrl) {
-            pdfViewerContainer.innerHTML = '<div style="text-align:center; padding:40px; color:#64748b; font-weight:bold; background:#f8fafc; border-radius:8px;">(튜터 첨삭 파일은 서버에서 고화질 원본으로 자동 병합되었습니다)</div>';
+        if (attachedPdfDataEl && attachedPdfUrl) {
+            // 1. 불필요하게 한 페이지를 다 차지하던 5번 박스 요소 전체를 찾아서 아예 삭제합니다.
+            const section5Box = attachedPdfDataEl.nextElementSibling;
+            if (section5Box && section5Box.classList.contains('doc-matched-box')) {
+                section5Box.remove();
+            }
+
+            // 2. 4번 섹션 아래(문서 맨 끝)에 공간을 차지하지 않는 자연스러운 안내 꼬리말을 덧붙입니다.
+            const noticeHtml = `
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 2px dashed #cbd5e1; text-align: right; color: #2563eb; font-weight: 800; font-size: 1.1rem;">
+                    <i class="fas fa-file-pdf" style="margin-right: 5px;"></i> 5. 튜터 플래너 첨삭은 다음 장에서 이어집니다 ▶
+                </div>
+            `;
+            clonedReport.insertAdjacentHTML('beforeend', noticeHtml);
         }
 
         const rawHtml = `
