@@ -616,8 +616,11 @@ function openUnivSelectModal(index) {
 function showUnivStep(isDeferred = false) {
     currentSelectStep = 'univ'; selectedUnivForMajor = '';
     document.getElementById('modalTitle').innerText = "대학 선택";
+    
     const listEl = document.getElementById('stepUnivList');
     listEl.style.display = 'grid';
+    listEl.style.pointerEvents = 'none'; 
+    
     document.getElementById('stepMajorList').style.display = 'none';
     document.getElementById('modalFooter').style.display = 'none';
 
@@ -625,10 +628,14 @@ function showUnivStep(isDeferred = false) {
     if(searchInput) { searchInput.placeholder = "대학명 검색 (예: 서울대, 연세)"; searchInput.value = ''; }
 
     if (isDeferred) {
-        // 모달이 화면에 등장할 틈을 0.05초 주고 렌더링 시작
-        setTimeout(() => { renderUnivList(''); }, 50);
+        setTimeout(() => { 
+            renderUnivList(''); 
+            
+            setTimeout(() => { listEl.style.pointerEvents = 'auto'; }, 300);
+        }, 50);
     } else {
         renderUnivList('');
+        setTimeout(() => { listEl.style.pointerEvents = 'auto'; }, 300);
     }
 }
 
