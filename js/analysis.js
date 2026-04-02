@@ -7,6 +7,7 @@ const MYPAGE_API_URL = CONFIG.api.user;
 const UNIV_DATA_API_URL = CONFIG.api.analysis;
 const FILE_API_URL = CONFIG.api.file;
 const REPORT_API_URL = CONFIG.api.report;
+const PDF_API_URL = CONFIG.api.pdf; 
 
 let currentUserTier = 'free';
 let univChangeRemaining = 30;
@@ -1709,7 +1710,13 @@ function openFeedbackModal(data) {
             const noCacheUrl = `${escapeHtml(fb.tutorImage)}?t=${new Date().getTime()}`;
             fileDisplayHtml = `<div style="text-align:center; padding: 10px 0;"><img src="${noCacheUrl}" crossorigin="anonymous" alt="튜터 플래너 코칭" style="max-width:100%; height:auto; border-radius:8px; border:1px solid #cbd5e1; display:block; margin: 0 auto;"></div>`;
         }
-        tutorFileBlockHtml = `<div class="doc-matched-box allow-page-break" style="margin-top: 30px;"><div class="doc-matched-header"><i class="fas fa-paperclip" style="color:#3b82f6;"></i> 5. 주간 플래너 코칭 & 첨삭</div><div class="doc-matched-body allow-page-break-body" style="padding:25px;">${fileDisplayHtml}</div></div>`;
+        
+        tutorFileBlockHtml = `
+            <div id="attachedPdfData" data-pdf-url="${actualPdfUrl}" style="display:none;"></div>
+            <div class="doc-matched-box allow-page-break" style="margin-top: 30px;">
+                <div class="doc-matched-header"><i class="fas fa-paperclip" style="color:#3b82f6;"></i> 5. 주간 플래너 코칭 & 첨삭</div>
+                <div class="doc-matched-body allow-page-break-body" style="padding:25px;">${fileDisplayHtml}</div>
+            </div>`;
     }
 
     const safeTitleForJs = escapeHtml(data.title || "주간 리포트").replace(/'/g, "\\'");
@@ -1746,10 +1753,10 @@ function openFeedbackModal(data) {
                 </div>
             </div>
             <div class="doc-matched-box">
-                <div class="doc-matched-header" style="background:#fff;"><i class="fas fa-comments"></i> 4. 심층 Q&A 솔루션</div>
-                <div class="doc-matched-body" style="flex-direction:column; padding:25px; gap:20px; border-top:1px solid #e2e8f0;">
-                    <div class="qna-student"><span class="doc-badge" style="background:#fef2f2; color:#ef4444; border-color:#fecaca;">학생의 심층 질문</span>${deepQnaHtml}</div>
-                    <div class="qna-tutor"><span class="doc-badge tutor-badge" style="background:#f0fdf4; color:#16a34a; border-color:#bbf7d0;">Consultant 추가 코멘트</span><div class="doc-text">${escapeHtml(fb.extraQuestion) || '<span style="color:#94a3b8">추가 코멘트가 없습니다.</span>'}</div></div>
+                <div class="doc-matched-header"><i class="fas fa-comments"></i> 4. 심층 Q&A 솔루션</div>
+                <div class="doc-matched-body">
+                    <div class="doc-student-data"><span class="doc-badge" style="background:#fef2f2; color:#ef4444; border-color:#fecaca;">학생의 심층 질문</span>${deepQnaHtml}</div>
+                    <div class="doc-tutor-feedback"><span class="doc-badge tutor-badge" style="background:#f0fdf4; color:#16a34a; border-color:#bbf7d0;">Consultant 추가 코멘트</span><div class="doc-text">${escapeHtml(fb.extraQuestion) || '<span style="color:#94a3b8">추가 코멘트가 없습니다.</span>'}</div></div>
                 </div>
             </div>
             ${tutorFileBlockHtml}
@@ -1834,9 +1841,8 @@ async function downloadReportPDF(reportTitle) {
         `;
 
         const token = localStorage.getItem('idToken');
-        const pdfApiUrl = 'https://ft35jsftc1.execute-api.ap-northeast-2.amazonaws.com/generate-pdf'; 
         
-        const response = await fetch(pdfApiUrl, { 
+        const response = await fetch(PDF_API_URL, { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 

@@ -367,8 +367,8 @@
 .doc-matched-box:hover { box-shadow: 0 10px 25px -5px rgba(0,0,0,0.08); border-color: #cbd5e1; }
 .doc-matched-header { background: #f8fafc; padding: 14px 20px; border-bottom: 1px solid #e2e8f0; font-weight: 800; font-size: 1.1rem; color: #1e293b; display: flex; align-items: center; gap: 10px; page-break-inside: avoid; }
 .doc-matched-header i { color: #3b82f6; font-size: 1.2rem; }
-.doc-matched-body { display: flex; flex-direction: column; }
-.doc-student-data { flex: 1; padding: 20px; border-bottom: 1px solid #e2e8f0; position: relative; }
+.doc-matched-body { display: flex; flex-direction: row; width: 100%; box-sizing: border-box; }
+.doc-student-data { flex: 1; padding: 20px; border-bottom: none; border-right: 1px dashed #e2e8f0; position: relative; }
 .doc-tutor-feedback { flex: 1.2; padding: 20px; background: #fafafa; position: relative; }
 .doc-badge { display: inline-block; padding: 4px 10px; background: #f1f5f9; color: #475569; border-radius: 6px; font-size: 0.8rem; font-weight: 800; margin-bottom: 15px; letter-spacing: -0.5px; border: 1px solid #e2e8f0; }
 .doc-badge.tutor-badge { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
@@ -641,8 +641,8 @@ input[type="number"]::-webkit-inner-spin-button {
     .tab-btn { padding: 12px 10px; font-size: 0.85rem; }
     .tab-content { padding: 15px; padding-bottom: 25px; }
     .check-modal-content { height: 95vh; height: 95dvh; max-height: 95dvh; }
-    .doc-matched-body { flex-direction: row; }
-    .doc-student-data { border-bottom: none; border-right: 1px dashed #cbd5e1; }
+    .doc-matched-body { flex-direction: column; }
+    .doc-student-data { border-right: none; border-bottom: 1px dashed #cbd5e1; }
 
     /* =======================================
        5. 차트 모바일 전용 설정 (기존 레이아웃 조정)
