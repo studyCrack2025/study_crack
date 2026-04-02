@@ -1635,7 +1635,7 @@ function openFeedbackModal(data) {
         return;
     }
 
-    const consultantName = "담당 수석 컨설턴트"; 
+    const consultantName = escapeHtml(data.tutorName || "수석 튜터");
     let detailRows = ''; let totalPlan = '0H', totalAct = '0H', totalRate = '0%';
     
     if (data.studyTime) {
