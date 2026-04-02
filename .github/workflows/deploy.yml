@@ -6,7 +6,6 @@ on:
       - main
       - dev
 
-# OIDC 임시 토큰 발급을 위해 반드시 필요한 권한입니다.
 permissions:
   id-token: write
   contents: read
@@ -24,7 +23,8 @@ jobs:
         run: |
           echo "AWS_ROLE_ARN=arn:aws:iam::235270182853:role/StudyCrack-GitHubActions-DevRole" >> $GITHUB_ENV
           echo "S3_BUCKET=dev.studycrack.co.kr" >> $GITHUB_ENV
-          echo "CF_DIST_ID=EV58SGU5XCI3O" >> $GITHUB_ENV
+          # 🚨 기존 실서버 ID 삭제! DEV용 CloudFront가 있다면 그 ID를 넣고, 없다면 비워두세요.
+          echo "CF_DIST_ID=" >> $GITHUB_ENV
 
       # 2. PROD 환경 변수 설정 (main 브랜치 푸시 시 실행)
       - name: Set Environment Variables for PROD
@@ -34,7 +34,7 @@ jobs:
           echo "S3_BUCKET=studycrack.co.kr" >> $GITHUB_ENV
           echo "CF_DIST_ID=EV58SGU5XCI3O" >> $GITHUB_ENV
 
-      # 3. AWS 자격 증명 설정 (기존 Access Key 방식에서 안전한 OIDC 방식으로 대체)
+      # 3. AWS 자격 증명 설정
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -46,7 +46,8 @@ jobs:
         run: |
           aws s3 sync . s3://${{ env.S3_BUCKET }} --delete --exclude ".git/*" --exclude ".github/*"
 
-      # 5. CloudFront 캐시 무효화 (업데이트 즉시 반영)
+      # 5. CloudFront 캐시 무효화 (CF_DIST_ID가 비어있지 않을 때만 실행)
       - name: CloudFront Invalidation
+        if: env.CF_DIST_ID != ''
         run: |
           aws cloudfront create-invalidation --distribution-id ${{ env.CF_DIST_ID }} --paths "/*"
