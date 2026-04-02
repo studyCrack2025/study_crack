@@ -976,15 +976,13 @@ function renderSimChart() {
 
                 if (item.ineligible) {
                     graphHtml += `
-                        <div class="sim-bar-item" onclick="selectSimUniv(${index})" style="flex: 1; min-width: 0; height: 100%; display: flex; justify-content: center;">
-                            <div style="position:relative; height:100%; width:100%; display:flex; justify-content:center;">
-                                <div class="sim-bar" style="position:absolute; bottom:0; height:8%; background:repeating-linear-gradient(45deg,#fca5a5,#fca5a5 4px,#fee2e2 4px,#fee2e2 8px); border:1px dashed #ef4444; border-radius:6px 6px 0 0; z-index:1; display:flex; align-items:flex-start; justify-content:center; width:100%; max-width:28px;">
-                                    <span class="sim-score-label" style="position:absolute; top:-22px; color:#ef4444; font-size:0.65rem; white-space:nowrap;">불가</span>
-                                </div>
+                        <div class="sim-bar-item" onclick="selectSimUniv(${index})" style="flex:1; align-self:stretch; position:relative; cursor:pointer; -webkit-tap-highlight-color: transparent;">
+                            <div class="sim-bar" style="position:absolute; bottom:0; left:50%; transform:translateX(-50%); height:8%; background:repeating-linear-gradient(45deg,#fca5a5,#fca5a5 4px,#fee2e2 4px,#fee2e2 8px); border:1px dashed #ef4444; border-radius:6px 6px 0 0; z-index:1; width:100%; max-width:28px;">
+                                <span class="sim-score-label" style="position:absolute; top:-22px; left:50%; transform:translateX(-50%); color:#ef4444; font-size:0.65rem; white-space:nowrap;">불가</span>
                             </div>
                         </div>`;
                     labelHtml += `
-                        <div class="sim-label-item" onclick="selectSimUniv(${index})" style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center;">
+                        <div class="sim-label-item" onclick="selectSimUniv(${index})" style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; -webkit-tap-highlight-color: transparent; cursor: pointer;">
                             <span class="label-mobile" style="word-break: keep-all; font-size: 0.75rem;">${choiceNum}지망</span>
                             <span class="label-pc" style="word-break: keep-all; line-height: 1.2;"><strong>${choiceNum}지망</strong><br>${escapeHtml(shortUniv)}<br><span style="color:#ef4444; font-size:0.75em;">지원불가</span></span>
                         </div>`;
@@ -1004,8 +1002,10 @@ function renderSimChart() {
                     const potentialScore = Math.min(score + maxRise, MAX_SCORE);
                     const riseAmount = potentialScore - score;
                     const riseHeightPct = `${(riseAmount / MAX_SCORE) * 100}%`;
+                    
+                    // 🔥 확작 막대가 부드럽게 차오르도록 초기값을 0으로 세팅 (data-target-height 에 목표치 보관)
                     extensionHtml = `
-                        <div class="sim-extension-bar" style="bottom:${currentHeightPct}; height:${riseHeightPct}; display:none; width:100%; max-width:28px; margin: 0 auto;">
+                        <div class="sim-extension-bar" data-target-height="${riseHeightPct}" style="position:absolute; left:50%; transform:translateX(-50%); bottom:${currentHeightPct}; height:0; opacity:0; width:100%; max-width:28px; z-index:2; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); pointer-events:none;">
                              <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">
                                 ${Math.round(potentialScore)} <span style="font-size:0.7rem;">(+${maxRise.toFixed(1)})</span>
                              </span>
@@ -1013,32 +1013,35 @@ function renderSimChart() {
                 }
 
                 graphHtml += `
-                    <div class="sim-bar-item" onclick="selectSimUniv(${index})" style="flex: 1; min-width: 0; height: 100%; display: flex; justify-content: center;">
-                        <div style="position:relative; height:100%; width:100%; display:flex; justify-content:center;">
-                            <div class="sim-bar" style="position:absolute; bottom:0; height:${currentHeightPct}; background:${color}; border-radius:6px 6px 0 0; z-index:1; width:100%; max-width:28px;">
-                                <span class="sim-score-label" style="position:absolute; top:-22px; left:50%; transform:translateX(-50%); font-weight:bold;">${safeScore}</span>
-                            </div>
-                            ${extensionHtml}
+                    <div class="sim-bar-item" onclick="selectSimUniv(${index})" style="flex:1; align-self:stretch; position:relative; cursor:pointer; -webkit-tap-highlight-color: transparent;">
+                        <div class="sim-bar" style="position:absolute; bottom:0; left:50%; transform:translateX(-50%); height:${currentHeightPct}; background:${color}; border-radius:6px 6px 0 0; z-index:1; width:100%; max-width:28px; transition: border-radius 0.3s;">
+                            <span class="sim-score-label" style="position:absolute; top:-22px; left:50%; transform:translateX(-50%); font-weight:bold; color:${color}; transition: opacity 0.2s ease-out;">${safeScore}</span>
                         </div>
+                        ${extensionHtml}
                     </div>`;
 
                 labelHtml += `
-                    <div class="sim-label-item" onclick="selectSimUniv(${index})" style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center;">
+                    <div class="sim-label-item" onclick="selectSimUniv(${index})" style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; -webkit-tap-highlight-color: transparent; cursor: pointer;">
                         <span class="label-mobile" style="word-break: keep-all; font-size: 0.75rem;">${choiceNum}지망</span>
                         <span class="label-pc" style="word-break: keep-all; line-height: 1.2;"><strong>${choiceNum}지망</strong><br>${escapeHtml(shortUniv)}<br>${escapeHtml(item.major)}</span>
                     </div>`;
             });
 
-            graphArea.innerHTML = graphHtml; labelArea.innerHTML = labelHtml;
-            wrapper.appendChild(graphArea); wrapper.appendChild(labelArea);
+            graphArea.innerHTML = graphHtml; labelArea.innerHTML = labelHtml;
+            wrapper.appendChild(graphArea); wrapper.appendChild(labelArea);
 
-            const mobileLegendDiv = document.createElement('div'); mobileLegendDiv.className = 'mobile-legend-area';
-            mobileLegendDiv.innerHTML = `
-                <div class="mobile-legend-item"><div style="width:12px; height:2px; background:#10b981; margin-right:4px;"></div> 안정(150)</div>
-                <div class="mobile-legend-item"><div style="width:12px; height:2px; background:#3b82f6; margin-right:4px;"></div> 합격(100)</div>
-            `;
-
-            container.appendChild(wrapper); container.appendChild(mobileLegendDiv);
+            // 🔥 모바일 범례(Legend) 디자인 깔끔하게 중앙 정렬 교체
+            const mobileLegendDiv = document.createElement('div');
+            mobileLegendDiv.style.cssText = "display: flex; justify-content: center; align-items: center; gap: 20px; padding: 15px 0 5px 0; width: 100%; border-top: 1px dashed #cbd5e1; margin-top: 15px;";
+            mobileLegendDiv.innerHTML = `
+                <div style="display:flex; align-items:center; gap:6px; font-size:0.85rem; color:#475569; font-weight:700;">
+                    <div style="width:16px; height:4px; background:#10b981; border-radius:2px;"></div> 안정(150)
+                </div>
+                <div style="display:flex; align-items:center; gap:6px; font-size:0.85rem; color:#475569; font-weight:700;">
+                    <div style="width:16px; height:4px; background:#3b82f6; border-radius:2px;"></div> 합격(100)
+                </div>
+            `;
+            container.appendChild(wrapper); container.appendChild(mobileLegendDiv);
         }
         updateSimBarGraph(selectedSimIndex || 0);
     }
