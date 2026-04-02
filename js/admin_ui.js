@@ -337,6 +337,32 @@ function getTierBadgeHTML(studentItem) {
 // ============================================================
 // [D] 질의 관리(Q&A) 로직
 // ============================================================
+async function fetchQnaBadgeCount() {
+    try {
+        const response = await apiFetch(QNA_API_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ type: 'admin_get_all_qna' }) 
+        });
+        const data = await response.json();
+        const qnaList = data.qnaList || [];
+        
+        // 'waiting' (안읽음) 상태인 문의만 카운트
+        const waitingCount = qnaList.filter(q => q.status === 'waiting').length;
+        
+        const badge = document.getElementById('qnaBadge');
+        if (badge) {
+            if (waitingCount > 0) {
+                badge.style.display = 'inline-block';
+                badge.innerText = waitingCount;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    } catch (e) {
+        console.error("QNA Badge Fetch Error:", e);
+    }
+}
+
 async function loadAllQna() {
     const tbody = document.getElementById('qnaListBody');
     if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px;">데이터를 불러오는 중...</td></tr>';
@@ -346,7 +372,32 @@ async function loadAllQna() {
         const data = await response.json();
         allQnaData = data.qnaList || [];
         renderQnaList();
+        
+        updateQnaBadgeFromData(); 
     } catch (e) { if (e.message !== "Auth expired") alert("질의 목록을 불러오는데 실패했습니다."); }
+}
+
+function updateQnaBadgeFromData() {
+    const waitingCount = allQnaData.filter(q => q.status === 'waiting').length;
+    const badge = document.getElementById('qnaBadge');
+    if (badge) {
+        badge.style.display = waitingCount > 0 ? 'inline-block' : 'none';
+        badge.innerText = waitingCount;
+    }
+}
+
+async function markAsRead(targetUserId, qnaId) {
+    if(!confirm("이 문의를 '읽음' 상태로 변경하시겠습니까?")) return;
+    try {
+        await apiFetch(QNA_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_mark_qna_read', data: { targetUserId, qnaId } }) });
+        const item = allQnaData.find(q => q.qnaId === qnaId); 
+        if(item) item.status = 'read';
+        
+        renderQnaList(); 
+        updateQnaBadgeFromData();
+    } catch(e) { 
+        if (e.message !== "Auth expired") alert("상태 업데이트에 실패했습니다."); 
+    }
 }
 
 function renderQnaList() {
@@ -372,19 +423,6 @@ function getQnaStatusBadge(status) {
     if (status === 'waiting') return '<span style="background:#fef2f2; color:#ef4444; padding:3px 8px; border-radius:10px; font-size:0.8rem; font-weight:bold;">안읽음</span>';
     if (status === 'read') return '<span style="background:#fff7ed; color:#f97316; padding:3px 8px; border-radius:10px; font-size:0.8rem; font-weight:bold;">미응답</span>';
     return '<span style="background:#ecfdf5; color:#10b981; padding:3px 8px; border-radius:10px; font-size:0.8rem; font-weight:bold;">완료</span>';
-}
-
-async function markAsRead(targetUserId, qnaId) {
-    if(!confirm("이 문의를 '읽음' 상태로 변경하시겠습니까?")) return;
-    try {
-        await apiFetch(QNA_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_mark_qna_read', data: { targetUserId, qnaId } }) });
-        const item = allQnaData.find(q => q.qnaId === qnaId); 
-        if(item) item.status = 'read';
-        
-        renderQnaList(); 
-    } catch(e) { 
-        if (e.message !== "Auth expired") alert("상태 업데이트에 실패했습니다. 네트워크 연결을 확인해주세요."); 
-    }
 }
 
 function openReplyModal(targetUserId, qnaId, isViewOnly = false) {
