@@ -676,7 +676,6 @@ function createWeeklyFbInput(weeklyKey, fb) {
     const allPreSaved = WEEKLY_FB_FIELDS.every(f => (fb[f.key] || '').replace(/\s/g, '').length >= WEEKLY_FB_MIN);
     const submitBtnClass = allPreSaved ? 'complete-write-btn active' : 'complete-write-btn';
 
-    // 💡 [추가] 이미 업로드된 파일이 있다면 미리보기 제공
     const existingFileHtml = fb.tutorImage 
         ? `<div style="margin-bottom:10px; font-size:0.85rem; color:#2563eb; background:#eff6ff; padding:8px 12px; border-radius:6px; border:1px solid #bfdbfe;"><i class="fas fa-file-check"></i> 현재 첨부된 파일: <a href="${escapeHtml(fb.tutorImage)}" target="_blank" style="text-decoration:underline; font-weight:bold;">보기</a></div>` 
         : '';
@@ -691,7 +690,9 @@ function createWeeklyFbInput(weeklyKey, fb) {
             
             <div class="write-item" style="margin-bottom:15px; padding-top: 15px; border-top: 1px dashed #e2e8f0;">
                 <label class="write-label">첨삭 플래너 / 추가 자료 (선택)</label>
-                ${existingFileHtml}
+                
+                <div id="wfb_existing_file_${idk}">${existingFileHtml}</div>
+                
                 <div style="display:flex; gap:10px; align-items:center;">
                     <input type="file" id="wfb_file_${idk}" accept="image/*,.pdf" style="font-size:0.9rem; padding:5px; border:1px solid #cbd5e1; border-radius:6px; flex:1; background:#fff;">
                     <button id="wfb_file_btn_${idk}" class="temp-save-btn" onclick="uploadWeeklyTutorFile('${weeklyKey}')" style="white-space:nowrap;"><i class="fas fa-upload"></i> 업로드</button>
@@ -780,7 +781,17 @@ window.uploadWeeklyTutorFile = async function(weeklyKey) {
         });
         
         alert("파일이 성공적으로 업로드되었습니다.");
-        renderWeeklyTab(); // UI 갱신 (새로운 첨부파일 표시)
+        
+        // 💡 [핵심 해결책] 탭 전체 새로고침 삭제! 대신 해당 UI 부분만 즉시 업데이트합니다.
+        const existingContainer = document.getElementById(`wfb_existing_file_${idk}`);
+        if (existingContainer) {
+            existingContainer.innerHTML = `<div style="margin-bottom:10px; font-size:0.85rem; color:#2563eb; background:#eff6ff; padding:8px 12px; border-radius:6px; border:1px solid #bfdbfe;"><i class="fas fa-file-check"></i> 현재 첨부된 파일: <a href="${escapeHtml(fileUrl)}" target="_blank" style="text-decoration:underline; font-weight:bold;">보기</a></div>`;
+        }
+        
+        // 파일 인풋 초기화 (안 헷갈리게) 및 버튼 원상복구
+        fileInput.value = '';
+        btn.innerHTML = originalText;
+        btn.disabled = false;
 
     } catch (e) {
         if (e.message !== "Auth expired") alert("파일 업로드에 실패했습니다.");
