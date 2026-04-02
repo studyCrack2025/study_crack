@@ -720,8 +720,8 @@ async function updateAnalysisUI() {
                 </select>
             </div>
         </div>
-        <div id="analysisCardsContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; align-items: start;">
-                 <div style="padding:60px; text-align:center; color:#3b82f6;">
+        <div id="analysisCardsContainer" style="display: flex; flex-direction: column; gap: 20px;">
+         	<div style="padding:60px; text-align:center; color:#3b82f6;">
                 <i class="fas fa-spinner fa-spin fa-2x"></i>
                 <p style="margin-top:15px; font-weight:600;">${EXAM_DISPLAY_NAMES[currentExamMode]} 기준으로<br>분석 중입니다...</p>
             </div>
@@ -777,46 +777,46 @@ function renderAnalysisCard(res) {
     const barWidth = Math.min((res.converted_score / MAX_SCORE) * 100, 100);
 
     return `
-            <div class="analysis-card" style="border-left-color: ${res.color}; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
-                <div class="analysis-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; border-bottom:1px solid #f1f5f9; padding-bottom:15px; margin-bottom:15px; flex-shrink: 0;">
-                    <div style="flex: 1; min-width: 0;">
-                        <span style="color:#64748b; font-size:1.1rem; font-weight:800; display:block; margin-bottom:5px;">${safeIdx}지망</span>
-                        <h4 style="margin:0; font-size:1.2rem; color:#1e293b; letter-spacing:-0.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeUniv}</h4>
-                        <div style="color:#64748b; font-size:0.95rem; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeMajor}</div>
+        <div class="analysis-card" style="border-left-color: ${res.color}; display: flex; flex-direction: column; gap: 15px;">
+            <div class="analysis-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; border-bottom:1px solid #f1f5f9; padding-bottom:15px;">
+                <div style="flex: 1; min-width: 0;">
+                    <span style="color:#64748b; font-size:1.1rem; font-weight:800; display:block; margin-bottom:5px;">${safeIdx}지망</span>
+                    <h4 style="margin:0; font-size:1.2rem; color:#1e293b; letter-spacing:-0.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeUniv}</h4>
+                    <div style="color:#64748b; font-size:0.95rem; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeMajor}</div>
+                </div>
+                <div style="text-align:right; flex-shrink: 0;">
+                    <span style="${badgeStyle} padding:6px 14px; border-radius:20px; font-size:0.9rem; font-weight:bold; display:inline-block; margin-bottom:5px; white-space:nowrap;">${safeStatus}</span>
+                    <div style="font-size:0.8rem; color:${res.color}; font-weight:600; white-space:nowrap;">${safeMsg}</div>
+                </div>
+            </div>
+            <div class="analysis-body" style="display:flex; flex-direction:column; gap:20px;">
+                <div class="score-section">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
+                        <span style="font-size:0.95rem; color:#475569; font-weight:600;">AI 환산 진단점수</span>
+                        <span style="${scoreStyle}">${safeScore}<span style="font-size:1rem; font-weight:normal; margin-left:2px; color:#64748b;">점</span></span>
                     </div>
-                    <div style="text-align:right; flex-shrink: 0;">
-                        <span style="${badgeStyle} padding:6px 14px; border-radius:20px; font-size:0.9rem; font-weight:bold; display:inline-block; margin-bottom:5px; white-space:nowrap;">${safeStatus}</span>
-                        <div style="font-size:0.8rem; color:${res.color}; font-weight:600; white-space:nowrap;">${safeMsg}</div>
+                    <div class="score-bar-container">
+                        <div class="score-bar-bg">
+                            <div style="position:absolute; left:40%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
+                            <div style="position:absolute; left:60%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
+                            <div class="score-bar-fill" style="width: ${barWidth}%; background: ${res.color};"></div>
+                        </div>
+                        <div class="score-labels">
+                            <span class="label-min">0</span>
+                            <span class="label-pass">합격<span class="m-line">(100)</span></span>
+                            <span class="label-stable">안정<span class="m-line">(150)</span></span>
+                            <span class="label-max">MAX<span class="m-line">(${MAX_SCORE})</span></span>
+                        </div>
                     </div>
                 </div>
-                <div class="analysis-body" style="display:flex; flex-direction:column; gap:20px; flex: 1;">
-                    <div class="score-section" style="flex-shrink: 0;">
-                        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
-                            <span style="font-size:0.95rem; color:#475569; font-weight:600;">AI 환산 진단점수</span>
-                            <span style="${scoreStyle}">${safeScore}<span style="font-size:1rem; font-weight:normal; margin-left:2px; color:#64748b;">점</span></span>
-                        </div>
-                        <div class="score-bar-container">
-                            <div class="score-bar-bg">
-                                <div style="position:absolute; left:40%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
-                                <div style="position:absolute; left:60%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
-                                <div class="score-bar-fill" style="width: ${barWidth}%; background: ${res.color};"></div>
-                            </div>
-                            <div class="score-labels">
-                                <span class="label-min">0</span>
-                                <span class="label-pass">합격<span class="m-line">(100)</span></span>
-                                <span class="label-stable">안정<span class="m-line">(150)</span></span>
-                                <span class="label-max">MAX<span class="m-line">(${MAX_SCORE})</span></span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="advice-section" style="background:#f8fafc; border-radius:10px; padding:18px; border:1px solid #e2e8f0; margin-top: auto;">
-                        <h5 style="margin:0 0 8px 0; font-size:0.9rem; color:#334155; display:flex; align-items:center;">
-                            <i class="fas fa-lightbulb" style="color:#fbbf24; margin-right:6px;"></i> 합격 전략 코멘트
-                        </h5>
-                        <p style="margin:0; font-size:0.95rem; color:#475569; line-height:1.6;">${getSimpleAdvice(res.converted_score, res.status)}</p>
-                    </div>
+                <div class="advice-section" style="background:#f8fafc; border-radius:10px; padding:18px; border:1px solid #e2e8f0;">
+                    <h5 style="margin:0 0 8px 0; font-size:0.9rem; color:#334155; display:flex; align-items:center;">
+                        <i class="fas fa-lightbulb" style="color:#fbbf24; margin-right:6px;"></i> 합격 전략 코멘트
+                    </h5>
+                    <p style="margin:0; font-size:0.95rem; color:#475569; line-height:1.6;">${getSimpleAdvice(res.converted_score, res.status)}</p>
                 </div>
-            </div>`;
+            </div>
+        </div>`;
 }
 
 function getSimpleAdvice(score, status) {
@@ -2089,14 +2089,34 @@ function initProSection() {
 
 function renderProPromo(container) {
     container.innerHTML = `
-        <div class="pro-header"><span class="pro-badge">PREMIUM STRATEGY</span><h2 class="pro-title">PRO EXCLUSIVE :<br>최소 학습, 최대 효율</h2><p class="pro-desc">추상적인 조언은 배제합니다. 데이터 기반으로 목표 대학을 향한 최단 경로를 설계하세요.</p></div>
-        <div class="pro-promo-grid">
-            <div class="pro-feature-card"><span class="feat-icon">📊</span><span class="feat-title">학습 정밀 진단</span><p class="feat-desc">단순한 착석 시간이 아닌 <strong>유효 학습 시간, 오답 회수율</strong> 등 객관적 지표로 학습 밀도를 진단합니다.</p></div>
-            <div class="pro-feature-card"><span class="feat-icon">🎯</span><span class="feat-title">합격 기여도 분석</span><p class="feat-desc">목표 대학 합격선까지의 부족한 점수(ΔCut)를 파악하고, 점수 상승 <strong>기여도가 가장 높은 과목</strong>을 짚어냅니다.</p></div>
-            <div class="pro-feature-card highlight"><span class="feat-icon">⚡</span><span class="feat-title">명확한 Next Step</span><p class="feat-desc">막연한 조언 대신 특정 인강 수강, 실전 모의고사 등 당장 실행해야 할 <strong>구체적인 행동 지침</strong>을 제시합니다.</p></div>
-        </div>
-        <button onclick="location.href='/payment'" class="pro-cta-btn">🚀 PRO 멤버십으로<br>업그레이드 하기<div style="font-size:0.8rem; opacity:0.8; margin-top:5px; font-weight:400;">데이터 기반 1:1 맞춤 컨설팅 시작하기</div></button>
-    `;
+        <div style="display: block;">
+            <div class="pro-header"><span class="pro-badge">PREMIUM STRATEGY</span><h2 class="pro-title">PRO EXCLUSIVE :<br>최소 학습, 최대 효율</h2><p class="pro-desc">추상적인 조언은 배제합니다. 데이터 기반으로 목표 대학을 향한 최단 경로를 설계하세요.</p></div>
+            <div class="pro-promo-grid">
+                <div class="pro-feature-card">
+                    <span class="feat-icon">📊</span>
+                    <div class="feat-text-box">
+                        <span class="feat-title">학습 정밀 진단</span>
+                        <p class="feat-desc">단순한 착석 시간이 아닌 <strong>유효 학습 시간, 오답 회수율</strong> 등 객관적 지표로 학습 밀도를 진단합니다.</p>
+                    </div>
+                </div>
+                <div class="pro-feature-card">
+                    <span class="feat-icon">🎯</span>
+                    <div class="feat-text-box">
+                        <span class="feat-title">합격 기여도 분석</span>
+                        <p class="feat-desc">목표 대학 합격선까지의 부족한 점수(ΔCut)를 파악하고, 점수 상승 <strong>기여도가 가장 높은 과목</strong>을 짚어냅니다.</p>
+                    </div>
+                </div>
+                <div class="pro-feature-card highlight">
+                    <span class="feat-icon">⚡</span>
+                    <div class="feat-text-box">
+                        <span class="feat-title">명확한 Next Step</span>
+                        <p class="feat-desc">막연한 조언 대신 특정 인강 수강, 실전 모의고사 등 당장 실행해야 할 <strong>구체적인 행동 지침</strong>을 제시합니다.</p>
+                    </div>
+                </div>
+            </div>
+            <button onclick="location.href='/payment'" class="pro-cta-btn">🚀 PRO 멤버십으로<br>업그레이드 하기<div style="font-size:0.8rem; opacity:0.8; margin-top:5px; font-weight:400;">데이터 기반 1:1 맞춤 컨설팅 시작하기</div></button>
+        </div>
+    `;
 }
 
 function generateReportKey(dateObj) {
@@ -2129,23 +2149,23 @@ async function renderProDashboard(container) {
     const releaseStr = `${releaseDate.getMonth() + 1}월 ${releaseDate.getDate()}일(수)`;
 
     container.innerHTML = `
-        <div class="pro-header">
-            <div style="font-size:2rem; margin-bottom:10px;">🎓</div><h2 class="pro-title">PRO STRATEGY LOUNGE</h2><p class="pro-desc">상위 1%를 위한 프리미엄 분석 센터입니다.<br><strong>${displayDateStr}</strong> 회차 리포트 요청이 진행 중입니다.</p>
-            <div style="margin-top:10px; font-size:0.85rem; color:#cbd5e1;"><i class="fas fa-bell" style="color:#fbbf24;"></i> 리포트는 <strong>${releaseStr}</strong>에 일괄 발송됩니다.</div>
-        </div>
-        <div class="pro-dashboard-layout">
-            <div class="dashboard-actions">
-                <div style="color:#bfdbfe; margin-bottom:15px; font-size:0.95rem;">⏳ 요청 마감: <strong>${deadlineStr}</strong> 까지</div>
-                <div id="requestBtnContainer"><button class="req-btn" onclick="openProReportModal()"><i class="fas fa-edit"></i> 분석 요청서 작성하기</button></div>
-            </div>
-            <div class="report-list-container">
-                <h4 style="color:white; margin:0 0 15px 0; border-left:4px solid #3b82f6; padding-left:10px;">📑 분석 보고서 보관함</h4>
-                <div id="proReportListArea"><div style="text-align:center; color:#64748b; padding:20px;"><i class="fas fa-spinner fa-spin"></i> 로딩 중...</div></div>
-            </div>
-        </div>
-    `;
-
-    // 💡 백엔드 분리 구조 반영: cachedProReports는 초기화(DOMContentLoaded) 시점에 받아왔으므로 바로 렌더링
+        <div style="display: block;">
+            <div class="pro-header">
+                <div style="font-size:2rem; margin-bottom:10px;">🎓</div><h2 class="pro-title">PRO STRATEGY LOUNGE</h2><p class="pro-desc">상위 1%를 위한 프리미엄 분석 센터입니다.<br><strong>${displayDateStr}</strong> 회차 리포트 요청이 진행 중입니다.</p>
+                <div style="margin-top:10px; font-size:0.85rem; color:#cbd5e1;"><i class="fas fa-bell" style="color:#fbbf24;"></i> 리포트는 <strong>${releaseStr}</strong>에 일괄 발송됩니다.</div>
+            </div>
+            <div class="pro-dashboard-layout">
+                <div class="dashboard-actions">
+                    <div style="color:#bfdbfe; margin-bottom:15px; font-size:0.95rem;">⏳ 요청 마감: <strong>${deadlineStr}</strong> 까지</div>
+                    <div id="requestBtnContainer"><button class="req-btn" onclick="openProReportModal()"><i class="fas fa-edit"></i> 분석 요청서 작성하기</button></div>
+                </div>
+                <div class="report-list-container">
+                    <h4 style="color:white; margin:0 0 15px 0; border-left:4px solid #3b82f6; padding-left:10px;">📑 분석 보고서 보관함</h4>
+                    <div id="proReportListArea"><div style="text-align:center; color:#64748b; padding:20px;"><i class="fas fa-spinner fa-spin"></i> 로딩 중...</div></div>
+                </div>
+            </div>
+        </div>
+    `;
     renderProReportList(currentKey, isDeadlinePassed);
 }
 
