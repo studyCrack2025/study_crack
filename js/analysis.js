@@ -554,13 +554,20 @@ function updateQuotaUI() {
 }
 
 function openUnivSelectModal(index) {
-    currentSlotIndex = index;
-    const modal = document.getElementById('univSelectModal');
-    modal.style.display = 'block';
-    document.body.style.overflow = 'hidden';
-    const searchInput = document.getElementById('univSearchInput');
-    if(searchInput) searchInput.value = '';
-    showUnivStep();
+    currentSlotIndex = index;
+    const modal = document.getElementById('univSelectModal');
+    
+    modal.style.pointerEvents = 'none';
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+    
+    setTimeout(() => {
+        modal.style.pointerEvents = 'auto';
+    }, 350);
+    
+    const searchInput = document.getElementById('univSearchInput');
+    if(searchInput) searchInput.value = '';
+    showUnivStep();
 }
 
 function closeUnivModal() {
@@ -924,65 +931,67 @@ function setSimChartType(type) {
 let simSvgRefs = null;
 
 function renderSimChart() {
-    const container = document.getElementById('simChartArea');
-    if (!simDisplayList || simDisplayList.length === 0) return;
+    const container = document.getElementById('simChartArea');
+    if (!simDisplayList || simDisplayList.length === 0) return;
 
-    const examName = EXAM_DISPLAY_NAMES[currentExamMode] || currentExamMode;
-    const getBadgeHTML = () => `<div class="sim-info-badge"><span><i class="fas fa-history"></i> ${examName} 기준</span></div>`;
+    const examName = EXAM_DISPLAY_NAMES[currentExamMode] || currentExamMode;
+    const getBadgeHTML = () => `<div class="sim-info-badge"><span><i class="fas fa-history"></i> ${examName} 기준</span></div>`;
 
-    if (!document.getElementById('simExtensionStyle')) {
-        const style = document.createElement('style');
-        style.id = 'simExtensionStyle';
-        style.innerHTML = `
-            .sim-extension-bar { width: 40px; background: #ffffff !important; border: 2px dashed #f59e0b; border-bottom: none; border-radius: 6px 6px 0 0; box-sizing: border-box; pointer-events: none; z-index: 2; position: absolute; }
-            .sim-bar-item, .sim-label-item { -webkit-tap-highlight-color: transparent; }
-            @media (max-width: 768px) { .sim-extension-bar { width: 28px; } }
-        `;
-        document.head.appendChild(style);
-    }
+    if (!document.getElementById('simExtensionStyle')) {
+        const style = document.createElement('style');
+        style.id = 'simExtensionStyle';
+        style.innerHTML = `
+            .sim-extension-bar { width: 40px; background: #ffffff !important; border: 2px dashed #f59e0b; border-bottom: none; border-radius: 6px 6px 0 0; box-sizing: border-box; pointer-events: none; z-index: 2; position: absolute; }
+            .sim-bar-item, .sim-label-item { -webkit-tap-highlight-color: transparent; }
+            @media (max-width: 768px) { .sim-extension-bar { width: 28px; } }
+        `;
+        document.head.appendChild(style);
+    }
 
-    if (currentSimChartType === 'bar') {
-        simSvgRefs = null;
-        if (!document.getElementById('simBarWrapper')) {
-            container.innerHTML = ''; 
-            container.style.overflow = 'visible';
+    if (currentSimChartType === 'bar') {
+        simSvgRefs = null;
+        if (!document.getElementById('simBarWrapper')) {
+            container.innerHTML = ''; 
+            container.style.overflow = 'visible';
 
-            const wrapper = document.createElement('div');
-            wrapper.id = 'simBarWrapper'; wrapper.className = 'chart-inner-container'; wrapper.style.height = 'auto'; wrapper.style.minHeight = '360px';
-            wrapper.insertAdjacentHTML('beforeend', getBadgeHTML());
-            
-            const graphArea = document.createElement('div'); graphArea.className = 'chart-graph-area';
-            const labelArea = document.createElement('div'); labelArea.className = 'chart-label-area';
+            const wrapper = document.createElement('div');
+            wrapper.id = 'simBarWrapper'; wrapper.className = 'chart-inner-container'; wrapper.style.height = 'auto'; wrapper.style.minHeight = '360px';
+            wrapper.insertAdjacentHTML('beforeend', getBadgeHTML());
+            
+            const graphArea = document.createElement('div'); graphArea.className = 'chart-graph-area';
+            const labelArea = document.createElement('div'); labelArea.className = 'chart-label-area';
 
-            const isMobile = window.innerWidth <= 768;
-            const MAX_SCORE = 250; 
+            const isMobile = window.innerWidth <= 768;
+            const MAX_SCORE = 250; 
 
-            if (isMobile) {
-                graphArea.style.padding = '0 15px'; graphArea.style.marginTop = '40px'; graphArea.style.height = '200px'; 
-            } else {
-                graphArea.style.padding = '0 60px 0 20px'; graphArea.style.marginTop = '50px'; graphArea.style.height = '260px'; 
-            }
+            if (isMobile) {
+                graphArea.style.padding = '0 15px'; graphArea.style.marginTop = '40px'; graphArea.style.height = '200px'; 
+            } else {
+                graphArea.style.padding = '0 60px 0 20px'; graphArea.style.marginTop = '50px'; graphArea.style.height = '260px'; 
+            }
 
-            let graphHtml = ''; let labelHtml = '';
-            const guideStyle100 = `bottom: ${(100 / MAX_SCORE) * 100}%; border-top-color: #3b82f6;`;
-            const guideStyle150 = `bottom: ${(150 / MAX_SCORE) * 100}%; border-top-color: #10b981;`;
-            
-            graphHtml += `<div class="chart-guide-line guide-100" style="${guideStyle100}"><span class="chart-guide-label">합격(100)</span></div>`;
-            graphHtml += `<div class="chart-guide-line guide-150" style="${guideStyle150}"><span class="chart-guide-label">안정(150)</span></div>`;
+            let graphHtml = ''; let labelHtml = '';
+            const guideStyle100 = `bottom: ${(100 / MAX_SCORE) * 100}%; border-top-color: #3b82f6;`;
+            const guideStyle150 = `bottom: ${(150 / MAX_SCORE) * 100}%; border-top-color: #10b981;`;
+            
+            graphHtml += `<div class="chart-guide-line guide-100" style="${guideStyle100}"><span class="chart-guide-label">합격(100)</span></div>`;
+            graphHtml += `<div class="chart-guide-line guide-150" style="${guideStyle150}"><span class="chart-guide-label">안정(150)</span></div>`;
 
-            simDisplayList.forEach((item, index) => {
+            simDisplayList.forEach((item, index) => {
                 const choiceNum = item.originalIdx + 1;
                 const shortUniv = item.univ.replace('학교', '');
 
                 if (item.ineligible) {
                     graphHtml += `
-                        <div class="sim-bar-item" onclick="selectSimUniv(${index})" style="flex:1; align-self:stretch; position:relative; cursor:pointer; -webkit-tap-highlight-color: transparent;">
-                            <div class="sim-bar" style="position:absolute; bottom:0; left:50%; transform:translateX(-50%); height:8%; background:repeating-linear-gradient(45deg,#fca5a5,#fca5a5 4px,#fee2e2 4px,#fee2e2 8px); border:1px dashed #ef4444; border-radius:6px 6px 0 0; z-index:1; width:100%; max-width:28px;">
-                                <span class="sim-score-label" style="position:absolute; top:-22px; left:50%; transform:translateX(-50%); color:#ef4444; font-size:0.65rem; white-space:nowrap;">불가</span>
+                        <div class="sim-bar-item" onclick="selectSimUniv(${index})" style="flex: 1; min-width: 0; height: 100%; display: flex; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent;">
+                            <div style="position:relative; height:100%; width:100%;">
+                                <div class="sim-bar" style="position:absolute; bottom:0; left:50%; transform:translateX(-50%); height:8%; background:repeating-linear-gradient(45deg,#fca5a5,#fca5a5 4px,#fee2e2 4px,#fee2e2 8px); border:1px dashed #ef4444; border-radius:6px 6px 0 0; z-index:1; width:100%; max-width:32px;">
+                                    <span class="sim-score-label" style="position:absolute; top:-22px; left:50%; transform:translateX(-50%); color:#ef4444; font-size:0.65rem; white-space:nowrap;">불가</span>
+                                </div>
                             </div>
                         </div>`;
                     labelHtml += `
-                        <div class="sim-label-item" onclick="selectSimUniv(${index})" style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; -webkit-tap-highlight-color: transparent; cursor: pointer;">
+                        <div class="sim-label-item" onclick="selectSimUniv(${index})" style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent;">
                             <span class="label-mobile" style="word-break: keep-all; font-size: 0.75rem;">${choiceNum}지망</span>
                             <span class="label-pc" style="word-break: keep-all; line-height: 1.2;"><strong>${choiceNum}지망</strong><br>${escapeHtml(shortUniv)}<br><span style="color:#ef4444; font-size:0.75em;">지원불가</span></span>
                         </div>`;
@@ -1003,9 +1012,9 @@ function renderSimChart() {
                     const riseAmount = potentialScore - score;
                     const riseHeightPct = `${(riseAmount / MAX_SCORE) * 100}%`;
                     
-                    // 🔥 확작 막대가 부드럽게 차오르도록 초기값을 0으로 세팅 (data-target-height 에 목표치 보관)
+                    // 🔥 오렌지 막대 애니메이션 대기 상태 (height: 0, opacity: 0) 및 중앙 정렬 핀 고정
                     extensionHtml = `
-                        <div class="sim-extension-bar" data-target-height="${riseHeightPct}" style="position:absolute; left:50%; transform:translateX(-50%); bottom:${currentHeightPct}; height:0; opacity:0; width:100%; max-width:28px; z-index:2; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); pointer-events:none;">
+                        <div class="sim-extension-bar" data-target-height="${riseHeightPct}" style="position:absolute; bottom:${currentHeightPct}; left:50%; transform:translateX(-50%); height:0; opacity:0; width:100%; max-width:32px; z-index:2; transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease; pointer-events:none;">
                              <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">
                                 ${Math.round(potentialScore)} <span style="font-size:0.7rem;">(+${maxRise.toFixed(1)})</span>
                              </span>
@@ -1013,15 +1022,17 @@ function renderSimChart() {
                 }
 
                 graphHtml += `
-                    <div class="sim-bar-item" onclick="selectSimUniv(${index})" style="flex:1; align-self:stretch; position:relative; cursor:pointer; -webkit-tap-highlight-color: transparent;">
-                        <div class="sim-bar" style="position:absolute; bottom:0; left:50%; transform:translateX(-50%); height:${currentHeightPct}; background:${color}; border-radius:6px 6px 0 0; z-index:1; width:100%; max-width:28px; transition: border-radius 0.3s;">
-                            <span class="sim-score-label" style="position:absolute; top:-22px; left:50%; transform:translateX(-50%); font-weight:bold; color:${color}; transition: opacity 0.2s ease-out;">${safeScore}</span>
+                    <div class="sim-bar-item" onclick="selectSimUniv(${index})" style="flex: 1; min-width: 0; height: 100%; display: flex; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent;">
+                        <div style="position:relative; height:100%; width:100%;">
+                            <div class="sim-bar" style="position:absolute; bottom:0; left:50%; transform:translateX(-50%); height:${currentHeightPct}; background:${color}; border-radius:6px 6px 0 0; z-index:1; width:100%; max-width:32px; transition: border-radius 0.3s;">
+                                <span class="sim-score-label" style="position:absolute; top:-22px; left:50%; transform:translateX(-50%); font-weight:bold; color:${color}; transition: opacity 0.2s;">${safeScore}</span>
+                            </div>
+                            ${extensionHtml}
                         </div>
-                        ${extensionHtml}
                     </div>`;
 
                 labelHtml += `
-                    <div class="sim-label-item" onclick="selectSimUniv(${index})" style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; -webkit-tap-highlight-color: transparent; cursor: pointer;">
+                    <div class="sim-label-item" onclick="selectSimUniv(${index})" style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent;">
                         <span class="label-mobile" style="word-break: keep-all; font-size: 0.75rem;">${choiceNum}지망</span>
                         <span class="label-pc" style="word-break: keep-all; line-height: 1.2;"><strong>${choiceNum}지망</strong><br>${escapeHtml(shortUniv)}<br>${escapeHtml(item.major)}</span>
                     </div>`;
@@ -1030,59 +1041,58 @@ function renderSimChart() {
             graphArea.innerHTML = graphHtml; labelArea.innerHTML = labelHtml;
             wrapper.appendChild(graphArea); wrapper.appendChild(labelArea);
 
-            // 🔥 모바일 범례(Legend) 디자인 깔끔하게 중앙 정렬 교체
-            const mobileLegendDiv = document.createElement('div');
-            mobileLegendDiv.style.cssText = "display: flex; justify-content: center; align-items: center; gap: 20px; padding: 15px 0 5px 0; width: 100%; border-top: 1px dashed #cbd5e1; margin-top: 15px;";
+            const mobileLegendDiv = document.createElement('div'); mobileLegendDiv.className = 'mobile-legend-area';
             mobileLegendDiv.innerHTML = `
-                <div style="display:flex; align-items:center; gap:6px; font-size:0.85rem; color:#475569; font-weight:700;">
-                    <div style="width:16px; height:4px; background:#10b981; border-radius:2px;"></div> 안정(150)
-                </div>
-                <div style="display:flex; align-items:center; gap:6px; font-size:0.85rem; color:#475569; font-weight:700;">
-                    <div style="width:16px; height:4px; background:#3b82f6; border-radius:2px;"></div> 합격(100)
-                </div>
+                <div class="mobile-legend-item"><div style="width:12px; height:2px; background:#10b981; margin-right:4px;"></div> 안정(150)</div>
+                <div class="mobile-legend-item"><div style="width:12px; height:2px; background:#3b82f6; margin-right:4px;"></div> 합격(100)</div>
             `;
             container.appendChild(wrapper); container.appendChild(mobileLegendDiv);
-        }
-        updateSimBarGraph(selectedSimIndex || 0);
-    }
-    else if (currentSimChartType === 'line') {
-        if (!document.getElementById('simLineWrapper')) {
-            container.innerHTML = ''; container.style.overflow = 'visible';
-            const wrapper = document.createElement('div'); wrapper.id = 'simLineWrapper'; wrapper.className = 'sim-line-container';
-            wrapper.insertAdjacentHTML('beforeend', getBadgeHTML());
+        }
+        updateSimBarGraph(selectedSimIndex || 0);
+    }
+    else if (currentSimChartType === 'line') {
+        if (!document.getElementById('simLineWrapper')) {
+            container.innerHTML = ''; container.style.overflow = 'visible';
+            const wrapper = document.createElement('div'); wrapper.id = 'simLineWrapper'; wrapper.className = 'sim-line-container';
+            wrapper.insertAdjacentHTML('beforeend', getBadgeHTML());
 
-            const chartArea = document.createElement('div'); chartArea.className = 'sim-line-chart-area'; chartArea.style.overflow = "visible"; 
-            const btnBox = document.createElement('div'); btnBox.className = 'sim-univ-scroll-box'; 
+            const chartArea = document.createElement('div'); chartArea.className = 'sim-line-chart-area'; chartArea.style.overflow = "visible"; 
+            const btnBox = document.createElement('div'); btnBox.className = 'sim-univ-scroll-box'; 
 
-            wrapper.appendChild(chartArea); wrapper.appendChild(btnBox); container.appendChild(wrapper);
-            initSimSvg(chartArea); renderSimUnivButtons(btnBox);
-        }
-        updateSimLineGraph(selectedSimIndex || 0);
-    }
-    renderDetailedSimCard();
+            wrapper.appendChild(chartArea); wrapper.appendChild(btnBox); container.appendChild(wrapper);
+            initSimSvg(chartArea); renderSimUnivButtons(btnBox);
+        }
+        updateSimLineGraph(selectedSimIndex || 0);
+    }
+    renderDetailedSimCard();
 }
 
 function updateSimBarGraph(idx) {
-    const items = document.querySelectorAll('.sim-bar-item');
-    items.forEach((item, i) => {
-        const extBar = item.querySelector('.sim-extension-bar');
-        const mainBar = item.querySelector('.sim-bar');
-        const scoreLabel = item.querySelector('.sim-score-label');
-        
-        if (i === idx) {
-            item.classList.add('active');
-            if (extBar) {
-                extBar.style.display = 'block'; 
-                if (mainBar) mainBar.style.borderRadius = '0 0 0 0'; 
-                if (scoreLabel) scoreLabel.style.display = 'none'; 
-            }
-        } else {
-            item.classList.remove('active');
-            if (extBar) extBar.style.display = 'none'; 
-            if (mainBar) mainBar.style.borderRadius = '6px 6px 0 0';
-            if (scoreLabel) scoreLabel.style.display = '';
-        }
-    });
+    const items = document.querySelectorAll('.sim-bar-item');
+    items.forEach((item, i) => {
+        const extBar = item.querySelector('.sim-extension-bar');
+        const mainBar = item.querySelector('.sim-bar');
+        const scoreLabel = item.querySelector('.sim-score-label');
+        
+        if (i === idx) {
+            item.classList.add('active');
+            if (extBar) {
+                void extBar.offsetWidth; 
+                extBar.style.height = extBar.getAttribute('data-target-height');
+                extBar.style.opacity = '1';
+                if (mainBar) mainBar.style.borderRadius = '0 0 0 0'; 
+                if (scoreLabel) scoreLabel.style.opacity = '0'; 
+            }
+        } else {
+            item.classList.remove('active');
+            if (extBar) {
+                extBar.style.height = '0';
+                extBar.style.opacity = '0';
+            }
+            if (mainBar) mainBar.style.borderRadius = '6px 6px 0 0';
+            if (scoreLabel) scoreLabel.style.opacity = '1';
+        }
+    });
 }
 
 function initSimSvg(targetDiv) {
