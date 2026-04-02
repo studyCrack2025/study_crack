@@ -502,7 +502,10 @@ window.fetchTutorNotifications = async function() {
         notis.forEach(n => {
             const div = document.createElement('div');
             div.className = `tutor-noti-item ${n.isRead ? '' : 'unread'}`;
-            div.onclick = () => { if (!n.isRead) markTutorNotiAsRead(n.id); };
+            div.onclick = async () => {
+                if (!n.isRead) await markTutorNotiAsRead(n.id);
+                handleTutorNotiAction(n);
+            };
             div.innerHTML = `
                 <div class="tutor-noti-meta">
                     <span class="tutor-noti-sender">보낸사람: ${escapeHtml(n.senderName)}</span>
@@ -680,6 +683,30 @@ window.requestEmailChange = function() {
 }
 window.verifyEmailChange = function() { alert("이메일이 변경되었습니다."); closeModal('emailModal'); }
 window.changePassword = function() { alert("비밀번호가 변경되었습니다."); closeModal('passwordModal'); }
+
+// 알림 타입에 따른 액션 처리 (공지사항 모달 등)
+function handleTutorNotiAction(noti) {
+    // 알림 패널 닫기
+    const panel = document.getElementById('tutorNotiPanel');
+    if (panel) panel.classList.add('hidden');
+
+    // 관리자 공지사항인 경우 모달 팝업
+    if (noti.actionType === 'admin_notice') {
+        const titleEl = document.getElementById('noticeModalTitle');
+        const dateEl = document.getElementById('noticeModalDate');
+        const contentEl = document.getElementById('noticeModalContent');
+        const modal = document.getElementById('noticeDetail-modal');
+
+        if (titleEl) titleEl.innerText = noti.title || "공지사항";
+        if (dateEl) dateEl.innerText = new Date(noti.createdAt).toLocaleDateString();
+        if (contentEl) contentEl.innerText = noti.detail || noti.message || "내용이 없습니다.";
+        
+        if (modal) {
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+    } 
+}
 
 function startTutorTimer(duration, displayId) {
     let timer = duration, minutes, seconds;

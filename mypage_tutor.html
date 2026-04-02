@@ -325,6 +325,20 @@
         </div>
     </div>
     
+    <div id="noticeDetail-modal" class="modal hidden">
+        <div class="modal-content notice-modal">
+            <span class="close-btn" onclick="closeModal('noticeDetail-modal')">&times;</span>
+            <div class="modal-body notice-body">
+                <h3 id="noticeModalTitle" class="notice-title">제목</h3>
+                <p id="noticeModalDate" class="notice-date">날짜</p>
+                <div id="noticeModalContent" class="notice-content">공지 내용이 표시됩니다.</div>
+                <div class="notice-btn-wrap">
+                    <button onclick="closeModal('noticeDetail-modal')" class="modal-action-btn">확인</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <script src="/js/config.js"></script>
