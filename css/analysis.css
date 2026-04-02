@@ -360,6 +360,11 @@
 .btn-add-card:hover { background: #eff6ff; border-color: #3b82f6; }
 .btn-del-card { background: #fff1f2; color: #e11d48; border: 1px solid #fecdd3; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
 
+.custom-subj { border: none; border-bottom: 2px solid #3b82f6; font-weight: 800; font-size: 1.05rem; outline: none; width: 65%; color: #1e293b; padding: 2px; background: transparent; }
+.custom-subj:focus { border-bottom-color: #2563eb; background: #eff6ff; }
+.btn-del-card { background: #fff1f2; color: #e11d48; border: 1px solid #fecdd3; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+.btn-del-card:hover { background: #e11d48; color: #fff; }
+
 
 /* ============================================================
    [6] 피드백 문서/모달 디자인
@@ -606,7 +611,8 @@ input[type="number"]::-webkit-inner-spin-button {
     .mobile-wizard-mode .rate-display span { font-size: 1.2rem; font-weight: 900; }
 
     .mobile-wizard-mode .btn-add-card { width: 100%; padding: 15px; border: 2px dashed #cbd5e1; background: #f8fafc; color: #3b82f6; font-weight: 800; font-size: 1.05rem; border-radius: 8px; cursor: pointer; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .mobile-wizard-mode .btn-del-card { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; cursor: pointer; white-space: nowrap; }
+    .mobile-wizard-mode .btn-del-card { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; padding: 8px 15px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; cursor: pointer; white-space: nowrap; }
+    .mobile-wizard-mode .custom-subj { width: 70%; font-size: 1.1rem; }
 
     .mobile-wizard-mode .score-input-grid.enhanced { display: flex; flex-direction: column; gap: 12px; }
     .mobile-wizard-mode .score-item { display: grid; grid-template-columns: 55px 1fr 1fr; gap: 10px; align-items: center; background: #f8fafc; padding: 15px 12px; border-radius: 8px; border: 1px solid #e2e8f0; }

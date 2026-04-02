@@ -2007,17 +2007,91 @@ function prevMobileStep() { if (currentMobileStep > 0) { currentMobileStep--; up
 function closeWeeklyModal() { document.getElementById('weeklyCheckModal').style.display = 'none'; document.body.style.overflow = 'auto'; }
 
 function resetWeeklyForm() {
-    document.querySelectorAll('.plan-time, .act-time, .sub-detail, .custom-subj').forEach(i => i.value = '');
-    document.querySelectorAll('.rate-txt').forEach(s => s.innerText = '0%');
-    document.getElementById('totalPlan').innerText = '0H'; document.getElementById('totalAct').innerText = '0H'; document.getElementById('totalRate').innerText = '0%';
-    selectMockType('none', document.querySelector('.mock-tile')); 
-    const mockIds = ['mockKorScore', 'mockKorOpt', 'mockMathScore', 'mockMathOpt', 'mockEngScore', 'mockInq1Score', 'mockInq1Name', 'mockInq2Score', 'mockInq2Name'];
-    mockIds.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-    const fileTxt = document.getElementById('mockFileNameDisplay'); if(fileTxt) { fileTxt.innerText = '선택된 파일 없음'; fileTxt.style.color = '#94a3b8'; }
-    document.getElementById('slumpDetail').value = ''; document.querySelectorAll('#slumpReasonBox input').forEach(cb => cb.checked = false);
-    document.getElementById('slumpReasonBox').style.display = 'none'; const radios = document.getElementsByName('studyTrend'); if(radios.length > 1) radios[1].checked = true;
-    currentPlannerFiles = []; renderPlannerFiles();
-    ['deepQ1', 'deepQ2', 'deepQ3', 'deepQ4'].forEach(id => { const el = document.getElementById(id); if(el) { el.value = ''; if(el.nextElementSibling && el.nextElementSibling.classList.contains('char-count')) el.nextElementSibling.querySelector('span').innerText = '0'; } });
+    // 1. 과목 리스트 초기화 (기본 과목 클리어 및 동적 카드 삭제)
+    const list = document.getElementById('studyTimeList');
+    if (list) {
+        // 'addSubjectCard'로 추가되었던 커스텀 카드들만 선택해서 삭제
+        const dynamicCards = list.querySelectorAll('.custom-added-card');
+        dynamicCards.forEach(card => card.remove());
+    }
+
+    // 기본 과목(국어, 수학, 영어)의 입력값 및 달성률 텍스트 초기화
+    document.querySelectorAll('.plan-time, .act-time, .sub-detail').forEach(input => {
+        input.value = '';
+    });
+    document.querySelectorAll('.rate-txt').forEach(span => {
+        span.innerText = '0%';
+        span.style.color = '#334155'; // 기본 색상으로 복구
+    });
+
+    // 2. 총합 요약 영역 초기화
+    const totalPlan = document.getElementById('totalPlan');
+    const totalAct = document.getElementById('totalAct');
+    const totalRate = document.getElementById('totalRate');
+    
+    if (totalPlan) totalPlan.innerText = '0H';
+    if (totalAct) totalAct.innerText = '0H';
+    if (totalRate) totalRate.innerText = '0%';
+
+    // 3. 실전 모의고사 섹션 초기화
+    // '미응시' 타일을 찾아 선택 상태로 강제 전환
+    const noneMockTile = document.querySelector('.mock-tile[onclick*="\'none\'"]');
+    if (noneMockTile) selectMockType('none', noneMockTile);
+
+    const mockFieldIds = [
+        'mockKorScore', 'mockKorOpt', 'mockMathScore', 'mockMathOpt', 
+        'mockEngScore', 'mockInq1Score', 'mockInq1Name', 'mockInq2Score', 'mockInq2Name'
+    ];
+    mockFieldIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+
+    // 모의고사 파일 업로드 표시 초기화
+    const mockFileDisplay = document.getElementById('mockFileNameDisplay');
+    if (mockFileDisplay) {
+        mockFileDisplay.innerText = '선택된 파일 없음';
+        mockFileDisplay.style.color = '#94a3b8';
+    }
+    const mockFileInput = document.getElementById('mockExamProof');
+    if (mockFileInput) mockFileInput.value = '';
+
+    // 4. 학업 추이 및 하락 원인 섹션 초기화
+    const trendRadios = document.getElementsByName('studyTrend');
+    if (trendRadios.length >= 2) trendRadios[1].checked = true; // '유지' 인덱스 선택
+
+    const slumpDetail = document.getElementById('slumpDetail');
+    if (slumpDetail) slumpDetail.value = '';
+
+    document.querySelectorAll('#slumpReasonBox input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+    });
+    
+    const slumpBox = document.getElementById('slumpReasonBox');
+    if (slumpBox) slumpBox.style.display = 'none';
+
+    // 5. 플래너 인증 파일 배열 및 뷰 초기화
+    currentPlannerFiles = []; // 전역 파일 배열 비우기
+    const plannerInput = document.getElementById('plannerUpload');
+    if (plannerInput) plannerInput.value = '';
+    renderPlannerFiles();
+
+    // 6. 심층 질문(Step 2) 및 글자 수 카운터 초기화
+    const deepQuestionIds = ['deepQ1', 'deepQ2', 'deepQ3', 'deepQ4'];
+    deepQuestionIds.forEach(id => {
+        const textarea = document.getElementById(id);
+        if (textarea) {
+            textarea.value = '';
+            // 텍스트영역 다음에 오는 글자 수 카운트 span 업데이트
+            const countSpan = textarea.parentElement.querySelector('.char-count span');
+            if (countSpan) countSpan.innerText = '0';
+        }
+    });
+
+    // 7. [핵심] 사용자가 버튼을 누르지 않아도 빈 과목 슬롯 1개를 자동으로 생성
+    if (typeof addSubjectCard === 'function') {
+        addSubjectCard();
+    }
 }
 
 function selectMockType(type, element) { document.getElementById('mockExamType').value = type; document.querySelectorAll('.mock-tile').forEach(tile => tile.classList.remove('selected')); element.classList.add('selected'); toggleMockExamFields(); }
@@ -2040,9 +2114,43 @@ function calcStudyRates() {
 }
 
 function addSubjectCard() {
-    const list = document.getElementById('studyTimeList'); const newCard = document.createElement('div'); newCard.className = 'subject-card';
-    newCard.innerHTML = `<div class="card-header"><input type="text" class="custom-subj" placeholder="과목명 직접 입력" style="border:none; border-bottom:2px solid #3b82f6; font-weight:800; font-size:1.05rem; outline:none; width:60%; color:#1e293b; padding:2px;"><button type="button" class="btn-del-card" onclick="this.closest('.subject-card').remove(); calcStudyRates();"><i class="fas fa-times"></i> 삭제</button></div><div class="card-body"><input type="text" class="sub-detail" placeholder="세부과목 (선택사항)"><div class="time-inputs"><div class="input-group"><label>계획(H)</label><input type="number" class="plan-time" oninput="calcStudyRates()"></div><div class="input-group"><label>실제(H)</label><input type="number" class="act-time" oninput="calcStudyRates()"></div><div class="rate-display"><label>달성률</label><span class="rate-txt">0%</span></div></div></div>`;
-    list.appendChild(newCard);
+    const list = document.getElementById('studyTimeList');
+    const newCard = document.createElement('div');
+    newCard.className = 'subject-card custom-added-card';
+
+    // 카드 헤더 생성 (입력창 + 삭제버튼)
+    const header = document.createElement('div');
+    header.className = 'card-header';
+    
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.className = 'custom-subj';
+    nameInput.placeholder = '과목명 직접 입력 (예: 한국사)';
+    
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'btn-del-card';
+    delBtn.innerHTML = '<i class="fas fa-times"></i> 삭제';
+    delBtn.onclick = () => { newCard.remove(); calcStudyRates(); };
+
+    header.appendChild(nameInput);
+    header.appendChild(delBtn);
+
+    // 카드 바디 생성 (세부과목 + 계획/실제/달성률)
+    const body = document.createElement('div');
+    body.className = 'card-body';
+    body.innerHTML = `
+        <input type="text" class="sub-detail" placeholder="세부과목 (선택사항)">
+        <div class="time-inputs">
+            <div class="input-group"><label>계획(H)</label><input type="number" class="plan-time" oninput="calcStudyRates()"></div>
+            <div class="input-group"><label>실제(H)</label><input type="number" class="act-time" oninput="calcStudyRates()"></div>
+            <div class="rate-display"><label>달성률</label><span class="rate-txt">0%</span></div>
+        </div>
+    `;
+
+    newCard.appendChild(header);
+    newCard.appendChild(body);
+    list.appendChild(newCard);
 }
 
 function handlePlannerFiles(input) {
