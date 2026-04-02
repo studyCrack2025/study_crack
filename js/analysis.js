@@ -713,24 +713,24 @@ async function updateAnalysisUI() {
     }
 
     const selectorHTML = `
-        <div class="analysis-controls" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; background:#fff; padding:15px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); border:1px solid #e2e8f0;">
-            <div style="font-weight:700; color:#334155; font-size:1rem;">
-                <i class="fas fa-chart-pie" style="color:#3b82f6; margin-right:6px;"></i> 합격 예측 리포트
-            </div>
-            <div style="display:flex; align-items:center; gap:8px;">
-                <label for="examSelector" style="font-size:0.85rem; color:#64748b; font-weight:500;">기준 시험:</label>
-                <select id="examSelector" onchange="changeExamMode(this.value)" style="padding:6px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; color:#1e293b; outline:none; cursor:pointer; font-family:inherit; background-color:#f8fafc;">
-                    ${availableExams.map(key => `<option value="${key}" ${key === currentExamMode ? 'selected' : ''}>${EXAM_DISPLAY_NAMES[key] || key.toUpperCase()}</option>`).join('')}
-                </select>
-            </div>
-        </div>
-        <div id="analysisCardsContainer" style="display: flex; flex-direction: column; gap: 20px;">
-         	<div style="padding:60px; text-align:center; color:#3b82f6;">
-                <i class="fas fa-spinner fa-spin fa-2x"></i>
-                <p style="margin-top:15px; font-weight:600;">${EXAM_DISPLAY_NAMES[currentExamMode]} 기준으로<br>분석 중입니다...</p>
-            </div>
-        </div>
-    `;
+        <div class="analysis-controls" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:20px; background:#fff; padding:15px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); border:1px solid #e2e8f0;">
+            <div style="font-weight:700; color:#334155; font-size:1rem;">
+                <i class="fas fa-chart-pie" style="color:#3b82f6; margin-right:6px;"></i> 합격 예측 리포트
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <label for="examSelector" style="font-size:0.85rem; color:#64748b; font-weight:500; white-space:nowrap;">기준 시험:</label>
+                <select id="examSelector" onchange="changeExamMode(this.value)" style="padding:6px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; color:#1e293b; outline:none; cursor:pointer; font-family:inherit; background-color:#f8fafc; max-width: 150px; text-overflow: ellipsis;">
+                    ${availableExams.map(key => `<option value="${key}" ${key === currentExamMode ? 'selected' : ''}>${EXAM_DISPLAY_NAMES[key] || key.toUpperCase()}</option>`).join('')}
+                </select>
+            </div>
+        </div>
+        <div id="analysisCardsContainer" style="display: flex; flex-direction: column; gap: 20px;">
+            <div style="padding:60px; text-align:center; color:#3b82f6;">
+                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                <p style="margin-top:15px; font-weight:600;">${EXAM_DISPLAY_NAMES[currentExamMode]} 기준으로<br>분석 중입니다...</p>
+            </div>
+        </div>
+    `;
     container.innerHTML = selectorHTML;
     
     const cardsContainer = document.getElementById('analysisCardsContainer');
@@ -968,17 +968,17 @@ function renderSimChart() {
 
                 if (item.ineligible) {
                     graphHtml += `
-                        <div class="sim-bar-item" onclick="selectSimUniv(${index})" style="height: 100%;">
+                        <div class="sim-bar-item" onclick="selectSimUniv(${index})" style="flex: 1; min-width: 0; height: 100%; display: flex; justify-content: center;">
                             <div style="position:relative; height:100%; width:100%; display:flex; justify-content:center;">
-                                <div class="sim-bar" style="position:absolute; bottom:0; height:8%; background:repeating-linear-gradient(45deg,#fca5a5,#fca5a5 4px,#fee2e2 4px,#fee2e2 8px); border:1px dashed #ef4444; border-radius:6px 6px 0 0; z-index:1; display:flex; align-items:flex-start; justify-content:center; width:100%; max-width:40px;">
+                                <div class="sim-bar" style="position:absolute; bottom:0; height:8%; background:repeating-linear-gradient(45deg,#fca5a5,#fca5a5 4px,#fee2e2 4px,#fee2e2 8px); border:1px dashed #ef4444; border-radius:6px 6px 0 0; z-index:1; display:flex; align-items:flex-start; justify-content:center; width:100%; max-width:28px;">
                                     <span class="sim-score-label" style="position:absolute; top:-22px; color:#ef4444; font-size:0.65rem; white-space:nowrap;">불가</span>
                                 </div>
                             </div>
                         </div>`;
                     labelHtml += `
-                        <div class="sim-label-item" onclick="selectSimUniv(${index})">
-                            <span class="label-mobile">${choiceNum}지망</span>
-                            <span class="label-pc"><strong>${choiceNum}지망</strong><br>${escapeHtml(shortUniv)}<br><span style="color:#ef4444; font-size:0.75em;">지원불가</span></span>
+                        <div class="sim-label-item" onclick="selectSimUniv(${index})" style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center;">
+                            <span class="label-mobile" style="word-break: keep-all; font-size: 0.75rem;">${choiceNum}지망</span>
+                            <span class="label-pc" style="word-break: keep-all; line-height: 1.2;"><strong>${choiceNum}지망</strong><br>${escapeHtml(shortUniv)}<br><span style="color:#ef4444; font-size:0.75em;">지원불가</span></span>
                         </div>`;
                     return;
                 }
@@ -997,7 +997,7 @@ function renderSimChart() {
                     const riseAmount = potentialScore - score;
                     const riseHeightPct = `${(riseAmount / MAX_SCORE) * 100}%`;
                     extensionHtml = `
-                        <div class="sim-extension-bar" style="bottom:${currentHeightPct}; height:${riseHeightPct}; display:none; width:100%; max-width:40px; margin: 0 auto;">
+                        <div class="sim-extension-bar" style="bottom:${currentHeightPct}; height:${riseHeightPct}; display:none; width:100%; max-width:28px; margin: 0 auto;">
                              <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">
                                 ${Math.round(potentialScore)} <span style="font-size:0.7rem;">(+${maxRise.toFixed(1)})</span>
                              </span>
@@ -1005,9 +1005,9 @@ function renderSimChart() {
                 }
 
                 graphHtml += `
-                    <div class="sim-bar-item" onclick="selectSimUniv(${index})" style="height: 100%;">
+                    <div class="sim-bar-item" onclick="selectSimUniv(${index})" style="flex: 1; min-width: 0; height: 100%; display: flex; justify-content: center;">
                         <div style="position:relative; height:100%; width:100%; display:flex; justify-content:center;">
-                            <div class="sim-bar" style="position:absolute; bottom:0; height:${currentHeightPct}; background:${color}; border-radius:6px 6px 0 0; z-index:1; width:100%; max-width:40px;">
+                            <div class="sim-bar" style="position:absolute; bottom:0; height:${currentHeightPct}; background:${color}; border-radius:6px 6px 0 0; z-index:1; width:100%; max-width:28px;">
                                 <span class="sim-score-label" style="position:absolute; top:-22px; left:50%; transform:translateX(-50%); font-weight:bold;">${safeScore}</span>
                             </div>
                             ${extensionHtml}
@@ -1015,9 +1015,9 @@ function renderSimChart() {
                     </div>`;
 
                 labelHtml += `
-                    <div class="sim-label-item" onclick="selectSimUniv(${index})">
-                        <span class="label-mobile">${choiceNum}지망</span>
-                        <span class="label-pc"><strong>${choiceNum}지망</strong><br>${escapeHtml(shortUniv)}<br>${escapeHtml(item.major)}</span>
+                    <div class="sim-label-item" onclick="selectSimUniv(${index})" style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center;">
+                        <span class="label-mobile" style="word-break: keep-all; font-size: 0.75rem;">${choiceNum}지망</span>
+                        <span class="label-pc" style="word-break: keep-all; line-height: 1.2;"><strong>${choiceNum}지망</strong><br>${escapeHtml(shortUniv)}<br>${escapeHtml(item.major)}</span>
                     </div>`;
             });
 
@@ -2213,16 +2213,21 @@ function renderProReportList(currentKey, isDeadlinePassed) {
     } else {
         let html = '<div class="report-grid">';
         cachedProReports.forEach(rep => {
-            const isReady = (rep.status === 'published' || rep.status === 'sent');
-            const statusBadge = isReady ? '<span style="color:#4ade80; font-size:0.8rem;">● 열람 가능</span>' : '<span style="color:#fbbf24; font-size:0.8rem;">● 분석중</span>';
-            const formattedName = formatReportKey(rep.key);
-            html += `
-                <div class="report-item" onclick="${isReady ? `window.open('${rep.reportLink}')` : "alert('튜터가 리포트를 최종 검수 중입니다. 잠시만 기다려주세요.')"}" style="cursor:${isReady?'pointer':'default'}">
-                    <div class="rep-info"><strong>${formattedName}</strong>${statusBadge}</div>
-                    <div class="rep-icon"><i class="fas fa-download" style="color:${isReady?'#3b82f6':'#475569'}"></i></div>
-                </div>
-            `;
-        });
+            const isReady = (rep.status === 'published' || rep.status === 'sent');
+            const statusBadge = isReady ? '<span style="color:#4ade80; font-size:0.8rem;">● 열람 가능</span>' : '<span style="color:#fbbf24; font-size:0.8rem;">● 분석중</span>';
+            const formattedName = formatReportKey(rep.key);
+            html += `
+                <div class="report-item" onclick="${isReady ? `window.open('${rep.reportLink}')` : "alert('튜터가 리포트를 최종 검수 중입니다. 잠시만 기다려주세요.')"}" style="cursor:${isReady?'pointer':'default'}; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 15px 12px;">
+                    <div class="rep-info" style="flex: 1; min-width: 0;">
+                        <strong style="display: block; color: #fff; font-size: 0.95rem; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${formattedName}</strong>
+                        ${statusBadge}
+                    </div>
+                    <div class="rep-icon" style="flex-shrink: 0;">
+                        <i class="fas fa-download" style="color:${isReady?'#3b82f6':'#475569'}"></i>
+                    </div>
+                </div>
+            `;
+        });
         html += `</div>`;
         listArea.innerHTML = html;
     }
