@@ -556,14 +556,19 @@ function updateQuotaUI() {
 function openUnivSelectModal(index) {
     currentSlotIndex = index;
     const modal = document.getElementById('univSelectModal');
-    
-    modal.style.pointerEvents = 'none';
-    modal.style.display = 'flex';
+    modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
     
-    setTimeout(() => {
-        modal.style.pointerEvents = 'auto';
-    }, 350);
+    // 🔥 고스트 클릭 차단: 투명 방어막(Shield)을 화면 전체에 덮어버립니다.
+    let shield = document.getElementById('ghost-shield');
+    if(!shield) {
+        shield = document.createElement('div');
+        shield.id = 'ghost-shield';
+        shield.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:999999; background:transparent;';
+        document.body.appendChild(shield);
+    }
+    shield.style.display = 'block';
+    setTimeout(() => { shield.style.display = 'none'; }, 400); // 0.4초 뒤 제거
     
     const searchInput = document.getElementById('univSearchInput');
     if(searchInput) searchInput.value = '';
@@ -584,8 +589,9 @@ function showUnivStep() {
     document.getElementById('stepMajorList').style.display = 'none';
     document.getElementById('modalFooter').style.display = 'none';
     
-    listEl.style.pointerEvents = 'none';
-    setTimeout(() => { listEl.style.pointerEvents = 'auto'; }, 350);
+    // 🔥 탭 전환 시 고스트 클릭 차단
+    let shield = document.getElementById('ghost-shield');
+    if(shield) { shield.style.display = 'block'; setTimeout(() => { shield.style.display = 'none'; }, 400); }
     
     const searchInput = document.getElementById('univSearchInput');
     if(searchInput) { searchInput.placeholder = "대학명 검색 (예: 서울대, 연세)"; searchInput.value = ''; }
@@ -600,8 +606,9 @@ function showMajorStep(univName) {
     listEl.style.display = 'grid';
     document.getElementById('modalFooter').style.display = 'flex';
     
-    listEl.style.pointerEvents = 'none';
-    setTimeout(() => { listEl.style.pointerEvents = 'auto'; }, 350);
+    // 🔥 탭 전환 시 고스트 클릭 차단
+    let shield = document.getElementById('ghost-shield');
+    if(shield) { shield.style.display = 'block'; setTimeout(() => { shield.style.display = 'none'; }, 400); }
     
     const searchInput = document.getElementById('univSearchInput');
     if(searchInput) { searchInput.placeholder = "학과명 검색 (예: 컴퓨터, 경영)"; searchInput.value = ''; }
@@ -940,10 +947,14 @@ function renderSimChart() {
     if (!document.getElementById('simExtensionStyle')) {
         const style = document.createElement('style');
         style.id = 'simExtensionStyle';
+        // 🔥 PC는 40px, 모바일은 28px로 반응하도록 CSS 주입
         style.innerHTML = `
             .sim-extension-bar { width: 40px; background: #ffffff !important; border: 2px dashed #f59e0b; border-bottom: none; border-radius: 6px 6px 0 0; box-sizing: border-box; pointer-events: none; z-index: 2; position: absolute; }
             .sim-bar-item, .sim-label-item { -webkit-tap-highlight-color: transparent; }
-            @media (max-width: 768px) { .sim-extension-bar { width: 28px; } }
+            @media (max-width: 768px) { 
+                .sim-extension-bar { width: 28px; } 
+                .sim-bar { width: 28px !important; } 
+            }
         `;
         document.head.appendChild(style);
     }
@@ -985,7 +996,7 @@ function renderSimChart() {
                     graphHtml += `
                         <div class="sim-bar-item" onclick="selectSimUniv(${index})" style="flex:1; align-self:stretch; position:relative; cursor:pointer; -webkit-tap-highlight-color:transparent;">
                             <div style="position:relative; height:100%; width:100%;">
-                                <div class="sim-bar" style="position:absolute; bottom:0; left:50%; transform:translateX(-50%); height:8%; background:repeating-linear-gradient(45deg,#fca5a5,#fca5a5 4px,#fee2e2 4px,#fee2e2 8px); border:1px dashed #ef4444; border-radius:6px 6px 0 0; z-index:1; width:24px;">
+                                <div class="sim-bar" style="position:absolute; bottom:0; left:50%; transform:translateX(-50%); height:8%; background:repeating-linear-gradient(45deg,#fca5a5,#fca5a5 4px,#fee2e2 4px,#fee2e2 8px); border:1px dashed #ef4444; border-radius:6px 6px 0 0; z-index:1;">
                                     <span class="sim-score-label" style="position:absolute; top:-22px; left:50%; transform:translateX(-50%); color:#ef4444; font-size:0.65rem; white-space:nowrap;">불가</span>
                                 </div>
                             </div>
@@ -1012,9 +1023,8 @@ function renderSimChart() {
                     const riseAmount = potentialScore - score;
                     const riseHeightPct = `${(riseAmount / MAX_SCORE) * 100}%`;
                     
-                    // 🔥 오렌지 막대 애니메이션을 위해 height: 0으로 시작, data-target-height로 보관
                     extensionHtml = `
-                        <div class="sim-extension-bar" data-target-height="${riseHeightPct}" style="position:absolute; bottom:${currentHeightPct}; left:50%; transform:translateX(-50%); height:0; opacity:0; width:24px; z-index:2; transition:height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease; pointer-events:none;">
+                        <div class="sim-extension-bar" data-target-height="${riseHeightPct}" style="position:absolute; bottom:${currentHeightPct}; left:50%; transform:translateX(-50%); height:0; opacity:0; z-index:2; transition:height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease; pointer-events:none;">
                              <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">
                                 ${Math.round(potentialScore)} <span style="font-size:0.7rem;">(+${maxRise.toFixed(1)})</span>
                              </span>
@@ -1024,7 +1034,7 @@ function renderSimChart() {
                 graphHtml += `
                     <div class="sim-bar-item" onclick="selectSimUniv(${index})" style="flex:1; align-self:stretch; position:relative; cursor:pointer; -webkit-tap-highlight-color:transparent;">
                         <div style="position:relative; height:100%; width:100%;">
-                            <div class="sim-bar" style="position:absolute; bottom:0; left:50%; transform:translateX(-50%); height:${currentHeightPct}; background:${color}; border-radius:6px 6px 0 0; z-index:1; width:24px; transition:border-radius 0.3s;">
+                            <div class="sim-bar" style="position:absolute; bottom:0; left:50%; transform:translateX(-50%); height:${currentHeightPct}; background:${color}; border-radius:6px 6px 0 0; z-index:1; transition:border-radius 0.3s;">
                                 <span class="sim-score-label" style="position:absolute; top:-22px; left:50%; transform:translateX(-50%); font-weight:bold; color:${color}; transition:opacity 0.2s;">${safeScore}</span>
                             </div>
                             ${extensionHtml}
@@ -1041,7 +1051,6 @@ function renderSimChart() {
             graphArea.innerHTML = graphHtml; labelArea.innerHTML = labelHtml;
             wrapper.appendChild(graphArea); wrapper.appendChild(labelArea);
 
-            // 🔥 모바일 범례(Legend) 텍스트 정렬
             const mobileLegendDiv = document.createElement('div'); mobileLegendDiv.className = 'mobile-legend-area';
             mobileLegendDiv.style.cssText = "display: flex; justify-content: center; align-items: center; gap: 20px; padding-top: 15px; margin-top: 10px; border-top: 1px dashed #cbd5e1;";
             mobileLegendDiv.innerHTML = `
