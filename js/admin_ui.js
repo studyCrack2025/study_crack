@@ -691,6 +691,30 @@ async function loadTutorListForNotice() {
             }
             html += `</div></div>`;
         });
+        
+        const proStus = students.filter(s => { 
+            const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE'; 
+            return tier.toLowerCase() === 'pro' && !s.tutorName; 
+        });
+        if(proStus.length > 0) { 
+            html += `<div class="tree-group"><div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> 🔥 PRO (미배정) 대기중</label></div><div class="tree-children">`; 
+            proStus.forEach(s => { 
+                html += `<label><input type="checkbox" class="is-pro target-chk" value="${s.userid}"> 🎓 ${s.name}</label>`; 
+            }); 
+            html += `</div></div>`; 
+        }
+
+        const stdStus = students.filter(s => { 
+            const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE'; 
+            return tier.toLowerCase() === 'standard' && !s.tutorName; 
+        });
+        if(stdStus.length > 0) { 
+            html += `<div class="tree-group"><div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> 📘 STANDARD (미배정) 대기중</label></div><div class="tree-children">`; 
+            stdStus.forEach(s => { 
+                html += `<label><input type="checkbox" class="is-standard target-chk" value="${s.userid}"> 🎓 ${s.name}</label>`; 
+            }); 
+            html += `</div></div>`; 
+        }
 
         const basicStus = students.filter(s => { const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE'; return tier.toLowerCase() === 'basic' && !s.tutorName; });
         if(basicStus.length > 0) { html += `<div class="tree-group"><div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> 🌱 BASIC (미배정) 모음</label></div><div class="tree-children">`; basicStus.forEach(s => { html += `<label><input type="checkbox" class="is-basic target-chk" value="${s.userid}"> 🎓 ${s.name}</label>`; }); html += `</div></div>`; }
