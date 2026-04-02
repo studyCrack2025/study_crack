@@ -467,6 +467,6 @@
     .common-textarea { padding: 10px; font-size: 0.9rem; }
     .noti-panel { width: calc(100% - 40px); right: 20px; bottom: 90px; }
     .noti-fab { bottom: 20px; right: 20px; width: 50px; height: 50px; font-size: 1.2rem; }
-    .modal-content { padding: 25px 20px; max-height: 85vh; overflow-y: auto; }
+    .modal-content { padding: 25px 20px; max-height: 85vh; overflow-y: auto; width: 90%; margin-left: auto; margin-right: auto; }
     .modal-action-btn { padding: 14px; font-size: 1rem; margin-top: 20px; word-break: keep-all; }
 }
