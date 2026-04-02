@@ -132,16 +132,6 @@ function parseDynamoItem(item) {
     return obj;
 }
 
-function preventGhostClickInModal() {
-    const modalContent = document.querySelector('.select-modal-content');
-    if (modalContent) {
-        modalContent.style.pointerEvents = 'none'; // 클릭 임시 차단
-        setTimeout(() => {
-            modalContent.style.pointerEvents = 'auto'; // 300ms 후 클릭 복구
-        }, 300);
-    }
-}
-
 // ============================================================
 // [데이터 로드] 사용자 정보 & 리포트 데이터
 // ============================================================
@@ -569,36 +559,42 @@ function closeUnivModal() {
     currentSlotIndex = null; selectedUnivForMajor = '';
 }
 
+// 1. 모달 여는 함수 수정 (렌더링 지연)
 function openUnivSelectModal(index) {
     currentSlotIndex = index;
     const modal = document.getElementById('univSelectModal');
     modal.style.display = 'block';
-    document.body.style.overflow = 'hidden'; 
-    
-    // 🔥 화면 전체를 덮던 ghost-shield 로직 삭제 및 새 함수 적용
-    preventGhostClickInModal();
-    
+    document.body.style.overflow = 'hidden';
+
     const searchInput = document.getElementById('univSearchInput');
     if(searchInput) searchInput.value = '';
-    showUnivStep();
+
+    // 🔥 핵심: 모달 애니메이션이 버벅대지 않도록 스피너를 먼저 띄우고 렌더링을 뒤로 미룸!
+    document.getElementById('stepUnivList').innerHTML = '<div style="padding:50px; text-align:center; color:#94a3b8; grid-column: 1/-1;"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>대학 목록을 불러오는 중...</div>';
+    showUnivStep(true); 
 }
 
-function showUnivStep() {
+// 2. showUnivStep 수정 (isDeferred 파라미터 추가)
+function showUnivStep(isDeferred = false) {
     currentSelectStep = 'univ'; selectedUnivForMajor = '';
     document.getElementById('modalTitle').innerText = "대학 선택";
     const listEl = document.getElementById('stepUnivList');
     listEl.style.display = 'grid';
     document.getElementById('stepMajorList').style.display = 'none';
     document.getElementById('modalFooter').style.display = 'none';
-    
-    // 🔥 기존 ghost-shield 로직 삭제 및 새 함수 적용
-    preventGhostClickInModal();
-    
+
     const searchInput = document.getElementById('univSearchInput');
     if(searchInput) { searchInput.placeholder = "대학명 검색 (예: 서울대, 연세)"; searchInput.value = ''; }
-    renderUnivList(''); 
+
+    if (isDeferred) {
+        // 모달이 화면에 등장할 틈을 0.05초 주고 렌더링 시작
+        setTimeout(() => { renderUnivList(''); }, 50);
+    } else {
+        renderUnivList('');
+    }
 }
 
+// 3. showMajorStep 수정 (학과 목록 넘어갈 때도 딜레이 방지)
 function showMajorStep(univName) {
     currentSelectStep = 'major'; selectedUnivForMajor = univName;
     document.getElementById('modalTitle').innerText = `${univName} - 학과 선택`;
@@ -606,55 +602,64 @@ function showMajorStep(univName) {
     const listEl = document.getElementById('stepMajorList');
     listEl.style.display = 'grid';
     document.getElementById('modalFooter').style.display = 'flex';
-    
-    // 🔥 기존 ghost-shield 로직 삭제 및 새 함수 적용
-    preventGhostClickInModal();
-    
+
     const searchInput = document.getElementById('univSearchInput');
     if(searchInput) { searchInput.placeholder = "학과명 검색 (예: 컴퓨터, 경영)"; searchInput.value = ''; }
-    renderMajorList(univName, ''); 
+
+    // 학과 리스트도 렌더링 전 스피너 먼저 보여주기
+    listEl.innerHTML = '<div style="padding:50px; text-align:center; color:#94a3b8; grid-column: 1/-1;"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>학과 목록을 불러오는 중...</div>';
+    setTimeout(() => { renderMajorList(univName, ''); }, 30);
+}
+
+// 4. renderUnivList 최적화 (DocumentFragment 사용 - 렌더링 속도 대폭 향상)
+function renderUnivList(filterText) {
+    const listContainer = document.getElementById('stepUnivList');
+    listContainer.innerHTML = '';
+    const allUnivs = Object.keys(univMap).sort();
+    const filteredUnivs = allUnivs.filter(u => u.toLowerCase().includes(filterText));
+
+    if (filteredUnivs.length === 0) {
+        listContainer.innerHTML = '<div class="empty-search-result"><i class="fas fa-search" style="font-size:2.5rem; color:#cbd5e1;"></i>찾으시는 대학이 없습니다.</div>';
+        return;
+    }
+
+    // 🔥 하나씩 append 하지 않고 Fragment에 모아서 한방에 렌더링!
+    const fragment = document.createDocumentFragment();
+    filteredUnivs.forEach(univName => {
+        const item = document.createElement('div'); item.className = 'selection-item';
+        item.innerHTML = `<span style="word-break: keep-all; line-height: 1.3;">${highlightSearchText(escapeHtml(univName), filterText)}</span>`;
+        item.onclick = () => showMajorStep(univName);
+        fragment.appendChild(item);
+    });
+    listContainer.appendChild(fragment);
+}
+
+// 5. renderMajorList 최적화 (DocumentFragment 사용)
+function renderMajorList(univName, filterText) {
+    const listContainer = document.getElementById('stepMajorList');
+    listContainer.innerHTML = '';
+    const majors = univMap[univName] || [];
+    const filteredMajors = [...majors].sort((a,b) => a.name.localeCompare(b.name)).filter(m => m.name.toLowerCase().includes(filterText));
+
+    if (filteredMajors.length === 0) {
+        listContainer.innerHTML = '<div class="empty-search-result"><i class="fas fa-search" style="font-size:2.5rem; color:#cbd5e1;"></i>찾으시는 학과가 없습니다.</div>';
+        return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    filteredMajors.forEach(majorObj => {
+        const item = document.createElement('div'); item.className = 'selection-item';
+        item.innerHTML = `<span style="word-break: keep-all; line-height: 1.3;">${highlightSearchText(escapeHtml(majorObj.name), filterText)}</span>`;
+        item.onclick = () => selectComplete(univName, majorObj.name);
+        fragment.appendChild(item);
+    });
+    listContainer.appendChild(fragment);
 }
 
 function handleModalSearch(e) {
     const text = e.target.value.trim().toLowerCase();
     if (currentSelectStep === 'univ') renderUnivList(text);
     else if (currentSelectStep === 'major') renderMajorList(selectedUnivForMajor, text);
-}
-
-function renderUnivList(filterText) {
-    const listContainer = document.getElementById('stepUnivList');
-    listContainer.innerHTML = '';
-    const allUnivs = Object.keys(univMap).sort();
-    const filteredUnivs = allUnivs.filter(u => u.toLowerCase().includes(filterText));
-    
-    if (filteredUnivs.length === 0) {
-        listContainer.innerHTML = '<div class="empty-search-result"><i class="fas fa-search" style="font-size:2.5rem; color:#cbd5e1;"></i>찾으시는 대학이 없습니다.</div>';
-        return;
-    }
-    filteredUnivs.forEach(univName => {
-        const item = document.createElement('div'); item.className = 'selection-item';
-        item.innerHTML = `<span style="word-break: keep-all; line-height: 1.3;">${highlightSearchText(escapeHtml(univName), filterText)}</span>`;
-        item.onclick = () => showMajorStep(univName);
-        listContainer.appendChild(item);
-    });
-}
-
-function renderMajorList(univName, filterText) {
-    const listContainer = document.getElementById('stepMajorList');
-    listContainer.innerHTML = '';
-    const majors = univMap[univName] || [];
-    const filteredMajors = [...majors].sort((a,b) => a.name.localeCompare(b.name)).filter(m => m.name.toLowerCase().includes(filterText));
-    
-    if (filteredMajors.length === 0) {
-        listContainer.innerHTML = '<div class="empty-search-result"><i class="fas fa-search" style="font-size:2.5rem; color:#cbd5e1;"></i>찾으시는 학과가 없습니다.</div>';
-        return;
-    }
-    filteredMajors.forEach(majorObj => {
-        const item = document.createElement('div'); item.className = 'selection-item';
-        item.innerHTML = `<span style="word-break: keep-all; line-height: 1.3;">${highlightSearchText(escapeHtml(majorObj.name), filterText)}</span>`;
-        item.onclick = () => selectComplete(univName, majorObj.name);
-        listContainer.appendChild(item);
-    });
 }
 
 function highlightSearchText(text, keyword) {
