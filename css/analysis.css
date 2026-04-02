@@ -600,13 +600,18 @@ input[type="number"]::-webkit-inner-spin-button {
     .mobile-wizard-mode .subject-card-list { grid-template-columns: 1fr; display: flex; flex-direction: column; gap: 15px; }
     .mobile-wizard-mode .subject-card { padding: 15px; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 0; background: #f8fafc; display: flex; flex-direction: column; gap: 12px; }
     .mobile-wizard-mode .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0; border-bottom: 1px dashed #cbd5e1; padding-bottom: 10px; }
-    .mobile-wizard-mode .time-inputs { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
-    .mobile-wizard-mode .input-group { display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 10px; width: 100%; box-sizing: border-box; }
-    .mobile-wizard-mode .input-group label { width: auto; min-width: 65px; white-space: nowrap; font-weight: bold; color: #475569; font-size: 0.95rem; margin: 0; text-align: left; }
+    /* =======================================
+   [모바일] 1단계: 세부과목/계획/실제 (좌) vs 달성률 (우) 분할 레이아웃
+   ======================================= */
+    .mobile-wizard-mode .card-body { display: grid; grid-template-columns: 1fr 100px; gap: 10px; align-items: stretch; }
+    .mobile-wizard-mode .sub-detail { grid-column: 1 / 2; margin-bottom: 0; width: 100%; height: 44px; box-sizing: border-box; }
+    .mobile-wizard-mode .time-inputs { display: contents; }
+    .mobile-wizard-mode .input-group { grid-column: 1 / 2; display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 10px; width: 100%; box-sizing: border-box; }
+    .mobile-wizard-mode .input-group label { width: auto; min-width: 55px; white-space: nowrap; font-weight: bold; color: #475569; font-size: 0.9rem; margin: 0; text-align: left; }
     .mobile-wizard-mode .input-group input { flex: 1; min-width: 0; height: 44px; font-size: 1rem; box-sizing: border-box; padding: 0 10px; }
-    .mobile-wizard-mode .rate-display { display: flex; flex-direction: row; justify-content: space-between; align-items: center; background: #eff6ff; padding: 15px; border-radius: 8px; margin-top: 5px; border: 1px solid #bfdbfe; }
-    .mobile-wizard-mode .rate-display label { font-weight: bold; color: #1d4ed8; font-size: 0.95rem; margin: 0; width: auto; }
-    .mobile-wizard-mode .rate-txt { font-size: 1.2rem; font-weight: 900; }
+    .mobile-wizard-mode .rate-display { grid-column: 2 / 3; grid-row: 1 / span 3; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #eff6ff; padding: 10px; border-radius: 8px; border: 1px solid #bfdbfe; margin-top: 0; height: auto; }
+    .mobile-wizard-mode .rate-display label { font-weight: bold; color: #1d4ed8; font-size: 0.85rem; margin-bottom: 6px; width: auto; }
+    .mobile-wizard-mode .rate-txt { font-size: 1.3rem; font-weight: 900; line-height: 1; }
     .mobile-wizard-mode .btn-add-card { width: 100%; padding: 15px; font-weight: 800; font-size: 1.05rem; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 20px; }
     .mobile-wizard-mode .btn-del-card { padding: 8px 15px; font-size: 0.9rem; white-space: nowrap; }
     .mobile-wizard-mode .custom-subj { width: 70%; font-size: 1.1rem; }
