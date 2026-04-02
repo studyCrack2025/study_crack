@@ -1891,6 +1891,62 @@ async function downloadReportPDF(reportTitle) {
     }
 }
 
+async function renderPdfToImages(url, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    try {
+        // html에 선언된 pdf.js 라이브러리의 worker 소스 설정 (버전 일치 필요)
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // S3에서 PDF 파일 다운로드 및 파싱
+        const loadingTask = pdfjsLib.getDocument(url);
+        const pdf = await loadingTask.promise;
+        
+        // 렌더링 시작 전 무한 로딩 스피너 제거
+        container.innerHTML = ''; 
+
+        // PDF의 모든 페이지를 순회하며 캔버스로 그려내기
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            
+            // 고화질 렌더링을 위해 scale 값을 2.0으로 설정 (모바일/PC 모두 깔끔하게 보임)
+            const scale = 2.0; 
+            const viewport = page.getViewport({ scale: scale });
+
+            // 캔버스 엘리먼트 생성
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            
+            // 스타일 적용 (반응형 100% 폭)
+            canvas.style.cssText = 'width: 100%; max-width: 100%; margin-bottom: 15px; border-radius: 8px; border: 1px solid #e2e8f0; display: block; box-sizing: border-box;';
+
+            // 화면에 캔버스 먼저 추가 후 렌더링 진행 (사용자가 진행 상황을 볼 수 있도록)
+            container.appendChild(canvas); 
+            
+            const renderContext = {
+                canvasContext: context,
+                viewport: viewport
+            };
+            
+            await page.render(renderContext).promise;
+        }
+    } catch (error) {
+        console.error("PDF 렌더링 실패:", error);
+        // 에러 발생 시 무한 로딩을 멈추고 직접 다운로드 링크 제공
+        container.innerHTML = `
+            <div style="padding: 30px; text-align: center; color: #ef4444; background: #fef2f2; border-radius: 8px;">
+                <i class="fas fa-exclamation-triangle fa-2x" style="margin-bottom: 10px;"></i><br>
+                PDF 문서를 화면에 불러오지 못했습니다.<br>
+                <a href="${url}" target="_blank" style="color: #2563eb; text-decoration: underline; font-size: 0.95rem; display: inline-block; margin-top: 10px; font-weight: bold;">
+                    직접 다운로드하여 확인하기 <i class="fas fa-external-link-alt" style="font-size:0.8rem;"></i>
+                </a>
+            </div>`;
+    }
+}
+
 let currentMobileStep = 0; let wizardSteps = []; let wizardResizeHandler = null;
 
 function openWeeklyCheckModal() {
