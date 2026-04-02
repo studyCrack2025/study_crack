@@ -600,39 +600,39 @@ function handleModalSearch(e) {
 }
 
 function renderUnivList(filterText) {
-    const listContainer = document.getElementById('stepUnivList');
-    listContainer.innerHTML = '';
-    const allUnivs = Object.keys(univMap).sort();
-    const filteredUnivs = allUnivs.filter(u => u.toLowerCase().includes(filterText));
-    
-    if (filteredUnivs.length === 0) {
-        listContainer.innerHTML = '<div class="empty-search-result"><i class="fas fa-search" style="font-size:2.5rem; color:#cbd5e1;"></i>찾으시는 대학이 없습니다.</div>';
-        return;
-    }
-    filteredUnivs.forEach(univName => {
-        const item = document.createElement('div'); item.className = 'selection-item';
-        item.innerHTML = highlightSearchText(escapeHtml(univName), filterText);
-        item.onclick = () => showMajorStep(univName);
-        listContainer.appendChild(item);
-    });
+    const listContainer = document.getElementById('stepUnivList');
+    listContainer.innerHTML = '';
+    const allUnivs = Object.keys(univMap).sort();
+    const filteredUnivs = allUnivs.filter(u => u.toLowerCase().includes(filterText));
+    
+    if (filteredUnivs.length === 0) {
+        listContainer.innerHTML = '<div class="empty-search-result"><i class="fas fa-search" style="font-size:2.5rem; color:#cbd5e1;"></i>찾으시는 대학이 없습니다.</div>';
+        return;
+    }
+    filteredUnivs.forEach(univName => {
+        const item = document.createElement('div'); item.className = 'selection-item';
+        item.innerHTML = `<span style="word-break: keep-all; line-height: 1.3;">${highlightSearchText(escapeHtml(univName), filterText)}</span>`;
+        item.onclick = () => showMajorStep(univName);
+        listContainer.appendChild(item);
+    });
 }
 
 function renderMajorList(univName, filterText) {
-    const listContainer = document.getElementById('stepMajorList');
-    listContainer.innerHTML = '';
-    const majors = univMap[univName] || [];
-    const filteredMajors = [...majors].sort((a,b) => a.name.localeCompare(b.name)).filter(m => m.name.toLowerCase().includes(filterText));
-    
-    if (filteredMajors.length === 0) {
-        listContainer.innerHTML = '<div class="empty-search-result"><i class="fas fa-search" style="font-size:2.5rem; color:#cbd5e1;"></i>찾으시는 학과가 없습니다.</div>';
-        return;
-    }
-    filteredMajors.forEach(majorObj => {
-        const item = document.createElement('div'); item.className = 'selection-item';
-        item.innerHTML = highlightSearchText(escapeHtml(majorObj.name), filterText);
-        item.onclick = () => selectComplete(univName, majorObj.name);
-        listContainer.appendChild(item);
-    });
+    const listContainer = document.getElementById('stepMajorList');
+    listContainer.innerHTML = '';
+    const majors = univMap[univName] || [];
+    const filteredMajors = [...majors].sort((a,b) => a.name.localeCompare(b.name)).filter(m => m.name.toLowerCase().includes(filterText));
+    
+    if (filteredMajors.length === 0) {
+        listContainer.innerHTML = '<div class="empty-search-result"><i class="fas fa-search" style="font-size:2.5rem; color:#cbd5e1;"></i>찾으시는 학과가 없습니다.</div>';
+        return;
+    }
+    filteredMajors.forEach(majorObj => {
+        const item = document.createElement('div'); item.className = 'selection-item';
+        item.innerHTML = `<span style="word-break: keep-all; line-height: 1.3;">${highlightSearchText(escapeHtml(majorObj.name), filterText)}</span>`;
+        item.onclick = () => selectComplete(univName, majorObj.name);
+        listContainer.appendChild(item);
+    });
 }
 
 function highlightSearchText(text, keyword) {
