@@ -67,7 +67,7 @@ async function apiFetch(url, options = {}) {
                 localStorage.removeItem('accessToken');
                 localStorage.removeItem('userId');
                 localStorage.removeItem('userRole');
-                window.location.href = '/login'; 
+                window.location.href = '/admin/login'; 
                 return Promise.reject(new Error("Auth expired")); 
             }
             throw new Error(`HTTP Error: ${response.status}`);
@@ -337,6 +337,32 @@ function getTierBadgeHTML(studentItem) {
 // ============================================================
 // [D] 질의 관리(Q&A) 로직
 // ============================================================
+async function fetchQnaBadgeCount() {
+    try {
+        const response = await apiFetch(QNA_API_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ type: 'admin_get_all_qna' }) 
+        });
+        const data = await response.json();
+        const qnaList = data.qnaList || [];
+        
+        // 'waiting' (안읽음) 상태인 문의만 카운트
+        const waitingCount = qnaList.filter(q => q.status === 'waiting').length;
+        
+        const badge = document.getElementById('qnaBadge');
+        if (badge) {
+            if (waitingCount > 0) {
+                badge.style.display = 'inline-block';
+                badge.innerText = waitingCount;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    } catch (e) {
+        console.error("QNA Badge Fetch Error:", e);
+    }
+}
+
 async function loadAllQna() {
     const tbody = document.getElementById('qnaListBody');
     if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px;">데이터를 불러오는 중...</td></tr>';
@@ -346,7 +372,32 @@ async function loadAllQna() {
         const data = await response.json();
         allQnaData = data.qnaList || [];
         renderQnaList();
+        
+        updateQnaBadgeFromData(); 
     } catch (e) { if (e.message !== "Auth expired") alert("질의 목록을 불러오는데 실패했습니다."); }
+}
+
+function updateQnaBadgeFromData() {
+    const waitingCount = allQnaData.filter(q => q.status === 'waiting').length;
+    const badge = document.getElementById('qnaBadge');
+    if (badge) {
+        badge.style.display = waitingCount > 0 ? 'inline-block' : 'none';
+        badge.innerText = waitingCount;
+    }
+}
+
+async function markAsRead(targetUserId, qnaId) {
+    if(!confirm("이 문의를 '읽음' 상태로 변경하시겠습니까?")) return;
+    try {
+        await apiFetch(QNA_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_mark_qna_read', data: { targetUserId, qnaId } }) });
+        const item = allQnaData.find(q => q.qnaId === qnaId); 
+        if(item) item.status = 'read';
+        
+        renderQnaList(); 
+        updateQnaBadgeFromData();
+    } catch(e) { 
+        if (e.message !== "Auth expired") alert("상태 업데이트에 실패했습니다."); 
+    }
 }
 
 function renderQnaList() {
@@ -372,19 +423,6 @@ function getQnaStatusBadge(status) {
     if (status === 'waiting') return '<span style="background:#fef2f2; color:#ef4444; padding:3px 8px; border-radius:10px; font-size:0.8rem; font-weight:bold;">안읽음</span>';
     if (status === 'read') return '<span style="background:#fff7ed; color:#f97316; padding:3px 8px; border-radius:10px; font-size:0.8rem; font-weight:bold;">미응답</span>';
     return '<span style="background:#ecfdf5; color:#10b981; padding:3px 8px; border-radius:10px; font-size:0.8rem; font-weight:bold;">완료</span>';
-}
-
-async function markAsRead(targetUserId, qnaId) {
-    if(!confirm("이 문의를 '읽음' 상태로 변경하시겠습니까?")) return;
-    try {
-        await apiFetch(QNA_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_mark_qna_read', data: { targetUserId, qnaId } }) });
-        const item = allQnaData.find(q => q.qnaId === qnaId); 
-        if(item) item.status = 'read';
-        
-        renderQnaList(); 
-    } catch(e) { 
-        if (e.message !== "Auth expired") alert("상태 업데이트에 실패했습니다. 네트워크 연결을 확인해주세요."); 
-    }
 }
 
 function openReplyModal(targetUserId, qnaId, isViewOnly = false) {
@@ -483,9 +521,9 @@ async function loadTutorStats() {
                     </div>
                     ${withdrawalUI}
                     <div class="tutor-tier-accordions" style="${t.withdrawalStatus ? 'margin-top:20px;' : ''}">
-                        <div class="tier-acc-group"><div class="tier-acc-header pro" onclick="toggleTierList(this)"><span>🔥 PRO 학생</span><strong>${t.proCount}명 <i class="fas fa-chevron-down"></i></strong></div><div class="tier-acc-content">${generateStudentListHtml(t.proStudents, '현재 담당 중인 PRO 학생이 없습니다.')}</div></div>
-                        <div class="tier-acc-group"><div class="tier-acc-header std" onclick="toggleTierList(this)"><span>📘 STANDARD 학생</span><strong>${t.stdCount}명 <i class="fas fa-chevron-down"></i></strong></div><div class="tier-acc-content">${generateStudentListHtml(t.stdStudents, '현재 담당 중인 STANDARD 학생이 없습니다.')}</div></div>
-                        <div class="tier-acc-group"><div class="tier-acc-header exp" onclick="toggleTierList(this)"><span>⏳ 구독 만료 / 대기 학생</span><strong>${t.freeCount}명 <i class="fas fa-chevron-down"></i></strong></div><div class="tier-acc-content">${generateStudentListHtml(t.freeStudents, '만료되거나 대기 중인 학생이 없습니다.')}</div></div>
+                        <div class="tier-acc-group"><div class="tier-acc-header pro" onclick="toggleTierList(this)"><span>🔥 PRO 학생</span><strong>${t.proCount}명 <i class="fas fa-chevron-down"></i></strong></div><div class="tier-acc-content">${generateStudentListHtml(t.proStudents, '현재 담당 중인 PRO 학생이 없습니다.', 'pro')}</div></div>
+                        <div class="tier-acc-group"><div class="tier-acc-header std" onclick="toggleTierList(this)"><span>📘 STANDARD 학생</span><strong>${t.stdCount}명 <i class="fas fa-chevron-down"></i></strong></div><div class="tier-acc-content">${generateStudentListHtml(t.stdStudents, '현재 담당 중인 STANDARD 학생이 없습니다.', 'standard')}</div></div>
+                        <div class="tier-acc-group"><div class="tier-acc-header exp" onclick="toggleTierList(this)"><span>⏳ 구독 만료 / 대기 학생</span><strong>${t.freeCount}명 <i class="fas fa-chevron-down"></i></strong></div><div class="tier-acc-content">${generateStudentListHtml(t.freeStudents, '만료되거나 대기 중인 학생이 없습니다.', 'free')}</div></div>
                     </div>
                 </div>
             `;
@@ -505,14 +543,36 @@ window.approveTutorWithdrawal = async function(tutorId) {
     } catch (e) { if (e.message !== "Auth expired") alert("서버 통신 중 오류가 발생했습니다."); }
 };
 
-function generateStudentListHtml(students, emptyMsg) {
+function reportBadge(status) {
+    if (!status) return '<span class="report-badge none">-</span>';
+    if (status.tutorSubmitted) return '<span class="report-badge done">✅ 완료</span>';
+    if (status.studentSubmitted) return '<span class="report-badge pending">🕐 피드백 대기</span>';
+    return '<span class="report-badge missing">❌ 미작성</span>';
+}
+
+function generateStudentListHtml(students, emptyMsg, tier = 'free') {
     if (!students || students.length === 0) return `<div class="tier-student-empty">${emptyMsg}</div>`;
-    let html = `<div class="table-responsive"><table class="tier-student-table"><thead><tr><th>이름</th><th>최초 가입일</th><th>마지막 결제일</th><th>누적 결제 이력</th></tr></thead><tbody>`;
+    const showWeekly = tier === 'standard' || tier === 'pro';
+    const showPro = tier === 'pro';
+
+    let headers = '<th>이름</th><th>최초 가입일</th><th>마지막 결제일</th>';
+    if (showWeekly) headers += '<th>주간 보고서 (이번 주)</th>';
+    if (showPro)    headers += '<th>PRO 보고서 (2주 이내)</th>';
+    headers += '<th>누적 결제 이력</th>';
+
+    let html = `<div class="table-responsive"><table class="tier-student-table"><thead><tr>${headers}</tr></thead><tbody>`;
     students.forEach(s => {
         const jDate = s.joinDate ? new Date(s.joinDate).toLocaleDateString() : '-';
         const lDate = s.lastPayDate ? new Date(s.lastPayDate).toLocaleDateString() : '<span style="color:#ef4444;">결제 없음</span>';
         const pays = Object.entries(s.payCounts || {}).map(([prod, cnt]) => `<span class="pay-badge">${prod} ${cnt}회</span>`).join(' ') || '-';
-        html += `<tr><td data-label="이름"><strong>${escapeHtml(s.name)}</strong></td><td data-label="최초 가입일">${jDate}</td><td data-label="마지막 결제일">${lDate}</td><td data-label="결제 이력">${pays}</td></tr>`;
+        let row = `<tr>
+            <td data-label="이름"><strong>${escapeHtml(s.name)}</strong></td>
+            <td data-label="최초 가입일">${jDate}</td>
+            <td data-label="마지막 결제일">${lDate}</td>`;
+        if (showWeekly) row += `<td data-label="주간 보고서">${reportBadge(s.weeklyStatus)}</td>`;
+        if (showPro)    row += `<td data-label="PRO 보고서">${reportBadge(s.proStatus)}</td>`;
+        row += `<td data-label="결제 이력">${pays}</td></tr>`;
+        html += row;
     });
     html += `</tbody></table></div>`;
     return html;
@@ -567,7 +627,7 @@ async function loadNotifications() {
             card.innerHTML = `
     <div style="width: 100%;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
-            <div class="noti-time" style="font-size: 0.85rem; color: #94a3b8;">${new Date(n.createdAt).toLocaleString()}</div>
+            <div class="noti-time" style="font-size: 0.85rem; color: #94a3b8;">${new Date(n.createdAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}</div>
             ${!n.isRead ? `<button class="noti-btn" onclick="markAsReadNoti('${n.id}')" style="background:#f59e0b; color:white; border:none; padding:4px 10px; border-radius:4px; font-size:0.8rem; cursor:pointer;">확인</button>` : '<span style="color:#10b981; font-size:0.8rem; font-weight:bold;">읽음</span>'}
         </div>
         <div style="font-weight:bold; color:#1e293b; font-size:1.05rem; margin-bottom:4px;">${escapeHtml(n.title || n.message)}</div>
@@ -617,7 +677,7 @@ window.loadSentNotices = async function() {
         if (sentList.length === 0) { container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding: 30px;">보낸 공지가 없습니다.</p>'; return; }
         sentList.forEach(n => {
             const card = document.createElement('div'); card.className = `noti-item`; const targetText = n.targetNames ? n.targetNames : `${n.targetCount}명`;
-            card.innerHTML = `<div style="width: 100%;"><div style="display:flex; justify-content:space-between; align-items:center;"><div class="noti-time">${new Date(n.createdAt).toLocaleString()}</div><div class="noti-tags"><span class="tag-tutor" style="background:#f1f5f9; color:#475569;">👥 수신: ${escapeHtml(targetText)} (총 ${n.targetCount}명)</span></div></div><div style="font-weight:bold; margin-top:8px; color:#1e293b; font-size:1.1rem;">${escapeHtml(n.title)}</div><div class="noti-text" style="margin-top:10px; white-space:pre-wrap; background:#f8fafc; padding:15px; border-radius:8px; font-size:0.95rem; border:1px solid #e2e8f0;">${escapeHtml(n.detail)}</div></div>`;
+            card.innerHTML = `<div style="width: 100%;"><div style="display:flex; justify-content:space-between; align-items:center;"><div class="noti-time">${new Date(n.createdAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}</div><div class="noti-tags"><span class="tag-tutor" style="background:#f1f5f9; color:#475569;">👥 수신: ${escapeHtml(targetText)} (총 ${n.targetCount}명)</span></div></div><div style="font-weight:bold; margin-top:8px; color:#1e293b; font-size:1.1rem;">${escapeHtml(n.title)}</div><div class="noti-text" style="margin-top:10px; white-space:pre-wrap; background:#f8fafc; padding:15px; border-radius:8px; font-size:0.95rem; border:1px solid #e2e8f0;">${escapeHtml(n.detail)}</div></div>`;
             container.appendChild(card);
         });
     } catch(e) { if (e.message !== "Auth expired") container.innerHTML = '<p style="text-align:center; color:red;">오류 발생</p>'; }
@@ -669,6 +729,30 @@ async function loadTutorListForNotice() {
             }
             html += `</div></div>`;
         });
+        
+        const proStus = students.filter(s => { 
+            const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE'; 
+            return tier.toLowerCase() === 'pro' && !s.tutorName; 
+        });
+        if(proStus.length > 0) { 
+            html += `<div class="tree-group"><div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> 🔥 PRO (미배정) 대기중</label></div><div class="tree-children">`; 
+            proStus.forEach(s => { 
+                html += `<label><input type="checkbox" class="is-pro target-chk" value="${s.userid}"> 🎓 ${s.name}</label>`; 
+            }); 
+            html += `</div></div>`; 
+        }
+
+        const stdStus = students.filter(s => { 
+            const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE'; 
+            return tier.toLowerCase() === 'standard' && !s.tutorName; 
+        });
+        if(stdStus.length > 0) { 
+            html += `<div class="tree-group"><div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> 📘 STANDARD (미배정) 대기중</label></div><div class="tree-children">`; 
+            stdStus.forEach(s => { 
+                html += `<label><input type="checkbox" class="is-standard target-chk" value="${s.userid}"> 🎓 ${s.name}</label>`; 
+            }); 
+            html += `</div></div>`; 
+        }
 
         const basicStus = students.filter(s => { const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE'; return tier.toLowerCase() === 'basic' && !s.tutorName; });
         if(basicStus.length > 0) { html += `<div class="tree-group"><div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> 🌱 BASIC (미배정) 모음</label></div><div class="tree-children">`; basicStus.forEach(s => { html += `<label><input type="checkbox" class="is-basic target-chk" value="${s.userid}"> 🎓 ${s.name}</label>`; }); html += `</div></div>`; }
@@ -706,21 +790,45 @@ function loadTargetUsers() {
 async function sendAdminNotice() {
     const checkedBoxes = document.querySelectorAll('.target-chk:checked');
     const targetUserIds = [...new Set(Array.from(checkedBoxes).map(b => b.value))];
-    const title = document.getElementById('noticeTitle').value.trim(); const content = document.getElementById('noticeContent').value.trim();
+    const title = document.getElementById('noticeTitle').value.trim();
+    const content = document.getElementById('noticeContent').value.trim();
+
+    const adminName = localStorage.getItem('userName') || '관리자';
 
     if (targetUserIds.length === 0) { alert("발송할 대상을 한 명 이상 선택해주세요."); return; }
     if (!title || !content) { alert("제목과 내용을 모두 입력해주세요."); return; }
     if (!confirm(`총 ${targetUserIds.length}명에게 공지를 발송하시겠습니까?`)) return;
 
-    const targetNamesList = targetUserIds.map(uid => { const user = globalUserList.find(u => u.userid === uid); return user ? (user.name || user.nickname || '알수없음') : '알수없음'; });
-    let targetNamesDisplay = targetNamesList.slice(0, 5).join(', '); if (targetNamesList.length > 5) targetNamesDisplay += ` 외 ${targetNamesList.length - 5}명`;
+    const targetNamesList = targetUserIds.map(uid => { 
+        const user = globalUserList.find(u => u.userid === uid); 
+        return user ? (user.name || user.nickname || '알수없음') : '알수없음'; 
+    });
+    let targetNamesDisplay = targetNamesList.slice(0, 5).join(', '); 
+    if (targetNamesList.length > 5) targetNamesDisplay += ` 외 ${targetNamesList.length - 5}명`;
 
     try {
-        await apiFetch(NOTI_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_send_notice', data: { targetUserIds: targetUserIds, title: title, content: content, targetNamesDisplay: targetNamesDisplay } }) });
+        await apiFetch(NOTI_API_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ 
+                type: 'admin_send_notice', 
+                data: { 
+                    targetUserIds: targetUserIds, 
+                    title: title, 
+                    content: content, 
+                    targetNamesDisplay: targetNamesDisplay,
+                    senderName: adminName
+                } 
+            }) 
+        }); 
+        
         alert("공지 발송 및 기록 저장이 완료되었습니다.");
-        document.getElementById('noticeTitle').value = ''; document.getElementById('noticeContent').value = '';
-        document.querySelectorAll('#noticeTargetCheckboxes input[type="checkbox"]').forEach(c => c.checked = false); showNotiMenu('sent'); 
-    } catch(e) { if (e.message !== "Auth expired") alert("공지 발송이 원활하게 진행되지 않았습니다. 서버 상태를 확인해주세요."); }
+        document.getElementById('noticeTitle').value = ''; 
+        document.getElementById('noticeContent').value = '';
+        document.querySelectorAll('#noticeTargetCheckboxes input[type="checkbox"]').forEach(c => c.checked = false); 
+        showNotiMenu('sent'); 
+    } catch(e) { 
+        if (e.message !== "Auth expired") alert("공지 발송이 원활하게 진행되지 않았습니다. 서버 상태를 확인해주세요."); 
+    }
 }
 
 // ============================================================
@@ -768,35 +876,40 @@ async function loadMatchingData(isSilent = false) {
 }
 
 function renderNewMatchingList() {
-    const container = document.getElementById('newMatchList'); container.innerHTML = '';
-    if (globalUnmatchedStudents.length === 0) { container.innerHTML = '<div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: #94a3b8; background: #f8fafc; border-radius: 8px;">현재 신규 매칭 대기 중인 학생이 없습니다.</div>'; return; }
+    const container = document.getElementById('newMatchList'); 
+    container.innerHTML = '';
+    
+    if (globalUnmatchedStudents.length === 0) { 
+        container.innerHTML = '<div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: #94a3b8; background: #f8fafc; border-radius: 8px;">현재 신규 매칭 대기 중인 학생이 없습니다.</div>'; 
+        return; 
+    }
 
     const tutorOptions = globalTutorsForMatch.map(t => `<option value="${t.nickname}">${t.nickname} (${t.name}) - 배정 ${t.totalStudents}명</option>`).join('');
 
     globalUnmatchedStudents.forEach(s => {
-    const tierBadge = getTierBadgeHTML(s);
-    const card = document.createElement('div'); 
-    card.className = 'match-card';
-    card.style.cssText = "background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 15px;";
-    
-    card.innerHTML = `
-        <div class="match-card-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
-            <div>
-                <h4 class="match-card-name" style="margin:0 0 5px 0; font-size:1.1rem; color:#1e293b;">${escapeHtml(s.name)}</h4>
-                <div class="match-card-date" style="font-size:0.85rem; color:#94a3b8;">가입일: ${new Date(s.createdAt).toLocaleDateString()}</div>
+        const tierBadge = getTierBadgeHTML(s);
+        const card = document.createElement('div'); 
+        card.className = 'match-card';
+        card.style.cssText = "background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 15px;";
+        
+        card.innerHTML = `
+            <div class="match-card-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
+                <div>
+                    <h4 class="match-card-name" style="margin:0 0 5px 0; font-size:1.1rem; color:#1e293b;">${escapeHtml(s.name)}</h4>
+                    <div class="match-card-date" style="font-size:0.85rem; color:#94a3b8;">가입일: ${new Date(s.createdAt).toLocaleDateString()}</div>
+                </div>
+                <div>${tierBadge}</div>
             </div>
-            <div>${tierBadge}</div>
-        </div>
-        <div class="match-select-box" style="display:flex; gap:10px;">
-            <select id="select_tutor_${s.userid}" style="flex:1; padding:8px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.9rem;">
-                <option value="">튜터 선택...</option>
-                ${tutorOptions}
-            </select>
-            <button class="match-btn" onclick="executeMatching('${s.userid}', false)" style="background:#3b82f6; color:white; border:none; padding:8px 15px; border-radius:4px; font-weight:bold; cursor:pointer;">배정하기</button>
-        </div>
-    `;
-    container.appendChild(card);
-});
+            <div class="match-select-box" style="display:flex; gap:10px;">
+                <select id="select_tutor_${s.userid}" style="flex:1; padding:8px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.9rem;">
+                    <option value="">튜터 선택...</option>
+                    ${tutorOptions}
+                </select>
+                <button class="match-btn" onclick="executeMatching('${s.userid}', false)" style="background:#3b82f6; color:white; border:none; padding:8px 15px; border-radius:4px; font-weight:bold; cursor:pointer;">배정하기</button>
+            </div>
+        `;
+        container.appendChild(card);
+    });
 }
 
 function initTutorChangeSelects() {

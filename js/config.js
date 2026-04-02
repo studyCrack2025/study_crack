@@ -36,7 +36,18 @@ const CONFIG = {
         payment: `${GATEWAY_URL}/payment`,
         
         // StudyCrack_Auth 람다로 연결되는 주소
-        auth: `${GATEWAY_URL}/auth`
+        auth: `${GATEWAY_URL}/auth`,
+
+        // NicePay returnUrl 콜백
+        payment_return: `${GATEWAY_URL}/payment-return`,
+        
+        // pdf 생성 관련 백엔드
+        pdf: `${GATEWAY_URL}/generate-pdf`
+    },
+
+    // NicePay 설정
+    nicepay: {
+        clientId: 'R2_18437f7c0352412ba94071b9af6895fd'
     },
     
     // 기존 Cognito 설정

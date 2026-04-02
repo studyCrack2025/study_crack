@@ -100,8 +100,8 @@ async function submitCheckout() {
     const cPwd = document.getElementById('cardPwd').value;
     const cDob = document.getElementById('cardAuthDob').value;
 
-    if (cNum.length < 15 || cExp.length !== 4 || cPwd.length !== 2 || cDob.length < 6) {
-        alert("신용카드 정보를 정확하게 입력해주세요.");
+    if (cNum.length < 15 || cExp.length !== 4 || cPwd.length !== 2 || cDob.length !== 6) {
+        alert("신용카드 정보를 정확하게 입력해주세요.\n생년월일은 6자리(YYMMDD)로 입력해주세요. 예) 1999년 1월 1일 → 990101");
         return;
     }
 
@@ -145,7 +145,7 @@ async function submitCheckout() {
             // 결제(빌링키 발급) 완벽 성공
             localStorage.removeItem('checkoutData'); // 보안 및 정리 차원에서 로컬스토리지 삭제
             alert("결제가 성공적으로 완료되었습니다!");
-            window.location.href = '/success.html'; // 성공 페이지나 마이페이지로 리다이렉트
+            window.location.href = '/success';
         } else {
             // 승인 거절 (잔액 부족, 카드 번호 오류 등)
             alert("결제 실패: " + (result.message || "카드 정보를 다시 확인해주세요."));

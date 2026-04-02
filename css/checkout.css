@@ -115,6 +115,7 @@
 
 .form-group { margin-bottom: 20px; }
 .form-group label { display: block; font-size: 0.9rem; font-weight: 600; color: #475569; margin-bottom: 8px; }
+.label-sub { font-weight: 400; font-size: 0.82rem; color: #94a3b8; }
 
 .input-with-icon { position: relative; }
 .input-with-icon i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem; }
@@ -162,7 +163,10 @@ input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(5
     .checkout-wrapper { flex-direction: column; margin: 0; width: 100%; border-radius: 0; }
     .order-summary-panel { padding: 30px 25px; }
     .payment-form-panel { padding: 30px 25px; }
-    .form-row-multi { gap: 10px; }
     .btn-back { margin-bottom: 20px; }
     .summary-title { margin-bottom: 20px; }
+
+    /* 유효기간 / 비밀번호 — 모바일에서 세로 배치 */
+    .form-row-multi { grid-template-columns: 1fr; gap: 0; }
+    .pwd-input-wrap input { width: 80px !important; }
 }

@@ -43,6 +43,14 @@
                 <span id="activeSubDate" class="sub-date">-</span>
             </div>
         </div>
+        <div id="pendingSubBanner" class="active-sub-banner" style="display: none; background: #eff6ff; border-color: #bfdbfe;">
+            <div class="sub-icon" style="background: #dbeafe;"><i class="fas fa-calendar-check" style="color: #2563eb;"></i></div>
+            <div class="sub-details">
+                <span class="sub-label" style="color: #2563eb;">예약된 플랜</span>
+                <strong id="pendingSubName" class="sub-name" style="color: #1d4ed8;">-</strong>
+                <span id="pendingSubDate" class="sub-date">-</span>
+            </div>
+        </div>
 
         <form id="paymentForm">
             <div class="form-group">
@@ -65,6 +73,16 @@
         <div class="f-row">합격 시뮬레이션</div>
         <div class="f-row">주간 플래너</div>
         <div class="f-row">프리미엄 보고서</div>
+    </div>
+
+    <div id="testOption" class="product-option tier-trial" style="display: none;" onclick="selectProduct(this, null, 'test')">
+        <div class="product-header">
+            <span class="p-name">TEST</span>
+            <span class="p-price">100원</span>
+        </div>
+        <div class="f-row">-</div>
+        <div class="f-row">-</div>
+        <div class="f-row">-</div>
     </div>
 
     <div id="trialOption" class="product-option tier-trial" style="display: none;" onclick="selectProduct(this, null, 'trial')">
@@ -126,6 +144,7 @@
         </form>
     </div>
 
+    <script src="https://pay.nicepay.co.kr/v1/js/"></script>
     <script src="/js/config.js"></script>
     <script src="/js/payment.js"></script>
     

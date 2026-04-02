@@ -433,6 +433,13 @@
     background-color: #2563eb;
 }
 
+.notice-modal { max-width: 500px; }
+.notice-body { padding: 10px 0; }
+.notice-title { margin-top: 0; color: #1e293b; font-size: 1.25rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; }
+.notice-date { font-size: 0.85rem; color: #94a3b8; text-align: right; margin: 10px 0 20px; }
+.notice-content { white-space: pre-wrap; color: #334155; line-height: 1.6; font-size: 1rem; min-height: 100px; }
+.notice-btn-wrap { text-align: center; margin-top: 25px; }
+
 /* 모바일 대응 */
 @media (max-width: 768px) {
     body { padding-bottom: 80px; }
@@ -460,6 +467,6 @@
     .common-textarea { padding: 10px; font-size: 0.9rem; }
     .noti-panel { width: calc(100% - 40px); right: 20px; bottom: 90px; }
     .noti-fab { bottom: 20px; right: 20px; width: 50px; height: 50px; font-size: 1.2rem; }
-    .modal-content { padding: 25px 20px; max-height: 85vh; overflow-y: auto; }
+    .modal-content { padding: 25px 20px; max-height: 85vh; overflow-y: auto; width: 90%; margin-left: auto; margin-right: auto; }
     .modal-action-btn { padding: 14px; font-size: 1rem; margin-top: 20px; word-break: keep-all; }
 }

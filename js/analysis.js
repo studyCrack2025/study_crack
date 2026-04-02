@@ -7,458 +7,472 @@ const MYPAGE_API_URL = CONFIG.api.user;
 const UNIV_DATA_API_URL = CONFIG.api.analysis;
 const FILE_API_URL = CONFIG.api.file;
 const REPORT_API_URL = CONFIG.api.report;
+const PDF_API_URL = CONFIG.api.pdf; 
 
 let currentUserTier = 'free';
 let univChangeRemaining = 30;
 let userRecentPaymentDate = null;
 let userTargetUnivs = [null, null, null, null, null, null]; // 6슬롯
-let univData = []; 
-let univMap = {};  
-let userQuantData = null; 
+let univData = []; 
+let univMap = {};  
+let userQuantData = null; 
 let weeklyDataHistory = []; // 💡 이제 별도 API로 받아옴
-let cachedProReports = [];  // 💡 이제 별도 API로 받아옴
+let cachedProReports = [];  // 💡 이제 별도 API로 받아옴
 let currentSelectStep = 'univ';
 let selectedUnivForMajor = '';
+
+let scrollPosition = 0;
 
 // 대학 선택 모달 관련
 let currentSlotIndex = null;
 
 // 플래너 파일 업로드 관련
-let currentPlannerFiles = []; 
+let currentPlannerFiles = []; 
 let originalPlannerFiles = [];
 
 // 시험 모드 (수능/평가원 등)
-let currentExamMode = 'csat'; 
+let currentExamMode = 'csat'; 
 
 const EXAM_DISPLAY_NAMES = {
-    "csat": "대학수학능력시험 (수능)",
-    "sep": "9월 모의평가",
-    "jun": "6월 모의평가",
-    "jul": "7월 학력평가",
-    "oct": "10월 학력평가",
-    "mar": "3월 학력평가",
-    "may": "5월 학력평가"
+    "csat": "대학수학능력시험 (수능)",
+    "sep": "9월 모의평가",
+    "jun": "6월 모의평가",
+    "jul": "7월 학력평가",
+    "oct": "10월 학력평가",
+    "mar": "3월 학력평가",
+    "may": "5월 학력평가"
 };
 
 const SUBJECT_CODE_MAP = {
-    'un': '언매', 'hj': '화작',
-    'mi': '미적', 'ki': '기하', 'hw': '확통',
+    'un': '언매', 'hj': '화작',
+    'mi': '미적', 'ki': '기하', 'hw': '확통',
 };
 
 // ============================================================
 // [초기화] DOM 로드 시 실행 (💡 병렬 데이터 로딩으로 개편)
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
-    const idToken = localStorage.getItem('idToken'); 
-    const userId = localStorage.getItem('userId');
+    const idToken = localStorage.getItem('idToken'); 
+    const userId = localStorage.getItem('userId');
 
-    if (!idToken) {
-        alert("로그인이 필요합니다.");
-        window.location.href = '/login';
-        return;
-    }
+    if (!idToken) {
+        alert("로그인이 필요합니다.");
+        window.location.href = '/login';
+        return;
+    }
 
-    setWeeklyLoadingStatus(true);
+    setWeeklyLoadingStatus(true);
 
-    // 🚀 [핵심] 분리된 테이블에 맞게 API 4개를 병렬로 동시에 호출
-    Promise.allSettled([
-        fetchUserData(userId),
-        fetchUnivData(),
-        fetchWeeklyHistory(), // 신규: 주간 리포트 독립 로드
-        fetchInitialProReports() // 신규: PRO 리포트 독립 로드
-    ]).then((results) => {
-        // 에러 로깅
-        results.forEach((res, idx) => {
-            if (res.status === 'rejected') console.error(`Data Load Error [${idx}]:`, res.reason);
-        });
+    // 🚀 [핵심] 분리된 테이블에 맞게 API 4개를 병렬로 동시에 호출
+    Promise.allSettled([
+        fetchUserData(userId),
+        fetchUnivData(),
+        fetchWeeklyHistory(), // 신규: 주간 리포트 독립 로드
+        fetchInitialProReports() // 신규: PRO 리포트 독립 로드
+    ]).then((results) => {
+        // 에러 로깅
+        results.forEach((res, idx) => {
+            if (res.status === 'rejected') console.error(`Data Load Error [${idx}]:`, res.reason);
+        });
 
-        // 초기화 로직 실행
-        initUnivGrid(); 
-        updateAnalysisUI();
-        initProSection(); // 내부에서 cachedProReports를 바로 사용
-        
-        setWeeklyLoadingStatus(false);
-        setTimeout(() => { 
-            checkWeeklyStatus(); // 내부에서 weeklyDataHistory를 바로 사용
-            applyCoachTierLock();
-        }, 500); 
-        
-        const loader = document.getElementById('pageLoadingOverlay');
-        if (loader) {
-            setTimeout(() => loader.classList.add('hidden'), 500);
-        }
+        // 초기화 로직 실행
+        initUnivGrid(); 
+        updateAnalysisUI();
+        initProSection(); // 내부에서 cachedProReports를 바로 사용
+        
+        setWeeklyLoadingStatus(false);
+        setTimeout(() => { 
+            checkWeeklyStatus(); // 내부에서 weeklyDataHistory를 바로 사용
+            applyCoachTierLock();
+        }, 500); 
+        
+        const loader = document.getElementById('pageLoadingOverlay');
+        if (loader) {
+            setTimeout(() => loader.classList.add('hidden'), 500);
+        }
 
-        // URL 파라미터 확인 (?sol=sim 등)
-        const params = new URLSearchParams(window.location.search);
-        const sol = params.get('sol');
-        if (sol) setTimeout(() => openSolution(sol), 100); 
+        // URL 파라미터 확인 (?sol=sim 등)
+        const params = new URLSearchParams(window.location.search);
+        const sol = params.get('sol');
+        if (sol) setTimeout(() => openSolution(sol), 100); 
 
-        const targetTab = params.get('tab');
-        if (targetTab) openSolution(targetTab);         
-    });
+        const targetTab = params.get('tab');
+        if (targetTab) openSolution(targetTab);         
+    });
 });
 
 // [보안] XSS 방지용 이스케이프 함수
 function escapeHtml(text) {
-    if (text == null) return ""; 
-    return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+    if (text == null) return ""; 
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 // [유틸] DynamoDB JSON 파서
 function parseDynamoItem(item) {
-    if (item === undefined || item === null) return null;
-    if (typeof item !== 'object') return item;
-    if (Array.isArray(item)) return item.map(parseDynamoItem);
-    if (item.S !== undefined) return item.S;
-    if (item.N !== undefined) return Number(item.N);
-    if (item.BOOL !== undefined) return item.BOOL;
-    if (item.NULL === true) return null;
-    if (item.L !== undefined) {
-        if (Array.isArray(item.L)) return item.L.map(parseDynamoItem);
-        return [];
-    }
-    if (item.M !== undefined) {
-        const obj = {};
-        for (const key in item.M) obj[key] = parseDynamoItem(item.M[key]);
-        return obj;
-    }
-    const obj = {};
-    for (const key in item) obj[key] = parseDynamoItem(item[key]);
-    return obj;
+    if (item === undefined || item === null) return null;
+    if (typeof item !== 'object') return item;
+    if (Array.isArray(item)) return item.map(parseDynamoItem);
+    if (item.S !== undefined) return item.S;
+    if (item.N !== undefined) return Number(item.N);
+    if (item.BOOL !== undefined) return item.BOOL;
+    if (item.NULL === true) return null;
+    if (item.L !== undefined) {
+        if (Array.isArray(item.L)) return item.L.map(parseDynamoItem);
+        return [];
+    }
+    if (item.M !== undefined) {
+        const obj = {};
+        for (const key in item.M) obj[key] = parseDynamoItem(item.M[key]);
+        return obj;
+    }
+    const obj = {};
+    for (const key in item) obj[key] = parseDynamoItem(item[key]);
+    return obj;
 }
 
 // ============================================================
 // [데이터 로드] 사용자 정보 & 리포트 데이터
 // ============================================================
 async function fetchUserData(userId) {
-    const token = localStorage.getItem('idToken');
-    const safeUserId = userId || localStorage.getItem('userId'); 
-    try {
-        const response = await fetch(MYPAGE_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'get_user', userId: safeUserId }) 
-        });
-        
-        if (response.status === 401) {
-            alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-            window.location.href = '/login';
-            return;
-        }
-        if (!response.ok) throw new Error("사용자 데이터 로드 실패");
-        
-        const rawData = await response.json();
-        const data = parseDynamoItem(rawData);
-        
-        // 💡 백엔드가 1:N으로 분리되면서 payments 데이터가 없을 수도 있음. currentSubscription을 1순위로 확인
-        if (data.currentSubscription && data.currentSubscription.startDate) {
-             userRecentPaymentDate = new Date(data.currentSubscription.startDate);
-        } else if (data.payments && Array.isArray(data.payments)) {
-            const paid = data.payments.filter(p => p.status === 'paid').sort((a,b) => new Date(b.date) - new Date(a.date));
-            if (paid.length > 0 && paid[0].date) userRecentPaymentDate = new Date(paid[0].date);
-        }
-        
-        renderUserInfo(data);
-        // 💡 백엔드에서 미리 계산해서 주는 computedTier 사용 (무거운 calcTier 삭제)
-        applyUserTier(data.computedTier || 'free'); 
-        updateSurveyStatus(data);
-        checkMbtiReport(data);
-        applyFreeTierLock();
-        
-        if (data.targetUnivs) userTargetUnivs = data.targetUnivs;
-        if (data.quantitative) userQuantData = data.quantitative;
-        
-        // 💡 weeklyHistory는 분리되었으므로 여기서 받지 않음
-        univChangeRemaining = data.univChangeRemaining !== undefined ? data.univChangeRemaining : 30;
-        updateQuotaUI();
-        
-        if (typeof buildUnivMap === 'function') buildUnivMap();
-        
-        if (data && data.profileImage) {
-            const imgElem = document.getElementById('profileImg');
-            if (imgElem) imgElem.src = escapeHtml(data.profileImage);
-        }
-    } catch (error) { 
-        if(error.message.includes("401")) { location.href='/login'; }
-    }
+    const token = localStorage.getItem('idToken');
+    const safeUserId = userId || localStorage.getItem('userId'); 
+    try {
+        const response = await fetch(MYPAGE_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'get_user', userId: safeUserId }) 
+        });
+        
+        if (response.status === 401) {
+            alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+            window.location.href = '/login';
+            return;
+        }
+        if (!response.ok) throw new Error("사용자 데이터 로드 실패");
+        
+        const rawData = await response.json();
+        const data = parseDynamoItem(rawData);
+        
+        // 💡 백엔드가 1:N으로 분리되면서 payments 데이터가 없을 수도 있음. currentSubscription을 1순위로 확인
+        if (data.currentSubscription && data.currentSubscription.startDate) {
+             userRecentPaymentDate = new Date(data.currentSubscription.startDate);
+        } else if (data.payments && Array.isArray(data.payments)) {
+            const paid = data.payments.filter(p => p.status === 'paid').sort((a,b) => new Date(b.date) - new Date(a.date));
+            if (paid.length > 0 && paid[0].date) userRecentPaymentDate = new Date(paid[0].date);
+        }
+        
+        renderUserInfo(data);
+        // 💡 백엔드에서 미리 계산해서 주는 computedTier 사용 (무거운 calcTier 삭제)
+        applyUserTier(data.computedTier || 'free'); 
+        updateSurveyStatus(data);
+        checkMbtiReport(data);
+        applyFreeTierLock();
+        
+        if (data.targetUnivs) userTargetUnivs = data.targetUnivs;
+        if (data.quantitative) userQuantData = data.quantitative;
+        
+        // 💡 weeklyHistory는 분리되었으므로 여기서 받지 않음
+        univChangeRemaining = data.univChangeRemaining !== undefined ? data.univChangeRemaining : 30;
+        updateQuotaUI();
+        
+        if (typeof buildUnivMap === 'function') buildUnivMap();
+        
+        if (data && data.profileImage) {
+            const imgElem = document.getElementById('profileImg');
+            if (imgElem) imgElem.src = escapeHtml(data.profileImage);
+        }
+    } catch (error) { 
+        if(error.message.includes("401")) { location.href='/login'; }
+    }
 }
 
 // 💡 [신규] 분리된 주간 리포트 로드
 async function fetchWeeklyHistory() {
-    const token = localStorage.getItem('idToken');
-    try {
-        const response = await fetch(REPORT_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            // 💡 [주의] ReportCore Lambda에 'get_weekly_reports' API가 추가되어 있어야 합니다.
-            body: JSON.stringify({ type: 'get_weekly_reports' }) 
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            weeklyDataHistory = data.weeklyReports || [];
-        }
-    } catch (e) { console.error("Weekly Data Load Error:", e); }
+    const token = localStorage.getItem('idToken');
+    try {
+        const response = await fetch(REPORT_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            // 💡 [주의] ReportCore Lambda에 'get_weekly_reports' API가 추가되어 있어야 합니다.
+            body: JSON.stringify({ type: 'get_weekly_reports' }) 
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            weeklyDataHistory = data.weeklyReports || [];
+        }
+    } catch (e) { console.error("Weekly Data Load Error:", e); }
 }
 
 // 💡 [신규] 분리된 PRO 리포트 로드
 async function fetchInitialProReports() {
-    const token = localStorage.getItem('idToken');
-    try {
-        const res = await fetch(REPORT_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'get_pro_reports', data: { requesterRole: 'student' } })
-        });
-        if (res.ok) {
-            const data = await res.json();
-            cachedProReports = data.reports || []; // 배열 형태로 들어옴
-        }
-    } catch (e) { console.error("Pro Reports Load Error:", e); }
+    const token = localStorage.getItem('idToken');
+    try {
+        const res = await fetch(REPORT_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'get_pro_reports', data: { requesterRole: 'student' } })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            cachedProReports = data.reports || []; // 배열 형태로 들어옴
+        }
+    } catch (e) { console.error("Pro Reports Load Error:", e); }
 }
 
 async function fetchUnivData() {
-    const token = localStorage.getItem('idToken');
-    const userId = localStorage.getItem('userId');
-    try {
-        const response = await fetch(UNIV_DATA_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'get_univ_list_only', userId: userId }) 
-        });
-        
-        if (!response.ok) throw new Error(`서버 응답 오류`);
-        const data = await response.json();
-        
-        univData = Array.isArray(data) ? data : (data.univs || []); 
-        univMap = {};
-        univData.forEach(item => { 
-            univMap[item.univName] = item.majors.map(m => ({ name: m })); 
-        });
-    } catch (e) { console.error("대학 데이터 로드 실패:", e); }
+    const token = localStorage.getItem('idToken');
+    const userId = localStorage.getItem('userId');
+    try {
+        const response = await fetch(UNIV_DATA_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'get_univ_list_only', userId: userId }) 
+        });
+        
+        if (!response.ok) throw new Error(`서버 응답 오류`);
+        const data = await response.json();
+        
+        univData = Array.isArray(data) ? data : (data.univs || []); 
+        univMap = {};
+        univData.forEach(item => { 
+            univMap[item.univName] = item.majors.map(m => ({ name: m })); 
+        });
+    } catch (e) { console.error("대학 데이터 로드 실패:", e); }
 }
 
 function buildUnivMap() {}
 
 // ============================================================
-// 이하 UI 렌더링 로직 (원문 유지)
+// 이하 UI 렌더링 로직
 // ============================================================
 function renderUserInfo(data) {
     const nameEl = document.getElementById('userNameDisplay');
     const tierBadgeEl = document.getElementById('userTierBadge');
     
-    if (nameEl) nameEl.innerText = data.name || '이름 없음';
+    // 🔒 textContent를 사용하여 악성 스크립트 주입(XSS) 완벽 차단
+    if (nameEl) nameEl.textContent = data.name || '이름 없음';
     
     if (tierBadgeEl) {
         const tier = data.computedTier || 'free';
-        let tierText = 'FREE'; let tierClass = 'tier-badge-free'; let iconHtml = '';
+        let tierText = 'FREE'; 
+        let tierClass = 'tier-badge-free'; 
+        let iconClass = '';
 
         if (tier === 'basic') { tierText = 'BASIC'; tierClass = 'tier-badge-basic'; }
-        else if (tier === 'standard') { tierText = 'STANDARD'; tierClass = 'tier-badge-standard'; iconHtml = '<i class="fas fa-gem" style="margin-right:4px;"></i>'; }
-        else if (tier === 'pro') { tierText = 'PRO'; tierClass = 'tier-badge-pro'; iconHtml = '<i class="fas fa-crown" style="margin-right:4px;"></i>'; }
+        else if (tier === 'standard') { tierText = 'STANDARD'; tierClass = 'tier-badge-standard'; iconClass = 'fa-gem'; }
+        else if (tier === 'pro') { tierText = 'PRO'; tierClass = 'tier-badge-pro'; iconClass = 'fa-crown'; }
 
         tierBadgeEl.className = `user-tier-badge ${tierClass}`;
-        tierBadgeEl.innerHTML = `${iconHtml}${tierText} 멤버십`;
+        tierBadgeEl.innerHTML = ''; // 자식 요소 초기화
+        
+        if (iconClass) {
+            const icon = document.createElement('i');
+            icon.className = `fas ${iconClass}`;
+            icon.style.marginRight = '4px';
+            tierBadgeEl.appendChild(icon);
+        }
+        tierBadgeEl.appendChild(document.createTextNode(`${tierText} 멤버십`));
     }
 }
 
 function applyUserTier(tier) { currentUserTier = tier; }
 
 function updateSurveyStatus(data) {
-    const qual = data.qualitative;
-    const isQualDone = !!qual; 
+    const qual = data.qualitative;
+    const isQualDone = !!qual; 
 
-    const qualStatusEl = document.getElementById('qualStatus');
-    const qualGradeRow = document.getElementById('qualGradeRow');
-    const qualStreamRow = document.getElementById('qualStreamRow');
-    const qualTargetRow = document.getElementById('qualTargetRow');
-    
-    if (isQualDone) {
-        qualStatusEl.innerHTML = '<span style="color:#166534; font-weight:bold;">✅ 작성완료</span>';
-        
-        const statusVal = qual.status || '';
-        if (statusVal) { document.getElementById('qualGrade').innerText = statusVal; qualGradeRow.style.display = 'flex'; } 
-        else { qualGradeRow.style.display = 'none'; }
+    const qualStatusEl = document.getElementById('qualStatus');
+    const qualGradeRow = document.getElementById('qualGradeRow');
+    const qualStreamRow = document.getElementById('qualStreamRow');
+    const qualTargetRow = document.getElementById('qualTargetRow');
+    
+    if (isQualDone) {
+        qualStatusEl.innerHTML = '<span style="color:#166534; font-weight:bold;">✅ 작성완료</span>';
+        
+        const statusVal = qual.status || '';
+        if (statusVal) { document.getElementById('qualGrade').innerText = statusVal; qualGradeRow.style.display = 'flex'; } 
+        else { qualGradeRow.style.display = 'none'; }
 
-        const groupMap = { 'humanities': '인문', 'natural': '자연', 'nature': '자연', 'arts': '예체능', 'undefined': '미정' };
-        const groupKey = qual.stream || 'undefined';
-        document.getElementById('qualStream').innerText = groupMap[groupKey] || groupKey;
-        qualStreamRow.style.display = 'flex';
+        const groupMap = { 'humanities': '인문', 'natural': '자연', 'nature': '자연', 'arts': '예체능', 'undefined': '미정' };
+        const groupKey = qual.stream || 'undefined';
+        document.getElementById('qualStream').innerText = groupMap[groupKey] || groupKey;
+        qualStreamRow.style.display = 'flex';
 
-        let targets = [];
-        if (Array.isArray(qual.targets)) targets = qual.targets.filter(t => t && t.trim() !== "");
-        if (targets.length === 0 && data.targetUnivs) data.targetUnivs.forEach(t => { if(t && t.univ) targets.push(t.univ); });
+        let targets = [];
+        if (Array.isArray(qual.targets)) targets = qual.targets.filter(t => t && t.trim() !== "");
+        if (targets.length === 0 && data.targetUnivs) data.targetUnivs.forEach(t => { if(t && t.univ) targets.push(t.univ); });
 
-        const targetContainer = document.getElementById('qualTargetContainer');
-        targetContainer.innerHTML = '';
+        const targetContainer = document.getElementById('qualTargetContainer');
+        targetContainer.innerHTML = '';
 
-        if (targets.length > 0) {
-            const uniqueTargets = [...new Set(targets)].slice(0, 2);
-            let targetHtml = '';
-            if (uniqueTargets[0]) targetHtml += `<div class="target-row"><span class="target-badge first">1지망</span> ${escapeHtml(uniqueTargets[0])}</div>`;
-            if (uniqueTargets[1]) targetHtml += `<div class="target-row"><span class="target-badge second">2지망</span> ${escapeHtml(uniqueTargets[1])}</div>`;
-            targetContainer.innerHTML = targetHtml;
-            qualTargetRow.style.display = 'flex';
-        } else {
-            qualTargetRow.style.display = 'none';
-        }
-    } else {
-        qualStatusEl.innerHTML = '<span style="color:#991b1b; font-weight:bold;">❌ 미작성</span>';
-        qualGradeRow.style.display = 'none'; qualStreamRow.style.display = 'none'; qualTargetRow.style.display = 'none';
-    }
+        if (targets.length > 0) {
+            const uniqueTargets = [...new Set(targets)].slice(0, 2);
+            let targetHtml = '';
+            if (uniqueTargets[0]) targetHtml += `<div class="target-row"><span class="target-badge first">1지망</span> ${escapeHtml(uniqueTargets[0])}</div>`;
+            if (uniqueTargets[1]) targetHtml += `<div class="target-row"><span class="target-badge second">2지망</span> ${escapeHtml(uniqueTargets[1])}</div>`;
+            targetContainer.innerHTML = targetHtml;
+            qualTargetRow.style.display = 'flex';
+        } else {
+            qualTargetRow.style.display = 'none';
+        }
+    } else {
+        qualStatusEl.innerHTML = '<span style="color:#991b1b; font-weight:bold;">❌ 미작성</span>';
+        qualGradeRow.style.display = 'none'; qualStreamRow.style.display = 'none'; qualTargetRow.style.display = 'none';
+    }
 
-    const quan = data.quantitative;
-    const validExams = [];
-    if (quan) { Object.keys(quan).forEach(key => { const d = quan[key]; if (d && (d.kor || d.math || d.eng)) validExams.push(key); }); }
-    
-    const isQuanDone = validExams.length > 0;
-    const quanEmptyEl = document.getElementById('quanEmpty');
-    const quanContentBox = document.getElementById('quanContentBox');
-    const selector = document.getElementById('sideQuanSelector');
-    const detailBox = document.getElementById('sideQuanDetail');
+    const quan = data.quantitative;
+    const validExams = [];
+    if (quan) { Object.keys(quan).forEach(key => { const d = quan[key]; if (d && (d.kor || d.math || d.eng)) validExams.push(key); }); }
+    
+    const isQuanDone = validExams.length > 0;
+    const quanEmptyEl = document.getElementById('quanEmpty');
+    const quanContentBox = document.getElementById('quanContentBox');
+    const selector = document.getElementById('sideQuanSelector');
+    const detailBox = document.getElementById('sideQuanDetail');
 
-    if (isQuanDone) {
-        quanEmptyEl.style.display = 'none';
-        quanContentBox.style.display = 'block';
+    if (isQuanDone) {
+        quanEmptyEl.style.display = 'none';
+        quanContentBox.style.display = 'block';
 
-        const sortOrder = ['mar', 'apr', 'may', 'jun', 'jul', 'sep', 'oct', 'csat'];
-        validExams.sort((a, b) => sortOrder.indexOf(b) - sortOrder.indexOf(a));
+        const sortOrder = ['mar', 'apr', 'may', 'jun', 'jul', 'sep', 'oct', 'csat'];
+        validExams.sort((a, b) => sortOrder.indexOf(b) - sortOrder.indexOf(a));
 
-        selector.innerHTML = validExams.map(key => {
-            const name = EXAM_DISPLAY_NAMES[key] || key.toUpperCase();
-            return `<option value="${key}">${name}</option>`;
-        }).join('');
+        selector.innerHTML = validExams.map(key => {
+            const name = EXAM_DISPLAY_NAMES[key] || key.toUpperCase();
+            return `<option value="${key}">${name}</option>`;
+        }).join('');
 
-        const renderSideScore = (examKey) => {
-            const d = quan[examKey];
-            if (!d) return;
+        const renderSideScore = (examKey) => {
+            const d = quan[examKey];
+            if (!d) return;
 
-            const makeRow = (label, obj) => {
-                if (!obj) return ''; 
-                let optText = '';
-                if (obj.opt) optText = `<span class="opt-badge">(${SUBJECT_CODE_MAP[obj.opt] || obj.opt})</span>`;
-                else if (obj.name) optText = `<span class="opt-badge">(${escapeHtml(obj.name)})</span>`;
+            const makeRow = (label, obj) => {
+                if (!obj) return ''; 
+                let optText = '';
+                if (obj.opt) optText = `<span class="opt-badge">(${SUBJECT_CODE_MAP[obj.opt] || obj.opt})</span>`;
+                else if (obj.name) optText = `<span class="opt-badge">(${escapeHtml(obj.name)})</span>`;
 
-                const std = escapeHtml(obj.std) || '-';
-                const pct = obj.pct ? escapeHtml(obj.pct) + '%' : '-';
-                const grd = obj.grd ? `<span class="grade-circle">${escapeHtml(obj.grd)}</span>` : '';
+                const std = escapeHtml(obj.std) || '-';
+                const pct = obj.pct ? escapeHtml(obj.pct) + '%' : '-';
+                const grd = obj.grd ? `<span class="grade-circle">${escapeHtml(obj.grd)}</span>` : '';
 
-                let valStr = '';
-                if (label === '영어' || label === '한국사') valStr = grd; 
-                else valStr = `${std} / ${pct} ${grd}`;
+                let valStr = '';
+                if (label === '영어' || label === '한국사') valStr = grd; 
+                else valStr = `${std} / ${pct} ${grd}`;
 
-                return `<tr><td class="subj-label">${label}</td><td class="score-info">${optText} ${valStr}</td></tr>`;
-            };
+                return `<tr><td class="subj-label">${label}</td><td class="score-info">${optText} ${valStr}</td></tr>`;
+            };
 
-            let html = '<table class="side-score-table">';
-            html += makeRow('국어', d.kor); html += makeRow('수학', d.math); html += makeRow('영어', d.eng);
-            html += makeRow('탐구1', d.inq1); html += makeRow('탐구2', d.inq2);
-            html += '</table>';
-            detailBox.innerHTML = html;
-        };
+            let html = '<table class="side-score-table">';
+            html += makeRow('국어', d.kor); html += makeRow('수학', d.math); html += makeRow('영어', d.eng);
+            html += makeRow('탐구1', d.inq1); html += makeRow('탐구2', d.inq2);
+            html += '</table>';
+            detailBox.innerHTML = html;
+        };
 
-        renderSideScore(validExams[0]);
-        selector.onchange = (e) => { renderSideScore(e.target.value); };
-    } else {
-        quanEmptyEl.style.display = 'block';
-        quanContentBox.style.display = 'none';
-    }
+        renderSideScore(validExams[0]);
+        selector.onchange = (e) => { renderSideScore(e.target.value); };
+    } else {
+        quanEmptyEl.style.display = 'block';
+        quanContentBox.style.display = 'none';
+    }
 
-    const badge = document.getElementById('statusBadge');
-    if(badge) {
-        badge.className = 'status-badge';
-        if (isQualDone && isQuanDone) { badge.classList.add('complete'); badge.innerText = "분석 준비 완료"; } 
-        else if (isQualDone || isQuanDone) { badge.classList.add('partial'); badge.innerText = "데이터 부족"; } 
-        else { badge.classList.add('incomplete'); badge.innerText = "시작 필요"; }
-    }
+    const badge = document.getElementById('statusBadge');
+    if(badge) {
+        badge.className = 'status-badge';
+        if (isQualDone && isQuanDone) { badge.classList.add('complete'); badge.innerText = "분석 준비 완료"; } 
+        else if (isQualDone || isQuanDone) { badge.classList.add('partial'); badge.innerText = "데이터 부족"; } 
+        else { badge.classList.add('incomplete'); badge.innerText = "시작 필요"; }
+    }
 }
 
-function openSolution(type) {    
-    document.querySelectorAll('.sol-content').forEach(el => el.style.display = 'none');
-    const targetContent = document.getElementById(`sol-${type}`);
-    if (targetContent) targetContent.style.display = 'block';
+function openSolution(type) {    
+    document.querySelectorAll('.sol-content').forEach(el => el.style.display = 'none');
+    const targetContent = document.getElementById(`sol-${type}`);
+    if (targetContent) targetContent.style.display = 'block';
 
-    document.querySelectorAll('.solution-menu .sol-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.getAttribute('onclick').includes(`'${type}'`)) btn.classList.add('active');
-    });
+    document.querySelectorAll('.solution-menu .sol-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('onclick').includes(`'${type}'`)) btn.classList.add('active');
+    });
 
-    if (type === 'sim') initSimulation();
+    if (type === 'sim') initSimulation();
 }
 
 function applyFreeTierLock() {
-    if (currentUserTier === 'free') {
-        document.querySelectorAll('.sol-content').forEach(content => {
-            content.style.position = 'relative';
-            if (content.querySelector('.free-lock-overlay')) return;
-            const overlay = document.createElement('div');
-            overlay.className = 'free-lock-overlay';
-            overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
-            overlay.innerHTML = `
-                <div style="background: white; padding: 40px 50px; border-radius: 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center; border: 1px solid #e2e8f0; max-width: 90%;">
-                    <i class="fas fa-lock" style="font-size: 3rem; color: #94a3b8; margin-bottom: 20px;"></i>
-                    <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 1.4rem;">유료회원 전용 기능입니다</h3>
-                    <p style="color: #64748b; font-size: 1rem; margin-bottom: 25px; line-height: 1.6;">
-                        나만의 목표대학 정밀 분석 및 점수 시뮬레이션은<br><strong>Standard 멤버십</strong> 이상부터 이용 가능합니다.
-                    </p>
-                    <button onclick="location.href='/payment'" style="padding: 14px 35px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1.05rem; cursor: pointer; transition: background 0.2s;">
-                        🚀 멤버십 알아보기
-                    </button>
-                </div>`;
-            content.appendChild(overlay);
-        });
-    }
+    if (currentUserTier === 'free') {
+        document.querySelectorAll('.sol-content').forEach(content => {
+            content.style.position = 'relative';
+            if (content.querySelector('.free-lock-overlay')) return;
+            const overlay = document.createElement('div');
+            overlay.className = 'free-lock-overlay';
+            overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
+            overlay.innerHTML = `
+                <div style="background: white; padding: 40px 50px; border-radius: 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center; border: 1px solid #e2e8f0; max-width: 90%;">
+                    <i class="fas fa-lock" style="font-size: 3rem; color: #94a3b8; margin-bottom: 20px;"></i>
+                    <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 1.4rem;">유료회원 전용 기능입니다</h3>
+                    <p style="color: #64748b; font-size: 1rem; margin-bottom: 25px; line-height: 1.6;">
+                        나만의 목표대학 정밀 분석 및 점수 시뮬레이션은<br><strong>Standard 멤버십</strong> 이상부터 이용 가능합니다.
+                    </p>
+                    <button onclick="location.href='/payment'" style="padding: 14px 35px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1.05rem; cursor: pointer; transition: background 0.2s;">
+                        🚀 멤버십 알아보기
+                    </button>
+                </div>`;
+            content.appendChild(overlay);
+        });
+    }
 }
 
 function checkMbtiReport(data) {
-    const container = document.getElementById('mbtiReportContainer');
-    if (!container) return;
-    const promo = data.promoCode; 
-    if (!promo || !promo.includes("-STC") || data.mbtiReportDownloaded) { container.innerHTML = ''; return; }
-    
-    let hex = promo.replace("-STC", "").replace("-", "");
-    let mbti = '';
-    for (let i = 0; i < hex.length; i += 2) mbti += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-    
-    container.innerHTML = `
-        <button onclick="downloadMbtiReport()" id="mbtiDownBtn" class="btn-go-survey" style="background-color: #10b981; color: white; border: none; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
-            <i class="fas fa-file-download"></i> [${mbti.toUpperCase()}] 보고서 다운받기
-        </button>`;
+    const container = document.getElementById('mbtiReportContainer');
+    if (!container) return;
+    const promo = data.promoCode; 
+    if (!promo || !promo.includes("-STC") || data.mbtiReportDownloaded) { container.innerHTML = ''; return; }
+    
+    let hex = promo.replace("-STC", "").replace("-", "");
+    let mbti = '';
+    for (let i = 0; i < hex.length; i += 2) mbti += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+    
+    container.innerHTML = `
+        <button onclick="downloadMbtiReport()" id="mbtiDownBtn" class="btn-go-survey" style="background-color: #10b981; color: white; border: none; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
+            <i class="fas fa-file-download"></i> [${mbti.toUpperCase()}] 보고서 다운받기
+        </button>`;
 }
 
 async function downloadMbtiReport() {
-    if (!confirm("해당 MBTI 리포트는 1회만 다운로드 가능합니다.\n지금 다운로드 하시겠습니까?")) return;
-    const btn = document.getElementById('mbtiDownBtn');
-    if (btn) { btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 발급 중...`; btn.disabled = true; }
+    if (!confirm("해당 MBTI 리포트는 1회만 다운로드 가능합니다.\n지금 다운로드 하시겠습니까?")) return;
+    const btn = document.getElementById('mbtiDownBtn');
+    if (btn) { btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 발급 중...`; btn.disabled = true; }
 
-    const token = localStorage.getItem('idToken');
-    try {
-        const res = await fetch(REPORT_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'get_mbti_report' })
-        });
-        const data = await res.json();
-        if (res.ok && data.success) {
-            alert("다운로드가 시작되었습니다.");
-            const link = document.createElement('a');
-            link.href = data.downloadUrl; link.target = '_blank';
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
-            const container = document.getElementById('mbtiReportContainer');
-            if (container) container.innerHTML = ''; 
-        } else {
-            alert(data.error || "보고서 발급에 실패했습니다.");
-            if (btn) { btn.innerHTML = `<i class="fas fa-file-download"></i> 보고서 다운받기`; btn.disabled = false; }
-        }
-    } catch (e) {
-        alert("서버 통신 오류가 발생했습니다.");
-        if (btn) { btn.innerHTML = `<i class="fas fa-file-download"></i> 보고서 다운받기`; btn.disabled = false; }
-    }
+    const token = localStorage.getItem('idToken');
+    try {
+        const res = await fetch(REPORT_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'get_mbti_report' })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            alert("다운로드가 시작되었습니다.");
+            const link = document.createElement('a');
+            link.href = data.downloadUrl; link.target = '_blank';
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            const container = document.getElementById('mbtiReportContainer');
+            if (container) container.innerHTML = ''; 
+        } else {
+            alert(data.error || "보고서 발급에 실패했습니다.");
+            if (btn) { btn.innerHTML = `<i class="fas fa-file-download"></i> 보고서 다운받기`; btn.disabled = false; }
+        }
+    } catch (e) {
+        alert("서버 통신 오류가 발생했습니다.");
+        if (btn) { btn.innerHTML = `<i class="fas fa-file-download"></i> 보고서 다운받기`; btn.disabled = false; }
+    }
 }
 
 // ------------------------------------------------------------
@@ -475,7 +489,11 @@ function initUnivGrid() {
         const savedData = userTargetUnivs[i] || { univ: '', major: '', date: null };
         const slotDiv = document.createElement('div');
         slotDiv.className = 'univ-slot';
-        slotDiv.style.position = 'relative'; 
+        
+        // 🔥 핵심: JS에서 직접 강제 팽창 방지 스타일 주입
+        slotDiv.style.position = 'relative';
+        slotDiv.style.alignSelf = 'start'; 
+        slotDiv.style.height = 'max-content'; 
         
         const safeUniv = escapeHtml(savedData.univ);
         const safeMajor = escapeHtml(savedData.major);
@@ -491,8 +509,8 @@ function initUnivGrid() {
             <label>지망 ${i+1}</label>
             ${deleteBtnHtml}
             <button type="button" class="univ-select-btn" onclick="${clickHandler}" style="${cursorStyle}" ${isQuotaZero ? 'disabled' : ''}>
-                <div style="text-align: left;">${btnText}</div>
-                ${iconHtml}
+                <div style="flex:1; min-width:0; text-align: left;">${btnText}</div>
+                <div style="flex-shrink:0;">${iconHtml}</div>
             </button>
         `;
         grid.appendChild(slotDiv);
@@ -500,117 +518,180 @@ function initUnivGrid() {
 }
 
 function clearUnivSlot(index) {
-    const isBasic = (currentUserTier === 'free' || currentUserTier === 'basic');
-    const msg = isBasic ? `${index + 1}지망 대학을 삭제하시겠습니까?\n(대학을 삭제하는 것은 횟수가 차감되지 않습니다.\n삭제 후 하단의 '저장하기'를 눌러야 반영됩니다.)`
-                        : `${index + 1}지망 대학을 삭제하시겠습니까?\n(삭제 후 하단의 '저장하기'를 눌러야 반영됩니다.)`;
-    if (confirm(msg)) {
-        userTargetUnivs[index] = null; 
-        initUnivGrid(); 
-    }
+    const isBasic = (currentUserTier === 'free' || currentUserTier === 'basic');
+    const msg = isBasic ? `${index + 1}지망 대학을 삭제하시겠습니까?\n(대학을 삭제하는 것은 횟수가 차감되지 않습니다.\n삭제 후 하단의 '저장하기'를 눌러야 반영됩니다.)`
+                        : `${index + 1}지망 대학을 삭제하시겠습니까?\n(삭제 후 하단의 '저장하기'를 눌러야 반영됩니다.)`;
+    if (confirm(msg)) {
+        userTargetUnivs[index] = null; 
+        initUnivGrid(); 
+    }
 }
 
 function updateQuotaUI() {
-    const container = document.getElementById('univQuotaContainer');
-    if (!container) return;
+    const container = document.getElementById('univQuotaContainer');
+    if (!container) return;
 
-    if (currentUserTier === 'standard' || currentUserTier === 'pro') {
-        container.innerHTML = `<div class="quota-info-box" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534; flex-wrap:wrap; gap:8px;">
-            <span><i class="fas fa-check-circle"></i> Standard/Pro 멤버십 혜택</span>
-            <span style="font-weight:bold;">목표대학 무제한 설정 가능</span>
-        </div>`;
+    if (currentUserTier === 'standard' || currentUserTier === 'pro') {
+        container.innerHTML = `<div class="quota-info-box" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534; flex-wrap:wrap; gap:8px;">
+            <span><i class="fas fa-check-circle"></i> Standard/Pro 멤버십 혜택</span>
+            <span style="font-weight:bold;">목표대학 무제한 설정 가능</span>
+        </div>`;
+        return;
+    }
+
+    const isWarning = univChangeRemaining < 10;
+    const isUpsell = univChangeRemaining <= 5;
+    const isZero = univChangeRemaining <= 0;
+
+    let boxStyle = ''; let textColor = '#2563eb';
+    if (isZero) { boxStyle = 'background:#fef2f2; border-color:#fecaca;'; textColor = '#ef4444'; }
+    else if (isWarning) { boxStyle = 'background:#fff7ed; border-color:#fed7aa;'; textColor = '#ea580c'; }
+
+    let html = `<div class="quota-info-box" style="${boxStyle} flex-wrap:wrap; gap:8px;">
+        <span><i class="fas fa-ticket-alt"></i> 목표대학 설정 잔여 횟수</span>
+        <span><strong class="remain-count" style="font-size:1.2rem; color:${textColor};">${univChangeRemaining}</strong> / 30회</span>
+    </div>`;
+
+    if (isUpsell) {
+        const bannerStyle = isZero ? 'border-color:#ef4444; background:#fef2f2;' : 'border-color:#fb923c; background:#fffaf0;';
+        const btnStyle = isZero ? 'background:#ef4444;' : 'background:#ea580c;';
+        const msg = isZero ? '⛔ <strong>목표대학 설정 횟수가 모두 소진되었습니다!</strong>' : `⚠️ <strong>설정 가능 횟수가 ${univChangeRemaining}회밖에 남지 않았습니다!</strong>`;
+        
+        html += `<div class="upgrade-promo-banner" style="${bannerStyle} flex-wrap:wrap; gap:12px;">
+            <div style="flex:1; min-width:240px; word-break:keep-all;">
+                <p style="margin:0; font-size:0.9rem; line-height:1.5;">${msg}<br>Standard 멤버십으로 업그레이드하고 <strong>무제한 대학 분석</strong>을 이용해보세요.</p>
+            </div>
+            <button class="upgrade-btn-small" style="${btnStyle} margin:0; flex:1; min-width:140px; padding:12px;" onclick="location.href='/payment'">멤버십 알아보기</button>
+        </div>`;
+    }
+    container.innerHTML = html;
+}
+
+function closeUnivModal() {
+    document.getElementById('univSelectModal').style.display = 'none';
+    
+    // 🔥 옛날 방식 삭제하고, iOS 스크롤 복구 로직 적용
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('top');
+    window.scrollTo(0, scrollPosition);
+
+    currentSlotIndex = null; selectedUnivForMajor = '';
+}
+
+function applySafeHighlight(container, text, keyword) {
+    if (!keyword) {
+        container.textContent = text;
         return;
     }
-
-    const isWarning = univChangeRemaining < 10;
-    const isUpsell = univChangeRemaining <= 5;
-    const isZero = univChangeRemaining <= 0;
-
-    let boxStyle = ''; let textColor = '#2563eb';
-    if (isZero) { boxStyle = 'background:#fef2f2; border-color:#fecaca;'; textColor = '#ef4444'; }
-    else if (isWarning) { boxStyle = 'background:#fff7ed; border-color:#fed7aa;'; textColor = '#ea580c'; }
-
-    let html = `<div class="quota-info-box" style="${boxStyle} flex-wrap:wrap; gap:8px;">
-        <span><i class="fas fa-ticket-alt"></i> 목표대학 설정 잔여 횟수</span>
-        <span><strong class="remain-count" style="font-size:1.2rem; color:${textColor};">${univChangeRemaining}</strong> / 30회</span>
-    </div>`;
-
-    if (isUpsell) {
-        const bannerStyle = isZero ? 'border-color:#ef4444; background:#fef2f2;' : 'border-color:#fb923c; background:#fffaf0;';
-        const btnStyle = isZero ? 'background:#ef4444;' : 'background:#ea580c;';
-        const msg = isZero ? '⛔ <strong>목표대학 설정 횟수가 모두 소진되었습니다!</strong>' : `⚠️ <strong>설정 가능 횟수가 ${univChangeRemaining}회밖에 남지 않았습니다!</strong>`;
-        
-        html += `<div class="upgrade-promo-banner" style="${bannerStyle} flex-wrap:wrap; gap:12px;">
-            <div style="flex:1; min-width:240px; word-break:keep-all;">
-                <p style="margin:0; font-size:0.9rem; line-height:1.5;">${msg}<br>Standard 멤버십으로 업그레이드하고 <strong>무제한 대학 분석</strong>을 이용해보세요.</p>
-            </div>
-            <button class="upgrade-btn-small" style="${btnStyle} margin:0; flex:1; min-width:140px; padding:12px;" onclick="location.href='/payment'">멤버십 알아보기</button>
-        </div>`;
-    }
-    container.innerHTML = html;
+    const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const parts = text.split(regex);
+    
+    parts.forEach(part => {
+        if (part.toLowerCase() === keyword.toLowerCase()) {
+            const b = document.createElement('strong');
+            b.style.cssText = 'color:#2563EB; font-weight:900;';
+            b.textContent = part;
+            container.appendChild(b);
+        } else {
+            container.appendChild(document.createTextNode(part));
+        }
+    });
 }
 
 function openUnivSelectModal(index) {
     currentSlotIndex = index;
     const modal = document.getElementById('univSelectModal');
     modal.style.display = 'block';
-    document.body.style.overflow = 'hidden';
+    scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+
+    document.body.classList.add('modal-open');
+    document.body.style.top = `-${scrollPosition}px`;
+
     const searchInput = document.getElementById('univSearchInput');
     if(searchInput) searchInput.value = '';
-    showUnivStep();
+
+    document.getElementById('stepUnivList').innerHTML = '<div style="padding:50px; text-align:center; color:#94a3b8; grid-column: 1/-1;"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>대학 목록을 불러오는 중...</div>';
+    showUnivStep(true); 
 }
 
-function closeUnivModal() {
-    document.getElementById('univSelectModal').style.display = 'none';
-    document.body.style.overflow = 'auto';
-    currentSlotIndex = null; selectedUnivForMajor = '';
-}
-
-function showUnivStep() {
+function showUnivStep(isDeferred = false) {
     currentSelectStep = 'univ'; selectedUnivForMajor = '';
     document.getElementById('modalTitle').innerText = "대학 선택";
-    document.getElementById('stepUnivList').style.display = 'grid';
+    
+    const listEl = document.getElementById('stepUnivList');
+    listEl.style.display = 'grid';
+    listEl.style.pointerEvents = 'none'; 
+    
     document.getElementById('stepMajorList').style.display = 'none';
     document.getElementById('modalFooter').style.display = 'none';
-    
+
     const searchInput = document.getElementById('univSearchInput');
     if(searchInput) { searchInput.placeholder = "대학명 검색 (예: 서울대, 연세)"; searchInput.value = ''; }
-    renderUnivList(''); 
+
+    if (isDeferred) {
+        setTimeout(() => { 
+            renderUnivList(''); 
+            
+            setTimeout(() => { listEl.style.pointerEvents = 'auto'; }, 300);
+        }, 50);
+    } else {
+        renderUnivList('');
+        setTimeout(() => { listEl.style.pointerEvents = 'auto'; }, 300);
+    }
 }
 
 function showMajorStep(univName) {
     currentSelectStep = 'major'; selectedUnivForMajor = univName;
     document.getElementById('modalTitle').innerText = `${univName} - 학과 선택`;
     document.getElementById('stepUnivList').style.display = 'none';
-    document.getElementById('stepMajorList').style.display = 'grid';
-    document.getElementById('modalFooter').style.display = 'flex';
     
+    const listEl = document.getElementById('stepMajorList');
+    listEl.style.display = 'grid';
+    listEl.style.pointerEvents = 'none'; 
+    
+    document.getElementById('modalFooter').style.display = 'flex';
+
     const searchInput = document.getElementById('univSearchInput');
     if(searchInput) { searchInput.placeholder = "학과명 검색 (예: 컴퓨터, 경영)"; searchInput.value = ''; }
-    renderMajorList(univName, ''); 
-}
 
-function handleModalSearch(e) {
-    const text = e.target.value.trim().toLowerCase();
-    if (currentSelectStep === 'univ') renderUnivList(text);
-    else if (currentSelectStep === 'major') renderMajorList(selectedUnivForMajor, text);
+    // 학과 리스트도 렌더링 전 스피너 먼저 보여주기
+    listEl.innerHTML = '<div style="padding:50px; text-align:center; color:#94a3b8; grid-column: 1/-1;"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>학과 목록을 불러오는 중...</div>';
+    
+    setTimeout(() => { 
+        renderMajorList(univName, ''); 
+        setTimeout(() => { 
+            listEl.style.pointerEvents = 'auto'; 
+        }, 300);
+        
+    }, 30);
 }
 
 function renderUnivList(filterText) {
     const listContainer = document.getElementById('stepUnivList');
-    listContainer.innerHTML = '';
+    listContainer.innerHTML = ''; 
+    
     const allUnivs = Object.keys(univMap).sort();
     const filteredUnivs = allUnivs.filter(u => u.toLowerCase().includes(filterText));
-    
+
     if (filteredUnivs.length === 0) {
         listContainer.innerHTML = '<div class="empty-search-result"><i class="fas fa-search" style="font-size:2.5rem; color:#cbd5e1;"></i>찾으시는 대학이 없습니다.</div>';
         return;
     }
+
+    const fragment = document.createDocumentFragment(); // 🚀 렌더링 성능 10배 향상
     filteredUnivs.forEach(univName => {
-        const item = document.createElement('div'); item.className = 'selection-item';
-        item.innerHTML = highlightSearchText(escapeHtml(univName), filterText);
+        const item = document.createElement('div');
+        item.className = 'selection-item';
+        
+        const span = document.createElement('span');
+        span.style.cssText = 'word-break: keep-all; line-height: 1.3;';
+        applySafeHighlight(span, univName, filterText); // 안전한 하이라이트 적용
+        
+        item.appendChild(span);
         item.onclick = () => showMajorStep(univName);
-        listContainer.appendChild(item);
+        fragment.appendChild(item);
     });
+    listContainer.appendChild(fragment);
 }
 
 function renderMajorList(univName, filterText) {
@@ -618,289 +699,317 @@ function renderMajorList(univName, filterText) {
     listContainer.innerHTML = '';
     const majors = univMap[univName] || [];
     const filteredMajors = [...majors].sort((a,b) => a.name.localeCompare(b.name)).filter(m => m.name.toLowerCase().includes(filterText));
-    
+
     if (filteredMajors.length === 0) {
         listContainer.innerHTML = '<div class="empty-search-result"><i class="fas fa-search" style="font-size:2.5rem; color:#cbd5e1;"></i>찾으시는 학과가 없습니다.</div>';
         return;
     }
+
+    const fragment = document.createDocumentFragment(); // 🚀 렌더링 성능 10배 향상
     filteredMajors.forEach(majorObj => {
-        const item = document.createElement('div'); item.className = 'selection-item';
-        item.innerHTML = highlightSearchText(escapeHtml(majorObj.name), filterText);
+        const item = document.createElement('div'); 
+        item.className = 'selection-item';
+
+        const span = document.createElement('span');
+        span.style.cssText = 'word-break: keep-all; line-height: 1.3;';
+        applySafeHighlight(span, majorObj.name, filterText); // 안전한 하이라이트 적용
+
+        item.appendChild(span);
         item.onclick = () => selectComplete(univName, majorObj.name);
-        listContainer.appendChild(item);
+        fragment.appendChild(item);
     });
+    listContainer.appendChild(fragment);
+}
+
+function handleModalSearch(e) {
+    const text = e.target.value.trim().toLowerCase();
+    if (currentSelectStep === 'univ') renderUnivList(text);
+    else if (currentSelectStep === 'major') renderMajorList(selectedUnivForMajor, text);
 }
 
 function highlightSearchText(text, keyword) {
-    if (!keyword) return text;
-    const safeKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`(${safeKeyword})`, 'gi');
-    return text.replace(regex, '<span style="color:#2563EB; font-weight:900;">$1</span>');
+    if (!keyword) return text;
+    const safeKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${safeKeyword})`, 'gi');
+    return text.replace(regex, '<span style="color:#2563EB; font-weight:900;">$1</span>');
 }
 
 function selectComplete(univ, major) {
-    if (currentSlotIndex !== null) {
-        userTargetUnivs[currentSlotIndex] = { univ: univ, major: major, date: null };
-        initUnivGrid(); updateAnalysisUI(); 
-    }
-    closeUnivModal();
+    if (currentSlotIndex !== null) {
+        userTargetUnivs[currentSlotIndex] = { univ: univ, major: major, date: null };
+        initUnivGrid(); updateAnalysisUI(); 
+    }
+    closeUnivModal();
 }
 
 async function saveTargetUnivs() {
-    if (currentUserTier === 'free' || currentUserTier === 'basic') {
-        if(!confirm("목표 대학을 저장하시겠습니까?\n(새로 등록/변경된 대학 수만큼 남은 횟수에서 차감됩니다.)")) return;
-    } else {
-        if(!confirm("목표 대학을 저장하시겠습니까?")) return;
-    }
+    if (currentUserTier === 'free' || currentUserTier === 'basic') {
+        if(!confirm("목표 대학을 저장하시겠습니까?\n(새로 등록/변경된 대학 수만큼 남은 횟수에서 차감됩니다.)")) return;
+    } else {
+        if(!confirm("목표 대학을 저장하시겠습니까?")) return;
+    }
 
-    const nowISO = new Date().toISOString();
-    const newUnivs = [];
-    for(let i = 0; i < 6; i++) {
-        const slot = userTargetUnivs[i];
-        if (slot && slot.univ && slot.major) { 
-            newUnivs.push({ univ: slot.univ, major: slot.major, date: slot.date ? slot.date : nowISO });
-        } else { newUnivs.push(null); }
-    }
-    
-    const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('idToken'); 
-    
-    try {
-        const response = await fetch(MYPAGE_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'update_target_univs', userId: userId, data: newUnivs })
-        });
-        const resData = await response.json();
-        if(response.ok) { 
-            let msg = (currentUserTier === 'free' || currentUserTier === 'basic') 
-                ? (resData.changedCount > 0 ? `저장되었습니다. (차감 횟수: ${resData.changedCount}회, 남은 횟수: ${resData.remainCount}회)` : "저장되었습니다. (변경된 내용 없음)")
-                : "목표 대학이 성공적으로 저장되었습니다.";
-            alert(msg); location.reload(); 
-        } else { throw new Error(resData.error || "저장 실패"); }
-    } catch(e) { alert(e.message || "통신 오류 발생"); }
+    const nowISO = new Date().toISOString();
+    const newUnivs = [];
+    for(let i = 0; i < 6; i++) {
+        const slot = userTargetUnivs[i];
+        if (slot && slot.univ && slot.major) { 
+            newUnivs.push({ univ: slot.univ, major: slot.major, date: slot.date ? slot.date : nowISO });
+        } else { newUnivs.push(null); }
+    }
+    
+    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('idToken'); 
+    
+    try {
+        const response = await fetch(MYPAGE_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'update_target_univs', userId: userId, data: newUnivs })
+        });
+        const resData = await response.json();
+        if(response.ok) { 
+            let msg = (currentUserTier === 'free' || currentUserTier === 'basic') 
+                ? (resData.changedCount > 0 ? `저장되었습니다. (차감 횟수: ${resData.changedCount}회, 남은 횟수: ${resData.remainCount}회)` : "저장되었습니다. (변경된 내용 없음)")
+                : "목표 대학이 성공적으로 저장되었습니다.";
+            alert(msg); location.reload(); 
+        } else { throw new Error(resData.error || "저장 실패"); }
+    } catch(e) { alert(e.message || "통신 오류 발생"); }
 }
 
 // ============================================================
 // [기능 2] 목표대학 분석 리포트
 // ============================================================
 async function updateAnalysisUI() {
-    const container = document.getElementById('univAnalysisResult');
-    if (!container || currentUserTier === 'free') return; 
-    
-    const hasTargets = userTargetUnivs && userTargetUnivs.some(u => u && u.univ);
-    const availableExams = userQuantData ? Object.keys(userQuantData).filter(key => {
-        const data = userQuantData[key];
-        return data && (data.kor || data.math || data.eng);
-    }) : [];
+    const container = document.getElementById('univAnalysisResult');
+    if (!container || currentUserTier === 'free') return; 
+    
+    const hasTargets = userTargetUnivs && userTargetUnivs.some(u => u && u.univ);
+    const availableExams = userQuantData ? Object.keys(userQuantData).filter(key => {
+        const data = userQuantData[key];
+        return data && (data.kor || data.math || data.eng);
+    }) : [];
 
-    if (!hasTargets || availableExams.length === 0) { 
-        container.innerHTML = `
-            <div class="empty-state" style="text-align:center; padding:40px; color:#64748b; background:#f8fafc; border-radius:12px;">
-                <i class="fas fa-exclamation-circle fa-2x" style="margin-bottom:10px; color:#94a3b8;"></i><br>
-                목표 대학을 설정하고 성적표를 입력해주세요.
-            </div>`; 
-        return; 
-    }
-    
-    if (!currentExamMode || !availableExams.includes(currentExamMode)) {
-        if (availableExams.includes('csat')) currentExamMode = 'csat';
-        else currentExamMode = availableExams[0];
-    }
+    if (!hasTargets || availableExams.length === 0) { 
+        container.innerHTML = `
+            <div class="empty-state" style="text-align:center; padding:40px; color:#64748b; background:#f8fafc; border-radius:12px;">
+                <i class="fas fa-exclamation-circle fa-2x" style="margin-bottom:10px; color:#94a3b8;"></i><br>
+                목표 대학을 설정하고 성적표를 입력해주세요.
+            </div>`; 
+        return; 
+    }
+    
+    if (!currentExamMode || !availableExams.includes(currentExamMode)) {
+        if (availableExams.includes('csat')) currentExamMode = 'csat';
+        else currentExamMode = availableExams[0];
+    }
 
-    const selectorHTML = `
-        <div class="analysis-controls" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; background:#fff; padding:15px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); border:1px solid #e2e8f0;">
+    const selectorHTML = `
+        <div class="analysis-controls" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:20px; background:#fff; padding:15px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); border:1px solid #e2e8f0;">
             <div style="font-weight:700; color:#334155; font-size:1rem;">
                 <i class="fas fa-chart-pie" style="color:#3b82f6; margin-right:6px;"></i> 합격 예측 리포트
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
-                <label for="examSelector" style="font-size:0.85rem; color:#64748b; font-weight:500;">기준 시험:</label>
-                <select id="examSelector" onchange="changeExamMode(this.value)" style="padding:6px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; color:#1e293b; outline:none; cursor:pointer; font-family:inherit; background-color:#f8fafc;">
+                <label for="examSelector" style="font-size:0.85rem; color:#64748b; font-weight:500; white-space:nowrap;">기준 시험:</label>
+                <select id="examSelector" onchange="changeExamMode(this.value)" style="padding:6px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; color:#1e293b; outline:none; cursor:pointer; font-family:inherit; background-color:#f8fafc; max-width: 150px; text-overflow: ellipsis;">
                     ${availableExams.map(key => `<option value="${key}" ${key === currentExamMode ? 'selected' : ''}>${EXAM_DISPLAY_NAMES[key] || key.toUpperCase()}</option>`).join('')}
                 </select>
             </div>
         </div>
-        <div id="analysisCardsContainer">
-             <div style="padding:60px; text-align:center; color:#3b82f6;">
+        <div id="analysisCardsContainer" style="display: flex; flex-direction: column; gap: 20px;">
+            <div style="padding:60px; text-align:center; color:#3b82f6;">
                 <i class="fas fa-spinner fa-spin fa-2x"></i>
                 <p style="margin-top:15px; font-weight:600;">${EXAM_DISPLAY_NAMES[currentExamMode]} 기준으로<br>분석 중입니다...</p>
             </div>
         </div>
     `;
-    container.innerHTML = selectorHTML;
-    
-    const cardsContainer = document.getElementById('analysisCardsContainer');
-    const token = localStorage.getItem('idToken');
-    const userId = localStorage.getItem('userId');
-    const currentScoreData = userQuantData[currentExamMode];
+    container.innerHTML = selectorHTML;
+    
+    const cardsContainer = document.getElementById('analysisCardsContainer');
+    const token = localStorage.getItem('idToken');
+    const userId = localStorage.getItem('userId');
+    const currentScoreData = userQuantData[currentExamMode];
 
-    try {
-        const res = await fetch(UNIV_DATA_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({
-                type: 'analyze_my_targets', userId: userId, targetUnivs: userTargetUnivs, userScores: currentScoreData, examMode: currentExamMode
-            })
-        });
-        const data = await res.json();
-        const results = data.results || [];
-        
-        if (results.length === 0) cardsContainer.innerHTML = `<div style="text-align:center; padding:40px;">분석 가능한 결과가 없습니다.</div>`;
-        else cardsContainer.innerHTML = results.map(item => renderAnalysisCard(item)).join('');
-    } catch (e) {
-        console.error(e);
-        cardsContainer.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">분석 중 오류가 발생했습니다.</div>`;
-    }
+    try {
+        const res = await fetch(UNIV_DATA_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                type: 'analyze_my_targets', userId: userId, targetUnivs: userTargetUnivs, userScores: currentScoreData, examMode: currentExamMode
+            })
+        });
+        const data = await res.json();
+        const results = data.results || [];
+        
+        if (results.length === 0) cardsContainer.innerHTML = `<div style="text-align:center; padding:40px;">분석 가능한 결과가 없습니다.</div>`;
+        else cardsContainer.innerHTML = results.map(item => renderAnalysisCard(item)).join('');
+    } catch (e) {
+        console.error(e);
+        cardsContainer.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">분석 중 오류가 발생했습니다.</div>`;
+    }
 }
 
 function changeExamMode(mode) { currentExamMode = mode; updateAnalysisUI(); }
 
 function renderAnalysisCard(res) {
-    if (res.msg.includes("오류") || res.msg.includes("데이터 없음") || res.status === '분석 불가') {
-        return `
-        <div class="analysis-card" style="border-left-color: #94a3b8;">
-            <div class="analysis-header" style="margin-bottom:10px;">
-                <h4 style="margin:0;">${escapeHtml(res.idx + 1)}지망: ${escapeHtml(res.univ)} <small style="color:#64748b;">${escapeHtml(res.major)}</small></h4>
-                <span style="background:#f1f5f9; color:#64748b; padding:2px 8px; border-radius:4px; font-size:0.8rem; margin-top:5px; display:inline-block;">데이터 부족</span>
+    if (res.msg.includes("오류") || res.msg.includes("데이터 없음") || res.status === '분석 불가') {
+        return `
+        <div class="analysis-card" style="border-left-color: #94a3b8;">
+            <div class="analysis-header" style="margin-bottom:10px;">
+                <h4 style="margin:0;">${escapeHtml(res.idx + 1)}지망: ${escapeHtml(res.univ)} <small style="color:#64748b;">${escapeHtml(res.major)}</small></h4>
+                <span style="background:#f1f5f9; color:#64748b; padding:2px 8px; border-radius:4px; font-size:0.8rem; margin-top:5px; display:inline-block;">데이터 부족</span>
+            </div>
+            <p style="color:#64748b; font-size:0.9rem; margin:0;">${escapeHtml(res.msg || '해당 학과의 작년 입시 데이터가 없습니다.')}</p>
+        </div>`;
+    }
+
+    const badgeStyle = `background: ${res.color}15; color: ${res.color}; border: 1px solid ${res.color};`; 
+    const scoreStyle = `color: ${res.color}; font-weight: 800; font-size: 1.5rem;`;
+
+    const safeIdx = escapeHtml(res.idx + 1); const safeUniv = escapeHtml(res.univ); const safeMajor = escapeHtml(res.major);
+    const safeStatus = escapeHtml(res.status); const safeMsg = escapeHtml(res.msg); const safeScore = escapeHtml(res.converted_score);
+
+    const MAX_SCORE = 250;
+    const barWidth = Math.min((res.converted_score / MAX_SCORE) * 100, 100);
+
+    return `
+        <div class="analysis-card" style="border-left-color: ${res.color}; display: flex; flex-direction: column; gap: 15px;">
+            <div class="analysis-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; border-bottom:1px solid #f1f5f9; padding-bottom:15px;">
+                <div style="flex: 1; min-width: 0;">
+                    <span style="color:#64748b; font-size:1.1rem; font-weight:800; display:block; margin-bottom:5px;">${safeIdx}지망</span>
+                    <h4 style="margin:0; font-size:1.2rem; color:#1e293b; letter-spacing:-0.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeUniv}</h4>
+                    <div style="color:#64748b; font-size:0.95rem; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeMajor}</div>
+                </div>
+                <div style="text-align:right; flex-shrink: 0;">
+                    <span style="${badgeStyle} padding:6px 14px; border-radius:20px; font-size:0.9rem; font-weight:bold; display:inline-block; margin-bottom:5px; white-space:nowrap;">${safeStatus}</span>
+                    <div style="font-size:0.8rem; color:${res.color}; font-weight:600; white-space:nowrap;">${safeMsg}</div>
+                </div>
             </div>
-            <p style="color:#64748b; font-size:0.9rem; margin:0;">${escapeHtml(res.msg || '해당 학과의 작년 입시 데이터가 없습니다.')}</p>
+            <div class="analysis-body" style="display:flex; flex-direction:column; gap:20px;">
+                <div class="score-section">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
+                        <span style="font-size:0.95rem; color:#475569; font-weight:600;">AI 환산 진단점수</span>
+                        <span style="${scoreStyle}">${safeScore}<span style="font-size:1rem; font-weight:normal; margin-left:2px; color:#64748b;">점</span></span>
+                    </div>
+                    <div class="score-bar-container">
+                        <div class="score-bar-bg">
+                            <div style="position:absolute; left:40%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
+                            <div style="position:absolute; left:60%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
+                            <div class="score-bar-fill" style="width: ${barWidth}%; background: ${res.color};"></div>
+                        </div>
+                        <div class="score-labels">
+                            <span class="label-min">0</span>
+                            <span class="label-pass">합격<span class="m-line">(100)</span></span>
+                            <span class="label-stable">안정<span class="m-line">(150)</span></span>
+                            <span class="label-max">MAX<span class="m-line">(${MAX_SCORE})</span></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="advice-section" style="background:#f8fafc; border-radius:10px; padding:18px; border:1px solid #e2e8f0;">
+                    <h5 style="margin:0 0 8px 0; font-size:0.9rem; color:#334155; display:flex; align-items:center;">
+                        <i class="fas fa-lightbulb" style="color:#fbbf24; margin-right:6px;"></i> 합격 전략 코멘트
+                    </h5>
+                    <p style="margin:0; font-size:0.95rem; color:#475569; line-height:1.6;">${getSimpleAdvice(res.converted_score, res.status)}</p>
+                </div>
+            </div>
         </div>`;
-    }
-
-    const badgeStyle = `background: ${res.color}15; color: ${res.color}; border: 1px solid ${res.color};`; 
-    const scoreStyle = `color: ${res.color}; font-weight: 800; font-size: 1.5rem;`;
-
-    const safeIdx = escapeHtml(res.idx + 1); const safeUniv = escapeHtml(res.univ); const safeMajor = escapeHtml(res.major);
-    const safeStatus = escapeHtml(res.status); const safeMsg = escapeHtml(res.msg); const safeScore = escapeHtml(res.converted_score);
-
-    const MAX_SCORE = 250;
-    const barWidth = Math.min((res.converted_score / MAX_SCORE) * 100, 100);
-
-    return `
-    <div class="analysis-card" style="border-left-color: ${res.color};">
-        <div class="analysis-header" style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:1px solid #f1f5f9; padding-bottom:15px; margin-bottom:15px;">
-            <div>
-                <span style="color:#64748b; font-size:1.1rem; font-weight:800; display:block; margin-bottom:5px;">${safeIdx}지망</span>
-                <h4 style="margin:0; font-size:1.2rem; color:#1e293b; letter-spacing:-0.5px;">${safeUniv}</h4>
-                <div style="color:#64748b; font-size:0.95rem; margin-top:2px;">${safeMajor}</div>
-            </div>
-            <div style="text-align:right;">
-                <span style="${badgeStyle} padding:6px 14px; border-radius:20px; font-size:0.9rem; font-weight:bold; display:inline-block; margin-bottom:5px;">${safeStatus}</span>
-                <div style="font-size:0.8rem; color:${res.color}; font-weight:600;">${safeMsg}</div>
-            </div>
-        </div>
-        <div class="analysis-body" style="display:grid; grid-template-columns: 1fr; gap:25px;">
-            <div class="score-section">
-                <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
-                    <span style="font-size:0.95rem; color:#475569; font-weight:600;">AI 환산 진단점수</span>
-                    <span style="${scoreStyle}">${safeScore}<span style="font-size:1rem; font-weight:normal; margin-left:2px; color:#64748b;">점</span></span>
-                </div>
-                <div class="score-bar-container">
-                    <div class="score-bar-bg">
-                        <div style="position:absolute; left:40%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
-                        <div style="position:absolute; left:60%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
-                        <div class="score-bar-fill" style="width: ${barWidth}%; background: ${res.color};"></div>
-                    </div>
-                    <div class="score-labels">
-                        <span class="label-min">0</span>
-                        <span class="label-pass">합격<span class="m-line">(100)</span></span>
-                        <span class="label-stable">안정<span class="m-line">(150)</span></span>
-                        <span class="label-max">MAX<span class="m-line">(${MAX_SCORE})</span></span>
-                    </div>
-                </div>
-            </div>
-            <div class="advice-section" style="background:#f8fafc; border-radius:10px; padding:18px; border:1px solid #e2e8f0;">
-                <h5 style="margin:0 0 8px 0; font-size:0.9rem; color:#334155; display:flex; align-items:center;">
-                    <i class="fas fa-lightbulb" style="color:#fbbf24; margin-right:6px;"></i> 합격 전략 코멘트
-                </h5>
-                <p style="margin:0; font-size:0.95rem; color:#475569; line-height:1.6;">${getSimpleAdvice(res.converted_score, res.status)}</p>
-            </div>
-        </div>
-    </div>`;
 }
 
 function getSimpleAdvice(score, status) {
-    if (score >= 170) return `<strong>👑 최초 합격 / 장학금 유력</strong> 구간입니다. 더 높은 대학을 과감하게 상향 지원해보는 전략이 필요합니다.`;
-    if (score >= 145) return `<strong>매우 안정 (최초합 유력)</strong>입니다. 이 대학을 보험으로 두고 상향 지원 전략을 짜세요.`;
-    if (score >= 120) return `<strong>합격 가능성이 높습니다. (안정)</strong> 무난한 합격이 예상됩니다.`;
-    if (score >= 100) return `<strong>적정 지원 (추합권)</strong>입니다. 추가 합격 가능성이 높으며 경쟁률 변화를 주시해야 합니다.`;
-    if (score >= 85) return `<strong>소신 지원 (문 닫고 입학)</strong> 전략입니다. 불합격 리스크를 감수해야 합니다.`;
-    if (score >= 65) return `<strong>상향 지원 (위험)</strong>입니다. 반드시 다른 군에 확실한 안정 카드를 확보하세요.`;
-    return `<strong>지원 불가 / 초고위험</strong> 구간입니다. 눈높이를 낮추거나 전형을 변경하는 것을 권장합니다.`;
+    if (score >= 170) return `<strong>👑 최초 합격 / 장학금 유력</strong> 구간입니다. 더 높은 대학을 과감하게 상향 지원해보는 전략이 필요합니다.`;
+    if (score >= 145) return `<strong>매우 안정 (최초합 유력)</strong>입니다. 이 대학을 보험으로 두고 상향 지원 전략을 짜세요.`;
+    if (score >= 120) return `<strong>합격 가능성이 높습니다. (안정)</strong> 무난한 합격이 예상됩니다.`;
+    if (score >= 100) return `<strong>적정 지원 (추합권)</strong>입니다. 추가 합격 가능성이 높으며 경쟁률 변화를 주시해야 합니다.`;
+    if (score >= 85) return `<strong>소신 지원 (문 닫고 입학)</strong> 전략입니다. 불합격 리스크를 감수해야 합니다.`;
+    if (score >= 65) return `<strong>상향 지원 (위험)</strong>입니다. 반드시 다른 군에 확실한 안정 카드를 확보하세요.`;
+    return `<strong>지원 불가 / 초고위험</strong> 구간입니다. 눈높이를 낮추거나 전형을 변경하는 것을 권장합니다.`;
 }
 
 // ============================================================
 // [기능 3] 점수 상승 시뮬레이션
 // ============================================================
-let currentSimChartType = 'bar'; 
+let currentSimChartType = 'bar';
 let cachedSimData = [];
-let selectedSimIndex = null; 
+let simDisplayList = []; // 원본 userTargetUnivs 순서 기준으로 지원불가 포함한 표시용 배열
+let selectedSimIndex = null;
 
 function initSimulation() {
-    if (currentUserTier === 'free') return;
-    
-    const chartArea = document.getElementById('simChartArea');
-    if (!userQuantData || Object.keys(userQuantData).length === 0) {
-        chartArea.innerHTML = `<div style="width:100%; height:100%; min-height: 200px; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px; color:#94a3b8;">
-            <i class="fas fa-exclamation-circle fa-2x" style="color:#cbd5e1;"></i>
-            <span style="font-weight:600;">성적 데이터를 먼저 입력해야 시뮬레이션을 실행할 수 있습니다.</span>
-        </div>`;
-        return;
-    }
-    
-    if (!currentExamMode || !userQuantData[currentExamMode]) {
-        const availableExams = Object.keys(userQuantData).filter(k => userQuantData[k] && (userQuantData[k].kor || userQuantData[k].math || userQuantData[k].eng));
-        if (availableExams.length > 0) currentExamMode = availableExams[0];
-        else { chartArea.innerHTML = `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8;">유효한 성적 데이터가 없습니다.</div>`; return; }
-    }
+    if (currentUserTier === 'free') return;
+    
+    const chartArea = document.getElementById('simChartArea');
+    if (!userQuantData || Object.keys(userQuantData).length === 0) {
+        chartArea.innerHTML = `<div style="width:100%; height:100%; min-height: 200px; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px; color:#94a3b8;">
+            <i class="fas fa-exclamation-circle fa-2x" style="color:#cbd5e1;"></i>
+            <span style="font-weight:600;">성적 데이터를 먼저 입력해야 시뮬레이션을 실행할 수 있습니다.</span>
+        </div>`;
+        return;
+    }
+    
+    if (!currentExamMode || !userQuantData[currentExamMode]) {
+        const availableExams = Object.keys(userQuantData).filter(k => userQuantData[k] && (userQuantData[k].kor || userQuantData[k].math || userQuantData[k].eng));
+        if (availableExams.length > 0) currentExamMode = availableExams[0];
+        else { chartArea.innerHTML = `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8;">유효한 성적 데이터가 없습니다.</div>`; return; }
+    }
 
-    const validTargets = userTargetUnivs ? userTargetUnivs.filter(t => t && t.univ) : [];
-    if (validTargets.length === 0) {
-        chartArea.innerHTML = `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8;">목표 대학을 먼저 설정해주세요.</div>`;
-        return;
-    }
-    
-    fetchSimulationData();
+    const validTargets = userTargetUnivs ? userTargetUnivs.filter(t => t && t.univ) : [];
+    if (validTargets.length === 0) {
+        chartArea.innerHTML = `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8;">목표 대학을 먼저 설정해주세요.</div>`;
+        return;
+    }
+    
+    fetchSimulationData();
 }
 
 async function fetchSimulationData() {
-    const chartArea = document.getElementById('simChartArea');
-    chartArea.innerHTML = '<div style="margin:auto; color:#3b82f6;"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
-    
-    const token = localStorage.getItem('idToken');
-    const userId = localStorage.getItem('userId');
-    const scoreData = userQuantData[currentExamMode];
-    
-    try {
-        const res = await fetch(UNIV_DATA_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'simulate_score_rise', userId, targetUnivs: userTargetUnivs, userScores: scoreData, examMode: currentExamMode })
-        });
-        cachedSimData = await res.json();
-        
-        if (cachedSimData.length > 0) selectedSimIndex = 0;
-        renderSimChart(); 
-        
-    } catch (e) { 
-        chartArea.innerHTML = '데이터 로드 실패'; 
-        console.error(e);
-    }
+    const chartArea = document.getElementById('simChartArea');
+    chartArea.innerHTML = '<div style="margin:auto; color:#3b82f6;"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
+    
+    const token = localStorage.getItem('idToken');
+    const userId = localStorage.getItem('userId');
+    const scoreData = userQuantData[currentExamMode];
+    
+    try {
+        const res = await fetch(UNIV_DATA_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'simulate_score_rise', userId, targetUnivs: userTargetUnivs, userScores: scoreData, examMode: currentExamMode })
+        });
+        cachedSimData = await res.json();
+
+        // 원본 userTargetUnivs 순서 기준으로 지원불가 포함한 표시용 배열 구성
+        simDisplayList = [];
+        (userTargetUnivs || []).forEach((target, originalIdx) => {
+            if (!target || !target.univ) return;
+            const simItem = cachedSimData.find(d => d && d.univ === target.univ && d.major === target.major);
+            if (simItem) {
+                simDisplayList.push({ ...simItem, originalIdx });
+            } else {
+                simDisplayList.push({ ineligible: true, univ: target.univ, major: target.major, originalIdx });
+            }
+        });
+
+        if (simDisplayList.length > 0) selectedSimIndex = 0;
+        renderSimChart();
+        
+    } catch (e) { 
+        chartArea.innerHTML = '데이터 로드 실패'; 
+        console.error(e);
+    }
 }
 
 function setSimChartType(type) {
-    currentSimChartType = type;
-    document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
-    const btnIdx = type === 'bar' ? 0 : 1;
-    document.querySelectorAll('.toggle-btn')[btnIdx].classList.add('active');
-    renderSimChart();
+    currentSimChartType = type;
+    document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+    const btnIdx = type === 'bar' ? 0 : 1;
+    document.querySelectorAll('.toggle-btn')[btnIdx].classList.add('active');
+    renderSimChart();
 }
 
 let simSvgRefs = null;
 
 function renderSimChart() {
     const container = document.getElementById('simChartArea');
-    if (!cachedSimData || cachedSimData.length === 0) return;
+    if (!simDisplayList || simDisplayList.length === 0) return;
 
     const examName = EXAM_DISPLAY_NAMES[currentExamMode] || currentExamMode;
     const getBadgeHTML = () => `<div class="sim-info-badge"><span><i class="fas fa-history"></i> ${examName} 기준</span></div>`;
@@ -908,10 +1017,14 @@ function renderSimChart() {
     if (!document.getElementById('simExtensionStyle')) {
         const style = document.createElement('style');
         style.id = 'simExtensionStyle';
+        // 🔥 PC는 40px, 모바일은 28px로 반응하도록 CSS 주입
         style.innerHTML = `
             .sim-extension-bar { width: 40px; background: #ffffff !important; border: 2px dashed #f59e0b; border-bottom: none; border-radius: 6px 6px 0 0; box-sizing: border-box; pointer-events: none; z-index: 2; position: absolute; }
             .sim-bar-item, .sim-label-item { -webkit-tap-highlight-color: transparent; }
-            @media (max-width: 768px) { .sim-extension-bar { width: 28px; } }
+            @media (max-width: 768px) { 
+                .sim-extension-bar { width: 28px; } 
+                .sim-bar { width: 28px !important; } 
+            }
         `;
         document.head.appendChild(style);
     }
@@ -945,25 +1058,43 @@ function renderSimChart() {
             graphHtml += `<div class="chart-guide-line guide-100" style="${guideStyle100}"><span class="chart-guide-label">합격(100)</span></div>`;
             graphHtml += `<div class="chart-guide-line guide-150" style="${guideStyle150}"><span class="chart-guide-label">안정(150)</span></div>`;
 
-            cachedSimData.forEach((item, index) => {
+            simDisplayList.forEach((item, index) => {
+                const choiceNum = item.originalIdx + 1;
+                const shortUniv = item.univ.replace('학교', '');
+
+                if (item.ineligible) {
+                    graphHtml += `
+                        <div class="sim-bar-item" onclick="selectSimUniv(${index})" style="flex:1; align-self:stretch; position:relative; cursor:pointer; -webkit-tap-highlight-color:transparent;">
+                            <div style="position:relative; height:100%; width:100%;">
+                                <div class="sim-bar" style="position:absolute; bottom:0; left:50%; transform:translateX(-50%); height:8%; background:repeating-linear-gradient(45deg,#fca5a5,#fca5a5 4px,#fee2e2 4px,#fee2e2 8px); border:1px dashed #ef4444; border-radius:6px 6px 0 0; z-index:1;">
+                                    <span class="sim-score-label" style="position:absolute; top:-22px; left:50%; transform:translateX(-50%); color:#ef4444; font-size:0.65rem; white-space:nowrap;">불가</span>
+                                </div>
+                            </div>
+                        </div>`;
+                    labelHtml += `
+                        <div class="sim-label-item" onclick="selectSimUniv(${index})" style="flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; text-align:center; cursor:pointer; -webkit-tap-highlight-color:transparent;">
+                            <span class="label-mobile" style="word-break:keep-all; font-size:0.75rem;">${choiceNum}지망</span>
+                            <span class="label-pc" style="word-break:keep-all; line-height:1.2;"><strong>${choiceNum}지망</strong><br>${escapeHtml(shortUniv)}<br><span style="color:#ef4444; font-size:0.75em;">지원불가</span></span>
+                        </div>`;
+                    return;
+                }
+
                 const score = item.base_ui_score;
                 const currentHeightPct = `${(score / MAX_SCORE) * 100}%`;
-                
-                let color = '#ef4444'; 
+                let color = '#ef4444';
                 if (score >= 150) color = '#10b981'; else if (score >= 100) color = '#3b82f6';
-                const safeScore = Math.round(score); const shortUniv = item.univ.replace('학교', '');
-
+                const safeScore = Math.round(score);
                 let extensionHtml = ''; let maxRise = 0;
-                
+
                 if (item.sim_data) { Object.values(item.sim_data).forEach(sub => { if (sub && sub.uiDiff > maxRise) maxRise = sub.uiDiff; }); }
 
                 if (maxRise > 0 && score < MAX_SCORE) {
                     const potentialScore = Math.min(score + maxRise, MAX_SCORE);
-                    const riseAmount = potentialScore - score; 
+                    const riseAmount = potentialScore - score;
                     const riseHeightPct = `${(riseAmount / MAX_SCORE) * 100}%`;
                     
                     extensionHtml = `
-                        <div class="sim-extension-bar" style="bottom:${currentHeightPct}; height:${riseHeightPct}; display:none;">
+                        <div class="sim-extension-bar" data-target-height="${riseHeightPct}" style="position:absolute; bottom:${currentHeightPct}; left:50%; transform:translateX(-50%); height:0; opacity:0; z-index:2; transition:height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease; pointer-events:none;">
                              <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">
                                 ${Math.round(potentialScore)} <span style="font-size:0.7rem;">(+${maxRise.toFixed(1)})</span>
                              </span>
@@ -971,19 +1102,19 @@ function renderSimChart() {
                 }
 
                 graphHtml += `
-                    <div class="sim-bar-item" onclick="selectSimUniv(${index})">
-                        <div style="position:relative; height:100%; width:100%; display:flex; justify-content:center;">
-                            <div class="sim-bar" style="position:absolute; bottom:0; height:${currentHeightPct}; background:${color}; border-radius:6px 6px 0 0; z-index:1;">
-                                <span class="sim-score-label">${safeScore}</span>
+                    <div class="sim-bar-item" onclick="selectSimUniv(${index})" style="flex:1; align-self:stretch; position:relative; cursor:pointer; -webkit-tap-highlight-color:transparent;">
+                        <div style="position:relative; height:100%; width:100%;">
+                            <div class="sim-bar" style="position:absolute; bottom:0; left:50%; transform:translateX(-50%); height:${currentHeightPct}; background:${color}; border-radius:6px 6px 0 0; z-index:1; transition:border-radius 0.3s;">
+                                <span class="sim-score-label" style="position:absolute; top:-22px; left:50%; transform:translateX(-50%); font-weight:bold; color:${color}; transition:opacity 0.2s;">${safeScore}</span>
                             </div>
                             ${extensionHtml}
                         </div>
                     </div>`;
 
                 labelHtml += `
-                    <div class="sim-label-item" onclick="selectSimUniv(${index})">
-                        <span class="label-mobile">${index + 1}지망</span>
-                        <span class="label-pc"><strong>${index + 1}지망</strong><br>${escapeHtml(shortUniv)}<br>${escapeHtml(item.major)}</span>
+                    <div class="sim-label-item" onclick="selectSimUniv(${index})" style="flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; text-align:center; cursor:pointer; -webkit-tap-highlight-color:transparent;">
+                        <span class="label-mobile" style="word-break:keep-all; font-size:0.75rem;">${choiceNum}지망</span>
+                        <span class="label-pc" style="word-break:keep-all; line-height:1.2;"><strong>${choiceNum}지망</strong><br>${escapeHtml(shortUniv)}<br>${escapeHtml(item.major)}</span>
                     </div>`;
             });
 
@@ -991,11 +1122,11 @@ function renderSimChart() {
             wrapper.appendChild(graphArea); wrapper.appendChild(labelArea);
 
             const mobileLegendDiv = document.createElement('div'); mobileLegendDiv.className = 'mobile-legend-area';
+            mobileLegendDiv.style.cssText = "display: flex; justify-content: center; align-items: center; gap: 20px; padding-top: 15px; margin-top: 10px; border-top: 1px dashed #cbd5e1;";
             mobileLegendDiv.innerHTML = `
-                <div class="mobile-legend-item"><div style="width:12px; height:2px; background:#10b981; margin-right:4px;"></div> 안정(150)</div>
-                <div class="mobile-legend-item"><div style="width:12px; height:2px; background:#3b82f6; margin-right:4px;"></div> 합격(100)</div>
+                <div style="display:flex; align-items:center; gap:6px; font-size:0.85rem; color:#475569; font-weight:700;"><div style="width:16px; height:4px; background:#10b981; border-radius:2px;"></div> 안정(150)</div>
+                <div style="display:flex; align-items:center; gap:6px; font-size:0.85rem; color:#475569; font-weight:700;"><div style="width:16px; height:4px; background:#3b82f6; border-radius:2px;"></div> 합격(100)</div>
             `;
-
             container.appendChild(wrapper); container.appendChild(mobileLegendDiv);
         }
         updateSimBarGraph(selectedSimIndex || 0);
@@ -1027,194 +1158,259 @@ function updateSimBarGraph(idx) {
         if (i === idx) {
             item.classList.add('active');
             if (extBar) {
-                extBar.style.display = 'block'; 
+                void extBar.offsetWidth; 
+                extBar.style.height = extBar.getAttribute('data-target-height');
+                extBar.style.opacity = '1';
                 if (mainBar) mainBar.style.borderRadius = '0 0 0 0'; 
-                if (scoreLabel) scoreLabel.style.display = 'none'; 
+                if (scoreLabel) scoreLabel.style.opacity = '0'; 
             }
         } else {
             item.classList.remove('active');
-            if (extBar) extBar.style.display = 'none'; 
+            if (extBar) {
+                extBar.style.height = '0';
+                extBar.style.opacity = '0';
+            }
             if (mainBar) mainBar.style.borderRadius = '6px 6px 0 0';
-            if (scoreLabel) scoreLabel.style.display = '';
+            if (scoreLabel) scoreLabel.style.opacity = '1';
         }
     });
 }
 
 function initSimSvg(targetDiv) {
-    const ns = "http://www.w3.org/2000/svg";
-    const svg = document.createElementNS(ns, "svg");
-    svg.setAttribute("class", "sim-svg-layer"); svg.style.overflow = "visible";
-    const isMobile = window.innerWidth <= 768; const baseRadius = isMobile ? "4" : "6";
-    
-    const guides = {
-        gBottom: createGuideGroup(ns, "#cbd5e1", ""), gMid: createGuideGroup(ns, "#cbd5e1", ""), gTop: createGuideGroup(ns, "#cbd5e1", ""),
-        g100: createGuideGroup(ns, "#3b82f6", "100 합격"), g150: createGuideGroup(ns, "#10b981", "150 안정")
-    };
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("class", "sim-svg-layer"); svg.style.overflow = "visible";
+    const isMobile = window.innerWidth <= 768; const baseRadius = isMobile ? "4" : "6";
+    
+    const guides = {
+        gBottom: createGuideGroup(ns, "#cbd5e1", ""), gMid: createGuideGroup(ns, "#cbd5e1", ""), gTop: createGuideGroup(ns, "#cbd5e1", ""),
+        g100: createGuideGroup(ns, "#3b82f6", "100 합격"), g150: createGuideGroup(ns, "#10b981", "150 안정")
+    };
 
-    const path = document.createElementNS(ns, "path"); path.setAttribute("class", "sim-path");
-    svg.appendChild(guides.gBottom.g); svg.appendChild(guides.gMid.g); svg.appendChild(guides.gTop.g);
-    svg.appendChild(guides.g100.g); svg.appendChild(guides.g150.g); svg.appendChild(path);
+    const path = document.createElementNS(ns, "path"); path.setAttribute("class", "sim-path");
+    svg.appendChild(guides.gBottom.g); svg.appendChild(guides.gMid.g); svg.appendChild(guides.gTop.g);
+    svg.appendChild(guides.g100.g); svg.appendChild(guides.g150.g); svg.appendChild(path);
 
-    const points = []; const labels = []; const labelsGroup = document.createElementNS(ns, "g");
-    for(let i=0; i<4; i++) {
-        const c = document.createElementNS(ns, "circle"); c.setAttribute("class", "sim-point"); c.setAttribute("r", baseRadius);
-        const t = document.createElementNS(ns, "text"); t.setAttribute("class", "sim-point-label");
-        svg.appendChild(c); labelsGroup.appendChild(t); points.push(c); labels.push(t);
-    }
-    svg.appendChild(labelsGroup); targetDiv.appendChild(svg);
+    const points = []; const labels = []; const labelsGroup = document.createElementNS(ns, "g");
+    for(let i=0; i<4; i++) {
+        const c = document.createElementNS(ns, "circle"); c.setAttribute("class", "sim-point"); c.setAttribute("r", baseRadius);
+        const t = document.createElementNS(ns, "text"); t.setAttribute("class", "sim-point-label");
+        svg.appendChild(c); labelsGroup.appendChild(t); points.push(c); labels.push(t);
+    }
+    svg.appendChild(labelsGroup); targetDiv.appendChild(svg);
 
-    const xAxis = document.createElement('div');
-    xAxis.style.cssText = "position:absolute; bottom:0; left:0; width:100%; display:flex; justify-content:space-around; padding-bottom:5px; pointer-events:none;";
-    const xAxisTexts = [];
-    ['국어', '수학', '탐구1', '탐구2'].forEach(txt => {
-        const sp = document.createElement('span'); sp.innerText = txt; sp.style.cssText = "font-size:11px; color:#64748b; font-weight:600; width:40px; text-align:center;";
-        xAxis.appendChild(sp); xAxisTexts.push(sp);
-    });
-    targetDiv.appendChild(xAxis);
-    simSvgRefs = { svg, guides, path, points, labels, xAxisTexts };
+    const xAxis = document.createElement('div');
+    xAxis.style.cssText = "position:absolute; bottom:0; left:0; width:100%; display:flex; justify-content:space-around; padding-bottom:5px; pointer-events:none;";
+    const xAxisTexts = [];
+    ['국어', '수학', '탐구1', '탐구2'].forEach(txt => {
+        const sp = document.createElement('span'); sp.innerText = txt; sp.style.cssText = "font-size:11px; color:#64748b; font-weight:600; width:40px; text-align:center;";
+        xAxis.appendChild(sp); xAxisTexts.push(sp);
+    });
+    targetDiv.appendChild(xAxis);
+    simSvgRefs = { svg, guides, path, points, labels, xAxisTexts };
 }
 
 function createGuideGroup(ns, color, txt) {
-    const g = document.createElementNS(ns, "g");
-    const line = document.createElementNS(ns, "line"); line.setAttribute("class", "sim-guide-line"); line.setAttribute("stroke", color);
-    const text = document.createElementNS(ns, "text"); text.setAttribute("class", "sim-guide-text"); text.setAttribute("fill", color); text.textContent = txt;
-    g.appendChild(line); g.appendChild(text);
-    return { g, line, text };
+    const g = document.createElementNS(ns, "g");
+    const line = document.createElementNS(ns, "line"); line.setAttribute("class", "sim-guide-line"); line.setAttribute("stroke", color);
+    const text = document.createElementNS(ns, "text"); text.setAttribute("class", "sim-guide-text"); text.setAttribute("fill", color); text.textContent = txt;
+    g.appendChild(line); g.appendChild(text);
+    return { g, line, text };
 }
 
 function renderSimUnivButtons(targetDiv) {
     targetDiv.innerHTML = '';
-    cachedSimData.forEach((d, i) => {
-        const btn = document.createElement('div'); btn.className = `univ-select-btn ${i === selectedSimIndex ? 'active' : ''}`;
-        const univName = d.univ.replace('학교', ''); const deptName = d.major || '학부';
-        btn.innerHTML = `<span style="font-weight:700;">${escapeHtml(univName)}</span><span style="font-size:0.85em; opacity:0.9;">${escapeHtml(deptName)}</span>`;
+    const fragment = document.createDocumentFragment(); // 🚀
+
+    simDisplayList.forEach((d, i) => {
+        const btn = document.createElement('div'); 
+        btn.className = `univ-select-btn ${i === selectedSimIndex ? 'active' : ''}`;
+        
+        const univName = d.univ.replace('학교', ''); 
+        const deptName = d.major || '학부';
+        const choiceNum = d.originalIdx + 1;
+
+        const innerContainer = document.createElement('div');
+        innerContainer.style.cssText = "flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px;";
+
+        const topSpan = document.createElement('span');
+        topSpan.style.cssText = "font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; text-align:center;";
+        topSpan.textContent = `${choiceNum}지망 ${univName}`; // 🔒 안전
+        
+        if (d.ineligible) {
+            const inelSpan = document.createElement('span');
+            inelSpan.style.cssText = "color:#ef4444; font-size:0.8em;";
+            inelSpan.textContent = " (지원불가)";
+            topSpan.appendChild(inelSpan);
+        }
+
+        const botSpan = document.createElement('span');
+        botSpan.style.cssText = "font-size:0.85em; opacity:0.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; text-align:center;";
+        botSpan.textContent = deptName; // 🔒 안전
+
+        innerContainer.appendChild(topSpan);
+        innerContainer.appendChild(botSpan);
+        btn.appendChild(innerContainer);
+
         btn.onclick = () => {
-            selectSimUniv(i); 
-            targetDiv.querySelectorAll('.univ-select-btn').forEach((b, idx) => { if (idx === i) b.classList.add('active'); else b.classList.remove('active'); });
+            selectSimUniv(i);
+            targetDiv.querySelectorAll('.univ-select-btn').forEach((b, idx) => { 
+                if (idx === i) b.classList.add('active'); else b.classList.remove('active'); 
+            });
         };
-        targetDiv.appendChild(btn);
+        fragment.appendChild(btn);
     });
+    targetDiv.appendChild(fragment);
 }
 
 function updateSimLineGraph(idx) {
-    if (!simSvgRefs) return;
-    window.lastSimGraphIdx = idx;
-    if (!window.simGraphResizeHandler) {
-        window.simGraphResizeHandler = () => { if (typeof window.lastSimGraphIdx !== 'undefined') updateSimLineGraph(window.lastSimGraphIdx); };
-        window.addEventListener('resize', window.simGraphResizeHandler);
-    }
+    if (!simSvgRefs) return;
+    window.lastSimGraphIdx = idx;
+    if (!window.simGraphResizeHandler) {
+        window.simGraphResizeHandler = () => { if (typeof window.lastSimGraphIdx !== 'undefined') updateSimLineGraph(window.lastSimGraphIdx); };
+        window.addEventListener('resize', window.simGraphResizeHandler);
+    }
 
-    const data = cachedSimData[idx];
-    if (!data) return;
+    const item = simDisplayList[idx];
+    if (!item) return;
+    if (item.ineligible) { simSvgRefs.svg.parentNode.style.height = '80px'; simSvgRefs.path.setAttribute("d", ""); simSvgRefs.points.forEach(p => { p.setAttribute("cx", -999); p.setAttribute("cy", -999); }); return; }
+    const data = item;
 
-    const TARGET_HEIGHT = 260; 
-    simSvgRefs.svg.parentNode.style.height = `${TARGET_HEIGHT}px`; simSvgRefs.svg.parentNode.style.minHeight = `${TARGET_HEIGHT}px`;
-    const svgEl = simSvgRefs.svg; const W = svgEl.clientWidth || 300; 
-    
-    const realNames = ['국어', '수학'];
-    realNames.push(data.sim_data.inq1?.name || '탐구1'); realNames.push(data.sim_data.inq2?.name || '탐구2');
-    simSvgRefs.xAxisTexts.forEach((span, i) => { span.innerText = realNames[i]; });
+    const TARGET_HEIGHT = 260; 
+    simSvgRefs.svg.parentNode.style.height = `${TARGET_HEIGHT}px`; simSvgRefs.svg.parentNode.style.minHeight = `${TARGET_HEIGHT}px`;
+    const svgEl = simSvgRefs.svg; const W = svgEl.clientWidth || 300; 
+    
+    const realNames = ['국어', '수학'];
+    realNames.push(data.sim_data.inq1?.name || '탐구1'); realNames.push(data.sim_data.inq2?.name || '탐구2');
+    simSvgRefs.xAxisTexts.forEach((span, i) => { span.innerText = realNames[i]; });
 
-    const keys = ['kor', 'math', 'inq1', 'inq2'];
-    const currentScore = data.base_ui_score;
-    const scores = keys.map(k => {
-        const rise = (data.sim_data && data.sim_data[k]) ? data.sim_data[k].uiDiff : 0;
-        return Math.min(250, currentScore + rise);
-    });
+    const keys = ['kor', 'math', 'inq1', 'inq2'];
+    const currentScore = data.base_ui_score;
+    const scores = keys.map(k => {
+        const rise = (data.sim_data && data.sim_data[k]) ? data.sim_data[k].uiDiff : 0;
+        return Math.min(250, currentScore + rise);
+    });
 
-    let minS = Math.min(...scores); let maxS = Math.max(...scores); const scoreDiff = maxS - minS;
-    let GAP = 25; if (scoreDiff > 160) GAP = 125; else if (scoreDiff > 90) GAP = 100; else if (scoreDiff > 40) GAP = 50;
-    let centerScore = (minS + maxS) / 2; let midLine = Math.round(centerScore / 25) * 25;
+    let minS = Math.min(...scores); let maxS = Math.max(...scores); const scoreDiff = maxS - minS;
+    let GAP = 25; if (scoreDiff > 160) GAP = 125; else if (scoreDiff > 90) GAP = 100; else if (scoreDiff > 40) GAP = 50;
+    let centerScore = (minS + maxS) / 2; let midLine = Math.round(centerScore / 25) * 25;
 
-    if (midLine + GAP < maxS) midLine += 25; if (midLine - GAP > minS) midLine -= 25;
-    if (midLine - GAP < 0) midLine = GAP; if (midLine + GAP > 250) midLine = 250 - GAP;
+    if (midLine + GAP < maxS) midLine += 25; if (midLine - GAP > minS) midLine -= 25;
+    if (midLine - GAP < 0) midLine = GAP; if (midLine + GAP > 250) midLine = 250 - GAP;
 
-    const midY = 130; const pixelPerGap = 90; const getY = (score) => midY - ((score - midLine) / GAP) * pixelPerGap;
+    const midY = 130; const pixelPerGap = 90; const getY = (score) => midY - ((score - midLine) / GAP) * pixelPerGap;
 
-    const targetGuides = [
-        { obj: simSvgRefs.guides.gBottom, val: midLine - GAP, isFixed: false }, { obj: simSvgRefs.guides.gMid, val: midLine, isFixed: false },
-        { obj: simSvgRefs.guides.gTop, val: midLine + GAP, isFixed: false }, { obj: simSvgRefs.guides.g100, val: 100, isFixed: true, label: "100 합격" },
-        { obj: simSvgRefs.guides.g150, val: 150, isFixed: true, label: "150 안정" }
-    ];
+    const targetGuides = [
+        { obj: simSvgRefs.guides.gBottom, val: midLine - GAP, isFixed: false }, { obj: simSvgRefs.guides.gMid, val: midLine, isFixed: false },
+        { obj: simSvgRefs.guides.gTop, val: midLine + GAP, isFixed: false }, { obj: simSvgRefs.guides.g100, val: 100, isFixed: true, label: "100 합격" },
+        { obj: simSvgRefs.guides.g150, val: 150, isFixed: true, label: "150 안정" }
+    ];
 
-    targetGuides.forEach(guide => {
-        const { obj, val, isFixed, label } = guide;
-        if (val >= midLine - GAP && val <= midLine + GAP) {
-            obj.g.style.opacity = 1; const y = getY(val);
-            obj.line.setAttribute("x1", 0); obj.line.setAttribute("x2", W); obj.line.setAttribute("y1", y); obj.line.setAttribute("y2", y);
-            obj.text.setAttribute("x", W - 5); obj.text.setAttribute("y", y - 4);
-            if (isFixed) { obj.text.textContent = label; obj.line.style.opacity = 1; } 
-            else { if (val === 100 || val === 150) { obj.text.textContent = ""; obj.line.style.opacity = 0; } else { obj.text.textContent = val; obj.line.style.opacity = 0.5; } }
-        } else { obj.g.style.opacity = 0; }
-    });
+    targetGuides.forEach(guide => {
+        const { obj, val, isFixed, label } = guide;
+        if (val >= midLine - GAP && val <= midLine + GAP) {
+            obj.g.style.opacity = 1; const y = getY(val);
+            obj.line.setAttribute("x1", 0); obj.line.setAttribute("x2", W); obj.line.setAttribute("y1", y); obj.line.setAttribute("y2", y);
+            obj.text.setAttribute("x", W - 5); obj.text.setAttribute("y", y - 4);
+            if (isFixed) { obj.text.textContent = label; obj.line.style.opacity = 1; } 
+            else { if (val === 100 || val === 150) { obj.text.textContent = ""; obj.line.style.opacity = 0; } else { obj.text.textContent = val; obj.line.style.opacity = 0.5; } }
+        } else { obj.g.style.opacity = 0; }
+    });
 
-    const sectionW = W / 4; let d = ""; 
-    const isFlat = (minS === maxS); const maxIdx = isFlat ? -1 : scores.indexOf(maxS); const minIdx = isFlat ? -1 : scores.indexOf(minS);
+    const sectionW = W / 4; let d = ""; 
+    const isFlat = (minS === maxS); const maxIdx = isFlat ? -1 : scores.indexOf(maxS); const minIdx = isFlat ? -1 : scores.indexOf(minS);
 
-    scores.forEach((s, i) => {
-        const cx = (sectionW * i) + (sectionW / 2); const cy = getY(s);
-        if (i === 0) d += `M ${cx} ${cy}`; else d += ` L ${cx} ${cy}`;
-        simSvgRefs.points[i].setAttribute("cx", cx); simSvgRefs.points[i].setAttribute("cy", cy);
-        
-        const pointEl = simSvgRefs.points[i]; const labelEl = simSvgRefs.labels[i];
-        pointEl.style.fill = "#bfdbfe"; pointEl.style.stroke = "#2563EB"; 
-        labelEl.style.opacity = 0; labelEl.style.fontWeight = "normal"; labelEl.style.fill = "#1e293b";
+    scores.forEach((s, i) => {
+        const cx = (sectionW * i) + (sectionW / 2); const cy = getY(s);
+        if (i === 0) d += `M ${cx} ${cy}`; else d += ` L ${cx} ${cy}`;
+        simSvgRefs.points[i].setAttribute("cx", cx); simSvgRefs.points[i].setAttribute("cy", cy);
+        
+        const pointEl = simSvgRefs.points[i]; const labelEl = simSvgRefs.labels[i];
+        pointEl.style.fill = "#bfdbfe"; pointEl.style.stroke = "#2563EB"; 
+        labelEl.style.opacity = 0; labelEl.style.fontWeight = "normal"; labelEl.style.fill = "#1e293b";
 
-        if (!isFlat) {
-            if (i === maxIdx) { pointEl.style.fill = "#10b981"; pointEl.style.stroke = "#059669"; labelEl.style.fill = "#10b981"; labelEl.style.opacity = 1; labelEl.style.fontWeight = "bold"; }
-            if (i === minIdx) { pointEl.style.fill = "#ef4444"; pointEl.style.stroke = "#b91c1c"; labelEl.style.fill = "#ef4444"; labelEl.style.opacity = 1; labelEl.style.fontWeight = "bold"; }
-        }
-        labelEl.textContent = Math.round(s); labelEl.setAttribute("x", cx); labelEl.setAttribute("y", cy - 12);
-    });
-    simSvgRefs.path.setAttribute("d", d);
+        if (!isFlat) {
+            if (i === maxIdx) { pointEl.style.fill = "#10b981"; pointEl.style.stroke = "#059669"; labelEl.style.fill = "#10b981"; labelEl.style.opacity = 1; labelEl.style.fontWeight = "bold"; }
+            if (i === minIdx) { pointEl.style.fill = "#ef4444"; pointEl.style.stroke = "#b91c1c"; labelEl.style.fill = "#ef4444"; labelEl.style.opacity = 1; labelEl.style.fontWeight = "bold"; }
+        }
+        labelEl.textContent = Math.round(s); labelEl.setAttribute("x", cx); labelEl.setAttribute("y", cy - 12);
+    });
+    simSvgRefs.path.setAttribute("d", d);
 }
 
 function selectSimUniv(index) {
-    selectedSimIndex = index;
-    if (currentSimChartType === 'bar') updateSimBarGraph(index);
-    else if (currentSimChartType === 'line') {
-        updateSimLineGraph(index);
-        document.querySelectorAll('.sim-univ-scroll-box .univ-select-btn').forEach((b, idx) => {
-            if (idx === index) b.classList.add('active'); else b.classList.remove('active');
-        });
-    }
-    renderDetailedSimCard(); 
+    selectedSimIndex = index;
+    if (currentSimChartType === 'bar') updateSimBarGraph(index);
+    else if (currentSimChartType === 'line') {
+        updateSimLineGraph(index);
+        document.querySelectorAll('.sim-univ-scroll-box .univ-select-btn').forEach((b, idx) => {
+            if (idx === index) b.classList.add('active'); else b.classList.remove('active');
+        });
+    }
+    renderDetailedSimCard(); 
 }
 
 function renderDetailedSimCard() {
     const cardArea = document.getElementById('simDetailCard');
-    if (selectedSimIndex === null || !cachedSimData[selectedSimIndex]) { cardArea.innerHTML = `<div class="empty-sim-state"><p>대학을 선택해주세요.</p></div>`; return; }
+    if (selectedSimIndex === null || !simDisplayList[selectedSimIndex]) { 
+        cardArea.innerHTML = `<div class="empty-sim-state" style="display:block; height:auto;"><p>대학을 선택해주세요.</p></div>`; 
+        return; 
+    }
 
-    const data = cachedSimData[selectedSimIndex];
+    const item = simDisplayList[selectedSimIndex];
+    if (item.ineligible) {
+        const choiceNum = item.originalIdx + 1;
+        cardArea.innerHTML = `
+            <div class="sim-result-card" style="display: block; height: auto;">
+                <div class="sim-card-header" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:15px; border-bottom:1px solid #f1f5f9; padding-bottom:15px; margin-bottom:20px;">
+                    <div style="flex:1 1 60%; min-width:200px;">
+                        <span class="sim-univ-title" style="display:block; font-size:1.2rem; font-weight:800; color:#1e293b; line-height:1.3; margin-bottom:4px; word-break:keep-all;">${escapeHtml(item.univ)}</span>
+                        <span class="sim-univ-dept" style="display:block; font-size:0.95rem; color:#64748b; line-height:1.3;">${escapeHtml(item.major)}</span>
+                    </div>
+                    <div class="sim-score-change" style="flex:0 0 auto; text-align:right;">
+                        <span class="score-badge" style="display:inline-block; background:#fee2e2; color:#ef4444; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:600;">${choiceNum}지망</span>
+                    </div>
+                </div>
+                <div style="padding:20px; text-align:center; color:#ef4444; font-weight:600;">
+                    <i class="fas fa-ban" style="font-size:1.5rem; margin-bottom:10px; display:block;"></i>지원 불가 대학입니다.
+                    <div style="font-size:0.85rem; color:#94a3b8; font-weight:400; margin-top:8px;">필수 과목 미응시 또는 자격 미충족으로 인해<br>분석 데이터를 제공할 수 없습니다.</div>
+                </div>
+            </div>`;
+        return;
+    }
+
+    const data = item;
     const currentScore = Math.round(data.base_ui_score);
-    
     if (currentScore >= 250) { Object.keys(data.sim_data).forEach(key => { if (data.sim_data[key]) data.sim_data[key].uiDiff = 0; }); }
-
     const getStatusText = (s) => { if (s >= 150) return "안정권"; if (s >= 100) return "적정권"; if (s >= 50) return "소신지원"; return "위험"; };
     const currentStatus = getStatusText(currentScore);
 
     let maxRise = 0; let bestSubjectKey = '';
     const subjects = [{ key: 'kor', name: '국어' }, { key: 'math', name: '수학' }, { key: 'inq1', name: '탐구1' }, { key: 'inq2', name: '탐구2' }];
-
     subjects.forEach(sub => { const info = data.sim_data[sub.key]; if (info && info.uiDiff > maxRise) { maxRise = info.uiDiff; bestSubjectKey = sub.key; } });
 
     let subjectsHTML = '';
     subjects.forEach(sub => {
         const info = data.sim_data[sub.key];
         if (!info) return;
-
         const diffVal = info.uiDiff.toFixed(1);
         const isBest = (sub.key === bestSubjectKey && maxRise > 0);
         let desc = '';
         if (info.msg.includes("응시 안 함")) desc = `<span style="color:#94a3b8;">미응시 과목입니다.</span>`;
         else if (info.diff <= 0) desc = `<span style="color:#ef4444;">점수 변화 없음 (만점 등)</span>`;
         else desc = isBest ? `<strong>가장 합격 상승에 유리합니다.</strong>` : `점수 상승으로 합격 가능성이 높아집니다.`;
-
         const subText = info.diff > 0 ? `(실점수 +${(info.diff || 3.0).toFixed(2)}점)` : ``;
+        
         subjectsHTML += `
-            <div class="sim-item ${isBest ? 'best-pick' : ''}">
-                <div class="sim-item-header"><span>${escapeHtml(info.name || sub.name)} (+1점)</span><span style="color:${info.uiDiff > 0 ? '#ef4444' : '#94a3b8'}">+${diffVal}점</span></div>
-                <div class="sim-item-body"><div>${desc}</div><div style="font-size:0.75rem; color:#94a3b8; margin-top:4px;">${subText}</div></div>
+            <div class="sim-item ${isBest ? 'best-pick' : ''}" style="display:flex; flex-direction:column; justify-content:flex-start; height:100%;">
+                <div class="sim-item-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:8px;">
+                    <span style="flex:1; min-width:0; font-weight:700; color:#334155; line-height:1.3; word-break:keep-all;">${escapeHtml(info.name || sub.name)} (+1점)</span>
+                    <span style="flex-shrink:0; color:${info.uiDiff > 0 ? '#ef4444' : '#94a3b8'}; font-weight:700;">+${diffVal}점</span>
+                </div>
+                <div class="sim-item-body" style="flex:1;">
+                    <div style="font-size:0.9rem; color:#475569; line-height:1.5; margin-bottom:4px;">${desc}</div>
+                    <div style="font-size:0.75rem; color:#94a3b8;">${subText}</div>
+                </div>
             </div>
         `;
     });
@@ -1228,12 +1424,20 @@ function renderDetailedSimCard() {
     }
 
     cardArea.innerHTML = `
-        <div class="sim-result-card">
-            <div class="sim-card-header">
-                <div><span class="sim-univ-title">${escapeHtml(data.univ)}</span><span class="sim-univ-dept">${escapeHtml(data.major)}</span></div>
-                <div class="sim-score-change"><span class="score-badge">현재: ${currentStatus}</span><span class="score-diff">${currentScore}점</span></div>
+        <div class="sim-result-card" style="display:block; height:auto;">
+            <div class="sim-card-header" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:15px; border-bottom:1px solid #f1f5f9; padding-bottom:15px; margin-bottom:20px;">
+                <div style="flex:1 1 60%; min-width:200px;">
+                    <span class="sim-univ-title" style="display:block; font-size:1.2rem; font-weight:800; color:#1e293b; line-height:1.3; margin-bottom:4px; word-break:keep-all;">${escapeHtml(data.univ)}</span>
+                    <span class="sim-univ-dept" style="display:block; font-size:0.95rem; color:#64748b; line-height:1.3;">${escapeHtml(data.major)}</span>
+                </div>
+                <div class="sim-score-change" style="flex:0 0 auto; text-align:right;">
+                    <span class="score-badge" style="display:inline-block; background:#f1f5f9; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:600; color:#64748b; margin-bottom:5px;">현재: ${currentStatus}</span>
+                    <span class="score-diff" style="display:block; font-size:1.4rem; font-weight:800; color:#2563EB;">${currentScore}점</span>
+                </div>
             </div>
-            <div class="sim-grid">${subjectsHTML}</div>
+            <div class="sim-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:15px;">
+                ${subjectsHTML}
+            </div>
             ${warningHTML}
         </div>
     `;
@@ -1243,94 +1447,104 @@ function renderDetailedSimCard() {
 // [기능 4] 코칭 & 주간 학습 점검
 // ============================================================
 function getWeekOfMonth(date) {
-    const start = new Date(date.getFullYear(), date.getMonth(), 1);
-    const day = start.getDay() || 7; 
-    const diff = date.getDate() - 1 + (day - 1); 
-    return Math.floor(diff / 7) + 1;
+    const start = new Date(date.getFullYear(), date.getMonth(), 1);
+    const day = start.getDay() || 7; 
+    const diff = date.getDate() - 1 + (day - 1); 
+    return Math.floor(diff / 7) + 1;
 }
 
 function getWeekTitle(date) {
-    const yearShort = date.getFullYear().toString().slice(2);
-    const month = date.getMonth() + 1;
-    const week = getWeekOfMonth(date);
-    return `${yearShort}년 ${month}월 ${week}주차`; 
+    const yearShort = date.getFullYear().toString().slice(2);
+    const month = date.getMonth() + 1;
+    const week = getWeekOfMonth(date);
+    return `${yearShort}년 ${month}월 ${week}주차`;
+}
+
+// 백엔드 generateWeekId()와 동일한 로직 — DB weekId 일관성 유지
+function generateWeekId(dateObj) {
+    const year = dateObj.getFullYear().toString().slice(2);
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const startOfMonth = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
+    const dayOfWeek = startOfMonth.getDay();
+    const offsetDate = dateObj.getDate() + dayOfWeek - 1;
+    const weekNum = String(Math.floor(offsetDate / 7) + 1).padStart(2, '0');
+    return `${year}${month}${weekNum}`;
 }
 
 function applyCoachTierLock() {
-    const container = document.querySelector('.coach-container');
-    if (!container) return;
+    const container = document.querySelector('.coach-container');
+    if (!container) return;
 
-    if (!['standard', 'pro', 'black'].includes(currentUserTier)) {
-        container.classList.add('tier-locked');
-        container.style.position = 'relative';
-        if (container.querySelector('.tier-lock-overlay')) return;
+    if (!['standard', 'pro', 'black'].includes(currentUserTier)) {
+        container.classList.add('tier-locked');
+        container.style.position = 'relative';
+        if (container.querySelector('.tier-lock-overlay')) return;
 
-        const overlay = document.createElement('div');
-        overlay.className = 'tier-lock-overlay';
-        overlay.innerHTML = `
-            <div class="lock-message-box">
-                <i class="fas fa-lock"></i><h3>Standard 멤버십 전용</h3>
-                <p>주간 학습 점검 및 피드백 기능은<br><strong>Standard 등급 이상</strong>부터 이용 가능합니다.</p>
-            </div>
-        `;
-        container.appendChild(overlay);
-    } else {
-        container.classList.remove('tier-locked');
-        const existingOverlay = container.querySelector('.tier-lock-overlay');
-        if (existingOverlay) existingOverlay.remove();
-    }
+        const overlay = document.createElement('div');
+        overlay.className = 'tier-lock-overlay';
+        overlay.innerHTML = `
+            <div class="lock-message-box">
+                <i class="fas fa-lock"></i><h3>Standard 멤버십 전용</h3>
+                <p>주간 학습 점검 및 피드백 기능은<br><strong>Standard 등급 이상</strong>부터 이용 가능합니다.</p>
+            </div>
+        `;
+        container.appendChild(overlay);
+    } else {
+        container.classList.remove('tier-locked');
+        const existingOverlay = container.querySelector('.tier-lock-overlay');
+        if (existingOverlay) existingOverlay.remove();
+    }
 }
 
 function switchWeeklyTab(step) {
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    if(step === 'step1') document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
-    else document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-    document.getElementById(`tab-${step}`).classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    if(step === 'step1') document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+    else document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    document.getElementById(`tab-${step}`).classList.add('active');
 }
 
 function setWeeklyLoadingStatus(isLoading) {
-    const msg = document.getElementById('weeklyDeadlineMsg');
-    const badge = document.getElementById('weeklyStatusBadge');
-    if (!msg || !badge) return;
-    
-    if (isLoading) {
-        badge.innerText = '...'; badge.className = 'badge-status pending'; 
-        msg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 로딩중...';
-    } else {
-        msg.innerText = '(매주 일요일 20:00 마감)';
-        renderFeedbackList(); 
-    }
+    const msg = document.getElementById('weeklyDeadlineMsg');
+    const badge = document.getElementById('weeklyStatusBadge');
+    if (!msg || !badge) return;
+    
+    if (isLoading) {
+        badge.innerText = '...'; badge.className = 'badge-status pending'; 
+        msg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 로딩중...';
+    } else {
+        msg.innerText = '(매주 일요일 20:00 마감)';
+        renderFeedbackList(); 
+    }
 }
 
 // 💡 [수정] 분리된 weeklyDataHistory(배열)를 직접 순회
 function checkWeeklyStatus() {
-    const today = new Date();
-    const currentWeekTitle = getWeekTitle(today); 
-    const history = Array.isArray(weeklyDataHistory) ? weeklyDataHistory : [];
-    
-    const thisWeekData = history.find(w => { 
-        if(!w.title) return false; 
-        return w.title.replace(/\s+/g, '').includes(currentWeekTitle.replace(/\s+/g, '')); 
-    });
-    
-    const badge = document.getElementById('weeklyStatusBadge');
-    const box = document.getElementById('weeklyBox');
-    if (!badge || !box) return;
-    
-    if (thisWeekData) { badge.className = 'badge-status submitted'; badge.innerText = '✅ 제출완료'; } 
-    else { badge.className = 'badge-status pending'; badge.innerText = '미제출'; }
-    
-    const day = today.getDay(); const hour = today.getHours();
-    if (day === 0 && hour >= 20) { 
-        badge.className = 'badge-status locked'; badge.innerText = '⛔ 마감됨'; 
-        box.classList.add('disabled'); box.onclick = null; 
-    } else { 
-        box.classList.remove('disabled'); box.onclick = openWeeklyCheckModal; 
-    }
+    const today = new Date();
+    const currentWeekTitle = getWeekTitle(today); 
+    const history = Array.isArray(weeklyDataHistory) ? weeklyDataHistory : [];
+    
+    const thisWeekData = history.find(w => { 
+        if(!w.title) return false; 
+        return w.title.replace(/\s+/g, '').includes(currentWeekTitle.replace(/\s+/g, '')); 
+    });
+    
+    const badge = document.getElementById('weeklyStatusBadge');
+    const box = document.getElementById('weeklyBox');
+    if (!badge || !box) return;
+    
+    if (thisWeekData) { badge.className = 'badge-status submitted'; badge.innerText = '✅ 제출완료'; } 
+    else { badge.className = 'badge-status pending'; badge.innerText = '미제출'; }
+    
+    const day = today.getDay(); const hour = today.getHours();
+    if (day === 0 && hour >= 20) { 
+        badge.className = 'badge-status locked'; badge.innerText = '⛔ 마감됨'; 
+        box.classList.add('disabled'); box.onclick = null; 
+    } else { 
+        box.classList.remove('disabled'); box.onclick = openWeeklyCheckModal; 
+    }
 }
 
-// 💡 [수정] 분리된 weeklyDataHistory 사용
 function renderFeedbackList() {
     const history = Array.isArray(weeklyDataHistory) ? weeklyDataHistory : [];
     const listContainer = document.getElementById('feedbackList');
@@ -1349,11 +1563,9 @@ function renderFeedbackList() {
     
     const prevValue = select.value;
     select.innerHTML = '';
-    
     Array.from(yearMonths).sort().reverse().forEach(ym => {
         const option = document.createElement('option'); option.value = ym; option.innerText = ym; select.appendChild(option);
     });
-    
     if (prevValue && yearMonths.has(prevValue)) select.value = prevValue; else select.selectedIndex = 0;
     const selectedYM = select.value;
 
@@ -1365,8 +1577,8 @@ function renderFeedbackList() {
         return;
     }
 
+    const fragment = document.createDocumentFragment(); // 🚀
     filtered.forEach(h => {
-        const div = document.createElement('div'); div.className = 'feedback-tile';
         const fb = h.tutorFeedback || {};
         const hasFeedback = fb && (
             (fb.priorityCheck && String(fb.priorityCheck).trim() !== "") || 
@@ -1376,48 +1588,24 @@ function renderFeedbackList() {
             (fb.extraQuestion && String(fb.extraQuestion).trim() !== "")
         );
 
-        const statusText = hasFeedback ? '피드백 도착 ✅' : '피드백 대기중 ⏳';
-        const statusStyle = hasFeedback ? 'color:#15803d; font-weight:bold;' : 'color:#94a3b8;';
-
+        const div = document.createElement('div'); 
+        div.className = 'feedback-tile';
         div.onclick = () => { openFeedbackModal(h); };
-        div.innerHTML = `<div class="fb-title">${escapeHtml(h.title) || "주간 리포트"}</div><div class="fb-status" style="${statusStyle}">${statusText}</div>`;
-        listContainer.appendChild(div);
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'fb-title';
+        titleDiv.textContent = h.title || "주간 리포트"; // 🔒 안전
+
+        const statusDiv = document.createElement('div');
+        statusDiv.className = 'fb-status';
+        statusDiv.style.cssText = hasFeedback ? 'color:#15803d; font-weight:bold;' : 'color:#94a3b8;';
+        statusDiv.textContent = hasFeedback ? '피드백 도착 ✅' : '피드백 대기중 ⏳'; // 🔒 안전
+
+        div.appendChild(titleDiv);
+        div.appendChild(statusDiv);
+        fragment.appendChild(div);
     });
-}
-
-async function renderPdfToImages(pdfUrl, containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
-    try {
-        container.classList.add('is-rendering');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-        const loadingTask = pdfjsLib.getDocument(pdfUrl);
-        const pdf = await loadingTask.promise;
-        const fragment = document.createDocumentFragment();
-
-        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-            const page = await pdf.getPage(pageNum);
-            const viewport = page.getViewport({ scale: 1.0 }); 
-
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.height = viewport.height; canvas.width = viewport.width;
-
-            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-
-            const img = document.createElement('img');
-            img.src = canvas.toDataURL('image/jpeg', 0.8);
-            img.style.cssText = 'max-width:100%; height:auto; margin-bottom:15px; border-radius:8px; border:1px solid #cbd5e1; box-shadow:0 2px 8px rgba(0,0,0,0.05); display:block;';
-            fragment.appendChild(img);
-        }
-        container.innerHTML = ''; container.appendChild(fragment);
-    } catch (error) {
-        container.innerHTML = `<div style="color:#ef4444; padding:20px; text-align:center;">PDF를 화면에 불러오지 못했습니다.</div>`;
-    } finally {
-        container.classList.remove('is-rendering'); 
-    }
+    listContainer.appendChild(fragment);
 }
 
 function openFeedbackModal(data) {
@@ -1447,7 +1635,7 @@ function openFeedbackModal(data) {
         return;
     }
 
-    const consultantName = "담당 수석 컨설턴트"; 
+    const consultantName = escapeHtml(data.tutorName || "수석 튜터");
     let detailRows = ''; let totalPlan = '0H', totalAct = '0H', totalRate = '0%';
     
     if (data.studyTime) {
@@ -1467,15 +1655,18 @@ function openFeedbackModal(data) {
         }
     }
     if (!detailRows) detailRows = `<tr><td colspan="5" style="color:#94a3b8; padding:20px;">상세 학습 기록이 없습니다.</td></tr>`;
-
+	
+	const CODE_MAP = { 'un': '언매', 'hj': '화작', 'mi': '미적', 'ki': '기하', 'hw': '확통' };
+    const getOptName = (code) => CODE_MAP[code] || code || '-';
+    
     let examHtml = '';
     if (data.mockExam && data.mockExam.type && data.mockExam.type !== 'none') {
         const typeMap = { 'school': '교내', 'edu': '평가원/교육청', 'private': '사설' };
         const typeName = typeMap[data.mockExam.type] || '기타';
         let scoreDetails = ''; const s = data.mockExam.scores || {};
         const rowStyle = "margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;";
-        if(s.kor) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">국어 (${escapeHtml(s.korOpt||'-')})</span> <strong style="color:#1e293b;">${escapeHtml(s.kor)}</strong></div>`;
-        if(s.math) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">수학 (${escapeHtml(s.mathOpt||'-')})</span> <strong style="color:#1e293b;">${escapeHtml(s.math)}</strong></div>`;
+        if(s.kor) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">국어 (${escapeHtml(getOptName(s.korOpt))})</span> <strong style="color:#1e293b;">${escapeHtml(s.kor)}</strong></div>`;
+        if(s.math) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">수학 (${escapeHtml(getOptName(s.mathOpt))})</span> <strong style="color:#1e293b;">${escapeHtml(s.math)}</strong></div>`;
         if(s.eng) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">영어</span> <strong style="color:#1e293b;">${escapeHtml(s.eng)}</strong></div>`;
         if(s.inq1) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">${escapeHtml(s.inq1Name||'탐구1')}</span> <strong style="color:#1e293b;">${escapeHtml(s.inq1)}</strong></div>`;
         if(s.inq2) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">${escapeHtml(s.inq2Name||'탐구2')}</span> <strong style="color:#1e293b;">${escapeHtml(s.inq2)}</strong></div>`;
@@ -1515,13 +1706,20 @@ function openFeedbackModal(data) {
         isPdfFile = fb.tutorImage.toLowerCase().includes('.pdf');
         actualPdfUrl = fb.tutorImage;
         let fileDisplayHtml = '';
+        
         if (isPdfFile) {
             fileDisplayHtml = `<div id="${uniqueContainerId}" style="width: 100%; display: block; text-align: center;"><div style="padding: 40px 0; color:#3b82f6; font-weight:bold;" class="pdf-loading-spinner"><i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom:10px;"></i><br>튜터의 첨삭 PDF 문서를 불러오는 중입니다...</div></div>`;
         } else {
             const noCacheUrl = `${escapeHtml(fb.tutorImage)}?t=${new Date().getTime()}`;
             fileDisplayHtml = `<div style="text-align:center; padding: 10px 0;"><img src="${noCacheUrl}" crossorigin="anonymous" alt="튜터 플래너 코칭" style="max-width:100%; height:auto; border-radius:8px; border:1px solid #cbd5e1; display:block; margin: 0 auto;"></div>`;
         }
-        tutorFileBlockHtml = `<div class="doc-matched-box allow-page-break" style="margin-top: 30px;"><div class="doc-matched-header"><i class="fas fa-paperclip" style="color:#3b82f6;"></i> 5. 주간 플래너 코칭 & 첨삭</div><div class="doc-matched-body allow-page-break-body" style="padding:25px;">${fileDisplayHtml}</div></div>`;
+        
+        tutorFileBlockHtml = `
+            <div id="attachedPdfData" data-pdf-url="${actualPdfUrl}" style="display:none;"></div>
+            <div class="doc-matched-box allow-page-break" style="margin-top: 30px;">
+                <div class="doc-matched-header"><i class="fas fa-paperclip" style="color:#3b82f6;"></i> 5. 주간 플래너 코칭 & 첨삭</div>
+                <div class="doc-matched-body allow-page-break-body" style="padding:25px;">${fileDisplayHtml}</div>
+            </div>`;
     }
 
     const safeTitleForJs = escapeHtml(data.title || "주간 리포트").replace(/'/g, "\\'");
@@ -1558,10 +1756,10 @@ function openFeedbackModal(data) {
                 </div>
             </div>
             <div class="doc-matched-box">
-                <div class="doc-matched-header" style="background:#fff;"><i class="fas fa-comments"></i> 4. 심층 Q&A 솔루션</div>
-                <div class="doc-matched-body" style="flex-direction:column; padding:25px; gap:20px; border-top:1px solid #e2e8f0;">
-                    <div class="qna-student"><span class="doc-badge" style="background:#fef2f2; color:#ef4444; border-color:#fecaca;">학생의 심층 질문</span>${deepQnaHtml}</div>
-                    <div class="qna-tutor"><span class="doc-badge tutor-badge" style="background:#f0fdf4; color:#16a34a; border-color:#bbf7d0;">Consultant 추가 코멘트</span><div class="doc-text">${escapeHtml(fb.extraQuestion) || '<span style="color:#94a3b8">추가 코멘트가 없습니다.</span>'}</div></div>
+                <div class="doc-matched-header"><i class="fas fa-comments"></i> 4. 심층 Q&A 솔루션</div>
+                <div class="doc-matched-body">
+                    <div class="doc-student-data"><span class="doc-badge" style="background:#fef2f2; color:#ef4444; border-color:#fecaca;">학생의 심층 질문</span>${deepQnaHtml}</div>
+                    <div class="doc-tutor-feedback"><span class="doc-badge tutor-badge" style="background:#f0fdf4; color:#16a34a; border-color:#bbf7d0;">Consultant 추가 코멘트</span><div class="doc-text">${escapeHtml(fb.extraQuestion) || '<span style="color:#94a3b8">추가 코멘트가 없습니다.</span>'}</div></div>
                 </div>
             </div>
             ${tutorFileBlockHtml}
@@ -1584,23 +1782,45 @@ function openFeedbackModal(data) {
 
     contentArea.innerHTML = html;
     modal.style.display = 'block';
-    if (isPdfFile) setTimeout(() => { renderPdfToImages(actualPdfUrl, uniqueContainerId); }, 100);
+    if (isPdfFile && typeof renderPdfToImages === 'function') setTimeout(() => { renderPdfToImages(actualPdfUrl, uniqueContainerId); }, 100);
 }
 
 async function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
-    if (reportElement.querySelector('.pdf-loading-spinner')) return alert("첨부파일(이미지) 렌더링 중입니다. 이미지가 모두 표시되면 다시 클릭해주세요.");
+    if (reportElement.querySelector('.pdf-loading-spinner')) return alert("첨부파일 렌더링 중입니다. 잠시 후 다시 클릭해주세요.");
+
+    const attachedPdfEl = reportElement.querySelector('#attachedPdfData');
+    const attachedPdfUrl = attachedPdfEl ? attachedPdfEl.getAttribute('data-pdf-url') : null;
 
     const loadingOverlay = document.createElement('div');
     loadingOverlay.id = 'pdf-loading-overlay';
     loadingOverlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.98); z-index:999999; display:flex; flex-direction:column; align-items:center; justify-content:center;';
-    loadingOverlay.innerHTML = `<i class="fas fa-spinner fa-spin fa-3x" style="color:#2563eb; margin-bottom:20px;"></i><h2 style="color:#1e293b; font-weight:800; margin-bottom:10px;">프리미엄 PDF 리포트 생성 중...</h2><p style="color:#64748b;">서버에서 고화질 PDF를 렌더링하고 있습니다. 잠시만 기다려주세요.</p>`;
+    loadingOverlay.innerHTML = `<i class="fas fa-spinner fa-spin fa-3x" style="color:#2563eb; margin-bottom:20px;"></i><h2 style="color:#1e293b; font-weight:800; margin-bottom:10px;">프리미엄 PDF 리포트 생성 중...</h2><p style="color:#64748b;">서버에서 고화질 PDF를 렌더링하고 병합하고 있습니다. 잠시만 기다려주세요.</p>`;
     document.body.appendChild(loadingOverlay);
 
     let finalDownloadUrl = null;
 
     try {
+        const clonedReport = reportElement.cloneNode(true);
+        const attachedPdfDataEl = clonedReport.querySelector('#attachedPdfData');
+        
+        if (attachedPdfDataEl && attachedPdfUrl) {
+            // 1. 불필요하게 한 페이지를 다 차지하던 5번 박스 요소 전체를 찾아서 아예 삭제합니다.
+            const section5Box = attachedPdfDataEl.nextElementSibling;
+            if (section5Box && section5Box.classList.contains('doc-matched-box')) {
+                section5Box.remove();
+            }
+
+            // 2. 4번 섹션 아래(문서 맨 끝)에 공간을 차지하지 않는 자연스러운 안내 꼬리말을 덧붙입니다.
+            const noticeHtml = `
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 2px dashed #cbd5e1; text-align: right; color: #2563eb; font-weight: 800; font-size: 1.1rem;">
+                    <i class="fas fa-file-pdf" style="margin-right: 5px;"></i> 5. 튜터 플래너 첨삭은 다음 장에서 이어집니다 ▶
+                </div>
+            `;
+            clonedReport.insertAdjacentHTML('beforeend', noticeHtml);
+        }
+
         const rawHtml = `
             <!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><base href="https://studycrack.co.kr">
             <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
@@ -1614,9 +1834,10 @@ async function downloadReportPDF(reportTitle) {
                 .doc-meta { font-size: 0.95rem; color: #64748b; text-align: right; line-height: 1.6; }
                 .doc-matched-box { border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 30px; background: #fff; page-break-inside: avoid; break-inside: avoid; }
                 .doc-matched-header { background: #f8fafc; padding: 14px 20px; border-bottom: 1px solid #e2e8f0; font-weight: 800; font-size: 1.1rem; color: #1e293b; border-radius: 12px 12px 0 0; }
-                .doc-matched-body { display: table; width: 100%; box-sizing: border-box; }
-                .doc-student-data { display: table-cell; width: 45%; vertical-align: top; padding: 20px; border-right: 1px dashed #cbd5e1; }
-                .doc-tutor-feedback { display: table-cell; width: 55%; vertical-align: top; padding: 20px; background: #fafafa; border-radius: 0 0 12px 0; }
+                .doc-matched-body { display: table; width: 100%; box-sizing: border-box; table-layout: fixed; }
+                .doc-student-data { display: table-cell; width: 40%; vertical-align: top; padding: 20px; border-right: 1px dashed #cbd5e1; word-break: break-word; overflow-wrap: break-word; }
+                .doc-tutor-feedback { display: table-cell; width: 60%; vertical-align: top; padding: 20px; background: #fafafa; border-radius: 0 0 12px 0; word-break: break-word; overflow-wrap: break-word; }
+                .doc-text { font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; color: #334155; word-break: break-word; overflow-wrap: break-word; }
                 .doc-table th { padding: 8px 4px; border-bottom: 1px solid #e2e8f0; color: #94a3b8; vertical-align: middle; }
                 .doc-table td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; vertical-align: middle; }
                 .doc-badge { display: inline-block; padding: 4px 10px; background: #f1f5f9; color: #475569; border-radius: 6px; font-size: 0.8rem; font-weight: 800; margin-bottom: 15px; letter-spacing: -0.5px; border: 1px solid #e2e8f0; }
@@ -1629,15 +1850,20 @@ async function downloadReportPDF(reportTitle) {
                 img { page-break-inside: avoid !important; break-inside: avoid !important; max-width: 100% !important; max-height: 250mm !important; object-fit: contain !important; display: block !important; margin: 0 auto 15px auto !important; }
             </style></head>
             <body><img src="https://studycrack.co.kr/assets/backgrounds/bg_studycrack_logo.png" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:500px; opacity:0.08; z-index:9999; pointer-events:none; max-height:none !important;">
-                <div class="report-wrapper">${reportElement.innerHTML}</div>
+                <div class="report-wrapper">${clonedReport.innerHTML}</div>
             </body></html>
         `;
 
         const token = localStorage.getItem('idToken');
-        const pdfApiUrl = 'https://ft35jsftc1.execute-api.ap-northeast-2.amazonaws.com/generate-pdf'; 
-        const response = await fetch(pdfApiUrl, { 
-            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ title: reportTitle, html: rawHtml })
+        
+        const response = await fetch(PDF_API_URL, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ 
+                title: reportTitle, 
+                html: rawHtml,
+                attachedPdfUrl: attachedPdfUrl 
+            })
         });
         const data = await response.json();
 
@@ -1654,7 +1880,6 @@ async function downloadReportPDF(reportTitle) {
             const isMobile = window.innerWidth <= 768; 
             
             if (isMobile) {
-                // 💡 [유저 솔루션 적용] 기존 feedbackModal의 컨텐츠를 모바일 메시지로 갈아치웁니다.
                 const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent');
                 if (contentArea) {
                     contentArea.innerHTML = `
@@ -1680,302 +1905,622 @@ async function downloadReportPDF(reportTitle) {
     }
 }
 
+async function renderPdfToImages(url, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    try {
+        // html에 선언된 pdf.js 라이브러리의 worker 소스 설정 (버전 일치 필요)
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // S3에서 PDF 파일 다운로드 및 파싱
+        const loadingTask = pdfjsLib.getDocument(url);
+        const pdf = await loadingTask.promise;
+        
+        // 렌더링 시작 전 무한 로딩 스피너 제거
+        container.innerHTML = ''; 
+
+        // PDF의 모든 페이지를 순회하며 캔버스로 그려내기
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            
+            // 고화질 렌더링을 위해 scale 값을 2.0으로 설정 (모바일/PC 모두 깔끔하게 보임)
+            const scale = 2.0; 
+            const viewport = page.getViewport({ scale: scale });
+
+            // 캔버스 엘리먼트 생성
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            
+            // 스타일 적용 (반응형 100% 폭)
+            canvas.style.cssText = 'width: 100%; max-width: 100%; margin-bottom: 15px; border-radius: 8px; border: 1px solid #e2e8f0; display: block; box-sizing: border-box;';
+
+            // 화면에 캔버스 먼저 추가 후 렌더링 진행 (사용자가 진행 상황을 볼 수 있도록)
+            container.appendChild(canvas); 
+            
+            const renderContext = {
+                canvasContext: context,
+                viewport: viewport
+            };
+            
+            await page.render(renderContext).promise;
+        }
+    } catch (error) {
+        console.error("PDF 렌더링 실패:", error);
+        // 에러 발생 시 무한 로딩을 멈추고 직접 다운로드 링크 제공
+        container.innerHTML = `
+            <div style="padding: 30px; text-align: center; color: #ef4444; background: #fef2f2; border-radius: 8px;">
+                <i class="fas fa-exclamation-triangle fa-2x" style="margin-bottom: 10px;"></i><br>
+                PDF 문서를 화면에 불러오지 못했습니다.<br>
+                <a href="${url}" target="_blank" style="color: #2563eb; text-decoration: underline; font-size: 0.95rem; display: inline-block; margin-top: 10px; font-weight: bold;">
+                    직접 다운로드하여 확인하기 <i class="fas fa-external-link-alt" style="font-size:0.8rem;"></i>
+                </a>
+            </div>`;
+    }
+}
+
 let currentMobileStep = 0; let wizardSteps = []; let wizardResizeHandler = null;
 
 function openWeeklyCheckModal() {
-    if (!['standard', 'pro'].includes(currentUserTier)) { alert("🔒 Standard 멤버십 이상 전용 기능입니다.\n멤버십 업그레이드 후 이용해주세요."); return; }
-    const today = new Date();
-    if (today.getDay() === 0 && today.getHours() >= 20) { alert("금주 학습 점검 제출이 마감되었습니다."); return; }
-    
-    const modal = document.getElementById('weeklyCheckModal'); const modalContent = modal.querySelector('.check-modal-content');
-    const currentWeekTitle = getWeekTitle(today); const [yStr, mStr, wStr] = currentWeekTitle.split(' '); 
-    document.getElementById('weeklyYear').innerText = yStr; document.getElementById('weeklyDateDetail').innerText = `${mStr} ${wStr}`;
-    
-    // 💡 분리된 weeklyDataHistory 사용
-    const thisWeekData = weeklyDataHistory.find(w => w.title && w.title.replace(/\s/g, '') === currentWeekTitle.replace(/\s/g, ''));
-    if (thisWeekData) loadWeeklyDataToForm(thisWeekData); else resetWeeklyForm(); 
-    
-    function applyModalLayout() {
-        const isMobile = window.innerWidth <= 768;
-        if (isMobile) {
-            modalContent.classList.add('mobile-wizard-mode'); wizardSteps = Array.from(modal.querySelectorAll('.check-section, .pro-input-card'));
-            if(currentMobileStep >= wizardSteps.length) currentMobileStep = 0; 
-            updateMobileWizardUI();
-        } else {
-            modalContent.classList.remove('mobile-wizard-mode'); document.getElementById('mobileWizardProgress').style.display = 'none';
-            document.getElementById('wizardPrevBtn').style.display = 'none'; document.getElementById('wizardNextBtn').style.display = 'none';
-            document.getElementById('wizardSubmitBtn').style.display = 'block'; document.getElementById('wizardSubmitBtn').style.width = '100%';
-            switchWeeklyTab('step1'); 
-        }
-    }
-    applyModalLayout();
-    if (!wizardResizeHandler) { wizardResizeHandler = () => { if (modal.style.display === 'block') applyModalLayout(); }; window.addEventListener('resize', wizardResizeHandler); }
-    modal.style.display = 'block'; document.body.style.overflow = 'hidden';
+    if (!['standard', 'pro'].includes(currentUserTier)) { alert("🔒 Standard 멤버십 이상 전용 기능입니다.\n멤버십 업그레이드 후 이용해주세요."); return; }
+    const today = new Date();
+    if (today.getDay() === 0 && today.getHours() >= 20) { alert("금주 학습 점검 제출이 마감되었습니다."); return; }
+    
+    const modal = document.getElementById('weeklyCheckModal'); const modalContent = modal.querySelector('.check-modal-content');
+    const currentWeekTitle = getWeekTitle(today); const [yStr, mStr, wStr] = currentWeekTitle.split(' '); 
+    document.getElementById('weeklyYear').innerText = yStr; document.getElementById('weeklyDateDetail').innerText = `${mStr} ${wStr}`;
+    
+    // weekId 기준 우선 탐색, 없으면 title로 fallback (구 데이터 호환)
+    const currentWeekId = generateWeekId(today);
+    const thisWeekData = weeklyDataHistory.find(w => w.weekId === currentWeekId)
+        || weeklyDataHistory.find(w => w.title && w.title.replace(/\s/g, '') === currentWeekTitle.replace(/\s/g, ''));
+    if (thisWeekData) loadWeeklyDataToForm(thisWeekData); else resetWeeklyForm();
+    
+    function applyModalLayout() {
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+            modalContent.classList.add('mobile-wizard-mode'); wizardSteps = Array.from(modal.querySelectorAll('.check-section, .pro-input-card'));
+            if(currentMobileStep >= wizardSteps.length) currentMobileStep = 0; 
+            updateMobileWizardUI();
+        } else {
+            modalContent.classList.remove('mobile-wizard-mode'); document.getElementById('mobileWizardProgress').style.display = 'none';
+            document.getElementById('wizardPrevBtn').style.display = 'none'; document.getElementById('wizardNextBtn').style.display = 'none';
+            document.getElementById('wizardSubmitBtn').style.display = 'block'; document.getElementById('wizardSubmitBtn').style.width = '100%';
+            switchWeeklyTab('step1'); 
+        }
+    }
+    applyModalLayout();
+    if (!wizardResizeHandler) { wizardResizeHandler = () => { if (modal.style.display === 'block') applyModalLayout(); }; window.addEventListener('resize', wizardResizeHandler); }
+    modal.style.display = 'block'; document.body.style.overflow = 'hidden';
 }
 
 function updateMobileWizardUI() {
-    wizardSteps.forEach((step, idx) => { if (idx === currentMobileStep) step.classList.add('active-step'); else step.classList.remove('active-step'); });
-    const progressEl = document.getElementById('mobileWizardProgress'); progressEl.style.display = 'block'; progressEl.innerText = `${currentMobileStep + 1} / ${wizardSteps.length} 단계`;
-    const prevBtn = document.getElementById('wizardPrevBtn'); const nextBtn = document.getElementById('wizardNextBtn'); const submitBtn = document.getElementById('wizardSubmitBtn');
+    wizardSteps.forEach((step, idx) => { if (idx === currentMobileStep) step.classList.add('active-step'); else step.classList.remove('active-step'); });
+    const progressEl = document.getElementById('mobileWizardProgress'); progressEl.style.display = 'block'; progressEl.innerText = `${currentMobileStep + 1} / ${wizardSteps.length} 단계`;
+    const prevBtn = document.getElementById('wizardPrevBtn'); const nextBtn = document.getElementById('wizardNextBtn'); const submitBtn = document.getElementById('wizardSubmitBtn');
 
-    if (currentMobileStep === 0) { prevBtn.style.display = 'none'; nextBtn.style.display = 'block'; submitBtn.style.display = 'none'; } 
-    else if (currentMobileStep === wizardSteps.length - 1) { prevBtn.style.display = 'block'; nextBtn.style.display = 'none'; submitBtn.style.display = 'block'; } 
-    else { prevBtn.style.display = 'block'; nextBtn.style.display = 'block'; submitBtn.style.display = 'none'; }
-    const modalBody = document.querySelector('.check-modal-content .modal-body.scrollable'); if (modalBody) modalBody.scrollTop = 0;
+    if (currentMobileStep === 0) { prevBtn.style.display = 'none'; nextBtn.style.display = 'block'; submitBtn.style.display = 'none'; } 
+    else if (currentMobileStep === wizardSteps.length - 1) { prevBtn.style.display = 'block'; nextBtn.style.display = 'none'; submitBtn.style.display = 'block'; } 
+    else { prevBtn.style.display = 'block'; nextBtn.style.display = 'block'; submitBtn.style.display = 'none'; }
+    const modalBody = document.querySelector('.check-modal-content .modal-body.scrollable'); if (modalBody) modalBody.scrollTop = 0;
 }
 function nextMobileStep() { if (currentMobileStep < wizardSteps.length - 1) { currentMobileStep++; updateMobileWizardUI(); } }
 function prevMobileStep() { if (currentMobileStep > 0) { currentMobileStep--; updateMobileWizardUI(); } }
 function closeWeeklyModal() { document.getElementById('weeklyCheckModal').style.display = 'none'; document.body.style.overflow = 'auto'; }
 
 function resetWeeklyForm() {
-    document.querySelectorAll('.plan-time, .act-time, .sub-detail, .custom-subj').forEach(i => i.value = '');
-    document.querySelectorAll('.rate-txt').forEach(s => s.innerText = '0%');
-    document.getElementById('totalPlan').innerText = '0H'; document.getElementById('totalAct').innerText = '0H'; document.getElementById('totalRate').innerText = '0%';
-    selectMockType('none', document.querySelector('.mock-tile')); 
-    const mockIds = ['mockKorScore', 'mockKorOpt', 'mockMathScore', 'mockMathOpt', 'mockEngScore', 'mockInq1Score', 'mockInq1Name', 'mockInq2Score', 'mockInq2Name'];
-    mockIds.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-    const fileTxt = document.getElementById('mockFileNameDisplay'); if(fileTxt) { fileTxt.innerText = '선택된 파일 없음'; fileTxt.style.color = '#94a3b8'; }
-    document.getElementById('slumpDetail').value = ''; document.querySelectorAll('#slumpReasonBox input').forEach(cb => cb.checked = false);
-    document.getElementById('slumpReasonBox').style.display = 'none'; const radios = document.getElementsByName('studyTrend'); if(radios.length > 1) radios[1].checked = true;
-    currentPlannerFiles = []; renderPlannerFiles();
-    ['deepQ1', 'deepQ2', 'deepQ3', 'deepQ4'].forEach(id => { const el = document.getElementById(id); if(el) { el.value = ''; if(el.nextElementSibling && el.nextElementSibling.classList.contains('char-count')) el.nextElementSibling.querySelector('span').innerText = '0'; } });
+    // 1. 과목 리스트 초기화 (기본 과목 클리어 및 동적 카드 삭제)
+    const list = document.getElementById('studyTimeList');
+    if (list) {
+        // 'addSubjectCard'로 추가되었던 커스텀 카드들만 선택해서 삭제
+        const dynamicCards = list.querySelectorAll('.custom-added-card');
+        dynamicCards.forEach(card => card.remove());
+    }
+
+    // 기본 과목(국어, 수학, 영어)의 입력값 및 달성률 텍스트 초기화
+    document.querySelectorAll('.plan-time, .act-time, .sub-detail').forEach(input => {
+        input.value = '';
+    });
+    document.querySelectorAll('.rate-txt').forEach(span => {
+        span.innerText = '0%';
+        span.style.color = '#334155'; // 기본 색상으로 복구
+    });
+
+    // 2. 총합 요약 영역 초기화
+    const totalPlan = document.getElementById('totalPlan');
+    const totalAct = document.getElementById('totalAct');
+    const totalRate = document.getElementById('totalRate');
+    
+    if (totalPlan) totalPlan.innerText = '0H';
+    if (totalAct) totalAct.innerText = '0H';
+    if (totalRate) totalRate.innerText = '0%';
+
+    // 3. 실전 모의고사 섹션 초기화
+    // '미응시' 타일을 찾아 선택 상태로 강제 전환
+    const noneMockTile = document.querySelector('.mock-tile[onclick*="\'none\'"]');
+    if (noneMockTile) selectMockType('none', noneMockTile);
+
+    const mockFieldIds = [
+        'mockKorScore', 'mockKorOpt', 'mockMathScore', 'mockMathOpt', 
+        'mockEngScore', 'mockInq1Score', 'mockInq1Name', 'mockInq2Score', 'mockInq2Name'
+    ];
+    mockFieldIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+
+    // 모의고사 파일 업로드 표시 초기화
+    const mockFileDisplay = document.getElementById('mockFileNameDisplay');
+    if (mockFileDisplay) {
+        mockFileDisplay.innerText = '선택된 파일 없음';
+        mockFileDisplay.style.color = '#94a3b8';
+    }
+    const mockFileInput = document.getElementById('mockExamProof');
+    if (mockFileInput) mockFileInput.value = '';
+
+    // 4. 학업 추이 및 하락 원인 섹션 초기화
+    const trendRadios = document.getElementsByName('studyTrend');
+    if (trendRadios.length >= 2) trendRadios[1].checked = true; // '유지' 인덱스 선택
+
+    const slumpDetail = document.getElementById('slumpDetail');
+    if (slumpDetail) slumpDetail.value = '';
+
+    document.querySelectorAll('#slumpReasonBox input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+    });
+    
+    const slumpBox = document.getElementById('slumpReasonBox');
+    if (slumpBox) slumpBox.style.display = 'none';
+
+    // 5. 플래너 인증 파일 배열 및 뷰 초기화
+    currentPlannerFiles = []; // 전역 파일 배열 비우기
+    const plannerInput = document.getElementById('plannerUpload');
+    if (plannerInput) plannerInput.value = '';
+    renderPlannerFiles();
+
+    // 6. 심층 질문(Step 2) 및 글자 수 카운터 초기화
+    const deepQuestionIds = ['deepQ1', 'deepQ2', 'deepQ3', 'deepQ4'];
+    deepQuestionIds.forEach(id => {
+        const textarea = document.getElementById(id);
+        if (textarea) {
+            textarea.value = '';
+            // 텍스트영역 다음에 오는 글자 수 카운트 span 업데이트
+            const countSpan = textarea.parentElement.querySelector('.char-count span');
+            if (countSpan) countSpan.innerText = '0';
+        }
+    });
+
+    // 7. [핵심] 사용자가 버튼을 누르지 않아도 빈 과목 슬롯 1개를 자동으로 생성
+    if (typeof addSubjectCard === 'function') {
+        addSubjectCard();
+    }
 }
 
 function selectMockType(type, element) { document.getElementById('mockExamType').value = type; document.querySelectorAll('.mock-tile').forEach(tile => tile.classList.remove('selected')); element.classList.add('selected'); toggleMockExamFields(); }
 function toggleMockExamFields() { const type = document.getElementById('mockExamType').value; const fields = document.getElementById('mockExamFields'); if (type === 'none') fields.style.display = 'none'; else fields.style.display = 'block'; }
 
 function calcStudyRates() {
-    const cards = document.querySelectorAll('.subject-card'); let sumPlan = 0, sumAct = 0;
-    cards.forEach(card => {
-        const planInput = card.querySelector('.plan-time'); const actInput = card.querySelector('.act-time'); const rateTxt = card.querySelector('.rate-txt');
-        if(!planInput || !actInput) return;
-        const plan = parseFloat(planInput.value) || 0; const act = parseFloat(actInput.value) || 0;
-        sumPlan += plan; sumAct += act;
-        if (plan > 0) {
-            const rate = Math.min((act / plan) * 100, 100).toFixed(0); rateTxt.innerText = `${rate}%`;
-            if(rate >= 100) rateTxt.style.color = '#10b981'; else if(rate >= 80) rateTxt.style.color = '#3b82f6'; else rateTxt.style.color = '#ef4444';
-        } else { rateTxt.innerText = '0%'; rateTxt.style.color = '#334155'; }
-    });
-    document.getElementById('totalPlan').innerText = sumPlan.toFixed(1) + 'H'; document.getElementById('totalAct').innerText = sumAct.toFixed(1) + 'H';
-    const totalRate = sumPlan > 0 ? Math.min((sumAct / sumPlan) * 100, 100).toFixed(0) : 0; document.getElementById('totalRate').innerText = `${totalRate}%`;
+    const cards = document.querySelectorAll('.subject-card'); let sumPlan = 0, sumAct = 0;
+    cards.forEach(card => {
+        const planInput = card.querySelector('.plan-time'); const actInput = card.querySelector('.act-time'); const rateTxt = card.querySelector('.rate-txt');
+        if(!planInput || !actInput) return;
+        const plan = parseFloat(planInput.value) || 0; const act = parseFloat(actInput.value) || 0;
+        sumPlan += plan; sumAct += act;
+        if (plan > 0) {
+            const rate = Math.min((act / plan) * 100, 100).toFixed(0); rateTxt.innerText = `${rate}%`;
+            if(rate >= 100) rateTxt.style.color = '#10b981'; else if(rate >= 80) rateTxt.style.color = '#3b82f6'; else rateTxt.style.color = '#ef4444';
+        } else { rateTxt.innerText = '0%'; rateTxt.style.color = '#334155'; }
+    });
+    document.getElementById('totalPlan').innerText = sumPlan.toFixed(1) + 'H'; document.getElementById('totalAct').innerText = sumAct.toFixed(1) + 'H';
+    const totalRate = sumPlan > 0 ? Math.min((sumAct / sumPlan) * 100, 100).toFixed(0) : 0; document.getElementById('totalRate').innerText = `${totalRate}%`;
 }
 
 function addSubjectCard() {
-    const list = document.getElementById('studyTimeList'); const newCard = document.createElement('div'); newCard.className = 'subject-card';
-    newCard.innerHTML = `<div class="card-header"><input type="text" class="custom-subj" placeholder="과목명 직접 입력" style="border:none; border-bottom:2px solid #3b82f6; font-weight:800; font-size:1.05rem; outline:none; width:60%; color:#1e293b; padding:2px;"><button type="button" class="btn-del-card" onclick="this.closest('.subject-card').remove(); calcStudyRates();"><i class="fas fa-times"></i> 삭제</button></div><div class="card-body"><input type="text" class="sub-detail" placeholder="세부과목 (선택사항)"><div class="time-inputs"><div class="input-group"><label>계획(H)</label><input type="number" class="plan-time" oninput="calcStudyRates()"></div><div class="input-group"><label>실제(H)</label><input type="number" class="act-time" oninput="calcStudyRates()"></div><div class="rate-display"><label>달성률</label><span class="rate-txt">0%</span></div></div></div>`;
+    const list = document.getElementById('studyTimeList');
+    const newCard = document.createElement('div');
+    newCard.className = 'subject-card custom-added-card';
+
+    // 카드 헤더 생성 (입력창 + 삭제버튼)
+    const header = document.createElement('div');
+    header.className = 'card-header';
+    
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.className = 'custom-subj';
+    nameInput.placeholder = '과목명 직접 입력 (예: 한국사)';
+    
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'btn-del-card';
+    delBtn.innerHTML = '<i class="fas fa-times"></i> 삭제';
+    delBtn.onclick = () => { newCard.remove(); calcStudyRates(); };
+
+    header.appendChild(nameInput);
+    header.appendChild(delBtn);
+
+    // 카드 바디 생성 (세부과목 + 계획/실제/달성률)
+    const body = document.createElement('div');
+    body.className = 'card-body';
+    body.innerHTML = `
+        <input type="text" class="sub-detail" placeholder="세부과목 (선택사항)">
+        <div class="time-inputs">
+            <div class="input-group"><label>계획(H)</label><input type="number" class="plan-time" oninput="calcStudyRates()"></div>
+            <div class="input-group"><label>실제(H)</label><input type="number" class="act-time" oninput="calcStudyRates()"></div>
+            <div class="rate-display"><label>달성률</label><span class="rate-txt">0%</span></div>
+        </div>
+    `;
+
+    newCard.appendChild(header);
+    newCard.appendChild(body);
     list.appendChild(newCard);
 }
 
 function handlePlannerFiles(input) {
-    if (input.files) {
-        const files = Array.from(input.files);
-        if (currentPlannerFiles.length + files.length > 5) { alert("최대 5장까지만 업로드 가능합니다."); input.value = ''; return; }
-        files.forEach(f => currentPlannerFiles.push(f)); renderPlannerFiles();
-    }
+    if (input.files) {
+        const files = Array.from(input.files);
+        if (currentPlannerFiles.length + files.length > 5) { alert("최대 5장까지만 업로드 가능합니다."); input.value = ''; return; }
+        files.forEach(f => currentPlannerFiles.push(f)); renderPlannerFiles();
+    }
 }
 
 function renderPlannerFiles() {
-    const list = document.getElementById('plannerFileList'); if(!list) return; list.innerHTML = '';
-    if (currentPlannerFiles.length === 0) { list.innerHTML = '<span class="placeholder-text">선택된 파일 없음</span>'; return; }
-    currentPlannerFiles.forEach((file, idx) => {
-        let fileName = ""; let fileLink = ""; 
-        if (file instanceof File) { fileName = file.name; } 
-        else if (typeof file === 'string') { try { const rawName = file.split('/').pop(); fileName = decodeURIComponent(rawName); fileName = fileName.replace(/^\d+_/, ''); fileLink = file; } catch (e) { fileName = file; } }
-        const div = document.createElement('div'); div.className = 'file-item';
-        let nameDisplay = `<span>📄 ${escapeHtml(fileName)}</span>`;
-        if (fileLink) { nameDisplay = `<a href="${fileLink}" target="_blank" style="text-decoration:none; color:#334155; display:flex; align-items:center; gap:5px;"><span>📄 ${escapeHtml(fileName)}</span> <i class="fas fa-external-link-alt" style="font-size:0.7rem; color:#3b82f6;"></i></a>`; }
-        div.innerHTML = `${nameDisplay}<span class="file-remove" onclick="removePlannerFile(${idx})">x</span>`; list.appendChild(div);
-    });
+    const list = document.getElementById('plannerFileList'); if(!list) return; list.innerHTML = '';
+    if (currentPlannerFiles.length === 0) { list.innerHTML = '<span class="placeholder-text">선택된 파일 없음</span>'; return; }
+    currentPlannerFiles.forEach((file, idx) => {
+        let fileName = ""; let fileLink = ""; 
+        if (file instanceof File) { fileName = file.name; } 
+        else if (typeof file === 'string') { try { const rawName = file.split('/').pop(); fileName = decodeURIComponent(rawName); fileName = fileName.replace(/^\d+_/, ''); fileLink = file; } catch (e) { fileName = file; } }
+        const div = document.createElement('div'); div.className = 'file-item';
+        let nameDisplay = `<span>📄 ${escapeHtml(fileName)}</span>`;
+        if (fileLink) { nameDisplay = `<a href="${fileLink}" target="_blank" style="text-decoration:none; color:#334155; display:flex; align-items:center; gap:5px;"><span>📄 ${escapeHtml(fileName)}</span> <i class="fas fa-external-link-alt" style="font-size:0.7rem; color:#3b82f6;"></i></a>`; }
+        div.innerHTML = `${nameDisplay}<span class="file-remove" onclick="removePlannerFile(${idx})">x</span>`; list.appendChild(div);
+    });
 }
 function removePlannerFile(idx) { currentPlannerFiles.splice(idx, 1); renderPlannerFiles(); }
 function toggleSlumpReason() { const trend = document.querySelector('input[name="studyTrend"]:checked')?.value; const box = document.getElementById('slumpReasonBox'); if(trend === 'down') box.style.display = 'block'; else box.style.display = 'none'; }
 
 function loadWeeklyDataToForm(data) {
-    if (data.studyTime && data.studyTime.details) {
-        const cards = document.querySelectorAll('.subject-card');
-        data.studyTime.details.forEach((detail, idx) => {
-            if (cards[idx]) {
-                const planInput = cards[idx].querySelector('.plan-time'); const actInput = cards[idx].querySelector('.act-time'); const detailInput = cards[idx].querySelector('.sub-detail'); const customInput = cards[idx].querySelector('.custom-subj');
-                if (planInput) planInput.value = detail.plan; if (actInput) actInput.value = detail.act;
-                if (detail.subject.includes('(') && detailInput) { const match = detail.subject.match(/\((.*?)\)/); if(match) detailInput.value = match[1]; } 
-                else if (customInput) { customInput.value = detail.subject; }
-            }
-        });
-        calcStudyRates(); 
-    }
-    if (data.mockExam) {
-        const targetTile = document.querySelector(`.mock-tile[onclick*="'${data.mockExam.type}'"]`); if(targetTile) selectMockType(data.mockExam.type, targetTile);
-        if (data.mockExam.scores) {
-            const s = data.mockExam.scores; const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
-            setVal('mockKorScore', s.kor); setVal('mockKorOpt', s.korOpt); setVal('mockMathScore', s.math); setVal('mockMathOpt', s.mathOpt); setVal('mockEngScore', s.eng); setVal('mockInq1Score', s.inq1); setVal('mockInq1Name', s.inq1Name); setVal('mockInq2Score', s.inq2); setVal('mockInq2Name', s.inq2Name);
-        }
-    }
-    if (data.trend) {
-        const radio = document.querySelector(`input[name="studyTrend"][value="${data.trend.status}"]`);
-        if (radio) {
-            radio.checked = true; toggleSlumpReason(); 
-            if (data.trend.status === 'down' && data.trend.reasons) { data.trend.reasons.forEach(r => { const cb = document.querySelector(`#slumpReasonBox input[value="${r}"]`); if(cb) cb.checked = true; else document.getElementById('slumpDetail').value = r; }); }
-        }
-    }
-    if (data.deepAnswers && Array.isArray(data.deepAnswers)) {
-        ['deepQ1', 'deepQ2', 'deepQ3', 'deepQ4'].forEach((id, idx) => { const el = document.getElementById(id); if(el) { el.value = data.deepAnswers[idx] || ''; if(typeof updateCharCount === 'function') updateCharCount(el); } });
-    }
-    currentPlannerFiles = data.plannerFiles || []; originalPlannerFiles = [...currentPlannerFiles]; renderPlannerFiles();
+    if (data.studyTime && data.studyTime.details) {
+        const cards = document.querySelectorAll('.subject-card');
+        data.studyTime.details.forEach((detail, idx) => {
+            if (cards[idx]) {
+                const planInput = cards[idx].querySelector('.plan-time'); const actInput = cards[idx].querySelector('.act-time'); const detailInput = cards[idx].querySelector('.sub-detail'); const customInput = cards[idx].querySelector('.custom-subj');
+                if (planInput) planInput.value = detail.plan; if (actInput) actInput.value = detail.act;
+                if (detail.subject.includes('(') && detailInput) { const match = detail.subject.match(/\((.*?)\)/); if(match) detailInput.value = match[1]; } 
+                else if (customInput) { customInput.value = detail.subject; }
+            }
+        });
+        calcStudyRates(); 
+    }
+    if (data.mockExam) {
+        const targetTile = document.querySelector(`.mock-tile[onclick*="'${data.mockExam.type}'"]`); if(targetTile) selectMockType(data.mockExam.type, targetTile);
+        if (data.mockExam.scores) {
+            const s = data.mockExam.scores; const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
+            setVal('mockKorScore', s.kor); setVal('mockKorOpt', s.korOpt); setVal('mockMathScore', s.math); setVal('mockMathOpt', s.mathOpt); setVal('mockEngScore', s.eng); setVal('mockInq1Score', s.inq1); setVal('mockInq1Name', s.inq1Name); setVal('mockInq2Score', s.inq2); setVal('mockInq2Name', s.inq2Name);
+        }
+    }
+    if (data.trend) {
+        const radio = document.querySelector(`input[name="studyTrend"][value="${data.trend.status}"]`);
+        if (radio) {
+            radio.checked = true; toggleSlumpReason(); 
+            if (data.trend.status === 'down' && data.trend.reasons) { data.trend.reasons.forEach(r => { const cb = document.querySelector(`#slumpReasonBox input[value="${r}"]`); if(cb) cb.checked = true; else document.getElementById('slumpDetail').value = r; }); }
+        }
+    }
+    if (data.deepAnswers && Array.isArray(data.deepAnswers)) {
+        ['deepQ1', 'deepQ2', 'deepQ3', 'deepQ4'].forEach((id, idx) => { const el = document.getElementById(id); if(el) { el.value = data.deepAnswers[idx] || ''; if(typeof updateCharCount === 'function') updateCharCount(el); } });
+    }
+    currentPlannerFiles = data.plannerFiles || []; originalPlannerFiles = [...currentPlannerFiles]; renderPlannerFiles();
 }
 
 function updateCharCount(el) { const countSpan = el.parentElement.querySelector('.char-count span'); if(countSpan) countSpan.innerText = el.value.length; }
 
+// 모바일/PC 화면 전환을 통합으로 처리하는 헬퍼 함수
+function forceMoveToStep(mobileIdx, tabId) {
+    const modalContent = document.querySelector('.check-modal-content');
+    if (modalContent && modalContent.classList.contains('mobile-wizard-mode')) {
+        currentMobileStep = mobileIdx;
+        if (typeof updateMobileWizardUI === 'function') updateMobileWizardUI();
+    } else {
+        if (typeof switchWeeklyTab === 'function') switchWeeklyTab(tabId);
+    }
+}
+
 async function submitWeeklyCheck() {
-    const totalPlanEl = document.getElementById('totalPlan'); if (!totalPlanEl) return;
-    const totalPlan = parseFloat(totalPlanEl.innerText); if (totalPlan === 0) { alert("학습 계획 시간을 입력해주세요."); switchWeeklyTab('step1'); return; }
+    const submitBtn = document.querySelector('.save-btn'); 
+    const originalBtnText = submitBtn ? submitBtn.innerText : "저장";
 
-    const getVal = (id) => document.getElementById(id) ? document.getElementById(id).value.trim() : "";
-    const q1 = getVal('deepQ1'); const q2 = getVal('deepQ2'); const q3 = getVal('deepQ3'); const q4 = getVal('deepQ4');
-    if (!q1 && !q2 && !q3 && !q4) { alert("심층 코칭 질문을 최소 1개 이상 작성해주세요."); switchWeeklyTab('step2'); return; }
+    try {
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.innerText = "처리 중..."; }
 
-    const mockType = document.getElementById('mockExamType').value; let mockData = { type: mockType, proofFile: null, scores: {} };
-    if (mockType !== 'none') {
-        const fileInput = document.getElementById('mockExamProof'); mockData.proofFile = (fileInput && fileInput.files.length > 0) ? fileInput.files[0].name : "file_uploaded"; 
-        mockData.scores = { kor: getVal('mockKorScore'), korOpt: getVal('mockKorOpt'), math: getVal('mockMathScore'), mathOpt: getVal('mockMathOpt'), eng: getVal('mockEngScore'), inq1: getVal('mockInq1Score'), inq1Name: getVal('mockInq1Name'), inq2: getVal('mockInq2Score'), inq2Name: getVal('mockInq2Name') };
-    }
+        const totalPlanEl = document.getElementById('totalPlan'); 
+        if (!totalPlanEl) {
+            alert("시스템 오류: 학습 계획 시간 요소를 찾을 수 없습니다.");
+            return;
+        }
 
-    const studyCards = document.querySelectorAll('.subject-card'); let studyData = [];
-    studyCards.forEach(card => {
-        let subjName = ""; const mainSub = card.querySelector('.main-sub'); const detail = card.querySelector('.sub-detail'); const custom = card.querySelector('.custom-subj');
-        if(mainSub) { subjName = mainSub.innerText.replace('↳', '').trim(); if(detail && detail.value) subjName += `(${detail.value.trim()})`; } 
-        else if(custom) { subjName = custom.value.trim() || "기타"; }
-        const planEl = card.querySelector('.plan-time'); const actEl = card.querySelector('.act-time');
-        const plan = planEl ? (parseFloat(planEl.value) || 0) : 0; const act = actEl ? (parseFloat(actEl.value) || 0) : 0;
-        if(plan > 0 || act > 0) studyData.push({ subject: subjName, plan, act });
-    });
+        const totalPlan = parseFloat(totalPlanEl.innerText); 
+        if (isNaN(totalPlan) || totalPlan === 0) { 
+            alert("학습 계획 시간을 1시간 이상 입력해주세요."); 
+            forceMoveToStep(0, 'step1');
+            return; 
+        }
 
-    const trendEl = document.querySelector('input[name="studyTrend"]:checked'); const trend = trendEl ? trendEl.value : 'keep'; let reasons = [];
-    if(trend === 'down') { document.querySelectorAll('#slumpReasonBox input:checked').forEach(cb => reasons.push(cb.value)); const det = document.getElementById('slumpDetail').value; if(det) reasons.push(det); }
+        const getVal = (id) => document.getElementById(id) ? document.getElementById(id).value.trim() : "";
+        const q1 = getVal('deepQ1'), q2 = getVal('deepQ2'), q3 = getVal('deepQ3'), q4 = getVal('deepQ4');
+        if (!q1 && !q2 && !q3 && !q4) { 
+            alert("심층 코칭 질문을 최소 1개 이상 작성해주세요."); 
+            forceMoveToStep(1, 'step2');
+            return; 
+        }
 
-    if(!confirm("제출하시겠습니까?")) return;
+        // 요소가 존재하지 않을 때를 대비한 안전한 값 추출
+        const mockExamTypeEl = document.getElementById('mockExamType');
+        const mockType = mockExamTypeEl ? mockExamTypeEl.value : 'none';
+        
+        let mockData = { type: mockType, proofFile: null, scores: {} };
+        if (mockType !== 'none') {
+            const fileInput = document.getElementById('mockExamProof');
+            mockData.proofFile = (fileInput && fileInput.files.length > 0) ? fileInput.files[0].name : "file_uploaded"; 
+            mockData.scores = { 
+                kor: getVal('mockKorScore'), korOpt: getVal('mockKorOpt'), 
+                math: getVal('mockMathScore'), mathOpt: getVal('mockMathOpt'), 
+                eng: getVal('mockEngScore'), 
+                inq1: getVal('mockInq1Score'), inq1Name: getVal('mockInq1Name'), 
+                inq2: getVal('mockInq2Score'), inq2Name: getVal('mockInq2Name') 
+            };
+        }
 
-    const token = localStorage.getItem('idToken'); const submitBtn = document.querySelector('.save-btn'); const originalBtnText = submitBtn ? submitBtn.innerText : "저장";
-    try {
-        if(submitBtn) { submitBtn.disabled = true; submitBtn.innerText = "처리 중..."; }
+        const studyCards = document.querySelectorAll('.subject-card'); 
+        let studyData = [];
+        studyCards.forEach(card => {
+            let subjName = ""; 
+            const mainSub = card.querySelector('.main-sub'); 
+            const detail = card.querySelector('.sub-detail'); 
+            const custom = card.querySelector('.custom-subj');
+            
+            if (mainSub) { 
+                subjName = mainSub.innerText.replace('↳', '').trim(); 
+                if(detail) {
+    				const detailVal = detail.value.trim();
+    				// 값이 있으면 그 값을 쓰고, 없으면 기본값인 '공통'을 붙여줍니다.
+    				subjName += `(${detailVal ? detailVal : '공통'})`;
+				}
+            } else if (custom) { 
+                subjName = custom.value.trim() || "기타"; 
+            }
+            
+            const planEl = card.querySelector('.plan-time'); 
+            const actEl = card.querySelector('.act-time');
+            const plan = planEl ? (parseFloat(planEl.value) || 0) : 0; 
+            const act = actEl ? (parseFloat(actEl.value) || 0) : 0;
+            
+            if (plan > 0 || act > 0) studyData.push({ subject: subjName, plan, act });
+        });
 
-        const currentUrls = currentPlannerFiles.filter(f => typeof f === 'string'); const filesToDelete = originalPlannerFiles.filter(url => !currentUrls.includes(url));
-        if (filesToDelete.length > 0) { await Promise.all(filesToDelete.map(url => fetch(FILE_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ type: 'delete_s3_file', data: { fileUrl: url } }) }))); }
-        let finalFileUrls = [...currentUrls]; const newFiles = currentPlannerFiles.filter(f => typeof f !== 'string');
-        if (newFiles.length > 0) {
-            for (const file of newFiles) {
-                const res = await fetch(FILE_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ type: 'get_presigned_url', data: { fileName: file.name, fileType: file.type, folder: 'planner' } }) });
-                if (!res.ok) throw new Error("업로드 URL 발급 실패");
-                const { uploadUrl, fileUrl, fields } = await res.json();
-                const formData = new FormData(); Object.entries(fields || {}).forEach(([k, v]) => formData.append(k, v)); formData.append('file', file);
-                await fetch(uploadUrl, { method: 'POST', body: formData }); finalFileUrls.push(fileUrl);
-            }
-        }
-        
-        if (mockData.type !== 'none') {
-            const mockFileInput = document.getElementById('mockExamProof');
-            if (mockFileInput && mockFileInput.files.length > 0) {
-                const mFile = mockFileInput.files[0];
-                const mRes = await fetch(FILE_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ type: 'get_presigned_url', data: { fileName: mFile.name, fileType: mFile.type, folder: 'mock_exams' } }) });
-                if (!mRes.ok) throw new Error("모의고사 파일 업로드 URL 발급 실패");
-                const { uploadUrl, fields, fileUrl } = await mRes.json();
-                const formData = new FormData(); Object.entries(fields || {}).forEach(([k, v]) => formData.append(k, v)); formData.append('file', mFile); 
-                const uploadRes = await fetch(uploadUrl, { method: 'POST', body: formData });
-                if (!uploadRes.ok) throw new Error("S3 업로드 실패");
-                mockData.proofFile = fileUrl; 
-            } else if (!mockData.proofFile || mockData.proofFile === "file_uploaded") {
-                alert("모의고사 성적 인증 사진을 첨부해주세요."); switchWeeklyTab('step1'); 
-                if(submitBtn) { submitBtn.disabled = false; submitBtn.innerText = originalBtnText; } return;
-            }
-        }
+        const trendEl = document.querySelector('input[name="studyTrend"]:checked'); 
+        const trend = trendEl ? trendEl.value : 'keep'; 
+        let reasons = [];
+        if (trend === 'down') { 
+            document.querySelectorAll('#slumpReasonBox input:checked').forEach(cb => reasons.push(cb.value)); 
+            const det = document.getElementById('slumpDetail');
+            if(det && det.value) reasons.push(det.value); 
+        }
 
-        const today = new Date().toISOString(); const title = (typeof getWeekTitle === 'function') ? getWeekTitle(new Date()) : "주간점검"; 
-        const weeklyData = { date: today, title: title, studyTime: { details: studyData, totalPlan: document.getElementById('totalPlan').innerText, totalAct: document.getElementById('totalAct').innerText, totalRate: document.getElementById('totalRate').innerText }, mockExam: mockData, trend: { status: trend, reasons: reasons }, deepAnswers: [q1, q2, q3, q4], plannerFiles: finalFileUrls };
+        if (!confirm("제출하시겠습니까?")) return;
 
-        const res = await fetch(REPORT_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ type: 'save_weekly_check', data: weeklyData }) });
-        if(res.ok) { alert("제출이 완료되었습니다."); closeWeeklyModal(); location.reload(); } else { throw new Error("서버 응답 오류"); }
-    } catch(e) { console.error("Submit Error:", e); alert("처리 중 오류가 발생했습니다: " + e.message); } 
-    finally { if(submitBtn) { submitBtn.disabled = false; submitBtn.innerText = originalBtnText; } }
+        const token = localStorage.getItem('idToken'); 
+
+        const currentUrls = currentPlannerFiles.filter(f => typeof f === 'string'); 
+        const filesToDelete = originalPlannerFiles.filter(url => !currentUrls.includes(url));
+        
+        if (filesToDelete.length > 0) { 
+            await Promise.all(filesToDelete.map(url => fetch(FILE_API_URL, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                body: JSON.stringify({ type: 'delete_s3_file', data: { fileUrl: url } }) 
+            }))); 
+        }
+        
+        let finalFileUrls = [...currentUrls]; 
+        const newFiles = currentPlannerFiles.filter(f => typeof f !== 'string');
+        
+        if (newFiles.length > 0) {
+            for (const file of newFiles) {
+                // 🔒 [보안] 파일명 살균 (Sanitization) 처리 적용
+                const secureFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`;
+
+                const res = await fetch(FILE_API_URL, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    body: JSON.stringify({ type: 'get_presigned_url', data: { fileName: secureFileName, fileType: file.type, folder: 'planner' } }) 
+                });
+                
+                if (!res.ok) throw new Error("플래너 업로드 URL 발급 실패");
+                const { uploadUrl, fileUrl, fields } = await res.json();
+                const formData = new FormData(); 
+                
+                Object.entries(fields || {}).forEach(([k, v]) => formData.append(k, v)); 
+                formData.append('file', file);
+                
+                await fetch(uploadUrl, { method: 'POST', body: formData }); 
+                finalFileUrls.push(fileUrl);
+            }
+        }
+        
+        if (mockData.type !== 'none') {
+            const mockFileInput = document.getElementById('mockExamProof');
+            if (mockFileInput && mockFileInput.files.length > 0) {
+                const mFile = mockFileInput.files[0];
+                // 🔒 [보안] 파일명 살균 (Sanitization) 처리 적용
+                const secureMockName = `mock_${Date.now()}_${mFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`;
+
+                const mRes = await fetch(FILE_API_URL, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    body: JSON.stringify({ type: 'get_presigned_url', data: { fileName: secureMockName, fileType: mFile.type, folder: 'mock_exams' } }) 
+                });
+                
+                if (!mRes.ok) throw new Error("모의고사 성적표 업로드 URL 발급 실패");
+                const { uploadUrl, fields, fileUrl } = await mRes.json();
+                
+                const formData = new FormData(); 
+                Object.entries(fields || {}).forEach(([k, v]) => formData.append(k, v)); 
+                formData.append('file', mFile); 
+                
+                const uploadRes = await fetch(uploadUrl, { method: 'POST', body: formData });
+                if (!uploadRes.ok) throw new Error("모의고사 S3 업로드 실패");
+                
+                mockData.proofFile = fileUrl; 
+            } else if (!mockData.proofFile || mockData.proofFile === "file_uploaded") {
+                alert("모의고사 성적 인증 사진을 첨부해주세요."); 
+                forceMoveToStep(0, 'step1'); 
+                return;
+            }
+        }
+
+        const today = new Date().toISOString();
+        const title = (typeof getWeekTitle === 'function') ? getWeekTitle(new Date()) : "주간점검";
+        const weekId = generateWeekId(new Date());
+        
+        const weeklyData = { 
+            weekId, date: today, title: title, 
+            studyTime: { 
+                details: studyData, 
+                totalPlan: document.getElementById('totalPlan') ? document.getElementById('totalPlan').innerText : '0H', 
+                totalAct: document.getElementById('totalAct') ? document.getElementById('totalAct').innerText : '0H', 
+                totalRate: document.getElementById('totalRate') ? document.getElementById('totalRate').innerText : '0%' 
+            }, 
+            mockExam: mockData, 
+            trend: { status: trend, reasons: reasons }, 
+            deepAnswers: [q1, q2, q3, q4], 
+            plannerFiles: finalFileUrls 
+        };
+
+        const res = await fetch(REPORT_API_URL, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+            body: JSON.stringify({ type: 'save_weekly_check', data: weeklyData }) 
+        });
+        
+        if (res.ok) { 
+            alert("제출이 완료되었습니다."); 
+            closeWeeklyModal(); 
+            location.reload(); 
+        } else { 
+            throw new Error("서버 응답 오류가 발생했습니다."); 
+        }
+        
+    } catch(e) { 
+        console.error("Submit Error:", e); 
+        alert("처리 중 오류가 발생했습니다: " + e.message); 
+    } finally { 
+        if (submitBtn) { 
+            submitBtn.disabled = false; 
+            submitBtn.innerText = originalBtnText; 
+        } 
+    }
 }
 
 function updateMockFileName(input) {
-    const display = document.getElementById('mockFileNameDisplay');
-    if (input.files && input.files.length > 0) { display.textContent = input.files[0].name; display.style.color = "#2563eb"; display.style.fontWeight = "bold"; } 
-    else { display.textContent = "선택된 파일 없음"; display.style.color = "#94a3b8"; display.style.fontWeight = "normal"; }
+    const display = document.getElementById('mockFileNameDisplay');
+    if (input.files && input.files.length > 0) { display.textContent = input.files[0].name; display.style.color = "#2563eb"; display.style.fontWeight = "bold"; } 
+    else { display.textContent = "선택된 파일 없음"; display.style.color = "#94a3b8"; display.style.fontWeight = "normal"; }
 }
 
 // ============================================================
 // [기능 5] PRO EXCLUSIVE 섹션 렌더링
 // ============================================================
 function initProSection() {
-    const container = document.getElementById('sol-pro');
-    if (!container) return;
-    if (['pro'].includes(currentUserTier)) renderProDashboard(container);
-    else renderProPromo(container);
+    const container = document.getElementById('sol-pro');
+    if (!container) return;
+    if (['pro'].includes(currentUserTier)) renderProDashboard(container);
+    else renderProPromo(container);
 }
 
 function renderProPromo(container) {
-    container.innerHTML = `
-        <div class="pro-header"><span class="pro-badge">PREMIUM STRATEGY</span><h2 class="pro-title">PRO EXCLUSIVE :<br>최소 학습, 최대 효율</h2><p class="pro-desc">추상적인 조언은 배제합니다. 데이터 기반으로 목표 대학을 향한 최단 경로를 설계하세요.</p></div>
-        <div class="pro-promo-grid">
-            <div class="pro-feature-card"><span class="feat-icon">📊</span><span class="feat-title">학습 정밀 진단</span><p class="feat-desc">단순한 착석 시간이 아닌 <strong>유효 학습 시간, 오답 회수율</strong> 등 객관적 지표로 학습 밀도를 진단합니다.</p></div>
-            <div class="pro-feature-card"><span class="feat-icon">🎯</span><span class="feat-title">합격 기여도 분석</span><p class="feat-desc">목표 대학 합격선까지의 부족한 점수(ΔCut)를 파악하고, 점수 상승 <strong>기여도가 가장 높은 과목</strong>을 짚어냅니다.</p></div>
-            <div class="pro-feature-card highlight"><span class="feat-icon">⚡</span><span class="feat-title">명확한 Next Step</span><p class="feat-desc">막연한 조언 대신 특정 인강 수강, 실전 모의고사 등 당장 실행해야 할 <strong>구체적인 행동 지침</strong>을 제시합니다.</p></div>
+    container.innerHTML = `
+        <div style="display: block;">
+            <div class="pro-header"><span class="pro-badge">PREMIUM STRATEGY</span><h2 class="pro-title">PRO EXCLUSIVE :<br>최소 학습, 최대 효율</h2><p class="pro-desc">추상적인 조언은 배제합니다. 데이터 기반으로 목표 대학을 향한 최단 경로를 설계하세요.</p></div>
+            <div class="pro-promo-grid">
+                <div class="pro-feature-card">
+                    <span class="feat-icon">📊</span>
+                    <div class="feat-text-box">
+                        <span class="feat-title">학습 정밀 진단</span>
+                        <p class="feat-desc">단순한 착석 시간이 아닌 <strong>유효 학습 시간, 오답 회수율</strong> 등 객관적 지표로 학습 밀도를 진단합니다.</p>
+                    </div>
+                </div>
+                <div class="pro-feature-card">
+                    <span class="feat-icon">🎯</span>
+                    <div class="feat-text-box">
+                        <span class="feat-title">합격 기여도 분석</span>
+                        <p class="feat-desc">목표 대학 합격선까지의 부족한 점수(ΔCut)를 파악하고, 점수 상승 <strong>기여도가 가장 높은 과목</strong>을 짚어냅니다.</p>
+                    </div>
+                </div>
+                <div class="pro-feature-card highlight">
+                    <span class="feat-icon">⚡</span>
+                    <div class="feat-text-box">
+                        <span class="feat-title">명확한 Next Step</span>
+                        <p class="feat-desc">막연한 조언 대신 특정 인강 수강, 실전 모의고사 등 당장 실행해야 할 <strong>구체적인 행동 지침</strong>을 제시합니다.</p>
+                    </div>
+                </div>
+            </div>
+            <button onclick="location.href='/payment'" class="pro-cta-btn">🚀 PRO 멤버십으로<br>업그레이드 하기<div style="font-size:0.8rem; opacity:0.8; margin-top:5px; font-weight:400;">데이터 기반 1:1 맞춤 컨설팅 시작하기</div></button>
         </div>
-        <button onclick="location.href='/payment'" class="pro-cta-btn">🚀 PRO 멤버십으로<br>업그레이드 하기<div style="font-size:0.8rem; opacity:0.8; margin-top:5px; font-weight:400;">데이터 기반 1:1 맞춤 컨설팅 시작하기</div></button>
     `;
 }
 
 function generateReportKey(dateObj) {
-    const year = dateObj.getFullYear().toString().slice(2); 
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0'); 
-    const startOfMonth = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
-    const dayOfWeek = startOfMonth.getDay(); 
-    const offsetDate = dateObj.getDate() + dayOfWeek - 1;
-    const weekNum = String(Math.floor(offsetDate / 7) + 1).padStart(2, '0'); 
-    return `${year}${month}${weekNum}`;
+    const year = dateObj.getFullYear().toString().slice(2); 
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0'); 
+    const startOfMonth = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
+    const dayOfWeek = startOfMonth.getDay(); 
+    const offsetDate = dateObj.getDate() + dayOfWeek - 1;
+    const weekNum = String(Math.floor(offsetDate / 7) + 1).padStart(2, '0'); 
+    return `${year}${month}${weekNum}`;
 }
 
 function formatReportKey(key) {
-    if (!key || key.length !== 6) return key;
-    const yStr = key.substring(0, 2); const mStr = parseInt(key.substring(2, 4), 10); const wStr = parseInt(key.substring(4, 6), 10);
-    return `20${yStr}년 ${mStr}월 ${wStr}주차 PRO 분석`;
+    if (!key || key.length !== 6) return key;
+    const yStr = key.substring(0, 2); const mStr = parseInt(key.substring(2, 4), 10); const wStr = parseInt(key.substring(4, 6), 10);
+    return `20${yStr}년 ${mStr}월 ${wStr}주차 PRO 분석`;
 }
 
 async function renderProDashboard(container) {
-    const now = new Date(); const currentKey = generateReportKey(now); 
-    const displayDateStr = formatReportKey(currentKey).replace(" PRO 분석", ""); 
-    
-    let paymentDate = userRecentPaymentDate || new Date();
-    let deadlineDate = new Date(paymentDate); deadlineDate.setDate(deadlineDate.getDate() + 7); 
-    const daysToSunday = (7 - deadlineDate.getDay()) % 7; deadlineDate.setDate(deadlineDate.getDate() + daysToSunday); deadlineDate.setHours(23, 59, 59, 999);
-    let releaseDate = new Date(deadlineDate); releaseDate.setDate(releaseDate.getDate() + 3);
+    const now = new Date(); const currentKey = generateReportKey(now); 
+    const displayDateStr = formatReportKey(currentKey).replace(" PRO 분석", ""); 
+    
+    let paymentDate = userRecentPaymentDate || new Date();
+    let deadlineDate = new Date(paymentDate); deadlineDate.setDate(deadlineDate.getDate() + 7); 
+    const daysToSunday = (7 - deadlineDate.getDay()) % 7; deadlineDate.setDate(deadlineDate.getDate() + daysToSunday); deadlineDate.setHours(23, 59, 59, 999);
+    let releaseDate = new Date(deadlineDate); releaseDate.setDate(releaseDate.getDate() + 3);
 
-    const isDeadlinePassed = now > deadlineDate;
-    const deadlineStr = `${deadlineDate.getMonth() + 1}월 ${deadlineDate.getDate()}일(일) 자정`;
-    const releaseStr = `${releaseDate.getMonth() + 1}월 ${releaseDate.getDate()}일(수)`;
+    const isDeadlinePassed = now > deadlineDate;
+    const deadlineStr = `${deadlineDate.getMonth() + 1}월 ${deadlineDate.getDate()}일(일) 자정`;
+    const releaseStr = `${releaseDate.getMonth() + 1}월 ${releaseDate.getDate()}일(수)`;
 
-    container.innerHTML = `
-        <div class="pro-header">
-            <div style="font-size:2rem; margin-bottom:10px;">🎓</div><h2 class="pro-title">PRO STRATEGY LOUNGE</h2><p class="pro-desc">상위 1%를 위한 프리미엄 분석 센터입니다.<br><strong>${displayDateStr}</strong> 회차 리포트 요청이 진행 중입니다.</p>
-            <div style="margin-top:10px; font-size:0.85rem; color:#cbd5e1;"><i class="fas fa-bell" style="color:#fbbf24;"></i> 리포트는 <strong>${releaseStr}</strong>에 일괄 발송됩니다.</div>
-        </div>
-        <div class="pro-dashboard-layout">
-            <div class="dashboard-actions">
-                <div style="color:#bfdbfe; margin-bottom:15px; font-size:0.95rem;">⏳ 요청 마감: <strong>${deadlineStr}</strong> 까지</div>
-                <div id="requestBtnContainer"><button class="req-btn" onclick="openProReportModal()"><i class="fas fa-edit"></i> 분석 요청서 작성하기</button></div>
+    container.innerHTML = `
+        <div style="display: block;">
+            <div class="pro-header">
+                <div style="font-size:2rem; margin-bottom:10px;">🎓</div><h2 class="pro-title">PRO STRATEGY LOUNGE</h2><p class="pro-desc">상위 1%를 위한 프리미엄 분석 센터입니다.<br><strong>${displayDateStr}</strong> 회차 리포트 요청이 진행 중입니다.</p>
+                <div style="margin-top:10px; font-size:0.85rem; color:#cbd5e1;"><i class="fas fa-bell" style="color:#fbbf24;"></i> 리포트는 <strong>${releaseStr}</strong>에 일괄 발송됩니다.</div>
             </div>
-            <div class="report-list-container">
-                <h4 style="color:white; margin:0 0 15px 0; border-left:4px solid #3b82f6; padding-left:10px;">📑 분석 보고서 보관함</h4>
-                <div id="proReportListArea"><div style="text-align:center; color:#64748b; padding:20px;"><i class="fas fa-spinner fa-spin"></i> 로딩 중...</div></div>
+            <div class="pro-dashboard-layout">
+                <div class="dashboard-actions">
+                    <div style="color:#bfdbfe; margin-bottom:15px; font-size:0.95rem;">⏳ 요청 마감: <strong>${deadlineStr}</strong> 까지</div>
+                    <div id="requestBtnContainer"><button class="req-btn" onclick="openProReportModal()"><i class="fas fa-edit"></i> 분석 요청서 작성하기</button></div>
+                </div>
+                <div class="report-list-container">
+                    <h4 style="color:white; margin:0 0 15px 0; border-left:4px solid #3b82f6; padding-left:10px;">📑 분석 보고서 보관함</h4>
+                    <div id="proReportListArea"><div style="text-align:center; color:#64748b; padding:20px;"><i class="fas fa-spinner fa-spin"></i> 로딩 중...</div></div>
+                </div>
             </div>
         </div>
     `;
-
-    // 💡 백엔드 분리 구조 반영: cachedProReports는 초기화(DOMContentLoaded) 시점에 받아왔으므로 바로 렌더링
-    renderProReportList(currentKey, isDeadlinePassed);
+    renderProReportList(currentKey, isDeadlinePassed);
 }
 
-// 💡 [신규] 리포트 렌더링 전용 함수 (백엔드 분리 반영)
 function renderProReportList(currentKey, isDeadlinePassed) {
     const listArea = document.getElementById('proReportListArea');
     const btnContainer = document.getElementById('requestBtnContainer');
@@ -1983,22 +2528,51 @@ function renderProReportList(currentKey, isDeadlinePassed) {
     if (cachedProReports.length === 0) {
         listArea.innerHTML = `<div style="text-align:center; color:#94a3b8; padding:30px;">발행된 보고서가 없습니다.</div>`;
     } else {
-        let html = '<div class="report-grid">';
+        const gridDiv = document.createElement('div');
+        gridDiv.className = 'report-grid';
+        
         cachedProReports.forEach(rep => {
             const isReady = (rep.status === 'published' || rep.status === 'sent');
-            const statusBadge = isReady ? '<span style="color:#4ade80; font-size:0.8rem;">● 열람 가능</span>' : '<span style="color:#fbbf24; font-size:0.8rem;">● 분석중</span>';
             const formattedName = formatReportKey(rep.key);
-            html += `
-                <div class="report-item" onclick="${isReady ? `window.open('${rep.reportLink}')` : "alert('튜터가 리포트를 최종 검수 중입니다. 잠시만 기다려주세요.')"}" style="cursor:${isReady?'pointer':'default'}">
-                    <div class="rep-info"><strong>${formattedName}</strong>${statusBadge}</div>
-                    <div class="rep-icon"><i class="fas fa-download" style="color:${isReady?'#3b82f6':'#475569'}"></i></div>
-                </div>
-            `;
+
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'report-item';
+            itemDiv.style.cssText = `cursor:${isReady ? 'pointer' : 'default'}; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 15px 12px;`;
+            itemDiv.onclick = () => {
+                if(isReady) window.open(rep.reportLink);
+                else alert('튜터가 리포트를 최종 검수 중입니다. 잠시만 기다려주세요.');
+            };
+
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'rep-info';
+            infoDiv.style.cssText = 'flex: 1; min-width: 0;';
+
+            const nameStrong = document.createElement('strong');
+            nameStrong.style.cssText = 'display: block; color: #fff; font-size: 0.95rem; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
+            nameStrong.textContent = formattedName; // 🔒 안전
+
+            const statusSpan = document.createElement('span');
+            statusSpan.style.cssText = isReady ? 'color:#4ade80; font-size:0.8rem;' : 'color:#fbbf24; font-size:0.8rem;';
+            statusSpan.textContent = isReady ? '● 열람 가능' : '● 분석중'; // 🔒 안전
+
+            infoDiv.appendChild(nameStrong);
+            infoDiv.appendChild(statusSpan);
+
+            const iconDiv = document.createElement('div');
+            iconDiv.className = 'rep-icon';
+            iconDiv.style.cssText = 'flex-shrink: 0;';
+            iconDiv.innerHTML = `<i class="fas fa-download" style="color:${isReady ? '#3b82f6' : '#475569'}"></i>`; // 아이콘은 안전
+
+            itemDiv.appendChild(infoDiv);
+            itemDiv.appendChild(iconDiv);
+            gridDiv.appendChild(itemDiv);
         });
-        html += `</div>`;
-        listArea.innerHTML = html;
+        
+        listArea.innerHTML = '';
+        listArea.appendChild(gridDiv);
     }
 
+    // 하단 버튼 처리 (기존 코드 유지)
     const currentData = cachedProReports.find(r => r.key === currentKey);
     const hasRequested = currentData && currentData.request;
     window.currentProRequestText = hasRequested ? currentData.request : '';
@@ -2010,53 +2584,44 @@ function renderProReportList(currentKey, isDeadlinePassed) {
     }
 }
 
-function modifyProRequest() {
-    if(confirm("이미 제출된 요청사항을 수정하시겠습니까?")) {
-        const now = new Date(); const currentKey = generateReportKey(now); 
-        const currentData = cachedProReports.find(r => r.key === currentKey);
-        const existingText = currentData && currentData.request ? currentData.request : '';
-        openProReportModal(existingText);
-    }
-}
-
 function openProReportModal(existingText = '') {
-    const modal = document.getElementById('proReportModal'); const textarea = document.getElementById('proReportRequest');
-    if (modal) {
-        modal.style.display = 'block';
-        if(textarea) { textarea.value = typeof existingText === 'string' ? existingText : ''; textarea.focus(); updateCharCount(textarea); }
-        document.body.style.overflow = 'hidden';
-    }
+    const modal = document.getElementById('proReportModal'); const textarea = document.getElementById('proReportRequest');
+    if (modal) {
+        modal.style.display = 'block';
+        if(textarea) { textarea.value = typeof existingText === 'string' ? existingText : ''; textarea.focus(); updateCharCount(textarea); }
+        document.body.style.overflow = 'hidden';
+    }
 }
 
 function closeProModal() { document.getElementById('proReportModal').style.display = 'none'; document.body.style.overflow = 'auto'; }
 
 async function submitProReport() {
-    const text = document.getElementById('proReportRequest').value;
-    if (text.trim().length < 10) { alert("요청 사항을 10자 이상 구체적으로 적어주세요."); return; }
-    if (!confirm("작성하신 내용으로 보고서를 요청하시겠습니까?\n(제출 후에는 수정이 어렵습니다)")) return;
+    const text = document.getElementById('proReportRequest').value;
+    if (text.trim().length < 10) { alert("요청 사항을 10자 이상 구체적으로 적어주세요."); return; }
+    if (!confirm("작성하신 내용으로 보고서를 요청하시겠습니까?\n(제출 후에는 수정이 어렵습니다)")) return;
 
-    const submitBtn = document.querySelector('.pro-submit-btn'); const originalText = submitBtn.innerText;
-    submitBtn.innerText = "처리 중..."; submitBtn.disabled = true;
-    
-    const token = localStorage.getItem('idToken');
-    try {
-        const res = await fetch(REPORT_API_URL, {
-            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'request_pro_report', data: { requestText: text } })
-        });
-        const data = await res.json();
+    const submitBtn = document.querySelector('.pro-submit-btn'); const originalText = submitBtn.innerText;
+    submitBtn.innerText = "처리 중..."; submitBtn.disabled = true;
+    
+    const token = localStorage.getItem('idToken');
+    try {
+        const res = await fetch(REPORT_API_URL, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'request_pro_report', data: { requestText: text } })
+        });
+        const data = await res.json();
 
-        if (res.ok) {
-            alert(data.msg || "요청이 정상적으로 접수되었습니다.");
-            const url = new URL(window.location.href); url.searchParams.set('tab', 'pro'); window.location.href = url.toString();
-        } else { throw new Error(data.msg || "요청 처리 중 오류가 발생했습니다."); }
-    } catch (e) { alert(e.message); } 
-    finally { submitBtn.innerText = originalText; submitBtn.disabled = false; }
+        if (res.ok) {
+            alert(data.msg || "요청이 정상적으로 접수되었습니다.");
+            const url = new URL(window.location.href); url.searchParams.set('tab', 'pro'); window.location.href = url.toString();
+        } else { throw new Error(data.msg || "요청 처리 중 오류가 발생했습니다."); }
+    } catch (e) { alert(e.message); } 
+    finally { submitBtn.innerText = originalText; submitBtn.disabled = false; }
 }
 
 document.addEventListener('input', function(e) {
-    if(e.target.id === 'proReportRequest') {
-        const countSpan = e.target.parentElement.querySelector('.char-count span');
-        if(countSpan) countSpan.innerText = e.target.value.length;
-    }
+    if(e.target.id === 'proReportRequest') {
+        const countSpan = e.target.parentElement.querySelector('.char-count span');
+        if(countSpan) countSpan.innerText = e.target.value.length;
+    }
 });

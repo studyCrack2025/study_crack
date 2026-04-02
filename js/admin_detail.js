@@ -7,15 +7,13 @@ const adminId = localStorage.getItem('userId');
 const API_URL = CONFIG.api.admin;
 const REPORT_API_URL = CONFIG.api.report;
 const FILE_API_URL = CONFIG.api.file;
-// 💡 결제 내역 전용 API 주소를 위한 상수 (기존 Auth나 Payment 람다 등에 연결된 주소)
 const PAYMENT_API_URL = CONFIG.api.payment || CONFIG.api.admin; 
 
 let currentStudentData = null;
 let currentTier = 'free';
-let currentPaymentsData = []; // 분리된 결제 데이터 보관용
-let currentWeeklyData = [];   // 분리된 주간 리포트 데이터 보관용
+let currentPaymentsData = []; 
+let currentWeeklyData = [];   
 
-// 💡 공통 apiFetch 함수
 async function apiFetch(url, options = {}) {
     const token = localStorage.getItem('accessToken');
     const defaultHeaders = {
@@ -27,7 +25,6 @@ async function apiFetch(url, options = {}) {
 
     try {
         const response = await fetch(url, options);
-
         if (!response.ok) {
             if (response.status === 401 || response.status === 403) {
                 alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
@@ -47,14 +44,12 @@ async function apiFetch(url, options = {}) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. 잘못된 접근 차단
     if (!targetUserId || !adminId) {
         alert("잘못된 접근입니다.");
         window.location.href = '/login';
         return;
     }
 
-    // 2. Back 버튼 처리
     const backBtn = document.querySelector('.back-btn');
     const userRole = localStorage.getItem('userRole');
 
@@ -69,12 +64,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     initRoleBasedView();
-    // 💡 분리된 데이터를 병렬로 모두 불러오는 새 함수 호출
     loadAllStudentData();
     
     const today = new Date();
     initDateFilter(today.getFullYear(), today.getMonth() + 1);
     initProDateFilter(today.getFullYear(), today.getMonth() + 1);
+
+    // 💡 [버그 수정] 드롭다운 변경 시 리스트 갱신 이벤트 리스너 추가
+    const filterYear = document.getElementById('filterYear');
+    const filterMonth = document.getElementById('filterMonth');
+    if (filterYear) filterYear.addEventListener('change', renderWeeklyTab);
+    if (filterMonth) filterMonth.addEventListener('change', renderWeeklyTab);
+
+    const proFilterYear = document.getElementById('proFilterYear');
+    const proFilterMonth = document.getElementById('proFilterMonth');
+    if (proFilterYear) proFilterYear.addEventListener('change', renderProTab);
+    if (proFilterMonth) proFilterMonth.addEventListener('change', renderProTab);
 });
 
 function initRoleBasedView() {
@@ -126,7 +131,6 @@ function switchTab(tabName) {
     const btn = document.getElementById(btnId);
     if(btn) btn.classList.add('active');
 
-    // 특수 탭 렌더링 호출
     if (currentStudentData) {
         if (tabName === 'weekly') renderWeeklyTab();
         if (tabName === 'special') renderProTab();
@@ -136,6 +140,26 @@ function switchTab(tabName) {
 function escapeHtml(text) {
     if (text === null || text === undefined) return '';
     return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+function formatReportKey(key, isPro = true) {
+    if (!key) return "알 수 없는 리포트";
+    
+    if (key.length === 6 && /^\d+$/.test(key)) {
+        const yy = key.substring(0, 2);
+        const mm = parseInt(key.substring(2, 4));
+        const ww = parseInt(key.substring(4, 6));
+        const suffix = isPro ? " PRO 리포트" : "";
+        return `${yy}년 ${mm}월 ${ww}주차${suffix}`;
+    }
+    
+    const match = key.match(/^(\d{4})-W(\d{1,2})$/);
+    if (match) {
+        const suffix = isPro ? " PRO 리포트" : "";
+        return `${match[1]}년 ${match[2]}주차${suffix}`;
+    }
+    
+    return key;
 }
 
 function parseDynamoItem(item) {
@@ -162,10 +186,8 @@ function parseDynamoItem(item) {
     return obj;
 }
 
-// 분리된 API를 병렬로 호출하여 데이터를 모으는 함수
 async function loadAllStudentData() {
     try {
-        // 1. 학생 기본 정보 (AdminCore)
         const detailPromise = apiFetch(API_URL, {
             method: 'POST',
             body: JSON.stringify({
@@ -173,7 +195,6 @@ async function loadAllStudentData() {
             })
         }).then(res => res.json());
 
-        // 2. 주간 리포트 (ReportCore)
         const weeklyPromise = apiFetch(REPORT_API_URL, {
             method: 'POST',
             body: JSON.stringify({
@@ -181,8 +202,6 @@ async function loadAllStudentData() {
             })
         }).then(res => res.json()).catch(() => ({ weeklyReports: [] }));
 
-        // 3. 결제 내역 (AdminCore 또는 PaymentCore에 라우팅 구현 가정)
-        // 백엔드 AdminCore의 'admin_get_payments' API 호출 (없다면 추가 필요)
         const paymentPromise = apiFetch(API_URL, {
             method: 'POST',
             body: JSON.stringify({
@@ -226,7 +245,7 @@ async function loadProReportsForAdmin() {
 }
 
 // -----------------------------------------------------------
-// 튜터/관리자 인터랙션 함수들 (API 통신 로직 변경 없음)
+// 튜터/관리자 인터랙션 함수들 
 // -----------------------------------------------------------
 async function submitRejectReason(key) {
     const reasonText = document.getElementById('rejectReasonText').value;
@@ -309,8 +328,8 @@ async function completeProWriting(key) {
     const e1 = document.getElementById(`${key}_item1`)?.value || ""; const e2 = document.getElementById(`${key}_item2`)?.value || "";
     const e3 = document.getElementById(`${key}_item3`)?.value || ""; const e4 = document.getElementById(`${key}_item4`)?.value || "";
     
-    if(e1.length < 200 || e2.length < 200 || e3.length < 200 || e4.length < 200) {
-        return alert("PRO 리포트의 1~4번 모든 항목은 각각 최소 200자 이상 작성해야 제출할 수 있습니다.");
+    if([e1,e2,e3,e4].some(v => v.replace(/\s/g, '').length < 200)) {
+        return alert("PRO 리포트의 1~4번 모든 항목은 각각 최소 200자 이상 작성해야 제출할 수 있습니다. (공백 제외)");
     }
     try { await saveProDraft(key, true); } catch (e) { if (e.message !== "Auth expired") alert("내용 저장 실패로 중단합니다."); return; }
     if(!confirm("작성을 완료하고 관리자에게 제출하시겠습니까?")) return;
@@ -340,12 +359,10 @@ function renderData(s) {
     const profileImg = document.getElementById('studentProfileImg');
     if(s.profileImage) profileImg.src = s.profileImage;
 
-    // 💡 [핵심] 분리된 스키마에 맞춰 currentSubscription 정보를 우선 확인
     currentTier = 'free';
     if (s.currentSubscription && s.currentSubscription.status === 'active') {
         currentTier = (s.currentSubscription.tier || "free").toLowerCase();
     } else {
-        // Fallback: 혹시나 남아있을 수 있는 payments 배열 확인 (이관 과도기용)
         currentTier = calcTierFromLegacy(currentPaymentsData || []);
     }
 
@@ -362,7 +379,6 @@ function renderData(s) {
     
     initQuantitativeData(s.quantitative);
     
-    // 💡 분리해서 불러온 결제 데이터 렌더링
     renderPayments(currentPaymentsData);
     
     loadProReportsForAdmin();
@@ -387,19 +403,6 @@ function renderTierBadge(tier) {
     else if (tier === 'basic') html = '<span class="tier-badge" style="background: linear-gradient(135deg, #3B82F6, #60A5FA); border: 2px solid #3B82F6; color: white;">BASIC TIER</span>';
     else html = '<span class="tier-badge" style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1;">FREE USER</span>';
     area.innerHTML = html;
-}
-
-function formatReportKey(key) {
-    if (!key) return "알 수 없는 리포트";
-    
-    // 예: '2024-W10' -> '2024년 10주차 PRO 리포트'
-    const match = key.match(/^(\d{4})-W(\d{1,2})$/);
-    if (match) {
-        return `${match[1]}년 ${match[2]}주차 PRO 리포트`;
-    }
-    
-    // 패턴이 안 맞으면 그대로 출력
-    return key;
 }
 
 function initQuantitativeData(q) {
@@ -444,19 +447,32 @@ function renderSelectedScore() {
     container.innerHTML = html;
 }
 
-// 💡 [핵심] 분리되어 저장된 currentWeeklyData를 사용하도록 변경
 function renderWeeklyTab() {
     const container = document.getElementById('weeklyListContainer');
     container.innerHTML = '';
     
-    // 원본 데이터가 아닌 병렬 로딩된 주간 리포트 데이터 배열 사용
     const weeklyHistory = currentWeeklyData || [];
-    const selYear = document.getElementById('filterYear').value;
-    const selMonth = document.getElementById('filterMonth').value;
+    const selYear = document.getElementById('filterYear')?.value;
+    const selMonth = document.getElementById('filterMonth')?.value;
 
+    // 💡 1. 필터링 로직 수정: weekId('260401') 형식에서 년/월을 정확히 뽑아내어 드롭다운 값과 비교
     const filtered = weeklyHistory.filter(w => {
-        const d = new Date(w.date);
-        return d.getFullYear() == selYear && (d.getMonth() + 1) == selMonth;
+        const keyMatch = w.weekId?.match(/^(\d{2})(\d{2})\d{2}$/);
+        let y = null, m = null;
+        
+        if (keyMatch) {
+            y = "20" + keyMatch[1]; // '26' -> '2026'
+            m = parseInt(keyMatch[2], 10).toString(); // '04' -> '4' (0 없애기)
+        } else if (w.date) {
+            const d = new Date(w.date);
+            y = d.getFullYear().toString();
+            m = (d.getMonth() + 1).toString();
+        }
+        
+        const yearMatch = !selYear || y === selYear;
+        const monthMatch = !selMonth || m === selMonth;
+        
+        return yearMatch && monthMatch;
     });
 
     filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -469,6 +485,9 @@ function renderWeeklyTab() {
     filtered.forEach((d, idx) => {
         const dateStr = new Date(d.date).toLocaleDateString();
         const safeComment = d.comment ? escapeHtml(d.comment) : '';
+        
+        // 💡 2. 제목 렌더링 수정: formatReportKey 적용
+        const displayTitle = formatReportKey(d.weekId, false) || d.title || (idx + 1) + '주차 리포트';
         
         let studyHtml = ''; 
         if (d.studyTime && Array.isArray(d.studyTime.details)) {
@@ -546,27 +565,325 @@ function renderWeeklyTab() {
 
         const fb = d.tutorFeedback || { priorityCheck: '', weakSubject: '', nextWeekTop3: '', planEvaluation: '', extraQuestion: '' };
         
-        // 카드 조립 (기존 DOM 구조 유지)
+        // 💡 3. 키값 설정 로직 (안전장치 포함)
+        let weeklyKey = d.weekId;
+        if (!weeklyKey) {
+            const dateObj = new Date(d.date);
+            const year = dateObj.getFullYear().toString().slice(2);
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const startOfMonth = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
+            const dayOfWeek = startOfMonth.getDay();
+            const offsetDate = dateObj.getDate() + dayOfWeek - 1;
+            const weekNum = String(Math.floor(offsetDate / 7) + 1).padStart(2, '0');
+            weeklyKey = `${year}${month}${weekNum}`;
+        }
+
         const card = document.createElement('div');
         card.className = 'timeline-card weekly-new';
         card.innerHTML = `
             <div class="card-header-row">
-                <div class="left"><span class="week-title">${d.title || (idx+1)+'주차 리포트'}</span><span class="week-date">${dateStr}</span></div>
+                <div class="left">
+                    <span class="week-title">${displayTitle}</span> <span class="week-date">${dateStr}</span>
+                </div>
             </div>
             <div class="card-grid-body">${studyHtml}${checkHtml}</div>
             ${mockHtml}${footerHtml}
-            <div class="tutor-feedback-area">
-                <div class="feedback-header"><div>👩‍🏫 튜터 코멘트</div></div>
-                <div class="doc-text" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-top:10px;">
-                    ${escapeHtml(fb.priorityCheck) ? `<strong>우선순위 점검:</strong> ${escapeHtml(fb.priorityCheck)}<br><br>` : ''}
-                    ${escapeHtml(fb.weakSubject) ? `<strong>취약 과목 진단:</strong> ${escapeHtml(fb.weakSubject)}<br><br>` : ''}
-                    ${escapeHtml(fb.nextWeekTop3) ? `<strong>다음 주 목표:</strong> ${escapeHtml(fb.nextWeekTop3)}` : '<span style="color:#94a3b8">튜터가 코멘트를 작성하지 않았습니다.</span>'}
-                </div>
-            </div>
+            ${renderWeeklyFeedbackArea(weeklyKey, fb)}
         `;
         container.appendChild(card);
     });
 }
+
+// ==========================================
+// 주간 리포트 - 튜터 코멘트 영역 렌더링
+// ==========================================
+const WEEKLY_FB_FIELDS = [
+    { key: 'priorityCheck',  label: '이번 주 우선순위 점검',        placeholder: '이번 주 학습 목표 이행 여부와 우선순위를 평가해주세요.' },
+    { key: 'weakSubject',    label: '취약 과목 진단 및 개입 포인트', placeholder: '취약 과목에 대한 구체적인 진단과 개선 방향을 작성해주세요.' },
+    { key: 'nextWeekTop3',   label: '다음 주 핵심 과제 Top3',        placeholder: '다음 주에 집중해야 할 핵심 과제 3가지를 작성해주세요.' },
+    { key: 'planEvaluation', label: '플랜 평가 및 조정',             placeholder: '이번 주 플랜 달성률을 평가하고 조정 방향을 제시해주세요.' },
+    { key: 'extraQuestion',  label: '심층 질문 답변',                placeholder: '학생의 심층 질문에 대한 답변을 근거와 함께 작성해주세요.' },
+];
+const WEEKLY_FB_MIN = 150;
+
+function weeklyIdKey(weeklyKey) {
+    return weeklyKey.replace(/[^a-zA-Z0-9]/g, '_');
+}
+
+function renderWeeklyFeedbackArea(weeklyKey, fb) {
+    const userRole = localStorage.getItem('userRole');
+    const submitted = fb.submitted === true;
+    if (userRole === 'tutor') {
+        return submitted ? createWeeklyFbReadOnly(fb, true) : createWeeklyFbInput(weeklyKey, fb);
+    }
+    return createWeeklyFbReadOnly(fb, false);
+}
+
+function createWeeklyFbReadOnly(fb, isLockedTutor) {
+    const hasAny = WEEKLY_FB_FIELDS.some(f => fb[f.key] && String(fb[f.key]).trim() !== '');
+    const lockedBadge = isLockedTutor
+        ? '<span style="font-size:0.8rem; color:#16a34a; font-weight:bold; background:#f0fdf4; padding:3px 10px; border-radius:20px; border:1px solid #bbf7d0;">✅ 최종 전송 완료 · 수정 불가</span>'
+        : '';
+        
+    const content = hasAny
+        ? WEEKLY_FB_FIELDS.map(f => fb[f.key] && String(fb[f.key]).trim() !== ''
+            ? `<div style="margin-bottom:14px;"><strong>${f.label}:</strong><div style="margin-top:4px; line-height:1.6; white-space:pre-wrap;">${escapeHtml(fb[f.key])}</div></div>`
+            : '').join('')
+        : '<span style="color:#94a3b8">튜터가 코멘트를 작성하지 않았습니다.</span>';
+
+    const fileHtml = fb.tutorImage 
+        ? `<div style="margin-top:15px; border-top:1px dashed #cbd5e1; padding-top:15px;"><strong>📎 첨삭 플래너 / 추가 자료:</strong><br><a href="${escapeHtml(fb.tutorImage)}" target="_blank" style="display:inline-block; margin-top:8px; background:#eff6ff; color:#2563eb; padding:8px 16px; border-radius:6px; text-decoration:none; font-weight:bold;"><i class="fas fa-file-download"></i> 첨부 파일 확인하기</a></div>` 
+        : '';
+
+    return `
+        <div class="tutor-feedback-area">
+            <div class="feedback-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <div>👩‍🏫 튜터 코멘트</div>${lockedBadge}
+            </div>
+            <div class="doc-text" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-top:10px;">
+                ${content}
+                ${fileHtml}
+            </div>
+        </div>`;
+}
+
+function createWeeklyFbInput(weeklyKey, fb) {
+    const idk = weeklyIdKey(weeklyKey);
+    const fieldsHtml = WEEKLY_FB_FIELDS.map(f => {
+        const val = fb[f.key] || '';
+        const len = val.replace(/\s/g, '').length;
+        const validClass = len >= WEEKLY_FB_MIN ? 'valid' : '';
+        
+        const isSaved = len >= WEEKLY_FB_MIN;
+        const btnClass = isSaved ? 'temp-save-btn saved' : 'temp-save-btn';
+        const btnText = isSaved ? '저장됨' : '임시저장';
+
+        return `
+        <div class="write-item" style="margin-bottom:15px;">
+            <label class="write-label">${f.label}</label>
+            <textarea id="wfb_${idk}_${f.key}" class="write-textarea"
+                placeholder="${f.placeholder} (최소 ${WEEKLY_FB_MIN}자)"
+                oninput="updateCharCount(this,'wfb_cnt_${idk}_${f.key}',${WEEKLY_FB_MIN}); handleWeeklyInput('${idk}', '${f.key}');"
+            >${escapeHtml(val)}</textarea>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+                <div id="wfb_cnt_${idk}_${f.key}" class="char-count ${validClass}">${len} / 최소 ${WEEKLY_FB_MIN}자</div>
+                <button id="wfb_btn_${idk}_${f.key}" class="${btnClass}"
+                    onclick="tempSaveWeeklyField('${weeklyKey}','${f.key}')">${btnText}</button>
+            </div>
+        </div>`;
+    }).join('');
+
+    const allPreSaved = WEEKLY_FB_FIELDS.every(f => (fb[f.key] || '').replace(/\s/g, '').length >= WEEKLY_FB_MIN);
+    const submitBtnClass = allPreSaved ? 'complete-write-btn active' : 'complete-write-btn';
+
+    const existingFileHtml = fb.tutorImage 
+        ? `<div style="margin-bottom:10px; font-size:0.85rem; color:#2563eb; background:#eff6ff; padding:8px 12px; border-radius:6px; border:1px solid #bfdbfe;"><i class="fas fa-file-check"></i> 현재 첨부된 파일: <a href="${escapeHtml(fb.tutorImage)}" target="_blank" style="text-decoration:underline; font-weight:bold;">보기</a></div>` 
+        : '';
+
+    return `
+        <div class="tutor-feedback-area" id="wfb_area_${idk}">
+            <div class="feedback-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <div>👩‍🏫 튜터 코멘트 작성</div>
+                <button class="guide-btn" onclick="showCoachingGuideModal()"><i class="fas fa-info-circle"></i> 작성 가이드</button>
+            </div>
+            ${fieldsHtml}
+            
+            <div class="write-item" style="margin-bottom:15px; padding-top: 15px; border-top: 1px dashed #e2e8f0;">
+                <label class="write-label">첨삭 플래너 / 추가 자료 (선택)</label>
+                
+                <div id="wfb_existing_file_${idk}">${existingFileHtml}</div>
+                
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <input type="file" id="wfb_file_${idk}" accept="image/*,.pdf" style="font-size:0.9rem; padding:5px; border:1px solid #cbd5e1; border-radius:6px; flex:1; background:#fff;">
+                    <button id="wfb_file_btn_${idk}" class="temp-save-btn" onclick="uploadWeeklyTutorFile('${weeklyKey}')" style="white-space:nowrap;"><i class="fas fa-upload"></i> 업로드</button>
+                </div>
+                <p style="font-size:0.8rem; color:#94a3b8; margin-top:5px;">* 이미지(jpg, png) 또는 PDF 파일만 업로드 가능합니다. (학생에게 리포트와 함께 전달됩니다)</p>
+            </div>
+
+            <div style="text-align:right; margin-top:10px;">
+                <button id="wfb_submit_${idk}" class="${submitBtnClass}"
+                    onclick="submitWeeklyFeedback('${weeklyKey}')">최종 전송 (학생에게 전달)</button>
+            </div>
+        </div>`;
+}
+
+window.handleWeeklyInput = function(idk, key) {
+    const btn = document.getElementById(`wfb_btn_${idk}_${key}`);
+    if (btn && btn.classList.contains('saved')) {
+        btn.classList.remove('saved');
+        btn.innerText = '임시저장';
+    }
+    checkWeeklyAllSaved(idk);
+};
+
+window.checkWeeklyAllSaved = function(idk) {
+    const area = document.getElementById(`wfb_area_${idk}`);
+    if (!area) return;
+    
+    const btns = area.querySelectorAll('.temp-save-btn');
+    const allSaved = Array.from(btns).every(b => b.classList.contains('saved'));
+    
+    const submitBtn = document.getElementById(`wfb_submit_${idk}`);
+    if (submitBtn) {
+        if (allSaved) {
+            submitBtn.classList.add('active');
+        } else {
+            submitBtn.classList.remove('active');
+        }
+    }
+};
+
+window.uploadWeeklyTutorFile = async function(weeklyKey) {
+    const idk = weeklyIdKey(weeklyKey);
+    const fileInput = document.getElementById(`wfb_file_${idk}`);
+    if (!fileInput.files || fileInput.files.length === 0) return alert("업로드할 파일을 선택해주세요.");
+    
+    const file = fileInput.files[0];
+    const btn = document.getElementById(`wfb_file_btn_${idk}`);
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 업로드 중...';
+    btn.disabled = true;
+
+    try {
+        // 1. S3 Presigned URL 발급
+        const urlResponse = await apiFetch(FILE_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'get_presigned_url', data: { fileName: encodeURIComponent(file.name), fileType: file.type, folder: 'tutor_feedback' } })
+        });
+        const { uploadUrl, fileUrl, fields } = await urlResponse.json();
+        
+        // 2. S3 직접 업로드
+        const formData = new FormData();
+        Object.entries(fields || {}).forEach(([k, v]) => formData.append(k, v));
+        formData.append('file', file);
+
+        const uploadResult = await fetch(uploadUrl, { method: 'POST', body: formData });
+        if (!uploadResult.ok) throw new Error("S3 업로드 실패");
+
+        // 3. 현재 입력된 텍스트 코멘트도 함께 모아서 DB 임시저장
+        const feedback = {};
+        WEEKLY_FB_FIELDS.forEach(f => {
+            const el = document.getElementById(`wfb_${idk}_${f.key}`);
+            feedback[f.key] = el ? el.value : '';
+        });
+        feedback.tutorImage = fileUrl; // 새로 업로드된 URL 포함
+
+        // 4. 로컬 데이터 갱신 (저장 시 덮어씌워지지 않게 메모리 유지)
+        const reportData = currentWeeklyData.find(w => w.weekId === weeklyKey || w.date === weeklyKey);
+        if (reportData) {
+            if (!reportData.tutorFeedback) reportData.tutorFeedback = {};
+            reportData.tutorFeedback.tutorImage = fileUrl;
+        }
+
+        await apiFetch(REPORT_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'tutor_save_weekly_draft', data: { targetUserId, reportDate: weeklyKey, tutorFeedback: feedback } })
+        });
+        
+        alert("파일이 성공적으로 업로드되었습니다.");
+        
+        // 💡 [핵심 해결책] 탭 전체 새로고침 삭제! 대신 해당 UI 부분만 즉시 업데이트합니다.
+        const existingContainer = document.getElementById(`wfb_existing_file_${idk}`);
+        if (existingContainer) {
+            existingContainer.innerHTML = `<div style="margin-bottom:10px; font-size:0.85rem; color:#2563eb; background:#eff6ff; padding:8px 12px; border-radius:6px; border:1px solid #bfdbfe;"><i class="fas fa-file-check"></i> 현재 첨부된 파일: <a href="${escapeHtml(fileUrl)}" target="_blank" style="text-decoration:underline; font-weight:bold;">보기</a></div>`;
+        }
+        
+        // 파일 인풋 초기화 (안 헷갈리게) 및 버튼 원상복구
+        fileInput.value = '';
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+
+    } catch (e) {
+        if (e.message !== "Auth expired") alert("파일 업로드에 실패했습니다.");
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+};
+
+window.tempSaveWeeklyField = async function(weeklyKey, fieldName) {
+    const idk = weeklyIdKey(weeklyKey);
+    const btn = document.getElementById(`wfb_btn_${idk}_${fieldName}`);
+    const textarea = document.getElementById(`wfb_${idk}_${fieldName}`);
+    if (!btn || !textarea) return;
+
+    const val = textarea.value;
+    const valLen = val.replace(/\s/g, '').length;
+    if (valLen < WEEKLY_FB_MIN) {
+        alert(`최소 ${WEEKLY_FB_MIN}자 이상 입력해주세요. (현재 ${valLen}자, 공백 제외)`);
+        return;
+    }
+
+    const originalText = btn.innerText;
+    btn.innerText = '저장 중...'; btn.disabled = true;
+
+    // 기존 데이터 메모리에서 파일 URL 가져오기
+    const reportData = currentWeeklyData.find(w => w.weekId === weeklyKey || w.date === weeklyKey) || {};
+    const existingFb = reportData.tutorFeedback || {};
+
+    const feedback = {};
+    WEEKLY_FB_FIELDS.forEach(f => {
+        const el = document.getElementById(`wfb_${idk}_${f.key}`);
+        feedback[f.key] = el ? el.value : '';
+    });
+    feedback.tutorImage = existingFb.tutorImage || ''; // 기존 파일 URL 유지
+
+    try {
+        await apiFetch(REPORT_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'tutor_save_weekly_draft', data: { targetUserId, reportDate: weeklyKey, tutorFeedback: feedback } })
+        });
+        btn.classList.add('saved'); btn.innerText = '저장됨'; btn.disabled = false;
+        checkWeeklyAllSaved(idk);
+    } catch (e) {
+        if (e.message !== 'Auth expired') alert('임시 저장에 실패했습니다.');
+        btn.innerText = originalText; btn.disabled = false;
+    }
+};
+
+window.submitWeeklyFeedback = async function(weeklyKey) {
+    const idk = weeklyIdKey(weeklyKey);
+
+    for (const f of WEEKLY_FB_FIELDS) {
+        const el = document.getElementById(`wfb_${idk}_${f.key}`);
+        if (!el || el.value.replace(/\s/g, '').length < WEEKLY_FB_MIN) {
+            alert(`'${f.label}' 항목을 최소 ${WEEKLY_FB_MIN}자 이상 입력해주세요. (공백 제외)`);
+            return;
+        }
+    }
+
+    if (!confirm('최종 전송 후에는 더 이상 수정할 수 없습니다.\n학생에게 코멘트를 전달하시겠습니까?')) return;
+
+    // 기존 데이터 메모리에서 파일 URL 가져오기
+    const reportData = currentWeeklyData.find(w => w.weekId === weeklyKey || w.date === weeklyKey) || {};
+    const existingFb = reportData.tutorFeedback || {};
+
+    const feedback = {};
+    WEEKLY_FB_FIELDS.forEach(f => {
+        const el = document.getElementById(`wfb_${idk}_${f.key}`);
+        feedback[f.key] = el ? el.value : '';
+    });
+    feedback.tutorImage = existingFb.tutorImage || ''; // 기존 파일 URL 유지
+    feedback.submitted = true;
+
+    const submitBtn = document.getElementById(`wfb_submit_${idk}`);
+    if (submitBtn) { submitBtn.innerText = '전송 중...'; submitBtn.disabled = true; }
+
+    try {
+        await apiFetch(REPORT_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'tutor_submit_weekly_feedback', data: { targetUserId, reportDate: weeklyKey, tutorFeedback: feedback } })
+        });
+        alert('학생에게 코멘트가 전달되었습니다.');
+        
+        // 제출 후 폼을 읽기 전용으로 전환
+        const area = document.getElementById(`wfb_area_${idk}`);
+        if (area) area.outerHTML = createWeeklyFbReadOnly(feedback, true);
+        
+    } catch (e) {
+        if (e.message !== 'Auth expired') alert('전송에 실패했습니다.');
+        if (submitBtn) { submitBtn.innerText = '최종 전송 (학생에게 전달)'; submitBtn.disabled = false; }
+    }
+};
 
 function renderProTab() {
     const container = document.getElementById('proReportContainer');
@@ -574,16 +891,47 @@ function renderProTab() {
 
     const userRole = localStorage.getItem('userRole');
     const reports = currentStudentData.proReportsList || [];
-    
+
+    const selYear = document.getElementById('proFilterYear')?.value;
+    const selMonth = document.getElementById('proFilterMonth')?.value;
+
     if (reports.length === 0) {
         container.innerHTML = `<div style="text-align:center; padding:50px; color:#94a3b8; background:#f8fafc; border-radius:8px;">학생이 아직 작성한 PRO 리포트 요청서가 없습니다.</div>`;
         return;
     }
 
-    reports.sort((a, b) => b.key.localeCompare(a.key));
+    // 💡 필터 로직 추가: reportKey (예: 260401 또는 2024-W10) 기준으로 필터링
+    const filtered = reports.filter(r => {
+        const keyMatch = r.key?.match(/^(\d{2})(\d{2})\d{2}$/); // 신규 포맷 260401
+        const oldMatch = r.key?.match(/^(\d{4})-W(\d{1,2})$/); // 구 포맷 2024-W10
+        let y = null, m = null;
 
-    reports.forEach(reportData => {
-        const displayTitle = formatReportKey(reportData.key);
+        if (keyMatch) {
+            y = "20" + keyMatch[1]; // '26' -> '2026'
+            m = parseInt(keyMatch[2], 10).toString(); // '04' -> '4'
+        } else if (oldMatch) {
+            y = oldMatch[1];
+            // 구 포맷은 정확한 월을 알기 어려워 업데이트 날짜로 추정
+            const d = r.updatedAt ? new Date(r.updatedAt) : new Date();
+            m = (d.getMonth() + 1).toString();
+        }
+
+        const yearMatch = !selYear || y === selYear;
+        const monthMatch = !selMonth || m === selMonth;
+        
+        return yearMatch && monthMatch;
+    });
+
+    if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-msg" style="text-align:center; padding:40px; color:#cbd5e1;">해당 월의 PRO 리포트가 없습니다.</div>';
+        return;
+    }
+
+    // 최신순 정렬
+    filtered.sort((a, b) => b.key.localeCompare(a.key));
+
+    filtered.forEach(reportData => {
+        const displayTitle = formatReportKey(reportData.key, true);
         container.appendChild(createProPeriodBox(displayTitle, reportData, reportData.key, userRole));
     });
 }
@@ -651,7 +999,7 @@ function createProPeriodBox(title, data, reportKey, userRole) {
 }
 
 function createTextAreaHtml(key, idx, label, val, readOnly, btnStyle) {
-    const minLen = 200; const len = val ? val.length : 0; const validClass = len >= minLen ? 'valid' : '';
+    const minLen = 200; const len = val ? val.replace(/\s/g, '').length : 0; const validClass = len >= minLen ? 'valid' : '';
     return `
         <div class="write-item">
             <label class="write-label">${label}</label>
@@ -805,15 +1153,47 @@ function showProGuideModal() {
     const modalHtml = `
         <div id="proGuideModal" class="coaching-modal-overlay">
             <div class="coaching-modal-content">
-                <div class="coaching-modal-header"><span>🏆 Pro 코칭 운영 가이드 (필수)</span><button class="coaching-modal-close" onclick="document.getElementById('proGuideModal').remove()">&times;</button></div>
-                <div class="coaching-modal-body">
-                    <h4>1) Pro의 역할</h4><p>목표 대학 기준으로 '최소 학습·최대 상승(효율)' 관점에서 합격 가능성을 높이는 방향과 속력을 교정합니다.</p>
-                    <h4>2) 확인 필수 데이터</h4><ul><li>목표 대학 컷까지의 거리 (ΔCut)</li><li>과목별 기여도</li><li>리스크 과목</li><li>효율 KPI</li></ul>
-                    <h4>3) 작성 4개 항목</h4><ul><li>지난 기간의 학습 평가</li><li>목표대학과의 거리</li><li>중기 핵심 과제 Top 2 & 장기 플랜</li><li>학생 요청 사항 답변</li></ul>
-                    <h4>4) 코칭 원칙</h4><ul><li>지표 근거 필수</li><li>구체적인 행동 유형 명시</li><li>합격 예측 단정 금지</li></ul>
-                    <h4>5) 제출 기한 🚨</h4><ul><li>학생에게는 마감 3일 뒤인 <strong>수요일</strong>에 발송됩니다.</li><li>원활한 검수를 위해 <strong>수요일 16:00 이전</strong>에 작성 완료 바랍니다.</li></ul>
+                <div class="coaching-modal-header">
+                    <span>🏆 Pro 코칭 운영 가이드 (필수)</span>
+                    <button class="coaching-modal-close" onclick="document.getElementById('proGuideModal').remove()">&times;</button>
                 </div>
-                <div style="text-align:right; margin-top:20px;"><button class="fb-save-btn" style="background:#475569;" onclick="document.getElementById('proGuideModal').remove()">확인했습니다</button></div>
+                <div class="coaching-modal-body">
+                    <h4>1) Pro의 역할</h4>
+                    <p>목표 대학 기준으로 '최소 학습·최대 상승(효율)' 관점에서 합격 가능성을 높이는 방향과 속력을 교정합니다. (모든 근거는 반드시 지표로 제시해야 합니다.)</p>
+
+                    <h4>2) 선생님께서 추가로 반드시 확인하셔야 할 데이터 (근거 판단)</h4>
+                    <ul>
+                        <li><strong>목표 대학 컷까지의 거리</strong> (컷거리 ΔCut)</li>
+                        <li><strong>과목별 컷거리 기여도</strong> (어느 과목의 효율이 가장 큰지 판단)</li>
+                        <li><strong>리스크 과목</strong> (무너질 때 전체 등급이 흔들리는 핵심 과목)</li>
+                        <li><strong>효율 KPI</strong> (유효 학습 비중 / 인강→적용 전환율 / 오답 회수율 / 실전 연동성)</li>
+                    </ul>
+
+                    <h4>3) 반드시 작성하셔야 하는 4개 항목 (지표 근거 인용 필수)</h4>
+                    <ul>
+                        <li><strong>지난 기간의 학습 평가:</strong> 리스크 및 효율 KPI를 기반으로 학생의 장단점을 명확히 평가합니다.</li>
+                        <li><strong>목표 대학과의 거리 (ΔCut/기여도):</strong> ΔCut 및 과목별 기여도 데이터를 기반으로 개선 여부를 구체적으로 분석합니다.</li>
+                        <li><strong>중기 핵심 과제 Top 2 & 장기 플랜:</strong> 중기 과제 제시 시 ΔCut, 기여도, 리스크, KPI 중 최소 1개 이상을 인용해야 합니다. 장기 플랜은 추세 그래프 등을 활용하여 주요 마일스톤(평가원 모의고사 일정 등)에 맞춘 예상치를 제시합니다.</li>
+                        <li><strong>학생 요청 사항 답변:</strong> 반드시 수치적일 필요는 없으나, 구체적이고 논리적인 근거를 들어 답변을 제공합니다.</li>
+                    </ul>
+
+                    <h4>4) Pro 코칭 원칙 (가드레일)</h4>
+                    <ul>
+                        <li>코칭 내용에는 <strong>반드시 지표 근거가 포함</strong>되어야 합니다.</li>
+                        <li>핵심 과제 제시 시 구체적인 행동 유형(인강 / 문풀 / 오답 / 복습 / 실전)을 <strong>명확히 명시</strong>합니다.</li>
+                        <li>막연한 합격 예측이나 보장 표현(합격률 단정, 무조건 합격 등)은 <strong>절대 금지</strong>합니다.</li>
+                    </ul>
+
+                    <h4>5) 리포트 제출 기한 및 유의사항 🚨</h4>
+                    <ul>
+                        <li>학생에게 Pro 리포트가 최종 제공되는 기한은 학생 제출 마감일의 3일 뒤인 <strong>수요일</strong>입니다.</li>
+                        <li>선생님께서 작성해주신 리포트는 <strong>관리자 측의 최종 검수(재확인) 작업</strong>을 거친 후 발송됩니다.</li>
+                        <li>따라서 원활한 검수 및 적시적인 발송을 위해 가급적 <strong>수요일 16:00 이전까지 작성을 완료하여 제출</strong>해 주시기 바랍니다.</li>
+                    </ul>
+                </div>
+                <div style="text-align:right; margin-top:20px;">
+                    <button class="fb-save-btn" style="background:#475569;" onclick="document.getElementById('proGuideModal').remove()">확인했습니다</button>
+                </div>
             </div>
         </div>
     `;
@@ -827,15 +1207,51 @@ function showCoachingGuideModal() {
     const modalHtml = `
         <div id="coachingGuideModal" class="coaching-modal-overlay">
             <div class="coaching-modal-content">
-                <div class="coaching-modal-header"><span>📋 Standard 코칭 운영 (필수)</span><button class="coaching-modal-close" onclick="document.getElementById('coachingGuideModal').remove()">&times;</button></div>
-                <div class="coaching-modal-body">
-                    <h4>1) Standard 역할</h4><p>보편적인 SKY 합격생 루틴을 ‘기준점’으로 제시하고, 방향과 속력을 주 1회 조정합니다.</p>
-                    <h4>2) 확인 필수 데이터</h4><ul><li>과목별 달성률</li><li>플래너 및 성적표 인증</li><li>학업 추이</li></ul>
-                    <h4>3) 작성 필수 항목</h4><ul><li>이번 주 판단</li><li>취약 과목 개입 포인트</li><li>다음 주 핵심 과제 Top 3</li><li>플랜 조정</li><li>심층 질문 답변</li></ul>
-                    <h4>4) 코칭 원칙</h4><ul><li>과제 중심 제시</li><li>취약 과목 우선</li><li>실패 전제 및 의지 탓 금지</li></ul>
-                    <h4>5) 제출 기한 🚨</h4><ul><li>학생 마감: 매주 일요일 20:00</li><li>리포트 발송: 매주 월요일 16:00</li><li><strong>월요일 16:00 이전까지 작성</strong> 바랍니다.</li></ul>
+                <div class="coaching-modal-header">
+                    <span>📋 Standard 코칭 운영 (필수)</span>
+                    <button class="coaching-modal-close" onclick="document.getElementById('coachingGuideModal').remove()">&times;</button>
                 </div>
-                <div style="text-align:right; margin-top:20px;"><button class="fb-save-btn" style="background:#475569;" onclick="document.getElementById('coachingGuideModal').remove()">확인했습니다</button></div>
+                <div class="coaching-modal-body">
+                    <h4>1) Standard의 역할</h4>
+                    <p>보편적인 SKY 합격생 루틴을 '기준점'으로 제시하고, 취약 과목이 무너지기 전에 보완하며, 학생의 방향과 속력을 주 1회 조정합니다.</p>
+
+                    <h4>2) 선생님께서 반드시 확인하셔야 할 데이터</h4>
+                    <ul>
+                        <li><strong>과목별 달성률</strong> (계획 시간 vs 실제 시간)</li>
+                        <li><strong>플래너 인증</strong> (사진)</li>
+                        <li><strong>실전 모의고사</strong> 응시 여부</li>
+                        <li><strong>성적표 인증</strong> (필수)</li>
+                        <li><strong>최근 2주 학업 추이</strong> (상승/유지/하락)</li>
+                        <li><strong>학생 심층 코칭 입력</strong> (계획 점검 / 방향 고민 / 취약 과목 / 멘탈)</li>
+                    </ul>
+
+                    <h4>3) 선생님께서 반드시 작성하셔야 하는 5개 항목 (주 1회)</h4>
+                    <ul>
+                        <li><strong>이번 주 판단</strong> (우선순위 결론, 첫 상담하는 학생이면 선생님의 객관적 판단 우선)</li>
+                        <li><strong>취약 과목 개입 포인트</strong></li>
+                        <li><strong>다음 주 핵심 과제 Top 3와 그 개별적인 근거</strong></li>
+                        <li><strong>플랜 조정</strong> (방향 / 속력)</li>
+                        <li><strong>심층 질문에 대한 추가 답변</strong> (어떤 질문에 대한 답변인지를 명시하고, 앞 항목 내용과 중복된다면 그렇다는 사실을 명시)</li>
+                    </ul>
+
+                    <h4>4) Standard 코칭 원칙 (최소 기준)</h4>
+                    <ul>
+                        <li>시간표형(분 단위) 강요를 금지하고, <strong>과제 중심</strong>으로 제시합니다.</li>
+                        <li><strong>취약 과목을 우선</strong>시합니다. (전 과목 균등 배분 금지)</li>
+                        <li><strong>실패를 전제</strong>합니다. (지키지 못한 계획을 죄책감으로 몰지 않습니다.)</li>
+                        <li><strong>의지 탓을 금지</strong>하고, 항상 판단 기준으로 설명합니다.</li>
+                    </ul>
+
+                    <h4>5) 리포트 제출 기한 및 유의사항 🚨</h4>
+                    <ul>
+                        <li>학생들의 주간 점검 제출은 <strong>매주 일요일 20:00</strong>에 마감됩니다.</li>
+                        <li>작성해주신 피드백 리포트는 그 다음 날인 <strong>월요일 16:00</strong>에 학생들에게 일괄 제공됩니다.</li>
+                        <li>따라서 학생 제출 직후 급하게 작성하시기보다는, <strong>월요일 16:00 이전까지 시간적 여유를 가지고 꼼꼼하게 작성</strong>해 주시기를 부탁드립니다.</li>
+                    </ul>
+                </div>
+                <div style="text-align:right; margin-top:20px;">
+                    <button class="fb-save-btn" style="background:#475569;" onclick="document.getElementById('coachingGuideModal').remove()">확인했습니다</button>
+                </div>
             </div>
         </div>
     `;
@@ -853,7 +1269,7 @@ function showModal(title, contentHtml) {
 window.updateCharCount = function(textarea, countId, minLength) {
     const countEl = document.getElementById(countId);
     if(!countEl) return;
-    const len = textarea.value.length;
+    const len = textarea.value.replace(/\s/g, '').length;
     countEl.innerText = `${len} / 최소 ${minLength}자`;
     if (len >= minLength) countEl.classList.add('valid'); else countEl.classList.remove('valid');
 };
@@ -861,7 +1277,9 @@ window.updateCharCount = function(textarea, countId, minLength) {
 async function renderTargetUnivs(list, quantData) {
     const container = document.getElementById('viewTargetUnivList');
     container.innerHTML = '';
-    const validList = list.filter(u => u && u.univ);
+
+    const validList = [];
+    list.forEach((u, originalIdx) => { if (u && u.univ) validList.push({ ...u, originalIdx }); });
     if (validList.length === 0) { container.innerHTML = '<p style="color:#94a3b8;">설정된 목표 대학이 없습니다.</p>'; return; }
 
     const examMode = 'mar';
@@ -870,9 +1288,10 @@ async function renderTargetUnivs(list, quantData) {
     validList.forEach((u, idx) => {
         const div = document.createElement('div'); div.className = 'target-univ-item';
         const dateStr = u.date ? new Date(u.date).toLocaleDateString() + ' 선택' : '날짜 정보 없음';
+        const choiceNum = u.originalIdx + 1;
 
         div.innerHTML = `
-            <div style="display:flex; flex-direction:column; gap:5px;"><strong>${idx+1}. ${escapeHtml(u.univ)}</strong><div class="major">${escapeHtml(u.major)}</div></div>
+            <div style="display:flex; flex-direction:column; gap:5px;"><strong>${choiceNum}지망. ${escapeHtml(u.univ)}</strong><div class="major">${escapeHtml(u.major)}</div></div>
             <div class="sim-summary-box empty" id="sim-box-${idx}">${hasMarScore ? '<div style="text-align:center; padding:10px; color:#3b82f6;"><i class="fas fa-spinner fa-spin"></i> 분석 중...</div>' : '<div class="sim-exam-label" style="color:#94a3b8;"><i class="fas fa-exclamation-circle"></i> 3월 학평 기준</div><div style="font-size:0.8rem; color:#94a3b8; text-align:center; padding:5px 0;">성적 데이터 없음</div>'}</div>
             <div class="date">${dateStr}</div>
         `;
@@ -889,7 +1308,10 @@ async function renderTargetUnivs(list, quantData) {
         const simData = await res.json();
 
         validList.forEach((u, idx) => {
-            const box = document.getElementById(`sim-box-${idx}`); const data = simData[idx]; 
+            const box = document.getElementById(`sim-box-${idx}`);
+            const data = Array.isArray(simData)
+                ? simData.find(d => d && d.univ === u.univ && d.major === u.major)
+                : simData[idx];
             if (data && typeof data.base_ui_score !== 'undefined' && data.sim_data) {
                 const currentScore = data.base_ui_score.toFixed(2);
                 let maxRise = 0; let bestSubName = '-';
@@ -898,7 +1320,7 @@ async function renderTargetUnivs(list, quantData) {
                 subjects.forEach(sub => { const info = data.sim_data[sub.key]; if (info && info.uiDiff > maxRise) { maxRise = info.uiDiff; bestSubName = sub.name; } });
                 box.className = 'sim-summary-box';
                 box.innerHTML = `<div class="sim-exam-label"><i class="fas fa-bolt"></i> 3월 학평 기준 시뮬레이션</div><div class="sim-score-row"><span>현재 환산</span><strong>${currentScore}점</strong></div><div class="sim-score-row"><span>+1점 효율</span><span class="sim-highlight">${bestSubName} (+${maxRise.toFixed(2)}점)</span></div>`;
-            } else { box.innerHTML = `<div style="font-size:0.8rem; color:#ef4444; text-align:center; padding:5px 0;">분석 데이터 부족 (지원 불가 등)</div>`; }
+            } else { box.innerHTML = `<div style="font-size:0.8rem; color:#ef4444; text-align:center; padding:5px 0;"><i class="fas fa-ban" style="margin-right:4px;"></i>지원 불가 (분석 데이터 없음)</div>`; }
         });
     } catch (e) { console.error("Simulation API Error:", e); validList.forEach((u, idx) => { const box = document.getElementById(`sim-box-${idx}`); if (box) box.innerHTML = `<div style="font-size:0.8rem; color:#ef4444; text-align:center; padding:5px 0;">분석 서버 오류</div>`; }); }
 }
@@ -956,7 +1378,15 @@ function renderPayments(p) {
 async function saveAdminMemo() {
     const memo = document.getElementById('adminMemoInput').value;
     try {
-        await apiFetch(API_URL, { method:'POST', body:JSON.stringify({ type:'admin_update_memo', userId:adminId, data:{targetUserId, memo} }) });
+        await apiFetch(API_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ 
+                type: 'admin_update_memo', 
+                data: { targetUserId: targetUserId, memo: memo } 
+            }) 
+        });
         alert("메모 저장 완료");
-    } catch(e) { if (e.message !== "Auth expired") alert("저장 실패"); }
+    } catch(e) { 
+        if (e.message !== "Auth expired") alert("저장 실패: 서버 응답을 확인해주세요."); 
+    }
 }

@@ -60,6 +60,10 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = '/login';
         return;
     }
+    if (new URLSearchParams(window.location.search).get('test') === '1') {
+        const testOption = document.getElementById('testOption');
+        if (testOption) testOption.style.display = 'block';
+    }
     fetchUserInfo(userId);
 });
 
@@ -148,6 +152,34 @@ function calculateUserTierDisplay(data) {
                 currentOptionObj.appendChild(badge);
             }
         }
+
+    // 예약된 플랜(pendingSubscription)이 있으면 안내 배너 추가
+    if (data.pendingSubscription && data.pendingSubscription.status === 'active') {
+        const pending = data.pendingSubscription;
+        const pendingTier = (pending.tier || '').toUpperCase();
+        const pendingStart = pending.startDate
+            ? new Date(pending.startDate)
+            : null;
+        const pendingStartStr = pendingStart
+            ? `${pendingStart.getFullYear()}년 ${pendingStart.getMonth()+1}월 ${pendingStart.getDate()}일`
+            : '만료 후';
+        const pendingBanner = document.getElementById('pendingSubBanner');
+        if (pendingBanner) {
+            document.getElementById('pendingSubName').innerText = pendingTier;
+            document.getElementById('pendingSubDate').innerText = `${pendingStartStr}부터 적용 예정`;
+            pendingBanner.style.display = 'flex';
+        }
+        // 선택 박스에 '예약됨' 뱃지 달기
+        const pendingOptionObj = document.querySelector(`.tier-${pending.tier?.toLowerCase()}`);
+        if (pendingOptionObj) {
+            const pendingBadge = document.createElement('div');
+            pendingBadge.className = 'current-tier-badge';
+            pendingBadge.style.background = '#dbeafe';
+            pendingBadge.style.color = '#1d4ed8';
+            pendingBadge.innerText = '예약됨';
+            pendingOptionObj.appendChild(pendingBadge);
+        }
+    }
     }
 }
 
@@ -188,48 +220,28 @@ function selectProduct(element, url, tier) {
                 btn.innerText = "업그레이드 결제하기";
             }
         } 
-        // 2. Standard / Pro 유저인 경우 (7일 제한 로직 적용)
+        // 2. Standard / Pro 유저인 경우
         else if (globalCurrentTier === 'standard' || globalCurrentTier === 'pro') {
+            const expireDateStr = globalExpireDate
+                ? `${globalExpireDate.getFullYear()}년 ${globalExpireDate.getMonth()+1}월 ${globalExpireDate.getDate()}일`
+                : '';
+
             if (selectedLevel < currentLevel) {
-                // 다운그레이드: 7일 이하 남았을 때만 허용
-                if (globalDaysLeft <= 7 && globalDaysLeft > 0) {
-                    msgWrap.style.display = 'block';
-                    msgWrap.classList.add('warning');
-                    msgText.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <strong>다운그레이드 주의:</strong> 기존 만료일 이후부터는 <strong>${globalCurrentTier.toUpperCase()}</strong> 전용 혜택을 이용하실 수 없습니다. 계속 진행하시겠습니까?`;
-                    btn.disabled = false;
-                    btn.innerText = "하위 플랜으로 예약 결제";
-                } else {
-                    msgWrap.style.display = 'block';
-                    msgWrap.classList.add('warning');
-                    msgText.innerHTML = `<i class="fas fa-clock"></i> 기존 구독 기간이 <strong>${globalDaysLeft}일</strong> 남았습니다. 하위 플랜으로의 변경은 만료 7일 전부터 가능합니다.`;
-                    btn.disabled = true;
-                    btn.innerText = "플랜 변경 기간 아님";
-                }
+                // 다운그레이드: 현재 만료 후 예약 적용
+                msgWrap.style.display = 'block';
+                msgWrap.classList.add('warning');
+                msgText.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <strong>다운그레이드 예약:</strong> 기존 구독 만료일(${expireDateStr}) 이후부터 <strong>${selectedTier.toUpperCase()}</strong> 플랜이 적용됩니다.`;
+                btn.innerText = "다운그레이드 예약 결제";
             } else if (selectedLevel === currentLevel) {
-                // 동일 티어 연장 (7일 이하 남았을 때만 허용)
-                if (globalDaysLeft <= 7 && globalDaysLeft > 0) {
-                    msgWrap.style.display = 'block';
-                    msgText.innerHTML = `<i class="fas fa-info-circle" style="color:#3b82f6;"></i> 기존 구독 기간이 <strong>${globalDaysLeft}일</strong> 남았습니다.<br>지금 결제하시면 기존 만료일 이후로 4주가 연장됩니다.`;
-                    btn.innerText = "연장 결제하기";
-                } else {
-                    msgWrap.style.display = 'block';
-                    msgWrap.classList.add('warning');
-                    msgText.innerHTML = `<i class="fas fa-clock"></i> 기존 구독 기간이 <strong>${globalDaysLeft}일</strong> 남았습니다. 연장 결제는 만료 7일 전부터 가능합니다.`;
-                    btn.disabled = true;
-                    btn.innerText = "연장 결제 기간 아님";
-                }
+                // 동일 티어 연장: 만료일로부터 28일 추가
+                msgWrap.style.display = 'block';
+                msgText.innerHTML = `<i class="fas fa-info-circle" style="color:#3b82f6;"></i> 기존 구독 기간이 <strong>${globalDaysLeft}일</strong> 남았습니다.<br>지금 결제하시면 만료일(${expireDateStr}) 이후로 4주가 연장됩니다.`;
+                btn.innerText = "연장 결제하기";
             } else if (selectedLevel > currentLevel) {
-                // 상위 티어로 업그레이드 (Standard -> Pro)
-                if (globalDaysLeft <= 7 && globalDaysLeft > 0) {
-                    msgWrap.style.display = 'block';
-                    msgText.innerHTML = `<i class="fas fa-info-circle" style="color:#3b82f6;"></i> 기존 구독 기간이 <strong>${globalDaysLeft}일</strong> 남았습니다.<br>지금 결제하시면 기존 만료일 이후로 <strong>PRO</strong> 혜택이 적용됩니다.`;
-                    btn.innerText = "예약 업그레이드 결제";
-                } else {
-                    msgWrap.style.display = 'block';
-                    msgText.innerHTML = `<i class="fas fa-info-circle" style="color:#3b82f6;"></i> 구독 기간이 <strong>${globalDaysLeft}일</strong> 남았습니다.<br>즉시 업그레이드를 원하시면 <strong>[1:1 문의]</strong>에 남겨주세요. 차액 결제를 도와드립니다.`;
-                    btn.disabled = true;
-                    btn.innerText = "업그레이드 불가 (문의 요망)";
-                }
+                // 업그레이드: 현재 만료 후 예약 적용
+                msgWrap.style.display = 'block';
+                msgText.innerHTML = `<i class="fas fa-arrow-up" style="color:#3b82f6;"></i> <strong>업그레이드 예약:</strong> 기존 구독 만료일(${expireDateStr}) 이후부터 <strong>${selectedTier.toUpperCase()}</strong> 혜택이 적용됩니다.`;
+                btn.innerText = "업그레이드 예약 결제";
             }
         }
     }
@@ -243,8 +255,11 @@ function formatPhoneNumber(rawPhone) {
     return cleaned.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/, "$1-$2-$3");
 }
 
-// 결제 데이터 세팅 및 페이지 이동 (시작일 계산 포함)
-async function processPayment() {
+// 티어별 결제 금액 (서버 사이드 TIER_PRICES 와 동일하게 유지)
+const TIER_PRICES_KRW = { 'test': 100, 'trial': 30000, 'basic': 25000, 'standard': 149000, 'pro': 299000 };
+
+// NicePay JS SDK 결제창 호출
+function processPayment() {
     const name = document.getElementById('name').value;
     const rawPhone = document.getElementById('phone').value;
     const email = document.getElementById('email').value;
@@ -257,24 +272,41 @@ async function processPayment() {
     }
 
     const formattedPhone = formatPhoneNumber(rawPhone);
+    const userId = localStorage.getItem('userId');
 
     // 결제 시작일(effectiveStartDate) 설정 로직
+    // 현재 구독이 유효한 경우 → 잔여 기간 보존을 위해 기존 만료일부터 새 구독 시작
+    // 만료됐거나 free인 경우 → 결제 즉시(now)부터 시작
     let startDate = new Date();
-    // Standard/Pro 연장 또는 예약 업그레이드 시, 시작일을 만료일로 지정
-    if ((globalCurrentTier === 'standard' || globalCurrentTier === 'pro') && globalDaysLeft <= 7 && globalDaysLeft > 0 && globalExpireDate) {
+    if ((globalCurrentTier === 'standard' || globalCurrentTier === 'pro') && globalDaysLeft > 0 && globalExpireDate) {
         startDate = globalExpireDate;
     }
 
-    const checkoutData = {
-        name: name,
-        phone: formattedPhone,
-        email: email,
-        tier: selectedTier,
-        productName: selectedProductName,
-        effectiveStartDate: startDate.toISOString(),
-        userId: localStorage.getItem('userId') 
-    };
+    const amount = TIER_PRICES_KRW[selectedTier];
+    if (!amount) { alert("유효하지 않은 상품입니다."); return; }
 
-    localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
-    window.location.href = '/checkout'; 
+    const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+
+    AUTHNICE.requestPay({
+        clientId: CONFIG.nicepay.clientId,
+        method: 'card',
+        orderId: orderId,
+        amount: amount,
+        goodsName: `스터디크랙 ${selectedProductName} 멤버십`,
+        buyerName: name,
+        buyerEmail: email,
+        buyerTel: formattedPhone,
+        returnUrl: CONFIG.api.payment_return,
+        mallReserved: JSON.stringify({
+            userId: userId,
+            tier: selectedTier,
+            productName: selectedProductName,
+            effectiveStartDate: startDate.toISOString(),
+            siteOrigin: window.location.origin
+        }),
+        fnError: function(result) {
+            console.error('[NicePay Error]', result);
+            alert('결제 창 오류: ' + (result.errorMsg || '알 수 없는 오류'));
+        }
+    });
 }
