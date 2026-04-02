@@ -23,8 +23,7 @@ jobs:
         run: |
           echo "AWS_ROLE_ARN=arn:aws:iam::235270182853:role/StudyCrack-GitHubActions-DevRole" >> $GITHUB_ENV
           echo "S3_BUCKET=dev.studycrack.co.kr" >> $GITHUB_ENV
-          # 🚨 기존 실서버 ID 삭제! DEV용 CloudFront가 있다면 그 ID를 넣고, 없다면 비워두세요.
-          echo "CF_DIST_ID=" >> $GITHUB_ENV
+          echo "CF_DIST_ID=E3LXVB0NYLKN6X" >> $GITHUB_ENV
 
       # 2. PROD 환경 변수 설정 (main 브랜치 푸시 시 실행)
       - name: Set Environment Variables for PROD
