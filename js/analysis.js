@@ -1655,15 +1655,18 @@ function openFeedbackModal(data) {
         }
     }
     if (!detailRows) detailRows = `<tr><td colspan="5" style="color:#94a3b8; padding:20px;">상세 학습 기록이 없습니다.</td></tr>`;
-
+	
+	const CODE_MAP = { 'un': '언매', 'hj': '화작', 'mi': '미적', 'ki': '기하', 'hw': '확통' };
+    const getOptName = (code) => CODE_MAP[code] || code || '-';
+    
     let examHtml = '';
     if (data.mockExam && data.mockExam.type && data.mockExam.type !== 'none') {
         const typeMap = { 'school': '교내', 'edu': '평가원/교육청', 'private': '사설' };
         const typeName = typeMap[data.mockExam.type] || '기타';
         let scoreDetails = ''; const s = data.mockExam.scores || {};
         const rowStyle = "margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;";
-        if(s.kor) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">국어 (${escapeHtml(s.korOpt||'-')})</span> <strong style="color:#1e293b;">${escapeHtml(s.kor)}</strong></div>`;
-        if(s.math) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">수학 (${escapeHtml(s.mathOpt||'-')})</span> <strong style="color:#1e293b;">${escapeHtml(s.math)}</strong></div>`;
+        if(s.kor) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">국어 (${escapeHtml(getOptName(s.korOpt))})</span> <strong style="color:#1e293b;">${escapeHtml(s.kor)}</strong></div>`;
+        if(s.math) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">수학 (${escapeHtml(getOptName(s.mathOpt))})</span> <strong style="color:#1e293b;">${escapeHtml(s.math)}</strong></div>`;
         if(s.eng) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">영어</span> <strong style="color:#1e293b;">${escapeHtml(s.eng)}</strong></div>`;
         if(s.inq1) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">${escapeHtml(s.inq1Name||'탐구1')}</span> <strong style="color:#1e293b;">${escapeHtml(s.inq1)}</strong></div>`;
         if(s.inq2) scoreDetails += `<div style="${rowStyle}"><span style="color:#64748b; font-size:0.85rem;">${escapeHtml(s.inq2Name||'탐구2')}</span> <strong style="color:#1e293b;">${escapeHtml(s.inq2)}</strong></div>`;
