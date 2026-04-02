@@ -67,7 +67,7 @@ async function apiFetch(url, options = {}) {
                 localStorage.removeItem('accessToken');
                 localStorage.removeItem('userId');
                 localStorage.removeItem('userRole');
-                window.location.href = '/login'; 
+                window.location.href = '/admin/login'; 
                 return Promise.reject(new Error("Auth expired")); 
             }
             throw new Error(`HTTP Error: ${response.status}`);
