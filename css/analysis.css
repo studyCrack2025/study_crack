@@ -579,20 +579,23 @@ input[type="number"]::-webkit-inner-spin-button {
     .mobile-wizard-mode #wizardSubmitBtn { flex: 2; margin-top: 0; }
     
     .mobile-wizard-mode .subject-card { padding: 15px; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 15px; background: #f8fafc; }
-    .mobile-wizard-mode .card-header { margin-bottom: 12px; font-size: 1.15rem; border-bottom: 1px dashed #cbd5e1; padding-bottom: 10px; }
+    .mobile-wizard-mode .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 10px; }
     .mobile-wizard-mode .time-inputs { display: flex; flex-direction: column; gap: 12px; margin-top: 15px; }
-    .mobile-wizard-mode .input-group { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-    .mobile-wizard-mode .input-group label { width: 70px; font-weight: bold; color: #475569; font-size: 0.95rem; margin: 0; }
-    .mobile-wizard-mode .input-group input { flex: 1; height: 42px; font-size: 1rem; }
+    .mobile-wizard-mode .input-group { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; box-sizing: border-box; }
+    .mobile-wizard-mode .input-group label { width: auto; min-width: 65px; white-space: nowrap; font-weight: bold; color: #475569; font-size: 0.95rem; margin: 0; }
+    .mobile-wizard-mode .input-group input { flex: 1; min-width: 0; height: 44px; font-size: 1rem; box-sizing: border-box; padding: 0 10px; }
     .mobile-wizard-mode .rate-display { display: flex; justify-content: space-between; align-items: center; background: #eff6ff; padding: 15px; border-radius: 8px; margin-top: 5px; border: 1px solid #bfdbfe; }
-    .mobile-wizard-mode .rate-display label { font-weight: bold; color: #1d4ed8; font-size: 0.95rem; margin: 0; }
+    .mobile-wizard-mode .rate-display label { font-weight: bold; color: #1d4ed8; font-size: 0.95rem; margin: 0; width: auto; }
     .mobile-wizard-mode .rate-display span { font-size: 1.2rem; font-weight: 900; }
 
+    .mobile-wizard-mode .btn-add-card { width: 100%; padding: 15px; border: 2px dashed #cbd5e1; background: #f8fafc; color: #3b82f6; font-weight: 800; font-size: 1.05rem; border-radius: 8px; cursor: pointer; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .mobile-wizard-mode .btn-del-card { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; cursor: pointer; white-space: nowrap; }
+
     .mobile-wizard-mode .score-input-grid.enhanced { display: flex; flex-direction: column; gap: 12px; }
-    .mobile-wizard-mode .score-item { display: grid; grid-template-columns: 50px 1fr 1fr; gap: 10px; align-items: center; background: #f8fafc; padding: 15px 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
-    .mobile-wizard-mode .score-item .main-label { text-align: left; margin-bottom: 0; font-size: 1rem; font-weight: 800; color: #1e293b; }
-    .mobile-wizard-mode .score-item .sub-input { height: 44px; font-size: 0.95rem; }
-    .mobile-wizard-mode .score-item .score-val { height: 44px; font-size: 1rem; }
+    .mobile-wizard-mode .score-item { display: grid; grid-template-columns: 55px 1fr 1fr; gap: 10px; align-items: center; background: #f8fafc; padding: 15px 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
+    .mobile-wizard-mode .score-item .main-label { text-align: left; margin-bottom: 0; font-size: 1rem; font-weight: 800; color: #1e293b; white-space: nowrap; }
+    .mobile-wizard-mode .score-item .sub-input { height: 44px; padding: 0 5px; font-size: 0.95rem; box-sizing: border-box; text-align: center; text-align-last: center; -webkit-appearance: none; appearance: none; line-height: 42px; vertical-align: middle; }
+    .mobile-wizard-mode .score-item .score-val { height: 44px; font-size: 1rem; box-sizing: border-box; padding: 0 10px; }
 
     /* =======================================
        1. 메인 헤더 & 네비게이션 탭 다이어트
