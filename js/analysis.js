@@ -570,27 +570,35 @@ function closeUnivModal() {
 }
 
 function showUnivStep() {
-    currentSelectStep = 'univ'; selectedUnivForMajor = '';
-    document.getElementById('modalTitle').innerText = "대학 선택";
-    document.getElementById('stepUnivList').style.display = 'grid';
-    document.getElementById('stepMajorList').style.display = 'none';
-    document.getElementById('modalFooter').style.display = 'none';
-    
-    const searchInput = document.getElementById('univSearchInput');
-    if(searchInput) { searchInput.placeholder = "대학명 검색 (예: 서울대, 연세)"; searchInput.value = ''; }
-    renderUnivList(''); 
+    currentSelectStep = 'univ'; selectedUnivForMajor = '';
+    document.getElementById('modalTitle').innerText = "대학 선택";
+    const listEl = document.getElementById('stepUnivList');
+    listEl.style.display = 'grid';
+    document.getElementById('stepMajorList').style.display = 'none';
+    document.getElementById('modalFooter').style.display = 'none';
+    
+    listEl.style.pointerEvents = 'none';
+    setTimeout(() => { listEl.style.pointerEvents = 'auto'; }, 350);
+    
+    const searchInput = document.getElementById('univSearchInput');
+    if(searchInput) { searchInput.placeholder = "대학명 검색 (예: 서울대, 연세)"; searchInput.value = ''; }
+    renderUnivList(''); 
 }
 
 function showMajorStep(univName) {
-    currentSelectStep = 'major'; selectedUnivForMajor = univName;
-    document.getElementById('modalTitle').innerText = `${univName} - 학과 선택`;
-    document.getElementById('stepUnivList').style.display = 'none';
-    document.getElementById('stepMajorList').style.display = 'grid';
-    document.getElementById('modalFooter').style.display = 'flex';
-    
-    const searchInput = document.getElementById('univSearchInput');
-    if(searchInput) { searchInput.placeholder = "학과명 검색 (예: 컴퓨터, 경영)"; searchInput.value = ''; }
-    renderMajorList(univName, ''); 
+    currentSelectStep = 'major'; selectedUnivForMajor = univName;
+    document.getElementById('modalTitle').innerText = `${univName} - 학과 선택`;
+    document.getElementById('stepUnivList').style.display = 'none';
+    const listEl = document.getElementById('stepMajorList');
+    listEl.style.display = 'grid';
+    document.getElementById('modalFooter').style.display = 'flex';
+    
+    listEl.style.pointerEvents = 'none';
+    setTimeout(() => { listEl.style.pointerEvents = 'auto'; }, 350);
+    
+    const searchInput = document.getElementById('univSearchInput');
+    if(searchInput) { searchInput.placeholder = "학과명 검색 (예: 컴퓨터, 경영)"; searchInput.value = ''; }
+    renderMajorList(univName, ''); 
 }
 
 function handleModalSearch(e) {
