@@ -266,7 +266,7 @@
 .badge-status.submitted { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
 .badge-status.locked { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
 
-/* [수정] 피드백 박스 및 리스트 (잘림 방지 포함) */
+/* 피드백 박스 및 리스트 (잘림 방지 포함) */
 .feedback-box { border-left: 4px solid #8b5cf6; background: linear-gradient(to bottom right, #fbfbfe, #fff); }
 .feedback-history-area { margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 15px; }
 .feedback-filter select { padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; color: #334155; margin-bottom: 12px; width: 100%; max-width: 200px; }
@@ -342,6 +342,23 @@
 .lock-message-box i { font-size: 2.5rem; color: #94a3b8; margin-bottom: 15px; }
 .lock-message-box h3 { margin: 0 0 8px 0; color: #1e293b; font-size: 1.2rem; }
 .lock-message-box p { margin: 0 0 20px 0; color: #64748b; font-size: 0.95rem; line-height: 1.5; }
+
+.subject-card-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
+.subject-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 12px; }
+.card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+.card-header .main-sub { font-weight: 800; color: #1e293b; font-size: 1.05rem; }
+.card-body { display: flex; flex-direction: column; gap: 10px; }
+.time-inputs { display: flex; align-items: center; gap: 15px; }
+.input-group { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.input-group label { font-size: 0.75rem; color: #64748b; font-weight: 700; margin: 0; }
+.input-group input { width: 100%; height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0 10px; font-size: 0.95rem; }
+.rate-display { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 65px; border-left: 1px solid #f1f5f9; padding-left: 10px; }
+.rate-display label { font-size: 0.7rem; color: #94a3b8; margin-bottom: 2px; }
+.rate-txt { font-size: 1.1rem; font-weight: 800; color: #2563eb; }
+
+.btn-add-card { width: 100%; padding: 12px; border: 2px dashed #cbd5e1; background: #f8fafc; color: #3b82f6; font-weight: 700; border-radius: 8px; cursor: pointer; margin-bottom: 20px; transition: all 0.2s; }
+.btn-add-card:hover { background: #eff6ff; border-color: #3b82f6; }
+.btn-del-card { background: #fff1f2; color: #e11d48; border: 1px solid #fecdd3; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
 
 
 /* ============================================================
