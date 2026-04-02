@@ -47,7 +47,7 @@ const CONFIG = {
 
     // NicePay 설정
     nicepay: {
-        clientId: 'R2_18437f7c0352412ba94071b9af6895fd'
+        clientId: 'R2_9ff3f8dde7ae45a1b84b6c0ab9ca6ea9'
     },
     
     // 기존 Cognito 설정
