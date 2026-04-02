@@ -752,21 +752,45 @@ function loadTargetUsers() {
 async function sendAdminNotice() {
     const checkedBoxes = document.querySelectorAll('.target-chk:checked');
     const targetUserIds = [...new Set(Array.from(checkedBoxes).map(b => b.value))];
-    const title = document.getElementById('noticeTitle').value.trim(); const content = document.getElementById('noticeContent').value.trim();
+    const title = document.getElementById('noticeTitle').value.trim();
+    const content = document.getElementById('noticeContent').value.trim();
+
+    const adminName = localStorage.getItem('userName') || '관리자';
 
     if (targetUserIds.length === 0) { alert("발송할 대상을 한 명 이상 선택해주세요."); return; }
     if (!title || !content) { alert("제목과 내용을 모두 입력해주세요."); return; }
     if (!confirm(`총 ${targetUserIds.length}명에게 공지를 발송하시겠습니까?`)) return;
 
-    const targetNamesList = targetUserIds.map(uid => { const user = globalUserList.find(u => u.userid === uid); return user ? (user.name || user.nickname || '알수없음') : '알수없음'; });
-    let targetNamesDisplay = targetNamesList.slice(0, 5).join(', '); if (targetNamesList.length > 5) targetNamesDisplay += ` 외 ${targetNamesList.length - 5}명`;
+    const targetNamesList = targetUserIds.map(uid => { 
+        const user = globalUserList.find(u => u.userid === uid); 
+        return user ? (user.name || user.nickname || '알수없음') : '알수없음'; 
+    });
+    let targetNamesDisplay = targetNamesList.slice(0, 5).join(', '); 
+    if (targetNamesList.length > 5) targetNamesDisplay += ` 외 ${targetNamesList.length - 5}명`;
 
     try {
-        await apiFetch(NOTI_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_send_notice', data: { targetUserIds: targetUserIds, title: title, content: content, targetNamesDisplay: targetNamesDisplay } }) });
+        await apiFetch(NOTI_API_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ 
+                type: 'admin_send_notice', 
+                data: { 
+                    targetUserIds: targetUserIds, 
+                    title: title, 
+                    content: content, 
+                    targetNamesDisplay: targetNamesDisplay,
+                    senderName: adminName
+                } 
+            }) 
+        }); 
+        
         alert("공지 발송 및 기록 저장이 완료되었습니다.");
-        document.getElementById('noticeTitle').value = ''; document.getElementById('noticeContent').value = '';
-        document.querySelectorAll('#noticeTargetCheckboxes input[type="checkbox"]').forEach(c => c.checked = false); showNotiMenu('sent'); 
-    } catch(e) { if (e.message !== "Auth expired") alert("공지 발송이 원활하게 진행되지 않았습니다. 서버 상태를 확인해주세요."); }
+        document.getElementById('noticeTitle').value = ''; 
+        document.getElementById('noticeContent').value = '';
+        document.querySelectorAll('#noticeTargetCheckboxes input[type="checkbox"]').forEach(c => c.checked = false); 
+        showNotiMenu('sent'); 
+    } catch(e) { 
+        if (e.message !== "Auth expired") alert("공지 발송이 원활하게 진행되지 않았습니다. 서버 상태를 확인해주세요."); 
+    }
 }
 
 // ============================================================
