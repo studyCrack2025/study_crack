@@ -7,7 +7,7 @@ let currentTutorData = null;
 
 let mypagePhoneTimerInterval = null;
 
-// 💡 공통 apiFetch 함수 (accessToken 기반 통합 및 401 예외 처리)
+// 💡 공통 apiFetch 함수
 async function apiFetch(url, options = {}) {
     const token = localStorage.getItem('accessToken');
     const defaultHeaders = {
@@ -15,25 +15,33 @@ async function apiFetch(url, options = {}) {
         ...(token && { 'Authorization': `Bearer ${token}` })
     };
 
-    options.headers = { ...defaultHeaders, ...options.headers };
+    options.headers = { ...defaultHeaders, ...(options.headers || {}) };
 
     try {
         const response = await fetch(url, options);
 
         if (!response.ok) {
             if (response.status === 401 || response.status === 403) {
-                const currentPath = window.location.pathname;
-                if (!['/login', '/signup', '/'].includes(currentPath)) {
-                    alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
-                    handleSignOut(); 
-                }
+                alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
+                handleSignOut(); 
                 return Promise.reject(new Error("Auth expired")); 
             }
-            throw new Error(`서버 통신 오류 (상태 코드: ${response.status})`);
+            
+            // 💡 백엔드에서 내려준 에러 메시지가 있다면 파싱해서 사용
+            let errorMessage = "요청 처리 중 문제가 발생했습니다.";
+            try {
+                const errorData = await response.json();
+                if (errorData.message) errorMessage = errorData.message;
+            } catch (e) {
+                // JSON 파싱 실패 시 기본 텍스트
+                errorMessage = `인증번호가 일치하지 않거나 오류가 발생했습니다.`;
+            }
+            // 콘솔에 에러를 찍지 않고 바로 에러를 던집니다.
+            throw new Error(errorMessage);
         }
         return response;
     } catch (error) {
-        console.error("API 통신 실패:", error);
+        // 네트워크 단절 또는 위에서 던진 에러만 그대로 전달
         throw error; 
     }
 }
@@ -66,6 +74,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 3. UI 이벤트 리스너 등록
     setupUI();
+    
+    // 💡 엔터키 바인딩 유틸리티
+    const bindEnterKey = (inputId, actionFunction) => {
+        const el = document.getElementById(inputId);
+        if (el) {
+            el.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); 
+                    actionFunction();
+                }
+            });
+        }
+    };
+
+    // 💡 학생 페이지 모달 인풋 엔터키 연동
+    bindEnterKey('newEmailInput', requestEmailChange);
+    bindEnterKey('emailVerifyCode', verifyEmailChange);
+    bindEnterKey('newPhoneInput', window.requestPhoneChange);
+    bindEnterKey('phoneVerifyCode', window.verifyPhoneChange);
+    bindEnterKey('currentPassword', changePassword);
+    bindEnterKey('newChangePassword', changePassword);
+    bindEnterKey('newChangePasswordConfirm', changePassword);
+    bindEnterKey('deleteAccountPassword', executeDeleteAccount);
 });
 
 function initCognitoAndFetchData() {
@@ -434,7 +465,7 @@ window.verifyPhoneChange = async function() {
             alert("인증번호가 일치하지 않거나 만료되었습니다.");
         }
     } catch (error) {
-        if (error.message !== "Auth expired") alert("인증 확인 중 오류가 발생했습니다.");
+        if (error.message !== "Auth expired") alert(error.message);
     }
 }
 
