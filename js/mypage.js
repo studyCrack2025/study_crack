@@ -372,7 +372,7 @@ window.requestPhoneChange = async function() {
     btn.disabled = true;
 
     try {
-        const response = await apiFetch(AUTH_API_URL, {
+        const response = await apiFetch(AUTH_URL, {
             method: 'POST',
             body: JSON.stringify({ type: 'send_sms_auth', phone: cleanPhone })
         });
