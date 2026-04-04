@@ -103,14 +103,6 @@
 
                 <div class="form-group row-group">
                     <div class="input-wrapper">
-                        <label>전화번호</label>
-                        <input type="tel" id="profilePhone" disabled>
-                    </div>
-                    <button class="edit-btn" onclick="toggleEdit('profilePhone', this)">수정하기</button>
-                </div>
-
-                <div class="form-group row-group">
-                    <div class="input-wrapper">
                         <label>학교</label>
                         <input type="text" id="profileSchool" disabled>
                     </div>
@@ -127,6 +119,11 @@
                         <a href="#" onclick="openEmailModal(); return false;" class="text-link">이메일 변경하기</a>
                     </div>
                     <div class="link-item">
+                        <span class="label">전화번호</span>
+                        <span class="value" id="currentPhoneDisplay">loading...</span>
+                        <a href="#" onclick="openPhoneModal(); return false;" class="text-link">전화번호 변경하기</a>
+                    </div>
+                    <div class="link-item">
                         <span class="label">비밀번호</span>
                         <span class="value">********</span>
                         <a href="/change-password" class="text-link">비밀번호 변경하기</a>
@@ -135,6 +132,7 @@
             </div>
         </main>
     </div> 
+    
     <div id="emailModal" class="modal hidden">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('emailModal')">&times;</span>
@@ -158,6 +156,32 @@
                     </div>
                 </div>
                 <button class="modal-action-btn" onclick="verifyEmailChange()">인증 및 변경 완료</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="phoneModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('phoneModal')">&times;</span>
+            <h3>전화번호 변경</h3>
+            
+            <div id="step-phone-input">
+                <div class="form-group">
+                    <label>새 전화번호</label>
+                    <input type="text" id="newPhoneInput" placeholder="01012345678 (숫자만 입력)">
+                </div>
+                <button id="sendPhoneCodeBtn" class="modal-action-btn" onclick="requestPhoneChange()">인증번호 전송</button>
+            </div>
+
+            <div id="step-phone-verify" class="hidden">
+                <div class="form-group">
+                    <label>인증번호</label>
+                    <div class="verify-row">
+                        <input type="text" id="phoneVerifyCode" placeholder="인증코드 6자리">
+                        <span id="phoneTimer" class="timer">05:00</span>
+                    </div>
+                </div>
+                <button id="verifyPhoneBtn" class="modal-action-btn" onclick="verifyPhoneChange()">인증 및 변경 완료</button>
             </div>
         </div>
     </div>

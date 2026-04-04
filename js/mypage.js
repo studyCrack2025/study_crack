@@ -5,6 +5,8 @@ let currentUserTier = 'free';
 let cognitoUser = null; 
 let currentTutorData = null;
 
+let mypagePhoneTimerInterval = null;
+
 // 💡 공통 apiFetch 함수 (accessToken 기반 통합 및 401 예외 처리)
 async function apiFetch(url, options = {}) {
     const token = localStorage.getItem('accessToken');
@@ -174,7 +176,9 @@ function renderUserInfo(data) {
     const nameInput = document.getElementById('profileName');
     if(nameInput) {
         nameInput.value = data.name || '';
-        document.getElementById('profilePhone').value = data.phone || '';
+        const phoneDisplay = document.getElementById('currentPhoneDisplay');
+        if(phoneDisplay) phoneDisplay.innerText = data.phone || '등록된 번호 없음';
+        
         document.getElementById('profileSchool').value = data.school || '';
         const currentEmailDisplay = document.getElementById('currentEmailDisplay');
         if(currentEmailDisplay) currentEmailDisplay.innerText = data.email || '';
@@ -271,6 +275,13 @@ function closeModal(modalId) {
         document.getElementById('emailVerifyCode').value = '';
         if(emailTimerInterval) clearInterval(emailTimerInterval);
     }
+    if(modalId === 'phoneModal') {
+        document.getElementById('step-phone-input').classList.remove('hidden');
+        document.getElementById('step-phone-verify').classList.add('hidden');
+        document.getElementById('newPhoneInput').value = '';
+        document.getElementById('phoneVerifyCode').value = '';
+        if(mypagePhoneTimerInterval) clearInterval(mypagePhoneTimerInterval);
+    }
     if(modalId === 'passwordModal') {
         document.getElementById('currentPassword').value = '';
         document.getElementById('newChangePassword').value = '';
@@ -324,6 +335,128 @@ function verifyEmailChange() {
             alert("인증 실패: 인증코드가 틀리거나 만료되었습니다.");
         }
     });
+}
+
+window.openPhoneModal = function() {
+    document.getElementById('phoneModal').classList.remove('hidden');
+    document.getElementById('step-phone-input').classList.remove('hidden');
+    document.getElementById('step-phone-verify').classList.add('hidden');
+    
+    document.getElementById('newPhoneInput').value = '';
+    document.getElementById('phoneVerifyCode').value = '';
+    
+    const sendBtn = document.getElementById('sendPhoneCodeBtn');
+    if (sendBtn) { 
+        sendBtn.innerText = "인증번호 전송"; 
+        sendBtn.disabled = false; 
+    }
+    if (mypagePhoneTimerInterval) clearInterval(mypagePhoneTimerInterval);
+}
+
+window.requestPhoneChange = async function() {
+    let phone = document.getElementById('newPhoneInput').value;
+    if (!phone) { alert("새 전화번호를 입력해주세요."); return; }
+
+    let cleanPhone = phone.replace(/-/g, '').trim();
+    if (cleanPhone.startsWith('010')) {
+        cleanPhone = '+82' + cleanPhone.substring(1);
+    } else if (cleanPhone.startsWith('10')) {
+        cleanPhone = '+82' + cleanPhone;
+    } else if (!cleanPhone.startsWith('+')) {
+        alert("휴대폰 번호 형식을 확인해주세요. (예: 01012345678)");
+        return;
+    }
+
+    const btn = document.getElementById('sendPhoneCodeBtn');
+    btn.innerText = "전송 중...";
+    btn.disabled = true;
+
+    try {
+        const response = await apiFetch(AUTH_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'send_sms_auth', phone: cleanPhone })
+        });
+
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.message || "SMS 발송 실패");
+        }
+
+        alert("인증번호가 발송되었습니다. 5분 이내에 입력해주세요.");
+        document.getElementById('step-phone-input').classList.add('hidden');
+        document.getElementById('step-phone-verify').classList.remove('hidden');
+        
+        startMypagePhoneTimer(5 * 60, 'phoneTimer');
+
+    } catch (error) {
+        if (error.message !== "Auth expired") alert("인증번호 발송에 실패했습니다.");
+        btn.innerText = "인증번호 전송";
+        btn.disabled = false;
+    }
+}
+
+window.verifyPhoneChange = async function() {
+    let phoneRaw = document.getElementById('newPhoneInput').value.replace(/-/g, '').trim();
+    let cleanPhone = phoneRaw;
+
+    if (cleanPhone.startsWith('010')) {
+        cleanPhone = '+82' + cleanPhone.substring(1);
+    } else if (cleanPhone.startsWith('10')) {
+        cleanPhone = '+82' + cleanPhone;
+    }
+
+    const inputCode = document.getElementById('phoneVerifyCode').value;
+    if (!inputCode) { alert("인증코드를 입력해주세요."); return; }
+
+    try {
+        const response = await apiFetch(AUTH_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'verify_code',
+                phone: cleanPhone,
+                code: inputCode
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            let dbFormattedPhone = phoneRaw.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/, "$1-$2-$3");
+
+            const success = await saveSingleField('phone', dbFormattedPhone);
+            
+            if (success) {
+                alert("전화번호가 성공적으로 변경되었습니다.");
+                document.getElementById('currentPhoneDisplay').innerText = escapeHtml(dbFormattedPhone);
+                closeModal('phoneModal');
+            }
+        } else {
+            alert("인증번호가 일치하지 않거나 만료되었습니다.");
+        }
+    } catch (error) {
+        if (error.message !== "Auth expired") alert("인증 확인 중 오류가 발생했습니다.");
+    }
+}
+
+function startMypagePhoneTimer(duration, displayId) {
+    let timer = duration, minutes, seconds;
+    const display = document.getElementById(displayId);
+    if(mypagePhoneTimerInterval) clearInterval(mypagePhoneTimerInterval);
+
+    mypagePhoneTimerInterval = setInterval(function () {
+        minutes = parseInt(timer / 60, 10);
+        seconds = parseInt(timer % 60, 10);
+        minutes = minutes < 10 ? "0" + minutes : minutes;
+        seconds = seconds < 10 ? "0" + seconds : seconds;
+
+        if(display) display.textContent = minutes + ":" + seconds;
+
+        if (--timer < 0) {
+            clearInterval(mypagePhoneTimerInterval);
+            if(display) display.textContent = "만료";
+            alert("인증 시간이 만료되었습니다. 창을 닫고 다시 시도해주세요.");
+        }
+    }, 1000);
 }
 
 function openPasswordModal() {
