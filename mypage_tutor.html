@@ -95,6 +95,7 @@
             <div class="main-tabs">
                 <button class="tab-btn active" onclick="switchTab('info')">내 정보 관리</button>
                 <button class="tab-btn" onclick="switchTab('students')">담당 학생 관리</button>
+                <button class="tab-btn" onclick="switchTab('notes')">특이사항 관리</button>
             </div>
 
             <div id="tab-info" class="tab-content active">
@@ -191,9 +192,23 @@
                     </table>
                 </div>
             </div>
+            
+            <div id="tab-notes" class="tab-content">
+                <div class="note-header-area">
+                    <div class="note-header-text">
+                        <h2>특이사항 관리</h2>
+                        <p>관리자에게 전달할 학생 특이사항이나 일반 문의를 남겨주세요.</p>
+                    </div>
+                    <button class="account-edit-btn" onclick="openTutorNoteModal()">작성하기</button>
+                </div>
+                
+                <div class="note-list-container" id="tutorNoteListArea">
+                    <div class="empty-msg">데이터를 불러오는 중...</div>
+                </div>
+            </div>
         </main>
     </div> 
-
+    
     <div id="profileModal" class="modal hidden">
         <div class="modal-content large-modal">
             <span class="close-btn" onclick="closeModal('profileModal')">&times;</span>
@@ -338,6 +353,58 @@
                 </div>
                 <button class="modal-action-btn danger-btn" onclick="executeTutorWithdrawal()">네, 모든 데이터를 삭제하고 탈퇴합니다</button>
             </div>
+        </div>
+    </div>
+    
+        <div id="tutorNoteModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('tutorNoteModal')">&times;</span>
+            <h3>특이사항 작성</h3>
+            
+            <div class="form-group">
+                <label>유형 선택</label>
+                <select id="noteCategory" class="account-input" onchange="handleNoteCategoryChange()">
+                    <option value="student">학생관련</option>
+                    <option value="admin">관리자관련</option>
+                    <option value="etc">기타</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="noteStudentSelectGroup">
+                <label>대상 학생</label>
+                <select id="noteTargetStudent" class="account-input">
+                    <option value="">학생을 선택해주세요</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>제목</label>
+                <input type="text" id="noteTitle" class="account-input" placeholder="제목을 입력하세요">
+            </div>
+            
+            <div class="form-group">
+                <label>내용</label>
+                <textarea id="noteContent" class="common-textarea" rows="5" placeholder="상세 내용을 적어주세요."></textarea>
+            </div>
+            
+            <button class="modal-action-btn" onclick="submitTutorNote()">등록하기</button>
+        </div>
+    </div>
+
+    <div id="tutorNoteDetailModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('tutorNoteDetailModal')">&times;</span>
+            
+            <div class="note-detail-top">
+                <span id="noteDetailCategory" class="tier-badge"></span>
+                <span id="noteDetailDate" class="note-detail-date"></span>
+            </div>
+            
+            <h3 id="noteDetailTitle" style="margin-top: 0;"></h3>
+            <div id="noteDetailContent" class="note-detail-content"></div>
+            
+            <h4 style="color: #2563eb; margin-bottom: 10px;">관리자 답변</h4>
+            <div id="noteDetailAnswerArea"></div>
         </div>
     </div>
     

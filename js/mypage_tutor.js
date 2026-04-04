@@ -3,11 +3,14 @@
 const TUTOR_API_URL = CONFIG.api.admin;
 const FILE_API_URL = CONFIG.api.file;
 const NOTI_API_URL = CONFIG.api.noti;
+const QNA_API_URL = CONFIG.api.qna;
 
 let tutorInfoData = {};
 let tutorCognitoUser = null; 
 let tutorTimerInterval = null;
 let mypagePhoneTimerInterval = null;
+
+window.myStudentsList = [];
 
 // 💡 공통 apiFetch 함수
 async function apiFetch(url, options = {}) {
@@ -168,6 +171,10 @@ window.switchTab = function(tabName) {
     else if (tabName === 'students' && btns[1]) { 
         btns[1].classList.add('active'); 
         loadMyStudents(); 
+    }
+    else if (tabName === 'notes' && btns[2]) {
+        btns[2].classList.add('active');
+        loadTutorNotes();
     }
 
     const targetContent = document.getElementById(`tab-${tabName}`);
@@ -460,6 +467,7 @@ window.loadMyStudents = async function() {
         });
         
         const students = await response.json();
+        window.myStudentsList = students || [];
 
         tbody.innerHTML = '';
         if (!students || students.length === 0) {
@@ -607,6 +615,169 @@ window.toggleEditMaxHours = async function(btn) {
             tutorInfoData.maxHours = newValue;
         } else { alert("수정에 실패했습니다. 다시 시도해주세요."); }
     }
+};
+
+// ==========================================
+// [특이사항 관리] 데이터 통신 및 모달 로직
+// ==========================================
+
+// 1. 특이사항 리스트 불러오기 (QnA API 재활용)
+window.loadTutorNotes = async function() {
+    const area = document.getElementById('tutorNoteListArea');
+    area.innerHTML = '<div class="empty-msg"><i class="fas fa-spinner fa-spin"></i> 내역을 불러오는 중...</div>';
+
+    try {
+        const response = await apiFetch(QNA_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'get_qna_list' }) 
+        });
+        const data = await response.json();
+        const history = data.qnaHistory || [];
+
+        if (history.length === 0) {
+            area.innerHTML = '<div class="empty-msg">등록된 특이사항 내역이 없습니다.</div>';
+            return;
+        }
+
+        area.innerHTML = '';
+        history.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        history.forEach(item => {
+            const isDone = item.status === 'done';
+            const statusHtml = isDone 
+                ? `<span style="color:#2563eb; font-weight:bold; font-size:0.85rem;"><i class="fas fa-check-circle"></i> 확인완료</span>`
+                : `<span style="color:#f59e0b; font-weight:bold; font-size:0.85rem;"><i class="fas fa-clock"></i> 대기중</span>`;
+            
+            let catName = '기타';
+            let badgeColor = 'tier-standard';
+            if (item.category === 'student') { catName = '학생관련'; badgeColor = 'tier-pro'; }
+            else if (item.category === 'admin') { catName = '관리자관련'; badgeColor = 'tier-free'; }
+
+            const div = document.createElement('div');
+            div.className = 'note-list-item';
+            div.onclick = () => openTutorNoteDetailModal(item, catName, badgeColor);
+
+            div.innerHTML = `
+                <div class="note-list-top">
+                    <span class="tier-badge ${badgeColor}">${catName}</span>
+                    ${statusHtml}
+                </div>
+                <h3 class="note-list-title">${escapeHtml(item.title)}</h3>
+                <div class="note-list-bottom">
+                    <span>${new Date(item.createdAt).toLocaleDateString()}</span>
+                </div>
+            `;
+            area.appendChild(div);
+        });
+    } catch (error) {
+        if (error.message !== "Auth expired") {
+            area.innerHTML = '<div class="empty-msg">내역을 불러오지 못했습니다. 잠시 후 시도해주세요.</div>';
+        }
+    }
+};
+
+// 2. 카테고리 변경 시 학생 선택창 토글
+window.handleNoteCategoryChange = function() {
+    const cat = document.getElementById('noteCategory').value;
+    const group = document.getElementById('noteStudentSelectGroup');
+    if (cat === 'student') group.classList.remove('hidden');
+    else group.classList.add('hidden');
+};
+
+// 3. 작성 모달 열기 (학생 리스트 렌더링 포함)
+window.openTutorNoteModal = function() {
+    document.getElementById('tutorNoteModal').classList.remove('hidden');
+    document.getElementById('noteCategory').value = 'student';
+    document.getElementById('noteTitle').value = '';
+    document.getElementById('noteContent').value = '';
+    handleNoteCategoryChange();
+
+    const select = document.getElementById('noteTargetStudent');
+    select.innerHTML = '<option value="">학생을 선택해주세요</option>';
+    
+    if (window.myStudentsList && window.myStudentsList.length > 0) {
+        window.myStudentsList.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.userid;
+            opt.textContent = `${s.name} (${s.school || '학교미상'})`;
+            select.appendChild(opt);
+        });
+    } else {
+        select.innerHTML = '<option value="">배정된 학생이 없습니다</option>';
+    }
+};
+
+// 4. 작성 폼 제출 (저장)
+window.submitTutorNote = async function() {
+    const category = document.getElementById('noteCategory').value;
+    const title = document.getElementById('noteTitle').value.trim();
+    const content = document.getElementById('noteContent').value.trim();
+    const studentSelect = document.getElementById('noteTargetStudent');
+    const studentId = studentSelect.value;
+    const studentName = studentSelect.options[studentSelect.selectedIndex]?.text;
+
+    if (!title || !content) { alert("제목과 내용을 모두 입력해주세요."); return; }
+    if (category === 'student' && !studentId) { alert("대상 학생을 선택해주세요."); return; }
+
+    let dataPayload = { title: title, category, content };
+    
+    // 학생 관련 문의일 경우, 관리자가 보기 편하도록 제목 말머리에 학생 정보를 추가합니다.
+    if (category === 'student') {
+        dataPayload.targetStudentId = studentId;
+        dataPayload.targetStudentName = studentName;
+        dataPayload.title = `[학생: ${studentName}] ` + title; 
+    }
+
+    const btn = document.querySelector('#tutorNoteModal .modal-action-btn');
+    btn.innerText = "등록 중...";
+    btn.disabled = true;
+
+    try {
+        await apiFetch(QNA_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'save_qna',
+                data: dataPayload
+            })
+        });
+        alert("성공적으로 관리자에게 전달되었습니다.");
+        closeModal('tutorNoteModal');
+        loadTutorNotes(); // 리스트 새로고침
+    } catch (error) {
+        if (error.message !== "Auth expired") alert(error.message);
+    } finally {
+        btn.innerText = "등록하기";
+        btn.disabled = false;
+    }
+};
+
+// 5. 상세 보기 모달 열기
+window.openTutorNoteDetailModal = function(item, catName, badgeColor) {
+    const catBadge = document.getElementById('noteDetailCategory');
+    catBadge.innerText = catName;
+    catBadge.className = `tier-badge ${badgeColor}`;
+    
+    document.getElementById('noteDetailDate').innerText = new Date(item.createdAt).toLocaleString();
+    document.getElementById('noteDetailTitle').innerText = item.title;
+    document.getElementById('noteDetailContent').innerText = item.content;
+
+    const answerArea = document.getElementById('noteDetailAnswerArea');
+    if (item.status === 'done' && item.answer) {
+        answerArea.innerHTML = `
+            <div style="background: #eff6ff; padding: 15px; border-radius: 8px; border: 1px solid #bfdbfe;">
+                <div style="color: #1e3a8a; line-height: 1.6; white-space: pre-wrap; font-size: 0.95rem;">${escapeHtml(item.answer)}</div>
+                <div style="text-align: right; font-size: 0.8rem; color: #60a5fa; margin-top: 10px;">확인일: ${new Date(item.answeredAt).toLocaleDateString()}</div>
+            </div>
+        `;
+    } else {
+        answerArea.innerHTML = `
+            <div style="text-align: center; color: #94a3b8; padding: 20px; background: #f8fafc; border-radius: 8px;">
+                <i class="fas fa-spinner fa-spin"></i><br>현재 관리자가 내용을 확인하고 있습니다.
+            </div>
+        `;
+    }
+
+    document.getElementById('tutorNoteDetailModal').classList.remove('hidden');
 };
 
 // ==========================================
