@@ -7,6 +7,7 @@ const NOTI_API_URL = CONFIG.api.noti;
 let tutorInfoData = {};
 let tutorCognitoUser = null; 
 let tutorTimerInterval = null;
+let mypagePhoneTimerInterval = null;
 
 // 💡 공통 apiFetch 함수 (accessToken 기반 통합 및 401 예외 처리)
 async function apiFetch(url, options = {}) {
@@ -158,6 +159,7 @@ async function loadTutorInfo(userId) {
         setTxt('userNameDisplay', data.name || '이름 없음');
         setTxt('userEmailDisplay', data.email || '');
         setTxt('currentEmailDisplay', data.email || '');
+        setTxt('currentPhoneDisplay', data.phone || '등록된 번호 없음');
 
         setVal('modalNickname', data.nickname || '');
         setVal('modalSchool', data.school || '');
@@ -665,6 +667,139 @@ window.executeTutorWithdrawal = function() {
         }
     });
 };
+
+/* 전화번호 수정 */
+window.openPhoneModal = function() {
+    document.getElementById('phoneModal').classList.remove('hidden');
+    document.getElementById('step-phone-input').classList.remove('hidden');
+    document.getElementById('step-phone-verify').classList.add('hidden');
+    
+    document.getElementById('newPhoneInput').value = '';
+    document.getElementById('phoneVerifyCode').value = '';
+    document.getElementById('newPhoneInput').disabled = false;
+    
+    const sendBtn = document.getElementById('sendPhoneCodeBtn');
+    if (sendBtn) { 
+        sendBtn.innerText = "인증번호 전송"; 
+        sendBtn.disabled = false; 
+    }
+    if (mypagePhoneTimerInterval) clearInterval(mypagePhoneTimerInterval);
+}
+
+// 1단계: 인증번호 발송 요청
+window.requestPhoneChange = async function() {
+    let phone = document.getElementById('newPhoneInput').value;
+    if (!phone) { alert("새 전화번호를 입력해주세요."); return; }
+
+    let cleanPhone = phone.replace(/-/g, '').trim();
+    if (cleanPhone.startsWith('010')) {
+        cleanPhone = '+82' + cleanPhone.substring(1);
+    } else if (cleanPhone.startsWith('10')) {
+        cleanPhone = '+82' + cleanPhone;
+    } else if (!cleanPhone.startsWith('+')) {
+        alert("휴대폰 번호 형식을 확인해주세요. (예: 01012345678)");
+        return;
+    }
+
+    const btn = document.getElementById('sendPhoneCodeBtn');
+    btn.innerText = "전송 중...";
+    btn.disabled = true;
+
+    try {
+        const response = await apiFetch(AUTH_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'send_sms_auth', phone: cleanPhone })
+        });
+
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.message || "SMS 발송 실패");
+        }
+
+        alert("인증번호가 발송되었습니다. 5분 이내에 입력해주세요.");
+        document.getElementById('step-phone-input').classList.add('hidden');
+        document.getElementById('step-phone-verify').classList.remove('hidden');
+        
+        startMypagePhoneTimer(5 * 60, 'phoneTimer');
+
+    } catch (error) {
+        if (error.message !== "Auth expired") alert("인증번호 발송에 실패했습니다.");
+        btn.innerText = "인증번호 전송";
+        btn.disabled = false;
+    }
+}
+
+// 2단계: 인증번호 확인 및 사용자 정보 업데이트
+window.verifyPhoneChange = async function() {
+    let phoneRaw = document.getElementById('newPhoneInput').value.replace(/-/g, '').trim();
+    let cleanPhone = phoneRaw;
+
+    if (cleanPhone.startsWith('010')) {
+        cleanPhone = '+82' + cleanPhone.substring(1);
+    } else if (cleanPhone.startsWith('10')) {
+        cleanPhone = '+82' + cleanPhone;
+    }
+
+    const inputCode = document.getElementById('phoneVerifyCode').value;
+    if (!inputCode) { alert("인증코드를 입력해주세요."); return; }
+
+    try {
+        // 인증번호 검증
+        const response = await apiFetch(AUTH_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'verify_code',
+                phone: cleanPhone,
+                code: inputCode
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // 검증 성공 시 DB에 저장하기 위한 포맷으로 변경 (예: 010-1234-5678)
+            let dbFormattedPhone = phoneRaw.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/, "$1-$2-$3");
+
+            // 기존에 작성되어 있는 saveSingleField 함수를 재활용하여 DB 업데이트
+            const success = await saveSingleField('phone', dbFormattedPhone);
+            
+            if (success) {
+                alert("전화번호가 성공적으로 변경되었습니다.");
+                document.getElementById('currentPhoneDisplay').innerText = escapeHtml(dbFormattedPhone);
+                tutorInfoData.phone = dbFormattedPhone;
+                closeModal('phoneModal');
+            } else {
+                alert("변경사항을 서버에 저장하는데 실패했습니다.");
+            }
+        } else {
+            alert("인증번호가 일치하지 않거나 만료되었습니다.");
+        }
+    } catch (error) {
+        if (error.message !== "Auth expired") alert("인증 확인 중 오류가 발생했습니다.");
+    }
+}
+
+// 3단계: 전용 타이머 동작 함수
+function startMypagePhoneTimer(duration, displayId) {
+    let timer = duration, minutes, seconds;
+    const display = document.getElementById(displayId);
+    if(mypagePhoneTimerInterval) clearInterval(mypagePhoneTimerInterval);
+
+    mypagePhoneTimerInterval = setInterval(function () {
+        minutes = parseInt(timer / 60, 10);
+        seconds = parseInt(timer % 60, 10);
+        minutes = minutes < 10 ? "0" + minutes : minutes;
+        seconds = seconds < 10 ? "0" + seconds : seconds;
+
+        if(display) display.textContent = minutes + ":" + seconds;
+
+        if (--timer < 0) {
+            clearInterval(mypagePhoneTimerInterval);
+            if(display) display.textContent = "만료";
+            alert("인증 시간이 만료되었습니다. 창을 닫고 다시 시도해주세요.");
+        }
+    }, 1000);
+}
 
 // [계정 관리 및 모달 유틸]
 window.handleSignOut = function() {
