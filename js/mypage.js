@@ -409,7 +409,7 @@ window.verifyPhoneChange = async function() {
     if (!inputCode) { alert("인증코드를 입력해주세요."); return; }
 
     try {
-        const response = await apiFetch(AUTH_API_URL, {
+        const response = await apiFetch(AUTH_URL, {
             method: 'POST',
             body: JSON.stringify({
                 type: 'verify_code',

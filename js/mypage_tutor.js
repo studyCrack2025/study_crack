@@ -745,7 +745,7 @@ window.verifyPhoneChange = async function() {
 
     try {
         // 인증번호 검증
-        const response = await apiFetch(AUTH_API_URL, {
+        const response = await apiFetch(AUTH_URL, {
             method: 'POST',
             body: JSON.stringify({
                 type: 'verify_code',
