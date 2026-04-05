@@ -37,6 +37,8 @@ document.addEventListener('DOMContentLoaded', () => {
     searchStudents();
     fetchUnreadNotiCount();
     
+    fetchQnaBadgeCount();
+    
     // 검색창에서 엔터키 누르면 검색 실행
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
