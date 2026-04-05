@@ -490,7 +490,7 @@ window.loadMyStudents = async function() {
                 <td data-label="학교">${escapeHtml(s.school || '-')}</td>
                 <td data-label="연락처">${escapeHtml(s.phone || '-')}</td>
                 <td data-label="유료 등급"><span class="tier-badge ${tierClass}">${tier}</span></td>
-                <td data-label="관리"><button class="manage-btn" onclick="goToStudentDetail('${s.userid}')">상세관리</button></td>
+                <td data-label="관리"><button class="manage-btn" onclick="goToStudentDetail('${s.userid}')">상세관리</button><button class="manage-btn" style="color:#ef4444; border-color:#fca5a5; margin-left:5px; background:#fef2f2;" onclick="openUrgentModal('${s.userid}', '${escapeHtml(s.name)}')">긴급</button></td>
             `;
             tbody.appendChild(tr);
         });
@@ -1006,6 +1006,62 @@ function startMypagePhoneTimer(duration, displayId) {
         }
     }, 1000);
 }
+
+// ==========================================
+// [긴급 요청 관리]
+// ==========================================
+window.openUrgentModal = function(studentId, studentName) {
+    document.getElementById('urgentStudentId').value = studentId;
+    document.getElementById('urgentStudentNameDisplay').innerText = studentName;
+    document.getElementById('urgentType').value = '';
+    document.getElementById('urgentEtcInput').value = '';
+    document.getElementById('urgentEtcGroup').classList.add('hidden');
+    document.getElementById('urgentModal').classList.remove('hidden');
+};
+
+window.toggleUrgentInput = function() {
+    const type = document.getElementById('urgentType').value;
+    const etcGroup = document.getElementById('urgentEtcGroup');
+    if (type === 'etc') etcGroup.classList.remove('hidden');
+    else etcGroup.classList.add('hidden');
+};
+
+window.submitUrgentRequest = async function() {
+    const studentId = document.getElementById('urgentStudentId').value;
+    const type = document.getElementById('urgentType').value;
+    let etcText = document.getElementById('urgentEtcInput').value.trim();
+
+    if (!type) return alert("긴급 요청 항목을 선택해주세요.");
+    if (type === 'etc' && !etcText) return alert("기타 사유를 입력해주세요.");
+    if (type === 'etc' && etcText.length > 15) return alert("사유는 15자 이내로 작성해주세요.");
+
+    const btn = document.querySelector('#urgentModal .danger-btn');
+    btn.innerText = "전송 중...";
+    btn.disabled = true;
+
+    try {
+        // 백엔드(Lambda)의 업데이트 로직을 호출 (학생의 urgentStatus 필드를 업데이트한다고 가정)
+        await apiFetch(TUTOR_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'tutor_report_urgent', 
+                data: {
+                    targetStudentId: studentId,
+                    urgentType: type,
+                    urgentText: type === 'etc' ? etcText : ''
+                }
+            })
+        });
+
+        alert("긴급 사항이 접수되었습니다. 관리자가 확인 후 조치할 예정입니다.");
+        closeModal('urgentModal');
+    } catch (error) {
+        if (error.message !== "Auth expired") alert("전송 중 오류가 발생했습니다.");
+    } finally {
+        btn.innerText = "긴급 사항 전송하기";
+        btn.disabled = false;
+    }
+};
 
 // [계정 관리 및 모달 유틸]
 window.handleSignOut = function() {

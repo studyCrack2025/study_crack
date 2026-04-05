@@ -555,28 +555,66 @@ function generateStudentListHtml(students, emptyMsg, tier = 'free') {
     const showWeekly = tier === 'standard' || tier === 'pro';
     const showPro = tier === 'pro';
 
-    let headers = '<th>이름</th><th>최초 가입일</th><th>마지막 결제일</th>';
+    // 💡 테이블 헤더에 '특이사항 여부' 추가
+    let headers = '<th>이름</th><th>특이사항 여부</th><th>최초 가입일</th><th>마지막 결제일</th>';
     if (showWeekly) headers += '<th>주간 보고서 (이번 주)</th>';
     if (showPro)    headers += '<th>PRO 보고서 (2주 이내)</th>';
     headers += '<th>누적 결제 이력</th>';
 
     let html = `<div class="table-responsive"><table class="tier-student-table"><thead><tr>${headers}</tr></thead><tbody>`;
+    
     students.forEach(s => {
         const jDate = s.joinDate ? new Date(s.joinDate).toLocaleDateString() : '-';
         const lDate = s.lastPayDate ? new Date(s.lastPayDate).toLocaleDateString() : '<span style="color:#ef4444;">결제 없음</span>';
         const pays = Object.entries(s.payCounts || {}).map(([prod, cnt]) => `<span class="pay-badge">${prod} ${cnt}회</span>`).join(' ') || '-';
-        let row = `<tr>
+        
+        // 💡 긴급(특이사항) 상태 체크 및 줄 색상(row class) 부여
+        let urgentHtml = '<span style="color:#cbd5e1;">-</span>';
+        let rowClass = ''; 
+        
+        if (s.urgentStatus && s.urgentStatus.type) {
+            if (s.urgentStatus.type === 'report') {
+                urgentHtml = '<span class="urgent-badge report">보고서 작성 불가</span>';
+                rowClass = 'urgent-row-report';
+            } else if (s.urgentStatus.type === 'transfer') {
+                urgentHtml = '<span class="urgent-badge transfer">소속 이동 요청</span>';
+                rowClass = 'urgent-row-transfer';
+            } else if (s.urgentStatus.type === 'etc') {
+                const safeText = escapeHtml(s.urgentStatus.text || '');
+                urgentHtml = `<span class="urgent-badge etc">기타 긴급</span> <span class="urgent-etc-text" onclick="toggleUrgentText(this, '${safeText}')">...</span>`;
+                rowClass = 'urgent-row-etc';
+            }
+        }
+
+        let row = `<tr class="${rowClass}">
             <td data-label="이름"><strong>${escapeHtml(s.name)}</strong></td>
+            <td data-label="특이사항 여부">${urgentHtml}</td>
             <td data-label="최초 가입일">${jDate}</td>
             <td data-label="마지막 결제일">${lDate}</td>`;
+            
         if (showWeekly) row += `<td data-label="주간 보고서">${reportBadge(s.weeklyStatus)}</td>`;
         if (showPro)    row += `<td data-label="PRO 보고서">${reportBadge(s.proStatus)}</td>`;
+        
         row += `<td data-label="결제 이력">${pays}</td></tr>`;
         html += row;
     });
+    
     html += `</tbody></table></div>`;
     return html;
 }
+
+// 💡 말줄임표 클릭 시 전체 텍스트 토글 함수
+window.toggleUrgentText = function(el, fullText) {
+    if (el.innerText === '...') {
+        el.innerText = fullText;
+        el.style.backgroundColor = '#fff';
+        el.style.border = '1px solid #eab308';
+    } else {
+        el.innerText = '...';
+        el.style.backgroundColor = '#e2e8f0';
+        el.style.border = 'none';
+    }
+};
 
 window.toggleTutorDetail = function(el) {
     el.classList.toggle('active'); const details = el.nextElementSibling; details.classList.toggle('open');
