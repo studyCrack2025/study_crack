@@ -95,6 +95,7 @@
             <div class="main-tabs">
                 <button class="tab-btn active" onclick="switchTab('info')">내 정보 관리</button>
                 <button class="tab-btn" onclick="switchTab('students')">담당 학생 관리</button>
+                <button class="tab-btn" onclick="switchTab('notes')">특이사항 관리</button>
             </div>
 
             <div id="tab-info" class="tab-content active">
@@ -106,6 +107,11 @@
                 <div class="form-container">
                     <h3>계정 정보 변경</h3>
                     <div class="account-links">
+                        <div class="link-item">
+                            <span class="label">전화번호</span>
+                            <span class="value" id="currentPhoneDisplay">loading...</span>
+                            <a href="#" onclick="openPhoneModal(); return false;" class="text-link">전화번호 변경하기</a>
+                        </div>
                         <div class="link-item">
                             <span class="label">이메일</span>
                             <span class="value" id="currentEmailDisplay">loading...</span>
@@ -186,9 +192,23 @@
                     </table>
                 </div>
             </div>
+            
+            <div id="tab-notes" class="tab-content">
+                <div class="note-header-area">
+                    <div class="note-header-text">
+                        <h2>특이사항 관리</h2>
+                        <p>관리자에게 전달할 학생 특이사항이나 일반 문의를 남겨주세요.</p>
+                    </div>
+                    <button class="account-edit-btn" onclick="openTutorNoteModal()">작성하기</button>
+                </div>
+                
+                <div class="note-list-container" id="tutorNoteListArea">
+                    <div class="empty-msg">데이터를 불러오는 중...</div>
+                </div>
+            </div>
         </main>
     </div> 
-
+    
     <div id="profileModal" class="modal hidden">
         <div class="modal-content large-modal">
             <span class="close-btn" onclick="closeModal('profileModal')">&times;</span>
@@ -222,6 +242,32 @@
             </div>
 
             <button class="modal-action-btn" onclick="saveProfileModalData()">저장하기</button>
+        </div>
+    </div>
+    
+    <div id="phoneModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('phoneModal')">&times;</span>
+            <h3>전화번호 변경</h3>
+            
+            <div id="step-phone-input">
+                <div class="form-group">
+                    <label>새 전화번호</label>
+                    <input type="text" id="newPhoneInput" placeholder="01012345678 (숫자만 입력)">
+                </div>
+                <button id="sendPhoneCodeBtn" class="modal-action-btn" onclick="requestPhoneChange()">인증번호 전송</button>
+            </div>
+
+            <div id="step-phone-verify" class="hidden">
+                <div class="form-group">
+                    <label>인증번호</label>
+                    <div class="verify-row">
+                        <input type="text" id="phoneVerifyCode" placeholder="인증코드 6자리">
+                        <span id="phoneTimer" class="timer">05:00</span>
+                    </div>
+                </div>
+                <button id="verifyPhoneBtn" class="modal-action-btn" onclick="verifyPhoneChange()">인증 및 변경 완료</button>
+            </div>
         </div>
     </div>
 
@@ -310,6 +356,58 @@
         </div>
     </div>
     
+        <div id="tutorNoteModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('tutorNoteModal')">&times;</span>
+            <h3>특이사항 작성</h3>
+            
+            <div class="form-group">
+                <label>유형 선택</label>
+                <select id="noteCategory" class="account-input" onchange="handleNoteCategoryChange()">
+                    <option value="student">학생관련</option>
+                    <option value="admin">관리자관련</option>
+                    <option value="etc">기타</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="noteStudentSelectGroup">
+                <label>대상 학생</label>
+                <select id="noteTargetStudent" class="account-input">
+                    <option value="">학생을 선택해주세요</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>제목</label>
+                <input type="text" id="noteTitle" class="account-input" placeholder="제목을 입력하세요">
+            </div>
+            
+            <div class="form-group">
+                <label>내용</label>
+                <textarea id="noteContent" class="common-textarea" rows="5" placeholder="상세 내용을 적어주세요."></textarea>
+            </div>
+            
+            <button class="modal-action-btn" onclick="submitTutorNote()">등록하기</button>
+        </div>
+    </div>
+
+    <div id="tutorNoteDetailModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('tutorNoteDetailModal')">&times;</span>
+            
+            <div class="note-detail-top">
+                <span id="noteDetailCategory" class="tier-badge"></span>
+                <span id="noteDetailDate" class="note-detail-date"></span>
+            </div>
+            
+            <h3 id="noteDetailTitle" style="margin-top: 0;"></h3>
+            <div id="noteDetailContent" class="note-detail-content"></div>
+            
+            <h4 style="color: #2563eb; margin-bottom: 10px;">관리자 답변</h4>
+            <div id="noteDetailAnswerArea"></div>
+        </div>
+    </div>
+    
     <div id="tutorNotiFab" class="noti-fab" onclick="toggleTutorNotiPanel()">
         <i class="fas fa-bell"></i>
         <span id="tutorNotiBadge" class="noti-badge">0</span>
@@ -336,6 +434,39 @@
                     <button onclick="closeModal('noticeDetail-modal')" class="modal-action-btn">확인</button>
                 </div>
             </div>
+        </div>
+    </div>
+    
+    <div id="urgentModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('urgentModal')">&times;</span>
+            <h3 style="color: #ef4444; margin-top: 0;"><i class="fas fa-exclamation-circle"></i> 긴급 사항 접수</h3>
+            <p style="font-weight: bold; color: #1e293b; margin-bottom: 20px;">대상 학생: <span id="urgentStudentNameDisplay" style="color: #3b82f6;"></span></p>
+            
+            <div class="form-group">
+                <label>긴급 요청 항목</label>
+                <select id="urgentType" class="account-input" onchange="toggleUrgentInput()">
+                    <option value="">항목을 선택해주세요</option>
+                    <option value="report">이번주 보고서 작성 불가능</option>
+                    <option value="transfer">학생 소속 이동 요청</option>
+                    <option value="etc">기타 긴급요청</option>
+                </select>
+            </div>
+            
+            <div class="form-group hidden" id="urgentEtcGroup">
+                <label>기타 사유 (15자 이내)</label>
+                <input type="text" id="urgentEtcInput" class="account-input" maxlength="15" placeholder="예: 학부모 강성 클레임">
+                <p style="font-size: 0.8rem; color: #ef4444; margin-top: 5px;">* 최대 15자까지만 입력 가능합니다.</p>
+            </div>
+            
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; text-align: center; margin-top: 20px;">
+                <p style="font-size: 0.85rem; color: #64748b; margin: 0;">
+                    ⚠️ <strong>24시간 내에 해결이 필요한 긴급한 사항</strong>이 아니라면 일반 특이사항 관리 탭을 이용해 주세요.
+                </p>
+            </div>
+            
+            <input type="hidden" id="urgentStudentId">
+            <button class="modal-action-btn danger-btn" onclick="submitUrgentRequest()">긴급 사항 전송하기</button>
         </div>
     </div>
     

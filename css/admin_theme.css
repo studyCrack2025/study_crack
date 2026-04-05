@@ -212,6 +212,19 @@ canvas { width: 100% !important; height: 100% !important; }
 .tree-parent label:hover, .tree-children label:hover { color: #3b82f6; }
 .tree-children { padding: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9rem; color: #475569; }
 
+/* 긴급 특이사항 관련 스타일 */
+.urgent-badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; color: white; white-space: nowrap; }
+.urgent-badge.report { background-color: #ef4444; }
+.urgent-badge.transfer { background-color: #f97316; }
+.urgent-badge.etc { background-color: #eab308; color: #713f12; }
+.urgent-etc-text { display: inline-block; background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; margin-left: 5px; transition: all 0.2s; white-space: nowrap; }
+.urgent-etc-text:hover { background: #cbd5e1; }
+
+/* 긴급 학생 행(Row) 배경색 강조 */
+tr.urgent-row-report td { background-color: #fef2f2 !important; border-bottom: 1px solid #fecaca !important; }
+tr.urgent-row-transfer td { background-color: #fff7ed !important; border-bottom: 1px solid #fed7aa !important; }
+tr.urgent-row-etc td { background-color: #fefce8 !important; border-bottom: 1px solid #fef08a !important; }
+
 /* 테이블 스크롤 처리용 래퍼 추가 */
 .table-responsive {
     width: 100%; overflow-x: auto; /* 가로 스크롤 허용 */

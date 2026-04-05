@@ -3,12 +3,16 @@
 const TUTOR_API_URL = CONFIG.api.admin;
 const FILE_API_URL = CONFIG.api.file;
 const NOTI_API_URL = CONFIG.api.noti;
+const QNA_API_URL = CONFIG.api.qna;
 
 let tutorInfoData = {};
 let tutorCognitoUser = null; 
 let tutorTimerInterval = null;
+let mypagePhoneTimerInterval = null;
 
-// 💡 공통 apiFetch 함수 (accessToken 기반 통합 및 401 예외 처리)
+window.myStudentsList = [];
+
+// 💡 공통 apiFetch 함수
 async function apiFetch(url, options = {}) {
     const token = localStorage.getItem('accessToken');
     const defaultHeaders = {
@@ -27,11 +31,22 @@ async function apiFetch(url, options = {}) {
                 handleSignOut(); 
                 return Promise.reject(new Error("Auth expired")); 
             }
-            throw new Error(`HTTP Error: ${response.status}`);
+            
+            // 💡 백엔드에서 내려준 에러 메시지가 있다면 파싱해서 사용
+            let errorMessage = "요청 처리 중 문제가 발생했습니다.";
+            try {
+                const errorData = await response.json();
+                if (errorData.message) errorMessage = errorData.message;
+            } catch (e) {
+                // JSON 파싱 실패 시 기본 텍스트
+                errorMessage = `인증번호가 일치하지 않거나 오류가 발생했습니다.`;
+            }
+            // 콘솔에 에러를 찍지 않고 바로 에러를 던집니다.
+            throw new Error(errorMessage);
         }
         return response;
     } catch (error) {
-        console.error("API 통신 실패:", error);
+        // 네트워크 단절 또는 위에서 던진 에러만 그대로 전달
         throw error; 
     }
 }
@@ -101,6 +116,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             event.target.classList.add('hidden');
         }
     }
+    
+    // 💡 엔터키 바인딩 유틸리티
+    const bindEnterKey = (inputId, actionFunction) => {
+        const el = document.getElementById(inputId);
+        if (el) {
+            el.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); 
+                    actionFunction();
+                }
+            });
+        }
+    };
+
+    // 💡 튜터 페이지 모달 인풋 엔터키 연동
+    bindEnterKey('newEmailInput', requestEmailChange);
+    bindEnterKey('emailVerifyCode', verifyEmailChange);
+    bindEnterKey('newPhoneInput', window.requestPhoneChange);
+    bindEnterKey('phoneVerifyCode', window.verifyPhoneChange);
+    bindEnterKey('currentPassword', changePassword);
+    bindEnterKey('newChangePassword', changePassword);
+    bindEnterKey('newChangePasswordConfirm', changePassword);
+    bindEnterKey('withdrawalReqPassword', window.requestTutorWithdrawal);
+    bindEnterKey('withdrawalFinalPassword', window.executeTutorWithdrawal);
 });
 
 function initTutorCognito() {
@@ -133,6 +172,10 @@ window.switchTab = function(tabName) {
         btns[1].classList.add('active'); 
         loadMyStudents(); 
     }
+    else if (tabName === 'notes' && btns[2]) {
+        btns[2].classList.add('active');
+        loadTutorNotes();
+    }
 
     const targetContent = document.getElementById(`tab-${tabName}`);
     if(targetContent) targetContent.classList.add('active');
@@ -158,6 +201,7 @@ async function loadTutorInfo(userId) {
         setTxt('userNameDisplay', data.name || '이름 없음');
         setTxt('userEmailDisplay', data.email || '');
         setTxt('currentEmailDisplay', data.email || '');
+        setTxt('currentPhoneDisplay', data.phone || '등록된 번호 없음');
 
         setVal('modalNickname', data.nickname || '');
         setVal('modalSchool', data.school || '');
@@ -423,6 +467,7 @@ window.loadMyStudents = async function() {
         });
         
         const students = await response.json();
+        window.myStudentsList = students || [];
 
         tbody.innerHTML = '';
         if (!students || students.length === 0) {
@@ -445,7 +490,7 @@ window.loadMyStudents = async function() {
                 <td data-label="학교">${escapeHtml(s.school || '-')}</td>
                 <td data-label="연락처">${escapeHtml(s.phone || '-')}</td>
                 <td data-label="유료 등급"><span class="tier-badge ${tierClass}">${tier}</span></td>
-                <td data-label="관리"><button class="manage-btn" onclick="goToStudentDetail('${s.userid}')">상세관리</button></td>
+                <td data-label="관리"><button class="manage-btn" onclick="goToStudentDetail('${s.userid}')">상세관리</button><button class="manage-btn" style="color:#ef4444; border-color:#fca5a5; margin-left:5px; background:#fef2f2;" onclick="openUrgentModal('${s.userid}', '${escapeHtml(s.name)}')">긴급</button></td>
             `;
             tbody.appendChild(tr);
         });
@@ -573,6 +618,169 @@ window.toggleEditMaxHours = async function(btn) {
 };
 
 // ==========================================
+// [특이사항 관리] 데이터 통신 및 모달 로직
+// ==========================================
+
+// 1. 특이사항 리스트 불러오기 (QnA API 재활용)
+window.loadTutorNotes = async function() {
+    const area = document.getElementById('tutorNoteListArea');
+    area.innerHTML = '<div class="empty-msg"><i class="fas fa-spinner fa-spin"></i> 내역을 불러오는 중...</div>';
+
+    try {
+        const response = await apiFetch(QNA_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'get_qna_list' }) 
+        });
+        const data = await response.json();
+        const history = data.qnaHistory || [];
+
+        if (history.length === 0) {
+            area.innerHTML = '<div class="empty-msg">등록된 특이사항 내역이 없습니다.</div>';
+            return;
+        }
+
+        area.innerHTML = '';
+        history.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        history.forEach(item => {
+            const isDone = item.status === 'done';
+            const statusHtml = isDone 
+                ? `<span style="color:#2563eb; font-weight:bold; font-size:0.85rem;"><i class="fas fa-check-circle"></i> 확인완료</span>`
+                : `<span style="color:#f59e0b; font-weight:bold; font-size:0.85rem;"><i class="fas fa-clock"></i> 대기중</span>`;
+            
+            let catName = '기타';
+            let badgeColor = 'tier-standard';
+            if (item.category === 'student') { catName = '학생관련'; badgeColor = 'tier-pro'; }
+            else if (item.category === 'admin') { catName = '관리자관련'; badgeColor = 'tier-free'; }
+
+            const div = document.createElement('div');
+            div.className = 'note-list-item';
+            div.onclick = () => openTutorNoteDetailModal(item, catName, badgeColor);
+
+            div.innerHTML = `
+                <div class="note-list-top">
+                    <span class="tier-badge ${badgeColor}">${catName}</span>
+                    ${statusHtml}
+                </div>
+                <h3 class="note-list-title">${escapeHtml(item.title)}</h3>
+                <div class="note-list-bottom">
+                    <span>${new Date(item.createdAt).toLocaleDateString()}</span>
+                </div>
+            `;
+            area.appendChild(div);
+        });
+    } catch (error) {
+        if (error.message !== "Auth expired") {
+            area.innerHTML = '<div class="empty-msg">내역을 불러오지 못했습니다. 잠시 후 시도해주세요.</div>';
+        }
+    }
+};
+
+// 2. 카테고리 변경 시 학생 선택창 토글
+window.handleNoteCategoryChange = function() {
+    const cat = document.getElementById('noteCategory').value;
+    const group = document.getElementById('noteStudentSelectGroup');
+    if (cat === 'student') group.classList.remove('hidden');
+    else group.classList.add('hidden');
+};
+
+// 3. 작성 모달 열기 (학생 리스트 렌더링 포함)
+window.openTutorNoteModal = function() {
+    document.getElementById('tutorNoteModal').classList.remove('hidden');
+    document.getElementById('noteCategory').value = 'student';
+    document.getElementById('noteTitle').value = '';
+    document.getElementById('noteContent').value = '';
+    handleNoteCategoryChange();
+
+    const select = document.getElementById('noteTargetStudent');
+    select.innerHTML = '<option value="">학생을 선택해주세요</option>';
+    
+    if (window.myStudentsList && window.myStudentsList.length > 0) {
+        window.myStudentsList.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.userid;
+            opt.textContent = `${s.name} (${s.school || '학교미상'})`;
+            select.appendChild(opt);
+        });
+    } else {
+        select.innerHTML = '<option value="">배정된 학생이 없습니다</option>';
+    }
+};
+
+// 4. 작성 폼 제출 (저장)
+window.submitTutorNote = async function() {
+    const category = document.getElementById('noteCategory').value;
+    const title = document.getElementById('noteTitle').value.trim();
+    const content = document.getElementById('noteContent').value.trim();
+    const studentSelect = document.getElementById('noteTargetStudent');
+    const studentId = studentSelect.value;
+    const studentName = studentSelect.options[studentSelect.selectedIndex]?.text;
+
+    if (!title || !content) { alert("제목과 내용을 모두 입력해주세요."); return; }
+    if (category === 'student' && !studentId) { alert("대상 학생을 선택해주세요."); return; }
+
+    let dataPayload = { title: title, category, content };
+    
+    // 학생 관련 문의일 경우, 관리자가 보기 편하도록 제목 말머리에 학생 정보를 추가합니다.
+    if (category === 'student') {
+        dataPayload.targetStudentId = studentId;
+        dataPayload.targetStudentName = studentName;
+        dataPayload.title = `[학생: ${studentName}] ` + title; 
+    }
+
+    const btn = document.querySelector('#tutorNoteModal .modal-action-btn');
+    btn.innerText = "등록 중...";
+    btn.disabled = true;
+
+    try {
+        await apiFetch(QNA_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'save_qna',
+                data: dataPayload
+            })
+        });
+        alert("성공적으로 관리자에게 전달되었습니다.");
+        closeModal('tutorNoteModal');
+        loadTutorNotes(); // 리스트 새로고침
+    } catch (error) {
+        if (error.message !== "Auth expired") alert(error.message);
+    } finally {
+        btn.innerText = "등록하기";
+        btn.disabled = false;
+    }
+};
+
+// 5. 상세 보기 모달 열기
+window.openTutorNoteDetailModal = function(item, catName, badgeColor) {
+    const catBadge = document.getElementById('noteDetailCategory');
+    catBadge.innerText = catName;
+    catBadge.className = `tier-badge ${badgeColor}`;
+    
+    document.getElementById('noteDetailDate').innerText = new Date(item.createdAt).toLocaleString();
+    document.getElementById('noteDetailTitle').innerText = item.title;
+    document.getElementById('noteDetailContent').innerText = item.content;
+
+    const answerArea = document.getElementById('noteDetailAnswerArea');
+    if (item.status === 'done' && item.answer) {
+        answerArea.innerHTML = `
+            <div style="background: #eff6ff; padding: 15px; border-radius: 8px; border: 1px solid #bfdbfe;">
+                <div style="color: #1e3a8a; line-height: 1.6; white-space: pre-wrap; font-size: 0.95rem;">${escapeHtml(item.answer)}</div>
+                <div style="text-align: right; font-size: 0.8rem; color: #60a5fa; margin-top: 10px;">확인일: ${new Date(item.answeredAt).toLocaleDateString()}</div>
+            </div>
+        `;
+    } else {
+        answerArea.innerHTML = `
+            <div style="text-align: center; color: #94a3b8; padding: 20px; background: #f8fafc; border-radius: 8px;">
+                <i class="fas fa-spinner fa-spin"></i><br>현재 관리자가 내용을 확인하고 있습니다.
+            </div>
+        `;
+    }
+
+    document.getElementById('tutorNoteDetailModal').classList.remove('hidden');
+};
+
+// ==========================================
 // 튜터 파트너십 해지 (2단계 회원 탈퇴)
 // ==========================================
 window.openTutorWithdrawalModal = function() {
@@ -664,6 +872,195 @@ window.executeTutorWithdrawal = function() {
             btn.innerText = "네, 모든 데이터를 삭제하고 탈퇴합니다"; btn.disabled = false;
         }
     });
+};
+
+/* 전화번호 수정 */
+window.openPhoneModal = function() {
+    document.getElementById('phoneModal').classList.remove('hidden');
+    document.getElementById('step-phone-input').classList.remove('hidden');
+    document.getElementById('step-phone-verify').classList.add('hidden');
+    
+    document.getElementById('newPhoneInput').value = '';
+    document.getElementById('phoneVerifyCode').value = '';
+    document.getElementById('newPhoneInput').disabled = false;
+    
+    const sendBtn = document.getElementById('sendPhoneCodeBtn');
+    if (sendBtn) { 
+        sendBtn.innerText = "인증번호 전송"; 
+        sendBtn.disabled = false; 
+    }
+    if (mypagePhoneTimerInterval) clearInterval(mypagePhoneTimerInterval);
+}
+
+// 1단계: 인증번호 발송 요청
+window.requestPhoneChange = async function() {
+    let phone = document.getElementById('newPhoneInput').value;
+    if (!phone) { alert("새 전화번호를 입력해주세요."); return; }
+
+    let cleanPhone = phone.replace(/-/g, '').trim();
+    if (cleanPhone.startsWith('010')) {
+        cleanPhone = '+82' + cleanPhone.substring(1);
+    } else if (cleanPhone.startsWith('10')) {
+        cleanPhone = '+82' + cleanPhone;
+    } else if (!cleanPhone.startsWith('+')) {
+        alert("휴대폰 번호 형식을 확인해주세요. (예: 01012345678)");
+        return;
+    }
+
+    const btn = document.getElementById('sendPhoneCodeBtn');
+    btn.innerText = "전송 중...";
+    btn.disabled = true;
+
+    try {
+        const response = await apiFetch(AUTH_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'send_sms_auth', phone: cleanPhone })
+        });
+
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.message || "SMS 발송 실패");
+        }
+
+        alert("인증번호가 발송되었습니다. 5분 이내에 입력해주세요.");
+        document.getElementById('step-phone-input').classList.add('hidden');
+        document.getElementById('step-phone-verify').classList.remove('hidden');
+        
+        startMypagePhoneTimer(5 * 60, 'phoneTimer');
+
+    } catch (error) {
+        if (error.message !== "Auth expired") alert("인증번호 발송에 실패했습니다.");
+        btn.innerText = "인증번호 전송";
+        btn.disabled = false;
+    }
+}
+
+// 2단계: 인증번호 확인 및 사용자 정보 업데이트
+window.verifyPhoneChange = async function() {
+    let phoneRaw = document.getElementById('newPhoneInput').value.replace(/-/g, '').trim();
+    let cleanPhone = phoneRaw;
+
+    if (cleanPhone.startsWith('010')) {
+        cleanPhone = '+82' + cleanPhone.substring(1);
+    } else if (cleanPhone.startsWith('10')) {
+        cleanPhone = '+82' + cleanPhone;
+    }
+
+    const inputCode = document.getElementById('phoneVerifyCode').value;
+    if (!inputCode) { alert("인증코드를 입력해주세요."); return; }
+
+    try {
+        // 인증번호 검증
+        const response = await apiFetch(AUTH_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'verify_code',
+                phone: cleanPhone,
+                code: inputCode
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // 검증 성공 시 DB에 저장하기 위한 포맷으로 변경 (예: 010-1234-5678)
+            let dbFormattedPhone = phoneRaw.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/, "$1-$2-$3");
+
+            // 기존에 작성되어 있는 saveSingleField 함수를 재활용하여 DB 업데이트
+            const success = await saveSingleField('phone', dbFormattedPhone);
+            
+            if (success) {
+                alert("전화번호가 성공적으로 변경되었습니다.");
+                document.getElementById('currentPhoneDisplay').innerText = escapeHtml(dbFormattedPhone);
+                tutorInfoData.phone = dbFormattedPhone;
+                closeModal('phoneModal');
+            } else {
+                alert("변경사항을 서버에 저장하는데 실패했습니다.");
+            }
+        } else {
+            alert("인증번호가 일치하지 않거나 만료되었습니다.");
+        }
+    } catch (error) {
+        if (error.message !== "Auth expired") alert(error.message);
+    }
+}
+
+// 3단계: 전용 타이머 동작 함수
+function startMypagePhoneTimer(duration, displayId) {
+    let timer = duration, minutes, seconds;
+    const display = document.getElementById(displayId);
+    if(mypagePhoneTimerInterval) clearInterval(mypagePhoneTimerInterval);
+
+    mypagePhoneTimerInterval = setInterval(function () {
+        minutes = parseInt(timer / 60, 10);
+        seconds = parseInt(timer % 60, 10);
+        minutes = minutes < 10 ? "0" + minutes : minutes;
+        seconds = seconds < 10 ? "0" + seconds : seconds;
+
+        if(display) display.textContent = minutes + ":" + seconds;
+
+        if (--timer < 0) {
+            clearInterval(mypagePhoneTimerInterval);
+            if(display) display.textContent = "만료";
+            alert("인증 시간이 만료되었습니다. 창을 닫고 다시 시도해주세요.");
+        }
+    }, 1000);
+}
+
+// ==========================================
+// [긴급 요청 관리]
+// ==========================================
+window.openUrgentModal = function(studentId, studentName) {
+    document.getElementById('urgentStudentId').value = studentId;
+    document.getElementById('urgentStudentNameDisplay').innerText = studentName;
+    document.getElementById('urgentType').value = '';
+    document.getElementById('urgentEtcInput').value = '';
+    document.getElementById('urgentEtcGroup').classList.add('hidden');
+    document.getElementById('urgentModal').classList.remove('hidden');
+};
+
+window.toggleUrgentInput = function() {
+    const type = document.getElementById('urgentType').value;
+    const etcGroup = document.getElementById('urgentEtcGroup');
+    if (type === 'etc') etcGroup.classList.remove('hidden');
+    else etcGroup.classList.add('hidden');
+};
+
+window.submitUrgentRequest = async function() {
+    const studentId = document.getElementById('urgentStudentId').value;
+    const type = document.getElementById('urgentType').value;
+    let etcText = document.getElementById('urgentEtcInput').value.trim();
+
+    if (!type) return alert("긴급 요청 항목을 선택해주세요.");
+    if (type === 'etc' && !etcText) return alert("기타 사유를 입력해주세요.");
+    if (type === 'etc' && etcText.length > 15) return alert("사유는 15자 이내로 작성해주세요.");
+
+    const btn = document.querySelector('#urgentModal .danger-btn');
+    btn.innerText = "전송 중...";
+    btn.disabled = true;
+
+    try {
+        // 백엔드(Lambda)의 업데이트 로직을 호출 (학생의 urgentStatus 필드를 업데이트한다고 가정)
+        await apiFetch(TUTOR_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'tutor_report_urgent', 
+                data: {
+                    targetStudentId: studentId,
+                    urgentType: type,
+                    urgentText: type === 'etc' ? etcText : ''
+                }
+            })
+        });
+
+        alert("긴급 사항이 접수되었습니다. 관리자가 확인 후 조치할 예정입니다.");
+        closeModal('urgentModal');
+    } catch (error) {
+        if (error.message !== "Auth expired") alert("전송 중 오류가 발생했습니다.");
+    } finally {
+        btn.innerText = "긴급 사항 전송하기";
+        btn.disabled = false;
+    }
 };
 
 // [계정 관리 및 모달 유틸]
