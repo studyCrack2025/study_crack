@@ -43,11 +43,6 @@ const EXAM_DISPLAY_NAMES = {
     "may": "5월 학력평가"
 };
 
-const SUBJECT_CODE_MAP = {
-    'un': '언매', 'hj': '화작',
-    'mi': '미적', 'ki': '기하', 'hw': '확통',
-};
-
 // ============================================================
 // [초기화] DOM 로드 시 실행 (💡 병렬 데이터 로딩으로 개편)
 // ============================================================
@@ -355,8 +350,8 @@ function updateSurveyStatus(data) {
             const makeRow = (label, obj) => {
                 if (!obj) return ''; 
                 let optText = '';
-                if (obj.opt) optText = `<span class="opt-badge">(${SUBJECT_CODE_MAP[obj.opt] || obj.opt})</span>`;
-                else if (obj.name) optText = `<span class="opt-badge">(${escapeHtml(obj.name)})</span>`;
+                if (obj.opt && obj.opt !== 'none') optText = `<span class="opt-badge">($				{escapeHtml(obj.opt)})</span>`;
+                else if (obj.name) optText = `<span class="opt-badge">(${escapeHtml(obj.name)})</span>`;
 
                 const std = escapeHtml(obj.std) || '-';
                 const pct = obj.pct ? escapeHtml(obj.pct) + '%' : '-';
