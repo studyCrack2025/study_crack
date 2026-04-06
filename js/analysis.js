@@ -948,71 +948,88 @@ function getSimpleAdvice(score, status) {
 // ============================================================
 let currentSimChartType = 'bar';
 let cachedSimData = [];
-let simDisplayList = []; // 원본 userTargetUnivs 순서 기준으로 지원불가 포함한 표시용 배열
+let simDisplayList = []; 
 let selectedSimIndex = null;
 
 function initSimulation() {
-    if (currentUserTier === 'free') return;
-    
-    const chartArea = document.getElementById('simChartArea');
-    if (!userQuantData || Object.keys(userQuantData).length === 0) {
-        chartArea.innerHTML = `<div style="width:100%; height:100%; min-height: 200px; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px; color:#94a3b8;">
-            <i class="fas fa-exclamation-circle fa-2x" style="color:#cbd5e1;"></i>
-            <span style="font-weight:600;">성적 데이터를 먼저 입력해야 시뮬레이션을 실행할 수 있습니다.</span>
-        </div>`;
-        return;
-    }
-    
-    if (!currentExamMode || !userQuantData[currentExamMode]) {
-        const availableExams = Object.keys(userQuantData).filter(k => userQuantData[k] && (userQuantData[k].kor || userQuantData[k].math || userQuantData[k].eng));
-        if (availableExams.length > 0) currentExamMode = availableExams[0];
-        else { chartArea.innerHTML = `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8;">유효한 성적 데이터가 없습니다.</div>`; return; }
-    }
+    if (currentUserTier === 'free') return;
+    
+    const chartArea = document.getElementById('simChartArea');
+    if (!userQuantData || Object.keys(userQuantData).length === 0) {
+        chartArea.innerHTML = `<div style="width:100%; height:100%; min-height: 200px; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px; color:#94a3b8;">
+            <i class="fas fa-exclamation-circle fa-2x" style="color:#cbd5e1;"></i>
+            <span style="font-weight:600;">성적 데이터를 먼저 입력해야 시뮬레이션을 실행할 수 있습니다.</span>
+        </div>`;
+        return;
+    }
+    
+    if (!currentExamMode || !userQuantData[currentExamMode]) {
+        const availableExams = Object.keys(userQuantData).filter(k => userQuantData[k] && (userQuantData[k].kor || userQuantData[k].math || userQuantData[k].eng));
+        if (availableExams.length > 0) currentExamMode = availableExams[0];
+        else { chartArea.innerHTML = `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8;">유효한 성적 데이터가 없습니다.</div>`; return; }
+    }
 
-    const validTargets = userTargetUnivs ? userTargetUnivs.filter(t => t && t.univ) : [];
-    if (validTargets.length === 0) {
-        chartArea.innerHTML = `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8;">목표 대학을 먼저 설정해주세요.</div>`;
-        return;
-    }
-    
-    fetchSimulationData();
+    const validTargets = userTargetUnivs ? userTargetUnivs.filter(t => t && t.univ) : [];
+    if (validTargets.length === 0) {
+        chartArea.innerHTML = `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8;">목표 대학을 먼저 설정해주세요.</div>`;
+        return;
+    }
+    
+    fetchSimulationData();
 }
 
 async function fetchSimulationData() {
-    const chartArea = document.getElementById('simChartArea');
-    chartArea.innerHTML = '<div style="margin:auto; color:#3b82f6;"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
-    
-    const token = localStorage.getItem('idToken');
-    const userId = localStorage.getItem('userId');
-    const scoreData = userQuantData[currentExamMode];
-    
-    try {
-        const res = await fetch(UNIV_DATA_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'simulate_score_rise', userId, targetUnivs: userTargetUnivs, userScores: scoreData, examMode: currentExamMode })
-        });
-        cachedSimData = await res.json();
+    const chartArea = document.getElementById('simChartArea');
+    chartArea.innerHTML = '<div style="margin:auto; color:#3b82f6;"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
+    
+    const token = localStorage.getItem('idToken');
+    const userId = localStorage.getItem('userId');
+    
+    // 💡 깊은 복사로 원본 훼손 방지 및 빈 데이터 안전장치
+    let scoreData = null;
+    if (userQuantData[currentExamMode]) {
+        scoreData = JSON.parse(JSON.stringify(userQuantData[currentExamMode]));
+    }
+    
+    try {
+        const res = await fetch(UNIV_DATA_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ 
+                type: 'simulate_score_rise', 
+                userId: userId, 
+                targetUnivs: userTargetUnivs, 
+                userScores: scoreData,
+                examMode: currentExamMode 
+            })
+        });
+        cachedSimData = await res.json();
 
-        // 원본 userTargetUnivs 순서 기준으로 지원불가 포함한 표시용 배열 구성
-        simDisplayList = [];
-        (userTargetUnivs || []).forEach((target, originalIdx) => {
-            if (!target || !target.univ) return;
-            const simItem = cachedSimData.find(d => d && d.univ === target.univ && d.major === target.major);
-            if (simItem) {
-                simDisplayList.push({ ...simItem, originalIdx });
-            } else {
-                simDisplayList.push({ ineligible: true, univ: target.univ, major: target.major, originalIdx });
-            }
-        });
+        // 원본 userTargetUnivs 순서 기준으로 지원불가 포함한 표시용 배열 구성
+        simDisplayList = [];
+        (userTargetUnivs || []).forEach((target, originalIdx) => {
+            if (!target || !target.univ) return;
+            // 배열인지 확인 후 find (에러 방지)
+            if (Array.isArray(cachedSimData)) {
+                const simItem = cachedSimData.find(d => d && d.univ === target.univ && d.major === target.major);
+                if (simItem) {
+                    simDisplayList.push({ ...simItem, originalIdx });
+                } else {
+                    simDisplayList.push({ ineligible: true, univ: target.univ, major: target.major, originalIdx });
+                }
+            } else {
+                // 서버 에러로 배열이 아닐 경우 예외 처리
+                simDisplayList.push({ ineligible: true, univ: target.univ, major: target.major, originalIdx });
+            }
+        });
 
-        if (simDisplayList.length > 0) selectedSimIndex = 0;
-        renderSimChart();
-        
-    } catch (e) { 
-        chartArea.innerHTML = '데이터 로드 실패'; 
-        console.error(e);
-    }
+        if (simDisplayList.length > 0) selectedSimIndex = 0;
+        renderSimChart();
+        
+    } catch (e) { 
+        chartArea.innerHTML = '<div style="color:#ef4444; padding:20px; text-align:center;">데이터 로드 실패</div>'; 
+        console.error("Simulation Fetch Error:", e);
+    }
 }
 
 function setSimChartType(type) {
