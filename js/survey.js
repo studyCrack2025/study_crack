@@ -378,20 +378,6 @@ async function saveQualitative() {
     }
 }
 
-const TO_KOREAN = {
-    'hwa': '화작', 'un': '언매',
-    'hwak': '확통', 'mi': '미적', 'ki': '기하',
-    '물원': '물1', '화원': '화1', '생원': '생1', '지원': '지1',
-    '물투': '물2', '화투': '화2', '생투': '생2', '지투': '지2'
-};
-
-const TO_HTML_VALUE = {
-    '화작': 'hwa', '언매': 'un',
-    '확통': 'hwak', '미적': 'mi', '기하': 'ki',
-    '물1': '물원', '화1': '화원', '생1': '생원', '지1': '지원',
-    '물2': '물투', '화2': '화투', '생2': '생투', '지2': '지투'
-};
-
 function loadExamData() {
     const month = document.getElementById('examSelect').value;
     const d = examScores[month] || {};
@@ -399,7 +385,7 @@ function loadExamData() {
     const setVal = (id, val) => { 
         const el = document.getElementById(id); 
         if(el) {
-            el.value = TO_HTML_VALUE[val] || val || ''; 
+            el.value = val || ''; 
         }
     };
 
@@ -424,7 +410,6 @@ function loadExamData() {
 async function saveQuantitative() {
     const month = document.getElementById('examSelect').value;
     
-    // 💡 [수정됨] HTML에 아이디가 없어도 에러를 내지 않고 빈 문자열("")을 반환하는 안전한 함수
     const getVal = (id) => {
         const el = document.getElementById(id);
         return el ? el.value : "";
@@ -436,39 +421,15 @@ async function saveQuantitative() {
     const inq2Name = getVal('inq2Name');
 
     const currentData = {
-        kor: { opt: TO_KOREAN[korOpt] || korOpt, raw: getVal('korRaw'), std: getVal('korStd'), pct: getVal('korPct'), grd: getVal('korGrd') },
-        math: { opt: TO_KOREAN[mathOpt] || mathOpt, raw: getVal('mathRaw'), std: getVal('mathStd'), pct: getVal('mathPct'), grd: getVal('mathGrd') },
+        // 🎯 서버에서 요구했던 raw(원점수) 데이터도 정상적으로 담겨서 날아갑니다.
+        kor: { opt: korOpt, raw: getVal('korRaw'), std: getVal('korStd'), pct: getVal('korPct'), grd: getVal('korGrd') },
+        math: { opt: mathOpt, raw: getVal('mathRaw'), std: getVal('mathStd'), pct: getVal('mathPct'), grd: getVal('mathGrd') },
         eng: { grd: getVal('engGrd') }, 
         hist: { grd: getVal('histGrd') },
-        inq1: { name: TO_KOREAN[inq1Name] || inq1Name, raw: getVal('inq1Raw'), std: getVal('inq1Std'), pct: getVal('inq1Pct'), grd: getVal('inq1Grd') },
-        inq2: { name: TO_KOREAN[inq2Name] || inq2Name, raw: getVal('inq2Raw'), std: getVal('inq2Std'), pct: getVal('inq2Pct'), grd: getVal('inq2Grd') },
+        inq1: { name: inq1Name, raw: getVal('inq1Raw'), std: getVal('inq1Std'), pct: getVal('inq1Pct'), grd: getVal('inq1Grd') },
+        inq2: { name: inq2Name, raw: getVal('inq2Raw'), std: getVal('inq2Std'), pct: getVal('inq2Pct'), grd: getVal('inq2Grd') },
         foreign: { name: getVal('foreignName'), grd: getVal('foreignGrd') }
     };
-
-    const restriction = ["자유선택"]; 
-
-    const sciSubjects = ["물1","화1","생1","지1","물2","화2","생2","지2"];
-    const socSubjects = ["생활과 윤리","윤리와 사상","한국지리","세계지리","동아시아사","세계사","경제","정치와 법","사회·문화"];
-
-    const inq1 = currentData.inq1.name;
-    const inq2 = currentData.inq2.name;
-    const mathVal = currentData.math.opt; 
-    const foreignGrd = currentData.foreign.grd;
-
-    const isSciAll = sciSubjects.includes(inq1) && sciSubjects.includes(inq2);
-    const isSocAll = socSubjects.includes(inq1) && socSubjects.includes(inq2);
-
-    const isMiKi = (mathVal === '미적' || mathVal === '기하'); 
-    const isHwak = (mathVal === '확통');
-
-    if (isSciAll) restriction.push("과탐 필수");
-    if (isMiKi) restriction.push("미적기하 필수");
-    if (isMiKi && isSciAll) restriction.push("미적기하+과탐 필수");
-    if (isHwak) restriction.push("확통 필수");
-    if (isHwak && isSocAll) restriction.push("확통+사탐 필수");
-    if (foreignGrd && parseInt(foreignGrd) > 0) restriction.push("제2외 필수");
-
-    currentData.restriction = restriction;
     
     examScores[month] = currentData;
 
