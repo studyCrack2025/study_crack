@@ -59,14 +59,13 @@ function getPayloadFromToken(token) {
     }
 }
 
-// 분리된 DB 구조에 맞춘 스마트 권한 식별 함수 (토큰 1차 검증 + DB 2차 검증)
-async function resolveUserIdentity(isLoginEvent = false) {
+// 분리된 DB 구조에 맞춘 스마트 권한 식별 함수
+async function resolveUserIdentity(eventType = 'none', promoCode = '') {
     const token = localStorage.getItem('accessToken');
     const idToken = localStorage.getItem('idToken');
     if (!token || !idToken) return;
 
     try {
-        // 1. JWT 토큰을 직접 해독하여 신분(Role)을 파악!
         const payload = getPayloadFromToken(idToken);
         const groups = payload['cognito:groups'] || [];
         
@@ -74,15 +73,13 @@ async function resolveUserIdentity(isLoginEvent = false) {
         if (groups.includes('Admins')) role = 'admin';
         else if (groups.includes('Tutors')) role = 'tutor';
 
-        // 2. 관리자나 튜터라면 불필요한 DB 조회(Student 테이블) 없이 바로 패스
         if (role === 'admin' || role === 'tutor') {
             const userName = payload.name || payload.given_name || (role === 'admin' ? '관리자' : '선생님');
             localStorage.setItem('userName', userName);
-            handleRoleSuccess(role, isLoginEvent, userName);
+            handleRoleSuccess(role, eventType, userName, promoCode);
             return;
         }
 
-        // 3. 일반 학생인 경우에만 기존처럼 UserCore에서 세부 정보(결제 티어 등)를 가져옴
         const userRes = await fetch(USER_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -95,14 +92,14 @@ async function resolveUserIdentity(isLoginEvent = false) {
             localStorage.setItem('userName', userName);
             if (data.computedTier) localStorage.setItem('userTier', data.computedTier);
             
-            handleRoleSuccess('student', isLoginEvent, userName);
+            handleRoleSuccess('student', eventType, userName, promoCode);
         } else {
             throw new Error("계정 정보를 데이터베이스에서 찾을 수 없습니다.");
         }
 
     } catch (error) {
         console.error("Identity Resolve Error:", error);
-        if (isLoginEvent) {
+        if (eventType === 'login' || eventType === 'signup') {
             alert("회원 정보 연동에 실패했습니다. 관리자에게 문의해주세요.");
             handleSignOut(true); 
         } else {
@@ -112,36 +109,53 @@ async function resolveUserIdentity(isLoginEvent = false) {
     }
 }
 
-// 식별 성공 시 후처리 함수
-function handleRoleSuccess(role, isLoginEvent, userName = '회원') {
+// 식별 성공 시 라우팅을 담당하는 후처리 함수
+function handleRoleSuccess(role, eventType, userName = '회원', promoCode = '') {
     const currentLocalRole = localStorage.getItem('userRole');
 
-    // 💡 일반 로그인 창에서 관리자 계정 접근 원천 차단
-    if (isLoginEvent && role === 'admin') {
+    // 관리자 로그인 차단
+    if (eventType === 'login' && role === 'admin') {
         alert("보안 정책에 따라 관리자는 일반 로그인 페이지를 사용할 수 없습니다.\n관리자 전용 로그인 페이지를 이용해주세요.");
         handleSignOut(true);
         window.location.href = '/';
         return;
     }
 
-    // 백그라운드 갱신인 경우 (새로고침 시)
-    if (!isLoginEvent) {
+    // 백그라운드 새로고침 시
+    if (eventType === 'none') {
         if (currentLocalRole !== role) {
             console.warn("Security Event: LocalStorage role mismatch detected. Correcting...");
             localStorage.setItem('userRole', role);
-            window.location.reload();
+            window.location.href = window.location.pathname; 
         }
         return;
     }
 
-    // 실제 일반/튜터 유저 로그인 이벤트인 경우
     localStorage.setItem('userRole', role);
-    if (role === 'tutor') {
-        alert(`${userName} 선생님, 안녕하세요.`);
-        window.location.href = '/mypage/tutor';
-    } else {
-        alert("로그인 성공!");
-        window.location.href = '/';
+
+    if (eventType === 'signup') {
+        if (role === 'tutor') {
+            alert(`${userName} 선생님, 가입이 완료되었습니다!`);
+            window.location.href = '/mypage/tutor'; // 튜터는 가입 후 튜터 전용 페이지로
+        } else {
+            // 학생은 웰컴 페이지로, 프로모 코드가 있다면 쿼리 파라미터 포함
+            if (promoCode) {
+                window.location.href = `/welcome?promo=${encodeURIComponent(promoCode)}`;
+            } else {
+                window.location.href = '/welcome';
+            }
+        }
+        return;
+    }
+
+    if (eventType === 'login') {
+        if (role === 'tutor') {
+            alert(`${userName} 선생님, 안녕하세요.`);
+            window.location.href = '/mypage/tutor';
+        } else {
+            alert("로그인 성공!");
+            window.location.href = '/';
+        }
     }
 }
 
@@ -512,17 +526,18 @@ async function handleFinalSubmit() {
         return;
     }
 
-    const email = document.getElementById('email').value;
+    // 앞뒤 공백 제거로 불필요한 입력 오류 방지
+    const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
     const passwordConfirm = document.getElementById('passwordConfirm').value;
-    const name = document.getElementById('name').value;
+    const name = document.getElementById('name').value.trim();
     const gender = document.getElementById('gender').value;
     const birthdate = document.getElementById('birthdate').value;
     const phoneRaw = document.getElementById('phone').value;
     
     const chkMarketingEl = document.getElementById('chkMarketing');
     const marketingAgreed = chkMarketingEl ? chkMarketingEl.checked : false;
-    const promoCode = document.getElementById('promoCode') ? document.getElementById('promoCode').value : "";
+    const promoCode = document.getElementById('promoCode') ? document.getElementById('promoCode').value.trim() : "";
 
     const pwRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!pwRegex.test(password)) {
@@ -545,20 +560,14 @@ async function handleFinalSubmit() {
     }
 
     let major = majorRadio.value;
-    if (major === 'etc') major = document.getElementById('majorEtc').value;
+    if (major === 'etc') major = document.getElementById('majorEtc').value.trim();
 
     let referral = referralRadio.value;
-    if (referral === 'etc') referral = document.getElementById('referralEtc').value;
+    if (referral === 'etc') referral = document.getElementById('referralEtc').value.trim();
 
     let onlyNumbers = phoneRaw.replace(/[^0-9]/g, ''); 
 
-    let cleanPhone = onlyNumbers;
-    if (cleanPhone.startsWith('010')) {
-        cleanPhone = '+82' + cleanPhone.substring(1);
-    } else if (cleanPhone.startsWith('10')) {
-        cleanPhone = '+82' + cleanPhone;
-    }
-
+    let cleanPhone = onlyNumbers.startsWith('010') ? '+82' + onlyNumbers.substring(1) : '+82' + onlyNumbers;
     let dbFormattedPhone = onlyNumbers.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/, "$1-$2-$3");
 
     const attributeList = [
@@ -574,6 +583,7 @@ async function handleFinalSubmit() {
     submitBtn.innerText = "가입 처리 중...";
     submitBtn.disabled = true;
 
+    // 💡 튜터 전용 코드는 제거하고 바로 가입 로직 수행
     userPool.signUp(email, password, attributeList, null, async function(err, result) {
         if (err) {
             alert(getErrorMessage(err)); 
@@ -619,7 +629,7 @@ async function handleFinalSubmit() {
                     localStorage.setItem('idToken', authResult.getIdToken().getJwtToken());
                     localStorage.setItem('userId', authResult.getIdToken().payload.sub);
                     localStorage.setItem('userEmail', email);
-                    localStorage.setItem('userRole', 'student');
+                    localStorage.setItem('userRole', 'student'); 
                     
                     window.dataLayer = window.dataLayer || [];
                     window.dataLayer.push({
@@ -627,21 +637,21 @@ async function handleFinalSubmit() {
                         user_id: authResult.getIdToken().payload.sub
                     });
                     
-                    // 신규 가입 시 스마트 라우팅 태우기
-                    resolveUserIdentity(true);
+                    // 학생 가입 이벤트 전달
+                    resolveUserIdentity('signup', promoCode);
                 },
                 onFailure: function(err) {
                     console.error("Auto Login Failed:", err);
-                    setTimeout(() => {
-                        if (promoCode) window.location.href = `/welcome?promo=${encodeURIComponent(promoCode)}`;
-                        else window.location.href = '/welcome';
-                    }, 300);
+                    alert("가입은 완료되었으나 자동 로그인에 실패했습니다. 로그인 창으로 이동합니다.");
+                    window.location.href = '/login';
                 }
             });
 
         } catch (error) {
             console.error(error);
-            alert("계정은 생성되었으나 활성화에 실패했습니다. 관리자에게 문의하세요.");
+            alert("계정은 생성되었으나 서버 통신 지연으로 활성화에 실패했습니다. 관리자에게 문의하세요.");
+            submitBtn.innerText = "다시 시도하기";
+            submitBtn.disabled = false;
         }
     });
 }
@@ -680,7 +690,7 @@ function checkLoginStatus() {
     
     if (accessToken) {
         // 💡 [핵심] 조용히 백그라운드에서 신분(Role)을 재확인
-        resolveUserIdentity(false);
+        resolveUserIdentity('none');
     }
 }
 
@@ -727,7 +737,7 @@ function handleSignIn() {
             });
             
             // 💡 [핵심] 로그인 이벤트와 함께 스마트 라우팅 시작
-            resolveUserIdentity(true);
+            resolveUserIdentity('login');
         },
         onFailure: function(err) {
             alert(getErrorMessage(err));
