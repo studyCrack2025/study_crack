@@ -808,16 +808,27 @@ window.requestTutorWithdrawal = function() {
     const reason = document.getElementById('withdrawalReason').value.trim();
 
     if (!password || !reason) return alert("비밀번호와 사유를 모두 입력해주세요.");
-    if (!tutorCognitoUser) { alert("세션이 만료되었습니다. 다시 로그인해주세요."); handleSignOut(); return; }
+    if (!tutorCognitoUser) { 
+        alert("세션이 만료되었습니다. 다시 로그인해주세요."); 
+        handleSignOut(); 
+        return; 
+    }
 
     const btn = document.querySelector('#withdrawalRequestForm .danger-btn');
-    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 요청 중...`; btn.disabled = true;
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 요청 중...`; 
+    btn.disabled = true;
 
-    const authDetails = new AmazonCognitoIdentity.AuthenticationDetails({ Username: tutorCognitoUser.getUsername(), Password: password });
+    const authDetails = new AmazonCognitoIdentity.AuthenticationDetails({ 
+        Username: tutorCognitoUser.getUsername(), 
+        Password: password 
+    });
 
     tutorCognitoUser.authenticateUser(authDetails, {
         onSuccess: async function(result) {
             try {
+                localStorage.setItem('accessToken', result.getAccessToken().getJwtToken());
+                localStorage.setItem('idToken', result.getIdToken().getJwtToken());
+
                 await saveSingleField('withdrawalStatus', 'pending');
                 tutorInfoData.withdrawalStatus = 'pending';
 
@@ -832,14 +843,20 @@ window.requestTutorWithdrawal = function() {
                 alert("관리자에게 튜터 파트너십 해지 요청이 전송되었습니다.\n정산 및 인수인계 확인 후 승인 알림이 발송됩니다.");
                 closeModal('tutorWithdrawalModal');
             } catch (e) {
-                if (e.message !== "Auth expired") alert("요청 중 오류가 발생했습니다.");
+                // Auth expired로 인해 튕기는 상황 외의 에러만 표시
+                if (e.message !== "Auth expired") {
+                    alert("요청 중 오류가 발생했습니다. 권한 대기 상태인지 확인해주세요.");
+                    console.error(e);
+                }
             } finally {
-                btn.innerText = "탈퇴 승인 요청하기"; btn.disabled = false;
+                btn.innerText = "탈퇴 승인 요청하기"; 
+                btn.disabled = false;
             }
         },
         onFailure: function(err) {
             alert("비밀번호가 일치하지 않습니다.");
-            btn.innerText = "탈퇴 승인 요청하기"; btn.disabled = false;
+            btn.innerText = "탈퇴 승인 요청하기"; 
+            btn.disabled = false;
         }
     });
 };
