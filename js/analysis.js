@@ -1431,7 +1431,7 @@ function renderDetailedSimCard() {
         const isBest = (sub.key === bestSubjectKey && maxRise > 0);
         let desc = '';
         if (info.msg.includes("응시 안 함")) desc = `<span style="color:#94a3b8;">미응시 과목입니다.</span>`;
-        else if (info.diff <= 0) desc = `<span style="color:#ef4444;">점수 변화 없음 (만점 등)</span>`;
+        else if (info.diff <= 0) desc = `<span style="color:#ef4444;">점수 변화 없음 (만점 혹은 탐구 한과목 반영)</span>`;
         else desc = isBest ? `<strong>가장 합격 상승에 유리합니다.</strong>` : `점수 상승으로 합격 가능성이 높아집니다.`;
         const subText = info.diff > 0 ? `(실점수 +${(info.diff || 3.0).toFixed(2)}점)` : ``;
         
