@@ -74,10 +74,14 @@
         
         let globalCognitoUser = null; // MFA 단계를 위해 유저 객체 임시 저장
 
-        // 엔터키 이벤트 리스너
-        document.getElementById('adminPassword').addEventListener('keypress', (e) => {
+        // 엔터키 이벤트 리스너 (이메일, 비밀번호 모두 적용)
+        const triggerAdminSignIn = (e) => {
             if (e.key === 'Enter') handleAdminSignIn();
-        });
+        };
+        document.getElementById('adminEmail').addEventListener('keypress', triggerAdminSignIn);
+        document.getElementById('adminPassword').addEventListener('keypress', triggerAdminSignIn);
+
+        // MFA 코드 엔터키 이벤트
         document.getElementById('mfaCode').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') handleMFASubmit();
         });

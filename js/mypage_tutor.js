@@ -811,18 +811,27 @@ window.requestTutorWithdrawal = function() {
     if (!tutorCognitoUser) { alert("세션이 만료되었습니다. 다시 로그인해주세요."); handleSignOut(); return; }
 
     const btn = document.querySelector('#withdrawalRequestForm .danger-btn');
-    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 요청 중...`; btn.disabled = true;
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 요청 중...`; 
+    btn.disabled = true;
 
-    const authDetails = new AmazonCognitoIdentity.AuthenticationDetails({ Username: tutorCognitoUser.getUsername(), Password: password });
+    const authDetails = new AmazonCognitoIdentity.AuthenticationDetails({ 
+        Username: tutorCognitoUser.getUsername(), 
+        Password: password 
+    });
 
     tutorCognitoUser.authenticateUser(authDetails, {
         onSuccess: async function(result) {
             try {
-                await saveSingleField('withdrawalStatus', 'pending');
-                tutorInfoData.withdrawalStatus = 'pending';
+                // 1. 최신 토큰으로 스토리지 갱신
+                const newAccessToken = result.getAccessToken().getJwtToken();
+                localStorage.setItem('accessToken', newAccessToken);
+                localStorage.setItem('idToken', result.getIdToken().getJwtToken());
 
+                // 2. 단일 API 호출 (saveSingleField 삭제됨)
+                // 💡 새 토큰을 헤더에 명시적으로 덮어씌워 401 동기화 에러 완벽 차단
                 await apiFetch(NOTI_API_URL, {
                     method: 'POST',
+                    headers: { 'Authorization': `Bearer ${newAccessToken}` }, 
                     body: JSON.stringify({ 
                         type: 'tutor_request_withdrawal',
                         data: { reason: reason, tutorName: tutorInfoData.name } 
@@ -831,15 +840,20 @@ window.requestTutorWithdrawal = function() {
                 
                 alert("관리자에게 튜터 파트너십 해지 요청이 전송되었습니다.\n정산 및 인수인계 확인 후 승인 알림이 발송됩니다.");
                 closeModal('tutorWithdrawalModal');
+                
+                // 3. UI 안전 갱신을 위해 페이지 리로드
+                window.location.reload(); 
             } catch (e) {
                 if (e.message !== "Auth expired") alert("요청 중 오류가 발생했습니다.");
             } finally {
-                btn.innerText = "탈퇴 승인 요청하기"; btn.disabled = false;
+                btn.innerText = "탈퇴 승인 요청하기"; 
+                btn.disabled = false;
             }
         },
         onFailure: function(err) {
             alert("비밀번호가 일치하지 않습니다.");
-            btn.innerText = "탈퇴 승인 요청하기"; btn.disabled = false;
+            btn.innerText = "탈퇴 승인 요청하기"; 
+            btn.disabled = false;
         }
     });
 };
