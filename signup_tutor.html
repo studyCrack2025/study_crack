@@ -557,9 +557,7 @@
                     });
 
                     if (!response.ok) throw new Error("계정 승인 및 DB 저장 실패");
-                    
-                    alert("튜터 가입이 성공적으로 완료되었습니다! 로그인 페이지로 이동합니다.");
-                    window.location.href = '/login';
+                    window.location.href = '/welcome?role=tutor';
 
                 } catch (error) {
                     console.error(error);

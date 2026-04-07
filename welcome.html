@@ -127,7 +127,6 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            // [추가] XSS 방어용 함수
             function escapeHtml(text) {
                 if (!text) return "";
                 return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -136,29 +135,38 @@
             const userId = localStorage.getItem('userId');
             if (userId) {
                 window.dataLayer = window.dataLayer || [];
-                window.dataLayer.push({
-                    'user_id': userId
-                });
+                window.dataLayer.push({ 'user_id': userId });
             }
 
-            // 기존 프로모션 코드(MBTI) 처리 로직
             const urlParams = new URLSearchParams(window.location.search);
+            const role = urlParams.get('role');
             let promo = urlParams.get('promo') || localStorage.getItem('signupPromo');
             
-            if (promo && promo.includes("-STC")) {
-                // 16진수 암호화 해독 로직
+            // 💡 [추가됨] 튜터 가입 완료 시 화면 변경 로직
+            if (role === 'tutor') {
+                // 아이콘 변경 (시계 모양)
+                const icon = document.querySelector('.success-icon');
+                icon.classList.remove('fa-check-circle', 'success-icon');
+                icon.classList.add('fa-clock');
+                icon.style.color = '#3b82f6'; // 파란색 테마
+                icon.style.fontSize = '5rem';
+                icon.style.marginBottom = '20px';
+                icon.style.animation = 'popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
+
+                // 텍스트 변경
+                document.querySelector('.welcome-title').innerHTML = '파트너 지원이<br>완료되었습니다!';
+                document.querySelector('.welcome-desc').innerHTML = '스터디크랙 파트너로 지원해주셔서 감사합니다.<br>현재 <strong>관리자 승인 대기 중</strong>이며,<br>가입 심사 및 승인 완료 후 즉시 안내해 드리겠습니다.';
+            } 
+            // 기존 학생 프로모션 코드(MBTI) 처리 로직
+            else if (promo && promo.includes("-STC")) {
                 let hex = promo.replace("-STC", "").replace("-", "");
                 let mbti = '';
                 for (let i = 0; i < hex.length; i += 2) {
                     mbti += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
                 }
                 
-                const uppercaseMbti = mbti.toUpperCase();
+                const safeMbti = escapeHtml(mbti.toUpperCase());
                 
-                // 🚨 [핵심 수정] 해독된 글자를 화면에 넣기 전에 안전하게 변환
-                const safeMbti = escapeHtml(uppercaseMbti);
-                
-                // 메인 버튼 바로 아래에 MBTI 리포트 다운로드 버튼 삽입
                 const btnHtml = `
                     <a href="/analysis" class="btn-go-main" style="margin-top: 15px; background-color: #10b981; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
                         <i class="fas fa-file-pdf"></i> [${safeMbti}] 보고서 받으러 가기
