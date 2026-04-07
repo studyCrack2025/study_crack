@@ -808,11 +808,7 @@ window.requestTutorWithdrawal = function() {
     const reason = document.getElementById('withdrawalReason').value.trim();
 
     if (!password || !reason) return alert("비밀번호와 사유를 모두 입력해주세요.");
-    if (!tutorCognitoUser) { 
-        alert("세션이 만료되었습니다. 다시 로그인해주세요."); 
-        handleSignOut(); 
-        return; 
-    }
+    if (!tutorCognitoUser) { alert("세션이 만료되었습니다. 다시 로그인해주세요."); handleSignOut(); return; }
 
     const btn = document.querySelector('#withdrawalRequestForm .danger-btn');
     btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 요청 중...`; 
@@ -826,14 +822,16 @@ window.requestTutorWithdrawal = function() {
     tutorCognitoUser.authenticateUser(authDetails, {
         onSuccess: async function(result) {
             try {
-                localStorage.setItem('accessToken', result.getAccessToken().getJwtToken());
+                // 1. 최신 토큰으로 스토리지 갱신
+                const newAccessToken = result.getAccessToken().getJwtToken();
+                localStorage.setItem('accessToken', newAccessToken);
                 localStorage.setItem('idToken', result.getIdToken().getJwtToken());
 
-                await saveSingleField('withdrawalStatus', 'pending');
-                tutorInfoData.withdrawalStatus = 'pending';
-
+                // 2. 단일 API 호출 (saveSingleField 삭제됨)
+                // 💡 새 토큰을 헤더에 명시적으로 덮어씌워 401 동기화 에러 완벽 차단
                 await apiFetch(NOTI_API_URL, {
                     method: 'POST',
+                    headers: { 'Authorization': `Bearer ${newAccessToken}` }, 
                     body: JSON.stringify({ 
                         type: 'tutor_request_withdrawal',
                         data: { reason: reason, tutorName: tutorInfoData.name } 
@@ -842,12 +840,11 @@ window.requestTutorWithdrawal = function() {
                 
                 alert("관리자에게 튜터 파트너십 해지 요청이 전송되었습니다.\n정산 및 인수인계 확인 후 승인 알림이 발송됩니다.");
                 closeModal('tutorWithdrawalModal');
+                
+                // 3. UI 안전 갱신을 위해 페이지 리로드
+                window.location.reload(); 
             } catch (e) {
-                // Auth expired로 인해 튕기는 상황 외의 에러만 표시
-                if (e.message !== "Auth expired") {
-                    alert("요청 중 오류가 발생했습니다. 권한 대기 상태인지 확인해주세요.");
-                    console.error(e);
-                }
+                if (e.message !== "Auth expired") alert("요청 중 오류가 발생했습니다.");
             } finally {
                 btn.innerText = "탈퇴 승인 요청하기"; 
                 btn.disabled = false;
