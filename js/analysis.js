@@ -350,8 +350,12 @@ function updateSurveyStatus(data) {
             const makeRow = (label, obj) => {
                 if (!obj) return ''; 
                 let optText = '';
-                if (obj.opt && obj.opt !== 'none') optText = `<span class="opt-badge">($				{escapeHtml(obj.opt)})</span>`;
-                else if (obj.name) optText = `<span class="opt-badge">(${escapeHtml(obj.name)})</span>`;
+                if (obj.opt && obj.opt !== 'none') {
+                    optText = `<span class="opt-badge">(${escapeHtml(obj.opt)})</span>`;
+                }
+                else if (obj.name) {
+                    optText = `<span class="opt-badge">(${escapeHtml(obj.name)})</span>`;
+                }
 
                 const std = escapeHtml(obj.std) || '-';
                 const pct = obj.pct ? escapeHtml(obj.pct) + '%' : '-';
