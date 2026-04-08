@@ -126,6 +126,7 @@ async function validatePromoCode(code) {
     }
 }
 
+// 나이스페이 모달창은 정상적으로 띄우고, 최종 승인 시에만 로딩 오버레이 덮기
 function setupPaymentLoadingInterceptor() {
     if (document.getElementById('stcPaymentLoadingOverlay')) return;
     
@@ -134,14 +135,12 @@ function setupPaymentLoadingInterceptor() {
     overlay.id = 'stcPaymentLoadingOverlay';
     overlay.innerHTML = `
         <style>
-            /* 나이스페이가 주입하는 투박한 텍스트 원천 차단 */
-            body > div[style*="z-index"]:not(#stcPaymentLoadingOverlay) { opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
-            
+            /* 문제가 되었던 공격적인 CSS 제거! 오직 오버레이 디자인만 남깁니다. */
             #stcPaymentLoadingOverlay {
                 display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-                background: rgba(255, 255, 255, 0.98); z-index: 2147483647; /* 화면 최상단 */
+                background: rgba(255, 255, 255, 1); /* 투명도 없는 완전한 흰색으로 뒤에 겹치는 못생긴 텍스트 완벽히 가림 */
+                z-index: 2147483647; /* 화면 최상단 */
                 flex-direction: column; justify-content: center; align-items: center;
-                backdrop-filter: blur(5px);
             }
             .stc-spinner { 
                 width: 55px; height: 55px; border: 5px solid #e2e8f0; 
@@ -156,10 +155,12 @@ function setupPaymentLoadingInterceptor() {
     `;
     document.body.appendChild(overlay);
 
-    // 2. [핵심] 나이스페이가 JS로 form.submit()을 강제 호출하는 것을 가로채서 로딩 화면 띄우기
+    // 2. [핵심] 폼 제출 가로채기 정밀 조정
     const originalSubmit = HTMLFormElement.prototype.submit;
     HTMLFormElement.prototype.submit = function() {
-        document.getElementById('stcPaymentLoadingOverlay').style.display = 'flex';
+        if (!this.target || this.target === '_self' || this.target === '') {
+            document.getElementById('stcPaymentLoadingOverlay').style.display = 'flex';
+        }
         originalSubmit.apply(this, arguments);
     };
 }
