@@ -60,10 +60,23 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = '/login';
         return;
     }
-    if (new URLSearchParams(window.location.search).get('test') === '1') {
+
+    const urlParams = new URLSearchParams(window.location.search);
+
+    const errorMsg = urlParams.get('error');
+    if (errorMsg) {
+        // 알림창 띄우기
+        alert("결제 실패: " + errorMsg);
+        
+        // 에러를 보여준 후, URL을 깔끔하게 정리 (새로고침 시 에러창 반복 방지)
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    if (urlParams.get('test') === '1') {
         const testOption = document.getElementById('testOption');
         if (testOption) testOption.style.display = 'block';
     }
+    
     fetchUserInfo(userId);
 });
 
