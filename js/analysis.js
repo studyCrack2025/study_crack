@@ -22,6 +22,7 @@ let currentSelectStep = 'univ';
 let selectedUnivForMajor = '';
 
 let scrollPosition = 0;
+let currentTutorName = "수석 튜터";
 
 // 대학 선택 모달 관련
 let currentSlotIndex = null;
@@ -152,6 +153,8 @@ async function fetchUserData(userId) {
         
         const rawData = await response.json();
         const data = parseDynamoItem(rawData);
+
+		if (data.tutorName) currentTutorName = data.tutorName;
         
         // 💡 백엔드가 1:N으로 분리되면서 payments 데이터가 없을 수도 있음. currentSubscription을 1순위로 확인
         if (data.currentSubscription && data.currentSubscription.startDate) {
@@ -1653,7 +1656,7 @@ function openFeedbackModal(data) {
         return;
     }
 
-    const consultantName = escapeHtml(data.tutorName || "수석 튜터");
+    const consultantName = escapeHtml(data.tutorName || currentTutorName);
     let detailRows = ''; let totalPlan = '0H', totalAct = '0H', totalRate = '0%';
     
     if (data.studyTime) {
