@@ -504,11 +504,51 @@ async function loadTutorStats() {
 
         data.tutors.forEach(t => {
             const card = document.createElement('div'); card.className = 'tutor-card';
+            
+            // 1. 탈퇴 요청 상태 UI
             let withdrawalUI = '';
             if (t.withdrawalStatus === 'pending') {
                 withdrawalUI = `<div style="margin-top:15px; padding:12px; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; display:flex; justify-content:space-between; align-items:center;"><span style="color:#991b1b; font-size:0.9rem;"><strong>⚠️ 파트너십 해지(탈퇴) 요청 대기 중</strong></span><button onclick="approveTutorWithdrawal('${t.userid}')" style="padding:6px 12px; background:#ef4444; color:white; border:none; border-radius:4px; cursor:pointer; font-size:0.85rem; font-weight:bold;">요청 승인하기</button></div>`;
             } else if (t.withdrawalStatus === 'approved') {
                 withdrawalUI = `<div style="margin-top:15px; padding:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px;"><span style="color:#475569; font-size:0.9rem;"><strong>✅ 탈퇴 승인 완료</strong> (튜터의 최종 확인 및 탈퇴 대기 중)</span></div>`;
+            }
+
+            // 💡 2. [추가된 로직] 정산(Settlement) 내역 계산 및 UI 생성
+            let settlementUI = '';
+            if (t.settlements && Object.keys(t.settlements).length > 0) {
+                const monthMap = { "Jan":"1월", "Feb":"2월", "Mar":"3월", "Apr":"4월", "May":"5월", "Jun":"6월", "Jul":"7월", "Aug":"8월", "Sep":"9월", "Oct":"10월", "Nov":"11월", "Dec":"12월" };
+                
+                // 최근 달(Key) 기준으로 내림차순 정렬하여 최대 3개월치만 표시
+                const months = Object.keys(t.settlements).sort((a, b) => b.localeCompare(a)).slice(0, 3);
+                
+                const listItems = months.map(month => {
+                    const sData = t.settlements[month];
+                    const weeklyCount = sData.weekly ? sData.weekly.length : 0;
+                    const proCount = sData.pro ? sData.pro.length : 0;
+                    
+                    // "26Apr" -> "2026년 4월" 로 변환
+                    const yy = "20" + month.substring(0, 2);
+                    const mStr = month.substring(2);
+                    const readableMonth = `${yy}년 ${monthMap[mStr] || mStr}`;
+                    
+                    return `<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed #e2e8f0; font-size:0.85rem;">
+                        <span style="color:#475569; font-weight:bold;">${readableMonth}</span>
+                        <span style="color:#2563eb; font-weight:bold;">주간: ${weeklyCount}건 &nbsp;|&nbsp; PRO: ${proCount}건</span>
+                    </div>`;
+                }).join('');
+
+                settlementUI = `
+                    <div style="margin-top:15px; padding:15px; background:white; border:1px solid #e2e8f0; border-radius:8px;">
+                        <p style="margin:0 0 10px 0; font-weight:bold; color:#1e293b; font-size:0.9rem;">💰 보고서 작성 실적 (최근 3개월)</p>
+                        ${listItems}
+                    </div>
+                `;
+            } else {
+                settlementUI = `
+                    <div style="margin-top:15px; padding:15px; background:white; border:1px solid #e2e8f0; border-radius:8px; text-align:center;">
+                        <p style="margin:0; font-size:0.85rem; color:#94a3b8;">아직 기록된 보고서 작성 실적이 없습니다.</p>
+                    </div>
+                `;
             }
 
             card.innerHTML = `
@@ -521,7 +561,11 @@ async function loadTutorStats() {
                         <div><p><strong>본명:</strong> ${escapeHtml(t.name) || '-'}</p><p><strong>학교:</strong> ${escapeHtml(t.school) || '-'}</p><p><strong>계약시작일:</strong> ${t.createdAt ? new Date(t.createdAt).toLocaleDateString() : '-'}</p></div>
                         <div><p><strong>최대 학생 수:</strong> <span style="color:#2563eb; font-weight:bold;">${t.maxStudents ? t.maxStudents + '명' : '미설정'}</span></p><p><strong>주 최대 시간:</strong> <span style="color:#2563eb; font-weight:bold;">${t.maxHours ? t.maxHours + '시간' : '미설정'}</span></p><p><strong>입금 계좌:</strong> ${escapeHtml(t.accountNumber) || '<span style="color:#94a3b8">미등록</span>'}</p></div>
                     </div>
+                    
+                    ${settlementUI}
+
                     ${withdrawalUI}
+                    
                     <div class="tutor-tier-accordions" style="${t.withdrawalStatus ? 'margin-top:20px;' : ''}">
                         <div class="tier-acc-group"><div class="tier-acc-header pro" onclick="toggleTierList(this)"><span>🔥 PRO 학생</span><strong>${t.proCount}명 <i class="fas fa-chevron-down"></i></strong></div><div class="tier-acc-content">${generateStudentListHtml(t.proStudents, '현재 담당 중인 PRO 학생이 없습니다.', 'pro')}</div></div>
                         <div class="tier-acc-group"><div class="tier-acc-header std" onclick="toggleTierList(this)"><span>📘 STANDARD 학생</span><strong>${t.stdCount}명 <i class="fas fa-chevron-down"></i></strong></div><div class="tier-acc-content">${generateStudentListHtml(t.stdStudents, '현재 담당 중인 STANDARD 학생이 없습니다.', 'standard')}</div></div>
@@ -531,7 +575,9 @@ async function loadTutorStats() {
             `;
             container.appendChild(card);
         });
-    } catch(e) { if (e.message !== "Auth expired") container.innerHTML = '<p style="text-align:center; color:red;">오류 발생</p>'; }
+    } catch(e) { 
+        if (e.message !== "Auth expired") container.innerHTML = '<p style="text-align:center; color:red;">오류 발생</p>'; 
+    }
 }
 
 window.approveTutorWithdrawal = async function(tutorId) {

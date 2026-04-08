@@ -417,7 +417,7 @@ function applyFreeTierLock() {
                     <i class="fas fa-lock" style="font-size: 3rem; color: #94a3b8; margin-bottom: 20px;"></i>
                     <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 1.4rem;">유료회원 전용 기능입니다</h3>
                     <p style="color: #64748b; font-size: 1rem; margin-bottom: 25px; line-height: 1.6;">
-                        나만의 목표대학 정밀 분석 및 점수 시뮬레이션은<br><strong>Standard 멤버십</strong> 이상부터 이용 가능합니다.
+                        나만의 목표대학 정밀 분석 및 점수 시뮬레이션은<br><strong>Basic 멤버십</strong> 이상부터 이용 가능합니다.
                     </p>
                     <button onclick="location.href='/payment'" style="padding: 14px 35px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1.05rem; cursor: pointer; transition: background 0.2s;">
                         🚀 멤버십 알아보기
