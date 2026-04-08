@@ -839,22 +839,6 @@ async function updateAnalysisUI() {
         });
         const data = await res.json();
         
-        if (data.server_debug && data.server_debug.logs) {
-            console.group("🟦 [서버 분석 전체 로그]");
-            data.server_debug.logs.forEach(log => console.log(log));
-            console.groupEnd();
-        }
-
-        const results = data.results || [];
-        
-        results.forEach(item => {
-            if (item.calculation_log && item.calculation_log.length > 0) {
-                console.groupCollapsed(`📊 [${item.univ} - ${item.major}] 계산 세부 로그`);
-                item.calculation_log.forEach(log => console.log(log));
-                console.groupEnd();
-            }
-        });
-        
         if (results.length === 0) {
             cardsContainer.innerHTML = `<div style="text-align:center; padding:40px;">분석 가능한 결과가 없습니다.</div>`;
         } else {
