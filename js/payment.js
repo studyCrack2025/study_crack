@@ -65,10 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const errorMsg = urlParams.get('error');
     if (errorMsg) {
-        // 알림창 띄우기
         alert("결제 실패: " + errorMsg);
-        
-        // 에러를 보여준 후, URL을 깔끔하게 정리 (새로고침 시 에러창 반복 방지)
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 
@@ -77,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (testOption) testOption.style.display = 'block';
     }
     
+    setupPaymentLoadingInterceptor();
     fetchUserInfo(userId);
 });
 
@@ -126,6 +124,44 @@ async function validatePromoCode(code) {
     } catch (error) {
         if (error.message !== "Auth expired") console.error("프로모션 코드 검증 API 호출 실패", error);
     }
+}
+
+function setupPaymentLoadingInterceptor() {
+    if (document.getElementById('stcPaymentLoadingOverlay')) return;
+    
+    // 1. 전체 화면 로딩 오버레이 DOM 생성
+    const overlay = document.createElement('div');
+    overlay.id = 'stcPaymentLoadingOverlay';
+    overlay.innerHTML = `
+        <style>
+            /* 나이스페이가 주입하는 투박한 텍스트 원천 차단 */
+            body > div[style*="z-index"]:not(#stcPaymentLoadingOverlay) { opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+            
+            #stcPaymentLoadingOverlay {
+                display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+                background: rgba(255, 255, 255, 0.98); z-index: 2147483647; /* 화면 최상단 */
+                flex-direction: column; justify-content: center; align-items: center;
+                backdrop-filter: blur(5px);
+            }
+            .stc-spinner { 
+                width: 55px; height: 55px; border: 5px solid #e2e8f0; 
+                border-top: 5px solid #2563EB; border-radius: 50%; 
+                animation: stc-spin 1s linear infinite; 
+            }
+            @keyframes stc-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        </style>
+        <div class="stc-spinner"></div>
+        <h2 style="color: #1e293b; margin-top: 25px; font-weight: bold; font-size: 1.4rem;">결제를 안전하게 승인 중입니다...</h2>
+        <p style="color: #64748b; margin-top: 10px;">창을 닫거나 새로고침하지 마세요.</p>
+    `;
+    document.body.appendChild(overlay);
+
+    // 2. [핵심] 나이스페이가 JS로 form.submit()을 강제 호출하는 것을 가로채서 로딩 화면 띄우기
+    const originalSubmit = HTMLFormElement.prototype.submit;
+    HTMLFormElement.prototype.submit = function() {
+        document.getElementById('stcPaymentLoadingOverlay').style.display = 'flex';
+        originalSubmit.apply(this, arguments);
+    };
 }
 
 // 💡 [핵심 수정] 분리된 구조(currentSubscription) 기반의 구독 기간 계산 헬퍼
