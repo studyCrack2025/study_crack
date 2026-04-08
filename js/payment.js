@@ -60,10 +60,21 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = '/login';
         return;
     }
-    if (new URLSearchParams(window.location.search).get('test') === '1') {
+
+    const urlParams = new URLSearchParams(window.location.search);
+
+    const errorMsg = urlParams.get('error');
+    if (errorMsg) {
+        alert("결제 실패: " + errorMsg);
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    if (urlParams.get('test') === '1') {
         const testOption = document.getElementById('testOption');
         if (testOption) testOption.style.display = 'block';
     }
+    
+    setupPaymentLoadingInterceptor();
     fetchUserInfo(userId);
 });
 
@@ -113,6 +124,45 @@ async function validatePromoCode(code) {
     } catch (error) {
         if (error.message !== "Auth expired") console.error("프로모션 코드 검증 API 호출 실패", error);
     }
+}
+
+// 나이스페이 모달창은 정상적으로 띄우고, 최종 승인 시에만 로딩 오버레이 덮기
+function setupPaymentLoadingInterceptor() {
+    if (document.getElementById('stcPaymentLoadingOverlay')) return;
+    
+    // 1. 전체 화면 로딩 오버레이 DOM 생성
+    const overlay = document.createElement('div');
+    overlay.id = 'stcPaymentLoadingOverlay';
+    overlay.innerHTML = `
+        <style>
+            /* 문제가 되었던 공격적인 CSS 제거! 오직 오버레이 디자인만 남깁니다. */
+            #stcPaymentLoadingOverlay {
+                display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+                background: rgba(255, 255, 255, 1); /* 투명도 없는 완전한 흰색으로 뒤에 겹치는 못생긴 텍스트 완벽히 가림 */
+                z-index: 2147483647; /* 화면 최상단 */
+                flex-direction: column; justify-content: center; align-items: center;
+            }
+            .stc-spinner { 
+                width: 55px; height: 55px; border: 5px solid #e2e8f0; 
+                border-top: 5px solid #2563EB; border-radius: 50%; 
+                animation: stc-spin 1s linear infinite; 
+            }
+            @keyframes stc-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        </style>
+        <div class="stc-spinner"></div>
+        <h2 style="color: #1e293b; margin-top: 25px; font-weight: bold; font-size: 1.4rem;">결제를 안전하게 승인 중입니다...</h2>
+        <p style="color: #64748b; margin-top: 10px;">창을 닫거나 새로고침하지 마세요.</p>
+    `;
+    document.body.appendChild(overlay);
+
+    // 2. [핵심] 폼 제출 가로채기 정밀 조정
+    const originalSubmit = HTMLFormElement.prototype.submit;
+    HTMLFormElement.prototype.submit = function() {
+        if (!this.target || this.target === '_self' || this.target === '') {
+            document.getElementById('stcPaymentLoadingOverlay').style.display = 'flex';
+        }
+        originalSubmit.apply(this, arguments);
+    };
 }
 
 // 💡 [핵심 수정] 분리된 구조(currentSubscription) 기반의 구독 기간 계산 헬퍼
@@ -271,12 +321,25 @@ function processPayment() {
         alert("신청할 프로그램을 선택해주세요."); return;
     }
 
+    // 💡 [수정] 무통장 입금 페이지로 넘길 데이터 포장
+    const checkoutData = {
+        tier: selectedTier,
+        productName: selectedProductName,
+        name: name,
+        phone: rawPhone,
+        email: email
+    };
+
+    // 로컬 스토리지에 저장 후 계좌이체 페이지로 강제 이동
+    localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
+    window.location.href = '/checkout-transfer';
+
+    /* =====================================================================
+       🚨 아래는 나이스페이 카드사 심사 완료 후 복구할 원본 코드입니다. 🚨
+    ========================================================================
     const formattedPhone = formatPhoneNumber(rawPhone);
     const userId = localStorage.getItem('userId');
 
-    // 결제 시작일(effectiveStartDate) 설정 로직
-    // 현재 구독이 유효한 경우 → 잔여 기간 보존을 위해 기존 만료일부터 새 구독 시작
-    // 만료됐거나 free인 경우 → 결제 즉시(now)부터 시작
     let startDate = new Date();
     if ((globalCurrentTier === 'standard' || globalCurrentTier === 'pro') && globalDaysLeft > 0 && globalExpireDate) {
         startDate = globalExpireDate;
@@ -285,14 +348,14 @@ function processPayment() {
     const amount = TIER_PRICES_KRW[selectedTier];
     if (!amount) { alert("유효하지 않은 상품입니다."); return; }
 
-    const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const orderId = \`ORDER_\${Date.now()}_\${Math.random().toString(36).substring(2, 6)}\`;
 
     AUTHNICE.requestPay({
         clientId: CONFIG.nicepay.clientId,
         method: 'card',
         orderId: orderId,
         amount: amount,
-        goodsName: `스터디크랙 ${selectedProductName} 멤버십`,
+        goodsName: \`스터디크랙 \${selectedProductName} 멤버십\`,
         buyerName: name,
         buyerEmail: email,
         buyerTel: formattedPhone,
@@ -309,4 +372,5 @@ function processPayment() {
             alert('결제 창 오류: ' + (result.errorMsg || '알 수 없는 오류'));
         }
     });
+    ===================================================================== */
 }
