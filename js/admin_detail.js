@@ -694,10 +694,10 @@ function createWeeklyFbInput(weeklyKey, fb) {
                 <div id="wfb_existing_file_${idk}">${existingFileHtml}</div>
                 
                 <div style="display:flex; gap:10px; align-items:center;">
-                    <input type="file" id="wfb_file_${idk}" accept="image/*,.pdf" style="font-size:0.9rem; padding:5px; border:1px solid #cbd5e1; border-radius:6px; flex:1; background:#fff;">
+                    <input type="file" id="wfb_file_${idk}" accept=".pdf" style="font-size:0.9rem; padding:5px; border:1px solid #cbd5e1; border-radius:6px; flex:1; background:#fff;">
                     <button id="wfb_file_btn_${idk}" class="temp-save-btn" onclick="uploadWeeklyTutorFile('${weeklyKey}')" style="white-space:nowrap;"><i class="fas fa-upload"></i> 업로드</button>
                 </div>
-                <p style="font-size:0.8rem; color:#94a3b8; margin-top:5px;">* 이미지(jpg, png) 또는 PDF 파일만 업로드 가능합니다. (학생에게 리포트와 함께 전달됩니다)</p>
+                <p style="font-size:0.8rem; color:#94a3b8; margin-top:5px;">* PDF 파일만 업로드 가능합니다. (학생에게 리포트와 함께 전달됩니다)</p>
             </div>
 
             <div style="text-align:right; margin-top:10px;">
