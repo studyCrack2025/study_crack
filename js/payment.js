@@ -321,12 +321,25 @@ function processPayment() {
         alert("신청할 프로그램을 선택해주세요."); return;
     }
 
+    // 💡 [수정] 무통장 입금 페이지로 넘길 데이터 포장
+    const checkoutData = {
+        tier: selectedTier,
+        productName: selectedProductName,
+        name: name,
+        phone: rawPhone,
+        email: email
+    };
+
+    // 로컬 스토리지에 저장 후 계좌이체 페이지로 강제 이동
+    localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
+    window.location.href = '/checkout-transfer';
+
+    /* =====================================================================
+       🚨 아래는 나이스페이 카드사 심사 완료 후 복구할 원본 코드입니다. 🚨
+    ========================================================================
     const formattedPhone = formatPhoneNumber(rawPhone);
     const userId = localStorage.getItem('userId');
 
-    // 결제 시작일(effectiveStartDate) 설정 로직
-    // 현재 구독이 유효한 경우 → 잔여 기간 보존을 위해 기존 만료일부터 새 구독 시작
-    // 만료됐거나 free인 경우 → 결제 즉시(now)부터 시작
     let startDate = new Date();
     if ((globalCurrentTier === 'standard' || globalCurrentTier === 'pro') && globalDaysLeft > 0 && globalExpireDate) {
         startDate = globalExpireDate;
@@ -335,14 +348,14 @@ function processPayment() {
     const amount = TIER_PRICES_KRW[selectedTier];
     if (!amount) { alert("유효하지 않은 상품입니다."); return; }
 
-    const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const orderId = \`ORDER_\${Date.now()}_\${Math.random().toString(36).substring(2, 6)}\`;
 
     AUTHNICE.requestPay({
         clientId: CONFIG.nicepay.clientId,
         method: 'card',
         orderId: orderId,
         amount: amount,
-        goodsName: `스터디크랙 ${selectedProductName} 멤버십`,
+        goodsName: \`스터디크랙 \${selectedProductName} 멤버십\`,
         buyerName: name,
         buyerEmail: email,
         buyerTel: formattedPhone,
@@ -359,4 +372,5 @@ function processPayment() {
             alert('결제 창 오류: ' + (result.errorMsg || '알 수 없는 오류'));
         }
     });
+    ===================================================================== */
 }
