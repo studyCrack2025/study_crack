@@ -22,6 +22,7 @@ let currentSelectStep = 'univ';
 let selectedUnivForMajor = '';
 
 let scrollPosition = 0;
+let currentTutorName = "수석 튜터";
 
 // 대학 선택 모달 관련
 let currentSlotIndex = null;
@@ -152,6 +153,8 @@ async function fetchUserData(userId) {
         
         const rawData = await response.json();
         const data = parseDynamoItem(rawData);
+
+		if (data.tutorName) currentTutorName = data.tutorName;
         
         // 💡 백엔드가 1:N으로 분리되면서 payments 데이터가 없을 수도 있음. currentSubscription을 1순위로 확인
         if (data.currentSubscription && data.currentSubscription.startDate) {
@@ -417,7 +420,7 @@ function applyFreeTierLock() {
                     <i class="fas fa-lock" style="font-size: 3rem; color: #94a3b8; margin-bottom: 20px;"></i>
                     <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 1.4rem;">유료회원 전용 기능입니다</h3>
                     <p style="color: #64748b; font-size: 1rem; margin-bottom: 25px; line-height: 1.6;">
-                        나만의 목표대학 정밀 분석 및 점수 시뮬레이션은<br><strong>Standard 멤버십</strong> 이상부터 이용 가능합니다.
+                        나만의 목표대학 정밀 분석 및 점수 시뮬레이션은<br><strong>Basic 멤버십</strong> 이상부터 이용 가능합니다.
                     </p>
                     <button onclick="location.href='/payment'" style="padding: 14px 35px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1.05rem; cursor: pointer; transition: background 0.2s;">
                         🚀 멤버십 알아보기
@@ -1653,7 +1656,7 @@ function openFeedbackModal(data) {
         return;
     }
 
-    const consultantName = escapeHtml(data.tutorName || "수석 튜터");
+    const consultantName = escapeHtml(data.tutorName || currentTutorName);
     let detailRows = ''; let totalPlan = '0H', totalAct = '0H', totalRate = '0%';
     
     if (data.studyTime) {
@@ -1844,7 +1847,7 @@ async function downloadReportPDF(reportTitle) {
             <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
             <style>
                 body { font-family: 'Noto Sans KR', sans-serif; background: #fff; color: #333; margin: 0; padding: 0; zoom: 0.9; }
-                .report-wrapper { width: 100%; max-width: 900px; margin: 0 auto; background: transparent; padding: 30px; box-sizing: border-box; }
+                .report-wrapper { width: 100%; max-width: 900px; margin: 0 auto; background: transparent; padding: 30px 10px; box-sizing: border-box; }
                 .doc-controls, .mobile-only-msg { display: none !important; }
                 .doc-header { border-bottom: 3px solid #1e293b; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
                 .doc-subtitle { font-size: 0.85rem; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 5px; }

@@ -55,7 +55,7 @@ API Gateway의 **스테이지(Stage)**와 Lambda의 **별칭(Alias)**을 결합�
 * **AWS S3**: 학생 플래너 이미지 및 모의고사 성적표 등 정적 파일 스토리지
 
 ### External Integration
-* **Stripe / 무통장입금**: 신용카드 결제 및 Webhook 연동 (결제 자동화)
+* **NICEPAY / 무통장입금**: 신용카드 결제 및 Webhook 연동 (결제 자동화)
 * **Solapi (CoolSMS) / AWS SES**: 관리자 알림, 카카오 알림톡 및 마케팅 메일 발송
 
 ---
