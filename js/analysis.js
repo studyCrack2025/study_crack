@@ -1844,7 +1844,7 @@ async function downloadReportPDF(reportTitle) {
             <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
             <style>
                 body { font-family: 'Noto Sans KR', sans-serif; background: #fff; color: #333; margin: 0; padding: 0; zoom: 0.9; }
-                .report-wrapper { width: 100%; max-width: 900px; margin: 0 auto; background: transparent; padding: 30px 15px; box-sizing: border-box; }
+                .report-wrapper { width: 100%; max-width: 900px; margin: 0 auto; background: transparent; padding: 30px 10px; box-sizing: border-box; }
                 .doc-controls, .mobile-only-msg { display: none !important; }
                 .doc-header { border-bottom: 3px solid #1e293b; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
                 .doc-subtitle { font-size: 0.85rem; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 5px; }
