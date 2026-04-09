@@ -551,9 +551,23 @@ footer { background-color: #0f172a; color: #94a3b8; padding: 60px 5%; font-size:
 .notice-btn { padding: 10px 30px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
 .notice-btn:hover { background: #2563eb; }
 
+/* =========================================
+   11. 튜토리얼 UI
+   ========================================= */
+.tutorial-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9998; pointer-events: auto; }
+.tutorial-clone-btn { position: fixed; z-index: 9999; background: #fff; padding: 6px 12px; border-radius: 6px; font-weight: 700; color: #2563EB; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(255,255,255,0.3); pointer-events: auto; cursor: pointer; transition: transform 0.2s; }
+.tutorial-clone-btn:hover { transform: scale(1.05); }
+.tutorial-tooltip { position: fixed; z-index: 10000; background: #fff; padding: 15px 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-weight: 800; color: #1e293b; pointer-events: none; }
+.tutorial-tooltip::before { content: ''; position: absolute; top: -8px; left: 20px; border-width: 0 8px 8px 8px; border-style: solid; border-color: transparent transparent #fff transparent; }
+.tutorial-bottom-bar { position: fixed; bottom: 0; left: 0; width: 100%; padding: 30px 5%; display: flex; justify-content: space-between; align-items: center; z-index: 10000; box-sizing: border-box; }
+.tutorial-progress { width: 150px; height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden; }
+.tutorial-progress-bar { height: 100%; background: #38bdf8; transition: width 0.3s; }
+.tutorial-skip-btn { background: transparent; border: 1px solid #38bdf8; color: #38bdf8; padding: 8px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; transition: all 0.2s; pointer-events: auto; font-size: 0.95rem; }
+.tutorial-skip-btn:hover { background: rgba(56,189,248,0.1); color: #7dd3fc; border-color: #7dd3fc; }
+
 
 /* =========================================
-   11. 모바일 반응형 (통합)
+   12. 모바일 반응형 (통합)
    ========================================= */
    
 @media (max-width: 900px) {

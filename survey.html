@@ -408,6 +408,25 @@
 - 문의처: contact@studycrack.co.kr</div>
         </div>
     </div>
+    
+    <div id="tutorialOverlay" class="tutorial-overlay hidden">
+        <div id="tutorialCloneContainer" style="position: fixed; z-index: 9999; pointer-events: none;"></div>
+        
+        <div id="tutorialTooltip" class="tutorial-tooltip">
+            <p id="tutorialMsg" style="margin-bottom: 15px;">기초조사서는 총 두 영역으로 구성되어 있습니다.</p>
+            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button id="tutPrevBtn" class="tut-nav-btn btn-gray" style="display: none;">이전</button>
+                <button id="tutNextBtn" class="tut-nav-btn btn-blue">다음</button>
+            </div>
+        </div>
+        
+        <div class="tutorial-bottom-bar">
+            <div class="tutorial-progress">
+                <div id="tutProgressBar" class="tutorial-progress-bar" style="width: 66%;"></div>
+            </div>
+            <button id="skipTutorialBtn" class="tutorial-skip-btn">튜토리얼 건너뛰기</button>
+        </div>
+    </div>
 
     <script src="/js/config.js"></script>
     <script src="/js/auth.js"></script>

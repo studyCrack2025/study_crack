@@ -543,9 +543,55 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { threshold: 0.15 });
     document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
 
-    // 5. BLACK 버튼 로직
-    if (typeof showBlackButtonIfEligible === 'function') {
-        showBlackButtonIfEligible();
+    // 5. 튜토리얼 1단계 (메인페이지 -> 마이페이지 유도)
+    const pendingTutorial = localStorage.getItem('pending_tutorial');
+    
+    if (pendingTutorial === 'true') {
+        // UI가 완전히 업데이트(updateNavUI)되고 렌더링된 후 실행하기 위해 약간 지연시킵니다.
+        setTimeout(() => {
+            const overlay = document.getElementById('tutorialOverlay');
+            const targetBtn = document.getElementById('myPageBtn');
+            const skipBtn = document.getElementById('skipTutorialBtn');
+            const tooltip = document.getElementById('tutorialTooltip');
+
+            // 마이페이지 버튼이 화면에 렌더링되어 있는지 확인
+            if (targetBtn && !targetBtn.classList.contains('hidden')) {
+                overlay.classList.remove('hidden');
+                
+                // [안전한 설계] 기존 상단바의 z-index 충돌을 피하기 위해 
+                // 원본 버튼의 위치를 계산해 오버레이 위에 '클론(복제본)'을 띄웁니다.
+                const rect = targetBtn.getBoundingClientRect();
+                const cloneBtn = document.createElement('div');
+                cloneBtn.className = 'tutorial-clone-btn';
+                cloneBtn.innerText = targetBtn.innerText;
+                
+                // 위치 및 크기 세팅
+                cloneBtn.style.top = `${rect.top - 6}px`; 
+                cloneBtn.style.left = `${rect.left - 12}px`; 
+                cloneBtn.style.width = `${rect.width + 24}px`; 
+                cloneBtn.style.height = `${rect.height + 12}px`; 
+                
+                overlay.appendChild(cloneBtn);
+
+                // 말풍선 위치 지정 (복제된 버튼 바로 아래)
+                tooltip.style.top = `${rect.bottom + 15}px`;
+                tooltip.style.left = `${rect.left - 40}px`;
+
+                // 복제된 버튼 클릭 이벤트 -> 실제 원본 버튼의 클릭(페이지 이동)을 강제 발생시킴
+                cloneBtn.addEventListener('click', () => {
+                    targetBtn.click();
+                    // 🚨 여기서 localStorage를 지우지 않습니다! 
+                    // 그래야 /mypage로 넘어갔을 때 튜토리얼 2단계가 연이어 실행됩니다.
+                });
+
+                // 건너뛰기 버튼 클릭 이벤트 -> 튜토리얼 영구 종료
+                skipBtn.addEventListener('click', () => {
+                    localStorage.removeItem('pending_tutorial'); 
+                    overlay.classList.add('hidden');
+                    cloneBtn.remove();
+                });
+            }
+        }, 100);
     }
 });
 

@@ -545,8 +545,34 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 
+/* =========================================================
+   10. 튜토리얼 전용 UI 및 기능 제어 
+========================================================= */
+body.tutorial-lock { overflow: hidden !important; touch-action: none; }
+.tutorial-lock .mypage-container { pointer-events: none; user-select: none; }
+.tutorial-lock .logo-link, .tutorial-lock .nav-links { pointer-events: auto; }
+.tutorial-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9998; pointer-events: auto; }
+.tutorial-tooltip { position: fixed; z-index: 10000; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); color: #1e293b; pointer-events: auto; width: 90%; max-width: 400px; line-height: 1.6; font-size: 1rem; word-break: keep-all; transition: top 0.3s, left 0.3s; border: 2px solid #3b82f6; }
+.tutorial-tooltip::before { content: ''; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); border-width: 0 10px 10px 10px; border-style: solid; border-color: transparent transparent #3b82f6 transparent; }
+.tutorial-tooltip::after { content: ''; position: absolute; top: -7px; left: 50%; transform: translateX(-50%); border-width: 0 8px 8px 8px; border-style: solid; border-color: transparent transparent #fff transparent; }
+.tut-nav-btn { padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: background 0.2s; font-size: 0.95rem; }
+.btn-gray { background: #f1f5f9; color: #475569; }
+.btn-gray:hover { background: #e2e8f0; }
+.btn-blue { background: #2563EB; color: white; }
+.btn-blue:hover { background: #1d4ed8; }
+.tutorial-bottom-bar { position: fixed; bottom: 0; left: 0; width: 100%; padding: 25px 5%; display: flex; justify-content: space-between; align-items: center; z-index: 10000; box-sizing: border-box; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); }
+.tutorial-progress { width: 150px; height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden; }
+.tutorial-progress-bar { height: 100%; background: #38bdf8; transition: width 0.3s; }
+.tutorial-skip-btn { background: #2563EB; color: #fff; padding: 10px 24px; border-radius: 30px; font-weight: 800; cursor: pointer; transition: all 0.3s; pointer-events: auto; font-size: 1.05rem; border: 2px solid transparent; }
+.tutorial-skip-btn.highlight-border { border-color: #fcd34d; box-shadow: 0 0 15px rgba(251, 191, 36, 0.5); animation: pulseBorder 1.5s infinite; }
+@keyframes pulseBorder { 0% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(251, 191, 36, 0); } 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); } }
+
+/* 더미 데이터가 오버레이 위로 올라오게 하는 클래스 */
+.tutorial-focus-content { position: relative; z-index: 9999 !important; pointer-events: none !important; background: white; border-radius: 12px; padding: 10px; margin-top: 20px; box-shadow: 0 0 30px rgba(255,255,255,0.2); }
+
+
 /* ============================================================
-   [10] 모바일 반응형 및 인쇄 설정
+   [11] 모바일 반응형 및 인쇄 설정
    ============================================================ */
    
 /* 🎯 모바일 화면 제어 */

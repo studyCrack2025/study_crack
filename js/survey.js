@@ -59,6 +59,120 @@ document.addEventListener('DOMContentLoaded', () => {
     setupUI();
     
     setTimeout(checkQualitativeForm, 500);
+    
+    // 튜토리얼 3단계 (기초조사서 다단계 설명 및 이탈 방지)
+    const pendingTutorial = localStorage.getItem('pending_tutorial');
+    
+    if (pendingTutorial === 'true') {
+        
+        // [방어 1] 브라우저 뒤로가기 / 새로고침 경고
+        const warnTutorialExit = (e) => {
+            if (localStorage.getItem('pending_tutorial') === 'true') {
+                e.preventDefault();
+                e.returnValue = '정말 튜토리얼을 종료하시겠습니까?'; 
+            }
+        };
+        window.addEventListener('beforeunload', warnTutorialExit);
+
+        // [방어 2] 로고, 마이페이지 등 내부 링크 클릭 시 경고 후 삭제
+        document.querySelectorAll('.logo-link, .nav-btn').forEach(link => {
+            link.addEventListener('click', (e) => {
+                if (localStorage.getItem('pending_tutorial') === 'true') {
+                    if (!confirm('현재 튜토리얼이 진행 중입니다.\n정말 튜토리얼을 종료하고 이동하시겠습니까?')) {
+                        e.preventDefault(); // 이동 취소
+                    } else {
+                        // 동의 시 튜토리얼 신호 파기 및 이벤트 해제
+                        localStorage.removeItem('pending_tutorial');
+                        window.removeEventListener('beforeunload', warnTutorialExit);
+                    }
+                }
+            });
+        });
+
+        // 다단계 UI 로직 실행
+        setTimeout(() => {
+            const overlay = document.getElementById('tutorialOverlay');
+            const cloneContainer = document.getElementById('tutorialCloneContainer');
+            const targetEl = document.querySelector('.survey-tabs'); // 복제할 원본 탭 영역
+            
+            if (targetEl) {
+                overlay.classList.remove('hidden');
+                
+                // 원본 탭 영역의 위치 계산 및 클론(복제본) 생성
+                const rect = targetEl.getBoundingClientRect();
+                cloneContainer.style.top = `${rect.top}px`;
+                cloneContainer.style.left = `${rect.left}px`;
+                cloneContainer.style.width = `${rect.width}px`;
+                cloneContainer.style.height = `${rect.height}px`;
+
+                const clone = targetEl.cloneNode(true);
+                cloneContainer.appendChild(clone);
+                
+                const tooltip = document.getElementById('tutorialTooltip');
+                // 툴팁 위치 중앙 정렬
+                tooltip.style.top = `${rect.bottom + 15}px`;
+                tooltip.style.left = `${rect.left + (rect.width / 2)}px`;
+                tooltip.style.transform = `translateX(-50%)`;
+
+                // 제어할 요소들 맵핑
+                const msgEl = document.getElementById('tutorialMsg');
+                const prevBtn = document.getElementById('tutPrevBtn');
+                const nextBtn = document.getElementById('tutNextBtn');
+                const skipBtn = document.getElementById('skipTutorialBtn');
+                const cloneBtns = clone.querySelectorAll('.tab-btn');
+
+                let tutStep = 0;
+                const tutMsgs = [
+                    '기초조사서는 총 두 영역으로 구성되어 있습니다.',
+                    '정성 영역은 학생의 성향과 기본정보를 판단하는 기준으로 구성되어 있습니다.',
+                    '정량 영역은 학생의 객관적인 현재위치를 판단하기 위해 성적을 작성하는 부분으로 구성되어 있습니다.',
+                    '보다 세세한 분석을 위해 최대한 자세히 적어주세요. 작성이 완료되면 다음 단계로 넘어가겠습니다.'
+                ];
+
+                const updateStep = () => {
+                    msgEl.innerText = tutMsgs[tutStep];
+                    
+                    // 스텝에 따른 탭(버튼) 강조(투명도) 처리
+                    if(cloneBtns.length === 2) {
+                        if (tutStep === 0 || tutStep === 3) {
+                            cloneBtns[0].style.opacity = '1';
+                            cloneBtns[1].style.opacity = '1';
+                        } else if (tutStep === 1) {
+                            cloneBtns[0].style.opacity = '1';
+                            cloneBtns[1].style.opacity = '0.3';
+                        } else if (tutStep === 2) {
+                            cloneBtns[0].style.opacity = '0.3';
+                            cloneBtns[1].style.opacity = '1';
+                        }
+                    }
+
+                    // 버튼 텍스트 및 노출 상태 변경
+                    prevBtn.style.display = tutStep > 0 ? 'block' : 'none';
+                    nextBtn.innerText = tutStep === 3 ? '확인했습니다.' : '다음';
+                };
+
+                prevBtn.addEventListener('click', () => { tutStep--; updateStep(); });
+                nextBtn.addEventListener('click', () => {
+                    if (tutStep === 3) {
+                        // '확인했습니다' 클릭 시 오버레이 해제 (작성 시작)
+                        // 🚨 저장 후 다음 페이지(/analysis) 튜토리얼을 위해 localStorage는 지우지 않음!
+                        overlay.classList.add('hidden');
+                    } else {
+                        tutStep++; updateStep();
+                    }
+                });
+
+                // 건너뛰기 클릭 시 튜토리얼 강제 완전 종료
+                skipBtn.addEventListener('click', () => {
+                    localStorage.removeItem('pending_tutorial');
+                    overlay.classList.add('hidden');
+                    window.removeEventListener('beforeunload', warnTutorialExit);
+                });
+
+                updateStep(); // 최초 1단계 렌더링
+            }
+        }, 400);
+    }
 });
 
 function openTab(tabName) {

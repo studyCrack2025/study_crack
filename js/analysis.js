@@ -95,7 +95,207 @@ document.addEventListener('DOMContentLoaded', () => {
         const targetTab = params.get('tab');
         if (targetTab) openSolution(targetTab);         
     });
+	
+	const params = new URLSearchParams(window.location.search);
+    const sol = params.get('sol');
+    if (sol) setTimeout(() => openSolution(sol), 100); 
+
+    const targetTab = params.get('tab');
+    if (targetTab) openSolution(targetTab);         
+
+    // 💡 [추가] 튜토리얼 4단계 (나만의 솔루션 탭 가이드 및 완료)
+    const pendingTutorial = localStorage.getItem('pending_tutorial');
+    
+    if (pendingTutorial === 'step3') {
+        document.body.classList.add('tutorial-lock'); // 전체 클릭, 스크롤 잠금
+
+        // [방어] 브라우저 뒤로가기 / 이탈 경고
+        const warnTutorialExit = (e) => {
+            if (localStorage.getItem('pending_tutorial')) {
+                e.preventDefault(); e.returnValue = '정말 튜토리얼을 종료하시겠습니까?'; 
+            }
+        };
+        window.addEventListener('beforeunload', warnTutorialExit);
+
+        document.querySelectorAll('.logo-link, .nav-btn').forEach(link => {
+            link.addEventListener('click', (e) => {
+                if (localStorage.getItem('pending_tutorial')) {
+                    if (!confirm('현재 튜토리얼이 거의 끝났습니다!\n정말 튜토리얼을 종료하시겠습니까?')) e.preventDefault(); 
+                    else { localStorage.removeItem('pending_tutorial'); window.removeEventListener('beforeunload', warnTutorialExit); document.body.classList.remove('tutorial-lock'); }
+                }
+            });
+        });
+
+        // 튜토리얼 제어 변수
+        let tutStep = 0;
+        const msgEl = document.getElementById('tutorialMsg');
+        const prevBtn = document.getElementById('tutPrevBtn');
+        const nextBtn = document.getElementById('tutNextBtn');
+        const skipBtn = document.getElementById('skipTutorialBtn');
+        
+        const tutMsgs = [
+            'Basic 등급 이상에서 사용 가능합니다. 현재 점수를 통해 각 대학에서 본인의 현재 위치를 알려줍니다.',
+            'Standard 등급 이상에서 사용 가능합니다. 현재 점수와 각 대학의 반영비를 통해 어떤 과목을 공부하는 것이 가장 효율적인지를 보여줍니다.',
+            'Standard 등급 이상에서 사용 가능합니다. SKY 출신 선생님들이 목표대학 합격을 위해 매주 어떻게 공부를 해야하는지 플래너를 검토해줍니다.',
+            'PRO 등급 이상에서 사용 가능합니다. 2주마다 목표 대학 합격률을 극대화하기 위한 중/장기적인 방향성을 제시하고, 그 과정에서 학생 개개인의 고민을 해결하고 요구에 최적화된 보고서를 제공합니다.'
+        ];
+        
+        const tabKeys = ['univ', 'sim', 'coach', 'pro'];
+
+        // 더미 데이터 주입 함수 (비활성화 상태로 화면에 띄움)
+        const injectDummyData = (step) => {
+            const contents = document.querySelectorAll('.sol-content');
+            contents.forEach(c => c.classList.remove('tutorial-focus-content'));
+
+            const targetContent = document.getElementById(`sol-${tabKeys[step]}`);
+            if (!targetContent) return;
+            
+            targetContent.classList.add('tutorial-focus-content');
+
+            // 각 탭에 맞는 더미 데이터 임시 주입
+            if (step === 0) { // 목표대학
+                const resArea = document.getElementById('univAnalysisResult');
+                if(resArea) resArea.innerHTML = `
+                    <div class="analysis-card" style="border-left-color: #10b981; margin-top:20px;">
+                        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f1f5f9; padding-bottom:10px; margin-bottom:15px;">
+                            <div><h4 style="margin:0; font-size:1.2rem;">고려대학교 <small style="color:#64748b;">컴퓨터학과</small></h4></div>
+                            <div><span style="background:#10b98115; color:#10b981; padding:6px 12px; border-radius:20px; font-weight:bold;">안정</span></div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-weight:bold;"><span style="color:#64748b">환산점수</span> <span style="color:#10b981; font-size:1.2rem;">152.4점</span></div>
+                    </div>`;
+            } else if (step === 1) { // 시뮬레이션
+                const simArea = document.querySelector('#sol-sim .sim-container-new');
+                if(simArea) simArea.innerHTML = `
+                    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:20px; text-align:center;">
+                        <div style="font-size:1.5rem; color:#2563EB; font-weight:900; margin-bottom:10px;">수학 (+1점) 상승 시</div>
+                        <div style="color:#475569; margin-bottom:20px;">합격 확률이 <strong style="color:#ef4444;">45%</strong> 대폭 상승합니다!</div>
+                        <div style="height:120px; display:flex; justify-content:center; align-items:flex-end; gap:20px; border-bottom:2px solid #cbd5e1;">
+                            <div style="width:40px; height:60px; background:#cbd5e1; border-radius:6px 6px 0 0;"></div>
+                            <div style="width:40px; height:100px; background:#2563EB; border-radius:6px 6px 0 0; position:relative;"><span style="position:absolute; top:-25px; left:-10px; background:#ef4444; color:white; font-size:0.7rem; padding:2px 6px; border-radius:10px; font-weight:bold; white-space:nowrap;">합격권 진입!</span></div>
+                        </div>
+                    </div>`;
+            } else if (step === 2) { // 플래너 코칭
+                const coachArea = document.querySelector('#sol-coach .coach-container');
+                if(coachArea) coachArea.innerHTML = `
+                    <div class="coach-box" style="border-left: 4px solid #8b5cf6;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                            <h3 style="margin:0; font-size:1.1rem;">💌 주간학습 피드백 도착</h3>
+                            <span style="background:#dcfce7; color:#166534; padding:4px 10px; border-radius:20px; font-size:0.8rem; font-weight:bold;">열람 가능</span>
+                        </div>
+                        <p style="color:#475569; font-size:0.9rem; margin-bottom:15px;">SKY 출신 컨설턴트가 이번 주 플래너를 꼼꼼히 분석했습니다.</p>
+                        <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; color:#334155; font-size:0.9rem;">
+                            "수학 기출 분석 2회독은 잘 지켜졌으나, 탐구 과목 투자 시간이 상대적으로 부족합니다. 다음 주에는 탐구 비율을 15% 늘려보세요..."
+                        </div>
+                    </div>`;
+            } else if (step === 3) { // PRO
+                const proArea = document.getElementById('sol-pro');
+                if(proArea) proArea.innerHTML = `
+                    <div class="pro-theme" style="padding:30px;">
+                        <div style="text-align:center; margin-bottom:20px;">
+                            <span style="background:#3b82f6; color:white; padding:4px 12px; border-radius:20px; font-size:0.8rem; font-weight:bold;">PRO EXCLUSIVE</span>
+                            <h2 style="margin:10px 0; font-size:1.6rem; color:white;">프리미엄 전략 리포트</h2>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.1); border-radius:12px; padding:20px; display:flex; justify-content:space-between; align-items:center;">
+                            <div><strong style="color:white; display:block; font-size:1.1rem; margin-bottom:5px;">2026년 3월 2주차 분석</strong><span style="color:#93c5fd; font-size:0.9rem;">발행 완료 (클릭하여 열람)</span></div>
+                            <i class="fas fa-file-pdf" style="font-size:2rem; color:#bfdbfe;"></i>
+                        </div>
+                    </div>`;
+            }
+        };
+
+        setTimeout(() => {
+            const overlay = document.getElementById('tutorialOverlay');
+            const cloneContainer = document.getElementById('tutorialCloneContainer');
+            const menuEl = document.querySelector('.solution-menu');
+            
+            if (menuEl) {
+                overlay.classList.remove('hidden');
+                
+                const rect = menuEl.getBoundingClientRect();
+                cloneContainer.style.top = `${rect.top}px`;
+                cloneContainer.style.left = `${rect.left}px`;
+                cloneContainer.style.width = `${rect.width}px`;
+                cloneContainer.style.height = `${rect.height}px`;
+
+                const cloneMenu = menuEl.cloneNode(true);
+                // 클론 버튼들은 클릭해도 아무 일도 안 일어나게 이벤트 막음
+                cloneMenu.querySelectorAll('.sol-btn').forEach(btn => { 
+                    btn.removeAttribute('onclick'); 
+                    btn.style.pointerEvents = 'none';
+                });
+                cloneContainer.appendChild(cloneMenu);
+                const cloneBtns = cloneMenu.querySelectorAll('.sol-btn');
+                
+                const tooltip = document.getElementById('tutorialTooltip');
+                
+                const updateStep = () => {
+                    // 1. 메뉴 탭의 선택 및 밝기 조절
+                    openSolution(tabKeys[tutStep]); // 원본 뒤쪽의 콘텐츠 탭 변경
+                    injectDummyData(tutStep); // 변경된 탭에 더미 데이터 투입
+
+                    cloneBtns.forEach((btn, idx) => {
+                        if (idx === tutStep) {
+                            btn.classList.add('active');
+                            btn.style.opacity = '1';
+                            // 말풍선 위치를 현재 선택된 탭 아래로 이동 (pc/mobile 대응)
+                            const btnRect = btn.getBoundingClientRect();
+                            tooltip.style.top = `${btnRect.bottom + 15}px`;
+                            tooltip.style.left = `${Math.max(10, btnRect.left + (btnRect.width / 2))}px`;
+                        } else {
+                            btn.classList.remove('active');
+                            btn.style.opacity = '0.4';
+                        }
+                    });
+                    
+                    // 2. 문구 및 하단 버튼 조절
+                    msgEl.innerText = tutMsgs[tutStep];
+                    prevBtn.style.display = tutStep > 0 ? 'block' : 'none';
+                    
+                    if (tutStep === 3) {
+                        nextBtn.style.display = 'none'; // 다음 버튼 숨김
+                        skipBtn.innerText = '튜토리얼 완료하기'; // 건너뛰기가 완료로 변신
+                    } else {
+                        nextBtn.style.display = 'block';
+                        skipBtn.innerText = '튜토리얼 건너뛰기';
+                    }
+                };
+
+                prevBtn.addEventListener('click', () => { tutStep--; updateStep(); });
+                nextBtn.addEventListener('click', () => { tutStep++; updateStep(); });
+
+                // 건너뛰기 혹은 완료 버튼 클릭 시
+                skipBtn.addEventListener('click', () => {
+                    localStorage.removeItem('pending_tutorial');
+                    window.removeEventListener('beforeunload', warnTutorialExit);
+                    document.body.classList.remove('tutorial-lock');
+                    overlay.classList.add('hidden');
+                    cloneContainer.remove();
+                    
+                    // 더미 데이터 초기화를 위해 페이지 새로고침 대신 원본 데이터 다시 불러오기
+                    document.querySelectorAll('.sol-content').forEach(c => c.classList.remove('tutorial-focus-content'));
+                    openSolution('univ'); // 기본 탭으로 복구
+                    
+                    if (tutStep === 3) {
+                        // 튜토리얼을 끝까지 봤다면 축하 모달 띄우기
+                        document.getElementById('tutorialCompleteModal').classList.remove('hidden');
+                        document.getElementById('tutorialCompleteModal').style.display = 'flex';
+                        // 꽃가루 효과 (외부 라이브러리 없이 간단한 CSS/JS로 구현 가능하나, 여기선 생략하고 모달로 축하)
+                    } else {
+                        // 중간에 건너뛰었으면 새로고침으로 깔끔하게 원복
+                        location.reload(); 
+                    }
+                });
+
+                updateStep(); // 1단계 실행
+            }
+        }, 300);
+    }
 });
+
+window.finishTutorialComplete = function() {
+    document.getElementById('tutorialCompleteModal').style.display = 'none';
+    location.reload(); // 더미 데이터를 지우고 원래 유저 데이터로 깔끔하게 화면 리로드
+};
 
 // [보안] XSS 방지용 이스케이프 함수
 function escapeHtml(text) {
