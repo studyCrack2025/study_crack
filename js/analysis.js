@@ -201,30 +201,46 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
+        // 다단계 UI 로직 실행 (Resize 갱신 및 Z-index 가려짐 해결)
         setTimeout(() => {
             const overlay = document.getElementById('tutorialOverlay');
             const cloneContainer = document.getElementById('tutorialCloneContainer');
             const menuEl = document.querySelector('.solution-menu');
+            const tooltip = document.getElementById('tutorialTooltip');
+            const bottomBar = document.querySelector('.tutorial-bottom-bar');
             
+            // 🚨 핵심: 말풍선과 하단바를 overlay 밖(body)으로 꺼내서 z-index 갇힘 현상 해결
+            if (tooltip) { document.body.appendChild(tooltip); tooltip.style.zIndex = '10005'; }
+            if (bottomBar) { document.body.appendChild(bottomBar); bottomBar.style.zIndex = '10005'; }
+
             if (menuEl && overlay && cloneContainer) {
                 overlay.classList.remove('hidden');
                 
-                const rect = menuEl.getBoundingClientRect();
-                cloneContainer.style.top = `${rect.top}px`;
-                cloneContainer.style.left = `${rect.left}px`;
-                cloneContainer.style.width = `${rect.width}px`;
-                cloneContainer.style.height = `${rect.height}px`;
-
                 const cloneMenu = menuEl.cloneNode(true);
                 cloneMenu.querySelectorAll('.sol-btn').forEach(btn => { 
                     btn.removeAttribute('onclick'); 
                     btn.style.pointerEvents = 'none';
                 });
                 cloneContainer.appendChild(cloneMenu);
-                const cloneBtns = cloneMenu.querySelectorAll('.sol-btn');
+                const cloneBtns = cloneContainer.querySelectorAll('.sol-btn');
                 
-                const tooltip = document.getElementById('tutorialTooltip');
-                
+                // 🚨 핵심: 창 크기가 변할 때마다 클론 메뉴와 말풍선의 위치를 실시간으로 재계산
+                const updatePositions = () => {
+                    if (localStorage.getItem('pending_tutorial') !== 'step3') return;
+                    const rect = menuEl.getBoundingClientRect();
+                    cloneContainer.style.top = `${rect.top}px`;
+                    cloneContainer.style.left = `${rect.left}px`;
+                    cloneContainer.style.width = `${rect.width}px`;
+                    cloneContainer.style.height = `${rect.height}px`;
+
+                    if (cloneBtns[tutStep] && tooltip) {
+                        const btnRect = cloneBtns[tutStep].getBoundingClientRect();
+                        tooltip.style.top = `${btnRect.bottom + 15}px`;
+                        tooltip.style.left = `${Math.max(10, btnRect.left + (btnRect.width / 2))}px`;
+                    }
+                };
+                window.addEventListener('resize', updatePositions);
+
                 const updateStep = () => {
                     openSolution(tabKeys[tutStep]); 
                     injectDummyData(tutStep); 
@@ -233,14 +249,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (idx === tutStep) {
                             btn.classList.add('active');
                             btn.style.opacity = '1';
-                            const btnRect = btn.getBoundingClientRect();
-                            tooltip.style.top = `${btnRect.bottom + 15}px`;
-                            tooltip.style.left = `${Math.max(10, btnRect.left + (btnRect.width / 2))}px`;
                         } else {
                             btn.classList.remove('active');
                             btn.style.opacity = '0.4';
                         }
                     });
+                    
+                    updatePositions(); // 탭이 바뀔 때마다 위치 재계산
                     
                     msgEl.innerText = tutMsgs[tutStep];
                     prevBtn.style.display = tutStep > 0 ? 'block' : 'none';
@@ -259,21 +274,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 prevBtn.addEventListener('click', () => { tutStep--; updateStep(); });
                 nextBtn.addEventListener('click', () => { tutStep++; updateStep(); });
 
-                // 건너뛰기 혹은 완료 버튼 클릭 시
                 skipBtn.addEventListener('click', () => {
+                    // 건너뛰기 재확인
                     if (tutStep < 3) {
                         if (!confirm("정말로 튜토리얼을 그만 하시겠습니까?")) return;
                     }
                     
                     localStorage.removeItem('pending_tutorial');
                     window.removeEventListener('beforeunload', warnTutorialExit);
+                    window.removeEventListener('resize', updatePositions); // 리사이즈 이벤트 해제
                     document.body.classList.remove('tutorial-lock');
                     overlay.classList.add('hidden');
                     cloneContainer.remove();
                     
-                    // 더미 데이터 초기화를 위해 페이지 새로고침 대신 원본 데이터 다시 불러오기
-                    document.querySelectorAll('.sol-content').forEach(c => c.classList.remove('tutorial-focus-content'));
-                    openSolution('univ'); // 기본 탭으로 복구
+                    if (tooltip) tooltip.remove();
+                    if (bottomBar) bottomBar.remove();
                     
                     if (tutStep === 3) {
                         document.getElementById('tutorialCompleteModal').classList.remove('hidden');
@@ -285,9 +300,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 updateStep(); 
             }
-        }, 500); // 렌더링을 기다리기 위해 넉넉하게 500ms
+        }, 500);
     }
-}); // <--- 💡 엉켰던 DOMContentLoaded 종료 지점 정상화
+});
 
 window.finishTutorialComplete = function() {
     document.getElementById('tutorialCompleteModal').style.display = 'none';
@@ -1125,6 +1140,8 @@ function initSimulation() {
     if (currentUserTier === 'free') return;
     
     const chartArea = document.getElementById('simChartArea');
+    if (!chartArea) return;
+    
     if (!userQuantData || Object.keys(userQuantData).length === 0) {
         chartArea.innerHTML = `<div style="width:100%; height:100%; min-height: 200px; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px; color:#94a3b8;">
             <i class="fas fa-exclamation-circle fa-2x" style="color:#cbd5e1;"></i>
@@ -1150,6 +1167,8 @@ function initSimulation() {
 
 async function fetchSimulationData() {
     const chartArea = document.getElementById('simChartArea');
+    if (!chartArea) return;
+    
     chartArea.innerHTML = '<div style="margin:auto; color:#3b82f6;"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
     
     const token = localStorage.getItem('idToken');
@@ -1210,6 +1229,8 @@ let simSvgRefs = null;
 
 function renderSimChart() {
     const container = document.getElementById('simChartArea');
+    if (!container || !simDisplayList || simDisplayList.length === 0) return;
+    
     if (!simDisplayList || simDisplayList.length === 0) return;
 
     const examName = EXAM_DISPLAY_NAMES[currentExamMode] || currentExamMode;
