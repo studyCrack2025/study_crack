@@ -259,8 +259,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 prevBtn.addEventListener('click', () => { tutStep--; updateStep(); });
                 nextBtn.addEventListener('click', () => { tutStep++; updateStep(); });
 
+                // 건너뛰기 혹은 완료 버튼 클릭 시
                 skipBtn.addEventListener('click', () => {
-                    // 💡 [추가됨] 튜토리얼 1~3단계일 때는 진짜 나갈 건지 물어보기
                     if (tutStep < 3) {
                         if (!confirm("정말로 튜토리얼을 그만 하시겠습니까?")) return;
                     }
@@ -271,14 +271,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     overlay.classList.add('hidden');
                     cloneContainer.remove();
                     
+                    // 더미 데이터 초기화를 위해 페이지 새로고침 대신 원본 데이터 다시 불러오기
                     document.querySelectorAll('.sol-content').forEach(c => c.classList.remove('tutorial-focus-content'));
-                    openSolution('univ'); // 원상복구
+                    openSolution('univ'); // 기본 탭으로 복구
                     
                     if (tutStep === 3) {
                         document.getElementById('tutorialCompleteModal').classList.remove('hidden');
                         document.getElementById('tutorialCompleteModal').style.display = 'flex';
                     } else {
-                        location.reload(); // 건너뛰기 시에는 바로 원본 화면으로
+                        location.reload(); 
                     }
                 });
 
@@ -590,7 +591,10 @@ function openSolution(type) {
 
     document.querySelectorAll('.solution-menu .sol-btn').forEach(btn => {
         btn.classList.remove('active');
-        if (btn.getAttribute('onclick').includes(`'${type}'`)) btn.classList.add('active');
+        const onclickAttr = btn.getAttribute('onclick');
+        if (onclickAttr && onclickAttr.includes(`'${type}'`)) {
+            btn.classList.add('active');
+        }
     });
 
     if (type === 'sim') initSimulation();
