@@ -543,54 +543,104 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { threshold: 0.15 });
     document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
 
-    // 5. 튜토리얼 1단계 (메인페이지 -> 마이페이지 유도)
+    // 💡 [수정됨] 5. 튜토리얼 통합 제어 (1단계 & 3단계 분기 및 이탈 방어)
     const pendingTutorial = localStorage.getItem('pending_tutorial');
     
-    if (pendingTutorial === 'true') {
-        // UI가 완전히 업데이트(updateNavUI)되고 렌더링된 후 실행하기 위해 약간 지연시킵니다.
+    if (pendingTutorial === 'true' || pendingTutorial === 'step3') {
+
+        document.body.classList.add('tutorial-lock');
+
+        // [방어 1] 브라우저 뒤로가기 / 새로고침 / 스와이프 경고
+        const warnTutorialExit = (e) => {
+            if (localStorage.getItem('pending_tutorial')) {
+                e.preventDefault();
+                e.returnValue = '정말 튜토리얼을 종료하시겠습니까?'; 
+            }
+        };
+        window.addEventListener('beforeunload', warnTutorialExit);
+
+        // [방어 2] 헤더 네비게이션(로고, 메뉴 등) 클릭 시 이탈 경고
+        document.querySelectorAll('.logo-link, .nav-btn').forEach(link => {
+            link.addEventListener('click', (e) => {
+                if (localStorage.getItem('pending_tutorial')) {
+                    if (!confirm('현재 튜토리얼이 진행 중입니다.\n정말 튜토리얼을 종료하고 이동하시겠습니까?')) {
+                        e.preventDefault(); // 이동 취소
+                    } else {
+                        // 종료 동의 시 튜토리얼 신호 완전 삭제 및 스크롤 잠금 해제
+                        localStorage.removeItem('pending_tutorial');
+                        window.removeEventListener('beforeunload', warnTutorialExit);
+                        document.body.classList.remove('tutorial-lock');
+                    }
+                }
+            });
+        });
+
+        // 튜토리얼 UI 렌더링
         setTimeout(() => {
             const overlay = document.getElementById('tutorialOverlay');
-            const targetBtn = document.getElementById('myPageBtn');
+            const tooltipMsg = document.querySelector('#tutorialTooltip p');
+            const progressBar = document.querySelector('.tutorial-progress-bar');
             const skipBtn = document.getElementById('skipTutorialBtn');
-            const tooltip = document.getElementById('tutorialTooltip');
+            
+            let targetBtn, targetUrl;
 
-            // 마이페이지 버튼이 화면에 렌더링되어 있는지 확인
+            // 현재 단계에 맞춰 타겟 버튼과 문구를 다르게 설정합니다.
+            if (pendingTutorial === 'true') {
+                targetBtn = document.getElementById('myPageBtn');
+                targetUrl = '/mypage';
+                if(tooltipMsg) tooltipMsg.innerText = '1. 마이페이지를 눌러 정보를 입력하실 수 있습니다.';
+                if(progressBar) progressBar.style.width = '33%';
+            } else if (pendingTutorial === 'step3') {
+                targetBtn = document.getElementById('navAnalysis');
+                targetUrl = '/analysis';
+                if(tooltipMsg) tooltipMsg.innerText = '3. 나만의 솔루션을 눌러 스터디크랙의 기능을 이용해보세요.';
+                if(progressBar) progressBar.style.width = '100%';
+            }
+
             if (targetBtn && !targetBtn.classList.contains('hidden')) {
                 overlay.classList.remove('hidden');
                 
-                // [안전한 설계] 기존 상단바의 z-index 충돌을 피하기 위해 
-                // 원본 버튼의 위치를 계산해 오버레이 위에 '클론(복제본)'을 띄웁니다.
+                // 원본 버튼 위에 클론 생성
                 const rect = targetBtn.getBoundingClientRect();
                 const cloneBtn = document.createElement('div');
                 cloneBtn.className = 'tutorial-clone-btn';
                 cloneBtn.innerText = targetBtn.innerText;
-
-                cloneBtn.style.top = `${rect.top}px`; 
-                cloneBtn.style.left = `${rect.left}px`; 
-                cloneBtn.style.width = `${rect.width}px`; 
-                cloneBtn.style.height = `${rect.height}px`; 
+                
+                // 💡 [개선] 강제 width/height 대신 정중앙 좌표 + padding으로 자연스럽게 생성
+                cloneBtn.style.top = `${rect.top + (rect.height / 2)}px`; 
+                cloneBtn.style.left = `${rect.left + (rect.width / 2)}px`; 
+                cloneBtn.style.transform = 'translate(-50%, -50%)';
+                cloneBtn.style.padding = '8px 16px'; 
                 
                 overlay.appendChild(cloneBtn);
 
-                // 말풍선 위치 지정 (복제된 버튼 바로 아래)
+                const tooltip = document.getElementById('tutorialTooltip');
                 tooltip.style.top = `${rect.bottom + 15}px`;
-                tooltip.style.left = `${rect.left - 40}px`;
+                tooltip.style.left = `${Math.max(10, rect.left - 40)}px`;
 
-                // 복제된 버튼 클릭 이벤트 -> 실제 원본 버튼의 클릭(페이지 이동)을 강제 발생시킴
-                cloneBtn.addEventListener('click', () => {
-                    targetBtn.click();
-                    // 🚨 여기서 localStorage를 지우지 않습니다! 
-                    // 그래야 /mypage로 넘어갔을 때 튜토리얼 2단계가 연이어 실행됩니다.
+                // 클론 버튼 클릭 -> 정상적인 튜토리얼 진행
+                cloneBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.removeEventListener('beforeunload', warnTutorialExit); 
+                    document.body.classList.remove('tutorial-lock'); // 이동 전 잠금 해제
+                    
+                    if (pendingTutorial === 'step3') {
+                        localStorage.removeItem('pending_tutorial');
+                        alert("튜토리얼이 모두 완료되었습니다!🎉\n이제 정식 서비스를 이용하실 수 있습니다.");
+                    }
+                    window.location.href = targetUrl; 
                 });
 
-                // 건너뛰기 버튼 클릭 이벤트 -> 튜토리얼 영구 종료
+                // 건너뛰기 클릭
                 skipBtn.addEventListener('click', () => {
                     localStorage.removeItem('pending_tutorial'); 
                     overlay.classList.add('hidden');
                     cloneBtn.remove();
+                    window.removeEventListener('beforeunload', warnTutorialExit);
+                    document.body.classList.remove('tutorial-lock'); // 잠금 해제
                 });
             }
-        }, 100);
+        }, 150); 
     }
 });
 
