@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (targetTab) openSolution(targetTab);         
     });
 
-    // 💡 [수정됨] 튜토리얼 4단계 (DOM 안쪽으로 안전하게 편입 & 건너뛰기 경고 추가)
+    // 튜토리얼 4단계 (DOM 안쪽으로 안전하게 편입 & 건너뛰기 경고 추가)
     const pendingTutorial = localStorage.getItem('pending_tutorial');
     
     if (pendingTutorial === 'true' || pendingTutorial === 'step3') {
@@ -151,47 +151,100 @@ document.addEventListener('DOMContentLoaded', () => {
             
             targetContent.classList.add('tutorial-focus-content');
 
-            if (step === 0) {
+            if (step === 0) { // 1. 목표대학 더미 데이터
                 const resArea = document.getElementById('univAnalysisResult');
                 if(resArea) resArea.innerHTML = `
-                    <div class="analysis-card" style="border-left-color: #10b981; margin-top:20px;">
-                        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f1f5f9; padding-bottom:10px; margin-bottom:15px;">
-                            <div><h4 style="margin:0; font-size:1.2rem;">고려대학교 <small style="color:#64748b;">컴퓨터학과</small></h4></div>
-                            <div><span style="background:#10b98115; color:#10b981; padding:6px 12px; border-radius:20px; font-weight:bold;">안정</span></div>
+                    <div class="analysis-card" style="border-left-color: #10b981; display: flex; flex-direction: column; gap: 15px; margin-top:20px;">
+                        <div class="analysis-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; border-bottom:1px solid #f1f5f9; padding-bottom:15px;">
+                            <div style="flex: 1; min-width: 0;">
+                                <span style="color:#64748b; font-size:1.1rem; font-weight:800; display:block; margin-bottom:5px;">1지망</span>
+                                <h4 style="margin:0; font-size:1.2rem; color:#1e293b; letter-spacing:-0.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">고려대학교</h4>
+                                <div style="color:#64748b; font-size:0.95rem; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">컴퓨터학과</div>
+                            </div>
+                            <div style="text-align:right; flex-shrink: 0;">
+                                <span style="background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid #10b981; padding:6px 14px; border-radius:20px; font-size:0.9rem; font-weight:bold; display:inline-block; margin-bottom:5px; white-space:nowrap;">안정</span>
+                                <div style="font-size:0.8rem; color:#10b981; font-weight:600; white-space:nowrap;">합격 가능성이 높습니다.</div>
+                            </div>
                         </div>
-                        <div style="display:flex; justify-content:space-between; font-weight:bold;"><span style="color:#64748b">환산점수</span> <span style="color:#10b981; font-size:1.2rem;">152.4점</span></div>
+                        <div class="analysis-body" style="display:flex; flex-direction:column; gap:20px;">
+                            <div class="score-section">
+                                <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
+                                    <span style="font-size:0.95rem; color:#475569; font-weight:600;">AI 환산 진단점수</span>
+                                    <span style="color: #10b981; font-weight: 800; font-size: 1.5rem;">152.4<span style="font-size:1rem; font-weight:normal; margin-left:2px; color:#64748b;">점</span></span>
+                                </div>
+                                <div class="score-bar-container">
+                                    <div class="score-bar-bg">
+                                        <div style="position:absolute; left:40%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
+                                        <div style="position:absolute; left:60%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
+                                        <div class="score-bar-fill" style="width: 70%; background: #10b981;"></div>
+                                    </div>
+                                    <div class="score-labels">
+                                        <span class="label-min">0</span>
+                                        <span class="label-pass">합격<span class="m-line">(100)</span></span>
+                                        <span class="label-stable">안정<span class="m-line">(150)</span></span>
+                                        <span class="label-max">MAX<span class="m-line">(250)</span></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>`;
-            } else if (step === 1) {
+            } else if (step === 1) { // 2. 시뮬레이션 더미 데이터
                 const simArea = document.querySelector('#sol-sim .sim-container-new');
                 if(simArea) simArea.innerHTML = `
-                    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:20px; text-align:center;">
-                        <div style="font-size:1.5rem; color:#2563EB; font-weight:900; margin-bottom:10px;">수학 (+1점) 상승 시</div>
-                        <div style="color:#475569; margin-bottom:20px;">합격 확률이 <strong style="color:#ef4444;">45%</strong> 대폭 상승합니다!</div>
-                        <div style="height:120px; display:flex; justify-content:center; align-items:flex-end; gap:20px; border-bottom:2px solid #cbd5e1;">
-                            <div style="width:40px; height:60px; background:#cbd5e1; border-radius:6px 6px 0 0;"></div>
-                            <div style="width:40px; height:100px; background:#2563EB; border-radius:6px 6px 0 0; position:relative;"><span style="position:absolute; top:-25px; left:-10px; background:#ef4444; color:white; font-size:0.7rem; padding:2px 6px; border-radius:10px; font-weight:bold; white-space:nowrap;">합격권 진입!</span></div>
+                    <div class="sim-result-card" style="display:block; height:auto; margin-top:20px;">
+                        <div class="sim-card-header" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:15px; border-bottom:1px solid #f1f5f9; padding-bottom:15px; margin-bottom:20px;">
+                            <div style="flex:1 1 60%; min-width:200px;">
+                                <span class="sim-univ-title" style="display:block; font-size:1.2rem; font-weight:800; color:#1e293b; line-height:1.3; margin-bottom:4px; word-break:keep-all;">고려대학교</span>
+                                <span class="sim-univ-dept" style="display:block; font-size:0.95rem; color:#64748b; line-height:1.3;">컴퓨터학과</span>
+                            </div>
+                            <div class="sim-score-change" style="flex:0 0 auto; text-align:right;">
+                                <span class="score-badge" style="display:inline-block; background:#f1f5f9; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:600; color:#64748b; margin-bottom:5px;">현재: 안정권</span>
+                                <span class="score-diff" style="display:block; font-size:1.4rem; font-weight:800; color:#2563EB;">152점</span>
+                            </div>
+                        </div>
+                        <div class="sim-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:15px;">
+                            <div class="sim-item best-pick" style="display:flex; flex-direction:column; justify-content:flex-start; height:100%;">
+                                <div class="sim-item-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:8px;">
+                                    <span style="flex:1; min-width:0; font-weight:700; color:#334155; line-height:1.3; word-break:keep-all;">수학 (+1점)</span>
+                                    <span style="flex-shrink:0; color:#ef4444; font-weight:700;">+3.2점</span>
+                                </div>
+                                <div class="sim-item-body" style="flex:1;">
+                                    <div style="font-size:0.9rem; color:#475569; line-height:1.5; margin-bottom:4px;"><strong>가장 합격 상승에 유리합니다.</strong></div>
+                                    <div style="font-size:0.75rem; color:#94a3b8;">(실점수 +3.20점)</div>
+                                </div>
+                            </div>
+                            <div class="sim-item" style="display:flex; flex-direction:column; justify-content:flex-start; height:100%;">
+                                <div class="sim-item-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:8px;">
+                                    <span style="flex:1; min-width:0; font-weight:700; color:#334155; line-height:1.3; word-break:keep-all;">국어 (+1점)</span>
+                                    <span style="flex-shrink:0; color:#ef4444; font-weight:700;">+1.1점</span>
+                                </div>
+                                <div class="sim-item-body" style="flex:1;">
+                                    <div style="font-size:0.9rem; color:#475569; line-height:1.5; margin-bottom:4px;">점수 상승으로 합격 가능성이 높아집니다.</div>
+                                    <div style="font-size:0.75rem; color:#94a3b8;">(실점수 +1.10점)</div>
+                                </div>
+                            </div>
                         </div>
                     </div>`;
-            } else if (step === 2) {
+            } else if (step === 2) { // 3. 플래너 코칭 더미 데이터
                 const coachArea = document.querySelector('#sol-coach .coach-container');
                 if(coachArea) coachArea.innerHTML = `
                     <div class="coach-box" style="border-left: 4px solid #8b5cf6;">
-                        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                            <h3 style="margin:0; font-size:1.1rem;">💌 주간학습 피드백 도착</h3>
-                            <span style="background:#dcfce7; color:#166534; padding:4px 10px; border-radius:20px; font-size:0.8rem; font-weight:bold;">열람 가능</span>
+                        <div class="box-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <h3 style="margin:0; font-size:1.1rem; font-weight:bold; color:#1e293b;">💌 주간학습 피드백 도착</h3>
+                            <span class="badge-status submitted" style="background:#dcfce7; color:#166534; padding:4px 10px; border-radius:20px; font-size:0.8rem; font-weight:bold; border:1px solid #86efac;">열람 가능</span>
                         </div>
-                        <p style="color:#475569; font-size:0.9rem; margin-bottom:15px;">SKY 출신 컨설턴트가 이번 주 플래너를 꼼꼼히 분석했습니다.</p>
-                        <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; color:#334155; font-size:0.9rem;">
+                        <p style="color:#475569; font-size:0.9rem; margin-bottom:15px; line-height:1.5;">SKY 출신 컨설턴트가 이번 주 플래너를 꼼꼼히 분석했습니다.</p>
+                        <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; color:#334155; font-size:0.9rem; font-weight:600;">
                             "수학 기출 분석 2회독은 잘 지켜졌으나, 탐구 과목 투자 시간이 상대적으로 부족합니다. 다음 주에는 탐구 비율을 15% 늘려보세요..."
                         </div>
                     </div>`;
-            } else if (step === 3) {
+            } else if (step === 3) { // 4. PRO 더미 데이터
                 const proArea = document.getElementById('sol-pro');
                 if(proArea) proArea.innerHTML = `
                     <div class="pro-theme" style="padding:30px;">
                         <div style="text-align:center; margin-bottom:20px;">
                             <span style="background:#3b82f6; color:white; padding:4px 12px; border-radius:20px; font-size:0.8rem; font-weight:bold;">PRO EXCLUSIVE</span>
-                            <h2 style="margin:10px 0; font-size:1.6rem; color:white;">프리미엄 전략 리포트</h2>
+                            <h2 style="margin:10px 0; font-size:1.6rem; color:white; font-weight:800;">프리미엄 전략 리포트</h2>
                         </div>
                         <div style="background:rgba(255,255,255,0.1); border-radius:12px; padding:20px; display:flex; justify-content:space-between; align-items:center;">
                             <div><strong style="color:white; display:block; font-size:1.1rem; margin-bottom:5px;">2026년 3월 2주차 분석</strong><span style="color:#93c5fd; font-size:0.9rem;">발행 완료 (클릭하여 열람)</span></div>
