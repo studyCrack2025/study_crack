@@ -564,12 +564,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cloneBtn = document.createElement('div');
                 cloneBtn.className = 'tutorial-clone-btn';
                 cloneBtn.innerText = targetBtn.innerText;
-                
-                // 위치 및 크기 세팅
-                cloneBtn.style.top = `${rect.top - 6}px`; 
-                cloneBtn.style.left = `${rect.left - 12}px`; 
-                cloneBtn.style.width = `${rect.width + 24}px`; 
-                cloneBtn.style.height = `${rect.height + 12}px`; 
+
+                cloneBtn.style.top = `${rect.top}px`; 
+                cloneBtn.style.left = `${rect.left}px`; 
+                cloneBtn.style.width = `${rect.width}px`; 
+                cloneBtn.style.height = `${rect.height}px`; 
                 
                 overlay.appendChild(cloneBtn);
 

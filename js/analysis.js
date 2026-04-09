@@ -1042,6 +1042,8 @@ async function updateAnalysisUI() {
         });
         const data = await res.json();
         
+        const results = Array.isArray(data) ? data : (data.results || data.data || []);
+        
         if (results.length === 0) {
             cardsContainer.innerHTML = `<div style="text-align:center; padding:40px;">분석 가능한 결과가 없습니다.</div>`;
         } else {
