@@ -535,7 +535,6 @@ async function saveQuantitative() {
     const inq2Name = getVal('inq2Name');
 
     const currentData = {
-        // 🎯 서버에서 요구했던 raw(원점수) 데이터도 정상적으로 담겨서 날아갑니다.
         kor: { opt: korOpt, raw: getVal('korRaw'), std: getVal('korStd'), pct: getVal('korPct'), grd: getVal('korGrd') },
         math: { opt: mathOpt, raw: getVal('mathRaw'), std: getVal('mathStd'), pct: getVal('mathPct'), grd: getVal('mathGrd') },
         eng: { grd: getVal('engGrd') }, 
@@ -553,8 +552,19 @@ async function saveQuantitative() {
             body: JSON.stringify({ type: 'update_quan', data: examScores })
         });
         
-        alert("성적 데이터가 저장되었습니다.\n(지원 가능 전형이 자동 계산되었습니다)\n\n솔루션 페이지로 이동합니다.");
-        window.location.href = '/analysis';
+        // 💡 [수정] 튜토리얼 여부에 따라 알림 메시지와 이동 경로 분기
+        if (localStorage.getItem('pending_tutorial') === 'true') {
+            alert("성적 데이터가 저장되었습니다.\n메인 페이지로 이동하여 튜토리얼을 완료해주세요!");
+            localStorage.setItem('pending_tutorial', 'step3');
+            
+            // 정상적인 페이지 이동이므로 이탈 경고 무시 처리
+            window.removeEventListener('beforeunload', warnTutorialExit); 
+            
+            window.location.href = '/'; // 튜토리얼일 땐 메인 페이지로 이동
+        } else {
+            alert("성적 데이터가 저장되었습니다.\n(지원 가능 전형이 자동 계산되었습니다)\n\n솔루션 페이지로 이동합니다.");
+            window.location.href = '/analysis'; // 일반 상황일 땐 analysis로 이동
+        }
         
     } catch (e) { 
         if (e.message !== "Auth expired") alert("저장 실패"); 
