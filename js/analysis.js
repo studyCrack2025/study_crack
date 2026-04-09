@@ -328,26 +328,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 nextBtn.addEventListener('click', () => { tutStep++; updateStep(); });
 
                 skipBtn.addEventListener('click', () => {
-                    // 건너뛰기 재확인
+                    // 💡 튜토리얼 1~3단계일 때는 진짜 나갈 건지 물어보기
                     if (tutStep < 3) {
                         if (!confirm("정말로 튜토리얼을 그만 하시겠습니까?")) return;
                     }
                     
                     localStorage.removeItem('pending_tutorial');
                     window.removeEventListener('beforeunload', warnTutorialExit);
-                    window.removeEventListener('resize', updatePositions); // 리사이즈 이벤트 해제
                     document.body.classList.remove('tutorial-lock');
+
                     overlay.classList.add('hidden');
+                    if (tooltip) tooltip.style.display = 'none';
+                    const bottomBar = document.querySelector('.tutorial-bottom-bar');
+                    if (bottomBar) bottomBar.style.display = 'none';
+                    
                     cloneContainer.remove();
                     
-                    if (tooltip) tooltip.remove();
-                    if (bottomBar) bottomBar.remove();
+                    // 더미 데이터 초기화를 위해 페이지 새로고침 대신 원본 데이터 다시 불러오기
+                    document.querySelectorAll('.sol-content').forEach(c => c.classList.remove('tutorial-focus-content'));
+                    openSolution('univ'); // 원상복구
                     
                     if (tutStep === 3) {
                         document.getElementById('tutorialCompleteModal').classList.remove('hidden');
                         document.getElementById('tutorialCompleteModal').style.display = 'flex';
                     } else {
-                        location.reload(); 
+                        location.reload();
                     }
                 });
 
