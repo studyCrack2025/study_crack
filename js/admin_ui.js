@@ -260,9 +260,6 @@ function renderProductChart(productMap, total) {
 // ============================================================
 // [C] 학생 관리 로직
 // ============================================================
-// ============================================================
-// [C] 학생 관리 로직
-// ============================================================
 async function searchStudents() {
     const adminId = localStorage.getItem('userId');
     const type = document.getElementById('searchType').value; 
@@ -279,6 +276,8 @@ async function searchStudents() {
         
         const rawData = await response.json();
         let students = Array.isArray(rawData) ? rawData : (rawData.students || []);
+        
+        // 💡 [필터링 1] 유령 계정 및 관리자/튜터 제외
         students = students.filter(s => {
             if (s.role === 'admin' || s.role === 'tutor') return false;
 
@@ -291,16 +290,15 @@ async function searchStudents() {
             return true;
         });
 
-        // 💡 [추가됨] 대시보드의 '총 학생 수' 덮어쓰기 로직
-        // 기본 전체 조회 상태일 때만 유령 계정이 빠진 진짜 학생 수로 덮어씌움
-        if ((!type || type === 'all' || type === '전체') && !keyword) {
+        // 💡 [핵심 수정] 검색창이 비어있을 때(=초기 로드 등 전체 조회 시) 무조건 총 학생 수 업데이트!
+        if (keyword.trim() === "") {
             const totalStudentsEl = document.getElementById('totalStudents');
             if (totalStudentsEl) {
                 totalStudentsEl.innerText = `${students.length}명`;
             }
         }
         
-        // 분리된 구독 정보(currentSubscription)를 기준으로 필터링 적용
+        // 💡 [필터링 2] 이후 구독 상태(paid/unpaid) 필터링 진행
         if (students.length > 0) {
             if (type === 'paid') {
                 students = students.filter(s => s.currentSubscription && s.currentSubscription.status === 'active');
