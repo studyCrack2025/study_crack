@@ -277,7 +277,18 @@ async function searchStudents() {
         
         const rawData = await response.json();
         let students = Array.isArray(rawData) ? rawData : (rawData.students || []);
-        students = students.filter(s => s.role !== 'admin' && s.role !== 'tutor');
+        students = students.filter(s => {
+            if (s.role === 'admin' || s.role === 'tutor') return false;
+
+            const uid = s.userid || "";
+            if (uid.startsWith("TEMP") || uid.startsWith("VERIFIED")) {
+                // createdAt 필드가 아예 없거나 빈 문자열인 경우 제외
+                if (!s.createdAt || String(s.createdAt).trim() === "") {
+                    return false;
+                }
+            }
+            return true;
+        });
         
         // 💡 [수정] 분리된 구독 정보(currentSubscription)를 기준으로 필터링 적용
         if (students.length > 0) {
