@@ -526,7 +526,6 @@ function loadExamData() {
     setVal('korElective', d.kor?.elective); 
     setVal('korRaw', d.kor?.raw); 
     setVal('korStd', d.kor?.std); setVal('korPct', d.kor?.pct); setVal('korGrd', d.kor?.grd);
-    document.getElementById('korTotalDisp').innerText = (d.kor?.common !== undefined || d.kor?.elective !== undefined) ? `총점: ${d.kor?.raw || 0}점` : '';
     
     // 수학 세팅
     setVal('mathOpt', d.math?.opt || 'none');
@@ -534,7 +533,6 @@ function loadExamData() {
     setVal('mathElective', d.math?.elective); 
     setVal('mathRaw', d.math?.raw); 
     setVal('mathStd', d.math?.std); setVal('mathPct', d.math?.pct); setVal('mathGrd', d.math?.grd);
-    document.getElementById('mathTotalDisp').innerText = (d.math?.common !== undefined || d.math?.elective !== undefined) ? `총점: ${d.math?.raw || 0}점` : '';
     
     setVal('engGrd', d.eng?.grd); 
     setVal('histGrd', d.hist?.grd);
