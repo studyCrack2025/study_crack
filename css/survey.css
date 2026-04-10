@@ -61,21 +61,11 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #2563EB
 .score-table input:focus, .score-table select:focus { background: white; border-color: #2563EB; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
 .score-table select { text-align-last: center; cursor: pointer; }
 .disabled-cell { background-color: #f8fafc; background-image: linear-gradient(45deg, #f1f5f9 25%, transparent 25%, transparent 50%, #f1f5f9 50%, #f1f5f9 75%, transparent 75%, transparent); background-size: 10px 10px; }
-.split-input-group { display: flex; gap: 4px; justify-content: center; }
-.split-input-group input { width: 100%; min-width: 0; text-align: center; padding: 0 2px; }
-.total-disp { font-size: 0.8rem; color: #2563EB; font-weight: 700; margin-top: 6px; text-align: center; }
-
-@media (min-width: 769px) {
-    .score-table th:nth-child(1), .score-table td:nth-child(1) { width: 10%; }
-    .score-table th:nth-child(2), .score-table td:nth-child(2) { width: 26%; }
-    .score-table th:nth-child(3), .score-table td:nth-child(3) { width: 16%; }
-    .score-table th:nth-child(4), .score-table td:nth-child(4) { width: 16%; }
-    .score-table th:nth-child(5), .score-table td:nth-child(5) { width: 16%; }
-    .score-table th:nth-child(6), .score-table td:nth-child(6) { width: 16%; }
-    .score-table input, .score-table select { height: 42px; line-height: 42px; padding: 0; margin: 0; display: block; box-sizing: border-box; }
-}
 .score-table input[type="number"]::-webkit-outer-spin-button, .score-table input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .score-table input[type="number"] { -moz-appearance: textfield; }
+.score-table th.score-header-group { border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; }
+.score-table th.sub-header { background: #f8fafc; font-size: 0.85rem; padding: 8px; border-top: none; }
+.score-table td[colspan="2"] { padding-left: 8px !important; padding-right: 8px !important; }
 
 /* =========================================================
    5. 버튼 및 모달/약관 (Buttons & Modals)
@@ -134,7 +124,9 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #2563EB
     .score-table td:last-child { border-bottom: none !important; }
     .score-table td:first-child { background: #f8fafc; justify-content: center; font-size: 1.1rem; font-weight: 700; color: #1e293b; padding: 15px !important; border-bottom: 1px solid #e2e8f0 !important; }
     .score-table td:not(:first-child)::before { content: attr(data-label); font-weight: 600; color: #475569; font-size: 0.95rem; flex-shrink: 0; }
+    .score-table td[colspan="2"] { width: 100%; display: flex; box-sizing: border-box; }
     .score-table input, .score-table select { width: 100%; max-width: 140px; text-align: right; text-align-last: right; border: 1px solid #e2e8f0; background-color: #fff; border-radius: 6px; padding: 0 10px; height: 40px; box-sizing: border-box; }
     .score-table input.readonly-input { background-color: #f8fafc; border-color: transparent; color: #64748b; }
     .disabled-cell { display: none !important; }
+    .hide-mobile { display: none !important; }
 }

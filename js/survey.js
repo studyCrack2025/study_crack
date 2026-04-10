@@ -281,24 +281,10 @@ function handleScoreInput(el, maxVal, subject) {
         el.value = maxVal;
         val = maxVal;
     }
-    
-    const commonEl = document.getElementById(`${subject}Common`);
-    const electiveEl = document.getElementById(`${subject}Elective`);
-    
-    const commonVal = parseInt(commonEl.value) || 0;
-    const electiveVal = parseInt(electiveEl.value) || 0;
-    const total = commonVal + electiveVal;
-    
-    // 숨겨진 원점수 input에 합산값 세팅
-    document.getElementById(`${subject}Raw`).value = total;
-    
-    // UI에 총점 표시
-    const totalDisp = document.getElementById(`${subject}TotalDisp`);
-    if (commonEl.value || electiveEl.value) {
-        totalDisp.innerText = `총점: ${total}점`;
-    } else {
-        totalDisp.innerText = '';
-    }
+
+    const commonVal = parseInt(document.getElementById(`${subject}Common`).value) || 0;
+    const electiveVal = parseInt(document.getElementById(`${subject}Elective`).value) || 0;
+    document.getElementById(`${subject}Raw`).value = commonVal + electiveVal;
 }
 
 // === UI 설정 ===

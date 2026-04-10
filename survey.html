@@ -209,14 +209,27 @@
 
             <div class="table-responsive">
                 <table class="score-table">
+                    <colgroup>
+                        <col style="width: 9%;" class="col-hide-mobile">
+                        <col style="width: 22%;">
+                        <col style="width: 12.5%;">
+                        <col style="width: 12.5%;">
+                        <col style="width: 14.6%;">
+                        <col style="width: 14.6%;">
+                        <col style="width: 14.6%;">
+                    </colgroup>
                     <thead>
                         <tr>
-                            <th>과목</th>
-                            <th>선택과목</th>
-                            <th>원점수</th>
-                            <th>표준점수</th>
-                            <th>백분위</th>
-                            <th>등급</th>
+                            <th rowspan="2">과목</th>
+                            <th rowspan="2">선택과목</th>
+                            <th colspan="2" class="score-header-group">원점수</th>
+                            <th rowspan="2">표준점수</th>
+                            <th rowspan="2">백분위</th>
+                            <th rowspan="2">등급</th>
+                        </tr>
+                        <tr>
+                            <th class="sub-header">공통</th>
+                            <th class="sub-header">선택</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -229,13 +242,10 @@
                                     <option value="언매">언어와매체</option>
                                 </select>
                             </td>
-                            <td data-label="원점수">
-                                <div class="split-input-group">
-                                    <input type="number" id="korCommon" oninput="handleScoreInput(this, 76, 'kor')" onchange="requestScoreConversion('kor')" placeholder="공통(76)">
-                                    <input type="number" id="korElective" oninput="handleScoreInput(this, 24, 'kor')" onchange="requestScoreConversion('kor')" placeholder="선택(24)">
-                                </div>
+                            <td data-label="원점수 (공통)"><input type="number" id="korCommon" oninput="handleScoreInput(this, 76, 'kor')" onchange="requestScoreConversion('kor')" placeholder="입력(76)"></td>
+                            <td data-label="원점수 (선택)">
+                                <input type="number" id="korElective" oninput="handleScoreInput(this, 24, 'kor')" onchange="requestScoreConversion('kor')" placeholder="입력(24)">
                                 <input type="hidden" id="korRaw">
-                                <div id="korTotalDisp" class="total-disp"></div>
                             </td>
                             <td data-label="표준점수"><input type="number" id="korStd" readonly class="readonly-input"></td>
                             <td data-label="백분위"><input type="number" id="korPct" readonly class="readonly-input"></td>
@@ -252,13 +262,10 @@
                                     <option value="기하">기하</option>
                                 </select>
                             </td>
-                            <td data-label="원점수" style="margin-top: 10px;">
-                                <div class="split-input-group">
-                                    <input type="number" id="mathCommon" oninput="handleScoreInput(this, 74, 'math')" onchange="requestScoreConversion('math')" placeholder="공통(74)">
-                                    <input type="number" id="mathElective" oninput="handleScoreInput(this, 26, 'math')" onchange="requestScoreConversion('math')" placeholder="선택(26)">
-                                </div>
+                            <td data-label="원점수 (공통)"><input type="number" id="mathCommon" oninput="handleScoreInput(this, 74, 'math')" onchange="requestScoreConversion('math')" placeholder="입력(74)"></td>
+                            <td data-label="원점수 (선택)">
+                                <input type="number" id="mathElective" oninput="handleScoreInput(this, 26, 'math')" onchange="requestScoreConversion('math')" placeholder="입력(26)">
                                 <input type="hidden" id="mathRaw">
-                                <div id="mathTotalDisp" class="total-disp"></div>
                             </td>
                             <td data-label="표준점수"><input type="number" id="mathStd" readonly class="readonly-input"></td>
                             <td data-label="백분위"><input type="number" id="mathPct" readonly class="readonly-input"></td>
@@ -268,7 +275,7 @@
                         <tr>
                             <td data-label="과목">영어</td>
                             <td class="disabled-cell"></td>
-                            <td class="disabled-cell"></td>
+                            <td colspan="2" class="disabled-cell hide-mobile"></td>
                             <td class="disabled-cell"></td>
                             <td class="disabled-cell"></td>
                             <td data-label="등급"><input type="number" id="engGrd"></td>
@@ -277,7 +284,7 @@
                         <tr>
                             <td data-label="과목">한국사</td>
                             <td class="disabled-cell"></td>
-                            <td class="disabled-cell"></td>
+                            <td colspan="2" class="disabled-cell hide-mobile"></td>
                             <td class="disabled-cell"></td>
                             <td class="disabled-cell"></td>
                             <td data-label="등급"><input type="number" id="histGrd"></td>
@@ -288,30 +295,9 @@
                             <td data-label="선택과목">
                                 <select id="inq1Name" style="width: 100%;" onchange="requestScoreConversion('inq1')">
                                     <option value="">과목 선택</option>
-                                    <optgroup label="사회탐구">
-                                        <option value="생윤">생활과 윤리</option>
-                                        <option value="윤사">윤리와 사상</option>
-                                        <option value="한지">한국지리</option>
-                                        <option value="세지">세계지리</option>
-                                        <option value="동사">동아시아사</option>
-                                        <option value="세사">세계사</option>
-                                        <option value="경제">경제</option>
-                                        <option value="정법">정치와 법</option>
-                                        <option value="사문">사회·문화</option>
-                                    </optgroup>
-                                    <optgroup label="과학탐구">
-                                        <option value="물1">물리학Ⅰ</option>
-                                        <option value="화1">화학Ⅰ</option>
-                                        <option value="생1">생명과학Ⅰ</option>
-                                        <option value="지1">지구과학Ⅰ</option>
-                                        <!-- <option value="물2">물리학Ⅱ</option>
-                                        <option value="화2">화학Ⅱ</option>
-                                        <option value="생2">생명과학Ⅱ</option>
-                                        <option value="지2">지구과학Ⅱ</option> -->
-                                    </optgroup>
-                                </select>
+                                    </select>
                             </td>
-                            <td data-label="원점수"><input type="number" id="inq1Raw" onchange="requestScoreConversion('inq1')" placeholder="입력"></td>
+                            <td colspan="2" data-label="원점수"><input type="number" id="inq1Raw" onchange="requestScoreConversion('inq1')" placeholder="입력"></td>
                             <td data-label="표준점수"><input type="number" id="inq1Std" readonly class="readonly-input"></td>
                             <td data-label="백분위"><input type="number" id="inq1Pct" readonly class="readonly-input"></td>
                             <td data-label="등급"><input type="number" id="inq1Grd" readonly class="readonly-input"></td>
@@ -322,56 +308,13 @@
                             <td data-label="선택과목">
                                 <select id="inq2Name" style="width: 100%;" onchange="requestScoreConversion('inq2')">
                                     <option value="">과목 선택</option>
-                                    <optgroup label="사회탐구">
-                                        <option value="생윤">생활과 윤리</option>
-                                        <option value="윤사">윤리와 사상</option>
-                                        <option value="한지">한국지리</option>
-                                        <option value="세지">세계지리</option>
-                                        <option value="동사">동아시아사</option>
-                                        <option value="세사">세계사</option>
-                                        <option value="경제">경제</option>
-                                        <option value="정법">정치와 법</option>
-                                        <option value="사문">사회·문화</option>
-                                    </optgroup>
-                                    <optgroup label="과학탐구">
-                                        <option value="물1">물리학Ⅰ</option>
-                                        <option value="화1">화학Ⅰ</option>
-                                        <option value="생1">생명과학Ⅰ</option>
-                                        <option value="지1">지구과학Ⅰ</option>
-                                        <!-- <option value="물2">물리학Ⅱ</option>
-                                        <option value="화2">화학Ⅱ</option>
-                                        <option value="생2">생명과학Ⅱ</option>
-                                        <option value="지2">지구과학Ⅱ</option> -->
-                                    </optgroup>
-                                </select>
+                                    </select>
                             </td>
-                            <td data-label="원점수"><input type="number" id="inq2Raw" onchange="requestScoreConversion('inq2')" placeholder="입력"></td>
+                            <td colspan="2" data-label="원점수"><input type="number" id="inq2Raw" onchange="requestScoreConversion('inq2')" placeholder="입력"></td>
                             <td data-label="표준점수"><input type="number" id="inq2Std" readonly class="readonly-input"></td>
                             <td data-label="백분위"><input type="number" id="inq2Pct" readonly class="readonly-input"></td>
                             <td data-label="등급"><input type="number" id="inq2Grd" readonly class="readonly-input"></td>
                         </tr>
-
-                        <!-- <tr>
-                            <td data-label="과목">제2외</td>
-                            <td data-label="선택과목">
-                                <select id="foreignName" style="width: 100%;">
-                                    <option value="">응시 안함</option>
-                                    <option value="독일어Ⅰ">독일어Ⅰ</option>
-                                    <option value="프랑스어Ⅰ">프랑스어Ⅰ</option>
-                                    <option value="스페인어Ⅰ">스페인어Ⅰ</option>
-                                    <option value="중국어Ⅰ">중국어Ⅰ</option>
-                                    <option value="일본어Ⅰ">일본어Ⅰ</option>
-                                    <option value="러시아어Ⅰ">러시아어Ⅰ</option>
-                                    <option value="아랍어Ⅰ">아랍어Ⅰ</option>
-                                    <option value="베트남어Ⅰ">베트남어Ⅰ</option>
-                                    <option value="한문Ⅰ">한문Ⅰ</option>
-                                </select>
-                            </td>
-                            <td class="disabled-cell"></td>
-                            <td class="disabled-cell"></td>
-                            <td class="disabled-cell"></td>
-                            <td data-label="등급"><input type="number" id="foreignGrd" placeholder="등급"></td>
-                        </tr> -->
                     </tbody>
                 </table>
                 <p style="text-align: right; font-size: 0.85rem; color: #64748b; margin-top: 10px; margin-right: 15px;">* 공식 성적표 발표 후 업데이트 예정</p>
