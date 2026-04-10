@@ -96,15 +96,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (targetTab) openSolution(targetTab);         
     });
 
-    // 튜토리얼 4단계 (DOM 안쪽으로 안전하게 편입 & 모바일 스크롤 처리)
+    // 튜토리얼 4단계 (모바일 말풍선 가려짐 완벽 해결 및 기능보기 변환 로직)
     const pendingTutorial = localStorage.getItem('pending_tutorial');
     
     if (pendingTutorial === 'step3') {
-        // [방어] 브라우저 뒤로가기 / 이탈 경고
         const warnTutorialExit = (e) => {
             if (localStorage.getItem('pending_tutorial')) {
-                e.preventDefault(); 
-                e.returnValue = '정말 튜토리얼을 종료하시겠습니까?'; 
+                e.preventDefault(); e.returnValue = '정말 튜토리얼을 종료하시겠습니까?'; 
             }
         };
         window.addEventListener('beforeunload', warnTutorialExit);
@@ -112,12 +110,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.logo-link, .nav-btn').forEach(link => {
             link.addEventListener('click', (e) => {
                 if (localStorage.getItem('pending_tutorial')) {
-                    if (!confirm('현재 튜토리얼이 거의 끝났습니다!\n정말로 튜토리얼을 그만 하시겠습니까?')) {
-                        e.preventDefault(); 
-                    } else { 
+                    if (!confirm('현재 튜토리얼이 거의 끝났습니다!\n정말로 튜토리얼을 그만 하시겠습니까?')) e.preventDefault(); 
+                    else { 
                         localStorage.removeItem('pending_tutorial'); 
                         window.removeEventListener('beforeunload', warnTutorialExit); 
-                        // 잠금 해제 복구
                         document.body.classList.remove('tutorial-lock');
                         document.body.style.removeProperty('position');
                         document.body.style.removeProperty('width');
@@ -127,8 +123,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // 튜토리얼 제어 변수
         let tutStep = 0;
+        let isTooltipHidden = false; // 💡 [추가] 모바일 '기능보기' 상태 변수
+        let lockedScrollY = 0;
+        
         const msgEl = document.getElementById('tutorialMsg');
         const prevBtn = document.getElementById('tutPrevBtn');
         const nextBtn = document.getElementById('tutNextBtn');
@@ -136,14 +134,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const tutMsgs = [
             'Basic 등급 이상에서 사용 가능합니다. 현재 점수를 통해 각 대학에서 본인의 현재 위치를 알려줍니다.',
-            'Standard 등급 이상에서 사용 가능합니다. 현재 점수와 각 대학의 반영비를 통해 어떤 과목을 공부하는 것이 가장 효율적인지를 보여줍니다.',
+            'Standard 등급 이상에서 사용 가능합니다. 현재 점수와 각 대학의 반영비를 통해 어떤 과목을 공부하는 가장 효율적인지를 보여줍니다.',
             'Standard 등급 이상에서 사용 가능합니다. SKY 출신 선생님들이 목표대학 합격을 위해 매주 어떻게 공부를 해야하는지 플래너를 검토해줍니다.',
             'PRO 등급 이상에서 사용 가능합니다. 2주마다 목표 대학 합격률을 극대화하기 위한 중/장기적인 방향성을 제시하고, 그 과정에서 학생 개개인의 고민을 해결하고 요구에 최적화된 보고서를 제공합니다.'
         ];
         
         const tabKeys = ['univ', 'sim', 'coach', 'pro'];
 
-        // 더미 데이터 주입 함수
         const injectDummyData = (step) => {
             const contents = document.querySelectorAll('.sol-content');
             contents.forEach(c => c.classList.remove('tutorial-focus-content'));
@@ -153,100 +150,47 @@ document.addEventListener('DOMContentLoaded', () => {
             
             targetContent.classList.add('tutorial-focus-content');
 
-            if (step === 0) { // 1. 목표대학 더미 데이터
+            if (step === 0) {
                 const resArea = document.getElementById('univAnalysisResult');
                 if(resArea) resArea.innerHTML = `
-                    <div class="analysis-card" style="border-left-color: #10b981; display: flex; flex-direction: column; gap: 15px; margin-top:20px;">
-                        <div class="analysis-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; border-bottom:1px solid #f1f5f9; padding-bottom:15px;">
-                            <div style="flex: 1; min-width: 0;">
-                                <span style="color:#64748b; font-size:1.1rem; font-weight:800; display:block; margin-bottom:5px;">1지망</span>
-                                <h4 style="margin:0; font-size:1.2rem; color:#1e293b; letter-spacing:-0.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">고려대학교</h4>
-                                <div style="color:#64748b; font-size:0.95rem; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">컴퓨터학과</div>
-                            </div>
-                            <div style="text-align:right; flex-shrink: 0;">
-                                <span style="background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid #10b981; padding:6px 14px; border-radius:20px; font-size:0.9rem; font-weight:bold; display:inline-block; margin-bottom:5px; white-space:nowrap;">안정</span>
-                                <div style="font-size:0.8rem; color:#10b981; font-weight:600; white-space:nowrap;">합격 가능성이 높습니다.</div>
-                            </div>
+                    <div class="analysis-card" style="border-left-color: #10b981; margin-top:20px;">
+                        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f1f5f9; padding-bottom:10px; margin-bottom:15px;">
+                            <div><h4 style="margin:0; font-size:1.2rem;">고려대학교 <small style="color:#64748b;">컴퓨터학과</small></h4></div>
+                            <div><span style="background:#10b98115; color:#10b981; padding:6px 12px; border-radius:20px; font-weight:bold;">안정</span></div>
                         </div>
-                        <div class="analysis-body" style="display:flex; flex-direction:column; gap:20px;">
-                            <div class="score-section">
-                                <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
-                                    <span style="font-size:0.95rem; color:#475569; font-weight:600;">AI 환산 진단점수</span>
-                                    <span style="color: #10b981; font-weight: 800; font-size: 1.5rem;">152.4<span style="font-size:1rem; font-weight:normal; margin-left:2px; color:#64748b;">점</span></span>
-                                </div>
-                                <div class="score-bar-container">
-                                    <div class="score-bar-bg">
-                                        <div style="position:absolute; left:40%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
-                                        <div style="position:absolute; left:60%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
-                                        <div class="score-bar-fill" style="width: 70%; background: #10b981;"></div>
-                                    </div>
-                                    <div class="score-labels">
-                                        <span class="label-min">0</span>
-                                        <span class="label-pass">합격<span class="m-line">(100)</span></span>
-                                        <span class="label-stable">안정<span class="m-line">(150)</span></span>
-                                        <span class="label-max">MAX<span class="m-line">(250)</span></span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <div style="display:flex; justify-content:space-between; font-weight:bold;"><span style="color:#64748b">환산점수</span> <span style="color:#10b981; font-size:1.2rem;">152.4점</span></div>
                     </div>`;
-            } else if (step === 1) { // 2. 시뮬레이션 더미 데이터
+            } else if (step === 1) {
                 const simArea = document.querySelector('#sol-sim .sim-container-new');
                 if(simArea) simArea.innerHTML = `
-                    <div class="sim-result-card" style="display:block; height:auto; margin-top:20px;">
-                        <div class="sim-card-header" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:15px; border-bottom:1px solid #f1f5f9; padding-bottom:15px; margin-bottom:20px;">
-                            <div style="flex:1 1 60%; min-width:200px;">
-                                <span class="sim-univ-title" style="display:block; font-size:1.2rem; font-weight:800; color:#1e293b; line-height:1.3; margin-bottom:4px; word-break:keep-all;">고려대학교</span>
-                                <span class="sim-univ-dept" style="display:block; font-size:0.95rem; color:#64748b; line-height:1.3;">컴퓨터학과</span>
-                            </div>
-                            <div class="sim-score-change" style="flex:0 0 auto; text-align:right;">
-                                <span class="score-badge" style="display:inline-block; background:#f1f5f9; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:600; color:#64748b; margin-bottom:5px;">현재: 안정권</span>
-                                <span class="score-diff" style="display:block; font-size:1.4rem; font-weight:800; color:#2563EB;">152점</span>
-                            </div>
-                        </div>
-                        <div class="sim-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:15px;">
-                            <div class="sim-item best-pick" style="display:flex; flex-direction:column; justify-content:flex-start; height:100%;">
-                                <div class="sim-item-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:8px;">
-                                    <span style="flex:1; min-width:0; font-weight:700; color:#334155; line-height:1.3; word-break:keep-all;">수학 (+1점)</span>
-                                    <span style="flex-shrink:0; color:#ef4444; font-weight:700;">+3.2점</span>
-                                </div>
-                                <div class="sim-item-body" style="flex:1;">
-                                    <div style="font-size:0.9rem; color:#475569; line-height:1.5; margin-bottom:4px;"><strong>가장 합격 상승에 유리합니다.</strong></div>
-                                    <div style="font-size:0.75rem; color:#94a3b8;">(실점수 +3.20점)</div>
-                                </div>
-                            </div>
-                            <div class="sim-item" style="display:flex; flex-direction:column; justify-content:flex-start; height:100%;">
-                                <div class="sim-item-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:8px;">
-                                    <span style="flex:1; min-width:0; font-weight:700; color:#334155; line-height:1.3; word-break:keep-all;">국어 (+1점)</span>
-                                    <span style="flex-shrink:0; color:#ef4444; font-weight:700;">+1.1점</span>
-                                </div>
-                                <div class="sim-item-body" style="flex:1;">
-                                    <div style="font-size:0.9rem; color:#475569; line-height:1.5; margin-bottom:4px;">점수 상승으로 합격 가능성이 높아집니다.</div>
-                                    <div style="font-size:0.75rem; color:#94a3b8;">(실점수 +1.10점)</div>
-                                </div>
-                            </div>
+                    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:20px; text-align:center;">
+                        <div style="font-size:1.5rem; color:#2563EB; font-weight:900; margin-bottom:10px;">수학 (+1점) 상승 시</div>
+                        <div style="color:#475569; margin-bottom:20px;">합격 확률이 <strong style="color:#ef4444;">45%</strong> 대폭 상승합니다!</div>
+                        <div style="height:120px; display:flex; justify-content:center; align-items:flex-end; gap:20px; border-bottom:2px solid #cbd5e1;">
+                            <div style="width:40px; height:60px; background:#cbd5e1; border-radius:6px 6px 0 0;"></div>
+                            <div style="width:40px; height:100px; background:#2563EB; border-radius:6px 6px 0 0; position:relative;"><span style="position:absolute; top:-25px; left:-10px; background:#ef4444; color:white; font-size:0.7rem; padding:2px 6px; border-radius:10px; font-weight:bold; white-space:nowrap;">합격권 진입!</span></div>
                         </div>
                     </div>`;
-            } else if (step === 2) { // 3. 플래너 코칭 더미 데이터
+            } else if (step === 2) {
                 const coachArea = document.querySelector('#sol-coach .coach-container');
                 if(coachArea) coachArea.innerHTML = `
                     <div class="coach-box" style="border-left: 4px solid #8b5cf6;">
-                        <div class="box-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                            <h3 style="margin:0; font-size:1.1rem; font-weight:bold; color:#1e293b;">💌 주간학습 피드백 도착</h3>
-                            <span class="badge-status submitted" style="background:#dcfce7; color:#166534; padding:4px 10px; border-radius:20px; font-size:0.8rem; font-weight:bold; border:1px solid #86efac;">열람 가능</span>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                            <h3 style="margin:0; font-size:1.1rem;">💌 주간학습 피드백 도착</h3>
+                            <span style="background:#dcfce7; color:#166534; padding:4px 10px; border-radius:20px; font-size:0.8rem; font-weight:bold;">열람 가능</span>
                         </div>
-                        <p style="color:#475569; font-size:0.9rem; margin-bottom:15px; line-height:1.5;">SKY 출신 컨설턴트가 이번 주 플래너를 꼼꼼히 분석했습니다.</p>
-                        <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; color:#334155; font-size:0.9rem; font-weight:600;">
+                        <p style="color:#475569; font-size:0.9rem; margin-bottom:15px;">SKY 출신 컨설턴트가 이번 주 플래너를 꼼꼼히 분석했습니다.</p>
+                        <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; color:#334155; font-size:0.9rem;">
                             "수학 기출 분석 2회독은 잘 지켜졌으나, 탐구 과목 투자 시간이 상대적으로 부족합니다. 다음 주에는 탐구 비율을 15% 늘려보세요..."
                         </div>
                     </div>`;
-            } else if (step === 3) { // 4. PRO 더미 데이터
+            } else if (step === 3) {
                 const proArea = document.getElementById('sol-pro');
                 if(proArea) proArea.innerHTML = `
                     <div class="pro-theme" style="padding:30px;">
                         <div style="text-align:center; margin-bottom:20px;">
                             <span style="background:#3b82f6; color:white; padding:4px 12px; border-radius:20px; font-size:0.8rem; font-weight:bold;">PRO EXCLUSIVE</span>
-                            <h2 style="margin:10px 0; font-size:1.6rem; color:white; font-weight:800;">프리미엄 전략 리포트</h2>
+                            <h2 style="margin:10px 0; font-size:1.6rem; color:white;">프리미엄 전략 리포트</h2>
                         </div>
                         <div style="background:rgba(255,255,255,0.1); border-radius:12px; padding:20px; display:flex; justify-content:space-between; align-items:center;">
                             <div><strong style="color:white; display:block; font-size:1.1rem; margin-bottom:5px;">2026년 3월 2주차 분석</strong><span style="color:#93c5fd; font-size:0.9rem;">발행 완료 (클릭하여 열람)</span></div>
@@ -263,20 +207,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const tooltip = document.getElementById('tutorialTooltip');
             const bottomBar = document.querySelector('.tutorial-bottom-bar');
             
-            // 🚨 핵심: 말풍선과 하단바를 overlay 밖(body)으로 꺼내서 z-index 갇힘 현상 해결
             if (tooltip) { document.body.appendChild(tooltip); tooltip.style.zIndex = '10005'; }
             if (bottomBar) { document.body.appendChild(bottomBar); bottomBar.style.zIndex = '10005'; }
 
             if (menuEl && overlay && cloneContainer) {
-                // 1. 모바일 환경을 위해 탭 메뉴 위치로 자동 스크롤
                 const headerHeight = document.querySelector('header') ? document.querySelector('header').offsetHeight : 70;
                 const targetY = menuEl.getBoundingClientRect().top + window.pageYOffset - headerHeight - 15;
                 window.scrollTo(0, targetY);
 
-                // 2. 스크롤 이동 후 50ms 뒤에 화면 꽁꽁 잠금
                 setTimeout(() => {
-                    const lockedScrollY = window.pageYOffset || document.documentElement.scrollTop;
-                    // iOS에서도 스크롤이 절대 안 먹히도록 fixed 처리
+                    lockedScrollY = window.pageYOffset || document.documentElement.scrollTop;
                     document.body.classList.add('tutorial-lock');
                     document.body.style.position = 'fixed';
                     document.body.style.width = '100%';
@@ -292,12 +232,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     cloneContainer.appendChild(cloneMenu);
                     const cloneBtns = cloneContainer.querySelectorAll('.sol-btn');
                     
-                    // 🚨 핵심: 창 크기가 변할 때마다 클론 메뉴와 말풍선의 위치를 실시간으로 재계산
+                    // 🚨 핵심: 리사이즈 시 말풍선 박스는 고정하고, 화살표(--arrow-pos)만 동적으로 위치 변경
                     const updatePositions = () => {
                         if (localStorage.getItem('pending_tutorial') !== 'step3') return;
                         
                         const rect = menuEl.getBoundingClientRect();
-                        // fixed 상태이므로 스크롤 보정 불필요
                         cloneContainer.style.top = `${rect.top}px`;
                         cloneContainer.style.left = `${rect.left}px`;
                         cloneContainer.style.width = `${rect.width}px`;
@@ -305,8 +244,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         if (cloneBtns[tutStep] && tooltip) {
                             const btnRect = cloneBtns[tutStep].getBoundingClientRect();
-                            tooltip.style.top = `${btnRect.bottom + 15}px`;
-                            tooltip.style.left = `${Math.max(10, btnRect.left + (btnRect.width / 2))}px`;
+                            const isMobile = window.innerWidth <= 768;
+
+                            if (isMobile) {
+                                // 모바일: 툴팁 박스는 메뉴 바로 아래 한가운데 고정
+                                tooltip.style.top = `${rect.bottom + 15}px`;
+                                tooltip.style.left = `50%`;
+                                tooltip.style.transform = `translateX(-50%)`;
+                                
+                                // 모바일: 화살표를 현재 활성화된 탭의 정중앙에 오도록 내부 변수 계산
+                                const tooltipRect = tooltip.getBoundingClientRect();
+                                const arrowLocalX = btnRect.left + (btnRect.width / 2) - tooltipRect.left;
+                                tooltip.style.setProperty('--arrow-pos', `${arrowLocalX}px`);
+                            } else {
+                                // PC: 원래대로 툴팁 박스 자체가 활성 탭 아래를 따라다님
+                                tooltip.style.top = `${btnRect.bottom + 15}px`;
+                                tooltip.style.left = `${Math.max(10, btnRect.left + (btnRect.width / 2))}px`;
+                                tooltip.style.transform = `translateX(-50%)`;
+                                tooltip.style.setProperty('--arrow-pos', `50%`);
+                            }
                         }
                     };
                     window.addEventListener('resize', updatePositions);
@@ -325,36 +281,62 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         });
                         
-                        updatePositions(); // 탭이 바뀔 때마다 위치 재계산
+                        // 탭 이동 시 말풍선 다시 나타내기 (기능보기 해제)
+                        isTooltipHidden = false;
+                        tooltip.style.display = 'block';
+                        
+                        updatePositions(); 
                         
                         msgEl.innerText = tutMsgs[tutStep];
                         prevBtn.style.display = tutStep > 0 ? 'block' : 'none';
                         
-                        if (tutStep === 3) {
-                            nextBtn.style.display = 'none'; 
-                            skipBtn.innerText = '튜토리얼 완료하기'; 
-                            skipBtn.classList.add('highlight-border');
-                        } else {
+                        const isMobile = window.innerWidth <= 768;
+                        
+                        if (isMobile) {
+                            // 모바일일 땐 항상 '기능보기'로 표시
                             nextBtn.style.display = 'block';
+                            nextBtn.innerText = '기능보기';
                             skipBtn.innerText = '튜토리얼 건너뛰기';
                             skipBtn.classList.remove('highlight-border');
+                        } else {
+                            if (tutStep === 3) {
+                                nextBtn.style.display = 'none'; 
+                                skipBtn.innerText = '튜토리얼 완료하기'; 
+                                skipBtn.classList.add('highlight-border');
+                            } else {
+                                nextBtn.style.display = 'block';
+                                nextBtn.innerText = '다음';
+                                skipBtn.innerText = '튜토리얼 건너뛰기';
+                                skipBtn.classList.remove('highlight-border');
+                            }
                         }
                     };
 
                     prevBtn.addEventListener('click', () => { tutStep--; updateStep(); });
-                    nextBtn.addEventListener('click', () => { tutStep++; updateStep(); });
-
-                    skipBtn.addEventListener('click', () => {
-                        // 💡 튜토리얼 1~3단계일 때는 진짜 나갈 건지 묻기
-                        if (tutStep < 3) {
-                            if (!confirm("정말로 튜토리얼을 그만 하시겠습니까?")) return;
+                    
+                    nextBtn.addEventListener('click', () => { 
+                        const isMobile = window.innerWidth <= 768;
+                        if (isMobile) {
+                            // 모바일에서 '기능보기' 클릭 시
+                            isTooltipHidden = true;
+                            tooltip.style.display = 'none';
+                            skipBtn.classList.add('highlight-border');
+                            if (tutStep === 3) {
+                                skipBtn.innerText = '튜토리얼 완료하기';
+                            } else {
+                                skipBtn.innerText = '다음';
+                            }
+                        } else {
+                            tutStep++; updateStep(); 
                         }
-                        
+                    });
+
+                    // 💡 [수정] 건너뛰기, 다음(모바일), 완료(모바일) 기능을 모두 통제
+                    const finishTutorialAction = (showModal) => {
                         localStorage.removeItem('pending_tutorial');
                         window.removeEventListener('beforeunload', warnTutorialExit);
                         window.removeEventListener('resize', updatePositions);
                         
-                        // 💡 스크롤 잠금 완전 해제 및 원래 스크롤 위치 복구
                         document.body.classList.remove('tutorial-lock');
                         document.body.style.removeProperty('position');
                         document.body.style.removeProperty('width');
@@ -363,25 +345,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         overlay.classList.add('hidden');
                         if (tooltip) tooltip.style.display = 'none';
-                        const bottomBar = document.querySelector('.tutorial-bottom-bar');
                         if (bottomBar) bottomBar.style.display = 'none';
-                        
                         cloneContainer.remove();
                         
-                        // 더미 데이터 초기화를 위해 페이지 새로고침 대신 원본 데이터 다시 불러오기
                         document.querySelectorAll('.sol-content').forEach(c => c.classList.remove('tutorial-focus-content'));
-                        openSolution('univ'); // 원상복구
+                        openSolution('univ'); 
                         
-                        if (tutStep === 3) {
+                        if (showModal) {
                             document.getElementById('tutorialCompleteModal').classList.remove('hidden');
                             document.getElementById('tutorialCompleteModal').style.display = 'flex';
                         } else {
                             location.reload(); 
                         }
+                    };
+
+                    skipBtn.addEventListener('click', () => {
+                        const isMobile = window.innerWidth <= 768;
+                        
+                        // 모바일에서 '기능보기'로 말풍선이 숨겨진 상태라면 하단 버튼은 '다음' 또는 '완료'로 작동
+                        if (isMobile && isTooltipHidden) {
+                            if (tutStep === 3) {
+                                finishTutorialAction(true); // 튜토리얼 끝
+                            } else {
+                                tutStep++;
+                                updateStep(); // 다음 탭으로 이동
+                            }
+                            return;
+                        }
+
+                        // 일반적인 '건너뛰기' 상태일 때
+                        if (tutStep < 3) {
+                            if (!confirm("정말로 튜토리얼을 그만 하시겠습니까?")) return;
+                        }
+                        finishTutorialAction(tutStep === 3);
                     });
 
                     updateStep(); 
-                }, 50); // 스크롤 직후 50ms 대기
+                }, 50); 
             }
         }, 500); 
     }
