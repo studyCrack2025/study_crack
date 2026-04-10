@@ -96,12 +96,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (targetTab) openSolution(targetTab);         
     });
 
-    // 튜토리얼 4단계 (DOM 안쪽으로 안전하게 편입 & 건너뛰기 경고 추가)
+    // 튜토리얼 4단계 (DOM 안쪽으로 안전하게 편입 & 모바일 스크롤 처리)
     const pendingTutorial = localStorage.getItem('pending_tutorial');
     
-    if (pendingTutorial === 'true' || pendingTutorial === 'step3') {
-        document.body.classList.add('tutorial-lock'); // 전체 클릭, 스크롤 잠금
-
+    if (pendingTutorial === 'step3') {
         // [방어] 브라우저 뒤로가기 / 이탈 경고
         const warnTutorialExit = (e) => {
             if (localStorage.getItem('pending_tutorial')) {
@@ -119,7 +117,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else { 
                         localStorage.removeItem('pending_tutorial'); 
                         window.removeEventListener('beforeunload', warnTutorialExit); 
-                        document.body.classList.remove('tutorial-lock'); 
+                        // 잠금 해제 복구
+                        document.body.classList.remove('tutorial-lock');
+                        document.body.style.removeProperty('position');
+                        document.body.style.removeProperty('width');
+                        document.body.style.removeProperty('top');
                     }
                 }
             });
@@ -254,11 +256,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // 다단계 UI 로직 실행 (Resize 갱신 및 Z-index 가려짐 해결)
         setTimeout(() => {
+            const menuEl = document.querySelector('.solution-menu');
             const overlay = document.getElementById('tutorialOverlay');
             const cloneContainer = document.getElementById('tutorialCloneContainer');
-            const menuEl = document.querySelector('.solution-menu');
             const tooltip = document.getElementById('tutorialTooltip');
             const bottomBar = document.querySelector('.tutorial-bottom-bar');
             
@@ -267,98 +268,122 @@ document.addEventListener('DOMContentLoaded', () => {
             if (bottomBar) { document.body.appendChild(bottomBar); bottomBar.style.zIndex = '10005'; }
 
             if (menuEl && overlay && cloneContainer) {
-                overlay.classList.remove('hidden');
-                
-                const cloneMenu = menuEl.cloneNode(true);
-                cloneMenu.querySelectorAll('.sol-btn').forEach(btn => { 
-                    btn.removeAttribute('onclick'); 
-                    btn.style.pointerEvents = 'none';
-                });
-                cloneContainer.appendChild(cloneMenu);
-                const cloneBtns = cloneContainer.querySelectorAll('.sol-btn');
-                
-                // 🚨 핵심: 창 크기가 변할 때마다 클론 메뉴와 말풍선의 위치를 실시간으로 재계산
-                const updatePositions = () => {
-                    if (localStorage.getItem('pending_tutorial') !== 'step3') return;
-                    const rect = menuEl.getBoundingClientRect();
-                    cloneContainer.style.top = `${rect.top}px`;
-                    cloneContainer.style.left = `${rect.left}px`;
-                    cloneContainer.style.width = `${rect.width}px`;
-                    cloneContainer.style.height = `${rect.height}px`;
+                // 1. 모바일 환경을 위해 탭 메뉴 위치로 자동 스크롤
+                const headerHeight = document.querySelector('header') ? document.querySelector('header').offsetHeight : 70;
+                const targetY = menuEl.getBoundingClientRect().top + window.pageYOffset - headerHeight - 15;
+                window.scrollTo(0, targetY);
 
-                    if (cloneBtns[tutStep] && tooltip) {
-                        const btnRect = cloneBtns[tutStep].getBoundingClientRect();
-                        tooltip.style.top = `${btnRect.bottom + 15}px`;
-                        tooltip.style.left = `${Math.max(10, btnRect.left + (btnRect.width / 2))}px`;
-                    }
-                };
-                window.addEventListener('resize', updatePositions);
+                // 2. 스크롤 이동 후 50ms 뒤에 화면 꽁꽁 잠금
+                setTimeout(() => {
+                    const lockedScrollY = window.pageYOffset || document.documentElement.scrollTop;
+                    // iOS에서도 스크롤이 절대 안 먹히도록 fixed 처리
+                    document.body.classList.add('tutorial-lock');
+                    document.body.style.position = 'fixed';
+                    document.body.style.width = '100%';
+                    document.body.style.top = `-${lockedScrollY}px`;
 
-                const updateStep = () => {
-                    openSolution(tabKeys[tutStep]); 
-                    injectDummyData(tutStep); 
+                    overlay.classList.remove('hidden');
+                    
+                    const cloneMenu = menuEl.cloneNode(true);
+                    cloneMenu.querySelectorAll('.sol-btn').forEach(btn => { 
+                        btn.removeAttribute('onclick'); 
+                        btn.style.pointerEvents = 'none';
+                    });
+                    cloneContainer.appendChild(cloneMenu);
+                    const cloneBtns = cloneContainer.querySelectorAll('.sol-btn');
+                    
+                    // 🚨 핵심: 창 크기가 변할 때마다 클론 메뉴와 말풍선의 위치를 실시간으로 재계산
+                    const updatePositions = () => {
+                        if (localStorage.getItem('pending_tutorial') !== 'step3') return;
+                        
+                        const rect = menuEl.getBoundingClientRect();
+                        // fixed 상태이므로 스크롤 보정 불필요
+                        cloneContainer.style.top = `${rect.top}px`;
+                        cloneContainer.style.left = `${rect.left}px`;
+                        cloneContainer.style.width = `${rect.width}px`;
+                        cloneContainer.style.height = `${rect.height}px`;
 
-                    cloneBtns.forEach((btn, idx) => {
-                        if (idx === tutStep) {
-                            btn.classList.add('active');
-                            btn.style.opacity = '1';
+                        if (cloneBtns[tutStep] && tooltip) {
+                            const btnRect = cloneBtns[tutStep].getBoundingClientRect();
+                            tooltip.style.top = `${btnRect.bottom + 15}px`;
+                            tooltip.style.left = `${Math.max(10, btnRect.left + (btnRect.width / 2))}px`;
+                        }
+                    };
+                    window.addEventListener('resize', updatePositions);
+
+                    const updateStep = () => {
+                        openSolution(tabKeys[tutStep]); 
+                        injectDummyData(tutStep); 
+
+                        cloneBtns.forEach((btn, idx) => {
+                            if (idx === tutStep) {
+                                btn.classList.add('active');
+                                btn.style.opacity = '1';
+                            } else {
+                                btn.classList.remove('active');
+                                btn.style.opacity = '0.4';
+                            }
+                        });
+                        
+                        updatePositions(); // 탭이 바뀔 때마다 위치 재계산
+                        
+                        msgEl.innerText = tutMsgs[tutStep];
+                        prevBtn.style.display = tutStep > 0 ? 'block' : 'none';
+                        
+                        if (tutStep === 3) {
+                            nextBtn.style.display = 'none'; 
+                            skipBtn.innerText = '튜토리얼 완료하기'; 
+                            skipBtn.classList.add('highlight-border');
                         } else {
-                            btn.classList.remove('active');
-                            btn.style.opacity = '0.4';
+                            nextBtn.style.display = 'block';
+                            skipBtn.innerText = '튜토리얼 건너뛰기';
+                            skipBtn.classList.remove('highlight-border');
+                        }
+                    };
+
+                    prevBtn.addEventListener('click', () => { tutStep--; updateStep(); });
+                    nextBtn.addEventListener('click', () => { tutStep++; updateStep(); });
+
+                    skipBtn.addEventListener('click', () => {
+                        // 💡 튜토리얼 1~3단계일 때는 진짜 나갈 건지 묻기
+                        if (tutStep < 3) {
+                            if (!confirm("정말로 튜토리얼을 그만 하시겠습니까?")) return;
+                        }
+                        
+                        localStorage.removeItem('pending_tutorial');
+                        window.removeEventListener('beforeunload', warnTutorialExit);
+                        window.removeEventListener('resize', updatePositions);
+                        
+                        // 💡 스크롤 잠금 완전 해제 및 원래 스크롤 위치 복구
+                        document.body.classList.remove('tutorial-lock');
+                        document.body.style.removeProperty('position');
+                        document.body.style.removeProperty('width');
+                        document.body.style.removeProperty('top');
+                        window.scrollTo(0, lockedScrollY);
+
+                        overlay.classList.add('hidden');
+                        if (tooltip) tooltip.style.display = 'none';
+                        const bottomBar = document.querySelector('.tutorial-bottom-bar');
+                        if (bottomBar) bottomBar.style.display = 'none';
+                        
+                        cloneContainer.remove();
+                        
+                        // 더미 데이터 초기화를 위해 페이지 새로고침 대신 원본 데이터 다시 불러오기
+                        document.querySelectorAll('.sol-content').forEach(c => c.classList.remove('tutorial-focus-content'));
+                        openSolution('univ'); // 원상복구
+                        
+                        if (tutStep === 3) {
+                            document.getElementById('tutorialCompleteModal').classList.remove('hidden');
+                            document.getElementById('tutorialCompleteModal').style.display = 'flex';
+                        } else {
+                            location.reload(); 
                         }
                     });
-                    
-                    updatePositions(); // 탭이 바뀔 때마다 위치 재계산
-                    
-                    msgEl.innerText = tutMsgs[tutStep];
-                    prevBtn.style.display = tutStep > 0 ? 'block' : 'none';
-                    
-                    if (tutStep === 3) {
-                        nextBtn.style.display = 'none'; 
-                        skipBtn.innerText = '튜토리얼 완료하기'; 
-                        skipBtn.classList.add('highlight-border');
-                    } else {
-                        nextBtn.style.display = 'block';
-                        skipBtn.innerText = '튜토리얼 건너뛰기';
-                        skipBtn.classList.remove('highlight-border');
-                    }
-                };
 
-                prevBtn.addEventListener('click', () => { tutStep--; updateStep(); });
-                nextBtn.addEventListener('click', () => { tutStep++; updateStep(); });
-
-                skipBtn.addEventListener('click', () => {
-                    // 💡 튜토리얼 1~3단계일 때는 진짜 나갈 건지 물어보기
-                    if (tutStep < 3) {
-                        if (!confirm("정말로 튜토리얼을 그만 하시겠습니까?")) return;
-                    }
-                    
-                    localStorage.removeItem('pending_tutorial');
-                    window.removeEventListener('beforeunload', warnTutorialExit);
-                    document.body.classList.remove('tutorial-lock');
-
-                    overlay.classList.add('hidden');
-                    if (tooltip) tooltip.style.display = 'none';
-                    const bottomBar = document.querySelector('.tutorial-bottom-bar');
-                    if (bottomBar) bottomBar.style.display = 'none';
-                    
-                    cloneContainer.remove();
-                    
-                    // 더미 데이터 초기화를 위해 페이지 새로고침 대신 원본 데이터 다시 불러오기
-                    document.querySelectorAll('.sol-content').forEach(c => c.classList.remove('tutorial-focus-content'));
-                    openSolution('univ'); // 원상복구
-                    
-                    if (tutStep === 3) {
-                        document.getElementById('tutorialCompleteModal').classList.remove('hidden');
-                        document.getElementById('tutorialCompleteModal').style.display = 'flex';
-                    } else {
-                        location.reload();
-                    }
-                });
-
-                updateStep(); 
+                    updateStep(); 
+                }, 50); // 스크롤 직후 50ms 대기
             }
-        }, 500);
+        }, 500); 
     }
 });
 
