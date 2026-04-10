@@ -308,7 +308,7 @@ function formatPhoneNumber(rawPhone) {
 // 티어별 결제 금액 (서버 사이드 TIER_PRICES 와 동일하게 유지)
 const TIER_PRICES_KRW = { 'test': 100, 'trial': 30000, 'basic': 25000, 'standard': 149000, 'pro': 299000 };
 
-// NicePay JS SDK 결제창 호출
+// NicePay JS SDK 결제창 호출 (카드 결제 로직 복구 완료)
 function processPayment() {
     const name = document.getElementById('name').value;
     const rawPhone = document.getElementById('phone').value;
@@ -321,7 +321,9 @@ function processPayment() {
         alert("신청할 프로그램을 선택해주세요."); return;
     }
 
-    // 💡 [수정] 무통장 입금 페이지로 넘길 데이터 포장
+    /* =====================================================================
+       🚨 임시 무통장 입금(계좌이체) 우회 로직 (주석 처리됨) 🚨
+    ========================================================================
     const checkoutData = {
         tier: selectedTier,
         productName: selectedProductName,
@@ -333,14 +335,15 @@ function processPayment() {
     // 로컬 스토리지에 저장 후 계좌이체 페이지로 강제 이동
     localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
     window.location.href = '/checkout-transfer';
+    return; // 원래 로직 실행 방지
+    ===================================================================== */
 
-    /* =====================================================================
-       🚨 아래는 나이스페이 카드사 심사 완료 후 복구할 원본 코드입니다. 🚨
-    ========================================================================
+    // 💡 [복구] 나이스페이 카드 결제 호출 원본 로직
     const formattedPhone = formatPhoneNumber(rawPhone);
     const userId = localStorage.getItem('userId');
 
     let startDate = new Date();
+    // 잔여일이 남아있는 유료 회원의 경우, 결제 시 시작일을 기존 만료일 이후로 세팅
     if ((globalCurrentTier === 'standard' || globalCurrentTier === 'pro') && globalDaysLeft > 0 && globalExpireDate) {
         startDate = globalExpireDate;
     }
@@ -348,14 +351,14 @@ function processPayment() {
     const amount = TIER_PRICES_KRW[selectedTier];
     if (!amount) { alert("유효하지 않은 상품입니다."); return; }
 
-    const orderId = \`ORDER_\${Date.now()}_\${Math.random().toString(36).substring(2, 6)}\`;
+    const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
 
     AUTHNICE.requestPay({
         clientId: CONFIG.nicepay.clientId,
         method: 'card',
         orderId: orderId,
         amount: amount,
-        goodsName: \`스터디크랙 \${selectedProductName} 멤버십\`,
+        goodsName: `스터디크랙 ${selectedProductName} 멤버십`,
         buyerName: name,
         buyerEmail: email,
         buyerTel: formattedPhone,
@@ -372,5 +375,4 @@ function processPayment() {
             alert('결제 창 오류: ' + (result.errorMsg || '알 수 없는 오류'));
         }
     });
-    ===================================================================== */
 }
