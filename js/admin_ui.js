@@ -261,6 +261,9 @@ function renderProductChart(productMap, total) {
 // ============================================================
 // [C] 학생 관리 로직
 // ============================================================
+// ============================================================
+// [C] 학생 관리 로직
+// ============================================================
 async function searchStudents() {
     const adminId = localStorage.getItem('userId');
     const type = document.getElementById('searchType').value; 
@@ -282,15 +285,23 @@ async function searchStudents() {
 
             const uid = s.userid || "";
             if (uid.startsWith("TEMP") || uid.startsWith("VERIFIED")) {
-                // createdAt 필드가 아예 없거나 빈 문자열인 경우 제외
                 if (!s.createdAt || String(s.createdAt).trim() === "") {
-                    return false;
+                    return false; // 화면에서 숨김
                 }
             }
             return true;
         });
+
+        // 💡 [추가됨] 대시보드의 '총 학생 수' 덮어쓰기 로직
+        // 기본 전체 조회 상태일 때만 유령 계정이 빠진 진짜 학생 수로 덮어씌움
+        if ((!type || type === 'all' || type === '전체') && !keyword) {
+            const totalStudentsEl = document.getElementById('totalStudents');
+            if (totalStudentsEl) {
+                totalStudentsEl.innerText = `${students.length}명`;
+            }
+        }
         
-        // 💡 [수정] 분리된 구독 정보(currentSubscription)를 기준으로 필터링 적용
+        // 분리된 구독 정보(currentSubscription)를 기준으로 필터링 적용
         if (students.length > 0) {
             if (type === 'paid') {
                 students = students.filter(s => s.currentSubscription && s.currentSubscription.status === 'active');
@@ -307,7 +318,6 @@ async function searchStudents() {
         }
 
         students.forEach(s => {
-            // 💡 [수정] 뱃지 출력 시 배열이 아닌 구독 객체 전달
             let statusBadge = getTierBadgeHTML(s);
             const tr = document.createElement('tr');
             tr.innerHTML = `
