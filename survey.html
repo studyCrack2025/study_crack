@@ -229,7 +229,14 @@
                                     <option value="언매">언어와매체</option>
                                 </select>
                             </td>
-                            <td data-label="원점수"><input type="number" id="korRaw" onchange="requestScoreConversion('kor')" placeholder="입력"></td>
+                            <td data-label="원점수">
+                                <div class="split-input-group">
+                                    <input type="number" id="korCommon" oninput="handleScoreInput(this, 76, 'kor')" onchange="requestScoreConversion('kor')" placeholder="공통(76)">
+                                    <input type="number" id="korElective" oninput="handleScoreInput(this, 24, 'kor')" onchange="requestScoreConversion('kor')" placeholder="선택(24)">
+                                </div>
+                                <input type="hidden" id="korRaw">
+                                <div id="korTotalDisp" class="total-disp"></div>
+                            </td>
                             <td data-label="표준점수"><input type="number" id="korStd" readonly class="readonly-input"></td>
                             <td data-label="백분위"><input type="number" id="korPct" readonly class="readonly-input"></td>
                             <td data-label="등급"><input type="number" id="korGrd" readonly class="readonly-input"></td>
@@ -245,7 +252,14 @@
                                     <option value="기하">기하</option>
                                 </select>
                             </td>
-                            <td data-label="원점수"><input type="number" id="mathRaw" onchange="requestScoreConversion('math')" placeholder="입력"></td>
+                            <td data-label="원점수" style="margin-top: 10px;">
+                                <div class="split-input-group">
+                                    <input type="number" id="mathCommon" oninput="handleScoreInput(this, 74, 'math')" onchange="requestScoreConversion('math')" placeholder="공통(74)">
+                                    <input type="number" id="mathElective" oninput="handleScoreInput(this, 26, 'math')" onchange="requestScoreConversion('math')" placeholder="선택(26)">
+                                </div>
+                                <input type="hidden" id="mathRaw">
+                                <div id="mathTotalDisp" class="total-disp"></div>
+                            </td>
                             <td data-label="표준점수"><input type="number" id="mathStd" readonly class="readonly-input"></td>
                             <td data-label="백분위"><input type="number" id="mathPct" readonly class="readonly-input"></td>
                             <td data-label="등급"><input type="number" id="mathGrd" readonly class="readonly-input"></td>

@@ -270,6 +270,37 @@ async function requestScoreConversion(type) {
     }
 }
 
+function handleScoreInput(el, maxVal, subject) {
+    let val = parseInt(el.value);
+    
+    if (isNaN(val) || val < 0) { 
+        el.value = ''; 
+        val = 0; 
+    } else if (val > maxVal) {
+        alert(`최대 ${maxVal}점까지만 입력 가능합니다.`);
+        el.value = maxVal;
+        val = maxVal;
+    }
+    
+    const commonEl = document.getElementById(`${subject}Common`);
+    const electiveEl = document.getElementById(`${subject}Elective`);
+    
+    const commonVal = parseInt(commonEl.value) || 0;
+    const electiveVal = parseInt(electiveEl.value) || 0;
+    const total = commonVal + electiveVal;
+    
+    // 숨겨진 원점수 input에 합산값 세팅
+    document.getElementById(`${subject}Raw`).value = total;
+    
+    // UI에 총점 표시
+    const totalDisp = document.getElementById(`${subject}TotalDisp`);
+    if (commonEl.value || electiveEl.value) {
+        totalDisp.innerText = `총점: ${total}점`;
+    } else {
+        totalDisp.innerText = '';
+    }
+}
+
 // === UI 설정 ===
 function setupUI() {
     const radioGroup = document.getElementById('statusRadioGroup');
@@ -503,11 +534,21 @@ function loadExamData() {
         }
     };
 
+    // 국어 세팅
     setVal('koreanOpt', d.kor?.opt || 'none');
-    setVal('korRaw', d.kor?.raw); setVal('korStd', d.kor?.std); setVal('korPct', d.kor?.pct); setVal('korGrd', d.kor?.grd);
+    setVal('korCommon', d.kor?.common); 
+    setVal('korElective', d.kor?.elective); 
+    setVal('korRaw', d.kor?.raw); 
+    setVal('korStd', d.kor?.std); setVal('korPct', d.kor?.pct); setVal('korGrd', d.kor?.grd);
+    document.getElementById('korTotalDisp').innerText = (d.kor?.common !== undefined || d.kor?.elective !== undefined) ? `총점: ${d.kor?.raw || 0}점` : '';
     
+    // 수학 세팅
     setVal('mathOpt', d.math?.opt || 'none');
-    setVal('mathRaw', d.math?.raw); setVal('mathStd', d.math?.std); setVal('mathPct', d.math?.pct); setVal('mathGrd', d.math?.grd);
+    setVal('mathCommon', d.math?.common); 
+    setVal('mathElective', d.math?.elective); 
+    setVal('mathRaw', d.math?.raw); 
+    setVal('mathStd', d.math?.std); setVal('mathPct', d.math?.pct); setVal('mathGrd', d.math?.grd);
+    document.getElementById('mathTotalDisp').innerText = (d.math?.common !== undefined || d.math?.elective !== undefined) ? `총점: ${d.math?.raw || 0}점` : '';
     
     setVal('engGrd', d.eng?.grd); 
     setVal('histGrd', d.hist?.grd);
@@ -535,8 +576,8 @@ async function saveQuantitative() {
     const inq2Name = getVal('inq2Name');
 
     const currentData = {
-        kor: { opt: korOpt, raw: getVal('korRaw'), std: getVal('korStd'), pct: getVal('korPct'), grd: getVal('korGrd') },
-        math: { opt: mathOpt, raw: getVal('mathRaw'), std: getVal('mathStd'), pct: getVal('mathPct'), grd: getVal('mathGrd') },
+        kor: { opt: korOpt, common: getVal('korCommon'), elective: getVal('korElective'), raw: getVal('korRaw'), std: getVal('korStd'), pct: getVal('korPct'), grd: getVal('korGrd') },
+        math: { opt: mathOpt, common: getVal('mathCommon'), elective: getVal('mathElective'), raw: getVal('mathRaw'), std: getVal('mathStd'), pct: getVal('mathPct'), grd: getVal('mathGrd') },
         eng: { grd: getVal('engGrd') }, 
         hist: { grd: getVal('histGrd') },
         inq1: { name: inq1Name, raw: getVal('inq1Raw'), std: getVal('inq1Std'), pct: getVal('inq1Pct'), grd: getVal('inq1Grd') },
