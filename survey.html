@@ -242,9 +242,9 @@
                                     <option value="언매">언어와매체</option>
                                 </select>
                             </td>
-                            <td data-label="원점수 (공통)"><input type="number" id="korCommon" oninput="handleScoreInput(this, 76, 'kor')" onchange="requestScoreConversion('kor')" placeholder="입력(76)"></td>
+                            <td data-label="원점수 (공통)"><input type="number" id="korCommon" oninput="handleScoreInput(this, 76, 'kor')" onchange="requestScoreConversion('kor')" placeholder="입력"></td>
                             <td data-label="원점수 (선택)">
-                                <input type="number" id="korElective" oninput="handleScoreInput(this, 24, 'kor')" onchange="requestScoreConversion('kor')" placeholder="입력(24)">
+                                <input type="number" id="korElective" oninput="handleScoreInput(this, 24, 'kor')" onchange="requestScoreConversion('kor')" placeholder="입력">
                                 <input type="hidden" id="korRaw">
                             </td>
                             <td data-label="표준점수"><input type="number" id="korStd" readonly class="readonly-input"></td>
@@ -262,9 +262,9 @@
                                     <option value="기하">기하</option>
                                 </select>
                             </td>
-                            <td data-label="원점수 (공통)"><input type="number" id="mathCommon" oninput="handleScoreInput(this, 74, 'math')" onchange="requestScoreConversion('math')" placeholder="입력(74)"></td>
+                            <td data-label="원점수 (공통)"><input type="number" id="mathCommon" oninput="handleScoreInput(this, 74, 'math')" onchange="requestScoreConversion('math')" placeholder="입력"></td>
                             <td data-label="원점수 (선택)">
-                                <input type="number" id="mathElective" oninput="handleScoreInput(this, 26, 'math')" onchange="requestScoreConversion('math')" placeholder="입력(26)">
+                                <input type="number" id="mathElective" oninput="handleScoreInput(this, 26, 'math')" onchange="requestScoreConversion('math')" placeholder="입력">
                                 <input type="hidden" id="mathRaw">
                             </td>
                             <td data-label="표준점수"><input type="number" id="mathStd" readonly class="readonly-input"></td>
@@ -295,7 +295,24 @@
                             <td data-label="선택과목">
                                 <select id="inq1Name" style="width: 100%;" onchange="requestScoreConversion('inq1')">
                                     <option value="">과목 선택</option>
-                                    </select>
+                                    <optgroup label="사회탐구">
+                                        <option value="생윤">생활과 윤리</option>
+                                        <option value="윤사">윤리와 사상</option>
+                                        <option value="한지">한국지리</option>
+                                        <option value="세지">세계지리</option>
+                                        <option value="동사">동아시아사</option>
+                                        <option value="세사">세계사</option>
+                                        <option value="경제">경제</option>
+                                        <option value="정법">정치와 법</option>
+                                        <option value="사문">사회·문화</option>
+                                    </optgroup>
+                                    <optgroup label="과학탐구">
+                                        <option value="물1">물리학Ⅰ</option>
+                                        <option value="화1">화학Ⅰ</option>
+                                        <option value="생1">생명과학Ⅰ</option>
+                                        <option value="지1">지구과학Ⅰ</option>
+                                    </optgroup>
+                                </select>
                             </td>
                             <td colspan="2" data-label="원점수"><input type="number" id="inq1Raw" onchange="requestScoreConversion('inq1')" placeholder="입력"></td>
                             <td data-label="표준점수"><input type="number" id="inq1Std" readonly class="readonly-input"></td>
@@ -308,7 +325,24 @@
                             <td data-label="선택과목">
                                 <select id="inq2Name" style="width: 100%;" onchange="requestScoreConversion('inq2')">
                                     <option value="">과목 선택</option>
-                                    </select>
+                                    <optgroup label="사회탐구">
+                                        <option value="생윤">생활과 윤리</option>
+                                        <option value="윤사">윤리와 사상</option>
+                                        <option value="한지">한국지리</option>
+                                        <option value="세지">세계지리</option>
+                                        <option value="동사">동아시아사</option>
+                                        <option value="세사">세계사</option>
+                                        <option value="경제">경제</option>
+                                        <option value="정법">정치와 법</option>
+                                        <option value="사문">사회·문화</option>
+                                    </optgroup>
+                                    <optgroup label="과학탐구">
+                                        <option value="물1">물리학Ⅰ</option>
+                                        <option value="화1">화학Ⅰ</option>
+                                        <option value="생1">생명과학Ⅰ</option>
+                                        <option value="지1">지구과학Ⅰ</option>
+                                    </optgroup>
+                                </select>
                             </td>
                             <td colspan="2" data-label="원점수"><input type="number" id="inq2Raw" onchange="requestScoreConversion('inq2')" placeholder="입력"></td>
                             <td data-label="표준점수"><input type="number" id="inq2Std" readonly class="readonly-input"></td>
