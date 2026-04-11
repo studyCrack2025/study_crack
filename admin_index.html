@@ -305,10 +305,10 @@
                 <div class="form-group noti-form-group alimtalk-option-box">
                     <label class="noti-form-label">4. 추가 발송 옵션</label>
                     <div class="option-row">
-                        <label><input type="checkbox" id="useAlimtalk" onchange="toggleAlimtalkOptions()"> 카카오 알림톡 동시 발송</label>
-                        <label id="marketingOnlyLabel" style="display:none; margin-left:15px; color:#ef4444;">
-                            <input type="checkbox" id="isMarketingNotice"> 마케팅 수신 동의자에게만 발송
-                        </label>
+                        <label><input type="checkbox" id="useAlimtalk" onchange="toggleAlimtalkOptions()"> 📱 외부 알림톡 동시 발송</label>
+                        <span id="marketingOnlyLabel" style="display:none; margin-left:15px; color:#ef4444; font-size:0.85rem; font-weight:bold;">
+                            ※ 법적 의무에 따라 '마케팅 수신 동의자'에게만 자동 필터링되어 발송됩니다.
+                        </span>
                     </div>
                     
                     <div id="alimtalkTemplateArea" style="display:none; margin-top:10px;">
@@ -318,7 +318,7 @@
                             <option value="TEMPLATE_PROMO">이벤트/혜택 마케팅 템플릿</option>
                             <option value="TEMPLATE_URGENT">긴급 점검/안내 템플릿</option>
                         </select>
-                        <p class="info-text">※ 알림톡은 Solapi에 사전 승인된 템플릿만 발송 가능합니다.</p>
+                        <p class="info-text" style="font-size:0.8rem; color:#94a3b8;">※ 알림톡은 Solapi에 사전 승인된 템플릿만 발송 가능합니다.</p>
                     </div>
                 </div>
 

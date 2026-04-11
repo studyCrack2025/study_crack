@@ -1004,18 +1004,17 @@ window.toggleAlimtalkOptions = function() {
     document.getElementById('marketingOnlyLabel').style.display = isChecked ? 'inline-block' : 'none';
 };
 
-// 💡 수정된 최종 공지 발송 API 호출부
+// 최종 공지 발송 API 호출부
 async function sendAdminNotice() {
     if (selectedTargetMap.size === 0) return alert("발송할 대상을 한 명 이상 명단에 추가해주세요.");
     
     // 알림톡 관련 변수 추출
     const useAlimtalkElement = document.getElementById('useAlimtalk');
-    const isMarketingElement = document.getElementById('isMarketingNotice');
     const templateIdElement = document.getElementById('alimtalkTemplateId');
 
     const useAlimtalk = useAlimtalkElement ? useAlimtalkElement.checked : false;
-    const isMarketing = isMarketingElement ? isMarketingElement.checked : false;
     const templateId = templateIdElement ? templateIdElement.value : '';
+    const isMarketing = true; 
     
     const targetUserIds = Array.from(selectedTargetMap.keys());
     const title = document.getElementById('noticeTitle').value.trim();
@@ -1024,7 +1023,7 @@ async function sendAdminNotice() {
 
     if (!title || !content) return alert("제목과 내용을 모두 입력해주세요.");
     
-    const confirmMsg = `총 ${targetUserIds.length}명에게 공지를 발송합니다.\n${useAlimtalk ? '📱 카카오 알림톡 동시 발송\n' : ''}진행하시겠습니까?`;
+    const confirmMsg = `총 ${targetUserIds.length}명에게 공지를 발송합니다.\n${useAlimtalk ? '📱 카카오 알림톡 동시 발송 (마케팅 동의자 한정)\n' : ''}진행하시겠습니까?`;
     if (!confirm(confirmMsg)) return;
 
     // 요약용 이름 목록 생성
@@ -1036,7 +1035,6 @@ async function sendAdminNotice() {
         await apiFetch(NOTI_API_URL, { 
             method: 'POST', 
             body: JSON.stringify({ 
-                // 💡 Lambda가 인식할 수 있도록 type을 admin_manual_notice로 통일합니다.
                 type: 'admin_manual_notice', 
                 data: { 
                     targetUserIds: targetUserIds, 
@@ -1046,7 +1044,7 @@ async function sendAdminNotice() {
                     senderName: adminName,
                     useAlimtalk: useAlimtalk,
                     templateId: templateId,
-                    isMarketing: isMarketing
+                    isMarketing: isMarketing // 무조건 true 전달
                 } 
             }) 
         }); 
@@ -1055,7 +1053,6 @@ async function sendAdminNotice() {
         document.getElementById('noticeTitle').value = ''; 
         document.getElementById('noticeContent').value = '';
         if(useAlimtalkElement) useAlimtalkElement.checked = false;
-        if(isMarketingElement) isMarketingElement.checked = false;
         toggleAlimtalkOptions(); // UI 리셋
         clearAllTargets(); 
         showNotiMenu('sent'); 
