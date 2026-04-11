@@ -49,20 +49,12 @@
 
     <script src="/js/config.js"></script>
     <script>
-        // 1. 접근 차단 가드레일
+// 1. 접근 차단 가드레일 (로그인만 확인, 횟수 제한 삭제)
         document.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('accessToken');
-            const userPromo = localStorage.getItem('promoCode') || '';
-            
             if (!token) {
                 alert("로그인이 필요한 페이지입니다.");
                 window.location.href = '/login';
-                return;
-            }
-            
-            if (/^[0-9A-F]{4}-[0-9A-F]{4}-STC$/.test(userPromo)) {
-                alert("이미 무료 다운로드 혜택을 이용하셨습니다. (계정당 1회 제한)");
-                window.location.href = '/';
             }
         });
 
@@ -75,10 +67,10 @@
             e.target.value = val;
         });
 
-        // 💡 [추가] 역산(디코딩) 함수를 여기에 독립적으로 배치합니다.
+        // 3. 디코딩 함수
         function decodeMbtiCode(code) {
-            const hexStr = code.replace(/-/g, '').replace('STC', ''); // 하이픈과 STC 제거
-            if (hexStr.length !== 8) return null; // 길이 검증
+            const hexStr = code.replace(/-/g, '').replace('STC', ''); 
+            if (hexStr.length !== 8) return null; 
             
             let mbti = '';
             for(let i=0; i<8; i+=2) {
@@ -87,7 +79,7 @@
             return mbti; 
         }
 
-        // 3. 디코딩 및 다운로드 처리
+        // 4. 디코딩 및 다운로드 처리 (무제한)
         async function verifyAndDownload() {
             const btn = document.getElementById('downloadBtn');
             const code = promoInput.value.trim();
@@ -96,10 +88,7 @@
                 return alert("올바른 형태의 코드가 아닙니다. (예: 434D-4446-STC)");
             }
 
-            // 💡 [수정] 방금 만든 함수를 여기서 호출하여 사용합니다.
             const mbtiResult = decodeMbtiCode(code);
-
-            // 역산 결과 알파벳이 4자리가 맞는지 최소 검증
             if (!mbtiResult || !/^[A-Z]{4}$/.test(mbtiResult)) {
                 return alert("유효하지 않은 코드입니다.");
             }
@@ -109,40 +98,39 @@
 
             try {
                 const token = localStorage.getItem('accessToken');
-                const userId = localStorage.getItem('userId');
-
-                // 백엔드에 promoCode 업데이트 및 URL 요청
-                const res = await fetch(CONFIG.api.user, { 
+                
+                // 💡 [핵심] 횟수 갱신 API(update_mbti_promo)를 버리고, 안전한 URL만 발급받는 별도 API 호출
+                const res = await fetch(CONFIG.api.report, { 
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        type: 'update_mbti_promo',
-                        data: { targetUserId: userId, promoCode: code, mbtiResult: mbtiResult } // mbtiResult 전송
+                        type: 'get_mbti_pdf_url',
+                        mbtiType: mbtiResult 
                     })
                 });
 
                 const responseData = await res.json();
                 if (!res.ok) throw new Error(responseData.error || "오류가 발생했습니다.");
 
-                // 로컬 스토리지 업데이트
+                // 로컬 스토리지에 마지막으로 본 코드만 저장해둠 (UI 표시용)
                 localStorage.setItem('promoCode', code);
 
-                alert(`${mbtiResult} 유형 솔루션 다운로드를 시작합니다!\n이제 이 혜택은 다시 사용할 수 없습니다.`);
-                
-                // 💡 백엔드에서 생성해준 1분짜리 안전한 링크로 이동
+                alert(`${mbtiResult} 유형 솔루션 다운로드를 시작합니다!`);
                 window.open(responseData.downloadUrl, '_blank');
                 
-                setTimeout(() => { window.location.href = '/'; }, 1000);
+                // 다운로드 후 버튼 초기화 (계속 다시 받을 수 있게)
+                btn.disabled = false;
+                btn.innerHTML = 'PDF 다운로드 및 코드 적용';
 
             } catch (e) {
                 alert(e.message);
                 btn.disabled = false;
                 btn.innerHTML = 'PDF 다운로드 및 코드 적용';
             }
-        }
+        }    
     </script>
 </body>
 </html>
