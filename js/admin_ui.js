@@ -260,13 +260,28 @@ function renderProductChart(productMap, total) {
 // ============================================================
 // [C] 학생 관리 로직
 // ============================================================
+async function populateTutorFilter() {
+    try {
+        const response = await apiFetch(ADMIN_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_get_tutor_stats' }) });
+        const data = await response.json();
+        const filterEl = document.getElementById('filterTutor');
+        if(filterEl && data.tutors) {
+            data.tutors.forEach(t => {
+                filterEl.innerHTML += `<option value="${escapeHtml(t.nickname)}">${escapeHtml(t.nickname)} 선생님</option>`;
+            });
+        }
+    } catch(e) { console.error("Tutor filter load failed", e); }
+}
+
 async function searchStudents() {
     const adminId = localStorage.getItem('userId');
     const type = document.getElementById('searchType').value; 
     const keyword = document.getElementById('searchInput').value || ""; 
+    const filterTier = document.getElementById('filterTier').value;
+    const filterTutor = document.getElementById('filterTutor').value;
     const tbody = document.getElementById('studentListBody');
 
-    tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>데이터 조회 중...</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>안전하게 데이터를 조회 중입니다...</td></tr>";
 
     try {
         const response = await apiFetch(ADMIN_API_URL, {
@@ -277,56 +292,64 @@ async function searchStudents() {
         const rawData = await response.json();
         let students = Array.isArray(rawData) ? rawData : (rawData.students || []);
         
-        // 💡 [필터링 1] 유령 계정 및 관리자/튜터 제외
+        // 유령 계정 및 관리자 제외
         students = students.filter(s => {
             if (s.role === 'admin' || s.role === 'tutor') return false;
-
             const uid = s.userid || "";
-            if (uid.startsWith("TEMP") || uid.startsWith("VERIFIED")) {
-                if (!s.createdAt || String(s.createdAt).trim() === "") {
-                    return false; // 화면에서 숨김
-                }
-            }
+            if ((uid.startsWith("TEMP") || uid.startsWith("VERIFIED")) && (!s.createdAt || String(s.createdAt).trim() === "")) return false;
             return true;
         });
 
-        // 💡 [핵심 수정] 검색창이 비어있을 때(=초기 로드 등 전체 조회 시) 무조건 총 학생 수 업데이트!
         if (keyword.trim() === "") {
             const totalStudentsEl = document.getElementById('totalStudents');
-            if (totalStudentsEl) {
-                totalStudentsEl.innerText = `${students.length}명`;
-            }
+            if (totalStudentsEl) totalStudentsEl.innerText = `${students.length}명`;
         }
         
-        // 💡 [필터링 2] 이후 구독 상태(paid/unpaid) 필터링 진행
+        // 🚀 다중 필터링 적용 (안전한 프론트엔드 필터링)
         if (students.length > 0) {
-            if (type === 'paid') {
-                students = students.filter(s => s.currentSubscription && s.currentSubscription.status === 'active');
-            } else if (type === 'unpaid') {
-                students = students.filter(s => !s.currentSubscription || s.currentSubscription.status !== 'active');
+            // 1. 등급 필터
+            if (filterTier !== 'all') {
+                students = students.filter(s => {
+                    const tierBadgeHTML = getTierBadgeHTML(s);
+                    return tierBadgeHTML.includes(filterTier);
+                });
+            }
+            // 2. 튜터 필터
+            if (filterTutor !== 'all') {
+                students = students.filter(s => s.tutorName === filterTutor);
             }
         }
 
         tbody.innerHTML = "";
         
         if (students.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>조건에 맞는 학생이 없거나 데이터를 불러올 수 없습니다.</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>조건에 맞는 학생이 없습니다.</td></tr>";
             return;
         }
 
         students.forEach(s => {
             let statusBadge = getTierBadgeHTML(s);
+            let tutorNameDisplay = s.tutorName ? `<span class="tutor-tag">👨‍🏫 ${escapeHtml(s.tutorName)}</span>` : '<span style="color:#94a3b8; font-size:0.8rem;">미배정</span>';
+            let lastActive = s.lastPayDate ? new Date(s.lastPayDate).toLocaleDateString() : '-';
+            
+            // XSS 방지를 위한 escapeHtml 철저히 적용
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td data-label="이름"><strong>${escapeHtml(s.name) || '(이름없음)'}</strong></td>
-                <td data-label="이메일">${escapeHtml(s.email) || '-'}</td>
-                <td data-label="학교">${escapeHtml(s.school) || '-'}</td>
-                <td data-label="상태">${statusBadge}</td>
-                <td data-label="관리">
+                <td data-label="학생 정보">
+                    <div class="student-info-cell">
+                        <span class="student-name-text">${escapeHtml(s.name) || '(이름없음)'}</span>
+                        <span class="student-meta-text">✉️ ${escapeHtml(s.email) || '-'}</span>
+                        <span class="student-meta-text">🏫 ${escapeHtml(s.school) || '-'}</span>
+                    </div>
+                </td>
+                <td data-label="담당 튜터">${tutorNameDisplay}</td>
+                <td data-label="상태/등급">${statusBadge}</td>
+                <td data-label="최근 활동"><span class="student-meta-text">결제: ${lastActive}</span></td>
+                <td data-label="관리 액션">
                     <div class="action-buttons">
-                        <button class="btn-detail" onclick="goToStudentDetail('${s.userid}')">상세관리</button>
-                        <button class="btn-up" onclick="openGrantTierModal('${s.userid}', '${escapeHtml(s.name)}')">등급UP</button>
-                        <button class="btn-del" onclick="openForceDeleteModal('${s.userid}', '${escapeHtml(s.name)}')">강제탈퇴</button>
+                        <button class="btn-detail" onclick="goToStudentDetail('${escapeHtml(s.userid)}')"><i class="fas fa-user-cog"></i> 상세관리</button>
+                        <button class="btn-up" onclick="openGrantTierModal('${escapeHtml(s.userid)}', '${escapeHtml(s.name)}')">등급UP</button>
+                        <button class="btn-del" onclick="openForceDeleteModal('${escapeHtml(s.userid)}', '${escapeHtml(s.name)}')">탈퇴</button>
                     </div>
                 </td>
             `;
@@ -334,7 +357,7 @@ async function searchStudents() {
         });
 
     } catch (error) {
-        if (error.message !== "Auth expired") tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>학생 데이터를 불러오는 중 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.</td></tr>";
+        if (error.message !== "Auth expired") tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>데이터를 불러오는 중 오류가 발생했습니다.</td></tr>";
     }
 }
 

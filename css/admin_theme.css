@@ -91,11 +91,8 @@ html, body { height: 100vh; overflow: hidden; }
 .advance-card { border-left-color: #8b5cf6 !important; background-color: #f8fafc; }
 
 .text-blue { color: #3b82f6 !important; }
-
 .text-green { color: #10b981 !important; }
-
 .text-purple { color: #8b5cf6 !important; }
-
 .text-orange { color: #f59e0b !important; }
 
 .card {
@@ -134,6 +131,19 @@ canvas { width: 100% !important; height: 100% !important; }
     padding: 10px 25px; background-color: #3b82f6; color: white;
     border: none; border-radius: 6px; cursor: pointer; font-weight: bold;
 }
+
+/* 학생 관리 다중 필터 UI */
+.advanced-search-wrapper { display: flex; gap: 10px; margin-bottom: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); flex-wrap: wrap; }
+.filter-select { flex: 1; min-width: 130px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; color: #334155; font-weight: 500; outline: none; }
+.filter-select:focus { border-color: #3b82f6; }
+.search-input { flex: 2; min-width: 200px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; outline: none; }
+.search-input:focus { border-color: #3b82f6; }
+.search-btn { padding: 10px 25px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; white-space: nowrap; transition: 0.2s; }
+.search-btn:hover { background-color: #2563eb; }
+.student-info-cell { display: flex; flex-direction: column; gap: 4px; }
+.student-name-text { font-size: 1.05rem; font-weight: 900; color: #1e293b; }
+.student-meta-text { font-size: 0.8rem; color: #64748b; }
+.tutor-tag { display: inline-block; background: #f1f5f9; border: 1px solid #cbd5e1; color: #475569; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
 
 /* 튜터 관리 아코디언 UI */
 .tutor-card { background: white; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden; }

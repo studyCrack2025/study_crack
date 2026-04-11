@@ -169,28 +169,40 @@
             </div>
         </div>
 
-        <div id="section-students" class="content-section">
+                <div id="section-students" class="content-section">
             <h1 class="page-title">👥 학생 관리</h1>
-            <div class="search-wrapper">
-                <select id="searchType">
+            
+            <div class="advanced-search-wrapper">
+                <select id="filterTutor" class="filter-select">
+                    <option value="all">전체 튜터</option>
+                    </select>
+                <select id="filterTier" class="filter-select">
+                    <option value="all">전체 등급</option>
+                    <option value="PRO">PRO</option>
+                    <option value="STANDARD">STANDARD</option>
+                    <option value="BASIC">BASIC</option>
+                    <option value="FREE">FREE</option>
+                </select>
+                <select id="searchType" class="filter-select">
                     <option value="name">이름</option>
                     <option value="email">이메일</option>
                     <option value="phone">전화번호</option>
-                    <option value="paid">결제상태</option>
                 </select>
-                <input type="text" id="searchInput" placeholder="검색어를 입력하세요...">
-                <button onclick="searchStudents()">검색</button>
+                <input type="text" id="searchInput" class="search-input" placeholder="검색어 입력...">
+                <button class="search-btn" onclick="searchStudents()">
+                    <i class="fas fa-search"></i> 상세 검색
+                </button>
             </div>
 
             <div class="table-responsive">
                 <table class="student-table">
                     <thead>
                         <tr>
-                            <th>이름</th>
-                            <th>이메일</th>
-                            <th>학교</th>
-                            <th>상태</th>
-                            <th>관리</th>
+                            <th>학생 정보</th>
+                            <th>담당 튜터</th>
+                            <th>상태/등급</th>
+                            <th>최근 활동</th>
+                            <th>관리 액션</th>
                         </tr>
                     </thead>
                     <tbody id="studentListBody">
