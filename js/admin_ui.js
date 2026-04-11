@@ -998,18 +998,44 @@ function renderTargetTags() {
     });
 }
 
-// 💡 알림톡 템플릿 미리보기용 데이터 (실제 솔라피에 등록한 텍스트와 맞춰주세요)
-const ALIMTALK_PREVIEWS = {
-    'GENERAL': "[안내]\n안녕하세요 #{이름}님, StudyCrack입니다.\n\n📌 #{공지제목}\n\n#{공지내용}\n\n감사합니다.",
-    'PROMO': "(광고) StudyCrack\n안녕하세요 #{이름}님!\n\n🎁 #{공지제목}\n\n#{공지내용}\n\n무료수신거부: 080-XXX-XXXX",
-    'URGENT': "[긴급안내]\n안녕하세요 #{이름}님.\n\n🚨 #{공지제목}\n\n#{공지내용}\n\n이용에 불편을 드려 죄송합니다."
-};
+// 💡 백엔드에서 받아온 템플릿 데이터를 저장할 전역 변수
+let globalAlimtalkTemplates = [];
 
+// 💡 템플릿 목록을 서버에서 불러오는 함수
+async function fetchAlimtalkTemplates() {
+    try {
+        const response = await apiFetch(NOTI_API_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ type: 'admin_get_alimtalk_templates' }) 
+        });
+        const data = await response.json();
+        globalAlimtalkTemplates = data.templates || [];
+        
+        const selectEl = document.getElementById('alimtalkTemplateType');
+        if (selectEl) {
+            selectEl.innerHTML = ''; // 기존 "불러오는 중..." 텍스트 제거
+            globalAlimtalkTemplates.forEach(tpl => {
+                selectEl.innerHTML += `<option value="${tpl.type}">${tpl.name}</option>`;
+            });
+            updateTemplatePreview(); // 첫 번째 항목 미리보기 렌더링
+        }
+    } catch(e) {
+        console.error("템플릿 목록 로드 실패:", e);
+        const selectEl = document.getElementById('alimtalkTemplateType');
+        if (selectEl) selectEl.innerHTML = '<option value="">불러오기 실패</option>';
+    }
+}
+
+// 💡 선택된 타입에 맞춰 미리보기 텍스트를 업데이트하는 함수
 window.updateTemplatePreview = function() {
-    const type = document.getElementById('alimtalkTemplateType').value;
+    const selectedType = document.getElementById('alimtalkTemplateType').value;
     const previewBox = document.getElementById('templatePreviewBox');
+    
+    // globalAlimtalkTemplates 배열에서 현재 선택된 타입의 데이터를 찾음
+    const matchedTemplate = globalAlimtalkTemplates.find(t => t.type === selectedType);
+    
     if (previewBox) {
-        previewBox.innerText = ALIMTALK_PREVIEWS[type] || "템플릿 형식을 불러올 수 없습니다.";
+        previewBox.innerText = matchedTemplate ? matchedTemplate.preview : "템플릿 형식을 불러올 수 없습니다.";
     }
 };
 
@@ -1017,7 +1043,15 @@ window.toggleAlimtalkOptions = function() {
     const isChecked = document.getElementById('useAlimtalk').checked;
     document.getElementById('alimtalkTemplateArea').style.display = isChecked ? 'block' : 'none';
     document.getElementById('marketingOnlyLabel').style.display = isChecked ? 'inline-block' : 'none';
-    if (isChecked) updateTemplatePreview(); // 켤 때 미리보기 렌더링
+    
+    if (isChecked) {
+        // 알림톡 옵션을 처음 켰을 때만 서버에서 데이터를 불러옴
+        if (globalAlimtalkTemplates.length === 0) {
+            fetchAlimtalkTemplates();
+        } else {
+            updateTemplatePreview();
+        }
+    }
 };
 
 // 최종 공지 발송 API 호출부
