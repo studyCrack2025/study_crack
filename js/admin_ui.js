@@ -483,16 +483,19 @@ function openReplyModal(targetUserId, qnaId, isViewOnly = false) {
     document.getElementById('replyModalTitle').innerText = item.title; 
     document.getElementById('replyModalContent').innerText = item.content;
     const replyInput = document.getElementById('replyInput'); 
-    const submitBtn = document.querySelector('#reply-modal button');
-
+    const submitBtn = document.getElementById('replySubmitBtn'); // 버튼 ID 사용 권장
+    const macroWrapper = document.getElementById('macroWrapper');
+    
     if (item.status === 'done' || isViewOnly) { 
         replyInput.value = item.answer || "(답변 내용 없음)"; 
         replyInput.disabled = true; 
         submitBtn.style.display = 'none'; 
+        if (macroWrapper) macroWrapper.style.display = 'none'; // 완료된 문의면 매크로 숨김
     } else { 
         replyInput.value = ''; 
         replyInput.disabled = false; 
         submitBtn.style.display = 'block'; 
+        if (macroWrapper) macroWrapper.style.display = 'block'; // 새 문의면 매크로 표시
     }
     
     const modal = document.getElementById('reply-modal'); 
@@ -533,6 +536,29 @@ async function submitReply() {
 }
 
 function closeReplyModal() { const modal = document.getElementById('reply-modal'); if (modal) modal.classList.add('hidden'); currentReplyTarget = null; }
+
+const QNA_MACROS = {
+    'tutor_delay': "안녕하세요, 학생님.\n현재 요청하신 과목과 성향에 가장 적합한 튜터님을 꼼꼼히 매칭하는 중이라 배정이 조금 지연되고 있습니다.\n최대 1~2일 내로 최적의 튜터님을 배정해 드릴 예정이니 조금만 양해 부탁드립니다.",
+    'report_guide': "안녕하세요! 주간 보고서 작성법 안내드립니다.\n매주 정해진 요일 자정까지 [마이페이지] > [보고서 작성] 탭에서 이번 주 학습 내용과 튜터님께 바라는 피드백을 50자 이상으로 남겨주시면 됩니다.",
+    'refund': "안녕하세요. 환불 규정에 대해 안내해 드립니다.\n결제 후 7일 이내이며, 실제 서비스(튜터 매칭 및 상담) 이용 이력이 없는 경우에 한해 전액 환불이 가능합니다.\n자세한 사항은 이용약관을 참고해 주시거나 추가 문의 남겨주세요.",
+    'polite_wait': "안녕하세요! 문의하신 내용 확인하였습니다.\n해당 건은 튜터님 및 내부 운영진과 내용 확인 후 정확한 안내를 드리기 위해 시간이 조금 소요될 수 있습니다.\n확인되는 대로 빠르게 다시 답변드리겠습니다."
+};
+
+window.applyMacro = function(type) {
+    const replyInput = document.getElementById('replyInput');
+    if (!replyInput || !QNA_MACROS[type]) return;
+
+    // 이미 작성 중인 내용이 있을 경우 덮어쓸지 경고
+    if (replyInput.value.trim() !== "") {
+        if (!confirm("작성 중인 내용이 지워지고 매크로 답변으로 교체됩니다. 계속하시겠습니까?")) {
+            return;
+        }
+    }
+    
+    replyInput.value = QNA_MACROS[type];
+    // 부드럽게 입력창으로 포커스 이동
+    replyInput.focus();
+};
 
 
 // ============================================================
