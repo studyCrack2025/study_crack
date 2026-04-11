@@ -198,12 +198,15 @@ async function requestScoreConversion(type) {
     
     // 원점수(rawId)와 표준점수(stdId) 매핑 변경
     let rawId = "", stdId = "", pctId = "", grdId = "";
+    let commonId = "", electiveId = "";
 
     if (type === 'kor') {
         rawId = "korRaw"; stdId = "korStd"; pctId = "korPct"; grdId = "korGrd";
+        commonId = "korCommon"; electiveId = "korElective";
         optVal = document.getElementById('koreanOpt').value;
     } else if (type === 'math') {
         rawId = "mathRaw"; stdId = "mathStd"; pctId = "mathPct"; grdId = "mathGrd";
+        commonId = "mathCommon"; electiveId = "mathElective";
         optVal = document.getElementById('mathOpt').value;
     } else if (type === 'inq1') {
         rawId = "inq1Raw"; stdId = "inq1Std"; pctId = "inq1Pct"; grdId = "inq1Grd";
@@ -222,6 +225,31 @@ async function requestScoreConversion(type) {
         alert("유효하지 않은 원점수입니다.");
         rawEl.value = "";
         return;
+    }
+    
+    // --- 없는 점수 방어 로직 ---
+    if (type === 'kor') {
+        const comVal = parseInt(document.getElementById(commonId).value) || 0;
+        const elecVal = parseInt(document.getElementById(electiveId).value) || 0;
+        if (comVal === 75 || comVal === 1 || elecVal === 23 || elecVal === 1) {
+            alert("입력하신 국어 점수 조합(75점, 23점 또는 1점)은 시스템상 없는 점수입니다.");
+            rawEl.value = "";
+            return;
+        }
+    } else if (type === 'math') {
+        const comVal = parseInt(document.getElementById(commonId).value) || 0;
+        const elecVal = parseInt(document.getElementById(electiveId).value) || 0;
+        if (comVal === 73 || comVal === 1 || elecVal === 25 || elecVal === 1) {
+            alert("입력하신 수학 점수 조합(73점, 25점 또는 1점)은 시스템상 없는 점수입니다.");
+            rawEl.value = "";
+            return;
+        }
+    } else if (type === 'inq1' || type === 'inq2') {
+        if (scoreVal === 49 || scoreVal === 1) {
+            alert("입력하신 탐구 점수(49점 또는 1점)는 시스템상 없는 점수입니다.");
+            rawEl.value = "";
+            return;
+        }
     }
 
     try {
