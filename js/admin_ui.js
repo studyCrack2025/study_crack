@@ -998,9 +998,24 @@ function renderTargetTags() {
     });
 }
 
+window.toggleAlimtalkOptions = function() {
+    const isChecked = document.getElementById('useAlimtalk').checked;
+    document.getElementById('alimtalkTemplateArea').style.display = isChecked ? 'block' : 'none';
+    document.getElementById('marketingOnlyLabel').style.display = isChecked ? 'inline-block' : 'none';
+};
+
 // 💡 수정된 최종 공지 발송 API 호출부
 async function sendAdminNotice() {
     if (selectedTargetMap.size === 0) return alert("발송할 대상을 한 명 이상 명단에 추가해주세요.");
+    
+    // 알림톡 관련 변수 추출
+    const useAlimtalkElement = document.getElementById('useAlimtalk');
+    const isMarketingElement = document.getElementById('isMarketingNotice');
+    const templateIdElement = document.getElementById('alimtalkTemplateId');
+
+    const useAlimtalk = useAlimtalkElement ? useAlimtalkElement.checked : false;
+    const isMarketing = isMarketingElement ? isMarketingElement.checked : false;
+    const templateId = templateIdElement ? templateIdElement.value : '';
     
     const targetUserIds = Array.from(selectedTargetMap.keys());
     const title = document.getElementById('noticeTitle').value.trim();
@@ -1008,7 +1023,9 @@ async function sendAdminNotice() {
     const adminName = localStorage.getItem('userName') || '관리자';
 
     if (!title || !content) return alert("제목과 내용을 모두 입력해주세요.");
-    if (!confirm(`총 ${targetUserIds.length}명에게 공지를 발송하시겠습니까?`)) return;
+    
+    const confirmMsg = `총 ${targetUserIds.length}명에게 공지를 발송합니다.\n${useAlimtalk ? '📱 카카오 알림톡 동시 발송\n' : ''}진행하시겠습니까?`;
+    if (!confirm(confirmMsg)) return;
 
     // 요약용 이름 목록 생성
     const targetNamesList = Array.from(selectedTargetMap.values()).map(info => info.name);
@@ -1019,20 +1036,27 @@ async function sendAdminNotice() {
         await apiFetch(NOTI_API_URL, { 
             method: 'POST', 
             body: JSON.stringify({ 
-                type: 'admin_send_notice', 
+                // 💡 Lambda가 인식할 수 있도록 type을 admin_manual_notice로 통일합니다.
+                type: 'admin_manual_notice', 
                 data: { 
                     targetUserIds: targetUserIds, 
                     title: title, 
                     content: content, 
                     targetNamesDisplay: targetNamesDisplay,
-                    senderName: adminName
+                    senderName: adminName,
+                    useAlimtalk: useAlimtalk,
+                    templateId: templateId,
+                    isMarketing: isMarketing
                 } 
             }) 
         }); 
         
-        alert("공지 발송 및 기록 저장이 완료되었습니다.");
+        alert("공지 발송이 완료되었습니다.");
         document.getElementById('noticeTitle').value = ''; 
         document.getElementById('noticeContent').value = '';
+        if(useAlimtalkElement) useAlimtalkElement.checked = false;
+        if(isMarketingElement) isMarketingElement.checked = false;
+        toggleAlimtalkOptions(); // UI 리셋
         clearAllTargets(); 
         showNotiMenu('sent'); 
     } catch(e) { 
