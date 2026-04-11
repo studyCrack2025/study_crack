@@ -80,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { 
             checkWeeklyStatus(); // 내부에서 weeklyDataHistory를 바로 사용
             applyCoachTierLock();
+            applySimTierLock();
         }, 500); 
         
         const loader = document.getElementById('pageLoadingOverlay');
@@ -403,6 +404,33 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
+function applySimTierLock() {
+    const container = document.getElementById('sol-sim');
+    if (!container) return;
+
+    // Free 유저는 이미 applyFreeTierLock에서 덮어씌워지므로 Basic 유저만 별도 타겟팅
+    if (currentUserTier === 'basic') {
+        container.style.position = 'relative';
+        if (container.querySelector('.sim-tier-lock-overlay')) return;
+
+        const overlay = document.createElement('div');
+        overlay.className = 'sim-tier-lock-overlay';
+        overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
+        overlay.innerHTML = `
+            <div style="background: white; padding: 40px 50px; border-radius: 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center; border: 1px solid #e2e8f0; max-width: 90%;">
+                <i class="fas fa-lock" style="font-size: 3rem; color: #94a3b8; margin-bottom: 20px;"></i>
+                <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 1.4rem;">Standard 멤버십 전용 기능입니다</h3>
+                <p style="color: #64748b; font-size: 1rem; margin-bottom: 25px; line-height: 1.6;">
+                    점수 상승 시뮬레이션은<br><strong>Standard 등급 이상</strong>부터 이용 가능합니다.
+                </p>
+                <button onclick="location.href='/payment'" style="padding: 14px 35px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1.05rem; cursor: pointer; transition: background 0.2s;">
+                    🚀 멤버십 알아보기
+                </button>
+            </div>`;
+        container.appendChild(overlay);
+    }
+}
+
 // [유틸] DynamoDB JSON 파서
 function parseDynamoItem(item) {
     if (item === undefined || item === null) return null;
@@ -711,7 +739,7 @@ function applyFreeTierLock() {
                     <i class="fas fa-lock" style="font-size: 3rem; color: #94a3b8; margin-bottom: 20px;"></i>
                     <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 1.4rem;">유료회원 전용 기능입니다</h3>
                     <p style="color: #64748b; font-size: 1rem; margin-bottom: 25px; line-height: 1.6;">
-                        나만의 목표대학 정밀 분석 및 점수 시뮬레이션은<br><strong>Basic 멤버십</strong> 이상부터 이용 가능합니다.
+                        나만의 목표대학 정밀 분석은<br><strong>Basic 멤버십</strong> 이상부터 이용 가능합니다.
                     </p>
                     <button onclick="location.href='/payment'" style="padding: 14px 35px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1.05rem; cursor: pointer; transition: background 0.2s;">
                         🚀 멤버십 알아보기
@@ -1220,7 +1248,7 @@ let simDisplayList = [];
 let selectedSimIndex = null;
 
 function initSimulation() {
-    if (currentUserTier === 'free') return;
+    if (!['standard', 'pro'].includes(currentUserTier)) return;
     
     const chartArea = document.getElementById('simChartArea');
     if (!chartArea) return;
