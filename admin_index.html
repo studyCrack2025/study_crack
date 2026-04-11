@@ -319,17 +319,22 @@
         <div id="reply-modal" class="modal hidden">
             <div class="modal-content">
                 <span class="close-btn" onclick="closeReplyModal()">&times;</span>
-                <h2 style="margin-top:0;">답변 작성</h2>
+                <h2 class="reply-modal-header">답변 작성</h2>
                 
-                <div style="background:#f8fafc; padding:15px; border-radius:8px; margin-bottom:20px;">
-                    <p style="font-size:0.9rem; color:#64748b; margin-bottom:5px;">질문 내용</p>
-                    <h4 id="replyModalTitle" style="margin:0 0 10px 0;"></h4>
-                    <p id="replyModalContent" style="white-space:pre-wrap; color:#334155;"></p>
+                <div class="reply-question-box">
+                    <div class="reply-question-header">
+                        <p class="reply-question-label">질문 내용</p>
+                        <button id="replyModalStudentLink" class="btn-macro btn-student-link">
+                            <i class="fas fa-external-link-alt"></i> 이 학생 상세정보 보기
+                        </button>
+                    </div>
+                    <h4 id="replyModalTitle" class="reply-title"></h4>
+                    <p id="replyModalContent" class="reply-content"></p>
                 </div>
 
-                <div id="macroWrapper" style="margin-bottom: 15px;">
-                    <p style="font-size:0.85rem; font-weight:bold; color:#475569; margin-bottom:8px;">⚡ 자주 쓰는 답변 (매크로)</p>
-                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <div id="macroWrapper" class="macro-wrapper">
+                    <p class="macro-label">⚡ 자주 쓰는 답변 (매크로)</p>
+                    <div class="macro-btn-group">
                         <button type="button" class="btn-macro" onclick="applyMacro('tutor_delay')">배정 지연 안내</button>
                         <button type="button" class="btn-macro" onclick="applyMacro('report_guide')">보고서 작성법</button>
                         <button type="button" class="btn-macro" onclick="applyMacro('refund')">환불 규정</button>
@@ -337,9 +342,9 @@
                     </div>
                 </div>
 
-                <textarea id="replyInput" rows="6" placeholder="답변을 입력하세요..." style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; resize:none; margin-bottom:15px;"></textarea>
+                <textarea id="replyInput" class="reply-textarea" rows="6" placeholder="답변을 입력하세요..."></textarea>
             
-                <button id="replySubmitBtn" onclick="submitReply()" style="width:100%; padding:15px; background:#3b82f6; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:1rem;">
+                <button id="replySubmitBtn" class="reply-submit-btn" onclick="submitReply()">
                     답변 전송하기
                 </button>
             </div>

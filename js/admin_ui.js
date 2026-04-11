@@ -444,6 +444,7 @@ async function markAsRead(targetUserId, qnaId) {
     }
 }
 
+// 리스트 렌더링 시 학생 이름 옆에 [상세 이동] 링크 아이콘 추가
 function renderQnaList() {
     const tbody = document.getElementById('qnaListBody'); if (!tbody) return;
     tbody.innerHTML = '';
@@ -454,16 +455,30 @@ function renderQnaList() {
     filtered.forEach(q => {
         const tr = document.createElement('tr'); const dateStr = new Date(q.createdAt).toLocaleDateString();
         let actionBtn = '';
-        if (q.status === 'waiting') actionBtn = `<button onclick="markAsRead('${q.userid}', '${q.qnaId}')" style="background:#f59e0b; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">읽음 처리</button>`;
-        else if (q.status === 'read') actionBtn = `<button onclick="openReplyModal('${q.userid}', '${q.qnaId}')" style="background:#3b82f6; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">답변하기</button>`;
+        if (q.status === 'waiting') actionBtn = `<button onclick="markAsRead('${escapeHtml(q.userid)}', '${q.qnaId}')" style="background:#f59e0b; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">읽음 처리</button>`;
+        else if (q.status === 'read') actionBtn = `<button onclick="openReplyModal('${escapeHtml(q.userid)}', '${q.qnaId}')" style="background:#3b82f6; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">답변하기</button>`;
         else actionBtn = `<span style="color:#10b981; font-weight:bold;">완료됨</span>`;
 
         let phoneStr = '-';
-        if (q.userPhone && q.userPhone.length >= 4) {
-            phoneStr = q.userPhone.slice(-4);
-        }
+        if (q.userPhone && q.userPhone.length >= 4) phoneStr = q.userPhone.slice(-4);
 
-        tr.innerHTML = `<td data-label="상태">${getQnaStatusBadge(q.status)}</td><td data-label="학생명"><strong>${escapeHtml(q.userName)}</strong><br><span style="font-size:0.8rem; color:#94a3b8;">(뒷자리: ${escapeHtml(phoneStr)})</span></td><td data-label="제목" style="cursor:pointer;" onclick="openReplyModal('${q.userid}', '${q.qnaId}', true)"><strong>${escapeHtml(q.title)}</strong><div style="font-size:0.85rem; color:#64748b; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:300px;">${escapeHtml(q.content)}</div></td><td data-label="등록일">${dateStr}</td><td data-label="관리">${actionBtn}</td>`;
+        // 💡 [수정] 학생명 우측에 상세페이지 이동 아이콘 버튼 추가
+        tr.innerHTML = `
+            <td data-label="상태">${getQnaStatusBadge(q.status)}</td>
+            <td data-label="학생명">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <strong>${escapeHtml(q.userName)}</strong>
+                    <button onclick="goToStudentDetail('${escapeHtml(q.userid)}')(event)" style="background:none; border:none; color:#3b82f6; cursor:pointer; padding:0; font-size:0.9rem;" title="학생 상세 정보 보기"><i class="fas fa-search-plus"></i></button>
+                </div>
+                <span style="font-size:0.8rem; color:#94a3b8;">(뒷자리: ${escapeHtml(phoneStr)})</span>
+            </td>
+            <td data-label="제목" style="cursor:pointer;" onclick="openReplyModal('${escapeHtml(q.userid)}', '${q.qnaId}', true)">
+                <strong>${escapeHtml(q.title)}</strong>
+                <div style="font-size:0.85rem; color:#64748b; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:300px;">${escapeHtml(q.content)}</div>
+            </td>
+            <td data-label="등록일">${dateStr}</td>
+            <td data-label="관리">${actionBtn}</td>
+        `;
         tbody.appendChild(tr);
     });
 }
@@ -482,20 +497,29 @@ function openReplyModal(targetUserId, qnaId, isViewOnly = false) {
     
     document.getElementById('replyModalTitle').innerText = item.title; 
     document.getElementById('replyModalContent').innerText = item.content;
+    
+    // 💡 상세정보 보기 버튼에 클릭 이벤트 연동 (새 탭으로 열기)
+    const detailLinkBtn = document.getElementById('replyModalStudentLink');
+    if (detailLinkBtn) {
+        detailLinkBtn.onclick = function() {
+            window.open(`/admin/detail?uid=${targetUserId}`, '_blank');
+        };
+    }
+
     const replyInput = document.getElementById('replyInput'); 
-    const submitBtn = document.getElementById('replySubmitBtn'); // 버튼 ID 사용 권장
+    const submitBtn = document.getElementById('replySubmitBtn'); 
     const macroWrapper = document.getElementById('macroWrapper');
     
     if (item.status === 'done' || isViewOnly) { 
         replyInput.value = item.answer || "(답변 내용 없음)"; 
         replyInput.disabled = true; 
-        submitBtn.style.display = 'none'; 
-        if (macroWrapper) macroWrapper.style.display = 'none'; // 완료된 문의면 매크로 숨김
+        if (submitBtn) submitBtn.style.display = 'none'; 
+        if (macroWrapper) macroWrapper.style.display = 'none'; 
     } else { 
         replyInput.value = ''; 
         replyInput.disabled = false; 
-        submitBtn.style.display = 'block'; 
-        if (macroWrapper) macroWrapper.style.display = 'block'; // 새 문의면 매크로 표시
+        if (submitBtn) submitBtn.style.display = 'block'; 
+        if (macroWrapper) macroWrapper.style.display = 'block'; 
     }
     
     const modal = document.getElementById('reply-modal'); 
