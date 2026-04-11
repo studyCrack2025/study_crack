@@ -771,6 +771,9 @@ async function downloadMbtiReport() {
     const btn = document.getElementById('mbtiDownBtn');
     if (btn) { btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 발급 중...`; btn.disabled = true; }
 
+    // 💡 [핵심 방어] 서버 통신(await)을 시작하기 전, 사용자가 클릭한 즉시 빈 창을 먼저 엽니다!
+    const newWindow = window.open('about:blank', '_blank');
+
     const token = localStorage.getItem('idToken');
     try {
         const res = await fetch(REPORT_API_URL, {
@@ -779,18 +782,23 @@ async function downloadMbtiReport() {
             body: JSON.stringify({ type: 'get_mbti_report' })
         });
         const data = await res.json();
+        
         if (res.ok && data.success) {
             alert("다운로드가 시작되었습니다.");
-            const link = document.createElement('a');
-            link.href = data.downloadUrl; link.target = '_blank';
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            
+            // 💡 [핵심 방어] 미리 열어둔 빈 창의 주소를 받아온 S3 다운로드 링크로 쓱 바꿔치기 합니다.
+            newWindow.location.href = data.downloadUrl;
+            
             const container = document.getElementById('mbtiReportContainer');
             if (container) container.innerHTML = ''; 
         } else {
+            // 실패하면 열어둔 빈 창을 조용히 닫아줍니다.
+            newWindow.close();
             alert(data.error || "보고서 발급에 실패했습니다.");
             if (btn) { btn.innerHTML = `<i class="fas fa-file-download"></i> 보고서 다운받기`; btn.disabled = false; }
         }
     } catch (e) {
+        newWindow.close(); // 에러 시에도 빈 창 닫기
         alert("서버 통신 오류가 발생했습니다.");
         if (btn) { btn.innerHTML = `<i class="fas fa-file-download"></i> 보고서 다운받기`; btn.disabled = false; }
     }
