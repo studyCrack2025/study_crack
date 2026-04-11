@@ -47,7 +47,7 @@ const EXAM_DISPLAY_NAMES = {
 // ============================================================
 // [초기화] DOM 로드 시 실행 (💡 병렬 데이터 로딩으로 개편)
 // ============================================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const idToken = localStorage.getItem('idToken'); 
     const userId = localStorage.getItem('userId');
 
