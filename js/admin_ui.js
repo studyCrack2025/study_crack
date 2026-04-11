@@ -434,7 +434,12 @@ function renderQnaList() {
         else if (q.status === 'read') actionBtn = `<button onclick="openReplyModal('${q.userid}', '${q.qnaId}')" style="background:#3b82f6; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">답변하기</button>`;
         else actionBtn = `<span style="color:#10b981; font-weight:bold;">완료됨</span>`;
 
-        tr.innerHTML = `<td data-label="상태">${getQnaStatusBadge(q.status)}</td><td data-label="학생명">${escapeHtml(q.userName)}<br><span style="font-size:0.8rem; color:#94a3b8;">${q.userPhone || '-'}</span></td><td data-label="제목" style="cursor:pointer;" onclick="openReplyModal('${q.userid}', '${q.qnaId}', true)"><strong>${escapeHtml(q.title)}</strong><div style="font-size:0.85rem; color:#64748b; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:300px;">${escapeHtml(q.content)}</div></td><td data-label="등록일">${dateStr}</td><td data-label="관리">${actionBtn}</td>`;
+        let phoneStr = '-';
+        if (q.userPhone && q.userPhone.length >= 4) {
+            phoneStr = q.userPhone.slice(-4);
+        }
+
+        tr.innerHTML = `<td data-label="상태">${getQnaStatusBadge(q.status)}</td><td data-label="학생명"><strong>${escapeHtml(q.userName)}</strong><br><span style="font-size:0.8rem; color:#94a3b8;">(뒷자리: ${escapeHtml(phoneStr)})</span></td><td data-label="제목" style="cursor:pointer;" onclick="openReplyModal('${q.userid}', '${q.qnaId}', true)"><strong>${escapeHtml(q.title)}</strong><div style="font-size:0.85rem; color:#64748b; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:300px;">${escapeHtml(q.content)}</div></td><td data-label="등록일">${dateStr}</td><td data-label="관리">${actionBtn}</td>`;
         tbody.appendChild(tr);
     });
 }
@@ -801,9 +806,23 @@ async function loadTutorListForNotice() {
         const tutorData = await tutorRes.json(); const studentData = await studentRes.json();
         const tutors = tutorData.tutors || [];
         let students = Array.isArray(studentData) ? studentData : (studentData.students || studentData.Items || []);
-        students = students.filter(u => u.role !== 'admin' && u.role !== 'tutor');
-        globalUserList = [...tutors, ...students];
         
+        students = students.filter(s => {
+            if (s.role === 'admin' || s.role === 'tutor') return false;
+            const uid = s.userid || "";
+            if (uid.startsWith("TEMP") || uid.startsWith("VERIFIED")) {
+                if (!s.createdAt || String(s.createdAt).trim() === "") return false;
+            }
+            return true;
+        });
+
+        students = students.map(s => {
+            let phoneEnd = '';
+            if (s.phone && s.phone.length >= 4) phoneEnd = ` (${s.phone.slice(-4)})`;
+            return { ...s, displayName: `${s.name || '이름없음'}${phoneEnd}` };
+        });
+        globalUserList = [...tutors, ...students];
+                
         let html = `<div class="quick-select-box"><strong>⚡ 빠른 선택:</strong><label><input type="checkbox" onchange="toggleAllCheckboxes(this)"> 싹 다 전체</label><label><input type="checkbox" onchange="toggleByClass('is-tutor', this)"> 튜터(선생님) 전체</label><label><input type="checkbox" onchange="toggleByClass('is-pro', this)"> PRO 전체</label><label><input type="checkbox" onchange="toggleByClass('is-standard', this)"> STANDARD 전체</label></div><div class="tree-grid-container">`;
 
         tutors.forEach(t => {
@@ -828,7 +847,7 @@ async function loadTutorListForNotice() {
                 myStus.forEach(s => {
                     const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE';
                     const tierClass = tier.toLowerCase();
-                    html += `<label><input type="checkbox" class="is-${tierClass} target-chk" value="${s.userid}"> 🎓 ${s.name} (${tier})</label>`;
+                    html += `<label><input type="checkbox" class="is-${tierClass} target-chk" value="${s.userid}"> 🎓 ${s.displayName} (${tier})</label>`;
                 });
             }
             html += `</div></div>`;
@@ -841,7 +860,7 @@ async function loadTutorListForNotice() {
         if(proStus.length > 0) { 
             html += `<div class="tree-group"><div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> 🔥 PRO (미배정) 대기중</label></div><div class="tree-children">`; 
             proStus.forEach(s => { 
-                html += `<label><input type="checkbox" class="is-pro target-chk" value="${s.userid}"> 🎓 ${s.name}</label>`; 
+                html += `<label><input type="checkbox" class="is-pro target-chk" value="${s.userid}"> 🎓 ${s.displayName}</label>`; 
             }); 
             html += `</div></div>`; 
         }
@@ -853,16 +872,16 @@ async function loadTutorListForNotice() {
         if(stdStus.length > 0) { 
             html += `<div class="tree-group"><div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> 📘 STANDARD (미배정) 대기중</label></div><div class="tree-children">`; 
             stdStus.forEach(s => { 
-                html += `<label><input type="checkbox" class="is-standard target-chk" value="${s.userid}"> 🎓 ${s.name}</label>`; 
+                html += `<label><input type="checkbox" class="is-standard target-chk" value="${s.userid}"> 🎓 ${s.displayName}</label>`; 
             }); 
             html += `</div></div>`; 
         }
 
         const basicStus = students.filter(s => { const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE'; return tier.toLowerCase() === 'basic' && !s.tutorName; });
-        if(basicStus.length > 0) { html += `<div class="tree-group"><div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> 🌱 BASIC (미배정) 모음</label></div><div class="tree-children">`; basicStus.forEach(s => { html += `<label><input type="checkbox" class="is-basic target-chk" value="${s.userid}"> 🎓 ${s.name}</label>`; }); html += `</div></div>`; }
+        if(basicStus.length > 0) { html += `<div class="tree-group"><div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> 🌱 BASIC (미배정) 모음</label></div><div class="tree-children">`; basicStus.forEach(s => { html += `<label><input type="checkbox" class="is-basic target-chk" value="${s.userid}"> 🎓 ${s.displayName}</label>`; }); html += `</div></div>`; }
 
         const freeStus = students.filter(s => { const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE'; return tier.toLowerCase() === 'free' && !s.tutorName; });
-        if(freeStus.length > 0) { html += `<div class="tree-group"><div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> ☁️ FREE (미배정) 모음</label></div><div class="tree-children">`; freeStus.forEach(s => { html += `<label><input type="checkbox" class="is-free target-chk" value="${s.userid}"> 🎓 ${s.name}</label>`; }); html += `</div></div>`; }
+        if(freeStus.length > 0) { html += `<div class="tree-group"><div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> ☁️ FREE (미배정) 모음</label></div><div class="tree-children">`; freeStus.forEach(s => { html += `<label><input type="checkbox" class="is-free target-chk" value="${s.userid}"> 🎓 ${s.displayName}</label>`; }); html += `</div></div>`; }
 
         html += `</div>`;
         document.getElementById('noticeTargetCheckboxes').innerHTML = html;
@@ -888,7 +907,10 @@ function loadTargetUsers() {
         const tName = groupVal.replace('tutor_', '');
         filtered = globalUserList.filter(u => u.role !== 'admin' && u.role !== 'tutor' && u.tutorName === tName);
     }
-    filtered.forEach(u => { userSelect.innerHTML += `<option value="${escapeHtml(u.userid)}">${escapeHtml(u.name)} (${escapeHtml(u.email) || '-'})</option>`; });
+    filtered.forEach(u => { 
+        const dName = u.displayName || u.name || '이름없음';
+        userSelect.innerHTML += `<option value="${escapeHtml(u.userid)}">${escapeHtml(dName)}</option>`; 
+    });
 }
 
 async function sendAdminNotice() {
