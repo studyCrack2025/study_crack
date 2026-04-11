@@ -404,29 +404,33 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
+function getStandardLockOverlayHTML(featureName) {
+    return `
+        <div style="background: white; padding: 40px 50px; border-radius: 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center; border: 1px solid #e2e8f0; max-width: 90%;">
+            <i class="fas fa-lock" style="font-size: 3rem; color: #94a3b8; margin-bottom: 20px;"></i>
+            <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 1.4rem;">Standard 멤버십 전용 기능입니다</h3>
+            <p style="color: #64748b; font-size: 1rem; margin-bottom: 25px; line-height: 1.6;">
+                ${featureName}은(는)<br><strong>Standard 등급 이상</strong>부터 이용 가능합니다.
+            </p>
+            <button onclick="location.href='/payment'" style="padding: 14px 35px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1.05rem; cursor: pointer; transition: background 0.2s;">
+                🚀 멤버십 알아보기
+            </button>
+        </div>`;
+}
+
 function applySimTierLock() {
     const container = document.getElementById('sol-sim');
     if (!container) return;
 
-    // Free 유저는 이미 applyFreeTierLock에서 덮어씌워지므로 Basic 유저만 별도 타겟팅
-    if (currentUserTier === 'basic') {
+    // Free와 Basic 유저 모두에게 통일된 디자인의 락 스크린을 보여줍니다.
+    if (currentUserTier === 'free' || currentUserTier === 'basic') {
         container.style.position = 'relative';
         if (container.querySelector('.sim-tier-lock-overlay')) return;
 
         const overlay = document.createElement('div');
         overlay.className = 'sim-tier-lock-overlay';
         overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
-        overlay.innerHTML = `
-            <div style="background: white; padding: 40px 50px; border-radius: 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center; border: 1px solid #e2e8f0; max-width: 90%;">
-                <i class="fas fa-lock" style="font-size: 3rem; color: #94a3b8; margin-bottom: 20px;"></i>
-                <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 1.4rem;">Standard 멤버십 전용 기능입니다</h3>
-                <p style="color: #64748b; font-size: 1rem; margin-bottom: 25px; line-height: 1.6;">
-                    점수 상승 시뮬레이션은<br><strong>Standard 등급 이상</strong>부터 이용 가능합니다.
-                </p>
-                <button onclick="location.href='/payment'" style="padding: 14px 35px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1.05rem; cursor: pointer; transition: background 0.2s;">
-                    🚀 멤버십 알아보기
-                </button>
-            </div>`;
+        overlay.innerHTML = getStandardLockOverlayHTML('점수 상승 시뮬레이션');
         container.appendChild(overlay);
     }
 }
@@ -490,7 +494,6 @@ async function fetchUserData(userId) {
         applyUserTier(data.computedTier || 'free'); 
         updateSurveyStatus(data);
         checkMbtiReport(data);
-        applyFreeTierLock();
         
         if (data.targetUnivs) userTargetUnivs = data.targetUnivs;
         if (data.quantitative) userQuantData = data.quantitative;
@@ -724,30 +727,6 @@ function openSolution(type) {
     });
 
     if (type === 'sim') initSimulation();
-}
-
-function applyFreeTierLock() {
-    if (currentUserTier === 'free') {
-        document.querySelectorAll('.sol-content').forEach(content => {
-            content.style.position = 'relative';
-            if (content.querySelector('.free-lock-overlay')) return;
-            const overlay = document.createElement('div');
-            overlay.className = 'free-lock-overlay';
-            overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
-            overlay.innerHTML = `
-                <div style="background: white; padding: 40px 50px; border-radius: 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center; border: 1px solid #e2e8f0; max-width: 90%;">
-                    <i class="fas fa-lock" style="font-size: 3rem; color: #94a3b8; margin-bottom: 20px;"></i>
-                    <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 1.4rem;">유료회원 전용 기능입니다</h3>
-                    <p style="color: #64748b; font-size: 1rem; margin-bottom: 25px; line-height: 1.6;">
-                        나만의 목표대학 정밀 분석은<br><strong>Basic 멤버십</strong> 이상부터 이용 가능합니다.
-                    </p>
-                    <button onclick="location.href='/payment'" style="padding: 14px 35px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1.05rem; cursor: pointer; transition: background 0.2s;">
-                        🚀 멤버십 알아보기
-                    </button>
-                </div>`;
-            content.appendChild(overlay);
-        });
-    }
 }
 
 function checkMbtiReport(data) {
@@ -1099,7 +1078,7 @@ async function saveTargetUnivs() {
 // ============================================================
 async function updateAnalysisUI() {
     const container = document.getElementById('univAnalysisResult');
-    if (!container || currentUserTier === 'free') return; 
+    if (!container) return;
     
     const hasTargets = userTargetUnivs && userTargetUnivs.some(u => u && u.univ);
     const availableExams = userQuantData ? Object.keys(userQuantData).filter(key => {
@@ -1256,8 +1235,6 @@ let simDisplayList = [];
 let selectedSimIndex = null;
 
 function initSimulation() {
-    if (!['standard', 'pro'].includes(currentUserTier)) return;
-    
     const chartArea = document.getElementById('simChartArea');
     if (!chartArea) return;
     
@@ -1756,11 +1733,33 @@ function renderDetailedSimCard() {
     });
 
     let warningHTML = '';
-    if (currentScore < 10 && (currentScore + maxRise) < 25) {
-        warningHTML = `<div class="sim-warning" style="background:#fff7ed; border-color:#fdba74; color:#c2410c;"><i class="fas fa-exclamation-circle"></i><div><strong>여전히 불합격권입니다.</strong><br>한 문제를 더 맞혀도 매우 어렵습니다. 다른 전형이나 대학을 함께 고려해보세요.</div></div>`;
-    } 
-    else if (currentScore >= 225 || (currentScore + maxRise) >= 250) {
-        warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><i class="fas fa-check-circle"></i><div><strong>이미 상당히 안정권입니다.</strong><br>한 문제를 더 맞혀도 합격 가능성에 유의미한 변화가 없습니다. 상위 대학 및 전형에 도전해보세요.</div></div>`;
+    if (!['standard', 'pro'].includes(currentUserTier) && univChangeRemaining <= 5) {
+        warningHTML = `
+            <div class="sim-warning upsell-warning" style="background:#fff7ed; border-color:#fdba74; color:#c2410c; padding: 20px; text-align: left; display: block; margin-top: 15px; border-radius: 8px; border: 1px solid #fdba74;">
+                <h4 style="margin: 0 0 10px 0; font-size: 1.05rem;"><i class="fas fa-exclamation-triangle"></i> 지금 점수 구조에서는 특정 과목이 결과에 불리하게 작용하고 있습니다.</h4>
+                <p style="margin: 0 0 12px 0; font-size: 0.9rem; line-height: 1.6;">
+                    이 상태에서는 공부량을 늘려도 결과가 크게 바뀌지 않을 수 있습니다.<br>
+                    특히 학기 초에 방향이 잘못 잡히면 시간만 더 쓰게 되는 경우가 많습니다.<br><br>
+                    어떤 과목이 중요한지는 확인됐지만 어떻게 올려야 하는지는 아직 정해지지 않은 상태입니다.<br>
+                    방향을 올바로 잡지 않은 상태에서의 노력은 결과로 이어지기 어렵습니다. <strong>지금 방향을 잡느냐에 따라 결과가 달라집니다.</strong>
+                </p>
+                <div style="background: white; border-radius: 6px; padding: 12px; margin-bottom: 15px; border: 1px solid #fed7aa; color: #431407; font-size: 0.9rem;">
+                    <strong style="color:#ea580c;">💡 해결책 제시</strong><br>
+                    SKY 합격생들이 실제로 밟아온 기준으로 과목별 공부 방향을 직접 설정해드립니다.
+                </div>
+                <button onclick="location.href='/payment'" style="width: 100%; padding: 12px; background: #ea580c; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.2s;">
+                    공부 방향 설정하기
+                </button>
+                <p style="margin: 10px 0 0 0; font-size: 0.8rem; text-align: center; opacity: 0.8;">지금 방향을 설정하면 이후 공부 효율이 크게 달라질 수 있습니다.</p>
+            </div>
+        `;
+    } else {
+        if (currentScore < 10 && (currentScore + maxRise) < 25) {
+            warningHTML = `<div class="sim-warning" style="background:#fff7ed; border-color:#fdba74; color:#c2410c;"><i class="fas fa-exclamation-circle"></i><div><strong>여전히 불합격권입니다.</strong><br>한 문제를 더 맞혀도 매우 어렵습니다. 다른 전형이나 대학을 함께 고려해보세요.</div></div>`;
+        } 
+        else if (currentScore >= 225 || (currentScore + maxRise) >= 250) {
+            warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><i class="fas fa-check-circle"></i><div><strong>이미 상당히 안정권입니다.</strong><br>한 문제를 더 맞혀도 합격 가능성에 유의미한 변화가 없습니다. 상위 대학 및 전형에 도전해보세요.</div></div>`;
+        }
     }
 
     cardArea.innerHTML = `
@@ -1815,23 +1814,20 @@ function applyCoachTierLock() {
     const container = document.querySelector('.coach-container');
     if (!container) return;
 
-    if (!['standard', 'pro', 'black'].includes(currentUserTier)) {
+    // Free와 Basic 유저 모두에게 시뮬레이션 탭과 동일한 디자인의 락 스크린을 보여줍니다.
+    if (currentUserTier === 'free' || currentUserTier === 'basic') {
         container.classList.add('tier-locked');
         container.style.position = 'relative';
-        if (container.querySelector('.tier-lock-overlay')) return;
+        if (container.querySelector('.coach-tier-lock-overlay')) return;
 
         const overlay = document.createElement('div');
-        overlay.className = 'tier-lock-overlay';
-        overlay.innerHTML = `
-            <div class="lock-message-box">
-                <i class="fas fa-lock"></i><h3>Standard 멤버십 전용</h3>
-                <p>주간 학습 점검 및 피드백 기능은<br><strong>Standard 등급 이상</strong>부터 이용 가능합니다.</p>
-            </div>
-        `;
+        overlay.className = 'coach-tier-lock-overlay';
+        overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
+        overlay.innerHTML = getStandardLockOverlayHTML('주간 학습 점검 및 피드백 기능');
         container.appendChild(overlay);
     } else {
         container.classList.remove('tier-locked');
-        const existingOverlay = container.querySelector('.tier-lock-overlay');
+        const existingOverlay = container.querySelector('.coach-tier-lock-overlay');
         if (existingOverlay) existingOverlay.remove();
     }
 }
