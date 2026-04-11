@@ -311,14 +311,20 @@
                         </span>
                     </div>
                     
-                    <div id="alimtalkTemplateArea" style="display:none; margin-top:10px;">
-                        <label class="noti-form-label" style="font-size:0.8rem;">발송 템플릿 선택</label>
-                        <select id="alimtalkTemplateId" class="noti-input">
-                            <option value="TEMPLATE_GENERAL">일반 공지 안내 템플릿</option>
-                            <option value="TEMPLATE_PROMO">이벤트/혜택 마케팅 템플릿</option>
-                            <option value="TEMPLATE_URGENT">긴급 점검/안내 템플릿</option>
+                    <div id="alimtalkTemplateArea" style="display:none; margin-top:15px; border-top:1px dashed #cbd5e1; padding-top:15px;">
+                        <label class="noti-form-label" style="font-size:0.85rem;">발송 템플릿 선택</label>
+                        
+                        <select id="alimtalkTemplateType" class="noti-input" style="width:100%; max-width:300px;" onchange="updateTemplatePreview()">
+                            <option value="GENERAL">일반 공지 안내</option>
+                            <option value="PROMO">이벤트/혜택 마케팅</option>
+                            <option value="URGENT">긴급 점검/안내</option>
                         </select>
-                        <p class="info-text" style="font-size:0.8rem; color:#94a3b8;">※ 알림톡은 Solapi에 사전 승인된 템플릿만 발송 가능합니다.</p>
+                        
+                        <div style="margin-top:10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:15px;">
+                            <p style="margin:0 0 5px 0; font-size:0.8rem; font-weight:bold; color:#3b82f6;">📱 카카오톡 발송 미리보기</p>
+                            <div id="templatePreviewBox" style="font-size:0.9rem; color:#334155; white-space:pre-wrap; line-height:1.5;">
+                                </div>
+                        </div>
                     </div>
                 </div>
 

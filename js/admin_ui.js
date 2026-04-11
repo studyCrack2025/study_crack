@@ -998,10 +998,26 @@ function renderTargetTags() {
     });
 }
 
+// 💡 알림톡 템플릿 미리보기용 데이터 (실제 솔라피에 등록한 텍스트와 맞춰주세요)
+const ALIMTALK_PREVIEWS = {
+    'GENERAL': "[안내]\n안녕하세요 #{이름}님, StudyCrack입니다.\n\n📌 #{공지제목}\n\n#{공지내용}\n\n감사합니다.",
+    'PROMO': "(광고) StudyCrack\n안녕하세요 #{이름}님!\n\n🎁 #{공지제목}\n\n#{공지내용}\n\n무료수신거부: 080-XXX-XXXX",
+    'URGENT': "[긴급안내]\n안녕하세요 #{이름}님.\n\n🚨 #{공지제목}\n\n#{공지내용}\n\n이용에 불편을 드려 죄송합니다."
+};
+
+window.updateTemplatePreview = function() {
+    const type = document.getElementById('alimtalkTemplateType').value;
+    const previewBox = document.getElementById('templatePreviewBox');
+    if (previewBox) {
+        previewBox.innerText = ALIMTALK_PREVIEWS[type] || "템플릿 형식을 불러올 수 없습니다.";
+    }
+};
+
 window.toggleAlimtalkOptions = function() {
     const isChecked = document.getElementById('useAlimtalk').checked;
     document.getElementById('alimtalkTemplateArea').style.display = isChecked ? 'block' : 'none';
     document.getElementById('marketingOnlyLabel').style.display = isChecked ? 'inline-block' : 'none';
+    if (isChecked) updateTemplatePreview(); // 켤 때 미리보기 렌더링
 };
 
 // 최종 공지 발송 API 호출부
@@ -1010,11 +1026,11 @@ async function sendAdminNotice() {
     
     // 알림톡 관련 변수 추출
     const useAlimtalkElement = document.getElementById('useAlimtalk');
-    const templateIdElement = document.getElementById('alimtalkTemplateId');
+    const templateTypeElement = document.getElementById('alimtalkTemplateType');
 
     const useAlimtalk = useAlimtalkElement ? useAlimtalkElement.checked : false;
-    const templateId = templateIdElement ? templateIdElement.value : '';
-    const isMarketing = true; 
+    const templateType = templateTypeElement ? templateTypeElement.value : 'GENERAL';
+    const isMarketing = true;
     
     const targetUserIds = Array.from(selectedTargetMap.keys());
     const title = document.getElementById('noticeTitle').value.trim();
@@ -1043,7 +1059,7 @@ async function sendAdminNotice() {
                     targetNamesDisplay: targetNamesDisplay,
                     senderName: adminName,
                     useAlimtalk: useAlimtalk,
-                    templateId: templateId,
+                    templateType: templateType,
                     isMarketing: isMarketing // 무조건 true 전달
                 } 
             }) 
