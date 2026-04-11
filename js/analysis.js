@@ -431,7 +431,7 @@ function getStandardLockOverlayHTML(featureName) {
 }
 
 function applySimTierLock() {
-    const container = document.getElementById('sol-sim');
+    const container = document.querySelector('.sim-container-new') || document.getElementById('sol-sim');
     if (!container) return;
 
     // Free와 Basic 유저 모두에게 통일된 디자인의 락 스크린을 보여줍니다.
