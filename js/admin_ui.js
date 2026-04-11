@@ -755,7 +755,7 @@ window.toggleNoticeTree = function(iconEl) {
 }
 
 // ============================================================
-// [F] 알림 시스템 및 공지 발송 로직
+// [F] 공지 발송 스마트 타겟팅 로직
 // ============================================================
 function switchNotiTab(tabName) {
     document.querySelectorAll('.noti-tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -842,9 +842,10 @@ window.loadSentNotices = async function() {
     } catch(e) { if (e.message !== "Auth expired") container.innerHTML = '<p style="text-align:center; color:red;">오류 발생</p>'; }
 };
 
-let globalUserList = [];
+let globalStudentsCache = [];
+let globalTutorsCache = [];
+let selectedTargetMap = new Map(); // 선택된 유저 정보 저장 { userId: { name, reason } }
 
-// 공지 수신자 트리도 새로운 뱃지 로직(currentSubscription) 사용
 async function loadTutorListForNotice() {
     const adminId = localStorage.getItem('userId');
     try {
@@ -853,132 +854,140 @@ async function loadTutorListForNotice() {
             apiFetch(ADMIN_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_search', userId: adminId, data: {} }) })
         ]);
 
-        const tutorData = await tutorRes.json(); const studentData = await studentRes.json();
-        const tutors = tutorData.tutors || [];
+        const tutorData = await tutorRes.json(); 
+        const studentData = await studentRes.json();
+        
+        globalTutorsCache = tutorData.tutors || [];
         let students = Array.isArray(studentData) ? studentData : (studentData.students || studentData.Items || []);
         
-        students = students.filter(s => {
+        // 유령 계정 및 튜터/관리자 필터링
+        globalStudentsCache = students.filter(s => {
             if (s.role === 'admin' || s.role === 'tutor') return false;
-            const uid = s.userid || "";
-            if (uid.startsWith("TEMP") || uid.startsWith("VERIFIED")) {
-                if (!s.createdAt || String(s.createdAt).trim() === "") return false;
-            }
+            if ((s.userid.startsWith("TEMP") || s.userid.startsWith("VERIFIED")) && !s.createdAt) return false;
             return true;
+        }).map(s => {
+            const tierBadge = getTierBadgeHTML(s);
+            const tier = (tierBadge.match(/>(.*?)<\/span>/) || [])[1] || 'FREE';
+            return { ...s, parsedTier: tier };
         });
 
-        students = students.map(s => {
-            let phoneEnd = '';
-            if (s.phone && s.phone.length >= 4) phoneEnd = ` (${s.phone.slice(-4)})`;
-            return { ...s, displayName: `${s.name || '이름없음'}${phoneEnd}` };
-        });
-        globalUserList = [...tutors, ...students];
-                
-        let html = `<div class="quick-select-box"><strong>⚡ 빠른 선택:</strong><label><input type="checkbox" onchange="toggleAllCheckboxes(this)"> 싹 다 전체</label><label><input type="checkbox" onchange="toggleByClass('is-tutor', this)"> 튜터(선생님) 전체</label><label><input type="checkbox" onchange="toggleByClass('is-pro', this)"> PRO 전체</label><label><input type="checkbox" onchange="toggleByClass('is-standard', this)"> STANDARD 전체</label></div><div class="tree-grid-container">`;
+        // 초기화
+        clearAllTargets();
+        document.getElementById('targetGroupSelect').value = '';
+        updateTargetSubSelect();
 
-        tutors.forEach(t => {
-            const myStus = students.filter(s => {
-                if (!s.tutorName) return false;
-                const targetTutor = s.tutorName.trim();
-                return targetTutor === (t.nickname || '').trim() || targetTutor === (t.name || '').trim();
-            });
-
-            html += `
-                <div class="tree-group">
-                    <div class="tree-parent" style="display:flex; justify-content:space-between; align-items:center;">
-                        <label><input type="checkbox" class="is-tutor target-chk" value="${t.userid}" onchange="toggleChildren(this)"> 👨‍🏫 ${t.nickname} (${t.name}) 튜터 그룹</label>
-                        <i class="fas fa-chevron-down" style="cursor:pointer; padding:10px 5px; color:#94a3b8; transition:transform 0.3s; transform: rotate(180deg);" onclick="toggleNoticeTree(this)"></i>
-                    </div>
-                    <div class="tree-children" style="display:grid;">
-            `;
-            
-            if (myStus.length === 0) { 
-                html += `<span style="color:#94a3b8; font-size:0.85rem; padding-left:5px;">소속 학생 없음</span>`; 
-            } else {
-                myStus.forEach(s => {
-                    const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE';
-                    const tierClass = tier.toLowerCase();
-                    html += `<label><input type="checkbox" class="is-${tierClass} target-chk" value="${s.userid}"> 🎓 ${s.displayName} (${tier})</label>`;
-                });
-            }
-            html += `</div></div>`;
-        });
-        
-        const proStus = students.filter(s => { 
-            const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE'; 
-            return tier.toLowerCase() === 'pro' && !s.tutorName; 
-        });
-        if(proStus.length > 0) { 
-            html += `<div class="tree-group"><div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> 🔥 PRO (미배정) 대기중</label></div><div class="tree-children">`; 
-            proStus.forEach(s => { 
-                html += `<label><input type="checkbox" class="is-pro target-chk" value="${s.userid}"> 🎓 ${s.displayName}</label>`; 
-            }); 
-            html += `</div></div>`; 
-        }
-
-        const stdStus = students.filter(s => { 
-            const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE'; 
-            return tier.toLowerCase() === 'standard' && !s.tutorName; 
-        });
-        if(stdStus.length > 0) { 
-            html += `<div class="tree-group"><div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> 📘 STANDARD (미배정) 대기중</label></div><div class="tree-children">`; 
-            stdStus.forEach(s => { 
-                html += `<label><input type="checkbox" class="is-standard target-chk" value="${s.userid}"> 🎓 ${s.displayName}</label>`; 
-            }); 
-            html += `</div></div>`; 
-        }
-
-        const basicStus = students.filter(s => { const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE'; return tier.toLowerCase() === 'basic' && !s.tutorName; });
-        if(basicStus.length > 0) { html += `<div class="tree-group"><div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> 🌱 BASIC (미배정) 모음</label></div><div class="tree-children">`; basicStus.forEach(s => { html += `<label><input type="checkbox" class="is-basic target-chk" value="${s.userid}"> 🎓 ${s.displayName}</label>`; }); html += `</div></div>`; }
-
-        const freeStus = students.filter(s => { const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE'; return tier.toLowerCase() === 'free' && !s.tutorName; });
-        if(freeStus.length > 0) { html += `<div class="tree-group"><div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> ☁️ FREE (미배정) 모음</label></div><div class="tree-children">`; freeStus.forEach(s => { html += `<label><input type="checkbox" class="is-free target-chk" value="${s.userid}"> 🎓 ${s.displayName}</label>`; }); html += `</div></div>`; }
-
-        html += `</div>`;
-        document.getElementById('noticeTargetCheckboxes').innerHTML = html;
-    } catch(e) { console.error("Notice Box Render Error:", e); }
+    } catch(e) { console.error("Notice User Load Error:", e); }
 }
 
-window.toggleChildren = function(parentChk) { const children = parentChk.closest('.tree-group').querySelectorAll('.tree-children input[type="checkbox"]'); children.forEach(child => child.checked = parentChk.checked); }
-window.toggleAllCheckboxes = function(chk) { document.querySelectorAll('#noticeTargetCheckboxes input[type="checkbox"]').forEach(c => c.checked = chk.checked); }
-window.toggleByClass = function(className, chk) { document.querySelectorAll('#noticeTargetCheckboxes .' + className).forEach(c => { c.checked = chk.checked; }); }
+window.updateTargetSubSelect = function() {
+    const groupVal = document.getElementById('targetGroupSelect').value;
+    const subSelect = document.getElementById('targetSubSelect');
+    subSelect.innerHTML = '';
 
-function loadTargetUsers() {
-    const groupVal = document.getElementById('noticeTargetGroup').value;
-    const userSelect = document.getElementById('noticeTargetUser');
-    userSelect.innerHTML = '<option value="all">해당 그룹 전체에게 보내기</option>';
-    if (!groupVal || groupVal === 'all' || groupVal === 'all_tutor' || groupVal === 'all_student') return;
-
-    let filtered = [];
-    if (['pro', 'standard', 'basic', 'free'].includes(groupVal)) {
-        filtered = globalUserList.filter(u => u.role !== 'admin' && u.role !== 'tutor');
-        filtered = filtered.filter(s => { const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE'; return tier.toLowerCase() === groupVal; });
-    } 
-    else if (groupVal.startsWith('tutor_')) {
-        const tName = groupVal.replace('tutor_', '');
-        filtered = globalUserList.filter(u => u.role !== 'admin' && u.role !== 'tutor' && u.tutorName === tName);
+    if (groupVal === 'TUTOR') {
+        subSelect.style.display = 'block';
+        globalTutorsCache.forEach(t => {
+            subSelect.innerHTML += `<option value="${escapeHtml(t.nickname)}">${escapeHtml(t.nickname)} 선생님 담당</option>`;
+        });
+    } else if (groupVal === 'INDIVIDUAL') {
+        subSelect.style.display = 'block';
+        globalStudentsCache.forEach(s => {
+            subSelect.innerHTML += `<option value="${escapeHtml(s.userid)}">${escapeHtml(s.name)} (${s.parsedTier})</option>`;
+        });
+    } else {
+        subSelect.style.display = 'none';
     }
-    filtered.forEach(u => { 
-        const dName = u.displayName || u.name || '이름없음';
-        userSelect.innerHTML += `<option value="${escapeHtml(u.userid)}">${escapeHtml(dName)}</option>`; 
+};
+
+window.addTargetUsers = function() {
+    const groupVal = document.getElementById('targetGroupSelect').value;
+    const subVal = document.getElementById('targetSubSelect').value;
+    
+    if (!groupVal) return alert("발송 대상을 먼저 선택해주세요.");
+
+    let targetPool = [];
+    let groupLabel = "";
+
+    if (groupVal === 'ALL') {
+        targetPool = globalStudentsCache;
+        groupLabel = "전체";
+    } else if (groupVal.startsWith('TIER_')) {
+        const targetTier = groupVal.split('_')[1];
+        targetPool = globalStudentsCache.filter(s => s.parsedTier.toUpperCase() === targetTier);
+        groupLabel = targetTier;
+    } else if (groupVal === 'TUTOR') {
+        if (!subVal) return;
+        targetPool = globalStudentsCache.filter(s => s.tutorName === subVal);
+        groupLabel = subVal;
+    } else if (groupVal === 'INDIVIDUAL') {
+        if (!subVal) return;
+        targetPool = globalStudentsCache.filter(s => s.userid === subVal);
+        groupLabel = "개별추가";
+    }
+
+    if (targetPool.length === 0) {
+        return alert("해당 조건에 맞는 학생이 없습니다.");
+    }
+
+    let addedCount = 0;
+    targetPool.forEach(user => {
+        if (!selectedTargetMap.has(user.userid)) {
+            selectedTargetMap.set(user.userid, { name: user.name, tag: groupLabel });
+            addedCount++;
+        }
+    });
+
+    if (addedCount > 0) renderTargetTags();
+    else alert("이미 명단에 모두 추가된 학생들입니다.");
+};
+
+window.removeTarget = function(userId) {
+    selectedTargetMap.delete(userId);
+    renderTargetTags();
+};
+
+window.clearAllTargets = function() {
+    selectedTargetMap.clear();
+    renderTargetTags();
+};
+
+function renderTargetTags() {
+    const container = document.getElementById('selectedTargetTags');
+    const countEl = document.getElementById('targetCountText');
+    
+    countEl.innerText = selectedTargetMap.size;
+    container.innerHTML = '';
+
+    if (selectedTargetMap.size === 0) {
+        container.innerHTML = '<span class="empty-msg" style="padding:0; font-size:0.9rem;">위에서 그룹이나 학생을 선택한 후 [추가]를 눌러주세요.</span>';
+        return;
+    }
+
+    selectedTargetMap.forEach((info, uid) => {
+        const safeName = escapeHtml(info.name || '이름없음');
+        container.innerHTML += `
+            <div class="target-tag">
+                <span style="color:#93c5fd; font-size:0.75rem; margin-right:4px;">[${info.tag}]</span> ${safeName}
+                <span class="remove-tag" onclick="removeTarget('${uid}')">&times;</span>
+            </div>
+        `;
     });
 }
 
+// 💡 수정된 최종 공지 발송 API 호출부
 async function sendAdminNotice() {
-    const checkedBoxes = document.querySelectorAll('.target-chk:checked');
-    const targetUserIds = [...new Set(Array.from(checkedBoxes).map(b => b.value))];
+    if (selectedTargetMap.size === 0) return alert("발송할 대상을 한 명 이상 명단에 추가해주세요.");
+    
+    const targetUserIds = Array.from(selectedTargetMap.keys());
     const title = document.getElementById('noticeTitle').value.trim();
     const content = document.getElementById('noticeContent').value.trim();
-
     const adminName = localStorage.getItem('userName') || '관리자';
 
-    if (targetUserIds.length === 0) { alert("발송할 대상을 한 명 이상 선택해주세요."); return; }
-    if (!title || !content) { alert("제목과 내용을 모두 입력해주세요."); return; }
+    if (!title || !content) return alert("제목과 내용을 모두 입력해주세요.");
     if (!confirm(`총 ${targetUserIds.length}명에게 공지를 발송하시겠습니까?`)) return;
 
-    const targetNamesList = targetUserIds.map(uid => { 
-        const user = globalUserList.find(u => u.userid === uid); 
-        return user ? (user.name || user.nickname || '알수없음') : '알수없음'; 
-    });
+    // 요약용 이름 목록 생성
+    const targetNamesList = Array.from(selectedTargetMap.values()).map(info => info.name);
     let targetNamesDisplay = targetNamesList.slice(0, 5).join(', '); 
     if (targetNamesList.length > 5) targetNamesDisplay += ` 외 ${targetNamesList.length - 5}명`;
 
@@ -1000,10 +1009,10 @@ async function sendAdminNotice() {
         alert("공지 발송 및 기록 저장이 완료되었습니다.");
         document.getElementById('noticeTitle').value = ''; 
         document.getElementById('noticeContent').value = '';
-        document.querySelectorAll('#noticeTargetCheckboxes input[type="checkbox"]').forEach(c => c.checked = false); 
+        clearAllTargets(); 
         showNotiMenu('sent'); 
     } catch(e) { 
-        if (e.message !== "Auth expired") alert("공지 발송이 원활하게 진행되지 않았습니다. 서버 상태를 확인해주세요."); 
+        if (e.message !== "Auth expired") alert("서버 통신 중 오류가 발생했습니다."); 
     }
 }
 

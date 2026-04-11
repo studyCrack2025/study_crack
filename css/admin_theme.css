@@ -300,6 +300,16 @@ tr.urgent-row-etc td { background-color: #fefce8 !important; border-bottom: 1px 
 .report-badge.missing { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
 .report-badge.none    { color: #94a3b8; }
 
+/* 스마트 타겟 셀렉터 UI */
+.smart-target-selector { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; }
+.btn-add-target { padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+.btn-add-target:hover { background: #059669; }
+.selected-targets-box { background: white; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 15px; min-height: 100px; }
+.target-tags-container { display: flex; flex-wrap: wrap; gap: 8px; }
+.target-tag { display: inline-flex; align-items: center; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; animation: fadeIn 0.2s ease-in; }
+.target-tag .remove-tag { margin-left: 8px; color: #93c5fd; cursor: pointer; font-weight: 900; font-size: 1rem; transition: 0.2s; }
+.target-tag .remove-tag:hover { color: #1e3a8a; }
+
 /* ============================================================
    [튜터 매칭 관리 시스템 UI - 디자인 리뉴얼]
    ============================================================ */

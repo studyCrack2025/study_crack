@@ -259,9 +259,36 @@
                 <h3 class="noti-send-title">📢 새로운 공지사항 작성</h3>
                 
                 <div class="form-group noti-form-group">
-                    <label class="noti-form-label">1. 수신 대상 선택 (다중 선택 가능)</label>
-                    <div id="noticeTargetCheckboxes" class="checkbox-container">
-                        <p class="empty-msg">명단을 불러오는 중...</p>
+                    <label class="noti-form-label">1. 수신 대상 지정 (스마트 그룹 추가)</label>
+                    <div class="smart-target-selector">
+                        <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
+                            <select id="targetGroupSelect" class="noti-input" style="flex:1; min-width:150px;" onchange="updateTargetSubSelect()">
+                                <option value="">-- 보낼 대상을 선택하세요 --</option>
+                                <option value="ALL">전체 학생 일괄 발송</option>
+                                <option value="TIER_PRO">🔥 PRO 등급 전체</option>
+                                <option value="TIER_STANDARD">📘 STANDARD 등급 전체</option>
+                                <option value="TIER_BASIC">🌱 BASIC 등급 전체</option>
+                                <option value="TUTOR">👨‍🏫 특정 튜터 담당 학생들...</option>
+                                <option value="INDIVIDUAL">👤 개별 학생 선택...</option>
+                            </select>
+                            
+                            <select id="targetSubSelect" class="noti-input" style="flex:1; min-width:150px; display:none;">
+                                </select>
+                            
+                            <button type="button" class="btn-add-target" onclick="addTargetUsers()">
+                                <i class="fas fa-plus"></i> 명단에 추가
+                            </button>
+                        </div>
+                        
+                        <div class="selected-targets-box">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                <p style="font-size:0.85rem; color:#64748b; margin:0; font-weight:bold;">발송 예정 명단 (총 <span id="targetCountText" style="color:#ef4444; font-size:1rem;">0</span>명)</p>
+                                <button type="button" onclick="clearAllTargets()" style="background:none; border:none; color:#94a3b8; font-size:0.8rem; cursor:pointer; text-decoration:underline;">전체 비우기</button>
+                            </div>
+                            <div id="selectedTargetTags" class="target-tags-container">
+                                <span class="empty-msg" style="padding:0; font-size:0.9rem;">위에서 그룹이나 학생을 선택한 후 [추가]를 눌러주세요.</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
