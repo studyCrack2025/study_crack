@@ -59,26 +59,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setWeeklyLoadingStatus(true);
 
-    // 🚀 [핵심] 분리된 테이블에 맞게 API 4개를 병렬로 동시에 호출
-    Promise.allSettled([
-        fetchUserData(userId),
-        fetchUnivData(),
-        fetchWeeklyHistory(), // 신규: 주간 리포트 독립 로드
-        fetchInitialProReports() // 신규: PRO 리포트 독립 로드
-    ]).then((results) => {
-        // 에러 로깅
+    try {
+        // 1️⃣ [핵심] 유저 데이터를 가장 먼저 가져와서 등급(Tier)을 확인합니다.
+        await fetchUserData(userId);
+
+        // 2️⃣ [핵심] 확인된 등급에 따라 굳이 필요 없는 무거운 API 연산/호출은 배열에서 제외합니다.
+        const parallelTasks = [fetchUnivData()];
+        
+        if (['standard', 'pro'].includes(currentUserTier)) {
+            parallelTasks.push(fetchWeeklyHistory()); // 코칭 탭용 데이터
+        }
+        if (['pro'].includes(currentUserTier)) {
+            parallelTasks.push(fetchInitialProReports()); // PRO 탭용 데이터
+        }
+
+        const results = await Promise.allSettled(parallelTasks);
         results.forEach((res, idx) => {
             if (res.status === 'rejected') console.error(`Data Load Error [${idx}]:`, res.reason);
         });
 
-        // 초기화 로직 실행
+        // 3️⃣ UI 초기화 로직 실행
         initUnivGrid(); 
         updateAnalysisUI();
-        initProSection(); // 내부에서 cachedProReports를 바로 사용
+        initProSection(); 
         
         setWeeklyLoadingStatus(false);
         setTimeout(() => { 
-            checkWeeklyStatus(); // 내부에서 weeklyDataHistory를 바로 사용
+            // 주간 상태 체크도 권한이 있는 사람만 실행
+            if (['standard', 'pro'].includes(currentUserTier)) {
+                checkWeeklyStatus(); 
+            }
             applyCoachTierLock();
             applySimTierLock();
         }, 500); 
@@ -95,7 +105,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const targetTab = params.get('tab');
         if (targetTab) openSolution(targetTab);         
-    });
+    } catch (e) {
+        console.error("Initialization Error:", e);
+    }
 
     // 튜토리얼 4단계 (모바일 말풍선 가려짐 완벽 해결 및 기능보기 변환 로직)
     const pendingTutorial = localStorage.getItem('pending_tutorial');
@@ -1237,6 +1249,12 @@ let selectedSimIndex = null;
 function initSimulation() {
     const chartArea = document.getElementById('simChartArea');
     if (!chartArea) return;
+
+    if (!['standard', 'pro'].includes(currentUserTier)) {
+        chartArea.innerHTML = `<div style="width:100%; height:100%; min-height: 260px; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-weight:600; font-size:1.1rem;">Standard 멤버십 이상 전용 기능입니다.</div>`;
+        renderDetailedSimCard(); // 블러 뒤에 나타날 타겟 CTA 렌더링 호출
+        return;
+    }
     
     if (!userQuantData || Object.keys(userQuantData).length === 0) {
         chartArea.innerHTML = `<div style="width:100%; height:100%; min-height: 200px; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px; color:#94a3b8;">
