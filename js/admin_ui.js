@@ -1058,13 +1058,13 @@ window.toggleAlimtalkOptions = function() {
 async function sendAdminNotice() {
     if (selectedTargetMap.size === 0) return alert("발송할 대상을 한 명 이상 명단에 추가해주세요.");
     
-    // 알림톡 관련 변수 추출
+    // 알림톡 관련 변수 추출 (ID 정확히 매칭)
     const useAlimtalkElement = document.getElementById('useAlimtalk');
-    const templateTypeElement = document.getElementById('alimtalkTemplateType');
+    const templateTypeElement = document.getElementById('alimtalkTemplateType'); // 💡 이 ID가 HTML과 일치해야 함!
 
     const useAlimtalk = useAlimtalkElement ? useAlimtalkElement.checked : false;
-    const templateType = templateTypeElement ? templateTypeElement.value : 'GENERAL';
-    const isMarketing = true;
+    const templateType = templateTypeElement ? templateTypeElement.value : 'REMIND'; // 💡 선택 안 되면 기본값 REMIND
+    const isMarketing = true; // 무조건 마케팅 동의자 전용
     
     const targetUserIds = Array.from(selectedTargetMap.keys());
     const title = document.getElementById('noticeTitle').value.trim();
@@ -1082,6 +1082,7 @@ async function sendAdminNotice() {
     if (targetNamesList.length > 5) targetNamesDisplay += ` 외 ${targetNamesList.length - 5}명`;
 
     try {
+        // 서버로 요청 전송
         await apiFetch(NOTI_API_URL, { 
             method: 'POST', 
             body: JSON.stringify({ 
@@ -1093,21 +1094,26 @@ async function sendAdminNotice() {
                     targetNamesDisplay: targetNamesDisplay,
                     senderName: adminName,
                     useAlimtalk: useAlimtalk,
-                    templateType: templateType,
-                    isMarketing: isMarketing // 무조건 true 전달
+                    templateType: templateType, // 💡 Lambda로 보내는 핵심 변수!
+                    isMarketing: isMarketing
                 } 
             }) 
         }); 
         
         alert("공지 발송이 완료되었습니다.");
+        
+        // 폼 초기화
         document.getElementById('noticeTitle').value = ''; 
         document.getElementById('noticeContent').value = '';
-        if(useAlimtalkElement) useAlimtalkElement.checked = false;
-        toggleAlimtalkOptions(); // UI 리셋
-        clearAllTargets(); 
+        if (useAlimtalkElement) useAlimtalkElement.checked = false;
+        
+        if (typeof toggleAlimtalkOptions === 'function') toggleAlimtalkOptions();
+        if (typeof clearAllTargets === 'function') clearAllTargets();
+        
         showNotiMenu('sent'); 
     } catch(e) { 
         if (e.message !== "Auth expired") alert("서버 통신 중 오류가 발생했습니다."); 
+        console.error("Notice Send Error:", e);
     }
 }
 
