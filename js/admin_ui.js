@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 초기 데이터 로드
     loadAdminStats(userId);
+    populateTutorFilter();
     searchStudents();
     fetchUnreadNotiCount();
     
