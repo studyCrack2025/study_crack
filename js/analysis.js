@@ -96,7 +96,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const loader = document.getElementById('pageLoadingOverlay');
         if (loader) {
-            setTimeout(() => loader.classList.add('hidden'), 500);
+            setTimeout(() => {
+                loader.classList.add('hidden');
+                // 👇 추가: 로딩 오버레이가 사라질 때 높이 최종 동기화
+                if (window.innerWidth <= 768) syncMobileHeight();
+            }, 500);
         }
 
         // URL 파라미터 확인 (?sol=sim 등)
@@ -540,6 +544,26 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
+// 💡 모바일 스와이프 래퍼 높이 강제 동기화 함수
+function syncMobileHeight() {
+    if (window.innerWidth > 768) return; // PC는 실행 안 함
+    
+    const wrapper = document.querySelector('.sol-swipe-wrapper');
+    if (!wrapper) return;
+
+    // 현재 스크롤 위치를 기반으로 어떤 탭을 보고 있는지 계산
+    const index = Math.round(wrapper.scrollLeft / wrapper.clientWidth);
+    const types = ['univ', 'sim', 'coach', 'pro'];
+    const activeTab = document.getElementById(`sol-${types[index]}`);
+
+    if (activeTab) {
+        // 브라우저가 레이아웃을 다시 그릴 시간을 약간 준 뒤 높이 측정
+        requestAnimationFrame(() => {
+            wrapper.style.height = `${activeTab.offsetHeight}px`;
+        });
+    }
+}
+
 function getStandardLockOverlayHTML(featureName) {
     return `
         <div style="background: white; padding: 30px 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; border: 1px solid #e2e8f0; width: 90%; max-width: 320px; box-sizing: border-box;">
@@ -879,7 +903,7 @@ function openSolution(type) {
         if (wrapper && targetContent) {
             // 해당 탭의 위치로 부드럽게 스크롤
             wrapper.scrollTo({ left: targetContent.offsetLeft - wrapper.offsetLeft, behavior: 'smooth' });
-            wrapper.style.height = `${targetContent.offsetHeight}px`;
+            setTimeout(syncMobileHeight, 350);
         }
     } else {
         // PC: 기존처럼 display로 탭 전환
@@ -1365,16 +1389,8 @@ async function updateAnalysisUI() {
             cardsContainer.innerHTML = results.map(item => renderAnalysisCard(item)).join('');
         }
         
-        const isMobile = window.innerWidth <= 768;
-        if (isMobile) {
-            const wrapper = document.querySelector('.sol-swipe-wrapper');
-            const activeTab = document.getElementById('sol-univ');
-            if (wrapper && activeTab) {
-                // 브라우저가 렌더링할 시간을 준 뒤 계산
-                setTimeout(() => {
-                    wrapper.style.height = `${activeTab.offsetHeight}px`;
-                }, 100);
-            }
+        if (window.innerWidth <= 768) {
+            setTimeout(syncMobileHeight, 150); // 렌더링 후 높이 재조정
         }
     } catch (e) {
         console.error("분석 API 호출 중 오류 발생:", e);
@@ -1708,13 +1724,7 @@ function renderSimChart() {
     renderDetailedSimCard();
     
     if (window.innerWidth <= 768) {
-        const wrapper = document.querySelector('.sol-swipe-wrapper');
-        const activeTab = document.getElementById('sol-sim');
-        if (wrapper && activeTab) {
-            setTimeout(() => {
-                wrapper.style.height = `${activeTab.offsetHeight}px`;
-            }, 200); // 차트 애니메이션 시간을 고려해 약간의 여유를 둡니다.
-        }
+        setTimeout(syncMobileHeight, 300); // 그래프 애니메이션 후 높이 재조정
     }
 }
 
