@@ -544,7 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const isLoggedIn = !!localStorage.getItem('accessToken');
     
     // 이미 튜토리얼을 수락해서 진행 중인 경우 (화면 깜빡임 방지용 즉시 락)
-    if (pendingTutorial === 'true' || pendingTutorial === 'step3') {
+    if (pendingTutorial === 'true') {
         runTutorialLock(pendingTutorial);
     } 
     // 💡 동기적으로 팝업을 띄우던 부분을 완전히 삭제하고 함수 호출만 남깁니다.
@@ -611,11 +611,6 @@ function runTutorialLock(stepState) {
             targetUrl = '/mypage';
             if(tooltipMsg) tooltipMsg.innerText = '1. 마이페이지를 눌러 정보를 입력하실 수 있습니다.';
             if(progressBar) progressBar.style.width = '33%';
-        } else if (stepState === 'step3') {
-            targetBtn = document.getElementById('navAnalysis');
-            targetUrl = '/analysis';
-            if(tooltipMsg) tooltipMsg.innerText = '3. 나만의 솔루션을 눌러 스터디크랙의 기능을 이용해보세요.';
-            if(progressBar) progressBar.style.width = '100%';
         }
 
         if (targetBtn && !targetBtn.classList.contains('hidden')) {
@@ -641,13 +636,6 @@ function runTutorialLock(stepState) {
                 e.preventDefault();
                 window.removeEventListener('beforeunload', warnTutorialExit); 
                 document.body.classList.remove('tutorial-lock'); 
-                
-                if (stepState === 'step3') {
-                    localStorage.removeItem('pending_tutorial');
-                    // 💡 최종 튜토리얼 완료 시 영구적으로 배너 띄우지 않음 설정
-                    localStorage.setItem('tutorial_completed', 'true');
-                    alert("튜토리얼이 모두 완료되었습니다!🎉\n이제 정식 서비스를 이용하실 수 있습니다.");
-                }
                 window.location.href = targetUrl; 
             });
 
@@ -655,7 +643,6 @@ function runTutorialLock(stepState) {
                 if (!confirm("정말로 그만두시겠습니까?\n튜토리얼 완료 시 제공되는 무료 대학 분석 기회를 받지 못할 수 있습니다.")) return;
 
                 localStorage.removeItem('pending_tutorial'); 
-                // 진행 중 건너뛰기를 누르면 피로도 방지를 위해 오늘 하루 보지 않기로 처리
                 const todayStr = new Date().toLocaleDateString();
                 localStorage.setItem('hide_tutorial_today', todayStr);
                 
@@ -689,12 +676,10 @@ async function checkTutorialStatus() {
         
         if (response.ok) {
             const data = await response.json();
-            
-            // 💡 [핵심 방어] DB 결과 보상을 받았거나 유료회원이면 로컬스토리지 갱신 후 즉시 함수 종료 (팝업 절대 불가)
             if (data && (data.tutorialRewardClaimed === true || data.computedTier === 'standard' || data.computedTier === 'pro')) {
                 localStorage.setItem('tutorial_completed', 'true');
                 localStorage.removeItem('pending_tutorial');
-                return; // 여기서 함수가 끝나므로 아래의 팝업 띄우기 로직에 도달하지 않음
+                return; 
             }
         }
     } catch (e) {
@@ -702,15 +687,12 @@ async function checkTutorialStatus() {
         return; 
     }
 
-    // --- DB 검사 결과 진짜로 튜토리얼을 안 한 유저만 이 아래로 내려옵니다 ---
-
     const pendingTutorial = localStorage.getItem('pending_tutorial');
     
-    if (pendingTutorial === 'true' || pendingTutorial === 'step3') {
+    if (pendingTutorial === 'true') {
         runTutorialLock(pendingTutorial);
     } 
     else {
-        // 💡 통신이 끝나고 조건이 맞을 때 비로소 팝업을 띄웁니다.
         const todayStr = new Date().toLocaleDateString();
         const hideToday = localStorage.getItem('hide_tutorial_today');
         
