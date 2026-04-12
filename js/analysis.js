@@ -1354,6 +1354,18 @@ async function updateAnalysisUI() {
         } else {
             cardsContainer.innerHTML = results.map(item => renderAnalysisCard(item)).join('');
         }
+        
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+            const wrapper = document.querySelector('.sol-swipe-wrapper');
+            const activeTab = document.getElementById('sol-univ');
+            if (wrapper && activeTab) {
+                // 브라우저가 렌더링할 시간을 준 뒤 계산
+                setTimeout(() => {
+                    wrapper.style.height = `${activeTab.offsetHeight}px`;
+                }, 100);
+            }
+        }
     } catch (e) {
         console.error("분석 API 호출 중 오류 발생:", e);
         cardsContainer.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">분석 중 오류가 발생했습니다.</div>`;
@@ -1684,6 +1696,16 @@ function renderSimChart() {
         updateSimLineGraph(selectedSimIndex || 0);
     }
     renderDetailedSimCard();
+    
+    if (window.innerWidth <= 768) {
+        const wrapper = document.querySelector('.sol-swipe-wrapper');
+        const activeTab = document.getElementById('sol-sim');
+        if (wrapper && activeTab) {
+            setTimeout(() => {
+                wrapper.style.height = `${activeTab.offsetHeight}px`;
+            }, 200); // 차트 애니메이션 시간을 고려해 약간의 여유를 둡니다.
+        }
+    }
 }
 
 function updateSimBarGraph(idx) {
