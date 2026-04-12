@@ -321,8 +321,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     window.addEventListener('resize', updatePositions);
 
                     const updateStep = () => {
-                        openSolution(tabKeys[tutStep]); 
-                        injectDummyData(tutStep); 
+                        openSolution(tabKeys[tutStep], true); 
+                        injectDummyData(tutStep);
 
                         cloneBtns.forEach((btn, idx) => {
                             // 💡 탭 하이라이트 보정
@@ -441,6 +441,38 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }, 50); 
             }
         }, 500); 
+    }
+    
+    // 👇 사용자가 수동으로 스와이프할 때 탭 버튼 상태 연동
+    const swipeWrapper = document.querySelector('.sol-swipe-wrapper');
+    if (swipeWrapper) {
+        let scrollTimeout;
+        swipeWrapper.addEventListener('scroll', () => {
+            if (window.innerWidth > 768) return; // PC는 제외
+            
+            clearTimeout(scrollTimeout);
+            // 스크롤이 끝난 직후를 감지하여 렌더링 최적화 (디바운싱)
+            scrollTimeout = setTimeout(() => {
+                const width = swipeWrapper.clientWidth;
+                // 스크롤 위치를 너비로 나누어 현재 인덱스 파악
+                const index = Math.round(swipeWrapper.scrollLeft / width);
+                const types = ['univ', 'sim', 'coach', 'pro'];
+                const currentType = types[index];
+                
+                document.querySelectorAll('.solution-menu .sol-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    const onclickAttr = btn.getAttribute('onclick');
+                    if (onclickAttr && onclickAttr.includes(`'${currentType}'`)) {
+                        btn.classList.add('active');
+                    }
+                });
+                
+                // 시뮬레이션 탭으로 스와이프 시 렌더링 전이라면 초기화
+                if (currentType === 'sim' && document.getElementById('simChartArea').innerHTML === '') {
+                    initSimulation();
+                }
+            }, 100);
+        });
     }
 });
 
@@ -801,11 +833,28 @@ function updateSurveyStatus(data) {
     }
 }
 
-function openSolution(type) {    
-    document.querySelectorAll('.sol-content').forEach(el => el.style.display = 'none');
-    const targetContent = document.getElementById(`sol-${type}`);
-    if (targetContent) targetContent.style.display = 'block';
+function openSolution(type, isTutorial = false) {    
+    const isMobile = window.innerWidth <= 768;
 
+    if (isMobile) {
+        // 모바일: 스와이프 래퍼에서 부드럽게 스크롤 이동
+        const wrapper = document.querySelector('.sol-swipe-wrapper');
+        const targetContent = document.getElementById(`sol-${type}`);
+        if (wrapper && targetContent) {
+            targetContent.scrollIntoView({ 
+                behavior: isTutorial ? 'auto' : 'smooth', 
+                block: 'nearest', 
+                inline: 'start' 
+            });
+        }
+    } else {
+        // PC: 기존처럼 display 토글 방식 유지
+        document.querySelectorAll('.sol-content').forEach(el => el.style.display = 'none');
+        const targetContent = document.getElementById(`sol-${type}`);
+        if (targetContent) targetContent.style.display = 'block';
+    }
+
+    // 상단 탭 버튼 활성화 스타일 업데이트
     document.querySelectorAll('.solution-menu .sol-btn').forEach(btn => {
         btn.classList.remove('active');
         const onclickAttr = btn.getAttribute('onclick');

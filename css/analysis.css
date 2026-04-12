@@ -726,4 +726,16 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .mobile-legend-area { display: flex; margin-top: 20px; }
     .sim-line-chart-area { min-height: 220px; overflow: visible !important; margin: 10px 0; }
     .sim-univ-scroll-box { flex-direction: column; gap: 8px; padding: 10px 0; overflow-x: hidden; grid-template-columns: 1fr; }
+    
+    /* =======================================
+       6. 솔루션 콘텐츠 좌우 스와이프 처리
+       ======================================= */
+    .sol-swipe-wrapper { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -ms-overflow-style: none; width: 100%; box-sizing: border-box; }
+    .sol-swipe-wrapper::-webkit-scrollbar { display: none; }
+    .sol-swipe-wrapper > .sol-content { flex: 0 0 100%; scroll-snap-align: start; display: block !important; padding: 0 5px; box-sizing: border-box; }
+
+    /* 👇 2. 목표대학 기본분석 카드 좌우 스와이프 처리 */
+    #analysisCardsContainer { display: flex !important; flex-direction: row !important; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; padding-bottom: 15px; scrollbar-width: none; -ms-overflow-style: none; }
+    #analysisCardsContainer::-webkit-scrollbar { display: none; }
+    #analysisCardsContainer .analysis-card { flex: 0 0 85%; scroll-snap-align: center; }
 }
