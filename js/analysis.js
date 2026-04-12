@@ -512,13 +512,13 @@ function escapeHtml(text) {
 
 function getStandardLockOverlayHTML(featureName) {
     return `
-        <div style="background: white; padding: 40px 50px; border-radius: 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center; border: 1px solid #e2e8f0; max-width: 90%;">
-            <i class="fas fa-lock" style="font-size: 3rem; color: #94a3b8; margin-bottom: 20px;"></i>
-            <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 1.4rem;">Standard 멤버십 전용 기능입니다</h3>
-            <p style="color: #64748b; font-size: 1rem; margin-bottom: 25px; line-height: 1.6;">
+        <div style="background: white; padding: 30px 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; border: 1px solid #e2e8f0; width: 90%; max-width: 320px; box-sizing: border-box;">
+            <i class="fas fa-lock" style="font-size: 2.5rem; color: #94a3b8; margin-bottom: 15px;"></i>
+            <h3 style="margin: 0 0 10px 0; color: #1e293b; font-size: 1.25rem; word-break: keep-all;">Standard 멤버십 전용</h3>
+            <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 20px; line-height: 1.5; word-break: keep-all;">
                 ${featureName}은(는)<br><strong>Standard 등급 이상</strong>부터 이용 가능합니다.
             </p>
-            <button onclick="location.href='/payment'" style="padding: 14px 35px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1.05rem; cursor: pointer; transition: background 0.2s;">
+            <button onclick="location.href='/payment'" style="width: 100%; padding: 14px 0; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.2s; white-space: nowrap; word-break: keep-all;">
                 🚀 멤버십 알아보기
             </button>
         </div>`;
@@ -528,14 +528,14 @@ function applySimTierLock() {
     const container = document.querySelector('.sim-container-new') || document.getElementById('sol-sim');
     if (!container) return;
 
-    // 'trial' 티어는 통과시키도록 조건문 수정
-    if (currentUserTier === 'free' || currentUserTier === 'basic') {
+    if (['free', 'basic', 'trial'].includes(currentUserTier)) {
         container.style.position = 'relative';
+        container.style.minHeight = '400px'; // 💡 높이 강제 고정으로 모달 위치 통일
         if (container.querySelector('.sim-tier-lock-overlay')) return;
 
         const overlay = document.createElement('div');
         overlay.className = 'sim-tier-lock-overlay';
-        overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
+        overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
         overlay.innerHTML = getStandardLockOverlayHTML('점수 상승 시뮬레이션');
         container.appendChild(overlay);
     }
@@ -2007,19 +2007,20 @@ function applyCoachTierLock() {
     const container = document.querySelector('.coach-container');
     if (!container) return;
 
-    // trial을 조건에 포함하여 블러(잠금) 처리되게 수정
     if (['free', 'basic', 'trial'].includes(currentUserTier)) {
         container.classList.add('tier-locked');
         container.style.position = 'relative';
+        container.style.minHeight = '400px'; // 💡 높이 강제 고정으로 모달 위치 통일
         if (container.querySelector('.coach-tier-lock-overlay')) return;
 
         const overlay = document.createElement('div');
         overlay.className = 'coach-tier-lock-overlay';
-        overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
-        overlay.innerHTML = getStandardLockOverlayHTML('주간 학습 점검 및 피드백 기능');
+        overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
+        overlay.innerHTML = getStandardLockOverlayHTML('주간 학습 점검 및 피드백');
         container.appendChild(overlay);
     } else {
         container.classList.remove('tier-locked');
+        container.style.minHeight = 'auto'; // 권한 있을 시 원상복구
         const existingOverlay = container.querySelector('.coach-tier-lock-overlay');
         if (existingOverlay) existingOverlay.remove();
     }
