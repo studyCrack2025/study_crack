@@ -539,22 +539,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { threshold: 0.15 });
     document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
 
-    // 💡 [수정됨] 5. 튜토리얼 통합 제어 (1단계 & 3단계 분기 및 이탈 방어)
+    // 💡 [수정됨] 5. 튜토리얼 통합 제어 (자동 팝업 및 오늘 하루 보지 않기)
     const pendingTutorial = localStorage.getItem('pending_tutorial');
+    const isTutorialCompleted = localStorage.getItem('tutorial_completed') === 'true';
     
-    if (pendingTutorial === 'offer') {
-        const offerModal = document.getElementById('tutorialOffer-modal');
-        if (offerModal) {
-            offerModal.classList.remove('hidden');
-            offerModal.style.display = 'block';
-            document.body.style.overflow = 'hidden';
-        }
-    } else if (pendingTutorial === 'true' || pendingTutorial === 'step3') {
+    // 이미 튜토리얼을 수락해서 진행 중인 경우
+    if (pendingTutorial === 'true' || pendingTutorial === 'step3') {
         runTutorialLock(pendingTutorial);
+    } 
+    // 튜토리얼을 완료하지 않았고, 진행 중도 아닐 경우 (메인 페이지 접속 시)
+    else if (!isTutorialCompleted) {
+        const todayStr = new Date().toLocaleDateString();
+        const hideToday = localStorage.getItem('hide_tutorial_today');
+        
+        // 오늘 하루 보지 않기 설정이 안 되어 있다면 팝업 출력
+        if (hideToday !== todayStr) {
+            const offerModal = document.getElementById('tutorialOffer-modal');
+            if (offerModal) {
+                offerModal.classList.remove('hidden');
+                offerModal.style.display = 'block';
+                document.body.style.overflow = 'hidden';
+            }
+        }
     }
-});
+}); // <-- DOMContentLoaded 닫힘 괄호 위치
 
-// 💡 튜토리얼 제안 수락/거절 핸들러 및 실행 함수 추가
+// 💡 튜토리얼 제안 수락 핸들러
 window.acceptTutorialOffer = function() {
     document.getElementById('tutorialOffer-modal').style.display = 'none';
     document.body.style.overflow = 'auto';
@@ -562,12 +572,18 @@ window.acceptTutorialOffer = function() {
     runTutorialLock('true');
 };
 
+// 💡 튜토리얼 제안 거절 (오늘 하루 보지 않기 처리) 핸들러
 window.declineTutorialOffer = function() {
+    const chk = document.getElementById('chkDoNotShowToday');
+    if (chk && chk.checked) {
+        const todayStr = new Date().toLocaleDateString();
+        localStorage.setItem('hide_tutorial_today', todayStr);
+    }
     document.getElementById('tutorialOffer-modal').style.display = 'none';
     document.body.style.overflow = 'auto';
-    localStorage.removeItem('pending_tutorial');
 };
 
+// 💡 튜토리얼 락 & 실행 함수
 function runTutorialLock(stepState) {
     document.body.classList.add('tutorial-lock');
 
@@ -639,6 +655,8 @@ function runTutorialLock(stepState) {
                 
                 if (stepState === 'step3') {
                     localStorage.removeItem('pending_tutorial');
+                    // 💡 최종 튜토리얼 완료 시 영구적으로 배너 띄우지 않음 설정
+                    localStorage.setItem('tutorial_completed', 'true');
                     alert("튜토리얼이 모두 완료되었습니다!🎉\n이제 정식 서비스를 이용하실 수 있습니다.");
                 }
                 window.location.href = targetUrl; 
@@ -646,6 +664,10 @@ function runTutorialLock(stepState) {
 
             skipBtn.addEventListener('click', () => {
                 localStorage.removeItem('pending_tutorial'); 
+                // 진행 중 건너뛰기를 누르면 피로도 방지를 위해 오늘 하루 보지 않기로 처리
+                const todayStr = new Date().toLocaleDateString();
+                localStorage.setItem('hide_tutorial_today', todayStr);
+                
                 overlay.classList.add('hidden');
                 cloneBtn.remove();
                 window.removeEventListener('beforeunload', warnTutorialExit);
