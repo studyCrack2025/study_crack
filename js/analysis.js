@@ -548,9 +548,10 @@ function applySimTierLock() {
     const container = document.querySelector('.sim-container-new') || document.getElementById('sol-sim');
     if (!container) return;
 
-    if (['free', 'basic', 'trial'].includes(currentUserTier)) {
+    // 💡 수정됨: 'trial'을 잠금 대상에서 제외 ('free', 'basic'만 잠금)
+    if (['free', 'basic'].includes(currentUserTier)) {
         container.style.position = 'relative';
-        container.style.minHeight = '400px'; // 💡 높이 강제 고정으로 모달 위치 통일
+        container.style.minHeight = '400px'; // 모달 위치 통일용 강제 고정
         if (container.querySelector('.sim-tier-lock-overlay')) return;
 
         const overlay = document.createElement('div');
@@ -558,6 +559,11 @@ function applySimTierLock() {
         overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
         overlay.innerHTML = getStandardLockOverlayHTML('점수 상승 시뮬레이션');
         container.appendChild(overlay);
+    } else {
+        // 💡 추가됨: 'trial', 'standard', 'pro' 일 경우 자물쇠 원상복구(해제)
+        container.style.minHeight = 'auto';
+        const existingOverlay = container.querySelector('.sim-tier-lock-overlay');
+        if (existingOverlay) existingOverlay.remove();
     }
 }
 
