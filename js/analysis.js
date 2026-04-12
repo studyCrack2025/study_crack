@@ -398,21 +398,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     prevBtn.addEventListener('click', () => { tutStep--; updateStep(); });
                     
-                    nextBtn.addEventListener('click', () => { 
-                        const isMobile = window.innerWidth <= 768;
-                        if (isMobile) {
-                            isTooltipHidden = true;
-                            tooltip.style.display = 'none';
-                            skipBtn.classList.add('highlight-border');
-                            if (tutStep === 4) {
-                                skipBtn.innerText = '튜토리얼 완료하기';
-                            } else {
-                                skipBtn.innerText = '다음';
-                            }
-                        } else {
-                            tutStep++; updateStep(); 
-                        }
-                    });
+                    nextBtn.addEventListener('click', () => { tutStep++; updateStep(); });
 
                     const finishTutorialAction = (showModal) => {
                         localStorage.removeItem('pending_tutorial');
@@ -446,22 +432,63 @@ document.addEventListener('DOMContentLoaded', async () => {
                     };
 
                     skipBtn.addEventListener('click', () => {
-                        const isMobile = window.innerWidth <= 768;
-                        if (isMobile && isTooltipHidden) {
-                            if (tutStep === 4) {
-                                finishTutorialAction(true);
-                            } else {
-                                tutStep++;
-                                updateStep();
+                        if (tutStep === 4) {
+                            finishTutorialAction(true);
+                        } else {
+                            if (!confirm("정말로 그만두시겠습니까?\n튜토리얼 완료 시 제공되는 무료 대학 분석 기회를 받지 못할 수 있습니다.")) return;
+                            finishTutorialAction(false);
+                        }
+                    });
+
+                    const updateStep = () => {
+                        // 1. 해당 탭으로 이동 (내부 API 로딩 스크립트 실행됨)
+                        openSolution(tabKeys[tutStep]); 
+                        
+                        // 2. 무조건 예시 더미 데이터로 덮어씌우기 (API 로딩 덮어쓰기)
+                        injectDummyData(tutStep);
+
+                        // 3. 🔥 핵심: 더미 데이터가 완전히 주입된 '후'에 모바일 래퍼 높이 재계산!
+                        const isMobileNow = window.innerWidth <= 768;
+                        if (isMobileNow) {
+                            const wrapper = document.querySelector('.sol-swipe-wrapper');
+                            const targetContent = document.getElementById(`sol-${tabKeys[tutStep]}`);
+                            if (wrapper && targetContent) {
+                                wrapper.style.height = `${targetContent.offsetHeight}px`;
                             }
-                            return;
                         }
 
-                        if (tutStep < 4) {
-                            if (!confirm("정말로 그만두시겠습니까?\n튜토리얼 완료 시 제공되는 무료 대학 분석 기회를 받지 못할 수 있습니다.")) return;
+                        cloneBtns.forEach((btn, idx) => {
+                            // 💡 탭 하이라이트 보정
+                            const isActive = (tutStep === 4 && idx === 3) || (idx === tutStep);
+                            if (isActive) {
+                                btn.classList.add('active');
+                                btn.style.opacity = '1';
+                            } else {
+                                btn.classList.remove('active');
+                                btn.style.opacity = '0.4';
+                            }
+                        });
+                        
+                        isTooltipHidden = false;
+                        tooltip.style.display = 'block';
+                        
+                        updatePositions(); 
+                        
+                        msgEl.innerText = tutMsgs[tutStep];
+                        prevBtn.style.display = tutStep > 0 ? 'block' : 'none';
+                        
+                        // 🔥 핵심: 모바일/PC 구분 없이 직관적으로 "다음/건너뛰기" 로직 통일
+                        if (tutStep === 4) {
+                            nextBtn.style.display = 'none';
+                            skipBtn.innerText = '튜토리얼 완료하기';
+                            skipBtn.classList.add('highlight-border');
+                        } else {
+                            nextBtn.style.display = 'block';
+                            nextBtn.innerText = '다음';
+                            skipBtn.innerText = '튜토리얼 건너뛰기';
+                            skipBtn.classList.remove('highlight-border');
                         }
-                        finishTutorialAction(tutStep === 4);
-                    });
+                    };
 
                     updateStep(); 
                 }, 50); 
