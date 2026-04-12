@@ -1856,8 +1856,7 @@ function renderDetailedSimCard() {
                 <h4 style="margin: 0 0 10px 0; font-size: 1.05rem;"><i class="fas fa-exclamation-triangle"></i> 지금 점수 구조에서는 특정 과목이 결과에 불리하게 작용하고 있습니다.</h4>
                 <p style="margin: 0 0 12px 0; font-size: 0.9rem; line-height: 1.6;">
                     이 상태에서는 공부량을 늘려도 결과가 크게 바뀌지 않을 수 있습니다.<br>
-                    특히 학기 초에 방향이 잘못 잡히면 시간만 더 쓰게 되는 경우가 많습니다.<br><br>
-                    어떤 과목이 중요한지는 확인됐지만 어떻게 올려야 하는지는 아직 정해지지 않은 상태입니다.<br>
+                    특히 학기 초에 방향이 잘못 잡히면 시간만 더 쓰게 되는 경우가 많습니다.<br>
                     방향을 올바로 잡지 않은 상태에서의 노력은 결과로 이어지기 어렵습니다. <strong>지금 방향을 잡느냐에 따라 결과가 달라집니다.</strong>
                 </p>
                 <div style="background: white; border-radius: 6px; padding: 12px; margin-bottom: 15px; border: 1px solid #fed7aa; color: #431407; font-size: 0.9rem;">
