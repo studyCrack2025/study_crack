@@ -443,22 +443,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 500); 
     }
     
-    // 👇 사용자가 수동으로 스와이프할 때 탭 버튼 상태 연동
     const swipeWrapper = document.querySelector('.sol-swipe-wrapper');
     if (swipeWrapper) {
         let scrollTimeout;
         swipeWrapper.addEventListener('scroll', () => {
-            if (window.innerWidth > 768) return; // PC는 제외
+            if (window.innerWidth > 768) return; // 모바일에서만 작동
             
             clearTimeout(scrollTimeout);
-            // 스크롤이 끝난 직후를 감지하여 렌더링 최적화 (디바운싱)
             scrollTimeout = setTimeout(() => {
+                const scrollLeft = swipeWrapper.scrollLeft;
                 const width = swipeWrapper.clientWidth;
-                // 스크롤 위치를 너비로 나누어 현재 인덱스 파악
-                const index = Math.round(swipeWrapper.scrollLeft / width);
+                // 현재 스크롤 위치를 계산해 몇 번째 탭인지 파악
+                const index = Math.round(scrollLeft / width);
                 const types = ['univ', 'sim', 'coach', 'pro'];
                 const currentType = types[index];
                 
+                // 버튼 상태 동기화
                 document.querySelectorAll('.solution-menu .sol-btn').forEach(btn => {
                     btn.classList.remove('active');
                     const onclickAttr = btn.getAttribute('onclick');
@@ -467,11 +467,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 });
                 
-                // 시뮬레이션 탭으로 스와이프 시 렌더링 전이라면 초기화
+                // 시뮬레이션 탭 도달 시 데이터 로드 안 되어있으면 로드
                 if (currentType === 'sim' && document.getElementById('simChartArea').innerHTML === '') {
                     initSimulation();
                 }
-            }, 100);
+            }, 100); // 부드러운 전환을 위해 스크롤 종료 0.1초 후 인식
         });
     }
 });
@@ -833,28 +833,24 @@ function updateSurveyStatus(data) {
     }
 }
 
-function openSolution(type, isTutorial = false) {    
+function openSolution(type) {    
     const isMobile = window.innerWidth <= 768;
+    const targetContent = document.getElementById(`sol-${type}`);
 
     if (isMobile) {
-        // 모바일: 스와이프 래퍼에서 부드럽게 스크롤 이동
+        // 모바일: 스와이프 래퍼 스크롤 이동 (display:none 처리 안 함)
         const wrapper = document.querySelector('.sol-swipe-wrapper');
-        const targetContent = document.getElementById(`sol-${type}`);
         if (wrapper && targetContent) {
-            targetContent.scrollIntoView({ 
-                behavior: isTutorial ? 'auto' : 'smooth', 
-                block: 'nearest', 
-                inline: 'start' 
-            });
+            // 해당 탭의 위치로 부드럽게 스크롤
+            wrapper.scrollTo({ left: targetContent.offsetLeft - wrapper.offsetLeft, behavior: 'smooth' });
         }
     } else {
-        // PC: 기존처럼 display 토글 방식 유지
+        // PC: 기존처럼 display로 탭 전환
         document.querySelectorAll('.sol-content').forEach(el => el.style.display = 'none');
-        const targetContent = document.getElementById(`sol-${type}`);
         if (targetContent) targetContent.style.display = 'block';
     }
 
-    // 상단 탭 버튼 활성화 스타일 업데이트
+    // 상단 탭 버튼 활성화 UI 변경
     document.querySelectorAll('.solution-menu .sol-btn').forEach(btn => {
         btn.classList.remove('active');
         const onclickAttr = btn.getAttribute('onclick');
