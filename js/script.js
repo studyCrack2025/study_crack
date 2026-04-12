@@ -681,54 +681,52 @@ function runTutorialLock(stepState) {
     }, 150); 
 }
 
+// 💡 [수정됨] 튜토리얼 상태 확인 및 팝업 제어
 async function checkTutorialStatus() {
     const isLoggedIn = !!localStorage.getItem('accessToken');
-    // 💡 수정됨: API Gateway 인가 통과를 위해 idToken 사용 및 userId 변수 추가
     const idToken = localStorage.getItem('idToken'); 
     const userId = localStorage.getItem('userId');
     
-    // 비회원이거나 토큰이 없다면 튜토리얼 배너를 띄우지 않음
+    // 비회원이거나 필수 정보가 없다면 무시
     if (!isLoggedIn || !idToken || !userId) return;
 
-    let isTutorialCompleted = localStorage.getItem('tutorial_completed') === 'true';
-
-    // 로컬에 완료 기록이 없다면 서버에서 실제 DB 플래그(tutorialRewardClaimed)를 확인
-    if (!isTutorialCompleted) {
-        try {
-            // MYPAGE API를 호출하여 유저 정보를 가져옵니다.
-            const response = await fetch(CONFIG.api.user, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
-                body: JSON.stringify({ type: 'get_user', userId: userId })
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                
-                // 💡 수정됨: DB에 이미 보상 수령 기록이 있거나, 유료 멤버십(Standard/Pro)인 경우 배너 영구 숨김
-                if (data && (data.tutorialRewardClaimed === true || data.computedTier === 'standard' || data.computedTier === 'pro')) {
-                    localStorage.setItem('tutorial_completed', 'true');
-                    return; // 배너 안 띄우고 즉시 종료
-                }
-            } else {
-                console.warn("유저 데이터 동기화 실패 (오작동 방지를 위해 배너 대기)");
-                return; // 🚨 수정됨: API가 실패하면 밑으로 내려가서 배너를 띄우지 않도록 방어
-            }
-        } catch (e) {
-            console.error("Tutorial status sync error:", e);
-            return; // 🚨 수정됨: 네트워크 에러 시 배너 띄우지 않음
-        }
-    } else {
-        return; // 이미 로컬에 완료 기록이 있으면 즉시 종료
+    // 1. 브라우저 로컬에 '완료' 도장이 찍혀있으면 더 볼 것 없이 즉시 종료
+    if (localStorage.getItem('tutorial_completed') === 'true') {
+        return;
     }
 
+    // 2. 로컬에 도장이 없다면, 진짜 안 한건지 다른 기기에서 한건지 DB를 찔러봄
+    try {
+        const response = await fetch(CONFIG.api.user, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+            body: JSON.stringify({ type: 'get_user', userId: userId })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            // DB 확인 결과 이미 보상을 받았거나, 돈을 낸 유료회원이면 배너 영구 금지
+            if (data && (data.tutorialRewardClaimed === true || data.computedTier === 'standard' || data.computedTier === 'pro')) {
+                localStorage.setItem('tutorial_completed', 'true');
+                localStorage.removeItem('pending_tutorial');
+                return; // 여기서 컷!
+            }
+        }
+    } catch (e) {
+        console.error("Tutorial sync error:", e);
+        // 에러가 났을 때는 유저를 괴롭히지 않기 위해 배너를 띄우지 않고 조용히 넘어갑니다.
+        return; 
+    }
+
+    // 3. 여기까지 왔다는 건 '진짜로 튜토리얼을 안 한 일반/무료 유저'라는 뜻입니다.
     const pendingTutorial = localStorage.getItem('pending_tutorial');
     
-    // 이미 튜토리얼을 수락해서 진행 중인 경우
+    // 진행 중인 상태(true, step3 등)라면 락 실행
     if (pendingTutorial === 'true' || pendingTutorial === 'step3') {
         runTutorialLock(pendingTutorial);
     } 
-    // 아직 진행 중이 아니라면 (메인 페이지 접속 시) 오늘 하루 보지 않기 판단 후 배너 노출
+    // 아직 시작도 안 한 유저라면 '오늘 하루 보지 않기' 확인 후 팝업 띄우기
     else {
         const todayStr = new Date().toLocaleDateString();
         const hideToday = localStorage.getItem('hide_tutorial_today');
