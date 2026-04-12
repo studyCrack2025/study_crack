@@ -8,19 +8,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        .download-container { background: white; max-width: 500px; width: 90%; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; }
-        .logo { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 1.6rem; font-weight: 900; color: #1e293b; margin-bottom: 30px; text-decoration: none; letter-spacing: -0.5px; }
-        .logo-img { height: 36px; width: auto; }
-        .step-box { background: #f1f5f9; padding: 25px; border-radius: 12px; margin-bottom: 20px; text-align: left; }
-        .step-title { font-size: 1.05rem; font-weight: 700; color: #3b82f6; margin: 0 0 10px 0; }
-        .survey-btn { display: block; text-align: center; background: #1e293b; color: white; text-decoration: none; padding: 12px; border-radius: 8px; font-weight: bold; transition: 0.2s; }
-        .survey-btn:hover { background: #334155; }
-        .code-input { width: 100%; padding: 14px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 1.1rem; text-align: center; letter-spacing: 2px; text-transform: uppercase; box-sizing: border-box; outline: none; transition: 0.2s; font-weight: bold; }
-        .code-input:focus { border-color: #8b5cf6; }
-        .download-btn { width: 100%; padding: 15px; margin-top: 10px; background: #8b5cf6; color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .download-btn:hover { background: #7c3aed; }
-        .download-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+.download-container { background: white; max-width: 500px; width: 90%; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; }
+.logo { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 1.6rem; font-weight: 900; color: #1e293b; margin-bottom: 30px; text-decoration: none; letter-spacing: -0.5px; }
+.logo-img { height: 36px; width: auto; }
+.step-box { background: #f1f5f9; padding: 25px; border-radius: 12px; margin-bottom: 20px; text-align: left; }
+.step-title { font-size: 1.05rem; font-weight: 700; color: #3b82f6; margin: 0 0 10px 0; }
+.survey-btn { display: block; text-align: center; background: #1e293b; color: white; text-decoration: none; padding: 12px; border-radius: 8px; font-weight: bold; transition: 0.2s; }
+.survey-btn:hover { background: #334155; }
+.code-input { width: 100%; padding: 14px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 1.1rem; text-align: center; letter-spacing: 2px; text-transform: uppercase; box-sizing: border-box; outline: none; transition: 0.2s; font-weight: bold; }
+.code-input:focus { border-color: #8b5cf6; }
+.download-btn { width: 100%; padding: 15px; margin-top: 10px; background: #8b5cf6; color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+.download-btn:hover { background: #7c3aed; }
+.download-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -40,7 +40,7 @@
                     ⚠️ 주의: 검사 마지막 페이지에 나오는<br><span style="color:#b45309; font-size: 1rem;">11자리 코드를 반드시 복사</span>해주세요!
                 </p>
             </div>
-            <a href="https://smore.im/quiz/8eEbDy4qTf" target="_blank" class="survey-btn">📝 탐구 MBTI 검사하러 가기</a>
+            <a href="https://smore.im/quiz/8eEbDy4qTf" target="_blank" rel="noopener noreferrer" class="survey-btn">📝 탐구 MBTI 검사하러 가기</a>
         </div>
 
         <div class="step-box">
@@ -50,12 +50,13 @@
                 🚨 보안을 위해 PDF 열람 링크는 60초 후 만료됩니다.<br>새 창이 열리면 즉시 기기에 저장해주세요.
             </p>
             <input type="text" id="promoInput" class="code-input" placeholder="XXXX-XXXX-STC" maxlength="13">
+            
+            <button id="downloadBtn" class="download-btn" onclick="verifyAndDownload()">PDF 다운로드 및 코드 적용</button>
         </div>
     </div>
 
     <script src="/js/config.js"></script>
     <script>
-// 1. 접근 차단 가드레일 (로그인만 확인, 횟수 제한 삭제)
         document.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('accessToken');
             if (!token) {
@@ -64,7 +65,6 @@
             }
         });
 
-        // 2. 입력 포맷팅 (자동 하이픈)
         const promoInput = document.getElementById('promoInput');
         promoInput.addEventListener('input', function(e) {
             let val = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
@@ -73,7 +73,6 @@
             e.target.value = val;
         });
 
-        // 3. 디코딩 함수
         function decodeMbtiCode(code) {
             const hexStr = code.replace(/-/g, '').replace('STC', ''); 
             if (hexStr.length !== 8) return null; 
@@ -85,7 +84,6 @@
             return mbti; 
         }
 
-        // 4. 디코딩 및 다운로드 처리 (무제한)
         async function verifyAndDownload() {
             const btn = document.getElementById('downloadBtn');
             const code = promoInput.value.trim();
@@ -102,8 +100,9 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 처리 중...';
 
-            // 💡 [핵심 방어] 통신 시작 전 빈 창 열기
             const newWindow = window.open('about:blank', '_blank');
+            // 보안 강화: 새 창이 원래 창 객체에 접근하지 못하도록 차단 (Reverse Tabnabbing 방지)
+            if (newWindow) newWindow.opener = null;
 
             try {
                 const token = localStorage.getItem('accessToken');
@@ -117,19 +116,22 @@
                 const responseData = await res.json();
                 if (!res.ok) throw new Error(responseData.error || "오류가 발생했습니다.");
 
+                // 보안 강화: 받아온 URL이 HTTPS인지 검증 (Open Redirect 및 악성 스크립트 실행 방지)
+                if (!responseData.downloadUrl || !responseData.downloadUrl.startsWith('https://')) {
+                    throw new Error("안전하지 않은 다운로드 경로입니다.");
+                }
+
                 localStorage.setItem('promoCode', code);
 
                 alert(`${mbtiResult} 유형 솔루션 다운로드를 시작합니다!\n\n🚨 새 창이 열리면 60초 안에 반드시 PDF를 기기에 저장해주세요.`);
                 
-                // 💡 [핵심 방어] 빈 창의 주소를 다운로드 링크로 변경
                 newWindow.location.href = responseData.downloadUrl;
                 
-                btn.disabled = false;
-                btn.innerHTML = 'PDF 다운로드 및 코드 적용';
-
             } catch (e) {
-                newWindow.close(); // 실패 시 빈 창 닫기
+                if (newWindow && !newWindow.closed) newWindow.close();
                 alert(e.message);
+            } finally {
+                // 정상/오류 상관없이 버튼 상태 복구
                 btn.disabled = false;
                 btn.innerHTML = 'PDF 다운로드 및 코드 적용';
             }
