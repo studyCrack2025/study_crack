@@ -746,6 +746,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     
     /* 튜토리얼 말풍선 꼬리표 모바일에서 숨김 (유동적 배치를 위해) */
     .tutorial-tooltip::before, .tutorial-tooltip::after { display: none !important; }
+    .tutorial-focus-content { background: #ffffff !important; border-radius: 16px !important; box-shadow: 0 0 0 15px #ffffff, 0 0 40px 20px rgba(255,255,255,0.4) !important; z-index: 9999 !important; position: relative !important; }
     
     /* =======================================
        7. PRO EXCLUSIVE 탭 모바일 완벽 최적화

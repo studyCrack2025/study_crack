@@ -372,27 +372,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                     };
 
+                    let isDetailMode = false; // 자세히 보기 상태 확인용 변수
+
                     const updateStep = () => {
-                        openSolution(tabKeys[tutStep]); 
-                        
-                        // 🔥 모바일일 경우, 탭 전환 시 화면을 즉시 이동시킴 (smooth 스크롤 꼬임 방지)
+                        openSolution(tabKeys[tutStep], true); 
+                        injectDummyData(tutStep);
+
                         const isMobileNow = window.innerWidth <= 768;
                         if (isMobileNow) {
                             const wrapper = document.querySelector('.sol-swipe-wrapper');
                             const targetContent = document.getElementById(`sol-${tabKeys[tutStep]}`);
                             if (wrapper && targetContent) {
-                                wrapper.scrollTo({ left: targetContent.offsetLeft - wrapper.offsetLeft, behavior: 'auto' });
-                            }
-                        }
-
-                        injectDummyData(tutStep);
-
-                        // 더미 데이터 삽입 후 높이 재조정
-                        if (isMobileNow) {
-                            const wrapper = document.querySelector('.sol-swipe-wrapper');
-                            const targetContent = document.getElementById(`sol-${tabKeys[tutStep]}`);
-                            if (wrapper && targetContent) {
-                                wrapper.style.height = `${targetContent.offsetHeight}px`;
+                                // 위아래 여백을 위해 높이를 살짝 더 여유 있게 잡아줌
+                                wrapper.style.height = `${targetContent.offsetHeight + 30}px`;
                             }
                         }
 
@@ -408,32 +400,53 @@ document.addEventListener('DOMContentLoaded', async () => {
                             }
                         });
                         
+                        // 💡 상태 초기화: 말풍선 보이기 & 버튼 텍스트 세팅
+                        isDetailMode = false;
                         isTooltipHidden = false;
                         tooltip.style.display = 'block';
-                        
                         updatePositions(); 
                         
                         msgEl.innerText = tutMsgs[tutStep];
                         prevBtn.style.display = tutStep > 0 ? 'block' : 'none';
                         
-                        if (tutStep === 4) {
-                            nextBtn.style.display = 'none';
-                            skipBtn.innerText = '튜토리얼 완료하기';
-                            skipBtn.classList.add('highlight-border');
-                        } else {
-                            nextBtn.style.display = 'block';
-                            nextBtn.innerText = '다음';
-                            skipBtn.innerText = '튜토리얼 건너뛰기';
-                            skipBtn.classList.remove('highlight-border');
-                        }
+                        // 💡 말풍선 안쪽 버튼은 '자세히 보기', 하단 바는 '건너뛰기'
+                        nextBtn.style.display = 'block';
+                        nextBtn.innerText = '자세히 보기';
+                        skipBtn.innerText = '튜토리얼 건너뛰기';
+                        skipBtn.classList.remove('highlight-border');
                     };
 
-                    prevBtn.addEventListener('click', () => { tutStep--; updateStep(); });
-                    nextBtn.addEventListener('click', () => { tutStep++; updateStep(); });
-                    skipBtn.addEventListener('click', () => {
+                    // [이전] 버튼
+                    prevBtn.addEventListener('click', () => { 
+                        if (tutStep > 0) { tutStep--; updateStep(); } 
+                    });
+                    
+                    // [자세히 보기] 버튼 (기존 '다음' 버튼)
+                    nextBtn.addEventListener('click', () => { 
+                        isDetailMode = true;
+                        tooltip.style.display = 'none'; // 말풍선 숨김
+                        
+                        // 하단 바 버튼을 '다음 단계로' 변경하고 강조
                         if (tutStep === 4) {
-                            finishTutorialAction(true);
+                            skipBtn.innerText = '튜토리얼 완료하기';
                         } else {
+                            skipBtn.innerText = '다음 단계로';
+                        }
+                        skipBtn.classList.add('highlight-border'); 
+                    });
+                    
+                    // [건너뛰기 / 다음 단계로] 하단 바 버튼
+                    skipBtn.addEventListener('click', () => {
+                        if (isDetailMode) {
+                            // 자세히 보기 모드일 때는 '다음' 역할 수행
+                            if (tutStep === 4) {
+                                finishTutorialAction(true);
+                            } else {
+                                tutStep++;
+                                updateStep();
+                            }
+                        } else {
+                            // 일반 모드일 때는 '건너뛰기' 역할 수행
                             if (!confirm("정말로 그만두시겠습니까?\n튜토리얼 완료 시 제공되는 무료 대학 분석 기회를 받지 못할 수 있습니다.")) return;
                             finishTutorialAction(false);
                         }
