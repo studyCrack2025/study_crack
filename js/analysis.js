@@ -1139,7 +1139,7 @@ function handleModalSearch(e) {
 function selectComplete(univ, major) {
     if (currentSlotIndex !== null) {
         userTargetUnivs[currentSlotIndex] = { univ: univ, major: major, date: null };
-        initUnivGrid(); updateAnalysisUI(); 
+        initUnivGrid();
     }
     closeUnivModal();
 }
