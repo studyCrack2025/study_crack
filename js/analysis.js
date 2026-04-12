@@ -494,6 +494,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             }, 100); // 부드러운 전환을 위해 스크롤 종료 0.1초 후 인식
         });
     }
+    
+    if (window.innerWidth <= 768) {
+        setTimeout(() => {
+            const firstTab = document.getElementById('sol-univ');
+            const wrapper = document.querySelector('.sol-swipe-wrapper');
+            if (firstTab && wrapper) {
+                wrapper.style.height = `${firstTab.offsetHeight}px`;
+            }
+        }, 1000); // 모든 병렬 태스크(fetch)가 어느 정도 끝날 시점
+    }
 });
 
 window.finishTutorialComplete = async function() {
