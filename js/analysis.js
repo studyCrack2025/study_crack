@@ -20,6 +20,7 @@ let weeklyDataHistory = []; // 💡 이제 별도 API로 받아옴
 let cachedProReports = [];  // 💡 이제 별도 API로 받아옴
 let currentSelectStep = 'univ';
 let selectedUnivForMajor = '';
+let userGracePeriodUntil = null;
 
 let scrollPosition = 0;
 let currentTutorName = "수석 튜터";
@@ -553,6 +554,8 @@ async function fetchUserData(userId) {
         
         const rawData = await response.json();
         const data = parseDynamoItem(rawData);
+        
+        userGracePeriodUntil = data.gracePeriodUntil || null;
 
         if (data.tutorName) currentTutorName = data.tutorName;
         
@@ -924,9 +927,17 @@ function updateQuotaUI() {
     
     // 💡 Trial 티어일 경우의 UI 처리 (변수 선언 오류 수정)
     if (currentUserTier === 'trial') {
+        let graceText = "";
+        if (isZero && userGracePeriodUntil && new Date() <= new Date(userGracePeriodUntil)) {
+            const diffMs = new Date(userGracePeriodUntil) - new Date();
+            const diffHrs = Math.max(1, Math.round(diffMs / (1000 * 60 * 60)));
+            graceText = `<div style="width: 100%; text-align: right; font-size:0.85rem; color:#ef4444; margin-top:5px; font-weight:bold;">⏳ ${diffHrs}시간 후 무료 등급으로 전환됩니다.</div>`;
+        }
+
         let html = `<div class="quota-info-box" style="background:#fdf4ff; border-color:#e879f9; flex-wrap:wrap; gap:8px;">
             <span><i class="fas fa-gift"></i> 신규 가입 무료 체험 혜택</span>
             <span><strong class="remain-count" style="font-size:1.2rem; color:#c026d3;">${univChangeRemaining}</strong> / 4회</span>
+            ${graceText}
         </div>`;
     
         if (isZero) {
@@ -1389,6 +1400,11 @@ async function fetchSimulationData() {
             })
         });
         cachedSimData = await res.json();
+        
+        if (!res.ok) {
+            chartArea.innerHTML = `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#ef4444; font-weight:bold;"><i class="fas fa-lock" style="margin-right:8px;"></i> ${cachedSimData.error || "데이터 로드 실패"}</div>`;
+            return;
+        }
 
         simDisplayList = [];
         (userTargetUnivs || []).forEach((target, originalIdx) => {
