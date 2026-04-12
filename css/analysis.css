@@ -625,9 +625,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .mobile-wizard-mode .subject-card-list { grid-template-columns: 1fr; display: flex; flex-direction: column; gap: 15px; }
     .mobile-wizard-mode .subject-card { padding: 15px; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 0; background: #f8fafc; display: flex; flex-direction: column; gap: 12px; }
     .mobile-wizard-mode .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0; border-bottom: 1px dashed #cbd5e1; padding-bottom: 10px; }
-    /* =======================================
-   [모바일] 1단계: 세부과목/계획/실제 (좌) vs 달성률 (우) 분할 레이아웃
-   ======================================= */
+
     .mobile-wizard-mode .card-body { display: grid; grid-template-columns: 1fr 100px; gap: 10px; align-items: stretch; }
     .mobile-wizard-mode .sub-detail { grid-column: 1 / 2; margin-bottom: 0; width: 100%; height: 44px; box-sizing: border-box; }
     .mobile-wizard-mode .time-inputs { display: contents; }
@@ -743,4 +741,26 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     #analysisCardsContainer { display: flex !important; flex-direction: row !important; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px !important; padding-bottom: 15px; scrollbar-width: none; -ms-overflow-style: none; width: 100%; box-sizing: border-box; }
     #analysisCardsContainer::-webkit-scrollbar { display: none; }
     #analysisCardsContainer .analysis-card { flex: 0 0 100%; width: 100%; scroll-snap-align: start; box-sizing: border-box; margin: 0; }
+    
+    /* =======================================
+       7. PRO EXCLUSIVE 탭 모바일 완벽 최적화
+       ======================================= */
+    /* 전체 스와이프 너비에 맞추되, 파란 배경이 여백을 침범하지 않도록 크기 보정 */
+    .sol-content.pro-theme { flex: 0 0 calc(100vw - 30px) !important; width: calc(100vw - 30px) !important; margin: 0 15px !important; padding: 30px 20px !important; border-radius: 16px !important; box-sizing: border-box; }
+    
+    /* 🔥 핵심: 이중 스와이프 충돌 방지를 위해 PRO 카드를 세로로 나열 */
+    .pro-promo-grid { display: flex !important; flex-direction: column !important; overflow: hidden !important; scroll-snap-type: none !important; gap: 15px !important; padding-bottom: 0 !important; margin-bottom: 20px !important; }
+    .pro-feature-card { flex: none !important; width: 100% !important; padding: 16px 15px !important; box-sizing: border-box; display: flex !important; flex-direction: row !important; align-items: flex-start !important; gap: 12px !important; scroll-snap-align: none !important; }
+    
+    /* 텍스트 줄바꿈 방지 및 버튼 여백 통일 */
+    .pro-title { font-size: 1.5rem !important; word-break: keep-all; line-height: 1.3 !important; }
+    .pro-desc { font-size: 0.95rem !important; word-break: keep-all; line-height: 1.5 !important; }
+    .pro-cta-btn { width: 100% !important; padding: 15px !important; font-size: 1.05rem !important; word-break: keep-all; white-space: normal; box-sizing: border-box; line-height: 1.4; }
+    
+    /* 멤버십 구독 이후의 대시보드 화면 보정 */
+    .pro-dashboard-layout { display: flex !important; flex-direction: column !important; gap: 15px !important; }
+    .dashboard-actions { padding: 20px 15px !important; width: 100% !important; box-sizing: border-box; }
+    .req-btn { width: 100% !important; padding: 14px 10px !important; font-size: 1rem !important; word-break: keep-all; white-space: normal; box-sizing: border-box; }
+    .report-item { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; text-align: left !important; }
+    .rep-icon { align-self: flex-end !important; margin-top: -30px !important; }
 }
