@@ -63,6 +63,7 @@
 .tier-badge-basic { background: linear-gradient(135deg, #3B82F6, #60A5FA); color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25); }
 .tier-badge-standard { background: linear-gradient(135deg, #94A3B8, #CBD5E1); color: #0F172A; box-shadow: 0 4px 12px rgba(100, 116, 139, 0.25); }
 .tier-badge-pro { background: linear-gradient(135deg, #F59E0B, #FCD34D); color: #78350f; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); }
+.tier-badge-trial { background: linear-gradient(135deg, #10B981, #34D399); color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25); }
 .survey-status-box h4 { font-size: 1.1rem; color: #1e293b; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .status-detail-container { text-align: left; margin-bottom: 20px; background: #f8fafc; border-radius: 8px; padding: 15px; border: 1px solid #e2e8f0; }
 .detail-group { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #cbd5e1; }

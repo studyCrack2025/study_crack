@@ -566,6 +566,17 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 .tutorial-skip-btn { background: transparent; border: 1px solid #38bdf8; color: #38bdf8; padding: 8px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; transition: all 0.2s; pointer-events: auto; font-size: 0.95rem; }
 .tutorial-skip-btn:hover { background: rgba(56,189,248,0.1); color: #7dd3fc; border-color: #7dd3fc; }
 
+.offer-modal-content { text-align: center; padding: 40px 20px; }
+.offer-icon { font-size: 3.5rem; margin-bottom: 15px; line-height: 1; }
+.offer-title { color: #1e293b; font-size: 1.6rem; margin-bottom: 10px; font-weight: 900; }
+.offer-desc { color: #64748b; font-size: 1.05rem; line-height: 1.6; margin-bottom: 25px; word-break: keep-all; }
+.offer-highlight { color: #2563EB; }
+.offer-btn-group { display: flex; gap: 10px; flex-direction: column; }
+.offer-btn-accept { width: 100%; padding: 16px; background: #2563EB; color: white; border: none; border-radius: 12px; font-size: 1.05rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3); transition: all 0.2s ease; }
+.offer-btn-accept:hover { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4); }
+.offer-btn-decline { width: 100%; padding: 14px; background: #f1f5f9; color: #64748b; border: none; border-radius: 12px; font-size: 0.95rem; font-weight: bold; cursor: pointer; transition: background 0.2s ease; }
+.offer-btn-decline:hover { background: #e2e8f0; color: #334155; }
+
 
 /* =========================================
    12. 모바일 반응형 (통합)

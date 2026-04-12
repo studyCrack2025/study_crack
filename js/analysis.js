@@ -10,7 +10,7 @@ const REPORT_API_URL = CONFIG.api.report;
 const PDF_API_URL = CONFIG.api.pdf; 
 
 let currentUserTier = 'free';
-let univChangeRemaining = 30;
+let univChangeRemaining = 0;
 let userRecentPaymentDate = null;
 let userTargetUnivs = [null, null, null, null, null, null]; // 6슬롯
 let univData = []; 
@@ -400,7 +400,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-window.finishTutorialComplete = function() {
+window.finishTutorialComplete = async function() {
+    const submitBtn = document.querySelector('#tutorialCompleteModal button');
+    if (submitBtn) {
+        submitBtn.innerText = "처리 중...";
+        submitBtn.disabled = true;
+    }
+
+    try {
+        const token = localStorage.getItem('idToken');
+        // 튜토리얼 보상으로 trial 티어 부여 및 횟수 4회 충전 요청
+        await fetch(MYPAGE_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'grant_tutorial_trial' })
+        });
+    } catch (e) {
+        console.error("Trial 승급 요청 실패:", e);
+    }
+
     document.getElementById('tutorialCompleteModal').style.display = 'none';
     location.reload(); 
 };
@@ -434,7 +452,7 @@ function applySimTierLock() {
     const container = document.querySelector('.sim-container-new') || document.getElementById('sol-sim');
     if (!container) return;
 
-    // Free와 Basic 유저 모두에게 통일된 디자인의 락 스크린을 보여줍니다.
+    // 'trial' 티어는 통과시키도록 조건문 수정
     if (currentUserTier === 'free' || currentUserTier === 'basic') {
         container.style.position = 'relative';
         if (container.querySelector('.sim-tier-lock-overlay')) return;
@@ -596,6 +614,7 @@ function renderUserInfo(data) {
         if (tier === 'basic') { tierText = 'BASIC'; tierClass = 'tier-badge-basic'; }
         else if (tier === 'standard') { tierText = 'STANDARD'; tierClass = 'tier-badge-standard'; iconClass = 'fa-gem'; }
         else if (tier === 'pro') { tierText = 'PRO'; tierClass = 'tier-badge-pro'; iconClass = 'fa-crown'; }
+        else if (tier === 'trial') { tierText = 'TRIAL (무료 체험)'; tierClass = 'tier-badge-trial'; iconClass = 'fa-gift'; }
 
         tierBadgeEl.className = `user-tier-badge ${tierClass}`;
         tierBadgeEl.innerHTML = ''; 
@@ -861,6 +880,25 @@ function updateQuotaUI() {
     const isWarning = univChangeRemaining < 10;
     const isUpsell = univChangeRemaining <= 5;
     const isZero = univChangeRemaining <= 0;
+    
+    if (currentUserTier === 'trial') {
+        boxStyle = 'background:#fdf4ff; border-color:#e879f9;'; textColor = '#c026d3';
+        html = `<div class="quota-info-box" style="${boxStyle} flex-wrap:wrap; gap:8px;">
+            <span><i class="fas fa-gift"></i> 신규 가입 무료 체험 혜택</span>
+            <span><strong class="remain-count" style="font-size:1.2rem; color:${textColor};">${univChangeRemaining}</strong> / 4회</span>
+        </div>`;
+    
+        if (univChangeRemaining <= 0) {
+            html += `<div class="upgrade-promo-banner" style="border-color:#fb923c; background:#fffaf0; flex-wrap:wrap; gap:12px;">
+                <div style="flex:1; min-width:240px; word-break:keep-all;">
+                    <p style="margin:0; font-size:0.9rem; line-height:1.5;">무료 체험이 종료되었습니다.<br>Standard 멤버십으로 <strong>무제한 대학 분석</strong>을 이용해보세요.</p>
+                </div>
+                <button class="upgrade-btn-small" style="background:#ea580c; margin:0; flex:1; min-width:140px; padding:12px;" onclick="location.href='/payment'">멤버십 알아보기</button>
+            </div>`;
+        }
+        container.innerHTML = html;
+        return;
+    }
 
     let boxStyle = ''; let textColor = '#2563eb';
     if (isZero) { boxStyle = 'background:#fef2f2; border-color:#fecaca;'; textColor = '#ef4444'; }
@@ -1250,7 +1288,7 @@ function initSimulation() {
     const chartArea = document.getElementById('simChartArea');
     if (!chartArea) return;
 
-    if (!['standard', 'pro'].includes(currentUserTier)) {
+    if (!['trial', 'standard', 'pro'].includes(currentUserTier)) {
         chartArea.innerHTML = `<div style="width:100%; height:100%; min-height: 260px; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-weight:600; font-size:1.1rem;">Standard 멤버십 이상 전용 기능입니다.</div>`;
         renderDetailedSimCard(); // 블러 뒤에 나타날 타겟 CTA 렌더링 호출
         return;

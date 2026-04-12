@@ -68,9 +68,9 @@
             const role = urlParams.get('role');
             let promo = urlParams.get('promo') || localStorage.getItem('signupPromo');
             
-            // 💡 [추가됨] 승인 대기 중인 튜터가 아닌 일반 학생 회원일 경우 튜토리얼 대기열에 등록
+            // 💡 승인 대기 중인 튜터가 아닌 일반 학생 회원일 경우 튜토리얼 대기열에 등록
             if (role !== 'tutor') {
-                localStorage.setItem('pending_tutorial', 'true');
+                localStorage.setItem('pending_tutorial', 'offer');
             }
 
             // 튜터 가입 완료 시 화면 변경 로직
