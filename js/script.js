@@ -539,16 +539,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { threshold: 0.15 });
     document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
 
-    // 💡 [수정됨] 5. 튜토리얼 통합 제어 (자동 팝업 및 오늘 하루 보지 않기)
+    // 💡 [수정됨] 5. 튜토리얼 통합 제어 (자동 팝업 및 오늘 하루 보지 않기 - 로그인 한정)
     const pendingTutorial = localStorage.getItem('pending_tutorial');
     const isTutorialCompleted = localStorage.getItem('tutorial_completed') === 'true';
+    const isLoggedIn = !!localStorage.getItem('accessToken'); // 💡 로그인 여부 확인
     
     // 이미 튜토리얼을 수락해서 진행 중인 경우
     if (pendingTutorial === 'true' || pendingTutorial === 'step3') {
         runTutorialLock(pendingTutorial);
     } 
-    // 튜토리얼을 완료하지 않았고, 진행 중도 아닐 경우 (메인 페이지 접속 시)
-    else if (!isTutorialCompleted) {
+    // 💡 로그인한 상태이면서 튜토리얼을 완료하지 않았을 경우에만 (메인 페이지 접속 시)
+    else if (isLoggedIn && !isTutorialCompleted) {
         const todayStr = new Date().toLocaleDateString();
         const hideToday = localStorage.getItem('hide_tutorial_today');
         
@@ -562,7 +563,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-}); // <-- DOMContentLoaded 닫힘 괄호 위치
+});
 
 // 💡 튜토리얼 제안 수락 핸들러
 window.acceptTutorialOffer = function() {
