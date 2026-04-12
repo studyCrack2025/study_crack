@@ -268,7 +268,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (bottomBar) { document.body.appendChild(bottomBar); bottomBar.style.zIndex = '10005'; }
 
             if (overlay && cloneContainer) {
-                // 👇 1. 스크롤 기준점 변경: 모바일은 숨겨진 메뉴 대신 실제 콘텐츠 래퍼 기준으로 이동
                 const targetEl = (isMobile && swipeWrapper) ? swipeWrapper : menuEl;
                 const headerHeight = document.querySelector('header') ? document.querySelector('header').offsetHeight : 70;
                 const targetY = targetEl ? (targetEl.getBoundingClientRect().top + window.pageYOffset - headerHeight - 15) : 0;
@@ -284,7 +283,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     overlay.classList.remove('hidden');
                     
-                    // 👇 2. 모바일에서는 상단 탭 메뉴 클론(복사) 금지
                     if (!isMobile && menuEl) {
                         const cloneMenu = menuEl.cloneNode(true);
                         cloneMenu.querySelectorAll('.sol-btn').forEach(btn => { 
@@ -310,19 +308,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 const cardRect = activeCard.getBoundingClientRect();
                                 const tooltipHeight = tooltip.offsetHeight || 120;
                                 
-                                // 👇 3. 말풍선 위치 자동 회피: 예시 화면을 가리지 않도록 빈 공간 계산
                                 if (cardRect.top > tooltipHeight + 30) {
-                                    // 카드 위쪽 공간이 넉넉하면 카드 바로 위에 배치
                                     tooltip.style.top = `${cardRect.top - tooltipHeight - 20}px`;
                                 } else {
-                                    // 위쪽 공간이 좁으면 카드 바로 밑에 배치
                                     tooltip.style.top = `${cardRect.bottom + 20}px`;
                                 }
                                 tooltip.style.left = `50%`;
                                 tooltip.style.transform = `translateX(-50%)`;
                             }
                         } else {
-                            // PC: 기존처럼 상단 탭 메뉴 아래에 배치
                             const menuEl = document.querySelector('.solution-menu');
                             if(menuEl && cloneContainer.style.display !== 'none') {
                                 const rect = menuEl.getBoundingClientRect();
@@ -346,60 +340,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     window.addEventListener('resize', updatePositions);
 
-                    const updateStep = () => {
-                        openSolution(tabKeys[tutStep], true); 
-                        injectDummyData(tutStep);
-
-                        cloneBtns.forEach((btn, idx) => {
-                            // 💡 탭 하이라이트 보정
-                            const isActive = (tutStep === 4 && idx === 3) || (idx === tutStep);
-                            if (isActive) {
-                                btn.classList.add('active');
-                                btn.style.opacity = '1';
-                            } else {
-                                btn.classList.remove('active');
-                                btn.style.opacity = '0.4';
-                            }
-                        });
-                        
-                        isTooltipHidden = false;
-                        tooltip.style.display = 'block';
-                        
-                        updatePositions(); 
-                        
-                        msgEl.innerText = tutMsgs[tutStep];
-                        prevBtn.style.display = tutStep > 0 ? 'block' : 'none';
-                        
-                        const isMobile = window.innerWidth <= 768;
-                        
-                        if (isMobile) {
-                            if (tutStep === 4) {
-                                skipBtn.innerText = '튜토리얼 완료하기';
-                                skipBtn.classList.add('highlight-border');
-                            } else {
-                                nextBtn.style.display = 'block';
-                                nextBtn.innerText = '기능보기';
-                                skipBtn.innerText = '튜토리얼 건너뛰기';
-                                skipBtn.classList.remove('highlight-border');
-                            }
-                        } else {
-                            if (tutStep === 4) {
-                                nextBtn.style.display = 'none'; 
-                                skipBtn.innerText = '튜토리얼 완료하기'; 
-                                skipBtn.classList.add('highlight-border');
-                            } else {
-                                nextBtn.style.display = 'block';
-                                nextBtn.innerText = '다음';
-                                skipBtn.innerText = '튜토리얼 건너뛰기';
-                                skipBtn.classList.remove('highlight-border');
-                            }
-                        }
-                    };
-
-                    prevBtn.addEventListener('click', () => { tutStep--; updateStep(); });
-                    
-                    nextBtn.addEventListener('click', () => { tutStep++; updateStep(); });
-
                     const finishTutorialAction = (showModal) => {
                         localStorage.removeItem('pending_tutorial');
                         window.removeEventListener('beforeunload', warnTutorialExit);
@@ -419,7 +359,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         document.querySelectorAll('.sol-content').forEach(c => c.classList.remove('tutorial-focus-content'));
                         openSolution('univ'); 
                         
-                        // 💡 블러 해제 복구 로직
                         applyCoachTierLock();
                         applySimTierLock();
 
@@ -431,23 +370,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                     };
 
-                    skipBtn.addEventListener('click', () => {
-                        if (tutStep === 4) {
-                            finishTutorialAction(true);
-                        } else {
-                            if (!confirm("정말로 그만두시겠습니까?\n튜토리얼 완료 시 제공되는 무료 대학 분석 기회를 받지 못할 수 있습니다.")) return;
-                            finishTutorialAction(false);
-                        }
-                    });
-
                     const updateStep = () => {
-                        // 1. 해당 탭으로 이동 (내부 API 로딩 스크립트 실행됨)
                         openSolution(tabKeys[tutStep]); 
-                        
-                        // 2. 무조건 예시 더미 데이터로 덮어씌우기 (API 로딩 덮어쓰기)
                         injectDummyData(tutStep);
 
-                        // 3. 🔥 핵심: 더미 데이터가 완전히 주입된 '후'에 모바일 래퍼 높이 재계산!
                         const isMobileNow = window.innerWidth <= 768;
                         if (isMobileNow) {
                             const wrapper = document.querySelector('.sol-swipe-wrapper');
@@ -457,8 +383,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                             }
                         }
 
+                        const cloneBtns = cloneContainer.querySelectorAll('.sol-btn');
                         cloneBtns.forEach((btn, idx) => {
-                            // 💡 탭 하이라이트 보정
                             const isActive = (tutStep === 4 && idx === 3) || (idx === tutStep);
                             if (isActive) {
                                 btn.classList.add('active');
@@ -477,7 +403,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         msgEl.innerText = tutMsgs[tutStep];
                         prevBtn.style.display = tutStep > 0 ? 'block' : 'none';
                         
-                        // 🔥 핵심: 모바일/PC 구분 없이 직관적으로 "다음/건너뛰기" 로직 통일
                         if (tutStep === 4) {
                             nextBtn.style.display = 'none';
                             skipBtn.innerText = '튜토리얼 완료하기';
@@ -490,10 +415,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                     };
 
+                    prevBtn.addEventListener('click', () => { tutStep--; updateStep(); });
+                    nextBtn.addEventListener('click', () => { tutStep++; updateStep(); });
+                    skipBtn.addEventListener('click', () => {
+                        if (tutStep === 4) {
+                            finishTutorialAction(true);
+                        } else {
+                            if (!confirm("정말로 그만두시겠습니까?\n튜토리얼 완료 시 제공되는 무료 대학 분석 기회를 받지 못할 수 있습니다.")) return;
+                            finishTutorialAction(false);
+                        }
+                    });
+
                     updateStep(); 
                 }, 50); 
             }
-        }, 500); 
+        }, 500);
     }
     
     const swipeWrapper = document.querySelector('.sol-swipe-wrapper');
