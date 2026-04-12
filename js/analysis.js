@@ -571,10 +571,21 @@ async function fetchUserData(userId) {
         updateSurveyStatus(data);
         checkMbtiReport(data);
         
-        if (data.targetUnivs) userTargetUnivs = data.targetUnivs;
+        if (data.targetUnivs) {
+            userTargetUnivs = data.targetUnivs;
+            // 💡 [추가] Free, Trial 유저는 5, 6번째 슬롯(인덱스 4, 5) 데이터를 강제로 비워 분석을 차단합니다.
+            if (['free', 'trial'].includes(currentUserTier)) {
+                userTargetUnivs[4] = null;
+                userTargetUnivs[5] = null;
+            }
+        }
         if (data.quantitative) userQuantData = data.quantitative;
         
-        univChangeRemaining = data.univChangeRemaining !== undefined ? data.univChangeRemaining : 30;
+        if (currentUserTier === 'free') {
+            univChangeRemaining = 0;
+        } else {
+            univChangeRemaining = data.univChangeRemaining !== undefined ? data.univChangeRemaining : 30;
+        }
         updateQuotaUI();
         
         if (typeof buildUnivMap === 'function') buildUnivMap();
@@ -868,9 +879,16 @@ function initUnivGrid() {
     if(!grid) return;
     grid.innerHTML = ''; 
     
-    const isQuotaZero = (['free', 'basic', 'trial'].includes(currentUserTier)) && (univChangeRemaining <= 0);
+    const isUnlimited = ['standard', 'pro'].includes(currentUserTier);
+    const isQuotaZero = !isUnlimited && (univChangeRemaining <= 0);
+    
+    // 💡 [핵심] Free, Trial 유저인지 확인
+    const isLockedTier = ['free', 'trial'].includes(currentUserTier);
 
     for (let i = 0; i < 6; i++) {
+        // 💡 5, 6지망(인덱스 4, 5) 잠금 여부 판별
+        const isThisSlotLocked = isLockedTier && (i >= 4);
+
         const savedData = userTargetUnivs[i] || { univ: '', major: '', date: null };
         const slotDiv = document.createElement('div');
         slotDiv.className = 'univ-slot';
@@ -879,20 +897,27 @@ function initUnivGrid() {
         slotDiv.style.alignSelf = 'start'; 
         slotDiv.style.height = 'max-content'; 
         
+        // 💡 잠긴 슬롯이면 CSS locked-tier 클래스 추가 (자물쇠 UI)
+        if (isThisSlotLocked) {
+            slotDiv.classList.add('locked-tier');
+            slotDiv.setAttribute('data-msg', '🔒 Basic 멤버십 이상 지원');
+        }
+
         const safeUniv = escapeHtml(savedData.univ);
         const safeMajor = escapeHtml(savedData.major);
-        const hasData = !!(savedData.univ && savedData.major); 
+        // 잠긴 슬롯은 무조건 데이터 없는 것으로 처리
+        const hasData = isThisSlotLocked ? false : !!(savedData.univ && savedData.major); 
         
         const btnText = hasData ? `<strong>${safeUniv}</strong><br><small>${safeMajor}</small>` : `<span class="placeholder">대학 및 학과를 선택하세요</span>`;
-        const clickHandler = isQuotaZero ? '' : `openUnivSelectModal(${i})`;
-        const cursorStyle = isQuotaZero ? 'cursor:not-allowed; opacity:0.8; background-color:#f1f5f9;' : '';
-        const iconHtml = isQuotaZero ? '<i class="fas fa-lock" style="color:#ef4444;"></i>' : '<i class="fas fa-chevron-right"></i>';
+        const clickHandler = (isQuotaZero || isThisSlotLocked) ? '' : `openUnivSelectModal(${i})`;
+        const cursorStyle = (isQuotaZero || isThisSlotLocked) ? 'cursor:not-allowed; opacity:0.8; background-color:#f1f5f9;' : '';
+        const iconHtml = (isQuotaZero || isThisSlotLocked) ? '<i class="fas fa-lock" style="color:#ef4444;"></i>' : '<i class="fas fa-chevron-right"></i>';
         const deleteBtnHtml = hasData ? `<button class="univ-delete-btn" onclick="clearUnivSlot(${i})" title="대학 삭제"><i class="fas fa-times"></i></button>` : '';
 
         slotDiv.innerHTML = `
             <label>지망 ${i+1}</label>
             ${deleteBtnHtml}
-            <button type="button" class="univ-select-btn" onclick="${clickHandler}" style="${cursorStyle}" ${isQuotaZero ? 'disabled' : ''}>
+            <button type="button" class="univ-select-btn" onclick="${clickHandler}" style="${cursorStyle}" ${(isQuotaZero || isThisSlotLocked) ? 'disabled' : ''}>
                 <div style="flex:1; min-width:0; text-align: left;">${btnText}</div>
                 <div style="flex-shrink:0;">${iconHtml}</div>
             </button>
@@ -1153,7 +1178,14 @@ async function saveTargetUnivs() {
 
     const nowISO = new Date().toISOString();
     const newUnivs = [];
+    const isLockedTier = ['free', 'trial'].includes(currentUserTier);
+
     for(let i = 0; i < 6; i++) {
+        if (i >= 4 && isLockedTier) {
+            newUnivs.push(null);
+            continue;
+        }
+
         const slot = userTargetUnivs[i];
         if (slot && slot.univ && slot.major) { 
             newUnivs.push({ univ: slot.univ, major: slot.major, date: slot.date ? slot.date : nowISO });
