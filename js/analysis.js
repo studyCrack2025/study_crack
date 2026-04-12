@@ -264,7 +264,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const tooltip = document.getElementById('tutorialTooltip');
             const bottomBar = document.querySelector('.tutorial-bottom-bar');
             
-            if (tooltip) { document.body.appendChild(tooltip); tooltip.style.zIndex = '10005'; }
+            if (tooltip) { 
+                document.body.appendChild(tooltip); 
+                tooltip.style.zIndex = '10005'; 
+                tooltip.style.pointerEvents = 'auto'; // 🔥 클릭 방지 해제 (가장 중요)
+            }
             if (bottomBar) { document.body.appendChild(bottomBar); bottomBar.style.zIndex = '10005'; }
 
             if (overlay && cloneContainer) {
@@ -302,19 +306,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                         
                         if (isMobileNow) {
                             cloneContainer.style.display = 'none';
-                            const activeCard = document.querySelector('.tutorial-focus-content');
                             
-                            if (activeCard && tooltip) {
-                                const cardRect = activeCard.getBoundingClientRect();
-                                const tooltipHeight = tooltip.offsetHeight || 120;
-                                
-                                if (cardRect.top > tooltipHeight + 30) {
-                                    tooltip.style.top = `${cardRect.top - tooltipHeight - 20}px`;
-                                } else {
-                                    tooltip.style.top = `${cardRect.bottom + 20}px`;
-                                }
-                                tooltip.style.left = `50%`;
-                                tooltip.style.transform = `translateX(-50%)`;
+                            if (tooltip) {
+                                // 🔥 모바일: 화면 밖으로 밀려나지 않게 하단 컨트롤 바 바로 위에 고정
+                                tooltip.style.top = 'auto';
+                                tooltip.style.bottom = '120px';
+                                tooltip.style.left = '50%';
+                                tooltip.style.transform = 'translateX(-50%)';
+                                tooltip.style.width = '90%';
+                                tooltip.style.maxWidth = '400px';
                             }
                         } else {
                             const menuEl = document.querySelector('.solution-menu');
@@ -329,6 +329,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 const targetBtnIdx = tutStep === 4 ? 3 : tutStep;
                                 if (cloneBtns[targetBtnIdx] && tooltip) {
                                     const btnRect = cloneBtns[targetBtnIdx].getBoundingClientRect();
+                                    tooltip.style.bottom = 'auto'; // PC 복구 시 bottom 해제
+                                    tooltip.style.width = 'auto';
                                     tooltip.style.top = `${btnRect.bottom + 15}px`;
                                     tooltip.style.left = `${Math.max(10, btnRect.left + (btnRect.width / 2))}px`;
                                     tooltip.style.transform = `translateX(-50%)`;
@@ -372,9 +374,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     const updateStep = () => {
                         openSolution(tabKeys[tutStep]); 
+                        
+                        // 🔥 모바일일 경우, 탭 전환 시 화면을 즉시 이동시킴 (smooth 스크롤 꼬임 방지)
+                        const isMobileNow = window.innerWidth <= 768;
+                        if (isMobileNow) {
+                            const wrapper = document.querySelector('.sol-swipe-wrapper');
+                            const targetContent = document.getElementById(`sol-${tabKeys[tutStep]}`);
+                            if (wrapper && targetContent) {
+                                wrapper.scrollTo({ left: targetContent.offsetLeft - wrapper.offsetLeft, behavior: 'auto' });
+                            }
+                        }
+
                         injectDummyData(tutStep);
 
-                        const isMobileNow = window.innerWidth <= 768;
+                        // 더미 데이터 삽입 후 높이 재조정
                         if (isMobileNow) {
                             const wrapper = document.querySelector('.sol-swipe-wrapper');
                             const targetContent = document.getElementById(`sol-${tabKeys[tutStep]}`);
