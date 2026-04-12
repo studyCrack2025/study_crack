@@ -652,6 +652,8 @@ function runTutorialLock(stepState) {
             });
 
             skipBtn.addEventListener('click', () => {
+                if (!confirm("정말로 그만두시겠습니까?\n튜토리얼 완료 시 제공되는 무료 대학 분석 기회를 받지 못할 수 있습니다.")) return;
+
                 localStorage.removeItem('pending_tutorial'); 
                 // 진행 중 건너뛰기를 누르면 피로도 방지를 위해 오늘 하루 보지 않기로 처리
                 const todayStr = new Date().toLocaleDateString();

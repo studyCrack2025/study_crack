@@ -139,6 +139,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // 건너뛰기 버튼 클릭 이벤트 -> 튜토리얼 영구 종료
                 skipBtn.addEventListener('click', () => {
+                    if (!confirm("정말로 그만두시겠습니까?\n튜토리얼 완료 시 제공되는 무료 대학 분석 기회를 받지 못할 수 있습니다.")) return;
+
                     localStorage.removeItem('pending_tutorial'); 
                     overlay.classList.add('hidden');
                     cloneBtn.remove();

@@ -432,7 +432,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
 
                         if (tutStep < 4) {
-                            if (!confirm("정말로 튜토리얼을 그만 하시겠습니까?")) return;
+                            if (!confirm("정말로 그만두시겠습니까?\n튜토리얼 완료 시 제공되는 무료 대학 분석 기회를 받지 못할 수 있습니다.")) return;
                         }
                         finishTutorialAction(tutStep === 4);
                     });
