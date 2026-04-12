@@ -683,31 +683,40 @@ function runTutorialLock(stepState) {
 
 async function checkTutorialStatus() {
     const isLoggedIn = !!localStorage.getItem('accessToken');
-    const token = localStorage.getItem('accessToken');
+    // 💡 수정됨: API Gateway 인가 통과를 위해 idToken 사용 및 userId 변수 추가
+    const idToken = localStorage.getItem('idToken'); 
+    const userId = localStorage.getItem('userId');
     
-    // 비회원이면 튜토리얼 배너를 띄우지 않음
-    if (!isLoggedIn) return;
+    // 비회원이거나 토큰이 없다면 튜토리얼 배너를 띄우지 않음
+    if (!isLoggedIn || !idToken || !userId) return;
 
     let isTutorialCompleted = localStorage.getItem('tutorial_completed') === 'true';
 
     // 로컬에 완료 기록이 없다면 서버에서 실제 DB 플래그(tutorialRewardClaimed)를 확인
     if (!isTutorialCompleted) {
         try {
-            // MYPAGE API를 호출하여 유저 정보를 가져옵니다. (CONFIG.api.user 사용)
+            // MYPAGE API를 호출하여 유저 정보를 가져옵니다.
             const response = await fetch(CONFIG.api.user, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ type: 'get_user' })
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                body: JSON.stringify({ type: 'get_user', userId: userId })
             });
-            const data = await response.json();
             
-            // DB에 이미 보상 수령 기록이 있다면 로컬스토리지 동기화 후 배너 숨김
-            if (data && data.tutorialRewardClaimed) {
-                localStorage.setItem('tutorial_completed', 'true');
-                return;
+            if (response.ok) {
+                const data = await response.json();
+                
+                // 💡 수정됨: DB에 이미 보상 수령 기록이 있거나, 유료 멤버십(Standard/Pro)인 경우 배너 영구 숨김
+                if (data && (data.tutorialRewardClaimed === true || data.computedTier === 'standard' || data.computedTier === 'pro')) {
+                    localStorage.setItem('tutorial_completed', 'true');
+                    return; // 배너 안 띄우고 즉시 종료
+                }
+            } else {
+                console.warn("유저 데이터 동기화 실패 (오작동 방지를 위해 배너 대기)");
+                return; // 🚨 수정됨: API가 실패하면 밑으로 내려가서 배너를 띄우지 않도록 방어
             }
         } catch (e) {
-            console.error("Tutorial status sync failed:", e);
+            console.error("Tutorial status sync error:", e);
+            return; // 🚨 수정됨: 네트워크 에러 시 배너 띄우지 않음
         }
     } else {
         return; // 이미 로컬에 완료 기록이 있으면 즉시 종료
