@@ -920,18 +920,16 @@ function updateQuotaUI() {
         return;
     }
 
-    const isWarning = univChangeRemaining < 10;
-    const isUpsell = univChangeRemaining <= 5;
     const isZero = univChangeRemaining <= 0;
     
+    // 💡 Trial 티어일 경우의 UI 처리 (변수 선언 오류 수정)
     if (currentUserTier === 'trial') {
-        boxStyle = 'background:#fdf4ff; border-color:#e879f9;'; textColor = '#c026d3';
-        html = `<div class="quota-info-box" style="${boxStyle} flex-wrap:wrap; gap:8px;">
+        let html = `<div class="quota-info-box" style="background:#fdf4ff; border-color:#e879f9; flex-wrap:wrap; gap:8px;">
             <span><i class="fas fa-gift"></i> 신규 가입 무료 체험 혜택</span>
-            <span><strong class="remain-count" style="font-size:1.2rem; color:${textColor};">${univChangeRemaining}</strong> / 4회</span>
+            <span><strong class="remain-count" style="font-size:1.2rem; color:#c026d3;">${univChangeRemaining}</strong> / 4회</span>
         </div>`;
     
-        if (univChangeRemaining <= 0) {
+        if (isZero) {
             html += `<div class="upgrade-promo-banner" style="border-color:#fb923c; background:#fffaf0; flex-wrap:wrap; gap:12px;">
                 <div style="flex:1; min-width:240px; word-break:keep-all;">
                     <p style="margin:0; font-size:0.9rem; line-height:1.5;">무료 체험이 종료되었습니다.<br>Standard 멤버십으로 <strong>무제한 대학 분석</strong>을 이용해보세요.</p>
@@ -943,6 +941,10 @@ function updateQuotaUI() {
         return;
     }
 
+    // 💡 Basic / Free 티어일 경우의 UI 처리
+    const isWarning = univChangeRemaining < 10;
+    const isUpsell = univChangeRemaining <= 5;
+    
     let boxStyle = ''; let textColor = '#2563eb';
     if (isZero) { boxStyle = 'background:#fef2f2; border-color:#fecaca;'; textColor = '#ef4444'; }
     else if (isWarning) { boxStyle = 'background:#fff7ed; border-color:#fed7aa;'; textColor = '#ea580c'; }
