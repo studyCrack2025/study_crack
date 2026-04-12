@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error("Initialization Error:", e);
     }
 
-    // 튜토리얼 4단계 (모바일 말풍선 가려짐 완벽 해결 및 기능보기 변환 로직)
+    // 💡 튜토리얼 5단계 (모바일 말풍선 가려짐 완벽 해결 및 PRO 분할 로직)
     const pendingTutorial = localStorage.getItem('pending_tutorial');
     
     if (pendingTutorial === 'step3') {
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         let tutStep = 0;
-        let isTooltipHidden = false; // 💡 [추가] 모바일 '기능보기' 상태 변수
+        let isTooltipHidden = false;
         let lockedScrollY = 0;
         
         const msgEl = document.getElementById('tutorialMsg');
@@ -145,14 +145,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const nextBtn = document.getElementById('tutNextBtn');
         const skipBtn = document.getElementById('skipTutorialBtn');
         
+        // 💡 메시지 5개로 분할
         const tutMsgs = [
             'Basic 등급 이상에서 사용 가능합니다. 현재 점수를 통해 각 대학에서 본인의 현재 위치를 알려줍니다.',
             'Standard 등급 이상에서 사용 가능합니다. 현재 점수와 각 대학의 반영비를 통해 어떤 과목을 공부하는 가장 효율적인지를 보여줍니다.',
             'Standard 등급 이상에서 사용 가능합니다. SKY 출신 선생님들이 목표대학 합격을 위해 매주 어떻게 공부를 해야하는지 플래너를 검토해줍니다.',
-            'PRO 등급 이상에서 사용 가능합니다. 2주마다 목표 대학 합격률을 극대화하기 위한 중/장기적인 방향성을 제시하고, 그 과정에서 학생 개개인의 고민을 해결하고 요구에 최적화된 보고서를 제공합니다.'
+            'PRO 등급 이상에서 사용 가능합니다. 현재 학습 상황과 고민을 작성하여 1:1 맞춤형 프리미엄 전략 리포트를 요청할 수 있습니다.',
+            '담당 컨설턴트가 데이터를 기반으로 분석한 최종 리포트를 2주마다 제공받아, 목표 대학 합격률을 극대화할 수 있습니다.'
         ];
         
-        const tabKeys = ['univ', 'sim', 'coach', 'pro'];
+        // 💡 탭 순서도 5개로 분할
+        const tabKeys = ['univ', 'sim', 'coach', 'pro', 'pro'];
 
         const injectDummyData = (step) => {
             const contents = document.querySelectorAll('.sol-content');
@@ -163,7 +166,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             targetContent.classList.add('tutorial-focus-content');
 
+            // 💡 튜토리얼 진행 시에는 임시로 블러(잠금) 효과를 해제하여 잘 보이게 처리
+            if (tabKeys[step] === 'coach') {
+                const coachContainer = document.querySelector('.coach-container');
+                if (coachContainer) {
+                    coachContainer.classList.remove('tier-locked');
+                    const lockOverlay = coachContainer.querySelector('.coach-tier-lock-overlay');
+                    if (lockOverlay) lockOverlay.style.display = 'none';
+                }
+            }
+            if (tabKeys[step] === 'sim') {
+                const simContainer = document.querySelector('.sim-container-new');
+                if (simContainer) {
+                    const lockOverlay = simContainer.querySelector('.sim-tier-lock-overlay');
+                    if (lockOverlay) lockOverlay.style.display = 'none';
+                }
+            }
+
             if (step === 0) {
+                // ... 기존 step 0 코드와 동일 ...
                 const resArea = document.getElementById('univAnalysisResult');
                 if(resArea) resArea.innerHTML = `
                     <div class="analysis-card" style="border-left-color: #10b981; margin-top:20px;">
@@ -174,6 +195,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div style="display:flex; justify-content:space-between; font-weight:bold;"><span style="color:#64748b">환산점수</span> <span style="color:#10b981; font-size:1.2rem;">152.4점</span></div>
                     </div>`;
             } else if (step === 1) {
+                // ... 기존 step 1 코드와 동일 ...
                 const simArea = document.querySelector('#sol-sim .sim-container-new');
                 if(simArea) simArea.innerHTML = `
                     <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:20px; text-align:center;">
@@ -185,6 +207,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
                     </div>`;
             } else if (step === 2) {
+                // ... 기존 step 2 코드와 동일 ...
                 const coachArea = document.querySelector('#sol-coach .coach-container');
                 if(coachArea) coachArea.innerHTML = `
                     <div class="coach-box" style="border-left: 4px solid #8b5cf6;">
@@ -198,16 +221,34 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
                     </div>`;
             } else if (step === 3) {
+                // 💡 [수정] 3단계: PRO 리포트 요청 화면
                 const proArea = document.getElementById('sol-pro');
                 if(proArea) proArea.innerHTML = `
                     <div class="pro-theme" style="padding:30px;">
                         <div style="text-align:center; margin-bottom:20px;">
                             <span style="background:#3b82f6; color:white; padding:4px 12px; border-radius:20px; font-size:0.8rem; font-weight:bold;">PRO EXCLUSIVE</span>
-                            <h2 style="margin:10px 0; font-size:1.6rem; color:white;">프리미엄 전략 리포트</h2>
+                            <h2 style="margin:10px 0; font-size:1.6rem; color:white;">프리미엄 전략 리포트 요청</h2>
                         </div>
-                        <div style="background:rgba(255,255,255,0.1); border-radius:12px; padding:20px; display:flex; justify-content:space-between; align-items:center;">
-                            <div><strong style="color:white; display:block; font-size:1.1rem; margin-bottom:5px;">2026년 3월 2주차 분석</strong><span style="color:#93c5fd; font-size:0.9rem;">발행 완료 (클릭하여 열람)</span></div>
-                            <i class="fas fa-file-pdf" style="font-size:2rem; color:#bfdbfe;"></i>
+                        <div style="background:rgba(255,255,255,0.1); border-radius:12px; padding:25px; text-align:center;">
+                            <div style="color:#bfdbfe; margin-bottom:15px; font-size:0.95rem;">⏳ 요청 마감: <strong>일요일 자정</strong> 까지</div>
+                            <button style="background: white; color: #1e3a8a; font-weight: 700; padding: 12px 30px; border-radius: 8px; border: none; font-size: 1rem; cursor:default;"><i class="fas fa-edit"></i> 분석 요청서 작성하기</button>
+                        </div>
+                    </div>`;
+            } else if (step === 4) {
+                // 💡 [수정] 4단계: PRO 리포트 보관함 (다운로드) 화면
+                const proArea = document.getElementById('sol-pro');
+                if(proArea) proArea.innerHTML = `
+                    <div class="pro-theme" style="padding:30px;">
+                        <div style="text-align:center; margin-bottom:20px;">
+                            <span style="background:#3b82f6; color:white; padding:4px 12px; border-radius:20px; font-size:0.8rem; font-weight:bold;">PRO EXCLUSIVE</span>
+                            <h2 style="margin:10px 0; font-size:1.6rem; color:white;">프리미엄 전략 리포트 보관함</h2>
+                        </div>
+                        <div style="background:#1e293b; border: 1px solid #3b82f6; border-radius:12px; padding:20px; display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <strong style="color:white; display:block; font-size:1.1rem; margin-bottom:5px;">2026년 3월 2주차 PRO 분석</strong>
+                                <span style="color:#4ade80; font-size:0.9rem;">● 열람 가능</span>
+                            </div>
+                            <i class="fas fa-download" style="font-size:1.5rem; color:#3b82f6;"></i>
                         </div>
                     </div>`;
             }
@@ -245,7 +286,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     cloneContainer.appendChild(cloneMenu);
                     const cloneBtns = cloneContainer.querySelectorAll('.sol-btn');
                     
-                    // 🚨 핵심: 리사이즈 시 말풍선 박스는 고정하고, 화살표(--arrow-pos)만 동적으로 위치 변경
                     const updatePositions = () => {
                         if (localStorage.getItem('pending_tutorial') !== 'step3') return;
                         
@@ -255,22 +295,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                         cloneContainer.style.width = `${rect.width}px`;
                         cloneContainer.style.height = `${rect.height}px`;
 
-                        if (cloneBtns[tutStep] && tooltip) {
-                            const btnRect = cloneBtns[tutStep].getBoundingClientRect();
+                        // 💡 탭 버튼 인덱스 보정 (4단계일 경우 마지막 버튼(인덱스 3) 가리킴)
+                        const targetBtnIdx = tutStep === 4 ? 3 : tutStep;
+                        if (cloneBtns[targetBtnIdx] && tooltip) {
+                            const btnRect = cloneBtns[targetBtnIdx].getBoundingClientRect();
                             const isMobile = window.innerWidth <= 768;
 
                             if (isMobile) {
-                                // 모바일: 툴팁 박스는 메뉴 바로 아래 한가운데 고정
                                 tooltip.style.top = `${rect.bottom + 15}px`;
                                 tooltip.style.left = `50%`;
                                 tooltip.style.transform = `translateX(-50%)`;
                                 
-                                // 모바일: 화살표를 현재 활성화된 탭의 정중앙에 오도록 내부 변수 계산
                                 const tooltipRect = tooltip.getBoundingClientRect();
                                 const arrowLocalX = btnRect.left + (btnRect.width / 2) - tooltipRect.left;
                                 tooltip.style.setProperty('--arrow-pos', `${arrowLocalX}px`);
                             } else {
-                                // PC: 원래대로 툴팁 박스 자체가 활성 탭 아래를 따라다님
                                 tooltip.style.top = `${btnRect.bottom + 15}px`;
                                 tooltip.style.left = `${Math.max(10, btnRect.left + (btnRect.width / 2))}px`;
                                 tooltip.style.transform = `translateX(-50%)`;
@@ -285,7 +324,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         injectDummyData(tutStep); 
 
                         cloneBtns.forEach((btn, idx) => {
-                            if (idx === tutStep) {
+                            // 💡 탭 하이라이트 보정
+                            const isActive = (tutStep === 4 && idx === 3) || (idx === tutStep);
+                            if (isActive) {
                                 btn.classList.add('active');
                                 btn.style.opacity = '1';
                             } else {
@@ -294,7 +335,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                             }
                         });
                         
-                        // 탭 이동 시 말풍선 다시 나타내기 (기능보기 해제)
                         isTooltipHidden = false;
                         tooltip.style.display = 'block';
                         
@@ -306,13 +346,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const isMobile = window.innerWidth <= 768;
                         
                         if (isMobile) {
-                            // 모바일일 땐 항상 '기능보기'로 표시
-                            nextBtn.style.display = 'block';
-                            nextBtn.innerText = '기능보기';
-                            skipBtn.innerText = '튜토리얼 건너뛰기';
-                            skipBtn.classList.remove('highlight-border');
+                            if (tutStep === 4) {
+                                skipBtn.innerText = '튜토리얼 완료하기';
+                                skipBtn.classList.add('highlight-border');
+                            } else {
+                                nextBtn.style.display = 'block';
+                                nextBtn.innerText = '기능보기';
+                                skipBtn.innerText = '튜토리얼 건너뛰기';
+                                skipBtn.classList.remove('highlight-border');
+                            }
                         } else {
-                            if (tutStep === 3) {
+                            if (tutStep === 4) {
                                 nextBtn.style.display = 'none'; 
                                 skipBtn.innerText = '튜토리얼 완료하기'; 
                                 skipBtn.classList.add('highlight-border');
@@ -330,11 +374,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     nextBtn.addEventListener('click', () => { 
                         const isMobile = window.innerWidth <= 768;
                         if (isMobile) {
-                            // 모바일에서 '기능보기' 클릭 시
                             isTooltipHidden = true;
                             tooltip.style.display = 'none';
                             skipBtn.classList.add('highlight-border');
-                            if (tutStep === 3) {
+                            if (tutStep === 4) {
                                 skipBtn.innerText = '튜토리얼 완료하기';
                             } else {
                                 skipBtn.innerText = '다음';
@@ -344,7 +387,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                     });
 
-                    // 💡 [수정] 건너뛰기, 다음(모바일), 완료(모바일) 기능을 모두 통제
                     const finishTutorialAction = (showModal) => {
                         localStorage.removeItem('pending_tutorial');
                         window.removeEventListener('beforeunload', warnTutorialExit);
@@ -364,6 +406,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         document.querySelectorAll('.sol-content').forEach(c => c.classList.remove('tutorial-focus-content'));
                         openSolution('univ'); 
                         
+                        // 💡 블러 해제 복구 로직
+                        applyCoachTierLock();
+                        applySimTierLock();
+
                         if (showModal) {
                             document.getElementById('tutorialCompleteModal').classList.remove('hidden');
                             document.getElementById('tutorialCompleteModal').style.display = 'flex';
@@ -374,23 +420,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     skipBtn.addEventListener('click', () => {
                         const isMobile = window.innerWidth <= 768;
-                        
-                        // 모바일에서 '기능보기'로 말풍선이 숨겨진 상태라면 하단 버튼은 '다음' 또는 '완료'로 작동
                         if (isMobile && isTooltipHidden) {
-                            if (tutStep === 3) {
-                                finishTutorialAction(true); // 튜토리얼 끝
+                            if (tutStep === 4) {
+                                finishTutorialAction(true);
                             } else {
                                 tutStep++;
-                                updateStep(); // 다음 탭으로 이동
+                                updateStep();
                             }
                             return;
                         }
 
-                        // 일반적인 '건너뛰기' 상태일 때
-                        if (tutStep < 3) {
+                        if (tutStep < 4) {
                             if (!confirm("정말로 튜토리얼을 그만 하시겠습니까?")) return;
                         }
-                        finishTutorialAction(tutStep === 3);
+                        finishTutorialAction(tutStep === 4);
                     });
 
                     updateStep(); 
@@ -822,7 +865,7 @@ function initUnivGrid() {
     if(!grid) return;
     grid.innerHTML = ''; 
     
-    const isQuotaZero = (currentUserTier === 'free' || currentUserTier === 'basic') && (univChangeRemaining <= 0);
+    const isQuotaZero = (['free', 'basic', 'trial'].includes(currentUserTier)) && (univChangeRemaining <= 0);
 
     for (let i = 0; i < 6; i++) {
         const savedData = userTargetUnivs[i] || { univ: '', major: '', date: null };
@@ -856,7 +899,7 @@ function initUnivGrid() {
 }
 
 function clearUnivSlot(index) {
-    const isBasic = (currentUserTier === 'free' || currentUserTier === 'basic');
+    const isBasic = ['free', 'basic', 'trial'].includes(currentUserTier);
     const msg = isBasic ? `${index + 1}지망 대학을 삭제하시겠습니까?\n(대학을 삭제하는 것은 횟수가 차감되지 않습니다.\n삭제 후 하단의 '저장하기'를 눌러야 반영됩니다.)`
                         : `${index + 1}지망 대학을 삭제하시겠습니까?\n(삭제 후 하단의 '저장하기'를 눌러야 반영됩니다.)`;
     if (confirm(msg)) {
@@ -1089,7 +1132,7 @@ function selectComplete(univ, major) {
 }
 
 async function saveTargetUnivs() {
-    if (currentUserTier === 'free' || currentUserTier === 'basic') {
+    if (['free', 'basic', 'trial'].includes(currentUserTier)) {
         if(!confirm("목표 대학을 저장하시겠습니까?\n(새로 등록/변경된 대학 수만큼 남은 횟수에서 차감됩니다.)")) return;
     } else {
         if(!confirm("목표 대학을 저장하시겠습니까?")) return;
@@ -1115,7 +1158,7 @@ async function saveTargetUnivs() {
         });
         const resData = await response.json();
         if(response.ok) { 
-            let msg = (currentUserTier === 'free' || currentUserTier === 'basic') 
+            let msg = (['free', 'basic', 'trial'].includes(currentUserTier)) 
                 ? (resData.changedCount > 0 ? `저장되었습니다. (차감 횟수: ${resData.changedCount}회, 남은 횟수: ${resData.remainCount}회)` : "저장되었습니다. (변경된 내용 없음)")
                 : "목표 대학이 성공적으로 저장되었습니다.";
             alert(msg); location.reload(); 
@@ -1870,8 +1913,8 @@ function applyCoachTierLock() {
     const container = document.querySelector('.coach-container');
     if (!container) return;
 
-    // Free와 Basic 유저 모두에게 시뮬레이션 탭과 동일한 디자인의 락 스크린을 보여줍니다.
-    if (currentUserTier === 'free' || currentUserTier === 'basic') {
+    // trial을 조건에 포함하여 블러(잠금) 처리되게 수정
+    if (['free', 'basic', 'trial'].includes(currentUserTier)) {
         container.classList.add('tier-locked');
         container.style.position = 'relative';
         if (container.querySelector('.coach-tier-lock-overlay')) return;

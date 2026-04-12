@@ -563,6 +563,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
+    
+    // 💡 튜토리얼 통합 제어 실행
+    checkTutorialStatus();
 });
 
 // 💡 튜토리얼 제안 수락 핸들러
@@ -676,6 +679,60 @@ function runTutorialLock(stepState) {
             });
         }
     }, 150); 
+}
+
+async function checkTutorialStatus() {
+    const isLoggedIn = !!localStorage.getItem('accessToken');
+    const token = localStorage.getItem('accessToken');
+    
+    // 비회원이면 튜토리얼 배너를 띄우지 않음
+    if (!isLoggedIn) return;
+
+    let isTutorialCompleted = localStorage.getItem('tutorial_completed') === 'true';
+
+    // 로컬에 완료 기록이 없다면 서버에서 실제 DB 플래그(tutorialRewardClaimed)를 확인
+    if (!isTutorialCompleted) {
+        try {
+            // MYPAGE API를 호출하여 유저 정보를 가져옵니다. (CONFIG.api.user 사용)
+            const response = await fetch(CONFIG.api.user, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ type: 'get_user' })
+            });
+            const data = await response.json();
+            
+            // DB에 이미 보상 수령 기록이 있다면 로컬스토리지 동기화 후 배너 숨김
+            if (data && data.tutorialRewardClaimed) {
+                localStorage.setItem('tutorial_completed', 'true');
+                return;
+            }
+        } catch (e) {
+            console.error("Tutorial status sync failed:", e);
+        }
+    } else {
+        return; // 이미 로컬에 완료 기록이 있으면 즉시 종료
+    }
+
+    const pendingTutorial = localStorage.getItem('pending_tutorial');
+    
+    // 이미 튜토리얼을 수락해서 진행 중인 경우
+    if (pendingTutorial === 'true' || pendingTutorial === 'step3') {
+        runTutorialLock(pendingTutorial);
+    } 
+    // 아직 진행 중이 아니라면 (메인 페이지 접속 시) 오늘 하루 보지 않기 판단 후 배너 노출
+    else {
+        const todayStr = new Date().toLocaleDateString();
+        const hideToday = localStorage.getItem('hide_tutorial_today');
+        
+        if (hideToday !== todayStr) {
+            const offerModal = document.getElementById('tutorialOffer-modal');
+            if (offerModal) {
+                offerModal.classList.remove('hidden');
+                offerModal.style.display = 'block';
+                document.body.style.overflow = 'hidden';
+            }
+        }
+    }
 }
 
 function updateNavUI() {
