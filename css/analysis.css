@@ -744,6 +744,9 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     #analysisCardsContainer::-webkit-scrollbar { display: none; }
     #analysisCardsContainer .analysis-card { flex: 0 0 100%; width: 100%; scroll-snap-align: center; box-sizing: border-box; margin: 0; }
     
+    /* 튜토리얼 말풍선 꼬리표 모바일에서 숨김 (유동적 배치를 위해) */
+    .tutorial-tooltip::before, .tutorial-tooltip::after { display: none !important; }
+    
     /* =======================================
        7. PRO EXCLUSIVE 탭 모바일 완벽 최적화
        ======================================= */

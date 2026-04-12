@@ -256,7 +256,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         setTimeout(() => {
+            const isMobile = window.innerWidth <= 768;
             const menuEl = document.querySelector('.solution-menu');
+            const swipeWrapper = document.querySelector('.sol-swipe-wrapper');
             const overlay = document.getElementById('tutorialOverlay');
             const cloneContainer = document.getElementById('tutorialCloneContainer');
             const tooltip = document.getElementById('tutorialTooltip');
@@ -265,9 +267,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (tooltip) { document.body.appendChild(tooltip); tooltip.style.zIndex = '10005'; }
             if (bottomBar) { document.body.appendChild(bottomBar); bottomBar.style.zIndex = '10005'; }
 
-            if (menuEl && overlay && cloneContainer) {
+            if (overlay && cloneContainer) {
+                // 👇 1. 스크롤 기준점 변경: 모바일은 숨겨진 메뉴 대신 실제 콘텐츠 래퍼 기준으로 이동
+                const targetEl = (isMobile && swipeWrapper) ? swipeWrapper : menuEl;
                 const headerHeight = document.querySelector('header') ? document.querySelector('header').offsetHeight : 70;
-                const targetY = menuEl.getBoundingClientRect().top + window.pageYOffset - headerHeight - 15;
+                const targetY = targetEl ? (targetEl.getBoundingClientRect().top + window.pageYOffset - headerHeight - 15) : 0;
+                
                 window.scrollTo(0, targetY);
 
                 setTimeout(() => {
@@ -279,45 +284,66 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     overlay.classList.remove('hidden');
                     
-                    const cloneMenu = menuEl.cloneNode(true);
-                    cloneMenu.querySelectorAll('.sol-btn').forEach(btn => { 
-                        btn.removeAttribute('onclick'); 
-                        btn.style.pointerEvents = 'none';
-                    });
-                    cloneContainer.appendChild(cloneMenu);
-                    const cloneBtns = cloneContainer.querySelectorAll('.sol-btn');
-                    
+                    // 👇 2. 모바일에서는 상단 탭 메뉴 클론(복사) 금지
+                    if (!isMobile && menuEl) {
+                        const cloneMenu = menuEl.cloneNode(true);
+                        cloneMenu.querySelectorAll('.sol-btn').forEach(btn => { 
+                            btn.removeAttribute('onclick'); 
+                            btn.style.pointerEvents = 'none';
+                        });
+                        cloneContainer.appendChild(cloneMenu);
+                        cloneContainer.style.display = 'block';
+                    } else {
+                        cloneContainer.style.display = 'none';
+                    }
+
                     const updatePositions = () => {
                         if (localStorage.getItem('pending_tutorial') !== 'step3') return;
                         
-                        const rect = menuEl.getBoundingClientRect();
-                        cloneContainer.style.top = `${rect.top}px`;
-                        cloneContainer.style.left = `${rect.left}px`;
-                        cloneContainer.style.width = `${rect.width}px`;
-                        cloneContainer.style.height = `${rect.height}px`;
-
-                        // 💡 탭 버튼 인덱스 보정 (4단계일 경우 마지막 버튼(인덱스 3) 가리킴)
-                        const targetBtnIdx = tutStep === 4 ? 3 : tutStep;
-                        if (cloneBtns[targetBtnIdx] && tooltip) {
-                            const btnRect = cloneBtns[targetBtnIdx].getBoundingClientRect();
-                            const isMobile = window.innerWidth <= 768;
-
-                            if (isMobile) {
-                                tooltip.style.top = `${rect.bottom + 15}px`;
+                        const isMobileNow = window.innerWidth <= 768;
+                        
+                        if (isMobileNow) {
+                            cloneContainer.style.display = 'none';
+                            const activeCard = document.querySelector('.tutorial-focus-content');
+                            
+                            if (activeCard && tooltip) {
+                                const cardRect = activeCard.getBoundingClientRect();
+                                const tooltipHeight = tooltip.offsetHeight || 120;
+                                
+                                // 👇 3. 말풍선 위치 자동 회피: 예시 화면을 가리지 않도록 빈 공간 계산
+                                if (cardRect.top > tooltipHeight + 30) {
+                                    // 카드 위쪽 공간이 넉넉하면 카드 바로 위에 배치
+                                    tooltip.style.top = `${cardRect.top - tooltipHeight - 20}px`;
+                                } else {
+                                    // 위쪽 공간이 좁으면 카드 바로 밑에 배치
+                                    tooltip.style.top = `${cardRect.bottom + 20}px`;
+                                }
                                 tooltip.style.left = `50%`;
                                 tooltip.style.transform = `translateX(-50%)`;
-                                
-                                const tooltipRect = tooltip.getBoundingClientRect();
-                                const arrowLocalX = btnRect.left + (btnRect.width / 2) - tooltipRect.left;
-                                tooltip.style.setProperty('--arrow-pos', `${arrowLocalX}px`);
-                            } else {
-                                tooltip.style.top = `${btnRect.bottom + 15}px`;
-                                tooltip.style.left = `${Math.max(10, btnRect.left + (btnRect.width / 2))}px`;
-                                tooltip.style.transform = `translateX(-50%)`;
-                                tooltip.style.setProperty('--arrow-pos', `50%`);
+                            }
+                        } else {
+                            // PC: 기존처럼 상단 탭 메뉴 아래에 배치
+                            const menuEl = document.querySelector('.solution-menu');
+                            if(menuEl && cloneContainer.style.display !== 'none') {
+                                const rect = menuEl.getBoundingClientRect();
+                                cloneContainer.style.top = `${rect.top}px`;
+                                cloneContainer.style.left = `${rect.left}px`;
+                                cloneContainer.style.width = `${rect.width}px`;
+                                cloneContainer.style.height = `${rect.height}px`;
+
+                                const cloneBtns = cloneContainer.querySelectorAll('.sol-btn');
+                                const targetBtnIdx = tutStep === 4 ? 3 : tutStep;
+                                if (cloneBtns[targetBtnIdx] && tooltip) {
+                                    const btnRect = cloneBtns[targetBtnIdx].getBoundingClientRect();
+                                    tooltip.style.top = `${btnRect.bottom + 15}px`;
+                                    tooltip.style.left = `${Math.max(10, btnRect.left + (btnRect.width / 2))}px`;
+                                    tooltip.style.transform = `translateX(-50%)`;
+                                    tooltip.style.setProperty('--arrow-pos', `50%`);
+                                }
                             }
                         }
                     };
+
                     window.addEventListener('resize', updatePositions);
 
                     const updateStep = () => {
