@@ -730,13 +730,19 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     /* =======================================
        6. 솔루션 콘텐츠 좌우 스와이프 처리
        ======================================= */
-    /* 1. 4개 주요 탭 좌우 스와이프 */
-    .sol-swipe-wrapper { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -ms-overflow-style: none; width: 100vw; margin-left: -20px; padding: 0 20px; box-sizing: border-box; scroll-behavior: smooth; }
-    .sol-swipe-wrapper::-webkit-scrollbar { display: none; }
-    .sol-content { display: block !important; flex: 0 0 100%; scroll-snap-align: center; width: 100%; box-sizing: border-box; animation: none !important; }
+    /* 1. 상단 4개 탭 버튼 모바일에서 완전 숨김 */
+    .solution-menu { display: none !important; }
 
-    /* 2. 목표대학 기본분석 카드 좌우 스와이프 (JS의 inline flex-direction: column 무력화) */
-    #analysisCardsContainer { display: flex !important; flex-direction: row !important; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px !important; padding-bottom: 15px; scrollbar-width: none; -ms-overflow-style: none; margin-left: -20px; width: 100vw; padding: 0 20px 20px 20px; box-sizing: border-box; }
+    /* 2. 박스 너머로 글자 새는 현상 완벽 차단 (가장 중요) */
+    .content-area { overflow: hidden !important; width: 100%; position: relative; }
+
+    /* 3. 4개 주요 탭 좌우 스와이프 처리 */
+    .sol-swipe-wrapper { display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; -ms-overflow-style: none; width: 100%; scroll-behavior: smooth; }
+    .sol-swipe-wrapper::-webkit-scrollbar { display: none; }
+    .sol-content { display: block !important; flex: 0 0 100%; width: 100%; scroll-snap-align: start; box-sizing: border-box; animation: none !important; padding: 0 15px; }
+
+    /* 4. 목표대학 기본분석 카드 좌우 스와이프 (JS 인라인 스타일 무력화) */
+    #analysisCardsContainer { display: flex !important; flex-direction: row !important; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px !important; padding-bottom: 15px; scrollbar-width: none; -ms-overflow-style: none; width: 100%; box-sizing: border-box; }
     #analysisCardsContainer::-webkit-scrollbar { display: none; }
     #analysisCardsContainer .analysis-card { flex: 0 0 85%; scroll-snap-align: center; }
 }
