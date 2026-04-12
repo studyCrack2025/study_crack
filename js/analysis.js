@@ -458,6 +458,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const types = ['univ', 'sim', 'coach', 'pro'];
                 const currentType = types[index];
                 
+                const targetContent = document.getElementById(`sol-${currentType}`);
+                if (targetContent) {
+                    swipeWrapper.style.height = `${targetContent.offsetHeight}px`;
+                }
+                
                 // 버튼 상태 동기화
                 document.querySelectorAll('.solution-menu .sol-btn').forEach(btn => {
                     btn.classList.remove('active');
@@ -843,6 +848,7 @@ function openSolution(type) {
         if (wrapper && targetContent) {
             // 해당 탭의 위치로 부드럽게 스크롤
             wrapper.scrollTo({ left: targetContent.offsetLeft - wrapper.offsetLeft, behavior: 'smooth' });
+            wrapper.style.height = `${targetContent.offsetHeight}px`;
         }
     } else {
         // PC: 기존처럼 display로 탭 전환
