@@ -539,33 +539,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { threshold: 0.15 });
     document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
 
-    // 💡 [수정됨] 5. 튜토리얼 통합 제어 (자동 팝업 및 오늘 하루 보지 않기 - 로그인 한정)
+    // 💡 [수정됨] 5. 튜토리얼 통합 제어 (자동 팝업 로직 삭제)
     const pendingTutorial = localStorage.getItem('pending_tutorial');
-    const isTutorialCompleted = localStorage.getItem('tutorial_completed') === 'true';
-    const isLoggedIn = !!localStorage.getItem('accessToken'); // 💡 로그인 여부 확인
+    const isLoggedIn = !!localStorage.getItem('accessToken');
     
-    // 이미 튜토리얼을 수락해서 진행 중인 경우
+    // 이미 튜토리얼을 수락해서 진행 중인 경우 (화면 깜빡임 방지용 즉시 락)
     if (pendingTutorial === 'true' || pendingTutorial === 'step3') {
         runTutorialLock(pendingTutorial);
     } 
-    // 💡 로그인한 상태이면서 튜토리얼을 완료하지 않았을 경우에만 (메인 페이지 접속 시)
-    else if (isLoggedIn && !isTutorialCompleted) {
-        const todayStr = new Date().toLocaleDateString();
-        const hideToday = localStorage.getItem('hide_tutorial_today');
-        
-        // 오늘 하루 보지 않기 설정이 안 되어 있다면 팝업 출력
-        if (hideToday !== todayStr) {
-            const offerModal = document.getElementById('tutorialOffer-modal');
-            if (offerModal) {
-                offerModal.classList.remove('hidden');
-                offerModal.style.display = 'block';
-                document.body.style.overflow = 'hidden';
-            }
-        }
+    // 💡 동기적으로 팝업을 띄우던 부분을 완전히 삭제하고 함수 호출만 남깁니다.
+    else if (isLoggedIn) {
+        checkTutorialStatus();
     }
-    
-    // 💡 튜토리얼 통합 제어 실행
-    checkTutorialStatus();
 });
 
 // 💡 튜토리얼 제안 수락 핸들러
@@ -687,15 +672,12 @@ async function checkTutorialStatus() {
     const idToken = localStorage.getItem('idToken'); 
     const userId = localStorage.getItem('userId');
     
-    // 비회원이거나 필수 정보가 없다면 무시
     if (!isLoggedIn || !idToken || !userId) return;
 
-    // 1. 브라우저 로컬에 '완료' 도장이 찍혀있으면 더 볼 것 없이 즉시 종료
     if (localStorage.getItem('tutorial_completed') === 'true') {
         return;
     }
 
-    // 2. 로컬에 도장이 없다면, 진짜 안 한건지 다른 기기에서 한건지 DB를 찔러봄
     try {
         const response = await fetch(CONFIG.api.user, {
             method: 'POST',
@@ -706,28 +688,27 @@ async function checkTutorialStatus() {
         if (response.ok) {
             const data = await response.json();
             
-            // DB 확인 결과 이미 보상을 받았거나, 돈을 낸 유료회원이면 배너 영구 금지
+            // 💡 [핵심 방어] DB 결과 보상을 받았거나 유료회원이면 로컬스토리지 갱신 후 즉시 함수 종료 (팝업 절대 불가)
             if (data && (data.tutorialRewardClaimed === true || data.computedTier === 'standard' || data.computedTier === 'pro')) {
                 localStorage.setItem('tutorial_completed', 'true');
                 localStorage.removeItem('pending_tutorial');
-                return; // 여기서 컷!
+                return; // 여기서 함수가 끝나므로 아래의 팝업 띄우기 로직에 도달하지 않음
             }
         }
     } catch (e) {
         console.error("Tutorial sync error:", e);
-        // 에러가 났을 때는 유저를 괴롭히지 않기 위해 배너를 띄우지 않고 조용히 넘어갑니다.
         return; 
     }
 
-    // 3. 여기까지 왔다는 건 '진짜로 튜토리얼을 안 한 일반/무료 유저'라는 뜻입니다.
+    // --- DB 검사 결과 진짜로 튜토리얼을 안 한 유저만 이 아래로 내려옵니다 ---
+
     const pendingTutorial = localStorage.getItem('pending_tutorial');
     
-    // 진행 중인 상태(true, step3 등)라면 락 실행
     if (pendingTutorial === 'true' || pendingTutorial === 'step3') {
         runTutorialLock(pendingTutorial);
     } 
-    // 아직 시작도 안 한 유저라면 '오늘 하루 보지 않기' 확인 후 팝업 띄우기
     else {
+        // 💡 통신이 끝나고 조건이 맞을 때 비로소 팝업을 띄웁니다.
         const todayStr = new Date().toLocaleDateString();
         const hideToday = localStorage.getItem('hide_tutorial_today');
         
