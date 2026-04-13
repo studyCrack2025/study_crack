@@ -771,21 +771,26 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     /* =======================================
        8. 점수 상승 시뮬레이션 모바일 전용
        ======================================= */
-    /* 모바일에서 불필요해진 토글 컨트롤 숨김 */
-    .sim-controls { display: none !important; }
-    .chart-graph-area { height: 140px !important; padding-top: 10px !important; }
-    .sim-chart-wrapper { padding: 12px; }
+    /* 🎯 1. 토글 컨트롤 복구 및 차트 영역 다이어트 */
+    .sim-controls { display: flex !important; }
+    .chart-graph-area { height: 160px !important; padding-top: 15px !important; }
+    .sim-chart-wrapper { padding: 15px; }
     .sim-bar { width: 24px !important; }
     .sim-bar-item { min-width: 35px; }
 
-    #simDetailCard::-webkit-scrollbar { display: none; }  
-    .sim-result-card.swipe-univ-card { padding: 12px !important; border-radius: 10px; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.1); }
+    /* 🎯 2. 대학 카드 좌우 스와이프 UI 설정 */
+    #simDetailCard::-webkit-scrollbar { display: none; } 
+    .sim-result-card.swipe-univ-card { padding: 15px !important; border-radius: 12px; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.1); }
 
-    .sim-item.swipe-subj-card { flex: 0 0 75%; scroll-snap-align: center; padding: 10px; border-radius: 8px; }
+    /* 🎯 3. 과목 카드 디자인 (화면의 약 90%를 채워 좌우 스와이프를 명확하게 함) */
+    .sim-item.swipe-subj-card { flex: 0 0 92%; scroll-snap-align: center; padding: 12px 15px; border-radius: 8px; }
     .sim-item.swipe-subj-card::-webkit-scrollbar { display: none; }    
-    .sim-item-header { margin-bottom: 5px !important; }
-    .sim-item-body { font-size: 0.8rem; line-height: 1.3; }
-    .sim-warning { margin-top: 5px; padding: 10px 12px; font-size: 0.8rem; }
-    .sim-warning h4 { font-size: 0.85rem; margin-bottom: 4px; }
-    .sim-warning p { font-size: 0.75rem; margin-bottom: 6px; }
+    .sim-item-header { margin-bottom: 6px !important; }
+    .sim-item-body { font-size: 0.85rem; line-height: 1.4; }
+
+    /* 🎯 4. 경고창 (Warning) 세로(Column) 정렬 최적화 */
+    .sim-warning { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 8px; margin-top: 15px; padding: 15px; border-radius: 8px; }
+    .sim-warning h4 { font-size: 0.95rem; margin: 0; line-height: 1.3; }
+    .sim-warning p { font-size: 0.85rem; margin: 0; line-height: 1.4; color: #475569; }
+    .sim-warning button { width: 100%; padding: 12px; margin-top: 5px; background: #ea580c; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 0.95rem; cursor: pointer; }
 }
