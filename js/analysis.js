@@ -2178,6 +2178,11 @@ function renderDetailedSimCard() {
             if (!['standard', 'pro'].includes(currentUserTier) && univChangeRemaining <= 5) {
                 warningHTML = `
                 <div class="sim-warning upsell-warning" style="background:#fff7ed; border:1px solid #fdba74; padding:18px; border-radius:10px; margin-top:15px;">
+                    
+                    <div style="background: linear-gradient(90deg, #ea580c, #f97316); color: white; padding: 14px 12px; border-radius: 8px; font-size: 0.95rem; font-weight: 800; text-align: center; margin-bottom: 18px; line-height: 1.5; box-shadow: 0 3px 6px rgba(234,88,12,0.25); word-break:keep-all;">
+                        🎓 SKY 합격생들이 직접 짜준 플래너로<br>합격생이 실제로 밟아온 루트로 공부하세요!
+                    </div>
+
                     <h4 style="color:#c2410c; margin:0 0 12px 0; line-height:1.3; font-size:1rem; font-weight:800;">
                         <i class="fas fa-exclamation-triangle" style="margin-right:4px;"></i> 공부 방향 설정이 필요합니다
                     </h4>
