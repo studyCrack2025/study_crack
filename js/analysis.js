@@ -1943,121 +1943,227 @@ function selectSimUniv(index) {
             if (idx === index) b.classList.add('active'); else b.classList.remove('active');
         });
     }
-    renderDetailedSimCard(); 
+
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+        const container = document.getElementById('simDetailCard');
+        const targetCard = container.children[index];
+        if (container && targetCard) {
+            container.scrollTo({ left: targetCard.offsetLeft - container.offsetLeft, behavior: 'smooth' });
+        }
+    } else {
+        renderDetailedSimCard(); 
+    }
 }
 
 function renderDetailedSimCard() {
     const cardArea = document.getElementById('simDetailCard');
-    if (selectedSimIndex === null || !simDisplayList[selectedSimIndex]) { 
+    const isMobile = window.innerWidth <= 768; // 모바일 여부 확인
+
+    if (!simDisplayList || simDisplayList.length === 0) { 
         cardArea.innerHTML = `<div class="empty-sim-state" style="display:block; height:auto;"><p>대학을 선택해주세요.</p></div>`; 
         return; 
     }
 
-    const item = simDisplayList[selectedSimIndex];
-    if (item.ineligible) {
-        const choiceNum = item.originalIdx + 1;
-        cardArea.innerHTML = `
-            <div class="sim-result-card" style="display: block; height: auto;">
-                <div class="sim-card-header" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:15px; border-bottom:1px solid #f1f5f9; padding-bottom:15px; margin-bottom:20px;">
-                    <div style="flex:1 1 60%; min-width:200px;">
-                        <span class="sim-univ-title" style="display:block; font-size:1.2rem; font-weight:800; color:#1e293b; line-height:1.3; margin-bottom:4px; word-break:keep-all;">${escapeHtml(item.univ)}</span>
-                        <span class="sim-univ-dept" style="display:block; font-size:0.95rem; color:#64748b; line-height:1.3;">${escapeHtml(item.major)}</span>
+    // ==========================================
+    // [1] 모바일 전용 로직: 모든 대학 가로 스와이프 & 과목 정렬
+    // ==========================================
+    if (isMobile) {
+        cardArea.style.display = 'flex';
+        cardArea.style.overflowX = 'auto';
+        cardArea.style.scrollSnapType = 'x mandatory';
+        cardArea.style.gap = '15px';
+        cardArea.style.scrollbarWidth = 'none';
+
+        let html = '';
+        simDisplayList.forEach((item, index) => {
+            const choiceNum = item.originalIdx + 1;
+
+            if (item.ineligible) {
+                html += `
+                <div class="sim-result-card swipe-univ-card" style="flex: 0 0 100%; scroll-snap-align: center; box-sizing: border-box; margin-top: 0;">
+                    <div class="sim-card-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
+                        <div>
+                            <span class="sim-univ-title" style="display:block; font-size:1.1rem; font-weight:800; color:#1e293b;">${escapeHtml(item.univ)}</span>
+                            <span class="sim-univ-dept" style="display:block; font-size:0.85rem; color:#64748b;">${escapeHtml(item.major)}</span>
+                        </div>
+                        <div class="sim-score-change">
+                            <span class="score-badge" style="background:#fee2e2; color:#ef4444;">${choiceNum}지망</span>
+                        </div>
                     </div>
-                    <div class="sim-score-change" style="flex:0 0 auto; text-align:right;">
-                        <span class="score-badge" style="display:inline-block; background:#fee2e2; color:#ef4444; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:600;">${choiceNum}지망</span>
+                    <div style="padding:15px; text-align:center; color:#ef4444; font-weight:600; font-size:0.9rem;">
+                        <i class="fas fa-ban" style="font-size:1.2rem; margin-bottom:8px; display:block;"></i>지원 불가 대학입니다.
+                    </div>
+                </div>`;
+                return;
+            }
+
+            const data = item;
+            const currentScore = Math.round(data.base_ui_score);
+            if (currentScore >= 250) { Object.keys(data.sim_data).forEach(key => { if (data.sim_data[key]) data.sim_data[key].uiDiff = 0; }); }
+            const getStatusText = (s) => { if (s >= 150) return "안정권"; if (s >= 100) return "적정권"; if (s >= 50) return "소신지원"; return "위험"; };
+            const currentStatus = getStatusText(currentScore);
+
+            // 과목 정렬 (내림차순)
+            let subjects = [{ key: 'kor', name: '국어' }, { key: 'math', name: '수학' }, { key: 'inq1', name: '탐구1' }, { key: 'inq2', name: '탐구2' }];
+            subjects.sort((a, b) => {
+                const diffA = (data.sim_data[a.key] && data.sim_data[a.key].uiDiff) || 0;
+                const diffB = (data.sim_data[b.key] && data.sim_data[b.key].uiDiff) || 0;
+                return diffB - diffA; 
+            });
+
+            let maxRise = (data.sim_data[subjects[0].key] && data.sim_data[subjects[0].key].uiDiff) || 0;
+            let bestSubjectKey = maxRise > 0 ? subjects[0].key : '';
+
+            let subjectsHTML = '';
+            subjects.forEach(sub => {
+                const info = data.sim_data[sub.key];
+                if (!info) return;
+                const diffVal = info.uiDiff.toFixed(1);
+                const isBest = (sub.key === bestSubjectKey && maxRise > 0);
+                let desc = '';
+                if (info.msg.includes("응시 안 함")) desc = `<span style="color:#94a3b8;">미응시</span>`;
+                else if (info.diff <= 0) desc = `<span style="color:#ef4444;">변화 없음</span>`;
+                else desc = isBest ? `<strong>가장 유리함</strong>` : `상승 가능`;
+                const subText = info.diff > 0 ? `(+${(info.diff || 3.0).toFixed(2)}점)` : ``;
+                
+                subjectsHTML += `
+                    <div class="sim-item swipe-subj-card ${isBest ? 'best-pick' : ''}">
+                        <div class="sim-item-header">
+                            <span style="font-weight:700;">${escapeHtml(info.name || sub.name)} <span style="font-size:0.75rem; font-weight:normal;">(+1점)</span></span>
+                            <span style="color:${info.uiDiff > 0 ? '#ef4444' : '#94a3b8'}; font-weight:800;">+${diffVal}점</span>
+                        </div>
+                        <div class="sim-item-body">
+                            <div style="font-size:0.8rem; margin-bottom:2px;">${desc}</div>
+                            <div style="font-size:0.7rem; color:#94a3b8;">${subText}</div>
+                        </div>
+                    </div>`;
+            });
+
+            let warningHTML = '';
+            if (!['standard', 'pro'].includes(currentUserTier) && univChangeRemaining <= 5) {
+                warningHTML = `<div class="sim-warning upsell-warning"><h4 style="margin:0 0 5px 0; font-size:0.9rem;"><i class="fas fa-exclamation-triangle"></i> 공부 방향 설정이 필요합니다.</h4><p style="margin:0; font-size:0.8rem; line-height:1.4;">현재 방향이 잘못 잡히면 시간만 낭비될 수 있습니다.</p><button onclick="location.href='/payment'" style="width: 100%; padding: 10px; margin-top: 10px; background: #ea580c; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 0.9rem; cursor: pointer;">공부 방향 설정하기</button></div>`;
+            } else {
+                if (currentScore < 10 && (currentScore + maxRise) < 25) warningHTML = `<div class="sim-warning" style="color:#c2410c;"><i class="fas fa-exclamation-circle"></i><div><strong>불합격권입니다.</strong><br><span style="font-size:0.75rem;">다른 전형이나 대학 고려를 권장합니다.</span></div></div>`;
+                else if (currentScore >= 225 || (currentScore + maxRise) >= 250) warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><i class="fas fa-check-circle"></i><div><strong>안정권입니다.</strong><br><span style="font-size:0.75rem;">상위 대학 도전을 고려해보세요.</span></div></div>`;
+            }
+
+            html += `
+            <div class="sim-result-card swipe-univ-card" style="flex: 0 0 100%; scroll-snap-align: center; box-sizing: border-box; margin-top: 0; display: flex; flex-direction: column;">
+                <div class="sim-card-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid #f1f5f9;">
+                    <div>
+                        <span class="sim-univ-title" style="display:block; font-size:1.1rem; font-weight:800; color:#1e293b; margin-bottom:2px;">${escapeHtml(data.univ)}</span>
+                        <span class="sim-univ-dept" style="display:block; font-size:0.85rem; color:#64748b;">${escapeHtml(data.major)}</span>
+                    </div>
+                    <div class="sim-score-change" style="text-align:right;">
+                        <span class="score-badge" style="display:inline-block; background:#f1f5f9; padding:2px 6px; border-radius:4px; font-size:0.75rem; color:#64748b; margin-bottom:4px;">현재: ${currentStatus}</span>
+                        <span class="score-diff" style="display:block; font-size:1.2rem; font-weight:800; color:#2563EB;">${currentScore}점</span>
                     </div>
                 </div>
-                <div style="padding:20px; text-align:center; color:#ef4444; font-weight:600;">
-                    <i class="fas fa-ban" style="font-size:1.5rem; margin-bottom:10px; display:block;"></i>지원 불가 대학입니다.
-                    <div style="font-size:0.85rem; color:#94a3b8; font-weight:400; margin-top:8px;">필수 과목 미응시 또는 자격 미충족으로 인해<br>분석 데이터를 제공할 수 없습니다.</div>
+                <div style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 10px; scrollbar-width: none; margin-bottom: 10px;">
+                    ${subjectsHTML}
                 </div>
+                ${warningHTML}
             </div>`;
-        return;
-    }
+        });
 
-    const data = item;
-    const currentScore = Math.round(data.base_ui_score);
-    if (currentScore >= 250) { Object.keys(data.sim_data).forEach(key => { if (data.sim_data[key]) data.sim_data[key].uiDiff = 0; }); }
-    const getStatusText = (s) => { if (s >= 150) return "안정권"; if (s >= 100) return "적정권"; if (s >= 50) return "소신지원"; return "위험"; };
-    const currentStatus = getStatusText(currentScore);
+        cardArea.innerHTML = html;
 
-    let maxRise = 0; let bestSubjectKey = '';
-    const subjects = [{ key: 'kor', name: '국어' }, { key: 'math', name: '수학' }, { key: 'inq1', name: '탐구1' }, { key: 'inq2', name: '탐구2' }];
-    subjects.forEach(sub => { const info = data.sim_data[sub.key]; if (info && info.uiDiff > maxRise) { maxRise = info.uiDiff; bestSubjectKey = sub.key; } });
-
-    let subjectsHTML = '';
-    subjects.forEach(sub => {
-        const info = data.sim_data[sub.key];
-        if (!info) return;
-        const diffVal = info.uiDiff.toFixed(1);
-        const isBest = (sub.key === bestSubjectKey && maxRise > 0);
-        let desc = '';
-        if (info.msg.includes("응시 안 함")) desc = `<span style="color:#94a3b8;">미응시 과목입니다.</span>`;
-        else if (info.diff <= 0) desc = `<span style="color:#ef4444;">점수 변화 없음 (만점 혹은 탐구 한과목 반영)</span>`;
-        else desc = isBest ? `<strong>가장 합격 상승에 유리합니다.</strong>` : `점수 상승으로 합격 가능성이 높아집니다.`;
-        const subText = info.diff > 0 ? `(실점수 +${(info.diff || 3.0).toFixed(2)}점)` : ``;
-        
-        subjectsHTML += `
-            <div class="sim-item ${isBest ? 'best-pick' : ''}" style="display:flex; flex-direction:column; justify-content:flex-start; height:100%;">
-                <div class="sim-item-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:8px;">
-                    <span style="flex:1; min-width:0; font-weight:700; color:#334155; line-height:1.3; word-break:keep-all;">${escapeHtml(info.name || sub.name)} (+1점)</span>
-                    <span style="flex-shrink:0; color:${info.uiDiff > 0 ? '#ef4444' : '#94a3b8'}; font-weight:700;">+${diffVal}점</span>
-                </div>
-                <div class="sim-item-body" style="flex:1;">
-                    <div style="font-size:0.9rem; color:#475569; line-height:1.5; margin-bottom:4px;">${desc}</div>
-                    <div style="font-size:0.75rem; color:#94a3b8;">${subText}</div>
-                </div>
-            </div>
-        `;
-    });
-
-    let warningHTML = '';
-    if (!['standard', 'pro'].includes(currentUserTier) && univChangeRemaining <= 5) {
-        warningHTML = `
-            <div class="sim-warning upsell-warning" style="background:#fff7ed; border-color:#fdba74; color:#c2410c; padding: 20px; text-align: left; display: block; margin-top: 15px; border-radius: 8px; border: 1px solid #fdba74;">
-                <h4 style="margin: 0 0 10px 0; font-size: 1.05rem;"><i class="fas fa-exclamation-triangle"></i> 지금 점수 구조에서는 특정 과목이 결과에 불리하게 작용하고 있습니다.</h4>
-                <p style="margin: 0 0 12px 0; font-size: 0.9rem; line-height: 1.6;">
-                    이 상태에서는 공부량을 늘려도 결과가 크게 바뀌지 않을 수 있습니다.<br>
-                    특히 학기 초에 방향이 잘못 잡히면 시간만 더 쓰게 되는 경우가 많습니다.<br>
-                    방향을 올바로 잡지 않은 상태에서의 노력은 결과로 이어지기 어렵습니다. <strong>지금 방향을 잡느냐에 따라 결과가 달라집니다.</strong>
-                </p>
-                <div style="background: white; border-radius: 6px; padding: 12px; margin-bottom: 15px; border: 1px solid #fed7aa; color: #431407; font-size: 0.9rem;">
-                    <strong style="color:#ea580c;">💡 해결책 제시</strong><br>
-                    SKY 합격생들이 실제로 밟아온 기준으로 과목별 공부 방향을 직접 설정해드립니다.
-                </div>
-                <button onclick="location.href='/payment'" style="width: 100%; padding: 12px; background: #ea580c; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.2s;">
-                    공부 방향 설정하기
-                </button>
-                <p style="margin: 10px 0 0 0; font-size: 0.8rem; text-align: center; opacity: 0.8;">지금 방향을 설정하면 이후 공부 효율이 크게 달라질 수 있습니다.</p>
-            </div>
-        `;
     } else {
-        if (currentScore < 10 && (currentScore + maxRise) < 25) {
-            warningHTML = `<div class="sim-warning" style="background:#fff7ed; border-color:#fdba74; color:#c2410c;"><i class="fas fa-exclamation-circle"></i><div><strong>여전히 불합격권입니다.</strong><br>한 문제를 더 맞혀도 매우 어렵습니다. 다른 전형이나 대학을 함께 고려해보세요.</div></div>`;
-        } 
-        else if (currentScore >= 225 || (currentScore + maxRise) >= 250) {
-            warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><i class="fas fa-check-circle"></i><div><strong>이미 상당히 안정권입니다.</strong><br>한 문제를 더 맞혀도 합격 가능성에 유의미한 변화가 없습니다. 상위 대학 및 전형에 도전해보세요.</div></div>`;
+        // ==========================================
+        // [2] PC 전용 로직: 기존의 단일 카드 렌더링 유지
+        // ==========================================
+        cardArea.style.display = 'block';
+        cardArea.style.overflowX = 'visible';
+        
+        if (selectedSimIndex === null || !simDisplayList[selectedSimIndex]) { 
+            cardArea.innerHTML = `<div class="empty-sim-state" style="display:block; height:auto;"><p>대학을 선택해주세요.</p></div>`; 
+            return; 
         }
-    }
 
-    cardArea.innerHTML = `
-        <div class="sim-result-card" style="display:block; height:auto;">
-            <div class="sim-card-header" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:15px; border-bottom:1px solid #f1f5f9; padding-bottom:15px; margin-bottom:20px;">
-                <div style="flex:1 1 60%; min-width:200px;">
-                    <span class="sim-univ-title" style="display:block; font-size:1.2rem; font-weight:800; color:#1e293b; line-height:1.3; margin-bottom:4px; word-break:keep-all;">${escapeHtml(data.univ)}</span>
-                    <span class="sim-univ-dept" style="display:block; font-size:0.95rem; color:#64748b; line-height:1.3;">${escapeHtml(data.major)}</span>
+        const item = simDisplayList[selectedSimIndex];
+        if (item.ineligible) {
+            const choiceNum = item.originalIdx + 1;
+            cardArea.innerHTML = `
+                <div class="sim-result-card" style="display: block; height: auto;">
+                    <div class="sim-card-header">
+                        <div style="flex:1 1 60%; min-width:200px;">
+                            <span class="sim-univ-title">${escapeHtml(item.univ)}</span>
+                            <span class="sim-univ-dept">${escapeHtml(item.major)}</span>
+                        </div>
+                        <div class="sim-score-change">
+                            <span class="score-badge" style="background:#fee2e2; color:#ef4444;">${choiceNum}지망</span>
+                        </div>
+                    </div>
+                    <div style="padding:20px; text-align:center; color:#ef4444; font-weight:600;">
+                        <i class="fas fa-ban" style="font-size:1.5rem; margin-bottom:10px; display:block;"></i>지원 불가 대학입니다.
+                        <div style="font-size:0.85rem; color:#94a3b8; font-weight:400; margin-top:8px;">필수 과목 미응시 또는 자격 미충족으로 인해<br>분석 데이터를 제공할 수 없습니다.</div>
+                    </div>
+                </div>`;
+            return;
+        }
+
+        const data = item;
+        const currentScore = Math.round(data.base_ui_score);
+        if (currentScore >= 250) { Object.keys(data.sim_data).forEach(key => { if (data.sim_data[key]) data.sim_data[key].uiDiff = 0; }); }
+        const getStatusText = (s) => { if (s >= 150) return "안정권"; if (s >= 100) return "적정권"; if (s >= 50) return "소신지원"; return "위험"; };
+        const currentStatus = getStatusText(currentScore);
+
+        let maxRise = 0; let bestSubjectKey = '';
+        const subjects = [{ key: 'kor', name: '국어' }, { key: 'math', name: '수학' }, { key: 'inq1', name: '탐구1' }, { key: 'inq2', name: '탐구2' }];
+        subjects.forEach(sub => { const info = data.sim_data[sub.key]; if (info && info.uiDiff > maxRise) { maxRise = info.uiDiff; bestSubjectKey = sub.key; } });
+
+        let subjectsHTML = '';
+        subjects.forEach(sub => {
+            const info = data.sim_data[sub.key];
+            if (!info) return;
+            const diffVal = info.uiDiff.toFixed(1);
+            const isBest = (sub.key === bestSubjectKey && maxRise > 0);
+            let desc = '';
+            if (info.msg.includes("응시 안 함")) desc = `<span style="color:#94a3b8;">미응시 과목입니다.</span>`;
+            else if (info.diff <= 0) desc = `<span style="color:#ef4444;">점수 변화 없음</span>`;
+            else desc = isBest ? `<strong>가장 합격 상승에 유리합니다.</strong>` : `점수 상승으로 합격 가능성이 높아집니다.`;
+            const subText = info.diff > 0 ? `(실점수 +${(info.diff || 3.0).toFixed(2)}점)` : ``;
+            
+            subjectsHTML += `
+                <div class="sim-item ${isBest ? 'best-pick' : ''}" style="display:flex; flex-direction:column; justify-content:flex-start; height:100%;">
+                    <div class="sim-item-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:8px;">
+                        <span style="flex:1; min-width:0; font-weight:700; color:#334155;">${escapeHtml(info.name || sub.name)} (+1점)</span>
+                        <span style="flex-shrink:0; color:${info.uiDiff > 0 ? '#ef4444' : '#94a3b8'}; font-weight:700;">+${diffVal}점</span>
+                    </div>
+                    <div class="sim-item-body" style="flex:1;">
+                        <div style="font-size:0.9rem; color:#475569; margin-bottom:4px;">${desc}</div>
+                        <div style="font-size:0.75rem; color:#94a3b8;">${subText}</div>
+                    </div>
                 </div>
-                <div class="sim-score-change" style="flex:0 0 auto; text-align:right;">
-                    <span class="score-badge" style="display:inline-block; background:#f1f5f9; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:600; color:#64748b; margin-bottom:5px;">현재: ${currentStatus}</span>
-                    <span class="score-diff" style="display:block; font-size:1.4rem; font-weight:800; color:#2563EB;">${currentScore}점</span>
+            `;
+        });
+
+        let warningHTML = '';
+        if (!['standard', 'pro'].includes(currentUserTier) && univChangeRemaining <= 5) {
+            warningHTML = `<div class="sim-warning upsell-warning"><h4><i class="fas fa-exclamation-triangle"></i> 지금 점수 구조에서는 특정 과목이 결과에 불리하게 작용하고 있습니다.</h4><button onclick="location.href='/payment'" style="width: 100%; padding: 12px; background: #ea580c; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer;">공부 방향 설정하기</button></div>`;
+        } else {
+            if (currentScore < 10 && (currentScore + maxRise) < 25) warningHTML = `<div class="sim-warning" style="background:#fff7ed; border-color:#fdba74; color:#c2410c;"><i class="fas fa-exclamation-circle"></i><div><strong>여전히 불합격권입니다.</strong></div></div>`; 
+            else if (currentScore >= 225 || (currentScore + maxRise) >= 250) warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><i class="fas fa-check-circle"></i><div><strong>이미 상당히 안정권입니다.</strong></div></div>`;
+        }
+
+        cardArea.innerHTML = `
+            <div class="sim-result-card" style="display:block; height:auto;">
+                <div class="sim-card-header">
+                    <div style="flex:1 1 60%; min-width:200px;">
+                        <span class="sim-univ-title">${escapeHtml(data.univ)}</span>
+                        <span class="sim-univ-dept">${escapeHtml(data.major)}</span>
+                    </div>
+                    <div class="sim-score-change">
+                        <span class="score-badge">현재: ${currentStatus}</span>
+                        <span class="score-diff">${currentScore}점</span>
+                    </div>
                 </div>
+                <div class="sim-grid">${subjectsHTML}</div>
+                ${warningHTML}
             </div>
-            <div class="sim-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:15px;">
-                ${subjectsHTML}
-            </div>
-            ${warningHTML}
-        </div>
-    `;
+        `;
+    }
 }
 
 // ============================================================
