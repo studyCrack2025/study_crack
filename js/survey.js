@@ -59,6 +59,120 @@ document.addEventListener('DOMContentLoaded', () => {
     setupUI();
     
     setTimeout(checkQualitativeForm, 500);
+    
+    // 튜토리얼 3단계 (기초조사서 다단계 설명 및 이탈 방지)
+    const pendingTutorial = localStorage.getItem('pending_tutorial');
+    
+    if (pendingTutorial === 'true') {
+        
+        // [방어 1] 브라우저 뒤로가기 / 새로고침 경고
+        const warnTutorialExit = (e) => {
+            if (localStorage.getItem('pending_tutorial') === 'true') {
+                e.preventDefault();
+                e.returnValue = '정말 튜토리얼을 종료하시겠습니까?'; 
+            }
+        };
+        window.addEventListener('beforeunload', warnTutorialExit);
+
+        // [방어 2] 로고, 마이페이지 등 내부 링크 클릭 시 경고 후 삭제
+        document.querySelectorAll('.logo-link, .nav-btn').forEach(link => {
+            link.addEventListener('click', (e) => {
+                if (localStorage.getItem('pending_tutorial') === 'true') {
+                    if (!confirm('현재 튜토리얼이 진행 중입니다.\n정말 튜토리얼을 종료하고 이동하시겠습니까?')) {
+                        e.preventDefault(); // 이동 취소
+                    } else {
+                        // 동의 시 튜토리얼 신호 파기 및 이벤트 해제
+                        localStorage.removeItem('pending_tutorial');
+                        window.removeEventListener('beforeunload', warnTutorialExit);
+                    }
+                }
+            });
+        });
+
+        // 다단계 UI 로직 실행
+        setTimeout(() => {
+            const overlay = document.getElementById('tutorialOverlay');
+            const cloneContainer = document.getElementById('tutorialCloneContainer');
+            const targetEl = document.querySelector('.survey-tabs'); // 복제할 원본 탭 영역
+            
+            if (targetEl) {
+                overlay.classList.remove('hidden');
+                
+                // 원본 탭 영역의 위치 계산 및 클론(복제본) 생성
+                const rect = targetEl.getBoundingClientRect();
+                cloneContainer.style.top = `${rect.top}px`;
+                cloneContainer.style.left = `${rect.left}px`;
+                cloneContainer.style.width = `${rect.width}px`;
+                cloneContainer.style.height = `${rect.height}px`;
+
+                const clone = targetEl.cloneNode(true);
+                cloneContainer.appendChild(clone);
+                
+                const tooltip = document.getElementById('tutorialTooltip');
+                // 툴팁 위치 중앙 정렬
+                tooltip.style.top = `${rect.bottom + 15}px`;
+                tooltip.style.left = `${rect.left + (rect.width / 2)}px`;
+                tooltip.style.transform = `translateX(-50%)`;
+
+                // 제어할 요소들 맵핑
+                const msgEl = document.getElementById('tutorialMsg');
+                const prevBtn = document.getElementById('tutPrevBtn');
+                const nextBtn = document.getElementById('tutNextBtn');
+                const skipBtn = document.getElementById('skipTutorialBtn');
+                const cloneBtns = clone.querySelectorAll('.tab-btn');
+
+                let tutStep = 0;
+                const tutMsgs = [
+                    '기초조사서는 총 두 영역으로 구성되어 있습니다.',
+                    '정성 영역은 학생의 성향과 기본정보를 판단하는 기준으로 구성되어 있습니다.',
+                    '정량 영역은 학생의 객관적인 현재위치를 판단하기 위해 성적을 작성하는 부분으로 구성되어 있습니다.',
+                    '보다 세세한 분석을 위해 최대한 자세히 적어주세요. 작성이 완료되면 다음 단계로 넘어가겠습니다.'
+                ];
+
+                const updateStep = () => {
+                    msgEl.innerText = tutMsgs[tutStep];
+                    
+                    // 스텝에 따른 탭(버튼) 강조(투명도) 처리
+                    if(cloneBtns.length === 2) {
+                        if (tutStep === 0 || tutStep === 3) {
+                            cloneBtns[0].style.opacity = '1';
+                            cloneBtns[1].style.opacity = '1';
+                        } else if (tutStep === 1) {
+                            cloneBtns[0].style.opacity = '1';
+                            cloneBtns[1].style.opacity = '0.3';
+                        } else if (tutStep === 2) {
+                            cloneBtns[0].style.opacity = '0.3';
+                            cloneBtns[1].style.opacity = '1';
+                        }
+                    }
+
+                    // 버튼 텍스트 및 노출 상태 변경
+                    prevBtn.style.display = tutStep > 0 ? 'block' : 'none';
+                    nextBtn.innerText = tutStep === 3 ? '확인했습니다.' : '다음';
+                };
+
+                prevBtn.addEventListener('click', () => { tutStep--; updateStep(); });
+                nextBtn.addEventListener('click', () => {
+                    if (tutStep === 3) {
+                        // '확인했습니다' 클릭 시 오버레이 해제 (작성 시작)
+                        // 🚨 저장 후 다음 페이지(/analysis) 튜토리얼을 위해 localStorage는 지우지 않음!
+                        overlay.classList.add('hidden');
+                    } else {
+                        tutStep++; updateStep();
+                    }
+                });
+
+                // 건너뛰기 클릭 시 튜토리얼 강제 완전 종료
+                skipBtn.addEventListener('click', () => {
+                    localStorage.removeItem('pending_tutorial');
+                    overlay.classList.add('hidden');
+                    window.removeEventListener('beforeunload', warnTutorialExit);
+                });
+
+                updateStep(); // 최초 1단계 렌더링
+            }
+        }, 400);
+    }
 });
 
 function openTab(tabName) {
@@ -84,12 +198,15 @@ async function requestScoreConversion(type) {
     
     // 원점수(rawId)와 표준점수(stdId) 매핑 변경
     let rawId = "", stdId = "", pctId = "", grdId = "";
+    let commonId = "", electiveId = "";
 
     if (type === 'kor') {
         rawId = "korRaw"; stdId = "korStd"; pctId = "korPct"; grdId = "korGrd";
+        commonId = "korCommon"; electiveId = "korElective";
         optVal = document.getElementById('koreanOpt').value;
     } else if (type === 'math') {
         rawId = "mathRaw"; stdId = "mathStd"; pctId = "mathPct"; grdId = "mathGrd";
+        commonId = "mathCommon"; electiveId = "mathElective";
         optVal = document.getElementById('mathOpt').value;
     } else if (type === 'inq1') {
         rawId = "inq1Raw"; stdId = "inq1Std"; pctId = "inq1Pct"; grdId = "inq1Grd";
@@ -108,6 +225,31 @@ async function requestScoreConversion(type) {
         alert("유효하지 않은 원점수입니다.");
         rawEl.value = "";
         return;
+    }
+    
+    // --- 없는 점수 방어 로직 ---
+    if (type === 'kor') {
+        const comVal = parseInt(document.getElementById(commonId).value) || 0;
+        const elecVal = parseInt(document.getElementById(electiveId).value) || 0;
+        if (comVal === 75 || comVal === 1 || elecVal === 23 || elecVal === 1) {
+            alert("입력하신 국어 점수 조합(75점, 23점 또는 1점)은 시스템상 없는 점수입니다.");
+            rawEl.value = "";
+            return;
+        }
+    } else if (type === 'math') {
+        const comVal = parseInt(document.getElementById(commonId).value) || 0;
+        const elecVal = parseInt(document.getElementById(electiveId).value) || 0;
+        if (comVal === 73 || comVal === 1 || elecVal === 25 || elecVal === 1) {
+            alert("입력하신 수학 점수 조합(73점, 25점 또는 1점)은 시스템상 없는 점수입니다.");
+            rawEl.value = "";
+            return;
+        }
+    } else if (type === 'inq1' || type === 'inq2') {
+        if (scoreVal === 49 || scoreVal === 1) {
+            alert("입력하신 탐구 점수(49점 또는 1점)는 시스템상 없는 점수입니다.");
+            rawEl.value = "";
+            return;
+        }
     }
 
     try {
@@ -154,6 +296,23 @@ async function requestScoreConversion(type) {
             alert("점수 환산 중 오류가 발생했습니다.");
         }
     }
+}
+
+function handleScoreInput(el, maxVal, subject) {
+    let val = parseInt(el.value);
+    
+    if (isNaN(val) || val < 0) { 
+        el.value = ''; 
+        val = 0; 
+    } else if (val > maxVal) {
+        alert(`최대 ${maxVal}점까지만 입력 가능합니다.`);
+        el.value = maxVal;
+        val = maxVal;
+    }
+
+    const commonVal = parseInt(document.getElementById(`${subject}Common`).value) || 0;
+    const electiveVal = parseInt(document.getElementById(`${subject}Elective`).value) || 0;
+    document.getElementById(`${subject}Raw`).value = commonVal + electiveVal;
 }
 
 // === UI 설정 ===
@@ -389,11 +548,19 @@ function loadExamData() {
         }
     };
 
+    // 국어 세팅
     setVal('koreanOpt', d.kor?.opt || 'none');
-    setVal('korRaw', d.kor?.raw); setVal('korStd', d.kor?.std); setVal('korPct', d.kor?.pct); setVal('korGrd', d.kor?.grd);
+    setVal('korCommon', d.kor?.common); 
+    setVal('korElective', d.kor?.elective); 
+    setVal('korRaw', d.kor?.raw); 
+    setVal('korStd', d.kor?.std); setVal('korPct', d.kor?.pct); setVal('korGrd', d.kor?.grd);
     
+    // 수학 세팅
     setVal('mathOpt', d.math?.opt || 'none');
-    setVal('mathRaw', d.math?.raw); setVal('mathStd', d.math?.std); setVal('mathPct', d.math?.pct); setVal('mathGrd', d.math?.grd);
+    setVal('mathCommon', d.math?.common); 
+    setVal('mathElective', d.math?.elective); 
+    setVal('mathRaw', d.math?.raw); 
+    setVal('mathStd', d.math?.std); setVal('mathPct', d.math?.pct); setVal('mathGrd', d.math?.grd);
     
     setVal('engGrd', d.eng?.grd); 
     setVal('histGrd', d.hist?.grd);
@@ -421,9 +588,8 @@ async function saveQuantitative() {
     const inq2Name = getVal('inq2Name');
 
     const currentData = {
-        // 🎯 서버에서 요구했던 raw(원점수) 데이터도 정상적으로 담겨서 날아갑니다.
-        kor: { opt: korOpt, raw: getVal('korRaw'), std: getVal('korStd'), pct: getVal('korPct'), grd: getVal('korGrd') },
-        math: { opt: mathOpt, raw: getVal('mathRaw'), std: getVal('mathStd'), pct: getVal('mathPct'), grd: getVal('mathGrd') },
+        kor: { opt: korOpt, common: getVal('korCommon'), elective: getVal('korElective'), raw: getVal('korRaw'), std: getVal('korStd'), pct: getVal('korPct'), grd: getVal('korGrd') },
+        math: { opt: mathOpt, common: getVal('mathCommon'), elective: getVal('mathElective'), raw: getVal('mathRaw'), std: getVal('mathStd'), pct: getVal('mathPct'), grd: getVal('mathGrd') },
         eng: { grd: getVal('engGrd') }, 
         hist: { grd: getVal('histGrd') },
         inq1: { name: inq1Name, raw: getVal('inq1Raw'), std: getVal('inq1Std'), pct: getVal('inq1Pct'), grd: getVal('inq1Grd') },
@@ -434,15 +600,28 @@ async function saveQuantitative() {
     examScores[month] = currentData;
 
     try {
-        await apiFetch(USER_API_URL, {
+        const response = await apiFetch(USER_API_URL, {
             method: 'POST',
             body: JSON.stringify({ type: 'update_quan', data: examScores })
         });
         
-        alert("성적 데이터가 저장되었습니다.\n(지원 가능 전형이 자동 계산되었습니다)\n\n솔루션 페이지로 이동합니다.");
-        window.location.href = '/analysis';
+        // 💡 [해결] 응답 성공 여부를 확실히 체크
+        if (!response.ok) throw new Error("서버 응답 오류");
+        
+        // 튜토리얼 여부에 따라 알림 메시지와 이동 경로 분기
+        if (localStorage.getItem('pending_tutorial') === 'true') {
+            alert("성적 데이터가 저장되었습니다.\n이어서 다음 튜토리얼을 진행합니다!");
+            localStorage.setItem('pending_tutorial', 'step3');
+            
+            // 정상적인 페이지 이동이므로 이탈 경고 무시 처리
+            window.isTutorialMoving = true; 
+            window.location.href = '/analysis';
+        } else {
+            alert("성적 데이터가 저장되었습니다.\n(지원 가능 전형이 자동 계산되었습니다)\n\n솔루션 페이지로 이동합니다.");
+            window.location.href = '/analysis'; 
+        }
         
     } catch (e) { 
-        if (e.message !== "Auth expired") alert("저장 실패"); 
+        if (e.message !== "Auth expired") alert("저장 실패: 다시 시도해주세요."); 
     }
 }

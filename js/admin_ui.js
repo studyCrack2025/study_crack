@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 초기 데이터 로드
     loadAdminStats(userId);
+    populateTutorFilter();
     searchStudents();
     fetchUnreadNotiCount();
     
@@ -147,7 +148,6 @@ async function loadAdminStats(adminId) {
         
         const data = await response.json();
         
-        document.getElementById('totalStudents').innerText = `${data.totalStudents || 0}명`; 
         document.getElementById('totalRevenue').innerText = `${(data.totalRevenue || 0).toLocaleString()}원`;
         document.getElementById('monthlyRevenue').innerText = `${(data.monthlyRevenue || 0).toLocaleString()}원`;
 
@@ -261,13 +261,28 @@ function renderProductChart(productMap, total) {
 // ============================================================
 // [C] 학생 관리 로직
 // ============================================================
+async function populateTutorFilter() {
+    try {
+        const response = await apiFetch(ADMIN_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_get_tutor_stats' }) });
+        const data = await response.json();
+        const filterEl = document.getElementById('filterTutor');
+        if(filterEl && data.tutors) {
+            data.tutors.forEach(t => {
+                filterEl.innerHTML += `<option value="${escapeHtml(t.nickname)}">${escapeHtml(t.nickname)} 선생님</option>`;
+            });
+        }
+    } catch(e) { console.error("Tutor filter load failed", e); }
+}
+
 async function searchStudents() {
     const adminId = localStorage.getItem('userId');
     const type = document.getElementById('searchType').value; 
     const keyword = document.getElementById('searchInput').value || ""; 
+    const filterTier = document.getElementById('filterTier').value;
+    const filterTutor = document.getElementById('filterTutor').value;
     const tbody = document.getElementById('studentListBody');
 
-    tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>데이터 조회 중...</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>안전하게 데이터를 조회 중입니다...</td></tr>";
 
     try {
         const response = await apiFetch(ADMIN_API_URL, {
@@ -277,38 +292,65 @@ async function searchStudents() {
         
         const rawData = await response.json();
         let students = Array.isArray(rawData) ? rawData : (rawData.students || []);
-        students = students.filter(s => s.role !== 'admin' && s.role !== 'tutor');
         
-        // 💡 [수정] 분리된 구독 정보(currentSubscription)를 기준으로 필터링 적용
+        // 유령 계정 및 관리자 제외
+        students = students.filter(s => {
+            if (s.role === 'admin' || s.role === 'tutor') return false;
+            const uid = s.userid || "";
+            if ((uid.startsWith("TEMP") || uid.startsWith("VERIFIED")) && (!s.createdAt || String(s.createdAt).trim() === "")) return false;
+            return true;
+        });
+
+        if (keyword.trim() === "") {
+            const totalStudentsEl = document.getElementById('totalStudents');
+            if (totalStudentsEl) totalStudentsEl.innerText = `${students.length}명`;
+        }
+        
+        // 🚀 다중 필터링 적용 (안전한 프론트엔드 필터링)
         if (students.length > 0) {
-            if (type === 'paid') {
-                students = students.filter(s => s.currentSubscription && s.currentSubscription.status === 'active');
-            } else if (type === 'unpaid') {
-                students = students.filter(s => !s.currentSubscription || s.currentSubscription.status !== 'active');
+            // 1. 등급 필터
+            if (filterTier !== 'all') {
+                students = students.filter(s => {
+                    const tierBadgeHTML = getTierBadgeHTML(s);
+                    return tierBadgeHTML.includes(filterTier);
+                });
+            }
+            // 2. 튜터 필터
+            if (filterTutor !== 'all') {
+                students = students.filter(s => s.tutorName === filterTutor);
             }
         }
 
         tbody.innerHTML = "";
         
         if (students.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>조건에 맞는 학생이 없거나 데이터를 불러올 수 없습니다.</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>조건에 맞는 학생이 없습니다.</td></tr>";
             return;
         }
 
         students.forEach(s => {
-            // 💡 [수정] 뱃지 출력 시 배열이 아닌 구독 객체 전달
             let statusBadge = getTierBadgeHTML(s);
+            let tutorNameDisplay = s.tutorName ? `<span class="tutor-tag">👨‍🏫 ${escapeHtml(s.tutorName)}</span>` : '<span style="color:#94a3b8; font-size:0.8rem;">미배정</span>';
+            let lastActive = s.lastPayDate ? new Date(s.lastPayDate).toLocaleDateString() : '-';
+            
+            // XSS 방지를 위한 escapeHtml 철저히 적용
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td data-label="이름"><strong>${escapeHtml(s.name) || '(이름없음)'}</strong></td>
-                <td data-label="이메일">${escapeHtml(s.email) || '-'}</td>
-                <td data-label="학교">${escapeHtml(s.school) || '-'}</td>
-                <td data-label="상태">${statusBadge}</td>
-                <td data-label="관리">
+                <td data-label="학생 정보">
+                    <div class="student-info-cell">
+                        <span class="student-name-text">${escapeHtml(s.name) || '(이름없음)'}</span>
+                        <span class="student-meta-text">✉️ ${escapeHtml(s.email) || '-'}</span>
+                        <span class="student-meta-text">🏫 ${escapeHtml(s.school) || '-'}</span>
+                    </div>
+                </td>
+                <td data-label="담당 튜터">${tutorNameDisplay}</td>
+                <td data-label="상태/등급">${statusBadge}</td>
+                <td data-label="최근 활동"><span class="student-meta-text">결제: ${lastActive}</span></td>
+                <td data-label="관리 액션">
                     <div class="action-buttons">
-                        <button class="btn-detail" onclick="goToStudentDetail('${s.userid}')">상세관리</button>
-                        <button class="btn-up" onclick="openGrantTierModal('${s.userid}', '${escapeHtml(s.name)}')">등급UP</button>
-                        <button class="btn-del" onclick="openForceDeleteModal('${s.userid}', '${escapeHtml(s.name)}')">강제탈퇴</button>
+                        <button class="btn-detail" onclick="goToStudentDetail('${escapeHtml(s.userid)}')"><i class="fas fa-user-cog"></i> 상세관리</button>
+                        <button class="btn-up" onclick="openGrantTierModal('${escapeHtml(s.userid)}', '${escapeHtml(s.name)}')">등급UP</button>
+                        <button class="btn-del" onclick="openForceDeleteModal('${escapeHtml(s.userid)}', '${escapeHtml(s.name)}')">탈퇴</button>
                     </div>
                 </td>
             `;
@@ -316,7 +358,7 @@ async function searchStudents() {
         });
 
     } catch (error) {
-        if (error.message !== "Auth expired") tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>학생 데이터를 불러오는 중 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.</td></tr>";
+        if (error.message !== "Auth expired") tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>데이터를 불러오는 중 오류가 발생했습니다.</td></tr>";
     }
 }
 
@@ -402,6 +444,7 @@ async function markAsRead(targetUserId, qnaId) {
     }
 }
 
+// 리스트 렌더링 시 학생 이름 옆에 [상세 이동] 링크 아이콘 추가
 function renderQnaList() {
     const tbody = document.getElementById('qnaListBody'); if (!tbody) return;
     tbody.innerHTML = '';
@@ -412,11 +455,30 @@ function renderQnaList() {
     filtered.forEach(q => {
         const tr = document.createElement('tr'); const dateStr = new Date(q.createdAt).toLocaleDateString();
         let actionBtn = '';
-        if (q.status === 'waiting') actionBtn = `<button onclick="markAsRead('${q.userid}', '${q.qnaId}')" style="background:#f59e0b; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">읽음 처리</button>`;
-        else if (q.status === 'read') actionBtn = `<button onclick="openReplyModal('${q.userid}', '${q.qnaId}')" style="background:#3b82f6; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">답변하기</button>`;
+        if (q.status === 'waiting') actionBtn = `<button onclick="markAsRead('${escapeHtml(q.userid)}', '${q.qnaId}')" style="background:#f59e0b; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">읽음 처리</button>`;
+        else if (q.status === 'read') actionBtn = `<button onclick="openReplyModal('${escapeHtml(q.userid)}', '${q.qnaId}')" style="background:#3b82f6; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">답변하기</button>`;
         else actionBtn = `<span style="color:#10b981; font-weight:bold;">완료됨</span>`;
 
-        tr.innerHTML = `<td data-label="상태">${getQnaStatusBadge(q.status)}</td><td data-label="학생명">${escapeHtml(q.userName)}<br><span style="font-size:0.8rem; color:#94a3b8;">${q.userPhone || '-'}</span></td><td data-label="제목" style="cursor:pointer;" onclick="openReplyModal('${q.userid}', '${q.qnaId}', true)"><strong>${escapeHtml(q.title)}</strong><div style="font-size:0.85rem; color:#64748b; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:300px;">${escapeHtml(q.content)}</div></td><td data-label="등록일">${dateStr}</td><td data-label="관리">${actionBtn}</td>`;
+        let phoneStr = '-';
+        if (q.userPhone && q.userPhone.length >= 4) phoneStr = q.userPhone.slice(-4);
+
+        // 💡 [수정] 학생명 우측에 상세페이지 이동 아이콘 버튼 추가
+        tr.innerHTML = `
+            <td data-label="상태">${getQnaStatusBadge(q.status)}</td>
+            <td data-label="학생명">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <strong>${escapeHtml(q.userName)}</strong>
+                    <button onclick="goToStudentDetail('${escapeHtml(q.userid)}')(event)" style="background:none; border:none; color:#3b82f6; cursor:pointer; padding:0; font-size:0.9rem;" title="학생 상세 정보 보기"><i class="fas fa-search-plus"></i></button>
+                </div>
+                <span style="font-size:0.8rem; color:#94a3b8;">(뒷자리: ${escapeHtml(phoneStr)})</span>
+            </td>
+            <td data-label="제목" style="cursor:pointer;" onclick="openReplyModal('${escapeHtml(q.userid)}', '${q.qnaId}', true)">
+                <strong>${escapeHtml(q.title)}</strong>
+                <div style="font-size:0.85rem; color:#64748b; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:300px;">${escapeHtml(q.content)}</div>
+            </td>
+            <td data-label="등록일">${dateStr}</td>
+            <td data-label="관리">${actionBtn}</td>
+        `;
         tbody.appendChild(tr);
     });
 }
@@ -435,17 +497,29 @@ function openReplyModal(targetUserId, qnaId, isViewOnly = false) {
     
     document.getElementById('replyModalTitle').innerText = item.title; 
     document.getElementById('replyModalContent').innerText = item.content;
-    const replyInput = document.getElementById('replyInput'); 
-    const submitBtn = document.querySelector('#reply-modal button');
+    
+    // 💡 상세정보 보기 버튼에 클릭 이벤트 연동 (새 탭으로 열기)
+    const detailLinkBtn = document.getElementById('replyModalStudentLink');
+    if (detailLinkBtn) {
+        detailLinkBtn.onclick = function() {
+            window.open(`/admin/detail?uid=${targetUserId}`, '_blank');
+        };
+    }
 
+    const replyInput = document.getElementById('replyInput'); 
+    const submitBtn = document.getElementById('replySubmitBtn'); 
+    const macroWrapper = document.getElementById('macroWrapper');
+    
     if (item.status === 'done' || isViewOnly) { 
         replyInput.value = item.answer || "(답변 내용 없음)"; 
         replyInput.disabled = true; 
-        submitBtn.style.display = 'none'; 
+        if (submitBtn) submitBtn.style.display = 'none'; 
+        if (macroWrapper) macroWrapper.style.display = 'none'; 
     } else { 
         replyInput.value = ''; 
         replyInput.disabled = false; 
-        submitBtn.style.display = 'block'; 
+        if (submitBtn) submitBtn.style.display = 'block'; 
+        if (macroWrapper) macroWrapper.style.display = 'block'; 
     }
     
     const modal = document.getElementById('reply-modal'); 
@@ -486,6 +560,29 @@ async function submitReply() {
 }
 
 function closeReplyModal() { const modal = document.getElementById('reply-modal'); if (modal) modal.classList.add('hidden'); currentReplyTarget = null; }
+
+const QNA_MACROS = {
+    'tutor_delay': "안녕하세요, 학생님.\n현재 요청하신 과목과 성향에 가장 적합한 튜터님을 꼼꼼히 매칭하는 중이라 배정이 조금 지연되고 있습니다.\n최대 1~2일 내로 최적의 튜터님을 배정해 드릴 예정이니 조금만 양해 부탁드립니다.",
+    'report_guide': "안녕하세요! 주간 보고서 작성법 안내드립니다.\n매주 정해진 요일 자정까지 [마이페이지] > [보고서 작성] 탭에서 이번 주 학습 내용과 튜터님께 바라는 피드백을 50자 이상으로 남겨주시면 됩니다.",
+    'refund': "안녕하세요. 환불 규정에 대해 안내해 드립니다.\n결제 후 7일 이내이며, 실제 서비스(튜터 매칭 및 상담) 이용 이력이 없는 경우에 한해 전액 환불이 가능합니다.\n자세한 사항은 이용약관을 참고해 주시거나 추가 문의 남겨주세요.",
+    'polite_wait': "안녕하세요! 문의하신 내용 확인하였습니다.\n해당 건은 튜터님 및 내부 운영진과 내용 확인 후 정확한 안내를 드리기 위해 시간이 조금 소요될 수 있습니다.\n확인되는 대로 빠르게 다시 답변드리겠습니다."
+};
+
+window.applyMacro = function(type) {
+    const replyInput = document.getElementById('replyInput');
+    if (!replyInput || !QNA_MACROS[type]) return;
+
+    // 이미 작성 중인 내용이 있을 경우 덮어쓸지 경고
+    if (replyInput.value.trim() !== "") {
+        if (!confirm("작성 중인 내용이 지워지고 매크로 답변으로 교체됩니다. 계속하시겠습니까?")) {
+            return;
+        }
+    }
+    
+    replyInput.value = QNA_MACROS[type];
+    // 부드럽게 입력창으로 포커스 이동
+    replyInput.focus();
+};
 
 
 // ============================================================
@@ -682,7 +779,7 @@ window.toggleNoticeTree = function(iconEl) {
 }
 
 // ============================================================
-// [F] 알림 시스템 및 공지 발송 로직
+// [F] 공지 발송 스마트 타겟팅 로직
 // ============================================================
 function switchNotiTab(tabName) {
     document.querySelectorAll('.noti-tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -769,9 +866,10 @@ window.loadSentNotices = async function() {
     } catch(e) { if (e.message !== "Auth expired") container.innerHTML = '<p style="text-align:center; color:red;">오류 발생</p>'; }
 };
 
-let globalUserList = [];
+let globalStudentsCache = [];
+let globalTutorsCache = [];
+let selectedTargetMap = new Map(); // 선택된 유저 정보 저장 { userId: { name, reason } }
 
-// 공지 수신자 트리도 새로운 뱃지 로직(currentSubscription) 사용
 async function loadTutorListForNotice() {
     const adminId = localStorage.getItem('userId');
     try {
@@ -780,140 +878,242 @@ async function loadTutorListForNotice() {
             apiFetch(ADMIN_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_search', userId: adminId, data: {} }) })
         ]);
 
-        const tutorData = await tutorRes.json(); const studentData = await studentRes.json();
-        const tutors = tutorData.tutors || [];
+        const tutorData = await tutorRes.json(); 
+        const studentData = await studentRes.json();
+        
+        globalTutorsCache = tutorData.tutors || [];
         let students = Array.isArray(studentData) ? studentData : (studentData.students || studentData.Items || []);
-        students = students.filter(u => u.role !== 'admin' && u.role !== 'tutor');
-        globalUserList = [...tutors, ...students];
         
-        let html = `<div class="quick-select-box"><strong>⚡ 빠른 선택:</strong><label><input type="checkbox" onchange="toggleAllCheckboxes(this)"> 싹 다 전체</label><label><input type="checkbox" onchange="toggleByClass('is-tutor', this)"> 튜터(선생님) 전체</label><label><input type="checkbox" onchange="toggleByClass('is-pro', this)"> PRO 전체</label><label><input type="checkbox" onchange="toggleByClass('is-standard', this)"> STANDARD 전체</label></div><div class="tree-grid-container">`;
-
-        tutors.forEach(t => {
-            const myStus = students.filter(s => {
-                if (!s.tutorName) return false;
-                const targetTutor = s.tutorName.trim();
-                return targetTutor === (t.nickname || '').trim() || targetTutor === (t.name || '').trim();
-            });
-
-            html += `
-                <div class="tree-group">
-                    <div class="tree-parent" style="display:flex; justify-content:space-between; align-items:center;">
-                        <label><input type="checkbox" class="is-tutor target-chk" value="${t.userid}" onchange="toggleChildren(this)"> 👨‍🏫 ${t.nickname} (${t.name}) 튜터 그룹</label>
-                        <i class="fas fa-chevron-down" style="cursor:pointer; padding:10px 5px; color:#94a3b8; transition:transform 0.3s; transform: rotate(180deg);" onclick="toggleNoticeTree(this)"></i>
-                    </div>
-                    <div class="tree-children" style="display:grid;">
-            `;
-            
-            if (myStus.length === 0) { 
-                html += `<span style="color:#94a3b8; font-size:0.85rem; padding-left:5px;">소속 학생 없음</span>`; 
-            } else {
-                myStus.forEach(s => {
-                    const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE';
-                    const tierClass = tier.toLowerCase();
-                    html += `<label><input type="checkbox" class="is-${tierClass} target-chk" value="${s.userid}"> 🎓 ${s.name} (${tier})</label>`;
-                });
-            }
-            html += `</div></div>`;
+        // 유령 계정 및 튜터/관리자 필터링
+        globalStudentsCache = students.filter(s => {
+            if (s.role === 'admin' || s.role === 'tutor') return false;
+            if ((s.userid.startsWith("TEMP") || s.userid.startsWith("VERIFIED")) && !s.createdAt) return false;
+            return true;
+        }).map(s => {
+            const tierBadge = getTierBadgeHTML(s);
+            const tier = (tierBadge.match(/>(.*?)<\/span>/) || [])[1] || 'FREE';
+            return { ...s, parsedTier: tier };
         });
-        
-        const proStus = students.filter(s => { 
-            const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE'; 
-            return tier.toLowerCase() === 'pro' && !s.tutorName; 
-        });
-        if(proStus.length > 0) { 
-            html += `<div class="tree-group"><div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> 🔥 PRO (미배정) 대기중</label></div><div class="tree-children">`; 
-            proStus.forEach(s => { 
-                html += `<label><input type="checkbox" class="is-pro target-chk" value="${s.userid}"> 🎓 ${s.name}</label>`; 
-            }); 
-            html += `</div></div>`; 
-        }
 
-        const stdStus = students.filter(s => { 
-            const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE'; 
-            return tier.toLowerCase() === 'standard' && !s.tutorName; 
-        });
-        if(stdStus.length > 0) { 
-            html += `<div class="tree-group"><div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> 📘 STANDARD (미배정) 대기중</label></div><div class="tree-children">`; 
-            stdStus.forEach(s => { 
-                html += `<label><input type="checkbox" class="is-standard target-chk" value="${s.userid}"> 🎓 ${s.name}</label>`; 
-            }); 
-            html += `</div></div>`; 
-        }
+        // 초기화
+        clearAllTargets();
+        document.getElementById('targetGroupSelect').value = '';
+        updateTargetSubSelect();
 
-        const basicStus = students.filter(s => { const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE'; return tier.toLowerCase() === 'basic' && !s.tutorName; });
-        if(basicStus.length > 0) { html += `<div class="tree-group"><div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> 🌱 BASIC (미배정) 모음</label></div><div class="tree-children">`; basicStus.forEach(s => { html += `<label><input type="checkbox" class="is-basic target-chk" value="${s.userid}"> 🎓 ${s.name}</label>`; }); html += `</div></div>`; }
-
-        const freeStus = students.filter(s => { const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE'; return tier.toLowerCase() === 'free' && !s.tutorName; });
-        if(freeStus.length > 0) { html += `<div class="tree-group"><div class="tree-parent"><label><input type="checkbox" onchange="toggleChildren(this)"> ☁️ FREE (미배정) 모음</label></div><div class="tree-children">`; freeStus.forEach(s => { html += `<label><input type="checkbox" class="is-free target-chk" value="${s.userid}"> 🎓 ${s.name}</label>`; }); html += `</div></div>`; }
-
-        html += `</div>`;
-        document.getElementById('noticeTargetCheckboxes').innerHTML = html;
-    } catch(e) { console.error("Notice Box Render Error:", e); }
+    } catch(e) { console.error("Notice User Load Error:", e); }
 }
 
-window.toggleChildren = function(parentChk) { const children = parentChk.closest('.tree-group').querySelectorAll('.tree-children input[type="checkbox"]'); children.forEach(child => child.checked = parentChk.checked); }
-window.toggleAllCheckboxes = function(chk) { document.querySelectorAll('#noticeTargetCheckboxes input[type="checkbox"]').forEach(c => c.checked = chk.checked); }
-window.toggleByClass = function(className, chk) { document.querySelectorAll('#noticeTargetCheckboxes .' + className).forEach(c => { c.checked = chk.checked; }); }
+window.updateTargetSubSelect = function() {
+    const groupVal = document.getElementById('targetGroupSelect').value;
+    const subSelect = document.getElementById('targetSubSelect');
+    subSelect.innerHTML = '';
 
-function loadTargetUsers() {
-    const groupVal = document.getElementById('noticeTargetGroup').value;
-    const userSelect = document.getElementById('noticeTargetUser');
-    userSelect.innerHTML = '<option value="all">해당 그룹 전체에게 보내기</option>';
-    if (!groupVal || groupVal === 'all' || groupVal === 'all_tutor' || groupVal === 'all_student') return;
-
-    let filtered = [];
-    if (['pro', 'standard', 'basic', 'free'].includes(groupVal)) {
-        filtered = globalUserList.filter(u => u.role !== 'admin' && u.role !== 'tutor');
-        filtered = filtered.filter(s => { const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE'; return tier.toLowerCase() === groupVal; });
-    } 
-    else if (groupVal.startsWith('tutor_')) {
-        const tName = groupVal.replace('tutor_', '');
-        filtered = globalUserList.filter(u => u.role !== 'admin' && u.role !== 'tutor' && u.tutorName === tName);
+    if (groupVal === 'TUTOR') {
+        subSelect.style.display = 'block';
+        globalTutorsCache.forEach(t => {
+            subSelect.innerHTML += `<option value="${escapeHtml(t.nickname)}">${escapeHtml(t.nickname)} 선생님 담당</option>`;
+        });
+    } else if (groupVal === 'INDIVIDUAL') {
+        subSelect.style.display = 'block';
+        globalStudentsCache.forEach(s => {
+            subSelect.innerHTML += `<option value="${escapeHtml(s.userid)}">${escapeHtml(s.name)} (${s.parsedTier})</option>`;
+        });
+    } else {
+        subSelect.style.display = 'none';
     }
-    filtered.forEach(u => { userSelect.innerHTML += `<option value="${escapeHtml(u.userid)}">${escapeHtml(u.name)} (${escapeHtml(u.email) || '-'})</option>`; });
+};
+
+window.addTargetUsers = function() {
+    const groupVal = document.getElementById('targetGroupSelect').value;
+    const subVal = document.getElementById('targetSubSelect').value;
+    
+    if (!groupVal) return alert("발송 대상을 먼저 선택해주세요.");
+
+    let targetPool = [];
+    let groupLabel = "";
+
+    if (groupVal === 'ALL') {
+        targetPool = globalStudentsCache;
+        groupLabel = "전체";
+    } else if (groupVal.startsWith('TIER_')) {
+        const targetTier = groupVal.split('_')[1];
+        targetPool = globalStudentsCache.filter(s => s.parsedTier.toUpperCase() === targetTier);
+        groupLabel = targetTier;
+    } else if (groupVal === 'TUTOR') {
+        if (!subVal) return;
+        targetPool = globalStudentsCache.filter(s => s.tutorName === subVal);
+        groupLabel = subVal;
+    } else if (groupVal === 'INDIVIDUAL') {
+        if (!subVal) return;
+        targetPool = globalStudentsCache.filter(s => s.userid === subVal);
+        groupLabel = "개별추가";
+    }
+
+    if (targetPool.length === 0) {
+        return alert("해당 조건에 맞는 학생이 없습니다.");
+    }
+
+    let addedCount = 0;
+    targetPool.forEach(user => {
+        if (!selectedTargetMap.has(user.userid)) {
+            selectedTargetMap.set(user.userid, { name: user.name, tag: groupLabel });
+            addedCount++;
+        }
+    });
+
+    if (addedCount > 0) renderTargetTags();
+    else alert("이미 명단에 모두 추가된 학생들입니다.");
+};
+
+window.removeTarget = function(userId) {
+    selectedTargetMap.delete(userId);
+    renderTargetTags();
+};
+
+window.clearAllTargets = function() {
+    selectedTargetMap.clear();
+    renderTargetTags();
+};
+
+function renderTargetTags() {
+    const container = document.getElementById('selectedTargetTags');
+    const countEl = document.getElementById('targetCountText');
+    
+    countEl.innerText = selectedTargetMap.size;
+    container.innerHTML = '';
+
+    if (selectedTargetMap.size === 0) {
+        container.innerHTML = '<span class="empty-msg" style="padding:0; font-size:0.9rem;">위에서 그룹이나 학생을 선택한 후 [추가]를 눌러주세요.</span>';
+        return;
+    }
+
+    selectedTargetMap.forEach((info, uid) => {
+        const safeName = escapeHtml(info.name || '이름없음');
+        container.innerHTML += `
+            <div class="target-tag">
+                <span style="color:#93c5fd; font-size:0.75rem; margin-right:4px;">[${info.tag}]</span> ${safeName}
+                <span class="remove-tag" onclick="removeTarget('${uid}')">&times;</span>
+            </div>
+        `;
+    });
 }
 
+// 💡 백엔드에서 받아온 템플릿 데이터를 저장할 전역 변수
+let globalAlimtalkTemplates = [];
+
+// 💡 템플릿 목록을 서버에서 불러오는 함수
+async function fetchAlimtalkTemplates() {
+    try {
+        const response = await apiFetch(NOTI_API_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ type: 'admin_get_alimtalk_templates' }) 
+        });
+        const data = await response.json();
+        globalAlimtalkTemplates = data.templates || [];
+        
+        const selectEl = document.getElementById('alimtalkTemplateType');
+        if (selectEl) {
+            selectEl.innerHTML = ''; // 기존 "불러오는 중..." 텍스트 제거
+            globalAlimtalkTemplates.forEach(tpl => {
+                selectEl.innerHTML += `<option value="${tpl.type}">${tpl.name}</option>`;
+            });
+            updateTemplatePreview(); // 첫 번째 항목 미리보기 렌더링
+        }
+    } catch(e) {
+        console.error("템플릿 목록 로드 실패:", e);
+        const selectEl = document.getElementById('alimtalkTemplateType');
+        if (selectEl) selectEl.innerHTML = '<option value="">불러오기 실패</option>';
+    }
+}
+
+// 💡 선택된 타입에 맞춰 미리보기 텍스트를 업데이트하는 함수
+window.updateTemplatePreview = function() {
+    const selectedType = document.getElementById('alimtalkTemplateType').value;
+    const previewBox = document.getElementById('templatePreviewBox');
+    
+    // globalAlimtalkTemplates 배열에서 현재 선택된 타입의 데이터를 찾음
+    const matchedTemplate = globalAlimtalkTemplates.find(t => t.type === selectedType);
+    
+    if (previewBox) {
+        previewBox.innerText = matchedTemplate ? matchedTemplate.preview : "템플릿 형식을 불러올 수 없습니다.";
+    }
+};
+
+window.toggleAlimtalkOptions = function() {
+    const isChecked = document.getElementById('useAlimtalk').checked;
+    document.getElementById('alimtalkTemplateArea').style.display = isChecked ? 'block' : 'none';
+    document.getElementById('marketingOnlyLabel').style.display = isChecked ? 'inline-block' : 'none';
+    
+    if (isChecked) {
+        // 알림톡 옵션을 처음 켰을 때만 서버에서 데이터를 불러옴
+        if (globalAlimtalkTemplates.length === 0) {
+            fetchAlimtalkTemplates();
+        } else {
+            updateTemplatePreview();
+        }
+    }
+};
+
+// 최종 공지 발송 API 호출부
 async function sendAdminNotice() {
-    const checkedBoxes = document.querySelectorAll('.target-chk:checked');
-    const targetUserIds = [...new Set(Array.from(checkedBoxes).map(b => b.value))];
+    if (selectedTargetMap.size === 0) return alert("발송할 대상을 한 명 이상 명단에 추가해주세요.");
+    
+    // 알림톡 관련 변수 추출 (ID 정확히 매칭)
+    const useAlimtalkElement = document.getElementById('useAlimtalk');
+    const templateTypeElement = document.getElementById('alimtalkTemplateType'); // 💡 이 ID가 HTML과 일치해야 함!
+
+    const useAlimtalk = useAlimtalkElement ? useAlimtalkElement.checked : false;
+    const templateType = templateTypeElement ? templateTypeElement.value : 'REMIND'; // 💡 선택 안 되면 기본값 REMIND
+    const isMarketing = true; // 무조건 마케팅 동의자 전용
+    
+    const targetUserIds = Array.from(selectedTargetMap.keys());
     const title = document.getElementById('noticeTitle').value.trim();
     const content = document.getElementById('noticeContent').value.trim();
-
     const adminName = localStorage.getItem('userName') || '관리자';
 
-    if (targetUserIds.length === 0) { alert("발송할 대상을 한 명 이상 선택해주세요."); return; }
-    if (!title || !content) { alert("제목과 내용을 모두 입력해주세요."); return; }
-    if (!confirm(`총 ${targetUserIds.length}명에게 공지를 발송하시겠습니까?`)) return;
+    if (!title || !content) return alert("제목과 내용을 모두 입력해주세요.");
+    
+    const confirmMsg = `총 ${targetUserIds.length}명에게 공지를 발송합니다.\n${useAlimtalk ? '📱 카카오 알림톡 동시 발송 (마케팅 동의자 한정)\n' : ''}진행하시겠습니까?`;
+    if (!confirm(confirmMsg)) return;
 
-    const targetNamesList = targetUserIds.map(uid => { 
-        const user = globalUserList.find(u => u.userid === uid); 
-        return user ? (user.name || user.nickname || '알수없음') : '알수없음'; 
-    });
+    // 요약용 이름 목록 생성
+    const targetNamesList = Array.from(selectedTargetMap.values()).map(info => info.name);
     let targetNamesDisplay = targetNamesList.slice(0, 5).join(', '); 
     if (targetNamesList.length > 5) targetNamesDisplay += ` 외 ${targetNamesList.length - 5}명`;
 
     try {
+        // 서버로 요청 전송
         await apiFetch(NOTI_API_URL, { 
             method: 'POST', 
             body: JSON.stringify({ 
-                type: 'admin_send_notice', 
+                type: 'admin_manual_notice', 
                 data: { 
                     targetUserIds: targetUserIds, 
                     title: title, 
                     content: content, 
                     targetNamesDisplay: targetNamesDisplay,
-                    senderName: adminName
+                    senderName: adminName,
+                    useAlimtalk: useAlimtalk,
+                    templateType: templateType, // 💡 Lambda로 보내는 핵심 변수!
+                    isMarketing: isMarketing
                 } 
             }) 
         }); 
         
-        alert("공지 발송 및 기록 저장이 완료되었습니다.");
+        alert("공지 발송이 완료되었습니다.");
+        
+        // 폼 초기화
         document.getElementById('noticeTitle').value = ''; 
         document.getElementById('noticeContent').value = '';
-        document.querySelectorAll('#noticeTargetCheckboxes input[type="checkbox"]').forEach(c => c.checked = false); 
+        if (useAlimtalkElement) useAlimtalkElement.checked = false;
+        
+        if (typeof toggleAlimtalkOptions === 'function') toggleAlimtalkOptions();
+        if (typeof clearAllTargets === 'function') clearAllTargets();
+        
         showNotiMenu('sent'); 
     } catch(e) { 
-        if (e.message !== "Auth expired") alert("공지 발송이 원활하게 진행되지 않았습니다. 서버 상태를 확인해주세요."); 
+        if (e.message !== "Auth expired") alert("서버 통신 중 오류가 발생했습니다."); 
+        console.error("Notice Send Error:", e);
     }
 }
 

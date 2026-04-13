@@ -169,28 +169,40 @@
             </div>
         </div>
 
-        <div id="section-students" class="content-section">
+                <div id="section-students" class="content-section">
             <h1 class="page-title">👥 학생 관리</h1>
-            <div class="search-wrapper">
-                <select id="searchType">
+            
+            <div class="advanced-search-wrapper">
+                <select id="filterTutor" class="filter-select">
+                    <option value="all">전체 튜터</option>
+                    </select>
+                <select id="filterTier" class="filter-select">
+                    <option value="all">전체 등급</option>
+                    <option value="PRO">PRO</option>
+                    <option value="STANDARD">STANDARD</option>
+                    <option value="BASIC">BASIC</option>
+                    <option value="FREE">FREE</option>
+                </select>
+                <select id="searchType" class="filter-select">
                     <option value="name">이름</option>
                     <option value="email">이메일</option>
                     <option value="phone">전화번호</option>
-                    <option value="paid">결제상태</option>
                 </select>
-                <input type="text" id="searchInput" placeholder="검색어를 입력하세요...">
-                <button onclick="searchStudents()">검색</button>
+                <input type="text" id="searchInput" class="search-input" placeholder="검색어 입력...">
+                <button class="search-btn" onclick="searchStudents()">
+                    <i class="fas fa-search"></i> 상세 검색
+                </button>
             </div>
 
             <div class="table-responsive">
                 <table class="student-table">
                     <thead>
                         <tr>
-                            <th>이름</th>
-                            <th>이메일</th>
-                            <th>학교</th>
-                            <th>상태</th>
-                            <th>관리</th>
+                            <th>학생 정보</th>
+                            <th>담당 튜터</th>
+                            <th>상태/등급</th>
+                            <th>최근 활동</th>
+                            <th>관리 액션</th>
                         </tr>
                     </thead>
                     <tbody id="studentListBody">
@@ -247,9 +259,36 @@
                 <h3 class="noti-send-title">📢 새로운 공지사항 작성</h3>
                 
                 <div class="form-group noti-form-group">
-                    <label class="noti-form-label">1. 수신 대상 선택 (다중 선택 가능)</label>
-                    <div id="noticeTargetCheckboxes" class="checkbox-container">
-                        <p class="empty-msg">명단을 불러오는 중...</p>
+                    <label class="noti-form-label">1. 수신 대상 지정 (스마트 그룹 추가)</label>
+                    <div class="smart-target-selector">
+                        <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
+                            <select id="targetGroupSelect" class="noti-input" style="flex:1; min-width:150px;" onchange="updateTargetSubSelect()">
+                                <option value="">-- 보낼 대상을 선택하세요 --</option>
+                                <option value="ALL">전체 학생 일괄 발송</option>
+                                <option value="TIER_PRO">🔥 PRO 등급 전체</option>
+                                <option value="TIER_STANDARD">📘 STANDARD 등급 전체</option>
+                                <option value="TIER_BASIC">🌱 BASIC 등급 전체</option>
+                                <option value="TUTOR">👨‍🏫 특정 튜터 담당 학생들...</option>
+                                <option value="INDIVIDUAL">👤 개별 학생 선택...</option>
+                            </select>
+                            
+                            <select id="targetSubSelect" class="noti-input" style="flex:1; min-width:150px; display:none;">
+                                </select>
+                            
+                            <button type="button" class="btn-add-target" onclick="addTargetUsers()">
+                                <i class="fas fa-plus"></i> 명단에 추가
+                            </button>
+                        </div>
+                        
+                        <div class="selected-targets-box">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                <p style="font-size:0.85rem; color:#64748b; margin:0; font-weight:bold;">발송 예정 명단 (총 <span id="targetCountText" style="color:#ef4444; font-size:1rem;">0</span>명)</p>
+                                <button type="button" onclick="clearAllTargets()" style="background:none; border:none; color:#94a3b8; font-size:0.8rem; cursor:pointer; text-decoration:underline;">전체 비우기</button>
+                            </div>
+                            <div id="selectedTargetTags" class="target-tags-container">
+                                <span class="empty-msg" style="padding:0; font-size:0.9rem;">위에서 그룹이나 학생을 선택한 후 [추가]를 눌러주세요.</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -261,6 +300,30 @@
                 <div class="form-group noti-form-group">
                     <label class="noti-form-label">3. 공지 내용</label>
                     <textarea id="noticeContent" class="noti-textarea" rows="8" placeholder="상세 내용을 입력하세요."></textarea>
+                </div>
+                
+                <div class="form-group noti-form-group alimtalk-option-box">
+                    <label class="noti-form-label">4. 추가 발송 옵션</label>
+                    <div class="option-row">
+                        <label><input type="checkbox" id="useAlimtalk" onchange="toggleAlimtalkOptions()"> 📱 외부 알림톡 동시 발송</label>
+                        <span id="marketingOnlyLabel" style="display:none; margin-left:15px; color:#ef4444; font-size:0.85rem; font-weight:bold;">
+                            ※ 법적 의무에 따라 '마케팅 수신 동의자'에게만 자동 필터링되어 발송됩니다.
+                        </span>
+                    </div>
+                    
+                    <div id="alimtalkTemplateArea" style="display:none; margin-top:15px; border-top:1px dashed #cbd5e1; padding-top:15px;">
+                        <label class="noti-form-label" style="font-size:0.85rem;">발송 템플릿 선택</label>
+                        
+                        <select id="alimtalkTemplateType" class="noti-input" style="width:100%; max-width:300px;" onchange="updateTemplatePreview()">
+                            <option value="">템플릿 불러오는 중...</option>
+                        </select>
+                        
+                        <div style="margin-top:10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:15px;">
+                            <p style="margin:0 0 5px 0; font-size:0.8rem; font-weight:bold; color:#3b82f6;">📱 카카오톡 발송 미리보기</p>
+                            <div id="templatePreviewBox" style="font-size:0.9rem; color:#334155; white-space:pre-wrap; line-height:1.5;">
+                                </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="noti-submit-area">
@@ -280,22 +343,37 @@
         <div id="reply-modal" class="modal hidden">
             <div class="modal-content">
                 <span class="close-btn" onclick="closeReplyModal()">&times;</span>
-                <h2 style="margin-top:0;">답변 작성</h2>
-            
-                <div style="background:#f8fafc; padding:15px; border-radius:8px; margin-bottom:20px;">
-                    <p style="font-size:0.9rem; color:#64748b; margin-bottom:5px;">질문 내용</p>
-                    <h4 id="replyModalTitle" style="margin:0 0 10px 0;"></h4>
-                    <p id="replyModalContent" style="white-space:pre-wrap; color:#334155;"></p>
+                <h2 class="reply-modal-header">답변 작성</h2>
+                
+                <div class="reply-question-box">
+                    <div class="reply-question-header">
+                        <p class="reply-question-label">질문 내용</p>
+                        <button id="replyModalStudentLink" class="btn-macro btn-student-link">
+                            <i class="fas fa-external-link-alt"></i> 이 학생 상세정보 보기
+                        </button>
+                    </div>
+                    <h4 id="replyModalTitle" class="reply-title"></h4>
+                    <p id="replyModalContent" class="reply-content"></p>
                 </div>
 
-                <textarea id="replyInput" rows="6" placeholder="답변을 입력하세요..." style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; resize:none; margin-bottom:15px;"></textarea>
+                <div id="macroWrapper" class="macro-wrapper">
+                    <p class="macro-label">⚡ 자주 쓰는 답변 (매크로)</p>
+                    <div class="macro-btn-group">
+                        <button type="button" class="btn-macro" onclick="applyMacro('tutor_delay')">배정 지연 안내</button>
+                        <button type="button" class="btn-macro" onclick="applyMacro('report_guide')">보고서 작성법</button>
+                        <button type="button" class="btn-macro" onclick="applyMacro('refund')">환불 규정</button>
+                        <button type="button" class="btn-macro" onclick="applyMacro('polite_wait')">확인 중 안내</button>
+                    </div>
+                </div>
+
+                <textarea id="replyInput" class="reply-textarea" rows="6" placeholder="답변을 입력하세요..."></textarea>
             
-                <button onclick="submitReply()" style="width:100%; padding:15px; background:#3b82f6; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:1rem;">
+                <button id="replySubmitBtn" class="reply-submit-btn" onclick="submitReply()">
                     답변 전송하기
                 </button>
             </div>
         </div>
-        
+                
         <div id="section-matching" class="content-section">
             <h1 class="page-title">🤝 튜터 매칭 관리</h1>
             

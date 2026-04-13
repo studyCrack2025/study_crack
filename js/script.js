@@ -178,33 +178,29 @@ function initMobileCourses() {
             }
         }).join('');
 
-        // 💡 [수정] 비회원에게도 노출되도록 조건 개선
+        // 비회원에게도 노출되도록 조건 개선
         let extraBtnHtml = "";
         if (tier === 'mbti') {
             const isLoggedIn = !!localStorage.getItem('accessToken');
-            const userPromo = localStorage.getItem('promoCode') || ''; 
-            const hasUsedPromo = /^[0-9A-F]{4}-[0-9A-F]{4}-STC$/.test(userPromo);
             
-            if (!hasUsedPromo) {
-                if (isLoggedIn) {
-                    extraBtnHtml = `
-                        <div style="margin-top: 25px; padding: 15px; background: #f5f3ff; border: 1px dashed #8b5cf6; border-radius: 8px; text-align: center;">
-                            <p style="margin: 0 0 10px 0; color: #6d28d9; font-weight: bold; font-size: 0.9rem;">🎁 회원 전용 혜택</p>
-                            <a href="/download/mbti" onclick="event.stopPropagation();" style="display: inline-block; background: #8b5cf6; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: 0.2s;">
-                                나만의 맞춤 공부법 PDF 무료 다운로드(1회)
-                            </a>
-                        </div>
-                    `;
-                } else {
-                    extraBtnHtml = `
-                        <div style="margin-top: 25px; padding: 15px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; text-align: center;">
-                            <p style="margin: 0 0 10px 0; color: #475569; font-weight: bold; font-size: 0.9rem;">🎁 1회성 무료 혜택</p>
-                            <a href="/login" onclick="event.stopPropagation(); alert('로그인 후 이용할 수 있는 혜택입니다.');" style="display: inline-block; background: #94a3b8; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: 0.2s;">
-                                🔒 로그인하고 맞춤 공부법 PDF 받기
-                            </a>
-                        </div>
-                    `;
-                }
+            if (isLoggedIn) {
+                extraBtnHtml = `
+                    <div style="margin-top: 25px; padding: 15px; background: #f5f3ff; border: 1px dashed #8b5cf6; border-radius: 8px; text-align: center;">
+                        <p style="margin: 0 0 10px 0; color: #6d28d9; font-weight: bold; font-size: 0.9rem;">🎁 회원 전용 혜택</p>
+                        <a href="/download/mbti" onclick="event.stopPropagation();" style="display: inline-block; background: #8b5cf6; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: 0.2s;">
+                            나만의 맞춤 공부법 PDF 무제한 다운로드
+                        </a>
+                    </div>
+                `;
+            } else {
+                extraBtnHtml = `
+                    <div style="margin-top: 25px; padding: 15px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; text-align: center;">
+                        <p style="margin: 0 0 10px 0; color: #475569; font-weight: bold; font-size: 0.9rem;">🎁 무료 혜택</p>
+                        <a href="/login" onclick="event.stopPropagation(); alert('로그인 후 이용할 수 있는 혜택입니다.');" style="display: inline-block; background: #94a3b8; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: 0.2s;">
+                            🔒 로그인하고 맞춤 공부법 PDF 받기
+                        </a>
+                    </div>
+                `;
             }
         }
 
@@ -543,11 +539,173 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { threshold: 0.15 });
     document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
 
-    // 5. BLACK 버튼 로직
-    if (typeof showBlackButtonIfEligible === 'function') {
-        showBlackButtonIfEligible();
+    // 💡 [수정됨] 5. 튜토리얼 통합 제어 (자동 팝업 로직 삭제)
+    const pendingTutorial = localStorage.getItem('pending_tutorial');
+    const isLoggedIn = !!localStorage.getItem('accessToken');
+    
+    // 이미 튜토리얼을 수락해서 진행 중인 경우 (화면 깜빡임 방지용 즉시 락)
+    if (pendingTutorial === 'true') {
+        runTutorialLock(pendingTutorial);
+    } 
+    // 💡 동기적으로 팝업을 띄우던 부분을 완전히 삭제하고 함수 호출만 남깁니다.
+    else if (isLoggedIn) {
+        checkTutorialStatus();
     }
 });
+
+// 💡 튜토리얼 제안 수락 핸들러
+window.acceptTutorialOffer = function() {
+    document.getElementById('tutorialOffer-modal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+    localStorage.setItem('pending_tutorial', 'true');
+    runTutorialLock('true');
+};
+
+// 💡 튜토리얼 제안 거절 (오늘 하루 보지 않기 처리) 핸들러
+window.declineTutorialOffer = function() {
+    const chk = document.getElementById('chkDoNotShowToday');
+    if (chk && chk.checked) {
+        const todayStr = new Date().toLocaleDateString();
+        localStorage.setItem('hide_tutorial_today', todayStr);
+    }
+    document.getElementById('tutorialOffer-modal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+};
+
+// 💡 튜토리얼 락 & 실행 함수
+function runTutorialLock(stepState) {
+    document.body.classList.add('tutorial-lock');
+
+    const warnTutorialExit = (e) => {
+        if (localStorage.getItem('pending_tutorial')) {
+            e.preventDefault();
+            e.returnValue = '정말 튜토리얼을 종료하시겠습니까?'; 
+        }
+    };
+    window.addEventListener('beforeunload', warnTutorialExit);
+
+    document.querySelectorAll('.logo-link, .nav-btn').forEach(link => {
+        link.addEventListener('click', (e) => {
+            if (localStorage.getItem('pending_tutorial')) {
+                if (!confirm('현재 튜토리얼이 진행 중입니다.\n정말 튜토리얼을 종료하고 이동하시겠습니까?')) {
+                    e.preventDefault(); 
+                } else {
+                    localStorage.removeItem('pending_tutorial');
+                    window.removeEventListener('beforeunload', warnTutorialExit);
+                    document.body.classList.remove('tutorial-lock');
+                }
+            }
+        });
+    });
+
+    setTimeout(() => {
+        const overlay = document.getElementById('tutorialOverlay');
+        const tooltipMsg = document.querySelector('#tutorialTooltip p');
+        const progressBar = document.querySelector('.tutorial-progress-bar');
+        const skipBtn = document.getElementById('skipTutorialBtn');
+        
+        let targetBtn, targetUrl;
+
+        if (stepState === 'true') {
+            targetBtn = document.getElementById('myPageBtn');
+            targetUrl = '/mypage';
+            if(tooltipMsg) tooltipMsg.innerText = '1. 마이페이지를 눌러 정보를 입력하실 수 있습니다.';
+            if(progressBar) progressBar.style.width = '33%';
+        }
+
+        if (targetBtn && !targetBtn.classList.contains('hidden')) {
+            overlay.classList.remove('hidden');
+            
+            const rect = targetBtn.getBoundingClientRect();
+            const cloneBtn = document.createElement('div');
+            cloneBtn.className = 'tutorial-clone-btn';
+            cloneBtn.innerText = targetBtn.innerText;
+            
+            cloneBtn.style.top = `${rect.top + (rect.height / 2)}px`; 
+            cloneBtn.style.left = `${rect.left + (rect.width / 2)}px`; 
+            cloneBtn.style.transform = 'translate(-50%, -50%)';
+            cloneBtn.style.padding = '8px 16px'; 
+            
+            overlay.appendChild(cloneBtn);
+
+            const tooltip = document.getElementById('tutorialTooltip');
+            tooltip.style.top = `${rect.bottom + 15}px`;
+            tooltip.style.left = `${Math.max(10, rect.left - 40)}px`;
+
+            cloneBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.removeEventListener('beforeunload', warnTutorialExit); 
+                document.body.classList.remove('tutorial-lock'); 
+                window.location.href = targetUrl; 
+            });
+
+            skipBtn.addEventListener('click', () => {
+                if (!confirm("정말로 그만두시겠습니까?\n튜토리얼 완료 시 제공되는 무료 대학 분석 기회를 받지 못할 수 있습니다.")) return;
+
+                localStorage.removeItem('pending_tutorial'); 
+                const todayStr = new Date().toLocaleDateString();
+                localStorage.setItem('hide_tutorial_today', todayStr);
+                
+                overlay.classList.add('hidden');
+                cloneBtn.remove();
+                window.removeEventListener('beforeunload', warnTutorialExit);
+                document.body.classList.remove('tutorial-lock'); 
+            });
+        }
+    }, 150); 
+}
+
+// 💡 [수정됨] 튜토리얼 상태 확인 및 팝업 제어
+async function checkTutorialStatus() {
+    const isLoggedIn = !!localStorage.getItem('accessToken');
+    const idToken = localStorage.getItem('idToken'); 
+    const userId = localStorage.getItem('userId');
+    
+    if (!isLoggedIn || !idToken || !userId) return;
+
+    if (localStorage.getItem('tutorial_completed') === 'true') {
+        return;
+    }
+
+    try {
+        const response = await fetch(CONFIG.api.user, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+            body: JSON.stringify({ type: 'get_user', userId: userId })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data && (data.tutorialRewardClaimed === true || data.computedTier === 'standard' || data.computedTier === 'pro')) {
+                localStorage.setItem('tutorial_completed', 'true');
+                localStorage.removeItem('pending_tutorial');
+                return; 
+            }
+        }
+    } catch (e) {
+        console.error("Tutorial sync error:", e);
+        return; 
+    }
+
+    const pendingTutorial = localStorage.getItem('pending_tutorial');
+    
+    if (pendingTutorial === 'true') {
+        runTutorialLock(pendingTutorial);
+    } 
+    else {
+        const todayStr = new Date().toLocaleDateString();
+        const hideToday = localStorage.getItem('hide_tutorial_today');
+        
+        if (hideToday !== todayStr) {
+            const offerModal = document.getElementById('tutorialOffer-modal');
+            if (offerModal) {
+                offerModal.classList.remove('hidden');
+                offerModal.style.display = 'block';
+                document.body.style.overflow = 'hidden';
+            }
+        }
+    }
+}
 
 function updateNavUI() {
     // 💡 accessToken 기준으로 로그인 여부 판단

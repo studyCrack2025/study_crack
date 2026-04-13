@@ -19,90 +19,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     
     <style>
-        /* 가입 완료 페이지 전용 심플 스타일 */
-        body {
-            background-color: #f8fafc; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-        }
-
-        .welcome-card {
-            background: white;
-            padding: 50px 40px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-            text-align: center;
-            max-width: 420px;
-            width: 90%;
-            border: 1px solid #e2e8f0;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 900;
-            color: #2563EB;
-            letter-spacing: -0.5px;
-            margin-bottom: 30px;
-            display: inline-block;
-        }
-
-        /* 성공 체크 아이콘 애니메이션 */
-        .success-icon {
-            font-size: 5rem;
-            color: #10b981; 
-            margin-bottom: 20px;
-            animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-
-        @keyframes popIn {
-            0% { transform: scale(0); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        .welcome-title {
-            color: #1e293b;
-            font-size: 1.6rem;
-            font-weight: 800;
-            margin-bottom: 15px;
-            margin-top: 0;
-        }
-
-        .welcome-desc {
-            color: #64748b;
-            font-size: 1rem;
-            line-height: 1.6;
-            margin-bottom: 35px;
-            word-break: keep-all;
-        }
-
-        .welcome-desc strong {
-            color: #334155;
-        }
-
-        /* 메인으로 가기 버튼 스타일 */
-        .btn-go-main {
-            display: block;
-            width: 100%;
-            padding: 16px;
-            background-color: #2563EB;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 1.05rem;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
-            box-sizing: border-box;
-        }
-
-        .btn-go-main:hover {
-            background-color: #1d4ed8;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3);
-        }
+        body { background-color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .welcome-card { background: white; padding: 50px 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); text-align: center; max-width: 420px; width: 90%; border: 1px solid #e2e8f0; }
+        .logo { font-size: 1.5rem; font-weight: 900; color: #2563EB; letter-spacing: -0.5px; margin-bottom: 30px; display: inline-block; }
+        .success-icon { font-size: 5rem; color: #10b981; margin-bottom: 20px; animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .welcome-title { color: #1e293b; font-size: 1.6rem; font-weight: 800; margin-bottom: 15px; margin-top: 0; }
+        .welcome-desc { color: #64748b; font-size: 1rem; line-height: 1.6; margin-bottom: 35px; word-break: keep-all; }
+        .welcome-desc strong { color: #334155; }
+        .btn-go-main { display: block; width: 100%; padding: 16px; background-color: #2563EB; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 1.05rem; transition: all 0.2s ease; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2); box-sizing: border-box; }
+        .btn-go-main:hover { background-color: #1d4ed8; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3); }
     </style>
 </head>
 <body>
@@ -121,7 +47,7 @@
             지금 바로 <strong>나만의 맞춤 입시 전략</strong>을<br>확인해보세요.
         </p>
         
-        <a href="/" class="btn-go-main">메인 페이지로 이동하기</a>
+        <a href="/" class="btn-go-main">스터디크랙 이용하러 가기</a>
         
     </div>
 
@@ -141,19 +67,17 @@
             const urlParams = new URLSearchParams(window.location.search);
             const role = urlParams.get('role');
             let promo = urlParams.get('promo') || localStorage.getItem('signupPromo');
-            
-            // 💡 [추가됨] 튜터 가입 완료 시 화면 변경 로직
+
+            // 튜터 가입 완료 시 화면 변경 로직
             if (role === 'tutor') {
-                // 아이콘 변경 (시계 모양)
                 const icon = document.querySelector('.success-icon');
                 icon.classList.remove('fa-check-circle', 'success-icon');
                 icon.classList.add('fa-clock');
-                icon.style.color = '#3b82f6'; // 파란색 테마
+                icon.style.color = '#3b82f6';
                 icon.style.fontSize = '5rem';
                 icon.style.marginBottom = '20px';
                 icon.style.animation = 'popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
 
-                // 텍스트 변경
                 document.querySelector('.welcome-title').innerHTML = '파트너 지원이<br>완료되었습니다!';
                 document.querySelector('.welcome-desc').innerHTML = '스터디크랙 파트너로 지원해주셔서 감사합니다.<br>현재 <strong>관리자 승인 대기 중</strong>이며,<br>가입 심사 및 승인 완료 후 즉시 안내해 드리겠습니다.';
             } 

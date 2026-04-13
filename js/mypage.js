@@ -97,6 +97,57 @@ document.addEventListener('DOMContentLoaded', () => {
     bindEnterKey('newChangePassword', changePassword);
     bindEnterKey('newChangePasswordConfirm', changePassword);
     bindEnterKey('deleteAccountPassword', executeDeleteAccount);
+    
+    const pendingTutorial = localStorage.getItem('pending_tutorial');
+    
+    if (pendingTutorial === 'true') {
+        setTimeout(() => {
+            const overlay = document.getElementById('tutorialOverlay');
+            // 대상: '기초조사서 작성/수정하러 가기' 버튼 (class로 찾음)
+            const targetBtn = document.querySelector('.btn-go-survey'); 
+            const skipBtn = document.getElementById('skipTutorialBtn');
+            const tooltip = document.getElementById('tutorialTooltip');
+
+            if (targetBtn) {
+                overlay.classList.remove('hidden');
+                
+                // 타겟 버튼 위치 계산 및 클론 생성
+                const rect = targetBtn.getBoundingClientRect();
+                const cloneBtn = document.createElement('a'); // 버튼이 원래 <a> 태그이므로 동일하게 생성
+                cloneBtn.className = 'tutorial-clone-btn btn-go-survey'; // 기존 클래스 그대로 복사하여 스타일 유지
+                cloneBtn.innerHTML = targetBtn.innerHTML; // 아이콘과 텍스트 그대로 복사
+                cloneBtn.href = targetBtn.href;
+                
+                // 원본 버튼과 똑같은 위치, 크기로 세팅
+                cloneBtn.style.top = `${rect.top}px`; 
+                cloneBtn.style.left = `${rect.left}px`; 
+                cloneBtn.style.width = `${rect.width}px`; 
+                cloneBtn.style.height = `${rect.height}px`; 
+                cloneBtn.style.margin = '0'; // 오버레이 위에서는 마진 제거
+                
+                overlay.appendChild(cloneBtn);
+
+                // 말풍선 위치 지정 (복제된 버튼 바로 아래)
+                tooltip.style.top = `${rect.bottom + 15}px`;
+                tooltip.style.left = `${rect.left}px`; // 이번엔 왼쪽 라인을 맞춰서 띄움
+
+                // 복제된 버튼 클릭 이벤트 -> 실제 페이지 이동 (<a> 태그이므로 href 속성으로 자연스럽게 이동)
+                cloneBtn.addEventListener('click', () => {
+                    // 🚨 여기서도 localStorage를 지우지 않습니다. 
+                    // /survey 작성 완료 후 3단계(솔루션 보기)로 넘어가기 위함입니다.
+                });
+
+                // 건너뛰기 버튼 클릭 이벤트 -> 튜토리얼 영구 종료
+                skipBtn.addEventListener('click', () => {
+                    if (!confirm("정말로 그만두시겠습니까?\n튜토리얼 완료 시 제공되는 무료 대학 분석 기회를 받지 못할 수 있습니다.")) return;
+
+                    localStorage.removeItem('pending_tutorial'); 
+                    overlay.classList.add('hidden');
+                    cloneBtn.remove();
+                });
+            }
+        }, 300);
+    }
 });
 
 function initCognitoAndFetchData() {
