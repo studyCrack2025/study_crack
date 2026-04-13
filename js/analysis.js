@@ -1752,6 +1752,8 @@ function renderSimChart() {
 
 function updateSimBarGraph(idx) {
     const items = document.querySelectorAll('.sim-bar-item');
+    const container = document.querySelector('.chart-scroll-container'); // 막대그래프 감싸는 래퍼
+
     items.forEach((item, i) => {
         const extBar = item.querySelector('.sim-extension-bar');
         const mainBar = item.querySelector('.sim-bar');
@@ -1765,6 +1767,12 @@ function updateSimBarGraph(idx) {
                 extBar.style.opacity = '1';
                 if (mainBar) mainBar.style.borderRadius = '0 0 0 0'; 
                 if (scoreLabel) scoreLabel.style.opacity = '0'; 
+            }
+            
+            // 💡 [수정된 부분] 모바일 막대그래프 강제 스크롤 동기화 로직
+            if (container && window.innerWidth <= 768) {
+                const scrollPos = item.offsetLeft - (container.clientWidth / 2) + (item.clientWidth / 2);
+                container.scrollTo({ left: scrollPos, behavior: 'smooth' });
             }
         } else {
             item.classList.remove('active');
@@ -1988,14 +1996,20 @@ function renderDetailedSimCard() {
         // 스와이프 시 상단 막대/꺾은선 그래프 연동
         cardArea.onscroll = () => {
             clearTimeout(window.simScrollTimeout);
+            // 💡 100ms -> 40ms로 줄여 손을 떼자마자 즉각 반응하도록 수정
             window.simScrollTimeout = setTimeout(() => {
+                const card = cardArea.querySelector('.swipe-univ-card');
+                if (!card) return;
+                
+                // 💡 카드 너비에 gap(15px)을 더해야 정확한 스와이프 인덱스가 산출됨
+                const itemWidth = card.offsetWidth + 15;
                 const scrollLeft = cardArea.scrollLeft;
-                const cardWidth = cardArea.clientWidth;
-                const index = Math.round(scrollLeft / Math.max(cardWidth, 1));
+                const index = Math.round(scrollLeft / itemWidth);
+
                 if (index !== selectedSimIndex && simDisplayList[index]) {
                     selectSimUniv(index, true);
                 }
-            }, 100);
+            }, 40); 
         };
 
         let html = '';
