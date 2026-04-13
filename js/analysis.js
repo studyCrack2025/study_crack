@@ -505,6 +505,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             const wrapper = document.querySelector('.sol-swipe-wrapper');
             if (firstTab && wrapper) {
                 wrapper.style.height = `${firstTab.offsetHeight}px`;
+                if (!document.getElementById('mainSwipeHint')) {
+                    const hintDiv = document.createElement('div');
+                    hintDiv.id = 'mainSwipeHint';
+                    hintDiv.style.cssText = "text-align:center; color:#94a3b8; font-size:0.8rem; padding:10px 0 5px 0; display:flex; justify-content:center; align-items:center; gap:8px;";
+                    hintDiv.innerHTML = '<i class="fas fa-angle-double-left"></i> 화면을 좌우로 밀어서 메뉴 이동 <i class="fas fa-angle-double-right"></i>';
+                    // wrapper 바로 위에 안내문구 삽입
+                    wrapper.parentNode.insertBefore(hintDiv, wrapper);
+                }
             }
         }, 1000); // 모든 병렬 태스크(fetch)가 어느 정도 끝날 시점
     }
@@ -2098,7 +2106,7 @@ function renderDetailedSimCard() {
                 warningHTML = `
                     <div class="sim-warning upsell-warning">
                         <h4 style="color:#c2410c; margin:0; line-height:1.3; font-size:0.95rem;"><i class="fas fa-exclamation-triangle"></i> 공부 방향 설정이 필요합니다</h4>
-                        <p style="margin:0; line-height:1.4; color:#475569; font-size:0.85rem;">현재 방향이 잘못 잡히면 시간만 낭비될 수 있습니다.</p>
+                        <p style="margin:0; line-height:1.4; color:#475569; font-size:0.85rem;">어떤 과목이 중요한지는 확인됐지만 어떻게 올려야 하는지는 아직 정해지지 않은 상태입니다. 특히 학기 초에 방향이 잘못 잡히면 시간만 더 쓰게 되는 경우가 많습니다. 방향을 올바로 잡지 않은 상태에서의 노력은 결과로 이어지기 어렵습니다. 👉 지금 방향을 잡느냐에 따라 결과가 달라집니다.</p>
                         <button onclick="location.href='/payment'" style="width:100%; padding:12px; margin-top:5px; background:#ea580c; color:white; border:none; border-radius:8px; font-weight:bold; font-size:0.95rem; cursor:pointer;">공부 방향 설정하기</button>
                     </div>`;
             } else {
@@ -2108,6 +2116,18 @@ function renderDetailedSimCard() {
                     warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><h4 style="color:#166534; margin:0; line-height:1.3; font-size:0.95rem;"><i class="fas fa-check-circle"></i> 안정권입니다</h4><p style="margin:0; line-height:1.4; color:#475569; font-size:0.85rem;">상위 대학 도전을 고려해보세요.</p></div>`;
                 }
             }
+            
+            // 💡 [추가] 대학 카드가 2개 이상일 때만 상단에 스와이프 안내 표시
+            const univSwipeHint = simDisplayList.length > 1 
+                ? `<div style="text-align:center; font-size:0.75rem; color:#64748b; background:#f1f5f9; border-radius:12px; padding:4px 0; margin-bottom:12px;">
+                     <i class="fas fa-arrows-alt-h" style="opacity:0.6;"></i> 카드를 좌우로 스와이프하여 다른 대학 보기
+                   </div>` 
+                : '';
+
+            // 💡 [추가] 과목 컨테이너 바로 위에 과목 스와이프 안내 표시
+            const subjSwipeHint = `<div style="text-align:right; font-size:0.75rem; color:#94a3b8; margin-bottom:5px;">
+                                     <i class="fas fa-hand-pointer"></i> 과목 좌우 스와이프
+                                   </div>`;
 
             html += `
             <div class="sim-result-card swipe-univ-card" style="flex: 0 0 100%; scroll-snap-align: center; box-sizing: border-box; margin-top: 0; display: flex; flex-direction: column;">
