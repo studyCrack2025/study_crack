@@ -1973,14 +1973,19 @@ function renderDetailedSimCard() {
         return; 
     }
 
+    // ==========================================
+    // [1] 모바일 전용 로직: 대학 카드 및 과목 카드 가로 스와이프
+    // ==========================================
     if (isMobile) {
-        // [모바일] 1회 렌더링하여 CSS로 제어
-        if (cardArea.children.length > 1 && cardArea.children[0].classList.contains('swipe-univ-card')) {
-            // 이미 렌더링 되어 있다면 재렌더링을 막습니다 (스크롤 초기화 방지)
-            return;
-        }
+        // 대학 카드 스와이프를 위한 인라인 스타일 (CSS 파일 대신 JS에서 제어하여 꼬임 방지)
+        cardArea.style.display = 'flex';
+        cardArea.style.overflowX = 'auto';
+        cardArea.style.scrollSnapType = 'x mandatory';
+        cardArea.style.gap = '15px';
+        cardArea.style.scrollbarWidth = 'none';
+        cardArea.style.paddingBottom = '10px';
 
-        // 스크롤 이벤트 바인딩 (차트 연동)
+        // 스와이프 시 상단 막대/꺾은선 그래프 연동
         cardArea.onscroll = () => {
             clearTimeout(window.simScrollTimeout);
             window.simScrollTimeout = setTimeout(() => {
@@ -1999,7 +2004,7 @@ function renderDetailedSimCard() {
 
             if (item.ineligible) {
                 html += `
-                <div class="sim-result-card swipe-univ-card">
+                <div class="sim-result-card swipe-univ-card" style="flex: 0 0 100%; scroll-snap-align: center; box-sizing: border-box; margin-top: 0;">
                     <div class="sim-card-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
                         <div>
                             <span class="sim-univ-title" style="display:block; font-size:1.1rem; font-weight:800; color:#1e293b;">${escapeHtml(item.univ)}</span>
@@ -2022,6 +2027,7 @@ function renderDetailedSimCard() {
             const getStatusText = (s) => { if (s >= 150) return "안정권"; if (s >= 100) return "적정권"; if (s >= 50) return "소신지원"; return "위험"; };
             const currentStatus = getStatusText(currentScore);
 
+            // 💡 과목 점수 상승폭 기준 내림차순 정렬
             let subjects = [{ key: 'kor', name: '국어' }, { key: 'math', name: '수학' }, { key: 'inq1', name: '탐구1' }, { key: 'inq2', name: '탐구2' }];
             subjects.sort((a, b) => {
                 const diffA = (data.sim_data[a.key] && data.sim_data[a.key].uiDiff) || 0;
@@ -2046,35 +2052,36 @@ function renderDetailedSimCard() {
                 
                 subjectsHTML += `
                     <div class="sim-item swipe-subj-card ${isBest ? 'best-pick' : ''}">
-                        <div class="sim-item-header">
+                        <div class="sim-item-header" style="margin-bottom:6px;">
                             <span style="font-weight:700;">${escapeHtml(info.name || sub.name)} <span style="font-size:0.75rem; font-weight:normal;">(+1점)</span></span>
                             <span style="color:${info.uiDiff > 0 ? '#ef4444' : '#94a3b8'}; font-weight:800;">+${diffVal}점</span>
                         </div>
-                        <div class="sim-item-body">
-                            <div style="font-size:0.85rem; margin-bottom:2px;">${desc}</div>
+                        <div class="sim-item-body" style="font-size:0.85rem; line-height:1.4;">
+                            <div style="margin-bottom:2px;">${desc}</div>
                             <div style="font-size:0.75rem; color:#94a3b8;">${subText}</div>
                         </div>
                     </div>`;
             });
 
+            // 💡 Warning 박스를 세로 정렬(column)에 맞게 HTML 단순화
             let warningHTML = '';
             if (!['standard', 'pro'].includes(currentUserTier) && univChangeRemaining <= 5) {
                 warningHTML = `
                     <div class="sim-warning upsell-warning">
-                        <h4 style="color:#c2410c;"><i class="fas fa-exclamation-triangle"></i> 공부 방향 설정이 필요합니다</h4>
-                        <p>현재 방향이 잘못 잡히면 시간만 낭비될 수 있습니다.</p>
-                        <button onclick="location.href='/payment'">공부 방향 설정하기</button>
+                        <h4 style="color:#c2410c; margin:0; line-height:1.3; font-size:0.95rem;"><i class="fas fa-exclamation-triangle"></i> 공부 방향 설정이 필요합니다</h4>
+                        <p style="margin:0; line-height:1.4; color:#475569; font-size:0.85rem;">현재 방향이 잘못 잡히면 시간만 낭비될 수 있습니다.</p>
+                        <button onclick="location.href='/payment'" style="width:100%; padding:12px; margin-top:5px; background:#ea580c; color:white; border:none; border-radius:8px; font-weight:bold; font-size:0.95rem; cursor:pointer;">공부 방향 설정하기</button>
                     </div>`;
             } else {
                 if (currentScore < 10 && (currentScore + maxRise) < 25) {
-                    warningHTML = `<div class="sim-warning" style="color:#c2410c;"><h4 style="color:#c2410c;"><i class="fas fa-exclamation-circle"></i> 불합격권입니다</h4><p>다른 전형이나 대학 고려를 권장합니다.</p></div>`;
+                    warningHTML = `<div class="sim-warning" style="color:#c2410c;"><h4 style="color:#c2410c; margin:0; line-height:1.3; font-size:0.95rem;"><i class="fas fa-exclamation-circle"></i> 불합격권입니다</h4><p style="margin:0; line-height:1.4; color:#475569; font-size:0.85rem;">다른 전형이나 대학 고려를 권장합니다.</p></div>`;
                 } else if (currentScore >= 225 || (currentScore + maxRise) >= 250) {
-                    warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><h4 style="color:#166534;"><i class="fas fa-check-circle"></i> 안정권입니다</h4><p>상위 대학 도전을 고려해보세요.</p></div>`;
+                    warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><h4 style="color:#166534; margin:0; line-height:1.3; font-size:0.95rem;"><i class="fas fa-check-circle"></i> 안정권입니다</h4><p style="margin:0; line-height:1.4; color:#475569; font-size:0.85rem;">상위 대학 도전을 고려해보세요.</p></div>`;
                 }
             }
 
             html += `
-            <div class="sim-result-card swipe-univ-card">
+            <div class="sim-result-card swipe-univ-card" style="flex: 0 0 100%; scroll-snap-align: center; box-sizing: border-box; margin-top: 0; display: flex; flex-direction: column;">
                 <div class="sim-card-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px; padding-bottom:12px; border-bottom:1px solid #f1f5f9;">
                     <div>
                         <span class="sim-univ-title" style="display:block; font-size:1.15rem; font-weight:800; color:#1e293b; margin-bottom:2px;">${escapeHtml(data.univ)}</span>
@@ -2096,7 +2103,12 @@ function renderDetailedSimCard() {
         cardArea.innerHTML = html;
 
     } else {
-        // [PC] 기존의 단일 카드 렌더링
+        // ==========================================
+        // [2] PC 전용 로직: 기존의 단일 렌더링 유지
+        // ==========================================
+        cardArea.style.display = 'block';
+        cardArea.style.overflowX = 'visible';
+        
         if (selectedSimIndex === null || !simDisplayList[selectedSimIndex]) { 
             cardArea.innerHTML = `<div class="empty-sim-state" style="display:block; height:auto;"><p>대학을 선택해주세요.</p></div>`; 
             return; 
