@@ -477,6 +477,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const types = ['univ', 'sim', 'coach', 'pro'];
                 const currentType = types[index];
                 
+                updateMainSwipeHint(currentType);
+                
                 const targetContent = document.getElementById(`sol-${currentType}`);
                 if (targetContent) {
                     swipeWrapper.style.height = `${targetContent.offsetHeight}px`;
@@ -505,16 +507,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             const wrapper = document.querySelector('.sol-swipe-wrapper');
             if (firstTab && wrapper) {
                 wrapper.style.height = `${firstTab.offsetHeight}px`;
+                
+                // 💡 [수정] 메인 화면 스와이프 안내 문구 (동적 렌더링 준비)
                 if (!document.getElementById('mainSwipeHint')) {
                     const hintDiv = document.createElement('div');
                     hintDiv.id = 'mainSwipeHint';
-                    hintDiv.style.cssText = "text-align:center; color:#94a3b8; font-size:0.8rem; padding:10px 0 5px 0; display:flex; justify-content:center; align-items:center; gap:8px;";
-                    hintDiv.innerHTML = '<i class="fas fa-angle-double-left"></i> 화면을 좌우로 밀어서 메뉴 이동 <i class="fas fa-angle-double-right"></i>';
-                    // wrapper 바로 위에 안내문구 삽입
+                    hintDiv.style.cssText = "padding:10px 15px 5px 15px; background:#f8fafc;";
                     wrapper.parentNode.insertBefore(hintDiv, wrapper);
+                    updateMainSwipeHint('univ'); // 초기값
                 }
             }
-        }, 1000); // 모든 병렬 태스크(fetch)가 어느 정도 끝날 시점
+        }, 1000); 
     }
 });
 
@@ -944,6 +947,7 @@ function openSolution(type) {
     });
 
     if (type === 'sim') initSimulation();
+    if (window.innerWidth <= 768) updateMainSwipeHint(type);
 }
 
 function checkMbtiReport(data) {
@@ -1000,6 +1004,52 @@ async function downloadMbtiReport() {
     }
 }
 
+// [추가] 메인 탭 좌우 스와이프 동적 안내 헬퍼 함수
+function updateMainSwipeHint(type) {
+    const hintDiv = document.getElementById('mainSwipeHint');
+    if (!hintDiv) return;
+    
+    const tabs = [
+        { id: 'univ', name: '목표대학' },
+        { id: 'sim', name: '시뮬레이션' },
+        { id: 'coach', name: '플래너 코칭' },
+        { id: 'pro', name: 'PRO 분석' }
+    ];
+    const idx = tabs.findIndex(t => t.id === type);
+    if (idx === -1) return;
+
+    let leftText = idx > 0 ? `<i class="fas fa-chevron-left"></i> ${tabs[idx-1].name}` : '';
+    let rightText = idx < tabs.length - 1 ? `${tabs[idx+1].name} <i class="fas fa-chevron-right"></i>` : '';
+
+    hintDiv.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; width:100%; max-width:340px; margin:0 auto; font-weight:700; color:#475569;">
+            <div style="flex:1; text-align:left; font-size:0.85rem; color:#3b82f6;">${leftText}</div>
+            <div style="flex:0 0 auto; color:#94a3b8; font-size:0.75rem; font-weight:normal; margin:0 10px;">메뉴 스와이프</div>
+            <div style="flex:1; text-align:right; font-size:0.85rem; color:#3b82f6;">${rightText}</div>
+        </div>
+    `;
+}
+
+// [추가] 시뮬레이션 대학 카드 좌우 스와이프 동적 안내 헬퍼 함수
+function updateSimCardSwipeHint(index) {
+    const hintDiv = document.getElementById('simCardSwipeHint');
+    if (!hintDiv || simDisplayList.length <= 1) return;
+
+    let leftName = index > 0 && simDisplayList[index - 1] ? escapeHtml(simDisplayList[index - 1].univ.replace('학교', '')) : '';
+    let rightName = index < simDisplayList.length - 1 && simDisplayList[index + 1] ? escapeHtml(simDisplayList[index + 1].univ.replace('학교', '')) : '';
+
+    let leftHtml = leftName ? `<i class="fas fa-chevron-left"></i> ${leftName}` : '';
+    let rightHtml = rightName ? `${rightName} <i class="fas fa-chevron-right"></i>` : '';
+
+    hintDiv.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; font-weight:700; color:#475569;">
+            <div style="flex:1; text-align:left; font-size:0.9rem; color:#ea580c;">${leftHtml}</div>
+            <div style="flex:0 0 auto; color:#94a3b8; font-size:0.75rem; font-weight:normal; margin:0 10px;">다른 대학 보기</div>
+            <div style="flex:1; text-align:right; font-size:0.9rem; color:#ea580c;">${rightHtml}</div>
+        </div>
+    `;
+}
+
 // ------------------------------------------------------------
 // [기능 1] 목표대학 설정
 // ------------------------------------------------------------
@@ -1052,6 +1102,17 @@ function initUnivGrid() {
             </button>
         `;
         grid.appendChild(slotDiv);
+    }
+    
+    if (window.innerWidth <= 768) {
+        if (!document.getElementById('univGridSwipeHint')) {
+            const hintDiv = document.createElement('div');
+            hintDiv.id = 'univGridSwipeHint';
+            hintDiv.style.cssText = "text-align:right; font-size:0.75rem; color:#94a3b8; margin-bottom:8px; padding-right:4px;";
+            hintDiv.innerHTML = '<i class="fas fa-hand-pointer"></i> 좌우로 스와이프하여 6지망까지 확인';
+            // univGrid 바로 위에 삽입
+            grid.parentNode.insertBefore(hintDiv, grid);
+        }
     }
 }
 
@@ -1978,6 +2039,10 @@ function selectSimUniv(index, fromScroll = false) {
     } else if (window.innerWidth > 768) {
         renderDetailedSimCard(); 
     }
+    
+    if (window.innerWidth <= 768) {
+        updateSimCardSwipeHint(index);
+    }
 }
 
 function renderDetailedSimCard() {
@@ -2000,6 +2065,14 @@ function renderDetailedSimCard() {
         cardArea.style.gap = '15px';
         cardArea.style.scrollbarWidth = 'none';
         cardArea.style.paddingBottom = '10px';
+        
+        if (simDisplayList.length > 1 && !document.getElementById('simCardSwipeHint')) {
+            const hintDiv = document.createElement('div');
+            hintDiv.id = 'simCardSwipeHint';
+            hintDiv.style.cssText = "background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px 15px; margin-bottom:15px;";
+            cardArea.parentNode.insertBefore(hintDiv, cardArea);
+            updateSimCardSwipeHint(selectedSimIndex || 0); // 초기화
+        }
 
         // 스와이프 시 상단 막대/꺾은선 그래프 연동
         cardArea.onscroll = () => {
@@ -2132,18 +2205,12 @@ function renderDetailedSimCard() {
                     warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><h4 style="color:#166534; margin:0; line-height:1.3; font-size:0.95rem;"><i class="fas fa-check-circle"></i> 안정권입니다</h4><p style="margin:0; line-height:1.4; color:#475569; font-size:0.85rem;">상위 대학 도전을 고려해보세요.</p></div>`;
                 }
             }
-            
-            // 💡 [추가] 대학 카드가 2개 이상일 때만 상단에 스와이프 안내 표시
-            const univSwipeHint = simDisplayList.length > 1 
-                ? `<div style="text-align:center; font-size:0.75rem; color:#64748b; background:#f1f5f9; border-radius:12px; padding:4px 0; margin-bottom:12px;">
-                     <i class="fas fa-arrows-alt-h" style="opacity:0.6;"></i> 카드를 좌우로 스와이프하여 다른 대학 보기
-                   </div>` 
-                : '';
 
-            // 💡 [추가] 과목 컨테이너 바로 위에 과목 스와이프 안내 표시
-            const subjSwipeHint = `<div style="text-align:right; font-size:0.75rem; color:#94a3b8; margin-bottom:5px;">
-                                     <i class="fas fa-hand-pointer"></i> 과목 좌우 스와이프
-                                   </div>`;
+            // 💡 과목 컨테이너 바로 위에 과목 스와이프 안내 표시
+            const subjSwipeHint = `
+                <div style="display:flex; justify-content:center; align-items:center; font-size:0.75rem; color:#94a3b8; margin-bottom:8px; gap:8px;">
+                    <i class="fas fa-chevron-left" style="opacity:0.5;"></i> 과목 스와이프 <i class="fas fa-chevron-right" style="opacity:0.5;"></i>
+                </div>`;
 
             html += `
             <div class="sim-result-card swipe-univ-card" style="flex: 0 0 100%; scroll-snap-align: center; box-sizing: border-box; margin-top: 0; display: flex; flex-direction: column;">
@@ -2158,6 +2225,7 @@ function renderDetailedSimCard() {
                     </div>
                 </div>
                 
+                ${subjSwipeHint}
                 <div class="subj-scroll-container">
                     ${subjectsHTML}
                 </div>
