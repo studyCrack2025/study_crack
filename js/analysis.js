@@ -2104,11 +2104,27 @@ function renderDetailedSimCard() {
             let warningHTML = '';
             if (!['standard', 'pro'].includes(currentUserTier) && univChangeRemaining <= 5) {
                 warningHTML = `
-                    <div class="sim-warning upsell-warning">
-                        <h4 style="color:#c2410c; margin:0; line-height:1.3; font-size:0.95rem;"><i class="fas fa-exclamation-triangle"></i> 공부 방향 설정이 필요합니다</h4>
-                        <p style="margin:0; line-height:1.4; color:#475569; font-size:0.85rem;">어떤 과목이 중요한지는 확인됐지만 어떻게 올려야 하는지는 아직 정해지지 않은 상태입니다. 특히 학기 초에 방향이 잘못 잡히면 시간만 더 쓰게 되는 경우가 많습니다. 방향을 올바로 잡지 않은 상태에서의 노력은 결과로 이어지기 어렵습니다. 👉 지금 방향을 잡느냐에 따라 결과가 달라집니다.</p>
-                        <button onclick="location.href='/payment'" style="width:100%; padding:12px; margin-top:5px; background:#ea580c; color:white; border:none; border-radius:8px; font-weight:bold; font-size:0.95rem; cursor:pointer;">공부 방향 설정하기</button>
-                    </div>`;
+                <div class="sim-warning upsell-warning" style="background:#fff7ed; border:1px solid #fdba74; padding:18px; border-radius:10px; margin-top:15px;">
+                    <h4 style="color:#c2410c; margin:0 0 12px 0; line-height:1.3; font-size:1rem; font-weight:800;">
+                        <i class="fas fa-exclamation-triangle" style="margin-right:4px;"></i> 공부 방향 설정이 필요합니다
+                    </h4>
+                    
+                    <p style="margin:0 0 8px 0; line-height:1.5; color:#475569; font-size:0.85rem; word-break:keep-all;">
+                        어떤 과목이 중요한지는 확인됐지만, <strong>어떻게 점수를 올려야 할지</strong>는 아직 정해지지 않은 상태입니다.
+                    </p>
+                    
+                    <p style="margin:0 0 12px 0; line-height:1.5; color:#475569; font-size:0.85rem; word-break:keep-all;">
+                        특히 학기 초에 방향이 잘못 잡히면 <strong><span style="color:#ea580c;">시간만 낭비</span></strong>하게 되는 경우가 많습니다. 올바른 방향이 전제되지 않은 노력은 결과로 이어지기 어렵습니다.
+                    </p>
+
+                    <div style="background:#ffedd5; color:#9a3412; padding:10px 12px; border-radius:8px; font-size:0.85rem; font-weight:800; margin-bottom:15px; text-align:center; word-break:keep-all;">
+                        👉 지금 방향을 잡느냐에 따라 결과가 완전히 달라집니다.
+                    </div>
+
+                    <button onclick="location.href='/payment'" style="width:100%; padding:14px; background:#ea580c; color:white; border:none; border-radius:8px; font-weight:bold; font-size:1rem; cursor:pointer; box-shadow:0 4px 6px rgba(234, 88, 12, 0.25);">
+                        공부 방향 설정하기
+                    </button>
+                </div>`;
             } else {
                 if (currentScore < 10 && (currentScore + maxRise) < 25) {
                     warningHTML = `<div class="sim-warning" style="color:#c2410c;"><h4 style="color:#c2410c; margin:0; line-height:1.3; font-size:0.95rem;"><i class="fas fa-exclamation-circle"></i> 불합격권입니다</h4><p style="margin:0; line-height:1.4; color:#475569; font-size:0.85rem;">다른 전형이나 대학 고려를 권장합니다.</p></div>`;
