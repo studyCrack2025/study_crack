@@ -492,7 +492,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
                 
                 // 시뮬레이션 탭 도달 시 데이터 로드 안 되어있으면 로드
-                if (currentType === 'sim' && document.getElementById('simChartArea').innerHTML === '') {
+                if (currentType === 'sim' && document.getElementById('simChartArea').innerHTML.trim() === '') {
                     initSimulation();
                 }
             }, 100); // 부드러운 전환을 위해 스크롤 종료 0.1초 후 인식
@@ -544,17 +544,32 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
-// 💡 모바일 스와이프 래퍼 높이 강제 동기화 함수
 function syncMobileHeight() {
     if (window.innerWidth > 768) return; // PC는 실행 안 함
     
     const wrapper = document.querySelector('.sol-swipe-wrapper');
     if (!wrapper) return;
 
-    // 현재 스크롤 위치를 기반으로 어떤 탭을 보고 있는지 계산
-    const index = Math.round(wrapper.scrollLeft / wrapper.clientWidth);
-    const types = ['univ', 'sim', 'coach', 'pro'];
-    const activeTab = document.getElementById(`sol-${types[index]}`);
+    // 스크롤 애니메이션 진행 중 오작동을 막기 위해 활성화된 탭을 강제 추적합니다.
+    const activeBtn = document.querySelector('.solution-menu .sol-btn.active');
+    let targetId = null;
+
+    if (activeBtn) {
+        const onclickAttr = activeBtn.getAttribute('onclick');
+        if (onclickAttr) {
+            const match = onclickAttr.match(/'([^']+)'/);
+            if (match) targetId = `sol-${match[1]}`;
+        }
+    }
+
+    // 폴백: 활성화된 버튼을 찾지 못한 경우 기존 방식(스크롤 위치) 사용
+    if (!targetId) {
+        const index = Math.round(wrapper.scrollLeft / Math.max(wrapper.clientWidth, 1));
+        const types = ['univ', 'sim', 'coach', 'pro'];
+        targetId = `sol-${types[index]}`;
+    }
+
+    const activeTab = document.getElementById(targetId);
 
     if (activeTab) {
         // 브라우저가 레이아웃을 다시 그릴 시간을 약간 준 뒤 높이 측정
@@ -1596,10 +1611,11 @@ function renderSimChart() {
         style.id = 'simExtensionStyle';
         style.innerHTML = `
             .sim-extension-bar { width: 40px; background: #ffffff !important; border: 2px dashed #f59e0b; border-bottom: none; border-radius: 6px 6px 0 0; box-sizing: border-box; pointer-events: none; z-index: 2; position: absolute; }
-            .sim-bar-item, .sim-label-item { -webkit-tap-highlight-color: transparent; }
-            @media (max-width: 768px) { 
-                .sim-extension-bar { width: 28px; } 
-                .sim-bar { width: 28px !important; } 
+            .sim-bar-item { -webkit-tap-highlight-color: transparent; }
+            .sim-label-item { -webkit-tap-highlight-color: transparent; }
+            @media (max-width: 768px) {
+                .sim-extension-bar { width: 28px; }
+                .sim-bar { width: 28px !important; }
             }
         `;
         document.head.appendChild(style);
