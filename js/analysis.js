@@ -2059,10 +2059,25 @@ function renderDetailedSimCard() {
                 const diffVal = info.uiDiff.toFixed(1);
                 const isBest = (sub.key === bestSubjectKey && maxRise > 0);
                 let desc = '';
-                if (info.msg.includes("응시 안 함")) desc = `<span style="color:#94a3b8;">미응시</span>`;
-                else if (info.diff <= 0) desc = `<span style="color:#ef4444;">변화 없음</span>`;
-                else desc = isBest ? `<strong>가장 유리함</strong>` : `상승 가능`;
-                const subText = info.diff > 0 ? `(+${(info.diff || 3.0).toFixed(2)}점)` : ``;
+                // 1. 응시하지 않은 과목 처리
+                if (info.msg && info.msg.includes("응시 안 함")) {
+                    desc = `<span style="color:#94a3b8;">미응시 과목입니다.</span>`;
+                } 
+                // 2. 실제 환산 점수(diff)가 전혀 오르지 않은 경우 (만점이거나, 반영비율이 0인 경우)
+                else if (Math.abs(info.diff) < 0.01) {
+                    desc = `<span style="color:#ef4444;">점수 변화 없음</span>`;
+                } 
+                // 3. 점수가 미세하게라도 오른 경우
+                else {
+                    desc = isBest ? `<strong>가장 합격 상승에 유리합니다.</strong>` : `점수 상승으로 합격 가능성이 높아집니다.`;
+                }
+
+                // 부호 및 텍스트 렌더링 개선 (양수면 +, 음수면 - 출력)
+                let subText = '';
+                if (Math.abs(info.diff) >= 0.01) {
+                     const sign = info.diff > 0 ? '+' : '';
+                     subText = `(${sign}${info.diff.toFixed(2)}점)`;
+                }
                 
                 subjectsHTML += `
                     <div class="sim-item swipe-subj-card ${isBest ? 'best-pick' : ''}">
@@ -2167,10 +2182,25 @@ function renderDetailedSimCard() {
             const diffVal = info.uiDiff.toFixed(1);
             const isBest = (sub.key === bestSubjectKey && maxRise > 0);
             let desc = '';
-            if (info.msg.includes("응시 안 함")) desc = `<span style="color:#94a3b8;">미응시 과목입니다.</span>`;
-            else if (info.diff <= 0) desc = `<span style="color:#ef4444;">점수 변화 없음</span>`;
-            else desc = isBest ? `<strong>가장 합격 상승에 유리합니다.</strong>` : `점수 상승으로 합격 가능성이 높아집니다.`;
-            const subText = info.diff > 0 ? `(실점수 +${(info.diff || 3.0).toFixed(2)}점)` : ``;
+                // 1. 응시하지 않은 과목 처리
+                if (info.msg && info.msg.includes("응시 안 함")) {
+                    desc = `<span style="color:#94a3b8;">미응시 과목입니다.</span>`;
+                } 
+                // 2. 실제 환산 점수(diff)가 전혀 오르지 않은 경우 (만점이거나, 반영비율이 0인 경우)
+                else if (Math.abs(info.diff) < 0.01) {
+                    desc = `<span style="color:#ef4444;">점수 변화 없음</span>`;
+                } 
+                // 3. 점수가 미세하게라도 오른 경우
+                else {
+                    desc = isBest ? `<strong>가장 합격 상승에 유리합니다.</strong>` : `점수 상승으로 합격 가능성이 높아집니다.`;
+                }
+
+                // 부호 및 텍스트 렌더링 개선 (양수면 +, 음수면 - 출력)
+                let subText = '';
+                if (Math.abs(info.diff) >= 0.01) {
+                     const sign = info.diff > 0 ? '+' : '';
+                     subText = `(${sign}${info.diff.toFixed(2)}점)`;
+                }
             
             subjectsHTML += `
                 <div class="sim-item ${isBest ? 'best-pick' : ''}" style="display:flex; flex-direction:column; justify-content:flex-start; height:100%;">
