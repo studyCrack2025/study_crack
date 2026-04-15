@@ -336,6 +336,9 @@ async function searchStudents() {
             // XSS 방지를 위한 escapeHtml 철저히 적용
             const tr = document.createElement('tr');
             tr.innerHTML = `
+                <td class="selection-col" data-label="선택">
+                    <input type="checkbox" class="student-checkbox" value="${escapeHtml(s.userid)}" data-name="${escapeHtml(s.name)}" onchange="handleStudentCheck()">
+                </td>
                 <td data-label="학생 정보">
                     <div class="student-info-cell">
                         <span class="student-name-text">${escapeHtml(s.name) || '(이름없음)'}</span>
@@ -377,6 +380,98 @@ function getTierBadgeHTML(studentItem) {
     else if (tier.includes('STANDARD')) return '<span style="color:#334155; background:#e2e8f0; padding:4px 8px; border-radius:12px; font-size:0.8rem; font-weight:bold;">STANDARD</span>';
     else return '<span style="color:#1e40af; background:#dbeafe; padding:4px 8px; border-radius:12px; font-size:0.8rem; font-weight:bold;">BASIC</span>';
 }
+
+// ============================================================
+// [C-2] 학생 일괄 선택 및 공지 발송 연동 로직
+// ============================================================
+let isSelectionMode = false;
+
+window.toggleStudentSelection = function() {
+    const table = document.querySelector('.student-table');
+    const toggleBtn = document.getElementById('btnToggleSelection');
+    const sendBtn = document.getElementById('btnSendNoticeToSelected');
+    
+    isSelectionMode = !isSelectionMode;
+    
+    if (isSelectionMode) {
+        // 선택 모드 ON
+        table.classList.add('selection-mode');
+        toggleBtn.style.backgroundColor = '#ef4444'; // 취소 느낌의 빨간색
+        toggleBtn.innerHTML = '<i class="fas fa-times"></i> 선택 취소';
+        handleStudentCheck(); // 체크 상태 확인하여 공지 버튼 렌더링
+    } else {
+        // 선택 모드 OFF
+        table.classList.remove('selection-mode');
+        toggleBtn.style.backgroundColor = '#64748b'; // 원래 색 복구
+        toggleBtn.innerHTML = '<i class="fas fa-check-square"></i> 학생 선택하기';
+        sendBtn.style.display = 'none';
+        
+        // 체크박스 모두 해제
+        document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = false);
+        const checkAll = document.getElementById('checkAllStudents');
+        if (checkAll) checkAll.checked = false;
+    }
+};
+
+window.toggleAllStudents = function(source) {
+    const checkboxes = document.querySelectorAll('.student-checkbox');
+    checkboxes.forEach(cb => cb.checked = source.checked);
+    handleStudentCheck(); // 하단 카운트 및 공지 버튼 업데이트
+};
+
+window.handleStudentCheck = function() {
+    if (!isSelectionMode) return;
+    const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
+    const sendBtn = document.getElementById('btnSendNoticeToSelected');
+    const countSpan = document.getElementById('selectedStudentCount');
+    
+    countSpan.innerText = checkedBoxes.length;
+    
+    // 1명이라도 체크되면 '공지 보내기' 버튼 노출
+    if (checkedBoxes.length > 0) {
+        sendBtn.style.display = 'inline-block';
+    } else {
+        sendBtn.style.display = 'none';
+    }
+};
+
+window.sendNoticeToSelectedStudents = function() {
+    const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
+    if (checkedBoxes.length === 0) {
+        alert("선택된 학생이 없습니다.");
+        return;
+    }
+
+    // 1. 선택된 학생들을 새 공지 발송 타겟 배열(selectedTargetMap)에 안전하게 병합
+    let addedCount = 0;
+    checkedBoxes.forEach(cb => {
+        const userId = cb.value; // 이미 escapeHtml된 값
+        const userName = cb.getAttribute('data-name');
+        
+        if (!selectedTargetMap.has(userId)) {
+            // UI에 태그 달아줄 때 [개별추가] 대신 직관적인 문구 사용
+            selectedTargetMap.set(userId, { name: userName, tag: "선택명단" });
+            addedCount++;
+        }
+    });
+
+    // 2. 학생 관리 탭의 선택 모드 깔끔하게 닫기
+    toggleStudentSelection();
+
+    // 3. 알림 관리 -> 새 공지 발송 탭으로 화면 전환
+    showNotiMenu('send');
+
+    // 4. 드롭다운 값을 '개별 학생 선택'으로 맞춰주고 명단 재렌더링
+    const groupSelect = document.getElementById('targetGroupSelect');
+    if (groupSelect) {
+        groupSelect.value = 'INDIVIDUAL';
+        updateTargetSubSelect();
+    }
+    renderTargetTags();
+
+    // 5. 관리자가 즉시 작성할 수 있도록 화면 최상단으로 이동
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 
 // ============================================================
 // [D] 질의 관리(Q&A) 로직
