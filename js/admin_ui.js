@@ -333,11 +333,13 @@ async function searchStudents() {
             let tutorNameDisplay = s.tutorName ? `<span class="tutor-tag">👨‍🏫 ${escapeHtml(s.tutorName)}</span>` : '<span style="color:#94a3b8; font-size:0.8rem;">미배정</span>';
             let lastActive = s.lastPayDate ? new Date(s.lastPayDate).toLocaleDateString() : '-';
             
+            const isChecked = (typeof persistedSelections !== 'undefined' && persistedSelections.has(s.userid)) ? 'checked' : '';
+            
             // XSS 방지를 위한 escapeHtml 철저히 적용
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td class="selection-col" data-label="선택">
-                    <input type="checkbox" class="student-checkbox" value="${escapeHtml(s.userid)}" data-name="${escapeHtml(s.name)}" onchange="handleStudentCheck()">
+                    <input type="checkbox" class="student-checkbox" value="${escapeHtml(s.userid)}" data-name="${escapeHtml(s.name)}" onchange="handleStudentCheck(this)" ${isChecked}>
                 </td>
                 <td data-label="학생 정보">
                     <div class="student-info-cell">
@@ -382,9 +384,10 @@ function getTierBadgeHTML(studentItem) {
 }
 
 // ============================================================
-// [C-2] 학생 일괄 선택 및 공지 발송 연동 로직
+// [C-2] 학생 일괄 선택 및 공지 발송 연동 로직 (상태 유지 기능 포함)
 // ============================================================
 let isSelectionMode = false;
+let persistedSelections = new Map(); // 💡 상태 유지를 위한 보이지 않는 장바구니 { userId: userName }
 
 window.toggleStudentSelection = function() {
     const table = document.querySelector('#section-students .student-table');
@@ -396,39 +399,63 @@ window.toggleStudentSelection = function() {
     if (isSelectionMode) {
         // 선택 모드 ON
         table.classList.add('selection-mode');
-        toggleBtn.style.backgroundColor = '#ef4444'; // 취소 느낌의 빨간색
+        toggleBtn.style.backgroundColor = '#ef4444';
         toggleBtn.innerHTML = '<i class="fas fa-times"></i> 선택 취소';
-        handleStudentCheck(); // 체크 상태 확인하여 공지 버튼 렌더링
+        updateSelectionUI();
     } else {
         // 선택 모드 OFF
         table.classList.remove('selection-mode');
-        toggleBtn.style.backgroundColor = '#64748b'; // 원래 색 복구
+        toggleBtn.style.backgroundColor = '#64748b';
         toggleBtn.innerHTML = '<i class="fas fa-check-square"></i> 학생 선택하기';
         sendBtn.style.display = 'none';
         
-        // 체크박스 모두 해제
+        // 💡 선택 취소 시 장바구니와 화면의 체크박스 모두 비우기
+        persistedSelections.clear();
         document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = false);
         const checkAll = document.getElementById('checkAllStudents');
         if (checkAll) checkAll.checked = false;
     }
 };
 
+// 상단 전체 선택 체크박스 동작
 window.toggleAllStudents = function(source) {
     const checkboxes = document.querySelectorAll('.student-checkbox');
-    checkboxes.forEach(cb => cb.checked = source.checked);
-    handleStudentCheck(); // 하단 카운트 및 공지 버튼 업데이트
+    checkboxes.forEach(cb => {
+        cb.checked = source.checked;
+        // 💡 화면에 보이는 체크박스들을 전부 장바구니에 넣거나 빼기
+        if (cb.checked) {
+            persistedSelections.set(cb.value, cb.getAttribute('data-name'));
+        } else {
+            persistedSelections.delete(cb.value);
+        }
+    });
+    updateSelectionUI();
 };
 
-window.handleStudentCheck = function() {
+// 개별 체크박스 누를 때 동작 (매개변수 cb 추가)
+window.handleStudentCheck = function(cb) {
     if (!isSelectionMode) return;
-    const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
+    
+    // 💡 체크하면 장바구니에 담고, 해제하면 빼기
+    if (cb.checked) {
+        persistedSelections.set(cb.value, cb.getAttribute('data-name'));
+    } else {
+        persistedSelections.delete(cb.value);
+    }
+    
+    updateSelectionUI();
+};
+
+// 버튼 및 인원수 UI 업데이트 전용 함수
+window.updateSelectionUI = function() {
+    if (!isSelectionMode) return;
     const sendBtn = document.getElementById('btnSendNoticeToSelected');
     const countSpan = document.getElementById('selectedStudentCount');
     
-    countSpan.innerText = checkedBoxes.length;
+    // 화면에 체크된 개수가 아닌, 장바구니에 담긴 총 개수를 표시
+    countSpan.innerText = persistedSelections.size;
     
-    // 1명이라도 체크되면 '공지 보내기' 버튼 노출
-    if (checkedBoxes.length > 0) {
+    if (persistedSelections.size > 0) {
         sendBtn.style.display = 'inline-block';
     } else {
         sendBtn.style.display = 'none';
@@ -436,23 +463,21 @@ window.handleStudentCheck = function() {
 };
 
 window.sendNoticeToSelectedStudents = function() {
-    const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
-    if (checkedBoxes.length === 0) {
+    if (persistedSelections.size === 0) {
         alert("선택된 학생이 없습니다.");
         return;
     }
 
-    // 1. 체크된 학생 데이터를 추출하여 '임시 바구니'에 저장해둡니다.
-    window.pendingNoticeTargets = Array.from(checkedBoxes).map(cb => ({
-        userId: cb.value,
-        userName: cb.getAttribute('data-name')
+    // 💡 1. 화면의 체크박스가 아닌 '장바구니(persistedSelections)'에서 명단을 꺼냄
+    window.pendingNoticeTargets = Array.from(persistedSelections.entries()).map(([userId, userName]) => ({
+        userId: userId,
+        userName: userName
     }));
 
-    // 2. 학생 관리 탭의 선택 모드를 깔끔하게 닫습니다.
+    // 2. 학생 관리 탭의 선택 모드 닫기
     toggleStudentSelection();
 
-    // 3. 새 공지 발송 화면으로 전환합니다. 
-    // (이 함수 내부에서 비동기로 loadTutorListForNotice 가 실행됩니다.)
+    // 3. 새 공지 발송 화면으로 전환 (내부적으로 초기화 후 임시 바구니 데이터 주입)
     showNotiMenu('send');
 };
 
