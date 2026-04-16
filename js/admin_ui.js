@@ -1174,10 +1174,10 @@ async function sendAdminNotice() {
     
     // 알림톡 관련 변수 추출 (ID 정확히 매칭)
     const useAlimtalkElement = document.getElementById('useAlimtalk');
-    const templateTypeElement = document.getElementById('alimtalkTemplateType'); // 💡 이 ID가 HTML과 일치해야 함!
+    const templateTypeElement = document.getElementById('alimtalkTemplateType');
 
     const useAlimtalk = useAlimtalkElement ? useAlimtalkElement.checked : false;
-    const templateType = templateTypeElement ? templateTypeElement.value : 'REMIND'; // 💡 선택 안 되면 기본값 REMIND
+    const templateType = templateTypeElement ? templateTypeElement.value : 'REMIND';
     const isMarketing = true; // 무조건 마케팅 동의자 전용
     
     const targetUserIds = Array.from(selectedTargetMap.keys());
@@ -1196,8 +1196,8 @@ async function sendAdminNotice() {
     if (targetNamesList.length > 5) targetNamesDisplay += ` 외 ${targetNamesList.length - 5}명`;
 
     try {
-        // 서버로 요청 전송
-        await apiFetch(NOTI_API_URL, { 
+        // 💡 [수정된 부분] API 통신 결과를 response 변수에 담습니다.
+        const response = await apiFetch(NOTI_API_URL, { 
             method: 'POST', 
             body: JSON.stringify({ 
                 type: 'admin_manual_notice', 
@@ -1208,14 +1208,19 @@ async function sendAdminNotice() {
                     targetNamesDisplay: targetNamesDisplay,
                     senderName: adminName,
                     useAlimtalk: useAlimtalk,
-                    templateType: templateType, // 💡 Lambda로 보내는 핵심 변수!
+                    templateType: templateType,
                     isMarketing: isMarketing
                 } 
             }) 
         }); 
         
+        // 💡 [수정된 부분] 서버가 보내준 응답을 json으로 풀어서 result 변수에 저장합니다!
+        const result = await response.json();
+
+        // 성공 알림 및 상세 리포팅 팝업 구성
         let alertMessage = "✅ 앱 내 공지 발송이 완료되었습니다.";
         
+        // 이제 result 변수가 정상적으로 정의되어 있으므로 에러가 나지 않습니다.
         if (useAlimtalk && result.solapiReport) {
             const report = result.solapiReport;
             alertMessage += `\n\n📱 카카오 알림톡/친구톡 발송 결과\n- 성공: ${report.successCount}건\n- 실패: ${report.failCount}건`;
