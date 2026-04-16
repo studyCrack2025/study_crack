@@ -442,35 +442,18 @@ window.sendNoticeToSelectedStudents = function() {
         return;
     }
 
-    // 1. 선택된 학생들을 새 공지 발송 타겟 배열(selectedTargetMap)에 안전하게 병합
-    let addedCount = 0;
-    checkedBoxes.forEach(cb => {
-        const userId = cb.value; // 이미 escapeHtml된 값
-        const userName = cb.getAttribute('data-name');
-        
-        if (!selectedTargetMap.has(userId)) {
-            // UI에 태그 달아줄 때 [개별추가] 대신 직관적인 문구 사용
-            selectedTargetMap.set(userId, { name: userName, tag: "선택명단" });
-            addedCount++;
-        }
-    });
+    // 1. 체크된 학생 데이터를 추출하여 '임시 바구니'에 저장해둡니다.
+    window.pendingNoticeTargets = Array.from(checkedBoxes).map(cb => ({
+        userId: cb.value,
+        userName: cb.getAttribute('data-name')
+    }));
 
-    // 2. 학생 관리 탭의 선택 모드 깔끔하게 닫기
+    // 2. 학생 관리 탭의 선택 모드를 깔끔하게 닫습니다.
     toggleStudentSelection();
 
-    // 3. 알림 관리 -> 새 공지 발송 탭으로 화면 전환
+    // 3. 새 공지 발송 화면으로 전환합니다. 
+    // (이 함수 내부에서 비동기로 loadTutorListForNotice 가 실행됩니다.)
     showNotiMenu('send');
-
-    // 4. 드롭다운 값을 '개별 학생 선택'으로 맞춰주고 명단 재렌더링
-    const groupSelect = document.getElementById('targetGroupSelect');
-    if (groupSelect) {
-        groupSelect.value = 'INDIVIDUAL';
-        updateTargetSubSelect();
-    }
-    renderTargetTags();
-
-    // 5. 관리자가 즉시 작성할 수 있도록 화면 최상단으로 이동
-    window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 // ============================================================
@@ -979,7 +962,6 @@ async function loadTutorListForNotice() {
         globalTutorsCache = tutorData.tutors || [];
         let students = Array.isArray(studentData) ? studentData : (studentData.students || studentData.Items || []);
         
-        // 유령 계정 및 튜터/관리자 필터링
         globalStudentsCache = students.filter(s => {
             if (s.role === 'admin' || s.role === 'tutor') return false;
             if ((s.userid.startsWith("TEMP") || s.userid.startsWith("VERIFIED")) && !s.createdAt) return false;
@@ -990,10 +972,22 @@ async function loadTutorListForNotice() {
             return { ...s, parsedTier: tier };
         });
 
-        // 초기화
         clearAllTargets();
-        document.getElementById('targetGroupSelect').value = '';
+        
+        if (window.pendingNoticeTargets && window.pendingNoticeTargets.length > 0) {
+            // 바구니에 데이터가 있으면 맵에 주입
+            window.pendingNoticeTargets.forEach(student => {
+                selectedTargetMap.set(student.userId, { name: student.userName, tag: "선택명단" });
+            });
+            window.pendingNoticeTargets = null; // 사용 후 바구니 비우기
+            document.getElementById('targetGroupSelect').value = 'INDIVIDUAL';
+        } else {
+            // 바구니가 비어있으면 일반적인 초기화 진행
+            document.getElementById('targetGroupSelect').value = '';
+        }
+        
         updateTargetSubSelect();
+        renderTargetTags(); // 최종 명단 다시 그리기
 
     } catch(e) { console.error("Notice User Load Error:", e); }
 }
