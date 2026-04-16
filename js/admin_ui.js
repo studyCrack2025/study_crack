@@ -387,7 +387,7 @@ function getTierBadgeHTML(studentItem) {
 let isSelectionMode = false;
 
 window.toggleStudentSelection = function() {
-    const table = document.querySelector('.student-table');
+    const table = document.querySelector('#section-students .student-table');
     const toggleBtn = document.getElementById('btnToggleSelection');
     const sendBtn = document.getElementById('btnSendNoticeToSelected');
     
