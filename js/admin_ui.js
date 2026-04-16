@@ -1214,7 +1214,19 @@ async function sendAdminNotice() {
             }) 
         }); 
         
-        alert("공지 발송이 완료되었습니다.");
+        let alertMessage = "✅ 앱 내 공지 발송이 완료되었습니다.";
+        
+        if (useAlimtalk && result.solapiReport) {
+            const report = result.solapiReport;
+            alertMessage += `\n\n📱 카카오 알림톡/친구톡 발송 결과\n- 성공: ${report.successCount}건\n- 실패: ${report.failCount}건`;
+            
+            if (report.failCount > 0 && report.errors && report.errors.length > 0) {
+                alertMessage += `\n\n🚨 주요 실패 사유:\n${report.errors.slice(0, 3).join('\n')}`;
+                if (report.errors.length > 3) alertMessage += `\n... 외 ${report.errors.length - 3}건`;
+            }
+        }
+        
+        alert(alertMessage);
         
         // 폼 초기화
         document.getElementById('noticeTitle').value = ''; 
