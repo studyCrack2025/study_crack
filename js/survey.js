@@ -403,14 +403,7 @@ async function fetchUserData(userId) {
 function fillQualitativeForm(qual) {
     if (!qual) return;
     
-    // 이전 영어 데이터를 한글로 매핑해주기 위한 호환성 딕셔너리
-    const LEGACY_MAP = {
-        'humanities': '인문사회', 'business': '상경계열', 'nature': '자연/공학', 'medical': '의치한약수', 'nursing': '간호', 'education': '사범/교대', 'art': '예체능', 'etc': '기타',
-        'yes': '예 (필수)', 'no': '아니오 (재수 가능)',
-        'univ': '대학 간판 중요', 'major': '학과 전공 중요', 'balance': '균형 있게 고려',
-        'low': '낮음', 'mid': '중간', 'high': '높음'
-    };
-
+    // 학년/상태 라디오 버튼 및 기타 입력창 처리
     if (qual.status) {
         const radio = document.querySelector(`input[name="studentStatus"][value="${qual.status}"]`);
         if (radio) radio.checked = true;
@@ -422,20 +415,12 @@ function fillQualitativeForm(qual) {
         }
     }
     
+    // 텍스트/셀렉트 데이터 매핑
     const ids = {
         'highSchool': qual.school, 
-        'targetStream': LEGACY_MAP[qual.stream] || qual.stream,
-        'careerPath': qual.career,
-        'mustGoCollege': LEGACY_MAP[qual.values?.mustGo] || qual.values?.mustGo,
-        'priorityType': LEGACY_MAP[qual.values?.priority] || qual.values?.priority,
-        'appStrategy': qual.values?.strategy, 'worstScenario': qual.values?.worst,
-        'regionRange': qual.values?.region, 'crossApply': qual.values?.cross,
-        'groupGa': qual.candidates?.ga, 'groupNa': qual.candidates?.na, 'groupDa': qual.candidates?.da,
-        'mostWanted': qual.candidates?.most, 'leastWanted': qual.candidates?.least,
-        'selfAssessment': qual.candidates?.self,
-        'parentOpinion': qual.parents?.opinion, 'parentInfluence': LEGACY_MAP[qual.parents?.influence] || qual.parents?.influence,
-        'transferPlan': qual.special?.transfer, 'teachingCert': qual.special?.teaching,
-        'etcConsultingInfo': qual.special?.etc
+        'targetStream': qual.stream,
+        'expectedBenefits': qual.benefits,
+        'consultingQuestions': qual.questions
     };
     
     for (const [id, val] of Object.entries(ids)) {
@@ -443,7 +428,7 @@ function fillQualitativeForm(qual) {
         if (el) el.value = val || '';
     }
     
-    // [추가] 불러온 학교 이름이 '검정고시'면 체크박스 ON
+    // 검정고시 체크박스 처리
     if (qual.school === '검정고시') {
         const gedCheck = document.getElementById('isGed');
         if(gedCheck) {
@@ -452,12 +437,6 @@ function fillQualitativeForm(qual) {
         }
     }
 
-    if (qual.targets) {
-        qual.targets.forEach((val, idx) => {
-            const input = document.getElementById(`target${idx+1}`);
-            if(input) input.value = val;
-        });
-    }
     checkQualitativeForm();
 }
 
@@ -499,30 +478,16 @@ async function saveQualitative() {
     let statusVal = document.querySelector('input[name="studentStatus"]:checked')?.value;
     if (statusVal === 'other') statusVal = document.getElementById('statusEtcInput').value;
 
+    // 대폭 다이어트된 데이터 페이로드
     const data = {
         status: statusVal,
         school: document.getElementById('highSchool').value,
         stream: document.getElementById('targetStream').value,
-        career: document.getElementById('careerPath').value,
-        values: {
-            mustGo: document.getElementById('mustGoCollege').value,
-            priority: document.getElementById('priorityType').value,
-            strategy: document.getElementById('appStrategy').value,
-            worst: document.getElementById('worstScenario').value,
-            region: document.getElementById('regionRange').value,
-            cross: document.getElementById('crossApply').value,
-        },
-        candidates: {
-            ga: document.getElementById('groupGa').value, na: document.getElementById('groupNa').value, da: document.getElementById('groupDa').value,
-            most: document.getElementById('mostWanted').value, least: document.getElementById('leastWanted').value, self: document.getElementById('selfAssessment').value
-        },
-        targets: [1,2,3,4,5].map(i => document.getElementById(`target${i}`)?.value || ''),
-        parents: { opinion: document.getElementById('parentOpinion').value, influence: document.getElementById('parentInfluence').value },
-        special: { transfer: document.getElementById('transferPlan').value, teaching: document.getElementById('teachingCert').value, etc: document.getElementById('etcConsultingInfo').value }
+        benefits: document.getElementById('expectedBenefits').value,
+        questions: document.getElementById('consultingQuestions').value
     };
 
     try {
-        // 💡 apiFetch 적용
         await apiFetch(USER_API_URL, {
             method: 'POST',
             body: JSON.stringify({ type: 'update_qual', data: data })

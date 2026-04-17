@@ -12,6 +12,8 @@ ul, ol { list-style: none; }
     color-scheme: light;
 }
 
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
 /* 공통 애니메이션 */
 .scroll-reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s ease-out; will-change: opacity, transform;}
 .scroll-reveal.visible { opacity: 1; transform: translateY(0); }

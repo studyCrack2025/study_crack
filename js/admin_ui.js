@@ -333,9 +333,14 @@ async function searchStudents() {
             let tutorNameDisplay = s.tutorName ? `<span class="tutor-tag">👨‍🏫 ${escapeHtml(s.tutorName)}</span>` : '<span style="color:#94a3b8; font-size:0.8rem;">미배정</span>';
             let lastActive = s.lastPayDate ? new Date(s.lastPayDate).toLocaleDateString() : '-';
             
+            const isChecked = (typeof persistedSelections !== 'undefined' && persistedSelections.has(s.userid)) ? 'checked' : '';
+            
             // XSS 방지를 위한 escapeHtml 철저히 적용
             const tr = document.createElement('tr');
             tr.innerHTML = `
+                <td class="selection-col" data-label="선택">
+                    <input type="checkbox" class="student-checkbox" value="${escapeHtml(s.userid)}" data-name="${escapeHtml(s.name)}" onchange="handleStudentCheck(this)" ${isChecked}>
+                </td>
                 <td data-label="학생 정보">
                     <div class="student-info-cell">
                         <span class="student-name-text">${escapeHtml(s.name) || '(이름없음)'}</span>
@@ -377,6 +382,104 @@ function getTierBadgeHTML(studentItem) {
     else if (tier.includes('STANDARD')) return '<span style="color:#334155; background:#e2e8f0; padding:4px 8px; border-radius:12px; font-size:0.8rem; font-weight:bold;">STANDARD</span>';
     else return '<span style="color:#1e40af; background:#dbeafe; padding:4px 8px; border-radius:12px; font-size:0.8rem; font-weight:bold;">BASIC</span>';
 }
+
+// ============================================================
+// [C-2] 학생 일괄 선택 및 공지 발송 연동 로직 (상태 유지 기능 포함)
+// ============================================================
+let isSelectionMode = false;
+let persistedSelections = new Map(); // 💡 상태 유지를 위한 보이지 않는 장바구니 { userId: userName }
+
+window.toggleStudentSelection = function() {
+    const table = document.querySelector('#section-students .student-table');
+    const toggleBtn = document.getElementById('btnToggleSelection');
+    const sendBtn = document.getElementById('btnSendNoticeToSelected');
+    
+    isSelectionMode = !isSelectionMode;
+    
+    if (isSelectionMode) {
+        // 선택 모드 ON
+        table.classList.add('selection-mode');
+        toggleBtn.style.backgroundColor = '#ef4444';
+        toggleBtn.innerHTML = '<i class="fas fa-times"></i> 선택 취소';
+        updateSelectionUI();
+    } else {
+        // 선택 모드 OFF
+        table.classList.remove('selection-mode');
+        toggleBtn.style.backgroundColor = '#64748b';
+        toggleBtn.innerHTML = '<i class="fas fa-check-square"></i> 학생 선택하기';
+        sendBtn.style.display = 'none';
+        
+        // 💡 선택 취소 시 장바구니와 화면의 체크박스 모두 비우기
+        persistedSelections.clear();
+        document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = false);
+        const checkAll = document.getElementById('checkAllStudents');
+        if (checkAll) checkAll.checked = false;
+    }
+};
+
+// 상단 전체 선택 체크박스 동작
+window.toggleAllStudents = function(source) {
+    const checkboxes = document.querySelectorAll('.student-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = source.checked;
+        // 💡 화면에 보이는 체크박스들을 전부 장바구니에 넣거나 빼기
+        if (cb.checked) {
+            persistedSelections.set(cb.value, cb.getAttribute('data-name'));
+        } else {
+            persistedSelections.delete(cb.value);
+        }
+    });
+    updateSelectionUI();
+};
+
+// 개별 체크박스 누를 때 동작 (매개변수 cb 추가)
+window.handleStudentCheck = function(cb) {
+    if (!isSelectionMode) return;
+    
+    // 💡 체크하면 장바구니에 담고, 해제하면 빼기
+    if (cb.checked) {
+        persistedSelections.set(cb.value, cb.getAttribute('data-name'));
+    } else {
+        persistedSelections.delete(cb.value);
+    }
+    
+    updateSelectionUI();
+};
+
+// 버튼 및 인원수 UI 업데이트 전용 함수
+window.updateSelectionUI = function() {
+    if (!isSelectionMode) return;
+    const sendBtn = document.getElementById('btnSendNoticeToSelected');
+    const countSpan = document.getElementById('selectedStudentCount');
+    
+    // 화면에 체크된 개수가 아닌, 장바구니에 담긴 총 개수를 표시
+    countSpan.innerText = persistedSelections.size;
+    
+    if (persistedSelections.size > 0) {
+        sendBtn.style.display = 'inline-block';
+    } else {
+        sendBtn.style.display = 'none';
+    }
+};
+
+window.sendNoticeToSelectedStudents = function() {
+    if (persistedSelections.size === 0) {
+        alert("선택된 학생이 없습니다.");
+        return;
+    }
+
+    // 💡 1. 화면의 체크박스가 아닌 '장바구니(persistedSelections)'에서 명단을 꺼냄
+    window.pendingNoticeTargets = Array.from(persistedSelections.entries()).map(([userId, userName]) => ({
+        userId: userId,
+        userName: userName
+    }));
+
+    // 2. 학생 관리 탭의 선택 모드 닫기
+    toggleStudentSelection();
+
+    // 3. 새 공지 발송 화면으로 전환 (내부적으로 초기화 후 임시 바구니 데이터 주입)
+    showNotiMenu('send');
+};
 
 // ============================================================
 // [D] 질의 관리(Q&A) 로직
@@ -884,7 +987,6 @@ async function loadTutorListForNotice() {
         globalTutorsCache = tutorData.tutors || [];
         let students = Array.isArray(studentData) ? studentData : (studentData.students || studentData.Items || []);
         
-        // 유령 계정 및 튜터/관리자 필터링
         globalStudentsCache = students.filter(s => {
             if (s.role === 'admin' || s.role === 'tutor') return false;
             if ((s.userid.startsWith("TEMP") || s.userid.startsWith("VERIFIED")) && !s.createdAt) return false;
@@ -895,10 +997,22 @@ async function loadTutorListForNotice() {
             return { ...s, parsedTier: tier };
         });
 
-        // 초기화
         clearAllTargets();
-        document.getElementById('targetGroupSelect').value = '';
+        
+        if (window.pendingNoticeTargets && window.pendingNoticeTargets.length > 0) {
+            // 바구니에 데이터가 있으면 맵에 주입
+            window.pendingNoticeTargets.forEach(student => {
+                selectedTargetMap.set(student.userId, { name: student.userName, tag: "선택명단" });
+            });
+            window.pendingNoticeTargets = null; // 사용 후 바구니 비우기
+            document.getElementById('targetGroupSelect').value = 'INDIVIDUAL';
+        } else {
+            // 바구니가 비어있으면 일반적인 초기화 진행
+            document.getElementById('targetGroupSelect').value = '';
+        }
+        
         updateTargetSubSelect();
+        renderTargetTags(); // 최종 명단 다시 그리기
 
     } catch(e) { console.error("Notice User Load Error:", e); }
 }
@@ -1060,10 +1174,10 @@ async function sendAdminNotice() {
     
     // 알림톡 관련 변수 추출 (ID 정확히 매칭)
     const useAlimtalkElement = document.getElementById('useAlimtalk');
-    const templateTypeElement = document.getElementById('alimtalkTemplateType'); // 💡 이 ID가 HTML과 일치해야 함!
+    const templateTypeElement = document.getElementById('alimtalkTemplateType');
 
     const useAlimtalk = useAlimtalkElement ? useAlimtalkElement.checked : false;
-    const templateType = templateTypeElement ? templateTypeElement.value : 'REMIND'; // 💡 선택 안 되면 기본값 REMIND
+    const templateType = templateTypeElement ? templateTypeElement.value : 'REMIND';
     const isMarketing = true; // 무조건 마케팅 동의자 전용
     
     const targetUserIds = Array.from(selectedTargetMap.keys());
@@ -1082,8 +1196,8 @@ async function sendAdminNotice() {
     if (targetNamesList.length > 5) targetNamesDisplay += ` 외 ${targetNamesList.length - 5}명`;
 
     try {
-        // 서버로 요청 전송
-        await apiFetch(NOTI_API_URL, { 
+        // 💡 [수정된 부분] API 통신 결과를 response 변수에 담습니다.
+        const response = await apiFetch(NOTI_API_URL, { 
             method: 'POST', 
             body: JSON.stringify({ 
                 type: 'admin_manual_notice', 
@@ -1094,13 +1208,30 @@ async function sendAdminNotice() {
                     targetNamesDisplay: targetNamesDisplay,
                     senderName: adminName,
                     useAlimtalk: useAlimtalk,
-                    templateType: templateType, // 💡 Lambda로 보내는 핵심 변수!
+                    templateType: templateType,
                     isMarketing: isMarketing
                 } 
             }) 
         }); 
         
-        alert("공지 발송이 완료되었습니다.");
+        // 💡 [수정된 부분] 서버가 보내준 응답을 json으로 풀어서 result 변수에 저장합니다!
+        const result = await response.json();
+
+        // 성공 알림 및 상세 리포팅 팝업 구성
+        let alertMessage = "✅ 앱 내 공지 발송이 완료되었습니다.";
+        
+        // 이제 result 변수가 정상적으로 정의되어 있으므로 에러가 나지 않습니다.
+        if (useAlimtalk && result.solapiReport) {
+            const report = result.solapiReport;
+            alertMessage += `\n\n📱 카카오 알림톡/친구톡 발송 결과\n- 성공: ${report.successCount}건\n- 실패: ${report.failCount}건`;
+            
+            if (report.failCount > 0 && report.errors && report.errors.length > 0) {
+                alertMessage += `\n\n🚨 주요 실패 사유:\n${report.errors.slice(0, 3).join('\n')}`;
+                if (report.errors.length > 3) alertMessage += `\n... 외 ${report.errors.length - 3}건`;
+            }
+        }
+        
+        alert(alertMessage);
         
         // 폼 초기화
         document.getElementById('noticeTitle').value = ''; 

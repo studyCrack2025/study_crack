@@ -1464,6 +1464,8 @@ async function updateAnalysisUI() {
         });
         const data = await res.json();
         
+        if (data.server_debug && data.server_debug.logs) console.log("🔥 [서버 환산 계산 로그]\n", data.server_debug.logs.join('\n'));
+        
         // 💡 [수정] 서버 데이터 배열 추출 로직 안정화
         const results = Array.isArray(data) ? data : (data.results || data.data || []);
         
