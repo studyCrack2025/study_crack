@@ -268,13 +268,14 @@
 .current-tier-badge {
     position: absolute;
     top: -8px;
-    right: 15px;
+    left: 50%;
     background: #334155;
     color: white;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: bold;
-    padding: 4px 10px;
+    padding: 4px 12px;
     border-radius: 20px;
+    z-index: 11;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
