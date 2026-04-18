@@ -22,8 +22,9 @@
         body { background-color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
         .welcome-card { background: white; padding: 50px 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); text-align: center; max-width: 420px; width: 90%; border: 1px solid #e2e8f0; }
         .logo { font-size: 1.5rem; font-weight: 900; color: #2563EB; letter-spacing: -0.5px; margin-bottom: 30px; display: inline-block; }
-        .success-icon { font-size: 5rem; color: #10b981; margin-bottom: 20px; animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .mascot-img { width: 140px; height: auto; margin-bottom: 20px; animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .success-icon { font-size: 5rem; color: #10b981; margin-bottom: 20px; animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; display: none; }
         .welcome-title { color: #1e293b; font-size: 1.6rem; font-weight: 800; margin-bottom: 15px; margin-top: 0; }
         .welcome-desc { color: #64748b; font-size: 1rem; line-height: 1.6; margin-bottom: 35px; word-break: keep-all; }
         .welcome-desc strong { color: #334155; }
@@ -39,7 +40,8 @@
     <div class="welcome-card">
         <div class="logo">StudyCrack</div>
         
-        <i class="fas fa-check-circle success-icon"></i>
+        <img src="/assets/images/mascots/crack_hi.png" alt="크랙이" class="mascot-img" id="mascot-img">
+        <i class="fas fa-check-circle success-icon" id="success-icon"></i>
         
         <h1 class="welcome-title">회원가입이<br>완료되었습니다!</h1>
         <p class="welcome-desc">
@@ -70,9 +72,12 @@
 
             // 튜터 가입 완료 시 화면 변경 로직
             if (role === 'tutor') {
-                const icon = document.querySelector('.success-icon');
-                icon.classList.remove('fa-check-circle', 'success-icon');
+                const mascot = document.getElementById('mascot-img');
+                const icon = document.getElementById('success-icon');
+                mascot.style.display = 'none';
+                icon.classList.remove('fa-check-circle');
                 icon.classList.add('fa-clock');
+                icon.style.display = 'block';
                 icon.style.color = '#3b82f6';
                 icon.style.fontSize = '5rem';
                 icon.style.marginBottom = '20px';
