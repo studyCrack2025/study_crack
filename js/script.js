@@ -422,25 +422,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 💡 튜토리얼 검증 후 강제 리다이렉트 (문지기 함수)
 async function checkTutorialStatus() {
-    // 1. 이미 튜토리얼 페이지에 있다면 무한루프 방지
     if (window.location.pathname.startsWith('/tutorial')) return;
-    
-    // 2. 이미 로컬스토리지에 완료 도장이 찍혀있으면 통과
     if (localStorage.getItem('tutorial_completed') === 'true') return;
 
-    // 💡 3. [추가됨] 진행 중인 흔적이 로컬에 남아있다면 서버 물어볼 것도 없이 바로 납치
     if (localStorage.getItem('tutorialStatus') !== null) {
         alert('진행 중인 튜토리얼이 있습니다. 전략 분석을 위해 먼저 완료해주세요!');
-        window.location.replace('/tutorial'); // replace로 히스토리에 안 남김
+        window.location.replace('/tutorial');
         return;
     }
 
     const idToken = localStorage.getItem('idToken'); 
     const userId = localStorage.getItem('userId');
     
-    if (!idToken || !userId) return;
+    // 💡 [수정 포인트] 정보가 없거나 꼬인 상태라도 침묵하지 않고 바로 보냅니다.
+    if (!idToken || !userId) {
+        window.location.replace('/tutorial');
+        return;
+    }
 
-    // 4. 로컬 데이터가 없으면 서버에 최종 확인
     try {
         const response = await fetch(CONFIG.api.user, {
             method: 'POST',
@@ -450,18 +449,21 @@ async function checkTutorialStatus() {
         
         if (response.ok) {
             const data = await response.json();
-            // 보상을 수령했거나 현재 유료/체험 티어라면 완료한 것으로 간주
             if (data && (data.tutorialRewardClaimed === true || data.computedTier === 'standard' || data.computedTier === 'pro' || data.computedTier === 'trial')) {
                 localStorage.setItem('tutorial_completed', 'true');
                 return; 
             } else {
-                // 아직 수령 안했다면 무조건 튜토리얼 룸으로 강제 이동
                 alert('스터디크랙 기능을 이용하려면 온보딩 튜토리얼을 완료해야 합니다!');
                 window.location.replace('/tutorial');
             }
+        } else {
+            // 💡 [수정 포인트] API 에러 응답 시에도 리다이렉트
+            window.location.replace('/tutorial');
         }
     } catch (e) {
         console.error("Tutorial sync error:", e);
+        // 💡 [수정 포인트] 네트워크 문제로 catch에 빠져도 리다이렉트
+        window.location.replace('/tutorial');
     }
 }
 
