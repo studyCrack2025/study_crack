@@ -20,6 +20,7 @@ let currentStepIdx = 0;
 let tutorialData = {
     qual: {}, quan: {}, mbti: null, selectedUniv: null
 };
+let isInterrupted = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 자동 재개 로직
@@ -42,15 +43,45 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('tutPrevBtn').addEventListener('click', prevStep);
     document.getElementById('tutNextBtn').addEventListener('click', nextStep);
+    
+    const logoLink = document.querySelector('.logo-link');
+    if (logoLink) {
+        logoLink.addEventListener('click', (e) => {
+            if (currentStepIdx < STEPS.length - 1 && !isInterrupted) {
+                e.preventDefault();
+                isInterrupted = true;
+                
+                // 크랙이 경고 멘트 및 모션 변경
+                updateMascot('앗! 아직 튜토리얼이 안 끝났어요!\n입시 전략을 위해 끝까지 마쳐주세요!', 'startle');
+                
+                // 콘텐츠 숨기고 복귀 버튼 하이라이트
+                document.getElementById('stepContent').style.display = 'none';
+                document.getElementById('tutPrevBtn').style.display = 'none';
+                
+                const nextBtn = document.getElementById('tutNextBtn');
+                nextBtn.style.display = 'block';
+                nextBtn.textContent = '튜토리얼 재개하기';
+                nextBtn.classList.add('btn-highlight-pulse');
+            } else if (isInterrupted) {
+                e.preventDefault(); // 이미 경고 상태면 계속 막음
+            }
+        });
+    }
 });
 
 function updateMascot(msg, mascotKey) {
-    document.getElementById('tutorialMsg').textContent = msg;
-    document.getElementById('mascotImg').src = MASCOTS[mascotKey];
+    const mascotImg = document.getElementById('mascotImg');
+    const newImg = mascotImg.cloneNode(true);
+    newImg.src = MASCOTS[mascotKey];
+    mascotImg.parentNode.replaceChild(newImg, mascotImg);
+
+    const bubble = document.getElementById('tutorialMsg');
+    const newBubble = bubble.cloneNode(true);
+    newBubble.textContent = msg;
+    bubble.parentNode.replaceChild(newBubble, bubble);
 }
 
 async function renderStep() {
-    // 로컬 저장 후 바로 DB로 쏴줍니다.
     localStorage.setItem('tutorialStatus', currentStepIdx);
     apiCall('update_tutorial_status', { step: currentStepIdx });
 
@@ -64,6 +95,9 @@ async function renderStep() {
         container.appendChild(template.content.cloneNode(true));
     }
 
+    // 초기화 보장
+    container.style.display = 'block';
+    
     const prevBtn = document.getElementById('tutPrevBtn');
     const nextBtn = document.getElementById('tutNextBtn');
     
@@ -71,10 +105,21 @@ async function renderStep() {
     
     if (step.id === 'univ-rec') initUnivSim();
     if (step.id === 'mbti' || step.id === 'subject-rec') nextBtn.style.display = 'none';
-    else nextBtn.style.display = 'block';
+    else {
+        nextBtn.style.display = 'block';
+        nextBtn.textContent = '다음';
+        nextBtn.classList.remove('btn-highlight-pulse');
+    }
 }
 
 async function nextStep() {
+    // 💡 [추가됨] 이탈 경고 상태에서 눌렀을 경우, 상태를 복구하고 리턴
+    if (isInterrupted) {
+        isInterrupted = false;
+        renderStep();
+        return;
+    }
+
     const step = STEPS[currentStepIdx];
 
     if (step.id === 'survey-qual') {
@@ -84,9 +129,8 @@ async function nextStep() {
         };
         await apiCall('update_qual', tutorialData.qual);
     } else if (step.id === 'survey-quan') {
-        // 💡 [수정됨] 탐구 과목 추가 및 Lambda 파싱 오류를 막기 위한 객체 래핑
         tutorialData.quan = {
-            "tutorial_exam": { // 임의의 가상 시험 식별자
+            "tutorial_exam": {
                 kor: { raw: document.getElementById('tutKor')?.value || 0 },
                 math: { raw: document.getElementById('tutMath')?.value || 0 },
                 inq1: { name: "튜토리얼용탐구1", raw: document.getElementById('tutInq1')?.value || 0 },
@@ -98,7 +142,7 @@ async function nextStep() {
 
     if (currentStepIdx < STEPS.length - 1) {
         currentStepIdx++;
-        renderStep(); // 여기서 자동으로 상태가 DB에 저장됩니다.
+        renderStep();
     }
 }
 
