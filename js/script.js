@@ -453,7 +453,7 @@ async function checkTutorialStatus() {
                 localStorage.setItem('tutorial_completed', 'true');
                 return; 
             } else {
-                alert('스터디크랙 기능을 이용하려면 온보딩 튜토리얼을 완료해야 합니다!');
+                alert('진행 중인 튜토리얼로 바로 넘어갑니다!');
                 window.location.replace('/tutorial');
             }
         } else {

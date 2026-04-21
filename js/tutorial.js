@@ -23,27 +23,59 @@ let tutorialData = {
 let isInterrupted = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // 자동 재개 로직
-    const savedStatus = localStorage.getItem('tutorialStatus');
-    if (savedStatus) {
-        currentStepIdx = parseInt(savedStatus, 10);
-        alert('이전 튜토리얼 진행 위치부터 계속합니다.');
-    }
-
-    // MBTI 복귀 로직 확인 (URL Query Param)
+    // 1. MBTI 검사 후 복귀한 경우 최우선 처리 (URL 파라미터 확인)
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('mbti_completed')) {
         tutorialData.mbti = urlParams.get('mbti_result') || 'INTJ';
         currentStepIdx = 4; // 대학 추천 단계로 강제 점프
+        localStorage.setItem('tutorialStatus', currentStepIdx); // DB 덮어쓰기 방지
         simulateMbtiAnalysis();
+        bindEvents(); 
         return;
     }
 
-    renderStep();
+    // 2. 서버(DB)에서 가장 최신 진행 상황을 가져옴 (Cross-device 동기화)
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+        try {
+            const response = await fetch(CONFIG.api.user, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ type: 'get_user' })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                // DB에 저장된 상태가 있다면 로컬에 덮어씌움
+                if (data && data.tutorialStatus !== undefined) {
+                    currentStepIdx = parseInt(data.tutorialStatus, 10);
+                    localStorage.setItem('tutorialStatus', currentStepIdx);
+                }
+            }
+        } catch (e) {
+            console.error("튜토리얼 상태 동기화 실패:", e);
+            // 통신 실패 시 로컬 스토리지에 남은 흔적으로 Fallback
+            const savedStatus = localStorage.getItem('tutorialStatus');
+            if (savedStatus) currentStepIdx = parseInt(savedStatus, 10);
+        }
+    }
 
+    // 3. 이어하기 알림 띄우기 (처음이 아니고 완료 직전도 아닐 때)
+    if (currentStepIdx > 0 && currentStepIdx < STEPS.length - 1) {
+        alert('이전 튜토리얼 진행 위치부터 계속합니다.');
+    }
+
+    // 4. 화면 렌더링 및 클릭 이벤트 부착
+    renderStep();
+    bindEvents();
+});
+
+// 💡 이벤트 리스너들을 한 곳에 모아주는 헬퍼 함수
+function bindEvents() {
     document.getElementById('tutPrevBtn').addEventListener('click', prevStep);
     document.getElementById('tutNextBtn').addEventListener('click', nextStep);
-    
+
+    // 로고 클릭 이탈 방지 로직
     const logoLink = document.querySelector('.logo-link');
     if (logoLink) {
         logoLink.addEventListener('click', (e) => {
@@ -51,10 +83,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 e.preventDefault();
                 isInterrupted = true;
                 
-                // 크랙이 경고 멘트 및 모션 변경
                 updateMascot('앗! 아직 튜토리얼이 안 끝났어요!\n입시 전략을 위해 끝까지 마쳐주세요!', 'startle');
                 
-                // 콘텐츠 숨기고 복귀 버튼 하이라이트
                 document.getElementById('stepContent').style.display = 'none';
                 document.getElementById('tutPrevBtn').style.display = 'none';
                 
@@ -63,11 +93,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 nextBtn.textContent = '튜토리얼 재개하기';
                 nextBtn.classList.add('btn-highlight-pulse');
             } else if (isInterrupted) {
-                e.preventDefault(); // 이미 경고 상태면 계속 막음
+                e.preventDefault(); 
             }
         });
     }
-});
+}
 
 function updateMascot(msg, mascotKey) {
     const mascotImg = document.getElementById('mascotImg');
