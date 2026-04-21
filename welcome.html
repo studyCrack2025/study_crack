@@ -38,7 +38,6 @@
 
     <div class="welcome-card">
         <div class="logo">StudyCrack</div>
-        
         <i class="fas fa-check-circle success-icon"></i>
         
         <h1 class="welcome-title">회원가입이<br>완료되었습니다!</h1>
@@ -48,7 +47,6 @@
         </p>
         
         <a href="/" class="btn-go-main">스터디크랙 이용하러 가기</a>
-        
     </div>
 
     <script>
@@ -67,9 +65,10 @@
             const urlParams = new URLSearchParams(window.location.search);
             const role = urlParams.get('role');
             let promo = urlParams.get('promo') || localStorage.getItem('signupPromo');
+            const mainBtn = document.querySelector('.btn-go-main');
 
-            // 튜터 가입 완료 시 화면 변경 로직
             if (role === 'tutor') {
+                // 튜터 대기화면
                 const icon = document.querySelector('.success-icon');
                 icon.classList.remove('fa-check-circle', 'success-icon');
                 icon.classList.add('fa-clock');
@@ -80,9 +79,14 @@
 
                 document.querySelector('.welcome-title').innerHTML = '파트너 지원이<br>완료되었습니다!';
                 document.querySelector('.welcome-desc').innerHTML = '스터디크랙 파트너로 지원해주셔서 감사합니다.<br>현재 <strong>관리자 승인 대기 중</strong>이며,<br>가입 심사 및 승인 완료 후 즉시 안내해 드리겠습니다.';
-            } 
-            // 기존 학생 프로모션 코드(MBTI) 처리 로직
-            else if (promo && promo.includes("-STC")) {
+            } else {
+                // 학생은 튜토리얼로 강제 배차
+                mainBtn.href = '/tutorial';
+                mainBtn.innerText = '튜토리얼 시작하기';
+            }
+            
+            // 학생 프로모션 코드 처리
+            if (promo && promo.includes("-STC")) {
                 let hex = promo.replace("-STC", "").replace("-", "");
                 let mbti = '';
                 for (let i = 0; i < hex.length; i += 2) {
@@ -96,7 +100,6 @@
                         <i class="fas fa-file-pdf"></i> [${safeMbti}] 보고서 받으러 가기
                     </a>
                 `;
-                const mainBtn = document.querySelector('.btn-go-main');
                 if(mainBtn) mainBtn.insertAdjacentHTML('afterend', btnHtml);
             }
         });

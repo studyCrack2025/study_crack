@@ -1,0 +1,47 @@
+/* 공통 구조 */
+body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; margin: 0; padding: 0; }
+header { background: #fff; padding: 15px 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+.logo-container { display: flex; align-items: center; }
+.logo-link { text-decoration: none; color: #1e293b; display: flex; align-items: center; font-weight: 900; font-size: 1.2rem; }
+
+/* 튜토리얼 레이아웃 */
+.tutorial-wrapper { max-width: 600px; margin: 40px auto; padding: 0 20px; }
+.mascot-section { display: flex; flex-direction: column; align-items: center; margin-bottom: 30px; animation: fadeIn 0.5s ease; }
+.mascot-img { width: 120px; height: auto; margin-top: 15px; transition: all 0.3s ease; }
+.dialogue-bubble { background: #eff6ff; border: 2px solid #bfdbfe; border-radius: 15px; padding: 15px 20px; font-weight: 500; color: #1e293b; position: relative; max-width: 80%; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+.dialogue-bubble::after { content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); border-width: 10px 10px 0; border-style: solid; border-color: #bfdbfe transparent transparent transparent; }
+
+/* 스텝 콘텐츠 */
+.step-container { background: #fff; border-radius: 20px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); min-height: 250px; margin-bottom: 20px; }
+.step-card h2, .step-card h3 { color: #0f172a; margin-top: 0; margin-bottom: 15px; }
+.step-card p { color: #475569; line-height: 1.6; margin-bottom: 15px; }
+
+/* 입력 폼 */
+.input-label { display: block; font-weight: 700; color: #334155; margin-bottom: 8px; margin-top: 15px; }
+.tut-input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-family: inherit; }
+
+/* 버튼 및 네비게이션 */
+.tutorial-nav { display: flex; justify-content: space-between; align-items: center; }
+.tut-btn { padding: 12px 24px; border-radius: 10px; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; }
+.btn-gray { background: #f1f5f9; color: #64748b; }
+.btn-gray:hover { background: #e2e8f0; }
+.btn-blue { background: #2563eb; color: #fff; margin-left: auto; }
+.btn-blue:hover { background: #1d4ed8; }
+.tut-action-btn { display: block; width: 100%; padding: 15px; background: #2563eb; color: white; text-align: center; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 20px; transition: 0.2s; }
+.tut-action-btn:hover { background: #1d4ed8; }
+
+/* 시뮬레이션 카드 */
+.univ-card-list { display: flex; flex-direction: column; gap: 15px; }
+.univ-card { border: 2px solid #e2e8f0; border-radius: 12px; padding: 15px; cursor: pointer; transition: all 0.2s; background: #fff; }
+.univ-card:hover, .univ-card.selected { border-color: #3b82f6; background: #eff6ff; }
+.univ-card-title { font-weight: 700; color: #1e293b; font-size: 1.1rem; margin-bottom: 5px; }
+.univ-score { color: #64748b; font-size: 0.9rem; }
+.univ-sim-result { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #cbd5e1; display: none; color: #b91c1c; font-weight: bold; font-size: 0.9rem; }
+
+/* 블러 처리 (Upsell) */
+.subject-card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px; margin-bottom: 15px; background: #f8fafc; }
+.subject-card h4 { margin: 0 0 10px 0; color: #0f172a; }
+.blurred { filter: blur(5px); user-select: none; pointer-events: none; opacity: 0.7; }
+
+/* 애니메이션 */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
