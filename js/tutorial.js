@@ -49,8 +49,11 @@ function updateMascot(msg, mascotKey) {
     document.getElementById('mascotImg').src = MASCOTS[mascotKey];
 }
 
-function renderStep() {
+async function renderStep() {
+    // 로컬 저장 후 바로 DB로 쏴줍니다.
     localStorage.setItem('tutorialStatus', currentStepIdx);
+    apiCall('update_tutorial_status', { step: currentStepIdx });
+
     const step = STEPS[currentStepIdx];
     updateMascot(step.msg, step.mascot);
 
@@ -61,13 +64,11 @@ function renderStep() {
         container.appendChild(template.content.cloneNode(true));
     }
 
-    // 버튼 컨트롤
     const prevBtn = document.getElementById('tutPrevBtn');
     const nextBtn = document.getElementById('tutNextBtn');
     
     prevBtn.style.display = (currentStepIdx === 0 || currentStepIdx >= 4) ? 'none' : 'block';
     
-    // 대학 추천 단계 이후 커스텀 로직
     if (step.id === 'univ-rec') initUnivSim();
     if (step.id === 'mbti' || step.id === 'subject-rec') nextBtn.style.display = 'none';
     else nextBtn.style.display = 'block';
@@ -76,24 +77,28 @@ function renderStep() {
 async function nextStep() {
     const step = STEPS[currentStepIdx];
 
-    // 데이터 저장 로직 (실제로는 CONFIG.api 통신)
     if (step.id === 'survey-qual') {
         tutorialData.qual = {
-            status: document.getElementById('tutStatus').value,
-            stream: document.getElementById('tutStream').value
+            status: document.getElementById('tutStatus')?.value || '',
+            stream: document.getElementById('tutStream')?.value || ''
         };
-        await mockApiCall('update_qual', tutorialData.qual);
+        await apiCall('update_qual', tutorialData.qual);
     } else if (step.id === 'survey-quan') {
+        // 💡 [수정됨] 탐구 과목 추가 및 Lambda 파싱 오류를 막기 위한 객체 래핑
         tutorialData.quan = {
-            kor: document.getElementById('tutKor').value,
-            math: document.getElementById('tutMath').value
+            "tutorial_exam": { // 임의의 가상 시험 식별자
+                kor: { raw: document.getElementById('tutKor')?.value || 0 },
+                math: { raw: document.getElementById('tutMath')?.value || 0 },
+                inq1: { name: "튜토리얼용탐구1", raw: document.getElementById('tutInq1')?.value || 0 },
+                inq2: { name: "튜토리얼용탐구2", raw: document.getElementById('tutInq2')?.value || 0 }
+            }
         };
-        await mockApiCall('update_quan', tutorialData.quan);
+        await apiCall('update_quan', tutorialData.quan);
     }
 
     if (currentStepIdx < STEPS.length - 1) {
         currentStepIdx++;
-        renderStep();
+        renderStep(); // 여기서 자동으로 상태가 DB에 저장됩니다.
     }
 }
 
@@ -130,12 +135,13 @@ function simulateMbtiAnalysis() {
     }, 2500);
 }
 
-// --- PDF 다운로드 (Lambda update_mbti_promo 연동 모의) ---
+// --- PDF 다운로드 (Lambda 연동) ---
 async function downloadMBTIReport(mbtiResult) {
     try {
-        const response = await fetch('https://api.studycrack.co.kr/user', {
+        // 💡 [수정됨] 토큰 키를 'accessToken'으로 변경 & 하드코딩 URL 제거
+        const response = await fetch(CONFIG.api.user, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` },
             body: JSON.stringify({ type: 'update_mbti_promo', data: { targetUserId: 'me', promoCode: 'TUTORIAL', mbtiResult: mbtiResult } })
         });
         const result = await response.json();
@@ -182,23 +188,57 @@ function selectUniv(element, data) {
 
 // --- 결제 및 완료 로직 ---
 async function upsellPayment() {
-    // 1. 선택 대학 디비 저장 (Lambda: update_target_univs)
-    if (tutorialData.selectedUniv) {
-        const payload = [ { univ: tutorialData.selectedUniv.school, major: tutorialData.selectedUniv.major } ];
-        await mockApiCall('update_target_univs', payload);
+    // 버튼 연타 방지
+    const actionBtn = document.querySelector('.tut-action-btn');
+    if (actionBtn) actionBtn.disabled = true;
+
+    try {
+        // 1. 선택 대학 디비 저장 (Lambda: update_target_univs)
+        if (tutorialData.selectedUniv) {
+            const payload = [ { univ: tutorialData.selectedUniv.school, major: tutorialData.selectedUniv.major } ];
+            await apiCall('update_target_univs', payload);
+        }
+        
+        // 2. 보상 지급 (Lambda: grant_tutorial_trial)
+        const trialResult = await apiCall('grant_tutorial_trial', {});
+        
+        // 성공했거나 이미 유료 멤버십이라서 바로 넘어간 경우
+        if (trialResult.success || trialResult.message) {
+            // 3. 상태 정리 및 이동
+            localStorage.removeItem('tutorialStatus');
+            localStorage.setItem('tutorial_completed', 'true'); // 문지기 프리패스 도장 발급!
+            
+            alert('튜토리얼을 모두 완료하셨습니다! Trial 등급이 부여되었으며, 추가 목표대학 설정 기회가 제공됩니다.\n결제 페이지로 이동하여 다른 추천대학과 1순위 과목을 확인하세요!');
+            window.location.href = '/payment';
+        } else {
+            alert(trialResult.error || '튜토리얼 완료 처리 중 문제가 발생했습니다.');
+            if (actionBtn) actionBtn.disabled = false;
+        }
+    } catch (e) {
+        console.error("튜토리얼 완료 처리 에러:", e);
+        alert('통신 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        if (actionBtn) actionBtn.disabled = false;
     }
-    
-    // 2. 보상 지급 (Lambda: grant_tutorial_trial)
-    await mockApiCall('grant_tutorial_trial', {});
-    
-    // 3. 상태 정리 및 이동
-    localStorage.removeItem('tutorialStatus');
-    alert('튜토리얼을 모두 완료하셨습니다! Trial 등급이 부여되었으며, 추가 목표대학 설정 기회가 제공됩니다. 결제 페이지로 이동하여 다른 추천대학과 1순위 과목을 확인하세요!');
-    window.location.href = '/payment';
 }
 
-// API 호출 모의 함수 (실제 연동 시 fetch 사용)
-async function mockApiCall(type, data) {
-    console.log(`[API Mock] ${type} 호출 완료`, data);
-    return new Promise(resolve => setTimeout(() => resolve({ success: true }), 500));
+async function apiCall(type, data) {
+    const token = localStorage.getItem('accessToken'); // 로그인 시 저장된 토큰 사용
+    if (!token) return { success: false, error: 'Unauthorized' };
+
+    try {
+        const response = await fetch(CONFIG.api.user, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ type: type, data: data })
+        });
+        
+        if (!response.ok) throw new Error('API 통신 에러');
+        return await response.json();
+    } catch (e) {
+        console.error(`[API Error] ${type}:`, e);
+        return { success: false };
+    }
 }
