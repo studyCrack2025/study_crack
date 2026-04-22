@@ -17,3 +17,6 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# 6. claude reference 관련 추가 데이터 및 마크다운용 폴더
+ref_for_claude/
