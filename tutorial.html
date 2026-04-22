@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>스터디크랙 튜토리얼</title>
+    <title>스터디크랙 - 나만의 입시 전략 설정</title>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/tutorial.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
@@ -20,12 +20,11 @@
 
     <div class="tutorial-wrapper">
         <div class="mascot-section">
-            <div class="dialogue-bubble" id="tutorialMsg">환영합니다! 스터디크랙의 튜토리얼을 시작할게요.</div>
+            <div class="dialogue-bubble" id="tutorialMsg">지금 바로 나만의 합격 전략을 확인해보세요.</div>
             <img id="mascotImg" src="/assets/images/mascots/crack_hi.png" alt="크랙이" class="mascot-img">
         </div>
 
-        <div class="step-container" id="stepContent">
-            </div>
+        <div class="step-container" id="stepContent"></div>
 
         <div class="tutorial-nav">
             <button id="tutPrevBtn" class="tut-btn btn-gray">이전</button>
@@ -33,81 +32,143 @@
         </div>
     </div>
 
+    <!-- Step 1: 인트로 -->
     <template id="tpl-intro">
         <div class="step-card">
-            <h2>🎉 스터디크랙에 오신 것을 환영해요!</h2>
-            <p>나만의 맞춤형 입시 전략과 학습 코디를 받아볼 준비가 되셨나요?</p>
-            <p>정확한 분석을 위해 몇 가지 기초 조사를 진행할게요.</p>
+            <div class="intro-badge">⚡ 무료 맞춤 입시 분석</div>
+            <h2>3분이면 나만의 합격 전략이 완성돼요</h2>
+            <p>성적과 학습 유형을 입력하면, 합격 가능 대학과 최우선 공부 과목을 바로 알려드릴게요.</p>
+            <ul class="intro-checklist">
+                <li><span class="check-icon">✓</span> 수능 환산 점수 자동 계산</li>
+                <li><span class="check-icon">✓</span> 맞춤형 추천 대학 / 학과 시뮬레이션</li>
+                <li><span class="check-icon">✓</span> 합격까지 과목별 공부시간 배분 전략</li>
+            </ul>
         </div>
     </template>
 
+    <!-- Step 2: 학년/계열 -->
     <template id="tpl-survey-qual">
         <div class="step-card">
-            <h3>1. 진로/희망 조사 (정성)</h3>
+            <h3>기본 정보 입력</h3>
+            <p class="step-desc">정확한 분석을 위해 현재 상황을 알려주세요.</p>
             <label class="input-label">현재 학년</label>
             <select id="tutStatus" class="tut-input">
-                <option value="고1-2">고1/2 재학</option>
+                <option value="고1-2">고1 / 고2 재학</option>
                 <option value="고3">고3 재학</option>
                 <option value="n수">N수생</option>
             </select>
             <label class="input-label">희망 계열</label>
             <select id="tutStream" class="tut-input">
                 <option value="인문사회">인문사회</option>
-                <option value="자연/공학">자연/공학</option>
+                <option value="자연/공학">자연 / 공학</option>
                 <option value="의치한약수">의치한약수</option>
             </select>
         </div>
     </template>
 
+    <!-- Step 3: 성적 입력 -->
     <template id="tpl-survey-quan">
         <div class="step-card">
-            <h3>2. 성적 입력 (정량 - 데모용)</h3>
-            <p>표준점수와 백분위를 바탕으로 분석합니다.</p>
-            <div class="score-inputs">
-                <label>국어 (원점수): <input type="number" id="tutKor" class="tut-input"></label>
-                <label>수학 (원점수): <input type="number" id="tutMath" class="tut-input"></label>
-                <label>탐구1 (원점수): <input type="number" id="tutInq1" class="tut-input"></label>
-                <label>탐구2 (원점수): <input type="number" id="tutInq2" class="tut-input"></label>
+            <h3>성적 입력</h3>
+            <p class="step-desc">가장 최근 시험의 원점수를 입력해주세요. 수능 환산 점수로 자동 보정됩니다.</p>
+            <div class="score-grid">
+                <div class="score-input-card" onclick="this.querySelector('input').focus()">
+                    <div class="score-subject-label">국어</div>
+                    <div class="score-big-input-wrap">
+                        <input type="number" id="tutKor" class="score-big-input" min="0" max="150" placeholder="—" oninput="updateScoreBar(this, 150, 'barKor')">
+                        <span class="score-max">/ 150점</span>
+                    </div>
+                    <div class="score-bar-bg"><div class="score-bar-fill" id="barKor"></div></div>
+                </div>
+                <div class="score-input-card" onclick="this.querySelector('input').focus()">
+                    <div class="score-subject-label">수학</div>
+                    <div class="score-big-input-wrap">
+                        <input type="number" id="tutMath" class="score-big-input" min="0" max="150" placeholder="—" oninput="updateScoreBar(this, 150, 'barMath')">
+                        <span class="score-max">/ 150점</span>
+                    </div>
+                    <div class="score-bar-bg"><div class="score-bar-fill" id="barMath"></div></div>
+                </div>
+                <div class="score-input-card" onclick="this.querySelector('input').focus()">
+                    <div class="score-subject-label">탐구 1과목</div>
+                    <div class="score-big-input-wrap">
+                        <input type="number" id="tutInq1" class="score-big-input" min="0" max="50" placeholder="—" oninput="updateScoreBar(this, 50, 'barInq1')">
+                        <span class="score-max">/ 50점</span>
+                    </div>
+                    <div class="score-bar-bg"><div class="score-bar-fill" id="barInq1"></div></div>
+                </div>
+                <div class="score-input-card" onclick="this.querySelector('input').focus()">
+                    <div class="score-subject-label">탐구 2과목</div>
+                    <div class="score-big-input-wrap">
+                        <input type="number" id="tutInq2" class="score-big-input" min="0" max="50" placeholder="—" oninput="updateScoreBar(this, 50, 'barInq2')">
+                        <span class="score-max">/ 50점</span>
+                    </div>
+                    <div class="score-bar-bg"><div class="score-bar-fill" id="barInq2"></div></div>
+                </div>
             </div>
         </div>
     </template>
 
+    <!-- Step 4: MBTI -->
     <template id="tpl-mbti">
         <div class="step-card">
-            <h3>🧠 나의 학습 유형(MBTI) 알아보기</h3>
-            <p>학습 성향을 분석하여 최적의 공부법을 추천해 드려요.</p>
-            <button class="tut-action-btn" onclick="goToMBTI()">MBTI 검사하러 가기</button>
-            <div style="margin-top:20px;">
-                <p>이미 결과를 알고 있나요?</p>
-                <input type="text" id="mbtiDirectInput" placeholder="예: INTP" class="tut-input" style="width: 150px; display:inline-block;">
-                <button class="tut-btn btn-gray" onclick="skipMBTI()">결과 직접 입력</button>
+            <h3>학습 유형 파악</h3>
+            <p class="step-desc">학습 성향을 분석하면 과목별 최적 공부법과 시간 배분을 추천해드려요.</p>
+            <button class="tut-action-btn" onclick="goToMBTI()">📋 학습 유형 검사 시작하기 (3분)</button>
+            <div class="mbti-divider"><span>또는 이미 결과를 알고 있다면</span></div>
+            <p class="mbti-manual-title">유형 직접 선택</p>
+            <div class="mbti-dim-list" id="mbtiDimList">
+                <div class="mbti-dim-row">
+                    <span class="mbti-dim-name">학습 접근법</span>
+                    <div class="mbti-dim-btns">
+                        <button class="mbti-dim-btn" onclick="selectMBTIDim(0,'C',this)"><span class="dim-letter">C</span><span class="dim-sub">개념 중심</span></button>
+                        <button class="mbti-dim-btn" onclick="selectMBTIDim(0,'I',this)"><span class="dim-letter">I</span><span class="dim-sub">문제 중심</span></button>
+                    </div>
+                </div>
+                <div class="mbti-dim-row">
+                    <span class="mbti-dim-name">변화 적응력</span>
+                    <div class="mbti-dim-btns">
+                        <button class="mbti-dim-btn" onclick="selectMBTIDim(1,'S',this)"><span class="dim-letter">S</span><span class="dim-sub">루틴 선호</span></button>
+                        <button class="mbti-dim-btn" onclick="selectMBTIDim(1,'M',this)"><span class="dim-letter">M</span><span class="dim-sub">변화 선호</span></button>
+                    </div>
+                </div>
+                <div class="mbti-dim-row">
+                    <span class="mbti-dim-name">사고 방식</span>
+                    <div class="mbti-dim-btns">
+                        <button class="mbti-dim-btn" onclick="selectMBTIDim(2,'D',this)"><span class="dim-letter">D</span><span class="dim-sub">근거 중심</span></button>
+                        <button class="mbti-dim-btn" onclick="selectMBTIDim(2,'E',this)"><span class="dim-letter">E</span><span class="dim-sub">흐름 중심</span></button>
+                    </div>
+                </div>
+                <div class="mbti-dim-row">
+                    <span class="mbti-dim-name">계획 스타일</span>
+                    <div class="mbti-dim-btns">
+                        <button class="mbti-dim-btn" onclick="selectMBTIDim(3,'R',this)"><span class="dim-letter">R</span><span class="dim-sub">계획 고수</span></button>
+                        <button class="mbti-dim-btn" onclick="selectMBTIDim(3,'F',this)"><span class="dim-letter">F</span><span class="dim-sub">유연 조정</span></button>
+                    </div>
+                </div>
+            </div>
+            <div class="mbti-code-preview" id="mbtiCodePreview">
+                <span class="mbti-preview-code" id="mbtiPreviewCode">?&nbsp;?&nbsp;?&nbsp;?</span>
+                <button class="mbti-confirm-btn" id="mbtiConfirmBtn" onclick="confirmMBTIDims()" disabled>이 유형으로 분석 시작</button>
             </div>
         </div>
     </template>
 
+    <!-- Step 5: 대학 시뮬레이션 -->
     <template id="tpl-univ-rec">
         <div class="step-card">
-            <h3>🎯 추천 대학/학과 시뮬레이션</h3>
-            <p>원점수 1점 상승 시 가장 효율이 좋은 학과들입니다. (클릭 시 시뮬레이션 전개)</p>
-            <div class="univ-card-list" id="univCardList">
-                </div>
+            <h3>추천 대학 시뮬레이션</h3>
+            <p class="step-desc">취약 과목 1점 상승 시 가장 큰 효과를 볼 수 있는 대학이에요. 목표 대학을 선택하면 상세 분석을 확인할 수 있어요.</p>
+            <div class="univ-card-list" id="univCardList"></div>
         </div>
     </template>
 
+    <!-- Step 6: 과목/학습시간 추천 -->
     <template id="tpl-subject-rec">
         <div class="step-card">
-            <h3>📚 맞춤형 과목/학습시간 추천</h3>
-            <p>선택하신 학과와 MBTI에 맞춘 공부시간 배분입니다.</p>
-            <div class="subject-card">
-                <h4>효율 2순위 과목: <span id="sub2Name">수학</span></h4>
-                <p>추천 투자 시간: <strong>전체 공부의 25%</strong></p>
-                <p>120점 도달 필요 점수: +8점</p>
-            </div>
-            <div class="subject-card blurred" id="sub1Card">
-                <h4>효율 1순위 과목: ?????</h4>
-                <p>추천 투자 시간: 비밀</p>
-            </div>
-            <button class="tut-action-btn" onclick="upsellPayment()">최대효율과목 추천받고 플랜 시작하기</button>
+            <h3>합격을 위한 과목별 집중 전략</h3>
+            <p class="step-desc">선택한 대학의 합격선까지, 가장 효율적인 공부시간 배분입니다.</p>
+            <div id="subjectRecContent"></div>
+            <button class="tut-action-btn" onclick="upsellPayment()">🔓 1순위 핵심 과목 전략 확인하고 플랜 시작하기</button>
         </div>
     </template>
 

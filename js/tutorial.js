@@ -8,33 +8,69 @@ const MASCOTS = {
 };
 
 const STEPS = [
-    { id: 'intro', msg: '환영합니다! 스터디크랙 온보딩 튜토리얼을 시작할게요.', mascot: 'hi' },
-    { id: 'survey-qual', msg: '먼저 학생의 진로와 희망 계열을 알려주세요.', mascot: 'thumbsup' },
-    { id: 'survey-quan', msg: '다음은 모의고사 원점수를 입력해주세요. 정확한 분석을 위해 쓰입니다.', mascot: 'analysis' },
-    { id: 'mbti', msg: '이제 학습 성향을 파악할 차례예요. MBTI 검사를 진행할까요?', mascot: 'hi' },
-    { id: 'univ-rec', msg: '입력하신 데이터를 기반으로 추천 학과를 분석했습니다!', mascot: 'showresult' },
-    { id: 'subject-rec', msg: '선택하신 학과 합격을 위한 과목별 공부 시간 배분 솔루션입니다.', mascot: 'showresult' }
+    { id: 'intro',       msg: '지금 바로 나만의 합격 전략을 확인해보세요.',                        mascot: 'hi' },
+    { id: 'survey-qual', msg: '먼저 현재 학년과 희망 계열을 알려주세요.',                          mascot: 'thumbsup' },
+    { id: 'survey-quan', msg: '모의고사 원점수를 입력해주세요. 수능 예측 점수로 자동 보정돼요.',    mascot: 'analysis' },
+    { id: 'mbti',        msg: '학습 성향을 파악할게요. 검사를 시작하거나 직접 선택해주세요.',       mascot: 'hi' },
+    { id: 'univ-rec',    msg: '성적을 분석했어요! 목표 대학을 선택하면 상세 시뮬레이션을 볼 수 있어요.', mascot: 'showresult' },
+    { id: 'subject-rec', msg: '선택한 대학 합격선까지, 가장 효율적인 과목 전략을 알려드릴게요.',   mascot: 'showresult' }
+];
+
+const DEMO_UNIVS = [
+    {
+        school: '연세대학교', major: '컴퓨터과학과',
+        currentScore: 121, passCut: 130, top70Cut: 115, maxScore: 150,
+        simScore: 124, gain: 3,
+        subjectAlloc: [
+            { label: '수학', pct: 40, color: '#3b82f6' },
+            { label: '국어', pct: 30, color: '#8b5cf6' },
+            { label: '탐구', pct: 20, color: '#10b981' },
+            { label: '기타', pct: 10, color: '#f59e0b' }
+        ],
+        top2Subject: '국어', top2Pct: 30, top2NeedPts: 8
+    },
+    {
+        school: '고려대학교', major: '데이터과학과',
+        currentScore: 105, passCut: 118, top70Cut: 98, maxScore: 150,
+        simScore: 108, gain: 3,
+        subjectAlloc: [
+            { label: '수학', pct: 38, color: '#3b82f6' },
+            { label: '탐구', pct: 28, color: '#10b981' },
+            { label: '국어', pct: 24, color: '#8b5cf6' },
+            { label: '기타', pct: 10, color: '#f59e0b' }
+        ],
+        top2Subject: '탐구', top2Pct: 28, top2NeedPts: 5
+    },
+    {
+        school: '성균관대학교', major: '소프트웨어학과',
+        currentScore: 108, passCut: 115, top70Cut: 100, maxScore: 150,
+        simScore: 111, gain: 3,
+        subjectAlloc: [
+            { label: '수학', pct: 38, color: '#3b82f6' },
+            { label: '국어', pct: 27, color: '#8b5cf6' },
+            { label: '탐구', pct: 23, color: '#10b981' },
+            { label: '기타', pct: 12, color: '#f59e0b' }
+        ],
+        top2Subject: '국어', top2Pct: 27, top2NeedPts: 6
+    }
 ];
 
 let currentStepIdx = 0;
-let tutorialData = {
-    qual: {}, quan: {}, mbti: null, selectedUniv: null
-};
+let tutorialData = { qual: {}, quan: {}, mbti: null, selectedUniv: null };
 let isInterrupted = false;
+let mbtiDimSelections = [null, null, null, null];
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. MBTI 검사 후 복귀한 경우 최우선 처리 (URL 파라미터 확인)
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('mbti_completed')) {
-        tutorialData.mbti = urlParams.get('mbti_result') || 'INTJ';
-        currentStepIdx = 4; // 대학 추천 단계로 강제 점프
-        localStorage.setItem('tutorialStatus', currentStepIdx); // DB 덮어쓰기 방지
+        tutorialData.mbti = urlParams.get('mbti_result') || 'CSDR';
+        currentStepIdx = 4;
+        localStorage.setItem('tutorialStatus', currentStepIdx);
         simulateMbtiAnalysis();
-        bindEvents(); 
+        bindEvents();
         return;
     }
 
-    // 2. 서버(DB)에서 가장 최신 진행 상황을 가져옴 (Cross-device 동기화)
     const token = localStorage.getItem('accessToken');
     if (token) {
         try {
@@ -43,57 +79,46 @@ document.addEventListener('DOMContentLoaded', async () => {
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ type: 'get_user' })
             });
-            
             if (response.ok) {
                 const data = await response.json();
-                // DB에 저장된 상태가 있다면 로컬에 덮어씌움
                 if (data && data.tutorialStatus !== undefined) {
                     currentStepIdx = parseInt(data.tutorialStatus, 10);
                     localStorage.setItem('tutorialStatus', currentStepIdx);
                 }
             }
         } catch (e) {
-            console.error("튜토리얼 상태 동기화 실패:", e);
-            // 통신 실패 시 로컬 스토리지에 남은 흔적으로 Fallback
             const savedStatus = localStorage.getItem('tutorialStatus');
             if (savedStatus) currentStepIdx = parseInt(savedStatus, 10);
         }
     }
 
-    // 3. 이어하기 알림 띄우기 (처음이 아니고 완료 직전도 아닐 때)
     if (currentStepIdx > 0 && currentStepIdx < STEPS.length - 1) {
-        alert('이전 튜토리얼 진행 위치부터 계속합니다.');
+        alert('이전 진행 위치부터 이어서 시작합니다.');
     }
 
-    // 4. 화면 렌더링 및 클릭 이벤트 부착
     renderStep();
     bindEvents();
 });
 
-// 💡 이벤트 리스너들을 한 곳에 모아주는 헬퍼 함수
 function bindEvents() {
     document.getElementById('tutPrevBtn').addEventListener('click', prevStep);
     document.getElementById('tutNextBtn').addEventListener('click', nextStep);
 
-    // 로고 클릭 이탈 방지 로직
     const logoLink = document.querySelector('.logo-link');
     if (logoLink) {
         logoLink.addEventListener('click', (e) => {
             if (currentStepIdx < STEPS.length - 1 && !isInterrupted) {
                 e.preventDefault();
                 isInterrupted = true;
-                
-                updateMascot('앗! 아직 튜토리얼이 안 끝났어요!\n입시 전략을 위해 끝까지 마쳐주세요!', 'startle');
-                
+                updateMascot('앗! 아직 입시 전략 설정이 완료되지 않았어요!\n끝까지 마치면 추천 대학과 공부 전략을 확인할 수 있어요.', 'startle');
                 document.getElementById('stepContent').style.display = 'none';
                 document.getElementById('tutPrevBtn').style.display = 'none';
-                
                 const nextBtn = document.getElementById('tutNextBtn');
                 nextBtn.style.display = 'block';
-                nextBtn.textContent = '튜토리얼 재개하기';
+                nextBtn.textContent = '전략 설정 계속하기';
                 nextBtn.classList.add('btn-highlight-pulse');
             } else if (isInterrupted) {
-                e.preventDefault(); 
+                e.preventDefault();
             }
         });
     }
@@ -104,7 +129,6 @@ function updateMascot(msg, mascotKey) {
     const newImg = mascotImg.cloneNode(true);
     newImg.src = MASCOTS[mascotKey];
     mascotImg.parentNode.replaceChild(newImg, mascotImg);
-
     const bubble = document.getElementById('tutorialMsg');
     const newBubble = bubble.cloneNode(true);
     newBubble.textContent = msg;
@@ -119,31 +143,33 @@ async function renderStep() {
     updateMascot(step.msg, step.mascot);
 
     const container = document.getElementById('stepContent');
-    container.innerHTML = ''; 
+    container.innerHTML = '';
     const template = document.getElementById(`tpl-${step.id}`);
-    if (template) {
-        container.appendChild(template.content.cloneNode(true));
-    }
+    if (template) container.appendChild(template.content.cloneNode(true));
 
-    // 초기화 보장
     container.style.display = 'block';
-    
+
     const prevBtn = document.getElementById('tutPrevBtn');
     const nextBtn = document.getElementById('tutNextBtn');
-    
+
     prevBtn.style.display = (currentStepIdx === 0 || currentStepIdx >= 4) ? 'none' : 'block';
-    
-    if (step.id === 'univ-rec') initUnivSim();
-    if (step.id === 'mbti' || step.id === 'subject-rec') nextBtn.style.display = 'none';
-    else {
+
+    if (step.id === 'mbti') {
+        mbtiDimSelections = [null, null, null, null];
+        nextBtn.style.display = 'none';
+    } else if (step.id === 'subject-rec') {
+        nextBtn.style.display = 'none';
+        initSubjectRec();
+    } else {
         nextBtn.style.display = 'block';
         nextBtn.textContent = '다음';
         nextBtn.classList.remove('btn-highlight-pulse');
     }
+
+    if (step.id === 'univ-rec') initUnivSim();
 }
 
 async function nextStep() {
-    // 💡 [추가됨] 이탈 경고 상태에서 눌렀을 경우, 상태를 복구하고 리턴
     if (isInterrupted) {
         isInterrupted = false;
         renderStep();
@@ -161,7 +187,7 @@ async function nextStep() {
     } else if (step.id === 'survey-quan') {
         tutorialData.quan = {
             "tutorial_exam": {
-                kor: { raw: document.getElementById('tutKor')?.value || 0 },
+                kor:  { raw: document.getElementById('tutKor')?.value  || 0 },
                 math: { raw: document.getElementById('tutMath')?.value || 0 },
                 inq1: { name: "튜토리얼용탐구1", raw: document.getElementById('tutInq1')?.value || 0 },
                 inq2: { name: "튜토리얼용탐구2", raw: document.getElementById('tutInq2')?.value || 0 }
@@ -183,136 +209,264 @@ function prevStep() {
     }
 }
 
-// --- MBTI 기능 ---
-function goToMBTI() {
-    localStorage.setItem('tutorialStatus', 3); // 상태 저장
-    window.location.href = '/mbti/survey?from_tutorial=true';
+// ── 성적 입력 바 ──────────────────────────────────────────────────
+function updateScoreBar(inputEl, max, barId) {
+    const val = Math.min(Math.max(parseInt(inputEl.value) || 0, 0), max);
+    const pct = (val / max) * 100;
+    const bar = document.getElementById(barId);
+    if (bar) bar.style.width = pct + '%';
 }
 
-function skipMBTI() {
-    const val = document.getElementById('mbtiDirectInput').value;
-    if (!val) { alert('결과를 입력해주세요.'); return; }
-    
-    // XSS 방지를 위해 textContent로 안전하게 처리된 상태 데이터만 메모리 적재
-    tutorialData.mbti = val.replace(/</g, "&lt;").replace(/>/g, "&gt;"); 
+// ── MBTI 직접 선택 ────────────────────────────────────────────────
+function selectMBTIDim(dimIdx, letter, btnEl) {
+    const row = btnEl.closest('.mbti-dim-btns');
+    row.querySelectorAll('.mbti-dim-btn').forEach(b => b.classList.remove('active'));
+    btnEl.classList.add('active');
+    mbtiDimSelections[dimIdx] = letter;
+
+    const allSelected = mbtiDimSelections.every(s => s !== null);
+    const codeEl = document.getElementById('mbtiPreviewCode');
+    const confirmBtn = document.getElementById('mbtiConfirmBtn');
+
+    if (codeEl) {
+        codeEl.textContent = mbtiDimSelections.map(s => s || '?').join('\u00a0');
+    }
+    if (confirmBtn) {
+        confirmBtn.disabled = !allSelected;
+        if (allSelected) confirmBtn.classList.add('active');
+    }
+}
+
+function confirmMBTIDims() {
+    if (mbtiDimSelections.some(s => s === null)) {
+        alert('4가지 항목을 모두 선택해주세요.');
+        return;
+    }
+    tutorialData.mbti = mbtiDimSelections.join('');
     simulateMbtiAnalysis();
+}
+
+function goToMBTI() {
+    localStorage.setItem('tutorialStatus', 3);
+    window.location.href = '/mbti_survey?from_tutorial=true';
 }
 
 function simulateMbtiAnalysis() {
     const container = document.getElementById('stepContent');
-    container.innerHTML = '<div class="step-card"><h3 style="text-align:center;">크랙이가 결과를 분석중입니다...</h3></div>';
-    updateMascot('입력된 MBTI와 성적을 종합하여 분석중입니다.', 'analysis');
-    
+    container.innerHTML = `
+        <div class="step-card" style="text-align:center; padding: 48px 20px;">
+            <div style="font-size:2.5rem; margin-bottom:16px;">🔍</div>
+            <div style="font-size:1.15rem; font-weight:700; color:#1e293b; margin-bottom:8px;">성적과 학습 유형을 종합 분석 중이에요</div>
+            <div style="font-size:0.95rem; color:#64748b;">잠시만 기다려주세요...</div>
+        </div>`;
+    updateMascot('입력하신 성적과 학습 유형을 종합 분석 중입니다.', 'analysis');
+
     setTimeout(() => {
         currentStepIdx = 4;
         renderStep();
     }, 2500);
 }
 
-// --- PDF 다운로드 (Lambda 연동) ---
-async function downloadMBTIReport(mbtiResult) {
-    try {
-        // 💡 [수정됨] 토큰 키를 'accessToken'으로 변경 & 하드코딩 URL 제거
-        const response = await fetch(CONFIG.api.user, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` },
-            body: JSON.stringify({ type: 'update_mbti_promo', data: { targetUserId: 'me', promoCode: 'TUTORIAL', mbtiResult: mbtiResult } })
-        });
-        const result = await response.json();
-        if (result.success && result.downloadUrl) window.open(result.downloadUrl, '_blank');
-    } catch (e) { console.error('PDF 다운로드 실패'); }
-}
-
-// --- 추천 대학 시뮬레이션 ---
-const DEMO_UNIVS = [
-    { school: '연세대학교', major: '컴퓨터과학과', score: 121, simScore: 124, reason: '1점 상승 시 환산점수 120점 돌파 구간' },
-    { school: '고려대학교', major: '데이터과학과', score: 95, simScore: 98, reason: '현재 100점 미만이나 상승폭이 가장 큼' },
-    { school: '성균관대학교', major: '소프트웨어학과', score: 108, simScore: 110, reason: '안정적인 상승 효율 구간' }
-];
-
+// ── 추천 대학 시뮬레이션 ──────────────────────────────────────────
 function initUnivSim() {
     const list = document.getElementById('univCardList');
+    if (!list) return;
     list.innerHTML = '';
-    
-    DEMO_UNIVS.forEach((u, i) => {
-        const div = document.createElement('div');
-        div.className = 'univ-card';
-        div.innerHTML = `
-            <div class="univ-card-title">${u.school} ${u.major}</div>
-            <div class="univ-score">현재 환산점수: ${u.score}점</div>
-            <div class="univ-sim-result">원점수 1점 상승 시 예상 환산점수: ${u.simScore}점<br><small>${u.reason}</small></div>
-        `;
-        div.onclick = () => selectUniv(div, u);
-        list.appendChild(div);
+
+    DEMO_UNIVS.forEach((u) => {
+        const card = document.createElement('div');
+        card.className = 'univ-card';
+
+        const gapToPass = u.passCut - u.currentScore;
+        const badgeClass = gapToPass <= 5 ? 'badge-close' : gapToPass <= 15 ? 'badge-mid' : 'badge-far';
+
+        const currentPct = (u.currentScore / u.maxScore * 100).toFixed(1);
+        const top70Pct  = (u.top70Cut    / u.maxScore * 100).toFixed(1);
+        const passPct   = (u.passCut     / u.maxScore * 100).toFixed(1);
+        const simPct    = (u.simScore    / u.maxScore * 100).toFixed(1);
+
+        const fillId   = 'sbcFill_'   + u.school.replace(/\s/g, '_');
+        const detailId = 'simDetail_' + u.school.replace(/\s/g, '_');
+
+        card.innerHTML = `
+            <div class="univ-card-header">
+                <div>
+                    <div class="univ-card-title">${u.school}</div>
+                    <div class="univ-card-major">${u.major}</div>
+                </div>
+                <div class="univ-gap-badge ${badgeClass}">합격까지 ${gapToPass}점</div>
+            </div>
+            <div class="sbc-wrap">
+                <div class="sbc-labels">
+                    <span class="sbc-lbl lbl-top70" style="left:${top70Pct}%">상위 70%<br>${u.top70Cut}점</span>
+                    <span class="sbc-lbl lbl-pass"  style="left:${passPct}%">합격 예측선<br>${u.passCut}점</span>
+                </div>
+                <div class="sbc-track">
+                    <div class="sbc-fill" id="${fillId}" style="width:${currentPct}%"></div>
+                    <div class="sbc-mark mark-top70" style="left:${top70Pct}%"></div>
+                    <div class="sbc-mark mark-pass"  style="left:${passPct}%"></div>
+                </div>
+                <div class="sbc-current-label">현재 <strong>${u.currentScore}점</strong></div>
+            </div>
+            <div class="univ-sim-detail" id="${detailId}">
+                <div class="sim-delta-row">
+                    <span class="sim-delta-label">취약 과목 1점 상승 후</span>
+                    <span class="sim-delta-score">${u.simScore}점 <em class="sim-gain">+${u.gain}</em></span>
+                </div>
+                <div class="sim-progress-bar-wrap">
+                    <div class="sim-progress-bg">
+                        <div class="sim-progress-fill" id="simFill_${u.school.replace(/\s/g,'_')}" style="width:${simPct}%"></div>
+                        <div class="sim-mark-pass" style="left:${passPct}%"></div>
+                    </div>
+                    <div class="sim-gap-note">합격선까지 <strong>${u.passCut - u.simScore}점</strong> 남았어요</div>
+                </div>
+            </div>`;
+
+        card.onclick = () => selectUniv(card, u, fillId, detailId, simPct);
+        list.appendChild(card);
     });
 }
 
-function selectUniv(element, data) {
+function selectUniv(element, data, fillId, detailId, simPct) {
     document.querySelectorAll('.univ-card').forEach(c => {
         c.classList.remove('selected');
-        c.querySelector('.univ-sim-result').style.display = 'none';
+        const detail = c.querySelector('.univ-sim-detail');
+        if (detail) detail.classList.remove('visible');
     });
-    
+
     element.classList.add('selected');
-    element.querySelector('.univ-sim-result').style.display = 'block';
+
+    const detail = document.getElementById(detailId);
+    if (detail) {
+        detail.classList.add('visible');
+        // 기존 바를 먼저 현재 점수로 되돌렸다가 시뮬 점수로 애니메이션
+        const fill = document.getElementById(fillId);
+        if (fill) {
+            const origPct = (data.currentScore / data.maxScore * 100).toFixed(1);
+            fill.style.transition = 'none';
+            fill.style.width = origPct + '%';
+            fill.classList.add('animating');
+            setTimeout(() => {
+                fill.style.transition = '';
+                fill.style.width = simPct + '%';
+                setTimeout(() => fill.classList.remove('animating'), 900);
+            }, 120);
+        }
+    }
+
     tutorialData.selectedUniv = data;
-    
     document.getElementById('tutNextBtn').style.display = 'block';
 }
 
-// --- 결제 및 완료 로직 ---
+// ── 과목별 공부시간 추천 ──────────────────────────────────────────
+function initSubjectRec() {
+    const container = document.getElementById('subjectRecContent');
+    if (!container) return;
+
+    const univ = tutorialData.selectedUniv || DEMO_UNIVS[0];
+    const alloc = univ.subjectAlloc;
+
+    // SVG 도넛 차트 생성
+    const r = 58, cx = 80, cy = 80;
+    const circ = 2 * Math.PI * r;
+    let cumPct = 0;
+    const segs = alloc.map(seg => {
+        const dash   = (seg.pct / 100) * circ;
+        const offset = (cumPct  / 100) * circ;
+        cumPct += seg.pct;
+        return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${seg.color}" stroke-width="22" stroke-linecap="butt" stroke-dasharray="${dash.toFixed(2)} ${(circ - dash).toFixed(2)}" stroke-dashoffset="${(-offset + 0.5).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})" class="donut-seg"/>`;
+    }).join('');
+
+    const donutSVG = `<svg viewBox="0 0 160 160" width="160" height="160" style="display:block;">${segs}<circle cx="${cx}" cy="${cy}" r="42" fill="#fff"/><text x="${cx}" y="${cy - 6}" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" font-family="Noto Sans KR,sans-serif">공부시간</text><text x="${cx}" y="${cy + 13}" text-anchor="middle" font-size="11" fill="#64748b" font-family="Noto Sans KR,sans-serif">배분</text></svg>`;
+
+    // 범례
+    const legendHtml = alloc.map(seg => `
+        <div class="donut-legend-item">
+            <span class="donut-dot" style="background:${seg.color}"></span>
+            <span class="donut-legend-label">${seg.label}</span>
+            <span class="donut-legend-pct">${seg.pct}%</span>
+            <div class="donut-legend-bar-bg"><div class="donut-legend-bar-fill" style="width:${seg.pct * 2}px;background:${seg.color}"></div></div>
+        </div>`).join('');
+
+    // 과목 카드 (2순위 공개 / 1순위 잠김)
+    const top2 = alloc[1] || alloc[0];
+
+    container.innerHTML = `
+        <div class="subj-donut-section">
+            <div class="donut-chart-wrap">${donutSVG}</div>
+            <div class="donut-legend">${legendHtml}</div>
+        </div>
+        <div class="subj-alloc-cards">
+            <div class="subj-card subj-visible">
+                <div class="subj-rank-badge rank-2">효율 2순위</div>
+                <div class="subj-name">${top2.label}</div>
+                <div class="subj-stats">
+                    <div class="subj-stat-row"><span>추천 비중</span><strong>전체 공부의 ${top2.pct}%</strong></div>
+                    <div class="subj-stat-row"><span>목표 점수까지</span><strong>+${univ.top2NeedPts}점 필요</strong></div>
+                </div>
+            </div>
+            <div class="subj-card subj-blurred">
+                <div class="subj-rank-badge rank-1">효율 1순위</div>
+                <div class="subj-name">???</div>
+                <div class="subj-stats">
+                    <div class="subj-stat-row"><span>추천 비중</span><strong>비공개</strong></div>
+                    <div class="subj-stat-row"><span>목표 점수까지</span><strong>비공개</strong></div>
+                </div>
+                <div class="subj-blur-overlay">🔒 플랜 시작 후 공개</div>
+            </div>
+        </div>`;
+}
+
+// ── 결제 / 완료 ──────────────────────────────────────────────────
 async function upsellPayment() {
-    // 버튼 연타 방지
     const actionBtn = document.querySelector('.tut-action-btn');
     if (actionBtn) actionBtn.disabled = true;
 
     try {
-        // 1. 선택 대학 디비 저장 (Lambda: update_target_univs)
         if (tutorialData.selectedUniv) {
-            const payload = [ { univ: tutorialData.selectedUniv.school, major: tutorialData.selectedUniv.major } ];
+            const payload = [{ univ: tutorialData.selectedUniv.school, major: tutorialData.selectedUniv.major }];
             await apiCall('update_target_univs', payload);
         }
-        
-        // 2. 보상 지급 (Lambda: grant_tutorial_trial)
         const trialResult = await apiCall('grant_tutorial_trial', {});
-        
-        // 성공했거나 이미 유료 멤버십이라서 바로 넘어간 경우
         if (trialResult.success || trialResult.message) {
-            // 3. 상태 정리 및 이동
             localStorage.removeItem('tutorialStatus');
-            localStorage.setItem('tutorial_completed', 'true'); // 문지기 프리패스 도장 발급!
-            
-            alert('튜토리얼을 모두 완료하셨습니다! Trial 등급이 부여되었으며, 추가 목표대학 설정 기회가 제공됩니다.\n결제 페이지로 이동하여 다른 추천대학과 1순위 과목을 확인하세요!');
+            localStorage.setItem('tutorial_completed', 'true');
+            alert('전략 설정이 완료되었습니다!\nTrial 등급이 부여되었으며, 추가 목표대학 설정 기회가 제공됩니다.\n결제 페이지에서 1순위 과목 전략과 더 많은 대학을 확인해보세요!');
             window.location.href = '/payment';
         } else {
-            alert(trialResult.error || '튜토리얼 완료 처리 중 문제가 발생했습니다.');
+            alert(trialResult.error || '완료 처리 중 문제가 발생했습니다.');
             if (actionBtn) actionBtn.disabled = false;
         }
     } catch (e) {
-        console.error("튜토리얼 완료 처리 에러:", e);
         alert('통신 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
         if (actionBtn) actionBtn.disabled = false;
     }
 }
 
-async function apiCall(type, data) {
-    const token = localStorage.getItem('accessToken'); // 로그인 시 저장된 토큰 사용
-    if (!token) return { success: false, error: 'Unauthorized' };
-
+async function downloadMBTIReport(mbtiResult) {
     try {
         const response = await fetch(CONFIG.api.user, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ type: type, data: data })
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` },
+            body: JSON.stringify({ type: 'update_mbti_promo', data: { targetUserId: 'me', promoCode: 'TUTORIAL', mbtiResult } })
         });
-        
+        const result = await response.json();
+        if (result.success && result.downloadUrl) window.open(result.downloadUrl, '_blank');
+    } catch (e) { /* silent */ }
+}
+
+async function apiCall(type, data) {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return { success: false, error: 'Unauthorized' };
+    try {
+        const response = await fetch(CONFIG.api.user, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type, data })
+        });
         if (!response.ok) throw new Error('API 통신 에러');
         return await response.json();
     } catch (e) {
-        console.error(`[API Error] ${type}:`, e);
         return { success: false };
     }
 }
