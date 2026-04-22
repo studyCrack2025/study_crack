@@ -72,21 +72,58 @@
             <h3>성적 입력</h3>
             <p class="step-desc">가장 최근 시험의 원점수를 입력해주세요. 수능 환산 점수로 자동 보정됩니다.</p>
             <div class="score-grid">
-                <div class="score-input-card" onclick="this.querySelector('input').focus()">
+                <div class="score-input-card">
                     <div class="score-subject-label">국어</div>
-                    <div class="score-big-input-wrap">
-                        <input type="number" id="tutKor" class="score-big-input" min="0" max="150" placeholder="—" oninput="updateScoreBar(this, 150, 'barKor')">
-                        <span class="score-max">/ 150점</span>
+                    <select class="score-select" id="tutKorSub">
+                        <option value="화법과작문">화법과작문</option>
+                        <option value="언어와매체">언어와매체</option>
+                    </select>
+                    <div class="score-sub-inputs">
+                        <div class="score-sub-item">
+                            <span class="score-sub-label">공통</span>
+                            <div class="score-sub-input-row">
+                                <input type="number" id="tutKorCommon" class="score-big-input score-split-input" min="0" max="76" placeholder="0" oninput="updateCombinedBar('tutKorCommon','tutKorSel',76,24,'barKor','totalKor')">
+                                <span class="score-sub-max">/ 76</span>
+                            </div>
+                        </div>
+                        <span class="score-sub-plus">+</span>
+                        <div class="score-sub-item">
+                            <span class="score-sub-label">선택</span>
+                            <div class="score-sub-input-row">
+                                <input type="number" id="tutKorSel" class="score-big-input score-split-input" min="0" max="24" placeholder="0" oninput="updateCombinedBar('tutKorCommon','tutKorSel',76,24,'barKor','totalKor')">
+                                <span class="score-sub-max">/ 24</span>
+                            </div>
+                        </div>
                     </div>
                     <div class="score-bar-bg"><div class="score-bar-fill" id="barKor"></div></div>
+                    <div class="score-total-label" id="totalKor">총점 0 / 100점</div>
                 </div>
-                <div class="score-input-card" onclick="this.querySelector('input').focus()">
+                <div class="score-input-card">
                     <div class="score-subject-label">수학</div>
-                    <div class="score-big-input-wrap">
-                        <input type="number" id="tutMath" class="score-big-input" min="0" max="150" placeholder="—" oninput="updateScoreBar(this, 150, 'barMath')">
-                        <span class="score-max">/ 150점</span>
+                    <select class="score-select" id="tutMathSub">
+                        <option value="확률과통계">확률과통계</option>
+                        <option value="미적분">미적분</option>
+                        <option value="기하">기하</option>
+                    </select>
+                    <div class="score-sub-inputs">
+                        <div class="score-sub-item">
+                            <span class="score-sub-label">공통</span>
+                            <div class="score-sub-input-row">
+                                <input type="number" id="tutMathCommon" class="score-big-input score-split-input" min="0" max="74" placeholder="0" oninput="updateCombinedBar('tutMathCommon','tutMathSel',74,26,'barMath','totalMath')">
+                                <span class="score-sub-max">/ 74</span>
+                            </div>
+                        </div>
+                        <span class="score-sub-plus">+</span>
+                        <div class="score-sub-item">
+                            <span class="score-sub-label">선택</span>
+                            <div class="score-sub-input-row">
+                                <input type="number" id="tutMathSel" class="score-big-input score-split-input" min="0" max="26" placeholder="0" oninput="updateCombinedBar('tutMathCommon','tutMathSel',74,26,'barMath','totalMath')">
+                                <span class="score-sub-max">/ 26</span>
+                            </div>
+                        </div>
                     </div>
                     <div class="score-bar-bg"><div class="score-bar-fill" id="barMath"></div></div>
+                    <div class="score-total-label" id="totalMath">총점 0 / 100점</div>
                 </div>
                 <div class="score-input-card" onclick="this.querySelector('input').focus()">
                     <div class="score-subject-label">탐구 1과목</div>

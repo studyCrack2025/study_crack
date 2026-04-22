@@ -152,5 +152,16 @@ header { background: #fff; padding: 15px 20px; box-shadow: 0 2px 4px rgba(0,0,0,
 @keyframes highlightPulse { 0% { box-shadow: 0 0 0 0 rgba(225,29,72,0.7); } 70% { box-shadow: 0 0 0 15px rgba(225,29,72,0); } 100% { box-shadow: 0 0 0 0 rgba(225,29,72,0); } }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+/* ── 성적 카드 내 공통/선택 분리 입력 ──────────────────────────── */
+.score-select { width: 100%; padding: 6px 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.8rem; font-weight: 600; color: #475569; background: #f1f5f9; font-family: inherit; margin-bottom: 10px; cursor: pointer; }
+.score-sub-inputs { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; }
+.score-sub-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.score-sub-label { font-size: 0.65rem; font-weight: 700; color: #94a3b8; letter-spacing: 0.05em; text-transform: uppercase; }
+.score-sub-input-row { display: flex; align-items: baseline; gap: 3px; }
+.score-split-input { width: 46px !important; font-size: 1.5rem !important; }
+.score-sub-max { font-size: 0.72rem; font-weight: 600; color: #cbd5e1; }
+.score-sub-plus { font-size: 1.1rem; font-weight: 700; color: #cbd5e1; padding-top: 16px; flex-shrink: 0; }
+.score-total-label { font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-align: center; margin-top: 6px; }
+
 /* ── 반응형 ────────────────────────────────────────────────────── */
 @media (max-width: 520px) { .score-grid { grid-template-columns: 1fr 1fr; gap: 10px; } .score-big-input { font-size: 1.9rem; width: 64px; } .subj-alloc-cards { grid-template-columns: 1fr; } .subj-donut-section { flex-direction: column; align-items: flex-start; } .dialogue-bubble { font-size: 0.95rem; padding: 15px 18px; } .mbti-dim-name { font-size: 0.78rem; min-width: 60px; } }

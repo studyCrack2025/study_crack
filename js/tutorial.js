@@ -16,42 +16,44 @@ const STEPS = [
     { id: 'subject-rec', msg: '선택한 대학 합격선까지, 가장 효율적인 과목 전략을 알려드릴게요.',   mascot: 'showresult' }
 ];
 
+// passCut=100 / top70Cut=150 은 전 학교 공통 고정값
+// 시나리오: 학교1(현재<100, 상승후<100) / 학교2(현재<100, 상승후 100-120) / 학교3(현재>100, 상승후>120)
 const DEMO_UNIVS = [
     {
-        school: '연세대학교', major: '컴퓨터과학과',
-        currentScore: 121, passCut: 130, top70Cut: 115, maxScore: 150,
-        simScore: 124, gain: 3,
-        subjectAlloc: [
-            { label: '수학', pct: 40, color: '#3b82f6' },
-            { label: '국어', pct: 30, color: '#8b5cf6' },
-            { label: '탐구', pct: 20, color: '#10b981' },
-            { label: '기타', pct: 10, color: '#f59e0b' }
-        ],
-        top2Subject: '국어', top2Pct: 30, top2NeedPts: 8
-    },
-    {
-        school: '고려대학교', major: '데이터과학과',
-        currentScore: 105, passCut: 118, top70Cut: 98, maxScore: 150,
-        simScore: 108, gain: 3,
+        school: '인하대학교', major: '컴퓨터공학과',
+        currentScore: 88, passCut: 100, top70Cut: 150, maxScore: 150,
+        simScore: 91, gain: 3,
         subjectAlloc: [
             { label: '수학', pct: 38, color: '#3b82f6' },
-            { label: '탐구', pct: 28, color: '#10b981' },
-            { label: '국어', pct: 24, color: '#8b5cf6' },
-            { label: '기타', pct: 10, color: '#f59e0b' }
-        ],
-        top2Subject: '탐구', top2Pct: 28, top2NeedPts: 5
-    },
-    {
-        school: '성균관대학교', major: '소프트웨어학과',
-        currentScore: 108, passCut: 115, top70Cut: 100, maxScore: 150,
-        simScore: 111, gain: 3,
-        subjectAlloc: [
-            { label: '수학', pct: 38, color: '#3b82f6' },
-            { label: '국어', pct: 27, color: '#8b5cf6' },
-            { label: '탐구', pct: 23, color: '#10b981' },
+            { label: '국어', pct: 28, color: '#8b5cf6' },
+            { label: '탐구', pct: 22, color: '#10b981' },
             { label: '기타', pct: 12, color: '#f59e0b' }
         ],
-        top2Subject: '국어', top2Pct: 27, top2NeedPts: 6
+        top2Subject: '국어', top2Pct: 28, top2NeedPts: 11
+    },
+    {
+        school: '경희대학교', major: '소프트웨어융합학과',
+        currentScore: 97, passCut: 100, top70Cut: 150, maxScore: 150,
+        simScore: 104, gain: 7,
+        subjectAlloc: [
+            { label: '수학', pct: 40, color: '#3b82f6' },
+            { label: '탐구', pct: 27, color: '#10b981' },
+            { label: '국어', pct: 23, color: '#8b5cf6' },
+            { label: '기타', pct: 10, color: '#f59e0b' }
+        ],
+        top2Subject: '탐구', top2Pct: 27, top2NeedPts: 4
+    },
+    {
+        school: '한양대학교', major: '컴퓨터소프트웨어학부',
+        currentScore: 112, passCut: 100, top70Cut: 150, maxScore: 150,
+        simScore: 126, gain: 14,
+        subjectAlloc: [
+            { label: '수학', pct: 42, color: '#3b82f6' },
+            { label: '국어', pct: 26, color: '#8b5cf6' },
+            { label: '탐구', pct: 21, color: '#10b981' },
+            { label: '기타', pct: 11, color: '#f59e0b' }
+        ],
+        top2Subject: '국어', top2Pct: 26, top2NeedPts: 6
     }
 ];
 
@@ -185,12 +187,16 @@ async function nextStep() {
         };
         await apiCall('update_qual', tutorialData.qual);
     } else if (step.id === 'survey-quan') {
+        const korCommon = parseInt(document.getElementById('tutKorCommon')?.value)  || 0;
+        const korSel    = parseInt(document.getElementById('tutKorSel')?.value)     || 0;
+        const mathCommon= parseInt(document.getElementById('tutMathCommon')?.value) || 0;
+        const mathSel   = parseInt(document.getElementById('tutMathSel')?.value)    || 0;
         tutorialData.quan = {
             "tutorial_exam": {
-                kor:  { raw: document.getElementById('tutKor')?.value  || 0 },
-                math: { raw: document.getElementById('tutMath')?.value || 0 },
-                inq1: { name: "튜토리얼용탐구1", raw: document.getElementById('tutInq1')?.value || 0 },
-                inq2: { name: "튜토리얼용탐구2", raw: document.getElementById('tutInq2')?.value || 0 }
+                kor:  { sub: document.getElementById('tutKorSub')?.value  || '화법과작문', raw_common: korCommon,  raw_sel: korSel,  raw: korCommon  + korSel  },
+                math: { sub: document.getElementById('tutMathSub')?.value || '확률과통계', raw_common: mathCommon, raw_sel: mathSel, raw: mathCommon + mathSel },
+                inq1: { name: "튜토리얼용탐구1", raw: parseInt(document.getElementById('tutInq1')?.value) || 0 },
+                inq2: { name: "튜토리얼용탐구2", raw: parseInt(document.getElementById('tutInq2')?.value) || 0 }
             }
         };
         await apiCall('update_quan', tutorialData.quan);
@@ -215,6 +221,17 @@ function updateScoreBar(inputEl, max, barId) {
     const pct = (val / max) * 100;
     const bar = document.getElementById(barId);
     if (bar) bar.style.width = pct + '%';
+}
+
+function updateCombinedBar(commonId, selId, maxCommon, maxSel, barId, totalId) {
+    const common = Math.min(Math.max(parseInt(document.getElementById(commonId)?.value) || 0, 0), maxCommon);
+    const sel    = Math.min(Math.max(parseInt(document.getElementById(selId)?.value)    || 0, 0), maxSel);
+    const total  = common + sel;
+    const maxTotal = maxCommon + maxSel;
+    const bar = document.getElementById(barId);
+    if (bar) bar.style.width = ((total / maxTotal) * 100) + '%';
+    const lbl = document.getElementById(totalId);
+    if (lbl) lbl.textContent = `총점 ${total} / ${maxTotal}점`;
 }
 
 // ── MBTI 직접 선택 ────────────────────────────────────────────────
