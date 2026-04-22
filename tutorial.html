@@ -51,18 +51,35 @@
         <div class="step-card">
             <h3>기본 정보 입력</h3>
             <p class="step-desc">정확한 분석을 위해 현재 상황을 알려주세요.</p>
-            <label class="input-label">현재 학년</label>
-            <select id="tutStatus" class="tut-input">
-                <option value="고1-2">고1 / 고2 재학</option>
-                <option value="고3">고3 재학</option>
-                <option value="n수">N수생</option>
-            </select>
-            <label class="input-label">희망 계열</label>
+            <label class="input-label">현재 학년 <span class="tut-req">*</span></label>
+            <div class="tut-radio-group">
+                <label><input type="radio" name="tutStudentStatus" value="고1-2" onchange="handleTutStatusChange(this.value)"> 고1/2 재학</label>
+                <label><input type="radio" name="tutStudentStatus" value="고3" onchange="handleTutStatusChange(this.value)"> 고3 재학</label>
+                <label><input type="radio" name="tutStudentStatus" value="n수" onchange="handleTutStatusChange(this.value)"> N수생</label>
+                <label><input type="radio" name="tutStudentStatus" value="검정" onchange="handleTutStatusChange(this.value)"> 검정고시</label>
+                <label><input type="radio" name="tutStudentStatus" value="other" onchange="handleTutStatusChange(this.value)"> 기타</label>
+            </div>
+            <input type="text" id="tutStatusEtc" class="tut-input" placeholder="직접 입력" style="display:none; margin-top:8px;">
+            <label class="input-label">출신 학교 <span class="tut-req">*</span>
+                <span class="tut-ged-wrap"><input type="checkbox" id="tutIsGed" onchange="handleTutGed(this.checked)"> 검정고시</span>
+            </label>
+            <input type="text" id="tutHighSchool" class="tut-input" placeholder="예: 서울고등학교">
+            <label class="input-label">희망 계열 <span class="tut-req">*</span></label>
             <select id="tutStream" class="tut-input">
+                <option value="">선택하세요</option>
                 <option value="인문사회">인문사회</option>
-                <option value="자연/공학">자연 / 공학</option>
+                <option value="상경계열">상경계열</option>
+                <option value="자연/공학">자연/공학</option>
                 <option value="의치한약수">의치한약수</option>
+                <option value="간호">간호</option>
+                <option value="사범/교대">사범/교대</option>
+                <option value="예체능">예체능</option>
+                <option value="기타">기타</option>
             </select>
+            <label class="input-label">스터디크랙을 통해 얻고 싶은 점 <span class="tut-req">*</span></label>
+            <textarea id="tutBenefits" class="tut-input tut-textarea" rows="3" placeholder="예: 구체적인 수시 지원 라인을 잡고 싶습니다."></textarea>
+            <label class="input-label">입시 고민 / 질문 (선택)</label>
+            <textarea id="tutQuestions" class="tut-input tut-textarea" rows="3" placeholder="현재 가장 큰 입시 고민이나 멘토에게 묻고 싶은 점을 적어주세요."></textarea>
         </div>
     </template>
 
@@ -75,8 +92,8 @@
                 <div class="score-input-card">
                     <div class="score-subject-label">국어</div>
                     <select class="score-select" id="tutKorSub">
-                        <option value="화법과작문">화법과작문</option>
-                        <option value="언어와매체">언어와매체</option>
+                        <option value="화작">화법과작문</option>
+                        <option value="언매">언어와매체</option>
                     </select>
                     <div class="score-sub-inputs">
                         <div class="score-sub-item">
@@ -101,8 +118,8 @@
                 <div class="score-input-card">
                     <div class="score-subject-label">수학</div>
                     <select class="score-select" id="tutMathSub">
-                        <option value="확률과통계">확률과통계</option>
-                        <option value="미적분">미적분</option>
+                        <option value="확통">확률과통계</option>
+                        <option value="미적">미적분</option>
                         <option value="기하">기하</option>
                     </select>
                     <div class="score-sub-inputs">
@@ -125,16 +142,56 @@
                     <div class="score-bar-bg"><div class="score-bar-fill" id="barMath"></div></div>
                     <div class="score-total-label" id="totalMath">총점 0 / 100점</div>
                 </div>
-                <div class="score-input-card" onclick="this.querySelector('input').focus()">
+                <div class="score-input-card">
                     <div class="score-subject-label">탐구 1과목</div>
+                    <select class="score-select" id="tutInq1Name">
+                        <option value="">과목 선택</option>
+                        <optgroup label="사회탐구">
+                            <option value="생윤">생활과 윤리</option>
+                            <option value="윤사">윤리와 사상</option>
+                            <option value="한지">한국지리</option>
+                            <option value="세지">세계지리</option>
+                            <option value="동사">동아시아사</option>
+                            <option value="세사">세계사</option>
+                            <option value="경제">경제</option>
+                            <option value="정법">정치와 법</option>
+                            <option value="사문">사회·문화</option>
+                        </optgroup>
+                        <optgroup label="과학탐구">
+                            <option value="물1">물리학Ⅰ</option>
+                            <option value="화1">화학Ⅰ</option>
+                            <option value="생1">생명과학Ⅰ</option>
+                            <option value="지1">지구과학Ⅰ</option>
+                        </optgroup>
+                    </select>
                     <div class="score-big-input-wrap">
                         <input type="number" id="tutInq1" class="score-big-input" min="0" max="50" placeholder="—" oninput="updateScoreBar(this, 50, 'barInq1')">
                         <span class="score-max">/ 50점</span>
                     </div>
                     <div class="score-bar-bg"><div class="score-bar-fill" id="barInq1"></div></div>
                 </div>
-                <div class="score-input-card" onclick="this.querySelector('input').focus()">
+                <div class="score-input-card">
                     <div class="score-subject-label">탐구 2과목</div>
+                    <select class="score-select" id="tutInq2Name">
+                        <option value="">과목 선택</option>
+                        <optgroup label="사회탐구">
+                            <option value="생윤">생활과 윤리</option>
+                            <option value="윤사">윤리와 사상</option>
+                            <option value="한지">한국지리</option>
+                            <option value="세지">세계지리</option>
+                            <option value="동사">동아시아사</option>
+                            <option value="세사">세계사</option>
+                            <option value="경제">경제</option>
+                            <option value="정법">정치와 법</option>
+                            <option value="사문">사회·문화</option>
+                        </optgroup>
+                        <optgroup label="과학탐구">
+                            <option value="물1">물리학Ⅰ</option>
+                            <option value="화1">화학Ⅰ</option>
+                            <option value="생1">생명과학Ⅰ</option>
+                            <option value="지1">지구과학Ⅰ</option>
+                        </optgroup>
+                    </select>
                     <div class="score-big-input-wrap">
                         <input type="number" id="tutInq2" class="score-big-input" min="0" max="50" placeholder="—" oninput="updateScoreBar(this, 50, 'barInq2')">
                         <span class="score-max">/ 50점</span>

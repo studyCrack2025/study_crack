@@ -152,6 +152,17 @@ header { background: #fff; padding: 15px 20px; box-shadow: 0 2px 4px rgba(0,0,0,
 @keyframes highlightPulse { 0% { box-shadow: 0 0 0 0 rgba(225,29,72,0.7); } 70% { box-shadow: 0 0 0 15px rgba(225,29,72,0); } 100% { box-shadow: 0 0 0 0 rgba(225,29,72,0); } }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+/* ── 정성 폼 요소 ──────────────────────────────────────────────── */
+.tut-req { color: #ef4444; font-size: 0.85rem; margin-left: 2px; }
+.tut-radio-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 4px; }
+.tut-radio-group label { display: flex; align-items: center; gap: 6px; font-size: 0.92rem; font-weight: 600; color: #334155; cursor: pointer; padding: 8px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; transition: all 0.15s; background: #f8fafc; }
+.tut-radio-group label:has(input:checked) { border-color: #3b82f6; background: #eff6ff; color: #2563eb; }
+.tut-radio-group input[type="radio"] { accent-color: #2563eb; }
+.tut-ged-wrap { margin-left: auto; font-size: 0.82rem; font-weight: 500; color: #64748b; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+.tut-textarea { resize: vertical; min-height: 72px; line-height: 1.6; }
+.legend-blurred { filter: blur(4px); user-select: none; pointer-events: none; }
+.rank-other { background: #f8fafc; color: #94a3b8; border: 1px solid #e2e8f0; }
+
 /* ── 성적 카드 내 공통/선택 분리 입력 ──────────────────────────── */
 .score-select { width: 100%; padding: 6px 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.8rem; font-weight: 600; color: #475569; background: #f1f5f9; font-family: inherit; margin-bottom: 10px; cursor: pointer; }
 .score-sub-inputs { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; }

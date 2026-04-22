@@ -181,22 +181,31 @@ async function nextStep() {
     const step = STEPS[currentStepIdx];
 
     if (step.id === 'survey-qual') {
+        let statusVal = document.querySelector('input[name="tutStudentStatus"]:checked')?.value || '';
+        if (statusVal === 'other') statusVal = document.getElementById('tutStatusEtc')?.value || '';
         tutorialData.qual = {
-            status: document.getElementById('tutStatus')?.value || '',
-            stream: document.getElementById('tutStream')?.value || ''
+            status:    statusVal,
+            school:    document.getElementById('tutHighSchool')?.value  || '',
+            stream:    document.getElementById('tutStream')?.value      || '',
+            benefits:  document.getElementById('tutBenefits')?.value    || '',
+            questions: document.getElementById('tutQuestions')?.value   || ''
         };
         await apiCall('update_qual', tutorialData.qual);
     } else if (step.id === 'survey-quan') {
-        const korCommon = parseInt(document.getElementById('tutKorCommon')?.value)  || 0;
-        const korSel    = parseInt(document.getElementById('tutKorSel')?.value)     || 0;
-        const mathCommon= parseInt(document.getElementById('tutMathCommon')?.value) || 0;
-        const mathSel   = parseInt(document.getElementById('tutMathSel')?.value)    || 0;
+        const korCommon  = parseInt(document.getElementById('tutKorCommon')?.value)  || 0;
+        const korSel     = parseInt(document.getElementById('tutKorSel')?.value)     || 0;
+        const mathCommon = parseInt(document.getElementById('tutMathCommon')?.value) || 0;
+        const mathSel    = parseInt(document.getElementById('tutMathSel')?.value)    || 0;
+        // survey.js와 동일한 키 구조: { mar: { kor: {opt,common,elective,raw,...}, math:..., inq1:..., inq2:... } }
         tutorialData.quan = {
-            "tutorial_exam": {
-                kor:  { sub: document.getElementById('tutKorSub')?.value  || '화법과작문', raw_common: korCommon,  raw_sel: korSel,  raw: korCommon  + korSel  },
-                math: { sub: document.getElementById('tutMathSub')?.value || '확률과통계', raw_common: mathCommon, raw_sel: mathSel, raw: mathCommon + mathSel },
-                inq1: { name: "튜토리얼용탐구1", raw: parseInt(document.getElementById('tutInq1')?.value) || 0 },
-                inq2: { name: "튜토리얼용탐구2", raw: parseInt(document.getElementById('tutInq2')?.value) || 0 }
+            mar: {
+                kor:     { opt: document.getElementById('tutKorSub')?.value  || 'none', common: korCommon,  elective: korSel,  raw: korCommon  + korSel,  std: '', pct: '', grd: '' },
+                math:    { opt: document.getElementById('tutMathSub')?.value || 'none', common: mathCommon, elective: mathSel, raw: mathCommon + mathSel, std: '', pct: '', grd: '' },
+                eng:     { grd: '' },
+                hist:    { grd: '' },
+                inq1:    { name: document.getElementById('tutInq1Name')?.value || '', raw: parseInt(document.getElementById('tutInq1')?.value) || 0, std: '', pct: '', grd: '' },
+                inq2:    { name: document.getElementById('tutInq2Name')?.value || '', raw: parseInt(document.getElementById('tutInq2')?.value) || 0, std: '', pct: '', grd: '' },
+                foreign: { name: '', grd: '' }
             }
         };
         await apiCall('update_quan', tutorialData.quan);
@@ -232,6 +241,19 @@ function updateCombinedBar(commonId, selId, maxCommon, maxSel, barId, totalId) {
     if (bar) bar.style.width = ((total / maxTotal) * 100) + '%';
     const lbl = document.getElementById(totalId);
     if (lbl) lbl.textContent = `총점 ${total} / ${maxTotal}점`;
+}
+
+// ── 정성 폼 헬퍼 ─────────────────────────────────────────────────
+function handleTutStatusChange(val) {
+    const etc = document.getElementById('tutStatusEtc');
+    if (etc) etc.style.display = (val === 'other') ? 'block' : 'none';
+}
+
+function handleTutGed(checked) {
+    const hs = document.getElementById('tutHighSchool');
+    if (!hs) return;
+    if (checked) { hs.value = '검정고시'; hs.disabled = true; }
+    else { if (hs.value === '검정고시') hs.value = ''; hs.disabled = false; }
 }
 
 // ── MBTI 직접 선택 ────────────────────────────────────────────────
@@ -396,42 +418,43 @@ function initSubjectRec() {
 
     const donutSVG = `<svg viewBox="0 0 160 160" width="160" height="160" style="display:block;">${segs}<circle cx="${cx}" cy="${cy}" r="42" fill="#fff"/><text x="${cx}" y="${cy - 6}" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" font-family="Noto Sans KR,sans-serif">공부시간</text><text x="${cx}" y="${cy + 13}" text-anchor="middle" font-size="11" fill="#64748b" font-family="Noto Sans KR,sans-serif">배분</text></svg>`;
 
-    // 범례
-    const legendHtml = alloc.map(seg => `
-        <div class="donut-legend-item">
+    // 범례: 2순위(index 1)만 공개, 나머지 블러
+    const legendHtml = alloc.map((seg, i) => {
+        const visible = (i === 1);
+        return `
+        <div class="donut-legend-item${visible ? '' : ' legend-blurred'}">
             <span class="donut-dot" style="background:${seg.color}"></span>
-            <span class="donut-legend-label">${seg.label}</span>
+            <span class="donut-legend-label">${visible ? seg.label : '???'}</span>
             <span class="donut-legend-pct">${seg.pct}%</span>
             <div class="donut-legend-bar-bg"><div class="donut-legend-bar-fill" style="width:${seg.pct * 2}px;background:${seg.color}"></div></div>
-        </div>`).join('');
+        </div>`;
+    }).join('');
 
-    // 과목 카드 (2순위 공개 / 1순위 잠김)
-    const top2 = alloc[1] || alloc[0];
+    // 4개 카드: 2순위만 공개, 1·3·4순위 블러
+    const rankLabels = ['1순위', '2순위', '3순위', '4순위'];
+    const rankBadgeClass = ['rank-1', 'rank-2', 'rank-other', 'rank-other'];
+    const cardsHtml = alloc.map((seg, i) => {
+        const visible = (i === 1);
+        const blur = visible ? '' : ' subj-blurred';
+        const highlight = visible ? ' subj-visible' : '';
+        return `
+        <div class="subj-card${highlight}${blur}">
+            <div class="subj-rank-badge ${rankBadgeClass[i]}">${rankLabels[i]}</div>
+            <div class="subj-name">${visible ? seg.label : '???'}</div>
+            <div class="subj-stats">
+                <div class="subj-stat-row"><span>추천 비중</span><strong>${visible ? `전체 공부의 ${seg.pct}%` : '비공개'}</strong></div>
+                <div class="subj-stat-row"><span>목표 점수까지</span><strong>${visible ? `+${univ.top2NeedPts}점 필요` : '비공개'}</strong></div>
+            </div>
+            ${!visible ? '<div class="subj-blur-overlay">🔒 플랜 시작 후 공개</div>' : ''}
+        </div>`;
+    }).join('');
 
     container.innerHTML = `
         <div class="subj-donut-section">
             <div class="donut-chart-wrap">${donutSVG}</div>
             <div class="donut-legend">${legendHtml}</div>
         </div>
-        <div class="subj-alloc-cards">
-            <div class="subj-card subj-visible">
-                <div class="subj-rank-badge rank-2">효율 2순위</div>
-                <div class="subj-name">${top2.label}</div>
-                <div class="subj-stats">
-                    <div class="subj-stat-row"><span>추천 비중</span><strong>전체 공부의 ${top2.pct}%</strong></div>
-                    <div class="subj-stat-row"><span>목표 점수까지</span><strong>+${univ.top2NeedPts}점 필요</strong></div>
-                </div>
-            </div>
-            <div class="subj-card subj-blurred">
-                <div class="subj-rank-badge rank-1">효율 1순위</div>
-                <div class="subj-name">???</div>
-                <div class="subj-stats">
-                    <div class="subj-stat-row"><span>추천 비중</span><strong>비공개</strong></div>
-                    <div class="subj-stat-row"><span>목표 점수까지</span><strong>비공개</strong></div>
-                </div>
-                <div class="subj-blur-overlay">🔒 플랜 시작 후 공개</div>
-            </div>
-        </div>`;
+        <div class="subj-alloc-cards">${cardsHtml}</div>`;
 }
 
 // ── 결제 / 완료 ──────────────────────────────────────────────────
