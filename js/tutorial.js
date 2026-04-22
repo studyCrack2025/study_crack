@@ -226,16 +226,23 @@ function prevStep() {
 
 // ── 성적 입력 바 ──────────────────────────────────────────────────
 function updateScoreBar(inputEl, max, barId) {
-    const val = Math.min(Math.max(parseInt(inputEl.value) || 0, 0), max);
-    const pct = (val / max) * 100;
+    const raw = parseInt(inputEl.value) || 0;
+    const val = Math.min(Math.max(raw, 0), max);
+    if (raw !== val) inputEl.value = val;
     const bar = document.getElementById(barId);
-    if (bar) bar.style.width = pct + '%';
+    if (bar) bar.style.width = ((val / max) * 100) + '%';
 }
 
 function updateCombinedBar(commonId, selId, maxCommon, maxSel, barId, totalId) {
-    const common = Math.min(Math.max(parseInt(document.getElementById(commonId)?.value) || 0, 0), maxCommon);
-    const sel    = Math.min(Math.max(parseInt(document.getElementById(selId)?.value)    || 0, 0), maxSel);
-    const total  = common + sel;
+    const commonEl = document.getElementById(commonId);
+    const selEl    = document.getElementById(selId);
+    const rawC = parseInt(commonEl?.value) || 0;
+    const rawS = parseInt(selEl?.value)    || 0;
+    const common = Math.min(Math.max(rawC, 0), maxCommon);
+    const sel    = Math.min(Math.max(rawS, 0), maxSel);
+    if (commonEl && rawC !== common) commonEl.value = common;
+    if (selEl    && rawS !== sel)    selEl.value    = sel;
+    const total    = common + sel;
     const maxTotal = maxCommon + maxSel;
     const bar = document.getElementById(barId);
     if (bar) bar.style.width = ((total / maxTotal) * 100) + '%';
