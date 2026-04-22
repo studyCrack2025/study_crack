@@ -165,6 +165,10 @@ header { background: #fff; padding: 15px 20px; box-shadow: 0 2px 4px rgba(0,0,0,
 
 /* ── 성적 카드 내 공통/선택 분리 입력 ──────────────────────────── */
 .score-select { width: 100%; padding: 6px 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.8rem; font-weight: 600; color: #475569; background: #f1f5f9; font-family: inherit; margin-bottom: 10px; cursor: pointer; }
+.score-grade-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.score-grade-item { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 16px; padding: 14px 16px; }
+.score-grade-item:focus-within { border-color: #3b82f6; }
+.score-grade-select { margin-bottom: 0 !important; font-size: 0.92rem; padding: 10px 8px; }
 .score-sub-inputs { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; }
 .score-sub-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .score-sub-label { font-size: 0.65rem; font-weight: 700; color: #94a3b8; letter-spacing: 0.05em; text-transform: uppercase; }

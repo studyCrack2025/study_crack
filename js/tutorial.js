@@ -196,15 +196,31 @@ async function nextStep() {
         const korSel     = parseInt(document.getElementById('tutKorSel')?.value)     || 0;
         const mathCommon = parseInt(document.getElementById('tutMathCommon')?.value) || 0;
         const mathSel    = parseInt(document.getElementById('tutMathSel')?.value)    || 0;
-        // survey.js와 동일한 키 구조: { mar: { kor: {opt,common,elective,raw,...}, math:..., inq1:..., inq2:... } }
+        const korOpt     = document.getElementById('tutKorSub')?.value   || 'none';
+        const mathOpt    = document.getElementById('tutMathSub')?.value  || 'none';
+        const inq1Name   = document.getElementById('tutInq1Name')?.value || '';
+        const inq2Name   = document.getElementById('tutInq2Name')?.value || '';
+        const inq1Raw    = parseInt(document.getElementById('tutInq1')?.value) || 0;
+        const inq2Raw    = parseInt(document.getElementById('tutInq2')?.value) || 0;
+        const engGrd     = document.getElementById('tutEngGrd')?.value   || '';
+        const histGrd    = document.getElementById('tutHistGrd')?.value  || '';
+
+        // 점수 환산 API 병렬 호출 → survey.js 로드 시 std/pct/grd 즉시 표시
+        const [korConv, mathConv, inq1Conv, inq2Conv] = await Promise.all([
+            convertScore('mar', 'kor',  korCommon + korSel,   korOpt,  ''),
+            convertScore('mar', 'math', mathCommon + mathSel, mathOpt, ''),
+            convertScore('mar', 'inq1', inq1Raw, '', inq1Name),
+            convertScore('mar', 'inq2', inq2Raw, '', inq2Name)
+        ]);
+
         tutorialData.quan = {
             mar: {
-                kor:     { opt: document.getElementById('tutKorSub')?.value  || 'none', common: korCommon,  elective: korSel,  raw: korCommon  + korSel,  std: '', pct: '', grd: '' },
-                math:    { opt: document.getElementById('tutMathSub')?.value || 'none', common: mathCommon, elective: mathSel, raw: mathCommon + mathSel, std: '', pct: '', grd: '' },
-                eng:     { grd: '' },
-                hist:    { grd: '' },
-                inq1:    { name: document.getElementById('tutInq1Name')?.value || '', raw: parseInt(document.getElementById('tutInq1')?.value) || 0, std: '', pct: '', grd: '' },
-                inq2:    { name: document.getElementById('tutInq2Name')?.value || '', raw: parseInt(document.getElementById('tutInq2')?.value) || 0, std: '', pct: '', grd: '' },
+                kor:     { opt: korOpt,  common: korCommon,  elective: korSel,  raw: korCommon  + korSel,  ...korConv  },
+                math:    { opt: mathOpt, common: mathCommon, elective: mathSel, raw: mathCommon + mathSel, ...mathConv },
+                eng:     { grd: engGrd },
+                hist:    { grd: histGrd },
+                inq1:    { name: inq1Name, raw: inq1Raw,  ...inq1Conv },
+                inq2:    { name: inq2Name, raw: inq2Raw,  ...inq2Conv },
                 foreign: { name: '', grd: '' }
             }
         };
@@ -500,6 +516,26 @@ async function downloadMBTIReport(mbtiResult) {
         const result = await response.json();
         if (result.success && result.downloadUrl) window.open(result.downloadUrl, '_blank');
     } catch (e) { /* silent */ }
+}
+
+// 점수 환산 API 호출 (survey.js requestScoreConversion과 동일한 엔드포인트)
+async function convertScore(month, subject, score, opt, subName) {
+    if (!score || score <= 0) return { std: '', pct: '', grd: '' };
+    const token = localStorage.getItem('accessToken');
+    if (!token) return { std: '', pct: '', grd: '' };
+    try {
+        const res = await fetch(CONFIG.api.analysis, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'convert_score', month, subject, score, opt: opt || '', subName: subName || '' })
+        });
+        if (!res.ok) return { std: '', pct: '', grd: '' };
+        const data = await res.json();
+        if (data.error) return { std: '', pct: '', grd: '' };
+        return { std: data.std || '', pct: data.pct || '', grd: data.grd || '' };
+    } catch {
+        return { std: '', pct: '', grd: '' };
+    }
 }
 
 async function apiCall(type, data) {
