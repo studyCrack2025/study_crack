@@ -6,14 +6,14 @@
     j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
     })(window,document,'script','dataLayer','GTM-KNHVMTR5');</script>
-    
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light">
     <meta name="facebook-domain-verification" content="55eup0qlw7p4hdgj5hyv2fsmhksvoj" />
     <meta name="naver-site-verification" content="e70d8cbe6d67167b9f8f6267985c17c42b616684" />
     <title>안전한 결제 - 스터디크랙</title>
-    
+
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/checkout.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -23,78 +23,93 @@
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     <div class="checkout-wrapper">
+
+        <!-- 좌측: 주문자 정보 (read-only) -->
         <div class="order-summary-panel">
             <button class="btn-back" onclick="history.back()"><i class="fas fa-arrow-left"></i> 뒤로가기</button>
-            
+
             <div class="summary-content">
                 <span class="brand-logo">StudyCrack</span>
-                <h2 class="summary-title">주문 요약</h2>
-                
-                <div class="product-info-box">
-                    <div id="chkProductName" class="chk-p-name">멤버십 불러오는 중...</div>
-                    <div id="chkProductDesc" class="chk-p-desc">...</div>
-                </div>
+                <h2 class="summary-title">주문자 정보</h2>
 
-                <div class="price-line">
-                    <span>결제 금액</span>
-                    <span id="chkPrice" class="chk-price">0원</span>
-                </div>
-                
-                <div class="billing-notice">
-                    <i class="fas fa-info-circle"></i> 다음 결제일은 4주 뒤인 <strong id="chkNextDate">00월 00일</strong>입니다. 언제든 해지 가능합니다.
+                <div class="buyer-info-section">
+                    <div class="buyer-info-field">
+                        <span class="buyer-info-label">이름</span>
+                        <span id="buyerName" class="buyer-info-value">-</span>
+                    </div>
+                    <div class="buyer-info-field">
+                        <span class="buyer-info-label">전화번호</span>
+                        <span id="buyerPhone" class="buyer-info-value">-</span>
+                    </div>
+                    <div class="buyer-info-field">
+                        <span class="buyer-info-label">이메일 주소</span>
+                        <span id="buyerEmail" class="buyer-info-value">-</span>
+                    </div>
                 </div>
             </div>
         </div>
 
+        <!-- 우측: 주문 내역 + 결제 수단 선택 -->
         <div class="payment-form-panel">
             <div class="form-header">
-                <h3>결제 수단</h3>
+                <h3>주문 내역</h3>
                 <span class="secure-badge"><i class="fas fa-lock"></i> NICEPAY 안전 결제</span>
             </div>
 
-            <form id="checkoutForm">
-                <div class="form-group">
-                    <label for="cardNumber">카드 번호</label>
-                    <div class="input-with-icon">
-                        <i class="far fa-credit-card"></i>
-                        <input type="text" id="cardNumber" placeholder="0000 - 0000 - 0000 - 0000" inputmode="numeric" maxlength="25">
-                    </div>
-                </div>
-                
-                <div class="form-row-multi">
-                    <div class="form-group">
-                        <label for="cardExpiry">유효기간</label>
-                        <input type="text" id="cardExpiry" placeholder="MM / YY" inputmode="numeric" maxlength="7">
-                    </div>
-                    <div class="form-group">
-                        <label for="cardPwd">비밀번호 <span class="label-sub">(앞 2자리)</span></label>
-                        <div class="pwd-input-wrap">
-                            <input type="password" id="cardPwd" placeholder="00" inputmode="numeric" maxlength="2">
-                            <span class="pwd-mask">**</span>
-                        </div>
-                    </div>
-                </div>
+            <div class="product-info-box">
+                <div id="chkProductName" class="chk-p-name">멤버십 불러오는 중...</div>
+                <div id="chkProductDesc" class="chk-p-desc">...</div>
+            </div>
 
-                <div class="form-group">
-                    <label for="cardAuthDob">생년월일 (6자리, YYMMDD)</label>
-                    <input type="text" id="cardAuthDob" placeholder="예: 990101" inputmode="numeric" maxlength="6">
-                </div>
+            <div class="price-line">
+                <span>결제 금액</span>
+                <span id="chkPrice" class="chk-price">0원</span>
+            </div>
 
-                <div class="terms-agree">
-                    <label>
-                        <input type="checkbox" id="agreeTerms"> 
-                        <span>정기결제 이용약관 및 개인정보 제공에 동의합니다.</span>
-                    </label>
-                </div>
+            <div class="billing-notice" id="billingNotice"></div>
 
-                <button type="button" class="btn-checkout" id="btnFinalPay" onclick="submitCheckout()">
-                    <span id="btnPayAmount">0원</span> 결제하기
-                </button>
-            </form>
+            <div class="section-divider"></div>
+
+            <h4 class="section-label">결제 수단 선택</h4>
+            <div class="payment-method-group">
+                <label class="payment-method-card" for="methodCard">
+                    <input type="radio" id="methodCard" name="payMethod" value="card">
+                    <div class="pm-card-inner">
+                        <i class="fas fa-credit-card pm-icon"></i>
+                        <span class="pm-label">신용카드</span>
+                    </div>
+                </label>
+                <label class="payment-method-card" for="methodBank">
+                    <input type="radio" id="methodBank" name="payMethod" value="bank">
+                    <div class="pm-card-inner">
+                        <i class="fas fa-university pm-icon"></i>
+                        <span class="pm-label">실시간<br>계좌이체</span>
+                    </div>
+                </label>
+                <label class="payment-method-card" for="methodVbank">
+                    <input type="radio" id="methodVbank" name="payMethod" value="vbank">
+                    <div class="pm-card-inner">
+                        <i class="fas fa-file-invoice pm-icon"></i>
+                        <span class="pm-label">가상계좌</span>
+                    </div>
+                </label>
+            </div>
+
+            <div class="terms-agree">
+                <label>
+                    <input type="checkbox" id="agreeTerms">
+                    <span>정기결제 이용약관 및 개인정보 제공에 동의합니다.</span>
+                </label>
+            </div>
+
+            <button type="button" class="btn-checkout" id="btnFinalPay" onclick="submitCheckout()">
+                <span id="btnPayAmount">0원</span> 결제하기
+            </button>
         </div>
     </div>
-    
+
     <script src="/js/config.js"></script>
+    <script src="https://pay.nicepay.co.kr/v1/js/"></script>
     <script src="/js/checkout.js"></script>
 </body>
 </html>
