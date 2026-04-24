@@ -350,8 +350,6 @@ async function searchStudents() {
         }
 
         currentStudentList = students;
-        // [DEBUG] admin_search 응답 필드 확인 — promoCode 포함 여부 점검 (확인 후 삭제)
-        if (students.length > 0) console.log('[admin_search] 첫 번째 학생 필드:', Object.keys(students[0]), '| promoCode:', students[0].promoCode);
         tbody.innerHTML = "";
 
         if (students.length === 0) {
