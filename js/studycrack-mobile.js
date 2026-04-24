@@ -1,3 +1,5 @@
+const { useState } = React;
+
 const tabTemplate = (active) => (
   <div className="tabbar">
     <div className={active === '홈' ? 'active' : ''}><span>🏠</span>홈</div>
@@ -202,5 +204,32 @@ function App() {
   );
 }
 
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<App />);
+function showFatal(message) {
+  const rootEl = document.getElementById("root");
+  if (!rootEl) return;
+  rootEl.innerHTML = `
+    <div style="padding:20px;font-family:Pretendard,sans-serif;color:#b91c1c;">
+      <h2 style="margin:0 0 8px;">StudyCrack UI 렌더링 오류</h2>
+      <p style="margin:0;white-space:pre-wrap;line-height:1.5;">${message}</p>
+    </div>
+  `;
+}
+
+window.addEventListener("error", function (event) {
+  showFatal(event.message || "알 수 없는 오류가 발생했습니다.");
+});
+window.addEventListener("unhandledrejection", function (event) {
+  const reason = event && event.reason ? String(event.reason) : "Promise 오류가 발생했습니다.";
+  showFatal(reason);
+});
+
+try {
+  const rootEl = document.getElementById("root");
+  if (!rootEl) {
+    throw new Error("#root 요소를 찾을 수 없습니다.");
+  }
+  const root = ReactDOM.createRoot(rootEl);
+  root.render(<App />);
+} catch (error) {
+  showFatal(error && error.message ? error.message : String(error));
+}
