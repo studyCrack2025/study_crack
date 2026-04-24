@@ -1,6 +1,6 @@
 const { useState, useEffect } = React;
 
-const CRACKY_SRC = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAAEfklEQVR42u3dsU3kYBRG0amEEBGTIVECfdAoHdAHKeFQARIjxvbvd8+RXr54/V2GlVZcLgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABt6ef+4egowbNRbnacLkbGLAhi8IIDRiwEYvRiA4QsBGL4QgOELARi+EIDhC8FQD4+vV+fc+icEzhm+TwTOGb4QOGf4QuCc4QuBc4YvBM4ZvhA4Z/hC4JzhC4Fzhi8Ezhm+EDhn+ELgnOELgXOGLwTOGb4QOGf4QuCc4QuBc4YvBM7wEQJn+NRC8PT85nY6w2e5EBjm/ABYlxAIQDAA1iQEAhAMgPUE3OsXWhjmfueXkLDU+AXgnAEQAQEQAAHA+AWgGgAREAABEACMXwCqARAB4xeAeABEQAAEQAAwfgGoBkAEBEAABADjF4BqAERAAARAADB+AagGQAQEQAAEAOMXgGoAREAABEAAMH4BqAZABARAAAQAARAAAcD4BSAXABEQAAEQAIxfAKoBEAEBEAABQAAEQAAwfgHIBUAEBEAABAABEAABwPgFIBcAERAAARAABEAABAABEAABwPgFoBMAERAAARAABEAABAABEAABQAD+ev9x7z/L99fn6K9PAIx/RAhuHfVWt8LXJwKMCMBvo1ll7FtFYcrfldUJwCG3wujvEQMBQAAGjL4aA6sTAKMPx8DqjN/w4yGwPgEw/HAIrE8ADD8cAusTAMMPh8D6BMD4wxGwPgEw/HAIrE8AjD8cAesTAOMPR8D6BMD4wxGwPgEw/nAErE8ADD8cAusTAOMPR8D6BMD4wxGwPgEQAAHA+I1fBMhGwCibEbA+ATDGcASsTwAMUQCoBsAI2xGwvnAAjE8ErE8AnABQC4DRiYAACIATAGoBMDYREAABcAIgALUAGJkICIAAOAEQgFoAjEsEBEAAnAAIQDEChiUAxi8ATgAEoBYAoxIBARAAJwACIABOAAQgFQGDEgDjFwAnAAIgAE4AEAAnAAiAEwAGR8CYRMD4458CjMn4BUAAnAAIgAA4AcC/Azg//yMATgAQACcATI2AQQmAVQmAEwD8GOB8/MenAOe7PwLgBIBABAyrGQArEgAR8N0fARAAAUAEjMz4EQAnAIiAM34EwAkAIuCMHwFwAoAIOONncgBEwH/6wacA57s/PgU43/0RAWf8iIAzfgTACQAi4IyfRABEwG/6QQSEwK/5RgREwPgRAWM2froBEIF1xi8AiIDxwzEREIJjhm/8iIDxwzoRqIdgr2fsbWbZABRDsPez9TZzighMD8ERz9NbzOkiMC0ERz1Dby+njsCZY3D0M/PWMioCZ4jBKs/I28roCKwUg9WeibeUVAT2jMLqX7u3ExG4MRZTvhZvJSIQPW8jImD8IASGDyJg/CACxg9CYPggAsYPQmD4IALGD0Jg+CAEhg9CYPggBIYPQmD4IASGD2Jg9CAGRg+CYPDQioKnC8Ni4SkAAAAAAAAAAAAAAAAAAAAs5wfpmZFnYgYPvwAAAABJRU5ErkJggg==';
+const CRACKY_SRC = './assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png';
 
 function i(name, primary) {
   const c = primary ? 'icon primary' : 'icon';
@@ -55,7 +55,7 @@ function App() {
   const layout = (inner, withTab) => `<div class="phone"><div class="screen">${inner}</div>${withTab ? tabbar() : ''}</div>`;
   const quick = (action, iconName, label) => `<div class="quick-item" data-action="goto" data-target="${action}">${i(iconName,false)}<div class="q-label">${label}</div></div>`;
 
-  const homeView = () => `<div class="brand-row"><p class="greeting">안녕하세요, 지민님 👋</p><img class="brand-logo-sm" src="./assets/images/studycrack_logo_wo_bg.png" alt="logo"/></div>
+  const homeView = () => `<div class="brand-row"><p class="greeting">안녕하세요, 지민님</p><img class="brand-logo-sm" src="./assets/images/studycrack_logo_wo_bg.png" alt="logo"/></div>
     <div class="section"><div class="card kpi-card"><p class="sub">내 합격 가능성</p><div style="display:flex;justify-content:space-between;align-items:center"><div><p class="metric">68%</p><p class="sub">상위 32%</p></div><div class="ring"></div></div>
     <div class="kpi-row"><div class="kpi-item"><b>323점</b>현재점수</div><div class="kpi-item"><b>335점</b>합격컷</div><div class="kpi-item danger"><b>-12점</b>부족점수</div></div>${mascotBubble('이 방향이면 합격 확률 올라가요!','sm')}</div></div>
     <div class="section"><div class="notice">수학이 합격 가능성을 제한하고 있어요</div></div>
