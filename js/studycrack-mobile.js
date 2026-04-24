@@ -1,6 +1,6 @@
 const { useState, useEffect } = React;
 
-const CRACKY_SRC = './assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png';
+const CRACKY_SRC = 'assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png';
 
 function i(name, primary) {
   const c = primary ? 'icon primary' : 'icon';
@@ -54,6 +54,22 @@ function App() {
   const tabbar = () => `<div class="tabbar">${tabBtn('home','홈','home')}${tabBtn('analysis','분석','chart')}${tabBtn('strategy','전략','target')}${tabBtn('planner','플래너','calendar')}${tabBtn('my','마이','user')}</div>`;
   const layout = (inner, withTab) => `<div class="phone"><div class="screen">${inner}</div>${withTab ? tabbar() : ''}</div>`;
   const quick = (action, iconName, label) => `<div class="quick-item" data-action="goto" data-target="${action}">${i(iconName,false)}<div class="q-label">${label}</div></div>`;
+  const onboarding = (step, title, subtitle, cardContent, target, cta = '다음') => `
+    <div class="phone">
+      <div class="screen">
+        ${appbar(`온보딩 ${step}`, true)}
+        <div class="onboarding-screen">
+          <div class="onboarding-copy"><h2>${title}</h2><p>${subtitle}</p></div>
+          <div class="onboarding-card">${cardContent}</div>
+          <img src="${CRACKY_SRC}" class="onboarding-char" alt="크랙이"/>
+          <div class="onboarding-footer">
+            <div class="page-indicator"><i class="${step===1?'active':''}"></i><i class="${step===2?'active':''}"></i><i class="${step===3?'active':''}"></i></div>
+            <button class="onboarding-next" data-action="goto" data-target="${target}">${cta}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 
   const homeView = () => `<div class="brand-row"><p class="greeting">안녕하세요, 지민님</p><img class="brand-logo-sm" src="./assets/images/studycrack_logo_wo_bg.png" alt="logo"/></div>
     <div class="section"><div class="card kpi-card"><p class="sub">내 합격 가능성</p><div style="display:flex;justify-content:space-between;align-items:center"><div><p class="metric">68%</p><p class="sub">상위 32%</p></div><div class="ring"></div></div>
@@ -67,9 +83,9 @@ function App() {
 
   const screens = {
     splash: `<div class="phone"><div class="splash"><div class="logo-bolt">${i('bolt',true)}</div><img class="brand-logo" src="./assets/images/studycrack_logo_wo_bg.png" alt="logo"/><h1 style="margin:0;font-size:30px">스터디크랙</h1><p>합격까지 가장 빠른 전략</p></div></div>`,
-    on1: layout(appbar('온보딩 1', true) + `<div class="card onboard-grid"><p class="sub" style="margin:0">현재 위치와 목표 대학 거리</p><div class="score-collage"><div class="score-box"><div class="label">현재 점수</div><p class="value">323</p></div><div class="gap-chip">-12점</div><div class="score-box"><div class="label">목표 컷</div><p class="value">335</p></div></div><div class="distance-track"><i></i></div><div class="collage-foot"><span class="sub" style="font-size:12px">거리만 줄이면 합격권</span><img src="${CRACKY_SRC}" class="cracky-img cracky-sm" alt="크랙이"/></div></div><button class="btn btn-primary" data-action="goto" data-target="on2">다음</button>`, false),
-    on2: layout(appbar('온보딩 2', true) + `<div class="card onboard-grid"><p class="sub" style="margin:0">과목별 영향도</p><div class="subject-bars"><div class="row focus"><span>수학</span><div class="line"><i style="width:88%"></i></div><b>+15%</b></div><div class="row"><span>탐구</span><div class="line"><i style="width:62%"></i></div><b>+9%</b></div><div class="row"><span>영어</span><div class="line"><i style="width:30%"></i></div><b>+3%</b></div></div><div class="collage-foot"><span class="sub" style="font-size:12px">핵심 과목부터 집중</span><img src="${CRACKY_SRC}" class="cracky-img cracky-sm" alt="크랙이"/></div></div><button class="btn btn-primary" data-action="goto" data-target="on3">다음</button>`, false),
-    on3: layout(appbar('온보딩 3', true) + `<div class="card onboard-grid"><p class="sub" style="margin:0">실행 흐름</p><div class="flow-chart"><div class="flow-step"><span>전략</span>${i('target', true)}</div><div class="flow-arrow">↓</div><div class="flow-step"><span>플래너</span>${i('calendar', true)}</div><div class="flow-arrow">↓</div><div class="flow-step"><span>튜터</span>${i('chat', true)}</div><div class="flow-arrow">↓</div><div class="flow-step"><span>리포트</span>${i('report', true)}</div></div><div class="collage-foot"><span class="sub" style="font-size:12px">한 흐름으로 연결돼요</span><img src="${CRACKY_SRC}" class="cracky-img cracky-sm" alt="크랙이"/></div></div><button class="btn btn-primary" data-action="goto" data-target="home">홈으로</button>`, false),
+    on1: onboarding(1, '합격 가능성', '현재 성적 기준', `<p class="onboarding-metric">72%</p><p class="onboarding-sub">합격 가능성</p><div class="on-graph-line"><svg viewBox="0 0 160 90" fill="none"><path d="M8 76C34 68 44 52 64 50C84 48 96 62 116 44C130 31 140 24 152 14" stroke="#2F6BFF" stroke-width="4" stroke-linecap="round"/></svg></div>`, 'on2'),
+    on2: onboarding(2, '수학 +12점', '합격 가능성 +18%', `<p class="onboarding-metric">+18%</p><p class="onboarding-sub">수학 영향도 최우선</p><div class="on-graph-bars"><i></i><i></i><i></i></div>`, 'on3'),
+    on3: onboarding(3, '실행 플로우', '한 번에 연결', `<p class="onboarding-metric">3 Steps</p><p class="onboarding-sub">학습 루틴 시작</p><div class="on-list-cards"><div class="on-list-item">${i('target', true)}전략 정리</div><div class="on-list-item">${i('calendar', true)}플래너 배치</div><div class="on-list-item">${i('report', true)}리포트 확인</div></div>`, 'home', '시작하기'),
     home: layout(homeView(), true),
     analysis: layout(appbar('분석', false) + `<div class="card"><span class="badge">연세대학교 경영학과</span><p class="metric-sm">68%</p><p class="sub">현재 323점 / 합격 컷 335점 / 부족 -12점</p></div><div class="card"><div class="bar">수학<div class="track"><i style="width:88%"></i></div><span>+15%</span></div><div class="bar">탐구<div class="track"><i style="width:72%;background:#0ea5a2"></i></div><span>+9%</span></div></div><div class="card compact"><p class="sub">현재 병목</p><p style="margin:0;font-weight:600">수학이 합격 가능성을 제한하고 있어요</p></div>`, true),
     strategy: layout(appbar('전략', false) + `<div class="card"><ul class="list"><li><b>1</b> 수학 2등급 → 1등급</li><li><b>2</b> 탐구 1과목 집중</li><li><b>3</b> 영어 유지 전략</li></ul></div><button class="btn btn-primary" data-action="goto" data-target="planner">플래너로 실행하기</button>`, true),
