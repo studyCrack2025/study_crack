@@ -23,3 +23,6 @@ backend-backup/
 CLAUDE.md
 ARCHITECTURE.md
 docs/
+
+# 7. 기타 지금은 안쓰는 파일 및 폴더들
+black/
