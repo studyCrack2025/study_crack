@@ -29,6 +29,9 @@ let salesChart = null;
 let periodChart = null; 
 let rawPaymentData = []; 
 
+// 학생 목록 현재 검색 결과 (CSV 내보내기용)
+let currentStudentList = [];
+
 // Q&A 관련 변수 (New)
 let allQnaData = []; // 서버에서 가져온 전체 질문 리스트
 let currentQnaFilter = 'waiting'; // 현재 탭 상태 (waiting | read | done)
@@ -346,8 +349,9 @@ async function searchStudents() {
             }
         }
 
+        currentStudentList = students;
         tbody.innerHTML = "";
-        
+
         if (students.length === 0) {
             tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>조건에 맞는 학생이 없습니다.</td></tr>";
             return;
@@ -393,6 +397,42 @@ async function searchStudents() {
 }
 
 function goToStudentDetail(targetUserId) { window.location.href = `/admin/detail?uid=${targetUserId}`; }
+
+// 학생 등급을 텍스트로 반환 (CSV용)
+function getStudentTierText(s) {
+    if (!s || !s.currentSubscription || s.currentSubscription.status !== 'active') return 'FREE';
+    return (s.currentSubscription.tier || 'FREE').toUpperCase();
+}
+
+// 현재 검색 결과를 CSV로 내보내기
+function exportStudentsToCSV() {
+    if (!currentStudentList || currentStudentList.length === 0) {
+        alert("내보낼 학생 데이터가 없습니다. 먼저 검색을 실행해 주세요.");
+        return;
+    }
+
+    const headers = ['이름', '이메일', '전화번호', '유료등급', 'MBTI'];
+    const rows = currentStudentList.map(s => [
+        s.name  || '',
+        s.email || '',
+        s.phone || '',
+        getStudentTierText(s),
+        decodePromoCodeToMbti(s.promoCode) || ''
+    ]);
+
+    const csvEscape = val => `"${String(val).replace(/"/g, '""')}"`;
+    const csvContent = [headers, ...rows].map(row => row.map(csvEscape).join(',')).join('\r\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    const now  = new Date();
+    const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+    a.href     = url;
+    a.download = `studycrack_students_${dateStr}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
 
 // 💡 [수정] 새로운 구독 스키마 기반 등급 뱃지 함수
 function getTierBadgeHTML(studentItem) {
