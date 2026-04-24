@@ -1,172 +1,77 @@
 /* css/checkout.css */
 
-.checkout-body {
-    background-color: #f1f5f9;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-}
+/* ── 공통 레이아웃 ── */
+.checkout-body { background-color: #f1f5f9; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+.checkout-wrapper { display: flex; max-width: 950px; width: 90%; background: #fff; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.08); overflow: hidden; margin: 40px 0; }
 
-.checkout-wrapper {
-    display: flex;
-    max-width: 950px;
-    width: 90%;
-    background: #fff;
-    border-radius: 20px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-    overflow: hidden;
-    margin: 40px 0;
-}
-
-/* 왼쪽 패널 (상품 요약) */
-.order-summary-panel {
-    flex: 1;
-    background-color: #0f172a; /* 고급스러운 다크 네이비 */
-    color: white;
-    padding: 50px 40px;
-    display: flex;
-    flex-direction: column;
-}
-
-.btn-back {
-    background: transparent;
-    border: none;
-    color: #94a3b8;
-    font-size: 0.95rem;
-    cursor: pointer;
-    padding: 0;
-    margin-bottom: 40px;
-    text-align: left;
-    transition: color 0.2s;
-}
+/* ── 좌측 패널: 주문자 정보 ── */
+.order-summary-panel { flex: 1; background-color: #0f172a; color: white; padding: 50px 40px; display: flex; flex-direction: column; }
+.btn-back { background: transparent; border: none; color: #94a3b8; font-size: 0.95rem; cursor: pointer; padding: 0; margin-bottom: 40px; text-align: left; transition: color 0.2s; }
 .btn-back:hover { color: white; }
+.brand-logo { font-size: 1.2rem; font-weight: 900; color: #3b82f6; display: block; margin-bottom: 20px; }
+.summary-title { margin: 0 0 28px 0; font-size: 1.7rem; font-weight: 800; }
+.buyer-info-section { display: flex; flex-direction: column; }
+.buyer-info-field { display: flex; flex-direction: column; padding-bottom: 20px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+.buyer-info-field:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.buyer-info-label { font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 5px; }
+.buyer-info-value { font-size: 1rem; font-weight: 500; color: #e2e8f0; word-break: break-all; }
 
-.brand-logo {
-    font-size: 1.2rem;
-    font-weight: 900;
-    color: #3b82f6;
-    display: block;
-    margin-bottom: 20px;
-}
+/* ── 우측 패널: 주문 내역 + 결제 수단 ── */
+.payment-form-panel { flex: 1.3; padding: 50px; background: #ffffff; overflow-y: auto; }
+.form-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; padding-bottom: 15px; border-bottom: 2px dashed #f1f5f9; }
+.form-header h3 { margin: 0; font-size: 1.35rem; color: #1e293b; font-weight: 800; }
+.secure-badge { background: #f0fdf4; color: #16a34a; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
 
-.summary-title { margin: 0 0 30px 0; font-size: 1.8rem; }
+/* ── 상품 정보 ── */
+.product-info-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 18px 20px; border-radius: 12px; margin-bottom: 16px; }
+.chk-p-name { font-size: 1.15rem; font-weight: 700; color: #1e293b; margin-bottom: 6px; }
+.chk-p-desc { font-size: 0.88rem; color: #64748b; line-height: 1.55; }
 
-.product-info-box {
-    background: rgba(255,255,255,0.05);
-    padding: 20px;
-    border-radius: 12px;
-    margin-bottom: 30px;
-}
+/* ── 금액 ── */
+.price-line { display: flex; justify-content: space-between; align-items: center; font-size: 1rem; font-weight: 700; color: #334155; padding: 16px 0; border-top: 2px dashed #f1f5f9; }
+.chk-price { font-size: 1.75rem; font-weight: 900; color: #2563EB; }
 
-.chk-p-name { font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; color: #f8fafc; }
-.chk-p-desc { font-size: 0.95rem; color: #94a3b8; line-height: 1.5; }
+/* ── 결제 안내 ── */
+.billing-notice { font-size: 0.84rem; color: #0369a1; line-height: 1.65; background: #f0f9ff; border: 1px solid #bae6fd; padding: 13px 16px; border-radius: 8px; margin-bottom: 6px; }
 
-.price-line {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 1.2rem;
-    font-weight: bold;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    padding-top: 30px;
-    margin-bottom: 30px;
-}
+/* ── 구분선 + 섹션 타이틀 ── */
+.section-divider { border: none; border-top: 2px dashed #f1f5f9; margin: 20px 0; }
+.section-label { font-size: 0.95rem; font-weight: 800; color: #1e293b; margin: 0 0 14px 0; }
 
-.chk-price { font-size: 1.8rem; color: #fff; }
+/* ── 결제 수단 카드 ── */
+.payment-method-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+.payment-method-card { display: flex; cursor: pointer; border: 2px solid #e2e8f0; border-radius: 12px; transition: border-color 0.18s, background 0.18s; }
+.payment-method-card input[type="radio"] { display: none; }
+.pm-card-inner { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 18px 8px; width: 100%; gap: 9px; }
+.pm-icon { font-size: 1.45rem; color: #94a3b8; transition: color 0.18s; }
+.pm-label { font-size: 0.8rem; font-weight: 600; color: #64748b; text-align: center; line-height: 1.4; transition: color 0.18s; }
+.payment-method-card:hover { border-color: #93c5fd; background: #eff6ff; }
+.payment-method-card:hover .pm-icon { color: #2563EB; }
+.payment-method-card:hover .pm-label { color: #1e40af; }
+.payment-method-card.selected { border-color: #2563EB; background: #eff6ff; }
+.payment-method-card.selected .pm-icon { color: #2563EB; }
+.payment-method-card.selected .pm-label { color: #1e40af; }
 
-.billing-notice {
-    font-size: 0.85rem;
-    color: #64748b;
-    line-height: 1.5;
-    background: rgba(0,0,0,0.2);
-    padding: 15px;
-    border-radius: 8px;
-}
-
-/* 오른쪽 패널 (결제 폼) */
-.payment-form-panel {
-    flex: 1.3;
-    padding: 50px;
-    background: #ffffff;
-}
-
-.form-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-    padding-bottom: 15px;
-    border-bottom: 2px dashed #f1f5f9;
-}
-
-.form-header h3 { margin: 0; font-size: 1.4rem; color: #1e293b; }
-
-.secure-badge {
-    background: #f0fdf4;
-    color: #16a34a;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: bold;
-}
-
-.form-group { margin-bottom: 20px; }
-.form-group label { display: block; font-size: 0.9rem; font-weight: 600; color: #475569; margin-bottom: 8px; }
-.label-sub { font-weight: 400; font-size: 0.82rem; color: #94a3b8; }
-
-.input-with-icon { position: relative; }
-.input-with-icon i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem; }
-.input-with-icon input { padding-left: 45px; }
-
-input {
-    width: 100%;
-    padding: 14px;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: border-color 0.2s;
-    box-sizing: border-box;
-    font-family: inherit;
-}
-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-
-.form-row-multi { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-
-.pwd-input-wrap { display: flex; align-items: center; gap: 10px; }
-.pwd-input-wrap input { width: 70px !important; text-align: center; }
-.pwd-mask { font-size: 1.5rem; color: #475569; letter-spacing: 2px; line-height: 1; margin-top: 8px; }
-
-.terms-agree { margin: 30px 0; font-size: 0.9rem; color: #475569; }
+/* ── 약관 동의 + 결제 버튼 ── */
+.terms-agree { margin: 0 0 22px 0; font-size: 0.88rem; color: #475569; }
 .terms-agree label { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-.terms-agree input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
-
-.btn-checkout {
-    width: 100%;
-    padding: 18px;
-    background: #2563EB;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 1.15rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.2s, transform 0.1s;
-}
+.terms-agree input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; }
+.btn-checkout { width: 100%; padding: 18px; background: #2563EB; color: white; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: 800; cursor: pointer; transition: background 0.2s, transform 0.1s; letter-spacing: -0.2px; }
 .btn-checkout:hover { background: #1d4ed8; transform: translateY(-2px); }
 .btn-checkout:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
 
-/* 모바일 1단 배치 */
+/* ── 모바일: 세로 스택 ── */
 @media (max-width: 768px) {
-    .checkout-wrapper { flex-direction: column; margin: 0; width: 100%; border-radius: 0; }
-    .order-summary-panel { padding: 30px 25px; }
-    .payment-form-panel { padding: 30px 25px; }
+    .checkout-body { align-items: flex-start; }
+    .checkout-wrapper { flex-direction: column; margin: 0; width: 100%; border-radius: 0; min-height: 100vh; }
+    .order-summary-panel { padding: 28px 22px; }
+    .payment-form-panel { padding: 28px 22px; }
     .btn-back { margin-bottom: 20px; }
-    .summary-title { margin-bottom: 20px; }
-
-    /* 유효기간 / 비밀번호 — 모바일에서 세로 배치 */
-    .form-row-multi { grid-template-columns: 1fr; gap: 0; }
-    .pwd-input-wrap input { width: 80px !important; }
+    .summary-title { font-size: 1.35rem; margin-bottom: 20px; }
+    .buyer-info-field { padding-bottom: 15px; margin-bottom: 15px; }
+    .payment-method-group { gap: 8px; }
+    .pm-card-inner { padding: 14px 6px; gap: 7px; }
+    .pm-icon { font-size: 1.2rem; }
+    .pm-label { font-size: 0.73rem; }
+    .chk-price { font-size: 1.5rem; }
 }
