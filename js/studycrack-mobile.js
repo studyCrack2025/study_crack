@@ -1,6 +1,7 @@
 const { useState, useEffect } = React;
 
 const CRACKY_SRC = 'assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png';
+const ONBOARDING_LOGO_SRC = './assets/images/og-image.jpg';
 
 function i(name, primary) {
   const c = primary ? 'icon primary' : 'icon';
@@ -54,13 +55,17 @@ function App() {
   const tabbar = () => `<div class="tabbar">${tabBtn('home','홈','home')}${tabBtn('analysis','분석','chart')}${tabBtn('strategy','전략','target')}${tabBtn('planner','플래너','calendar')}${tabBtn('my','마이','user')}</div>`;
   const layout = (inner, withTab) => `<div class="app-shell"><div class="screen app-screen app-content">${inner}</div>${withTab ? tabbar() : ''}</div>`;
   const quick = (action, iconName, label) => `<div class="quick-item" data-action="goto" data-target="${action}">${i(iconName,false)}<div class="q-label">${label}</div></div>`;
-  const onboarding = (step, title, subtitle, cardContent, target, cta = '다음') => `
+  const onboarding = (step, title, subtitle, cardContent, bubbleText, target, cta = '다음') => `
     <div class="app-shell">
       <div class="screen app-screen app-content">
         <div class="onboarding-screen">
+          <img src="${ONBOARDING_LOGO_SRC}" class="onboarding-logo" alt="StudyCrack 로고"/>
           <div class="onboarding-copy"><h2>${title}</h2><p>${subtitle}</p></div>
           ${cardContent}
-          <img src="${CRACKY_SRC}" class="onboarding-char" alt="크랙이"/>
+          <div class="onboarding-speech">
+            <img src="${CRACKY_SRC}" class="onboarding-speech-char" alt="크랙이"/>
+            <p class="onboarding-speech-text">${bubbleText}</p>
+          </div>
           <div class="onboarding-footer">
             <div class="page-indicator"><i class="${step===1?'active':''}"></i><i class="${step===2?'active':''}"></i><i class="${step===3?'active':''}"></i></div>
             <button class="onboarding-next" data-action="goto" data-target="${target}">${cta}</button>
@@ -87,6 +92,7 @@ function App() {
       '데이터 기반으로\n내 합격 가능성을 분석해요',
       '흔들리지 않는 방향을\n제시해드립니다.',
       `<div class="onboarding-card"><p class="onboarding-sub">합격 가능성</p><p class="onboarding-metric">72%</p><div class="on-graph-line"><svg viewBox="0 0 300 90" fill="none"><path d="M0 82H300" stroke="#E7EEF9" stroke-width="2"/><path d="M10 74C34 72 46 62 66 62C90 62 96 70 116 66C136 62 146 48 164 46C182 44 192 56 212 48C230 41 240 30 260 24C274 20 286 14 294 10" stroke="#2F6BFF" stroke-width="4" stroke-linecap="round"/><circle cx="294" cy="10" r="4.5" fill="#2F6BFF"/></svg></div></div>`,
+      '데이터로 흔들리지 않는 방향을 잡아드릴게요.',
       'on2'
     ),
     on2: onboarding(
@@ -94,6 +100,7 @@ function App() {
       '나에게 최적화된\n점수 상승 전략을 제공해요',
       '과목별 효율과 목표 도달 시간을\n정확하게 예측해 드려요.',
       `<div class="onboarding-card"><p class="onboarding-sub" style="margin-top:0">수학 +12점</p><p class="onboarding-sub" style="margin-top:4px">합격 가능성 +18%</p><div class="on-graph-bars"><i></i><i></i><i></i><i></i></div><div class="on-chart-line"><svg viewBox="0 0 300 90" fill="none"><path d="M18 72C54 70 88 66 122 60C156 54 190 45 222 34C246 26 266 20 286 14" stroke="#2F6BFF" stroke-width="4" stroke-linecap="round"/></svg></div></div>`,
+      '가장 효율적인 점수 상승 루트를 찾아드릴게요.',
       'on3'
     ),
     on3: onboarding(
@@ -101,6 +108,7 @@ function App() {
       '실행부터 관리까지\n끝까지 함께해요',
       '플래너, 주간 점검, Sky튜터 피드백,\n프로 보고서로 관리합니다.',
       `<div class="on-feature-list"><div class="on-feature-item"><div class="on-feature-icon">${i('calendar', true)}</div><span>플래너 & 주간 점검</span></div><div class="on-feature-item"><div class="on-feature-icon">${i('chat', true)}</div><span>Sky튜터 1:1 피드백</span></div><div class="on-feature-item"><div class="on-feature-icon">${i('report', true)}</div><span>프로 보고서 (2주에 1번)</span></div></div>`,
+      '계획부터 점검까지 끝까지 같이 갈게요.',
       'home',
       '시작하기'
     ),
