@@ -44,10 +44,10 @@
   }
 
   function homeView() {
-    return appbar('홈 대시보드', false)
+    return '<div class="brand-row"><img class="brand-logo-sm" src="./assets/images/studycrack_logo_wo_bg.png" alt="logo"/><p class="greeting">안녕하세요, 지민님 👋</p></div>' + appbar('홈 대시보드', false)
       + '<div class="card"><p class="small">내 합격 가능성</p><div class="row"><div><p class="metric">68%</p><p class="small">상위 32%</p></div><div class="ring-wrap"><div class="ring"></div></div></div>'
-      + '<div class="row"><div class="small"><b>323점</b><br/>현재 점수</div><div class="small"><b>335점</b><br/>합격 컷</div><div class="small" style="color:var(--danger)"><b>-12점</b><br/>부족 점수</div></div></div>'
-      + '<div class="notice">수학이 합격 가능성을 제한하고 있어요. 수학 우선 개선이 가장 효율적입니다.</div>'
+      + '<div class="row"><div class="small"><b>323점</b><br/>현재 점수</div><div class="small"><b>335점</b><br/>합격 컷</div><div class="small" style="color:var(--danger)"><b>-12점</b><br/>부족 점수</div></div><div class="row" style="margin-top:8px"><div class="mascot">🐊🎓</div><div class="bubble">이 방향이면 합격 확률 올라가요!</div></div></div>'
+      + '<div class="notice">수학이 지금 발목 잡고 있어요. 수학 우선 개선이 가장 효율적입니다.</div>'
       + '<div class="card"><p class="small" style="margin-top:0">빠른 메뉴</p><div class="quick-grid">'
       + '<div class="quick-item" data-action="goto" data-target="analysis"><strong>📊</strong>분석</div>'
       + '<div class="quick-item" data-action="goto" data-target="strategy"><strong>🎯</strong>전략</div>'
@@ -61,10 +61,10 @@
 
   function screenHtml(name) {
     if (name === 'splash') {
-      return '<div class="phone"><div class="splash"><div class="logo">⚡</div><h1 style="margin:0">스터디크랙</h1><p style="opacity:.9">합격까지 가장 빠른 전략</p><button class="btn" data-action="goto" data-target="on1">시작하기</button></div></div>';
+      return '<div class="phone"><div class="splash"><div class="logo-bolt">⚡</div><img class="brand-logo" src="./assets/images/studycrack_logo_wo_bg.png" alt="StudyCrack 로고"/><h1 style="margin:0;font-size:30px">스터디크랙</h1><p style="opacity:.95">합격까지 가장 빠른 전략</p><button class="btn" data-action="goto" data-target="on1">시작하기</button></div></div>';
     }
-    if (name === 'on1') return layout(appbar('온보딩 1', true) + '<div class="card center"><h3 style="margin:0 0 6px">데이터 기반 합격 가능성 분석</h3><p class="metric">72%</p><div class="progress"><span style="width:72%"></span></div></div><button class="btn" data-action="goto" data-target="on2">다음</button>', false);
-    if (name === 'on2') return layout(appbar('온보딩 2', true) + '<div class="card center"><h3 style="margin:0 0 8px">점수 상승 전략 역산</h3><ul class="list"><li>수학 +12점 → 합격 가능성 +18%</li><li>탐구 +1등급 → 합격 가능성 +9%</li></ul></div><button class="btn" data-action="goto" data-target="on3">다음</button>', false);
+    if (name === 'on1') return layout(appbar('온보딩 1', true) + '<div class="card center"><h3 style="margin:0 0 6px">데이터 기반 합격 가능성 분석</h3><p class="metric">72%</p><div class="progress"><span style="width:72%"></span></div><div class="row" style="margin-top:8px"><div class="mascot">🐊🎓</div><div class="bubble">흔들리지 않는 방향을 찾았어요!</div></div></div><button class="btn" data-action="goto" data-target="on2">다음</button>', false);
+    if (name === 'on2') return layout(appbar('온보딩 2', true) + '<div class="card center"><h3 style="margin:0 0 8px">점수 상승 전략 역산</h3><ul class="list"><li>수학 +12점 → 합격 가능성 +18%</li><li>탐구 +1등급 → 합격 가능성 +9%</li></ul><div class="row" style="margin-top:8px"><div class="mascot">🐊🎓</div><div class="bubble">과목 ROI부터 공략하면 빨라요!</div></div></div><button class="btn" data-action="goto" data-target="on3">다음</button>', false);
     if (name === 'on3') return layout(appbar('온보딩 3', true) + '<div class="card center"><h3 style="margin:0 0 8px">실행부터 관리까지 함께</h3><ul class="list"><li>플래너</li><li>주간 점검</li><li>SKY튜터 피드백</li><li>프로 보고서</li></ul></div><button class="btn" data-action="goto" data-target="home">홈으로</button>', false);
     if (name === 'home') return layout(homeView(), true);
     if (name === 'analysis') return layout(appbar('분석', false)
@@ -80,12 +80,12 @@
       + '<div class="card center" style="background:linear-gradient(145deg,#edf4ff,#ffffff)"><p class="small">공부 타이머</p><p class="metric" style="font-size:36px">01:25:30</p></div>', true);
     if (name === 'my') return layout(appbar('마이페이지', false)
       + '<div class="card"><h3 style="margin:0">김지민</h3><p class="small">목표 대학: 연세대학교 경영학과</p><span class="badge">Pro 플랜 이용 중</span></div>'
-      + '<div class="card"><ul class="list"><li>성적 정보</li><li>학습 리포트</li><li>구독 관리</li><li>설정</li></ul></div>', true);
+      + '<div class="card"><ul class="list"><li>성적 정보</li><li>학습 리포트</li><li>구독 관리</li><li>설정</li></ul></div><div class="card center"><div class="mascot" style="margin:0 auto 8px">🐊🎓</div><p class="small">아직 데이터가 없어요. 먼저 분석해볼까요?</p></div>', true);
     if (name === 'weekly') return layout(appbar('주간 점검', true)
       + '<div class="card"><p class="small">플래너 수행률</p><p class="metric" style="font-size:42px">82%</p><div class="progress"><span style="width:82%"></span></div></div>'
       + '<div class="card"><h3 style="margin:0 0 8px">튜터 피드백</h3><ul class="list"><li>수학 절대 시간이 부족해요</li><li>개념 비중을 늘려보세요</li></ul></div><button class="btn" data-action="back">다음 주 계획 세우기</button>', false);
     if (name === 'report') return layout(appbar('프로 보고서', true)
-      + '<div class="card"><span class="badge">Pro 플랜 전용</span><p class="small">2주에 1회 제공</p><div class="card" style="margin:8px 0 0;padding:10px"><p class="small">다음 이용 가능일</p><p class="metric" style="font-size:40px">D-11</p><p class="small">5월 25일 (토)</p></div></div>'
+      + '<div class="card"><span class="badge">Pro 플랜 전용</span><p class="small">2주에 1회 제공</p><div class="card" style="margin:8px 0 0;padding:10px"><p class="small">다음 이용 가능일</p><div class="row"><div><p class="metric" style="font-size:40px">D-11</p><p class="small">5월 25일 (토)</p></div><div class="mascot">🐊🎓</div></div></div></div>'
       + '<div class="card"><h3 style="margin:0 0 7px">이전 보고서</h3><ul class="list"><li class="clickable" data-action="goto" data-target="reportDetail">5월 11일 · 종합 분석 리포트</li><li>4월 27일 · 중간 분석 리포트</li></ul></div>', false);
     if (name === 'reportDetail') return layout(appbar('프로 보고서 상세', true)
       + '<div class="card"><h3 style="margin:0 0 8px">학습 평가</h3><ul class="list"><li>수학 점수 상승 여지 큼</li><li>목표 대학 거리 -12점</li><li>중기: 탐구 집중 강화</li><li>장기: 6월 전 수학 완성</li></ul></div><button class="btn ghost">PDF 다운로드</button>', false);
