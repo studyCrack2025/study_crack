@@ -57,10 +57,9 @@ function App() {
   const onboarding = (step, title, subtitle, cardContent, target, cta = '다음') => `
     <div class="app-shell">
       <div class="screen app-screen app-content">
-        ${appbar(`온보딩 ${step}`, true)}
         <div class="onboarding-screen">
           <div class="onboarding-copy"><h2>${title}</h2><p>${subtitle}</p></div>
-          <div class="onboarding-card">${cardContent}</div>
+          ${cardContent}
           <img src="${CRACKY_SRC}" class="onboarding-char" alt="크랙이"/>
           <div class="onboarding-footer">
             <div class="page-indicator"><i class="${step===1?'active':''}"></i><i class="${step===2?'active':''}"></i><i class="${step===3?'active':''}"></i></div>
@@ -83,9 +82,28 @@ function App() {
 
   const screens = {
     splash: `<div class="app-shell"><div class="splash"><div class="logo-bolt">${i('bolt',true)}</div><img class="brand-logo" src="./assets/images/studycrack_logo_wo_bg.png" alt="logo"/><h1 style="margin:0;font-size:30px">스터디크랙</h1><p>합격까지 가장 빠른 전략</p></div></div>`,
-    on1: onboarding(1, '합격 가능성', '현재 성적 기준', `<p class="onboarding-metric">72%</p><p class="onboarding-sub">합격 가능성</p><div class="on-graph-line"><svg viewBox="0 0 160 90" fill="none"><path d="M8 76C34 68 44 52 64 50C84 48 96 62 116 44C130 31 140 24 152 14" stroke="#2F6BFF" stroke-width="4" stroke-linecap="round"/></svg></div>`, 'on2'),
-    on2: onboarding(2, '수학 +12점', '합격 가능성 +18%', `<p class="onboarding-metric">+18%</p><p class="onboarding-sub">수학 영향도 최우선</p><div class="on-graph-bars"><i></i><i></i><i></i></div>`, 'on3'),
-    on3: onboarding(3, '실행 플로우', '한 번에 연결', `<p class="onboarding-metric">3 Steps</p><p class="onboarding-sub">학습 루틴 시작</p><div class="on-list-cards"><div class="on-list-item">${i('target', true)}전략 정리</div><div class="on-list-item">${i('calendar', true)}플래너 배치</div><div class="on-list-item">${i('report', true)}리포트 확인</div></div>`, 'home', '시작하기'),
+    on1: onboarding(
+      1,
+      '데이터 기반으로\n내 합격 가능성을 분석해요',
+      '흔들리지 않는 방향을\n제시해드립니다.',
+      `<div class="onboarding-card"><p class="onboarding-sub">합격 가능성</p><p class="onboarding-metric">72%</p><div class="on-graph-line"><svg viewBox="0 0 300 90" fill="none"><path d="M0 82H300" stroke="#E7EEF9" stroke-width="2"/><path d="M10 74C34 72 46 62 66 62C90 62 96 70 116 66C136 62 146 48 164 46C182 44 192 56 212 48C230 41 240 30 260 24C274 20 286 14 294 10" stroke="#2F6BFF" stroke-width="4" stroke-linecap="round"/><circle cx="294" cy="10" r="4.5" fill="#2F6BFF"/></svg></div></div>`,
+      'on2'
+    ),
+    on2: onboarding(
+      2,
+      '나에게 최적화된\n점수 상승 전략을 제공해요',
+      '과목별 효율과 목표 도달 시간을\n정확하게 예측해 드려요.',
+      `<div class="onboarding-card"><p class="onboarding-sub" style="margin-top:0">수학 +12점</p><p class="onboarding-sub" style="margin-top:4px">합격 가능성 +18%</p><div class="on-graph-bars"><i></i><i></i><i></i><i></i></div><div class="on-chart-line"><svg viewBox="0 0 300 90" fill="none"><path d="M18 72C54 70 88 66 122 60C156 54 190 45 222 34C246 26 266 20 286 14" stroke="#2F6BFF" stroke-width="4" stroke-linecap="round"/></svg></div></div>`,
+      'on3'
+    ),
+    on3: onboarding(
+      3,
+      '실행부터 관리까지\n끝까지 함께해요',
+      '플래너, 주간 점검, Sky튜터 피드백,\n프로 보고서로 관리합니다.',
+      `<div class="on-feature-list"><div class="on-feature-item"><div class="on-feature-icon">${i('calendar', true)}</div><span>플래너 & 주간 점검</span></div><div class="on-feature-item"><div class="on-feature-icon">${i('chat', true)}</div><span>Sky튜터 1:1 피드백</span></div><div class="on-feature-item"><div class="on-feature-icon">${i('report', true)}</div><span>프로 보고서 (2주에 1번)</span></div></div>`,
+      'home',
+      '시작하기'
+    ),
     home: layout(homeView(), true),
     analysis: layout(appbar('분석', false) + `<div class="card"><span class="badge">연세대학교 경영학과</span><p class="metric-sm">68%</p><p class="sub">현재 323점 / 합격 컷 335점 / 부족 -12점</p></div><div class="card"><div class="bar">수학<div class="track"><i style="width:88%"></i></div><span>+15%</span></div><div class="bar">탐구<div class="track"><i style="width:72%;background:#0ea5a2"></i></div><span>+9%</span></div></div><div class="card compact"><p class="sub">현재 병목</p><p style="margin:0;font-weight:600">수학이 합격 가능성을 제한하고 있어요</p></div>`, true),
     strategy: layout(appbar('전략', false) + `<div class="card"><ul class="list"><li><b>1</b> 수학 2등급 → 1등급</li><li><b>2</b> 탐구 1과목 집중</li><li><b>3</b> 영어 유지 전략</li></ul></div><button class="btn btn-primary" data-action="goto" data-target="planner">플래너로 실행하기</button>`, true),
