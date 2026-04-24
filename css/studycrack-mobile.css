@@ -44,8 +44,8 @@ body {
   box-sizing: border-box;
   position: relative;
 }
-.screen { overflow: auto; overflow-x: hidden; padding: 12px 14px 112px; }
-.section { margin-bottom: 12px; }
+.screen { overflow: auto; overflow-x: hidden; padding: 12px 14px 92px; }
+.section { margin-bottom: 10px; }
 .appbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
 .back-btn { width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: #1e293b; }
 .title { font-size: 18px; font-weight: 600; }
@@ -159,27 +159,32 @@ body {
 .tabbar .icon { width:16px; height:16px; }
 .center { text-align:center; }
 
+.home-dashboard { padding-bottom: 2px; }
 .home-header { margin-bottom: 10px; }
-.home-top-icons { display:flex; justify-content:space-between; margin-bottom: 10px; }
+.home-top-icons { display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px; }
 .top-icon-btn { width: 34px; height: 34px; border-radius: 10px; border:1px solid var(--line); background:#fff; display:grid; place-items:center; color:#64748b; }
 .top-icon-btn .icon { width:18px; height:18px; }
-.home-greeting { margin: 0; font-size: 23px; font-weight: 800; letter-spacing: -0.02em; color:#0f172a; }
-.home-sub { margin: 6px 0 0; font-size: 13px; color:#64748b; }
-.home-kpi-card { padding: 16px 17px; border-radius: 19px; min-height: 198px; }
-.home-kpi-head { display:flex; justify-content:space-between; align-items:flex-start; margin-top: 2px; }
-.home-kpi-head .ring { margin-top: 2px; width: 88px; height: 88px; }
-.home-risk-card { margin-top:0; min-height: 100px; padding: 12px 14px 10px; position: relative; overflow: visible; }
-.home-risk-copy { max-width: 68%; }
+.home-greeting { margin: 0; font-size: 21px; font-weight: 800; letter-spacing: -0.02em; color:#0f172a; }
+.home-sub { margin: 4px 0 0; font-size: 12px; color:#64748b; }
+.home-section { margin-bottom: 10px; }
+.home-section-tight { margin-bottom: 8px; }
+.home-section-last { margin-bottom: 0; }
+.home-kpi-card { padding: 16px; border-radius: 19px; min-height: 192px; }
+.home-kpi-card .kpi-row { margin-top: 6px; }
+.home-kpi-head { display:flex; justify-content:space-between; align-items:flex-start; margin-top: 0; }
+.home-kpi-head .ring { margin-top: 0; width: 86px; height: 86px; }
+.home-risk-card { margin-top:0; min-height: 98px; padding: 11px 14px 9px; position: relative; overflow: visible; }
+.home-risk-copy { max-width: 62%; }
 .home-risk-title { display:flex; align-items:center; gap:6px; color:#b91c1c; font-size:14px; line-height:1.35; }
 .home-risk-title .icon { width:16px; height:16px; stroke:#b91c1c; flex-shrink:0; }
 .home-risk-copy p { margin: 6px 0 0; font-size: 12px; color:#b45309; font-weight:600; }
 .home-risk-char { position:absolute; right: 4px; bottom: -4px; width:92px; height:auto; object-fit:contain; }
-.home-quick-title { margin:0 0 10px; font-size:14px; font-weight:700; color:#334155; }
-.quick-mini-grid { display:grid; grid-template-columns: repeat(5, 1fr); gap:8px; }
-.quick-mini-item { border:1px solid var(--line); background:#fff; border-radius:12px; min-height: 62px; padding:7px 4px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; box-shadow: 0 6px 12px rgba(15, 23, 42, 0.04); }
-.quick-mini-icon { width:26px; height:26px; border-radius:8px; border:1px solid #dbe7fb; background:#f8fbff; display:grid; place-items:center; }
+.home-quick-title { margin:0 0 8px; font-size:13px; font-weight:700; color:#334155; }
+.quick-mini-grid { display:grid; grid-template-columns: repeat(5, 1fr); gap:6px; }
+.quick-mini-item { border:1px solid var(--line); background:#fff; border-radius:12px; min-height: 58px; padding:6px 3px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; box-shadow: 0 5px 10px rgba(15, 23, 42, 0.04); }
+.quick-mini-icon { width:24px; height:24px; border-radius:7px; border:1px solid #dbe7fb; background:#f8fbff; display:grid; place-items:center; }
 .quick-mini-icon .icon { width:14px; height:14px; stroke:#4b5563; }
-.quick-mini-label { font-size:11px; line-height:1.2; color:#334155; font-weight:600; text-align:center; }
+.quick-mini-label { font-size:10.5px; line-height:1.2; color:#334155; font-weight:600; text-align:center; }
 
 .onboard-grid { display:grid; gap:10px; }
 .score-collage { display:grid; grid-template-columns: 1fr auto 1fr; gap:8px; align-items:end; }

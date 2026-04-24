@@ -86,7 +86,8 @@ function App() {
     </div>
   `;
 
-  const homeView = () => `<div class="home-header">
+  const homeView = () => `<div class="home-dashboard">
+    <div class="home-header">
       <div class="home-top-icons">
         <button class="top-icon-btn">${i('menu', false)}</button>
         <button class="top-icon-btn">${i('bell', false)}</button>
@@ -94,14 +95,14 @@ function App() {
       <p class="home-greeting">안녕하세요, 지민님 👋</p>
       <p class="home-sub">오늘도 크랙한 하루 되세요!</p>
     </div>
-    <div class="section">
+    <div class="section home-section">
       <div class="card home-kpi-card">
         <p class="sub">내 합격 가능성</p>
         <div class="home-kpi-head"><div><p class="metric">68%</p><p class="sub">상위 32%</p></div><div class="ring"></div></div>
         <div class="kpi-row"><div class="kpi-item"><b>323점</b>현재 점수</div><div class="kpi-item"><b>335점</b>합격 컷</div><div class="kpi-item danger"><b>-12점</b>부족 점수</div></div>
       </div>
     </div>
-    <div class="section">
+    <div class="section home-section home-section-tight">
       <div class="notice home-risk-card">
         <div class="home-risk-copy">
           <div class="home-risk-title">${i('alert', false)}<b>수학이 합격 가능성을 제한하고 있어요</b></div>
@@ -110,7 +111,7 @@ function App() {
         <img src="${CRACKY_SRC}" class="home-risk-char crackie" alt="크랙이" />
       </div>
     </div>
-    <div class="section">
+    <div class="section home-section home-section-last">
       <p class="home-quick-title">빠른 메뉴</p>
       <div class="quick-mini-grid">
         ${quickMini('analysis','chart','분석')}
@@ -119,7 +120,8 @@ function App() {
         ${quickMini('weekly','check','주간 점검')}
         ${quickMini('report','report','프로 보고서')}
       </div>
-    </div>`;
+    </div>
+  </div>`;
 
   const screens = {
     splash: `<div class="app-shell"><div class="splash"><div class="logo-bolt">${i('bolt',true)}</div><img class="brand-logo" src="./assets/images/studycrack_logo_wo_bg.png" alt="logo"/><h1 style="margin:0;font-size:30px">스터디크랙</h1><p>합격까지 가장 빠른 전략</p></div></div>`,
