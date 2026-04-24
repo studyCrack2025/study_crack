@@ -1,5 +1,19 @@
 // js/admin_ui.js
 
+// promoCode(예: 4953-4446-STC)를 MBTI 문자열로 역변환
+function decodePromoCodeToMbti(promoCode) {
+    if (!promoCode || !promoCode.endsWith('-STC')) return null;
+    const hex = promoCode.replace('-STC', '').replace(/-/g, '');
+    if (hex.length !== 8) return null;
+    let mbti = '';
+    for (let i = 0; i < hex.length; i += 2) {
+        const charCode = parseInt(hex.substring(i, i + 2), 16);
+        if (isNaN(charCode)) return null;
+        mbti += String.fromCharCode(charCode);
+    }
+    return mbti.toUpperCase();
+}
+
 // 1. 차트 플러그인 등록
 if (typeof ChartDataLabels !== 'undefined') {
     Chart.register(ChartDataLabels);
@@ -285,9 +299,12 @@ async function searchStudents() {
     tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>안전하게 데이터를 조회 중입니다...</td></tr>";
 
     try {
+        // MBTI 검색은 백엔드에 전체 조회 요청 후 클라이언트에서 필터링
+        const apiSearchType = type === 'mbti' ? 'name' : type;
+        const apiKeyword    = type === 'mbti' ? '' : keyword;
         const response = await apiFetch(ADMIN_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'admin_search', userId: adminId, data: { searchType: type, keyword: keyword } })
+            body: JSON.stringify({ type: 'admin_search', userId: adminId, data: { searchType: apiSearchType, keyword: apiKeyword } })
         });
         
         const rawData = await response.json();
@@ -319,6 +336,14 @@ async function searchStudents() {
             if (filterTutor !== 'all') {
                 students = students.filter(s => s.tutorName === filterTutor);
             }
+            // 3. MBTI 필터 (클라이언트 측 역변환 후 비교)
+            if (type === 'mbti' && keyword.trim()) {
+                const mbtiQuery = keyword.trim().toUpperCase();
+                students = students.filter(s => {
+                    const mbti = decodePromoCodeToMbti(s.promoCode);
+                    return mbti && mbti.includes(mbtiQuery);
+                });
+            }
         }
 
         tbody.innerHTML = "";
@@ -345,7 +370,7 @@ async function searchStudents() {
                     <div class="student-info-cell">
                         <span class="student-name-text">${escapeHtml(s.name) || '(이름없음)'}</span>
                         <span class="student-meta-text">✉️ ${escapeHtml(s.email) || '-'}</span>
-                        <span class="student-meta-text">🏫 ${escapeHtml(s.school) || '-'}</span>
+                        <span class="student-meta-text">🧠 ${escapeHtml(decodePromoCodeToMbti(s.promoCode) || '-')}</span>
                     </div>
                 </td>
                 <td data-label="담당 튜터">${tutorNameDisplay}</td>
