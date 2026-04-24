@@ -1,0 +1,198 @@
+:root {
+  --bg: #f3f6fb;
+  --card: #ffffff;
+  --blue: #1f64ff;
+  --blue-deep: #0f3fae;
+  --text: #0f172a;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --danger: #ef4444;
+  --success: #0ea5a2;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'Pretendard', system-ui, -apple-system, sans-serif;
+  background: linear-gradient(180deg, #eff4ff, #f8fbff);
+  color: var(--text);
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 12px 24px;
+}
+
+.top-controls {
+  width: min(420px, 100%);
+  background: rgba(255,255,255,0.82);
+  border: 1px solid #dbe4ff;
+  border-radius: 18px;
+  padding: 12px;
+}
+
+.top-controls label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
+.top-controls select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+  background: #fff;
+}
+
+.phone {
+  width: min(390px, 100%);
+  min-height: 780px;
+  background: var(--bg);
+  border: 1px solid #dbe2f3;
+  border-radius: 34px;
+  box-shadow: 0 20px 42px rgba(34, 61, 116, 0.16);
+  overflow: hidden;
+  position: relative;
+}
+
+.screen { padding: 18px 16px 86px; }
+.center-screen {
+  min-height: 740px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding-bottom: 40px;
+}
+
+.logo-box {
+  width: 84px;
+  height: 84px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, var(--blue), var(--blue-deep));
+  color: white;
+  display: grid;
+  place-items: center;
+  font-size: 46px;
+  font-weight: 800;
+  margin-bottom: 14px;
+}
+
+.title { font-size: 26px; margin: 0; font-weight: 800; }
+.subtitle { font-size: 14px; color: var(--muted); margin: 8px 0 0; }
+
+.card {
+  background: var(--card);
+  border: 1px solid #e5ecfa;
+  border-radius: 18px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.metric {
+  font-size: 50px;
+  margin: 4px 0;
+  color: var(--blue);
+  font-weight: 800;
+  line-height: 1;
+}
+.small { font-size: 12px; color: var(--muted); }
+
+.row { display: flex; gap: 10px; }
+.row > * { flex: 1; }
+
+.btn {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--blue), #3d7dff);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 12px;
+}
+.btn.ghost {
+  background: #eef3ff;
+  color: var(--blue);
+  border: 1px solid #c8d8ff;
+}
+
+.list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.list li {
+  background: #f8fbff;
+  border: 1px solid #e5ecfa;
+  border-radius: 12px;
+  padding: 10px;
+  font-size: 13px;
+}
+
+.progress {
+  width: 100%;
+  height: 8px;
+  border-radius: 99px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+.progress > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #2f6cff, #78a0ff);
+}
+
+.inputs { display: grid; gap: 8px; }
+.inputs input {
+  width: 100%;
+  border: 1px solid #dbe4ff;
+  border-radius: 12px;
+  padding: 11px 12px;
+}
+
+.badge {
+  display: inline-block;
+  background: #eaf2ff;
+  color: var(--blue);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.bar { height: 10px; border-radius: 99px; background: #e8eef9; overflow: hidden; }
+.bar i { display: block; height: 100%; background: #3f78ff; border-radius: 99px; }
+
+.cta-box { position: absolute; left: 16px; right: 16px; bottom: 16px; }
+
+.bottom-tab {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 68px;
+  background: rgba(255,255,255,0.97);
+  border-top: 1px solid #dbe4ff;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+}
+.bottom-tab button {
+  border: none;
+  background: transparent;
+  color: #7b8ba6;
+  font-size: 11px;
+  font-weight: 600;
+}
+.bottom-tab button.active { color: var(--blue); }
+
+.section-title { margin: 0 0 10px; font-size: 17px; }
+.highlight { color: var(--danger); font-weight: 700; }
+.ok { color: var(--success); font-weight: 700; }
+
+.notice {
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: #fff7f7;
+  border: 1px solid #ffd8d8;
+  font-size: 13px;
+}
