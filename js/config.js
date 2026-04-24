@@ -2,7 +2,7 @@
 
 // 1. 현재 접속한 도메인을 확인하여 개발(Dev) 환경인지 운영(Prod) 환경인지 판단
 const currentDomain = window.location.hostname;
-const IS_DEV = currentDomain.includes('cloudfront.net') || currentDomain.includes('dev.studycrack.co.kr') || currentDomain === 'localhost';
+const IS_DEV = currentDomain.includes('cloudfront.net') || currentDomain.includes('dev.studycrack.co.kr') || currentDomain === 'localhost' || currentDomain === '127.0.0.1';
 
 // 2. 환경에 따라 API Gateway 기본 주소에 스테이지(/dev 또는 /prod)를 자동으로 붙여줍니다.
 const API_BASE_URL = "https://ft35jsftc1.execute-api.ap-northeast-2.amazonaws.com";
