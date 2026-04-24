@@ -52,11 +52,11 @@ function App() {
   const appbar = (title, showBack) => `<div class="appbar">${showBack ? '<button class="back-btn" data-action="back">←</button>' : '<div style="width:36px"></div>'}<div class="title">${title}</div></div>`;
   const tabBtn = (k, label, iconName) => `<button class="${tab === k ? 'active' : ''}" data-action="tab" data-tab="${k}">${i(iconName, tab===k)}<span>${label}</span></button>`;
   const tabbar = () => `<div class="tabbar">${tabBtn('home','홈','home')}${tabBtn('analysis','분석','chart')}${tabBtn('strategy','전략','target')}${tabBtn('planner','플래너','calendar')}${tabBtn('my','마이','user')}</div>`;
-  const layout = (inner, withTab) => `<div class="phone"><div class="screen">${inner}</div>${withTab ? tabbar() : ''}</div>`;
+  const layout = (inner, withTab) => `<div class="app-shell"><div class="screen app-screen app-content">${inner}</div>${withTab ? tabbar() : ''}</div>`;
   const quick = (action, iconName, label) => `<div class="quick-item" data-action="goto" data-target="${action}">${i(iconName,false)}<div class="q-label">${label}</div></div>`;
   const onboarding = (step, title, subtitle, cardContent, target, cta = '다음') => `
-    <div class="phone">
-      <div class="screen">
+    <div class="app-shell">
+      <div class="screen app-screen app-content">
         ${appbar(`온보딩 ${step}`, true)}
         <div class="onboarding-screen">
           <div class="onboarding-copy"><h2>${title}</h2><p>${subtitle}</p></div>
@@ -82,7 +82,7 @@ function App() {
     <div class="section"><button class="btn btn-primary" data-action="goto" data-target="proPlan">Pro 업그레이드</button></div>`;
 
   const screens = {
-    splash: `<div class="phone"><div class="splash"><div class="logo-bolt">${i('bolt',true)}</div><img class="brand-logo" src="./assets/images/studycrack_logo_wo_bg.png" alt="logo"/><h1 style="margin:0;font-size:30px">스터디크랙</h1><p>합격까지 가장 빠른 전략</p></div></div>`,
+    splash: `<div class="app-shell"><div class="splash"><div class="logo-bolt">${i('bolt',true)}</div><img class="brand-logo" src="./assets/images/studycrack_logo_wo_bg.png" alt="logo"/><h1 style="margin:0;font-size:30px">스터디크랙</h1><p>합격까지 가장 빠른 전략</p></div></div>`,
     on1: onboarding(1, '합격 가능성', '현재 성적 기준', `<p class="onboarding-metric">72%</p><p class="onboarding-sub">합격 가능성</p><div class="on-graph-line"><svg viewBox="0 0 160 90" fill="none"><path d="M8 76C34 68 44 52 64 50C84 48 96 62 116 44C130 31 140 24 152 14" stroke="#2F6BFF" stroke-width="4" stroke-linecap="round"/></svg></div>`, 'on2'),
     on2: onboarding(2, '수학 +12점', '합격 가능성 +18%', `<p class="onboarding-metric">+18%</p><p class="onboarding-sub">수학 영향도 최우선</p><div class="on-graph-bars"><i></i><i></i><i></i></div>`, 'on3'),
     on3: onboarding(3, '실행 플로우', '한 번에 연결', `<p class="onboarding-metric">3 Steps</p><p class="onboarding-sub">학습 루틴 시작</p><div class="on-list-cards"><div class="on-list-item">${i('target', true)}전략 정리</div><div class="on-list-item">${i('calendar', true)}플래너 배치</div><div class="on-list-item">${i('report', true)}리포트 확인</div></div>`, 'home', '시작하기'),
