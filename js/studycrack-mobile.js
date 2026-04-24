@@ -59,11 +59,11 @@ function App() {
     <div class="app-shell">
       <div class="screen app-screen app-content">
         <div class="onboarding-screen">
-          <img src="${ONBOARDING_LOGO_SRC}" class="onboarding-logo" alt="StudyCrack 로고"/>
+          <img src="${ONBOARDING_LOGO_SRC}" class="onboarding-logo logo" alt="StudyCrack 로고"/>
           <div class="onboarding-copy"><h2>${title}</h2><p>${subtitle}</p></div>
           ${cardContent}
           <div class="onboarding-speech">
-            <img src="${CRACKY_SRC}" class="onboarding-speech-char" alt="크랙이"/>
+            <img src="${CRACKY_SRC}" class="onboarding-speech-char crackie" alt="크랙이"/>
             <p class="onboarding-speech-text">${bubbleText}</p>
           </div>
           <div class="onboarding-footer">
