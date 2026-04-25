@@ -123,6 +123,10 @@ function App() {
   const [openFaq, setOpenFaq] = useState('');
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [plannerItems, setPlannerItems] = useState(DEFAULT_PLANNER_ITEMS);
+  const [studyRecords, setStudyRecords] = useState(() => safeParse('studyRecords', []));
+  const [studyTimerRunning, setStudyTimerRunning] = useState(false);
+  const [studyTimerSeconds, setStudyTimerSeconds] = useState(0);
+  const [studySessionStart, setStudySessionStart] = useState(null);
 
   const goto = (next, addHistory = true) => {
     if (addHistory && screen !== next) setHistory((h) => [...h, screen]);
@@ -215,6 +219,16 @@ function App() {
   useEffect(() => {
     localStorage.setItem('notifications', JSON.stringify(notifications));
   }, [notifications]);
+
+  useEffect(() => {
+    localStorage.setItem('studyRecords', JSON.stringify(studyRecords));
+  }, [studyRecords]);
+
+  useEffect(() => {
+    if (!studyTimerRunning) return undefined;
+    const t = setInterval(() => setStudyTimerSeconds((prev) => prev + 1), 1000);
+    return () => clearInterval(t);
+  }, [studyTimerRunning]);
 
   useEffect(() => {
     localStorage.setItem('selectedPlan', selectedPlan);
@@ -380,6 +394,39 @@ function App() {
   const scoreList = Object.entries(SCORE_LABELS)
     .map(([key, label]) => `<div class="score-info-row"><span>${label}</span><strong>${Number(scores?.[key] ?? DEFAULT_SCORES[key])}점</strong></div>`)
     .join('');
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayRecord = studyRecords.find((item) => item.date === todayKey);
+  const todayStudySeconds = (todayRecord?.studyTime || 0) + studyTimerSeconds;
+  const formatHms = (total) => {
+    const hh = String(Math.floor(total / 3600)).padStart(2, '0');
+    const mm = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
+    const ss = String(total % 60).padStart(2, '0');
+    return `${hh}:${mm}:${ss}`;
+  };
+  const formatHourMin = (total) => {
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    return `${h}시간 ${m}분`;
+  };
+  const todayGoalSeconds = 3 * 3600;
+  const todayGoalPercent = Math.min(Math.round((todayStudySeconds / todayGoalSeconds) * 100), 100);
+  const myRank = Math.max(1, 160 - Math.floor(todayStudySeconds / 60));
+  const percentile = Math.max(1, Math.min(100, 100 - Math.floor(todayStudySeconds / 120)));
+  const lastStudyDate = studyRecords.length ? studyRecords[studyRecords.length - 1].date : '';
+  const noStudyFor24h = !todayRecord && lastStudyDate !== todayKey;
+  const retentionMessage = noStudyFor24h ? '오늘 공부 안 하면 합격컷에서 멀어집니다' : `오늘 목표까지 ${Math.max(0, Math.ceil((todayGoalSeconds - todayStudySeconds) / 3600))}시간 남았어요`;
+  const streakDays = (() => {
+    const set = new Set(studyRecords.filter((r) => r.studyTime > 0).map((r) => r.date));
+    let count = 0;
+    for (let i = 0; i < 30; i += 1) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      if (set.has(key) || (i === 0 && todayStudySeconds > 0)) count += 1;
+      else break;
+    }
+    return count;
+  })();
 
   const homeView = () => `<div class="home-dashboard">
     <div class="home-header">
@@ -414,6 +461,23 @@ function App() {
       </div>
     </div>
     <div class="section home-section home-section-last">
+      <div class="card">
+        <p class="analysis-title">오늘 공부 시작하기</p>
+        <p class="sub" style="margin:0 0 8px">${retentionMessage}</p>
+        <div class="study-timer-row"><b>${formatHms(todayStudySeconds)}</b>${studyTimerRunning ? '<button class="btn btn-secondary" data-action="stopStudyTimer">공부 종료</button>' : '<button class="btn btn-primary" data-action="startStudyTimer">공부 시작하기</button>'}</div>
+        <p class="sub" style="margin:8px 0 0">🔥 ${streakDays}일 연속 공부 중 ${streakDays >= 7 ? '· 상위 10% 학습자' : ''}</p>
+      </div>
+      <div class="card">
+        <p class="analysis-title">오늘 공부 목표</p>
+        <p class="sub">수학: 2시간 · 탐구: 1시간</p>
+        <div class="track"><i style="width:${todayGoalPercent}%"></i></div>
+        <p class="sub" style="margin:8px 0 0">오늘 목표 달성률 ${todayGoalPercent}%</p>
+      </div>
+      <div class="home-retention-grid">
+        <div class="card"><p class="sub">나의 공부시간</p><b>오늘 ${formatHourMin(todayStudySeconds)} 공부했어요</b></div>
+        <div class="card"><p class="sub">평균 비교</p><b>상위 ${percentile}%입니다</b></div>
+        <div class="card"><p class="sub">랭킹</p><b>전체 124명 중 ${Math.min(myRank, 124)}등</b></div>
+      </div>
       <p class="home-quick-title">빠른 메뉴</p>
       <div class="quick-mini-grid">
         ${quickMini('analysis','chart','분석')}
@@ -838,6 +902,34 @@ function App() {
     if (action === 'confirmLogout') {
       setLogoutModalOpen(false);
       window.alert('로그아웃되었습니다');
+    }
+    if (action === 'startStudyTimer') {
+      setStudyTimerRunning(true);
+      setStudySessionStart(Date.now());
+      setStudyTimerSeconds(0);
+    }
+    if (action === 'stopStudyTimer') {
+      setStudyTimerRunning(false);
+      const elapsed = studyTimerSeconds;
+      const today = new Date().toISOString().slice(0, 10);
+      setStudyRecords((prev) => {
+        const idx = prev.findIndex((r) => r.date === today);
+        if (idx >= 0) {
+          const clone = [...prev];
+          clone[idx] = { ...clone[idx], studyTime: clone[idx].studyTime + elapsed };
+          return clone;
+        }
+        return [...prev, { date: today, studyTime: elapsed }];
+      });
+      const mathMin = Math.round((elapsed / 60) * (2 / 3));
+      const scienceMin = Math.round((elapsed / 60) * (1 / 3));
+      setPlannerItems((prev) => [
+        ...prev,
+        { subject: '수학', content: '자동 기록', start: '자동', end: '자동', minutes: mathMin, dot: 'math' },
+        { subject: '탐구', content: '자동 기록', start: '자동', end: '자동', minutes: scienceMin, dot: 'sci' }
+      ]);
+      setStudyTimerSeconds(0);
+      setStudySessionStart(null);
     }
     if (action === 'loginSuccess' || action === 'signupSuccess' || action === 'ssoSuccess') {
       setLoggedIn(true);
