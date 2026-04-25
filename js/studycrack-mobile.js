@@ -194,7 +194,7 @@ function App() {
        <button class="btn btn-primary report-sample">프로 보고서 샘플 보기</button>`,
       true
     ),
-    reportDetail: layout(appbar('프로 보고서 상세', true) + `<div class="card"><ul class="list"><li>수학 점수 상승 여지 큼</li><li>목표 대학 거리 -12점</li><li>중기: 탐구 집중 강화</li></ul></div><div class="card compact"><p class="sub">장기 전략</p><p style="margin:0;font-size:14px">6월 모평 전 수학 전범위 1회독 완료</p></div>`, false),
+    reportDetail: layout(appbar('프로 보고서 상세', true) + `<div class="report-detail-stack"><div class="card report-detail-card"><ul class="list"><li>수학 점수 상승 여지 큼</li><li>목표 대학 거리 -12점</li><li>중기: 탐구 집중 강화</li></ul></div><div class="card compact report-detail-card"><p class="sub">장기 전략</p><p style="margin:0;font-size:14px">6월 모평 전 수학 전범위 1회독 완료</p></div></div>`, false),
     tutor: layout(appbar('SKY튜터 1:1 피드백', true) + `<div class="card"><p class="sub">텍스트 기반 질의응답</p><ul class="list"><li>Q. 수학 개념 이해가 잘 안돼요</li><li>A. 유형별 복습 루틴을 추가하세요</li></ul></div><button class="btn btn-primary">새 질문 작성</button>`, false),
     proPlan: layout(appbar('프로 플랜 안내', true) + `<div class="card"><p class="title" style="margin:0;color:#0b63e5">PRO PLAN</p><ul class="list"><li>합격 가능성/전략 무제한</li><li>플래너/주간 점검 무제한</li><li>프로 보고서 2주 1회 포함</li></ul></div><button class="btn btn-primary" data-action="goto" data-target="paymentSelect">결제 선택으로</button>`, false),
     paymentSelect: layout(appbar('결제 선택', true) + `<div class="card"><p class="title" style="margin:0">Standard</p><p class="sub">월 149,000원</p></div><div class="card" style="border:2px solid #0b63e5"><p class="title" style="margin:0">Pro</p><p class="sub">월 299,000원</p></div><button class="btn btn-primary" data-action="goto" data-target="paymentDone">결제하기</button>`, false),

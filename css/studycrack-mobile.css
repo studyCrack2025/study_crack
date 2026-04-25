@@ -191,7 +191,7 @@ body {
 .quick-mini-icon .icon { width:15px; height:15px; stroke:#4b5563; }
 .quick-mini-label { font-size:11px; line-height:1.2; color:#334155; font-weight:600; text-align:center; }
 
-.planner-head, .weekly-head { display:flex; align-items:center; justify-content:space-between; margin-bottom: 7px; margin-top: -2px; }
+.planner-head, .weekly-head { display:flex; align-items:center; justify-content:space-between; margin-bottom: 6px; margin-top: -2px; }
 .planner-head h3, .weekly-head h3 { margin:0; font-size:19px; font-weight:800; color:#111827; }
 .planner-cal-btn, .weekly-back {
   width:35px; height:35px; border-radius:10px; border:1px solid var(--line); background:#fff;
@@ -202,42 +202,48 @@ body {
 .planner-weekday { font-size:11.5px; color:#64748b; margin-bottom:4px; }
 .planner-days span { padding:8px 0; border-radius:10px; font-size:12.5px; color:#334155; background:#f8fafc; }
 .planner-days span.active { background:#0b63e5; color:#fff; font-weight:700; }
-.planner-section-title { margin:10px 0 7px; }
+.planner-section-title { margin:9px 0 6px; }
 .planner-section-title h4 { margin:0; font-size:16px; font-weight:800; color:#0f172a; }
 .planner-section-title p { margin:4px 0 0; font-size:12.5px; color:#4b5563; font-weight:600; }
-.planner-plan-list { display:grid; gap:7px; }
-.planner-item { background:#fff; border:1px solid var(--line); border-radius:16px; padding:10px 12px; display:grid; grid-template-columns: 14px 1fr auto; gap:10px; align-items:center; box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04); }
+.planner-plan-list { display:grid; gap:6px; }
+.planner-item { background:#fff; border:1px solid var(--line); border-radius:15px; padding:8px 11px; display:grid; grid-template-columns: 12px 1fr auto; gap:9px; align-items:center; box-shadow: 0 5px 14px rgba(15, 23, 42, 0.04); }
 .planner-item .dot { width:12px; height:12px; border-radius:4px; display:block; }
 .planner-item .dot.math { background:#3b82f6; }
 .planner-item .dot.eng { background:#14b8a6; }
 .planner-item .dot.sci { background:#f97316; }
-.planner-item b { display:block; font-size:13px; color:#0f172a; }
-.planner-item p { margin:2px 0; font-size:13.5px; color:#1f2937; }
+.planner-item b { display:block; font-size:13px; font-weight:700; color:#0f172a; }
+.planner-item p { margin:1px 0; font-size:13px; color:#1f2937; }
 .planner-item small { font-size:11.5px; color:#4b5563; }
-.planner-item strong { font-size:12px; color:#0b63e5; }
-.planner-timer { margin-top:8px; background:#fff; border:1px solid var(--line); border-radius:18px; padding:14px; text-align:center; box-shadow: 0 8px 20px rgba(15,23,42,0.05); }
+.planner-item strong { font-size:12px; font-weight:700; color:#0b63e5; }
+.planner-timer { margin-top:8px; background:#fff; border:1px solid var(--line); border-radius:18px; padding:12px; text-align:center; box-shadow: 0 8px 20px rgba(15,23,42,0.05); }
 .planner-timer p { margin:0; font-size:13.5px; color:#4b5563; font-weight:700; }
 .planner-timer h2 { margin:6px 0 0; font-size:40px; font-weight:800; color:#0b63e5; line-height:1; }
 
 .weekly-range { margin: 0 0 8px; font-size:13.5px; color:#4b5563; font-weight:600; }
-.weekly-rate { display:flex; justify-content:space-between; align-items:flex-start; padding:16px; border-radius:18px; }
+.weekly-rate { display:flex; justify-content:space-between; align-items:flex-start; padding:15px; border-radius:18px; }
 .weekly-rate h2 { margin:6px 0 0; font-size:42px; font-weight:800; color:#0b63e5; line-height:1; }
-.weekly-feedback { position:relative; padding:14px; border-radius:18px; overflow:visible; margin-top:10px; }
-.feedback-item { display:flex; align-items:flex-start; gap:8px; background:#f8fbff; border:1px solid #dbeafe; border-radius:12px; padding:9px 10px; font-size:12.5px; color:#1f2937; margin-bottom:6px; line-height:1.4; }
-.feedback-item .icon { width:14px; height:14px; stroke:#0b63e5; margin-top:1px; flex-shrink:0; }
+.weekly-feedback { position:relative; padding:12px; border-radius:18px; overflow:visible; margin-top:8px; }
+.feedback-item { display:flex; align-items:center; gap:8px; background:#f8fbff; border:1px solid #dbeafe; border-radius:12px; padding:7px 8px; font-size:12.5px; color:#1f2937; margin-bottom:5px; line-height:1.35; }
+.feedback-item .icon { width:14px; height:14px; stroke:#0b63e5; margin-top:0; flex-shrink:0; }
 .weekly-char { position:absolute; right:4px; bottom:-5px; width:92px; height:auto; object-fit:contain; }
-.weekly-next { margin-top:10px; min-height:52px; position: sticky; bottom: 16px; }
+.weekly-next { margin-top:8px; min-height:52px; position: sticky; bottom: 14px; }
 
-.report-desc { margin:8px 0 8px; font-size:13.5px; color:#4b5563; }
-.report-main { border-radius:18px; padding:16px; text-align:center; }
+.report-desc { margin:6px 0 7px; font-size:13.5px; color:#4b5563; }
+.report-main { border-radius:18px; padding:13px; text-align:center; }
 .report-main .report-date { margin:8px 0 0; font-size:15.5px; color:#1f2937; font-weight:700; }
 .report-main h2 { margin:8px 0 0; font-size:44px; font-weight:800; color:#0b63e5; line-height:1; }
-.report-list { margin-top:9px; padding:14px; border-radius:18px; }
-.report-row { width:100%; border:1px solid var(--line); background:#fff; border-radius:12px; padding:11px; margin-top:8px; display:flex; align-items:center; justify-content:space-between; text-align:left; }
+.report-list { margin-top:8px; padding:12px; border-radius:18px; }
+.report-row { width:100%; border:1px solid var(--line); background:#fff; border-radius:12px; padding:10px; margin-top:6px; display:flex; align-items:center; justify-content:space-between; text-align:left; }
 .report-row b { font-size:13.5px; color:#0f172a; }
 .report-row p { margin:2px 0 0; font-size:12.5px; color:#4b5563; }
 .report-row .icon { width:15px; height:15px; stroke:#64748b; }
-.report-sample { margin-top:10px; min-height:52px; position: sticky; bottom: 16px; }
+.report-sample { margin-top:8px; min-height:52px; position: sticky; bottom: 14px; }
+
+.report-detail-stack { display:grid; gap:16px; }
+.report-detail-card {
+  border: 1.5px solid #d6e3f5;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.10);
+}
 
 .onboard-grid { display:grid; gap:10px; }
 .score-collage { display:grid; grid-template-columns: 1fr auto 1fr; gap:8px; align-items:end; }
