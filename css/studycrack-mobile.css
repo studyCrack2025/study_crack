@@ -839,6 +839,13 @@ body {
 }
 
 .auth-screen { display:flex; flex-direction:column; gap:12px; }
+.auth-unified-card {
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  padding:16px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.04);
+}
 .auth-logo-wrap {
   margin-top: 36px;
   display: flex;
@@ -847,6 +854,7 @@ body {
   flex-direction: column;
   gap: 14px;
 }
+.auth-logo-wrap.compact { margin-top: 8px; gap: 12px; }
 .auth-logo {
   width: 140px;
   max-width: 45%;
@@ -861,6 +869,11 @@ body {
 }
 .auth-brand h1 { margin:0; font-size:28px; color:var(--primary); }
 .auth-title { margin:8px 0 6px; font-size:20px; font-weight:800; }
+.auth-unified-card .sub { margin:0 0 6px; color:#6B7280; font-size:14px; }
+.auth-divider { display:flex; align-items:center; justify-content:center; color:#9ca3af; font-size:12px; margin:2px 0; }
+.auth-divider:before, .auth-divider:after { content:''; height:1px; background:#e5e7eb; flex:1; }
+.auth-divider span { padding:0 10px; }
+.auth-link-btn { border:none; background:transparent; color:#0b6bff; font-weight:600; font-size:14px; padding:4px 0; }
 .auth-form-card,
 .auth-signup-card,
 .auth-sso-card { display:flex; flex-direction:column; gap:8px; }
@@ -887,6 +900,13 @@ body {
 .onboarding-container { display:flex; flex-direction:column; height:100%; }
 .onboarding-container > .content { flex:1; overflow-y:auto; padding:20px; padding-bottom:24px; }
 .onboarding-container > .cta-wrapper { padding:16px 20px 24px; background:#F5F7FB; }
+.onboarding-container .card {
+  padding:16px;
+  border-radius:20px;
+  border:1px solid #E2E8F0;
+  box-shadow:0 4px 12px rgba(0,0,0,0.04);
+  margin-bottom:12px;
+}
 .cta-button {
   width:100%;
   height:56px;
@@ -897,6 +917,7 @@ body {
   font-size:16px;
   font-weight:600;
 }
+.ob-rate { margin:0; font-size:32px; font-weight:700; color:#0b6bff; line-height:1; }
 .ob-mbti-modal { max-height: 70vh; overflow: auto; }
 .ob-mbti-q p { margin: 0 0 6px; font-size: 13px; font-weight: 700; }
 .ob-mbti-opt { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
