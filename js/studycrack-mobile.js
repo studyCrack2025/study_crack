@@ -521,7 +521,7 @@ function App() {
       <div class="card my-menu-card">
         <button class="my-row" data-action="goto" data-target="scoreInfo">성적 정보 <span>${i('chevron', false)}</span></button>
         <button class="my-row" data-action="goto" data-target="studyReports">학습 리포트 <span>${i('chevron', false)}</span></button>
-        <button class="my-row" data-action="comingSoon">구독 관리 <span>${i('chevron', false)}</span></button>
+        <button class="my-row" data-action="goto" data-target="proIntro">구독 관리 <span>${i('chevron', false)}</span></button>
       </div>
       <div class="card my-menu-card my-service-card">
         <p class="my-section-title">서비스</p>
@@ -643,7 +643,6 @@ function App() {
       setLogoutModalOpen(false);
       window.alert('로그아웃되었습니다');
     }
-    if (action === 'comingSoon') window.alert('구독 관리 기능은 준비 중입니다.');
     if (action === 'retryInit') initializeApp();
     if (action === 'noopModal') return;
     if (action === 'setPlannerSubject') setPlannerSubject(actionEl.getAttribute('data-planner-subject'));
