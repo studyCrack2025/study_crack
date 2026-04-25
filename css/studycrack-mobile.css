@@ -837,3 +837,21 @@ body {
   font-size:15px;
   font-weight:700;
 }
+
+.auth-screen { display:flex; flex-direction:column; gap:12px; }
+.auth-brand h1 { margin:0; font-size:28px; color:var(--primary); }
+.auth-title { margin:8px 0 6px; font-size:20px; font-weight:800; }
+.auth-form-card,
+.auth-signup-card,
+.auth-sso-card { display:flex; flex-direction:column; gap:8px; }
+.auth-label { font-size:13px; color:var(--muted); font-weight:600; }
+.auth-submit { margin-top:6px; }
+.auth-sso-row { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; }
+.auth-sso-btn {
+  border:1px solid #e2e8f0;
+  border-radius:16px;
+  background:#fff;
+  height:48px;
+  font-weight:800;
+  color:#0b6bff;
+}

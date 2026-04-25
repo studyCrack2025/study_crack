@@ -84,6 +84,7 @@ function App() {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
   const [selectedUniversityIndex, setSelectedUniversityIndex] = useState(0);
   const [user, setUser] = useState(DEFAULT_USER);
   const [selectedPlan, setSelectedPlan] = useState(DEFAULT_USER.plan);
@@ -101,6 +102,12 @@ function App() {
   const [plannerCustomMinutes, setPlannerCustomMinutes] = useState('');
   const [plannerStart, setPlannerStart] = useState('');
   const [plannerEnd, setPlannerEnd] = useState('');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [signupName, setSignupName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [signupPasswordConfirm, setSignupPasswordConfirm] = useState('');
   const [scoreEditOpen, setScoreEditOpen] = useState(false);
   const [scores, setScores] = useState(DEFAULT_SCORES);
   const [notifications, setNotifications] = useState(DEFAULT_NOTIFICATIONS);
@@ -137,10 +144,9 @@ function App() {
       setError(false);
       fallbackTimer = setTimeout(() => {
         setLoading(false);
-        setScreen('home');
+        setScreen('authLogin');
       }, 3000);
 
-      const onboardingDone = localStorage.getItem('onboardingDone') === 'true';
       const savedUser = safeParse('user', DEFAULT_USER);
       const savedPlan = localStorage.getItem('selectedPlan') || savedUser.plan || DEFAULT_USER.plan;
       const savedTarget = localStorage.getItem('selectedUniversity') || savedUser.targetUniversity || DEFAULT_USER.targetUniversity;
@@ -169,12 +175,12 @@ function App() {
       await resolveAssetPath('./assets/76220C96-DE85-4148-A6AC-7BD5881821A0.png', null);
       await resolveAssetPath('./assets/IMG_2648.jpeg', null);
 
-      setScreen(onboardingDone ? 'home' : 'on1');
+      setScreen('authLogin');
       console.log('[APP_INIT_SUCCESS]');
     } catch (e) {
       console.error('[APP_INIT_ERROR]', e);
       setError(true);
-      setScreen('home');
+      setScreen('authLogin');
     } finally {
       if (fallbackTimer) clearTimeout(fallbackTimer);
       setLoading(false);
@@ -418,6 +424,49 @@ function App() {
   const currentPlan = planMeta[selectedPlan] || planMeta.Pro;
 
   const screens = {
+    authLogin: layout(`<div class="auth-screen">
+      <div class="auth-brand card">
+        <h1>StudyCrack</h1>
+        <p class="auth-title">합격 전략을 시작해볼까요?</p>
+        <p class="sub">내 성적에 맞는 대학별 합격 가능성과 전략을 확인하세요.</p>
+      </div>
+      <div class="card auth-form-card">
+        <label class="auth-label">이메일</label>
+        <input class="planner-input" data-field="loginEmail" value="${loginEmail}" placeholder="you@example.com" />
+        <label class="auth-label">비밀번호</label>
+        <input class="planner-input" data-field="loginPassword" value="${loginPassword}" type="password" placeholder="비밀번호 입력" />
+        <button class="btn btn-primary auth-submit" data-action="loginSuccess">로그인</button>
+      </div>
+      <div class="card auth-signup-card">
+        <p>아직 계정이 없나요?</p>
+        <button class="btn btn-secondary" data-action="goto" data-target="authSignup">회원가입</button>
+      </div>
+      <div class="card auth-sso-card">
+        <p class="analysis-title">간편하게 시작하기</p>
+        <div class="auth-sso-row">
+          <button class="auth-sso-btn" data-action="ssoSuccess">K</button>
+          <button class="auth-sso-btn" data-action="ssoSuccess">G</button>
+          <button class="auth-sso-btn" data-action="ssoSuccess">N</button>
+        </div>
+      </div>
+    </div>`, false),
+    authSignup: layout(appbar('회원가입', true) + `<div class="auth-screen">
+      <div class="card auth-form-card">
+        <label class="auth-label">이름</label>
+        <input class="planner-input" data-field="signupName" value="${signupName}" placeholder="이름 입력" />
+        <label class="auth-label">이메일</label>
+        <input class="planner-input" data-field="signupEmail" value="${signupEmail}" placeholder="you@example.com" />
+        <label class="auth-label">비밀번호</label>
+        <input class="planner-input" data-field="signupPassword" value="${signupPassword}" type="password" placeholder="비밀번호 입력" />
+        <label class="auth-label">비밀번호 확인</label>
+        <input class="planner-input" data-field="signupPasswordConfirm" value="${signupPasswordConfirm}" type="password" placeholder="비밀번호 다시 입력" />
+        <button class="btn btn-primary auth-submit" data-action="signupSuccess">회원가입 완료</button>
+      </div>
+      <div class="card auth-signup-card">
+        <p>이미 계정이 있나요?</p>
+        <button class="btn btn-secondary" data-action="goto" data-target="authLogin">로그인</button>
+      </div>
+    </div>`, false),
     splash: `<div class="app-shell"><div class="splash"><div class="logo-bolt">${i('bolt',true)}</div><img class="brand-logo" src="${(window.__studycrackAssetSrc && window.__studycrackAssetSrc.onboardingLogoSrc) || './assets/images/studycrack_logo_wo_bg.png'}" alt="logo"/><h1 style="margin:0;font-size:30px">스터디크랙</h1><p>합격까지 가장 빠른 전략</p></div></div>`,
     on1: onboarding(
       1,
@@ -643,6 +692,11 @@ function App() {
       setLogoutModalOpen(false);
       window.alert('로그아웃되었습니다');
     }
+    if (action === 'loginSuccess' || action === 'signupSuccess' || action === 'ssoSuccess') {
+      setLoggedIn(true);
+      setHistory([]);
+      goto('home', false);
+    }
     if (action === 'retryInit') initializeApp();
     if (action === 'noopModal') return;
     if (action === 'setPlannerSubject') setPlannerSubject(actionEl.getAttribute('data-planner-subject'));
@@ -711,6 +765,12 @@ function App() {
     if (field === 'plannerCustomMinutes') setPlannerCustomMinutes(value);
     if (field === 'plannerStart') setPlannerStart(value);
     if (field === 'plannerEnd') setPlannerEnd(value);
+    if (field === 'loginEmail') setLoginEmail(value);
+    if (field === 'loginPassword') setLoginPassword(value);
+    if (field === 'signupName') setSignupName(value);
+    if (field === 'signupEmail') setSignupEmail(value);
+    if (field === 'signupPassword') setSignupPassword(value);
+    if (field === 'signupPasswordConfirm') setSignupPasswordConfirm(value);
     if (field.startsWith('score-')) {
       const subject = field.replace('score-', '');
       setScores((prev) => ({ ...prev, [subject]: Number(value) || 0 }));
@@ -719,7 +779,7 @@ function App() {
 
   const loadingUi = `<div class="app-shell"><div class="screen app-screen app-content"><div class="center init-loading"><h3>StudyCrack 앱을 불러오는 중입니다...</h3><p class="sub">잠시만 기다려 주세요.</p></div></div></div>`;
   const fallbackUi = `<div class="app-shell"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div>`;
-  const rendered = loading ? loadingUi : error ? fallbackUi : current;
+  const rendered = loading ? loadingUi : error ? fallbackUi : !loggedIn && !['authLogin', 'authSignup'].includes(screen) ? screens.authLogin : current;
 
   return <div onClick={onClick} onInput={onInput} dangerouslySetInnerHTML={{ __html: rendered }} />;
 }
