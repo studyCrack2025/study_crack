@@ -121,7 +121,7 @@ function App() {
           <div class="home-kpi-head"><div><p class="metric">${item.rate}%</p><p class="sub">${item.rank}</p></div><div class="ring" style="background:conic-gradient(var(--primary) 0 ${item.rate}%, #dfe8f8 ${item.rate}% 100%)"></div></div>
           <div class="kpi-row"><div class="kpi-item"><b>${item.score}점</b>현재 점수</div><div class="kpi-item"><b>${item.cut}점</b>합격 컷</div><div class="kpi-item danger"><b>${item.gap}점</b>부족 점수</div></div>
         </div>`).join('')}
-        <button class="card home-kpi-add-card slider-card" data-action="openUniversityModal"><span class="plus">+</span><p>목표 대학 추가하기</p></button>
+        <button class="card home-kpi-add-card slider-card" data-action="openUniversityModal"><span class="plus">+</span><p>+ 목표 대학 추가</p></button>
       </div>
       <div class="home-kpi-indicator">${homeTargets.map((_, idx) => `<i class="${idx===0?'active':''}"></i>`).join('')}<b>+</b></div>
       ${universityModalOpen ? `<div class="home-modal-overlay" data-action="closeUniversityModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">목표 대학 추가</p><p class="sub" style="margin-top:8px">대학 선택 모달은 다음 단계에서 연결됩니다.</p><button class="btn btn-primary" data-action="closeUniversityModal">닫기</button></div></div>` : ''}
