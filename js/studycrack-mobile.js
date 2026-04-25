@@ -176,11 +176,11 @@ function App() {
       <div class="card analysis-roi">
         <p class="analysis-title">과목별 효율 (ROI)</p>
         <div class="roi-item"><span>수학</span><div class="track"><i style="width:92%"></i></div><em>매우 높음</em></div>
-        <div class="roi-item"><span>탐구</span><div class="track"><i style="width:72%;background:#14b8a6"></i></div><em>보통</em></div>
+        <div class="roi-item"><span>탐구</span><div class="track"><i style="width:72%;background:#14b8a6"></i></div><em>높음</em></div>
         <div class="roi-item"><span>국어</span><div class="track"><i style="width:58%;background:#f59e0b"></i></div><em>보통</em></div>
         <div class="roi-item"><span>영어</span><div class="track"><i style="width:44%;background:#ef4444"></i></div><em>낮음</em></div>
       </div>
-      <div class="cta-wrapper"><button class="btn btn-primary cta-btn" data-action="goto" data-target="planner">플래너로 실행하기</button></div>`,
+      <div class="analysis-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="planner">플래너로 실행하기</button></div>`,
       true
     ),
     strategy: layout(
@@ -191,17 +191,13 @@ function App() {
        </div>
        <div class="card feedback-sample">
          <p class="analysis-title">질문 예시</p>
-         <ul>
-           <li>수학 개념 이해가 안돼요</li>
-           <li>탐구 공부법이 궁금해요</li>
-           <li>시간 관리 방법이 궁금해요</li>
-         </ul>
+         <div class="feedback-pills"><span>수학 개념 이해가 안돼요</span><span>탐구 공부법이 궁금해요</span><span>시간 관리 방법이 궁금해요</span></div>
        </div>
        <div class="cta-wrapper"><button class="btn btn-primary cta-btn">새 질문 작성</button></div>
        <div class="card feedback-history">
          <p class="analysis-title">내 질문 내역</p>
-         <button class="report-row"><div><b>수학 함수 문제 질문</b><p>답변 완료 05.12</p></div><span>${i('chevron', false)}</span></button>
-         <button class="report-row"><div><b>탐구 개념 질문</b><p>답변 완료 05.10</p></div><span>${i('chevron', false)}</span></button>
+         <button class="report-row feedback-row"><div><b>수학 함수 문제 질문</b><p>답변 완료 05.12</p></div><span>${i('chevron', false)}</span></button>
+         <button class="report-row feedback-row"><div><b>탐구 개념 질문</b><p>답변 완료 05.10</p></div><span>${i('chevron', false)}</span></button>
        </div>`,
       true
     ),
@@ -245,7 +241,7 @@ function App() {
        <div class="cta-wrapper"><button class="btn btn-primary report-sample cta-btn">프로 보고서 샘플 보기</button></div>`,
       true
     ),
-    reportDetail: layout(appbar('종합 분석 리포트', true) + `<div class="report-tabs"><span class="active">종합 분석</span><span>과목 분석</span><span>학습 전략</span><span>현재 위치</span></div><div class="report-detail-stack"><div class="card report-detail-card"><p class="sub">핵심 요약</p><p class="report-detail-text">수학에서 점수 상승 여지가 가장 큽니다. 개념 학습 시간을 늘리고, 문제 풀이 비중을 높이면 단기간 점수 개선이 가능합니다.</p></div><div class="card report-detail-card"><p class="sub">과목별 성과</p><div class="subject-result"><span>수학</span><div class="track"><i style="width:82%"></i></div><em>68점 (▲ 12)</em></div><div class="subject-result"><span>국어</span><div class="track"><i style="width:74%"></i></div><em>82점 (▲ 3)</em></div><div class="subject-result"><span>영어</span><div class="track"><i style="width:70%"></i></div><em>77점 (-)</em></div><div class="subject-result"><span>탐구</span><div class="track"><i style="width:62%"></i></div><em>66점 (▲ 5)</em></div></div></div><div class="cta-wrapper"><button class="btn btn-primary cta-btn">PDF 다운로드</button></div>`, false),
+    reportDetail: layout(appbar('종합 분석 리포트', true) + `<div class="report-tabs"><span class="active">종합 분석</span><span>과목 분석</span><span>학습 전략</span><span>현재 위치</span></div><div class="report-detail-stack"><div class="card report-detail-card"><p class="sub">핵심 요약</p><p class="report-detail-text">수학에서 점수 상승 여지가 가장 큽니다. 개념 학습 시간을 늘리고, 문제 풀이 비중을 높이면 단기간 점수 개선이 가능합니다.</p></div><div class="card report-detail-card"><p class="sub">과목별 성과</p><div class="subject-result"><span>수학</span><div class="track"><i style="width:82%"></i></div><em><span class="score">68점</span><span class="delta">▲12</span></em></div><div class="subject-result"><span>국어</span><div class="track"><i style="width:74%"></i></div><em><span class="score">82점</span><span class="delta">▲3</span></em></div><div class="subject-result"><span>영어</span><div class="track"><i style="width:70%"></i></div><em><span class="score">77점</span><span class="delta">-</span></em></div><div class="subject-result"><span>탐구</span><div class="track"><i style="width:62%"></i></div><em><span class="score">66점</span><span class="delta">▲5</span></em></div></div></div><div class="cta-wrapper report-detail-cta"><button class="btn btn-primary cta-btn">PDF 다운로드</button></div>`, false),
     tutor: layout(appbar('SKY튜터 1:1 피드백', true) + `<div class="card"><p class="sub">텍스트 기반 질의응답</p><ul class="list"><li>Q. 수학 개념 이해가 잘 안돼요</li><li>A. 유형별 복습 루틴을 추가하세요</li></ul></div><button class="btn btn-primary">새 질문 작성</button>`, false),
     proPlan: layout(appbar('프로 플랜 안내', true) + `<div class="card"><p class="title" style="margin:0;color:#0b63e5">PRO PLAN</p><ul class="list"><li>합격 가능성/전략 무제한</li><li>플래너/주간 점검 무제한</li><li>프로 보고서 2주 1회 포함</li></ul></div><button class="btn btn-primary" data-action="goto" data-target="paymentSelect">결제 선택으로</button>`, false),
     paymentSelect: layout(appbar('결제 선택', true) + `<div class="card"><p class="title" style="margin:0">Standard</p><p class="sub">월 149,000원</p></div><div class="card" style="border:2px solid #0b63e5"><p class="title" style="margin:0">Pro</p><p class="sub">월 299,000원</p></div><div class="cta-wrapper"><button class="btn btn-primary cta-btn" data-action="goto" data-target="paymentDone">결제하기</button></div>`, false),
