@@ -292,23 +292,23 @@ body {
   font-weight:600;
 }
 .planner-bottom-space { height:100px; }
-.planner-fixed-cta {
+.planner-fab {
   position:fixed;
-  bottom:76px;
-  left:20px;
   right:20px;
-  width:calc(100% - 40px);
-  max-width:420px;
-  margin:0 auto;
+  bottom:90px;
+  width:60px;
+  height:60px;
+  border:none;
+  border-radius:50%;
+  background:linear-gradient(135deg, #3B82F6, #2563EB);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);
   z-index:25;
 }
-.planner-fixed-cta .btn {
-  min-height:50px;
-  border-radius:16px;
-  font-weight:700;
-  background:linear-gradient(135deg,#1463F3,#3b82f6);
-  box-shadow: 0 10px 25px rgba(20, 99, 243, 0.2);
-}
+.planner-fab:active { transform: scale(0.95); }
+.planner-fab span { font-size:28px; font-weight:600; color:#fff; line-height:1; }
 .timer-modal .timer-subject-row,
 .timer-modal .timer-controls { display:grid; grid-template-columns: repeat(3,1fr); gap:8px; margin-top:12px; }
 .timer-modal .timer-subject-row button,
