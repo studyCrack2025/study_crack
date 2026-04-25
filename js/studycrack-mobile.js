@@ -2,6 +2,34 @@ const { useState, useEffect } = React;
 
 const CRACKY_SRC = 'assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png';
 const ONBOARDING_LOGO_SRC = './assets/images/og-image.jpg';
+const safeJsonParse = (value, fallback) => {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value);
+  } catch (e) {
+    console.error('[APP_INIT_ERROR]', e);
+    return fallback;
+  }
+};
+
+class AppErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error) {
+    console.error('[APP_INIT_ERROR]', error);
+  }
+  render() {
+    if (this.state.hasError) {
+      return <div className="app-shell"><div className="screen app-screen app-content"><div className="center init-loading"><h3>앱을 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.</h3></div></div></div>;
+    }
+    return this.props.children;
+  }
+}
 
 function i(name, primary) {
   const c = primary ? 'icon primary' : 'icon';
@@ -34,6 +62,7 @@ function App() {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [selectedUniversityIndex, setSelectedUniversityIndex] = useState(0);
   const [selectedPlan, setSelectedPlan] = useState('Pro');
   const [duration, setDuration] = useState('4주');
   const [targetMajor, setTargetMajor] = useState('연세대학교 경영학과');
@@ -90,16 +119,36 @@ function App() {
   const initializeApp = async () => {
     let fallbackTimer;
     try {
+      console.log('[APP_INIT_START]');
       setLoading(true);
       setError(false);
-      fallbackTimer = setTimeout(() => setError(true), 3000);
+      fallbackTimer = setTimeout(() => {
+        setLoading(false);
+        setScreen('home');
+      }, 3000);
 
-      const res = await fetch('/api/data');
-      if (!res.ok) throw new Error(`Init API failed: ${res.status}`);
-      await res.json();
+      const onboardingDone = localStorage.getItem('onboardingDone') === 'true';
+      const savedPlan = localStorage.getItem('selectedPlan') || 'Pro';
+      const savedTarget = localStorage.getItem('selectedUniversity') || '연세대학교 경영학과';
+      const savedTab = localStorage.getItem('activeTab') || 'home';
+      const savedItems = safeJsonParse(localStorage.getItem('plannerItems'), []);
+      const savedScore = safeJsonParse(localStorage.getItem('scores'), null);
+
+      setSelectedPlan(savedPlan);
+      setTargetMajor(savedTarget);
+      setTab(savedTab);
+      setPlannerItems(Array.isArray(savedItems) ? savedItems : []);
+      if (savedScore) setScores(savedScore);
+
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('init-timeout')), 2500));
+      await Promise.race([fetch('./assets/og-image.jpg'), timeoutPromise]).catch(() => null);
+
+      setScreen(onboardingDone ? 'home' : 'on1');
+      console.log('[APP_INIT_SUCCESS]');
     } catch (e) {
-      console.error(e);
+      console.error('[APP_INIT_ERROR]', e);
       setError(true);
+      setScreen('home');
     } finally {
       if (fallbackTimer) clearTimeout(fallbackTimer);
       setLoading(false);
@@ -613,4 +662,4 @@ function App() {
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+root.render(<AppErrorBoundary><App /></AppErrorBoundary>);
