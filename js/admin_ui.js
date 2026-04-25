@@ -411,14 +411,56 @@ function exportStudentsToCSV() {
         return;
     }
 
+    const EXAM_NAMES = { mar: '3월학평', apr: '4월학평', may: '5월학평', jun: '6월모평', jul: '7월학평', sep: '9월모평', oct: '10월학평', csat: '수능' };
+    const EXAM_ORDER = ['mar', 'apr', 'may', 'jun', 'jul', 'sep', 'oct', 'csat'];
+
+    // 현재 목록 중 실제 데이터가 있는 시험 키만 추출
+    const activeExams = EXAM_ORDER.filter(k => currentStudentList.some(s => s.quantitative && s.quantitative[k]));
+
+    // 기본 헤더
     const headers = ['이름', '이메일', '전화번호', '유료등급', 'MBTI'];
-    const rows = currentStudentList.map(s => [
-        s.name  || '',
-        s.email || '',
-        s.phone || '',
-        getStudentTierText(s),
-        decodePromoCodeToMbti(s.promoCode) || ''
-    ]);
+
+    // 시험별 동적 헤더 추가
+    for (const examKey of activeExams) {
+        const p = EXAM_NAMES[examKey] || examKey;
+        headers.push(
+            `${p}_국어_선택과목`, `${p}_국어_표준점수`, `${p}_국어_등급`,
+            `${p}_수학_선택과목`, `${p}_수학_표준점수`, `${p}_수학_등급`,
+            `${p}_영어_등급`, `${p}_한국사_등급`,
+            `${p}_탐구1_과목명`, `${p}_탐구1_표준점수`, `${p}_탐구1_등급`,
+            `${p}_탐구2_과목명`, `${p}_탐구2_표준점수`, `${p}_탐구2_등급`
+        );
+    }
+
+    const rows = currentStudentList.map(s => {
+        const base = [
+            s.name  || '',
+            s.email || '',
+            s.phone || '',
+            getStudentTierText(s),
+            decodePromoCodeToMbti(s.promoCode) || ''
+        ];
+
+        const examCols = [];
+        for (const examKey of activeExams) {
+            const d = s.quantitative?.[examKey];
+            if (!d) {
+                // 컬럼 수(14)만큼 빈 값
+                for (let i = 0; i < 14; i++) examCols.push('');
+            } else {
+                examCols.push(
+                    d.kor?.opt  || '', d.kor?.std  || '', d.kor?.grd  || '',
+                    d.math?.opt || '', d.math?.std || '', d.math?.grd || '',
+                    d.eng?.grd  || '',
+                    d.hist?.grd || '',
+                    d.inq1?.name || '', d.inq1?.std || '', d.inq1?.grd || '',
+                    d.inq2?.name || '', d.inq2?.std || '', d.inq2?.grd || ''
+                );
+            }
+        }
+
+        return [...base, ...examCols];
+    });
 
     const csvEscape = val => `"${String(val).replace(/"/g, '""')}"`;
     const csvContent = [headers, ...rows].map(row => row.map(csvEscape).join(',')).join('\r\n');
