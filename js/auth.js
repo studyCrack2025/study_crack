@@ -551,16 +551,12 @@ async function handleFinalSubmit() {
         return;
     }
 
-    const majorRadio = document.querySelector('input[name="major"]:checked');
     const referralRadio = document.querySelector('input[name="referral"]:checked');
 
-    if (!majorRadio || !referralRadio) {
-        alert("희망 계열과 가입 경로를 선택해주세요.");
+    if (!referralRadio) {
+        alert("가입 경로를 선택해주세요.");
         return;
     }
-
-    let major = majorRadio.value;
-    if (major === 'etc') major = document.getElementById('majorEtc').value.trim();
 
     let referral = referralRadio.value;
     if (referral === 'etc') referral = document.getElementById('referralEtc').value.trim();
@@ -606,8 +602,7 @@ async function handleFinalSubmit() {
                         email: email,
                         phone: dbFormattedPhone,
                         cognitoPhone: cleanPhone,
-                        promoCode: promoCode, 
-                        major: major,
+                        promoCode: promoCode,
                         referral: referral,
                         gender: gender,
                         birthdate: birthdate,

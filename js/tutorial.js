@@ -58,7 +58,7 @@ const DEMO_UNIVS = [
 ];
 
 let currentStepIdx = 0;
-let tutorialData = { qual: {}, quan: {}, mbti: null, selectedUniv: null };
+let tutorialData = { qual: {}, quan: {}, mbti: null, selectedUniv: null, selectedUnivs: null, totalStdScore: 0 };
 let isInterrupted = false;
 let mbtiDimSelections = [null, null, null, null];
 
@@ -238,6 +238,20 @@ async function nextStep() {
             }
         };
         await apiCall('update_quan', tutorialData.quan);
+
+        // 보정 표준점수 단순합 계산 후 백그라운드로 학교 선정
+        tutorialData.totalStdScore = [korConv.std, mathConv.std, inq1Conv.std, inq2Conv.std]
+            .reduce((sum, v) => sum + (parseFloat(v) || 0), 0);
+
+        const stream = tutorialData.qual.stream;
+        if (stream && tutorialData.totalStdScore > 0) {
+            fetchTutScoreData().then(scoreData => {
+                if (scoreData) {
+                    const selected = selectTutorialUnivs(stream, tutorialData.totalStdScore, scoreData);
+                    if (selected && selected.length > 0) tutorialData.selectedUnivs = selected;
+                }
+            }).catch(() => {});
+        }
     }
 
     if (currentStepIdx < STEPS.length - 1) {
@@ -342,18 +356,143 @@ function simulateMbtiAnalysis() {
     }, 2500);
 }
 
+// ── 튜토리얼 학교 선정 로직 ──────────────────────────────────────
+async function fetchTutScoreData() {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return null;
+    try {
+        const res = await fetch(CONFIG.api.analysis, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'get_tut_score_data' })
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.scoreData || null;
+    } catch {
+        return null;
+    }
+}
+
+function selectTutorialUnivs(stream, totalScore, data) {
+    const streamData = data[stream];
+    if (!streamData) return null;
+
+    const allBandNums = Object.keys(streamData).map(Number).sort((a, b) => a - b);
+    if (allBandNums.length === 0) return null;
+
+    const currentBand = Math.floor(totalScore / 10) * 10;
+    const minBand = allBandNums[0];
+    const maxBand = allBandNums[allBandNums.length - 1];
+    const maxOffset = Math.max(currentBand - minBand, maxBand - currentBand) + 10;
+
+    const searchOrder = [currentBand];
+    for (let offset = 10; offset <= maxOffset; offset += 10) {
+        const upper = currentBand + offset;
+        const lower = currentBand - offset;
+        if (upper <= maxBand + offset) searchOrder.push(upper);
+        if (lower >= minBand - offset) searchOrder.push(lower);
+    }
+
+    const slots = [null, null, null];
+    const labelOrder = ['A', 'B', 'C', 'D', 'E'];
+    const usedSchools = new Set();
+
+    for (const band of searchOrder) {
+        const bandData = streamData[String(band)];
+        if (!bandData) continue;
+
+        for (const label of labelOrder) {
+            const labelData = bandData[label];
+            if (!labelData) continue;
+
+            const slotIdx = labelOrder.indexOf(label);
+            if (slotIdx >= slots.length) continue;
+            if (slots[slotIdx] !== null) continue;
+
+            const schoolNames = Object.keys(labelData);
+            let picked = null;
+
+            // 중복 없는 학교 우선 탐색
+            for (const schoolName of schoolNames) {
+                if (!usedSchools.has(schoolName) && labelData[schoolName].length > 0) {
+                    const entry = labelData[schoolName][0];
+                    picked = { school: schoolName, major: entry['학과'], passCut: entry['표준점수'] };
+                    break;
+                }
+            }
+            // 불가피한 경우 중복 허용
+            if (!picked) {
+                for (const schoolName of schoolNames) {
+                    if (labelData[schoolName].length > 0) {
+                        const entry = labelData[schoolName][0];
+                        picked = { school: schoolName, major: entry['학과'], passCut: entry['표준점수'] };
+                        break;
+                    }
+                }
+            }
+
+            if (picked) {
+                slots[slotIdx] = picked;
+                usedSchools.add(picked.school);
+            }
+        }
+
+        // 조기 종료: 현재 점수대에서 3개 모두 확정
+        if (slots.every(s => s !== null)) break;
+    }
+
+    return slots.filter(s => s !== null);
+}
+
+function buildUnivCards(selectedUnivs, studentScore) {
+    const defaultAlloc = [
+        { label: '수학', pct: 40, color: '#3b82f6' },
+        { label: '국어', pct: 28, color: '#8b5cf6' },
+        { label: '탐구', pct: 22, color: '#10b981' },
+        { label: '기타', pct: 10, color: '#f59e0b' }
+    ];
+    const allScores = [studentScore, ...selectedUnivs.map(u => u.passCut)];
+    const maxScore = Math.ceil(Math.max(...allScores) * 1.08 / 10) * 10;
+
+    return selectedUnivs.map(u => {
+        const gap = Math.round(u.passCut - studentScore);
+        const gain = Math.max(3, Math.round(Math.abs(gap) * 0.15) + 2);
+        const simScore = Math.min(Math.round(studentScore + gain), maxScore);
+        return {
+            school: u.school,
+            major: u.major,
+            currentScore: Math.round(studentScore),
+            passCut: Math.round(u.passCut),
+            top70Cut: Math.min(Math.round(u.passCut + 10), maxScore),
+            maxScore,
+            simScore,
+            gain,
+            subjectAlloc: defaultAlloc,
+            top2Subject: '국어',
+            top2Pct: 28,
+            top2NeedPts: Math.max(2, Math.round(Math.abs(gap) * 0.3) + 1)
+        };
+    });
+}
+
 // ── 추천 대학 시뮬레이션 ──────────────────────────────────────────
 function initUnivSim() {
     const list = document.getElementById('univCardList');
     if (!list) return;
     list.innerHTML = '';
 
-    DEMO_UNIVS.forEach((u) => {
+    const univsToRender = (tutorialData.selectedUnivs && tutorialData.selectedUnivs.length > 0)
+        ? buildUnivCards(tutorialData.selectedUnivs, tutorialData.totalStdScore)
+        : DEMO_UNIVS;
+
+    univsToRender.forEach((u) => {
         const card = document.createElement('div');
         card.className = 'univ-card';
 
         const gapToPass = u.passCut - u.currentScore;
         const badgeClass = gapToPass <= 5 ? 'badge-close' : gapToPass <= 15 ? 'badge-mid' : 'badge-far';
+        const badgeText = gapToPass <= 0 ? `합격선 초과 ${Math.abs(gapToPass)}점` : `합격까지 ${gapToPass}점`;
 
         const currentPct = (u.currentScore / u.maxScore * 100).toFixed(1);
         const top70Pct  = (u.top70Cut    / u.maxScore * 100).toFixed(1);
@@ -369,7 +508,7 @@ function initUnivSim() {
                     <div class="univ-card-title">${u.school}</div>
                     <div class="univ-card-major">${u.major}</div>
                 </div>
-                <div class="univ-gap-badge ${badgeClass}">합격까지 ${gapToPass}점</div>
+                <div class="univ-gap-badge ${badgeClass}">${badgeText}</div>
             </div>
             <div class="sbc-wrap">
                 <div class="sbc-labels">
