@@ -15,6 +15,7 @@ function i(name, primary) {
     calendar: `<svg viewBox="0 0 24 24" class="${c}"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 9h18"/></svg>`,
     user: `<svg viewBox="0 0 24 24" class="${c}"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 5-6 8-6s6.5 2 8 6"/></svg>`,
     report: `<svg viewBox="0 0 24 24" class="${c}"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>`,
+    chevron: `<svg viewBox="0 0 24 24" class="${c}"><path d="M9 6l6 6-6 6"/></svg>`,
     chat: `<svg viewBox="0 0 24 24" class="${c}"><path d="M4 5h16v11H8l-4 4z"/></svg>`,
     check: `<svg viewBox="0 0 24 24" class="${c}"><path d="M20 6L9 17l-5-5"/></svg>`,
     bolt: `<svg viewBox="0 0 24 24" class="${c}"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg>`
@@ -153,10 +154,46 @@ function App() {
     home: layout(homeView(), true),
     analysis: layout(appbar('분석', false) + `<div class="card"><span class="badge">연세대학교 경영학과</span><p class="metric-sm">68%</p><p class="sub">현재 323점 / 합격 컷 335점 / 부족 -12점</p></div><div class="card"><div class="bar">수학<div class="track"><i style="width:88%"></i></div><span>+15%</span></div><div class="bar">탐구<div class="track"><i style="width:72%;background:#0ea5a2"></i></div><span>+9%</span></div></div><div class="card compact"><p class="sub">현재 병목</p><p style="margin:0;font-weight:600">수학이 합격 가능성을 제한하고 있어요</p></div>`, true),
     strategy: layout(appbar('전략', false) + `<div class="card"><ul class="list"><li><b>1</b> 수학 2등급 → 1등급</li><li><b>2</b> 탐구 1과목 집중</li><li><b>3</b> 영어 유지 전략</li></ul></div><button class="btn btn-primary" data-action="goto" data-target="planner">플래너로 실행하기</button>`, true),
-    planner: layout(appbar('플래너', false) + `<div class="card"><p class="sub">2024년 5월 14일 (화)</p><div class="calendar"><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div><div>일</div><div>12</div><div>13</div><div class="active">14</div><div>15</div><div>16</div><div>17</div><div>18</div></div></div><div class="card"><ul class="list"><li><span class="tag math">수학</span>개념 학습 10:00-12:00</li><li><span class="tag eng">영어</span>독해 문제 풀이 13:00-14:30</li></ul></div><div class="card center"><p class="sub">공부 타이머</p><p class="metric-sm">01:25:30</p></div><div class="card compact"><p class="sub">오늘 요약</p><p style="margin:0;font-size:14px">총 6시간 30분 / 목표 달성률 82%</p></div>`, true),
+    planner: layout(
+      `<div class="planner-head"><h3>2024년 5월 14일 (화)</h3><button class="planner-cal-btn">${i('calendar', false)}</button></div>
+       <div class="planner-weekday"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+       <div class="planner-days"><span>12</span><span>13</span><span class="active">14</span><span>15</span><span>16</span><span>17</span><span>18</span></div>
+       <div class="planner-section-title"><div><h4>오늘의 계획</h4><p>총 6시간 30분</p></div></div>
+       <div class="planner-plan-list">
+         <div class="planner-item"><i class="dot math"></i><div><b>수학</b><p>개념 학습</p><small>10:00 - 12:00</small></div><strong>120분</strong></div>
+         <div class="planner-item"><i class="dot eng"></i><div><b>영어</b><p>독해 문제 풀이</p><small>13:00 - 14:30</small></div><strong>90분</strong></div>
+         <div class="planner-item"><i class="dot sci"></i><div><b>탐구</b><p>실전문제</p><small>15:00 - 17:00</small></div><strong>120분</strong></div>
+         <div class="planner-item"><i class="dot math"></i><div><b>수학</b><p>오답 풀이</p><small>19:00 - 22:00</small></div><strong>180분</strong></div>
+       </div>
+       <div class="planner-timer"><p>공부 타이머 시작</p><h2>01:25:30</h2></div>`,
+      true
+    ),
     my: layout(appbar('마이페이지', false) + `<div class="card"><p class="title" style="margin:0">김지민</p><p class="sub">목표 대학: 연세대학교 경영학과</p><span class="badge">Pro 이용 중</span></div><div class="card"><ul class="list"><li>성적 정보</li><li>학습 리포트</li><li>구독 관리</li></ul><div class="center"><img src="${CRACKY_SRC}" class="cracky-img cracky-lg" alt="크랙이"/><p class="sub">아직 데이터가 없어요. 먼저 분석해볼까요?</p></div></div>`, true),
-    weekly: layout(appbar('주간 점검', true) + `<div class="card"><p class="sub">플래너 수행률</p><p class="metric-sm">82%</p><div class="progress"><span style="width:82%"></span></div></div><button class="btn btn-primary" data-action="back">다음 주 계획 세우기</button>`, false),
-    report: layout(appbar('프로 보고서', true) + `<div class="card"><span class="badge">Pro 플랜 전용</span><p class="sub">2주에 1회 제공</p><div class="card" style="padding:14px"><div style="display:flex;justify-content:space-between;align-items:center"><div><p class="metric-sm">D-11</p><p class="sub">5월 25일 (토)</p></div></div></div></div><div class="card"><ul class="list"><li data-action="goto" data-target="reportDetail">5월 11일 · 종합 분석 리포트</li><li>4월 27일 · 중간 분석 리포트</li></ul></div><div class="card compact"><p class="sub">이전 보고서</p><ul class="list"><li>5월 11일 · 종합 분석 리포트</li><li>4월 27일 · 중간 분석 리포트</li></ul></div><button class="btn btn-primary">PDF 다운로드</button>`, false),
+    weekly: layout(
+      `<div class="weekly-head"><button class="weekly-back" data-action="back">←</button><h3>주간 점검</h3><span></span></div>
+       <p class="weekly-range">이번 주 점검 (5.6 ~ 5.12)</p>
+       <div class="card weekly-rate"><div><p class="sub">플래너 수행률</p><h2>82%</h2></div><span class="badge">목표 90%</span></div>
+       <div class="card weekly-feedback">
+         <p class="sub" style="margin:0 0 10px;">주간 요약 피드백</p>
+         <div class="feedback-item">${i('check', true)}수학 공부 시간이 부족해요. 개념 학습 시간을 늘려보세요.</div>
+         <div class="feedback-item">${i('check', true)}탐구 문제 풀이 시간이 좋아요! 유지하면 더 좋은 결과가 기대돼요.</div>
+         <div class="feedback-item">${i('check', true)}영어는 꾸준히 잘하고 있어요. 계속 유지해요!</div>
+         <img src="${CRACKY_SRC}" class="weekly-char crackie" alt="크랙이"/>
+       </div>
+       <button class="btn btn-primary weekly-next" data-action="goto" data-target="planner">다음 주 계획 세우기</button>`,
+      true
+    ),
+    report: layout(
+      `<span class="badge">프로 플랜 전용</span>
+       <p class="report-desc">2주에 한 번, 내 맞춤 분석 리포트 제공</p>
+       <div class="card report-main"><p class="sub">다음 보고서 이용 가능일</p><p class="report-date">5월 25일 (토)</p><h2>D-11</h2></div>
+       <div class="card report-list"><p class="sub">이전 보고서</p>
+         <button class="report-row" data-action="goto" data-target="reportDetail"><div><b>5월 11일 (토)</b><p>종합 분석 리포트</p></div><span>${i('chevron', false)}</span></button>
+         <button class="report-row"><div><b>4월 27일 (토)</b><p>중간 분석 리포트</p></div><span>${i('chevron', false)}</span></button>
+       </div>
+       <button class="btn btn-primary report-sample">프로 보고서 샘플 보기</button>`,
+      true
+    ),
     reportDetail: layout(appbar('프로 보고서 상세', true) + `<div class="card"><ul class="list"><li>수학 점수 상승 여지 큼</li><li>목표 대학 거리 -12점</li><li>중기: 탐구 집중 강화</li></ul></div><div class="card compact"><p class="sub">장기 전략</p><p style="margin:0;font-size:14px">6월 모평 전 수학 전범위 1회독 완료</p></div>`, false),
     tutor: layout(appbar('SKY튜터 1:1 피드백', true) + `<div class="card"><p class="sub">텍스트 기반 질의응답</p><ul class="list"><li>Q. 수학 개념 이해가 잘 안돼요</li><li>A. 유형별 복습 루틴을 추가하세요</li></ul></div><button class="btn btn-primary">새 질문 작성</button>`, false),
     proPlan: layout(appbar('프로 플랜 안내', true) + `<div class="card"><p class="title" style="margin:0;color:#0b63e5">PRO PLAN</p><ul class="list"><li>합격 가능성/전략 무제한</li><li>플래너/주간 점검 무제한</li><li>프로 보고서 2주 1회 포함</li></ul></div><button class="btn btn-primary" data-action="goto" data-target="paymentSelect">결제 선택으로</button>`, false),
