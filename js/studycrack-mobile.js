@@ -37,6 +37,12 @@ function App() {
   const [targetMajor, setTargetMajor] = useState('연세대학교 경영학과');
   const [targetOpen, setTargetOpen] = useState(false);
   const [universityModalOpen, setUniversityModalOpen] = useState(false);
+  const [plannerItems, setPlannerItems] = useState([
+    { subject: '수학', content: '개념 학습', start: '10:00', end: '12:00', minutes: 120, dot: 'math' },
+    { subject: '영어', content: '독해 문제 풀이', start: '13:00', end: '14:30', minutes: 90, dot: 'eng' },
+    { subject: '탐구', content: '실전문제', start: '15:00', end: '17:00', minutes: 120, dot: 'sci' },
+    { subject: '수학', content: '오답 풀이', start: '19:00', end: '22:00', minutes: 180, dot: 'math' }
+  ]);
 
   const goto = (next, addHistory = true) => {
     if (addHistory && screen !== next) setHistory((h) => [...h, screen]);
@@ -72,12 +78,53 @@ function App() {
   const tabbar = () => `<div class="tabbar">${tabBtn('home','홈','home')}${tabBtn('analysis','분석','chart')}${tabBtn('strategy','전략','target')}${tabBtn('planner','플래너','calendar')}${tabBtn('my','마이','user')}</div>`;
   const layout = (inner, withTab) => `<div class="app-shell"><div class="screen app-screen app-content">${inner}</div>${withTab ? tabbar() : ''}</div>`;
   const quickMini = (action, iconName, label) => `<button class="quick-mini-item" data-action="goto" data-target="${action}"><span class="quick-mini-icon">${i(iconName,false)}</span><span class="quick-mini-label">${label}</span></button>`;
-  const targetOptions = [
-    '연세대학교 경영학과',
-    '고려대학교 경영학과',
-    '성균관대학교 글로벌경영학과',
-    '한양대학교 경영학부'
-  ];
+  const universityProfiles = {
+    '연세대학교 경영학과': {
+      rate: 68, rank: '상위 32%', score: 323, cut: 335, gap: -12,
+      impact: [
+        ['수학', '90%', '+12점 → +18%', ''],
+        ['탐구', '66%', '+6점 → +9%', '#14b8a6'],
+        ['국어', '52%', '+4점 → +6%', '#f59e0b'],
+        ['영어', '46%', '+3점 → +5%', '#ef4444']
+      ],
+      strategy: ['수학 2등급 → 1등급', '탐구 1과목 집중', '영어 유지']
+    },
+    '고려대학교 경영학과': {
+      rate: 61, rank: '상위 39%', score: 319, cut: 334, gap: -15,
+      impact: [
+        ['수학', '88%', '+11점 → +15%', ''],
+        ['탐구', '64%', '+5점 → +8%', '#14b8a6'],
+        ['국어', '58%', '+5점 → +7%', '#f59e0b'],
+        ['영어', '42%', '+2점 → +4%', '#ef4444']
+      ],
+      strategy: ['수학 고난도 집중', '탐구 개념+실전 병행', '국어 비문학 훈련']
+    },
+    '성균관대학교 글로벌경영학과': {
+      rate: 73, rank: '상위 27%', score: 328, cut: 336, gap: -8,
+      impact: [
+        ['수학', '84%', '+8점 → +12%', ''],
+        ['탐구', '72%', '+6점 → +10%', '#14b8a6'],
+        ['국어', '54%', '+3점 → +5%', '#f59e0b'],
+        ['영어', '50%', '+3점 → +4%', '#ef4444']
+      ],
+      strategy: ['수학 실수 최소화', '탐구 고정 1등급', '영어 1등급 유지']
+    },
+    '한양대학교 경영학부': {
+      rate: 65, rank: '상위 35%', score: 321, cut: 333, gap: -12,
+      impact: [
+        ['수학', '86%', '+10점 → +14%', ''],
+        ['탐구', '68%', '+6점 → +9%', '#14b8a6'],
+        ['국어', '50%', '+3점 → +5%', '#f59e0b'],
+        ['영어', '44%', '+2점 → +3%', '#ef4444']
+      ],
+      strategy: ['수학 개념 복습 강화', '탐구 과목 편차 축소', '국어 시간 배분 훈련']
+    }
+  };
+  const targetOptions = Object.keys(universityProfiles);
+  const selectedUniversity = universityProfiles[targetMajor] || universityProfiles['연세대학교 경영학과'];
+  const totalMinutes = plannerItems.reduce((acc, item) => acc + item.minutes, 0);
+  const totalHour = Math.floor(totalMinutes / 60);
+  const totalMinute = totalMinutes % 60;
   const onboarding = (step, title, subtitle, cardContent, bubbleText, target, cta = '다음') => `
     <div class="app-shell">
       <div class="screen app-screen app-content">
@@ -98,11 +145,7 @@ function App() {
     </div>
   `;
 
-  const homeTargets = [
-    { major: '연세대학교 경영학과', rate: 68, rank: '상위 32%', score: 323, cut: 335, gap: -12 },
-    { major: '고려대학교 경영학과', rate: 61, rank: '상위 39%', score: 319, cut: 334, gap: -15 },
-    { major: '성균관대학교 글로벌경영학과', rate: 73, rank: '상위 27%', score: 328, cut: 336, gap: -8 }
-  ];
+  const homeTargets = targetOptions.slice(0, 3).map((major) => ({ major, ...universityProfiles[major] }));
 
   const homeView = () => `<div class="home-dashboard">
     <div class="home-header">
@@ -115,12 +158,12 @@ function App() {
     </div>
     <div class="section home-section">
       <div class="home-kpi-slider">
-        ${homeTargets.map((item) => `<div class="card home-kpi-card slider-card">
+        ${homeTargets.map((item) => `<button class="card home-kpi-card slider-card" data-action="selectUniversity" data-target-major="${item.major}">
           <span class="home-major-pill">${item.major}</span>
           <p class="sub">내 합격 가능성</p>
           <div class="home-kpi-head"><div><p class="metric">${item.rate}%</p><p class="sub">${item.rank}</p></div><div class="ring" style="background:conic-gradient(var(--primary) 0 ${item.rate}%, #dfe8f8 ${item.rate}% 100%)"></div></div>
           <div class="kpi-row"><div class="kpi-item"><b>${item.score}점</b>현재 점수</div><div class="kpi-item"><b>${item.cut}점</b>합격 컷</div><div class="kpi-item danger"><b>${item.gap}점</b>부족 점수</div></div>
-        </div>`).join('')}
+        </button>`).join('')}
         <button class="card home-kpi-add-card slider-card" data-action="openUniversityModal"><span class="plus">+</span><p>+ 목표 대학 추가</p></button>
       </div>
       <div class="home-kpi-indicator">${homeTargets.map((_, idx) => `<i class="${idx===0?'active':''}"></i>`).join('')}<b>+</b></div>
@@ -211,22 +254,17 @@ function App() {
       </div>
       <div class="analysis-top card">
         <span class="badge analysis-badge">${targetMajor}</span>
-        <div class="analysis-kpi-row"><div><p class="metric-sm">68%</p><p class="analysis-sub">상위 32%</p></div><div class="ring"></div></div>
-        <div class="analysis-score-row"><div><b>323점</b><span>현재 점수</span></div><div><b>335점</b><span>합격 컷</span></div><div><b class="danger">-12점</b><span>부족 점수</span></div></div>
+        <div class="analysis-kpi-row"><div><p class="metric-sm">${selectedUniversity.rate}%</p><p class="analysis-sub">${selectedUniversity.rank}</p></div><div class="ring" style="background:conic-gradient(var(--primary) 0 ${selectedUniversity.rate}%, #dfe8f8 ${selectedUniversity.rate}% 100%)"></div></div>
+        <div class="analysis-score-row"><div><b>${selectedUniversity.score}점</b><span>현재 점수</span></div><div><b>${selectedUniversity.cut}점</b><span>합격 컷</span></div><div><b class="danger">${selectedUniversity.gap}점</b><span>부족 점수</span></div></div>
       </div>
       <div class="card analysis-impact">
         <p class="analysis-title">과목 영향도</p>
-        <div class="analysis-impact-item">수학<div class="track"><i style="width:90%"></i></div><span>+12점 → +18%</span></div>
-        <div class="analysis-impact-item">탐구<div class="track"><i style="width:66%;background:#14b8a6"></i></div><span>+6점 → +9%</span></div>
-        <div class="analysis-impact-item">국어<div class="track"><i style="width:52%;background:#f59e0b"></i></div><span>+4점 → +6%</span></div>
-        <div class="analysis-impact-item">영어<div class="track"><i style="width:46%;background:#ef4444"></i></div><span>+3점 → +5%</span></div>
+        ${selectedUniversity.impact.map((item) => `<div class="analysis-impact-item">${item[0]}<div class="track"><i style="width:${item[1]}${item[3]?`;background:${item[3]}`:''}"></i></div><span>${item[2]}</span></div>`).join('')}
       </div>
       <div class="card analysis-strategy">
         <p class="analysis-title">합격을 위한 최적 전략</p>
         <ol>
-          <li><b>1</b><div><strong>수학 2등급 → 1등급</strong><p>합격 가능성 +18%</p></div></li>
-          <li><b>2</b><div><strong>탐구 1과목 집중</strong><p>합격 가능성 +9%</p></div></li>
-          <li><b>3</b><div><strong>영어 유지</strong><p>합격 가능성 +5%</p></div></li>
+          ${selectedUniversity.strategy.map((item, idx) => `<li><b>${idx+1}</b><div><strong>${item}</strong><p>합격 가능성 개선 전략</p></div></li>`).join('')}
         </ol>
       </div>
       <div class="card analysis-roi">
@@ -261,14 +299,12 @@ function App() {
       `<div class="planner-head"><h3>2024년 5월 14일 (화)</h3><button class="planner-cal-btn">${i('calendar', false)}</button></div>
        <div class="planner-weekday"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
        <div class="planner-days"><span>12</span><span>13</span><span class="active">14</span><span>15</span><span>16</span><span>17</span><span>18</span></div>
-       <div class="planner-section-title"><div><h4>오늘의 계획</h4><p>총 6시간 30분</p></div></div>
+       <div class="planner-section-title"><div><h4>오늘의 계획</h4><p>총 ${totalHour}시간 ${totalMinute}분</p></div></div>
        <div class="planner-plan-list">
-         <div class="planner-item"><i class="dot math"></i><div><b>수학</b><p>개념 학습</p><small>10:00 - 12:00</small></div><strong>120분</strong></div>
-         <div class="planner-item"><i class="dot eng"></i><div><b>영어</b><p>독해 문제 풀이</p><small>13:00 - 14:30</small></div><strong>90분</strong></div>
-         <div class="planner-item"><i class="dot sci"></i><div><b>탐구</b><p>실전문제</p><small>15:00 - 17:00</small></div><strong>120분</strong></div>
-         <div class="planner-item"><i class="dot math"></i><div><b>수학</b><p>오답 풀이</p><small>19:00 - 22:00</small></div><strong>180분</strong></div>
+         ${plannerItems.map((item) => `<div class="planner-item"><i class="dot ${item.dot}"></i><div><b>${item.subject}</b><p>${item.content}</p><small>${item.start} - ${item.end}</small></div><strong>${item.minutes}분</strong></div>`).join('')}
        </div>
-       <div class="planner-timer"><p>공부 타이머 시작</p><h2>01:25:30</h2></div>`,
+       <div class="planner-timer"><p>공부 타이머 시작</p><h2>01:25:30</h2></div>
+       <div class="cta-wrapper planner-add-wrap"><button class="btn btn-primary cta-btn" data-action="addPlannerItem">플래너 항목 추가</button></div>`,
       true
     ),
     my: layout(appbar('마이페이지', false) + `<div class="my-stack">
@@ -358,6 +394,27 @@ function App() {
     if (action === 'openUniversityModal') setUniversityModalOpen(true);
     if (action === 'closeUniversityModal') setUniversityModalOpen(false);
     if (action === 'noopModal') return;
+    if (action === 'selectUniversity') {
+      setTargetMajor(actionEl.getAttribute('data-target-major'));
+      setTargetOpen(false);
+      goto('analysis');
+    }
+    if (action === 'addPlannerItem') {
+      const subject = window.prompt('과목을 입력하세요', '수학');
+      if (!subject) return;
+      const content = window.prompt('학습 내용을 입력하세요', '개념 복습');
+      if (!content) return;
+      const start = window.prompt('시작 시간을 입력하세요 (예: 18:00)', '18:00');
+      if (!start) return;
+      const end = window.prompt('종료 시간을 입력하세요 (예: 19:30)', '19:30');
+      if (!end) return;
+      const durationValue = window.prompt('예상 학습 시간을 분 단위로 입력하세요', '90');
+      const minutes = Number(durationValue);
+      if (!minutes || Number.isNaN(minutes)) return;
+      const lowered = subject.toLowerCase();
+      const dot = lowered.includes('수') ? 'math' : lowered.includes('영') ? 'eng' : 'sci';
+      setPlannerItems((prev) => [...prev, { subject, content, start, end, minutes, dot }]);
+    }
   };
 
   return <div onClick={onClick} dangerouslySetInnerHTML={{ __html: current }} />;
