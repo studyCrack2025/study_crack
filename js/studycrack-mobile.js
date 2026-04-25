@@ -288,6 +288,15 @@ function App() {
   const selectedUniversity = universityProfiles[targetMajor] || universityProfiles['연세대학교 경영학과'];
   const onboardingProgress = (step) => `<div class="ob-progress"><span>${step}/3</span><div class="ob-dots"><i class="${step>=1?'active':''}"></i><i class="${step>=2?'active':''}"></i><i class="${step>=3?'active':''}"></i></div></div>`;
   const mbtiDone = Object.values(mbtiAnswers).every(Boolean);
+  const gaugeTotal = 250;
+  const gaugeCurrent = 86;
+  const gaugeTarget = 120;
+  const gaugePass = 100;
+  const gaugeSafe = 150;
+  const gaugeCurrentPct = Math.min((gaugeCurrent / gaugeTotal) * 100, 100);
+  const gaugeTargetPct = Math.min((gaugeTarget / gaugeTotal) * 100, 100);
+  const gaugePassPct = (gaugePass / gaugeTotal) * 100;
+  const gaugeSafePct = (gaugeSafe / gaugeTotal) * 100;
   const totalMinutes = plannerItems.reduce((acc, item) => acc + item.minutes, 0);
   const totalHour = Math.floor(totalMinutes / 60);
   const totalMinute = totalMinutes % 60;
@@ -471,7 +480,7 @@ function App() {
          <div class="ob-mbti-q"><p>4) 피드백이 있으면 공부가 더 잘 되나요?</p><div class="ob-mbti-opt"><button data-action="setMbti" data-mbti-q="q4" data-mbti-v="feedback" class="${mbtiAnswers.q4==='feedback'?'active':''}">네</button><button data-action="setMbti" data-mbti-q="q4" data-mbti-v="self" class="${mbtiAnswers.q4==='self'?'active':''}">아니오</button></div></div>
          <button class="btn btn-primary ${mbtiDone?'':'disabled'}" data-action="completeMbti" ${mbtiDone?'':'disabled'}>검사 완료</button>
        </div></div>` : ''}
-       </div><div class="cta-wrapper"><button class="cta-button" data-action="goto" data-target="ob2">진단 완료하고 다음으로</button></div></div>`,
+       </div><div class="cta-wrapper onboarding-fixed-cta"><button class="cta-button" data-action="goto" data-target="ob2">진단 완료하고 다음으로</button></div></div>`,
       false
     ),
     ob2: layout(
@@ -494,7 +503,7 @@ function App() {
          <div class="analysis-impact-item">탐구<div class="track"><i style="width:68%;background:#14b8a6"></i></div><span>+6점 → +9%</span></div>
          <div class="analysis-impact-item">영어<div class="track"><i style="width:48%;background:#f59e0b"></i></div><span>+3점 → +5%</span></div>
        </div>
-       </div><div class="cta-wrapper"><button class="cta-button" data-action="goto" data-target="ob3">내 맞춤 솔루션 보기</button></div></div>`,
+       </div><div class="cta-wrapper onboarding-fixed-cta"><button class="cta-button" data-action="goto" data-target="ob3">내 맞춤 솔루션 보기</button></div></div>`,
       false
     ),
     ob3: layout(
@@ -504,18 +513,23 @@ function App() {
        <p class="sub ob-subcopy">현재 성적에서 합격컷까지,<br/>가장 효율적인 점수 상승 루트를 보여드릴게요.</p>
        <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>무작정 전 과목을 올리는 게 아니라, 합격에 가장 크게 기여하는 과목부터 잡아야 해요!</p></div>
        <div class="card ob-card">
-         <p class="analysis-title">최대효율 합격컷 도달 성적표</p>
-         <div class="ob-before-after">
-          <div class="ob-score-card"><b>현재 성적</b><p>국어 82</p><p>수학 68</p><p>영어 77</p><p>탐구1 70</p><p>탐구2 66</p><strong>총점 323</strong></div>
-          <div class="ob-score-card"><b>목표 성적</b><p>국어 82</p><p>수학 80 <span class="plus">+12</span></p><p>영어 77</p><p>탐구1 76 <span class="plus">+6</span></p><p>탐구2 66</p><strong>예상 총점 335</strong></div>
+         <p class="analysis-title">합격확률 게이지</p>
+         <div class="ob-gauge-head"><div><span>현재 점수</span><b>${gaugeCurrent}점</b></div><div><span>목표 점수</span><b class="target">${gaugeTarget}점</b></div></div>
+         <div class="ob-gauge">
+           <div class="ob-gauge-current" style="width:${gaugeCurrentPct}%"></div>
+           <div class="ob-gauge-target" style="width:${gaugeTargetPct}%"></div>
+           <i class="ob-gauge-cut pass" style="left:${gaugePassPct}%"></i>
+           <i class="ob-gauge-cut safe" style="left:${gaugeSafePct}%"></i>
          </div>
+         <div class="ob-gauge-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
+         <p class="sub"><b>합격 가능성 상승 구간</b> · 현재 → 합격권 진입</p>
        </div>
        <div class="card ob-card">
          <p class="analysis-title">핵심 전략</p>
          <ol class="ob-strategy"><li><b>수학 68점 → 80점</b><p>합격 가능성 상승 기여도 가장 큼</p></li><li><b>탐구1 70점 → 76점</b><p>단기간 상승 효율 높음</p></li><li><b>영어 77점 유지</b><p>현재 수준 유지 전략</p></li></ol>
        </div>
        <div class="card ob-card ob-period-card"><p class="analysis-title">Standard 이용 시 예상 도달 기간</p><h2>평균 3개월 예상</h2><p class="sub">주간 플래너 피드백과 학습 방향 코칭 제공</p></div>
-       </div><div class="cta-wrapper"><button class="cta-button" data-action="startStandard">Standard로 시작하기</button><button class="auth-link-btn" data-action="completeOnboarding">나중에 홈으로 이동</button></div></div>`,
+       </div><div class="cta-wrapper onboarding-fixed-cta"><button class="cta-button" data-action="startStandard">Standard로 시작하기</button><button class="auth-link-btn" data-action="completeOnboarding">나중에 홈으로 이동</button></div></div>`,
       false
     ),
     authLogin: layout(`<div class="auth-screen">
