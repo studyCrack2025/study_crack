@@ -184,6 +184,13 @@ async function renderStep() {
     if (step.id === 'univ-rec') initUnivSim();
 }
 
+function showTutLoading(show) {
+    const overlay = document.getElementById('tutLoadingOverlay');
+    if (!overlay) return;
+    if (show) overlay.classList.add('active');
+    else overlay.classList.remove('active');
+}
+
 async function nextStep() {
     if (isInterrupted) {
         isInterrupted = false;
@@ -191,6 +198,19 @@ async function nextStep() {
         return;
     }
 
+    const nextBtn = document.getElementById('tutNextBtn');
+    if (nextBtn) nextBtn.disabled = true;
+    showTutLoading(true);
+
+    try {
+        await _nextStepCore();
+    } finally {
+        showTutLoading(false);
+        if (nextBtn) nextBtn.disabled = false;
+    }
+}
+
+async function _nextStepCore() {
     const step = STEPS[currentStepIdx];
 
     if (step.id === 'survey-qual') {
@@ -205,6 +225,10 @@ async function nextStep() {
         };
         await apiCall('update_qual', tutorialData.qual);
     } else if (step.id === 'survey-quan') {
+        // 새 점수 입력 시 이전 시뮬레이션 결과 초기화
+        tutorialData.selectedUnivs = null;
+        tutorialData.totalStdScore = 0;
+
         const korCommon  = parseInt(document.getElementById('tutKorCommon')?.value)  || 0;
         const korSel     = parseInt(document.getElementById('tutKorSel')?.value)     || 0;
         const mathCommon = parseInt(document.getElementById('tutMathCommon')?.value) || 0;
