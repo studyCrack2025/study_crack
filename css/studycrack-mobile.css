@@ -298,6 +298,26 @@ body {
 .report-detail-text { line-height:1.62; }
 .report-detail-cta .btn { box-shadow: 0 10px 24px rgba(11, 99, 229, 0.28); min-height:54px; }
 
+.pricing-sub { margin: 2px 0 10px; color:#4b5563; }
+.plan-stack { display:grid; gap:10px; }
+.plan-card { text-align:left; border:1px solid #dbe5f4; border-radius:20px; background:#fff; padding:14px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); }
+.plan-card h4 { margin:0; font-size:16px; font-weight:800; color:#0f172a; }
+.plan-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+.plan-price { margin:0 0 8px; font-size:18px; font-weight:800; color:#0b63e5; }
+.plan-card ul { margin:0; padding-left:18px; color:#4b5563; font-size:12px; line-height:1.45; }
+.plan-card.standard { border-color:#b9d3ff; background:#f8fbff; }
+.plan-card.pro { border-color:#8eb8ff; background:#f2f7ff; box-shadow: 0 12px 26px rgba(11,99,229,0.18); transform: scale(1.01); }
+.plan-card.active { outline:2px solid #0b63e5; }
+.plan-chip { display:inline-block; margin-top:8px; padding:4px 9px; border-radius:999px; background:#eef4ff; color:#0b63e5; font-size:11px; font-weight:700; }
+
+.payment-summary h3 { margin:6px 0 2px; font-size:24px; color:#111827; }
+.duration-row { display:grid; grid-template-columns: repeat(3,1fr); gap:8px; margin-top:10px; }
+.duration-row button { min-height:42px; border:1px solid #d1d5db; border-radius:12px; background:#fff; font-weight:700; color:#334155; }
+.duration-row button.active { background:#0b63e5; border-color:#0b63e5; color:#fff; }
+.payment-note { margin:10px 0 0; color:#4b5563; }
+.payment-complete .list { margin-top:10px; }
+.payment-complete .list li { font-size:13px; color:#4b5563; }
+
 .onboard-grid { display:grid; gap:10px; }
 .score-collage { display:grid; grid-template-columns: 1fr auto 1fr; gap:8px; align-items:end; }
 .score-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; padding:10px; }
