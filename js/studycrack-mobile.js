@@ -1,7 +1,16 @@
 const { useState, useEffect } = React;
 
-const CRACKY_SRC = 'assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png';
+const CRACKY_SRC = './assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png';
 const ONBOARDING_LOGO_SRC = './assets/images/og-image.jpg';
+const HOME_FALLBACK_HTML = `<div class="app-shell"><div class="screen app-screen app-content"><div class="center init-loading"><h3>스터디크랙 홈</h3><p class="sub">앱을 불러왔어요. 계속 이용해 주세요.</p></div></div></div>`;
+const resolveAssetPath = async (path, fallback) => {
+  try {
+    const response = await fetch(path, { method: 'HEAD' });
+    return response.ok ? path : fallback;
+  } catch (_) {
+    return fallback;
+  }
+};
 const safeJsonParse = (value, fallback) => {
   if (!value) return fallback;
   try {
@@ -52,11 +61,13 @@ function i(name, primary) {
 }
 
 function mascotBubble(text, size = 'sm') {
+  const mascotSrc = (window.__studycrackAssetSrc && window.__studycrackAssetSrc.crackySrc) || CRACKY_SRC;
   const sizeClass = size === 'lg' ? 'cracky-lg' : size === 'md' ? 'cracky-md' : 'cracky-sm';
-  return `<div class="mascot"><div class="mascot-badge"><img src="${CRACKY_SRC}" class="cracky-img ${sizeClass}" alt="크랙이"/></div><div class="bubble">${text}</div></div>`;
+  return `<div class="mascot"><div class="mascot-badge"><img src="${mascotSrc}" class="cracky-img ${sizeClass}" alt="크랙이"/></div><div class="bubble">${text}</div></div>`;
 }
 
 function App() {
+  console.log('APP_RENDER_START');
   const [screen, setScreen] = useState('splash');
   const [tab, setTab] = useState('home');
   const [history, setHistory] = useState([]);
@@ -141,7 +152,12 @@ function App() {
       if (savedScore) setScores(savedScore);
 
       const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('init-timeout')), 2500));
-      await Promise.race([fetch('./assets/og-image.jpg'), timeoutPromise]).catch(() => null);
+      const crackySrc = await resolveAssetPath(CRACKY_SRC, './assets/images/studycrack_logo_wo_bg.png');
+      const onboardingLogoSrc = await resolveAssetPath(ONBOARDING_LOGO_SRC, './assets/images/studycrack_logo_wo_bg.png');
+      window.__studycrackAssetSrc = { crackySrc, onboardingLogoSrc };
+      await Promise.race([fetch(onboardingLogoSrc), timeoutPromise]).catch(() => null);
+      await resolveAssetPath('./assets/76220C96-DE85-4148-A6AC-7BD5881821A0.png', null);
+      await resolveAssetPath('./assets/IMG_2648.jpeg', null);
 
       setScreen(onboardingDone ? 'home' : 'on1');
       console.log('[APP_INIT_SUCCESS]');
@@ -157,6 +173,10 @@ function App() {
 
   useEffect(() => {
     initializeApp();
+  }, []);
+
+  useEffect(() => {
+    window.__studycrackAppBooted = true;
   }, []);
 
   useEffect(() => {
@@ -360,7 +380,7 @@ function App() {
   const currentPlan = planMeta[selectedPlan] || planMeta.Pro;
 
   const screens = {
-    splash: `<div class="app-shell"><div class="splash"><div class="logo-bolt">${i('bolt',true)}</div><img class="brand-logo" src="./assets/images/studycrack_logo_wo_bg.png" alt="logo"/><h1 style="margin:0;font-size:30px">스터디크랙</h1><p>합격까지 가장 빠른 전략</p></div></div>`,
+    splash: `<div class="app-shell"><div class="splash"><div class="logo-bolt">${i('bolt',true)}</div><img class="brand-logo" src="${(window.__studycrackAssetSrc && window.__studycrackAssetSrc.onboardingLogoSrc) || './assets/images/studycrack_logo_wo_bg.png'}" alt="logo"/><h1 style="margin:0;font-size:30px">스터디크랙</h1><p>합격까지 가장 빠른 전략</p></div></div>`,
     on1: onboarding(
       1,
       '데이터 기반으로\n내 합격 가능성을 분석해요',
@@ -545,6 +565,9 @@ function App() {
   };
 
   const current = screens[screen] || screens.home;
+  const currentScreen = screen;
+  console.log('APP_LOADING_STATE', loading);
+  console.log('APP_CURRENT_SCREEN', currentScreen);
 
   const onClick = (e) => {
     const actionEl = e.target.closest('[data-action]');
@@ -661,5 +684,18 @@ function App() {
   return <div onClick={onClick} onInput={onInput} dangerouslySetInnerHTML={{ __html: rendered }} />;
 }
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<AppErrorBoundary><App /></AppErrorBoundary>);
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  console.error('[APP_INIT_ERROR]', new Error('root element #root not found'));
+} else if (!window.ReactDOM || typeof window.ReactDOM.createRoot !== 'function') {
+  console.error('[APP_INIT_ERROR]', new Error('ReactDOM.createRoot is unavailable'));
+  rootElement.innerHTML = HOME_FALLBACK_HTML;
+} else {
+  try {
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<AppErrorBoundary><App /></AppErrorBoundary>);
+  } catch (e) {
+    console.error('[APP_INIT_ERROR]', e);
+    rootElement.innerHTML = `<div class="app-shell"><div class="screen app-screen app-content"><div class="center init-loading"><h3>앱을 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.</h3></div></div></div>`;
+  }
+}
