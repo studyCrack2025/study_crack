@@ -839,6 +839,26 @@ body {
 }
 
 .auth-screen { display:flex; flex-direction:column; gap:12px; }
+.auth-logo-wrap {
+  margin-top: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 14px;
+}
+.auth-logo {
+  width: 140px;
+  max-width: 45%;
+  height: auto;
+  object-fit: contain;
+}
+.auth-logo-fallback {
+  display: none;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--primary);
+}
 .auth-brand h1 { margin:0; font-size:28px; color:var(--primary); }
 .auth-title { margin:8px 0 6px; font-size:20px; font-weight:800; }
 .auth-form-card,

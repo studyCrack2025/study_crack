@@ -2,6 +2,7 @@ const { useState, useEffect } = React;
 
 const CRACKY_SRC = './assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png';
 const ONBOARDING_LOGO_SRC = './assets/images/og-image.jpg';
+const STUDYCRACK_LOGO_SRC = './assets/images/studycrack_logo_wo_bg.png';
 const HOME_FALLBACK_HTML = `<div class="app-shell"><div class="screen app-screen app-content"><div class="center init-loading"><h3>스터디크랙 홈</h3><p class="sub">앱을 불러왔어요. 계속 이용해 주세요.</p></div></div></div>`;
 const DEFAULT_USER = { name: '김지민', targetUniversity: '연세대학교 경영학과', plan: 'Pro' };
 const DEFAULT_SCORES = { korean: 82, math: 68, english: 77, inquiry1: 70, inquiry2: 66 };
@@ -426,6 +427,15 @@ function App() {
   const screens = {
     authLogin: layout(`<div class="auth-screen">
       <div class="auth-brand card">
+        <div class="auth-logo-wrap">
+          <img
+            src="${STUDYCRACK_LOGO_SRC}"
+            class="auth-logo"
+            alt="StudyCrack Logo"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+          />
+          <span class="auth-logo-fallback">StudyCrack</span>
+        </div>
         <h1>StudyCrack</h1>
         <p class="auth-title">합격 전략을 시작해볼까요?</p>
         <p class="sub">내 성적에 맞는 대학별 합격 가능성과 전략을 확인하세요.</p>
@@ -451,6 +461,17 @@ function App() {
       </div>
     </div>`, false),
     authSignup: layout(appbar('회원가입', true) + `<div class="auth-screen">
+      <div class="auth-brand card">
+        <div class="auth-logo-wrap">
+          <img
+            src="${STUDYCRACK_LOGO_SRC}"
+            class="auth-logo"
+            alt="StudyCrack Logo"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+          />
+          <span class="auth-logo-fallback">StudyCrack</span>
+        </div>
+      </div>
       <div class="card auth-form-card">
         <label class="auth-label">이름</label>
         <input class="planner-input" data-field="signupName" value="${signupName}" placeholder="이름 입력" />
