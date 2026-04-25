@@ -46,6 +46,9 @@ body {
   position: relative;
 }
 .screen { overflow: auto; overflow-x: hidden; padding: 12px 14px 92px; }
+.app-shell,
+.screen,
+.app-content { position: relative; }
 .section { margin-bottom: 10px; }
 .appbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
 .back-btn { width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: #1e293b; }
@@ -293,22 +296,22 @@ body {
 }
 .planner-bottom-space { height:100px; }
 .planner-fab {
-  position:fixed;
+  position:absolute;
   right:20px;
-  bottom:90px;
-  width:60px;
-  height:60px;
+  bottom:92px;
+  width:56px;
+  height:56px;
   border:none;
   border-radius:50%;
-  background:linear-gradient(135deg, #3B82F6, #2563EB);
+  background:linear-gradient(135deg, #1E6BEA, #3B82F6);
   display:flex;
   align-items:center;
   justify-content:center;
-  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 10px 24px rgba(30, 107, 234, 0.32);
   z-index:25;
 }
 .planner-fab:active { transform: scale(0.95); }
-.planner-fab span { font-size:28px; font-weight:600; color:#fff; line-height:1; }
+.planner-fab span { font-size:30px; font-weight:600; color:#fff; line-height:1; }
 .timer-modal .timer-subject-row,
 .timer-modal .timer-controls { display:grid; grid-template-columns: repeat(3,1fr); gap:8px; margin-top:12px; }
 .timer-modal .timer-subject-row button,
