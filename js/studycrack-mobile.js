@@ -41,6 +41,12 @@ function App() {
   const [plannerAddModalOpen, setPlannerAddModalOpen] = useState(false);
   const [timerStatus, setTimerStatus] = useState('idle');
   const [timerSubject, setTimerSubject] = useState('수학');
+  const [plannerSubject, setPlannerSubject] = useState('');
+  const [plannerContent, setPlannerContent] = useState('');
+  const [plannerDurationChoice, setPlannerDurationChoice] = useState('');
+  const [plannerCustomMinutes, setPlannerCustomMinutes] = useState('');
+  const [plannerStart, setPlannerStart] = useState('');
+  const [plannerEnd, setPlannerEnd] = useState('');
   const [plannerItems, setPlannerItems] = useState([
     { subject: '수학', content: '개념 학습', start: '10:00', end: '12:00', minutes: 120, dot: 'math' },
     { subject: '영어', content: '독해 문제 풀이', start: '13:00', end: '14:30', minutes: 90, dot: 'eng' },
@@ -129,6 +135,13 @@ function App() {
   const totalMinutes = plannerItems.reduce((acc, item) => acc + item.minutes, 0);
   const totalHour = Math.floor(totalMinutes / 60);
   const totalMinute = totalMinutes % 60;
+  const canSubmitPlanner = Boolean(
+    plannerSubject &&
+      plannerContent.trim() &&
+      plannerStart &&
+      plannerEnd &&
+      (plannerDurationChoice === 'custom' ? Number(plannerCustomMinutes) > 0 : Number(plannerDurationChoice) > 0)
+  );
   const onboarding = (step, title, subtitle, cardContent, bubbleText, target, cta = '다음') => `
     <div class="app-shell">
       <div class="screen app-screen app-content">
@@ -309,8 +322,8 @@ function App() {
        </div>
        <div class="planner-timer card" data-action="openTimerModal"><p>오늘 공부 시간</p><h2>01:25:30</h2><button class="planner-timer-start" data-action="openTimerModal">타이머 시작하기</button></div>
        <div class="planner-bottom-space"></div>
-       <button class="planner-fab" data-action="openPlannerAddModal"><span>+</span></button>
-       ${plannerAddModalOpen ? `<div class="home-modal-overlay" data-action="closePlannerAddModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">플래너 항목 추가</p><p class="sub" style="margin-top:8px">새 플래너 항목을 추가하시겠어요?</p><button class="btn btn-primary" style="margin-top:12px" data-action="addPlannerItemFromModal">추가하기</button><button class="btn btn-secondary" style="margin-top:8px" data-action="closePlannerAddModal">취소</button></div></div>` : ''}
+       ${!plannerAddModalOpen ? `<button class="planner-fab" data-action="openPlannerAddModal"><span>+</span></button>` : ''}
+       ${plannerAddModalOpen ? `<div class="planner-sheet-overlay" data-action="closePlannerAddModal"><div class="planner-sheet" data-action="noopModal"><button class="planner-sheet-close" data-action="closePlannerAddModal">✕</button><h3>플래너 항목 추가</h3><p>오늘 실행할 학습 계획을 입력해 주세요.</p><div class="planner-sheet-block"><label>과목 선택</label><div class="planner-pill-row"><button class="planner-pill ${plannerSubject==='수학'?'active':''}" data-action="setPlannerSubject" data-planner-subject="수학">수학</button><button class="planner-pill ${plannerSubject==='국어'?'active':''}" data-action="setPlannerSubject" data-planner-subject="국어">국어</button><button class="planner-pill ${plannerSubject==='영어'?'active':''}" data-action="setPlannerSubject" data-planner-subject="영어">영어</button><button class="planner-pill ${plannerSubject==='탐구'?'active':''}" data-action="setPlannerSubject" data-planner-subject="탐구">탐구</button></div></div><div class="planner-sheet-block"><label>학습 내용</label><input class="planner-input" data-field="plannerContent" value="${plannerContent}" placeholder="예: 개념 학습, 독해 문제 풀이" /></div><div class="planner-sheet-block"><label>시간 선택</label><div class="planner-pill-row"><button class="planner-pill ${plannerDurationChoice==='30'?'active':''}" data-action="setPlannerDuration" data-planner-duration="30">30분</button><button class="planner-pill ${plannerDurationChoice==='60'?'active':''}" data-action="setPlannerDuration" data-planner-duration="60">60분</button><button class="planner-pill ${plannerDurationChoice==='90'?'active':''}" data-action="setPlannerDuration" data-planner-duration="90">90분</button><button class="planner-pill ${plannerDurationChoice==='120'?'active':''}" data-action="setPlannerDuration" data-planner-duration="120">120분</button><button class="planner-pill ${plannerDurationChoice==='custom'?'active':''}" data-action="setPlannerDuration" data-planner-duration="custom">직접 입력</button></div>${plannerDurationChoice==='custom' ? `<input class="planner-input" data-field="plannerCustomMinutes" value="${plannerCustomMinutes}" type="number" placeholder="분 단위 입력" />` : ''}</div><div class="planner-sheet-block"><label>시간대</label><div class="planner-time-row"><input class="planner-input" data-field="plannerStart" value="${plannerStart}" type="time" /><input class="planner-input" data-field="plannerEnd" value="${plannerEnd}" type="time" /></div></div><button class="btn btn-primary planner-sheet-submit ${canSubmitPlanner?'':'disabled'}" data-action="addPlannerFromSheet" ${canSubmitPlanner?'':'disabled'}>플래너에 추가하기</button></div></div>` : ''}
        ${timerModalOpen ? `<div class="home-modal-overlay" data-action="closeTimerModal"><div class="home-modal timer-modal" data-action="noopModal"><p class="home-modal-title">학습 타이머</p><p class="sub" style="margin:8px 0 0">과목 선택: <b>${timerSubject}</b></p><div class="timer-subject-row"><button data-action="setTimerSubject" data-timer-subject="수학">수학</button><button data-action="setTimerSubject" data-timer-subject="영어">영어</button><button data-action="setTimerSubject" data-timer-subject="탐구">탐구</button></div><div class="timer-controls"><button data-action="timerStart">시작</button><button data-action="timerPause">일시정지</button><button data-action="timerEnd">종료</button></div><p class="sub" style="margin:10px 0 0">상태: ${timerStatus==='idle'?'대기':timerStatus==='running'?'진행 중':'일시정지'}</p><button class="btn btn-primary" style="margin-top:12px" data-action="closeTimerModal">닫기</button></div></div>` : ''}
        </div>`,
       true
@@ -406,6 +419,8 @@ function App() {
     if (action === 'openPlannerAddModal') setPlannerAddModalOpen(true);
     if (action === 'closePlannerAddModal') setPlannerAddModalOpen(false);
     if (action === 'noopModal') return;
+    if (action === 'setPlannerSubject') setPlannerSubject(actionEl.getAttribute('data-planner-subject'));
+    if (action === 'setPlannerDuration') setPlannerDurationChoice(actionEl.getAttribute('data-planner-duration'));
     if (action === 'selectUniversity') {
       setTargetMajor(actionEl.getAttribute('data-target-major'));
       setTargetOpen(false);
@@ -428,6 +443,19 @@ function App() {
       const dot = lowered.includes('수') ? 'math' : lowered.includes('영') ? 'eng' : 'sci';
       setPlannerItems((prev) => [...prev, { subject, content, start, end, minutes, dot }]);
     }
+    if (action === 'addPlannerFromSheet') {
+      if (!canSubmitPlanner) return;
+      const minutes = plannerDurationChoice === 'custom' ? Number(plannerCustomMinutes) : Number(plannerDurationChoice);
+      const dot = plannerSubject === '수학' ? 'math' : plannerSubject === '영어' ? 'eng' : plannerSubject === '국어' ? 'kor' : 'sci';
+      setPlannerItems((prev) => [...prev, { subject: plannerSubject, content: plannerContent, start: plannerStart, end: plannerEnd, minutes, dot }]);
+      setPlannerAddModalOpen(false);
+      setPlannerSubject('');
+      setPlannerContent('');
+      setPlannerDurationChoice('');
+      setPlannerCustomMinutes('');
+      setPlannerStart('');
+      setPlannerEnd('');
+    }
     if (action === 'setTimerSubject') setTimerSubject(actionEl.getAttribute('data-timer-subject'));
     if (action === 'timerStart') setTimerStatus('running');
     if (action === 'timerPause') setTimerStatus('paused');
@@ -445,7 +473,17 @@ function App() {
     }
   };
 
-  return <div onClick={onClick} dangerouslySetInnerHTML={{ __html: current }} />;
+  const onInput = (e) => {
+    const field = e.target.getAttribute('data-field');
+    if (!field) return;
+    const value = e.target.value;
+    if (field === 'plannerContent') setPlannerContent(value);
+    if (field === 'plannerCustomMinutes') setPlannerCustomMinutes(value);
+    if (field === 'plannerStart') setPlannerStart(value);
+    if (field === 'plannerEnd') setPlannerEnd(value);
+  };
+
+  return <div onClick={onClick} onInput={onInput} dangerouslySetInnerHTML={{ __html: current }} />;
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
