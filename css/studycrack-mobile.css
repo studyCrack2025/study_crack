@@ -105,6 +105,13 @@ body {
 }
 .icon.primary { stroke: var(--primary); }
 .btn { width:100%; min-height: 44px; border-radius: 12px; border:none; font-size: 14px; font-weight:600; }
+.cta-wrapper {
+  position: sticky;
+  bottom: 76px;
+  padding: 0 0 12px;
+  z-index: 20;
+}
+.cta-btn { min-height: 52px; }
 
 .stack-card { display:grid; gap:12px; }
 .compact { padding: 14px 16px; border-radius: 16px; }
@@ -226,7 +233,7 @@ body {
 .feedback-item { display:flex; align-items:center; gap:8px; background:#f8fbff; border:1px solid #dbeafe; border-radius:12px; padding:6px 7px; font-size:12.5px; color:#1f2937; margin-bottom:4px; line-height:1.35; }
 .feedback-item .icon { width:14px; height:14px; stroke:#0b63e5; margin-top:0; flex-shrink:0; align-self:center; }
 .weekly-char { position:absolute; right:4px; bottom:-5px; width:92px; height:auto; object-fit:contain; }
-.weekly-next { margin-top:6px; min-height:52px; position: sticky; bottom: 80px; }
+.weekly-next { margin-top:0; min-height:52px; position: static; }
 
 .report-desc { margin:4px 0 6px; font-size:13.5px; color:#4b5563; }
 .report-main { border-radius:18px; padding:11px; text-align:center; }
@@ -238,7 +245,7 @@ body {
 .report-row b { font-size:13.5px; color:#0f172a; }
 .report-row p { margin:2px 0 0; font-size:12.5px; color:#4b5563; }
 .report-row .icon { width:15px; height:15px; stroke:#64748b; }
-.report-sample { margin-top:6px; min-height:52px; position: sticky; bottom: 80px; }
+.report-sample { margin-top:0; min-height:52px; position: static; }
 
 .report-detail-stack { display:grid; gap:12px; }
 .report-detail-card {
@@ -246,6 +253,14 @@ body {
   box-shadow: 0 8px 24px rgba(0,0,0,0.08);
 }
 .report-detail-card .sub { font-weight:700; color:#1f2937; }
+.report-detail-list li { font-weight:500; color:#374151; }
+.report-detail-text { margin:0; font-size:14px; font-weight:500; color:#4b5563; }
+
+.analysis-kpi .metric-sm { font-weight:800; }
+.analysis-badge { font-size:10px; padding:4px 8px; }
+.analysis-sub { color:#9ca3af; font-size:13px; }
+.analysis-bars { padding:10px 12px; }
+.analysis-bars .bar { font-size:13px; }
 
 .onboard-grid { display:grid; gap:10px; }
 .score-collage { display:grid; grid-template-columns: 1fr auto 1fr; gap:8px; align-items:end; }

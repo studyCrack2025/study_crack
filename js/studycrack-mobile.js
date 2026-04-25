@@ -152,8 +152,8 @@ function App() {
       '시작하기'
     ),
     home: layout(homeView(), true),
-    analysis: layout(appbar('분석', false) + `<div class="card"><span class="badge">연세대학교 경영학과</span><p class="metric-sm">68%</p><p class="sub">현재 323점 / 합격 컷 335점 / 부족 -12점</p></div><div class="card"><div class="bar">수학<div class="track"><i style="width:88%"></i></div><span>+15%</span></div><div class="bar">탐구<div class="track"><i style="width:72%;background:#0ea5a2"></i></div><span>+9%</span></div></div><div class="card compact"><p class="sub">현재 병목</p><p style="margin:0;font-weight:600">수학이 합격 가능성을 제한하고 있어요</p></div>`, true),
-    strategy: layout(appbar('전략', false) + `<div class="card"><ul class="list"><li><b>1</b> 수학 2등급 → 1등급</li><li><b>2</b> 탐구 1과목 집중</li><li><b>3</b> 영어 유지 전략</li></ul></div><button class="btn btn-primary" data-action="goto" data-target="planner">플래너로 실행하기</button>`, true),
+    analysis: layout(appbar('분석', false) + `<div class="card analysis-kpi"><span class="badge analysis-badge">연세대학교 경영학과</span><p class="metric-sm">68%</p><p class="sub analysis-sub">현재 323점 / 합격 컷 335점 / 부족 -12점</p></div><div class="card analysis-bars"><div class="bar">수학<div class="track"><i style="width:88%"></i></div><span>+15%</span></div><div class="bar">탐구<div class="track"><i style="width:72%;background:#0ea5a2"></i></div><span>+9%</span></div></div><div class="card compact"><p class="sub">현재 병목</p><p style="margin:0;font-weight:600">수학이 합격 가능성을 제한하고 있어요</p></div>`, true),
+    strategy: layout(appbar('전략', false) + `<div class="card"><ul class="list"><li><b>1</b> 수학 2등급 → 1등급</li><li><b>2</b> 탐구 1과목 집중</li><li><b>3</b> 영어 유지 전략</li></ul></div><div class="cta-wrapper"><button class="btn btn-primary cta-btn" data-action="goto" data-target="planner">플래너로 실행하기</button></div>`, true),
     planner: layout(
       `<div class="planner-head"><h3>2024년 5월 14일 (화)</h3><button class="planner-cal-btn">${i('calendar', false)}</button></div>
        <div class="planner-weekday"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
@@ -180,7 +180,7 @@ function App() {
          <div class="feedback-item">${i('check', true)}영어는 꾸준히 잘하고 있어요. 계속 유지해요!</div>
          <img src="${CRACKY_SRC}" class="weekly-char crackie" alt="크랙이"/>
        </div>
-       <button class="btn btn-primary weekly-next" data-action="goto" data-target="planner">다음 주 계획 세우기</button>`,
+       <div class="cta-wrapper"><button class="btn btn-primary weekly-next cta-btn" data-action="goto" data-target="planner">다음 주 계획 세우기</button></div>`,
       true
     ),
     report: layout(
@@ -191,14 +191,14 @@ function App() {
          <button class="report-row" data-action="goto" data-target="reportDetail"><div><b>5월 11일 (토)</b><p>종합 분석 리포트</p></div><span>${i('chevron', false)}</span></button>
          <button class="report-row"><div><b>4월 27일 (토)</b><p>중간 분석 리포트</p></div><span>${i('chevron', false)}</span></button>
        </div>
-       <button class="btn btn-primary report-sample">프로 보고서 샘플 보기</button>`,
+       <div class="cta-wrapper"><button class="btn btn-primary report-sample cta-btn">프로 보고서 샘플 보기</button></div>`,
       true
     ),
-    reportDetail: layout(appbar('프로 보고서 상세', true) + `<div class="report-detail-stack"><div class="card report-detail-card"><ul class="list"><li>수학 점수 상승 여지 큼</li><li>목표 대학 거리 -12점</li><li>중기: 탐구 집중 강화</li></ul></div><div class="card compact report-detail-card"><p class="sub">장기 전략</p><p style="margin:0;font-size:14px">6월 모평 전 수학 전범위 1회독 완료</p></div></div>`, false),
+    reportDetail: layout(appbar('프로 보고서 상세', true) + `<div class="report-detail-stack"><div class="card report-detail-card"><ul class="list report-detail-list"><li>수학 점수 상승 여지 큼</li><li>목표 대학 거리 -12점</li><li>중기: 탐구 집중 강화</li></ul></div><div class="card compact report-detail-card"><p class="sub">장기 전략</p><p class="report-detail-text">6월 모평 전 수학 전범위 1회독 완료</p></div></div>`, false),
     tutor: layout(appbar('SKY튜터 1:1 피드백', true) + `<div class="card"><p class="sub">텍스트 기반 질의응답</p><ul class="list"><li>Q. 수학 개념 이해가 잘 안돼요</li><li>A. 유형별 복습 루틴을 추가하세요</li></ul></div><button class="btn btn-primary">새 질문 작성</button>`, false),
     proPlan: layout(appbar('프로 플랜 안내', true) + `<div class="card"><p class="title" style="margin:0;color:#0b63e5">PRO PLAN</p><ul class="list"><li>합격 가능성/전략 무제한</li><li>플래너/주간 점검 무제한</li><li>프로 보고서 2주 1회 포함</li></ul></div><button class="btn btn-primary" data-action="goto" data-target="paymentSelect">결제 선택으로</button>`, false),
-    paymentSelect: layout(appbar('결제 선택', true) + `<div class="card"><p class="title" style="margin:0">Standard</p><p class="sub">월 149,000원</p></div><div class="card" style="border:2px solid #0b63e5"><p class="title" style="margin:0">Pro</p><p class="sub">월 299,000원</p></div><button class="btn btn-primary" data-action="goto" data-target="paymentDone">결제하기</button>`, false),
-    paymentDone: layout(appbar('결제 완료', true) + `<div class="card center"><div style="width:96px;height:96px;border-radius:50%;background:#0b63e5;display:grid;place-items:center;margin:0 auto 14px">${i('check', true)}</div><p class="title" style="margin:0">결제가 완료되었습니다</p><p class="sub">Pro 플랜이 활성화되었습니다.</p></div><button class="btn btn-primary" data-action="goto" data-target="home">홈으로 이동</button>`, false)
+    paymentSelect: layout(appbar('결제 선택', true) + `<div class="card"><p class="title" style="margin:0">Standard</p><p class="sub">월 149,000원</p></div><div class="card" style="border:2px solid #0b63e5"><p class="title" style="margin:0">Pro</p><p class="sub">월 299,000원</p></div><div class="cta-wrapper"><button class="btn btn-primary cta-btn" data-action="goto" data-target="paymentDone">결제하기</button></div>`, false),
+    paymentDone: layout(appbar('결제 완료', true) + `<div class="card center"><div style="width:96px;height:96px;border-radius:50%;background:#0b63e5;display:grid;place-items:center;margin:0 auto 14px">${i('check', true)}</div><p class="title" style="margin:0">결제가 완료되었습니다</p><p class="sub">Pro 플랜이 활성화되었습니다.</p></div><div class="cta-wrapper"><button class="btn btn-primary cta-btn" data-action="goto" data-target="home">홈으로 이동</button></div>`, false)
   };
 
   const current = screens[screen] || screens.home;
