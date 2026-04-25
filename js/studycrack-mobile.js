@@ -497,7 +497,11 @@ function App() {
          <p class="analysis-title">합격 가능성 분석</p>
          <span class="badge analysis-badge">${targetMajor}</span>
          <div class="analysis-kpi-row"><div><p class="ob-rate">${selectedUniversity.rate}%</p><p class="analysis-sub">합격 가능성</p></div><div class="ring" style="background:conic-gradient(var(--primary) 0 ${selectedUniversity.rate}%, #dfe8f8 ${selectedUniversity.rate}% 100%)"></div></div>
-         <div class="analysis-score-row"><div><b>${selectedUniversity.score}점</b><span>현재 점수</span></div><div><b>${selectedUniversity.cut}점</b><span>합격 컷</span></div><div><b class="danger">${selectedUniversity.gap}점</b><span>부족 점수</span></div></div>
+         <div class="ob-score-summary-row">
+           <div class="ob-score-summary-card"><b>${selectedUniversity.score}점</b><span>현재 점수</span></div>
+           <div class="ob-score-summary-card"><b>${selectedUniversity.cut}점</b><span>합격 컷</span></div>
+           <div class="ob-score-summary-card danger"><b>${selectedUniversity.gap}점</b><span>부족 점수</span></div>
+         </div>
          <p class="analysis-title">+1점 상승 시뮬레이션</p>
          <div class="analysis-impact-item">수학<div class="track"><i style="width:90%"></i></div><span>+12점 → +18%</span></div>
          <div class="analysis-impact-item">탐구<div class="track"><i style="width:68%;background:#14b8a6"></i></div><span>+6점 → +9%</span></div>
@@ -514,7 +518,7 @@ function App() {
        <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>무작정 전 과목을 올리는 게 아니라, 합격에 가장 크게 기여하는 과목부터 잡아야 해요!</p></div>
        <div class="card ob-card">
          <p class="analysis-title">합격확률 게이지</p>
-         <div class="ob-gauge-head"><div><span>현재 점수</span><b>${gaugeCurrent}점</b></div><div><span>목표 점수</span><b class="target">${gaugeTarget}점</b></div></div>
+         <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${gaugeTarget}점</b></div></div>
          <div class="ob-gauge">
            <div class="ob-gauge-current" style="width:${gaugeCurrentPct}%"></div>
            <div class="ob-gauge-target" style="width:${gaugeTargetPct}%"></div>
@@ -522,7 +526,12 @@ function App() {
            <i class="ob-gauge-cut safe" style="left:${gaugeSafePct}%"></i>
          </div>
          <div class="ob-gauge-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
-         <p class="sub"><b>합격 가능성 상승 구간</b> · 현재 → 합격권 진입</p>
+         <p class="sub"><b>현재 → 합격권 진입 구간</b></p>
+         <div class="ob-subject-delta">
+           <div class="ob-delta-row"><span>수학</span><div class="track"><i style="width:80%"></i></div><em>68 → 80 <b>(+12)</b></em></div>
+           <div class="ob-delta-row"><span>탐구</span><div class="track"><i style="width:68%"></i></div><em>70 → 76 <b>(+6)</b></em></div>
+           <div class="ob-delta-row"><span>영어</span><div class="track"><i style="width:54%"></i></div><em>77 → 유지</em></div>
+         </div>
        </div>
        <div class="card ob-card">
          <p class="analysis-title">핵심 전략</p>
