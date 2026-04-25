@@ -135,6 +135,22 @@ function App() {
   const totalMinutes = plannerItems.reduce((acc, item) => acc + item.minutes, 0);
   const totalHour = Math.floor(totalMinutes / 60);
   const totalMinute = totalMinutes % 60;
+  const subjectMinutes = plannerItems.reduce((acc, item) => {
+    acc[item.subject] = (acc[item.subject] || 0) + item.minutes;
+    return acc;
+  }, {});
+  const subjectRatio = Object.entries(subjectMinutes).map(([subject, minutes]) => ({
+    subject,
+    minutes,
+    percent: totalMinutes ? Math.round((minutes / totalMinutes) * 100) : 0
+  }));
+  const highRatio = subjectRatio.find((item) => item.percent >= 40);
+  const lowRatio = subjectRatio.find((item) => item.percent <= 10);
+  const plannerFeedback = highRatio
+    ? { tone: 'warn', icon: '⚠️', text: `${highRatio.subject} 비중이 높아요. 다른 과목 균형이 필요해요.` }
+    : lowRatio
+      ? { tone: 'info', icon: '📊', text: `${lowRatio.subject} 비중이 부족합니다. 전략상 손해 가능성이 있어요.` }
+      : { tone: 'info', icon: '📊', text: '과목 비중이 균형적으로 유지되고 있어요. 지금 흐름을 유지해요.' };
   const canSubmitPlanner = Boolean(
     plannerSubject &&
       plannerContent.trim() &&
@@ -318,8 +334,9 @@ function App() {
        <div class="planner-days"><span>12</span><span>13</span><span class="active">14</span><span>15</span><span>16</span><span>17</span><span>18</span></div>
        <div class="planner-section-title"><div><h4>오늘의 계획</h4><p>총 ${totalHour}시간 ${totalMinute}분</p></div></div>
        <div class="planner-plan-list">
-         ${plannerItems.map((item) => `<div class="planner-item"><i class="dot ${item.dot}"></i><div><b>${item.subject}</b><p>${item.content}</p><small>${item.start} - ${item.end}</small></div><strong>${item.minutes}분</strong></div>`).join('')}
+         ${plannerItems.map((item, idx) => `<div class="planner-item"><i class="dot ${item.dot}"></i><div><b>${item.subject}</b><p>${item.content}</p><small>${item.start} - ${item.end}</small></div><div class="planner-item-right"><strong>${item.minutes}분</strong><button class="planner-item-remove" data-action="removePlannerItem" data-planner-index="${idx}">✕</button></div></div>`).join('')}
        </div>
+       <div class="planner-feedback-card ${plannerFeedback.tone}"><span>${plannerFeedback.icon}</span><p>${plannerFeedback.text}</p></div>
        <div class="planner-timer card" data-action="openTimerModal"><p>오늘 공부 시간</p><h2>01:25:30</h2><button class="planner-timer-start" data-action="openTimerModal">타이머 시작하기</button></div>
        <div class="planner-bottom-space"></div>
        ${!plannerAddModalOpen ? `<button class="planner-fab" data-action="openPlannerAddModal"><span>+</span></button>` : ''}
@@ -421,6 +438,10 @@ function App() {
     if (action === 'noopModal') return;
     if (action === 'setPlannerSubject') setPlannerSubject(actionEl.getAttribute('data-planner-subject'));
     if (action === 'setPlannerDuration') setPlannerDurationChoice(actionEl.getAttribute('data-planner-duration'));
+    if (action === 'removePlannerItem') {
+      const idx = Number(actionEl.getAttribute('data-planner-index'));
+      setPlannerItems((prev) => prev.filter((_, i) => i !== idx));
+    }
     if (action === 'selectUniversity') {
       setTargetMajor(actionEl.getAttribute('data-target-major'));
       setTargetOpen(false);
