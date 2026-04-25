@@ -95,25 +95,14 @@
                 <p>문자로 인증번호를 보냈습니다.</p>
                 <div class="input-with-btn">
                     <input type="text" id="phoneVerifyCode" placeholder="인증코드 6자리">
-                    <span id="phoneTimer">03:00</span>
+                    <span id="phoneTimer">05:00</span>
                     <button type="button" class="verify-confirm-btn" onclick="handleVerifyPhone()">확인</button>
                 </div>
             </div>
 
             <h4 class="section-title" style="margin-top: 30px;">3. 세부 정보</h4>
 
-            <label class="input-label">희망 계열</label>
-            <div class="radio-group">
-                <label><input type="radio" name="major" value="의치한약계열" onchange="toggleEtc('major', false)" checked> 의치한약계열</label>
-                <label><input type="radio" name="major" value="자연/공학계열" onchange="toggleEtc('major', false)"> 자연/공학계열</label>
-                <label><input type="radio" name="major" value="상경계열" onchange="toggleEtc('major', false)"> 상경계열</label>
-                <label><input type="radio" name="major" value="어문/사회계열" onchange="toggleEtc('major', false)"> 어문/사회계열</label>
-                <label><input type="radio" name="major" value="예체능" onchange="toggleEtc('major', false)"> 예체능</label>
-                <label><input type="radio" name="major" value="etc" onchange="toggleEtc('major', true)"> 기타</label>
-            </div>
-            <input type="text" id="majorEtc" class="hidden" placeholder="희망 계열을 직접 입력해주세요">
-
-            <label class="input-label" style="margin-top: 15px;">유입 경로</label>
+            <label class="input-label">유입 경로</label>
             <div class="radio-group">
                 <label><input type="radio" name="referral" value="인스타그램" onchange="toggleEtc('referral', false)" checked> 인스타그램</label>
                 <label><input type="radio" name="referral" value="스레드" onchange="toggleEtc('referral', false)"> 스레드</label>

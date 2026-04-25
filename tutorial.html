@@ -71,7 +71,7 @@
                 <option value="상경계열">상경계열</option>
                 <option value="자연/공학">자연/공학</option>
                 <option value="의치한약수">의치한약수</option>
-                <option value="간호">간호</option>
+                <option value="간호/보건">간호/보건</option>
                 <option value="사범/교대">사범/교대</option>
                 <option value="예체능">예체능</option>
                 <option value="기타">기타</option>
@@ -298,6 +298,13 @@
         </div>
     </template>
 
+    <div id="tutLoadingOverlay" class="tut-loading-overlay">
+        <div class="tut-loading-spinner"></div>
+        <div class="tut-loading-text">데이터를 분석 중입니다. 잠시만 기다려 주세요...</div>
+    </div>
+
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
     <script src="/js/config.js"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/tutorial.js"></script>
