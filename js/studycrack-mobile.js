@@ -109,6 +109,13 @@ function App() {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupPasswordConfirm, setSignupPasswordConfirm] = useState('');
+  const [mbtiModalOpen, setMbtiModalOpen] = useState(false);
+  const [mbtiAnswers, setMbtiAnswers] = useState({ q1: '', q2: '', q3: '', q4: '' });
+  const [mbtiResult, setMbtiResult] = useState('');
+  const [strongSubject, setStrongSubject] = useState('');
+  const [weakSubject, setWeakSubject] = useState('');
+  const [studyHours, setStudyHours] = useState('');
+  const [studyDifficulty, setStudyDifficulty] = useState('');
   const [scoreEditOpen, setScoreEditOpen] = useState(false);
   const [scores, setScores] = useState(DEFAULT_SCORES);
   const [notifications, setNotifications] = useState(DEFAULT_NOTIFICATIONS);
@@ -279,6 +286,8 @@ function App() {
   };
   const targetOptions = Object.keys(universityProfiles);
   const selectedUniversity = universityProfiles[targetMajor] || universityProfiles['연세대학교 경영학과'];
+  const onboardingProgress = (step) => `<div class="ob-progress"><span>${step}/3</span><div class="ob-dots"><i class="${step>=1?'active':''}"></i><i class="${step>=2?'active':''}"></i><i class="${step>=3?'active':''}"></i></div></div>`;
+  const mbtiDone = Object.values(mbtiAnswers).every(Boolean);
   const totalMinutes = plannerItems.reduce((acc, item) => acc + item.minutes, 0);
   const totalHour = Math.floor(totalMinutes / 60);
   const totalMinute = totalMinutes % 60;
@@ -425,6 +434,89 @@ function App() {
   const currentPlan = planMeta[selectedPlan] || planMeta.Pro;
 
   const screens = {
+    ob1: layout(
+      `${onboardingProgress(1)}
+       ${appbar('학습성향 진단', true)}
+       <p class="sub ob-subcopy">지금 성적과 공부 습관을 바탕으로<br/>나에게 맞는 합격 전략을 찾아볼게요.</p>
+       <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>성적만 보는 게 아니라, 공부 방식까지 같이 봐야 정확해요!</p></div>
+       <div class="card">
+         <p class="analysis-title">성적 입력</p>
+         <div class="score-edit-grid">
+           <label>국어<input data-field="score-korean" value="${scores.korean}" type="number"/></label>
+           <label>수학<input data-field="score-math" value="${scores.math}" type="number"/></label>
+           <label>영어<input data-field="score-english" value="${scores.english}" type="number"/></label>
+           <label>탐구1<input data-field="score-inquiry1" value="${scores.inquiry1}" type="number"/></label>
+           <label>탐구2<input data-field="score-inquiry2" value="${scores.inquiry2}" type="number"/></label>
+         </div>
+       </div>
+       <div class="card">
+         <p class="analysis-title">정성 조사서</p>
+         <label class="auth-label">가장 자신 있는 과목</label><input class="planner-input" data-field="strongSubject" value="${strongSubject}" placeholder="예: 국어" />
+         <label class="auth-label">가장 불안한 과목</label><input class="planner-input" data-field="weakSubject" value="${weakSubject}" placeholder="예: 수학" />
+         <label class="auth-label">하루 평균 공부 시간</label><input class="planner-input" data-field="studyHours" value="${studyHours}" placeholder="예: 5시간" />
+         <label class="auth-label">공부할 때 가장 어려운 점</label><input class="planner-input" data-field="studyDifficulty" value="${studyDifficulty}" placeholder="예: 집중력 유지" />
+       </div>
+       <div class="card">
+         <p class="analysis-title">학습 MBTI 검사</p>
+         <p class="sub">공부 성향을 간단히 확인해요.</p>
+         <button class="btn btn-secondary" data-action="openMbtiModal">MBTI 시작하기</button>
+         ${mbtiResult ? `<p class="sub mbti-result">진단 결과: <b>${mbtiResult}</b></p>` : ''}
+       </div>
+       ${mbtiModalOpen ? `<div class="home-modal-overlay" data-action="closeMbtiModal"><div class="home-modal ob-mbti-modal" data-action="noopModal">
+         <p class="home-modal-title">학습 MBTI 검사</p>
+         <div class="ob-mbti-q"><p>1) 계획을 세우고 공부하는 편인가요?</p><div class="ob-mbti-opt"><button data-action="setMbti" data-mbti-q="q1" data-mbti-v="plan" class="${mbtiAnswers.q1==='plan'?'active':''}">네</button><button data-action="setMbti" data-mbti-q="q1" data-mbti-v="flex" class="${mbtiAnswers.q1==='flex'?'active':''}">아니오</button></div></div>
+         <div class="ob-mbti-q"><p>2) 혼자 공부할 때 집중이 잘 되나요?</p><div class="ob-mbti-opt"><button data-action="setMbti" data-mbti-q="q2" data-mbti-v="solo" class="${mbtiAnswers.q2==='solo'?'active':''}">네</button><button data-action="setMbti" data-mbti-q="q2" data-mbti-v="group" class="${mbtiAnswers.q2==='group'?'active':''}">아니오</button></div></div>
+         <div class="ob-mbti-q"><p>3) 부족한 과목부터 먼저 하는 편인가요?</p><div class="ob-mbti-opt"><button data-action="setMbti" data-mbti-q="q3" data-mbti-v="weak_first" class="${mbtiAnswers.q3==='weak_first'?'active':''}">네</button><button data-action="setMbti" data-mbti-q="q3" data-mbti-v="strong_first" class="${mbtiAnswers.q3==='strong_first'?'active':''}">아니오</button></div></div>
+         <div class="ob-mbti-q"><p>4) 피드백이 있으면 공부가 더 잘 되나요?</p><div class="ob-mbti-opt"><button data-action="setMbti" data-mbti-q="q4" data-mbti-v="feedback" class="${mbtiAnswers.q4==='feedback'?'active':''}">네</button><button data-action="setMbti" data-mbti-q="q4" data-mbti-v="self" class="${mbtiAnswers.q4==='self'?'active':''}">아니오</button></div></div>
+         <button class="btn btn-primary ${mbtiDone?'':'disabled'}" data-action="completeMbti" ${mbtiDone?'':'disabled'}>검사 완료</button>
+       </div></div>` : ''}
+       <div class="ob-cta-wrap"><button class="btn btn-primary cta-btn" data-action="goto" data-target="ob2">진단 완료하고 다음으로</button></div>`,
+      false
+    ),
+    ob2: layout(
+      `${onboardingProgress(2)}
+       ${appbar('목표 설정 및 분석', true)}
+       <p class="sub ob-subcopy">현재 성적 기준으로 도전 가능한 대학과<br/>합격 가능성을 분석해드릴게요.</p>
+       <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>목표 대학마다 유리한 과목이 달라요. 그래서 대학별로 따로 봐야 해요!</p></div>
+       <div class="card">
+         <p class="analysis-title">현재 성적 기준 추천 대학</p>
+         <div class="ob-uni-list">${['연세대학교 경영학과','고려대학교 경영학과','성균관대학교 글로벌경영학과'].map((u) => `<button class="ob-uni-item ${targetMajor===u?'active':''}" data-action="selectTarget" data-target-major="${u}">${u}</button>`).join('')}</div>
+       </div>
+       <div class="card analysis-top">
+         <p class="analysis-title">합격 가능성 분석</p>
+         <span class="badge analysis-badge">${targetMajor}</span>
+         <div class="analysis-kpi-row"><div><p class="metric-sm">${selectedUniversity.rate}%</p><p class="analysis-sub">합격 가능성</p></div><div class="ring" style="background:conic-gradient(var(--primary) 0 ${selectedUniversity.rate}%, #dfe8f8 ${selectedUniversity.rate}% 100%)"></div></div>
+         <div class="analysis-score-row"><div><b>${selectedUniversity.score}점</b><span>현재 점수</span></div><div><b>${selectedUniversity.cut}점</b><span>합격 컷</span></div><div><b class="danger">${selectedUniversity.gap}점</b><span>부족 점수</span></div></div>
+       </div>
+       <div class="card">
+         <p class="analysis-title">+1점 상승 시뮬레이션</p>
+         <div class="analysis-impact-item">수학<div class="track"><i style="width:90%"></i></div><span>+12점 → +18%</span></div>
+         <div class="analysis-impact-item">탐구<div class="track"><i style="width:68%;background:#14b8a6"></i></div><span>+6점 → +9%</span></div>
+         <div class="analysis-impact-item">영어<div class="track"><i style="width:48%;background:#f59e0b"></i></div><span>+3점 → +5%</span></div>
+       </div>
+       <div class="ob-cta-wrap"><button class="btn btn-primary cta-btn" data-action="goto" data-target="ob3">내 맞춤 솔루션 보기</button></div>`,
+      false
+    ),
+    ob3: layout(
+      `${onboardingProgress(3)}
+       ${appbar('공부 성향 맞춤 솔루션', true)}
+       <p class="sub ob-subcopy">현재 성적에서 합격컷까지,<br/>가장 효율적인 점수 상승 루트를 보여드릴게요.</p>
+       <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>무작정 전 과목을 올리는 게 아니라, 합격에 가장 크게 기여하는 과목부터 잡아야 해요!</p></div>
+       <div class="card">
+         <p class="analysis-title">최대효율 합격컷 도달 성적표</p>
+         <div class="ob-before-after">
+          <div class="ob-score-card"><b>현재 성적</b><p>국어 82</p><p>수학 68</p><p>영어 77</p><p>탐구1 70</p><p>탐구2 66</p><strong>총점 323</strong></div>
+          <div class="ob-score-card"><b>목표 성적</b><p>국어 82</p><p>수학 80 <span class="plus">+12</span></p><p>영어 77</p><p>탐구1 76 <span class="plus">+6</span></p><p>탐구2 66</p><strong>예상 총점 335</strong></div>
+         </div>
+       </div>
+       <div class="card">
+         <p class="analysis-title">핵심 전략</p>
+         <ol class="ob-strategy"><li><b>수학 68점 → 80점</b><p>합격 가능성 상승 기여도 가장 큼</p></li><li><b>탐구1 70점 → 76점</b><p>단기간 상승 효율 높음</p></li><li><b>영어 77점 유지</b><p>현재 수준 유지 전략</p></li></ol>
+       </div>
+       <div class="card ob-period-card"><p class="analysis-title">Standard 이용 시 예상 도달 기간</p><h2>평균 3개월 예상</h2><p class="sub">Standard 플랜에서는 SKY/상위권 튜터가 주간 플래너 피드백과 학습 방향 코칭을 제공해요.</p></div>
+       <div class="card ob-cta-card"><p class="analysis-title">이 전략대로 실행해볼까요?</p><p class="sub">분석은 방향을 보여주고, Standard는 매주 실행을 도와줘요.</p><button class="btn btn-primary cta-btn" data-action="startStandard">Standard로 시작하기</button><button class="btn btn-secondary" data-action="completeOnboarding">나중에 홈으로 이동</button></div>`,
+      false
+    ),
     authLogin: layout(`<div class="auth-screen">
       <div class="auth-brand card">
         <div class="auth-logo-wrap">
@@ -709,6 +801,18 @@ function App() {
     }
     if (action === 'openLogoutModal') setLogoutModalOpen(true);
     if (action === 'closeLogoutModal') setLogoutModalOpen(false);
+    if (action === 'openMbtiModal') setMbtiModalOpen(true);
+    if (action === 'closeMbtiModal') setMbtiModalOpen(false);
+    if (action === 'setMbti') {
+      const q = actionEl.getAttribute('data-mbti-q');
+      const v = actionEl.getAttribute('data-mbti-v');
+      setMbtiAnswers((prev) => ({ ...prev, [q]: v }));
+    }
+    if (action === 'completeMbti') {
+      const yesCount = Object.values(mbtiAnswers).filter((v) => ['plan', 'solo', 'weak_first', 'feedback'].includes(v)).length;
+      setMbtiResult(yesCount >= 3 ? '전략형 집중러' : '균형형 실행러');
+      setMbtiModalOpen(false);
+    }
     if (action === 'confirmLogout') {
       setLogoutModalOpen(false);
       window.alert('로그아웃되었습니다');
@@ -716,7 +820,17 @@ function App() {
     if (action === 'loginSuccess' || action === 'signupSuccess' || action === 'ssoSuccess') {
       setLoggedIn(true);
       setHistory([]);
+      const completed = localStorage.getItem('studycrack_onboarding_completed') === 'true';
+      goto(completed ? 'home' : 'ob1', true);
+    }
+    if (action === 'completeOnboarding') {
+      localStorage.setItem('studycrack_onboarding_completed', 'true');
       goto('home', false);
+    }
+    if (action === 'startStandard') {
+      localStorage.setItem('studycrack_onboarding_completed', 'true');
+      setSelectedPlan('Standard');
+      goto('proIntro');
     }
     if (action === 'retryInit') initializeApp();
     if (action === 'noopModal') return;
@@ -792,6 +906,10 @@ function App() {
     if (field === 'signupEmail') setSignupEmail(value);
     if (field === 'signupPassword') setSignupPassword(value);
     if (field === 'signupPasswordConfirm') setSignupPasswordConfirm(value);
+    if (field === 'strongSubject') setStrongSubject(value);
+    if (field === 'weakSubject') setWeakSubject(value);
+    if (field === 'studyHours') setStudyHours(value);
+    if (field === 'studyDifficulty') setStudyDifficulty(value);
     if (field.startsWith('score-')) {
       const subject = field.replace('score-', '');
       setScores((prev) => ({ ...prev, [subject]: Number(value) || 0 }));

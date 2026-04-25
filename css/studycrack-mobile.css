@@ -875,3 +875,32 @@ body {
   font-weight:800;
   color:#0b6bff;
 }
+
+.ob-progress { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; color:#64748b; font-weight:700; font-size:13px; }
+.ob-dots { display:flex; gap:6px; }
+.ob-dots i { width:8px; height:8px; border-radius:99px; background:#cbd5e1; display:block; }
+.ob-dots i.active { background:#0b6bff; }
+.ob-subcopy { margin:0 0 10px; line-height:1.5; }
+.ob-bubble-card { display:flex; align-items:center; gap:10px; }
+.ob-bubble-card p { margin:0; font-size:14px; line-height:1.45; }
+.ob-cracky { width:64px; height:64px; object-fit:contain; flex-shrink:0; }
+.ob-cta-wrap { position: sticky; bottom: 0; padding: 10px 0 6px; background: linear-gradient(to top, #f5f7fb 70%, rgba(245,247,251,0)); }
+.ob-mbti-modal { max-height: 70vh; overflow: auto; }
+.ob-mbti-q p { margin: 0 0 6px; font-size: 13px; font-weight: 700; }
+.ob-mbti-opt { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+.ob-mbti-opt button { border:1px solid #dbeafe; background:#fff; border-radius:12px; height:36px; font-weight:700; color:#334155; }
+.ob-mbti-opt button.active { background:#eaf2ff; color:#0b6bff; border-color:#0b6bff; }
+.mbti-result { margin-top:8px; }
+.ob-uni-list { display:grid; gap:8px; }
+.ob-uni-item { border:1px solid #e2e8f0; background:#fff; border-radius:14px; padding:10px 12px; text-align:left; font-weight:700; }
+.ob-uni-item.active { border-color:#0b6bff; background:#eff6ff; color:#0b6bff; }
+.ob-before-after { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.ob-score-card { border:1px solid #e2e8f0; border-radius:14px; padding:10px; background:#fff; font-size:13px; }
+.ob-score-card p { margin:4px 0; color:#334155; }
+.ob-score-card .plus { color:#0b6bff; font-weight:800; }
+.ob-score-card strong { display:block; margin-top:6px; }
+.ob-strategy { margin:0; padding-left:18px; }
+.ob-strategy li { margin-bottom:8px; }
+.ob-strategy p { margin:2px 0 0; color:#64748b; font-size:13px; }
+.ob-period-card h2 { margin:4px 0; color:#0b6bff; }
+.ob-cta-card { display:flex; flex-direction:column; gap:10px; }
