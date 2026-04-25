@@ -525,6 +525,14 @@ function App() {
        <p class="sub ob-subcopy">현재 성적에서 합격컷까지,<br/>가장 효율적인 점수 상승 루트를 보여드릴게요.</p>
        <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>무작정 전 과목을 올리는 게 아니라, 합격에 가장 크게 기여하는 과목부터 잡아야 해요!</p></div>
        <div class="card ob-card">
+         <p class="analysis-title">성적 Before & After</p>
+         <div class="ob-before-after">
+           <div class="ob-score-card"><b>현재 성적</b><p>국어 82</p><p>수학 68</p><p>영어 77</p><p>탐구1 70</p><p>탐구2 66</p><strong>총점 86</strong></div>
+           <div class="ob-score-card"><b>목표 성적</b><p>국어 82</p><p>수학 80 <span class="plus">(+12)</span></p><p>영어 77</p><p>탐구1 76 <span class="plus">(+6)</span></p><p>탐구2 66</p><strong>총점 120</strong></div>
+         </div>
+       </div>
+       ${showDurationCard ? `<div class="card ob-card ob-period-card"><p class="analysis-title">Standard 이용 시 예상 도달 기간</p><h2>평균 3개월 예상</h2><p class="sub">주간 플래너 피드백과 학습 방향 코칭 제공</p></div>` : `<div class="card ob-card ob-loading-card"><div class="ob-spinner"></div><p class="sub">최적 도달 기간 계산 중...</p></div>`}
+       <div class="card ob-card">
          <p class="analysis-title">합격확률 게이지</p>
          <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${gaugeTarget}점</b></div></div>
          <div class="ob-gauge">
@@ -537,18 +545,10 @@ function App() {
          <p class="sub"><b>현재 → 합격권 진입 구간</b></p>
        </div>
        <div class="card ob-card">
-         <p class="analysis-title">비포/애프터 성적표</p>
-         <div class="ob-before-after">
-           <div class="ob-score-card"><b>현재 성적</b><p>국어 82</p><p>수학 68</p><p>영어 77</p><p>탐구1 70</p><p>탐구2 66</p><strong>총점 86</strong></div>
-           <div class="ob-score-card"><b>목표 성적</b><p>국어 82</p><p>수학 80 <span class="plus">(+12)</span></p><p>영어 77</p><p>탐구1 76 <span class="plus">(+6)</span></p><p>탐구2 66</p><strong>총점 120</strong></div>
-         </div>
-       </div>
-       <div class="card ob-card">
          <p class="analysis-title">핵심 전략</p>
          <ol class="ob-strategy"><li><b>수학 68점 → 80점</b><p>합격 가능성 상승 기여도 가장 큼</p></li><li><b>탐구1 70점 → 76점</b><p>단기간 상승 효율 높음</p></li><li><b>영어 77점 유지</b><p>현재 수준 유지 전략</p></li></ol>
        </div>
-       ${showDurationCard ? `<div class="card ob-card ob-period-card"><p class="analysis-title">Standard 이용 시 예상 도달 기간</p><h2>평균 3개월 예상</h2><p class="sub">주간 플래너 피드백과 학습 방향 코칭 제공</p></div>` : `<div class="card ob-card ob-loading-card"><div class="ob-spinner"></div><p class="sub">최적 학습 루트 계산 중...</p></div>`}
-       </div><div class="cta-wrapper onboarding-fixed-cta"><button class="cta-button" data-action="startStandard">Standard로 시작하기</button><button class="auth-link-btn" data-action="completeOnboarding">나중에 홈으로 이동</button></div></div>`,
+       </div><div class="cta-wrapper onboarding-fixed-cta"><button class="cta-button" data-action="startStandard">Standard로 시작하기</button><button class="auth-link-btn" data-action="completeOnboarding">홈으로 이동</button></div></div>`,
       false
     ),
     authLogin: layout(`<div class="auth-screen">
