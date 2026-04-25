@@ -47,6 +47,16 @@ function App() {
   const [plannerCustomMinutes, setPlannerCustomMinutes] = useState('');
   const [plannerStart, setPlannerStart] = useState('');
   const [plannerEnd, setPlannerEnd] = useState('');
+  const [scoreEditOpen, setScoreEditOpen] = useState(false);
+  const [scores, setScores] = useState({ 국어: 82, 수학: 68, 영어: 77, 탐구1: 70, 탐구2: 66 });
+  const [notifications, setNotifications] = useState({
+    planner: true,
+    weekly: true,
+    report: true,
+    billing: true
+  });
+  const [openFaq, setOpenFaq] = useState('');
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [plannerItems, setPlannerItems] = useState([
     { subject: '수학', content: '개념 학습', start: '10:00', end: '12:00', minutes: 120, dot: 'math' },
     { subject: '영어', content: '독해 문제 풀이', start: '13:00', end: '14:30', minutes: 90, dot: 'eng' },
@@ -208,6 +218,7 @@ function App() {
   `;
 
   const homeTargets = targetOptions.slice(0, 3).map((major) => ({ major, ...universityProfiles[major] }));
+  const scoreList = Object.entries(scores).map(([subject, value]) => `<div class="score-info-row"><span>${subject}</span><strong>${value}점</strong></div>`).join('');
 
   const homeView = () => `<div class="home-dashboard">
     <div class="home-header">
@@ -380,15 +391,15 @@ function App() {
       <div class="card my-profile-card"><div class="my-profile-left"><div class="my-avatar">${i('user', false)}</div><div><p class="my-name">김지민</p><p class="sub">목표 대학: 연세대학교 경영학과</p></div></div><span class="badge">Pro 이용 중</span></div>
       <div class="card my-subscription-card"><div class="my-sub-icon">${i('report', false)}</div><div><p class="my-sub-title">Pro 플랜 이용 중</p><p class="my-sub-date">다음 결제일 2024.06.14</p></div></div>
       <div class="card my-menu-card">
-        <button class="my-row">성적 정보 <span>${i('chevron', false)}</span></button>
-        <button class="my-row">학습 리포트 <span>${i('chevron', false)}</span></button>
-        <button class="my-row" data-action="goto" data-target="proIntro">구독 관리 <span>${i('chevron', false)}</span></button>
+        <button class="my-row" data-action="goto" data-target="scoreInfo">성적 정보 <span>${i('chevron', false)}</span></button>
+        <button class="my-row" data-action="goto" data-target="studyReports">학습 리포트 <span>${i('chevron', false)}</span></button>
+        <button class="my-row" data-action="comingSoon">구독 관리 <span>${i('chevron', false)}</span></button>
       </div>
       <div class="card my-menu-card my-service-card">
         <p class="my-section-title">서비스</p>
-        <button class="my-row">알림 설정 <span>${i('chevron', false)}</span></button>
-        <button class="my-row">고객센터 <span>${i('chevron', false)}</span></button>
-        <button class="my-row">설정 <span>${i('chevron', false)}</span></button>
+        <button class="my-row" data-action="goto" data-target="notificationSettings">알림 설정 <span>${i('chevron', false)}</span></button>
+        <button class="my-row" data-action="goto" data-target="customerSupport">고객센터 <span>${i('chevron', false)}</span></button>
+        <button class="my-row" data-action="goto" data-target="settingsMain">설정 <span>${i('chevron', false)}</span></button>
       </div>
       <div class="card my-empty-card">
         <p class="my-empty-text">아직 데이터가 없어요. 먼저 분석해볼까요?</p>
@@ -442,6 +453,25 @@ function App() {
       </div>
       <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="paymentComplete">결제하기</button></div>`, false),
     paymentComplete: layout(`<div class="payment-done-screen"><div class="payment-complete-wrap"><div class="payment-check">${i('check', true)}</div><p class="title payment-complete-title">결제가 완료되었습니다!</p><p class="sub payment-complete-sub">${selectedPlan.toUpperCase()} 플랜이 활성화되었습니다.</p><div class="card payment-complete-note"><b>프로 보고서 이용 안내</b><p>2주에 한 번 새로운 리포트를 제공해 드려요.<br/>다음 리포트는 5월 25일에 이용 가능해요.</p></div></div><div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="home">홈으로 이동</button></div></div>`, false)
+    paymentComplete: layout(`<div class="payment-done-screen"><div class="payment-complete-wrap"><div class="payment-check">${i('check', true)}</div><p class="title payment-complete-title">결제가 완료되었습니다!</p><p class="sub payment-complete-sub">${selectedPlan.toUpperCase()} 플랜이 활성화되었습니다.</p><div class="card payment-complete-note"><b>프로 보고서 이용 안내</b><p>2주에 한 번 새로운 리포트를 제공해 드려요.<br/>다음 리포트는 5월 25일에 이용 가능해요.</p></div></div><div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="home">홈으로 이동</button></div></div>`, false),
+    scoreInfo: layout(appbar('성적 정보', true) + `<div class="card score-info-card">${scoreList}<button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">성적 수정하기</button></div><div class="card"><p class="analysis-title">최근 성적 업데이트</p><p class="sub" style="margin:0">2024.05.14 기준</p><p class="sub" style="margin:6px 0 0">다음 업데이트 권장: 2주 후</p></div>${scoreEditOpen ? `<div class="home-modal-overlay" data-action="closeScoreEdit"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">성적 수정</p><div class="score-edit-grid"><label>국어<input data-field="score-국어" value="${scores['국어']}" type="number"/></label><label>수학<input data-field="score-수학" value="${scores['수학']}" type="number"/></label><label>영어<input data-field="score-영어" value="${scores['영어']}" type="number"/></label><label>탐구1<input data-field="score-탐구1" value="${scores['탐구1']}" type="number"/></label><label>탐구2<input data-field="score-탐구2" value="${scores['탐구2']}" type="number"/></label></div><button class="btn btn-primary" data-action="saveScoreEdit">저장</button></div></div>` : ''}`, false),
+    studyReports: layout(appbar('학습 리포트', true) + `<div class="card report-list-card"><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>5월 11일 종합 분석 리포트</b><p>수학 점수 상승 여지 큼</p></div><span>${i('chevron', false)}</span></button><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>4월 27일 중간 분석 리포트</b><p>탐구 집중 강화 필요</p></div><span>${i('chevron', false)}</span></button></div><div class="cta-wrapper"><button class="btn btn-primary cta-btn" data-action="goto" data-target="reportDetail">프로 보고서 샘플 보기</button></div>`, false),
+    notificationSettings: layout(appbar('알림 설정', true) + `<div class="card notify-card">${[
+      ['planner', '플래너 알림', '오늘 계획을 잊지 않도록 알려드려요'],
+      ['weekly', '주간 점검 알림', '매주 점검 시점을 알려드려요'],
+      ['report', '프로 보고서 알림', '새 리포트 이용 가능일을 알려드려요'],
+      ['billing', '결제/구독 알림', '다음 결제일을 미리 알려드려요']
+    ].map(([key, title, desc]) => `<button class="notify-row" data-action="toggleNotification" data-notify-key="${key}"><div><b>${title}</b><p>${desc}</p></div><span class="notify-switch ${notifications[key]?'on':''}"><i></i></span></button>`).join('')}</div>`, false),
+    customerSupport: layout(appbar('고객센터', true) + `<div class="card"><p class="analysis-title">궁금한 점이 있으면 언제든 문의해주세요.</p><p class="sub" style="margin:0">운영 시간: 평일 10:00 - 18:00</p><div class="support-btns"><button class="btn btn-secondary">카카오톡 문의하기</button><button class="btn btn-secondary">이메일 문의하기</button></div></div><div class="card faq-card">${[
+      ['faq1', '합격 가능성은 어떻게 계산되나요?', '최근 성적, 목표 대학 컷, 과목별 개선 여지를 기반으로 계산합니다.'],
+      ['faq2', '플래너 피드백은 언제 받을 수 있나요?', '주간 점검 시점에 자동 요약 피드백이 제공됩니다.'],
+      ['faq3', '프로 보고서는 얼마나 자주 받을 수 있나요?', '프로 보고서는 2주에 1회 업데이트됩니다.'],
+      ['faq4', '결제 후 플랜 변경이 가능한가요?', '마이페이지에서 다음 결제 주기 전에 변경할 수 있습니다.']
+    ].map(([id, q, a]) => `<button class="faq-row" data-action="toggleFaq" data-faq-id="${id}"><div><b>${q}</b>${openFaq===id?`<p>${a}</p>`:''}</div><span>${i('chevron', false)}</span></button>`).join('')}</div>`, false),
+    settingsMain: layout(appbar('설정', true) + `<div class="card settings-list"><button data-action="goto" data-target="accountInfo">계정 정보 <span>${i('chevron', false)}</span></button><button data-action="goto" data-target="privacyPolicy">개인정보 처리방침 <span>${i('chevron', false)}</span></button><button data-action="goto" data-target="termsScreen">서비스 이용약관 <span>${i('chevron', false)}</span></button><button data-action="openLogoutModal">로그아웃 <span>${i('chevron', false)}</span></button></div>${logoutModalOpen ? `<div class="home-modal-overlay" data-action="closeLogoutModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">로그아웃하시겠어요?</p><div class="support-btns"><button class="btn btn-secondary" data-action="closeLogoutModal">취소</button><button class="btn btn-primary" data-action="closeLogoutModal">로그아웃</button></div></div></div>` : ''}`, false),
+    accountInfo: layout(appbar('계정 정보', true) + `<div class="card"><div class="score-info-row"><span>이름</span><strong>김지민</strong></div><div class="score-info-row"><span>목표 대학</span><strong>연세대학교 경영학과</strong></div><div class="score-info-row"><span>현재 플랜</span><strong>Pro</strong></div></div>`, false),
+    privacyPolicy: layout(appbar('개인정보 처리방침', true) + `<div class="card"><p class="sub" style="margin:0">개인정보 처리방침 더미 텍스트입니다. 서비스 제공을 위해 필요한 최소한의 정보를 수집/이용합니다.</p></div>`, false),
+    termsScreen: layout(appbar('서비스 이용약관', true) + `<div class="card"><p class="sub" style="margin:0">서비스 이용약관 더미 텍스트입니다. 이용자는 관련 법령 및 약관을 준수해야 합니다.</p></div>`, false)
   };
 
   const current = screens[screen] || screens.home;
@@ -466,6 +496,20 @@ function App() {
     if (action === 'closeTimerModal') setTimerModalOpen(false);
     if (action === 'openPlannerAddModal') setPlannerAddModalOpen(true);
     if (action === 'closePlannerAddModal') setPlannerAddModalOpen(false);
+    if (action === 'openScoreEdit') setScoreEditOpen(true);
+    if (action === 'closeScoreEdit') setScoreEditOpen(false);
+    if (action === 'saveScoreEdit') setScoreEditOpen(false);
+    if (action === 'toggleNotification') {
+      const key = actionEl.getAttribute('data-notify-key');
+      setNotifications((prev) => ({ ...prev, [key]: !prev[key] }));
+    }
+    if (action === 'toggleFaq') {
+      const id = actionEl.getAttribute('data-faq-id');
+      setOpenFaq((prev) => (prev === id ? '' : id));
+    }
+    if (action === 'openLogoutModal') setLogoutModalOpen(true);
+    if (action === 'closeLogoutModal') setLogoutModalOpen(false);
+    if (action === 'comingSoon') window.alert('구독 관리 기능은 준비 중입니다.');
     if (action === 'noopModal') return;
     if (action === 'setPlannerSubject') setPlannerSubject(actionEl.getAttribute('data-planner-subject'));
     if (action === 'setPlannerDuration') setPlannerDurationChoice(actionEl.getAttribute('data-planner-duration'));
@@ -533,6 +577,10 @@ function App() {
     if (field === 'plannerCustomMinutes') setPlannerCustomMinutes(value);
     if (field === 'plannerStart') setPlannerStart(value);
     if (field === 'plannerEnd') setPlannerEnd(value);
+    if (field.startsWith('score-')) {
+      const subject = field.replace('score-', '');
+      setScores((prev) => ({ ...prev, [subject]: Number(value) || 0 }));
+    }
   };
 
   return <div onClick={onClick} onInput={onInput} dangerouslySetInnerHTML={{ __html: current }} />;
