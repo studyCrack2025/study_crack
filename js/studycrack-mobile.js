@@ -37,6 +37,9 @@ function App() {
   const [targetMajor, setTargetMajor] = useState('연세대학교 경영학과');
   const [targetOpen, setTargetOpen] = useState(false);
   const [universityModalOpen, setUniversityModalOpen] = useState(false);
+  const [timerModalOpen, setTimerModalOpen] = useState(false);
+  const [timerStatus, setTimerStatus] = useState('idle');
+  const [timerSubject, setTimerSubject] = useState('수학');
   const [plannerItems, setPlannerItems] = useState([
     { subject: '수학', content: '개념 학습', start: '10:00', end: '12:00', minutes: 120, dot: 'math' },
     { subject: '영어', content: '독해 문제 풀이', start: '13:00', end: '14:30', minutes: 90, dot: 'eng' },
@@ -296,15 +299,18 @@ function App() {
       true
     ),
     planner: layout(
-      `<div class="planner-head"><h3>2024년 5월 14일 (화)</h3><button class="planner-cal-btn">${i('calendar', false)}</button></div>
+      `<div class="planner-screen"><div class="planner-head"><h3>2024년 5월 14일 (화)</h3><button class="planner-cal-btn">${i('calendar', false)}</button></div>
        <div class="planner-weekday"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
        <div class="planner-days"><span>12</span><span>13</span><span class="active">14</span><span>15</span><span>16</span><span>17</span><span>18</span></div>
        <div class="planner-section-title"><div><h4>오늘의 계획</h4><p>총 ${totalHour}시간 ${totalMinute}분</p></div></div>
        <div class="planner-plan-list">
          ${plannerItems.map((item) => `<div class="planner-item"><i class="dot ${item.dot}"></i><div><b>${item.subject}</b><p>${item.content}</p><small>${item.start} - ${item.end}</small></div><strong>${item.minutes}분</strong></div>`).join('')}
        </div>
-       <div class="planner-timer"><p>공부 타이머 시작</p><h2>01:25:30</h2></div>
-       <div class="cta-wrapper planner-add-wrap"><button class="btn btn-primary cta-btn" data-action="addPlannerItem">플래너 항목 추가</button></div>`,
+       <div class="planner-timer card"><p>오늘 공부 시간</p><h2>01:25:30</h2><button class="planner-timer-start" data-action="openTimerModal">공부 시작</button></div>
+       <div class="planner-bottom-space"></div>
+       <div class="planner-fixed-cta"><button class="btn btn-primary cta-btn" data-action="addPlannerItem">플래너 추가</button></div>
+       ${timerModalOpen ? `<div class="home-modal-overlay" data-action="closeTimerModal"><div class="home-modal timer-modal" data-action="noopModal"><p class="home-modal-title">학습 타이머</p><p class="sub" style="margin:8px 0 0">과목 선택: <b>${timerSubject}</b></p><div class="timer-subject-row"><button data-action="setTimerSubject" data-timer-subject="수학">수학</button><button data-action="setTimerSubject" data-timer-subject="영어">영어</button><button data-action="setTimerSubject" data-timer-subject="탐구">탐구</button></div><div class="timer-controls"><button data-action="timerStart">시작</button><button data-action="timerPause">일시정지</button><button data-action="timerEnd">종료</button></div><p class="sub" style="margin:10px 0 0">상태: ${timerStatus==='idle'?'대기':timerStatus==='running'?'진행 중':'일시정지'}</p><button class="btn btn-primary" style="margin-top:12px" data-action="closeTimerModal">닫기</button></div></div>` : ''}
+       </div>`,
       true
     ),
     my: layout(appbar('마이페이지', false) + `<div class="my-stack">
@@ -393,6 +399,8 @@ function App() {
     }
     if (action === 'openUniversityModal') setUniversityModalOpen(true);
     if (action === 'closeUniversityModal') setUniversityModalOpen(false);
+    if (action === 'openTimerModal') setTimerModalOpen(true);
+    if (action === 'closeTimerModal') setTimerModalOpen(false);
     if (action === 'noopModal') return;
     if (action === 'selectUniversity') {
       setTargetMajor(actionEl.getAttribute('data-target-major'));
@@ -414,6 +422,21 @@ function App() {
       const lowered = subject.toLowerCase();
       const dot = lowered.includes('수') ? 'math' : lowered.includes('영') ? 'eng' : 'sci';
       setPlannerItems((prev) => [...prev, { subject, content, start, end, minutes, dot }]);
+    }
+    if (action === 'setTimerSubject') setTimerSubject(actionEl.getAttribute('data-timer-subject'));
+    if (action === 'timerStart') setTimerStatus('running');
+    if (action === 'timerPause') setTimerStatus('paused');
+    if (action === 'timerEnd') {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const endMin = (now.getMinutes() + 30) % 60;
+      const endHour = (now.getHours() + Math.floor((now.getMinutes() + 30) / 60)) % 24;
+      const endText = `${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`;
+      const dot = timerSubject === '수학' ? 'math' : timerSubject === '영어' ? 'eng' : 'sci';
+      setPlannerItems((prev) => [...prev, { subject: timerSubject, content: '타이머 학습', start: `${hh}:${mm}`, end: endText, minutes: 30, dot }]);
+      setTimerStatus('idle');
+      setTimerModalOpen(false);
     }
   };
 
