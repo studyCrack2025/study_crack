@@ -106,6 +106,19 @@ function bindEvents() {
     document.getElementById('tutPrevBtn').addEventListener('click', prevStep);
     document.getElementById('tutNextBtn').addEventListener('click', nextStep);
 
+    // 브라우저 종료·새로고침 시 currentStepIdx를 서버에 안정적으로 전송
+    // fetch keepalive=true: sendBeacon과 달리 Authorization 헤더를 유지한 채 페이지 언로드 후에도 요청 완료
+    window.addEventListener('beforeunload', () => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+        fetch(CONFIG.api.user, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'update_tutorial_status', data: { step: currentStepIdx } }),
+            keepalive: true
+        }).catch(() => {});
+    });
+
     const logoLink = document.querySelector('.logo-link');
     if (logoLink) {
         logoLink.addEventListener('click', (e) => {
