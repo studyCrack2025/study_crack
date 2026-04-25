@@ -33,7 +33,7 @@ function App() {
   const [tab, setTab] = useState('home');
   const [history, setHistory] = useState([]);
   const [selectedPlan, setSelectedPlan] = useState('Pro');
-  const [duration, setDuration] = useState('6개월');
+  const [duration, setDuration] = useState('4주');
 
   const goto = (next, addHistory = true) => {
     if (addHistory && screen !== next) setHistory((h) => [...h, screen]);
@@ -138,7 +138,7 @@ function App() {
       introPrice: '149,000원 / 4주',
       payPrice: '149,000원 / 4주',
       desc: '전략 + 플래너 + 주간 점검',
-      features: ['전략 기능 이용', '플래너 피드백', '학습 방향 코칭'],
+      features: ['전략 기능 이용', '플래너 피드백', '학습 방향 코칭', '주간 점검 제공'],
       complete: '플래너 피드백과 학습 방향 코칭을 받을 수 있어요.'
     },
     Pro: {
@@ -242,7 +242,22 @@ function App() {
        <div class="planner-timer"><p>공부 타이머 시작</p><h2>01:25:30</h2></div>`,
       true
     ),
-    my: layout(appbar('마이페이지', false) + `<div class="card"><p class="title" style="margin:0">김지민</p><p class="sub">목표 대학: 연세대학교 경영학과</p><span class="badge">Pro 이용 중</span></div><div class="card"><ul class="list"><li>성적 정보</li><li>학습 리포트</li><li data-action="goto" data-target="proIntro">구독 관리</li></ul><div class="center"><img src="${CRACKY_SRC}" class="cracky-img cracky-lg" alt="크랙이"/><p class="sub">아직 데이터가 없어요. 먼저 분석해볼까요?</p></div></div>`, true),
+    my: layout(appbar('마이페이지', false) + `<div class="my-stack">
+      <div class="card my-profile-card"><div class="my-profile-left"><div class="my-avatar">${i('user', false)}</div><div><p class="my-name">김지민</p><p class="sub">목표 대학: 연세대학교 경영학과</p></div></div><span class="badge">Pro 이용 중</span></div>
+      <div class="card my-subscription-card"><div class="my-sub-icon">${i('report', false)}</div><div><p class="my-sub-title">Pro 플랜 이용 중</p><p class="my-sub-date">다음 결제일 2024.06.14</p></div></div>
+      <div class="card my-menu-card">
+        <button class="my-row">성적 정보 <span>${i('chevron', false)}</span></button>
+        <button class="my-row">학습 리포트 <span>${i('chevron', false)}</span></button>
+        <button class="my-row" data-action="goto" data-target="proIntro">구독 관리 <span>${i('chevron', false)}</span></button>
+      </div>
+      <div class="card my-menu-card my-service-card">
+        <p class="my-section-title">서비스</p>
+        <button class="my-row">알림 설정 <span>${i('chevron', false)}</span></button>
+        <button class="my-row">고객센터 <span>${i('chevron', false)}</span></button>
+        <button class="my-row">설정 <span>${i('chevron', false)}</span></button>
+        <img src="${CRACKY_SRC}" class="my-char crackie" alt="크랙이"/>
+      </div>
+    </div>`, true),
     weekly: layout(
       `<div class="weekly-head"><button class="weekly-back" data-action="back">←</button><h3>주간 점검</h3><span></span></div>
        <p class="weekly-range">이번 주 점검 (5.6 ~ 5.12)</p>
@@ -270,26 +285,23 @@ function App() {
     ),
     reportDetail: layout(appbar('종합 분석 리포트', true) + `<div class="report-tabs"><span class="active">종합 분석</span><span>과목 분석</span><span>학습 전략</span><span>현재 위치</span></div><div class="report-detail-stack"><div class="card report-detail-card"><p class="sub">핵심 요약</p><p class="report-detail-text">수학에서 점수 상승 여지가 가장 큽니다. 개념 학습 시간을 늘리고, 문제 풀이 비중을 높이면 단기간 점수 개선이 가능합니다.</p></div><div class="card report-detail-card"><p class="sub">과목별 성과</p><div class="subject-result"><span>수학</span><div class="track"><i style="width:82%"></i></div><em><span class="score">68점</span><span class="delta">▲12</span></em></div><div class="subject-result"><span>국어</span><div class="track"><i style="width:74%"></i></div><em><span class="score">82점</span><span class="delta">▲3</span></em></div><div class="subject-result"><span>영어</span><div class="track"><i style="width:70%"></i></div><em><span class="score">77점</span><span class="delta">-</span></em></div><div class="subject-result"><span>탐구</span><div class="track"><i style="width:62%"></i></div><em><span class="score">66점</span><span class="delta">▲5</span></em></div></div></div><div class="cta-wrapper report-detail-cta"><button class="btn btn-primary cta-btn">PDF 다운로드</button></div>`, false),
     tutor: layout(appbar('SKY튜터 1:1 피드백', true) + `<div class="card"><p class="sub">텍스트 기반 질의응답</p><ul class="list"><li>Q. 수학 개념 이해가 잘 안돼요</li><li>A. 유형별 복습 루틴을 추가하세요</li></ul></div><button class="btn btn-primary">새 질문 작성</button>`, false),
-    proIntro: layout(appbar('', true) + `<div class="pro-plan-screen">
-      <p class="pro-plan-title">PRO PLAN</p>
-      <p class="pro-plan-sub">모든 기능을 무제한으로!</p>
-      <div class="card pro-plan-card">
-        <ul class="pro-feature-list">
-          <li><span>${i('chart', false)}</span>합격 가능성 & 전략 무제한 이용</li>
-          <li><span>${i('calendar', false)}</span>플래너 & 주간 점검 무제한</li>
-          <li><span>${i('chat', false)}</span>Sky튜터 1:1 피드백 무제한</li>
-          <li><span>${i('report', false)}</span>프로 보고서 2주에 1번 제공</li>
-          <li><span>${i('alert', false)}</span>광고 없이 쾌적하게 이용</li>
-        </ul>
-        <img src="${CRACKY_SRC}" class="pro-plan-char crackie" alt="크랙이"/>
+    proIntro: layout(appbar('StudyCrack 요금제', true) + `<p class="sub pricing-sub">합격 전략, 단계별로 선택하세요</p>
+      <div class="plan-stack">
+        <button class="plan-card basic ${selectedPlan==='Basic'?'active':''}" data-action="selectPlan" data-plan="Basic"><div class="plan-head"><h4>Basic</h4></div><p class="plan-price">${planMeta.Basic.introPrice}</p><ul><li>합격 가능성 분석</li><li>대학별 전략 확인</li></ul></button>
+        <button class="plan-card standard ${selectedPlan==='Standard'?'active':''}" data-action="selectPlan" data-plan="Standard"><div class="plan-head"><h4>Standard</h4><span class="badge">추천</span></div><p class="plan-price">${planMeta.Standard.introPrice}</p><ul><li>플래너 피드백</li><li>학습 방향 코칭</li></ul></button>
+        <button class="plan-card pro ${selectedPlan==='Pro'?'active':''}" data-action="selectPlan" data-plan="Pro"><div class="plan-head"><h4>Pro</h4><span class="badge">최고 효율</span></div><p class="plan-price">${planMeta.Pro.introPrice}</p><ul><li>모든 기능 무제한 이용</li><li>프로 보고서 2주 1회</li><li>Sky튜터 1:1 피드백</li></ul></button>
       </div>
-      <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="startPro">프로 플랜 시작하기</button></div>
-    </div>`, false),
-    payment: layout(appbar('플랜 선택', true) + `<div class="payment-tab-wrap"><span class="badge payment-reco">추천</span><div class="payment-tabs"><button class="${selectedPlan==='Standard'?'active':''}" data-action="selectPlan" data-plan="Standard">Standard</button><button class="${selectedPlan==='Pro'?'active':''}" data-action="selectPlan" data-plan="Pro">Pro</button></div></div>
-      <div class="card payment-focus-card"><div class="payment-focus-head"><div><h3>${selectedPlan}</h3><p>${currentPlan.desc}</p></div><button class="payment-close-btn">×</button></div><p class="payment-price-main">${currentPlan.payPrice}</p><small>VAT 포함</small><ul class="payment-check-list">${currentPlan.features.map((item) => `<li>${item}</li>`).join('')}</ul></div>
-      <div class="payment-period-stack">
-        <button class="period-card ${duration==='6개월'?'active':''}" data-action="selectDuration" data-duration="6개월"><div><b>6개월</b><p>169,000원</p></div><em>6% 할인</em></button>
-        <button class="period-card ${duration==='12개월'?'active':''}" data-action="selectDuration" data-duration="12개월"><div><b>12개월</b><p>299,000원</p></div><em>17% 할인</em></button>
+      <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="payment">결제하기</button></div>`, false),
+    payment: layout(appbar('플랜 선택', true) + `<div class="payment-tabs full">
+      <button class="${selectedPlan==='Basic'?'active':''}" data-action="selectPlan" data-plan="Basic">Basic</button>
+      <button class="${selectedPlan==='Standard'?'active':''}" data-action="selectPlan" data-plan="Standard">Standard</button>
+      <button class="${selectedPlan==='Pro'?'active':''}" data-action="selectPlan" data-plan="Pro">Pro</button>
+    </div>
+      <div class="card payment-focus-card"><div class="payment-focus-head"><div><h3>${selectedPlan}</h3><p>${currentPlan.payPrice}</p></div></div><p class="payment-desc">${currentPlan.desc}</p><ul class="payment-check-list">${currentPlan.features.map((item) => `<li>${item}</li>`).join('')}</ul></div>
+      <div class="duration-row payment-duration-row">
+        <button class="${duration==='4주'?'active':''}" data-action="selectDuration" data-duration="4주">4주</button>
+        <button class="${duration==='8주'?'active':''}" data-action="selectDuration" data-duration="8주">8주</button>
+        <button class="${duration==='12주'?'active':''}" data-action="selectDuration" data-duration="12주">12주</button>
       </div>
       <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="paymentComplete">결제하기</button></div>`, false),
     paymentComplete: layout(`<div class="payment-done-screen"><div class="payment-complete-wrap"><div class="payment-check">${i('check', true)}</div><p class="title payment-complete-title">결제가 완료되었습니다!</p><p class="sub payment-complete-sub">${selectedPlan.toUpperCase()} 플랜이 활성화되었습니다.</p><div class="card payment-complete-note"><b>프로 보고서 이용 안내</b><p>2주에 한 번 새로운 리포트를 제공해 드려요.<br/>다음 리포트는 5월 25일에 이용 가능해요.</p></div></div><div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="home">홈으로 이동</button></div></div>`, false)
@@ -306,10 +318,6 @@ function App() {
     if (action === 'tab') goto(actionEl.getAttribute('data-tab'));
     if (action === 'selectPlan') setSelectedPlan(actionEl.getAttribute('data-plan'));
     if (action === 'selectDuration') setDuration(actionEl.getAttribute('data-duration'));
-    if (action === 'startPro') {
-      setSelectedPlan('Pro');
-      goto('payment');
-    }
   };
 
   return <div onClick={onClick} dangerouslySetInnerHTML={{ __html: current }} />;
