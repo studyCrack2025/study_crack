@@ -261,6 +261,36 @@ body {
 .analysis-sub { color:#9ca3af; font-size:13px; }
 .analysis-bars { padding:10px 12px; }
 .analysis-bars .bar { font-size:13px; }
+.target-select-card { padding:16px; border-radius:20px; margin-bottom:14px; box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06); }
+.target-label { margin:0 0 8px; font-size:13px; color:#6b7280; font-weight:700; }
+.target-select-btn {
+  width:100%;
+  min-height:48px;
+  border:1px solid #E1E8F5;
+  border-radius:14px;
+  background:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 14px;
+  font-size:14px;
+  font-weight:600;
+  color:#1f2937;
+}
+.target-select-btn em { font-style:normal; color:#64748b; font-size:12px; }
+.target-dropdown { margin-top:8px; border:1px solid #e1e8f5; border-radius:14px; overflow:hidden; background:#fff; }
+.target-option {
+  width:100%;
+  border:none;
+  border-bottom:1px solid #eef2f8;
+  background:#fff;
+  text-align:left;
+  padding:12px 14px;
+  font-size:13px;
+  color:#334155;
+}
+.target-option:last-child { border-bottom:none; }
+.target-option.active { background:#eef4ff; color:#0b63e5; font-weight:700; }
 .analysis-top { padding:12px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
 .analysis-kpi-row { display:flex; justify-content:space-between; align-items:center; margin-top:2px; }
 .analysis-score-row { margin-top:8px; display:grid; grid-template-columns: repeat(3,1fr); gap:8px; font-size:11px; color:#4b5563; }

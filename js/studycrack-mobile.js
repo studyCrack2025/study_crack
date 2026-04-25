@@ -34,6 +34,8 @@ function App() {
   const [history, setHistory] = useState([]);
   const [selectedPlan, setSelectedPlan] = useState('Pro');
   const [duration, setDuration] = useState('4주');
+  const [targetMajor, setTargetMajor] = useState('연세대학교 경영학과');
+  const [targetOpen, setTargetOpen] = useState(false);
 
   const goto = (next, addHistory = true) => {
     if (addHistory && screen !== next) setHistory((h) => [...h, screen]);
@@ -69,6 +71,12 @@ function App() {
   const tabbar = () => `<div class="tabbar">${tabBtn('home','홈','home')}${tabBtn('analysis','분석','chart')}${tabBtn('strategy','전략','target')}${tabBtn('planner','플래너','calendar')}${tabBtn('my','마이','user')}</div>`;
   const layout = (inner, withTab) => `<div class="app-shell"><div class="screen app-screen app-content">${inner}</div>${withTab ? tabbar() : ''}</div>`;
   const quickMini = (action, iconName, label) => `<button class="quick-mini-item" data-action="goto" data-target="${action}"><span class="quick-mini-icon">${i(iconName,false)}</span><span class="quick-mini-label">${label}</span></button>`;
+  const targetOptions = [
+    '연세대학교 경영학과',
+    '고려대학교 경영학과',
+    '성균관대학교 글로벌경영학과',
+    '한양대학교 경영학부'
+  ];
   const onboarding = (step, title, subtitle, cardContent, bubbleText, target, cta = '다음') => `
     <div class="app-shell">
       <div class="screen app-screen app-content">
@@ -180,8 +188,16 @@ function App() {
     ),
     home: layout(homeView(), true),
     analysis: layout(
-      `<div class="analysis-top card">
-        <span class="badge analysis-badge">연세대학교 경영학과</span>
+      `<div class="card target-select-card">
+        <p class="target-label">목표 대학</p>
+        <button class="target-select-btn" data-action="toggleTarget">
+          <span>${targetMajor}</span>
+          <em>▼</em>
+        </button>
+        ${targetOpen ? `<div class="target-dropdown">${targetOptions.map((option) => `<button class="target-option ${targetMajor===option?'active':''}" data-action="selectTarget" data-target-major="${option}">${option}</button>`).join('')}</div>` : ''}
+      </div>
+      <div class="analysis-top card">
+        <span class="badge analysis-badge">${targetMajor}</span>
         <div class="analysis-kpi-row"><div><p class="metric-sm">68%</p><p class="analysis-sub">상위 32%</p></div><div class="ring"></div></div>
         <div class="analysis-score-row"><div><b>323점</b><span>현재 점수</span></div><div><b>335점</b><span>합격 컷</span></div><div><b class="danger">-12점</b><span>부족 점수</span></div></div>
       </div>
@@ -321,6 +337,11 @@ function App() {
     if (action === 'tab') goto(actionEl.getAttribute('data-tab'));
     if (action === 'selectPlan') setSelectedPlan(actionEl.getAttribute('data-plan'));
     if (action === 'selectDuration') setDuration(actionEl.getAttribute('data-duration'));
+    if (action === 'toggleTarget') setTargetOpen((v) => !v);
+    if (action === 'selectTarget') {
+      setTargetMajor(actionEl.getAttribute('data-target-major'));
+      setTargetOpen(false);
+    }
   };
 
   return <div onClick={onClick} dangerouslySetInnerHTML={{ __html: current }} />;
