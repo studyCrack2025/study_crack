@@ -884,7 +884,19 @@ body {
 .ob-bubble-card { display:flex; align-items:center; gap:10px; }
 .ob-bubble-card p { margin:0; font-size:14px; line-height:1.45; }
 .ob-cracky { width:64px; height:64px; object-fit:contain; flex-shrink:0; }
-.ob-cta-wrap { position: sticky; bottom: 0; padding: 10px 0 6px; background: linear-gradient(to top, #f5f7fb 70%, rgba(245,247,251,0)); }
+.onboarding-container { display:flex; flex-direction:column; height:100%; }
+.onboarding-container > .content { flex:1; overflow-y:auto; padding:20px; padding-bottom:24px; }
+.onboarding-container > .cta-wrapper { padding:16px 20px 24px; background:#F5F7FB; }
+.cta-button {
+  width:100%;
+  height:56px;
+  border:none;
+  border-radius:16px;
+  background:linear-gradient(90deg, #0B6BFF, #4A8DFF);
+  color:#fff;
+  font-size:16px;
+  font-weight:600;
+}
 .ob-mbti-modal { max-height: 70vh; overflow: auto; }
 .ob-mbti-q p { margin: 0 0 6px; font-size: 13px; font-weight: 700; }
 .ob-mbti-opt { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }

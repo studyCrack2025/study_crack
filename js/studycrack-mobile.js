@@ -435,7 +435,8 @@ function App() {
 
   const screens = {
     ob1: layout(
-      `${onboardingProgress(1)}
+      `<div class="onboarding-container"><div class="content">
+       ${onboardingProgress(1)}
        ${appbar('학습성향 진단', true)}
        <p class="sub ob-subcopy">지금 성적과 공부 습관을 바탕으로<br/>나에게 맞는 합격 전략을 찾아볼게요.</p>
        <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>성적만 보는 게 아니라, 공부 방식까지 같이 봐야 정확해요!</p></div>
@@ -470,11 +471,12 @@ function App() {
          <div class="ob-mbti-q"><p>4) 피드백이 있으면 공부가 더 잘 되나요?</p><div class="ob-mbti-opt"><button data-action="setMbti" data-mbti-q="q4" data-mbti-v="feedback" class="${mbtiAnswers.q4==='feedback'?'active':''}">네</button><button data-action="setMbti" data-mbti-q="q4" data-mbti-v="self" class="${mbtiAnswers.q4==='self'?'active':''}">아니오</button></div></div>
          <button class="btn btn-primary ${mbtiDone?'':'disabled'}" data-action="completeMbti" ${mbtiDone?'':'disabled'}>검사 완료</button>
        </div></div>` : ''}
-       <div class="ob-cta-wrap"><button class="btn btn-primary cta-btn" data-action="goto" data-target="ob2">진단 완료하고 다음으로</button></div>`,
+       </div><div class="cta-wrapper"><button class="cta-button" data-action="goto" data-target="ob2">진단 완료하고 다음으로</button></div></div>`,
       false
     ),
     ob2: layout(
-      `${onboardingProgress(2)}
+      `<div class="onboarding-container"><div class="content">
+       ${onboardingProgress(2)}
        ${appbar('목표 설정 및 분석', true)}
        <p class="sub ob-subcopy">현재 성적 기준으로 도전 가능한 대학과<br/>합격 가능성을 분석해드릴게요.</p>
        <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>목표 대학마다 유리한 과목이 달라요. 그래서 대학별로 따로 봐야 해요!</p></div>
@@ -494,11 +496,12 @@ function App() {
          <div class="analysis-impact-item">탐구<div class="track"><i style="width:68%;background:#14b8a6"></i></div><span>+6점 → +9%</span></div>
          <div class="analysis-impact-item">영어<div class="track"><i style="width:48%;background:#f59e0b"></i></div><span>+3점 → +5%</span></div>
        </div>
-       <div class="ob-cta-wrap"><button class="btn btn-primary cta-btn" data-action="goto" data-target="ob3">내 맞춤 솔루션 보기</button></div>`,
+       </div><div class="cta-wrapper"><button class="cta-button" data-action="goto" data-target="ob3">내 맞춤 솔루션 보기</button></div></div>`,
       false
     ),
     ob3: layout(
-      `${onboardingProgress(3)}
+      `<div class="onboarding-container"><div class="content">
+       ${onboardingProgress(3)}
        ${appbar('공부 성향 맞춤 솔루션', true)}
        <p class="sub ob-subcopy">현재 성적에서 합격컷까지,<br/>가장 효율적인 점수 상승 루트를 보여드릴게요.</p>
        <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>무작정 전 과목을 올리는 게 아니라, 합격에 가장 크게 기여하는 과목부터 잡아야 해요!</p></div>
@@ -514,7 +517,8 @@ function App() {
          <ol class="ob-strategy"><li><b>수학 68점 → 80점</b><p>합격 가능성 상승 기여도 가장 큼</p></li><li><b>탐구1 70점 → 76점</b><p>단기간 상승 효율 높음</p></li><li><b>영어 77점 유지</b><p>현재 수준 유지 전략</p></li></ol>
        </div>
        <div class="card ob-period-card"><p class="analysis-title">Standard 이용 시 예상 도달 기간</p><h2>평균 3개월 예상</h2><p class="sub">Standard 플랜에서는 SKY/상위권 튜터가 주간 플래너 피드백과 학습 방향 코칭을 제공해요.</p></div>
-       <div class="card ob-cta-card"><p class="analysis-title">이 전략대로 실행해볼까요?</p><p class="sub">분석은 방향을 보여주고, Standard는 매주 실행을 도와줘요.</p><button class="btn btn-primary cta-btn" data-action="startStandard">Standard로 시작하기</button><button class="btn btn-secondary" data-action="completeOnboarding">나중에 홈으로 이동</button></div>`,
+       <div class="card ob-cta-card"><p class="analysis-title">이 전략대로 실행해볼까요?</p><p class="sub">분석은 방향을 보여주고, Standard는 매주 실행을 도와줘요.</p><button class="btn btn-secondary" data-action="completeOnboarding">나중에 홈으로 이동</button></div>
+       </div><div class="cta-wrapper"><button class="cta-button" data-action="startStandard">Standard로 시작하기</button></div></div>`,
       false
     ),
     authLogin: layout(`<div class="auth-screen">
