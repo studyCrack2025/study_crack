@@ -116,6 +116,7 @@ function App() {
   const [weakSubject, setWeakSubject] = useState('');
   const [studyHours, setStudyHours] = useState('');
   const [studyDifficulty, setStudyDifficulty] = useState('');
+  const [showDurationCard, setShowDurationCard] = useState(false);
   const [scoreEditOpen, setScoreEditOpen] = useState(false);
   const [scores, setScores] = useState(DEFAULT_SCORES);
   const [notifications, setNotifications] = useState(DEFAULT_NOTIFICATIONS);
@@ -228,6 +229,13 @@ function App() {
       })
     );
   }, [selectedPlan, targetMajor, tab, user]);
+
+  useEffect(() => {
+    if (screen !== 'ob3') return undefined;
+    setShowDurationCard(false);
+    const t = setTimeout(() => setShowDurationCard(true), 1500);
+    return () => clearTimeout(t);
+  }, [screen]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -527,17 +535,19 @@ function App() {
          </div>
          <div class="ob-gauge-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
          <p class="sub"><b>현재 → 합격권 진입 구간</b></p>
-         <div class="ob-subject-delta">
-           <div class="ob-delta-row"><span>수학</span><div class="track"><i style="width:80%"></i></div><em>68 → 80 <b>(+12)</b></em></div>
-           <div class="ob-delta-row"><span>탐구</span><div class="track"><i style="width:68%"></i></div><em>70 → 76 <b>(+6)</b></em></div>
-           <div class="ob-delta-row"><span>영어</span><div class="track"><i style="width:54%"></i></div><em>77 → 유지</em></div>
+       </div>
+       <div class="card ob-card">
+         <p class="analysis-title">비포/애프터 성적표</p>
+         <div class="ob-before-after">
+           <div class="ob-score-card"><b>현재 성적</b><p>국어 82</p><p>수학 68</p><p>영어 77</p><p>탐구1 70</p><p>탐구2 66</p><strong>총점 86</strong></div>
+           <div class="ob-score-card"><b>목표 성적</b><p>국어 82</p><p>수학 80 <span class="plus">(+12)</span></p><p>영어 77</p><p>탐구1 76 <span class="plus">(+6)</span></p><p>탐구2 66</p><strong>총점 120</strong></div>
          </div>
        </div>
        <div class="card ob-card">
          <p class="analysis-title">핵심 전략</p>
          <ol class="ob-strategy"><li><b>수학 68점 → 80점</b><p>합격 가능성 상승 기여도 가장 큼</p></li><li><b>탐구1 70점 → 76점</b><p>단기간 상승 효율 높음</p></li><li><b>영어 77점 유지</b><p>현재 수준 유지 전략</p></li></ol>
        </div>
-       <div class="card ob-card ob-period-card"><p class="analysis-title">Standard 이용 시 예상 도달 기간</p><h2>평균 3개월 예상</h2><p class="sub">주간 플래너 피드백과 학습 방향 코칭 제공</p></div>
+       ${showDurationCard ? `<div class="card ob-card ob-period-card"><p class="analysis-title">Standard 이용 시 예상 도달 기간</p><h2>평균 3개월 예상</h2><p class="sub">주간 플래너 피드백과 학습 방향 코칭 제공</p></div>` : `<div class="card ob-card ob-loading-card"><div class="ob-spinner"></div><p class="sub">최적 학습 루트 계산 중...</p></div>`}
        </div><div class="cta-wrapper onboarding-fixed-cta"><button class="cta-button" data-action="startStandard">Standard로 시작하기</button><button class="auth-link-btn" data-action="completeOnboarding">나중에 홈으로 이동</button></div></div>`,
       false
     ),
