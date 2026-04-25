@@ -36,6 +36,7 @@ function App() {
   const [duration, setDuration] = useState('4주');
   const [targetMajor, setTargetMajor] = useState('연세대학교 경영학과');
   const [targetOpen, setTargetOpen] = useState(false);
+  const [universityModalOpen, setUniversityModalOpen] = useState(false);
 
   const goto = (next, addHistory = true) => {
     if (addHistory && screen !== next) setHistory((h) => [...h, screen]);
@@ -97,6 +98,12 @@ function App() {
     </div>
   `;
 
+  const homeTargets = [
+    { major: '연세대학교 경영학과', rate: 68, rank: '상위 32%', score: 323, cut: 335, gap: -12 },
+    { major: '고려대학교 경영학과', rate: 61, rank: '상위 39%', score: 319, cut: 334, gap: -15 },
+    { major: '성균관대학교 글로벌경영학과', rate: 73, rank: '상위 27%', score: 328, cut: 336, gap: -8 }
+  ];
+
   const homeView = () => `<div class="home-dashboard">
     <div class="home-header">
       <div class="home-top-icons">
@@ -107,11 +114,17 @@ function App() {
       <p class="home-sub">오늘도 크랙한 하루 되세요!</p>
     </div>
     <div class="section home-section">
-      <div class="card home-kpi-card">
-        <p class="sub">내 합격 가능성</p>
-        <div class="home-kpi-head"><div><p class="metric">68%</p><p class="sub">상위 32%</p></div><div class="ring"></div></div>
-        <div class="kpi-row"><div class="kpi-item"><b>323점</b>현재 점수</div><div class="kpi-item"><b>335점</b>합격 컷</div><div class="kpi-item danger"><b>-12점</b>부족 점수</div></div>
+      <div class="home-kpi-slider">
+        ${homeTargets.map((item) => `<div class="card home-kpi-card slider-card">
+          <span class="home-major-pill">${item.major}</span>
+          <p class="sub">내 합격 가능성</p>
+          <div class="home-kpi-head"><div><p class="metric">${item.rate}%</p><p class="sub">${item.rank}</p></div><div class="ring" style="background:conic-gradient(var(--primary) 0 ${item.rate}%, #dfe8f8 ${item.rate}% 100%)"></div></div>
+          <div class="kpi-row"><div class="kpi-item"><b>${item.score}점</b>현재 점수</div><div class="kpi-item"><b>${item.cut}점</b>합격 컷</div><div class="kpi-item danger"><b>${item.gap}점</b>부족 점수</div></div>
+        </div>`).join('')}
+        <button class="card home-kpi-add-card slider-card" data-action="openUniversityModal"><span class="plus">+</span><p>목표 대학 추가하기</p></button>
       </div>
+      <div class="home-kpi-indicator">${homeTargets.map((_, idx) => `<i class="${idx===0?'active':''}"></i>`).join('')}<b>+</b></div>
+      ${universityModalOpen ? `<div class="home-modal-overlay" data-action="closeUniversityModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">목표 대학 추가</p><p class="sub" style="margin-top:8px">대학 선택 모달은 다음 단계에서 연결됩니다.</p><button class="btn btn-primary" data-action="closeUniversityModal">닫기</button></div></div>` : ''}
     </div>
     <div class="section home-section home-section-tight">
       <div class="notice home-risk-card">
@@ -342,6 +355,9 @@ function App() {
       setTargetMajor(actionEl.getAttribute('data-target-major'));
       setTargetOpen(false);
     }
+    if (action === 'openUniversityModal') setUniversityModalOpen(true);
+    if (action === 'closeUniversityModal') setUniversityModalOpen(false);
+    if (action === 'noopModal') return;
   };
 
   return <div onClick={onClick} dangerouslySetInnerHTML={{ __html: current }} />;
