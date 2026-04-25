@@ -61,7 +61,7 @@ body {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 20px;
-  padding: 12px;
+  padding: 16px;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
 }
 .metric { margin: 0; font-size: 42px; font-weight: 800; letter-spacing: -0.02em; color: var(--primary); }
@@ -111,7 +111,7 @@ body {
   padding: 0 0 12px;
   z-index: 20;
 }
-.cta-btn { min-height: 52px; }
+.cta-btn { min-height: 56px; }
 
 .stack-card { display:grid; gap:12px; }
 .compact { padding: 14px 16px; border-radius: 16px; }
@@ -299,8 +299,8 @@ body {
 .report-detail-cta .btn { box-shadow: 0 10px 24px rgba(11, 99, 229, 0.28); min-height:54px; }
 
 .pricing-sub { margin: 2px 0 10px; color:#4b5563; }
-.plan-stack { display:grid; gap:10px; }
-.plan-card { text-align:left; border:1px solid #dbe5f4; border-radius:20px; background:#fff; padding:14px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); }
+.plan-stack { display:grid; gap:16px; }
+.plan-card { text-align:left; border:1px solid #dbe5f4; border-radius:20px; background:#fff; padding:16px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); }
 .plan-card h4 { margin:0; font-size:16px; font-weight:800; color:#0f172a; }
 .plan-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
 .plan-price { margin:0 0 8px; font-size:18px; font-weight:800; color:#0b63e5; }
@@ -310,7 +310,7 @@ body {
 .plan-card.active { outline:2px solid #0b63e5; box-shadow: 0 14px 30px rgba(11,99,229,0.22); }
 .plan-chip { display:inline-block; margin-top:8px; padding:4px 9px; border-radius:999px; background:#eef4ff; color:#0b63e5; font-size:11px; font-weight:700; }
 
-.my-stack { display:grid; gap:12px; }
+.my-stack { display:grid; gap:16px; }
 .my-profile-card { padding:16px; display:flex; align-items:center; justify-content:space-between; }
 .my-profile-left { display:flex; align-items:center; gap:10px; }
 .my-avatar { width:42px; height:42px; border-radius:999px; background:#f8fafc; border:1px solid #dbe4f4; display:grid; place-items:center; }
@@ -318,7 +318,7 @@ body {
 .my-name { margin:0; font-size:17px; font-weight:800; color:#111827; }
 .my-subscription-card { padding:15px 16px; display:flex; align-items:center; gap:10px; background:#eef4ff; }
 .my-sub-icon { width:36px; height:36px; border-radius:10px; border:1px solid #d2e2fb; background:#fff; display:grid; place-items:center; }
-.my-sub-title { margin:0; font-size:14px; font-weight:800; color:#0f172a; }
+.my-sub-title { margin:0; font-size:14px; font-weight:700; color:#0f172a; }
 .my-sub-date { margin:2px 0 0; font-size:12px; color:#64748b; font-weight:600; }
 .my-menu-card { padding:0; overflow:hidden; }
 .my-row {
@@ -341,7 +341,7 @@ body {
 .my-section-title { position:absolute; left:16px; top:10px; margin:0; font-size:12px; color:#64748b; font-weight:700; }
 .my-char { position:absolute; right:8px; bottom:6px; width:92px; height:auto; object-fit:contain; pointer-events:none; }
 
-.payment-tabs { display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-top:2px; }
+.payment-tabs { display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-top:2px; margin-bottom:16px; }
 .payment-tabs button {
   min-height:42px;
   border:1px solid #d1d5db;
@@ -352,21 +352,35 @@ body {
 }
 .payment-tabs button.active { background:#0b63e5; color:#fff; border-color:#0b63e5; box-shadow: 0 8px 20px rgba(11,99,229,0.24); }
 .payment-tabs.full { margin-top:4px; }
-.payment-focus-card { margin-top:12px; padding:16px; border:1.5px solid #9abfff; box-shadow: 0 12px 28px rgba(47,107,255,0.14); border-radius:20px; }
+.payment-focus-card { margin-top:0; padding:16px; border:1.5px solid #9abfff; box-shadow: 0 12px 28px rgba(47,107,255,0.14); border-radius:20px; }
 .payment-focus-head { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
 .payment-focus-head h3 { margin:0; font-size:22px; font-weight:800; letter-spacing:-0.02em; }
-.payment-focus-head p { margin:6px 0 0; font-size:20px; color:#111827; font-weight:800; }
-.payment-desc { margin:8px 0 0; font-size:13px; color:#64748b; font-weight:600; }
+.payment-focus-head p { margin:8px 0 0; font-size:26px; line-height:1.1; color:#111827; font-weight:900; }
+.payment-desc { margin:12px 0 0; font-size:13px; color:#64748b; font-weight:600; }
 .payment-close-btn { width:22px; height:22px; border:none; background:transparent; color:#94a3b8; font-size:16px; }
-.payment-check-list { margin:10px 0 0; padding:0; list-style:none; display:grid; gap:6px; }
-.payment-check-list li { position:relative; padding-left:16px; font-size:12px; font-weight:600; color:#334155; }
-.payment-check-list li::before { content:'✓'; position:absolute; left:0; top:0; color:#0b63e5; font-weight:800; }
-.payment-duration-row { margin-top:12px; }
+.payment-check-list { margin:12px 0 0; padding:0; list-style:none; display:grid; gap:8px; }
+.payment-check-list li { position:relative; padding-left:24px; font-size:13px; font-weight:600; color:#334155; }
+.payment-check-list li::before {
+  content:'✓';
+  position:absolute;
+  left:0;
+  top:1px;
+  width:16px;
+  height:16px;
+  border-radius:999px;
+  background:#e9f1ff;
+  color:#0b63e5;
+  display:grid;
+  place-items:center;
+  font-size:11px;
+  font-weight:900;
+}
+.payment-duration-row { margin-top:16px; }
 .duration-row { display:grid; grid-template-columns: repeat(3,1fr); gap:8px; margin-top:10px; }
 .duration-row button { min-height:42px; border:1px solid #d1d5db; border-radius:12px; background:#fff; font-weight:700; color:#334155; }
 .duration-row button.active { background:#0b63e5; border-color:#0b63e5; color:#fff; }
 .payment-note { margin:10px 0 0; color:#4b5563; }
-.payment-cta .btn { min-height:54px; box-shadow: 0 12px 24px rgba(11,99,229,0.28); }
+.payment-cta .btn { min-height:56px; box-shadow: 0 12px 24px rgba(11,99,229,0.28); }
 .payment-done-screen { height:100%; display:flex; flex-direction:column; justify-content:space-between; padding-top:30px; }
 .payment-check {
   width:100px;
@@ -379,7 +393,7 @@ body {
   box-shadow: 0 14px 30px rgba(11,99,229,0.28);
 }
 .payment-complete-wrap { text-align:center; }
-.payment-complete-title { margin:0; font-size:34px; font-weight:900; letter-spacing:-0.02em; }
+.payment-complete-title { margin:0; font-size:24px; font-weight:900; letter-spacing:-0.02em; }
 .payment-complete-sub { margin:14px 0 0; font-size:14px; color:#334155; }
 .payment-complete-note {
   margin-top:16px;
@@ -389,8 +403,8 @@ body {
   text-align:left;
   line-height:1.6;
   font-size:13px;
-  border-radius:20px;
-  padding:16px;
+  border-radius:18px;
+  padding:18px;
 }
 .payment-complete-note b { color:#2563eb; font-size:12px; display:block; margin-bottom:4px; }
 .payment-complete-note p { margin:0; font-size:13px; font-weight:600; color:#475569; }
