@@ -32,6 +32,8 @@ function App() {
   const [screen, setScreen] = useState('splash');
   const [tab, setTab] = useState('home');
   const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState('Pro');
   const [duration, setDuration] = useState('4주');
   const [targetMajor, setTargetMajor] = useState('연세대학교 경영학과');
@@ -84,6 +86,29 @@ function App() {
       return () => clearTimeout(t);
     }
   }, [screen]);
+
+  const initializeApp = async () => {
+    let fallbackTimer;
+    try {
+      setLoading(true);
+      setError(false);
+      fallbackTimer = setTimeout(() => setError(true), 3000);
+
+      const res = await fetch('/api/data');
+      if (!res.ok) throw new Error(`Init API failed: ${res.status}`);
+      await res.json();
+    } catch (e) {
+      console.error(e);
+      setError(true);
+    } finally {
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    initializeApp();
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -506,6 +531,7 @@ function App() {
     if (action === 'openLogoutModal') setLogoutModalOpen(true);
     if (action === 'closeLogoutModal') setLogoutModalOpen(false);
     if (action === 'comingSoon') window.alert('구독 관리 기능은 준비 중입니다.');
+    if (action === 'retryInit') initializeApp();
     if (action === 'noopModal') return;
     if (action === 'setPlannerSubject') setPlannerSubject(actionEl.getAttribute('data-planner-subject'));
     if (action === 'setPlannerDuration') setPlannerDurationChoice(actionEl.getAttribute('data-planner-duration'));
@@ -579,7 +605,11 @@ function App() {
     }
   };
 
-  return <div onClick={onClick} onInput={onInput} dangerouslySetInnerHTML={{ __html: current }} />;
+  const loadingUi = `<div class="app-shell"><div class="screen app-screen app-content"><div class="center init-loading"><h3>StudyCrack 앱을 불러오는 중입니다...</h3><p class="sub">잠시만 기다려 주세요.</p></div></div></div>`;
+  const fallbackUi = `<div class="app-shell"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div>`;
+  const rendered = loading ? loadingUi : error ? fallbackUi : current;
+
+  return <div onClick={onClick} onInput={onInput} dangerouslySetInnerHTML={{ __html: rendered }} />;
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

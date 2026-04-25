@@ -169,6 +169,9 @@ body {
 .tabbar button.active { color: #0b63e5; background: #e9f1ff; font-weight:800; }
 .tabbar .icon { width:16px; height:16px; }
 .center { text-align:center; }
+.init-loading { min-height:100%; display:grid; place-content:center; gap:10px; padding:24px; }
+.init-loading h3 { margin:0; font-size:18px; color:#111827; }
+.init-loading .btn { margin-top:8px; min-height:44px; border-radius:12px; }
 
 .home-dashboard { padding-bottom: 2px; }
 .home-header { margin-bottom: 10px; }
