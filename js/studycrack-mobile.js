@@ -129,24 +129,24 @@ function App() {
   const planMeta = {
     Basic: {
       introPrice: '25,000원 / 4주',
-      monthlyPrice: '월 25,000원',
+      payPrice: '25,000원 / 4주',
       desc: '합격 가능성 분석 + 대학별 전략 확인',
       features: ['합격 가능성 분석', '대학별 전략 확인'],
       complete: '합격 가능성 분석과 대학별 전략을 확인할 수 있어요.'
     },
     Standard: {
       introPrice: '149,000원 / 4주',
-      monthlyPrice: '월 149,000원',
+      payPrice: '149,000원 / 4주',
       desc: '전략 + 플래너 + 주간 점검',
-      features: ['전략 기능 이용', '플래너 & 주간 점검', '학습 방향 코칭'],
-      complete: '주간 점검과 플래너 피드백을 이용할 수 있어요.'
+      features: ['전략 기능 이용', '플래너 피드백', '학습 방향 코칭'],
+      complete: '플래너 피드백과 학습 방향 코칭을 받을 수 있어요.'
     },
     Pro: {
       introPrice: '299,000원 / 4주',
-      monthlyPrice: '월 299,000원',
+      payPrice: '299,000원 / 4주',
       desc: '모든 기능 무제한 + 프로 보고서 제공',
-      features: ['모든 기능 무제한 이용', '프로 보고서 2주에 1번 제공', 'Sky튜터 1:1 피드백 무제한'],
-      complete: '프로 보고서는 2주 단위로 제공됩니다. 다음 리포트는 5월 25일에 이용 가능해요.'
+      features: ['모든 기능 무제한 이용', '프로 보고서 2주 1회', 'Sky튜터 1:1 피드백'],
+      complete: '프로 보고서는 2주 단위로 제공됩니다.'
     }
   };
   const currentPlan = planMeta[selectedPlan] || planMeta.Pro;
@@ -272,21 +272,20 @@ function App() {
     tutor: layout(appbar('SKY튜터 1:1 피드백', true) + `<div class="card"><p class="sub">텍스트 기반 질의응답</p><ul class="list"><li>Q. 수학 개념 이해가 잘 안돼요</li><li>A. 유형별 복습 루틴을 추가하세요</li></ul></div><button class="btn btn-primary">새 질문 작성</button>`, false),
     proIntro: layout(appbar('StudyCrack 요금제', true) + `<p class="sub pricing-sub">합격 전략, 단계별로 선택하세요</p>
       <div class="plan-stack">
-        <button class="plan-card basic ${selectedPlan==='Basic'?'active':''}" data-action="selectPlan" data-plan="Basic"><div class="plan-head"><h4>Basic</h4></div><p class="plan-price">25,000원 / 4주</p><ul><li>합격 가능성 분석</li><li>대학별 전략 확인</li></ul><span class="plan-chip">Basic 시작</span></button>
-        <button class="plan-card standard ${selectedPlan==='Standard'?'active':''}" data-action="selectPlan" data-plan="Standard"><div class="plan-head"><h4>Standard</h4><span class="badge">추천</span></div><p class="plan-price">149,000원 / 4주</p><ul><li>플래너 피드백 (주 1회)</li><li>학습 방향 코칭</li></ul></button>
-        <button class="plan-card pro ${selectedPlan==='Pro'?'active':''}" data-action="selectPlan" data-plan="Pro"><div class="plan-head"><h4>Pro</h4><span class="badge">최고 효율</span></div><p class="plan-price">299,000원 / 4주</p><ul><li>Standard 포함 +</li><li>프로 보고서 (2주 1회)</li><li>Sky튜터 1:1 피드백</li></ul></button>
+        <button class="plan-card basic ${selectedPlan==='Basic'?'active':''}" data-action="selectPlan" data-plan="Basic"><div class="plan-head"><h4>Basic</h4></div><p class="plan-price">${planMeta.Basic.introPrice}</p><ul><li>합격 가능성 분석</li><li>대학별 전략 확인</li></ul></button>
+        <button class="plan-card standard ${selectedPlan==='Standard'?'active':''}" data-action="selectPlan" data-plan="Standard"><div class="plan-head"><h4>Standard</h4><span class="badge">추천</span></div><p class="plan-price">${planMeta.Standard.introPrice}</p><ul><li>플래너 피드백</li><li>학습 방향 코칭</li></ul></button>
+        <button class="plan-card pro ${selectedPlan==='Pro'?'active':''}" data-action="selectPlan" data-plan="Pro"><div class="plan-head"><h4>Pro</h4><span class="badge">최고 효율</span></div><p class="plan-price">${planMeta.Pro.introPrice}</p><ul><li>모든 기능 무제한 이용</li><li>프로 보고서 2주 1회</li><li>Sky튜터 1:1 피드백</li></ul></button>
       </div>
       <div class="cta-wrapper"><button class="btn btn-primary cta-btn" data-action="goto" data-target="payment">결제하기</button></div>`, false),
-    payment: layout(appbar('플랜 선택', true) + `<div class="payment-tabs"><button class="${selectedPlan==='Standard'?'active':''}" data-action="selectPlan" data-plan="Standard">Standard</button><button class="${selectedPlan==='Pro'?'active':''}" data-action="selectPlan" data-plan="Pro">Pro</button></div>
-      <button class="payment-basic-toggle ${selectedPlan==='Basic'?'active':''}" data-action="selectPlan" data-plan="Basic">Basic 요금 보기</button>
-      <div class="card payment-summary"><p class="sub">${selectedPlan}</p><h3>${currentPlan.monthlyPrice}</h3><p class="sub payment-note">${currentPlan.desc}</p><ul class="payment-feature-list">${currentPlan.features.map((item) => `<li>${item}</li>`).join('')}</ul></div>
+    payment: layout(appbar('플랜 선택', true) + `<div class="payment-tabs"><button class="${selectedPlan==='Basic'?'active':''}" data-action="selectPlan" data-plan="Basic">Basic</button><button class="${selectedPlan==='Standard'?'active':''}" data-action="selectPlan" data-plan="Standard">Standard</button><button class="${selectedPlan==='Pro'?'active':''}" data-action="selectPlan" data-plan="Pro">Pro</button></div>
+      <div class="card payment-summary"><p class="sub">${selectedPlan}</p><h3>${currentPlan.payPrice}</h3><p class="sub payment-note">${currentPlan.desc}</p><ul class="payment-feature-list">${currentPlan.features.map((item) => `<li>${item}</li>`).join('')}</ul></div>
       <div class="duration-row payment-duration-row">
         <button class="${duration==='4주'?'active':''}" data-action="selectDuration" data-duration="4주">4주</button>
         <button class="${duration==='8주'?'active':''}" data-action="selectDuration" data-duration="8주">8주</button>
         <button class="${duration==='12주'?'active':''}" data-action="selectDuration" data-duration="12주">12주</button>
       </div>
       <p class="sub payment-note">지금 시작하면 바로 적용됩니다</p>
-      <div class="cta-wrapper"><button class="btn btn-primary cta-btn" data-action="goto" data-target="paymentComplete">결제하기</button></div>`, false),
+      <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="paymentComplete">결제하기</button></div>`, false),
     paymentComplete: layout(appbar('결제 완료', true) + `<div class="payment-complete-wrap"><div class="payment-check">${i('check', true)}</div><p class="title payment-complete-title">결제가 완료되었습니다!</p><p class="sub payment-complete-sub">${selectedPlan} 플랜이 활성화되었습니다.</p><div class="card payment-complete-note">${currentPlan.complete}</div></div><div class="cta-wrapper"><button class="btn btn-primary cta-btn" data-action="goto" data-target="home">홈으로 이동</button></div>`, false)
   };
 
