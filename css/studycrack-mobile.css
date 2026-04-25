@@ -188,6 +188,15 @@ body {
 .home-kpi-head .ring { margin-top: 0; width: 90px; height: 90px; }
 .home-kpi-card .kpi-item { font-size: 12.5px; }
 .home-kpi-card .kpi-item b { font-size: 19px; }
+.home-planner-badges { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.home-planner-badges span {
+  font-size:10px;
+  padding:4px 8px;
+  border-radius:999px;
+  background:#eef4ff;
+  color:#2563eb;
+  font-weight:700;
+}
 .home-kpi-slider {
   display:flex;
   flex-direction:row;
@@ -479,6 +488,8 @@ body {
 .analysis-score-row b.danger { color:#ef4444; }
 .analysis-title { margin:0 0 8px; font-size:14px; font-weight:800; color:#111827; }
 .analysis-impact, .analysis-strategy, .analysis-roi { padding:12px; margin-top:24px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); border-radius:22px; }
+.planner-reflect-card { margin-top:14px; padding:12px; border-radius:18px; background:#f8fbff; border:1px solid #dbeafe; }
+.planner-reflect-card ul { margin:6px 0 0; padding-left:18px; display:grid; gap:4px; color:#334155; font-size:12.5px; }
 .analysis-impact-item, .roi-item { display:grid; grid-template-columns: 32px 1fr auto; align-items:center; gap:8px; font-size:12px; color:#4b5563; margin-bottom:8px; }
 .analysis-impact-item:last-child, .roi-item:last-child { margin-bottom:0; }
 .analysis-impact-item span, .roi-item em { font-size:11px; color:#6b7280; font-style:normal; }
