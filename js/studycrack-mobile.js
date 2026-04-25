@@ -306,7 +306,7 @@ function App() {
        <div class="planner-plan-list">
          ${plannerItems.map((item) => `<div class="planner-item"><i class="dot ${item.dot}"></i><div><b>${item.subject}</b><p>${item.content}</p><small>${item.start} - ${item.end}</small></div><strong>${item.minutes}분</strong></div>`).join('')}
        </div>
-       <div class="planner-timer card"><p>오늘 공부 시간</p><h2>01:25:30</h2><button class="planner-timer-start" data-action="openTimerModal">공부 시작</button></div>
+       <div class="planner-timer card" data-action="openTimerModal"><p>오늘 공부 시간</p><h2>01:25:30</h2><button class="planner-timer-start" data-action="openTimerModal">타이머 시작하기</button></div>
        <div class="planner-bottom-space"></div>
        <div class="planner-fixed-cta"><button class="btn btn-primary cta-btn" data-action="addPlannerItem">플래너 추가</button></div>
        ${timerModalOpen ? `<div class="home-modal-overlay" data-action="closeTimerModal"><div class="home-modal timer-modal" data-action="noopModal"><p class="home-modal-title">학습 타이머</p><p class="sub" style="margin:8px 0 0">과목 선택: <b>${timerSubject}</b></p><div class="timer-subject-row"><button data-action="setTimerSubject" data-timer-subject="수학">수학</button><button data-action="setTimerSubject" data-timer-subject="영어">영어</button><button data-action="setTimerSubject" data-timer-subject="탐구">탐구</button></div><div class="timer-controls"><button data-action="timerStart">시작</button><button data-action="timerPause">일시정지</button><button data-action="timerEnd">종료</button></div><p class="sub" style="margin:10px 0 0">상태: ${timerStatus==='idle'?'대기':timerStatus==='running'?'진행 중':'일시정지'}</p><button class="btn btn-primary" style="margin-top:12px" data-action="closeTimerModal">닫기</button></div></div>` : ''}
