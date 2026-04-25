@@ -174,15 +174,11 @@ function App() {
         ? `${secondaryHighImpactSubject} 보완 필요`
         : '학습 밸런스 양호'
   ];
-  const plannerReflection = [
-    `이번 주 ${topHighImpactSubject} 학습 ${topHighImpactMinutes}분 반영`,
-    topHighImpactMinutes >= 180
-      ? `${topHighImpactSubject} 집중도가 높아 합격 가능성 개선 여지가 큽니다.`
-      : `${topHighImpactSubject} 학습 시간이 부족해 보완이 필요합니다.`,
-    plannerMinutesBySubject['탐구'] < 120
-      ? '탐구 학습 시간이 부족해 보완이 필요합니다.'
-      : '탐구 학습이 안정적으로 반영되고 있습니다.'
-  ];
+  const plannerReflectionPositive = `${topHighImpactSubject} 집중 학습 (${topHighImpactMinutes}분)`;
+  const plannerReflectionPositiveSub = '합격 가능성 상승 기여';
+  const warningSubject = plannerMinutesBySubject['탐구'] < 120 ? '탐구' : lowImpactFocus ? '영어' : secondaryHighImpactSubject;
+  const plannerReflectionWarning = `${warningSubject} ${warningSubject==='영어'?'효율 점검':'학습 부족'}`;
+  const plannerReflectionWarningSub = warningSubject === '영어' ? '시간 분배 조정 필요' : '전략상 보완 필요';
   const highRatio = subjectRatio.find((item) => item.percent >= 40);
   const lowRatio = subjectRatio.find((item) => item.percent <= 10);
   const plannerFeedback = highRatio
@@ -331,7 +327,7 @@ function App() {
         <div class="analysis-kpi-row"><div><p class="metric-sm">${selectedUniversity.rate}%</p><p class="analysis-sub">${selectedUniversity.rank}</p></div><div class="ring" style="background:conic-gradient(var(--primary) 0 ${selectedUniversity.rate}%, #dfe8f8 ${selectedUniversity.rate}% 100%)"></div></div>
         <div class="analysis-score-row"><div><b>${selectedUniversity.score}점</b><span>현재 점수</span></div><div><b>${selectedUniversity.cut}점</b><span>합격 컷</span></div><div><b class="danger">${selectedUniversity.gap}점</b><span>부족 점수</span></div></div>
       </div>
-      <div class="card planner-reflect-card"><p class="analysis-title">이번 주 플래너 반영</p><ul><li>${plannerReflection[0]}</li><li>${plannerReflection[1]}</li><li>${plannerReflection[2]}</li></ul></div>
+      <div class="card planner-reflect-card"><p class="analysis-title">이번 주 플래너 반영</p><div class="planner-reflect-row"><span class="icon positive">✔</span><div><b>${plannerReflectionPositive}</b><p>${plannerReflectionPositiveSub}</p></div></div><div class="planner-reflect-row"><span class="icon warning">⚠</span><div><b>${plannerReflectionWarning}</b><p>${plannerReflectionWarningSub}</p></div></div></div>
       <div class="card analysis-impact">
         <p class="analysis-title">과목 영향도</p>
         ${selectedUniversity.impact.map((item) => `<div class="analysis-impact-item">${item[0]}<div class="track"><i style="width:${item[1]}${item[3]?`;background:${item[3]}`:''}"></i></div><span>${plannerMinutesBySubject[item[0]] || 0}분 / ${item[2]}</span></div>`).join('')}
