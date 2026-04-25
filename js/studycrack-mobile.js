@@ -255,6 +255,9 @@ function App() {
         <button class="my-row">알림 설정 <span>${i('chevron', false)}</span></button>
         <button class="my-row">고객센터 <span>${i('chevron', false)}</span></button>
         <button class="my-row">설정 <span>${i('chevron', false)}</span></button>
+      </div>
+      <div class="card my-empty-card">
+        <p class="my-empty-text">아직 데이터가 없어요. 먼저 분석해볼까요?</p>
         <img src="${CRACKY_SRC}" class="my-char crackie" alt="크랙이"/>
       </div>
     </div>`, true),
