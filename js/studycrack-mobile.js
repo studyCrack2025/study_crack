@@ -3,6 +3,27 @@ const { useState, useEffect } = React;
 const CRACKY_SRC = './assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png';
 const ONBOARDING_LOGO_SRC = './assets/images/og-image.jpg';
 const HOME_FALLBACK_HTML = `<div class="app-shell"><div class="screen app-screen app-content"><div class="center init-loading"><h3>스터디크랙 홈</h3><p class="sub">앱을 불러왔어요. 계속 이용해 주세요.</p></div></div></div>`;
+const DEFAULT_USER = { name: '김지민', targetUniversity: '연세대학교 경영학과', plan: 'Pro' };
+const DEFAULT_SCORES = { korean: 82, math: 68, english: 77, inquiry1: 70, inquiry2: 66 };
+const DEFAULT_NOTIFICATIONS = { planner: true, weekly: true, report: true, billing: true };
+const DEFAULT_PLANNER_ITEMS = [
+  { subject: '수학', content: '개념 학습', start: '10:00', end: '12:00', minutes: 120, dot: 'math' },
+  { subject: '영어', content: '독해 문제 풀이', start: '13:00', end: '14:30', minutes: 90, dot: 'eng' },
+  { subject: '탐구', content: '실전문제', start: '15:00', end: '17:00', minutes: 120, dot: 'sci' },
+  { subject: '수학', content: '오답 풀이', start: '19:00', end: '22:00', minutes: 180, dot: 'math' }
+];
+const SCORE_LABELS = { korean: '국어', math: '수학', english: '영어', inquiry1: '탐구1', inquiry2: '탐구2' };
+
+const safeParse = (key, fallback) => {
+  try {
+    const value = localStorage.getItem(key);
+    return value ? JSON.parse(value) : fallback;
+  } catch (error) {
+    console.warn(`${key} parse failed`, error);
+    return fallback;
+  }
+};
+
 const resolveAssetPath = async (path, fallback) => {
   try {
     const response = await fetch(path, { method: 'HEAD' });
@@ -11,16 +32,6 @@ const resolveAssetPath = async (path, fallback) => {
     return fallback;
   }
 };
-const safeJsonParse = (value, fallback) => {
-  if (!value) return fallback;
-  try {
-    return JSON.parse(value);
-  } catch (e) {
-    console.error('[APP_INIT_ERROR]', e);
-    return fallback;
-  }
-};
-
 class AppErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -74,9 +85,10 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [selectedUniversityIndex, setSelectedUniversityIndex] = useState(0);
-  const [selectedPlan, setSelectedPlan] = useState('Pro');
+  const [user, setUser] = useState(DEFAULT_USER);
+  const [selectedPlan, setSelectedPlan] = useState(DEFAULT_USER.plan);
   const [duration, setDuration] = useState('4주');
-  const [targetMajor, setTargetMajor] = useState('연세대학교 경영학과');
+  const [targetMajor, setTargetMajor] = useState(DEFAULT_USER.targetUniversity);
   const [targetOpen, setTargetOpen] = useState(false);
   const [universityModalOpen, setUniversityModalOpen] = useState(false);
   const [timerModalOpen, setTimerModalOpen] = useState(false);
@@ -90,21 +102,11 @@ function App() {
   const [plannerStart, setPlannerStart] = useState('');
   const [plannerEnd, setPlannerEnd] = useState('');
   const [scoreEditOpen, setScoreEditOpen] = useState(false);
-  const [scores, setScores] = useState({ 국어: 82, 수학: 68, 영어: 77, 탐구1: 70, 탐구2: 66 });
-  const [notifications, setNotifications] = useState({
-    planner: true,
-    weekly: true,
-    report: true,
-    billing: true
-  });
+  const [scores, setScores] = useState(DEFAULT_SCORES);
+  const [notifications, setNotifications] = useState(DEFAULT_NOTIFICATIONS);
   const [openFaq, setOpenFaq] = useState('');
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
-  const [plannerItems, setPlannerItems] = useState([
-    { subject: '수학', content: '개념 학습', start: '10:00', end: '12:00', minutes: 120, dot: 'math' },
-    { subject: '영어', content: '독해 문제 풀이', start: '13:00', end: '14:30', minutes: 90, dot: 'eng' },
-    { subject: '탐구', content: '실전문제', start: '15:00', end: '17:00', minutes: 120, dot: 'sci' },
-    { subject: '수학', content: '오답 풀이', start: '19:00', end: '22:00', minutes: 180, dot: 'math' }
-  ]);
+  const [plannerItems, setPlannerItems] = useState(DEFAULT_PLANNER_ITEMS);
 
   const goto = (next, addHistory = true) => {
     if (addHistory && screen !== next) setHistory((h) => [...h, screen]);
@@ -139,17 +141,25 @@ function App() {
       }, 3000);
 
       const onboardingDone = localStorage.getItem('onboardingDone') === 'true';
-      const savedPlan = localStorage.getItem('selectedPlan') || 'Pro';
-      const savedTarget = localStorage.getItem('selectedUniversity') || '연세대학교 경영학과';
+      const savedUser = safeParse('user', DEFAULT_USER);
+      const savedPlan = localStorage.getItem('selectedPlan') || savedUser.plan || DEFAULT_USER.plan;
+      const savedTarget = localStorage.getItem('selectedUniversity') || savedUser.targetUniversity || DEFAULT_USER.targetUniversity;
       const savedTab = localStorage.getItem('activeTab') || 'home';
-      const savedItems = safeJsonParse(localStorage.getItem('plannerItems'), []);
-      const savedScore = safeJsonParse(localStorage.getItem('scores'), null);
+      const savedItems = safeParse('plannerItems', DEFAULT_PLANNER_ITEMS);
+      const savedScore = safeParse('scores', DEFAULT_SCORES);
+      const savedNotifications = safeParse('notifications', DEFAULT_NOTIFICATIONS);
 
       setSelectedPlan(savedPlan);
       setTargetMajor(savedTarget);
       setTab(savedTab);
-      setPlannerItems(Array.isArray(savedItems) ? savedItems : []);
-      if (savedScore) setScores(savedScore);
+      setUser({
+        name: savedUser?.name || DEFAULT_USER.name,
+        targetUniversity: savedTarget || DEFAULT_USER.targetUniversity,
+        plan: savedPlan || DEFAULT_USER.plan
+      });
+      setPlannerItems(Array.isArray(savedItems) ? savedItems : DEFAULT_PLANNER_ITEMS);
+      setScores({ ...DEFAULT_SCORES, ...(savedScore || {}) });
+      setNotifications({ ...DEFAULT_NOTIFICATIONS, ...(savedNotifications || {}) });
 
       const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('init-timeout')), 2500));
       const crackySrc = await resolveAssetPath(CRACKY_SRC, './assets/images/studycrack_logo_wo_bg.png');
@@ -178,6 +188,32 @@ function App() {
   useEffect(() => {
     window.__studycrackAppBooted = true;
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('scores', JSON.stringify(scores));
+  }, [scores]);
+
+  useEffect(() => {
+    localStorage.setItem('plannerItems', JSON.stringify(plannerItems));
+  }, [plannerItems]);
+
+  useEffect(() => {
+    localStorage.setItem('notifications', JSON.stringify(notifications));
+  }, [notifications]);
+
+  useEffect(() => {
+    localStorage.setItem('selectedPlan', selectedPlan);
+    localStorage.setItem('selectedUniversity', targetMajor);
+    localStorage.setItem('activeTab', tab);
+    localStorage.setItem(
+      'user',
+      JSON.stringify({
+        name: user?.name || DEFAULT_USER.name,
+        targetUniversity: targetMajor || DEFAULT_USER.targetUniversity,
+        plan: selectedPlan || DEFAULT_USER.plan
+      })
+    );
+  }, [selectedPlan, targetMajor, tab, user]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -308,7 +344,9 @@ function App() {
   `;
 
   const homeTargets = targetOptions.slice(0, 3).map((major) => ({ major, ...universityProfiles[major] }));
-  const scoreList = Object.entries(scores).map(([subject, value]) => `<div class="score-info-row"><span>${subject}</span><strong>${value}점</strong></div>`).join('');
+  const scoreList = Object.entries(SCORE_LABELS)
+    .map(([key, label]) => `<div class="score-info-row"><span>${label}</span><strong>${Number(scores?.[key] ?? DEFAULT_SCORES[key])}점</strong></div>`)
+    .join('');
 
   const homeView = () => `<div class="home-dashboard">
     <div class="home-header">
@@ -542,9 +580,8 @@ function App() {
         <button class="${duration==='12주'?'active':''}" data-action="selectDuration" data-duration="12주">12주</button>
       </div>
       <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="paymentComplete">결제하기</button></div>`, false),
-    paymentComplete: layout(`<div class="payment-done-screen"><div class="payment-complete-wrap"><div class="payment-check">${i('check', true)}</div><p class="title payment-complete-title">결제가 완료되었습니다!</p><p class="sub payment-complete-sub">${selectedPlan.toUpperCase()} 플랜이 활성화되었습니다.</p><div class="card payment-complete-note"><b>프로 보고서 이용 안내</b><p>2주에 한 번 새로운 리포트를 제공해 드려요.<br/>다음 리포트는 5월 25일에 이용 가능해요.</p></div></div><div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="home">홈으로 이동</button></div></div>`, false)
     paymentComplete: layout(`<div class="payment-done-screen"><div class="payment-complete-wrap"><div class="payment-check">${i('check', true)}</div><p class="title payment-complete-title">결제가 완료되었습니다!</p><p class="sub payment-complete-sub">${selectedPlan.toUpperCase()} 플랜이 활성화되었습니다.</p><div class="card payment-complete-note"><b>프로 보고서 이용 안내</b><p>2주에 한 번 새로운 리포트를 제공해 드려요.<br/>다음 리포트는 5월 25일에 이용 가능해요.</p></div></div><div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="home">홈으로 이동</button></div></div>`, false),
-    scoreInfo: layout(appbar('성적 정보', true) + `<div class="card score-info-card">${scoreList}<button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">성적 수정하기</button></div><div class="card"><p class="analysis-title">최근 성적 업데이트</p><p class="sub" style="margin:0">2024.05.14 기준</p><p class="sub" style="margin:6px 0 0">다음 업데이트 권장: 2주 후</p></div>${scoreEditOpen ? `<div class="home-modal-overlay" data-action="closeScoreEdit"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">성적 수정</p><div class="score-edit-grid"><label>국어<input data-field="score-국어" value="${scores['국어']}" type="number"/></label><label>수학<input data-field="score-수학" value="${scores['수학']}" type="number"/></label><label>영어<input data-field="score-영어" value="${scores['영어']}" type="number"/></label><label>탐구1<input data-field="score-탐구1" value="${scores['탐구1']}" type="number"/></label><label>탐구2<input data-field="score-탐구2" value="${scores['탐구2']}" type="number"/></label></div><button class="btn btn-primary" data-action="saveScoreEdit">저장</button></div></div>` : ''}`, false),
+    scoreInfo: layout(appbar('성적 정보', true) + `<div class="card score-info-card">${scoreList}<button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">성적 수정하기</button></div><div class="card"><p class="analysis-title">최근 성적 업데이트</p><p class="sub" style="margin:0">2024.05.14 기준</p><p class="sub" style="margin:6px 0 0">다음 업데이트 권장: 2주 후</p></div>${scoreEditOpen ? `<div class="home-modal-overlay" data-action="closeScoreEdit"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">성적 수정</p><div class="score-edit-grid"><label>국어<input data-field="score-korean" value="${scores.korean}" type="number"/></label><label>수학<input data-field="score-math" value="${scores.math}" type="number"/></label><label>영어<input data-field="score-english" value="${scores.english}" type="number"/></label><label>탐구1<input data-field="score-inquiry1" value="${scores.inquiry1}" type="number"/></label><label>탐구2<input data-field="score-inquiry2" value="${scores.inquiry2}" type="number"/></label></div><button class="btn btn-primary" data-action="saveScoreEdit">저장</button></div></div>` : ''}`, false),
     studyReports: layout(appbar('학습 리포트', true) + `<div class="card report-list-card"><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>5월 11일 종합 분석 리포트</b><p>수학 점수 상승 여지 큼</p></div><span>${i('chevron', false)}</span></button><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>4월 27일 중간 분석 리포트</b><p>탐구 집중 강화 필요</p></div><span>${i('chevron', false)}</span></button></div><div class="cta-wrapper"><button class="btn btn-primary cta-btn" data-action="goto" data-target="reportDetail">프로 보고서 샘플 보기</button></div>`, false),
     notificationSettings: layout(appbar('알림 설정', true) + `<div class="card notify-card">${[
       ['planner', '플래너 알림', '오늘 계획을 잊지 않도록 알려드려요'],
@@ -553,15 +590,15 @@ function App() {
       ['billing', '결제/구독 알림', '다음 결제일을 미리 알려드려요']
     ].map(([key, title, desc]) => `<button class="notify-row" data-action="toggleNotification" data-notify-key="${key}"><div><b>${title}</b><p>${desc}</p></div><span class="notify-switch ${notifications[key]?'on':''}"><i></i></span></button>`).join('')}</div>`, false),
     customerSupport: layout(appbar('고객센터', true) + `<div class="card"><p class="analysis-title">궁금한 점이 있으면 언제든 문의해주세요.</p><p class="sub" style="margin:0">운영 시간: 평일 10:00 - 18:00</p><div class="support-btns"><button class="btn btn-secondary">카카오톡 문의하기</button><button class="btn btn-secondary">이메일 문의하기</button></div></div><div class="card faq-card">${[
-      ['faq1', '합격 가능성은 어떻게 계산되나요?', '최근 성적, 목표 대학 컷, 과목별 개선 여지를 기반으로 계산합니다.'],
-      ['faq2', '플래너 피드백은 언제 받을 수 있나요?', '주간 점검 시점에 자동 요약 피드백이 제공됩니다.'],
-      ['faq3', '프로 보고서는 얼마나 자주 받을 수 있나요?', '프로 보고서는 2주에 1회 업데이트됩니다.'],
-      ['faq4', '결제 후 플랜 변경이 가능한가요?', '마이페이지에서 다음 결제 주기 전에 변경할 수 있습니다.']
+      ['faq1', '합격 가능성은 어떻게 계산되나요?', '목표 대학의 반영 방식과 현재 성적을 기준으로 계산됩니다.'],
+      ['faq2', '플래너 피드백은 언제 받을 수 있나요?', '제출된 플래너를 기준으로 정해진 일정에 맞춰 피드백을 제공합니다.'],
+      ['faq3', '프로 보고서는 얼마나 자주 받을 수 있나요?', 'Pro 플랜은 2주에 한 번 리포트를 받을 수 있습니다.'],
+      ['faq4', '결제 후 플랜 변경이 가능한가요?', '플랜 변경 기능은 준비 중입니다.']
     ].map(([id, q, a]) => `<button class="faq-row" data-action="toggleFaq" data-faq-id="${id}"><div><b>${q}</b>${openFaq===id?`<p>${a}</p>`:''}</div><span>${i('chevron', false)}</span></button>`).join('')}</div>`, false),
-    settingsMain: layout(appbar('설정', true) + `<div class="card settings-list"><button data-action="goto" data-target="accountInfo">계정 정보 <span>${i('chevron', false)}</span></button><button data-action="goto" data-target="privacyPolicy">개인정보 처리방침 <span>${i('chevron', false)}</span></button><button data-action="goto" data-target="termsScreen">서비스 이용약관 <span>${i('chevron', false)}</span></button><button data-action="openLogoutModal">로그아웃 <span>${i('chevron', false)}</span></button></div>${logoutModalOpen ? `<div class="home-modal-overlay" data-action="closeLogoutModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">로그아웃하시겠어요?</p><div class="support-btns"><button class="btn btn-secondary" data-action="closeLogoutModal">취소</button><button class="btn btn-primary" data-action="closeLogoutModal">로그아웃</button></div></div></div>` : ''}`, false),
-    accountInfo: layout(appbar('계정 정보', true) + `<div class="card"><div class="score-info-row"><span>이름</span><strong>김지민</strong></div><div class="score-info-row"><span>목표 대학</span><strong>연세대학교 경영학과</strong></div><div class="score-info-row"><span>현재 플랜</span><strong>Pro</strong></div></div>`, false),
-    privacyPolicy: layout(appbar('개인정보 처리방침', true) + `<div class="card"><p class="sub" style="margin:0">개인정보 처리방침 더미 텍스트입니다. 서비스 제공을 위해 필요한 최소한의 정보를 수집/이용합니다.</p></div>`, false),
-    termsScreen: layout(appbar('서비스 이용약관', true) + `<div class="card"><p class="sub" style="margin:0">서비스 이용약관 더미 텍스트입니다. 이용자는 관련 법령 및 약관을 준수해야 합니다.</p></div>`, false)
+    settingsMain: layout(appbar('설정', true) + `<div class="card settings-list"><button data-action="goto" data-target="accountInfo">계정 정보 <span>${i('chevron', false)}</span></button><button data-action="goto" data-target="privacyPolicy">개인정보 처리방침 <span>${i('chevron', false)}</span></button><button data-action="goto" data-target="termsScreen">서비스 이용약관 <span>${i('chevron', false)}</span></button><button data-action="openLogoutModal">로그아웃 <span>${i('chevron', false)}</span></button></div>${logoutModalOpen ? `<div class="home-modal-overlay" data-action="closeLogoutModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">로그아웃하시겠어요?</p><div class="support-btns"><button class="btn btn-secondary" data-action="closeLogoutModal">취소</button><button class="btn btn-primary" data-action="confirmLogout">로그아웃</button></div></div></div>` : ''}`, false),
+    accountInfo: layout(appbar('계정 정보', true) + `<div class="card"><div class="score-info-row"><span>이름</span><strong>${user?.name || DEFAULT_USER.name}</strong></div><div class="score-info-row"><span>목표 대학</span><strong>${targetMajor || DEFAULT_USER.targetUniversity}</strong></div><div class="score-info-row"><span>현재 플랜</span><strong>${selectedPlan || DEFAULT_USER.plan}</strong></div></div>`, false),
+    privacyPolicy: layout(appbar('개인정보 처리방침', true) + `<div class="card"><p class="sub" style="margin:0">스터디크랙은 서비스 제공을 위해 필요한 최소한의 개인정보를 처리합니다.</p></div>`, false),
+    termsScreen: layout(appbar('서비스 이용약관', true) + `<div class="card"><p class="sub" style="margin:0">본 약관은 스터디크랙 서비스 이용과 관련한 기본 사항을 안내합니다.</p></div>`, false)
   };
 
   const current = screens[screen] || screens.home;
@@ -602,6 +639,10 @@ function App() {
     }
     if (action === 'openLogoutModal') setLogoutModalOpen(true);
     if (action === 'closeLogoutModal') setLogoutModalOpen(false);
+    if (action === 'confirmLogout') {
+      setLogoutModalOpen(false);
+      window.alert('로그아웃되었습니다');
+    }
     if (action === 'comingSoon') window.alert('구독 관리 기능은 준비 중입니다.');
     if (action === 'retryInit') initializeApp();
     if (action === 'noopModal') return;
