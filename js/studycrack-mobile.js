@@ -96,7 +96,7 @@ function App() {
   const [analysisSearchOpen, setAnalysisSearchOpen] = useState(false);
   const [analysisSearchTerm, setAnalysisSearchTerm] = useState('');
   const [analysisMode, setAnalysisMode] = useState('summary');
-  const [analysisEtaLoading, setAnalysisEtaLoading] = useState(false);
+  const [analysisEtaStage, setAnalysisEtaStage] = useState(1);
   const [analysisHighlightedSubject, setAnalysisHighlightedSubject] = useState('');
   const [universityModalOpen, setUniversityModalOpen] = useState(false);
   const [plannerAddModalOpen, setPlannerAddModalOpen] = useState(false);
@@ -171,9 +171,13 @@ function App() {
 
   useEffect(() => {
     if (screen !== 'analysis' || analysisMode !== 'summary') return;
-    setAnalysisEtaLoading(true);
-    const t = setTimeout(() => setAnalysisEtaLoading(false), 1500);
-    return () => clearTimeout(t);
+    setAnalysisEtaStage(1);
+    const t1 = setTimeout(() => setAnalysisEtaStage(2), 1500);
+    const t2 = setTimeout(() => setAnalysisEtaStage(3), 4500);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, [screen, analysisMode, targetMajor]);
 
   const initializeApp = async () => {
@@ -917,10 +921,9 @@ function App() {
               <div class="analysis-v2-arrow">→</div>
               <div class="analysis-v2-ba-col"><h4>도달 성적</h4><p>국어 82</p><p>수학 80 <em>+12</em></p><p>영어 77</p><p>탐구1 76 <em>+6</em></p><p>탐구2 66</p><p><b>예상 총점 120</b></p></div>
             </div>
-          </div>
-
-          <div class="card analysis-v2-eta ${analysisEtaLoading?'loading':''}">
-            ${analysisEtaLoading ? `<div class="analysis-eta-loading"><span class="skeleton"></span><p>도달 시간을 계산중입니다...</p></div>` : `<p class="analysis-v2-eta-text">⚡ <b>Standard 이용 시 평균 2개월 내 도달 예상</b></p>`}
+            <div class="analysis-v2-eta ${analysisEtaStage < 3 ? 'loading' : ''}">
+              ${analysisEtaStage === 1 ? `<div class="analysis-eta-loading"><span class="skeleton"></span><p>도달 성적 계산 중입니다...</p><small>최소 노력 대비 최적 점수 조합 분석 중</small></div>` : analysisEtaStage === 2 ? `<div class="analysis-eta-loading"><span class="skeleton thin"></span><p>현재 학습 패턴 기반 도달 시간 분석 중...</p></div>` : `<p class="analysis-v2-eta-text">⚡ <b>현재 학습분석 기반 Standard 이용 시 평균 2개월 내 도달 예상</b></p>`}
+            </div>
           </div>
 
           <div class="card analysis-v2-gauge-change">
@@ -937,12 +940,13 @@ function App() {
             <p class="analysis-sub">현재: 합격컷 미달 → 목표 달성 시 합격권 진입</p>
           </div>
 
-          <div class="card analysis-v2-cta"><p class="analysis-title">이 전략, 실행해볼까요?</p><p class="sub">Standard는 매주 플래너 피드백과 실행 코칭을 제공합니다.</p><button class="btn btn-primary" data-action="startStandard">Standard로 시작하기</button></div>
+          <div class="card analysis-v2-cta sticky"><p class="analysis-title">지금 방향이 틀리면 시간만 낭비될 수 있습니다</p><p class="sub">Standard는 매주 학습 방향과 실행을 관리합니다.</p><button class="btn analysis-convert-btn" data-action="startStandard">👉 2개월 내 합격권 진입 시작하기</button></div>
         ` : `
           <div class="card analysis-v2-compare">
             <p class="analysis-title">목표대학 점수 비교</p>
-            <div class="analysis-v2-bar-chart">
-              ${[['가천대 관광경영학과', 250, '가천대학교 관광경영학과'], ['강서대 G2빅데이터경영학과', 250, '강서대학교 G2빅데이터경영학과'], ['고려대 경영대학', 71, '고려대학교 경영대학']].map(([label, score, full]) => `<button class="analysis-v2-bar ${targetMajor===full?'active':''}" data-action="selectTarget" data-target-major="${full}"><span class="score">${score}</span><i style="height:${Math.max((score/250)*100, 10)}%"></i><p>${label}</p></button>`).join('')}
+            <div class="analysis-v2-ratio-chart">
+              <div class="analysis-v2-ratio-guides"><span class="pass" style="left:40%">합격선 100</span><span class="safe" style="left:60%">안정선 150</span></div>
+              ${[['가천대 관광경영학과', 250, '가천대학교 관광경영학과'], ['강서대 G2빅데이터경영학과', 250, '강서대학교 G2빅데이터경영학과'], ['고려대 경영대학', 71, '고려대학교 경영대학']].map(([label, score, full]) => `<button class="analysis-v2-ratio-row ${targetMajor===full?'active':''}" data-action="selectTarget" data-target-major="${full}"><p>${label}<b>${score}점</b></p><div class="track"><i style="width:${Math.min((score/250)*100,100)}%;background:${score>=150?'#22C55E':score>=100?'#0B6BFF':'#F97316'}"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div></button>`).join('')}
             </div>
           </div>
 
