@@ -1019,8 +1019,16 @@ body {
 .coach-status-card p, .coach-feedback-card p { margin:10px 0 8px; color:#475569; font-size:13px; }
 .coach-status-card small { display:block; margin-bottom:10px; color:#94a3b8; }
 .coach-month-btn { border:1px solid #E2E8F0; background:#F8FAFC; border-radius:12px; padding:7px 10px; font-size:12px; color:#334155; }
+.coach-month-select { border:1px solid #E2E8F0; background:#F8FAFC; border-radius:12px; padding:7px 10px; font-size:12px; color:#334155; }
 .coach-empty { border:1px dashed #CBD5E1; border-radius:14px; padding:14px; color:#64748b; font-size:13px; background:#F8FAFC; }
 .coach-submitted { background:#DBEAFE !important; color:#0B6BFF !important; }
+.coach-report-list { display:grid; gap:10px; margin-top:10px; }
+.coach-report-card { background:#fff; border:1px solid #E2E8F0; border-radius:20px; padding:12px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.coach-report-card b { font-size:14px; color:#0f172a; }
+.coach-report-card p { margin:4px 0 0; font-size:12px; color:#64748b; }
+.coach-report-side { display:grid; justify-items:end; gap:8px; }
+.coach-pdf-badge { background:#EFF6FF; color:#0B6BFF; }
+.coach-pdf-btn { border:1px solid #0B6BFF; color:#0B6BFF; background:#fff; border-radius:10px; padding:7px 10px; font-size:12px; font-weight:700; }
 
 .coach-sheet-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.46); z-index:30; display:flex; align-items:flex-end; }
 .coach-sheet { width:100%; max-width:430px; margin:0 auto; max-height:92vh; background:#F5F7FB; border-radius:24px 24px 0 0; border:1px solid #E2E8F0; display:flex; flex-direction:column; overflow:hidden; }

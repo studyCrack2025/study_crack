@@ -574,6 +574,14 @@ function App() {
     }
   };
   const currentPlan = planMeta[selectedPlan] || planMeta.Pro;
+  const coachingMonthlyReports = {
+    '26년 4월': [
+      { title: '4월 1주차 피드백 리포트', date: '2026.04.07', pdfPath: 'assets/sample/weekly-feedback-4w1.pdf' },
+      { title: '4월 2주차 피드백 리포트', date: '2026.04.14', pdfPath: 'assets/sample/weekly-feedback-4w2.pdf' }
+    ],
+    '26년 3월': []
+  };
+  const selectedCoachingReports = coachingMonthlyReports[coachingMonth] || [];
   const coachingStepBody = () => {
     if (coachingStep === 1) {
       return `<div class="coach-step-body"><h4>1. 과목별 학습 달성률</h4><p class="sub">과목별 구체적인 과목명과 시간을 입력하세요.</p>
@@ -867,9 +875,9 @@ function App() {
           <button class="btn btn-primary" data-action="openCoachingSheet">${coachingSubmitted ? '다시 작성하기' : '코칭 요청하기'}</button>
         </div>
         <div class="card coach-feedback-card">
-          <div class="coach-row"><h4>주간학습 피드백</h4><button class="coach-month-btn" data-action="toggleCoachingMonth">${coachingMonth} ▾</button></div>
-          <p>제출 후 튜터 피드백이 도착하면 이곳에서 확인할 수 있어요.</p>
-          <div class="coach-empty">${coachingSubmitted ? '튜터가 피드백을 작성 중입니다.' : '아직 제출된 기록이 없습니다.'}</div>
+          <div class="coach-row"><h4>주간학습 피드백</h4><select class="coach-month-select" data-field="coachingMonth"><option value="26년 4월" ${coachingMonth==='26년 4월'?'selected':''}>26년 4월</option><option value="26년 3월" ${coachingMonth==='26년 3월'?'selected':''}>26년 3월</option></select></div>
+          <p>월별 피드백 리포트를 PDF로 다운로드할 수 있어요.</p>
+          ${selectedCoachingReports.length ? `<div class="coach-report-list">${selectedCoachingReports.map((report) => `<div class="coach-report-card"><div><b>${report.title}</b><p>${report.date}</p></div><div class="coach-report-side"><span class="badge coach-pdf-badge">PDF</span><button class="coach-pdf-btn" data-action="downloadCoachingPdf" data-pdf-path="${report.pdfPath}">PDF 다운로드</button></div></div>`).join('')}</div>` : `<div class="coach-empty">아직 도착한 피드백 리포트가 없습니다.</div>`}
         </div>
         ${coachingSheetOpen ? `<div class="coach-sheet-overlay" data-action="closeCoachingSheet">
           <section class="coach-sheet" data-action="noopModal">
@@ -1038,6 +1046,19 @@ function App() {
     }
     if (action === 'toggleCoachingMonth') {
       setCoachingMonth((prev) => (prev === '26년 4월' ? '26년 3월' : '26년 4월'));
+    }
+    if (action === 'downloadCoachingPdf') {
+      const pdfPath = actionEl.getAttribute('data-pdf-path');
+      if (!pdfPath) {
+        window.alert('PDF 다운로드 준비 중입니다.');
+        return;
+      }
+      const anchor = document.createElement('a');
+      anchor.href = pdfPath;
+      anchor.download = pdfPath.split('/').pop() || 'weekly-feedback.pdf';
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
     }
     if (action === 'openCoachingSheet') {
       ensureCoachingSubjectRows();
@@ -1221,6 +1242,7 @@ function App() {
 
   const onInput = (e) => {
     const field = e.target.getAttribute('data-field');
+    if (field === 'coachingMonth') setCoachingMonth(e.target.value);
     const coachAnswer = e.target.getAttribute('data-coach-answer');
     const coachPlan = e.target.getAttribute('data-coach-plan');
     const coachActual = e.target.getAttribute('data-coach-actual');
