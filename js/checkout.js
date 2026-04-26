@@ -1,7 +1,7 @@
 // 1. 티어별 설명 매핑
 const TIER_DATA = {
     'test':     { desc: '시스템 연동 테스트용 결제' },
-    'basic':    { desc: '현재 위치 진단 및 전략 수립' },
+    'basic':    { desc: '현재 위치 진단 및 전략 수립 (28일 이용권)' },
     'standard': { desc: '월간 학습 코칭 (플래닝) 28일 이용권' },
     'pro':      { desc: '최소 노력 최대 효율, 맞춤 전략 재설계 28일 이용권' },
     'trial':    { desc: 'PRO 등급 한 달 완벽 체험' }
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 5. 결제 안내 문구
     const noticeBox = document.getElementById('billingNotice');
-    if (checkoutData.tier === 'basic' || checkoutData.tier === 'trial') {
+    if (checkoutData.tier === 'trial') {
         noticeBox.style.display = 'none';
     } else {
         const effectiveStart = new Date(checkoutData.effectiveStartDate || new Date());
