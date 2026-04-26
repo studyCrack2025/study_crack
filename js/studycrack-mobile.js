@@ -371,13 +371,7 @@ function App() {
     : lowRatio
       ? { tone: 'info', icon: '📊', text: `${lowRatio.subject} 비중이 부족합니다. 전략상 손해 가능성이 있어요.` }
       : { tone: 'info', icon: '📊', text: '과목 비중이 균형적으로 유지되고 있어요. 지금 흐름을 유지해요.' };
-  const canSubmitPlanner = Boolean(
-    plannerSubject &&
-      plannerContent.trim() &&
-      plannerStart &&
-      plannerEnd &&
-      (plannerDurationChoice === 'custom' ? Number(plannerCustomMinutes) > 0 : Number(plannerDurationChoice) > 0)
-  );
+  const canSubmitPlanner = Boolean(plannerSubject && plannerDurationChoice);
   const onboarding = (step, title, subtitle, cardContent, bubbleText, target, cta = '다음') => `
     <div class="app-shell">
       <div class="screen app-screen app-content">
@@ -1023,10 +1017,18 @@ function App() {
       setPlannerItems((prev) => [...prev, { subject, content, start, end, minutes, dot }]);
     }
     if (action === 'addPlannerFromSheet') {
-      if (!canSubmitPlanner) return;
-      const minutes = plannerDurationChoice === 'custom' ? Number(plannerCustomMinutes) : Number(plannerDurationChoice);
+      const readFieldValue = (name) => {
+        const input = document.querySelector(`[data-field="${name}"]`);
+        return input ? input.value.trim() : '';
+      };
+      const content = readFieldValue('plannerContent');
+      const start = readFieldValue('plannerStart');
+      const end = readFieldValue('plannerEnd');
+      const customMinutes = readFieldValue('plannerCustomMinutes');
+      const minutes = plannerDurationChoice === 'custom' ? Number(customMinutes) : Number(plannerDurationChoice);
+      if (!plannerSubject || !content || !start || !end || !minutes || Number.isNaN(minutes)) return;
       const dot = plannerSubject === '수학' ? 'math' : plannerSubject === '영어' ? 'eng' : plannerSubject === '국어' ? 'kor' : 'sci';
-      setPlannerItems((prev) => [...prev, { subject: plannerSubject, content: plannerContent, start: plannerStart, end: plannerEnd, minutes, dot }]);
+      setPlannerItems((prev) => [...prev, { subject: plannerSubject, content, start, end, minutes, dot }]);
       setPlannerAddModalOpen(false);
       setPlannerSubject('');
       setPlannerContent('');
@@ -1034,6 +1036,10 @@ function App() {
       setPlannerCustomMinutes('');
       setPlannerStart('');
       setPlannerEnd('');
+      ['plannerContent', 'plannerCustomMinutes', 'plannerStart', 'plannerEnd'].forEach((name) => {
+        const input = document.querySelector(`[data-field="${name}"]`);
+        if (input) input.value = '';
+      });
     }
     if (action === 'setTimerSubject') setTimerSubject(actionEl.getAttribute('data-timer-subject'));
     if (action === 'timerStart') setTimerStatus('running');
@@ -1056,20 +1062,6 @@ function App() {
     const field = e.target.getAttribute('data-field');
     if (!field) return;
     const value = e.target.value;
-    if (field === 'plannerContent') setPlannerContent(value);
-    if (field === 'plannerCustomMinutes') setPlannerCustomMinutes(value);
-    if (field === 'plannerStart') setPlannerStart(value);
-    if (field === 'plannerEnd') setPlannerEnd(value);
-    if (field === 'loginEmail') setLoginEmail(value);
-    if (field === 'loginPassword') setLoginPassword(value);
-    if (field === 'signupName') setSignupName(value);
-    if (field === 'signupEmail') setSignupEmail(value);
-    if (field === 'signupPassword') setSignupPassword(value);
-    if (field === 'signupPasswordConfirm') setSignupPasswordConfirm(value);
-    if (field === 'strongSubject') setStrongSubject(value);
-    if (field === 'weakSubject') setWeakSubject(value);
-    if (field === 'studyHours') setStudyHours(value);
-    if (field === 'studyDifficulty') setStudyDifficulty(value);
     if (field.startsWith('score-')) {
       const subject = field.replace('score-', '');
       setScores((prev) => ({ ...prev, [subject]: Number(value) || 0 }));
