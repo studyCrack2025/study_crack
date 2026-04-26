@@ -294,7 +294,10 @@
             <h3>합격을 위한 과목별 집중 전략</h3>
             <p class="step-desc">선택한 대학의 합격선까지, 가장 효율적인 공부시간 배분입니다.</p>
             <div id="subjectRecContent"></div>
-            <button class="tut-action-btn" onclick="upsellPayment()">🔓 1순위 핵심 과목 전략 확인하고 플랜 시작하기</button>
+            <div class="upsell-btn-group">
+                <button class="tut-upsell-btn btn-upsell-primary" onclick="upsellPayment()">🔓 Standard 결제하고 원하는 대학 진학 플랜 전체 보기</button>
+                <button class="tut-upsell-btn btn-upsell-secondary" onclick="endTutorial()">튜토리얼 종료하기</button>
+            </div>
         </div>
     </template>
 
