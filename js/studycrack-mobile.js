@@ -92,6 +92,9 @@ function App() {
   const [duration, setDuration] = useState('4주');
   const [targetMajor, setTargetMajor] = useState(DEFAULT_USER.targetUniversity);
   const [targetOpen, setTargetOpen] = useState(false);
+  const [analysisTargetList, setAnalysisTargetList] = useState(['연세대학교 경영학과', '고려대학교 경영대학', '강서대학교 G2빅데이터경영학과']);
+  const [analysisSearchOpen, setAnalysisSearchOpen] = useState(false);
+  const [analysisSearchTerm, setAnalysisSearchTerm] = useState('');
   const [universityModalOpen, setUniversityModalOpen] = useState(false);
   const [plannerAddModalOpen, setPlannerAddModalOpen] = useState(false);
   const [plannerSubject, setPlannerSubject] = useState('');
@@ -334,6 +337,37 @@ function App() {
   };
   const targetOptions = Object.keys(universityProfiles);
   const selectedUniversity = universityProfiles[targetMajor] || universityProfiles['연세대학교 경영학과'];
+  const analysisProfiles = {
+    '연세대학교 경영학과': {
+      score: 86, verdict: '도전', verdictColor: '#2563EB', aiGrade: '도전',
+      comment: '합격선 근처까지 접근했습니다. 영향도가 큰 과목부터 보완하면 가능성이 올라갑니다.',
+      sim: [['국어', '+13.1점', '가장 합격 상승에 유리합니다.', true], ['수학', '+13.1점', '점수 상승으로 합격 가능성이 높아집니다.', false], ['세사', '+8.2점', '점수 상승으로 합격 가능성이 높아집니다.', false], ['동사', '+8.2점', '점수 상승으로 합격 가능성이 높아집니다.', false]]
+    },
+    '고려대학교 경영대학': {
+      score: 71, verdict: '소신지원', verdictColor: '#F97316', aiGrade: '소신지원',
+      comment: '상향 지원 구간입니다. 반드시 다른 군에 안정 카드를 확보하세요.',
+      sim: [['국어', '+13.1점', '가장 합격 상승에 유리합니다.', true], ['수학', '+13.1점', '점수 상승으로 합격 가능성이 높아집니다.', false], ['세사', '+8.2점', '점수 상승으로 합격 가능성이 높아집니다.', false], ['동사', '+8.2점', '점수 상승으로 합격 가능성이 높아집니다.', false]]
+    },
+    '강서대학교 G2빅데이터경영학과': {
+      score: 250, verdict: '초안정', verdictColor: '#22C55E', aiGrade: '초안정',
+      comment: '최초 합격/장학금 유력 구간입니다. 더 높은 대학을 과감하게 상향 지원해보는 전략이 필요합니다.',
+      sim: [['국어', '+4.2점', '현재 합격권에서 안정성 강화에 유리합니다.', true], ['수학', '+3.8점', '상위 대학 도전 전략에 유리합니다.', false], ['세사', '+2.1점', '기본 유지가 중요합니다.', false], ['동사', '+2.1점', '기본 유지가 중요합니다.', false]]
+    },
+    '가천대학교 관광경영학과': {
+      score: 250, verdict: '초안정', verdictColor: '#22C55E', aiGrade: '초안정',
+      comment: '최초 합격/장학금 유력 구간입니다. 더 높은 대학을 과감하게 상향 지원해보는 전략이 필요합니다.',
+      sim: [['국어', '+4.2점', '현재 합격권에서 안정성 강화에 유리합니다.', true], ['수학', '+3.8점', '상위 대학 도전 전략에 유리합니다.', false], ['세사', '+2.1점', '기본 유지가 중요합니다.', false], ['동사', '+2.1점', '기본 유지가 중요합니다.', false]]
+    },
+    '성균관대학교 글로벌경영학과': { score: 120, verdict: '합격권', verdictColor: '#2563EB', aiGrade: '합격권', comment: '합격권 안에서 안정성을 높일 수 있는 구간입니다.', sim: [['국어', '+9.2점', '점수 상승으로 합격 가능성이 높아집니다.', true], ['수학', '+10.4점', '핵심 상승 과목입니다.', false], ['세사', '+6.4점', '점수 상승으로 합격 가능성이 높아집니다.', false], ['동사', '+6.4점', '점수 상승으로 합격 가능성이 높아집니다.', false]] },
+    '서강대학교 경영학부': { score: 102, verdict: '도전', verdictColor: '#2563EB', aiGrade: '도전', comment: '합격선 근처까지 접근했습니다. 영향도가 큰 과목부터 보완하면 가능성이 올라갑니다.', sim: [['국어', '+10.8점', '핵심 과목 보완이 필요합니다.', true], ['수학', '+11.2점', '점수 상승으로 합격 가능성이 높아집니다.', false], ['세사', '+6.6점', '점수 상승으로 합격 가능성이 높아집니다.', false], ['동사', '+6.6점', '점수 상승으로 합격 가능성이 높아집니다.', false]] },
+    '한양대학교 경영학부': { score: 98, verdict: '도전', verdictColor: '#F97316', aiGrade: '도전', comment: '합격선 근처까지 접근했습니다. 영향도가 큰 과목부터 보완하면 가능성이 올라갑니다.', sim: [['국어', '+11.0점', '핵심 과목 보완이 필요합니다.', true], ['수학', '+11.8점', '점수 상승으로 합격 가능성이 높아집니다.', false], ['세사', '+7.4점', '점수 상승으로 합격 가능성이 높아집니다.', false], ['동사', '+7.4점', '점수 상승으로 합격 가능성이 높아집니다.', false]] }
+  };
+  const analysisSelected = analysisProfiles[targetMajor] || analysisProfiles['연세대학교 경영학과'];
+  const analysisSearchPool = ['연세대학교 경영학과', '고려대학교 경영대학', '성균관대학교 글로벌경영학과', '서강대학교 경영학부', '한양대학교 경영학부'];
+  const analysisRecommended = ['가천대학교 관광경영학과', '강서대학교 G2빅데이터경영학과', '고려대학교 경영대학'];
+  const analysisSearchList = analysisSearchPool.filter((name) => name.includes(analysisSearchTerm.trim()));
+  const analysisGaugeFill = Math.min((analysisSelected.score / 250) * 100, 100);
+  const analysisGaugeColor = analysisSelected.score >= 150 ? '#22C55E' : analysisSelected.score >= 100 ? '#2563EB' : '#F97316';
   const onboardingProgress = (step) => `<div class="ob-progress"><span>${step}/3</span><div class="ob-dots"><i class="${step>=1?'active':''}"></i><i class="${step>=2?'active':''}"></i><i class="${step>=3?'active':''}"></i></div></div>`;
   const mbtiDone = Object.values(mbtiAnswers).every(Boolean);
   const gaugeTotal = 250;
@@ -827,38 +861,69 @@ function App() {
     ),
     home: layout(homeView(), true),
     analysis: layout(
-      `<div class="card target-select-card">
-        <p class="target-label">목표 대학</p>
-        <button class="target-select-btn" data-action="toggleTarget">
-          <span>${targetMajor}</span>
-          <em>▼</em>
-        </button>
-        ${targetOpen ? `<div class="target-dropdown">${targetOptions.map((option) => `<button class="target-option ${targetMajor===option?'active':''}" data-action="selectTarget" data-target-major="${option}">${option}</button>`).join('')}</div>` : ''}
-      </div>
-      <div class="analysis-top card">
-        <span class="badge analysis-badge">${targetMajor}</span>
-        <div class="analysis-kpi-row"><div><p class="metric-sm">${selectedUniversity.rate}%</p><p class="analysis-sub">${selectedUniversity.rank}</p></div><div class="ring" style="background:conic-gradient(var(--primary) 0 ${selectedUniversity.rate}%, #dfe8f8 ${selectedUniversity.rate}% 100%)"></div></div>
-        <div class="analysis-score-row"><div><b>${selectedUniversity.score}점</b><span>현재 점수</span></div><div><b>${selectedUniversity.cut}점</b><span>합격 컷</span></div><div><b class="danger">${selectedUniversity.gap}점</b><span>부족 점수</span></div></div>
-      </div>
-      <div class="card planner-reflect-card"><p class="analysis-title">이번 주 플래너 반영</p><div class="planner-reflect-row"><span class="icon positive">✔</span><div><b>${plannerReflectionPositive}</b><p>${plannerReflectionPositiveSub}</p></div></div><div class="planner-reflect-row"><span class="icon warning">⚠</span><div><b>${plannerReflectionWarning}</b><p>${plannerReflectionWarningSub}</p></div></div></div>
-      <div class="card analysis-impact">
-        <p class="analysis-title">과목 영향도</p>
-        ${selectedUniversity.impact.map((item) => `<div class="analysis-impact-item">${item[0]}<div class="track"><i style="width:${item[1]}${item[3]?`;background:${item[3]}`:''}"></i></div><span>${plannerMinutesBySubject[item[0]] || 0}분 / ${item[2]}</span></div>`).join('')}
-      </div>
-      <div class="card analysis-strategy">
-        <p class="analysis-title">합격을 위한 최적 전략</p>
-        <ol>
-          ${selectedUniversity.strategy.map((item, idx) => `<li><b>${idx+1}</b><div><strong>${item}</strong><p>합격 가능성 개선 전략</p></div></li>`).join('')}
-        </ol>
-      </div>
-      <div class="card analysis-roi">
-        <p class="analysis-title">과목별 효율 (ROI)</p>
-        <div class="roi-item"><span>수학</span><div class="track"><i style="width:92%"></i></div><em>매우 높음</em></div>
-        <div class="roi-item"><span>탐구</span><div class="track"><i style="width:72%;background:#14b8a6"></i></div><em>높음</em></div>
-        <div class="roi-item"><span>국어</span><div class="track"><i style="width:58%;background:#f59e0b"></i></div><em>보통</em></div>
-        <div class="roi-item"><span>영어</span><div class="track"><i style="width:44%;background:#ef4444"></i></div><em>낮음</em></div>
-      </div>
-      <div class="analysis-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="planner">플래너로 실행하기</button></div>`,
+      `<section class="analysis-v2">
+        <div class="card analysis-v2-head">
+          <h3>분석</h3>
+          <p>목표대학별 합격 가능성과 상승 전략을 확인하세요.</p>
+        </div>
+
+        <div class="card analysis-v2-targets">
+          <p class="analysis-title">목표대학</p>
+          <div class="analysis-target-grid">
+            ${analysisTargetList.map((name) => `<button class="analysis-target-item ${targetMajor===name?'active':''}" data-action="selectTarget" data-target-major="${name}">${name}</button>`).join('')}
+            <button class="analysis-target-item add" data-action="openAnalysisSearch">+ 희망 대학 추가</button>
+          </div>
+        </div>
+
+        <div class="card analysis-v2-summary">
+          <div class="analysis-v2-summary-top">
+            <div>
+              <p class="analysis-v2-univ">${targetMajor}</p>
+              <p class="analysis-v2-label">AI 환산 진단점수</p>
+            </div>
+            <div class="analysis-v2-score-wrap">
+              <span class="analysis-v2-verdict" style="color:${analysisSelected.verdictColor};border-color:${analysisSelected.verdictColor}">${analysisSelected.verdict}</span>
+              <strong>${analysisSelected.score}점</strong>
+            </div>
+          </div>
+          <div class="analysis-v2-gauge"><i style="width:${analysisGaugeFill}%;background:${analysisGaugeColor}"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
+          <div class="analysis-v2-gauge-meta"><span>0</span><span>합격컷 100점</span><span>안정컷 150점</span><span>MAX 250점</span></div>
+        </div>
+
+        <div class="card analysis-v2-before-after">
+          <p class="analysis-title">성적 Before & After</p>
+          <div class="analysis-v2-ba-grid">
+            <div class="analysis-v2-ba-col"><h4>현재 성적</h4><p>국어 82</p><p>수학 68</p><p>영어 77</p><p>탐구1 70</p><p>탐구2 66</p><p><b>총점 86</b></p></div>
+            <div class="analysis-v2-arrow">→</div>
+            <div class="analysis-v2-ba-col"><h4>목표 성적</h4><p>국어 82</p><p>수학 80 <em>+12</em></p><p>영어 77</p><p>탐구1 76 <em>+6</em></p><p>탐구2 66</p><p><b>예상 총점 120</b></p></div>
+          </div>
+        </div>
+
+        <div class="card analysis-v2-gauge-change">
+          <p class="analysis-title">합격 게이지 변화</p>
+          <p class="analysis-v2-gauge-line">현재 <b class="current">86점</b> → 목표 <b class="target">120점</b> · 합격컷 100 · 안정컷 150 · MAX 250</p>
+          <div class="analysis-v2-change-track"><span class="marker current" style="left:34.4%"></span><span class="marker target" style="left:48%"></span><span class="line pass" style="left:40%"></span><span class="line safe" style="left:60%"></span></div>
+          <p class="analysis-sub">현재는 합격컷 아래 / 목표 성적 달성 시 합격권 진입</p>
+        </div>
+
+        <div class="card analysis-v2-compare">
+          <p class="analysis-title">목표대학 비교</p>
+          <div class="analysis-v2-bar-chart">
+            ${[['가천대 관광경영학과', 250, '가천대학교 관광경영학과'], ['강서대 G2빅데이터경영학과', 250, '강서대학교 G2빅데이터경영학과'], ['고려대 경영대학', 71, '고려대학교 경영대학']].map(([label, score, full]) => `<button class="analysis-v2-bar ${targetMajor===full?'active':''}" data-action="selectTarget" data-target-major="${full}"><span class="score">${score}</span><i style="height:${Math.max((score/250)*100, 10)}%"></i><p>${label}</p></button>`).join('')}
+            <span class="guide pass">합격선 100점</span><span class="guide safe">안정선 150점</span>
+          </div>
+        </div>
+
+        <div class="card analysis-v2-sim">
+          <p class="analysis-title">+1점 상승 시뮬레이션</p>
+          ${analysisSelected.sim.map(([subject, gain, desc, recommended]) => `<div class="analysis-v2-sim-item ${recommended?'recommended':''}"><div><p><strong>${subject} (+1점)</strong>${recommended?'<span class="badge">추천</span>':''}</p><small>${desc}</small></div><b>${gain}</b></div>`).join('')}
+        </div>
+
+        <div class="card analysis-v2-comment"><p class="analysis-title">합격 전략 코멘트</p><p>${analysisSelected.comment}</p></div>
+        <div class="card analysis-v2-cta"><p class="analysis-title">이 전략대로 실행해볼까요?</p><p class="sub">분석은 방향을 보여주고, Standard는 매주 실행을 도와줘요.</p><button class="btn btn-primary" data-action="startStandard">Standard로 시작하기</button></div>
+
+        ${analysisSearchOpen ? `<div class="analysis-search-overlay" data-action="closeAnalysisSearch"><div class="analysis-search-modal" data-action="noopModal"><div class="analysis-search-head"><h4>희망 대학 추가</h4><button data-action="closeAnalysisSearch">✕</button></div><input class="planner-input" data-field="analysisSearchTerm" value="${analysisSearchTerm}" placeholder="대학명 또는 학과명을 검색하세요"/><div class="analysis-search-section"><p>검색 결과</p>${analysisSearchList.map((name) => `<button class="analysis-search-row" data-action="addAnalysisTarget" data-target-major="${name}">${name}<span>${analysisTargetList.includes(name)?'추가됨':'추가'}</span></button>`).join('')}</div><div class="analysis-search-section"><p>현재 성적 기준 추천 대학</p>${analysisRecommended.map((name) => `<button class="analysis-search-row" data-action="addAnalysisTarget" data-target-major="${name}">${name}<span>${analysisTargetList.includes(name)?'추가됨':'추가'}</span></button>`).join('')}</div></div></div>` : ''}
+      </section>`,
       true
     ),
     strategy: layout(
@@ -1001,6 +1066,19 @@ function App() {
     if (action === 'selectTarget') {
       setTargetMajor(actionEl.getAttribute('data-target-major'));
       setTargetOpen(false);
+    }
+    if (action === 'openAnalysisSearch') setAnalysisSearchOpen(true);
+    if (action === 'closeAnalysisSearch') {
+      setAnalysisSearchOpen(false);
+      setAnalysisSearchTerm('');
+    }
+    if (action === 'addAnalysisTarget') {
+      const major = actionEl.getAttribute('data-target-major');
+      if (!major) return;
+      setAnalysisTargetList((prev) => (prev.includes(major) ? prev : [...prev, major]));
+      setTargetMajor(major);
+      setAnalysisSearchOpen(false);
+      setAnalysisSearchTerm('');
     }
     if (action === 'openUniversityModal') setUniversityModalOpen(true);
     if (action === 'closeUniversityModal') setUniversityModalOpen(false);
@@ -1308,6 +1386,7 @@ function App() {
     if (field === 'signupEmail') setSignupEmail(value);
     if (field === 'signupPassword') setSignupPassword(value);
     if (field === 'signupPasswordConfirm') setSignupPasswordConfirm(value);
+    if (field === 'analysisSearchTerm') setAnalysisSearchTerm(value);
   };
 
   const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>StudyCrack 앱을 불러오는 중입니다...</h3><p class="sub">잠시만 기다려 주세요.</p></div></div></div></div>`;
