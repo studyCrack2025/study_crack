@@ -17,7 +17,7 @@
       if (window.__studycrackAppBooted) return;
       var root = document.getElementById('root');
       if (!root) return;
-      root.innerHTML = '<div class="app-shell"><div class="screen app-screen app-content"><div class="center init-loading"><h3>스터디크랙 홈</h3><p class="sub">초기 로딩이 지연되어 홈으로 이동했습니다.</p></div></div></div>';
+      root.innerHTML = '<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>스터디크랙 홈</h3><p class="sub">초기 로딩이 지연되어 홈으로 이동했습니다.</p></div></div></div></div>';
     }, 3000);
   </script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>

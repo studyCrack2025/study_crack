@@ -3,7 +3,7 @@ const { useState, useEffect, useRef } = React;
 const CRACKY_SRC = './assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png';
 const ONBOARDING_LOGO_SRC = './assets/images/og-image.jpg';
 const STUDYCRACK_LOGO_SRC = './assets/images/studycrack_logo_wo_bg.png';
-const HOME_FALLBACK_HTML = `<div class="app-shell app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>스터디크랙 홈</h3><p class="sub">앱을 불러왔어요. 계속 이용해 주세요.</p></div></div></div>`;
+const HOME_FALLBACK_HTML = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>스터디크랙 홈</h3><p class="sub">앱을 불러왔어요. 계속 이용해 주세요.</p></div></div></div></div>`;
 const DEFAULT_USER = { name: '김지민', targetUniversity: '연세대학교 경영학과', plan: 'Pro' };
 const DEFAULT_SCORES = { korean: 82, math: 68, english: 77, inquiry1: 70, inquiry2: 66 };
 const DEFAULT_NOTIFICATIONS = { planner: true, weekly: true, report: true, billing: true };
@@ -46,7 +46,7 @@ class AppErrorBoundary extends React.Component {
   }
   render() {
     if (this.state.hasError) {
-      return <div className="app-shell"><div className="screen app-screen app-content"><div className="center init-loading"><h3>앱을 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.</h3></div></div></div>;
+      return <div className="app-shell"><div className="app-frame"><div className="screen app-screen app-content"><div className="center init-loading"><h3>앱을 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.</h3></div></div></div></div>;
     }
     return this.props.children;
   }
@@ -278,7 +278,7 @@ function App() {
   const appbar = (title, showBack) => `<div class="appbar">${showBack ? '<button class="back-btn" data-action="back">←</button>' : '<div style="width:36px"></div>'}<div class="title">${title}</div></div>`;
   const tabBtn = (k, label, iconName) => `<button class="${tab === k ? 'active' : ''}" data-action="tab" data-tab="${k}">${i(iconName, tab===k)}<span>${label}</span></button>`;
   const tabbar = () => `<div class="tabbar bottom-tab">${tabBtn('home','홈','home')}${tabBtn('analysis','분석','chart')}${tabBtn('strategy','학습 코칭','target')}${tabBtn('planner','플래너','calendar')}${tabBtn('my','마이','user')}</div>`;
-  const layout = (inner, withTab) => `<div class="app-shell app-frame"><div class="screen app-screen app-content">${inner}</div>${withTab ? tabbar() : ''}</div>`;
+  const layout = (inner, withTab) => `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content">${inner}</div>${withTab ? tabbar() : ''}</div></div>`;
   const quickMini = (action, iconName, label) => `<button class="quick-mini-item" data-action="goto" data-target="${action}"><span class="quick-mini-icon">${i(iconName,false)}</span><span class="quick-mini-label">${label}</span></button>`;
   const universityProfiles = {
     '연세대학교 경영학과': {
@@ -381,7 +381,7 @@ function App() {
       : { tone: 'info', icon: '📊', text: '과목 비중이 균형적으로 유지되고 있어요. 지금 흐름을 유지해요.' };
   const canSubmitPlanner = Boolean(plannerSubject && plannerDurationChoice);
   const onboarding = (step, title, subtitle, cardContent, bubbleText, target, cta = '다음') => `
-    <div class="app-shell">
+    <div class="app-shell"><div class="app-frame">
       <div class="screen app-screen app-content">
         <div class="onboarding-screen">
           <img src="${ONBOARDING_LOGO_SRC}" class="onboarding-logo logo" alt="StudyCrack 로고"/>
@@ -396,7 +396,7 @@ function App() {
             <button class="onboarding-next" data-action="goto" data-target="${target}">${cta}</button>
           </div>
         </div>
-      </div>
+      </div></div>
     </div>
   `;
 
@@ -783,7 +783,7 @@ function App() {
         <button class="btn btn-secondary" data-action="goto" data-target="authLogin">로그인</button>
       </div>
     </div>`, false),
-    splash: `<div class="app-shell"><div class="splash"><div class="logo-bolt">${i('bolt',true)}</div><img class="brand-logo" src="${(window.__studycrackAssetSrc && window.__studycrackAssetSrc.onboardingLogoSrc) || './assets/images/studycrack_logo_wo_bg.png'}" alt="logo"/><h1 style="margin:0;font-size:30px">스터디크랙</h1><p>합격까지 가장 빠른 전략</p></div></div>`,
+    splash: `<div class="app-shell"><div class="app-frame"><div class="splash"><div class="logo-bolt">${i('bolt',true)}</div><img class="brand-logo" src="${(window.__studycrackAssetSrc && window.__studycrackAssetSrc.onboardingLogoSrc) || './assets/images/studycrack_logo_wo_bg.png'}" alt="logo"/><h1 style="margin:0;font-size:30px">스터디크랙</h1><p>합격까지 가장 빠른 전략</p></div></div></div>`,
     on1: onboarding(
       1,
       '데이터 기반으로\n내 합격 가능성을 분석해요',
@@ -1296,8 +1296,8 @@ function App() {
     if (field === 'signupPasswordConfirm') setSignupPasswordConfirm(value);
   };
 
-  const loadingUi = `<div class="app-shell"><div class="screen app-screen app-content"><div class="center init-loading"><h3>StudyCrack 앱을 불러오는 중입니다...</h3><p class="sub">잠시만 기다려 주세요.</p></div></div></div>`;
-  const fallbackUi = `<div class="app-shell"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div>`;
+  const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>StudyCrack 앱을 불러오는 중입니다...</h3><p class="sub">잠시만 기다려 주세요.</p></div></div></div></div>`;
+  const fallbackUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div></div>`;
   const rendered = loading ? loadingUi : error ? fallbackUi : !loggedIn && !['authLogin', 'authSignup'].includes(screen) ? screens.authLogin : current;
 
   return <div onClick={onClick} onInput={onInput} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: rendered }} />;
@@ -1315,6 +1315,6 @@ if (!rootElement) {
     root.render(<AppErrorBoundary><App /></AppErrorBoundary>);
   } catch (e) {
     console.error('[APP_INIT_ERROR]', e);
-    rootElement.innerHTML = `<div class="app-shell"><div class="screen app-screen app-content"><div class="center init-loading"><h3>앱을 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.</h3></div></div></div>`;
+    rootElement.innerHTML = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>앱을 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.</h3></div></div></div></div>`;
   }
 }
