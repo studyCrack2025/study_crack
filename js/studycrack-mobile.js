@@ -1,4 +1,4 @@
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 
 const CRACKY_SRC = './assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png';
 const ONBOARDING_LOGO_SRC = './assets/images/og-image.jpg';
@@ -93,10 +93,7 @@ function App() {
   const [targetMajor, setTargetMajor] = useState(DEFAULT_USER.targetUniversity);
   const [targetOpen, setTargetOpen] = useState(false);
   const [universityModalOpen, setUniversityModalOpen] = useState(false);
-  const [timerModalOpen, setTimerModalOpen] = useState(false);
   const [plannerAddModalOpen, setPlannerAddModalOpen] = useState(false);
-  const [timerStatus, setTimerStatus] = useState('idle');
-  const [timerSubject, setTimerSubject] = useState('수학');
   const [plannerSubject, setPlannerSubject] = useState('');
   const [plannerContent, setPlannerContent] = useState('');
   const [plannerDurationChoice, setPlannerDurationChoice] = useState('');
@@ -126,8 +123,8 @@ function App() {
   const [studyRecords, setStudyRecords] = useState(() => safeParse('studyRecords', []));
   const [studySubjectRecords, setStudySubjectRecords] = useState(() => safeParse('studySubjectRecords', []));
   const [studyTimerRunning, setStudyTimerRunning] = useState(false);
-  const [studyTimerSeconds, setStudyTimerSeconds] = useState(0);
-  const [studySessionStart, setStudySessionStart] = useState(null);
+  const studyTimerSecondsRef = useRef(0);
+  const studyTimerIntervalRef = useRef(null);
   const [activeStudySubject, setActiveStudySubject] = useState('');
   const [studySubjectSheetOpen, setStudySubjectSheetOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -232,11 +229,9 @@ function App() {
     localStorage.setItem('studySubjectRecords', JSON.stringify(studySubjectRecords));
   }, [studySubjectRecords]);
 
-  useEffect(() => {
-    if (!studyTimerRunning) return undefined;
-    const t = setInterval(() => setStudyTimerSeconds((prev) => prev + 1), 1000);
-    return () => clearInterval(t);
-  }, [studyTimerRunning]);
+  useEffect(() => () => {
+    if (studyTimerIntervalRef.current) clearInterval(studyTimerIntervalRef.current);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('selectedPlan', selectedPlan);
@@ -398,7 +393,8 @@ function App() {
     .join('');
   const todayKey = new Date().toISOString().slice(0, 10);
   const todayRecord = studyRecords.find((item) => item.date === todayKey);
-  const todayStudySeconds = (todayRecord?.studyTime || 0) + studyTimerSeconds;
+  const liveStudySeconds = studyTimerSecondsRef.current;
+  const todayStudySeconds = (todayRecord?.studyTime || 0) + liveStudySeconds;
   const formatHms = (total) => {
     const hh = String(Math.floor(total / 3600)).padStart(2, '0');
     const mm = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
@@ -410,13 +406,32 @@ function App() {
     const m = Math.floor((total % 3600) / 60);
     return `${h}시간 ${m}분`;
   };
+  const syncLiveStudyTimerUi = (liveSeconds) => {
+    document.querySelectorAll('[data-study-base-seconds]').forEach((node) => {
+      const baseSeconds = Number(node.getAttribute('data-study-base-seconds')) || 0;
+      node.textContent = formatHms(baseSeconds + liveSeconds);
+    });
+  };
+  const startLiveStudyTimer = () => {
+    if (studyTimerIntervalRef.current) clearInterval(studyTimerIntervalRef.current);
+    studyTimerIntervalRef.current = setInterval(() => {
+      studyTimerSecondsRef.current += 1;
+      syncLiveStudyTimerUi(studyTimerSecondsRef.current);
+    }, 1000);
+  };
+  const stopLiveStudyTimer = () => {
+    if (studyTimerIntervalRef.current) {
+      clearInterval(studyTimerIntervalRef.current);
+      studyTimerIntervalRef.current = null;
+    }
+  };
   const todayGoalSeconds = 3 * 3600;
   const todayGoalPercent = Math.min(Math.round((todayStudySeconds / todayGoalSeconds) * 100), 100);
   const subjectPalette = { 수학: '#3B82F6', 영어: '#10B981', 탐구: '#F59E0B', 국어: '#8B5CF6', 기타: '#64748B' };
   const todaySubjectRecord = studySubjectRecords.find((item) => item.date === todayKey) || { date: todayKey, subjects: {} };
   const todaySubjectsWithTimer = { ...todaySubjectRecord.subjects };
   if (studyTimerRunning && activeStudySubject) {
-    todaySubjectsWithTimer[activeStudySubject] = (todaySubjectsWithTimer[activeStudySubject] || 0) + studyTimerSeconds;
+    todaySubjectsWithTimer[activeStudySubject] = (todaySubjectsWithTimer[activeStudySubject] || 0) + liveStudySeconds;
   }
   const todaySubjectRows = Object.entries(todaySubjectsWithTimer).filter(([, sec]) => sec > 0);
   const plannedSubjectOptions = Array.from(new Set(plannerItems.map((item) => `${item.subject}${item.content ? ` - ${item.content}` : ''}`)));
@@ -474,12 +489,12 @@ function App() {
       <div class="card">
         <p class="analysis-title">오늘 공부 시작하기</p>
         <p class="sub" style="margin:0 0 8px">${retentionMessage}</p>
-        <div class="study-timer-row"><b>${formatHms(todayStudySeconds)}</b>${studyTimerRunning ? `<button class="btn btn-secondary" data-action="stopStudyTimer">공부 종료</button>` : `<button class="btn btn-primary" data-action="openStudySubjectSheet">공부 시작하기</button>`}</div>
+        <div class="study-timer-row"><b data-study-base-seconds="${todayRecord?.studyTime || 0}">${formatHms(todayStudySeconds)}</b>${studyTimerRunning ? `<button class="btn btn-secondary" data-action="stopStudyTimer">공부 종료</button>` : `<button class="btn btn-primary" data-action="openStudySubjectSheet">공부 시작하기</button>`}</div>
         <p class="sub" style="margin:8px 0 0">🔥 ${streakDays}일 연속 공부 중 ${streakDays >= 7 ? '· 상위 10% 학습자' : ''}</p>
       </div>
       <div class="card">
         <p class="analysis-title">오늘 공부시간</p>
-        <p class="sub" style="margin:0 0 6px">총 공부시간: <b>${formatHms(todayStudySeconds)}</b>${activeStudySubject ? ` · 현재 과목: ${activeStudySubject}` : ''}</p>
+        <p class="sub" style="margin:0 0 6px">총 공부시간: <b data-study-base-seconds="${todayRecord?.studyTime || 0}">${formatHms(todayStudySeconds)}</b>${activeStudySubject ? ` · 현재 과목: ${activeStudySubject}` : ''}</p>
         ${todaySubjectRows.length ? todaySubjectRows.map(([subject, sec]) => {
           const pct = todayStudySeconds ? Math.round((sec / todayStudySeconds) * 100) : 0;
           return `<div class="subject-time-row"><span>${subject}</span><b>${formatHms(sec)}</b><div class="track"><i style="width:${pct}%;background:${subjectPalette[subject] || subjectPalette['기타']}"></i></div></div>`;
@@ -767,11 +782,9 @@ function App() {
          ${plannerItems.map((item, idx) => `<div class="planner-item"><i class="dot ${item.dot}"></i><div><b>${item.subject}</b><p>${item.content}</p><small>${item.start} - ${item.end}</small></div><div class="planner-item-right"><strong>${item.minutes}분</strong><button class="planner-item-remove" data-action="removePlannerItem" data-planner-index="${idx}">✕</button></div></div>`).join('')}
        </div>
        <div class="planner-feedback-card ${plannerFeedback.tone}"><span>${plannerFeedback.icon}</span><p>${plannerFeedback.text}</p></div>
-       <div class="planner-timer card" data-action="openTimerModal"><p>오늘 공부 시간</p><h2>01:25:30</h2><button class="planner-timer-start" data-action="openTimerModal">타이머 시작하기</button></div>
        <div class="planner-bottom-space"></div>
        ${!plannerAddModalOpen ? `<button class="planner-fab" data-action="openPlannerAddModal"><span>+</span></button>` : ''}
        ${plannerAddModalOpen ? `<div class="planner-sheet-overlay" data-action="closePlannerAddModal"><div class="planner-sheet" data-action="noopModal"><button class="planner-sheet-close" data-action="closePlannerAddModal">✕</button><h3>플래너 항목 추가</h3><p>오늘 실행할 학습 계획을 입력해 주세요.</p><div class="planner-sheet-block"><label>과목 선택</label><div class="planner-pill-row"><button class="planner-pill ${plannerSubject==='수학'?'active':''}" data-action="setPlannerSubject" data-planner-subject="수학">수학</button><button class="planner-pill ${plannerSubject==='국어'?'active':''}" data-action="setPlannerSubject" data-planner-subject="국어">국어</button><button class="planner-pill ${plannerSubject==='영어'?'active':''}" data-action="setPlannerSubject" data-planner-subject="영어">영어</button><button class="planner-pill ${plannerSubject==='탐구'?'active':''}" data-action="setPlannerSubject" data-planner-subject="탐구">탐구</button></div></div><div class="planner-sheet-block"><label>학습 내용</label><input class="planner-input" data-field="plannerContent" value="${plannerContent}" placeholder="예: 개념 학습, 독해 문제 풀이" /></div><div class="planner-sheet-block"><label>시간 선택</label><div class="planner-pill-row"><button class="planner-pill ${plannerDurationChoice==='30'?'active':''}" data-action="setPlannerDuration" data-planner-duration="30">30분</button><button class="planner-pill ${plannerDurationChoice==='60'?'active':''}" data-action="setPlannerDuration" data-planner-duration="60">60분</button><button class="planner-pill ${plannerDurationChoice==='90'?'active':''}" data-action="setPlannerDuration" data-planner-duration="90">90분</button><button class="planner-pill ${plannerDurationChoice==='120'?'active':''}" data-action="setPlannerDuration" data-planner-duration="120">120분</button><button class="planner-pill ${plannerDurationChoice==='custom'?'active':''}" data-action="setPlannerDuration" data-planner-duration="custom">직접 입력</button></div>${plannerDurationChoice==='custom' ? `<input class="planner-input" data-field="plannerCustomMinutes" value="${plannerCustomMinutes}" type="number" placeholder="분 단위 입력" />` : ''}</div><div class="planner-sheet-block"><label>시간대</label><div class="planner-time-row"><input class="planner-input" data-field="plannerStart" value="${plannerStart}" type="time" /><input class="planner-input" data-field="plannerEnd" value="${plannerEnd}" type="time" /></div></div><button class="btn btn-primary planner-sheet-submit ${canSubmitPlanner?'':'disabled'}" data-action="addPlannerFromSheet" ${canSubmitPlanner?'':'disabled'}>플래너에 추가하기</button></div></div>` : ''}
-       ${timerModalOpen ? `<div class="home-modal-overlay" data-action="closeTimerModal"><div class="home-modal timer-modal" data-action="noopModal"><p class="home-modal-title">학습 타이머</p><p class="sub" style="margin:8px 0 0">과목 선택: <b>${timerSubject}</b></p><div class="timer-subject-row"><button data-action="setTimerSubject" data-timer-subject="수학">수학</button><button data-action="setTimerSubject" data-timer-subject="영어">영어</button><button data-action="setTimerSubject" data-timer-subject="탐구">탐구</button></div><div class="timer-controls"><button data-action="timerStart">시작</button><button data-action="timerPause">일시정지</button><button data-action="timerEnd">종료</button></div><p class="sub" style="margin:10px 0 0">상태: ${timerStatus==='idle'?'대기':timerStatus==='running'?'진행 중':'일시정지'}</p><button class="btn btn-primary" style="margin-top:12px" data-action="closeTimerModal">닫기</button></div></div>` : ''}
        </div>`,
       true
     ),
@@ -788,10 +801,6 @@ function App() {
         <button class="my-row" data-action="goto" data-target="notificationSettings">알림 설정 <span>${i('chevron', false)}</span></button>
         <button class="my-row" data-action="goto" data-target="customerSupport">고객센터 <span>${i('chevron', false)}</span></button>
         <button class="my-row" data-action="goto" data-target="settingsMain">설정 <span>${i('chevron', false)}</span></button>
-      </div>
-      <div class="card my-empty-card">
-        <p class="my-empty-text">아직 데이터가 없어요. 먼저 분석해볼까요?</p>
-        <img src="${CRACKY_SRC}" class="my-char crackie" alt="크랙이"/>
       </div>
     </div>`, true),
     weekly: layout(
@@ -882,8 +891,6 @@ function App() {
     }
     if (action === 'openUniversityModal') setUniversityModalOpen(true);
     if (action === 'closeUniversityModal') setUniversityModalOpen(false);
-    if (action === 'openTimerModal') setTimerModalOpen(true);
-    if (action === 'closeTimerModal') setTimerModalOpen(false);
     if (action === 'openPlannerAddModal') setPlannerAddModalOpen(true);
     if (action === 'closePlannerAddModal') setPlannerAddModalOpen(false);
     if (action === 'openScoreEdit') setScoreEditOpen(true);
@@ -929,8 +936,9 @@ function App() {
       setActiveStudySubject(custom);
       setStudySubjectSheetOpen(false);
       setStudyTimerRunning(true);
-      setStudySessionStart(Date.now());
-      setStudyTimerSeconds(0);
+      studyTimerSecondsRef.current = 0;
+      startLiveStudyTimer();
+      syncLiveStudyTimerUi(0);
     }
     if (action === 'selectStudySubject') {
       const subject = actionEl.getAttribute('data-study-subject');
@@ -938,12 +946,14 @@ function App() {
       setActiveStudySubject(subject);
       setStudySubjectSheetOpen(false);
       setStudyTimerRunning(true);
-      setStudySessionStart(Date.now());
-      setStudyTimerSeconds(0);
+      studyTimerSecondsRef.current = 0;
+      startLiveStudyTimer();
+      syncLiveStudyTimerUi(0);
     }
     if (action === 'stopStudyTimer') {
       setStudyTimerRunning(false);
-      const elapsed = studyTimerSeconds;
+      stopLiveStudyTimer();
+      const elapsed = studyTimerSecondsRef.current;
       const today = new Date().toISOString().slice(0, 10);
       setStudyRecords((prev) => {
         const idx = prev.findIndex((r) => r.date === today);
@@ -967,8 +977,8 @@ function App() {
         });
         setPlannerItems((prev) => prev.map((item) => item.subject === activeStudySubject ? { ...item, doneMinutes: (item.doneMinutes || 0) + Math.round(elapsed / 60) } : item));
       }
-      setStudyTimerSeconds(0);
-      setStudySessionStart(null);
+      studyTimerSecondsRef.current = 0;
+      syncLiveStudyTimerUi(0);
       setActiveStudySubject('');
     }
     if (action === 'loginSuccess' || action === 'signupSuccess' || action === 'ssoSuccess') {
@@ -1041,24 +1051,13 @@ function App() {
         if (input) input.value = '';
       });
     }
-    if (action === 'setTimerSubject') setTimerSubject(actionEl.getAttribute('data-timer-subject'));
-    if (action === 'timerStart') setTimerStatus('running');
-    if (action === 'timerPause') setTimerStatus('paused');
-    if (action === 'timerEnd') {
-      const now = new Date();
-      const hh = String(now.getHours()).padStart(2, '0');
-      const mm = String(now.getMinutes()).padStart(2, '0');
-      const endMin = (now.getMinutes() + 30) % 60;
-      const endHour = (now.getHours() + Math.floor((now.getMinutes() + 30) / 60)) % 24;
-      const endText = `${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`;
-      const dot = timerSubject === '수학' ? 'math' : timerSubject === '영어' ? 'eng' : 'sci';
-      setPlannerItems((prev) => [...prev, { subject: timerSubject, content: '타이머 학습', start: `${hh}:${mm}`, end: endText, minutes: 30, dot }]);
-      setTimerStatus('idle');
-      setTimerModalOpen(false);
-    }
   };
 
   const onInput = (e) => {
+    const field = e.target.getAttribute('data-field');
+    if (!field) return;
+  };
+  const onBlur = (e) => {
     const field = e.target.getAttribute('data-field');
     if (!field) return;
     const value = e.target.value;
@@ -1066,13 +1065,23 @@ function App() {
       const subject = field.replace('score-', '');
       setScores((prev) => ({ ...prev, [subject]: Number(value) || 0 }));
     }
+    if (field === 'strongSubject') setStrongSubject(value);
+    if (field === 'weakSubject') setWeakSubject(value);
+    if (field === 'studyHours') setStudyHours(value);
+    if (field === 'studyDifficulty') setStudyDifficulty(value);
+    if (field === 'loginEmail') setLoginEmail(value);
+    if (field === 'loginPassword') setLoginPassword(value);
+    if (field === 'signupName') setSignupName(value);
+    if (field === 'signupEmail') setSignupEmail(value);
+    if (field === 'signupPassword') setSignupPassword(value);
+    if (field === 'signupPasswordConfirm') setSignupPasswordConfirm(value);
   };
 
   const loadingUi = `<div class="app-shell"><div class="screen app-screen app-content"><div class="center init-loading"><h3>StudyCrack 앱을 불러오는 중입니다...</h3><p class="sub">잠시만 기다려 주세요.</p></div></div></div>`;
   const fallbackUi = `<div class="app-shell"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div>`;
   const rendered = loading ? loadingUi : error ? fallbackUi : !loggedIn && !['authLogin', 'authSignup'].includes(screen) ? screens.authLogin : current;
 
-  return <div onClick={onClick} onInput={onInput} dangerouslySetInnerHTML={{ __html: rendered }} />;
+  return <div onClick={onClick} onInput={onInput} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: rendered }} />;
 }
 
 const rootElement = document.getElementById('root');
