@@ -277,7 +277,7 @@ function App() {
 
   const appbar = (title, showBack) => `<div class="appbar">${showBack ? '<button class="back-btn" data-action="back">←</button>' : '<div style="width:36px"></div>'}<div class="title">${title}</div></div>`;
   const tabBtn = (k, label, iconName) => `<button class="${tab === k ? 'active' : ''}" data-action="tab" data-tab="${k}">${i(iconName, tab===k)}<span>${label}</span></button>`;
-  const tabbar = () => `<div class="tabbar">${tabBtn('home','홈','home')}${tabBtn('analysis','분석','chart')}${tabBtn('strategy','학습 코칭','target')}${tabBtn('planner','플래너','calendar')}${tabBtn('my','마이','user')}</div>`;
+  const tabbar = () => `<div class="tabbar bottom-tab">${tabBtn('home','홈','home')}${tabBtn('analysis','분석','chart')}${tabBtn('strategy','학습 코칭','target')}${tabBtn('planner','플래너','calendar')}${tabBtn('my','마이','user')}</div>`;
   const layout = (inner, withTab) => `<div class="app-shell"><div class="screen app-screen app-content">${inner}</div>${withTab ? tabbar() : ''}</div>`;
   const quickMini = (action, iconName, label) => `<button class="quick-mini-item" data-action="goto" data-target="${action}"><span class="quick-mini-icon">${i(iconName,false)}</span><span class="quick-mini-label">${label}</span></button>`;
   const universityProfiles = {
@@ -503,31 +503,31 @@ function App() {
     </div>
     <div class="section home-section">
       <div class="home-kpi-slider">
-        ${homeTargets.map((item) => `<button class="card home-kpi-card slider-card" data-action="selectUniversity" data-target-major="${item.major}">
+        ${homeTargets.map((item) => `<button class="card home-kpi-card admission-card slider-card" data-action="selectUniversity" data-target-major="${item.major}">
           <span class="home-major-pill">${item.major}</span>
           <p class="sub">내 합격 가능성</p>
-          <div class="home-kpi-head"><div><p class="metric">${item.rate}%</p><p class="sub">${item.rank}</p></div><div class="ring" style="background:conic-gradient(var(--primary) 0 ${item.rate}%, #dfe8f8 ${item.rate}% 100%)"></div></div>
-          <div class="kpi-row"><div class="kpi-item"><b>${item.score}점</b>현재 점수</div><div class="kpi-item"><b>${item.cut}점</b>합격 컷</div><div class="kpi-item danger"><b>${item.gap}점</b>부족 점수</div></div>
-          <div class="home-planner-badges">${plannerBadges.map((badge) => `<span>${badge}</span>`).join('')}</div>
+          <div class="home-kpi-head"><div><p class="metric percent">${item.rate}%</p><p class="sub">${item.rank}</p></div><div class="ring donut" style="background:conic-gradient(var(--primary) 0 ${item.rate}%, #dfe8f8 ${item.rate}% 100%)"></div></div>
+          <div class="kpi-row score-row"><div class="kpi-item"><b>${item.score}점</b>현재 점수</div><div class="kpi-item"><b>${item.cut}점</b>합격 컷</div><div class="kpi-item danger"><b>${item.gap}점</b>부족 점수</div></div>
+          <div class="home-planner-badges chip-row">${plannerBadges.map((badge) => `<span class="chip">${badge}</span>`).join('')}</div>
         </button>`).join('')}
         <button class="card home-kpi-add-card slider-card" data-action="openUniversityModal"><span class="plus">+</span><p>+ 목표 대학 추가</p></button>
       </div>
-      <div class="home-kpi-indicator">${homeTargets.map((_, idx) => `<i class="${idx===0?'active':''}"></i>`).join('')}<b>+</b></div>
+      <div class="home-kpi-indicator card-indicator">${homeTargets.map((_, idx) => `<i class="${idx===0?'active':''}"></i>`).join('')}<b>+</b></div>
       ${universityModalOpen ? `<div class="home-modal-overlay" data-action="closeUniversityModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">목표 대학 추가</p><p class="sub" style="margin-top:8px">대학 선택 모달은 다음 단계에서 연결됩니다.</p><button class="btn btn-primary" data-action="closeUniversityModal">닫기</button></div></div>` : ''}
     </div>
     <div class="section home-section home-section-last">
-      <div class="card home-study-summary">
+      <div class="card home-study-summary study-summary-card">
         <p class="analysis-title">오늘 공부 요약</p>
-        <div class="study-timer-row"><b data-study-base-seconds="${todayRecord?.studyTime || 0}">${formatHms(todayStudySeconds)}</b>${studyTimerRunning ? `<button class="btn btn-secondary" data-action="stopStudyTimer">공부 종료</button>` : `<button class="btn btn-primary" data-action="openStudySubjectSheet">공부 시작하기</button>`}</div>
-        <div class="home-subject-pill-row">${visibleSubjectChips.map(([subject, sec]) => `<span class="home-subject-pill">${subject} ${formatHms(sec || 0)}</span>`).join('')}${hiddenSubjectCount ? `<span class="home-subject-pill more">+${hiddenSubjectCount}</span>` : ''}</div>
+        <div class="study-timer-row"><b class="timer" data-study-base-seconds="${todayRecord?.studyTime || 0}">${formatHms(todayStudySeconds)}</b>${studyTimerRunning ? `<button class="btn btn-secondary start-button" data-action="stopStudyTimer">공부 종료</button>` : `<button class="btn btn-primary start-button" data-action="openStudySubjectSheet">공부 시작하기</button>`}</div>
+        <div class="home-subject-pill-row subject-chip-row">${visibleSubjectChips.map(([subject, sec]) => `<span class="home-subject-pill subject-time-chip">${subject} ${formatHms(sec || 0)}</span>`).join('')}${hiddenSubjectCount ? `<span class="home-subject-pill subject-time-chip more">+${hiddenSubjectCount}</span>` : ''}</div>
       </div>
-      <div class="card">
+      <div class="card study-goal-card">
         <p class="analysis-title">오늘 공부 목표</p>
         <p class="sub">수학: 2시간 · 탐구: 1시간</p>
         <div class="track"><i style="width:${todayGoalPercent}%"></i></div>
         <p class="sub" style="margin:8px 0 0">오늘 목표 달성률 ${todayGoalPercent}%</p>
       </div>
-      <div class="card home-bottom-summary">
+      <div class="card home-bottom-summary ranking-card">
         <p class="sub">상위 ${percentile}% · 전체 124명 중 ${Math.min(myRank, 124)}등</p>
       </div>
     </div>

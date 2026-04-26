@@ -82,6 +82,7 @@ body {
   padding: 16px;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
 }
+.card.compact { padding: 10px; }
 .metric { margin: 0; font-size: 42px; font-weight: 800; letter-spacing: -0.02em; color: var(--primary); }
 .metric-sm { font-size: 36px; font-weight: 800; margin: 0; color: var(--primary); }
 .kpi-row { display:flex; gap:8px; margin-top: 8px; }
@@ -306,6 +307,143 @@ body {
   padding: 18px 14px;
   box-shadow: 8px 0 20px rgba(0,0,0,0.08);
   animation: drawerIn .2s ease;
+}
+
+@media (max-width: 480px) {
+  .home-container {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .home-content {
+    height: calc(100dvh - 74px);
+    padding: 14px 16px 82px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: hidden;
+  }
+
+  .home-header {
+    margin-bottom: 10px;
+  }
+
+  .home-greeting {
+    font-size: 24px;
+    line-height: 1.2;
+  }
+
+  .home-sub {
+    font-size: 14px;
+    margin-top: 4px;
+  }
+
+  .admission-card {
+    padding: 18px;
+    min-height: auto;
+  }
+
+  .admission-card .percent {
+    font-size: 44px;
+  }
+
+  .admission-card .donut {
+    width: 88px;
+    height: 88px;
+  }
+
+  .admission-card .score-row {
+    margin-top: 14px;
+  }
+
+  .admission-card .chip-row {
+    gap: 6px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .admission-card .chip {
+    font-size: 11px;
+    padding: 5px 8px;
+    white-space: nowrap;
+  }
+
+  .card-indicator {
+    margin: 8px 0;
+  }
+
+  .study-summary-card {
+    padding: 16px;
+  }
+
+  .study-summary-card .timer {
+    font-size: 38px;
+    line-height: 1.1;
+  }
+
+  .study-summary-card .start-button {
+    height: 48px;
+    min-height: 48px;
+    font-size: 16px;
+    margin-top: 8px;
+  }
+
+  .subject-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+    max-height: 56px;
+    overflow: hidden;
+  }
+
+  .subject-time-chip {
+    font-size: 11px;
+    padding: 5px 8px;
+  }
+
+  .study-goal-card {
+    padding: 14px 16px;
+  }
+
+  .study-goal-card h3,
+  .study-goal-card .analysis-title {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+
+  .study-goal-card p {
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+
+  .study-goal-card .track {
+    height: 6px;
+  }
+
+  .ranking-card {
+    padding: 10px 14px;
+    text-align: center;
+    font-size: 13px;
+  }
+
+  .bottom-tab {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 74px;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: white;
+    z-index: 100;
+  }
+}
+
+@media (min-width: 481px) {
+  .home-content {
+    max-width: 720px;
+    margin: 0 auto;
+  }
 }
 .side-drawer h3 { margin: 0 0 12px; }
 @keyframes drawerIn {
