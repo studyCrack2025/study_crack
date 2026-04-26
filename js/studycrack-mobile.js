@@ -485,6 +485,7 @@ function App() {
   };
   const myRank = Math.max(1, 160 - Math.floor(todayStudySeconds / 60));
   const percentile = Math.max(1, Math.min(100, 100 - Math.floor(todayStudySeconds / 120)));
+  const rankingProgress = Math.max(5, 100 - percentile);
   const lastStudyDate = studyRecords.length ? studyRecords[studyRecords.length - 1].date : '';
   const noStudyFor24h = !todayRecord && lastStudyDate !== todayKey;
   const retentionMessage = noStudyFor24h ? '오늘 공부 안 하면 합격컷에서 멀어집니다' : `오늘 목표까지 ${Math.max(0, Math.ceil((todayGoalSeconds - todayStudySeconds) / 3600))}시간 남았어요`;
@@ -538,7 +539,12 @@ function App() {
         <p class="sub" style="margin:8px 0 0">오늘 목표 달성률 ${todayGoalPercent}%</p>
       </div>
       <div class="card home-bottom-summary ranking-card">
-        <p class="sub">상위 ${percentile}% · 전체 124명 중 ${Math.min(myRank, 124)}등</p>
+        <div class="home-ranking-head"><p class="analysis-title">내 공부 랭킹</p><span class="badge">오늘 기준</span></div>
+        <p class="home-ranking-main">${Math.min(myRank, 124)}등</p>
+        <p class="home-ranking-sub">전체 124명 중</p>
+        <div class="home-ranking-progress"><i style="width:${rankingProgress}%"></i></div>
+        <p class="home-ranking-foot">상위 ${percentile}%</p>
+        <p class="home-ranking-tip">오늘 공부를 시작하면 순위가 올라가요</p>
       </div>
     </div>
     ${studySubjectSheetOpen ? `<div class="planner-sheet-overlay" data-action="closeStudySubjectSheet"><div class="planner-sheet study-subject-sheet" data-action="noopModal"><h3>어떤 과목을 공부할까요?</h3><div class="study-subject-grid">${['국어', '수학', '영어', '탐구'].map((s) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${s}">${s}</button>`).join('')}<button class="planner-pill" data-action="selectStudySubjectCustom">기타 직접 입력</button></div>${plannedSubjectOptions.length ? `<p class="sub" style="margin:8px 0 6px">오늘 플래너 일정</p><div class="study-subject-grid">${plannedSubjectOptions.map((s) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${s.split(' - ')[0]}">${s}</button>`).join('')}</div>` : ''}</div></div>` : ''}

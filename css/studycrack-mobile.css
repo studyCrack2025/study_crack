@@ -301,8 +301,20 @@ body {
 .home-subject-pill-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; max-height:56px; overflow:hidden; }
 .home-subject-pill { display:inline-flex; align-items:center; background:#eef2ff; color:#1e3a8a; border-radius:999px; padding:6px 10px; font-size:11px; font-weight:700; white-space:nowrap; }
 .home-subject-pill.more { background:#e2e8f0; color:#475569; }
-.home-bottom-summary { padding:12px; }
-.home-bottom-summary .sub { margin:0; font-size:13px; font-weight:700; color:#334155; text-align:center; }
+.home-bottom-summary {
+  padding:16px;
+  border:1px solid #E2E8F0;
+  border-radius:20px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  margin-bottom: 8px;
+}
+.home-ranking-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
+.home-ranking-main { margin:0; font-size:34px; line-height:1; font-weight:800; color:#111827; }
+.home-ranking-sub { margin:4px 0 10px; font-size:13px; color:#6B7280; }
+.home-ranking-progress { height:8px; border-radius:999px; background:#E5EAF2; overflow:hidden; }
+.home-ranking-progress i { display:block; height:100%; border-radius:999px; background:#0B6BFF; }
+.home-ranking-foot { margin:10px 0 4px; font-size:13px; color:#6B7280; font-weight:700; }
+.home-ranking-tip { margin:0; font-size:12px; color:#6B7280; }
 .home-section-last > .card { padding:10px; border-radius:16px; }
 .home-section-last > .card .track { height:6px; }
 .subject-time-row { display:grid; grid-template-columns:52px 74px 1fr; align-items:center; gap:8px; margin-bottom:8px; font-size:13px; }
