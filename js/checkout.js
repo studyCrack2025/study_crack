@@ -2,8 +2,8 @@
 const TIER_DATA = {
     'test':     { desc: '시스템 연동 테스트용 결제' },
     'basic':    { desc: '현재 위치 진단 및 전략 수립' },
-    'standard': { desc: '월간 학습 코칭 (플래닝) 정기구독' },
-    'pro':      { desc: '최소 노력 최대 효율, 맞춤 전략 재설계 정기구독' },
+    'standard': { desc: '월간 학습 코칭 (플래닝) 28일 이용권' },
+    'pro':      { desc: '최소 노력 최대 효율, 맞춤 전략 재설계 28일 이용권' },
     'trial':    { desc: 'PRO 등급 한 달 완벽 체험' }
 };
 
@@ -60,9 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const nextD  = nextDate.getDate();
 
         if (effectiveStart > new Date()) {
-            noticeBox.innerHTML = `<i class="fas fa-info-circle" style="color:#0284c7;"></i> 예약 결제 안내<br>새로운 구독은 기존 만료일인 <strong>${startM}월 ${startD}일</strong>부터 적용되며, 다음 정기 결제일은 <strong>${nextM}월 ${nextD}일</strong>입니다.`;
+            noticeBox.innerHTML = `<i class="fas fa-info-circle" style="color:#0284c7;"></i> 예약 적용 안내: 기존 이용권 만료일인 <strong>${startM}월 ${startD}일</strong>부터 적용되며, <strong>${nextM}월 ${nextD}일</strong>까지 이용 가능합니다.`;
         } else {
-            noticeBox.innerHTML = `<i class="fas fa-info-circle" style="color:#0284c7;"></i> 다음 결제일은 4주 뒤인 <strong>${nextM}월 ${nextD}일</strong>입니다. 언제든 해지 가능합니다.`;
+            noticeBox.innerHTML = `<i class="fas fa-info-circle" style="color:#0284c7;"></i> 결제 완료 시 28일간 이용 가능하며, 만료일은 <strong>${nextM}월 ${nextD}일</strong>입니다.`;
         }
     }
 
