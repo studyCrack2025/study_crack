@@ -174,23 +174,24 @@ body {
 .init-loading .btn { margin-top:8px; min-height:44px; border-radius:12px; }
 
 .home-dashboard { padding-bottom: 2px; }
-.home-header { margin-bottom: 10px; }
+.home-single-screen { height: calc(100dvh - 170px); overflow: hidden; display:flex; flex-direction:column; gap:8px; }
+.home-header { margin-bottom: 4px; }
 .home-top-icons { display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px; }
 .top-icon-btn { width: 36px; height: 36px; border-radius: 10px; border:1px solid var(--line); background:#fff; display:grid; place-items:center; color:#64748b; }
 .top-icon-btn .icon { width:19px; height:19px; }
-.home-greeting { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; color:#0f172a; }
-.home-sub { margin: 4px 0 0; font-size: 12.5px; color:#64748b; }
-.home-section { margin-bottom: 10px; }
+.home-greeting { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -0.02em; color:#0f172a; }
+.home-sub { margin: 2px 0 0; font-size: 12px; color:#64748b; }
+.home-section { margin-bottom: 6px; }
 .home-section-tight { margin-bottom: 8px; }
 .home-section-last { margin-bottom: 0; }
-.home-kpi-card { padding: 17px; border-radius: 19px; min-height: 198px; }
-.home-kpi-card .sub { font-size: 13px; }
-.home-kpi-card .metric { font-size: 46px; }
+.home-kpi-card { padding: 12px; border-radius: 19px; min-height: 154px; }
+.home-kpi-card .sub { font-size: 12px; margin:2px 0; }
+.home-kpi-card .metric { font-size: 36px; line-height:1; }
 .home-kpi-card .kpi-row { margin-top: 6px; }
 .home-kpi-head { display:flex; justify-content:space-between; align-items:flex-start; margin-top: 0; }
-.home-kpi-head .ring { margin-top: 0; width: 90px; height: 90px; }
+.home-kpi-head .ring { margin-top: 0; width: 68px; height: 68px; }
 .home-kpi-card .kpi-item { font-size: 12.5px; }
-.home-kpi-card .kpi-item b { font-size: 19px; }
+.home-kpi-card .kpi-item b { font-size: 16px; }
 .home-planner-badges { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
 .home-planner-badges span {
   font-size:10px;
@@ -210,7 +211,7 @@ body {
   padding-bottom:8px;
 }
 .home-kpi-slider::-webkit-scrollbar { display:none; }
-.home-kpi-slider .slider-card { min-width:85%; scroll-snap-align:center; flex-shrink:0; flex-grow:0; }
+.home-kpi-slider .slider-card { min-width:84%; scroll-snap-align:center; flex-shrink:0; flex-grow:0; }
 .home-kpi-card.slider-card { border:1px solid var(--line); text-align:left; font-family:inherit; color:inherit; }
 .home-major-pill {
   display:inline-block;
@@ -265,13 +266,16 @@ body {
 .home-quick-title { margin:0 0 8px; font-size:14px; font-weight:700; color:#334155; }
 .study-timer-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .study-timer-row b { font-size:26px; color:#0B6BFF; letter-spacing:0.02em; }
-.home-study-summary { padding:14px; }
+.home-study-summary { padding:12px; }
 .home-study-summary .study-timer-row { flex-direction:column; align-items:flex-start; gap:8px; }
 .home-study-summary .study-timer-row .btn { align-self:flex-start; }
-.home-subject-pill-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.home-subject-pill-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; max-height:56px; overflow:hidden; }
 .home-subject-pill { display:inline-flex; align-items:center; background:#eef2ff; color:#1e3a8a; border-radius:999px; padding:6px 10px; font-size:11px; font-weight:700; white-space:nowrap; }
-.home-compact-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
-.home-compact-grid .card b { font-size:15px; line-height:1.35; }
+.home-subject-pill.more { background:#e2e8f0; color:#475569; }
+.home-bottom-summary { padding:12px; }
+.home-bottom-summary .sub { margin:0; font-size:13px; font-weight:700; color:#334155; text-align:center; }
+.home-section-last > .card { padding:12px; }
+.home-section-last > .card .track { height:6px; }
 .subject-time-row { display:grid; grid-template-columns:52px 74px 1fr; align-items:center; gap:8px; margin-bottom:8px; font-size:13px; }
 .subject-time-row b { font-size:12px; color:#334155; }
 .study-subject-sheet { border-radius:20px 20px 0 0; }

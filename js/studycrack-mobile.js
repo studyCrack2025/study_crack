@@ -447,6 +447,9 @@ function App() {
     todaySubjectsWithTimer[activeStudySubject] = (todaySubjectsWithTimer[activeStudySubject] || 0) + liveStudySeconds;
   }
   const todaySubjectRows = Object.entries(todaySubjectsWithTimer).filter(([, sec]) => sec > 0);
+  const subjectChipSource = Object.entries({ 국어: todaySubjectsWithTimer['국어'] || 0, 수학: todaySubjectsWithTimer['수학'] || 0, 영어: todaySubjectsWithTimer['영어'] || 0, 탐구: todaySubjectsWithTimer['탐구'] || 0, ...todaySubjectsWithTimer });
+  const visibleSubjectChips = subjectChipSource.slice(0, 4);
+  const hiddenSubjectCount = Math.max(subjectChipSource.length - 4, 0);
   const plannedSubjectOptions = Array.from(new Set(plannerItems.map((item) => `${item.subject}${item.content ? ` - ${item.content}` : ''}`)));
   const buildDefaultCoachingSubjects = () => {
     const mapped = ['국어', '수학', '영어', '탐구'].map((subject) => {
@@ -488,7 +491,7 @@ function App() {
     return count;
   })();
 
-  const homeView = () => `<div class="home-dashboard">
+  const homeView = () => `<div class="home-dashboard home-single-screen">
     <div class="home-header">
       <div class="home-top-icons">
         <button class="top-icon-btn" data-action="openDrawer">${i('menu', false)}</button>
@@ -511,21 +514,11 @@ function App() {
       <div class="home-kpi-indicator">${homeTargets.map((_, idx) => `<i class="${idx===0?'active':''}"></i>`).join('')}<b>+</b></div>
       ${universityModalOpen ? `<div class="home-modal-overlay" data-action="closeUniversityModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">목표 대학 추가</p><p class="sub" style="margin-top:8px">대학 선택 모달은 다음 단계에서 연결됩니다.</p><button class="btn btn-primary" data-action="closeUniversityModal">닫기</button></div></div>` : ''}
     </div>
-    <div class="section home-section home-section-tight">
-      <div class="notice home-risk-card">
-        <div class="home-risk-copy">
-          <div class="home-risk-title">${i('alert', false)}<b>수학이 합격 가능성을 제한하고 있어요</b></div>
-          <p>전략을 확인해보세요!</p>
-        </div>
-        <img src="${CRACKY_SRC}" class="home-risk-char crackie" alt="크랙이" />
-      </div>
-    </div>
     <div class="section home-section home-section-last">
       <div class="card home-study-summary">
         <p class="analysis-title">오늘 공부 요약</p>
         <div class="study-timer-row"><b data-study-base-seconds="${todayRecord?.studyTime || 0}">${formatHms(todayStudySeconds)}</b>${studyTimerRunning ? `<button class="btn btn-secondary" data-action="stopStudyTimer">공부 종료</button>` : `<button class="btn btn-primary" data-action="openStudySubjectSheet">공부 시작하기</button>`}</div>
-        <p class="sub" style="margin:8px 0 0">${retentionMessage}</p>
-        <div class="home-subject-pill-row">${['국어', '수학', '영어', '탐구'].map((subject) => `<span class="home-subject-pill">${subject} ${formatHms(todaySubjectsWithTimer[subject] || 0)}</span>`).join('')}</div>
+        <div class="home-subject-pill-row">${visibleSubjectChips.map(([subject, sec]) => `<span class="home-subject-pill">${subject} ${formatHms(sec || 0)}</span>`).join('')}${hiddenSubjectCount ? `<span class="home-subject-pill more">+${hiddenSubjectCount}</span>` : ''}</div>
       </div>
       <div class="card">
         <p class="analysis-title">오늘 공부 목표</p>
@@ -533,9 +526,8 @@ function App() {
         <div class="track"><i style="width:${todayGoalPercent}%"></i></div>
         <p class="sub" style="margin:8px 0 0">오늘 목표 달성률 ${todayGoalPercent}%</p>
       </div>
-      <div class="home-compact-grid">
-        <div class="card"><p class="sub">평균 비교</p><b>상위 ${percentile}%</b></div>
-        <div class="card"><p class="sub">랭킹</p><b>전체 124명 중 ${Math.min(myRank, 124)}등</b></div>
+      <div class="card home-bottom-summary">
+        <p class="sub">상위 ${percentile}% · 전체 124명 중 ${Math.min(myRank, 124)}등</p>
       </div>
       ${studySubjectSheetOpen ? `<div class="planner-sheet-overlay" data-action="closeStudySubjectSheet"><div class="planner-sheet study-subject-sheet" data-action="noopModal"><h3>어떤 과목을 공부할까요?</h3><div class="study-subject-grid">${['국어', '수학', '영어', '탐구'].map((s) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${s}">${s}</button>`).join('')}<button class="planner-pill" data-action="selectStudySubjectCustom">기타 직접 입력</button></div>${plannedSubjectOptions.length ? `<p class="sub" style="margin:8px 0 6px">오늘 플래너 일정</p><div class="study-subject-grid">${plannedSubjectOptions.map((s) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${s.split(' - ')[0]}">${s}</button>`).join('')}</div>` : ''}</div></div>` : ''}
       ${drawerOpen ? `<div class="home-modal-overlay drawer-overlay" data-action="closeDrawer"><aside class="side-drawer" data-action="noopModal"><h3>메뉴</h3>${[['analysis','분석'],['strategy','학습 코칭'],['planner','플래너'],['weekly','주간 점검'],['report','프로 보고서']].map(([target,label]) => `<button class="my-row" data-action="drawerGoto" data-target="${target}">${label}<span>${i('chevron', false)}</span></button>`).join('')}</aside></div>` : ''}
