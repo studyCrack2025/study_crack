@@ -368,6 +368,10 @@ function App() {
   const analysisSearchList = analysisSearchPool.filter((name) => name.includes(analysisSearchTerm.trim()));
   const analysisGaugeFill = Math.min((analysisSelected.score / 250) * 100, 100);
   const analysisGaugeColor = analysisSelected.score >= 150 ? '#22C55E' : analysisSelected.score >= 100 ? '#2563EB' : '#F97316';
+  const analysisStatus = analysisSelected.score >= 150 ? '초안정' : analysisSelected.score >= 100 ? '적정' : '위험';
+  const analysisStatusColor = analysisSelected.score >= 150 ? '#22C55E' : analysisSelected.score >= 100 ? '#0B6BFF' : '#F97316';
+  const analysisTargetScore = Math.min(analysisSelected.score + 34, 180);
+  const analysisWeeks = Math.max(3, Math.ceil((Math.max(100 - analysisSelected.score, 0) || 12) / 3));
   const onboardingProgress = (step) => `<div class="ob-progress"><span>${step}/3</span><div class="ob-dots"><i class="${step>=1?'active':''}"></i><i class="${step>=2?'active':''}"></i><i class="${step>=3?'active':''}"></i></div></div>`;
   const mbtiDone = Object.values(mbtiAnswers).every(Boolean);
   const gaugeTotal = 250;
@@ -864,11 +868,12 @@ function App() {
       `<section class="analysis-v2">
         <div class="card analysis-v2-head">
           <h3>분석</h3>
-          <p>목표대학별 합격 가능성과 상승 전략을 확인하세요.</p>
+          <p>결과를 보고, 전략을 이해하고, 바로 실행으로 연결하세요.</p>
         </div>
 
         <div class="card analysis-v2-targets">
-          <p class="analysis-title">목표대학</p>
+          <p class="analysis-title">희망 대학 선택</p>
+          <div class="analysis-selected-target"><span>선택된 대학</span><strong>${targetMajor}</strong></div>
           <div class="analysis-target-grid">
             ${analysisTargetList.map((name) => `<button class="analysis-target-item ${targetMajor===name?'active':''}" data-action="selectTarget" data-target-major="${name}">${name}</button>`).join('')}
             <button class="analysis-target-item add" data-action="openAnalysisSearch">+ 희망 대학 추가</button>
@@ -876,13 +881,14 @@ function App() {
         </div>
 
         <div class="card analysis-v2-summary">
+          <p class="analysis-title">핵심 결과 요약</p>
           <div class="analysis-v2-summary-top">
             <div>
               <p class="analysis-v2-univ">${targetMajor}</p>
-              <p class="analysis-v2-label">AI 환산 진단점수</p>
+              <p class="analysis-v2-label">AI 점수 · 합격컷 대비 위치</p>
             </div>
             <div class="analysis-v2-score-wrap">
-              <span class="analysis-v2-verdict" style="color:${analysisSelected.verdictColor};border-color:${analysisSelected.verdictColor}">${analysisSelected.verdict}</span>
+              <span class="analysis-v2-verdict" style="color:${analysisStatusColor};border-color:${analysisStatusColor}">${analysisStatus}</span>
               <strong>${analysisSelected.score}점</strong>
             </div>
           </div>
@@ -891,38 +897,39 @@ function App() {
         </div>
 
         <div class="card analysis-v2-before-after">
-          <p class="analysis-title">성적 Before & After</p>
+          <p class="analysis-title">최소 노력 대비 합격 도달 성적</p>
           <div class="analysis-v2-ba-grid">
             <div class="analysis-v2-ba-col"><h4>현재 성적</h4><p>국어 82</p><p>수학 68</p><p>영어 77</p><p>탐구1 70</p><p>탐구2 66</p><p><b>총점 86</b></p></div>
             <div class="analysis-v2-arrow">→</div>
             <div class="analysis-v2-ba-col"><h4>목표 성적</h4><p>국어 82</p><p>수학 80 <em>+12</em></p><p>영어 77</p><p>탐구1 76 <em>+6</em></p><p>탐구2 66</p><p><b>예상 총점 120</b></p></div>
           </div>
+          <p class="analysis-v2-period">현재 학습량 기준 약 <b>${analysisWeeks}주</b> 소요</p>
         </div>
 
         <div class="card analysis-v2-gauge-change">
-          <p class="analysis-title">합격 게이지 변화</p>
-          <p class="analysis-v2-gauge-line">현재 <b class="current">86점</b> → 목표 <b class="target">120점</b> · 합격컷 100 · 안정컷 150 · MAX 250</p>
-          <div class="analysis-v2-change-track"><span class="marker current" style="left:34.4%"></span><span class="marker target" style="left:48%"></span><span class="line pass" style="left:40%"></span><span class="line safe" style="left:60%"></span></div>
-          <p class="analysis-sub">현재는 합격컷 아래 / 목표 성적 달성 시 합격권 진입</p>
-        </div>
-
-        <div class="card analysis-v2-compare">
-          <p class="analysis-title">목표대학 비교</p>
-          <div class="analysis-v2-bar-chart">
-            ${[['가천대 관광경영학과', 250, '가천대학교 관광경영학과'], ['강서대 G2빅데이터경영학과', 250, '강서대학교 G2빅데이터경영학과'], ['고려대 경영대학', 71, '고려대학교 경영대학']].map(([label, score, full]) => `<button class="analysis-v2-bar ${targetMajor===full?'active':''}" data-action="selectTarget" data-target-major="${full}"><span class="score">${score}</span><i style="height:${Math.max((score/250)*100, 10)}%"></i><p>${label}</p></button>`).join('')}
-            <span class="guide pass">합격선 100점</span><span class="guide safe">안정선 150점</span>
+          <p class="analysis-title">합격 가능성 변화</p>
+          <p class="analysis-v2-gauge-line">현재 <b class="current">${analysisSelected.score}점</b> → 목표 <b class="target">${analysisTargetScore}점</b></p>
+          <div class="analysis-v2-progress">
+            <div class="seg risk"></div>
+            <div class="seg pass"></div>
+            <div class="seg safe"></div>
+            <span class="dot current" style="left:${Math.min((analysisSelected.score / 250) * 100, 100)}%"></span>
+            <span class="dot target" style="left:${Math.min((analysisTargetScore / 250) * 100, 100)}%"></span>
           </div>
+          <div class="analysis-v2-progress-label"><span>위험</span><span>합격</span><span>안정</span></div>
+          <p class="analysis-sub">현재: 합격컷 미달 → 목표 달성 시 합격권 진입</p>
         </div>
 
         <div class="card analysis-v2-sim">
-          <p class="analysis-title">+1점 상승 시뮬레이션</p>
+          <p class="analysis-title">+1점 상승 시 기대 효율</p>
           ${analysisSelected.sim.map(([subject, gain, desc, recommended]) => `<div class="analysis-v2-sim-item ${recommended?'recommended':''}"><div><p><strong>${subject} (+1점)</strong>${recommended?'<span class="badge">추천</span>':''}</p><small>${desc}</small></div><b>${gain}</b></div>`).join('')}
+          <p class="analysis-v2-sim-foot">이 과목부터 올려야 합격 확률이 가장 빠르게 올라갑니다.</p>
         </div>
 
-        <div class="card analysis-v2-comment"><p class="analysis-title">합격 전략 코멘트</p><p>${analysisSelected.comment}</p></div>
-        <div class="card analysis-v2-cta"><p class="analysis-title">이 전략대로 실행해볼까요?</p><p class="sub">분석은 방향을 보여주고, Standard는 매주 실행을 도와줘요.</p><button class="btn btn-primary" data-action="startStandard">Standard로 시작하기</button></div>
+        <div class="card analysis-v2-comment"><p class="analysis-title">전략 코멘트</p><p>${analysisSelected.comment}</p></div>
+        <div class="card analysis-v2-cta"><p class="analysis-title">이 전략, 실제로 실행해볼까요?</p><p class="sub">Standard 플랜은 매주 플래너 피드백과 실행 코칭을 제공합니다.</p><button class="btn btn-primary" data-action="startStandard">Standard로 시작하기</button></div>
 
-        ${analysisSearchOpen ? `<div class="analysis-search-overlay" data-action="closeAnalysisSearch"><div class="analysis-search-modal" data-action="noopModal"><div class="analysis-search-head"><h4>희망 대학 추가</h4><button data-action="closeAnalysisSearch">✕</button></div><input class="planner-input" data-field="analysisSearchTerm" value="${analysisSearchTerm}" placeholder="대학명 또는 학과명을 검색하세요"/><div class="analysis-search-section"><p>검색 결과</p>${analysisSearchList.map((name) => `<button class="analysis-search-row" data-action="addAnalysisTarget" data-target-major="${name}">${name}<span>${analysisTargetList.includes(name)?'추가됨':'추가'}</span></button>`).join('')}</div><div class="analysis-search-section"><p>현재 성적 기준 추천 대학</p>${analysisRecommended.map((name) => `<button class="analysis-search-row" data-action="addAnalysisTarget" data-target-major="${name}">${name}<span>${analysisTargetList.includes(name)?'추가됨':'추가'}</span></button>`).join('')}</div></div></div>` : ''}
+        ${analysisSearchOpen ? `<div class="analysis-search-overlay" data-action="closeAnalysisSearch"><div class="analysis-search-modal" data-action="noopModal"><div class="analysis-search-head"><h4>희망 대학 추가</h4><button data-action="closeAnalysisSearch">✕</button></div><input class="planner-input" data-field="analysisSearchTerm" value="${analysisSearchTerm}" placeholder="대학명 또는 학과명을 검색하세요"/><div class="analysis-search-section recommend"><p>현재 성적 기준 추천 대학</p><div class="analysis-search-rec-grid">${analysisRecommended.map((name) => `<button class="analysis-rec-card" data-action="addAnalysisTarget" data-target-major="${name}"><div><strong>${name}</strong><span class="badge">추천</span></div><em>${analysisTargetList.includes(name)?'추가됨':'추가하기'}</em></button>`).join('')}</div></div><div class="analysis-search-section"><p>검색 결과</p>${analysisSearchList.map((name) => `<button class="analysis-search-row" data-action="addAnalysisTarget" data-target-major="${name}">${name}<span>${analysisTargetList.includes(name)?'추가됨':'추가'}</span></button>`).join('')}</div></div></div>` : ''}
       </section>`,
       true
     ),
