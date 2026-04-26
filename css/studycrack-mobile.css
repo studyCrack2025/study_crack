@@ -9,7 +9,7 @@
   --danger-bg: #fee2e2;
 }
 * { box-sizing: border-box; }
-html, body, #root {
+html, body {
   height: 100%;
   overflow: hidden;
   background: #F7F9FC;
@@ -21,7 +21,7 @@ body {
   background: #F7F9FC;
   color: var(--text);
 }
-#root { width: 100%; }
+#root { width: 100%; height: 100%; }
 .phone {
   width: 390px;
   max-width: 390px;
@@ -189,26 +189,27 @@ body {
 .init-loading h3 { margin:0; font-size:18px; color:#111827; }
 .init-loading .btn { margin-top:8px; min-height:44px; border-radius:12px; }
 
-.home-dashboard { padding-bottom: 2px; }
-.home-single-screen { height: calc(100dvh - 170px); overflow: hidden; display:flex; flex-direction:column; gap:8px; }
+.home-dashboard { padding-bottom: 0; height: 100dvh; display:flex; flex-direction:column; background:#F7F9FC; }
+.home-container { height: 100dvh; display:flex; flex-direction:column; }
+.home-content { flex:1; display:flex; flex-direction:column; justify-content:space-between; padding: 10px 12px calc(70px + env(safe-area-inset-bottom)); overflow: hidden; }
 .home-header { margin-bottom: 4px; }
 .home-top-icons { display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px; }
 .top-icon-btn { width: 36px; height: 36px; border-radius: 10px; border:1px solid var(--line); background:#fff; display:grid; place-items:center; color:#64748b; }
 .top-icon-btn .icon { width:19px; height:19px; }
 .home-greeting { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -0.02em; color:#0f172a; }
 .home-sub { margin: 2px 0 0; font-size: 12px; color:#64748b; }
-.home-section { margin-bottom: 6px; }
+.home-section { margin-bottom: 5px; }
 .home-section-tight { margin-bottom: 8px; }
 .home-section-last { margin-bottom: 0; }
-.home-kpi-card { padding: 12px; border-radius: 19px; min-height: 154px; }
+.home-kpi-card { padding: 10px; border-radius: 16px; min-height: 0; }
 .home-kpi-card .sub { font-size: 12px; margin:2px 0; }
 .home-kpi-card .metric { font-size: 36px; line-height:1; }
 .home-kpi-card .kpi-row { margin-top: 6px; }
 .home-kpi-head { display:flex; justify-content:space-between; align-items:flex-start; margin-top: 0; }
-.home-kpi-head .ring { margin-top: 0; width: 68px; height: 68px; }
+.home-kpi-head .ring { margin-top: 0; width: 80px; height: 80px; }
 .home-kpi-card .kpi-item { font-size: 12.5px; }
 .home-kpi-card .kpi-item b { font-size: 16px; }
-.home-planner-badges { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.home-planner-badges { display:flex; flex-wrap:nowrap; gap:6px; margin-top:6px; overflow:hidden; }
 .home-planner-badges span {
   font-size:10px;
   padding:4px 8px;
@@ -240,7 +241,7 @@ body {
   font-weight:700;
 }
 .home-kpi-add-card {
-  min-height:198px;
+  min-height:0;
   border:2px dashed #D1D5DB;
   background:#f8fbff;
   color:#475569;
@@ -281,16 +282,16 @@ body {
 .home-risk-char { position:absolute; right: 4px; bottom: -4px; width:92px; height:auto; object-fit:contain; }
 .home-quick-title { margin:0 0 8px; font-size:14px; font-weight:700; color:#334155; }
 .study-timer-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-.study-timer-row b { font-size:26px; color:#0B6BFF; letter-spacing:0.02em; }
+.study-timer-row b { font-size:22px; color:#0B6BFF; letter-spacing:0.02em; }
 .home-study-summary { padding:12px; }
 .home-study-summary .study-timer-row { flex-direction:column; align-items:flex-start; gap:8px; }
-.home-study-summary .study-timer-row .btn { align-self:flex-start; }
+.home-study-summary .study-timer-row .btn { align-self:flex-start; min-height:48px; }
 .home-subject-pill-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; max-height:56px; overflow:hidden; }
 .home-subject-pill { display:inline-flex; align-items:center; background:#eef2ff; color:#1e3a8a; border-radius:999px; padding:6px 10px; font-size:11px; font-weight:700; white-space:nowrap; }
 .home-subject-pill.more { background:#e2e8f0; color:#475569; }
 .home-bottom-summary { padding:12px; }
 .home-bottom-summary .sub { margin:0; font-size:13px; font-weight:700; color:#334155; text-align:center; }
-.home-section-last > .card { padding:12px; }
+.home-section-last > .card { padding:10px; border-radius:16px; }
 .home-section-last > .card .track { height:6px; }
 .subject-time-row { display:grid; grid-template-columns:52px 74px 1fr; align-items:center; gap:8px; margin-bottom:8px; font-size:13px; }
 .subject-time-row b { font-size:12px; color:#334155; }
