@@ -280,18 +280,18 @@ function selectProduct(element, url, tier) {
                 // 다운그레이드: 현재 만료 후 예약 적용
                 msgWrap.style.display = 'block';
                 msgWrap.classList.add('warning');
-                msgText.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <strong>다운그레이드 예약:</strong> 기존 구독 만료일(${expireDateStr}) 이후부터 <strong>${selectedTier.toUpperCase()}</strong> 플랜이 적용됩니다.`;
-                btn.innerText = "다운그레이드 예약 결제";
+                msgText.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <strong>다운그레이드 예약:</strong> 현재 이용 만료일(${expireDateStr}) 이후부터 <strong>${selectedTier.toUpperCase()}</strong> 이용권이 적용됩니다.`;
+                btn.innerText = "다운그레이드 예약 구매";
             } else if (selectedLevel === currentLevel) {
                 // 동일 티어 연장: 만료일로부터 28일 추가
                 msgWrap.style.display = 'block';
-                msgText.innerHTML = `<i class="fas fa-info-circle" style="color:#3b82f6;"></i> 기존 구독 기간이 <strong>${globalDaysLeft}일</strong> 남았습니다.<br>지금 결제하시면 만료일(${expireDateStr}) 이후로 4주가 연장됩니다.`;
-                btn.innerText = "연장 결제하기";
+                msgText.innerHTML = `<i class="fas fa-info-circle" style="color:#3b82f6;"></i> 현재 이용 기간이 <strong>${globalDaysLeft}일</strong> 남았습니다.<br>지금 구매하시면 만료일(${expireDateStr}) 이후로 28일이 연장됩니다.`;
+                btn.innerText = "이용권 연장하기";
             } else if (selectedLevel > currentLevel) {
                 // 업그레이드: 현재 만료 후 예약 적용
                 msgWrap.style.display = 'block';
-                msgText.innerHTML = `<i class="fas fa-arrow-up" style="color:#3b82f6;"></i> <strong>업그레이드 예약:</strong> 기존 구독 만료일(${expireDateStr}) 이후부터 <strong>${selectedTier.toUpperCase()}</strong> 혜택이 적용됩니다.`;
-                btn.innerText = "업그레이드 예약 결제";
+                msgText.innerHTML = `<i class="fas fa-arrow-up" style="color:#3b82f6;"></i> <strong>업그레이드 예약:</strong> 현재 이용 만료일(${expireDateStr}) 이후부터 <strong>${selectedTier.toUpperCase()}</strong> 이용권이 적용됩니다.`;
+                btn.innerText = "업그레이드 예약 구매";
             }
         }
     }
