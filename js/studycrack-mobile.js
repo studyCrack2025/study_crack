@@ -120,6 +120,7 @@ function App() {
   const [openFaq, setOpenFaq] = useState('');
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [plannerItems, setPlannerItems] = useState(DEFAULT_PLANNER_ITEMS);
+  const [plannerEditIndex, setPlannerEditIndex] = useState(null);
   const [studyRecords, setStudyRecords] = useState(() => safeParse('studyRecords', []));
   const [studySubjectRecords, setStudySubjectRecords] = useState(() => safeParse('studySubjectRecords', []));
   const [studyTimerRunning, setStudyTimerRunning] = useState(false);
@@ -520,19 +521,11 @@ function App() {
       </div>
     </div>
     <div class="section home-section home-section-last">
-      <div class="card">
-        <p class="analysis-title">오늘 공부 시작하기</p>
-        <p class="sub" style="margin:0 0 8px">${retentionMessage}</p>
+      <div class="card home-study-summary">
+        <p class="analysis-title">오늘 공부 요약</p>
         <div class="study-timer-row"><b data-study-base-seconds="${todayRecord?.studyTime || 0}">${formatHms(todayStudySeconds)}</b>${studyTimerRunning ? `<button class="btn btn-secondary" data-action="stopStudyTimer">공부 종료</button>` : `<button class="btn btn-primary" data-action="openStudySubjectSheet">공부 시작하기</button>`}</div>
-        <p class="sub" style="margin:8px 0 0">🔥 ${streakDays}일 연속 공부 중 ${streakDays >= 7 ? '· 상위 10% 학습자' : ''}</p>
-      </div>
-      <div class="card">
-        <p class="analysis-title">오늘 공부시간</p>
-        <p class="sub" style="margin:0 0 6px">총 공부시간: <b data-study-base-seconds="${todayRecord?.studyTime || 0}">${formatHms(todayStudySeconds)}</b>${activeStudySubject ? ` · 현재 과목: ${activeStudySubject}` : ''}</p>
-        ${todaySubjectRows.length ? todaySubjectRows.map(([subject, sec]) => {
-          const pct = todayStudySeconds ? Math.round((sec / todayStudySeconds) * 100) : 0;
-          return `<div class="subject-time-row"><span>${subject}</span><b>${formatHms(sec)}</b><div class="track"><i style="width:${pct}%;background:${subjectPalette[subject] || subjectPalette['기타']}"></i></div></div>`;
-        }).join('') : '<p class="sub" style="margin:0">아직 기록이 없어요. 바로 시작해볼까요?</p>'}
+        <p class="sub" style="margin:8px 0 0">${retentionMessage}</p>
+        <div class="home-subject-pill-row">${['국어', '수학', '영어', '탐구'].map((subject) => `<span class="home-subject-pill">${subject} ${formatHms(todaySubjectsWithTimer[subject] || 0)}</span>`).join('')}</div>
       </div>
       <div class="card">
         <p class="analysis-title">오늘 공부 목표</p>
@@ -540,9 +533,8 @@ function App() {
         <div class="track"><i style="width:${todayGoalPercent}%"></i></div>
         <p class="sub" style="margin:8px 0 0">오늘 목표 달성률 ${todayGoalPercent}%</p>
       </div>
-      <div class="home-retention-grid">
-        <div class="card"><p class="sub">나의 공부시간</p><b>오늘 ${formatHourMin(todayStudySeconds)} 공부했어요</b></div>
-        <div class="card"><p class="sub">평균 비교</p><b>상위 ${percentile}%입니다</b></div>
+      <div class="home-compact-grid">
+        <div class="card"><p class="sub">평균 비교</p><b>상위 ${percentile}%</b></div>
         <div class="card"><p class="sub">랭킹</p><b>전체 124명 중 ${Math.min(myRank, 124)}등</b></div>
       </div>
       ${studySubjectSheetOpen ? `<div class="planner-sheet-overlay" data-action="closeStudySubjectSheet"><div class="planner-sheet study-subject-sheet" data-action="noopModal"><h3>어떤 과목을 공부할까요?</h3><div class="study-subject-grid">${['국어', '수학', '영어', '탐구'].map((s) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${s}">${s}</button>`).join('')}<button class="planner-pill" data-action="selectStudySubjectCustom">기타 직접 입력</button></div>${plannedSubjectOptions.length ? `<p class="sub" style="margin:8px 0 6px">오늘 플래너 일정</p><div class="study-subject-grid">${plannedSubjectOptions.map((s) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${s.split(' - ')[0]}">${s}</button>`).join('')}</div>` : ''}</div></div>` : ''}
@@ -617,18 +609,12 @@ function App() {
         ${coachingExamType && coachingExamType !== '미응시' ? `<div class="coach-exam-form">
           <button class="btn btn-secondary" data-action="addExamPhoto">성적 인증 사진 첨부</button>
           <div class="coach-thumb-list">${coachingExamPhotos.map((name, idx) => `<div class="coach-thumb"><span>${name}</span><button data-action="removeExamPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}</div>
-          <div class="coach-score-grid">
-            <input class="planner-input" data-coach-field="koreanType" value="${coachingExamScores.koreanType || ''}" placeholder="국어: 선택" />
-            <input class="planner-input" data-coach-field="koreanRaw" value="${coachingExamScores.koreanRaw || ''}" placeholder="국어: 원점수" />
-            <input class="planner-input" data-coach-field="mathType" value="${coachingExamScores.mathType || ''}" placeholder="수학: 선택" />
-            <input class="planner-input" data-coach-field="mathRaw" value="${coachingExamScores.mathRaw || ''}" placeholder="수학: 원점수" />
-            <input class="planner-input" data-coach-field="englishGrade" value="${coachingExamScores.englishGrade || ''}" placeholder="영어: 등급" />
-            <input class="planner-input" data-coach-field="inq1Name" value="${coachingExamScores.inq1Name || ''}" placeholder="탐구1: 과목명" />
-            <input class="planner-input" data-coach-field="inq1Raw" value="${coachingExamScores.inq1Raw || ''}" placeholder="탐구1: 원점수" />
-            <input class="planner-input" data-coach-field="inq2Name" value="${coachingExamScores.inq2Name || ''}" placeholder="탐구2: 과목명" />
-            <input class="planner-input" data-coach-field="inq2Raw" value="${coachingExamScores.inq2Raw || ''}" placeholder="탐구2: 원점수" />
-            <input class="planner-input" data-coach-field="percentile" value="${coachingExamScores.percentile || ''}" placeholder="백분위(선택)" />
-            <input class="planner-input" data-coach-field="stdScore" value="${coachingExamScores.stdScore || ''}" placeholder="표준점수(선택)" />
+          <div class="coach-exam-subject-list">
+            <section class="coach-exam-subject-card"><h5>국어</h5><input class="planner-input" data-coach-field="koreanType" value="${coachingExamScores.koreanType || ''}" placeholder="선택과목" /><input class="planner-input" data-coach-field="koreanRaw" value="${coachingExamScores.koreanRaw || ''}" placeholder="원점수" /></section>
+            <section class="coach-exam-subject-card"><h5>수학</h5><input class="planner-input" data-coach-field="mathType" value="${coachingExamScores.mathType || ''}" placeholder="선택과목" /><input class="planner-input" data-coach-field="mathRaw" value="${coachingExamScores.mathRaw || ''}" placeholder="원점수" /></section>
+            <section class="coach-exam-subject-card"><h5>영어</h5><input class="planner-input" data-coach-field="englishGrade" value="${coachingExamScores.englishGrade || ''}" placeholder="등급" /></section>
+            <section class="coach-exam-subject-card"><h5>탐구1</h5><input class="planner-input" data-coach-field="inq1Name" value="${coachingExamScores.inq1Name || ''}" placeholder="과목명" /><input class="planner-input" data-coach-field="inq1Raw" value="${coachingExamScores.inq1Raw || ''}" placeholder="원점수" /></section>
+            <section class="coach-exam-subject-card"><h5>탐구2</h5><input class="planner-input" data-coach-field="inq2Name" value="${coachingExamScores.inq2Name || ''}" placeholder="과목명" /><input class="planner-input" data-coach-field="inq2Raw" value="${coachingExamScores.inq2Raw || ''}" placeholder="원점수" /></section>
           </div>
         </div>` : ''}
       </div>`;
@@ -877,7 +863,7 @@ function App() {
         <div class="card coach-feedback-card">
           <div class="coach-row"><h4>주간학습 피드백</h4><select class="coach-month-select" data-field="coachingMonth"><option value="26년 4월" ${coachingMonth==='26년 4월'?'selected':''}>26년 4월</option><option value="26년 3월" ${coachingMonth==='26년 3월'?'selected':''}>26년 3월</option></select></div>
           <p>월별 피드백 리포트를 PDF로 다운로드할 수 있어요.</p>
-          ${selectedCoachingReports.length ? `<div class="coach-report-list">${selectedCoachingReports.map((report) => `<div class="coach-report-card"><div><b>${report.title}</b><p>${report.date}</p></div><div class="coach-report-side"><span class="badge coach-pdf-badge">PDF</span><button class="coach-pdf-btn" data-action="downloadCoachingPdf" data-pdf-path="${report.pdfPath}">PDF 다운로드</button></div></div>`).join('')}</div>` : `<div class="coach-empty">아직 도착한 피드백 리포트가 없습니다.</div>`}
+          ${selectedCoachingReports.length ? `<div class="coach-report-list">${selectedCoachingReports.map((report) => `<button class="coach-report-card" data-action="downloadCoachingPdf" data-pdf-path="${report.pdfPath}"><div><b>${report.title}</b><p>${report.date}</p></div><div class="coach-report-side"><span class="badge coach-pdf-badge">PDF</span><span class="coach-report-arrow">›</span></div></button>`).join('')}</div>` : `<div class="coach-empty">아직 도착한 피드백 리포트가 없습니다.</div>`}
         </div>
         ${coachingSheetOpen ? `<div class="coach-sheet-overlay" data-action="closeCoachingSheet">
           <section class="coach-sheet" data-action="noopModal">
@@ -895,12 +881,13 @@ function App() {
        <div class="planner-days"><span>12</span><span>13</span><span class="active">14</span><span>15</span><span>16</span><span>17</span><span>18</span></div>
        <div class="planner-section-title"><div><h4>오늘의 계획</h4><p>총 ${totalHour}시간 ${totalMinute}분</p></div></div>
        <div class="planner-plan-list">
-         ${plannerItems.map((item, idx) => `<div class="planner-item"><i class="dot ${item.dot}"></i><div><b>${item.subject}</b><p>${item.content}</p><small>${item.start} - ${item.end}</small></div><div class="planner-item-right"><strong>${item.minutes}분</strong><button class="planner-item-remove" data-action="removePlannerItem" data-planner-index="${idx}">✕</button></div></div>`).join('')}
+         ${plannerItems.map((item, idx) => `<div class="planner-item ${item.done ? 'done' : ''}" data-action="openPlannerEdit" data-planner-index="${idx}"><i class="dot ${item.dot}"></i><div><b>${item.subject}</b><p>${item.content}</p><small>${item.start} - ${item.end}</small></div><div class="planner-item-right"><strong>${item.minutes}분</strong><div class="planner-item-controls"><button class="planner-item-check" data-action="togglePlannerDone" data-planner-index="${idx}">${item.done ? '☑' : '☐'}</button><button class="planner-item-remove" data-action="removePlannerItem" data-planner-index="${idx}">✕</button></div></div></div>`).join('')}
        </div>
        <div class="planner-feedback-card ${plannerFeedback.tone}"><span>${plannerFeedback.icon}</span><p>${plannerFeedback.text}</p></div>
        <div class="planner-bottom-space"></div>
        ${!plannerAddModalOpen ? `<button class="planner-fab" data-action="openPlannerAddModal"><span>+</span></button>` : ''}
        ${plannerAddModalOpen ? `<div class="planner-sheet-overlay" data-action="closePlannerAddModal"><div class="planner-sheet" data-action="noopModal"><button class="planner-sheet-close" data-action="closePlannerAddModal">✕</button><h3>플래너 항목 추가</h3><p>오늘 실행할 학습 계획을 입력해 주세요.</p><div class="planner-sheet-block"><label>과목 선택</label><div class="planner-pill-row"><button class="planner-pill ${plannerSubject==='수학'?'active':''}" data-action="setPlannerSubject" data-planner-subject="수학">수학</button><button class="planner-pill ${plannerSubject==='국어'?'active':''}" data-action="setPlannerSubject" data-planner-subject="국어">국어</button><button class="planner-pill ${plannerSubject==='영어'?'active':''}" data-action="setPlannerSubject" data-planner-subject="영어">영어</button><button class="planner-pill ${plannerSubject==='탐구'?'active':''}" data-action="setPlannerSubject" data-planner-subject="탐구">탐구</button></div></div><div class="planner-sheet-block"><label>학습 내용</label><input class="planner-input" data-field="plannerContent" value="${plannerContent}" placeholder="예: 개념 학습, 독해 문제 풀이" /></div><div class="planner-sheet-block"><label>시간 선택</label><div class="planner-pill-row"><button class="planner-pill ${plannerDurationChoice==='30'?'active':''}" data-action="setPlannerDuration" data-planner-duration="30">30분</button><button class="planner-pill ${plannerDurationChoice==='60'?'active':''}" data-action="setPlannerDuration" data-planner-duration="60">60분</button><button class="planner-pill ${plannerDurationChoice==='90'?'active':''}" data-action="setPlannerDuration" data-planner-duration="90">90분</button><button class="planner-pill ${plannerDurationChoice==='120'?'active':''}" data-action="setPlannerDuration" data-planner-duration="120">120분</button><button class="planner-pill ${plannerDurationChoice==='custom'?'active':''}" data-action="setPlannerDuration" data-planner-duration="custom">직접 입력</button></div>${plannerDurationChoice==='custom' ? `<input class="planner-input" data-field="plannerCustomMinutes" value="${plannerCustomMinutes}" type="number" placeholder="분 단위 입력" />` : ''}</div><div class="planner-sheet-block"><label>시간대</label><div class="planner-time-row"><input class="planner-input" data-field="plannerStart" value="${plannerStart}" type="time" /><input class="planner-input" data-field="plannerEnd" value="${plannerEnd}" type="time" /></div></div><button class="btn btn-primary planner-sheet-submit ${canSubmitPlanner?'':'disabled'}" data-action="addPlannerFromSheet" ${canSubmitPlanner?'':'disabled'}>플래너에 추가하기</button></div></div>` : ''}
+       ${plannerEditIndex !== null ? `<div class="planner-sheet-overlay" data-action="closePlannerEdit"><div class="planner-sheet" data-action="noopModal"><button class="planner-sheet-close" data-action="closePlannerEdit">✕</button><h3>플래너 항목 수정</h3><div class="planner-sheet-block"><label>과목</label><input class="planner-input" data-field="plannerEditSubject" value="${plannerItems[plannerEditIndex]?.subject || ''}" /></div><div class="planner-sheet-block"><label>세부 내용</label><input class="planner-input" data-field="plannerEditContent" value="${plannerItems[plannerEditIndex]?.content || ''}" /></div><div class="planner-sheet-block"><label>시간대</label><div class="planner-time-row"><input class="planner-input" data-field="plannerEditStart" type="time" value="${plannerItems[plannerEditIndex]?.start || ''}" /><input class="planner-input" data-field="plannerEditEnd" type="time" value="${plannerItems[plannerEditIndex]?.end || ''}" /></div></div><div class="planner-sheet-block"><label>소요 시간(분)</label><input class="planner-input" data-field="plannerEditMinutes" type="number" value="${plannerItems[plannerEditIndex]?.minutes || ''}" /></div><button class="btn btn-primary" data-action="savePlannerEdit">수정 저장</button></div></div>` : ''}
        </div>`,
       true
     ),
@@ -1009,6 +996,8 @@ function App() {
     if (action === 'closeUniversityModal') setUniversityModalOpen(false);
     if (action === 'openPlannerAddModal') setPlannerAddModalOpen(true);
     if (action === 'closePlannerAddModal') setPlannerAddModalOpen(false);
+    if (action === 'openPlannerEdit') setPlannerEditIndex(Number(actionEl.getAttribute('data-planner-index')));
+    if (action === 'closePlannerEdit') setPlannerEditIndex(null);
     if (action === 'openScoreEdit') setScoreEditOpen(true);
     if (action === 'closeScoreEdit') setScoreEditOpen(false);
     if (action === 'saveScoreEdit') setScoreEditOpen(false);
@@ -1191,6 +1180,10 @@ function App() {
       const idx = Number(actionEl.getAttribute('data-planner-index'));
       setPlannerItems((prev) => prev.filter((_, i) => i !== idx));
     }
+    if (action === 'togglePlannerDone') {
+      const idx = Number(actionEl.getAttribute('data-planner-index'));
+      setPlannerItems((prev) => prev.map((item, i) => (i === idx ? { ...item, done: !item.done } : item)));
+    }
     if (action === 'selectUniversity') {
       setTargetMajor(actionEl.getAttribute('data-target-major'));
       setTargetOpen(false);
@@ -1237,6 +1230,19 @@ function App() {
         const input = document.querySelector(`[data-field="${name}"]`);
         if (input) input.value = '';
       });
+    }
+    if (action === 'savePlannerEdit') {
+      if (plannerEditIndex === null) return;
+      const subject = document.querySelector('[data-field="plannerEditSubject"]')?.value?.trim();
+      const content = document.querySelector('[data-field="plannerEditContent"]')?.value?.trim();
+      const start = document.querySelector('[data-field="plannerEditStart"]')?.value;
+      const end = document.querySelector('[data-field="plannerEditEnd"]')?.value;
+      const minutes = Number(document.querySelector('[data-field="plannerEditMinutes"]')?.value || 0);
+      if (!subject || !content || !start || !end || !minutes) return;
+      const lowered = subject.toLowerCase();
+      const dot = lowered.includes('수') ? 'math' : lowered.includes('영') ? 'eng' : lowered.includes('국') ? 'kor' : 'sci';
+      setPlannerItems((prev) => prev.map((item, idx) => (idx === plannerEditIndex ? { ...item, subject, content, start, end, minutes, dot } : item)));
+      setPlannerEditIndex(null);
     }
   };
 

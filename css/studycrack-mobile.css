@@ -265,8 +265,10 @@ body {
 .home-quick-title { margin:0 0 8px; font-size:14px; font-weight:700; color:#334155; }
 .study-timer-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .study-timer-row b { font-size:26px; color:#0B6BFF; letter-spacing:0.02em; }
-.home-retention-grid { display:grid; gap:10px; margin-bottom:10px; }
-.home-retention-grid .card b { font-size:16px; line-height:1.35; }
+.home-subject-pill-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.home-subject-pill { background:#eef2ff; color:#1e3a8a; border-radius:999px; padding:4px 8px; font-size:11px; font-weight:700; }
+.home-compact-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+.home-compact-grid .card b { font-size:15px; line-height:1.35; }
 .subject-time-row { display:grid; grid-template-columns:52px 74px 1fr; align-items:center; gap:8px; margin-bottom:8px; font-size:13px; }
 .subject-time-row b { font-size:12px; color:#334155; }
 .study-subject-sheet { border-radius:20px 20px 0 0; }
@@ -319,6 +321,10 @@ body {
 .planner-item small { font-size:11.5px; color:#4b5563; }
 .planner-item strong { font-size:12px; font-weight:600; color:#64748b; }
 .planner-item-right { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+.planner-item-controls { display:flex; align-items:center; gap:6px; }
+.planner-item-check { width:24px; height:24px; border:none; border-radius:999px; background:#e2e8f0; color:#0f172a; font-size:13px; font-weight:700; }
+.planner-item.done { opacity:0.62; }
+.planner-item.done b, .planner-item.done p, .planner-item.done small, .planner-item.done strong { text-decoration:line-through; }
 .planner-item-remove {
   width:22px;
   height:22px;
@@ -1023,12 +1029,14 @@ body {
 .coach-empty { border:1px dashed #CBD5E1; border-radius:14px; padding:14px; color:#64748b; font-size:13px; background:#F8FAFC; }
 .coach-submitted { background:#DBEAFE !important; color:#0B6BFF !important; }
 .coach-report-list { display:grid; gap:10px; margin-top:10px; }
-.coach-report-card { background:#fff; border:1px solid #E2E8F0; border-radius:20px; padding:12px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.coach-report-card { background:#fff; border:1px solid #E2E8F0; border-radius:20px; padding:12px; display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; text-align:left; cursor:pointer; transition:transform .12s ease, box-shadow .12s ease; }
+.coach-report-card:hover { box-shadow:0 8px 16px rgba(15,23,42,0.08); transform:translateY(-1px); }
+.coach-report-card:active { transform:translateY(0); }
 .coach-report-card b { font-size:14px; color:#0f172a; }
 .coach-report-card p { margin:4px 0 0; font-size:12px; color:#64748b; }
 .coach-report-side { display:grid; justify-items:end; gap:8px; }
 .coach-pdf-badge { background:#EFF6FF; color:#0B6BFF; }
-.coach-pdf-btn { border:1px solid #0B6BFF; color:#0B6BFF; background:#fff; border-radius:10px; padding:7px 10px; font-size:12px; font-weight:700; }
+.coach-report-arrow { font-size:20px; color:#0B6BFF; line-height:1; font-weight:700; }
 
 .coach-sheet-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.46); z-index:30; display:flex; align-items:flex-end; }
 .coach-sheet { width:100%; max-width:430px; margin:0 auto; max-height:92vh; background:#F5F7FB; border-radius:24px 24px 0 0; border:1px solid #E2E8F0; display:flex; flex-direction:column; overflow:hidden; }
@@ -1050,7 +1058,9 @@ body {
 .coach-thumb button { border:none; background:#eef2ff; color:#1d4ed8; border-radius:8px; padding:4px 8px; font-size:12px; }
 .coach-choice-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
 .coach-exam-form { margin-top:10px; display:grid; gap:8px; }
-.coach-score-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.coach-exam-subject-list { display:grid; gap:10px; }
+.coach-exam-subject-card { background:#fff; border:1px solid #E2E8F0; border-radius:16px; padding:10px; display:grid; gap:8px; }
+.coach-exam-subject-card h5 { margin:0; font-size:14px; font-weight:800; color:#0f172a; }
 .coach-drop-box { margin-top:12px; background:#fff; border:1px solid #E2E8F0; border-radius:18px; padding:12px; }
 .coach-textarea { min-height:120px; padding:12px; resize:none; }
 .coach-count { text-align:right; margin:6px 0 0; font-size:12px; color:#64748b; }
