@@ -128,6 +128,18 @@ function App() {
   const [activeStudySubject, setActiveStudySubject] = useState('');
   const [studySubjectSheetOpen, setStudySubjectSheetOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [coachingSubmitted, setCoachingSubmitted] = useState(false);
+  const [coachingSheetOpen, setCoachingSheetOpen] = useState(false);
+  const [coachingStep, setCoachingStep] = useState(1);
+  const [coachingMonth, setCoachingMonth] = useState('26년 4월');
+  const [coachingSubjectRows, setCoachingSubjectRows] = useState([]);
+  const [coachingPlannerPhotos, setCoachingPlannerPhotos] = useState([]);
+  const [coachingExamType, setCoachingExamType] = useState('');
+  const [coachingExamPhotos, setCoachingExamPhotos] = useState([]);
+  const [coachingExamScores, setCoachingExamScores] = useState({});
+  const [coachingTrend, setCoachingTrend] = useState('');
+  const [coachingDropReasons, setCoachingDropReasons] = useState([]);
+  const [coachingAnswers, setCoachingAnswers] = useState({ step4Reason: '', step5: '', step6: '', step7: '', step8: '' });
 
   const goto = (next, addHistory = true) => {
     if (addHistory && screen !== next) setHistory((h) => [...h, screen]);
@@ -264,7 +276,7 @@ function App() {
 
   const appbar = (title, showBack) => `<div class="appbar">${showBack ? '<button class="back-btn" data-action="back">←</button>' : '<div style="width:36px"></div>'}<div class="title">${title}</div></div>`;
   const tabBtn = (k, label, iconName) => `<button class="${tab === k ? 'active' : ''}" data-action="tab" data-tab="${k}">${i(iconName, tab===k)}<span>${label}</span></button>`;
-  const tabbar = () => `<div class="tabbar">${tabBtn('home','홈','home')}${tabBtn('analysis','분석','chart')}${tabBtn('strategy','전략','target')}${tabBtn('planner','플래너','calendar')}${tabBtn('my','마이','user')}</div>`;
+  const tabbar = () => `<div class="tabbar">${tabBtn('home','홈','home')}${tabBtn('analysis','분석','chart')}${tabBtn('strategy','학습 코칭','target')}${tabBtn('planner','플래너','calendar')}${tabBtn('my','마이','user')}</div>`;
   const layout = (inner, withTab) => `<div class="app-shell"><div class="screen app-screen app-content">${inner}</div>${withTab ? tabbar() : ''}</div>`;
   const quickMini = (action, iconName, label) => `<button class="quick-mini-item" data-action="goto" data-target="${action}"><span class="quick-mini-icon">${i(iconName,false)}</span><span class="quick-mini-label">${label}</span></button>`;
   const universityProfiles = {
@@ -435,6 +447,28 @@ function App() {
   }
   const todaySubjectRows = Object.entries(todaySubjectsWithTimer).filter(([, sec]) => sec > 0);
   const plannedSubjectOptions = Array.from(new Set(plannerItems.map((item) => `${item.subject}${item.content ? ` - ${item.content}` : ''}`)));
+  const buildDefaultCoachingSubjects = () => {
+    const mapped = ['국어', '수학', '영어', '탐구'].map((subject) => {
+      const plannedHour = Math.round((plannerMinutesBySubject[subject] || 0) / 60);
+      const actualHour = Math.round(((todaySubjectRecord.subjects && todaySubjectRecord.subjects[subject]) || 0) / 3600);
+      const hint = subject === '국어' ? '세부과목 (예: 언매)' : subject === '수학' ? '세부과목 (예: 미적)' : subject === '영어' ? '세부과목 (예: 독해)' : '세부과목 (예: 생1)';
+      return { id: `${subject}-base`, subject, detail: '', planned: plannedHour ? String(plannedHour) : '', actual: actualHour ? String(actualHour) : '', removable: false, placeholder: hint };
+    });
+    return mapped;
+  };
+  const ensureCoachingSubjectRows = () => {
+    if (coachingSubjectRows.length) return;
+    setCoachingSubjectRows(buildDefaultCoachingSubjects());
+  };
+  const syncStep1FromDom = () => {
+    const rows = coachingSubjectRows.map((row) => {
+      const detail = document.querySelector(`[data-coach-detail="${row.id}"]`)?.value || row.detail;
+      const planned = document.querySelector(`[data-coach-plan="${row.id}"]`)?.value || row.planned;
+      const actual = document.querySelector(`[data-coach-actual="${row.id}"]`)?.value || row.actual;
+      return { ...row, detail, planned, actual };
+    });
+    setCoachingSubjectRows(rows);
+  };
   const myRank = Math.max(1, 160 - Math.floor(todayStudySeconds / 60));
   const percentile = Math.max(1, Math.min(100, 100 - Math.floor(todayStudySeconds / 120)));
   const lastStudyDate = studyRecords.length ? studyRecords[studyRecords.length - 1].date : '';
@@ -512,7 +546,7 @@ function App() {
         <div class="card"><p class="sub">랭킹</p><b>전체 124명 중 ${Math.min(myRank, 124)}등</b></div>
       </div>
       ${studySubjectSheetOpen ? `<div class="planner-sheet-overlay" data-action="closeStudySubjectSheet"><div class="planner-sheet study-subject-sheet" data-action="noopModal"><h3>어떤 과목을 공부할까요?</h3><div class="study-subject-grid">${['국어', '수학', '영어', '탐구'].map((s) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${s}">${s}</button>`).join('')}<button class="planner-pill" data-action="selectStudySubjectCustom">기타 직접 입력</button></div>${plannedSubjectOptions.length ? `<p class="sub" style="margin:8px 0 6px">오늘 플래너 일정</p><div class="study-subject-grid">${plannedSubjectOptions.map((s) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${s.split(' - ')[0]}">${s}</button>`).join('')}</div>` : ''}</div></div>` : ''}
-      ${drawerOpen ? `<div class="home-modal-overlay drawer-overlay" data-action="closeDrawer"><aside class="side-drawer" data-action="noopModal"><h3>메뉴</h3>${[['analysis','분석'],['strategy','전략'],['planner','플래너'],['weekly','주간 점검'],['report','프로 보고서']].map(([target,label]) => `<button class="my-row" data-action="drawerGoto" data-target="${target}">${label}<span>${i('chevron', false)}</span></button>`).join('')}</aside></div>` : ''}
+      ${drawerOpen ? `<div class="home-modal-overlay drawer-overlay" data-action="closeDrawer"><aside class="side-drawer" data-action="noopModal"><h3>메뉴</h3>${[['analysis','분석'],['strategy','학습 코칭'],['planner','플래너'],['weekly','주간 점검'],['report','프로 보고서']].map(([target,label]) => `<button class="my-row" data-action="drawerGoto" data-target="${target}">${label}<span>${i('chevron', false)}</span></button>`).join('')}</aside></div>` : ''}
     </div>
   </div>`;
 
@@ -540,6 +574,74 @@ function App() {
     }
   };
   const currentPlan = planMeta[selectedPlan] || planMeta.Pro;
+  const coachingStepBody = () => {
+    if (coachingStep === 1) {
+      return `<div class="coach-step-body"><h4>1. 과목별 학습 달성률</h4><p class="sub">과목별 구체적인 과목명과 시간을 입력하세요.</p>
+        <div class="coach-subject-list">
+          ${coachingSubjectRows.map((row) => {
+            const planned = Number(row.planned) || 0;
+            const actual = Number(row.actual) || 0;
+            const rate = planned > 0 ? Math.min(999, Math.round((actual / planned) * 100)) : 0;
+            return `<div class="coach-subject-card">
+              <div class="coach-subject-head"><b>${row.subject}</b>${row.removable ? `<button class="coach-delete-btn" data-action="removeCoachingSubject" data-coach-row="${row.id}">삭제</button>` : ''}</div>
+              <input class="planner-input" data-coach-detail="${row.id}" value="${row.detail || ''}" placeholder="${row.placeholder}" />
+              <div class="coach-hours-row">
+                <input class="planner-input" data-coach-plan="${row.id}" value="${row.planned || ''}" type="number" placeholder="계획(H)" />
+                <input class="planner-input" data-coach-actual="${row.id}" value="${row.actual || ''}" type="number" placeholder="실제(H)" />
+                <div class="coach-rate-box" data-coach-rate="${row.id}">달성률 ${rate}%</div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+        <button class="btn btn-secondary" data-action="addCoachingSubject">+ 새로운 과목 추가</button>
+      </div>`;
+    }
+    if (coachingStep === 2) {
+      return `<div class="coach-step-body"><h4>2. 플래너 인증</h4><p class="sub">이번 주 플래너 사진을 첨부해주세요. 최대 5장</p>
+        <div class="coach-upload-box"><p>파일/사진 첨부 박스</p><button class="btn btn-secondary" data-action="addPlannerPhoto">사진 추가하기</button></div>
+        <div class="coach-thumb-list">${coachingPlannerPhotos.length ? coachingPlannerPhotos.map((name, idx) => `<div class="coach-thumb"><span>${name}</span><button data-action="removePlannerPhoto" data-photo-index="${idx}">삭제</button></div>`).join('') : '<p class="sub">첨부된 사진이 없습니다.</p>'}</div>
+      </div>`;
+    }
+    if (coachingStep === 3) {
+      const examTypes = ['미응시', '교내', '평가원/교육청', '사설'];
+      return `<div class="coach-step-body"><h4>3. 모의고사 응시 여부</h4><p class="sub">이번 주 사설 모의고사 또는 학력평가를 응시했나요?</p>
+        <div class="coach-choice-row">${examTypes.map((type) => `<button class="planner-pill ${coachingExamType===type?'active':''}" data-action="setCoachingExamType" data-coach-exam="${type}">${type}</button>`).join('')}</div>
+        ${coachingExamType && coachingExamType !== '미응시' ? `<div class="coach-exam-form">
+          <button class="btn btn-secondary" data-action="addExamPhoto">성적 인증 사진 첨부</button>
+          <div class="coach-thumb-list">${coachingExamPhotos.map((name, idx) => `<div class="coach-thumb"><span>${name}</span><button data-action="removeExamPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}</div>
+          <div class="coach-score-grid">
+            <input class="planner-input" data-coach-field="koreanType" value="${coachingExamScores.koreanType || ''}" placeholder="국어: 선택" />
+            <input class="planner-input" data-coach-field="koreanRaw" value="${coachingExamScores.koreanRaw || ''}" placeholder="국어: 원점수" />
+            <input class="planner-input" data-coach-field="mathType" value="${coachingExamScores.mathType || ''}" placeholder="수학: 선택" />
+            <input class="planner-input" data-coach-field="mathRaw" value="${coachingExamScores.mathRaw || ''}" placeholder="수학: 원점수" />
+            <input class="planner-input" data-coach-field="englishGrade" value="${coachingExamScores.englishGrade || ''}" placeholder="영어: 등급" />
+            <input class="planner-input" data-coach-field="inq1Name" value="${coachingExamScores.inq1Name || ''}" placeholder="탐구1: 과목명" />
+            <input class="planner-input" data-coach-field="inq1Raw" value="${coachingExamScores.inq1Raw || ''}" placeholder="탐구1: 원점수" />
+            <input class="planner-input" data-coach-field="inq2Name" value="${coachingExamScores.inq2Name || ''}" placeholder="탐구2: 과목명" />
+            <input class="planner-input" data-coach-field="inq2Raw" value="${coachingExamScores.inq2Raw || ''}" placeholder="탐구2: 원점수" />
+            <input class="planner-input" data-coach-field="percentile" value="${coachingExamScores.percentile || ''}" placeholder="백분위(선택)" />
+            <input class="planner-input" data-coach-field="stdScore" value="${coachingExamScores.stdScore || ''}" placeholder="표준점수(선택)" />
+          </div>
+        </div>` : ''}
+      </div>`;
+    }
+    if (coachingStep === 4) {
+      const reasons = ['계획 과다', '실전 감각 저하', '컨디션/건강', '기타'];
+      return `<div class="coach-step-body"><h4>4. 최근 2주 학업 추이</h4><p class="sub">최근 2주간 학습 흐름이 어땠나요?</p>
+        <div class="coach-choice-row">${['상승', '유지', '하락'].map((v) => `<button class="planner-pill ${coachingTrend===v?'active':''}" data-action="setCoachingTrend" data-coach-trend="${v}">${v}</button>`).join('')}</div>
+        ${coachingTrend === '하락' ? `<div class="coach-drop-box"><p class="sub">하락 원인 (중복 선택 가능)</p><div class="coach-choice-row">${reasons.map((reason) => `<button class="planner-pill ${coachingDropReasons.includes(reason)?'active':''}" data-action="toggleDropReason" data-drop-reason="${reason}">${reason}</button>`).join('')}</div><textarea class="planner-input coach-textarea" data-coach-answer="step4Reason" maxlength="200" placeholder="구체적인 이유를 간단히 적어주세요.">${coachingAnswers.step4Reason || ''}</textarea><p class="coach-count" data-coach-count="step4Reason">${(coachingAnswers.step4Reason || '').length}/200</p></div>` : ''}
+      </div>`;
+    }
+    const stepMap = {
+      5: ['5. 학습 계획 점검', '현재 세우고 있는 계획의 문제점이나 확신이 없는 부분을 적어주세요.', 'step5', '예: 하루 14시간 계획을 세우는데 자꾸 밀립니다. 현실적인 수정이 필요합니다.'],
+      6: ['6. 학습 방향성 설정', '현재 공부하고 있는 방향이 맞는지, 입시 전략과 일치하는지 고민을 적어주세요.', 'step6', '예: 정시 파이터인데 내신 기간에 수능 공부 밸런스를 어떻게 잡아야 할까요?'],
+      7: ['7. 튜터에게 묻고 싶은 질문', '이번 주 피드백에서 꼭 답변받고 싶은 질문을 적어주세요.', 'step7', '예: 수학은 기출을 반복하는 게 나을까요, N제를 늘리는 게 나을까요?'],
+      8: ['8. 기타 멘탈 관리', '슬럼프, 불안감 등 학습 외적인 고민이 있다면 자유롭게 적어주세요.', 'step8', '자유롭게 작성해주세요.']
+    };
+    const [title, desc, key, placeholder] = stepMap[coachingStep];
+    const value = coachingAnswers[key] || '';
+    return `<div class="coach-step-body"><h4>${title}</h4><p class="sub">${desc}</p><textarea class="planner-input coach-textarea" data-coach-answer="${key}" maxlength="200" placeholder="${placeholder}">${value}</textarea><p class="coach-count" data-coach-count="${key}">${value.length}/200</p></div>`;
+  };
 
   const screens = {
     ob1: layout(
@@ -756,21 +858,27 @@ function App() {
       true
     ),
     strategy: layout(
-      `<div class="feedback-head"><h3>Sky튜터 1:1 피드백</h3></div>
-       <div class="feedback-blue card">
-         <h4>내 질문 리스트</h4>
-         <p>궁금한 내용을 등록하면<br/>Sky튜터가 24시간 내 답변</p>
-       </div>
-       <div class="card feedback-sample">
-         <p class="analysis-title">질문 예시</p>
-         <div class="feedback-pills"><span>수학 개념 이해가 안돼요</span><span>탐구 공부법이 궁금해요</span><span>시간 관리 방법이 궁금해요</span></div>
-       </div>
-       <div class="cta-wrapper"><button class="btn btn-primary cta-btn">새 질문 작성</button></div>
-       <div class="card feedback-history">
-         <p class="analysis-title">내 질문 내역</p>
-         <button class="report-row feedback-row"><div><b>수학 함수 문제 질문</b><p>답변 완료 05.12</p></div><span>${i('chevron', false)}</span></button>
-         <button class="report-row feedback-row"><div><b>탐구 개념 질문</b><p>답변 완료 05.10</p></div><span>${i('chevron', false)}</span></button>
-       </div>`,
+      `<div class="coach-page">
+        <div class="card coach-title-card"><h3>학습 코칭</h3><p>주간 학습 계획을 점검하고, 튜터의 피드백을 받아보세요.</p></div>
+        <div class="card coach-status-card">
+          <div class="coach-row"><h4>이번 주 학습 점검 & 코칭 요청</h4><span class="badge ${coachingSubmitted ? 'coach-submitted' : ''}">${coachingSubmitted ? '제출 완료' : '미제출'}</span></div>
+          <p>이번 주 학습 달성률과 고민을 작성하면 튜터가 피드백을 제공해요.</p>
+          <small>매주 일요일 20:00 마감</small>
+          <button class="btn btn-primary" data-action="openCoachingSheet">${coachingSubmitted ? '다시 작성하기' : '코칭 요청하기'}</button>
+        </div>
+        <div class="card coach-feedback-card">
+          <div class="coach-row"><h4>주간학습 피드백</h4><button class="coach-month-btn" data-action="toggleCoachingMonth">${coachingMonth} ▾</button></div>
+          <p>제출 후 튜터 피드백이 도착하면 이곳에서 확인할 수 있어요.</p>
+          <div class="coach-empty">${coachingSubmitted ? '튜터가 피드백을 작성 중입니다.' : '아직 제출된 기록이 없습니다.'}</div>
+        </div>
+        ${coachingSheetOpen ? `<div class="coach-sheet-overlay" data-action="closeCoachingSheet">
+          <section class="coach-sheet" data-action="noopModal">
+            <div class="coach-sheet-head"><div><h3>26년 4월 4주차 학습점검</h3><p>${coachingStep} / 8 단계</p></div><button class="coach-close" data-action="closeCoachingSheet">✕</button></div>
+            <div class="coach-sheet-body">${coachingStepBody()}</div>
+            <div class="coach-sheet-footer"><button class="btn btn-secondary" data-action="coachingPrev" ${coachingStep===1?'disabled':''}>이전</button><button class="btn btn-primary" data-action="coachingNext">${coachingStep===8?'작성 완료 및 제출':'다음 단계'}</button></div>
+          </section>
+        </div>` : ''}
+      </div>`,
       true
     ),
     planner: layout(
@@ -928,6 +1036,64 @@ function App() {
       setDrawerOpen(false);
       goto(actionEl.getAttribute('data-target'));
     }
+    if (action === 'toggleCoachingMonth') {
+      setCoachingMonth((prev) => (prev === '26년 4월' ? '26년 3월' : '26년 4월'));
+    }
+    if (action === 'openCoachingSheet') {
+      ensureCoachingSubjectRows();
+      setCoachingStep(1);
+      setCoachingSheetOpen(true);
+    }
+    if (action === 'closeCoachingSheet') setCoachingSheetOpen(false);
+    if (action === 'addCoachingSubject') {
+      const customName = window.prompt('과목명을 입력하세요', '사회문화');
+      if (!customName) return;
+      const id = `custom-${Date.now()}`;
+      setCoachingSubjectRows((prev) => [...prev, { id, subject: customName, detail: '', planned: '', actual: '', removable: true, placeholder: '세부과목 입력' }]);
+    }
+    if (action === 'removeCoachingSubject') {
+      const rowId = actionEl.getAttribute('data-coach-row');
+      setCoachingSubjectRows((prev) => prev.filter((row) => row.id !== rowId));
+    }
+    if (action === 'addPlannerPhoto') {
+      if (coachingPlannerPhotos.length >= 5) return;
+      const name = window.prompt('사진 이름을 입력하세요', `planner_${coachingPlannerPhotos.length + 1}.jpg`);
+      if (!name) return;
+      setCoachingPlannerPhotos((prev) => [...prev, name]);
+    }
+    if (action === 'removePlannerPhoto') {
+      const idx = Number(actionEl.getAttribute('data-photo-index'));
+      setCoachingPlannerPhotos((prev) => prev.filter((_, i) => i !== idx));
+    }
+    if (action === 'setCoachingExamType') setCoachingExamType(actionEl.getAttribute('data-coach-exam'));
+    if (action === 'addExamPhoto') {
+      const name = window.prompt('성적 인증 사진 이름', `exam_${coachingExamPhotos.length + 1}.jpg`);
+      if (!name) return;
+      setCoachingExamPhotos((prev) => [...prev, name]);
+    }
+    if (action === 'removeExamPhoto') {
+      const idx = Number(actionEl.getAttribute('data-photo-index'));
+      setCoachingExamPhotos((prev) => prev.filter((_, i) => i !== idx));
+    }
+    if (action === 'setCoachingTrend') setCoachingTrend(actionEl.getAttribute('data-coach-trend'));
+    if (action === 'toggleDropReason') {
+      const reason = actionEl.getAttribute('data-drop-reason');
+      setCoachingDropReasons((prev) => (prev.includes(reason) ? prev.filter((item) => item !== reason) : [...prev, reason]));
+    }
+    if (action === 'coachingPrev') {
+      if (coachingStep <= 1) return;
+      setCoachingStep((prev) => Math.max(1, prev - 1));
+    }
+    if (action === 'coachingNext') {
+      if (coachingStep === 1) syncStep1FromDom();
+      if (coachingStep >= 8) {
+        setCoachingSheetOpen(false);
+        setCoachingSubmitted(true);
+        window.alert('코칭 요청이 제출되었습니다.\n튜터 피드백이 도착하면 학습 코칭 페이지에서 확인할 수 있어요.');
+        return;
+      }
+      setCoachingStep((prev) => Math.min(8, prev + 1));
+    }
     if (action === 'openStudySubjectSheet') setStudySubjectSheetOpen(true);
     if (action === 'closeStudySubjectSheet') setStudySubjectSheetOpen(false);
     if (action === 'selectStudySubjectCustom') {
@@ -1055,10 +1221,41 @@ function App() {
 
   const onInput = (e) => {
     const field = e.target.getAttribute('data-field');
+    const coachAnswer = e.target.getAttribute('data-coach-answer');
+    const coachPlan = e.target.getAttribute('data-coach-plan');
+    const coachActual = e.target.getAttribute('data-coach-actual');
+    if (coachAnswer) {
+      const countEl = document.querySelector(`[data-coach-count="${coachAnswer}"]`);
+      if (countEl) countEl.textContent = `${e.target.value.length}/200`;
+    }
+    if (coachPlan || coachActual) {
+      const rowId = coachPlan || coachActual;
+      const plan = Number(document.querySelector(`[data-coach-plan="${rowId}"]`)?.value || 0);
+      const actual = Number(document.querySelector(`[data-coach-actual="${rowId}"]`)?.value || 0);
+      const rate = plan > 0 ? Math.round((actual / plan) * 100) : 0;
+      const rateEl = document.querySelector(`[data-coach-rate="${rowId}"]`);
+      if (rateEl) rateEl.textContent = `달성률 ${Number.isFinite(rate) ? rate : 0}%`;
+    }
     if (!field) return;
   };
   const onBlur = (e) => {
     const field = e.target.getAttribute('data-field');
+    const coachAnswer = e.target.getAttribute('data-coach-answer');
+    if (coachAnswer) {
+      const value = e.target.value.slice(0, 200);
+      setCoachingAnswers((prev) => ({ ...prev, [coachAnswer]: value }));
+    }
+    const coachDetail = e.target.getAttribute('data-coach-detail');
+    const coachPlan = e.target.getAttribute('data-coach-plan');
+    const coachActual = e.target.getAttribute('data-coach-actual');
+    const coachField = e.target.getAttribute('data-coach-field');
+    if (coachField) setCoachingExamScores((prev) => ({ ...prev, [coachField]: e.target.value }));
+    if (coachDetail || coachPlan || coachActual) {
+      const rowId = coachDetail || coachPlan || coachActual;
+      setCoachingSubjectRows((prev) => prev.map((row) => row.id === rowId
+        ? { ...row, detail: document.querySelector(`[data-coach-detail="${rowId}"]`)?.value || row.detail, planned: document.querySelector(`[data-coach-plan="${rowId}"]`)?.value || row.planned, actual: document.querySelector(`[data-coach-actual="${rowId}"]`)?.value || row.actual }
+        : row));
+    }
     if (!field) return;
     const value = e.target.value;
     if (field.startsWith('score-')) {
