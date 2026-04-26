@@ -3,7 +3,7 @@ const { useState, useEffect, useRef } = React;
 const CRACKY_SRC = './assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png';
 const ONBOARDING_LOGO_SRC = './assets/images/og-image.jpg';
 const STUDYCRACK_LOGO_SRC = './assets/images/studycrack_logo_wo_bg.png';
-const HOME_FALLBACK_HTML = `<div class="app-shell"><div class="screen app-screen app-content"><div class="center init-loading"><h3>스터디크랙 홈</h3><p class="sub">앱을 불러왔어요. 계속 이용해 주세요.</p></div></div></div>`;
+const HOME_FALLBACK_HTML = `<div class="app-shell app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>스터디크랙 홈</h3><p class="sub">앱을 불러왔어요. 계속 이용해 주세요.</p></div></div></div>`;
 const DEFAULT_USER = { name: '김지민', targetUniversity: '연세대학교 경영학과', plan: 'Pro' };
 const DEFAULT_SCORES = { korean: 82, math: 68, english: 77, inquiry1: 70, inquiry2: 66 };
 const DEFAULT_NOTIFICATIONS = { planner: true, weekly: true, report: true, billing: true };
@@ -278,7 +278,7 @@ function App() {
   const appbar = (title, showBack) => `<div class="appbar">${showBack ? '<button class="back-btn" data-action="back">←</button>' : '<div style="width:36px"></div>'}<div class="title">${title}</div></div>`;
   const tabBtn = (k, label, iconName) => `<button class="${tab === k ? 'active' : ''}" data-action="tab" data-tab="${k}">${i(iconName, tab===k)}<span>${label}</span></button>`;
   const tabbar = () => `<div class="tabbar bottom-tab">${tabBtn('home','홈','home')}${tabBtn('analysis','분석','chart')}${tabBtn('strategy','학습 코칭','target')}${tabBtn('planner','플래너','calendar')}${tabBtn('my','마이','user')}</div>`;
-  const layout = (inner, withTab) => `<div class="app-shell"><div class="screen app-screen app-content">${inner}</div>${withTab ? tabbar() : ''}</div>`;
+  const layout = (inner, withTab) => `<div class="app-shell app-frame"><div class="screen app-screen app-content">${inner}</div>${withTab ? tabbar() : ''}</div>`;
   const quickMini = (action, iconName, label) => `<button class="quick-mini-item" data-action="goto" data-target="${action}"><span class="quick-mini-icon">${i(iconName,false)}</span><span class="quick-mini-label">${label}</span></button>`;
   const universityProfiles = {
     '연세대학교 경영학과': {
