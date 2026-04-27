@@ -1019,7 +1019,7 @@ function App() {
             <div class="analysis-v2-vert-chart">
               <span class="guide pass" style="bottom:40%">합격선 100</span>
               <span class="guide safe" style="bottom:60%">안정선 150</span>
-              ${[['가천대 관광경영학과', 250, '가천대학교 관광경영학과'], ['강서대 G2빅데이터경영학과', 250, '강서대학교 G2빅데이터경영학과'], ['고려대 경영대학', 71, '고려대학교 경영대학']].map(([label, score, full]) => `<button class="analysis-v2-vert-item ${targetMajor===full?'active':''}" data-action="selectTarget" data-target-major="${full}"><b>${score}</b><i style="height:${Math.max((score/250)*100, 8)}%;background:${score>=150?'#22C55E':score>=100?'#2563EB':'#F97316'}"></i><p>${label}</p></button>`).join('')}
+              ${[['가천대 관광경영학과', 250, '가천대학교 관광경영학과'], ['강서대 G2빅데이터경영학과', 250, '강서대학교 G2빅데이터경영학과'], ['고려대 경영대학', 71, '고려대학교 경영대학']].map(([label, score, full]) => `<button class="analysis-v2-vert-item ${targetMajor===full?'active':''}" data-action="selectTarget" data-target-major="${full}"><b>${score}</b><div class="bar-wrap"><i style="height:${Math.max((score/250)*100, 8)}%;background:${score>=150?'#22C55E':score>=100?'#2563EB':'#F97316'}"></i></div><p>${label}</p></button>`).join('')}
             </div>
           </div>
 
