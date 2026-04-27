@@ -121,7 +121,6 @@ function App() {
   const [weakSubject, setWeakSubject] = useState('');
   const [studyHours, setStudyHours] = useState('');
   const [studyDifficulty, setStudyDifficulty] = useState('');
-  const [showDurationCard, setShowDurationCard] = useState(false);
   const [scoreEditOpen, setScoreEditOpen] = useState(false);
   const [scoreEditStep, setScoreEditStep] = useState(1);
   const [scores, setScores] = useState(DEFAULT_SCORES);
@@ -151,6 +150,7 @@ function App() {
   const [coachingDropReasons, setCoachingDropReasons] = useState([]);
   const [coachingAnswers, setCoachingAnswers] = useState({ step4Reason: '', step5: '', step6: '', step7: '', step8: '' });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [ob3IsAnalyzing, setOb3IsAnalyzing] = useState(true);
   const [onboardingLoading, setOnboardingLoading] = useState(false);
   const [onboardingLoadingText, setOnboardingLoadingText] = useState('');
   const [scoreState, setScoreState] = useState({ korean: { type: '', common: '', elective: '' }, math: { type: '', common: '', elective: '' }, english: '', history: '', inquiry1: { subject: '', score: '' }, inquiry2: { subject: '', score: '' } });
@@ -202,6 +202,13 @@ function App() {
     const t = setTimeout(() => setIsAnalyzing(false), 2000);
     return () => clearTimeout(t);
   }, [screen, targetMajor]);
+
+  useEffect(() => {
+    if (screen !== 'ob3') return;
+    setOb3IsAnalyzing(true);
+    const t = setTimeout(() => setOb3IsAnalyzing(false), 1500);
+    return () => clearTimeout(t);
+  }, [screen]);
 
   const initializeApp = async () => {
     let fallbackTimer;
@@ -299,13 +306,6 @@ function App() {
       })
     );
   }, [selectedPlan, targetMajor, tab, user]);
-
-  useEffect(() => {
-    if (screen !== 'ob3') return undefined;
-    setShowDurationCard(false);
-    const t = setTimeout(() => setShowDurationCard(true), 1500);
-    return () => clearTimeout(t);
-  }, [screen]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -484,30 +484,7 @@ function App() {
       : { tone: 'info', icon: '📊', text: '과목 비중이 균형적으로 유지되고 있어요. 지금 흐름을 유지해요.' };
   const canSubmitPlanner = Boolean(plannerSubject && plannerDurationChoice);
   const inquiryOptions = `<optgroup label="사회탐구"><option value="">과목 선택</option><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option></optgroup><optgroup label="과학탐구"><option>물리학</option><option>화학</option><option>생명과학</option><option>지구과학</option></optgroup>`;
-  const ScoreLine = (title, left, mid, right = '') => `<div class="v2-score-line"><span>${title}</span>${left}${mid}${right}</div>`;
-  const OnboardingStep1Full = () => `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="onboarding-screen on-form-screen">
-    <img src="${ONBOARDING_LOGO_SRC}" class="onboarding-logo logo" alt="StudyCrack 로고"/>
-    <div class="onboarding-copy"><h2>학습성향 진단</h2><p>학생 현황 및 진로 설계 정보를 먼저 입력해 주세요.</p></div>
-    <div class="card on-form-card"><h4>학생 현황 및 진로 설계</h4>
-      <select class="planner-input" data-field="obGradeStatus"><option ${obGradeStatus==='고1/2 재학'?'selected':''}>고1/2 재학</option><option ${obGradeStatus==='고3 재학'?'selected':''}>고3 재학</option><option ${obGradeStatus==='N수생'?'selected':''}>N수생</option><option ${obGradeStatus==='검정고시'?'selected':''}>검정고시</option><option ${obGradeStatus==='기타'?'selected':''}>기타</option></select>
-      <input class="planner-input" data-field="obSchoolName" value="${obSchoolName}" placeholder="출신 학교"/>
-      <select class="planner-input" data-field="obTrack"><option ${obTrack==='예체능'?'selected':''}>예체능</option><option ${obTrack==='인문'?'selected':''}>인문</option><option ${obTrack==='자연'?'selected':''}>자연</option></select>
-      <textarea class="planner-input on-ta" data-field="obGoalText" placeholder="스터디크랙을 통해서 얻고 싶은 점">${obGoalText}</textarea>
-      <textarea class="planner-input on-ta" data-field="obQuestionText" placeholder="입시 고민 및 질문">${obQuestionText}</textarea>
-    </div>
-    <div class="card on-form-card"><h4>모의고사 / 수능 예상 성적 입력</h4>
-      <select class="planner-input" data-field="obExamType"><option>3월 학평</option><option>6월 모의평가</option><option>9월 모의평가</option><option>수능</option><option>기타</option></select>
-      <div class="v2-score-scroll">
-        ${ScoreLine('국어', `<select class="planner-input" data-field="v2-korean-type"><option value="">선택과목</option><option value="화법과작문" ${scoreState.korean.type==='화법과작문'?'selected':''}>화법과작문</option><option value="언어와매체" ${scoreState.korean.type==='언어와매체'?'selected':''}>언어와매체</option></select>`, `<input class="planner-input" data-field="v2-korean-common" value="${scoreState.korean.common}" placeholder="공통 점수" type="number"/>`, `<input class="planner-input" data-field="v2-korean-elective" value="${scoreState.korean.elective}" placeholder="선택 점수" type="number"/>`)}
-        ${ScoreLine('수학', `<select class="planner-input" data-field="v2-math-type"><option value="">선택과목</option><option value="확률과통계" ${scoreState.math.type==='확률과통계'?'selected':''}>확률과통계</option><option value="미적분" ${scoreState.math.type==='미적분'?'selected':''}>미적분</option><option value="기하" ${scoreState.math.type==='기하'?'selected':''}>기하</option></select>`, `<input class="planner-input" data-field="v2-math-common" value="${scoreState.math.common}" placeholder="공통 점수" type="number"/>`, `<input class="planner-input" data-field="v2-math-elective" value="${scoreState.math.elective}" placeholder="선택 점수" type="number"/>`)}
-        ${ScoreLine('영어', `<select class="planner-input" data-field="v2-english"><option value="">등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option value="${n}" ${String(scoreState.english)===String(n)?'selected':''}>${n}등급</option>`).join('')}</select>`, `<span class="v2-fill"></span>`)}
-        ${ScoreLine('한국사', `<select class="planner-input" data-field="v2-history"><option value="">등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option value="${n}" ${String(scoreState.history)===String(n)?'selected':''}>${n}등급</option>`).join('')}</select>`, `<span class="v2-fill"></span>`)}
-        ${ScoreLine('탐구1', `<select class="planner-input" data-field="v2-inq1-subject">${inquiryOptions}</select>`, `<input class="planner-input" data-field="v2-inq1-score" value="${scoreState.inquiry1.score}" placeholder="원점수" type="number"/>`)}
-        ${ScoreLine('탐구2', `<select class="planner-input" data-field="v2-inq2-subject">${inquiryOptions}</select>`, `<input class="planner-input" data-field="v2-inq2-score" value="${scoreState.inquiry2.score}" placeholder="원점수" type="number"/>`)}
-      </div>
-    </div><div class="onboarding-footer"><div class="page-indicator"><i class="active"></i><i></i><i></i></div><button class="onboarding-next" data-action="goto" data-target="on2">다음</button></div>
-  </div></div></div>`;
-  const ScoreEditModalV2 = () => {
+  const ScoreEditModal = () => {
     const step = scoreEditStep;
     const preview = `<div class="on-dummy-result"><b>표준점수 ${100 + step * 4}</b><b>백분위 ${82 + step * 2}</b><b>등급 ${Math.max(1, 4 - Math.floor(step/2))}</b></div>`;
     const body = step === 1
@@ -797,13 +774,13 @@ function App() {
        </div>
        <div class="card ob-card">
          <p class="analysis-title">성적 입력</p>
-         <label class="auth-label">시험 선택</label><select class="planner-input"><option>3월 학평</option></select>
-         <div class="ob-subject-line"><b>국어</b><select class="planner-input"><option>선택과목</option><option>화법과작문</option><option>언어와매체</option></select><input class="planner-input" placeholder="공통 원점수" type="number"/><input class="planner-input" placeholder="선택 원점수" type="number"/></div>
-         <div class="ob-subject-line"><b>수학</b><select class="planner-input"><option>선택과목</option><option>확률과통계</option><option>미적분</option><option>기하</option></select><input class="planner-input" placeholder="공통 원점수" type="number"/><input class="planner-input" placeholder="선택 원점수" type="number"/></div>
-         <div class="ob-subject-line short"><b>영어</b><select class="planner-input"><option>등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option>${n}등급</option>`).join('')}</select></div>
-         <div class="ob-subject-line short"><b>한국사</b><select class="planner-input"><option>등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option>${n}등급</option>`).join('')}</select></div>
-         <div class="ob-subject-line"><b>탐구1</b><select class="planner-input"><option>과목 선택</option><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option><option>물리학</option><option>화학</option><option>생명과학</option><option>지구과학</option></select><input class="planner-input" placeholder="원점수" type="number"/></div>
-         <div class="ob-subject-line"><b>탐구2</b><select class="planner-input"><option>과목 선택</option><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option><option>물리학</option><option>화학</option><option>생명과학</option><option>지구과학</option></select><input class="planner-input" placeholder="원점수" type="number"/></div>
+         <label class="auth-label">시험 선택</label><select class="planner-input"><option>3월 학평</option><option>6월 모의평가</option><option>9월 모의평가</option><option>수능</option></select>
+         <div class="card ob-score-card"><p class="analysis-sub">국어</p><select class="planner-input"><option>선택과목</option><option>화법과작문</option><option>언어와매체</option></select><div class="input-row"><input class="planner-input" placeholder="공통 원점수" type="number"/><input class="planner-input" placeholder="선택 원점수" type="number"/></div></div>
+         <div class="card ob-score-card"><p class="analysis-sub">수학</p><select class="planner-input"><option>선택과목</option><option>확률과통계</option><option>미적분</option><option>기하</option></select><div class="input-row"><input class="planner-input" placeholder="공통 원점수" type="number"/><input class="planner-input" placeholder="선택 원점수" type="number"/></div></div>
+         <div class="card ob-score-card"><p class="analysis-sub">영어</p><select class="planner-input"><option>등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option>${n}등급</option>`).join('')}</select></div>
+         <div class="card ob-score-card"><p class="analysis-sub">한국사</p><select class="planner-input"><option>등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option>${n}등급</option>`).join('')}</select></div>
+         <div class="card ob-score-card"><p class="analysis-sub">탐구1</p><div class="input-row"><select class="planner-input"><option>과목 선택</option><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option><option>물리학</option><option>화학</option><option>생명과학</option><option>지구과학</option></select><input class="planner-input" placeholder="원점수" type="number"/></div></div>
+         <div class="card ob-score-card"><p class="analysis-sub">탐구2</p><div class="input-row"><select class="planner-input"><option>과목 선택</option><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option><option>물리학</option><option>화학</option><option>생명과학</option><option>지구과학</option></select><input class="planner-input" placeholder="원점수" type="number"/></div></div>
        </div>
        <div class="card ob-card">
          <p class="analysis-title">학습 MBTI 검사</p>
@@ -862,7 +839,7 @@ function App() {
            <div class="ob-score-card"><b>목표 성적</b><p>국어 82</p><p>수학 80 <span class="plus">(+12)</span></p><p>영어 77</p><p>탐구1 76 <span class="plus">(+6)</span></p><p>탐구2 66</p><strong>총점 120</strong></div>
          </div>
        </div>
-       ${showDurationCard ? `<div class="card ob-card ob-period-card"><p class="analysis-title">Standard 이용 시 예상 도달 기간</p><h2>평균 3개월 예상</h2><p class="sub">주간 플래너 피드백과 학습 방향 코칭 제공</p></div>` : `<div class="card ob-card ob-loading-card"><div class="ob-spinner"></div><p class="sub">최적 도달 기간 계산 중...</p></div>`}
+       ${ob3IsAnalyzing ? `<div class="loading-overlay"><div class="loading-box"><div class="dots">● ● ●</div><div>분석중입니다</div><div>잠시만 기다려주세요</div></div></div>` : `<div class="card ob-card ob-period-card"><p class="analysis-title">Standard 이용 시 예상 도달 기간</p><h2>평균 3개월 예상</h2><p class="sub">주간 플래너 피드백과 학습 방향 코칭 제공</p></div>
        <div class="card ob-card">
          <p class="analysis-title">합격확률 게이지</p>
          <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${gaugeTarget}점</b></div></div>
@@ -878,7 +855,7 @@ function App() {
        <div class="card ob-card">
          <p class="analysis-title">핵심 전략</p>
          <ol class="ob-strategy"><li><b>수학 68점 → 80점</b><p>합격 가능성 상승 기여도 가장 큼</p></li><li><b>탐구1 70점 → 76점</b><p>단기간 상승 효율 높음</p></li><li><b>영어 77점 유지</b><p>현재 수준 유지 전략</p></li></ol>
-       </div>
+       </div>`}
        </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="startStandard">Standard로 시작하기</button><button class="auth-link-btn" data-action="completeOnboarding">홈으로 이동</button></div></div>`,
       false
     ),
@@ -934,7 +911,14 @@ function App() {
       </div>
     </div>`, false),
     splash: `<div class="app-shell"><div class="app-frame"><div class="splash"><div class="logo-bolt">${i('bolt',true)}</div><img class="brand-logo" src="${(window.__studycrackAssetSrc && window.__studycrackAssetSrc.onboardingLogoSrc) || './assets/images/studycrack_logo_wo_bg.png'}" alt="logo"/><h1 style="margin:0;font-size:30px">스터디크랙</h1><p>합격까지 가장 빠른 전략</p></div></div></div>`,
-    on1: OnboardingStep1Full(),
+    on1: onboarding(
+      1,
+      '학습성향 진단을 시작해요',
+      '현재 학습 정보와 목표를 입력하면\n맞춤 분석을 진행할게요.',
+      `<div class="onboarding-card"><p class="onboarding-sub">기초 진단 정보를 입력하고 다음 단계로 이동하세요.</p></div>`,
+      '성적과 학습 성향을 함께 보면 더 정확해요.',
+      'ob1'
+    ),
     on2: onboarding(
       2,
       '나에게 최적화된\n점수 상승 전략을 제공해요',
@@ -1017,9 +1001,9 @@ function App() {
           <div class="card analysis-v2-compare">
             <p class="analysis-title">목표대학 점수 비교</p>
             <div class="analysis-v2-vert-chart">
-              <span class="guide pass" style="bottom:40%">합격선 100</span>
-              <span class="guide safe" style="bottom:60%">안정선 150</span>
-              ${[['가천대 관광경영학과', 250, '가천대학교 관광경영학과'], ['강서대 G2빅데이터경영학과', 250, '강서대학교 G2빅데이터경영학과'], ['고려대 경영대학', 71, '고려대학교 경영대학']].map(([label, score, full]) => `<button class="analysis-v2-vert-item ${targetMajor===full?'active':''}" data-action="selectTarget" data-target-major="${full}"><b>${score}</b><div class="bar-wrap"><i style="height:${Math.max((score/250)*100, 8)}%;background:${score>=150?'#22C55E':score>=100?'#2563EB':'#F97316'}"></i></div><p>${label}</p></button>`).join('')}
+              <span class="guide pass" style="top:40%">합격선 100</span>
+              <span class="guide safe" style="top:60%">안정선 150</span>
+              ${[['가천대 관광경영학과', 250, '가천대학교 관광경영학과'], ['강서대 G2빅데이터경영학과', 250, '강서대학교 G2빅데이터경영학과'], ['고려대 경영대학', 71, '고려대학교 경영대학']].map(([label, score, full]) => { const MAX = 250; const height = (score / MAX) * 100; return `<button class="analysis-v2-vert-item ${targetMajor===full?'active':''}" data-action="selectTarget" data-target-major="${full}"><b>${score}</b><div class="bar-container"><i class="bar" style="height:${height}%;width:52px;background:${score>=150?'#22C55E':score>=100?'#2563EB':'#F97316'}"></i></div><p>${label}</p></button>`; }).join('')}
             </div>
           </div>
 
@@ -1137,7 +1121,7 @@ function App() {
       </div>
       <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="paymentComplete">결제하기</button></div>`, false),
     paymentComplete: layout(`<div class="payment-done-screen"><div class="payment-complete-wrap"><div class="payment-check">${i('check', true)}</div><p class="title payment-complete-title">결제가 완료되었습니다!</p><p class="sub payment-complete-sub">${selectedPlan.toUpperCase()} 플랜이 활성화되었습니다.</p><div class="card payment-complete-note"><b>프로 보고서 이용 안내</b><p>2주에 한 번 새로운 리포트를 제공해 드려요.<br/>다음 리포트는 5월 25일에 이용 가능해요.</p></div></div><div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="home">홈으로 이동</button></div></div>`, false),
-    scoreInfo: layout(appbar('성적 정보', true) + `<div class="card score-info-card">${scoreList}<button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">성적 수정하기</button></div><div class="card"><p class="analysis-title">최근 성적 업데이트</p><p class="sub" style="margin:0">2024.05.14 기준</p><p class="sub" style="margin:6px 0 0">다음 업데이트 권장: 2주 후</p></div>${scoreEditOpen ? ScoreEditModalV2() : ''}`, false),
+    scoreInfo: layout(appbar('성적 정보', true) + `<div class="card score-info-card">${scoreList}<button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">성적 수정하기</button></div><div class="card"><p class="analysis-title">최근 성적 업데이트</p><p class="sub" style="margin:0">2024.05.14 기준</p><p class="sub" style="margin:6px 0 0">다음 업데이트 권장: 2주 후</p></div>${scoreEditOpen ? ScoreEditModal() : ''}`, false),
     studyReports: layout(appbar('학습 리포트', true) + `<div class="card report-list-card"><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>5월 11일 종합 분석 리포트</b><p>수학 점수 상승 여지 큼</p></div><span>${i('chevron', false)}</span></button><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>4월 27일 중간 분석 리포트</b><p>탐구 집중 강화 필요</p></div><span>${i('chevron', false)}</span></button></div><div class="cta-wrapper"><button class="btn btn-primary cta-btn" data-action="goto" data-target="reportDetail">프로 보고서 샘플 보기</button></div>`, false),
     notificationSettings: layout(appbar('알림 설정', true) + `<div class="card notify-card">${[
       ['planner', '플래너 알림', '오늘 계획을 잊지 않도록 알려드려요'],
@@ -1169,18 +1153,18 @@ function App() {
     const action = actionEl.getAttribute('data-action');
     if (action === 'goto') {
       const target = actionEl.getAttribute('data-target');
-      if (screen === 'on1' && target === 'on2') {
+      if (screen === 'on1' && target === 'ob1') {
         setOnboardingLoading(true);
         setOnboardingLoadingText('성적 분석중...');
         setTimeout(() => setOnboardingLoadingText('유리한 대학 전형 파악중...'), 2000);
-        setTimeout(() => { setOnboardingLoading(false); goto('on2'); }, 4000);
+        setTimeout(() => { setOnboardingLoading(false); goto('ob1'); }, 4000);
         return;
       }
-      if (screen === 'on2' && target === 'on3') {
+      if (screen === 'ob2' && target === 'ob3') {
         setOnboardingLoading(true);
         setOnboardingLoadingText('학습 성향 분석중...');
         setTimeout(() => setOnboardingLoadingText('효율적인 공부법 찾는 중...'), 1500);
-        setTimeout(() => { setOnboardingLoading(false); goto('on3'); }, 3000);
+        setTimeout(() => { setOnboardingLoading(false); goto('ob3'); }, 3000);
         return;
       }
       goto(target);
