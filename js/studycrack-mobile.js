@@ -671,7 +671,7 @@ function App() {
   const subjectChipSource = Object.entries({ 국어: todaySubjectsWithTimer['국어'] || 0, 수학: todaySubjectsWithTimer['수학'] || 0, 영어: todaySubjectsWithTimer['영어'] || 0, 탐구: todaySubjectsWithTimer['탐구'] || 0, ...todaySubjectsWithTimer });
   const visibleSubjectChips = subjectChipSource.slice(0, 4);
   const hiddenSubjectCount = Math.max(subjectChipSource.length - 4, 0);
-  const plannedSubjectOptions = Array.from(new Set(plannerItems.map((item) => `${item.subject}${item.content ? ` - ${item.content}` : ''}`)));
+  const plannedSubjectOptions = Array.from(new Set(todayPlannerItems.map((item) => `${item.subject}${item.content ? ` - ${item.content}` : ''}`)));
   const buildDefaultCoachingSubjects = () => {
     const mapped = ['국어', '수학', '영어', '탐구'].map((subject) => {
       const plannedHour = Math.round((plannerMinutesBySubject[subject] || 0) / 60);
@@ -818,7 +818,7 @@ function App() {
     if (coachingStep === 2) {
       return `<div class="coach-step-body"><h4>2. 플래너 인증</h4><p class="sub">이번 주 플래너 사진을 첨부해주세요. 최대 5장</p>
         <div class="coach-upload-box"><p>파일/사진 첨부 박스</p><input type="file" class="coach-hidden-file" data-field="coachPlannerFiles" accept="image/*" multiple /><button class="btn btn-secondary" data-action="openPlannerFilePicker">사진 추가하기</button></div>
-        <div class="coach-thumb-list">${coachingPlannerFiles.length ? `<p class="sub">총 ${coachingPlannerFiles.length}개 첨부됨</p>${coachingPlannerFiles.map((file, idx) => `<div class="coach-thumb"><span>${file.name}</span><button data-action="removePlannerPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}` : '<p class="sub">첨부된 사진이 없습니다.</p>'}</div>
+        <div class="coach-thumb-list">${coachingPlannerFiles.length ? `<p class="sub">사진 ${coachingPlannerFiles.length}장 첨부됨</p>${coachingPlannerFiles.map((file, idx) => `<div class="coach-thumb"><span>${file.name}</span><button data-action="removePlannerPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}` : '<p class="sub">첨부된 사진이 없습니다.</p>'}</div>
       </div>`;
     }
     if (coachingStep === 3) {
@@ -827,7 +827,7 @@ function App() {
         <div class="coach-choice-row">${examTypes.map((type) => `<button class="planner-pill ${coachingExamType===type?'active':''}" data-action="setCoachingExamType" data-coach-exam="${type}">${type}</button>`).join('')}</div>
         ${coachingExamType && coachingExamType !== '미응시' ? `<div class="coach-exam-form">
           <input type="file" class="coach-hidden-file" data-field="coachExamFiles" accept="image/*" multiple /><button class="btn btn-secondary" data-action="openExamFilePicker">성적 인증 사진 첨부</button>
-          <div class="coach-thumb-list">${coachingExamFiles.length ? `<p class="sub">총 ${coachingExamFiles.length}개 첨부됨</p>${coachingExamFiles.map((file, idx) => `<div class="coach-thumb"><span>${file.name}</span><button data-action="removeExamPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}` : '<p class="sub">첨부된 사진이 없습니다.</p>'}</div>
+          <div class="coach-thumb-list">${coachingExamFiles.length ? `<p class="sub">사진 ${coachingExamFiles.length}장 첨부됨</p>${coachingExamFiles.map((file, idx) => `<div class="coach-thumb"><span>${file.name}</span><button data-action="removeExamPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}` : '<p class="sub">첨부된 사진이 없습니다.</p>'}</div>
           <div class="coach-exam-subject-list">
             <section class="coach-exam-subject-card"><h5>국어</h5><input class="planner-input" data-coach-field="koreanType" value="${coachingExamScores.koreanType || ''}" placeholder="선택과목" /><input class="planner-input" data-coach-field="koreanRaw" value="${coachingExamScores.koreanRaw || ''}" placeholder="원점수" /></section>
             <section class="coach-exam-subject-card"><h5>수학</h5><input class="planner-input" data-coach-field="mathType" value="${coachingExamScores.mathType || ''}" placeholder="선택과목" /><input class="planner-input" data-coach-field="mathRaw" value="${coachingExamScores.mathRaw || ''}" placeholder="원점수" /></section>
