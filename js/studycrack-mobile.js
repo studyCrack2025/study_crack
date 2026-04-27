@@ -123,6 +123,7 @@ function App() {
   const [studyDifficulty, setStudyDifficulty] = useState('');
   const [showDurationCard, setShowDurationCard] = useState(false);
   const [scoreEditOpen, setScoreEditOpen] = useState(false);
+  const [scoreEditDetail, setScoreEditDetail] = useState({ koreanType: '화법과작문', koreanCommon: '', koreanSelect: '', mathType: '확률과통계', mathCommon: '', mathSelect: '', englishGrade: '', historyGrade: '', inq1Name: '생활과 윤리', inq1Raw: '', inq2Name: '사회·문화', inq2Raw: '' });
   const [scores, setScores] = useState(DEFAULT_SCORES);
   const [notifications, setNotifications] = useState(DEFAULT_NOTIFICATIONS);
   const [openFaq, setOpenFaq] = useState('');
@@ -185,12 +186,8 @@ function App() {
   useEffect(() => {
     if (screen !== 'analysis' || analysisMode !== 'summary') return;
     setAnalysisEtaStage(1);
-    const t1 = setTimeout(() => setAnalysisEtaStage(2), 1500);
-    const t2 = setTimeout(() => setAnalysisEtaStage(3), 4500);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
+    const t = setTimeout(() => setAnalysisEtaStage(3), 3000);
+    return () => clearTimeout(t);
   }, [screen, analysisMode, targetMajor]);
 
   useEffect(() => {
@@ -909,11 +906,11 @@ function App() {
         <h4>모의고사 / 수능 예상 성적 입력</h4>
         <select class="planner-input" data-field="obExamType">${['3월 학평','6월 모의평가','9월 모의평가','수능','기타'].map((v)=>`<option value="${v}" ${obExamType===v?'selected':''}>${v}</option>`).join('')}</select>
         <div class="on-score-grid">
-          <label>국어 선택과목<input class="planner-input" data-field="ob-koreanType" value="${obScoreInputs.koreanType}" /></label><label>공통 원점수<input class="planner-input" data-field="ob-koreanCommon" value="${obScoreInputs.koreanCommon}" type="number"/></label><label>선택 원점수<input class="planner-input" data-field="ob-koreanSelect" value="${obScoreInputs.koreanSelect}" type="number"/></label>
-          <label>수학 선택과목<input class="planner-input" data-field="ob-mathType" value="${obScoreInputs.mathType}" /></label><label>공통 원점수<input class="planner-input" data-field="ob-mathCommon" value="${obScoreInputs.mathCommon}" type="number"/></label><label>선택 원점수<input class="planner-input" data-field="ob-mathSelect" value="${obScoreInputs.mathSelect}" type="number"/></label>
+          <label>국어 선택과목<select class="planner-input" data-field="ob-koreanType"><option value="화법과작문" ${obScoreInputs.koreanType==='화법과작문'?'selected':''}>화법과작문</option><option value="언어와매체" ${obScoreInputs.koreanType==='언어와매체'?'selected':''}>언어와매체</option></select></label><label>공통 원점수<input class="planner-input" data-field="ob-koreanCommon" value="${obScoreInputs.koreanCommon}" type="number"/></label><label>선택 원점수<input class="planner-input" data-field="ob-koreanSelect" value="${obScoreInputs.koreanSelect}" type="number"/></label>
+          <label>수학 선택과목<select class="planner-input" data-field="ob-mathType"><option value="확률과통계" ${obScoreInputs.mathType==='확률과통계'?'selected':''}>확률과통계</option><option value="미적분" ${obScoreInputs.mathType==='미적분'?'selected':''}>미적분</option><option value="기하" ${obScoreInputs.mathType==='기하'?'selected':''}>기하</option></select></label><label>공통 원점수<input class="planner-input" data-field="ob-mathCommon" value="${obScoreInputs.mathCommon}" type="number"/></label><label>선택 원점수<input class="planner-input" data-field="ob-mathSelect" value="${obScoreInputs.mathSelect}" type="number"/></label>
           <label>영어 등급<input class="planner-input" data-field="ob-englishGrade" value="${obScoreInputs.englishGrade}" /></label><label>한국사 등급<input class="planner-input" data-field="ob-historyGrade" value="${obScoreInputs.historyGrade}" /></label>
-          <label>탐구1 과목<input class="planner-input" data-field="ob-inq1Name" value="${obScoreInputs.inq1Name}" /></label><label>탐구1 원점수<input class="planner-input" data-field="ob-inq1Raw" value="${obScoreInputs.inq1Raw}" type="number"/></label>
-          <label>탐구2 과목<input class="planner-input" data-field="ob-inq2Name" value="${obScoreInputs.inq2Name}" /></label><label>탐구2 원점수<input class="planner-input" data-field="ob-inq2Raw" value="${obScoreInputs.inq2Raw}" type="number"/></label>
+          <label>탐구1 과목<select class="planner-input" data-field="ob-inq1Name"><optgroup label="사회탐구"><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option></optgroup><optgroup label="과학탐구"><option>물리학</option><option>화학</option><option>생명과학</option><option>지구과학</option></optgroup></select></label><label>탐구1 원점수<input class="planner-input" data-field="ob-inq1Raw" value="${obScoreInputs.inq1Raw}" type="number"/></label><label>탐구1 결과<small>표준 63 / 백분위 92 / 2등급</small></label>
+          <label>탐구2 과목<select class="planner-input" data-field="ob-inq2Name"><optgroup label="사회탐구"><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option></optgroup><optgroup label="과학탐구"><option>물리학</option><option>화학</option><option>생명과학</option><option>지구과학</option></optgroup></select></label><label>탐구2 원점수<input class="planner-input" data-field="ob-inq2Raw" value="${obScoreInputs.inq2Raw}" type="number"/></label><label>탐구2 결과<small>표준 61 / 백분위 88 / 2등급</small></label>
         </div>
         <div class="on-dummy-result"><b>표준점수 124</b><b>백분위 91</b><b>등급 2</b></div>
       </div>
@@ -938,7 +935,7 @@ function App() {
     ),
     home: layout(homeView(), true),
     analysis: layout(
-      `<section class="analysis-v2">
+      `<section class="analysis-v2 ${analysisLoading ? 'loading' : ''}">
         <div class="card analysis-v2-head">
           <h3>분석</h3>
           <p>결과를 보고, 전략을 이해하고, 바로 실행으로 연결하세요.</p>
@@ -979,7 +976,7 @@ function App() {
               <div class="analysis-v2-ba-col"><h4>도달 성적</h4><p>국어 82</p><p>수학 80 <em>+12</em></p><p>영어 77</p><p>탐구1 76 <em>+6</em></p><p>탐구2 66</p><p><b>예상 총점 120</b></p></div>
             </div>
             <div class="analysis-v2-eta ${analysisEtaStage < 3 ? 'loading' : ''}">
-              ${analysisEtaStage === 1 ? `<div class="analysis-eta-loading"><span class="skeleton"></span><p>도달 성적 계산 중입니다...</p><small>최소 노력 대비 최적 점수 조합 분석 중</small></div>` : analysisEtaStage === 2 ? `<div class="analysis-eta-loading"><span class="skeleton thin"></span><p>현재 학습 패턴 기반 도달 시간 분석 중...</p></div>` : `<p class="analysis-v2-eta-text">⚡ <b>현재 학습분석 기반 Standard 이용 시 평균 2개월 내 도달 예상</b></p>`}
+              ${analysisEtaStage < 3 ? `<div class="analysis-eta-loading"><span class="skeleton"></span><p>도달 시간을 예상중입니다</p></div>` : `<p class="analysis-v2-eta-text">⚡ <b>현재 학습분석 기반 Standard 이용 시 평균 2개월 내 도달 예상</b></p>`}
             </div>
           </div>
 
@@ -997,7 +994,7 @@ function App() {
             <p class="analysis-sub">현재: 합격컷 미달 → 목표 달성 시 합격권 진입</p>
           </div>
 
-          <div class="card analysis-v2-cta sticky"><p class="analysis-title">지금 방향이 틀리면 시간만 낭비될 수 있습니다</p><p class="sub">Standard는 매주 학습 방향과 실행을 관리합니다.</p><button class="btn analysis-convert-btn" data-action="startStandard">👉 2개월 내 합격권 진입 시작하기</button></div>
+          <div class="card analysis-v2-cta sticky"><p class="analysis-title">지금 방향이 틀리면 시간만 낭비될 수 있습니다</p><p class="sub">Standard는 매주 학습 방향과 실행을 관리합니다.</p><button class="btn analysis-convert-btn" data-action="startStandard">2개월 내 합격권 진입 시작하기</button></div>
         ` : `
           <div class="card analysis-v2-compare">
             <p class="analysis-title">목표대학 점수 비교</p>
@@ -1122,7 +1119,13 @@ function App() {
       </div>
       <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="paymentComplete">결제하기</button></div>`, false),
     paymentComplete: layout(`<div class="payment-done-screen"><div class="payment-complete-wrap"><div class="payment-check">${i('check', true)}</div><p class="title payment-complete-title">결제가 완료되었습니다!</p><p class="sub payment-complete-sub">${selectedPlan.toUpperCase()} 플랜이 활성화되었습니다.</p><div class="card payment-complete-note"><b>프로 보고서 이용 안내</b><p>2주에 한 번 새로운 리포트를 제공해 드려요.<br/>다음 리포트는 5월 25일에 이용 가능해요.</p></div></div><div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="home">홈으로 이동</button></div></div>`, false),
-    scoreInfo: layout(appbar('성적 정보', true) + `<div class="card score-info-card">${scoreList}<button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">성적 수정하기</button></div><div class="card"><p class="analysis-title">최근 성적 업데이트</p><p class="sub" style="margin:0">2024.05.14 기준</p><p class="sub" style="margin:6px 0 0">다음 업데이트 권장: 2주 후</p></div>${scoreEditOpen ? `<div class="home-modal-overlay" data-action="closeScoreEdit"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">성적 수정</p><div class="score-edit-grid"><label>국어<input data-field="score-korean" value="${scores.korean}" type="number"/></label><label>수학<input data-field="score-math" value="${scores.math}" type="number"/></label><label>영어<input data-field="score-english" value="${scores.english}" type="number"/></label><label>탐구1<input data-field="score-inquiry1" value="${scores.inquiry1}" type="number"/></label><label>탐구2<input data-field="score-inquiry2" value="${scores.inquiry2}" type="number"/></label></div><button class="btn btn-primary" data-action="saveScoreEdit">저장</button></div></div>` : ''}`, false),
+    scoreInfo: layout(appbar('성적 정보', true) + `<div class="card score-info-card">${scoreList}<button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">성적 수정하기</button></div><div class="card"><p class="analysis-title">최근 성적 업데이트</p><p class="sub" style="margin:0">2024.05.14 기준</p><p class="sub" style="margin:6px 0 0">다음 업데이트 권장: 2주 후</p></div>${scoreEditOpen ? `<div class="home-modal-overlay" data-action="closeScoreEdit"><div class="home-modal score-edit-modal" data-action="noopModal"><p class="home-modal-title">성적 수정</p><div class="on-score-grid">
+    <label>국어 선택과목<select class="planner-input" data-field="score-detail-koreanType"><option value="화법과작문" ${scoreEditDetail.koreanType==='화법과작문'?'selected':''}>화법과작문</option><option value="언어와매체" ${scoreEditDetail.koreanType==='언어와매체'?'selected':''}>언어와매체</option></select></label><label>국어 공통<input class="planner-input" data-field="score-detail-koreanCommon" value="${scoreEditDetail.koreanCommon}" type="number"/></label><label>국어 선택<input class="planner-input" data-field="score-detail-koreanSelect" value="${scoreEditDetail.koreanSelect}" type="number"/></label>
+    <label>수학 선택과목<select class="planner-input" data-field="score-detail-mathType"><option value="확률과통계" ${scoreEditDetail.mathType==='확률과통계'?'selected':''}>확률과통계</option><option value="미적분" ${scoreEditDetail.mathType==='미적분'?'selected':''}>미적분</option><option value="기하" ${scoreEditDetail.mathType==='기하'?'selected':''}>기하</option></select></label><label>수학 공통<input class="planner-input" data-field="score-detail-mathCommon" value="${scoreEditDetail.mathCommon}" type="number"/></label><label>수학 선택<input class="planner-input" data-field="score-detail-mathSelect" value="${scoreEditDetail.mathSelect}" type="number"/></label>
+    <label>영어 등급<input class="planner-input" data-field="score-detail-englishGrade" value="${scoreEditDetail.englishGrade}"/></label><label>한국사 등급<input class="planner-input" data-field="score-detail-historyGrade" value="${scoreEditDetail.historyGrade}"/></label>
+    <label>탐구1 과목<input class="planner-input" data-field="score-detail-inq1Name" value="${scoreEditDetail.inq1Name}"/></label><label>탐구1 원점수<input class="planner-input" data-field="score-detail-inq1Raw" value="${scoreEditDetail.inq1Raw}" type="number"/></label>
+    <label>탐구2 과목<input class="planner-input" data-field="score-detail-inq2Name" value="${scoreEditDetail.inq2Name}"/></label><label>탐구2 원점수<input class="planner-input" data-field="score-detail-inq2Raw" value="${scoreEditDetail.inq2Raw}" type="number"/></label>
+    </div><div class="on-dummy-result"><b>표준점수 124</b><b>백분위 91</b><b>등급 2</b></div><button class="btn btn-primary" data-action="saveScoreEdit">저장</button></div></div>` : ''}`, false),
     studyReports: layout(appbar('학습 리포트', true) + `<div class="card report-list-card"><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>5월 11일 종합 분석 리포트</b><p>수학 점수 상승 여지 큼</p></div><span>${i('chevron', false)}</span></button><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>4월 27일 중간 분석 리포트</b><p>탐구 집중 강화 필요</p></div><span>${i('chevron', false)}</span></button></div><div class="cta-wrapper"><button class="btn btn-primary cta-btn" data-action="goto" data-target="reportDetail">프로 보고서 샘플 보기</button></div>`, false),
     notificationSettings: layout(appbar('알림 설정', true) + `<div class="card notify-card">${[
       ['planner', '플래너 알림', '오늘 계획을 잊지 않도록 알려드려요'],
@@ -1215,7 +1218,17 @@ function App() {
     if (action === 'closePlannerEdit') setPlannerEditIndex(null);
     if (action === 'openScoreEdit') setScoreEditOpen(true);
     if (action === 'closeScoreEdit') setScoreEditOpen(false);
-    if (action === 'saveScoreEdit') setScoreEditOpen(false);
+    if (action === 'saveScoreEdit') {
+      setScores((prev) => ({
+        ...prev,
+        korean: Number(scoreEditDetail.koreanCommon || prev.korean),
+        math: Number(scoreEditDetail.mathCommon || prev.math),
+        english: Number(scoreEditDetail.englishGrade || prev.english),
+        inquiry1: Number(scoreEditDetail.inq1Raw || prev.inquiry1),
+        inquiry2: Number(scoreEditDetail.inq2Raw || prev.inquiry2)
+      }));
+      setScoreEditOpen(false);
+    }
     if (action === 'toggleNotification') {
       const key = actionEl.getAttribute('data-notify-key');
       setNotifications((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -1524,6 +1537,10 @@ function App() {
     if (field && field.startsWith('ob-')) {
       const key = field.replace('ob-', '');
       setObScoreInputs((prev) => ({ ...prev, [key]: value }));
+    }
+    if (field && field.startsWith('score-detail-')) {
+      const key = field.replace('score-detail-', '');
+      setScoreEditDetail((prev) => ({ ...prev, [key]: value }));
     }
   };
 
