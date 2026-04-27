@@ -749,7 +749,7 @@ function validateSocialConfig(provider) {
     const callbackUrl = social && social.callbackUrl;
     const clientId = social && social[provider] && social[provider].clientId;
 
-    const PLACEHOLDERS = ['GOOGLE_CLIENT_ID', 'NAVER_CLIENT_ID', 'KAKAO_CLIENT_ID', 'undefined', 'null', ''];
+    const PLACEHOLDERS = ['GOOGLE_CLIENT_ID', 'NAVER_CLIENT_ID', 'KAKAO_CLIENT_ID', 'undefined', 'null'];
     const isPlaceholder = (val) => !val || PLACEHOLDERS.some(p => String(val).includes(p));
 
     if (isPlaceholder(clientId)) {
