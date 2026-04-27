@@ -441,6 +441,28 @@ function App() {
   const plannerViewMinutes = plannerViewItems.reduce((acc, item) => acc + (item.minutes || 0), 0);
   const plannerViewHour = Math.floor(plannerViewMinutes / 60);
   const plannerViewMinute = plannerViewMinutes % 60;
+  const todayPlannerItems = plannerItemsByDate['14'] || [];
+  const todayPlannerTotalMinutes = todayPlannerItems.reduce((acc, item) => acc + (item.minutes || 0), 0);
+  const todayPlannerDoneMinutes = todayPlannerItems.reduce((acc, item) => acc + (item.done ? (item.minutes || 0) : 0), 0);
+  const todayPlannerProgress = todayPlannerTotalMinutes ? Math.round((todayPlannerDoneMinutes / todayPlannerTotalMinutes) * 100) : 0;
+  const formatMinutesLabel = (minutes) => {
+    const safeMinutes = Math.max(0, Number(minutes) || 0);
+    const hour = Math.floor(safeMinutes / 60);
+    const min = safeMinutes % 60;
+    if (hour && min) return `${hour}시간 ${min}분`;
+    if (hour) return `${hour}시간`;
+    return `${min}분`;
+  };
+  const todayPlannerSubjectSummary = Object.entries(
+    todayPlannerItems.reduce((acc, item) => {
+      const key = item.subject || '기타';
+      acc[key] = (acc[key] || 0) + (item.minutes || 0);
+      return acc;
+    }, {})
+  )
+    .filter(([, minutes]) => minutes > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(([subject, minutes]) => `${subject} ${formatMinutesLabel(minutes)}`);
   const subjectMinutes = plannerItems.reduce((acc, item) => {
     acc[item.subject] = (acc[item.subject] || 0) + item.minutes;
     return acc;
@@ -613,6 +635,7 @@ function App() {
   })();
 
   const homeView = () => `<div class="home-dashboard home-container">
+    ${(() => { console.log('RENDER_HOME_RESULT_CARD_V3'); return ''; })()}
     <div class="home-content">
     <div class="home-header">
       <div class="home-top-icons">
@@ -624,10 +647,10 @@ function App() {
     </div>
     <div class="section home-section">
       <div class="home-kpi-slider">
-        ${homeTargets.map((item) => `<button class="card home-kpi-card admission-card slider-card" data-action="selectUniversity" data-target-major="${item.major}">
-          <span class="home-major-pill">${item.major}</span>
-          <p class="sub">내 합격 가능성</p>
-          <div class="home-kpi-head"><div><p class="metric percent">${item.rate}%</p><p class="sub">${item.rank}</p></div><div class="ring donut" style="background:conic-gradient(var(--primary) 0 ${item.rate}%, #dfe8f8 ${item.rate}% 100%)"></div></div>
+        ${homeTargets.map((item) => `<button class="card home-kpi-card admission-card slider-card home-result-card-v3" data-action="selectUniversity" data-target-major="${item.major}">
+          <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score"><strong>${item.score}점</strong><small>AI 점수</small></div></div>
+          <div class="home-result-gauge"><i style="width:${Math.min((item.score / 250) * 100, 100)}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
+          <div class="home-result-gauge-meta"><span>0</span><span>합격컷 100</span><span>안정컷 150</span><span>MAX 250</span></div>
           <div class="kpi-row score-row"><div class="kpi-item"><b>${item.score}점</b>현재 점수</div><div class="kpi-item"><b>${item.cut}점</b>합격 컷</div><div class="kpi-item danger"><b>${item.gap}점</b>부족 점수</div></div>
           <div class="home-planner-badges chip-row">${plannerBadges.map((badge) => `<span class="chip">${badge}</span>`).join('')}</div>
         </button>`).join('')}
@@ -642,12 +665,10 @@ function App() {
         <div class="study-timer-row"><b class="timer" data-study-base-seconds="${todayRecord?.studyTime || 0}">${formatHms(todayStudySeconds)}</b>${studyTimerRunning ? `<button class="btn btn-secondary start-button" data-action="stopStudyTimer">공부 종료</button>` : `<button class="btn btn-primary start-button" data-action="openStudySubjectSheet">공부 시작하기</button>`}</div>
         <div class="home-subject-pill-row subject-chip-row">${visibleSubjectChips.map(([subject, sec]) => `<span class="home-subject-pill subject-time-chip">${subject} ${formatHms(sec || 0)}</span>`).join('')}${hiddenSubjectCount ? `<span class="home-subject-pill subject-time-chip more">+${hiddenSubjectCount}</span>` : ''}</div>
       </div>
-      <div class="card study-goal-card">
+      <button class="card study-goal-card home-goal-linked-card" data-action="goto" data-target="planner">
         <p class="analysis-title">오늘 공부 목표</p>
-        <p class="sub">수학: 2시간 · 탐구: 1시간</p>
-        <div class="track"><i style="width:${todayGoalPercent}%"></i></div>
-        <p class="sub" style="margin:8px 0 0">오늘 목표 달성률 ${todayGoalPercent}%</p>
-      </div>
+        ${todayPlannerItems.length ? `<p class="sub">${todayPlannerSubjectSummary.join(' · ')}</p><div class="track"><i style="width:${todayPlannerProgress}%"></i></div><p class="sub" style="margin:8px 0 0">오늘 목표 달성률 ${todayPlannerProgress}% (${formatMinutesLabel(todayPlannerDoneMinutes)} / ${formatMinutesLabel(todayPlannerTotalMinutes)})</p>` : `<p class="sub">오늘 계획을 추가해보세요</p><span class="home-goal-empty-cta">플래너로 이동</span>`}
+      </button>
       <div class="card home-bottom-summary ranking-card">
         <div class="home-ranking-head"><p class="analysis-title">내 공부 랭킹</p><span class="badge">오늘 기준</span></div>
         <p class="home-ranking-main">${Math.min(myRank, 124)}등</p>
@@ -798,7 +819,76 @@ function App() {
     .analysis-v2-bar-item p{margin:0;max-width:84px;font-size:12px;font-weight:600;line-height:1.35;color:#475569;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
     .analysis-v2-bar-item.active .analysis-v2-bar-wrap{outline:2px solid #2563EB;outline-offset:8px;border-radius:20px;}
     .analysis-v2-selected-badge{font-size:11px;font-weight:700;color:#2563EB;background:#DBEAFE;border-radius:999px;padding:4px 8px;}
+    .home-result-card-v3{display:grid;gap:12px;text-align:left;overflow:hidden;}
+    .home-result-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;}
+    .home-result-major{margin:0;font-size:16px;font-weight:800;color:#0F172A;line-height:1.4;}
+    .home-result-state{display:inline-flex;margin-top:6px;padding:4px 10px;border-radius:999px;background:#DBEAFE;color:#1D4ED8;font-size:12px;font-weight:700;}
+    .home-result-score{text-align:right;}
+    .home-result-score strong{display:block;font-size:24px;line-height:1.1;color:#0F172A;}
+    .home-result-score small{font-size:12px;color:#64748B;}
+    .home-result-gauge{position:relative;height:10px;background:#E2E8F0;border-radius:999px;overflow:hidden;}
+    .home-result-gauge i{display:block;height:100%;background:#2563EB;border-radius:inherit;}
+    .home-result-gauge .cut{position:absolute;top:-2px;width:2px;height:14px;background:#fff;box-shadow:0 0 0 1px rgba(15,23,42,.18);}
+    .home-result-gauge-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));font-size:11px;color:#64748B;gap:4px;}
+    .home-result-gauge-meta span:nth-child(2),.home-result-gauge-meta span:nth-child(3){text-align:center;}
+    .home-result-gauge-meta span:last-child{text-align:right;}
+    .home-goal-linked-card{cursor:pointer;text-align:left;}
+    .home-goal-empty-cta{margin-top:8px;display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;background:#DBEAFE;color:#1D4ED8;border-radius:10px;font-weight:700;font-size:13px;}
+    .score-journey-card{display:grid;gap:14px;}
+    .score-journey-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:stretch;}
+    .score-journey-col{border:1px solid #E2E8F0;background:#F8FAFC;border-radius:18px;padding:14px;display:grid;gap:8px;}
+    .score-journey-col.target{border-color:#93C5FD;background:#EFF6FF;}
+    .score-journey-col h4{margin:0;font-size:14px;color:#334155;}
+    .score-journey-row{display:flex;justify-content:space-between;gap:10px;font-size:14px;color:#334155;}
+    .score-journey-row .pill{background:#DBEAFE;color:#1D4ED8;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700;}
+    .score-journey-total{margin-top:2px;padding-top:10px;border-top:1px solid #CBD5E1;display:flex;justify-content:space-between;font-weight:800;}
+    .score-journey-arrow{align-self:center;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#E2E8F0;color:#334155;font-weight:900;}
+    .analysis-v2-eta-card{margin-top:2px;padding:20px;border:1px solid #93C5FD;border-radius:20px;background:linear-gradient(135deg,#EFF6FF 0%, #DBEAFE 100%);box-shadow:0 10px 24px rgba(37,99,235,.18);}
+    .analysis-v2-eta-card .eyebrow{display:block;font-size:14px;font-weight:800;color:#1E40AF;margin-bottom:4px;}
+    .analysis-v2-eta-card b{font-size:20px;line-height:1.35;color:#1E3A8A;}
+    .analysis-v2-chart-area{overflow:hidden;}
+    .analysis-v2-bars{position:relative;display:flex;justify-content:space-evenly;align-items:flex-end;gap:10px;height:100%;padding:24px 8px 0;}
+    .analysis-v2-chart-area .analysis-v2-guide-line{z-index:1;}
+    .analysis-v2-bar-item{z-index:2;height:100%;justify-content:flex-end;}
+    .analysis-v2-bar-wrap{height:100%;display:flex;align-items:flex-end;}
+    .analysis-v2-sim-item{min-height:124px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;border:1px solid #E2E8F0;border-radius:16px;padding:12px 14px;background:#fff;}
+    .analysis-v2-sim-item .left{display:grid;gap:6px;}
+    .analysis-v2-sim-item .left p{margin:0;display:flex;align-items:center;gap:8px;font-size:16px;}
+    .analysis-v2-sim-item small{color:#64748B;line-height:1.4;}
+    .analysis-v2-sim-item b{font-size:22px;}
+    .analysis-v2-sim-item.focus{background:#EFF6FF;border-color:#60A5FA;box-shadow:0 8px 24px rgba(37,99,235,.14);}
+    .analysis-v2-sim-item .sim-detail{font-size:12px;color:#1D4ED8;font-weight:700;}
+    .planner-item-main b,.planner-item-main p{transition:color .15s ease,text-decoration-color .15s ease;}
+    .planner-item.done .planner-item-main b,.planner-item.done .planner-item-main p{color:#94A3B8;text-decoration:line-through;text-decoration-thickness:1px;text-decoration-color:#CBD5E1;}
+    @media (max-width:380px){.score-journey-grid{grid-template-columns:1fr;}.score-journey-arrow{margin:0 auto;transform:rotate(90deg);}}
   </style>`;
+
+  const scoreJourneyCard = (title = '최소 노력 대비 합격 도달 성적') => `
+    <div class="score-journey-card">
+      <p class="analysis-title">${title}</p>
+      <div class="score-journey-grid">
+        <div class="score-journey-col">
+          <h4>현재 성적</h4>
+          <div class="score-journey-row"><span>국어</span><b>82</b></div>
+          <div class="score-journey-row"><span>수학</span><b>68</b></div>
+          <div class="score-journey-row"><span>영어</span><b>77</b></div>
+          <div class="score-journey-row"><span>탐구1</span><b>70</b></div>
+          <div class="score-journey-row"><span>탐구2</span><b>66</b></div>
+          <div class="score-journey-total"><span>총점</span><b>86점</b></div>
+        </div>
+        <div class="score-journey-arrow">→</div>
+        <div class="score-journey-col target">
+          <h4>도달 성적</h4>
+          <div class="score-journey-row"><span>국어</span><b>82</b></div>
+          <div class="score-journey-row"><span>수학</span><b>80 <span class="pill">+12</span></b></div>
+          <div class="score-journey-row"><span>영어</span><b>77</b></div>
+          <div class="score-journey-row"><span>탐구1</span><b>76 <span class="pill">+6</span></b></div>
+          <div class="score-journey-row"><span>탐구2</span><b>66</b></div>
+          <div class="score-journey-total"><span>예상 총점</span><b>120점</b></div>
+        </div>
+      </div>
+    </div>
+  `;
 
   const screens = {
     ob1: layout(
@@ -924,13 +1014,7 @@ function App() {
        ${appbar('공부 성향 맞춤 솔루션', true)}
        <p class="sub ob-subcopy">현재 성적에서 합격컷까지,<br/>가장 효율적인 점수 상승 루트를 보여드릴게요.</p>
        <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>무작정 전 과목을 올리는 게 아니라, 합격에 가장 크게 기여하는 과목부터 잡아야 해요!</p></div>
-       <div class="card ob-card">
-         <p class="analysis-title">성적 Before & After</p>
-         <div class="ob-before-after">
-           <div class="ob-score-card"><b>현재 성적</b><p>국어 82</p><p>수학 68</p><p>영어 77</p><p>탐구1 70</p><p>탐구2 66</p><strong>총점 86</strong></div>
-           <div class="ob-score-card"><b>목표 성적</b><p>국어 82</p><p>수학 80 <span class="plus">(+12)</span></p><p>영어 77</p><p>탐구1 76 <span class="plus">(+6)</span></p><p>탐구2 66</p><strong>총점 120</strong></div>
-         </div>
-       </div>
+       <div class="card ob-card">${scoreJourneyCard('최소 노력 대비 합격 도달 성적')}</div>
        ${ob3IsAnalyzing ? `<div class="loading-overlay"><div class="loading-box"><div class="dots">● ● ●</div><div>분석중입니다</div><div>잠시만 기다려주세요</div></div></div>` : `<div class="card ob-card ob-period-card"><p class="analysis-title">Standard 이용 시 예상 도달 기간</p><h2>평균 3개월 예상</h2><p class="sub">주간 플래너 피드백과 학습 방향 코칭 제공</p></div>
        <div class="card ob-card">
          <p class="analysis-title">합격확률 게이지</p>
@@ -1064,14 +1148,9 @@ function App() {
           </div>
 
           <div class="card analysis-v2-before-after">
-            <p class="analysis-title">최소 노력 대비 합격 도달 성적</p>
-            <div class="analysis-v2-ba-grid">
-              <div class="analysis-v2-ba-col"><h4>현재 성적</h4><p>국어 82</p><p>수학 68</p><p>영어 77</p><p>탐구1 70</p><p>탐구2 66</p><p><b>총점 86</b></p></div>
-              <div class="analysis-v2-arrow">→</div>
-              <div class="analysis-v2-ba-col"><h4>도달 성적</h4><p>국어 82</p><p>수학 80 <em>+12</em></p><p>영어 77</p><p>탐구1 76 <em>+6</em></p><p>탐구2 66</p><p><b>예상 총점 120</b></p></div>
-            </div>
+            ${scoreJourneyCard('최소 노력 대비 합격 도달 성적')}
             <div class="analysis-v2-eta ${analysisEtaStage < 3 ? 'loading' : ''}">
-              ${analysisEtaStage === 1 ? `<div class="analysis-eta-loading"><span class="skeleton"></span><p>도달 성적 계산 중입니다...</p></div>` : analysisEtaStage === 2 ? `<div class="analysis-eta-loading"><span class="skeleton thin"></span><p>도달 시간을 예상 중입니다...</p></div>` : `<p class="analysis-v2-eta-text">⚡ <b>현재 학습분석 기반 Standard 이용 시 평균 2개월 내 도달 예상</b></p>`}
+              ${analysisEtaStage === 1 ? `<div class="analysis-eta-loading"><span class="skeleton"></span><p>도달 성적 계산 중입니다...</p></div>` : analysisEtaStage === 2 ? `<div class="analysis-eta-loading"><span class="skeleton thin"></span><p>도달 시간을 예상 중입니다...</p></div>` : `<div class="analysis-v2-eta-card"><span class="eyebrow">⚡ 현재 학습분석 기반</span><b>Standard 이용 시 평균 2개월 내 도달 예상</b></div>`}
             </div>
           </div>
 
@@ -1091,7 +1170,7 @@ function App() {
           <div class="card analysis-v2-cta sticky"><p class="analysis-title">지금 방향이 틀리면 시간만 낭비될 수 있습니다</p><p class="sub">Standard는 매주 학습 방향과 실행을 관리합니다.</p><button class="btn analysis-convert-btn" data-action="startStandard">2개월 내 합격권 진입 시작하기</button></div>
         ` : `
           <div class="analysis-v2-compare-card">
-            ${(() => { console.log('RENDER_ANALYSIS_CHART_V2'); return ''; })()}
+            ${(() => { console.log('RENDER_ANALYSIS_BAR_CHART_FIXED_V3'); return ''; })()}
             <h3>목표대학 점수 비교</h3>
             <p class="analysis-v2-compare-sub">AI 환산 진단점수 기준</p>
             <div class="analysis-v2-chart-area">
@@ -1099,19 +1178,23 @@ function App() {
               <div class="analysis-v2-guide-line safe"><span class="label">안정선 150</span></div>
               <div class="analysis-v2-bars">
                 ${[['가천대 관광경영학과', 250, '가천대학교 관광경영학과'], ['강서대 G2빅데이터경영학과', 250, '강서대학교 G2빅데이터경영학과'], ['고려대 경영대학', 71, '고려대학교 경영대학']].map(([label, score, full]) => {
-                  const MAX = 250;
-                  const chartHeight = 260;
-                  const height = (score / MAX) * chartHeight;
+                  const heightPercent = Math.max(4, Math.min(100, (score / 250) * 100));
                   const color = score >= 250 ? '#22C55E' : score < 100 ? '#F97316' : '#2563EB';
-                  return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="selectTarget" data-target-major="${full}"><b class="score">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar" style="height:${height}px;background:${color}"></i></div>${targetMajor===full?'<span class="analysis-v2-selected-badge">선택됨</span>':''}<p>${label}</p></button>`;
+                  return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="selectTarget" data-target-major="${full}"><b class="score">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar" style="height:${heightPercent}%;background:${color}"></i></div>${targetMajor===full?'<span class="analysis-v2-selected-badge">선택됨</span>':''}<p>${label}</p></button>`;
                 }).join('')}
               </div>
             </div>
           </div>
 
           <div class="card analysis-v2-sim">
+            ${(() => { console.log('RENDER_SCORE_GAIN_CARD_V3'); return ''; })()}
             <p class="analysis-title">+1점 상승 시 기대 효율</p>
-            ${analysisSelected.sim.map(([subject, gain, desc, recommended]) => `<button class="analysis-v2-sim-item ${recommended?'recommended':''} ${analysisHighlightedSubject===subject?'focus':''}" data-action="highlightSimSubject" data-sim-subject="${subject}"><div class="left"><p><strong>${subject} (+1점)</strong>${recommended?'<span class="badge">추천</span>':''}</p><small>${desc}</small><span class="mini-track"><i style="width:${Math.max(((Number(String(gain).replace(/[^0-9.]/g, '')) || 0) / analysisSimMax) * 100, 8)}%"></i></span></div><b>${gain}</b></button>`).join('')}
+            ${analysisSelected.sim.map(([subject, gain, desc, recommended]) => {
+              const gainNum = Number(String(gain).replace(/[^0-9.]/g, '')) || 0;
+              const ratio = Math.max((gainNum / analysisSimMax) * 100, 8);
+              const selected = analysisHighlightedSubject===subject;
+              return `<button class="analysis-v2-sim-item ${recommended?'recommended':''} ${selected?'focus':''}" data-action="highlightSimSubject" data-sim-subject="${subject}"><div class="left"><p><strong>${subject} (+1점)</strong>${recommended?'<span class="badge">추천</span>':''}</p><small>${desc}</small><span class="mini-track"><i style="width:${ratio}%"></i></span>${selected?`<span class="sim-detail">+1점 상승 시 AI 점수 ${gain} / 합격 가능성 상승 기대</span>`:''}</div><b>${gain}</b></button>`;
+            }).join('')}
             <p class="analysis-v2-sim-foot">탭해서 과목별 상승 효율을 빠르게 비교해보세요.</p>
           </div>
         `}
@@ -1145,12 +1228,12 @@ function App() {
       true
     ),
     planner: layout(
-      `<div class="planner-screen"><div class="planner-head"><h3>2024년 5월 ${selectedDate}일 (화)</h3><button class="planner-cal-btn" data-action="openPlannerCalendar">${i('calendar', false)}</button></div>
+      `<div class="planner-screen">${(() => { console.log('RENDER_PLANNER_NO_TIME_RANGE_V3'); return ''; })()}<div class="planner-head"><h3>2024년 5월 ${selectedDate}일 (화)</h3><button class="planner-cal-btn" data-action="openPlannerCalendar">${i('calendar', false)}</button></div>
        <div class="planner-weekday"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
        <div class="planner-days">${plannerWeekDates.map((d) => `<button class="${selectedDate===d?'active':''}" data-action="selectPlannerDate" data-planner-date="${d}">${d}</button>`).join('')}</div>
        <div class="planner-section-title planner-fade"><div><h4>${selectedDate}일 계획</h4><p>총 ${plannerViewHour}시간 ${plannerViewMinute}분</p></div></div>
        <div class="planner-plan-list">
-         ${plannerViewItems.map((item, idx) => `<div class="planner-item ${item.done ? 'done' : ''}" data-action="openPlannerEdit" data-planner-index="${idx}"><i class="dot ${item.dot}"></i><div><b>${item.subject}</b><p>${item.content}</p><small>${item.start} - ${item.end}</small></div><div class="planner-item-right"><strong>${item.minutes}분</strong><div class="planner-item-controls"><button class="planner-item-done" data-action="togglePlannerDone" data-planner-index="${idx}">✓ ${item.done ? '완료!' : '완료'}</button><button class="planner-item-remove" data-action="removePlannerItem" data-planner-index="${idx}">✕</button></div></div></div>`).join('') || '<div class="planner-empty-day">선택한 날짜의 플래너가 없습니다.</div>'}
+         ${plannerViewItems.map((item, idx) => `<div class="planner-item ${item.done ? 'done' : ''}" data-action="openPlannerEdit" data-planner-index="${idx}"><i class="dot ${item.dot}"></i><div class="planner-item-main"><b>${item.subject}</b><p>${item.content}</p></div><div class="planner-item-right"><strong>${item.minutes}분</strong><div class="planner-item-controls"><button class="planner-item-done" data-action="togglePlannerDone" data-planner-index="${idx}">✓ ${item.done ? '완료!' : '완료'}</button><button class="planner-item-remove" data-action="removePlannerItem" data-planner-index="${idx}">✕</button></div></div></div>`).join('') || '<div class="planner-empty-day">선택한 날짜의 플래너가 없습니다.</div>'}
        </div>
        <div class="planner-feedback-card ${plannerFeedback.tone}"><span>${plannerFeedback.icon}</span><p>${plannerFeedback.text}</p></div>
        <div class="planner-bottom-space"></div>
