@@ -487,8 +487,16 @@ function App() {
   const ScoreLine = (title, left, mid, right = '') => `<div class="v2-score-line"><span>${title}</span>${left}${mid}${right}</div>`;
   const OnboardingStep1Full = () => `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="onboarding-screen on-form-screen">
     <img src="${ONBOARDING_LOGO_SRC}" class="onboarding-logo logo" alt="StudyCrack 로고"/>
-    <div class="onboarding-copy"><h2>학생 현황 및 진로 설계</h2><p>정성/정량 정보를 모두 입력해 주세요.</p></div>
-    <div class="card on-form-card"><h4>성적 입력</h4>
+    <div class="onboarding-copy"><h2>학습성향 진단</h2><p>학생 현황 및 진로 설계 정보를 먼저 입력해 주세요.</p></div>
+    <div class="card on-form-card"><h4>학생 현황 및 진로 설계</h4>
+      <select class="planner-input" data-field="obGradeStatus"><option ${obGradeStatus==='고1/2 재학'?'selected':''}>고1/2 재학</option><option ${obGradeStatus==='고3 재학'?'selected':''}>고3 재학</option><option ${obGradeStatus==='N수생'?'selected':''}>N수생</option><option ${obGradeStatus==='검정고시'?'selected':''}>검정고시</option><option ${obGradeStatus==='기타'?'selected':''}>기타</option></select>
+      <input class="planner-input" data-field="obSchoolName" value="${obSchoolName}" placeholder="출신 학교"/>
+      <select class="planner-input" data-field="obTrack"><option ${obTrack==='예체능'?'selected':''}>예체능</option><option ${obTrack==='인문'?'selected':''}>인문</option><option ${obTrack==='자연'?'selected':''}>자연</option></select>
+      <textarea class="planner-input on-ta" data-field="obGoalText" placeholder="스터디크랙을 통해서 얻고 싶은 점">${obGoalText}</textarea>
+      <textarea class="planner-input on-ta" data-field="obQuestionText" placeholder="입시 고민 및 질문">${obQuestionText}</textarea>
+    </div>
+    <div class="card on-form-card"><h4>모의고사 / 수능 예상 성적 입력</h4>
+      <select class="planner-input" data-field="obExamType"><option>3월 학평</option><option>6월 모의평가</option><option>9월 모의평가</option><option>수능</option><option>기타</option></select>
       <div class="v2-score-scroll">
         ${ScoreLine('국어', `<select class="planner-input" data-field="v2-korean-type"><option value="">선택과목</option><option value="화법과작문" ${scoreState.korean.type==='화법과작문'?'selected':''}>화법과작문</option><option value="언어와매체" ${scoreState.korean.type==='언어와매체'?'selected':''}>언어와매체</option></select>`, `<input class="planner-input" data-field="v2-korean-common" value="${scoreState.korean.common}" placeholder="공통 점수" type="number"/>`, `<input class="planner-input" data-field="v2-korean-elective" value="${scoreState.korean.elective}" placeholder="선택 점수" type="number"/>`)}
         ${ScoreLine('수학', `<select class="planner-input" data-field="v2-math-type"><option value="">선택과목</option><option value="확률과통계" ${scoreState.math.type==='확률과통계'?'selected':''}>확률과통계</option><option value="미적분" ${scoreState.math.type==='미적분'?'selected':''}>미적분</option><option value="기하" ${scoreState.math.type==='기하'?'selected':''}>기하</option></select>`, `<input class="planner-input" data-field="v2-math-common" value="${scoreState.math.common}" placeholder="공통 점수" type="number"/>`, `<input class="planner-input" data-field="v2-math-elective" value="${scoreState.math.elective}" placeholder="선택 점수" type="number"/>`)}
@@ -507,9 +515,9 @@ function App() {
       : step === 2
         ? `<h4>수학</h4><select class="planner-input" data-field="v2e-math-type"><option value="확률과통계" ${scoreEditState.math.type==='확률과통계'?'selected':''}>확률과통계</option><option value="미적분" ${scoreEditState.math.type==='미적분'?'selected':''}>미적분</option><option value="기하" ${scoreEditState.math.type==='기하'?'selected':''}>기하</option></select><input class="planner-input" data-field="v2e-math-common" value="${scoreEditState.math.common}" type="number" placeholder="공통 원점수"/><input class="planner-input" data-field="v2e-math-elective" value="${scoreEditState.math.elective}" type="number" placeholder="선택 원점수"/>${preview}`
         : step === 3
-          ? `<h4>영어</h4><select class="planner-input" data-field="v2e-english"><option value="">등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option value="${n}" ${String(scoreEditState.english)===String(n)?'selected':''}>${n}등급</option>`).join('')}</select>${preview}`
+          ? `<h4>영어</h4><select class="planner-input" data-field="v2e-english"><option value="">등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option value="${n}" ${String(scoreEditState.english)===String(n)?'selected':''}>${n}등급</option>`).join('')}</select>`
           : step === 4
-            ? `<h4>한국사</h4><select class="planner-input" data-field="v2e-history"><option value="">등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option value="${n}" ${String(scoreEditState.history)===String(n)?'selected':''}>${n}등급</option>`).join('')}</select>${preview}`
+            ? `<h4>한국사</h4><select class="planner-input" data-field="v2e-history"><option value="">등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option value="${n}" ${String(scoreEditState.history)===String(n)?'selected':''}>${n}등급</option>`).join('')}</select>`
             : step === 5
               ? `<h4>탐구1</h4><select class="planner-input" data-field="v2e-inq1-subject">${inquiryOptions}</select><input class="planner-input" data-field="v2e-inq1-score" value="${scoreEditState.inquiry1.score}" type="number" placeholder="원점수"/>${preview}`
               : `<h4>탐구2</h4><select class="planner-input" data-field="v2e-inq2-subject">${inquiryOptions}</select><input class="planner-input" data-field="v2e-inq2-score" value="${scoreEditState.inquiry2.score}" type="number" placeholder="원점수"/>${preview}`;
@@ -1536,6 +1544,7 @@ function App() {
     if (field === 'signupPasswordConfirm') setSignupPasswordConfirm(value);
     if (field === 'analysisSearchTerm') setAnalysisSearchTerm(value);
     if (field === 'obSchoolName') setObSchoolName(value);
+    if (field === 'obGradeStatus') setObGradeStatus(value);
     if (field === 'obTrack') setObTrack(value);
     if (field === 'obGoalText') setObGoalText(value);
     if (field === 'obQuestionText') setObQuestionText(value);
