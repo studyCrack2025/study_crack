@@ -7,6 +7,7 @@ const HOME_FALLBACK_HTML = `<div class="app-shell"><div class="app-frame"><div c
 const DEFAULT_USER = { name: '김지민', targetUniversity: '연세대학교 경영학과', plan: 'Pro' };
 const DEFAULT_SCORES = { korean: 82, math: 68, english: 77, inquiry1: 70, inquiry2: 66 };
 const DEFAULT_NOTIFICATIONS = { planner: true, weekly: true, report: true, billing: true };
+const FIXED_TODAY_DATE = '2024-05-14';
 const DEFAULT_PLANNER_ITEMS = [
   { id: 'pl-default-1', date: '14', subject: '수학', content: '개념 학습', start: '10:00', end: '12:00', minutes: 120, dot: 'math' },
   { id: 'pl-default-2', date: '14', subject: '영어', content: '독해 문제 풀이', start: '13:00', end: '14:30', minutes: 90, dot: 'eng' },
@@ -145,9 +146,9 @@ function App() {
   const [coachingStep, setCoachingStep] = useState(1);
   const [coachingMonth, setCoachingMonth] = useState('26년 4월');
   const [coachingSubjectRows, setCoachingSubjectRows] = useState([]);
-  const [coachingPlannerPhotos, setCoachingPlannerPhotos] = useState([]);
+  const [coachingPlannerFiles, setCoachingPlannerFiles] = useState([]);
   const [coachingExamType, setCoachingExamType] = useState('');
-  const [coachingExamPhotos, setCoachingExamPhotos] = useState([]);
+  const [coachingExamFiles, setCoachingExamFiles] = useState([]);
   const [coachingExamScores, setCoachingExamScores] = useState({});
   const [coachingTrend, setCoachingTrend] = useState('');
   const [coachingDropReasons, setCoachingDropReasons] = useState([]);
@@ -497,7 +498,7 @@ function App() {
   const plannerViewHour = Math.floor(plannerViewMinutes / 60);
   const plannerViewMinute = plannerViewMinutes % 60;
   const plannerEditItem = plannerItems.find((item) => item.id === plannerEditIndex) || null;
-  const todayDateKey = '14';
+  const todayDateKey = String(Number(FIXED_TODAY_DATE.split('-')[2]));
   const todayPlannerItems = plannerItemsByDate[todayDateKey] || [];
   const todayPlannerTotalMinutes = todayPlannerItems.reduce((acc, item) => acc + (item.minutes || 0), 0);
   const todayPlannerTotalSeconds = todayPlannerTotalMinutes * 60;
@@ -623,7 +624,7 @@ function App() {
     ['탐구1', `${scores.inquiry1}점`, `${scores.inquiry1 + 17}`, `${Math.min(99, scores.inquiry1 + 11)}`, '3등급'],
     ['탐구2', `${scores.inquiry2}점`, `${scores.inquiry2 + 15}`, `${Math.min(99, scores.inquiry2 + 9)}`, '3등급']
   ].map(([subject, raw, std, pct, grade]) => `<div class="score-info-detail-row"><b>${subject}</b><span>원점수 ${raw}</span><span>표준점수 ${std}</span><span>백분위 ${pct}</span><span>등급 ${grade}</span></div>`).join('');
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayKey = FIXED_TODAY_DATE;
   const todayRecord = studyRecords.find((item) => item.date === todayKey);
   const liveStudySeconds = studyTimerSecondsRef.current;
   const todayStudySeconds = (todayRecord?.studyTime || 0) + liveStudySeconds;
@@ -816,8 +817,8 @@ function App() {
     }
     if (coachingStep === 2) {
       return `<div class="coach-step-body"><h4>2. 플래너 인증</h4><p class="sub">이번 주 플래너 사진을 첨부해주세요. 최대 5장</p>
-        <div class="coach-upload-box"><p>파일/사진 첨부 박스</p><input type="file" class="coach-hidden-file" data-field="coachPlannerFiles" accept="image/*,.pdf" multiple /><button class="btn btn-secondary" data-action="openPlannerFilePicker">사진 추가하기</button></div>
-        <div class="coach-thumb-list">${coachingPlannerPhotos.length ? coachingPlannerPhotos.map((name, idx) => `<div class="coach-thumb"><span>${name}</span><button data-action="removePlannerPhoto" data-photo-index="${idx}">삭제</button></div>`).join('') : '<p class="sub">첨부된 사진이 없습니다.</p>'}</div>
+        <div class="coach-upload-box"><p>파일/사진 첨부 박스</p><input type="file" class="coach-hidden-file" data-field="coachPlannerFiles" accept="image/*" multiple /><button class="btn btn-secondary" data-action="openPlannerFilePicker">사진 추가하기</button></div>
+        <div class="coach-thumb-list">${coachingPlannerFiles.length ? `<p class="sub">총 ${coachingPlannerFiles.length}개 첨부됨</p>${coachingPlannerFiles.map((file, idx) => `<div class="coach-thumb"><span>${file.name}</span><button data-action="removePlannerPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}` : '<p class="sub">첨부된 사진이 없습니다.</p>'}</div>
       </div>`;
     }
     if (coachingStep === 3) {
@@ -825,8 +826,8 @@ function App() {
       return `<div class="coach-step-body"><h4>3. 모의고사 응시 여부</h4><p class="sub">이번 주 사설 모의고사 또는 학력평가를 응시했나요?</p>
         <div class="coach-choice-row">${examTypes.map((type) => `<button class="planner-pill ${coachingExamType===type?'active':''}" data-action="setCoachingExamType" data-coach-exam="${type}">${type}</button>`).join('')}</div>
         ${coachingExamType && coachingExamType !== '미응시' ? `<div class="coach-exam-form">
-          <input type="file" class="coach-hidden-file" data-field="coachExamFiles" accept="image/*,.pdf" multiple /><button class="btn btn-secondary" data-action="openExamFilePicker">성적 인증 사진 첨부</button>
-          <div class="coach-thumb-list">${coachingExamPhotos.map((name, idx) => `<div class="coach-thumb"><span>${name}</span><button data-action="removeExamPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}</div>
+          <input type="file" class="coach-hidden-file" data-field="coachExamFiles" accept="image/*" multiple /><button class="btn btn-secondary" data-action="openExamFilePicker">성적 인증 사진 첨부</button>
+          <div class="coach-thumb-list">${coachingExamFiles.length ? `<p class="sub">총 ${coachingExamFiles.length}개 첨부됨</p>${coachingExamFiles.map((file, idx) => `<div class="coach-thumb"><span>${file.name}</span><button data-action="removeExamPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}` : '<p class="sub">첨부된 사진이 없습니다.</p>'}</div>
           <div class="coach-exam-subject-list">
             <section class="coach-exam-subject-card"><h5>국어</h5><input class="planner-input" data-coach-field="koreanType" value="${coachingExamScores.koreanType || ''}" placeholder="선택과목" /><input class="planner-input" data-coach-field="koreanRaw" value="${coachingExamScores.koreanRaw || ''}" placeholder="원점수" /></section>
             <section class="coach-exam-subject-card"><h5>수학</h5><input class="planner-input" data-coach-field="mathType" value="${coachingExamScores.mathType || ''}" placeholder="선택과목" /><input class="planner-input" data-coach-field="mathRaw" value="${coachingExamScores.mathRaw || ''}" placeholder="원점수" /></section>
@@ -1615,13 +1616,13 @@ function App() {
     if (action === 'openPlannerFilePicker') document.querySelector('[data-field="coachPlannerFiles"]')?.click();
     if (action === 'removePlannerPhoto') {
       const idx = Number(actionEl.getAttribute('data-photo-index'));
-      setCoachingPlannerPhotos((prev) => prev.filter((_, i) => i !== idx));
+      setCoachingPlannerFiles((prev) => prev.filter((_, i) => i !== idx));
     }
     if (action === 'setCoachingExamType') setCoachingExamType(actionEl.getAttribute('data-coach-exam'));
     if (action === 'openExamFilePicker') document.querySelector('[data-field="coachExamFiles"]')?.click();
     if (action === 'removeExamPhoto') {
       const idx = Number(actionEl.getAttribute('data-photo-index'));
-      setCoachingExamPhotos((prev) => prev.filter((_, i) => i !== idx));
+      setCoachingExamFiles((prev) => prev.filter((_, i) => i !== idx));
     }
     if (action === 'setCoachingTrend') setCoachingTrend(actionEl.getAttribute('data-coach-trend'));
     if (action === 'toggleDropReason') {
@@ -1668,7 +1669,7 @@ function App() {
       setStudyTimerRunning(false);
       stopLiveStudyTimer();
       const elapsed = studyTimerSecondsRef.current;
-      const today = new Date().toISOString().slice(0, 10);
+      const today = FIXED_TODAY_DATE;
       setStudyRecords((prev) => {
         const idx = prev.findIndex((r) => r.date === today);
         if (idx >= 0) {
@@ -1794,12 +1795,12 @@ function App() {
   const onChange = (e) => {
     const field = e.target.getAttribute('data-field');
     if (field === 'coachPlannerFiles') {
-      const files = Array.from(e.target.files || []).map((file) => file.name);
-      if (files.length) setCoachingPlannerPhotos((prev) => [...prev, ...files].slice(0, 5));
+      const files = Array.from(e.target.files || []);
+      if (files.length) setCoachingPlannerFiles((prev) => [...prev, ...files].slice(0, 5));
     }
     if (field === 'coachExamFiles') {
-      const files = Array.from(e.target.files || []).map((file) => file.name);
-      if (files.length) setCoachingExamPhotos((prev) => [...prev, ...files]);
+      const files = Array.from(e.target.files || []);
+      if (files.length) setCoachingExamFiles((prev) => [...prev, ...files]);
     }
   };
   const onBlur = (e) => {
