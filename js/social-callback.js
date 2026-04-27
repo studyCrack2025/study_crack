@@ -6,8 +6,20 @@
     const USER_API_URL = CONFIG.api.user;
     const statusMsg = document.getElementById('statusMsg');
 
+    // innerHTML 대신 안전한 DOM 조작 (XSS 방지)
     function showError(msg) {
-        statusMsg.innerHTML = `<span style="color:#dc2626;">${msg}</span><br><br><a href="/login" style="color:#2563eb;">로그인 페이지로 돌아가기</a>`;
+        statusMsg.textContent = '';
+        const span = document.createElement('span');
+        span.style.color = '#dc2626';
+        span.textContent = msg;
+        const link = document.createElement('a');
+        link.href = '/login';
+        link.style.color = '#2563eb';
+        link.textContent = '로그인 페이지로 돌아가기';
+        statusMsg.appendChild(span);
+        statusMsg.appendChild(document.createElement('br'));
+        statusMsg.appendChild(document.createElement('br'));
+        statusMsg.appendChild(link);
     }
 
     const params = new URLSearchParams(window.location.search);
@@ -63,12 +75,12 @@
         const result = await res.json();
 
         if (!res.ok) {
-            // 이메일 충돌
             if (res.status === 409) {
-                showError(result.error || '이미 동일 이메일로 가입된 계정이 있습니다.<br>기존 이메일/비밀번호로 로그인해 주세요.');
+                showError(result.error || '이미 동일 이메일로 가입된 계정이 있습니다. 기존 이메일/비밀번호로 로그인해 주세요.');
             } else {
                 showError(result.error || '로그인 처리에 실패했습니다. 다시 시도해 주세요.');
             }
+            console.error('[SocialCallback] Lambda error:', res.status, result);
             return;
         }
 
@@ -101,19 +113,12 @@
             const userData = await userRes.json();
             localStorage.setItem('userName', userData.name || '');
             if (userData.computedTier) localStorage.setItem('userTier', userData.computedTier);
-
-            if (isNewUser) {
-                window.location.href = '/welcome';
-            } else {
-                window.location.href = '/';
-            }
-        } else {
-            // 신규 소셜 유저 → 웰컴 페이지로
-            window.location.href = '/welcome';
         }
 
+        window.location.href = isNewUser ? '/welcome' : '/';
+
     } catch (e) {
-        console.error('Social callback error:', e);
+        console.error('[SocialCallback] Error:', e);
         showError('인증 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
     }
 })();
