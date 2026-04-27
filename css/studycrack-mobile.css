@@ -1298,3 +1298,9 @@ button:disabled, .disabled, [disabled] { opacity:.5; pointer-events:none; }
 .analysis-v2.loading .card { position:relative; overflow:hidden; min-height:120px; }
 .analysis-v2.loading .card > * { opacity:0; }
 .analysis-v2.loading .card::before { content:''; position:absolute; inset:12px; border-radius:12px; background:linear-gradient(90deg,#E5E7EB,#F1F5F9,#E5E7EB); background-size:220% 100%; animation:analysisSk 1.1s linear infinite; }
+
+.v2-score-scroll { display:grid; gap:8px; overflow-x:auto; }
+.v2-score-line { display:grid; grid-template-columns:64px minmax(140px,1fr) minmax(96px,.8fr) minmax(96px,.8fr); gap:8px; align-items:center; min-width:430px; }
+.v2-score-line > span { font-size:12px; font-weight:800; color:#334155; }
+.v2-score-line .planner-input { min-height:40px; }
+.v2-fill { display:block; }
