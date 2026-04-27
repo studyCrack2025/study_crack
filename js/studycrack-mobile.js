@@ -571,7 +571,7 @@ function App() {
     : lowRatio
       ? { tone: 'info', icon: '📊', text: `${lowRatio.subject} 비중이 부족합니다. 전략상 손해 가능성이 있어요.` }
       : { tone: 'info', icon: '📊', text: '과목 비중이 균형적으로 유지되고 있어요. 지금 흐름을 유지해요.' };
-  const canSubmitPlanner = Boolean(plannerDraft.subject && plannerDraft.durationChoice && plannerDraft.content.trim());
+  const canSubmitPlanner = Boolean(plannerDraft.subject && plannerDraft.durationChoice);
   const inquiryOptions = `<optgroup label="사회탐구"><option value="">과목 선택</option><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option></optgroup><optgroup label="과학탐구"><option>물리학</option><option>화학</option><option>생명과학</option><option>지구과학</option></optgroup>`;
   const ScoreEditModal = () => {
     const step = scoreEditStep;
@@ -1750,8 +1750,8 @@ function App() {
       goto('analysis');
     }
     if (action === 'addPlannerFromSheet') {
-      const content = plannerDraft.content.trim();
-      const customMinutes = plannerDraft.customMinutes.trim();
+      const content = (document.querySelector('[data-field="plannerContent"]')?.value || '').trim();
+      const customMinutes = (document.querySelector('[data-field="plannerCustomMinutes"]')?.value || '').trim();
       const minutes = plannerDraft.durationChoice === 'custom' ? Number(customMinutes) : Number(plannerDraft.durationChoice);
       if (!plannerDraft.subject || !content || !minutes || Number.isNaN(minutes)) return;
       const dot = plannerDraft.subject === '수학' ? 'math' : plannerDraft.subject === '영어' ? 'eng' : plannerDraft.subject === '국어' ? 'kor' : 'sci';
@@ -1804,9 +1804,7 @@ function App() {
       if (rateEl) rateEl.textContent = `달성률 ${Number.isFinite(rate) ? rate : 0}%`;
     }
     if (!field) return;
-    const liveValue = e.target.value;
-    if (field === 'plannerContent') setPlannerDraft((prev) => ({ ...prev, content: liveValue }));
-    if (field === 'plannerCustomMinutes') setPlannerDraft((prev) => ({ ...prev, customMinutes: liveValue }));
+    if (field === 'plannerContent' || field === 'plannerCustomMinutes') return;
   };
 
   const onChange = (e) => {
