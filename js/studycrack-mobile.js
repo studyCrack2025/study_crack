@@ -240,11 +240,13 @@ function App() {
   }, [screen]);
 
   useEffect(() => {
+    const scrollY = window.scrollY || window.pageYOffset || 0;
     const raf = requestAnimationFrame(() => {
       const container = document.querySelector('.score-journey-scroll');
       if (!container) return;
       const target = container.querySelector(`.score-journey-col.${activeScoreView}`);
       if (target) target.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
     });
     return () => cancelAnimationFrame(raf);
   }, [activeScoreView, screen, analysisMode]);
@@ -934,8 +936,8 @@ function App() {
     .score-journey-col h4{margin:0;font-size:14px;color:#334155;}
     .score-row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;color:#334155;white-space:nowrap;word-break:keep-all;min-width:0;}
     .score-row span,.score-row b,.score-row em{white-space:nowrap;word-break:keep-all;min-width:0;flex-shrink:0;font-style:normal;}
-    .score-row b{min-width:48px;text-align:center;}
-    .score-row em{color:#1E293B;font-weight:600;}
+    .score-row b{min-width:56px;width:56px;text-align:center;}
+    .score-row em{color:#1E293B;font-weight:600;min-width:92px;text-align:right;}
     .score-row .pill{border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;}
     .score-row .pill.up{background:#DBEAFE;color:#1D4ED8;}
     .score-row .pill.keep{background:#E2E8F0;color:#475569;}
@@ -1452,8 +1454,10 @@ function App() {
   console.log('APP_CURRENT_SCREEN', currentScreen);
 
   const onClick = (e) => {
+    const scrollY = window.scrollY || window.pageYOffset || 0;
     const activeEl = document.activeElement;
     requestAnimationFrame(() => {
+      window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
       if (activeEl && document.body.contains(activeEl)) activeEl.focus?.({ preventScroll: true });
     });
     if (isAnalyzing && screen === 'analysis') return;
@@ -1768,6 +1772,10 @@ function App() {
   };
 
   const onInput = (e) => {
+    const scrollY = window.scrollY || window.pageYOffset || 0;
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
+    });
     e.target?.focus?.({ preventScroll: true });
     const field = e.target.getAttribute('data-field');
     if (field === 'coachingMonth') setCoachingMonth(e.target.value);
