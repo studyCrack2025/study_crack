@@ -105,6 +105,7 @@ function App() {
   const [analysisEtaStage, setAnalysisEtaStage] = useState(1);
   const [analysisHighlightedSubject, setAnalysisHighlightedSubject] = useState('');
   const [activeScoreView, setActiveScoreView] = useState('current');
+  const [homeSlideIndex, setHomeSlideIndex] = useState(0);
   const [selectedDate, setSelectedDate] = useState('14');
   const [plannerCalendarOpen, setPlannerCalendarOpen] = useState(false);
   const [universityModalOpen, setUniversityModalOpen] = useState(false);
@@ -228,6 +229,20 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (screen !== 'home') return;
+    const slider = document.querySelector('.home-kpi-slider');
+    if (!slider) return;
+    const handler = () => {
+      const cardWidth = slider.firstElementChild ? slider.firstElementChild.getBoundingClientRect().width : 1;
+      const idx = Math.round(slider.scrollLeft / Math.max(cardWidth, 1));
+      setHomeSlideIndex(Math.max(0, Math.min(2, idx)));
+    };
+    slider.addEventListener('scroll', handler, { passive: true });
+    handler();
+    return () => slider.removeEventListener('scroll', handler);
+  }, [screen]);
+
+  useEffect(() => {
     const raf = requestAnimationFrame(() => {
       const container = document.querySelector('.score-journey-scroll');
       if (!container) return;
@@ -236,6 +251,29 @@ function App() {
     });
     return () => cancelAnimationFrame(raf);
   }, [activeScoreView, screen, analysisMode]);
+
+  useEffect(() => {
+    const container = document.querySelector('.score-journey-scroll');
+    if (!container) return;
+    const syncFromScroll = () => {
+      const cards = Array.from(container.querySelectorAll('.score-journey-col'));
+      if (!cards.length) return;
+      const center = container.scrollLeft + (container.clientWidth / 2);
+      let closest = cards[0];
+      let dist = Math.abs((cards[0].offsetLeft + cards[0].clientWidth / 2) - center);
+      cards.forEach((card) => {
+        const d = Math.abs((card.offsetLeft + card.clientWidth / 2) - center);
+        if (d < dist) {
+          closest = card;
+          dist = d;
+        }
+      });
+      const next = closest.classList.contains('target') ? 'target' : 'current';
+      setActiveScoreView((prev) => (prev === next ? prev : next));
+    };
+    container.addEventListener('scroll', syncFromScroll, { passive: true });
+    return () => container.removeEventListener('scroll', syncFromScroll);
+  }, [screen, analysisMode]);
 
   const initializeApp = async () => {
     let fallbackTimer;
@@ -463,7 +501,8 @@ function App() {
   const plannerViewHour = Math.floor(plannerViewMinutes / 60);
   const plannerViewMinute = plannerViewMinutes % 60;
   const plannerEditItem = plannerItems.find((item) => item.id === plannerEditIndex) || null;
-  const todayPlannerItems = plannerItemsByDate[selectedPlannerDate] || [];
+  const todayDateKey = '14';
+  const todayPlannerItems = plannerItemsByDate[todayDateKey] || [];
   const todayPlannerTotalMinutes = todayPlannerItems.reduce((acc, item) => acc + (item.minutes || 0), 0);
   const todayPlannerTotalSeconds = todayPlannerTotalMinutes * 60;
   const formatMinutesLabel = (minutes) => {
@@ -580,6 +619,14 @@ function App() {
   const scoreList = Object.entries(SCORE_LABELS)
     .map(([key, label]) => `<div class="score-info-row"><span>${label}</span><strong>${Number(scores?.[key] ?? DEFAULT_SCORES[key])}점</strong></div>`)
     .join('');
+  const scoreInfoDetailList = [
+    ['국어', `${scores.korean}점`, `${scores.korean + 18}`, `${Math.min(99, scores.korean + 10)}`, '2등급'],
+    ['수학', `${scores.math}점`, `${scores.math + 22}`, `${Math.min(99, scores.math + 14)}`, '3등급'],
+    ['영어', '-', '-', '-', `${Math.max(1, 9 - Math.floor(scores.english / 12))}등급`],
+    ['한국사', '-', '-', '-', '3등급'],
+    ['탐구1', `${scores.inquiry1}점`, `${scores.inquiry1 + 17}`, `${Math.min(99, scores.inquiry1 + 11)}`, '3등급'],
+    ['탐구2', `${scores.inquiry2}점`, `${scores.inquiry2 + 15}`, `${Math.min(99, scores.inquiry2 + 9)}`, '3등급']
+  ].map(([subject, raw, std, pct, grade]) => `<div class="score-info-detail-row"><b>${subject}</b><span>원점수 ${raw}</span><span>표준점수 ${std}</span><span>백분위 ${pct}</span><span>등급 ${grade}</span></div>`).join('');
   const todayKey = new Date().toISOString().slice(0, 10);
   const todayRecord = studyRecords.find((item) => item.date === todayKey);
   const liveStudySeconds = studyTimerSecondsRef.current;
@@ -691,7 +738,7 @@ function App() {
         </button>`).join('')}
         <button class="card home-kpi-add-card slider-card" data-action="openUniversityModal"><span class="plus">+</span><p>+ 목표 대학 추가</p></button>
       </div>
-      <div class="home-kpi-indicator card-indicator">${homeTargets.map((_, idx) => `<i class="${idx===0?'active':''}"></i>`).join('')}<b>+</b></div>
+      <div class="home-kpi-indicator card-indicator">${homeTargets.map((_, idx) => `<i class="${idx===homeSlideIndex?'active':''}"></i>`).join('')}<b>+</b></div>
       ${universityModalOpen ? `<div class="home-modal-overlay" data-action="closeUniversityModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">목표 대학 추가</p><p class="sub" style="margin-top:8px">대학 선택 모달은 다음 단계에서 연결됩니다.</p><button class="btn btn-primary" data-action="closeUniversityModal">닫기</button></div></div>` : ''}
     </div>
     <div class="section home-section home-section-last">
@@ -774,7 +821,7 @@ function App() {
     }
     if (coachingStep === 2) {
       return `<div class="coach-step-body"><h4>2. 플래너 인증</h4><p class="sub">이번 주 플래너 사진을 첨부해주세요. 최대 5장</p>
-        <div class="coach-upload-box"><p>파일/사진 첨부 박스</p><button class="btn btn-secondary" data-action="addPlannerPhoto">사진 추가하기</button></div>
+        <div class="coach-upload-box"><p>파일/사진 첨부 박스</p><input type="file" class="coach-hidden-file" data-field="coachPlannerFiles" accept="image/*,.pdf" multiple /><button class="btn btn-secondary" data-action="openPlannerFilePicker">사진 추가하기</button></div>
         <div class="coach-thumb-list">${coachingPlannerPhotos.length ? coachingPlannerPhotos.map((name, idx) => `<div class="coach-thumb"><span>${name}</span><button data-action="removePlannerPhoto" data-photo-index="${idx}">삭제</button></div>`).join('') : '<p class="sub">첨부된 사진이 없습니다.</p>'}</div>
       </div>`;
     }
@@ -783,7 +830,7 @@ function App() {
       return `<div class="coach-step-body"><h4>3. 모의고사 응시 여부</h4><p class="sub">이번 주 사설 모의고사 또는 학력평가를 응시했나요?</p>
         <div class="coach-choice-row">${examTypes.map((type) => `<button class="planner-pill ${coachingExamType===type?'active':''}" data-action="setCoachingExamType" data-coach-exam="${type}">${type}</button>`).join('')}</div>
         ${coachingExamType && coachingExamType !== '미응시' ? `<div class="coach-exam-form">
-          <button class="btn btn-secondary" data-action="addExamPhoto">성적 인증 사진 첨부</button>
+          <input type="file" class="coach-hidden-file" data-field="coachExamFiles" accept="image/*,.pdf" multiple /><button class="btn btn-secondary" data-action="openExamFilePicker">성적 인증 사진 첨부</button>
           <div class="coach-thumb-list">${coachingExamPhotos.map((name, idx) => `<div class="coach-thumb"><span>${name}</span><button data-action="removeExamPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}</div>
           <div class="coach-exam-subject-list">
             <section class="coach-exam-subject-card"><h5>국어</h5><input class="planner-input" data-coach-field="koreanType" value="${coachingExamScores.koreanType || ''}" placeholder="선택과목" /><input class="planner-input" data-coach-field="koreanRaw" value="${coachingExamScores.koreanRaw || ''}" placeholder="원점수" /></section>
@@ -820,6 +867,7 @@ function App() {
     .onboarding-fixed-cta{padding-bottom:calc(16px + env(safe-area-inset-bottom));}
     .btn,button,.planner-input,select,textarea,input{transition:box-shadow .15s ease, border-color .15s ease;}
     .btn:active,button:active,.planner-input:active,select:active,textarea:active,input:active{transform:scale(.98);}
+    .card:active{transform:none !important;}
     input,select,textarea{font-size:16px !important;}
 
     .ob1-survey-card,.ob1-score-wrap,.analysis-v2-compare-card{background:#fff;border:1px solid #E2E8F0;border-radius:24px;padding:24px;box-sizing:border-box;}
@@ -923,10 +971,13 @@ function App() {
     .planner-add-cta{margin-top:10px;border:1px dashed #93C5FD;background:#EFF6FF;color:#1D4ED8;border-radius:16px;padding:14px;text-align:center;font-weight:800;}
     .planner-days-carousel{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px;padding-bottom:4px;}
     .planner-date-item{flex:0 0 auto;scroll-snap-align:center;display:grid;gap:2px;min-width:52px;padding:6px 8px;border-radius:12px;}
-    .planner-date-item.active{background:#EFF6FF;border:1px solid #BFDBFE;}
+    .planner-date-item.active{background:transparent;border:none;}
     .planner-date-item small{font-size:11px;color:#64748B;}
     .planner-date-item strong{font-size:16px;line-height:1;}
-    .planner-date-item.active small,.planner-date-item.active strong{color:#2563EB;font-weight:700;}
+    .planner-date-item.active small,.planner-date-item.active strong{color:#2563EB;font-weight:800;}
+    .score-info-detail-table{display:grid;gap:8px;margin:14px 0;}
+    .score-info-detail-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;font-size:12px;color:#475569;padding:10px;border:1px solid #E2E8F0;border-radius:12px;background:#F8FAFC;}
+    .coach-hidden-file{display:none;}
     @media (max-width:390px){.score-journey-col{padding:10px;}.score-row{font-size:13px;}.score-row .pill{font-size:11px;padding:2px 6px;}.score-journey-total{font-size:13px;}.score-journey-scroll .score-journey-col{min-width:220px;}}
   </style>`;
 
@@ -940,11 +991,11 @@ function App() {
       <div class="score-journey-scroll">
         <div class="score-journey-col current">
           <h4>현재 성적</h4>
-          <div class="score-row"><span>국어</span><b>유지</b><em>82 → 82</em></div>
-          <div class="score-row"><span>수학</span><b>유지</b><em>68 → 68</em></div>
-          <div class="score-row"><span>영어</span><b>유지</b><em>77 → 77</em></div>
-          <div class="score-row"><span>탐구1</span><b>유지</b><em>70 → 70</em></div>
-          <div class="score-row"><span>탐구2</span><b>유지</b><em>66 → 66</em></div>
+          <div class="score-row"><span>국어</span><b>82</b></div>
+          <div class="score-row"><span>수학</span><b>68</b></div>
+          <div class="score-row"><span>영어</span><b>77</b></div>
+          <div class="score-row"><span>탐구1</span><b>70</b></div>
+          <div class="score-row"><span>탐구2</span><b>66</b></div>
           <div class="score-journey-total"><span>총점</span><b>86점</b></div>
         </div>
         <div class="score-journey-arrow">→</div>
@@ -1070,6 +1121,9 @@ function App() {
          </div>
          <div class="analysis-v2-gauge"><i style="width:${analysisGaugeFill}%;background:${analysisGaugeColor}"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
          <div class="analysis-v2-gauge-meta"><span>0</span><span>합격컷 100점</span><span>안정컷 150점</span><span>MAX 250점</span></div>
+         <div class="kpi-row score-row"><div class="kpi-item"><b>${analysisSelected.score}점</b>현재 점수</div><div class="kpi-item"><b>100점</b>합격 컷</div><div class="kpi-item danger"><b>${analysisSelected.score-100>0?`+${analysisSelected.score-100}`:analysisSelected.score-100}점</b>격차</div></div>
+       </div>
+       <div class="card ob-card">
          <p class="analysis-title">+1점 상승 시뮬레이션</p>
          <div class="analysis-impact-item">수학<div class="track"><i style="width:90%"></i></div><span>+12점 → +18%</span></div>
          <div class="analysis-impact-item">탐구<div class="track"><i style="width:68%;background:#14b8a6"></i></div><span>+6점 → +9%</span></div>
@@ -1375,7 +1429,7 @@ function App() {
       </div>
       <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="paymentComplete">결제하기</button></div>`, false),
     paymentComplete: layout(`<div class="payment-done-screen"><div class="payment-complete-wrap"><div class="payment-check">${i('check', true)}</div><p class="title payment-complete-title">결제가 완료되었습니다!</p><p class="sub payment-complete-sub">${selectedPlan.toUpperCase()} 플랜이 활성화되었습니다.</p><div class="card payment-complete-note"><b>프로 보고서 이용 안내</b><p>2주에 한 번 새로운 리포트를 제공해 드려요.<br/>다음 리포트는 5월 25일에 이용 가능해요.</p></div></div><div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="home">홈으로 이동</button></div></div>`, false),
-    scoreInfo: layout(appbar('성적 정보', true) + `<div class="card score-info-card">${scoreList}<button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">성적 수정하기</button></div><div class="card"><p class="analysis-title">최근 성적 업데이트</p><p class="sub" style="margin:0">2024.05.14 기준</p><p class="sub" style="margin:6px 0 0">다음 업데이트 권장: 2주 후</p></div>${scoreEditOpen ? ScoreEditModal() : ''}`, false),
+    scoreInfo: layout(appbar('성적 정보', true) + `<div class="card score-info-card">${scoreList}<div class="score-info-detail-table">${scoreInfoDetailList}</div><button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">성적 수정하기</button></div><div class="card"><p class="analysis-title">최근 성적 업데이트</p><p class="sub" style="margin:0">2024.05.14 기준</p><p class="sub" style="margin:6px 0 0">다음 업데이트 권장: 2주 후</p></div>${scoreEditOpen ? ScoreEditModal() : ''}`, false),
     studyReports: layout(appbar('학습 리포트', true) + `<div class="card report-list-card"><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>5월 11일 종합 분석 리포트</b><p>수학 점수 상승 여지 큼</p></div><span>${i('chevron', false)}</span></button><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>4월 27일 중간 분석 리포트</b><p>탐구 집중 강화 필요</p></div><span>${i('chevron', false)}</span></button></div><div class="cta-wrapper"><button class="btn btn-primary cta-btn" data-action="goto" data-target="reportDetail">프로 보고서 샘플 보기</button></div>`, false),
     notificationSettings: layout(appbar('알림 설정', true) + `<div class="card notify-card">${[
       ['planner', '플래너 알림', '오늘 계획을 잊지 않도록 알려드려요'],
@@ -1564,22 +1618,13 @@ function App() {
       const rowId = actionEl.getAttribute('data-coach-row');
       setCoachingSubjectRows((prev) => prev.filter((row) => row.id !== rowId));
     }
-    if (action === 'addPlannerPhoto') {
-      if (coachingPlannerPhotos.length >= 5) return;
-      const name = window.prompt('사진 이름을 입력하세요', `planner_${coachingPlannerPhotos.length + 1}.jpg`);
-      if (!name) return;
-      setCoachingPlannerPhotos((prev) => [...prev, name]);
-    }
+    if (action === 'openPlannerFilePicker') document.querySelector('[data-field="coachPlannerFiles"]')?.click();
     if (action === 'removePlannerPhoto') {
       const idx = Number(actionEl.getAttribute('data-photo-index'));
       setCoachingPlannerPhotos((prev) => prev.filter((_, i) => i !== idx));
     }
     if (action === 'setCoachingExamType') setCoachingExamType(actionEl.getAttribute('data-coach-exam'));
-    if (action === 'addExamPhoto') {
-      const name = window.prompt('성적 인증 사진 이름', `exam_${coachingExamPhotos.length + 1}.jpg`);
-      if (!name) return;
-      setCoachingExamPhotos((prev) => [...prev, name]);
-    }
+    if (action === 'openExamFilePicker') document.querySelector('[data-field="coachExamFiles"]')?.click();
     if (action === 'removeExamPhoto') {
       const idx = Number(actionEl.getAttribute('data-photo-index'));
       setCoachingExamPhotos((prev) => prev.filter((_, i) => i !== idx));
@@ -1768,6 +1813,21 @@ function App() {
       if (rateEl) rateEl.textContent = `달성률 ${Number.isFinite(rate) ? rate : 0}%`;
     }
     if (!field) return;
+    const liveValue = e.target.value;
+    if (field === 'plannerContent') setPlannerContent(liveValue);
+    if (field === 'plannerCustomMinutes') setPlannerCustomMinutes(liveValue);
+  };
+
+  const onChange = (e) => {
+    const field = e.target.getAttribute('data-field');
+    if (field === 'coachPlannerFiles') {
+      const files = Array.from(e.target.files || []).map((file) => file.name);
+      if (files.length) setCoachingPlannerPhotos((prev) => [...prev, ...files].slice(0, 5));
+    }
+    if (field === 'coachExamFiles') {
+      const files = Array.from(e.target.files || []).map((file) => file.name);
+      if (files.length) setCoachingExamPhotos((prev) => [...prev, ...files]);
+    }
   };
   const onBlur = (e) => {
     const field = e.target.getAttribute('data-field');
@@ -1839,7 +1899,7 @@ function App() {
     : '';
   const rendered = `${designV2StyleTag}${renderedBase}${analysisOverlay}${onboardingOverlay}`;
 
-  return <div onClick={onClick} onInput={onInput} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: rendered }} />;
+  return <div onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: rendered }} />;
 }
 
 const rootElement = document.getElementById('root');
