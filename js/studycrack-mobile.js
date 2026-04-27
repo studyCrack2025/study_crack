@@ -973,6 +973,10 @@ function App() {
     .planner-plan-list{padding-bottom:120px;}
     .planner-warning-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#FFF7ED;border:1px solid #FED7AA;border-radius:999px;font-size:12px;color:#9A3412;font-weight:700;margin-top:8px;}
     .planner-add-cta{margin-top:10px;border:1px dashed #93C5FD;background:#EFF6FF;color:#1D4ED8;border-radius:16px;padding:14px;text-align:center;font-weight:800;}
+    .planner-add-page{padding:0 0 120px;}
+    .planner-add-form{margin-top:12px;display:grid;gap:12px;background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:16px;}
+    .planner-add-form h4{margin:0;font-size:18px;color:#0F172A;}
+    .planner-add-form .sub{margin:0;color:#64748B;}
     .planner-days-carousel{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px;padding-bottom:4px;}
     .planner-date-item{flex:0 0 auto;scroll-snap-align:center;display:grid;gap:2px;min-width:52px;padding:6px 8px;border-radius:12px;}
     .planner-date-item.active{background:transparent !important;border:none !important;box-shadow:none !important;}
@@ -1373,9 +1377,10 @@ function App() {
     plannerAdd: layout(
       `<div class="planner-screen">
         ${appbar(`${selectedPlannerDate}일 플래너 항목 추가`, true)}
-        <div class="planner-plan-list">
-          <div class="card planner-sheet" style="margin:0">
-            <p>선택한 날짜에 실행할 학습 계획을 입력해 주세요.</p>
+        <div class="planner-add-page">
+          <div class="planner-add-form">
+            <h4>${selectedPlannerDate}일 학습 계획</h4>
+            <p class="sub">선택한 날짜에 실행할 학습 계획을 입력해 주세요.</p>
             <div class="planner-sheet-block"><label>과목 선택</label><div class="planner-pill-row"><button class="planner-pill ${plannerDraft.subject==='수학'?'active':''}" data-action="setPlannerSubject" data-planner-subject="수학">수학</button><button class="planner-pill ${plannerDraft.subject==='국어'?'active':''}" data-action="setPlannerSubject" data-planner-subject="국어">국어</button><button class="planner-pill ${plannerDraft.subject==='영어'?'active':''}" data-action="setPlannerSubject" data-planner-subject="영어">영어</button><button class="planner-pill ${plannerDraft.subject==='탐구'?'active':''}" data-action="setPlannerSubject" data-planner-subject="탐구">탐구</button></div></div>
             <div class="planner-sheet-block"><label>학습 내용</label><input class="planner-input" data-field="plannerContent" value="${plannerDraft.content}" placeholder="예: 개념 학습, 독해 문제 풀이" /></div>
             <div class="planner-sheet-block"><label>시간 선택</label><div class="planner-pill-row"><button class="planner-pill ${plannerDraft.durationChoice==='30'?'active':''}" data-action="setPlannerDuration" data-planner-duration="30">30분</button><button class="planner-pill ${plannerDraft.durationChoice==='60'?'active':''}" data-action="setPlannerDuration" data-planner-duration="60">60분</button><button class="planner-pill ${plannerDraft.durationChoice==='90'?'active':''}" data-action="setPlannerDuration" data-planner-duration="90">90분</button><button class="planner-pill ${plannerDraft.durationChoice==='120'?'active':''}" data-action="setPlannerDuration" data-planner-duration="120">120분</button><button class="planner-pill ${plannerDraft.durationChoice==='custom'?'active':''}" data-action="setPlannerDuration" data-planner-duration="custom">직접 입력</button></div><input class="planner-input ${plannerDraft.durationChoice==='custom'?'':'is-hidden'}" data-field="plannerCustomMinutes" value="${plannerDraft.customMinutes}" type="number" placeholder="분 단위 입력" /></div>
