@@ -757,30 +757,122 @@ function App() {
     return `<div class="coach-step-body"><h4>${title}</h4><p class="sub">${desc}</p><textarea class="planner-input coach-textarea" data-coach-answer="${key}" maxlength="200" placeholder="${placeholder}">${value}</textarea><p class="coach-count" data-coach-count="${key}">${value.length}/200</p></div>`;
   };
 
+  const designV2StyleTag = `<style>
+    .app-shell,.app-frame,.app-screen{min-height:100dvh;}
+    .onboarding-container .content{padding:0 16px 150px;box-sizing:border-box;}
+    .onboarding-fixed-cta{padding-bottom:calc(16px + env(safe-area-inset-bottom));}
+    .card,.btn,button,.planner-input,select,textarea,input{transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;}
+    .card:active,.btn:active,button:active,.planner-input:active,select:active,textarea:active,input:active{transform:scale(.98);}
+
+    .ob1-survey-card,.ob1-score-wrap,.analysis-v2-compare-card{background:#fff;border:1px solid #E2E8F0;border-radius:24px;padding:24px;box-sizing:border-box;}
+    .ob1-survey-card h3,.ob1-score-wrap h3,.analysis-v2-compare-card h3{margin:0;font-size:24px;line-height:1.25;}
+    .ob1-subtitle,.score-subtitle,.analysis-v2-compare-sub{margin:8px 0 0;color:#64748B;font-size:14px;line-height:1.5;}
+    .ob1-field-stack{display:grid;gap:18px;margin-top:20px;}
+    .ob1-field label,.ob1-score-wrap label{display:block;font-size:13px;font-weight:700;color:#334155;margin:0 0 8px;}
+    .ob1-pill-row{display:flex;flex-wrap:wrap;gap:10px;}
+    .ob1-pill{border:1px solid #CBD5E1;background:#F8FAFC;color:#334155;border-radius:999px;padding:10px 14px;font-size:14px;font-weight:600;}
+    .ob1-pill.active{background:#DBEAFE;border-color:#2563EB;color:#1D4ED8;}
+    .ob1-input,.ob1-select,.ob1-textarea,.ob1-score-input,.ob1-score-select{width:100%;box-sizing:border-box;border:1px solid #CBD5E1;border-radius:16px;background:#fff;color:#0F172A;padding:0 14px;font-size:15px;height:52px;outline:none;}
+    .ob1-textarea{height:96px;padding:14px;resize:vertical;}
+    .ob1-input:focus,.ob1-select:focus,.ob1-textarea:focus,.ob1-score-input:focus,.ob1-score-select:focus{border-color:#2563EB;box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+
+    .ob1-score-wrap{margin-top:16px;}
+    .ob1-score-exam{margin-top:18px;}
+    .ob1-score-grid{display:grid;gap:14px;margin-top:14px;}
+    .ob1-subject-card{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:20px;padding:16px;display:grid;gap:10px;box-sizing:border-box;}
+    .ob1-subject-card h4{margin:0;font-size:18px;line-height:1.3;}
+    .ob1-score-select,.ob1-score-input{height:48px;border-radius:14px;}
+    .ob1-score-two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+    .analysis-v2-compare-card{box-shadow:0 10px 30px rgba(15,23,42,.06);}
+    .analysis-v2-chart-area{position:relative;height:260px;padding:40px 10px 0;border-radius:20px;background:linear-gradient(180deg,#F8FAFC 0%,#FFFFFF 100%);margin-top:16px;}
+    .analysis-v2-guide-line{position:absolute;left:10px;right:10px;border-top:1px dashed #94A3B8;}
+    .analysis-v2-guide-line.pass{bottom:40%;}
+    .analysis-v2-guide-line.safe{bottom:60%;}
+    .analysis-v2-guide-line .label{position:absolute;right:0;top:-18px;font-size:12px;font-weight:700;color:#64748B;text-align:right;background:rgba(255,255,255,.9);padding-left:8px;}
+    .analysis-v2-bars{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-evenly;align-items:flex-end;padding:0 8px;gap:10px;}
+    .analysis-v2-bar-item{background:transparent;border:none;display:flex;flex-direction:column;align-items:center;gap:10px;min-width:88px;padding:0 4px 6px;}
+    .analysis-v2-bar-item .score{font-size:22px;font-weight:800;color:#0F172A;line-height:1;}
+    .analysis-v2-bar-wrap{height:260px;display:flex;align-items:flex-end;}
+    .analysis-v2-bar{width:56px;min-height:8px;border-radius:18px 18px 12px 12px;}
+    .analysis-v2-bar-item p{margin:0;max-width:84px;font-size:12px;font-weight:600;line-height:1.35;color:#475569;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+    .analysis-v2-bar-item.active .analysis-v2-bar-wrap{outline:2px solid #2563EB;outline-offset:8px;border-radius:20px;}
+    .analysis-v2-selected-badge{font-size:11px;font-weight:700;color:#2563EB;background:#DBEAFE;border-radius:999px;padding:4px 8px;}
+  </style>`;
+
   const screens = {
     ob1: layout(
       `<div class="onboarding-container"><div class="content">
+       ${(() => { console.log('RENDER_OB1_DESIGN_V2'); return ''; })()}
        ${onboardingProgress(1)}
        ${appbar('학습성향 진단', true)}
        <p class="sub ob-subcopy">지금 성적과 공부 습관을 바탕으로<br/>나에게 맞는 합격 전략을 찾아볼게요.</p>
        <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>성적만 보는 게 아니라, 공부 방식까지 같이 봐야 정확해요!</p></div>
-       <div class="card ob-card">
-         <p class="analysis-title">정성 조사서</p>
-         <label class="auth-label">현재 학년</label><select class="planner-input" data-field="obGradeStatus"><option>고1/2 재학</option><option>고3 재학</option><option>N수생</option><option>검정고시</option><option>기타</option></select>
-         <label class="auth-label">출신 학교</label><input class="planner-input" data-field="obSchoolName" value="${obSchoolName}" placeholder="출신 학교 입력" />
-         <label class="auth-label">희망 계열</label><select class="planner-input" data-field="obTrack"><option>예체능</option><option>인문</option><option>자연</option></select>
-         <label class="auth-label">스터디크랙을 통해 얻고 싶은 점</label><textarea class="planner-input on-ta" data-field="obGoalText" placeholder="자유롭게 입력">${obGoalText}</textarea>
-         <label class="auth-label">입시 고민 및 질문</label><textarea class="planner-input on-ta" data-field="obQuestionText" placeholder="자유롭게 입력">${obQuestionText}</textarea>
+       <div class="ob1-survey-card">
+         <h3>정성 조사서</h3>
+         <p class="ob1-subtitle">학습 상황과 고민을 알려주시면 더 정확한 전략을 만들 수 있어요.</p>
+         <div class="ob1-field-stack">
+           <div class="ob1-field">
+             <label>현재 학년</label>
+             <div class="ob1-pill-row">
+               ${['고1/2 재학','고3 재학','N수생','검정고시','기타'].map((grade) => `<button class="ob1-pill ${obGradeStatus===grade?'active':''}" data-action="setObGradeStatus" data-ob-grade="${grade}">${grade}</button>`).join('')}
+             </div>
+           </div>
+           <div class="ob1-field">
+             <label>출신 학교</label>
+             <input class="ob1-input" data-field="obSchoolName" value="${obSchoolName}" placeholder="출신 학교 입력" />
+           </div>
+           <div class="ob1-field">
+             <label>희망 계열</label>
+             <select class="ob1-select" data-field="obTrack">
+               <option ${obTrack==='예체능'?'selected':''}>예체능</option>
+               <option ${obTrack==='인문'?'selected':''}>인문</option>
+               <option ${obTrack==='자연'?'selected':''}>자연</option>
+             </select>
+           </div>
+           <div class="ob1-field">
+             <label>스터디크랙을 통해 얻고 싶은 점</label>
+             <textarea class="ob1-textarea" data-field="obGoalText" placeholder="자유롭게 입력">${obGoalText}</textarea>
+           </div>
+           <div class="ob1-field">
+             <label>입시 고민 및 질문</label>
+             <textarea class="ob1-textarea" data-field="obQuestionText" placeholder="자유롭게 입력">${obQuestionText}</textarea>
+           </div>
+         </div>
        </div>
-       <div class="card ob-card">
-         <p class="analysis-title">성적 입력</p>
-         <label class="auth-label">시험 선택</label><select class="planner-input"><option>3월 학평</option><option>6월 모의평가</option><option>9월 모의평가</option><option>수능</option></select>
-         <div class="card ob-score-card"><p class="analysis-sub">국어</p><select class="planner-input"><option>선택과목</option><option>화법과작문</option><option>언어와매체</option></select><div class="input-row"><input class="planner-input" placeholder="공통 원점수" type="number"/><input class="planner-input" placeholder="선택 원점수" type="number"/></div></div>
-         <div class="card ob-score-card"><p class="analysis-sub">수학</p><select class="planner-input"><option>선택과목</option><option>확률과통계</option><option>미적분</option><option>기하</option></select><div class="input-row"><input class="planner-input" placeholder="공통 원점수" type="number"/><input class="planner-input" placeholder="선택 원점수" type="number"/></div></div>
-         <div class="card ob-score-card"><p class="analysis-sub">영어</p><select class="planner-input"><option>등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option>${n}등급</option>`).join('')}</select></div>
-         <div class="card ob-score-card"><p class="analysis-sub">한국사</p><select class="planner-input"><option>등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option>${n}등급</option>`).join('')}</select></div>
-         <div class="card ob-score-card"><p class="analysis-sub">탐구1</p><div class="input-row"><select class="planner-input"><option>과목 선택</option><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option><option>물리학</option><option>화학</option><option>생명과학</option><option>지구과학</option></select><input class="planner-input" placeholder="원점수" type="number"/></div></div>
-         <div class="card ob-score-card"><p class="analysis-sub">탐구2</p><div class="input-row"><select class="planner-input"><option>과목 선택</option><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option><option>물리학</option><option>화학</option><option>생명과학</option><option>지구과학</option></select><input class="planner-input" placeholder="원점수" type="number"/></div></div>
+       <div class="ob1-score-wrap">
+         <h3>성적 입력</h3>
+         <p class="score-subtitle">과목별 입력을 완료하면 현재 위치를 더 정확하게 계산해요.</p>
+         <div class="ob1-score-exam">
+           <label>시험 선택</label>
+           <select class="ob1-score-select">
+             <option>3월 학평</option><option>6월 모의평가</option><option>9월 모의평가</option><option>수능</option>
+           </select>
+         </div>
+         <div class="ob1-score-grid">
+           <div class="ob1-subject-card">
+             <h4>국어</h4>
+             <select class="ob1-score-select"><option>화법과작문</option><option>언어와매체</option></select>
+             <div class="ob1-score-two-col"><input class="ob1-score-input" placeholder="공통 원점수" type="number"/><input class="ob1-score-input" placeholder="선택 원점수" type="number"/></div>
+           </div>
+           <div class="ob1-subject-card">
+             <h4>수학</h4>
+             <select class="ob1-score-select"><option>확률과통계</option><option>미적분</option><option>기하</option></select>
+             <div class="ob1-score-two-col"><input class="ob1-score-input" placeholder="공통 원점수" type="number"/><input class="ob1-score-input" placeholder="선택 원점수" type="number"/></div>
+           </div>
+           <div class="ob1-subject-card"><h4>영어</h4><select class="ob1-score-select"><option>등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option>${n}등급</option>`).join('')}</select></div>
+           <div class="ob1-subject-card"><h4>한국사</h4><select class="ob1-score-select"><option>등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option>${n}등급</option>`).join('')}</select></div>
+           <div class="ob1-subject-card">
+             <h4>탐구1</h4>
+             <select class="ob1-score-select"><option>과목 선택</option><optgroup label="사회탐구"><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option></optgroup><optgroup label="과학탐구"><option>물리학Ⅰ</option><option>화학Ⅰ</option><option>생명과학Ⅰ</option><option>지구과학Ⅰ</option><option>물리학Ⅱ</option><option>화학Ⅱ</option><option>생명과학Ⅱ</option><option>지구과학Ⅱ</option></optgroup></select>
+             <input class="ob1-score-input" placeholder="원점수" type="number"/>
+           </div>
+           <div class="ob1-subject-card">
+             <h4>탐구2</h4>
+             <select class="ob1-score-select"><option>과목 선택</option><optgroup label="사회탐구"><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option></optgroup><optgroup label="과학탐구"><option>물리학Ⅰ</option><option>화학Ⅰ</option><option>생명과학Ⅰ</option><option>지구과학Ⅰ</option><option>물리학Ⅱ</option><option>화학Ⅱ</option><option>생명과학Ⅱ</option><option>지구과학Ⅱ</option></optgroup></select>
+             <input class="ob1-score-input" placeholder="원점수" type="number"/>
+           </div>
+         </div>
        </div>
        <div class="card ob-card">
          <p class="analysis-title">학습 MBTI 검사</p>
@@ -998,12 +1090,22 @@ function App() {
 
           <div class="card analysis-v2-cta sticky"><p class="analysis-title">지금 방향이 틀리면 시간만 낭비될 수 있습니다</p><p class="sub">Standard는 매주 학습 방향과 실행을 관리합니다.</p><button class="btn analysis-convert-btn" data-action="startStandard">2개월 내 합격권 진입 시작하기</button></div>
         ` : `
-          <div class="card analysis-v2-compare">
-            <p class="analysis-title">목표대학 점수 비교</p>
-            <div class="analysis-v2-vert-chart">
-              <span class="guide pass" style="top:40%">합격선 100</span>
-              <span class="guide safe" style="top:60%">안정선 150</span>
-              ${[['가천대 관광경영학과', 250, '가천대학교 관광경영학과'], ['강서대 G2빅데이터경영학과', 250, '강서대학교 G2빅데이터경영학과'], ['고려대 경영대학', 71, '고려대학교 경영대학']].map(([label, score, full]) => { const MAX = 250; const height = (score / MAX) * 100; return `<button class="analysis-v2-vert-item ${targetMajor===full?'active':''}" data-action="selectTarget" data-target-major="${full}"><b>${score}</b><div class="bar-container"><i class="bar" style="height:${height}%;width:52px;background:${score>=150?'#22C55E':score>=100?'#2563EB':'#F97316'}"></i></div><p>${label}</p></button>`; }).join('')}
+          <div class="analysis-v2-compare-card">
+            ${(() => { console.log('RENDER_ANALYSIS_CHART_V2'); return ''; })()}
+            <h3>목표대학 점수 비교</h3>
+            <p class="analysis-v2-compare-sub">AI 환산 진단점수 기준</p>
+            <div class="analysis-v2-chart-area">
+              <div class="analysis-v2-guide-line pass"><span class="label">합격선 100</span></div>
+              <div class="analysis-v2-guide-line safe"><span class="label">안정선 150</span></div>
+              <div class="analysis-v2-bars">
+                ${[['가천대 관광경영학과', 250, '가천대학교 관광경영학과'], ['강서대 G2빅데이터경영학과', 250, '강서대학교 G2빅데이터경영학과'], ['고려대 경영대학', 71, '고려대학교 경영대학']].map(([label, score, full]) => {
+                  const MAX = 250;
+                  const chartHeight = 260;
+                  const height = (score / MAX) * chartHeight;
+                  const color = score >= 250 ? '#22C55E' : score < 100 ? '#F97316' : '#2563EB';
+                  return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="selectTarget" data-target-major="${full}"><b class="score">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar" style="height:${height}px;background:${color}"></i></div>${targetMajor===full?'<span class="analysis-v2-selected-badge">선택됨</span>':''}<p>${label}</p></button>`;
+                }).join('')}
+              </div>
             </div>
           </div>
 
@@ -1561,7 +1663,7 @@ function App() {
   const onboardingOverlay = onboardingLoading
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><img src="${CRACKY_SRC}" alt="크랙이" class="global-loading-char"/><div class="loading-dots"><i></i><i></i><i></i></div><b>${onboardingLoadingText}</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
-  const rendered = `${renderedBase}${analysisOverlay}${onboardingOverlay}`;
+  const rendered = `${designV2StyleTag}${renderedBase}${analysisOverlay}${onboardingOverlay}`;
 
   return <div onClick={onClick} onInput={onInput} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: rendered }} />;
 }
