@@ -7,6 +7,7 @@ const HOME_FALLBACK_HTML = `<div class="app-shell"><div class="app-frame"><div c
 const DEFAULT_USER = { name: '김지민', targetUniversity: '연세대학교 경영학과', plan: 'Pro' };
 const DEFAULT_SCORES = { korean: 82, math: 68, english: 77, inquiry1: 70, inquiry2: 66 };
 const DEFAULT_NOTIFICATIONS = { planner: true, weekly: true, report: true, billing: true };
+const FIXED_TODAY_DATE = '2024-05-14';
 const DEFAULT_PLANNER_ITEMS = [
   { id: 'pl-default-1', date: '14', subject: '수학', content: '개념 학습', start: '10:00', end: '12:00', minutes: 120, dot: 'math' },
   { id: 'pl-default-2', date: '14', subject: '영어', content: '독해 문제 풀이', start: '13:00', end: '14:30', minutes: 90, dot: 'eng' },
@@ -145,9 +146,9 @@ function App() {
   const [coachingStep, setCoachingStep] = useState(1);
   const [coachingMonth, setCoachingMonth] = useState('26년 4월');
   const [coachingSubjectRows, setCoachingSubjectRows] = useState([]);
-  const [coachingPlannerPhotos, setCoachingPlannerPhotos] = useState([]);
+  const [coachingPlannerFiles, setCoachingPlannerFiles] = useState([]);
   const [coachingExamType, setCoachingExamType] = useState('');
-  const [coachingExamPhotos, setCoachingExamPhotos] = useState([]);
+  const [coachingExamFiles, setCoachingExamFiles] = useState([]);
   const [coachingExamScores, setCoachingExamScores] = useState({});
   const [coachingTrend, setCoachingTrend] = useState('');
   const [coachingDropReasons, setCoachingDropReasons] = useState([]);
@@ -166,6 +167,7 @@ function App() {
   const [obQuestionText, setObQuestionText] = useState('');
   const [obExamType, setObExamType] = useState('3월 학평');
   const [obScoreInputs, setObScoreInputs] = useState({});
+  const scrollRestoreRef = useRef(0);
 
   const goto = (next, addHistory = true) => {
     if (addHistory && screen !== next) setHistory((h) => [...h, screen]);
@@ -237,12 +239,27 @@ function App() {
     return () => slider.removeEventListener('scroll', handler);
   }, [screen]);
 
+  const rememberScrollY = () => {
+    scrollRestoreRef.current = window.scrollY || window.pageYOffset || 0;
+  };
+  const restoreScrollY = () => {
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: scrollRestoreRef.current, left: 0, behavior: 'auto' });
+    });
+  };
+
   useEffect(() => {
+    restoreScrollY();
+  }, [loading, error, screen]);
+
+  useEffect(() => {
+    const pageY = window.scrollY || window.pageYOffset || 0;
     const raf = requestAnimationFrame(() => {
       const container = document.querySelector('.score-journey-scroll');
       if (!container) return;
       const target = container.querySelector(`.score-journey-col.${activeScoreView}`);
       if (target) target.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      window.scrollTo({ top: pageY, left: 0, behavior: 'auto' });
     });
     return () => cancelAnimationFrame(raf);
   }, [activeScoreView, screen, analysisMode]);
@@ -496,7 +513,7 @@ function App() {
   const plannerViewHour = Math.floor(plannerViewMinutes / 60);
   const plannerViewMinute = plannerViewMinutes % 60;
   const plannerEditItem = plannerItems.find((item) => item.id === plannerEditIndex) || null;
-  const todayDateKey = '14';
+  const todayDateKey = String(Number(FIXED_TODAY_DATE.split('-')[2]));
   const todayPlannerItems = plannerItemsByDate[todayDateKey] || [];
   const todayPlannerTotalMinutes = todayPlannerItems.reduce((acc, item) => acc + (item.minutes || 0), 0);
   const todayPlannerTotalSeconds = todayPlannerTotalMinutes * 60;
@@ -611,18 +628,15 @@ function App() {
       rate: Math.round(Math.min(99, Math.max(20, (score / 150) * 100)))
     };
   });
-  const scoreList = Object.entries(SCORE_LABELS)
-    .map(([key, label]) => `<div class="score-info-row"><span>${label}</span><strong>${Number(scores?.[key] ?? DEFAULT_SCORES[key])}점</strong></div>`)
-    .join('');
   const scoreInfoDetailList = [
-    ['국어', `${scores.korean}점`, `${scores.korean + 18}`, `${Math.min(99, scores.korean + 10)}`, '2등급'],
-    ['수학', `${scores.math}점`, `${scores.math + 22}`, `${Math.min(99, scores.math + 14)}`, '3등급'],
-    ['영어', '-', '-', '-', `${Math.max(1, 9 - Math.floor(scores.english / 12))}등급`],
+    ['국어', `${scores.korean}`, `${scores.korean + 18}`, `${Math.min(99, scores.korean + 10)}`, '2등급'],
+    ['수학', `${scores.math}`, `${scores.math + 22}`, `${Math.min(99, scores.math + 14)}`, '3등급'],
+    ['영어', '-', '-', '-', `${Math.max(1, 9 - Math.floor(scores.english / 12))}등급'],
     ['한국사', '-', '-', '-', '3등급'],
-    ['탐구1', `${scores.inquiry1}점`, `${scores.inquiry1 + 17}`, `${Math.min(99, scores.inquiry1 + 11)}`, '3등급'],
-    ['탐구2', `${scores.inquiry2}점`, `${scores.inquiry2 + 15}`, `${Math.min(99, scores.inquiry2 + 9)}`, '3등급']
-  ].map(([subject, raw, std, pct, grade]) => `<div class="score-info-detail-row"><b>${subject}</b><span>원점수 ${raw}</span><span>표준점수 ${std}</span><span>백분위 ${pct}</span><span>등급 ${grade}</span></div>`).join('');
-  const todayKey = new Date().toISOString().slice(0, 10);
+    ['탐구1', `${scores.inquiry1}`, `${scores.inquiry1 + 17}`, `${Math.min(99, scores.inquiry1 + 11)}`, '3등급'],
+    ['탐구2', `${scores.inquiry2}`, `${scores.inquiry2 + 15}`, `${Math.min(99, scores.inquiry2 + 9)}`, '3등급']
+  ].map(([subject, raw, std, pct, grade]) => `<div class="score-info-detail-row"><b>${subject}</b><span>${raw}</span><span>${std}</span><span>${pct}</span><span>${grade}</span></div>`).join('');
+  const todayKey = FIXED_TODAY_DATE;
   const todayRecord = studyRecords.find((item) => item.date === todayKey);
   const liveStudySeconds = studyTimerSecondsRef.current;
   const todayStudySeconds = (todayRecord?.studyTime || 0) + liveStudySeconds;
@@ -817,7 +831,7 @@ function App() {
     if (coachingStep === 2) {
       return `<div class="coach-step-body"><h4>2. 플래너 인증</h4><p class="sub">이번 주 플래너 사진을 첨부해주세요. 최대 5장</p>
         <div class="coach-upload-box"><p>파일/사진 첨부 박스</p><input type="file" class="coach-hidden-file" data-field="coachPlannerFiles" accept="image/*,.pdf" multiple /><button class="btn btn-secondary" data-action="openPlannerFilePicker">사진 추가하기</button></div>
-        <div class="coach-thumb-list">${coachingPlannerPhotos.length ? coachingPlannerPhotos.map((name, idx) => `<div class="coach-thumb"><span>${name}</span><button data-action="removePlannerPhoto" data-photo-index="${idx}">삭제</button></div>`).join('') : '<p class="sub">첨부된 사진이 없습니다.</p>'}</div>
+        <div class="coach-thumb-list">${coachingPlannerFiles.length ? `<p class="sub">총 ${coachingPlannerFiles.length}개 첨부됨</p>${coachingPlannerFiles.map((file, idx) => `<div class="coach-thumb"><span>${file.name}</span><button data-action="removePlannerPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}` : '<p class="sub">첨부된 사진이 없습니다.</p>'}</div>
       </div>`;
     }
     if (coachingStep === 3) {
@@ -826,7 +840,7 @@ function App() {
         <div class="coach-choice-row">${examTypes.map((type) => `<button class="planner-pill ${coachingExamType===type?'active':''}" data-action="setCoachingExamType" data-coach-exam="${type}">${type}</button>`).join('')}</div>
         ${coachingExamType && coachingExamType !== '미응시' ? `<div class="coach-exam-form">
           <input type="file" class="coach-hidden-file" data-field="coachExamFiles" accept="image/*,.pdf" multiple /><button class="btn btn-secondary" data-action="openExamFilePicker">성적 인증 사진 첨부</button>
-          <div class="coach-thumb-list">${coachingExamPhotos.map((name, idx) => `<div class="coach-thumb"><span>${name}</span><button data-action="removeExamPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}</div>
+          <div class="coach-thumb-list">${coachingExamFiles.length ? `<p class="sub">총 ${coachingExamFiles.length}개 첨부됨</p>${coachingExamFiles.map((file, idx) => `<div class="coach-thumb"><span>${file.name}</span><button data-action="removeExamPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}` : '<p class="sub">첨부된 사진이 없습니다.</p>'}</div>
           <div class="coach-exam-subject-list">
             <section class="coach-exam-subject-card"><h5>국어</h5><input class="planner-input" data-coach-field="koreanType" value="${coachingExamScores.koreanType || ''}" placeholder="선택과목" /><input class="planner-input" data-coach-field="koreanRaw" value="${coachingExamScores.koreanRaw || ''}" placeholder="원점수" /></section>
             <section class="coach-exam-subject-card"><h5>수학</h5><input class="planner-input" data-coach-field="mathType" value="${coachingExamScores.mathType || ''}" placeholder="선택과목" /><input class="planner-input" data-coach-field="mathRaw" value="${coachingExamScores.mathRaw || ''}" placeholder="원점수" /></section>
@@ -974,6 +988,9 @@ function App() {
     .planner-input.is-hidden{display:none;}
     .score-info-detail-table{display:grid;gap:8px;margin:14px 0;}
     .score-info-detail-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;font-size:12px;color:#475569;padding:10px;border:1px solid #E2E8F0;border-radius:12px;background:#F8FAFC;}
+    .score-info-detail-head{background:#EEF2FF;}
+    .score-info-detail-head b{font-weight:800;color:#0F172A;}
+    .score-info-detail-row b{font-weight:800;color:#0F172A;}
     .coach-hidden-file{display:none;}
     @media (max-width:390px){.score-journey-col{padding:10px;}.score-row{font-size:13px;}.score-row .pill{font-size:11px;padding:2px 6px;}.score-journey-total{font-size:13px;}.score-journey-scroll .score-journey-col{min-width:220px;}}
   </style>`;
@@ -1425,7 +1442,7 @@ function App() {
       </div>
       <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="paymentComplete">결제하기</button></div>`, false),
     paymentComplete: layout(`<div class="payment-done-screen"><div class="payment-complete-wrap"><div class="payment-check">${i('check', true)}</div><p class="title payment-complete-title">결제가 완료되었습니다!</p><p class="sub payment-complete-sub">${selectedPlan.toUpperCase()} 플랜이 활성화되었습니다.</p><div class="card payment-complete-note"><b>프로 보고서 이용 안내</b><p>2주에 한 번 새로운 리포트를 제공해 드려요.<br/>다음 리포트는 5월 25일에 이용 가능해요.</p></div></div><div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="home">홈으로 이동</button></div></div>`, false),
-    scoreInfo: layout(appbar('성적 정보', true) + `<div class="card score-info-card">${scoreList}<div class="score-info-detail-table">${scoreInfoDetailList}</div><button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">성적 수정하기</button></div><div class="card"><p class="analysis-title">최근 성적 업데이트</p><p class="sub" style="margin:0">2024.05.14 기준</p><p class="sub" style="margin:6px 0 0">다음 업데이트 권장: 2주 후</p></div>${scoreEditOpen ? ScoreEditModal() : ''}`, false),
+    scoreInfo: layout(appbar('성적 정보', true) + `<div class="card score-info-card"><div class="score-info-detail-table"><div class="score-info-detail-row score-info-detail-head"><b>과목</b><b>원점수</b><b>표준점수</b><b>백분위</b><b>등급</b></div>${scoreInfoDetailList}</div><button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">성적 수정하기</button></div><div class="card"><p class="analysis-title">최근 성적 업데이트</p><p class="sub" style="margin:0">2024.05.14 기준</p><p class="sub" style="margin:6px 0 0">다음 업데이트 권장: 2주 후</p></div>${scoreEditOpen ? ScoreEditModal() : ''}`, false),
     studyReports: layout(appbar('학습 리포트', true) + `<div class="card report-list-card"><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>5월 11일 종합 분석 리포트</b><p>수학 점수 상승 여지 큼</p></div><span>${i('chevron', false)}</span></button><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>4월 27일 중간 분석 리포트</b><p>탐구 집중 강화 필요</p></div><span>${i('chevron', false)}</span></button></div><div class="cta-wrapper"><button class="btn btn-primary cta-btn" data-action="goto" data-target="reportDetail">프로 보고서 샘플 보기</button></div>`, false),
     notificationSettings: layout(appbar('알림 설정', true) + `<div class="card notify-card">${[
       ['planner', '플래너 알림', '오늘 계획을 잊지 않도록 알려드려요'],
@@ -1451,6 +1468,7 @@ function App() {
   console.log('APP_CURRENT_SCREEN', currentScreen);
 
   const onClick = (e) => {
+    rememberScrollY();
     const activeEl = document.activeElement;
     requestAnimationFrame(() => {
       if (activeEl && document.body.contains(activeEl)) activeEl.focus?.({ preventScroll: true });
@@ -1490,6 +1508,7 @@ function App() {
     if (action === 'setScoreView') {
       e.stopPropagation();
       setActiveScoreView(actionEl.getAttribute('data-score-view') || 'current');
+      restoreScrollY();
     }
     if (action === 'openAnalysisSearch') setAnalysisSearchOpen(true);
     if (action === 'closeAnalysisSearch') {
@@ -1615,13 +1634,13 @@ function App() {
     if (action === 'openPlannerFilePicker') document.querySelector('[data-field="coachPlannerFiles"]')?.click();
     if (action === 'removePlannerPhoto') {
       const idx = Number(actionEl.getAttribute('data-photo-index'));
-      setCoachingPlannerPhotos((prev) => prev.filter((_, i) => i !== idx));
+      setCoachingPlannerFiles((prev) => prev.filter((_, i) => i !== idx));
     }
     if (action === 'setCoachingExamType') setCoachingExamType(actionEl.getAttribute('data-coach-exam'));
     if (action === 'openExamFilePicker') document.querySelector('[data-field="coachExamFiles"]')?.click();
     if (action === 'removeExamPhoto') {
       const idx = Number(actionEl.getAttribute('data-photo-index'));
-      setCoachingExamPhotos((prev) => prev.filter((_, i) => i !== idx));
+      setCoachingExamFiles((prev) => prev.filter((_, i) => i !== idx));
     }
     if (action === 'setCoachingTrend') setCoachingTrend(actionEl.getAttribute('data-coach-trend'));
     if (action === 'toggleDropReason') {
@@ -1668,7 +1687,7 @@ function App() {
       setStudyTimerRunning(false);
       stopLiveStudyTimer();
       const elapsed = studyTimerSecondsRef.current;
-      const today = new Date().toISOString().slice(0, 10);
+      const today = FIXED_TODAY_DATE;
       setStudyRecords((prev) => {
         const idx = prev.findIndex((r) => r.date === today);
         if (idx >= 0) {
@@ -1764,9 +1783,11 @@ function App() {
       setPlannerItems((prev) => prev.map((item) => (item.id === plannerEditIndex ? { ...item, subject, content, minutes, dot } : item)));
       setPlannerEditIndex(null);
     }
+    restoreScrollY();
   };
 
   const onInput = (e) => {
+    rememberScrollY();
     e.target?.focus?.({ preventScroll: true });
     const field = e.target.getAttribute('data-field');
     if (field === 'coachingMonth') setCoachingMonth(e.target.value);
@@ -1789,17 +1810,18 @@ function App() {
     const liveValue = e.target.value;
     if (field === 'plannerContent') setPlannerDraft((prev) => ({ ...prev, content: liveValue }));
     if (field === 'plannerCustomMinutes') setPlannerDraft((prev) => ({ ...prev, customMinutes: liveValue }));
+    restoreScrollY();
   };
 
   const onChange = (e) => {
     const field = e.target.getAttribute('data-field');
     if (field === 'coachPlannerFiles') {
-      const files = Array.from(e.target.files || []).map((file) => file.name);
-      if (files.length) setCoachingPlannerPhotos((prev) => [...prev, ...files].slice(0, 5));
+      const files = Array.from(e.target.files || []);
+      if (files.length) setCoachingPlannerFiles((prev) => [...prev, ...files].slice(0, 5));
     }
     if (field === 'coachExamFiles') {
-      const files = Array.from(e.target.files || []).map((file) => file.name);
-      if (files.length) setCoachingExamPhotos((prev) => [...prev, ...files]);
+      const files = Array.from(e.target.files || []);
+      if (files.length) setCoachingExamFiles((prev) => [...prev, ...files]);
     }
   };
   const onBlur = (e) => {
