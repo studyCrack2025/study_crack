@@ -1,12 +1,18 @@
 // js/config.js
 
-// 1. 현재 접속한 도메인을 확인하여 개발(Dev) 환경인지 운영(Prod) 환경인지 판단
+// 1. 현재 접속한 도메인을 확인하여 환경을 판단
 const currentDomain = window.location.hostname;
-const IS_DEV = currentDomain.includes('cloudfront.net') || currentDomain.includes('dev.studycrack.co.kr') || currentDomain === 'localhost' || currentDomain === '127.0.0.1';
+const IS_LOCAL = currentDomain === 'localhost' || currentDomain === '127.0.0.1';
+const IS_DEV   = !IS_LOCAL && (currentDomain.includes('cloudfront.net') || currentDomain.includes('dev.studycrack.co.kr'));
 
-// 2. 환경에 따라 API Gateway 기본 주소에 스테이지(/dev 또는 /prod)를 자동으로 붙여줍니다.
+// 2. 환경에 따라 API Gateway 스테이지 결정
+// local → /local 스테이지 ($LATEST Lambda 연결, 로컬 개발용)
+// dev   → /dev 스테이지 (특정 Lambda 버전 고정, dev.studycrack.co.kr용)
+// prod  → /prod 스테이지
 const API_BASE_URL = "https://ft35jsftc1.execute-api.ap-northeast-2.amazonaws.com";
-const GATEWAY_URL = IS_DEV ? `${API_BASE_URL}/dev` : `${API_BASE_URL}/prod`;
+const GATEWAY_URL = IS_LOCAL ? `${API_BASE_URL}/local`
+                  : IS_DEV   ? `${API_BASE_URL}/dev`
+                  :             `${API_BASE_URL}/prod`;
 
 const CONFIG = {
     // API 경로 설정 (환경별로 자동 설정된 GATEWAY_URL 적용)
