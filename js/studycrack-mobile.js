@@ -230,7 +230,8 @@ function App() {
     const handler = () => {
       const cardWidth = slider.firstElementChild ? slider.firstElementChild.getBoundingClientRect().width : 1;
       const idx = Math.round(slider.scrollLeft / Math.max(cardWidth, 1));
-      setHomeSlideIndex(Math.max(0, Math.min(3, idx)));
+      const maxIdx = Math.max(0, homeTargets.length - 1);
+      setHomeSlideIndex(Math.max(0, Math.min(maxIdx, idx)));
     };
     slider.addEventListener('scroll', handler, { passive: true });
     handler();
@@ -731,9 +732,8 @@ function App() {
           <div class="kpi-row score-row"><div class="kpi-item"><b>${item.score}점</b>현재 점수</div><div class="kpi-item"><b>${item.cut}점</b>합격 컷</div><div class="kpi-item danger"><b>${item.gap}점</b>부족 점수</div></div>
           <div class="home-planner-badges chip-row">${plannerBadges.map((badge) => `<span class="chip">${badge}</span>`).join('')}</div>
         </button>`).join('')}
-        <button class="card home-kpi-add-card slider-card" data-action="openUniversityModal"><span class="plus">+</span><p>+ 목표 대학 추가</p></button>
       </div>
-      <div class="home-kpi-indicator card-indicator">${homeTargets.map((_, idx) => `<i class="${idx===homeSlideIndex?'active':''}"></i>`).join('')}<i class="${homeSlideIndex===homeTargets.length?'active':''}"></i></div>
+      <div class="home-kpi-indicator card-indicator">${homeTargets.map((_, idx) => `<i class="${idx===homeSlideIndex?'active':''}"></i>`).join('')}</div>
       ${universityModalOpen ? `<div class="home-modal-overlay" data-action="closeUniversityModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">목표 대학 추가</p><p class="sub" style="margin-top:8px">대학 선택 모달은 다음 단계에서 연결됩니다.</p><button class="btn btn-primary" data-action="closeUniversityModal">닫기</button></div></div>` : ''}
     </div>
     <div class="section home-section home-section-last">
