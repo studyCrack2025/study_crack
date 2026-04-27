@@ -788,21 +788,22 @@ function App() {
        <p class="sub ob-subcopy">지금 성적과 공부 습관을 바탕으로<br/>나에게 맞는 합격 전략을 찾아볼게요.</p>
        <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>성적만 보는 게 아니라, 공부 방식까지 같이 봐야 정확해요!</p></div>
        <div class="card ob-card">
-         <p class="analysis-title">성적 입력</p>
-         <div class="score-edit-grid">
-           <label>국어<input data-field="score-korean" value="${scores.korean}" type="number"/></label>
-           <label>수학<input data-field="score-math" value="${scores.math}" type="number"/></label>
-           <label>영어<input data-field="score-english" value="${scores.english}" type="number"/></label>
-           <label>탐구1<input data-field="score-inquiry1" value="${scores.inquiry1}" type="number"/></label>
-           <label>탐구2<input data-field="score-inquiry2" value="${scores.inquiry2}" type="number"/></label>
-         </div>
+         <p class="analysis-title">정성 조사서</p>
+         <label class="auth-label">현재 학년</label><select class="planner-input" data-field="obGradeStatus"><option>고1/2 재학</option><option>고3 재학</option><option>N수생</option><option>검정고시</option><option>기타</option></select>
+         <label class="auth-label">출신 학교</label><input class="planner-input" data-field="obSchoolName" value="${obSchoolName}" placeholder="출신 학교 입력" />
+         <label class="auth-label">희망 계열</label><select class="planner-input" data-field="obTrack"><option>예체능</option><option>인문</option><option>자연</option></select>
+         <label class="auth-label">스터디크랙을 통해 얻고 싶은 점</label><textarea class="planner-input on-ta" data-field="obGoalText" placeholder="자유롭게 입력">${obGoalText}</textarea>
+         <label class="auth-label">입시 고민 및 질문</label><textarea class="planner-input on-ta" data-field="obQuestionText" placeholder="자유롭게 입력">${obQuestionText}</textarea>
        </div>
        <div class="card ob-card">
-         <p class="analysis-title">정성 조사서</p>
-         <label class="auth-label">가장 자신 있는 과목</label><input class="planner-input" data-field="strongSubject" value="${strongSubject}" placeholder="예: 국어" />
-         <label class="auth-label">가장 불안한 과목</label><input class="planner-input" data-field="weakSubject" value="${weakSubject}" placeholder="예: 수학" />
-         <label class="auth-label">하루 평균 공부 시간</label><input class="planner-input" data-field="studyHours" value="${studyHours}" placeholder="예: 5시간" />
-         <label class="auth-label">공부할 때 가장 어려운 점</label><input class="planner-input" data-field="studyDifficulty" value="${studyDifficulty}" placeholder="예: 집중력 유지" />
+         <p class="analysis-title">성적 입력</p>
+         <label class="auth-label">시험 선택</label><select class="planner-input"><option>3월 학평</option></select>
+         <div class="ob-subject-line"><b>국어</b><select class="planner-input"><option>선택과목</option><option>화법과작문</option><option>언어와매체</option></select><input class="planner-input" placeholder="공통 원점수" type="number"/><input class="planner-input" placeholder="선택 원점수" type="number"/></div>
+         <div class="ob-subject-line"><b>수학</b><select class="planner-input"><option>선택과목</option><option>확률과통계</option><option>미적분</option><option>기하</option></select><input class="planner-input" placeholder="공통 원점수" type="number"/><input class="planner-input" placeholder="선택 원점수" type="number"/></div>
+         <div class="ob-subject-line short"><b>영어</b><select class="planner-input"><option>등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option>${n}등급</option>`).join('')}</select></div>
+         <div class="ob-subject-line short"><b>한국사</b><select class="planner-input"><option>등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option>${n}등급</option>`).join('')}</select></div>
+         <div class="ob-subject-line"><b>탐구1</b><select class="planner-input"><option>과목 선택</option><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option><option>물리학</option><option>화학</option><option>생명과학</option><option>지구과학</option></select><input class="planner-input" placeholder="원점수" type="number"/></div>
+         <div class="ob-subject-line"><b>탐구2</b><select class="planner-input"><option>과목 선택</option><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option><option>물리학</option><option>화학</option><option>생명과학</option><option>지구과학</option></select><input class="planner-input" placeholder="원점수" type="number"/></div>
        </div>
        <div class="card ob-card">
          <p class="analysis-title">학습 MBTI 검사</p>
