@@ -110,12 +110,7 @@ function App() {
   const [plannerCalendarOpen, setPlannerCalendarOpen] = useState(false);
   const [universityModalOpen, setUniversityModalOpen] = useState(false);
   const [plannerAddModalOpen, setPlannerAddModalOpen] = useState(false);
-  const [plannerSubject, setPlannerSubject] = useState('');
-  const [plannerContent, setPlannerContent] = useState('');
-  const [plannerDurationChoice, setPlannerDurationChoice] = useState('');
-  const [plannerCustomMinutes, setPlannerCustomMinutes] = useState('');
-  const [plannerStart, setPlannerStart] = useState('');
-  const [plannerEnd, setPlannerEnd] = useState('');
+  const [plannerDraft, setPlannerDraft] = useState({ subject: '', content: '', durationChoice: '', customMinutes: '' });
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [signupName, setSignupName] = useState('');
@@ -235,7 +230,7 @@ function App() {
     const handler = () => {
       const cardWidth = slider.firstElementChild ? slider.firstElementChild.getBoundingClientRect().width : 1;
       const idx = Math.round(slider.scrollLeft / Math.max(cardWidth, 1));
-      setHomeSlideIndex(Math.max(0, Math.min(2, idx)));
+      setHomeSlideIndex(Math.max(0, Math.min(3, idx)));
     };
     slider.addEventListener('scroll', handler, { passive: true });
     handler();
@@ -564,7 +559,7 @@ function App() {
     : lowRatio
       ? { tone: 'info', icon: '📊', text: `${lowRatio.subject} 비중이 부족합니다. 전략상 손해 가능성이 있어요.` }
       : { tone: 'info', icon: '📊', text: '과목 비중이 균형적으로 유지되고 있어요. 지금 흐름을 유지해요.' };
-  const canSubmitPlanner = Boolean(plannerSubject && plannerDurationChoice);
+  const canSubmitPlanner = Boolean(plannerDraft.subject && plannerDraft.durationChoice && plannerDraft.content.trim());
   const inquiryOptions = `<optgroup label="사회탐구"><option value="">과목 선택</option><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option></optgroup><optgroup label="과학탐구"><option>물리학</option><option>화학</option><option>생명과학</option><option>지구과학</option></optgroup>`;
   const ScoreEditModal = () => {
     const step = scoreEditStep;
@@ -738,7 +733,7 @@ function App() {
         </button>`).join('')}
         <button class="card home-kpi-add-card slider-card" data-action="openUniversityModal"><span class="plus">+</span><p>+ 목표 대학 추가</p></button>
       </div>
-      <div class="home-kpi-indicator card-indicator">${homeTargets.map((_, idx) => `<i class="${idx===homeSlideIndex?'active':''}"></i>`).join('')}<b>+</b></div>
+      <div class="home-kpi-indicator card-indicator">${homeTargets.map((_, idx) => `<i class="${idx===homeSlideIndex?'active':''}"></i>`).join('')}<i class="${homeSlideIndex===homeTargets.length?'active':''}"></i></div>
       ${universityModalOpen ? `<div class="home-modal-overlay" data-action="closeUniversityModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">목표 대학 추가</p><p class="sub" style="margin-top:8px">대학 선택 모달은 다음 단계에서 연결됩니다.</p><button class="btn btn-primary" data-action="closeUniversityModal">닫기</button></div></div>` : ''}
     </div>
     <div class="section home-section home-section-last">
@@ -866,8 +861,8 @@ function App() {
     .onboarding-container .content{padding:0 16px 150px;box-sizing:border-box;}
     .onboarding-fixed-cta{padding-bottom:calc(16px + env(safe-area-inset-bottom));}
     .btn,button,.planner-input,select,textarea,input{transition:box-shadow .15s ease, border-color .15s ease;}
-    .btn:active,button:active,.planner-input:active,select:active,textarea:active,input:active{transform:scale(.98);}
-    .card:active{transform:none !important;}
+    .btn:active,button:active,.planner-input:active,select:active,textarea:active,input:active{transform:none;}
+    .card:active{transform:none !important;filter:none !important;}
     input,select,textarea{font-size:16px !important;}
 
     .ob1-survey-card,.ob1-score-wrap,.analysis-v2-compare-card{background:#fff;border:1px solid #E2E8F0;border-radius:24px;padding:24px;box-sizing:border-box;}
@@ -944,6 +939,7 @@ function App() {
     .score-row .pill.up{background:#DBEAFE;color:#1D4ED8;}
     .score-row .pill.keep{background:#E2E8F0;color:#475569;}
     .score-journey-total{margin-top:2px;padding-top:10px;border-top:1px solid #CBD5E1;display:flex;justify-content:space-between;font-weight:800;white-space:nowrap;word-break:keep-all;}
+    .score-journey-total b{font-weight:800;}
     .score-journey-arrow{align-self:center;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#E2E8F0;color:#334155;font-weight:900;}
     .analysis-v2-eta-card{margin-top:2px;padding:16px;border:1px solid #BFDBFE;border-radius:18px;background:linear-gradient(135deg,#EEF6FF, #F8FBFF);box-shadow:0 4px 12px rgba(30,64,175,.08);}
     .analysis-v2-eta-card .eyebrow{display:block;font-size:13px;font-weight:700;color:#1E40AF;margin-bottom:4px;}
@@ -975,6 +971,7 @@ function App() {
     .planner-date-item small{font-size:11px;color:#64748B;}
     .planner-date-item strong{font-size:16px;line-height:1;}
     .planner-date-item.active small,.planner-date-item.active strong{color:#2563EB;font-weight:800;}
+    .planner-input.is-hidden{display:none;}
     .score-info-detail-table{display:grid;gap:8px;margin:14px 0;}
     .score-info-detail-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;font-size:12px;color:#475569;padding:10px;border:1px solid #E2E8F0;border-radius:12px;background:#F8FAFC;}
     .coach-hidden-file{display:none;}
@@ -989,7 +986,7 @@ function App() {
         <button type="button" class="${activeScoreView==='target'?'active':''}" data-action="setScoreView" data-score-view="target">도달 성적</button>
       </div>
       <div class="score-journey-scroll">
-        <div class="score-journey-col current">
+        <div class="score-journey-col current" data-score-view="current">
           <h4>현재 성적</h4>
           <div class="score-row"><span>국어</span><b>82</b></div>
           <div class="score-row"><span>수학</span><b>68</b></div>
@@ -998,14 +995,13 @@ function App() {
           <div class="score-row"><span>탐구2</span><b>66</b></div>
           <div class="score-journey-total"><span>총점</span><b>86점</b></div>
         </div>
-        <div class="score-journey-arrow">→</div>
-        <div class="score-journey-col target">
+        <div class="score-journey-col target" data-score-view="target">
           <h4>도달 성적</h4>
           <div class="score-row"><span>수학</span><b><span class="pill up">+12</span></b><em>68 → 80</em></div>
           <div class="score-row"><span>탐구1</span><b><span class="pill up">+6</span></b><em>70 → 76</em></div>
-          <div class="score-row"><span>국어</span><b><span class="pill keep">유지</span></b><em>82 → 82</em></div>
-          <div class="score-row"><span>영어</span><b><span class="pill keep">유지</span></b><em>77 → 77</em></div>
-          <div class="score-row"><span>탐구2</span><b><span class="pill keep">유지</span></b><em>66 → 66</em></div>
+          <div class="score-row"><span>국어</span><b><span class="pill keep">유지</span></b><em>82</em></div>
+          <div class="score-row"><span>영어</span><b><span class="pill keep">유지</span></b><em>77</em></div>
+          <div class="score-row"><span>탐구2</span><b><span class="pill keep">유지</span></b><em>66</em></div>
           <div class="score-journey-total"><span>예상 총점</span><b>120점</b></div>
         </div>
       </div>
@@ -1362,8 +1358,8 @@ function App() {
        
        <div class="planner-bottom-space"></div>
        ${plannerCalendarOpen ? `<div class="planner-sheet-overlay" data-action="closePlannerCalendar"><div class="planner-sheet planner-calendar-sheet" data-action="noopModal"><button class="planner-sheet-close" data-action="closePlannerCalendar">✕</button><h3>2024년 5월</h3><div class="planner-calendar-grid">${Array.from({ length: 31 }, (_, i) => i + 1).map((day) => `<button class="planner-cal-day ${selectedPlannerDate===String(day)?'active':''}" data-action="selectPlannerDate" data-planner-date="${day}">${day}</button>`).join('')}</div></div></div>` : ''}
-       ${plannerAddModalOpen ? `<div class="planner-sheet-overlay" data-action="closePlannerAddModal"><div class="planner-sheet" data-action="noopModal"><button class="planner-sheet-close" data-action="closePlannerAddModal">✕</button><h3>${selectedPlannerDate}일 플래너 항목 추가</h3><p>선택한 날짜에 실행할 학습 계획을 입력해 주세요.</p><div class="planner-sheet-block"><label>과목 선택</label><div class="planner-pill-row"><button class="planner-pill ${plannerSubject==='수학'?'active':''}" data-action="setPlannerSubject" data-planner-subject="수학">수학</button><button class="planner-pill ${plannerSubject==='국어'?'active':''}" data-action="setPlannerSubject" data-planner-subject="국어">국어</button><button class="planner-pill ${plannerSubject==='영어'?'active':''}" data-action="setPlannerSubject" data-planner-subject="영어">영어</button><button class="planner-pill ${plannerSubject==='탐구'?'active':''}" data-action="setPlannerSubject" data-planner-subject="탐구">탐구</button></div></div><div class="planner-sheet-block"><label>학습 내용</label><input class="planner-input" data-field="plannerContent" value="${plannerContent}" placeholder="예: 개념 학습, 독해 문제 풀이" /></div><div class="planner-sheet-block"><label>시간 선택</label><div class="planner-pill-row"><button class="planner-pill ${plannerDurationChoice==='30'?'active':''}" data-action="setPlannerDuration" data-planner-duration="30">30분</button><button class="planner-pill ${plannerDurationChoice==='60'?'active':''}" data-action="setPlannerDuration" data-planner-duration="60">60분</button><button class="planner-pill ${plannerDurationChoice==='90'?'active':''}" data-action="setPlannerDuration" data-planner-duration="90">90분</button><button class="planner-pill ${plannerDurationChoice==='120'?'active':''}" data-action="setPlannerDuration" data-planner-duration="120">120분</button><button class="planner-pill ${plannerDurationChoice==='custom'?'active':''}" data-action="setPlannerDuration" data-planner-duration="custom">직접 입력</button></div>${plannerDurationChoice==='custom' ? `<input class="planner-input" data-field="plannerCustomMinutes" value="${plannerCustomMinutes}" type="number" placeholder="분 단위 입력" />` : ''}</div><button class="btn btn-primary planner-sheet-submit ${canSubmitPlanner?'':'disabled'}" data-action="addPlannerFromSheet" ${canSubmitPlanner?'':'disabled'}>플래너에 추가하기</button></div></div>` : ''}
-       ${plannerEditIndex !== null ? `<div class="planner-sheet-overlay" data-action="closePlannerEdit"><div class="planner-sheet" data-action="noopModal"><button class="planner-sheet-close" data-action="closePlannerEdit">✕</button><h3>플래너 항목 수정</h3><div class="planner-sheet-block"><label>과목</label><input class="planner-input" data-field="plannerEditSubject" value="${plannerEditItem?.subject || ''}" /></div><div class="planner-sheet-block"><label>세부 내용</label><input class="planner-input" data-field="plannerEditContent" value="${plannerEditItem?.content || ''}" /></div><div class="planner-sheet-block"><label>시간대</label><div class="planner-time-row"><input class="planner-input" data-field="plannerEditStart" type="time" value="${plannerEditItem?.start || ''}" /><input class="planner-input" data-field="plannerEditEnd" type="time" value="${plannerEditItem?.end || ''}" /></div></div><div class="planner-sheet-block"><label>소요 시간(분)</label><input class="planner-input" data-field="plannerEditMinutes" type="number" value="${plannerEditItem?.minutes || ''}" /></div><button class="btn btn-primary" data-action="savePlannerEdit">수정 저장</button></div></div>` : ''}
+       ${plannerAddModalOpen ? `<div class="planner-sheet-overlay" data-action="closePlannerAddModal"><div class="planner-sheet" data-action="noopModal"><button class="planner-sheet-close" data-action="closePlannerAddModal">✕</button><h3>${selectedPlannerDate}일 플래너 항목 추가</h3><p>선택한 날짜에 실행할 학습 계획을 입력해 주세요.</p><div class="planner-sheet-block"><label>과목 선택</label><div class="planner-pill-row"><button class="planner-pill ${plannerDraft.subject==='수학'?'active':''}" data-action="setPlannerSubject" data-planner-subject="수학">수학</button><button class="planner-pill ${plannerDraft.subject==='국어'?'active':''}" data-action="setPlannerSubject" data-planner-subject="국어">국어</button><button class="planner-pill ${plannerDraft.subject==='영어'?'active':''}" data-action="setPlannerSubject" data-planner-subject="영어">영어</button><button class="planner-pill ${plannerDraft.subject==='탐구'?'active':''}" data-action="setPlannerSubject" data-planner-subject="탐구">탐구</button></div></div><div class="planner-sheet-block"><label>학습 내용</label><input class="planner-input" data-field="plannerContent" value="${plannerDraft.content}" placeholder="예: 개념 학습, 독해 문제 풀이" /></div><div class="planner-sheet-block"><label>시간 선택</label><div class="planner-pill-row"><button class="planner-pill ${plannerDraft.durationChoice==='30'?'active':''}" data-action="setPlannerDuration" data-planner-duration="30">30분</button><button class="planner-pill ${plannerDraft.durationChoice==='60'?'active':''}" data-action="setPlannerDuration" data-planner-duration="60">60분</button><button class="planner-pill ${plannerDraft.durationChoice==='90'?'active':''}" data-action="setPlannerDuration" data-planner-duration="90">90분</button><button class="planner-pill ${plannerDraft.durationChoice==='120'?'active':''}" data-action="setPlannerDuration" data-planner-duration="120">120분</button><button class="planner-pill ${plannerDraft.durationChoice==='custom'?'active':''}" data-action="setPlannerDuration" data-planner-duration="custom">직접 입력</button></div><input class="planner-input ${plannerDraft.durationChoice==='custom'?'':'is-hidden'}" data-field="plannerCustomMinutes" value="${plannerDraft.customMinutes}" type="number" placeholder="분 단위 입력" /></div><button class="btn btn-primary planner-sheet-submit ${canSubmitPlanner?'':'disabled'}" data-action="addPlannerFromSheet" ${canSubmitPlanner?'':'disabled'}>플래너에 추가하기</button></div></div>` : ''}
+       ${plannerEditIndex !== null ? `<div class="planner-sheet-overlay" data-action="closePlannerEdit"><div class="planner-sheet" data-action="noopModal"><button class="planner-sheet-close" data-action="closePlannerEdit">✕</button><h3>플래너 항목 수정</h3><div class="planner-sheet-block"><label>과목</label><input class="planner-input" data-field="plannerEditSubject" value="${plannerEditItem?.subject || ''}" /></div><div class="planner-sheet-block"><label>세부 내용</label><input class="planner-input" data-field="plannerEditContent" value="${plannerEditItem?.content || ''}" /></div><div class="planner-sheet-block"><label>소요 시간(분)</label><input class="planner-input" data-field="plannerEditMinutes" type="number" value="${plannerEditItem?.minutes || ''}" /></div><button class="btn btn-primary" data-action="savePlannerEdit">수정 저장</button></div></div>` : ''}
        </div>`,
       true
     ),
@@ -1455,10 +1451,8 @@ function App() {
   console.log('APP_CURRENT_SCREEN', currentScreen);
 
   const onClick = (e) => {
-    const scrollY = window.scrollY;
     const activeEl = document.activeElement;
     requestAnimationFrame(() => {
-      window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
       if (activeEl && document.body.contains(activeEl)) activeEl.focus?.({ preventScroll: true });
     });
     if (isAnalyzing && screen === 'analysis') return;
@@ -1718,8 +1712,8 @@ function App() {
     }
     if (action === 'retryInit') initializeApp();
     if (action === 'noopModal') return;
-    if (action === 'setPlannerSubject') setPlannerSubject(actionEl.getAttribute('data-planner-subject'));
-    if (action === 'setPlannerDuration') setPlannerDurationChoice(actionEl.getAttribute('data-planner-duration'));
+    if (action === 'setPlannerSubject') setPlannerDraft((prev) => ({ ...prev, subject: actionEl.getAttribute('data-planner-subject') || '' }));
+    if (action === 'setPlannerDuration') setPlannerDraft((prev) => ({ ...prev, durationChoice: actionEl.getAttribute('data-planner-duration') || '' }));
     if (action === 'removePlannerItem') {
       const plannerId = actionEl.getAttribute('data-planner-id');
       setPlannerItems((prev) => prev.filter((item) => item.id !== plannerId));
@@ -1751,50 +1745,29 @@ function App() {
       setPlannerItems((prev) => [...prev, { id: buildPlannerId(), date: selectedPlannerDate, subject, content, start, end, minutes, dot }]);
     }
     if (action === 'addPlannerFromSheet') {
-      const readFieldValue = (name) => {
-        const input = document.querySelector(`[data-field="${name}"]`);
-        return input ? input.value.trim() : '';
-      };
-      const content = readFieldValue('plannerContent');
-      const customMinutes = readFieldValue('plannerCustomMinutes');
-      const minutes = plannerDurationChoice === 'custom' ? Number(customMinutes) : Number(plannerDurationChoice);
-      if (!plannerSubject || !content || !minutes || Number.isNaN(minutes)) return;
-      const dot = plannerSubject === '수학' ? 'math' : plannerSubject === '영어' ? 'eng' : plannerSubject === '국어' ? 'kor' : 'sci';
-      setPlannerItems((prev) => [...prev, { id: buildPlannerId(), date: selectedPlannerDate, subject: plannerSubject, content, start: '--:--', end: '--:--', minutes, dot }]);
+      const content = plannerDraft.content.trim();
+      const customMinutes = plannerDraft.customMinutes.trim();
+      const minutes = plannerDraft.durationChoice === 'custom' ? Number(customMinutes) : Number(plannerDraft.durationChoice);
+      if (!plannerDraft.subject || !content || !minutes || Number.isNaN(minutes)) return;
+      const dot = plannerDraft.subject === '수학' ? 'math' : plannerDraft.subject === '영어' ? 'eng' : plannerDraft.subject === '국어' ? 'kor' : 'sci';
+      setPlannerItems((prev) => [...prev, { id: buildPlannerId(), date: selectedPlannerDate, subject: plannerDraft.subject, content, start: '--:--', end: '--:--', minutes, dot }]);
       setPlannerAddModalOpen(false);
-      setPlannerSubject('');
-      setPlannerContent('');
-      setPlannerDurationChoice('');
-      setPlannerCustomMinutes('');
-      setPlannerStart('');
-      setPlannerEnd('');
-      ['plannerContent', 'plannerCustomMinutes'].forEach((name) => {
-        const input = document.querySelector(`[data-field="${name}"]`);
-        if (input) input.value = '';
-      });
     }
     if (action === 'savePlannerEdit') {
       if (plannerEditIndex === null) return;
       const subject = document.querySelector('[data-field="plannerEditSubject"]')?.value?.trim();
       const content = document.querySelector('[data-field="plannerEditContent"]')?.value?.trim();
-      const start = document.querySelector('[data-field="plannerEditStart"]')?.value;
-      const end = document.querySelector('[data-field="plannerEditEnd"]')?.value;
       const minutes = Number(document.querySelector('[data-field="plannerEditMinutes"]')?.value || 0);
-      if (!subject || !content || !start || !end || !minutes || !plannerEditItem) return;
+      if (!subject || !content || !minutes || !plannerEditItem) return;
       const lowered = subject.toLowerCase();
       const dot = lowered.includes('수') ? 'math' : lowered.includes('영') ? 'eng' : lowered.includes('국') ? 'kor' : 'sci';
-      setPlannerItems((prev) => prev.map((item) => (item.id === plannerEditIndex ? { ...item, subject, content, start, end, minutes, dot } : item)));
+      setPlannerItems((prev) => prev.map((item) => (item.id === plannerEditIndex ? { ...item, subject, content, minutes, dot } : item)));
       setPlannerEditIndex(null);
     }
   };
 
   const onInput = (e) => {
-    const scrollY = window.scrollY;
-    const activeEl = document.activeElement;
-    requestAnimationFrame(() => {
-      window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
-      if (activeEl && document.body.contains(activeEl)) activeEl.focus?.({ preventScroll: true });
-    });
+    e.target?.focus?.({ preventScroll: true });
     const field = e.target.getAttribute('data-field');
     if (field === 'coachingMonth') setCoachingMonth(e.target.value);
     const coachAnswer = e.target.getAttribute('data-coach-answer');
@@ -1814,8 +1787,8 @@ function App() {
     }
     if (!field) return;
     const liveValue = e.target.value;
-    if (field === 'plannerContent') setPlannerContent(liveValue);
-    if (field === 'plannerCustomMinutes') setPlannerCustomMinutes(liveValue);
+    if (field === 'plannerContent') setPlannerDraft((prev) => ({ ...prev, content: liveValue }));
+    if (field === 'plannerCustomMinutes') setPlannerDraft((prev) => ({ ...prev, customMinutes: liveValue }));
   };
 
   const onChange = (e) => {
