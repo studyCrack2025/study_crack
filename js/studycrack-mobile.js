@@ -104,6 +104,7 @@ function App() {
   const [analysisMode, setAnalysisMode] = useState('summary');
   const [analysisEtaStage, setAnalysisEtaStage] = useState(1);
   const [analysisHighlightedSubject, setAnalysisHighlightedSubject] = useState('');
+  const [activeScoreView, setActiveScoreView] = useState('current');
   const [selectedDate, setSelectedDate] = useState('14');
   const [plannerCalendarOpen, setPlannerCalendarOpen] = useState(false);
   const [universityModalOpen, setUniversityModalOpen] = useState(false);
@@ -216,6 +217,16 @@ function App() {
     return () => clearTimeout(t);
   }, [screen]);
 
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      const container = document.querySelector('.score-journey-scroll');
+      if (!container) return;
+      const target = container.querySelector(`.score-journey-col.${activeScoreView}`);
+      if (target) target.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [activeScoreView, screen, analysisMode]);
+
   const initializeApp = async () => {
     let fallbackTimer;
     try {
@@ -312,14 +323,6 @@ function App() {
       })
     );
   }, [selectedPlan, targetMajor, tab, user]);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      const el = document.querySelector('.app-shell .app-content');
-      if (el) el.scrollTop = 0;
-    }, 0);
-    return () => clearTimeout(t);
-  }, [screen]);
 
   const appbar = (title, showBack) => `<div class="appbar">${showBack ? '<button class="back-btn" data-action="back">←</button>' : '<div style="width:36px"></div>'}<div class="title">${title}</div></div>`;
   const tabBtn = (k, label, iconName) => `<button class="${tab === k ? 'active' : ''}" data-action="tab" data-tab="${k}">${i(iconName, tab===k)}<span>${label}</span></button>`;
@@ -433,14 +436,18 @@ function App() {
   const totalMinutes = plannerItems.reduce((acc, item) => acc + item.minutes, 0);
   const totalHour = Math.floor(totalMinutes / 60);
   const totalMinute = totalMinutes % 60;
-  const plannerWeekDates = ['12', '13', '14', '15', '16', '17', '18'];
+  const plannerWeekDates = Array.from({ length: 15 }, (_, idx) => {
+    const day = Math.min(31, Math.max(1, Number(selectedDate) - 7 + idx));
+    const weekday = ['일', '월', '화', '수', '목', '금', '토'][new Date(2024, 4, day).getDay()];
+    return { day: String(day), weekday };
+  });
   const selectedPlannerDate = selectedDate;
   const plannerItemsByDate = plannerItems.reduce((acc, item) => {
     const dateKey = item.date || '14';
     if (!acc[dateKey]) acc[dateKey] = [];
     acc[dateKey].push(item);
     return acc;
-  }, { '12': [], '13': [], '14': [], '15': [], '16': [], '17': [], '18': [] });
+  }, {});
   const plannerViewItems = plannerItemsByDate[selectedPlannerDate] || [];
   const plannerViewMinutes = plannerViewItems.reduce((acc, item) => acc + (item.minutes || 0), 0);
   const plannerViewHour = Math.floor(plannerViewMinutes / 60);
@@ -678,16 +685,16 @@ function App() {
       ${universityModalOpen ? `<div class="home-modal-overlay" data-action="closeUniversityModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">목표 대학 추가</p><p class="sub" style="margin-top:8px">대학 선택 모달은 다음 단계에서 연결됩니다.</p><button class="btn btn-primary" data-action="closeUniversityModal">닫기</button></div></div>` : ''}
     </div>
     <div class="section home-section home-section-last">
-      <div class="card home-study-summary study-summary-card">
-        <p class="analysis-title">오늘 공부 요약</p>
+      <div class="card home-study-summary study-summary-card home-insight-card">
+        <div class="home-card-head"><p class="analysis-title">오늘 누적 공부</p><span class="home-mini-badge">${studyTimerRunning ? '진행중' : '대기'}</span></div>
         <div class="study-timer-row"><b class="timer" data-study-base-seconds="${todayRecord?.studyTime || 0}">${formatHms(todayStudySeconds)}</b>${studyTimerRunning ? `<button class="btn btn-secondary start-button" data-action="stopStudyTimer">공부 종료</button>` : `<button class="btn btn-primary start-button" data-action="openStudySubjectSheet">공부 시작하기</button>`}</div>
-        <div class="home-subject-pill-row subject-chip-row">${visibleSubjectChips.map(([subject, sec]) => `<span class="home-subject-pill subject-time-chip">${subject} ${formatHms(sec || 0)}</span>`).join('')}${hiddenSubjectCount ? `<span class="home-subject-pill subject-time-chip more">+${hiddenSubjectCount}</span>` : ''}</div>
+        <div class="home-subject-pill-row subject-chip-row home-chip-grid">${visibleSubjectChips.map(([subject, sec]) => `<span class="home-subject-pill subject-time-chip">${subject} ${formatHms(sec || 0)}</span>`).join('')}${hiddenSubjectCount ? `<span class="home-subject-pill subject-time-chip more">+${hiddenSubjectCount}</span>` : ''}</div>
       </div>
-      <button class="card study-goal-card home-goal-linked-card" data-action="goto" data-target="planner">
+      <button class="card study-goal-card home-goal-linked-card home-insight-card" data-action="goto" data-target="planner">
         <p class="analysis-title">오늘 공부 목표</p>
         ${todayPlannerItems.length ? `<p class="sub">오늘 목표 ${formatMinutesLabel(todayPlannerTotalMinutes)} · 현재 ${formatHourMin(todayStudySeconds)}</p><div class="track"><i style="width:${todayPlannerProgress}%"></i></div><p class="sub" style="margin:8px 0 0">달성률 ${todayPlannerProgress}% · ${todayPlannerSubjectSummary.join(' · ')}</p>` : `<p class="sub">오늘 계획을 추가해보세요</p><span class="home-goal-empty-cta">플래너로 이동</span>`}
       </button>
-      <div class="card home-bottom-summary ranking-card">
+      <div class="card home-bottom-summary ranking-card home-insight-card">
         <div class="home-ranking-head"><p class="analysis-title">내 공부 랭킹</p><span class="badge">오늘 기준</span></div>
         <p class="home-ranking-main">${Math.min(myRank, 124)}등</p>
         <p class="home-ranking-sub">전체 124명 중</p>
@@ -838,8 +845,7 @@ function App() {
     .analysis-v2-bar-wrap{height:260px;display:flex;align-items:flex-end;}
     .analysis-v2-bar{width:56px;min-height:8px;border-radius:18px 18px 12px 12px;}
     .analysis-v2-bar-item p{margin:0;max-width:84px;font-size:12px;font-weight:600;line-height:1.35;color:#475569;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-    .analysis-v2-bar-item.active .analysis-v2-bar-wrap{outline:2px solid #2563EB;outline-offset:8px;border-radius:20px;}
-    .analysis-v2-selected-badge{font-size:11px;font-weight:700;color:#2563EB;background:#DBEAFE;border-radius:999px;padding:4px 8px;}
+    .analysis-v2-bar-item.active p{color:#2563EB;font-weight:700;}
     .home-result-card-v3{display:grid;gap:12px;text-align:left;overflow:hidden;}
     .home-result-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;}
     .home-result-major{margin:0;font-size:16px;font-weight:800;color:#0F172A;line-height:1.4;}
@@ -855,13 +861,19 @@ function App() {
     .home-result-gauge-meta span:last-child{text-align:right;}
     .home-goal-linked-card{cursor:pointer;text-align:left;}
     .home-goal-empty-cta{margin-top:8px;display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;background:#DBEAFE;color:#1D4ED8;border-radius:10px;font-weight:700;font-size:13px;}
+    .home-insight-card{border:1px solid #E2E8F0;border-radius:20px;box-shadow:0 8px 20px rgba(15,23,42,.05);padding:16px;}
+    .home-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+    .home-mini-badge{font-size:11px;font-weight:700;color:#1D4ED8;background:#DBEAFE;border-radius:999px;padding:4px 8px;}
+    .home-chip-grid{display:flex;flex-wrap:wrap;gap:8px;}
+    .study-goal-card .track{height:12px;border-radius:999px;background:#E2E8F0;overflow:hidden;}
+    .study-goal-card .track i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#2563EB,#38BDF8);}
     .score-journey-card{display:grid;gap:12px;}
-    .score-journey-segment{display:inline-flex;gap:6px;background:#F1F5F9;border-radius:999px;padding:4px;width:max-content;}
-    .score-journey-segment span{padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;color:#64748B;}
-    .score-journey-segment span.active{background:#fff;color:#1E3A8A;box-shadow:0 1px 2px rgba(0,0,0,.06);}
-    .score-journey-scroll{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:2px;}
+    .score-journey-segment{display:inline-flex;gap:6px;background:#F1F5F9;border-radius:999px;padding:4px;width:max-content;position:relative;z-index:2;pointer-events:auto;}
+    .score-journey-segment button{padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;color:#64748B;border:none;background:transparent;pointer-events:auto;}
+    .score-journey-segment button.active{background:#fff;color:#1E3A8A;box-shadow:0 1px 2px rgba(0,0,0,.06);}
+    .score-journey-scroll{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 0;position:relative;z-index:1;}
     .score-journey-col{border:1px solid #E2E8F0;background:#F8FAFC;border-radius:18px;padding:12px;display:grid;gap:8px;min-width:0;}
-    .score-journey-scroll .score-journey-col{min-width:240px;scroll-snap-align:start;}
+    .score-journey-scroll .score-journey-col{width:calc(100% - 32px);flex:0 0 calc(100% - 32px);scroll-snap-align:center;}
     .score-journey-col.target{border-color:#93C5FD;background:#EFF6FF;}
     .score-journey-col h4{margin:0;font-size:14px;color:#334155;}
     .score-row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;color:#334155;white-space:nowrap;word-break:keep-all;min-width:0;}
@@ -894,16 +906,22 @@ function App() {
     .planner-warning-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#FFF7ED;border:1px solid #FED7AA;border-radius:999px;font-size:12px;color:#9A3412;font-weight:700;margin-top:8px;}
     .planner-add-cta{margin-top:10px;border:1px dashed #93C5FD;background:#EFF6FF;color:#1D4ED8;border-radius:16px;padding:14px;text-align:center;font-weight:800;}
     .planner-days-carousel{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px;padding-bottom:4px;}
-    .planner-days-carousel button{flex:0 0 auto;scroll-snap-align:center;}
+    .planner-date-item{flex:0 0 auto;scroll-snap-align:center;display:grid;gap:2px;min-width:52px;padding:6px 8px;border-radius:12px;}
+    .planner-date-item small{font-size:11px;color:#64748B;}
+    .planner-date-item strong{font-size:16px;line-height:1;}
+    .planner-date-item.active small,.planner-date-item.active strong{color:#2563EB;font-weight:700;}
     @media (max-width:390px){.score-journey-col{padding:10px;}.score-row{font-size:13px;}.score-row .pill{font-size:11px;padding:2px 6px;}.score-journey-total{font-size:13px;}.score-journey-scroll .score-journey-col{min-width:220px;}}
   </style>`;
 
   const scoreJourneyCard = (title = '최소 노력 대비 합격 도달 성적') => `
     <div class="score-journey-card">
       <p class="analysis-title">${title}</p>
-      <div class="score-journey-segment"><span class="active">현재 성적</span><span>도달 성적</span></div>
+      <div class="score-journey-segment">
+        <button class="${activeScoreView==='current'?'active':''}" data-action="setScoreView" data-score-view="current">현재 성적</button>
+        <button class="${activeScoreView==='target'?'active':''}" data-action="setScoreView" data-score-view="target">도달 성적</button>
+      </div>
       <div class="score-journey-scroll">
-        <div class="score-journey-col">
+        <div class="score-journey-col current">
           <h4>현재 성적</h4>
           <div class="score-row"><span>국어</span><b>82</b></div>
           <div class="score-row"><span>수학</span><b>68</b></div>
@@ -1216,7 +1234,7 @@ function App() {
                   const heightPercent = Math.max(8, Math.min(100, (score / 250) * 100));
                   const color = score >= 250 ? '#22C55E' : score < 100 ? '#F97316' : '#2563EB';
                   const projection = score === 71 ? `<span class="analysis-v2-bar-proj">84 (+13.1)</span>` : '';
-                  return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="selectTarget" data-target-major="${full}"><b class="score">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar" style="height:${heightPercent}%;background:${color}"></i>${projection}</div>${targetMajor===full?'<span class="analysis-v2-selected-badge">선택됨</span>':''}<p>${label}</p></button>`;
+                  return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="selectTarget" data-target-major="${full}"><b class="score">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar" style="height:${heightPercent}%;background:${color}"></i>${projection}</div><p>${label}</p></button>`;
                 }).join('')}
               </div>
             </div>
@@ -1265,8 +1283,7 @@ function App() {
     ),
     planner: layout(
       `<div class="planner-screen">${(() => { console.log('RENDER_PLANNER_NO_TIME_RANGE_V3'); return ''; })()}<div class="planner-head"><h3>2024년 5월 ${selectedPlannerDate}일 (화)</h3><button class="planner-cal-btn" data-action="openPlannerCalendar">${i('calendar', false)}</button></div>
-       <div class="planner-weekday"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
-       <div class="planner-days planner-days-carousel">${plannerWeekDates.map((d) => `<button class="${selectedPlannerDate===d?'active':''}" data-action="selectPlannerDate" data-planner-date="${d}">${d}</button>`).join('')}</div>
+       <div class="planner-days planner-days-carousel">${plannerWeekDates.map(({ day, weekday }) => `<button class="planner-date-item ${selectedPlannerDate===day?'active':''}" data-action="selectPlannerDate" data-planner-date="${day}"><small>${weekday}</small><strong>${day}</strong></button>`).join('')}</div>
        <div class="planner-section-title planner-fade"><div><h4>${selectedPlannerDate}일 계획</h4><p>총 ${plannerViewHour}시간 ${plannerViewMinute}분</p>${plannerFeedback.tone==='warn' ? `<span class="planner-warning-pill">⚠ 수학 비중 높음 · 과목 균형 필요</span>` : ''}</div></div>
        <div class="planner-plan-list">
          ${plannerViewItems.map((item) => `<div class="planner-item ${item.done ? 'done' : ''}" data-action="openPlannerEdit" data-planner-id="${item.id}"><i class="dot ${item.dot}"></i><div class="planner-item-main"><b>${item.subject}</b><p>${item.content}</p></div><div class="planner-item-right"><strong>${item.minutes}분</strong><div class="planner-item-controls"><button class="planner-item-done" data-action="togglePlannerDone" data-planner-id="${item.id}">✓ ${item.done ? '완료!' : '완료'}</button><button class="planner-item-remove" data-action="removePlannerItem" data-planner-id="${item.id}">✕</button></div></div></div>`).join('') || '<div class="planner-empty-day">선택한 날짜의 플래너가 없습니다.</div>'}
@@ -1400,6 +1417,7 @@ function App() {
       setTargetOpen(false);
     }
     if (action === 'setAnalysisMode') setAnalysisMode(actionEl.getAttribute('data-analysis-mode') || 'summary');
+    if (action === 'setScoreView') setActiveScoreView(actionEl.getAttribute('data-score-view') || 'current');
     if (action === 'openAnalysisSearch') setAnalysisSearchOpen(true);
     if (action === 'closeAnalysisSearch') {
       setAnalysisSearchOpen(false);
