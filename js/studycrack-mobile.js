@@ -167,6 +167,16 @@ function App() {
   const [obQuestionText, setObQuestionText] = useState('');
   const [obExamType, setObExamType] = useState('3월 학평');
   const [obScoreInputs, setObScoreInputs] = useState({});
+  const preservedScrollYRef = useRef(0);
+
+  const preserveScrollY = () => {
+    preservedScrollYRef.current = window.scrollY || window.pageYOffset || 0;
+  };
+  const restoreScrollY = () => {
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: preservedScrollYRef.current, left: 0, behavior: 'auto' });
+    });
+  };
 
   const goto = (next, addHistory = true) => {
     if (addHistory && screen !== next) setHistory((h) => [...h, screen]);
@@ -202,6 +212,7 @@ function App() {
 
   useEffect(() => {
     if (screen !== 'analysis') return;
+    preserveScrollY();
     setIsAnalyzing(true);
     const t = setTimeout(() => setIsAnalyzing(false), 2000);
     return () => clearTimeout(t);
@@ -209,10 +220,15 @@ function App() {
 
   useEffect(() => {
     if (screen !== 'ob3') return;
+    preserveScrollY();
     setOb3IsAnalyzing(true);
     const t = setTimeout(() => setOb3IsAnalyzing(false), 1500);
     return () => clearTimeout(t);
   }, [screen]);
+
+  useEffect(() => {
+    if (!onboardingLoading && !isAnalyzing && !ob3IsAnalyzing) restoreScrollY();
+  }, [onboardingLoading, isAnalyzing, ob3IsAnalyzing]);
 
   useEffect(() => {
     let viewport = document.querySelector('meta[name="viewport"]');
@@ -626,13 +642,13 @@ function App() {
     };
   });
   const scoreInfoDetailList = [
-    ['국어', `${scores.korean}점`, `${scores.korean + 18}`, `${Math.min(99, scores.korean + 10)}`, '2등급'],
-    ['수학', `${scores.math}점`, `${scores.math + 22}`, `${Math.min(99, scores.math + 14)}`, '3등급'],
-    ['영어', '-', '-', '-', `${Math.max(1, 9 - Math.floor(scores.english / 12))}등급`],
-    ['한국사', '-', '-', '-', '3등급'],
-    ['탐구1', `${scores.inquiry1}점`, `${scores.inquiry1 + 17}`, `${Math.min(99, scores.inquiry1 + 11)}`, '3등급'],
-    ['탐구2', `${scores.inquiry2}점`, `${scores.inquiry2 + 15}`, `${Math.min(99, scores.inquiry2 + 9)}`, '3등급']
-  ].map(([subject, raw, std, pct, grade]) => `<div class="score-info-detail-row"><b>${subject}</b><span>원점수 ${raw}</span><span>표준점수 ${std}</span><span>백분위 ${pct}</span><span>등급 ${grade}</span></div>`).join('');
+    ['국어', `${scores.korean}`, `${scores.korean + 18}`, `${Math.min(99, scores.korean + 10)}`, '2'],
+    ['수학', `${scores.math}`, `${scores.math + 22}`, `${Math.min(99, scores.math + 14)}`, '3'],
+    ['영어', '-', '-', '-', `${Math.max(1, 9 - Math.floor(scores.english / 12))}`],
+    ['한국사', '-', '-', '-', '3'],
+    ['탐구1', `${scores.inquiry1}`, `${scores.inquiry1 + 17}`, `${Math.min(99, scores.inquiry1 + 11)}`, '3'],
+    ['탐구2', `${scores.inquiry2}`, `${scores.inquiry2 + 15}`, `${Math.min(99, scores.inquiry2 + 9)}`, '3']
+  ].map(([subject, raw, std, pct, grade]) => `<div class="score-info-detail-row"><b>${subject}</b><span>${raw}</span><span>${std}</span><span>${pct}</span><span>${grade}</span></div>`).join('');
   const todayKey = FIXED_TODAY_DATE;
   const todayRecord = studyRecords.find((item) => item.date === todayKey);
   const liveStudySeconds = studyTimerSecondsRef.current;
@@ -1461,10 +1477,6 @@ function App() {
   console.log('APP_CURRENT_SCREEN', currentScreen);
 
   const onClick = (e) => {
-    const activeEl = document.activeElement;
-    requestAnimationFrame(() => {
-      if (activeEl && document.body.contains(activeEl)) activeEl.focus?.({ preventScroll: true });
-    });
     if (isAnalyzing && screen === 'analysis') return;
     const actionEl = e.target.closest('[data-action]');
     if (!actionEl) return;
@@ -1472,6 +1484,7 @@ function App() {
     if (action === 'goto') {
       const target = actionEl.getAttribute('data-target');
       if (screen === 'on1' && target === 'ob1') {
+        preserveScrollY();
         setOnboardingLoading(true);
         setOnboardingLoadingText('성적 분석중...');
         setTimeout(() => setOnboardingLoadingText('유리한 대학 전형 파악중...'), 2000);
@@ -1479,6 +1492,7 @@ function App() {
         return;
       }
       if (screen === 'ob2' && target === 'ob3') {
+        preserveScrollY();
         setOnboardingLoading(true);
         setOnboardingLoadingText('학습 성향 분석중...');
         setTimeout(() => setOnboardingLoadingText('효율적인 공부법 찾는 중...'), 1500);
@@ -1779,6 +1793,18 @@ function App() {
   const onInput = (e) => {
     e.target?.focus?.({ preventScroll: true });
     const field = e.target.getAttribute('data-field');
+    if (field === 'coachPlannerFiles') {
+      const files = Array.from(e.target.files || []);
+      if (files.length) setCoachingPlannerFiles((prev) => [...prev, ...files].slice(0, 5));
+      e.target.value = '';
+      return;
+    }
+    if (field === 'coachExamFiles') {
+      const files = Array.from(e.target.files || []);
+      if (files.length) setCoachingExamFiles((prev) => [...prev, ...files]);
+      e.target.value = '';
+      return;
+    }
     if (field === 'coachingMonth') setCoachingMonth(e.target.value);
     const coachAnswer = e.target.getAttribute('data-coach-answer');
     const coachPlan = e.target.getAttribute('data-coach-plan');
