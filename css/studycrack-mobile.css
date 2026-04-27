@@ -1208,10 +1208,9 @@ body {
 .analysis-v2-gauge-line b.target { color:#0B6BFF; }
 .analysis-v2-gauge-change { background:#F3F4F6; border-radius:12px; padding:16px; }
 .analysis-v2-progress { margin-top:10px; position:relative; border-radius:999px; overflow:hidden; display:grid; grid-template-columns:40fr 20fr 40fr; height:11px; background:#E5E7EB; }
-.analysis-v2-progress .seg { height:11px; }
-.analysis-v2-progress .seg.risk { background:#E5E7EB; border-radius:999px 0 0 999px; }
-.analysis-v2-progress .seg.pass { background:#2563EB; }
-.analysis-v2-progress .seg.safe { background:#22C55E; border-radius:0 999px 999px 0; }
+.analysis-v2-progress .line { position:absolute; top:-2px; width:1px; height:15px; border-left:1px dashed #cbd5e1; z-index:1; }
+.analysis-v2-progress .line.pass { border-color:#2563EB; }
+.analysis-v2-progress .line.safe { border-color:#22C55E; }
 .analysis-v2-progress .dot { position:absolute; top:50%; width:18px; height:18px; border-radius:999px; transform:translate(-50%, -50%); border:2px solid #fff; box-shadow:0 3px 10px rgba(15,23,42,0.22); background:#fff; }
 .analysis-v2-progress .dot.current { border-color:#F97316; }
 .analysis-v2-progress .dot.target { background:#2563EB; border-color:#fff; }
@@ -1304,3 +1303,6 @@ button:disabled, .disabled, [disabled] { opacity:.5; pointer-events:none; }
 .v2-score-line > span { font-size:12px; font-weight:800; color:#334155; }
 .v2-score-line .planner-input { min-height:40px; }
 .v2-fill { display:block; }
+.v2-step-modal { width:min(92%,420px); max-height:80vh; overflow:auto; display:grid; gap:10px; }
+.v2-step-modal h4 { margin:0; font-size:16px; color:#0f172a; }
+.v2-step-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px; }

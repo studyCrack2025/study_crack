@@ -123,6 +123,7 @@ function App() {
   const [studyDifficulty, setStudyDifficulty] = useState('');
   const [showDurationCard, setShowDurationCard] = useState(false);
   const [scoreEditOpen, setScoreEditOpen] = useState(false);
+  const [scoreEditStep, setScoreEditStep] = useState(1);
   const [scores, setScores] = useState(DEFAULT_SCORES);
   const [notifications, setNotifications] = useState(DEFAULT_NOTIFICATIONS);
   const [openFaq, setOpenFaq] = useState('');
@@ -187,8 +188,12 @@ function App() {
   useEffect(() => {
     if (screen !== 'analysis' || analysisMode !== 'summary') return;
     setAnalysisEtaStage(1);
-    const t = setTimeout(() => setAnalysisEtaStage(3), 3000);
-    return () => clearTimeout(t);
+    const t1 = setTimeout(() => setAnalysisEtaStage(2), 1500);
+    const t2 = setTimeout(() => setAnalysisEtaStage(3), 4500);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, [screen, analysisMode, targetMajor]);
 
   useEffect(() => {
@@ -494,14 +499,22 @@ function App() {
       </div>
     </div><div class="onboarding-footer"><div class="page-indicator"><i class="active"></i><i></i><i></i></div><button class="onboarding-next" data-action="goto" data-target="on2">다음</button></div>
   </div></div></div>`;
-  const ScoreEditModalV2 = () => `<div class="home-modal-overlay" data-action="closeScoreEdit"><div class="home-modal score-edit-modal" data-action="noopModal"><p class="home-modal-title">성적 수정</p><div class="v2-score-scroll v2-modal-scroll">
-      ${ScoreLine('국어', `<select class="planner-input" data-field="v2e-korean-type"><option>화법과작문</option><option>언어와매체</option></select>`, `<input class="planner-input" data-field="v2e-korean-common" value="${scoreEditState.korean.common}" type="number" placeholder="공통 점수"/>`, `<input class="planner-input" data-field="v2e-korean-elective" value="${scoreEditState.korean.elective}" type="number" placeholder="선택 점수"/>`)}
-      ${ScoreLine('수학', `<select class="planner-input" data-field="v2e-math-type"><option>확률과통계</option><option>미적분</option><option>기하</option></select>`, `<input class="planner-input" data-field="v2e-math-common" value="${scoreEditState.math.common}" type="number" placeholder="공통 점수"/>`, `<input class="planner-input" data-field="v2e-math-elective" value="${scoreEditState.math.elective}" type="number" placeholder="선택 점수"/>`)}
-      ${ScoreLine('영어', `<select class="planner-input" data-field="v2e-english"><option value="">등급</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option>${n}</option>`).join('')}</select>`, `<span class="v2-fill"></span>`)}
-      ${ScoreLine('한국사', `<select class="planner-input" data-field="v2e-history"><option value="">등급</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option>${n}</option>`).join('')}</select>`, `<span class="v2-fill"></span>`)}
-      ${ScoreLine('탐구1', `<select class="planner-input" data-field="v2e-inq1-subject">${inquiryOptions}</select>`, `<input class="planner-input" data-field="v2e-inq1-score" value="${scoreEditState.inquiry1.score}" type="number" placeholder="원점수"/>`)}
-      ${ScoreLine('탐구2', `<select class="planner-input" data-field="v2e-inq2-subject">${inquiryOptions}</select>`, `<input class="planner-input" data-field="v2e-inq2-score" value="${scoreEditState.inquiry2.score}" type="number" placeholder="원점수"/>`)}
-    </div><div class="on-dummy-result"><b>표준점수 124</b><b>백분위 91</b><b>등급 2</b></div><button class="btn btn-primary" data-action="saveScoreEdit">저장</button></div></div>`;
+  const ScoreEditModalV2 = () => {
+    const step = scoreEditStep;
+    const preview = `<div class="on-dummy-result"><b>표준점수 ${100 + step * 4}</b><b>백분위 ${82 + step * 2}</b><b>등급 ${Math.max(1, 4 - Math.floor(step/2))}</b></div>`;
+    const body = step === 1
+      ? `<h4>국어</h4><select class="planner-input" data-field="v2e-korean-type"><option value="화법과작문" ${scoreEditState.korean.type==='화법과작문'?'selected':''}>화법과작문</option><option value="언어와매체" ${scoreEditState.korean.type==='언어와매체'?'selected':''}>언어와매체</option></select><input class="planner-input" data-field="v2e-korean-common" value="${scoreEditState.korean.common}" type="number" placeholder="공통 원점수"/><input class="planner-input" data-field="v2e-korean-elective" value="${scoreEditState.korean.elective}" type="number" placeholder="선택 원점수"/>${preview}`
+      : step === 2
+        ? `<h4>수학</h4><select class="planner-input" data-field="v2e-math-type"><option value="확률과통계" ${scoreEditState.math.type==='확률과통계'?'selected':''}>확률과통계</option><option value="미적분" ${scoreEditState.math.type==='미적분'?'selected':''}>미적분</option><option value="기하" ${scoreEditState.math.type==='기하'?'selected':''}>기하</option></select><input class="planner-input" data-field="v2e-math-common" value="${scoreEditState.math.common}" type="number" placeholder="공통 원점수"/><input class="planner-input" data-field="v2e-math-elective" value="${scoreEditState.math.elective}" type="number" placeholder="선택 원점수"/>${preview}`
+        : step === 3
+          ? `<h4>영어</h4><select class="planner-input" data-field="v2e-english"><option value="">등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option value="${n}" ${String(scoreEditState.english)===String(n)?'selected':''}>${n}등급</option>`).join('')}</select>${preview}`
+          : step === 4
+            ? `<h4>한국사</h4><select class="planner-input" data-field="v2e-history"><option value="">등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option value="${n}" ${String(scoreEditState.history)===String(n)?'selected':''}>${n}등급</option>`).join('')}</select>${preview}`
+            : step === 5
+              ? `<h4>탐구1</h4><select class="planner-input" data-field="v2e-inq1-subject">${inquiryOptions}</select><input class="planner-input" data-field="v2e-inq1-score" value="${scoreEditState.inquiry1.score}" type="number" placeholder="원점수"/>${preview}`
+              : `<h4>탐구2</h4><select class="planner-input" data-field="v2e-inq2-subject">${inquiryOptions}</select><input class="planner-input" data-field="v2e-inq2-score" value="${scoreEditState.inquiry2.score}" type="number" placeholder="원점수"/>${preview}`;
+    return `<div class="home-modal-overlay" data-action="closeScoreEdit"><div class="home-modal score-edit-modal v2-step-modal" data-action="noopModal"><p class="home-modal-title">성적 수정</p><p class="sub">${step}/6</p>${body}<div class="v2-step-actions"><button class="btn btn-secondary" data-action="scoreStepPrev" ${step===1?'disabled':''}>이전</button>${step===6?'<button class="btn btn-primary" data-action="saveScoreEdit">저장</button>':'<button class="btn btn-primary" data-action="scoreStepNext">다음</button>'}</div></div></div>`;
+  };
   const onboarding = (step, title, subtitle, cardContent, bubbleText, target, cta = '다음') => `
     <div class="app-shell"><div class="app-frame">
       <div class="screen app-screen app-content">
@@ -973,7 +986,7 @@ function App() {
               <div class="analysis-v2-ba-col"><h4>도달 성적</h4><p>국어 82</p><p>수학 80 <em>+12</em></p><p>영어 77</p><p>탐구1 76 <em>+6</em></p><p>탐구2 66</p><p><b>예상 총점 120</b></p></div>
             </div>
             <div class="analysis-v2-eta ${analysisEtaStage < 3 ? 'loading' : ''}">
-              ${analysisEtaStage < 3 ? `<div class="analysis-eta-loading"><span class="skeleton"></span><p>도달 시간을 예상중입니다</p></div>` : `<p class="analysis-v2-eta-text">⚡ <b>현재 학습분석 기반 Standard 이용 시 평균 2개월 내 도달 예상</b></p>`}
+              ${analysisEtaStage === 1 ? `<div class="analysis-eta-loading"><span class="skeleton"></span><p>도달 성적 계산 중입니다...</p></div>` : analysisEtaStage === 2 ? `<div class="analysis-eta-loading"><span class="skeleton thin"></span><p>도달 시간을 예상 중입니다...</p></div>` : `<p class="analysis-v2-eta-text">⚡ <b>현재 학습분석 기반 Standard 이용 시 평균 2개월 내 도달 예상</b></p>`}
             </div>
           </div>
 
@@ -981,9 +994,8 @@ function App() {
             <p class="analysis-title">합격 가능성 변화</p>
             <p class="analysis-v2-gauge-line">현재 <b class="current">${analysisSelected.score}점</b> → 목표 <b class="target">${analysisTargetScore}점</b></p>
             <div class="analysis-v2-progress">
-              <div class="seg risk"></div>
-              <div class="seg pass"></div>
-              <div class="seg safe"></div>
+              <span class="line pass" style="left:40%"></span>
+              <span class="line safe" style="left:60%"></span>
               <span class="dot current" style="left:${analysisCurrentPct}%"></span>
               <span class="dot target" style="left:${analysisTargetPct}%"></span>
             </div>
@@ -1207,8 +1219,10 @@ function App() {
     }
     if (action === 'openPlannerEdit') setPlannerEditIndex(Number(actionEl.getAttribute('data-planner-index')));
     if (action === 'closePlannerEdit') setPlannerEditIndex(null);
-    if (action === 'openScoreEdit') setScoreEditOpen(true);
-    if (action === 'closeScoreEdit') setScoreEditOpen(false);
+    if (action === 'openScoreEdit') { setScoreEditOpen(true); setScoreEditStep(1); }
+    if (action === 'closeScoreEdit') { setScoreEditOpen(false); setScoreEditStep(1); }
+    if (action === 'scoreStepPrev') setScoreEditStep((v) => Math.max(1, v - 1));
+    if (action === 'scoreStepNext') setScoreEditStep((v) => Math.min(6, v + 1));
     if (action === 'saveScoreEdit') {
       setScores((prev) => ({
         ...prev,
@@ -1219,6 +1233,7 @@ function App() {
         inquiry2: Number(scoreEditState.inquiry2.score || prev.inquiry2)
       }));
       setScoreEditOpen(false);
+      setScoreEditStep(1);
     }
     if (action === 'toggleNotification') {
       const key = actionEl.getAttribute('data-notify-key');
