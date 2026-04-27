@@ -229,10 +229,20 @@ function App() {
     const slider = document.querySelector('.home-kpi-slider');
     if (!slider) return;
     const handler = () => {
-      const cardWidth = slider.firstElementChild ? slider.firstElementChild.getBoundingClientRect().width : 1;
-      const idx = Math.round(slider.scrollLeft / Math.max(cardWidth, 1));
-      const maxIdx = Math.max(0, homeTargets.length - 1);
-      setHomeSlideIndex(Math.max(0, Math.min(maxIdx, idx)));
+      const cards = Array.from(slider.querySelectorAll('.slider-card'));
+      if (!cards.length) return;
+      const center = slider.scrollLeft + (slider.clientWidth / 2);
+      let nextIdx = 0;
+      let minDist = Number.MAX_SAFE_INTEGER;
+      cards.forEach((card, idx) => {
+        const cardCenter = card.offsetLeft + (card.clientWidth / 2);
+        const dist = Math.abs(cardCenter - center);
+        if (dist < minDist) {
+          minDist = dist;
+          nextIdx = idx;
+        }
+      });
+      setHomeSlideIndex((prev) => (prev === nextIdx ? prev : nextIdx));
     };
     slider.addEventListener('scroll', handler, { passive: true });
     handler();
@@ -240,13 +250,13 @@ function App() {
   }, [screen]);
 
   useEffect(() => {
-    const scrollY = window.scrollY || window.pageYOffset || 0;
     const raf = requestAnimationFrame(() => {
       const container = document.querySelector('.score-journey-scroll');
       if (!container) return;
-      const target = container.querySelector(`.score-journey-col.${activeScoreView}`);
-      if (target) target.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-      window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
+      const target = container.querySelector(`.score-journey-col[data-score-view="${activeScoreView}"]`);
+      if (!target) return;
+      const left = target.offsetLeft - Math.max(0, (container.clientWidth - target.clientWidth) / 2);
+      container.scrollTo({ left, behavior: 'smooth' });
     });
     return () => cancelAnimationFrame(raf);
   }, [activeScoreView, screen, analysisMode]);
@@ -615,9 +625,6 @@ function App() {
       rate: Math.round(Math.min(99, Math.max(20, (score / 150) * 100)))
     };
   });
-  const scoreList = Object.entries(SCORE_LABELS)
-    .map(([key, label]) => `<div class="score-info-row"><span>${label}</span><strong>${Number(scores?.[key] ?? DEFAULT_SCORES[key])}점</strong></div>`)
-    .join('');
   const scoreInfoDetailList = [
     ['국어', `${scores.korean}점`, `${scores.korean + 18}`, `${Math.min(99, scores.korean + 10)}`, '2등급'],
     ['수학', `${scores.math}점`, `${scores.math + 22}`, `${Math.min(99, scores.math + 14)}`, '3등급'],
@@ -970,7 +977,7 @@ function App() {
     .planner-add-cta{margin-top:10px;border:1px dashed #93C5FD;background:#EFF6FF;color:#1D4ED8;border-radius:16px;padding:14px;text-align:center;font-weight:800;}
     .planner-days-carousel{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px;padding-bottom:4px;}
     .planner-date-item{flex:0 0 auto;scroll-snap-align:center;display:grid;gap:2px;min-width:52px;padding:6px 8px;border-radius:12px;}
-    .planner-date-item.active{background:transparent;border:none;}
+    .planner-date-item.active{background:transparent !important;border:none !important;box-shadow:none !important;}
     .planner-date-item small{font-size:11px;color:#64748B;}
     .planner-date-item strong{font-size:16px;line-height:1;}
     .planner-date-item.active small,.planner-date-item.active strong{color:#2563EB;font-weight:800;}
@@ -1428,7 +1435,7 @@ function App() {
       </div>
       <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="paymentComplete">결제하기</button></div>`, false),
     paymentComplete: layout(`<div class="payment-done-screen"><div class="payment-complete-wrap"><div class="payment-check">${i('check', true)}</div><p class="title payment-complete-title">결제가 완료되었습니다!</p><p class="sub payment-complete-sub">${selectedPlan.toUpperCase()} 플랜이 활성화되었습니다.</p><div class="card payment-complete-note"><b>프로 보고서 이용 안내</b><p>2주에 한 번 새로운 리포트를 제공해 드려요.<br/>다음 리포트는 5월 25일에 이용 가능해요.</p></div></div><div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="home">홈으로 이동</button></div></div>`, false),
-    scoreInfo: layout(appbar('성적 정보', true) + `<div class="card score-info-card">${scoreList}<div class="score-info-detail-table">${scoreInfoDetailList}</div><button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">성적 수정하기</button></div><div class="card"><p class="analysis-title">최근 성적 업데이트</p><p class="sub" style="margin:0">2024.05.14 기준</p><p class="sub" style="margin:6px 0 0">다음 업데이트 권장: 2주 후</p></div>${scoreEditOpen ? ScoreEditModal() : ''}`, false),
+    scoreInfo: layout(appbar('성적 정보', true) + `<div class="card score-info-card"><div class="score-info-detail-table"><div class="score-info-detail-row"><b>과목</b><b>원점수</b><b>표준점수</b><b>백분위</b><b>등급</b></div>${scoreInfoDetailList}</div><button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">성적 수정하기</button></div><div class="card"><p class="analysis-title">최근 성적 업데이트</p><p class="sub" style="margin:0">2024.05.14 기준</p><p class="sub" style="margin:6px 0 0">다음 업데이트 권장: 2주 후</p></div>${scoreEditOpen ? ScoreEditModal() : ''}`, false),
     studyReports: layout(appbar('학습 리포트', true) + `<div class="card report-list-card"><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>5월 11일 종합 분석 리포트</b><p>수학 점수 상승 여지 큼</p></div><span>${i('chevron', false)}</span></button><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>4월 27일 중간 분석 리포트</b><p>탐구 집중 강화 필요</p></div><span>${i('chevron', false)}</span></button></div><div class="cta-wrapper"><button class="btn btn-primary cta-btn" data-action="goto" data-target="reportDetail">프로 보고서 샘플 보기</button></div>`, false),
     notificationSettings: layout(appbar('알림 설정', true) + `<div class="card notify-card">${[
       ['planner', '플래너 알림', '오늘 계획을 잊지 않도록 알려드려요'],
@@ -1454,10 +1461,8 @@ function App() {
   console.log('APP_CURRENT_SCREEN', currentScreen);
 
   const onClick = (e) => {
-    const scrollY = window.scrollY || window.pageYOffset || 0;
     const activeEl = document.activeElement;
     requestAnimationFrame(() => {
-      window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
       if (activeEl && document.body.contains(activeEl)) activeEl.focus?.({ preventScroll: true });
     });
     if (isAnalyzing && screen === 'analysis') return;
@@ -1772,10 +1777,6 @@ function App() {
   };
 
   const onInput = (e) => {
-    const scrollY = window.scrollY || window.pageYOffset || 0;
-    requestAnimationFrame(() => {
-      window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
-    });
     e.target?.focus?.({ preventScroll: true });
     const field = e.target.getAttribute('data-field');
     if (field === 'coachingMonth') setCoachingMonth(e.target.value);
@@ -1805,10 +1806,12 @@ function App() {
     if (field === 'coachPlannerFiles') {
       const files = Array.from(e.target.files || []);
       if (files.length) setCoachingPlannerFiles((prev) => [...prev, ...files].slice(0, 5));
+      e.target.value = '';
     }
     if (field === 'coachExamFiles') {
       const files = Array.from(e.target.files || []);
       if (files.length) setCoachingExamFiles((prev) => [...prev, ...files]);
+      e.target.value = '';
     }
   };
   const onBlur = (e) => {
