@@ -480,8 +480,32 @@ input[type="date"] {
     }
     
     /* 하단 링크 */
-    .auth-links { 
-        font-size: 0.85rem; 
-        margin-top: 15px; 
+    .auth-links {
+        font-size: 0.85rem;
+        margin-top: 15px;
     }
 }
+
+/* =========================================
+   소셜 로그인 버튼
+   ========================================= */
+.social-divider { display: flex; align-items: center; margin: 20px 0; gap: 12px; }
+.social-divider::before,
+.social-divider::after { content: ''; flex: 1; height: 1px; background: #e2e8f0; }
+.social-divider span { font-size: 0.78rem; color: #94a3b8; white-space: nowrap; }
+.social-btn-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.social-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 11px 16px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: background 0.15s, opacity 0.15s; background: #fff; color: #1e293b; font-family: inherit; }
+.social-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.social-icon { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 3px; font-size: 0.75rem; font-weight: 900; flex-shrink: 0; }
+.social-btn-google { border-color: #dadce0; color: #3c4043; }
+.social-btn-google:hover:not(:disabled) { background: #f8f9fa; }
+.social-btn-google .social-icon { color: #4285f4; }
+.social-btn-naver { background: #03c75a; border-color: #03c75a; color: #fff; }
+.social-btn-naver:hover:not(:disabled) { background: #02b04e; border-color: #02b04e; }
+.social-btn-naver .social-icon { color: #fff; }
+.social-btn-kakao { background: #fee500; border-color: #fee500; color: #191919; }
+.social-btn-kakao:hover:not(:disabled) { background: #f5dc00; border-color: #f5dc00; }
+.social-btn-kakao .social-icon { color: #191919; }
+.social-signup-box { background: #f8faff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 18px 20px; margin-bottom: 24px; text-align: center; }
+.social-signup-title { font-size: 0.88rem; font-weight: 700; color: #1d4ed8; margin-bottom: 12px; }
+.social-signup-box .social-btn-group { margin-bottom: 0; }

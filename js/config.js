@@ -52,7 +52,29 @@ const CONFIG = {
     
     // 기존 Cognito 설정
     cognito: {
-        userPoolId: 'ap-northeast-2_00mP8t8UM', 
-        clientId: '2lovlq38kvgn2dckppn91iqq2l'  
+        userPoolId: 'ap-northeast-2_00mP8t8UM',
+        clientId: '2lovlq38kvgn2dckppn91iqq2l',
+        // AWS 콘솔 > Cognito > App integration > Domain 에서 설정한 도메인을 입력하세요.
+        // 예: 'studycrack.auth.ap-northeast-2.amazoncognito.com'
+        domain: '' // TODO: Cognito 도메인 설정 필요
+    },
+
+    // 소셜 로그인 설정
+    social: {
+        // 환경별 콜백 URL — 현재 도메인을 그대로 사용하므로 별도 분기 불필요
+        // Provider OAuth 앱에 아래 URI 모두 등록 필요:
+        //   https://studycrack.co.kr/social-callback
+        //   https://dev.studycrack.co.kr/social-callback
+        //   http://localhost:3000/social-callback
+        callbackUrl: (currentDomain === 'localhost' || currentDomain === '127.0.0.1')
+            ? `http://${currentDomain}:3000/social-callback`
+            : `https://${currentDomain}/social-callback`,
+
+        // Google: 소셜 로그인은 Cognito Hosted UI 경유 (Google Cloud Console에서 clientId 확인)
+        // Naver: https://developers.naver.com 에서 앱 생성 후 clientId 입력
+        // Kakao: https://developers.kakao.com 에서 REST API 키를 clientId에 입력
+        google: { clientId: 'GOOGLE_CLIENT_ID' }, // TODO: Google OAuth Client ID
+        naver:  { clientId: 'NAVER_CLIENT_ID' }, // TODO: Naver Client ID
+        kakao:  { clientId: 'KAKAO_CLIENT_ID' }  // TODO: Kakao REST API Key
     }
 };

@@ -197,6 +197,7 @@ async function fetchUserData(userId) {
 
         // 2. 내 정보 렌더링
         renderUserInfo(userData);
+        renderAuthProvider(userData);
         applyUserTier(userData.computedTier || 'free');
 
         // 프로필 이미지 처리
@@ -245,6 +246,22 @@ async function fetchTutorInfo(tutorName, userTier) {
         checkTutorButtonVisibility(userTier || 'free');
     } catch (error) {
         if (error.message !== "Auth expired") console.error("튜터 정보 로드 실패:", error);
+    }
+}
+
+function renderAuthProvider(data) {
+    const el = document.getElementById('authProviderDisplay');
+    if (!el) return;
+    const providerMap = { google: '🔵 Google 로그인', naver: '🟢 Naver 로그인', kakao: '🟡 Kakao 로그인', local: '✉️ 이메일 로그인' };
+    const provider = data.authProvider || 'local';
+    el.innerText = providerMap[provider] || '이메일 로그인';
+
+    // 소셜 로그인 사용자는 이메일/비밀번호 변경 항목 숨김
+    if (provider !== 'local') {
+        const emailChangeLink = document.getElementById('emailChangeLink');
+        if (emailChangeLink) emailChangeLink.style.display = 'none';
+        const pwRow = document.getElementById('passwordChangeRow');
+        if (pwRow) pwRow.style.display = 'none';
     }
 }
 

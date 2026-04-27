@@ -741,8 +741,57 @@ function handleSignIn() {
 }
 
 // ==========================================
-// [Part G] 이메일/비밀번호 찾기 로직 
+// [Part G] 소셜 로그인
 // ==========================================
+
+window.handleSocialLogin = function(provider) {
+    const buttons = document.querySelectorAll('.social-btn');
+    buttons.forEach(btn => { btn.disabled = true; });
+
+    // CSRF state: randomHex|provider
+    const stateNonce = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+        .map(b => b.toString(16).padStart(2, '0')).join('');
+    const state = `${stateNonce}|${provider}`;
+    sessionStorage.setItem('socialState', state);
+
+    const callbackUrl = CONFIG.social.callbackUrl;
+
+    let authUrl = '';
+    if (provider === 'google') {
+        const params = new URLSearchParams({
+            client_id: CONFIG.social.google.clientId,
+            redirect_uri: callbackUrl,
+            response_type: 'code',
+            scope: 'openid email profile',
+            state: state,
+            access_type: 'offline',
+            prompt: 'select_account'
+        });
+        authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+    } else if (provider === 'naver') {
+        const params = new URLSearchParams({
+            response_type: 'code',
+            client_id: CONFIG.social.naver.clientId,
+            redirect_uri: callbackUrl,
+            state: state
+        });
+        authUrl = `https://nid.naver.com/oauth2.0/authorize?${params}`;
+    } else if (provider === 'kakao') {
+        const params = new URLSearchParams({
+            client_id: CONFIG.social.kakao.clientId,
+            redirect_uri: callbackUrl,
+            response_type: 'code',
+            state: state
+        });
+        authUrl = `https://kauth.kakao.com/oauth/authorize?${params}`;
+    } else {
+        buttons.forEach(btn => { btn.disabled = false; });
+        alert("지원하지 않는 로그인 방식입니다.");
+        return;
+    }
+
+    window.location.href = authUrl;
+};
 
 window.openAuthModal = function(modalId) {
     const modal = document.getElementById(modalId);

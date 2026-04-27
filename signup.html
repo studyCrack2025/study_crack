@@ -35,7 +35,27 @@
             <img src="/assets/images/studycrack_logo_wo_bg.png" alt="StudyCrack 로고" class="auth-logo-img">
         </a>
         <h2>회원가입</h2>
-        
+
+        <div class="social-signup-box">
+            <p class="social-signup-title">소셜 계정으로 3초 만에 시작하기</p>
+            <div class="social-btn-group">
+                <button class="social-btn social-btn-google" id="socialBtnGoogle" onclick="handleSocialLogin('google')">
+                    <span class="social-icon social-icon-google">G</span>
+                    Google로 시작하기
+                </button>
+                <button class="social-btn social-btn-naver" id="socialBtnNaver" onclick="handleSocialLogin('naver')">
+                    <span class="social-icon social-icon-naver">N</span>
+                    Naver로 시작하기
+                </button>
+                <button class="social-btn social-btn-kakao" id="socialBtnKakao" onclick="handleSocialLogin('kakao')">
+                    <span class="social-icon social-icon-kakao">K</span>
+                    Kakao로 시작하기
+                </button>
+            </div>
+        </div>
+
+        <div class="social-divider"><span>또는 이메일로 직접 가입하기</span></div>
+
         <div class="auth-form" style="text-align: left;">
             
             <h4 class="section-title">1. 계정 정보</h4>
