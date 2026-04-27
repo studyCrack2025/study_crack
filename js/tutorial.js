@@ -1,3 +1,17 @@
+// MBTI 유형별 과목 가중치 [국어, 수학, 탐구, 영어]
+// Dim1: C=개념중심, I=문제중심 | Dim2: S=루틴선호, M=변화선호
+// Dim3: D=근거중심, E=흐름중심 | Dim4: R=계획고수, F=유연조정
+const MBTI_SUBJECT_WEIGHTS = {
+    'CSDR': [0.6, 0.7, 0.8, 0.4], 'CSDF': [0.6, 0.6, 0.7, 0.5],
+    'CSER': [0.8, 0.5, 0.6, 0.5], 'CSEF': [0.8, 0.4, 0.5, 0.6],
+    'CMDR': [0.5, 0.8, 0.9, 0.3], 'CMDF': [0.5, 0.7, 0.8, 0.4],
+    'CMER': [0.7, 0.5, 0.6, 0.5], 'CMEF': [0.7, 0.4, 0.5, 0.6],
+    'ISDR': [0.4, 0.9, 0.8, 0.3], 'ISDF': [0.4, 0.8, 0.8, 0.4],
+    'ISER': [0.5, 0.7, 0.6, 0.5], 'ISEF': [0.5, 0.6, 0.6, 0.6],
+    'IMDR': [0.3, 0.9, 0.9, 0.3], 'IMDF': [0.3, 0.9, 0.8, 0.3],
+    'IMER': [0.4, 0.8, 0.7, 0.4], 'IMEF': [0.4, 0.7, 0.6, 0.5]
+};
+
 const MASCOTS = {
     hi: '/assets/images/mascots/crack_hi.png',
     thumbsup: '/assets/images/mascots/crack_thumbsup.png',
@@ -270,10 +284,10 @@ async function _nextStepCore() {
         const stream = tutorialData.qual.stream;
         if (stream && tutorialData.totalStdScore > 0) {
             fetchTutScoreData().then(scoreData => {
-                if (scoreData) {
-                    const selected = selectTutorialUnivs(stream, tutorialData.totalStdScore, scoreData);
-                    if (selected && selected.length > 0) tutorialData.selectedUnivs = selected;
-                }
+                if (!scoreData) return null;
+                return selectTutorialUnivsWithAnalysis(stream, tutorialData.quan.mar, tutorialData.totalStdScore, scoreData);
+            }).then(selected => {
+                if (selected && selected.length > 0) tutorialData.selectedUnivs = selected;
             }).catch(() => {});
         }
     }
@@ -469,6 +483,159 @@ function selectTutorialUnivs(stream, totalScore, data) {
     return slots.filter(s => s !== null);
 }
 
+// ── 환산점수 기반 학교 선정 (자체 환산점수 계산 로직 적용) ────────────────
+
+function buildUserScoresForAnalysis(mar) {
+    const mathOpt = (mar.math?.opt || '').replace(/\s/g, '');
+    const inq1Name = mar.inq1?.name || '';
+    const inq2Name = mar.inq2?.name || '';
+    const sciSubjects = ['물리학1','물리학2','화학1','화학2','생명과학1','생명과학2','지구과학1','지구과학2'];
+    const hasSci = [inq1Name, inq2Name].some(n => sciSubjects.some(s => n.replace(/\s/g, '').includes(s)));
+    const isMijet = mathOpt.includes('미적분') || mathOpt.includes('기하');
+    const restriction = [];
+    if (isMijet) restriction.push('미적기하 필수');
+    if (hasSci) restriction.push('과탐 필수');
+    if (restriction.length === 0) restriction.push('자유선택');
+    return {
+        kor: { std: parseFloat(mar.kor?.std) || 0, pct: parseFloat(mar.kor?.pct) || 0, grd: parseInt(mar.kor?.grd) || 9, opt: mar.kor?.opt || '', name: '국어' },
+        math: { std: parseFloat(mar.math?.std) || 0, pct: parseFloat(mar.math?.pct) || 0, grd: parseInt(mar.math?.grd) || 9, opt: mar.math?.opt || '', name: '수학' },
+        eng: { grd: mar.eng?.grd || 9 },
+        inq1: { std: parseFloat(mar.inq1?.std) || 0, pct: parseFloat(mar.inq1?.pct) || 0, grd: parseInt(mar.inq1?.grd) || 9, name: inq1Name },
+        inq2: { std: parseFloat(mar.inq2?.std) || 0, pct: parseFloat(mar.inq2?.pct) || 0, grd: parseInt(mar.inq2?.grd) || 9, name: inq2Name },
+        restriction
+    };
+}
+
+function boostUserScores(scores, boost) {
+    const b = JSON.parse(JSON.stringify(scores));
+    ['kor', 'math', 'inq1', 'inq2'].forEach(k => {
+        if (b[k]) b[k].std = (parseFloat(b[k].std) || 0) + boost;
+    });
+    return b;
+}
+
+async function callAnalyzeMyTargets(token, targetUnivs, userScores) {
+    try {
+        const res = await fetch(CONFIG.api.analysis, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'analyze_my_targets', targetUnivs, userScores, examMode: 'mock' })
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.results || null;
+    } catch { return null; }
+}
+
+function getTutorialCandidates(streamData, totalStdScore, maxCandidates) {
+    const allBandNums = Object.keys(streamData).map(Number).sort((a, b) => a - b);
+    const currentBand = Math.floor(totalStdScore / 10) * 10;
+    const orderedBands = allBandNums.slice().sort((a, b) => Math.abs(a - currentBand) - Math.abs(b - currentBand));
+    const candidates = [];
+    const usedKeys = new Set();
+    for (const band of orderedBands) {
+        if (candidates.length >= maxCandidates) break;
+        const bandData = streamData[String(band)];
+        if (!bandData) continue;
+        for (const label of ['A', 'B', 'C', 'D', 'E']) {
+            const labelData = bandData[label];
+            if (!labelData) continue;
+            for (const schoolName of Object.keys(labelData)) {
+                const entries = labelData[schoolName];
+                if (entries && entries.length > 0) {
+                    const key = `${schoolName}||${entries[0]['학과']}`;
+                    if (!usedKeys.has(key)) {
+                        usedKeys.add(key);
+                        candidates.push({ univ: schoolName, major: entries[0]['학과'] });
+                        if (candidates.length >= maxCandidates) break;
+                    }
+                }
+                if (candidates.length >= maxCandidates) break;
+            }
+            if (candidates.length >= maxCandidates) break;
+        }
+    }
+    return candidates;
+}
+
+async function selectTutorialUnivsWithAnalysis(stream, mar, totalStdScore, scoreData) {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return null;
+    const streamData = scoreData[stream];
+    if (!streamData) return null;
+
+    const candidates = getTutorialCandidates(streamData, totalStdScore, 24);
+    if (candidates.length === 0) return null;
+
+    const userScores = buildUserScoresForAnalysis(mar);
+    const boostedScores = boostUserScores(userScores, 5);
+
+    const [currentResults, simResults] = await Promise.all([
+        callAnalyzeMyTargets(token, candidates, userScores),
+        callAnalyzeMyTargets(token, candidates, boostedScores)
+    ]);
+    if (!currentResults) return null;
+
+    const currentMap = {}, simMap = {};
+    for (const r of currentResults) {
+        if (r && r.is_eligible && r.converted_score > 0) currentMap[`${r.univ}||${r.major}`] = r.converted_score;
+    }
+    if (simResults) {
+        for (const r of simResults) {
+            if (r && r.is_eligible && r.converted_score > 0) simMap[`${r.univ}||${r.major}`] = r.converted_score;
+        }
+    }
+
+    // 시나리오별 분류
+    // 학교1(안정/하향): 현재<100 AND 상승후<100
+    // 학교2(적정/도전): 현재<100 AND 상승후 100~120
+    // 학교3(상향/초과달성): 현재>100 AND 상승후>120
+    const scenario1 = [], scenario2 = [], scenario3 = [], allEligible = [];
+    for (const cand of candidates) {
+        const key = `${cand.univ}||${cand.major}`;
+        const cur = currentMap[key];
+        if (!cur) continue;
+        const sim = simMap[key] ?? (cur + 10);
+        const item = { school: cand.univ, major: cand.major, currentScore: cur, simScore: sim };
+        allEligible.push(item);
+        if (cur < 100 && sim < 100) scenario1.push(item);
+        else if (cur < 100 && sim >= 100 && sim <= 120) scenario2.push(item);
+        else if (cur > 100 && sim > 120) scenario3.push(item);
+    }
+
+    // 시나리오 내 정렬
+    scenario1.sort((a, b) => b.currentScore - a.currentScore);
+    scenario2.sort((a, b) => Math.abs(a.simScore - 110) - Math.abs(b.simScore - 110));
+    scenario3.sort((a, b) => a.currentScore - b.currentScore);
+
+    // 시나리오 조건에 맞는 학교가 없을 때 가장 근접한 환산점수 대역 폴백
+    const fallback1 = [...allEligible].sort((a, b) => Math.abs(a.currentScore - 88) - Math.abs(b.currentScore - 88));
+    const fallback2 = [...allEligible].sort((a, b) => Math.abs(a.currentScore - 95) - Math.abs(b.currentScore - 95));
+    const fallback3 = [...allEligible].sort((a, b) => Math.abs(a.currentScore - 108) - Math.abs(b.currentScore - 108));
+
+    const selected = [];
+    const usedSchools = new Set();
+
+    const tryPick = (primary, fallback) => {
+        const sources = primary.length > 0 ? [primary, fallback] : [fallback];
+        for (const src of sources) {
+            for (const item of src) {
+                if (!usedSchools.has(item.school)) {
+                    usedSchools.add(item.school);
+                    selected.push(item);
+                    return;
+                }
+            }
+        }
+    };
+
+    tryPick(scenario1, fallback1);
+    tryPick(scenario2, fallback2);
+    tryPick(scenario3, fallback3);
+
+    return selected.length > 0 ? selected : null;
+}
+
 function buildUnivCards(selectedUnivs, studentScore) {
     const defaultAlloc = [
         { label: '수학', pct: 40, color: '#3b82f6' },
@@ -476,25 +643,38 @@ function buildUnivCards(selectedUnivs, studentScore) {
         { label: '탐구', pct: 22, color: '#10b981' },
         { label: '기타', pct: 10, color: '#f59e0b' }
     ];
+
+    // 신규 포맷: currentScore가 이미 환산점수(0–250 UI 스케일)로 들어온 경우
+    if (selectedUnivs.length > 0 && 'currentScore' in selectedUnivs[0]) {
+        const PASS_CUT = 100, TOP70_CUT = 150, MAX_SCORE = 200;
+        return selectedUnivs.map(u => {
+            const gain = Math.max(0, Math.round(u.simScore - u.currentScore));
+            return {
+                school: u.school, major: u.major,
+                currentScore: Math.round(u.currentScore),
+                passCut: PASS_CUT, top70Cut: TOP70_CUT, maxScore: MAX_SCORE,
+                simScore: Math.round(Math.min(u.simScore, MAX_SCORE)),
+                gain,
+                subjectAlloc: defaultAlloc, top2Subject: '국어', top2Pct: 28,
+                top2NeedPts: Math.max(2, Math.round(Math.abs(PASS_CUT - u.currentScore) * 0.3) + 1)
+            };
+        });
+    }
+
+    // 구 포맷: passCut이 표준점수 단순합인 경우 (레거시 폴백)
     const allScores = [studentScore, ...selectedUnivs.map(u => u.passCut)];
     const maxScore = Math.ceil(Math.max(...allScores) * 1.08 / 10) * 10;
-
     return selectedUnivs.map(u => {
         const gap = Math.round(u.passCut - studentScore);
         const gain = Math.max(3, Math.round(Math.abs(gap) * 0.15) + 2);
         const simScore = Math.min(Math.round(studentScore + gain), maxScore);
         return {
-            school: u.school,
-            major: u.major,
+            school: u.school, major: u.major,
             currentScore: Math.round(studentScore),
             passCut: Math.round(u.passCut),
             top70Cut: Math.min(Math.round(u.passCut + 10), maxScore),
-            maxScore,
-            simScore,
-            gain,
-            subjectAlloc: defaultAlloc,
-            top2Subject: '국어',
-            top2Pct: 28,
+            maxScore, simScore, gain,
+            subjectAlloc: defaultAlloc, top2Subject: '국어', top2Pct: 28,
             top2NeedPts: Math.max(2, Math.round(Math.abs(gap) * 0.3) + 1)
         };
     });
@@ -596,29 +776,111 @@ function selectUniv(element, data, fillId, detailId, simPct) {
     document.getElementById('tutNextBtn').style.display = 'block';
 }
 
+// ── 최소 노력 합격 최적화 (Greedy Algorithm) ─────────────────────
+
+function gradeToApproxPct(grd) {
+    const map = { '1': 96, '2': 89, '3': 77, '4': 60, '5': 40, '6': 23, '7': 11, '8': 4, '9': 1 };
+    return map[String(grd)] || 50;
+}
+
+function calcGreedySubjectPlan(univ, mar, mbti) {
+    const currentScore = univ.currentScore || 0;
+    // delta: 합격선(100)까지 부족한 점수. 이미 초과해도 최소 20점으로 개선 추천 제공
+    const delta = Math.max(20, 100 - currentScore);
+
+    const w = MBTI_SUBJECT_WEIGHTS[mbti] || [0.5, 0.7, 0.7, 0.4];
+    // w = [국어, 수학, 탐구, 영어]
+
+    // 대학 반영비율 — subjectAlloc에서 파싱, 없으면 기본값
+    const allocArr = univ.subjectAlloc || [];
+    const ur = { kor: 0.28, math: 0.40, inq1: 0.11, inq2: 0.11, eng: 0.10 };
+    allocArr.forEach(a => {
+        if (a.label === '수학') ur.math = a.pct / 100;
+        else if (a.label === '국어') ur.kor = a.pct / 100;
+        else if (a.label === '탐구') { ur.inq1 = a.pct / 200; ur.inq2 = a.pct / 200; }
+        else if (a.label === '기타') ur.eng = a.pct / 100;
+    });
+
+    const curPct = {
+        kor: parseFloat(mar.kor?.pct) || 50,
+        math: parseFloat(mar.math?.pct) || 50,
+        inq1: parseFloat(mar.inq1?.pct) || 50,
+        inq2: parseFloat(mar.inq2?.pct) || 50,
+        eng: gradeToApproxPct(mar.eng?.grd)
+    };
+
+    const HARD_LIMIT = { kor: 10, math: 15, inq1: 8, inq2: 8, eng: 5 };
+    const COLORS = { kor: '#8b5cf6', math: '#3b82f6', inq1: '#10b981', inq2: '#06b6d4', eng: '#f59e0b' };
+    const LABELS = {
+        kor: '국어', math: '수학',
+        inq1: mar.inq1?.name || '탐구1',
+        inq2: mar.inq2?.name || '탐구2',
+        eng: '영어'
+    };
+    const mbtiW = { kor: w[0], math: w[1], inq1: w[2], inq2: w[2], eng: w[3] };
+
+    // 최종 효율 = MBTI가중치 × (1 - 현재백분위/100) × 대학반영비율
+    const subjects = ['kor', 'math', 'inq1', 'inq2', 'eng'].map(key => ({
+        key,
+        label: LABELS[key],
+        color: COLORS[key],
+        efficiency: mbtiW[key] * (1 - curPct[key] / 100) * ur[key],
+        hardLimit: HARD_LIMIT[key]
+    })).sort((a, b) => b.efficiency - a.efficiency);
+
+    // Greedy 점수 할당
+    let remaining = delta;
+    subjects.forEach(s => {
+        if (remaining <= 0) { s.assigned = 0; return; }
+        const alloc = Math.min(remaining, s.hardLimit);
+        s.assigned = Math.round(alloc * 10) / 10;
+        remaining -= alloc;
+    });
+
+    return subjects;
+}
+
 // ── 과목별 공부시간 추천 ──────────────────────────────────────────
 function initSubjectRec() {
     const container = document.getElementById('subjectRecContent');
     if (!container) return;
 
     const univ = tutorialData.selectedUniv || DEMO_UNIVS[0];
-    const alloc = univ.subjectAlloc;
+    const mar = tutorialData.quan?.mar;
+    const mbti = tutorialData.mbti;
 
-    // SVG 도넛 차트 생성
+    let plan = null;
+    if (mar && mbti) {
+        try { plan = calcGreedySubjectPlan(univ, mar, mbti); } catch(e) {}
+    }
+
+    // 도넛 데이터: Greedy 할당 비율(정규화) 또는 폴백으로 subjectAlloc 사용
+    let donutData;
+    if (plan) {
+        const totalAssigned = plan.reduce((sum, s) => sum + (s.assigned || 0), 0) || 1;
+        const rawPcts = plan.map(s => Math.round((s.assigned / totalAssigned) * 100));
+        // 합이 정확히 100이 되도록 마지막 항목 보정
+        const diff = 100 - rawPcts.reduce((a, b) => a + b, 0);
+        rawPcts[rawPcts.length - 1] += diff;
+        donutData = plan.map((s, i) => ({ label: s.label, pct: rawPcts[i], color: s.color }));
+    } else {
+        donutData = univ.subjectAlloc;
+    }
+
+    // SVG 도넛 차트
     const r = 58, cx = 80, cy = 80;
     const circ = 2 * Math.PI * r;
     let cumPct = 0;
-    const segs = alloc.map(seg => {
+    const segs = donutData.map(seg => {
         const dash   = (seg.pct / 100) * circ;
         const offset = (cumPct  / 100) * circ;
         cumPct += seg.pct;
         return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${seg.color}" stroke-width="22" stroke-linecap="butt" stroke-dasharray="${dash.toFixed(2)} ${(circ - dash).toFixed(2)}" stroke-dashoffset="${(-offset + 0.5).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})" class="donut-seg"/>`;
     }).join('');
-
     const donutSVG = `<svg viewBox="0 0 160 160" width="160" height="160" style="display:block;">${segs}<circle cx="${cx}" cy="${cy}" r="42" fill="#fff"/><text x="${cx}" y="${cy - 6}" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" font-family="Noto Sans KR,sans-serif">공부시간</text><text x="${cx}" y="${cy + 13}" text-anchor="middle" font-size="11" fill="#64748b" font-family="Noto Sans KR,sans-serif">배분</text></svg>`;
 
     // 범례: 2순위(index 1)만 공개, 나머지 블러
-    const legendHtml = alloc.map((seg, i) => {
+    const legendHtml = donutData.map((seg, i) => {
         const visible = (i === 1);
         return `
         <div class="donut-legend-item${visible ? '' : ' legend-blurred'}">
@@ -629,20 +891,23 @@ function initSubjectRec() {
         </div>`;
     }).join('');
 
-    // 4개 카드: 2순위만 공개, 1·3·4순위 블러
+    // 카드: 상위 4개, 2순위만 공개
     const rankLabels = ['1순위', '2순위', '3순위', '4순위'];
     const rankBadgeClass = ['rank-1', 'rank-2', 'rank-other', 'rank-other'];
-    const cardsHtml = alloc.map((seg, i) => {
+    const cardsSource = plan ? plan.slice(0, 4) : donutData.slice(0, 4);
+    const cardsHtml = cardsSource.map((s, i) => {
         const visible = (i === 1);
         const blur = visible ? '' : ' subj-blurred';
         const highlight = visible ? ' subj-visible' : '';
+        const allocPct = donutData[i]?.pct ?? 0;
+        const assignedPts = plan ? s.assigned : (univ.top2NeedPts || 0);
         return `
         <div class="subj-card${highlight}${blur}">
             <div class="subj-rank-badge ${rankBadgeClass[i]}">${rankLabels[i]}</div>
-            <div class="subj-name">${visible ? seg.label : '???'}</div>
+            <div class="subj-name">${visible ? s.label : '???'}</div>
             <div class="subj-stats">
-                <div class="subj-stat-row"><span>추천 비중</span><strong>${visible ? `전체 공부의 ${seg.pct}%` : '비공개'}</strong></div>
-                <div class="subj-stat-row"><span>목표 점수까지</span><strong>${visible ? `+${univ.top2NeedPts}점 필요` : '비공개'}</strong></div>
+                <div class="subj-stat-row"><span>추천 집중 비중</span><strong>${visible ? `전체 학습의 ${allocPct}%` : '비공개'}</strong></div>
+                <div class="subj-stat-row"><span>합격선까지 기여 필요</span><strong>${visible ? `+${assignedPts}점` : '비공개'}</strong></div>
             </div>
             ${!visible ? '<div class="subj-blur-overlay">🔒 플랜 시작 후 공개</div>' : ''}
         </div>`;
@@ -657,10 +922,13 @@ function initSubjectRec() {
 }
 
 // ── 결제 / 완료 ──────────────────────────────────────────────────
-async function upsellPayment() {
-    const actionBtn = document.querySelector('.tut-action-btn');
-    if (actionBtn) actionBtn.disabled = true;
 
+function _setUpsellBtnsDisabled(disabled) {
+    document.querySelectorAll('.tut-upsell-btn').forEach(b => { b.disabled = disabled; });
+}
+
+async function upsellPayment() {
+    _setUpsellBtnsDisabled(true);
     try {
         if (tutorialData.selectedUniv) {
             const payload = [{ univ: tutorialData.selectedUniv.school, major: tutorialData.selectedUniv.major }];
@@ -670,15 +938,36 @@ async function upsellPayment() {
         if (trialResult.success || trialResult.message) {
             localStorage.removeItem('tutorialStatus');
             localStorage.setItem('tutorial_completed', 'true');
-            alert('전략 설정이 완료되었습니다!\nTrial 등급이 부여되었으며, 추가 목표대학 설정 기회가 제공됩니다.\n결제 페이지에서 1순위 과목 전략과 더 많은 대학을 확인해보세요!');
             window.location.href = '/payment';
         } else {
             alert(trialResult.error || '완료 처리 중 문제가 발생했습니다.');
-            if (actionBtn) actionBtn.disabled = false;
+            _setUpsellBtnsDisabled(false);
         }
     } catch (e) {
         alert('통신 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-        if (actionBtn) actionBtn.disabled = false;
+        _setUpsellBtnsDisabled(false);
+    }
+}
+
+async function endTutorial() {
+    _setUpsellBtnsDisabled(true);
+    try {
+        if (tutorialData.selectedUniv) {
+            const payload = [{ univ: tutorialData.selectedUniv.school, major: tutorialData.selectedUniv.major }];
+            await apiCall('update_target_univs', payload);
+        }
+        const trialResult = await apiCall('grant_tutorial_trial', {});
+        if (trialResult.success || trialResult.message) {
+            localStorage.removeItem('tutorialStatus');
+            localStorage.setItem('tutorial_completed', 'true');
+            window.location.href = '/';
+        } else {
+            alert(trialResult.error || '완료 처리 중 문제가 발생했습니다.');
+            _setUpsellBtnsDisabled(false);
+        }
+    } catch (e) {
+        alert('통신 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        _setUpsellBtnsDisabled(false);
     }
 }
 

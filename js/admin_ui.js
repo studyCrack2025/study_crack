@@ -66,6 +66,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     setTimeout(() => loadMatchingData(true), 1500);
+
+    // CUSTOM 템플릿 선택 시 공지 내용 textarea와 미리보기 실시간 연동
+    const noticeContentEl = document.getElementById('noticeContent');
+    if (noticeContentEl) {
+        noticeContentEl.addEventListener('input', () => {
+            const selectedType = document.getElementById('alimtalkTemplateType')?.value;
+            if (selectedType === 'CUSTOM') updateTemplatePreview();
+        });
+    }
 });
 
 // 💡 공통 apiFetch 함수
@@ -1251,11 +1260,14 @@ async function fetchAlimtalkTemplates() {
 window.updateTemplatePreview = function() {
     const selectedType = document.getElementById('alimtalkTemplateType').value;
     const previewBox = document.getElementById('templatePreviewBox');
-    
-    // globalAlimtalkTemplates 배열에서 현재 선택된 타입의 데이터를 찾음
-    const matchedTemplate = globalAlimtalkTemplates.find(t => t.type === selectedType);
-    
-    if (previewBox) {
+    if (!previewBox) return;
+
+    if (selectedType === 'CUSTOM') {
+        // CUSTOM: 공지 내용 textarea 값을 실시간으로 미리보기에 반영
+        const content = (document.getElementById('noticeContent')?.value || '').trim();
+        previewBox.innerText = content || '✏️ [공지 내용] 란에 내용을 입력하면 그대로 카카오톡으로 발송됩니다.\n#{이름} 입력 시 학생 이름으로 자동 치환됩니다.';
+    } else {
+        const matchedTemplate = globalAlimtalkTemplates.find(t => t.type === selectedType);
         previewBox.innerText = matchedTemplate ? matchedTemplate.preview : "템플릿 형식을 불러올 수 없습니다.";
     }
 };

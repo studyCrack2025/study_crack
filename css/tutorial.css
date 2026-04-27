@@ -185,5 +185,14 @@ header { background: #fff; padding: 15px 20px; box-shadow: 0 2px 4px rgba(0,0,0,
 .score-sub-plus { font-size: 1.1rem; font-weight: 700; color: #cbd5e1; padding-top: 16px; flex-shrink: 0; }
 .score-total-label { font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-align: center; margin-top: 6px; }
 
+/* ── 업셀링 버튼 그룹 ────────────────────────────────────────── */
+.upsell-btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+.btn-upsell-primary { display: block; width: 100%; padding: 16px; background: #2563eb; color: #fff; text-align: center; border: none; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px rgba(37,99,235,0.2); font-family: inherit; }
+.btn-upsell-primary:hover { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(37,99,235,0.3); }
+.btn-upsell-primary:disabled { background: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-upsell-secondary { display: block; width: 100%; padding: 13px; background: transparent; color: #64748b; text-align: center; border: 1.5px solid #e2e8f0; border-radius: 12px; font-weight: 600; font-size: 0.92rem; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+.btn-upsell-secondary:hover { background: #f8fafc; color: #475569; border-color: #cbd5e1; }
+.btn-upsell-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
 /* ── 반응형 ────────────────────────────────────────────────────── */
 @media (max-width: 520px) { .score-grid { grid-template-columns: 1fr 1fr; gap: 10px; } .score-big-input { font-size: 1.9rem; width: 64px; } .subj-alloc-cards { grid-template-columns: 1fr; } .subj-donut-section { flex-direction: column; align-items: flex-start; } .dialogue-bubble { font-size: 0.95rem; padding: 15px 18px; } .mbti-dim-name { font-size: 0.78rem; min-width: 60px; } }
