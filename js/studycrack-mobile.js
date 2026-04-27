@@ -149,6 +149,17 @@ function App() {
   const [coachingTrend, setCoachingTrend] = useState('');
   const [coachingDropReasons, setCoachingDropReasons] = useState([]);
   const [coachingAnswers, setCoachingAnswers] = useState({ step4Reason: '', step5: '', step6: '', step7: '', step8: '' });
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [onboardingLoading, setOnboardingLoading] = useState(false);
+  const [onboardingLoadingText, setOnboardingLoadingText] = useState('');
+  const [obGradeStatus, setObGradeStatus] = useState('고1/2 재학');
+  const [obSchoolName, setObSchoolName] = useState('');
+  const [obGed, setObGed] = useState(false);
+  const [obTrack, setObTrack] = useState('예체능');
+  const [obGoalText, setObGoalText] = useState('');
+  const [obQuestionText, setObQuestionText] = useState('');
+  const [obExamType, setObExamType] = useState('3월 학평');
+  const [obScoreInputs, setObScoreInputs] = useState({ koreanType: '', koreanCommon: '', koreanSelect: '', mathType: '', mathCommon: '', mathSelect: '', englishGrade: '', historyGrade: '', inq1Name: '', inq1Raw: '', inq2Name: '', inq2Raw: '' });
 
   const goto = (next, addHistory = true) => {
     if (addHistory && screen !== next) setHistory((h) => [...h, screen]);
@@ -181,6 +192,13 @@ function App() {
       clearTimeout(t2);
     };
   }, [screen, analysisMode, targetMajor]);
+
+  useEffect(() => {
+    if (screen !== 'analysis') return;
+    setAnalysisLoading(true);
+    const t = setTimeout(() => setAnalysisLoading(false), 2000);
+    return () => clearTimeout(t);
+  }, [screen, targetMajor]);
 
   const initializeApp = async () => {
     let fallbackTimer;
@@ -872,14 +890,35 @@ function App() {
       </div>
     </div>`, false),
     splash: `<div class="app-shell"><div class="app-frame"><div class="splash"><div class="logo-bolt">${i('bolt',true)}</div><img class="brand-logo" src="${(window.__studycrackAssetSrc && window.__studycrackAssetSrc.onboardingLogoSrc) || './assets/images/studycrack_logo_wo_bg.png'}" alt="logo"/><h1 style="margin:0;font-size:30px">스터디크랙</h1><p>합격까지 가장 빠른 전략</p></div></div></div>`,
-    on1: onboarding(
-      1,
-      '데이터 기반으로\n내 합격 가능성을 분석해요',
-      '흔들리지 않는 방향을\n제시해드립니다.',
-      `<div class="onboarding-card"><p class="onboarding-sub">합격 가능성</p><p class="onboarding-metric">72%</p><div class="on-graph-line"><svg viewBox="0 0 300 90" fill="none"><path d="M0 82H300" stroke="#E7EEF9" stroke-width="2"/><path d="M10 74C34 72 46 62 66 62C90 62 96 70 116 66C136 62 146 48 164 46C182 44 192 56 212 48C230 41 240 30 260 24C274 20 286 14 294 10" stroke="#2F6BFF" stroke-width="4" stroke-linecap="round"/><circle cx="294" cy="10" r="4.5" fill="#2F6BFF"/></svg></div></div>`,
-      '데이터로 흔들리지 않는 방향을 잡아드릴게요.',
-      'on2'
-    ),
+    on1: `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="onboarding-screen on-form-screen">
+      <img src="${ONBOARDING_LOGO_SRC}" class="onboarding-logo logo" alt="StudyCrack 로고"/>
+      <div class="onboarding-copy"><h2>학생 현황 및 진로 설계</h2><p>정성 + 정량 정보를 기반으로 맞춤 전략을 시작합니다.</p></div>
+      <div class="card on-form-card">
+        <h4>현재 학년</h4>
+        <div class="planner-pill-row">${['고1/2 재학', '고3 재학', 'N수생', '검정고시', '기타'].map((v) => `<button class="planner-pill ${obGradeStatus===v?'active':''}" data-action="setObGradeStatus" data-ob-grade="${v}">${v}</button>`).join('')}</div>
+        <h4>출신 학교</h4>
+        <div class="on-inline-row"><input class="planner-input" data-field="obSchoolName" value="${obSchoolName}" placeholder="학교명을 입력하세요"/><label class="on-check"><input type="checkbox" data-action="toggleObGed" ${obGed?'checked':''}/>검정고시</label></div>
+        <h4>희망 계열</h4>
+        <select class="planner-input" data-field="obTrack"><option value="예체능" ${obTrack==='예체능'?'selected':''}>예체능</option><option value="인문" ${obTrack==='인문'?'selected':''}>인문</option><option value="자연" ${obTrack==='자연'?'selected':''}>자연</option></select>
+        <h4>스터디크랙을 통해서 얻고 싶은 점</h4>
+        <textarea class="planner-input on-ta" data-field="obGoalText" placeholder="스터디크랙을 통해 얻고 싶은 점을 적어주세요.">${obGoalText}</textarea>
+        <h4>입시 고민 및 질문</h4>
+        <textarea class="planner-input on-ta" data-field="obQuestionText" placeholder="현재 가장 큰 입시 고민이나 멘토에게 묻고 싶은 점을 자유롭게 적어주세요.">${obQuestionText}</textarea>
+      </div>
+      <div class="card on-form-card">
+        <h4>모의고사 / 수능 예상 성적 입력</h4>
+        <select class="planner-input" data-field="obExamType">${['3월 학평','6월 모의평가','9월 모의평가','수능','기타'].map((v)=>`<option value="${v}" ${obExamType===v?'selected':''}>${v}</option>`).join('')}</select>
+        <div class="on-score-grid">
+          <label>국어 선택과목<input class="planner-input" data-field="ob-koreanType" value="${obScoreInputs.koreanType}" /></label><label>공통 원점수<input class="planner-input" data-field="ob-koreanCommon" value="${obScoreInputs.koreanCommon}" type="number"/></label><label>선택 원점수<input class="planner-input" data-field="ob-koreanSelect" value="${obScoreInputs.koreanSelect}" type="number"/></label>
+          <label>수학 선택과목<input class="planner-input" data-field="ob-mathType" value="${obScoreInputs.mathType}" /></label><label>공통 원점수<input class="planner-input" data-field="ob-mathCommon" value="${obScoreInputs.mathCommon}" type="number"/></label><label>선택 원점수<input class="planner-input" data-field="ob-mathSelect" value="${obScoreInputs.mathSelect}" type="number"/></label>
+          <label>영어 등급<input class="planner-input" data-field="ob-englishGrade" value="${obScoreInputs.englishGrade}" /></label><label>한국사 등급<input class="planner-input" data-field="ob-historyGrade" value="${obScoreInputs.historyGrade}" /></label>
+          <label>탐구1 과목<input class="planner-input" data-field="ob-inq1Name" value="${obScoreInputs.inq1Name}" /></label><label>탐구1 원점수<input class="planner-input" data-field="ob-inq1Raw" value="${obScoreInputs.inq1Raw}" type="number"/></label>
+          <label>탐구2 과목<input class="planner-input" data-field="ob-inq2Name" value="${obScoreInputs.inq2Name}" /></label><label>탐구2 원점수<input class="planner-input" data-field="ob-inq2Raw" value="${obScoreInputs.inq2Raw}" type="number"/></label>
+        </div>
+        <div class="on-dummy-result"><b>표준점수 124</b><b>백분위 91</b><b>등급 2</b></div>
+      </div>
+      <div class="onboarding-footer"><div class="page-indicator"><i class="active"></i><i></i><i></i></div><button class="onboarding-next" data-action="goto" data-target="on2">다음</button></div>
+    </div></div></div>`,
     on2: onboarding(
       2,
       '나에게 최적화된\n점수 상승 전략을 제공해요',
@@ -1109,10 +1148,28 @@ function App() {
   console.log('APP_CURRENT_SCREEN', currentScreen);
 
   const onClick = (e) => {
+    if (analysisLoading && screen === 'analysis') return;
     const actionEl = e.target.closest('[data-action]');
     if (!actionEl) return;
     const action = actionEl.getAttribute('data-action');
-    if (action === 'goto') goto(actionEl.getAttribute('data-target'));
+    if (action === 'goto') {
+      const target = actionEl.getAttribute('data-target');
+      if (screen === 'on1' && target === 'on2') {
+        setOnboardingLoading(true);
+        setOnboardingLoadingText('성적 분석중...');
+        setTimeout(() => setOnboardingLoadingText('유리한 대학 전형 파악중...'), 2000);
+        setTimeout(() => { setOnboardingLoading(false); goto('on2'); }, 4000);
+        return;
+      }
+      if (screen === 'on2' && target === 'on3') {
+        setOnboardingLoading(true);
+        setOnboardingLoadingText('학습 성향 분석중...');
+        setTimeout(() => setOnboardingLoadingText('효율적인 공부법 찾는 중...'), 1500);
+        setTimeout(() => { setOnboardingLoading(false); goto('on3'); }, 3000);
+        return;
+      }
+      goto(target);
+    }
     if (action === 'back') back();
     if (action === 'tab') goto(actionEl.getAttribute('data-tab'));
     if (action === 'selectPlan') setSelectedPlan(actionEl.getAttribute('data-plan'));
@@ -1185,6 +1242,8 @@ function App() {
       setLogoutModalOpen(false);
       window.alert('로그아웃되었습니다');
     }
+    if (action === 'setObGradeStatus') setObGradeStatus(actionEl.getAttribute('data-ob-grade') || '고1/2 재학');
+    if (action === 'toggleObGed') setObGed((v) => !v);
     if (action === 'openDrawer') setDrawerOpen(true);
     if (action === 'closeDrawer') setDrawerOpen(false);
     if (action === 'drawerGoto') {
@@ -1457,11 +1516,27 @@ function App() {
     if (field === 'signupPassword') setSignupPassword(value);
     if (field === 'signupPasswordConfirm') setSignupPasswordConfirm(value);
     if (field === 'analysisSearchTerm') setAnalysisSearchTerm(value);
+    if (field === 'obSchoolName') setObSchoolName(value);
+    if (field === 'obTrack') setObTrack(value);
+    if (field === 'obGoalText') setObGoalText(value);
+    if (field === 'obQuestionText') setObQuestionText(value);
+    if (field === 'obExamType') setObExamType(value);
+    if (field && field.startsWith('ob-')) {
+      const key = field.replace('ob-', '');
+      setObScoreInputs((prev) => ({ ...prev, [key]: value }));
+    }
   };
 
   const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>StudyCrack 앱을 불러오는 중입니다...</h3><p class="sub">잠시만 기다려 주세요.</p></div></div></div></div>`;
   const fallbackUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div></div>`;
-  const rendered = loading ? loadingUi : error ? fallbackUi : !loggedIn && !['authLogin', 'authSignup'].includes(screen) ? screens.authLogin : current;
+  const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !['authLogin', 'authSignup'].includes(screen) ? screens.authLogin : current;
+  const analysisOverlay = analysisLoading && screen === 'analysis'
+    ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>분석중입니다</b><p>잠시만 기다려주세요</p></div></div>`
+    : '';
+  const onboardingOverlay = onboardingLoading
+    ? `<div class="global-loading-overlay"><div class="global-loading-card"><img src="${CRACKY_SRC}" alt="크랙이" class="global-loading-char"/><div class="loading-dots"><i></i><i></i><i></i></div><b>${onboardingLoadingText}</b><p>잠시만 기다려주세요</p></div></div>`
+    : '';
+  const rendered = `${renderedBase}${analysisOverlay}${onboardingOverlay}`;
 
   return <div onClick={onClick} onInput={onInput} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: rendered }} />;
 }
