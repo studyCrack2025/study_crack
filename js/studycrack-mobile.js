@@ -25,6 +25,15 @@ const safeParse = (key, fallback) => {
     return fallback;
   }
 };
+const safeGetItem = (key, fallback = '') => {
+  try {
+    const value = localStorage.getItem(key);
+    return value ?? fallback;
+  } catch (error) {
+    console.warn(`${key} get failed`, error);
+    return fallback;
+  }
+};
 
 const resolveAssetPath = async (path, fallback) => {
   try {
@@ -288,20 +297,17 @@ function App() {
   }, [screen, analysisMode]);
 
   const initializeApp = async () => {
-    let fallbackTimer;
     try {
       console.log('[APP_INIT_START]');
       setLoading(true);
       setError(false);
-      fallbackTimer = setTimeout(() => {
-        setLoading(false);
-        setScreen('authLogin');
-      }, 3000);
 
       const savedUser = safeParse('user', DEFAULT_USER);
-      const savedPlan = localStorage.getItem('selectedPlan') || savedUser.plan || DEFAULT_USER.plan;
-      const savedTarget = localStorage.getItem('selectedUniversity') || savedUser.targetUniversity || DEFAULT_USER.targetUniversity;
-      const savedTab = localStorage.getItem('activeTab') || 'home';
+      const savedPlan = safeGetItem('selectedPlan', savedUser.plan || DEFAULT_USER.plan);
+      const savedTarget = safeGetItem('selectedUniversity', savedUser.targetUniversity || DEFAULT_USER.targetUniversity);
+      const savedTab = safeGetItem('activeTab', 'home');
+      const savedScreen = safeGetItem('currentScreen', '');
+      const savedLoggedIn = safeParse('loggedIn', false);
       const savedItems = safeParse('plannerItems', DEFAULT_PLANNER_ITEMS);
       const savedScore = safeParse('scores', DEFAULT_SCORES);
       const savedNotifications = safeParse('notifications', DEFAULT_NOTIFICATIONS);
@@ -317,23 +323,24 @@ function App() {
       setPlannerItems(normalizePlannerItems(Array.isArray(savedItems) ? savedItems : DEFAULT_PLANNER_ITEMS));
       setScores({ ...DEFAULT_SCORES, ...(savedScore || {}) });
       setNotifications({ ...DEFAULT_NOTIFICATIONS, ...(savedNotifications || {}) });
+      const hasStoredScreen = Boolean(savedScreen || savedTab);
+      const isLoggedIn = Boolean(savedLoggedIn || hasStoredScreen);
+      setLoggedIn(isLoggedIn);
 
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('init-timeout')), 2500));
       const crackySrc = await resolveAssetPath(CRACKY_SRC, './assets/images/studycrack_logo_wo_bg.png');
       const onboardingLogoSrc = await resolveAssetPath(ONBOARDING_LOGO_SRC, './assets/images/studycrack_logo_wo_bg.png');
       window.__studycrackAssetSrc = { crackySrc, onboardingLogoSrc };
-      await Promise.race([fetch(onboardingLogoSrc), timeoutPromise]).catch(() => null);
+      await fetch(onboardingLogoSrc).catch(() => null);
       await resolveAssetPath('./assets/76220C96-DE85-4148-A6AC-7BD5881821A0.png', null);
       await resolveAssetPath('./assets/IMG_2648.jpeg', null);
 
-      setScreen('authLogin');
+      setScreen(savedScreen || savedTab || 'home');
       console.log('[APP_INIT_SUCCESS]');
     } catch (e) {
       console.error('[APP_INIT_ERROR]', e);
-      setError(true);
-      setScreen('authLogin');
+      setError(false);
+      setScreen((prev) => prev || safeGetItem('currentScreen', safeGetItem('activeTab', 'home')) || 'home');
     } finally {
-      if (fallbackTimer) clearTimeout(fallbackTimer);
       setLoading(false);
     }
   };
@@ -347,23 +354,43 @@ function App() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('scores', JSON.stringify(scores));
+    try {
+      localStorage.setItem('scores', JSON.stringify(scores));
+    } catch (error) {
+      console.warn('scores save failed', error);
+    }
   }, [scores]);
 
   useEffect(() => {
-    localStorage.setItem('plannerItems', JSON.stringify(plannerItems));
+    try {
+      localStorage.setItem('plannerItems', JSON.stringify(plannerItems));
+    } catch (error) {
+      console.warn('plannerItems save failed', error);
+    }
   }, [plannerItems]);
 
   useEffect(() => {
-    localStorage.setItem('notifications', JSON.stringify(notifications));
+    try {
+      localStorage.setItem('notifications', JSON.stringify(notifications));
+    } catch (error) {
+      console.warn('notifications save failed', error);
+    }
   }, [notifications]);
 
   useEffect(() => {
-    localStorage.setItem('studyRecords', JSON.stringify(studyRecords));
+    try {
+      localStorage.setItem('studyRecords', JSON.stringify(studyRecords));
+    } catch (error) {
+      console.warn('studyRecords save failed', error);
+    }
   }, [studyRecords]);
 
   useEffect(() => {
-    localStorage.setItem('studySubjectRecords', JSON.stringify(studySubjectRecords));
+    try {
+      localStorage.setItem('studySubjectRecords', JSON.stringify(studySubjectRecords));
+    } catch (error) {
+      console.warn('studySubjectRecords save failed', error);
+    }
   }, [studySubjectRecords]);
 
   useEffect(() => () => {
@@ -371,18 +398,24 @@ function App() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('selectedPlan', selectedPlan);
-    localStorage.setItem('selectedUniversity', targetMajor);
-    localStorage.setItem('activeTab', tab);
-    localStorage.setItem(
-      'user',
-      JSON.stringify({
-        name: user?.name || DEFAULT_USER.name,
-        targetUniversity: targetMajor || DEFAULT_USER.targetUniversity,
-        plan: selectedPlan || DEFAULT_USER.plan
-      })
-    );
-  }, [selectedPlan, targetMajor, tab, user]);
+    try {
+      localStorage.setItem('selectedPlan', selectedPlan);
+      localStorage.setItem('selectedUniversity', targetMajor);
+      localStorage.setItem('activeTab', tab);
+      localStorage.setItem('currentScreen', screen);
+      localStorage.setItem('loggedIn', JSON.stringify(loggedIn));
+      localStorage.setItem(
+        'user',
+        JSON.stringify({
+          name: user?.name || DEFAULT_USER.name,
+          targetUniversity: targetMajor || DEFAULT_USER.targetUniversity,
+          plan: selectedPlan || DEFAULT_USER.plan
+        })
+      );
+    } catch (error) {
+      console.warn('app profile save failed', error);
+    }
+  }, [selectedPlan, targetMajor, tab, user, screen, loggedIn]);
 
   const appbar = (title, showBack) => `<div class="appbar">${showBack ? '<button class="back-btn" data-action="back">←</button>' : '<div style="width:36px"></div>'}<div class="title">${title}</div></div>`;
   const tabBtn = (k, label, iconName) => `<button class="${tab === k ? 'active' : ''}" data-action="tab" data-tab="${k}">${i(iconName, tab===k)}<span>${label}</span></button>`;
@@ -1589,6 +1622,8 @@ function App() {
     }
     if (action === 'confirmLogout') {
       setLogoutModalOpen(false);
+      setLoggedIn(false);
+      setScreen('authLogin');
       window.alert('로그아웃되었습니다');
     }
     if (action === 'setObGradeStatus') setObGradeStatus(actionEl.getAttribute('data-ob-grade') || '고1/2 재학');
