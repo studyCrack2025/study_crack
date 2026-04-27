@@ -218,6 +218,16 @@ function App() {
   }, [screen]);
 
   useEffect(() => {
+    let viewport = document.querySelector('meta[name="viewport"]');
+    if (!viewport) {
+      viewport = document.createElement('meta');
+      viewport.setAttribute('name', 'viewport');
+      document.head.appendChild(viewport);
+    }
+    viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
+  }, []);
+
+  useEffect(() => {
     const raf = requestAnimationFrame(() => {
       const container = document.querySelector('.score-journey-scroll');
       if (!container) return;
@@ -804,11 +814,13 @@ function App() {
   };
 
   const designV2StyleTag = `<style>
+    html,body{touch-action:manipulation;overscroll-behavior:none;}
     .app-shell,.app-frame,.app-screen{min-height:100dvh;}
     .onboarding-container .content{padding:0 16px 150px;box-sizing:border-box;}
     .onboarding-fixed-cta{padding-bottom:calc(16px + env(safe-area-inset-bottom));}
-    .card,.btn,button,.planner-input,select,textarea,input{transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;}
-    .card:active,.btn:active,button:active,.planner-input:active,select:active,textarea:active,input:active{transform:scale(.98);}
+    .btn,button,.planner-input,select,textarea,input{transition:box-shadow .15s ease, border-color .15s ease;}
+    .btn:active,button:active,.planner-input:active,select:active,textarea:active,input:active{transform:scale(.98);}
+    input,select,textarea{font-size:16px !important;}
 
     .ob1-survey-card,.ob1-score-wrap,.analysis-v2-compare-card{background:#fff;border:1px solid #E2E8F0;border-radius:24px;padding:24px;box-sizing:border-box;}
     .ob1-survey-card h3,.ob1-score-wrap h3,.analysis-v2-compare-card h3{margin:0;font-size:24px;line-height:1.25;}
@@ -859,7 +871,7 @@ function App() {
     .home-result-gauge-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));font-size:11px;color:#64748B;gap:4px;}
     .home-result-gauge-meta span:nth-child(2),.home-result-gauge-meta span:nth-child(3){text-align:center;}
     .home-result-gauge-meta span:last-child{text-align:right;}
-    .home-goal-linked-card{cursor:pointer;text-align:left;}
+    .home-goal-linked-card{text-align:left;}
     .home-goal-empty-cta{margin-top:8px;display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;background:#DBEAFE;color:#1D4ED8;border-radius:10px;font-weight:700;font-size:13px;}
     .home-insight-card{border:1px solid #E2E8F0;border-radius:20px;box-shadow:0 8px 20px rgba(15,23,42,.05);padding:16px;}
     .home-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
@@ -877,8 +889,12 @@ function App() {
     .score-journey-col.target{border-color:#93C5FD;background:#EFF6FF;}
     .score-journey-col h4{margin:0;font-size:14px;color:#334155;}
     .score-row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;color:#334155;white-space:nowrap;word-break:keep-all;min-width:0;}
-    .score-row span,.score-row b{white-space:nowrap;word-break:keep-all;min-width:0;flex-shrink:0;}
-    .score-row .pill{background:#DBEAFE;color:#1D4ED8;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700;}
+    .score-row span,.score-row b,.score-row em{white-space:nowrap;word-break:keep-all;min-width:0;flex-shrink:0;font-style:normal;}
+    .score-row b{min-width:48px;text-align:center;}
+    .score-row em{color:#1E293B;font-weight:600;}
+    .score-row .pill{border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;}
+    .score-row .pill.up{background:#DBEAFE;color:#1D4ED8;}
+    .score-row .pill.keep{background:#E2E8F0;color:#475569;}
     .score-journey-total{margin-top:2px;padding-top:10px;border-top:1px solid #CBD5E1;display:flex;justify-content:space-between;font-weight:800;white-space:nowrap;word-break:keep-all;}
     .score-journey-arrow{align-self:center;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#E2E8F0;color:#334155;font-weight:900;}
     .analysis-v2-eta-card{margin-top:2px;padding:16px;border:1px solid #BFDBFE;border-radius:18px;background:linear-gradient(135deg,#EEF6FF, #F8FBFF);box-shadow:0 4px 12px rgba(30,64,175,.08);}
@@ -907,6 +923,7 @@ function App() {
     .planner-add-cta{margin-top:10px;border:1px dashed #93C5FD;background:#EFF6FF;color:#1D4ED8;border-radius:16px;padding:14px;text-align:center;font-weight:800;}
     .planner-days-carousel{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px;padding-bottom:4px;}
     .planner-date-item{flex:0 0 auto;scroll-snap-align:center;display:grid;gap:2px;min-width:52px;padding:6px 8px;border-radius:12px;}
+    .planner-date-item.active{background:#EFF6FF;border:1px solid #BFDBFE;}
     .planner-date-item small{font-size:11px;color:#64748B;}
     .planner-date-item strong{font-size:16px;line-height:1;}
     .planner-date-item.active small,.planner-date-item.active strong{color:#2563EB;font-weight:700;}
@@ -917,27 +934,27 @@ function App() {
     <div class="score-journey-card">
       <p class="analysis-title">${title}</p>
       <div class="score-journey-segment">
-        <button class="${activeScoreView==='current'?'active':''}" data-action="setScoreView" data-score-view="current">현재 성적</button>
-        <button class="${activeScoreView==='target'?'active':''}" data-action="setScoreView" data-score-view="target">도달 성적</button>
+        <button type="button" class="${activeScoreView==='current'?'active':''}" data-action="setScoreView" data-score-view="current">현재 성적</button>
+        <button type="button" class="${activeScoreView==='target'?'active':''}" data-action="setScoreView" data-score-view="target">도달 성적</button>
       </div>
       <div class="score-journey-scroll">
         <div class="score-journey-col current">
           <h4>현재 성적</h4>
-          <div class="score-row"><span>국어</span><b>82</b></div>
-          <div class="score-row"><span>수학</span><b>68</b></div>
-          <div class="score-row"><span>영어</span><b>77</b></div>
-          <div class="score-row"><span>탐구1</span><b>70</b></div>
-          <div class="score-row"><span>탐구2</span><b>66</b></div>
+          <div class="score-row"><span>국어</span><b>유지</b><em>82 → 82</em></div>
+          <div class="score-row"><span>수학</span><b>유지</b><em>68 → 68</em></div>
+          <div class="score-row"><span>영어</span><b>유지</b><em>77 → 77</em></div>
+          <div class="score-row"><span>탐구1</span><b>유지</b><em>70 → 70</em></div>
+          <div class="score-row"><span>탐구2</span><b>유지</b><em>66 → 66</em></div>
           <div class="score-journey-total"><span>총점</span><b>86점</b></div>
         </div>
         <div class="score-journey-arrow">→</div>
         <div class="score-journey-col target">
           <h4>도달 성적</h4>
-          <div class="score-row"><span>국어</span><b>82</b></div>
-          <div class="score-row"><span>수학</span><b>80 <span class="pill">+12</span></b></div>
-          <div class="score-row"><span>영어</span><b>77</b></div>
-          <div class="score-row"><span>탐구1</span><b>76 <span class="pill">+6</span></b></div>
-          <div class="score-row"><span>탐구2</span><b>66</b></div>
+          <div class="score-row"><span>수학</span><b><span class="pill up">+12</span></b><em>68 → 80</em></div>
+          <div class="score-row"><span>탐구1</span><b><span class="pill up">+6</span></b><em>70 → 76</em></div>
+          <div class="score-row"><span>국어</span><b><span class="pill keep">유지</span></b><em>82 → 82</em></div>
+          <div class="score-row"><span>영어</span><b><span class="pill keep">유지</span></b><em>77 → 77</em></div>
+          <div class="score-row"><span>탐구2</span><b><span class="pill keep">유지</span></b><em>66 → 66</em></div>
           <div class="score-journey-total"><span>예상 총점</span><b>120점</b></div>
         </div>
       </div>
@@ -1047,13 +1064,12 @@ function App() {
        </div>
        <div class="card ob-card analysis-top">
          <p class="analysis-title">합격 가능성 분석</p>
-         <span class="badge analysis-badge">${targetMajor}</span>
-         <div class="analysis-kpi-row"><div><p class="ob-rate">${selectedUniversity.rate}%</p><p class="analysis-sub">합격 가능성</p></div><div class="ring" style="background:conic-gradient(var(--primary) 0 ${selectedUniversity.rate}%, #dfe8f8 ${selectedUniversity.rate}% 100%)"></div></div>
-         <div class="ob-score-summary-row">
-           <div class="ob-score-summary-card"><b>${selectedUniversity.score}점</b><span>현재 점수</span></div>
-           <div class="ob-score-summary-card"><b>${selectedUniversity.cut}점</b><span>합격 컷</span></div>
-           <div class="ob-score-summary-card danger"><b>${selectedUniversity.gap}점</b><span>부족 점수</span></div>
+         <div class="analysis-v2-summary-top">
+           <div><p class="analysis-v2-univ">${targetMajor}</p><p class="analysis-v2-label">AI 점수 · 합격컷 대비 위치</p></div>
+           <div class="analysis-v2-score-wrap"><span class="analysis-v2-verdict" style="color:${analysisStatusColor};border-color:${analysisStatusColor}">${analysisStatus}</span><strong>${analysisSelected.score}점</strong></div>
          </div>
+         <div class="analysis-v2-gauge"><i style="width:${analysisGaugeFill}%;background:${analysisGaugeColor}"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
+         <div class="analysis-v2-gauge-meta"><span>0</span><span>합격컷 100점</span><span>안정컷 150점</span><span>MAX 250점</span></div>
          <p class="analysis-title">+1점 상승 시뮬레이션</p>
          <div class="analysis-impact-item">수학<div class="track"><i style="width:90%"></i></div><span>+12점 → +18%</span></div>
          <div class="analysis-impact-item">탐구<div class="track"><i style="width:68%;background:#14b8a6"></i></div><span>+6점 → +9%</span></div>
@@ -1283,7 +1299,7 @@ function App() {
     ),
     planner: layout(
       `<div class="planner-screen">${(() => { console.log('RENDER_PLANNER_NO_TIME_RANGE_V3'); return ''; })()}<div class="planner-head"><h3>2024년 5월 ${selectedPlannerDate}일 (화)</h3><button class="planner-cal-btn" data-action="openPlannerCalendar">${i('calendar', false)}</button></div>
-       <div class="planner-days planner-days-carousel">${plannerWeekDates.map(({ day, weekday }) => `<button class="planner-date-item ${selectedPlannerDate===day?'active':''}" data-action="selectPlannerDate" data-planner-date="${day}"><small>${weekday}</small><strong>${day}</strong></button>`).join('')}</div>
+       <div class="planner-days planner-days-carousel planner-date-strip">${plannerWeekDates.map(({ day, weekday }) => `<button class="planner-date-item ${selectedPlannerDate===day?'active':''}" data-action="selectPlannerDate" data-planner-date="${day}"><small>${weekday}</small><strong>${day}</strong></button>`).join('')}</div>
        <div class="planner-section-title planner-fade"><div><h4>${selectedPlannerDate}일 계획</h4><p>총 ${plannerViewHour}시간 ${plannerViewMinute}분</p>${plannerFeedback.tone==='warn' ? `<span class="planner-warning-pill">⚠ 수학 비중 높음 · 과목 균형 필요</span>` : ''}</div></div>
        <div class="planner-plan-list">
          ${plannerViewItems.map((item) => `<div class="planner-item ${item.done ? 'done' : ''}" data-action="openPlannerEdit" data-planner-id="${item.id}"><i class="dot ${item.dot}"></i><div class="planner-item-main"><b>${item.subject}</b><p>${item.content}</p></div><div class="planner-item-right"><strong>${item.minutes}분</strong><div class="planner-item-controls"><button class="planner-item-done" data-action="togglePlannerDone" data-planner-id="${item.id}">✓ ${item.done ? '완료!' : '완료'}</button><button class="planner-item-remove" data-action="removePlannerItem" data-planner-id="${item.id}">✕</button></div></div></div>`).join('') || '<div class="planner-empty-day">선택한 날짜의 플래너가 없습니다.</div>'}
@@ -1385,6 +1401,12 @@ function App() {
   console.log('APP_CURRENT_SCREEN', currentScreen);
 
   const onClick = (e) => {
+    const scrollY = window.scrollY;
+    const activeEl = document.activeElement;
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
+      if (activeEl && document.body.contains(activeEl)) activeEl.focus?.({ preventScroll: true });
+    });
     if (isAnalyzing && screen === 'analysis') return;
     const actionEl = e.target.closest('[data-action]');
     if (!actionEl) return;
@@ -1417,7 +1439,10 @@ function App() {
       setTargetOpen(false);
     }
     if (action === 'setAnalysisMode') setAnalysisMode(actionEl.getAttribute('data-analysis-mode') || 'summary');
-    if (action === 'setScoreView') setActiveScoreView(actionEl.getAttribute('data-score-view') || 'current');
+    if (action === 'setScoreView') {
+      e.stopPropagation();
+      setActiveScoreView(actionEl.getAttribute('data-score-view') || 'current');
+    }
     if (action === 'openAnalysisSearch') setAnalysisSearchOpen(true);
     if (action === 'closeAnalysisSearch') {
       setAnalysisSearchOpen(false);
@@ -1446,8 +1471,14 @@ function App() {
     if (action === 'selectPlannerDate') {
       const date = actionEl.getAttribute('data-planner-date');
       if (!date) return;
+      const strip = document.querySelector('.planner-date-strip');
+      const prevLeft = strip?.scrollLeft ?? 0;
       setSelectedDate(String(date));
       setPlannerCalendarOpen(false);
+      requestAnimationFrame(() => {
+        const currentStrip = document.querySelector('.planner-date-strip');
+        if (currentStrip) currentStrip.scrollLeft = prevLeft;
+      });
     }
     if (action === 'openPlannerEdit') setPlannerEditIndex(actionEl.getAttribute('data-planner-id'));
     if (action === 'closePlannerEdit') setPlannerEditIndex(null);
@@ -1713,6 +1744,12 @@ function App() {
   };
 
   const onInput = (e) => {
+    const scrollY = window.scrollY;
+    const activeEl = document.activeElement;
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
+      if (activeEl && document.body.contains(activeEl)) activeEl.focus?.({ preventScroll: true });
+    });
     const field = e.target.getAttribute('data-field');
     if (field === 'coachingMonth') setCoachingMonth(e.target.value);
     const coachAnswer = e.target.getAttribute('data-coach-answer');
