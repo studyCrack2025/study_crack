@@ -104,7 +104,7 @@ function App() {
   const [screen, setScreen] = useState('splash');
   const [tab, setTab] = useState('home');
   const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [selectedUniversityIndex, setSelectedUniversityIndex] = useState(0);
@@ -377,7 +377,6 @@ function App() {
   const initializeApp = () => {
     try {
       console.log('[APP_INIT_START]');
-      setLoading(true);
       setError(false);
 
       const savedUser = safeParse('user', DEFAULT_USER);
@@ -419,6 +418,12 @@ function App() {
 
   useEffect(() => {
     initializeApp();
+  }, []);
+
+  useEffect(() => {
+    // 어떤 예외 상황에서도 초기 로딩 UI가 3초 이상 유지되지 않도록 강제 해제
+    const loadingGuard = setTimeout(() => setLoading(false), 2500);
+    return () => clearTimeout(loadingGuard);
   }, []);
 
   useEffect(() => {
