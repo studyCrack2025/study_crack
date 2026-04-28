@@ -355,7 +355,7 @@ function App() {
       setError(false);
       fallbackTimer = setTimeout(() => {
         setLoading(false);
-        setScreen('authLogin');
+        setScreen('authLanding');
       }, 3000);
 
       const savedUser = safeParse('user', DEFAULT_USER);
@@ -386,12 +386,12 @@ function App() {
       await resolveAssetPath('./assets/76220C96-DE85-4148-A6AC-7BD5881821A0.png', null);
       await resolveAssetPath('./assets/IMG_2648.jpeg', null);
 
-      setScreen('authLogin');
+      setScreen('authLanding');
       console.log('[APP_INIT_SUCCESS]');
     } catch (e) {
       console.error('[APP_INIT_ERROR]', e);
       setError(true);
-      setScreen('authLogin');
+      setScreen('authLanding');
     } finally {
       if (fallbackTimer) clearTimeout(fallbackTimer);
       setLoading(false);
@@ -1257,6 +1257,19 @@ function App() {
        </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="startStandard">Standard로 시작하기</button><button class="auth-link-btn" data-action="completeOnboarding">홈으로 이동</button></div></div>`,
       false
     ),
+    authLanding: layout(`<div class="auth-screen auth-landing-screen">
+      <div class="card auth-landing-card">
+        <div class="auth-landing-logo-wrap">
+          <img src="${STUDYCRACK_LOGO_SRC}" class="auth-landing-logo" alt="StudyCrack Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+          <span class="auth-logo-fallback">StudyCrack</span>
+        </div>
+        <div class="auth-landing-cracky-wrap">
+          <img src="${CRACKY_SRC}" class="auth-landing-cracky" alt="크랙이" />
+        </div>
+        <div class="auth-landing-bubble">크랙이가 “대학에 합격할 수 있는 가장 쉽고 확실한 방법을 알려줄게요!“</div>
+      </div>
+      <button class="btn btn-primary auth-landing-login-btn" data-action="goto" data-target="authLogin">로그인</button>
+    </div>`, false),
     authLogin: layout(`<div class="auth-screen">
       <div class="card auth-unified-card">
         <div class="auth-logo-wrap compact">
@@ -1273,11 +1286,33 @@ function App() {
         <button class="btn btn-primary auth-submit" data-action="loginSuccess">로그인</button>
         <div class="auth-divider"><span>또는</span></div>
         <div class="auth-sso-row">
-          <button class="auth-sso-btn" data-action="ssoSuccess">K</button>
-          <button class="auth-sso-btn" data-action="ssoSuccess">G</button>
-          <button class="auth-sso-btn" data-action="ssoSuccess">N</button>
+          <button class="auth-sso-btn kakao" data-action="ssoSuccess">카카오 계정으로 로그인</button>
+          <button class="auth-sso-btn apple" data-action="ssoSuccess">Apple로 로그인</button>
+        </div>
+        <div class="auth-helper-row">
+          <button class="auth-link-btn" data-action="goto" data-target="authFindId">아이디 찾기</button>
+          <span>|</span>
+          <button class="auth-link-btn" data-action="goto" data-target="authFindPw">비밀번호 찾기</button>
         </div>
         <button class="auth-link-btn" data-action="goto" data-target="authSignup">아직 계정이 없나요? 회원가입</button>
+      </div>
+    </div>`, false),
+    authFindId: layout(appbar('아이디 찾기', true) + `<div class="auth-screen">
+      <div class="card auth-form-card">
+        <p class="sub">가입한 이름과 연락처를 입력하면 아이디(이메일)를 안내해드려요.</p>
+        <label class="auth-label">이름</label>
+        <input class="planner-input" placeholder="이름 입력" />
+        <label class="auth-label">휴대폰 번호</label>
+        <input class="planner-input" placeholder="01012345678" />
+        <button class="btn btn-primary auth-submit" data-action="goto" data-target="authLogin">아이디 확인하기</button>
+      </div>
+    </div>`, false),
+    authFindPw: layout(appbar('비밀번호 찾기', true) + `<div class="auth-screen">
+      <div class="card auth-form-card">
+        <p class="sub">가입한 아이디(이메일)로 비밀번호 재설정 링크를 보내드려요.</p>
+        <label class="auth-label">아이디(이메일)</label>
+        <input class="planner-input" placeholder="you@example.com" />
+        <button class="btn btn-primary auth-submit" data-action="goto" data-target="authLogin">재설정 링크 받기</button>
       </div>
     </div>`, false),
     authSignup: layout(appbar('회원가입', true) + `<div class="auth-screen">
@@ -1411,6 +1446,9 @@ function App() {
                   const projectionBox = projectionScore ? `<span class="analysis-v2-bar-proj-box" style="bottom:${heightPercent}%;height:${projectionHeight}%"></span>` : '';
                   return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="simulateBarGain" data-target-major="${full}" data-base-score="${score}"><b class="score">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar" style="height:${heightPercent}%;background:${color}"></i>${projectionBox}${projection}</div><p>${label}</p></button>`;
                 }).join('')}
+              </div>
+              <div class="analysis-v2-bar-toggle-row">
+                ${[['가천대학교 관광경영학과'], ['강서대학교 G2빅데이터경영학과'], ['고려대학교 경영대학']].map(([full]) => `<button class="analysis-v2-bar-toggle ${targetMajor===full?'active':''}" data-action="simulateBarGain" data-target-major="${full}"><i></i></button>`).join('')}
               </div>
             </div>
           </div>
@@ -2147,7 +2185,7 @@ function App() {
 
   const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>StudyCrack 앱을 불러오는 중입니다...</h3><p class="sub">잠시만 기다려 주세요.</p></div></div></div></div>`;
   const fallbackUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div></div>`;
-  const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !['authLogin', 'authSignup'].includes(screen) ? screens.authLogin : current;
+  const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !['authLanding', 'authLogin', 'authSignup', 'authFindId', 'authFindPw'].includes(screen) ? screens.authLanding : current;
   const analysisOverlay = isAnalyzing && screen === 'analysis'
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>분석중입니다</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
