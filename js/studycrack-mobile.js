@@ -1662,7 +1662,7 @@ function App() {
     const actionEl = e.target.closest('[data-action]');
     if (!actionEl) return;
     const action = actionEl.getAttribute('data-action');
-    const shouldKeepScroll = !['goto', 'back', 'tab', 'drawerGoto', 'loginSuccess', 'signupSuccess', 'ssoSuccess', 'selectUniversity'].includes(action);
+    const shouldKeepScroll = !['loginSuccess', 'signupSuccess', 'ssoSuccess'].includes(action);
     const keepTop = shouldKeepScroll ? getAppScrollTop() : null;
     const keepActive = shouldKeepScroll ? document.activeElement : null;
     if (shouldKeepScroll) armScrollGuard(900);
@@ -2244,16 +2244,17 @@ function App() {
     });
   };
 
-  const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>StudyCrack 앱을 불러오는 중입니다...</h3><p class="sub">잠시만 기다려 주세요.</p></div></div></div></div>`;
+  const loadingUi = `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>초기 로딩 중입니다</b><p>잠시만 기다려주세요</p></div></div>`;
   const fallbackUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div></div>`;
-  const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !['authEntry', 'authLogin', 'authSignup', 'authFindEmail', 'authFindPassword'].includes(screen) ? screens.authEntry : current;
+  const renderedBase = error ? fallbackUi : !loggedIn && !['authEntry', 'authLogin', 'authSignup', 'authFindEmail', 'authFindPassword'].includes(screen) ? screens.authEntry : current;
+  const startupOverlay = loading ? loadingUi : '';
   const analysisOverlay = isAnalyzing && screen === 'analysis'
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>분석중입니다</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
   const onboardingOverlay = onboardingLoading
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><img src="${CRACKY_SRC}" alt="크랙이" class="global-loading-char"/><div class="loading-dots"><i></i><i></i><i></i></div><b>${onboardingLoadingText}</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
-  const rendered = `${designV2StyleTag}${renderedBase}${analysisOverlay}${onboardingOverlay}`;
+  const rendered = `${designV2StyleTag}${renderedBase}${startupOverlay}${analysisOverlay}${onboardingOverlay}`;
 
   return <div onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} onScroll={onScroll} dangerouslySetInnerHTML={{ __html: rendered }} />;
 }
