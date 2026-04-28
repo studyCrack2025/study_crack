@@ -177,8 +177,15 @@ function initCognitoAndFetchData() {
             fetchUserData(userId);
         });
     } else {
-        alert("로그인 정보가 유효하지 않습니다.");
-        handleSignOut();
+        // 소셜 로그인 사용자는 Cognito SDK 세션 없이 localStorage 토큰을 직접 사용
+        const accessToken = localStorage.getItem('accessToken');
+        const userId = localStorage.getItem('userId');
+        if (accessToken && userId) {
+            fetchUserData(userId);
+        } else {
+            alert("로그인 정보가 유효하지 않습니다.");
+            handleSignOut();
+        }
     }
 }
 
