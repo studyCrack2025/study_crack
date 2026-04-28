@@ -182,6 +182,17 @@ function App() {
   const suppressClickUntilRef = useRef(0);
   const lastStableScrollYRef = useRef(0);
   const scrollGuardRef = useRef({ until: 0, y: 0 });
+  const keepScrollPosition = () => {
+    const y = window.scrollY || window.pageYOffset || 0;
+    requestAnimationFrame(() => {
+      const now = window.scrollY || window.pageYOffset || 0;
+      if (Math.abs(now - y) > 2) window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+    });
+    setTimeout(() => {
+      const now = window.scrollY || window.pageYOffset || 0;
+      if (Math.abs(now - y) > 2) window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+    }, 0);
+  };
 
   const goto = (next, addHistory = true) => {
     const currentY = window.scrollY || window.pageYOffset || 0;
@@ -312,20 +323,24 @@ function App() {
 
   useEffect(() => {
     if (screen !== 'analysis') return;
+    const yBefore = window.scrollY || window.pageYOffset || 0;
     setIsAnalyzing(true);
     const t = setTimeout(() => {
       armScrollGuard(1200);
       setIsAnalyzing(false);
+      requestAnimationFrame(() => window.scrollTo({ top: yBefore, left: 0, behavior: 'auto' }));
     }, 2000);
     return () => clearTimeout(t);
   }, [screen, targetMajor]);
 
   useEffect(() => {
     if (screen !== 'ob3') return;
+    const yBefore = window.scrollY || window.pageYOffset || 0;
     setOb3IsAnalyzing(true);
     const t = setTimeout(() => {
       armScrollGuard(1200);
       setOb3IsAnalyzing(false);
+      requestAnimationFrame(() => window.scrollTo({ top: yBefore, left: 0, behavior: 'auto' }));
     }, 1500);
     return () => clearTimeout(t);
   }, [screen]);
@@ -1624,7 +1639,7 @@ function App() {
     if (!actionEl) return;
     const action = actionEl.getAttribute('data-action');
     const shouldKeepScroll = !['goto', 'back', 'tab', 'drawerGoto', 'loginSuccess', 'signupSuccess', 'ssoSuccess', 'selectUniversity'].includes(action);
-    if (shouldKeepScroll) armScrollGuard(900);
+    if (shouldKeepScroll) keepScrollPosition();
     if (action === 'goto') {
       const target = actionEl.getAttribute('data-target');
       if (screen === 'on1' && target === 'ob1') {
