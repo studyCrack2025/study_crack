@@ -8,6 +8,7 @@ const DEFAULT_USER = { name: '김지민', targetUniversity: '연세대학교 경
 const DEFAULT_SCORES = { korean: 82, math: 68, english: 77, inquiry1: 70, inquiry2: 66 };
 const DEFAULT_NOTIFICATIONS = { planner: true, weekly: true, report: true, billing: true };
 const FIXED_TODAY_DATE = '2024-05-14';
+const SCROLL_STORAGE_KEY = 'studycrack_scroll_positions_v1';
 const DEFAULT_PLANNER_ITEMS = [
   { id: 'pl-default-1', date: '14', subject: '수학', content: '개념 학습', start: '10:00', end: '12:00', minutes: 120, dot: 'math' },
   { id: 'pl-default-2', date: '14', subject: '영어', content: '독해 문제 풀이', start: '13:00', end: '14:30', minutes: 90, dot: 'eng' },
@@ -172,11 +173,17 @@ function App() {
   const plannerContentRef = useRef('');
   const plannerCustomMinutesRef = useRef('');
   const screenScrollRef = useRef({});
+  const scrollPersistRafRef = useRef(null);
   const touchStartXRef = useRef(null);
   const touchTargetRef = useRef('');
 
   const goto = (next, addHistory = true) => {
     screenScrollRef.current[screen] = window.scrollY || window.pageYOffset || 0;
+    try {
+      localStorage.setItem(SCROLL_STORAGE_KEY, JSON.stringify(screenScrollRef.current));
+    } catch (_err) {
+      // noop
+    }
     if (addHistory && screen !== next) setHistory((h) => [...h, screen]);
     setScreen(next);
     if (['home', 'analysis', 'strategy', 'planner', 'my'].includes(next)) setTab(next);
@@ -184,12 +191,61 @@ function App() {
 
   const back = () => {
     screenScrollRef.current[screen] = window.scrollY || window.pageYOffset || 0;
+    try {
+      localStorage.setItem(SCROLL_STORAGE_KEY, JSON.stringify(screenScrollRef.current));
+    } catch (_err) {
+      // noop
+    }
     if (!history.length) return goto('home', false);
     const clone = [...history];
     const prev = clone.pop();
     setHistory(clone);
     setScreen(prev);
   };
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SCROLL_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') screenScrollRef.current = parsed;
+      }
+    } catch (_err) {
+      // noop
+    }
+  }, []);
+
+  useEffect(() => {
+    const persist = () => {
+      if (scrollPersistRafRef.current) cancelAnimationFrame(scrollPersistRafRef.current);
+      scrollPersistRafRef.current = requestAnimationFrame(() => {
+        try {
+          localStorage.setItem(SCROLL_STORAGE_KEY, JSON.stringify(screenScrollRef.current));
+        } catch (_err) {
+          // noop
+        }
+      });
+    };
+    const onScroll = () => {
+      screenScrollRef.current[screen] = window.scrollY || window.pageYOffset || 0;
+      persist();
+    };
+    const onBeforeUnload = () => {
+      screenScrollRef.current[screen] = window.scrollY || window.pageYOffset || 0;
+      try {
+        localStorage.setItem(SCROLL_STORAGE_KEY, JSON.stringify(screenScrollRef.current));
+      } catch (_err) {
+        // noop
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('beforeunload', onBeforeUnload);
+      if (scrollPersistRafRef.current) cancelAnimationFrame(scrollPersistRafRef.current);
+    };
+  }, [screen]);
 
   useEffect(() => {
     const savedY = screenScrollRef.current[screen];
