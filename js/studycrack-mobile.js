@@ -515,7 +515,7 @@ function App() {
       sim: [['국어', '+13.1점', '가장 합격 상승에 유리합니다.', true], ['수학', '+13.1점', '점수 상승으로 합격 가능성이 높아집니다.', false], ['세사', '+8.2점', '점수 상승으로 합격 가능성이 높아집니다.', false], ['동사', '+8.2점', '점수 상승으로 합격 가능성이 높아집니다.', false]]
     },
     '강서대학교 G2빅데이터경영학과': {
-      score: 250, verdict: '초안정', verdictColor: '#22C55E', aiGrade: '초안정',
+      score: 238, verdict: '초안정', verdictColor: '#22C55E', aiGrade: '초안정',
       comment: '최초 합격/장학금 유력 구간입니다. 더 높은 대학을 과감하게 상향 지원해보는 전략이 필요합니다.',
       sim: [['국어', '+4.2점', '현재 합격권에서 안정성 강화에 유리합니다.', true], ['수학', '+3.8점', '상위 대학 도전 전략에 유리합니다.', false], ['세사', '+2.1점', '기본 유지가 중요합니다.', false], ['동사', '+2.1점', '기본 유지가 중요합니다.', false]]
     },
@@ -540,7 +540,12 @@ function App() {
   const analysisWeeks = Math.max(3, Math.ceil((Math.max(100 - analysisSelected.score, 0) || 12) / 3));
   const analysisCurrentPct = Math.min((analysisSelected.score / 250) * 100, 100);
   const analysisTargetPct = Math.min((analysisTargetScore / 250) * 100, 100);
-  const analysisSimMax = Math.max(...analysisSelected.sim.map(([, gain]) => Number(String(gain).replace(/[^0-9.]/g, '')) || 0), 1);
+  const analysisSimRows = analysisSelected.sim.map(([subject, gain, desc], idx) => {
+    const gainNum = Number(String(gain).replace(/[^0-9.]/g, '')) || 0;
+    return { subject, gain, desc, gainNum, idx };
+  });
+  const analysisSimMax = Math.max(...analysisSimRows.map(({ gainNum }) => gainNum), 0);
+  const analysisSimRecommendedIndex = analysisSimRows.findIndex(({ gainNum }) => gainNum === analysisSimMax);
   const onboardingProgress = (step) => `<div class="ob-progress"><span>${step}/3</span><div class="ob-dots"><i class="${step>=1?'active':''}"></i><i class="${step>=2?'active':''}"></i><i class="${step>=3?'active':''}"></i></div></div>`;
   const mbtiDone = Object.values(mbtiAnswers).every(Boolean);
   const gaugeTotal = 250;
@@ -1393,14 +1398,16 @@ function App() {
               <div class="analysis-v2-guide-line pass"><span class="label">합격선 100</span></div>
               <div class="analysis-v2-guide-line safe"><span class="label">안정선 150</span></div>
               <div class="analysis-v2-bars">
-                ${[['가천대 관광경영학과', 250, '가천대학교 관광경영학과'], ['강서대 G2빅데이터경영학과', 250, '강서대학교 G2빅데이터경영학과'], ['고려대 경영대학', 71, '고려대학교 경영대학']].map(([label, score, full]) => {
+                ${[['가천대 관광경영학과', 250, '가천대학교 관광경영학과'], ['강서대 G2빅데이터경영학과', 238, '강서대학교 G2빅데이터경영학과'], ['고려대 경영대학', 71, '고려대학교 경영대학']].map(([label, score, full]) => {
                   const heightPercent = Math.max(8, Math.min(100, (score / 250) * 100));
                   const color = score >= 250 ? '#22C55E' : score < 100 ? '#F97316' : '#2563EB';
                   const shouldProject = analysisBarProjectionTarget === full;
-                  const projectionScore = shouldProject ? Math.min(250, score + 13) : null;
+                  const projectionGain = shouldProject ? Math.max(0, Math.min(analysisSimMax, 250 - score)) : null;
+                  const projectionScore = projectionGain !== null ? Math.min(250, score + projectionGain) : null;
                   const projectedPercent = projectionScore ? Math.max(8, Math.min(100, (projectionScore / 250) * 100)) : heightPercent;
                   const projectionHeight = projectionScore ? Math.max(8, projectedPercent - heightPercent) : 0;
-                  const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${Math.min(96, projectedPercent + 3)}%">${projectionScore} (+13.1)</span>` : '';
+                  const gainLabel = projectionGain === null ? '' : Number(projectionGain.toFixed(1)).toString();
+                  const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${Math.min(96, projectedPercent + 3)}%">${Number(projectionScore.toFixed(1)).toString()} (+${gainLabel})</span>` : '';
                   const projectionBox = projectionScore ? `<span class="analysis-v2-bar-proj-box" style="bottom:${heightPercent}%;height:${projectionHeight}%"></span>` : '';
                   return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="simulateBarGain" data-target-major="${full}" data-base-score="${score}"><b class="score">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar" style="height:${heightPercent}%;background:${color}"></i>${projectionBox}${projection}</div><p>${label}</p></button>`;
                 }).join('')}
@@ -1411,9 +1418,9 @@ function App() {
           <div class="card analysis-v2-sim">
             ${(() => { console.log('RENDER_SCORE_GAIN_CARD_V3'); return ''; })()}
             <p class="analysis-title">+1점 상승 시 기대 효율</p>
-            ${analysisSelected.sim.map(([subject, gain, desc, recommended]) => {
-              const gainNum = Number(String(gain).replace(/[^0-9.]/g, '')) || 0;
-              const ratio = Math.max((gainNum / analysisSimMax) * 100, 8);
+            ${analysisSimRows.map(({ subject, gain, desc, gainNum }, index) => {
+              const ratio = Math.max((gainNum / Math.max(analysisSimMax, 1)) * 100, 8);
+              const recommended = index === analysisSimRecommendedIndex;
               const selected = analysisHighlightedSubject===subject;
               return `<button class="analysis-v2-sim-item ${recommended?'recommended':''} ${selected?'focus':''}" data-action="highlightSimSubject" data-sim-subject="${subject}"><div class="left"><p><strong>${subject} (+1점)</strong>${recommended?'<span class="badge">추천</span>':''}</p><small>${desc}</small><span class="mini-track"><i style="width:${ratio}%"></i></span>${selected?`<span class="sim-detail">+1점 상승 시 AI 점수 ${gain} / 합격 가능성 상승 기대</span>`:''}</div><b>${gain}</b></button>`;
             }).join('')}
