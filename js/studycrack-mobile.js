@@ -105,6 +105,7 @@ function App() {
   const [analysisMode, setAnalysisMode] = useState('summary');
   const [analysisEtaStage, setAnalysisEtaStage] = useState(1);
   const [analysisHighlightedSubject, setAnalysisHighlightedSubject] = useState('');
+  const [analysisBarProjectionTarget, setAnalysisBarProjectionTarget] = useState('');
   const [activeScoreView, setActiveScoreView] = useState('current');
   const [homeSlideIndex, setHomeSlideIndex] = useState(0);
   const [selectedDate, setSelectedDate] = useState('14');
@@ -166,20 +167,32 @@ function App() {
   const [obQuestionText, setObQuestionText] = useState('');
   const [obExamType, setObExamType] = useState('3월 학평');
   const [obScoreInputs, setObScoreInputs] = useState({});
+  const plannerContentRef = useRef('');
+  const plannerCustomMinutesRef = useRef('');
+  const screenScrollRef = useRef({});
+  const scoreViewScrollLockRef = useRef(false);
 
   const goto = (next, addHistory = true) => {
+    screenScrollRef.current[screen] = window.scrollY || window.pageYOffset || 0;
     if (addHistory && screen !== next) setHistory((h) => [...h, screen]);
     setScreen(next);
     if (['home', 'analysis', 'strategy', 'planner', 'my'].includes(next)) setTab(next);
   };
 
   const back = () => {
+    screenScrollRef.current[screen] = window.scrollY || window.pageYOffset || 0;
     if (!history.length) return goto('home', false);
     const clone = [...history];
     const prev = clone.pop();
     setHistory(clone);
     setScreen(prev);
   };
+
+  useEffect(() => {
+    const savedY = screenScrollRef.current[screen];
+    if (typeof savedY !== 'number') return;
+    requestAnimationFrame(() => window.scrollTo({ top: savedY, left: 0, behavior: 'auto' }));
+  }, [screen]);
 
   useEffect(() => {
     if (screen === 'splash') {
@@ -227,9 +240,9 @@ function App() {
     if (screen !== 'home') return;
     const slider = document.querySelector('.home-kpi-slider');
     if (!slider) return;
-    const handler = () => {
-      const cards = Array.from(slider.querySelectorAll('.slider-card'));
-      if (!cards.length) return;
+    const cards = Array.from(slider.querySelectorAll('.slider-card'));
+    if (!cards.length) return;
+    const snapToClosest = () => {
       const center = slider.scrollLeft + (slider.clientWidth / 2);
       let nextIdx = 0;
       let minDist = Number.MAX_SAFE_INTEGER;
@@ -243,27 +256,50 @@ function App() {
       });
       setHomeSlideIndex((prev) => (prev === nextIdx ? prev : nextIdx));
     };
+    const io = new IntersectionObserver((entries) => {
+      const visible = entries.filter((entry) => entry.isIntersecting);
+      if (!visible.length) return;
+      const mostVisible = visible.sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      const nextIdx = cards.findIndex((card) => card === mostVisible.target);
+      if (nextIdx >= 0) setHomeSlideIndex((prev) => (prev === nextIdx ? prev : nextIdx));
+    }, { root: slider, threshold: [0.55, 0.7, 0.85] });
+    cards.forEach((card) => io.observe(card));
+    const handler = () => {
+      snapToClosest();
+    };
     slider.addEventListener('scroll', handler, { passive: true });
-    handler();
-    return () => slider.removeEventListener('scroll', handler);
+    snapToClosest();
+    return () => {
+      slider.removeEventListener('scroll', handler);
+      io.disconnect();
+    };
   }, [screen]);
 
   useEffect(() => {
+    if (!['analysis', 'on3'].includes(screen)) return;
     const raf = requestAnimationFrame(() => {
       const container = document.querySelector('.score-journey-scroll');
       if (!container) return;
       const target = container.querySelector(`.score-journey-col[data-score-view="${activeScoreView}"]`);
       if (!target) return;
       const left = target.offsetLeft - Math.max(0, (container.clientWidth - target.clientWidth) / 2);
-      container.scrollTo({ left, behavior: 'smooth' });
+      const currentY = window.scrollY || window.pageYOffset || 0;
+      scoreViewScrollLockRef.current = true;
+      container.scrollTo({ left, behavior: 'auto' });
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: currentY, left: 0, behavior: 'auto' });
+        scoreViewScrollLockRef.current = false;
+      });
     });
     return () => cancelAnimationFrame(raf);
   }, [activeScoreView, screen, analysisMode]);
 
   useEffect(() => {
+    if (!['analysis', 'on3'].includes(screen)) return;
     const container = document.querySelector('.score-journey-scroll');
     if (!container) return;
     const syncFromScroll = () => {
+      if (scoreViewScrollLockRef.current) return;
       const cards = Array.from(container.querySelectorAll('.score-journey-col'));
       if (!cards.length) return;
       const center = container.scrollLeft + (container.clientWidth / 2);
@@ -741,7 +777,7 @@ function App() {
           <div class="home-planner-badges chip-row">${plannerBadges.map((badge) => `<span class="chip">${badge}</span>`).join('')}</div>
         </button>`).join('')}
       </div>
-      <div class="home-kpi-indicator card-indicator">${homeTargets.map((_, idx) => `<i class="${idx===homeSlideIndex?'active':''}"></i>`).join('')}</div>
+      <div class="home-kpi-indicator card-indicator">${homeTargets.map((_, idx) => `<i class="${idx===homeSlideIndex?'active':''}" data-action="setHomeSlide" data-slide-index="${idx}"></i>`).join('')}</div>
       ${universityModalOpen ? `<div class="home-modal-overlay" data-action="closeUniversityModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">목표 대학 추가</p><p class="sub" style="margin-top:8px">대학 선택 모달은 다음 단계에서 연결됩니다.</p><button class="btn btn-primary" data-action="closeUniversityModal">닫기</button></div></div>` : ''}
     </div>
     <div class="section home-section home-section-last">
@@ -909,6 +945,11 @@ function App() {
     .analysis-v2-bar{width:56px;min-height:8px;border-radius:18px 18px 12px 12px;}
     .analysis-v2-bar-item p{margin:0;max-width:84px;font-size:12px;font-weight:600;line-height:1.35;color:#475569;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
     .analysis-v2-bar-item.active p{color:#2563EB;font-weight:700;}
+    .analysis-v2-bar-proj.pop{animation:barProjPop .36s ease;}
+    @keyframes barProjPop{0%{transform:translateX(-50%) translateY(8px);opacity:0;}100%{transform:translateX(-50%) translateY(0);opacity:1;}}
+    .home-kpi-slider{display:flex;overflow-x:auto;gap:10px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:2px;}
+    .home-kpi-slider .slider-card{flex:0 0 calc(100% - 24px);scroll-snap-align:center;}
+    .home-kpi-indicator i{cursor:pointer;}
     .home-result-card-v3{display:grid;gap:12px;text-align:left;overflow:hidden;}
     .home-result-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;}
     .home-result-major{margin:0;font-size:16px;font-weight:800;color:#0F172A;line-height:1.4;}
@@ -1311,8 +1352,10 @@ function App() {
                 ${[['가천대 관광경영학과', 250, '가천대학교 관광경영학과'], ['강서대 G2빅데이터경영학과', 250, '강서대학교 G2빅데이터경영학과'], ['고려대 경영대학', 71, '고려대학교 경영대학']].map(([label, score, full]) => {
                   const heightPercent = Math.max(8, Math.min(100, (score / 250) * 100));
                   const color = score >= 250 ? '#22C55E' : score < 100 ? '#F97316' : '#2563EB';
-                  const projection = score === 71 ? `<span class="analysis-v2-bar-proj">84 (+13.1)</span>` : '';
-                  return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="selectTarget" data-target-major="${full}"><b class="score">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar" style="height:${heightPercent}%;background:${color}"></i>${projection}</div><p>${label}</p></button>`;
+                  const shouldProject = analysisBarProjectionTarget === full;
+                  const projectionScore = shouldProject ? Math.min(250, score + 13) : score === 71 ? 84 : null;
+                  const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}">${projectionScore} (+13.1)</span>` : '';
+                  return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="simulateBarGain" data-target-major="${full}" data-base-score="${score}"><b class="score">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar" style="height:${heightPercent}%;background:${color}"></i>${projection}</div><p>${label}</p></button>`;
                 }).join('')}
               </div>
             </div>
@@ -1382,8 +1425,8 @@ function App() {
             <h4>${selectedPlannerDate}일 학습 계획</h4>
             <p class="sub">선택한 날짜에 실행할 학습 계획을 입력해 주세요.</p>
             <div class="planner-sheet-block"><label>과목 선택</label><div class="planner-pill-row"><button class="planner-pill ${plannerDraft.subject==='수학'?'active':''}" data-action="setPlannerSubject" data-planner-subject="수학">수학</button><button class="planner-pill ${plannerDraft.subject==='국어'?'active':''}" data-action="setPlannerSubject" data-planner-subject="국어">국어</button><button class="planner-pill ${plannerDraft.subject==='영어'?'active':''}" data-action="setPlannerSubject" data-planner-subject="영어">영어</button><button class="planner-pill ${plannerDraft.subject==='탐구'?'active':''}" data-action="setPlannerSubject" data-planner-subject="탐구">탐구</button></div></div>
-            <div class="planner-sheet-block"><label>학습 내용</label><input class="planner-input" data-field="plannerContent" value="${plannerDraft.content}" placeholder="예: 개념 학습, 독해 문제 풀이" /></div>
-            <div class="planner-sheet-block"><label>시간 선택</label><div class="planner-pill-row"><button class="planner-pill ${plannerDraft.durationChoice==='30'?'active':''}" data-action="setPlannerDuration" data-planner-duration="30">30분</button><button class="planner-pill ${plannerDraft.durationChoice==='60'?'active':''}" data-action="setPlannerDuration" data-planner-duration="60">60분</button><button class="planner-pill ${plannerDraft.durationChoice==='90'?'active':''}" data-action="setPlannerDuration" data-planner-duration="90">90분</button><button class="planner-pill ${plannerDraft.durationChoice==='120'?'active':''}" data-action="setPlannerDuration" data-planner-duration="120">120분</button><button class="planner-pill ${plannerDraft.durationChoice==='custom'?'active':''}" data-action="setPlannerDuration" data-planner-duration="custom">직접 입력</button></div><input class="planner-input ${plannerDraft.durationChoice==='custom'?'':'is-hidden'}" data-field="plannerCustomMinutes" value="${plannerDraft.customMinutes}" type="number" placeholder="분 단위 입력" /></div>
+            <div class="planner-sheet-block"><label>학습 내용</label><input class="planner-input" data-field="plannerContent" value="${plannerContentRef.current}" placeholder="예: 개념 학습, 독해 문제 풀이" /></div>
+            <div class="planner-sheet-block"><label>시간 선택</label><div class="planner-pill-row"><button class="planner-pill ${plannerDraft.durationChoice==='30'?'active':''}" data-action="setPlannerDuration" data-planner-duration="30">30분</button><button class="planner-pill ${plannerDraft.durationChoice==='60'?'active':''}" data-action="setPlannerDuration" data-planner-duration="60">60분</button><button class="planner-pill ${plannerDraft.durationChoice==='90'?'active':''}" data-action="setPlannerDuration" data-planner-duration="90">90분</button><button class="planner-pill ${plannerDraft.durationChoice==='120'?'active':''}" data-action="setPlannerDuration" data-planner-duration="120">120분</button><button class="planner-pill ${plannerDraft.durationChoice==='custom'?'active':''}" data-action="setPlannerDuration" data-planner-duration="custom">직접 입력</button></div><input class="planner-input ${plannerDraft.durationChoice==='custom'?'':'is-hidden'}" data-field="plannerCustomMinutes" value="${plannerCustomMinutesRef.current}" type="number" placeholder="분 단위 입력" /></div>
             <button class="btn btn-primary planner-sheet-submit ${canSubmitPlanner?'':'disabled'}" data-action="addPlannerFromSheet" ${canSubmitPlanner?'':'disabled'}>플래너에 추가하기</button>
           </div>
         </div>
@@ -1514,6 +1557,14 @@ function App() {
       e.stopPropagation();
       setActiveScoreView(actionEl.getAttribute('data-score-view') || 'current');
     }
+    if (action === 'setHomeSlide') {
+      const idx = Number(actionEl.getAttribute('data-slide-index'));
+      const slider = document.querySelector('.home-kpi-slider');
+      const cards = slider ? Array.from(slider.querySelectorAll('.slider-card')) : [];
+      if (!slider || Number.isNaN(idx) || !cards[idx]) return;
+      slider.scrollTo({ left: cards[idx].offsetLeft - Math.max(0, (slider.clientWidth - cards[idx].clientWidth) / 2), behavior: 'smooth' });
+      setHomeSlideIndex(idx);
+    }
     if (action === 'openAnalysisSearch') setAnalysisSearchOpen(true);
     if (action === 'closeAnalysisSearch') {
       setAnalysisSearchOpen(false);
@@ -1524,6 +1575,13 @@ function App() {
       if (!subject) return;
       setAnalysisHighlightedSubject(subject);
       setTimeout(() => setAnalysisHighlightedSubject(''), 550);
+    }
+    if (action === 'simulateBarGain') {
+      const major = actionEl.getAttribute('data-target-major');
+      if (!major) return;
+      setTargetMajor(major);
+      setAnalysisBarProjectionTarget(major);
+      setTimeout(() => setAnalysisBarProjectionTarget((prev) => (prev === major ? '' : prev)), 1200);
     }
     if (action === 'addAnalysisTarget') {
       const major = actionEl.getAttribute('data-target-major');
@@ -1750,12 +1808,14 @@ function App() {
       goto('analysis');
     }
     if (action === 'addPlannerFromSheet') {
-      const content = (document.querySelector('[data-field="plannerContent"]')?.value || '').trim();
-      const customMinutes = (document.querySelector('[data-field="plannerCustomMinutes"]')?.value || '').trim();
+      const content = plannerContentRef.current.trim();
+      const customMinutes = plannerCustomMinutesRef.current.trim();
       const minutes = plannerDraft.durationChoice === 'custom' ? Number(customMinutes) : Number(plannerDraft.durationChoice);
       if (!plannerDraft.subject || !content || !minutes || Number.isNaN(minutes)) return;
       const dot = plannerDraft.subject === '수학' ? 'math' : plannerDraft.subject === '영어' ? 'eng' : plannerDraft.subject === '국어' ? 'kor' : 'sci';
       setPlannerItems((prev) => [...prev, { id: buildPlannerId(), date: selectedPlannerDate, subject: plannerDraft.subject, content, start: '--:--', end: '--:--', minutes, dot }]);
+      plannerContentRef.current = '';
+      plannerCustomMinutesRef.current = '';
       setPlannerDraft({ subject: '', content: '', durationChoice: '', customMinutes: '' });
       goto('planner', false);
     }
@@ -1773,7 +1833,6 @@ function App() {
   };
 
   const onInput = (e) => {
-    e.target?.focus?.({ preventScroll: true });
     const field = e.target.getAttribute('data-field');
     if (field === 'coachPlannerFiles') {
       const files = Array.from(e.target.files || []);
@@ -1804,7 +1863,14 @@ function App() {
       if (rateEl) rateEl.textContent = `달성률 ${Number.isFinite(rate) ? rate : 0}%`;
     }
     if (!field) return;
-    if (field === 'plannerContent' || field === 'plannerCustomMinutes') return;
+    if (field === 'plannerContent') {
+      plannerContentRef.current = e.target.value;
+      return;
+    }
+    if (field === 'plannerCustomMinutes') {
+      plannerCustomMinutesRef.current = e.target.value;
+      return;
+    }
   };
 
   const onChange = (e) => {
