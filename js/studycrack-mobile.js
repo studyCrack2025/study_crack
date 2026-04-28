@@ -230,7 +230,7 @@ function App() {
   const goto = (next, addHistory = true) => {
     const currentY = window.scrollY || window.pageYOffset || 0;
     screenScrollRef.current[screen] = currentY;
-    if (typeof screenScrollRef.current[next] !== 'number') screenScrollRef.current[next] = currentY;
+    if (typeof screenScrollRef.current[next] !== 'number') screenScrollRef.current[next] = 0;
     try {
       localStorage.setItem(SCROLL_STORAGE_KEY, JSON.stringify(screenScrollRef.current));
     } catch (_err) {
@@ -253,6 +253,7 @@ function App() {
     const prev = clone.pop();
     setHistory(clone);
     setScreen(prev);
+    if (['home', 'analysis', 'strategy', 'planner', 'my'].includes(prev)) setTab(prev);
   };
 
   useEffect(() => {
@@ -316,8 +317,13 @@ function App() {
   }, [screen]);
 
   useEffect(() => {
-    // Intentionally do not force-scroll on render/screen change.
-    // Forced restoration has caused visible jump-to-top/jitter on user interactions.
+    const savedY = screenScrollRef.current[screen];
+    const targetY = Number.isFinite(savedY) && savedY >= 0 ? savedY : 0;
+    const raf = requestAnimationFrame(() => {
+      const now = window.scrollY || window.pageYOffset || 0;
+      if (Math.abs(now - targetY) > 2) window.scrollTo({ top: targetY, left: 0, behavior: 'auto' });
+    });
+    return () => cancelAnimationFrame(raf);
   }, [screen]);
 
   useEffect(() => {
