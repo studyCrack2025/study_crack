@@ -59,6 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     setWeeklyLoadingStatus(true);
+    initScrollStabilizer();
 
     try {
         // 1️⃣ [핵심] 유저 데이터를 가장 먼저 가져와서 등급(Tier)을 확인합니다.
@@ -555,6 +556,55 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
+function preserveScrollPositionDuring(updateFn) {
+    if (typeof updateFn !== 'function') return;
+    const startY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+    let userScrolled = false;
+
+    const onUserScroll = () => { userScrolled = true; };
+    window.addEventListener('scroll', onUserScroll, { passive: true, once: true });
+
+    try {
+        updateFn();
+    } finally {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                if (!userScrolled) {
+                    window.scrollTo(0, startY);
+                }
+            });
+        });
+    }
+}
+
+function initScrollStabilizer() {
+    if (window.innerWidth > 768) return;
+    const root = document.querySelector('.content-area');
+    if (!root) return;
+
+    let rafId = null;
+    let baselineY = window.scrollY || window.pageYOffset || 0;
+    let userActivelyScrolling = false;
+
+    window.addEventListener('touchstart', () => { userActivelyScrolling = true; }, { passive: true });
+    window.addEventListener('touchend', () => { setTimeout(() => { userActivelyScrolling = false; }, 120); }, { passive: true });
+    window.addEventListener('scroll', () => { baselineY = window.scrollY || window.pageYOffset || 0; }, { passive: true });
+
+    const observer = new MutationObserver(() => {
+        if (userActivelyScrolling) return;
+        if (rafId) cancelAnimationFrame(rafId);
+        const targetY = baselineY;
+        rafId = requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                const currentY = window.scrollY || window.pageYOffset || 0;
+                if (Math.abs(currentY - targetY) > 4) window.scrollTo(0, targetY);
+            });
+        });
+    });
+
+    observer.observe(root, { childList: true, subtree: true, attributes: true });
+}
+
 function syncMobileHeight() {
     if (window.innerWidth > 768) return; // PC는 실행 안 함
     
@@ -924,13 +974,15 @@ function openSolution(type) {
     const targetContent = document.getElementById(`sol-${type}`);
 
     if (isMobile) {
-        // 모바일: 스와이프 래퍼 스크롤 이동 (display:none 처리 안 함)
-        const wrapper = document.querySelector('.sol-swipe-wrapper');
-        if (wrapper && targetContent) {
-            // 해당 탭의 위치로 부드럽게 스크롤
-            wrapper.scrollTo({ left: targetContent.offsetLeft - wrapper.offsetLeft, behavior: 'smooth' });
-            setTimeout(syncMobileHeight, 350);
-        }
+        preserveScrollPositionDuring(() => {
+            // 모바일: 스와이프 래퍼 스크롤 이동 (display:none 처리 안 함)
+            const wrapper = document.querySelector('.sol-swipe-wrapper');
+            if (wrapper && targetContent) {
+                // 해당 탭의 위치로 부드럽게 스크롤
+                wrapper.scrollTo({ left: targetContent.offsetLeft - wrapper.offsetLeft, behavior: 'smooth' });
+                setTimeout(syncMobileHeight, 350);
+            }
+        });
     } else {
         // PC: 기존처럼 display로 탭 전환
         document.querySelectorAll('.sol-content').forEach(el => el.style.display = 'none');
@@ -1660,10 +1712,12 @@ async function fetchSimulationData() {
 
 function setSimChartType(type) {
     currentSimChartType = type;
-    document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
-    const btnIdx = type === 'bar' ? 0 : 1;
-    document.querySelectorAll('.toggle-btn')[btnIdx].classList.add('active');
-    renderSimChart();
+    preserveScrollPositionDuring(() => {
+        document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+        const btnIdx = type === 'bar' ? 0 : 1;
+        document.querySelectorAll('.toggle-btn')[btnIdx].classList.add('active');
+        renderSimChart();
+    });
 }
 
 let simSvgRefs = null;
@@ -1679,12 +1733,14 @@ function renderSimChart() {
         const style = document.createElement('style');
         style.id = 'simExtensionStyle';
         style.innerHTML = `
-            .sim-extension-bar { width: 40px; background: #ffffff !important; border: 2px dashed #f59e0b; border-bottom: none; border-radius: 6px 6px 0 0; box-sizing: border-box; pointer-events: none; z-index: 2; position: absolute; }
+            .sim-extension-bar { width: 40px; background: #ffffff !important; border: 2px dashed #f59e0b; border-bottom: none; border-radius: 6px 6px 0 0; box-sizing: border-box; pointer-events: none; z-index: 4; position: absolute; }
             .sim-bar-item { -webkit-tap-highlight-color: transparent; }
             .sim-label-item { -webkit-tap-highlight-color: transparent; }
+            .sim-extension-label { position:absolute; left:50%; transform:translateX(-50%); background:#fffbeb; border:1px dashed #f59e0b; border-radius:9999px; color:#b45309; font-size:0.78rem; font-weight:800; white-space:nowrap; padding:3px 9px; line-height:1.1; z-index:5; box-shadow:0 2px 6px rgba(180, 83, 9, 0.15); }
             @media (max-width: 768px) {
                 .sim-extension-bar { width: 28px; }
                 .sim-bar { width: 28px !important; }
+                .sim-extension-label { font-size:0.72rem; padding:2px 7px; }
             }
         `;
         document.head.appendChild(style);
@@ -1708,9 +1764,9 @@ function renderSimChart() {
             const MAX_SCORE = 250; 
 
             if (isMobile) {
-                graphArea.style.padding = '0 15px'; graphArea.style.marginTop = '40px'; graphArea.style.height = '200px'; 
+                graphArea.style.padding = '0 15px'; graphArea.style.marginTop = '56px'; graphArea.style.height = '260px'; 
             } else {
-                graphArea.style.padding = '0 60px 0 20px'; graphArea.style.marginTop = '50px'; graphArea.style.height = '260px'; 
+                graphArea.style.padding = '0 60px 0 20px'; graphArea.style.marginTop = '62px'; graphArea.style.height = '300px'; 
             }
 
             let graphHtml = ''; let labelHtml = '';
@@ -1757,7 +1813,7 @@ function renderSimChart() {
                     
                     extensionHtml = `
                         <div class="sim-extension-bar" data-target-height="${riseHeightPct}" style="position:absolute; bottom:${currentHeightPct}; left:50%; transform:translateX(-50%); height:0; opacity:0; z-index:2; transition:height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease; pointer-events:none;">
-                             <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">
+                             <span class="sim-extension-label" style="top:-30px;">
                                 ${Math.round(potentialScore)} <span style="font-size:0.7rem;">(+${maxRise.toFixed(1)})</span>
                              </span>
                         </div>`;
