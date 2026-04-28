@@ -176,9 +176,12 @@ function App() {
   const scrollPersistRafRef = useRef(null);
   const touchStartXRef = useRef(null);
   const touchTargetRef = useRef('');
+  const suppressClickUntilRef = useRef(0);
 
   const goto = (next, addHistory = true) => {
-    screenScrollRef.current[screen] = window.scrollY || window.pageYOffset || 0;
+    const currentY = window.scrollY || window.pageYOffset || 0;
+    screenScrollRef.current[screen] = currentY;
+    if (typeof screenScrollRef.current[next] !== 'number') screenScrollRef.current[next] = currentY;
     try {
       localStorage.setItem(SCROLL_STORAGE_KEY, JSON.stringify(screenScrollRef.current));
     } catch (_err) {
@@ -1530,6 +1533,7 @@ function App() {
   console.log('APP_CURRENT_SCREEN', currentScreen);
 
   const onClick = (e) => {
+    if (Date.now() < suppressClickUntilRef.current) return;
     if (isAnalyzing && screen === 'analysis') return;
     const actionEl = e.target.closest('[data-action]');
     if (!actionEl) return;
@@ -1908,6 +1912,7 @@ function App() {
       if (typeof endX !== 'number') return;
       const delta = endX - startX;
       if (Math.abs(delta) < 32) return;
+      suppressClickUntilRef.current = Date.now() + 380;
       if (touchTargetRef.current === 'home') {
         setHomeSlideMotion(delta < 0 ? 'motion-next' : 'motion-prev');
         setHomeSlideIndex((prev) => (delta < 0 ? Math.min(prev + 1, homeTargets.length - 1) : Math.max(prev - 1, 0)));
