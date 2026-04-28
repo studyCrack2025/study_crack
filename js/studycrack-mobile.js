@@ -1,4 +1,5 @@
 const { useState, useEffect, useLayoutEffect, useRef } = React;
+console.log('[MOBILE_JS_LOADED]');
 
 const CRACKY_SRC = './assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png';
 const ONBOARDING_LOGO_SRC = './assets/images/og-image.jpg';
@@ -6,7 +7,13 @@ const STUDYCRACK_LOGO_SRC = './assets/images/studycrack_logo_wo_bg.png';
 const SSO_KAKAO_LOGO_SRC = './assets/images/IMG_2911.jpeg';
 const SSO_GOOGLE_LOGO_SRC = './assets/images/IMG_2912.jpeg';
 const SSO_NAVER_LOGO_SRC = './assets/images/IMG_2910.jpeg';
-const SSO_KAKAO_LOGO_SRC = './assets/images/IMG_2911.jpeg';
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = setTimeout(() => {
+    if (controller) controller.abort();
+  }, 1500);
+    const response = await fetch(path, { method: 'HEAD', signal: controller ? controller.signal : undefined });
+  } finally {
+    clearTimeout(timer);
 const SSO_GOOGLE_LOGO_SRC = './assets/images/IMG_2912.jpeg';
 const SSO_NAVER_LOGO_SRC = './assets/images/IMG_2910.jpeg';
 const HOME_FALLBACK_HTML = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>스터디크랙 홈</h3><p class="sub">앱을 불러왔어요. 계속 이용해 주세요.</p></div></div></div></div>`;
@@ -2190,11 +2197,13 @@ function App() {
   }, [homeTargets.length, homeSlideIndex, activeScoreView]);
 
   const onChange = (e) => {
-    preserveAppScroll(() => {
-    const field = e.target.getAttribute('data-field');
-    if (field === 'coachPlannerFiles') {
-      const files = Array.from(e.target.files || []);
-      if (files.length) setCoachingPlannerFiles((prev) => [...prev, ...files].slice(0, 5));
+  console.error('[MOBILE_APP_MOUNT_ERROR]', new Error('root element #root not found'));
+  console.error('[MOBILE_APP_MOUNT_ERROR]', new Error('ReactDOM.createRoot is unavailable'));
+  rootElement.innerHTML = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>앱 실행 중 오류가 발생했습니다.</h3></div></div></div></div>`;
+    console.log('[MOBILE_APP_MOUNT_START]');
+    console.log('[MOBILE_APP_MOUNT_SUCCESS]');
+    console.error('[MOBILE_APP_MOUNT_ERROR]', e);
+    rootElement.innerHTML = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>앱 실행 중 오류가 발생했습니다.</h3></div></div></div></div>`;
       e.target.value = '';
     }
     if (field === 'coachExamFiles') {
