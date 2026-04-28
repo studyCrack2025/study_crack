@@ -19,6 +19,24 @@ const DEFAULT_PLANNER_ITEMS = [
   { id: 'pl-default-4', date: '14', subject: '수학', content: '오답 풀이', start: '19:00', end: '22:00', minutes: 180, dot: 'math' }
 ];
 const SCORE_LABELS = { korean: '국어', math: '수학', english: '영어', inquiry1: '탐구1', inquiry2: '탐구2' };
+const appContent = () => document.querySelector('.app-content');
+const getAppScrollTop = () => (appContent() ? appContent().scrollTop : 0);
+const setAppScrollTop = (top) => {
+  const el = appContent();
+  if (!el) return;
+  el.scrollTop = Math.max(0, Number(top) || 0);
+};
+const preserveAppScroll = (fn) => {
+  const top = getAppScrollTop();
+  const active = document.activeElement;
+  fn();
+  requestAnimationFrame(() => {
+    setAppScrollTop(top);
+    if (active && document.body.contains(active) && typeof active.focus === 'function') {
+      active.focus({ preventScroll: true });
+    }
+  });
+};
 
 const safeParse = (key, fallback) => {
   try {
@@ -188,7 +206,7 @@ function App() {
   const scrollGuardRef = useRef({ until: 0, y: 0 });
 
   const goto = (next, addHistory = true) => {
-    const currentY = window.scrollY || window.pageYOffset || 0;
+    const currentY = getAppScrollTop();
     screenScrollRef.current[screen] = currentY;
     if (typeof screenScrollRef.current[next] !== 'number') screenScrollRef.current[next] = currentY;
     try {
@@ -202,7 +220,7 @@ function App() {
   };
 
   const back = () => {
-    screenScrollRef.current[screen] = window.scrollY || window.pageYOffset || 0;
+    screenScrollRef.current[screen] = getAppScrollTop();
     try {
       localStorage.setItem(SCROLL_STORAGE_KEY, JSON.stringify(screenScrollRef.current));
     } catch (_err) {
@@ -216,13 +234,7 @@ function App() {
   };
 
   useEffect(() => {
-    lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
-    const onNativeScroll = () => {
-      lastUserScrollAtRef.current = Date.now();
-      lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
-    };
-    window.addEventListener('scroll', onNativeScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onNativeScroll);
+    lastStableScrollYRef.current = getAppScrollTop();
   }, []);
 
   useEffect(() => {
@@ -230,20 +242,6 @@ function App() {
       window.history.scrollRestoration = 'manual';
     }
   }, []);
-
-  useEffect(() => {
-    const onScrollGuard = () => {
-      const guard = scrollGuardRef.current;
-      if (!guard || Date.now() > guard.until) return;
-      const y = window.scrollY || window.pageYOffset || 0;
-      if (y < guard.y - 18) {
-        window.scrollTo({ top: guard.y, left: 0, behavior: 'auto' });
-      }
-    };
-    window.addEventListener('scroll', onScrollGuard, { passive: true });
-    return () => window.removeEventListener('scroll', onScrollGuard);
-  }, []);
-
 
   useEffect(() => {
     try {
@@ -258,32 +256,16 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const persist = () => {
-      if (scrollPersistRafRef.current) cancelAnimationFrame(scrollPersistRafRef.current);
-      scrollPersistRafRef.current = requestAnimationFrame(() => {
-        try {
-          localStorage.setItem(SCROLL_STORAGE_KEY, JSON.stringify(screenScrollRef.current));
-        } catch (_err) {
-          // noop
-        }
-      });
-    };
-    const onScroll = () => {
-      screenScrollRef.current[screen] = window.scrollY || window.pageYOffset || 0;
-      persist();
-    };
     const onBeforeUnload = () => {
-      screenScrollRef.current[screen] = window.scrollY || window.pageYOffset || 0;
+      screenScrollRef.current[screen] = getAppScrollTop();
       try {
         localStorage.setItem(SCROLL_STORAGE_KEY, JSON.stringify(screenScrollRef.current));
       } catch (_err) {
         // noop
       }
     };
-    window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => {
-      window.removeEventListener('scroll', onScroll);
       window.removeEventListener('beforeunload', onBeforeUnload);
       if (scrollPersistRafRef.current) cancelAnimationFrame(scrollPersistRafRef.current);
     };
@@ -297,9 +279,9 @@ function App() {
     let rafId = requestAnimationFrame(() => {
       const now = Date.now();
       if (now - lastUserScrollAtRef.current < 150) return;
-      const currentY = window.scrollY || window.pageYOffset || 0;
+      const currentY = getAppScrollTop();
       if (currentY + 70 < expectedY) {
-        window.scrollTo({ top: expectedY, left: 0, behavior: 'auto' });
+        setAppScrollTop(expectedY);
       }
     });
     return () => cancelAnimationFrame(rafId);
@@ -311,9 +293,9 @@ function App() {
       if (now - lastUserScrollAtRef.current < 180) return;
       const expectedY = Number(screenScrollRef.current[screen] ?? lastStableScrollYRef.current ?? 0);
       if (!Number.isFinite(expectedY) || expectedY <= 30) return;
-      const currentY = window.scrollY || window.pageYOffset || 0;
+      const currentY = getAppScrollTop();
       if (currentY + 90 < expectedY) {
-        window.scrollTo({ top: expectedY, left: 0, behavior: 'auto' });
+        setAppScrollTop(expectedY);
       }
     };
 
@@ -408,7 +390,7 @@ function App() {
       setError(false);
       fallbackTimer = setTimeout(() => {
         setLoading(false);
-        setScreen('authLogin');
+        setScreen('authEntry');
       }, 3000);
 
       const savedUser = safeParse('user', DEFAULT_USER);
@@ -439,12 +421,12 @@ function App() {
       await resolveAssetPath('./assets/76220C96-DE85-4148-A6AC-7BD5881821A0.png', null);
       await resolveAssetPath('./assets/IMG_2648.jpeg', null);
 
-      setScreen('authLogin');
+      setScreen('authEntry');
       console.log('[APP_INIT_SUCCESS]');
     } catch (e) {
       console.error('[APP_INIT_ERROR]', e);
       setError(true);
-      setScreen('authLogin');
+      setScreen('authEntry');
     } finally {
       if (fallbackTimer) clearTimeout(fallbackTimer);
       setLoading(false);
@@ -987,8 +969,9 @@ function App() {
   };
 
   const designV2StyleTag = `<style>
-    html,body{touch-action:manipulation;overscroll-behavior:none;overflow-anchor:none;}
+    html,body{touch-action:manipulation;overscroll-behavior:none;overflow-anchor:none;overflow:hidden;}
     .app-shell,.app-frame,.app-screen{min-height:100dvh;}
+    .app-content{overflow-y:auto;height:calc(100dvh - 78px);}
     .onboarding-container .content{padding:0 16px 150px;box-sizing:border-box;}
     .onboarding-fixed-cta{padding-bottom:calc(16px + env(safe-area-inset-bottom));}
     .btn,button,.planner-input,select,textarea,input{transition:box-shadow .15s ease, border-color .15s ease;}
@@ -1096,11 +1079,12 @@ function App() {
     .analysis-v2-chart-area{overflow:visible;}
     .analysis-v2-bars{position:relative;display:flex;justify-content:space-evenly;align-items:flex-end;gap:10px;height:100%;padding:10px 8px 0;}
     .analysis-v2-chart-area .analysis-v2-guide-line{z-index:1;}
-    .analysis-v2-bar-item{z-index:2;height:100%;justify-content:flex-end;min-height:280px;}
+    .analysis-v2-bar-item{z-index:2;height:100%;justify-content:flex-end;min-height:280px;padding-bottom:52px;position:relative;}
     .analysis-v2-bar-wrap{height:100%;display:flex;align-items:flex-end;position:relative;}
     .analysis-v2-bar-item .score{font-size:14px;font-weight:700;}
     .analysis-v2-bar-item p{min-height:38px;line-height:1.3;}
     .analysis-v2-bar-proj{position:absolute;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;color:#1E3A8A;border:1px dashed #93C5FD;border-radius:999px;padding:2px 7px;background:#EFF6FF;white-space:nowrap;z-index:6;}
+    .analysis-v2-bar-proj.bottom{bottom:4px !important;z-index:9;}
     .analysis-v2-bar-proj-box{position:absolute;left:50%;transform:translateX(-50%);width:62px;min-height:4px;border:3px dashed #F59E0B;border-bottom:none;border-radius:14px 14px 0 0;background:rgba(251,191,36,.25);pointer-events:none;z-index:7;}
     .analysis-v2-sim-item{min-height:112px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;border:1px solid #E2E8F0;border-radius:16px;padding:14px 15px;background:#fff;}
     .analysis-v2-sim-item .left{display:grid;gap:6px;}
@@ -1310,6 +1294,19 @@ function App() {
        </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="startStandard">Standard로 시작하기</button><button class="auth-link-btn" data-action="completeOnboarding">홈으로 이동</button></div></div>`,
       false
     ),
+    authEntry: layout(`<div class="auth-entry-screen">
+      <div class="card auth-entry-card">
+        <div class="auth-entry-logo-wrap"><img src="${STUDYCRACK_LOGO_SRC}" class="auth-entry-logo" alt="StudyCrack Logo" /></div>
+        <img src="${CRACKY_SRC}" class="auth-entry-cracky" alt="크랙이" />
+        <div class="auth-entry-bubble">대학에 합격할 수 있는 가장 쉽고 확실한 방법을 알려줄게요!</div>
+        <div class="auth-entry-social-stack">
+          <button class="auth-entry-social-btn kakao" data-action="ssoSuccess"><img src="${SSO_KAKAO_LOGO_SRC}" alt="카카오 로그인" /></button>
+          <button class="auth-entry-social-btn google" data-action="ssoSuccess"><img src="${SSO_GOOGLE_LOGO_SRC}" alt="구글 로그인" /></button>
+          <button class="auth-entry-social-btn naver" data-action="ssoSuccess"><img src="${SSO_NAVER_LOGO_SRC}" alt="네이버 로그인" /></button>
+        </div>
+        <button class="btn btn-primary auth-entry-login-btn" data-action="goto" data-target="authLogin">Login</button>
+      </div>
+    </div>`, false),
     authLogin: layout(`<div class="auth-screen auth-screen-login">
       <div class="card auth-unified-card">
         <div class="auth-logo-wrap login-hero">
@@ -1330,7 +1327,26 @@ function App() {
           <button class="auth-sso-btn logo" data-action="ssoSuccess"><img src="${SSO_GOOGLE_LOGO_SRC}" alt="구글 로그인" /></button>
           <button class="auth-sso-btn logo" data-action="ssoSuccess"><img src="${SSO_NAVER_LOGO_SRC}" alt="네이버 로그인" /></button>
         </div>
-        <button class="auth-link-btn" data-action="goto" data-target="authSignup">아직 계정이 없나요? 회원가입</button>
+        <div class="auth-login-links">
+          <button class="auth-link-btn" data-action="goto" data-target="authSignup">회원가입</button>
+          <span>·</span>
+          <button class="auth-link-btn" data-action="goto" data-target="authFindEmail">아이디찾기</button>
+          <span>·</span>
+          <button class="auth-link-btn" data-action="goto" data-target="authFindPassword">비밀번호 찾기</button>
+        </div>
+      </div>
+    </div>`, false),
+    authFindEmail: layout(appbar('아이디 찾기', true) + `<div class="auth-screen">
+      <div class="card auth-form-card">
+        <label class="auth-label">이름</label><input class="planner-input" placeholder="이름 입력" />
+        <label class="auth-label">전화번호</label><input class="planner-input" placeholder="01012345678" />
+        <button class="btn btn-primary" data-action="goto" data-target="authLogin">아이디 확인</button>
+      </div>
+    </div>`, false),
+    authFindPassword: layout(appbar('비밀번호 찾기', true) + `<div class="auth-screen">
+      <div class="card auth-form-card">
+        <label class="auth-label">이메일</label><input class="planner-input" placeholder="you@example.com" />
+        <button class="btn btn-primary" data-action="goto" data-target="authLogin">재설정 링크 받기</button>
       </div>
     </div>`, false),
     authSignup: layout(appbar('회원가입', true) + `<div class="auth-screen">
@@ -1460,10 +1476,9 @@ function App() {
                   const projectedPercent = projectionScore ? Math.max(6, Math.min(100, (projectionScore / 250) * 100)) : heightPercent;
                   const projectionHeight = projectionScore ? Math.max(4, projectedPercent - heightPercent) : 0;
                   const gainLabel = projectionGain === null ? '' : Number(projectionGain.toFixed(1)).toString();
-                  const labelBottom = projectionScore ? Math.min(116, projectedPercent + Math.max(10, projectionHeight + 7)) : 0;
-                  const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${labelBottom}%">${Number(projectionScore.toFixed(1)).toString()} (+${gainLabel})</span>` : '';
+                  const projection = projectionScore ? `<span class="analysis-v2-bar-proj bottom ${shouldProject ? 'pop' : ''}">${Number(projectionScore.toFixed(1)).toString()} (+${gainLabel})</span>` : '';
                   const projectionBox = projectionScore ? `<span class="analysis-v2-bar-proj-box" style="bottom:${heightPercent}%;height:${projectionHeight}%"></span>` : '';
-                  return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="simulateBarGain" data-target-major="${full}" data-base-score="${score}"><b class="score">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar" style="height:${heightPercent}%;background:${color}"></i>${projectionBox}${projection}</div><p>${label}</p></button>`;
+                  return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="simulateBarGain" data-target-major="${full}" data-base-score="${score}"><b class="score">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar" style="height:${heightPercent}%;background:${color}"></i>${projectionBox}</div><p>${label}</p>${projection}</button>`;
                 }).join('')}
               </div>
             </div>
@@ -1628,26 +1643,28 @@ function App() {
   console.log('APP_LOADING_STATE', loading);
   console.log('APP_CURRENT_SCREEN', currentScreen);
   const armScrollGuard = (durationMs = 900) => {
-    const y = window.scrollY || window.pageYOffset || 0;
+    const y = getAppScrollTop();
     scrollGuardRef.current = { until: Date.now() + durationMs, y };
     requestAnimationFrame(() => {
       const guard = scrollGuardRef.current;
       if (!guard || Date.now() > guard.until) return;
-      const currentY = window.scrollY || window.pageYOffset || 0;
+      const currentY = getAppScrollTop();
       if (currentY < guard.y - 18) {
-        window.scrollTo({ top: guard.y, left: 0, behavior: 'auto' });
+        setAppScrollTop(guard.y);
       }
     });
   };
 
   const onClick = (e) => {
-    lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
+    lastStableScrollYRef.current = getAppScrollTop();
     if (Date.now() < suppressClickUntilRef.current) return;
     if (isAnalyzing && screen === 'analysis') return;
     const actionEl = e.target.closest('[data-action]');
     if (!actionEl) return;
     const action = actionEl.getAttribute('data-action');
     const shouldKeepScroll = !['goto', 'back', 'tab', 'drawerGoto', 'loginSuccess', 'signupSuccess', 'ssoSuccess', 'selectUniversity'].includes(action);
+    const keepTop = shouldKeepScroll ? getAppScrollTop() : null;
+    const keepActive = shouldKeepScroll ? document.activeElement : null;
     if (shouldKeepScroll) armScrollGuard(900);
     if (action === 'goto') {
       const target = actionEl.getAttribute('data-target');
@@ -1970,9 +1987,18 @@ function App() {
       setPlannerItems((prev) => prev.map((item) => (item.id === plannerEditIndex ? { ...item, subject, content, minutes, dot } : item)));
       setPlannerEditIndex(null);
     }
+    if (shouldKeepScroll && keepTop != null) {
+      requestAnimationFrame(() => {
+        setAppScrollTop(keepTop);
+        if (keepActive && document.body.contains(keepActive) && typeof keepActive.focus === 'function') {
+          keepActive.focus({ preventScroll: true });
+        }
+      });
+    }
   };
 
   const onInput = (e) => {
+    preserveAppScroll(() => {
     const field = e.target.getAttribute('data-field');
     if (field === 'coachPlannerFiles') {
       const files = Array.from(e.target.files || []);
@@ -2128,6 +2154,7 @@ function App() {
   }, [homeTargets.length, homeSlideIndex, activeScoreView]);
 
   const onChange = (e) => {
+    preserveAppScroll(() => {
     const field = e.target.getAttribute('data-field');
     if (field === 'coachPlannerFiles') {
       const files = Array.from(e.target.files || []);
@@ -2139,6 +2166,7 @@ function App() {
       if (files.length) setCoachingExamFiles((prev) => [...prev, ...files]);
       e.target.value = '';
     }
+    });
   };
   const onBlur = (e) => {
     const field = e.target.getAttribute('data-field');
@@ -2197,11 +2225,28 @@ function App() {
       if (subject === 'korean' || subject === 'math') setScoreEditState((prev) => ({ ...prev, [subject]: { ...prev[subject], [key === 'type' ? 'type' : key === 'common' ? 'common' : 'elective']: value } }));
       if (subject === 'inq1' || subject === 'inq2') setScoreEditState((prev) => ({ ...prev, [subject === 'inq1' ? 'inquiry1' : 'inquiry2']: { ...prev[subject === 'inq1' ? 'inquiry1' : 'inquiry2'], [key === 'subject' ? 'subject' : 'score']: value } }));
     }
+    });
+  };
+  const onScroll = (e) => {
+    const target = e.target;
+    if (!target || !target.classList || !target.classList.contains('app-content')) return;
+    const y = target.scrollTop || 0;
+    lastUserScrollAtRef.current = Date.now();
+    lastStableScrollYRef.current = y;
+    screenScrollRef.current[screen] = y;
+    if (scrollPersistRafRef.current) cancelAnimationFrame(scrollPersistRafRef.current);
+    scrollPersistRafRef.current = requestAnimationFrame(() => {
+      try {
+        localStorage.setItem(SCROLL_STORAGE_KEY, JSON.stringify(screenScrollRef.current));
+      } catch (_err) {
+        // noop
+      }
+    });
   };
 
   const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>StudyCrack 앱을 불러오는 중입니다...</h3><p class="sub">잠시만 기다려 주세요.</p></div></div></div></div>`;
   const fallbackUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div></div>`;
-  const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !['authLogin', 'authSignup'].includes(screen) ? screens.authLogin : current;
+  const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !['authEntry', 'authLogin', 'authSignup', 'authFindEmail', 'authFindPassword'].includes(screen) ? screens.authEntry : current;
   const analysisOverlay = isAnalyzing && screen === 'analysis'
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>분석중입니다</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
@@ -2210,7 +2255,7 @@ function App() {
     : '';
   const rendered = `${designV2StyleTag}${renderedBase}${analysisOverlay}${onboardingOverlay}`;
 
-  return <div onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: rendered }} />;
+  return <div onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} onScroll={onScroll} dangerouslySetInnerHTML={{ __html: rendered }} />;
 }
 
 const rootElement = document.getElementById('root');
