@@ -210,6 +210,12 @@ function App() {
     setScreen(prev);
   };
 
+  const restoreScrollPosition = (y) => {
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+    });
+  };
+
   useEffect(() => {
     lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
     const onNativeScroll = () => {
@@ -305,15 +311,23 @@ function App() {
 
   useEffect(() => {
     if (screen !== 'analysis') return;
+    const preservedY = window.scrollY || window.pageYOffset || 0;
     setIsAnalyzing(true);
-    const t = setTimeout(() => setIsAnalyzing(false), 2000);
+    const t = setTimeout(() => {
+      setIsAnalyzing(false);
+      restoreScrollPosition(preservedY);
+    }, 2000);
     return () => clearTimeout(t);
   }, [screen, targetMajor]);
 
   useEffect(() => {
     if (screen !== 'ob3') return;
+    const preservedY = window.scrollY || window.pageYOffset || 0;
     setOb3IsAnalyzing(true);
-    const t = setTimeout(() => setOb3IsAnalyzing(false), 1500);
+    const t = setTimeout(() => {
+      setOb3IsAnalyzing(false);
+      restoreScrollPosition(preservedY);
+    }, 1500);
     return () => clearTimeout(t);
   }, [screen]);
 
@@ -1555,17 +1569,27 @@ function App() {
     if (action === 'goto') {
       const target = actionEl.getAttribute('data-target');
       if (screen === 'on1' && target === 'ob1') {
+        const preservedY = window.scrollY || window.pageYOffset || 0;
         setOnboardingLoading(true);
         setOnboardingLoadingText('성적 분석중...');
         setTimeout(() => setOnboardingLoadingText('유리한 대학 전형 파악중...'), 2000);
-        setTimeout(() => { setOnboardingLoading(false); goto('ob1'); }, 4000);
+        setTimeout(() => {
+          setOnboardingLoading(false);
+          restoreScrollPosition(preservedY);
+          goto('ob1');
+        }, 4000);
         return;
       }
       if (screen === 'ob2' && target === 'ob3') {
+        const preservedY = window.scrollY || window.pageYOffset || 0;
         setOnboardingLoading(true);
         setOnboardingLoadingText('학습 성향 분석중...');
         setTimeout(() => setOnboardingLoadingText('효율적인 공부법 찾는 중...'), 1500);
-        setTimeout(() => { setOnboardingLoading(false); goto('ob3'); }, 3000);
+        setTimeout(() => {
+          setOnboardingLoading(false);
+          restoreScrollPosition(preservedY);
+          goto('ob3');
+        }, 3000);
         return;
       }
       goto(target);
@@ -1582,17 +1606,28 @@ function App() {
     if (action === 'setAnalysisMode') setAnalysisMode(actionEl.getAttribute('data-analysis-mode') || 'summary');
     if (action === 'setScoreView') {
       e.stopPropagation();
+      const preservedY = window.scrollY || window.pageYOffset || 0;
       const nextView = actionEl.getAttribute('data-score-view') || 'current';
       setScoreDragOffset(0);
-      setScoreSlideMotion(nextView === 'target' ? 'motion-next' : 'motion-prev');
-      setActiveScoreView(nextView);
+      setActiveScoreView((prev) => {
+        if (prev === nextView) return prev;
+        setScoreSlideMotion(nextView === 'target' ? 'motion-next' : 'motion-prev');
+        return nextView;
+      });
+      restoreScrollPosition(preservedY);
     }
     if (action === 'setHomeSlide') {
+      const preservedY = window.scrollY || window.pageYOffset || 0;
       const idx = Number(actionEl.getAttribute('data-slide-index'));
       if (Number.isNaN(idx)) return;
       setHomeDragOffset(0);
-      setHomeSlideMotion(idx > homeSlideIndex ? 'motion-next' : idx < homeSlideIndex ? 'motion-prev' : '');
-      setHomeSlideIndex(Math.max(0, Math.min(idx, homeTargets.length - 1)));
+      setHomeSlideIndex((prev) => {
+        const next = Math.max(0, Math.min(idx, homeTargets.length - 1));
+        if (next === prev) return prev;
+        setHomeSlideMotion(next > prev ? 'motion-next' : 'motion-prev');
+        return next;
+      });
+      restoreScrollPosition(preservedY);
     }
     if (action === 'openAnalysisSearch') setAnalysisSearchOpen(true);
     if (action === 'closeAnalysisSearch') {
@@ -1922,10 +1957,22 @@ function App() {
     const moveGesture = (clientX) => {
       const startX = touchStartXRef.current;
       if (typeof startX !== 'number' || typeof clientX !== 'number') return;
-      const delta = clientX - startX;
+      let delta = clientX - startX;
       touchLastXRef.current = clientX;
-      if (touchTargetRef.current === 'home') setHomeDragOffset(Math.max(-80, Math.min(80, delta)));
-      if (touchTargetRef.current === 'score') setScoreDragOffset(Math.max(-70, Math.min(70, delta)));
+      if (touchTargetRef.current === 'home') {
+        const atLeftEdge = homeSlideIndex <= 0 && delta > 0;
+        const atRightEdge = homeSlideIndex >= homeTargets.length - 1 && delta < 0;
+        if (atLeftEdge || atRightEdge) delta *= 0.18;
+        const nextOffset = Math.max(-80, Math.min(80, delta));
+        setHomeDragOffset((prev) => (Math.abs(prev - nextOffset) < 1 ? prev : nextOffset));
+      }
+      if (touchTargetRef.current === 'score') {
+        const atLeftEdge = activeScoreView === 'current' && delta > 0;
+        const atRightEdge = activeScoreView === 'target' && delta < 0;
+        if (atLeftEdge || atRightEdge) delta *= 0.18;
+        const nextOffset = Math.max(-70, Math.min(70, delta));
+        setScoreDragOffset((prev) => (Math.abs(prev - nextOffset) < 1 ? prev : nextOffset));
+      }
     };
 
     const endGesture = (clientX) => {
@@ -1942,11 +1989,19 @@ function App() {
       }
       suppressClickUntilRef.current = Date.now() + 260;
       if (touchTargetRef.current === 'home') {
-        setHomeSlideMotion(delta < 0 ? 'motion-next' : 'motion-prev');
-        setHomeSlideIndex((prev) => (delta < 0 ? Math.min(prev + 1, homeTargets.length - 1) : Math.max(prev - 1, 0)));
+        setHomeSlideIndex((prev) => {
+          const next = delta < 0 ? Math.min(prev + 1, homeTargets.length - 1) : Math.max(prev - 1, 0);
+          if (next === prev) return prev;
+          setHomeSlideMotion(next > prev ? 'motion-next' : 'motion-prev');
+          return next;
+        });
       } else if (touchTargetRef.current === 'score') {
-        setScoreSlideMotion(delta < 0 ? 'motion-next' : 'motion-prev');
-        setActiveScoreView((prev) => (delta < 0 ? 'target' : 'current'));
+        setActiveScoreView((prev) => {
+          const next = delta < 0 ? 'target' : 'current';
+          if (next === prev) return prev;
+          setScoreSlideMotion(next === 'target' ? 'motion-next' : 'motion-prev');
+          return next;
+        });
       }
       touchTargetRef.current = '';
     };
@@ -1975,7 +2030,7 @@ function App() {
       document.removeEventListener('pointermove', onPointerMove, true);
       document.removeEventListener('pointerup', onPointerUp, true);
     };
-  }, [homeTargets.length]);
+  }, [homeTargets.length, homeSlideIndex, activeScoreView]);
 
   const onChange = (e) => {
     const field = e.target.getAttribute('data-field');
