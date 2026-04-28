@@ -108,6 +108,8 @@ function App() {
   const [analysisBarProjectionTarget, setAnalysisBarProjectionTarget] = useState('');
   const [activeScoreView, setActiveScoreView] = useState('target');
   const [homeSlideIndex, setHomeSlideIndex] = useState(0);
+  const [homeSlideMotion, setHomeSlideMotion] = useState('');
+  const [scoreSlideMotion, setScoreSlideMotion] = useState('');
   const [selectedDate, setSelectedDate] = useState('14');
   const [plannerCalendarOpen, setPlannerCalendarOpen] = useState(false);
   const [universityModalOpen, setUniversityModalOpen] = useState(false);
@@ -201,6 +203,22 @@ function App() {
       return () => clearTimeout(t);
     }
   }, [screen]);
+
+  useEffect(() => {
+    if (screen === 'analysis') setActiveScoreView('target');
+  }, [screen]);
+
+  useEffect(() => {
+    if (!homeSlideMotion) return;
+    const t = setTimeout(() => setHomeSlideMotion(''), 420);
+    return () => clearTimeout(t);
+  }, [homeSlideMotion]);
+
+  useEffect(() => {
+    if (!scoreSlideMotion) return;
+    const t = setTimeout(() => setScoreSlideMotion(''), 380);
+    return () => clearTimeout(t);
+  }, [scoreSlideMotion]);
 
   useEffect(() => {
     if (screen !== 'analysis' || analysisMode !== 'summary') return;
@@ -687,7 +705,7 @@ function App() {
     </div>
     <div class="section home-section">
       <div class="home-kpi-slider">
-        <div class="home-kpi-track" style="transform:translateX(-${homeSlideIndex * 100}%);">
+        <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-x:-${homeSlideIndex * 100}%;">
         ${homeTargets.map((item) => `<button class="card home-kpi-card admission-card slider-card home-result-card-v3" data-action="selectUniversity" data-target-major="${item.major}">
           <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score"><strong>${item.score}점</strong><small>AI 점수</small></div></div>
           <div class="home-result-gauge"><i style="width:${Math.min((item.score / 250) * 100, 100)}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
@@ -869,7 +887,11 @@ function App() {
     .analysis-v2-bar-proj-line.show{opacity:1;}
     @keyframes barProjPop{0%{transform:translateX(-50%) translateY(8px);opacity:0;}100%{transform:translateX(-50%) translateY(0);opacity:1;}}
     .home-kpi-slider{overflow:hidden;padding-bottom:2px;touch-action:pan-y;}
-    .home-kpi-track{display:flex;transition:transform .42s cubic-bezier(.22,.61,.36,1);will-change:transform;}
+    .home-kpi-track{display:flex;transform:translateX(var(--home-slide-x));will-change:transform;}
+    .home-kpi-track.motion-next{animation:homeSlideNext .42s cubic-bezier(.22,.61,.36,1);}
+    .home-kpi-track.motion-prev{animation:homeSlidePrev .42s cubic-bezier(.22,.61,.36,1);}
+    @keyframes homeSlideNext{from{transform:translateX(calc(var(--home-slide-x) + 10%));}to{transform:translateX(var(--home-slide-x));}}
+    @keyframes homeSlidePrev{from{transform:translateX(calc(var(--home-slide-x) - 10%));}to{transform:translateX(var(--home-slide-x));}}
     .home-kpi-slider .slider-card{flex:0 0 100%;}
     .home-kpi-indicator i{cursor:pointer;}
     .home-result-card-v3{display:grid;gap:12px;text-align:left;overflow:hidden;}
@@ -898,7 +920,11 @@ function App() {
     .score-journey-segment button{padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;color:#64748B;border:none;background:transparent;pointer-events:auto;}
     .score-journey-segment button.active{background:#fff;color:#1E3A8A;box-shadow:0 1px 2px rgba(0,0,0,.06);}
     .score-journey-scroll{overflow:hidden;padding:4px 0;position:relative;z-index:1;touch-action:pan-y;}
-    .score-journey-track{display:flex;width:200%;transition:transform .38s cubic-bezier(.22,.61,.36,1);will-change:transform;}
+    .score-journey-track{display:flex;width:200%;transform:translateX(var(--score-slide-x));will-change:transform;}
+    .score-journey-track.motion-next{animation:scoreSlideNext .38s cubic-bezier(.22,.61,.36,1);}
+    .score-journey-track.motion-prev{animation:scoreSlidePrev .38s cubic-bezier(.22,.61,.36,1);}
+    @keyframes scoreSlideNext{from{transform:translateX(calc(var(--score-slide-x) + 8%));}to{transform:translateX(var(--score-slide-x));}}
+    @keyframes scoreSlidePrev{from{transform:translateX(calc(var(--score-slide-x) - 8%));}to{transform:translateX(var(--score-slide-x));}}
     .score-journey-col{border:1px solid #E2E8F0;background:#F8FAFC;border-radius:18px;padding:12px;display:grid;gap:8px;min-width:0;}
     .score-journey-track .score-journey-col{width:50%;flex:0 0 50%;}
     .score-journey-col.target{border-color:#93C5FD;background:#EFF6FF;}
@@ -962,7 +988,7 @@ function App() {
         <button type="button" class="${activeScoreView==='target'?'active':''}" data-action="setScoreView" data-score-view="target">도달 성적</button>
       </div>
       <div class="score-journey-scroll">
-        <div class="score-journey-track" style="transform:translateX(${activeScoreView==='target' ? '-50%' : '0%'});">
+        <div class="score-journey-track ${scoreSlideMotion}" style="--score-slide-x:${activeScoreView==='target' ? '-50%' : '0%'};">
         <div class="score-journey-col current" data-score-view="current">
           <h4>현재 성적</h4>
           <div class="score-row"><span>국어</span><b>82</b></div>
@@ -1482,11 +1508,14 @@ function App() {
     if (action === 'setAnalysisMode') setAnalysisMode(actionEl.getAttribute('data-analysis-mode') || 'summary');
     if (action === 'setScoreView') {
       e.stopPropagation();
-      setActiveScoreView(actionEl.getAttribute('data-score-view') || 'current');
+      const nextView = actionEl.getAttribute('data-score-view') || 'current';
+      setScoreSlideMotion(nextView === 'target' ? 'motion-next' : 'motion-prev');
+      setActiveScoreView(nextView);
     }
     if (action === 'setHomeSlide') {
       const idx = Number(actionEl.getAttribute('data-slide-index'));
       if (Number.isNaN(idx)) return;
+      setHomeSlideMotion(idx > homeSlideIndex ? 'motion-next' : idx < homeSlideIndex ? 'motion-prev' : '');
       setHomeSlideIndex(Math.max(0, Math.min(idx, homeTargets.length - 1)));
     }
     if (action === 'openAnalysisSearch') setAnalysisSearchOpen(true);
@@ -1824,9 +1853,11 @@ function App() {
       const delta = endX - startX;
       if (Math.abs(delta) < 32) return;
       if (touchTargetRef.current === 'home') {
+        setHomeSlideMotion(delta < 0 ? 'motion-next' : 'motion-prev');
         setHomeSlideIndex((prev) => (delta < 0 ? Math.min(prev + 1, homeTargets.length - 1) : Math.max(prev - 1, 0)));
       }
       if (touchTargetRef.current === 'score') {
+        setScoreSlideMotion(delta < 0 ? 'motion-next' : 'motion-prev');
         setActiveScoreView((prev) => (delta < 0 ? 'target' : 'current'));
       }
       touchTargetRef.current = '';
