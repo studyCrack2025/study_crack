@@ -177,6 +177,7 @@ function App() {
   const touchStartXRef = useRef(null);
   const touchTargetRef = useRef('');
   const suppressClickUntilRef = useRef(0);
+  const lastStableScrollYRef = useRef(0);
 
   const goto = (next, addHistory = true) => {
     const currentY = window.scrollY || window.pageYOffset || 0;
@@ -205,6 +206,26 @@ function App() {
     setHistory(clone);
     setScreen(prev);
   };
+
+  useEffect(() => {
+    lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
+    const onNativeScroll = () => {
+      lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
+    };
+    window.addEventListener('scroll', onNativeScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onNativeScroll);
+  }, []);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      const stableY = lastStableScrollYRef.current;
+      const currentY = window.scrollY || window.pageYOffset || 0;
+      if (Math.abs(currentY - stableY) > 4) {
+        window.scrollTo({ top: stableY, left: 0, behavior: 'auto' });
+      }
+    });
+    return () => cancelAnimationFrame(raf);
+  });
 
   useEffect(() => {
     try {
@@ -1533,6 +1554,7 @@ function App() {
   console.log('APP_CURRENT_SCREEN', currentScreen);
 
   const onClick = (e) => {
+    lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
     if (Date.now() < suppressClickUntilRef.current) return;
     if (isAnalyzing && screen === 'analysis') return;
     const actionEl = e.target.closest('[data-action]');
@@ -1907,6 +1929,7 @@ function App() {
     const onNativeTouchEnd = (e) => {
       const startX = touchStartXRef.current;
       if (typeof startX !== 'number') return;
+      lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
       const endX = e.changedTouches?.[0]?.clientX;
       touchStartXRef.current = null;
       if (typeof endX !== 'number') return;
