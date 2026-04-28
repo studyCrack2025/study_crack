@@ -106,7 +106,7 @@ function App() {
   const [analysisEtaStage, setAnalysisEtaStage] = useState(1);
   const [analysisHighlightedSubject, setAnalysisHighlightedSubject] = useState('');
   const [analysisBarProjectionTarget, setAnalysisBarProjectionTarget] = useState('');
-  const [activeScoreView, setActiveScoreView] = useState('current');
+  const [activeScoreView, setActiveScoreView] = useState('target');
   const [homeSlideIndex, setHomeSlideIndex] = useState(0);
   const [selectedDate, setSelectedDate] = useState('14');
   const [plannerCalendarOpen, setPlannerCalendarOpen] = useState(false);
@@ -869,7 +869,7 @@ function App() {
     .analysis-v2-bar-proj-line.show{opacity:1;}
     @keyframes barProjPop{0%{transform:translateX(-50%) translateY(8px);opacity:0;}100%{transform:translateX(-50%) translateY(0);opacity:1;}}
     .home-kpi-slider{overflow:hidden;padding-bottom:2px;touch-action:pan-y;}
-    .home-kpi-track{display:flex;transition:transform .25s ease;will-change:transform;}
+    .home-kpi-track{display:flex;transition:transform .42s cubic-bezier(.22,.61,.36,1);will-change:transform;}
     .home-kpi-slider .slider-card{flex:0 0 100%;}
     .home-kpi-indicator i{cursor:pointer;}
     .home-result-card-v3{display:grid;gap:12px;text-align:left;overflow:hidden;}
@@ -898,7 +898,7 @@ function App() {
     .score-journey-segment button{padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;color:#64748B;border:none;background:transparent;pointer-events:auto;}
     .score-journey-segment button.active{background:#fff;color:#1E3A8A;box-shadow:0 1px 2px rgba(0,0,0,.06);}
     .score-journey-scroll{overflow:hidden;padding:4px 0;position:relative;z-index:1;touch-action:pan-y;}
-    .score-journey-track{display:flex;width:200%;transition:transform .24s ease;will-change:transform;}
+    .score-journey-track{display:flex;width:200%;transition:transform .38s cubic-bezier(.22,.61,.36,1);will-change:transform;}
     .score-journey-col{border:1px solid #E2E8F0;background:#F8FAFC;border-radius:18px;padding:12px;display:grid;gap:8px;min-width:0;}
     .score-journey-track .score-journey-col{width:50%;flex:0 0 50%;}
     .score-journey-col.target{border-color:#93C5FD;background:#EFF6FF;}
