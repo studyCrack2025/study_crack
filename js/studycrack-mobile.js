@@ -181,7 +181,7 @@ function App() {
   const touchTargetRef = useRef('');
   const suppressClickUntilRef = useRef(0);
   const lastStableScrollYRef = useRef(0);
-  const pendingScrollRestoreRef = useRef(null);
+  const scrollGuardRef = useRef({ until: 0, y: 0 });
 
   const goto = (next, addHistory = true) => {
     const currentY = window.scrollY || window.pageYOffset || 0;
@@ -221,12 +221,16 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (pendingScrollRestoreRef.current === null) return;
-    const y = pendingScrollRestoreRef.current;
-    pendingScrollRestoreRef.current = null;
-    requestAnimationFrame(() => {
-      window.scrollTo({ top: y, left: 0, behavior: 'auto' });
-    });
+    const onScrollGuard = () => {
+      const guard = scrollGuardRef.current;
+      if (!guard || Date.now() > guard.until) return;
+      const y = window.scrollY || window.pageYOffset || 0;
+      if (y < guard.y - 18) {
+        window.scrollTo({ top: guard.y, left: 0, behavior: 'auto' });
+      }
+    };
+    window.addEventListener('scroll', onScrollGuard, { passive: true });
+    return () => window.removeEventListener('scroll', onScrollGuard);
   });
 
 
@@ -317,7 +321,7 @@ function App() {
     if (screen !== 'analysis') return;
     setIsAnalyzing(true);
     const t = setTimeout(() => {
-      queueScrollRestore();
+      armScrollGuard(1200);
       setIsAnalyzing(false);
     }, 2000);
     return () => clearTimeout(t);
@@ -327,7 +331,7 @@ function App() {
     if (screen !== 'ob3') return;
     setOb3IsAnalyzing(true);
     const t = setTimeout(() => {
-      queueScrollRestore();
+      armScrollGuard(1200);
       setOb3IsAnalyzing(false);
     }, 1500);
     return () => clearTimeout(t);
@@ -1393,7 +1397,7 @@ function App() {
                   const heightPercent = Math.max(8, Math.min(100, (score / 250) * 100));
                   const color = score >= 250 ? '#22C55E' : score < 100 ? '#F97316' : '#2563EB';
                   const shouldProject = analysisBarProjectionTarget === full;
-                  const projectionScore = shouldProject ? Math.min(250, score + 13) : score === 71 ? 84 : null;
+                  const projectionScore = shouldProject ? Math.min(250, score + 13) : null;
                   const projectedPercent = projectionScore ? Math.max(8, Math.min(100, (projectionScore / 250) * 100)) : heightPercent;
                   const projectionHeight = projectionScore ? Math.max(8, projectedPercent - heightPercent) : 0;
                   const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${Math.min(96, projectedPercent + 3)}%">${projectionScore} (+13.1)</span>` : '';
@@ -1562,8 +1566,17 @@ function App() {
   const currentScreen = screen;
   console.log('APP_LOADING_STATE', loading);
   console.log('APP_CURRENT_SCREEN', currentScreen);
-  const queueScrollRestore = () => {
-    pendingScrollRestoreRef.current = window.scrollY || window.pageYOffset || 0;
+  const armScrollGuard = (durationMs = 900) => {
+    const y = window.scrollY || window.pageYOffset || 0;
+    scrollGuardRef.current = { until: Date.now() + durationMs, y };
+    requestAnimationFrame(() => {
+      const guard = scrollGuardRef.current;
+      if (!guard || Date.now() > guard.until) return;
+      const currentY = window.scrollY || window.pageYOffset || 0;
+      if (currentY < guard.y - 18) {
+        window.scrollTo({ top: guard.y, left: 0, behavior: 'auto' });
+      }
+    });
   };
 
   const onClick = (e) => {
@@ -1574,7 +1587,7 @@ function App() {
     if (!actionEl) return;
     const action = actionEl.getAttribute('data-action');
     const shouldKeepScroll = !['goto', 'back', 'tab', 'drawerGoto', 'loginSuccess', 'signupSuccess', 'ssoSuccess', 'selectUniversity'].includes(action);
-    if (shouldKeepScroll) queueScrollRestore();
+    if (shouldKeepScroll) armScrollGuard(900);
     if (action === 'goto') {
       const target = actionEl.getAttribute('data-target');
       if (screen === 'on1' && target === 'ob1') {
@@ -1582,7 +1595,7 @@ function App() {
         setOnboardingLoadingText('성적 분석중...');
         setTimeout(() => setOnboardingLoadingText('유리한 대학 전형 파악중...'), 2000);
         setTimeout(() => {
-          queueScrollRestore();
+          armScrollGuard(1400);
           setOnboardingLoading(false);
           goto('ob1');
         }, 4000);
@@ -1593,7 +1606,7 @@ function App() {
         setOnboardingLoadingText('학습 성향 분석중...');
         setTimeout(() => setOnboardingLoadingText('효율적인 공부법 찾는 중...'), 1500);
         setTimeout(() => {
-          queueScrollRestore();
+          armScrollGuard(1400);
           setOnboardingLoading(false);
           goto('ob3');
         }, 3000);
@@ -1990,6 +2003,7 @@ function App() {
         touchTargetRef.current = '';
         return;
       }
+      armScrollGuard(1000);
       suppressClickUntilRef.current = Date.now() + 260;
       if (touchTargetRef.current === 'home') {
         setHomeSlideIndex((prev) => {
