@@ -135,6 +135,7 @@ function App() {
   const [scores, setScores] = useState(DEFAULT_SCORES);
   const [notifications, setNotifications] = useState(DEFAULT_NOTIFICATIONS);
   const [openFaq, setOpenFaq] = useState('');
+  const [notifModalOpen, setNotifModalOpen] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [plannerItems, setPlannerItems] = useState(DEFAULT_PLANNER_ITEMS);
   const [plannerEditIndex, setPlannerEditIndex] = useState(null);
@@ -802,8 +803,8 @@ function App() {
     <div class="home-content">
     <div class="home-header">
       <div class="home-top-icons">
-        <button class="top-icon-btn" data-action="openDrawer">${i('menu', false)}</button>
-        <button class="top-icon-btn">${i('bell', false)}</button>
+        <button class="pro-top-btn" data-action="goto" data-target="proElite"><span>PRO</span></button>
+        <button class="top-icon-btn" data-action="openNotificationModal">${i('bell', false)}</button>
       </div>
       <p class="home-greeting">안녕하세요, 지민님 👋</p>
       <p class="home-sub">오늘도 크랙한 하루 되세요!</p>
@@ -842,6 +843,7 @@ function App() {
       </div>
     </div>
     ${studySubjectSheetOpen ? `<div class="planner-sheet-overlay" data-action="closeStudySubjectSheet"><div class="planner-sheet study-subject-sheet" data-action="noopModal"><h3>어떤 과목을 공부할까요?</h3><div class="study-subject-grid">${['국어', '수학', '영어', '탐구'].map((s) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${s}">${s}</button>`).join('')}<button class="planner-pill" data-action="selectStudySubjectCustom">기타 직접 입력</button></div>${plannedSubjectOptions.length ? `<p class="sub" style="margin:8px 0 6px">오늘 플래너 일정</p><div class="study-subject-grid">${plannedSubjectOptions.map((s) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${s.split(' - ')[0]}">${s}</button>`).join('')}</div>` : ''}</div></div>` : ''}
+    ${notifModalOpen ? `<div class="home-modal-overlay" data-action="closeNotificationModal"><div class="home-modal pro-notif-modal" data-action="noopModal"><p class="home-modal-title">알림</p><div class="pro-notif-list"><div><b>주간 코칭 알림</b><p>이번 주 코칭 작성 마감이 오늘 20:00입니다.</p></div><div><b>PRO 리포트 알림</b><p>26년 4월 4주차 리포트가 도착했습니다.</p></div><div><b>플래너 알림</b><p>오늘 계획 3개 중 1개를 완료했어요.</p></div></div><button class="btn btn-primary" data-action="closeNotificationModal">확인</button></div></div>` : ''}
     ${drawerOpen ? `<div class="home-modal-overlay drawer-overlay" data-action="closeDrawer"><aside class="side-drawer" data-action="noopModal"><h3>메뉴</h3>${[['analysis','분석'],['strategy','학습 코칭'],['planner','플래너'],['weekly','주간 점검'],['report','프로 보고서']].map(([target,label]) => `<button class="my-row" data-action="drawerGoto" data-target="${target}">${label}<span>${i('chevron', false)}</span></button>`).join('')}</aside></div>` : ''}
   </div>
   </div>`;
@@ -1017,6 +1019,37 @@ function App() {
     .home-insight-card{border:1px solid #E2E8F0;border-radius:20px;box-shadow:0 8px 20px rgba(15,23,42,.05);padding:16px;}
     .home-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
     .home-mini-badge{font-size:11px;font-weight:700;color:#1D4ED8;background:#DBEAFE;border-radius:999px;padding:4px 8px;}
+    .home-top-icons{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+    .pro-top-btn{
+      width:78px;height:44px;border:none;border-radius:16px;position:relative;overflow:hidden;
+      background:linear-gradient(135deg,#0F172A 0%,#1E293B 45%,#475569 100%);
+      box-shadow:0 8px 20px rgba(15,23,42,.25), inset 0 1px 0 rgba(255,255,255,.22);
+      color:#F8FAFC;font-weight:900;letter-spacing:.08em;font-size:14px;
+    }
+    .pro-top-btn:before{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,.35) 35%,transparent 60%);transform:translateX(-120%);animation:proShine 3.4s ease-in-out infinite;}
+    @keyframes proShine{0%{transform:translateX(-120%);}45%,100%{transform:translateX(120%);}}
+    .pro-notif-modal .pro-notif-list{display:grid;gap:10px;margin:10px 0 14px;}
+    .pro-notif-modal .pro-notif-list > div{padding:10px;border:1px solid #E2E8F0;border-radius:12px;background:#F8FAFC;}
+    .pro-notif-modal .pro-notif-list b{display:block;font-size:14px;color:#0F172A;margin-bottom:4px;}
+    .pro-notif-modal .pro-notif-list p{margin:0;font-size:12px;color:#475569;line-height:1.45;}
+    .pro-elite-page{display:grid;gap:14px;}
+    .pro-elite-hero{
+      padding:20px;border-radius:20px;border:1px solid #334155;
+      background:radial-gradient(120% 120% at 0% 0%,#1E293B 0%,#0F172A 55%,#020617 100%);
+      box-shadow:0 14px 30px rgba(2,6,23,.45);color:#E2E8F0;
+    }
+    .pro-elite-badge{display:inline-flex;padding:4px 10px;border-radius:999px;background:linear-gradient(90deg,#F59E0B,#FDE68A);color:#78350F;font-weight:900;font-size:11px;}
+    .pro-elite-hero h3{margin:10px 0 8px;font-size:24px;line-height:1.28;color:#F8FAFC;}
+    .pro-elite-hero p{margin:0;font-size:13px;color:#CBD5E1;}
+    .pro-elite-list{display:grid;gap:10px;}
+    .pro-elite-item{
+      border:1px solid #1E293B;background:#fff;border-radius:16px;padding:14px;
+      display:flex;justify-content:space-between;align-items:center;text-align:left;gap:10px;
+      box-shadow:0 8px 18px rgba(15,23,42,.08);
+    }
+    .pro-elite-item b{display:block;font-size:14px;color:#0F172A;margin-bottom:4px;}
+    .pro-elite-item p{margin:0;font-size:12px;color:#64748B;line-height:1.4;}
+    .pro-elite-download{font-size:12px;font-weight:800;color:#1D4ED8;white-space:nowrap;}
     .home-chip-grid{display:flex;flex-wrap:wrap;gap:8px;}
     .study-goal-card .track{height:12px;border-radius:999px;background:#E2E8F0;overflow:hidden;}
     .study-goal-card .track i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#2563EB,#38BDF8);}
@@ -1575,6 +1608,7 @@ function App() {
       true
     ),
     reportDetail: layout(appbar('종합 분석 리포트', true) + `<div class="report-tabs"><span class="active">종합 분석</span><span>과목 분석</span><span>학습 전략</span><span>현재 위치</span></div><div class="report-detail-stack"><div class="card report-detail-card"><p class="sub">핵심 요약</p><p class="report-detail-text">수학에서 점수 상승 여지가 가장 큽니다. 개념 학습 시간을 늘리고, 문제 풀이 비중을 높이면 단기간 점수 개선이 가능합니다.</p></div><div class="card report-detail-card"><p class="sub">과목별 성과</p><div class="subject-result"><span>수학</span><div class="track"><i style="width:82%"></i></div><em><span class="score">68점</span><span class="delta">▲12</span></em></div><div class="subject-result"><span>국어</span><div class="track"><i style="width:74%"></i></div><em><span class="score">82점</span><span class="delta">▲3</span></em></div><div class="subject-result"><span>영어</span><div class="track"><i style="width:70%"></i></div><em><span class="score">77점</span><span class="delta">-</span></em></div><div class="subject-result"><span>탐구</span><div class="track"><i style="width:62%"></i></div><em><span class="score">66점</span><span class="delta">▲5</span></em></div></div></div><div class="cta-wrapper report-detail-cta"><button class="btn btn-primary cta-btn">PDF 다운로드</button></div>`, false),
+    proElite: layout(appbar('PRO EXCLUSIVE', true) + `<div class="pro-elite-page"><div class="pro-elite-hero"><span class="pro-elite-badge">TOP 1%</span><h3>상위 1%를 위한<br/>중장기 집중 맞춤 솔루션</h3><p>주차별 프리미엄 전략 리포트를 다운로드하세요.</p></div><div class="pro-elite-list">${[['26년 4월 4주차','심화 집중 루트 + 과목별 우선순위'],['26년 4월 3주차','중간 점검 + 리밸런싱 전략'],['26년 4월 2주차','약점 보강 로드맵 + 실행 체크']].map(([w,d])=>`<button class="pro-elite-item"><div><b>${w} PRO 리포트</b><p>${d}</p></div><span class="pro-elite-download">PDF 다운로드</span></button>`).join('')}</div></div>`, false),
     tutor: layout(appbar('SKY튜터 1:1 피드백', true) + `<div class="card"><p class="sub">텍스트 기반 질의응답</p><ul class="list"><li>Q. 수학 개념 이해가 잘 안돼요</li><li>A. 유형별 복습 루틴을 추가하세요</li></ul></div><button class="btn btn-primary">새 질문 작성</button>`, false),
     proIntro: layout(appbar('StudyCrack 요금제', true) + `<p class="sub pricing-sub">합격 전략, 단계별로 선택하세요</p>
       <div class="plan-stack">
@@ -1780,6 +1814,8 @@ function App() {
     if (action === 'toggleObGed') setObGed((v) => !v);
     if (action === 'openDrawer') setDrawerOpen(true);
     if (action === 'closeDrawer') setDrawerOpen(false);
+    if (action === 'openNotificationModal') setNotifModalOpen(true);
+    if (action === 'closeNotificationModal') setNotifModalOpen(false);
     if (action === 'drawerGoto') {
       setDrawerOpen(false);
       goto(actionEl.getAttribute('data-target'));
