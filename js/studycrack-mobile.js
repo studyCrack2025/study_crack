@@ -181,6 +181,7 @@ function App() {
   const touchTargetRef = useRef('');
   const suppressClickUntilRef = useRef(0);
   const lastStableScrollYRef = useRef(0);
+  const pendingScrollRestoreRef = useRef(null);
 
   const goto = (next, addHistory = true) => {
     const currentY = window.scrollY || window.pageYOffset || 0;
@@ -218,6 +219,15 @@ function App() {
     window.addEventListener('scroll', onNativeScroll, { passive: true });
     return () => window.removeEventListener('scroll', onNativeScroll);
   }, []);
+
+  useEffect(() => {
+    if (pendingScrollRestoreRef.current === null) return;
+    const y = pendingScrollRestoreRef.current;
+    pendingScrollRestoreRef.current = null;
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+    });
+  });
 
 
   useEffect(() => {
@@ -306,14 +316,20 @@ function App() {
   useEffect(() => {
     if (screen !== 'analysis') return;
     setIsAnalyzing(true);
-    const t = setTimeout(() => setIsAnalyzing(false), 2000);
+    const t = setTimeout(() => {
+      queueScrollRestore();
+      setIsAnalyzing(false);
+    }, 2000);
     return () => clearTimeout(t);
   }, [screen, targetMajor]);
 
   useEffect(() => {
     if (screen !== 'ob3') return;
     setOb3IsAnalyzing(true);
-    const t = setTimeout(() => setOb3IsAnalyzing(false), 1500);
+    const t = setTimeout(() => {
+      queueScrollRestore();
+      setOb3IsAnalyzing(false);
+    }, 1500);
     return () => clearTimeout(t);
   }, [screen]);
 
@@ -1022,7 +1038,8 @@ function App() {
     .analysis-v2-bar-wrap{height:100%;display:flex;align-items:flex-end;position:relative;}
     .analysis-v2-bar-item .score{font-size:14px;font-weight:700;}
     .analysis-v2-bar-item p{min-height:38px;line-height:1.3;}
-    .analysis-v2-bar-proj{position:absolute;bottom:36%;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;color:#1E3A8A;border:1px dashed #93C5FD;border-radius:999px;padding:2px 7px;background:#EFF6FF;white-space:nowrap;}
+    .analysis-v2-bar-proj{position:absolute;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;color:#1E3A8A;border:1px dashed #93C5FD;border-radius:999px;padding:2px 7px;background:#EFF6FF;white-space:nowrap;z-index:4;}
+    .analysis-v2-bar-proj-box{position:absolute;left:50%;transform:translateX(-50%);width:56px;min-height:10px;border:3px dashed #F59E0B;border-bottom:none;border-radius:14px 14px 0 0;background:rgba(251,191,36,.18);pointer-events:none;z-index:3;}
     .analysis-v2-sim-item{min-height:112px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;border:1px solid #E2E8F0;border-radius:16px;padding:14px 15px;background:#fff;}
     .analysis-v2-sim-item .left{display:grid;gap:6px;}
     .analysis-v2-sim-item .left p{margin:0;display:flex;align-items:center;gap:8px;font-size:16px;}
@@ -1377,10 +1394,11 @@ function App() {
                   const color = score >= 250 ? '#22C55E' : score < 100 ? '#F97316' : '#2563EB';
                   const shouldProject = analysisBarProjectionTarget === full;
                   const projectionScore = shouldProject ? Math.min(250, score + 13) : score === 71 ? 84 : null;
-                  const projectionHeight = projectionScore ? Math.max(8, ((projectionScore - score) / 250) * 100) : 0;
-                  const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}">${projectionScore} (+13.1)</span>` : '';
-                  const projectionLine = projectionScore ? `<span class="analysis-v2-bar-proj-line ${shouldProject ? 'show' : ''}" style="bottom:${heightPercent}%;height:${projectionHeight}%"></span>` : '';
-                  return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="simulateBarGain" data-target-major="${full}" data-base-score="${score}"><b class="score">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar" style="height:${heightPercent}%;background:${color}"></i>${projectionLine}${projection}</div><p>${label}</p></button>`;
+                  const projectedPercent = projectionScore ? Math.max(8, Math.min(100, (projectionScore / 250) * 100)) : heightPercent;
+                  const projectionHeight = projectionScore ? Math.max(8, projectedPercent - heightPercent) : 0;
+                  const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${Math.min(96, projectedPercent + 3)}%">${projectionScore} (+13.1)</span>` : '';
+                  const projectionBox = projectionScore ? `<span class="analysis-v2-bar-proj-box" style="bottom:${heightPercent}%;height:${projectionHeight}%"></span>` : '';
+                  return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="simulateBarGain" data-target-major="${full}" data-base-score="${score}"><b class="score">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar" style="height:${heightPercent}%;background:${color}"></i>${projectionBox}${projection}</div><p>${label}</p></button>`;
                 }).join('')}
               </div>
             </div>
@@ -1544,6 +1562,9 @@ function App() {
   const currentScreen = screen;
   console.log('APP_LOADING_STATE', loading);
   console.log('APP_CURRENT_SCREEN', currentScreen);
+  const queueScrollRestore = () => {
+    pendingScrollRestoreRef.current = window.scrollY || window.pageYOffset || 0;
+  };
 
   const onClick = (e) => {
     lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
@@ -1552,6 +1573,8 @@ function App() {
     const actionEl = e.target.closest('[data-action]');
     if (!actionEl) return;
     const action = actionEl.getAttribute('data-action');
+    const shouldKeepScroll = !['goto', 'back', 'tab', 'drawerGoto', 'loginSuccess', 'signupSuccess', 'ssoSuccess', 'selectUniversity'].includes(action);
+    if (shouldKeepScroll) queueScrollRestore();
     if (action === 'goto') {
       const target = actionEl.getAttribute('data-target');
       if (screen === 'on1' && target === 'ob1') {
@@ -1559,6 +1582,7 @@ function App() {
         setOnboardingLoadingText('성적 분석중...');
         setTimeout(() => setOnboardingLoadingText('유리한 대학 전형 파악중...'), 2000);
         setTimeout(() => {
+          queueScrollRestore();
           setOnboardingLoading(false);
           goto('ob1');
         }, 4000);
@@ -1569,6 +1593,7 @@ function App() {
         setOnboardingLoadingText('학습 성향 분석중...');
         setTimeout(() => setOnboardingLoadingText('효율적인 공부법 찾는 중...'), 1500);
         setTimeout(() => {
+          queueScrollRestore();
           setOnboardingLoading(false);
           goto('ob3');
         }, 3000);
