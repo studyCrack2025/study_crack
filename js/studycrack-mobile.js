@@ -6,7 +6,7 @@ const STUDYCRACK_LOGO_SRC = './assets/images/studycrack_logo_wo_bg.png';
 const SSO_KAKAO_LOGO_SRC = './assets/images/IMG_2911.jpeg';
 const SSO_GOOGLE_LOGO_SRC = './assets/images/IMG_2912.jpeg';
 const SSO_NAVER_LOGO_SRC = './assets/images/IMG_2910.jpeg';
-const HOME_FALLBACK_HTML = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>스터디크랙 홈</h3><p class="sub">앱을 불러왔어요. 계속 이용해 주세요.</p></div></div></div></div>`;
+const HOME_FALLBACK_HTML = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>스터디크랙</h3><p class="sub">초기 로딩 중입니다. 잠시만 기다려 주세요.</p></div></div></div></div>`;
 const DEFAULT_USER = { name: '김지민', targetUniversity: '연세대학교 경영학과', plan: 'Pro' };
 const DEFAULT_SCORES = { korean: 82, math: 68, english: 77, inquiry1: 70, inquiry2: 66 };
 const DEFAULT_NOTIFICATIONS = { planner: true, weekly: true, report: true, billing: true };
