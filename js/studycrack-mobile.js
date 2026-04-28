@@ -15,6 +15,18 @@ const DEFAULT_PLANNER_ITEMS = [
   { id: 'pl-default-3', date: '14', subject: '탐구', content: '실전문제', start: '15:00', end: '17:00', minutes: 120, dot: 'sci' },
   { id: 'pl-default-4', date: '14', subject: '수학', content: '오답 풀이', start: '19:00', end: '22:00', minutes: 180, dot: 'math' }
 ];
+const PRO_ELITE_REPORTS = [
+  { week: '26년 4월 4주차', desc: '심화 집중 루트 + 과목별 우선순위', fileName: 'studycrack-pro-report-26-04-w4.pdf' },
+  { week: '26년 4월 3주차', desc: '중간 점검 + 리밸런싱 전략', fileName: 'studycrack-pro-report-26-04-w3.pdf' },
+  { week: '26년 4월 2주차', desc: '약점 보강 로드맵 + 실행 체크', fileName: 'studycrack-pro-report-26-04-w2.pdf' },
+  { week: '26년 4월 1주차', desc: '실전 루틴 안정화 + 시간 배분', fileName: 'studycrack-pro-report-26-04-w1.pdf' },
+  { week: '26년 3월 4주차', desc: '오답 패턴 정리 + 단원 회독', fileName: 'studycrack-pro-report-26-03-w4.pdf' },
+  { week: '26년 3월 3주차', desc: '과목 밸런스 조정 + 약점 보강', fileName: 'studycrack-pro-report-26-03-w3.pdf' },
+  { week: '26년 3월 2주차', desc: '모의고사 리커버리 + 집중 강화', fileName: 'studycrack-pro-report-26-03-w2.pdf' },
+  { week: '26년 3월 1주차', desc: '기본기 리빌드 + 학습 체력 관리', fileName: 'studycrack-pro-report-26-03-w1.pdf' },
+  { week: '26년 2월 4주차', desc: '개념 정착 로드맵 + 주간 점검', fileName: 'studycrack-pro-report-26-02-w4.pdf' }
+];
+const PRO_ELITE_REPORT_PDF_PATH = './assets/features/feat_pro_report.pdf';
 const SCORE_LABELS = { korean: '국어', math: '수학', english: '영어', inquiry1: '탐구1', inquiry2: '탐구2' };
 
 const safeParse = (key, fallback) => {
@@ -1034,9 +1046,7 @@ function App() {
     .pro-notif-modal .pro-notif-list > div{padding:10px;border:1px solid #E2E8F0;border-radius:12px;background:#F8FAFC;}
     .pro-notif-modal .pro-notif-list b{display:block;font-size:14px;color:#0F172A;margin-bottom:4px;}
     .pro-notif-modal .pro-notif-list p{margin:0;font-size:12px;color:#475569;line-height:1.45;}
-    .pro-elite-page{display:grid;gap:14px;}
-    .pro-elite-action-row{display:flex;justify-content:flex-end;}
-    .pro-request-btn{border:none;border-radius:12px;padding:9px 14px;font-size:13px;font-weight:800;color:#fff;background:linear-gradient(135deg,#1D4ED8,#2563EB);box-shadow:0 8px 18px rgba(37,99,235,.24);}
+    .pro-elite-page{display:grid;gap:14px;padding-bottom:8px;}
     .pro-elite-hero{
       padding:20px;border-radius:20px;border:1px solid #334155;
       background:radial-gradient(120% 120% at 0% 0%,#1E293B 0%,#0F172A 55%,#020617 100%);
@@ -1045,7 +1055,7 @@ function App() {
     .pro-elite-badge{display:inline-flex;padding:4px 10px;border-radius:999px;background:linear-gradient(90deg,#F59E0B,#FDE68A);color:#78350F;font-weight:900;font-size:11px;}
     .pro-elite-hero h3{margin:10px 0 8px;font-size:24px;line-height:1.28;color:#F8FAFC;}
     .pro-elite-hero p{margin:0;font-size:13px;color:#CBD5E1;}
-    .pro-elite-list{display:grid;gap:10px;}
+    .pro-elite-list{display:grid;gap:10px;max-height:420px;overflow:auto;padding-right:2px;}
     .pro-elite-item{
       border:1px solid #1E293B;background:#fff;border-radius:16px;padding:14px;
       display:flex;justify-content:space-between;align-items:center;text-align:left;gap:10px;
@@ -1054,6 +1064,19 @@ function App() {
     .pro-elite-item b{display:block;font-size:14px;color:#0F172A;margin-bottom:4px;}
     .pro-elite-item p{margin:0;font-size:12px;color:#64748B;line-height:1.4;}
     .pro-elite-download{font-size:12px;font-weight:800;color:#1D4ED8;white-space:nowrap;}
+    .pro-elite-request-bottom{padding:10px 4px 2px;}
+    .pro-request-btn{
+      width:100%;height:58px;border:none;border-radius:18px;
+      display:flex;align-items:center;justify-content:center;gap:8px;
+      font-size:16px;font-weight:900;color:#fff;letter-spacing:.02em;
+      background:linear-gradient(135deg,#0B1A47 0%,#1D4ED8 48%,#3B82F6 100%);
+      box-shadow:0 16px 28px rgba(29,78,216,.26), inset 0 1px 0 rgba(255,255,255,.32);
+      position:relative;overflow:hidden;
+    }
+    .pro-request-btn:before{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,.3) 36%,transparent 64%);transform:translateX(-120%);animation:proRequestShine 3s ease-in-out infinite;}
+    .pro-request-btn .spark{position:relative;z-index:1;font-size:17px;}
+    .pro-request-btn span{position:relative;z-index:1;}
+    @keyframes proRequestShine{0%{transform:translateX(-120%);}45%,100%{transform:translateX(120%);}}
     .pro-request-modal{width:calc(100% - 22px);max-width:430px;padding:0;overflow:hidden;border:1px solid #3B82F6;}
     .pro-request-head{background:linear-gradient(135deg,#1E40AF,#2563EB);color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;}
     .pro-request-head h4{margin:0;font-size:18px;font-weight:800;}
@@ -1624,7 +1647,7 @@ function App() {
       true
     ),
     reportDetail: layout(appbar('종합 분석 리포트', true) + `<div class="report-tabs"><span class="active">종합 분석</span><span>과목 분석</span><span>학습 전략</span><span>현재 위치</span></div><div class="report-detail-stack"><div class="card report-detail-card"><p class="sub">핵심 요약</p><p class="report-detail-text">수학에서 점수 상승 여지가 가장 큽니다. 개념 학습 시간을 늘리고, 문제 풀이 비중을 높이면 단기간 점수 개선이 가능합니다.</p></div><div class="card report-detail-card"><p class="sub">과목별 성과</p><div class="subject-result"><span>수학</span><div class="track"><i style="width:82%"></i></div><em><span class="score">68점</span><span class="delta">▲12</span></em></div><div class="subject-result"><span>국어</span><div class="track"><i style="width:74%"></i></div><em><span class="score">82점</span><span class="delta">▲3</span></em></div><div class="subject-result"><span>영어</span><div class="track"><i style="width:70%"></i></div><em><span class="score">77점</span><span class="delta">-</span></em></div><div class="subject-result"><span>탐구</span><div class="track"><i style="width:62%"></i></div><em><span class="score">66점</span><span class="delta">▲5</span></em></div></div></div><div class="cta-wrapper report-detail-cta"><button class="btn btn-primary cta-btn">PDF 다운로드</button></div>`, false),
-    proElite: layout(appbar('PRO EXCLUSIVE', true) + `<div class="pro-elite-page"><div class="pro-elite-action-row"><button class="pro-request-btn" data-action="openProRequestModal">요청</button></div><div class="pro-elite-hero"><span class="pro-elite-badge">TOP 1%</span><h3>상위 1%를 위한<br/>중장기 집중 맞춤 솔루션</h3><p>주차별 프리미엄 전략 리포트를 다운로드하세요.</p></div><div class="pro-elite-list">${[['26년 4월 4주차','심화 집중 루트 + 과목별 우선순위'],['26년 4월 3주차','중간 점검 + 리밸런싱 전략'],['26년 4월 2주차','약점 보강 로드맵 + 실행 체크']].map(([w,d])=>`<button class="pro-elite-item"><div><b>${w} PRO 리포트</b><p>${d}</p></div><span class="pro-elite-download">PDF 다운로드</span></button>`).join('')}</div>${proRequestModalOpen ? `<div class="home-modal-overlay" data-action="closeProRequestModal"><div class="home-modal pro-request-modal" data-action="noopModal"><div class="pro-request-head"><h4>✈ 전략 보고서 요청</h4><button class="pro-request-close" data-action="closeProRequestModal">✕</button></div><div class="pro-request-body"><p>현재 학습 상황이나 고민, 특별히 분석받고 싶은 내용을 적어주세요.</p><p>담당 컨설턴트가 이를 반영하여 <b>최적의 전략</b>을 수립합니다.</p><label>요청 사항 (500자 이내)</label><textarea data-field="proRequestText" maxlength="500" placeholder="예: 6월 모평 대비 수학 기하 과목 집중 전략이 필요합니다. 최근 실전 문제 풀이에서 시간이 부족해 고민입니다.">${proRequestText}</textarea><div class="pro-request-count">${proRequestText.length}/500</div><div class="pro-request-actions"><button class="cancel" data-action="closeProRequestModal">취소</button><button class="submit" data-action="submitProRequest">요청서 제출하기</button></div></div></div></div>` : ''}</div>`, false),
+    proElite: layout(appbar('PRO EXCLUSIVE', true) + `<div class="pro-elite-page"><div class="pro-elite-hero"><span class="pro-elite-badge">TOP 1%</span><h3>상위 1%를 위한<br/>중장기 집중 맞춤 솔루션</h3><p>주차별 프리미엄 전략 리포트를 다운로드하세요.</p></div><div class="pro-elite-list">${PRO_ELITE_REPORTS.map((report)=>`<button class="pro-elite-item" data-action="downloadProReport" data-pdf-path="${PRO_ELITE_REPORT_PDF_PATH}" data-pdf-name="${report.fileName}"><div><b>${report.week} PRO 리포트</b><p>${report.desc}</p></div><span class="pro-elite-download">PDF 다운로드</span></button>`).join('')}</div><div class="pro-elite-request-bottom"><button class="pro-request-btn" data-action="openProRequestModal"><i class="spark">✦</i><span>전략 리포트 요청하기</span></button></div>${proRequestModalOpen ? `<div class="home-modal-overlay" data-action="closeProRequestModal"><div class="home-modal pro-request-modal" data-action="noopModal"><div class="pro-request-head"><h4>✈ 전략 보고서 요청</h4><button class="pro-request-close" data-action="closeProRequestModal">✕</button></div><div class="pro-request-body"><p>현재 학습 상황이나 고민, 특별히 분석받고 싶은 내용을 적어주세요.</p><p>담당 컨설턴트가 이를 반영하여 <b>최적의 전략</b>을 수립합니다.</p><label>요청 사항 (500자 이내)</label><textarea data-field="proRequestText" maxlength="500" placeholder="예: 6월 모평 대비 수학 기하 과목 집중 전략이 필요합니다. 최근 실전 문제 풀이에서 시간이 부족해 고민입니다.">${proRequestText}</textarea><div class="pro-request-count">${proRequestText.length}/500</div><div class="pro-request-actions"><button class="cancel" data-action="closeProRequestModal">취소</button><button class="submit" data-action="submitProRequest">요청서 제출하기</button></div></div></div></div>` : ''}</div>`, false),
     tutor: layout(appbar('SKY튜터 1:1 피드백', true) + `<div class="card"><p class="sub">텍스트 기반 질의응답</p><ul class="list"><li>Q. 수학 개념 이해가 잘 안돼요</li><li>A. 유형별 복습 루틴을 추가하세요</li></ul></div><button class="btn btn-primary">새 질문 작성</button>`, false),
     proIntro: layout(appbar('StudyCrack 요금제', true) + `<p class="sub pricing-sub">합격 전략, 단계별로 선택하세요</p>
       <div class="plan-stack">
@@ -1842,6 +1865,16 @@ function App() {
       window.alert('요청서가 제출되었습니다.');
       setProRequestModalOpen(false);
       setProRequestText('');
+    }
+    if (action === 'downloadProReport') {
+      const pdfPath = actionEl.getAttribute('data-pdf-path') || PRO_ELITE_REPORT_PDF_PATH;
+      const fileName = actionEl.getAttribute('data-pdf-name') || 'studycrack-pro-report.pdf';
+      const anchor = document.createElement('a');
+      anchor.href = pdfPath;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
     }
     if (action === 'drawerGoto') {
       setDrawerOpen(false);
