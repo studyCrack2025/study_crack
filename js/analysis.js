@@ -928,7 +928,7 @@ function openSolution(type) {
         const wrapper = document.querySelector('.sol-swipe-wrapper');
         if (wrapper && targetContent) {
             // 해당 탭의 위치로 부드럽게 스크롤
-            wrapper.scrollTo({ left: targetContent.offsetLeft - wrapper.offsetLeft, behavior: 'smooth' });
+            wrapper.scrollTo({ left: targetContent.offsetLeft - wrapper.offsetLeft, behavior: getStableScrollBehavior() });
             setTimeout(syncMobileHeight, 350);
         }
     } else {
@@ -1568,6 +1568,10 @@ let cachedSimData = [];
 let simDisplayList = []; 
 let selectedSimIndex = null;
 
+function getStableScrollBehavior() {
+    return window.innerWidth <= 768 ? 'auto' : 'smooth';
+}
+
 function initSimulation() {
     const chartArea = document.getElementById('simChartArea');
     if (!chartArea) return;
@@ -1699,7 +1703,7 @@ function renderSimChart() {
             container.style.overflow = 'visible';
 
             const wrapper = document.createElement('div');
-            wrapper.id = 'simBarWrapper'; wrapper.className = 'chart-inner-container'; wrapper.style.height = 'auto'; wrapper.style.minHeight = '360px';
+            wrapper.id = 'simBarWrapper'; wrapper.className = 'chart-inner-container'; wrapper.style.height = 'auto'; wrapper.style.minHeight = '430px';
             wrapper.insertAdjacentHTML('beforeend', getBadgeHTML());
             
             const graphArea = document.createElement('div'); graphArea.className = 'chart-graph-area';
@@ -1708,9 +1712,9 @@ function renderSimChart() {
             const MAX_SCORE = 250; 
 
             if (isMobile) {
-                graphArea.style.padding = '0 15px'; graphArea.style.marginTop = '40px'; graphArea.style.height = '200px'; 
+                graphArea.style.padding = '0 15px'; graphArea.style.marginTop = '54px'; graphArea.style.height = '240px'; 
             } else {
-                graphArea.style.padding = '0 60px 0 20px'; graphArea.style.marginTop = '50px'; graphArea.style.height = '260px'; 
+                graphArea.style.padding = '0 60px 0 20px'; graphArea.style.marginTop = '58px'; graphArea.style.height = '300px'; 
             }
 
             let graphHtml = ''; let labelHtml = '';
@@ -1754,10 +1758,14 @@ function renderSimChart() {
                     const potentialScore = Math.min(score + maxRise, MAX_SCORE);
                     const riseAmount = potentialScore - score;
                     const riseHeightPct = `${(riseAmount / MAX_SCORE) * 100}%`;
+                    const nearTop = (potentialScore / MAX_SCORE) >= 0.9;
+                    const labelStyle = nearTop
+                        ? 'bottom:8px; top:auto; color:#92400e; background:rgba(255,255,255,0.95); border-radius:999px; padding:2px 6px; border:1px dashed #f59e0b;'
+                        : 'top:-25px; color:#d97706;';
                     
                     extensionHtml = `
                         <div class="sim-extension-bar" data-target-height="${riseHeightPct}" style="position:absolute; bottom:${currentHeightPct}; left:50%; transform:translateX(-50%); height:0; opacity:0; z-index:2; transition:height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease; pointer-events:none;">
-                             <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">
+                             <span style="position:absolute; left:50%; transform:translateX(-50%); font-size:0.8rem; font-weight:800; white-space:nowrap; ${labelStyle}">
                                 ${Math.round(potentialScore)} <span style="font-size:0.7rem;">(+${maxRise.toFixed(1)})</span>
                              </span>
                         </div>`;
@@ -1843,7 +1851,7 @@ function updateSimBarGraph(idx) {
             // 💡 [수정된 부분] 모바일 막대그래프 강제 스크롤 동기화 로직
             if (container && window.innerWidth <= 768) {
                 const scrollPos = item.offsetLeft - (container.clientWidth / 2) + (item.clientWidth / 2);
-                container.scrollTo({ left: scrollPos, behavior: 'smooth' });
+                container.scrollTo({ left: scrollPos, behavior: getStableScrollBehavior() });
             }
         } else {
             item.classList.remove('active');
@@ -2036,7 +2044,7 @@ function selectSimUniv(index, fromScroll = false) {
         const container = document.getElementById('simDetailCard');
         if (container && container.children[index]) {
             const targetCard = container.children[index];
-            container.scrollTo({ left: targetCard.offsetLeft - container.offsetLeft, behavior: 'smooth' });
+            container.scrollTo({ left: targetCard.offsetLeft - container.offsetLeft, behavior: getStableScrollBehavior() });
         }
     } else if (window.innerWidth > 768) {
         renderDetailedSimCard(); 
