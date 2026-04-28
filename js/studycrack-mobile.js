@@ -159,21 +159,6 @@ function App() {
   const [studyTimerRunning, setStudyTimerRunning] = useState(false);
   const studyTimerSecondsRef = useRef(0);
   const studyTimerIntervalRef = useRef(null);
-  const [activeStudySubject, setActiveStudySubject] = useState('');
-  const [studySubjectSheetOpen, setStudySubjectSheetOpen] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [coachingSubmitted, setCoachingSubmitted] = useState(false);
-  const [coachingSheetOpen, setCoachingSheetOpen] = useState(false);
-  const [coachingStep, setCoachingStep] = useState(1);
-  const [coachingMonth, setCoachingMonth] = useState('26년 4월');
-  const [coachingSubjectRows, setCoachingSubjectRows] = useState([]);
-  const [coachingPlannerFiles, setCoachingPlannerFiles] = useState([]);
-  const [coachingExamType, setCoachingExamType] = useState('');
-  const [coachingExamFiles, setCoachingExamFiles] = useState([]);
-  const [coachingExamScores, setCoachingExamScores] = useState({});
-  const [coachingTrend, setCoachingTrend] = useState('');
-  const [coachingDropReasons, setCoachingDropReasons] = useState([]);
-  const [coachingAnswers, setCoachingAnswers] = useState({ step4Reason: '', step5: '', step6: '', step7: '', step8: '' });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [ob3IsAnalyzing, setOb3IsAnalyzing] = useState(true);
   const [onboardingLoading, setOnboardingLoading] = useState(false);
@@ -300,8 +285,6 @@ function App() {
       rafId = requestAnimationFrame(stabilizeUnexpectedJump);
     };
 
-    const observer = new MutationObserver(requestStabilize);
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
     window.addEventListener('resize', requestStabilize, { passive: true });
     window.addEventListener('orientationchange', requestStabilize, { passive: true });
 
@@ -1579,23 +1562,6 @@ function App() {
       </div>
       <div class="card my-menu-card my-service-card">
         <p class="my-section-title">서비스</p>
-        <button class="my-row" data-action="goto" data-target="notificationSettings">알림 설정 <span>${i('chevron', false)}</span></button>
-        <button class="my-row" data-action="goto" data-target="customerSupport">고객센터 <span>${i('chevron', false)}</span></button>
-        <button class="my-row" data-action="goto" data-target="settingsMain">설정 <span>${i('chevron', false)}</span></button>
-      </div>
-    </div>`, true),
-    weekly: layout(
-      `<div class="weekly-head"><button class="weekly-back" data-action="back">←</button><h3>주간 점검</h3><span></span></div>
-       <p class="weekly-range">이번 주 점검 (5.6 ~ 5.12)</p>
-       <div class="card weekly-rate"><div><p class="sub">플래너 수행률</p><h2>82%</h2></div><span class="badge">목표 90%</span></div>
-       <div class="card weekly-feedback">
-         <p class="sub" style="margin:0 0 10px;">주간 요약 피드백</p>
-         <div class="feedback-item">${i('check', true)}수학 공부 시간이 부족해요. 개념 학습 시간을 늘려보세요.</div>
-         <div class="feedback-item">${i('check', true)}탐구 문제 풀이 시간이 좋아요! 유지하면 더 좋은 결과가 기대돼요.</div>
-         <div class="feedback-item">${i('check', true)}영어는 꾸준히 잘하고 있어요. 계속 유지해요!</div>
-         <img src="${CRACKY_SRC}" class="weekly-char crackie" alt="크랙이"/>
-       </div>
-       <div class="cta-wrapper"><button class="btn btn-primary weekly-next cta-btn" data-action="goto" data-target="planner">다음 주 계획 세우기</button></div>`,
       true
     ),
     report: layout(
@@ -2015,7 +1981,6 @@ function App() {
     const field = e.target.getAttribute('data-field');
     if (field === 'coachPlannerFiles') {
       const files = Array.from(e.target.files || []);
-      if (files.length) setCoachingPlannerFiles((prev) => [...prev, ...files].slice(0, 5));
       e.target.value = '';
       return;
     }
