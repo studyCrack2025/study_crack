@@ -161,20 +161,18 @@ function App() {
   const [analysisSearchOpen, setAnalysisSearchOpen] = useState(false);
   const [analysisSearchTerm, setAnalysisSearchTerm] = useState('');
   const [analysisMode, setAnalysisMode] = useState('summary');
-  const [analysisEtaStage, setAnalysisEtaStage] = useState(1);
-  const [analysisHighlightedSubject, setAnalysisHighlightedSubject] = useState('');
-  const [analysisBarProjectionTarget, setAnalysisBarProjectionTarget] = useState('');
-  const [activeScoreView, setActiveScoreView] = useState('target');
-  const [homeSlideIndex, setHomeSlideIndex] = useState(0);
-  const [homeSlideMotion, setHomeSlideMotion] = useState('');
-  const [scoreSlideMotion, setScoreSlideMotion] = useState('');
-  const [homeDragOffset, setHomeDragOffset] = useState(0);
-  const [scoreDragOffset, setScoreDragOffset] = useState(0);
-  const [selectedDate, setSelectedDate] = useState('14');
-  const [plannerCalendarOpen, setPlannerCalendarOpen] = useState(false);
-  const [universityModalOpen, setUniversityModalOpen] = useState(false);
-  const [plannerDraft, setPlannerDraft] = useState({ subject: '', content: '', durationChoice: '', customMinutes: '' });
-  const [loginEmail, setLoginEmail] = useState('');
+    if (typeof screenScrollRef.current[next] !== 'number') screenScrollRef.current[next] = 0;
+    if (['home', 'analysis', 'strategy', 'planner', 'my'].includes(prev)) setTab(prev);
+    // 강제 스크롤 가드는 iOS/Safari에서 튐 현상을 만들 수 있어 비활성화
+    scrollGuardRef.current = { until: 0, y: 0 };
+  }, []);
+    const savedY = screenScrollRef.current[screen];
+    const targetY = Number.isFinite(savedY) && savedY >= 0 ? savedY : 0;
+    const raf = requestAnimationFrame(() => {
+      const now = window.scrollY || window.pageYOffset || 0;
+      if (Math.abs(now - targetY) > 2) window.scrollTo({ top: targetY, left: 0, behavior: 'auto' });
+    });
+    return () => cancelAnimationFrame(raf);
   const [loginPassword, setLoginPassword] = useState('');
   const [signupName, setSignupName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
