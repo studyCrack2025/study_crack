@@ -170,7 +170,8 @@ function App() {
   const plannerContentRef = useRef('');
   const plannerCustomMinutesRef = useRef('');
   const screenScrollRef = useRef({});
-  const scoreViewScrollLockRef = useRef(false);
+  const touchStartXRef = useRef(null);
+  const touchTargetRef = useRef('');
 
   const goto = (next, addHistory = true) => {
     screenScrollRef.current[screen] = window.scrollY || window.pageYOffset || 0;
@@ -235,25 +236,6 @@ function App() {
     }
     viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
   }, []);
-
-  useEffect(() => {
-    if (!['analysis', 'on3'].includes(screen)) return;
-    const raf = requestAnimationFrame(() => {
-      const container = document.querySelector('.score-journey-scroll');
-      if (!container) return;
-      const target = container.querySelector(`.score-journey-col[data-score-view="${activeScoreView}"]`);
-      if (!target) return;
-      const left = target.offsetLeft - Math.max(0, (container.clientWidth - target.clientWidth) / 2);
-      const currentY = window.scrollY || window.pageYOffset || 0;
-      scoreViewScrollLockRef.current = true;
-      container.scrollTo({ left, behavior: 'auto' });
-      requestAnimationFrame(() => {
-        window.scrollTo({ top: currentY, left: 0, behavior: 'auto' });
-        scoreViewScrollLockRef.current = false;
-      });
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [activeScoreView, screen, analysisMode]);
 
   const initializeApp = async () => {
     let fallbackTimer;
@@ -705,13 +687,14 @@ function App() {
     </div>
     <div class="section home-section">
       <div class="home-kpi-slider">
+        <div class="home-kpi-track" style="transform:translateX(-${homeSlideIndex * 100}%);">
         ${homeTargets.map((item) => `<button class="card home-kpi-card admission-card slider-card home-result-card-v3" data-action="selectUniversity" data-target-major="${item.major}">
           <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score"><strong>${item.score}점</strong><small>AI 점수</small></div></div>
           <div class="home-result-gauge"><i style="width:${Math.min((item.score / 250) * 100, 100)}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
           <div class="home-result-gauge-meta"><span>0</span><span>합격컷 100</span><span>안정컷 150</span><span>MAX 250</span></div>
           <div class="kpi-row score-row"><div class="kpi-item"><b>${item.score}점</b>현재 점수</div><div class="kpi-item"><b>${item.cut}점</b>합격 컷</div><div class="kpi-item danger"><b>${item.gap}점</b>부족 점수</div></div>
           <div class="home-planner-badges chip-row">${plannerBadges.map((badge) => `<span class="chip">${badge}</span>`).join('')}</div>
-        </button>`).join('')}
+        </button>`).join('')}</div>
       </div>
       <div class="home-kpi-indicator card-indicator">${homeTargets.map((_, idx) => `<i class="${idx===homeSlideIndex?'active':''}" data-action="setHomeSlide" data-slide-index="${idx}"></i>`).join('')}</div>
       ${universityModalOpen ? `<div class="home-modal-overlay" data-action="closeUniversityModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">목표 대학 추가</p><p class="sub" style="margin-top:8px">대학 선택 모달은 다음 단계에서 연결됩니다.</p><button class="btn btn-primary" data-action="closeUniversityModal">닫기</button></div></div>` : ''}
@@ -885,8 +868,9 @@ function App() {
     .analysis-v2-bar-proj-line{position:absolute;left:50%;transform:translateX(-50%);border-left:2px dashed #FACC15;opacity:0;pointer-events:none;}
     .analysis-v2-bar-proj-line.show{opacity:1;}
     @keyframes barProjPop{0%{transform:translateX(-50%) translateY(8px);opacity:0;}100%{transform:translateX(-50%) translateY(0);opacity:1;}}
-    .home-kpi-slider{display:flex;overflow-x:auto;gap:10px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:2px;}
-    .home-kpi-slider .slider-card{flex:0 0 calc(100% - 24px);scroll-snap-align:center;}
+    .home-kpi-slider{overflow:hidden;padding-bottom:2px;touch-action:pan-y;}
+    .home-kpi-track{display:flex;transition:transform .25s ease;will-change:transform;}
+    .home-kpi-slider .slider-card{flex:0 0 100%;}
     .home-kpi-indicator i{cursor:pointer;}
     .home-result-card-v3{display:grid;gap:12px;text-align:left;overflow:hidden;}
     .home-result-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;}
@@ -913,9 +897,10 @@ function App() {
     .score-journey-segment{display:inline-flex;gap:6px;background:#F1F5F9;border-radius:999px;padding:4px;width:max-content;position:relative;z-index:2;pointer-events:auto;}
     .score-journey-segment button{padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;color:#64748B;border:none;background:transparent;pointer-events:auto;}
     .score-journey-segment button.active{background:#fff;color:#1E3A8A;box-shadow:0 1px 2px rgba(0,0,0,.06);}
-    .score-journey-scroll{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 0;position:relative;z-index:1;}
+    .score-journey-scroll{overflow:hidden;padding:4px 0;position:relative;z-index:1;touch-action:pan-y;}
+    .score-journey-track{display:flex;width:200%;transition:transform .24s ease;will-change:transform;}
     .score-journey-col{border:1px solid #E2E8F0;background:#F8FAFC;border-radius:18px;padding:12px;display:grid;gap:8px;min-width:0;}
-    .score-journey-scroll .score-journey-col{width:calc(100% - 32px);flex:0 0 calc(100% - 32px);scroll-snap-align:center;}
+    .score-journey-track .score-journey-col{width:50%;flex:0 0 50%;}
     .score-journey-col.target{border-color:#93C5FD;background:#EFF6FF;}
     .score-journey-col h4{margin:0;font-size:14px;color:#334155;}
     .score-row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;color:#334155;white-space:nowrap;word-break:keep-all;min-width:0;}
@@ -966,7 +951,7 @@ function App() {
     .score-info-detail-table{display:grid;gap:8px;margin:14px 0;}
     .score-info-detail-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;font-size:12px;color:#475569;padding:10px;border:1px solid #E2E8F0;border-radius:12px;background:#F8FAFC;}
     .coach-hidden-file{display:none;}
-    @media (max-width:390px){.score-journey-col{padding:10px;}.score-row{font-size:13px;}.score-row .pill{font-size:11px;padding:2px 6px;}.score-journey-total{font-size:13px;}.score-journey-scroll .score-journey-col{min-width:220px;}}
+    @media (max-width:390px){.score-journey-col{padding:10px;}.score-row{font-size:13px;}.score-row .pill{font-size:11px;padding:2px 6px;}.score-journey-total{font-size:13px;}}
   </style>`;
 
   const scoreJourneyCard = (title = '최소 노력 대비 합격 도달 성적') => `
@@ -977,6 +962,7 @@ function App() {
         <button type="button" class="${activeScoreView==='target'?'active':''}" data-action="setScoreView" data-score-view="target">도달 성적</button>
       </div>
       <div class="score-journey-scroll">
+        <div class="score-journey-track" style="transform:translateX(${activeScoreView==='target' ? '-50%' : '0%'});">
         <div class="score-journey-col current" data-score-view="current">
           <h4>현재 성적</h4>
           <div class="score-row"><span>국어</span><b>82</b></div>
@@ -994,6 +980,7 @@ function App() {
           <div class="score-row"><span>탐구1</span><b><span class="pill up">+6</span></b><em>70 → 76</em></div>
           <div class="score-row"><span>탐구2</span><b><span class="pill keep">유지</span></b><em>66</em></div>
           <div class="score-journey-total"><span>예상 총점</span><b>120점</b></div>
+        </div>
         </div>
       </div>
     </div>
@@ -1499,11 +1486,8 @@ function App() {
     }
     if (action === 'setHomeSlide') {
       const idx = Number(actionEl.getAttribute('data-slide-index'));
-      const slider = document.querySelector('.home-kpi-slider');
-      const cards = slider ? Array.from(slider.querySelectorAll('.slider-card')) : [];
-      if (!slider || Number.isNaN(idx) || !cards[idx]) return;
-      slider.scrollTo({ left: cards[idx].offsetLeft - Math.max(0, (slider.clientWidth - cards[idx].clientWidth) / 2), behavior: 'smooth' });
-      setHomeSlideIndex(idx);
+      if (Number.isNaN(idx)) return;
+      setHomeSlideIndex(Math.max(0, Math.min(idx, homeTargets.length - 1)));
     }
     if (action === 'openAnalysisSearch') setAnalysisSearchOpen(true);
     if (action === 'closeAnalysisSearch') {
@@ -1813,42 +1797,45 @@ function App() {
     }
   };
 
-  const onScrollCapture = (e) => {
-    const target = e.target;
-    if (target && target.classList?.contains('home-kpi-slider')) {
-      const cards = Array.from(target.querySelectorAll('.slider-card'));
-      if (!cards.length) return;
-      const center = target.scrollLeft + (target.clientWidth / 2);
-      let nextIdx = 0;
-      let minDist = Number.MAX_SAFE_INTEGER;
-      cards.forEach((card, idx) => {
-        const cardCenter = card.offsetLeft + (card.clientWidth / 2);
-        const dist = Math.abs(cardCenter - center);
-        if (dist < minDist) {
-          minDist = dist;
-          nextIdx = idx;
-        }
-      });
-      setHomeSlideIndex((prev) => (prev === nextIdx ? prev : nextIdx));
+  const onTouchStart = (e) => {
+    const startX = e.touches?.[0]?.clientX;
+    if (typeof startX !== 'number') return;
+    const t = e.target;
+    if (t?.closest('.home-kpi-slider')) {
+      touchTargetRef.current = 'home';
+      touchStartXRef.current = startX;
       return;
     }
-    if (target && target.classList?.contains('score-journey-scroll')) {
-      if (scoreViewScrollLockRef.current) return;
-      const cards = Array.from(target.querySelectorAll('.score-journey-col'));
-      if (!cards.length) return;
-      const center = target.scrollLeft + (target.clientWidth / 2);
-      let closest = cards[0];
-      let dist = Math.abs((cards[0].offsetLeft + cards[0].clientWidth / 2) - center);
-      cards.forEach((card) => {
-        const d = Math.abs((card.offsetLeft + card.clientWidth / 2) - center);
-        if (d < dist) {
-          closest = card;
-          dist = d;
-        }
-      });
-      const next = closest.classList.contains('target') ? 'target' : 'current';
-      setActiveScoreView((prev) => (prev === next ? prev : next));
+    if (t?.closest('.score-journey-scroll')) {
+      touchTargetRef.current = 'score';
+      touchStartXRef.current = startX;
+      return;
     }
+    touchTargetRef.current = '';
+    touchStartXRef.current = null;
+  };
+
+  const onTouchEnd = (e) => {
+    const startX = touchStartXRef.current;
+    if (typeof startX !== 'number') return;
+    const endX = e.changedTouches?.[0]?.clientX;
+    touchStartXRef.current = null;
+    if (typeof endX !== 'number') return;
+    const delta = endX - startX;
+    if (Math.abs(delta) < 36) return;
+    if (touchTargetRef.current === 'home') {
+      setHomeSlideIndex((prev) => {
+        if (delta < 0) return Math.min(prev + 1, homeTargets.length - 1);
+        return Math.max(prev - 1, 0);
+      });
+    }
+    if (touchTargetRef.current === 'score') {
+      setActiveScoreView((prev) => {
+        if (delta < 0) return 'target';
+        return 'current';
+      });
+    }
+    touchTargetRef.current = '';
   };
 
   const onChange = (e) => {
@@ -1934,7 +1921,7 @@ function App() {
     : '';
   const rendered = `${designV2StyleTag}${renderedBase}${analysisOverlay}${onboardingOverlay}`;
 
-  return <div onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} onScrollCapture={onScrollCapture} dangerouslySetInnerHTML={{ __html: rendered }} />;
+  return <div onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} dangerouslySetInnerHTML={{ __html: rendered }} />;
 }
 
 const rootElement = document.getElementById('root');
