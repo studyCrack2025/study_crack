@@ -1797,46 +1797,47 @@ function App() {
     }
   };
 
-  const onTouchStart = (e) => {
-    const startX = e.touches?.[0]?.clientX;
-    if (typeof startX !== 'number') return;
-    const t = e.target;
-    if (t?.closest('.home-kpi-slider')) {
-      touchTargetRef.current = 'home';
-      touchStartXRef.current = startX;
-      return;
-    }
-    if (t?.closest('.score-journey-scroll')) {
-      touchTargetRef.current = 'score';
-      touchStartXRef.current = startX;
-      return;
-    }
-    touchTargetRef.current = '';
-    touchStartXRef.current = null;
-  };
-
-  const onTouchEnd = (e) => {
-    const startX = touchStartXRef.current;
-    if (typeof startX !== 'number') return;
-    const endX = e.changedTouches?.[0]?.clientX;
-    touchStartXRef.current = null;
-    if (typeof endX !== 'number') return;
-    const delta = endX - startX;
-    if (Math.abs(delta) < 36) return;
-    if (touchTargetRef.current === 'home') {
-      setHomeSlideIndex((prev) => {
-        if (delta < 0) return Math.min(prev + 1, homeTargets.length - 1);
-        return Math.max(prev - 1, 0);
-      });
-    }
-    if (touchTargetRef.current === 'score') {
-      setActiveScoreView((prev) => {
-        if (delta < 0) return 'target';
-        return 'current';
-      });
-    }
-    touchTargetRef.current = '';
-  };
+  useEffect(() => {
+    const onNativeTouchStart = (e) => {
+      const startX = e.touches?.[0]?.clientX;
+      if (typeof startX !== 'number') return;
+      const t = e.target;
+      if (t?.closest?.('.home-kpi-slider')) {
+        touchTargetRef.current = 'home';
+        touchStartXRef.current = startX;
+        return;
+      }
+      if (t?.closest?.('.score-journey-scroll')) {
+        touchTargetRef.current = 'score';
+        touchStartXRef.current = startX;
+        return;
+      }
+      touchTargetRef.current = '';
+      touchStartXRef.current = null;
+    };
+    const onNativeTouchEnd = (e) => {
+      const startX = touchStartXRef.current;
+      if (typeof startX !== 'number') return;
+      const endX = e.changedTouches?.[0]?.clientX;
+      touchStartXRef.current = null;
+      if (typeof endX !== 'number') return;
+      const delta = endX - startX;
+      if (Math.abs(delta) < 32) return;
+      if (touchTargetRef.current === 'home') {
+        setHomeSlideIndex((prev) => (delta < 0 ? Math.min(prev + 1, homeTargets.length - 1) : Math.max(prev - 1, 0)));
+      }
+      if (touchTargetRef.current === 'score') {
+        setActiveScoreView((prev) => (delta < 0 ? 'target' : 'current'));
+      }
+      touchTargetRef.current = '';
+    };
+    document.addEventListener('touchstart', onNativeTouchStart, { passive: true, capture: true });
+    document.addEventListener('touchend', onNativeTouchEnd, { passive: true, capture: true });
+    return () => {
+      document.removeEventListener('touchstart', onNativeTouchStart, true);
+      document.removeEventListener('touchend', onNativeTouchEnd, true);
+    };
+  }, [homeTargets.length]);
 
   const onChange = (e) => {
     const field = e.target.getAttribute('data-field');
@@ -1921,7 +1922,7 @@ function App() {
     : '';
   const rendered = `${designV2StyleTag}${renderedBase}${analysisOverlay}${onboardingOverlay}`;
 
-  return <div onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} dangerouslySetInnerHTML={{ __html: rendered }} />;
+  return <div onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: rendered }} />;
 }
 
 const rootElement = document.getElementById('root');
