@@ -978,8 +978,8 @@ function App() {
     @keyframes barProjPop{0%{transform:translateX(-50%) translateY(8px);opacity:0;}100%{transform:translateX(-50%) translateY(0);opacity:1;}}
     .home-kpi-slider{overflow:hidden;padding:2px 20px 2px 0;touch-action:pan-y;}
     .home-kpi-track{display:flex;transform:translateX(var(--home-slide-x));will-change:transform;transition:var(--home-slide-transition, transform .58s cubic-bezier(.22,.61,.36,1));}
-    .home-kpi-track.motion-next{animation:homeSlideNext .58s cubic-bezier(.22,.61,.36,1);}
-    .home-kpi-track.motion-prev{animation:homeSlidePrev .58s cubic-bezier(.22,.61,.36,1);}
+    .home-kpi-track.motion-next{animation:none;}
+    .home-kpi-track.motion-prev{animation:none;}
     @keyframes homeSlideNext{from{transform:translateX(calc(var(--home-slide-x) + 18%));}to{transform:translateX(var(--home-slide-x));}}
     @keyframes homeSlidePrev{from{transform:translateX(calc(var(--home-slide-x) - 18%));}to{transform:translateX(var(--home-slide-x));}}
     .home-kpi-slider .slider-card{flex:0 0 100%;}
@@ -1011,8 +1011,8 @@ function App() {
     .score-journey-segment button.active{background:#fff;color:#1E3A8A;box-shadow:0 1px 2px rgba(0,0,0,.06);}
     .score-journey-scroll{overflow:hidden;padding:4px 20px 4px 0;position:relative;z-index:1;touch-action:pan-y;}
     .score-journey-track{display:flex;width:200%;transform:translateX(var(--score-slide-x));will-change:transform;transition:var(--score-slide-transition, transform .56s cubic-bezier(.22,.61,.36,1));}
-    .score-journey-track.motion-next{animation:scoreSlideNext .56s cubic-bezier(.22,.61,.36,1);}
-    .score-journey-track.motion-prev{animation:scoreSlidePrev .56s cubic-bezier(.22,.61,.36,1);}
+    .score-journey-track.motion-next{animation:none;}
+    .score-journey-track.motion-prev{animation:none;}
     @keyframes scoreSlideNext{from{transform:translateX(calc(var(--score-slide-x) + 14%));}to{transform:translateX(var(--score-slide-x));}}
     @keyframes scoreSlidePrev{from{transform:translateX(calc(var(--score-slide-x) - 14%));}to{transform:translateX(var(--score-slide-x));}}
     .score-journey-col{border:1px solid #E2E8F0;background:#F8FAFC;border-radius:18px;padding:12px;display:grid;gap:8px;min-width:0;}
@@ -1023,6 +1023,7 @@ function App() {
     .score-row span,.score-row b,.score-row em{white-space:nowrap;word-break:keep-all;min-width:0;flex-shrink:0;font-style:normal;}
     .score-row b{min-width:56px;width:56px;text-align:center;}
     .score-row em{color:#1E293B;font-weight:600;min-width:92px;text-align:right;}
+    .score-journey-col.target .score-row em{font-size:20px;font-weight:900;color:#1E40AF;letter-spacing:-0.01em;}
     .score-row .pill{border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;}
     .score-row .pill.up{background:#DBEAFE;color:#1D4ED8;}
     .score-row .pill.keep{background:#E2E8F0;color:#475569;}
@@ -2001,22 +2002,9 @@ function App() {
     const moveGesture = (clientX) => {
       const startX = touchStartXRef.current;
       if (typeof startX !== 'number' || typeof clientX !== 'number') return;
-      let delta = clientX - startX;
       touchLastXRef.current = clientX;
-      if (touchTargetRef.current === 'home') {
-        const atLeftEdge = homeSlideIndex <= 0 && delta > 0;
-        const atRightEdge = homeSlideIndex >= homeTargets.length - 1 && delta < 0;
-        if (atLeftEdge || atRightEdge) delta *= 0.18;
-        const nextOffset = Math.max(-80, Math.min(80, delta));
-        setHomeDragOffset((prev) => (Math.abs(prev - nextOffset) < 1 ? prev : nextOffset));
-      }
-      if (touchTargetRef.current === 'score') {
-        const atLeftEdge = activeScoreView === 'current' && delta > 0;
-        const atRightEdge = activeScoreView === 'target' && delta < 0;
-        if (atLeftEdge || atRightEdge) delta *= 0.18;
-        const nextOffset = Math.max(-70, Math.min(70, delta));
-        setScoreDragOffset((prev) => (Math.abs(prev - nextOffset) < 1 ? prev : nextOffset));
-      }
+      // 드래그 중 매 프레임 setState를 제거해 렌더링 버벅임을 최소화합니다.
+      // 최종 전환은 endGesture에서 방향 판단 후 애니메이션으로 처리합니다.
     };
 
     const endGesture = (clientX) => {
