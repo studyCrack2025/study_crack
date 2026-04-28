@@ -93,7 +93,36 @@
             return;
         }
 
-        // 4. 토큰 저장
+        // 4. 연동 모드 + 새 계정 생성된 경우: 기존 세션 보관 후 확인
+        if (isLinkMode && isNewUser) {
+            const prevAccessToken = localStorage.getItem('accessToken');
+            const prevIdToken    = localStorage.getItem('idToken');
+            const prevUserId     = localStorage.getItem('userId');
+
+            const confirmed = confirm(
+                '연동하려는 소셜 계정의 이메일이 현재 계정과 달라\n새로운 별도 계정이 생성되었습니다.\n\n' +
+                '새 계정으로 계속 진행하시겠습니까?\n(취소 시 기존 계정을 유지합니다)'
+            );
+
+            if (!confirmed) {
+                // 기존 세션 복원 후 마이페이지로 복귀
+                if (prevAccessToken) localStorage.setItem('accessToken', prevAccessToken);
+                if (prevIdToken)    localStorage.setItem('idToken', prevIdToken);
+                if (prevUserId)     localStorage.setItem('userId', prevUserId);
+                window.location.href = '/mypage';
+                return;
+            }
+
+            // 확인 → 새 계정 토큰으로 교체 후 welcome으로
+            localStorage.setItem('accessToken', accessToken);
+            localStorage.setItem('idToken', idToken);
+            localStorage.setItem('userId', userId);
+            localStorage.setItem('userRole', 'student');
+            window.location.href = '/welcome';
+            return;
+        }
+
+        // 5. 토큰 저장
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('idToken', idToken);
         localStorage.setItem('userId', userId);
@@ -102,7 +131,7 @@
         window.dataLayer = window.dataLayer || [];
         window.dataLayer.push({ event: 'login', user_id: userId });
 
-        // 5. 사용자 정보 조회 및 라우팅
+        // 6. 사용자 정보 조회 및 라우팅
         statusMsg.textContent = isLinkMode ? '연동 완료! 마이페이지로 이동 중...' : '로그인 완료! 이동 중입니다...';
 
         const userRes = await fetch(USER_API_URL, {
