@@ -89,8 +89,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 💡 학생 페이지 모달 인풋 엔터키 연동
-    bindEnterKey('newEmailInput', requestEmailChange);
-    bindEnterKey('emailVerifyCode', verifyEmailChange);
     bindEnterKey('newPhoneInput', window.requestPhoneChange);
     bindEnterKey('phoneVerifyCode', window.verifyPhoneChange);
     bindEnterKey('currentPassword', changePassword);
@@ -98,6 +96,23 @@ document.addEventListener('DOMContentLoaded', () => {
     bindEnterKey('newChangePasswordConfirm', changePassword);
     bindEnterKey('deleteAccountPassword', executeDeleteAccount);
     
+    // MBTI 테스트 후 복귀 처리
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('mbti_completed') === 'true') {
+        const mbtiResult = urlParams.get('mbti_result');
+        if (mbtiResult && /^[CI][SM][DE][RF]$/.test(mbtiResult)) {
+            saveMbti(mbtiResult).then(ok => {
+                if (ok) {
+                    const el = document.getElementById('profileMbtiDisplay');
+                    if (el) el.textContent = mbtiResult;
+                    alert(`탐구 MBTI가 ${mbtiResult}로 저장되었습니다.`);
+                }
+            });
+        }
+        // URL 정리
+        history.replaceState(null, '', '/mypage');
+    }
+
     const pendingTutorial = localStorage.getItem('pending_tutorial');
     
     if (pendingTutorial === 'true') {
@@ -177,8 +192,15 @@ function initCognitoAndFetchData() {
             fetchUserData(userId);
         });
     } else {
-        alert("로그인 정보가 유효하지 않습니다.");
-        handleSignOut();
+        // 소셜 로그인 사용자는 Cognito SDK 세션 없이 localStorage 토큰을 직접 사용
+        const accessToken = localStorage.getItem('accessToken');
+        const userId = localStorage.getItem('userId');
+        if (accessToken && userId) {
+            fetchUserData(userId);
+        } else {
+            alert("로그인 정보가 유효하지 않습니다.");
+            handleSignOut();
+        }
     }
 }
 
@@ -197,6 +219,7 @@ async function fetchUserData(userId) {
 
         // 2. 내 정보 렌더링
         renderUserInfo(userData);
+        renderSocialLinks(userData);
         applyUserTier(userData.computedTier || 'free');
 
         // 프로필 이미지 처리
@@ -248,23 +271,68 @@ async function fetchTutorInfo(tutorName, userTier) {
     }
 }
 
+function renderSocialLinks(data) {
+    const section = document.getElementById('socialLinksSection');
+    if (!section) return;
+
+    const primaryProvider = data.authProvider || 'local';
+    const linked = data.linkedProviders || [];
+    const linkedSet = new Set(linked.map(lp => lp.provider));
+    if (primaryProvider !== 'local') linkedSet.add(primaryProvider);
+
+    // 비밀번호 변경 행: 소셜 전용 계정(local provider 없음)이면 숨김
+    const pwRow = document.getElementById('passwordChangeRow');
+    if (pwRow) pwRow.style.display = primaryProvider !== 'local' ? 'none' : '';
+
+    const providers = [
+        { key: 'google', label: 'Google', icon: 'fab fa-google', color: '#EA4335' },
+        { key: 'naver', label: 'Naver', icon: 'fas fa-n', color: '#03C75A' },
+        { key: 'kakao', label: 'Kakao', icon: 'fas fa-comment', color: '#FEE500' }
+    ];
+
+    section.innerHTML = providers.map(p => {
+        const isLinked = linkedSet.has(p.key);
+        const isPrimary = primaryProvider === p.key;
+        return `<div class="social-link-row">
+            <div class="social-link-info">
+                <span class="social-icon" style="color:${p.color}"><i class="${p.icon}"></i></span>
+                <span class="social-label">${p.label}</span>
+            </div>
+            <div class="social-link-status">
+                ${isLinked
+                    ? `<span class="social-badge linked">연동됨</span>
+                       ${isPrimary
+                           ? `<span class="social-primary-hint">기본 로그인</span>`
+                           : `<button class="social-action-btn unlink-btn" onclick="unlinkSocial('${p.key}')">연동 해제</button>`
+                       }`
+                    : `<span class="social-badge unlinked">미연동</span>
+                       <button class="social-action-btn link-btn" onclick="linkSocial('${p.key}')">연동하기</button>`
+                }
+            </div>
+        </div>`;
+    }).join('');
+}
+
 function renderUserInfo(data) {
     const nameEl = document.getElementById('userNameDisplay');
     const emailEl = document.getElementById('userEmailDisplay');
-    
+
     if (nameEl) nameEl.innerText = data.name ? data.name : '이름 없음';
     if (emailEl) emailEl.innerText = data.email ? data.email : '';
-    
+
     const nameInput = document.getElementById('profileName');
-    if(nameInput) {
+    if (nameInput) {
         nameInput.value = data.name || '';
-        const phoneDisplay = document.getElementById('currentPhoneDisplay');
-        if(phoneDisplay) phoneDisplay.innerText = data.phone || '등록된 번호 없음';
-        
-        document.getElementById('profileSchool').value = data.school || '';
-        const currentEmailDisplay = document.getElementById('currentEmailDisplay');
-        if(currentEmailDisplay) currentEmailDisplay.innerText = data.email || '';
     }
+
+    const phoneDisplay = document.getElementById('currentPhoneDisplay');
+    if (phoneDisplay) phoneDisplay.innerText = data.phone || '등록된 번호 없음';
+
+    const currentEmailDisplay = document.getElementById('currentEmailDisplay');
+    if (currentEmailDisplay) currentEmailDisplay.innerText = data.email || '';
+
+    const mbtiDisplay = document.getElementById('profileMbtiDisplay');
+    if (mbtiDisplay) mbtiDisplay.textContent = data.mbti || '-';
 }
 
 function applyUserTier(tier) {
@@ -310,7 +378,6 @@ async function toggleEdit(fieldId, btn) {
         let dbField = '';
         if (fieldId === 'profileName') dbField = 'name';
         else if (fieldId === 'profilePhone') dbField = 'phone';
-        else if (fieldId === 'profileSchool') dbField = 'school';
 
         const success = await saveSingleField(dbField, newValue);
         
@@ -350,12 +417,13 @@ async function saveSingleField(field, value) {
 
 function closeModal(modalId) {
     document.getElementById(modalId).classList.add('hidden');
-    if(modalId === 'emailModal') {
-        document.getElementById('step-email-input').classList.remove('hidden');
-        document.getElementById('step-email-verify').classList.add('hidden');
-        document.getElementById('newEmailInput').value = '';
-        document.getElementById('emailVerifyCode').value = '';
-        if(emailTimerInterval) clearInterval(emailTimerInterval);
+    if(modalId === 'mbtiModal') {
+        mypageMbtiDimSelections = [null, null, null, null];
+        document.querySelectorAll('#mbtiDimListMypage .mbti-dim-btn').forEach(b => b.classList.remove('active'));
+        const preview = document.getElementById('mbtiPreviewCodeMypage');
+        if (preview) preview.textContent = '? ? ? ?';
+        const confirmBtn = document.getElementById('mbtiConfirmBtnMypage');
+        if (confirmBtn) confirmBtn.disabled = true;
     }
     if(modalId === 'phoneModal') {
         document.getElementById('step-phone-input').classList.remove('hidden');
@@ -369,54 +437,6 @@ function closeModal(modalId) {
         document.getElementById('newChangePassword').value = '';
         document.getElementById('newChangePasswordConfirm').value = '';
     }
-}
-
-function openEmailModal() {
-    document.getElementById('emailModal').classList.remove('hidden');
-}
-
-function requestEmailChange() {
-    const newEmail = document.getElementById('newEmailInput').value;
-    if (!newEmail || !newEmail.includes('@')) { alert("유효한 이메일을 입력해주세요."); return; }
-
-    const attributeList = [
-        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'email', Value: newEmail })
-    ];
-
-    cognitoUser.updateAttributes(attributeList, function(err, result) {
-        if (err) {
-            alert("이메일 변경 요청 실패: " + (err.message || err));
-            return;
-        }
-        
-        alert("인증번호가 전송되었습니다. 이메일을 확인해주세요.");
-        document.getElementById('step-email-input').classList.add('hidden');
-        document.getElementById('step-email-verify').classList.remove('hidden');
-        
-        startTimer(5 * 60, 'emailTimer');
-    });
-}
-
-function verifyEmailChange() {
-    const code = document.getElementById('emailVerifyCode').value;
-    if (!code) { alert("인증코드를 입력해주세요."); return; }
-
-    cognitoUser.verifyAttribute('email', code, {
-        onSuccess: async function(result) {
-            alert("이메일이 성공적으로 변경되었습니다.");
-            
-            const newEmail = document.getElementById('newEmailInput').value;
-            await saveSingleField('email', newEmail);
-            
-            localStorage.setItem('userEmail', newEmail); 
-            
-            closeModal('emailModal');
-            location.reload(); 
-        },
-        onFailure: function(err) {
-            alert("인증 실패: 인증코드가 틀리거나 만료되었습니다.");
-        }
-    });
 }
 
 window.openPhoneModal = function() {
@@ -572,28 +592,119 @@ function changePassword() {
     });
 }
 
-function startTimer(duration, displayId) {
-    let timer = duration, minutes, seconds;
-    const display = document.getElementById(displayId);
-    
-    if(emailTimerInterval) clearInterval(emailTimerInterval);
-    
-    emailTimerInterval = setInterval(function () {
-        minutes = parseInt(timer / 60, 10);
-        seconds = parseInt(timer % 60, 10);
+// ==========================================
+// [기능] 탐구 MBTI 변경
+// ==========================================
+let mypageMbtiDimSelections = [null, null, null, null];
 
-        minutes = minutes < 10 ? "0" + minutes : minutes;
-        seconds = seconds < 10 ? "0" + seconds : seconds;
+function openMbtiModal() {
+    mypageMbtiDimSelections = [null, null, null, null];
+    document.querySelectorAll('#mbtiDimListMypage .mbti-dim-btn').forEach(b => b.classList.remove('active'));
+    const preview = document.getElementById('mbtiPreviewCodeMypage');
+    if (preview) preview.textContent = '? ? ? ?';
+    const confirmBtn = document.getElementById('mbtiConfirmBtnMypage');
+    if (confirmBtn) confirmBtn.disabled = true;
+    document.getElementById('mbtiModal').classList.remove('hidden');
+}
 
-        display.textContent = minutes + ":" + seconds;
+function selectMbtiDimMypage(dimIdx, letter, btnEl) {
+    const row = btnEl.closest('.mbti-dim-btns');
+    row.querySelectorAll('.mbti-dim-btn').forEach(b => b.classList.remove('active'));
+    btnEl.classList.add('active');
+    mypageMbtiDimSelections[dimIdx] = letter;
 
-        if (--timer < 0) {
-            clearInterval(emailTimerInterval);
-            display.textContent = "만료";
-            alert("인증 시간이 만료되었습니다. 다시 시도해주세요.");
-            closeModal('emailModal');
-        }
-    }, 1000);
+    const allSelected = mypageMbtiDimSelections.every(s => s !== null);
+    const preview = document.getElementById('mbtiPreviewCodeMypage');
+    const confirmBtn = document.getElementById('mbtiConfirmBtnMypage');
+    if (preview) preview.textContent = mypageMbtiDimSelections.map(s => s || '?').join('\u00a0');
+    if (confirmBtn) confirmBtn.disabled = !allSelected;
+}
+
+async function confirmMbtiDimsMypage() {
+    if (mypageMbtiDimSelections.some(s => s === null)) {
+        alert("4가지 항목을 모두 선택해주세요."); return;
+    }
+    const mbtiCode = mypageMbtiDimSelections.join('');
+    const ok = await saveMbti(mbtiCode);
+    if (ok) {
+        const el = document.getElementById('profileMbtiDisplay');
+        if (el) el.textContent = mbtiCode;
+        alert(`탐구 MBTI가 ${mbtiCode}로 저장되었습니다.`);
+        closeModal('mbtiModal');
+    }
+}
+
+function goToMbtiTestMypage() {
+    window.location.href = '/mbti_survey?from_mypage=true';
+}
+
+async function saveMbti(mbtiCode) {
+    try {
+        await apiFetch(USER_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'update_member_info', data: { mbti: mbtiCode } })
+        });
+        return true;
+    } catch (error) {
+        if (error.message !== "Auth expired") alert("저장 중 오류가 발생했습니다.");
+        return false;
+    }
+}
+
+// ==========================================
+// [기능] 소셜 계정 연동 / 해제
+// ==========================================
+async function unlinkSocial(provider) {
+    if (!confirm(`${provider} 계정 연동을 해제하시겠습니까?`)) return;
+    try {
+        await apiFetch(AUTH_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'unlink_social', data: { provider } })
+        });
+        alert(`${provider} 연동이 해제되었습니다.`);
+        location.reload();
+    } catch (error) {
+        if (error.message !== "Auth expired") alert("연동 해제 중 오류가 발생했습니다.");
+    }
+}
+
+function linkSocial(provider) {
+    const social = CONFIG && CONFIG.social;
+    const clientId = social && social[provider] && social[provider].clientId;
+    const callbackUrl = social && social.callbackUrl;
+
+    if (!clientId || !callbackUrl) {
+        alert('소셜 연동 설정이 완료되지 않았습니다. 관리자에게 문의해주세요.');
+        return;
+    }
+
+    // auth.js와 동일한 state 형식: {nonce}|{provider}
+    const stateNonce = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+        .map(b => b.toString(16).padStart(2, '0')).join('');
+    const state = `${stateNonce}|${provider}`;
+    sessionStorage.setItem('socialState', state);
+    sessionStorage.setItem('socialLinkMode', 'true'); // 연동 모드 플래그
+
+    let authUrl = '';
+    if (provider === 'google') {
+        authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + new URLSearchParams({
+            client_id: clientId, redirect_uri: callbackUrl,
+            response_type: 'code', scope: 'openid email profile',
+            state, access_type: 'offline', prompt: 'select_account'
+        });
+    } else if (provider === 'naver') {
+        authUrl = `https://nid.naver.com/oauth2.0/authorize?` + new URLSearchParams({
+            response_type: 'code', client_id: clientId,
+            redirect_uri: callbackUrl, state
+        });
+    } else if (provider === 'kakao') {
+        authUrl = `https://kauth.kakao.com/oauth/authorize?` + new URLSearchParams({
+            client_id: clientId, redirect_uri: callbackUrl,
+            response_type: 'code', state
+        });
+    }
+
+    if (authUrl) window.location.href = authUrl;
 }
 
 function handleSignOut() {

@@ -741,8 +741,77 @@ function handleSignIn() {
 }
 
 // ==========================================
-// [Part G] 이메일/비밀번호 찾기 로직 
+// [Part G] 소셜 로그인
 // ==========================================
+
+function validateSocialConfig(provider) {
+    const social = CONFIG && CONFIG.social;
+    const callbackUrl = social && social.callbackUrl;
+    const clientId = social && social[provider] && social[provider].clientId;
+
+    const PLACEHOLDERS = ['GOOGLE_CLIENT_ID', 'NAVER_CLIENT_ID', 'KAKAO_CLIENT_ID', 'undefined', 'null'];
+    const isPlaceholder = (val) => !val || PLACEHOLDERS.some(p => String(val).includes(p));
+
+    if (isPlaceholder(clientId)) {
+        throw new Error(`[SocialLogin] ${provider} clientId가 설정되지 않았습니다.`);
+    }
+    if (isPlaceholder(callbackUrl)) {
+        throw new Error(`[SocialLogin] callbackUrl이 설정되지 않았습니다.`);
+    }
+    // localhost는 개발 환경이므로 http 허용, 그 외에는 https 필수
+    const isLocalhost = /^http:\/\/(localhost|127\.0\.0\.1)/.test(callbackUrl);
+    if (!isLocalhost && !/^https:\/\//.test(callbackUrl)) {
+        throw new Error(`[SocialLogin] callbackUrl은 https여야 합니다: ${callbackUrl}`);
+    }
+
+    return { clientId, callbackUrl };
+}
+
+window.handleSocialLogin = function(provider) {
+    const buttons = document.querySelectorAll('.social-btn');
+    buttons.forEach(btn => { btn.disabled = true; });
+
+    let clientId, callbackUrl;
+    try {
+        ({ clientId, callbackUrl } = validateSocialConfig(provider));
+    } catch (err) {
+        console.error(err);
+        alert("소셜 로그인 설정이 완료되지 않았습니다. 관리자에게 문의해주세요.");
+        buttons.forEach(btn => { btn.disabled = false; });
+        return;
+    }
+
+    // CSRF state: randomHex|provider
+    const stateNonce = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+        .map(b => b.toString(16).padStart(2, '0')).join('');
+    const state = `${stateNonce}|${provider}`;
+    sessionStorage.setItem('socialState', state);
+
+    let authUrl = '';
+    if (provider === 'google') {
+        authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + new URLSearchParams({
+            client_id: clientId, redirect_uri: callbackUrl,
+            response_type: 'code', scope: 'openid email profile',
+            state, access_type: 'offline', prompt: 'select_account'
+        });
+    } else if (provider === 'naver') {
+        authUrl = `https://nid.naver.com/oauth2.0/authorize?` + new URLSearchParams({
+            response_type: 'code', client_id: clientId,
+            redirect_uri: callbackUrl, state
+        });
+    } else if (provider === 'kakao') {
+        authUrl = `https://kauth.kakao.com/oauth/authorize?` + new URLSearchParams({
+            client_id: clientId, redirect_uri: callbackUrl,
+            response_type: 'code', state
+        });
+    } else {
+        buttons.forEach(btn => { btn.disabled = false; });
+        alert("지원하지 않는 로그인 방식입니다.");
+        return;
+    }
+
+    window.location.href = authUrl;
+};
 
 window.openAuthModal = function(modalId) {
     const modal = document.getElementById(modalId);

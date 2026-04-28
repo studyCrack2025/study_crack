@@ -487,6 +487,45 @@ input:focus { outline: none; border-color: #2563EB; }
     .modal-action-btn { padding: 10px; font-size: 0.95rem; }
 }
 
+/* 탐구 MBTI 표시 */
+.mbti-display-row { display: flex; align-items: center; height: 46px; padding: 0 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; }
+.mbti-code-display { font-size: 1.15rem; font-weight: 800; color: #1e293b; letter-spacing: 0.1em; }
+
+/* 탐구 MBTI 모달 내 차원 선택 UI (tutorial.css 패턴 재사용) */
+.mbti-dim-list { display: flex; flex-direction: column; gap: 10px; }
+.mbti-dim-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.mbti-dim-name { font-size: 0.85rem; font-weight: 600; color: #64748b; min-width: 72px; flex-shrink: 0; }
+.mbti-dim-btns { display: flex; gap: 8px; flex: 1; }
+.mbti-dim-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 8px; border: 2px solid #e2e8f0; border-radius: 12px; background: #f8fafc; cursor: pointer; transition: all 0.18s; font-family: inherit; }
+.mbti-dim-btn:hover { border-color: #93c5fd; background: #eff6ff; }
+.mbti-dim-btn.active { border-color: #2563eb; background: #eff6ff; }
+.dim-letter { font-size: 1.15rem; font-weight: 900; color: #334155; line-height: 1; }
+.mbti-dim-btn.active .dim-letter { color: #2563eb; }
+.dim-sub { font-size: 0.68rem; color: #94a3b8; font-weight: 500; white-space: nowrap; }
+.mbti-dim-btn.active .dim-sub { color: #3b82f6; }
+.mbti-preview { display: flex; align-items: center; gap: 10px; margin: 16px 0 4px; }
+.mbti-preview-label { font-size: 0.85rem; color: #64748b; font-weight: 600; }
+.mbti-preview-code { font-size: 1.6rem; font-weight: 900; color: #1e293b; letter-spacing: 0.12em; min-width: 80px; }
+.mbti-test-btn { background: #f1f5f9 !important; color: #475569 !important; border: 1px solid #cbd5e1; margin-top: 12px !important; }
+.mbti-test-btn:hover { background: #e2e8f0 !important; }
+
+/* 소셜 계정 연동 섹션 */
+.social-links-section { display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px; }
+.social-link-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
+.social-link-info { display: flex; align-items: center; gap: 10px; }
+.social-icon { font-size: 1.2rem; width: 24px; text-align: center; }
+.social-label { font-weight: 600; color: #334155; font-size: 0.95rem; }
+.social-link-status { display: flex; align-items: center; gap: 8px; }
+.social-badge { font-size: 0.8rem; font-weight: 700; padding: 3px 10px; border-radius: 100px; }
+.social-badge.linked { background: #dcfce7; color: #166534; }
+.social-badge.unlinked { background: #f1f5f9; color: #94a3b8; }
+.social-primary-hint { font-size: 0.8rem; color: #94a3b8; font-style: italic; }
+.social-action-btn { font-size: 0.82rem; padding: 5px 12px; border-radius: 6px; cursor: pointer; border: 1px solid; font-weight: 600; transition: all 0.15s; }
+.social-action-btn.link-btn { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+.social-action-btn.link-btn:hover { background: #dbeafe; }
+.social-action-btn.unlink-btn { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+.social-action-btn.unlink-btn:hover { background: #fee2e2; }
+
 @media (min-width: 769px) {
     .mypage-container { display: flex; flex-direction: row; align-items: flex-start; gap: 30px; max-width: 1200px; margin: 40px auto; padding: 0 20px; }
     .profile-summary { width: 300px; min-width: 300px; flex-shrink: 0; position: sticky; top: 20px; overflow: visible; }

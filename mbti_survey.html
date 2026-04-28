@@ -48,11 +48,8 @@
         .result-title { font-size: 1.1rem; color: #64748b; font-weight: 500; margin-bottom: 10px; }
         .result-type { font-size: 3rem; font-weight: 900; color: #2563eb; letter-spacing: 0.12em; margin-bottom: 8px; }
         .result-divider { width: 48px; height: 4px; background: linear-gradient(90deg, #2563eb, #60a5fa); border-radius: 99px; margin: 20px auto; }
-        .result-scores { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 28px 0; }
-        .score-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; }
-        .score-item .dim-label { font-size: 0.8rem; color: #94a3b8; font-weight: 600; margin-bottom: 6px; letter-spacing: 0.04em; }
-        .score-item .dim-result { font-size: 1.4rem; font-weight: 900; color: #1e293b; }
-        .score-item .dim-detail { font-size: 0.78rem; color: #94a3b8; margin-top: 4px; }
+        .result-dim-tags { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+        .result-dim-tag { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 99px; padding: 5px 16px; font-size: 0.85rem; font-weight: 700; color: #2563eb; }
         .result-desc { margin: 20px 0; font-size: 1rem; color: #475569; line-height: 1.6; font-weight: 500; word-break: keep-all; }
         .btn-retry { margin-top: 12px; padding: 14px 36px; background: #f1f5f9; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; color: #475569; cursor: pointer; transition: all 0.2s; }
         .btn-retry:hover { background: #e2e8f0; }
@@ -244,43 +241,38 @@
             const rc = document.getElementById('resultCard');
             const urlParams = new URLSearchParams(window.location.search);
 
-            // [로직 1] 튜토리얼을 통해 유입된 경우 (리다이렉트 우선)
-            if (urlParams.get('from_tutorial') === 'true') {
-                rc.innerHTML = `
-                    <div class="result-emoji">🔍</div>
-                    <div class="result-title" style="font-size: 1.2rem; font-weight: 700; color: #1e293b;">크랙이가 결과를 분석중입니다...</div>
-                `;
+            const loadingHtml = (emoji, msg) => `
+                <div class="result-emoji">${emoji}</div>
+                <div class="result-title" style="font-size:1.2rem;font-weight:700;color:#1e293b;">${msg}</div>
+            `;
+            const redirectAfterDelay = (url) => {
+                rc.innerHTML = loadingHtml('🔍', '크랙이가 결과를 분석중입니다...');
                 rc.style.display = 'block';
                 rc.style.animation = 'fadeSlide 0.4s ease';
-
                 setTimeout(() => {
-                    rc.innerHTML = `
-                        <div class="result-emoji">✨</div>
-                        <div class="result-title" style="font-size: 1.2rem; font-weight: 700; color: #1e293b;">분석이 완료되었습니다!<br>튜토리얼로 돌아와서 결과를 확인해보아요!</div>
-                    `;
-                    setTimeout(() => {
-                        // URI 인코딩으로 안전하게 전달
-                        window.location.href = `/tutorial?mbti_completed=true&mbti_result=${encodeURIComponent(typeCode)}`;
-                    }, 2000);
+                    rc.innerHTML = loadingHtml('✨', '분석이 완료되었습니다!<br>잠시 후 이동합니다...');
+                    setTimeout(() => { window.location.href = url; }, 1800);
                 }, 2000);
+            };
+
+            // [로직 1] 튜토리얼을 통해 유입된 경우
+            if (urlParams.get('from_tutorial') === 'true') {
+                redirectAfterDelay(`/tutorial?mbti_completed=true&mbti_result=${encodeURIComponent(typeCode)}`);
                 return;
             }
 
-            // [로직 2] 외부에서 직접 접속한 경우 (결과 및 PDF 다운로드 제공)
-            const dimNames = ["학습 접근법", "변화 적응력", "사고 방식", "계획 스타일"];
-            let scoresHtml = '';
-            
-            dims.forEach((d, i) => {
-                const [p1, p2] = SECTIONS[i].pairs;
-                scoresHtml += `
-                <div class="score-item">
-                    <div class="dim-label">${dimNames[i]}</div>
-                    <div class="dim-result">${d.chosen}</div>
-                    <div class="dim-detail">${p1} ${d.count1} · ${p2} ${d.count2}</div>
-                </div>`;
-            });
+            // [로직 2] 마이페이지를 통해 유입된 경우
+            if (urlParams.get('from_mypage') === 'true') {
+                redirectAfterDelay(`/mypage?mbti_completed=true&mbti_result=${encodeURIComponent(typeCode)}`);
+                return;
+            }
 
-            // 임시 설명 문구 (안전한 텍스트로 처리)
+            // [로직 3] 외부에서 직접 접속한 경우 (결과 및 PDF 다운로드 제공)
+            const dimNames = ["학습 접근법", "변화 적응력", "사고 방식", "계획 스타일"];
+            const dimTagsHtml = dims.map((d, i) =>
+                `<span class="result-dim-tag">${dimNames[i]}: ${d.chosen}</span>`
+            ).join('');
+
             const tempDesc = `[${typeCode}] 유형은 본인만의 뚜렷한 주관과 체계적인 계획을 통해 목표를 달성하는 데에 탁월한 잠재력을 가진 유형입니다. (추후 상세 분석이 업데이트 될 예정입니다.)`;
 
             rc.innerHTML = `
@@ -288,14 +280,14 @@
                 <div class="result-title">나의 학습 유형 코드</div>
                 <div class="result-type" id="finalTypeCode">${typeCode}</div>
                 <div class="result-divider"></div>
-                <div class="result-scores">${scoresHtml}</div>
+                <div class="result-dim-tags">${dimTagsHtml}</div>
                 <div class="result-desc">${tempDesc}</div>
                 <div style="margin-top: 20px;">
                     <button class="btn-retry" onclick="resetSurvey()">다시 검사하기</button>
                     <button class="btn-download" onclick="downloadPDF()">📥 분석 보고서 PDF 다운로드</button>
                 </div>
             `;
-            
+
             rc.style.display = 'block';
             rc.style.animation = 'fadeSlide 0.4s ease';
         }
