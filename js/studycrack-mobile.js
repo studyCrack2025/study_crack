@@ -3,6 +3,9 @@ const { useState, useEffect, useLayoutEffect, useRef } = React;
 const CRACKY_SRC = './assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png';
 const ONBOARDING_LOGO_SRC = './assets/images/og-image.jpg';
 const STUDYCRACK_LOGO_SRC = './assets/images/studycrack_logo_wo_bg.png';
+const SSO_KAKAO_LOGO_SRC = './assets/images/IMG_2911.jpeg';
+const SSO_GOOGLE_LOGO_SRC = './assets/images/IMG_2912.jpeg';
+const SSO_NAVER_LOGO_SRC = './assets/images/IMG_2910.jpeg';
 const HOME_FALLBACK_HTML = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>스터디크랙 홈</h3><p class="sub">앱을 불러왔어요. 계속 이용해 주세요.</p></div></div></div></div>`;
 const DEFAULT_USER = { name: '김지민', targetUniversity: '연세대학교 경영학과', plan: 'Pro' };
 const DEFAULT_SCORES = { korean: 82, math: 68, english: 77, inquiry1: 70, inquiry2: 66 };
@@ -223,6 +226,12 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+  }, []);
+
+  useEffect(() => {
     const onScrollGuard = () => {
       const guard = scrollGuardRef.current;
       if (!guard || Date.now() > guard.until) return;
@@ -295,6 +304,37 @@ function App() {
     });
     return () => cancelAnimationFrame(rafId);
   }, [screen, onboardingLoading, isAnalyzing, ob3IsAnalyzing, analysisMode, activeScoreView, homeSlideIndex, scoreSlideMotion, homeSlideMotion]);
+
+  useEffect(() => {
+    const stabilizeUnexpectedJump = () => {
+      const now = Date.now();
+      if (now - lastUserScrollAtRef.current < 180) return;
+      const expectedY = Number(screenScrollRef.current[screen] ?? lastStableScrollYRef.current ?? 0);
+      if (!Number.isFinite(expectedY) || expectedY <= 30) return;
+      const currentY = window.scrollY || window.pageYOffset || 0;
+      if (currentY + 90 < expectedY) {
+        window.scrollTo({ top: expectedY, left: 0, behavior: 'auto' });
+      }
+    };
+
+    let rafId = 0;
+    const requestStabilize = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(stabilizeUnexpectedJump);
+    };
+
+    const observer = new MutationObserver(requestStabilize);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+    window.addEventListener('resize', requestStabilize, { passive: true });
+    window.addEventListener('orientationchange', requestStabilize, { passive: true });
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', requestStabilize);
+      window.removeEventListener('orientationchange', requestStabilize);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [screen]);
 
   useEffect(() => {
     if (screen === 'splash') {
@@ -1061,7 +1101,7 @@ function App() {
     .analysis-v2-bar-item .score{font-size:14px;font-weight:700;}
     .analysis-v2-bar-item p{min-height:38px;line-height:1.3;}
     .analysis-v2-bar-proj{position:absolute;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;color:#1E3A8A;border:1px dashed #93C5FD;border-radius:999px;padding:2px 7px;background:#EFF6FF;white-space:nowrap;z-index:6;}
-    .analysis-v2-bar-proj-box{position:absolute;left:50%;transform:translateX(-50%);width:56px;min-height:2px;border:3px dashed #F59E0B;border-bottom:none;border-radius:14px 14px 0 0;background:rgba(251,191,36,.25);pointer-events:none;z-index:5;}
+    .analysis-v2-bar-proj-box{position:absolute;left:50%;transform:translateX(-50%);width:62px;min-height:4px;border:3px dashed #F59E0B;border-bottom:none;border-radius:14px 14px 0 0;background:rgba(251,191,36,.25);pointer-events:none;z-index:7;}
     .analysis-v2-sim-item{min-height:112px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;border:1px solid #E2E8F0;border-radius:16px;padding:14px 15px;background:#fff;}
     .analysis-v2-sim-item .left{display:grid;gap:6px;}
     .analysis-v2-sim-item .left p{margin:0;display:flex;align-items:center;gap:8px;font-size:16px;}
@@ -1270,13 +1310,13 @@ function App() {
        </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="startStandard">Standard로 시작하기</button><button class="auth-link-btn" data-action="completeOnboarding">홈으로 이동</button></div></div>`,
       false
     ),
-    authLogin: layout(`<div class="auth-screen">
+    authLogin: layout(`<div class="auth-screen auth-screen-login">
       <div class="card auth-unified-card">
-        <div class="auth-logo-wrap compact">
+        <div class="auth-logo-wrap login-hero">
           <img src="${STUDYCRACK_LOGO_SRC}" class="auth-logo" alt="StudyCrack Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
           <span class="auth-logo-fallback">StudyCrack</span>
         </div>
-        <h1>StudyCrack</h1>
+        <h1 class="auth-brand-title">StudyCrack</h1>
         <p class="auth-title">합격 전략을 시작해볼까요?</p>
         <p class="sub">내 성적에 맞는 대학별 합격 가능성과 전략을 확인하세요.</p>
         <label class="auth-label">이메일</label>
@@ -1285,10 +1325,10 @@ function App() {
         <input class="planner-input" data-field="loginPassword" value="${loginPassword}" type="password" placeholder="비밀번호 입력" />
         <button class="btn btn-primary auth-submit" data-action="loginSuccess">로그인</button>
         <div class="auth-divider"><span>또는</span></div>
-        <div class="auth-sso-row">
-          <button class="auth-sso-btn" data-action="ssoSuccess">K</button>
-          <button class="auth-sso-btn" data-action="ssoSuccess">G</button>
-          <button class="auth-sso-btn" data-action="ssoSuccess">N</button>
+        <div class="auth-sso-row logo">
+          <button class="auth-sso-btn logo" data-action="ssoSuccess"><img src="${SSO_KAKAO_LOGO_SRC}" alt="카카오 로그인" /></button>
+          <button class="auth-sso-btn logo" data-action="ssoSuccess"><img src="${SSO_GOOGLE_LOGO_SRC}" alt="구글 로그인" /></button>
+          <button class="auth-sso-btn logo" data-action="ssoSuccess"><img src="${SSO_NAVER_LOGO_SRC}" alt="네이버 로그인" /></button>
         </div>
         <button class="auth-link-btn" data-action="goto" data-target="authSignup">아직 계정이 없나요? 회원가입</button>
       </div>
@@ -1418,9 +1458,9 @@ function App() {
                   const projectionGain = shouldProject ? Math.max(0, Math.min(analysisSimMax, 250 - score)) : null;
                   const projectionScore = projectionGain !== null ? Math.min(250, score + projectionGain) : null;
                   const projectedPercent = projectionScore ? Math.max(6, Math.min(100, (projectionScore / 250) * 100)) : heightPercent;
-                  const projectionHeight = projectionScore ? Math.max(1.2, projectedPercent - heightPercent) : 0;
+                  const projectionHeight = projectionScore ? Math.max(4, projectedPercent - heightPercent) : 0;
                   const gainLabel = projectionGain === null ? '' : Number(projectionGain.toFixed(1)).toString();
-                  const labelBottom = projectionScore ? Math.min(98, projectedPercent + Math.max(6, projectionHeight + 1.4)) : 0;
+                  const labelBottom = projectionScore ? Math.min(116, projectedPercent + Math.max(10, projectionHeight + 7)) : 0;
                   const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${labelBottom}%">${Number(projectionScore.toFixed(1)).toString()} (+${gainLabel})</span>` : '';
                   const projectionBox = projectionScore ? `<span class="analysis-v2-bar-proj-box" style="bottom:${heightPercent}%;height:${projectionHeight}%"></span>` : '';
                   return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="simulateBarGain" data-target-major="${full}" data-base-score="${score}"><b class="score">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar" style="height:${heightPercent}%;background:${color}"></i>${projectionBox}${projection}</div><p>${label}</p></button>`;
