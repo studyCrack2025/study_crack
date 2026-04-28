@@ -975,17 +975,17 @@ function App() {
     .analysis-chart-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
     .analysis-chart-head h3{margin:0;font-size:20px;}
     .analysis-chart-badge{font-size:11px;font-weight:700;color:#475569;background:#F1F5F9;border-radius:999px;padding:5px 10px;}
-    .analysis-v2-chart-area{position:relative;min-height:420px;padding:36px 10px 18px;border-radius:20px;background:linear-gradient(180deg,#F8FAFC 0%,#FFFFFF 100%);margin-top:14px;overflow:visible;}
+    .analysis-v2-chart-area{position:relative;--bar-bottom:66px;--label-zone:48px;--bar-height:220px;min-height:420px;padding:36px 10px 18px;border-radius:20px;background:linear-gradient(180deg,#F8FAFC 0%,#FFFFFF 100%);margin-top:14px;overflow:visible;}
     .analysis-v2-guide-line{position:absolute;left:10px;right:10px;border-top:1px dashed #94A3B8;}
-    .analysis-v2-guide-line.pass{top:60%;}
-    .analysis-v2-guide-line.safe{top:40%;}
+    .analysis-v2-guide-line.pass{bottom:calc(var(--bar-bottom) + var(--label-zone) + (var(--bar-height) * 0.4));}
+    .analysis-v2-guide-line.safe{bottom:calc(var(--bar-bottom) + var(--label-zone) + (var(--bar-height) * 0.6));}
     .analysis-v2-guide-line .label{position:absolute;right:0;top:-18px;font-size:12px;font-weight:700;color:#64748B;text-align:right;background:rgba(255,255,255,.9);padding-left:8px;}
-    .analysis-v2-bars{position:absolute;left:0;right:0;bottom:68px;display:flex;justify-content:space-evenly;align-items:flex-end;gap:10px;height:280px;padding:0 8px;}
-    .analysis-v2-bar-item{background:transparent;border:none;display:flex;flex-direction:column;align-items:center;gap:10px;min-width:88px;padding:0 4px 0;}
-    .analysis-v2-bar-item .score{font-size:22px;font-weight:800;color:#0F172A;line-height:1;}
-    .analysis-v2-bar-wrap{height:230px;display:flex;align-items:flex-end;position:relative;}
+    .analysis-v2-bars{position:absolute;left:0;right:0;bottom:var(--bar-bottom);display:flex;justify-content:space-evenly;align-items:flex-end;gap:10px;height:310px;padding:0 8px;}
+    .analysis-v2-bar-item{background:transparent;border:none;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:88px;padding:34px 4px 0;position:relative;}
+    .analysis-v2-bar-item .score{font-size:22px;font-weight:800;color:#0F172A;line-height:1;position:absolute;top:0;left:50%;transform:translateX(-50%);}
+    .analysis-v2-bar-wrap{height:var(--bar-height);display:flex;align-items:flex-end;position:relative;}
     .analysis-v2-bar{width:56px;min-height:8px;border-radius:18px 18px 12px 12px;position:relative;z-index:2;}
-    .analysis-v2-bar-item p{margin:0;max-width:96px;min-height:38px;max-height:38px;font-size:12px;font-weight:600;line-height:1.3;color:#475569;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all;}
+    .analysis-v2-bar-item p{margin:0;max-width:96px;min-height:48px;max-height:48px;font-size:12px;font-weight:600;line-height:1.3;color:#475569;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all;}
     .analysis-v2-bar-item.active p{color:#2563EB;font-weight:700;}
     .analysis-v2-bar-proj.pop{animation:barProjPop .36s ease;}
     .analysis-v2-bar-proj-line{position:absolute;left:50%;transform:translateX(-50%);border-left:2px dashed #FACC15;opacity:0;pointer-events:none;z-index:4;}
@@ -1053,10 +1053,10 @@ function App() {
     .analysis-v2-eta-card b{display:block;font-size:20px;line-height:1.35;color:#1E3A8A;}
     .analysis-v2-eta-card p{margin:6px 0 0;font-size:12px;color:#475569;line-height:1.45;}
     .analysis-v2-chart-area{overflow:visible;}
-    .analysis-v2-bars{position:absolute;left:0;right:0;bottom:68px;display:flex;justify-content:space-evenly;align-items:flex-end;gap:10px;height:280px;padding:0 8px;}
+    .analysis-v2-bars{position:absolute;left:0;right:0;bottom:var(--bar-bottom);display:flex;justify-content:space-evenly;align-items:flex-end;gap:10px;height:310px;padding:0 8px;}
     .analysis-v2-chart-area .analysis-v2-guide-line{z-index:1;}
     .analysis-v2-bar-item{z-index:2;height:100%;justify-content:flex-end;min-height:280px;}
-    .analysis-v2-bar-wrap{height:100%;display:flex;align-items:flex-end;position:relative;}
+    .analysis-v2-bar-wrap{height:var(--bar-height);display:flex;align-items:flex-end;position:relative;}
     .analysis-v2-bar-item .score{font-size:14px;font-weight:700;}
     .analysis-v2-bar-item p{min-height:48px;max-height:48px;line-height:1.3;}
     .analysis-v2-bar-proj{position:absolute;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;color:#1E3A8A;border:1px dashed #93C5FD;border-radius:999px;padding:2px 7px;background:#EFF6FF;white-space:nowrap;z-index:7;}
@@ -1450,13 +1450,13 @@ function App() {
               <div class="analysis-v2-guide-line safe"><span class="label">안정선 150</span></div>
               <div class="analysis-v2-bars">
                 ${[['가천대 관광경영학과', 250, '가천대학교 관광경영학과'], ['강서대 G2빅데이터경영학과', 238, '강서대학교 G2빅데이터경영학과'], ['고려대 경영대학', 71, '고려대학교 경영대학']].map(([label, score, full]) => {
-                  const heightPercent = Math.max(8, Math.min(100, (score / 250) * 100));
+                  const heightPercent = Math.max(0, Math.min(100, (score / 250) * 100));
                   const color = score >= 250 ? '#22C55E' : score < 100 ? '#F97316' : '#2563EB';
                   const shouldProject = analysisBarProjectionTarget === full;
                   const projectionGain = shouldProject ? Math.max(0, Math.min(analysisSimMax, 250 - score)) : null;
                   const projectionScore = projectionGain !== null ? Math.min(250, score + projectionGain) : null;
-                  const projectedPercent = projectionScore ? Math.max(8, Math.min(100, (projectionScore / 250) * 100)) : heightPercent;
-                  const projectionHeight = projectionScore ? Math.max(8, projectedPercent - heightPercent) : 0;
+                  const projectedPercent = projectionScore ? Math.max(0, Math.min(100, (projectionScore / 250) * 100)) : heightPercent;
+                  const projectionHeight = projectionScore ? Math.max(0, projectedPercent - heightPercent) : 0;
                   const gainLabel = projectionGain === null ? '' : Number(projectionGain.toFixed(1)).toString();
                   const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${Math.max(12, heightPercent - 10)}%">${Number(projectionScore.toFixed(1)).toString()} (+${gainLabel})</span>` : '';
                   const projectionBox = projectionScore ? `<span class="analysis-v2-bar-proj-box" style="bottom:${heightPercent}%;height:${projectionHeight}%"></span>` : '';
