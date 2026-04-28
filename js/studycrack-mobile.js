@@ -7,6 +7,31 @@ const HOME_FALLBACK_HTML = `<div class="app-shell"><div class="app-frame"><div c
 const DEFAULT_USER = { name: '김지민', targetUniversity: '연세대학교 경영학과', plan: 'Pro' };
 const DEFAULT_SCORES = { korean: 82, math: 68, english: 77, inquiry1: 70, inquiry2: 66 };
 const DEFAULT_NOTIFICATIONS = { planner: true, weekly: true, report: true, billing: true };
+const PRO_ELITE_REPORTS_BY_MONTH = [
+  {
+    month: '26년 4월',
+    reports: [
+      ['4주차', '심화 집중 루트 + 과목별 우선순위'],
+      ['3주차', '중간 점검 + 리밸런싱 전략'],
+      ['2주차', '약점 보강 로드맵 + 실행 체크'],
+      ['1주차', '실전 루틴 안정화 + 시간 배분']
+    ]
+  },
+  {
+    month: '26년 3월',
+    reports: [
+      ['4주차', '오답 패턴 정리 + 단원 회독'],
+      ['3주차', '과목 밸런스 조정 + 약점 보강'],
+      ['2주차', '모의고사 리커버리 + 집중 강화'],
+      ['1주차', '기본기 리빌드 + 학습 체력 관리']
+    ]
+  },
+  {
+    month: '26년 2월',
+    reports: [['4주차', '개념 정착 로드맵 + 주간 점검']]
+  }
+];
+const PRO_REPORT_SAMPLE_PDF = './assets/features/feat_pro_report.pdf';
 const FIXED_TODAY_DATE = '2024-05-14';
 const SCROLL_STORAGE_KEY = 'studycrack_scroll_positions_v1';
 const DEFAULT_PLANNER_ITEMS = [
@@ -110,6 +135,8 @@ function i(name, primary) {
   return map[name] || map.chart;
 }
 
+  const [proSelectedMonth, setProSelectedMonth] = useState(PRO_ELITE_REPORTS_BY_MONTH[0].month);
+  const [proMonthPickerOpen, setProMonthPickerOpen] = useState(false);
 function mascotBubble(text, size = 'sm') {
   const mascotSrc = (window.__studycrackAssetSrc && window.__studycrackAssetSrc.crackySrc) || CRACKY_SRC;
   const sizeClass = size === 'lg' ? 'cracky-lg' : size === 'md' ? 'cracky-md' : 'cracky-sm';
@@ -269,6 +296,10 @@ function App() {
     // 스크롤 강제 복원은 iOS/Safari에서 "스크롤 초기화"처럼 보이는 점프를 유발할 수 있어 비활성화합니다.
     // 스크롤 위치는 아래 persist 로직(localStorage 저장)으로만 유지합니다.
     scrollGuardRef.current = { until: 0, y: 0 };
+  useEffect(() => {
+    if (screen !== 'proExclusive' && proMonthPickerOpen) setProMonthPickerOpen(false);
+  }, [screen, proMonthPickerOpen]);
+
   }, []);
 
 
@@ -985,6 +1016,40 @@ function App() {
     html,body{touch-action:manipulation;overscroll-behavior:none;}
     .app-shell,.app-frame,.app-screen{min-height:100dvh;}
     .onboarding-container .content{padding:0 16px 150px;box-sizing:border-box;}
+    .pro-elite-page{display:grid;gap:14px;}
+    .pro-elite-hero{
+      padding:20px;border-radius:20px;border:1px solid #334155;
+      background:radial-gradient(120% 120% at 0% 0%,#1E293B 0%,#0F172A 55%,#020617 100%);
+      box-shadow:0 14px 30px rgba(2,6,23,.45);color:#E2E8F0;
+    }
+    .pro-elite-badge{display:inline-flex;padding:4px 10px;border-radius:999px;background:linear-gradient(90deg,#F59E0B,#FDE68A);color:#78350F;font-weight:900;font-size:11px;}
+    .pro-elite-hero h3{margin:10px 0 8px;font-size:24px;line-height:1.28;color:#F8FAFC;}
+    .pro-elite-hero p{margin:0;font-size:13px;color:#CBD5E1;}
+    .pro-month-picker-wrap{position:relative;}
+    .pro-month-picker{
+      width:100%;height:52px;border:none;border-radius:16px;padding:0 14px;
+      display:flex;align-items:center;justify-content:space-between;
+      background:linear-gradient(135deg,#0F172A,#1E3A8A);color:#F8FAFC;font-weight:800;font-size:15px;
+      box-shadow:0 12px 24px rgba(15,23,42,.24), inset 0 1px 0 rgba(255,255,255,.22);
+    }
+    .pro-month-picker em{font-style:normal;color:#BFDBFE;font-size:12px;}
+    .pro-month-options{
+      position:absolute;top:58px;left:0;right:0;z-index:5;display:grid;gap:8px;padding:10px;border-radius:14px;
+      background:#fff;border:1px solid #DBEAFE;box-shadow:0 20px 30px rgba(15,23,42,.18);
+    }
+    .pro-month-option{
+      border:1px solid #CBD5E1;background:#fff;color:#0F172A;border-radius:12px;height:44px;font-weight:700;
+    }
+    .pro-month-option.active{border-color:#1D4ED8;background:#EFF6FF;color:#1E3A8A;}
+    .pro-elite-list{display:grid;gap:10px;}
+    .pro-elite-item{
+      border:1px solid #1E293B;background:#fff;border-radius:16px;padding:14px;
+      display:flex;justify-content:space-between;align-items:center;text-align:left;gap:10px;
+      box-shadow:0 8px 18px rgba(15,23,42,.08);
+    }
+    .pro-elite-item b{display:block;font-size:14px;color:#0F172A;margin-bottom:4px;}
+    .pro-elite-item p{margin:0;font-size:12px;color:#64748B;line-height:1.4;}
+    .pro-elite-download{font-size:12px;font-weight:800;color:#1D4ED8;white-space:nowrap;}
     .onboarding-fixed-cta{padding-bottom:calc(16px + env(safe-area-inset-bottom));}
     .btn,button,.planner-input,select,textarea,input{transition:box-shadow .15s ease, border-color .15s ease;}
     .btn:active,button:active,.planner-input:active,select:active,textarea:active,input:active{transform:none;}
@@ -1084,6 +1149,8 @@ function App() {
       display:grid;gap:8px;padding:12px 10px 10px;border-radius:18px;
       background:linear-gradient(180deg,#FFFFFF 0%,#F8FAFC 100%);
       border:1px solid #DBEAFE;box-shadow:0 10px 24px rgba(30,64,175,.08);
+  const proMonthList = PRO_ELITE_REPORTS_BY_MONTH.map((item) => item.month);
+  const proCurrentMonth = PRO_ELITE_REPORTS_BY_MONTH.find((item) => item.month === proSelectedMonth) || PRO_ELITE_REPORTS_BY_MONTH[0];
     }
     .pro-elite-month-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:0 2px 2px;}
     .pro-elite-month-title{margin:0;font-size:13px;font-weight:900;color:#1E3A8A;letter-spacing:.02em;}
@@ -1499,8 +1566,9 @@ function App() {
         </div>
 
         <div class="analysis-v2-tabs">
-          <button class="analysis-v2-tab ${analysisMode==='summary'?'active':''}" data-action="setAnalysisMode" data-analysis-mode="summary">전략 요약</button>
-          <button class="analysis-v2-tab ${analysisMode==='simulation'?'active':''}" data-action="setAnalysisMode" data-analysis-mode="simulation">점수 상승 시뮬레이션</button>
+       <div class="cta-wrapper"><button class="btn btn-primary report-sample cta-btn" data-action="goto" data-target="proExclusive">프로 보고서 샘플 보기</button></div>`,
+    proExclusive: layout(appbar('PRO EXCLUSIVE', true) + `<div class="pro-elite-page"><div class="pro-elite-hero"><span class="pro-elite-badge">TOP 1%</span><h3>상위 1%를 위한<br/>중장기 집중 맞춤 솔루션</h3><p>주차별 프리미엄 전략 리포트를 다운로드하세요.</p></div><div class="pro-month-picker-wrap"><button class="pro-month-picker" data-action="toggleProMonthPicker"><span>${proCurrentMonth.month} 리포트</span><em>${proMonthPickerOpen ? '닫기 ▲' : '월 선택 ▼'}</em></button>${proMonthPickerOpen ? `<div class="pro-month-options">${proMonthList.map((month) => `<button class="pro-month-option ${month===proCurrentMonth.month?'active':''}" data-action="selectProMonth" data-pro-month="${month}">${month}</button>`).join('')}</div>` : ''}</div><div class="pro-elite-list">${proCurrentMonth.reports.map(([week, desc]) => `<button class="pro-elite-item" data-action="downloadProReport" data-pdf-path="${PRO_REPORT_SAMPLE_PDF}" data-pdf-name="studycrack-pro-${proCurrentMonth.month.replace(/\\s+/g, '-')}-${week}.pdf"><div><b>${proCurrentMonth.month} ${week} PRO 리포트</b><p>${desc}</p></div><span class="pro-elite-download">PDF 다운로드</span></button>`).join('')}</div></div>`, false),
+    studyReports: layout(appbar('학습 리포트', true) + `<div class="card report-list-card"><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>5월 11일 종합 분석 리포트</b><p>수학 점수 상승 여지 큼</p></div><span>${i('chevron', false)}</span></button><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>4월 27일 중간 분석 리포트</b><p>탐구 집중 강화 필요</p></div><span>${i('chevron', false)}</span></button></div><div class="cta-wrapper"><button class="btn btn-primary cta-btn" data-action="goto" data-target="proExclusive">프로 보고서 샘플 보기</button></div>`, false),
         </div>
 
         ${analysisMode === 'summary' ? `
@@ -1717,6 +1785,23 @@ function App() {
     customerSupport: layout(appbar('고객센터', true) + `<div class="card"><p class="analysis-title">궁금한 점이 있으면 언제든 문의해주세요.</p><p class="sub" style="margin:0">운영 시간: 평일 10:00 - 18:00</p><div class="support-btns"><button class="btn btn-secondary">카카오톡 문의하기</button><button class="btn btn-secondary">이메일 문의하기</button></div></div><div class="card faq-card">${[
       ['faq1', '합격 가능성은 어떻게 계산되나요?', '목표 대학의 반영 방식과 현재 성적을 기준으로 계산됩니다.'],
       ['faq2', '플래너 피드백은 언제 받을 수 있나요?', '제출된 플래너를 기준으로 정해진 일정에 맞춰 피드백을 제공합니다.'],
+    if (action === 'toggleProMonthPicker') setProMonthPickerOpen((prev) => !prev);
+    if (action === 'selectProMonth') {
+      const month = actionEl.getAttribute('data-pro-month');
+      if (!month) return;
+      setProSelectedMonth(month);
+      setProMonthPickerOpen(false);
+    }
+    if (action === 'downloadProReport') {
+      const pdfPath = actionEl.getAttribute('data-pdf-path') || PRO_REPORT_SAMPLE_PDF;
+      const fileName = actionEl.getAttribute('data-pdf-name') || 'studycrack-pro-report.pdf';
+      const anchor = document.createElement('a');
+      anchor.href = pdfPath;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+    }
       ['faq3', '프로 보고서는 얼마나 자주 받을 수 있나요?', 'Pro 플랜은 2주에 한 번 리포트를 받을 수 있습니다.'],
       ['faq4', '결제 후 플랜 변경이 가능한가요?', '플랜 변경 기능은 준비 중입니다.']
     ].map(([id, q, a]) => `<button class="faq-row" data-action="toggleFaq" data-faq-id="${id}"><div><b>${q}</b>${openFaq===id?`<p>${a}</p>`:''}</div><span>${i('chevron', false)}</span></button>`).join('')}</div>`, false),
