@@ -48,14 +48,6 @@ const safeParse = (key, fallback) => {
   }
 };
 
-const resolveAssetPath = async (path, fallback) => {
-  try {
-    const response = await fetch(path, { method: 'HEAD' });
-    return response.ok ? path : fallback;
-  } catch (_) {
-    return fallback;
-  }
-};
 const buildPlannerId = () => `pl-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 const normalizePlannerItems = (items = []) => items.map((item, idx) => ({
   ...item,
@@ -109,10 +101,10 @@ function mascotBubble(text, size = 'sm') {
 
 function App() {
   console.log('APP_RENDER_START');
-  const [screen, setScreen] = useState('splash');
+  const [screen, setScreen] = useState('authEntry');
   const [tab, setTab] = useState('home');
   const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [selectedUniversityIndex, setSelectedUniversityIndex] = useState(0);
@@ -382,16 +374,10 @@ function App() {
     viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
   }, []);
 
-  const initializeApp = async () => {
-    let fallbackTimer;
+  const initializeApp = () => {
     try {
       console.log('[APP_INIT_START]');
-      setLoading(true);
       setError(false);
-      fallbackTimer = setTimeout(() => {
-        setLoading(false);
-        setScreen('authEntry');
-      }, 3000);
 
       const savedUser = safeParse('user', DEFAULT_USER);
       const savedPlan = localStorage.getItem('selectedPlan') || savedUser.plan || DEFAULT_USER.plan;
@@ -413,13 +399,10 @@ function App() {
       setScores({ ...DEFAULT_SCORES, ...(savedScore || {}) });
       setNotifications({ ...DEFAULT_NOTIFICATIONS, ...(savedNotifications || {}) });
 
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('init-timeout')), 2500));
-      const crackySrc = await resolveAssetPath(CRACKY_SRC, './assets/images/studycrack_logo_wo_bg.png');
-      const onboardingLogoSrc = await resolveAssetPath(ONBOARDING_LOGO_SRC, './assets/images/studycrack_logo_wo_bg.png');
-      window.__studycrackAssetSrc = { crackySrc, onboardingLogoSrc };
-      await Promise.race([fetch(onboardingLogoSrc), timeoutPromise]).catch(() => null);
-      await resolveAssetPath('./assets/76220C96-DE85-4148-A6AC-7BD5881821A0.png', null);
-      await resolveAssetPath('./assets/IMG_2648.jpeg', null);
+      window.__studycrackAssetSrc = {
+        crackySrc: CRACKY_SRC,
+        onboardingLogoSrc: ONBOARDING_LOGO_SRC
+      };
 
       setScreen('authEntry');
       console.log('[APP_INIT_SUCCESS]');
@@ -428,7 +411,6 @@ function App() {
       setError(true);
       setScreen('authEntry');
     } finally {
-      if (fallbackTimer) clearTimeout(fallbackTimer);
       setLoading(false);
     }
   };
