@@ -210,12 +210,6 @@ function App() {
     setScreen(prev);
   };
 
-  const restoreScrollPosition = (y) => {
-    requestAnimationFrame(() => {
-      window.scrollTo({ top: y, left: 0, behavior: 'auto' });
-    });
-  };
-
   useEffect(() => {
     lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
     const onNativeScroll = () => {
@@ -311,23 +305,15 @@ function App() {
 
   useEffect(() => {
     if (screen !== 'analysis') return;
-    const preservedY = window.scrollY || window.pageYOffset || 0;
     setIsAnalyzing(true);
-    const t = setTimeout(() => {
-      setIsAnalyzing(false);
-      restoreScrollPosition(preservedY);
-    }, 2000);
+    const t = setTimeout(() => setIsAnalyzing(false), 2000);
     return () => clearTimeout(t);
   }, [screen, targetMajor]);
 
   useEffect(() => {
     if (screen !== 'ob3') return;
-    const preservedY = window.scrollY || window.pageYOffset || 0;
     setOb3IsAnalyzing(true);
-    const t = setTimeout(() => {
-      setOb3IsAnalyzing(false);
-      restoreScrollPosition(preservedY);
-    }, 1500);
+    const t = setTimeout(() => setOb3IsAnalyzing(false), 1500);
     return () => clearTimeout(t);
   }, [screen]);
 
@@ -1569,25 +1555,21 @@ function App() {
     if (action === 'goto') {
       const target = actionEl.getAttribute('data-target');
       if (screen === 'on1' && target === 'ob1') {
-        const preservedY = window.scrollY || window.pageYOffset || 0;
         setOnboardingLoading(true);
         setOnboardingLoadingText('성적 분석중...');
         setTimeout(() => setOnboardingLoadingText('유리한 대학 전형 파악중...'), 2000);
         setTimeout(() => {
           setOnboardingLoading(false);
-          restoreScrollPosition(preservedY);
           goto('ob1');
         }, 4000);
         return;
       }
       if (screen === 'ob2' && target === 'ob3') {
-        const preservedY = window.scrollY || window.pageYOffset || 0;
         setOnboardingLoading(true);
         setOnboardingLoadingText('학습 성향 분석중...');
         setTimeout(() => setOnboardingLoadingText('효율적인 공부법 찾는 중...'), 1500);
         setTimeout(() => {
           setOnboardingLoading(false);
-          restoreScrollPosition(preservedY);
           goto('ob3');
         }, 3000);
         return;
@@ -1606,7 +1588,6 @@ function App() {
     if (action === 'setAnalysisMode') setAnalysisMode(actionEl.getAttribute('data-analysis-mode') || 'summary');
     if (action === 'setScoreView') {
       e.stopPropagation();
-      const preservedY = window.scrollY || window.pageYOffset || 0;
       const nextView = actionEl.getAttribute('data-score-view') || 'current';
       setScoreDragOffset(0);
       setActiveScoreView((prev) => {
@@ -1614,10 +1595,8 @@ function App() {
         setScoreSlideMotion(nextView === 'target' ? 'motion-next' : 'motion-prev');
         return nextView;
       });
-      restoreScrollPosition(preservedY);
     }
     if (action === 'setHomeSlide') {
-      const preservedY = window.scrollY || window.pageYOffset || 0;
       const idx = Number(actionEl.getAttribute('data-slide-index'));
       if (Number.isNaN(idx)) return;
       setHomeDragOffset(0);
@@ -1627,7 +1606,6 @@ function App() {
         setHomeSlideMotion(next > prev ? 'motion-next' : 'motion-prev');
         return next;
       });
-      restoreScrollPosition(preservedY);
     }
     if (action === 'openAnalysisSearch') setAnalysisSearchOpen(true);
     if (action === 'closeAnalysisSearch') {
@@ -2009,26 +1987,44 @@ function App() {
     const onNativeTouchStart = (e) => startGesture(e.target, e.touches?.[0]?.clientX);
     const onNativeTouchMove = (e) => moveGesture(e.touches?.[0]?.clientX);
     const onNativeTouchEnd = (e) => endGesture(e.changedTouches?.[0]?.clientX);
+    const onNativeTouchCancel = () => {
+      touchStartXRef.current = null;
+      touchLastXRef.current = null;
+      touchTargetRef.current = '';
+      setHomeDragOffset(0);
+      setScoreDragOffset(0);
+    };
     const onPointerDown = (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       startGesture(e.target, e.clientX);
     };
     const onPointerUp = (e) => endGesture(e.clientX);
     const onPointerMove = (e) => moveGesture(e.clientX);
+    const onPointerCancel = () => {
+      touchStartXRef.current = null;
+      touchLastXRef.current = null;
+      touchTargetRef.current = '';
+      setHomeDragOffset(0);
+      setScoreDragOffset(0);
+    };
 
     document.addEventListener('touchstart', onNativeTouchStart, { passive: true, capture: true });
     document.addEventListener('touchmove', onNativeTouchMove, { passive: true, capture: true });
     document.addEventListener('touchend', onNativeTouchEnd, { passive: true, capture: true });
+    document.addEventListener('touchcancel', onNativeTouchCancel, { passive: true, capture: true });
     document.addEventListener('pointerdown', onPointerDown, true);
     document.addEventListener('pointermove', onPointerMove, true);
     document.addEventListener('pointerup', onPointerUp, true);
+    document.addEventListener('pointercancel', onPointerCancel, true);
     return () => {
       document.removeEventListener('touchstart', onNativeTouchStart, true);
       document.removeEventListener('touchmove', onNativeTouchMove, true);
       document.removeEventListener('touchend', onNativeTouchEnd, true);
+      document.removeEventListener('touchcancel', onNativeTouchCancel, true);
       document.removeEventListener('pointerdown', onPointerDown, true);
       document.removeEventListener('pointermove', onPointerMove, true);
       document.removeEventListener('pointerup', onPointerUp, true);
+      document.removeEventListener('pointercancel', onPointerCancel, true);
     };
   }, [homeTargets.length, homeSlideIndex, activeScoreView]);
 
