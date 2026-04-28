@@ -41,7 +41,9 @@
 
     // 2. CSRF state 검증
     const savedState = sessionStorage.getItem('socialState');
+    const isLinkMode = sessionStorage.getItem('socialLinkMode') === 'true';
     sessionStorage.removeItem('socialState');
+    sessionStorage.removeItem('socialLinkMode');
 
     if (!savedState || savedState !== returnedState) {
         showError('보안 검증에 실패했습니다. 다시 시도해 주세요.');
@@ -101,7 +103,7 @@
         window.dataLayer.push({ event: 'login', user_id: userId });
 
         // 5. 사용자 정보 조회 및 라우팅
-        statusMsg.textContent = '로그인 완료! 이동 중입니다...';
+        statusMsg.textContent = isLinkMode ? '연동 완료! 마이페이지로 이동 중...' : '로그인 완료! 이동 중입니다...';
 
         const userRes = await fetch(USER_API_URL, {
             method: 'POST',
@@ -113,6 +115,12 @@
             const userData = await userRes.json();
             localStorage.setItem('userName', userData.name || '');
             if (userData.computedTier) localStorage.setItem('userTier', userData.computedTier);
+        }
+
+        // 마이페이지 연동 요청인 경우 마이페이지로 복귀
+        if (isLinkMode) {
+            window.location.href = '/mypage';
+            return;
         }
 
         window.location.href = isNewUser ? '/welcome' : '/';

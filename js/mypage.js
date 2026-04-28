@@ -669,22 +669,42 @@ async function unlinkSocial(provider) {
 }
 
 function linkSocial(provider) {
-    const redirectUri = encodeURIComponent(window.location.origin + '/social-callback');
-    const state = btoa(JSON.stringify({ from: 'mypage', ts: Date.now() }));
-    sessionStorage.setItem('oauth_state', state);
-    sessionStorage.setItem('oauth_link_mode', 'true');
+    const social = CONFIG && CONFIG.social;
+    const clientId = social && social[provider] && social[provider].clientId;
+    const callbackUrl = social && social.callbackUrl;
 
-    const providerUrls = {
-        google: `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CONFIG.social?.googleClientId || ''}&redirect_uri=${redirectUri}&response_type=code&scope=email+profile&state=${state}`,
-        naver: `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${CONFIG.social?.naverClientId || ''}&redirect_uri=${redirectUri}&state=${state}`,
-        kakao: `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${CONFIG.social?.kakaoClientId || ''}&redirect_uri=${redirectUri}&state=${state}`
-    };
-    const url = providerUrls[provider];
-    if (url && !url.includes('undefined') && !url.includes("''")) {
-        window.location.href = url;
-    } else {
-        alert(`${provider} 연동하기는 현재 준비 중입니다.`);
+    if (!clientId || !callbackUrl) {
+        alert('소셜 연동 설정이 완료되지 않았습니다. 관리자에게 문의해주세요.');
+        return;
     }
+
+    // auth.js와 동일한 state 형식: {nonce}|{provider}
+    const stateNonce = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+        .map(b => b.toString(16).padStart(2, '0')).join('');
+    const state = `${stateNonce}|${provider}`;
+    sessionStorage.setItem('socialState', state);
+    sessionStorage.setItem('socialLinkMode', 'true'); // 연동 모드 플래그
+
+    let authUrl = '';
+    if (provider === 'google') {
+        authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + new URLSearchParams({
+            client_id: clientId, redirect_uri: callbackUrl,
+            response_type: 'code', scope: 'openid email profile',
+            state, access_type: 'offline', prompt: 'select_account'
+        });
+    } else if (provider === 'naver') {
+        authUrl = `https://nid.naver.com/oauth2.0/authorize?` + new URLSearchParams({
+            response_type: 'code', client_id: clientId,
+            redirect_uri: callbackUrl, state
+        });
+    } else if (provider === 'kakao') {
+        authUrl = `https://kauth.kakao.com/oauth/authorize?` + new URLSearchParams({
+            client_id: clientId, redirect_uri: callbackUrl,
+            response_type: 'code', state
+        });
+    }
+
+    if (authUrl) window.location.href = authUrl;
 }
 
 function handleSignOut() {
