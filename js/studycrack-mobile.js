@@ -15,6 +15,36 @@ const DEFAULT_PLANNER_ITEMS = [
   { id: 'pl-default-3', date: '14', subject: '탐구', content: '실전문제', start: '15:00', end: '17:00', minutes: 120, dot: 'sci' },
   { id: 'pl-default-4', date: '14', subject: '수학', content: '오답 풀이', start: '19:00', end: '22:00', minutes: 180, dot: 'math' }
 ];
+const PRO_ELITE_REPORTS_BY_MONTH = [
+  {
+    month: '26년 4월',
+    pdfPath: './assets/features/feat_pro_report.pdf',
+    reports: [
+      { week: '4주차', desc: '심화 집중 루트 + 과목별 우선순위', fileName: 'studycrack-pro-report-26-04-w4.pdf' },
+      { week: '3주차', desc: '중간 점검 + 리밸런싱 전략', fileName: 'studycrack-pro-report-26-04-w3.pdf' },
+      { week: '2주차', desc: '약점 보강 로드맵 + 실행 체크', fileName: 'studycrack-pro-report-26-04-w2.pdf' },
+      { week: '1주차', desc: '실전 루틴 안정화 + 시간 배분', fileName: 'studycrack-pro-report-26-04-w1.pdf' }
+    ]
+  },
+  {
+    month: '26년 3월',
+    pdfPath: './assets/features/feat_pro_report.pdf',
+    reports: [
+      { week: '4주차', desc: '오답 패턴 정리 + 단원 회독', fileName: 'studycrack-pro-report-26-03-w4.pdf' },
+      { week: '3주차', desc: '과목 밸런스 조정 + 약점 보강', fileName: 'studycrack-pro-report-26-03-w3.pdf' },
+      { week: '2주차', desc: '모의고사 리커버리 + 집중 강화', fileName: 'studycrack-pro-report-26-03-w2.pdf' },
+      { week: '1주차', desc: '기본기 리빌드 + 학습 체력 관리', fileName: 'studycrack-pro-report-26-03-w1.pdf' }
+    ]
+  },
+  {
+    month: '26년 2월',
+    pdfPath: './assets/features/feat_pro_report.pdf',
+    reports: [
+      { week: '4주차', desc: '개념 정착 로드맵 + 주간 점검', fileName: 'studycrack-pro-report-26-02-w4.pdf' }
+    ]
+  }
+];
+const PRO_ELITE_REPORT_FALLBACK_PDF_PATH = './assets/features/feat_pro_report.pdf';
 const SCORE_LABELS = { korean: '국어', math: '수학', english: '영어', inquiry1: '탐구1', inquiry2: '탐구2' };
 
 const safeParse = (key, fallback) => {
@@ -135,6 +165,9 @@ function App() {
   const [scores, setScores] = useState(DEFAULT_SCORES);
   const [notifications, setNotifications] = useState(DEFAULT_NOTIFICATIONS);
   const [openFaq, setOpenFaq] = useState('');
+  const [notifModalOpen, setNotifModalOpen] = useState(false);
+  const [proRequestModalOpen, setProRequestModalOpen] = useState(false);
+  const [proRequestText, setProRequestText] = useState('');
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [plannerItems, setPlannerItems] = useState(DEFAULT_PLANNER_ITEMS);
   const [plannerEditIndex, setPlannerEditIndex] = useState(null);
@@ -182,6 +215,17 @@ function App() {
   const suppressClickUntilRef = useRef(0);
   const lastStableScrollYRef = useRef(0);
   const scrollGuardRef = useRef({ until: 0, y: 0 });
+  const keepScrollPosition = () => {
+    const y = window.scrollY || window.pageYOffset || 0;
+    requestAnimationFrame(() => {
+      const now = window.scrollY || window.pageYOffset || 0;
+      if (Math.abs(now - y) > 2) window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+    });
+    setTimeout(() => {
+      const now = window.scrollY || window.pageYOffset || 0;
+      if (Math.abs(now - y) > 2) window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+    }, 0);
+  };
 
   const goto = (next, addHistory = true) => {
     const currentY = window.scrollY || window.pageYOffset || 0;
@@ -221,17 +265,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const onScrollGuard = () => {
-      const guard = scrollGuardRef.current;
-      if (!guard || Date.now() > guard.until) return;
-      const y = window.scrollY || window.pageYOffset || 0;
-      if (y < guard.y - 18) {
-        window.scrollTo({ top: guard.y, left: 0, behavior: 'auto' });
-      }
-    };
-    window.addEventListener('scroll', onScrollGuard, { passive: true });
-    return () => window.removeEventListener('scroll', onScrollGuard);
-  });
+    // 스크롤 강제 복원은 iOS/Safari에서 "스크롤 초기화"처럼 보이는 점프를 유발할 수 있어 비활성화합니다.
+    // 스크롤 위치는 아래 persist 로직(localStorage 저장)으로만 유지합니다.
+    scrollGuardRef.current = { until: 0, y: 0 };
+  }, []);
 
 
   useEffect(() => {
@@ -319,20 +356,24 @@ function App() {
 
   useEffect(() => {
     if (screen !== 'analysis') return;
+    const yBefore = window.scrollY || window.pageYOffset || 0;
     setIsAnalyzing(true);
     const t = setTimeout(() => {
       armScrollGuard(1200);
       setIsAnalyzing(false);
+      requestAnimationFrame(() => window.scrollTo({ top: yBefore, left: 0, behavior: 'auto' }));
     }, 2000);
     return () => clearTimeout(t);
   }, [screen, targetMajor]);
 
   useEffect(() => {
     if (screen !== 'ob3') return;
+    const yBefore = window.scrollY || window.pageYOffset || 0;
     setOb3IsAnalyzing(true);
     const t = setTimeout(() => {
       armScrollGuard(1200);
       setOb3IsAnalyzing(false);
+      requestAnimationFrame(() => window.scrollTo({ top: yBefore, left: 0, behavior: 'auto' }));
     }, 1500);
     return () => clearTimeout(t);
   }, [screen]);
@@ -355,7 +396,7 @@ function App() {
       setError(false);
       fallbackTimer = setTimeout(() => {
         setLoading(false);
-        setScreen('authLogin');
+        setScreen('authLanding');
       }, 3000);
 
       const savedUser = safeParse('user', DEFAULT_USER);
@@ -386,12 +427,12 @@ function App() {
       await resolveAssetPath('./assets/76220C96-DE85-4148-A6AC-7BD5881821A0.png', null);
       await resolveAssetPath('./assets/IMG_2648.jpeg', null);
 
-      setScreen('authLogin');
+      setScreen('authLanding');
       console.log('[APP_INIT_SUCCESS]');
     } catch (e) {
       console.error('[APP_INIT_ERROR]', e);
       setError(true);
-      setScreen('authLogin');
+      setScreen('authLanding');
     } finally {
       if (fallbackTimer) clearTimeout(fallbackTimer);
       setLoading(false);
@@ -794,8 +835,8 @@ function App() {
     <div class="home-content">
     <div class="home-header">
       <div class="home-top-icons">
-        <button class="top-icon-btn" data-action="openDrawer">${i('menu', false)}</button>
-        <button class="top-icon-btn">${i('bell', false)}</button>
+        <button class="pro-top-btn" data-action="goto" data-target="proElite"><span>PRO</span></button>
+        <button class="top-icon-btn" data-action="openNotificationModal">${i('bell', false)}</button>
       </div>
       <p class="home-greeting">안녕하세요, 지민님 👋</p>
       <p class="home-sub">오늘도 크랙한 하루 되세요!</p>
@@ -834,6 +875,7 @@ function App() {
       </div>
     </div>
     ${studySubjectSheetOpen ? `<div class="planner-sheet-overlay" data-action="closeStudySubjectSheet"><div class="planner-sheet study-subject-sheet" data-action="noopModal"><h3>어떤 과목을 공부할까요?</h3><div class="study-subject-grid">${['국어', '수학', '영어', '탐구'].map((s) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${s}">${s}</button>`).join('')}<button class="planner-pill" data-action="selectStudySubjectCustom">기타 직접 입력</button></div>${plannedSubjectOptions.length ? `<p class="sub" style="margin:8px 0 6px">오늘 플래너 일정</p><div class="study-subject-grid">${plannedSubjectOptions.map((s) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${s.split(' - ')[0]}">${s}</button>`).join('')}</div>` : ''}</div></div>` : ''}
+    ${notifModalOpen ? `<div class="home-modal-overlay" data-action="closeNotificationModal"><div class="home-modal pro-notif-modal" data-action="noopModal"><p class="home-modal-title">알림</p><div class="pro-notif-list"><div><b>주간 코칭 알림</b><p>이번 주 코칭 작성 마감이 오늘 20:00입니다.</p></div><div><b>PRO 리포트 알림</b><p>26년 4월 4주차 리포트가 도착했습니다.</p></div><div><b>플래너 알림</b><p>오늘 계획 3개 중 1개를 완료했어요.</p></div></div><button class="btn btn-primary" data-action="closeNotificationModal">확인</button></div></div>` : ''}
     ${drawerOpen ? `<div class="home-modal-overlay drawer-overlay" data-action="closeDrawer"><aside class="side-drawer" data-action="noopModal"><h3>메뉴</h3>${[['analysis','분석'],['strategy','학습 코칭'],['planner','플래너'],['weekly','주간 점검'],['report','프로 보고서']].map(([target,label]) => `<button class="my-row" data-action="drawerGoto" data-target="${target}">${label}<span>${i('chevron', false)}</span></button>`).join('')}</aside></div>` : ''}
   </div>
   </div>`;
@@ -967,20 +1009,20 @@ function App() {
     .analysis-chart-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
     .analysis-chart-head h3{margin:0;font-size:20px;}
     .analysis-chart-badge{font-size:11px;font-weight:700;color:#475569;background:#F1F5F9;border-radius:999px;padding:5px 10px;}
-    .analysis-v2-chart-area{position:relative;height:280px;padding:36px 10px 0;border-radius:20px;background:linear-gradient(180deg,#F8FAFC 0%,#FFFFFF 100%);margin-top:14px;}
+    .analysis-v2-chart-area{position:relative;--bar-bottom:26px;--label-zone:48px;--bar-height:280px;min-height:460px;padding:36px 10px 18px;border-radius:20px;background:linear-gradient(180deg,#F8FAFC 0%,#FFFFFF 100%);margin-top:14px;overflow:visible;}
     .analysis-v2-guide-line{position:absolute;left:10px;right:10px;border-top:1px dashed #94A3B8;}
-    .analysis-v2-guide-line.pass{top:60%;}
-    .analysis-v2-guide-line.safe{top:40%;}
+    .analysis-v2-guide-line.pass{bottom:calc(var(--bar-bottom) + var(--label-zone) + (var(--bar-height) * 0.4));}
+    .analysis-v2-guide-line.safe{bottom:calc(var(--bar-bottom) + var(--label-zone) + (var(--bar-height) * 0.6));}
     .analysis-v2-guide-line .label{position:absolute;right:0;top:-18px;font-size:12px;font-weight:700;color:#64748B;text-align:right;background:rgba(255,255,255,.9);padding-left:8px;}
-    .analysis-v2-bars{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-evenly;align-items:flex-end;padding:0 8px;gap:10px;}
-    .analysis-v2-bar-item{background:transparent;border:none;display:flex;flex-direction:column;align-items:center;gap:10px;min-width:88px;padding:0 4px 6px;}
-    .analysis-v2-bar-item .score{font-size:22px;font-weight:800;color:#0F172A;line-height:1;}
-    .analysis-v2-bar-wrap{height:260px;display:flex;align-items:flex-end;}
-    .analysis-v2-bar{width:56px;min-height:8px;border-radius:18px 18px 12px 12px;}
-    .analysis-v2-bar-item p{margin:0;max-width:84px;font-size:12px;font-weight:600;line-height:1.35;color:#475569;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+    .analysis-v2-bars{position:absolute;left:0;right:0;bottom:var(--bar-bottom);display:flex;justify-content:space-evenly;align-items:flex-end;gap:10px;height:370px;padding:0 8px;}
+    .analysis-v2-bar-item{background:transparent;border:none;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:88px;padding:34px 4px 0;position:relative;}
+    .analysis-v2-bar-item .score{font-size:22px;font-weight:800;color:#0F172A;line-height:1;position:absolute;top:0;left:50%;transform:translateX(-50%);}
+    .analysis-v2-bar-wrap{height:var(--bar-height);display:flex;align-items:flex-end;position:relative;}
+    .analysis-v2-bar{width:56px;min-height:8px;border-radius:18px 18px 12px 12px;position:relative;z-index:2;}
+    .analysis-v2-bar-item p{margin:0;max-width:96px;min-height:48px;max-height:48px;font-size:12px;font-weight:600;line-height:1.3;color:#475569;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all;}
     .analysis-v2-bar-item.active p{color:#2563EB;font-weight:700;}
     .analysis-v2-bar-proj.pop{animation:barProjPop .36s ease;}
-    .analysis-v2-bar-proj-line{position:absolute;left:50%;transform:translateX(-50%);border-left:2px dashed #FACC15;opacity:0;pointer-events:none;}
+    .analysis-v2-bar-proj-line{position:absolute;left:50%;transform:translateX(-50%);border-left:2px dashed #FACC15;opacity:0;pointer-events:none;z-index:4;}
     .analysis-v2-bar-proj-line.show{opacity:1;}
     @keyframes barProjPop{0%{transform:translateX(-50%) translateY(8px);opacity:0;}100%{transform:translateX(-50%) translateY(0);opacity:1;}}
     .home-kpi-slider{overflow:hidden;padding:2px 20px 2px 0;touch-action:pan-y;}
@@ -1009,6 +1051,75 @@ function App() {
     .home-insight-card{border:1px solid #E2E8F0;border-radius:20px;box-shadow:0 8px 20px rgba(15,23,42,.05);padding:16px;}
     .home-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
     .home-mini-badge{font-size:11px;font-weight:700;color:#1D4ED8;background:#DBEAFE;border-radius:999px;padding:4px 8px;}
+    .home-top-icons{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+    .pro-top-btn{
+      width:78px;height:36px;border:none;border-radius:16px;position:relative;overflow:hidden;
+      background:linear-gradient(135deg,#0F172A 0%,#1E293B 45%,#475569 100%);
+      box-shadow:0 8px 20px rgba(15,23,42,.25), inset 0 1px 0 rgba(255,255,255,.22);
+      color:#F8FAFC;font-weight:900;letter-spacing:.08em;font-size:14px;
+    }
+    .pro-top-btn:before{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,.35) 35%,transparent 60%);transform:translateX(-120%);animation:proShine 3.4s ease-in-out infinite;}
+    @keyframes proShine{0%{transform:translateX(-120%);}45%,100%{transform:translateX(120%);}}
+    .pro-notif-modal .pro-notif-list{display:grid;gap:10px;margin:10px 0 14px;}
+    .pro-notif-modal .pro-notif-list > div{padding:10px;border:1px solid #E2E8F0;border-radius:12px;background:#F8FAFC;}
+    .pro-notif-modal .pro-notif-list b{display:block;font-size:14px;color:#0F172A;margin-bottom:4px;}
+    .pro-notif-modal .pro-notif-list p{margin:0;font-size:12px;color:#475569;line-height:1.45;}
+    .pro-elite-page{display:grid;gap:14px;padding-bottom:8px;}
+    .pro-elite-hero{
+      padding:20px;border-radius:20px;border:1px solid #334155;
+      background:radial-gradient(120% 120% at 0% 0%,#1E293B 0%,#0F172A 55%,#020617 100%);
+      box-shadow:0 14px 30px rgba(2,6,23,.45);color:#E2E8F0;
+    }
+    .pro-elite-badge{display:inline-flex;padding:4px 10px;border-radius:999px;background:linear-gradient(90deg,#F59E0B,#FDE68A);color:#78350F;font-weight:900;font-size:11px;}
+    .pro-elite-hero h3{margin:10px 0 8px;font-size:24px;line-height:1.28;color:#F8FAFC;}
+    .pro-elite-hero p{margin:0;font-size:13px;color:#CBD5E1;}
+    .pro-elite-list{display:grid;gap:14px;max-height:420px;overflow:auto;padding-right:2px;}
+    .pro-elite-month-group{
+      display:grid;gap:8px;padding:12px 10px 10px;border-radius:18px;
+      background:linear-gradient(180deg,#FFFFFF 0%,#F8FAFC 100%);
+      border:1px solid #DBEAFE;box-shadow:0 10px 24px rgba(30,64,175,.08);
+    }
+    .pro-elite-month-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:0 2px 2px;}
+    .pro-elite-month-title{margin:0;font-size:13px;font-weight:900;color:#1E3A8A;letter-spacing:.02em;}
+    .pro-elite-month-badge{
+      display:inline-flex;align-items:center;justify-content:center;
+      min-width:54px;height:24px;padding:0 9px;border-radius:999px;
+      background:linear-gradient(135deg,#1D4ED8,#3B82F6);color:#EFF6FF;font-size:11px;font-weight:800;
+      box-shadow:0 4px 10px rgba(37,99,235,.3);
+    }
+    .pro-elite-item{
+      border:1px solid #1E293B;background:#fff;border-radius:16px;padding:14px;
+      display:flex;justify-content:space-between;align-items:center;text-align:left;gap:10px;
+      box-shadow:0 8px 18px rgba(15,23,42,.08);
+    }
+    .pro-elite-item b{display:block;font-size:14px;color:#0F172A;margin-bottom:4px;}
+    .pro-elite-item p{margin:0;font-size:12px;color:#64748B;line-height:1.4;}
+    .pro-elite-download{font-size:12px;font-weight:800;color:#1D4ED8;white-space:nowrap;}
+    .pro-elite-request-bottom{padding:10px 4px 2px;}
+    .pro-request-btn{
+      width:100%;height:58px;border:none;border-radius:18px;
+      display:flex;align-items:center;justify-content:center;gap:8px;
+      font-size:16px;font-weight:900;color:#fff;letter-spacing:.02em;
+      background:linear-gradient(135deg,#0B1A47 0%,#1D4ED8 48%,#3B82F6 100%);
+      box-shadow:0 16px 28px rgba(29,78,216,.26), inset 0 1px 0 rgba(255,255,255,.32);
+      position:relative;overflow:hidden;
+    }
+    .pro-request-btn:before{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,.3) 36%,transparent 64%);transform:translateX(-120%);animation:proRequestShine 3s ease-in-out infinite;}
+    .pro-request-btn .spark{position:relative;z-index:1;font-size:17px;}
+    .pro-request-btn span{position:relative;z-index:1;}
+    @keyframes proRequestShine{0%{transform:translateX(-120%);}45%,100%{transform:translateX(120%);}}
+    .pro-request-modal{width:calc(100% - 22px);max-width:430px;padding:0;overflow:hidden;border:1px solid #3B82F6;}
+    .pro-request-head{background:linear-gradient(135deg,#1E40AF,#2563EB);color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;}
+    .pro-request-head h4{margin:0;font-size:18px;font-weight:800;}
+    .pro-request-close{border:none;background:transparent;color:#BFDBFE;font-size:20px;font-weight:700;}
+    .pro-request-body{padding:14px 16px 16px;background:#F8FAFC;}
+    .pro-request-body p{margin:0 0 8px;color:#475569;line-height:1.45;}
+    .pro-request-body label{display:block;margin:10px 0 8px;font-size:13px;font-weight:700;color:#64748B;}
+    .pro-request-body textarea{width:100%;height:170px;border:2px solid #3B82F6;border-radius:14px;padding:12px;font-size:14px;resize:none;color:#334155;background:#fff;}
+    .pro-request-count{text-align:right;font-size:13px;color:#94A3B8;margin-top:8px;}
+    .pro-request-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+    .pro-request-actions .cancel{border:1px solid #CBD5E1;background:#fff;color:#64748B;border-radius:12px;height:48px;font-weight:700;}
+    .pro-request-actions .submit{border:none;background:linear-gradient(135deg,#1D4ED8,#2563EB);color:#fff;border-radius:12px;height:48px;font-weight:800;}
     .home-chip-grid{display:flex;flex-wrap:wrap;gap:8px;}
     .study-goal-card .track{height:12px;border-radius:999px;background:#E2E8F0;overflow:hidden;}
     .study-goal-card .track i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#2563EB,#38BDF8);}
@@ -1018,10 +1129,10 @@ function App() {
     .score-journey-segment button.active{background:#fff;color:#1E3A8A;box-shadow:0 1px 2px rgba(0,0,0,.06);}
     .score-journey-scroll{overflow:hidden;padding:4px 20px 4px 0;position:relative;z-index:1;touch-action:pan-y;}
     .score-journey-track{display:flex;width:200%;transform:translateX(var(--score-slide-x));will-change:transform;transition:var(--score-slide-transition, transform .56s cubic-bezier(.22,.61,.36,1));}
-    .score-journey-track.motion-next{animation:scoreSlideNext .56s cubic-bezier(.22,.61,.36,1);}
-    .score-journey-track.motion-prev{animation:scoreSlidePrev .56s cubic-bezier(.22,.61,.36,1);}
-    @keyframes scoreSlideNext{from{transform:translateX(calc(var(--score-slide-x) + 14%));}to{transform:translateX(var(--score-slide-x));}}
-    @keyframes scoreSlidePrev{from{transform:translateX(calc(var(--score-slide-x) - 14%));}to{transform:translateX(var(--score-slide-x));}}
+    .score-journey-track.motion-next{animation:scoreSlideNext .58s cubic-bezier(.22,.61,.36,1);}
+    .score-journey-track.motion-prev{animation:scoreSlidePrev .58s cubic-bezier(.22,.61,.36,1);}
+    @keyframes scoreSlideNext{from{transform:translateX(calc(var(--score-slide-x) + 18%));}to{transform:translateX(var(--score-slide-x));}}
+    @keyframes scoreSlidePrev{from{transform:translateX(calc(var(--score-slide-x) - 18%));}to{transform:translateX(var(--score-slide-x));}}
     .score-journey-col{border:1px solid #E2E8F0;background:#F8FAFC;border-radius:18px;padding:12px;display:grid;gap:8px;min-width:0;}
     .score-journey-track .score-journey-col{width:50%;flex:0 0 50%;}
     .score-journey-col.target{border-color:#93C5FD;background:#EFF6FF;}
@@ -1030,6 +1141,10 @@ function App() {
     .score-row span,.score-row b,.score-row em{white-space:nowrap;word-break:keep-all;min-width:0;flex-shrink:0;font-style:normal;}
     .score-row b{min-width:56px;width:56px;text-align:center;}
     .score-row em{color:#1E293B;font-weight:600;min-width:92px;text-align:right;}
+    .score-journey-col.target .score-row em{font-size:20px;font-weight:900;color:#1E40AF;letter-spacing:-0.01em;}
+    .score-journey-col.target .score-row em .old{font-size:15px;font-weight:600;color:#111827;}
+    .score-journey-col.target .score-row em .arrow{font-size:19px;font-weight:800;color:#1E40AF;padding:0 3px;}
+    .score-journey-col.target .score-row em .new{font-size:20px;font-weight:900;color:#1E40AF;}
     .score-row .pill{border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;}
     .score-row .pill.up{background:#DBEAFE;color:#1D4ED8;}
     .score-row .pill.keep{background:#E2E8F0;color:#475569;}
@@ -1041,14 +1156,14 @@ function App() {
     .analysis-v2-eta-card b{display:block;font-size:20px;line-height:1.35;color:#1E3A8A;}
     .analysis-v2-eta-card p{margin:6px 0 0;font-size:12px;color:#475569;line-height:1.45;}
     .analysis-v2-chart-area{overflow:visible;}
-    .analysis-v2-bars{position:relative;display:flex;justify-content:space-evenly;align-items:flex-end;gap:10px;height:100%;padding:24px 8px 0;}
+    .analysis-v2-bars{position:absolute;left:0;right:0;bottom:var(--bar-bottom);display:flex;justify-content:space-evenly;align-items:flex-end;gap:10px;height:370px;padding:0 8px;}
     .analysis-v2-chart-area .analysis-v2-guide-line{z-index:1;}
-    .analysis-v2-bar-item{z-index:2;height:100%;justify-content:flex-end;min-height:230px;}
-    .analysis-v2-bar-wrap{height:100%;display:flex;align-items:flex-end;position:relative;}
+    .analysis-v2-bar-item{z-index:2;height:100%;justify-content:flex-end;min-height:280px;}
+    .analysis-v2-bar-wrap{height:var(--bar-height);display:flex;align-items:flex-end;position:relative;}
     .analysis-v2-bar-item .score{font-size:14px;font-weight:700;}
-    .analysis-v2-bar-item p{min-height:38px;line-height:1.3;}
-    .analysis-v2-bar-proj{position:absolute;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;color:#1E3A8A;border:1px dashed #93C5FD;border-radius:999px;padding:2px 7px;background:#EFF6FF;white-space:nowrap;z-index:4;}
-    .analysis-v2-bar-proj-box{position:absolute;left:50%;transform:translateX(-50%);width:56px;min-height:10px;border:3px dashed #F59E0B;border-bottom:none;border-radius:14px 14px 0 0;background:rgba(251,191,36,.18);pointer-events:none;z-index:3;}
+    .analysis-v2-bar-item p{min-height:48px;max-height:48px;line-height:1.3;}
+    .analysis-v2-bar-proj{position:absolute;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;color:#1E3A8A;border:1px dashed #93C5FD;border-radius:999px;padding:2px 7px;background:#EFF6FF;white-space:nowrap;z-index:7;}
+    .analysis-v2-bar-proj-box{position:absolute;left:50%;transform:translateX(-50%);width:62px;min-height:10px;border:3px dashed #F59E0B;border-bottom:none;border-radius:14px 14px 0 0;background:rgba(251,191,36,.18);pointer-events:none;z-index:6;}
     .analysis-v2-sim-item{min-height:112px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;border:1px solid #E2E8F0;border-radius:16px;padding:14px 15px;background:#fff;}
     .analysis-v2-sim-item .left{display:grid;gap:6px;}
     .analysis-v2-sim-item .left p{margin:0;display:flex;align-items:center;gap:8px;font-size:16px;}
@@ -1099,9 +1214,9 @@ function App() {
         <div class="score-journey-col target" data-score-view="target">
           <h4>도달 성적</h4>
           <div class="score-row"><span>국어</span><b><span class="pill keep">유지</span></b><em>82</em></div>
-          <div class="score-row"><span>수학</span><b><span class="pill up">+12</span></b><em>68 → 80</em></div>
+          <div class="score-row"><span>수학</span><b><span class="pill up">+12</span></b><em><span class="old">68</span><span class="arrow">→</span><span class="new">80</span></em></div>
           <div class="score-row"><span>영어</span><b><span class="pill keep">유지</span></b><em>77</em></div>
-          <div class="score-row"><span>탐구1</span><b><span class="pill up">+6</span></b><em>70 → 76</em></div>
+          <div class="score-row"><span>탐구1</span><b><span class="pill up">+6</span></b><em><span class="old">70</span><span class="arrow">→</span><span class="new">76</span></em></div>
           <div class="score-row"><span>탐구2</span><b><span class="pill keep">유지</span></b><em>66</em></div>
           <div class="score-journey-total"><span>예상 총점</span><b>120점</b></div>
         </div>
@@ -1257,6 +1372,19 @@ function App() {
        </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="startStandard">Standard로 시작하기</button><button class="auth-link-btn" data-action="completeOnboarding">홈으로 이동</button></div></div>`,
       false
     ),
+    authLanding: layout(`<div class="auth-screen auth-landing-screen">
+      <div class="card auth-landing-card">
+        <div class="auth-landing-logo-wrap">
+          <img src="${STUDYCRACK_LOGO_SRC}" class="auth-landing-logo" alt="StudyCrack Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+          <span class="auth-logo-fallback">StudyCrack</span>
+        </div>
+        <div class="auth-landing-cracky-wrap">
+          <img src="${CRACKY_SRC}" class="auth-landing-cracky" alt="크랙이" />
+        </div>
+        <div class="auth-landing-bubble">크랙이가 “대학에 합격할 수 있는 가장 쉽고 확실한 방법을 알려줄게요!“</div>
+      </div>
+      <button class="btn btn-primary auth-landing-login-btn" data-action="goto" data-target="authLogin">로그인</button>
+    </div>`, false),
     authLogin: layout(`<div class="auth-screen">
       <div class="card auth-unified-card">
         <div class="auth-logo-wrap compact">
@@ -1273,11 +1401,33 @@ function App() {
         <button class="btn btn-primary auth-submit" data-action="loginSuccess">로그인</button>
         <div class="auth-divider"><span>또는</span></div>
         <div class="auth-sso-row">
-          <button class="auth-sso-btn" data-action="ssoSuccess">K</button>
-          <button class="auth-sso-btn" data-action="ssoSuccess">G</button>
-          <button class="auth-sso-btn" data-action="ssoSuccess">N</button>
+          <button class="auth-sso-btn kakao" data-action="ssoSuccess">카카오 계정으로 로그인</button>
+          <button class="auth-sso-btn apple" data-action="ssoSuccess">Apple로 로그인</button>
+        </div>
+        <div class="auth-helper-row">
+          <button class="auth-link-btn" data-action="goto" data-target="authFindId">아이디 찾기</button>
+          <span>|</span>
+          <button class="auth-link-btn" data-action="goto" data-target="authFindPw">비밀번호 찾기</button>
         </div>
         <button class="auth-link-btn" data-action="goto" data-target="authSignup">아직 계정이 없나요? 회원가입</button>
+      </div>
+    </div>`, false),
+    authFindId: layout(appbar('아이디 찾기', true) + `<div class="auth-screen">
+      <div class="card auth-form-card">
+        <p class="sub">가입한 이름과 연락처를 입력하면 아이디(이메일)를 안내해드려요.</p>
+        <label class="auth-label">이름</label>
+        <input class="planner-input" placeholder="이름 입력" />
+        <label class="auth-label">휴대폰 번호</label>
+        <input class="planner-input" placeholder="01012345678" />
+        <button class="btn btn-primary auth-submit" data-action="goto" data-target="authLogin">아이디 확인하기</button>
+      </div>
+    </div>`, false),
+    authFindPw: layout(appbar('비밀번호 찾기', true) + `<div class="auth-screen">
+      <div class="card auth-form-card">
+        <p class="sub">가입한 아이디(이메일)로 비밀번호 재설정 링크를 보내드려요.</p>
+        <label class="auth-label">아이디(이메일)</label>
+        <input class="planner-input" placeholder="you@example.com" />
+        <button class="btn btn-primary auth-submit" data-action="goto" data-target="authLogin">재설정 링크 받기</button>
       </div>
     </div>`, false),
     authSignup: layout(appbar('회원가입', true) + `<div class="auth-screen">
@@ -1399,15 +1549,15 @@ function App() {
               <div class="analysis-v2-guide-line safe"><span class="label">안정선 150</span></div>
               <div class="analysis-v2-bars">
                 ${[['가천대 관광경영학과', 250, '가천대학교 관광경영학과'], ['강서대 G2빅데이터경영학과', 238, '강서대학교 G2빅데이터경영학과'], ['고려대 경영대학', 71, '고려대학교 경영대학']].map(([label, score, full]) => {
-                  const heightPercent = Math.max(8, Math.min(100, (score / 250) * 100));
+                  const heightPercent = Math.max(0, Math.min(100, (score / 250) * 100));
                   const color = score >= 250 ? '#22C55E' : score < 100 ? '#F97316' : '#2563EB';
                   const shouldProject = analysisBarProjectionTarget === full;
                   const projectionGain = shouldProject ? Math.max(0, Math.min(analysisSimMax, 250 - score)) : null;
                   const projectionScore = projectionGain !== null ? Math.min(250, score + projectionGain) : null;
-                  const projectedPercent = projectionScore ? Math.max(8, Math.min(100, (projectionScore / 250) * 100)) : heightPercent;
-                  const projectionHeight = projectionScore ? Math.max(8, projectedPercent - heightPercent) : 0;
+                  const projectedPercent = projectionScore ? Math.max(0, Math.min(100, (projectionScore / 250) * 100)) : heightPercent;
+                  const projectionHeight = projectionScore ? Math.max(0, projectedPercent - heightPercent) : 0;
                   const gainLabel = projectionGain === null ? '' : Number(projectionGain.toFixed(1)).toString();
-                  const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${Math.min(96, projectedPercent + 3)}%">${Number(projectionScore.toFixed(1)).toString()} (+${gainLabel})</span>` : '';
+                  const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${Math.max(12, heightPercent - 10)}%">${Number(projectionScore.toFixed(1)).toString()} (+${gainLabel})</span>` : '';
                   const projectionBox = projectionScore ? `<span class="analysis-v2-bar-proj-box" style="bottom:${heightPercent}%;height:${projectionHeight}%"></span>` : '';
                   return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="simulateBarGain" data-target-major="${full}" data-base-score="${score}"><b class="score">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar" style="height:${heightPercent}%;background:${color}"></i>${projectionBox}${projection}</div><p>${label}</p></button>`;
                 }).join('')}
@@ -1528,6 +1678,7 @@ function App() {
       true
     ),
     reportDetail: layout(appbar('종합 분석 리포트', true) + `<div class="report-tabs"><span class="active">종합 분석</span><span>과목 분석</span><span>학습 전략</span><span>현재 위치</span></div><div class="report-detail-stack"><div class="card report-detail-card"><p class="sub">핵심 요약</p><p class="report-detail-text">수학에서 점수 상승 여지가 가장 큽니다. 개념 학습 시간을 늘리고, 문제 풀이 비중을 높이면 단기간 점수 개선이 가능합니다.</p></div><div class="card report-detail-card"><p class="sub">과목별 성과</p><div class="subject-result"><span>수학</span><div class="track"><i style="width:82%"></i></div><em><span class="score">68점</span><span class="delta">▲12</span></em></div><div class="subject-result"><span>국어</span><div class="track"><i style="width:74%"></i></div><em><span class="score">82점</span><span class="delta">▲3</span></em></div><div class="subject-result"><span>영어</span><div class="track"><i style="width:70%"></i></div><em><span class="score">77점</span><span class="delta">-</span></em></div><div class="subject-result"><span>탐구</span><div class="track"><i style="width:62%"></i></div><em><span class="score">66점</span><span class="delta">▲5</span></em></div></div></div><div class="cta-wrapper report-detail-cta"><button class="btn btn-primary cta-btn">PDF 다운로드</button></div>`, false),
+    proElite: layout(appbar('PRO EXCLUSIVE', true) + `<div class="pro-elite-page"><div class="pro-elite-hero"><span class="pro-elite-badge">TOP 1%</span><h3>상위 1%를 위한<br/>중장기 집중 맞춤 솔루션</h3><p>주차별 프리미엄 전략 리포트를 다운로드하세요.</p></div><div class="pro-elite-list">${PRO_ELITE_REPORTS_BY_MONTH.map((monthGroup)=>`<div class="pro-elite-month-group"><div class="pro-elite-month-head"><h4 class="pro-elite-month-title">${monthGroup.month} 리포트</h4><span class="pro-elite-month-badge">${monthGroup.reports.length}건</span></div>${monthGroup.reports.map((report)=>`<button class="pro-elite-item" data-action="downloadProReport" data-pdf-path="${monthGroup.pdfPath}" data-pdf-name="${report.fileName}"><div><b>${monthGroup.month} ${report.week} PRO 리포트</b><p>${report.desc}</p></div><span class="pro-elite-download">PDF 다운로드</span></button>`).join('')}</div>`).join('')}</div><div class="pro-elite-request-bottom"><button class="pro-request-btn" data-action="openProRequestModal"><i class="spark">✦</i><span>전략 리포트 요청하기</span></button></div>${proRequestModalOpen ? `<div class="home-modal-overlay" data-action="closeProRequestModal"><div class="home-modal pro-request-modal" data-action="noopModal"><div class="pro-request-head"><h4>✈ 전략 보고서 요청</h4><button class="pro-request-close" data-action="closeProRequestModal">✕</button></div><div class="pro-request-body"><p>현재 학습 상황이나 고민, 특별히 분석받고 싶은 내용을 적어주세요.</p><p>담당 컨설턴트가 이를 반영하여 <b>최적의 전략</b>을 수립합니다.</p><label>요청 사항 (500자 이내)</label><textarea data-field="proRequestText" maxlength="500" placeholder="예: 6월 모평 대비 수학 기하 과목 집중 전략이 필요합니다. 최근 실전 문제 풀이에서 시간이 부족해 고민입니다.">${proRequestText}</textarea><div class="pro-request-count">${proRequestText.length}/500</div><div class="pro-request-actions"><button class="cancel" data-action="closeProRequestModal">취소</button><button class="submit" data-action="submitProRequest">요청서 제출하기</button></div></div></div></div>` : ''}</div>`, false),
     tutor: layout(appbar('SKY튜터 1:1 피드백', true) + `<div class="card"><p class="sub">텍스트 기반 질의응답</p><ul class="list"><li>Q. 수학 개념 이해가 잘 안돼요</li><li>A. 유형별 복습 루틴을 추가하세요</li></ul></div><button class="btn btn-primary">새 질문 작성</button>`, false),
     proIntro: layout(appbar('StudyCrack 요금제', true) + `<p class="sub pricing-sub">합격 전략, 단계별로 선택하세요</p>
       <div class="plan-stack">
@@ -1573,17 +1724,8 @@ function App() {
   const currentScreen = screen;
   console.log('APP_LOADING_STATE', loading);
   console.log('APP_CURRENT_SCREEN', currentScreen);
-  const armScrollGuard = (durationMs = 900) => {
-    const y = window.scrollY || window.pageYOffset || 0;
-    scrollGuardRef.current = { until: Date.now() + durationMs, y };
-    requestAnimationFrame(() => {
-      const guard = scrollGuardRef.current;
-      if (!guard || Date.now() > guard.until) return;
-      const currentY = window.scrollY || window.pageYOffset || 0;
-      if (currentY < guard.y - 18) {
-        window.scrollTo({ top: guard.y, left: 0, behavior: 'auto' });
-      }
-    });
+  const armScrollGuard = () => {
+    // no-op: 강제 scrollTo 제거
   };
 
   const onClick = (e) => {
@@ -1594,7 +1736,7 @@ function App() {
     if (!actionEl) return;
     const action = actionEl.getAttribute('data-action');
     const shouldKeepScroll = !['goto', 'back', 'tab', 'drawerGoto', 'loginSuccess', 'signupSuccess', 'ssoSuccess', 'selectUniversity'].includes(action);
-    if (shouldKeepScroll) armScrollGuard(900);
+    if (shouldKeepScroll) keepScrollPosition();
     if (action === 'goto') {
       const target = actionEl.getAttribute('data-target');
       if (screen === 'on1' && target === 'ob1') {
@@ -1742,6 +1884,29 @@ function App() {
     if (action === 'toggleObGed') setObGed((v) => !v);
     if (action === 'openDrawer') setDrawerOpen(true);
     if (action === 'closeDrawer') setDrawerOpen(false);
+    if (action === 'openNotificationModal') setNotifModalOpen(true);
+    if (action === 'closeNotificationModal') setNotifModalOpen(false);
+    if (action === 'openProRequestModal') setProRequestModalOpen(true);
+    if (action === 'closeProRequestModal') setProRequestModalOpen(false);
+    if (action === 'submitProRequest') {
+      if (!proRequestText.trim()) {
+        window.alert('요청 사항을 입력해주세요.');
+        return;
+      }
+      window.alert('요청서가 제출되었습니다.');
+      setProRequestModalOpen(false);
+      setProRequestText('');
+    }
+    if (action === 'downloadProReport') {
+      const pdfPath = actionEl.getAttribute('data-pdf-path') || PRO_ELITE_REPORT_FALLBACK_PDF_PATH;
+      const fileName = actionEl.getAttribute('data-pdf-name') || 'studycrack-pro-report.pdf';
+      const anchor = document.createElement('a');
+      anchor.href = pdfPath;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+    }
     if (action === 'drawerGoto') {
       setDrawerOpen(false);
       goto(actionEl.getAttribute('data-target'));
@@ -1979,22 +2144,9 @@ function App() {
     const moveGesture = (clientX) => {
       const startX = touchStartXRef.current;
       if (typeof startX !== 'number' || typeof clientX !== 'number') return;
-      let delta = clientX - startX;
       touchLastXRef.current = clientX;
-      if (touchTargetRef.current === 'home') {
-        const atLeftEdge = homeSlideIndex <= 0 && delta > 0;
-        const atRightEdge = homeSlideIndex >= homeTargets.length - 1 && delta < 0;
-        if (atLeftEdge || atRightEdge) delta *= 0.18;
-        const nextOffset = Math.max(-80, Math.min(80, delta));
-        setHomeDragOffset((prev) => (Math.abs(prev - nextOffset) < 1 ? prev : nextOffset));
-      }
-      if (touchTargetRef.current === 'score') {
-        const atLeftEdge = activeScoreView === 'current' && delta > 0;
-        const atRightEdge = activeScoreView === 'target' && delta < 0;
-        if (atLeftEdge || atRightEdge) delta *= 0.18;
-        const nextOffset = Math.max(-70, Math.min(70, delta));
-        setScoreDragOffset((prev) => (Math.abs(prev - nextOffset) < 1 ? prev : nextOffset));
-      }
+      // 드래그 중 매 프레임 setState를 제거해 렌더링 버벅임을 최소화합니다.
+      // 최종 전환은 endGesture에서 방향 판단 후 애니메이션으로 처리합니다.
     };
 
     const endGesture = (clientX) => {
@@ -2114,6 +2266,7 @@ function App() {
     if (field === 'weakSubject') setWeakSubject(value);
     if (field === 'studyHours') setStudyHours(value);
     if (field === 'studyDifficulty') setStudyDifficulty(value);
+    if (field === 'proRequestText') setProRequestText(value);
     if (field === 'loginEmail') setLoginEmail(value);
     if (field === 'loginPassword') setLoginPassword(value);
     if (field === 'signupName') setSignupName(value);
@@ -2147,7 +2300,7 @@ function App() {
 
   const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>StudyCrack 앱을 불러오는 중입니다...</h3><p class="sub">잠시만 기다려 주세요.</p></div></div></div></div>`;
   const fallbackUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div></div>`;
-  const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !['authLogin', 'authSignup'].includes(screen) ? screens.authLogin : current;
+  const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !['authLanding', 'authLogin', 'authSignup', 'authFindId', 'authFindPw'].includes(screen) ? screens.authLanding : current;
   const analysisOverlay = isAnalyzing && screen === 'analysis'
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>분석중입니다</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
