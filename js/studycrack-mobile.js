@@ -6,6 +6,9 @@ const STUDYCRACK_LOGO_SRC = './assets/images/studycrack_logo_wo_bg.png';
 const SSO_KAKAO_LOGO_SRC = './assets/images/IMG_2911.jpeg';
 const SSO_GOOGLE_LOGO_SRC = './assets/images/IMG_2912.jpeg';
 const SSO_NAVER_LOGO_SRC = './assets/images/IMG_2910.jpeg';
+const SSO_KAKAO_LOGO_SRC = './assets/images/IMG_2911.jpeg';
+const SSO_GOOGLE_LOGO_SRC = './assets/images/IMG_2912.jpeg';
+const SSO_NAVER_LOGO_SRC = './assets/images/IMG_2910.jpeg';
 const HOME_FALLBACK_HTML = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>스터디크랙 홈</h3><p class="sub">앱을 불러왔어요. 계속 이용해 주세요.</p></div></div></div></div>`;
 const DEFAULT_USER = { name: '김지민', targetUniversity: '연세대학교 경영학과', plan: 'Pro' };
 const DEFAULT_SCORES = { korean: 82, math: 68, english: 77, inquiry1: 70, inquiry2: 66 };
@@ -179,8 +182,16 @@ function App() {
   const touchTargetRef = useRef('');
   const suppressClickUntilRef = useRef(0);
   const lastStableScrollYRef = useRef(0);
+  const lastUserScrollAtRef = useRef(0);
   const scrollGuardRef = useRef({ until: 0, y: 0 });
   useEffect(() => {
+      lastUserScrollAtRef.current = Date.now();
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+  }, []);
+
     const onScrollGuard = () => {
       const guard = scrollGuardRef.current;
       if (!guard || Date.now() > guard.until) return;
@@ -191,11 +202,53 @@ function App() {
     };
     window.addEventListener('scroll', onScrollGuard, { passive: true });
     return () => window.removeEventListener('scroll', onScrollGuard);
-  });
+  }, []);
 
 
-  const lastUserScrollAtRef = useRef(0);
-  const scrollGuardRef = useRef({ until: 0, y: 0 });
+  useLayoutEffect(() => {
+    const expectedY = Number(screenScrollRef.current[screen] ?? lastStableScrollYRef.current ?? 0);
+    if (!Number.isFinite(expectedY)) return undefined;
+    if (expectedY <= 30) return undefined;
+
+    let rafId = requestAnimationFrame(() => {
+      const now = Date.now();
+      if (now - lastUserScrollAtRef.current < 150) return;
+      const currentY = window.scrollY || window.pageYOffset || 0;
+      if (currentY + 70 < expectedY) {
+        window.scrollTo({ top: expectedY, left: 0, behavior: 'auto' });
+      }
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [screen, onboardingLoading, isAnalyzing, ob3IsAnalyzing, analysisMode, activeScoreView, homeSlideIndex, scoreSlideMotion, homeSlideMotion]);
+
+    const stabilizeUnexpectedJump = () => {
+      const now = Date.now();
+      if (now - lastUserScrollAtRef.current < 180) return;
+      const expectedY = Number(screenScrollRef.current[screen] ?? lastStableScrollYRef.current ?? 0);
+      if (!Number.isFinite(expectedY) || expectedY <= 30) return;
+      const currentY = window.scrollY || window.pageYOffset || 0;
+      if (currentY + 90 < expectedY) {
+        window.scrollTo({ top: expectedY, left: 0, behavior: 'auto' });
+      }
+    };
+
+    let rafId = 0;
+    const requestStabilize = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(stabilizeUnexpectedJump);
+    };
+
+    const observer = new MutationObserver(requestStabilize);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+    window.addEventListener('resize', requestStabilize, { passive: true });
+    window.addEventListener('orientationchange', requestStabilize, { passive: true });
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', requestStabilize);
+      window.removeEventListener('orientationchange', requestStabilize);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
 
   const goto = (next, addHistory = true) => {
     const currentY = getAppScrollTop();
@@ -909,10 +962,10 @@ function App() {
         <button class="btn btn-secondary" data-action="addCoachingSubject">+ 새로운 과목 추가</button>
       </div>`;
     }
-    if (coachingStep === 2) {
-      return `<div class="coach-step-body"><h4>2. 플래너 인증</h4><p class="sub">이번 주 플래너 사진을 첨부해주세요. 최대 5장</p>
-        <div class="coach-upload-box"><p>파일/사진 첨부 박스</p><input type="file" class="coach-hidden-file" data-field="coachPlannerFiles" accept="image/*" multiple /><button class="btn btn-secondary" data-action="openPlannerFilePicker">사진 추가하기</button></div>
-        <div class="coach-thumb-list">${coachingPlannerFiles.length ? `<p class="sub">사진 ${coachingPlannerFiles.length}장 첨부됨</p>${coachingPlannerFiles.map((file, idx) => `<div class="coach-thumb"><span>${file.name}</span><button data-action="removePlannerPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}` : '<p class="sub">첨부된 사진이 없습니다.</p>'}</div>
+    html,body{touch-action:manipulation;overscroll-behavior:none;overflow-anchor:none;}
+    .analysis-v2-chart-area{position:relative;height:340px;padding:50px 10px 0;border-radius:20px;background:linear-gradient(180deg,#F8FAFC 0%,#FFFFFF 100%);margin-top:14px;}
+    .analysis-v2-bar-wrap{height:280px;display:flex;align-items:flex-end;}
+    .analysis-v2-bar{width:56px;min-height:6px;border-radius:18px 18px 12px 12px;}
       </div>`;
     }
     if (coachingStep === 3) {
@@ -1016,10 +1069,10 @@ function App() {
     .home-result-score{text-align:right;}
     .home-result-score strong{display:block;font-size:24px;line-height:1.1;color:#0F172A;}
     .home-result-score small{font-size:12px;color:#64748B;}
-    .home-result-gauge{position:relative;height:10px;background:#E2E8F0;border-radius:999px;overflow:hidden;}
-    .home-result-gauge i{display:block;height:100%;background:#2563EB;border-radius:inherit;}
-    .analysis-v2-bar-item{z-index:2;height:100%;justify-content:flex-end;min-height:230px;}
-    .home-result-gauge-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));font-size:11px;color:#64748B;gap:4px;}
+    .analysis-v2-bars{position:relative;display:flex;justify-content:space-evenly;align-items:flex-end;gap:10px;height:100%;padding:10px 8px 0;}
+    .analysis-v2-bar-item{z-index:2;height:100%;justify-content:flex-end;min-height:280px;}
+    .analysis-v2-bar-proj{position:absolute;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;color:#1E3A8A;border:1px dashed #93C5FD;border-radius:999px;padding:2px 7px;background:#EFF6FF;white-space:nowrap;z-index:6;}
+    .analysis-v2-bar-proj-box{position:absolute;left:50%;transform:translateX(-50%);width:62px;min-height:4px;border:3px dashed #F59E0B;border-bottom:none;border-radius:14px 14px 0 0;background:rgba(251,191,36,.25);pointer-events:none;z-index:7;}
     .home-result-gauge-meta span:nth-child(2),.home-result-gauge-meta span:nth-child(3){text-align:center;}
     .home-result-gauge-meta span:last-child{text-align:right;}
     .home-goal-linked-card{text-align:left;}
@@ -1232,13 +1285,13 @@ function App() {
        </div>
        <div class="card ob-card analysis-top">
          <p class="analysis-title">합격 가능성 분석</p>
-        <div class="auth-divider"><span>또는</span></div>
-        <div class="auth-sso-row">
-          <button class="auth-sso-btn" data-action="ssoSuccess">K</button>
-          <button class="auth-sso-btn" data-action="ssoSuccess">G</button>
-          <button class="auth-sso-btn" data-action="ssoSuccess">N</button>
-        <button class="auth-link-btn" data-action="goto" data-target="authSignup">아직 계정이 없나요? 회원가입</button>
-         <div class="kpi-row score-row"><div class="kpi-item"><b>${analysisSelected.score}점</b>현재 점수</div><div class="kpi-item"><b>100점</b>합격 컷</div><div class="kpi-item danger"><b>${analysisSelected.score-100>0?`+${analysisSelected.score-100}`:analysisSelected.score-100}점</b>격차</div></div>
+    authLogin: layout(`<div class="auth-screen auth-screen-login">
+        <div class="auth-logo-wrap login-hero">
+        <h1 class="auth-brand-title">StudyCrack</h1>
+        <div class="auth-sso-row logo">
+          <button class="auth-sso-btn logo" data-action="ssoSuccess"><img src="${SSO_KAKAO_LOGO_SRC}" alt="카카오 로그인" /></button>
+          <button class="auth-sso-btn logo" data-action="ssoSuccess"><img src="${SSO_GOOGLE_LOGO_SRC}" alt="구글 로그인" /></button>
+          <button class="auth-sso-btn logo" data-action="ssoSuccess"><img src="${SSO_NAVER_LOGO_SRC}" alt="네이버 로그인" /></button>
        </div>
        <div class="card ob-card">
          <p class="analysis-title">+1점 상승 시뮬레이션</p>
@@ -1374,10 +1427,11 @@ function App() {
       '과목별 효율과 목표 도달 시간을\n정확하게 예측해 드려요.',
       `<div class="onboarding-card"><p class="onboarding-sub" style="margin-top:0">수학 +12점</p><p class="onboarding-sub" style="margin-top:4px">합격 가능성 +18%</p><div class="on-graph-bars"><i></i><i></i><i></i><i></i></div><div class="on-chart-line"><svg viewBox="0 0 300 90" fill="none"><path d="M18 72C54 70 88 66 122 60C156 54 190 45 222 34C246 26 266 20 286 14" stroke="#2F6BFF" stroke-width="4" stroke-linecap="round"/></svg></div></div>`,
       '가장 효율적인 점수 상승 루트를 찾아드릴게요.',
-      'on3'
-    ),
-    on3: onboarding(
-      3,
+                  const heightPercent = Math.max(6, Math.min(100, (score / 250) * 100));
+                  const projectedPercent = projectionScore ? Math.max(6, Math.min(100, (projectionScore / 250) * 100)) : heightPercent;
+                  const projectionHeight = projectionScore ? Math.max(4, projectedPercent - heightPercent) : 0;
+                  const labelBottom = projectionScore ? Math.min(116, projectedPercent + Math.max(10, projectionHeight + 7)) : 0;
+                  const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${labelBottom}%">${Number(projectionScore.toFixed(1)).toString()} (+${gainLabel})</span>` : '';
       '실행부터 관리까지\n끝까지 함께해요',
       '플래너, 주간 점검, Sky튜터 피드백,\n프로 보고서로 관리합니다.',
       `<div class="on-feature-list"><div class="on-feature-item"><div class="on-feature-icon">${i('calendar', true)}</div><span>플래너 & 주간 점검</span></div><div class="on-feature-item"><div class="on-feature-icon">${i('chat', true)}</div><span>Sky튜터 1:1 피드백</span></div><div class="on-feature-item"><div class="on-feature-icon">${i('report', true)}</div><span>프로 보고서 (2주에 1번)</span></div></div>`,
