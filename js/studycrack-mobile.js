@@ -111,6 +111,8 @@ function App() {
   const [homeSlideIndex, setHomeSlideIndex] = useState(0);
   const [homeSlideMotion, setHomeSlideMotion] = useState('');
   const [scoreSlideMotion, setScoreSlideMotion] = useState('');
+  const [homeDragOffset, setHomeDragOffset] = useState(0);
+  const [scoreDragOffset, setScoreDragOffset] = useState(0);
   const [selectedDate, setSelectedDate] = useState('14');
   const [plannerCalendarOpen, setPlannerCalendarOpen] = useState(false);
   const [universityModalOpen, setUniversityModalOpen] = useState(false);
@@ -175,6 +177,7 @@ function App() {
   const screenScrollRef = useRef({});
   const scrollPersistRafRef = useRef(null);
   const touchStartXRef = useRef(null);
+  const touchLastXRef = useRef(null);
   const touchTargetRef = useRef('');
   const suppressClickUntilRef = useRef(0);
   const lastStableScrollYRef = useRef(0);
@@ -216,16 +219,6 @@ function App() {
     return () => window.removeEventListener('scroll', onNativeScroll);
   }, []);
 
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => {
-      const stableY = lastStableScrollYRef.current;
-      const currentY = window.scrollY || window.pageYOffset || 0;
-      if (Math.abs(currentY - stableY) > 4) {
-        window.scrollTo({ top: stableY, left: 0, behavior: 'auto' });
-      }
-    });
-    return () => cancelAnimationFrame(raf);
-  });
 
   useEffect(() => {
     try {
@@ -272,9 +265,8 @@ function App() {
   }, [screen]);
 
   useEffect(() => {
-    const savedY = screenScrollRef.current[screen];
-    if (typeof savedY !== 'number') return;
-    requestAnimationFrame(() => window.scrollTo({ top: savedY, left: 0, behavior: 'auto' }));
+    // Intentionally do not force-scroll on render/screen change.
+    // Forced restoration has caused visible jump-to-top/jitter on user interactions.
   }, [screen]);
 
   useEffect(() => {
@@ -785,7 +777,7 @@ function App() {
     </div>
     <div class="section home-section">
       <div class="home-kpi-slider">
-        <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-x:-${homeSlideIndex * 100}%;">
+        <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-x:calc(-${homeSlideIndex * 100}% + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .58s cubic-bezier(.22,.61,.36,1)'};">
         ${homeTargets.map((item) => `<button class="card home-kpi-card admission-card slider-card home-result-card-v3" data-action="selectUniversity" data-target-major="${item.major}">
           <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score"><strong>${item.score}점</strong><small>AI 점수</small></div></div>
           <div class="home-result-gauge"><i style="width:${Math.min((item.score / 250) * 100, 100)}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
@@ -966,8 +958,8 @@ function App() {
     .analysis-v2-bar-proj-line{position:absolute;left:50%;transform:translateX(-50%);border-left:2px dashed #FACC15;opacity:0;pointer-events:none;}
     .analysis-v2-bar-proj-line.show{opacity:1;}
     @keyframes barProjPop{0%{transform:translateX(-50%) translateY(8px);opacity:0;}100%{transform:translateX(-50%) translateY(0);opacity:1;}}
-    .home-kpi-slider{overflow:hidden;padding-bottom:2px;touch-action:pan-y;}
-    .home-kpi-track{display:flex;transform:translateX(var(--home-slide-x));will-change:transform;transition:transform .58s cubic-bezier(.22,.61,.36,1);}
+    .home-kpi-slider{overflow:hidden;padding:2px 20px 2px 0;touch-action:pan-y;}
+    .home-kpi-track{display:flex;transform:translateX(var(--home-slide-x));will-change:transform;transition:var(--home-slide-transition, transform .58s cubic-bezier(.22,.61,.36,1));}
     .home-kpi-track.motion-next{animation:homeSlideNext .58s cubic-bezier(.22,.61,.36,1);}
     .home-kpi-track.motion-prev{animation:homeSlidePrev .58s cubic-bezier(.22,.61,.36,1);}
     @keyframes homeSlideNext{from{transform:translateX(calc(var(--home-slide-x) + 18%));}to{transform:translateX(var(--home-slide-x));}}
@@ -999,8 +991,8 @@ function App() {
     .score-journey-segment{display:inline-flex;gap:6px;background:#F1F5F9;border-radius:999px;padding:4px;width:max-content;position:relative;z-index:2;pointer-events:auto;}
     .score-journey-segment button{padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;color:#64748B;border:none;background:transparent;pointer-events:auto;}
     .score-journey-segment button.active{background:#fff;color:#1E3A8A;box-shadow:0 1px 2px rgba(0,0,0,.06);}
-    .score-journey-scroll{overflow:hidden;padding:4px 0;position:relative;z-index:1;touch-action:pan-y;}
-    .score-journey-track{display:flex;width:200%;transform:translateX(var(--score-slide-x));will-change:transform;transition:transform .56s cubic-bezier(.22,.61,.36,1);}
+    .score-journey-scroll{overflow:hidden;padding:4px 20px 4px 0;position:relative;z-index:1;touch-action:pan-y;}
+    .score-journey-track{display:flex;width:200%;transform:translateX(var(--score-slide-x));will-change:transform;transition:var(--score-slide-transition, transform .56s cubic-bezier(.22,.61,.36,1));}
     .score-journey-track.motion-next{animation:scoreSlideNext .56s cubic-bezier(.22,.61,.36,1);}
     .score-journey-track.motion-prev{animation:scoreSlidePrev .56s cubic-bezier(.22,.61,.36,1);}
     @keyframes scoreSlideNext{from{transform:translateX(calc(var(--score-slide-x) + 14%));}to{transform:translateX(var(--score-slide-x));}}
@@ -1068,7 +1060,7 @@ function App() {
         <button type="button" class="${activeScoreView==='target'?'active':''}" data-action="setScoreView" data-score-view="target">도달 성적</button>
       </div>
       <div class="score-journey-scroll">
-        <div class="score-journey-track ${scoreSlideMotion}" style="--score-slide-x:${activeScoreView==='target' ? '-50%' : '0%'};">
+        <div class="score-journey-track ${scoreSlideMotion}" style="--score-slide-x:calc(${activeScoreView==='target' ? '-50%' : '0%'} + ${scoreDragOffset}px);--score-slide-transition:${scoreDragOffset!==0?'0s':'transform .56s cubic-bezier(.22,.61,.36,1)'};">
         <div class="score-journey-col current" data-score-view="current">
           <h4>현재 성적</h4>
           <div class="score-row"><span>국어</span><b>82</b></div>
@@ -1591,12 +1583,14 @@ function App() {
     if (action === 'setScoreView') {
       e.stopPropagation();
       const nextView = actionEl.getAttribute('data-score-view') || 'current';
+      setScoreDragOffset(0);
       setScoreSlideMotion(nextView === 'target' ? 'motion-next' : 'motion-prev');
       setActiveScoreView(nextView);
     }
     if (action === 'setHomeSlide') {
       const idx = Number(actionEl.getAttribute('data-slide-index'));
       if (Number.isNaN(idx)) return;
+      setHomeDragOffset(0);
       setHomeSlideMotion(idx > homeSlideIndex ? 'motion-next' : idx < homeSlideIndex ? 'motion-prev' : '');
       setHomeSlideIndex(Math.max(0, Math.min(idx, homeTargets.length - 1)));
     }
@@ -1925,11 +1919,23 @@ function App() {
       touchStartXRef.current = null;
     };
 
+    const moveGesture = (clientX) => {
+      const startX = touchStartXRef.current;
+      if (typeof startX !== 'number' || typeof clientX !== 'number') return;
+      const delta = clientX - startX;
+      touchLastXRef.current = clientX;
+      if (touchTargetRef.current === 'home') setHomeDragOffset(Math.max(-80, Math.min(80, delta)));
+      if (touchTargetRef.current === 'score') setScoreDragOffset(Math.max(-70, Math.min(70, delta)));
+    };
+
     const endGesture = (clientX) => {
       const startX = touchStartXRef.current;
       if (typeof startX !== 'number' || typeof clientX !== 'number') return;
       const delta = clientX - startX;
       touchStartXRef.current = null;
+      touchLastXRef.current = null;
+      setHomeDragOffset(0);
+      setScoreDragOffset(0);
       if (Math.abs(delta) < 26) {
         touchTargetRef.current = '';
         return;
@@ -1946,21 +1952,27 @@ function App() {
     };
 
     const onNativeTouchStart = (e) => startGesture(e.target, e.touches?.[0]?.clientX);
+    const onNativeTouchMove = (e) => moveGesture(e.touches?.[0]?.clientX);
     const onNativeTouchEnd = (e) => endGesture(e.changedTouches?.[0]?.clientX);
     const onPointerDown = (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       startGesture(e.target, e.clientX);
     };
     const onPointerUp = (e) => endGesture(e.clientX);
+    const onPointerMove = (e) => moveGesture(e.clientX);
 
     document.addEventListener('touchstart', onNativeTouchStart, { passive: true, capture: true });
+    document.addEventListener('touchmove', onNativeTouchMove, { passive: true, capture: true });
     document.addEventListener('touchend', onNativeTouchEnd, { passive: true, capture: true });
     document.addEventListener('pointerdown', onPointerDown, true);
+    document.addEventListener('pointermove', onPointerMove, true);
     document.addEventListener('pointerup', onPointerUp, true);
     return () => {
       document.removeEventListener('touchstart', onNativeTouchStart, true);
+      document.removeEventListener('touchmove', onNativeTouchMove, true);
       document.removeEventListener('touchend', onNativeTouchEnd, true);
       document.removeEventListener('pointerdown', onPointerDown, true);
+      document.removeEventListener('pointermove', onPointerMove, true);
       document.removeEventListener('pointerup', onPointerUp, true);
     };
   }, [homeTargets.length]);
