@@ -182,6 +182,21 @@ function App() {
   const touchTargetRef = useRef('');
   const suppressClickUntilRef = useRef(0);
   const lastStableScrollYRef = useRef(0);
+  const scrollGuardRef = useRef({ until: 0, y: 0 });
+  useEffect(() => {
+    const onScrollGuard = () => {
+      const guard = scrollGuardRef.current;
+      if (!guard || Date.now() > guard.until) return;
+      const y = window.scrollY || window.pageYOffset || 0;
+      if (y < guard.y - 18) {
+        window.scrollTo({ top: guard.y, left: 0, behavior: 'auto' });
+      }
+    };
+    window.addEventListener('scroll', onScrollGuard, { passive: true });
+    return () => window.removeEventListener('scroll', onScrollGuard);
+  });
+
+
   const lastUserScrollAtRef = useRef(0);
   const scrollGuardRef = useRef({ until: 0, y: 0 });
 
@@ -285,6 +300,8 @@ function App() {
       rafId = requestAnimationFrame(stabilizeUnexpectedJump);
     };
 
+      armScrollGuard(1200);
+      armScrollGuard(1200);
     window.addEventListener('resize', requestStabilize, { passive: true });
     window.addEventListener('orientationchange', requestStabilize, { passive: true });
 
@@ -1562,6 +1579,23 @@ function App() {
       </div>
       <div class="card my-menu-card my-service-card">
         <p class="my-section-title">서비스</p>
+  const armScrollGuard = (durationMs = 900) => {
+    const y = window.scrollY || window.pageYOffset || 0;
+    scrollGuardRef.current = { until: Date.now() + durationMs, y };
+    requestAnimationFrame(() => {
+      const guard = scrollGuardRef.current;
+      if (!guard || Date.now() > guard.until) return;
+      const currentY = window.scrollY || window.pageYOffset || 0;
+      if (currentY < guard.y - 18) {
+        window.scrollTo({ top: guard.y, left: 0, behavior: 'auto' });
+      }
+    });
+  };
+
+    const shouldKeepScroll = !['goto', 'back', 'tab', 'drawerGoto', 'loginSuccess', 'signupSuccess', 'ssoSuccess', 'selectUniversity'].includes(action);
+    if (shouldKeepScroll) armScrollGuard(900);
+          armScrollGuard(1400);
+          armScrollGuard(1400);
       true
     ),
     report: layout(
@@ -1981,6 +2015,7 @@ function App() {
     const field = e.target.getAttribute('data-field');
     if (field === 'coachPlannerFiles') {
       const files = Array.from(e.target.files || []);
+      armScrollGuard(1000);
       e.target.value = '';
       return;
     }
