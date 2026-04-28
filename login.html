@@ -23,34 +23,50 @@
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
 </head>
-<body class="auth-body">
-    <div class="auth-card">
+<body class="auth-body auth-login-page">
+    <div class="auth-card auth-login-card">
         <a href="/" class="auth-logo-link">
             <img src="/assets/images/studycrack_logo_wo_bg.png" alt="StudyCrack 로고" class="auth-logo-img">
         </a>
         
-        <h2>로그인</h2>
+        <h2 class="auth-login-title">로그인</h2>
+        <p class="auth-login-subtitle">결과를 보고, 전략을 이해하고, 바로 실행으로 연결하세요.</p>
         
         <div class="auth-form">
             <div class="form-group">
-                <input type="email" id="email" placeholder="이메일" required>
+                <input type="email" id="email" placeholder="이메일을 입력하세요" required>
             </div>
             <div class="form-group">
-                <input type="password" id="password" placeholder="비밀번호" required>
+                <input type="password" id="password" placeholder="비밀번호를 입력하세요" required>
             </div>
-            
-            <button class="auth-btn" onclick="handleSignIn()">로그인</button>
+            <div class="auth-login-options">
+                <label class="keep-login"><input type="checkbox" id="keepLogin"> 로그인 유지</label>
+            </div>
+
+            <button class="auth-btn auth-email-btn" onclick="handleSignIn()">이메일로 로그인</button>
         </div>
 
         <div class="auth-helper-links">
+            <a href="/signup">회원가입</a>
+            <span class="divider">|</span>
             <a href="#" onclick="openAuthModal('findEmailModal'); return false;">이메일 찾기</a>
             <span class="divider">|</span>
             <a href="#" onclick="openAuthModal('forgotPwModal'); return false;">비밀번호 찾기</a>
         </div>
 
-        <div class="auth-links" style="margin-top: 25px;">
-            <span>아직 계정이 없으신가요?</span>
-            <a href="/signup" style="color: #2563EB; font-weight: bold;">회원가입하기</a>
+        <div class="social-login-section">
+            <div class="social-divider"><span>간편 로그인</span></div>
+            <div class="social-login-stack">
+                <button type="button" class="social-login-btn naver" aria-label="네이버 로그인">
+                    <img src="/assets/images/IMG_2910.jpeg" alt="네이버 로그인">
+                </button>
+                <button type="button" class="social-login-btn kakao" aria-label="카카오 로그인">
+                    <img src="/assets/images/IMG_2911.jpeg" alt="카카오 로그인">
+                </button>
+                <button type="button" class="social-login-btn google" aria-label="구글 로그인">
+                    <img src="/assets/images/IMG_2912.jpeg" alt="구글 로그인">
+                </button>
+            </div>
         </div>
     </div>
 

@@ -1,4 +1,4 @@
-const { useState, useEffect, useRef } = React;
+const { useState, useEffect, useLayoutEffect, useRef } = React;
 
 const CRACKY_SRC = './assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png';
 const ONBOARDING_LOGO_SRC = './assets/images/og-image.jpg';
@@ -181,6 +181,7 @@ function App() {
   const touchTargetRef = useRef('');
   const suppressClickUntilRef = useRef(0);
   const lastStableScrollYRef = useRef(0);
+  const lastUserScrollAtRef = useRef(0);
   const scrollGuardRef = useRef({ until: 0, y: 0 });
 
   const goto = (next, addHistory = true) => {
@@ -214,6 +215,7 @@ function App() {
   useEffect(() => {
     lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
     const onNativeScroll = () => {
+      lastUserScrollAtRef.current = Date.now();
       lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
     };
     window.addEventListener('scroll', onNativeScroll, { passive: true });
@@ -231,7 +233,7 @@ function App() {
     };
     window.addEventListener('scroll', onScrollGuard, { passive: true });
     return () => window.removeEventListener('scroll', onScrollGuard);
-  });
+  }, []);
 
 
   useEffect(() => {
@@ -278,10 +280,21 @@ function App() {
     };
   }, [screen]);
 
-  useEffect(() => {
-    // Intentionally do not force-scroll on render/screen change.
-    // Forced restoration has caused visible jump-to-top/jitter on user interactions.
-  }, [screen]);
+  useLayoutEffect(() => {
+    const expectedY = Number(screenScrollRef.current[screen] ?? lastStableScrollYRef.current ?? 0);
+    if (!Number.isFinite(expectedY)) return undefined;
+    if (expectedY <= 30) return undefined;
+
+    let rafId = requestAnimationFrame(() => {
+      const now = Date.now();
+      if (now - lastUserScrollAtRef.current < 150) return;
+      const currentY = window.scrollY || window.pageYOffset || 0;
+      if (currentY + 70 < expectedY) {
+        window.scrollTo({ top: expectedY, left: 0, behavior: 'auto' });
+      }
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [screen, onboardingLoading, isAnalyzing, ob3IsAnalyzing, analysisMode, activeScoreView, homeSlideIndex, scoreSlideMotion, homeSlideMotion]);
 
   useEffect(() => {
     if (screen === 'splash') {
@@ -934,7 +947,7 @@ function App() {
   };
 
   const designV2StyleTag = `<style>
-    html,body{touch-action:manipulation;overscroll-behavior:none;}
+    html,body{touch-action:manipulation;overscroll-behavior:none;overflow-anchor:none;}
     .app-shell,.app-frame,.app-screen{min-height:100dvh;}
     .onboarding-container .content{padding:0 16px 150px;box-sizing:border-box;}
     .onboarding-fixed-cta{padding-bottom:calc(16px + env(safe-area-inset-bottom));}
@@ -967,7 +980,7 @@ function App() {
     .analysis-chart-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
     .analysis-chart-head h3{margin:0;font-size:20px;}
     .analysis-chart-badge{font-size:11px;font-weight:700;color:#475569;background:#F1F5F9;border-radius:999px;padding:5px 10px;}
-    .analysis-v2-chart-area{position:relative;height:280px;padding:36px 10px 0;border-radius:20px;background:linear-gradient(180deg,#F8FAFC 0%,#FFFFFF 100%);margin-top:14px;}
+    .analysis-v2-chart-area{position:relative;height:340px;padding:50px 10px 0;border-radius:20px;background:linear-gradient(180deg,#F8FAFC 0%,#FFFFFF 100%);margin-top:14px;}
     .analysis-v2-guide-line{position:absolute;left:10px;right:10px;border-top:1px dashed #94A3B8;}
     .analysis-v2-guide-line.pass{top:60%;}
     .analysis-v2-guide-line.safe{top:40%;}
@@ -975,8 +988,8 @@ function App() {
     .analysis-v2-bars{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-evenly;align-items:flex-end;padding:0 8px;gap:10px;}
     .analysis-v2-bar-item{background:transparent;border:none;display:flex;flex-direction:column;align-items:center;gap:10px;min-width:88px;padding:0 4px 6px;}
     .analysis-v2-bar-item .score{font-size:22px;font-weight:800;color:#0F172A;line-height:1;}
-    .analysis-v2-bar-wrap{height:260px;display:flex;align-items:flex-end;}
-    .analysis-v2-bar{width:56px;min-height:8px;border-radius:18px 18px 12px 12px;}
+    .analysis-v2-bar-wrap{height:280px;display:flex;align-items:flex-end;}
+    .analysis-v2-bar{width:56px;min-height:6px;border-radius:18px 18px 12px 12px;}
     .analysis-v2-bar-item p{margin:0;max-width:84px;font-size:12px;font-weight:600;line-height:1.35;color:#475569;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
     .analysis-v2-bar-item.active p{color:#2563EB;font-weight:700;}
     .analysis-v2-bar-proj.pop{animation:barProjPop .36s ease;}
@@ -1041,14 +1054,14 @@ function App() {
     .analysis-v2-eta-card b{display:block;font-size:20px;line-height:1.35;color:#1E3A8A;}
     .analysis-v2-eta-card p{margin:6px 0 0;font-size:12px;color:#475569;line-height:1.45;}
     .analysis-v2-chart-area{overflow:visible;}
-    .analysis-v2-bars{position:relative;display:flex;justify-content:space-evenly;align-items:flex-end;gap:10px;height:100%;padding:24px 8px 0;}
+    .analysis-v2-bars{position:relative;display:flex;justify-content:space-evenly;align-items:flex-end;gap:10px;height:100%;padding:10px 8px 0;}
     .analysis-v2-chart-area .analysis-v2-guide-line{z-index:1;}
-    .analysis-v2-bar-item{z-index:2;height:100%;justify-content:flex-end;min-height:230px;}
+    .analysis-v2-bar-item{z-index:2;height:100%;justify-content:flex-end;min-height:280px;}
     .analysis-v2-bar-wrap{height:100%;display:flex;align-items:flex-end;position:relative;}
     .analysis-v2-bar-item .score{font-size:14px;font-weight:700;}
     .analysis-v2-bar-item p{min-height:38px;line-height:1.3;}
-    .analysis-v2-bar-proj{position:absolute;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;color:#1E3A8A;border:1px dashed #93C5FD;border-radius:999px;padding:2px 7px;background:#EFF6FF;white-space:nowrap;z-index:4;}
-    .analysis-v2-bar-proj-box{position:absolute;left:50%;transform:translateX(-50%);width:56px;min-height:10px;border:3px dashed #F59E0B;border-bottom:none;border-radius:14px 14px 0 0;background:rgba(251,191,36,.18);pointer-events:none;z-index:3;}
+    .analysis-v2-bar-proj{position:absolute;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;color:#1E3A8A;border:1px dashed #93C5FD;border-radius:999px;padding:2px 7px;background:#EFF6FF;white-space:nowrap;z-index:6;}
+    .analysis-v2-bar-proj-box{position:absolute;left:50%;transform:translateX(-50%);width:56px;min-height:2px;border:3px dashed #F59E0B;border-bottom:none;border-radius:14px 14px 0 0;background:rgba(251,191,36,.25);pointer-events:none;z-index:5;}
     .analysis-v2-sim-item{min-height:112px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;border:1px solid #E2E8F0;border-radius:16px;padding:14px 15px;background:#fff;}
     .analysis-v2-sim-item .left{display:grid;gap:6px;}
     .analysis-v2-sim-item .left p{margin:0;display:flex;align-items:center;gap:8px;font-size:16px;}
@@ -1399,15 +1412,16 @@ function App() {
               <div class="analysis-v2-guide-line safe"><span class="label">안정선 150</span></div>
               <div class="analysis-v2-bars">
                 ${[['가천대 관광경영학과', 250, '가천대학교 관광경영학과'], ['강서대 G2빅데이터경영학과', 238, '강서대학교 G2빅데이터경영학과'], ['고려대 경영대학', 71, '고려대학교 경영대학']].map(([label, score, full]) => {
-                  const heightPercent = Math.max(8, Math.min(100, (score / 250) * 100));
+                  const heightPercent = Math.max(6, Math.min(100, (score / 250) * 100));
                   const color = score >= 250 ? '#22C55E' : score < 100 ? '#F97316' : '#2563EB';
                   const shouldProject = analysisBarProjectionTarget === full;
                   const projectionGain = shouldProject ? Math.max(0, Math.min(analysisSimMax, 250 - score)) : null;
                   const projectionScore = projectionGain !== null ? Math.min(250, score + projectionGain) : null;
-                  const projectedPercent = projectionScore ? Math.max(8, Math.min(100, (projectionScore / 250) * 100)) : heightPercent;
-                  const projectionHeight = projectionScore ? Math.max(8, projectedPercent - heightPercent) : 0;
+                  const projectedPercent = projectionScore ? Math.max(6, Math.min(100, (projectionScore / 250) * 100)) : heightPercent;
+                  const projectionHeight = projectionScore ? Math.max(1.2, projectedPercent - heightPercent) : 0;
                   const gainLabel = projectionGain === null ? '' : Number(projectionGain.toFixed(1)).toString();
-                  const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${Math.min(96, projectedPercent + 3)}%">${Number(projectionScore.toFixed(1)).toString()} (+${gainLabel})</span>` : '';
+                  const labelBottom = projectionScore ? Math.min(98, projectedPercent + Math.max(6, projectionHeight + 1.4)) : 0;
+                  const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${labelBottom}%">${Number(projectionScore.toFixed(1)).toString()} (+${gainLabel})</span>` : '';
                   const projectionBox = projectionScore ? `<span class="analysis-v2-bar-proj-box" style="bottom:${heightPercent}%;height:${projectionHeight}%"></span>` : '';
                   return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="simulateBarGain" data-target-major="${full}" data-base-score="${score}"><b class="score">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar" style="height:${heightPercent}%;background:${color}"></i>${projectionBox}${projection}</div><p>${label}</p></button>`;
                 }).join('')}
