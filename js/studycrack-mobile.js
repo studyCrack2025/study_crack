@@ -6,7 +6,7 @@ const STUDYCRACK_LOGO_SRC = './assets/images/studycrack_logo_wo_bg.png';
 const SSO_KAKAO_LOGO_SRC = './assets/images/IMG_2911.jpeg';
 const SSO_GOOGLE_LOGO_SRC = './assets/images/IMG_2912.jpeg';
 const SSO_NAVER_LOGO_SRC = './assets/images/IMG_2910.jpeg';
-const HOME_FALLBACK_HTML = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>스터디크랙</h3><p class="sub">초기 로딩 중입니다. 잠시만 기다려 주세요.</p></div></div></div></div>`;
+const HOME_FALLBACK_HTML = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>스터디크랙 홈</h3><p class="sub">앱을 불러왔어요. 계속 이용해 주세요.</p></div></div></div></div>`;
 const DEFAULT_USER = { name: '김지민', targetUniversity: '연세대학교 경영학과', plan: 'Pro' };
 const DEFAULT_SCORES = { korean: 82, math: 68, english: 77, inquiry1: 70, inquiry2: 66 };
 const DEFAULT_NOTIFICATIONS = { planner: true, weekly: true, report: true, billing: true };
@@ -48,6 +48,14 @@ const safeParse = (key, fallback) => {
   }
 };
 
+const resolveAssetPath = async (path, fallback) => {
+  try {
+    const response = await fetch(path, { method: 'HEAD' });
+    return response.ok ? path : fallback;
+  } catch (_) {
+    return fallback;
+  }
+};
 const buildPlannerId = () => `pl-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 const normalizePlannerItems = (items = []) => items.map((item, idx) => ({
   ...item,
@@ -101,10 +109,10 @@ function mascotBubble(text, size = 'sm') {
 
 function App() {
   console.log('APP_RENDER_START');
-  const [screen, setScreen] = useState('authEntry');
+  const [screen, setScreen] = useState('splash');
   const [tab, setTab] = useState('home');
   const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [selectedUniversityIndex, setSelectedUniversityIndex] = useState(0);
@@ -374,10 +382,16 @@ function App() {
     viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
   }, []);
 
-  const initializeApp = () => {
+  const initializeApp = async () => {
+    let fallbackTimer;
     try {
       console.log('[APP_INIT_START]');
+      setLoading(true);
       setError(false);
+      fallbackTimer = setTimeout(() => {
+        setLoading(false);
+        setScreen('authEntry');
+      }, 3000);
 
       const savedUser = safeParse('user', DEFAULT_USER);
       const savedPlan = localStorage.getItem('selectedPlan') || savedUser.plan || DEFAULT_USER.plan;
@@ -399,11 +413,13 @@ function App() {
       setScores({ ...DEFAULT_SCORES, ...(savedScore || {}) });
       setNotifications({ ...DEFAULT_NOTIFICATIONS, ...(savedNotifications || {}) });
 
-      // 초기 진입은 네트워크 검사 없이 즉시 완료해 로딩 지연을 제거합니다.
-      window.__studycrackAssetSrc = {
-        crackySrc: CRACKY_SRC,
-        onboardingLogoSrc: ONBOARDING_LOGO_SRC
-      };
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('init-timeout')), 2500));
+      const crackySrc = await resolveAssetPath(CRACKY_SRC, './assets/images/studycrack_logo_wo_bg.png');
+      const onboardingLogoSrc = await resolveAssetPath(ONBOARDING_LOGO_SRC, './assets/images/studycrack_logo_wo_bg.png');
+      window.__studycrackAssetSrc = { crackySrc, onboardingLogoSrc };
+      await Promise.race([fetch(onboardingLogoSrc), timeoutPromise]).catch(() => null);
+      await resolveAssetPath('./assets/76220C96-DE85-4148-A6AC-7BD5881821A0.png', null);
+      await resolveAssetPath('./assets/IMG_2648.jpeg', null);
 
       setScreen('authEntry');
       console.log('[APP_INIT_SUCCESS]');
@@ -412,18 +428,13 @@ function App() {
       setError(true);
       setScreen('authEntry');
     } finally {
+      if (fallbackTimer) clearTimeout(fallbackTimer);
       setLoading(false);
     }
   };
 
   useEffect(() => {
     initializeApp();
-  }, []);
-
-  useEffect(() => {
-    // 어떤 예외 상황에서도 초기 로딩 UI가 3초 이상 유지되지 않도록 강제 해제
-    const loadingGuard = setTimeout(() => setLoading(false), 2500);
-    return () => clearTimeout(loadingGuard);
   }, []);
 
   useEffect(() => {
@@ -2233,8 +2244,9 @@ function App() {
     });
   };
 
+  const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>StudyCrack 앱을 불러오는 중입니다...</h3><p class="sub">잠시만 기다려 주세요.</p></div></div></div></div>`;
   const fallbackUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div></div>`;
-  const renderedBase = error ? fallbackUi : !loggedIn && !['authEntry', 'authLogin', 'authSignup', 'authFindEmail', 'authFindPassword'].includes(screen) ? screens.authEntry : current;
+  const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !['authEntry', 'authLogin', 'authSignup', 'authFindEmail', 'authFindPassword'].includes(screen) ? screens.authEntry : current;
   const analysisOverlay = isAnalyzing && screen === 'analysis'
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>분석중입니다</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
