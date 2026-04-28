@@ -221,17 +221,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const onScrollGuard = () => {
-      const guard = scrollGuardRef.current;
-      if (!guard || Date.now() > guard.until) return;
-      const y = window.scrollY || window.pageYOffset || 0;
-      if (y < guard.y - 18) {
-        window.scrollTo({ top: guard.y, left: 0, behavior: 'auto' });
-      }
-    };
-    window.addEventListener('scroll', onScrollGuard, { passive: true });
-    return () => window.removeEventListener('scroll', onScrollGuard);
-  });
+    // 스크롤 강제 복원은 iOS/Safari에서 "스크롤 초기화"처럼 보이는 점프를 유발할 수 있어 비활성화합니다.
+    // 스크롤 위치는 아래 persist 로직(localStorage 저장)으로만 유지합니다.
+    scrollGuardRef.current = { until: 0, y: 0 };
+  }, []);
 
 
   useEffect(() => {
@@ -1611,17 +1604,8 @@ function App() {
   const currentScreen = screen;
   console.log('APP_LOADING_STATE', loading);
   console.log('APP_CURRENT_SCREEN', currentScreen);
-  const armScrollGuard = (durationMs = 900) => {
-    const y = window.scrollY || window.pageYOffset || 0;
-    scrollGuardRef.current = { until: Date.now() + durationMs, y };
-    requestAnimationFrame(() => {
-      const guard = scrollGuardRef.current;
-      if (!guard || Date.now() > guard.until) return;
-      const currentY = window.scrollY || window.pageYOffset || 0;
-      if (currentY < guard.y - 18) {
-        window.scrollTo({ top: guard.y, left: 0, behavior: 'auto' });
-      }
-    });
+  const armScrollGuard = () => {
+    // no-op: 강제 scrollTo 제거
   };
 
   const onClick = (e) => {
