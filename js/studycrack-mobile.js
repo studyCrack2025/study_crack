@@ -1,3 +1,6 @@
+const SSO_KAKAO_LOGO_SRC = './assets/images/IMG_2911.jpeg';
+const SSO_GOOGLE_LOGO_SRC = './assets/images/IMG_2912.jpeg';
+const SSO_NAVER_LOGO_SRC = './assets/images/IMG_2910.jpeg';
 const { useState, useEffect, useLayoutEffect, useRef } = React;
 
 const CRACKY_SRC = './assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png';
@@ -331,10 +334,10 @@ function App() {
     if (!scoreSlideMotion) return;
     const t = setTimeout(() => setScoreSlideMotion(''), 380);
     return () => clearTimeout(t);
-  }, [scoreSlideMotion]);
+        setScreen('authEntry');
 
-  useEffect(() => {
-    if (screen !== 'analysis' || analysisMode !== 'summary') return;
+      setScreen('authEntry');
+      setScreen('authEntry');
     setAnalysisEtaStage(1);
     const t1 = setTimeout(() => setAnalysisEtaStage(2), 1500);
     const t2 = setTimeout(() => setAnalysisEtaStage(3), 4500);
@@ -1018,7 +1021,8 @@ function App() {
     .home-result-score small{font-size:12px;color:#64748B;}
     .home-result-gauge{position:relative;height:10px;background:#E2E8F0;border-radius:999px;overflow:hidden;}
     .home-result-gauge i{display:block;height:100%;background:#2563EB;border-radius:inherit;}
-    .home-result-gauge .cut{position:absolute;top:-2px;width:2px;height:14px;background:#fff;box-shadow:0 0 0 1px rgba(15,23,42,.18);}
+    .analysis-v2-bar-item{z-index:2;height:100%;justify-content:flex-end;min-height:230px;padding-bottom:48px;position:relative;}
+    .analysis-v2-bar-proj.bottom{bottom:4px;}
     .home-result-gauge-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));font-size:11px;color:#64748B;gap:4px;}
     .home-result-gauge-meta span:nth-child(2),.home-result-gauge-meta span:nth-child(3){text-align:center;}
     .home-result-gauge-meta span:last-child{text-align:right;}
@@ -1232,12 +1236,39 @@ function App() {
        </div>
        <div class="card ob-card analysis-top">
          <p class="analysis-title">합격 가능성 분석</p>
-         <div class="analysis-v2-summary-top">
-           <div><p class="analysis-v2-univ">${targetMajor}</p><p class="analysis-v2-label">AI 점수 · 합격컷 대비 위치</p></div>
-           <div class="analysis-v2-score-wrap"><span class="analysis-v2-verdict" style="color:${analysisStatusColor};border-color:${analysisStatusColor}">${analysisStatus}</span><strong>${analysisSelected.score}점</strong></div>
-         </div>
-         <div class="analysis-v2-gauge"><i style="width:${analysisGaugeFill}%;background:${analysisGaugeColor}"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
-         <div class="analysis-v2-gauge-meta"><span>0</span><span>합격컷 100점</span><span>안정컷 150점</span><span>MAX 250점</span></div>
+    authEntry: layout(`<div class="auth-screen auth-entry-screen">
+      <div class="card auth-unified-card auth-entry-card">
+        <div class="auth-logo-wrap compact">
+          <img src="${STUDYCRACK_LOGO_SRC}" class="auth-logo" alt="StudyCrack Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+          <span class="auth-logo-fallback">StudyCrack</span>
+        </div>
+        <img src="${CRACKY_SRC}" class="auth-entry-cracky" alt="크랙이" />
+        <div class="auth-entry-bubble">대학에 합격할 수 있는 가장 쉽고 확실한 방법을 알려줄게요!</div>
+        <div class="auth-entry-sso-stack">
+          <button class="auth-entry-sso-btn" data-action="ssoSuccess"><img src="${SSO_KAKAO_LOGO_SRC}" alt="카카오 로그인" /></button>
+          <button class="auth-entry-sso-btn" data-action="ssoSuccess"><img src="${SSO_GOOGLE_LOGO_SRC}" alt="구글 로그인" /></button>
+          <button class="auth-entry-sso-btn" data-action="ssoSuccess"><img src="${SSO_NAVER_LOGO_SRC}" alt="네이버 로그인" /></button>
+        </div>
+        <button class="btn btn-primary auth-submit" data-action="goto" data-target="authLogin">Login</button>
+      </div>
+    </div>`, false),
+        <div class="auth-login-links">
+          <button class="auth-link-btn" data-action="goto" data-target="authSignup">회원가입</button>
+          <button class="auth-link-btn" data-action="goto" data-target="authFindEmail">아이디찾기</button>
+          <button class="auth-link-btn" data-action="goto" data-target="authFindPassword">비밀번호 찾기</button>
+      </div>
+    </div>`, false),
+    authFindEmail: layout(appbar('아이디 찾기', true) + `<div class="auth-screen">
+      <div class="card auth-form-card">
+        <label class="auth-label">이름</label><input class="planner-input" placeholder="이름 입력" />
+        <label class="auth-label">전화번호</label><input class="planner-input" placeholder="01012345678" />
+        <button class="btn btn-primary" data-action="goto" data-target="authLogin">확인</button>
+      </div>
+    </div>`, false),
+    authFindPassword: layout(appbar('비밀번호 찾기', true) + `<div class="auth-screen">
+      <div class="card auth-form-card">
+        <label class="auth-label">이메일</label><input class="planner-input" placeholder="you@example.com" />
+        <button class="btn btn-primary" data-action="goto" data-target="authLogin">재설정 링크 받기</button>
          <div class="kpi-row score-row"><div class="kpi-item"><b>${analysisSelected.score}점</b>현재 점수</div><div class="kpi-item"><b>100점</b>합격 컷</div><div class="kpi-item danger"><b>${analysisSelected.score-100>0?`+${analysisSelected.score-100}`:analysisSelected.score-100}점</b>격차</div></div>
        </div>
        <div class="card ob-card">
@@ -1382,8 +1413,8 @@ function App() {
       '플래너, 주간 점검, Sky튜터 피드백,\n프로 보고서로 관리합니다.',
       `<div class="on-feature-list"><div class="on-feature-item"><div class="on-feature-icon">${i('calendar', true)}</div><span>플래너 & 주간 점검</span></div><div class="on-feature-item"><div class="on-feature-icon">${i('chat', true)}</div><span>Sky튜터 1:1 피드백</span></div><div class="on-feature-item"><div class="on-feature-icon">${i('report', true)}</div><span>프로 보고서 (2주에 1번)</span></div></div>`,
       '계획부터 점검까지 끝까지 같이 갈게요.',
-      'home',
-      '시작하기'
+                  const projection = projectionScore ? `<span class="analysis-v2-bar-proj bottom ${shouldProject ? 'pop' : ''}">${Number(projectionScore.toFixed(1)).toString()} (+${gainLabel})</span>` : '';
+                  return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="simulateBarGain" data-target-major="${full}" data-base-score="${score}"><b class="score">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar" style="height:${heightPercent}%;background:${color}"></i>${projectionBox}</div><p>${label}</p>${projection}</button>`;
     ),
     home: layout(homeView(), true),
     analysis: layout(
@@ -2122,7 +2153,7 @@ function App() {
     document.addEventListener('pointerdown', onPointerDown, true);
     document.addEventListener('pointermove', onPointerMove, true);
     document.addEventListener('pointerup', onPointerUp, true);
-    document.addEventListener('pointercancel', onPointerCancel, true);
+  const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !['authEntry', 'authLogin', 'authSignup', 'authFindEmail', 'authFindPassword'].includes(screen) ? screens.authEntry : current;
     return () => {
       document.removeEventListener('touchstart', onNativeTouchStart, true);
       document.removeEventListener('touchmove', onNativeTouchMove, true);
