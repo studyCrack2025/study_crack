@@ -960,20 +960,20 @@ function App() {
     .analysis-chart-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
     .analysis-chart-head h3{margin:0;font-size:20px;}
     .analysis-chart-badge{font-size:11px;font-weight:700;color:#475569;background:#F1F5F9;border-radius:999px;padding:5px 10px;}
-    .analysis-v2-chart-area{position:relative;height:280px;padding:36px 10px 0;border-radius:20px;background:linear-gradient(180deg,#F8FAFC 0%,#FFFFFF 100%);margin-top:14px;}
+    .analysis-v2-chart-area{position:relative;min-height:352px;padding:36px 10px 64px;border-radius:20px;background:linear-gradient(180deg,#F8FAFC 0%,#FFFFFF 100%);margin-top:14px;overflow:visible;}
     .analysis-v2-guide-line{position:absolute;left:10px;right:10px;border-top:1px dashed #94A3B8;}
     .analysis-v2-guide-line.pass{top:60%;}
     .analysis-v2-guide-line.safe{top:40%;}
     .analysis-v2-guide-line .label{position:absolute;right:0;top:-18px;font-size:12px;font-weight:700;color:#64748B;text-align:right;background:rgba(255,255,255,.9);padding-left:8px;}
-    .analysis-v2-bars{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-evenly;align-items:flex-end;padding:0 8px;gap:10px;}
-    .analysis-v2-bar-item{background:transparent;border:none;display:flex;flex-direction:column;align-items:center;gap:10px;min-width:88px;padding:0 4px 6px;}
+    .analysis-v2-bars{position:absolute;left:0;right:0;bottom:56px;display:flex;justify-content:space-evenly;align-items:flex-end;padding:0 8px;gap:10px;}
+    .analysis-v2-bar-item{background:transparent;border:none;display:flex;flex-direction:column;align-items:center;gap:10px;min-width:88px;padding:0 4px 0;}
     .analysis-v2-bar-item .score{font-size:22px;font-weight:800;color:#0F172A;line-height:1;}
-    .analysis-v2-bar-wrap{height:260px;display:flex;align-items:flex-end;}
-    .analysis-v2-bar{width:56px;min-height:8px;border-radius:18px 18px 12px 12px;}
-    .analysis-v2-bar-item p{margin:0;max-width:84px;font-size:12px;font-weight:600;line-height:1.35;color:#475569;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+    .analysis-v2-bar-wrap{height:230px;display:flex;align-items:flex-end;position:relative;}
+    .analysis-v2-bar{width:56px;min-height:8px;border-radius:18px 18px 12px 12px;position:relative;z-index:2;}
+    .analysis-v2-bar-item p{margin:0;max-width:96px;min-height:38px;max-height:38px;font-size:12px;font-weight:600;line-height:1.3;color:#475569;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all;}
     .analysis-v2-bar-item.active p{color:#2563EB;font-weight:700;}
     .analysis-v2-bar-proj.pop{animation:barProjPop .36s ease;}
-    .analysis-v2-bar-proj-line{position:absolute;left:50%;transform:translateX(-50%);border-left:2px dashed #FACC15;opacity:0;pointer-events:none;}
+    .analysis-v2-bar-proj-line{position:absolute;left:50%;transform:translateX(-50%);border-left:2px dashed #FACC15;opacity:0;pointer-events:none;z-index:4;}
     .analysis-v2-bar-proj-line.show{opacity:1;}
     @keyframes barProjPop{0%{transform:translateX(-50%) translateY(8px);opacity:0;}100%{transform:translateX(-50%) translateY(0);opacity:1;}}
     .home-kpi-slider{overflow:hidden;padding:2px 20px 2px 0;touch-action:pan-y;}
@@ -1035,14 +1035,18 @@ function App() {
     .analysis-v2-eta-card b{display:block;font-size:20px;line-height:1.35;color:#1E3A8A;}
     .analysis-v2-eta-card p{margin:6px 0 0;font-size:12px;color:#475569;line-height:1.45;}
     .analysis-v2-chart-area{overflow:visible;}
-    .analysis-v2-bars{position:relative;display:flex;justify-content:space-evenly;align-items:flex-end;gap:10px;height:100%;padding:24px 8px 0;}
+    .analysis-v2-bars{position:absolute;left:0;right:0;bottom:56px;display:flex;justify-content:space-evenly;align-items:flex-end;gap:10px;height:auto;padding:24px 8px 0;}
     .analysis-v2-chart-area .analysis-v2-guide-line{z-index:1;}
     .analysis-v2-bar-item{z-index:2;height:100%;justify-content:flex-end;min-height:230px;}
     .analysis-v2-bar-wrap{height:100%;display:flex;align-items:flex-end;position:relative;}
     .analysis-v2-bar-item .score{font-size:14px;font-weight:700;}
-    .analysis-v2-bar-item p{min-height:38px;line-height:1.3;}
-    .analysis-v2-bar-proj{position:absolute;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;color:#1E3A8A;border:1px dashed #93C5FD;border-radius:999px;padding:2px 7px;background:#EFF6FF;white-space:nowrap;z-index:4;}
-    .analysis-v2-bar-proj-box{position:absolute;left:50%;transform:translateX(-50%);width:56px;min-height:10px;border:3px dashed #F59E0B;border-bottom:none;border-radius:14px 14px 0 0;background:rgba(251,191,36,.18);pointer-events:none;z-index:3;}
+    .analysis-v2-bar-item p{min-height:38px;max-height:38px;line-height:1.3;}
+    .analysis-v2-bar-proj{position:absolute;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;color:#1E3A8A;border:1px dashed #93C5FD;border-radius:999px;padding:2px 7px;background:#EFF6FF;white-space:nowrap;z-index:7;}
+    .analysis-v2-bar-proj-box{position:absolute;left:50%;transform:translateX(-50%);width:62px;min-height:10px;border:3px dashed #F59E0B;border-bottom:none;border-radius:14px 14px 0 0;background:rgba(251,191,36,.18);pointer-events:none;z-index:6;}
+    .analysis-v2-bar-toggle-row{position:absolute;left:8px;right:8px;bottom:10px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;z-index:2;}
+    .analysis-v2-bar-toggle{border:none;background:transparent;height:30px;display:grid;place-items:center;}
+    .analysis-v2-bar-toggle i{display:block;width:90%;height:14px;border-radius:999px;background:#DBEAFE;border:1px solid #93C5FD;}
+    .analysis-v2-bar-toggle.active i{background:#2563EB;border-color:#2563EB;transform:scaleY(1.15);}
     .analysis-v2-sim-item{min-height:112px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;border:1px solid #E2E8F0;border-radius:16px;padding:14px 15px;background:#fff;}
     .analysis-v2-sim-item .left{display:grid;gap:6px;}
     .analysis-v2-sim-item .left p{margin:0;display:flex;align-items:center;gap:8px;font-size:16px;}
