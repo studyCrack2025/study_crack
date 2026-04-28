@@ -1021,7 +1021,7 @@ function App() {
     .home-mini-badge{font-size:11px;font-weight:700;color:#1D4ED8;background:#DBEAFE;border-radius:999px;padding:4px 8px;}
     .home-top-icons{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
     .pro-top-btn{
-      width:78px;height:44px;border:none;border-radius:16px;position:relative;overflow:hidden;
+      width:78px;height:36px;border:none;border-radius:16px;position:relative;overflow:hidden;
       background:linear-gradient(135deg,#0F172A 0%,#1E293B 45%,#475569 100%);
       box-shadow:0 8px 20px rgba(15,23,42,.25), inset 0 1px 0 rgba(255,255,255,.22);
       color:#F8FAFC;font-weight:900;letter-spacing:.08em;font-size:14px;
