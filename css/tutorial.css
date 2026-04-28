@@ -141,6 +141,33 @@ header { background: #fff; padding: 15px 20px; box-shadow: 0 2px 4px rgba(0,0,0,
 .subj-blur-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.82rem; font-weight: 700; color: #475569; background: rgba(248,250,252,0.6); filter: blur(0); pointer-events: none; text-align: center; padding: 8px; line-height: 1.4; }
 .subj-visible { border-color: #bfdbfe; background: #eff6ff; }
 
+/* ── 과목별 최적 상승 계획 ─────────────────────────────────────── */
+.score-plan-section { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 18px 16px; margin-bottom: 14px; }
+.score-plan-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.score-plan-title { font-size: 0.95rem; font-weight: 800; color: #1e293b; }
+.score-plan-total { font-size: 0.85rem; color: #64748b; }
+.score-plan-total strong { color: #2563eb; }
+.score-plan-rows { display: flex; flex-direction: column; gap: 10px; }
+.score-plan-row { display: grid; grid-template-columns: 52px 54px 1fr 44px; align-items: center; gap: 8px; }
+.score-plan-blurred .score-plan-subject, .score-plan-blurred .score-plan-pct { filter: blur(4px); user-select: none; }
+.score-plan-rank { font-size: 0.68rem; font-weight: 700; border-radius: 99px; padding: 2px 6px; text-align: center; }
+.rank-other { background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; }
+.score-plan-subject { font-size: 0.88rem; font-weight: 800; }
+.score-plan-progress { display: flex; flex-direction: column; gap: 3px; }
+.score-plan-bar-bg { height: 6px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
+.score-plan-bar-fill { height: 100%; border-radius: 99px; transition: width 0.6s ease; }
+.score-plan-pct { font-size: 0.72rem; color: #64748b; }
+.score-plan-gain { font-size: 0.88rem; font-weight: 800; text-align: right; }
+.score-plan-note { font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 12px; }
+/* ── 예상 도달 기간 ─────────────────────────────────────────────── */
+.reach-period-section { background: linear-gradient(135deg, #eff6ff, #f0fdf4); border: 1.5px solid #bfdbfe; border-radius: 14px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.reach-period-label { font-size: 0.85rem; color: #475569; font-weight: 600; }
+.reach-period-value { font-size: 0.95rem; color: #1e293b; font-weight: 700; }
+.reach-period-value strong { color: #2563eb; font-size: 1.15rem; }
+/* ── 도달 가능 대학 ─────────────────────────────────────────────── */
+.reachable-univs-section { margin-top: 4px; }
+.reachable-univs-title { font-size: 0.92rem; font-weight: 800; color: #1e293b; margin-bottom: 12px; }
+
 /* ── 버튼 ──────────────────────────────────────────────────────── */
 .tutorial-nav { display: flex; justify-content: space-between; align-items: center; }
 .tut-btn { padding: 14px 28px; border-radius: 12px; font-weight: 700; font-size: 1.05rem; cursor: pointer; border: none; transition: all 0.2s; font-family: inherit; }

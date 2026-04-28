@@ -588,8 +588,8 @@ async function selectTutorialUnivsWithAnalysis(stream, mar, totalStdScore, score
 
     // 시나리오별 분류
     // 학교1(안정/하향): 현재<100 AND 상승후<100
-    // 학교2(적정/도전): 현재<100 AND 상승후 100~120
-    // 학교3(상향/초과달성): 현재>100 AND 상승후>120
+    // 학교2(적정/도전): 현재<100 AND 상승후 100~125 (범위 확장)
+    // 학교3(상향/초과달성): 현재>=100 OR 상승후>125 (경계값 포함, 나머지 전부 커버)
     const scenario1 = [], scenario2 = [], scenario3 = [], allEligible = [];
     for (const cand of candidates) {
         const key = `${cand.univ}||${cand.major}`;
@@ -598,9 +598,9 @@ async function selectTutorialUnivsWithAnalysis(stream, mar, totalStdScore, score
         const sim = simMap[key] ?? (cur + 10);
         const item = { school: cand.univ, major: cand.major, currentScore: cur, simScore: sim };
         allEligible.push(item);
-        if (cur < 100 && sim < 100) scenario1.push(item);
-        else if (cur < 100 && sim >= 100 && sim <= 120) scenario2.push(item);
-        else if (cur > 100 && sim > 120) scenario3.push(item);
+        if (cur < 100 && sim < 100)                        scenario1.push(item);
+        else if (cur < 100 && sim >= 100 && sim <= 125)    scenario2.push(item);
+        else                                               scenario3.push(item); // cur>=100 OR sim>125
     }
 
     // 시나리오 내 정렬
@@ -608,10 +608,15 @@ async function selectTutorialUnivsWithAnalysis(stream, mar, totalStdScore, score
     scenario2.sort((a, b) => Math.abs(a.simScore - 110) - Math.abs(b.simScore - 110));
     scenario3.sort((a, b) => a.currentScore - b.currentScore);
 
-    // 시나리오 조건에 맞는 학교가 없을 때 가장 근접한 환산점수 대역 폴백
-    const fallback1 = [...allEligible].sort((a, b) => Math.abs(a.currentScore - 88) - Math.abs(b.currentScore - 88));
-    const fallback2 = [...allEligible].sort((a, b) => Math.abs(a.currentScore - 95) - Math.abs(b.currentScore - 95));
-    const fallback3 = [...allEligible].sort((a, b) => Math.abs(a.currentScore - 108) - Math.abs(b.currentScore - 108));
+    // 폴백: 고정값 대신 실제 점수 분포의 4분위 기반으로 계산
+    const sortedByScore = [...allEligible].sort((a, b) => a.currentScore - b.currentScore);
+    const n = sortedByScore.length;
+    const t1 = sortedByScore[Math.floor(n * 0.20)]?.currentScore ?? 88;
+    const t2 = sortedByScore[Math.floor(n * 0.50)]?.currentScore ?? 97;
+    const t3 = sortedByScore[Math.floor(n * 0.75)]?.currentScore ?? 108;
+    const fallback1 = [...allEligible].sort((a, b) => Math.abs(a.currentScore - t1) - Math.abs(b.currentScore - t1));
+    const fallback2 = [...allEligible].sort((a, b) => Math.abs(a.currentScore - t2) - Math.abs(b.currentScore - t2));
+    const fallback3 = [...allEligible].sort((a, b) => Math.abs(a.currentScore - t3) - Math.abs(b.currentScore - t3));
 
     const selected = [];
     const usedSchools = new Set();
@@ -840,85 +845,132 @@ function calcGreedySubjectPlan(univ, mar, mbti) {
     return subjects;
 }
 
-// ── 과목별 공부시간 추천 ──────────────────────────────────────────
-function initSubjectRec() {
+// ── 과목별 최적 상승 계획 + 도달 가능 대학 ───────────────────────
+async function initSubjectRec() {
     const container = document.getElementById('subjectRecContent');
     if (!container) return;
 
+    showTutLoading(true);
+
     const univ = tutorialData.selectedUniv || DEMO_UNIVS[0];
-    const mar = tutorialData.quan?.mar;
+    const mar  = tutorialData.quan?.mar;
     const mbti = tutorialData.mbti;
 
+    // 1. Greedy 알고리즘으로 과목별 최적 상승 계획 계산
     let plan = null;
     if (mar && mbti) {
         try { plan = calcGreedySubjectPlan(univ, mar, mbti); } catch(e) {}
     }
-
-    // 도넛 데이터: Greedy 할당 비율(정규화) 또는 폴백으로 subjectAlloc 사용
-    let donutData;
-    if (plan) {
-        const totalAssigned = plan.reduce((sum, s) => sum + (s.assigned || 0), 0) || 1;
-        const rawPcts = plan.map(s => Math.round((s.assigned / totalAssigned) * 100));
-        // 합이 정확히 100이 되도록 마지막 항목 보정
-        const diff = 100 - rawPcts.reduce((a, b) => a + b, 0);
-        rawPcts[rawPcts.length - 1] += diff;
-        donutData = plan.map((s, i) => ({ label: s.label, pct: rawPcts[i], color: s.color }));
-    } else {
-        donutData = univ.subjectAlloc;
+    if (!plan) {
+        plan = [
+            { key: 'math', label: '수학',  color: '#3b82f6', assigned: 15, hardLimit: 15 },
+            { key: 'inq1', label: '탐구1', color: '#10b981', assigned: 10, hardLimit: 10 },
+            { key: 'kor',  label: '국어',  color: '#8b5cf6', assigned:  4, hardLimit: 10 },
+            { key: 'eng',  label: '영어',  color: '#f59e0b', assigned:  0, hardLimit:  5 }
+        ];
     }
 
-    // SVG 도넛 차트
-    const r = 58, cx = 80, cy = 80;
-    const circ = 2 * Math.PI * r;
-    let cumPct = 0;
-    const segs = donutData.map(seg => {
-        const dash   = (seg.pct / 100) * circ;
-        const offset = (cumPct  / 100) * circ;
-        cumPct += seg.pct;
-        return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${seg.color}" stroke-width="22" stroke-linecap="butt" stroke-dasharray="${dash.toFixed(2)} ${(circ - dash).toFixed(2)}" stroke-dashoffset="${(-offset + 0.5).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})" class="donut-seg"/>`;
-    }).join('');
-    const donutSVG = `<svg viewBox="0 0 160 160" width="160" height="160" style="display:block;">${segs}<circle cx="${cx}" cy="${cy}" r="42" fill="#fff"/><text x="${cx}" y="${cy - 6}" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" font-family="Noto Sans KR,sans-serif">공부시간</text><text x="${cx}" y="${cy + 13}" text-anchor="middle" font-size="11" fill="#64748b" font-family="Noto Sans KR,sans-serif">배분</text></svg>`;
+    // 2. 백엔드에서 예상 도달 기간(개월) 가져오기
+    let estimatedMonths = 3;
+    try {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            const res = await fetch(CONFIG.api.analysis, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ type: 'get_estimated_months' })
+            });
+            if (res.ok) {
+                const d = await res.json();
+                if (d.months) estimatedMonths = d.months;
+            }
+        }
+    } catch(e) {}
 
-    // 범례: 2순위(index 1)만 공개, 나머지 블러
-    const legendHtml = donutData.map((seg, i) => {
-        const visible = (i === 1);
+    showTutLoading(false);
+
+    // 3. 과목별 계획 행 렌더링 (assigned > 0인 것만, 최대 4개)
+    const activePlan = plan.filter(s => s.assigned > 0).slice(0, 4);
+    const totalGain  = activePlan.reduce((sum, s) => sum + (s.assigned || 0), 0);
+    const rankLabels = ['1순위', '2순위', '3순위', '4순위'];
+
+    const planRows = activePlan.map((s, i) => {
+        const curPct = mar
+            ? (s.key === 'eng' ? gradeToApproxPct(mar.eng?.grd) : (parseFloat(mar[s.key]?.pct) || 50))
+            : 50;
+        const visible = (i === 0 || i === 1); // 1·2순위만 공개
+        const barWidth = Math.min(Math.round(curPct), 100);
         return `
-        <div class="donut-legend-item${visible ? '' : ' legend-blurred'}">
-            <span class="donut-dot" style="background:${seg.color}"></span>
-            <span class="donut-legend-label">${visible ? seg.label : '???'}</span>
-            <span class="donut-legend-pct">${seg.pct}%</span>
-            <div class="donut-legend-bar-bg"><div class="donut-legend-bar-fill" style="width:${seg.pct * 2}px;background:${seg.color}"></div></div>
+        <div class="score-plan-row${visible ? '' : ' score-plan-blurred'}">
+            <div class="score-plan-rank rank-${i < 2 ? i + 1 : 'other'}">${rankLabels[i]}</div>
+            <div class="score-plan-subject" style="color:${s.color}">${visible ? s.label : '???'}</div>
+            <div class="score-plan-progress">
+                <div class="score-plan-bar-bg">
+                    <div class="score-plan-bar-fill" style="width:${barWidth}%;background:${s.color}"></div>
+                </div>
+                <span class="score-plan-pct">${visible ? `백분위 ${Math.round(curPct)}%` : '비공개'}</span>
+            </div>
+            <div class="score-plan-gain" style="color:${visible ? s.color : '#94a3b8'}">
+                ${visible ? `+${Math.round(s.assigned)}점` : '🔒'}
+            </div>
         </div>`;
     }).join('');
 
-    // 카드: 상위 4개, 2순위만 공개
-    const rankLabels = ['1순위', '2순위', '3순위', '4순위'];
-    const rankBadgeClass = ['rank-1', 'rank-2', 'rank-other', 'rank-other'];
-    const cardsSource = plan ? plan.slice(0, 4) : donutData.slice(0, 4);
-    const cardsHtml = cardsSource.map((s, i) => {
-        const visible = (i === 1);
-        const blur = visible ? '' : ' subj-blurred';
-        const highlight = visible ? ' subj-visible' : '';
-        const allocPct = donutData[i]?.pct ?? 0;
-        const assignedPts = plan ? s.assigned : (univ.top2NeedPts || 0);
+    // 4. 도달 가능 대학 카드 (univ-rec와 동일한 buildUnivCards + 같은 카드 HTML)
+    const univSource = (tutorialData.selectedUnivs && tutorialData.selectedUnivs.length > 0)
+        ? tutorialData.selectedUnivs : null;
+    const univsToRender = univSource ? buildUnivCards(univSource, tutorialData.totalStdScore) : DEMO_UNIVS;
+
+    const reachableCardsHtml = univsToRender.map(u => {
+        const PASS_CUT = u.passCut, MAX_SCORE = u.maxScore;
+        const currentPct = (u.currentScore / MAX_SCORE * 100).toFixed(1);
+        const passPct    = (PASS_CUT       / MAX_SCORE * 100).toFixed(1);
+        const top70Pct   = (u.top70Cut     / MAX_SCORE * 100).toFixed(1);
+        const simPct     = (u.simScore     / MAX_SCORE * 100).toFixed(1);
+        const gapToPass  = PASS_CUT - u.currentScore;
+        const badgeClass = gapToPass <= 5 ? 'badge-close' : gapToPass <= 15 ? 'badge-mid' : 'badge-far';
+        const badgeText  = gapToPass <= 0 ? `합격선 초과 ${Math.abs(gapToPass)}점` : `합격까지 ${gapToPass}점`;
         return `
-        <div class="subj-card${highlight}${blur}">
-            <div class="subj-rank-badge ${rankBadgeClass[i]}">${rankLabels[i]}</div>
-            <div class="subj-name">${visible ? s.label : '???'}</div>
-            <div class="subj-stats">
-                <div class="subj-stat-row"><span>추천 집중 비중</span><strong>${visible ? `전체 학습의 ${allocPct}%` : '비공개'}</strong></div>
-                <div class="subj-stat-row"><span>합격선까지 기여 필요</span><strong>${visible ? `+${assignedPts}점` : '비공개'}</strong></div>
+        <div class="univ-card">
+            <div class="univ-card-header">
+                <div>
+                    <div class="univ-card-title">${u.school}</div>
+                    <div class="univ-card-major">${u.major}</div>
+                </div>
+                <div class="univ-gap-badge ${badgeClass}">${badgeText}</div>
             </div>
-            ${!visible ? '<div class="subj-blur-overlay">🔒 플랜 시작 후 공개</div>' : ''}
+            <div class="sbc-wrap">
+                <div class="sbc-labels">
+                    <span class="sbc-lbl lbl-top70" style="left:${top70Pct}%">상위 70%<br>${u.top70Cut}점</span>
+                    <span class="sbc-lbl lbl-pass"  style="left:${passPct}%">합격 예측선<br>${u.passCut}점</span>
+                </div>
+                <div class="sbc-track">
+                    <div class="sbc-fill" style="width:${simPct}%"></div>
+                    <div class="sbc-mark mark-top70" style="left:${top70Pct}%"></div>
+                    <div class="sbc-mark mark-pass"  style="left:${passPct}%"></div>
+                </div>
+                <div class="sbc-current-label">향상 후 <strong>${u.simScore}점</strong> <em style="color:#10b981;font-size:0.82rem">+${u.gain}</em></div>
+            </div>
         </div>`;
     }).join('');
 
     container.innerHTML = `
-        <div class="subj-donut-section">
-            <div class="donut-chart-wrap">${donutSVG}</div>
-            <div class="donut-legend">${legendHtml}</div>
+        <div class="score-plan-section">
+            <div class="score-plan-header">
+                <span class="score-plan-title">📊 과목별 최적 상승 계획</span>
+                <span class="score-plan-total">합격선까지 총 <strong>+${Math.round(totalGain)}점</strong></span>
+            </div>
+            <div class="score-plan-rows">${planRows}</div>
+            <div class="score-plan-note">3·4순위 전략은 Standard 플랜 시작 후 공개됩니다.</div>
         </div>
-        <div class="subj-alloc-cards">${cardsHtml}</div>`;
+        <div class="reach-period-section">
+            <div class="reach-period-label">Standard 이용 시 예상 도달 기간</div>
+            <div class="reach-period-value">평균 <strong>${estimatedMonths}개월</strong> 예상</div>
+        </div>
+        <div class="reachable-univs-section">
+            <div class="reachable-univs-title">🎯 향상된 성적으로 도달 가능한 대학</div>
+            <div class="univ-card-list">${reachableCardsHtml}</div>
+        </div>`;
 }
 
 // ── 결제 / 완료 ──────────────────────────────────────────────────
