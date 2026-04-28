@@ -5,6 +5,52 @@
    ========================================= */
 const AUTH_API_URL = CONFIG.api.auth;
 const NOTI_API_URL = CONFIG.api.noti;
+const SCROLL_POS_KEY_PREFIX = 'studycrack_scroll_pos:';
+
+function getScrollStorageKey() {
+    return `${SCROLL_POS_KEY_PREFIX}${window.location.pathname}${window.location.search}`;
+}
+
+function saveCurrentScrollPosition() {
+    try {
+        sessionStorage.setItem(getScrollStorageKey(), String(window.scrollY || window.pageYOffset || 0));
+    } catch (e) {
+        console.warn('스크롤 위치 저장 실패:', e);
+    }
+}
+
+function restoreSavedScrollPosition() {
+    try {
+        const savedY = sessionStorage.getItem(getScrollStorageKey());
+        if (savedY == null) return;
+        const y = Number(savedY);
+        if (!Number.isFinite(y)) return;
+
+        requestAnimationFrame(() => {
+            window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+        });
+    } catch (e) {
+        console.warn('스크롤 위치 복원 실패:', e);
+    }
+}
+
+function initScrollPersistence() {
+    if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'manual';
+    }
+
+    restoreSavedScrollPosition();
+    window.addEventListener('beforeunload', saveCurrentScrollPosition);
+    window.addEventListener('pagehide', saveCurrentScrollPosition);
+    window.addEventListener('scroll', saveCurrentScrollPosition, { passive: true });
+
+    // href="#" 기본 동작(페이지 맨 위로 이동) 차단
+    document.addEventListener('click', (e) => {
+        const anchor = e.target.closest('a[href="#"]');
+        if (!anchor) return;
+        e.preventDefault();
+    });
+}
 
 // 💡 공통 apiFetch 함수 (accessToken 기반 통합)
 async function apiFetch(url, options = {}) {
@@ -478,6 +524,7 @@ window.cycleResultView = function() {
    5. 페이지 초기화 및 이벤트 리스너
    ========================================= */
 document.addEventListener('DOMContentLoaded', () => {
+    initScrollPersistence();
     
     // 1. 권한 체크 (accessToken으로 통일)
     const token = localStorage.getItem('accessToken');
