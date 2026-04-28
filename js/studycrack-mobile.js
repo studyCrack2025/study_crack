@@ -1566,9 +1566,9 @@ function App() {
         </div>
 
         <div class="analysis-v2-tabs">
-       <div class="cta-wrapper"><button class="btn btn-primary report-sample cta-btn" data-action="goto" data-target="proExclusive">프로 보고서 샘플 보기</button></div>`,
+       <div class="cta-wrapper"><button class="btn btn-primary report-sample cta-btn" data-action="openProSamplePending">프로 보고서 샘플 보기</button></div>`,
     proExclusive: layout(appbar('PRO EXCLUSIVE', true) + `<div class="pro-elite-page"><div class="pro-elite-hero"><span class="pro-elite-badge">TOP 1%</span><h3>상위 1%를 위한<br/>중장기 집중 맞춤 솔루션</h3><p>주차별 프리미엄 전략 리포트를 다운로드하세요.</p></div><div class="pro-month-picker-wrap"><button class="pro-month-picker" data-action="toggleProMonthPicker"><span>${proCurrentMonth.month} 리포트</span><em>${proMonthPickerOpen ? '닫기 ▲' : '월 선택 ▼'}</em></button>${proMonthPickerOpen ? `<div class="pro-month-options">${proMonthList.map((month) => `<button class="pro-month-option ${month===proCurrentMonth.month?'active':''}" data-action="selectProMonth" data-pro-month="${month}">${month}</button>`).join('')}</div>` : ''}</div><div class="pro-elite-list">${proCurrentMonth.reports.map(([week, desc]) => `<button class="pro-elite-item" data-action="downloadProReport" data-pdf-path="${PRO_REPORT_SAMPLE_PDF}" data-pdf-name="studycrack-pro-${proCurrentMonth.month.replace(/\\s+/g, '-')}-${week}.pdf"><div><b>${proCurrentMonth.month} ${week} PRO 리포트</b><p>${desc}</p></div><span class="pro-elite-download">PDF 다운로드</span></button>`).join('')}</div></div>`, false),
-    studyReports: layout(appbar('학습 리포트', true) + `<div class="card report-list-card"><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>5월 11일 종합 분석 리포트</b><p>수학 점수 상승 여지 큼</p></div><span>${i('chevron', false)}</span></button><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>4월 27일 중간 분석 리포트</b><p>탐구 집중 강화 필요</p></div><span>${i('chevron', false)}</span></button></div><div class="cta-wrapper"><button class="btn btn-primary cta-btn" data-action="goto" data-target="proExclusive">프로 보고서 샘플 보기</button></div>`, false),
+    studyReports: layout(appbar('학습 리포트', true) + `<div class="card report-list-card"><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>5월 11일 종합 분석 리포트</b><p>수학 점수 상승 여지 큼</p></div><span>${i('chevron', false)}</span></button><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>4월 27일 중간 분석 리포트</b><p>탐구 집중 강화 필요</p></div><span>${i('chevron', false)}</span></button></div><div class="cta-wrapper"><button class="btn btn-primary cta-btn" data-action="openProSamplePending">프로 보고서 샘플 보기</button></div>`, false),
         </div>
 
         ${analysisMode === 'summary' ? `
@@ -1759,6 +1759,9 @@ function App() {
         <button class="plan-card basic ${selectedPlan==='Basic'?'active':''}" data-action="selectPlan" data-plan="Basic"><div class="plan-head"><h4>Basic</h4></div><p class="plan-price">${planMeta.Basic.introPrice}</p><ul><li>합격 가능성 분석</li><li>대학별 전략 확인</li></ul></button>
         <button class="plan-card standard ${selectedPlan==='Standard'?'active':''}" data-action="selectPlan" data-plan="Standard"><div class="plan-head"><h4>Standard</h4><span class="badge">추천</span></div><p class="plan-price">${planMeta.Standard.introPrice}</p><ul><li>플래너 피드백</li><li>학습 방향 코칭</li></ul></button>
         <button class="plan-card pro ${selectedPlan==='Pro'?'active':''}" data-action="selectPlan" data-plan="Pro"><div class="plan-head"><h4>Pro</h4><span class="badge">최고 효율</span></div><p class="plan-price">${planMeta.Pro.introPrice}</p><ul><li>모든 기능 무제한 이용</li><li>프로 보고서 2주 1회</li><li>Sky튜터 1:1 피드백</li></ul></button>
+    if (action === 'openProSamplePending') {
+      window.alert('프로 보고서 샘플은 현재 준비중입니다.');
+    }
       </div>
       <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="payment">결제하기</button></div>`, false),
     payment: layout(appbar('플랜 선택', true) + `<div class="payment-tabs full">
