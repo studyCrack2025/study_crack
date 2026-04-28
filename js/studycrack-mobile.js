@@ -101,7 +101,7 @@ function mascotBubble(text, size = 'sm') {
 
 function App() {
   console.log('APP_RENDER_START');
-  const [screen, setScreen] = useState('splash');
+  const [screen, setScreen] = useState('authEntry');
   const [tab, setTab] = useState('home');
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -2233,9 +2233,8 @@ function App() {
     });
   };
 
-  const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>StudyCrack 앱을 불러오는 중입니다...</h3><p class="sub">잠시만 기다려 주세요.</p></div></div></div></div>`;
   const fallbackUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div></div>`;
-  const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !['authEntry', 'authLogin', 'authSignup', 'authFindEmail', 'authFindPassword'].includes(screen) ? screens.authEntry : current;
+  const renderedBase = error ? fallbackUi : !loggedIn && !['authEntry', 'authLogin', 'authSignup', 'authFindEmail', 'authFindPassword'].includes(screen) ? screens.authEntry : current;
   const analysisOverlay = isAnalyzing && screen === 'analysis'
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>분석중입니다</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
