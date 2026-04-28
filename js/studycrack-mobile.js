@@ -136,6 +136,8 @@ function App() {
   const [notifications, setNotifications] = useState(DEFAULT_NOTIFICATIONS);
   const [openFaq, setOpenFaq] = useState('');
   const [notifModalOpen, setNotifModalOpen] = useState(false);
+  const [proRequestModalOpen, setProRequestModalOpen] = useState(false);
+  const [proRequestText, setProRequestText] = useState('');
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [plannerItems, setPlannerItems] = useState(DEFAULT_PLANNER_ITEMS);
   const [plannerEditIndex, setPlannerEditIndex] = useState(null);
@@ -1033,6 +1035,8 @@ function App() {
     .pro-notif-modal .pro-notif-list b{display:block;font-size:14px;color:#0F172A;margin-bottom:4px;}
     .pro-notif-modal .pro-notif-list p{margin:0;font-size:12px;color:#475569;line-height:1.45;}
     .pro-elite-page{display:grid;gap:14px;}
+    .pro-elite-action-row{display:flex;justify-content:flex-end;}
+    .pro-request-btn{border:none;border-radius:12px;padding:9px 14px;font-size:13px;font-weight:800;color:#fff;background:linear-gradient(135deg,#1D4ED8,#2563EB);box-shadow:0 8px 18px rgba(37,99,235,.24);}
     .pro-elite-hero{
       padding:20px;border-radius:20px;border:1px solid #334155;
       background:radial-gradient(120% 120% at 0% 0%,#1E293B 0%,#0F172A 55%,#020617 100%);
@@ -1050,6 +1054,18 @@ function App() {
     .pro-elite-item b{display:block;font-size:14px;color:#0F172A;margin-bottom:4px;}
     .pro-elite-item p{margin:0;font-size:12px;color:#64748B;line-height:1.4;}
     .pro-elite-download{font-size:12px;font-weight:800;color:#1D4ED8;white-space:nowrap;}
+    .pro-request-modal{width:calc(100% - 22px);max-width:430px;padding:0;overflow:hidden;border:1px solid #3B82F6;}
+    .pro-request-head{background:linear-gradient(135deg,#1E40AF,#2563EB);color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;}
+    .pro-request-head h4{margin:0;font-size:18px;font-weight:800;}
+    .pro-request-close{border:none;background:transparent;color:#BFDBFE;font-size:20px;font-weight:700;}
+    .pro-request-body{padding:14px 16px 16px;background:#F8FAFC;}
+    .pro-request-body p{margin:0 0 8px;color:#475569;line-height:1.45;}
+    .pro-request-body label{display:block;margin:10px 0 8px;font-size:13px;font-weight:700;color:#64748B;}
+    .pro-request-body textarea{width:100%;height:170px;border:2px solid #3B82F6;border-radius:14px;padding:12px;font-size:14px;resize:none;color:#334155;background:#fff;}
+    .pro-request-count{text-align:right;font-size:13px;color:#94A3B8;margin-top:8px;}
+    .pro-request-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+    .pro-request-actions .cancel{border:1px solid #CBD5E1;background:#fff;color:#64748B;border-radius:12px;height:48px;font-weight:700;}
+    .pro-request-actions .submit{border:none;background:linear-gradient(135deg,#1D4ED8,#2563EB);color:#fff;border-radius:12px;height:48px;font-weight:800;}
     .home-chip-grid{display:flex;flex-wrap:wrap;gap:8px;}
     .study-goal-card .track{height:12px;border-radius:999px;background:#E2E8F0;overflow:hidden;}
     .study-goal-card .track i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#2563EB,#38BDF8);}
@@ -1608,7 +1624,7 @@ function App() {
       true
     ),
     reportDetail: layout(appbar('종합 분석 리포트', true) + `<div class="report-tabs"><span class="active">종합 분석</span><span>과목 분석</span><span>학습 전략</span><span>현재 위치</span></div><div class="report-detail-stack"><div class="card report-detail-card"><p class="sub">핵심 요약</p><p class="report-detail-text">수학에서 점수 상승 여지가 가장 큽니다. 개념 학습 시간을 늘리고, 문제 풀이 비중을 높이면 단기간 점수 개선이 가능합니다.</p></div><div class="card report-detail-card"><p class="sub">과목별 성과</p><div class="subject-result"><span>수학</span><div class="track"><i style="width:82%"></i></div><em><span class="score">68점</span><span class="delta">▲12</span></em></div><div class="subject-result"><span>국어</span><div class="track"><i style="width:74%"></i></div><em><span class="score">82점</span><span class="delta">▲3</span></em></div><div class="subject-result"><span>영어</span><div class="track"><i style="width:70%"></i></div><em><span class="score">77점</span><span class="delta">-</span></em></div><div class="subject-result"><span>탐구</span><div class="track"><i style="width:62%"></i></div><em><span class="score">66점</span><span class="delta">▲5</span></em></div></div></div><div class="cta-wrapper report-detail-cta"><button class="btn btn-primary cta-btn">PDF 다운로드</button></div>`, false),
-    proElite: layout(appbar('PRO EXCLUSIVE', true) + `<div class="pro-elite-page"><div class="pro-elite-hero"><span class="pro-elite-badge">TOP 1%</span><h3>상위 1%를 위한<br/>중장기 집중 맞춤 솔루션</h3><p>주차별 프리미엄 전략 리포트를 다운로드하세요.</p></div><div class="pro-elite-list">${[['26년 4월 4주차','심화 집중 루트 + 과목별 우선순위'],['26년 4월 3주차','중간 점검 + 리밸런싱 전략'],['26년 4월 2주차','약점 보강 로드맵 + 실행 체크']].map(([w,d])=>`<button class="pro-elite-item"><div><b>${w} PRO 리포트</b><p>${d}</p></div><span class="pro-elite-download">PDF 다운로드</span></button>`).join('')}</div></div>`, false),
+    proElite: layout(appbar('PRO EXCLUSIVE', true) + `<div class="pro-elite-page"><div class="pro-elite-action-row"><button class="pro-request-btn" data-action="openProRequestModal">요청</button></div><div class="pro-elite-hero"><span class="pro-elite-badge">TOP 1%</span><h3>상위 1%를 위한<br/>중장기 집중 맞춤 솔루션</h3><p>주차별 프리미엄 전략 리포트를 다운로드하세요.</p></div><div class="pro-elite-list">${[['26년 4월 4주차','심화 집중 루트 + 과목별 우선순위'],['26년 4월 3주차','중간 점검 + 리밸런싱 전략'],['26년 4월 2주차','약점 보강 로드맵 + 실행 체크']].map(([w,d])=>`<button class="pro-elite-item"><div><b>${w} PRO 리포트</b><p>${d}</p></div><span class="pro-elite-download">PDF 다운로드</span></button>`).join('')}</div>${proRequestModalOpen ? `<div class="home-modal-overlay" data-action="closeProRequestModal"><div class="home-modal pro-request-modal" data-action="noopModal"><div class="pro-request-head"><h4>✈ 전략 보고서 요청</h4><button class="pro-request-close" data-action="closeProRequestModal">✕</button></div><div class="pro-request-body"><p>현재 학습 상황이나 고민, 특별히 분석받고 싶은 내용을 적어주세요.</p><p>담당 컨설턴트가 이를 반영하여 <b>최적의 전략</b>을 수립합니다.</p><label>요청 사항 (500자 이내)</label><textarea data-field="proRequestText" maxlength="500" placeholder="예: 6월 모평 대비 수학 기하 과목 집중 전략이 필요합니다. 최근 실전 문제 풀이에서 시간이 부족해 고민입니다.">${proRequestText}</textarea><div class="pro-request-count">${proRequestText.length}/500</div><div class="pro-request-actions"><button class="cancel" data-action="closeProRequestModal">취소</button><button class="submit" data-action="submitProRequest">요청서 제출하기</button></div></div></div></div>` : ''}</div>`, false),
     tutor: layout(appbar('SKY튜터 1:1 피드백', true) + `<div class="card"><p class="sub">텍스트 기반 질의응답</p><ul class="list"><li>Q. 수학 개념 이해가 잘 안돼요</li><li>A. 유형별 복습 루틴을 추가하세요</li></ul></div><button class="btn btn-primary">새 질문 작성</button>`, false),
     proIntro: layout(appbar('StudyCrack 요금제', true) + `<p class="sub pricing-sub">합격 전략, 단계별로 선택하세요</p>
       <div class="plan-stack">
@@ -1816,6 +1832,17 @@ function App() {
     if (action === 'closeDrawer') setDrawerOpen(false);
     if (action === 'openNotificationModal') setNotifModalOpen(true);
     if (action === 'closeNotificationModal') setNotifModalOpen(false);
+    if (action === 'openProRequestModal') setProRequestModalOpen(true);
+    if (action === 'closeProRequestModal') setProRequestModalOpen(false);
+    if (action === 'submitProRequest') {
+      if (!proRequestText.trim()) {
+        window.alert('요청 사항을 입력해주세요.');
+        return;
+      }
+      window.alert('요청서가 제출되었습니다.');
+      setProRequestModalOpen(false);
+      setProRequestText('');
+    }
     if (action === 'drawerGoto') {
       setDrawerOpen(false);
       goto(actionEl.getAttribute('data-target'));
@@ -2175,6 +2202,7 @@ function App() {
     if (field === 'weakSubject') setWeakSubject(value);
     if (field === 'studyHours') setStudyHours(value);
     if (field === 'studyDifficulty') setStudyDifficulty(value);
+    if (field === 'proRequestText') setProRequestText(value);
     if (field === 'loginEmail') setLoginEmail(value);
     if (field === 'loginPassword') setLoginPassword(value);
     if (field === 'signupName') setSignupName(value);
