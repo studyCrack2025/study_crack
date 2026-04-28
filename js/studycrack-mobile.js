@@ -1661,7 +1661,6 @@ function App() {
       if (!major) return;
       setTargetMajor(major);
       setAnalysisBarProjectionTarget(major);
-      setTimeout(() => setAnalysisBarProjectionTarget((prev) => (prev === major ? '' : prev)), 1200);
     }
     if (action === 'addAnalysisTarget') {
       const major = actionEl.getAttribute('data-target-major');
