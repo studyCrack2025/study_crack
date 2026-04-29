@@ -151,7 +151,8 @@ function App() {
   const [notifModalOpen, setNotifModalOpen] = useState(false);
   const [proRequestModalOpen, setProRequestModalOpen] = useState(false);
   const [proRequestText, setProRequestText] = useState('');
-  const [proEliteMonth, setProEliteMonth] = useState('전체');
+  const [proEliteMonth, setProEliteMonth] = useState('26년 4월');
+  const [addingUniversity, setAddingUniversity] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [plannerItems, setPlannerItems] = useState(DEFAULT_PLANNER_ITEMS);
   const [plannerEditIndex, setPlannerEditIndex] = useState(null);
@@ -571,10 +572,8 @@ function App() {
   });
   const analysisSimMax = Math.max(...analysisSimRows.map(({ gainNum }) => gainNum), 0);
   const analysisSimRecommendedIndex = analysisSimRows.findIndex(({ gainNum }) => gainNum === analysisSimMax);
-  const proEliteMonths = ['전체', ...Array.from(new Set(PRO_ELITE_REPORTS.map((report) => report.week.split(' ').slice(0, 2).join(' '))))];
-  const proEliteFilteredReports = proEliteMonth === '전체'
-    ? PRO_ELITE_REPORTS
-    : PRO_ELITE_REPORTS.filter((report) => report.week.startsWith(proEliteMonth));
+  const proEliteMonths = Array.from(new Set(PRO_ELITE_REPORTS.map((report) => report.week.split(' ').slice(0, 2).join(' '))));
+  const proEliteFilteredReports = PRO_ELITE_REPORTS.filter((report) => report.week.startsWith(proEliteMonth));
   const onboardingProgress = (step) => `<div class="ob-progress"><span>${step}/3</span><div class="ob-dots"><i class="${step>=1?'active':''}"></i><i class="${step>=2?'active':''}"></i><i class="${step>=3?'active':''}"></i></div></div>`;
   const mbtiDone = Object.values(mbtiAnswers).every(Boolean);
   const gaugeTotal = 250;
@@ -722,7 +721,7 @@ function App() {
   };
   const homeTargets = homeTargetList.map((major) => {
     const profile = analysisProfiles[major] || analysisSelected;
-    const score = profile.score;
+    const score = Number(profile.score || Math.round((scores.korean + scores.math + scores.english + scores.inquiry1 + scores.inquiry2) / 5));
     const cut = 100;
     const gap = score - cut;
     return {
@@ -1035,12 +1034,17 @@ function App() {
     .home-kpi-track.motion-prev{animation:homeSlidePrev .58s cubic-bezier(.22,.61,.36,1);}
     @keyframes homeSlideNext{from{transform:translateX(calc(var(--home-slide-x) + 18%));}to{transform:translateX(var(--home-slide-x));}}
     @keyframes homeSlidePrev{from{transform:translateX(calc(var(--home-slide-x) - 18%));}to{transform:translateX(var(--home-slide-x));}}
-    .home-kpi-slider .slider-card{flex:0 0 100%;}
+    .home-kpi-slider .slider-card{flex:0 0 92%;margin-right:8px;}
     .home-kpi-indicator i{cursor:pointer;}
     .home-add-univ-card{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;padding:24px;border:1px solid #BFDBFE;background:linear-gradient(135deg,#F8FBFF,#EAF2FF);color:#1D4ED8;border-radius:24px;box-shadow:0 12px 24px rgba(30,64,175,.10);}
     .home-add-univ-card b{font-size:28px;line-height:1.15;letter-spacing:-.02em;}
     .home-add-univ-card p{margin:8px 0 0;font-size:14px;color:#334155;font-weight:600;}
     .premium-panel{border:1px solid #D6E2F5;background:linear-gradient(160deg,#FFFFFF 0%,#F4F8FF 55%,#EEF4FF 100%);box-shadow:0 14px 28px rgba(15,23,42,.08);border-radius:24px;padding:18px;}
+    .home-study-summary .timer{font-size:52px;letter-spacing:0.01em;}
+    .home-study-summary .start-button{box-shadow:0 10px 20px rgba(37,99,235,.2);}
+    .home-subject-pill-row{gap:10px;}
+    .home-goal-linked-card .analysis-title{margin-bottom:6px;}
+    .home-goal-linked-card .track{height:14px;border-radius:999px;}
     .home-result-card-v3{display:grid;gap:12px;text-align:left;overflow:hidden;}
     .home-result-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;}
     .home-result-major{margin:0;font-size:16px;font-weight:800;color:#0F172A;line-height:1.4;}
@@ -1814,11 +1818,17 @@ function App() {
     if (action === 'addAnalysisTarget') {
       const major = actionEl.getAttribute('data-target-major');
       if (!major) return;
-      setAnalysisTargetList((prev) => (prev.includes(major) ? prev : [...prev, major]));
-      setTargetMajor(major);
-      setHomeTargetList((prev) => prev.includes(major) ? prev : [...prev, major]);
+      setUniversityModalOpen(false);
       setAnalysisSearchOpen(false);
       setAnalysisSearchTerm('');
+      setAddingUniversity(true);
+      setTimeout(() => {
+        setAnalysisTargetList((prev) => (prev.includes(major) ? prev : [...prev, major]));
+        setTargetMajor(major);
+        setHomeTargetList((prev) => prev.includes(major) ? prev : [...prev, major]);
+        setHomeSlideIndex(homeTargetList.length);
+        setAddingUniversity(false);
+      }, 500);
     }
     if (action === 'openUniversityModal') setUniversityModalOpen(true);
     if (action === 'openAnalysisSearchFromHome') setUniversityModalOpen(true);
@@ -2311,7 +2321,10 @@ function App() {
   const onboardingOverlay = onboardingLoading
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><img src="${CRACKY_SRC}" alt="크랙이" class="global-loading-char"/><div class="loading-dots"><i></i><i></i><i></i></div><b>${onboardingLoadingText}</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
-  const rendered = `${designV2StyleTag}${renderedBase}${analysisOverlay}${onboardingOverlay}`;
+  const addingUniversityOverlay = addingUniversity
+    ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>추가중입니다.</b><p>잠시만 기다려주세요</p></div></div>`
+    : '';
+  const rendered = `${designV2StyleTag}${renderedBase}${analysisOverlay}${onboardingOverlay}${addingUniversityOverlay}`;
 
   return <div onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: rendered }} />;
 }
