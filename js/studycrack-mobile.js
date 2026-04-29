@@ -1,5 +1,6 @@
 const { useState, useEffect, useRef } = React;
 if (typeof window !== 'undefined') window.__studycrackAppBooted = true;
+if (typeof window !== 'undefined') window.__studycrackAppBooted = true;
 
 const CRACKY_SRC = './assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png';
 const ONBOARDING_LOGO_SRC = './assets/images/og-image.jpg';
