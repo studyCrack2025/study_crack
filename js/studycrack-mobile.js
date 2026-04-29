@@ -113,6 +113,7 @@ function App() {
   const [targetMajor, setTargetMajor] = useState(DEFAULT_USER.targetUniversity);
   const [targetOpen, setTargetOpen] = useState(false);
   const [analysisTargetList, setAnalysisTargetList] = useState(['연세대학교 경영학과', '고려대학교 경영대학', '강서대학교 G2빅데이터경영학과']);
+  const [homeTargetList, setHomeTargetList] = useState(['연세대학교 경영학과', '고려대학교 경영대학', '강서대학교 G2빅데이터경영학과']);
   const [analysisSearchOpen, setAnalysisSearchOpen] = useState(false);
   const [analysisSearchTerm, setAnalysisSearchTerm] = useState('');
   const [analysisMode, setAnalysisMode] = useState('summary');
@@ -672,7 +673,13 @@ function App() {
   const inquiryOptions = `<optgroup label="사회탐구"><option value="">과목 선택</option><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option></optgroup><optgroup label="과학탐구"><option>물리학</option><option>화학</option><option>생명과학</option><option>지구과학</option></optgroup>`;
   const ScoreEditModal = () => {
     const step = scoreEditStep;
-    const preview = `<div class="on-dummy-result"><b>표준점수 ${100 + step * 4}</b><b>백분위 ${82 + step * 2}</b><b>등급 ${Math.max(1, 4 - Math.floor(step/2))}</b></div>`;
+    const previewRaw = step === 1 ? Number(scoreEditState.korean.common || 0)
+      : step === 2 ? Number(scoreEditState.math.common || 0)
+        : step === 5 ? Number(scoreEditState.inquiry1.score || 0)
+          : step === 6 ? Number(scoreEditState.inquiry2.score || 0)
+            : 0;
+    const previewMetric = scoreMetric(previewRaw);
+    const preview = `<div class="on-dummy-result"><b>표준점수 ${previewMetric.std}</b><b>백분위 ${previewMetric.pct}</b><b>등급 ${step===3 ? (Number(scoreEditState.english || 0) || '-') : step===4 ? (Number(scoreEditState.history || 0) || '-') : previewMetric.grade}</b></div>`;
     const body = step === 1
       ? `<h4>국어</h4><select class="planner-input" data-field="v2e-korean-type"><option value="화법과작문" ${scoreEditState.korean.type==='화법과작문'?'selected':''}>화법과작문</option><option value="언어와매체" ${scoreEditState.korean.type==='언어와매체'?'selected':''}>언어와매체</option></select><input class="planner-input" data-field="v2e-korean-common" value="${scoreEditState.korean.common}" type="number" placeholder="공통 원점수"/><input class="planner-input" data-field="v2e-korean-elective" value="${scoreEditState.korean.elective}" type="number" placeholder="선택 원점수"/>${preview}`
       : step === 2
@@ -706,7 +713,14 @@ function App() {
     </div>
   `;
 
-  const homeTargets = targetOptions.slice(0, 3).map((major) => {
+  const scoreMetric = (raw) => {
+    const n = Math.max(0, Number(raw) || 0);
+    const std = Math.min(160, Math.round(n * 0.95 + 22));
+    const pct = Math.min(99, Math.max(1, Math.round(n * 0.9 + 10)));
+    const grade = pct >= 96 ? 1 : pct >= 89 ? 2 : pct >= 77 ? 3 : pct >= 64 ? 4 : pct >= 52 ? 5 : pct >= 40 ? 6 : pct >= 28 ? 7 : pct >= 16 ? 8 : 9;
+    return { std, pct, grade };
+  };
+  const homeTargets = homeTargetList.map((major) => {
     const profile = analysisProfiles[major] || analysisSelected;
     const score = profile.score;
     const cut = 100;
@@ -720,14 +734,17 @@ function App() {
       rate: Math.round(Math.min(99, Math.max(20, (score / 150) * 100)))
     };
   });
-  const scoreInfoDetailList = [
-    ['국어', `${scores.korean}`, `${scores.korean + 18}`, `${Math.min(99, scores.korean + 10)}`, '2'],
-    ['수학', `${scores.math}`, `${scores.math + 22}`, `${Math.min(99, scores.math + 14)}`, '3'],
-    ['영어', '-', '-', '-', `${Math.max(1, 9 - Math.floor(scores.english / 12))}`],
-    ['한국사', '-', '-', '-', '3'],
-    ['탐구1', `${scores.inquiry1}`, `${scores.inquiry1 + 17}`, `${Math.min(99, scores.inquiry1 + 11)}`, '3'],
-    ['탐구2', `${scores.inquiry2}`, `${scores.inquiry2 + 15}`, `${Math.min(99, scores.inquiry2 + 9)}`, '3']
-  ].map(([subject, raw, std, pct, grade]) => `<div class="score-info-detail-row"><b>${subject}</b><span>${raw}</span><span>${std}</span><span>${pct}</span><span>${grade}</span></div>`).join('');
+  const scoreRows = [
+    ['국어', scores.korean],
+    ['수학', scores.math],
+    ['영어', scores.english],
+    ['탐구1', scores.inquiry1],
+    ['탐구2', scores.inquiry2]
+  ];
+  const scoreInfoDetailList = scoreRows.map(([subject, raw]) => {
+    const m = scoreMetric(raw);
+    return `<div class="score-info-detail-row"><b>${subject}</b><span>${raw}</span><span>${m.std}</span><span>${m.pct}</span><span>${m.grade}</span></div>`;
+  }).join('') + `<div class="score-info-detail-row"><b>한국사</b><span>-</span><span>-</span><span>-</span><span>${Math.max(1, Number(scoreEditState.history || 3) || 3)}</span></div>`;
   const todayKey = FIXED_TODAY_DATE;
   const todayRecord = studyRecords.find((item) => item.date === todayKey);
   const liveStudySeconds = studyTimerSecondsRef.current;
@@ -837,22 +854,22 @@ function App() {
           <div class="home-result-gauge-meta"><span>0</span><span>합격컷 100</span><span>안정컷 150</span><span>MAX 250</span></div>
           <div class="kpi-row score-row"><div class="kpi-item"><b>${item.score}점</b>현재 점수</div><div class="kpi-item"><b>${item.cut}점</b>합격 컷</div><div class="kpi-item danger"><b>${item.gap}점</b>부족 점수</div></div>
           <div class="home-planner-badges chip-row">${plannerBadges.map((badge) => `<span class="chip">${badge}</span>`).join('')}</div>
-        </button>`).join('')}</div>
+        </button>`).join('')}<button class="card slider-card home-add-univ-card" data-action="openAnalysisSearchFromHome"><b>+ 대학 추가</b><p>추천/검색으로 추가</p></button></div>
       </div>
-      <div class="home-kpi-indicator card-indicator">${homeTargets.map((_, idx) => `<i class="${idx===homeSlideIndex?'active':''}" data-action="setHomeSlide" data-slide-index="${idx}"></i>`).join('')}</div>
+      <div class="home-kpi-indicator card-indicator">${[...homeTargets, { add: true }].map((_, idx) => `<i class="${idx===homeSlideIndex?'active':''}" data-action="setHomeSlide" data-slide-index="${idx}"></i>`).join('')}</div>
       ${universityModalOpen ? `<div class="home-modal-overlay" data-action="closeUniversityModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">목표 대학 추가</p><p class="sub" style="margin-top:8px">대학 선택 모달은 다음 단계에서 연결됩니다.</p><button class="btn btn-primary" data-action="closeUniversityModal">닫기</button></div></div>` : ''}
     </div>
     <div class="section home-section home-section-last">
-      <div class="card home-study-summary study-summary-card home-insight-card">
+      <div class="card home-study-summary study-summary-card home-insight-card premium-panel">
         <div class="home-card-head"><p class="analysis-title">오늘 누적 공부</p><span class="home-mini-badge">${studyTimerRunning ? '진행중' : '대기'}</span></div>
         <div class="study-timer-row"><b class="timer" data-study-base-seconds="${todayRecord?.studyTime || 0}">${formatHms(todayStudySeconds)}</b>${studyTimerRunning ? `<button class="btn btn-secondary start-button" data-action="stopStudyTimer">공부 종료</button>` : `<button class="btn btn-primary start-button" data-action="openStudySubjectSheet">공부 시작하기</button>`}</div>
         <div class="home-subject-pill-row subject-chip-row home-chip-grid">${visibleSubjectChips.map(([subject, sec]) => `<span class="home-subject-pill subject-time-chip">${subject} ${formatHms(sec || 0)}</span>`).join('')}${hiddenSubjectCount ? `<span class="home-subject-pill subject-time-chip more">+${hiddenSubjectCount}</span>` : ''}</div>
       </div>
-      <button class="card study-goal-card home-goal-linked-card home-insight-card" data-action="goto" data-target="planner">
+      <button class="card study-goal-card home-goal-linked-card home-insight-card premium-panel" data-action="goto" data-target="planner">
         <p class="analysis-title">오늘 공부 목표</p>
         ${todayPlannerItems.length ? `<p class="sub">오늘 목표 ${formatMinutesLabel(todayPlannerTotalMinutes)} · 현재 ${formatHourMin(todayStudySeconds)}</p><div class="track"><i style="width:${todayPlannerProgress}%"></i></div><p class="sub" style="margin:8px 0 0">달성률 ${todayPlannerProgress}% · ${todayPlannerSubjectSummary.join(' · ')}</p>` : `<p class="sub">오늘 계획을 추가해보세요</p><span class="home-goal-empty-cta">플래너로 이동</span>`}
       </button>
-      <div class="card home-bottom-summary ranking-card home-insight-card">
+      <div class="card home-bottom-summary ranking-card home-insight-card premium-panel">
         <div class="home-ranking-head"><p class="analysis-title">내 공부 랭킹</p><span class="badge">오늘 기준</span></div>
         <p class="home-ranking-main">${Math.min(myRank, 124)}등</p>
         <p class="home-ranking-sub">전체 124명 중</p>
@@ -1020,6 +1037,10 @@ function App() {
     @keyframes homeSlidePrev{from{transform:translateX(calc(var(--home-slide-x) - 18%));}to{transform:translateX(var(--home-slide-x));}}
     .home-kpi-slider .slider-card{flex:0 0 100%;}
     .home-kpi-indicator i{cursor:pointer;}
+    .home-add-univ-card{display:grid;place-items:center;text-align:center;gap:8px;border:1.5px dashed #93C5FD;background:linear-gradient(145deg,#F8FBFF,#EFF6FF);color:#1D4ED8;}
+    .home-add-univ-card b{font-size:22px;line-height:1.2;}
+    .home-add-univ-card p{margin:0;font-size:13px;color:#475569;}
+    .premium-panel{border:1px solid #DCE6F7;background:linear-gradient(160deg,#FFFFFF,#F5F9FF);box-shadow:0 10px 28px rgba(37,99,235,.08);border-radius:22px;}
     .home-result-card-v3{display:grid;gap:12px;text-align:left;overflow:hidden;}
     .home-result-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;}
     .home-result-major{margin:0;font-size:16px;font-weight:800;color:#0F172A;line-height:1.4;}
@@ -1618,7 +1639,7 @@ function App() {
       <div class="card my-subscription-card"><div class="my-sub-icon">${i('report', false)}</div><div><p class="my-sub-title">Pro 플랜 이용 중</p><p class="my-sub-date">다음 결제일 2024.06.14</p></div></div>
       <div class="card my-menu-card">
         <button class="my-row" data-action="goto" data-target="scoreInfo">성적 정보 <span>${i('chevron', false)}</span></button>
-        <button class="my-row" data-action="goto" data-target="studyReports">학습 리포트 <span>${i('chevron', false)}</span></button>
+        
         <button class="my-row" data-action="goto" data-target="proIntro">구독 관리 <span>${i('chevron', false)}</span></button>
       </div>
       <div class="card my-menu-card my-service-card">
@@ -1677,14 +1698,13 @@ function App() {
       <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="paymentComplete">결제하기</button></div>`, false),
     paymentComplete: layout(`<div class="payment-done-screen"><div class="payment-complete-wrap"><div class="payment-check">${i('check', true)}</div><p class="title payment-complete-title">결제가 완료되었습니다!</p><p class="sub payment-complete-sub">${selectedPlan.toUpperCase()} 플랜이 활성화되었습니다.</p><div class="card payment-complete-note"><b>프로 보고서 이용 안내</b><p>2주에 한 번 새로운 리포트를 제공해 드려요.<br/>다음 리포트는 5월 25일에 이용 가능해요.</p></div></div><div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="home">홈으로 이동</button></div></div>`, false),
     scoreInfo: layout(appbar('성적 정보', true) + `<div class="card score-info-card"><div class="score-info-detail-table"><div class="score-info-detail-row"><b>과목</b><b>원점수</b><b>표준점수</b><b>백분위</b><b>등급</b></div>${scoreInfoDetailList}</div><button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">성적 수정하기</button></div><div class="card"><p class="analysis-title">최근 성적 업데이트</p><p class="sub" style="margin:0">2024.05.14 기준</p><p class="sub" style="margin:6px 0 0">다음 업데이트 권장: 2주 후</p></div>${scoreEditOpen ? ScoreEditModal() : ''}`, false),
-    studyReports: layout(appbar('학습 리포트', true) + `<div class="card report-list-card"><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>5월 11일 종합 분석 리포트</b><p>수학 점수 상승 여지 큼</p></div><span>${i('chevron', false)}</span></button><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>4월 27일 중간 분석 리포트</b><p>탐구 집중 강화 필요</p></div><span>${i('chevron', false)}</span></button></div><div class="cta-wrapper"><button class="btn btn-primary cta-btn" data-action="goto" data-target="reportDetail">프로 보고서 샘플 보기</button></div>`, false),
     notificationSettings: layout(appbar('알림 설정', true) + `<div class="card notify-card">${[
       ['planner', '플래너 알림', '오늘 계획을 잊지 않도록 알려드려요'],
       ['weekly', '주간 점검 알림', '매주 점검 시점을 알려드려요'],
       ['report', '프로 보고서 알림', '새 리포트 이용 가능일을 알려드려요'],
       ['billing', '결제/구독 알림', '다음 결제일을 미리 알려드려요']
     ].map(([key, title, desc]) => `<button class="notify-row" data-action="toggleNotification" data-notify-key="${key}"><div><b>${title}</b><p>${desc}</p></div><span class="notify-switch ${notifications[key]?'on':''}"><i></i></span></button>`).join('')}</div>`, false),
-    customerSupport: layout(appbar('고객센터', true) + `<div class="card"><p class="analysis-title">궁금한 점이 있으면 언제든 문의해주세요.</p><p class="sub" style="margin:0">운영 시간: 평일 10:00 - 18:00</p><div class="support-btns"><button class="btn btn-secondary">카카오톡 문의하기</button><button class="btn btn-secondary">이메일 문의하기</button></div></div><div class="card faq-card">${[
+    customerSupport: layout(appbar('고객센터', true) + `<div class="card"><p class="analysis-title">궁금한 점이 있으면 언제든 문의해주세요.</p><p class="sub" style="margin:0">운영 시간: 평일 10:00 - 18:00</p><div class="support-btns"><button class="btn btn-secondary" data-action="openKakaoSupport">카카오톡 문의하기</button><button class="btn btn-secondary" data-action="openEmailSupport">이메일 문의하기</button></div></div><div class="card faq-card">${[
       ['faq1', '합격 가능성은 어떻게 계산되나요?', '목표 대학의 반영 방식과 현재 성적을 기준으로 계산됩니다.'],
       ['faq2', '플래너 피드백은 언제 받을 수 있나요?', '제출된 플래너를 기준으로 정해진 일정에 맞춰 피드백을 제공합니다.'],
       ['faq3', '프로 보고서는 얼마나 자주 받을 수 있나요?', 'Pro 플랜은 2주에 한 번 리포트를 받을 수 있습니다.'],
@@ -1764,7 +1784,7 @@ function App() {
       if (Number.isNaN(idx)) return;
       setHomeDragOffset(0);
       setHomeSlideIndex((prev) => {
-        const next = Math.max(0, Math.min(idx, homeTargets.length - 1));
+        const next = Math.max(0, Math.min(idx, homeTargets.length));
         if (next === prev) return prev;
         setHomeSlideMotion(next > prev ? 'motion-next' : 'motion-prev');
         return next;
@@ -1792,10 +1812,12 @@ function App() {
       if (!major) return;
       setAnalysisTargetList((prev) => (prev.includes(major) ? prev : [...prev, major]));
       setTargetMajor(major);
+      setHomeTargetList((prev) => prev.includes(major) ? prev : [...prev, major]);
       setAnalysisSearchOpen(false);
       setAnalysisSearchTerm('');
     }
     if (action === 'openUniversityModal') setUniversityModalOpen(true);
+    if (action === 'openAnalysisSearchFromHome') setAnalysisSearchOpen(true);
     if (action === 'closeUniversityModal') setUniversityModalOpen(false);
     if (action === 'openPlannerAddPage') goto('plannerAdd');
     if (action === 'openPlannerCalendar') setPlannerCalendarOpen(true);
@@ -1857,6 +1879,8 @@ function App() {
     }
     if (action === 'setObGradeStatus') setObGradeStatus(actionEl.getAttribute('data-ob-grade') || '고1/2 재학');
     if (action === 'toggleObGed') setObGed((v) => !v);
+    if (action === 'openKakaoSupport') window.open('https://open.kakao.com/o/sw1b6M2h', '_blank');
+    if (action === 'openEmailSupport') window.location.href = 'mailto:contact@studycrack.co.kr';
     if (action === 'openDrawer') setDrawerOpen(true);
     if (action === 'closeDrawer') setDrawerOpen(false);
     if (action === 'openNotificationModal') setNotifModalOpen(true);
@@ -2141,7 +2165,7 @@ function App() {
       suppressClickUntilRef.current = Date.now() + 260;
       if (touchTargetRef.current === 'home') {
         setHomeSlideIndex((prev) => {
-          const next = delta < 0 ? Math.min(prev + 1, homeTargets.length - 1) : Math.max(prev - 1, 0);
+          const next = delta < 0 ? Math.min(prev + 1, homeTargets.length) : Math.max(prev - 1, 0);
           if (next === prev) return prev;
           setHomeSlideMotion(next > prev ? 'motion-next' : 'motion-prev');
           return next;
