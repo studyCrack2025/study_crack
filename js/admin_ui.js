@@ -78,35 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // 💡 공통 apiFetch 함수
-async function apiFetch(url, options = {}) {
-    const token = localStorage.getItem('accessToken');
-    const defaultHeaders = {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
-    };
-
-    options.headers = { ...defaultHeaders, ...options.headers };
-
-    try {
-        const response = await fetch(url, options);
-
-        if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
-                alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('userId');
-                localStorage.removeItem('userRole');
-                window.location.href = '/admin/login'; 
-                return Promise.reject(new Error("Auth expired")); 
-            }
-            throw new Error(`HTTP Error: ${response.status}`);
-        }
-        return response;
-    } catch (error) {
-        console.error("API 통신 실패:", error);
-        throw error; 
-    }
-}
 
 // ============================================================
 // [A] 네비게이션 및 UI 제어

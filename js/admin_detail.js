@@ -1,47 +1,15 @@
 // js/admin_detail.js
+// URL 상수 및 apiFetch, escapeHtml, formatReportKey는 shared/api.js + shared/utils.js 에서 제공
 
 const urlParams = new URLSearchParams(window.location.search);
 const targetUserId = urlParams.get('uid');
 const adminId = localStorage.getItem('userId');
 
-const API_URL = CONFIG.api.admin;
-const REPORT_API_URL = CONFIG.api.report;
-const FILE_API_URL = CONFIG.api.file;
-const PAYMENT_API_URL = CONFIG.api.payment || CONFIG.api.admin; 
-
 let currentStudentData = null;
 let currentTier = 'free';
-let currentPaymentsData = []; 
-let currentWeeklyData = [];   
+let currentPaymentsData = [];
+let currentWeeklyData = [];
 
-async function apiFetch(url, options = {}) {
-    const token = localStorage.getItem('accessToken');
-    const defaultHeaders = {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
-    };
-
-    options.headers = { ...defaultHeaders, ...options.headers };
-
-    try {
-        const response = await fetch(url, options);
-        if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
-                alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('userId');
-                localStorage.removeItem('userRole');
-                window.location.href = '/login'; 
-                return Promise.reject(new Error("Auth expired")); 
-            }
-            throw new Error(`HTTP Error: ${response.status}`);
-        }
-        return response;
-    } catch (error) {
-        console.error("API 통신 실패:", error);
-        throw error; 
-    }
-}
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!targetUserId || !adminId) {
@@ -137,30 +105,6 @@ function switchTab(tabName) {
     }
 }
 
-function escapeHtml(text) {
-    if (text === null || text === undefined) return '';
-    return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-}
-
-function formatReportKey(key, isPro = true) {
-    if (!key) return "알 수 없는 리포트";
-    
-    if (key.length === 6 && /^\d+$/.test(key)) {
-        const yy = key.substring(0, 2);
-        const mm = parseInt(key.substring(2, 4));
-        const ww = parseInt(key.substring(4, 6));
-        const suffix = isPro ? " PRO 리포트" : "";
-        return `${yy}년 ${mm}월 ${ww}주차${suffix}`;
-    }
-    
-    const match = key.match(/^(\d{4})-W(\d{1,2})$/);
-    if (match) {
-        const suffix = isPro ? " PRO 리포트" : "";
-        return `${match[1]}년 ${match[2]}주차${suffix}`;
-    }
-    
-    return key;
-}
 
 function parseDynamoItem(item) {
     if (item === undefined || item === null) return null;
@@ -188,7 +132,7 @@ function parseDynamoItem(item) {
 
 async function loadAllStudentData() {
     try {
-        const detailPromise = apiFetch(API_URL, {
+        const detailPromise = apiFetch(ADMIN_API_URL, {
             method: 'POST',
             body: JSON.stringify({
                 type: 'admin_get_user_detail', userId: adminId, data: { targetUserId: targetUserId }
@@ -202,7 +146,7 @@ async function loadAllStudentData() {
             })
         }).then(res => res.json()).catch(() => ({ weeklyReports: [] }));
 
-        const paymentPromise = apiFetch(API_URL, {
+        const paymentPromise = apiFetch(ADMIN_API_URL, {
             method: 'POST',
             body: JSON.stringify({
                 type: 'admin_get_payments', data: { targetUserId: targetUserId }
@@ -1378,7 +1322,7 @@ function renderPayments(p) {
 async function saveAdminMemo() {
     const memo = document.getElementById('adminMemoInput').value;
     try {
-        await apiFetch(API_URL, { 
+        await apiFetch(ADMIN_API_URL, { 
             method: 'POST', 
             body: JSON.stringify({ 
                 type: 'admin_update_memo', 
