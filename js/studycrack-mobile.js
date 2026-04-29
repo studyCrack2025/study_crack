@@ -849,7 +849,7 @@ function App() {
     </div>
     <div class="section home-section">
       <div class="home-kpi-slider">
-        <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-x:calc(-${homeSlideIndex * 100}% + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .58s cubic-bezier(.22,.61,.36,1)'};">
+        <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .58s cubic-bezier(.22,.61,.36,1)'};">
         ${homeTargets.map((item) => `<button class="card home-kpi-card admission-card slider-card home-result-card-v3" data-action="selectUniversity" data-target-major="${item.major}">
           <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score"><strong>${item.score}점</strong><small>AI 점수</small></div></div>
           <div class="home-result-gauge"><i style="width:${Math.min((item.score / 250) * 100, 100)}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
@@ -1032,13 +1032,13 @@ function App() {
     .analysis-v2-bar-proj-line{position:absolute;left:50%;transform:translateX(-50%);border-left:2px dashed #FACC15;opacity:0;pointer-events:none;z-index:4;}
     .analysis-v2-bar-proj-line.show{opacity:1;}
     @keyframes barProjPop{0%{transform:translateX(-50%) translateY(8px);opacity:0;}100%{transform:translateX(-50%) translateY(0);opacity:1;}}
-    .home-kpi-slider{overflow:hidden;padding:2px 0 2px 0;touch-action:pan-y;}
-    .home-kpi-track{display:flex;gap:0;transform:translateX(var(--home-slide-x));will-change:transform;transition:var(--home-slide-transition, transform .46s cubic-bezier(.22,.61,.36,1));}
+    .home-kpi-slider{--home-slide-card-width:72%;--home-slide-gap:12px;overflow:hidden;padding:2px 0 2px 0;touch-action:pan-y;}
+    .home-kpi-track{display:flex;align-items:stretch;gap:var(--home-slide-gap);padding-right:calc(100% - var(--home-slide-card-width));transform:translateX(var(--home-slide-x));will-change:transform;transition:var(--home-slide-transition, transform .46s cubic-bezier(.22,.61,.36,1));}
     .home-kpi-track.motion-next{animation:none;}
     .home-kpi-track.motion-prev{animation:none;}
     @keyframes homeSlideNext{from{transform:translateX(calc(var(--home-slide-x) + 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
     @keyframes homeSlidePrev{from{transform:translateX(calc(var(--home-slide-x) - 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
-    .home-kpi-slider .slider-card{flex:0 0 100%;margin-right:0;min-height:0;}
+    .home-kpi-slider .slider-card{flex:0 0 var(--home-slide-card-width);margin-right:0;min-height:0;}
     .home-kpi-indicator i{cursor:pointer;}
     .home-add-univ-card{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;padding:24px;border:1px solid #BFDBFE;background:linear-gradient(135deg,#F8FBFF,#EAF2FF);color:#1D4ED8;border-radius:24px;box-shadow:0 12px 24px rgba(30,64,175,.10);min-height:0;}
     .home-add-univ-card b{font-size:28px;line-height:1.15;letter-spacing:-.02em;}
@@ -1046,8 +1046,8 @@ function App() {
     .premium-panel{border:1px solid #D6E2F5;background:linear-gradient(160deg,#FFFFFF 0%,#F4F8FF 55%,#EEF4FF 100%);box-shadow:0 14px 28px rgba(15,23,42,.08);border-radius:24px;padding:18px;}
     .home-study-summary .timer{font-size:44px;letter-spacing:0.02em;font-weight:500;color:#0F172A;background:none;-webkit-background-clip:initial;text-shadow:none;}
     .premium-clock{font-family:'Pretendard',system-ui;display:inline-block;padding:6px 10px;border-radius:14px;background:#fff;}
-    .study-timer-row{display:grid;justify-items:center;text-align:center;place-items:center;}
-    .timer-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;width:100%;}
+    .study-timer-row{display:grid;grid-template-columns:1fr;justify-items:center;align-items:center;text-align:center;gap:12px;}
+    .timer-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:0;width:100%;max-width:320px;}
     .timer-actions .mini{min-height:42px;border-radius:12px;width:100%;}
     .timer-actions .btn-secondary{background:#E5E7EB;color:#475569;border:none;}
     .home-breakdown-toggle{margin-top:10px;border:none;background:#EAF2FF;color:#1D4ED8;border-radius:14px;padding:11px 12px;font-weight:800;width:100%;text-align:center;display:block;}
