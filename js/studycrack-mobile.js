@@ -1883,7 +1883,7 @@ function App() {
     }
     if (action === 'setObGradeStatus') setObGradeStatus(actionEl.getAttribute('data-ob-grade') || '고1/2 재학');
     if (action === 'toggleObGed') setObGed((v) => !v);
-    if (action === 'openKakaoSupport') window.open('https://open.kakao.com/o/sw1b6M2h', '_blank');
+    if (action === 'openKakaoSupport') window.open('http://pf.kakao.com/_wxjxcgn', '_blank');
     if (action === 'openEmailSupport') window.location.href = 'mailto:contact@studycrack.co.kr';
     if (action === 'openDrawer') setDrawerOpen(true);
     if (action === 'closeDrawer') setDrawerOpen(false);
