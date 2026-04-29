@@ -669,7 +669,8 @@ function App() {
       ? { tone: 'info', icon: '📊', text: `${lowRatio.subject} 비중이 부족합니다. 전략상 손해 가능성이 있어요.` }
       : { tone: 'info', icon: '📊', text: '과목 비중이 균형적으로 유지되고 있어요. 지금 흐름을 유지해요.' };
   const canSubmitPlanner = Boolean(plannerDraft.subject && plannerDraft.durationChoice);
-  const inquiryOptions = `<optgroup label="사회탐구"><option value="">과목 선택</option><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option></optgroup><optgroup label="과학탐구"><option>물리학</option><option>화학</option><option>생명과학</option><option>지구과학</option></optgroup>`;
+  const inquirySubjects = ['생활과 윤리','윤리와 사상','한국지리','세계지리','동아시아사','세계사','경제','정치와 법','사회·문화','물리학','화학','생명과학','지구과학'];
+  const inquiryOptions = (selected = '') => `<option value="">과목 선택</option>${inquirySubjects.map((s)=>`<option value="${s}" ${selected===s?'selected':''}>${s}</option>`).join('')}`;
   const ScoreEditModal = () => {
     const step = scoreEditStep;
     const previewRaw = step === 1 ? (Number(scoreEditState.korean.common || 0) + Number(scoreEditState.korean.elective || 0))
@@ -688,8 +689,8 @@ function App() {
           : step === 4
             ? `<h4>한국사</h4><select class="planner-input" data-field="v2e-history"><option value="">등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option value="${n}" ${String(scoreEditState.history)===String(n)?'selected':''}>${n}등급</option>`).join('')}</select>`
             : step === 5
-              ? `<h4>탐구1</h4><select class="planner-input" data-field="v2e-inq1-subject">${inquiryOptions}</select><input class="planner-input" data-field="v2e-inq1-score" value="${scoreEditState.inquiry1.score}" type="number" placeholder="원점수"/>${preview}`
-              : `<h4>탐구2</h4><select class="planner-input" data-field="v2e-inq2-subject">${inquiryOptions}</select><input class="planner-input" data-field="v2e-inq2-score" value="${scoreEditState.inquiry2.score}" type="number" placeholder="원점수"/>${preview}`;
+              ? `<h4>탐구1</h4><select class="planner-input" data-field="v2e-inq1-subject">${inquiryOptions(scoreEditState.inquiry1.subject)}</select><input class="planner-input" data-field="v2e-inq1-score" value="${scoreEditState.inquiry1.score}" type="number" placeholder="원점수"/>${preview}`
+              : `<h4>탐구2</h4><select class="planner-input" data-field="v2e-inq2-subject">${inquiryOptions(scoreEditState.inquiry2.subject)}</select><input class="planner-input" data-field="v2e-inq2-score" value="${scoreEditState.inquiry2.score}" type="number" placeholder="원점수"/>${preview}`;
     return `<div class="home-modal-overlay" data-action="closeScoreEdit"><div class="home-modal score-edit-modal v2-step-modal" data-action="noopModal"><p class="home-modal-title">성적 수정</p><p class="sub">${step}/6</p>${body}<div class="v2-step-actions"><button class="btn btn-secondary" data-action="scoreStepPrev" ${step===1?'disabled':''}>이전</button>${step===6?'<button class="btn btn-primary" data-action="saveScoreEdit">저장</button>':'<button class="btn btn-primary" data-action="scoreStepNext">다음</button>'}</div></div></div>`;
   };
   const onboarding = (step, title, subtitle, cardContent, bubbleText, target, cta = '다음') => `
@@ -734,13 +735,14 @@ function App() {
     };
   });
   const scoreRows = [
-    ['국어', scores.korean],
-    ['수학', scores.math],
-    ['영어', scores.english],
-    [scoreEditState.inquiry1.subject || '탐구1', scores.inquiry1],
-    [scoreEditState.inquiry2.subject || '탐구2', scores.inquiry2]
+    [scoreEditState.korean.type || '국어', scores.korean, 'raw'],
+    [scoreEditState.math.type || '수학', scores.math, 'raw'],
+    ['영어', scores.english, 'grade-only'],
+    [scoreEditState.inquiry1.subject || '탐구1', scores.inquiry1, 'raw'],
+    [scoreEditState.inquiry2.subject || '탐구2', scores.inquiry2, 'raw']
   ];
-  const scoreInfoDetailList = scoreRows.map(([subject, raw]) => {
+  const scoreInfoDetailList = scoreRows.map(([subject, raw, type]) => {
+    if (type === 'grade-only') return `<div class="score-info-detail-row"><b>${subject}</b><span>-</span><span>-</span><span>-</span><span>${Math.max(1, Number(raw) || 1)}</span></div>`;
     const m = scoreMetric(raw);
     return `<div class="score-info-detail-row"><b>${subject}</b><span>${raw}</span><span>${m.std}</span><span>${m.pct}</span><span>${m.grade}</span></div>`;
   }).join('') + `<div class="score-info-detail-row"><b>한국사</b><span>-</span><span>-</span><span>-</span><span>${Math.max(1, Number(scoreEditState.history || 3) || 3)}</span></div>`;
@@ -866,7 +868,7 @@ function App() {
       </div>
       <button class="card study-goal-card home-goal-linked-card home-insight-card premium-panel" data-action="goto" data-target="planner">
         <p class="analysis-title">오늘 공부 목표</p>
-        ${todayPlannerItems.length ? `<p class="sub">오늘 목표 ${formatMinutesLabel(todayPlannerTotalMinutes)} · 현재 ${formatHourMin(todayStudySeconds)}</p><div class="track"><i style="width:${todayPlannerProgress}%"></i></div><p class="sub" style="margin:8px 0 0">달성률 ${todayPlannerProgress}% · ${todayPlannerSubjectSummary.join(' · ')}</p>` : `<p class="sub">오늘 계획을 추가해보세요</p><span class="home-goal-empty-cta">플래너로 이동</span>`}
+        ${todayPlannerItems.length ? `<div class="goal-compact"><b>${todayPlannerProgress}%</b><span>달성</span><em>${formatMinutesLabel(todayPlannerTotalMinutes)}</em></div><div class="track"><i style="width:${todayPlannerProgress}%"></i></div><div class="goal-tags">${todayPlannerSubjectSummary.slice(0,3).map((v)=>`<span>${v}</span>`).join('')}</div>` : `<p class="sub">오늘 계획을 추가해보세요</p><span class="home-goal-empty-cta">플래너로 이동</span>`}
       </button>
       <div class="card home-bottom-summary ranking-card home-insight-card premium-panel">
         <div class="home-ranking-head"><p class="analysis-title">내 공부 랭킹</p><span class="badge">오늘 기준</span></div>
@@ -1034,7 +1036,7 @@ function App() {
     .home-kpi-track.motion-prev{animation:homeSlidePrev .58s cubic-bezier(.22,.61,.36,1);}
     @keyframes homeSlideNext{from{transform:translateX(calc(var(--home-slide-x) + 18%));}to{transform:translateX(var(--home-slide-x));}}
     @keyframes homeSlidePrev{from{transform:translateX(calc(var(--home-slide-x) - 18%));}to{transform:translateX(var(--home-slide-x));}}
-    .home-kpi-slider .slider-card{flex:0 0 92%;margin-right:8px;}
+    .home-kpi-slider .slider-card{flex:0 0 80%;margin-right:10px;}
     .home-kpi-indicator i{cursor:pointer;}
     .home-add-univ-card{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;padding:24px;border:1px solid #BFDBFE;background:linear-gradient(135deg,#F8FBFF,#EAF2FF);color:#1D4ED8;border-radius:24px;box-shadow:0 12px 24px rgba(30,64,175,.10);}
     .home-add-univ-card b{font-size:28px;line-height:1.15;letter-spacing:-.02em;}
@@ -1044,6 +1046,12 @@ function App() {
     .home-study-summary .start-button{box-shadow:0 10px 20px rgba(37,99,235,.2);}
     .home-subject-pill-row{gap:10px;}
     .home-goal-linked-card .analysis-title{margin-bottom:6px;}
+    .goal-compact{display:flex;align-items:flex-end;gap:8px;margin-bottom:8px}
+    .goal-compact b{font-size:26px;line-height:1;color:#1D4ED8}
+    .goal-compact span{font-size:12px;color:#64748B;font-weight:700}
+    .goal-compact em{margin-left:auto;font-style:normal;font-weight:700;color:#334155}
+    .goal-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .goal-tags span{font-size:12px;padding:4px 8px;background:#EAF2FF;color:#1E3A8A;border-radius:999px}
     .home-goal-linked-card .track{height:14px;border-radius:999px;}
     .home-result-card-v3{display:grid;gap:12px;text-align:left;overflow:hidden;}
     .home-result-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;}
@@ -1825,8 +1833,11 @@ function App() {
       setTimeout(() => {
         setAnalysisTargetList((prev) => (prev.includes(major) ? prev : [...prev, major]));
         setTargetMajor(major);
-        setHomeTargetList((prev) => prev.includes(major) ? prev : [...prev, major]);
-        setHomeSlideIndex(homeTargetList.length);
+        setHomeTargetList((prev) => {
+          const next = prev.includes(major) ? prev : [...prev, major];
+          setHomeSlideIndex(Math.max(0, next.length - 1));
+          return next;
+        });
         setAddingUniversity(false);
       }, 500);
     }
