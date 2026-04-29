@@ -864,7 +864,7 @@ function App() {
     <div class="section home-section home-section-last">
       <div class="card home-study-summary study-summary-card home-insight-card premium-panel">
         <div class="home-card-head"><p class="analysis-title">오늘 누적 공부</p><span class="home-mini-badge">${studyTimerRunning ? '진행중' : '대기'}</span></div>
-        <div class="study-timer-row"><b class="timer premium-clock" data-study-base-seconds="${todayRecord?.studyTime || 0}">${formatHms(todayStudySeconds)}</b>${studyTimerRunning ? `<button class="btn btn-secondary start-button" data-action="stopStudyTimer">공부 종료</button>` : `<button class="btn btn-primary start-button" data-action="openStudySubjectSheet">공부 시작하기</button>`}</div>
+        <div class="study-timer-row"><b class="timer premium-clock" data-study-base-seconds="${todayRecord?.studyTime || 0}">${formatHms(todayStudySeconds)}</b><div class="timer-actions"><button class="btn btn-primary mini ${studyTimerRunning?'disabled':''}" data-action="openStudySubjectSheet" ${studyTimerRunning?'disabled':''}>공부 시작</button><button class="btn btn-secondary mini ${studyTimerRunning?'':'disabled'}" data-action="stopStudyTimer" ${studyTimerRunning?'':'disabled'}>정지</button></div></div>
         <button class="home-breakdown-toggle" data-action="toggleStudyBreakdown">${showStudyBreakdown ? '접기' : '펼쳐보기'}</button>
         ${showStudyBreakdown ? `<div class="home-breakdown-list">${visibleSubjectChips.map(([subject, sec]) => `<div><b>${subject}</b><span>${formatHms(sec || 0)}</span></div>`).join('')}</div>` : ''}
       </div>
@@ -1032,22 +1032,24 @@ function App() {
     .analysis-v2-bar-proj-line{position:absolute;left:50%;transform:translateX(-50%);border-left:2px dashed #FACC15;opacity:0;pointer-events:none;z-index:4;}
     .analysis-v2-bar-proj-line.show{opacity:1;}
     @keyframes barProjPop{0%{transform:translateX(-50%) translateY(8px);opacity:0;}100%{transform:translateX(-50%) translateY(0);opacity:1;}}
-    .home-kpi-slider{overflow:hidden;padding:2px 12px 2px 0;touch-action:pan-y;}
-    .home-kpi-track{display:flex;transform:translateX(var(--home-slide-x));will-change:transform;transition:var(--home-slide-transition, transform .72s cubic-bezier(.16,.84,.32,1));}
-    .home-kpi-track.motion-next{animation:homeSlideNext .66s cubic-bezier(.2,.7,.25,1);}
-    .home-kpi-track.motion-prev{animation:homeSlidePrev .66s cubic-bezier(.2,.7,.25,1);}
+    .home-kpi-slider{overflow:hidden;padding:2px 0 2px 0;touch-action:pan-y;}
+    .home-kpi-track{display:flex;gap:12px;transform:translateX(var(--home-slide-x));will-change:transform;transition:var(--home-slide-transition, transform .8s cubic-bezier(.18,.88,.28,1));}
+    .home-kpi-track.motion-next{animation:none;}
+    .home-kpi-track.motion-prev{animation:none;}
     @keyframes homeSlideNext{from{transform:translateX(calc(var(--home-slide-x) + 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
     @keyframes homeSlidePrev{from{transform:translateX(calc(var(--home-slide-x) - 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
-    .home-kpi-slider .slider-card{flex:0 0 72%;margin-right:12px;}
+    .home-kpi-slider .slider-card{flex:0 0 72%;margin-right:0;}
     .home-kpi-indicator i{cursor:pointer;}
     .home-add-univ-card{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;padding:24px;border:1px solid #BFDBFE;background:linear-gradient(135deg,#F8FBFF,#EAF2FF);color:#1D4ED8;border-radius:24px;box-shadow:0 12px 24px rgba(30,64,175,.10);}
     .home-add-univ-card b{font-size:28px;line-height:1.15;letter-spacing:-.02em;}
     .home-add-univ-card p{margin:8px 0 0;font-size:14px;color:#334155;font-weight:600;}
     .premium-panel{border:1px solid #D6E2F5;background:linear-gradient(160deg,#FFFFFF 0%,#F4F8FF 55%,#EEF4FF 100%);box-shadow:0 14px 28px rgba(15,23,42,.08);border-radius:24px;padding:18px;}
-    .home-study-summary .timer{font-size:56px;letter-spacing:0.04em;font-weight:900;background:linear-gradient(135deg,#1D4ED8,#3B82F6);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 6px 18px rgba(37,99,235,.25);}
-    .premium-clock{font-family:'Pretendard',system-ui;display:inline-block;padding:6px 10px;border-radius:14px;background:linear-gradient(145deg,#fff,#eef4ff);}
-    .home-study-summary .start-button{box-shadow:0 10px 20px rgba(37,99,235,.2);}
-    .home-breakdown-toggle{margin-top:8px;border:none;background:#EAF2FF;color:#1D4ED8;border-radius:999px;padding:8px 12px;font-weight:800;}
+    .home-study-summary .timer{font-size:44px;letter-spacing:0.02em;font-weight:500;color:#0F172A;background:none;-webkit-background-clip:initial;text-shadow:none;}
+    .premium-clock{font-family:'Pretendard',system-ui;display:inline-block;padding:6px 10px;border-radius:14px;background:#fff;}
+    .timer-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+    .timer-actions .mini{min-height:42px;border-radius:12px;}
+    .timer-actions .btn-secondary{background:#E5E7EB;color:#475569;border:none;}
+    .home-breakdown-toggle{margin-top:10px;border:none;background:#EAF2FF;color:#1D4ED8;border-radius:14px;padding:11px 12px;font-weight:800;width:100%;text-align:center;}
     .home-breakdown-list{margin-top:10px;display:grid;gap:8px}
     .home-breakdown-list > div{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid #DBEAFE;background:#F8FBFF;border-radius:12px}
     .home-goal-linked-card .analysis-title{margin-bottom:6px;}
@@ -1078,10 +1080,10 @@ function App() {
     .home-mini-badge{font-size:11px;font-weight:700;color:#1D4ED8;background:#DBEAFE;border-radius:999px;padding:4px 8px;}
     .home-top-icons{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
     .pro-top-btn{
-      width:158px;height:42px;border:none;border-radius:16px;position:relative;overflow:hidden;
+      width:190px;height:42px;border:none;border-radius:16px;position:relative;overflow:hidden;
       background:linear-gradient(135deg,#0F172A 0%,#1E293B 45%,#475569 100%);
       box-shadow:0 8px 20px rgba(15,23,42,.25), inset 0 1px 0 rgba(255,255,255,.22);
-      color:#F8FAFC;font-weight:900;letter-spacing:.02em;font-size:18px;
+      color:#F8FAFC;font-weight:700;letter-spacing:0;font-size:15px;font-family:'Pretendard',system-ui;white-space:nowrap;
     }
     .pro-top-btn:before{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,.35) 35%,transparent 60%);transform:translateX(-120%);animation:proShine 3.4s ease-in-out infinite;}
     @keyframes proShine{0%{transform:translateX(-120%);}45%,100%{transform:translateX(120%);}}
