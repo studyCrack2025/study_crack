@@ -127,6 +127,7 @@
         localStorage.setItem('idToken', idToken);
         localStorage.setItem('userId', userId);
         localStorage.setItem('userRole', 'student');
+        if (result.refreshToken) localStorage.setItem('refreshToken', result.refreshToken);
 
         window.dataLayer = window.dataLayer || [];
         window.dataLayer.push({ event: 'login', user_id: userId });
