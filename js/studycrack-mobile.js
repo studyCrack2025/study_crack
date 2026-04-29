@@ -1033,12 +1033,12 @@ function App() {
     .analysis-v2-bar-proj-line.show{opacity:1;}
     @keyframes barProjPop{0%{transform:translateX(-50%) translateY(8px);opacity:0;}100%{transform:translateX(-50%) translateY(0);opacity:1;}}
     .home-kpi-slider{overflow:hidden;padding:2px 0 2px 0;touch-action:pan-y;}
-    .home-kpi-track{display:flex;gap:12px;transform:translateX(var(--home-slide-x));will-change:transform;transition:var(--home-slide-transition, transform .8s cubic-bezier(.18,.88,.28,1));}
+    .home-kpi-track{display:flex;gap:0;transform:translateX(var(--home-slide-x));will-change:transform;transition:var(--home-slide-transition, transform .46s cubic-bezier(.22,.61,.36,1));}
     .home-kpi-track.motion-next{animation:none;}
     .home-kpi-track.motion-prev{animation:none;}
     @keyframes homeSlideNext{from{transform:translateX(calc(var(--home-slide-x) + 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
     @keyframes homeSlidePrev{from{transform:translateX(calc(var(--home-slide-x) - 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
-    .home-kpi-slider .slider-card{flex:0 0 72%;margin-right:0;}
+    .home-kpi-slider .slider-card{flex:0 0 100%;margin-right:0;}
     .home-kpi-indicator i{cursor:pointer;}
     .home-add-univ-card{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;padding:24px;border:1px solid #BFDBFE;background:linear-gradient(135deg,#F8FBFF,#EAF2FF);color:#1D4ED8;border-radius:24px;box-shadow:0 12px 24px rgba(30,64,175,.10);}
     .home-add-univ-card b{font-size:28px;line-height:1.15;letter-spacing:-.02em;}
@@ -1046,7 +1046,8 @@ function App() {
     .premium-panel{border:1px solid #D6E2F5;background:linear-gradient(160deg,#FFFFFF 0%,#F4F8FF 55%,#EEF4FF 100%);box-shadow:0 14px 28px rgba(15,23,42,.08);border-radius:24px;padding:18px;}
     .home-study-summary .timer{font-size:44px;letter-spacing:0.02em;font-weight:500;color:#0F172A;background:none;-webkit-background-clip:initial;text-shadow:none;}
     .premium-clock{font-family:'Pretendard',system-ui;display:inline-block;padding:6px 10px;border-radius:14px;background:#fff;}
-    .timer-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+    .study-timer-row{display:grid;justify-items:center;}
+    .timer-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;width:100%;}
     .timer-actions .mini{min-height:42px;border-radius:12px;}
     .timer-actions .btn-secondary{background:#E5E7EB;color:#475569;border:none;}
     .home-breakdown-toggle{margin-top:10px;border:none;background:#EAF2FF;color:#1D4ED8;border-radius:14px;padding:11px 12px;font-weight:800;width:100%;text-align:center;}
@@ -1167,12 +1168,12 @@ function App() {
     .score-journey-total{margin-top:2px;padding-top:10px;border-top:1px solid #CBD5E1;display:flex;justify-content:space-between;font-weight:800;white-space:nowrap;word-break:keep-all;}
     .score-journey-total b{font-weight:800;}
     .score-journey-arrow{align-self:center;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#E2E8F0;color:#334155;font-weight:900;}
-    .analysis-v2-eta-card{margin-top:2px;padding:18px;border:1px solid #93C5FD;border-radius:22px;background:linear-gradient(135deg,#0B1A47 0%,#1D4ED8 52%,#60A5FA 100%);box-shadow:0 10px 24px rgba(29,78,216,.24);position:relative;overflow:hidden;}
-    .analysis-v2-eta-card:before{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 8%,rgba(255,255,255,.35) 38%,transparent 62%);transform:translateX(-120%);animation:etaShine 3.3s ease-in-out infinite;}
+    .analysis-v2-eta-card,.on-eta-card{margin-top:2px;padding:18px;border:1px solid #93C5FD;border-radius:22px;background:linear-gradient(135deg,#0B1A47 0%,#1D4ED8 52%,#60A5FA 100%);box-shadow:0 10px 24px rgba(29,78,216,.24);position:relative;overflow:hidden;}
+    .analysis-v2-eta-card:before,.on-eta-card:before{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 8%,rgba(255,255,255,.35) 38%,transparent 62%);transform:translateX(-120%);animation:etaShine 3.3s ease-in-out infinite;}
     @keyframes etaShine{0%{transform:translateX(-120%);}45%,100%{transform:translateX(130%);}}
-    .analysis-v2-eta-card .eyebrow{display:block;font-size:13px;font-weight:700;color:#DBEAFE;margin-bottom:4px;position:relative;z-index:1;}
-    .analysis-v2-eta-card b{display:block;font-size:22px;line-height:1.35;color:#fff;position:relative;z-index:1;}
-    .analysis-v2-eta-card p{margin:6px 0 0;font-size:13px;color:#DBEAFE;line-height:1.45;position:relative;z-index:1;}
+    .analysis-v2-eta-card .eyebrow,.on-eta-card .eyebrow{display:block;font-size:13px;font-weight:700;color:#DBEAFE;margin-bottom:4px;position:relative;z-index:1;}
+    .analysis-v2-eta-card b,.on-eta-card b{display:block;font-size:22px;line-height:1.35;color:#fff;position:relative;z-index:1;}
+    .analysis-v2-eta-card p,.on-eta-card p{margin:6px 0 0;font-size:13px;color:#DBEAFE;line-height:1.45;position:relative;z-index:1;}
     .analysis-v2-chart-area{overflow:visible;}
     .analysis-v2-bars{position:absolute;left:0;right:0;bottom:var(--bar-bottom);display:flex;justify-content:space-evenly;align-items:flex-end;gap:10px;height:370px;padding:0 8px;}
     .analysis-v2-chart-area .analysis-v2-guide-line{z-index:1;}
@@ -1370,7 +1371,7 @@ function App() {
        <p class="sub ob-subcopy">현재 성적에서 합격컷까지,<br/>가장 효율적인 점수 상승 루트를 보여드릴게요.</p>
        <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>무작정 전 과목을 올리는 게 아니라, 합격에 가장 크게 기여하는 과목부터 잡아야 해요!</p></div>
        <div class="card ob-card">${scoreJourneyCard('최소 노력 대비 합격 도달 성적')}</div>
-       ${ob3IsAnalyzing ? `<div class="loading-overlay"><div class="loading-box"><div class="dots">● ● ●</div><div>분석중입니다</div><div>잠시만 기다려주세요</div></div></div>` : `<div class="card ob-card ob-period-card"><p class="analysis-title">Standard 이용 시 예상 도달 기간</p><h2>평균 3개월 예상</h2><p class="sub">주간 플래너 피드백과 학습 방향 코칭 제공</p></div>
+       ${ob3IsAnalyzing ? `<div class="loading-overlay"><div class="loading-box"><div class="dots">● ● ●</div><div>분석중입니다</div><div>잠시만 기다려주세요</div></div></div>` : `<div class="card ob-card ob-period-card on-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 3개월 내 도달 예상</b><p>주간 플래너 피드백과 학습 방향 코칭 제공</p></div>
        <div class="card ob-card">
          <p class="analysis-title">합격확률 게이지</p>
          <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${gaugeTarget}점</b></div></div>
