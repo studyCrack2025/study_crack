@@ -153,6 +153,7 @@ function App() {
   const [proRequestText, setProRequestText] = useState('');
   const [proEliteMonth, setProEliteMonth] = useState('26년 4월');
   const [addingUniversity, setAddingUniversity] = useState(false);
+  const [showStudyBreakdown, setShowStudyBreakdown] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [plannerItems, setPlannerItems] = useState(DEFAULT_PLANNER_ITEMS);
   const [plannerEditIndex, setPlannerEditIndex] = useState(null);
@@ -840,7 +841,7 @@ function App() {
     <div class="home-content">
     <div class="home-header">
       <div class="home-top-icons">
-        <button class="pro-top-btn" data-action="goto" data-target="proElite"><span>PRO LOUNGE</span></button>
+        <button class="pro-top-btn" data-action="goto" data-target="proElite"><span>PRO LOUNGE 입장</span></button>
         <button class="top-icon-btn" data-action="openNotificationModal">${i('bell', false)}</button>
       </div>
       <p class="home-greeting">안녕하세요, 지민님 👋</p>
@@ -863,8 +864,9 @@ function App() {
     <div class="section home-section home-section-last">
       <div class="card home-study-summary study-summary-card home-insight-card premium-panel">
         <div class="home-card-head"><p class="analysis-title">오늘 누적 공부</p><span class="home-mini-badge">${studyTimerRunning ? '진행중' : '대기'}</span></div>
-        <div class="study-timer-row"><b class="timer" data-study-base-seconds="${todayRecord?.studyTime || 0}">${formatHms(todayStudySeconds)}</b>${studyTimerRunning ? `<button class="btn btn-secondary start-button" data-action="stopStudyTimer">공부 종료</button>` : `<button class="btn btn-primary start-button" data-action="openStudySubjectSheet">공부 시작하기</button>`}</div>
-        <div class="home-subject-pill-row subject-chip-row home-chip-grid">${visibleSubjectChips.map(([subject, sec]) => `<span class="home-subject-pill subject-time-chip">${subject} ${formatHms(sec || 0)}</span>`).join('')}${hiddenSubjectCount ? `<span class="home-subject-pill subject-time-chip more">+${hiddenSubjectCount}</span>` : ''}</div>
+        <div class="study-timer-row"><b class="timer premium-clock" data-study-base-seconds="${todayRecord?.studyTime || 0}">${formatHms(todayStudySeconds)}</b>${studyTimerRunning ? `<button class="btn btn-secondary start-button" data-action="stopStudyTimer">공부 종료</button>` : `<button class="btn btn-primary start-button" data-action="openStudySubjectSheet">공부 시작하기</button>`}</div>
+        <button class="home-breakdown-toggle" data-action="toggleStudyBreakdown">${showStudyBreakdown ? '접기' : '펼쳐보기'}</button>
+        ${showStudyBreakdown ? `<div class="home-breakdown-list">${visibleSubjectChips.map(([subject, sec]) => `<div><b>${subject}</b><span>${formatHms(sec || 0)}</span></div>`).join('')}</div>` : ''}
       </div>
       <button class="card study-goal-card home-goal-linked-card home-insight-card premium-panel" data-action="goto" data-target="planner">
         <p class="analysis-title">오늘 공부 목표</p>
@@ -1030,8 +1032,8 @@ function App() {
     .analysis-v2-bar-proj-line{position:absolute;left:50%;transform:translateX(-50%);border-left:2px dashed #FACC15;opacity:0;pointer-events:none;z-index:4;}
     .analysis-v2-bar-proj-line.show{opacity:1;}
     @keyframes barProjPop{0%{transform:translateX(-50%) translateY(8px);opacity:0;}100%{transform:translateX(-50%) translateY(0);opacity:1;}}
-    .home-kpi-slider{overflow:visible;padding:2px 20px 2px 0;touch-action:pan-y;}
-    .home-kpi-track{display:flex;transform:translateX(var(--home-slide-x));will-change:transform;transition:var(--home-slide-transition, transform .58s cubic-bezier(.22,.61,.36,1));}
+    .home-kpi-slider{overflow:hidden;padding:2px 12px 2px 0;touch-action:pan-y;}
+    .home-kpi-track{display:flex;transform:translateX(var(--home-slide-x));will-change:transform;transition:var(--home-slide-transition, transform .72s cubic-bezier(.16,.84,.32,1));}
     .home-kpi-track.motion-next{animation:homeSlideNext .66s cubic-bezier(.2,.7,.25,1);}
     .home-kpi-track.motion-prev{animation:homeSlidePrev .66s cubic-bezier(.2,.7,.25,1);}
     @keyframes homeSlideNext{from{transform:translateX(calc(var(--home-slide-x) + 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
@@ -1043,9 +1045,11 @@ function App() {
     .home-add-univ-card p{margin:8px 0 0;font-size:14px;color:#334155;font-weight:600;}
     .premium-panel{border:1px solid #D6E2F5;background:linear-gradient(160deg,#FFFFFF 0%,#F4F8FF 55%,#EEF4FF 100%);box-shadow:0 14px 28px rgba(15,23,42,.08);border-radius:24px;padding:18px;}
     .home-study-summary .timer{font-size:56px;letter-spacing:0.04em;font-weight:900;background:linear-gradient(135deg,#1D4ED8,#3B82F6);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 6px 18px rgba(37,99,235,.25);}
+    .premium-clock{font-family:'Pretendard',system-ui;display:inline-block;padding:6px 10px;border-radius:14px;background:linear-gradient(145deg,#fff,#eef4ff);}
     .home-study-summary .start-button{box-shadow:0 10px 20px rgba(37,99,235,.2);}
-    .home-subject-pill-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
-    .home-subject-pill-row .home-subject-pill{white-space:nowrap;text-align:center;}
+    .home-breakdown-toggle{margin-top:8px;border:none;background:#EAF2FF;color:#1D4ED8;border-radius:999px;padding:8px 12px;font-weight:800;}
+    .home-breakdown-list{margin-top:10px;display:grid;gap:8px}
+    .home-breakdown-list > div{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid #DBEAFE;background:#F8FBFF;border-radius:12px}
     .home-goal-linked-card .analysis-title{margin-bottom:6px;}
     .goal-compact{display:flex;align-items:flex-end;gap:8px;margin-bottom:8px}
     .goal-compact b{font-size:26px;line-height:1;color:#1D4ED8}
@@ -1074,10 +1078,10 @@ function App() {
     .home-mini-badge{font-size:11px;font-weight:700;color:#1D4ED8;background:#DBEAFE;border-radius:999px;padding:4px 8px;}
     .home-top-icons{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
     .pro-top-btn{
-      width:72px;height:32px;border:none;border-radius:14px;position:relative;overflow:hidden;
+      width:158px;height:42px;border:none;border-radius:16px;position:relative;overflow:hidden;
       background:linear-gradient(135deg,#0F172A 0%,#1E293B 45%,#475569 100%);
       box-shadow:0 8px 20px rgba(15,23,42,.25), inset 0 1px 0 rgba(255,255,255,.22);
-      color:#F8FAFC;font-weight:900;letter-spacing:.09em;font-size:13px;
+      color:#F8FAFC;font-weight:900;letter-spacing:.02em;font-size:18px;
     }
     .pro-top-btn:before{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,.35) 35%,transparent 60%);transform:translateX(-120%);animation:proShine 3.4s ease-in-out infinite;}
     @keyframes proShine{0%{transform:translateX(-120%);}45%,100%{transform:translateX(120%);}}
@@ -1534,7 +1538,7 @@ function App() {
           <div class="card analysis-v2-before-after">
             ${scoreJourneyCard('최소 노력 대비 합격 도달 성적')}
             <div class="analysis-v2-eta ${analysisEtaStage < 3 ? 'loading' : ''}">
-              ${analysisEtaStage === 1 ? `<div class="analysis-eta-loading"><span class="skeleton"></span><p>도달 성적 계산 중입니다...</p></div>` : analysisEtaStage === 2 ? `<div class="analysis-eta-loading"><span class="skeleton thin"></span><p>도달 시간을 예상 중입니다...</p></div>` : `<div class="analysis-v2-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 2개월 내 도달 예상</b><p>매주 플래너 피드백과 학습 방향 관리를 기준으로 계산했어요</p></div>`}
+              ${analysisEtaStage === 1 ? `<div class="analysis-eta-loading"><span class="skeleton"></span><p>도달 성적 계산 중입니다...</p></div>` : analysisEtaStage === 2 ? `<div class="analysis-eta-loading"><span class="skeleton thin"></span><p>도달 시간을 예상 중입니다...</p></div>` : `<button class="analysis-v2-eta-card" data-action="startStandard"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 2개월 내 도달 예상</b><p>매주 플래너 피드백과 학습 방향 관리를 기준으로 계산했어요</p></button>`}
             </div>
           </div>
 
@@ -2001,6 +2005,7 @@ function App() {
       setCoachingStep((prev) => Math.min(8, prev + 1));
     }
     if (action === 'openStudySubjectSheet') setStudySubjectSheetOpen(true);
+    if (action === 'toggleStudyBreakdown') setShowStudyBreakdown((v) => !v);
     if (action === 'closeStudySubjectSheet') setStudySubjectSheetOpen(false);
     if (action === 'selectStudySubjectCustom') {
       const custom = window.prompt('과목명을 입력하세요', '기타');
