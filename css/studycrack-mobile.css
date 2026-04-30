@@ -240,8 +240,8 @@ body {
   padding-bottom:8px;
 }
 .home-kpi-slider::-webkit-scrollbar { display:none; }
-.home-kpi-slider .slider-card { flex:0 0 var(--home-slide-card-width,50%); min-width:var(--home-slide-card-width,50%); max-width:var(--home-slide-card-width,50%); width:var(--home-slide-card-width,50%); scroll-snap-align:center; flex-shrink:0; flex-grow:0; }
-.home-kpi-card.slider-card { flex:0 0 var(--home-slide-card-width,50%); min-width:var(--home-slide-card-width,50%); max-width:var(--home-slide-card-width,50%); width:var(--home-slide-card-width,50%); border:1px solid var(--line); text-align:left; font-family:inherit; color:inherit; }
+.home-kpi-slider .slider-card { flex:0 0 var(--home-slide-card-width,40%); min-width:var(--home-slide-card-width,40%); max-width:var(--home-slide-card-width,40%); width:var(--home-slide-card-width,40%); scroll-snap-align:center; flex-shrink:0; flex-grow:0; }
+.home-kpi-card.slider-card { flex:0 0 var(--home-slide-card-width,40%); min-width:var(--home-slide-card-width,40%); max-width:var(--home-slide-card-width,40%); width:var(--home-slide-card-width,40%); border:1px solid var(--line); text-align:left; font-family:inherit; color:inherit; }
 .home-major-pill {
   display:inline-block;
   font-size:12px;
