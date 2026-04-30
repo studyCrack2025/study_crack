@@ -880,14 +880,14 @@ function App() {
     </div>
     <div class="section home-section">
       <div class="home-kpi-slider">
-        <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-card:40%;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .58s cubic-bezier(.22,.61,.36,1)'};">
-        ${homeTargets.map((item) => `<button class="card home-kpi-card admission-card slider-card home-result-card-v3" style="flex:0 0 40%;min-width:40%;max-width:40%;" data-action="selectUniversity" data-target-major="${item.major}">
+        <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-card:40%;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .66s cubic-bezier(.16,1,.3,1)'};">
+        ${homeTargets.map((item) => `<button class="card home-kpi-card admission-card slider-card home-result-card-v3" style="flex:0 0 40%;min-width:40%;max-width:40%;width:40%;" data-action="selectUniversity" data-target-major="${item.major}">
           <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score"><strong>${item.score}점</strong><small>AI 점수</small></div></div>
           <div class="home-result-gauge"><i style="width:${Math.min((item.score / 250) * 100, 100)}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
           <div class="home-result-gauge-meta"><span>0</span><span>합격컷 100</span><span>안정컷 150</span><span>MAX 250</span></div>
           <div class="kpi-row score-row"><div class="kpi-item"><b>${item.score}점</b>현재 점수</div><div class="kpi-item"><b>${item.cut}점</b>합격 컷</div><div class="kpi-item danger"><b>${item.gap}점</b>부족 점수</div></div>
           <div class="home-planner-badges chip-row">${plannerBadges.map((badge) => `<span class="chip">${badge}</span>`).join('')}</div>
-        </button>`).join('')}<button class="card slider-card home-add-univ-card" data-action="openAnalysisSearchFromHome"><b>+ 대학 추가</b><p>추천/검색으로 추가</p></button></div>
+        </button>`).join('')}<button class="card slider-card home-add-univ-card" style="flex:0 0 40%;min-width:40%;max-width:40%;width:40%;" data-action="openAnalysisSearchFromHome"><b>+ 대학 추가</b><p>추천/검색으로 추가</p></button></div>
       </div>
       <div class="home-kpi-indicator card-indicator">${[...homeTargets, { add: true }].map((_, idx) => `<i class="${idx===homeSlideIndex?'active':''}" data-action="setHomeSlide" data-slide-index="${idx}"></i>`).join('')}</div>
       ${universityModalOpen ? `<div class="home-modal-overlay" data-action="closeUniversityModal"><div class="home-modal" data-action="noopModal"><div class="analysis-search-head"><h4>희망 대학 선택</h4><button data-action="closeUniversityModal">✕</button></div><input class="planner-input" data-field="analysisSearchTerm" value="${analysisSearchTerm}" placeholder="대학명 또는 학과명을 검색하세요"/><div class="analysis-search-section recommend"><p>현재 성적 기준 추천</p><div class="analysis-search-rec-grid">${analysisRecommended.map((name) => `<button class="analysis-rec-card" data-action="addAnalysisTarget" data-target-major="${name}"><div><strong>${name}</strong><span class="badge">추천</span></div><em>${analysisTargetList.includes(name)?'추가됨':'선택'}</em></button>`).join('')}</div></div><div class="analysis-search-section"><p>검색 결과</p>${analysisSearchList.map((name) => `<button class="analysis-search-row" data-action="addAnalysisTarget" data-target-major="${name}">${name}<span>${analysisTargetList.includes(name)?'추가됨':'추가'}</span></button>`).join('')}</div></div></div>` : ''}
@@ -1282,34 +1282,6 @@ function App() {
       </div>
     </div>
   `;
-
-
-
-  const passChanceChangeCard = () => `
-    <div class="score-journey-card pass-change-card">
-      <p class="analysis-title">합격 가능성 변화</p>
-      <div class="score-journey-segment">
-        <button type="button" class="${activeScoreView==='current'?'active':''}" data-action="setScoreView" data-score-view="current">현재</button>
-        <button type="button" class="${activeScoreView==='target'?'active':''}" data-action="setScoreView" data-score-view="target">목표</button>
-      </div>
-      <div class="score-journey-scroll">
-        <div class="score-journey-track ${scoreSlideMotion}" style="--score-slide-x:calc(${activeScoreView==='target' ? '-50%' : '0%'} + ${scoreDragOffset}px);--score-slide-transition:${scoreDragOffset!==0?'0s':'transform .56s cubic-bezier(.22,.61,.36,1)'};">
-          <div class="score-journey-col" data-score-view="current">
-            <div class="analysis-v2-gauge-head"><div><small>현재</small><b class="current">${analysisSelected.score}점</b></div></div>
-            <div class="analysis-v2-progress"><span class="progress-base" style="width:${analysisCurrentPct}%"></span><span class="line pass" style="left:40%"></span><span class="line safe" style="left:60%"></span></div>
-            <div class="analysis-v2-cut-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
-          </div>
-          <div class="score-journey-col" data-score-view="target">
-            <div class="analysis-v2-gauge-head"><div><small>목표</small><b class="target">${analysisTargetScore}점</b></div></div>
-            <div class="analysis-v2-progress"><span class="progress-base" style="width:${analysisTargetPct}%"></span><span class="line pass" style="left:40%"></span><span class="line safe" style="left:60%"></span></div>
-            <div class="analysis-v2-cut-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
-          </div>
-        </div>
-      </div>
-      <p class="analysis-sub"><b>현재 → 합격권 진입 구간</b></p>
-    </div>
-  `;
-
   const screens = {
     ob1: layout(
       `<div class="onboarding-container"><div class="content">
@@ -1611,7 +1583,16 @@ function App() {
             </div>
           </div>
           <div class="card analysis-v2-gauge-change">
-            ${passChanceChangeCard()}
+            <p class="analysis-title">합격 가능성 변화</p>
+            <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${gaugeTarget}점</b></div></div>
+            <div class="ob-gauge">
+              <div class="ob-gauge-current" style="width:${gaugeCurrentPct}%"></div>
+              <div class="ob-gauge-target" style="width:${gaugeTargetPct}%"></div>
+              <i class="ob-gauge-cut pass" style="left:${gaugePassPct}%"></i>
+              <i class="ob-gauge-cut safe" style="left:${gaugeSafePct}%"></i>
+            </div>
+            <div class="ob-gauge-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
+            <p class="analysis-sub"><b>현재 → 합격권 진입 구간</b></p>
           </div>
 
           <div class="card analysis-v2-cta sticky"><p class="analysis-title">지금 방향이 틀리면 시간만 낭비될 수 있습니다</p><p class="sub">Standard는 매주 학습 방향과 실행을 관리합니다.</p><button class="btn analysis-convert-btn" data-action="startStandard">2개월 내 합격권 진입 시작하기</button></div>
@@ -2237,8 +2218,13 @@ function App() {
       const startX = touchStartXRef.current;
       if (typeof startX !== 'number' || typeof clientX !== 'number') return;
       touchLastXRef.current = clientX;
-      // 드래그 중 매 프레임 setState를 제거해 렌더링 버벅임을 최소화합니다.
-      // 최종 전환은 endGesture에서 방향 판단 후 애니메이션으로 처리합니다.
+      const delta = clientX - startX;
+      const clamped = Math.max(-96, Math.min(96, delta));
+      if (touchTargetRef.current === 'home') {
+        setHomeDragOffset(clamped);
+      } else if (touchTargetRef.current === 'score') {
+        setScoreDragOffset(clamped);
+      }
     };
 
     const endGesture = (clientX) => {
