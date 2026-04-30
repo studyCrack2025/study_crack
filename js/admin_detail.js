@@ -131,6 +131,18 @@ function parseDynamoItem(item) {
 }
 
 async function loadAllStudentData() {
+    const cacheKey = 'studentDetail_' + targetUserId;
+
+    // 캐시 확인 (2분 TTL) — 자주 돌아오는 튜터/관리자 UX 개선
+    const cached = Store.get(cacheKey);
+    if (cached) {
+        currentStudentData  = cached.detail;
+        currentWeeklyData   = cached.weekly;
+        currentPaymentsData = cached.payments;
+        renderData(currentStudentData);
+        return;
+    }
+
     try {
         const detailPromise = apiFetch(ADMIN_API_URL, {
             method: 'POST',
@@ -155,9 +167,16 @@ async function loadAllStudentData() {
 
         const [detailData, weeklyData, paymentData] = await Promise.all([detailPromise, weeklyPromise, paymentPromise]);
 
-        currentStudentData = parseDynamoItem(detailData);
-        currentWeeklyData = parseDynamoItem(weeklyData.weeklyReports || []);
+        currentStudentData  = parseDynamoItem(detailData);
+        currentWeeklyData   = parseDynamoItem(weeklyData.weeklyReports || []);
         currentPaymentsData = parseDynamoItem(paymentData.payments || []);
+
+        // 결과를 Store에 캐싱 (2분)
+        Store.set(cacheKey, {
+            detail:   currentStudentData,
+            weekly:   currentWeeklyData,
+            payments: currentPaymentsData
+        }, 120);
 
         renderData(currentStudentData);
     } catch (e) {

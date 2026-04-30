@@ -52,6 +52,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // 초기 데이터 로드
     loadAdminStats(userId);
     populateTutorFilter();
+
+    // 상세 페이지에서 돌아온 경우 이전 검색 상태 복원
+    const savedSearch = Store.get('lastSearch');
+    if (savedSearch) {
+        const typeEl = document.getElementById('searchType');
+        const inputEl = document.getElementById('searchInput');
+        const tierEl  = document.getElementById('filterTier');
+        if (typeEl)  typeEl.value  = savedSearch.type  || 'name';
+        if (inputEl) inputEl.value = savedSearch.keyword || '';
+        if (tierEl)  tierEl.value  = savedSearch.filterTier || 'all';
+        // filterTutor는 populateTutorFilter() 비동기 완료 후 적용
+        if (savedSearch.filterTutor && savedSearch.filterTutor !== 'all') {
+            const applyTutor = () => {
+                const tutorEl = document.getElementById('filterTutor');
+                if (tutorEl) tutorEl.value = savedSearch.filterTutor;
+            };
+            setTimeout(applyTutor, 1000);
+        }
+    }
     searchStudents();
     fetchUnreadNotiCount();
     
@@ -330,6 +349,8 @@ async function searchStudents() {
         }
 
         currentStudentList = students;
+        Store.set('lastSearch', { type, keyword, filterTier, filterTutor });
+
         tbody.innerHTML = "";
 
         if (students.length === 0) {
@@ -376,7 +397,10 @@ async function searchStudents() {
     }
 }
 
-function goToStudentDetail(targetUserId) { window.location.href = `/admin/detail?uid=${targetUserId}`; }
+function goToStudentDetail(targetUserId) {
+    // 상세 페이지에서 돌아올 때 목록 복원용 검색 상태는 이미 Store에 저장됨
+    window.location.href = `/admin/detail?uid=${targetUserId}`;
+}
 
 // 학생 등급을 텍스트로 반환 (CSV용)
 function getStudentTierText(s) {
@@ -556,10 +580,9 @@ window.sendNoticeToSelectedStudents = function() {
     }
 
     // 💡 1. 화면의 체크박스가 아닌 '장바구니(persistedSelections)'에서 명단을 꺼냄
-    window.pendingNoticeTargets = Array.from(persistedSelections.entries()).map(([userId, userName]) => ({
-        userId: userId,
-        userName: userName
-    }));
+    Store.set('pendingNoticeTargets', Array.from(persistedSelections.entries()).map(([userId, userName]) => ({
+        userId, userName
+    })));
 
     // 2. 학생 관리 탭의 선택 모드 닫기
     toggleStudentSelection();
@@ -1086,12 +1109,13 @@ async function loadTutorListForNotice() {
 
         clearAllTargets();
         
-        if (window.pendingNoticeTargets && window.pendingNoticeTargets.length > 0) {
+        const pendingTargets = Store.get('pendingNoticeTargets');
+        Store.clear('pendingNoticeTargets');
+        if (pendingTargets && pendingTargets.length > 0) {
             // 바구니에 데이터가 있으면 맵에 주입
-            window.pendingNoticeTargets.forEach(student => {
+            pendingTargets.forEach(student => {
                 selectedTargetMap.set(student.userId, { name: student.userName, tag: "선택명단" });
             });
-            window.pendingNoticeTargets = null; // 사용 후 바구니 비우기
             document.getElementById('targetGroupSelect').value = 'INDIVIDUAL';
         } else {
             // 바구니가 비어있으면 일반적인 초기화 진행
