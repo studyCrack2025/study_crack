@@ -587,8 +587,8 @@ function App() {
   const onboardingProgress = (step) => `<div class="ob-progress"><span>${step}/3</span><div class="ob-dots"><i class="${step>=1?'active':''}"></i><i class="${step>=2?'active':''}"></i><i class="${step>=3?'active':''}"></i></div></div>`;
   const mbtiDone = Object.values(mbtiAnswers).every(Boolean);
   const gaugeTotal = 250;
-  const gaugeCurrent = 86;
-  const gaugeTarget = 120;
+  const gaugeCurrent = Math.max(0, Math.min(gaugeTotal, Math.round(analysisSelected.score)));
+  const gaugeTarget = Math.max(gaugeCurrent, Math.min(gaugeTotal, Math.round(analysisTargetScore)));
   const gaugePass = 100;
   const gaugeSafe = 150;
   const gaugeCurrentPct = Math.min((gaugeCurrent / gaugeTotal) * 100, 100);
@@ -880,14 +880,14 @@ function App() {
     </div>
     <div class="section home-section">
       <div class="home-kpi-slider">
-        <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-card:40%;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .66s cubic-bezier(.16,1,.3,1)'};">
-        ${homeTargets.map((item) => `<button class="card home-kpi-card admission-card slider-card home-result-card-v3" style="flex:0 0 40%;min-width:40%;max-width:40%;width:40%;" data-action="selectUniversity" data-target-major="${item.major}">
+        <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-card:40%;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .72s cubic-bezier(.22,1,.36,1)'};">
+        ${homeTargets.map((item) => `<button class="card home-kpi-card admission-card slider-card home-result-card-v3" data-action="selectUniversity" data-target-major="${item.major}">
           <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score"><strong>${item.score}점</strong><small>AI 점수</small></div></div>
           <div class="home-result-gauge"><i style="width:${Math.min((item.score / 250) * 100, 100)}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
           <div class="home-result-gauge-meta"><span>0</span><span>합격컷 100</span><span>안정컷 150</span><span>MAX 250</span></div>
           <div class="kpi-row score-row"><div class="kpi-item"><b>${item.score}점</b>현재 점수</div><div class="kpi-item"><b>${item.cut}점</b>합격 컷</div><div class="kpi-item danger"><b>${item.gap}점</b>부족 점수</div></div>
           <div class="home-planner-badges chip-row">${plannerBadges.map((badge) => `<span class="chip">${badge}</span>`).join('')}</div>
-        </button>`).join('')}<button class="card slider-card home-add-univ-card" style="flex:0 0 40%;min-width:40%;max-width:40%;width:40%;" data-action="openAnalysisSearchFromHome"><b>+ 대학 추가</b><p>추천/검색으로 추가</p></button></div>
+        </button>`).join('')}<button class="card slider-card home-add-univ-card" data-action="openAnalysisSearchFromHome"><b>+ 대학 추가</b><p>추천/검색으로 추가</p></button></div>
       </div>
       <div class="home-kpi-indicator card-indicator">${[...homeTargets, { add: true }].map((_, idx) => `<i class="${idx===homeSlideIndex?'active':''}" data-action="setHomeSlide" data-slide-index="${idx}"></i>`).join('')}</div>
       ${universityModalOpen ? `<div class="home-modal-overlay" data-action="closeUniversityModal"><div class="home-modal" data-action="noopModal"><div class="analysis-search-head"><h4>희망 대학 선택</h4><button data-action="closeUniversityModal">✕</button></div><input class="planner-input" data-field="analysisSearchTerm" value="${analysisSearchTerm}" placeholder="대학명 또는 학과명을 검색하세요"/><div class="analysis-search-section recommend"><p>현재 성적 기준 추천</p><div class="analysis-search-rec-grid">${analysisRecommended.map((name) => `<button class="analysis-rec-card" data-action="addAnalysisTarget" data-target-major="${name}"><div><strong>${name}</strong><span class="badge">추천</span></div><em>${analysisTargetList.includes(name)?'추가됨':'선택'}</em></button>`).join('')}</div></div><div class="analysis-search-section"><p>검색 결과</p>${analysisSearchList.map((name) => `<button class="analysis-search-row" data-action="addAnalysisTarget" data-target-major="${name}">${name}<span>${analysisTargetList.includes(name)?'추가됨':'추가'}</span></button>`).join('')}</div></div></div>` : ''}
@@ -1069,8 +1069,8 @@ function App() {
     .home-kpi-track.motion-prev{animation:none;}
     @keyframes homeSlideNext{from{transform:translateX(calc(var(--home-slide-x) + 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
     @keyframes homeSlidePrev{from{transform:translateX(calc(var(--home-slide-x) - 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
-    .home-kpi-slider .slider-card{flex:0 0 var(--home-slide-card,40%) !important;min-width:var(--home-slide-card,40%) !important;max-width:var(--home-slide-card,40%) !important;width:var(--home-slide-card,40%) !important;margin-right:0;min-height:0;box-sizing:border-box;overflow:hidden;}
-    .home-kpi-slider .home-kpi-card.slider-card{flex:0 0 var(--home-slide-card,40%) !important;max-width:var(--home-slide-card,40%) !important;min-width:var(--home-slide-card,40%) !important;width:var(--home-slide-card,40%) !important;}
+    .home-kpi-slider .slider-card{flex:0 0 var(--home-slide-card,40%) !important;flex-basis:var(--home-slide-card,40%) !important;flex-shrink:0 !important;min-width:var(--home-slide-card,40%) !important;max-width:var(--home-slide-card,40%) !important;width:var(--home-slide-card,40%) !important;margin-right:0;min-height:0;box-sizing:border-box;overflow:hidden;}
+    .home-kpi-slider .home-kpi-card.slider-card{flex:0 0 var(--home-slide-card,40%) !important;flex-basis:var(--home-slide-card,40%) !important;flex-shrink:0 !important;max-width:var(--home-slide-card,40%) !important;min-width:var(--home-slide-card,40%) !important;width:var(--home-slide-card,40%) !important;}
     .home-kpi-indicator i{cursor:pointer;}
     .home-add-univ-card{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;padding:24px;border:1px solid #BFDBFE;background:linear-gradient(135deg,#F8FBFF,#EAF2FF);color:#1D4ED8;border-radius:24px;box-shadow:0 12px 24px rgba(30,64,175,.10);min-height:0;}
     .home-add-univ-card b{font-size:28px;line-height:1.15;letter-spacing:-.02em;}
@@ -2219,10 +2219,15 @@ function App() {
       if (typeof startX !== 'number' || typeof clientX !== 'number') return;
       touchLastXRef.current = clientX;
       const delta = clientX - startX;
-      const clamped = Math.max(-96, Math.min(96, delta));
       if (touchTargetRef.current === 'home') {
+        const atFirst = homeSlideIndex === 0;
+        const atLast = homeSlideIndex === homeTargets.length;
+        const overscrolling = (atFirst && delta > 0) || (atLast && delta < 0);
+        const resistance = overscrolling ? 0.35 : 0.92;
+        const clamped = Math.max(-118, Math.min(118, delta * resistance));
         setHomeDragOffset(clamped);
       } else if (touchTargetRef.current === 'score') {
+        const clamped = Math.max(-96, Math.min(96, delta));
         setScoreDragOffset(clamped);
       }
     };
@@ -2235,7 +2240,9 @@ function App() {
       touchLastXRef.current = null;
       setHomeDragOffset(0);
       setScoreDragOffset(0);
-      if (Math.abs(delta) < 26) {
+      const absDelta = Math.abs(delta);
+      const swipeThreshold = touchTargetRef.current === 'home' ? 22 : 26;
+      if (absDelta < swipeThreshold) {
         touchTargetRef.current = '';
         return;
       }
