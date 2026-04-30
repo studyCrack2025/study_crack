@@ -191,7 +191,8 @@ function App() {
   const [obTrack, setObTrack] = useState('예체능');
   const [obGoalText, setObGoalText] = useState('');
   const [obQuestionText, setObQuestionText] = useState('');
-  const [obExamType, setObExamType] = useState('3월 학평');
+  const [obExamType, setObExamType] = useState('3월 모의고사');
+  const [scoreExamType, setScoreExamType] = useState('3월 모의고사');
   const [obScoreInputs, setObScoreInputs] = useState({});
   const plannerContentRef = useRef('');
   const plannerCustomMinutesRef = useRef('');
@@ -756,6 +757,11 @@ function App() {
     const grade = pct >= 96 ? 1 : pct >= 89 ? 2 : pct >= 77 ? 3 : pct >= 64 ? 4 : pct >= 52 ? 5 : pct >= 40 ? 6 : pct >= 28 ? 7 : pct >= 16 ? 8 : 9;
     return { std, pct, grade };
   };
+  const EXAM_OPTIONS = ['3월 모의고사','5월 모의고사','6월 평가원','7월 모의고사','9월 평가원','10월 모의고사','수능','기타'];
+  const getExamScoresMap = () => {
+    try { return JSON.parse(localStorage.getItem('examScoresByType') || '{}') || {}; } catch { return {}; }
+  };
+  const saveExamScoresMap = (map) => localStorage.setItem('examScoresByType', JSON.stringify(map || {}));
   const homeTargets = homeTargetList.map((major) => {
     const profile = analysisProfiles[major] || analysisSelected;
     const score = Number(liveCurrentScore || Math.round((scores.korean + scores.math + scores.english + scores.inquiry1 + scores.inquiry2) / 5));
@@ -1381,8 +1387,8 @@ function App() {
          <p class="score-subtitle">과목별 입력을 완료하면 현재 위치를 더 정확하게 계산해요.</p>
          <div class="ob1-score-exam">
            <label>시험 선택</label>
-           <select class="ob1-score-select">
-             <option>3월 학평</option><option>6월 모의평가</option><option>9월 모의평가</option><option>수능</option>
+           <select class="ob1-score-select" data-field="obExamType">
+             ${EXAM_OPTIONS.map((label) => `<option value="${label}" ${obExamType===label?'selected':''}>${label}</option>`).join('')}
            </select>
          </div>
          <div class="ob1-score-grid">
@@ -1784,7 +1790,7 @@ function App() {
     paymentComplete: layout(`<div class="payment-done-screen"><div class="payment-complete-wrap"><div class="payment-check">${i('check', true)}</div><p class="title payment-complete-title">결제가 완료되었습니다!</p><p class="sub payment-complete-sub">${selectedPlan.toUpperCase()} 플랜이 활성화되었습니다.</p><div class="card payment-complete-note"><b>프로 보고서 이용 안내</b><p>2주에 한 번 새로운 리포트를 제공해 드려요.<br/>다음 리포트는 5월 25일에 이용 가능해요.</p></div></div><div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="home">홈으로 이동</button></div></div>`, false),
 
     qualInfo: layout(appbar('정성조사서', true) + `<div class="card"><p class="analysis-title">현재 학년</p><div class="ob1-pill-row">${['고1/2 재학','고3 재학','N수생','검정고시','기타'].map((grade) => `<button class="ob1-pill ${obGradeStatus===grade?'active':''}" data-action="setObGradeStatus" data-ob-grade="${grade}">${grade}</button>`).join('')}</div></div><div class="card"><p class="analysis-title">출신 학교</p><input class="planner-input" data-field="obSchoolName" value="${obSchoolName}" placeholder="출신 학교 입력"/></div><div class="card"><p class="analysis-title">희망 계열</p><select class="planner-input" data-field="obTrack"><option value="예체능" ${obTrack==='예체능'?'selected':''}>예체능</option><option value="인문사회" ${obTrack==='인문사회'?'selected':''}>인문사회</option><option value="상경계열" ${obTrack==='상경계열'?'selected':''}>상경계열</option><option value="자연/공학" ${obTrack==='자연/공학'?'selected':''}>자연/공학</option><option value="의치한약수" ${obTrack==='의치한약수'?'selected':''}>의치한약수</option><option value="간호" ${obTrack==='간호'?'selected':''}>간호</option><option value="사범/교대" ${obTrack==='사범/교대'?'selected':''}>사범/교대</option><option value="기타" ${obTrack==='기타'?'selected':''}>기타</option></select></div><div class="card"><p class="analysis-title">스터디크랙을 통해서 얻고 싶은 점</p><textarea class="planner-input" data-field="obGoalText" rows="3">${obGoalText}</textarea></div><div class="card"><p class="analysis-title">입시 고민 및 질문 (있으면 작성해주세요.)</p><textarea class="planner-input" data-field="obQuestionText" rows="4">${obQuestionText}</textarea><button class="btn btn-primary" data-action="saveQualInfo">정성조사서 저장</button></div>`, false),
-    scoreInfo: layout(appbar('성적 정보', true) + `<div class="card score-info-card"><div class="score-info-detail-table"><div class="score-info-detail-row"><b>과목</b><b>원점수</b><b>표준점수</b><b>백분위</b><b>등급</b></div>${scoreInfoDetailList}</div><button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">성적 수정하기</button></div><div class="card"><p class="analysis-title">최근 성적 업데이트</p><p class="sub" style="margin:0">2024.05.14 기준</p><p class="sub" style="margin:6px 0 0">다음 업데이트 권장: 2주 후</p></div>${scoreEditOpen ? ScoreEditModal() : ''}`, false),
+    scoreInfo: layout(appbar('성적 정보', true) + `<div class="card score-info-card"><label style="font-weight:700;">시험 선택</label><select class="planner-input" data-field="scoreExamType" style="margin-top:8px;">${EXAM_OPTIONS.map((label) => `<option value="${label}" ${scoreExamType===label?'selected':''}>${label}</option>`).join('')}</select><div class="score-info-detail-table"><div class="score-info-detail-row"><b>과목</b><b>원점수</b><b>표준점수</b><b>백분위</b><b>등급</b></div>${scoreInfoDetailList}</div><button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">성적 수정하기</button><button class="btn btn-secondary score-edit-btn" data-action="applyScoreExam" style="margin-top:10px;">적용</button></div><div class="card"><p class="analysis-title">최근 성적 업데이트</p><p class="sub" style="margin:0">선택한 시험 기준으로 결과가 연동됩니다.</p></div>${scoreEditOpen ? ScoreEditModal() : ''}`, false),
     notificationSettings: layout(appbar('알림 설정', true) + `<div class="card notify-card">${[
       ['planner', '플래너 알림', '오늘 계획을 잊지 않도록 알려드려요'],
       ['weekly', '주간 점검 알림', '매주 점검 시점을 알려드려요'],
@@ -1829,7 +1835,14 @@ function App() {
       if (screen === 'ob1' && target === 'ob2') {
         const ko = Number(obScoreInputs.korean_common||0)+Number(obScoreInputs.korean_elective||0);
         const ma = Number(obScoreInputs.math_common||0)+Number(obScoreInputs.math_elective||0);
-        if (ko || ma) setScores((prev)=>({ ...prev, korean: ko || prev.korean, math: ma || prev.math }));
+        const enGrade = Number(obScoreInputs.english_grade||0);
+        const enScore = enGrade ? Math.max(0, Math.round(100 - (enGrade - 1) * 12.5)) : 0;
+        const iq1 = Number(obScoreInputs.inquiry1_raw||0);
+        const iq2 = Number(obScoreInputs.inquiry2_raw||0);
+        if (ko || ma || enScore || iq1 || iq2) setScores((prev)=>({ ...prev, korean: ko || prev.korean, math: ma || prev.math, english: enScore || prev.english, inquiry1: iq1 || prev.inquiry1, inquiry2: iq2 || prev.inquiry2 }));
+        const map = getExamScoresMap();
+        map[obExamType] = { korean: ko, math: ma, englishGrade: enGrade, english: enScore, inquiry1: iq1, inquiry2: iq2 };
+        saveExamScoresMap(map);
       }
       if (screen === 'on1' && target === 'ob1') {
         setOnboardingLoading(true);
@@ -1951,17 +1964,33 @@ function App() {
     if (action === 'scoreStepPrev') setScoreEditStep((v) => Math.max(1, v - 1));
     if (action === 'scoreStepNext') setScoreEditStep((v) => Math.min(6, v + 1));
     if (action === 'saveScoreEdit') {
+      const nextKo = Number(scoreEditState.korean.common || 0) + Number(scoreEditState.korean.elective || 0);
+      const nextMa = Number(scoreEditState.math.common || 0) + Number(scoreEditState.math.elective || 0);
+      const nextEnGrade = Number(scoreEditState.english || 0);
+      const nextEnScore = nextEnGrade ? Math.max(0, Math.round(100 - (nextEnGrade - 1) * 12.5)) : 0;
+      const nextIq1 = Number(scoreEditState.inquiry1.score || 0);
+      const nextIq2 = Number(scoreEditState.inquiry2.score || 0);
       setScores((prev) => ({
         ...prev,
-        korean: Number(scoreEditState.korean.common || 0) + Number(scoreEditState.korean.elective || 0) || prev.korean,
-        math: Number(scoreEditState.math.common || 0) + Number(scoreEditState.math.elective || 0) || prev.math,
-        english: (() => { const g = Number(scoreEditState.english || 0); return g ? Math.max(0, Math.round(100 - (g - 1) * 12.5)) : prev.english; })(),
-        inquiry1: Number(scoreEditState.inquiry1.score || prev.inquiry1),
-        inquiry2: Number(scoreEditState.inquiry2.score || prev.inquiry2)
+        korean: nextKo || prev.korean,
+        math: nextMa || prev.math,
+        english: nextEnScore || prev.english,
+        inquiry1: nextIq1 || prev.inquiry1,
+        inquiry2: nextIq2 || prev.inquiry2
       }));
+      const map = getExamScoresMap();
+      map[scoreExamType] = { korean: nextKo, math: nextMa, englishGrade: nextEnGrade, english: nextEnScore, inquiry1: nextIq1, inquiry2: nextIq2 };
+      saveExamScoresMap(map);
       setUser((prevUser)=>({ ...prevUser, quantitative: { ...(prevUser.quantitative||{}), active: { kor: { raw: Number(scoreEditState.korean.common || 0) + Number(scoreEditState.korean.elective || 0) }, math: { raw: Number(scoreEditState.math.common || 0) + Number(scoreEditState.math.elective || 0) }, eng: { grd: Number(scoreEditState.english || 0) }, inq1: { raw: Number(scoreEditState.inquiry1.score || 0) }, inq2: { raw: Number(scoreEditState.inquiry2.score || 0) } } } }));
       setScoreEditOpen(false);
       setScoreEditStep(1);
+    }
+    if (action === 'applyScoreExam') {
+      const map = getExamScoresMap();
+      const picked = map[scoreExamType];
+      if (!picked) { alert('선택한 시험의 저장된 성적이 없습니다.'); return; }
+      setScores((prev) => ({ ...prev, korean: Number(picked.korean||prev.korean), math: Number(picked.math||prev.math), english: Number(picked.english||prev.english), inquiry1: Number(picked.inquiry1||prev.inquiry1), inquiry2: Number(picked.inquiry2||prev.inquiry2) }));
+      alert('선택한 시험 성적이 적용되었습니다.');
     }
     if (action === 'toggleNotification') {
       const key = actionEl.getAttribute('data-notify-key');
@@ -2426,6 +2455,7 @@ function App() {
     if (field === 'obGoalText') setObGoalText(value);
     if (field === 'obQuestionText') setObQuestionText(value);
     if (field === 'obExamType') setObExamType(value);
+    if (field === 'scoreExamType') setScoreExamType(value);
     if (field && field.startsWith('ob-')) {
       const key = field.replace('ob-', '');
       setObScoreInputs((prev) => ({ ...prev, [key]: value }));
