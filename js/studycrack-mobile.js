@@ -1378,11 +1378,11 @@ function App() {
       `<div class="onboarding-container"><div class="content">
        ${(() => { console.log('RENDER_OB1_DESIGN_V2'); return ''; })()}
        ${onboardingProgress(1)}
-       ${appbar('학습성향 진단', true)}
+       ${appbar('학습성향 진단 1-1', true)}
        <p class="sub ob-subcopy">지금 성적과 공부 습관을 바탕으로<br/>나에게 맞는 합격 전략을 찾아볼게요.</p>
        <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>성적만 보는 게 아니라, 공부 방식까지 같이 봐야 정확해요!</p></div>
        <div class="ob1-survey-card">
-         <h3>정성 조사서</h3>
+         <h3>정성조사서</h3>
          <p class="ob1-subtitle">학습 상황과 고민을 알려주시면 더 정확한 전략을 만들 수 있어요.</p><p class="ob1-subtitle" style="color:#ef4444;font-weight:700;">* 표시는 필수 입력 항목입니다.</p>
          <div class="ob1-field-stack">
            <div class="ob1-field">
@@ -1413,6 +1413,15 @@ function App() {
            </div>
          </div>
        </div>
+       </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="goto" data-target="ob2">1-2 성적 입력으로</button></div></div>`,
+      false
+    ),
+    ob2: layout(
+      `<div class="onboarding-container"><div class="content">
+       ${onboardingProgress(2)}
+       ${appbar('학습성향 진단 1-2', true)}
+       <p class="sub ob-subcopy">과목별 성적을 입력하면 현재 위치를<br/>더 정확하게 계산할 수 있어요.</p>
+       <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>점수는 세밀할수록 좋아요! 입력한 정보로 맞춤 분석을 진행할게요.</p></div>
        <div class="ob1-score-wrap">
          <h3>성적 입력 <span style="color:#ef4444">*</span></h3>
          <p class="score-subtitle">과목별 입력을 완료하면 현재 위치를 더 정확하게 계산해요.</p>
@@ -1447,6 +1456,15 @@ function App() {
            </div>
          </div>
        </div>
+       </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="goto" data-target="ob3">1-3 학습 MBTI로</button></div></div>`,
+      false
+    ),
+    ob3: layout(
+      `<div class="onboarding-container"><div class="content">
+       ${onboardingProgress(3)}
+       ${appbar('학습성향 진단 1-3', true)}
+       <p class="sub ob-subcopy">마지막 단계예요.<br/>학습 MBTI로 내 공부 성향을 진단해보세요.</p>
+       <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>짧은 질문 4개로 학습 성향을 빠르게 확인할 수 있어요!</p></div>
        <div class="card ob-card">
          <p class="analysis-title">학습 MBTI 검사</p>
          <p class="sub">4문항으로 빠르게 진단해요.</p>
@@ -1461,62 +1479,6 @@ function App() {
          <div class="ob-mbti-q"><p>4) 피드백이 있으면 공부가 더 잘 되나요?</p><div class="ob-mbti-opt"><button data-action="setMbti" data-mbti-q="q4" data-mbti-v="feedback" class="${mbtiAnswers.q4==='feedback'?'active':''}">네</button><button data-action="setMbti" data-mbti-q="q4" data-mbti-v="self" class="${mbtiAnswers.q4==='self'?'active':''}">아니오</button></div></div>
          <button class="btn btn-primary ${mbtiDone?'':'disabled'}" data-action="completeMbti" ${mbtiDone?'':'disabled'}>검사 완료</button>
        </div></div>` : ''}
-       </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="goto" data-target="ob2">진단 완료하고 다음으로</button></div></div>`,
-      false
-    ),
-    ob2: layout(
-      `<div class="onboarding-container"><div class="content">
-       ${onboardingProgress(2)}
-       ${appbar('목표 설정 및 분석', true)}
-       <p class="sub ob-subcopy">현재 성적 기준으로 도전 가능한 대학과<br/>합격 가능성을 분석해드릴게요.</p>
-       <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>목표 대학마다 유리한 과목이 달라요. 그래서 대학별로 따로 봐야 해요!</p></div>
-       <div class="card ob-card">
-         <p class="analysis-title">현재 성적 기준 추천 대학</p>
-         <div class="ob-uni-list">${['연세대학교 경영학과','고려대학교 경영학과','성균관대학교 글로벌경영학과'].map((u) => `<button class="ob-uni-item ${targetMajor===u?'active':''}" data-action="selectTarget" data-target-major="${u}">${u}</button>`).join('')}</div>
-       </div>
-       <div class="card ob-card analysis-top">
-         <p class="analysis-title">합격 가능성 분석</p>
-         <div class="analysis-v2-summary-top">
-           <div><p class="analysis-v2-univ">${targetMajor}</p><p class="analysis-v2-label">AI 점수 · 합격컷 대비 위치</p></div>
-           <div class="analysis-v2-score-wrap"><span class="analysis-v2-verdict" style="color:${analysisStatusColor};border-color:${analysisStatusColor}">${analysisStatus}</span><strong>${analysisSelected.score}점</strong></div>
-         </div>
-         <div class="analysis-v2-gauge"><i style="width:${analysisGaugeFill}%;background:${analysisGaugeColor}"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
-         <div class="analysis-v2-gauge-meta"><span>0</span><span>합격컷 100점</span><span>안정컷 150점</span><span>MAX 250점</span></div>
-         <div class="kpi-row score-row"><div class="kpi-item"><b>${liveCurrentScore}점</b>현재성적</div><div class="kpi-item"><b>100점</b>합격 컷</div><div class="kpi-item danger"><b>${analysisSelected.score-100>0?`+${analysisSelected.score-100}`:analysisSelected.score-100}점</b>격차</div></div>
-       </div>
-       <div class="card ob-card">
-         <p class="analysis-title">+1점 상승 시뮬레이션</p>
-         <div class="analysis-impact-item">수학<div class="track"><i style="width:90%"></i></div><span>+12점 → +18%</span></div>
-         <div class="analysis-impact-item">탐구<div class="track"><i style="width:68%;background:#14b8a6"></i></div><span>+6점 → +9%</span></div>
-         <div class="analysis-impact-item">영어<div class="track"><i style="width:48%;background:#f59e0b"></i></div><span>+3점 → +5%</span></div>
-       </div>
-       </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="goto" data-target="ob3">내 맞춤 솔루션 보기</button></div></div>`,
-      false
-    ),
-    ob3: layout(
-      `<div class="onboarding-container"><div class="content">
-       ${onboardingProgress(3)}
-       ${appbar('공부 성향 맞춤 솔루션', true)}
-       <p class="sub ob-subcopy">현재 성적에서 합격컷까지,<br/>가장 효율적인 점수 상승 루트를 보여드릴게요.</p>
-       <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>무작정 전 과목을 올리는 게 아니라, 합격에 가장 크게 기여하는 과목부터 잡아야 해요!</p></div>
-       <div class="card ob-card">${scoreJourneyCard('최소 노력 대비 합격 도달 성적')}</div>
-       ${ob3IsAnalyzing ? `<div class="loading-overlay"><div class="loading-box"><div class="dots">● ● ●</div><div>분석중입니다</div><div>잠시만 기다려주세요</div></div></div>` : `<div class="card ob-card ob-period-card on-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 3개월 내 도달 예상</b><p>주간 플래너 피드백과 학습 방향 코칭 제공</p></div>
-       <div class="card ob-card">
-         <p class="analysis-title">합격 가능성 변화</p>
-         <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${gaugeTarget}점</b></div></div>
-         <div class="ob-gauge">
-           <div class="ob-gauge-current" style="width:${gaugeCurrentPct}%"></div>
-           <div class="ob-gauge-target" style="width:${gaugeTargetPct}%"></div>
-           <i class="ob-gauge-cut pass" style="left:${gaugePassPct}%"></i>
-           <i class="ob-gauge-cut safe" style="left:${gaugeSafePct}%"></i>
-         </div>
-         <div class="ob-gauge-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
-         <p class="sub"><b>현재 → 합격권 진입 구간</b></p>
-       </div>
-       <div class="card ob-card">
-         <p class="analysis-title">핵심 전략</p>
-         <ol class="ob-strategy"><li><b>수학 68점 → 80점</b><p>합격 가능성 상승 기여도 가장 큼</p></li><li><b>탐구1 70점 → 76점</b><p>단기간 상승 효율 높음</p></li><li><b>영어 77점 유지</b><p>현재 수준 유지 전략</p></li></ol>
-       </div>`}
        </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="startStandard">Standard로 시작하기</button><button class="auth-link-btn" data-action="completeOnboarding">홈으로 이동</button></div></div>`,
       false
     ),
@@ -1868,6 +1830,19 @@ function App() {
           alert('필수 입력 사항을 모두 입력해주세요');
           return;
         }
+      }
+      if (screen === 'on1' && target === 'ob1') {
+        setOnboardingLoading(true);
+        setOnboardingLoadingText('성적 분석중...');
+        setTimeout(() => setOnboardingLoadingText('유리한 대학 전형 파악중...'), 2000);
+        setTimeout(() => {
+          armScrollGuard(1400);
+          setOnboardingLoading(false);
+          goto('ob1');
+        }, 4000);
+        return;
+      }
+      if (screen === 'ob2' && target === 'ob3') {
         const getScoreInput = (key) => Number(document.querySelector(`[data-score-key="${key}"]`)?.value || 0);
         const hasAllScores = ['korean_common','korean_elective','math_common','math_elective','english_grade','inquiry1_raw','inquiry2_raw']
           .every((k) => String(document.querySelector(`[data-score-key="${k}"]`)?.value || '').trim() !== '');
@@ -1882,19 +1857,6 @@ function App() {
         const map = getExamScoresMap();
         map[obExamType] = { korean: ko, math: ma, englishGrade: enGrade, english: enScore, inquiry1: iq1, inquiry2: iq2 };
         saveExamScoresMap(map);
-      }
-      if (screen === 'on1' && target === 'ob1') {
-        setOnboardingLoading(true);
-        setOnboardingLoadingText('성적 분석중...');
-        setTimeout(() => setOnboardingLoadingText('유리한 대학 전형 파악중...'), 2000);
-        setTimeout(() => {
-          armScrollGuard(1400);
-          setOnboardingLoading(false);
-          goto('ob1');
-        }, 4000);
-        return;
-      }
-      if (screen === 'ob2' && target === 'ob3') {
         setOnboardingLoading(true);
         setOnboardingLoadingText('학습 성향 분석중...');
         setTimeout(() => setOnboardingLoadingText('효율적인 공부법 찾는 중...'), 1500);
