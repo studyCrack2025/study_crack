@@ -2121,7 +2121,8 @@ function App() {
     if (action === 'loginSuccess' || action === 'signupSuccess' || action === 'ssoSuccess') {
       setLoggedIn(true);
       setHistory([]);
-      goto('home', true);
+      const completed = localStorage.getItem('studycrack_onboarding_completed') === 'true';
+      goto(completed ? 'home' : 'ob1', true);
     }
     if (action === 'completeOnboarding') {
       localStorage.setItem('studycrack_onboarding_completed', 'true');
