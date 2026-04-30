@@ -155,6 +155,8 @@ function App() {
   const [addingUniversity, setAddingUniversity] = useState(false);
   const [showStudyBreakdown, setShowStudyBreakdown] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+  const [withdrawPassword, setWithdrawPassword] = useState('');
   const [plannerItems, setPlannerItems] = useState(DEFAULT_PLANNER_ITEMS);
   const [plannerEditIndex, setPlannerEditIndex] = useState(null);
   const [studyRecords, setStudyRecords] = useState(() => safeParse('studyRecords', []));
@@ -1017,6 +1019,20 @@ function App() {
     html,body{touch-action:manipulation;overscroll-behavior:none;}
     .app-shell,.app-frame,.app-screen{min-height:100dvh;}
     .onboarding-container .content{padding:0 16px 150px;box-sizing:border-box;}
+    .onboarding-shot{max-width:420px;margin:0 auto;padding:24px 16px 28px;}
+    .onboarding-shot h3{margin:0 0 14px;font-size:36px;line-height:1.15;letter-spacing:-.03em;}
+    .onboarding-shot-card{position:relative;border-radius:28px;background:#F8FAFF;border:1px solid #E2E8F0;padding:28px 22px 120px;min-height:520px;}
+    .onboarding-shot-card h2{margin:0;font-size:44px;line-height:1.2;letter-spacing:-.03em;}
+    .onboarding-shot-card p{margin:14px 0 0;font-size:27px;line-height:1.35;color:#334155;font-weight:700;}
+    .onboarding-mini-card{margin-top:20px;border-radius:20px;background:#fff;padding:18px;border:1px solid #E2E8F0;}
+    .onboarding-mini-card b{display:block;font-size:24px;}
+    .onboarding-mini-card strong{display:block;margin-top:8px;font-size:50px;color:#0B57D0;}
+    .onboarding-list-box{display:grid;gap:10px;margin-top:18px;}
+    .onboarding-list-box span{background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:14px 16px;font-weight:700;font-size:24px;}
+    .onboarding-shot-mascot{position:absolute;right:24px;bottom:16px;width:132px;height:auto;}
+    .onboarding-shot-dots{display:flex;justify-content:center;gap:10px;margin:18px 0;}
+    .onboarding-shot-dots i{width:10px;height:10px;border-radius:50%;background:#CBD5E1;}
+    .onboarding-shot-dots i.active{background:#2563EB;}
     .onboarding-fixed-cta{padding-bottom:calc(16px + env(safe-area-inset-bottom));}
     .btn,button,.planner-input,select,textarea,input{transition:box-shadow .15s ease, border-color .15s ease;}
     .btn:active,button:active,.planner-input:active,select:active,textarea:active,input:active{transform:none;}
@@ -1516,31 +1532,9 @@ function App() {
       </div>
     </div>`, false),
     splash: `<div class="app-shell"><div class="app-frame"><div class="splash"><div class="logo-bolt">${i('bolt',true)}</div><img class="brand-logo" src="${(window.__studycrackAssetSrc && window.__studycrackAssetSrc.onboardingLogoSrc) || './assets/images/studycrack_logo_wo_bg.png'}" alt="logo"/><h1 style="margin:0;font-size:30px">스터디크랙</h1><p>합격까지 가장 빠른 전략</p></div></div></div>`,
-    on1: onboarding(
-      1,
-      '학습성향 진단을 시작해요',
-      '현재 학습 정보와 목표를 입력하면\n맞춤 분석을 진행할게요.',
-      `<div class="onboarding-card"><p class="onboarding-sub">기초 진단 정보를 입력하고 다음 단계로 이동하세요.</p></div>`,
-      '성적과 학습 성향을 함께 보면 더 정확해요.',
-      'ob1'
-    ),
-    on2: onboarding(
-      2,
-      '나에게 최적화된\n점수 상승 전략을 제공해요',
-      '과목별 효율과 목표 도달 시간을\n정확하게 예측해 드려요.',
-      `<div class="onboarding-card"><p class="onboarding-sub" style="margin-top:0">수학 +12점</p><p class="onboarding-sub" style="margin-top:4px">합격 가능성 +18%</p><div class="on-graph-bars"><i></i><i></i><i></i><i></i></div><div class="on-chart-line"><svg viewBox="0 0 300 90" fill="none"><path d="M18 72C54 70 88 66 122 60C156 54 190 45 222 34C246 26 266 20 286 14" stroke="#2F6BFF" stroke-width="4" stroke-linecap="round"/></svg></div></div>`,
-      '가장 효율적인 점수 상승 루트를 찾아드릴게요.',
-      'on3'
-    ),
-    on3: onboarding(
-      3,
-      '실행부터 관리까지\n끝까지 함께해요',
-      '플래너, 주간 점검, Sky튜터 피드백,\n프로 보고서로 관리합니다.',
-      `<div class="on-feature-list"><div class="on-feature-item"><div class="on-feature-icon">${i('calendar', true)}</div><span>플래너 & 주간 점검</span></div><div class="on-feature-item"><div class="on-feature-icon">${i('chat', true)}</div><span>Sky튜터 1:1 피드백</span></div><div class="on-feature-item"><div class="on-feature-icon">${i('report', true)}</div><span>프로 보고서 (2주에 1번)</span></div></div>`,
-      '계획부터 점검까지 끝까지 같이 갈게요.',
-      'home',
-      '시작하기'
-    ),
+    on1: `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="onboarding-shot"><h3>2. 온보딩 1</h3><div class="onboarding-shot-card"><h2>데이터 기반으로<br>내 합격 가능성을 분석해요</h2><p>흔들리지 않는 방향을<br>제시해드립니다.</p><div class="onboarding-mini-card"><b>합격 가능성</b><strong>72%</strong></div><img src="${CRACKY_SRC}" class="onboarding-shot-mascot" alt="크랙이"/></div><div class="onboarding-shot-dots"><i class="active"></i><i></i><i></i></div><button class="onboarding-next" data-action="goto" data-target="on2">다음</button></div></div></div></div>`,
+    on2: `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="onboarding-shot"><h3>3. 온보딩 2</h3><div class="onboarding-shot-card"><h2>나에게 최적화된<br>점수 상승 전략을 제공해요</h2><p>과목별 효과와 목표 도달 시간을<br>정확하게 예측해 드려요.</p><div class="onboarding-mini-card"><b>수학 +12점</b><strong>합격 가능성 +18%</strong></div><img src="${CRACKY_SRC}" class="onboarding-shot-mascot" alt="크랙이"/></div><div class="onboarding-shot-dots"><i></i><i class="active"></i><i></i></div><button class="onboarding-next" data-action="goto" data-target="on3">다음</button></div></div></div></div>`,
+    on3: `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="onboarding-shot"><h3>4. 온보딩 3</h3><div class="onboarding-shot-card"><h2>실행부터 관리까지<br>끝까지 함께해요</h2><p>플래너, 주간 점검, Sky튜터 피드백,<br>프로 보고서로 완성됩니다.</p><div class="onboarding-list-box"><span>플래너 & 주간 점검</span><span>Sky튜터 1:1 피드백</span><span>프로 보고서 (2주에 1번)</span></div><img src="${CRACKY_SRC}" class="onboarding-shot-mascot" alt="크랙이"/></div><div class="onboarding-shot-dots"><i></i><i></i><i class="active"></i></div><button class="onboarding-next" data-action="goto" data-target="ob1">시작하기</button></div></div></div></div>`,
     home: layout(homeView(), true),
     analysis: layout(
       `<section class="analysis-v2 ${isAnalyzing ? 'loading' : ''}">
@@ -1774,7 +1768,7 @@ function App() {
       ['faq8', '어떤 플랜을 선택해야 할지 모르겠어요.', '빠르게 방향만 잡고 싶다면 Basic, 루틴 관리까지 원하면 Standard, 확실한 결과를 원하면 Pro를 추천합니다.']
     ].map(([id, q, a]) => `<button class="faq-row" data-action="toggleFaq" data-faq-id="${id}"><div><b>${q}</b>${openFaq===id?`<p>${a}</p>`:''}</div><span>${i('chevron', false)}</span></button>`).join('')}</div>`, false),
     settingsMain: layout(appbar('설정', true) + `<div class="card settings-list"><button data-action="goto" data-target="accountInfo">계정 정보 <span>${i('chevron', false)}</span></button><button data-action="goto" data-target="privacyPolicy">개인정보 처리방침 <span>${i('chevron', false)}</span></button><button data-action="goto" data-target="termsScreen">서비스 이용약관 <span>${i('chevron', false)}</span></button><button data-action="openLogoutModal">로그아웃 <span>${i('chevron', false)}</span></button></div>${logoutModalOpen ? `<div class="home-modal-overlay" data-action="closeLogoutModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">로그아웃하시겠어요?</p><div class="support-btns"><button class="btn btn-secondary" data-action="closeLogoutModal">취소</button><button class="btn btn-primary" data-action="confirmLogout">로그아웃</button></div></div></div>` : ''}`, false),
-    accountInfo: layout(appbar('계정 정보', true) + `<div class="card"><div class="score-info-row"><span>이름</span><strong>${user?.name || DEFAULT_USER.name}</strong></div><div class="score-info-row"><span>목표 대학</span><strong>${targetMajor || DEFAULT_USER.targetUniversity}</strong></div><div class="score-info-row"><span>현재 플랜</span><strong>${selectedPlan || DEFAULT_USER.plan}</strong></div></div>`, false),
+    accountInfo: layout(appbar('계정 정보', true) + `<div class="card"><div class="score-info-row"><span>이름</span><strong>${user?.name || DEFAULT_USER.name}</strong></div><div class="score-info-row"><span>목표 대학</span><strong>${targetMajor || DEFAULT_USER.targetUniversity}</strong></div><div class="score-info-row"><span>현재 플랜</span><strong>${selectedPlan || DEFAULT_USER.plan}</strong></div><button class="btn btn-secondary" style="margin-top:14px" data-action="openWithdrawModal">회원탈퇴</button></div>${withdrawModalOpen ? `<div class="home-modal-overlay" data-action="closeWithdrawModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">회원탈퇴</p><p class="sub" style="margin:8px 0 12px;">현재 비밀번호를 입력하면 탈퇴할 수 있습니다.</p><input class="planner-input" type="password" data-field="withdrawPassword" value="${withdrawPassword}" placeholder="현재 비밀번호"/><div class="support-btns" style="margin-top:12px"><button class="btn btn-secondary" data-action="closeWithdrawModal">취소</button><button class="btn btn-primary" data-action="confirmWithdraw">탈퇴하기</button></div></div></div>` : ''}`, false),
     privacyPolicy: layout(appbar('개인정보 처리방침', true) + `<div class="card"><p class="sub" style="margin:0">스터디크랙은 서비스 제공을 위해 필요한 최소한의 개인정보를 처리합니다.</p></div>`, false),
     termsScreen: layout(appbar('서비스 이용약관', true) + `<div class="card"><p class="sub" style="margin:0">본 약관은 스터디크랙 서비스 이용과 관련한 기본 사항을 안내합니다.</p></div>`, false)
   };
@@ -1933,6 +1927,11 @@ function App() {
     }
     if (action === 'openLogoutModal') setLogoutModalOpen(true);
     if (action === 'closeLogoutModal') setLogoutModalOpen(false);
+    if (action === 'openWithdrawModal') setWithdrawModalOpen(true);
+    if (action === 'closeWithdrawModal') {
+      setWithdrawModalOpen(false);
+      setWithdrawPassword('');
+    }
     if (action === 'openMbtiModal') setMbtiModalOpen(true);
     if (action === 'closeMbtiModal') setMbtiModalOpen(false);
     if (action === 'setMbti') {
@@ -1947,7 +1946,22 @@ function App() {
     }
     if (action === 'confirmLogout') {
       setLogoutModalOpen(false);
+      setLoggedIn(false);
+      setHistory([]);
+      goto('authLogin', false);
       window.alert('로그아웃되었습니다');
+    }
+    if (action === 'confirmWithdraw') {
+      if (!withdrawPassword.trim()) {
+        window.alert('현재 비밀번호를 입력해주세요.');
+        return;
+      }
+      setWithdrawModalOpen(false);
+      setWithdrawPassword('');
+      setLoggedIn(false);
+      setHistory([]);
+      goto('authLogin', false);
+      window.alert('회원탈퇴가 완료되었습니다.');
     }
     if (action === 'setObGradeStatus') setObGradeStatus(actionEl.getAttribute('data-ob-grade') || '고1/2 재학');
     if (action === 'toggleObGed') setObGed((v) => !v);
@@ -2102,7 +2116,7 @@ function App() {
       setLoggedIn(true);
       setHistory([]);
       const completed = localStorage.getItem('studycrack_onboarding_completed') === 'true';
-      goto(completed ? 'home' : 'ob1', true);
+      goto(completed ? 'home' : 'on1', true);
     }
     if (action === 'completeOnboarding') {
       localStorage.setItem('studycrack_onboarding_completed', 'true');
@@ -2354,6 +2368,7 @@ function App() {
     if (field === 'proRequestText') setProRequestText(value);
     if (field === 'loginEmail') setLoginEmail(value);
     if (field === 'loginPassword') setLoginPassword(value);
+    if (field === 'withdrawPassword') setWithdrawPassword(value);
     if (field === 'signupName') setSignupName(value);
     if (field === 'signupEmail') setSignupEmail(value);
     if (field === 'signupPassword') setSignupPassword(value);
@@ -2383,7 +2398,7 @@ function App() {
     }
   };
 
-  const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>StudyCrack 앱을 불러오는 중입니다...</h3><p class="sub">잠시만 기다려 주세요.</p></div></div></div></div>`;
+  const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><img src="${STUDYCRACK_LOGO_SRC}" alt="StudyCrack 로고" style="width:120px;height:auto;margin-bottom:12px;"/><h3>StudyCrack 앱을 불러오는 중입니다...</h3><p class="sub">잠시만 기다려 주세요.</p></div></div></div></div>`;
   const fallbackUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div></div>`;
   const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !['authLanding', 'authLogin', 'authSignup', 'authFindId', 'authFindPw'].includes(screen) ? screens.authLanding : current;
   const analysisOverlay = isAnalyzing && screen === 'analysis'
