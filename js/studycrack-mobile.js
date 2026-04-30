@@ -393,7 +393,7 @@ function App() {
       setError(false);
       fallbackTimer = setTimeout(() => {
         setLoading(false);
-        setScreen('authLanding');
+        setScreen('on1');
       }, 3000);
 
       const savedUser = safeParse('user', DEFAULT_USER);
@@ -424,12 +424,12 @@ function App() {
       await resolveAssetPath('./assets/76220C96-DE85-4148-A6AC-7BD5881821A0.png', null);
       await resolveAssetPath('./assets/IMG_2648.jpeg', null);
 
-      setScreen('authLanding');
+      setScreen('on1');
       console.log('[APP_INIT_SUCCESS]');
     } catch (e) {
       console.error('[APP_INIT_ERROR]', e);
       setError(true);
-      setScreen('authLanding');
+      setScreen('on1');
     } finally {
       if (fallbackTimer) clearTimeout(fallbackTimer);
       setLoading(false);
@@ -1457,19 +1457,6 @@ function App() {
        </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="startStandard">Standard로 시작하기</button><button class="auth-link-btn" data-action="completeOnboarding">홈으로 이동</button></div></div>`,
       false
     ),
-    authLanding: layout(`<div class="auth-screen auth-landing-screen">
-      <div class="card auth-landing-card">
-        <div class="auth-landing-logo-wrap">
-          <img src="${STUDYCRACK_LOGO_SRC}" class="auth-landing-logo" alt="StudyCrack Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
-          <span class="auth-logo-fallback">StudyCrack</span>
-        </div>
-        <div class="auth-landing-cracky-wrap">
-          <img src="${CRACKY_SRC}" class="auth-landing-cracky" alt="크랙이" />
-        </div>
-        <div class="auth-landing-bubble">크랙이가 “대학에 합격할 수 있는 가장 쉽고 확실한 방법을 알려줄게요!“</div>
-      </div>
-      <button class="btn btn-primary auth-landing-login-btn" data-action="goto" data-target="authLogin">로그인</button>
-    </div>`, false),
     authLogin: layout(`<div class="auth-screen">
       <div class="card auth-unified-card">
         <div class="auth-logo-wrap compact">
@@ -2410,10 +2397,10 @@ function App() {
     }
   };
 
-  const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><section class="app-loading-hero"><img class="app-loading-logo" src="./assets/IMG_2636.jpeg" alt="스터디크랙 로딩"/><img class="app-loading-mascot" src="${CRACKY_SRC}" alt="크랙이"/><div class="app-loading-wave"></div><p class="app-loading-text">스터디크랙과 함께 원하는 대학으로 가는 중</p><div class="app-loading-bar"><i></i></div><p class="app-loading-label">LOADING...</p></section></div></div></div>`;
+  const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><section class="app-loading-hero"><img class="app-loading-logo" src="${ONBOARDING_LOGO_SRC}" alt="스터디크랙 로고"/><img class="app-loading-mascot" src="${CRACKY_SRC}" alt="크랙이"/><div class="app-loading-wave"></div><p class="app-loading-text">스터디크랙과 함께 원하는 대학으로 가는 중</p><div class="app-loading-bar"><i></i></div><p class="app-loading-label">LOADING...</p></section></div></div></div>`;
   const fallbackUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div></div>`;
-  const preAuthAllowedScreens = ['splash', 'authLanding', 'authLogin', 'authSignup', 'authFindId', 'authFindPw', 'on1', 'on2', 'on3'];
-  const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !preAuthAllowedScreens.includes(screen) ? screens.authLanding : current;
+  const preAuthAllowedScreens = ['splash', 'authLogin', 'authSignup', 'authFindId', 'authFindPw', 'on1', 'on2', 'on3'];
+  const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !preAuthAllowedScreens.includes(screen) ? screens.on1 : current;
   const analysisOverlay = isAnalyzing && screen === 'analysis'
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>분석중입니다</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
