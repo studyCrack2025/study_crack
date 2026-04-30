@@ -387,6 +387,7 @@ body {
 .planner-item .dot.kor { background:#8b5cf6; }
 .planner-item .dot.eng { background:#14b8a6; }
 .planner-item .dot.sci { background:#f97316; }
+.planner-item .dot.etc { background:#64748b; }
 .planner-screen { padding-bottom:110px; }
 .planner-item b { display:block; font-size:13px; font-weight:700; color:#0f172a; }
 .planner-item p { margin:1px 0; font-size:13px; color:#1f2937; }

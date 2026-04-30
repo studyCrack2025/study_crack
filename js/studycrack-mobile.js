@@ -605,6 +605,28 @@ function App() {
   const plannerViewMinutes = plannerViewItems.reduce((acc, item) => acc + (item.minutes || 0), 0);
   const plannerViewHour = Math.floor(plannerViewMinutes / 60);
   const plannerViewMinute = plannerViewMinutes % 60;
+  const plannerViewSubjectMinutes = plannerViewItems.reduce((acc, item) => {
+    const key = item.subject || '기타';
+    acc[key] = (acc[key] || 0) + (item.minutes || 0);
+    return acc;
+  }, {});
+  const plannerViewPalette = { 국어: '#8B5CF6', 수학: '#3B82F6', 영어: '#14B8A6', 탐구: '#F97316', 기타: '#64748B' };
+  const plannerViewSubjectStats = Object.entries(plannerViewSubjectMinutes)
+    .filter(([, minutes]) => minutes > 0)
+    .map(([subject, minutes]) => ({
+      subject,
+      minutes,
+      percent: plannerViewMinutes ? Math.round((minutes / plannerViewMinutes) * 100) : 0,
+      color: plannerViewPalette[subject] || plannerViewPalette['기타']
+    }))
+    .sort((a, b) => b.minutes - a.minutes);
+  const plannerViewDonutGradient = plannerViewSubjectStats.length
+    ? `conic-gradient(${plannerViewSubjectStats.map((item, idx) => {
+      const start = plannerViewSubjectStats.slice(0, idx).reduce((sum, cur) => sum + cur.percent, 0);
+      const end = Math.min(100, start + item.percent);
+      return `${item.color} ${start}% ${end}%`;
+    }).join(',')})`
+    : 'conic-gradient(#E2E8F0 0 100%)';
   const plannerEditItem = plannerItems.find((item) => item.id === plannerEditIndex) || null;
   const todayDateKey = String(Number(FIXED_TODAY_DATE.split('-')[2]));
   const todayPlannerItems = plannerItemsByDate[todayDateKey] || [];
@@ -1195,6 +1217,13 @@ function App() {
     .planner-item.done .planner-item-main b,.planner-item.done .planner-item-main p{color:#94A3B8;text-decoration:line-through;text-decoration-thickness:1px;text-decoration-color:#CBD5E1;}
     .planner-plan-list{padding-bottom:120px;}
     .planner-warning-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#FFF7ED;border:1px solid #FED7AA;border-radius:999px;font-size:12px;color:#9A3412;font-weight:700;margin-top:8px;}
+    .planner-section-title{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+    .planner-donut-wrap{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid #E2E8F0;border-radius:14px;background:#fff;}
+    .planner-donut{width:56px;height:56px;border-radius:999px;background:var(--donut);position:relative;flex-shrink:0;}
+    .planner-donut:after{content:"";position:absolute;inset:11px;border-radius:999px;background:#fff;}
+    .planner-donut-legend{display:grid;gap:4px;}
+    .planner-donut-legend span{display:flex;align-items:center;gap:6px;font-size:11px;color:#475569;font-weight:700;white-space:nowrap;}
+    .planner-donut-legend i{width:8px;height:8px;border-radius:999px;display:inline-block;}
     .planner-add-cta{margin-top:10px;border:1px dashed #93C5FD;background:#EFF6FF;color:#1D4ED8;border-radius:16px;padding:14px;text-align:center;font-weight:800;}
     .planner-add-page{padding:0 0 120px;}
     .planner-add-form{margin-top:12px;display:grid;gap:12px;background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:16px;}
@@ -1629,7 +1658,7 @@ function App() {
     planner: layout(
 	      `<div class="planner-screen">${(() => { console.log('RENDER_PLANNER_NO_TIME_RANGE_V3'); return ''; })()}<div class="planner-head"><h3>2024년 5월 ${selectedPlannerDate}일 (화)</h3><button class="planner-cal-btn" data-action="openPlannerCalendar">${i('calendar', false)}</button></div>
        <div class="planner-days planner-days-carousel planner-date-strip">${plannerWeekDates.map(({ day, weekday }) => `<button class="planner-date-item ${selectedPlannerDate===day?'active':''}" data-action="selectPlannerDate" data-planner-date="${day}"><small>${weekday}</small><strong>${day}</strong></button>`).join('')}</div>
-       <div class="planner-section-title planner-fade"><div><h4>${selectedPlannerDate}일 계획</h4><p>총 ${plannerViewHour}시간 ${plannerViewMinute}분</p>${plannerFeedback.tone==='warn' ? `<span class="planner-warning-pill">⚠ 수학 비중 높음 · 과목 균형 필요</span>` : ''}</div></div>
+       <div class="planner-section-title planner-fade"><div><h4>${selectedPlannerDate}일 계획</h4><p>총 ${plannerViewHour}시간 ${plannerViewMinute}분</p>${plannerFeedback.tone==='warn' ? `<span class="planner-warning-pill">⚠ 수학 비중 높음 · 과목 균형 필요</span>` : ''}</div>${plannerViewSubjectStats.length ? `<div class="planner-donut-wrap"><div class="planner-donut" style="--donut:${plannerViewDonutGradient}"></div><div class="planner-donut-legend">${plannerViewSubjectStats.map((item)=>`<span><i style="background:${item.color}"></i>${item.subject} ${item.percent}%</span>`).join('')}</div></div>` : ''}</div>
        <div class="planner-plan-list">
          ${plannerViewItems.map((item) => `<div class="planner-item ${item.done ? 'done' : ''}" data-action="openPlannerEdit" data-planner-id="${item.id}"><i class="dot ${item.dot}"></i><div class="planner-item-main"><b>${item.subject}</b><p>${item.content}</p></div><div class="planner-item-right"><strong>${item.minutes}분</strong><div class="planner-item-controls"><button class="planner-item-done" data-action="togglePlannerDone" data-planner-id="${item.id}">✓ ${item.done ? '완료!' : '완료'}</button><button class="planner-item-remove" data-action="removePlannerItem" data-planner-id="${item.id}">✕</button></div></div></div>`).join('') || '<div class="planner-empty-day">선택한 날짜의 플래너가 없습니다.</div>'}
 	         <button class="planner-add-cta" data-action="openPlannerAddPage">+ ${selectedPlannerDate}일 계획 추가하기</button>
@@ -1648,7 +1677,7 @@ function App() {
           <div class="planner-add-form">
             <h4>${selectedPlannerDate}일 학습 계획</h4>
             <p class="sub">선택한 날짜에 실행할 학습 계획을 입력해 주세요.</p>
-            <div class="planner-sheet-block"><label>과목 선택</label><div class="planner-pill-row"><button class="planner-pill ${plannerDraft.subject==='수학'?'active':''}" data-action="setPlannerSubject" data-planner-subject="수학">수학</button><button class="planner-pill ${plannerDraft.subject==='국어'?'active':''}" data-action="setPlannerSubject" data-planner-subject="국어">국어</button><button class="planner-pill ${plannerDraft.subject==='영어'?'active':''}" data-action="setPlannerSubject" data-planner-subject="영어">영어</button><button class="planner-pill ${plannerDraft.subject==='탐구'?'active':''}" data-action="setPlannerSubject" data-planner-subject="탐구">탐구</button></div></div>
+            <div class="planner-sheet-block"><label>과목 선택</label><div class="planner-pill-row"><button class="planner-pill ${plannerDraft.subject==='수학'?'active':''}" data-action="setPlannerSubject" data-planner-subject="수학">수학</button><button class="planner-pill ${plannerDraft.subject==='국어'?'active':''}" data-action="setPlannerSubject" data-planner-subject="국어">국어</button><button class="planner-pill ${plannerDraft.subject==='영어'?'active':''}" data-action="setPlannerSubject" data-planner-subject="영어">영어</button><button class="planner-pill ${plannerDraft.subject==='탐구'?'active':''}" data-action="setPlannerSubject" data-planner-subject="탐구">탐구</button><button class="planner-pill ${plannerDraft.subject==='기타'?'active':''}" data-action="setPlannerSubject" data-planner-subject="기타">기타</button></div></div>
             <div class="planner-sheet-block"><label>학습 내용</label><input class="planner-input" data-field="plannerContent" value="${plannerContentRef.current}" placeholder="예: 개념 학습, 독해 문제 풀이" /></div>
             <div class="planner-sheet-block"><label>시간 선택</label><div class="planner-pill-row"><button class="planner-pill ${plannerDraft.durationChoice==='30'?'active':''}" data-action="setPlannerDuration" data-planner-duration="30">30분</button><button class="planner-pill ${plannerDraft.durationChoice==='60'?'active':''}" data-action="setPlannerDuration" data-planner-duration="60">60분</button><button class="planner-pill ${plannerDraft.durationChoice==='90'?'active':''}" data-action="setPlannerDuration" data-planner-duration="90">90분</button><button class="planner-pill ${plannerDraft.durationChoice==='120'?'active':''}" data-action="setPlannerDuration" data-planner-duration="120">120분</button><button class="planner-pill ${plannerDraft.durationChoice==='custom'?'active':''}" data-action="setPlannerDuration" data-planner-duration="custom">직접 입력</button></div><input class="planner-input ${plannerDraft.durationChoice==='custom'?'':'is-hidden'}" data-field="plannerCustomMinutes" value="${plannerCustomMinutesRef.current}" type="number" placeholder="분 단위 입력" /></div>
             <button class="btn btn-primary planner-sheet-submit ${canSubmitPlanner?'':'disabled'}" data-action="addPlannerFromSheet" ${canSubmitPlanner?'':'disabled'}>플래너에 추가하기</button>
@@ -2099,7 +2128,7 @@ function App() {
       const customMinutes = plannerCustomMinutesRef.current.trim();
       const minutes = plannerDraft.durationChoice === 'custom' ? Number(customMinutes) : Number(plannerDraft.durationChoice);
       if (!plannerDraft.subject || !content || !minutes || Number.isNaN(minutes)) return;
-      const dot = plannerDraft.subject === '수학' ? 'math' : plannerDraft.subject === '영어' ? 'eng' : plannerDraft.subject === '국어' ? 'kor' : 'sci';
+      const dot = plannerDraft.subject === '수학' ? 'math' : plannerDraft.subject === '영어' ? 'eng' : plannerDraft.subject === '국어' ? 'kor' : plannerDraft.subject === '기타' ? 'etc' : 'sci';
       setPlannerItems((prev) => [...prev, { id: buildPlannerId(), date: selectedPlannerDate, subject: plannerDraft.subject, content, start: '--:--', end: '--:--', minutes, dot }]);
       plannerContentRef.current = '';
       plannerCustomMinutesRef.current = '';
@@ -2113,7 +2142,7 @@ function App() {
       const minutes = Number(document.querySelector('[data-field="plannerEditMinutes"]')?.value || 0);
       if (!subject || !content || !minutes || !plannerEditItem) return;
       const lowered = subject.toLowerCase();
-      const dot = lowered.includes('수') ? 'math' : lowered.includes('영') ? 'eng' : lowered.includes('국') ? 'kor' : 'sci';
+      const dot = lowered.includes('수') ? 'math' : lowered.includes('영') ? 'eng' : lowered.includes('국') ? 'kor' : lowered.includes('기타') ? 'etc' : 'sci';
       setPlannerItems((prev) => prev.map((item) => (item.id === plannerEditIndex ? { ...item, subject, content, minutes, dot } : item)));
       setPlannerEditIndex(null);
     }
