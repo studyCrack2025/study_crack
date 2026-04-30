@@ -880,8 +880,8 @@ function App() {
     </div>
     <div class="section home-section">
       <div class="home-kpi-slider">
-        <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-card:84%;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .58s cubic-bezier(.22,.61,.36,1)'};">
-        ${homeTargets.map((item) => `<button class="card home-kpi-card admission-card slider-card home-result-card-v3" style="flex:0 0 84%;min-width:84%;max-width:84%;" data-action="selectUniversity" data-target-major="${item.major}">
+        <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-card:40%;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .58s cubic-bezier(.22,.61,.36,1)'};">
+        ${homeTargets.map((item) => `<button class="card home-kpi-card admission-card slider-card home-result-card-v3" style="flex:0 0 40%;min-width:40%;max-width:40%;" data-action="selectUniversity" data-target-major="${item.major}">
           <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score"><strong>${item.score}점</strong><small>AI 점수</small></div></div>
           <div class="home-result-gauge"><i style="width:${Math.min((item.score / 250) * 100, 100)}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
           <div class="home-result-gauge-meta"><span>0</span><span>합격컷 100</span><span>안정컷 150</span><span>MAX 250</span></div>
@@ -1069,8 +1069,8 @@ function App() {
     .home-kpi-track.motion-prev{animation:none;}
     @keyframes homeSlideNext{from{transform:translateX(calc(var(--home-slide-x) + 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
     @keyframes homeSlidePrev{from{transform:translateX(calc(var(--home-slide-x) - 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
-    .home-kpi-slider .slider-card{flex:0 0 var(--home-slide-card,84%);min-width:var(--home-slide-card,84%);max-width:var(--home-slide-card,84%);margin-right:0;min-height:0;}
-    .home-kpi-slider .home-kpi-card.slider-card{flex:0 0 var(--home-slide-card,84%);max-width:var(--home-slide-card,84%);min-width:var(--home-slide-card,84%);}
+    .home-kpi-slider .slider-card{flex:0 0 var(--home-slide-card,40%);min-width:var(--home-slide-card,40%);max-width:var(--home-slide-card,40%);margin-right:0;min-height:0;}
+    .home-kpi-slider .home-kpi-card.slider-card{flex:0 0 var(--home-slide-card,40%);max-width:var(--home-slide-card,40%);min-width:var(--home-slide-card,40%);}
     .home-kpi-indicator i{cursor:pointer;}
     .home-add-univ-card{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;padding:24px;border:1px solid #BFDBFE;background:linear-gradient(135deg,#F8FBFF,#EAF2FF);color:#1D4ED8;border-radius:24px;box-shadow:0 12px 24px rgba(30,64,175,.10);min-height:0;}
     .home-add-univ-card b{font-size:28px;line-height:1.15;letter-spacing:-.02em;}
@@ -1412,7 +1412,7 @@ function App() {
        <div class="card ob-card">${scoreJourneyCard('최소 노력 대비 합격 도달 성적')}</div>
        ${ob3IsAnalyzing ? `<div class="loading-overlay"><div class="loading-box"><div class="dots">● ● ●</div><div>분석중입니다</div><div>잠시만 기다려주세요</div></div></div>` : `<div class="card ob-card ob-period-card on-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 3개월 내 도달 예상</b><p>주간 플래너 피드백과 학습 방향 코칭 제공</p></div>
        <div class="card ob-card">
-         <p class="analysis-title">합격확률 게이지</p>
+         <p class="analysis-title">합격 가능성 변화</p>
          <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${gaugeTarget}점</b></div></div>
          <div class="ob-gauge">
            <div class="ob-gauge-current" style="width:${gaugeCurrentPct}%"></div>
@@ -1586,16 +1586,20 @@ function App() {
 
           <div class="card analysis-v2-gauge-change">
             <p class="analysis-title">합격 가능성 변화</p>
-            <p class="analysis-v2-gauge-line">현재 <b class="current">${analysisSelected.score}점</b> → 목표 <b class="target">${analysisTargetScore}점</b></p>
+            <div class="analysis-v2-gauge-head">
+              <div><small>현재</small><b class="current">${analysisSelected.score}점</b></div>
+              <span class="arrow">→</span>
+              <div><small>목표</small><b class="target">${analysisTargetScore}점</b></div>
+            </div>
             <div class="analysis-v2-progress">
               <span class="line pass" style="left:40%"></span>
               <span class="line safe" style="left:60%"></span>
               <span class="dot current" style="left:${analysisCurrentPct}%"></span>
-              <span class="trend-arrow" style="left:${(analysisCurrentPct + analysisTargetPct) / 2}%">➜</span>
+              <span class="trend-arrow" style="left:${(analysisCurrentPct + analysisTargetPct) / 2}%">→</span>
               <span class="dot target" style="left:${analysisTargetPct}%"></span>
             </div>
-            <div class="analysis-v2-progress-label"><span>위험</span><span>합격</span><span>안정</span></div>
-            <p class="analysis-sub">현재: 합격컷 미달 → 목표 달성 시 합격권 진입</p>
+            <div class="analysis-v2-cut-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
+            <p class="analysis-sub"><b>현재 → 합격권 진입 구간</b></p>
           </div>
 
           <div class="card analysis-v2-cta sticky"><p class="analysis-title">지금 방향이 틀리면 시간만 낭비될 수 있습니다</p><p class="sub">Standard는 매주 학습 방향과 실행을 관리합니다.</p><button class="btn analysis-convert-btn" data-action="startStandard">2개월 내 합격권 진입 시작하기</button></div>

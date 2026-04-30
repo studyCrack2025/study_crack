@@ -240,8 +240,8 @@ body {
   padding-bottom:8px;
 }
 .home-kpi-slider::-webkit-scrollbar { display:none; }
-.home-kpi-slider .slider-card { min-width:84%; scroll-snap-align:center; flex-shrink:0; flex-grow:0; }
-.home-kpi-card.slider-card { flex:0 0 84%; min-width:84%; max-width:84%; border:1px solid var(--line); text-align:left; font-family:inherit; color:inherit; }
+.home-kpi-slider .slider-card { min-width:40%; scroll-snap-align:center; flex-shrink:0; flex-grow:0; }
+.home-kpi-card.slider-card { flex:0 0 40%; min-width:40%; max-width:40%; border:1px solid var(--line); text-align:left; font-family:inherit; color:inherit; }
 .home-major-pill {
   display:inline-block;
   font-size:12px;
@@ -1261,6 +1261,12 @@ body {
 .analysis-v2-progress .dot.current { border-color:#F97316; }
 .analysis-v2-progress .dot.target { background:#2563EB; border-color:#fff; }
 .analysis-v2-progress .trend-arrow { position:absolute; top:50%; transform:translate(-50%,-54%); color:#F97316; font-size:16px; font-weight:700; z-index:3; text-shadow:0 2px 4px rgba(249,115,22,.25); line-height:1; }
+
+.analysis-v2-gauge-head { display:grid; grid-template-columns:1fr auto 1fr; align-items:end; margin:4px 0 10px; }
+.analysis-v2-gauge-head small { display:block; color:#64748B; font-size:13px; margin-bottom:2px; }
+.analysis-v2-gauge-head .current, .analysis-v2-gauge-head .target { font-size:54px; line-height:1; letter-spacing:-0.02em; }
+.analysis-v2-gauge-head .arrow { color:#94A3B8; font-size:34px; padding:0 10px 8px; }
+.analysis-v2-cut-labels { display:flex; justify-content:space-between; margin-top:10px; color:#64748B; font-size:14px; }
 .analysis-v2-progress-label { margin-top:8px; display:grid; grid-template-columns:40fr 20fr 40fr; font-size:11px; color:#64748b; }
 .analysis-v2-progress-label span:nth-child(1) { text-align:left; }
 .analysis-v2-progress-label span:nth-child(2) { text-align:center; }
