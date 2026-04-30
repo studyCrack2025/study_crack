@@ -784,7 +784,10 @@ function App() {
     [scoreEditState.inquiry2.subject || '탐구2', scores.inquiry2, 'raw']
   ];
   const scoreInfoDetailList = scoreRows.map(([subject, raw, type]) => {
-    if (type === 'grade-only') return `<div class="score-info-detail-row"><b>${subject}</b><span>-</span><span>-</span><span>-</span><span>${Math.max(1, Number(raw) || 1)}</span></div>`;
+    if (type === 'grade-only') {
+      const englishGrade = Number(scoreEditState.english || 0) || Math.min(9, Math.max(1, Math.round((100 - Number(raw || 0)) / 12.5) + 1));
+      return `<div class="score-info-detail-row"><b>${subject}</b><span>-</span><span>-</span><span>-</span><span>${englishGrade}</span></div>`;
+    }
     const m = scoreMetric(raw);
     return `<div class="score-info-detail-row"><b>${subject}</b><span>${raw}</span><span>${m.std}</span><span>${m.pct}</span><span>${m.grade}</span></div>`;
   }).join('') + `<div class="score-info-detail-row"><b>한국사</b><span>-</span><span>-</span><span>-</span><span>${Math.max(1, Number(scoreEditState.history || 3) || 3)}</span></div>`;
@@ -2294,6 +2297,11 @@ function App() {
   useEffect(() => {
     const startGesture = (target, clientX) => {
       if (typeof clientX !== 'number') return;
+      if (target?.closest?.('input, textarea, select, [contenteditable="true"]')) {
+        touchTargetRef.current = '';
+        touchStartXRef.current = null;
+        return;
+      }
       if (target?.closest?.('.home-kpi-slider')) {
         touchTargetRef.current = 'home';
         touchStartXRef.current = clientX;
@@ -2459,7 +2467,20 @@ function App() {
     if (field === 'obTrack') setObTrack(value);
     if (field === 'obGoalText') setObGoalText(value);
     if (field === 'obQuestionText') setObQuestionText(value);
-    if (field === 'obExamType') setObExamType(value);
+    if (field === 'obExamType') {
+      setObExamType(value);
+      const map = getExamScoresMap();
+      const picked = map[value] || {};
+      setObScoreInputs({
+        korean_common: picked.korean ? Math.max(0, Math.floor(Number(picked.korean) * 0.75)) : '',
+        korean_elective: picked.korean ? Math.max(0, Math.round(Number(picked.korean) * 0.25)) : '',
+        math_common: picked.math ? Math.max(0, Math.floor(Number(picked.math) * 0.74)) : '',
+        math_elective: picked.math ? Math.max(0, Math.round(Number(picked.math) * 0.26)) : '',
+        english_grade: picked.englishGrade || '',
+        inquiry1_raw: picked.inquiry1 || '',
+        inquiry2_raw: picked.inquiry2 || ''
+      });
+    }
     if (field === 'scoreExamType') setScoreExamType(value);
     if (field && field.startsWith('ob-')) {
       const key = field.replace('ob-', '');
