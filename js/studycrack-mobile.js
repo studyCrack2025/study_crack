@@ -1398,24 +1398,24 @@ function App() {
            <div class="ob1-subject-card">
              <h4>국어</h4>
              <select class="ob1-score-select"><option>화법과작문</option><option>언어와매체</option></select>
-             <div class="ob1-score-two-col"><input class="ob1-score-input" data-score-key="korean_common" value="${obScoreInputs.korean_common||''}" placeholder="공통 원점수" type="number"/><input class="ob1-score-input" data-score-key="korean_elective" value="${obScoreInputs.korean_elective||''}" placeholder="선택 원점수" type="number"/></div>
+             <div class="ob1-score-two-col"><input class="ob1-score-input" data-score-key="korean_common" placeholder="공통 원점수" type="number"/><input class="ob1-score-input" data-score-key="korean_elective" placeholder="선택 원점수" type="number"/></div>
            </div>
            <div class="ob1-subject-card">
              <h4>수학</h4>
              <select class="ob1-score-select"><option>확률과통계</option><option>미적분</option><option>기하</option></select>
-             <div class="ob1-score-two-col"><input class="ob1-score-input" data-score-key="math_common" value="${obScoreInputs.math_common||''}" placeholder="공통 원점수" type="number"/><input class="ob1-score-input" data-score-key="math_elective" value="${obScoreInputs.math_elective||''}" placeholder="선택 원점수" type="number"/></div>
+             <div class="ob1-score-two-col"><input class="ob1-score-input" data-score-key="math_common" placeholder="공통 원점수" type="number"/><input class="ob1-score-input" data-score-key="math_elective" placeholder="선택 원점수" type="number"/></div>
            </div>
-          <div class="ob1-subject-card"><h4>영어</h4><select class="ob1-score-select" data-score-key="english_grade"><option value="">등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option value="${n}" ${String(obScoreInputs.english_grade||'')===String(n)?'selected':''}>${n}등급</option>`).join('')}</select></div>
+          <div class="ob1-subject-card"><h4>영어</h4><select class="ob1-score-select" data-score-key="english_grade"><option value="">등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option value="${n}">${n}등급</option>`).join('')}</select></div>
            <div class="ob1-subject-card"><h4>한국사</h4><select class="ob1-score-select"><option>등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option>${n}등급</option>`).join('')}</select></div>
            <div class="ob1-subject-card">
              <h4>탐구1</h4>
              <select class="ob1-score-select"><option>과목 선택</option><optgroup label="사회탐구"><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option></optgroup><optgroup label="과학탐구"><option>물리학Ⅰ</option><option>화학Ⅰ</option><option>생명과학Ⅰ</option><option>지구과학Ⅰ</option><option>물리학Ⅱ</option><option>화학Ⅱ</option><option>생명과학Ⅱ</option><option>지구과학Ⅱ</option></optgroup></select>
-            <input class="ob1-score-input" data-score-key="inquiry1_raw" value="${obScoreInputs.inquiry1_raw||''}" placeholder="원점수" type="number"/>
+            <input class="ob1-score-input" data-score-key="inquiry1_raw" placeholder="원점수" type="number"/>
            </div>
            <div class="ob1-subject-card">
              <h4>탐구2</h4>
              <select class="ob1-score-select"><option>과목 선택</option><optgroup label="사회탐구"><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option></optgroup><optgroup label="과학탐구"><option>물리학Ⅰ</option><option>화학Ⅰ</option><option>생명과학Ⅰ</option><option>지구과학Ⅰ</option><option>물리학Ⅱ</option><option>화학Ⅱ</option><option>생명과학Ⅱ</option><option>지구과학Ⅱ</option></optgroup></select>
-            <input class="ob1-score-input" data-score-key="inquiry2_raw" value="${obScoreInputs.inquiry2_raw||''}" placeholder="원점수" type="number"/>
+            <input class="ob1-score-input" data-score-key="inquiry2_raw" placeholder="원점수" type="number"/>
            </div>
          </div>
        </div>
@@ -1836,12 +1836,13 @@ function App() {
     if (action === 'goto') {
       const target = actionEl.getAttribute('data-target');
       if (screen === 'ob1' && target === 'ob2') {
-        const ko = Number(obScoreInputs.korean_common||0)+Number(obScoreInputs.korean_elective||0);
-        const ma = Number(obScoreInputs.math_common||0)+Number(obScoreInputs.math_elective||0);
-        const enGrade = Number(obScoreInputs.english_grade||0);
+        const getScoreInput = (key) => Number(document.querySelector(`[data-score-key="${key}"]`)?.value || 0);
+        const ko = getScoreInput('korean_common') + getScoreInput('korean_elective');
+        const ma = getScoreInput('math_common') + getScoreInput('math_elective');
+        const enGrade = getScoreInput('english_grade');
         const enScore = enGrade ? Math.max(0, Math.round(100 - (enGrade - 1) * 12.5)) : 0;
-        const iq1 = Number(obScoreInputs.inquiry1_raw||0);
-        const iq2 = Number(obScoreInputs.inquiry2_raw||0);
+        const iq1 = getScoreInput('inquiry1_raw');
+        const iq2 = getScoreInput('inquiry2_raw');
         if (ko || ma || enScore || iq1 || iq2) setScores((prev)=>({ ...prev, korean: ko || prev.korean, math: ma || prev.math, english: enScore || prev.english, inquiry1: iq1 || prev.inquiry1, inquiry2: iq2 || prev.inquiry2 }));
         const map = getExamScoresMap();
         map[obExamType] = { korean: ko, math: ma, englishGrade: enGrade, english: enScore, inquiry1: iq1, inquiry2: iq2 };
@@ -2248,11 +2249,6 @@ function App() {
   };
 
   const onInput = (e) => {
-    const scoreKey = e.target.getAttribute('data-score-key');
-    if (scoreKey) {
-      setObScoreInputs((prev) => ({ ...prev, [scoreKey]: e.target.value }));
-      return;
-    }
     const field = e.target.getAttribute('data-field');
     if (field === 'coachPlannerFiles') {
       const files = Array.from(e.target.files || []);
@@ -2471,21 +2467,19 @@ function App() {
       setObExamType(value);
       const map = getExamScoresMap();
       const picked = map[value] || {};
-      setObScoreInputs({
-        korean_common: picked.korean ? Math.max(0, Math.floor(Number(picked.korean) * 0.75)) : '',
-        korean_elective: picked.korean ? Math.max(0, Math.round(Number(picked.korean) * 0.25)) : '',
-        math_common: picked.math ? Math.max(0, Math.floor(Number(picked.math) * 0.74)) : '',
-        math_elective: picked.math ? Math.max(0, Math.round(Number(picked.math) * 0.26)) : '',
-        english_grade: picked.englishGrade || '',
-        inquiry1_raw: picked.inquiry1 || '',
-        inquiry2_raw: picked.inquiry2 || ''
-      });
+      const setVal = (key, val) => {
+        const el = document.querySelector(`[data-score-key="${key}"]`);
+        if (el) el.value = val ?? '';
+      };
+      setVal('korean_common', picked.korean ? Math.max(0, Math.floor(Number(picked.korean) * 0.75)) : '');
+      setVal('korean_elective', picked.korean ? Math.max(0, Math.round(Number(picked.korean) * 0.25)) : '');
+      setVal('math_common', picked.math ? Math.max(0, Math.floor(Number(picked.math) * 0.74)) : '');
+      setVal('math_elective', picked.math ? Math.max(0, Math.round(Number(picked.math) * 0.26)) : '');
+      setVal('english_grade', picked.englishGrade || '');
+      setVal('inquiry1_raw', picked.inquiry1 || '');
+      setVal('inquiry2_raw', picked.inquiry2 || '');
     }
     if (field === 'scoreExamType') setScoreExamType(value);
-    if (field && field.startsWith('ob-')) {
-      const key = field.replace('ob-', '');
-      setObScoreInputs((prev) => ({ ...prev, [key]: value }));
-    }
     if (field && field.startsWith('v2-')) {
       const [, subject, key] = field.split('-');
       if (subject === 'english' || subject === 'history') setScoreState((prev) => ({ ...prev, [subject]: value }));
