@@ -104,6 +104,7 @@ function App() {
   const [tab, setTab] = useState('home');
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingFadeOut, setLoadingFadeOut] = useState(false);
   const [error, setError] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [selectedUniversityIndex, setSelectedUniversityIndex] = useState(0);
@@ -194,6 +195,9 @@ function App() {
   const [obExamType, setObExamType] = useState('3월 모의고사');
   const [scoreExamType, setScoreExamType] = useState('3월 모의고사');
   const [obScoreInputs, setObScoreInputs] = useState({});
+  const loadingStartedAtRef = useRef(Date.now());
+  const loadingExitTimerRef = useRef(null);
+  const loadingDoneRef = useRef(false);
   const plannerContentRef = useRef('');
   const plannerCustomMinutesRef = useRef('');
   const screenScrollRef = useRef({});
@@ -386,15 +390,29 @@ function App() {
     viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
   }, []);
 
+  const finishLoading = () => {
+    if (loadingDoneRef.current) return;
+    loadingDoneRef.current = true;
+    const elapsed = Date.now() - loadingStartedAtRef.current;
+    const waitMs = Math.max(0, 1300 - elapsed);
+    loadingExitTimerRef.current = setTimeout(() => {
+      setLoadingFadeOut(true);
+      setTimeout(() => setLoading(false), 320);
+    }, waitMs);
+  };
+
   const initializeApp = async () => {
     let fallbackTimer;
     try {
       console.log('[APP_INIT_START]');
       setLoading(true);
+      setLoadingFadeOut(false);
+      loadingDoneRef.current = false;
+      loadingStartedAtRef.current = Date.now();
       setError(false);
       fallbackTimer = setTimeout(() => {
-        setLoading(false);
         setScreen('on1');
+        finishLoading();
       }, 3000);
 
       const savedUser = safeParse('user', DEFAULT_USER);
@@ -433,12 +451,15 @@ function App() {
       setScreen('on1');
     } finally {
       if (fallbackTimer) clearTimeout(fallbackTimer);
-      setLoading(false);
+      finishLoading();
     }
   };
 
   useEffect(() => {
     initializeApp();
+    return () => {
+      if (loadingExitTimerRef.current) clearTimeout(loadingExitTimerRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -2645,7 +2666,7 @@ function App() {
     }
   };
 
-  const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><section class="app-loading-hero app-loading-poster"><img class="app-loading-poster-img" src="./assets/images/IMG_3020.png" alt="스터디크랙 로딩 이미지"/><div class="app-loading-progress"><div class="app-loading-bar"><i></i></div><p class="app-loading-label">LOADING...</p></div></section></div></div></div>`;
+  const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><section class="app-loading-hero app-loading-poster ${loadingFadeOut ? 'is-fade-out' : ''}"><img class="app-loading-poster-img" src="./assets/images/IMG_3020.png" alt="스터디크랙 로딩 이미지"/><div class="app-loading-progress"><div class="app-loading-bar"><i></i></div><p class="app-loading-label">LOADING...</p></div></section></div></div></div>`;
   const fallbackUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div></div>`;
   const preAuthAllowedScreens = ['splash', 'authLogin', 'authSignup', 'authFindId', 'authFindPw', 'on1', 'on2', 'on3'];
   const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !preAuthAllowedScreens.includes(screen) ? screens.on1 : current;
