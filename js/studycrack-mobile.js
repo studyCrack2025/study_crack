@@ -789,7 +789,11 @@ function App() {
       return `<div class="score-info-detail-row"><b>${subject}</b><span>-</span><span>-</span><span>-</span><span>${englishGrade}</span></div>`;
     }
     const m = scoreMetric(raw);
-    return `<div class="score-info-detail-row"><b>${subject}</b><span>${raw}</span><span>${m.std}</span><span>${m.pct}</span><span>${m.grade}</span></div>`;
+    const rawText = Number(raw) > 0 ? raw : '-';
+    const stdText = Number(raw) > 0 ? m.std : '-';
+    const pctText = Number(raw) > 0 ? m.pct : '-';
+    const grdText = Number(raw) > 0 ? m.grade : '-';
+    return `<div class="score-info-detail-row"><b>${subject}</b><span>${rawText}</span><span>${stdText}</span><span>${pctText}</span><span>${grdText}</span></div>`;
   }).join('') + `<div class="score-info-detail-row"><b>한국사</b><span>-</span><span>-</span><span>-</span><span>${Math.max(1, Number(scoreEditState.history || 3) || 3)}</span></div>`;
   const todayKey = FIXED_TODAY_DATE;
   const todayRecord = studyRecords.find((item) => item.date === todayKey);
@@ -1307,10 +1311,13 @@ function App() {
       inquiry2: Math.min(100, curr.inquiry2 + Math.max(1, Math.round((100 - curr.inquiry2) * 0.1)))
     };
     const targetAvg = Math.round((target.korean + target.math + target.english + target.inquiry1 + target.inquiry2) / 5);
+    const toEngGrade = (v) => Math.min(9, Math.max(1, Math.round((100 - Number(v || 0)) / 12.5) + 1));
     const row = (label, c, t) => {
       const diff = t - c;
       const badge = diff > 0 ? `<span class="pill up">+${diff}</span>` : `<span class="pill keep">유지</span>`;
-      const detail = diff > 0 ? `<span class="old">${c}</span><span class="arrow">→</span><span class="new">${t}</span>` : `${c}`;
+      const fromVal = label === '영어' ? `${toEngGrade(c)}등급` : `${c}`;
+      const toVal = label === '영어' ? `${toEngGrade(t)}등급` : `${t}`;
+      const detail = diff > 0 ? `<span class="old">${fromVal}</span><span class="arrow">→</span><span class="new">${toVal}</span>` : `${fromVal}`;
       return `<div class="score-row"><span>${label}</span><b>${badge}</b><em>${detail}</em></div>`;
     };
     return `
@@ -1326,7 +1333,7 @@ function App() {
           <h4>현재 성적</h4>
           <div class="score-row"><span>국어</span><b>${curr.korean}</b></div>
           <div class="score-row"><span>수학</span><b>${curr.math}</b></div>
-          <div class="score-row"><span>영어</span><b>${curr.english}</b></div>
+          <div class="score-row"><span>영어</span><b>${toEngGrade(curr.english)}등급</b></div>
           <div class="score-row"><span>탐구1</span><b>${curr.inquiry1}</b></div>
           <div class="score-row"><span>탐구2</span><b>${curr.inquiry2}</b></div>
           <div class="score-journey-total"><span>총점</span><b>${currAvg}점</b></div>
@@ -2479,7 +2486,23 @@ function App() {
       setVal('inquiry1_raw', picked.inquiry1 || '');
       setVal('inquiry2_raw', picked.inquiry2 || '');
     }
-    if (field === 'scoreExamType') setScoreExamType(value);
+    if (field === 'scoreExamType') {
+      setScoreExamType(value);
+      const map = getExamScoresMap();
+      const picked = map[value];
+      if (!picked) {
+        setScores((prev) => ({ ...prev, korean: 0, math: 0, english: 0, inquiry1: 0, inquiry2: 0 }));
+        return;
+      }
+      setScores((prev) => ({
+        ...prev,
+        korean: Number(picked.korean || 0),
+        math: Number(picked.math || 0),
+        english: Number(picked.english || 0),
+        inquiry1: Number(picked.inquiry1 || 0),
+        inquiry2: Number(picked.inquiry2 || 0)
+      }));
+    }
     if (field && field.startsWith('v2-')) {
       const [, subject, key] = field.split('-');
       if (subject === 'english' || subject === 'history') setScoreState((prev) => ({ ...prev, [subject]: value }));
