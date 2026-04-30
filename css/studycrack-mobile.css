@@ -240,8 +240,8 @@ body {
   padding-bottom:8px;
 }
 .home-kpi-slider::-webkit-scrollbar { display:none; }
-.home-kpi-slider .slider-card { min-width:84%; scroll-snap-align:center; flex-shrink:0; flex-grow:0; }
-.home-kpi-card.slider-card { flex:0 0 40%; min-width:40%; max-width:40%; border:1px solid var(--line); text-align:left; font-family:inherit; color:inherit; }
+.home-kpi-slider .slider-card { min-width:100%; scroll-snap-align:center; flex-shrink:0; flex-grow:0; }
+.home-kpi-card.slider-card { flex:0 0 100%; min-width:100%; max-width:100%; border:1px solid var(--line); text-align:left; font-family:inherit; color:inherit; }
 .home-major-pill {
   display:inline-block;
   font-size:12px;

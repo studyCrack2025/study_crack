@@ -850,7 +850,7 @@ function App() {
     <div class="section home-section">
       <div class="home-kpi-slider">
         <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-x:calc(-${homeSlideIndex * 100}% + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .58s cubic-bezier(.22,.61,.36,1)'};">
-        ${homeTargets.map((item) => `<button class="card home-kpi-card admission-card slider-card home-result-card-v3" style="flex:0 0 40%;min-width:40%;max-width:40%;" data-action="selectUniversity" data-target-major="${item.major}">
+        ${homeTargets.map((item) => `<button class="card home-kpi-card admission-card slider-card home-result-card-v3" style="flex:0 0 100%;min-width:100%;max-width:100%;" data-action="selectUniversity" data-target-major="${item.major}">
           <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score"><strong>${item.score}점</strong><small>AI 점수</small></div></div>
           <div class="home-result-gauge"><i style="width:${Math.min((item.score / 250) * 100, 100)}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
           <div class="home-result-gauge-meta"><span>0</span><span>합격컷 100</span><span>안정컷 150</span><span>MAX 250</span></div>
@@ -1039,7 +1039,7 @@ function App() {
     @keyframes homeSlideNext{from{transform:translateX(calc(var(--home-slide-x) + 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
     @keyframes homeSlidePrev{from{transform:translateX(calc(var(--home-slide-x) - 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
     .home-kpi-slider .slider-card{flex:0 0 100%;margin-right:0;min-height:0;}
-    .home-kpi-slider .home-kpi-card.slider-card{flex:0 0 40%;max-width:40%;min-width:40%;}
+    .home-kpi-slider .home-kpi-card.slider-card{flex:0 0 100%;max-width:100%;min-width:100%;}
     .home-kpi-indicator i{cursor:pointer;}
     .home-add-univ-card{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;padding:24px;border:1px solid #BFDBFE;background:linear-gradient(135deg,#F8FBFF,#EAF2FF);color:#1D4ED8;border-radius:24px;box-shadow:0 12px 24px rgba(30,64,175,.10);min-height:0;}
     .home-add-univ-card b{font-size:28px;line-height:1.15;letter-spacing:-.02em;}
