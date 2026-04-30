@@ -1437,7 +1437,7 @@ button:disabled, .disabled, [disabled] { opacity:.5; pointer-events:none; }
 .v2-step-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px; }
 
 
-.onboarding-list-item.long-report span:last-child{font-size:13px;white-space:nowrap;letter-spacing:-0.02em;}
+.onboarding-list-item.long-report span:last-child{font-size:14px;font-weight:800;white-space:nowrap;letter-spacing:-0.01em;}
 .app-loading-poster{min-height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:18px;padding:20px;background:#0f172a;}
 .app-loading-poster-img{width:min(82%,320px);max-height:56vh;object-fit:contain;border-radius:18px;box-shadow:0 16px 38px rgba(0,0,0,.35);}
 .app-loading-progress{width:min(76%,280px);display:grid;gap:8px;justify-items:center;}

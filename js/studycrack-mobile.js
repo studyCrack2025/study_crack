@@ -1281,7 +1281,30 @@ function App() {
     @media (max-width:390px){.score-journey-col{padding:10px;}.score-row{font-size:13px;}.score-row .pill{font-size:11px;padding:2px 6px;}.score-journey-total{font-size:13px;}}
   </style>`;
 
-  const scoreJourneyCard = (title = '최소 노력 대비 합격 도달 성적') => `
+  const scoreJourneyCard = (title = '최소 노력 대비 합격 도달 성적') => {
+    const curr = {
+      korean: Number(scores.korean || 0),
+      math: Number(scores.math || 0),
+      english: Number(scores.english || 0),
+      inquiry1: Number(scores.inquiry1 || 0),
+      inquiry2: Number(scores.inquiry2 || 0)
+    };
+    const currAvg = Math.round((curr.korean + curr.math + curr.english + curr.inquiry1 + curr.inquiry2) / 5);
+    const target = {
+      korean: Math.min(100, curr.korean + Math.max(1, Math.round((100 - curr.korean) * 0.12))),
+      math: Math.min(100, curr.math + Math.max(2, Math.round((100 - curr.math) * 0.22))),
+      english: Math.min(100, curr.english + Math.max(1, Math.round((100 - curr.english) * 0.08))),
+      inquiry1: Math.min(100, curr.inquiry1 + Math.max(1, Math.round((100 - curr.inquiry1) * 0.14))),
+      inquiry2: Math.min(100, curr.inquiry2 + Math.max(1, Math.round((100 - curr.inquiry2) * 0.1)))
+    };
+    const targetAvg = Math.round((target.korean + target.math + target.english + target.inquiry1 + target.inquiry2) / 5);
+    const row = (label, c, t) => {
+      const diff = t - c;
+      const badge = diff > 0 ? `<span class="pill up">+${diff}</span>` : `<span class="pill keep">유지</span>`;
+      const detail = diff > 0 ? `<span class="old">${c}</span><span class="arrow">→</span><span class="new">${t}</span>` : `${c}`;
+      return `<div class="score-row"><span>${label}</span><b>${badge}</b><em>${detail}</em></div>`;
+    };
+    return `
     <div class="score-journey-card">
       <p class="analysis-title">${title}</p>
       <div class="score-journey-segment">
@@ -1292,26 +1315,27 @@ function App() {
         <div class="score-journey-track ${scoreSlideMotion}" style="--score-slide-x:calc(${activeScoreView==='target' ? '-50%' : '0%'} + ${scoreDragOffset}px);--score-slide-transition:${scoreDragOffset!==0?'0s':'transform .56s cubic-bezier(.22,.61,.36,1)'};">
         <div class="score-journey-col current" data-score-view="current">
           <h4>현재 성적</h4>
-          <div class="score-row"><span>국어</span><b>82</b></div>
-          <div class="score-row"><span>수학</span><b>68</b></div>
-          <div class="score-row"><span>영어</span><b>77</b></div>
-          <div class="score-row"><span>탐구1</span><b>70</b></div>
-          <div class="score-row"><span>탐구2</span><b>66</b></div>
-          <div class="score-journey-total"><span>총점</span><b>86점</b></div>
+          <div class="score-row"><span>국어</span><b>${curr.korean}</b></div>
+          <div class="score-row"><span>수학</span><b>${curr.math}</b></div>
+          <div class="score-row"><span>영어</span><b>${curr.english}</b></div>
+          <div class="score-row"><span>탐구1</span><b>${curr.inquiry1}</b></div>
+          <div class="score-row"><span>탐구2</span><b>${curr.inquiry2}</b></div>
+          <div class="score-journey-total"><span>총점</span><b>${currAvg}점</b></div>
         </div>
         <div class="score-journey-col target" data-score-view="target">
           <h4>도달 성적</h4>
-          <div class="score-row"><span>국어</span><b><span class="pill keep">유지</span></b><em>82</em></div>
-          <div class="score-row"><span>수학</span><b><span class="pill up">+12</span></b><em><span class="old">68</span><span class="arrow">→</span><span class="new">80</span></em></div>
-          <div class="score-row"><span>영어</span><b><span class="pill keep">유지</span></b><em>77</em></div>
-          <div class="score-row"><span>탐구1</span><b><span class="pill up">+6</span></b><em><span class="old">70</span><span class="arrow">→</span><span class="new">76</span></em></div>
-          <div class="score-row"><span>탐구2</span><b><span class="pill keep">유지</span></b><em>66</em></div>
-          <div class="score-journey-total"><span>예상 총점</span><b>120점</b></div>
+          ${row('국어', curr.korean, target.korean)}
+          ${row('수학', curr.math, target.math)}
+          ${row('영어', curr.english, target.english)}
+          ${row('탐구1', curr.inquiry1, target.inquiry1)}
+          ${row('탐구2', curr.inquiry2, target.inquiry2)}
+          <div class="score-journey-total"><span>예상 총점</span><b>${targetAvg}점</b></div>
         </div>
         </div>
       </div>
     </div>
   `;
+  };
   const screens = {
     ob1: layout(
       `<div class="onboarding-container"><div class="content">
@@ -1699,7 +1723,7 @@ function App() {
       <div class="card my-profile-card"><div class="my-profile-left"><div class="my-avatar">${i('user', false)}</div><div><p class="my-name">김지민</p><p class="sub">목표 대학: 연세대학교 경영학과</p></div></div><span class="badge">Pro 이용 중</span></div>
       <div class="card my-subscription-card"><div class="my-sub-icon">${i('report', false)}</div><div><p class="my-sub-title">Pro 플랜 이용 중</p><p class="my-sub-date">다음 결제일 2024.06.14</p></div></div>
       <div class="card my-menu-card">
-        <button class="my-row" data-action="goto" data-target="scoreInfo">성적 정보 <span>${i('chevron', false)}</span></button>
+        <button class="my-row" data-action="goto" data-target="qualInfo">정성조사서 <span>${i('chevron', false)}</span></button><button class="my-row" data-action="goto" data-target="scoreInfo">성적 정보 <span>${i('chevron', false)}</span></button>
         
         <button class="my-row" data-action="goto" data-target="proIntro">구독 관리 <span>${i('chevron', false)}</span></button>
       </div>
@@ -1758,6 +1782,8 @@ function App() {
       </div>
       <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="paymentComplete">결제하기</button></div>`, false),
     paymentComplete: layout(`<div class="payment-done-screen"><div class="payment-complete-wrap"><div class="payment-check">${i('check', true)}</div><p class="title payment-complete-title">결제가 완료되었습니다!</p><p class="sub payment-complete-sub">${selectedPlan.toUpperCase()} 플랜이 활성화되었습니다.</p><div class="card payment-complete-note"><b>프로 보고서 이용 안내</b><p>2주에 한 번 새로운 리포트를 제공해 드려요.<br/>다음 리포트는 5월 25일에 이용 가능해요.</p></div></div><div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="home">홈으로 이동</button></div></div>`, false),
+
+    qualInfo: layout(appbar('정성조사서', true) + `<div class="card"><p class="analysis-title">학년/신분</p><input class="planner-input" data-field="qual_status" value="${(user.qualitative&&user.qualitative.status)||''}" placeholder="예: 고3"/></div><div class="card"><p class="analysis-title">출신학교</p><input class="planner-input" data-field="qual_school" value="${(user.qualitative&&user.qualitative.school)||''}" placeholder="예: 서울고"/></div><div class="card"><p class="analysis-title">희망계열</p><input class="planner-input" data-field="qual_stream" value="${(user.qualitative&&user.qualitative.stream)||''}" placeholder="예: 자연/공학"/></div><div class="card"><p class="analysis-title">얻고 싶은 점</p><textarea class="planner-input" data-field="qual_benefits" rows="3">${(user.qualitative&&user.qualitative.benefits)||''}</textarea></div><div class="card"><p class="analysis-title">입시 고민/질문</p><textarea class="planner-input" data-field="qual_questions" rows="4">${(user.qualitative&&user.qualitative.questions)||''}</textarea><button class="btn btn-primary" data-action="saveQualInfo">정성조사서 저장</button></div>`, false),
     scoreInfo: layout(appbar('성적 정보', true) + `<div class="card score-info-card"><div class="score-info-detail-table"><div class="score-info-detail-row"><b>과목</b><b>원점수</b><b>표준점수</b><b>백분위</b><b>등급</b></div>${scoreInfoDetailList}</div><button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">성적 수정하기</button></div><div class="card"><p class="analysis-title">최근 성적 업데이트</p><p class="sub" style="margin:0">2024.05.14 기준</p><p class="sub" style="margin:6px 0 0">다음 업데이트 권장: 2주 후</p></div>${scoreEditOpen ? ScoreEditModal() : ''}`, false),
     notificationSettings: layout(appbar('알림 설정', true) + `<div class="card notify-card">${[
       ['planner', '플래너 알림', '오늘 계획을 잊지 않도록 알려드려요'],
@@ -1910,6 +1936,10 @@ function App() {
     if (action === 'openPlannerEdit') setPlannerEditIndex(actionEl.getAttribute('data-planner-id'));
     if (action === 'closePlannerEdit') setPlannerEditIndex(null);
     if (action === 'openScoreEdit') { setScoreEditOpen(true); setScoreEditStep(1); }
+    if (action === 'saveQualInfo') {
+      setUser(prev => ({ ...prev, qualitative: { status: state.qual_status || '', school: state.qual_school || '', stream: state.qual_stream || '', benefits: state.qual_benefits || '', questions: state.qual_questions || '' } }));
+      alert('정성조사서가 저장되었습니다.');
+    }
     if (action === 'closeScoreEdit') { setScoreEditOpen(false); setScoreEditStep(1); }
     if (action === 'scoreStepPrev') setScoreEditStep((v) => Math.max(1, v - 1));
     if (action === 'scoreStepNext') setScoreEditStep((v) => Math.min(6, v + 1));
@@ -2382,6 +2412,7 @@ function App() {
     if (field === 'signupPassword') setSignupPassword(value);
     if (field === 'signupPasswordConfirm') setSignupPasswordConfirm(value);
     if (field === 'analysisSearchTerm') setAnalysisSearchTerm(value);
+    if (field && field.startsWith('qual_')) setStateField(field, value);
     if (field === 'obSchoolName') setObSchoolName(value);
     if (field === 'obGradeStatus') setObGradeStatus(value);
     if (field === 'obTrack') setObTrack(value);
