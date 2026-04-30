@@ -1024,13 +1024,13 @@ function App() {
     .onboarding-shot-head h2{margin:0;font-size:24px;font-weight:800;line-height:1.45;letter-spacing:-0.04em;color:#111827;white-space:pre-line;}
     .onboarding-shot-head h2 .accent{color:#0B4EDB;}
     .onboarding-shot-head p{margin:20px 0 0;font-size:16px;font-weight:600;line-height:1.55;letter-spacing:-0.04em;color:#4B5563;white-space:pre-line;}
-    .onboarding-center{margin-top:18px;position:relative;}
+    .onboarding-center{margin-top:8px;position:relative;}
     .onboarding-card{background:#fff;border-radius:22px;box-shadow:0 8px 28px rgba(15,23,42,.08);border:1px solid rgba(226,232,240,.8);position:relative;}
-    .onboarding-card.list{padding-top:26px;background:transparent;border:none;box-shadow:none;}
-    .onboarding-list-item{height:88px;border-radius:20px;padding:0 24px;display:flex;align-items:center;gap:20px;margin-bottom:18px;background:#fff;box-shadow:0 8px 26px rgba(15,23,42,.07);border:1px solid #EEF2F7;font-size:21px;font-weight:800;color:#111827;letter-spacing:-0.04em;}
+    .onboarding-card.list{padding-top:10px;background:transparent;border:none;box-shadow:none;}
+    .onboarding-list-item{height:78px;border-radius:18px;padding:0 20px;display:flex;align-items:center;gap:16px;margin-bottom:14px;background:#fff;box-shadow:0 8px 26px rgba(15,23,42,.07);border:1px solid #EEF2F7;font-size:19px;font-weight:800;color:#111827;letter-spacing:-0.04em;}
     .onboarding-icon-box{width:48px;height:48px;border-radius:14px;background:#F0F5FF;color:#0B6BFF;display:grid;place-items:center;flex:0 0 48px;}
-    .onboarding-card.strategy{height:232px;margin-top:40px;padding:28px 28px 22px;}
-    .onboarding-card.data{height:254px;margin-top:40px;padding:28px;overflow:hidden;}
+    .onboarding-card.strategy{height:232px;margin-top:24px;padding:28px 28px 22px;}
+    .onboarding-card.data{height:254px;margin-top:24px;padding:28px;overflow:hidden;}
     .onboarding-stat{font-size:24px;font-weight:800;line-height:1.65;color:#111827;letter-spacing:-0.04em;white-space:pre-line;}
     .onboarding-label{font-size:20px;font-weight:800;color:#111827;}
     .onboarding-score{margin-top:8px;font-size:58px;font-weight:900;line-height:1;color:#0f172a;}
