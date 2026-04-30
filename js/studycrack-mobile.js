@@ -437,10 +437,10 @@ function App() {
     } finally {
       if (fallbackTimer) clearTimeout(fallbackTimer);
       const elapsed = Date.now() - loadingStartedAt;
-      const remain = Math.max(0, 1500 - elapsed);
+      const remain = Math.max(0, 1300 - elapsed);
       setTimeout(() => {
         setLoadingReady(true);
-        setTimeout(() => setLoading(false), 420);
+        setTimeout(() => setLoading(false), 350);
       }, remain);
     }
   };
