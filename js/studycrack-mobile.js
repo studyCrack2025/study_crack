@@ -1592,6 +1592,8 @@ function App() {
               <div><small>목표</small><b class="target">${analysisTargetScore}점</b></div>
             </div>
             <div class="analysis-v2-progress">
+              <span class="progress-base" style="width:${analysisCurrentPct}%"></span>
+              <span class="progress-range" style="left:${analysisCurrentPct}%;width:${Math.max(0, analysisTargetPct - analysisCurrentPct)}%"></span>
               <span class="line pass" style="left:40%"></span>
               <span class="line safe" style="left:60%"></span>
               <span class="dot current" style="left:${analysisCurrentPct}%"></span>

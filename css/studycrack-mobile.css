@@ -240,8 +240,8 @@ body {
   padding-bottom:8px;
 }
 .home-kpi-slider::-webkit-scrollbar { display:none; }
-.home-kpi-slider .slider-card { min-width:40%; scroll-snap-align:center; flex-shrink:0; flex-grow:0; }
-.home-kpi-card.slider-card { flex:0 0 40%; min-width:40%; max-width:40%; border:1px solid var(--line); text-align:left; font-family:inherit; color:inherit; }
+.home-kpi-slider .slider-card { flex:0 0 40%; min-width:40%; max-width:40%; width:40%; scroll-snap-align:center; flex-shrink:0; flex-grow:0; }
+.home-kpi-card.slider-card { flex:0 0 40%; min-width:40%; max-width:40%; width:40%; border:1px solid var(--line); text-align:left; font-family:inherit; color:inherit; }
 .home-major-pill {
   display:inline-block;
   font-size:12px;
@@ -253,6 +253,10 @@ body {
   font-weight:700;
 }
 .home-kpi-add-card {
+  flex:0 0 40%;
+  min-width:40%;
+  max-width:40%;
+  width:40%;
   min-height:0;
   border:2px dashed #D1D5DB;
   background:#f8fbff;
@@ -1254,19 +1258,23 @@ body {
 .analysis-v2-gauge-change { background:#F3F4F6; border-radius:12px; padding:16px; }
 .analysis-v2-progress { margin-top:10px; position:relative; border-radius:999px; overflow:visible; height:11px; }
 .analysis-v2-progress::before { content:''; position:absolute; inset:0; border-radius:999px; background:#E5E7EB; }
-.analysis-v2-progress .line { position:absolute; top:-2px; width:1px; height:15px; border-left:1px dashed #cbd5e1; z-index:1; }
-.analysis-v2-progress .line.pass { border-color:#2563EB; }
-.analysis-v2-progress .line.safe { border-color:#22C55E; }
-.analysis-v2-progress .dot { position:absolute; top:50%; width:18px; height:18px; border-radius:999px; transform:translate(-50%, -50%); border:2px solid #fff; box-shadow:0 3px 10px rgba(15,23,42,0.22); background:#fff; z-index:2; }
+.analysis-v2-progress .progress-base { position:absolute; left:0; top:0; bottom:0; border-radius:999px; background:linear-gradient(90deg,#1f66ea,#2f6bff); z-index:1; transition:width .56s cubic-bezier(.22,.61,.36,1); }
+.analysis-v2-progress .progress-range { position:absolute; top:0; bottom:0; border-radius:0; background:rgba(37,99,235,.58); z-index:1; transition:left .56s cubic-bezier(.22,.61,.36,1), width .56s cubic-bezier(.22,.61,.36,1); }
+.analysis-v2-progress .line { position:absolute; top:-4px; width:2px; height:19px; z-index:2; }
+.analysis-v2-progress .line.pass { background:#EF4444; }
+.analysis-v2-progress .line.safe { background:#22C55E; }
+.analysis-v2-progress .dot { position:absolute; top:50%; width:16px; height:16px; border-radius:999px; transform:translate(-50%, -50%); border:3px solid #fff; box-shadow:0 3px 10px rgba(15,23,42,0.18); background:#fff; z-index:3; transition:left .56s cubic-bezier(.22,.61,.36,1); }
 .analysis-v2-progress .dot.current { border-color:#F97316; }
 .analysis-v2-progress .dot.target { background:#2563EB; border-color:#fff; }
-.analysis-v2-progress .trend-arrow { position:absolute; top:50%; transform:translate(-50%,-54%); color:#F97316; font-size:16px; font-weight:700; z-index:3; text-shadow:0 2px 4px rgba(249,115,22,.25); line-height:1; }
+.analysis-v2-progress .trend-arrow { position:absolute; top:50%; transform:translate(-50%,-54%); color:#F97316; font-size:20px; font-weight:700; z-index:4; line-height:1; transition:left .56s cubic-bezier(.22,.61,.36,1); }
 
 .analysis-v2-gauge-head { display:grid; grid-template-columns:1fr auto 1fr; align-items:end; margin:4px 0 10px; }
-.analysis-v2-gauge-head small { display:block; color:#64748B; font-size:13px; margin-bottom:2px; }
-.analysis-v2-gauge-head .current, .analysis-v2-gauge-head .target { font-size:54px; line-height:1; letter-spacing:-0.02em; }
-.analysis-v2-gauge-head .arrow { color:#94A3B8; font-size:34px; padding:0 10px 8px; }
-.analysis-v2-cut-labels { display:flex; justify-content:space-between; margin-top:10px; color:#64748B; font-size:14px; }
+.analysis-v2-gauge-head small { display:block; color:#64748B; font-size:16px; margin-bottom:3px; font-weight:500; }
+.analysis-v2-gauge-head .current, .analysis-v2-gauge-head .target { font-size:72px; line-height:1; letter-spacing:-0.03em; font-weight:800; }
+.analysis-v2-gauge-head .target { color:#0B6BFF; }
+.analysis-v2-gauge-head .arrow { color:#94A3B8; font-size:44px; padding:0 10px 8px; }
+.analysis-v2-cut-labels { display:flex; justify-content:space-between; margin-top:12px; color:#64748B; font-size:14px; font-weight:500; }
+.analysis-v2-gauge-change .analysis-sub { margin-top:14px; font-size:13px; color:#9CA3AF; font-weight:700; }
 .analysis-v2-progress-label { margin-top:8px; display:grid; grid-template-columns:40fr 20fr 40fr; font-size:11px; color:#64748b; }
 .analysis-v2-progress-label span:nth-child(1) { text-align:left; }
 .analysis-v2-progress-label span:nth-child(2) { text-align:center; }
