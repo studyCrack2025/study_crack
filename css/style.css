@@ -5,6 +5,56 @@
    ========================================= */
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Noto Sans KR', sans-serif; }
 body { color: #333; line-height: 1.6; background-color: #f8fafc; overflow-x: hidden; }
+
+.initial-splash {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    background: #f8fafc;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.initial-splash.hide {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.initial-splash-image {
+    width: min(92vw, 420px);
+    max-height: 75vh;
+    object-fit: contain;
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+
+.initial-splash-progress {
+    width: min(72vw, 280px);
+    height: 8px;
+    border-radius: 999px;
+    background: #bfd4f6;
+    overflow: hidden;
+}
+
+.initial-splash-progress-fill {
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #1d4ed8, #2563eb);
+    animation: splashLoad 1.5s ease-in-out forwards;
+}
+
+@keyframes splashLoad {
+    from { width: 0; }
+    to { width: 100%; }
+}
 a { text-decoration: none; color: inherit; cursor: pointer; }
 ul, ol { list-style: none; }
 
