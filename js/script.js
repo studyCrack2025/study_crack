@@ -478,6 +478,12 @@ window.cycleResultView = function() {
    5. 페이지 초기화 및 이벤트 리스너
    ========================================= */
 document.addEventListener('DOMContentLoaded', () => {
+    const splash = document.getElementById('initialSplash');
+    if (splash) {
+        setTimeout(() => {
+            splash.classList.add('hide');
+        }, 1500);
+    }
     
     // 1. 권한 체크 (accessToken으로 통일)
     const token = localStorage.getItem('accessToken');
