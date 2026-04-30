@@ -1783,7 +1783,7 @@ function App() {
       <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="paymentComplete">결제하기</button></div>`, false),
     paymentComplete: layout(`<div class="payment-done-screen"><div class="payment-complete-wrap"><div class="payment-check">${i('check', true)}</div><p class="title payment-complete-title">결제가 완료되었습니다!</p><p class="sub payment-complete-sub">${selectedPlan.toUpperCase()} 플랜이 활성화되었습니다.</p><div class="card payment-complete-note"><b>프로 보고서 이용 안내</b><p>2주에 한 번 새로운 리포트를 제공해 드려요.<br/>다음 리포트는 5월 25일에 이용 가능해요.</p></div></div><div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="home">홈으로 이동</button></div></div>`, false),
 
-    qualInfo: layout(appbar('정성조사서', true) + `<div class="card"><p class="analysis-title">학년/신분</p><input class="planner-input" data-field="qual_status" value="${(user.qualitative&&user.qualitative.status)||''}" placeholder="예: 고3"/></div><div class="card"><p class="analysis-title">출신학교</p><input class="planner-input" data-field="qual_school" value="${(user.qualitative&&user.qualitative.school)||''}" placeholder="예: 서울고"/></div><div class="card"><p class="analysis-title">희망계열</p><input class="planner-input" data-field="qual_stream" value="${(user.qualitative&&user.qualitative.stream)||''}" placeholder="예: 자연/공학"/></div><div class="card"><p class="analysis-title">얻고 싶은 점</p><textarea class="planner-input" data-field="qual_benefits" rows="3">${(user.qualitative&&user.qualitative.benefits)||''}</textarea></div><div class="card"><p class="analysis-title">입시 고민/질문</p><textarea class="planner-input" data-field="qual_questions" rows="4">${(user.qualitative&&user.qualitative.questions)||''}</textarea><button class="btn btn-primary" data-action="saveQualInfo">정성조사서 저장</button></div>`, false),
+    qualInfo: layout(appbar('정성조사서', true) + `<div class="card"><p class="analysis-title">현재 학년</p><div class="ob1-pill-row">${['고1/2 재학','고3 재학','N수생','검정고시','기타'].map((grade) => `<button class="ob1-pill ${obGradeStatus===grade?'active':''}" data-action="setObGradeStatus" data-ob-grade="${grade}">${grade}</button>`).join('')}</div></div><div class="card"><p class="analysis-title">출신 학교</p><input class="planner-input" data-field="obSchoolName" value="${obSchoolName}" placeholder="출신 학교 입력"/></div><div class="card"><p class="analysis-title">희망 계열</p><select class="planner-input" data-field="obTrack"><option value="예체능" ${obTrack==='예체능'?'selected':''}>예체능</option><option value="인문사회" ${obTrack==='인문사회'?'selected':''}>인문사회</option><option value="상경계열" ${obTrack==='상경계열'?'selected':''}>상경계열</option><option value="자연/공학" ${obTrack==='자연/공학'?'selected':''}>자연/공학</option><option value="의치한약수" ${obTrack==='의치한약수'?'selected':''}>의치한약수</option><option value="간호" ${obTrack==='간호'?'selected':''}>간호</option><option value="사범/교대" ${obTrack==='사범/교대'?'selected':''}>사범/교대</option><option value="기타" ${obTrack==='기타'?'selected':''}>기타</option></select></div><div class="card"><p class="analysis-title">스터디크랙을 통해서 얻고 싶은 점</p><textarea class="planner-input" data-field="obGoalText" rows="3">${obGoalText}</textarea></div><div class="card"><p class="analysis-title">입시 고민 및 질문 (있으면 작성해주세요.)</p><textarea class="planner-input" data-field="obQuestionText" rows="4">${obQuestionText}</textarea><button class="btn btn-primary" data-action="saveQualInfo">정성조사서 저장</button></div>`, false),
     scoreInfo: layout(appbar('성적 정보', true) + `<div class="card score-info-card"><div class="score-info-detail-table"><div class="score-info-detail-row"><b>과목</b><b>원점수</b><b>표준점수</b><b>백분위</b><b>등급</b></div>${scoreInfoDetailList}</div><button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">성적 수정하기</button></div><div class="card"><p class="analysis-title">최근 성적 업데이트</p><p class="sub" style="margin:0">2024.05.14 기준</p><p class="sub" style="margin:6px 0 0">다음 업데이트 권장: 2주 후</p></div>${scoreEditOpen ? ScoreEditModal() : ''}`, false),
     notificationSettings: layout(appbar('알림 설정', true) + `<div class="card notify-card">${[
       ['planner', '플래너 알림', '오늘 계획을 잊지 않도록 알려드려요'],
@@ -1942,7 +1942,9 @@ function App() {
     if (action === 'closePlannerEdit') setPlannerEditIndex(null);
     if (action === 'openScoreEdit') { setScoreEditOpen(true); setScoreEditStep(1); }
     if (action === 'saveQualInfo') {
-      setUser(prev => ({ ...prev, qualitative: { status: obGradeStatus || '', school: obSchoolName || '', stream: obTrack || '', benefits: obGoalText || '', questions: obQuestionText || '' } }));
+      const nextQual = { status: obGradeStatus || '', school: obSchoolName || '', stream: obTrack || '', benefits: obGoalText || '', questions: obQuestionText || '' };
+      setUser(prev => ({ ...prev, qualitative: nextQual }));
+      localStorage.setItem('user', JSON.stringify({ ...(user || {}), qualitative: nextQual }));
       alert('정성조사서가 저장되었습니다.');
     }
     if (action === 'closeScoreEdit') { setScoreEditOpen(false); setScoreEditStep(1); }
@@ -2418,7 +2420,6 @@ function App() {
     if (field === 'signupPassword') setSignupPassword(value);
     if (field === 'signupPasswordConfirm') setSignupPasswordConfirm(value);
     if (field === 'analysisSearchTerm') setAnalysisSearchTerm(value);
-    if (field && field.startsWith('qual_')) setStateField(field, value);
     if (field === 'obSchoolName') setObSchoolName(value);
     if (field === 'obGradeStatus') setObGradeStatus(value);
     if (field === 'obTrack') setObTrack(value);
