@@ -758,7 +758,7 @@ function App() {
   };
   const homeTargets = homeTargetList.map((major) => {
     const profile = analysisProfiles[major] || analysisSelected;
-    const score = Number(profile.score || Math.round((scores.korean + scores.math + scores.english + scores.inquiry1 + scores.inquiry2) / 5));
+    const score = Number(liveCurrentScore || Math.round((scores.korean + scores.math + scores.english + scores.inquiry1 + scores.inquiry2) / 5));
     const cut = 100;
     const gap = score - cut;
     return {

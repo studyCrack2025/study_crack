@@ -891,3 +891,5 @@ renderUserInfo = function(data){
   renderMyQualitative();
   renderMyScoreTable();
 };
+
+function applyMyScoreToServices(){ saveMyQuantitative(); }

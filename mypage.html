@@ -146,7 +146,7 @@
                 </div>
                 <div id="myDataScore" class="my-data-tab">
                     <label>시험 선택</label>
-                    <select id="myScoreExam" onchange="renderMyScoreTable()"><option value="mar">3월 학평</option><option value="jun">6월 모평</option><option value="sep">9월 모평</option><option value="csat">수능</option></select>
+                    <select id="myScoreExam" onchange="renderMyScoreTable()"><option value="mar">3월 모의고사</option><option value="may">5월 모의고사</option><option value="jun">6월 평가원</option><option value="jul">7월 모의고사</option><option value="sep">9월 평가원</option><option value="oct">10월 모의고사</option><option value="csat">수능</option><option value="etc">기타</option></select><button class="btn btn-primary" type="button" onclick="applyMyScoreToServices()" style="margin-top:10px;">적용</button>
                     <div class="table-responsive"><table class="score-table"><thead><tr><th>과목</th><th>원점수</th><th>표준</th><th>백분위</th><th>등급</th></tr></thead><tbody id="myScoreTbody"></tbody></table></div>
                     <button class="save-btn" type="button" onclick="saveMyQuantitative()">성적정보 저장</button>
                 </div>
