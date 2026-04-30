@@ -2584,23 +2584,25 @@ function App() {
     }
     if (field && field.startsWith('v2-')) {
       const [, subject, key] = field.split('-');
+      let normalizedValue = value;
       const valueNum = Number(value);
       const maxMap = { 'korean-common': 76, 'korean-elective': 24, 'math-common': 74, 'math-elective': 26, 'inq1-score': 50, 'inq2-score': 50 };
       const mk = `${subject}-${key}`;
-      if (maxMap[mk] && valueNum > maxMap[mk]) { alert('성적을 정확히 입력해주세요'); e.target.value = String(maxMap[mk]); return; }
-      if (subject === 'english' || subject === 'history') setScoreState((prev) => ({ ...prev, [subject]: value }));
-      if (subject === 'korean' || subject === 'math') setScoreState((prev) => ({ ...prev, [subject]: { ...prev[subject], [key === 'type' ? 'type' : key === 'common' ? 'common' : 'elective']: value } }));
-      if (subject === 'inq1' || subject === 'inq2') setScoreState((prev) => ({ ...prev, [subject === 'inq1' ? 'inquiry1' : 'inquiry2']: { ...prev[subject === 'inq1' ? 'inquiry1' : 'inquiry2'], [key === 'subject' ? 'subject' : 'score']: value } }));
+      if (maxMap[mk] && valueNum > maxMap[mk]) { alert('성적을 정확히 입력해주세요'); normalizedValue = String(maxMap[mk]); e.target.value = normalizedValue; }
+      if (subject === 'english' || subject === 'history') setScoreState((prev) => ({ ...prev, [subject]: normalizedValue }));
+      if (subject === 'korean' || subject === 'math') setScoreState((prev) => ({ ...prev, [subject]: { ...prev[subject], [key === 'type' ? 'type' : key === 'common' ? 'common' : 'elective']: normalizedValue } }));
+      if (subject === 'inq1' || subject === 'inq2') setScoreState((prev) => ({ ...prev, [subject === 'inq1' ? 'inquiry1' : 'inquiry2']: { ...prev[subject === 'inq1' ? 'inquiry1' : 'inquiry2'], [key === 'subject' ? 'subject' : 'score']: normalizedValue } }));
     }
     if (field && field.startsWith('v2e-')) {
       const [, subject, key] = field.split('-');
+      let normalizedValue = value;
       const valueNum = Number(value);
       const maxMap = { 'korean-common': 76, 'korean-elective': 24, 'math-common': 74, 'math-elective': 26, 'inq1-score': 50, 'inq2-score': 50 };
       const mk = `${subject}-${key}`;
-      if (maxMap[mk] && valueNum > maxMap[mk]) { alert('성적을 정확히 입력해주세요'); e.target.value = String(maxMap[mk]); return; }
-      if (subject === 'english' || subject === 'history') setScoreEditState((prev) => ({ ...prev, [subject]: value }));
-      if (subject === 'korean' || subject === 'math') setScoreEditState((prev) => ({ ...prev, [subject]: { ...prev[subject], [key === 'type' ? 'type' : key === 'common' ? 'common' : 'elective']: value } }));
-      if (subject === 'inq1' || subject === 'inq2') setScoreEditState((prev) => ({ ...prev, [subject === 'inq1' ? 'inquiry1' : 'inquiry2']: { ...prev[subject === 'inq1' ? 'inquiry1' : 'inquiry2'], [key === 'subject' ? 'subject' : 'score']: value } }));
+      if (maxMap[mk] && valueNum > maxMap[mk]) { alert('성적을 정확히 입력해주세요'); normalizedValue = String(maxMap[mk]); e.target.value = normalizedValue; }
+      if (subject === 'english' || subject === 'history') setScoreEditState((prev) => ({ ...prev, [subject]: normalizedValue }));
+      if (subject === 'korean' || subject === 'math') setScoreEditState((prev) => ({ ...prev, [subject]: { ...prev[subject], [key === 'type' ? 'type' : key === 'common' ? 'common' : 'elective']: normalizedValue } }));
+      if (subject === 'inq1' || subject === 'inq2') setScoreEditState((prev) => ({ ...prev, [subject === 'inq1' ? 'inquiry1' : 'inquiry2']: { ...prev[subject === 'inq1' ? 'inquiry1' : 'inquiry2'], [key === 'subject' ? 'subject' : 'score']: normalizedValue } }));
     }
   };
 
