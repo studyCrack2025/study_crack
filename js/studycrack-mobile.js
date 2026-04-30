@@ -1302,7 +1302,7 @@ function App() {
       inquiry1: Number(scores.inquiry1 || 0),
       inquiry2: Number(scores.inquiry2 || 0)
     };
-    const currAvg = Math.round((curr.korean + curr.math + curr.english + curr.inquiry1 + curr.inquiry2) / 5);
+    const currAvg = Math.round(analysisSelected?.score || ((curr.korean + curr.math + curr.english + curr.inquiry1 + curr.inquiry2) / 5));
     const target = {
       korean: Math.min(100, curr.korean + Math.max(1, Math.round((100 - curr.korean) * 0.12))),
       math: Math.min(100, curr.math + Math.max(2, Math.round((100 - curr.math) * 0.22))),
@@ -1310,7 +1310,7 @@ function App() {
       inquiry1: Math.min(100, curr.inquiry1 + Math.max(1, Math.round((100 - curr.inquiry1) * 0.14))),
       inquiry2: Math.min(100, curr.inquiry2 + Math.max(1, Math.round((100 - curr.inquiry2) * 0.1)))
     };
-    const targetAvg = Math.round((target.korean + target.math + target.english + target.inquiry1 + target.inquiry2) / 5);
+    const targetAvg = Math.round(analysisTargetScore || ((target.korean + target.math + target.english + target.inquiry1 + target.inquiry2) / 5));
     const toEngGrade = (v) => Math.min(9, Math.max(1, Math.round((100 - Number(v || 0)) / 12.5) + 1));
     const row = (label, c, t) => {
       const diff = t - c;
@@ -2017,23 +2017,39 @@ function App() {
       setScoreEditStep((v) => Math.min(6, v + 1));
     }
     if (action === 'saveScoreEdit') {
-      const requiredMissing = !String(scoreEditState.korean.common || '').trim()
-        || !String(scoreEditState.korean.elective || '').trim()
-        || !String(scoreEditState.math.common || '').trim()
-        || !String(scoreEditState.math.elective || '').trim()
-        || !String(scoreEditState.english || '').trim()
-        || !String(scoreEditState.inquiry1.score || '').trim()
-        || !String(scoreEditState.inquiry2.score || '').trim();
+      const read = (name, fallback = '') => (document.querySelector(`[data-field="${name}"]`)?.value ?? fallback);
+      const nextCommonKor = read('v2e-korean-common', scoreEditState.korean.common || '');
+      const nextElecKor = read('v2e-korean-elective', scoreEditState.korean.elective || '');
+      const nextCommonMath = read('v2e-math-common', scoreEditState.math.common || '');
+      const nextElecMath = read('v2e-math-elective', scoreEditState.math.elective || '');
+      const nextEnglish = read('v2e-english-grade', scoreEditState.english || '');
+      const nextInq1 = read('v2e-inq1-score', scoreEditState.inquiry1.score || '');
+      const nextInq2 = read('v2e-inq2-score', scoreEditState.inquiry2.score || '');
+      setScoreEditState((prev) => ({
+        ...prev,
+        korean: { ...prev.korean, common: nextCommonKor, elective: nextElecKor },
+        math: { ...prev.math, common: nextCommonMath, elective: nextElecMath },
+        english: nextEnglish,
+        inquiry1: { ...prev.inquiry1, score: nextInq1 },
+        inquiry2: { ...prev.inquiry2, score: nextInq2 }
+      }));
+      const requiredMissing = !String(nextCommonKor).trim()
+        || !String(nextElecKor).trim()
+        || !String(nextCommonMath).trim()
+        || !String(nextElecMath).trim()
+        || !String(nextEnglish).trim()
+        || !String(nextInq1).trim()
+        || !String(nextInq2).trim();
       if (requiredMissing) {
         alert('필수 입력 사항을 모두 입력해주세요');
         return;
       }
-      const nextKo = Number(scoreEditState.korean.common || 0) + Number(scoreEditState.korean.elective || 0);
-      const nextMa = Number(scoreEditState.math.common || 0) + Number(scoreEditState.math.elective || 0);
-      const nextEnGrade = Number(scoreEditState.english || 0);
+      const nextKo = Number(nextCommonKor || 0) + Number(nextElecKor || 0);
+      const nextMa = Number(nextCommonMath || 0) + Number(nextElecMath || 0);
+      const nextEnGrade = Number(nextEnglish || 0);
       const nextEnScore = nextEnGrade ? Math.max(0, Math.round(100 - (nextEnGrade - 1) * 12.5)) : 0;
-      const nextIq1 = Number(scoreEditState.inquiry1.score || 0);
-      const nextIq2 = Number(scoreEditState.inquiry2.score || 0);
+      const nextIq1 = Number(nextInq1 || 0);
+      const nextIq2 = Number(nextInq2 || 0);
       setScores((prev) => ({
         ...prev,
         korean: nextKo || prev.korean,
