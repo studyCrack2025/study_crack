@@ -1985,6 +1985,29 @@ function App() {
     if (action === 'closeScoreEdit') { setScoreEditOpen(false); setScoreEditStep(1); }
     if (action === 'scoreStepPrev') setScoreEditStep((v) => Math.max(1, v - 1));
     if (action === 'scoreStepNext') {
+      const read = (name) => (document.querySelector(`[data-field="${name}"]`)?.value ?? '');
+      if (scoreEditStep === 1) {
+        const common = read('v2e-korean-common');
+        const elective = read('v2e-korean-elective');
+        setScoreEditState((prev) => ({ ...prev, korean: { ...prev.korean, common, elective } }));
+      }
+      if (scoreEditStep === 2) {
+        const common = read('v2e-math-common');
+        const elective = read('v2e-math-elective');
+        setScoreEditState((prev) => ({ ...prev, math: { ...prev.math, common, elective } }));
+      }
+      if (scoreEditStep === 3) {
+        const english = read('v2e-english-grade');
+        setScoreEditState((prev) => ({ ...prev, english }));
+      }
+      if (scoreEditStep === 5) {
+        const score = read('v2e-inq1-score');
+        setScoreEditState((prev) => ({ ...prev, inquiry1: { ...prev.inquiry1, score } }));
+      }
+      if (scoreEditStep === 6) {
+        const score = read('v2e-inq2-score');
+        setScoreEditState((prev) => ({ ...prev, inquiry2: { ...prev.inquiry2, score } }));
+      }
       const over =
         (scoreEditStep === 1 && (Number(scoreEditState.korean.common || 0) > 76 || Number(scoreEditState.korean.elective || 0) > 24)) ||
         (scoreEditStep === 2 && (Number(scoreEditState.math.common || 0) > 74 || Number(scoreEditState.math.elective || 0) > 26)) ||
@@ -2314,30 +2337,6 @@ function App() {
       return;
     }
     const field = e.target.getAttribute('data-field');
-    if (field && field.startsWith('v2e-')) {
-      const [, subject, key] = field.split('-');
-      let normalizedValue = e.target.value;
-      const valueNum = Number(normalizedValue);
-      const maxMap = { 'korean-common': 76, 'korean-elective': 24, 'math-common': 74, 'math-elective': 26, 'inq1-score': 50, 'inq2-score': 50 };
-      const mk = `${subject}-${key}`;
-      if (maxMap[mk] && valueNum > maxMap[mk]) { alert('성적을 정확히 입력해주세요'); normalizedValue = String(maxMap[mk]); e.target.value = normalizedValue; }
-      if (subject === 'english' || subject === 'history') setScoreEditState((prev) => ({ ...prev, [subject]: normalizedValue }));
-      if (subject === 'korean' || subject === 'math') setScoreEditState((prev) => ({ ...prev, [subject]: { ...prev[subject], [key === 'type' ? 'type' : key === 'common' ? 'common' : 'elective']: normalizedValue } }));
-      if (subject === 'inq1' || subject === 'inq2') setScoreEditState((prev) => ({ ...prev, [subject === 'inq1' ? 'inquiry1' : 'inquiry2']: { ...prev[subject === 'inq1' ? 'inquiry1' : 'inquiry2'], [key === 'subject' ? 'subject' : 'score']: normalizedValue } }));
-      return;
-    }
-    if (field && field.startsWith('v2-')) {
-      const [, subject, key] = field.split('-');
-      let normalizedValue = e.target.value;
-      const valueNum = Number(normalizedValue);
-      const maxMap = { 'korean-common': 76, 'korean-elective': 24, 'math-common': 74, 'math-elective': 26, 'inq1-score': 50, 'inq2-score': 50 };
-      const mk = `${subject}-${key}`;
-      if (maxMap[mk] && valueNum > maxMap[mk]) { alert('성적을 정확히 입력해주세요'); normalizedValue = String(maxMap[mk]); e.target.value = normalizedValue; }
-      if (subject === 'english' || subject === 'history') setScoreState((prev) => ({ ...prev, [subject]: normalizedValue }));
-      if (subject === 'korean' || subject === 'math') setScoreState((prev) => ({ ...prev, [subject]: { ...prev[subject], [key === 'type' ? 'type' : key === 'common' ? 'common' : 'elective']: normalizedValue } }));
-      if (subject === 'inq1' || subject === 'inq2') setScoreState((prev) => ({ ...prev, [subject === 'inq1' ? 'inquiry1' : 'inquiry2']: { ...prev[subject === 'inq1' ? 'inquiry1' : 'inquiry2'], [key === 'subject' ? 'subject' : 'score']: normalizedValue } }));
-      return;
-    }
     if (field === 'coachPlannerFiles') {
       const files = Array.from(e.target.files || []);
       if (files.length) setCoachingPlannerFiles((prev) => [...prev, ...files].slice(0, 5));
