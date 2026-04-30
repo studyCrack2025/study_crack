@@ -1069,8 +1069,8 @@ function App() {
     .home-kpi-track.motion-prev{animation:none;}
     @keyframes homeSlideNext{from{transform:translateX(calc(var(--home-slide-x) + 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
     @keyframes homeSlidePrev{from{transform:translateX(calc(var(--home-slide-x) - 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
-    .home-kpi-slider .slider-card{flex:0 0 var(--home-slide-card,40%);min-width:var(--home-slide-card,40%);max-width:var(--home-slide-card,40%);margin-right:0;min-height:0;}
-    .home-kpi-slider .home-kpi-card.slider-card{flex:0 0 var(--home-slide-card,40%);max-width:var(--home-slide-card,40%);min-width:var(--home-slide-card,40%);}
+    .home-kpi-slider .slider-card{flex:0 0 var(--home-slide-card,40%) !important;min-width:var(--home-slide-card,40%) !important;max-width:var(--home-slide-card,40%) !important;width:var(--home-slide-card,40%) !important;margin-right:0;min-height:0;box-sizing:border-box;overflow:hidden;}
+    .home-kpi-slider .home-kpi-card.slider-card{flex:0 0 var(--home-slide-card,40%) !important;max-width:var(--home-slide-card,40%) !important;min-width:var(--home-slide-card,40%) !important;width:var(--home-slide-card,40%) !important;}
     .home-kpi-indicator i{cursor:pointer;}
     .home-add-univ-card{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;padding:24px;border:1px solid #BFDBFE;background:linear-gradient(135deg,#F8FBFF,#EAF2FF);color:#1D4ED8;border-radius:24px;box-shadow:0 12px 24px rgba(30,64,175,.10);min-height:0;}
     .home-add-univ-card b{font-size:28px;line-height:1.15;letter-spacing:-.02em;}
@@ -1280,6 +1280,33 @@ function App() {
         </div>
         </div>
       </div>
+    </div>
+  `;
+
+
+
+  const passChanceChangeCard = () => `
+    <div class="score-journey-card pass-change-card">
+      <p class="analysis-title">합격 가능성 변화</p>
+      <div class="score-journey-segment">
+        <button type="button" class="${activeScoreView==='current'?'active':''}" data-action="setScoreView" data-score-view="current">현재</button>
+        <button type="button" class="${activeScoreView==='target'?'active':''}" data-action="setScoreView" data-score-view="target">목표</button>
+      </div>
+      <div class="score-journey-scroll">
+        <div class="score-journey-track ${scoreSlideMotion}" style="--score-slide-x:calc(${activeScoreView==='target' ? '-50%' : '0%'} + ${scoreDragOffset}px);--score-slide-transition:${scoreDragOffset!==0?'0s':'transform .56s cubic-bezier(.22,.61,.36,1)'};">
+          <div class="score-journey-col" data-score-view="current">
+            <div class="analysis-v2-gauge-head"><div><small>현재</small><b class="current">${analysisSelected.score}점</b></div></div>
+            <div class="analysis-v2-progress"><span class="progress-base" style="width:${analysisCurrentPct}%"></span><span class="line pass" style="left:40%"></span><span class="line safe" style="left:60%"></span></div>
+            <div class="analysis-v2-cut-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
+          </div>
+          <div class="score-journey-col" data-score-view="target">
+            <div class="analysis-v2-gauge-head"><div><small>목표</small><b class="target">${analysisTargetScore}점</b></div></div>
+            <div class="analysis-v2-progress"><span class="progress-base" style="width:${analysisTargetPct}%"></span><span class="line pass" style="left:40%"></span><span class="line safe" style="left:60%"></span></div>
+            <div class="analysis-v2-cut-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="analysis-sub"><b>현재 → 합격권 진입 구간</b></p>
     </div>
   `;
 
@@ -1583,25 +1610,8 @@ function App() {
               ${analysisEtaStage === 1 ? `<div class="analysis-eta-loading"><span class="skeleton"></span><p>도달 성적 계산 중입니다...</p></div>` : analysisEtaStage === 2 ? `<div class="analysis-eta-loading"><span class="skeleton thin"></span><p>도달 시간을 예상 중입니다...</p></div>` : `<button class="analysis-v2-eta-card" data-action="startStandard"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 2개월 내 도달 예상</b><p>매주 플래너 피드백과 학습 방향 관리를 기준으로 계산했어요</p></button>`}
             </div>
           </div>
-
           <div class="card analysis-v2-gauge-change">
-            <p class="analysis-title">합격 가능성 변화</p>
-            <div class="analysis-v2-gauge-head">
-              <div><small>현재</small><b class="current">${analysisSelected.score}점</b></div>
-              <span class="arrow">→</span>
-              <div><small>목표</small><b class="target">${analysisTargetScore}점</b></div>
-            </div>
-            <div class="analysis-v2-progress">
-              <span class="progress-base" style="width:${analysisCurrentPct}%"></span>
-              <span class="progress-range" style="left:${analysisCurrentPct}%;width:${Math.max(0, analysisTargetPct - analysisCurrentPct)}%"></span>
-              <span class="line pass" style="left:40%"></span>
-              <span class="line safe" style="left:60%"></span>
-              <span class="dot current" style="left:${analysisCurrentPct}%"></span>
-              <span class="trend-arrow" style="left:${(analysisCurrentPct + analysisTargetPct) / 2}%">→</span>
-              <span class="dot target" style="left:${analysisTargetPct}%"></span>
-            </div>
-            <div class="analysis-v2-cut-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
-            <p class="analysis-sub"><b>현재 → 합격권 진입 구간</b></p>
+            ${passChanceChangeCard()}
           </div>
 
           <div class="card analysis-v2-cta sticky"><p class="analysis-title">지금 방향이 틀리면 시간만 낭비될 수 있습니다</p><p class="sub">Standard는 매주 학습 방향과 실행을 관리합니다.</p><button class="btn analysis-convert-btn" data-action="startStandard">2개월 내 합격권 진입 시작하기</button></div>
