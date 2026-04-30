@@ -113,6 +113,7 @@ function App() {
   const [targetMajor, setTargetMajor] = useState(DEFAULT_USER.targetUniversity);
   const [targetOpen, setTargetOpen] = useState(false);
   const [analysisTargetList, setAnalysisTargetList] = useState(['연세대학교 경영학과', '고려대학교 경영대학', '강서대학교 G2빅데이터경영학과']);
+  const [homeTargetList, setHomeTargetList] = useState(['연세대학교 경영학과', '고려대학교 경영대학', '강서대학교 G2빅데이터경영학과']);
   const [analysisSearchOpen, setAnalysisSearchOpen] = useState(false);
   const [analysisSearchTerm, setAnalysisSearchTerm] = useState('');
   const [analysisMode, setAnalysisMode] = useState('summary');
@@ -150,6 +151,9 @@ function App() {
   const [notifModalOpen, setNotifModalOpen] = useState(false);
   const [proRequestModalOpen, setProRequestModalOpen] = useState(false);
   const [proRequestText, setProRequestText] = useState('');
+  const [proEliteMonth, setProEliteMonth] = useState('26년 4월');
+  const [addingUniversity, setAddingUniversity] = useState(false);
+  const [showStudyBreakdown, setShowStudyBreakdown] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [plannerItems, setPlannerItems] = useState(DEFAULT_PLANNER_ITEMS);
   const [plannerEditIndex, setPlannerEditIndex] = useState(null);
@@ -569,6 +573,8 @@ function App() {
   });
   const analysisSimMax = Math.max(...analysisSimRows.map(({ gainNum }) => gainNum), 0);
   const analysisSimRecommendedIndex = analysisSimRows.findIndex(({ gainNum }) => gainNum === analysisSimMax);
+  const proEliteMonths = Array.from(new Set(PRO_ELITE_REPORTS.map((report) => report.week.split(' ').slice(0, 2).join(' '))));
+  const proEliteFilteredReports = PRO_ELITE_REPORTS.filter((report) => report.week.startsWith(proEliteMonth));
   const onboardingProgress = (step) => `<div class="ob-progress"><span>${step}/3</span><div class="ob-dots"><i class="${step>=1?'active':''}"></i><i class="${step>=2?'active':''}"></i><i class="${step>=3?'active':''}"></i></div></div>`;
   const mbtiDone = Object.values(mbtiAnswers).every(Boolean);
   const gaugeTotal = 250;
@@ -664,10 +670,17 @@ function App() {
       ? { tone: 'info', icon: '📊', text: `${lowRatio.subject} 비중이 부족합니다. 전략상 손해 가능성이 있어요.` }
       : { tone: 'info', icon: '📊', text: '과목 비중이 균형적으로 유지되고 있어요. 지금 흐름을 유지해요.' };
   const canSubmitPlanner = Boolean(plannerDraft.subject && plannerDraft.durationChoice);
-  const inquiryOptions = `<optgroup label="사회탐구"><option value="">과목 선택</option><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option></optgroup><optgroup label="과학탐구"><option>물리학</option><option>화학</option><option>생명과학</option><option>지구과학</option></optgroup>`;
+  const inquirySubjects = ['생활과 윤리','윤리와 사상','한국지리','세계지리','동아시아사','세계사','경제','정치와 법','사회·문화','물리학','화학','생명과학','지구과학'];
+  const inquiryOptions = (selected = '') => `<option value="">과목 선택</option>${inquirySubjects.map((s)=>`<option value="${s}" ${selected===s?'selected':''}>${s}</option>`).join('')}`;
   const ScoreEditModal = () => {
     const step = scoreEditStep;
-    const preview = `<div class="on-dummy-result"><b>표준점수 ${100 + step * 4}</b><b>백분위 ${82 + step * 2}</b><b>등급 ${Math.max(1, 4 - Math.floor(step/2))}</b></div>`;
+    const previewRaw = step === 1 ? (Number(scoreEditState.korean.common || 0) + Number(scoreEditState.korean.elective || 0))
+      : step === 2 ? (Number(scoreEditState.math.common || 0) + Number(scoreEditState.math.elective || 0))
+        : step === 5 ? Number(scoreEditState.inquiry1.score || 0)
+          : step === 6 ? Number(scoreEditState.inquiry2.score || 0)
+            : 0;
+    const previewMetric = scoreMetric(previewRaw);
+    const preview = `<div class="on-dummy-result"><b>표준점수 ${previewMetric.std}</b><b>백분위 ${previewMetric.pct}</b><b>등급 ${step===3 ? (Number(scoreEditState.english || 0) || '-') : step===4 ? (Number(scoreEditState.history || 0) || '-') : previewMetric.grade}</b></div>`;
     const body = step === 1
       ? `<h4>국어</h4><select class="planner-input" data-field="v2e-korean-type"><option value="화법과작문" ${scoreEditState.korean.type==='화법과작문'?'selected':''}>화법과작문</option><option value="언어와매체" ${scoreEditState.korean.type==='언어와매체'?'selected':''}>언어와매체</option></select><input class="planner-input" data-field="v2e-korean-common" value="${scoreEditState.korean.common}" type="number" placeholder="공통 원점수"/><input class="planner-input" data-field="v2e-korean-elective" value="${scoreEditState.korean.elective}" type="number" placeholder="선택 원점수"/>${preview}`
       : step === 2
@@ -677,8 +690,8 @@ function App() {
           : step === 4
             ? `<h4>한국사</h4><select class="planner-input" data-field="v2e-history"><option value="">등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option value="${n}" ${String(scoreEditState.history)===String(n)?'selected':''}>${n}등급</option>`).join('')}</select>`
             : step === 5
-              ? `<h4>탐구1</h4><select class="planner-input" data-field="v2e-inq1-subject">${inquiryOptions}</select><input class="planner-input" data-field="v2e-inq1-score" value="${scoreEditState.inquiry1.score}" type="number" placeholder="원점수"/>${preview}`
-              : `<h4>탐구2</h4><select class="planner-input" data-field="v2e-inq2-subject">${inquiryOptions}</select><input class="planner-input" data-field="v2e-inq2-score" value="${scoreEditState.inquiry2.score}" type="number" placeholder="원점수"/>${preview}`;
+              ? `<h4>탐구1</h4><select class="planner-input" data-field="v2e-inq1-subject">${inquiryOptions(scoreEditState.inquiry1.subject)}</select><input class="planner-input" data-field="v2e-inq1-score" value="${scoreEditState.inquiry1.score}" type="number" placeholder="원점수"/>${preview}`
+              : `<h4>탐구2</h4><select class="planner-input" data-field="v2e-inq2-subject">${inquiryOptions(scoreEditState.inquiry2.subject)}</select><input class="planner-input" data-field="v2e-inq2-score" value="${scoreEditState.inquiry2.score}" type="number" placeholder="원점수"/>${preview}`;
     return `<div class="home-modal-overlay" data-action="closeScoreEdit"><div class="home-modal score-edit-modal v2-step-modal" data-action="noopModal"><p class="home-modal-title">성적 수정</p><p class="sub">${step}/6</p>${body}<div class="v2-step-actions"><button class="btn btn-secondary" data-action="scoreStepPrev" ${step===1?'disabled':''}>이전</button>${step===6?'<button class="btn btn-primary" data-action="saveScoreEdit">저장</button>':'<button class="btn btn-primary" data-action="scoreStepNext">다음</button>'}</div></div></div>`;
   };
   const onboarding = (step, title, subtitle, cardContent, bubbleText, target, cta = '다음') => `
@@ -701,9 +714,16 @@ function App() {
     </div>
   `;
 
-  const homeTargets = targetOptions.slice(0, 3).map((major) => {
+  const scoreMetric = (raw) => {
+    const n = Math.max(0, Number(raw) || 0);
+    const std = Math.min(160, Math.round(n * 0.95 + 22));
+    const pct = Math.min(99, Math.max(1, Math.round(n * 0.9 + 10)));
+    const grade = pct >= 96 ? 1 : pct >= 89 ? 2 : pct >= 77 ? 3 : pct >= 64 ? 4 : pct >= 52 ? 5 : pct >= 40 ? 6 : pct >= 28 ? 7 : pct >= 16 ? 8 : 9;
+    return { std, pct, grade };
+  };
+  const homeTargets = homeTargetList.map((major) => {
     const profile = analysisProfiles[major] || analysisSelected;
-    const score = profile.score;
+    const score = Number(profile.score || Math.round((scores.korean + scores.math + scores.english + scores.inquiry1 + scores.inquiry2) / 5));
     const cut = 100;
     const gap = score - cut;
     return {
@@ -715,14 +735,18 @@ function App() {
       rate: Math.round(Math.min(99, Math.max(20, (score / 150) * 100)))
     };
   });
-  const scoreInfoDetailList = [
-    ['국어', `${scores.korean}`, `${scores.korean + 18}`, `${Math.min(99, scores.korean + 10)}`, '2'],
-    ['수학', `${scores.math}`, `${scores.math + 22}`, `${Math.min(99, scores.math + 14)}`, '3'],
-    ['영어', '-', '-', '-', `${Math.max(1, 9 - Math.floor(scores.english / 12))}`],
-    ['한국사', '-', '-', '-', '3'],
-    ['탐구1', `${scores.inquiry1}`, `${scores.inquiry1 + 17}`, `${Math.min(99, scores.inquiry1 + 11)}`, '3'],
-    ['탐구2', `${scores.inquiry2}`, `${scores.inquiry2 + 15}`, `${Math.min(99, scores.inquiry2 + 9)}`, '3']
-  ].map(([subject, raw, std, pct, grade]) => `<div class="score-info-detail-row"><b>${subject}</b><span>${raw}</span><span>${std}</span><span>${pct}</span><span>${grade}</span></div>`).join('');
+  const scoreRows = [
+    [scoreEditState.korean.type || '국어', scores.korean, 'raw'],
+    [scoreEditState.math.type || '수학', scores.math, 'raw'],
+    ['영어', scores.english, 'grade-only'],
+    [scoreEditState.inquiry1.subject || '탐구1', scores.inquiry1, 'raw'],
+    [scoreEditState.inquiry2.subject || '탐구2', scores.inquiry2, 'raw']
+  ];
+  const scoreInfoDetailList = scoreRows.map(([subject, raw, type]) => {
+    if (type === 'grade-only') return `<div class="score-info-detail-row"><b>${subject}</b><span>-</span><span>-</span><span>-</span><span>${Math.max(1, Number(raw) || 1)}</span></div>`;
+    const m = scoreMetric(raw);
+    return `<div class="score-info-detail-row"><b>${subject}</b><span>${raw}</span><span>${m.std}</span><span>${m.pct}</span><span>${m.grade}</span></div>`;
+  }).join('') + `<div class="score-info-detail-row"><b>한국사</b><span>-</span><span>-</span><span>-</span><span>${Math.max(1, Number(scoreEditState.history || 3) || 3)}</span></div>`;
   const todayKey = FIXED_TODAY_DATE;
   const todayRecord = studyRecords.find((item) => item.date === todayKey);
   const liveStudySeconds = studyTimerSecondsRef.current;
@@ -817,7 +841,7 @@ function App() {
     <div class="home-content">
     <div class="home-header">
       <div class="home-top-icons">
-        <button class="pro-top-btn" data-action="goto" data-target="proElite"><span>PRO</span></button>
+        <button class="pro-top-btn" data-action="goto" data-target="proElite"><span>PRO LOUNGE 입장</span></button>
         <button class="top-icon-btn" data-action="openNotificationModal">${i('bell', false)}</button>
       </div>
       <p class="home-greeting">안녕하세요, 지민님 👋</p>
@@ -832,22 +856,23 @@ function App() {
           <div class="home-result-gauge-meta"><span>0</span><span>합격컷 100</span><span>안정컷 150</span><span>MAX 250</span></div>
           <div class="kpi-row score-row"><div class="kpi-item"><b>${item.score}점</b>현재 점수</div><div class="kpi-item"><b>${item.cut}점</b>합격 컷</div><div class="kpi-item danger"><b>${item.gap}점</b>부족 점수</div></div>
           <div class="home-planner-badges chip-row">${plannerBadges.map((badge) => `<span class="chip">${badge}</span>`).join('')}</div>
-        </button>`).join('')}</div>
+        </button>`).join('')}<button class="card slider-card home-add-univ-card" data-action="openAnalysisSearchFromHome"><b>+ 대학 추가</b><p>추천/검색으로 추가</p></button></div>
       </div>
-      <div class="home-kpi-indicator card-indicator">${homeTargets.map((_, idx) => `<i class="${idx===homeSlideIndex?'active':''}" data-action="setHomeSlide" data-slide-index="${idx}"></i>`).join('')}</div>
-      ${universityModalOpen ? `<div class="home-modal-overlay" data-action="closeUniversityModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">목표 대학 추가</p><p class="sub" style="margin-top:8px">대학 선택 모달은 다음 단계에서 연결됩니다.</p><button class="btn btn-primary" data-action="closeUniversityModal">닫기</button></div></div>` : ''}
+      <div class="home-kpi-indicator card-indicator">${[...homeTargets, { add: true }].map((_, idx) => `<i class="${idx===homeSlideIndex?'active':''}" data-action="setHomeSlide" data-slide-index="${idx}"></i>`).join('')}</div>
+      ${universityModalOpen ? `<div class="home-modal-overlay" data-action="closeUniversityModal"><div class="home-modal" data-action="noopModal"><div class="analysis-search-head"><h4>희망 대학 선택</h4><button data-action="closeUniversityModal">✕</button></div><input class="planner-input" data-field="analysisSearchTerm" value="${analysisSearchTerm}" placeholder="대학명 또는 학과명을 검색하세요"/><div class="analysis-search-section recommend"><p>현재 성적 기준 추천</p><div class="analysis-search-rec-grid">${analysisRecommended.map((name) => `<button class="analysis-rec-card" data-action="addAnalysisTarget" data-target-major="${name}"><div><strong>${name}</strong><span class="badge">추천</span></div><em>${analysisTargetList.includes(name)?'추가됨':'선택'}</em></button>`).join('')}</div></div><div class="analysis-search-section"><p>검색 결과</p>${analysisSearchList.map((name) => `<button class="analysis-search-row" data-action="addAnalysisTarget" data-target-major="${name}">${name}<span>${analysisTargetList.includes(name)?'추가됨':'추가'}</span></button>`).join('')}</div></div></div>` : ''}
     </div>
     <div class="section home-section home-section-last">
-      <div class="card home-study-summary study-summary-card home-insight-card">
+      <div class="card home-study-summary study-summary-card home-insight-card premium-panel">
         <div class="home-card-head"><p class="analysis-title">오늘 누적 공부</p><span class="home-mini-badge">${studyTimerRunning ? '진행중' : '대기'}</span></div>
-        <div class="study-timer-row"><b class="timer" data-study-base-seconds="${todayRecord?.studyTime || 0}">${formatHms(todayStudySeconds)}</b>${studyTimerRunning ? `<button class="btn btn-secondary start-button" data-action="stopStudyTimer">공부 종료</button>` : `<button class="btn btn-primary start-button" data-action="openStudySubjectSheet">공부 시작하기</button>`}</div>
-        <div class="home-subject-pill-row subject-chip-row home-chip-grid">${visibleSubjectChips.map(([subject, sec]) => `<span class="home-subject-pill subject-time-chip">${subject} ${formatHms(sec || 0)}</span>`).join('')}${hiddenSubjectCount ? `<span class="home-subject-pill subject-time-chip more">+${hiddenSubjectCount}</span>` : ''}</div>
+        <div class="study-timer-row"><b class="timer premium-clock" data-study-base-seconds="${todayRecord?.studyTime || 0}">${formatHms(todayStudySeconds)}</b><div class="timer-actions"><button class="btn btn-primary mini ${studyTimerRunning?'disabled':''}" data-action="openStudySubjectSheet" ${studyTimerRunning?'disabled':''}>공부 시작</button><button class="btn btn-secondary mini ${studyTimerRunning?'':'disabled'}" data-action="stopStudyTimer" ${studyTimerRunning?'':'disabled'}>정지</button></div></div>
+        <button class="home-breakdown-toggle" data-action="toggleStudyBreakdown">${showStudyBreakdown ? '접기' : '펼쳐보기'}</button>
+        ${showStudyBreakdown ? `<div class="home-breakdown-list">${visibleSubjectChips.map(([subject, sec]) => `<div><b>${subject}</b><span>${formatHms(sec || 0)}</span></div>`).join('')}</div>` : ''}
       </div>
-      <button class="card study-goal-card home-goal-linked-card home-insight-card" data-action="goto" data-target="planner">
+      <button class="card study-goal-card home-goal-linked-card home-insight-card premium-panel" data-action="goto" data-target="planner">
         <p class="analysis-title">오늘 공부 목표</p>
-        ${todayPlannerItems.length ? `<p class="sub">오늘 목표 ${formatMinutesLabel(todayPlannerTotalMinutes)} · 현재 ${formatHourMin(todayStudySeconds)}</p><div class="track"><i style="width:${todayPlannerProgress}%"></i></div><p class="sub" style="margin:8px 0 0">달성률 ${todayPlannerProgress}% · ${todayPlannerSubjectSummary.join(' · ')}</p>` : `<p class="sub">오늘 계획을 추가해보세요</p><span class="home-goal-empty-cta">플래너로 이동</span>`}
+        ${todayPlannerItems.length ? `<div class="goal-compact"><b>${todayPlannerProgress}%</b><span>달성</span><em>${formatMinutesLabel(todayPlannerTotalMinutes)}</em></div><div class="track"><i style="width:${todayPlannerProgress}%"></i></div><div class="goal-tags">${todayPlannerSubjectSummary.slice(0,3).map((v)=>`<span>${v}</span>`).join('')}</div>` : `<p class="sub">오늘 계획을 추가해보세요</p><span class="home-goal-empty-cta">플래너로 이동</span>`}
       </button>
-      <div class="card home-bottom-summary ranking-card home-insight-card">
+      <div class="card home-bottom-summary ranking-card home-insight-card premium-panel">
         <div class="home-ranking-head"><p class="analysis-title">내 공부 랭킹</p><span class="badge">오늘 기준</span></div>
         <p class="home-ranking-main">${Math.min(myRank, 124)}등</p>
         <p class="home-ranking-sub">전체 124명 중</p>
@@ -1007,17 +1032,39 @@ function App() {
     .analysis-v2-bar-proj-line{position:absolute;left:50%;transform:translateX(-50%);border-left:2px dashed #FACC15;opacity:0;pointer-events:none;z-index:4;}
     .analysis-v2-bar-proj-line.show{opacity:1;}
     @keyframes barProjPop{0%{transform:translateX(-50%) translateY(8px);opacity:0;}100%{transform:translateX(-50%) translateY(0);opacity:1;}}
-    .home-kpi-slider{overflow:hidden;padding:2px 20px 2px 0;touch-action:pan-y;}
-    .home-kpi-track{display:flex;transform:translateX(var(--home-slide-x));will-change:transform;transition:var(--home-slide-transition, transform .58s cubic-bezier(.22,.61,.36,1));}
-    .home-kpi-track.motion-next{animation:homeSlideNext .58s cubic-bezier(.22,.61,.36,1);}
-    .home-kpi-track.motion-prev{animation:homeSlidePrev .58s cubic-bezier(.22,.61,.36,1);}
-    @keyframes homeSlideNext{from{transform:translateX(calc(var(--home-slide-x) + 18%));}to{transform:translateX(var(--home-slide-x));}}
-    @keyframes homeSlidePrev{from{transform:translateX(calc(var(--home-slide-x) - 18%));}to{transform:translateX(var(--home-slide-x));}}
-    .home-kpi-slider .slider-card{flex:0 0 100%;}
+    .home-kpi-slider{overflow:hidden;padding:2px 0 2px 0;touch-action:pan-y;}
+    .home-kpi-track{display:flex;gap:0;transform:translateX(var(--home-slide-x));will-change:transform;transition:var(--home-slide-transition, transform .46s cubic-bezier(.22,.61,.36,1));}
+    .home-kpi-track.motion-next{animation:none;}
+    .home-kpi-track.motion-prev{animation:none;}
+    @keyframes homeSlideNext{from{transform:translateX(calc(var(--home-slide-x) + 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
+    @keyframes homeSlidePrev{from{transform:translateX(calc(var(--home-slide-x) - 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
+    .home-kpi-slider .slider-card{flex:0 0 100%;margin-right:0;min-height:0;}
+    .home-kpi-slider .home-kpi-card.slider-card{flex:0 0 64%;max-width:64%;min-width:64%;}
     .home-kpi-indicator i{cursor:pointer;}
+    .home-add-univ-card{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;padding:24px;border:1px solid #BFDBFE;background:linear-gradient(135deg,#F8FBFF,#EAF2FF);color:#1D4ED8;border-radius:24px;box-shadow:0 12px 24px rgba(30,64,175,.10);min-height:0;}
+    .home-add-univ-card b{font-size:28px;line-height:1.15;letter-spacing:-.02em;}
+    .home-add-univ-card p{margin:8px 0 0;font-size:14px;color:#334155;font-weight:600;}
+    .premium-panel{border:1px solid #D6E2F5;background:linear-gradient(160deg,#FFFFFF 0%,#F4F8FF 55%,#EEF4FF 100%);box-shadow:0 14px 28px rgba(15,23,42,.08);border-radius:24px;padding:18px;}
+    .home-study-summary .timer{font-size:44px;letter-spacing:0.02em;font-weight:500;color:#0F172A;background:none;-webkit-background-clip:initial;text-shadow:none;}
+    .premium-clock{font-family:'Pretendard',system-ui;display:inline-block;padding:6px 10px;border-radius:14px;background:#fff;}
+    .study-timer-row{display:grid;grid-template-columns:1fr;justify-items:center;align-items:center;text-align:center;gap:12px;}
+    .timer-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:0;width:100%;max-width:320px;}
+    .timer-actions .mini{min-height:42px;border-radius:12px;width:100%;}
+    .timer-actions .btn-secondary{background:#E5E7EB;color:#475569;border:none;}
+    .home-breakdown-toggle{margin-top:10px;border:none;background:#EAF2FF;color:#1D4ED8;border-radius:14px;padding:11px 12px;font-weight:800;width:100%;text-align:center;display:block;}
+    .home-breakdown-list{margin-top:10px;display:grid;gap:8px}
+    .home-breakdown-list > div{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid #DBEAFE;background:#F8FBFF;border-radius:12px}
+    .home-goal-linked-card .analysis-title{margin-bottom:6px;}
+    .goal-compact{display:flex;align-items:flex-end;gap:8px;margin-bottom:8px}
+    .goal-compact b{font-size:26px;line-height:1;color:#1D4ED8}
+    .goal-compact span{font-size:12px;color:#64748B;font-weight:700}
+    .goal-compact em{margin-left:auto;font-style:normal;font-weight:700;color:#334155}
+    .goal-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .goal-tags span{font-size:12px;padding:4px 8px;background:#EAF2FF;color:#1E3A8A;border-radius:999px}
+    .home-goal-linked-card .track{height:14px;border-radius:999px;}
     .home-result-card-v3{display:grid;gap:12px;text-align:left;overflow:hidden;}
     .home-result-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;}
-    .home-result-major{margin:0;font-size:16px;font-weight:800;color:#0F172A;line-height:1.4;}
+    .home-result-major{margin:0;font-size:16px;font-weight:800;color:#0F172A;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;}
     .home-result-state{display:inline-flex;margin-top:6px;padding:4px 10px;border-radius:999px;background:#DBEAFE;color:#1D4ED8;font-size:12px;font-weight:700;}
     .home-result-score{text-align:right;}
     .home-result-score strong{display:block;font-size:24px;line-height:1.1;color:#0F172A;}
@@ -1035,10 +1082,10 @@ function App() {
     .home-mini-badge{font-size:11px;font-weight:700;color:#1D4ED8;background:#DBEAFE;border-radius:999px;padding:4px 8px;}
     .home-top-icons{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
     .pro-top-btn{
-      width:78px;height:36px;border:none;border-radius:16px;position:relative;overflow:hidden;
+      width:190px;height:42px;border:none;border-radius:16px;position:relative;overflow:hidden;
       background:linear-gradient(135deg,#0F172A 0%,#1E293B 45%,#475569 100%);
       box-shadow:0 8px 20px rgba(15,23,42,.25), inset 0 1px 0 rgba(255,255,255,.22);
-      color:#F8FAFC;font-weight:900;letter-spacing:.08em;font-size:14px;
+      color:#F8FAFC;font-weight:700;letter-spacing:0;font-size:15px;font-family:'Pretendard',system-ui;white-space:nowrap;
     }
     .pro-top-btn:before{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,.35) 35%,transparent 60%);transform:translateX(-120%);animation:proShine 3.4s ease-in-out infinite;}
     @keyframes proShine{0%{transform:translateX(-120%);}45%,100%{transform:translateX(120%);}}
@@ -1065,6 +1112,8 @@ function App() {
     .pro-elite-item p{margin:0;font-size:12px;color:#64748B;line-height:1.4;}
     .pro-elite-download{font-size:12px;font-weight:800;color:#1D4ED8;white-space:nowrap;}
     .pro-elite-request-bottom{padding:10px 4px 2px;}
+    .pro-elite-filter{display:flex;justify-content:flex-end;}
+    .pro-elite-month-select{border:1px solid #CBD5E1;background:#fff;border-radius:12px;padding:8px 12px;font-size:13px;font-weight:700;color:#334155;}
     .pro-request-btn{
       width:100%;height:58px;border:none;border-radius:18px;
       display:flex;align-items:center;justify-content:center;gap:8px;
@@ -1120,10 +1169,12 @@ function App() {
     .score-journey-total{margin-top:2px;padding-top:10px;border-top:1px solid #CBD5E1;display:flex;justify-content:space-between;font-weight:800;white-space:nowrap;word-break:keep-all;}
     .score-journey-total b{font-weight:800;}
     .score-journey-arrow{align-self:center;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#E2E8F0;color:#334155;font-weight:900;}
-    .analysis-v2-eta-card{margin-top:2px;padding:16px;border:1px solid #BFDBFE;border-radius:18px;background:linear-gradient(135deg,#EEF6FF, #F8FBFF);box-shadow:0 4px 12px rgba(30,64,175,.08);}
-    .analysis-v2-eta-card .eyebrow{display:block;font-size:13px;font-weight:700;color:#1E40AF;margin-bottom:4px;}
-    .analysis-v2-eta-card b{display:block;font-size:20px;line-height:1.35;color:#1E3A8A;}
-    .analysis-v2-eta-card p{margin:6px 0 0;font-size:12px;color:#475569;line-height:1.45;}
+    .analysis-v2-eta-card,.on-eta-card{margin-top:2px;padding:18px;border:1px solid #93C5FD;border-radius:22px;background:linear-gradient(135deg,#0B1A47 0%,#1D4ED8 52%,#60A5FA 100%);box-shadow:0 10px 24px rgba(29,78,216,.24);position:relative;overflow:hidden;}
+    .analysis-v2-eta-card:before,.on-eta-card:before{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 8%,rgba(255,255,255,.35) 38%,transparent 62%);transform:translateX(-120%);animation:etaShine 3.3s ease-in-out infinite;}
+    @keyframes etaShine{0%{transform:translateX(-120%);}45%,100%{transform:translateX(130%);}}
+    .analysis-v2-eta-card .eyebrow,.on-eta-card .eyebrow{display:block;font-size:13px;font-weight:700;color:#DBEAFE;margin-bottom:4px;position:relative;z-index:1;}
+    .analysis-v2-eta-card b,.on-eta-card b{display:block;font-size:22px;line-height:1.35;color:#fff;position:relative;z-index:1;}
+    .analysis-v2-eta-card p,.on-eta-card p{margin:6px 0 0;font-size:13px;color:#DBEAFE;line-height:1.45;position:relative;z-index:1;}
     .analysis-v2-chart-area{overflow:visible;}
     .analysis-v2-bars{position:absolute;left:0;right:0;bottom:var(--bar-bottom);display:flex;justify-content:space-evenly;align-items:flex-end;gap:10px;height:370px;padding:0 8px;}
     .analysis-v2-chart-area .analysis-v2-guide-line{z-index:1;}
@@ -1131,7 +1182,7 @@ function App() {
     .analysis-v2-bar-wrap{height:var(--bar-height);display:flex;align-items:flex-end;position:relative;}
     .analysis-v2-bar-item .score{font-size:14px;font-weight:700;}
     .analysis-v2-bar-item p{min-height:48px;max-height:48px;line-height:1.3;}
-    .analysis-v2-bar-proj{position:absolute;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;color:#1E3A8A;border:1px dashed #93C5FD;border-radius:999px;padding:2px 7px;background:#EFF6FF;white-space:nowrap;z-index:7;}
+    .analysis-v2-bar-proj{position:absolute;left:50%;transform:translate(-50%, 100%);font-size:11px;font-weight:700;color:#1E3A8A;border:1px dashed #93C5FD;border-radius:999px;padding:2px 7px;background:#EFF6FF;white-space:nowrap;z-index:7;}
     .analysis-v2-bar-proj-box{position:absolute;left:50%;transform:translateX(-50%);width:62px;min-height:10px;border:3px dashed #F59E0B;border-bottom:none;border-radius:14px 14px 0 0;background:rgba(251,191,36,.18);pointer-events:none;z-index:6;}
     .analysis-v2-sim-item{min-height:112px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;border:1px solid #E2E8F0;border-radius:16px;padding:14px 15px;background:#fff;}
     .analysis-v2-sim-item .left{display:grid;gap:6px;}
@@ -1149,7 +1200,7 @@ function App() {
     .planner-add-form{margin-top:12px;display:grid;gap:12px;background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:16px;}
     .planner-add-form h4{margin:0;font-size:18px;color:#0F172A;}
     .planner-add-form .sub{margin:0;color:#64748B;}
-    .planner-days-carousel{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px;padding-bottom:4px;}
+    .planner-days-carousel{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px;padding:4px 16px 4px;}
     .planner-date-item{flex:0 0 auto;scroll-snap-align:center;display:grid;gap:2px;min-width:52px;padding:6px 8px;border-radius:12px;}
     .planner-date-item.active{background:transparent !important;border:none !important;box-shadow:none !important;}
     .planner-date-item small{font-size:11px;color:#64748B;}
@@ -1321,7 +1372,7 @@ function App() {
        <p class="sub ob-subcopy">현재 성적에서 합격컷까지,<br/>가장 효율적인 점수 상승 루트를 보여드릴게요.</p>
        <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>무작정 전 과목을 올리는 게 아니라, 합격에 가장 크게 기여하는 과목부터 잡아야 해요!</p></div>
        <div class="card ob-card">${scoreJourneyCard('최소 노력 대비 합격 도달 성적')}</div>
-       ${ob3IsAnalyzing ? `<div class="loading-overlay"><div class="loading-box"><div class="dots">● ● ●</div><div>분석중입니다</div><div>잠시만 기다려주세요</div></div></div>` : `<div class="card ob-card ob-period-card"><p class="analysis-title">Standard 이용 시 예상 도달 기간</p><h2>평균 3개월 예상</h2><p class="sub">주간 플래너 피드백과 학습 방향 코칭 제공</p></div>
+       ${ob3IsAnalyzing ? `<div class="loading-overlay"><div class="loading-box"><div class="dots">● ● ●</div><div>분석중입니다</div><div>잠시만 기다려주세요</div></div></div>` : `<div class="card ob-card ob-period-card on-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 3개월 내 도달 예상</b><p>주간 플래너 피드백과 학습 방향 코칭 제공</p></div>
        <div class="card ob-card">
          <p class="analysis-title">합격확률 게이지</p>
          <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${gaugeTarget}점</b></div></div>
@@ -1491,7 +1542,7 @@ function App() {
           <div class="card analysis-v2-before-after">
             ${scoreJourneyCard('최소 노력 대비 합격 도달 성적')}
             <div class="analysis-v2-eta ${analysisEtaStage < 3 ? 'loading' : ''}">
-              ${analysisEtaStage === 1 ? `<div class="analysis-eta-loading"><span class="skeleton"></span><p>도달 성적 계산 중입니다...</p></div>` : analysisEtaStage === 2 ? `<div class="analysis-eta-loading"><span class="skeleton thin"></span><p>도달 시간을 예상 중입니다...</p></div>` : `<div class="analysis-v2-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 2개월 내 도달 예상</b><p>매주 플래너 피드백과 학습 방향 관리를 기준으로 계산했어요</p></div>`}
+              ${analysisEtaStage === 1 ? `<div class="analysis-eta-loading"><span class="skeleton"></span><p>도달 성적 계산 중입니다...</p></div>` : analysisEtaStage === 2 ? `<div class="analysis-eta-loading"><span class="skeleton thin"></span><p>도달 시간을 예상 중입니다...</p></div>` : `<button class="analysis-v2-eta-card" data-action="startStandard"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 2개월 내 도달 예상</b><p>매주 플래너 피드백과 학습 방향 관리를 기준으로 계산했어요</p></button>`}
             </div>
           </div>
 
@@ -1526,8 +1577,8 @@ function App() {
                   const projectedPercent = projectionScore ? Math.max(0, Math.min(100, (projectionScore / 250) * 100)) : heightPercent;
                   const projectionHeight = projectionScore ? Math.max(0, projectedPercent - heightPercent) : 0;
                   const gainLabel = projectionGain === null ? '' : Number(projectionGain.toFixed(1)).toString();
-                  const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${Math.max(12, heightPercent - 10)}%">${Number(projectionScore.toFixed(1)).toString()} (+${gainLabel})</span>` : '';
-                  const projectionBox = projectionScore ? `<span class="analysis-v2-bar-proj-box" style="bottom:${heightPercent}%;height:${projectionHeight}%"></span>` : '';
+                  const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${Math.max(0, (100 - projectionScore / 250 * 100))}%">${Number(projectionScore.toFixed(1)).toString()} (+${gainLabel})</span>` : '';
+                  const projectionBox = projectionScore && projectionHeight > 0 ? `<span class="analysis-v2-bar-proj-box" style="bottom:${heightPercent}%;height:${projectionHeight}%"></span>` : '';
                   return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="simulateBarGain" data-target-major="${full}" data-base-score="${score}"><b class="score">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar" style="height:${heightPercent}%;background:${color}"></i>${projectionBox}${projection}</div><p>${label}</p></button>`;
                 }).join('')}
               </div>
@@ -1611,7 +1662,7 @@ function App() {
       <div class="card my-subscription-card"><div class="my-sub-icon">${i('report', false)}</div><div><p class="my-sub-title">Pro 플랜 이용 중</p><p class="my-sub-date">다음 결제일 2024.06.14</p></div></div>
       <div class="card my-menu-card">
         <button class="my-row" data-action="goto" data-target="scoreInfo">성적 정보 <span>${i('chevron', false)}</span></button>
-        <button class="my-row" data-action="goto" data-target="studyReports">학습 리포트 <span>${i('chevron', false)}</span></button>
+        
         <button class="my-row" data-action="goto" data-target="proIntro">구독 관리 <span>${i('chevron', false)}</span></button>
       </div>
       <div class="card my-menu-card my-service-card">
@@ -1647,7 +1698,7 @@ function App() {
       true
     ),
     reportDetail: layout(appbar('종합 분석 리포트', true) + `<div class="report-tabs"><span class="active">종합 분석</span><span>과목 분석</span><span>학습 전략</span><span>현재 위치</span></div><div class="report-detail-stack"><div class="card report-detail-card"><p class="sub">핵심 요약</p><p class="report-detail-text">수학에서 점수 상승 여지가 가장 큽니다. 개념 학습 시간을 늘리고, 문제 풀이 비중을 높이면 단기간 점수 개선이 가능합니다.</p></div><div class="card report-detail-card"><p class="sub">과목별 성과</p><div class="subject-result"><span>수학</span><div class="track"><i style="width:82%"></i></div><em><span class="score">68점</span><span class="delta">▲12</span></em></div><div class="subject-result"><span>국어</span><div class="track"><i style="width:74%"></i></div><em><span class="score">82점</span><span class="delta">▲3</span></em></div><div class="subject-result"><span>영어</span><div class="track"><i style="width:70%"></i></div><em><span class="score">77점</span><span class="delta">-</span></em></div><div class="subject-result"><span>탐구</span><div class="track"><i style="width:62%"></i></div><em><span class="score">66점</span><span class="delta">▲5</span></em></div></div></div><div class="cta-wrapper report-detail-cta"><button class="btn btn-primary cta-btn">PDF 다운로드</button></div>`, false),
-    proElite: layout(appbar('PRO EXCLUSIVE', true) + `<div class="pro-elite-page"><div class="pro-elite-hero"><span class="pro-elite-badge">TOP 1%</span><h3>상위 1%를 위한<br/>중장기 집중 맞춤 솔루션</h3><p>주차별 프리미엄 전략 리포트를 다운로드하세요.</p></div><div class="pro-elite-list">${PRO_ELITE_REPORTS.map((report)=>`<button class="pro-elite-item" data-action="downloadProReport" data-pdf-path="${PRO_ELITE_REPORT_PDF_PATH}" data-pdf-name="${report.fileName}"><div><b>${report.week} PRO 리포트</b><p>${report.desc}</p></div><span class="pro-elite-download">PDF 다운로드</span></button>`).join('')}</div><div class="pro-elite-request-bottom"><button class="pro-request-btn" data-action="openProRequestModal"><i class="spark">✦</i><span>전략 리포트 요청하기</span></button></div>${proRequestModalOpen ? `<div class="home-modal-overlay" data-action="closeProRequestModal"><div class="home-modal pro-request-modal" data-action="noopModal"><div class="pro-request-head"><h4>✈ 전략 보고서 요청</h4><button class="pro-request-close" data-action="closeProRequestModal">✕</button></div><div class="pro-request-body"><p>현재 학습 상황이나 고민, 특별히 분석받고 싶은 내용을 적어주세요.</p><p>담당 컨설턴트가 이를 반영하여 <b>최적의 전략</b>을 수립합니다.</p><label>요청 사항 (500자 이내)</label><textarea data-field="proRequestText" maxlength="500" placeholder="예: 6월 모평 대비 수학 기하 과목 집중 전략이 필요합니다. 최근 실전 문제 풀이에서 시간이 부족해 고민입니다.">${proRequestText}</textarea><div class="pro-request-count">${proRequestText.length}/500</div><div class="pro-request-actions"><button class="cancel" data-action="closeProRequestModal">취소</button><button class="submit" data-action="submitProRequest">요청서 제출하기</button></div></div></div></div>` : ''}</div>`, false),
+    proElite: layout(appbar('PRO EXCLUSIVE', true) + `<div class="pro-elite-page"><div class="pro-elite-hero"><span class="pro-elite-badge">TOP 1%</span><h3>상위 1%를 위한<br/>중장기 집중 맞춤 솔루션</h3><p>주차별 프리미엄 전략 리포트를 다운로드하세요.</p></div><div class="pro-elite-filter"><select class="pro-elite-month-select" data-field="proEliteMonth">${proEliteMonths.map((month)=>`<option value="${month}" ${proEliteMonth===month?'selected':''}>${month}</option>`).join('')}</select></div><div class="pro-elite-list">${proEliteFilteredReports.map((report)=>`<button class="pro-elite-item" data-action="downloadProReport" data-pdf-path="${PRO_ELITE_REPORT_PDF_PATH}" data-pdf-name="${report.fileName}"><div><b>${report.week} PRO 리포트</b><p>${report.desc}</p></div><span class="pro-elite-download">PDF 다운로드</span></button>`).join('') || '<div class="coach-empty">해당 월 리포트가 없습니다.</div>'}</div><div class="pro-elite-request-bottom"><button class="pro-request-btn" data-action="openProRequestModal"><i class="spark">✦</i><span>전략 리포트 요청하기</span></button></div>${proRequestModalOpen ? `<div class="home-modal-overlay" data-action="closeProRequestModal"><div class="home-modal pro-request-modal" data-action="noopModal"><div class="pro-request-head"><h4>✈ 전략 보고서 요청</h4><button class="pro-request-close" data-action="closeProRequestModal">✕</button></div><div class="pro-request-body"><p>현재 학습 상황이나 고민, 특별히 분석받고 싶은 내용을 적어주세요.</p><p>담당 컨설턴트가 이를 반영하여 <b>최적의 전략</b>을 수립합니다.</p><label>요청 사항 (500자 이내)</label><textarea data-field="proRequestText" maxlength="500" placeholder="예: 6월 모평 대비 수학 기하 과목 집중 전략이 필요합니다. 최근 실전 문제 풀이에서 시간이 부족해 고민입니다.">${proRequestText}</textarea><div class="pro-request-count">${proRequestText.length}/500</div><div class="pro-request-actions"><button class="cancel" data-action="closeProRequestModal">취소</button><button class="submit" data-action="submitProRequest">요청서 제출하기</button></div></div></div></div>` : ''}</div>`, false),
     tutor: layout(appbar('SKY튜터 1:1 피드백', true) + `<div class="card"><p class="sub">텍스트 기반 질의응답</p><ul class="list"><li>Q. 수학 개념 이해가 잘 안돼요</li><li>A. 유형별 복습 루틴을 추가하세요</li></ul></div><button class="btn btn-primary">새 질문 작성</button>`, false),
     proIntro: layout(appbar('StudyCrack 요금제', true) + `<p class="sub pricing-sub">합격 전략, 단계별로 선택하세요</p>
       <div class="plan-stack">
@@ -1670,18 +1721,21 @@ function App() {
       <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="paymentComplete">결제하기</button></div>`, false),
     paymentComplete: layout(`<div class="payment-done-screen"><div class="payment-complete-wrap"><div class="payment-check">${i('check', true)}</div><p class="title payment-complete-title">결제가 완료되었습니다!</p><p class="sub payment-complete-sub">${selectedPlan.toUpperCase()} 플랜이 활성화되었습니다.</p><div class="card payment-complete-note"><b>프로 보고서 이용 안내</b><p>2주에 한 번 새로운 리포트를 제공해 드려요.<br/>다음 리포트는 5월 25일에 이용 가능해요.</p></div></div><div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="home">홈으로 이동</button></div></div>`, false),
     scoreInfo: layout(appbar('성적 정보', true) + `<div class="card score-info-card"><div class="score-info-detail-table"><div class="score-info-detail-row"><b>과목</b><b>원점수</b><b>표준점수</b><b>백분위</b><b>등급</b></div>${scoreInfoDetailList}</div><button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">성적 수정하기</button></div><div class="card"><p class="analysis-title">최근 성적 업데이트</p><p class="sub" style="margin:0">2024.05.14 기준</p><p class="sub" style="margin:6px 0 0">다음 업데이트 권장: 2주 후</p></div>${scoreEditOpen ? ScoreEditModal() : ''}`, false),
-    studyReports: layout(appbar('학습 리포트', true) + `<div class="card report-list-card"><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>5월 11일 종합 분석 리포트</b><p>수학 점수 상승 여지 큼</p></div><span>${i('chevron', false)}</span></button><button class="report-row" data-action="goto" data-target="reportDetail"><div><b>4월 27일 중간 분석 리포트</b><p>탐구 집중 강화 필요</p></div><span>${i('chevron', false)}</span></button></div><div class="cta-wrapper"><button class="btn btn-primary cta-btn" data-action="goto" data-target="reportDetail">프로 보고서 샘플 보기</button></div>`, false),
     notificationSettings: layout(appbar('알림 설정', true) + `<div class="card notify-card">${[
       ['planner', '플래너 알림', '오늘 계획을 잊지 않도록 알려드려요'],
       ['weekly', '주간 점검 알림', '매주 점검 시점을 알려드려요'],
       ['report', '프로 보고서 알림', '새 리포트 이용 가능일을 알려드려요'],
       ['billing', '결제/구독 알림', '다음 결제일을 미리 알려드려요']
     ].map(([key, title, desc]) => `<button class="notify-row" data-action="toggleNotification" data-notify-key="${key}"><div><b>${title}</b><p>${desc}</p></div><span class="notify-switch ${notifications[key]?'on':''}"><i></i></span></button>`).join('')}</div>`, false),
-    customerSupport: layout(appbar('고객센터', true) + `<div class="card"><p class="analysis-title">궁금한 점이 있으면 언제든 문의해주세요.</p><p class="sub" style="margin:0">운영 시간: 평일 10:00 - 18:00</p><div class="support-btns"><button class="btn btn-secondary">카카오톡 문의하기</button><button class="btn btn-secondary">이메일 문의하기</button></div></div><div class="card faq-card">${[
-      ['faq1', '합격 가능성은 어떻게 계산되나요?', '목표 대학의 반영 방식과 현재 성적을 기준으로 계산됩니다.'],
-      ['faq2', '플래너 피드백은 언제 받을 수 있나요?', '제출된 플래너를 기준으로 정해진 일정에 맞춰 피드백을 제공합니다.'],
-      ['faq3', '프로 보고서는 얼마나 자주 받을 수 있나요?', 'Pro 플랜은 2주에 한 번 리포트를 받을 수 있습니다.'],
-      ['faq4', '결제 후 플랜 변경이 가능한가요?', '플랜 변경 기능은 준비 중입니다.']
+    customerSupport: layout(appbar('고객센터', true) + `<div class="card"><p class="analysis-title">궁금한 점이 있으면 언제든 문의해주세요.</p><p class="sub" style="margin:0">운영 시간: 평일 10:00 - 18:00</p><div class="support-btns"><button class="btn btn-secondary" data-action="openKakaoSupport">카카오톡 문의하기</button><button class="btn btn-secondary" data-action="openEmailSupport">이메일 문의하기</button></div></div><div class="card faq-card">${[
+      ['faq1', '분석 결과는 얼마나 정확한가요?', '스터디크랙의 분석 엔진은 최근 3개년의 합격자 표본과 대학별 환산식을 기반으로 계산됩니다. 단순 등급이 아닌 대학별 실질 환산 점수를 사용하여 높은 정확도를 제공합니다.'],
+      ['faq2', '목표 대학을 중간에 변경할 수 있나요?', '네, 가능합니다. 목표 대학을 수정하면 즉시 새로운 분석 결과가 반영됩니다.'],
+      ['faq3', '환불 규정이 궁금합니다.', '결제 후 목표 대학 설정 전까지는 전액 환불이 가능합니다. 목표 대학 설정 이후에는 콘텐츠 이용으로 간주되어 환불이 제한될 수 있습니다.'],
+      ['faq4', '다른 서비스랑 뭐가 다른가요?', '스터디크랙은 실제 합격 데이터를 기반으로 개인 전략을 설계해주는 서비스입니다. 막연한 가능성이 아니라 어디를, 왜, 어떻게 써야 하는지까지 제시합니다.'],
+      ['faq5', '지금 시작해도 늦지 않았나요?', '오히려 지금이 가장 중요합니다. 입시는 얼마나 많이가 아니라 얼마나 정확하게 하느냐가 결과를 좌우합니다.'],
+      ['faq6', '성적이 애매한데 효과가 있을까요?', '성적이 애매할수록 전략이 더 중요합니다. 상위권은 유지가 핵심이지만, 중위권은 전략에 따라 결과가 크게 갈립니다.'],
+      ['faq7', '혼자 해도 되는 거 아닌가요?', '가능합니다. 하지만 잘못된 방향으로 공부하면 시간은 쓰고 결과는 안 나옵니다. 스터디크랙은 시행착오를 줄여줍니다.'],
+      ['faq8', '어떤 플랜을 선택해야 할지 모르겠어요.', '빠르게 방향만 잡고 싶다면 Basic, 루틴 관리까지 원하면 Standard, 확실한 결과를 원하면 Pro를 추천합니다.']
     ].map(([id, q, a]) => `<button class="faq-row" data-action="toggleFaq" data-faq-id="${id}"><div><b>${q}</b>${openFaq===id?`<p>${a}</p>`:''}</div><span>${i('chevron', false)}</span></button>`).join('')}</div>`, false),
     settingsMain: layout(appbar('설정', true) + `<div class="card settings-list"><button data-action="goto" data-target="accountInfo">계정 정보 <span>${i('chevron', false)}</span></button><button data-action="goto" data-target="privacyPolicy">개인정보 처리방침 <span>${i('chevron', false)}</span></button><button data-action="goto" data-target="termsScreen">서비스 이용약관 <span>${i('chevron', false)}</span></button><button data-action="openLogoutModal">로그아웃 <span>${i('chevron', false)}</span></button></div>${logoutModalOpen ? `<div class="home-modal-overlay" data-action="closeLogoutModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">로그아웃하시겠어요?</p><div class="support-btns"><button class="btn btn-secondary" data-action="closeLogoutModal">취소</button><button class="btn btn-primary" data-action="confirmLogout">로그아웃</button></div></div></div>` : ''}`, false),
     accountInfo: layout(appbar('계정 정보', true) + `<div class="card"><div class="score-info-row"><span>이름</span><strong>${user?.name || DEFAULT_USER.name}</strong></div><div class="score-info-row"><span>목표 대학</span><strong>${targetMajor || DEFAULT_USER.targetUniversity}</strong></div><div class="score-info-row"><span>현재 플랜</span><strong>${selectedPlan || DEFAULT_USER.plan}</strong></div></div>`, false),
@@ -1757,7 +1811,7 @@ function App() {
       if (Number.isNaN(idx)) return;
       setHomeDragOffset(0);
       setHomeSlideIndex((prev) => {
-        const next = Math.max(0, Math.min(idx, homeTargets.length - 1));
+        const next = Math.max(0, Math.min(idx, homeTargets.length));
         if (next === prev) return prev;
         setHomeSlideMotion(next > prev ? 'motion-next' : 'motion-prev');
         return next;
@@ -1783,12 +1837,23 @@ function App() {
     if (action === 'addAnalysisTarget') {
       const major = actionEl.getAttribute('data-target-major');
       if (!major) return;
-      setAnalysisTargetList((prev) => (prev.includes(major) ? prev : [...prev, major]));
-      setTargetMajor(major);
+      setUniversityModalOpen(false);
       setAnalysisSearchOpen(false);
       setAnalysisSearchTerm('');
+      setAddingUniversity(true);
+      setTimeout(() => {
+        setAnalysisTargetList((prev) => (prev.includes(major) ? prev : [...prev, major]));
+        setTargetMajor(major);
+        setHomeTargetList((prev) => {
+          const next = prev.includes(major) ? prev : [...prev, major];
+          setHomeSlideIndex(Math.max(0, next.length - 1));
+          return next;
+        });
+        setAddingUniversity(false);
+      }, 500);
     }
     if (action === 'openUniversityModal') setUniversityModalOpen(true);
+    if (action === 'openAnalysisSearchFromHome') setUniversityModalOpen(true);
     if (action === 'closeUniversityModal') setUniversityModalOpen(false);
     if (action === 'openPlannerAddPage') goto('plannerAdd');
     if (action === 'openPlannerCalendar') setPlannerCalendarOpen(true);
@@ -1796,13 +1861,12 @@ function App() {
     if (action === 'selectPlannerDate') {
       const date = actionEl.getAttribute('data-planner-date');
       if (!date) return;
-      const strip = document.querySelector('.planner-date-strip');
-      const prevLeft = strip?.scrollLeft ?? 0;
       setSelectedDate(String(date));
       setPlannerCalendarOpen(false);
       requestAnimationFrame(() => {
         const currentStrip = document.querySelector('.planner-date-strip');
-        if (currentStrip) currentStrip.scrollLeft = prevLeft;
+        const selectedBtn = currentStrip?.querySelector(`[data-planner-date="${date}"]`);
+        if (selectedBtn && selectedBtn.scrollIntoView) selectedBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
       });
     }
     if (action === 'openPlannerEdit') setPlannerEditIndex(actionEl.getAttribute('data-planner-id'));
@@ -1814,8 +1878,8 @@ function App() {
     if (action === 'saveScoreEdit') {
       setScores((prev) => ({
         ...prev,
-        korean: Number(scoreEditState.korean.common || prev.korean),
-        math: Number(scoreEditState.math.common || prev.math),
+        korean: Number(scoreEditState.korean.common || 0) + Number(scoreEditState.korean.elective || 0) || prev.korean,
+        math: Number(scoreEditState.math.common || 0) + Number(scoreEditState.math.elective || 0) || prev.math,
         english: Number(scoreEditState.english || prev.english),
         inquiry1: Number(scoreEditState.inquiry1.score || prev.inquiry1),
         inquiry2: Number(scoreEditState.inquiry2.score || prev.inquiry2)
@@ -1851,6 +1915,8 @@ function App() {
     }
     if (action === 'setObGradeStatus') setObGradeStatus(actionEl.getAttribute('data-ob-grade') || '고1/2 재학');
     if (action === 'toggleObGed') setObGed((v) => !v);
+    if (action === 'openKakaoSupport') window.open('http://pf.kakao.com/_wxjxcgn', '_blank');
+    if (action === 'openEmailSupport') window.location.href = 'mailto:contact@studycrack.co.kr';
     if (action === 'openDrawer') setDrawerOpen(true);
     if (action === 'closeDrawer') setDrawerOpen(false);
     if (action === 'openNotificationModal') setNotifModalOpen(true);
@@ -1943,6 +2009,7 @@ function App() {
       setCoachingStep((prev) => Math.min(8, prev + 1));
     }
     if (action === 'openStudySubjectSheet') setStudySubjectSheetOpen(true);
+    if (action === 'toggleStudyBreakdown') setShowStudyBreakdown((v) => !v);
     if (action === 'closeStudySubjectSheet') setStudySubjectSheetOpen(false);
     if (action === 'selectStudySubjectCustom') {
       const custom = window.prompt('과목명을 입력하세요', '기타');
@@ -2067,6 +2134,7 @@ function App() {
       return;
     }
     if (field === 'coachingMonth') setCoachingMonth(e.target.value);
+    if (field === 'proEliteMonth') setProEliteMonth(e.target.value);
     const coachAnswer = e.target.getAttribute('data-coach-answer');
     const coachPlan = e.target.getAttribute('data-coach-plan');
     const coachActual = e.target.getAttribute('data-coach-actual');
@@ -2134,7 +2202,7 @@ function App() {
       suppressClickUntilRef.current = Date.now() + 260;
       if (touchTargetRef.current === 'home') {
         setHomeSlideIndex((prev) => {
-          const next = delta < 0 ? Math.min(prev + 1, homeTargets.length - 1) : Math.max(prev - 1, 0);
+          const next = delta < 0 ? Math.min(prev + 1, homeTargets.length) : Math.max(prev - 1, 0);
           if (next === prev) return prev;
           setHomeSlideMotion(next > prev ? 'motion-next' : 'motion-prev');
           return next;
@@ -2276,7 +2344,10 @@ function App() {
   const onboardingOverlay = onboardingLoading
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><img src="${CRACKY_SRC}" alt="크랙이" class="global-loading-char"/><div class="loading-dots"><i></i><i></i><i></i></div><b>${onboardingLoadingText}</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
-  const rendered = `${designV2StyleTag}${renderedBase}${analysisOverlay}${onboardingOverlay}`;
+  const addingUniversityOverlay = addingUniversity
+    ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>추가중입니다.</b><p>잠시만 기다려주세요</p></div></div>`
+    : '';
+  const rendered = `${designV2StyleTag}${renderedBase}${analysisOverlay}${onboardingOverlay}${addingUniversityOverlay}`;
 
   return <div onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: rendered }} />;
 }
