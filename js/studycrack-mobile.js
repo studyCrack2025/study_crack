@@ -969,7 +969,7 @@ function App() {
   const selectedCoachingReports = coachingMonthlyReports[coachingMonth] || [];
   const coachingStepBody = () => {
     if (coachingStep === 1) {
-      return `<div class="coach-step-body"><h4>1. 과목별 학습 달성률</h4><p class="sub">과목별 구체적인 과목명과 시간을 입력하세요.</p>
+      return `<div class="coach-step-body"><h4>1. 과목별 학습 달성률 <span style="color:#ef4444">*</span></h4><p class="sub">과목별 구체적인 과목명과 시간을 입력하세요.</p>
         <div class="coach-subject-list">
           ${coachingSubjectRows.map((row) => {
             const planned = Number(row.planned) || 0;
@@ -990,14 +990,14 @@ function App() {
       </div>`;
     }
     if (coachingStep === 2) {
-      return `<div class="coach-step-body"><h4>2. 플래너 인증</h4><p class="sub">이번 주 플래너 사진을 첨부해주세요. 최대 5장</p>
+      return `<div class="coach-step-body"><h4>2. 플래너 인증 <span style="color:#ef4444">*</span></h4><p class="sub">이번 주 플래너 사진을 첨부해주세요. 최대 5장</p>
         <div class="coach-upload-box"><p>파일/사진 첨부 박스</p><input type="file" class="coach-hidden-file" data-field="coachPlannerFiles" accept="image/*" multiple /><button class="btn btn-secondary" data-action="openPlannerFilePicker">사진 추가하기</button></div>
         <div class="coach-thumb-list">${coachingPlannerFiles.length ? `<p class="sub">사진 ${coachingPlannerFiles.length}장 첨부됨</p>${coachingPlannerFiles.map((file, idx) => `<div class="coach-thumb"><span>${file.name}</span><button data-action="removePlannerPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}` : '<p class="sub">첨부된 사진이 없습니다.</p>'}</div>
       </div>`;
     }
     if (coachingStep === 3) {
       const examTypes = ['미응시', '교내', '평가원/교육청', '사설'];
-      return `<div class="coach-step-body"><h4>3. 모의고사 응시 여부</h4><p class="sub">이번 주 사설 모의고사 또는 학력평가를 응시했나요?</p>
+      return `<div class="coach-step-body"><h4>3. 모의고사 응시 여부 <span style="color:#ef4444">*</span></h4><p class="sub">이번 주 사설 모의고사 또는 학력평가를 응시했나요?</p>
         <div class="coach-choice-row">${examTypes.map((type) => `<button class="planner-pill ${coachingExamType===type?'active':''}" data-action="setCoachingExamType" data-coach-exam="${type}">${type}</button>`).join('')}</div>
         ${coachingExamType && coachingExamType !== '미응시' ? `<div class="coach-exam-form">
           <input type="file" class="coach-hidden-file" data-field="coachExamFiles" accept="image/*" multiple /><button class="btn btn-secondary" data-action="openExamFilePicker">성적 인증 사진 첨부</button>
@@ -1014,7 +1014,7 @@ function App() {
     }
     if (coachingStep === 4) {
       const reasons = ['계획 과다', '실전 감각 저하', '컨디션/건강', '기타'];
-      return `<div class="coach-step-body"><h4>4. 최근 2주 학업 추이</h4><p class="sub">최근 2주간 학습 흐름이 어땠나요?</p>
+      return `<div class="coach-step-body"><h4>4. 최근 2주 학업 추이 <span style="color:#ef4444">*</span></h4><p class="sub">최근 2주간 학습 흐름이 어땠나요?</p>
         <div class="coach-choice-row">${['상승', '유지', '하락'].map((v) => `<button class="planner-pill ${coachingTrend===v?'active':''}" data-action="setCoachingTrend" data-coach-trend="${v}">${v}</button>`).join('')}</div>
         ${coachingTrend === '하락' ? `<div class="coach-drop-box"><p class="sub">하락 원인 (중복 선택 가능)</p><div class="coach-choice-row">${reasons.map((reason) => `<button class="planner-pill ${coachingDropReasons.includes(reason)?'active':''}" data-action="toggleDropReason" data-drop-reason="${reason}">${reason}</button>`).join('')}</div><textarea class="planner-input coach-textarea" data-coach-answer="step4Reason" maxlength="200" placeholder="구체적인 이유를 간단히 적어주세요.">${coachingAnswers.step4Reason || ''}</textarea><p class="coach-count" data-coach-count="step4Reason">${(coachingAnswers.step4Reason || '').length}/200</p></div>` : ''}
       </div>`;
@@ -1383,7 +1383,7 @@ function App() {
              </select>
            </div>
            <div class="ob1-field">
-             <label>스터디크랙을 통해 얻고 싶은 점</label>
+             <label>스터디크랙을 통해 얻고 싶은 점 <span style="color:#ef4444">*</span></label>
              <textarea class="ob1-textarea" data-field="obGoalText" placeholder="자유롭게 입력">${obGoalText}</textarea>
            </div>
            <div class="ob1-field">
@@ -1393,7 +1393,7 @@ function App() {
          </div>
        </div>
        <div class="ob1-score-wrap">
-         <h3>성적 입력</h3>
+         <h3>성적 입력 <span style="color:#ef4444">*</span></h3>
          <p class="score-subtitle">과목별 입력을 완료하면 현재 위치를 더 정확하게 계산해요.</p>
          <div class="ob1-score-exam">
            <label>시험 선택</label>
@@ -1799,7 +1799,7 @@ function App() {
       <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="paymentComplete">결제하기</button></div>`, false),
     paymentComplete: layout(`<div class="payment-done-screen"><div class="payment-complete-wrap"><div class="payment-check">${i('check', true)}</div><p class="title payment-complete-title">결제가 완료되었습니다!</p><p class="sub payment-complete-sub">${selectedPlan.toUpperCase()} 플랜이 활성화되었습니다.</p><div class="card payment-complete-note"><b>프로 보고서 이용 안내</b><p>2주에 한 번 새로운 리포트를 제공해 드려요.<br/>다음 리포트는 5월 25일에 이용 가능해요.</p></div></div><div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="home">홈으로 이동</button></div></div>`, false),
 
-    qualInfo: layout(appbar('정성조사서', true) + `<div class="card"><p class="sub" style="color:#ef4444;font-weight:700;margin:0 0 10px;">* 표시는 필수 입력 항목입니다.</p><p class="analysis-title">현재 학년 <span style="color:#ef4444">*</span></p><div class="ob1-pill-row">${['고1/2 재학','고3 재학','N수생','검정고시','기타'].map((grade) => `<button class="ob1-pill ${obGradeStatus===grade?'active':''}" data-action="setObGradeStatus" data-ob-grade="${grade}">${grade}</button>`).join('')}</div></div><div class="card"><p class="analysis-title">출신 학교 <span style="color:#ef4444">*</span></p><input class="planner-input" data-field="obSchoolName" value="${obSchoolName}" placeholder="출신 학교 입력"/></div><div class="card"><p class="analysis-title">희망 계열 <span style="color:#ef4444">*</span></p><select class="planner-input" data-field="obTrack"><option value="예체능" ${obTrack==='예체능'?'selected':''}>예체능</option><option value="인문사회" ${obTrack==='인문사회'?'selected':''}>인문사회</option><option value="상경계열" ${obTrack==='상경계열'?'selected':''}>상경계열</option><option value="자연/공학" ${obTrack==='자연/공학'?'selected':''}>자연/공학</option><option value="의치한약수" ${obTrack==='의치한약수'?'selected':''}>의치한약수</option><option value="간호" ${obTrack==='간호'?'selected':''}>간호</option><option value="사범/교대" ${obTrack==='사범/교대'?'selected':''}>사범/교대</option><option value="기타" ${obTrack==='기타'?'selected':''}>기타</option></select></div><div class="card"><p class="analysis-title">스터디크랙을 통해서 얻고 싶은 점</p><textarea class="planner-input" data-field="obGoalText" rows="3">${obGoalText}</textarea></div><div class="card"><p class="analysis-title">입시 고민 및 질문 (있으면 작성해주세요.)</p><textarea class="planner-input" data-field="obQuestionText" rows="4">${obQuestionText}</textarea><button class="btn btn-primary" data-action="saveQualInfo">정성조사서 저장</button></div>`, false),
+    qualInfo: layout(appbar('정성조사서', true) + `<div class="card"><p class="sub" style="color:#ef4444;font-weight:700;margin:0 0 10px;">* 표시는 필수 입력 항목입니다.</p><p class="analysis-title">현재 학년 <span style="color:#ef4444">*</span></p><div class="ob1-pill-row">${['고1/2 재학','고3 재학','N수생','검정고시','기타'].map((grade) => `<button class="ob1-pill ${obGradeStatus===grade?'active':''}" data-action="setObGradeStatus" data-ob-grade="${grade}">${grade}</button>`).join('')}</div></div><div class="card"><p class="analysis-title">출신 학교 <span style="color:#ef4444">*</span></p><input class="planner-input" data-field="obSchoolName" value="${obSchoolName}" placeholder="출신 학교 입력"/></div><div class="card"><p class="analysis-title">희망 계열 <span style="color:#ef4444">*</span></p><select class="planner-input" data-field="obTrack"><option value="예체능" ${obTrack==='예체능'?'selected':''}>예체능</option><option value="인문사회" ${obTrack==='인문사회'?'selected':''}>인문사회</option><option value="상경계열" ${obTrack==='상경계열'?'selected':''}>상경계열</option><option value="자연/공학" ${obTrack==='자연/공학'?'selected':''}>자연/공학</option><option value="의치한약수" ${obTrack==='의치한약수'?'selected':''}>의치한약수</option><option value="간호" ${obTrack==='간호'?'selected':''}>간호</option><option value="사범/교대" ${obTrack==='사범/교대'?'selected':''}>사범/교대</option><option value="기타" ${obTrack==='기타'?'selected':''}>기타</option></select></div><div class="card"><p class="analysis-title">스터디크랙을 통해서 얻고 싶은 점 <span style="color:#ef4444">*</span></p><textarea class="planner-input" data-field="obGoalText" rows="3">${obGoalText}</textarea></div><div class="card"><p class="analysis-title">입시 고민 및 질문 (있으면 작성해주세요.)</p><textarea class="planner-input" data-field="obQuestionText" rows="4">${obQuestionText}</textarea><button class="btn btn-primary" data-action="saveQualInfo">정성조사서 저장</button></div>`, false),
     scoreInfo: layout(appbar('성적 정보', true) + `<div class="card score-info-card"><label style="font-weight:700;">시험 선택</label><select class="planner-input" data-field="scoreExamType" style="margin-top:8px;">${EXAM_OPTIONS.map((label) => `<option value="${label}" ${scoreExamType===label?'selected':''}>${label}</option>`).join('')}</select><div class="score-info-detail-table"><div class="score-info-detail-row"><b>과목</b><b>원점수</b><b>표준점수</b><b>백분위</b><b>등급</b></div>${scoreInfoDetailList}</div><button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">성적 수정하기</button><button class="btn btn-secondary score-edit-btn" data-action="applyScoreExam" style="margin-top:10px;">적용</button></div><div class="card"><p class="analysis-title">최근 성적 업데이트</p><p class="sub" style="margin:0">선택한 시험 기준으로 결과가 연동됩니다.</p></div>${scoreEditOpen ? ScoreEditModal() : ''}`, false),
     notificationSettings: layout(appbar('알림 설정', true) + `<div class="card notify-card">${[
       ['planner', '플래너 알림', '오늘 계획을 잊지 않도록 알려드려요'],
@@ -1848,6 +1848,9 @@ function App() {
           return;
         }
         const getScoreInput = (key) => Number(document.querySelector(`[data-score-key="${key}"]`)?.value || 0);
+        const hasAllScores = ['korean_common','korean_elective','math_common','math_elective','english_grade','inquiry1_raw','inquiry2_raw']
+          .every((k) => String(document.querySelector(`[data-score-key="${k}"]`)?.value || '').trim() !== '');
+        if (!hasAllScores) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
         const ko = getScoreInput('korean_common') + getScoreInput('korean_elective');
         const ma = getScoreInput('math_common') + getScoreInput('math_elective');
         const enGrade = getScoreInput('english_grade');
@@ -2560,12 +2563,20 @@ function App() {
     }
     if (field && field.startsWith('v2-')) {
       const [, subject, key] = field.split('-');
+      const valueNum = Number(value);
+      const maxMap = { 'korean-common': 76, 'korean-elective': 24, 'math-common': 74, 'math-elective': 26, 'inq1-score': 50, 'inq2-score': 50 };
+      const mk = `${subject}-${key}`;
+      if (maxMap[mk] && valueNum > maxMap[mk]) { alert('성적을 정확히 입력해주세요'); e.target.value = String(maxMap[mk]); return; }
       if (subject === 'english' || subject === 'history') setScoreState((prev) => ({ ...prev, [subject]: value }));
       if (subject === 'korean' || subject === 'math') setScoreState((prev) => ({ ...prev, [subject]: { ...prev[subject], [key === 'type' ? 'type' : key === 'common' ? 'common' : 'elective']: value } }));
       if (subject === 'inq1' || subject === 'inq2') setScoreState((prev) => ({ ...prev, [subject === 'inq1' ? 'inquiry1' : 'inquiry2']: { ...prev[subject === 'inq1' ? 'inquiry1' : 'inquiry2'], [key === 'subject' ? 'subject' : 'score']: value } }));
     }
     if (field && field.startsWith('v2e-')) {
       const [, subject, key] = field.split('-');
+      const valueNum = Number(value);
+      const maxMap = { 'korean-common': 76, 'korean-elective': 24, 'math-common': 74, 'math-elective': 26, 'inq1-score': 50, 'inq2-score': 50 };
+      const mk = `${subject}-${key}`;
+      if (maxMap[mk] && valueNum > maxMap[mk]) { alert('성적을 정확히 입력해주세요'); e.target.value = String(maxMap[mk]); return; }
       if (subject === 'english' || subject === 'history') setScoreEditState((prev) => ({ ...prev, [subject]: value }));
       if (subject === 'korean' || subject === 'math') setScoreEditState((prev) => ({ ...prev, [subject]: { ...prev[subject], [key === 'type' ? 'type' : key === 'common' ? 'common' : 'elective']: value } }));
       if (subject === 'inq1' || subject === 'inq2') setScoreEditState((prev) => ({ ...prev, [subject === 'inq1' ? 'inquiry1' : 'inquiry2']: { ...prev[subject === 'inq1' ? 'inquiry1' : 'inquiry2'], [key === 'subject' ? 'subject' : 'score']: value } }));
