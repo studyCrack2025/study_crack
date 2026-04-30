@@ -847,7 +847,7 @@ function renderMyQualitative(){
 function renderMyScoreTable(){
     const exam=document.getElementById('myScoreExam')?.value || 'mar';
     const d=(mySurveyData.quantitative||{})[exam]||{};
-    const rows=[['국어','kor'],['수학','math'],['영어','eng'],['한국사','hist'],['탐구1', 'inq1'],['탐구2','inq2']];
+    const rows=[['국어','kor'],['수학','math'],['영어','eng'],['한국사','hist'],[`탐구1${d.inq1?.name?` (${d.inq1.name})`:''}`, 'inq1'],[`탐구2${d.inq2?.name?` (${d.inq2.name})`:''}`,'inq2']];
     const tbody=document.getElementById('myScoreTbody'); if(!tbody) return;
     tbody.innerHTML=rows.map(([name,key])=>{const v=d[key]||{}; return `<tr><td>${name}</td><td><input data-k="${key}" data-f="raw" value="${v.raw||''}"></td><td><input data-k="${key}" data-f="std" value="${v.std||''}"></td><td><input data-k="${key}" data-f="pct" value="${v.pct||''}"></td><td><input data-k="${key}" data-f="grd" value="${v.grd||''}"></td></tr>`}).join('');
 }
@@ -860,11 +860,27 @@ async function saveMyQualitative(){
 
 async function saveMyQuantitative(){
     const exam=document.getElementById('myScoreExam')?.value || 'mar';
-    const examData={};
-    document.querySelectorAll('#myScoreTbody input').forEach(i=>{const k=i.dataset.k,f=i.dataset.f; examData[k]=examData[k]||{}; examData[k][f]=i.value===''?'':Number(i.value)});
+    const prevExamData = ((mySurveyData.quantitative||{})[exam]) || {};
+    const examData = JSON.parse(JSON.stringify(prevExamData));
+    document.querySelectorAll('#myScoreTbody input').forEach(i=>{
+        const k=i.dataset.k,f=i.dataset.f;
+        examData[k]=examData[k]||{};
+        examData[k][f]=i.value===''?'':Number(i.value);
+    });
     mySurveyData.quantitative=mySurveyData.quantitative||{}; mySurveyData.quantitative[exam]=examData;
     await apiFetch(USER_API_URL,{method:'POST',body:JSON.stringify({type:'update_quan',data:mySurveyData.quantitative})});
-    alert('성적정보가 저장되었습니다. 분석/온보딩에도 반영됩니다.');
+    const avgRaw = ['kor','math','inq1','inq2'].map(k=>Number(examData?.[k]?.raw||0)).reduce((a,b)=>a+b,0) / 4;
+    const engAsScore = Math.max(0, 100 - (Number(examData?.eng?.grd||9)-1)*12.5);
+    const mergedAvg = Math.round((avgRaw + engAsScore)/2);
+    localStorage.setItem('scores', JSON.stringify({
+        korean: Number(examData?.kor?.raw||0),
+        math: Number(examData?.math?.raw||0),
+        english: Math.round(engAsScore),
+        inquiry1: Number(examData?.inq1?.raw||0),
+        inquiry2: Number(examData?.inq2?.raw||0),
+        avg: mergedAvg
+    }));
+    alert('성적정보가 저장되었습니다. 마이페이지/분석/온보딩에 반영됩니다.');
 }
 
 const __origRenderUserInfo = renderUserInfo;
