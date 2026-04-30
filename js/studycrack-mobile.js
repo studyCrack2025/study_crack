@@ -1997,7 +1997,7 @@ function App() {
         setScoreEditState((prev) => ({ ...prev, math: { ...prev.math, common, elective } }));
       }
       if (scoreEditStep === 3) {
-        const english = read('v2e-english-grade');
+        const english = read('v2e-english');
         setScoreEditState((prev) => ({ ...prev, english }));
       }
       if (scoreEditStep === 5) {
@@ -2022,7 +2022,7 @@ function App() {
       const nextElecKor = read('v2e-korean-elective', scoreEditState.korean.elective || '');
       const nextCommonMath = read('v2e-math-common', scoreEditState.math.common || '');
       const nextElecMath = read('v2e-math-elective', scoreEditState.math.elective || '');
-      const nextEnglish = read('v2e-english-grade', scoreEditState.english || '');
+      const nextEnglish = read('v2e-english', scoreEditState.english || '');
       const nextInq1 = read('v2e-inq1-score', scoreEditState.inquiry1.score || '');
       const nextInq2 = read('v2e-inq2-score', scoreEditState.inquiry2.score || '');
       setScoreEditState((prev) => ({
