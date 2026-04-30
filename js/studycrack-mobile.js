@@ -1041,7 +1041,7 @@ function App() {
     .app-loading-poster-img{width:100%;height:100%;object-fit:cover;display:block;}
     .app-loading-progress{position:absolute;left:50%;bottom:8%;transform:translateX(-50%);width:min(78vw,520px);}
     .app-loading-bar{width:100%;height:14px;border-radius:999px;background:rgba(191,213,249,.9);overflow:hidden;}
-    .app-loading-bar i{display:block;height:100%;width:35%;background:linear-gradient(90deg,#0B4FC8,#2B6FE5);border-radius:999px;animation:loadingProgress 1.6s ease-in-out infinite;}
+    .app-loading-bar i{display:block;height:100%;width:35%;background:linear-gradient(90deg,#0B4FC8,#2B6FE5);border-radius:999px;animation:loadingProgress 1.2s ease-in-out infinite;}
     .app-loading-label{margin-top:14px;letter-spacing:.12em;font-size:38px;color:#1D4ED8;font-weight:500;}
     @keyframes loadingProgress{0%{transform:translateX(-130%);}70%{transform:translateX(190%);}100%{transform:translateX(190%);}}
     .onboarding-fixed-cta{padding-bottom:calc(16px + env(safe-area-inset-bottom));}
@@ -2395,7 +2395,7 @@ function App() {
     }
   };
 
-  const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><section class="app-loading-hero app-loading-poster"><img class="app-loading-poster-img" src="./assets/IMG_3020.png" alt="스터디크랙 로딩 이미지" onerror="this.onerror=null;this.src='./assets/IMG_2636.jpeg';"/><div class="app-loading-progress"><div class="app-loading-bar"><i></i></div><p class="app-loading-label">LOADING...</p></div></section></div></div></div>`;
+  const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><section class="app-loading-hero app-loading-poster"><img class="app-loading-poster-img" src="./assets/IMG_3020.png" alt="스터디크랙 로딩 이미지"/><div class="app-loading-progress"><div class="app-loading-bar"><i></i></div><p class="app-loading-label">LOADING...</p></div></section></div></div></div>`;
   const fallbackUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div></div>`;
   const preAuthAllowedScreens = ['splash', 'authLogin', 'authSignup', 'authFindId', 'authFindPw', 'on1', 'on2', 'on3'];
   const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !preAuthAllowedScreens.includes(screen) ? screens.on1 : current;
