@@ -830,4 +830,48 @@ function openTutorModal() {
 
     const modal = document.getElementById('tutorModal');
     if (modal) modal.classList.remove('hidden');
+}let mySurveyData = { qualitative: null, quantitative: {} };
+
+function openMyDataTab(tab){
+    document.querySelectorAll('.mypage-data-sync .tab-btn').forEach((b,i)=>b.classList.toggle('active',(tab==='qual'&&i===0)||(tab==='score'&&i===1)));
+    document.getElementById('myDataQual')?.classList.toggle('active', tab==='qual');
+    document.getElementById('myDataScore')?.classList.toggle('active', tab==='score');
 }
+
+function renderMyQualitative(){
+    const q = mySurveyData.qualitative || {};
+    const set=(id,v)=>{const el=document.getElementById(id); if(el) el.value=v||''};
+    set('myQualStatus', q.status); set('myQualSchool', q.school); set('myQualStream', q.stream); set('myQualBenefits', q.benefits); set('myQualQuestions', q.questions);
+}
+
+function renderMyScoreTable(){
+    const exam=document.getElementById('myScoreExam')?.value || 'mar';
+    const d=(mySurveyData.quantitative||{})[exam]||{};
+    const rows=[['국어','kor'],['수학','math'],['영어','eng'],['한국사','hist'],['탐구1', 'inq1'],['탐구2','inq2']];
+    const tbody=document.getElementById('myScoreTbody'); if(!tbody) return;
+    tbody.innerHTML=rows.map(([name,key])=>{const v=d[key]||{}; return `<tr><td>${name}</td><td><input data-k="${key}" data-f="raw" value="${v.raw||''}"></td><td><input data-k="${key}" data-f="std" value="${v.std||''}"></td><td><input data-k="${key}" data-f="pct" value="${v.pct||''}"></td><td><input data-k="${key}" data-f="grd" value="${v.grd||''}"></td></tr>`}).join('');
+}
+
+async function saveMyQualitative(){
+    const data={status:document.getElementById('myQualStatus')?.value?.trim()||'',school:document.getElementById('myQualSchool')?.value?.trim()||'',stream:document.getElementById('myQualStream')?.value?.trim()||'',benefits:document.getElementById('myQualBenefits')?.value?.trim()||'',questions:document.getElementById('myQualQuestions')?.value?.trim()||''};
+    await apiFetch(USER_API_URL,{method:'POST',body:JSON.stringify({type:'update_qual',data})});
+    mySurveyData.qualitative=data; alert('정성조사서가 저장되었습니다.');
+}
+
+async function saveMyQuantitative(){
+    const exam=document.getElementById('myScoreExam')?.value || 'mar';
+    const examData={};
+    document.querySelectorAll('#myScoreTbody input').forEach(i=>{const k=i.dataset.k,f=i.dataset.f; examData[k]=examData[k]||{}; examData[k][f]=i.value===''?'':Number(i.value)});
+    mySurveyData.quantitative=mySurveyData.quantitative||{}; mySurveyData.quantitative[exam]=examData;
+    await apiFetch(USER_API_URL,{method:'POST',body:JSON.stringify({type:'update_quan',data:mySurveyData.quantitative})});
+    alert('성적정보가 저장되었습니다. 분석/온보딩에도 반영됩니다.');
+}
+
+const __origRenderUserInfo = renderUserInfo;
+renderUserInfo = function(data){
+  __origRenderUserInfo(data);
+  mySurveyData.qualitative = data.qualitative || null;
+  mySurveyData.quantitative = data.quantitative || {};
+  renderMyQualitative();
+  renderMyScoreTable();
+};

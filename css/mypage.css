@@ -493,4 +493,8 @@ input:focus { outline: none; border-color: #2563EB; }
     .content-area { flex-grow: 1; min-width: 0; width: 100%; }
     .password-section { display: flex; gap: 20px; }
     .password-section .form-group { flex: 1; }
-}
+}.mypage-data-sync .survey-tabs.mini{display:flex;gap:8px;margin:10px 0 14px}
+.mypage-data-sync .survey-tabs .tab-btn{flex:1}
+.my-data-tab{display:none}.my-data-tab.active{display:block}
+.my-data-tab label{display:block;margin:10px 0 6px;font-weight:700;color:#334155}
+.my-data-tab input,.my-data-tab textarea,.my-data-tab select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px}
