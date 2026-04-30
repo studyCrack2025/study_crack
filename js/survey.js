@@ -123,9 +123,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 let tutStep = 0;
                 const tutMsgs = [
-                    '기초조사서는 총 두 영역으로 구성되어 있습니다.',
-                    '정성 영역은 학생의 성향과 기본정보를 판단하는 기준으로 구성되어 있습니다.',
-                    '정량 영역은 학생의 객관적인 현재위치를 판단하기 위해 성적을 작성하는 부분으로 구성되어 있습니다.',
+                    '기초조사서는 총 세 영역(1-1, 1-2, 1-3)으로 구성되어 있습니다.',
+                    '1-1 정성조사서는 학생의 성향과 기본정보를 판단하는 기준으로 구성되어 있습니다.',
+                    '1-2 성적 입력은 학생의 객관적인 현재위치를 판단하기 위해 성적을 작성하는 부분입니다.',
                     '보다 세세한 분석을 위해 최대한 자세히 적어주세요. 작성이 완료되면 다음 단계로 넘어가겠습니다.'
                 ];
 
@@ -582,8 +582,9 @@ async function saveQuantitative() {
             window.isTutorialMoving = true; 
             window.location.href = '/analysis';
         } else {
-            alert("성적 데이터가 저장되었습니다.\n(지원 가능 전형이 자동 계산되었습니다)\n\n솔루션 페이지로 이동합니다.");
-            window.location.href = '/analysis'; 
+            alert("성적 데이터가 저장되었습니다.\n이어서 1-3 학습 MBTI를 진행해주세요.");
+            openTab('mbti');
+            window.scrollTo(0,0);
         }
         
     } catch (e) { 
