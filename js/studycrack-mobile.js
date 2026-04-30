@@ -1758,7 +1758,7 @@ function App() {
     const actionEl = e.target.closest('[data-action]');
     if (!actionEl) return;
     const action = actionEl.getAttribute('data-action');
-    const shouldKeepScroll = !['goto', 'back', 'tab', 'drawerGoto', 'loginSuccess', 'signupSuccess', 'ssoSuccess', 'selectUniversity'].includes(action);
+    const shouldKeepScroll = ['toggleFaq', 'toggleStudyBreakdown', 'openUniversityModal', 'closeUniversityModal', 'openDrawer', 'closeDrawer', 'openScoreEdit', 'closeScoreEdit'].includes(action);
     if (shouldKeepScroll) keepScrollPosition();
     if (action === 'goto') {
       const target = actionEl.getAttribute('data-target');
