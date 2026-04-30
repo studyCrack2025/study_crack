@@ -850,7 +850,7 @@ function App() {
     <div class="section home-section">
       <div class="home-kpi-slider">
         <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-x:calc(-${homeSlideIndex * 100}% + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .58s cubic-bezier(.22,.61,.36,1)'};">
-        ${homeTargets.map((item) => `<button class="card home-kpi-card admission-card slider-card home-result-card-v3" data-action="selectUniversity" data-target-major="${item.major}">
+        ${homeTargets.map((item) => `<button class="card home-kpi-card admission-card slider-card home-result-card-v3" style="flex:0 0 64%;min-width:64%;max-width:64%;" data-action="selectUniversity" data-target-major="${item.major}">
           <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score"><strong>${item.score}점</strong><small>AI 점수</small></div></div>
           <div class="home-result-gauge"><i style="width:${Math.min((item.score / 250) * 100, 100)}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
           <div class="home-result-gauge-meta"><span>0</span><span>합격컷 100</span><span>안정컷 150</span><span>MAX 250</span></div>
