@@ -393,7 +393,7 @@ function App() {
       setError(false);
       fallbackTimer = setTimeout(() => {
         setLoading(false);
-        setScreen('authLanding');
+        setScreen('on1');
       }, 3000);
 
       const savedUser = safeParse('user', DEFAULT_USER);
@@ -424,12 +424,12 @@ function App() {
       await resolveAssetPath('./assets/76220C96-DE85-4148-A6AC-7BD5881821A0.png', null);
       await resolveAssetPath('./assets/IMG_2648.jpeg', null);
 
-      setScreen('authLanding');
+      setScreen('on1');
       console.log('[APP_INIT_SUCCESS]');
     } catch (e) {
       console.error('[APP_INIT_ERROR]', e);
       setError(true);
-      setScreen('authLanding');
+      setScreen('on1');
     } finally {
       if (fallbackTimer) clearTimeout(fallbackTimer);
       setLoading(false);
@@ -1019,33 +1019,33 @@ function App() {
     html,body{touch-action:manipulation;overscroll-behavior:none;}
     .app-shell,.app-frame,.app-screen{min-height:100dvh;}
     .onboarding-container .content{padding:0 16px 150px;box-sizing:border-box;}
-    .onboarding-shot{max-width:420px;margin:0 auto;padding:34px 20px 28px;text-align:center;}
-    .onboarding-shot-card{position:relative;border-radius:0;background:transparent;border:none;padding:0 0 148px;min-height:640px;box-shadow:none;}
-    .onboarding-shot-card h2{margin:0;font-size:27px;line-height:1.28;letter-spacing:-.02em;color:#0F172A;font-weight:800;}
-    .onboarding-shot-card p{margin:14px 0 0;font-size:16px;line-height:1.5;color:#3C4A62;font-weight:600;}
-    .onboarding-mini-card{margin:22px auto 0;border-radius:24px;background:#fff;padding:20px;border:1px solid #D8E1EF;max-width:94%;}
-    .onboarding-mini-card b{display:block;font-size:16px;}
-    .onboarding-mini-card strong{display:block;margin-top:6px;font-size:42px;line-height:1.1;color:#1758D1;letter-spacing:-.02em;}
-    .onboarding-list-box{display:grid;gap:10px;margin:20px auto 0;max-width:94%;}
-    .onboarding-list-box span{background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:14px 16px;font-weight:700;font-size:16px;}
-    .onboarding-chart-line{display:block;width:100%;height:74px;margin-top:12px;}
-    .onboarding-bars{display:flex;align-items:flex-end;gap:10px;height:70px;margin-top:12px;}
-    .onboarding-bars i{display:block;width:16px;border-radius:6px 6px 0 0;background:linear-gradient(180deg,#1D6BFF,#3A82FF);}
-    .onboarding-bars i:nth-child(1){height:24px}.onboarding-bars i:nth-child(2){height:40px}.onboarding-bars i:nth-child(3){height:54px}.onboarding-bars i:nth-child(4){height:66px}
-    .onboarding-shot-mascot{position:absolute;right:6px;bottom:4px;width:154px;height:auto;}
-    .onboarding-shot-dots{display:flex;justify-content:center;gap:10px;margin:18px 0;}
-    .onboarding-shot-dots i{width:10px;height:10px;border-radius:50%;background:#CBD5E1;}
-    .onboarding-shot-dots i.active{background:#2563EB;}
-    .app-loading-hero{min-height:100dvh;background:#F6F8FD;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:44px 24px 36px;box-sizing:border-box;text-align:center;}
-    .app-loading-logo{width:min(72vw,340px);height:auto;}
-    .app-loading-mascot{width:min(52vw,238px);height:auto;margin-top:30px;}
-    .app-loading-wave{width:100%;height:180px;margin:18px 0 8px;background:radial-gradient(120% 100% at 0% 100%, rgba(37,99,235,.18), transparent 70%),radial-gradient(110% 100% at 100% 100%, rgba(37,99,235,.22), transparent 70%);}
-    .app-loading-text{font-size:18px;font-weight:700;color:#1D4ED8;margin:0 0 14px;}
-    .app-loading-bar{width:min(86vw,620px);height:16px;border-radius:999px;background:#BFD5F9;overflow:hidden;}
-    .app-loading-bar i{display:block;height:100%;width:40%;background:linear-gradient(90deg,#0B4FC8,#2B6FE5);border-radius:999px;animation:loadingProgress 1.8s ease-in-out infinite;}
-    .app-loading-label{margin-top:16px;letter-spacing:.14em;font-size:40px;color:#1D4ED8;font-weight:500;}
-    @keyframes loadingProgress{0%{transform:translateX(-120%);}65%{transform:translateX(120%);}100%{transform:translateX(120%);}}
-    .onboarding-fixed-cta{padding-bottom:calc(16px + env(safe-area-inset-bottom));}
+    .onboarding-shot{height:100vh;max-width:390px;margin:0 auto;padding:0 24px;display:flex;flex-direction:column;position:relative;overflow:hidden;background:#fff;}
+    .onboarding-shot-head{margin-top:72px;text-align:center;}
+    .onboarding-shot-head h2{margin:0;font-size:24px;font-weight:800;line-height:1.45;letter-spacing:-0.04em;color:#111827;white-space:pre-line;}
+    .onboarding-shot-head h2 .accent{color:#0B4EDB;}
+    .onboarding-shot-head p{margin:20px 0 0;font-size:16px;font-weight:600;line-height:1.55;letter-spacing:-0.04em;color:#4B5563;white-space:pre-line;}
+    .onboarding-center{margin-top:68px;position:relative;}
+    .onboarding-card{background:#fff;border-radius:22px;box-shadow:0 8px 28px rgba(15,23,42,.08);border:1px solid rgba(226,232,240,.8);position:relative;}
+    .onboarding-card.list{padding-top:62px;background:transparent;border:none;box-shadow:none;}
+    .onboarding-list-item{height:88px;border-radius:20px;padding:0 24px;display:flex;align-items:center;gap:20px;margin-bottom:18px;background:#fff;box-shadow:0 8px 26px rgba(15,23,42,.07);border:1px solid #EEF2F7;font-size:21px;font-weight:800;color:#111827;letter-spacing:-0.04em;}
+    .onboarding-icon-box{width:48px;height:48px;border-radius:14px;background:#F0F5FF;color:#0B6BFF;display:grid;place-items:center;flex:0 0 48px;}
+    .onboarding-card.strategy{height:232px;margin-top:72px;padding:28px 28px 22px;}
+    .onboarding-card.data{height:254px;margin-top:72px;padding:28px;overflow:hidden;}
+    .onboarding-stat{font-size:24px;font-weight:800;line-height:1.65;color:#111827;letter-spacing:-0.04em;white-space:pre-line;}
+    .onboarding-label{font-size:20px;font-weight:800;color:#111827;}
+    .onboarding-score{margin-top:8px;font-size:58px;font-weight:900;line-height:1;color:#0f172a;}
+    .onboarding-score em{font-style:normal;font-size:26px;font-weight:800;}
+    .onboarding-graph{width:100%;display:block;}
+    .onboarding-graph.strategy{height:96px;margin-top:10px;}
+    .onboarding-graph.data{height:124px;margin-top:8px;}
+    .onboarding-character{position:absolute;width:116px;height:auto;z-index:3;}
+    .onboarding-character.on1{right:24px;bottom:128px;}
+    .onboarding-character.on2{right:18px;bottom:130px;}
+    .onboarding-character.on3{right:22px;bottom:128px;}
+    .onboarding-shot-dots{position:absolute;bottom:132px;left:0;right:0;display:flex;justify-content:center;gap:12px;}
+    .onboarding-shot-dots i{width:10px;height:10px;border-radius:999px;background:#E6EAF2;}
+    .onboarding-shot-dots i.active{background:#0B6BFF;}
+    .onboarding-next{position:absolute;left:24px;right:24px;bottom:36px;height:64px;border-radius:16px;background:#006BFF;color:#fff;font-size:22px;font-weight:800;letter-spacing:-0.04em;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,107,255,.25);border:none;}.onboarding-fixed-cta{padding-bottom:calc(16px + env(safe-area-inset-bottom));}
     .btn,button,.planner-input,select,textarea,input{transition:box-shadow .15s ease, border-color .15s ease;}
     .btn:active,button:active,.planner-input:active,select:active,textarea:active,input:active{transform:none;}
     .card:active{transform:none !important;filter:none !important;}
@@ -1457,19 +1457,6 @@ function App() {
        </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="startStandard">Standard로 시작하기</button><button class="auth-link-btn" data-action="completeOnboarding">홈으로 이동</button></div></div>`,
       false
     ),
-    authLanding: layout(`<div class="auth-screen auth-landing-screen">
-      <div class="card auth-landing-card">
-        <div class="auth-landing-logo-wrap">
-          <img src="${STUDYCRACK_LOGO_SRC}" class="auth-landing-logo" alt="StudyCrack Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
-          <span class="auth-logo-fallback">StudyCrack</span>
-        </div>
-        <div class="auth-landing-cracky-wrap">
-          <img src="${CRACKY_SRC}" class="auth-landing-cracky" alt="크랙이" />
-        </div>
-        <div class="auth-landing-bubble">크랙이가 “대학에 합격할 수 있는 가장 쉽고 확실한 방법을 알려줄게요!“</div>
-      </div>
-      <button class="btn btn-primary auth-landing-login-btn" data-action="goto" data-target="authLogin">로그인</button>
-    </div>`, false),
     authLogin: layout(`<div class="auth-screen">
       <div class="card auth-unified-card">
         <div class="auth-logo-wrap compact">
@@ -1544,9 +1531,16 @@ function App() {
       </div>
     </div>`, false),
     splash: `<div class="app-shell"><div class="app-frame"><div class="splash"><div class="logo-bolt">${i('bolt',true)}</div><img class="brand-logo" src="${(window.__studycrackAssetSrc && window.__studycrackAssetSrc.onboardingLogoSrc) || './assets/images/studycrack_logo_wo_bg.png'}" alt="logo"/><h1 style="margin:0;font-size:30px">스터디크랙</h1><p>합격까지 가장 빠른 전략</p></div></div></div>`,
-    on1: `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="onboarding-shot"><div class="onboarding-shot-card"><h2>데이터 기반으로<br>내 합격 가능성을 분석해요</h2><p>흔들리지 않는 방향을<br>제시해드립니다.</p><div class="onboarding-mini-card"><b>합격 가능성</b><strong>72%</strong><svg class="onboarding-chart-line" viewBox="0 0 280 74" fill="none"><path d="M10 60C40 52 56 48 80 34C100 23 124 44 146 38C168 32 186 6 206 20C224 32 246 48 270 8" stroke="#2262E7" stroke-width="4" stroke-linecap="round"/></svg></div><img src="${CRACKY_SRC}" class="onboarding-shot-mascot" alt="크랙이"/></div><div class="onboarding-shot-dots"><i class="active"></i><i></i><i></i></div><button class="onboarding-next" data-action="goto" data-target="on2">다음</button></div></div></div></div>`,
-    on2: `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="onboarding-shot"><div class="onboarding-shot-card"><h2>나에게 최적화된<br>점수 상승 전략을 제공해요</h2><p>과목별 효과와 목표 도달 시간을<br>정확하게 예측해 드려요.</p><div class="onboarding-mini-card"><b>수학 +12점</b><strong style="font-size:30px;">합격 가능성 +18%</strong><div class="onboarding-bars"><i></i><i></i><i></i><i></i></div><svg class="onboarding-chart-line" viewBox="0 0 280 74" fill="none"><path d="M8 64L66 56L112 44L160 38L206 26L272 12" stroke="#83AFFF" stroke-width="3" stroke-linecap="round"/></svg></div><img src="${CRACKY_SRC}" class="onboarding-shot-mascot" alt="크랙이"/></div><div class="onboarding-shot-dots"><i></i><i class="active"></i><i></i></div><button class="onboarding-next" data-action="goto" data-target="on3">다음</button></div></div></div></div>`,
-    on3: `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="onboarding-shot"><div class="onboarding-shot-card"><h2>실행부터 관리까지<br>끝까지 함께해요</h2><p>플래너, 주간 점검, Sky튜터 피드백,<br>프로 보고서로 완성됩니다.</p><div class="onboarding-list-box"><span>플래너 & 주간 점검</span><span>Sky튜터 1:1 피드백</span><span>프로 보고서 (2주에 1번)</span></div><img src="${CRACKY_SRC}" class="onboarding-shot-mascot" alt="크랙이"/></div><div class="onboarding-shot-dots"><i></i><i></i><i class="active"></i></div><button class="onboarding-next" data-action="goto" data-target="authLogin">시작하기</button></div></div></div></div>`,
+    on1: `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="onboarding-shot"><div class="onboarding-shot-head"><h2>실행부터 관리까지
+끝까지 함께해요</h2><p>플래너, 주간 점검, Sky튜터 피드백,
+프로 보고서로 완성됩니다.</p></div><div class="onboarding-center"><div class="onboarding-card list"><div class="onboarding-list-item"><span class="onboarding-icon-box"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M9 12l2 2 4-4"/></svg></span><span>플래너 & 주간 점검</span></div><div class="onboarding-list-item"><span class="onboarding-icon-box"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.8-4 5-6 8-6s6.2 2 8 6"/></svg></span><span>Sky튜터 1:1 피드백</span></div><div class="onboarding-list-item"><span class="onboarding-icon-box"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v6h6"/></svg></span><span>프로 보고서 (2주에 1번)</span></div></div></div><img src="./assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png" class="onboarding-character on1" alt="크랙이"/><div class="onboarding-shot-dots"><i class="active"></i><i></i><i></i></div><button class="onboarding-next" data-action="goto" data-target="on2">시작하기</button></div></div></div></div>`,
+    on2: `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="onboarding-shot"><div class="onboarding-shot-head"><h2>나에게 최적화된
+점수 상승 전략을 제공해요</h2><p>과목별 효율과 목표 도달 시간을
+정확하게 예측해 드려요.</p></div><div class="onboarding-center"><div class="onboarding-card strategy"><div class="onboarding-stat">수학 +12점
+합격 가능성 +18%</div><svg class="onboarding-graph strategy" viewBox="0 0 320 96"><rect x="72" y="58" width="16" height="38" rx="3" fill="#0B6BFF" fill-opacity="0.85"/><rect x="142" y="40" width="16" height="56" rx="3" fill="#0B6BFF" fill-opacity="0.85"/><rect x="212" y="22" width="16" height="74" rx="3" fill="#0B6BFF" fill-opacity="0.85"/><rect x="282" y="-2" width="16" height="98" rx="3" fill="#0B6BFF" fill-opacity="0.85"/><path d="M18 88 L56 84 L92 70 L126 62 L162 48 L196 42 L232 30 L266 20 L302 12" stroke="#4A8DFF" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="88" r="3" fill="#4A8DFF"/><circle cx="302" cy="12" r="3" fill="#4A8DFF"/></svg></div></div><img src="./assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png" class="onboarding-character on2" alt="크랙이"/><div class="onboarding-shot-dots"><i></i><i class="active"></i><i></i></div><button class="onboarding-next" data-action="goto" data-target="on3">다음</button></div></div></div></div>`,
+    on3: `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="onboarding-shot"><div class="onboarding-shot-head"><h2><span class="accent">데이터 기반으로</span>
+내 합격 가능성을 분석해요</h2><p>흔들리지 않는 방향을
+제시해드립니다.</p></div><div class="onboarding-center"><div class="onboarding-card data"><div class="onboarding-label">합격 가능성</div><div class="onboarding-score">72<em>%</em></div><svg class="onboarding-graph data" viewBox="0 0 320 124"><defs><linearGradient id="obDataFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#BFD8FF" stop-opacity="0.65"/><stop offset="100%" stop-color="#BFD8FF" stop-opacity="0"/></linearGradient></defs><path d="M16 106 L42 84 L66 92 L94 60 L122 76 L146 92 L172 74 L196 36 L224 76 L248 62 L272 24 L292 56 L310 10 L310 124 L16 124 Z" fill="url(#obDataFill)"/><path d="M16 106 L42 84 L66 92 L94 60 L122 76 L146 92 L172 74 L196 36 L224 76 L248 62 L272 24 L292 56 L310 10" stroke="#0B6BFF" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="310" cy="10" r="5" fill="#0B6BFF"/></svg></div></div><img src="./assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png" class="onboarding-character on3" alt="크랙이"/><div class="onboarding-shot-dots"><i></i><i></i><i class="active"></i></div><button class="onboarding-next" data-action="goto" data-target="authLogin">다음</button></div></div></div></div>`,
     home: layout(homeView(), true),
     analysis: layout(
       `<section class="analysis-v2 ${isAnalyzing ? 'loading' : ''}">
@@ -2127,8 +2121,7 @@ function App() {
     if (action === 'loginSuccess' || action === 'signupSuccess' || action === 'ssoSuccess') {
       setLoggedIn(true);
       setHistory([]);
-      const completed = localStorage.getItem('studycrack_onboarding_completed') === 'true';
-      goto(completed ? 'home' : 'on1', true);
+      goto('home', true);
     }
     if (action === 'completeOnboarding') {
       localStorage.setItem('studycrack_onboarding_completed', 'true');
@@ -2410,10 +2403,10 @@ function App() {
     }
   };
 
-  const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><section class="app-loading-hero"><img class="app-loading-logo" src="./assets/IMG_2636.jpeg" alt="스터디크랙 로딩"/><img class="app-loading-mascot" src="${CRACKY_SRC}" alt="크랙이"/><div class="app-loading-wave"></div><p class="app-loading-text">스터디크랙과 함께 원하는 대학으로 가는 중</p><div class="app-loading-bar"><i></i></div><p class="app-loading-label">LOADING...</p></section></div></div></div>`;
+  const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><section class="app-loading-hero app-loading-poster"><img class="app-loading-poster-img" src="./assets/IMG_3020.png" alt="스터디크랙 로딩 이미지"/><div class="app-loading-progress"><div class="app-loading-bar"><i></i></div><p class="app-loading-label">LOADING...</p></div></section></div></div></div>`;
   const fallbackUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div></div>`;
-  const preAuthAllowedScreens = ['splash', 'authLanding', 'authLogin', 'authSignup', 'authFindId', 'authFindPw', 'on1', 'on2', 'on3'];
-  const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !preAuthAllowedScreens.includes(screen) ? screens.authLanding : current;
+  const preAuthAllowedScreens = ['splash', 'authLogin', 'authSignup', 'authFindId', 'authFindPw', 'on1', 'on2', 'on3'];
+  const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !preAuthAllowedScreens.includes(screen) ? screens.on1 : current;
   const analysisOverlay = isAnalyzing && screen === 'analysis'
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>분석중입니다</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
