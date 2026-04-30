@@ -241,7 +241,7 @@ body {
 }
 .home-kpi-slider::-webkit-scrollbar { display:none; }
 .home-kpi-slider .slider-card { min-width:84%; scroll-snap-align:center; flex-shrink:0; flex-grow:0; }
-.home-kpi-card.slider-card { border:1px solid var(--line); text-align:left; font-family:inherit; color:inherit; }
+.home-kpi-card.slider-card { min-width:64%; max-width:64%; border:1px solid var(--line); text-align:left; font-family:inherit; color:inherit; }
 .home-major-pill {
   display:inline-block;
   font-size:12px;
