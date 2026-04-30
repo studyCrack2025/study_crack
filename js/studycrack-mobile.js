@@ -393,7 +393,7 @@ function App() {
       setError(false);
       fallbackTimer = setTimeout(() => {
         setLoading(false);
-        setScreen('on1');
+        setScreen('authLogin');
       }, 3000);
 
       const savedUser = safeParse('user', DEFAULT_USER);
@@ -424,12 +424,12 @@ function App() {
       await resolveAssetPath('./assets/76220C96-DE85-4148-A6AC-7BD5881821A0.png', null);
       await resolveAssetPath('./assets/IMG_2648.jpeg', null);
 
-      setScreen('on1');
+      setScreen('authLogin');
       console.log('[APP_INIT_SUCCESS]');
     } catch (e) {
       console.error('[APP_INIT_ERROR]', e);
       setError(true);
-      setScreen('on1');
+      setScreen('authLogin');
     } finally {
       if (fallbackTimer) clearTimeout(fallbackTimer);
       setLoading(false);
@@ -1036,15 +1036,14 @@ function App() {
     .onboarding-shot-dots{display:flex;justify-content:center;gap:10px;margin:18px 0;}
     .onboarding-shot-dots i{width:10px;height:10px;border-radius:50%;background:#CBD5E1;}
     .onboarding-shot-dots i.active{background:#2563EB;}
-    .app-loading-hero{min-height:100dvh;background:#F6F8FD;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:44px 24px 36px;box-sizing:border-box;text-align:center;}
-    .app-loading-logo{width:min(72vw,340px);height:auto;}
-    .app-loading-mascot{width:min(52vw,238px);height:auto;margin-top:30px;}
-    .app-loading-wave{width:100%;height:180px;margin:18px 0 8px;background:radial-gradient(120% 100% at 0% 100%, rgba(37,99,235,.18), transparent 70%),radial-gradient(110% 100% at 100% 100%, rgba(37,99,235,.22), transparent 70%);}
-    .app-loading-text{font-size:18px;font-weight:700;color:#1D4ED8;margin:0 0 14px;}
-    .app-loading-bar{width:min(86vw,620px);height:16px;border-radius:999px;background:#BFD5F9;overflow:hidden;}
-    .app-loading-bar i{display:block;height:100%;width:40%;background:linear-gradient(90deg,#0B4FC8,#2B6FE5);border-radius:999px;animation:loadingProgress 1.8s ease-in-out infinite;}
-    .app-loading-label{margin-top:16px;letter-spacing:.14em;font-size:40px;color:#1D4ED8;font-weight:500;}
-    @keyframes loadingProgress{0%{transform:translateX(-120%);}65%{transform:translateX(120%);}100%{transform:translateX(120%);}}
+    .app-loading-hero{min-height:100dvh;background:#F6F8FD;display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;text-align:center;position:relative;}
+    .app-loading-poster{padding:0;}
+    .app-loading-poster-img{width:100%;height:100%;object-fit:cover;display:block;}
+    .app-loading-progress{position:absolute;left:50%;bottom:8%;transform:translateX(-50%);width:min(78vw,520px);}
+    .app-loading-bar{width:100%;height:14px;border-radius:999px;background:rgba(191,213,249,.9);overflow:hidden;}
+    .app-loading-bar i{display:block;height:100%;width:35%;background:linear-gradient(90deg,#0B4FC8,#2B6FE5);border-radius:999px;animation:loadingProgress 1.6s ease-in-out infinite;}
+    .app-loading-label{margin-top:14px;letter-spacing:.12em;font-size:38px;color:#1D4ED8;font-weight:500;}
+    @keyframes loadingProgress{0%{transform:translateX(-130%);}70%{transform:translateX(190%);}100%{transform:translateX(190%);}}
     .onboarding-fixed-cta{padding-bottom:calc(16px + env(safe-area-inset-bottom));}
     .btn,button,.planner-input,select,textarea,input{transition:box-shadow .15s ease, border-color .15s ease;}
     .btn:active,button:active,.planner-input:active,select:active,textarea:active,input:active{transform:none;}
@@ -2114,8 +2113,7 @@ function App() {
     if (action === 'loginSuccess' || action === 'signupSuccess' || action === 'ssoSuccess') {
       setLoggedIn(true);
       setHistory([]);
-      const completed = localStorage.getItem('studycrack_onboarding_completed') === 'true';
-      goto(completed ? 'home' : 'on1', true);
+      goto('home', true);
     }
     if (action === 'completeOnboarding') {
       localStorage.setItem('studycrack_onboarding_completed', 'true');
@@ -2397,10 +2395,10 @@ function App() {
     }
   };
 
-  const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><section class="app-loading-hero"><img class="app-loading-logo" src="${ONBOARDING_LOGO_SRC}" alt="스터디크랙 로고"/><img class="app-loading-mascot" src="${CRACKY_SRC}" alt="크랙이"/><div class="app-loading-wave"></div><p class="app-loading-text">스터디크랙과 함께 원하는 대학으로 가는 중</p><div class="app-loading-bar"><i></i></div><p class="app-loading-label">LOADING...</p></section></div></div></div>`;
+  const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><section class="app-loading-hero app-loading-poster"><img class="app-loading-poster-img" src="./assets/IMG_2636.jpeg" alt="스터디크랙 로딩 이미지"/><div class="app-loading-progress"><div class="app-loading-bar"><i></i></div><p class="app-loading-label">LOADING...</p></div></section></div></div></div>`;
   const fallbackUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div></div>`;
-  const preAuthAllowedScreens = ['splash', 'authLogin', 'authSignup', 'authFindId', 'authFindPw', 'on1', 'on2', 'on3'];
-  const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !preAuthAllowedScreens.includes(screen) ? screens.on1 : current;
+  const preAuthAllowedScreens = ['splash', 'authLogin', 'authSignup', 'authFindId', 'authFindPw'];
+  const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !preAuthAllowedScreens.includes(screen) ? screens.authLogin : current;
   const analysisOverlay = isAnalyzing && screen === 'analysis'
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>분석중입니다</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
