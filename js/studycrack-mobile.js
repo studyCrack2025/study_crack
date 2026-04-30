@@ -566,7 +566,9 @@ function App() {
     '서강대학교 경영학부': { score: 102, verdict: '도전', verdictColor: '#2563EB', aiGrade: '도전', comment: '합격선 근처까지 접근했습니다. 영향도가 큰 과목부터 보완하면 가능성이 올라갑니다.', sim: [['국어', '+10.8점', '핵심 과목 보완이 필요합니다.', true], ['수학', '+11.2점', '점수 상승으로 합격 가능성이 높아집니다.', false], ['세사', '+6.6점', '점수 상승으로 합격 가능성이 높아집니다.', false], ['동사', '+6.6점', '점수 상승으로 합격 가능성이 높아집니다.', false]] },
     '한양대학교 경영학부': { score: 98, verdict: '도전', verdictColor: '#F97316', aiGrade: '도전', comment: '합격선 근처까지 접근했습니다. 영향도가 큰 과목부터 보완하면 가능성이 올라갑니다.', sim: [['국어', '+11.0점', '핵심 과목 보완이 필요합니다.', true], ['수학', '+11.8점', '점수 상승으로 합격 가능성이 높아집니다.', false], ['세사', '+7.4점', '점수 상승으로 합격 가능성이 높아집니다.', false], ['동사', '+7.4점', '점수 상승으로 합격 가능성이 높아집니다.', false]] }
   };
-  const analysisSelected = analysisProfiles[targetMajor] || analysisProfiles['연세대학교 경영학과'];
+  const analysisBaseProfile = analysisProfiles[targetMajor] || analysisProfiles['연세대학교 경영학과'];
+  const liveCurrentScore = Math.round((Number(scores.korean||0)+Number(scores.math||0)+Number(scores.english||0)+Number(scores.inquiry1||0)+Number(scores.inquiry2||0))/5);
+  const analysisSelected = { ...analysisBaseProfile, score: liveCurrentScore, sim: (analysisBaseProfile.sim||[]).map((r,idx)=>{ const boost = Math.max(0, Math.round((liveCurrentScore-60)/10)); const g = Number(String(r[1]).replace(/[^0-9.-]/g,'')) || 0; return [r[0], `+${(g+boost).toFixed(1)}점`, r[2], idx===0]; }) };
   const analysisSearchPool = ['연세대학교 경영학과', '고려대학교 경영대학', '성균관대학교 글로벌경영학과', '서강대학교 경영학부', '한양대학교 경영학부'];
   const analysisRecommended = ['가천대학교 관광경영학과', '강서대학교 G2빅데이터경영학과', '고려대학교 경영대학'];
   const analysisSearchList = analysisSearchPool.filter((name) => name.includes(analysisSearchTerm.trim()));
@@ -1419,7 +1421,7 @@ function App() {
          </div>
          <div class="analysis-v2-gauge"><i style="width:${analysisGaugeFill}%;background:${analysisGaugeColor}"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
          <div class="analysis-v2-gauge-meta"><span>0</span><span>합격컷 100점</span><span>안정컷 150점</span><span>MAX 250점</span></div>
-         <div class="kpi-row score-row"><div class="kpi-item"><b>${analysisSelected.score}점</b>현재 점수</div><div class="kpi-item"><b>100점</b>합격 컷</div><div class="kpi-item danger"><b>${analysisSelected.score-100>0?`+${analysisSelected.score-100}`:analysisSelected.score-100}점</b>격차</div></div>
+         <div class="kpi-row score-row"><div class="kpi-item"><b>${liveCurrentScore}점</b>현재성적</div><div class="kpi-item"><b>100점</b>합격 컷</div><div class="kpi-item danger"><b>${analysisSelected.score-100>0?`+${analysisSelected.score-100}`:analysisSelected.score-100}점</b>격차</div></div>
        </div>
        <div class="card ob-card">
          <p class="analysis-title">+1점 상승 시뮬레이션</p>
