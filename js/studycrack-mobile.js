@@ -1984,7 +1984,15 @@ function App() {
     }
     if (action === 'closeScoreEdit') { setScoreEditOpen(false); setScoreEditStep(1); }
     if (action === 'scoreStepPrev') setScoreEditStep((v) => Math.max(1, v - 1));
-    if (action === 'scoreStepNext') setScoreEditStep((v) => Math.min(6, v + 1));
+    if (action === 'scoreStepNext') {
+      const over =
+        (scoreEditStep === 1 && (Number(scoreEditState.korean.common || 0) > 76 || Number(scoreEditState.korean.elective || 0) > 24)) ||
+        (scoreEditStep === 2 && (Number(scoreEditState.math.common || 0) > 74 || Number(scoreEditState.math.elective || 0) > 26)) ||
+        (scoreEditStep === 5 && Number(scoreEditState.inquiry1.score || 0) > 50) ||
+        (scoreEditStep === 6 && Number(scoreEditState.inquiry2.score || 0) > 50);
+      if (over) { alert('성적을 정확히 입력해주세요'); return; }
+      setScoreEditStep((v) => Math.min(6, v + 1));
+    }
     if (action === 'saveScoreEdit') {
       const requiredMissing = !String(scoreEditState.korean.common || '').trim()
         || !String(scoreEditState.korean.elective || '').trim()
@@ -2475,6 +2483,19 @@ function App() {
       const files = Array.from(e.target.files || []);
       if (files.length) setCoachingExamFiles((prev) => [...prev, ...files]);
       e.target.value = '';
+    }
+    if (field === 'scoreExamType') {
+      const value = e.target.value;
+      setScoreExamType(value);
+      const map = getExamScoresMap();
+      const picked = map[value];
+      if (!picked) {
+        setScores((prev) => ({ ...prev, korean: 0, math: 0, english: 0, inquiry1: 0, inquiry2: 0 }));
+        setScoreEditState((prev) => ({ ...prev, korean: { ...prev.korean, common: '', elective: '' }, math: { ...prev.math, common: '', elective: '' }, english: '', inquiry1: { ...prev.inquiry1, score: '' }, inquiry2: { ...prev.inquiry2, score: '' } }));
+        return;
+      }
+      setScores((prev) => ({ ...prev, korean: Number(picked.korean || 0), math: Number(picked.math || 0), english: Number(picked.english || 0), inquiry1: Number(picked.inquiry1 || 0), inquiry2: Number(picked.inquiry2 || 0) }));
+      setScoreEditState((prev) => ({ ...prev, korean: { ...prev.korean, common: Math.floor(Number(picked.korean || 0) * 0.75), elective: Math.round(Number(picked.korean || 0) * 0.25) }, math: { ...prev.math, common: Math.floor(Number(picked.math || 0) * 0.74), elective: Math.round(Number(picked.math || 0) * 0.26) }, english: picked.englishGrade ? String(picked.englishGrade) : '', inquiry1: { ...prev.inquiry1, score: picked.inquiry1 ? String(picked.inquiry1) : '' }, inquiry2: { ...prev.inquiry2, score: picked.inquiry2 ? String(picked.inquiry2) : '' } }));
     }
   };
   const onBlur = (e) => {
