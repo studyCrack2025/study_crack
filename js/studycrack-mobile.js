@@ -2314,6 +2314,30 @@ function App() {
       return;
     }
     const field = e.target.getAttribute('data-field');
+    if (field && field.startsWith('v2e-')) {
+      const [, subject, key] = field.split('-');
+      let normalizedValue = e.target.value;
+      const valueNum = Number(normalizedValue);
+      const maxMap = { 'korean-common': 76, 'korean-elective': 24, 'math-common': 74, 'math-elective': 26, 'inq1-score': 50, 'inq2-score': 50 };
+      const mk = `${subject}-${key}`;
+      if (maxMap[mk] && valueNum > maxMap[mk]) { alert('성적을 정확히 입력해주세요'); normalizedValue = String(maxMap[mk]); e.target.value = normalizedValue; }
+      if (subject === 'english' || subject === 'history') setScoreEditState((prev) => ({ ...prev, [subject]: normalizedValue }));
+      if (subject === 'korean' || subject === 'math') setScoreEditState((prev) => ({ ...prev, [subject]: { ...prev[subject], [key === 'type' ? 'type' : key === 'common' ? 'common' : 'elective']: normalizedValue } }));
+      if (subject === 'inq1' || subject === 'inq2') setScoreEditState((prev) => ({ ...prev, [subject === 'inq1' ? 'inquiry1' : 'inquiry2']: { ...prev[subject === 'inq1' ? 'inquiry1' : 'inquiry2'], [key === 'subject' ? 'subject' : 'score']: normalizedValue } }));
+      return;
+    }
+    if (field && field.startsWith('v2-')) {
+      const [, subject, key] = field.split('-');
+      let normalizedValue = e.target.value;
+      const valueNum = Number(normalizedValue);
+      const maxMap = { 'korean-common': 76, 'korean-elective': 24, 'math-common': 74, 'math-elective': 26, 'inq1-score': 50, 'inq2-score': 50 };
+      const mk = `${subject}-${key}`;
+      if (maxMap[mk] && valueNum > maxMap[mk]) { alert('성적을 정확히 입력해주세요'); normalizedValue = String(maxMap[mk]); e.target.value = normalizedValue; }
+      if (subject === 'english' || subject === 'history') setScoreState((prev) => ({ ...prev, [subject]: normalizedValue }));
+      if (subject === 'korean' || subject === 'math') setScoreState((prev) => ({ ...prev, [subject]: { ...prev[subject], [key === 'type' ? 'type' : key === 'common' ? 'common' : 'elective']: normalizedValue } }));
+      if (subject === 'inq1' || subject === 'inq2') setScoreState((prev) => ({ ...prev, [subject === 'inq1' ? 'inquiry1' : 'inquiry2']: { ...prev[subject === 'inq1' ? 'inquiry1' : 'inquiry2'], [key === 'subject' ? 'subject' : 'score']: normalizedValue } }));
+      return;
+    }
     if (field === 'coachPlannerFiles') {
       const files = Array.from(e.target.files || []);
       if (files.length) setCoachingPlannerFiles((prev) => [...prev, ...files].slice(0, 5));
