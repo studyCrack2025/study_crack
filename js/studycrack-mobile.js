@@ -1402,17 +1402,17 @@ function App() {
              <select class="ob1-score-select"><option>확률과통계</option><option>미적분</option><option>기하</option></select>
              <div class="ob1-score-two-col"><input class="ob1-score-input" data-score-key="math_common" value="${obScoreInputs.math_common||''}" placeholder="공통 원점수" type="number"/><input class="ob1-score-input" data-score-key="math_elective" value="${obScoreInputs.math_elective||''}" placeholder="선택 원점수" type="number"/></div>
            </div>
-           <div class="ob1-subject-card"><h4>영어</h4><select class="ob1-score-select"><option>등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option>${n}등급</option>`).join('')}</select></div>
+          <div class="ob1-subject-card"><h4>영어</h4><select class="ob1-score-select" data-score-key="english_grade"><option value="">등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option value="${n}" ${String(obScoreInputs.english_grade||'')===String(n)?'selected':''}>${n}등급</option>`).join('')}</select></div>
            <div class="ob1-subject-card"><h4>한국사</h4><select class="ob1-score-select"><option>등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option>${n}등급</option>`).join('')}</select></div>
            <div class="ob1-subject-card">
              <h4>탐구1</h4>
              <select class="ob1-score-select"><option>과목 선택</option><optgroup label="사회탐구"><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option></optgroup><optgroup label="과학탐구"><option>물리학Ⅰ</option><option>화학Ⅰ</option><option>생명과학Ⅰ</option><option>지구과학Ⅰ</option><option>물리학Ⅱ</option><option>화학Ⅱ</option><option>생명과학Ⅱ</option><option>지구과학Ⅱ</option></optgroup></select>
-             <input class="ob1-score-input" placeholder="원점수" type="number"/>
+            <input class="ob1-score-input" data-score-key="inquiry1_raw" value="${obScoreInputs.inquiry1_raw||''}" placeholder="원점수" type="number"/>
            </div>
            <div class="ob1-subject-card">
              <h4>탐구2</h4>
              <select class="ob1-score-select"><option>과목 선택</option><optgroup label="사회탐구"><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option></optgroup><optgroup label="과학탐구"><option>물리학Ⅰ</option><option>화학Ⅰ</option><option>생명과학Ⅰ</option><option>지구과학Ⅰ</option><option>물리학Ⅱ</option><option>화학Ⅱ</option><option>생명과학Ⅱ</option><option>지구과학Ⅱ</option></optgroup></select>
-             <input class="ob1-score-input" placeholder="원점수" type="number"/>
+            <input class="ob1-score-input" data-score-key="inquiry2_raw" value="${obScoreInputs.inquiry2_raw||''}" placeholder="원점수" type="number"/>
            </div>
          </div>
        </div>
@@ -2245,6 +2245,11 @@ function App() {
   };
 
   const onInput = (e) => {
+    const scoreKey = e.target.getAttribute('data-score-key');
+    if (scoreKey) {
+      setObScoreInputs((prev) => ({ ...prev, [scoreKey]: e.target.value }));
+      return;
+    }
     const field = e.target.getAttribute('data-field');
     if (field === 'coachPlannerFiles') {
       const files = Array.from(e.target.files || []);
