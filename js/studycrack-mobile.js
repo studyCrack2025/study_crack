@@ -1389,12 +1389,12 @@ function App() {
            <div class="ob1-subject-card">
              <h4>국어</h4>
              <select class="ob1-score-select"><option>화법과작문</option><option>언어와매체</option></select>
-             <div class="ob1-score-two-col"><input class="ob1-score-input" placeholder="공통 원점수" type="number"/><input class="ob1-score-input" placeholder="선택 원점수" type="number"/></div>
+             <div class="ob1-score-two-col"><input class="ob1-score-input" data-score-key="korean_common" value="${obScoreInputs.korean_common||''}" placeholder="공통 원점수" type="number"/><input class="ob1-score-input" data-score-key="korean_elective" value="${obScoreInputs.korean_elective||''}" placeholder="선택 원점수" type="number"/></div>
            </div>
            <div class="ob1-subject-card">
              <h4>수학</h4>
              <select class="ob1-score-select"><option>확률과통계</option><option>미적분</option><option>기하</option></select>
-             <div class="ob1-score-two-col"><input class="ob1-score-input" placeholder="공통 원점수" type="number"/><input class="ob1-score-input" placeholder="선택 원점수" type="number"/></div>
+             <div class="ob1-score-two-col"><input class="ob1-score-input" data-score-key="math_common" value="${obScoreInputs.math_common||''}" placeholder="공통 원점수" type="number"/><input class="ob1-score-input" data-score-key="math_elective" value="${obScoreInputs.math_elective||''}" placeholder="선택 원점수" type="number"/></div>
            </div>
            <div class="ob1-subject-card"><h4>영어</h4><select class="ob1-score-select"><option>등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option>${n}등급</option>`).join('')}</select></div>
            <div class="ob1-subject-card"><h4>한국사</h4><select class="ob1-score-select"><option>등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option>${n}등급</option>`).join('')}</select></div>
@@ -1826,6 +1826,11 @@ function App() {
     if (shouldKeepScroll) keepScrollPosition();
     if (action === 'goto') {
       const target = actionEl.getAttribute('data-target');
+      if (screen === 'ob1' && target === 'ob2') {
+        const ko = Number(obScoreInputs.korean_common||0)+Number(obScoreInputs.korean_elective||0);
+        const ma = Number(obScoreInputs.math_common||0)+Number(obScoreInputs.math_elective||0);
+        if (ko || ma) setScores((prev)=>({ ...prev, korean: ko || prev.korean, math: ma || prev.math }));
+      }
       if (screen === 'on1' && target === 'ob1') {
         setOnboardingLoading(true);
         setOnboardingLoadingText('성적 분석중...');
@@ -1937,7 +1942,7 @@ function App() {
     if (action === 'closePlannerEdit') setPlannerEditIndex(null);
     if (action === 'openScoreEdit') { setScoreEditOpen(true); setScoreEditStep(1); }
     if (action === 'saveQualInfo') {
-      setUser(prev => ({ ...prev, qualitative: { status: state.qual_status || '', school: state.qual_school || '', stream: state.qual_stream || '', benefits: state.qual_benefits || '', questions: state.qual_questions || '' } }));
+      setUser(prev => ({ ...prev, qualitative: { status: obGradeStatus || '', school: obSchoolName || '', stream: obTrack || '', benefits: obGoalText || '', questions: obQuestionText || '' } }));
       alert('정성조사서가 저장되었습니다.');
     }
     if (action === 'closeScoreEdit') { setScoreEditOpen(false); setScoreEditStep(1); }
@@ -1948,10 +1953,11 @@ function App() {
         ...prev,
         korean: Number(scoreEditState.korean.common || 0) + Number(scoreEditState.korean.elective || 0) || prev.korean,
         math: Number(scoreEditState.math.common || 0) + Number(scoreEditState.math.elective || 0) || prev.math,
-        english: Number(scoreEditState.english || prev.english),
+        english: (() => { const g = Number(scoreEditState.english || 0); return g ? Math.max(0, Math.round(100 - (g - 1) * 12.5)) : prev.english; })(),
         inquiry1: Number(scoreEditState.inquiry1.score || prev.inquiry1),
         inquiry2: Number(scoreEditState.inquiry2.score || prev.inquiry2)
       }));
+      setUser((prevUser)=>({ ...prevUser, quantitative: { ...(prevUser.quantitative||{}), active: { kor: { raw: Number(scoreEditState.korean.common || 0) + Number(scoreEditState.korean.elective || 0) }, math: { raw: Number(scoreEditState.math.common || 0) + Number(scoreEditState.math.elective || 0) }, eng: { grd: Number(scoreEditState.english || 0) }, inq1: { raw: Number(scoreEditState.inquiry1.score || 0) }, inq2: { raw: Number(scoreEditState.inquiry2.score || 0) } } } }));
       setScoreEditOpen(false);
       setScoreEditStep(1);
     }
