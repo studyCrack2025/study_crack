@@ -234,12 +234,30 @@ function App() {
       return;
     }
     const prevY = window.scrollY || window.pageYOffset || 0;
+    lastStableScrollYRef.current = prevY;
     callback();
     afterSafariViewportStable(() => {
       const nowY = window.scrollY || window.pageYOffset || 0;
       if (Math.abs(nowY - prevY) > 80) window.scrollTo({ top: prevY, left: 0, behavior: 'auto' });
     });
   };
+
+  useEffect(() => {
+    if (!isIOSSafari || !window.visualViewport) return undefined;
+    const recoverIfJumped = () => {
+      const savedY = lastStableScrollYRef.current || 0;
+      const nowY = window.scrollY || window.pageYOffset || 0;
+      if (Math.abs(nowY - savedY) > 80) {
+        afterSafariViewportStable(() => window.scrollTo({ top: savedY, left: 0, behavior: 'auto' }));
+      }
+    };
+    window.visualViewport.addEventListener('resize', recoverIfJumped);
+    window.visualViewport.addEventListener('scroll', recoverIfJumped);
+    return () => {
+      window.visualViewport.removeEventListener('resize', recoverIfJumped);
+      window.visualViewport.removeEventListener('scroll', recoverIfJumped);
+    };
+  }, [isIOSSafari]);
 
   const goto = (next, addHistory = true) => {
     const currentY = window.scrollY || window.pageYOffset || 0;
@@ -2732,7 +2750,7 @@ function App() {
   const appLoadingOverlay = loading ? loadingUi : '';
   const rendered = `${designV2StyleTag}${renderedBase}${appLoadingOverlay}${analysisOverlay}${onboardingOverlay}${addingUniversityOverlay}`;
 
-  return <div onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: rendered }} />;
+  return <div className="app-root app-scroll-container" onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: rendered }} />;
 }
 
 const rootElement = document.getElementById('root');
