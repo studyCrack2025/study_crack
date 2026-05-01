@@ -440,11 +440,29 @@ function App() {
   const finishLoading = () => {
     if (loadingDoneRef.current) return;
     loadingDoneRef.current = true;
+    const afterSafariViewportStable = (callback) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(callback);
+      });
+    };
+    const completeLoading = () => {
+      const y = window.scrollY || window.pageYOffset || 0;
+      afterSafariViewportStable(() => {
+        setLoading(false);
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (y > 0 && (window.scrollY || window.pageYOffset || 0) === 0) {
+              window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+            }
+          });
+        });
+      });
+    };
     const elapsed = Date.now() - loadingStartedAtRef.current;
     const waitMs = Math.max(0, 1300 - elapsed);
     loadingExitTimerRef.current = setTimeout(() => {
       setLoadingFadeOut(true);
-      setTimeout(() => { markStableScrollPosition(); setLoading(false); restoreIfUnexpectedTopJump(); }, 320);
+      setTimeout(completeLoading, 320);
     }, waitMs);
   };
 
