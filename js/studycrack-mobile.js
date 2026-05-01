@@ -118,6 +118,7 @@ function App() {
   const [analysisSearchOpen, setAnalysisSearchOpen] = useState(false);
   const [analysisSearchTerm, setAnalysisSearchTerm] = useState('');
   const [analysisMode, setAnalysisMode] = useState('summary');
+  const isIOSSafari = /iP(ad|hone|od)/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|OPiOS/.test(navigator.userAgent);
   const [analysisEtaStage, setAnalysisEtaStage] = useState(1);
   const [analysisHighlightedSubject, setAnalysisHighlightedSubject] = useState('');
   const [analysisBarProjectionTarget, setAnalysisBarProjectionTarget] = useState('');
@@ -223,6 +224,21 @@ function App() {
       const now = window.scrollY || window.pageYOffset || 0;
       if (Math.abs(now - y) > 0) window.scrollTo({ top: y, left: 0, behavior: 'auto' });
     }, durationMs + 20);
+  };
+  const afterSafariViewportStable = (callback) => {
+    requestAnimationFrame(() => requestAnimationFrame(callback));
+  };
+  const preserveScrollDuringSafariViewportChange = (callback) => {
+    if (!isIOSSafari) {
+      callback();
+      return;
+    }
+    const prevY = window.scrollY || window.pageYOffset || 0;
+    callback();
+    afterSafariViewportStable(() => {
+      const nowY = window.scrollY || window.pageYOffset || 0;
+      if (Math.abs(nowY - prevY) > 80) window.scrollTo({ top: prevY, left: 0, behavior: 'auto' });
+    });
   };
 
   const goto = (next, addHistory = true) => {
@@ -389,11 +405,11 @@ function App() {
     setOb3IsAnalyzing(true);
     const t = setTimeout(() => {
       armScrollGuard(1200);
-      setOb3IsAnalyzing(false);
+      preserveScrollDuringSafariViewportChange(() => setOb3IsAnalyzing(false));
     }, 1500);
     return () => {
       clearTimeout(t);
-      setOb3IsAnalyzing(false);
+      preserveScrollDuringSafariViewportChange(() => setOb3IsAnalyzing(false));
     };
   }, [screen]);
 
@@ -414,7 +430,7 @@ function App() {
     const waitMs = Math.max(0, 1300 - elapsed);
     loadingExitTimerRef.current = setTimeout(() => {
       setLoadingFadeOut(true);
-      setTimeout(() => setLoading(false), 320);
+      setTimeout(() => preserveScrollDuringSafariViewportChange(() => setLoading(false)), 320);
     }, waitMs);
   };
 
@@ -1102,7 +1118,7 @@ function App() {
     html,body{touch-action:manipulation;overscroll-behavior:none;}
     .app-shell,.app-frame,.app-screen{min-height:100dvh;}
     .onboarding-container .content{padding:0 16px 150px;box-sizing:border-box;}
-    .onboarding-shot{height:100vh;max-width:390px;margin:0 auto;padding:0 24px;display:flex;flex-direction:column;position:relative;overflow:hidden;background:#fff;}
+    .onboarding-shot{min-height:100dvh;min-height:-webkit-fill-available;max-width:390px;margin:0 auto;padding:0 24px;display:flex;flex-direction:column;position:relative;overflow:hidden;background:#fff;}
     .onboarding-shot-head{margin-top:72px;text-align:center;}
     .onboarding-shot-head h2{margin:0;font-size:24px;font-weight:800;line-height:1.45;letter-spacing:-0.04em;color:#111827;white-space:pre-line;}
     .onboarding-shot-head h2 .accent{color:#0B4EDB;}
@@ -1998,22 +2014,22 @@ function App() {
       e.stopPropagation();
       const nextView = actionEl.getAttribute('data-score-view') || 'current';
       setScoreDragOffset(0);
-      setActiveScoreView((prev) => {
+      preserveScrollDuringSafariViewportChange(() => setActiveScoreView((prev) => {
         if (prev === nextView) return prev;
         setScoreSlideMotion(nextView === 'target' ? 'motion-next' : 'motion-prev');
         return nextView;
-      });
+      }));
     }
     if (action === 'setHomeSlide') {
       const idx = Number(actionEl.getAttribute('data-slide-index'));
       if (Number.isNaN(idx)) return;
       setHomeDragOffset(0);
-      setHomeSlideIndex((prev) => {
+      preserveScrollDuringSafariViewportChange(() => setHomeSlideIndex((prev) => {
         const next = Math.max(0, Math.min(idx, homeTargets.length));
         if (next === prev) return prev;
         setHomeSlideMotion(next > prev ? 'motion-next' : 'motion-prev');
         return next;
-      });
+      }));
     }
     if (action === 'openAnalysisSearch') setAnalysisSearchOpen(true);
     if (action === 'closeAnalysisSearch') {
@@ -2628,11 +2644,12 @@ function App() {
       e.target.value = '';
       return;
     }
-    if (field === 'scoreExamType') applyScoreExamSelection(e.target.value);
-    if (field === 'obTrack') setObTrack(e.target.value);
-    if (field === 'obExamType') applyObExamSelection(e.target.value);
+    if (field === 'scoreExamType') preserveScrollDuringSafariViewportChange(() => applyScoreExamSelection(e.target.value));
+    if (field === 'obTrack') preserveScrollDuringSafariViewportChange(() => setObTrack(e.target.value));
+    if (field === 'obExamType') preserveScrollDuringSafariViewportChange(() => applyObExamSelection(e.target.value));
   };
   const onBlur = (e) => {
+    if (isIOSSafari) preserveScrollDuringSafariViewportChange(() => {});
     const field = e.target.getAttribute('data-field');
     const coachAnswer = e.target.getAttribute('data-coach-answer');
     if (coachAnswer) {
@@ -2702,7 +2719,7 @@ function App() {
   const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><section class="app-loading-hero app-loading-poster ${loadingFadeOut ? 'is-fade-out' : ''}"><img class="app-loading-poster-img" src="./assets/images/IMG_3020.png" alt="스터디크랙 로딩 이미지"/><div class="app-loading-progress"><div class="app-loading-bar"><i></i></div><p class="app-loading-label">LOADING...</p></div></section></div></div></div>`;
   const fallbackUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div></div>`;
   const preAuthAllowedScreens = ['splash', 'authLogin', 'authSignup', 'authFindId', 'authFindPw', 'on1', 'on2', 'on3'];
-  const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !preAuthAllowedScreens.includes(screen) ? screens.on1 : current;
+  const renderedBase = error ? fallbackUi : !loggedIn && !preAuthAllowedScreens.includes(screen) ? screens.on1 : current;
   const analysisOverlay = isAnalyzing && screen === 'analysis'
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>분석중입니다</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
@@ -2712,7 +2729,8 @@ function App() {
   const addingUniversityOverlay = addingUniversity
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>추가중입니다.</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
-  const rendered = `${designV2StyleTag}${renderedBase}${analysisOverlay}${onboardingOverlay}${addingUniversityOverlay}`;
+  const appLoadingOverlay = loading ? loadingUi : '';
+  const rendered = `${designV2StyleTag}${renderedBase}${appLoadingOverlay}${analysisOverlay}${onboardingOverlay}${addingUniversityOverlay}`;
 
   return <div onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: rendered }} />;
 }
