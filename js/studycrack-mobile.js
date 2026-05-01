@@ -479,6 +479,36 @@ function App() {
     };
   }, []);
 
+  const applyScoreExamSelection = (value) => {
+    setScoreExamType(value);
+    const map = getExamScoresMap();
+    const picked = map[value];
+    if (!picked) {
+      setScores((prev) => ({ ...prev, korean: 0, math: 0, english: 0, inquiry1: 0, inquiry2: 0 }));
+      setScoreEditState((prev) => ({ ...prev, korean: { ...prev.korean, common: '', elective: '' }, math: { ...prev.math, common: '', elective: '' }, english: '', inquiry1: { ...prev.inquiry1, score: '' }, inquiry2: { ...prev.inquiry2, score: '' } }));
+      return;
+    }
+    setScores((prev) => ({ ...prev, korean: Number(picked.korean || 0), math: Number(picked.math || 0), english: Number(picked.english || 0), inquiry1: Number(picked.inquiry1 || 0), inquiry2: Number(picked.inquiry2 || 0) }));
+    setScoreEditState((prev) => ({ ...prev, korean: { ...prev.korean, common: Math.floor(Number(picked.korean || 0) * 0.75), elective: Math.round(Number(picked.korean || 0) * 0.25) }, math: { ...prev.math, common: Math.floor(Number(picked.math || 0) * 0.74), elective: Math.round(Number(picked.math || 0) * 0.26) }, english: picked.englishGrade ? String(picked.englishGrade) : '', inquiry1: { ...prev.inquiry1, score: picked.inquiry1 ? String(picked.inquiry1) : '' }, inquiry2: { ...prev.inquiry2, score: picked.inquiry2 ? String(picked.inquiry2) : '' } }));
+  };
+
+  const applyObExamSelection = (value) => {
+    setObExamType(value);
+    const map = getExamScoresMap();
+    const picked = map[value] || {};
+    const setVal = (key, val) => {
+      const el = document.querySelector(`[data-score-key="${key}"]`);
+      if (el) el.value = val ?? '';
+    };
+    setVal('korean_common', picked.korean ? Math.max(0, Math.floor(Number(picked.korean) * 0.75)) : '');
+    setVal('korean_elective', picked.korean ? Math.max(0, Math.round(Number(picked.korean) * 0.25)) : '');
+    setVal('math_common', picked.math ? Math.max(0, Math.floor(Number(picked.math) * 0.74)) : '');
+    setVal('math_elective', picked.math ? Math.max(0, Math.round(Number(picked.math) * 0.26)) : '');
+    setVal('english_grade', picked.englishGrade || '');
+    setVal('inquiry1_raw', picked.inquiry1 || '');
+    setVal('inquiry2_raw', picked.inquiry2 || '');
+  };
+
   useEffect(() => {
     window.__studycrackAppBooted = true;
   }, []);
@@ -2436,36 +2466,8 @@ function App() {
     if (field === 'coachingMonth') setCoachingMonth(e.target.value);
     if (field === 'proEliteMonth') setProEliteMonth(e.target.value);
     if (field === 'obTrack') setObTrack(e.target.value);
-    if (field === 'scoreExamType') {
-      const value = e.target.value;
-      setScoreExamType(value);
-      const map = getExamScoresMap();
-      const picked = map[value];
-      if (!picked) {
-        setScores((prev) => ({ ...prev, korean: 0, math: 0, english: 0, inquiry1: 0, inquiry2: 0 }));
-        setScoreEditState((prev) => ({ ...prev, korean: { ...prev.korean, common: '', elective: '' }, math: { ...prev.math, common: '', elective: '' }, english: '', inquiry1: { ...prev.inquiry1, score: '' }, inquiry2: { ...prev.inquiry2, score: '' } }));
-      } else {
-        setScores((prev) => ({ ...prev, korean: Number(picked.korean || 0), math: Number(picked.math || 0), english: Number(picked.english || 0), inquiry1: Number(picked.inquiry1 || 0), inquiry2: Number(picked.inquiry2 || 0) }));
-        setScoreEditState((prev) => ({ ...prev, korean: { ...prev.korean, common: Math.floor(Number(picked.korean || 0) * 0.75), elective: Math.round(Number(picked.korean || 0) * 0.25) }, math: { ...prev.math, common: Math.floor(Number(picked.math || 0) * 0.74), elective: Math.round(Number(picked.math || 0) * 0.26) }, english: picked.englishGrade ? String(picked.englishGrade) : '', inquiry1: { ...prev.inquiry1, score: picked.inquiry1 ? String(picked.inquiry1) : '' }, inquiry2: { ...prev.inquiry2, score: picked.inquiry2 ? String(picked.inquiry2) : '' } }));
-      }
-    }
-    if (field === 'obExamType') {
-      const value = e.target.value;
-      setObExamType(value);
-      const map = getExamScoresMap();
-      const picked = map[value] || {};
-      const setVal = (key, val) => {
-        const el = document.querySelector(`[data-score-key="${key}"]`);
-        if (el) el.value = val ?? '';
-      };
-      setVal('korean_common', picked.korean ? Math.max(0, Math.floor(Number(picked.korean) * 0.75)) : '');
-      setVal('korean_elective', picked.korean ? Math.max(0, Math.round(Number(picked.korean) * 0.25)) : '');
-      setVal('math_common', picked.math ? Math.max(0, Math.floor(Number(picked.math) * 0.74)) : '');
-      setVal('math_elective', picked.math ? Math.max(0, Math.round(Number(picked.math) * 0.26)) : '');
-      setVal('english_grade', picked.englishGrade || '');
-      setVal('inquiry1_raw', picked.inquiry1 || '');
-      setVal('inquiry2_raw', picked.inquiry2 || '');
-    }
+    if (field === 'scoreExamType') applyScoreExamSelection(e.target.value);
+    if (field === 'obExamType') applyObExamSelection(e.target.value);
     const coachAnswer = e.target.getAttribute('data-coach-answer');
     const coachPlan = e.target.getAttribute('data-coach-plan');
     const coachActual = e.target.getAttribute('data-coach-actual');
@@ -2616,43 +2618,17 @@ function App() {
       const files = Array.from(e.target.files || []);
       if (files.length) setCoachingPlannerFiles((prev) => [...prev, ...files].slice(0, 5));
       e.target.value = '';
+      return;
     }
     if (field === 'coachExamFiles') {
       const files = Array.from(e.target.files || []);
       if (files.length) setCoachingExamFiles((prev) => [...prev, ...files]);
       e.target.value = '';
+      return;
     }
-    if (field === 'scoreExamType') {
-      const value = e.target.value;
-      setScoreExamType(value);
-      const map = getExamScoresMap();
-      const picked = map[value];
-      if (!picked) {
-        setScores((prev) => ({ ...prev, korean: 0, math: 0, english: 0, inquiry1: 0, inquiry2: 0 }));
-        setScoreEditState((prev) => ({ ...prev, korean: { ...prev.korean, common: '', elective: '' }, math: { ...prev.math, common: '', elective: '' }, english: '', inquiry1: { ...prev.inquiry1, score: '' }, inquiry2: { ...prev.inquiry2, score: '' } }));
-        return;
-      }
-      setScores((prev) => ({ ...prev, korean: Number(picked.korean || 0), math: Number(picked.math || 0), english: Number(picked.english || 0), inquiry1: Number(picked.inquiry1 || 0), inquiry2: Number(picked.inquiry2 || 0) }));
-      setScoreEditState((prev) => ({ ...prev, korean: { ...prev.korean, common: Math.floor(Number(picked.korean || 0) * 0.75), elective: Math.round(Number(picked.korean || 0) * 0.25) }, math: { ...prev.math, common: Math.floor(Number(picked.math || 0) * 0.74), elective: Math.round(Number(picked.math || 0) * 0.26) }, english: picked.englishGrade ? String(picked.englishGrade) : '', inquiry1: { ...prev.inquiry1, score: picked.inquiry1 ? String(picked.inquiry1) : '' }, inquiry2: { ...prev.inquiry2, score: picked.inquiry2 ? String(picked.inquiry2) : '' } }));
-    }
+    if (field === 'scoreExamType') applyScoreExamSelection(e.target.value);
     if (field === 'obTrack') setObTrack(e.target.value);
-    if (field === 'obExamType') {
-      const value = e.target.value;
-      setObExamType(value);
-      const map = getExamScoresMap();
-      const picked = map[value] || {};
-      const setVal = (key, val) => {
-        const el = document.querySelector(`[data-score-key="${key}"]`);
-        if (el) el.value = val ?? '';
-      };
-      setVal('korean_common', picked.korean ? Math.max(0, Math.floor(Number(picked.korean) * 0.75)) : '');
-      setVal('korean_elective', picked.korean ? Math.max(0, Math.round(Number(picked.korean) * 0.25)) : '');
-      setVal('math_common', picked.math ? Math.max(0, Math.floor(Number(picked.math) * 0.74)) : '');
-      setVal('math_elective', picked.math ? Math.max(0, Math.round(Number(picked.math) * 0.26)) : '');
-      setVal('english_grade', picked.englishGrade || '');
-      setVal('inquiry1_raw', picked.inquiry1 || '');
-      setVal('inquiry2_raw', picked.inquiry2 || '');
-    }
+    if (field === 'obExamType') applyObExamSelection(e.target.value);
   };
   const onBlur = (e) => {
     const field = e.target.getAttribute('data-field');
@@ -2696,48 +2672,7 @@ function App() {
     if (field === 'obTrack') setObTrack(value);
     if (field === 'obGoalText') setObGoalText(value);
     if (field === 'obQuestionText') setObQuestionText(value);
-    if (field === 'obExamType') {
-      setObExamType(value);
-      const map = getExamScoresMap();
-      const picked = map[value] || {};
-      const setVal = (key, val) => {
-        const el = document.querySelector(`[data-score-key="${key}"]`);
-        if (el) el.value = val ?? '';
-      };
-      setVal('korean_common', picked.korean ? Math.max(0, Math.floor(Number(picked.korean) * 0.75)) : '');
-      setVal('korean_elective', picked.korean ? Math.max(0, Math.round(Number(picked.korean) * 0.25)) : '');
-      setVal('math_common', picked.math ? Math.max(0, Math.floor(Number(picked.math) * 0.74)) : '');
-      setVal('math_elective', picked.math ? Math.max(0, Math.round(Number(picked.math) * 0.26)) : '');
-      setVal('english_grade', picked.englishGrade || '');
-      setVal('inquiry1_raw', picked.inquiry1 || '');
-      setVal('inquiry2_raw', picked.inquiry2 || '');
-    }
-    if (field === 'scoreExamType') {
-      setScoreExamType(value);
-      const map = getExamScoresMap();
-      const picked = map[value];
-      if (!picked) {
-        setScores((prev) => ({ ...prev, korean: 0, math: 0, english: 0, inquiry1: 0, inquiry2: 0 }));
-        setScoreEditState((prev) => ({ ...prev, korean: { ...prev.korean, common: '', elective: '' }, math: { ...prev.math, common: '', elective: '' }, english: '', inquiry1: { ...prev.inquiry1, score: '' }, inquiry2: { ...prev.inquiry2, score: '' } }));
-        return;
-      }
-      setScores((prev) => ({
-        ...prev,
-        korean: Number(picked.korean || 0),
-        math: Number(picked.math || 0),
-        english: Number(picked.english || 0),
-        inquiry1: Number(picked.inquiry1 || 0),
-        inquiry2: Number(picked.inquiry2 || 0)
-      }));
-      setScoreEditState((prev) => ({
-        ...prev,
-        korean: { ...prev.korean, common: Math.floor(Number(picked.korean || 0) * 0.75), elective: Math.round(Number(picked.korean || 0) * 0.25) },
-        math: { ...prev.math, common: Math.floor(Number(picked.math || 0) * 0.74), elective: Math.round(Number(picked.math || 0) * 0.26) },
-        english: picked.englishGrade ? String(picked.englishGrade) : '',
-        inquiry1: { ...prev.inquiry1, score: picked.inquiry1 ? String(picked.inquiry1) : '' },
-        inquiry2: { ...prev.inquiry2, score: picked.inquiry2 ? String(picked.inquiry2) : '' }
-      }));
-    }
+    if (e.target && e.target.tagName === 'SELECT') return;
     if (field && field.startsWith('v2-')) {
       const [, subject, key] = field.split('-');
       let normalizedValue = value;
