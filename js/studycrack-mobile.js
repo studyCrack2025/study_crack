@@ -288,7 +288,7 @@ function App() {
     const updateFixedAreaVars = () => {
       const top = document.querySelector('[data-fixed-header]');
       const topHeight = top ? top.getBoundingClientRect().height : 0;
-      const bottomHeight = 72;
+      const bottomHeight = 88;
       document.documentElement.style.setProperty('--header-height', `${topHeight}px`);
       document.documentElement.style.setProperty('--bottom-nav-height', `${bottomHeight}px`);
       document.documentElement.style.setProperty('--fixed-top-height', `${topHeight}px`);
@@ -1186,8 +1186,8 @@ function App() {
     .app-shell,.app-frame,.app-screen{min-height:100%;height:auto;}
     .onboarding-container .content{padding:0 16px 150px;box-sizing:border-box;}
     .onboarding-shot{min-height:100%;max-width:390px;margin:0 auto;padding:24px;display:flex;flex-direction:column;background:#fff;}
-    .prelogin-onboarding{width:100%;min-height:100svh;background:#f5f7fb;display:flex;flex-direction:column;padding:132px 24px 148px;overflow-x:hidden;overflow-y:auto;}
-    .prelogin-onboarding-main{width:100%;flex:1;display:flex;flex-direction:column;align-items:center;}
+    .prelogin-onboarding{width:100%;min-height:100svh;background:#f5f7fb;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 24px) 24px calc(env(safe-area-inset-bottom) + 24px);overflow-x:hidden;overflow-y:auto;}
+    .prelogin-onboarding-main{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:32px;}
     .prelogin-onboarding-footer{flex-shrink:0;display:flex;flex-direction:column;gap:12px;}
     .onboarding-card-area{position:relative;width:100%;max-width:690px;margin:0 auto;}
     .onboarding-shell{min-height:100%;display:flex;flex-direction:column;}
@@ -1199,11 +1199,11 @@ function App() {
     .onboarding-visual{position:relative;width:100%;max-width:340px;margin:0 auto;}
     .onboarding-footer,.prelogin-onboarding-footer{flex-shrink:0;display:flex;flex-direction:column;gap:12px;padding-top:12px;z-index:10;}
     .onboarding-dots{display:flex;justify-content:center;align-items:center;gap:14px;margin-top:36px;margin-bottom:38px;}
-    .onboarding-cta{width:100%;max-width:690px;height:112px;border-radius:22px;background:#0877ff;color:#fff;font-size:38px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto;box-shadow:0 16px 34px rgba(0,105,255,.25);position:relative;z-index:3;}
+    .onboarding-cta{width:100%;height:72px;border-radius:20px;background:#0877ff;color:#fff;font-size:30px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto;box-shadow:0 16px 34px rgba(0,105,255,.25);position:relative;z-index:3;}
     .crack-character{position:absolute;right:12px;bottom:12px;width:clamp(54px,14vw,84px);height:auto;z-index:2;pointer-events:none;}
     .onboarding-step-3 step-3 .onboarding-visual{display:flex;flex-direction:column;gap:14px;}
     .onboarding-step-3 step-3 .feature-card{position:relative;z-index:1;}
-    .step-1 .crack-character{position:absolute;width:136px;right:42px;bottom:-92px;z-index:3;pointer-events:none;}.step-2 .crack-character{position:absolute;width:118px;right:48px;bottom:-84px;z-index:3;pointer-events:none;}.step-3 .onboarding-card-area{max-width:620px;}.step-3 .feature-list{display:flex;flex-direction:column;gap:28px;}.step-3 .feature-card{position:relative;height:112px;border-radius:24px;background:#fff;box-shadow:0 14px 36px rgba(15,23,42,.07);display:flex;align-items:center;padding:0 42px;gap:32px;}.step-3 .crack-character{position:absolute;width:150px;right:34px;top:152px;z-index:4;pointer-events:none;}
+    .step-1 .crack-character,.step-2 .crack-character{position:absolute;width:clamp(80px,18vw,130px);right:32px;bottom:-48px;z-index:2;pointer-events:none;}.step-3 .feature-list{display:flex;flex-direction:column;gap:20px;}.step-3 .feature-card{min-height:92px;border-radius:24px;background:#fff;display:flex;align-items:center;padding:0 32px;gap:24px;}.step-3 .crack-character{position:absolute;width:clamp(120px,28vw,180px);right:32px;bottom:-56px;z-index:2;pointer-events:none;}
     .onboarding-shot-head{margin-top:24px;text-align:center;}
     .onboarding-shot-head h2{margin:0;font-size:24px;font-weight:800;line-height:1.45;letter-spacing:-0.04em;color:#111827;white-space:pre-line;}
     .onboarding-shot-head h2 .accent{color:#0B4EDB;}

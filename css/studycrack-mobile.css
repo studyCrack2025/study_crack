@@ -7,7 +7,7 @@
   --muted: #6b7280;
   --line: #e5ecf7;
   --danger-bg: #fee2e2;
-  --bottom-nav-height: 96px;
+  --bottom-nav-height: 88px;
   --safe-bottom: env(safe-area-inset-bottom);
   --fixed-top-height: 0px;
   --fixed-bottom-height: 80px;
@@ -86,7 +86,7 @@ body {
   overflow: visible;
   padding: 20px 16px;
   padding-top: calc(var(--header-height) + var(--safe-top) + 16px) !important;
-  padding-bottom: calc(96px + var(--safe-bottom) + 86px) !important;
+  padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + 24px) !important;
   box-sizing: border-box;
   z-index: 1;
   background: #f5f7fb;
@@ -223,15 +223,18 @@ body {
   will-change: transform;
   box-sizing: border-box;
 }
-.bottom-nav { position: fixed; left:14px; right:14px; bottom: calc(var(--safe-bottom) + 58px); height:96px; z-index:9999; background:#fff; border-radius:22px; display:grid; grid-template-columns:repeat(5,1fr); align-items:center; box-shadow:0 -8px 32px rgba(15,23,42,0.08); box-sizing:border-box; overflow:hidden; transform:translateZ(0); }
-.bottom-nav-inner { height:72px; min-height:72px; max-height:72px; display:grid; grid-template-columns:repeat(5,1fr); align-items:center; }
+.bottom-nav { position: fixed; left:16px; right:16px; bottom: calc(var(--safe-bottom) + 12px); height:88px; min-height:88px; max-height:88px; background:#fff; border-radius:24px; z-index:1000; display:grid; grid-template-columns:repeat(5,1fr); align-items:stretch; box-shadow:0 -8px 30px rgba(15,23,42,0.08); overflow:hidden; box-sizing:border-box; }
+.bottom-nav-inner { height:88px; min-height:88px; max-height:88px; display:grid; grid-template-columns:repeat(5,1fr); align-items:stretch; }
+.tabbar button{min-width:0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12px;line-height:1.2;white-space:nowrap;}
+.tabbar button .icon{width:24px;height:24px;flex-shrink:0;}
+.tabbar button span{display:block;white-space:nowrap;word-break:keep-all;}
 .bottom-nav * { box-sizing:border-box; }
 @supports (-webkit-touch-callout: none) {
   .app-root,
   .app-frame,
   .app-content {
     min-height: 100%;
-    padding-bottom: calc(96px + var(--safe-bottom) + 86px) !important;
+    padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + 24px) !important;
   }
   .tabbar { padding-bottom: 6px; height: 72px; }
 }
@@ -385,7 +388,7 @@ body {
 
 @media (max-width: 430px) {
   .app-frame { width: 100vw; min-height: 100%; height: auto; border-radius: 0; }
-  .app-content { padding: 16px; padding-bottom: calc(96px + var(--safe-bottom) + 86px) !important; }
+  .app-content { padding: 16px; padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + 24px) !important; }
   .admission-card { padding: 16px; }
   .admission-card .percent { font-size: 44px; }
   .study-summary-card .timer { font-size: 34px; }
