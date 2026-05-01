@@ -626,7 +626,7 @@ function App() {
   }, [selectedPlan, targetMajor, tab, user]);
 
   const appbar = (title, showBack) => `<header class="appbar fixed-header" data-app-header>${showBack ? '<button class="back-btn" data-action="back">←</button>' : '<div style="width:36px"></div>'}<div class="title">${title}</div></header>`;
-  const tabBtn = (k, label, iconName) => `<button class="${tab === k ? 'active' : ''}" data-action="tab" data-tab="${k}">${i(iconName, tab===k)}<span>${label}</span></button>`;
+  const tabBtn = (k, label, iconName) => `<button class="bottom-nav-item nav-item ${tab === k ? 'active' : ''}" type="button" data-action="tab" data-tab="${k}">${i(iconName, tab===k)}<span>${label}</span></button>`;
   const tabbarDimmed = Boolean(
     coachingSheetOpen
     || studySubjectSheetOpen
@@ -1221,6 +1221,14 @@ function App() {
     .onboarding-shot-dots i{width:10px;height:10px;border-radius:999px;background:#E6EAF2;}
     .onboarding-shot-dots i.active{background:#0B6BFF;}
     .onboarding-next{position:static;margin-top:0;width:100%;height:64px;border-radius:16px;background:#006BFF;color:#fff;font-size:22px;font-weight:800;letter-spacing:-0.04em;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,107,255,.25);border:none;}.onboarding-fixed-cta{padding-bottom:calc(16px + env(safe-area-inset-bottom));}
+
+    @media (max-width:768px){
+      .tabbar.bottom-nav[data-bottom-nav]{position:fixed;left:24px;right:24px;bottom:calc(12px + env(safe-area-inset-bottom));height:76px;padding:8px 12px;background:#fff;border-radius:24px;box-shadow:0 12px 30px rgba(15,23,42,.10);z-index:1000;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;align-items:center;box-sizing:border-box;}
+      .tabbar.bottom-nav[data-bottom-nav] .bottom-nav-inner{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;align-items:stretch;gap:0;height:100%;}
+      .tabbar.bottom-nav[data-bottom-nav] .bottom-nav-inner > *{min-width:0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0;margin:0;border:0;background:transparent;text-align:center;white-space:nowrap;line-height:1;}
+      .tabbar.bottom-nav[data-bottom-nav] svg,.tabbar.bottom-nav[data-bottom-nav] img,.tabbar.bottom-nav[data-bottom-nav] .icon{width:24px;height:24px;flex:0 0 auto;display:block;}
+      .tabbar.bottom-nav[data-bottom-nav] span,.tabbar.bottom-nav[data-bottom-nav] p,.tabbar.bottom-nav[data-bottom-nav] small{display:block;font-size:11px;line-height:1.15;margin:0;padding:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;}
+    }
     .btn,button,.planner-input,select,textarea,input{transition:box-shadow .15s ease, border-color .15s ease;}
     .btn:active,button:active,.planner-input:active,select:active,textarea:active,input:active{transform:none;}
     .card:active{transform:none !important;filter:none !important;}

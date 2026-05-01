@@ -1585,3 +1585,85 @@ html, body, #root { width:100%; min-height:100%; margin:0; padding:0; overflow-x
     z-index: 1001;
   }
 }
+
+
+@media (max-width: 768px) {
+  .tabbar.bottom-nav[data-bottom-nav] {
+    position: fixed !important;
+    left: 24px !important;
+    right: 24px !important;
+    bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+    height: 76px !important;
+    min-height: 76px !important;
+    max-height: 76px !important;
+    padding: 8px 12px !important;
+    background: #fff !important;
+    border-radius: 24px !important;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.10) !important;
+    z-index: 1000 !important;
+    display: grid !important;
+    grid-auto-flow: column !important;
+    grid-auto-columns: 1fr !important;
+    align-items: center !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  .tabbar.bottom-nav[data-bottom-nav] .bottom-nav-inner {
+    display: grid !important;
+    grid-auto-flow: column !important;
+    grid-auto-columns: 1fr !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+    height: 100% !important;
+  }
+
+  .tabbar.bottom-nav[data-bottom-nav] .bottom-nav-inner > *,
+  .tabbar.bottom-nav[data-bottom-nav] .nav-item,
+  .tabbar.bottom-nav[data-bottom-nav] .bottom-nav-item {
+    min-width: 0 !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    line-height: 1 !important;
+  }
+
+  .tabbar.bottom-nav[data-bottom-nav] svg,
+  .tabbar.bottom-nav[data-bottom-nav] img,
+  .tabbar.bottom-nav[data-bottom-nav] .icon {
+    width: 24px !important;
+    height: 24px !important;
+    flex: 0 0 auto !important;
+    display: block !important;
+  }
+
+  .tabbar.bottom-nav[data-bottom-nav] span,
+  .tabbar.bottom-nav[data-bottom-nav] p,
+  .tabbar.bottom-nav[data-bottom-nav] small {
+    display: block !important;
+    font-size: 11px !important;
+    line-height: 1.15 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .app-main {
+    padding-bottom: calc(120px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .onboarding-cta {
+    margin-bottom: 112px !important;
+  }
+}
