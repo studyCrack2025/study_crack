@@ -262,15 +262,20 @@ async function requestScoreConversion(type) {
         if(grdEl) { grdEl.value = ""; grdEl.placeholder = "..."; }
         
         // 💡 apiFetch 적용
+        const isDualSubject = (type === 'kor' || type === 'math');
+        const commonVal   = isDualSubject ? (parseInt(document.getElementById(commonId)?.value)   || 0) : undefined;
+        const electiveVal = isDualSubject ? (parseInt(document.getElementById(electiveId)?.value) || 0) : undefined;
+
         const response = await apiFetch(DATA_FETCH_URL, {
             method: 'POST',
             body: JSON.stringify({
-                type: 'convert_score', 
+                type: 'convert_score',
                 month: month,
                 subject: subjectKey,
-                score: scoreVal, // 이제 원점수가 전송됨
+                score: scoreVal,
                 opt: optVal,
-                subName: subNameVal
+                subName: subNameVal,
+                ...(isDualSubject ? { common: commonVal, elective: electiveVal } : {})
             })
         });
 

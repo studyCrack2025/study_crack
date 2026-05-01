@@ -225,8 +225,8 @@ async function _nextStepCore() {
 
         // 점수 환산 API 병렬 호출 → survey.js 로드 시 std/pct/grd 즉시 표시
         const [korConv, mathConv, inq1Conv, inq2Conv] = await Promise.all([
-            convertScore('mar', 'kor',  korCommon + korSel,   korOpt,  ''),
-            convertScore('mar', 'math', mathCommon + mathSel, mathOpt, ''),
+            convertScore('mar', 'kor',  korCommon + korSel,   korOpt,  '', korCommon,  korSel),
+            convertScore('mar', 'math', mathCommon + mathSel, mathOpt, '', mathCommon, mathSel),
             convertScore('mar', 'inq1', inq1Raw, '', inq1Name),
             convertScore('mar', 'inq2', inq2Raw, '', inq2Name)
         ]);
@@ -1022,16 +1022,16 @@ async function downloadMBTIReport(mbtiResult) {
     } catch (e) { /* silent */ }
 }
 
-// 점수 환산 API 호출 (survey.js requestScoreConversion과 동일한 엔드포인트)
-async function convertScore(month, subject, score, opt, subName) {
+async function convertScore(month, subject, score, opt, subName, common, elective) {
     if (!score || score <= 0) return { std: '', pct: '', grd: '' };
     const token = localStorage.getItem('accessToken');
     if (!token) return { std: '', pct: '', grd: '' };
+    const hasDual = common != null && elective != null;
     try {
         const res = await fetch(CONFIG.api.analysis, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'convert_score', month, subject, score, opt: opt || '', subName: subName || '' })
+            body: JSON.stringify({ type: 'convert_score', month, subject, score, opt: opt || '', subName: subName || '', ...(hasDual ? { common, elective } : {}) })
         });
         if (!res.ok) return { std: '', pct: '', grd: '' };
         const data = await res.json();
