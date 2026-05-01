@@ -9,6 +9,7 @@ const DEFAULT_SCORES = { korean: 82, math: 68, english: 77, inquiry1: 70, inquir
 const DEFAULT_NOTIFICATIONS = { planner: true, weekly: true, report: true, billing: true };
 const FIXED_TODAY_DATE = '2024-05-14';
 const SCROLL_STORAGE_KEY = 'studycrack_scroll_positions_v1';
+const LAST_SCROLL_KEY = 'studycrack_last_scroll_y_v1';
 const DEFAULT_PLANNER_ITEMS = [
   { id: 'pl-default-1', date: '14', subject: '수학', content: '개념 학습', start: '10:00', end: '12:00', minutes: 120, dot: 'math' },
   { id: 'pl-default-2', date: '14', subject: '영어', content: '독해 문제 풀이', start: '13:00', end: '14:30', minutes: 90, dot: 'eng' },
@@ -219,6 +220,16 @@ function App() {
       if (Math.abs(now - y) > 2) window.scrollTo({ top: y, left: 0, behavior: 'auto' });
     }, 0);
   };
+  const persistCurrentScroll = () => {
+    const y = window.scrollY || window.pageYOffset || 0;
+    screenScrollRef.current[screen] = y;
+    try {
+      localStorage.setItem(SCROLL_STORAGE_KEY, JSON.stringify(screenScrollRef.current));
+      sessionStorage.setItem(LAST_SCROLL_KEY, String(y));
+    } catch (_err) {
+      // noop
+    }
+  };
   const preserveScrollDuringUiUpdate = (duration = 500) => {
     const y = window.scrollY || window.pageYOffset || 0;
     const startedAt = Date.now();
@@ -303,6 +314,7 @@ function App() {
     };
     const onScroll = () => {
       screenScrollRef.current[screen] = window.scrollY || window.pageYOffset || 0;
+      try { sessionStorage.setItem(LAST_SCROLL_KEY, String(screenScrollRef.current[screen])); } catch (_err) {}
       persist();
     };
     const onBeforeUnload = () => {
@@ -323,8 +335,27 @@ function App() {
   }, [screen]);
 
   useEffect(() => {
-    // Intentionally do not force-scroll on render/screen change.
-    // Forced restoration has caused visible jump-to-top/jitter on user interactions.
+    const savedScreenY = Number(screenScrollRef.current[screen]);
+    if (Number.isFinite(savedScreenY) && savedScreenY >= 0) {
+      requestAnimationFrame(() => window.scrollTo({ top: savedScreenY, left: 0, behavior: 'auto' }));
+    }
+  }, [screen]);
+
+  useEffect(() => {
+    const restoreLastScroll = () => {
+      let y = Number.NaN;
+      try { y = Number(sessionStorage.getItem(LAST_SCROLL_KEY)); } catch (_err) {}
+      if (!Number.isFinite(y) || y < 0) y = Number(screenScrollRef.current[screen] || 0);
+      requestAnimationFrame(() => window.scrollTo({ top: y, left: 0, behavior: 'auto' }));
+      setTimeout(() => window.scrollTo({ top: y, left: 0, behavior: 'auto' }), 80);
+    };
+    restoreLastScroll();
+    window.addEventListener('pageshow', restoreLastScroll);
+    window.addEventListener('popstate', restoreLastScroll);
+    return () => {
+      window.removeEventListener('pageshow', restoreLastScroll);
+      window.removeEventListener('popstate', restoreLastScroll);
+    };
   }, [screen]);
 
   useEffect(() => {
@@ -933,7 +964,7 @@ function App() {
     </div>
     <div class="section home-section">
       <div class="home-kpi-slider">
-        <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-card-width:70vw;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .72s cubic-bezier(.22,1,.36,1)'};">
+        <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-card-width:70%;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .72s cubic-bezier(.22,1,.36,1)'};">
         ${homeTargets.map((item) => `<button class="card home-kpi-card admission-card slider-card home-result-card-v3" data-action="selectUniversity" data-target-major="${item.major}">
           <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score"><strong>${item.score}점</strong><small>AI 점수</small></div></div>
           <div class="home-result-gauge"><i style="width:${Math.min((item.score / 250) * 100, 100)}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
@@ -1148,8 +1179,8 @@ function App() {
     .home-kpi-track.motion-prev{animation:none;}
     @keyframes homeSlideNext{from{transform:translateX(calc(var(--home-slide-x) + 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
     @keyframes homeSlidePrev{from{transform:translateX(calc(var(--home-slide-x) - 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
-    .home-kpi-slider .slider-card{flex:0 0 var(--home-slide-card-width,70vw) !important;flex-basis:var(--home-slide-card-width,70vw) !important;flex-shrink:0 !important;min-width:var(--home-slide-card-width,70vw) !important;max-width:var(--home-slide-card-width,70vw) !important;width:var(--home-slide-card-width,70vw) !important;margin-right:0;min-height:0;box-sizing:border-box;overflow:hidden;}
-    .home-kpi-slider .home-kpi-card.slider-card{flex:0 0 var(--home-slide-card-width,70vw) !important;flex-basis:var(--home-slide-card-width,70vw) !important;flex-shrink:0 !important;max-width:var(--home-slide-card-width,70vw) !important;min-width:var(--home-slide-card-width,70vw) !important;width:var(--home-slide-card-width,70vw) !important;}
+    .home-kpi-slider .slider-card{flex:0 0 var(--home-slide-card-width,70%) !important;flex-basis:var(--home-slide-card-width,70%) !important;flex-shrink:0 !important;min-width:var(--home-slide-card-width,70%) !important;max-width:var(--home-slide-card-width,70%) !important;width:var(--home-slide-card-width,70%) !important;margin-right:0;min-height:0;box-sizing:border-box;overflow:hidden;}
+    .home-kpi-slider .home-kpi-card.slider-card{flex:0 0 var(--home-slide-card-width,70%) !important;flex-basis:var(--home-slide-card-width,70%) !important;flex-shrink:0 !important;max-width:var(--home-slide-card-width,70%) !important;min-width:var(--home-slide-card-width,70%) !important;width:var(--home-slide-card-width,70%) !important;}
     .home-kpi-indicator i{cursor:pointer;}
     .home-add-univ-card{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;padding:24px;border:1px solid #BFDBFE;background:linear-gradient(135deg,#F8FBFF,#EAF2FF);color:#1D4ED8;border-radius:24px;box-shadow:0 12px 24px rgba(30,64,175,.10);min-height:0;}
     .home-add-univ-card b{font-size:28px;line-height:1.15;letter-spacing:-.02em;}
@@ -1891,11 +1922,13 @@ function App() {
     if (isAnalyzing && screen === 'analysis') return;
     const actionEl = e.target.closest('[data-action]');
     if (!actionEl) return;
+    e.preventDefault();
     preserveScrollDuringUiUpdate(520);
     const action = actionEl.getAttribute('data-action');
     const shouldKeepScroll = ['toggleFaq', 'toggleStudyBreakdown', 'openUniversityModal', 'closeUniversityModal', 'openDrawer', 'closeDrawer', 'openScoreEdit', 'closeScoreEdit'].includes(action);
     if (shouldKeepScroll) keepScrollPosition();
     if (action === 'goto') {
+      persistCurrentScroll();
       const target = actionEl.getAttribute('data-target');
       if (screen === 'ob1' && target === 'ob2') {
         if (!obGradeStatus || !String(obSchoolName || '').trim() || !String(obTrack || '').trim() || !String(obGoalText || '').trim()) {
@@ -2452,6 +2485,7 @@ function App() {
     const startGesture = (target, clientX) => {
       if (typeof clientX !== 'number') return;
       if (target?.closest?.('input, textarea, select, [contenteditable="true"]')) {
+        preserveScrollDuringUiUpdate(520);
         touchTargetRef.current = '';
         touchStartXRef.current = null;
         return;
@@ -2546,6 +2580,11 @@ function App() {
       setHomeDragOffset(0);
       setScoreDragOffset(0);
     };
+    const onFocusIn = (e) => {
+      if (!e.target?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+      preserveScrollDuringUiUpdate(620);
+      persistCurrentScroll();
+    };
 
     document.addEventListener('touchstart', onNativeTouchStart, { passive: true, capture: true });
     document.addEventListener('touchmove', onNativeTouchMove, { passive: true, capture: true });
@@ -2555,6 +2594,7 @@ function App() {
     document.addEventListener('pointermove', onPointerMove, true);
     document.addEventListener('pointerup', onPointerUp, true);
     document.addEventListener('pointercancel', onPointerCancel, true);
+    document.addEventListener('focusin', onFocusIn, true);
     return () => {
       document.removeEventListener('touchstart', onNativeTouchStart, true);
       document.removeEventListener('touchmove', onNativeTouchMove, true);
@@ -2564,6 +2604,7 @@ function App() {
       document.removeEventListener('pointermove', onPointerMove, true);
       document.removeEventListener('pointerup', onPointerUp, true);
       document.removeEventListener('pointercancel', onPointerCancel, true);
+      document.removeEventListener('focusin', onFocusIn, true);
     };
   }, [homeTargets.length, homeSlideIndex, activeScoreView]);
 
