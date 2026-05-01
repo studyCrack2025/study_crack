@@ -235,6 +235,20 @@ function App() {
       });
     });
   };
+  const afterSafariViewportStable = (callback) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(callback);
+    });
+  };
+  const preserveY = (callback) => {
+    const y = window.scrollY || window.pageYOffset || 0;
+    callback();
+    afterSafariViewportStable(() => {
+      if (y > 0 && (window.scrollY || window.pageYOffset || 0) === 0) {
+        window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+      }
+    });
+  };
   const keepScrollPosition = (durationMs = 380) => {
     const y = window.scrollY || window.pageYOffset || 0;
     const started = Date.now();
@@ -440,11 +454,6 @@ function App() {
   const finishLoading = () => {
     if (loadingDoneRef.current) return;
     loadingDoneRef.current = true;
-    const afterSafariViewportStable = (callback) => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(callback);
-      });
-    };
     const completeLoading = () => {
       const y = window.scrollY || window.pageYOffset || 0;
       afterSafariViewportStable(() => {
@@ -2039,10 +2048,10 @@ function App() {
     if (action === 'tab') goto(actionEl.getAttribute('data-tab'));
     if (action === 'selectPlan') setSelectedPlan(actionEl.getAttribute('data-plan'));
     if (action === 'selectDuration') setDuration(actionEl.getAttribute('data-duration'));
-    if (action === 'toggleTarget') setTargetOpen((v) => !v);
+    if (action === 'toggleTarget') preserveY(() => setTargetOpen((v) => !v));
     if (action === 'selectTarget') {
       setTargetMajor(actionEl.getAttribute('data-target-major'));
-      setTargetOpen(false);
+      afterSafariViewportStable(() => setTargetOpen(false));
     }
     if (action === 'setAnalysisMode') setAnalysisMode(actionEl.getAttribute('data-analysis-mode') || 'summary');
     if (action === 'setScoreView') {
@@ -2070,9 +2079,9 @@ function App() {
       });
       restoreIfUnexpectedTopJump();
     }
-    if (action === 'openAnalysisSearch') setAnalysisSearchOpen(true);
+    if (action === 'openAnalysisSearch') preserveY(() => setAnalysisSearchOpen(true));
     if (action === 'closeAnalysisSearch') {
-      setAnalysisSearchOpen(false);
+      afterSafariViewportStable(() => setAnalysisSearchOpen(false));
       setAnalysisSearchTerm('');
     }
     if (action === 'highlightSimSubject') {
@@ -2090,8 +2099,8 @@ function App() {
     if (action === 'addAnalysisTarget') {
       const major = actionEl.getAttribute('data-target-major');
       if (!major) return;
-      setUniversityModalOpen(false);
-      setAnalysisSearchOpen(false);
+      afterSafariViewportStable(() => setUniversityModalOpen(false));
+      afterSafariViewportStable(() => setAnalysisSearchOpen(false));
       setAnalysisSearchTerm('');
       setAddingUniversity(true);
       setTimeout(() => {
@@ -2105,17 +2114,17 @@ function App() {
         setAddingUniversity(false);
       }, 500);
     }
-    if (action === 'openUniversityModal') setUniversityModalOpen(true);
-    if (action === 'openAnalysisSearchFromHome') setUniversityModalOpen(true);
-    if (action === 'closeUniversityModal') setUniversityModalOpen(false);
+    if (action === 'openUniversityModal') preserveY(() => setUniversityModalOpen(true));
+    if (action === 'openAnalysisSearchFromHome') preserveY(() => setUniversityModalOpen(true));
+    if (action === 'closeUniversityModal') afterSafariViewportStable(() => setUniversityModalOpen(false));
     if (action === 'openPlannerAddPage') goto('plannerAdd');
-    if (action === 'openPlannerCalendar') setPlannerCalendarOpen(true);
-    if (action === 'closePlannerCalendar') setPlannerCalendarOpen(false);
+    if (action === 'openPlannerCalendar') preserveY(() => setPlannerCalendarOpen(true));
+    if (action === 'closePlannerCalendar') afterSafariViewportStable(() => setPlannerCalendarOpen(false));
     if (action === 'selectPlannerDate') {
       const date = actionEl.getAttribute('data-planner-date');
       if (!date) return;
       setSelectedDate(String(date));
-      setPlannerCalendarOpen(false);
+      afterSafariViewportStable(() => setPlannerCalendarOpen(false));
       requestAnimationFrame(() => {
         const currentStrip = document.querySelector('.planner-date-strip');
         const selectedBtn = currentStrip?.querySelector(`[data-planner-date="${date}"]`);
@@ -2686,9 +2695,9 @@ function App() {
       e.target.value = '';
       return;
     }
-    if (field === 'scoreExamType') applyScoreExamSelection(e.target.value);
-    if (field === 'obTrack') setObTrack(e.target.value);
-    if (field === 'obExamType') applyObExamSelection(e.target.value);
+    if (field === 'scoreExamType') preserveY(() => applyScoreExamSelection(e.target.value));
+    if (field === 'obTrack') preserveY(() => setObTrack(e.target.value));
+    if (field === 'obExamType') preserveY(() => applyObExamSelection(e.target.value));
     restoreIfUnexpectedTopJump();
   };
   const onBlur = (e) => {
