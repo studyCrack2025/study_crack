@@ -302,6 +302,33 @@ function App() {
   }, [isIOSSafari]);
 
   useEffect(() => {
+    const setViewportHeight = () => {
+      const height = window.visualViewport?.height || window.innerHeight;
+      document.documentElement.style.setProperty('--app-vh', `${height}px`);
+    };
+    const updateFixedAreaVars = () => {
+      const top = document.querySelector('[data-fixed-header]');
+      const bottom = document.querySelector('[data-bottom-nav]');
+      const topHeight = top ? top.getBoundingClientRect().height : 0;
+      const bottomHeight = bottom ? bottom.getBoundingClientRect().height : 0;
+      document.documentElement.style.setProperty('--fixed-top-height', `${topHeight}px`);
+      document.documentElement.style.setProperty('--fixed-bottom-height', `${bottomHeight}px`);
+    };
+    setViewportHeight();
+    updateFixedAreaVars();
+    window.addEventListener('resize', setViewportHeight);
+    window.addEventListener('resize', updateFixedAreaVars);
+    window.visualViewport?.addEventListener('resize', setViewportHeight);
+    window.visualViewport?.addEventListener('resize', updateFixedAreaVars);
+    return () => {
+      window.removeEventListener('resize', setViewportHeight);
+      window.removeEventListener('resize', updateFixedAreaVars);
+      window.visualViewport?.removeEventListener('resize', setViewportHeight);
+      window.visualViewport?.removeEventListener('resize', updateFixedAreaVars);
+    };
+  }, [screen, tabbarDimmed]);
+
+  useEffect(() => {
     if (!isIOSSafari) return undefined;
     const onTouchStartRemember = (e) => rememberFocusTarget(e.target);
     document.addEventListener('touchstart', onTouchStartRemember, { passive: true });
@@ -634,7 +661,7 @@ function App() {
     );
   }, [selectedPlan, targetMajor, tab, user]);
 
-  const appbar = (title, showBack) => `<div class="appbar">${showBack ? '<button class="back-btn" data-action="back">←</button>' : '<div style="width:36px"></div>'}<div class="title">${title}</div></div>`;
+  const appbar = (title, showBack) => `<div class="appbar" data-fixed-header>${showBack ? '<button class="back-btn" data-action="back">←</button>' : '<div style="width:36px"></div>'}<div class="title">${title}</div></div>`;
   const tabBtn = (k, label, iconName) => `<button class="${tab === k ? 'active' : ''}" data-action="tab" data-tab="${k}">${i(iconName, tab===k)}<span>${label}</span></button>`;
   const tabbarDimmed = Boolean(
     coachingSheetOpen
@@ -646,7 +673,7 @@ function App() {
     || scoreEditOpen
     || logoutModalOpen
   );
-  const tabbar = () => `<div class="tabbar bottom-tab ${tabbarDimmed ? 'is-muted' : ''}">${tabBtn('home','홈','home')}${tabBtn('analysis','분석','chart')}${tabBtn('strategy','학습 코칭','target')}${tabBtn('planner','플래너','calendar')}${tabBtn('my','마이','user')}</div>`;
+  const tabbar = () => `<div class="tabbar bottom-tab ${tabbarDimmed ? 'is-muted' : ''}" data-bottom-nav>${tabBtn('home','홈','home')}${tabBtn('analysis','분석','chart')}${tabBtn('strategy','학습 코칭','target')}${tabBtn('planner','플래너','calendar')}${tabBtn('my','마이','user')}</div>`;
   const layout = (inner, withTab) => `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content ${tabbarDimmed ? 'modal-lock' : ''}">${inner}</div>${withTab ? tabbar() : ''}</div></div>`;
   const quickMini = (action, iconName, label) => `<button class="quick-mini-item" data-action="goto" data-target="${action}"><span class="quick-mini-icon">${i(iconName,false)}</span><span class="quick-mini-label">${label}</span></button>`;
   const universityProfiles = {
