@@ -29,6 +29,37 @@ const PRO_ELITE_REPORTS = [
 const PRO_ELITE_REPORT_PDF_PATH = './assets/features/feat_pro_report.pdf';
 const SCORE_LABELS = { korean: '국어', math: '수학', english: '영어', inquiry1: '탐구1', inquiry2: '탐구2' };
 
+
+const isIOSSafari = () => {
+  if (typeof navigator === 'undefined') return false;
+  return /iP(ad|hone|od)/.test(navigator.userAgent)
+    && /Safari/.test(navigator.userAgent)
+    && !/CriOS|FxiOS|OPiOS|EdgiOS/.test(navigator.userAgent);
+};
+
+const afterViewportStable = (callback) => {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(callback);
+  });
+};
+
+const preserveScrollOnIOSSafari = (callback) => {
+  if (typeof window === 'undefined' || !isIOSSafari()) {
+    callback();
+    return;
+  }
+  const previousY = window.scrollY;
+  callback();
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const currentY = window.scrollY;
+      if (previousY > 0 && currentY === 0) {
+        window.scrollTo({ top: previousY, left: 0, behavior: 'auto' });
+      }
+    });
+  });
+};
+
 const safeParse = (key, fallback) => {
   try {
     const value = localStorage.getItem(key);
@@ -379,7 +410,7 @@ function App() {
     setIsAnalyzing(true);
     const t = setTimeout(() => {
       armScrollGuard(1200);
-      setIsAnalyzing(false);
+      preserveScrollOnIOSSafari(() => setIsAnalyzing(false));
     }, 2000);
     return () => clearTimeout(t);
   }, [screen, targetMajor]);
@@ -389,11 +420,11 @@ function App() {
     setOb3IsAnalyzing(true);
     const t = setTimeout(() => {
       armScrollGuard(1200);
-      setOb3IsAnalyzing(false);
+      preserveScrollOnIOSSafari(() => setOb3IsAnalyzing(false));
     }, 1500);
     return () => {
       clearTimeout(t);
-      setOb3IsAnalyzing(false);
+      preserveScrollOnIOSSafari(() => setOb3IsAnalyzing(false));
     };
   }, [screen]);
 
@@ -414,7 +445,7 @@ function App() {
     const waitMs = Math.max(0, 1300 - elapsed);
     loadingExitTimerRef.current = setTimeout(() => {
       setLoadingFadeOut(true);
-      setTimeout(() => setLoading(false), 320);
+      setTimeout(() => preserveScrollOnIOSSafari(() => setLoading(false)), 320);
     }, waitMs);
   };
 
@@ -1990,7 +2021,7 @@ function App() {
     if (action === 'toggleTarget') setTargetOpen((v) => !v);
     if (action === 'selectTarget') {
       setTargetMajor(actionEl.getAttribute('data-target-major'));
-      setTargetOpen(false);
+      afterViewportStable(() => setTargetOpen(false));
     }
     if (action === 'setAnalysisMode') setAnalysisMode(actionEl.getAttribute('data-analysis-mode') || 'summary');
     if (action === 'setScoreView') {
@@ -1998,26 +2029,26 @@ function App() {
       e.stopPropagation();
       const nextView = actionEl.getAttribute('data-score-view') || 'current';
       setScoreDragOffset(0);
-      setActiveScoreView((prev) => {
+      preserveScrollOnIOSSafari(() => setActiveScoreView((prev) => {
         if (prev === nextView) return prev;
         setScoreSlideMotion(nextView === 'target' ? 'motion-next' : 'motion-prev');
         return nextView;
-      });
+      }));
     }
     if (action === 'setHomeSlide') {
       const idx = Number(actionEl.getAttribute('data-slide-index'));
       if (Number.isNaN(idx)) return;
       setHomeDragOffset(0);
-      setHomeSlideIndex((prev) => {
+      preserveScrollOnIOSSafari(() => setHomeSlideIndex((prev) => {
         const next = Math.max(0, Math.min(idx, homeTargets.length));
         if (next === prev) return prev;
         setHomeSlideMotion(next > prev ? 'motion-next' : 'motion-prev');
         return next;
-      });
+      }));
     }
     if (action === 'openAnalysisSearch') setAnalysisSearchOpen(true);
     if (action === 'closeAnalysisSearch') {
-      setAnalysisSearchOpen(false);
+      afterViewportStable(() => setAnalysisSearchOpen(false));
       setAnalysisSearchTerm('');
     }
     if (action === 'highlightSimSubject') {
@@ -2055,7 +2086,7 @@ function App() {
     if (action === 'closeUniversityModal') setUniversityModalOpen(false);
     if (action === 'openPlannerAddPage') goto('plannerAdd');
     if (action === 'openPlannerCalendar') setPlannerCalendarOpen(true);
-    if (action === 'closePlannerCalendar') setPlannerCalendarOpen(false);
+    if (action === 'closePlannerCalendar') afterViewportStable(() => setPlannerCalendarOpen(false));
     if (action === 'selectPlannerDate') {
       const date = actionEl.getAttribute('data-planner-date');
       if (!date) return;
@@ -2551,19 +2582,19 @@ function App() {
       armScrollGuard(1000);
       suppressClickUntilRef.current = Date.now() + 260;
       if (touchTargetRef.current === 'home') {
-        setHomeSlideIndex((prev) => {
+        preserveScrollOnIOSSafari(() => setHomeSlideIndex((prev) => {
           const next = delta < 0 ? Math.min(prev + 1, homeTargets.length) : Math.max(prev - 1, 0);
           if (next === prev) return prev;
           setHomeSlideMotion(next > prev ? 'motion-next' : 'motion-prev');
           return next;
-        });
+        }));
       } else if (touchTargetRef.current === 'score') {
-        setActiveScoreView((prev) => {
+        preserveScrollOnIOSSafari(() => setActiveScoreView((prev) => {
           const next = delta < 0 ? 'target' : 'current';
           if (next === prev) return prev;
           setScoreSlideMotion(next === 'target' ? 'motion-next' : 'motion-prev');
           return next;
-        });
+        }));
       }
       touchTargetRef.current = '';
     };
@@ -2631,6 +2662,7 @@ function App() {
     if (field === 'obExamType') applyObExamSelection(e.target.value);
   };
   const onBlur = (e) => {
+    preserveScrollOnIOSSafari(() => {
     const field = e.target.getAttribute('data-field');
     const coachAnswer = e.target.getAttribute('data-coach-answer');
     if (coachAnswer) {
@@ -2695,6 +2727,7 @@ function App() {
       if (subject === 'korean' || subject === 'math') setScoreEditState((prev) => ({ ...prev, [subject]: { ...prev[subject], [key === 'type' ? 'type' : key === 'common' ? 'common' : 'elective']: normalizedValue } }));
       if (subject === 'inq1' || subject === 'inq2') setScoreEditState((prev) => ({ ...prev, [subject === 'inq1' ? 'inquiry1' : 'inquiry2']: { ...prev[subject === 'inq1' ? 'inquiry1' : 'inquiry2'], [key === 'subject' ? 'subject' : 'score']: normalizedValue } }));
     }
+    });
   };
 
   const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><section class="app-loading-hero app-loading-poster ${loadingFadeOut ? 'is-fade-out' : ''}"><img class="app-loading-poster-img" src="./assets/images/IMG_3020.png" alt="스터디크랙 로딩 이미지"/><div class="app-loading-progress"><div class="app-loading-bar"><i></i></div><p class="app-loading-label">LOADING...</p></div></section></div></div></div>`;
@@ -2711,6 +2744,21 @@ function App() {
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>추가중입니다.</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
   const rendered = `${designV2StyleTag}${renderedBase}${analysisOverlay}${onboardingOverlay}${addingUniversityOverlay}`;
+
+  useEffect(() => {
+    if (typeof process === 'undefined' || process.env?.NODE_ENV !== 'development') return;
+    const onScrollDebug = () => console.log('[scroll]', window.scrollY);
+    const onVvResize = () => console.log('[vv resize]', window.visualViewport?.height, window.scrollY);
+    const onVvScroll = () => console.log('[vv scroll]', window.visualViewport?.offsetTop, window.scrollY);
+    window.addEventListener('scroll', onScrollDebug, { passive: true });
+    window.visualViewport?.addEventListener('resize', onVvResize);
+    window.visualViewport?.addEventListener('scroll', onVvScroll);
+    return () => {
+      window.removeEventListener('scroll', onScrollDebug);
+      window.visualViewport?.removeEventListener('resize', onVvResize);
+      window.visualViewport?.removeEventListener('scroll', onVvScroll);
+    };
+  }, []);
 
   return <div onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: rendered }} />;
 }
