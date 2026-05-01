@@ -431,39 +431,29 @@ async function checkTutorialStatus() {
         return;
     }
 
-    const idToken = localStorage.getItem('idToken'); 
-    const userId = localStorage.getItem('userId');
-    
-    // 💡 [수정 포인트] 정보가 없거나 꼬인 상태라도 침묵하지 않고 바로 보냅니다.
-    if (!idToken || !userId) {
-        window.location.replace('/tutorial');
-        return;
-    }
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) return;
 
     try {
         const response = await fetch(CONFIG.api.user, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
-            body: JSON.stringify({ type: 'get_user', userId: userId })
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
+            body: JSON.stringify({ type: 'get_user' })
         });
-        
+
         if (response.ok) {
             const data = await response.json();
             if (data && (data.tutorialRewardClaimed === true || data.computedTier === 'standard' || data.computedTier === 'pro' || data.computedTier === 'trial')) {
                 localStorage.setItem('tutorial_completed', 'true');
-                return; 
+                return;
             } else {
                 alert('진행 중인 튜토리얼로 바로 넘어갑니다!');
                 window.location.replace('/tutorial');
             }
-        } else {
-            // 💡 [수정 포인트] API 에러 응답 시에도 리다이렉트
-            window.location.replace('/tutorial');
         }
+        // API 에러 시 조용히 처리 (인증 문제일 수 있으므로 강제 이동하지 않음)
     } catch (e) {
         console.error("Tutorial sync error:", e);
-        // 💡 [수정 포인트] 네트워크 문제로 catch에 빠져도 리다이렉트
-        window.location.replace('/tutorial');
     }
 }
 

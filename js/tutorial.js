@@ -40,39 +40,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = localStorage.getItem('accessToken');
 
-    // 항상 DB에서 유저 데이터를 복원 (mbti_completed 경로 포함)
-    if (token) {
-        try {
-            const response = await fetch(CONFIG.api.user, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ type: 'get_user' })
-            });
-            if (response.ok) {
-                const data = await response.json();
-                if (data && data.tutorialStatus !== undefined) {
-                    currentStepIdx = parseInt(data.tutorialStatus, 10);
-                    localStorage.setItem('tutorialStatus', currentStepIdx);
-                }
-                // 점수 데이터 복원
-                if (data.quantitative) {
-                    tutorialData.quan = data.quantitative;
-                    const mar = data.quantitative.mar;
-                    if (mar) {
-                        tutorialData.totalStdScore = ['kor', 'math', 'inq1', 'inq2']
-                            .reduce((sum, k) => sum + (parseFloat(mar[k]?.std) || 0), 0);
-                    }
-                }
-                // 정성 데이터 및 MBTI 복원
-                if (data.qualitative) {
-                    tutorialData.qual = data.qualitative;
-                    if (data.qualitative.mbti) tutorialData.mbti = data.qualitative.mbti;
+    // 인증 가드: 로그인하지 않은 사용자는 로그인 페이지로 이동
+    if (!token) {
+        window.location.replace('/login');
+        return;
+    }
+
+    // DB에서 유저 데이터 복원 (mbti_completed 경로 포함)
+    try {
+        const response = await fetch(CONFIG.api.user, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'get_user' })
+        });
+        if (response.ok) {
+            const data = await response.json();
+            if (data && data.tutorialStatus !== undefined) {
+                currentStepIdx = parseInt(data.tutorialStatus, 10);
+                localStorage.setItem('tutorialStatus', currentStepIdx);
+            }
+            // 점수 데이터 복원
+            if (data.quantitative) {
+                tutorialData.quan = data.quantitative;
+                const mar = data.quantitative.mar;
+                if (mar) {
+                    tutorialData.totalStdScore = ['kor', 'math', 'inq1', 'inq2']
+                        .reduce((sum, k) => sum + (parseFloat(mar[k]?.std) || 0), 0);
                 }
             }
-        } catch (e) {
-            const savedStatus = localStorage.getItem('tutorialStatus');
-            if (savedStatus) currentStepIdx = parseInt(savedStatus, 10);
+            // 정성 데이터 및 MBTI 복원
+            if (data.qualitative) {
+                tutorialData.qual = data.qualitative;
+                if (data.qualitative.mbti) tutorialData.mbti = data.qualitative.mbti;
+            }
         }
+    } catch (e) {
+        const savedStatus = localStorage.getItem('tutorialStatus');
+        if (savedStatus) currentStepIdx = parseInt(savedStatus, 10);
     }
 
     if (urlParams.get('mbti_completed')) {
