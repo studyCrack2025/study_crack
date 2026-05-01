@@ -208,16 +208,19 @@ function App() {
   const suppressClickUntilRef = useRef(0);
   const lastStableScrollYRef = useRef(0);
   const scrollGuardRef = useRef({ until: 0, y: 0 });
-  const keepScrollPosition = () => {
+  const keepScrollPosition = (durationMs = 380) => {
     const y = window.scrollY || window.pageYOffset || 0;
-    requestAnimationFrame(() => {
+    const started = Date.now();
+    const lock = () => {
       const now = window.scrollY || window.pageYOffset || 0;
-      if (Math.abs(now - y) > 2) window.scrollTo({ top: y, left: 0, behavior: 'auto' });
-    });
+      if (Math.abs(now - y) > 0) window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+      if (Date.now() - started < durationMs) requestAnimationFrame(lock);
+    };
+    requestAnimationFrame(lock);
     setTimeout(() => {
       const now = window.scrollY || window.pageYOffset || 0;
-      if (Math.abs(now - y) > 2) window.scrollTo({ top: y, left: 0, behavior: 'auto' });
-    }, 0);
+      if (Math.abs(now - y) > 0) window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+    }, durationMs + 20);
   };
 
   const goto = (next, addHistory = true) => {
@@ -377,7 +380,10 @@ function App() {
       setOb3IsAnalyzing(false);
       requestAnimationFrame(() => window.scrollTo({ top: yBefore, left: 0, behavior: 'auto' }));
     }, 1500);
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(t);
+      setOb3IsAnalyzing(false);
+    };
   }, [screen]);
 
   useEffect(() => {
@@ -1913,13 +1919,17 @@ function App() {
         const map = getExamScoresMap();
         map[obExamType] = { korean: ko, math: ma, englishGrade: enGrade, english: enScore, inquiry1: iq1, inquiry2: iq2 };
         saveExamScoresMap(map);
+        goto('ob3');
+        return;
+      }
+      if (screen === 'ob4' && target === 'ob5') {
         setOnboardingLoading(true);
         setOnboardingLoadingText('학습 성향 분석중...');
-        setTimeout(() => setOnboardingLoadingText('효율적인 공부법 찾는 중...'), 1500);
+        setTimeout(() => setOnboardingLoadingText('효율적인 공부법 찾는중...'), 1500);
         setTimeout(() => {
           armScrollGuard(1400);
           setOnboardingLoading(false);
-          goto('ob3');
+          goto('ob5');
         }, 3000);
         return;
       }
@@ -1936,6 +1946,7 @@ function App() {
     }
     if (action === 'setAnalysisMode') setAnalysisMode(actionEl.getAttribute('data-analysis-mode') || 'summary');
     if (action === 'setScoreView') {
+      keepScrollPosition(700);
       e.stopPropagation();
       const nextView = actionEl.getAttribute('data-score-view') || 'current';
       setScoreDragOffset(0);
@@ -2551,6 +2562,9 @@ function App() {
   }, [homeTargets.length, homeSlideIndex, activeScoreView]);
 
   const onChange = (e) => {
+    if (e.target && e.target.tagName === 'SELECT') {
+      requestAnimationFrame(() => e.target.blur());
+    }
     const field = e.target.getAttribute('data-field');
     if (field === 'coachPlannerFiles') {
       const files = Array.from(e.target.files || []);
@@ -2574,6 +2588,24 @@ function App() {
       }
       setScores((prev) => ({ ...prev, korean: Number(picked.korean || 0), math: Number(picked.math || 0), english: Number(picked.english || 0), inquiry1: Number(picked.inquiry1 || 0), inquiry2: Number(picked.inquiry2 || 0) }));
       setScoreEditState((prev) => ({ ...prev, korean: { ...prev.korean, common: Math.floor(Number(picked.korean || 0) * 0.75), elective: Math.round(Number(picked.korean || 0) * 0.25) }, math: { ...prev.math, common: Math.floor(Number(picked.math || 0) * 0.74), elective: Math.round(Number(picked.math || 0) * 0.26) }, english: picked.englishGrade ? String(picked.englishGrade) : '', inquiry1: { ...prev.inquiry1, score: picked.inquiry1 ? String(picked.inquiry1) : '' }, inquiry2: { ...prev.inquiry2, score: picked.inquiry2 ? String(picked.inquiry2) : '' } }));
+    }
+    if (field === 'obTrack') setObTrack(e.target.value);
+    if (field === 'obExamType') {
+      const value = e.target.value;
+      setObExamType(value);
+      const map = getExamScoresMap();
+      const picked = map[value] || {};
+      const setVal = (key, val) => {
+        const el = document.querySelector(`[data-score-key="${key}"]`);
+        if (el) el.value = val ?? '';
+      };
+      setVal('korean_common', picked.korean ? Math.max(0, Math.floor(Number(picked.korean) * 0.75)) : '');
+      setVal('korean_elective', picked.korean ? Math.max(0, Math.round(Number(picked.korean) * 0.25)) : '');
+      setVal('math_common', picked.math ? Math.max(0, Math.floor(Number(picked.math) * 0.74)) : '');
+      setVal('math_elective', picked.math ? Math.max(0, Math.round(Number(picked.math) * 0.26)) : '');
+      setVal('english_grade', picked.englishGrade || '');
+      setVal('inquiry1_raw', picked.inquiry1 || '');
+      setVal('inquiry2_raw', picked.inquiry2 || '');
     }
   };
   const onBlur = (e) => {
