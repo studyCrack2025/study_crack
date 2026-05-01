@@ -84,7 +84,6 @@ body {
   box-sizing: border-box;
   z-index: 1;
 }
-.app-content > :last-child, .app-main > :last-child { margin-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + 48px) !important; }
 .app-content > :last-child, .app-main > :last-child { margin-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + 32px) !important; }
 .app-content.modal-lock { overflow: visible; }
 .app-shell,
