@@ -209,6 +209,8 @@ function App() {
   const suppressClickUntilRef = useRef(0);
   const lastStableScrollYRef = useRef(0);
   const scrollGuardRef = useRef({ until: 0, y: 0 });
+  const userTouchingRef = useRef(false);
+  const touchReleaseTimerRef = useRef(null);
   const keepScrollPosition = () => {
     const y = window.scrollY || window.pageYOffset || 0;
     requestAnimationFrame(() => {
@@ -276,10 +278,39 @@ function App() {
   useEffect(() => {
     lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
     const onNativeScroll = () => {
-      lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
+      const y = window.scrollY || window.pageYOffset || 0;
+      const jumpToTop = y <= 2 && lastStableScrollYRef.current > 56 && !userTouchingRef.current;
+      if (jumpToTop) {
+        window.scrollTo({ top: lastStableScrollYRef.current, left: 0, behavior: 'auto' });
+        return;
+      }
+      lastStableScrollYRef.current = y;
+    };
+    const markTouchStart = () => {
+      userTouchingRef.current = true;
+      if (touchReleaseTimerRef.current) clearTimeout(touchReleaseTimerRef.current);
+    };
+    const markTouchEnd = () => {
+      if (touchReleaseTimerRef.current) clearTimeout(touchReleaseTimerRef.current);
+      touchReleaseTimerRef.current = setTimeout(() => { userTouchingRef.current = false; }, 180);
     };
     window.addEventListener('scroll', onNativeScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onNativeScroll);
+    window.addEventListener('touchstart', markTouchStart, { passive: true });
+    window.addEventListener('touchmove', markTouchStart, { passive: true });
+    window.addEventListener('touchend', markTouchEnd, { passive: true });
+    window.addEventListener('touchcancel', markTouchEnd, { passive: true });
+    window.addEventListener('pointerdown', markTouchStart, true);
+    window.addEventListener('pointerup', markTouchEnd, true);
+    return () => {
+      window.removeEventListener('scroll', onNativeScroll);
+      window.removeEventListener('touchstart', markTouchStart);
+      window.removeEventListener('touchmove', markTouchStart);
+      window.removeEventListener('touchend', markTouchEnd);
+      window.removeEventListener('touchcancel', markTouchEnd);
+      window.removeEventListener('pointerdown', markTouchStart, true);
+      window.removeEventListener('pointerup', markTouchEnd, true);
+      if (touchReleaseTimerRef.current) clearTimeout(touchReleaseTimerRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -964,7 +995,7 @@ function App() {
     </div>
     <div class="section home-section">
       <div class="home-kpi-slider">
-        <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-card-width:70%;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .72s cubic-bezier(.22,1,.36,1)'};">
+        <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-card-width:85%;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .72s cubic-bezier(.22,1,.36,1)'};">
         ${homeTargets.map((item) => `<button class="card home-kpi-card admission-card slider-card home-result-card-v3" data-action="selectUniversity" data-target-major="${item.major}">
           <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score"><strong>${item.score}점</strong><small>AI 점수</small></div></div>
           <div class="home-result-gauge"><i style="width:${Math.min((item.score / 250) * 100, 100)}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
@@ -1179,8 +1210,8 @@ function App() {
     .home-kpi-track.motion-prev{animation:none;}
     @keyframes homeSlideNext{from{transform:translateX(calc(var(--home-slide-x) + 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
     @keyframes homeSlidePrev{from{transform:translateX(calc(var(--home-slide-x) - 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
-    .home-kpi-slider .slider-card{flex:0 0 var(--home-slide-card-width,70%) !important;flex-basis:var(--home-slide-card-width,70%) !important;flex-shrink:0 !important;min-width:var(--home-slide-card-width,70%) !important;max-width:var(--home-slide-card-width,70%) !important;width:var(--home-slide-card-width,70%) !important;margin-right:0;min-height:0;box-sizing:border-box;overflow:hidden;}
-    .home-kpi-slider .home-kpi-card.slider-card{flex:0 0 var(--home-slide-card-width,70%) !important;flex-basis:var(--home-slide-card-width,70%) !important;flex-shrink:0 !important;max-width:var(--home-slide-card-width,70%) !important;min-width:var(--home-slide-card-width,70%) !important;width:var(--home-slide-card-width,70%) !important;}
+    .home-kpi-slider .slider-card{flex:0 0 var(--home-slide-card-width,85%) !important;flex-basis:var(--home-slide-card-width,85%) !important;flex-shrink:0 !important;min-width:var(--home-slide-card-width,85%) !important;max-width:var(--home-slide-card-width,85%) !important;width:var(--home-slide-card-width,85%) !important;margin-right:0;min-height:0;box-sizing:border-box;overflow:hidden;}
+    .home-kpi-slider .home-kpi-card.slider-card{flex:0 0 var(--home-slide-card-width,85%) !important;flex-basis:var(--home-slide-card-width,85%) !important;flex-shrink:0 !important;max-width:var(--home-slide-card-width,85%) !important;min-width:var(--home-slide-card-width,85%) !important;width:var(--home-slide-card-width,85%) !important;}
     .home-kpi-indicator i{cursor:pointer;}
     .home-add-univ-card{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;padding:24px;border:1px solid #BFDBFE;background:linear-gradient(135deg,#F8FBFF,#EAF2FF);color:#1D4ED8;border-radius:24px;box-shadow:0 12px 24px rgba(30,64,175,.10);min-height:0;}
     .home-add-univ-card b{font-size:28px;line-height:1.15;letter-spacing:-.02em;}
