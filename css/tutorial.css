@@ -76,7 +76,9 @@ header { background: #fff; padding: 15px 20px; box-shadow: 0 2px 4px rgba(0,0,0,
 .univ-card-list { display: flex; flex-direction: column; gap: 14px; }
 .univ-card { border: 2px solid #e2e8f0; border-radius: 16px; padding: 20px; cursor: pointer; transition: all 0.2s; background: #fff; }
 .univ-card:hover { border-color: #93c5fd; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.06); }
-.univ-card.selected { border-color: #2563eb; box-shadow: 0 4px 18px rgba(37,99,235,0.14); }
+.univ-card.selected { border-color: #f59e0b; box-shadow: 0 4px 18px rgba(245,158,11,0.22); background: #fffbeb; }
+.univ-sim-badge { display: flex; align-items: center; gap: 6px; margin-top: 12px; padding: 7px 14px; background: linear-gradient(90deg, #fef3c7, #fde68a); border: 1px solid #f59e0b; border-radius: 99px; font-size: 0.82rem; font-weight: 700; color: #92400e; }
+.sim-badge-icon { font-size: 1rem; }
 .univ-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 18px; }
 .univ-card-title { font-weight: 800; color: #1e293b; font-size: 1.1rem; margin-bottom: 3px; }
 .univ-card-major { color: #64748b; font-size: 0.88rem; font-weight: 500; }

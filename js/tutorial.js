@@ -38,16 +38,9 @@ let mbtiDimSelections = [null, null, null, null];
 
 document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('mbti_completed')) {
-        tutorialData.mbti = urlParams.get('mbti_result') || 'CSDR';
-        currentStepIdx = 4;
-        localStorage.setItem('tutorialStatus', currentStepIdx);
-        simulateMbtiAnalysis();
-        bindEvents();
-        return;
-    }
-
     const token = localStorage.getItem('accessToken');
+
+    // 항상 DB에서 유저 데이터를 복원 (mbti_completed 경로 포함)
     if (token) {
         try {
             const response = await fetch(CONFIG.api.user, {
@@ -61,6 +54,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                     currentStepIdx = parseInt(data.tutorialStatus, 10);
                     localStorage.setItem('tutorialStatus', currentStepIdx);
                 }
+                // 점수 데이터 복원
+                if (data.quantitative) {
+                    tutorialData.quan = data.quantitative;
+                    const mar = data.quantitative.mar;
+                    if (mar) {
+                        tutorialData.totalStdScore = ['kor', 'math', 'inq1', 'inq2']
+                            .reduce((sum, k) => sum + (parseFloat(mar[k]?.std) || 0), 0);
+                    }
+                }
+                // 정성 데이터 및 MBTI 복원
+                if (data.qualitative) {
+                    tutorialData.qual = data.qualitative;
+                    if (data.qualitative.mbti) tutorialData.mbti = data.qualitative.mbti;
+                }
             }
         } catch (e) {
             const savedStatus = localStorage.getItem('tutorialStatus');
@@ -68,10 +75,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    if (currentStepIdx >= 4) {
+    if (urlParams.get('mbti_completed')) {
+        // URL 파라미터 mbti가 DB보다 우선 (방금 완료한 결과)
+        tutorialData.mbti = urlParams.get('mbti_result') || tutorialData.mbti || 'CSDR';
+        currentStepIdx = 4;
+        localStorage.setItem('tutorialStatus', currentStepIdx);
+        // MBTI 결과를 DB에 저장
+        if (token) {
+            apiCall('update_qual', { ...tutorialData.qual, mbti: tutorialData.mbti }).catch(() => {});
+        }
+        // 추천 대학 목록 복원
         const savedUnivs = sessionStorage.getItem('tut_selectedUnivs');
         if (savedUnivs) {
             try { tutorialData.selectedUnivs = JSON.parse(savedUnivs); } catch(e) {}
+        }
+        simulateMbtiAnalysis();
+        bindEvents();
+        return;
+    }
+
+    // 추천 대학 목록 및 선택 대학 복원 (4단계 이상 재진입 시)
+    if (currentStepIdx >= 4) {
+        const savedUnivs = sessionStorage.getItem('tut_selectedUnivs');
+        if (savedUnivs) {
+            try {
+                tutorialData.selectedUnivs = JSON.parse(savedUnivs);
+                // 선택한 대학 복원 (qualitative에 저장된 tutorialUniv 기준)
+                if (tutorialData.qual?.tutorialUniv && tutorialData.selectedUnivs?.length > 0) {
+                    const tu = tutorialData.qual.tutorialUniv;
+                    const cards = buildUnivCards(tutorialData.selectedUnivs, tutorialData.totalStdScore);
+                    const match = cards.find(c => c.school === tu.univ && c.major === tu.major);
+                    tutorialData.selectedUniv = match || cards[0] || null;
+                }
+            } catch(e) {}
         }
     }
 
@@ -340,6 +376,8 @@ function confirmMBTIDims() {
         return;
     }
     tutorialData.mbti = mbtiDimSelections.join('');
+    // MBTI 결과를 DB에 저장 (재진입 시 복원용)
+    apiCall('update_qual', { ...tutorialData.qual, mbti: tutorialData.mbti }).catch(() => {});
     simulateMbtiAnalysis();
 }
 
@@ -702,6 +740,10 @@ function initUnivSim() {
                     <div class="sbc-mark mark-pass"  style="left:${passPct}%"></div>
                 </div>
                 <div class="sbc-current-label">현재 <strong>${u.currentScore}점</strong></div>
+            </div>
+            <div class="univ-sim-badge" style="display:none">
+                <span class="sim-badge-icon">✨</span>
+                <span>1점 상승 시뮬레이션 <strong>+${u.gain}점</strong></span>
             </div>`;
 
         card.onclick = () => selectUniv(card, u, fillId, simPct);
@@ -710,7 +752,7 @@ function initUnivSim() {
 }
 
 function selectUniv(element, data, fillId, simPct) {
-    // 이전 선택 카드의 바를 원상복구
+    // 이전 선택 카드의 바 및 시뮬레이션 뱃지 원상복구
     document.querySelectorAll('.univ-card.selected').forEach(c => {
         c.classList.remove('selected');
         const prevFill = c.querySelector('.sbc-fill');
@@ -719,9 +761,15 @@ function selectUniv(element, data, fillId, simPct) {
             prevFill.style.transition = 'none';
             prevFill.style.width = origPct + '%';
         }
+        const badge = c.querySelector('.univ-sim-badge');
+        if (badge) badge.style.display = 'none';
     });
 
     element.classList.add('selected');
+
+    // 시뮬레이션 뱃지 표시
+    const badge = element.querySelector('.univ-sim-badge');
+    if (badge) badge.style.display = 'flex';
 
     const fill = document.getElementById(fillId);
     if (fill) {
@@ -737,6 +785,11 @@ function selectUniv(element, data, fillId, simPct) {
     }
 
     tutorialData.selectedUniv = data;
+
+    // 선택한 대학을 DB에 저장 (재진입 시 복원 + /analysis 1지망 설정용)
+    const qualPayload = { ...tutorialData.qual, mbti: tutorialData.mbti, tutorialUniv: { univ: data.school, major: data.major } };
+    apiCall('update_qual', qualPayload).catch(() => {});
+
     document.getElementById('tutNextBtn').style.display = 'block';
 }
 
@@ -966,24 +1019,28 @@ function _setUpsellBtnsDisabled(disabled) {
     document.querySelectorAll('.tut-upsell-btn').forEach(b => { b.disabled = disabled; });
 }
 
+async function _completeTutorial(redirectUrl) {
+    // 1. Trial 지급 (tier 상승 후 quota 부여)
+    const trialResult = await apiCall('grant_tutorial_trial', {});
+    if (!trialResult.success && !trialResult.message) {
+        throw new Error(trialResult.error || '완료 처리 중 문제가 발생했습니다.');
+    }
+    // 2. Trial 지급 후 목표 대학 저장 (quota가 생긴 뒤에 호출)
+    if (tutorialData.selectedUniv) {
+        const payload = [{ univ: tutorialData.selectedUniv.school, major: tutorialData.selectedUniv.major }];
+        await apiCall('update_target_univs', payload);
+    }
+    localStorage.removeItem('tutorialStatus');
+    localStorage.setItem('tutorial_completed', 'true');
+    window.location.href = redirectUrl;
+}
+
 async function upsellPayment() {
     _setUpsellBtnsDisabled(true);
     try {
-        if (tutorialData.selectedUniv) {
-            const payload = [{ univ: tutorialData.selectedUniv.school, major: tutorialData.selectedUniv.major }];
-            await apiCall('update_target_univs', payload);
-        }
-        const trialResult = await apiCall('grant_tutorial_trial', {});
-        if (trialResult.success || trialResult.message) {
-            localStorage.removeItem('tutorialStatus');
-            localStorage.setItem('tutorial_completed', 'true');
-            window.location.href = '/payment';
-        } else {
-            alert(trialResult.error || '완료 처리 중 문제가 발생했습니다.');
-            _setUpsellBtnsDisabled(false);
-        }
+        await _completeTutorial('/payment');
     } catch (e) {
-        alert('통신 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        alert(e.message || '통신 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
         _setUpsellBtnsDisabled(false);
     }
 }
@@ -991,21 +1048,9 @@ async function upsellPayment() {
 async function endTutorial() {
     _setUpsellBtnsDisabled(true);
     try {
-        if (tutorialData.selectedUniv) {
-            const payload = [{ univ: tutorialData.selectedUniv.school, major: tutorialData.selectedUniv.major }];
-            await apiCall('update_target_univs', payload);
-        }
-        const trialResult = await apiCall('grant_tutorial_trial', {});
-        if (trialResult.success || trialResult.message) {
-            localStorage.removeItem('tutorialStatus');
-            localStorage.setItem('tutorial_completed', 'true');
-            window.location.href = '/';
-        } else {
-            alert(trialResult.error || '완료 처리 중 문제가 발생했습니다.');
-            _setUpsellBtnsDisabled(false);
-        }
+        await _completeTutorial('/');
     } catch (e) {
-        alert('통신 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        alert(e.message || '통신 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
         _setUpsellBtnsDisabled(false);
     }
 }

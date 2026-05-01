@@ -2,8 +2,9 @@
 const FILE_API_URL = CONFIG.api.file;
 
 let currentUserTier = 'free';
-let cognitoUser = null; 
+let cognitoUser = null;
 let currentTutorData = null;
+let currentUserAuthProvider = 'local';
 
 let mypagePhoneTimerInterval = null;
 
@@ -276,6 +277,7 @@ function renderSocialLinks(data) {
     if (!section) return;
 
     const primaryProvider = data.authProvider || 'local';
+    currentUserAuthProvider = primaryProvider;
     const linked = data.linkedProviders || [];
     const linkedSet = new Set(linked.map(lp => lp.provider));
     if (primaryProvider !== 'local') linkedSet.add(primaryProvider);
@@ -821,13 +823,26 @@ function checkDeleteButtonVisibility(url) {
 // [기능 4] 회원 탈퇴
 // ==========================================
 function handleDeleteAccount() {
-    document.getElementById('deleteAccountPassword').value = ''; 
+    document.getElementById('deleteAccountPassword').value = '';
+    const isSocialOnly = currentUserAuthProvider !== 'local';
+    const pwGroup = document.querySelector('#deleteAccountModal .form-group');
+    if (pwGroup) pwGroup.style.display = isSocialOnly ? 'none' : '';
     document.getElementById('deleteAccountModal').classList.remove('hidden');
 }
 
 function executeDeleteAccount() {
+    const isSocialOnly = currentUserAuthProvider !== 'local';
+
+    // 소셜 전용 계정: 비밀번호 없이 바로 삭제
+    if (isSocialOnly) {
+        const btn = document.querySelector('#deleteAccountModal .danger-btn');
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 데이터 삭제 중...`;
+        btn.disabled = true;
+        processBackendDeletion();
+        return;
+    }
+
     const password = document.getElementById('deleteAccountPassword').value;
-    
     if (!password) {
         alert("비밀번호를 입력해주세요.");
         return;
@@ -854,7 +869,6 @@ function executeDeleteAccount() {
             await processBackendDeletion();
         },
         onFailure: function (err) {
-            // 💡 AWS 원시 에러 대신 친절한 경고창으로 안내
             alert("비밀번호가 일치하지 않습니다. 다시 확인해주세요.");
             btn.innerText = "네, 모든 데이터를 삭제하고 탈퇴합니다";
             btn.disabled = false;
