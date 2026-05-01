@@ -7,13 +7,13 @@
   --muted: #6b7280;
   --line: #e5ecf7;
   --danger-bg: #fee2e2;
-  --bottom-nav-height: 72px;
+  --bottom-nav-height: 96px;
   --safe-bottom: env(safe-area-inset-bottom);
   --fixed-top-height: 0px;
   --fixed-bottom-height: 80px;
   --safe-top: env(safe-area-inset-top);
   }
-* { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: border-box; }
 html, body, #root {
   width: 100%;
   min-height: 100%;
@@ -86,7 +86,7 @@ body {
   overflow: visible;
   padding: 20px 16px;
   padding-top: calc(var(--header-height) + var(--safe-top) + 16px) !important;
-  padding-bottom: calc(72px + var(--safe-bottom) + 24px) !important;
+  padding-bottom: calc(96px + var(--safe-bottom) + 86px) !important;
   box-sizing: border-box;
   z-index: 1;
   background: #f5f7fb;
@@ -223,7 +223,7 @@ body {
   will-change: transform;
   box-sizing: border-box;
 }
-.bottom-nav { position: fixed; left:20px; right:20px; bottom: calc(var(--safe-bottom) + 8px); height:72px; min-height:72px; max-height:72px; z-index: 9999; background:#fff; border-radius:24px; display:flex; align-items:center; justify-content:space-around; box-sizing:border-box; transform: translateZ(0); }
+.bottom-nav { position: fixed; left:14px; right:14px; bottom: calc(var(--safe-bottom) + 58px); height:96px; z-index:9999; background:#fff; border-radius:22px; display:grid; grid-template-columns:repeat(5,1fr); align-items:center; box-shadow:0 -8px 32px rgba(15,23,42,0.08); box-sizing:border-box; overflow:hidden; transform:translateZ(0); }
 .bottom-nav-inner { height:72px; min-height:72px; max-height:72px; display:grid; grid-template-columns:repeat(5,1fr); align-items:center; }
 .bottom-nav * { box-sizing:border-box; }
 @supports (-webkit-touch-callout: none) {
@@ -231,7 +231,7 @@ body {
   .app-frame,
   .app-content {
     min-height: 100%;
-    padding-bottom: calc(72px + var(--safe-bottom) + 24px) !important;
+    padding-bottom: calc(96px + var(--safe-bottom) + 86px) !important;
   }
   .tabbar { padding-bottom: 6px; height: 72px; }
 }
@@ -385,7 +385,7 @@ body {
 
 @media (max-width: 430px) {
   .app-frame { width: 100vw; min-height: 100%; height: auto; border-radius: 0; }
-  .app-content { padding: 16px; padding-bottom: calc(72px + var(--safe-bottom) + 24px) !important; }
+  .app-content { padding: 16px; padding-bottom: calc(96px + var(--safe-bottom) + 86px) !important; }
   .admission-card { padding: 16px; }
   .admission-card .percent { font-size: 44px; }
   .study-summary-card .timer { font-size: 34px; }
@@ -1489,3 +1489,6 @@ button:disabled, .disabled, [disabled] { opacity:.5; pointer-events:none; }
 .app-loading-bar i{display:block;height:100%;width:38%;background:linear-gradient(90deg,#60a5fa,#93c5fd,#dbeafe);border-radius:999px;animation:loadingBarSlide .9s ease-in-out infinite;}
 .app-loading-label{margin:0;font-size:12px;font-weight:700;letter-spacing:.2em;color:#bfdbfe;}
 @keyframes loadingBarSlide{0%{transform:translateX(-120%)}50%{transform:translateX(90%)}100%{transform:translateX(260%)}}
+
+.page { padding-top: 16px; }
+.header { margin-bottom: 16px; }
