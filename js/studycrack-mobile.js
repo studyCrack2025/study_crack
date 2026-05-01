@@ -285,20 +285,11 @@ function App() {
 
 
   useEffect(() => {
-    const updateFixedAreaVars = () => {
-      const top = document.querySelector('[data-fixed-header]');
-      const topHeight = top ? top.getBoundingClientRect().height : 0;
-      const bottomHeight = 88;
-      document.documentElement.style.setProperty('--header-height', `${topHeight}px`);
-      document.documentElement.style.setProperty('--bottom-nav-height', `${bottomHeight}px`);
-      document.documentElement.style.setProperty('--fixed-top-height', `${topHeight}px`);
-      document.documentElement.style.setProperty('--fixed-bottom-height', `${bottomHeight}px`);
-    };
-    updateFixedAreaVars();
-    window.addEventListener('resize', updateFixedAreaVars);
-    return () => {
-      window.removeEventListener('resize', updateFixedAreaVars);
-    };
+    document.documentElement.style.setProperty('--bottom-nav-height', '88px');
+    document.documentElement.style.setProperty('--fixed-bottom-height', '88px');
+    document.documentElement.style.setProperty('--header-height', '0px');
+    document.documentElement.style.setProperty('--fixed-top-height', '0px');
+    return undefined;
   }, [screen, tabbarDimmed]);
 
   useEffect(() => {
