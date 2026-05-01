@@ -36,6 +36,9 @@
     transition: all 0.3s ease;
 }
 
+#userNameDisplay { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+#userEmailDisplay { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; font-size: 0.85rem; color: #64748b; }
+
 .profile-pic-area {
     position: relative;
     width: 120px; height: 120px;

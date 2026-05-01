@@ -318,7 +318,12 @@ function renderUserInfo(data) {
     const emailEl = document.getElementById('userEmailDisplay');
 
     if (nameEl) nameEl.innerText = data.name ? data.name : '이름 없음';
-    if (emailEl) emailEl.innerText = data.email ? data.email : '';
+
+    // 소셜 로그인 가상 이메일(xxx@social.studycrack.co.kr) 필터링
+    // socialEmail(카카오/구글/네이버 실제 이메일) 우선 표시
+    const rawEmail = data.socialEmail || data.email || '';
+    const displayEmail = rawEmail.includes('@social.studycrack.co.kr') ? '' : rawEmail;
+    if (emailEl) emailEl.innerText = displayEmail;
 
     const nameInput = document.getElementById('profileName');
     if (nameInput) {
@@ -329,7 +334,7 @@ function renderUserInfo(data) {
     if (phoneDisplay) phoneDisplay.innerText = data.phone || '등록된 번호 없음';
 
     const currentEmailDisplay = document.getElementById('currentEmailDisplay');
-    if (currentEmailDisplay) currentEmailDisplay.innerText = data.email || '';
+    if (currentEmailDisplay) currentEmailDisplay.innerText = displayEmail;
 
     const mbtiDisplay = document.getElementById('profileMbtiDisplay');
     if (mbtiDisplay) mbtiDisplay.textContent = data.mbti || '-';
