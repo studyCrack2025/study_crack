@@ -80,11 +80,18 @@ body {
   overflow: visible;
   padding: 20px 16px;
   padding-top: calc(var(--fixed-top-height) + var(--safe-top) + 24px) !important;
-  padding-bottom: calc(var(--fixed-bottom-height) + var(--safe-bottom) + 80px) !important;
+  padding-bottom: calc(var(--fixed-bottom-height) + var(--safe-bottom) + 120px) !important;
   box-sizing: border-box;
   z-index: 1;
 }
-.app-content > :last-child { margin-bottom: calc(var(--fixed-bottom-height) + var(--safe-bottom) + 80px) !important; }
+.app-content > :last-child { margin-bottom: calc(var(--fixed-bottom-height) + var(--safe-bottom) + 120px) !important; }
+.app-content::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: calc(var(--fixed-bottom-height) + var(--safe-bottom) + 48px);
+  pointer-events: none;
+}
 .app-content.modal-lock { overflow: visible; }
 .app-shell,
 .screen,
@@ -215,7 +222,7 @@ body {
   .app-frame,
   .app-content {
     min-height: -webkit-fill-available;
-    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 32px);
+    padding-bottom: calc(var(--fixed-bottom-height) + env(safe-area-inset-bottom) + 120px) !important;
   }
   .tabbar { padding-bottom: env(safe-area-inset-bottom); }
 }
@@ -369,7 +376,7 @@ body {
 
 @media (max-width: 430px) {
   .app-frame { width: 100vw; height: 100dvh; border-radius: 0; }
-  .app-content { padding: 16px; padding-bottom: 90px; }
+  .app-content { padding: 16px; padding-bottom: calc(var(--fixed-bottom-height) + var(--safe-bottom) + 120px) !important; }
   .admission-card { padding: 16px; }
   .admission-card .percent { font-size: 44px; }
   .study-summary-card .timer { font-size: 34px; }
