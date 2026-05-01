@@ -43,8 +43,9 @@ body {
   min-height: -webkit-fill-available;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   background: #F5F7FB;
+  padding-top: env(safe-area-inset-top);
 }
 .app-frame {
   width: 100%;
@@ -56,7 +57,7 @@ body {
   flex-direction: column;
   position: relative;
   overflow: visible;
-  border-radius: 28px;
+  border-radius: 0;
 }
 .screen,
 .app-screen,
@@ -357,7 +358,7 @@ body {
 }
 
 @media (min-width: 431px) {
-  .app-frame { max-width: 430px; }
+  .app-frame { max-width: 430px; border-radius: 28px; }
 }
 .side-drawer h3 { margin: 0 0 12px; }
 @keyframes drawerIn {

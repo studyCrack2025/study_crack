@@ -206,6 +206,9 @@ function App() {
   const touchStartXRef = useRef(null);
   const touchLastXRef = useRef(null);
   const touchTargetRef = useRef('');
+  const dragFrameRef = useRef(null);
+  const pendingHomeDragRef = useRef(0);
+  const pendingScoreDragRef = useRef(0);
   const suppressClickUntilRef = useRef(0);
   const lastStableScrollYRef = useRef(0);
   const scrollGuardRef = useRef({ until: 0, y: 0 });
@@ -999,7 +1002,7 @@ function App() {
     </div>
     <div class="section home-section">
       <div class="home-kpi-slider">
-        <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-card-width:100%;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .72s cubic-bezier(.22,1,.36,1)'};">
+        <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-card-width:100%;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .34s cubic-bezier(.22,.61,.36,1)'};">
         ${homeTargets.map((item) => `<button class="university-card-slide card home-kpi-card admission-card slider-card home-result-card-v3" data-action="selectUniversity" data-target-major="${item.major}">
           <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score"><strong>${item.score}점</strong><small>AI 점수</small></div></div>
           <div class="home-result-gauge"><i style="width:${Math.min((item.score / 250) * 100, 100)}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
@@ -2561,10 +2564,22 @@ function App() {
         const overscrolling = (atFirst && delta > 0) || (atLast && delta < 0);
         const resistance = overscrolling ? 0.35 : 0.92;
         const clamped = Math.max(-118, Math.min(118, delta * resistance));
-        setHomeDragOffset(clamped);
+        pendingHomeDragRef.current = clamped;
+        if (!dragFrameRef.current) {
+          dragFrameRef.current = requestAnimationFrame(() => {
+            dragFrameRef.current = null;
+            setHomeDragOffset(pendingHomeDragRef.current);
+          });
+        }
       } else if (touchTargetRef.current === 'score') {
         const clamped = Math.max(-96, Math.min(96, delta));
-        setScoreDragOffset(clamped);
+        pendingScoreDragRef.current = clamped;
+        if (!dragFrameRef.current) {
+          dragFrameRef.current = requestAnimationFrame(() => {
+            dragFrameRef.current = null;
+            setScoreDragOffset(pendingScoreDragRef.current);
+          });
+        }
       }
     };
 
@@ -2574,6 +2589,10 @@ function App() {
       const delta = clientX - startX;
       touchStartXRef.current = null;
       touchLastXRef.current = null;
+      if (dragFrameRef.current) {
+        cancelAnimationFrame(dragFrameRef.current);
+        dragFrameRef.current = null;
+      }
       setHomeDragOffset(0);
       setScoreDragOffset(0);
       const absDelta = Math.abs(delta);
