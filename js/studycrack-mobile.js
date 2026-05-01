@@ -282,29 +282,13 @@ function App() {
     });
   };
 
-  useEffect(() => {
-    if (!isIOSSafari || !window.visualViewport) return undefined;
-    const recoverIfJumped = () => {
-      measureSlideStep('home');
-      measureSlideStep('score');
-      const savedY = lastStableScrollYRef.current || 0;
-      const nowY = window.scrollY || window.pageYOffset || 0;
-      if (Math.abs(nowY - savedY) > 80) {
-        afterSafariViewportStable(() => window.scrollTo({ top: savedY, left: 0, behavior: 'auto' }));
-      }
-    };
-    window.visualViewport.addEventListener('resize', recoverIfJumped);
-    return () => {
-      window.visualViewport.removeEventListener('resize', recoverIfJumped);
-    };
-  }, [isIOSSafari]);
+
 
   useEffect(() => {
     const updateFixedAreaVars = () => {
       const top = document.querySelector('[data-fixed-header]');
-      const bottom = document.querySelector('[data-bottom-nav]');
       const topHeight = top ? top.getBoundingClientRect().height : 0;
-      const bottomHeight = bottom ? bottom.getBoundingClientRect().height : 0;
+      const bottomHeight = 72;
       document.documentElement.style.setProperty('--header-height', `${topHeight}px`);
       document.documentElement.style.setProperty('--bottom-nav-height', `${bottomHeight}px`);
       document.documentElement.style.setProperty('--fixed-top-height', `${topHeight}px`);
@@ -1199,24 +1183,24 @@ function App() {
 
   const designV2StyleTag = `<style>
     html,body{touch-action:manipulation;overscroll-behavior:none;}
-    .app-shell,.app-frame,.app-screen{min-height:var(--app-vh);height:auto;}
+    .app-shell,.app-frame,.app-screen{min-height:100%;height:auto;}
     .onboarding-container .content{padding:0 16px 150px;box-sizing:border-box;}
-    .onboarding-shot{min-height:var(--app-vh);max-width:390px;margin:0 auto;padding:24px;display:flex;flex-direction:column;background:#fff;}
-    .prelogin-onboarding{min-height:100dvh;width:100%;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 20px) 24px calc(env(safe-area-inset-bottom) + 20px);background:#f5f7fb;overflow-x:hidden;overflow-y:auto;}
+    .onboarding-shot{min-height:100%;max-width:390px;margin:0 auto;padding:24px;display:flex;flex-direction:column;background:#fff;}
+    .prelogin-onboarding{min-height:100%;width:100%;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 20px) 24px calc(env(safe-area-inset-bottom) + 20px);background:#f5f7fb;overflow-x:hidden;overflow-y:auto;}
     .prelogin-onboarding-main{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:clamp(20px,4vh,36px);}
     .prelogin-onboarding-footer{flex-shrink:0;display:flex;flex-direction:column;gap:12px;}
     .onboarding-card-area{position:relative;width:100%;max-width:340px;margin:0 auto;}
-    .onboarding-shell{min-height:100dvh;display:flex;flex-direction:column;}
+    .onboarding-shell{min-height:100%;display:flex;flex-direction:column;}
     .onboarding-main{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:clamp(18px,4vh,36px);}
     .onboarding-copy{text-align:center;}
     .onboarding-visual{position:relative;width:100%;max-width:340px;margin:0 auto;}
     .onboarding-footer,.prelogin-onboarding-footer{flex-shrink:0;display:flex;flex-direction:column;gap:12px;padding-top:12px;z-index:10;}
     .onboarding-dots{display:flex;justify-content:center;align-items:center;height:16px;gap:8px;}
-    .onboarding-cta{width:100%;height:60px;border-radius:18px;position:relative;z-index:20;}
+    .onboarding-cta{width:100%;height:56px;border-radius:16px;position:relative;z-index:3;}
     .crack-character{position:absolute;right:12px;bottom:12px;width:clamp(54px,14vw,84px);height:auto;z-index:2;pointer-events:none;}
     .onboarding-step-3 .onboarding-visual{display:flex;flex-direction:column;gap:14px;}
     .onboarding-step-3 .feature-card{position:relative;z-index:1;}
-    .onboarding-step-3 .crack-character{width:clamp(180px,42vw,260px);height:auto;right:-8px;bottom:8px;z-index:3;pointer-events:none;}
+    .onboarding-step-3 .crack-character{position:absolute;width:clamp(120px,28vw,180px);height:auto;right:16px;bottom:110px;z-index:2;pointer-events:none;}
     .onboarding-shot-head{margin-top:24px;text-align:center;}
     .onboarding-shot-head h2{margin:0;font-size:24px;font-weight:800;line-height:1.45;letter-spacing:-0.04em;color:#111827;white-space:pre-line;}
     .onboarding-shot-head h2 .accent{color:#0B4EDB;}

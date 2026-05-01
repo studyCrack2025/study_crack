@@ -12,8 +12,7 @@
   --fixed-top-height: 0px;
   --fixed-bottom-height: 80px;
   --safe-top: env(safe-area-inset-top);
-  --app-vh: 100dvh;
-}
+  }
 * { box-sizing: border-box; }
 html, body, #root {
   width: 100%;
@@ -30,8 +29,8 @@ body {
   overscroll-behavior-y: none;
 }
 #root { width: 100%; }
-.app-root { min-height: var(--app-vh); height: auto; overflow-x:hidden; overflow-y: visible; }
-.app-scroll-container { overflow-anchor: none; min-height: var(--app-vh); }
+.app-root { min-height: 100%; height: auto; overflow-x:hidden; overflow-y: visible; }
+.app-scroll-container { overflow-anchor: none; min-height: 100%; }
 .phone {
   width: 390px;
   max-width: 390px;
@@ -49,7 +48,7 @@ body {
 }
 .app-shell {
   width: 100%;
-  min-height: var(--app-vh);
+  min-height: 100%;
   height: auto;
   display: flex;
   justify-content: center;
@@ -61,7 +60,7 @@ body {
 .app-frame {
   width: 100%;
   max-width: 430px;
-  min-height: var(--app-vh);
+  min-height: 100%;
   height: auto;
   background: #F5F7FB;
   display: flex;
@@ -87,7 +86,7 @@ body {
   overflow: visible;
   padding: 20px 16px;
   padding-top: calc(var(--header-height) + var(--safe-top) + 16px) !important;
-  padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + 24px) !important;
+  padding-bottom: calc(72px + var(--safe-bottom) + 24px) !important;
   box-sizing: border-box;
   z-index: 1;
   background: #f5f7fb;
@@ -224,17 +223,17 @@ body {
   will-change: transform;
   box-sizing: border-box;
 }
-.bottom-nav { position: fixed; left:24px; right:24px; bottom: calc(var(--safe-bottom) + 8px); height:72px; z-index: 9999; background:#fff; padding-bottom: 0; border-radius:24px; box-sizing:border-box; overflow:hidden; -webkit-transform: translateZ(0); transform: translateZ(0); }
+.bottom-nav { position: fixed; left:20px; right:20px; bottom: calc(var(--safe-bottom) + 8px); height:72px; min-height:72px; max-height:72px; z-index: 9999; background:#fff; border-radius:24px; display:flex; align-items:center; justify-content:space-around; box-sizing:border-box; transform: translateZ(0); }
 .bottom-nav-inner { height:72px; min-height:72px; max-height:72px; display:grid; grid-template-columns:repeat(5,1fr); align-items:center; }
 .bottom-nav * { box-sizing:border-box; }
 @supports (-webkit-touch-callout: none) {
   .app-root,
   .app-frame,
   .app-content {
-    min-height: var(--app-vh);
-    padding-bottom: calc(var(--bottom-nav-height) + 16px) !important;
+    min-height: 100%;
+    padding-bottom: calc(72px + var(--safe-bottom) + 24px) !important;
   }
-  .tabbar { padding-bottom: calc(10px + env(safe-area-inset-bottom)); height: calc(var(--bottom-nav-height)); }
+  .tabbar { padding-bottom: 6px; height: 72px; }
 }
 .tabbar.is-muted { opacity: 0; pointer-events: none; }
 .tabbar button { border:none; background:transparent; color:#94a3b8; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:10px; border-radius:10px; }
@@ -385,8 +384,8 @@ body {
 .side-drawer .my-row span { flex-shrink:0; }
 
 @media (max-width: 430px) {
-  .app-frame { width: 100vw; min-height: var(--app-vh); height: auto; border-radius: 0; }
-  .app-content { padding: 16px; padding-bottom: calc(var(--bottom-nav-height) + 16px) !important; }
+  .app-frame { width: 100vw; min-height: 100%; height: auto; border-radius: 0; }
+  .app-content { padding: 16px; padding-bottom: calc(72px + var(--safe-bottom) + 24px) !important; }
   .admission-card { padding: 16px; }
   .admission-card .percent { font-size: 44px; }
   .study-summary-card .timer { font-size: 34px; }
@@ -1097,7 +1096,7 @@ body {
 .onboarding-container {
   display: flex;
   flex-direction: column;
-  min-height: var(--app-vh);
+  min-height: 100%;
   height: auto;
 }
 .onboarding-container > .content {
