@@ -60,6 +60,27 @@ const preserveScrollOnIOSSafari = (callback) => {
   });
 };
 
+let lastStableScrollY = 0;
+let restoringUnexpectedTopJump = false;
+const markStableScrollPosition = () => {
+  if (typeof window === 'undefined' || !isIOSSafari()) return;
+  if (window.scrollY > 0) lastStableScrollY = window.scrollY;
+};
+const restoreIfUnexpectedTopJump = () => {
+  if (typeof window === 'undefined' || !isIOSSafari() || restoringUnexpectedTopJump) return;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (window.scrollY === 0 && lastStableScrollY > 80) {
+        restoringUnexpectedTopJump = true;
+        window.scrollTo({ top: lastStableScrollY, left: 0, behavior: 'auto' });
+        requestAnimationFrame(() => {
+          restoringUnexpectedTopJump = false;
+        });
+      }
+    });
+  });
+};
+
 const safeParse = (key, fallback) => {
   try {
     const value = localStorage.getItem(key);
@@ -285,6 +306,30 @@ function App() {
   };
 
   useEffect(() => {
+    if (typeof process === 'undefined' || process.env?.NODE_ENV !== 'development') return;
+    const originalScrollTo = window.scrollTo.bind(window);
+    const originalScroll = window.scroll.bind(window);
+    window.scrollTo = (...args) => {
+      console.trace('[DEBUG scrollTo called]', args);
+      return originalScrollTo(...args);
+    };
+    window.scroll = (...args) => {
+      console.trace('[DEBUG scroll called]', args);
+      return originalScroll(...args);
+    };
+    const onScrollDebug = () => console.log('[DEBUG scrollY]', window.scrollY);
+    const onVvResize = () => console.log('[DEBUG visualViewport resize]', window.visualViewport?.height, window.visualViewport?.offsetTop, window.scrollY);
+    window.addEventListener('scroll', onScrollDebug, { passive: true });
+    window.visualViewport?.addEventListener('resize', onVvResize);
+    return () => {
+      window.scrollTo = originalScrollTo;
+      window.scroll = originalScroll;
+      window.removeEventListener('scroll', onScrollDebug);
+      window.visualViewport?.removeEventListener('resize', onVvResize);
+    };
+  }, []);
+
+  useEffect(() => {
     lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
     renderStableScrollYRef.current = lastStableScrollYRef.current;
     renderStableScreenRef.current = screen;
@@ -444,8 +489,12 @@ function App() {
     const elapsed = Date.now() - loadingStartedAtRef.current;
     const waitMs = Math.max(0, 1300 - elapsed);
     loadingExitTimerRef.current = setTimeout(() => {
+      markStableScrollPosition();
       setLoadingFadeOut(true);
-      setTimeout(() => preserveScrollOnIOSSafari(() => setLoading(false)), 320);
+      setTimeout(() => {
+        preserveScrollOnIOSSafari(() => setLoading(false));
+        restoreIfUnexpectedTopJump();
+      }, 320);
     }, waitMs);
   };
 
@@ -2020,8 +2069,10 @@ function App() {
     if (action === 'selectDuration') setDuration(actionEl.getAttribute('data-duration'));
     if (action === 'toggleTarget') setTargetOpen((v) => !v);
     if (action === 'selectTarget') {
+      markStableScrollPosition();
       setTargetMajor(actionEl.getAttribute('data-target-major'));
       afterViewportStable(() => setTargetOpen(false));
+      restoreIfUnexpectedTopJump();
     }
     if (action === 'setAnalysisMode') setAnalysisMode(actionEl.getAttribute('data-analysis-mode') || 'summary');
     if (action === 'setScoreView') {
@@ -2029,27 +2080,33 @@ function App() {
       e.stopPropagation();
       const nextView = actionEl.getAttribute('data-score-view') || 'current';
       setScoreDragOffset(0);
+      markStableScrollPosition();
       preserveScrollOnIOSSafari(() => setActiveScoreView((prev) => {
         if (prev === nextView) return prev;
         setScoreSlideMotion(nextView === 'target' ? 'motion-next' : 'motion-prev');
         return nextView;
       }));
+      restoreIfUnexpectedTopJump();
     }
     if (action === 'setHomeSlide') {
       const idx = Number(actionEl.getAttribute('data-slide-index'));
       if (Number.isNaN(idx)) return;
       setHomeDragOffset(0);
+      markStableScrollPosition();
       preserveScrollOnIOSSafari(() => setHomeSlideIndex((prev) => {
         const next = Math.max(0, Math.min(idx, homeTargets.length));
         if (next === prev) return prev;
         setHomeSlideMotion(next > prev ? 'motion-next' : 'motion-prev');
         return next;
       }));
+      restoreIfUnexpectedTopJump();
     }
     if (action === 'openAnalysisSearch') setAnalysisSearchOpen(true);
     if (action === 'closeAnalysisSearch') {
+      markStableScrollPosition();
       afterViewportStable(() => setAnalysisSearchOpen(false));
       setAnalysisSearchTerm('');
+      restoreIfUnexpectedTopJump();
     }
     if (action === 'highlightSimSubject') {
       const subject = actionEl.getAttribute('data-sim-subject');
@@ -2582,19 +2639,23 @@ function App() {
       armScrollGuard(1000);
       suppressClickUntilRef.current = Date.now() + 260;
       if (touchTargetRef.current === 'home') {
+        markStableScrollPosition();
         preserveScrollOnIOSSafari(() => setHomeSlideIndex((prev) => {
           const next = delta < 0 ? Math.min(prev + 1, homeTargets.length) : Math.max(prev - 1, 0);
           if (next === prev) return prev;
           setHomeSlideMotion(next > prev ? 'motion-next' : 'motion-prev');
           return next;
         }));
+        restoreIfUnexpectedTopJump();
       } else if (touchTargetRef.current === 'score') {
+        markStableScrollPosition();
         preserveScrollOnIOSSafari(() => setActiveScoreView((prev) => {
           const next = delta < 0 ? 'target' : 'current';
           if (next === prev) return prev;
           setScoreSlideMotion(next === 'target' ? 'motion-next' : 'motion-prev');
           return next;
         }));
+        restoreIfUnexpectedTopJump();
       }
       touchTargetRef.current = '';
     };
@@ -2662,6 +2723,7 @@ function App() {
     if (field === 'obExamType') applyObExamSelection(e.target.value);
   };
   const onBlur = (e) => {
+    markStableScrollPosition();
     preserveScrollOnIOSSafari(() => {
     const field = e.target.getAttribute('data-field');
     const coachAnswer = e.target.getAttribute('data-coach-answer');
@@ -2728,6 +2790,7 @@ function App() {
       if (subject === 'inq1' || subject === 'inq2') setScoreEditState((prev) => ({ ...prev, [subject === 'inq1' ? 'inquiry1' : 'inquiry2']: { ...prev[subject === 'inq1' ? 'inquiry1' : 'inquiry2'], [key === 'subject' ? 'subject' : 'score']: normalizedValue } }));
     }
     });
+    restoreIfUnexpectedTopJump();
   };
 
   const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><section class="app-loading-hero app-loading-poster ${loadingFadeOut ? 'is-fade-out' : ''}"><img class="app-loading-poster-img" src="./assets/images/IMG_3020.png" alt="스터디크랙 로딩 이미지"/><div class="app-loading-progress"><div class="app-loading-bar"><i></i></div><p class="app-loading-label">LOADING...</p></div></section></div></div></div>`;
@@ -2744,21 +2807,6 @@ function App() {
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>추가중입니다.</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
   const rendered = `${designV2StyleTag}${renderedBase}${analysisOverlay}${onboardingOverlay}${addingUniversityOverlay}`;
-
-  useEffect(() => {
-    if (typeof process === 'undefined' || process.env?.NODE_ENV !== 'development') return;
-    const onScrollDebug = () => console.log('[scroll]', window.scrollY);
-    const onVvResize = () => console.log('[vv resize]', window.visualViewport?.height, window.scrollY);
-    const onVvScroll = () => console.log('[vv scroll]', window.visualViewport?.offsetTop, window.scrollY);
-    window.addEventListener('scroll', onScrollDebug, { passive: true });
-    window.visualViewport?.addEventListener('resize', onVvResize);
-    window.visualViewport?.addEventListener('scroll', onVvScroll);
-    return () => {
-      window.removeEventListener('scroll', onScrollDebug);
-      window.visualViewport?.removeEventListener('resize', onVvResize);
-      window.visualViewport?.removeEventListener('scroll', onVvScroll);
-    };
-  }, []);
 
   return <div onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: rendered }} />;
 }
