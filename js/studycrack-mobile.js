@@ -455,7 +455,10 @@ function App() {
       setOb3IsAnalyzing(false);
       requestAnimationFrame(() => window.scrollTo({ top: yBefore, left: 0, behavior: 'auto' }));
     }, 1500);
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(t);
+      setOb3IsAnalyzing(false);
+    };
   }, [screen]);
 
   useEffect(() => {
@@ -2639,6 +2642,7 @@ function App() {
   }, [homeTargets.length, homeSlideIndex, activeScoreView]);
 
   const onChange = (e) => {
+    onInput(e);
     const field = e.target.getAttribute('data-field');
     if (field === 'coachPlannerFiles') {
       const files = Array.from(e.target.files || []);
@@ -2663,6 +2667,7 @@ function App() {
       setScores((prev) => ({ ...prev, korean: Number(picked.korean || 0), math: Number(picked.math || 0), english: Number(picked.english || 0), inquiry1: Number(picked.inquiry1 || 0), inquiry2: Number(picked.inquiry2 || 0) }));
       setScoreEditState((prev) => ({ ...prev, korean: { ...prev.korean, common: Math.floor(Number(picked.korean || 0) * 0.75), elective: Math.round(Number(picked.korean || 0) * 0.25) }, math: { ...prev.math, common: Math.floor(Number(picked.math || 0) * 0.74), elective: Math.round(Number(picked.math || 0) * 0.26) }, english: picked.englishGrade ? String(picked.englishGrade) : '', inquiry1: { ...prev.inquiry1, score: picked.inquiry1 ? String(picked.inquiry1) : '' }, inquiry2: { ...prev.inquiry2, score: picked.inquiry2 ? String(picked.inquiry2) : '' } }));
     }
+    if (e.target.tagName === 'SELECT' && field) onBlur(e);
   };
   const onBlur = (e) => {
     const field = e.target.getAttribute('data-field');
