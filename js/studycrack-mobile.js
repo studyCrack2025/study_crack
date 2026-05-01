@@ -2417,6 +2417,9 @@ function App() {
     }
     if (field === 'coachingMonth') setCoachingMonth(e.target.value);
     if (field === 'proEliteMonth') setProEliteMonth(e.target.value);
+    if (field === 'obTrack') setObTrack(e.target.value);
+    if (field === 'scoreExamType') setScoreExamType(e.target.value);
+    if (field === 'obExamType') setObExamType(e.target.value);
     const coachAnswer = e.target.getAttribute('data-coach-answer');
     const coachPlan = e.target.getAttribute('data-coach-plan');
     const coachActual = e.target.getAttribute('data-coach-actual');
@@ -2563,7 +2566,7 @@ function App() {
 
   const onChange = (e) => {
     if (e.target && e.target.tagName === 'SELECT') {
-      requestAnimationFrame(() => e.target.blur());
+      e.target.blur();
     }
     const field = e.target.getAttribute('data-field');
     if (field === 'coachPlannerFiles') {
