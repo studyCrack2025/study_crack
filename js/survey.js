@@ -495,7 +495,6 @@ async function saveQualitative() {
         
         alert("저장되었습니다! 다음으로 '성적 입력' 탭을 작성해주세요.");
         openTab('quantitative');
-        window.scrollTo(0,0);
         
     } catch (e) { 
         if (e.message !== "Auth expired") alert("저장 중 일시적인 문제가 발생했습니다. 닫고 다시 시도해주세요."); 
@@ -584,7 +583,6 @@ async function saveQuantitative() {
         } else {
             alert("성적 데이터가 저장되었습니다.\n이어서 1-3 학습 MBTI를 진행해주세요.");
             openTab('mbti');
-            window.scrollTo(0,0);
         }
         
     } catch (e) { 

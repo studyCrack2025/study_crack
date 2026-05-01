@@ -46,7 +46,7 @@
             <a href="/analysis" id="navAnalysis" class="active-link">나만의 솔루션</a>
             <a href="/qna" id="navQna">1:1 문의</a>
             <a href="/mypage" class="nav-btn">마이페이지</a>
-            <a href="#" onclick="handleSignOut()" class="nav-btn">로그아웃</a>
+            <button type="button" onclick="handleSignOut()" class="nav-btn">로그아웃</button>
         </nav>
     </header>
 
@@ -109,16 +109,16 @@
         <main class="content-area">
             
             <div class="solution-menu">
-                <button class="sol-btn active" onclick="openSolution('univ')">
+                <button type="button" class="sol-btn active" onclick="openSolution('univ')">
                     <i class="fas fa-university"></i><span>목표대학</span>
                 </button>
-                <button class="sol-btn" onclick="openSolution('sim')">
+                <button type="button" class="sol-btn" onclick="openSolution('sim')">
                     <i class="fas fa-chart-line"></i><span>점수 시뮬레이션</span>
                 </button>
-                <button class="sol-btn" onclick="openSolution('coach')">
+                <button type="button" class="sol-btn" onclick="openSolution('coach')">
                     <i class="fas fa-chalkboard-teacher"></i><span>플래너 코칭</span>
                 </button>
-                <button class="sol-btn pro-btn" onclick="openSolution('pro')">
+                <button type="button" class="sol-btn pro-btn" onclick="openSolution('pro')">
                     <i class="fas fa-crown"></i><span>PRO EXCLUSIVE</span>
                 </button>
             </div>
@@ -143,7 +143,7 @@
                 </div>
 
                 <div class="univ-grid" id="univGrid"></div>
-                <button id="btnSaveTarget" class="save-btn" onclick="saveTargetUnivs()">목표 대학 저장하기</button>
+                <button type="button" id="btnSaveTarget" class="save-btn" onclick="saveTargetUnivs()">목표 대학 저장하기</button>
 
                 <hr class="divider">
 
@@ -276,7 +276,7 @@
                 <div id="stepMajorList" class="selection-grid" style="display:none;"></div>
             </div>
             <div class="modal-footer" id="modalFooter" style="display:none;">
-                <button class="back-step-btn" onclick="showUnivStep()">← 대학 다시 선택</button>
+                <button type="button" class="back-step-btn" onclick="showUnivStep()">← 대학 다시 선택</button>
             </div>
         </div>
     </div>
@@ -296,8 +296,8 @@
             </div>
 
             <div class="tab-menu">
-                <button class="tab-btn active" onclick="switchWeeklyTab('step1')">Step 1. 학습평가</button>
-                <button class="tab-btn" onclick="switchWeeklyTab('step2')">Step 2. 심층코칭</button>
+                <button type="button" class="tab-btn active" onclick="switchWeeklyTab('step1')">Step 1. 학습평가</button>
+                <button type="button" class="tab-btn" onclick="switchWeeklyTab('step2')">Step 2. 심층코칭</button>
             </div>
 
             <div class="modal-body scrollable">
@@ -534,10 +534,10 @@
             </div>
 
             <div class="modal-footer" id="weeklyModalFooter" style="display:flex; gap:10px; justify-content:space-between;">
-                <button class="btn-common btn-cancel" id="wizardPrevBtn" onclick="prevMobileStep()" style="display:none; margin-top:0; width:100%;">이전</button>
-                <button class="save-btn" id="wizardNextBtn" onclick="nextMobileStep()" style="display:none; margin-top:0; width:100%;">다음 단계로</button>
+                <button type="button" class="btn-common btn-cancel" id="wizardPrevBtn" onclick="prevMobileStep()" style="display:none; margin-top:0; width:100%;">이전</button>
+                <button type="button" class="save-btn" id="wizardNextBtn" onclick="nextMobileStep()" style="display:none; margin-top:0; width:100%;">다음 단계로</button>
                 
-                <button class="save-btn" id="wizardSubmitBtn" onclick="submitWeeklyCheck()" style="margin-top:0; width:100%;">작성 완료 및 제출</button>
+                <button type="button" class="save-btn" id="wizardSubmitBtn" onclick="submitWeeklyCheck()" style="margin-top:0; width:100%;">작성 완료 및 제출</button>
             </div>
         </div>
     </div>
@@ -571,8 +571,8 @@
             </div>
 
             <div class="modal-footer">
-                <button class="btn-common btn-cancel" onclick="closeProModal()">취소</button>
-                <button class="btn-common btn-confirm pro-submit-btn" onclick="submitProReport()">요청서 제출하기</button>
+                <button type="button" class="btn-common btn-cancel" onclick="closeProModal()">취소</button>
+                <button type="button" class="btn-common btn-confirm pro-submit-btn" onclick="submitProReport()">요청서 제출하기</button>
             </div>
         </div>
     </div>
@@ -583,8 +583,8 @@
         <div id="tutorialTooltip" class="tutorial-tooltip">
             <p id="tutorialMsg" style="margin-bottom: 15px;">Basic 등급 이상에서 사용 가능합니다. 현재 점수를 통해 각 대학에서 본인의 현재 위치를 알려줍니다.</p>
             <div style="display: flex; justify-content: flex-end; gap: 8px;">
-                <button id="tutPrevBtn" class="tut-nav-btn btn-gray" style="display: none;">이전</button>
-                <button id="tutNextBtn" class="tut-nav-btn btn-blue">다음</button>
+                <button type="button" id="tutPrevBtn" class="tut-nav-btn btn-gray" style="display: none;">이전</button>
+                <button type="button" id="tutNextBtn" class="tut-nav-btn btn-blue">다음</button>
             </div>
         </div>
         
@@ -592,7 +592,7 @@
             <div class="tutorial-progress">
                 <div class="tutorial-progress-bar" style="width: 100%;"></div>
             </div>
-            <button id="skipTutorialBtn" class="tutorial-skip-btn highlight-border">튜토리얼 완료하기</button>
+            <button type="button" id="skipTutorialBtn" class="tutorial-skip-btn highlight-border">튜토리얼 완료하기</button>
         </div>
     </div>
 
