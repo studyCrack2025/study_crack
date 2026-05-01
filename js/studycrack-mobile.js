@@ -207,9 +207,34 @@ function App() {
   const touchTargetRef = useRef('');
   const suppressClickUntilRef = useRef(0);
   const lastStableScrollYRef = useRef(0);
-  const scrollGuardRef = useRef({ until: 0, y: 0 });
+  const scrollGuardRef = useRef({ until: 0, y: 0, restoring: false });
   const renderStableScrollYRef = useRef(0);
   const renderStableScreenRef = useRef('');
+  const isIOSSafari = () => {
+    if (typeof navigator === 'undefined') return false;
+    return /iP(ad|hone|od)/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|OPiOS|EdgiOS/.test(navigator.userAgent);
+  };
+  const markStableScrollPosition = () => {
+    if (!isIOSSafari()) return;
+    const y = window.scrollY || window.pageYOffset || 0;
+    if (y > 0) lastStableScrollYRef.current = y;
+  };
+  const restoreIfUnexpectedTopJump = () => {
+    if (!isIOSSafari()) return;
+    if (scrollGuardRef.current.restoring) return;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const nowY = window.scrollY || window.pageYOffset || 0;
+        if (nowY === 0 && lastStableScrollYRef.current > 80) {
+          scrollGuardRef.current.restoring = true;
+          window.scrollTo({ top: lastStableScrollYRef.current, left: 0, behavior: 'auto' });
+          requestAnimationFrame(() => {
+            scrollGuardRef.current.restoring = false;
+          });
+        }
+      });
+    });
+  };
   const keepScrollPosition = (durationMs = 380) => {
     const y = window.scrollY || window.pageYOffset || 0;
     const started = Date.now();
@@ -226,6 +251,7 @@ function App() {
   };
 
   const goto = (next, addHistory = true) => {
+    if (!next || next === screen) return;
     const currentY = window.scrollY || window.pageYOffset || 0;
     screenScrollRef.current[screen] = currentY;
     if (typeof screenScrollRef.current[next] !== 'number') screenScrollRef.current[next] = currentY;
@@ -269,7 +295,7 @@ function App() {
   useEffect(() => {
     // 스크롤 강제 복원은 iOS/Safari에서 "스크롤 초기화"처럼 보이는 점프를 유발할 수 있어 비활성화합니다.
     // 스크롤 위치는 아래 persist 로직(localStorage 저장)으로만 유지합니다.
-    scrollGuardRef.current = { until: 0, y: 0 };
+    scrollGuardRef.current = { until: 0, y: 0, restoring: false };
   }, []);
 
 
@@ -297,7 +323,11 @@ function App() {
       });
     };
     const onScroll = () => {
-      screenScrollRef.current[screen] = window.scrollY || window.pageYOffset || 0;
+      const y = window.scrollY || window.pageYOffset || 0;
+      if (y === 0 && lastStableScrollYRef.current > 80) {
+        console.trace('[IOS_SCROLL_TOP_JUMP]', { screen, lastStable: lastStableScrollYRef.current });
+      }
+      screenScrollRef.current[screen] = y;
       persist();
     };
     const onBeforeUnload = () => {
@@ -414,7 +444,7 @@ function App() {
     const waitMs = Math.max(0, 1300 - elapsed);
     loadingExitTimerRef.current = setTimeout(() => {
       setLoadingFadeOut(true);
-      setTimeout(() => setLoading(false), 320);
+      setTimeout(() => { markStableScrollPosition(); setLoading(false); restoreIfUnexpectedTopJump(); }, 320);
     }, waitMs);
   };
 
@@ -1947,8 +1977,10 @@ function App() {
         setTimeout(() => setOnboardingLoadingText('유리한 대학 전형 파악중...'), 2000);
         setTimeout(() => {
           armScrollGuard(1400);
+          markStableScrollPosition();
           setOnboardingLoading(false);
           goto('ob1');
+          restoreIfUnexpectedTopJump();
         }, 4000);
         return;
       }
@@ -1976,8 +2008,10 @@ function App() {
         setTimeout(() => setOnboardingLoadingText('효율적인 공부법 찾는중...'), 1500);
         setTimeout(() => {
           armScrollGuard(1400);
+          markStableScrollPosition();
           setOnboardingLoading(false);
           goto('ob5');
+          restoreIfUnexpectedTopJump();
         }, 3000);
         return;
       }
@@ -1998,6 +2032,7 @@ function App() {
       e.stopPropagation();
       const nextView = actionEl.getAttribute('data-score-view') || 'current';
       setScoreDragOffset(0);
+      markStableScrollPosition();
       setActiveScoreView((prev) => {
         if (prev === nextView) return prev;
         setScoreSlideMotion(nextView === 'target' ? 'motion-next' : 'motion-prev');
@@ -2008,12 +2043,14 @@ function App() {
       const idx = Number(actionEl.getAttribute('data-slide-index'));
       if (Number.isNaN(idx)) return;
       setHomeDragOffset(0);
+      markStableScrollPosition();
       setHomeSlideIndex((prev) => {
         const next = Math.max(0, Math.min(idx, homeTargets.length));
         if (next === prev) return prev;
         setHomeSlideMotion(next > prev ? 'motion-next' : 'motion-prev');
         return next;
       });
+      restoreIfUnexpectedTopJump();
     }
     if (action === 'openAnalysisSearch') setAnalysisSearchOpen(true);
     if (action === 'closeAnalysisSearch') {
@@ -2066,6 +2103,7 @@ function App() {
         const selectedBtn = currentStrip?.querySelector(`[data-planner-date="${date}"]`);
         if (selectedBtn && selectedBtn.scrollIntoView) selectedBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
       });
+      restoreIfUnexpectedTopJump();
     }
     if (action === 'openPlannerEdit') setPlannerEditIndex(actionEl.getAttribute('data-planner-id'));
     if (action === 'closePlannerEdit') setPlannerEditIndex(null);
@@ -2468,6 +2506,7 @@ function App() {
     if (field === 'obTrack') setObTrack(e.target.value);
     if (field === 'scoreExamType') applyScoreExamSelection(e.target.value);
     if (field === 'obExamType') applyObExamSelection(e.target.value);
+    restoreIfUnexpectedTopJump();
     const coachAnswer = e.target.getAttribute('data-coach-answer');
     const coachPlan = e.target.getAttribute('data-coach-plan');
     const coachActual = e.target.getAttribute('data-coach-actual');
@@ -2550,6 +2589,7 @@ function App() {
       }
       armScrollGuard(1000);
       suppressClickUntilRef.current = Date.now() + 260;
+      markStableScrollPosition();
       if (touchTargetRef.current === 'home') {
         setHomeSlideIndex((prev) => {
           const next = delta < 0 ? Math.min(prev + 1, homeTargets.length) : Math.max(prev - 1, 0);
@@ -2566,6 +2606,7 @@ function App() {
         });
       }
       touchTargetRef.current = '';
+      restoreIfUnexpectedTopJump();
     };
 
     const onNativeTouchStart = (e) => startGesture(e.target, e.touches?.[0]?.clientX);
@@ -2613,6 +2654,7 @@ function App() {
   }, [homeTargets.length, homeSlideIndex, activeScoreView]);
 
   const onChange = (e) => {
+    markStableScrollPosition();
     const field = e.target.getAttribute('data-field');
     if (field === 'coachPlannerFiles') {
       const files = Array.from(e.target.files || []);
@@ -2629,8 +2671,10 @@ function App() {
     if (field === 'scoreExamType') applyScoreExamSelection(e.target.value);
     if (field === 'obTrack') setObTrack(e.target.value);
     if (field === 'obExamType') applyObExamSelection(e.target.value);
+    restoreIfUnexpectedTopJump();
   };
   const onBlur = (e) => {
+    markStableScrollPosition();
     const field = e.target.getAttribute('data-field');
     const coachAnswer = e.target.getAttribute('data-coach-answer');
     if (coachAnswer) {
@@ -2695,6 +2739,7 @@ function App() {
       if (subject === 'korean' || subject === 'math') setScoreEditState((prev) => ({ ...prev, [subject]: { ...prev[subject], [key === 'type' ? 'type' : key === 'common' ? 'common' : 'elective']: normalizedValue } }));
       if (subject === 'inq1' || subject === 'inq2') setScoreEditState((prev) => ({ ...prev, [subject === 'inq1' ? 'inquiry1' : 'inquiry2']: { ...prev[subject === 'inq1' ? 'inquiry1' : 'inquiry2'], [key === 'subject' ? 'subject' : 'score']: normalizedValue } }));
     }
+    restoreIfUnexpectedTopJump();
   };
 
   const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><section class="app-loading-hero app-loading-poster ${loadingFadeOut ? 'is-fade-out' : ''}"><img class="app-loading-poster-img" src="./assets/images/IMG_3020.png" alt="스터디크랙 로딩 이미지"/><div class="app-loading-progress"><div class="app-loading-bar"><i></i></div><p class="app-loading-label">LOADING...</p></div></section></div></div></div>`;
