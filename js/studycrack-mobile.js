@@ -294,10 +294,8 @@ function App() {
       }
     };
     window.visualViewport.addEventListener('resize', recoverIfJumped);
-    window.visualViewport.addEventListener('scroll', recoverIfJumped);
     return () => {
       window.visualViewport.removeEventListener('resize', recoverIfJumped);
-      window.visualViewport.removeEventListener('scroll', recoverIfJumped);
     };
   }, [isIOSSafari]);
 
@@ -664,7 +662,7 @@ function App() {
     || scoreEditOpen
     || logoutModalOpen
   );
-  const tabbar = () => `<nav class="tabbar bottom-nav bottom-tab ${tabbarDimmed ? 'is-muted' : ''}" data-bottom-nav>${tabBtn('home','홈','home')}${tabBtn('analysis','분석','chart')}${tabBtn('strategy','학습 코칭','target')}${tabBtn('planner','플래너','calendar')}${tabBtn('my','마이','user')}</nav>`;
+  const tabbar = () => `<nav class="tabbar bottom-nav bottom-tab ${tabbarDimmed ? 'is-muted' : ''}" data-bottom-nav><div class="bottom-nav-inner">${tabBtn('home','홈','home')}${tabBtn('analysis','분석','chart')}${tabBtn('strategy','학습 코칭','target')}${tabBtn('planner','플래너','calendar')}${tabBtn('my','마이','user')}</div></nav>`;
   const layout = (inner, withTab) => `<div class="app-shell"><div class="app-frame"><main class="screen app-screen app-main app-content ${tabbarDimmed ? 'modal-lock' : ''}">${inner}</main>${withTab ? tabbar() : ''}</div></div>`;
   const quickMini = (action, iconName, label) => `<button class="quick-mini-item" data-action="goto" data-target="${action}"><span class="quick-mini-icon">${i(iconName,false)}</span><span class="quick-mini-label">${label}</span></button>`;
   const universityProfiles = {
@@ -1218,7 +1216,7 @@ function App() {
     .crack-character{position:absolute;right:12px;bottom:12px;width:clamp(54px,14vw,84px);height:auto;z-index:2;pointer-events:none;}
     .onboarding-step-3 .onboarding-visual{display:flex;flex-direction:column;gap:14px;}
     .onboarding-step-3 .feature-card{position:relative;z-index:1;}
-    .onboarding-step-3 .crack-character{right:4px;bottom:-10px;}
+    .onboarding-step-3 .crack-character{width:clamp(180px,42vw,260px);height:auto;right:-8px;bottom:8px;z-index:3;pointer-events:none;}
     .onboarding-shot-head{margin-top:24px;text-align:center;}
     .onboarding-shot-head h2{margin:0;font-size:24px;font-weight:800;line-height:1.45;letter-spacing:-0.04em;color:#111827;white-space:pre-line;}
     .onboarding-shot-head h2 .accent{color:#0B4EDB;}
