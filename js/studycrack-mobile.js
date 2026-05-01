@@ -204,6 +204,8 @@ function App() {
   const screenScrollRef = useRef({});
   const scrollPersistRafRef = useRef(null);
   const touchStartXRef = useRef(null);
+  const touchStartYRef = useRef(null);
+  const touchStartTimeRef = useRef(0);
   const touchLastXRef = useRef(null);
   const touchTargetRef = useRef('');
   const dragFrameRef = useRef(null);
@@ -2555,7 +2557,7 @@ function App() {
   };
 
   useEffect(() => {
-    const startGesture = (target, clientX) => {
+    const startGesture = (target, clientX, clientY) => {
       if (typeof clientX !== 'number') return;
       if (target?.closest?.('input, textarea, select, [contenteditable="true"]')) {
         touchTargetRef.current = '';
@@ -2565,22 +2567,29 @@ function App() {
       if (target?.closest?.('.home-kpi-slider')) {
         touchTargetRef.current = 'home';
         touchStartXRef.current = clientX;
+        touchStartYRef.current = typeof clientY === 'number' ? clientY : 0;
+        touchStartTimeRef.current = performance.now();
         return;
       }
       if (target?.closest?.('.score-journey-scroll')) {
         touchTargetRef.current = 'score';
         touchStartXRef.current = clientX;
+        touchStartYRef.current = typeof clientY === 'number' ? clientY : 0;
+        touchStartTimeRef.current = performance.now();
         return;
       }
       touchTargetRef.current = '';
       touchStartXRef.current = null;
     };
 
-    const moveGesture = (clientX) => {
+    const moveGesture = (clientX, clientY) => {
       const startX = touchStartXRef.current;
       if (typeof startX !== 'number' || typeof clientX !== 'number') return;
+      const startY = touchStartYRef.current || 0;
       touchLastXRef.current = clientX;
       const delta = clientX - startX;
+      const deltaY = (typeof clientY === 'number' ? clientY : startY) - startY;
+      if (Math.abs(deltaY) > Math.abs(delta)) return;
       if (touchTargetRef.current === 'home') {
         const atFirst = homeSlideIndex === 0;
         const atLast = homeSlideIndex === homeTargets.length;
@@ -2610,7 +2619,10 @@ function App() {
       const startX = touchStartXRef.current;
       if (typeof startX !== 'number' || typeof clientX !== 'number') return;
       const delta = clientX - startX;
+      const elapsedMs = Math.max(1, performance.now() - (touchStartTimeRef.current || performance.now()));
+      const velocityX = delta / elapsedMs;
       touchStartXRef.current = null;
+      touchStartYRef.current = null;
       touchLastXRef.current = null;
       if (dragFrameRef.current) {
         cancelAnimationFrame(dragFrameRef.current);
@@ -2619,10 +2631,9 @@ function App() {
       setHomeDragOffset(0);
       setScoreDragOffset(0);
       const absDelta = Math.abs(delta);
-      // 홈 상단 카드 슬라이드는 짧은 스와이프에도 반응하도록 민감도를 높인다.
-      // score 여정 슬라이드는 기존보다 소폭만 완화해 오작동은 최소화한다.
-      const swipeThreshold = touchTargetRef.current === 'home' ? 12 : 22;
-      if (absDelta < swipeThreshold) {
+      const swipeThreshold = Math.min(window.innerWidth * 0.1, 40);
+      const velocityThreshold = 0.25;
+      if (absDelta < swipeThreshold && Math.abs(velocityX) < velocityThreshold) {
         touchTargetRef.current = '';
         return;
       }
@@ -2646,8 +2657,8 @@ function App() {
       touchTargetRef.current = '';
     };
 
-    const onNativeTouchStart = (e) => startGesture(e.target, e.touches?.[0]?.clientX);
-    const onNativeTouchMove = (e) => moveGesture(e.touches?.[0]?.clientX);
+    const onNativeTouchStart = (e) => startGesture(e.target, e.touches?.[0]?.clientX, e.touches?.[0]?.clientY);
+    const onNativeTouchMove = (e) => moveGesture(e.touches?.[0]?.clientX, e.touches?.[0]?.clientY);
     const onNativeTouchEnd = (e) => endGesture(e.changedTouches?.[0]?.clientX);
     const onNativeTouchCancel = () => {
       touchStartXRef.current = null;
@@ -2658,10 +2669,10 @@ function App() {
     };
     const onPointerDown = (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      startGesture(e.target, e.clientX);
+      startGesture(e.target, e.clientX, e.clientY);
     };
     const onPointerUp = (e) => endGesture(e.clientX);
-    const onPointerMove = (e) => moveGesture(e.clientX);
+    const onPointerMove = (e) => moveGesture(e.clientX, e.clientY);
     const onPointerCancel = () => {
       touchStartXRef.current = null;
       touchLastXRef.current = null;
