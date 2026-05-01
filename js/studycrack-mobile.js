@@ -219,6 +219,20 @@ function App() {
       if (Math.abs(now - y) > 2) window.scrollTo({ top: y, left: 0, behavior: 'auto' });
     }, 0);
   };
+  const preserveScrollDuringUiUpdate = (duration = 500) => {
+    const y = window.scrollY || window.pageYOffset || 0;
+    const startedAt = Date.now();
+    const restore = () => {
+      const nowY = window.scrollY || window.pageYOffset || 0;
+      if (Math.abs(nowY - y) > 2) window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+      if (Date.now() - startedAt < duration) requestAnimationFrame(restore);
+    };
+    requestAnimationFrame(restore);
+    setTimeout(() => {
+      const nowY = window.scrollY || window.pageYOffset || 0;
+      if (Math.abs(nowY - y) > 2) window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+    }, duration + 40);
+  };
 
   const goto = (next, addHistory = true) => {
     const currentY = window.scrollY || window.pageYOffset || 0;
@@ -393,6 +407,7 @@ function App() {
   const finishLoading = () => {
     if (loadingDoneRef.current) return;
     loadingDoneRef.current = true;
+    preserveScrollDuringUiUpdate(700);
     const elapsed = Date.now() - loadingStartedAtRef.current;
     const waitMs = Math.max(0, 1300 - elapsed);
     loadingExitTimerRef.current = setTimeout(() => {
@@ -1876,6 +1891,7 @@ function App() {
     if (isAnalyzing && screen === 'analysis') return;
     const actionEl = e.target.closest('[data-action]');
     if (!actionEl) return;
+    preserveScrollDuringUiUpdate(520);
     const action = actionEl.getAttribute('data-action');
     const shouldKeepScroll = ['toggleFaq', 'toggleStudyBreakdown', 'openUniversityModal', 'closeUniversityModal', 'openDrawer', 'closeDrawer', 'openScoreEdit', 'closeScoreEdit'].includes(action);
     if (shouldKeepScroll) keepScrollPosition();
@@ -2486,6 +2502,7 @@ function App() {
         touchTargetRef.current = '';
         return;
       }
+      preserveScrollDuringUiUpdate(560);
       armScrollGuard(1000);
       suppressClickUntilRef.current = Date.now() + 260;
       if (touchTargetRef.current === 'home') {
