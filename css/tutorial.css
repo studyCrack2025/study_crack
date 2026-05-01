@@ -147,17 +147,14 @@ header { background: #fff; padding: 15px 20px; box-shadow: 0 2px 4px rgba(0,0,0,
 .score-plan-title { font-size: 0.95rem; font-weight: 800; color: #1e293b; }
 .score-plan-total { font-size: 0.85rem; color: #64748b; }
 .score-plan-total strong { color: #2563eb; }
-.score-plan-rows { display: flex; flex-direction: column; gap: 10px; }
-.score-plan-row { display: grid; grid-template-columns: 52px 54px 1fr 44px; align-items: center; gap: 8px; }
-.score-plan-blurred .score-plan-subject, .score-plan-blurred .score-plan-pct { filter: blur(4px); user-select: none; }
-.score-plan-rank { font-size: 0.68rem; font-weight: 700; border-radius: 99px; padding: 2px 6px; text-align: center; }
-.rank-other { background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; }
-.score-plan-subject { font-size: 0.88rem; font-weight: 800; }
-.score-plan-progress { display: flex; flex-direction: column; gap: 3px; }
-.score-plan-bar-bg { height: 6px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
-.score-plan-bar-fill { height: 100%; border-radius: 99px; transition: width 0.6s ease; }
-.score-plan-pct { font-size: 0.72rem; color: #64748b; }
-.score-plan-gain { font-size: 0.88rem; font-weight: 800; text-align: right; }
+.score-plan-rows { display: flex; flex-direction: column; gap: 8px; }
+.score-plan-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+.score-plan-blurred .score-plan-subject, .score-plan-blurred .plan-status, .score-plan-blurred .plan-score-text { filter: blur(4px); user-select: none; }
+.score-plan-subject { font-size: 0.9rem; font-weight: 800; min-width: 52px; }
+.plan-status { font-size: 0.75rem; font-weight: 700; border-radius: 6px; padding: 2px 8px; white-space: nowrap; flex-shrink: 0; }
+.plan-hold { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+.plan-rise { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+.plan-score-text { font-size: 0.88rem; color: #334155; font-weight: 600; }
 .score-plan-note { font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 12px; }
 /* ── 예상 도달 기간 ─────────────────────────────────────────────── */
 .reach-period-section { background: linear-gradient(135deg, #eff6ff, #f0fdf4); border: 1.5px solid #bfdbfe; border-radius: 14px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
@@ -167,6 +164,15 @@ header { background: #fff; padding: 15px 20px; box-shadow: 0 2px 4px rgba(0,0,0,
 /* ── 도달 가능 대학 ─────────────────────────────────────────────── */
 .reachable-univs-section { margin-top: 4px; }
 .reachable-univs-title { font-size: 0.92rem; font-weight: 800; color: #1e293b; margin-bottom: 12px; }
+
+/* ── 목표 대학 좌우 비교 ────────────────────────────────────────── */
+.subject-rec-univ-compare { border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 16px; background: #fff; }
+.src-univ-name { font-size: 0.92rem; font-weight: 800; color: #1e293b; margin-bottom: 14px; }
+.src-compare-wrap { display: flex; align-items: center; gap: 12px; }
+.src-side { flex: 1; min-width: 0; }
+.src-side-label { font-size: 0.72rem; font-weight: 700; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+.src-score { font-size: 0.85rem; color: #334155; font-weight: 700; margin-top: 6px; }
+.src-arrow { font-size: 1.3rem; color: #cbd5e1; font-weight: 700; flex-shrink: 0; }
 
 /* ── 버튼 ──────────────────────────────────────────────────────── */
 .tutorial-nav { display: flex; justify-content: space-between; align-items: center; }

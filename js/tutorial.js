@@ -30,46 +30,6 @@ const STEPS = [
     { id: 'subject-rec', msg: '선택한 대학 합격선까지, 가장 효율적인 과목 전략을 알려드릴게요.',   mascot: 'showresult' }
 ];
 
-// passCut=100 / top70Cut=150 은 전 학교 공통 고정값
-// 시나리오: 학교1(현재<100, 상승후<100) / 학교2(현재<100, 상승후 100-120) / 학교3(현재>100, 상승후>120)
-const DEMO_UNIVS = [
-    {
-        school: '인하대학교', major: '컴퓨터공학과',
-        currentScore: 88, passCut: 100, top70Cut: 150, maxScore: 150,
-        simScore: 91, gain: 3,
-        subjectAlloc: [
-            { label: '수학', pct: 38, color: '#3b82f6' },
-            { label: '국어', pct: 28, color: '#8b5cf6' },
-            { label: '탐구', pct: 22, color: '#10b981' },
-            { label: '기타', pct: 12, color: '#f59e0b' }
-        ],
-        top2Subject: '국어', top2Pct: 28, top2NeedPts: 11
-    },
-    {
-        school: '경희대학교', major: '소프트웨어융합학과',
-        currentScore: 97, passCut: 100, top70Cut: 150, maxScore: 150,
-        simScore: 104, gain: 7,
-        subjectAlloc: [
-            { label: '수학', pct: 40, color: '#3b82f6' },
-            { label: '탐구', pct: 27, color: '#10b981' },
-            { label: '국어', pct: 23, color: '#8b5cf6' },
-            { label: '기타', pct: 10, color: '#f59e0b' }
-        ],
-        top2Subject: '탐구', top2Pct: 27, top2NeedPts: 4
-    },
-    {
-        school: '한양대학교', major: '컴퓨터소프트웨어학부',
-        currentScore: 112, passCut: 100, top70Cut: 150, maxScore: 150,
-        simScore: 126, gain: 14,
-        subjectAlloc: [
-            { label: '수학', pct: 42, color: '#3b82f6' },
-            { label: '국어', pct: 26, color: '#8b5cf6' },
-            { label: '탐구', pct: 21, color: '#10b981' },
-            { label: '기타', pct: 11, color: '#f59e0b' }
-        ],
-        top2Subject: '국어', top2Pct: 26, top2NeedPts: 6
-    }
-];
 
 let currentStepIdx = 0;
 let tutorialData = { qual: {}, quan: {}, mbti: null, selectedUniv: null, selectedUnivs: null, totalStdScore: 0 };
@@ -105,6 +65,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (e) {
             const savedStatus = localStorage.getItem('tutorialStatus');
             if (savedStatus) currentStepIdx = parseInt(savedStatus, 10);
+        }
+    }
+
+    if (currentStepIdx >= 4) {
+        const savedUnivs = sessionStorage.getItem('tut_selectedUnivs');
+        if (savedUnivs) {
+            try { tutorialData.selectedUnivs = JSON.parse(savedUnivs); } catch(e) {}
         }
     }
 
@@ -287,7 +254,10 @@ async function _nextStepCore() {
                 if (!scoreData) return null;
                 return selectTutorialUnivsWithAnalysis(stream, tutorialData.quan.mar, tutorialData.totalStdScore, scoreData);
             }).then(selected => {
-                if (selected && selected.length > 0) tutorialData.selectedUnivs = selected;
+                if (selected && selected.length > 0) {
+                    tutorialData.selectedUnivs = selected;
+                    sessionStorage.setItem('tut_selectedUnivs', JSON.stringify(selected));
+                }
             }).catch(() => {});
         }
     }
@@ -651,7 +621,7 @@ function buildUnivCards(selectedUnivs, studentScore) {
 
     // 신규 포맷: currentScore가 이미 환산점수(0–250 UI 스케일)로 들어온 경우
     if (selectedUnivs.length > 0 && 'currentScore' in selectedUnivs[0]) {
-        const PASS_CUT = 100, TOP70_CUT = 150, MAX_SCORE = 200;
+        const PASS_CUT = 100, TOP70_CUT = 150, MAX_SCORE = 250;
         return selectedUnivs.map(u => {
             const gain = Math.max(0, Math.round(u.simScore - u.currentScore));
             return {
@@ -691,9 +661,9 @@ function initUnivSim() {
     if (!list) return;
     list.innerHTML = '';
 
-    const univsToRender = (tutorialData.selectedUnivs && tutorialData.selectedUnivs.length > 0)
-        ? buildUnivCards(tutorialData.selectedUnivs, tutorialData.totalStdScore)
-        : DEMO_UNIVS;
+    if (!tutorialData.selectedUnivs || tutorialData.selectedUnivs.length === 0) return;
+
+    const univsToRender = buildUnivCards(tutorialData.selectedUnivs, tutorialData.totalStdScore);
 
     univsToRender.forEach((u) => {
         const card = document.createElement('div');
@@ -708,8 +678,10 @@ function initUnivSim() {
         const passPct   = (u.passCut     / u.maxScore * 100).toFixed(1);
         const simPct    = (u.simScore    / u.maxScore * 100).toFixed(1);
 
-        const fillId   = 'sbcFill_'   + u.school.replace(/\s/g, '_');
-        const detailId = 'simDetail_' + u.school.replace(/\s/g, '_');
+        const fillId = 'sbcFill_' + u.school.replace(/\s/g, '_');
+
+        card.dataset.currentPct = currentPct;
+        card.dataset.simPct = simPct;
 
         card.innerHTML = `
             <div class="univ-card-header">
@@ -730,51 +702,38 @@ function initUnivSim() {
                     <div class="sbc-mark mark-pass"  style="left:${passPct}%"></div>
                 </div>
                 <div class="sbc-current-label">현재 <strong>${u.currentScore}점</strong></div>
-            </div>
-            <div class="univ-sim-detail" id="${detailId}">
-                <div class="sim-delta-row">
-                    <span class="sim-delta-label">취약 과목 1점 상승 후</span>
-                    <span class="sim-delta-score">${u.simScore}점 <em class="sim-gain">+${u.gain}</em></span>
-                </div>
-                <div class="sim-progress-bar-wrap">
-                    <div class="sim-progress-bg">
-                        <div class="sim-progress-fill" id="simFill_${u.school.replace(/\s/g,'_')}" style="width:${simPct}%"></div>
-                        <div class="sim-mark-pass" style="left:${passPct}%"></div>
-                    </div>
-                    <div class="sim-gap-note">합격선까지 <strong>${u.passCut - u.simScore}점</strong> 남았어요</div>
-                </div>
             </div>`;
 
-        card.onclick = () => selectUniv(card, u, fillId, detailId, simPct);
+        card.onclick = () => selectUniv(card, u, fillId, simPct);
         list.appendChild(card);
     });
 }
 
-function selectUniv(element, data, fillId, detailId, simPct) {
-    document.querySelectorAll('.univ-card').forEach(c => {
+function selectUniv(element, data, fillId, simPct) {
+    // 이전 선택 카드의 바를 원상복구
+    document.querySelectorAll('.univ-card.selected').forEach(c => {
         c.classList.remove('selected');
-        const detail = c.querySelector('.univ-sim-detail');
-        if (detail) detail.classList.remove('visible');
+        const prevFill = c.querySelector('.sbc-fill');
+        const origPct = c.dataset.currentPct;
+        if (prevFill && origPct != null) {
+            prevFill.style.transition = 'none';
+            prevFill.style.width = origPct + '%';
+        }
     });
 
     element.classList.add('selected');
 
-    const detail = document.getElementById(detailId);
-    if (detail) {
-        detail.classList.add('visible');
-        // 기존 바를 먼저 현재 점수로 되돌렸다가 시뮬 점수로 애니메이션
-        const fill = document.getElementById(fillId);
-        if (fill) {
-            const origPct = (data.currentScore / data.maxScore * 100).toFixed(1);
-            fill.style.transition = 'none';
-            fill.style.width = origPct + '%';
-            fill.classList.add('animating');
-            setTimeout(() => {
-                fill.style.transition = '';
-                fill.style.width = simPct + '%';
-                setTimeout(() => fill.classList.remove('animating'), 900);
-            }, 120);
-        }
+    const fill = document.getElementById(fillId);
+    if (fill) {
+        const origPct = element.dataset.currentPct;
+        fill.style.transition = 'none';
+        fill.style.width = origPct + '%';
+        fill.classList.add('animating');
+        setTimeout(() => {
+            fill.style.transition = '';
+            fill.style.width = simPct + '%';
+            setTimeout(() => fill.classList.remove('animating'), 900);
+        }, 120);
     }
 
     tutorialData.selectedUniv = data;
@@ -845,32 +804,22 @@ function calcGreedySubjectPlan(univ, mar, mbti) {
     return subjects;
 }
 
-// ── 과목별 최적 상승 계획 + 도달 가능 대학 ───────────────────────
+// ── 과목별 최적 상승 계획 + 선택한 대학 도달 시뮬레이션 ──────────
 async function initSubjectRec() {
     const container = document.getElementById('subjectRecContent');
     if (!container) return;
 
     showTutLoading(true);
 
-    const univ = tutorialData.selectedUniv || DEMO_UNIVS[0];
+    const univ = tutorialData.selectedUniv;
     const mar  = tutorialData.quan?.mar;
     const mbti = tutorialData.mbti;
 
-    // 1. Greedy 알고리즘으로 과목별 최적 상승 계획 계산
     let plan = null;
-    if (mar && mbti) {
+    if (univ && mar && mbti) {
         try { plan = calcGreedySubjectPlan(univ, mar, mbti); } catch(e) {}
     }
-    if (!plan) {
-        plan = [
-            { key: 'math', label: '수학',  color: '#3b82f6', assigned: 15, hardLimit: 15 },
-            { key: 'inq1', label: '탐구1', color: '#10b981', assigned: 10, hardLimit: 10 },
-            { key: 'kor',  label: '국어',  color: '#8b5cf6', assigned:  4, hardLimit: 10 },
-            { key: 'eng',  label: '영어',  color: '#f59e0b', assigned:  0, hardLimit:  5 }
-        ];
-    }
 
-    // 2. 백엔드에서 예상 도달 기간(개월) 가져오기
     let estimatedMonths = 3;
     try {
         const token = localStorage.getItem('accessToken');
@@ -889,70 +838,107 @@ async function initSubjectRec() {
 
     showTutLoading(false);
 
-    // 3. 과목별 계획 행 렌더링 (assigned > 0인 것만, 최대 4개)
-    const activePlan = plan.filter(s => s.assigned > 0).slice(0, 4);
-    const totalGain  = activePlan.reduce((sum, s) => sum + (s.assigned || 0), 0);
-    const rankLabels = ['1순위', '2순위', '3순위', '4순위'];
+    if (!mar || !plan) {
+        container.innerHTML = '<div style="text-align:center;padding:32px;color:#64748b">성적 데이터를 불러올 수 없습니다.</div>';
+        return;
+    }
 
-    const planRows = activePlan.map((s, i) => {
-        const curPct = mar
-            ? (s.key === 'eng' ? gradeToApproxPct(mar.eng?.grd) : (parseFloat(mar[s.key]?.pct) || 50))
-            : 50;
-        const visible = (i === 0 || i === 1); // 1·2순위만 공개
-        const barWidth = Math.min(Math.round(curPct), 100);
-        return `
-        <div class="score-plan-row${visible ? '' : ' score-plan-blurred'}">
-            <div class="score-plan-rank rank-${i < 2 ? i + 1 : 'other'}">${rankLabels[i]}</div>
-            <div class="score-plan-subject" style="color:${s.color}">${visible ? s.label : '???'}</div>
-            <div class="score-plan-progress">
-                <div class="score-plan-bar-bg">
-                    <div class="score-plan-bar-fill" style="width:${barWidth}%;background:${s.color}"></div>
-                </div>
-                <span class="score-plan-pct">${visible ? `백분위 ${Math.round(curPct)}%` : '비공개'}</span>
-            </div>
-            <div class="score-plan-gain" style="color:${visible ? s.color : '#94a3b8'}">
-                ${visible ? `+${Math.round(s.assigned)}점` : '🔒'}
-            </div>
+    // plan은 효율 순 정렬. key → plan item 맵
+    const planMap = {};
+    plan.forEach(s => { planMap[s.key] = s; });
+
+    // assigned > 0인 과목 우선순위 순서 (블러 판단용)
+    const risingByPriority = plan.filter(s => s.assigned > 0);
+    const totalGain = risingByPriority.reduce((sum, s) => sum + s.assigned, 0);
+
+    const subjectOrder = ['kor', 'math', 'eng', 'inq1', 'inq2'];
+    const LABELS = {
+        kor: '국어', math: '수학', eng: '영어',
+        inq1: mar.inq1?.name || '탐구1',
+        inq2: mar.inq2?.name || '탐구2'
+    };
+    const COLORS = { kor: '#8b5cf6', math: '#3b82f6', eng: '#f59e0b', inq1: '#10b981', inq2: '#06b6d4' };
+
+    const planRows = subjectOrder.map(key => {
+        const s = planMap[key];
+        const assigned = s ? s.assigned : 0;
+        const color = COLORS[key];
+        const label = LABELS[key];
+
+        // 상승 과목 중 3순위 이상(인덱스 2+)은 잠금
+        const priorityIdx = risingByPriority.findIndex(p => p.key === key);
+        const isLocked = priorityIdx >= 2;
+
+        if (assigned > 0 && isLocked) {
+            return `<div class="score-plan-row score-plan-blurred">
+                <div class="score-plan-subject" style="color:#94a3b8">???</div>
+                <div class="plan-status plan-rise">🔒</div>
+                <div class="plan-score-text" style="color:#94a3b8">비공개</div>
+            </div>`;
+        }
+
+        if (key === 'eng') {
+            const grd = mar.eng?.grd;
+            const grdLabel = grd ? `${grd}등급` : '';
+            return `<div class="score-plan-row">
+                <div class="score-plan-subject" style="color:${color}">${label}</div>
+                <div class="plan-status ${assigned > 0 ? 'plan-rise' : 'plan-hold'}">${assigned > 0 ? '향상' : '유지'}</div>
+                <div class="plan-score-text">${grdLabel}</div>
+            </div>`;
+        }
+
+        const rawScore = mar[key]?.raw || 0;
+        if (assigned > 0) {
+            const newRaw = rawScore + Math.round(assigned);
+            return `<div class="score-plan-row">
+                <div class="score-plan-subject" style="color:${color}">${label}</div>
+                <div class="plan-status plan-rise">+${Math.round(assigned)}</div>
+                <div class="plan-score-text">${rawScore} → ${newRaw}</div>
+            </div>`;
+        }
+        return `<div class="score-plan-row">
+            <div class="score-plan-subject" style="color:${color}">${label}</div>
+            <div class="plan-status plan-hold">유지</div>
+            <div class="plan-score-text">${rawScore}</div>
         </div>`;
     }).join('');
 
-    // 4. 도달 가능 대학 카드 (univ-rec와 동일한 buildUnivCards + 같은 카드 HTML)
-    const univSource = (tutorialData.selectedUnivs && tutorialData.selectedUnivs.length > 0)
-        ? tutorialData.selectedUnivs : null;
-    const univsToRender = univSource ? buildUnivCards(univSource, tutorialData.totalStdScore) : DEMO_UNIVS;
-
-    const reachableCardsHtml = univsToRender.map(u => {
-        const PASS_CUT = u.passCut, MAX_SCORE = u.maxScore;
-        const currentPct = (u.currentScore / MAX_SCORE * 100).toFixed(1);
-        const passPct    = (PASS_CUT       / MAX_SCORE * 100).toFixed(1);
-        const top70Pct   = (u.top70Cut     / MAX_SCORE * 100).toFixed(1);
-        const simPct     = (u.simScore     / MAX_SCORE * 100).toFixed(1);
-        const gapToPass  = PASS_CUT - u.currentScore;
-        const badgeClass = gapToPass <= 5 ? 'badge-close' : gapToPass <= 15 ? 'badge-mid' : 'badge-far';
-        const badgeText  = gapToPass <= 0 ? `합격선 초과 ${Math.abs(gapToPass)}점` : `합격까지 ${gapToPass}점`;
-        return `
-        <div class="univ-card">
-            <div class="univ-card-header">
-                <div>
-                    <div class="univ-card-title">${u.school}</div>
-                    <div class="univ-card-major">${u.major}</div>
+    // 선택한 대학 1개 좌우 비교 (현재 vs 향상 후)
+    let univCompareHtml = '';
+    if (univ) {
+        const MAX_SCORE = univ.maxScore || 250;
+        const PASS_CUT  = univ.passCut  || 100;
+        const currentPct = (univ.currentScore / MAX_SCORE * 100).toFixed(1);
+        const simPct     = (univ.simScore     / MAX_SCORE * 100).toFixed(1);
+        const passPct    = (PASS_CUT          / MAX_SCORE * 100).toFixed(1);
+        univCompareHtml = `
+        <div class="subject-rec-univ-compare">
+            <div class="src-univ-name">${univ.school} · ${univ.major}</div>
+            <div class="src-compare-wrap">
+                <div class="src-side">
+                    <div class="src-side-label">현재</div>
+                    <div class="sbc-wrap">
+                        <div class="sbc-track">
+                            <div class="sbc-fill" style="width:${currentPct}%"></div>
+                            <div class="sbc-mark mark-pass" style="left:${passPct}%"></div>
+                        </div>
+                    </div>
+                    <div class="src-score">${univ.currentScore}점</div>
                 </div>
-                <div class="univ-gap-badge ${badgeClass}">${badgeText}</div>
-            </div>
-            <div class="sbc-wrap">
-                <div class="sbc-labels">
-                    <span class="sbc-lbl lbl-top70" style="left:${top70Pct}%">상위 70%<br>${u.top70Cut}점</span>
-                    <span class="sbc-lbl lbl-pass"  style="left:${passPct}%">합격 예측선<br>${u.passCut}점</span>
+                <div class="src-arrow">→</div>
+                <div class="src-side">
+                    <div class="src-side-label">향상 후</div>
+                    <div class="sbc-wrap">
+                        <div class="sbc-track">
+                            <div class="sbc-fill" style="width:${simPct}%"></div>
+                            <div class="sbc-mark mark-pass" style="left:${passPct}%"></div>
+                        </div>
+                    </div>
+                    <div class="src-score">${univ.simScore}점 <em style="color:#10b981;font-size:0.8rem">+${univ.gain}</em></div>
                 </div>
-                <div class="sbc-track">
-                    <div class="sbc-fill" style="width:${simPct}%"></div>
-                    <div class="sbc-mark mark-top70" style="left:${top70Pct}%"></div>
-                    <div class="sbc-mark mark-pass"  style="left:${passPct}%"></div>
-                </div>
-                <div class="sbc-current-label">향상 후 <strong>${u.simScore}점</strong> <em style="color:#10b981;font-size:0.82rem">+${u.gain}</em></div>
             </div>
         </div>`;
-    }).join('');
+    }
 
     container.innerHTML = `
         <div class="score-plan-section">
@@ -967,10 +953,11 @@ async function initSubjectRec() {
             <div class="reach-period-label">Standard 이용 시 예상 도달 기간</div>
             <div class="reach-period-value">평균 <strong>${estimatedMonths}개월</strong> 예상</div>
         </div>
+        ${univCompareHtml ? `
         <div class="reachable-univs-section">
-            <div class="reachable-univs-title">🎯 향상된 성적으로 도달 가능한 대학</div>
-            <div class="univ-card-list">${reachableCardsHtml}</div>
-        </div>`;
+            <div class="reachable-univs-title">🎯 선택한 목표 대학 도달 시뮬레이션</div>
+            ${univCompareHtml}
+        </div>` : ''}`;
 }
 
 // ── 결제 / 완료 ──────────────────────────────────────────────────
