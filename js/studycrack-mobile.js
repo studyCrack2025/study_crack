@@ -2543,7 +2543,9 @@ function App() {
       setHomeDragOffset(0);
       setScoreDragOffset(0);
       const absDelta = Math.abs(delta);
-      const swipeThreshold = touchTargetRef.current === 'home' ? 22 : 26;
+      // 홈 상단 카드 슬라이드는 짧은 스와이프에도 반응하도록 민감도를 높인다.
+      // score 여정 슬라이드는 기존보다 소폭만 완화해 오작동은 최소화한다.
+      const swipeThreshold = touchTargetRef.current === 'home' ? 12 : 22;
       if (absDelta < swipeThreshold) {
         touchTargetRef.current = '';
         return;
