@@ -218,7 +218,7 @@ body {
   will-change: transform;
   box-sizing: border-box;
 }
-.bottom-nav { position: fixed; left:0; right:0; bottom:0; padding-bottom: var(--safe-bottom); z-index: 1000; }
+.bottom-nav { position: fixed; left:0; right:0; bottom:0; z-index: 1000; }
 @supports (-webkit-touch-callout: none) {
   .app-root,
   .app-frame,

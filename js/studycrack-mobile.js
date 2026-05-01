@@ -1237,7 +1237,7 @@ function App() {
     .onboarding-character.on1{right:18px;bottom:170px;}
     .onboarding-character.on2{right:16px;bottom:168px;}
     .onboarding-character.on3{right:14px;bottom:112px;}
-    .onboarding-shot-dots{margin-top:8px;display:flex;justify-content:center;gap:12px;}
+    .onboarding-shot-dots{margin-top:auto;margin-bottom:12px;display:flex;justify-content:center;gap:12px;}
     .onboarding-shot-dots i{width:10px;height:10px;border-radius:999px;background:#E6EAF2;}
     .onboarding-shot-dots i.active{background:#0B6BFF;}
     .onboarding-next{position:static;margin-top:auto;width:100%;height:64px;border-radius:16px;background:#006BFF;color:#fff;font-size:22px;font-weight:800;letter-spacing:-0.04em;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,107,255,.25);border:none;}.onboarding-fixed-cta{padding-bottom:calc(16px + env(safe-area-inset-bottom));}
