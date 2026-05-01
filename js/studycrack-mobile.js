@@ -208,6 +208,8 @@ function App() {
   const suppressClickUntilRef = useRef(0);
   const lastStableScrollYRef = useRef(0);
   const scrollGuardRef = useRef({ until: 0, y: 0 });
+  const renderStableScrollYRef = useRef(0);
+  const renderStableScreenRef = useRef('');
   const keepScrollPosition = (durationMs = 380) => {
     const y = window.scrollY || window.pageYOffset || 0;
     const started = Date.now();
@@ -253,12 +255,16 @@ function App() {
 
   useEffect(() => {
     lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
+    renderStableScrollYRef.current = lastStableScrollYRef.current;
+    renderStableScreenRef.current = screen;
     const onNativeScroll = () => {
       lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
+      renderStableScrollYRef.current = lastStableScrollYRef.current;
+      renderStableScreenRef.current = screen;
     };
     window.addEventListener('scroll', onNativeScroll, { passive: true });
     return () => window.removeEventListener('scroll', onNativeScroll);
-  }, []);
+  }, [screen]);
 
   useEffect(() => {
     // 스크롤 강제 복원은 iOS/Safari에서 "스크롤 초기화"처럼 보이는 점프를 유발할 수 있어 비활성화합니다.
@@ -315,6 +321,15 @@ function App() {
     // Intentionally do not force-scroll on render/screen change.
     // Forced restoration has caused visible jump-to-top/jitter on user interactions.
   }, [screen]);
+
+  useEffect(() => {
+    const previousY = renderStableScrollYRef.current || 0;
+    const previousScreen = renderStableScreenRef.current || screen;
+    const nowY = window.scrollY || window.pageYOffset || 0;
+    if (previousScreen === screen && previousY > 40 && nowY <= 2) {
+      requestAnimationFrame(() => window.scrollTo({ top: previousY, left: 0, behavior: 'auto' }));
+    }
+  });
 
   useEffect(() => {
     if (screen === 'splash') {
@@ -2589,9 +2604,6 @@ function App() {
   }, [homeTargets.length, homeSlideIndex, activeScoreView]);
 
   const onChange = (e) => {
-    if (e.target && e.target.tagName === 'SELECT' && e.target.getAttribute('data-field')) {
-      e.target.blur();
-    }
     const field = e.target.getAttribute('data-field');
     if (field === 'coachPlannerFiles') {
       const files = Array.from(e.target.files || []);
