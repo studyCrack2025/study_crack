@@ -924,7 +924,7 @@ function App() {
     </div>
     <div class="section home-section">
       <div class="home-kpi-slider">
-        <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-card-width:70vw;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .72s cubic-bezier(.22,1,.36,1)'};">
+        <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-card-width:50%;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .72s cubic-bezier(.22,1,.36,1)'};">
         ${homeTargets.map((item) => `<button class="card home-kpi-card admission-card slider-card home-result-card-v3" data-action="selectUniversity" data-target-major="${item.major}">
           <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score"><strong>${item.score}점</strong><small>AI 점수</small></div></div>
           <div class="home-result-gauge"><i style="width:${Math.min((item.score / 250) * 100, 100)}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
@@ -1139,8 +1139,8 @@ function App() {
     .home-kpi-track.motion-prev{animation:none;}
     @keyframes homeSlideNext{from{transform:translateX(calc(var(--home-slide-x) + 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
     @keyframes homeSlidePrev{from{transform:translateX(calc(var(--home-slide-x) - 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
-    .home-kpi-slider .slider-card{flex:0 0 var(--home-slide-card-width,70vw) !important;flex-basis:var(--home-slide-card-width,70vw) !important;flex-shrink:0 !important;min-width:var(--home-slide-card-width,70vw) !important;max-width:var(--home-slide-card-width,70vw) !important;width:var(--home-slide-card-width,70vw) !important;margin-right:0;min-height:0;box-sizing:border-box;overflow:hidden;}
-    .home-kpi-slider .home-kpi-card.slider-card{flex:0 0 var(--home-slide-card-width,70vw) !important;flex-basis:var(--home-slide-card-width,70vw) !important;flex-shrink:0 !important;max-width:var(--home-slide-card-width,70vw) !important;min-width:var(--home-slide-card-width,70vw) !important;width:var(--home-slide-card-width,70vw) !important;}
+    .home-kpi-slider .slider-card{flex:0 0 var(--home-slide-card-width,50%) !important;flex-basis:var(--home-slide-card-width,50%) !important;flex-shrink:0 !important;min-width:var(--home-slide-card-width,50%) !important;max-width:var(--home-slide-card-width,50%) !important;width:var(--home-slide-card-width,50%) !important;margin-right:0;min-height:0;box-sizing:border-box;overflow:hidden;}
+    .home-kpi-slider .home-kpi-card.slider-card{flex:0 0 var(--home-slide-card-width,50%) !important;flex-basis:var(--home-slide-card-width,50%) !important;flex-shrink:0 !important;max-width:var(--home-slide-card-width,50%) !important;min-width:var(--home-slide-card-width,50%) !important;width:var(--home-slide-card-width,50%) !important;}
     .home-kpi-indicator i{cursor:pointer;}
     .home-add-univ-card{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;padding:24px;border:1px solid #BFDBFE;background:linear-gradient(135deg,#F8FBFF,#EAF2FF);color:#1D4ED8;border-radius:24px;box-shadow:0 12px 24px rgba(30,64,175,.10);min-height:0;}
     .home-add-univ-card b{font-size:28px;line-height:1.15;letter-spacing:-.02em;}
@@ -2418,8 +2418,36 @@ function App() {
     if (field === 'coachingMonth') setCoachingMonth(e.target.value);
     if (field === 'proEliteMonth') setProEliteMonth(e.target.value);
     if (field === 'obTrack') setObTrack(e.target.value);
-    if (field === 'scoreExamType') setScoreExamType(e.target.value);
-    if (field === 'obExamType') setObExamType(e.target.value);
+    if (field === 'scoreExamType') {
+      const value = e.target.value;
+      setScoreExamType(value);
+      const map = getExamScoresMap();
+      const picked = map[value];
+      if (!picked) {
+        setScores((prev) => ({ ...prev, korean: 0, math: 0, english: 0, inquiry1: 0, inquiry2: 0 }));
+        setScoreEditState((prev) => ({ ...prev, korean: { ...prev.korean, common: '', elective: '' }, math: { ...prev.math, common: '', elective: '' }, english: '', inquiry1: { ...prev.inquiry1, score: '' }, inquiry2: { ...prev.inquiry2, score: '' } }));
+      } else {
+        setScores((prev) => ({ ...prev, korean: Number(picked.korean || 0), math: Number(picked.math || 0), english: Number(picked.english || 0), inquiry1: Number(picked.inquiry1 || 0), inquiry2: Number(picked.inquiry2 || 0) }));
+        setScoreEditState((prev) => ({ ...prev, korean: { ...prev.korean, common: Math.floor(Number(picked.korean || 0) * 0.75), elective: Math.round(Number(picked.korean || 0) * 0.25) }, math: { ...prev.math, common: Math.floor(Number(picked.math || 0) * 0.74), elective: Math.round(Number(picked.math || 0) * 0.26) }, english: picked.englishGrade ? String(picked.englishGrade) : '', inquiry1: { ...prev.inquiry1, score: picked.inquiry1 ? String(picked.inquiry1) : '' }, inquiry2: { ...prev.inquiry2, score: picked.inquiry2 ? String(picked.inquiry2) : '' } }));
+      }
+    }
+    if (field === 'obExamType') {
+      const value = e.target.value;
+      setObExamType(value);
+      const map = getExamScoresMap();
+      const picked = map[value] || {};
+      const setVal = (key, val) => {
+        const el = document.querySelector(`[data-score-key="${key}"]`);
+        if (el) el.value = val ?? '';
+      };
+      setVal('korean_common', picked.korean ? Math.max(0, Math.floor(Number(picked.korean) * 0.75)) : '');
+      setVal('korean_elective', picked.korean ? Math.max(0, Math.round(Number(picked.korean) * 0.25)) : '');
+      setVal('math_common', picked.math ? Math.max(0, Math.floor(Number(picked.math) * 0.74)) : '');
+      setVal('math_elective', picked.math ? Math.max(0, Math.round(Number(picked.math) * 0.26)) : '');
+      setVal('english_grade', picked.englishGrade || '');
+      setVal('inquiry1_raw', picked.inquiry1 || '');
+      setVal('inquiry2_raw', picked.inquiry2 || '');
+    }
     const coachAnswer = e.target.getAttribute('data-coach-answer');
     const coachPlan = e.target.getAttribute('data-coach-plan');
     const coachActual = e.target.getAttribute('data-coach-actual');
