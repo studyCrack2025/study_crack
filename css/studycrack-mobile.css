@@ -1667,3 +1667,94 @@ html, body, #root { width:100%; min-height:100%; margin:0; padding:0; overflow-x
     margin-bottom: 112px !important;
   }
 }
+
+
+@media (max-width: 768px) {
+  .app-main,
+  main,
+  .mobile-page,
+  .dashboard-page {
+    padding-bottom: calc(180px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .bottom-nav {
+    position: fixed !important;
+    left: 24px !important;
+    right: 24px !important;
+    bottom: calc(88px + env(safe-area-inset-bottom)) !important;
+    height: 72px !important;
+    padding: 8px 12px !important;
+    background: #fff !important;
+    border-radius: 24px !important;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12) !important;
+    z-index: 9999 !important;
+
+    display: grid !important;
+    grid-auto-flow: column !important;
+    grid-auto-columns: 1fr !important;
+    align-items: center !important;
+    justify-items: center !important;
+    overflow: hidden !important;
+  }
+
+  .bottom-nav .bottom-nav-inner {
+    width: 100% !important;
+    height: 100% !important;
+    display: grid !important;
+    grid-auto-flow: column !important;
+    grid-auto-columns: 1fr !important;
+    align-items: stretch !important;
+  }
+
+  .bottom-nav a,
+  .bottom-nav button,
+  .bottom-nav .nav-item,
+  .bottom-nav [role="button"] {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    line-height: 1 !important;
+    text-align: center !important;
+  }
+
+  .bottom-nav svg,
+  .bottom-nav img {
+    width: 24px !important;
+    height: 24px !important;
+    flex: 0 0 24px !important;
+    display: block !important;
+    object-fit: contain !important;
+  }
+
+  .bottom-nav span,
+  .bottom-nav p,
+  .bottom-nav small {
+    display: block !important;
+    font-size: 11px !important;
+    line-height: 1.15 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+  }
+
+  .onboarding-cta {
+    position: fixed !important;
+    left: 24px !important;
+    right: 24px !important;
+    bottom: calc(112px + env(safe-area-inset-bottom)) !important;
+    height: 64px !important;
+    z-index: 9998 !important;
+  }
+}
