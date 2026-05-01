@@ -1182,7 +1182,10 @@ function App() {
     html,body{touch-action:manipulation;overscroll-behavior:none;}
     .app-shell,.app-frame,.app-screen{min-height:100dvh;}
     .onboarding-container .content{padding:0 16px 150px;box-sizing:border-box;}
-    .onboarding-shot{height:100vh;max-width:390px;margin:0 auto;padding:0 24px;display:flex;flex-direction:column;position:relative;overflow:hidden;background:#fff;}
+    .onboarding-shot{height:100vh;height:100dvh;max-width:390px;margin:0 auto;padding:0 24px;display:flex;flex-direction:column;position:relative;overflow:hidden;background:#fff;}
+    @supports (-webkit-touch-callout: none) {
+      .onboarding-shot{height:-webkit-fill-available;}
+    }
     .onboarding-shot-head{margin-top:72px;text-align:center;}
     .onboarding-shot-head h2{margin:0;font-size:24px;font-weight:800;line-height:1.45;letter-spacing:-0.04em;color:#111827;white-space:pre-line;}
     .onboarding-shot-head h2 .accent{color:#0B4EDB;}
