@@ -1559,3 +1559,29 @@ html, body, #root { width:100%; min-height:100%; margin:0; padding:0; overflow-x
   .bottom-nav-item span,.tabbar button span { display:block !important; white-space:nowrap !important; word-break:keep-all !important; }
   .bottom-nav-item.active,.tabbar button.active { background:#eef4ff !important; color:#1269f3 !important; border-radius:18px !important; }
 }
+
+
+@media (max-width: 768px) {
+  .bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(72px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    z-index: 1000;
+  }
+
+  .app-main {
+    padding-bottom: calc(144px + env(safe-area-inset-bottom));
+  }
+
+  .onboarding-cta {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: calc(84px + env(safe-area-inset-bottom));
+    height: 56px;
+    z-index: 1001;
+  }
+}
