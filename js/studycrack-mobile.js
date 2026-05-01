@@ -311,6 +311,8 @@ function App() {
       const bottom = document.querySelector('[data-bottom-nav]');
       const topHeight = top ? top.getBoundingClientRect().height : 0;
       const bottomHeight = bottom ? bottom.getBoundingClientRect().height : 0;
+      document.documentElement.style.setProperty('--header-height', `${topHeight}px`);
+      document.documentElement.style.setProperty('--bottom-nav-height', `${bottomHeight}px`);
       document.documentElement.style.setProperty('--fixed-top-height', `${topHeight}px`);
       document.documentElement.style.setProperty('--fixed-bottom-height', `${bottomHeight}px`);
     };
@@ -661,7 +663,7 @@ function App() {
     );
   }, [selectedPlan, targetMajor, tab, user]);
 
-  const appbar = (title, showBack) => `<div class="appbar">${showBack ? '<button class="back-btn" data-action="back">←</button>' : '<div style="width:36px"></div>'}<div class="title">${title}</div></div>`;
+  const appbar = (title, showBack) => `<header class="appbar fixed-header" data-app-header>${showBack ? '<button class="back-btn" data-action="back">←</button>' : '<div style="width:36px"></div>'}<div class="title">${title}</div></header>`;
   const tabBtn = (k, label, iconName) => `<button class="${tab === k ? 'active' : ''}" data-action="tab" data-tab="${k}">${i(iconName, tab===k)}<span>${label}</span></button>`;
   const tabbarDimmed = Boolean(
     coachingSheetOpen
@@ -673,8 +675,8 @@ function App() {
     || scoreEditOpen
     || logoutModalOpen
   );
-  const tabbar = () => `<div class="tabbar bottom-tab ${tabbarDimmed ? 'is-muted' : ''}" data-bottom-nav>${tabBtn('home','홈','home')}${tabBtn('analysis','분석','chart')}${tabBtn('strategy','학습 코칭','target')}${tabBtn('planner','플래너','calendar')}${tabBtn('my','마이','user')}</div>`;
-  const layout = (inner, withTab) => `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content ${tabbarDimmed ? 'modal-lock' : ''}">${inner}</div>${withTab ? tabbar() : ''}</div></div>`;
+  const tabbar = () => `<nav class="tabbar bottom-nav bottom-tab ${tabbarDimmed ? 'is-muted' : ''}" data-bottom-nav>${tabBtn('home','홈','home')}${tabBtn('analysis','분석','chart')}${tabBtn('strategy','학습 코칭','target')}${tabBtn('planner','플래너','calendar')}${tabBtn('my','마이','user')}</nav>`;
+  const layout = (inner, withTab) => `<div class="app-shell"><div class="app-frame"><main class="screen app-screen app-main app-content ${tabbarDimmed ? 'modal-lock' : ''}">${inner}</main>${withTab ? tabbar() : ''}</div></div>`;
   const quickMini = (action, iconName, label) => `<button class="quick-mini-item" data-action="goto" data-target="${action}"><span class="quick-mini-icon">${i(iconName,false)}</span><span class="quick-mini-label">${label}</span></button>`;
   const universityProfiles = {
     '연세대학교 경영학과': {

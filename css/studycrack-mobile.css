@@ -45,13 +45,12 @@ body {
 }
 .app-shell {
   width: 100%;
-  min-height: 100dvh;
-  min-height: -webkit-fill-available;
+  min-height: var(--app-vh);
   display: flex;
   justify-content: center;
   align-items: flex-start;
   background: #F5F7FB;
-  padding-top: env(safe-area-inset-top);
+  overflow-x: hidden;
 }
 .app-frame {
   width: 100%;
@@ -67,24 +66,25 @@ body {
 }
 .screen,
 .app-screen,
-.app-content {
+.app-content,
+.app-main {
   width: 100%;
-  min-height: 100dvh;
-  min-height: -webkit-fill-available;
+  min-height: var(--app-vh);
   box-sizing: border-box;
   position: relative;
 }
 .screen { overflow-x: hidden; overflow-y: visible; padding: 0; }
-.app-content {
+.app-content,
+.app-main {
   flex: 1;
   overflow: visible;
   padding: 20px 16px;
-  padding-top: calc(var(--fixed-top-height) + var(--safe-top) + 24px) !important;
-  padding-bottom: calc(var(--fixed-bottom-height) + var(--safe-bottom) + 120px) !important;
+  padding-top: calc(var(--header-height) + var(--safe-top) + 16px) !important;
+  padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + 48px) !important;
   box-sizing: border-box;
   z-index: 1;
 }
-.app-content > :last-child { margin-bottom: calc(var(--fixed-bottom-height) + var(--safe-bottom) + 120px) !important; }
+.app-content > :last-child, .app-main > :last-child { margin-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + 48px) !important; }
 .app-content::after {
   content: '';
   display: block;
@@ -98,6 +98,13 @@ body {
 .app-content { position: relative; }
 .section { margin-bottom: 10px; }
 .appbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.fixed-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  padding-top: var(--safe-top);
+  background: #F5F7FB;
+}
 .back-btn { width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: #1e293b; }
 .title { font-size: 18px; font-weight: 600; }
 .sub { font-size: 14px; color: var(--muted); }
@@ -218,6 +225,7 @@ body {
   will-change: transform;
   box-sizing: border-box;
 }
+.bottom-nav { position: fixed; left:0; right:0; bottom:0; padding-bottom: var(--safe-bottom); z-index: 1000; }
 @supports (-webkit-touch-callout: none) {
   .app-root,
   .app-frame,
