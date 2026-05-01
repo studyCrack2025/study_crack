@@ -661,7 +661,7 @@ function App() {
     );
   }, [selectedPlan, targetMajor, tab, user]);
 
-  const appbar = (title, showBack) => `<div class="appbar" data-fixed-header>${showBack ? '<button class="back-btn" data-action="back">←</button>' : '<div style="width:36px"></div>'}<div class="title">${title}</div></div>`;
+  const appbar = (title, showBack) => `<div class="appbar">${showBack ? '<button class="back-btn" data-action="back">←</button>' : '<div style="width:36px"></div>'}<div class="title">${title}</div></div>`;
   const tabBtn = (k, label, iconName) => `<button class="${tab === k ? 'active' : ''}" data-action="tab" data-tab="${k}">${i(iconName, tab===k)}<span>${label}</span></button>`;
   const tabbarDimmed = Boolean(
     coachingSheetOpen
