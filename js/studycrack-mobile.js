@@ -28,6 +28,7 @@ const PRO_ELITE_REPORTS = [
 ];
 const PRO_ELITE_REPORT_PDF_PATH = './assets/features/feat_pro_report.pdf';
 const SCORE_LABELS = { korean: '국어', math: '수학', english: '영어', inquiry1: '탐구1', inquiry2: '탐구2' };
+const isIOSSafari = /iP(ad|hone|od)/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|OPiOS/.test(navigator.userAgent);
 
 const safeParse = (key, fallback) => {
   try {
@@ -224,6 +225,23 @@ function App() {
       if (Math.abs(now - y) > 0) window.scrollTo({ top: y, left: 0, behavior: 'auto' });
     }, durationMs + 20);
   };
+  const afterSafariViewportStable = (callback) => {
+    requestAnimationFrame(() => requestAnimationFrame(callback));
+  };
+  const preserveScrollDuringSafariViewportChange = (callback) => {
+    if (!isIOSSafari) {
+      callback();
+      return;
+    }
+    const lastScrollY = window.scrollY || window.pageYOffset || 0;
+    callback();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const nowY = window.scrollY || window.pageYOffset || 0;
+        if (Math.abs(nowY - lastScrollY) > 80) window.scrollTo({ top: lastScrollY, left: 0, behavior: 'auto' });
+      });
+    });
+  };
 
   const goto = (next, addHistory = true) => {
     const currentY = window.scrollY || window.pageYOffset || 0;
@@ -265,6 +283,19 @@ function App() {
     window.addEventListener('scroll', onNativeScroll, { passive: true });
     return () => window.removeEventListener('scroll', onNativeScroll);
   }, [screen]);
+  useEffect(() => {
+    const onScrollDebug = () => console.log('[scroll]', window.scrollY);
+    const onViewportResize = () => console.log('[vv resize]', window.visualViewport?.height, window.scrollY);
+    const onViewportScroll = () => console.log('[vv scroll]', window.visualViewport?.offsetTop, window.scrollY);
+    window.addEventListener('scroll', onScrollDebug, { passive: true });
+    window.visualViewport?.addEventListener('resize', onViewportResize);
+    window.visualViewport?.addEventListener('scroll', onViewportScroll);
+    return () => {
+      window.removeEventListener('scroll', onScrollDebug);
+      window.visualViewport?.removeEventListener('resize', onViewportResize);
+      window.visualViewport?.removeEventListener('scroll', onViewportScroll);
+    };
+  }, []);
 
   useEffect(() => {
     // 스크롤 강제 복원은 iOS/Safari에서 "스크롤 초기화"처럼 보이는 점프를 유발할 수 있어 비활성화합니다.
@@ -414,7 +445,7 @@ function App() {
     const waitMs = Math.max(0, 1300 - elapsed);
     loadingExitTimerRef.current = setTimeout(() => {
       setLoadingFadeOut(true);
-      setTimeout(() => setLoading(false), 320);
+      setTimeout(() => preserveScrollDuringSafariViewportChange(() => setLoading(false)), 320);
     }, waitMs);
   };
 
@@ -1102,7 +1133,7 @@ function App() {
     html,body{touch-action:manipulation;overscroll-behavior:none;}
     .app-shell,.app-frame,.app-screen{min-height:100dvh;}
     .onboarding-container .content{padding:0 16px 150px;box-sizing:border-box;}
-    .onboarding-shot{height:100vh;max-width:390px;margin:0 auto;padding:0 24px;display:flex;flex-direction:column;position:relative;overflow:hidden;background:#fff;}
+    .onboarding-shot{min-height:100dvh;min-height:-webkit-fill-available;max-width:390px;margin:0 auto;padding:0 24px;display:flex;flex-direction:column;position:relative;overflow:hidden;background:#fff;}
     .onboarding-shot-head{margin-top:72px;text-align:center;}
     .onboarding-shot-head h2{margin:0;font-size:24px;font-weight:800;line-height:1.45;letter-spacing:-0.04em;color:#111827;white-space:pre-line;}
     .onboarding-shot-head h2 .accent{color:#0B4EDB;}
@@ -1990,7 +2021,7 @@ function App() {
     if (action === 'toggleTarget') setTargetOpen((v) => !v);
     if (action === 'selectTarget') {
       setTargetMajor(actionEl.getAttribute('data-target-major'));
-      setTargetOpen(false);
+      afterSafariViewportStable(() => preserveScrollDuringSafariViewportChange(() => setTargetOpen(false)));
     }
     if (action === 'setAnalysisMode') setAnalysisMode(actionEl.getAttribute('data-analysis-mode') || 'summary');
     if (action === 'setScoreView') {
@@ -2017,7 +2048,7 @@ function App() {
     }
     if (action === 'openAnalysisSearch') setAnalysisSearchOpen(true);
     if (action === 'closeAnalysisSearch') {
-      setAnalysisSearchOpen(false);
+      afterSafariViewportStable(() => preserveScrollDuringSafariViewportChange(() => setAnalysisSearchOpen(false)));
       setAnalysisSearchTerm('');
     }
     if (action === 'highlightSimSubject') {
@@ -2697,10 +2728,10 @@ function App() {
     }
   };
 
-  const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><section class="app-loading-hero app-loading-poster ${loadingFadeOut ? 'is-fade-out' : ''}"><img class="app-loading-poster-img" src="./assets/images/IMG_3020.png" alt="스터디크랙 로딩 이미지"/><div class="app-loading-progress"><div class="app-loading-bar"><i></i></div><p class="app-loading-label">LOADING...</p></div></section></div></div></div>`;
+  const loadingUi = `<section class="app-loading-hero app-loading-poster ${loadingFadeOut ? 'is-fade-out' : ''}"><img class="app-loading-poster-img" src="./assets/images/IMG_3020.png" alt="스터디크랙 로딩 이미지"/><div class="app-loading-progress"><div class="app-loading-bar"><i></i></div><p class="app-loading-label">LOADING...</p></div></section>`;
   const fallbackUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div></div>`;
   const preAuthAllowedScreens = ['splash', 'authLogin', 'authSignup', 'authFindId', 'authFindPw', 'on1', 'on2', 'on3'];
-  const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !preAuthAllowedScreens.includes(screen) ? screens.on1 : current;
+  const renderedBase = error ? fallbackUi : !loggedIn && !preAuthAllowedScreens.includes(screen) ? screens.on1 : current;
   const analysisOverlay = isAnalyzing && screen === 'analysis'
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>분석중입니다</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
@@ -2710,7 +2741,7 @@ function App() {
   const addingUniversityOverlay = addingUniversity
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>추가중입니다.</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
-  const rendered = `${designV2StyleTag}${renderedBase}${analysisOverlay}${onboardingOverlay}${addingUniversityOverlay}`;
+  const rendered = `${designV2StyleTag}${renderedBase}${loading ? loadingUi : ''}${analysisOverlay}${onboardingOverlay}${addingUniversityOverlay}`;
 
   return <div onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: rendered }} />;
 }
