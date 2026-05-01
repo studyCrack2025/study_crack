@@ -211,6 +211,7 @@ function App() {
   const dragFrameRef = useRef(null);
   const pendingHomeDragRef = useRef(0);
   const pendingScoreDragRef = useRef(0);
+  const slideStepRef = useRef({ home: 0, score: 0 });
   const suppressClickUntilRef = useRef(0);
   const pendingFocusTargetRef = useRef(null);
   const lastStableScrollYRef = useRef(0);
@@ -255,6 +256,24 @@ function App() {
     const isDropdownTrigger = typeof target.closest === 'function' && !!target.closest('[data-dropdown-trigger]');
     if (isFocusableInput || isDropdownTrigger) pendingFocusTargetRef.current = target;
   };
+  const measureSlideStep = (type) => {
+    if (type === 'home') {
+      const track = document.querySelector('.home-kpi-track');
+      const card = track?.querySelector('.slider-card');
+      if (!track || !card) return 0;
+      const style = window.getComputedStyle(track);
+      const gap = parseFloat(style.columnGap || style.gap || '0') || 0;
+      slideStepRef.current.home = card.offsetWidth + gap;
+      return slideStepRef.current.home;
+    }
+    const track = document.querySelector('.score-journey-track');
+    const card = track?.querySelector('.score-journey-item');
+    if (!track || !card) return 0;
+    const style = window.getComputedStyle(track);
+    const gap = parseFloat(style.columnGap || style.gap || '0') || 0;
+    slideStepRef.current.score = card.offsetWidth + gap;
+    return slideStepRef.current.score;
+  };
   const restoreFocusIfSafariDroppedIt = () => {
     if (!isIOSSafari || !pendingFocusTargetRef.current) return;
     afterSafariViewportStable(() => {
@@ -266,6 +285,8 @@ function App() {
   useEffect(() => {
     if (!isIOSSafari || !window.visualViewport) return undefined;
     const recoverIfJumped = () => {
+      measureSlideStep('home');
+      measureSlideStep('score');
       const savedY = lastStableScrollYRef.current || 0;
       const nowY = window.scrollY || window.pageYOffset || 0;
       if (Math.abs(nowY - savedY) > 80) {
@@ -2566,6 +2587,7 @@ function App() {
       }
       if (target?.closest?.('.home-kpi-slider')) {
         touchTargetRef.current = 'home';
+        measureSlideStep('home');
         touchStartXRef.current = clientX;
         touchStartYRef.current = typeof clientY === 'number' ? clientY : 0;
         touchStartTimeRef.current = performance.now();
@@ -2573,6 +2595,7 @@ function App() {
       }
       if (target?.closest?.('.score-journey-scroll')) {
         touchTargetRef.current = 'score';
+        measureSlideStep('score');
         touchStartXRef.current = clientX;
         touchStartYRef.current = typeof clientY === 'number' ? clientY : 0;
         touchStartTimeRef.current = performance.now();
@@ -2595,7 +2618,8 @@ function App() {
         const atLast = homeSlideIndex === homeTargets.length;
         const overscrolling = (atFirst && delta > 0) || (atLast && delta < 0);
         const resistance = overscrolling ? 0.35 : 0.92;
-        const clamped = Math.max(-118, Math.min(118, delta * resistance));
+        const step = slideStepRef.current.home || measureSlideStep('home') || 1;
+        const clamped = Math.max(-step, Math.min(step, delta * resistance));
         pendingHomeDragRef.current = clamped;
         if (!dragFrameRef.current) {
           dragFrameRef.current = requestAnimationFrame(() => {
@@ -2604,7 +2628,8 @@ function App() {
           });
         }
       } else if (touchTargetRef.current === 'score') {
-        const clamped = Math.max(-96, Math.min(96, delta));
+        const step = slideStepRef.current.score || measureSlideStep('score') || 1;
+        const clamped = Math.max(-step, Math.min(step, delta));
         pendingScoreDragRef.current = clamped;
         if (!dragFrameRef.current) {
           dragFrameRef.current = requestAnimationFrame(() => {
@@ -2631,7 +2656,10 @@ function App() {
       setHomeDragOffset(0);
       setScoreDragOffset(0);
       const absDelta = Math.abs(delta);
-      const swipeThreshold = Math.min(window.innerWidth * 0.1, 40);
+      const step = touchTargetRef.current === 'home'
+        ? (slideStepRef.current.home || measureSlideStep('home') || window.innerWidth)
+        : (slideStepRef.current.score || measureSlideStep('score') || window.innerWidth);
+      const swipeThreshold = Math.min(step * 0.12, 42);
       const velocityThreshold = 0.25;
       if (absDelta < swipeThreshold && Math.abs(velocityX) < velocityThreshold) {
         touchTargetRef.current = '';
