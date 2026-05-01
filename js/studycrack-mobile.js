@@ -210,6 +210,7 @@ function App() {
   const pendingHomeDragRef = useRef(0);
   const pendingScoreDragRef = useRef(0);
   const suppressClickUntilRef = useRef(0);
+  const pendingFocusTargetRef = useRef(null);
   const lastStableScrollYRef = useRef(0);
   const scrollGuardRef = useRef({ until: 0, y: 0 });
   const renderStableScrollYRef = useRef(0);
@@ -244,6 +245,21 @@ function App() {
       if (Math.abs(nowY - prevY) > 80) window.scrollTo({ top: prevY, left: 0, behavior: 'auto' });
     });
   };
+  const rememberFocusTarget = (target) => {
+    if (!isIOSSafari || !target) return;
+    const isFocusableInput = target instanceof HTMLInputElement
+      || target instanceof HTMLTextAreaElement
+      || target instanceof HTMLSelectElement;
+    const isDropdownTrigger = typeof target.closest === 'function' && !!target.closest('[data-dropdown-trigger]');
+    if (isFocusableInput || isDropdownTrigger) pendingFocusTargetRef.current = target;
+  };
+  const restoreFocusIfSafariDroppedIt = () => {
+    if (!isIOSSafari || !pendingFocusTargetRef.current) return;
+    afterSafariViewportStable(() => {
+      if (document.activeElement === document.body) pendingFocusTargetRef.current?.focus?.();
+      pendingFocusTargetRef.current = null;
+    });
+  };
 
   useEffect(() => {
     if (!isIOSSafari || !window.visualViewport) return undefined;
@@ -260,6 +276,13 @@ function App() {
       window.visualViewport.removeEventListener('resize', recoverIfJumped);
       window.visualViewport.removeEventListener('scroll', recoverIfJumped);
     };
+  }, [isIOSSafari]);
+
+  useEffect(() => {
+    if (!isIOSSafari) return undefined;
+    const onTouchStartRemember = (e) => rememberFocusTarget(e.target);
+    document.addEventListener('touchstart', onTouchStartRemember, { passive: true });
+    return () => document.removeEventListener('touchstart', onTouchStartRemember);
   }, [isIOSSafari]);
 
   const goto = (next, addHistory = true) => {
@@ -2669,6 +2692,7 @@ function App() {
 
   const onChange = (e) => {
     const field = e.target.getAttribute('data-field');
+    rememberFocusTarget(e.target);
     if (field === 'coachPlannerFiles') {
       const files = Array.from(e.target.files || []);
       if (files.length) setCoachingPlannerFiles((prev) => [...prev, ...files].slice(0, 5));
@@ -2681,12 +2705,24 @@ function App() {
       e.target.value = '';
       return;
     }
-    if (field === 'scoreExamType') preserveScrollDuringSafariViewportChange(() => applyScoreExamSelection(e.target.value));
-    if (field === 'obTrack') preserveScrollDuringSafariViewportChange(() => setObTrack(e.target.value));
-    if (field === 'obExamType') preserveScrollDuringSafariViewportChange(() => applyObExamSelection(e.target.value));
+    if (field === 'scoreExamType') preserveScrollDuringSafariViewportChange(() => {
+      applyScoreExamSelection(e.target.value);
+      restoreFocusIfSafariDroppedIt();
+    });
+    if (field === 'obTrack') preserveScrollDuringSafariViewportChange(() => {
+      setObTrack(e.target.value);
+      restoreFocusIfSafariDroppedIt();
+    });
+    if (field === 'obExamType') preserveScrollDuringSafariViewportChange(() => {
+      applyObExamSelection(e.target.value);
+      restoreFocusIfSafariDroppedIt();
+    });
   };
   const onBlur = (e) => {
-    if (isIOSSafari) preserveScrollDuringSafariViewportChange(() => {});
+    if (e.target && e.target.tagName === 'SELECT') {
+      if (isIOSSafari) preserveScrollDuringSafariViewportChange(() => restoreFocusIfSafariDroppedIt());
+      return;
+    }
     const field = e.target.getAttribute('data-field');
     const coachAnswer = e.target.getAttribute('data-coach-answer');
     if (coachAnswer) {
