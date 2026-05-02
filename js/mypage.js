@@ -5,6 +5,7 @@ let currentUserTier = 'free';
 let cognitoUser = null;
 let currentTutorData = null;
 let currentUserAuthProvider = 'local';
+let currentUserEmail = '';
 
 let mypagePhoneTimerInterval = null;
 
@@ -324,6 +325,7 @@ function renderUserInfo(data) {
     // socialEmail(카카오/구글/네이버 실제 이메일) 우선 표시
     const rawEmail = data.socialEmail || data.email || '';
     const displayEmail = rawEmail.includes('@social.studycrack.co.kr') ? '' : rawEmail;
+    currentUserEmail = displayEmail;
     if (emailEl) emailEl.innerText = displayEmail;
 
     const nameInput = document.getElementById('profileName');
@@ -817,57 +819,99 @@ function checkDeleteButtonVisibility(url) {
 // [기능 4] 회원 탈퇴
 // ==========================================
 function handleDeleteAccount() {
-    document.getElementById('deleteAccountPassword').value = '';
     const isSocialOnly = currentUserAuthProvider !== 'local';
-    const pwGroup = document.querySelector('#deleteAccountModal .form-group');
-    if (pwGroup) pwGroup.style.display = isSocialOnly ? 'none' : '';
+    const authGroup = document.getElementById('deleteAuthGroup');
+
+    // 1단계 인증 입력 폼 동적 구성
+    if (isSocialOnly) {
+        authGroup.innerHTML = `
+            <label>본인 확인을 위해 가입 시 사용한 <strong>이메일 주소</strong>를 입력해주세요.</label>
+            <input type="email" id="deleteAuthInput" placeholder="이메일 입력" autocomplete="off">`;
+    } else {
+        authGroup.innerHTML = `
+            <label>본인 확인을 위해 현재 <strong>비밀번호</strong>를 입력해주세요.</label>
+            <input type="password" id="deleteAuthInput" placeholder="현재 비밀번호 입력">`;
+    }
+
+    // 모달 초기화: 1단계 표시, 2단계 숨김
+    document.getElementById('deleteStep1').classList.remove('hidden');
+    document.getElementById('deleteStep2').classList.add('hidden');
+    document.getElementById('deleteConfirmText').value = '';
+
+    // 버튼 초기화
+    const step1Btn = document.querySelector('#deleteStep1 .primary-btn');
+    if (step1Btn) { step1Btn.innerText = '본인 확인'; step1Btn.disabled = false; }
+
     document.getElementById('deleteAccountModal').classList.remove('hidden');
 }
 
-function executeDeleteAccount() {
+function deleteStep1Submit() {
     const isSocialOnly = currentUserAuthProvider !== 'local';
+    const inputVal = document.getElementById('deleteAuthInput')?.value || '';
+    const btn = document.querySelector('#deleteStep1 .primary-btn');
 
-    // 소셜 전용 계정: 비밀번호 없이 바로 삭제
+    if (!inputVal.trim()) {
+        alert(isSocialOnly ? '이메일을 입력해주세요.' : '비밀번호를 입력해주세요.');
+        return;
+    }
+
     if (isSocialOnly) {
-        const btn = document.querySelector('#deleteAccountModal .danger-btn');
-        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 데이터 삭제 중...`;
-        btn.disabled = true;
-        processBackendDeletion();
-        return;
-    }
-
-    const password = document.getElementById('deleteAccountPassword').value;
-    if (!password) {
-        alert("비밀번호를 입력해주세요.");
-        return;
-    }
-
-    if (!cognitoUser) {
-        alert("유저 세션이 만료되었습니다. 다시 로그인해주세요.");
-        window.location.href = '/login';
-        return;
-    }
-
-    const btn = document.querySelector('#deleteAccountModal .danger-btn');
-    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 비밀번호 확인 중...`;
-    btn.disabled = true;
-
-    const authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails({
-        Username: cognitoUser.getUsername(),
-        Password: password,
-    });
-
-    cognitoUser.authenticateUser(authenticationDetails, {
-        onSuccess: async function (result) {
-            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 데이터 삭제 중...`;
-            await processBackendDeletion();
-        },
-        onFailure: function (err) {
-            alert("비밀번호가 일치하지 않습니다. 다시 확인해주세요.");
-            btn.innerText = "네, 모든 데이터를 삭제하고 탈퇴합니다";
-            btn.disabled = false;
+        // 소셜 계정: 등록된 이메일과 일치 여부 확인
+        if (inputVal.trim().toLowerCase() !== currentUserEmail.toLowerCase()) {
+            alert('이메일이 일치하지 않습니다. 다시 확인해주세요.');
+            return;
         }
-    });
+        _proceedToDeleteStep2();
+    } else {
+        // 로컬 계정: Cognito 비밀번호 인증
+        if (!cognitoUser) {
+            alert('유저 세션이 만료되었습니다. 다시 로그인해주세요.');
+            window.location.href = '/login';
+            return;
+        }
+
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 확인 중...`;
+        btn.disabled = true;
+
+        const authDetails = new AmazonCognitoIdentity.AuthenticationDetails({
+            Username: cognitoUser.getUsername(),
+            Password: inputVal
+        });
+
+        cognitoUser.authenticateUser(authDetails, {
+            onSuccess: function () {
+                _proceedToDeleteStep2();
+            },
+            onFailure: function () {
+                alert('비밀번호가 일치하지 않습니다. 다시 확인해주세요.');
+                btn.innerText = '본인 확인';
+                btn.disabled = false;
+            }
+        });
+    }
+}
+
+function _proceedToDeleteStep2() {
+    document.getElementById('deleteStep1').classList.add('hidden');
+    document.getElementById('deleteStep2').classList.remove('hidden');
+    document.getElementById('deleteConfirmText').value = '';
+    document.getElementById('deleteConfirmText').focus();
+
+    const step2Btn = document.querySelector('#deleteStep2 .danger-btn');
+    if (step2Btn) { step2Btn.innerText = '탈퇴하기'; step2Btn.disabled = false; }
+}
+
+function deleteStep2Submit() {
+    const confirmText = document.getElementById('deleteConfirmText').value;
+    if (confirmText !== '회원 탈퇴') {
+        alert("'회원 탈퇴'를 정확히 입력해주세요.");
+        return;
+    }
+
+    const btn = document.querySelector('#deleteStep2 .danger-btn');
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 데이터 삭제 중...`;
+    btn.disabled = true;
+    processBackendDeletion();
 }
 
 async function processBackendDeletion() {
@@ -883,9 +927,8 @@ async function processBackendDeletion() {
         window.location.href = '/'; 
     } catch (error) { 
         if (error.message !== "Auth expired") alert("서버 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-        const btn = document.querySelector('#deleteAccountModal .danger-btn');
-        btn.innerText = "네, 모든 데이터를 삭제하고 탈퇴합니다";
-        btn.disabled = false;
+        const btn = document.querySelector('#deleteStep2 .danger-btn');
+        if (btn) { btn.innerText = '탈퇴하기'; btn.disabled = false; }
     }
 }
 
