@@ -2523,11 +2523,27 @@ function App() {
       setDrawerOpen(false);
     }
     if (action === 'openNotificationModal') {
-      if (isIOSSafari() && toggleHomeUiDom('.home-modal-overlay:has(.pro-notif-modal)', true)) return;
+      if (isIOSSafari() && screen === 'home') {
+        const modal = document.querySelector('.pro-notif-modal');
+        const overlay = modal?.closest('.home-modal-overlay');
+        if (overlay) {
+          overlay.hidden = false;
+          overlay.style.display = '';
+          return;
+        }
+      }
       setNotifModalOpen(true);
     }
     if (action === 'closeNotificationModal') {
-      if (isIOSSafari() && toggleHomeUiDom('.home-modal-overlay:has(.pro-notif-modal)', false)) return;
+      if (isIOSSafari() && screen === 'home') {
+        const modal = document.querySelector('.pro-notif-modal');
+        const overlay = modal?.closest('.home-modal-overlay');
+        if (overlay) {
+          overlay.hidden = true;
+          overlay.style.display = 'none';
+          return;
+        }
+      }
       setNotifModalOpen(false);
     }
     if (action === 'openProRequestModal') setProRequestModalOpen(true);
