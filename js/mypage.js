@@ -98,11 +98,12 @@ document.addEventListener('DOMContentLoaded', () => {
     bindEnterKey('newChangePasswordConfirm', changePassword);
     bindEnterKey('deleteAccountPassword', executeDeleteAccount);
     
-    // 소셜 재인증 콜백 처리 (회원 탈퇴용)
+    // 소셜 재인증 콜백 처리 (회원 탈퇴용) — DOM 즉시 열기
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('reauth') === 'success' && urlParams.get('purpose') === 'delete_account') {
         history.replaceState(null, '', '/mypage');
-        sessionStorage.setItem('pendingDeleteReauth', 'true');
+        document.getElementById('deleteAccountModal').classList.remove('hidden');
+        _proceedToDeleteStep2();
     }
 
     // MBTI 테스트 후 복귀 처리
@@ -237,13 +238,6 @@ async function fetchUserData(userId) {
                 imgElem.src = escapeHtml(userData.profileImage);
                 checkDeleteButtonVisibility(userData.profileImage);
             }
-        }
-
-        // 소셜 재인증 후 탈퇴 2단계 자동 열기
-        if (sessionStorage.getItem('pendingDeleteReauth') === 'true') {
-            sessionStorage.removeItem('pendingDeleteReauth');
-            document.getElementById('deleteAccountModal').classList.remove('hidden');
-            _proceedToDeleteStep2();
         }
 
         // 튜터 정보 조회 로직 업데이트
