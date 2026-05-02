@@ -2515,11 +2515,27 @@ function App() {
     if (action === 'openKakaoSupport') window.open('http://pf.kakao.com/_wxjxcgn', '_blank');
     if (action === 'openEmailSupport') window.location.href = 'mailto:contact@studycrack.co.kr';
     if (action === 'openDrawer') {
-      if (isIOSSafari() && toggleHomeUiDom('.drawer-overlay', true)) return;
+      if (isIOSSafari() && screen === 'home') {
+        const drawer = document.querySelector('.side-drawer');
+        const overlay = drawer?.closest('.drawer-overlay');
+        if (overlay) {
+          overlay.hidden = false;
+          overlay.style.display = '';
+          return;
+        }
+      }
       setDrawerOpen(true);
     }
     if (action === 'closeDrawer') {
-      if (isIOSSafari() && toggleHomeUiDom('.drawer-overlay', false)) return;
+      if (isIOSSafari() && screen === 'home') {
+        const drawer = document.querySelector('.side-drawer');
+        const overlay = drawer?.closest('.drawer-overlay');
+        if (overlay) {
+          overlay.hidden = true;
+          overlay.style.display = 'none';
+          return;
+        }
+      }
       setDrawerOpen(false);
     }
     if (action === 'openNotificationModal') {
