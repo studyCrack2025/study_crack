@@ -4,7 +4,6 @@ const CRACKY_SRC = './assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png';
 const ONBOARDING_LOGO_SRC = './assets/images/og-image.jpg';
 const STUDYCRACK_LOGO_SRC = './assets/images/studycrack_logo_wo_bg.png';
 const HOME_FALLBACK_HTML = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>스터디크랙 홈</h3><p class="sub">앱을 불러왔어요. 계속 이용해 주세요.</p></div></div></div></div>`;
-let hasRestoredInitialScroll = false;
 let initialScrollY = 0;
 const DEFAULT_USER = { name: '김지민', targetUniversity: '연세대학교 경영학과', plan: 'Pro' };
 const DEFAULT_SCORES = { korean: 82, math: 68, english: 77, inquiry1: 70, inquiry2: 66 };
@@ -222,6 +221,17 @@ function App() {
     if (isIOSSafari()) return;
     if ((window.scrollY || window.pageYOffset || 0) >= 50) return;
     el.scrollIntoView(options);
+  };
+  const preserveScrollAfterStateChange = (callback) => {
+    const y = window.scrollY || window.pageYOffset || 0;
+    callback();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (Math.abs((window.scrollY || window.pageYOffset || 0) - y) > 80) {
+          window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+        }
+      });
+    });
   };
   const safeScrollTo = (...args) => {
     if (isIOSSafari()) return;
@@ -473,33 +483,30 @@ function App() {
     setOb3IsAnalyzing(true);
     const t = setTimeout(() => {
       armScrollGuard(1200);
-      if (replaceStandardEtaSlotForIos()) {
+      if (isIOSSafari()) {
+        const loading = document.querySelector('.onboarding-shell .loading-overlay');
+        if (loading) {
+          const wrap = document.createElement('div');
+          wrap.innerHTML = `<div class="card ob-card ob-period-card on-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 3개월 내 도달 예상</b><p>주간 플래너 피드백과 학습 방향 코칭 제공</p></div>`;
+          loading.replaceWith(wrap.firstChild);
           return;
+        }
       }
       setOb3IsAnalyzing(false);
     }, 1500);
     return () => {
       clearTimeout(t);
-      if (!(isIOSSafari() && (screen === 'analysis' || screen === 'ob5'))) setOb3IsAnalyzing(false);
+      setOb3IsAnalyzing(false);
     };
   }, [screen]);
 
   useEffect(() => {
-    if (!isIOSSafari() || hasRestoredInitialScroll) return undefined;
+    if (!isIOSSafari()) return;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        if ((window.scrollY || window.pageYOffset || 0) === 0 && initialScrollY > 0) {
-          window.scrollTo({ top: initialScrollY, left: 0, behavior: 'auto' });
-        }
-        hasRestoredInitialScroll = true;
+        if ((window.scrollY || window.pageYOffset || 0) === 0 && initialScrollY > 0) window.scrollTo(0, initialScrollY);
       });
     });
-    const onInitialViewportResize = () => {
-      if (hasRestoredInitialScroll) return;
-      if (initialScrollY > 0) window.scrollTo({ top: initialScrollY, left: 0, behavior: 'auto' });
-    };
-    window.visualViewport?.addEventListener('resize', onInitialViewportResize);
-    return () => window.visualViewport?.removeEventListener('resize', onInitialViewportResize);
   }, []);
 
   useEffect(() => {
@@ -1153,8 +1160,8 @@ function App() {
     '26년 3월': []
   };
   const selectedCoachingReports = coachingMonthlyReports[coachingMonth] || [];
-  const coachingStepBodyByStep = (step) => {
-    if (step === 1) {
+  const coachingStepBody = () => {
+    if (coachingStep === 1) {
       return `<div class="coach-step-body"><h4>1. 과목별 학습 달성률 <span style="color:#ef4444">*</span></h4><p class="sub">과목별 구체적인 과목명과 시간을 입력하세요.</p>
         <div class="coach-subject-list">
           ${coachingSubjectRows.map((row) => {
@@ -1175,13 +1182,13 @@ function App() {
         <button class="btn btn-secondary" data-action="addCoachingSubject">+ 새로운 과목 추가</button>
       </div>`;
     }
-    if (step === 2) {
+    if (coachingStep === 2) {
       return `<div class="coach-step-body"><h4>2. 플래너 인증 <span style="color:#ef4444">*</span></h4><p class="sub">이번 주 플래너 사진을 첨부해주세요. 최대 5장</p>
         <div class="coach-upload-box"><p>파일/사진 첨부 박스</p><input type="file" class="coach-hidden-file" data-field="coachPlannerFiles" accept="image/*" multiple /><button class="btn btn-secondary" data-action="openPlannerFilePicker">사진 추가하기</button></div>
         <div class="coach-thumb-list">${coachingPlannerFiles.length ? `<p class="sub">사진 ${coachingPlannerFiles.length}장 첨부됨</p>${coachingPlannerFiles.map((file, idx) => `<div class="coach-thumb"><span>${file.name}</span><button data-action="removePlannerPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}` : '<p class="sub">첨부된 사진이 없습니다.</p>'}</div>
       </div>`;
     }
-    if (step === 3) {
+    if (coachingStep === 3) {
       const examTypes = ['미응시', '교내', '평가원/교육청', '사설'];
       return `<div class="coach-step-body"><h4>3. 모의고사 응시 여부 <span style="color:#ef4444">*</span></h4><p class="sub">이번 주 사설 모의고사 또는 학력평가를 응시했나요?</p>
         <div class="coach-choice-row">${examTypes.map((type) => `<button class="planner-pill ${coachingExamType===type?'active':''}" data-action="setCoachingExamType" data-coach-exam="${type}">${type}</button>`).join('')}</div>
@@ -1198,7 +1205,7 @@ function App() {
         </div>` : ''}
       </div>`;
     }
-    if (step === 4) {
+    if (coachingStep === 4) {
       const reasons = ['계획 과다', '실전 감각 저하', '컨디션/건강', '기타'];
       return `<div class="coach-step-body"><h4>4. 최근 2주 학업 추이 <span style="color:#ef4444">*</span></h4><p class="sub">최근 2주간 학습 흐름이 어땠나요?</p>
         <div class="coach-choice-row">${['상승', '유지', '하락'].map((v) => `<button class="planner-pill ${coachingTrend===v?'active':''}" data-action="setCoachingTrend" data-coach-trend="${v}">${v}</button>`).join('')}</div>
@@ -1211,63 +1218,9 @@ function App() {
       7: ['7. 튜터에게 묻고 싶은 질문', '이번 주 피드백에서 꼭 답변받고 싶은 질문을 적어주세요.', 'step7', '예: 수학은 기출을 반복하는 게 나을까요, N제를 늘리는 게 나을까요?'],
       8: ['8. 기타 멘탈 관리', '슬럼프, 불안감 등 학습 외적인 고민이 있다면 자유롭게 적어주세요.', 'step8', '자유롭게 작성해주세요.']
     };
-    const [title, desc, key, placeholder] = stepMap[step];
+    const [title, desc, key, placeholder] = stepMap[coachingStep];
     const value = coachingAnswers[key] || '';
     return `<div class="coach-step-body"><h4>${title}</h4><p class="sub">${desc}</p><textarea class="planner-input coach-textarea" data-coach-answer="${key}" maxlength="200" placeholder="${placeholder}">${value}</textarea><p class="coach-count" data-coach-count="${key}">${value.length}/200</p></div>`;
-  };
-  const coachingStepBody = () => coachingStepBodyByStep(coachingStep);
-  const getCurrentCoachingStep = () => {
-    if (!(isIOSSafari() && screen === 'strategy')) return coachingStep;
-    const modal = document.querySelector('.coach-sheet');
-    return Number(modal?.dataset.currentStep || coachingStep || 1);
-  };
-  const setCoachingStepDom = (step) => {
-    const modal = document.querySelector('.coach-sheet');
-    if (!modal) return false;
-    const bounded = Math.max(1, Math.min(8, Number(step) || 1));
-    modal.dataset.currentStep = String(bounded);
-    const body = modal.querySelector('.coach-sheet-body');
-    if (body) body.innerHTML = coachingStepBodyByStep(bounded);
-    const stepText = modal.querySelector('.coach-sheet-head p');
-    if (stepText) stepText.textContent = `${bounded} / 8 단계`;
-    const prevBtn = modal.querySelector('[data-action="coachingPrev"]');
-    const nextBtn = modal.querySelector('[data-action="coachingNext"]');
-    if (prevBtn) prevBtn.toggleAttribute('disabled', bounded === 1);
-    if (nextBtn) nextBtn.textContent = bounded === 8 ? '작성 완료 및 제출' : '다음 단계';
-    return true;
-  };
-  const isIosCoachingModalInput = (el) => {
-    if (!(isIOSSafari() && screen === 'strategy')) return false;
-    if (!el?.closest?.('.coaching-modal, .coach-modal, .planner-sheet, .coaching-request-modal, .coach-sheet')) return false;
-    return el.matches?.('input, textarea, select')
-      || el.hasAttribute?.('data-coach-answer')
-      || el.hasAttribute?.('data-coach-field')
-      || el.hasAttribute?.('data-coach-detail')
-      || el.hasAttribute?.('data-coach-plan')
-      || el.hasAttribute?.('data-coach-actual');
-  };
-  const collectCoachingDomValues = () => {
-    const root = document.querySelector('.coach-sheet') || document;
-    const answers = {};
-    root.querySelectorAll('[data-coach-answer]').forEach((el) => {
-      const key = el.getAttribute('data-coach-answer');
-      if (key) answers[key] = el.value || '';
-    });
-    const examScores = {};
-    root.querySelectorAll('[data-coach-field]').forEach((el) => {
-      const key = el.getAttribute('data-coach-field');
-      if (key) examScores[key] = el.value || '';
-    });
-    const rowMap = {};
-    root.querySelectorAll('[data-coach-detail], [data-coach-plan], [data-coach-actual]').forEach((el) => {
-      const rowId = el.getAttribute('data-coach-detail') || el.getAttribute('data-coach-plan') || el.getAttribute('data-coach-actual');
-      if (!rowId) return;
-      rowMap[rowId] = rowMap[rowId] || {};
-      if (el.hasAttribute('data-coach-detail')) rowMap[rowId].detail = el.value || '';
-      if (el.hasAttribute('data-coach-plan')) rowMap[rowId].planned = el.value || '';
-      if (el.hasAttribute('data-coach-actual')) rowMap[rowId].actual = el.value || '';
-    });
-    return { answers, examScores, rowMap };
   };
 
   const designV2StyleTag = `<style>
@@ -1745,8 +1698,8 @@ function App() {
        <p class="sub ob-subcopy">현재 성적에서 합격컷까지,<br/>가장 효율적인 점수 상승 루트를 보여드릴게요.</p>
        <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>무작정 전 과목을 올리는 게 아니라, 합격에 가장 크게 기여하는 과목부터 잡아야 해요!</p></div>
        <div class="card ob-card">${scoreJourneyCard('최소 노력 대비 합격 도달 성적')}</div>
-       <div class="eta-card-slot" data-eta-slot="standard">${ob3IsAnalyzing ? `<div class="loading-overlay"><div class="loading-box"><div class="dots">● ● ●</div><div>분석중입니다</div><div>잠시만 기다려주세요</div></div></div>` : `<div class="card ob-card ob-period-card on-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 3개월 내 도달 예상</b><p>주간 플래너 피드백과 학습 방향 코칭 제공</p></div>`}</div>
-       ${!ob3IsAnalyzing ? `
+       <div class="eta-card"><div class="card ob-card ob-period-card on-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 3개월 내 도달 예상</b><p>주간 플래너 피드백과 학습 방향 코칭 제공</p></div>${ob3IsAnalyzing ? `<div class="loading-overlay"><div class="loading-box"><div class="dots">● ● ●</div><div>분석중입니다</div><div>잠시만 기다려주세요</div></div></div>` : ''}</div>
+       <div class="ob5-after-eta">
        <div class="card ob-card">
          <p class="analysis-title">합격 가능성 변화</p>
          <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${gaugeTarget}점</b></div></div>
@@ -1762,7 +1715,7 @@ function App() {
        <div class="card ob-card">
          <p class="analysis-title">핵심 전략</p>
          <ol class="ob-strategy"><li><b>수학 68점 → 80점</b><p>합격 가능성 상승 기여도 가장 큼</p></li><li><b>탐구1 70점 → 76점</b><p>단기간 상승 효율 높음</p></li><li><b>영어 77점 유지</b><p>현재 수준 유지 전략</p></li></ol>
-       </div>` : ''}
+       </div></div>
        </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button type="button" class="cta-button" data-action="startStandard">Standard로 시작하기</button><button type="button" class="auth-link-btn" data-action="completeOnboarding">홈으로 이동</button></div></div>`,
       false
     ),
@@ -1888,7 +1841,7 @@ function App() {
           <div class="card analysis-v2-before-after">
             ${scoreJourneyCard('최소 노력 대비 합격 도달 성적')}
             <div class="analysis-v2-eta ${analysisEtaStage < 3 ? 'loading' : ''}">
-              <div class="eta-card-slot" data-eta-slot="standard">${analysisEtaStage === 1 ? `<div class="analysis-eta-loading"><span class="skeleton"></span><p>도달 성적 계산 중입니다...</p></div>` : analysisEtaStage === 2 ? `<div class="analysis-eta-loading"><span class="skeleton thin"></span><p>도달 시간을 예상 중입니다...</p></div>` : `<button class="analysis-v2-eta-card" data-action="startStandard"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 2개월 내 도달 예상</b><p>매주 플래너 피드백과 학습 방향 관리를 기준으로 계산했어요</p></button>`}</div>
+              ${analysisEtaStage === 1 ? `<div class="analysis-eta-loading"><span class="skeleton"></span><p>도달 성적 계산 중입니다...</p></div>` : analysisEtaStage === 2 ? `<div class="analysis-eta-loading"><span class="skeleton thin"></span><p>도달 시간을 예상 중입니다...</p></div>` : `<button class="analysis-v2-eta-card" data-action="startStandard"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 2개월 내 도달 예상</b><p>매주 플래너 피드백과 학습 방향 관리를 기준으로 계산했어요</p></button>`}
             </div>
           </div>
           <div class="card analysis-v2-gauge-change">
@@ -1962,7 +1915,7 @@ function App() {
           ${selectedCoachingReports.length ? `<div class="coach-report-list">${selectedCoachingReports.map((report) => `<button class="coach-report-card" data-action="downloadCoachingPdf" data-pdf-path="${report.pdfPath}"><div><b>${report.title}</b><p>${report.date}</p></div><div class="coach-report-side"><span class="badge coach-pdf-badge">PDF</span><span class="coach-report-arrow">›</span></div></button>`).join('')}</div>` : `<div class="coach-empty">아직 도착한 피드백 리포트가 없습니다.</div>`}
         </div>
         ${coachingSheetOpen ? `<div class="coach-sheet-overlay" data-action="closeCoachingSheet">
-          <section class="coach-sheet" data-action="noopModal" data-current-step="${coachingStep}">
+          <section class="coach-sheet" data-action="noopModal">
             <div class="coach-sheet-head"><div><h3>26년 4월 4주차 학습점검</h3><p>${coachingStep} / 8 단계</p></div><button class="coach-close" data-action="closeCoachingSheet">✕</button></div>
             <div class="coach-sheet-body">${coachingStepBody()}</div>
             <div class="coach-sheet-footer"><button class="btn btn-secondary" data-action="coachingPrev" ${coachingStep===1?'disabled':''}>이전</button><button class="btn btn-primary" data-action="coachingNext">${coachingStep===8?'작성 완료 및 제출':'다음 단계'}</button></div>
@@ -2183,41 +2136,6 @@ function App() {
     el.setAttribute('aria-hidden', open ? 'false' : 'true');
     return true;
   };
-  const getOB1DomValue = (field) => document.querySelector(`[data-field="${field}"]`)?.value?.trim() || '';
-  const isIosOb1DeferredField = (el, field) => {
-    if (!el || !field) return false;
-    if (!(isIOSSafari() && screen === 'ob1')) return false;
-    if (!field.startsWith('ob')) return false;
-    const tag = String(el.tagName || '').toUpperCase();
-    return tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA';
-  };
-  const setHomeTimerUiRunning = (running) => {
-    const timerEl = document.querySelector('.timer');
-    const startBtn = document.querySelector('[data-action="openStudySubjectSheet"]');
-    const stopBtn = document.querySelector('[data-action="stopStudyTimer"]');
-    if (timerEl) timerEl.dataset.running = running ? 'true' : 'false';
-    if (startBtn) {
-      startBtn.classList.toggle('disabled', running);
-      if (running) startBtn.setAttribute('disabled', 'disabled');
-      else startBtn.removeAttribute('disabled');
-    }
-    if (stopBtn) {
-      stopBtn.classList.toggle('disabled', !running);
-      if (running) stopBtn.removeAttribute('disabled');
-      else stopBtn.setAttribute('disabled', 'disabled');
-    }
-  };
-  const replaceStandardEtaSlotForIos = () => {
-    if (!(isIOSSafari() && (screen === 'analysis' || screen === 'ob5'))) return false;
-    const slot = document.querySelector('[data-eta-slot="standard"]');
-    if (!slot) return false;
-    if (screen === 'analysis') {
-      slot.innerHTML = `<button class="analysis-v2-eta-card" data-action="startStandard"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 2개월 내 도달 예상</b><p>매주 플래너 피드백과 학습 방향 관리를 기준으로 계산했어요</p></button>`;
-      return true;
-    }
-    slot.innerHTML = `<div class="card ob-card ob-period-card on-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 3개월 내 도달 예상</b><p>주간 플래너 피드백과 학습 방향 코칭 제공</p></div>`;
-    return true;
-  };
 
   const onClick = (e) => {
     lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
@@ -2231,20 +2149,10 @@ function App() {
     if (action === 'goto') {
       const target = actionEl.getAttribute('data-target');
       if (screen === 'ob1' && target === 'ob2') {
-        const gradeStatus = getOB1DomValue('obGradeStatus') || String(obGradeStatus || '').trim();
-        const schoolName = getOB1DomValue('obSchoolName');
-        const track = getOB1DomValue('obTrack');
-        const goalText = getOB1DomValue('obGoalText');
-        const questionText = getOB1DomValue('obQuestionText');
-        if (!schoolName || !gradeStatus || !track || !goalText) {
+        if (!obGradeStatus || !String(obSchoolName || '').trim() || !String(obTrack || '').trim() || !String(obGoalText || '').trim()) {
           alert('필수 입력 사항을 모두 입력해주세요');
           return;
         }
-        setObSchoolName(schoolName);
-        setObGradeStatus(gradeStatus);
-        setObTrack(track);
-        setObGoalText(goalText);
-        setObQuestionText(questionText);
       }
       if (screen === 'on1' && target === 'ob1') {
         setOnboardingLoading(true);
@@ -2491,20 +2399,7 @@ function App() {
       }
       afterSafariViewportStable(() => setUniversityModalOpen(false));
     }
-    if (action === 'openPlannerAddPage') {
-      if (isIOSSafari() && screen === 'planner') {
-        const overlay = document.querySelector('.planner-sheet-overlay .planner-sheet');
-        if (overlay) {
-          const wrap = overlay.closest('.planner-sheet-overlay');
-          if (wrap) {
-            wrap.hidden = false;
-            wrap.style.display = '';
-            return;
-          }
-        }
-      }
-      goto('plannerAdd');
-    }
+    if (action === 'openPlannerAddPage') goto('plannerAdd');
     if (action === 'openPlannerCalendar') preserveY(() => setPlannerCalendarOpen(true));
     if (action === 'closePlannerCalendar') afterSafariViewportStable(() => setPlannerCalendarOpen(false));
     if (action === 'selectPlannerDate') {
@@ -2519,28 +2414,8 @@ function App() {
       });
       restoreIfUnexpectedTopJump();
     }
-    if (action === 'openPlannerEdit') {
-      if (isIOSSafari() && screen === 'planner') {
-        const wrap = document.querySelector('.planner-sheet-overlay');
-        if (wrap && wrap.querySelector('[data-action="savePlannerEdit"]')) {
-          wrap.hidden = false;
-          wrap.style.display = '';
-          return;
-        }
-      }
-      setPlannerEditIndex(actionEl.getAttribute('data-planner-id'));
-    }
-    if (action === 'closePlannerEdit') {
-      if (isIOSSafari() && screen === 'planner') {
-        const wrap = actionEl.closest('.planner-sheet-overlay') || document.querySelector('.planner-sheet-overlay');
-        if (wrap && wrap.querySelector('[data-action="savePlannerEdit"]')) {
-          wrap.hidden = true;
-          wrap.style.display = 'none';
-          return;
-        }
-      }
-      setPlannerEditIndex(null);
-    }
+    if (action === 'openPlannerEdit') setPlannerEditIndex(actionEl.getAttribute('data-planner-id'));
+    if (action === 'closePlannerEdit') setPlannerEditIndex(null);
     if (action === 'openScoreEdit') { setScoreEditOpen(true); setScoreEditStep(1); }
     if (action === 'saveQualInfo') {
       if (!obGradeStatus || !String(obSchoolName || '').trim() || !String(obTrack || '').trim() || !String(obGoalText || '').trim()) {
@@ -2826,21 +2701,12 @@ function App() {
       setCoachingDropReasons((prev) => (prev.includes(reason) ? prev.filter((item) => item !== reason) : [...prev, reason]));
     }
     if (action === 'coachingPrev') {
-      const currentStep = getCurrentCoachingStep();
-      if (currentStep <= 1) return;
-      if (isIOSSafari() && screen === 'strategy' && coachingSheetOpen) {
-        setCoachingStepDom(currentStep - 1);
-        return;
-      }
+      if (coachingStep <= 1) return;
       setCoachingStep((prev) => Math.max(1, prev - 1));
     }
     if (action === 'coachingNext') {
-      const currentStep = getCurrentCoachingStep();
-      const domCoaching = isIOSSafari() && screen === 'strategy' ? collectCoachingDomValues() : null;
-      const domRows = domCoaching ? coachingSubjectRows.map((row) => ({ ...row, ...(domCoaching.rowMap[row.id] || {}) })) : coachingSubjectRows;
-      const domExamScores = domCoaching ? { ...coachingExamScores, ...domCoaching.examScores } : coachingExamScores;
-      if (currentStep === 1) syncStep1FromDom();
-      if (isIOSSafari() && screen === 'strategy' && currentStep === 3) {
+      if (coachingStep === 1) syncStep1FromDom();
+      if (isIOSSafari() && screen === 'strategy' && coachingStep === 3) {
         const nextScores = {};
         document.querySelectorAll('[data-coach-field]').forEach((input) => {
           const key = input.getAttribute('data-coach-field');
@@ -2848,29 +2714,20 @@ function App() {
         });
         setCoachingExamScores((prev) => ({ ...prev, ...nextScores }));
       }
-      if (currentStep === 1) {
-        const invalid = domRows.some((r) => !String(r.detail || '').trim() || !String(r.planned || '').trim() || !String(r.actual || '').trim());
+      if (coachingStep === 1) {
+        const invalid = coachingSubjectRows.some((r) => !String(r.detail || '').trim() || !String(r.planned || '').trim() || !String(r.actual || '').trim());
         if (invalid) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
       }
-      if (currentStep === 2 && coachingPlannerFiles.length === 0) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
-      if (currentStep === 3) {
+      if (coachingStep === 2 && coachingPlannerFiles.length === 0) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
+      if (coachingStep === 3) {
         if (!coachingExamType) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
-        if (coachingExamType !== '미응시' && (!String(domExamScores.koreanRaw || '').trim() || !String(domExamScores.mathRaw || '').trim() || !String(domExamScores.englishGrade || '').trim() || !String(domExamScores.inq1Raw || '').trim() || !String(domExamScores.inq2Raw || '').trim())) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
+        if (coachingExamType !== '미응시' && (!String(coachingExamScores.koreanRaw || '').trim() || !String(coachingExamScores.mathRaw || '').trim() || !String(coachingExamScores.englishGrade || '').trim() || !String(coachingExamScores.inq1Raw || '').trim() || !String(coachingExamScores.inq2Raw || '').trim())) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
       }
-      if (currentStep === 4 && !coachingTrend) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
-      if (currentStep >= 8) {
-        if (domCoaching) {
-          setCoachingAnswers((prev) => ({ ...prev, ...domCoaching.answers }));
-          setCoachingExamScores((prev) => ({ ...prev, ...domCoaching.examScores }));
-          setCoachingSubjectRows((prev) => prev.map((row) => ({ ...row, ...(domCoaching.rowMap[row.id] || {}) })));
-        }
+      if (coachingStep === 4 && !coachingTrend) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
+      if (coachingStep >= 8) {
         setCoachingSheetOpen(false);
         setCoachingSubmitted(true);
         window.alert('코칭 요청이 제출되었습니다.\n튜터 피드백이 도착하면 학습 코칭 페이지에서 확인할 수 있어요.');
-        return;
-      }
-      if (isIOSSafari() && screen === 'strategy' && coachingSheetOpen) {
-        setCoachingStepDom(currentStep + 1);
         return;
       }
       setCoachingStep((prev) => Math.min(8, prev + 1));
@@ -2920,8 +2777,7 @@ function App() {
       if (!custom) return;
       setActiveStudySubject(custom);
       setStudySubjectSheetOpen(false);
-      if (isIOSSafari() && screen === 'home') setHomeTimerUiRunning(true);
-      else setStudyTimerRunning(true);
+      setStudyTimerRunning(true);
       studyTimerSecondsRef.current = 0;
       startLiveStudyTimer();
       syncLiveStudyTimerUi(0);
@@ -2931,15 +2787,13 @@ function App() {
       if (!subject) return;
       setActiveStudySubject(subject);
       setStudySubjectSheetOpen(false);
-      if (isIOSSafari() && screen === 'home') setHomeTimerUiRunning(true);
-      else setStudyTimerRunning(true);
+      setStudyTimerRunning(true);
       studyTimerSecondsRef.current = 0;
       startLiveStudyTimer();
       syncLiveStudyTimerUi(0);
     }
     if (action === 'stopStudyTimer') {
-      if (isIOSSafari() && screen === 'home') setHomeTimerUiRunning(false);
-      else setStudyTimerRunning(false);
+      setStudyTimerRunning(false);
       stopLiveStudyTimer();
       const elapsed = studyTimerSecondsRef.current;
       const today = FIXED_TODAY_DATE;
@@ -2991,16 +2845,6 @@ function App() {
     if (action === 'retryInit') initializeApp();
     if (action === 'noopModal') return;
     if (action === 'setPlannerSubject') {
-      if (isIOSSafari() && screen === 'planner') {
-        const subject = actionEl.getAttribute('data-subject') || actionEl.getAttribute('data-planner-subject') || String(actionEl.textContent || '').trim();
-        document.body.dataset.selectedPlannerSubject = subject;
-        const group = actionEl.closest('.planner-subjects, .subject-row, .planner-pill-row') || document;
-        group.querySelectorAll('[data-subject], .planner-pill, .subject-button').forEach((btn) => {
-          btn.classList.toggle('active', btn === actionEl);
-          btn.classList.toggle('selected', btn === actionEl);
-        });
-        return;
-      }
       if (isIOSSafari() && screen === 'plannerAdd') {
         const subject = actionEl.getAttribute('data-planner-subject') || '';
         document.body.dataset.plannerSelectedSubject = subject;
@@ -3011,30 +2855,14 @@ function App() {
       }
       setPlannerDraft((prev) => ({ ...prev, subject: actionEl.getAttribute('data-planner-subject') || '' }));
     }
-    if (action === 'setPlannerDuration') {
-      if (isIOSSafari() && screen === 'plannerAdd') {
-        const value = actionEl.getAttribute('data-planner-duration') || '';
-        document.body.dataset.plannerSelectedDuration = value;
-        actionEl.closest('.planner-pill-row')?.querySelectorAll('.planner-pill').forEach((pill) => {
-          pill.classList.toggle('active', pill.getAttribute('data-planner-duration') === value);
-          pill.classList.toggle('selected', pill.getAttribute('data-planner-duration') === value);
-        });
-        const customInput = document.querySelector('[data-field="plannerCustomMinutes"]');
-        if (customInput) customInput.classList.toggle('is-hidden', value !== 'custom');
-        return;
-      }
-      setPlannerDraft((prev) => ({ ...prev, durationChoice: actionEl.getAttribute('data-planner-duration') || '' }));
-    }
+    if (action === 'setPlannerDuration') setPlannerDraft((prev) => ({ ...prev, durationChoice: actionEl.getAttribute('data-planner-duration') || '' }));
     if (action === 'removePlannerItem') {
       const plannerId = actionEl.getAttribute('data-planner-id');
       if (isIOSSafari() && screen === 'planner') {
-        const item = actionEl.closest('[data-planner-id], .planner-item, .planner-card');
-        const itemId = item?.getAttribute('data-planner-id') || plannerId || '';
+        const item = actionEl.closest('.planner-item');
         if (item) {
           item.style.display = 'none';
-          if (itemId) document.body.dataset.pendingPlannerDelete = itemId;
-          window.__pendingPlannerDeletes__ = window.__pendingPlannerDeletes__ || [];
-          if (itemId) window.__pendingPlannerDeletes__.push(itemId);
+          document.body.dataset.pendingPlannerDelete = `${document.body.dataset.pendingPlannerDelete || ''},${plannerId}`;
           return;
         }
       }
@@ -3043,13 +2871,12 @@ function App() {
     if (action === 'togglePlannerDone') {
       const plannerId = actionEl.getAttribute('data-planner-id');
       if (isIOSSafari() && screen === 'planner') {
-        const item = actionEl.closest('[data-planner-id], .planner-item, .planner-card');
+        const item = actionEl.closest('.planner-item');
         if (item) {
-          const nextCompleted = actionEl.dataset.completed !== 'true';
-          actionEl.dataset.completed = String(nextCompleted);
-          item.classList.toggle('completed', nextCompleted);
-          item.classList.toggle('done', nextCompleted);
-          actionEl.textContent = nextCompleted ? '✓ 완료!' : '✓ 완료';
+          const nextDone = item.classList.contains('done') ? '0' : '1';
+          item.classList.toggle('done', nextDone === '1');
+          actionEl.dataset.completed = nextDone;
+          actionEl.textContent = nextDone === '1' ? '✓ 완료!' : '✓ 완료';
           return;
         }
       }
@@ -3086,10 +2913,6 @@ function App() {
   };
 
   const onInput = (e) => {
-    if (isIosCoachingModalInput(e.target)) {
-      e.target.dataset.pendingValue = e.target.value;
-      return;
-    }
     const scoreKey = e.target.getAttribute('data-score-key');
     if (scoreKey) {
       const raw = String(e.target.value || '');
@@ -3108,14 +2931,6 @@ function App() {
       return;
     }
     const field = e.target.getAttribute('data-field');
-    if (isIOSSafari() && (screen === 'planner' || screen === 'plannerAdd') && e.target.closest('.planner-sheet, .planner-modal')) {
-      e.target.dataset.pendingValue = e.target.value;
-      return;
-    }
-    if (isIosOb1DeferredField(e.target, field)) {
-      e.target.dataset.pendingValue = e.target.value;
-      return;
-    }
     if (field === 'coachPlannerFiles') {
       const files = Array.from(e.target.files || []);
       if (files.length) setCoachingPlannerFiles((prev) => [...prev, ...files].slice(0, 5));
@@ -3373,19 +3188,7 @@ function App() {
 
   const onChange = (e) => {
     markStableScrollPosition();
-    if (isIosCoachingModalInput(e.target)) {
-      e.target.dataset.pendingValue = e.target.value;
-      return;
-    }
     const field = e.target.getAttribute('data-field');
-    if (isIOSSafari() && (screen === 'planner' || screen === 'plannerAdd') && e.target.closest('.planner-sheet, .planner-modal')) {
-      e.target.dataset.pendingValue = e.target.value;
-      return;
-    }
-    if (isIosOb1DeferredField(e.target, field)) {
-      e.target.dataset.pendingValue = e.target.value;
-      return;
-    }
     if (field === 'coachPlannerFiles') {
       const files = Array.from(e.target.files || []);
       if (files.length) setCoachingPlannerFiles((prev) => [...prev, ...files].slice(0, 5));
@@ -3405,19 +3208,7 @@ function App() {
   };
   const onBlur = (e) => {
     markStableScrollPosition();
-    if (isIosCoachingModalInput(e.target)) {
-      e.target.dataset.pendingValue = e.target.value;
-      return;
-    }
     const field = e.target.getAttribute('data-field');
-    if (isIOSSafari() && (screen === 'planner' || screen === 'plannerAdd') && e.target.closest('.planner-sheet, .planner-modal')) {
-      e.target.dataset.pendingValue = e.target.value;
-      return;
-    }
-    if (isIosOb1DeferredField(e.target, field)) {
-      e.target.dataset.pendingValue = e.target.value;
-      return;
-    }
     const coachAnswer = e.target.getAttribute('data-coach-answer');
     if (coachAnswer) {
       const value = e.target.value.slice(0, 200);
