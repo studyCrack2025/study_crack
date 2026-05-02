@@ -578,32 +578,80 @@ function App() {
   useEffect(() => {
     window.__studycrackAppBooted = true;
   }, []);
+
+  const debugScrollEnabled = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const params = new URLSearchParams(window.location.search || '');
+      return process.env.NODE_ENV === 'development' || params.get('debugScroll') === '1';
+    } catch (_e) {
+      return process.env.NODE_ENV === 'development';
+    }
+  }, []);
+  const [debugLogs, setDebugLogs] = useState([]);
+  const pushDebugLog = useCallback((type, data) => {
+    if (!debugScrollEnabled) return;
+    const payload = `${new Date().toISOString().slice(11, 23)} | ${type} | ${typeof data === 'string' ? data : JSON.stringify(data)}`;
+    setDebugLogs((prev) => {
+      const next = [...prev, payload];
+      return next.length > 30 ? next.slice(next.length - 30) : next;
+    });
+    try { console.log('[DEBUG_PANEL]', type, data); } catch (_e) {}
+  }, [debugScrollEnabled]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (!debugScrollEnabled) return;
+    pushDebugLog('MOUNT', 'App');
+    return () => pushDebugLog('UNMOUNT', 'App');
+  }, [debugScrollEnabled, pushDebugLog]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!debugScrollEnabled) return;
     if (window.__studycrackScrollDebugInstalled) return;
     window.__studycrackScrollDebugInstalled = true;
     const originalScrollTo = window.scrollTo.bind(window);
     window.scrollTo = (...args) => {
-      console.trace('[scrollTo called]', args);
+      console.trace('[DEBUG window.scrollTo called]', args);
+      pushDebugLog('scrollTo', { args, y: window.scrollY, route: window.location.href });
       return originalScrollTo(...args);
+    };
+    const originalScroll = window.scroll.bind(window);
+    window.scroll = (...args) => {
+      console.trace('[DEBUG window.scroll called]', args);
+      pushDebugLog('scroll', { args, y: window.scrollY, route: window.location.href });
+      return originalScroll(...args);
     };
     const originalScrollIntoView = Element.prototype.scrollIntoView;
     Element.prototype.scrollIntoView = function (...args) {
-      console.trace('[scrollIntoView called]', this, args);
+      console.trace('[DEBUG scrollIntoView called]', this, args);
+      pushDebugLog('scrollIntoView', { tag: this?.tagName, cls: this?.className, args, y: window.scrollY });
       return originalScrollIntoView.apply(this, args);
     };
-    const onBeforeUnload = () => console.log('[beforeunload]');
-    const onPopstate = () => console.log('[popstate]', window.location.href);
-    const onHashchange = () => console.log('[hashchange]', window.location.href);
+    const onScroll = () => pushDebugLog('scrollEvent', { y: window.scrollY, vvHeight: window.visualViewport?.height || null, active: document.activeElement?.tagName || null, route: location.href });
+    const onVvResize = () => pushDebugLog('vvResize', { vvHeight: window.visualViewport?.height || null, vvOffsetTop: window.visualViewport?.offsetTop || null, y: window.scrollY, active: document.activeElement?.tagName || null });
+    const onFocusin = () => pushDebugLog('focusin', { tag: document.activeElement?.tagName || null, cls: document.activeElement?.className || null });
+    const onFocusout = () => pushDebugLog('focusout', { tag: document.activeElement?.tagName || null, cls: document.activeElement?.className || null });
+    const onBeforeUnload = () => pushDebugLog('beforeunload', location.href);
+    const onPopstate = () => pushDebugLog('popstate', location.href);
+    const onHashchange = () => pushDebugLog('hashchange', location.href);
     const onSubmitCapture = (e) => {
       e.preventDefault();
+      pushDebugLog('formSubmitPrevented', e.target?.className || e.target?.tagName || 'unknown');
       console.trace('[form submit prevented]', e.target);
     };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.visualViewport?.addEventListener('resize', onVvResize);
+    window.addEventListener('focusin', onFocusin);
+    window.addEventListener('focusout', onFocusout);
     window.addEventListener('beforeunload', onBeforeUnload);
     window.addEventListener('popstate', onPopstate);
     window.addEventListener('hashchange', onHashchange);
     document.addEventListener('submit', onSubmitCapture, true);
-  }, []);
+  }, [debugScrollEnabled, pushDebugLog]);
+
+  useEffect(() => { if (debugScrollEnabled) pushDebugLog('route', { screen, tab, loading }); }, [screen, tab, loading, debugScrollEnabled, pushDebugLog]);
 
 
   useEffect(() => {
@@ -2822,7 +2870,19 @@ function App() {
   const rendered = `${designV2StyleTag}${renderedBase}${analysisOverlay}${onboardingOverlay}${addingUniversityOverlay}${loading ? loadingOverlayUi : ''}`;
   const renderedWithButtonType = rendered.replace(/<button(?![^>]*\btype=)/g, '<button type="button"');
 
-  return <div className="ios-scroll-root" onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: renderedWithButtonType }} />;
+
+  const debugPanel = debugScrollEnabled ? (
+    <div style={{ position: 'fixed', left: 8, right: 8, bottom: 8, zIndex: 2147483647, maxHeight: '34vh', background: 'rgba(0,0,0,0.88)', color: '#9ef7b8', fontSize: 11, borderRadius: 10, padding: 8, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+        <b style={{ color: '#fff' }}>DEBUG SCROLL PANEL</b>
+        <button type="button" style={{ fontSize: 11 }} onClick={() => navigator.clipboard?.writeText(debugLogs.join('\n'))}>Copy</button>
+      </div>
+      <div style={{ overflow: 'auto', maxHeight: '25vh', whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>{debugLogs.slice().reverse().join('\n')}</div>
+    </div>
+  ) : null;
+
+  return <><div className="ios-scroll-root" onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: renderedWithButtonType }} />{debugPanel}</>;
+
 }
 
 const rootElement = document.getElementById('root');
