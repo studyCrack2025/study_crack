@@ -224,6 +224,22 @@ function App() {
     if (isIOSSafari()) return;
     window.scrollTo(...args);
   };
+  const getOBScrollContainer = () => document.querySelector('.onboarding-container > .content') || document.querySelector('.app-content');
+  const preserveContainerScroll = (container, callback) => {
+    if (!container) {
+      callback();
+      return;
+    }
+    const top = container.scrollTop;
+    callback();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (top > 0 && container.scrollTop === 0) {
+          container.scrollTop = top;
+        }
+      });
+    });
+  };
   const markStableScrollPosition = () => {
     if (!isIOSSafari()) return;
     const y = window.scrollY || window.pageYOffset || 0;
@@ -2068,23 +2084,26 @@ function App() {
         return;
       }
       if (screen === 'ob4' && target === 'ob5') {
+        const obContainer = getOBScrollContainer();
         setOnboardingLoading(true);
         setOnboardingLoadingText('학습 성향 분석중...');
         setTimeout(() => setOnboardingLoadingText('효율적인 공부법 찾는중...'), 1500);
         setTimeout(() => {
           const y = window.scrollY;
-          armScrollGuard(1400);
-          markStableScrollPosition();
-          setOnboardingLoading(false);
-          requestAnimationFrame(() => {
+          preserveContainerScroll(obContainer, () => {
+            armScrollGuard(1400);
+            markStableScrollPosition();
+            setOnboardingLoading(false);
             requestAnimationFrame(() => {
-              goto('ob5');
               requestAnimationFrame(() => {
+                goto('ob5');
                 requestAnimationFrame(() => {
-                  if (y > 0 && window.scrollY === 0) {
-                    safeScrollTo({ top: y, left: 0, behavior: 'auto' });
-                  }
-                  restoreIfUnexpectedTopJump();
+                  requestAnimationFrame(() => {
+                    if (y > 0 && window.scrollY === 0) {
+                      safeScrollTo({ top: y, left: 0, behavior: 'auto' });
+                    }
+                    restoreIfUnexpectedTopJump();
+                  });
                 });
               });
             });
