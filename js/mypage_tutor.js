@@ -46,10 +46,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const accessToken = localStorage.getItem('accessToken'); 
     const userId = localStorage.getItem('userId');
 
-    if (!accessToken) {
-        alert("로그인이 필요합니다.");
-        window.location.href = '/login';
-        return;
+    if (!accessToken && !localStorage.getItem('refreshToken')) {
+        const refreshed = await tryRefreshToken();
+        if (!refreshed) {
+            alert("로그인이 필요합니다.");
+            window.location.href = '/login';
+            return;
+        }
     }
 
     initTutorCognito();

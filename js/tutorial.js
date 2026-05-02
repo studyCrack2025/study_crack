@@ -41,9 +41,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('accessToken');
 
     // 인증 가드: 로그인하지 않은 사용자는 로그인 페이지로 이동
-    if (!token) {
-        window.location.replace('/login');
-        return;
+    if (!token && !localStorage.getItem('refreshToken')) {
+        const refreshed = await tryRefreshToken();
+        if (!refreshed) {
+            window.location.replace('/login');
+            return;
+        }
     }
 
     // DB에서 유저 데이터 복원 (mbti_completed 경로 포함)
@@ -1092,15 +1095,11 @@ async function convertScore(month, subject, score, opt, subName, common, electiv
 }
 
 async function apiCall(type, data) {
-    const token = localStorage.getItem('accessToken');
-    if (!token) return { success: false, error: 'Unauthorized' };
     try {
-        const response = await fetch(CONFIG.api.user, {
+        const response = await apiFetch(CONFIG.api.user, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type, data })
         });
-        if (!response.ok) throw new Error('API 통신 에러');
         return await response.json();
     } catch (e) {
         return { success: false };

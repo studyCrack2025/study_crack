@@ -17,14 +17,24 @@ async function apiFetch(url, options = {}) {
 
         if (!response.ok) {
             if (response.status === 401 || response.status === 403) {
+                const refreshed = await tryRefreshToken();
+                if (refreshed) {
+                    const newToken = localStorage.getItem('accessToken');
+                    options.headers['Authorization'] = `Bearer ${newToken}`;
+                    const retryRes = await fetch(url, options);
+                    if (retryRes.ok) return retryRes;
+                    if (!retryRes.ok && retryRes.status !== 401 && retryRes.status !== 403) {
+                        throw new Error(`서버 통신 오류 (상태 코드: ${retryRes.status})`);
+                    }
+                }
                 const currentPath = window.location.pathname;
                 if (!['/login', '/signup', '/'].includes(currentPath)) {
                     alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
                     localStorage.clear();
                     sessionStorage.clear();
-                    window.location.href = '/login'; 
+                    window.location.href = '/login';
                 }
-                return Promise.reject(new Error("Auth expired")); 
+                return Promise.reject(new Error("Auth expired"));
             }
             throw new Error(`서버 통신 오류 (상태 코드: ${response.status})`);
         }
@@ -94,11 +104,13 @@ function closeDetailModal() { closeLocalModal('qna-detail-modal'); }
    ========================================= */
 async function loadQnaHistory() {
     const grid = document.getElementById('qna-grid');
-    const token = localStorage.getItem('accessToken');
 
-    if (!token) {
-        grid.innerHTML = '<div style="text-align:center; padding:40px; color:#64748b;">로그인 후 이용 가능한 서비스입니다.</div>';
-        return;
+    if (!localStorage.getItem('accessToken') && !localStorage.getItem('refreshToken')) {
+        const refreshed = await tryRefreshToken();
+        if (!refreshed) {
+            grid.innerHTML = '<div style="text-align:center; padding:40px; color:#64748b;">로그인 후 이용 가능한 서비스입니다.</div>';
+            return;
+        }
     }
 
     try {

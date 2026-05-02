@@ -14,25 +14,40 @@ const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 let isPhoneVerified = false; 
 let isEmailVerified = false;
 
-// 토큰 갱신 시도 (refreshToken → 새 accessToken + idToken)
-// 동시 다발 갱신 요청 방지를 위해 플래그 사용
+// 토큰 갱신 시도: 쿠키 기반 silent_refresh 우선, localStorage refreshToken 폴백
 let _isRefreshing = false;
 async function tryRefreshToken() {
     if (_isRefreshing) return false;
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) return false;
     _isRefreshing = true;
     try {
+        // 1차: HttpOnly 쿠키 기반 silent_refresh
         const res = await fetch(AUTH_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ type: 'silent_refresh' })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.accessToken && data.idToken) {
+                localStorage.setItem('accessToken', data.accessToken);
+                localStorage.setItem('idToken', data.idToken);
+                return true;
+            }
+        }
+        // 2차: localStorage refreshToken 폴백 (구형 세션 호환)
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (!refreshToken) return false;
+        const fallbackRes = await fetch(AUTH_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ type: 'refresh_token', refreshToken })
         });
-        if (!res.ok) return false;
-        const data = await res.json();
-        if (data.accessToken && data.idToken) {
-            localStorage.setItem('accessToken', data.accessToken);
-            localStorage.setItem('idToken', data.idToken);
+        if (!fallbackRes.ok) return false;
+        const fallbackData = await fallbackRes.json();
+        if (fallbackData.accessToken && fallbackData.idToken) {
+            localStorage.setItem('accessToken', fallbackData.accessToken);
+            localStorage.setItem('idToken', fallbackData.idToken);
             return true;
         }
         return false;
@@ -659,20 +674,37 @@ async function handleFinalSubmit() {
             const cognitoUserToAuth = new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool });
 
             cognitoUserToAuth.authenticateUser(authDetails, {
-                onSuccess: function(authResult) {
+                onSuccess: async function(authResult) {
+                    const refreshToken = authResult.getRefreshToken().getToken();
                     localStorage.setItem('accessToken', authResult.getAccessToken().getJwtToken());
                     localStorage.setItem('idToken', authResult.getIdToken().getJwtToken());
-                    localStorage.setItem('refreshToken', authResult.getRefreshToken().getToken());
                     localStorage.setItem('userId', authResult.getIdToken().payload.sub);
                     localStorage.setItem('userEmail', email);
                     localStorage.setItem('userRole', 'student');
-                    
+
+                    // refreshToken → HttpOnly 쿠키 등록
+                    try {
+                        const cookieRes = await fetch(AUTH_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken })
+                        });
+                        if (cookieRes.ok) {
+                            const d = await cookieRes.json();
+                            if (d.accessToken) localStorage.setItem('accessToken', d.accessToken);
+                            if (d.idToken) localStorage.setItem('idToken', d.idToken);
+                            localStorage.removeItem('refreshToken');
+                        } else {
+                            localStorage.setItem('refreshToken', refreshToken);
+                        }
+                    } catch (e) {
+                        localStorage.setItem('refreshToken', refreshToken);
+                    }
+
                     window.dataLayer = window.dataLayer || [];
-                    window.dataLayer.push({
-                        event: "login",
-                        user_id: authResult.getIdToken().payload.sub
-                    });
-                    
+                    window.dataLayer.push({ event: "login", user_id: authResult.getIdToken().payload.sub });
+
                     // 학생 가입 이벤트 전달
                     resolveUserIdentity('signup', promoCode);
                 },
@@ -756,23 +788,40 @@ function handleSignIn() {
     const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
 
     cognitoUser.authenticateUser(authDetails, {
-        onSuccess: function(result) {
+        onSuccess: async function(result) {
             const accessToken = result.getAccessToken().getJwtToken();
             const idToken = result.getIdToken();
             const userId = idToken.payload.sub;
+            const refreshToken = result.getRefreshToken().getToken();
 
             localStorage.setItem('accessToken', accessToken);
             localStorage.setItem('idToken', idToken.getJwtToken());
-            localStorage.setItem('refreshToken', result.getRefreshToken().getToken());
             localStorage.setItem('userEmail', email);
             localStorage.setItem('userId', userId);
-            
+
+            // refreshToken → HttpOnly 쿠키 등록 (localStorage에는 저장 안 함)
+            try {
+                const cookieRes = await fetch(AUTH_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken })
+                });
+                if (cookieRes.ok) {
+                    const d = await cookieRes.json();
+                    if (d.accessToken) localStorage.setItem('accessToken', d.accessToken);
+                    if (d.idToken) localStorage.setItem('idToken', d.idToken);
+                    localStorage.removeItem('refreshToken');
+                } else {
+                    localStorage.setItem('refreshToken', refreshToken); // 실패 시 폴백
+                }
+            } catch (e) {
+                localStorage.setItem('refreshToken', refreshToken); // 실패 시 폴백
+            }
+
             window.dataLayer = window.dataLayer || [];
-            window.dataLayer.push({
-                event: "login",
-                user_id: userId
-            });
-            
+            window.dataLayer.push({ event: "login", user_id: userId });
+
             // 💡 [핵심] 로그인 이벤트와 함께 스마트 라우팅 시작
             resolveUserIdentity('login');
         },

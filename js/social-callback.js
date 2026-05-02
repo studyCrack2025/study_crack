@@ -101,6 +101,7 @@
         const res = await fetch(AUTH_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({
                 type: 'social_callback',
                 provider,

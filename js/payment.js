@@ -12,6 +12,48 @@ let globalCurrentTier = 'free';
 let globalDaysLeft = 0;
 let globalExpireDate = null; // 기존 만료일(새로운 시작일) 저장용
 
+// 💡 토큰 자동 갱신 (쿠키 우선, localStorage 폴백)
+let _isRefreshing = false;
+async function tryRefreshToken() {
+    if (_isRefreshing) return false;
+    _isRefreshing = true;
+    try {
+        const res = await fetch(CONFIG.api.auth, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ type: 'silent_refresh' })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.accessToken && data.idToken) {
+                localStorage.setItem('accessToken', data.accessToken);
+                localStorage.setItem('idToken', data.idToken);
+                return true;
+            }
+        }
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (!refreshToken) return false;
+        const fallbackRes = await fetch(CONFIG.api.auth, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'refresh_token', refreshToken })
+        });
+        if (!fallbackRes.ok) return false;
+        const fallbackData = await fallbackRes.json();
+        if (fallbackData.accessToken && fallbackData.idToken) {
+            localStorage.setItem('accessToken', fallbackData.accessToken);
+            localStorage.setItem('idToken', fallbackData.idToken);
+            return true;
+        }
+        return false;
+    } catch (e) {
+        return false;
+    } finally {
+        _isRefreshing = false;
+    }
+}
+
 // 💡 공통 apiFetch 함수
 async function apiFetch(url, options = {}) {
     const token = localStorage.getItem('accessToken');
@@ -27,18 +69,28 @@ async function apiFetch(url, options = {}) {
 
         if (!response.ok) {
             if (response.status === 401 || response.status === 403) {
+                const refreshed = await tryRefreshToken();
+                if (refreshed) {
+                    const newToken = localStorage.getItem('accessToken');
+                    options.headers['Authorization'] = `Bearer ${newToken}`;
+                    const retryRes = await fetch(url, options);
+                    if (retryRes.ok) return retryRes;
+                    if (!retryRes.ok && retryRes.status !== 401 && retryRes.status !== 403) {
+                        throw new Error(`서버 통신 오류 (상태 코드: ${retryRes.status})`);
+                    }
+                }
                 alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
                 localStorage.clear();
                 sessionStorage.clear();
-                window.location.href = '/login'; 
-                return Promise.reject(new Error("Auth expired")); 
+                window.location.href = '/login';
+                return Promise.reject(new Error("Auth expired"));
             }
             throw new Error(`서버 통신 오류 (상태 코드: ${response.status})`);
         }
         return response;
     } catch (error) {
         console.error("API 통신 실패:", error);
-        throw error; 
+        throw error;
     }
 }
 
