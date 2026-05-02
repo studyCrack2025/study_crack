@@ -200,7 +200,6 @@ function App() {
   const loadingDoneRef = useRef(false);
   const plannerContentRef = useRef('');
   const plannerCustomMinutesRef = useRef('');
-  const ob5HtmlRef = useRef(null);
   const screenScrollRef = useRef({});
   const scrollPersistRafRef = useRef(null);
   const touchStartXRef = useRef(null);
@@ -2012,18 +2011,7 @@ function App() {
     termsScreen: layout(appbar('서비스 이용약관', true) + `<div class="card"><p class="sub" style="margin:0">본 약관은 스터디크랙 서비스 이용과 관련한 기본 사항을 안내합니다.</p></div>`, false)
   };
 
-  useEffect(() => {
-    if (screen !== 'ob5') {
-      ob5HtmlRef.current = null;
-    }
-  }, [screen]);
-
-  if (screen === 'ob5' && !ob5HtmlRef.current) {
-    ob5HtmlRef.current = screens.ob5;
-  }
-  const current = screen === 'ob5'
-    ? (ob5HtmlRef.current || screens.ob5)
-    : (screens[screen] || screens.home);
+  const current = screens[screen] || screens.home;
   const currentScreen = screen;
   console.log('APP_LOADING_STATE', loading);
   console.log('APP_CURRENT_SCREEN', currentScreen);
@@ -2749,7 +2737,6 @@ function App() {
   const onChange = (e) => {
     markStableScrollPosition();
     const field = e.target.getAttribute('data-field');
-    if (screen === 'ob5' && !['obTrack', 'obExamType', 'scoreExamType'].includes(field || '')) return;
     if (field === 'coachPlannerFiles') {
       const files = Array.from(e.target.files || []);
       if (files.length) setCoachingPlannerFiles((prev) => [...prev, ...files].slice(0, 5));
@@ -2770,7 +2757,6 @@ function App() {
   const onBlur = (e) => {
     markStableScrollPosition();
     const field = e.target.getAttribute('data-field');
-    if (screen === 'ob5' && !String(field || '').startsWith('ob') && !String(field || '').startsWith('score-') && !String(field || '').startsWith('v2-') && !String(field || '').startsWith('v2e-')) return;
     const coachAnswer = e.target.getAttribute('data-coach-answer');
     if (coachAnswer) {
       const value = e.target.value.slice(0, 200);
