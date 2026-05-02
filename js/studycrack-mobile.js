@@ -224,22 +224,7 @@ function App() {
     if (isIOSSafari()) return;
     window.scrollTo(...args);
   };
-  const getOBScrollContainer = () => document.querySelector('.onboarding-container > .content') || document.querySelector('.app-content');
-  const preserveContainerScroll = (container, callback) => {
-    if (!container) {
-      callback();
-      return;
-    }
-    const top = container.scrollTop;
-    callback();
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (top > 0 && container.scrollTop === 0) {
-          container.scrollTop = top;
-        }
-      });
-    });
-  };
+  const obScrollRestoreRef = useRef({ top: 0, active: false });
   const markStableScrollPosition = () => {
     if (!isIOSSafari()) return;
     const y = window.scrollY || window.pageYOffset || 0;
@@ -319,6 +304,11 @@ function App() {
 
   const goto = (next, addHistory = true) => {
     if (!next || next === screen) return;
+    const previousOBScrollTop = document.querySelector('.onboarding-container > .content')?.scrollTop || 0;
+    const shouldPreserveOBScroll = screen === 'ob5' || next === 'ob5' || String(screen).startsWith('ob');
+    if (shouldPreserveOBScroll && previousOBScrollTop > 0) {
+      obScrollRestoreRef.current = { top: previousOBScrollTop, active: true };
+    }
     const currentY = window.scrollY || window.pageYOffset || 0;
     screenScrollRef.current[screen] = currentY;
     if (typeof screenScrollRef.current[next] !== 'number') screenScrollRef.current[next] = currentY;
@@ -426,6 +416,21 @@ function App() {
     if (previousScreen === screen && previousY > 40 && nowY <= 2) {
       requestAnimationFrame(() => safeScrollTo({ top: previousY, left: 0, behavior: 'auto' }));
     }
+  });
+
+  useEffect(() => {
+    const shouldPreserveOBScroll = screen === 'ob5' || String(screen).startsWith('ob');
+    if (!shouldPreserveOBScroll || !obScrollRestoreRef.current.active) return;
+    const previousOBScrollTop = obScrollRestoreRef.current.top;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const nextContainer = document.querySelector('.onboarding-container > .content');
+        if (nextContainer && previousOBScrollTop > 0 && nextContainer.scrollTop === 0) {
+          nextContainer.scrollTop = previousOBScrollTop;
+        }
+        obScrollRestoreRef.current.active = false;
+      });
+    });
   });
 
   useEffect(() => {
@@ -2084,26 +2089,23 @@ function App() {
         return;
       }
       if (screen === 'ob4' && target === 'ob5') {
-        const obContainer = getOBScrollContainer();
         setOnboardingLoading(true);
         setOnboardingLoadingText('학습 성향 분석중...');
         setTimeout(() => setOnboardingLoadingText('효율적인 공부법 찾는중...'), 1500);
         setTimeout(() => {
           const y = window.scrollY;
-          preserveContainerScroll(obContainer, () => {
-            armScrollGuard(1400);
-            markStableScrollPosition();
-            setOnboardingLoading(false);
+          armScrollGuard(1400);
+          markStableScrollPosition();
+          setOnboardingLoading(false);
+          requestAnimationFrame(() => {
             requestAnimationFrame(() => {
+              goto('ob5');
               requestAnimationFrame(() => {
-                goto('ob5');
                 requestAnimationFrame(() => {
-                  requestAnimationFrame(() => {
-                    if (y > 0 && window.scrollY === 0) {
-                      safeScrollTo({ top: y, left: 0, behavior: 'auto' });
-                    }
-                    restoreIfUnexpectedTopJump();
-                  });
+                  if (y > 0 && window.scrollY === 0) {
+                    safeScrollTo({ top: y, left: 0, behavior: 'auto' });
+                  }
+                  restoreIfUnexpectedTopJump();
                 });
               });
             });
