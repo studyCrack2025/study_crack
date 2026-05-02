@@ -5,14 +5,14 @@ const currentDomain = window.location.hostname;
 const IS_LOCAL = currentDomain === 'localhost' || currentDomain === '127.0.0.1';
 const IS_DEV   = !IS_LOCAL && (currentDomain.includes('cloudfront.net') || currentDomain.includes('dev.studycrack.co.kr'));
 
-// 2. 환경에 따라 API Gateway 스테이지 결정
-// local → /local 스테이지 ($LATEST Lambda 연결, 로컬 개발용)
-// dev   → /dev 스테이지 (특정 Lambda 버전 고정, dev.studycrack.co.kr용)
-// prod  → /prod 스테이지
+// 2. 환경에 따라 API 베이스 URL 결정
+// local → API Gateway /local 직접 호출 (localhost 개발용, 쿠키 미지원)
+// dev   → CloudFront dev 경유 (dev.studycrack.co.kr → CF → API Gateway /dev)
+// prod  → CloudFront prod 경유 (studycrack.co.kr → CF → API Gateway /prod)
 const API_BASE_URL = "https://ft35jsftc1.execute-api.ap-northeast-2.amazonaws.com";
-const GATEWAY_URL = IS_LOCAL ? `${API_BASE_URL}/local`
-                  : IS_DEV   ? `${API_BASE_URL}/dev`
-                  :             `${API_BASE_URL}/prod`;
+const GATEWAY_URL = IS_LOCAL
+    ? `${API_BASE_URL}/local`
+    : `https://${currentDomain}`;
 
 const CONFIG = {
     // API 경로 설정 (환경별로 자동 설정된 GATEWAY_URL 적용)
