@@ -2417,7 +2417,20 @@ function App() {
       }
       afterSafariViewportStable(() => setUniversityModalOpen(false));
     }
-    if (action === 'openPlannerAddPage') goto('plannerAdd');
+    if (action === 'openPlannerAddPage') {
+      if (isIOSSafari() && screen === 'planner') {
+        const overlay = document.querySelector('.planner-sheet-overlay .planner-sheet');
+        if (overlay) {
+          const wrap = overlay.closest('.planner-sheet-overlay');
+          if (wrap) {
+            wrap.hidden = false;
+            wrap.style.display = '';
+            return;
+          }
+        }
+      }
+      goto('plannerAdd');
+    }
     if (action === 'openPlannerCalendar') preserveY(() => setPlannerCalendarOpen(true));
     if (action === 'closePlannerCalendar') afterSafariViewportStable(() => setPlannerCalendarOpen(false));
     if (action === 'selectPlannerDate') {
@@ -2432,8 +2445,28 @@ function App() {
       });
       restoreIfUnexpectedTopJump();
     }
-    if (action === 'openPlannerEdit') setPlannerEditIndex(actionEl.getAttribute('data-planner-id'));
-    if (action === 'closePlannerEdit') setPlannerEditIndex(null);
+    if (action === 'openPlannerEdit') {
+      if (isIOSSafari() && screen === 'planner') {
+        const wrap = document.querySelector('.planner-sheet-overlay');
+        if (wrap && wrap.querySelector('[data-action="savePlannerEdit"]')) {
+          wrap.hidden = false;
+          wrap.style.display = '';
+          return;
+        }
+      }
+      setPlannerEditIndex(actionEl.getAttribute('data-planner-id'));
+    }
+    if (action === 'closePlannerEdit') {
+      if (isIOSSafari() && screen === 'planner') {
+        const wrap = actionEl.closest('.planner-sheet-overlay') || document.querySelector('.planner-sheet-overlay');
+        if (wrap && wrap.querySelector('[data-action="savePlannerEdit"]')) {
+          wrap.hidden = true;
+          wrap.style.display = 'none';
+          return;
+        }
+      }
+      setPlannerEditIndex(null);
+    }
     if (action === 'openScoreEdit') { setScoreEditOpen(true); setScoreEditStep(1); }
     if (action === 'saveQualInfo') {
       if (!obGradeStatus || !String(obSchoolName || '').trim() || !String(obTrack || '').trim() || !String(obGoalText || '').trim()) {
@@ -2886,7 +2919,20 @@ function App() {
       }
       setPlannerDraft((prev) => ({ ...prev, subject: actionEl.getAttribute('data-planner-subject') || '' }));
     }
-    if (action === 'setPlannerDuration') setPlannerDraft((prev) => ({ ...prev, durationChoice: actionEl.getAttribute('data-planner-duration') || '' }));
+    if (action === 'setPlannerDuration') {
+      if (isIOSSafari() && screen === 'plannerAdd') {
+        const value = actionEl.getAttribute('data-planner-duration') || '';
+        document.body.dataset.plannerSelectedDuration = value;
+        actionEl.closest('.planner-pill-row')?.querySelectorAll('.planner-pill').forEach((pill) => {
+          pill.classList.toggle('active', pill.getAttribute('data-planner-duration') === value);
+          pill.classList.toggle('selected', pill.getAttribute('data-planner-duration') === value);
+        });
+        const customInput = document.querySelector('[data-field="plannerCustomMinutes"]');
+        if (customInput) customInput.classList.toggle('is-hidden', value !== 'custom');
+        return;
+      }
+      setPlannerDraft((prev) => ({ ...prev, durationChoice: actionEl.getAttribute('data-planner-duration') || '' }));
+    }
     if (action === 'removePlannerItem') {
       const plannerId = actionEl.getAttribute('data-planner-id');
       if (isIOSSafari() && screen === 'planner') {
@@ -2966,6 +3012,10 @@ function App() {
       return;
     }
     const field = e.target.getAttribute('data-field');
+    if (isIOSSafari() && (screen === 'planner' || screen === 'plannerAdd') && e.target.closest('.planner-sheet, .planner-modal')) {
+      e.target.dataset.pendingValue = e.target.value;
+      return;
+    }
     if (isIosOb1DeferredField(e.target, field)) {
       e.target.dataset.pendingValue = e.target.value;
       return;
@@ -3228,6 +3278,10 @@ function App() {
   const onChange = (e) => {
     markStableScrollPosition();
     const field = e.target.getAttribute('data-field');
+    if (isIOSSafari() && (screen === 'planner' || screen === 'plannerAdd') && e.target.closest('.planner-sheet, .planner-modal')) {
+      e.target.dataset.pendingValue = e.target.value;
+      return;
+    }
     if (isIosOb1DeferredField(e.target, field)) {
       e.target.dataset.pendingValue = e.target.value;
       return;
@@ -3252,6 +3306,10 @@ function App() {
   const onBlur = (e) => {
     markStableScrollPosition();
     const field = e.target.getAttribute('data-field');
+    if (isIOSSafari() && (screen === 'planner' || screen === 'plannerAdd') && e.target.closest('.planner-sheet, .planner-modal')) {
+      e.target.dataset.pendingValue = e.target.value;
+      return;
+    }
     if (isIosOb1DeferredField(e.target, field)) {
       e.target.dataset.pendingValue = e.target.value;
       return;
