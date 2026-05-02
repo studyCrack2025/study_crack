@@ -74,8 +74,8 @@ function escapeHtml(text) {
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     // 1. 기본 토큰 존재 여부만 1차 확인 (accessToken으로 통일)
-    const accessToken = localStorage.getItem('accessToken'); 
-    if (!accessToken) {
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken && !localStorage.getItem('refreshToken')) {
         alert("로그인이 필요합니다.");
         window.location.href = '/login';
         return;

@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('accessToken');
 
     // 인증 가드: 로그인하지 않은 사용자는 로그인 페이지로 이동
-    if (!token) {
+    if (!token && !localStorage.getItem('refreshToken')) {
         window.location.replace('/login');
         return;
     }

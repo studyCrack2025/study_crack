@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const accessToken = localStorage.getItem('accessToken'); 
     const userId = localStorage.getItem('userId');
 
-    if (!accessToken) {
+    if (!accessToken && !localStorage.getItem('refreshToken')) {
         alert("로그인이 필요합니다.");
         window.location.href = '/login';
         return;
