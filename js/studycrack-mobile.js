@@ -471,20 +471,14 @@ function App() {
     setOb3IsAnalyzing(true);
     const t = setTimeout(() => {
       armScrollGuard(1200);
-      if (isIOSSafari()) {
-        const loading = document.querySelector('.onboarding-shell .loading-overlay');
-        if (loading) {
-          const wrap = document.createElement('div');
-          wrap.innerHTML = `<div class="card ob-card ob-period-card on-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 3개월 내 도달 예상</b><p>주간 플래너 피드백과 학습 방향 코칭 제공</p></div>`;
-          loading.replaceWith(wrap.firstChild);
+      if (replaceStandardEtaSlotForIos()) {
           return;
-        }
       }
       setOb3IsAnalyzing(false);
     }, 1500);
     return () => {
       clearTimeout(t);
-      setOb3IsAnalyzing(false);
+      if (!(isIOSSafari() && (screen === 'analysis' || screen === 'ob5'))) setOb3IsAnalyzing(false);
     };
   }, [screen]);
 
@@ -1677,7 +1671,8 @@ function App() {
        <p class="sub ob-subcopy">현재 성적에서 합격컷까지,<br/>가장 효율적인 점수 상승 루트를 보여드릴게요.</p>
        <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>무작정 전 과목을 올리는 게 아니라, 합격에 가장 크게 기여하는 과목부터 잡아야 해요!</p></div>
        <div class="card ob-card">${scoreJourneyCard('최소 노력 대비 합격 도달 성적')}</div>
-       ${ob3IsAnalyzing ? `<div class="loading-overlay"><div class="loading-box"><div class="dots">● ● ●</div><div>분석중입니다</div><div>잠시만 기다려주세요</div></div></div>` : `<div class="card ob-card ob-period-card on-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 3개월 내 도달 예상</b><p>주간 플래너 피드백과 학습 방향 코칭 제공</p></div>
+       <div class="eta-card-slot" data-eta-slot="standard">${ob3IsAnalyzing ? `<div class="loading-overlay"><div class="loading-box"><div class="dots">● ● ●</div><div>분석중입니다</div><div>잠시만 기다려주세요</div></div></div>` : `<div class="card ob-card ob-period-card on-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 3개월 내 도달 예상</b><p>주간 플래너 피드백과 학습 방향 코칭 제공</p></div>`}</div>
+       ${!ob3IsAnalyzing ? `
        <div class="card ob-card">
          <p class="analysis-title">합격 가능성 변화</p>
          <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${gaugeTarget}점</b></div></div>
@@ -1693,7 +1688,7 @@ function App() {
        <div class="card ob-card">
          <p class="analysis-title">핵심 전략</p>
          <ol class="ob-strategy"><li><b>수학 68점 → 80점</b><p>합격 가능성 상승 기여도 가장 큼</p></li><li><b>탐구1 70점 → 76점</b><p>단기간 상승 효율 높음</p></li><li><b>영어 77점 유지</b><p>현재 수준 유지 전략</p></li></ol>
-       </div>`}
+       </div>` : ''}
        </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button type="button" class="cta-button" data-action="startStandard">Standard로 시작하기</button><button type="button" class="auth-link-btn" data-action="completeOnboarding">홈으로 이동</button></div></div>`,
       false
     ),
@@ -1819,7 +1814,7 @@ function App() {
           <div class="card analysis-v2-before-after">
             ${scoreJourneyCard('최소 노력 대비 합격 도달 성적')}
             <div class="analysis-v2-eta ${analysisEtaStage < 3 ? 'loading' : ''}">
-              ${analysisEtaStage === 1 ? `<div class="analysis-eta-loading"><span class="skeleton"></span><p>도달 성적 계산 중입니다...</p></div>` : analysisEtaStage === 2 ? `<div class="analysis-eta-loading"><span class="skeleton thin"></span><p>도달 시간을 예상 중입니다...</p></div>` : `<button class="analysis-v2-eta-card" data-action="startStandard"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 2개월 내 도달 예상</b><p>매주 플래너 피드백과 학습 방향 관리를 기준으로 계산했어요</p></button>`}
+              <div class="eta-card-slot" data-eta-slot="standard">${analysisEtaStage === 1 ? `<div class="analysis-eta-loading"><span class="skeleton"></span><p>도달 성적 계산 중입니다...</p></div>` : analysisEtaStage === 2 ? `<div class="analysis-eta-loading"><span class="skeleton thin"></span><p>도달 시간을 예상 중입니다...</p></div>` : `<button class="analysis-v2-eta-card" data-action="startStandard"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 2개월 내 도달 예상</b><p>매주 플래너 피드백과 학습 방향 관리를 기준으로 계산했어요</p></button>`}</div>
             </div>
           </div>
           <div class="card analysis-v2-gauge-change">
@@ -2137,6 +2132,17 @@ function App() {
       if (running) stopBtn.removeAttribute('disabled');
       else stopBtn.setAttribute('disabled', 'disabled');
     }
+  };
+  const replaceStandardEtaSlotForIos = () => {
+    if (!(isIOSSafari() && (screen === 'analysis' || screen === 'ob5'))) return false;
+    const slot = document.querySelector('[data-eta-slot="standard"]');
+    if (!slot) return false;
+    if (screen === 'analysis') {
+      slot.innerHTML = `<button class="analysis-v2-eta-card" data-action="startStandard"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 2개월 내 도달 예상</b><p>매주 플래너 피드백과 학습 방향 관리를 기준으로 계산했어요</p></button>`;
+      return true;
+    }
+    slot.innerHTML = `<div class="card ob-card ob-period-card on-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 3개월 내 도달 예상</b><p>주간 플래너 피드백과 학습 방향 코칭 제공</p></div>`;
+    return true;
   };
 
   const onClick = (e) => {
