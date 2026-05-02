@@ -1078,26 +1078,6 @@ body {
   padding: 20px;
   padding-bottom: 20px;
 }
-.screen.screen-ob5 {
-  height: auto;
-  min-height: 100dvh;
-  max-height: none;
-  overflow: visible;
-}
-.onboarding-container.ob5-screen {
-  height: auto;
-  min-height: 100dvh;
-  max-height: none;
-  overflow: visible;
-}
-.onboarding-container.ob5-screen > .content,
-.screen.screen-ob5 .onboarding-container.ob5-screen > .content {
-  overflow-y: visible;
-  overflow-x: hidden;
-  height: auto;
-  min-height: auto;
-  max-height: none;
-}
 .onboarding-container > .cta-wrapper {
   flex-shrink: 0;
   padding: 16px;
