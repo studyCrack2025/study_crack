@@ -2122,6 +2122,22 @@ function App() {
     const tag = String(el.tagName || '').toUpperCase();
     return tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA';
   };
+  const setHomeTimerUiRunning = (running) => {
+    const timerEl = document.querySelector('.timer');
+    const startBtn = document.querySelector('[data-action="openStudySubjectSheet"]');
+    const stopBtn = document.querySelector('[data-action="stopStudyTimer"]');
+    if (timerEl) timerEl.dataset.running = running ? 'true' : 'false';
+    if (startBtn) {
+      startBtn.classList.toggle('disabled', running);
+      if (running) startBtn.setAttribute('disabled', 'disabled');
+      else startBtn.removeAttribute('disabled');
+    }
+    if (stopBtn) {
+      stopBtn.classList.toggle('disabled', !running);
+      if (running) stopBtn.removeAttribute('disabled');
+      else stopBtn.setAttribute('disabled', 'disabled');
+    }
+  };
 
   const onClick = (e) => {
     lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
@@ -2773,7 +2789,8 @@ function App() {
       if (!custom) return;
       setActiveStudySubject(custom);
       setStudySubjectSheetOpen(false);
-      setStudyTimerRunning(true);
+      if (isIOSSafari() && screen === 'home') setHomeTimerUiRunning(true);
+      else setStudyTimerRunning(true);
       studyTimerSecondsRef.current = 0;
       startLiveStudyTimer();
       syncLiveStudyTimerUi(0);
@@ -2783,13 +2800,15 @@ function App() {
       if (!subject) return;
       setActiveStudySubject(subject);
       setStudySubjectSheetOpen(false);
-      setStudyTimerRunning(true);
+      if (isIOSSafari() && screen === 'home') setHomeTimerUiRunning(true);
+      else setStudyTimerRunning(true);
       studyTimerSecondsRef.current = 0;
       startLiveStudyTimer();
       syncLiveStudyTimerUi(0);
     }
     if (action === 'stopStudyTimer') {
-      setStudyTimerRunning(false);
+      if (isIOSSafari() && screen === 'home') setHomeTimerUiRunning(false);
+      else setStudyTimerRunning(false);
       stopLiveStudyTimer();
       const elapsed = studyTimerSecondsRef.current;
       const today = FIXED_TODAY_DATE;
