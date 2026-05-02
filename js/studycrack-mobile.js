@@ -2105,6 +2105,11 @@ function App() {
     el.setAttribute('aria-hidden', open ? 'false' : 'true');
     return true;
   };
+  const findOverlayByAction = (actionName) => {
+    const actionSelector = `[data-action="${actionName}"]`;
+    const actionNode = document.querySelector(actionSelector);
+    return actionNode?.closest('.home-modal-overlay, .drawer-overlay, .planner-sheet-overlay') || null;
+  };
 
   const onClick = (e) => {
     lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
@@ -2183,14 +2188,23 @@ function App() {
     }
     if (action === 'back') back();
     if (action === 'tab') goto(actionEl.getAttribute('data-tab'));
-    if (action === 'selectPlan') setSelectedPlan(actionEl.getAttribute('data-plan'));
-    if (action === 'selectDuration') setDuration(actionEl.getAttribute('data-duration'));
     if (action === 'toggleTarget') preserveY(() => setTargetOpen((v) => !v));
     if (action === 'selectTarget') {
       setTargetMajor(actionEl.getAttribute('data-target-major'));
       afterSafariViewportStable(() => setTargetOpen(false));
     }
-    if (action === 'setAnalysisMode') setAnalysisMode(actionEl.getAttribute('data-analysis-mode') || 'summary');
+    if (action === 'setAnalysisMode') {
+      if (isIOSSafari()) {
+        const mode = actionEl.getAttribute('data-analysis-mode') || 'summary';
+        document.querySelectorAll('.analysis-v2-tab').forEach((tabEl) => {
+          tabEl.classList.toggle('active', tabEl.getAttribute('data-analysis-mode') === mode);
+        });
+        const root = document.querySelector('.analysis-v2');
+        if (root) root.dataset.analysisMode = mode;
+        return;
+      }
+      setAnalysisMode(actionEl.getAttribute('data-analysis-mode') || 'summary');
+    }
     if (action === 'setScoreView') {
       const nextView = actionEl.getAttribute('data-score-view') || 'current';
       if (isIOSSafari()) {
@@ -2279,15 +2293,24 @@ function App() {
       }, 500);
     }
     if (action === 'openUniversityModal') {
-      if (isIOSSafari() && toggleHomeUiDom('.home-modal-overlay', true)) return;
+      if (isIOSSafari()) {
+        const overlay = findOverlayByAction('closeUniversityModal');
+        if (overlay) { overlay.style.display = ''; overlay.hidden = false; return; }
+      }
       preserveY(() => setUniversityModalOpen(true));
     }
     if (action === 'openAnalysisSearchFromHome') {
-      if (isIOSSafari() && toggleHomeUiDom('.home-modal-overlay', true)) return;
+      if (isIOSSafari()) {
+        const overlay = findOverlayByAction('closeUniversityModal');
+        if (overlay) { overlay.style.display = ''; overlay.hidden = false; return; }
+      }
       preserveY(() => setUniversityModalOpen(true));
     }
     if (action === 'closeUniversityModal') {
-      if (isIOSSafari() && toggleHomeUiDom('.home-modal-overlay', false)) return;
+      if (isIOSSafari()) {
+        const overlay = findOverlayByAction('closeUniversityModal');
+        if (overlay) { overlay.style.display = 'none'; overlay.hidden = true; return; }
+      }
       afterSafariViewportStable(() => setUniversityModalOpen(false));
     }
     if (action === 'openPlannerAddPage') goto('plannerAdd');
@@ -2413,6 +2436,13 @@ function App() {
       setNotifications((prev) => ({ ...prev, [key]: !prev[key] }));
     }
     if (action === 'toggleFaq') {
+      if (isIOSSafari()) {
+        const body = actionEl.querySelector('p');
+        const opened = actionEl.classList.toggle('active');
+        actionEl.setAttribute('aria-expanded', opened ? 'true' : 'false');
+        if (body) body.style.display = opened ? '' : 'none';
+        return;
+      }
       const id = actionEl.getAttribute('data-faq-id');
       setOpenFaq((prev) => (prev === id ? '' : id));
     }
@@ -2459,19 +2489,31 @@ function App() {
     if (action === 'openKakaoSupport') window.open('http://pf.kakao.com/_wxjxcgn', '_blank');
     if (action === 'openEmailSupport') window.location.href = 'mailto:contact@studycrack.co.kr';
     if (action === 'openDrawer') {
-      if (isIOSSafari() && toggleHomeUiDom('.drawer-overlay', true)) return;
+      if (isIOSSafari()) {
+        const overlay = document.querySelector('.drawer-overlay');
+        if (overlay) { overlay.style.display = ''; overlay.hidden = false; return; }
+      }
       setDrawerOpen(true);
     }
     if (action === 'closeDrawer') {
-      if (isIOSSafari() && toggleHomeUiDom('.drawer-overlay', false)) return;
+      if (isIOSSafari()) {
+        const overlay = document.querySelector('.drawer-overlay');
+        if (overlay) { overlay.style.display = 'none'; overlay.hidden = true; return; }
+      }
       setDrawerOpen(false);
     }
     if (action === 'openNotificationModal') {
-      if (isIOSSafari() && toggleHomeUiDom('.home-modal-overlay:has(.pro-notif-modal)', true)) return;
+      if (isIOSSafari()) {
+        const overlay = findOverlayByAction('closeNotificationModal');
+        if (overlay) { overlay.style.display = ''; overlay.hidden = false; return; }
+      }
       setNotifModalOpen(true);
     }
     if (action === 'closeNotificationModal') {
-      if (isIOSSafari() && toggleHomeUiDom('.home-modal-overlay:has(.pro-notif-modal)', false)) return;
+      if (isIOSSafari()) {
+        const overlay = findOverlayByAction('closeNotificationModal');
+        if (overlay) { overlay.style.display = 'none'; overlay.hidden = true; return; }
+      }
       setNotifModalOpen(false);
     }
     if (action === 'openProRequestModal') setProRequestModalOpen(true);
@@ -2572,7 +2614,10 @@ function App() {
       setCoachingStep((prev) => Math.min(8, prev + 1));
     }
     if (action === 'openStudySubjectSheet') {
-      if (isIOSSafari() && toggleHomeUiDom('.study-subject-sheet', true)) return;
+      if (isIOSSafari()) {
+        const overlay = findOverlayByAction('closeStudySubjectSheet');
+        if (overlay) { overlay.style.display = ''; overlay.hidden = false; return; }
+      }
       setStudySubjectSheetOpen(true);
     }
     if (action === 'toggleStudyBreakdown') {
@@ -2589,7 +2634,10 @@ function App() {
       setShowStudyBreakdown((v) => !v);
     }
     if (action === 'closeStudySubjectSheet') {
-      if (isIOSSafari() && toggleHomeUiDom('.study-subject-sheet', false)) return;
+      if (isIOSSafari()) {
+        const overlay = findOverlayByAction('closeStudySubjectSheet');
+        if (overlay) { overlay.style.display = 'none'; overlay.hidden = true; return; }
+      }
       setStudySubjectSheetOpen(false);
     }
     if (action === 'selectStudySubjectCustom') {
@@ -3102,3 +3150,29 @@ if (!rootElement) {
     rootElement.innerHTML = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>앱을 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.</h3></div></div></div></div>`;
   }
 }
+    if (action === 'selectPlan') {
+      if (isIOSSafari()) {
+        const plan = actionEl.getAttribute('data-plan');
+        if (!plan) return;
+        document.querySelectorAll('.plan-card, .payment-plan-tabs button').forEach((btn) => {
+          const p = btn.getAttribute('data-plan');
+          if (!p) return;
+          btn.classList.toggle('active', p === plan);
+        });
+        document.body.dataset.selectedPlan = plan;
+        return;
+      }
+      setSelectedPlan(actionEl.getAttribute('data-plan'));
+    }
+    if (action === 'selectDuration') {
+      if (isIOSSafari()) {
+        const durationValue = actionEl.getAttribute('data-duration');
+        if (!durationValue) return;
+        actionEl.closest('.duration-row')?.querySelectorAll('button').forEach((btn) => {
+          btn.classList.toggle('active', btn.getAttribute('data-duration') === durationValue);
+        });
+        document.body.dataset.selectedDuration = durationValue;
+        return;
+      }
+      setDuration(actionEl.getAttribute('data-duration'));
+    }
