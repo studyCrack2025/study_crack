@@ -249,6 +249,15 @@ function App() {
       }
     });
   };
+
+  useEffect(() => {
+    console.log('[MOUNT]', 'App');
+    return () => console.log('[UNMOUNT]', 'App');
+  }, []);
+
+  useEffect(() => {
+    console.log('[WRAPPER_STATE]', { screen, loading, tab });
+  }, [screen, loading, tab]);
   const keepScrollPosition = (durationMs = 380) => {
     const y = window.scrollY || window.pageYOffset || 0;
     const started = Date.now();
@@ -569,6 +578,33 @@ function App() {
   useEffect(() => {
     window.__studycrackAppBooted = true;
   }, []);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.__studycrackScrollDebugInstalled) return;
+    window.__studycrackScrollDebugInstalled = true;
+    const originalScrollTo = window.scrollTo.bind(window);
+    window.scrollTo = (...args) => {
+      console.trace('[scrollTo called]', args);
+      return originalScrollTo(...args);
+    };
+    const originalScrollIntoView = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (...args) {
+      console.trace('[scrollIntoView called]', this, args);
+      return originalScrollIntoView.apply(this, args);
+    };
+    const onBeforeUnload = () => console.log('[beforeunload]');
+    const onPopstate = () => console.log('[popstate]', window.location.href);
+    const onHashchange = () => console.log('[hashchange]', window.location.href);
+    const onSubmitCapture = (e) => {
+      e.preventDefault();
+      console.trace('[form submit prevented]', e.target);
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    window.addEventListener('popstate', onPopstate);
+    window.addEventListener('hashchange', onHashchange);
+    document.addEventListener('submit', onSubmitCapture, true);
+  }, []);
+
 
   useEffect(() => {
     localStorage.setItem('scores', JSON.stringify(scores));
@@ -2784,8 +2820,9 @@ function App() {
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>추가중입니다.</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
   const rendered = `${designV2StyleTag}${renderedBase}${analysisOverlay}${onboardingOverlay}${addingUniversityOverlay}`;
+  const renderedWithButtonType = rendered.replace(/<button(?![^>]*\btype=)/g, '<button type="button"');
 
-  return <div onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: rendered }} />;
+  return <div onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: renderedWithButtonType }} />;
 }
 
 const rootElement = document.getElementById('root');
