@@ -2242,18 +2242,11 @@ function App() {
     }
     if (action === 'toggleTarget') preserveY(() => setTargetOpen((v) => !v));
     if (action === 'selectTarget') {
-      if (isIOSSafari() && screen === 'ob4') {
-        const major = actionEl.getAttribute('data-target-major') || '';
-        document.body.dataset.ob4SelectedUniversity = major;
-        const group = actionEl.closest('.ob-uni-list');
-        group?.querySelectorAll('.ob-uni-item').forEach((btn) => {
-          btn.classList.toggle('active', btn === actionEl);
-          btn.classList.toggle('selected', btn === actionEl);
-        });
-        return;
-      }
-      setTargetMajor(actionEl.getAttribute('data-target-major'));
-      afterSafariViewportStable(() => setTargetOpen(false));
+      const major = actionEl.getAttribute('data-target-major');
+      preserveScrollAfterStateChange(() => {
+        setTargetMajor(major);
+        afterSafariViewportStable(() => setTargetOpen(false));
+      });
     }
     if (action === 'setAnalysisMode') {
       const mode = actionEl.getAttribute('data-analysis-mode') || 'summary';
@@ -2845,14 +2838,6 @@ function App() {
     if (action === 'retryInit') initializeApp();
     if (action === 'noopModal') return;
     if (action === 'setPlannerSubject') {
-      if (isIOSSafari() && screen === 'plannerAdd') {
-        const subject = actionEl.getAttribute('data-planner-subject') || '';
-        document.body.dataset.plannerSelectedSubject = subject;
-        actionEl.closest('.planner-pill-row')?.querySelectorAll('.planner-pill').forEach((pill) => {
-          pill.classList.toggle('active', pill.getAttribute('data-planner-subject') === subject);
-        });
-        return;
-      }
       setPlannerDraft((prev) => ({ ...prev, subject: actionEl.getAttribute('data-planner-subject') || '' }));
     }
     if (action === 'setPlannerDuration') setPlannerDraft((prev) => ({ ...prev, durationChoice: actionEl.getAttribute('data-planner-duration') || '' }));
