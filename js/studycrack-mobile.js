@@ -39,6 +39,10 @@ const safeParse = (key, fallback) => {
     return fallback;
   }
 };
+const isInvalidRequiredSelectValue = (v) => {
+  const value = String(v ?? '').trim();
+  return !value || ['선택', '과목 선택', '선택하세요', '미선택'].includes(value);
+};
 
 const resolveAssetPath = async (path, fallback) => {
   try {
@@ -2218,10 +2222,6 @@ function App() {
     if (shouldKeepScroll) keepScrollPosition();
     if (action === 'goto') {
       const target = actionEl.getAttribute('data-target');
-      const isInvalidRequiredSelect = (value) => {
-        const normalized = String(value ?? '').trim();
-        return !normalized || normalized === '선택' || normalized === '선택하세요' || normalized === '기본값';
-      };
       if (screen === 'ob1' && target === 'ob2') {
         if (!obGradeStatus || !String(obSchoolName || '').trim() || !String(obTrack || '').trim() || !String(obGoalText || '').trim()) {
           alert('필수 입력 사항을 모두 입력해주세요');
@@ -2242,7 +2242,12 @@ function App() {
         return;
       }
       if (screen === 'ob2' && target === 'ob3') {
-        if (isInvalidRequiredSelect(obExamType)) {
+        if (isInvalidRequiredSelectValue(obExamType)) {
+          alert('필수 항목을 모두 선택해주세요');
+          return;
+        }
+        const englishGradeValue = String(document.querySelector('[data-score-key="english_grade"]')?.value || '').trim();
+        if (isInvalidRequiredSelectValue(englishGradeValue)) {
           alert('필수 항목을 모두 선택해주세요');
           return;
         }
@@ -2477,7 +2482,17 @@ function App() {
       afterSafariViewportStable(() => setUniversityModalOpen(false));
     }
     if (action === 'openPlannerAddPage') goto('plannerAdd');
-    if (action === 'openPlannerCalendar') preserveY(() => setPlannerCalendarOpen(true));
+    if (action === 'openPlannerCalendar') {
+      const strip = document.querySelector('.planner-date-strip');
+      const left = strip?.scrollLeft || 0;
+      preserveY(() => setPlannerCalendarOpen(true));
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const nextStrip = document.querySelector('.planner-date-strip');
+          if (nextStrip && Math.abs((nextStrip.scrollLeft || 0) - left) > 2) nextStrip.scrollLeft = left;
+        });
+      });
+    }
     if (action === 'closePlannerCalendar') afterSafariViewportStable(() => setPlannerCalendarOpen(false));
     if (action === 'selectPlannerDate') {
       const date = actionEl.getAttribute('data-planner-date');
@@ -2565,15 +2580,14 @@ function App() {
         inquiry1: { ...prev.inquiry1, score: nextInq1 },
         inquiry2: { ...prev.inquiry2, score: nextInq2 }
       }));
-      const isUnselected = (v) => !String(v ?? '').trim() || ['선택', '과목 선택', '선택하세요'].includes(String(v).trim());
       const requiredMissing = !String(nextCommonKor).trim()
         || !String(nextElecKor).trim()
         || !String(nextCommonMath).trim()
         || !String(nextElecMath).trim()
-        || isUnselected(nextEnglish)
-        || isUnselected(nextHistory)
-        || isUnselected(nextInq1Subject)
-        || isUnselected(nextInq2Subject)
+        || isInvalidRequiredSelectValue(nextEnglish)
+        || isInvalidRequiredSelectValue(nextHistory)
+        || isInvalidRequiredSelectValue(nextInq1Subject)
+        || isInvalidRequiredSelectValue(nextInq2Subject)
         || !String(nextInq1).trim()
         || !String(nextInq2).trim();
       if (requiredMissing) {
@@ -2602,6 +2616,14 @@ function App() {
       setScoreEditStep(1);
     }
     if (action === 'applyScoreExam') {
+      const vEnglish = document.querySelector('[data-field="v2e-english"]')?.value ?? scoreEditState.english;
+      const vHistory = document.querySelector('[data-field="v2e-history"]')?.value ?? scoreEditState.history;
+      const vInq1Subject = document.querySelector('[data-field="v2e-inq1-subject"]')?.value ?? scoreEditState.inquiry1.subject;
+      const vInq2Subject = document.querySelector('[data-field="v2e-inq2-subject"]')?.value ?? scoreEditState.inquiry2.subject;
+      if (isInvalidRequiredSelectValue(vEnglish) || isInvalidRequiredSelectValue(vHistory) || isInvalidRequiredSelectValue(vInq1Subject) || isInvalidRequiredSelectValue(vInq2Subject)) {
+        alert('필수 항목을 모두 선택해주세요');
+        return;
+      }
       if (!scoreExamType || scoreExamType === '선택' || scoreExamType === '선택하세요') {
         alert('필수 항목을 모두 선택해주세요');
         return;
@@ -2815,8 +2837,21 @@ function App() {
       }
       if (coachingStep === 2 && coachingPlannerFiles.length === 0) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
       if (coachingStep === 3) {
+        const examScoresForValidation = isIOSSafari() && screen === 'strategy'
+          ? (() => {
+            const values = {};
+            document.querySelectorAll('[data-coach-field]').forEach((input) => {
+              const key = input.getAttribute('data-coach-field');
+              if (key) values[key] = input.value || '';
+            });
+            return values;
+          })()
+          : coachingExamScores;
         if (!coachingExamType) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
-        if (coachingExamType !== '미응시' && (!String(coachingExamScores.koreanRaw || '').trim() || !String(coachingExamScores.mathRaw || '').trim() || !String(coachingExamScores.englishGrade || '').trim() || !String(coachingExamScores.inq1Raw || '').trim() || !String(coachingExamScores.inq2Raw || '').trim())) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
+        if (coachingExamType !== '미응시' && (!String(examScoresForValidation.koreanRaw || '').trim() || !String(examScoresForValidation.mathRaw || '').trim() || !String(examScoresForValidation.englishGrade || '').trim() || !String(examScoresForValidation.inq1Raw || '').trim() || !String(examScoresForValidation.inq2Raw || '').trim())) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
+        if (isIOSSafari() && screen === 'strategy') {
+          setCoachingExamScores((prev) => ({ ...prev, ...examScoresForValidation }));
+        }
       }
       if (coachingStep === 4 && !coachingTrend) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
       if (coachingStep >= 8) {
@@ -2923,7 +2958,9 @@ function App() {
           }
           return [...prev, { date: today, subjects: { [activeStudySubject]: elapsed } }];
         });
-        setPlannerItems((prev) => prev.map((item) => ((activePlannerItemId && item.id === activePlannerItemId) || (!activePlannerItemId && item.subject === activeStudySubject)) ? { ...item, doneMinutes: (item.doneMinutes || 0) + Math.round(elapsed / 60) } : item));
+        if (activePlannerItemId) {
+          setPlannerItems((prev) => prev.map((item) => (item.id === activePlannerItemId ? { ...item, doneMinutes: (item.doneMinutes || 0) + Math.round(elapsed / 60) } : item)));
+        }
       }
       studyTimerSecondsRef.current = 0;
       syncLiveStudyTimerUi(0);
