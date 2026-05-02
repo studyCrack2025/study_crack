@@ -2114,6 +2114,14 @@ function App() {
     el.setAttribute('aria-hidden', open ? 'false' : 'true');
     return true;
   };
+  const getOB1DomValue = (field) => document.querySelector(`[data-field="${field}"]`)?.value?.trim() || '';
+  const isIosOb1DeferredField = (el, field) => {
+    if (!el || !field) return false;
+    if (!(isIOSSafari() && screen === 'ob1')) return false;
+    if (!field.startsWith('ob')) return false;
+    const tag = String(el.tagName || '').toUpperCase();
+    return tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA';
+  };
 
   const onClick = (e) => {
     lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
@@ -2127,10 +2135,20 @@ function App() {
     if (action === 'goto') {
       const target = actionEl.getAttribute('data-target');
       if (screen === 'ob1' && target === 'ob2') {
-        if (!obGradeStatus || !String(obSchoolName || '').trim() || !String(obTrack || '').trim() || !String(obGoalText || '').trim()) {
+        const gradeStatus = getOB1DomValue('obGradeStatus') || String(obGradeStatus || '').trim();
+        const schoolName = getOB1DomValue('obSchoolName');
+        const track = getOB1DomValue('obTrack');
+        const goalText = getOB1DomValue('obGoalText');
+        const questionText = getOB1DomValue('obQuestionText');
+        if (!schoolName || !gradeStatus || !track || !goalText) {
           alert('필수 입력 사항을 모두 입력해주세요');
           return;
         }
+        setObSchoolName(schoolName);
+        setObGradeStatus(gradeStatus);
+        setObTrack(track);
+        setObGoalText(goalText);
+        setObQuestionText(questionText);
       }
       if (screen === 'on1' && target === 'ob1') {
         setOnboardingLoading(true);
@@ -2909,6 +2927,10 @@ function App() {
       return;
     }
     const field = e.target.getAttribute('data-field');
+    if (isIosOb1DeferredField(e.target, field)) {
+      e.target.dataset.pendingValue = e.target.value;
+      return;
+    }
     if (field === 'coachPlannerFiles') {
       const files = Array.from(e.target.files || []);
       if (files.length) setCoachingPlannerFiles((prev) => [...prev, ...files].slice(0, 5));
@@ -3167,6 +3189,10 @@ function App() {
   const onChange = (e) => {
     markStableScrollPosition();
     const field = e.target.getAttribute('data-field');
+    if (isIosOb1DeferredField(e.target, field)) {
+      e.target.dataset.pendingValue = e.target.value;
+      return;
+    }
     if (field === 'coachPlannerFiles') {
       const files = Array.from(e.target.files || []);
       if (files.length) setCoachingPlannerFiles((prev) => [...prev, ...files].slice(0, 5));
@@ -3187,6 +3213,10 @@ function App() {
   const onBlur = (e) => {
     markStableScrollPosition();
     const field = e.target.getAttribute('data-field');
+    if (isIosOb1DeferredField(e.target, field)) {
+      e.target.dataset.pendingValue = e.target.value;
+      return;
+    }
     const coachAnswer = e.target.getAttribute('data-coach-answer');
     if (coachAnswer) {
       const value = e.target.value.slice(0, 200);
