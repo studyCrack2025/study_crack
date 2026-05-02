@@ -4,6 +4,8 @@ const CRACKY_SRC = './assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png';
 const ONBOARDING_LOGO_SRC = './assets/images/og-image.jpg';
 const STUDYCRACK_LOGO_SRC = './assets/images/studycrack_logo_wo_bg.png';
 const HOME_FALLBACK_HTML = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>스터디크랙 홈</h3><p class="sub">앱을 불러왔어요. 계속 이용해 주세요.</p></div></div></div></div>`;
+let hasRestoredInitialScroll = false;
+let initialScrollY = 0;
 const DEFAULT_USER = { name: '김지민', targetUniversity: '연세대학교 경영학과', plan: 'Pro' };
 const DEFAULT_SCORES = { korean: 82, math: 68, english: 77, inquiry1: 70, inquiry2: 66 };
 const DEFAULT_NOTIFICATIONS = { planner: true, weekly: true, report: true, billing: true };
@@ -481,6 +483,24 @@ function App() {
       if (!(isIOSSafari() && (screen === 'analysis' || screen === 'ob5'))) setOb3IsAnalyzing(false);
     };
   }, [screen]);
+
+  useEffect(() => {
+    if (!isIOSSafari() || hasRestoredInitialScroll) return undefined;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if ((window.scrollY || window.pageYOffset || 0) === 0 && initialScrollY > 0) {
+          window.scrollTo({ top: initialScrollY, left: 0, behavior: 'auto' });
+        }
+        hasRestoredInitialScroll = true;
+      });
+    });
+    const onInitialViewportResize = () => {
+      if (hasRestoredInitialScroll) return;
+      if (initialScrollY > 0) window.scrollTo({ top: initialScrollY, left: 0, behavior: 'auto' });
+    };
+    window.visualViewport?.addEventListener('resize', onInitialViewportResize);
+    return () => window.visualViewport?.removeEventListener('resize', onInitialViewportResize);
+  }, []);
 
   useEffect(() => {
     let viewport = document.querySelector('meta[name="viewport"]');
@@ -3491,6 +3511,7 @@ function App() {
 }
 
 const rootElement = document.getElementById('root');
+initialScrollY = window.scrollY || window.pageYOffset || 0;
 if (!rootElement) {
   console.error('[APP_INIT_ERROR]', new Error('root element #root not found'));
 } else if (!window.ReactDOM || typeof window.ReactDOM.createRoot !== 'function') {
