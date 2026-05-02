@@ -581,30 +581,38 @@ function App() {
 
   const debugScrollEnabled = useMemo(() => {
     if (typeof window === 'undefined') return false;
-    try {
-      const params = new URLSearchParams(window.location.search || '');
-      return process.env.NODE_ENV === 'development' || params.get('debugScroll') === '1';
-    } catch (_e) {
-      return process.env.NODE_ENV === 'development';
+    const params = new URLSearchParams(window.location.search || '');
+    window.__SCROLL_DEBUG_ENABLED__ = params.get('debugScroll') === '1' || process.env.NODE_ENV === 'development';
+    window.__SCROLL_DEBUG_LOGS__ = window.__SCROLL_DEBUG_LOGS__ || [];
+    if (window.__SCROLL_DEBUG_ENABLED__ && !window.__SCROLL_DEBUG_USAGE_LOGGED__) {
+      console.log('Scroll debug enabled. Run copyScrollDebugLogs() after reproducing the issue.');
+      window.__SCROLL_DEBUG_USAGE_LOGGED__ = true;
     }
+    return window.__SCROLL_DEBUG_ENABLED__;
   }, []);
-  const [debugLogs, setDebugLogs] = useState([]);
-  const pushDebugLog = useCallback((type, data) => {
-    if (!debugScrollEnabled) return;
-    const payload = `${new Date().toISOString().slice(11, 23)} | ${type} | ${typeof data === 'string' ? data : JSON.stringify(data)}`;
-    setDebugLogs((prev) => {
-      const next = [...prev, payload];
-      return next.length > 30 ? next.slice(next.length - 30) : next;
+  const addScrollDebugLog = useCallback((type, payload = {}) => {
+    if (typeof window === 'undefined' || !window.__SCROLL_DEBUG_ENABLED__) return;
+    const logs = window.__SCROLL_DEBUG_LOGS__ || [];
+    logs.push({
+      time: new Date().toISOString(),
+      type,
+      payload,
+      y: window.scrollY,
+      url: location.href,
+      activeElement: document.activeElement?.tagName || null,
+      activeClass: document.activeElement?.className || null
     });
-    try { console.log('[DEBUG_PANEL]', type, data); } catch (_e) {}
-  }, [debugScrollEnabled]);
+    if (logs.length > 100) logs.shift();
+    window.__SCROLL_DEBUG_LOGS__ = logs;
+    console.log('[SCROLL_DEBUG]', type, payload);
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!debugScrollEnabled) return;
-    pushDebugLog('MOUNT', 'App');
-    return () => pushDebugLog('UNMOUNT', 'App');
-  }, [debugScrollEnabled, pushDebugLog]);
+    addScrollDebugLog('MOUNT', { component: 'App' });
+    return () => addScrollDebugLog('UNMOUNT', { component: 'App' });
+  }, [debugScrollEnabled, addScrollDebugLog]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -614,32 +622,53 @@ function App() {
     const originalScrollTo = window.scrollTo.bind(window);
     window.scrollTo = (...args) => {
       console.trace('[DEBUG window.scrollTo called]', args);
-      pushDebugLog('scrollTo', { args, y: window.scrollY, route: window.location.href });
+      addScrollDebugLog('window.scrollTo', { args });
       return originalScrollTo(...args);
     };
     const originalScroll = window.scroll.bind(window);
     window.scroll = (...args) => {
       console.trace('[DEBUG window.scroll called]', args);
-      pushDebugLog('scroll', { args, y: window.scrollY, route: window.location.href });
+      addScrollDebugLog('window.scroll', { args });
       return originalScroll(...args);
     };
     const originalScrollIntoView = Element.prototype.scrollIntoView;
     Element.prototype.scrollIntoView = function (...args) {
       console.trace('[DEBUG scrollIntoView called]', this, args);
-      pushDebugLog('scrollIntoView', { tag: this?.tagName, cls: this?.className, args, y: window.scrollY });
+      addScrollDebugLog('scrollIntoView', { tag: this?.tagName, cls: this?.className, args });
       return originalScrollIntoView.apply(this, args);
     };
-    const onScroll = () => pushDebugLog('scrollEvent', { y: window.scrollY, vvHeight: window.visualViewport?.height || null, active: document.activeElement?.tagName || null, route: location.href });
-    const onVvResize = () => pushDebugLog('vvResize', { vvHeight: window.visualViewport?.height || null, vvOffsetTop: window.visualViewport?.offsetTop || null, y: window.scrollY, active: document.activeElement?.tagName || null });
-    const onFocusin = () => pushDebugLog('focusin', { tag: document.activeElement?.tagName || null, cls: document.activeElement?.className || null });
-    const onFocusout = () => pushDebugLog('focusout', { tag: document.activeElement?.tagName || null, cls: document.activeElement?.className || null });
-    const onBeforeUnload = () => pushDebugLog('beforeunload', location.href);
-    const onPopstate = () => pushDebugLog('popstate', location.href);
-    const onHashchange = () => pushDebugLog('hashchange', location.href);
+    let lastScrollLogAt = 0;
+    let lastVVLogAt = 0;
+    const onScroll = () => {
+      const now = Date.now();
+      if (now - lastScrollLogAt < 300) return;
+      lastScrollLogAt = now;
+      addScrollDebugLog('scroll', { y: window.scrollY });
+    };
+    const onVvResize = () => {
+      const now = Date.now();
+      if (now - lastVVLogAt < 300) return;
+      lastVVLogAt = now;
+      addScrollDebugLog('visualViewport.resize', { height: window.visualViewport?.height, offsetTop: window.visualViewport?.offsetTop });
+    };
+    const onFocusin = () => addScrollDebugLog('focusin');
+    const onFocusout = () => addScrollDebugLog('focusout');
+    const onBeforeUnload = () => addScrollDebugLog('beforeunload');
+    const onPopstate = () => addScrollDebugLog('popstate');
+    const onHashchange = () => addScrollDebugLog('hashchange');
     const onSubmitCapture = (e) => {
       e.preventDefault();
-      pushDebugLog('formSubmitPrevented', e.target?.className || e.target?.tagName || 'unknown');
+      addScrollDebugLog('formSubmitPrevented', { target: e.target?.className || e.target?.tagName || 'unknown' });
       console.trace('[form submit prevented]', e.target);
+    };
+    window.copyScrollDebugLogs = async () => {
+      const text = JSON.stringify(window.__SCROLL_DEBUG_LOGS__ || [], null, 2);
+      try {
+        await navigator.clipboard.writeText(text);
+        console.log('[SCROLL_DEBUG] copied');
+      } catch (e) {
+        console.log(text);
+      }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     window.visualViewport?.addEventListener('resize', onVvResize);
@@ -649,9 +678,9 @@ function App() {
     window.addEventListener('popstate', onPopstate);
     window.addEventListener('hashchange', onHashchange);
     document.addEventListener('submit', onSubmitCapture, true);
-  }, [debugScrollEnabled, pushDebugLog]);
+  }, [debugScrollEnabled, addScrollDebugLog]);
 
-  useEffect(() => { if (debugScrollEnabled) pushDebugLog('route', { screen, tab, loading }); }, [screen, tab, loading, debugScrollEnabled, pushDebugLog]);
+  useEffect(() => { if (debugScrollEnabled) addScrollDebugLog('route', { screen, tab, loading }); }, [screen, tab, loading, debugScrollEnabled, addScrollDebugLog]);
 
 
   useEffect(() => {
@@ -2871,17 +2900,7 @@ function App() {
   const renderedWithButtonType = rendered.replace(/<button(?![^>]*\btype=)/g, '<button type="button"');
 
 
-  const debugPanel = debugScrollEnabled ? (
-    <div style={{ position: 'fixed', left: 8, right: 8, bottom: 8, zIndex: 2147483647, maxHeight: '34vh', background: 'rgba(0,0,0,0.88)', color: '#9ef7b8', fontSize: 11, borderRadius: 10, padding: 8, overflow: 'hidden' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-        <b style={{ color: '#fff' }}>DEBUG SCROLL PANEL</b>
-        <button type="button" style={{ fontSize: 11 }} onClick={() => navigator.clipboard?.writeText(debugLogs.join('\n'))}>Copy</button>
-      </div>
-      <div style={{ overflow: 'auto', maxHeight: '25vh', whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>{debugLogs.slice().reverse().join('\n')}</div>
-    </div>
-  ) : null;
-
-  return <><div className="ios-scroll-root" onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: renderedWithButtonType }} />{debugPanel}</>;
+  return <div className="ios-scroll-root" onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: renderedWithButtonType }} />;
 
 }
 
