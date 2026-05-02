@@ -2323,15 +2323,39 @@ function App() {
       }, 500);
     }
     if (action === 'openUniversityModal') {
-      if (isIOSSafari() && toggleHomeUiDom('.home-modal-overlay', true)) return;
+      if (isIOSSafari() && screen === 'home') {
+        const modal = document.querySelector('.home-modal .analysis-search-row, .home-modal .analysis-rec-card')?.closest('.home-modal');
+        const overlay = modal?.closest('.home-modal-overlay');
+        if (overlay) {
+          overlay.hidden = false;
+          overlay.style.display = '';
+          return;
+        }
+      }
       preserveY(() => setUniversityModalOpen(true));
     }
     if (action === 'openAnalysisSearchFromHome') {
-      if (isIOSSafari() && toggleHomeUiDom('.home-modal-overlay', true)) return;
+      if (isIOSSafari() && screen === 'home') {
+        const modal = document.querySelector('.home-modal .analysis-search-row, .home-modal .analysis-rec-card')?.closest('.home-modal');
+        const overlay = modal?.closest('.home-modal-overlay');
+        if (overlay) {
+          overlay.hidden = false;
+          overlay.style.display = '';
+          return;
+        }
+      }
       preserveY(() => setUniversityModalOpen(true));
     }
     if (action === 'closeUniversityModal') {
-      if (isIOSSafari() && toggleHomeUiDom('.home-modal-overlay', false)) return;
+      if (isIOSSafari() && screen === 'home') {
+        const modal = document.querySelector('.home-modal .analysis-search-row, .home-modal .analysis-rec-card')?.closest('.home-modal');
+        const overlay = modal?.closest('.home-modal-overlay');
+        if (overlay) {
+          overlay.hidden = true;
+          overlay.style.display = 'none';
+          return;
+        }
+      }
       afterSafariViewportStable(() => setUniversityModalOpen(false));
     }
     if (action === 'openPlannerAddPage') goto('plannerAdd');
