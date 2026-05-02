@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
     bindEnterKey('currentPassword', changePassword);
     bindEnterKey('newChangePassword', changePassword);
     bindEnterKey('newChangePasswordConfirm', changePassword);
-    bindEnterKey('deleteAccountPassword', executeDeleteAccount);
+    bindEnterKey('deleteConfirmText', deleteStep2Submit);
     
     // 소셜 재인증 콜백 처리 (회원 탈퇴용) — DOM 즉시 열기
     const urlParams = new URLSearchParams(window.location.search);
