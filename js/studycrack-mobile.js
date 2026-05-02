@@ -514,6 +514,20 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!coachingSheetOpen || coachingStep !== 1 || !coachingAutoFilledRef.current) return;
+    const nextAutoRows = buildDefaultCoachingSubjects();
+    setCoachingSubjectRows((prev) => {
+      const prevBySource = new Map(prev.filter((r) => r.sourceId).map((r) => [r.sourceId, r]));
+      return nextAutoRows.map((row) => {
+        const prevRow = prevBySource.get(row.sourceId);
+        if (!prevRow) return row;
+        if (coachingDirtyRowsRef.current[prevRow.id]) return prevRow;
+        return { ...row, detail: prevRow.detail || row.detail, planned: prevRow.planned || row.planned, actual: prevRow.actual || row.actual };
+      });
+    });
+  }, [coachingSheetOpen, coachingStep, plannerItems, todayStudySeconds, studySubjectRecords]);
+
+  useEffect(() => {
     let viewport = document.querySelector('meta[name="viewport"]');
     if (!viewport) {
       viewport = document.createElement('meta');
@@ -1055,14 +1069,14 @@ function App() {
       const subject = item.subject || '기타';
       const plannedHour = ((item.minutes || 0) / 60);
       const actualHour = (((todaySubjectRecord.subjects && todaySubjectRecord.subjects[subject]) || todayStudySeconds || 0) / 3600);
-      return { id: `plan-${idx}-${subject}`, subject, detail: item.content || '', planned: plannedHour ? plannedHour.toFixed(1) : '', actual: actualHour ? actualHour.toFixed(1) : '', removable: true, placeholder: '세부과목 입력' };
+      return { id: `plan-${idx}-${subject}`, sourceId: item.id || `plan-${idx}`, subject, detail: item.content || '', planned: plannedHour ? plannedHour.toFixed(1) : '', actual: actualHour ? actualHour.toFixed(1) : '', removable: true, placeholder: '세부과목 입력' };
     });
     if (rows.length) return rows;
     const mapped = ['국어', '수학', '영어', '탐구', '기타'].map((subject) => {
       const plannedHour = (plannerMinutesBySubject[subject] || 0) / 60;
       const actualHour = (((todaySubjectRecord.subjects && todaySubjectRecord.subjects[subject]) || todayStudySeconds || 0) / 3600);
       const hint = subject === '국어' ? '세부과목 (예: 언매)' : subject === '수학' ? '세부과목 (예: 미적)' : subject === '영어' ? '세부과목 (예: 독해)' : subject === '탐구' ? '세부과목 (예: 생1)' : '세부과목 입력';
-      return { id: `${subject}-base`, subject, detail: '', planned: plannedHour ? plannedHour.toFixed(1) : '', actual: actualHour ? actualHour.toFixed(1) : '', removable: subject === '기타', placeholder: hint };
+      return { id: `${subject}-base`, sourceId: `${subject}-base`, subject, detail: '', planned: plannedHour ? plannedHour.toFixed(1) : '', actual: actualHour ? actualHour.toFixed(1) : '', removable: subject === '기타', placeholder: hint };
     });
     return mapped;
   };
@@ -1084,7 +1098,7 @@ function App() {
   const percentile = Math.max(1, Math.min(100, 100 - Math.floor(todayStudySeconds / 120)));
   const rankingProgress = Math.max(5, 100 - percentile);
   const rankTier = percentile <= 5 ? 'diamond' : percentile <= 15 ? 'platinum' : percentile <= 30 ? 'gold' : percentile <= 60 ? 'silver' : 'bronze';
-  const rankTierLabel = rankTier === 'diamond' ? '다이아' : rankTier === 'platinum' ? '플레티넘' : rankTier === 'gold' ? '골드' : rankTier === 'silver' ? '실버' : '브론즈';
+  const rankTierLabel = rankTier === 'diamond' ? 'DIAMOND' : rankTier === 'platinum' ? 'PLATINUM' : rankTier === 'gold' ? 'GOLD' : rankTier === 'silver' ? 'SILVER' : 'BRONZE';
   const lastStudyDate = studyRecords.length ? studyRecords[studyRecords.length - 1].date : '';
   const noStudyFor24h = !todayRecord && lastStudyDate !== todayKey;
   const retentionMessage = noStudyFor24h ? '오늘 공부 안 하면 합격컷에서 멀어집니다' : `오늘 목표까지 ${Math.max(0, Math.ceil((todayGoalSeconds - todayStudySeconds) / 3600))}시간 남았어요`;
@@ -1135,7 +1149,7 @@ function App() {
           const sec = todaySubjectsWithTimer[subject] || 0;
           const rows = breakdownDetailMap[subject] || [];
           const expanded = expandedBreakdownSubject === subject;
-          return `<button class="home-breakdown-item" data-action="toggleBreakdownSubject" data-breakdown-subject="${subject}"><div><b>${subject}</b><span>${formatHms(sec)}</span></div></button>${expanded ? `<div class="home-breakdown-detail">${rows.length ? rows.map((row) => `<p>${row.content} / 계획 ${row.plannedHour.toFixed(1)}H / 실제 ${row.actualHour.toFixed(1)}H</p>`).join('') : '<p>오늘 등록된 학습 계획이 없습니다</p>'}</div>` : ''}`;
+          return `<button class="home-breakdown-item" data-action="toggleBreakdownSubject" data-breakdown-subject="${subject}"><div><b>${subject}</b><span>${formatHms(sec)}</span></div></button>${expanded ? `<div class="home-breakdown-detail">${rows.length ? rows.map((row) => { const plannedSec = Math.round(row.plannedHour * 3600); const actualSec = Math.round(row.actualHour * 3600); const rate = plannedSec > 0 ? Math.min(100, Math.round((actualSec / plannedSec) * 100)) : 0; return `<div class="home-breakdown-detail-row"><small>${row.content}</small><em>계획 ${formatHms(plannedSec)} · 실제 ${formatHms(actualSec)}</em><span>${rate}%</span></div>`; }).join('') : '<p>오늘 등록된 학습 계획이 없습니다</p>'}</div>` : ''}`;
         }).join('')}</div>` : ''}
       </div>
       <button class="card study-goal-card home-goal-linked-card home-insight-card premium-panel" data-action="goto" data-target="planner">
@@ -1359,6 +1373,10 @@ function App() {
     .home-breakdown-toggle{margin-top:10px;border:none;background:#EAF2FF;color:#1D4ED8;border-radius:14px;padding:11px 12px;font-weight:800;width:100%;text-align:center;display:block;}
     .home-breakdown-list{margin-top:10px;display:grid;gap:8px}
     .home-breakdown-list > div{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid #DBEAFE;background:#F8FBFF;border-radius:12px}
+    .home-breakdown-detail-row{display:grid;gap:3px;padding:8px 10px;border:1px solid #E2E8F0;background:#fff;border-radius:10px;margin-top:6px;}
+    .home-breakdown-detail-row small{font-size:12px;color:#334155;font-weight:700;}
+    .home-breakdown-detail-row em{font-size:11px;color:#64748B;font-style:normal;}
+    .home-breakdown-detail-row span{font-size:11px;font-weight:800;color:#1D4ED8;justify-self:end;background:#DBEAFE;padding:2px 8px;border-radius:999px;}
     .home-ranking-tier{margin:4px 0 0;font-size:13px;font-weight:800;color:#334155;}
     .rank-tier-bronze{border-color:#E7D8CC;background:linear-gradient(160deg,rgba(180,120,80,.10),rgba(255,255,255,.95));}
     .rank-tier-silver{border-color:#D5DCE5;background:linear-gradient(160deg,rgba(148,163,184,.12),rgba(255,255,255,.95));}
@@ -1366,7 +1384,7 @@ function App() {
     .rank-tier-platinum{border-color:#D7D9FF;background:linear-gradient(160deg,rgba(129,140,248,.14),rgba(191,219,254,.16),rgba(255,255,255,.96));}
     .rank-tier-diamond{border-color:#BAE6FD;background:linear-gradient(160deg,rgba(34,211,238,.14),rgba(167,243,208,.14),rgba(255,255,255,.96));}
     .rank-shine{position:relative;overflow:hidden;}
-    .rank-shine:after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,.35) 45%,transparent 70%);transform:translateX(-120%);animation:rankShine 3.6s ease-in-out infinite;}
+    .rank-shine:after{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 0%,rgba(255,255,255,.55) 42%,transparent 68%);transform:translateX(-130%);animation:rankShine 2.8s ease-in-out infinite;}
     @keyframes rankShine{0%{transform:translateX(-120%);}45%,100%{transform:translateX(120%);}}
     .home-goal-linked-card .analysis-title{margin-bottom:6px;}
     .goal-compact{display:flex;align-items:flex-end;gap:8px;margin-bottom:8px}
@@ -1753,10 +1771,18 @@ function App() {
        </div>
        <div class="card ob-card">
          <p class="analysis-title">성적 변화 시 가능한 대학</p>
-         <p class="sub">현재 점수 대비 도달 성적 기준으로 지원 가능성이 높아지는 대학입니다.</p>
-         <div class="ob-total-compare"><div><span>국민대</span><b>경영학부</b></div><i>·</i><div><span>도달 구간</span><b class="target">합격권</b></div></div>
-         <div class="ob-total-compare"><div><span>숭실대</span><b>경제학과</b></div><i>·</i><div><span>도달 구간</span><b class="target">합격권</b></div></div>
-         <div class="ob-total-compare"><div><span>세종대</span><b>미디어커뮤니케이션학과</b></div><i>·</i><div><span>도달 구간</span><b class="target">합격권</b></div></div>
+         ${[['국민대 경영학부', gaugeCurrent + 6], ['숭실대 경제학과', gaugeCurrent + 10], ['세종대 미디어커뮤니케이션학과', gaugeCurrent + 14]].map(([name, target]) => `<div class="card ob-card" style="margin:10px 0 0;">
+           <p class="analysis-title">${name}</p>
+           <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${target}점</b></div></div>
+           <div class="ob-gauge">
+             <div class="ob-gauge-current" style="width:${Math.min(100, (gaugeCurrent / 250) * 100)}%"></div>
+             <div class="ob-gauge-target" style="width:${Math.min(100, (target / 250) * 100)}%"></div>
+             <i class="ob-gauge-cut pass" style="left:${gaugePassPct}%"></i>
+             <i class="ob-gauge-cut safe" style="left:${gaugeSafePct}%"></i>
+           </div>
+           <div class="ob-gauge-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
+           <p class="sub"><b>현재 → 합격권 진입 구간</b></p>
+         </div>`).join('')}
        </div></div>
        </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button type="button" class="cta-button" data-action="startStandard">Standard로 시작하기</button><button type="button" class="auth-link-btn" data-action="completeOnboarding">홈으로 이동</button></div></div>`,
       false
@@ -2235,11 +2261,13 @@ function App() {
         goto('ob3');
         return;
       }
-      if (screen === 'ob4' && target === 'ob5') {
+      if (screen === 'ob3' && target === 'ob4') {
         if (!Object.values(mbtiAnswers).every(Boolean)) {
           alert('MBTI 검사를 완료해주세요');
           return;
         }
+      }
+      if (screen === 'ob4' && target === 'ob5') {
         setOnboardingLoading(true);
         setOnboardingLoadingText('학습 성향 분석중...');
         setTimeout(() => setOnboardingLoadingText('효율적인 공부법 찾는중...'), 1500);
@@ -2457,7 +2485,10 @@ function App() {
       requestAnimationFrame(() => {
         const currentStrip = document.querySelector('.planner-date-strip');
         const selectedBtn = currentStrip?.querySelector(`[data-planner-date="${date}"]`);
-        safeScrollIntoView(selectedBtn, { behavior: 'smooth', inline: 'center', block: 'nearest' });
+        if (currentStrip && selectedBtn) {
+          const targetLeft = selectedBtn.offsetLeft - (currentStrip.clientWidth / 2) + (selectedBtn.clientWidth / 2);
+          currentStrip.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
+        }
       });
       restoreIfUnexpectedTopJump();
     }
