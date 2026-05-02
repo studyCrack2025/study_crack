@@ -10,16 +10,16 @@
 }
 * { box-sizing: border-box; }
 html, body {
-  height: 100%;
+  height: -webkit-fill-available;
   min-height: -webkit-fill-available;
   margin: 0;
-  overflow: hidden;
+  overflow: auto;
 }
 body {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: var(--text);
 }
-#root { width: 100%; height: 100%; }
+#root { width: 100%; min-height: -webkit-fill-available; }
 .ios-scroll-root {
   width: 100%;
   min-height: 100dvh;
@@ -80,7 +80,7 @@ body {
 .screen { overflow: hidden; overflow-x: hidden; padding: 0; }
 .app-content {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: visible;
   padding: 20px 16px;
   padding-bottom: 100px;
   box-sizing: border-box;
