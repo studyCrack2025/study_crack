@@ -1647,7 +1647,7 @@ function App() {
          <div class="analysis-impact-item">탐구<div class="track"><i style="width:68%;background:#14b8a6"></i></div><span>+6점 → +9%</span></div>
          <div class="analysis-impact-item">영어<div class="track"><i style="width:48%;background:#f59e0b"></i></div><span>+3점 → +5%</span></div>
        </div>
-       </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="goto" data-target="ob5">내 맞춤 솔루션 보기</button></div></div>`,
+       </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button type="button" class="cta-button" data-action="goto" data-target="ob5">내 맞춤 솔루션 보기</button></div></div>`,
       false
     ),
     ob5: layout(
@@ -2062,12 +2062,22 @@ function App() {
         setOnboardingLoadingText('학습 성향 분석중...');
         setTimeout(() => setOnboardingLoadingText('효율적인 공부법 찾는중...'), 1500);
         setTimeout(() => {
-          preserveOB5Scroll(() => {
-            armScrollGuard(1400);
-            markStableScrollPosition();
-            setOnboardingLoading(false);
-            goto('ob5');
-            restoreIfUnexpectedTopJump();
+          const y = window.scrollY;
+          armScrollGuard(1400);
+          markStableScrollPosition();
+          setOnboardingLoading(false);
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              goto('ob5');
+              requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                  if (y > 0 && window.scrollY === 0) {
+                    window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+                  }
+                  restoreIfUnexpectedTopJump();
+                });
+              });
+            });
           });
         }, 3000);
         return;
