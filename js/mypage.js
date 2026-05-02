@@ -288,8 +288,7 @@ function renderSocialLinks(data) {
 
     const providers = [
         { key: 'google', label: 'Google', icon: 'fab fa-google', color: '#EA4335' },
-        { key: 'naver', label: 'Naver', icon: 'fas fa-n', color: '#03C75A' },
-        { key: 'kakao', label: 'Kakao', icon: 'fas fa-comment', color: '#FEE500' }
+        { key: 'naver', label: 'Naver', icon: 'fas fa-n', color: '#03C75A' }
     ];
 
     section.innerHTML = providers.map(p => {
@@ -703,11 +702,6 @@ function linkSocial(provider) {
         authUrl = `https://nid.naver.com/oauth2.0/authorize?` + new URLSearchParams({
             response_type: 'code', client_id: clientId,
             redirect_uri: callbackUrl, state
-        });
-    } else if (provider === 'kakao') {
-        authUrl = `https://kauth.kakao.com/oauth/authorize?` + new URLSearchParams({
-            client_id: clientId, redirect_uri: callbackUrl,
-            response_type: 'code', state
         });
     }
 

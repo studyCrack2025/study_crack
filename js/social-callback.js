@@ -57,6 +57,10 @@
         return;
     }
     const provider = providerMatch[1];
+    if (!['google', 'naver'].includes(provider)) {
+        showError('지원하지 않는 로그인 방식입니다.');
+        return;
+    }
     const callbackUrl = CONFIG.social.callbackUrl;
 
     // 3. Lambda에 code 전달 → provider 토큰 교환 + Cognito 토큰 발급
