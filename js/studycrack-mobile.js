@@ -2413,6 +2413,18 @@ function App() {
       setNotifications((prev) => ({ ...prev, [key]: !prev[key] }));
     }
     if (action === 'toggleFaq') {
+      if (isIOSSafari()) {
+        const answerEl = actionEl.querySelector('p');
+        if (answerEl) {
+          const nextOpen = actionEl.classList.contains('active') ? false : true;
+          actionEl.classList.toggle('active', nextOpen);
+          actionEl.classList.toggle('open', nextOpen);
+          actionEl.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
+          answerEl.hidden = !nextOpen;
+          answerEl.style.display = nextOpen ? '' : 'none';
+          return;
+        }
+      }
       const id = actionEl.getAttribute('data-faq-id');
       setOpenFaq((prev) => (prev === id ? '' : id));
     }
