@@ -2105,9 +2105,22 @@ function App() {
     }
     if (action === 'setAnalysisMode') setAnalysisMode(actionEl.getAttribute('data-analysis-mode') || 'summary');
     if (action === 'setScoreView') {
+      const nextView = actionEl.getAttribute('data-score-view') || 'current';
+      if (screen === 'ob5') {
+        const card = actionEl.closest('.score-journey-card');
+        if (!card) return;
+        card.querySelectorAll('.score-journey-segment button').forEach((btn) => {
+          btn.classList.toggle('active', btn.getAttribute('data-score-view') === nextView);
+        });
+        const track = card.querySelector('.score-journey-track');
+        if (track) {
+          track.style.setProperty('--score-slide-x', nextView === 'target' ? '-50%' : '0%');
+          track.style.setProperty('--score-slide-transition', 'transform .56s cubic-bezier(.22,.61,.36,1)');
+        }
+        return;
+      }
       keepScrollPosition(700);
       e.stopPropagation();
-      const nextView = actionEl.getAttribute('data-score-view') || 'current';
       setScoreDragOffset(0);
       markStableScrollPosition();
       setActiveScoreView((prev) => {
