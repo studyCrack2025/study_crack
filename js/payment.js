@@ -12,24 +12,38 @@ let globalCurrentTier = 'free';
 let globalDaysLeft = 0;
 let globalExpireDate = null; // 기존 만료일(새로운 시작일) 저장용
 
-// 💡 토큰 자동 갱신
+// 💡 토큰 자동 갱신 (쿠키 우선, localStorage 폴백)
 let _isRefreshing = false;
 async function tryRefreshToken() {
     if (_isRefreshing) return false;
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) return false;
     _isRefreshing = true;
     try {
         const res = await fetch(CONFIG.api.auth, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ type: 'silent_refresh' })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.accessToken && data.idToken) {
+                localStorage.setItem('accessToken', data.accessToken);
+                localStorage.setItem('idToken', data.idToken);
+                return true;
+            }
+        }
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (!refreshToken) return false;
+        const fallbackRes = await fetch(CONFIG.api.auth, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ type: 'refresh_token', refreshToken })
         });
-        if (!res.ok) return false;
-        const data = await res.json();
-        if (data.accessToken && data.idToken) {
-            localStorage.setItem('accessToken', data.accessToken);
-            localStorage.setItem('idToken', data.idToken);
+        if (!fallbackRes.ok) return false;
+        const fallbackData = await fallbackRes.json();
+        if (fallbackData.accessToken && fallbackData.idToken) {
+            localStorage.setItem('accessToken', fallbackData.accessToken);
+            localStorage.setItem('idToken', fallbackData.idToken);
             return true;
         }
         return false;

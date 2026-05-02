@@ -6,20 +6,36 @@ let _sharedIsRefreshing = false;
 
 async function tryRefreshToken() {
     if (_sharedIsRefreshing) return false;
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) return false;
     _sharedIsRefreshing = true;
     try {
+        // 1차: HttpOnly 쿠키 기반 silent_refresh
         const res = await fetch(CONFIG.api.auth, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ type: 'silent_refresh' })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.accessToken && data.idToken) {
+                localStorage.setItem('accessToken', data.accessToken);
+                localStorage.setItem('idToken', data.idToken);
+                return true;
+            }
+        }
+        // 2차: localStorage refreshToken 폴백 (기존 세션 호환)
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (!refreshToken) return false;
+        const fallbackRes = await fetch(CONFIG.api.auth, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ type: 'refresh_token', refreshToken })
         });
-        if (!res.ok) return false;
-        const data = await res.json();
-        if (data.accessToken && data.idToken) {
-            localStorage.setItem('accessToken', data.accessToken);
-            localStorage.setItem('idToken', data.idToken);
+        if (!fallbackRes.ok) return false;
+        const fallbackData = await fallbackRes.json();
+        if (fallbackData.accessToken && fallbackData.idToken) {
+            localStorage.setItem('accessToken', fallbackData.accessToken);
+            localStorage.setItem('idToken', fallbackData.idToken);
             return true;
         }
         return false;
