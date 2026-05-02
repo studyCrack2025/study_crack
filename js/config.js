@@ -7,11 +7,14 @@ const IS_DEV   = !IS_LOCAL && (currentDomain.includes('cloudfront.net') || curre
 
 // 2. 환경에 따라 API 베이스 URL 결정
 // local → API Gateway /local 직접 호출 (localhost 개발용, 쿠키 미지원)
-// dev   → CloudFront dev 경유 (dev.studycrack.co.kr → CF → API Gateway /dev)
-// prod  → CloudFront prod 경유 (studycrack.co.kr → CF → API Gateway /prod)
+// dev   → CloudFront same-origin 프록시 (dev.studycrack.co.kr/api/* → CF → API Gateway /dev/api/*)
+// prod  → CloudFront same-origin 프록시 (studycrack.co.kr/api/* → CF → API Gateway /prod/api/*)
 const API_BASE_URL = "https://ft35jsftc1.execute-api.ap-northeast-2.amazonaws.com";
+const DIRECT_GATEWAY_URL = IS_LOCAL ? `${API_BASE_URL}/local`
+                         : IS_DEV   ? `${API_BASE_URL}/dev`
+                         :             `${API_BASE_URL}/prod`;
 const GATEWAY_URL = IS_LOCAL
-    ? `${API_BASE_URL}/local`
+    ? DIRECT_GATEWAY_URL
     : `https://${currentDomain}`;
 
 const CONFIG = {
@@ -36,19 +39,19 @@ const CONFIG = {
         report: `${GATEWAY_URL}/api/report`,
         
         // StudyCrack_Analysis 람다로 연결되는 주소
-        analysis: `${GATEWAY_URL}/analysis`,
-        
+        analysis: `${GATEWAY_URL}/api/analysis`,
+
         // StudyCrack_Payment 람다로 연결되는 주소
-        payment: `${GATEWAY_URL}/payment`,
-        
+        payment: `${GATEWAY_URL}/api/payment`,
+
         // StudyCrack_Auth 람다로 연결되는 주소
-        auth: `${GATEWAY_URL}/auth`,
+        auth: `${GATEWAY_URL}/api/auth`,
 
         // NicePay returnUrl 콜백
-        payment_return: `${GATEWAY_URL}/payment-return`,
-        
+        payment_return: `${GATEWAY_URL}/api/payment-return`,
+
         // pdf 생성 관련 백엔드
-        pdf: `${GATEWAY_URL}/generate-pdf`
+        pdf: `${GATEWAY_URL}/api/generate-pdf`
     },
 
     // NicePay 설정
