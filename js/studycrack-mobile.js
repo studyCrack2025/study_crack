@@ -2081,6 +2081,23 @@ function App() {
   const syncScoreJourneyDomFromCurrentMarkup = () => {
     document.querySelectorAll('.score-journey-card').forEach((card) => ensureScoreJourneyDomReady(card));
   };
+  const waitAndSyncHomeSliderDom = (attempt = 0) => {
+    if (!isIOSSafari()) return;
+    if (screen !== 'home') return;
+    const slider = document.querySelector('.home-kpi-slider');
+    const track = document.querySelector('.home-kpi-track');
+    const indicators = document.querySelectorAll('.home-kpi-indicator i');
+    if (!slider || !track || !indicators.length) {
+      if (attempt < 10) requestAnimationFrame(() => waitAndSyncHomeSliderDom(attempt + 1));
+      return;
+    }
+    const activeIndex = Array.from(indicators).findIndex((el) => el.classList.contains('active'));
+    const index = activeIndex >= 0 ? activeIndex : 0;
+    track.dataset.homeSlideIndex = String(index);
+    track.style.setProperty('--home-slide-x', `calc(-${index} * (var(--home-slide-card-width) + var(--home-slide-gap)) + 0px)`);
+    track.style.setProperty('--home-slide-transition', 'transform .72s cubic-bezier(.22,1,.36,1)');
+    slider.dataset.homeSliderReady = '1';
+  };
   const toggleHomeUiDom = (selector, open) => {
     const el = document.querySelector(selector);
     if (!el) return false;
@@ -2206,6 +2223,10 @@ function App() {
     if (action === 'setHomeSlide') {
       const idx = Number(actionEl.getAttribute('data-slide-index'));
       if (Number.isNaN(idx)) return;
+      if (screen === 'home' && isIOSSafari()) {
+        const slider = document.querySelector('.home-kpi-slider');
+        if (slider && slider.dataset.homeSliderReady !== '1') waitAndSyncHomeSliderDom();
+      }
       if (screen === 'home') {
         const { activeIndex } = getHomeSliderState();
         const motion = idx > activeIndex ? 'motion-next' : 'motion-prev';
@@ -2748,10 +2769,10 @@ function App() {
 
   useEffect(() => {
     if (!isIOSSafari()) return;
+    if (screen !== 'home') return;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        syncHomeSliderDomFromCurrentMarkup();
-        syncScoreJourneyDomFromCurrentMarkup();
+        waitAndSyncHomeSliderDom();
       });
     });
   }, [screen]);
@@ -2765,6 +2786,10 @@ function App() {
         return;
       }
       if (target?.closest?.('.home-kpi-slider')) {
+        if (screen === 'home' && isIOSSafari()) {
+          const slider = document.querySelector('.home-kpi-slider');
+          if (slider && slider.dataset.homeSliderReady !== '1') waitAndSyncHomeSliderDom();
+        }
         touchTargetRef.current = 'home';
         touchStartXRef.current = clientX;
         return;
