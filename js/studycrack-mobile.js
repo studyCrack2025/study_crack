@@ -1713,8 +1713,11 @@ function App() {
          <p class="sub"><b>현재 → 합격권 진입 구간</b></p>
        </div>
        <div class="card ob-card">
-         <p class="analysis-title">핵심 전략</p>
-         <ol class="ob-strategy"><li><b>수학 68점 → 80점</b><p>합격 가능성 상승 기여도 가장 큼</p></li><li><b>탐구1 70점 → 76점</b><p>단기간 상승 효율 높음</p></li><li><b>영어 77점 유지</b><p>현재 수준 유지 전략</p></li></ol>
+         <p class="analysis-title">성적 변화 시 가능한 대학</p>
+         <p class="sub">현재 점수 대비 도달 성적 기준으로 지원 가능성이 높아지는 대학입니다.</p>
+         <div class="ob-total-compare"><div><span>국민대</span><b>경영학부</b></div><i>·</i><div><span>도달 구간</span><b class="target">합격권</b></div></div>
+         <div class="ob-total-compare"><div><span>숭실대</span><b>경제학과</b></div><i>·</i><div><span>도달 구간</span><b class="target">합격권</b></div></div>
+         <div class="ob-total-compare"><div><span>세종대</span><b>미디어커뮤니케이션학과</b></div><i>·</i><div><span>도달 구간</span><b class="target">합격권</b></div></div>
        </div></div>
        </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button type="button" class="cta-button" data-action="startStandard">Standard로 시작하기</button><button type="button" class="auth-link-btn" data-action="completeOnboarding">홈으로 이동</button></div></div>`,
       false
@@ -2148,6 +2151,10 @@ function App() {
     if (shouldKeepScroll) keepScrollPosition();
     if (action === 'goto') {
       const target = actionEl.getAttribute('data-target');
+      const isInvalidRequiredSelect = (value) => {
+        const normalized = String(value ?? '').trim();
+        return !normalized || normalized === '선택' || normalized === '선택하세요' || normalized === '기본값';
+      };
       if (screen === 'ob1' && target === 'ob2') {
         if (!obGradeStatus || !String(obSchoolName || '').trim() || !String(obTrack || '').trim() || !String(obGoalText || '').trim()) {
           alert('필수 입력 사항을 모두 입력해주세요');
@@ -2168,6 +2175,10 @@ function App() {
         return;
       }
       if (screen === 'ob2' && target === 'ob3') {
+        if (isInvalidRequiredSelect(obExamType)) {
+          alert('필수 항목을 모두 선택해주세요');
+          return;
+        }
         const getScoreInput = (key) => Number(document.querySelector(`[data-score-key="${key}"]`)?.value || 0);
         const hasAllScores = ['korean_common','korean_elective','math_common','math_elective','english_grade','inquiry1_raw','inquiry2_raw']
           .every((k) => String(document.querySelector(`[data-score-key="${k}"]`)?.value || '').trim() !== '');
@@ -2186,6 +2197,10 @@ function App() {
         return;
       }
       if (screen === 'ob4' && target === 'ob5') {
+        if (!Object.values(mbtiAnswers).every(Boolean)) {
+          alert('MBTI 검사를 완료해주세요');
+          return;
+        }
         setOnboardingLoading(true);
         setOnboardingLoadingText('학습 성향 분석중...');
         setTimeout(() => setOnboardingLoadingText('효율적인 공부법 찾는중...'), 1500);
@@ -2455,6 +2470,10 @@ function App() {
       setScoreEditStep((v) => Math.min(6, v + 1));
     }
     if (action === 'saveScoreEdit') {
+      if (!scoreExamType || scoreExamType === '선택' || scoreExamType === '선택하세요') {
+        alert('필수 항목을 모두 선택해주세요');
+        return;
+      }
       const read = (name, fallback = '') => (document.querySelector(`[data-field="${name}"]`)?.value ?? fallback);
       const nextCommonKor = read('v2e-korean-common', scoreEditState.korean.common || '');
       const nextElecKor = read('v2e-korean-elective', scoreEditState.korean.elective || '');
@@ -2504,6 +2523,10 @@ function App() {
       setScoreEditStep(1);
     }
     if (action === 'applyScoreExam') {
+      if (!scoreExamType || scoreExamType === '선택' || scoreExamType === '선택하세요') {
+        alert('필수 항목을 모두 선택해주세요');
+        return;
+      }
       const map = getExamScoresMap();
       const picked = map[scoreExamType];
       if (!picked) { alert('선택한 시험의 저장된 성적이 없습니다.'); return; }
