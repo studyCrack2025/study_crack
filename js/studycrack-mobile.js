@@ -2684,7 +2684,15 @@ function App() {
       setCoachingStep((prev) => Math.min(8, prev + 1));
     }
     if (action === 'openStudySubjectSheet') {
-      if (isIOSSafari() && toggleHomeUiDom('.study-subject-sheet', true)) return;
+      if (isIOSSafari() && screen === 'home') {
+        const sheet = document.querySelector('.study-subject-sheet');
+        const overlay = sheet?.closest('.planner-sheet-overlay');
+        if (overlay) {
+          overlay.hidden = false;
+          overlay.style.display = '';
+          return;
+        }
+      }
       setStudySubjectSheetOpen(true);
     }
     if (action === 'toggleStudyBreakdown') {
@@ -2704,7 +2712,15 @@ function App() {
       setShowStudyBreakdown((v) => !v);
     }
     if (action === 'closeStudySubjectSheet') {
-      if (isIOSSafari() && toggleHomeUiDom('.study-subject-sheet', false)) return;
+      if (isIOSSafari() && screen === 'home') {
+        const sheet = document.querySelector('.study-subject-sheet');
+        const overlay = sheet?.closest('.planner-sheet-overlay');
+        if (overlay) {
+          overlay.hidden = true;
+          overlay.style.display = 'none';
+          return;
+        }
+      }
       setStudySubjectSheetOpen(false);
     }
     if (action === 'selectStudySubjectCustom') {
