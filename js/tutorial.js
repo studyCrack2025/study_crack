@@ -42,8 +42,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 인증 가드: 로그인하지 않은 사용자는 로그인 페이지로 이동
     if (!token && !localStorage.getItem('refreshToken')) {
-        window.location.replace('/login');
-        return;
+        const refreshed = await tryRefreshToken();
+        if (!refreshed) {
+            window.location.replace('/login');
+            return;
+        }
     }
 
     // DB에서 유저 데이터 복원 (mbti_completed 경로 포함)

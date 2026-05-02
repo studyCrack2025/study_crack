@@ -106,8 +106,11 @@ async function loadQnaHistory() {
     const grid = document.getElementById('qna-grid');
 
     if (!localStorage.getItem('accessToken') && !localStorage.getItem('refreshToken')) {
-        grid.innerHTML = '<div style="text-align:center; padding:40px; color:#64748b;">로그인 후 이용 가능한 서비스입니다.</div>';
-        return;
+        const refreshed = await tryRefreshToken();
+        if (!refreshed) {
+            grid.innerHTML = '<div style="text-align:center; padding:40px; color:#64748b;">로그인 후 이용 가능한 서비스입니다.</div>';
+            return;
+        }
     }
 
     try {

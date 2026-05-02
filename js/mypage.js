@@ -72,13 +72,16 @@ function escapeHtml(text) {
 // ==========================================
 // [초기화] DOM 로드 및 데이터 페치
 // ==========================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // 1. 기본 토큰 존재 여부만 1차 확인 (accessToken으로 통일)
     const accessToken = localStorage.getItem('accessToken');
     if (!accessToken && !localStorage.getItem('refreshToken')) {
-        alert("로그인이 필요합니다.");
-        window.location.href = '/login';
-        return;
+        const refreshed = await tryRefreshToken();
+        if (!refreshed) {
+            alert("로그인이 필요합니다.");
+            window.location.href = '/login';
+            return;
+        }
     }
 
     // 2. 세션 갱신 및 데이터 페치를 순차적으로 실행
