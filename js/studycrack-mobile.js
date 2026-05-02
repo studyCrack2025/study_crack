@@ -203,6 +203,8 @@ function App() {
   const loadingDoneRef = useRef(false);
   const plannerContentRef = useRef('');
   const plannerCustomMinutesRef = useRef('');
+  const coachingAutoFilledRef = useRef(false);
+  const coachingDirtyRowsRef = useRef({});
   const screenScrollRef = useRef({});
   const scrollPersistRafRef = useRef(null);
   const touchStartXRef = useRef(null);
@@ -1049,16 +1051,24 @@ function App() {
     return acc;
   }, {});
   const buildDefaultCoachingSubjects = () => {
-    const mapped = ['국어', '수학', '영어', '탐구'].map((subject) => {
-      const plannedHour = Math.round((plannerMinutesBySubject[subject] || 0) / 60);
-      const actualHour = Math.round(((todaySubjectRecord.subjects && todaySubjectRecord.subjects[subject]) || 0) / 3600);
-      const hint = subject === '국어' ? '세부과목 (예: 언매)' : subject === '수학' ? '세부과목 (예: 미적)' : subject === '영어' ? '세부과목 (예: 독해)' : '세부과목 (예: 생1)';
-      return { id: `${subject}-base`, subject, detail: '', planned: plannedHour ? String(plannedHour) : '', actual: actualHour ? String(actualHour) : '', removable: false, placeholder: hint };
+    const rows = todayPlannerItems.map((item, idx) => {
+      const subject = item.subject || '기타';
+      const plannedHour = ((item.minutes || 0) / 60);
+      const actualHour = (((todaySubjectRecord.subjects && todaySubjectRecord.subjects[subject]) || todayStudySeconds || 0) / 3600);
+      return { id: `plan-${idx}-${subject}`, subject, detail: item.content || '', planned: plannedHour ? plannedHour.toFixed(1) : '', actual: actualHour ? actualHour.toFixed(1) : '', removable: true, placeholder: '세부과목 입력' };
+    });
+    if (rows.length) return rows;
+    const mapped = ['국어', '수학', '영어', '탐구', '기타'].map((subject) => {
+      const plannedHour = (plannerMinutesBySubject[subject] || 0) / 60;
+      const actualHour = (((todaySubjectRecord.subjects && todaySubjectRecord.subjects[subject]) || todayStudySeconds || 0) / 3600);
+      const hint = subject === '국어' ? '세부과목 (예: 언매)' : subject === '수학' ? '세부과목 (예: 미적)' : subject === '영어' ? '세부과목 (예: 독해)' : subject === '탐구' ? '세부과목 (예: 생1)' : '세부과목 입력';
+      return { id: `${subject}-base`, subject, detail: '', planned: plannedHour ? plannedHour.toFixed(1) : '', actual: actualHour ? actualHour.toFixed(1) : '', removable: subject === '기타', placeholder: hint };
     });
     return mapped;
   };
   const ensureCoachingSubjectRows = () => {
-    if (coachingSubjectRows.length) return;
+    if (coachingAutoFilledRef.current || coachingSubjectRows.length) return;
+    coachingAutoFilledRef.current = true;
     setCoachingSubjectRows(buildDefaultCoachingSubjects());
   };
   const syncStep1FromDom = () => {
@@ -1073,6 +1083,8 @@ function App() {
   const myRank = Math.max(1, 160 - Math.floor(todayStudySeconds / 60));
   const percentile = Math.max(1, Math.min(100, 100 - Math.floor(todayStudySeconds / 120)));
   const rankingProgress = Math.max(5, 100 - percentile);
+  const rankTier = percentile <= 5 ? 'diamond' : percentile <= 15 ? 'platinum' : percentile <= 30 ? 'gold' : percentile <= 60 ? 'silver' : 'bronze';
+  const rankTierLabel = rankTier === 'diamond' ? '다이아' : rankTier === 'platinum' ? '플레티넘' : rankTier === 'gold' ? '골드' : rankTier === 'silver' ? '실버' : '브론즈';
   const lastStudyDate = studyRecords.length ? studyRecords[studyRecords.length - 1].date : '';
   const noStudyFor24h = !todayRecord && lastStudyDate !== todayKey;
   const retentionMessage = noStudyFor24h ? '오늘 공부 안 하면 합격컷에서 멀어집니다' : `오늘 목표까지 ${Math.max(0, Math.ceil((todayGoalSeconds - todayStudySeconds) / 3600))}시간 남았어요`;
@@ -1130,9 +1142,10 @@ function App() {
         <p class="analysis-title">오늘 공부 목표</p>
         ${todayPlannerItems.length ? `<div class="goal-compact"><b>${todayPlannerProgress}%</b><span>달성</span><em>${formatMinutesLabel(todayPlannerTotalMinutes)}</em></div><div class="track"><i style="width:${todayPlannerProgress}%"></i></div><div class="goal-tags">${todayPlannerSubjectSummary.slice(0,3).map((v)=>`<span>${v}</span>`).join('')}</div>` : `<p class="sub">오늘 계획을 추가해보세요</p><span class="home-goal-empty-cta">플래너로 이동</span>`}
       </button>
-      <div class="card home-bottom-summary ranking-card home-insight-card premium-panel">
+      <div class="card home-bottom-summary ranking-card home-insight-card premium-panel rank-tier-${rankTier} ${['gold','platinum','diamond'].includes(rankTier) ? 'rank-shine' : ''}">
         <div class="home-ranking-head"><p class="analysis-title">내 공부 랭킹</p><span class="badge">오늘 기준</span></div>
         <p class="home-ranking-main">${Math.min(myRank, 124)}등</p>
+        <p class="home-ranking-tier">${rankTierLabel}</p>
         <p class="home-ranking-sub">전체 124명 중</p>
         <div class="home-ranking-progress"><i style="width:${rankingProgress}%"></i></div>
         <p class="home-ranking-foot">상위 ${percentile}%</p>
@@ -1346,6 +1359,15 @@ function App() {
     .home-breakdown-toggle{margin-top:10px;border:none;background:#EAF2FF;color:#1D4ED8;border-radius:14px;padding:11px 12px;font-weight:800;width:100%;text-align:center;display:block;}
     .home-breakdown-list{margin-top:10px;display:grid;gap:8px}
     .home-breakdown-list > div{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid #DBEAFE;background:#F8FBFF;border-radius:12px}
+    .home-ranking-tier{margin:4px 0 0;font-size:13px;font-weight:800;color:#334155;}
+    .rank-tier-bronze{border-color:#E7D8CC;background:linear-gradient(160deg,rgba(180,120,80,.10),rgba(255,255,255,.95));}
+    .rank-tier-silver{border-color:#D5DCE5;background:linear-gradient(160deg,rgba(148,163,184,.12),rgba(255,255,255,.95));}
+    .rank-tier-gold{border-color:#F4E2A1;background:linear-gradient(160deg,rgba(250,204,21,.14),rgba(255,255,255,.96));}
+    .rank-tier-platinum{border-color:#D7D9FF;background:linear-gradient(160deg,rgba(129,140,248,.14),rgba(191,219,254,.16),rgba(255,255,255,.96));}
+    .rank-tier-diamond{border-color:#BAE6FD;background:linear-gradient(160deg,rgba(34,211,238,.14),rgba(167,243,208,.14),rgba(255,255,255,.96));}
+    .rank-shine{position:relative;overflow:hidden;}
+    .rank-shine:after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,.35) 45%,transparent 70%);transform:translateX(-120%);animation:rankShine 3.6s ease-in-out infinite;}
+    @keyframes rankShine{0%{transform:translateX(-120%);}45%,100%{transform:translateX(120%);}}
     .home-goal-linked-card .analysis-title{margin-bottom:6px;}
     .goal-compact{display:flex;align-items:flex-end;gap:8px;margin-bottom:8px}
     .goal-compact b{font-size:26px;line-height:1;color:#1D4ED8}
@@ -3250,6 +3272,10 @@ function App() {
     const coachDetail = e.target.getAttribute('data-coach-detail');
     const coachPlan = e.target.getAttribute('data-coach-plan');
     const coachActual = e.target.getAttribute('data-coach-actual');
+    if (coachDetail || coachPlan || coachActual) {
+      const dirtyId = coachDetail || coachPlan || coachActual;
+      if (dirtyId) coachingDirtyRowsRef.current[dirtyId] = true;
+    }
     const coachField = e.target.getAttribute('data-coach-field');
     if (coachField) {
       if (isIOSSafari() && screen === 'strategy') {
