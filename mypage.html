@@ -268,19 +268,29 @@
         <div class="modal-content delete-modal">
             <span class="close-btn" onclick="closeModal('deleteAccountModal')">&times;</span>
             <h3>회원 탈퇴</h3>
-            
+
             <div class="warning-box">
                 <i class="fas fa-exclamation-triangle"></i>
                 <strong>탈퇴 전 반드시 확인해주세요!</strong>
                 탈퇴 시 작성한 기초조사서, 입시 솔루션 결과, 결제 내역 등 <span class="highlight">모든 데이터가 영구적으로 삭제</span>되며 절대 복구할 수 없습니다.
             </div>
 
-            <div class="form-group">
-                <label>본인 확인을 위해 현재 비밀번호를 입력해주세요.</label>
-                <input type="password" id="deleteAccountPassword" placeholder="현재 비밀번호 입력">
+            <!-- 1단계: 계정 재인증 -->
+            <div id="deleteStep1">
+                <div class="form-group" id="deleteAuthGroup">
+                    <!-- JS에서 로컬/소셜 여부에 따라 label·input 동적 주입 -->
+                </div>
+                <button class="modal-action-btn primary-btn" onclick="deleteStep1Submit()">본인 확인</button>
             </div>
-            
-            <button class="modal-action-btn danger-btn" onclick="executeDeleteAccount()">네, 모든 데이터를 삭제하고 탈퇴합니다</button>
+
+            <!-- 2단계: '회원 탈퇴' 직접 입력 -->
+            <div id="deleteStep2" class="hidden">
+                <div class="delete-step2-notice">본인 확인이 완료되었습니다.<br>아래 입력란에 <strong>회원 탈퇴</strong>를 직접 입력하면 탈퇴가 진행됩니다.</div>
+                <div class="form-group">
+                    <input type="text" id="deleteConfirmText" placeholder="회원 탈퇴" autocomplete="off">
+                </div>
+                <button class="modal-action-btn danger-btn" onclick="deleteStep2Submit()">탈퇴하기</button>
+            </div>
         </div>
     </div>
     

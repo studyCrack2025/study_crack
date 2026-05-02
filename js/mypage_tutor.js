@@ -12,55 +12,6 @@ let mypagePhoneTimerInterval = null;
 
 window.myStudentsList = [];
 
-// 💡 공통 apiFetch 함수
-async function apiFetch(url, options = {}) {
-    const token = localStorage.getItem('accessToken');
-    const defaultHeaders = {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
-    };
-
-    options.headers = { ...defaultHeaders, ...(options.headers || {}) };
-
-    try {
-        const response = await fetch(url, options);
-
-        if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
-                alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
-                handleSignOut(); 
-                return Promise.reject(new Error("Auth expired")); 
-            }
-            
-            // 💡 백엔드에서 내려준 에러 메시지가 있다면 파싱해서 사용
-            let errorMessage = "요청 처리 중 문제가 발생했습니다.";
-            try {
-                const errorData = await response.json();
-                if (errorData.message) errorMessage = errorData.message;
-            } catch (e) {
-                // JSON 파싱 실패 시 기본 텍스트
-                errorMessage = `인증번호가 일치하지 않거나 오류가 발생했습니다.`;
-            }
-            // 콘솔에 에러를 찍지 않고 바로 에러를 던집니다.
-            throw new Error(errorMessage);
-        }
-        return response;
-    } catch (error) {
-        // 네트워크 단절 또는 위에서 던진 에러만 그대로 전달
-        throw error; 
-    }
-}
-
-// 💡 공통 XSS 방어 유틸리티
-function escapeHtml(text) {
-    if (text == null) return ""; 
-    return String(text) 
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
 
 function parseDynamoItem(item) {
     if (item === undefined || item === null) return null;

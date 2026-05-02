@@ -42,8 +42,12 @@
     // 2. CSRF state 검증
     const savedState = sessionStorage.getItem('socialState');
     const isLinkMode = sessionStorage.getItem('socialLinkMode') === 'true';
+    const isReauthMode = sessionStorage.getItem('socialReauthMode') === 'true';
+    const reauthPurpose = sessionStorage.getItem('socialReauthPurpose') || '';
     sessionStorage.removeItem('socialState');
     sessionStorage.removeItem('socialLinkMode');
+    sessionStorage.removeItem('socialReauthMode');
+    sessionStorage.removeItem('socialReauthPurpose');
 
     if (!savedState || savedState !== returnedState) {
         showError('보안 검증에 실패했습니다. 다시 시도해 주세요.');
@@ -57,7 +61,38 @@
         return;
     }
     const provider = providerMatch[1];
+    if (!['google', 'naver'].includes(provider)) {
+        showError('지원하지 않는 로그인 방식입니다.');
+        return;
+    }
     const callbackUrl = CONFIG.social.callbackUrl;
+
+    // 3-a. 재인증 모드: 기존 세션 유지, 소셜 계정 본인 확인만 수행
+    if (isReauthMode) {
+        try {
+            statusMsg.textContent = '본인 확인 중입니다...';
+            const currentAccessToken = localStorage.getItem('accessToken');
+            if (!currentAccessToken) {
+                showError('로그인 세션이 만료되었습니다. 다시 로그인해주세요.');
+                return;
+            }
+            const reauthRes = await fetch(AUTH_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentAccessToken}` },
+                body: JSON.stringify({ type: 'reauth_social', provider, code, redirectUri: callbackUrl })
+            });
+            const reauthResult = await reauthRes.json();
+            if (!reauthRes.ok || !reauthResult.verified) {
+                showError(reauthResult.error || '본인 확인에 실패했습니다. 다시 시도해 주세요.');
+                return;
+            }
+            window.location.href = `/mypage?reauth=success&purpose=${encodeURIComponent(reauthPurpose)}`;
+        } catch (e) {
+            console.error('[SocialCallback] Reauth error:', e);
+            showError('본인 확인 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+        }
+        return;
+    }
 
     // 3. Lambda에 code 전달 → provider 토큰 교환 + Cognito 토큰 발급
     try {
@@ -127,6 +162,7 @@
         localStorage.setItem('idToken', idToken);
         localStorage.setItem('userId', userId);
         localStorage.setItem('userRole', 'student');
+        if (result.refreshToken) localStorage.setItem('refreshToken', result.refreshToken);
 
         window.dataLayer = window.dataLayer || [];
         window.dataLayer.push({ event: 'login', user_id: userId });

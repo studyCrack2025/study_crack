@@ -78,9 +78,7 @@ const CONFIG = {
 
         // Google OAuth 2.0 Client ID (공개값 — Client Secret은 Lambda 환경변수에만 보관)
         // Naver Client ID (공개값)
-        // Kakao REST API Key (공개값 — JavaScript Key 아님)
         google: { clientId: '943531531983-smammosbmt2netc1uu06bspf4553ucnj.apps.googleusercontent.com' },
-        naver:  { clientId: 'qzuULTydirmJNXlXhnVQ' },
-        kakao:  { clientId: 'fae387832b86d1a8ebe95712ea8b404b' }
+        naver:  { clientId: 'qzuULTydirmJNXlXhnVQ' }
     }
 };

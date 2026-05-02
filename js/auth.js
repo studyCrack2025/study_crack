@@ -14,7 +14,37 @@ const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 let isPhoneVerified = false; 
 let isEmailVerified = false;
 
+// 토큰 갱신 시도 (refreshToken → 새 accessToken + idToken)
+// 동시 다발 갱신 요청 방지를 위해 플래그 사용
+let _isRefreshing = false;
+async function tryRefreshToken() {
+    if (_isRefreshing) return false;
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) return false;
+    _isRefreshing = true;
+    try {
+        const res = await fetch(AUTH_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'refresh_token', refreshToken })
+        });
+        if (!res.ok) return false;
+        const data = await res.json();
+        if (data.accessToken && data.idToken) {
+            localStorage.setItem('accessToken', data.accessToken);
+            localStorage.setItem('idToken', data.idToken);
+            return true;
+        }
+        return false;
+    } catch (e) {
+        return false;
+    } finally {
+        _isRefreshing = false;
+    }
+}
+
 // 💡 무한 루프 방지 및 헤더 병합 에러 방지가 적용된 글로벌 apiFetch
+// 401 수신 시 refreshToken으로 갱신 1회 시도 후 재시도 — 실패 시 로그아웃
 async function apiFetch(url, options = {}) {
     const token = localStorage.getItem('accessToken');
     const defaultHeaders = {
@@ -29,20 +59,30 @@ async function apiFetch(url, options = {}) {
 
         if (!response.ok) {
             if (response.status === 401 || response.status === 403) {
+                const refreshed = await tryRefreshToken();
+                if (refreshed) {
+                    const newToken = localStorage.getItem('accessToken');
+                    options.headers['Authorization'] = `Bearer ${newToken}`;
+                    const retryRes = await fetch(url, options);
+                    if (retryRes.ok) return retryRes;
+                    if (!retryRes.ok && retryRes.status !== 401 && retryRes.status !== 403) {
+                        throw new Error(`서버 통신 오류 (상태 코드: ${retryRes.status})`);
+                    }
+                }
                 const currentPath = window.location.pathname;
                 if (!['/login', '/signup', '/'].includes(currentPath)) {
                     localStorage.clear();
                     sessionStorage.clear();
-                    window.location.href = '/login'; 
+                    window.location.href = '/login';
                 }
-                return Promise.reject(new Error("Auth expired")); 
+                return Promise.reject(new Error("Auth expired"));
             }
             throw new Error(`서버 통신 오류 (상태 코드: ${response.status})`);
         }
         return response;
     } catch (error) {
         console.error("API 통신 실패:", error);
-        throw error; 
+        throw error;
     }
 }
 
@@ -622,9 +662,10 @@ async function handleFinalSubmit() {
                 onSuccess: function(authResult) {
                     localStorage.setItem('accessToken', authResult.getAccessToken().getJwtToken());
                     localStorage.setItem('idToken', authResult.getIdToken().getJwtToken());
+                    localStorage.setItem('refreshToken', authResult.getRefreshToken().getToken());
                     localStorage.setItem('userId', authResult.getIdToken().payload.sub);
                     localStorage.setItem('userEmail', email);
-                    localStorage.setItem('userRole', 'student'); 
+                    localStorage.setItem('userRole', 'student');
                     
                     window.dataLayer = window.dataLayer || [];
                     window.dataLayer.push({
@@ -719,9 +760,10 @@ function handleSignIn() {
             const accessToken = result.getAccessToken().getJwtToken();
             const idToken = result.getIdToken();
             const userId = idToken.payload.sub;
-            
+
             localStorage.setItem('accessToken', accessToken);
             localStorage.setItem('idToken', idToken.getJwtToken());
+            localStorage.setItem('refreshToken', result.getRefreshToken().getToken());
             localStorage.setItem('userEmail', email);
             localStorage.setItem('userId', userId);
             
@@ -749,7 +791,7 @@ function validateSocialConfig(provider) {
     const callbackUrl = social && social.callbackUrl;
     const clientId = social && social[provider] && social[provider].clientId;
 
-    const PLACEHOLDERS = ['GOOGLE_CLIENT_ID', 'NAVER_CLIENT_ID', 'KAKAO_CLIENT_ID', 'undefined', 'null'];
+    const PLACEHOLDERS = ['GOOGLE_CLIENT_ID', 'NAVER_CLIENT_ID', 'undefined', 'null'];
     const isPlaceholder = (val) => !val || PLACEHOLDERS.some(p => String(val).includes(p));
 
     if (isPlaceholder(clientId)) {
@@ -798,11 +840,6 @@ window.handleSocialLogin = function(provider) {
         authUrl = `https://nid.naver.com/oauth2.0/authorize?` + new URLSearchParams({
             response_type: 'code', client_id: clientId,
             redirect_uri: callbackUrl, state
-        });
-    } else if (provider === 'kakao') {
-        authUrl = `https://kauth.kakao.com/oauth/authorize?` + new URLSearchParams({
-            client_id: clientId, redirect_uri: callbackUrl,
-            response_type: 'code', state
         });
     } else {
         buttons.forEach(btn => { btn.disabled = false; });

@@ -2,8 +2,10 @@
 const FILE_API_URL = CONFIG.api.file;
 
 let currentUserTier = 'free';
-let cognitoUser = null; 
+let cognitoUser = null;
 let currentTutorData = null;
+let currentUserAuthProvider = 'local';
+let currentUserEmail = '';
 
 let mypagePhoneTimerInterval = null;
 
@@ -94,10 +96,17 @@ document.addEventListener('DOMContentLoaded', () => {
     bindEnterKey('currentPassword', changePassword);
     bindEnterKey('newChangePassword', changePassword);
     bindEnterKey('newChangePasswordConfirm', changePassword);
-    bindEnterKey('deleteAccountPassword', executeDeleteAccount);
+    bindEnterKey('deleteConfirmText', deleteStep2Submit);
     
-    // MBTI 테스트 후 복귀 처리
+    // 소셜 재인증 콜백 처리 (회원 탈퇴용) — DOM 즉시 열기
     const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('reauth') === 'success' && urlParams.get('purpose') === 'delete_account') {
+        history.replaceState(null, '', '/mypage');
+        document.getElementById('deleteAccountModal').classList.remove('hidden');
+        _proceedToDeleteStep2();
+    }
+
+    // MBTI 테스트 후 복귀 처리
     if (urlParams.get('mbti_completed') === 'true') {
         const mbtiResult = urlParams.get('mbti_result');
         if (mbtiResult && /^[CI][SM][DE][RF]$/.test(mbtiResult)) {
@@ -276,6 +285,7 @@ function renderSocialLinks(data) {
     if (!section) return;
 
     const primaryProvider = data.authProvider || 'local';
+    currentUserAuthProvider = primaryProvider;
     const linked = data.linkedProviders || [];
     const linkedSet = new Set(linked.map(lp => lp.provider));
     if (primaryProvider !== 'local') linkedSet.add(primaryProvider);
@@ -286,8 +296,7 @@ function renderSocialLinks(data) {
 
     const providers = [
         { key: 'google', label: 'Google', icon: 'fab fa-google', color: '#EA4335' },
-        { key: 'naver', label: 'Naver', icon: 'fas fa-n', color: '#03C75A' },
-        { key: 'kakao', label: 'Kakao', icon: 'fas fa-comment', color: '#FEE500' }
+        { key: 'naver', label: 'Naver', icon: 'fas fa-n', color: '#03C75A' }
     ];
 
     section.innerHTML = providers.map(p => {
@@ -318,7 +327,13 @@ function renderUserInfo(data) {
     const emailEl = document.getElementById('userEmailDisplay');
 
     if (nameEl) nameEl.innerText = data.name ? data.name : '이름 없음';
-    if (emailEl) emailEl.innerText = data.email ? data.email : '';
+
+    // 소셜 로그인 가상 이메일(xxx@social.studycrack.co.kr) 필터링
+    // socialEmail(카카오/구글/네이버 실제 이메일) 우선 표시
+    const rawEmail = data.socialEmail || data.email || '';
+    const displayEmail = rawEmail.includes('@social.studycrack.co.kr') ? '' : rawEmail;
+    currentUserEmail = displayEmail;
+    if (emailEl) emailEl.innerText = displayEmail;
 
     const nameInput = document.getElementById('profileName');
     if (nameInput) {
@@ -329,7 +344,7 @@ function renderUserInfo(data) {
     if (phoneDisplay) phoneDisplay.innerText = data.phone || '등록된 번호 없음';
 
     const currentEmailDisplay = document.getElementById('currentEmailDisplay');
-    if (currentEmailDisplay) currentEmailDisplay.innerText = data.email || '';
+    if (currentEmailDisplay) currentEmailDisplay.innerText = displayEmail;
 
     const mbtiDisplay = document.getElementById('profileMbtiDisplay');
     if (mbtiDisplay) mbtiDisplay.textContent = data.mbti || '-';
@@ -697,10 +712,39 @@ function linkSocial(provider) {
             response_type: 'code', client_id: clientId,
             redirect_uri: callbackUrl, state
         });
-    } else if (provider === 'kakao') {
-        authUrl = `https://kauth.kakao.com/oauth/authorize?` + new URLSearchParams({
+    }
+
+    if (authUrl) window.location.href = authUrl;
+}
+
+function startDeleteReauth(provider) {
+    const social = CONFIG && CONFIG.social;
+    const clientId = social && social[provider] && social[provider].clientId;
+    const callbackUrl = social && social.callbackUrl;
+
+    if (!clientId || !callbackUrl) {
+        alert('소셜 인증 설정을 불러올 수 없습니다. 관리자에게 문의해주세요.');
+        return;
+    }
+
+    const stateNonce = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+        .map(b => b.toString(16).padStart(2, '0')).join('');
+    const state = `${stateNonce}|${provider}`;
+    sessionStorage.setItem('socialState', state);
+    sessionStorage.setItem('socialReauthMode', 'true');
+    sessionStorage.setItem('socialReauthPurpose', 'delete_account');
+
+    let authUrl = '';
+    if (provider === 'google') {
+        authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + new URLSearchParams({
             client_id: clientId, redirect_uri: callbackUrl,
-            response_type: 'code', state
+            response_type: 'code', scope: 'openid email profile',
+            state, access_type: 'offline', prompt: 'select_account'
+        });
+    } else if (provider === 'naver') {
+        authUrl = `https://nid.naver.com/oauth2.0/authorize?` + new URLSearchParams({
+            response_type: 'code', client_id: clientId,
+            redirect_uri: callbackUrl, state
         });
     }
 
@@ -816,45 +860,102 @@ function checkDeleteButtonVisibility(url) {
 // [기능 4] 회원 탈퇴
 // ==========================================
 function handleDeleteAccount() {
-    document.getElementById('deleteAccountPassword').value = ''; 
+    const isSocialOnly = currentUserAuthProvider !== 'local';
+    const authGroup = document.getElementById('deleteAuthGroup');
+    const step1Btn = document.querySelector('#deleteStep1 .primary-btn');
+
+    // 1단계 인증 입력 폼 동적 구성
+    if (isSocialOnly) {
+        const providerLabel = currentUserAuthProvider === 'google' ? 'Google' : 'Naver';
+        const providerIcon = currentUserAuthProvider === 'google' ? 'fab fa-google' : 'fas fa-n';
+        authGroup.innerHTML = `
+            <p style="margin-bottom:14px;color:#374151;">본인 확인을 위해 <strong>${escapeHtml(providerLabel)} 계정으로 재인증</strong>이 필요합니다.</p>
+            <button class="modal-action-btn" style="width:100%;" onclick="startDeleteReauth('${escapeHtml(currentUserAuthProvider)}')">
+                <i class="${escapeHtml(providerIcon)}"></i>&nbsp;${escapeHtml(providerLabel)}로 본인 확인
+            </button>`;
+        if (step1Btn) step1Btn.style.display = 'none';
+    } else {
+        authGroup.innerHTML = `
+            <label>본인 확인을 위해 현재 <strong>비밀번호</strong>를 입력해주세요.</label>
+            <input type="password" id="deleteAuthInput" placeholder="현재 비밀번호 입력">`;
+        if (step1Btn) { step1Btn.style.display = ''; step1Btn.innerText = '본인 확인'; step1Btn.disabled = false; }
+    }
+
+    // 모달 초기화: 1단계 표시, 2단계 숨김
+    document.getElementById('deleteStep1').classList.remove('hidden');
+    document.getElementById('deleteStep2').classList.add('hidden');
+    document.getElementById('deleteConfirmText').value = '';
+
     document.getElementById('deleteAccountModal').classList.remove('hidden');
 }
 
-function executeDeleteAccount() {
-    const password = document.getElementById('deleteAccountPassword').value;
-    
-    if (!password) {
-        alert("비밀번호를 입력해주세요.");
+function deleteStep1Submit() {
+    const isSocialOnly = currentUserAuthProvider !== 'local';
+    const inputVal = document.getElementById('deleteAuthInput')?.value || '';
+    const btn = document.querySelector('#deleteStep1 .primary-btn');
+
+    if (!inputVal.trim()) {
+        alert(isSocialOnly ? '이메일을 입력해주세요.' : '비밀번호를 입력해주세요.');
         return;
     }
 
-    if (!cognitoUser) {
-        alert("유저 세션이 만료되었습니다. 다시 로그인해주세요.");
-        window.location.href = '/login';
-        return;
-    }
-
-    const btn = document.querySelector('#deleteAccountModal .danger-btn');
-    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 비밀번호 확인 중...`;
-    btn.disabled = true;
-
-    const authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails({
-        Username: cognitoUser.getUsername(),
-        Password: password,
-    });
-
-    cognitoUser.authenticateUser(authenticationDetails, {
-        onSuccess: async function (result) {
-            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 데이터 삭제 중...`;
-            await processBackendDeletion();
-        },
-        onFailure: function (err) {
-            // 💡 AWS 원시 에러 대신 친절한 경고창으로 안내
-            alert("비밀번호가 일치하지 않습니다. 다시 확인해주세요.");
-            btn.innerText = "네, 모든 데이터를 삭제하고 탈퇴합니다";
-            btn.disabled = false;
+    if (isSocialOnly) {
+        // 소셜 계정: 등록된 이메일과 일치 여부 확인
+        if (inputVal.trim().toLowerCase() !== currentUserEmail.toLowerCase()) {
+            alert('이메일이 일치하지 않습니다. 다시 확인해주세요.');
+            return;
         }
-    });
+        _proceedToDeleteStep2();
+    } else {
+        // 로컬 계정: Cognito 비밀번호 인증
+        if (!cognitoUser) {
+            alert('유저 세션이 만료되었습니다. 다시 로그인해주세요.');
+            window.location.href = '/login';
+            return;
+        }
+
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 확인 중...`;
+        btn.disabled = true;
+
+        const authDetails = new AmazonCognitoIdentity.AuthenticationDetails({
+            Username: cognitoUser.getUsername(),
+            Password: inputVal
+        });
+
+        cognitoUser.authenticateUser(authDetails, {
+            onSuccess: function () {
+                _proceedToDeleteStep2();
+            },
+            onFailure: function () {
+                alert('비밀번호가 일치하지 않습니다. 다시 확인해주세요.');
+                btn.innerText = '본인 확인';
+                btn.disabled = false;
+            }
+        });
+    }
+}
+
+function _proceedToDeleteStep2() {
+    document.getElementById('deleteStep1').classList.add('hidden');
+    document.getElementById('deleteStep2').classList.remove('hidden');
+    document.getElementById('deleteConfirmText').value = '';
+    document.getElementById('deleteConfirmText').focus();
+
+    const step2Btn = document.querySelector('#deleteStep2 .danger-btn');
+    if (step2Btn) { step2Btn.innerText = '탈퇴하기'; step2Btn.disabled = false; }
+}
+
+function deleteStep2Submit() {
+    const confirmText = document.getElementById('deleteConfirmText').value;
+    if (confirmText !== '회원 탈퇴') {
+        alert("'회원 탈퇴'를 정확히 입력해주세요.");
+        return;
+    }
+
+    const btn = document.querySelector('#deleteStep2 .danger-btn');
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 데이터 삭제 중...`;
+    btn.disabled = true;
+    processBackendDeletion();
 }
 
 async function processBackendDeletion() {
@@ -870,9 +971,8 @@ async function processBackendDeletion() {
         window.location.href = '/'; 
     } catch (error) { 
         if (error.message !== "Auth expired") alert("서버 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-        const btn = document.querySelector('#deleteAccountModal .danger-btn');
-        btn.innerText = "네, 모든 데이터를 삭제하고 탈퇴합니다";
-        btn.disabled = false;
+        const btn = document.querySelector('#deleteStep2 .danger-btn');
+        if (btn) { btn.innerText = '탈퇴하기'; btn.disabled = false; }
     }
 }
 
