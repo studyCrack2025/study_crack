@@ -214,6 +214,16 @@ function App() {
     if (typeof navigator === 'undefined') return false;
     return /iP(ad|hone|od)/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|OPiOS|EdgiOS/.test(navigator.userAgent);
   };
+  const safeScrollIntoView = (el, options) => {
+    if (!el?.scrollIntoView) return;
+    if (isIOSSafari()) return;
+    if ((window.scrollY || window.pageYOffset || 0) >= 50) return;
+    el.scrollIntoView(options);
+  };
+  const safeScrollTo = (...args) => {
+    if (isIOSSafari()) return;
+    window.scrollTo(...args);
+  };
   const markStableScrollPosition = () => {
     if (!isIOSSafari()) return;
     const y = window.scrollY || window.pageYOffset || 0;
@@ -227,7 +237,7 @@ function App() {
         const nowY = window.scrollY || window.pageYOffset || 0;
         if (nowY === 0 && lastStableScrollYRef.current > 80) {
           scrollGuardRef.current.restoring = true;
-          window.scrollTo({ top: lastStableScrollYRef.current, left: 0, behavior: 'auto' });
+          safeScrollTo({ top: lastStableScrollYRef.current, left: 0, behavior: 'auto' });
           requestAnimationFrame(() => {
             scrollGuardRef.current.restoring = false;
           });
@@ -245,7 +255,7 @@ function App() {
     callback();
     afterSafariViewportStable(() => {
       if (y > 0 && (window.scrollY || window.pageYOffset || 0) === 0) {
-        window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+        safeScrollTo({ top: y, left: 0, behavior: 'auto' });
       }
     });
   };
@@ -263,7 +273,7 @@ function App() {
     callback();
     runAfterViewportStable(() => {
       if (y > 0 && window.scrollY === 0) {
-        window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+        safeScrollTo({ top: y, left: 0, behavior: 'auto' });
       }
     });
   };
@@ -281,13 +291,13 @@ function App() {
     const started = Date.now();
     const lock = () => {
       const now = window.scrollY || window.pageYOffset || 0;
-      if (Math.abs(now - y) > 0) window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+      if (Math.abs(now - y) > 0) safeScrollTo({ top: y, left: 0, behavior: 'auto' });
       if (Date.now() - started < durationMs) requestAnimationFrame(lock);
     };
     requestAnimationFrame(lock);
     setTimeout(() => {
       const now = window.scrollY || window.pageYOffset || 0;
-      if (Math.abs(now - y) > 0) window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+      if (Math.abs(now - y) > 0) safeScrollTo({ top: y, left: 0, behavior: 'auto' });
     }, durationMs + 20);
   };
 
@@ -398,7 +408,7 @@ function App() {
     const previousScreen = renderStableScreenRef.current || screen;
     const nowY = window.scrollY || window.pageYOffset || 0;
     if (previousScreen === screen && previousY > 40 && nowY <= 2) {
-      requestAnimationFrame(() => window.scrollTo({ top: previousY, left: 0, behavior: 'auto' }));
+      requestAnimationFrame(() => safeScrollTo({ top: previousY, left: 0, behavior: 'auto' }));
     }
   });
 
@@ -417,7 +427,7 @@ function App() {
     requestAnimationFrame(() => {
       const currentStrip = document.querySelector('.planner-date-strip');
       const selectedBtn = currentStrip?.querySelector(`[data-planner-date="${selectedPlannerDate}"]`);
-      if (selectedBtn?.scrollIntoView) selectedBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      safeScrollIntoView(selectedBtn, { behavior: 'smooth', inline: 'center', block: 'nearest' });
     });
   }, [screen, selectedPlannerDate]);
 
@@ -488,7 +498,7 @@ function App() {
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             if (y > 0 && (window.scrollY || window.pageYOffset || 0) === 0) {
-              window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+              safeScrollTo({ top: y, left: 0, behavior: 'auto' });
             }
           });
         });
@@ -2072,7 +2082,7 @@ function App() {
               requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                   if (y > 0 && window.scrollY === 0) {
-                    window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+                    safeScrollTo({ top: y, left: 0, behavior: 'auto' });
                   }
                   restoreIfUnexpectedTopJump();
                 });
@@ -2168,7 +2178,7 @@ function App() {
       requestAnimationFrame(() => {
         const currentStrip = document.querySelector('.planner-date-strip');
         const selectedBtn = currentStrip?.querySelector(`[data-planner-date="${date}"]`);
-        if (selectedBtn && selectedBtn.scrollIntoView) selectedBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        safeScrollIntoView(selectedBtn, { behavior: 'smooth', inline: 'center', block: 'nearest' });
       });
       restoreIfUnexpectedTopJump();
     }
