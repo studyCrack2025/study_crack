@@ -1078,6 +1078,13 @@ body {
   padding: 20px;
   padding-bottom: 20px;
 }
+.onboarding-container.ob5-screen > .content,
+.screen-ob5 > .content {
+  overflow-y: visible;
+  overflow-x: hidden;
+  height: auto;
+  max-height: none;
+}
 .onboarding-container > .cta-wrapper {
   flex-shrink: 0;
   padding: 16px;

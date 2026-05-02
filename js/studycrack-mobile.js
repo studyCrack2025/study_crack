@@ -224,7 +224,6 @@ function App() {
     if (isIOSSafari()) return;
     window.scrollTo(...args);
   };
-  const obScrollRestoreRef = useRef({ top: 0, active: false });
   const markStableScrollPosition = () => {
     if (!isIOSSafari()) return;
     const y = window.scrollY || window.pageYOffset || 0;
@@ -304,11 +303,6 @@ function App() {
 
   const goto = (next, addHistory = true) => {
     if (!next || next === screen) return;
-    const previousOBScrollTop = document.querySelector('.onboarding-container > .content')?.scrollTop || 0;
-    const shouldPreserveOBScroll = screen === 'ob5' || next === 'ob5' || String(screen).startsWith('ob');
-    if (shouldPreserveOBScroll && previousOBScrollTop > 0) {
-      obScrollRestoreRef.current = { top: previousOBScrollTop, active: true };
-    }
     const currentY = window.scrollY || window.pageYOffset || 0;
     screenScrollRef.current[screen] = currentY;
     if (typeof screenScrollRef.current[next] !== 'number') screenScrollRef.current[next] = currentY;
@@ -416,21 +410,6 @@ function App() {
     if (previousScreen === screen && previousY > 40 && nowY <= 2) {
       requestAnimationFrame(() => safeScrollTo({ top: previousY, left: 0, behavior: 'auto' }));
     }
-  });
-
-  useEffect(() => {
-    const shouldPreserveOBScroll = screen === 'ob5' || String(screen).startsWith('ob');
-    if (!shouldPreserveOBScroll || !obScrollRestoreRef.current.active) return;
-    const previousOBScrollTop = obScrollRestoreRef.current.top;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const nextContainer = document.querySelector('.onboarding-container > .content');
-        if (nextContainer && previousOBScrollTop > 0 && nextContainer.scrollTop === 0) {
-          nextContainer.scrollTop = previousOBScrollTop;
-        }
-        obScrollRestoreRef.current.active = false;
-      });
-    });
   });
 
   useEffect(() => {
@@ -1682,7 +1661,7 @@ function App() {
       false
     ),
     ob5: layout(
-      `<div class="onboarding-container"><div class="content">
+      `<div class="onboarding-container ob5-screen"><div class="content">
        ${onboardingProgress(3)}
        ${appbar('공부 성향 맞춤 솔루션', true)}
        <p class="sub ob-subcopy">현재 성적에서 합격컷까지,<br/>가장 효율적인 점수 상승 루트를 보여드릴게요.</p>
