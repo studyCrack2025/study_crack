@@ -98,8 +98,14 @@ document.addEventListener('DOMContentLoaded', () => {
     bindEnterKey('newChangePasswordConfirm', changePassword);
     bindEnterKey('deleteAccountPassword', executeDeleteAccount);
     
-    // MBTI 테스트 후 복귀 처리
+    // 소셜 재인증 콜백 처리 (회원 탈퇴용)
     const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('reauth') === 'success' && urlParams.get('purpose') === 'delete_account') {
+        history.replaceState(null, '', '/mypage');
+        sessionStorage.setItem('pendingDeleteReauth', 'true');
+    }
+
+    // MBTI 테스트 후 복귀 처리
     if (urlParams.get('mbti_completed') === 'true') {
         const mbtiResult = urlParams.get('mbti_result');
         if (mbtiResult && /^[CI][SM][DE][RF]$/.test(mbtiResult)) {
@@ -231,6 +237,13 @@ async function fetchUserData(userId) {
                 imgElem.src = escapeHtml(userData.profileImage);
                 checkDeleteButtonVisibility(userData.profileImage);
             }
+        }
+
+        // 소셜 재인증 후 탈퇴 2단계 자동 열기
+        if (sessionStorage.getItem('pendingDeleteReauth') === 'true') {
+            sessionStorage.removeItem('pendingDeleteReauth');
+            document.getElementById('deleteAccountModal').classList.remove('hidden');
+            _proceedToDeleteStep2();
         }
 
         // 튜터 정보 조회 로직 업데이트
@@ -710,6 +723,40 @@ function linkSocial(provider) {
     if (authUrl) window.location.href = authUrl;
 }
 
+function startDeleteReauth(provider) {
+    const social = CONFIG && CONFIG.social;
+    const clientId = social && social[provider] && social[provider].clientId;
+    const callbackUrl = social && social.callbackUrl;
+
+    if (!clientId || !callbackUrl) {
+        alert('소셜 인증 설정을 불러올 수 없습니다. 관리자에게 문의해주세요.');
+        return;
+    }
+
+    const stateNonce = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+        .map(b => b.toString(16).padStart(2, '0')).join('');
+    const state = `${stateNonce}|${provider}`;
+    sessionStorage.setItem('socialState', state);
+    sessionStorage.setItem('socialReauthMode', 'true');
+    sessionStorage.setItem('socialReauthPurpose', 'delete_account');
+
+    let authUrl = '';
+    if (provider === 'google') {
+        authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + new URLSearchParams({
+            client_id: clientId, redirect_uri: callbackUrl,
+            response_type: 'code', scope: 'openid email profile',
+            state, access_type: 'offline', prompt: 'select_account'
+        });
+    } else if (provider === 'naver') {
+        authUrl = `https://nid.naver.com/oauth2.0/authorize?` + new URLSearchParams({
+            response_type: 'code', client_id: clientId,
+            redirect_uri: callbackUrl, state
+        });
+    }
+
+    if (authUrl) window.location.href = authUrl;
+}
+
 function handleSignOut() {
     if (cognitoUser) cognitoUser.signOut();
     localStorage.clear();
@@ -821,26 +868,29 @@ function checkDeleteButtonVisibility(url) {
 function handleDeleteAccount() {
     const isSocialOnly = currentUserAuthProvider !== 'local';
     const authGroup = document.getElementById('deleteAuthGroup');
+    const step1Btn = document.querySelector('#deleteStep1 .primary-btn');
 
     // 1단계 인증 입력 폼 동적 구성
     if (isSocialOnly) {
+        const providerLabel = currentUserAuthProvider === 'google' ? 'Google' : 'Naver';
+        const providerIcon = currentUserAuthProvider === 'google' ? 'fab fa-google' : 'fas fa-n';
         authGroup.innerHTML = `
-            <label>본인 확인을 위해 가입 시 사용한 <strong>이메일 주소</strong>를 입력해주세요.</label>
-            <input type="email" id="deleteAuthInput" placeholder="이메일 입력" autocomplete="off">`;
+            <p style="margin-bottom:14px;color:#374151;">본인 확인을 위해 <strong>${escapeHtml(providerLabel)} 계정으로 재인증</strong>이 필요합니다.</p>
+            <button class="modal-action-btn" style="width:100%;" onclick="startDeleteReauth('${escapeHtml(currentUserAuthProvider)}')">
+                <i class="${escapeHtml(providerIcon)}"></i>&nbsp;${escapeHtml(providerLabel)}로 본인 확인
+            </button>`;
+        if (step1Btn) step1Btn.style.display = 'none';
     } else {
         authGroup.innerHTML = `
             <label>본인 확인을 위해 현재 <strong>비밀번호</strong>를 입력해주세요.</label>
             <input type="password" id="deleteAuthInput" placeholder="현재 비밀번호 입력">`;
+        if (step1Btn) { step1Btn.style.display = ''; step1Btn.innerText = '본인 확인'; step1Btn.disabled = false; }
     }
 
     // 모달 초기화: 1단계 표시, 2단계 숨김
     document.getElementById('deleteStep1').classList.remove('hidden');
     document.getElementById('deleteStep2').classList.add('hidden');
     document.getElementById('deleteConfirmText').value = '';
-
-    // 버튼 초기화
-    const step1Btn = document.querySelector('#deleteStep1 .primary-btn');
-    if (step1Btn) { step1Btn.innerText = '본인 확인'; step1Btn.disabled = false; }
 
     document.getElementById('deleteAccountModal').classList.remove('hidden');
 }
