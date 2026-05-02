@@ -1216,6 +1216,39 @@ function App() {
     if (nextBtn) nextBtn.textContent = bounded === 8 ? '작성 완료 및 제출' : '다음 단계';
     return true;
   };
+  const isIosCoachingModalInput = (el) => {
+    if (!(isIOSSafari() && screen === 'strategy')) return false;
+    if (!el?.closest?.('.coaching-modal, .coach-modal, .planner-sheet, .coaching-request-modal, .coach-sheet')) return false;
+    return el.matches?.('input, textarea, select')
+      || el.hasAttribute?.('data-coach-answer')
+      || el.hasAttribute?.('data-coach-field')
+      || el.hasAttribute?.('data-coach-detail')
+      || el.hasAttribute?.('data-coach-plan')
+      || el.hasAttribute?.('data-coach-actual');
+  };
+  const collectCoachingDomValues = () => {
+    const root = document.querySelector('.coach-sheet') || document;
+    const answers = {};
+    root.querySelectorAll('[data-coach-answer]').forEach((el) => {
+      const key = el.getAttribute('data-coach-answer');
+      if (key) answers[key] = el.value || '';
+    });
+    const examScores = {};
+    root.querySelectorAll('[data-coach-field]').forEach((el) => {
+      const key = el.getAttribute('data-coach-field');
+      if (key) examScores[key] = el.value || '';
+    });
+    const rowMap = {};
+    root.querySelectorAll('[data-coach-detail], [data-coach-plan], [data-coach-actual]').forEach((el) => {
+      const rowId = el.getAttribute('data-coach-detail') || el.getAttribute('data-coach-plan') || el.getAttribute('data-coach-actual');
+      if (!rowId) return;
+      rowMap[rowId] = rowMap[rowId] || {};
+      if (el.hasAttribute('data-coach-detail')) rowMap[rowId].detail = el.value || '';
+      if (el.hasAttribute('data-coach-plan')) rowMap[rowId].planned = el.value || '';
+      if (el.hasAttribute('data-coach-actual')) rowMap[rowId].actual = el.value || '';
+    });
+    return { answers, examScores, rowMap };
+  };
 
   const designV2StyleTag = `<style>
     html,body{touch-action:manipulation;overscroll-behavior:none;}
@@ -2783,6 +2816,9 @@ function App() {
     }
     if (action === 'coachingNext') {
       const currentStep = getCurrentCoachingStep();
+      const domCoaching = isIOSSafari() && screen === 'strategy' ? collectCoachingDomValues() : null;
+      const domRows = domCoaching ? coachingSubjectRows.map((row) => ({ ...row, ...(domCoaching.rowMap[row.id] || {}) })) : coachingSubjectRows;
+      const domExamScores = domCoaching ? { ...coachingExamScores, ...domCoaching.examScores } : coachingExamScores;
       if (currentStep === 1) syncStep1FromDom();
       if (isIOSSafari() && screen === 'strategy' && currentStep === 3) {
         const nextScores = {};
@@ -2793,16 +2829,21 @@ function App() {
         setCoachingExamScores((prev) => ({ ...prev, ...nextScores }));
       }
       if (currentStep === 1) {
-        const invalid = coachingSubjectRows.some((r) => !String(r.detail || '').trim() || !String(r.planned || '').trim() || !String(r.actual || '').trim());
+        const invalid = domRows.some((r) => !String(r.detail || '').trim() || !String(r.planned || '').trim() || !String(r.actual || '').trim());
         if (invalid) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
       }
       if (currentStep === 2 && coachingPlannerFiles.length === 0) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
       if (currentStep === 3) {
         if (!coachingExamType) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
-        if (coachingExamType !== '미응시' && (!String(coachingExamScores.koreanRaw || '').trim() || !String(coachingExamScores.mathRaw || '').trim() || !String(coachingExamScores.englishGrade || '').trim() || !String(coachingExamScores.inq1Raw || '').trim() || !String(coachingExamScores.inq2Raw || '').trim())) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
+        if (coachingExamType !== '미응시' && (!String(domExamScores.koreanRaw || '').trim() || !String(domExamScores.mathRaw || '').trim() || !String(domExamScores.englishGrade || '').trim() || !String(domExamScores.inq1Raw || '').trim() || !String(domExamScores.inq2Raw || '').trim())) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
       }
       if (currentStep === 4 && !coachingTrend) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
       if (currentStep >= 8) {
+        if (domCoaching) {
+          setCoachingAnswers((prev) => ({ ...prev, ...domCoaching.answers }));
+          setCoachingExamScores((prev) => ({ ...prev, ...domCoaching.examScores }));
+          setCoachingSubjectRows((prev) => prev.map((row) => ({ ...row, ...(domCoaching.rowMap[row.id] || {}) })));
+        }
         setCoachingSheetOpen(false);
         setCoachingSubmitted(true);
         window.alert('코칭 요청이 제출되었습니다.\n튜터 피드백이 도착하면 학습 코칭 페이지에서 확인할 수 있어요.');
@@ -3025,6 +3066,10 @@ function App() {
   };
 
   const onInput = (e) => {
+    if (isIosCoachingModalInput(e.target)) {
+      e.target.dataset.pendingValue = e.target.value;
+      return;
+    }
     const scoreKey = e.target.getAttribute('data-score-key');
     if (scoreKey) {
       const raw = String(e.target.value || '');
@@ -3308,6 +3353,10 @@ function App() {
 
   const onChange = (e) => {
     markStableScrollPosition();
+    if (isIosCoachingModalInput(e.target)) {
+      e.target.dataset.pendingValue = e.target.value;
+      return;
+    }
     const field = e.target.getAttribute('data-field');
     if (isIOSSafari() && (screen === 'planner' || screen === 'plannerAdd') && e.target.closest('.planner-sheet, .planner-modal')) {
       e.target.dataset.pendingValue = e.target.value;
@@ -3336,6 +3385,10 @@ function App() {
   };
   const onBlur = (e) => {
     markStableScrollPosition();
+    if (isIosCoachingModalInput(e.target)) {
+      e.target.dataset.pendingValue = e.target.value;
+      return;
+    }
     const field = e.target.getAttribute('data-field');
     if (isIOSSafari() && (screen === 'planner' || screen === 'plannerAdd') && e.target.closest('.planner-sheet, .planner-modal')) {
       e.target.dataset.pendingValue = e.target.value;
