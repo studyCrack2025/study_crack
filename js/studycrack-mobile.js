@@ -1661,7 +1661,7 @@ function App() {
       false
     ),
     ob5: layout(
-      `<div class="onboarding-container ob5-screen"><div class="content">
+      `<div class="screen screen-ob5"><div class="onboarding-container ob5-screen"><div class="content">
        ${onboardingProgress(3)}
        ${appbar('공부 성향 맞춤 솔루션', true)}
        <p class="sub ob-subcopy">현재 성적에서 합격컷까지,<br/>가장 효율적인 점수 상승 루트를 보여드릴게요.</p>
@@ -1684,7 +1684,7 @@ function App() {
          <p class="analysis-title">핵심 전략</p>
          <ol class="ob-strategy"><li><b>수학 68점 → 80점</b><p>합격 가능성 상승 기여도 가장 큼</p></li><li><b>탐구1 70점 → 76점</b><p>단기간 상승 효율 높음</p></li><li><b>영어 77점 유지</b><p>현재 수준 유지 전략</p></li></ol>
        </div>`}
-       </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button type="button" class="cta-button" data-action="startStandard">Standard로 시작하기</button><button type="button" class="auth-link-btn" data-action="completeOnboarding">홈으로 이동</button></div></div>`,
+       </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button type="button" class="cta-button" data-action="startStandard">Standard로 시작하기</button><button type="button" class="auth-link-btn" data-action="completeOnboarding">홈으로 이동</button></div></div></div>`,
       false
     ),
     authLogin: layout(`<div class="auth-screen">
