@@ -11,6 +11,7 @@
 * { box-sizing: border-box; }
 html, body {
   height: 100%;
+  min-height: -webkit-fill-available;
   margin: 0;
   overflow: hidden;
 }
@@ -19,6 +20,21 @@ body {
   color: var(--text);
 }
 #root { width: 100%; height: 100%; }
+.ios-scroll-root {
+  width: 100%;
+  min-height: 100dvh;
+  overflow-anchor: none;
+}
+@supports (-webkit-touch-callout: none) {
+  .ios-scroll-root {
+    min-height: -webkit-fill-available;
+  }
+}
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
 .phone {
   width: 390px;
   max-width: 390px;
