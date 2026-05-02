@@ -2061,6 +2061,13 @@ function App() {
     track.style.setProperty('--score-slide-transition', transition);
     card.dataset.scoreView = nextView;
   };
+  const toggleHomeUiDom = (selector, open) => {
+    const el = document.querySelector(selector);
+    if (!el) return false;
+    el.style.display = open ? '' : 'none';
+    el.setAttribute('aria-hidden', open ? 'false' : 'true');
+    return true;
+  };
 
   const onClick = (e) => {
     lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
@@ -2230,9 +2237,18 @@ function App() {
         setAddingUniversity(false);
       }, 500);
     }
-    if (action === 'openUniversityModal') preserveY(() => setUniversityModalOpen(true));
-    if (action === 'openAnalysisSearchFromHome') preserveY(() => setUniversityModalOpen(true));
-    if (action === 'closeUniversityModal') afterSafariViewportStable(() => setUniversityModalOpen(false));
+    if (action === 'openUniversityModal') {
+      if (isIOSSafari() && toggleHomeUiDom('.home-modal-overlay', true)) return;
+      preserveY(() => setUniversityModalOpen(true));
+    }
+    if (action === 'openAnalysisSearchFromHome') {
+      if (isIOSSafari() && toggleHomeUiDom('.home-modal-overlay', true)) return;
+      preserveY(() => setUniversityModalOpen(true));
+    }
+    if (action === 'closeUniversityModal') {
+      if (isIOSSafari() && toggleHomeUiDom('.home-modal-overlay', false)) return;
+      afterSafariViewportStable(() => setUniversityModalOpen(false));
+    }
     if (action === 'openPlannerAddPage') goto('plannerAdd');
     if (action === 'openPlannerCalendar') preserveY(() => setPlannerCalendarOpen(true));
     if (action === 'closePlannerCalendar') afterSafariViewportStable(() => setPlannerCalendarOpen(false));
@@ -2401,10 +2417,22 @@ function App() {
     if (action === 'toggleObGed') setObGed((v) => !v);
     if (action === 'openKakaoSupport') window.open('http://pf.kakao.com/_wxjxcgn', '_blank');
     if (action === 'openEmailSupport') window.location.href = 'mailto:contact@studycrack.co.kr';
-    if (action === 'openDrawer') setDrawerOpen(true);
-    if (action === 'closeDrawer') setDrawerOpen(false);
-    if (action === 'openNotificationModal') setNotifModalOpen(true);
-    if (action === 'closeNotificationModal') setNotifModalOpen(false);
+    if (action === 'openDrawer') {
+      if (isIOSSafari() && toggleHomeUiDom('.drawer-overlay', true)) return;
+      setDrawerOpen(true);
+    }
+    if (action === 'closeDrawer') {
+      if (isIOSSafari() && toggleHomeUiDom('.drawer-overlay', false)) return;
+      setDrawerOpen(false);
+    }
+    if (action === 'openNotificationModal') {
+      if (isIOSSafari() && toggleHomeUiDom('.home-modal-overlay:has(.pro-notif-modal)', true)) return;
+      setNotifModalOpen(true);
+    }
+    if (action === 'closeNotificationModal') {
+      if (isIOSSafari() && toggleHomeUiDom('.home-modal-overlay:has(.pro-notif-modal)', false)) return;
+      setNotifModalOpen(false);
+    }
     if (action === 'openProRequestModal') setProRequestModalOpen(true);
     if (action === 'closeProRequestModal') setProRequestModalOpen(false);
     if (action === 'submitProRequest') {
@@ -2502,9 +2530,27 @@ function App() {
       }
       setCoachingStep((prev) => Math.min(8, prev + 1));
     }
-    if (action === 'openStudySubjectSheet') setStudySubjectSheetOpen(true);
-    if (action === 'toggleStudyBreakdown') setShowStudyBreakdown((v) => !v);
-    if (action === 'closeStudySubjectSheet') setStudySubjectSheetOpen(false);
+    if (action === 'openStudySubjectSheet') {
+      if (isIOSSafari() && toggleHomeUiDom('.study-subject-sheet', true)) return;
+      setStudySubjectSheetOpen(true);
+    }
+    if (action === 'toggleStudyBreakdown') {
+      if (isIOSSafari()) {
+        const list = document.querySelector('.home-breakdown-list');
+        const btn = document.querySelector('.home-breakdown-toggle');
+        if (list && btn) {
+          const open = list.style.display === 'none';
+          list.style.display = open ? '' : 'none';
+          btn.textContent = open ? '접기' : '펼쳐보기';
+          return;
+        }
+      }
+      setShowStudyBreakdown((v) => !v);
+    }
+    if (action === 'closeStudySubjectSheet') {
+      if (isIOSSafari() && toggleHomeUiDom('.study-subject-sheet', false)) return;
+      setStudySubjectSheetOpen(false);
+    }
     if (action === 'selectStudySubjectCustom') {
       const custom = window.prompt('과목명을 입력하세요', '기타');
       if (!custom) return;
