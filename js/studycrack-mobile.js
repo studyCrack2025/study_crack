@@ -2019,6 +2019,30 @@ function App() {
   const armScrollGuard = () => {
     // no-op: 강제 scrollTo 제거
   };
+  const getHomeSliderState = () => {
+    const slider = document.querySelector('.home-kpi-slider');
+    const track = slider?.querySelector('.home-kpi-track');
+    const indicators = document.querySelectorAll('.home-kpi-indicator i');
+    const total = indicators.length;
+    const activeIndex = Array.from(indicators).findIndex((el) => el.classList.contains('active'));
+    return { slider, track, indicators, total, activeIndex: activeIndex >= 0 ? activeIndex : 0 };
+  };
+  const setHomeSlideDom = (index, motion = '') => {
+    const { track, indicators, total } = getHomeSliderState();
+    if (!track || !total) return;
+    const max = total - 1;
+    const next = Math.max(0, Math.min(index, max));
+    indicators.forEach((el, idx) => {
+      el.classList.toggle('active', idx === next);
+    });
+    if (motion) {
+      track.classList.remove('motion-next', 'motion-prev');
+      track.classList.add(motion);
+    }
+    track.style.setProperty('--home-slide-x', `calc(-${next} * (var(--home-slide-card-width) + var(--home-slide-gap)) + 0px)`);
+    track.style.setProperty('--home-slide-transition', 'transform .72s cubic-bezier(.22,1,.36,1)');
+    track.dataset.homeSlideIndex = String(next);
+  };
 
   const onClick = (e) => {
     lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
@@ -2133,6 +2157,12 @@ function App() {
     if (action === 'setHomeSlide') {
       const idx = Number(actionEl.getAttribute('data-slide-index'));
       if (Number.isNaN(idx)) return;
+      if (screen === 'home') {
+        const { activeIndex } = getHomeSliderState();
+        const motion = idx > activeIndex ? 'motion-next' : 'motion-prev';
+        setHomeSlideDom(idx, motion);
+        return;
+      }
       setHomeDragOffset(0);
       markStableScrollPosition();
       setHomeSlideIndex((prev) => {
@@ -2663,6 +2693,19 @@ function App() {
       touchLastXRef.current = clientX;
       const delta = clientX - startX;
       if (touchTargetRef.current === 'home') {
+        if (screen === 'home') {
+          const { slider, track, activeIndex, total } = getHomeSliderState();
+          if (!slider || !track || !total) return;
+          const max = total - 1;
+          const atFirst = activeIndex === 0;
+          const atLast = activeIndex === max;
+          const overscrolling = (atFirst && delta > 0) || (atLast && delta < 0);
+          const resistance = overscrolling ? 0.35 : 0.92;
+          const clamped = Math.max(-118, Math.min(118, delta * resistance));
+          track.style.setProperty('--home-slide-x', `calc(-${activeIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${clamped}px)`);
+          track.style.setProperty('--home-slide-transition', '0s');
+          return;
+        }
         const atFirst = homeSlideIndex === 0;
         const atLast = homeSlideIndex === homeTargets.length;
         const overscrolling = (atFirst && delta > 0) || (atLast && delta < 0);
@@ -2694,7 +2737,7 @@ function App() {
       const delta = clientX - startX;
       touchStartXRef.current = null;
       touchLastXRef.current = null;
-      setHomeDragOffset(0);
+      if (!(touchTargetRef.current === 'home' && screen === 'home')) setHomeDragOffset(0);
       if (screen !== 'ob5') setScoreDragOffset(0);
       const absDelta = Math.abs(delta);
       const swipeThreshold = touchTargetRef.current === 'home' ? 22 : 26;
@@ -2706,6 +2749,17 @@ function App() {
       suppressClickUntilRef.current = Date.now() + 260;
       markStableScrollPosition();
       if (touchTargetRef.current === 'home') {
+        if (screen === 'home') {
+          const { activeIndex, total } = getHomeSliderState();
+          const max = total - 1;
+          const next = delta < 0 ? Math.min(activeIndex + 1, max) : Math.max(activeIndex - 1, 0);
+          const motion = next > activeIndex ? 'motion-next' : 'motion-prev';
+          setHomeSlideDom(next, motion);
+          touchTargetRef.current = '';
+          touchCardRef.current = null;
+          restoreIfUnexpectedTopJump();
+          return;
+        }
         setHomeSlideIndex((prev) => {
           const next = delta < 0 ? Math.min(prev + 1, homeTargets.length) : Math.max(prev - 1, 0);
           if (next === prev) return prev;
@@ -2753,7 +2807,7 @@ function App() {
       touchStartXRef.current = null;
       touchLastXRef.current = null;
       touchTargetRef.current = '';
-      setHomeDragOffset(0);
+      if (screen !== 'home') setHomeDragOffset(0);
       if (screen !== 'ob5') setScoreDragOffset(0);
       if (touchCardRef.current) {
         delete touchCardRef.current.dataset.dragStartX;
@@ -2771,7 +2825,7 @@ function App() {
       touchStartXRef.current = null;
       touchLastXRef.current = null;
       touchTargetRef.current = '';
-      setHomeDragOffset(0);
+      if (screen !== 'home') setHomeDragOffset(0);
       if (screen !== 'ob5') setScoreDragOffset(0);
       if (touchCardRef.current) {
         delete touchCardRef.current.dataset.dragStartX;
