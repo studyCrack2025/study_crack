@@ -21,11 +21,21 @@ async function apiFetch(url, options = {}) {
 
         if (!response.ok) {
             if (response.status === 401 || response.status === 403) {
+                const refreshed = await tryRefreshToken();
+                if (refreshed) {
+                    const newToken = localStorage.getItem('accessToken');
+                    options.headers['Authorization'] = `Bearer ${newToken}`;
+                    const retryRes = await fetch(url, options);
+                    if (retryRes.ok) return retryRes;
+                    if (!retryRes.ok && retryRes.status !== 401 && retryRes.status !== 403) {
+                        throw new Error(`서버 통신 오류 (상태 코드: ${retryRes.status})`);
+                    }
+                }
                 alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
                 localStorage.clear();
                 sessionStorage.clear();
-                window.location.href = '/login'; 
-                return Promise.reject(new Error("Auth expired")); 
+                window.location.href = '/login';
+                return Promise.reject(new Error("Auth expired"));
             }
             throw new Error(`서버 통신 오류 (상태 코드: ${response.status})`);
         }

@@ -1092,15 +1092,11 @@ async function convertScore(month, subject, score, opt, subName, common, electiv
 }
 
 async function apiCall(type, data) {
-    const token = localStorage.getItem('accessToken');
-    if (!token) return { success: false, error: 'Unauthorized' };
     try {
-        const response = await fetch(CONFIG.api.user, {
+        const response = await apiFetch(CONFIG.api.user, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type, data })
         });
-        if (!response.ok) throw new Error('API 통신 에러');
         return await response.json();
     } catch (e) {
         return { success: false };
