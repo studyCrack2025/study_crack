@@ -195,6 +195,15 @@ function App() {
   const [obExamType, setObExamType] = useState('3월 모의고사');
   const [scoreExamType, setScoreExamType] = useState('3월 모의고사');
   const [obScoreInputs, setObScoreInputs] = useState({});
+  const ob5TestMode = useMemo(() => {
+    if (typeof window === 'undefined') return 'normal';
+    const raw = new URLSearchParams(window.location.search || '').get('ob5Test') || 'normal';
+    const allowed = new Set(['normal', 'noLoading', 'noTransitions', 'noInputBlur', 'noChangeState', 'static']);
+    return allowed.has(raw) ? raw : 'normal';
+  }, []);
+  const isOB5TestMode = (mode) => ob5TestMode === mode;
+  const isOB5StaticLike = ob5TestMode === 'static';
+  const isOB5NoTransitions = ob5TestMode === 'noTransitions';
   const loadingStartedAtRef = useRef(Date.now());
   const loadingExitTimerRef = useRef(null);
   const loadingDoneRef = useRef(false);
@@ -1667,7 +1676,23 @@ function App() {
        <p class="sub ob-subcopy">현재 성적에서 합격컷까지,<br/>가장 효율적인 점수 상승 루트를 보여드릴게요.</p>
        <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>무작정 전 과목을 올리는 게 아니라, 합격에 가장 크게 기여하는 과목부터 잡아야 해요!</p></div>
        <div class="card ob-card">${scoreJourneyCard('최소 노력 대비 합격 도달 성적')}</div>
-       ${ob3IsAnalyzing ? `<div class="loading-overlay"><div class="loading-box"><div class="dots">● ● ●</div><div>분석중입니다</div><div>잠시만 기다려주세요</div></div></div>` : `<div class="card ob-card ob-period-card on-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 3개월 내 도달 예상</b><p>주간 플래너 피드백과 학습 방향 코칭 제공</p></div>
+       ${(isOB5TestMode('noLoading') || isOB5NoTransitions || isOB5StaticLike) ? `<div class="card ob-card ob-period-card on-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 3개월 내 도달 예상</b><p>주간 플래너 피드백과 학습 방향 코칭 제공</p></div>
+       <div class="card ob-card">
+         <p class="analysis-title">합격 가능성 변화</p>
+         <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${gaugeTarget}점</b></div></div>
+         <div class="ob-gauge">
+           <div class="ob-gauge-current" style="width:${gaugeCurrentPct}%"></div>
+           <div class="ob-gauge-target" style="width:${gaugeTargetPct}%"></div>
+           <i class="ob-gauge-cut pass" style="left:${gaugePassPct}%"></i>
+           <i class="ob-gauge-cut safe" style="left:${gaugeSafePct}%"></i>
+         </div>
+         <div class="ob-gauge-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
+         <p class="sub"><b>현재 → 합격권 진입 구간</b></p>
+       </div>
+       <div class="card ob-card">
+         <p class="analysis-title">핵심 전략</p>
+         <ol class="ob-strategy"><li><b>수학 68점 → 80점</b><p>합격 가능성 상승 기여도 가장 큼</p></li><li><b>탐구1 70점 → 76점</b><p>단기간 상승 효율 높음</p></li><li><b>영어 77점 유지</b><p>현재 수준 유지 전략</p></li></ol>
+       </div>` : ob3IsAnalyzing ? `<div class="loading-overlay"><div class="loading-box"><div class="dots">● ● ●</div><div>분석중입니다</div><div>잠시만 기다려주세요</div></div></div>` : `<div class="card ob-card ob-period-card on-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 3개월 내 도달 예상</b><p>주간 플래너 피드백과 학습 방향 코칭 제공</p></div>
        <div class="card ob-card">
          <p class="analysis-title">합격 가능성 변화</p>
          <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${gaugeTarget}점</b></div></div>
@@ -2025,6 +2050,7 @@ function App() {
     if (isAnalyzing && screen === 'analysis') return;
     const actionEl = e.target.closest('[data-action]');
     if (!actionEl) return;
+    if (screen === 'ob5' && isOB5StaticLike) return;
     const action = actionEl.getAttribute('data-action');
     const shouldKeepScroll = ['toggleFaq', 'toggleStudyBreakdown', 'openUniversityModal', 'closeUniversityModal', 'openDrawer', 'closeDrawer', 'openScoreEdit', 'closeScoreEdit'].includes(action);
     if (shouldKeepScroll) keepScrollPosition();
@@ -2068,6 +2094,10 @@ function App() {
         return;
       }
       if (screen === 'ob4' && target === 'ob5') {
+        if (isOB5TestMode('noLoading') || isOB5NoTransitions || isOB5StaticLike) {
+          goto('ob5');
+          return;
+        }
         setOnboardingLoading(true);
         setOnboardingLoadingText('학습 성향 분석중...');
         setTimeout(() => setOnboardingLoadingText('효율적인 공부법 찾는중...'), 1500);
@@ -2735,6 +2765,7 @@ function App() {
   }, [homeTargets.length, homeSlideIndex, activeScoreView]);
 
   const onChange = (e) => {
+    if (screen === 'ob5' && (isOB5TestMode('noChangeState') || isOB5StaticLike)) return;
     markStableScrollPosition();
     const field = e.target.getAttribute('data-field');
     if (field === 'coachPlannerFiles') {
@@ -2755,6 +2786,7 @@ function App() {
     restoreIfUnexpectedTopJump();
   };
   const onBlur = (e) => {
+    if (screen === 'ob5' && (isOB5TestMode('noInputBlur') || isOB5StaticLike)) return;
     markStableScrollPosition();
     const field = e.target.getAttribute('data-field');
     const coachAnswer = e.target.getAttribute('data-coach-answer');
