@@ -1022,7 +1022,7 @@ function App() {
     </div>
     <div class="section home-section">
       <div class="home-kpi-slider">
-        <div class="home-kpi-track ${homeSlideMotion}" style="--home-slide-card-width:100%;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .72s cubic-bezier(.22,1,.36,1)'};">
+        <div class="home-kpi-track anchor-volatile ${homeSlideMotion}" style="--home-slide-card-width:100%;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .72s cubic-bezier(.22,1,.36,1)'};">
         ${homeTargets.map((item) => `<button class="university-card-slide card home-kpi-card admission-card slider-card home-result-card-v3" data-action="selectUniversity" data-target-major="${item.major}">
           <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score"><strong>${item.score}점</strong><small>AI 점수</small></div></div>
           <div class="home-result-gauge"><i style="width:${Math.min((item.score / 250) * 100, 100)}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
@@ -1233,6 +1233,7 @@ function App() {
     @keyframes barProjPop{0%{transform:translateX(-50%) translateY(8px);opacity:0;}100%{transform:translateX(-50%) translateY(0);opacity:1;}}
     .home-kpi-slider{overflow:visible;padding:2px 0 2px 0;touch-action:pan-y;}
     .home-kpi-track{display:flex;gap:var(--home-slide-gap,12px);transform:translateX(var(--home-slide-x));will-change:transform;transition:var(--home-slide-transition, transform .46s cubic-bezier(.22,.61,.36,1));}
+    .anchor-volatile{overflow-anchor:none;}
     .home-kpi-track.motion-next{animation:none;}
     .home-kpi-track.motion-prev{animation:none;}
     @keyframes homeSlideNext{from{transform:translateX(calc(var(--home-slide-x) + 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
@@ -1460,7 +1461,7 @@ function App() {
         <button type="button" class="${activeScoreView==='target'?'active':''}" data-action="setScoreView" data-score-view="target">도달 성적</button>
       </div>
       <div class="score-journey-scroll">
-        <div class="score-journey-track ${scoreSlideMotion}" style="--score-slide-x:calc(${activeScoreView==='target' ? '-50%' : '0%'} + ${scoreDragOffset}px);--score-slide-transition:${scoreDragOffset!==0?'0s':'transform .56s cubic-bezier(.22,.61,.36,1)'};">
+        <div class="score-journey-track anchor-volatile ${scoreSlideMotion}" style="--score-slide-x:calc(${activeScoreView==='target' ? '-50%' : '0%'} + ${scoreDragOffset}px);--score-slide-transition:${scoreDragOffset!==0?'0s':'transform .56s cubic-bezier(.22,.61,.36,1)'};">
         <div class="score-journey-col current" data-score-view="current">
           <h4>현재 성적</h4>
           <div class="score-row"><span>국어</span><b>${curr.korean}</b></div>
@@ -2769,7 +2770,7 @@ function App() {
     restoreIfUnexpectedTopJump();
   };
 
-  const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><section class="app-loading-hero app-loading-poster ${loadingFadeOut ? 'is-fade-out' : ''}"><img class="app-loading-poster-img" src="./assets/images/IMG_3020.png" alt="스터디크랙 로딩 이미지"/><div class="app-loading-progress"><div class="app-loading-bar"><i></i></div><p class="app-loading-label">LOADING...</p></div></section></div></div></div>`;
+  const loadingUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><section class="app-loading-hero app-loading-poster anchor-volatile ${loadingFadeOut ? 'is-fade-out' : ''}"><img class="app-loading-poster-img" src="./assets/images/IMG_3020.png" alt="스터디크랙 로딩 이미지"/><div class="app-loading-progress"><div class="app-loading-bar"><i></i></div><p class="app-loading-label">LOADING...</p></div></section></div></div></div>`;
   const fallbackUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div></div>`;
   const preAuthAllowedScreens = ['splash', 'authLogin', 'authSignup', 'authFindId', 'authFindPw', 'on1', 'on2', 'on3'];
   const renderedBase = loading ? loadingUi : error ? fallbackUi : !loggedIn && !preAuthAllowedScreens.includes(screen) ? screens.on1 : current;
