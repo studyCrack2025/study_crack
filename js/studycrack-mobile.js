@@ -2183,8 +2183,32 @@ function App() {
     }
     if (action === 'back') back();
     if (action === 'tab') goto(actionEl.getAttribute('data-tab'));
-    if (action === 'selectPlan') setSelectedPlan(actionEl.getAttribute('data-plan'));
-    if (action === 'selectDuration') setDuration(actionEl.getAttribute('data-duration'));
+    if (action === 'selectPlan') {
+      const plan = actionEl.getAttribute('data-plan');
+      if (isIOSSafari()) {
+        if (!plan) return;
+        document.body.dataset.selectedPlan = plan;
+        document.querySelectorAll('.plan-card, .payment-plan-tabs button').forEach((card) => {
+          const key = card.getAttribute('data-plan');
+          if (!key) return;
+          card.classList.toggle('active', key === plan);
+        });
+        return;
+      }
+      setSelectedPlan(plan);
+    }
+    if (action === 'selectDuration') {
+      const durationValue = actionEl.getAttribute('data-duration');
+      if (isIOSSafari()) {
+        if (!durationValue) return;
+        document.body.dataset.selectedDuration = durationValue;
+        document.querySelectorAll('.duration-row button').forEach((btn) => {
+          btn.classList.toggle('active', btn.getAttribute('data-duration') === durationValue);
+        });
+        return;
+      }
+      setDuration(durationValue);
+    }
     if (action === 'toggleTarget') preserveY(() => setTargetOpen((v) => !v));
     if (action === 'selectTarget') {
       setTargetMajor(actionEl.getAttribute('data-target-major'));
