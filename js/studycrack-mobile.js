@@ -1133,8 +1133,8 @@ function App() {
     '26년 3월': []
   };
   const selectedCoachingReports = coachingMonthlyReports[coachingMonth] || [];
-  const coachingStepBody = () => {
-    if (coachingStep === 1) {
+  const coachingStepBodyByStep = (step) => {
+    if (step === 1) {
       return `<div class="coach-step-body"><h4>1. 과목별 학습 달성률 <span style="color:#ef4444">*</span></h4><p class="sub">과목별 구체적인 과목명과 시간을 입력하세요.</p>
         <div class="coach-subject-list">
           ${coachingSubjectRows.map((row) => {
@@ -1155,13 +1155,13 @@ function App() {
         <button class="btn btn-secondary" data-action="addCoachingSubject">+ 새로운 과목 추가</button>
       </div>`;
     }
-    if (coachingStep === 2) {
+    if (step === 2) {
       return `<div class="coach-step-body"><h4>2. 플래너 인증 <span style="color:#ef4444">*</span></h4><p class="sub">이번 주 플래너 사진을 첨부해주세요. 최대 5장</p>
         <div class="coach-upload-box"><p>파일/사진 첨부 박스</p><input type="file" class="coach-hidden-file" data-field="coachPlannerFiles" accept="image/*" multiple /><button class="btn btn-secondary" data-action="openPlannerFilePicker">사진 추가하기</button></div>
         <div class="coach-thumb-list">${coachingPlannerFiles.length ? `<p class="sub">사진 ${coachingPlannerFiles.length}장 첨부됨</p>${coachingPlannerFiles.map((file, idx) => `<div class="coach-thumb"><span>${file.name}</span><button data-action="removePlannerPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}` : '<p class="sub">첨부된 사진이 없습니다.</p>'}</div>
       </div>`;
     }
-    if (coachingStep === 3) {
+    if (step === 3) {
       const examTypes = ['미응시', '교내', '평가원/교육청', '사설'];
       return `<div class="coach-step-body"><h4>3. 모의고사 응시 여부 <span style="color:#ef4444">*</span></h4><p class="sub">이번 주 사설 모의고사 또는 학력평가를 응시했나요?</p>
         <div class="coach-choice-row">${examTypes.map((type) => `<button class="planner-pill ${coachingExamType===type?'active':''}" data-action="setCoachingExamType" data-coach-exam="${type}">${type}</button>`).join('')}</div>
@@ -1178,7 +1178,7 @@ function App() {
         </div>` : ''}
       </div>`;
     }
-    if (coachingStep === 4) {
+    if (step === 4) {
       const reasons = ['계획 과다', '실전 감각 저하', '컨디션/건강', '기타'];
       return `<div class="coach-step-body"><h4>4. 최근 2주 학업 추이 <span style="color:#ef4444">*</span></h4><p class="sub">최근 2주간 학습 흐름이 어땠나요?</p>
         <div class="coach-choice-row">${['상승', '유지', '하락'].map((v) => `<button class="planner-pill ${coachingTrend===v?'active':''}" data-action="setCoachingTrend" data-coach-trend="${v}">${v}</button>`).join('')}</div>
@@ -1191,9 +1191,30 @@ function App() {
       7: ['7. 튜터에게 묻고 싶은 질문', '이번 주 피드백에서 꼭 답변받고 싶은 질문을 적어주세요.', 'step7', '예: 수학은 기출을 반복하는 게 나을까요, N제를 늘리는 게 나을까요?'],
       8: ['8. 기타 멘탈 관리', '슬럼프, 불안감 등 학습 외적인 고민이 있다면 자유롭게 적어주세요.', 'step8', '자유롭게 작성해주세요.']
     };
-    const [title, desc, key, placeholder] = stepMap[coachingStep];
+    const [title, desc, key, placeholder] = stepMap[step];
     const value = coachingAnswers[key] || '';
     return `<div class="coach-step-body"><h4>${title}</h4><p class="sub">${desc}</p><textarea class="planner-input coach-textarea" data-coach-answer="${key}" maxlength="200" placeholder="${placeholder}">${value}</textarea><p class="coach-count" data-coach-count="${key}">${value.length}/200</p></div>`;
+  };
+  const coachingStepBody = () => coachingStepBodyByStep(coachingStep);
+  const getCurrentCoachingStep = () => {
+    if (!(isIOSSafari() && screen === 'strategy')) return coachingStep;
+    const modal = document.querySelector('.coach-sheet');
+    return Number(modal?.dataset.currentStep || coachingStep || 1);
+  };
+  const setCoachingStepDom = (step) => {
+    const modal = document.querySelector('.coach-sheet');
+    if (!modal) return false;
+    const bounded = Math.max(1, Math.min(8, Number(step) || 1));
+    modal.dataset.currentStep = String(bounded);
+    const body = modal.querySelector('.coach-sheet-body');
+    if (body) body.innerHTML = coachingStepBodyByStep(bounded);
+    const stepText = modal.querySelector('.coach-sheet-head p');
+    if (stepText) stepText.textContent = `${bounded} / 8 단계`;
+    const prevBtn = modal.querySelector('[data-action="coachingPrev"]');
+    const nextBtn = modal.querySelector('[data-action="coachingNext"]');
+    if (prevBtn) prevBtn.toggleAttribute('disabled', bounded === 1);
+    if (nextBtn) nextBtn.textContent = bounded === 8 ? '작성 완료 및 제출' : '다음 단계';
+    return true;
   };
 
   const designV2StyleTag = `<style>
@@ -1888,7 +1909,7 @@ function App() {
           ${selectedCoachingReports.length ? `<div class="coach-report-list">${selectedCoachingReports.map((report) => `<button class="coach-report-card" data-action="downloadCoachingPdf" data-pdf-path="${report.pdfPath}"><div><b>${report.title}</b><p>${report.date}</p></div><div class="coach-report-side"><span class="badge coach-pdf-badge">PDF</span><span class="coach-report-arrow">›</span></div></button>`).join('')}</div>` : `<div class="coach-empty">아직 도착한 피드백 리포트가 없습니다.</div>`}
         </div>
         ${coachingSheetOpen ? `<div class="coach-sheet-overlay" data-action="closeCoachingSheet">
-          <section class="coach-sheet" data-action="noopModal">
+          <section class="coach-sheet" data-action="noopModal" data-current-step="${coachingStep}">
             <div class="coach-sheet-head"><div><h3>26년 4월 4주차 학습점검</h3><p>${coachingStep} / 8 단계</p></div><button class="coach-close" data-action="closeCoachingSheet">✕</button></div>
             <div class="coach-sheet-body">${coachingStepBody()}</div>
             <div class="coach-sheet-footer"><button class="btn btn-secondary" data-action="coachingPrev" ${coachingStep===1?'disabled':''}>이전</button><button class="btn btn-primary" data-action="coachingNext">${coachingStep===8?'작성 완료 및 제출':'다음 단계'}</button></div>
@@ -2752,12 +2773,18 @@ function App() {
       setCoachingDropReasons((prev) => (prev.includes(reason) ? prev.filter((item) => item !== reason) : [...prev, reason]));
     }
     if (action === 'coachingPrev') {
-      if (coachingStep <= 1) return;
+      const currentStep = getCurrentCoachingStep();
+      if (currentStep <= 1) return;
+      if (isIOSSafari() && screen === 'strategy' && coachingSheetOpen) {
+        setCoachingStepDom(currentStep - 1);
+        return;
+      }
       setCoachingStep((prev) => Math.max(1, prev - 1));
     }
     if (action === 'coachingNext') {
-      if (coachingStep === 1) syncStep1FromDom();
-      if (isIOSSafari() && screen === 'strategy' && coachingStep === 3) {
+      const currentStep = getCurrentCoachingStep();
+      if (currentStep === 1) syncStep1FromDom();
+      if (isIOSSafari() && screen === 'strategy' && currentStep === 3) {
         const nextScores = {};
         document.querySelectorAll('[data-coach-field]').forEach((input) => {
           const key = input.getAttribute('data-coach-field');
@@ -2765,20 +2792,24 @@ function App() {
         });
         setCoachingExamScores((prev) => ({ ...prev, ...nextScores }));
       }
-      if (coachingStep === 1) {
+      if (currentStep === 1) {
         const invalid = coachingSubjectRows.some((r) => !String(r.detail || '').trim() || !String(r.planned || '').trim() || !String(r.actual || '').trim());
         if (invalid) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
       }
-      if (coachingStep === 2 && coachingPlannerFiles.length === 0) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
-      if (coachingStep === 3) {
+      if (currentStep === 2 && coachingPlannerFiles.length === 0) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
+      if (currentStep === 3) {
         if (!coachingExamType) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
         if (coachingExamType !== '미응시' && (!String(coachingExamScores.koreanRaw || '').trim() || !String(coachingExamScores.mathRaw || '').trim() || !String(coachingExamScores.englishGrade || '').trim() || !String(coachingExamScores.inq1Raw || '').trim() || !String(coachingExamScores.inq2Raw || '').trim())) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
       }
-      if (coachingStep === 4 && !coachingTrend) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
-      if (coachingStep >= 8) {
+      if (currentStep === 4 && !coachingTrend) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
+      if (currentStep >= 8) {
         setCoachingSheetOpen(false);
         setCoachingSubmitted(true);
         window.alert('코칭 요청이 제출되었습니다.\n튜터 피드백이 도착하면 학습 코칭 페이지에서 확인할 수 있어요.');
+        return;
+      }
+      if (isIOSSafari() && screen === 'strategy' && coachingSheetOpen) {
+        setCoachingStepDom(currentStep + 1);
         return;
       }
       setCoachingStep((prev) => Math.min(8, prev + 1));
