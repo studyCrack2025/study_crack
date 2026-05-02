@@ -249,6 +249,24 @@ function App() {
       }
     });
   };
+  const runAfterViewportStable = (callback) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(callback);
+    });
+  };
+  const preserveOB5Scroll = (callback) => {
+    if (typeof window === 'undefined' || screen !== 'ob5' || !isIOSSafari()) {
+      callback();
+      return;
+    }
+    const y = window.scrollY;
+    callback();
+    runAfterViewportStable(() => {
+      if (y > 0 && window.scrollY === 0) {
+        window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+      }
+    });
+  };
 
   useEffect(() => {
     console.log('[MOUNT]', 'App');
@@ -1656,7 +1674,7 @@ function App() {
          <p class="analysis-title">핵심 전략</p>
          <ol class="ob-strategy"><li><b>수학 68점 → 80점</b><p>합격 가능성 상승 기여도 가장 큼</p></li><li><b>탐구1 70점 → 76점</b><p>단기간 상승 효율 높음</p></li><li><b>영어 77점 유지</b><p>현재 수준 유지 전략</p></li></ol>
        </div>`}
-       </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="startStandard">Standard로 시작하기</button><button class="auth-link-btn" data-action="completeOnboarding">홈으로 이동</button></div></div>`,
+       </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button type="button" class="cta-button" data-action="startStandard">Standard로 시작하기</button><button type="button" class="auth-link-btn" data-action="completeOnboarding">홈으로 이동</button></div></div>`,
       false
     ),
     authLogin: layout(`<div class="auth-screen">
@@ -2044,11 +2062,13 @@ function App() {
         setOnboardingLoadingText('학습 성향 분석중...');
         setTimeout(() => setOnboardingLoadingText('효율적인 공부법 찾는중...'), 1500);
         setTimeout(() => {
-          armScrollGuard(1400);
-          markStableScrollPosition();
-          setOnboardingLoading(false);
-          goto('ob5');
-          restoreIfUnexpectedTopJump();
+          preserveOB5Scroll(() => {
+            armScrollGuard(1400);
+            markStableScrollPosition();
+            setOnboardingLoading(false);
+            goto('ob5');
+            restoreIfUnexpectedTopJump();
+          });
         }, 3000);
         return;
       }
@@ -2457,13 +2477,17 @@ function App() {
       goto(completed ? 'home' : 'ob1', true);
     }
     if (action === 'completeOnboarding') {
-      localStorage.setItem('studycrack_onboarding_completed', 'true');
-      goto('home', false);
+      preserveOB5Scroll(() => {
+        localStorage.setItem('studycrack_onboarding_completed', 'true');
+        goto('home', false);
+      });
     }
     if (action === 'startStandard') {
-      localStorage.setItem('studycrack_onboarding_completed', 'true');
-      setSelectedPlan('Standard');
-      goto('proIntro');
+      preserveOB5Scroll(() => {
+        localStorage.setItem('studycrack_onboarding_completed', 'true');
+        setSelectedPlan('Standard');
+        goto('proIntro');
+      });
     }
     if (action === 'retryInit') initializeApp();
     if (action === 'noopModal') return;
