@@ -205,6 +205,7 @@ function App() {
   const touchStartXRef = useRef(null);
   const touchLastXRef = useRef(null);
   const touchTargetRef = useRef('');
+  const touchCardRef = useRef(null);
   const suppressClickUntilRef = useRef(0);
   const lastStableScrollYRef = useRef(0);
   const scrollGuardRef = useRef({ until: 0, y: 0, restoring: false });
@@ -2643,6 +2644,13 @@ function App() {
       if (target?.closest?.('.score-journey-scroll')) {
         touchTargetRef.current = 'score';
         touchStartXRef.current = clientX;
+        touchCardRef.current = target.closest('.score-journey-card');
+        if (screen === 'ob5' && touchCardRef.current) {
+          touchCardRef.current.dataset.dragStartX = String(clientX);
+          touchCardRef.current.dataset.dragging = '1';
+          const track = touchCardRef.current.querySelector('.score-journey-track');
+          if (track) track.style.setProperty('--score-slide-transition', '0s');
+        }
         return;
       }
       touchTargetRef.current = '';
@@ -2662,8 +2670,21 @@ function App() {
         const clamped = Math.max(-118, Math.min(118, delta * resistance));
         setHomeDragOffset(clamped);
       } else if (touchTargetRef.current === 'score') {
-        const clamped = Math.max(-96, Math.min(96, delta));
-        setScoreDragOffset(clamped);
+        if (screen === 'ob5') {
+          const card = touchCardRef.current;
+          if (!card || card.dataset.dragging !== '1') return;
+          const currentView = card.querySelector('.score-journey-segment button.active')?.getAttribute('data-score-view') || 'target';
+          const base = currentView === 'target' ? -50 : 0;
+          const offsetPct = Math.max(-50, Math.min(50, (delta / Math.max(card.clientWidth || 1, 1)) * 100));
+          const track = card.querySelector('.score-journey-track');
+          if (track) {
+            track.style.setProperty('--score-slide-x', `calc(${base}% + ${offsetPct}%)`);
+            track.style.setProperty('--score-slide-transition', '0s');
+          }
+        } else {
+          const clamped = Math.max(-96, Math.min(96, delta));
+          setScoreDragOffset(clamped);
+        }
       }
     };
 
@@ -2674,7 +2695,7 @@ function App() {
       touchStartXRef.current = null;
       touchLastXRef.current = null;
       setHomeDragOffset(0);
-      setScoreDragOffset(0);
+      if (screen !== 'ob5') setScoreDragOffset(0);
       const absDelta = Math.abs(delta);
       const swipeThreshold = touchTargetRef.current === 'home' ? 22 : 26;
       if (absDelta < swipeThreshold) {
@@ -2692,14 +2713,36 @@ function App() {
           return next;
         });
       } else if (touchTargetRef.current === 'score') {
-        setActiveScoreView((prev) => {
-          const next = delta < 0 ? 'target' : 'current';
-          if (next === prev) return prev;
-          setScoreSlideMotion(next === 'target' ? 'motion-next' : 'motion-prev');
-          return next;
-        });
+        if (screen === 'ob5') {
+          const card = touchCardRef.current;
+          if (card) {
+            const threshold = Math.max(40, (card.clientWidth || 0) * 0.15);
+            const currentView = card.querySelector('.score-journey-segment button.active')?.getAttribute('data-score-view') || 'target';
+            let nextView = currentView;
+            if (delta < -threshold) nextView = 'target';
+            if (delta > threshold) nextView = 'current';
+            card.querySelectorAll('.score-journey-segment button').forEach((btn) => {
+              btn.classList.toggle('active', btn.getAttribute('data-score-view') === nextView);
+            });
+            const track = card.querySelector('.score-journey-track');
+            if (track) {
+              track.style.setProperty('--score-slide-x', nextView === 'target' ? '-50%' : '0%');
+              track.style.setProperty('--score-slide-transition', 'transform .56s cubic-bezier(.22,.61,.36,1)');
+            }
+            delete card.dataset.dragStartX;
+            delete card.dataset.dragging;
+          }
+        } else {
+          setActiveScoreView((prev) => {
+            const next = delta < 0 ? 'target' : 'current';
+            if (next === prev) return prev;
+            setScoreSlideMotion(next === 'target' ? 'motion-next' : 'motion-prev');
+            return next;
+          });
+        }
       }
       touchTargetRef.current = '';
+      touchCardRef.current = null;
       restoreIfUnexpectedTopJump();
     };
 
@@ -2711,7 +2754,12 @@ function App() {
       touchLastXRef.current = null;
       touchTargetRef.current = '';
       setHomeDragOffset(0);
-      setScoreDragOffset(0);
+      if (screen !== 'ob5') setScoreDragOffset(0);
+      if (touchCardRef.current) {
+        delete touchCardRef.current.dataset.dragStartX;
+        delete touchCardRef.current.dataset.dragging;
+      }
+      touchCardRef.current = null;
     };
     const onPointerDown = (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -2724,7 +2772,12 @@ function App() {
       touchLastXRef.current = null;
       touchTargetRef.current = '';
       setHomeDragOffset(0);
-      setScoreDragOffset(0);
+      if (screen !== 'ob5') setScoreDragOffset(0);
+      if (touchCardRef.current) {
+        delete touchCardRef.current.dataset.dragStartX;
+        delete touchCardRef.current.dataset.dragging;
+      }
+      touchCardRef.current = null;
     };
 
     document.addEventListener('touchstart', onNativeTouchStart, { passive: true, capture: true });
