@@ -2214,7 +2214,27 @@ function App() {
       setTargetMajor(actionEl.getAttribute('data-target-major'));
       afterSafariViewportStable(() => setTargetOpen(false));
     }
-    if (action === 'setAnalysisMode') setAnalysisMode(actionEl.getAttribute('data-analysis-mode') || 'summary');
+    if (action === 'setAnalysisMode') {
+      const mode = actionEl.getAttribute('data-analysis-mode') || 'summary';
+      if (isIOSSafari() && screen === 'analysis') {
+        const tabs = document.querySelectorAll('.analysis-v2-tab');
+        tabs.forEach((tabEl) => {
+          tabEl.classList.toggle('active', tabEl.getAttribute('data-analysis-mode') === mode);
+        });
+        document.body.dataset.analysisMode = mode;
+        const summarySection = document.querySelector('.analysis-v2-summary');
+        const simulationSection = document.querySelector('.analysis-v2-compare-card');
+        if (summarySection && simulationSection) {
+          const showSummary = mode === 'summary';
+          summarySection.style.display = showSummary ? '' : 'none';
+          summarySection.hidden = !showSummary;
+          simulationSection.style.display = showSummary ? 'none' : '';
+          simulationSection.hidden = showSummary;
+          return;
+        }
+      }
+      setAnalysisMode(mode);
+    }
     if (action === 'setScoreView') {
       const nextView = actionEl.getAttribute('data-score-view') || 'current';
       if (isIOSSafari()) {
