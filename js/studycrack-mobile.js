@@ -249,19 +249,24 @@ function App() {
       }
     });
   };
-  const ob5MountedRef = useRef(false);
-  useEffect(() => {
-    if (process.env.NODE_ENV !== 'development') return;
-    if (screen === 'ob5' && !ob5MountedRef.current) {
-      ob5MountedRef.current = true;
-      console.log('[OB5 MOUNT]');
+  const runAfterViewportStable = (callback) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(callback);
+    });
+  };
+  const preserveOB5Scroll = (callback) => {
+    if (typeof window === 'undefined' || screen !== 'ob5' || !isIOSSafari()) {
+      callback();
       return;
     }
-    if (screen !== 'ob5' && ob5MountedRef.current) {
-      ob5MountedRef.current = false;
-      console.log('[OB5 UNMOUNT]');
-    }
-  }, [screen]);
+    const y = window.scrollY;
+    callback();
+    runAfterViewportStable(() => {
+      if (y > 0 && window.scrollY === 0) {
+        window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+      }
+    });
+  };
 
   useEffect(() => {
     console.log('[MOUNT]', 'App');
@@ -1652,7 +1657,7 @@ function App() {
        <p class="sub ob-subcopy">현재 성적에서 합격컷까지,<br/>가장 효율적인 점수 상승 루트를 보여드릴게요.</p>
        <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>무작정 전 과목을 올리는 게 아니라, 합격에 가장 크게 기여하는 과목부터 잡아야 해요!</p></div>
        <div class="card ob-card">${scoreJourneyCard('최소 노력 대비 합격 도달 성적')}</div>
-       <div class="card ob-card ob-period-card on-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 3개월 내 도달 예상</b><p>주간 플래너 피드백과 학습 방향 코칭 제공</p></div>
+       ${ob3IsAnalyzing ? `<div class="loading-overlay"><div class="loading-box"><div class="dots">● ● ●</div><div>분석중입니다</div><div>잠시만 기다려주세요</div></div></div>` : `<div class="card ob-card ob-period-card on-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 3개월 내 도달 예상</b><p>주간 플래너 피드백과 학습 방향 코칭 제공</p></div>
        <div class="card ob-card">
          <p class="analysis-title">합격 가능성 변화</p>
          <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${gaugeTarget}점</b></div></div>
@@ -1668,8 +1673,7 @@ function App() {
        <div class="card ob-card">
          <p class="analysis-title">핵심 전략</p>
          <ol class="ob-strategy"><li><b>수학 68점 → 80점</b><p>합격 가능성 상승 기여도 가장 큼</p></li><li><b>탐구1 70점 → 76점</b><p>단기간 상승 효율 높음</p></li><li><b>영어 77점 유지</b><p>현재 수준 유지 전략</p></li></ol>
-       </div>
-       ${ob3IsAnalyzing ? `<div class="loading-overlay"><div class="loading-box"><div class="dots">● ● ●</div><div>분석중입니다</div><div>잠시만 기다려주세요</div></div></div>` : ''}
+       </div>`}
        </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button type="button" class="cta-button" data-action="startStandard">Standard로 시작하기</button><button type="button" class="auth-link-btn" data-action="completeOnboarding">홈으로 이동</button></div></div>`,
       false
     ),
@@ -2058,11 +2062,13 @@ function App() {
         setOnboardingLoadingText('학습 성향 분석중...');
         setTimeout(() => setOnboardingLoadingText('효율적인 공부법 찾는중...'), 1500);
         setTimeout(() => {
-          armScrollGuard(1400);
-          markStableScrollPosition();
-          setOnboardingLoading(false);
-          goto('ob5');
-          restoreIfUnexpectedTopJump();
+          preserveOB5Scroll(() => {
+            armScrollGuard(1400);
+            markStableScrollPosition();
+            setOnboardingLoading(false);
+            goto('ob5');
+            restoreIfUnexpectedTopJump();
+          });
         }, 3000);
         return;
       }
@@ -2471,13 +2477,17 @@ function App() {
       goto(completed ? 'home' : 'ob1', true);
     }
     if (action === 'completeOnboarding') {
-      localStorage.setItem('studycrack_onboarding_completed', 'true');
-      goto('home', false);
+      preserveOB5Scroll(() => {
+        localStorage.setItem('studycrack_onboarding_completed', 'true');
+        goto('home', false);
+      });
     }
     if (action === 'startStandard') {
-      localStorage.setItem('studycrack_onboarding_completed', 'true');
-      setSelectedPlan('Standard');
-      goto('proIntro');
+      preserveOB5Scroll(() => {
+        localStorage.setItem('studycrack_onboarding_completed', 'true');
+        setSelectedPlan('Standard');
+        goto('proIntro');
+      });
     }
     if (action === 'retryInit') initializeApp();
     if (action === 'noopModal') return;
