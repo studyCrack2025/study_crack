@@ -2576,13 +2576,16 @@ function App() {
       setStudySubjectSheetOpen(true);
     }
     if (action === 'toggleStudyBreakdown') {
-      if (isIOSSafari()) {
+      if (isIOSSafari() && screen === 'home') {
         const list = document.querySelector('.home-breakdown-list');
-        const btn = document.querySelector('.home-breakdown-toggle');
-        if (list && btn) {
-          const open = list.style.display === 'none';
-          list.style.display = open ? '' : 'none';
-          btn.textContent = open ? '접기' : '펼쳐보기';
+        const toggleBtn = document.querySelector('.home-breakdown-toggle');
+        if (list && toggleBtn) {
+          const hiddenNow = list.hidden || list.style.display === 'none';
+          const nextOpen = hiddenNow;
+          list.hidden = !nextOpen;
+          list.style.display = nextOpen ? '' : 'none';
+          toggleBtn.textContent = nextOpen ? '접기' : '펼쳐보기';
+          toggleBtn.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
           return;
         }
       }
