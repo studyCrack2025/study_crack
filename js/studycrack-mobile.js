@@ -579,110 +579,6 @@ function App() {
     window.__studycrackAppBooted = true;
   }, []);
 
-  const debugScrollEnabled = useMemo(() => {
-    if (typeof window === 'undefined') return false;
-    const params = new URLSearchParams(window.location.search || '');
-    window.__SCROLL_DEBUG_ENABLED__ = params.get('debugScroll') === '1' || process.env.NODE_ENV === 'development';
-    window.__SCROLL_DEBUG_LOGS__ = window.__SCROLL_DEBUG_LOGS__ || [];
-    if (window.__SCROLL_DEBUG_ENABLED__ && !window.__SCROLL_DEBUG_USAGE_LOGGED__) {
-      console.log('Scroll debug enabled. Run copyScrollDebugLogs() after reproducing the issue.');
-      window.__SCROLL_DEBUG_USAGE_LOGGED__ = true;
-    }
-    return window.__SCROLL_DEBUG_ENABLED__;
-  }, []);
-  const addScrollDebugLog = useCallback((type, payload = {}) => {
-    if (typeof window === 'undefined' || !window.__SCROLL_DEBUG_ENABLED__) return;
-    const logs = window.__SCROLL_DEBUG_LOGS__ || [];
-    logs.push({
-      time: new Date().toISOString(),
-      type,
-      payload,
-      y: window.scrollY,
-      url: location.href,
-      activeElement: document.activeElement?.tagName || null,
-      activeClass: document.activeElement?.className || null
-    });
-    if (logs.length > 100) logs.shift();
-    window.__SCROLL_DEBUG_LOGS__ = logs;
-    console.log('[SCROLL_DEBUG]', type, payload);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!debugScrollEnabled) return;
-    addScrollDebugLog('MOUNT', { component: 'App' });
-    return () => addScrollDebugLog('UNMOUNT', { component: 'App' });
-  }, [debugScrollEnabled, addScrollDebugLog]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!debugScrollEnabled) return;
-    if (window.__studycrackScrollDebugInstalled) return;
-    window.__studycrackScrollDebugInstalled = true;
-    const originalScrollTo = window.scrollTo.bind(window);
-    window.scrollTo = (...args) => {
-      console.trace('[DEBUG window.scrollTo called]', args);
-      addScrollDebugLog('window.scrollTo', { args });
-      return originalScrollTo(...args);
-    };
-    const originalScroll = window.scroll.bind(window);
-    window.scroll = (...args) => {
-      console.trace('[DEBUG window.scroll called]', args);
-      addScrollDebugLog('window.scroll', { args });
-      return originalScroll(...args);
-    };
-    const originalScrollIntoView = Element.prototype.scrollIntoView;
-    Element.prototype.scrollIntoView = function (...args) {
-      console.trace('[DEBUG scrollIntoView called]', this, args);
-      addScrollDebugLog('scrollIntoView', { tag: this?.tagName, cls: this?.className, args });
-      return originalScrollIntoView.apply(this, args);
-    };
-    let lastScrollLogAt = 0;
-    let lastVVLogAt = 0;
-    const onScroll = () => {
-      const now = Date.now();
-      if (now - lastScrollLogAt < 300) return;
-      lastScrollLogAt = now;
-      addScrollDebugLog('scroll', { y: window.scrollY });
-    };
-    const onVvResize = () => {
-      const now = Date.now();
-      if (now - lastVVLogAt < 300) return;
-      lastVVLogAt = now;
-      addScrollDebugLog('visualViewport.resize', { height: window.visualViewport?.height, offsetTop: window.visualViewport?.offsetTop });
-    };
-    const onFocusin = () => addScrollDebugLog('focusin');
-    const onFocusout = () => addScrollDebugLog('focusout');
-    const onBeforeUnload = () => addScrollDebugLog('beforeunload');
-    const onPopstate = () => addScrollDebugLog('popstate');
-    const onHashchange = () => addScrollDebugLog('hashchange');
-    const onSubmitCapture = (e) => {
-      e.preventDefault();
-      addScrollDebugLog('formSubmitPrevented', { target: e.target?.className || e.target?.tagName || 'unknown' });
-      console.trace('[form submit prevented]', e.target);
-    };
-    window.copyScrollDebugLogs = async () => {
-      const text = JSON.stringify(window.__SCROLL_DEBUG_LOGS__ || [], null, 2);
-      try {
-        await navigator.clipboard.writeText(text);
-        console.log('[SCROLL_DEBUG] copied');
-      } catch (e) {
-        console.log(text);
-      }
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.visualViewport?.addEventListener('resize', onVvResize);
-    window.addEventListener('focusin', onFocusin);
-    window.addEventListener('focusout', onFocusout);
-    window.addEventListener('beforeunload', onBeforeUnload);
-    window.addEventListener('popstate', onPopstate);
-    window.addEventListener('hashchange', onHashchange);
-    document.addEventListener('submit', onSubmitCapture, true);
-  }, [debugScrollEnabled, addScrollDebugLog]);
-
-  useEffect(() => { if (debugScrollEnabled) addScrollDebugLog('route', { screen, tab, loading }); }, [screen, tab, loading, debugScrollEnabled, addScrollDebugLog]);
-
-
   useEffect(() => {
     localStorage.setItem('scores', JSON.stringify(scores));
   }, [scores]);
@@ -2897,10 +2793,9 @@ function App() {
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>추가중입니다.</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
   const rendered = `${designV2StyleTag}${renderedBase}${analysisOverlay}${onboardingOverlay}${addingUniversityOverlay}${loading ? loadingOverlayUi : ''}`;
-  const renderedWithButtonType = rendered.replace(/<button(?![^>]*\btype=)/g, '<button type="button"');
 
 
-  return <div className="ios-scroll-root" onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: renderedWithButtonType }} />;
+  return <div className="ios-scroll-root" onClick={onClick} onInput={onInput} onChange={onChange} onBlur={onBlur} dangerouslySetInnerHTML={{ __html: rendered }} />;
 
 }
 
