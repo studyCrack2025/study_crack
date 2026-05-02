@@ -2866,6 +2866,16 @@ function App() {
     if (action === 'retryInit') initializeApp();
     if (action === 'noopModal') return;
     if (action === 'setPlannerSubject') {
+      if (isIOSSafari() && screen === 'planner') {
+        const subject = actionEl.getAttribute('data-subject') || actionEl.getAttribute('data-planner-subject') || String(actionEl.textContent || '').trim();
+        document.body.dataset.selectedPlannerSubject = subject;
+        const group = actionEl.closest('.planner-subjects, .subject-row, .planner-pill-row') || document;
+        group.querySelectorAll('[data-subject], .planner-pill, .subject-button').forEach((btn) => {
+          btn.classList.toggle('active', btn === actionEl);
+          btn.classList.toggle('selected', btn === actionEl);
+        });
+        return;
+      }
       if (isIOSSafari() && screen === 'plannerAdd') {
         const subject = actionEl.getAttribute('data-planner-subject') || '';
         document.body.dataset.plannerSelectedSubject = subject;
@@ -2880,10 +2890,13 @@ function App() {
     if (action === 'removePlannerItem') {
       const plannerId = actionEl.getAttribute('data-planner-id');
       if (isIOSSafari() && screen === 'planner') {
-        const item = actionEl.closest('.planner-item');
+        const item = actionEl.closest('[data-planner-id], .planner-item, .planner-card');
+        const itemId = item?.getAttribute('data-planner-id') || plannerId || '';
         if (item) {
           item.style.display = 'none';
-          document.body.dataset.pendingPlannerDelete = `${document.body.dataset.pendingPlannerDelete || ''},${plannerId}`;
+          if (itemId) document.body.dataset.pendingPlannerDelete = itemId;
+          window.__pendingPlannerDeletes__ = window.__pendingPlannerDeletes__ || [];
+          if (itemId) window.__pendingPlannerDeletes__.push(itemId);
           return;
         }
       }
@@ -2892,12 +2905,13 @@ function App() {
     if (action === 'togglePlannerDone') {
       const plannerId = actionEl.getAttribute('data-planner-id');
       if (isIOSSafari() && screen === 'planner') {
-        const item = actionEl.closest('.planner-item');
+        const item = actionEl.closest('[data-planner-id], .planner-item, .planner-card');
         if (item) {
-          const nextDone = item.classList.contains('done') ? '0' : '1';
-          item.classList.toggle('done', nextDone === '1');
-          actionEl.dataset.completed = nextDone;
-          actionEl.textContent = nextDone === '1' ? '✓ 완료!' : '✓ 완료';
+          const nextCompleted = actionEl.dataset.completed !== 'true';
+          actionEl.dataset.completed = String(nextCompleted);
+          item.classList.toggle('completed', nextCompleted);
+          item.classList.toggle('done', nextCompleted);
+          actionEl.textContent = nextCompleted ? '✓ 완료!' : '✓ 완료';
           return;
         }
       }
