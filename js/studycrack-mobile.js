@@ -471,6 +471,15 @@ function App() {
     setOb3IsAnalyzing(true);
     const t = setTimeout(() => {
       armScrollGuard(1200);
+      if (isIOSSafari()) {
+        const loading = document.querySelector('.onboarding-shell .loading-overlay');
+        if (loading) {
+          const wrap = document.createElement('div');
+          wrap.innerHTML = `<div class="card ob-card ob-period-card on-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 3개월 내 도달 예상</b><p>주간 플래너 피드백과 학습 방향 코칭 제공</p></div>`;
+          loading.replaceWith(wrap.firstChild);
+          return;
+        }
+      }
       setOb3IsAnalyzing(false);
     }, 1500);
     return () => {
@@ -2211,6 +2220,16 @@ function App() {
     }
     if (action === 'toggleTarget') preserveY(() => setTargetOpen((v) => !v));
     if (action === 'selectTarget') {
+      if (isIOSSafari() && screen === 'ob4') {
+        const major = actionEl.getAttribute('data-target-major') || '';
+        document.body.dataset.ob4SelectedUniversity = major;
+        const group = actionEl.closest('.ob-uni-list');
+        group?.querySelectorAll('.ob-uni-item').forEach((btn) => {
+          btn.classList.toggle('active', btn === actionEl);
+          btn.classList.toggle('selected', btn === actionEl);
+        });
+        return;
+      }
       setTargetMajor(actionEl.getAttribute('data-target-major'));
       afterSafariViewportStable(() => setTargetOpen(false));
     }
@@ -2665,6 +2684,14 @@ function App() {
     }
     if (action === 'coachingNext') {
       if (coachingStep === 1) syncStep1FromDom();
+      if (isIOSSafari() && screen === 'strategy' && coachingStep === 3) {
+        const nextScores = {};
+        document.querySelectorAll('[data-coach-field]').forEach((input) => {
+          const key = input.getAttribute('data-coach-field');
+          if (key) nextScores[key] = input.value;
+        });
+        setCoachingExamScores((prev) => ({ ...prev, ...nextScores }));
+      }
       if (coachingStep === 1) {
         const invalid = coachingSubjectRows.some((r) => !String(r.detail || '').trim() || !String(r.planned || '').trim() || !String(r.actual || '').trim());
         if (invalid) { alert('필수 입력 사항을 모두 입력해주세요'); return; }
@@ -2795,14 +2822,42 @@ function App() {
     }
     if (action === 'retryInit') initializeApp();
     if (action === 'noopModal') return;
-    if (action === 'setPlannerSubject') setPlannerDraft((prev) => ({ ...prev, subject: actionEl.getAttribute('data-planner-subject') || '' }));
+    if (action === 'setPlannerSubject') {
+      if (isIOSSafari() && screen === 'plannerAdd') {
+        const subject = actionEl.getAttribute('data-planner-subject') || '';
+        document.body.dataset.plannerSelectedSubject = subject;
+        actionEl.closest('.planner-pill-row')?.querySelectorAll('.planner-pill').forEach((pill) => {
+          pill.classList.toggle('active', pill.getAttribute('data-planner-subject') === subject);
+        });
+        return;
+      }
+      setPlannerDraft((prev) => ({ ...prev, subject: actionEl.getAttribute('data-planner-subject') || '' }));
+    }
     if (action === 'setPlannerDuration') setPlannerDraft((prev) => ({ ...prev, durationChoice: actionEl.getAttribute('data-planner-duration') || '' }));
     if (action === 'removePlannerItem') {
       const plannerId = actionEl.getAttribute('data-planner-id');
+      if (isIOSSafari() && screen === 'planner') {
+        const item = actionEl.closest('.planner-item');
+        if (item) {
+          item.style.display = 'none';
+          document.body.dataset.pendingPlannerDelete = `${document.body.dataset.pendingPlannerDelete || ''},${plannerId}`;
+          return;
+        }
+      }
       setPlannerItems((prev) => prev.filter((item) => item.id !== plannerId));
     }
     if (action === 'togglePlannerDone') {
       const plannerId = actionEl.getAttribute('data-planner-id');
+      if (isIOSSafari() && screen === 'planner') {
+        const item = actionEl.closest('.planner-item');
+        if (item) {
+          const nextDone = item.classList.contains('done') ? '0' : '1';
+          item.classList.toggle('done', nextDone === '1');
+          actionEl.dataset.completed = nextDone;
+          actionEl.textContent = nextDone === '1' ? '✓ 완료!' : '✓ 완료';
+          return;
+        }
+      }
       setPlannerItems((prev) => prev.map((item) => (item.id === plannerId ? { ...item, done: !item.done } : item)));
     }
     if (action === 'selectUniversity') {
@@ -3141,7 +3196,13 @@ function App() {
     const coachPlan = e.target.getAttribute('data-coach-plan');
     const coachActual = e.target.getAttribute('data-coach-actual');
     const coachField = e.target.getAttribute('data-coach-field');
-    if (coachField) setCoachingExamScores((prev) => ({ ...prev, [coachField]: e.target.value }));
+    if (coachField) {
+      if (isIOSSafari() && screen === 'strategy') {
+        e.target.dataset.pendingValue = e.target.value;
+      } else {
+        setCoachingExamScores((prev) => ({ ...prev, [coachField]: e.target.value }));
+      }
+    }
     if (coachDetail || coachPlan || coachActual) {
       const rowId = coachDetail || coachPlan || coachActual;
       setCoachingSubjectRows((prev) => prev.map((row) => row.id === rowId
