@@ -2061,6 +2061,26 @@ function App() {
     track.style.setProperty('--score-slide-transition', transition);
     card.dataset.scoreView = nextView;
   };
+  const ensureHomeSliderDomReady = () => {
+    const { track, activeIndex } = getHomeSliderState();
+    if (!track) return;
+    track.dataset.homeSlideIndex = String(activeIndex || 0);
+    track.style.setProperty('--home-slide-transition', 'transform .72s cubic-bezier(.22,1,.36,1)');
+  };
+  const ensureScoreJourneyDomReady = (card) => {
+    if (!card) return;
+    const active = card.querySelector('.score-journey-segment button.active')?.getAttribute('data-score-view') || 'target';
+    card.dataset.scoreView = active;
+    const track = card.querySelector('.score-journey-track');
+    if (track) {
+      track.style.setProperty('--score-slide-x', active === 'target' ? '-50%' : '0%');
+      track.style.setProperty('--score-slide-transition', 'transform .56s cubic-bezier(.22,.61,.36,1)');
+    }
+  };
+  const syncHomeSliderDomFromCurrentMarkup = () => ensureHomeSliderDomReady();
+  const syncScoreJourneyDomFromCurrentMarkup = () => {
+    document.querySelectorAll('.score-journey-card').forEach((card) => ensureScoreJourneyDomReady(card));
+  };
   const toggleHomeUiDom = (selector, open) => {
     const el = document.querySelector(selector);
     if (!el) return false;
@@ -2727,6 +2747,16 @@ function App() {
   };
 
   useEffect(() => {
+    if (!isIOSSafari()) return;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        syncHomeSliderDomFromCurrentMarkup();
+        syncScoreJourneyDomFromCurrentMarkup();
+      });
+    });
+  }, [screen]);
+
+  useEffect(() => {
     const startGesture = (target, clientX) => {
       if (typeof clientX !== 'number') return;
       if (target?.closest?.('input, textarea, select, [contenteditable="true"]')) {
@@ -2784,7 +2814,8 @@ function App() {
         if (screen === 'ob5' || isIOSSafari()) {
           const card = touchCardRef.current;
           if (!card || card.dataset.dragging !== '1') return;
-          const currentView = card.querySelector('.score-journey-segment button.active')?.getAttribute('data-score-view') || card.dataset.scoreView || 'target';
+          ensureScoreJourneyDomReady(card);
+          const currentView = card.querySelector('.score-journey-segment button.active')?.getAttribute('data-score-view') || 'target';
           const base = currentView === 'target' ? -50 : 0;
           const offsetPct = Math.max(-50, Math.min(50, (delta / Math.max(card.clientWidth || 1, 1)) * 100));
           const track = card.querySelector('.score-journey-track');
@@ -2841,7 +2872,8 @@ function App() {
           const card = touchCardRef.current;
           if (card) {
             const threshold = Math.max(40, (card.clientWidth || 0) * 0.15);
-            const currentView = card.querySelector('.score-journey-segment button.active')?.getAttribute('data-score-view') || card.dataset.scoreView || 'target';
+            ensureScoreJourneyDomReady(card);
+            const currentView = card.querySelector('.score-journey-segment button.active')?.getAttribute('data-score-view') || 'target';
             let nextView = currentView;
             if (delta < -threshold) nextView = 'target';
             if (delta > threshold) nextView = 'current';
