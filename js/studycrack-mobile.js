@@ -2043,6 +2043,24 @@ function App() {
     track.style.setProperty('--home-slide-transition', 'transform .72s cubic-bezier(.22,1,.36,1)');
     track.dataset.homeSlideIndex = String(next);
   };
+  const getScoreCardState = (baseEl) => {
+    const card = baseEl?.closest?.('.score-journey-card') || document.querySelector('.score-journey-card');
+    const track = card?.querySelector('.score-journey-track');
+    const buttons = card?.querySelectorAll('.score-journey-segment button') || [];
+    const activeView = card?.querySelector('.score-journey-segment button.active')?.getAttribute('data-score-view') || 'target';
+    return { card, track, buttons, activeView };
+  };
+  const setScoreCardDom = (baseEl, nextView, transition = 'transform .56s cubic-bezier(.22,.61,.36,1)') => {
+    const { card, track, buttons } = getScoreCardState(baseEl);
+    if (!card || !track || !buttons.length) return;
+    buttons.forEach((btn) => {
+      btn.classList.toggle('active', btn.getAttribute('data-score-view') === nextView);
+    });
+    track.classList.remove('motion-next', 'motion-prev');
+    track.style.setProperty('--score-slide-x', nextView === 'target' ? '-50%' : '0%');
+    track.style.setProperty('--score-slide-transition', transition);
+    card.dataset.scoreView = nextView;
+  };
 
   const onClick = (e) => {
     lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
@@ -2131,6 +2149,10 @@ function App() {
     if (action === 'setAnalysisMode') setAnalysisMode(actionEl.getAttribute('data-analysis-mode') || 'summary');
     if (action === 'setScoreView') {
       const nextView = actionEl.getAttribute('data-score-view') || 'current';
+      if (isIOSSafari()) {
+        setScoreCardDom(actionEl, nextView);
+        return;
+      }
       if (screen === 'ob5') {
         const card = actionEl.closest('.score-journey-card');
         if (!card) return;
@@ -2713,10 +2735,10 @@ function App() {
         const clamped = Math.max(-118, Math.min(118, delta * resistance));
         setHomeDragOffset(clamped);
       } else if (touchTargetRef.current === 'score') {
-        if (screen === 'ob5') {
+        if (screen === 'ob5' || isIOSSafari()) {
           const card = touchCardRef.current;
           if (!card || card.dataset.dragging !== '1') return;
-          const currentView = card.querySelector('.score-journey-segment button.active')?.getAttribute('data-score-view') || 'target';
+          const currentView = card.querySelector('.score-journey-segment button.active')?.getAttribute('data-score-view') || card.dataset.scoreView || 'target';
           const base = currentView === 'target' ? -50 : 0;
           const offsetPct = Math.max(-50, Math.min(50, (delta / Math.max(card.clientWidth || 1, 1)) * 100));
           const track = card.querySelector('.score-journey-track');
@@ -2738,7 +2760,9 @@ function App() {
       touchStartXRef.current = null;
       touchLastXRef.current = null;
       if (!(touchTargetRef.current === 'home' && screen === 'home')) setHomeDragOffset(0);
-      if (screen !== 'ob5') setScoreDragOffset(0);
+      if (!(touchTargetRef.current === 'score' && isIOSSafari())) {
+        if (screen !== 'ob5') setScoreDragOffset(0);
+      }
       const absDelta = Math.abs(delta);
       const swipeThreshold = touchTargetRef.current === 'home' ? 22 : 26;
       if (absDelta < swipeThreshold) {
@@ -2767,22 +2791,15 @@ function App() {
           return next;
         });
       } else if (touchTargetRef.current === 'score') {
-        if (screen === 'ob5') {
+        if (screen === 'ob5' || isIOSSafari()) {
           const card = touchCardRef.current;
           if (card) {
             const threshold = Math.max(40, (card.clientWidth || 0) * 0.15);
-            const currentView = card.querySelector('.score-journey-segment button.active')?.getAttribute('data-score-view') || 'target';
+            const currentView = card.querySelector('.score-journey-segment button.active')?.getAttribute('data-score-view') || card.dataset.scoreView || 'target';
             let nextView = currentView;
             if (delta < -threshold) nextView = 'target';
             if (delta > threshold) nextView = 'current';
-            card.querySelectorAll('.score-journey-segment button').forEach((btn) => {
-              btn.classList.toggle('active', btn.getAttribute('data-score-view') === nextView);
-            });
-            const track = card.querySelector('.score-journey-track');
-            if (track) {
-              track.style.setProperty('--score-slide-x', nextView === 'target' ? '-50%' : '0%');
-              track.style.setProperty('--score-slide-transition', 'transform .56s cubic-bezier(.22,.61,.36,1)');
-            }
+            setScoreCardDom(card, nextView);
             delete card.dataset.dragStartX;
             delete card.dataset.dragging;
           }
@@ -2808,7 +2825,9 @@ function App() {
       touchLastXRef.current = null;
       touchTargetRef.current = '';
       if (screen !== 'home') setHomeDragOffset(0);
-      if (screen !== 'ob5') setScoreDragOffset(0);
+      if (!(touchTargetRef.current === 'score' && isIOSSafari())) {
+        if (screen !== 'ob5') setScoreDragOffset(0);
+      }
       if (touchCardRef.current) {
         delete touchCardRef.current.dataset.dragStartX;
         delete touchCardRef.current.dataset.dragging;
@@ -2826,7 +2845,9 @@ function App() {
       touchLastXRef.current = null;
       touchTargetRef.current = '';
       if (screen !== 'home') setHomeDragOffset(0);
-      if (screen !== 'ob5') setScoreDragOffset(0);
+      if (!(touchTargetRef.current === 'score' && isIOSSafari())) {
+        if (screen !== 'ob5') setScoreDragOffset(0);
+      }
       if (touchCardRef.current) {
         delete touchCardRef.current.dataset.dragStartX;
         delete touchCardRef.current.dataset.dragging;
