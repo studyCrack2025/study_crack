@@ -156,6 +156,8 @@ function App() {
   const [proEliteMonth, setProEliteMonth] = useState('26년 4월');
   const [addingUniversity, setAddingUniversity] = useState(false);
   const [showStudyBreakdown, setShowStudyBreakdown] = useState(false);
+  const [expandedBreakdownSubject, setExpandedBreakdownSubject] = useState('');
+  const [studySubjectSheetOnlyPlanned, setStudySubjectSheetOnlyPlanned] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const [withdrawPassword, setWithdrawPassword] = useState('');
@@ -1036,6 +1038,16 @@ function App() {
   const visibleSubjectChips = subjectChipSource.slice(0, 4);
   const hiddenSubjectCount = Math.max(subjectChipSource.length - 4, 0);
   const plannedSubjectOptions = Array.from(new Set(todayPlannerItems.map((item) => `${item.subject}${item.content ? ` - ${item.content}` : ''}`)));
+  const breakdownSubjects = Array.from(new Set(['국어', '수학', '영어', '탐구', '기타', ...Object.keys(todaySubjectsWithTimer), ...todayPlannerItems.map((item) => item.subject || '기타')]));
+  const breakdownDetailMap = breakdownSubjects.reduce((acc, subject) => {
+    const rows = todayPlannerItems.filter((item) => (item.subject || '기타') === subject).map((item) => ({
+      content: item.content || '학습 내용 없음',
+      plannedHour: ((item.minutes || 0) / 60),
+      actualHour: (((todaySubjectRecord.subjects && todaySubjectRecord.subjects[subject]) || 0) / 3600)
+    }));
+    acc[subject] = rows;
+    return acc;
+  }, {});
   const buildDefaultCoachingSubjects = () => {
     const mapped = ['국어', '수학', '영어', '탐구'].map((subject) => {
       const plannedHour = Math.round((plannerMinutesBySubject[subject] || 0) / 60);
@@ -1107,7 +1119,12 @@ function App() {
         <div class="home-card-head"><p class="analysis-title">오늘 누적 공부</p><span class="home-mini-badge">${studyTimerRunning ? '진행중' : '대기'}</span></div>
         <div class="study-timer-row"><b class="timer premium-clock" data-study-base-seconds="${todayRecord?.studyTime || 0}">${formatHms(todayStudySeconds)}</b><div class="timer-actions"><button class="btn btn-primary mini ${studyTimerRunning?'disabled':''}" data-action="openStudySubjectSheet" ${studyTimerRunning?'disabled':''}>공부 시작</button><button class="btn btn-secondary mini ${studyTimerRunning?'':'disabled'}" data-action="stopStudyTimer" ${studyTimerRunning?'':'disabled'}>정지</button></div></div>
         <button class="home-breakdown-toggle" data-action="toggleStudyBreakdown">${showStudyBreakdown ? '접기' : '펼쳐보기'}</button>
-        ${showStudyBreakdown ? `<div class="home-breakdown-list">${visibleSubjectChips.map(([subject, sec]) => `<div><b>${subject}</b><span>${formatHms(sec || 0)}</span></div>`).join('')}</div>` : ''}
+        ${showStudyBreakdown ? `<div class="home-breakdown-list">${breakdownSubjects.map((subject) => {
+          const sec = todaySubjectsWithTimer[subject] || 0;
+          const rows = breakdownDetailMap[subject] || [];
+          const expanded = expandedBreakdownSubject === subject;
+          return `<button class="home-breakdown-item" data-action="toggleBreakdownSubject" data-breakdown-subject="${subject}"><div><b>${subject}</b><span>${formatHms(sec)}</span></div></button>${expanded ? `<div class="home-breakdown-detail">${rows.length ? rows.map((row) => `<p>${row.content} / 계획 ${row.plannedHour.toFixed(1)}H / 실제 ${row.actualHour.toFixed(1)}H</p>`).join('') : '<p>오늘 등록된 학습 계획이 없습니다</p>'}</div>` : ''}`;
+        }).join('')}</div>` : ''}
       </div>
       <button class="card study-goal-card home-goal-linked-card home-insight-card premium-panel" data-action="goto" data-target="planner">
         <p class="analysis-title">오늘 공부 목표</p>
@@ -1122,7 +1139,7 @@ function App() {
         <p class="home-ranking-tip">오늘 공부를 시작하면 순위가 올라가요</p>
       </div>
     </div>
-    ${studySubjectSheetOpen ? `<div class="planner-sheet-overlay" data-action="closeStudySubjectSheet"><div class="planner-sheet study-subject-sheet" data-action="noopModal"><h3>어떤 과목을 공부할까요?</h3><div class="study-subject-grid">${['국어', '수학', '영어', '탐구'].map((s) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${s}">${s}</button>`).join('')}<button class="planner-pill" data-action="selectStudySubjectCustom">기타 직접 입력</button></div>${plannedSubjectOptions.length ? `<p class="sub" style="margin:8px 0 6px">오늘 플래너 일정</p><div class="study-subject-grid">${plannedSubjectOptions.map((s) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${s.split(' - ')[0]}">${s}</button>`).join('')}</div>` : ''}</div></div>` : ''}
+    ${studySubjectSheetOpen ? `<div class="planner-sheet-overlay" data-action="closeStudySubjectSheet"><div class="planner-sheet study-subject-sheet" data-action="noopModal"><h3>어떤 과목을 공부할까요?</h3>${studySubjectSheetOnlyPlanned ? '' : `<div class="study-subject-grid">${['국어', '수학', '영어', '탐구'].map((s) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${s}">${s}</button>`).join('')}<button class="planner-pill" data-action="selectStudySubjectCustom">기타 직접 입력</button></div>`}${plannedSubjectOptions.length ? `<p class="sub" style="margin:8px 0 6px">오늘 플래너 일정</p><div class="study-subject-grid">${plannedSubjectOptions.map((s) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${s.split(' - ')[0]}">${s}</button>`).join('')}</div>` : '<p class="sub" style="margin-top:8px">오늘 플래너 일정이 없습니다.</p>'}</div></div>` : ''}
     ${notifModalOpen ? `<div class="home-modal-overlay" data-action="closeNotificationModal"><div class="home-modal pro-notif-modal" data-action="noopModal"><p class="home-modal-title">알림</p><div class="pro-notif-list"><div><b>주간 코칭 알림</b><p>이번 주 코칭 작성 마감이 오늘 20:00입니다.</p></div><div><b>PRO 리포트 알림</b><p>26년 4월 4주차 리포트가 도착했습니다.</p></div><div><b>플래너 알림</b><p>오늘 계획 3개 중 1개를 완료했어요.</p></div></div><button class="btn btn-primary" data-action="closeNotificationModal">확인</button></div></div>` : ''}
     ${drawerOpen ? `<div class="home-modal-overlay drawer-overlay" data-action="closeDrawer"><aside class="side-drawer" data-action="noopModal"><h3>메뉴</h3>${[['analysis','분석'],['strategy','학습 코칭'],['planner','플래너'],['weekly','주간 점검'],['report','프로 보고서']].map(([target,label]) => `<button class="my-row" data-action="drawerGoto" data-target="${target}">${label}<span>${i('chevron', false)}</span></button>`).join('')}</aside></div>` : ''}
   </div>
@@ -2749,6 +2766,7 @@ function App() {
       setCoachingStep((prev) => Math.min(8, prev + 1));
     }
     if (action === 'openStudySubjectSheet') {
+      setStudySubjectSheetOnlyPlanned(true);
       if (isIOSSafari() && screen === 'home') {
         const sheet = document.querySelector('.study-subject-sheet');
         const overlay = sheet?.closest('.planner-sheet-overlay');
@@ -2776,7 +2794,12 @@ function App() {
       }
       setShowStudyBreakdown((v) => !v);
     }
+    if (action === 'toggleBreakdownSubject') {
+      const subject = actionEl.getAttribute('data-breakdown-subject') || '';
+      setExpandedBreakdownSubject((prev) => (prev === subject ? '' : subject));
+    }
     if (action === 'closeStudySubjectSheet') {
+      setStudySubjectSheetOnlyPlanned(false);
       if (isIOSSafari() && screen === 'home') {
         const sheet = document.querySelector('.study-subject-sheet');
         const overlay = sheet?.closest('.planner-sheet-overlay');
@@ -2793,6 +2816,7 @@ function App() {
       if (!custom) return;
       setActiveStudySubject(custom);
       setStudySubjectSheetOpen(false);
+      setStudySubjectSheetOnlyPlanned(false);
       setStudyTimerRunning(true);
       studyTimerSecondsRef.current = 0;
       startLiveStudyTimer();
@@ -2803,6 +2827,7 @@ function App() {
       if (!subject) return;
       setActiveStudySubject(subject);
       setStudySubjectSheetOpen(false);
+      setStudySubjectSheetOnlyPlanned(false);
       setStudyTimerRunning(true);
       studyTimerSecondsRef.current = 0;
       startLiveStudyTimer();
