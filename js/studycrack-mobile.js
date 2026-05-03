@@ -1737,29 +1737,29 @@ function App() {
          <div class="ob1-score-grid">
            <div class="ob1-subject-card">
              <h4>국어</h4>
-             <select class="ob1-score-select"><option>화법과작문</option><option>언어와매체</option></select>
+             <select class="ob1-score-select" data-field="obKoreanType"><option value="">선택</option><option value="화법과작문">화법과작문</option><option value="언어와매체">언어와매체</option></select>
              <div class="ob1-score-two-col"><input class="ob1-score-input" data-score-key="korean_common" placeholder="공통 원점수" type="number"/><input class="ob1-score-input" data-score-key="korean_elective" placeholder="선택 원점수" type="number"/></div>
            </div>
            <div class="ob1-subject-card">
              <h4>수학</h4>
-             <select class="ob1-score-select"><option>확률과통계</option><option>미적분</option><option>기하</option></select>
+             <select class="ob1-score-select" data-field="obMathType"><option value="">선택</option><option value="확률과통계">확률과통계</option><option value="미적분">미적분</option><option value="기하">기하</option></select>
              <div class="ob1-score-two-col"><input class="ob1-score-input" data-score-key="math_common" placeholder="공통 원점수" type="number"/><input class="ob1-score-input" data-score-key="math_elective" placeholder="선택 원점수" type="number"/></div>
            </div>
           <div class="ob1-subject-card"><h4>영어</h4><select class="ob1-score-select" data-score-key="english_grade"><option value="">등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option value="${n}">${n}등급</option>`).join('')}</select></div>
-           <div class="ob1-subject-card"><h4>한국사</h4><select class="ob1-score-select"><option>등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option>${n}등급</option>`).join('')}</select></div>
+           <div class="ob1-subject-card"><h4>한국사</h4><select class="ob1-score-select" data-field="obHistoryType"><option value="">등급 선택</option>${[1,2,3,4,5,6,7,8,9].map((n)=>`<option value="${n}">${n}등급</option>`).join('')}</select></div>
            <div class="ob1-subject-card">
              <h4>탐구1</h4>
-             <select class="ob1-score-select"><option>과목 선택</option><optgroup label="사회탐구"><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option></optgroup><optgroup label="과학탐구"><option>물리학Ⅰ</option><option>화학Ⅰ</option><option>생명과학Ⅰ</option><option>지구과학Ⅰ</option><option>물리학Ⅱ</option><option>화학Ⅱ</option><option>생명과학Ⅱ</option><option>지구과학Ⅱ</option></optgroup></select>
+             <select class="ob1-score-select" data-field="obInquiry1Subject"><option value="">과목 선택</option><optgroup label="사회탐구"><option value="생활과 윤리">생활과 윤리</option><option value="윤리와 사상">윤리와 사상</option><option value="한국지리">한국지리</option><option value="세계지리">세계지리</option><option value="동아시아사">동아시아사</option><option value="세계사">세계사</option><option value="경제">경제</option><option value="정치와 법">정치와 법</option><option value="사회·문화">사회·문화</option></optgroup><optgroup label="과학탐구"><option value="물리학Ⅰ">물리학Ⅰ</option><option value="화학Ⅰ">화학Ⅰ</option><option value="생명과학Ⅰ">생명과학Ⅰ</option><option value="지구과학Ⅰ">지구과학Ⅰ</option><option value="물리학Ⅱ">물리학Ⅱ</option><option value="화학Ⅱ">화학Ⅱ</option><option value="생명과학Ⅱ">생명과학Ⅱ</option><option value="지구과학Ⅱ">지구과학Ⅱ</option></optgroup></select>
             <input class="ob1-score-input" data-score-key="inquiry1_raw" placeholder="원점수" type="number"/>
            </div>
            <div class="ob1-subject-card">
              <h4>탐구2</h4>
-             <select class="ob1-score-select"><option>과목 선택</option><optgroup label="사회탐구"><option>생활과 윤리</option><option>윤리와 사상</option><option>한국지리</option><option>세계지리</option><option>동아시아사</option><option>세계사</option><option>경제</option><option>정치와 법</option><option>사회·문화</option></optgroup><optgroup label="과학탐구"><option>물리학Ⅰ</option><option>화학Ⅰ</option><option>생명과학Ⅰ</option><option>지구과학Ⅰ</option><option>물리학Ⅱ</option><option>화학Ⅱ</option><option>생명과학Ⅱ</option><option>지구과학Ⅱ</option></optgroup></select>
+             <select class="ob1-score-select" data-field="obInquiry2Subject"><option value="">과목 선택</option><optgroup label="사회탐구"><option value="생활과 윤리">생활과 윤리</option><option value="윤리와 사상">윤리와 사상</option><option value="한국지리">한국지리</option><option value="세계지리">세계지리</option><option value="동아시아사">동아시아사</option><option value="세계사">세계사</option><option value="경제">경제</option><option value="정치와 법">정치와 법</option><option value="사회·문화">사회·문화</option></optgroup><optgroup label="과학탐구"><option value="물리학Ⅰ">물리학Ⅰ</option><option value="화학Ⅰ">화학Ⅰ</option><option value="생명과학Ⅰ">생명과학Ⅰ</option><option value="지구과학Ⅰ">지구과학Ⅰ</option><option value="물리학Ⅱ">물리학Ⅱ</option><option value="화학Ⅱ">화학Ⅱ</option><option value="생명과학Ⅱ">생명과학Ⅱ</option><option value="지구과학Ⅱ">지구과학Ⅱ</option></optgroup></select>
             <input class="ob1-score-input" data-score-key="inquiry2_raw" placeholder="원점수" type="number"/>
            </div>
          </div>
        </div>
-       </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="goto" data-target="ob3">1-3 학습 MBTI로</button></div></div>`,
+       </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="goto" data-target="ob3">1-3 학습 MBTI로</button><button type="button" class="auth-link-btn" data-action="skipOb2WithoutScore">시험 성적이 없어요</button></div></div>`,
       false
     ),
     ob3: layout(
@@ -2342,9 +2342,13 @@ function App() {
           return;
         }
         const historySelect = document.querySelector('[data-score-key="history_grade"], [data-field="obHistoryType"]');
+        const koreanTypeSelect = document.querySelector('[data-field="obKoreanType"]');
+        const mathTypeSelect = document.querySelector('[data-field="obMathType"]');
         const inq1SubjectSelect = document.querySelector('[data-field="obInquiry1Subject"], [data-score-key="inquiry1_subject"]');
         const inq2SubjectSelect = document.querySelector('[data-field="obInquiry2Subject"], [data-score-key="inquiry2_subject"]');
-        if ((historySelect && isInvalidRequiredSelectValue(historySelect.value))
+        if ((koreanTypeSelect && isInvalidRequiredSelectValue(koreanTypeSelect.value))
+          || (mathTypeSelect && isInvalidRequiredSelectValue(mathTypeSelect.value))
+          || (historySelect && isInvalidRequiredSelectValue(historySelect.value))
           || (inq1SubjectSelect && isInvalidRequiredSelectValue(inq1SubjectSelect.value))
           || (inq2SubjectSelect && isInvalidRequiredSelectValue(inq2SubjectSelect.value))) {
           alert('필수 항목을 모두 선택해주세요');
@@ -2637,6 +2641,12 @@ function App() {
       alert('정성조사서가 저장되었습니다.');
     }
     if (action === 'closeScoreEdit') { setScoreEditOpen(false); setScoreEditStep(1); }
+    if (action === 'skipOb2WithoutScore') {
+      const ok = window.confirm('정확한 분석이 어려울 수 있어요. 그래도 진행할까요?');
+      if (!ok) return;
+      goto('home');
+      return;
+    }
     if (action === 'scoreStepPrev') setScoreEditStep((v) => Math.max(1, v - 1));
     if (action === 'scoreStepNext') {
       const read = (name) => (document.querySelector(`[data-field="${name}"]`)?.value ?? '');
