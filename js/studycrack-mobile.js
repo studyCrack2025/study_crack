@@ -1032,6 +1032,7 @@ function App() {
     obGoalText: readOb1Value('obGoalText'),
     obQuestionText: readOb1Value('obQuestionText')
   });
+  const isObSurveyScreen = () => screen === 'ob1' || screen === 'qualInfo';
   const EXAM_OPTIONS = ['3월 모의고사','5월 모의고사','6월 평가원','7월 모의고사','9월 평가원','10월 모의고사','수능','기타'];
   const getExamScoresMap = () => {
     try { return JSON.parse(localStorage.getItem('examScoresByType') || '{}') || {}; } catch { return {}; }
@@ -2298,7 +2299,7 @@ function App() {
     if (action === 'goto') {
       const target = actionEl.getAttribute('data-target');
       if (screen === 'ob1' && target === 'ob2') {
-        const ob1Values = isIOSSafari() ? readOb1FormValuesFromDom() : {
+        const ob1Values = (isIOSSafari() && isObSurveyScreen()) ? readOb1FormValuesFromDom() : {
           obSchoolName,
           obGradeStatus,
           obTrack,
@@ -2309,7 +2310,7 @@ function App() {
           alert('필수 입력 사항을 모두 입력해주세요');
           return;
         }
-        if (isIOSSafari()) {
+        if (isIOSSafari() && isObSurveyScreen()) {
           setObSchoolName(ob1Values.obSchoolName);
           setObGradeStatus(ob1Values.obGradeStatus);
           setObTrack(ob1Values.obTrack);
@@ -2612,7 +2613,7 @@ function App() {
     if (action === 'closePlannerEdit') setPlannerEditIndex(null);
     if (action === 'openScoreEdit') { setScoreEditOpen(true); setScoreEditStep(1); }
     if (action === 'saveQualInfo') {
-      const ob1Values = isIOSSafari() ? readOb1FormValuesFromDom() : {
+      const ob1Values = (isIOSSafari() && isObSurveyScreen()) ? readOb1FormValuesFromDom() : {
         obSchoolName,
         obGradeStatus,
         obTrack,
@@ -2623,7 +2624,7 @@ function App() {
         alert('필수 입력 사항을 모두 입력해주세요');
         return;
       }
-      if (isIOSSafari()) {
+      if (isIOSSafari() && isObSurveyScreen()) {
         setObSchoolName(ob1Values.obSchoolName);
         setObGradeStatus(ob1Values.obGradeStatus);
         setObTrack(ob1Values.obTrack);
@@ -2808,7 +2809,7 @@ function App() {
     }
     if (action === 'setObGradeStatus') {
       const nextGrade = actionEl.getAttribute('data-ob-grade') || '고1/2 재학';
-      if (isIOSSafari() && screen === 'ob1') {
+      if (isIOSSafari() && isObSurveyScreen()) {
         const schoolEl = document.querySelector('[data-field="obSchoolName"]');
         const goalEl = document.querySelector('[data-field="obGoalText"]');
         const questionEl = document.querySelector('[data-field="obQuestionText"]');
@@ -3174,7 +3175,7 @@ function App() {
     if (field === 'coachingMonth') setCoachingMonth(e.target.value);
     if (field === 'proEliteMonth') setProEliteMonth(e.target.value);
     if (field === 'obTrack') {
-      if (isIOSSafari() && screen === 'ob1') {
+      if (isIOSSafari() && isObSurveyScreen()) {
         e.target.dataset.pendingValue = e.target.value;
       } else {
         setObTrack(e.target.value);
@@ -3437,7 +3438,7 @@ function App() {
     }
     if (field === 'scoreExamType') preserveY(() => applyScoreExamSelection(e.target.value));
     if (field === 'obTrack') {
-      if (isIOSSafari() && screen === 'ob1') {
+      if (isIOSSafari() && isObSurveyScreen()) {
         e.target.dataset.pendingValue = e.target.value;
       } else {
         preserveY(() => setObTrack(e.target.value));
@@ -3505,23 +3506,23 @@ function App() {
     if (field === 'signupPasswordConfirm') setSignupPasswordConfirm(value);
     if (field === 'analysisSearchTerm') setAnalysisSearchTerm(value);
     if (field === 'obSchoolName') {
-      if (isIOSSafari() && screen === 'ob1') e.target.dataset.pendingValue = value;
+      if (isIOSSafari() && isObSurveyScreen()) e.target.dataset.pendingValue = value;
       else setObSchoolName(value);
     }
     if (field === 'obGradeStatus') {
-      if (isIOSSafari() && screen === 'ob1') e.target.dataset.pendingValue = value;
+      if (isIOSSafari() && isObSurveyScreen()) e.target.dataset.pendingValue = value;
       else setObGradeStatus(value);
     }
     if (field === 'obTrack') {
-      if (isIOSSafari() && screen === 'ob1') e.target.dataset.pendingValue = value;
+      if (isIOSSafari() && isObSurveyScreen()) e.target.dataset.pendingValue = value;
       else setObTrack(value);
     }
     if (field === 'obGoalText') {
-      if (isIOSSafari() && screen === 'ob1') e.target.dataset.pendingValue = value;
+      if (isIOSSafari() && isObSurveyScreen()) e.target.dataset.pendingValue = value;
       else setObGoalText(value);
     }
     if (field === 'obQuestionText') {
-      if (isIOSSafari() && screen === 'ob1') e.target.dataset.pendingValue = value;
+      if (isIOSSafari() && isObSurveyScreen()) e.target.dataset.pendingValue = value;
       else setObQuestionText(value);
     }
     if (field === 'v2e-english' || field === 'v2e-history' || field === 'v2e-inq1-subject' || field === 'v2e-inq2-subject') {
