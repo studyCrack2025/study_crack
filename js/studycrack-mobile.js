@@ -973,6 +973,50 @@ function App() {
     const grade = pct >= 96 ? 1 : pct >= 89 ? 2 : pct >= 77 ? 3 : pct >= 64 ? 4 : pct >= 52 ? 5 : pct >= 40 ? 6 : pct >= 28 ? 7 : pct >= 16 ? 8 : 9;
     return { std, pct, grade };
   };
+  const updateText = (selector, value) => {
+    document.querySelectorAll(selector).forEach((el) => { el.textContent = value ?? '-'; });
+  };
+  const readScoreInputValue = (key) => {
+    const el = document.querySelector(`[data-score-key="${key}"], [data-field="${key}"]`);
+    return Number(el?.dataset?.pendingValue ?? el?.value ?? 0);
+  };
+  const updateScoreDerivedDomFromInputs = () => {
+    const koreanRaw = readScoreInputValue('korean_common') + readScoreInputValue('korean_elective');
+    const mathRaw = readScoreInputValue('math_common') + readScoreInputValue('math_elective');
+    const inquiry1Raw = readScoreInputValue('inquiry1_raw');
+    const inquiry2Raw = readScoreInputValue('inquiry2_raw');
+    const k = scoreMetric(koreanRaw);
+    const m = scoreMetric(mathRaw);
+    const i1 = scoreMetric(inquiry1Raw);
+    const i2 = scoreMetric(inquiry2Raw);
+    updateText('[data-derived="korean-standard"]', k.std);
+    updateText('[data-derived="korean-percentile"]', k.pct);
+    updateText('[data-derived="korean-grade"]', k.grade);
+    updateText('[data-derived="math-standard"]', m.std);
+    updateText('[data-derived="math-percentile"]', m.pct);
+    updateText('[data-derived="math-grade"]', m.grade);
+    updateText('[data-derived="inquiry1-standard"]', i1.std);
+    updateText('[data-derived="inquiry1-percentile"]', i1.pct);
+    updateText('[data-derived="inquiry1-grade"]', i1.grade);
+    updateText('[data-derived="inquiry2-standard"]', i2.std);
+    updateText('[data-derived="inquiry2-percentile"]', i2.pct);
+    updateText('[data-derived="inquiry2-grade"]', i2.grade);
+  };
+  const syncScoreInputsFromDom = () => {
+    const get = (k) => {
+      const el = document.querySelector(`[data-score-key="${k}"]`);
+      return Number(el?.dataset?.pendingValue ?? el?.value ?? 0);
+    };
+    return {
+      korean_common: get('korean_common'),
+      korean_elective: get('korean_elective'),
+      math_common: get('math_common'),
+      math_elective: get('math_elective'),
+      english_grade: get('english_grade'),
+      inquiry1_raw: get('inquiry1_raw'),
+      inquiry2_raw: get('inquiry2_raw')
+    };
+  };
   const EXAM_OPTIONS = ['3월 모의고사','5월 모의고사','6월 평가원','7월 모의고사','9월 평가원','10월 모의고사','수능','기타'];
   const getExamScoresMap = () => {
     try { return JSON.parse(localStorage.getItem('examScoresByType') || '{}') || {}; } catch { return {}; }
