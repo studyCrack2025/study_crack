@@ -2,6 +2,11 @@
 // auth.js 없이 동작하는 페이지(admin_detail.html 등)용 apiFetch 모듈
 // refresh token 자동 갱신 + 401 시 재시도 포함
 
+// 독립 메모리 저장소 (auth.js 미탑재 페이지용)
+let _adminAccessToken = null;
+function getAccessToken() { return _adminAccessToken; }
+function setAccessToken(token) { _adminAccessToken = token; }
+
 let _sharedIsRefreshing = false;
 
 async function tryRefreshToken() {
@@ -18,7 +23,7 @@ async function tryRefreshToken() {
         if (res.ok) {
             const data = await res.json();
             if (data.accessToken && data.idToken) {
-                localStorage.setItem('accessToken', data.accessToken);
+                setAccessToken(data.accessToken);
                 localStorage.setItem('idToken', data.idToken);
                 return true;
             }
@@ -34,7 +39,7 @@ async function tryRefreshToken() {
         if (!fallbackRes.ok) return false;
         const fallbackData = await fallbackRes.json();
         if (fallbackData.accessToken && fallbackData.idToken) {
-            localStorage.setItem('accessToken', fallbackData.accessToken);
+            setAccessToken(fallbackData.accessToken);
             localStorage.setItem('idToken', fallbackData.idToken);
             return true;
         }
@@ -47,7 +52,7 @@ async function tryRefreshToken() {
 }
 
 async function apiFetch(url, options = {}) {
-    const token = localStorage.getItem('accessToken');
+    const token = getAccessToken();
     const defaultHeaders = {
         'Content-Type': 'application/json',
         ...(token && { 'Authorization': `Bearer ${token}` })
@@ -61,7 +66,7 @@ async function apiFetch(url, options = {}) {
             if (response.status === 401 || response.status === 403) {
                 const refreshed = await tryRefreshToken();
                 if (refreshed) {
-                    const newToken = localStorage.getItem('accessToken');
+                    const newToken = getAccessToken();
                     options.headers['Authorization'] = `Bearer ${newToken}`;
                     const retryRes = await fetch(url, options);
                     if (retryRes.ok) return retryRes;
@@ -71,7 +76,8 @@ async function apiFetch(url, options = {}) {
                 }
                 alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
                 const userRole = localStorage.getItem('userRole');
-                ['accessToken','idToken','refreshToken','userId','userEmail','userRole','userName','userTier','authProvider'].forEach(k => localStorage.removeItem(k));
+                setAccessToken(null);
+                ['idToken','refreshToken','userId','userEmail','userRole','userName','userTier','authProvider'].forEach(k => localStorage.removeItem(k));
                 sessionStorage.clear();
                 window.location.href = (userRole === 'admin' || userRole === 'tutor') ? '/admin/login' : '/login';
                 return Promise.reject(new Error("Auth expired"));

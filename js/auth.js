@@ -1,5 +1,13 @@
 // js/auth.js
 
+// ==========================================
+// [메모리 저장소] accessToken - XSS 탈취 방지
+// ==========================================
+let _accessToken = null;
+function getAccessToken() { return _accessToken; }
+function setAccessToken(token) { _accessToken = token; }
+function clearAccessToken() { _accessToken = null; }
+
 // API URL 변경 (Gateway 사용)
 const USER_API_URL = CONFIG.api.user;
 const AUTH_URL = CONFIG.api.auth;
@@ -30,7 +38,7 @@ async function tryRefreshToken() {
         if (res.ok) {
             const data = await res.json();
             if (data.accessToken && data.idToken) {
-                localStorage.setItem('accessToken', data.accessToken);
+                setAccessToken(data.accessToken);
                 localStorage.setItem('idToken', data.idToken);
                 return true;
             }
@@ -46,7 +54,7 @@ async function tryRefreshToken() {
         if (!fallbackRes.ok) return false;
         const fallbackData = await fallbackRes.json();
         if (fallbackData.accessToken && fallbackData.idToken) {
-            localStorage.setItem('accessToken', fallbackData.accessToken);
+            setAccessToken(fallbackData.accessToken);
             localStorage.setItem('idToken', fallbackData.idToken);
             return true;
         }
@@ -61,7 +69,7 @@ async function tryRefreshToken() {
 // 💡 무한 루프 방지 및 헤더 병합 에러 방지가 적용된 글로벌 apiFetch
 // 401 수신 시 refreshToken으로 갱신 1회 시도 후 재시도 — 실패 시 로그아웃
 async function apiFetch(url, options = {}) {
-    const token = localStorage.getItem('accessToken');
+    const token = getAccessToken();
     const defaultHeaders = {
         'Content-Type': 'application/json',
         ...(token && { 'Authorization': `Bearer ${token}` })
@@ -76,7 +84,7 @@ async function apiFetch(url, options = {}) {
             if (response.status === 401 || response.status === 403) {
                 const refreshed = await tryRefreshToken();
                 if (refreshed) {
-                    const newToken = localStorage.getItem('accessToken');
+                    const newToken = getAccessToken();
                     options.headers['Authorization'] = `Bearer ${newToken}`;
                     const retryRes = await fetch(url, options);
                     if (retryRes.ok) return retryRes;
@@ -115,7 +123,7 @@ function getPayloadFromToken(token) {
 
 // 분리된 DB 구조에 맞춘 스마트 권한 식별 함수
 async function resolveUserIdentity(eventType = 'none', promoCode = '') {
-    const token = localStorage.getItem('accessToken');
+    const token = getAccessToken();
     const idToken = localStorage.getItem('idToken');
     if (!token || !idToken) return;
 
@@ -675,7 +683,7 @@ async function handleFinalSubmit() {
             cognitoUserToAuth.authenticateUser(authDetails, {
                 onSuccess: async function(authResult) {
                     const refreshToken = authResult.getRefreshToken().getToken();
-                    localStorage.setItem('accessToken', authResult.getAccessToken().getJwtToken());
+                    setAccessToken(authResult.getAccessToken().getJwtToken());
                     localStorage.setItem('idToken', authResult.getIdToken().getJwtToken());
                     localStorage.setItem('userId', authResult.getIdToken().payload.sub);
                     localStorage.setItem('userEmail', email);
@@ -691,7 +699,7 @@ async function handleFinalSubmit() {
                         });
                         if (cookieRes.ok) {
                             const d = await cookieRes.json();
-                            if (d.accessToken) localStorage.setItem('accessToken', d.accessToken);
+                            if (d.accessToken) setAccessToken(d.accessToken);
                             if (d.idToken) localStorage.setItem('idToken', d.idToken);
                             localStorage.removeItem('refreshToken');
                         } else {
@@ -728,8 +736,9 @@ async function handleFinalSubmit() {
 // ==========================================
 
 function clearClientSession() {
+    clearAccessToken();
     const sessionKeys = [
-        'accessToken', 'idToken', 'refreshToken',
+        'idToken', 'refreshToken',
         'userId', 'userEmail', 'userRole', 'userName', 'userTier', 'authProvider'
     ];
     sessionKeys.forEach(key => localStorage.removeItem(key));
@@ -737,14 +746,14 @@ function clearClientSession() {
 }
 
 function checkLoginStatus() {
-    const accessToken = localStorage.getItem('accessToken');
+    const accessToken = getAccessToken() || localStorage.getItem('idToken');
     const userRole = localStorage.getItem('userRole');
 
     const loginBtn = document.getElementById('loginBtn');
     const myPageBtn = document.getElementById('myPageBtn');
     const adminBtn = document.getElementById('adminBtn');
     const logoutBtn = document.getElementById('logoutBtn');
-    
+
     if (loginBtn && logoutBtn) {
         if (accessToken) {
             loginBtn.classList.add('hidden');
@@ -764,7 +773,7 @@ function checkLoginStatus() {
         }
     }
     
-    if (accessToken) {
+    if (getAccessToken() || localStorage.getItem('idToken')) {
         // 💡 [핵심] 조용히 백그라운드에서 신분(Role)을 재확인
         resolveUserIdentity('none');
     }
@@ -801,7 +810,7 @@ function handleSignIn() {
             const userId = idToken.payload.sub;
             const refreshToken = result.getRefreshToken().getToken();
 
-            localStorage.setItem('accessToken', accessToken);
+            setAccessToken(accessToken);
             localStorage.setItem('idToken', idToken.getJwtToken());
             localStorage.setItem('userEmail', email);
             localStorage.setItem('userId', userId);
@@ -816,7 +825,7 @@ function handleSignIn() {
                 });
                 if (cookieRes.ok) {
                     const d = await cookieRes.json();
-                    if (d.accessToken) localStorage.setItem('accessToken', d.accessToken);
+                    if (d.accessToken) setAccessToken(d.accessToken);
                     if (d.idToken) localStorage.setItem('idToken', d.idToken);
                     localStorage.removeItem('refreshToken');
                 } else {

@@ -45,7 +45,7 @@ function parseDynamoItem(item) {
 document.addEventListener('DOMContentLoaded', async () => {
     const userId = localStorage.getItem('userId');
 
-    if (!localStorage.getItem('accessToken') || !localStorage.getItem('idToken')) {
+    if (!getAccessToken() || !localStorage.getItem('idToken')) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
             clearClientSession();
@@ -777,9 +777,9 @@ window.requestTutorWithdrawal = function() {
     tutorCognitoUser.authenticateUser(authDetails, {
         onSuccess: async function(result) {
             try {
-                // 1. 최신 토큰으로 스토리지 갱신
+                // 1. 최신 토큰으로 갱신
                 const newAccessToken = result.getAccessToken().getJwtToken();
-                localStorage.setItem('accessToken', newAccessToken);
+                setAccessToken(newAccessToken);
                 localStorage.setItem('idToken', result.getIdToken().getJwtToken());
 
                 // 2. 단일 API 호출 (saveSingleField 삭제됨)

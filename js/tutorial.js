@@ -39,7 +39,7 @@ let mbtiDimSelections = [null, null, null, null];
 document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     // 인증 가드: 로그인하지 않은 사용자는 로그인 페이지로 이동
-    if (!localStorage.getItem('accessToken') || !localStorage.getItem('idToken')) {
+    if (!getAccessToken() || !localStorage.getItem('idToken')) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
             clearClientSession();
@@ -133,7 +133,7 @@ function bindEvents() {
     // 브라우저 종료·새로고침 시 currentStepIdx를 서버에 안정적으로 전송
     // fetch keepalive=true: sendBeacon과 달리 Authorization 헤더를 유지한 채 페이지 언로드 후에도 요청 완료
     window.addEventListener('beforeunload', () => {
-        const token = localStorage.getItem('accessToken');
+        const token = getAccessToken();
         if (!token) return;
         fetch(CONFIG.api.user, {
             method: 'POST',
@@ -411,7 +411,7 @@ function simulateMbtiAnalysis() {
 
 // ── 튜토리얼 학교 선정 로직 ──────────────────────────────────────
 async function fetchTutScoreData() {
-    const token = localStorage.getItem('accessToken');
+    const token = getAccessToken();
     if (!token) return null;
     try {
         const res = await fetch(CONFIG.api.analysis, {
@@ -574,7 +574,7 @@ function getTutorialCandidates(streamData, totalStdScore, maxCandidates) {
 }
 
 async function selectTutorialUnivsWithAnalysis(stream, mar, totalStdScore, scoreData) {
-    const token = localStorage.getItem('accessToken');
+    const token = getAccessToken();
     if (!token) return null;
     const streamData = scoreData[stream];
     if (!streamData) return null;
@@ -882,7 +882,7 @@ async function initSubjectRec() {
 
     let estimatedMonths = 3;
     try {
-        const token = localStorage.getItem('accessToken');
+        const token = getAccessToken();
         if (token) {
             const res = await fetch(CONFIG.api.analysis, {
                 method: 'POST',
@@ -1066,7 +1066,7 @@ async function downloadMBTIReport(mbtiResult) {
     try {
         const response = await fetch(CONFIG.api.user, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAccessToken()}` },
             body: JSON.stringify({ type: 'update_mbti_promo', data: { targetUserId: 'me', promoCode: 'TUTORIAL', mbtiResult } })
         });
         const result = await response.json();
@@ -1076,7 +1076,7 @@ async function downloadMBTIReport(mbtiResult) {
 
 async function convertScore(month, subject, score, opt, subName, common, elective) {
     if (!score || score <= 0) return { std: '', pct: '', grd: '' };
-    const token = localStorage.getItem('accessToken');
+    const token = getAccessToken();
     if (!token) return { std: '', pct: '', grd: '' };
     const hasDual = common != null && elective != null;
     try {

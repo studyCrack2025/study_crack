@@ -8,7 +8,7 @@ const NOTI_API_URL = CONFIG.api.noti;
 
 // 공통 apiFetch 함수
 async function apiFetch(url, options = {}) {
-    const token = localStorage.getItem('accessToken');
+    const token = getAccessToken();
     const defaultHeaders = {
         'Content-Type': 'application/json',
         ...(token && { 'Authorization': `Bearer ${token}` })
@@ -23,7 +23,7 @@ async function apiFetch(url, options = {}) {
             if (response.status === 401 || response.status === 403) {
                 const refreshed = await tryRefreshToken();
                 if (refreshed) {
-                    const newToken = localStorage.getItem('accessToken');
+                    const newToken = getAccessToken();
                     options.headers['Authorization'] = `Bearer ${newToken}`;
                     const retryRes = await fetch(url, options);
                     if (retryRes.ok) return retryRes;
@@ -112,7 +112,7 @@ function initMobileCourses() {
 
         let extraBtnHtml = "";
         if (tier === 'mbti') {
-            const isLoggedIn = !!localStorage.getItem('accessToken');
+            const isLoggedIn = !!getAccessToken();
             if (isLoggedIn) {
                 extraBtnHtml = `
                     <div style="margin-top: 25px; padding: 15px; background: #f5f3ff; border: 1px dashed #8b5cf6; border-radius: 8px; text-align: center;">
@@ -198,7 +198,7 @@ function selectCourse(tier) {
 
             let extraBtnHtml = "";
             if (tier === 'mbti') {
-                const isLoggedIn = !!localStorage.getItem('accessToken');
+                const isLoggedIn = !!getAccessToken();
                 const userPromo = localStorage.getItem('promoCode') || ''; 
                 const hasUsedPromo = /^[0-9A-F]{4}-[0-9A-F]{4}-STC$/.test(userPromo);
                 
@@ -368,7 +368,7 @@ window.cycleResultView = function() {
    ========================================= */
 document.addEventListener('DOMContentLoaded', () => {
     // 권한 체크
-    const token = localStorage.getItem('accessToken');
+    const token = getAccessToken();
     const userRole = localStorage.getItem('userRole');
     const userName = localStorage.getItem('userName') || '회원';
 
@@ -425,7 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
 
     // [핵심] 튜토리얼 완료 여부 엄격한 체크 시작
-    if (token && userRole !== 'tutor' && userRole !== 'admin') {
+    if (getAccessToken() && userRole !== 'tutor' && userRole !== 'admin') {
         checkTutorialStatus();
     }
 });
@@ -441,7 +441,7 @@ async function checkTutorialStatus() {
         return;
     }
 
-    const accessToken = localStorage.getItem('accessToken');
+    const accessToken = getAccessToken();
     if (!accessToken) return;
 
     try {
@@ -468,7 +468,7 @@ async function checkTutorialStatus() {
 }
 
 function updateNavUI() {
-    const isLoggedIn = !!localStorage.getItem('accessToken');
+    const isLoggedIn = !!getAccessToken();
     const userRole = localStorage.getItem('userRole');
     
     const btnAnalysis = document.getElementById('navAnalysis');

@@ -4,7 +4,7 @@ let cognitoUser = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     // 💡 1. 인증 기준을 accessToken으로 통일
-    const accessToken = localStorage.getItem('accessToken'); 
+    const accessToken = getAccessToken();
     if (!accessToken) {
         alert("로그인이 만료되었습니다. 다시 로그인해주세요.");
         window.location.href = '/login';

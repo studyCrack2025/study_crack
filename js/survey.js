@@ -5,7 +5,7 @@ let examScores = {};
 
 // 💡 공통 apiFetch 함수 (accessToken 기반 통합 및 401 예외 처리)
 async function apiFetch(url, options = {}) {
-    const token = localStorage.getItem('accessToken');
+    const token = getAccessToken();
     const defaultHeaders = {
         'Content-Type': 'application/json',
         ...(token && { 'Authorization': `Bearer ${token}` })
@@ -20,7 +20,7 @@ async function apiFetch(url, options = {}) {
             if (response.status === 401 || response.status === 403) {
                 const refreshed = await tryRefreshToken();
                 if (refreshed) {
-                    const newToken = localStorage.getItem('accessToken');
+                    const newToken = getAccessToken();
                     options.headers['Authorization'] = `Bearer ${newToken}`;
                     const retryRes = await fetch(url, options);
                     if (retryRes.ok) return retryRes;
