@@ -145,6 +145,7 @@ function App() {
   const [mbtiModalOpen, setMbtiModalOpen] = useState(false);
   const [mbtiAnswers, setMbtiAnswers] = useState({ q1: '', q2: '', q3: '', q4: '' });
   const [mbtiResult, setMbtiResult] = useState('');
+  const [ob2SkippedNoScore, setOb2SkippedNoScore] = useState(false);
   const [strongSubject, setStrongSubject] = useState('');
   const [weakSubject, setWeakSubject] = useState('');
   const [studyHours, setStudyHours] = useState('');
@@ -1772,6 +1773,7 @@ function App() {
          <p class="analysis-title">학습 MBTI 검사</p>
          <p class="sub">4문항으로 빠르게 진단해요.</p>
          <button class="btn btn-secondary" data-action="openMbtiModal">MBTI 시작하기</button>
+         ${mbtiResult ? `<button class="btn btn-secondary" data-action="downloadMbtiReport">MBTI 학습 보고서 다운</button>` : ''}
          ${mbtiResult ? `<p class="sub mbti-result">진단 결과: <b>${mbtiResult}</b></p>` : ''}
        </div>
        ${mbtiModalOpen ? `<div class="home-modal-overlay" data-action="closeMbtiModal"><div class="home-modal ob-mbti-modal" data-action="noopModal">
@@ -2370,12 +2372,17 @@ function App() {
         const map = getExamScoresMap();
         map[obExamType] = { korean: ko, math: ma, englishGrade: enGrade, english: enScore, inquiry1: iq1, inquiry2: iq2 };
         saveExamScoresMap(map);
+        setOb2SkippedNoScore(false);
         goto('ob3');
         return;
       }
       if (screen === 'ob3' && target === 'ob4') {
         if (!Object.values(mbtiAnswers).every(Boolean)) {
           alert('MBTI 검사를 완료해주세요');
+          return;
+        }
+        if (ob2SkippedNoScore) {
+          goto('home');
           return;
         }
       }
@@ -2646,7 +2653,8 @@ function App() {
     if (action === 'skipOb2WithoutScore') {
       const ok = window.confirm('정확한 분석이 어려울 수 있어요. 그래도 진행할까요?');
       if (!ok) return;
-      goto('ob4');
+      setOb2SkippedNoScore(true);
+      goto('ob3');
       return;
     }
     if (action === 'downloadMbtiReport') {
