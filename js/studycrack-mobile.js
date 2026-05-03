@@ -1813,7 +1813,7 @@ function App() {
          <div class="analysis-impact-item">탐구<div class="track"><i style="width:68%;background:#14b8a6"></i></div><span>+6점 → +9%</span></div>
          <div class="analysis-impact-item">영어<div class="track"><i style="width:48%;background:#f59e0b"></i></div><span>+3점 → +5%</span></div>
        </div>
-       ${mbtiResult ? `<div class="card ob-card" style="border:2px solid #2563EB;"><p class="analysis-title">MBTI 검사 결과</p><p class="sub mbti-result" style="font-size:16px;color:#1D4ED8;">진단 결과: <b>${mbtiResult}</b></p></div><div class="card ob-card" style="border:2px dashed #2563EB;background:#EFF6FF;"><p class="analysis-title">MBTI 학습 보고서</p><p class="sub">학습 성향 기반 요약 리포트를 다운로드하세요.</p><button class="btn btn-secondary" data-action="downloadMbtiReport">MBTI 학습 보고서 다운</button></div>` : ''}
+       ${mbtiResult ? `<div class="card ob-card" style="border:2px solid #2563EB;background:#EFF6FF;"><p class="analysis-title">진단 결과 & MBTI 학습보고서</p><p style="margin:6px 0 2px;font-size:30px;font-weight:900;letter-spacing:.08em;color:#1D4ED8;text-shadow:0 6px 18px rgba(37,99,235,.18);">CSDR</p><p class="sub" style="margin:0 0 12px;font-size:12px;color:#1E40AF;">(컨셉형, 직관령, 분석형, 루틴)</p><button class="btn btn-primary" data-action="downloadMbtiReport">MBTI 학습 보고서 다운</button></div>` : ''}
        </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button type="button" class="cta-button" data-action="goto" data-target="ob5">내 맞춤 솔루션 보기</button></div></div>`,
       false
     ),
@@ -2109,7 +2109,7 @@ function App() {
     ),
     my: layout(appbar('마이페이지', false) + `<div class="my-stack">
       <div class="card my-profile-card"><div class="my-profile-left"><div class="my-avatar">${i('user', false)}</div><div><p class="my-name">김지민</p><p class="sub">목표 대학: 연세대학교 경영학과</p></div></div><span class="badge">Pro 이용 중</span></div>
-      ${mbtiResult ? `<div class="card" style="border:2px solid #2563EB;"><p class="analysis-title">학습 MBTI 결과</p><p class="sub mbti-result" style="font-size:16px;color:#1D4ED8;">진단 결과: <b>${mbtiResult}</b></p></div><div class="card" style="border:2px dashed #2563EB;background:#EFF6FF;"><p class="analysis-title">MBTI 학습 보고서</p><p class="sub">결과 기반 리포트를 내려받아 학습에 활용해보세요.</p><button class="btn btn-secondary" data-action="downloadMbtiReport">MBTI 학습 보고서 다운</button></div>` : ''}
+      ${mbtiResult ? `<div class="card" style="border:2px solid #2563EB;background:#EFF6FF;"><p class="analysis-title">진단 결과 & MBTI 학습보고서</p><p style="margin:6px 0 2px;font-size:30px;font-weight:900;letter-spacing:.08em;color:#1D4ED8;text-shadow:0 6px 18px rgba(37,99,235,.18);">CSDR</p><p class="sub" style="margin:0 0 12px;font-size:12px;color:#1E40AF;">(컨셉형, 직관령, 분석형, 루틴)</p><button class="btn btn-primary" data-action="downloadMbtiReport">MBTI 학습 보고서 다운</button></div>` : ''}
       <div class="card my-subscription-card"><div class="my-sub-icon">${i('report', false)}</div><div><p class="my-sub-title">Pro 플랜 이용 중</p><p class="my-sub-date">다음 결제일 2024.06.14</p></div></div>
       <div class="card my-menu-card">
         <button class="my-row" data-action="goto" data-target="qualInfo">정성조사서 <span>${i('chevron', false)}</span></button><button class="my-row" data-action="goto" data-target="scoreInfo">성적 정보 <span>${i('chevron', false)}</span></button>
