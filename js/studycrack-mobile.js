@@ -1782,7 +1782,7 @@ function App() {
          <div class="ob-mbti-q"><p>4) 피드백이 있으면 공부가 더 잘 되나요?</p><div class="ob-mbti-opt"><button data-action="setMbti" data-mbti-q="q4" data-mbti-v="feedback" class="${mbtiAnswers.q4==='feedback'?'active':''}">네</button><button data-action="setMbti" data-mbti-q="q4" data-mbti-v="self" class="${mbtiAnswers.q4==='self'?'active':''}">아니오</button></div></div>
          <button class="btn btn-primary ${mbtiDone?'':'disabled'}" data-action="completeMbti" ${mbtiDone?'':'disabled'}>검사 완료</button>
        </div></div>` : ''}
-       </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="goto" data-target="home">홈으로 이동</button></div></div>`,
+       </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="goto" data-target="ob4">분석 결과 보기</button></div></div>`,
       false
     ),
     ob4: layout(
@@ -2373,7 +2373,7 @@ function App() {
         goto('ob3');
         return;
       }
-      if (screen === 'ob3' && target === 'home') {
+      if (screen === 'ob3' && target === 'ob4') {
         if (!Object.values(mbtiAnswers).every(Boolean)) {
           alert('MBTI 검사를 완료해주세요');
           return;
@@ -2646,7 +2646,7 @@ function App() {
     if (action === 'skipOb2WithoutScore') {
       const ok = window.confirm('정확한 분석이 어려울 수 있어요. 그래도 진행할까요?');
       if (!ok) return;
-      goto('ob5');
+      goto('ob4');
       return;
     }
     if (action === 'downloadMbtiReport') {
