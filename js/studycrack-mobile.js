@@ -1017,6 +1017,21 @@ function App() {
       inquiry2_raw: get('inquiry2_raw')
     };
   };
+  const readOb1Value = (field) => {
+    const el = document.querySelector(`[data-field="${field}"]`);
+    if (field === 'obGradeStatus' && !el) {
+      const activeGrade = document.querySelector('.ob1-pill[data-action="setObGradeStatus"].active')?.getAttribute('data-ob-grade');
+      if (activeGrade) return String(activeGrade);
+    }
+    return String(el?.dataset?.pendingValue ?? el?.value ?? '');
+  };
+  const readOb1FormValuesFromDom = () => ({
+    obSchoolName: readOb1Value('obSchoolName'),
+    obGradeStatus: readOb1Value('obGradeStatus'),
+    obTrack: readOb1Value('obTrack'),
+    obGoalText: readOb1Value('obGoalText'),
+    obQuestionText: readOb1Value('obQuestionText')
+  });
   const EXAM_OPTIONS = ['3월 모의고사','5월 모의고사','6월 평가원','7월 모의고사','9월 평가원','10월 모의고사','수능','기타'];
   const getExamScoresMap = () => {
     try { return JSON.parse(localStorage.getItem('examScoresByType') || '{}') || {}; } catch { return {}; }
@@ -2283,9 +2298,23 @@ function App() {
     if (action === 'goto') {
       const target = actionEl.getAttribute('data-target');
       if (screen === 'ob1' && target === 'ob2') {
-        if (!obGradeStatus || !String(obSchoolName || '').trim() || !String(obTrack || '').trim() || !String(obGoalText || '').trim()) {
+        const ob1Values = isIOSSafari() ? readOb1FormValuesFromDom() : {
+          obSchoolName,
+          obGradeStatus,
+          obTrack,
+          obGoalText,
+          obQuestionText
+        };
+        if (!String(ob1Values.obGradeStatus || '').trim() || !String(ob1Values.obSchoolName || '').trim() || !String(ob1Values.obTrack || '').trim() || !String(ob1Values.obGoalText || '').trim()) {
           alert('필수 입력 사항을 모두 입력해주세요');
           return;
+        }
+        if (isIOSSafari()) {
+          setObSchoolName(ob1Values.obSchoolName);
+          setObGradeStatus(ob1Values.obGradeStatus);
+          setObTrack(ob1Values.obTrack);
+          setObGoalText(ob1Values.obGoalText);
+          setObQuestionText(ob1Values.obQuestionText);
         }
       }
       if (screen === 'on1' && target === 'ob1') {
@@ -2583,11 +2612,25 @@ function App() {
     if (action === 'closePlannerEdit') setPlannerEditIndex(null);
     if (action === 'openScoreEdit') { setScoreEditOpen(true); setScoreEditStep(1); }
     if (action === 'saveQualInfo') {
-      if (!obGradeStatus || !String(obSchoolName || '').trim() || !String(obTrack || '').trim() || !String(obGoalText || '').trim()) {
+      const ob1Values = isIOSSafari() ? readOb1FormValuesFromDom() : {
+        obSchoolName,
+        obGradeStatus,
+        obTrack,
+        obGoalText,
+        obQuestionText
+      };
+      if (!String(ob1Values.obGradeStatus || '').trim() || !String(ob1Values.obSchoolName || '').trim() || !String(ob1Values.obTrack || '').trim() || !String(ob1Values.obGoalText || '').trim()) {
         alert('필수 입력 사항을 모두 입력해주세요');
         return;
       }
-      const nextQual = { status: obGradeStatus || '', school: obSchoolName || '', stream: obTrack || '', benefits: obGoalText || '', questions: obQuestionText || '' };
+      if (isIOSSafari()) {
+        setObSchoolName(ob1Values.obSchoolName);
+        setObGradeStatus(ob1Values.obGradeStatus);
+        setObTrack(ob1Values.obTrack);
+        setObGoalText(ob1Values.obGoalText);
+        setObQuestionText(ob1Values.obQuestionText);
+      }
+      const nextQual = { status: ob1Values.obGradeStatus || '', school: ob1Values.obSchoolName || '', stream: ob1Values.obTrack || '', benefits: ob1Values.obGoalText || '', questions: ob1Values.obQuestionText || '' };
       setUser(prev => ({ ...prev, qualitative: nextQual }));
       localStorage.setItem('user', JSON.stringify({ ...(user || {}), qualitative: nextQual }));
       alert('정성조사서가 저장되었습니다.');
@@ -2763,7 +2806,20 @@ function App() {
       goto('authLogin', false);
       window.alert('회원탈퇴가 완료되었습니다.');
     }
-    if (action === 'setObGradeStatus') setObGradeStatus(actionEl.getAttribute('data-ob-grade') || '고1/2 재학');
+    if (action === 'setObGradeStatus') {
+      const nextGrade = actionEl.getAttribute('data-ob-grade') || '고1/2 재학';
+      if (isIOSSafari() && screen === 'ob1') {
+        const schoolEl = document.querySelector('[data-field="obSchoolName"]');
+        const goalEl = document.querySelector('[data-field="obGoalText"]');
+        const questionEl = document.querySelector('[data-field="obQuestionText"]');
+        if (schoolEl) schoolEl.dataset.pendingValue = schoolEl.value;
+        if (goalEl) goalEl.dataset.pendingValue = goalEl.value;
+        if (questionEl) questionEl.dataset.pendingValue = questionEl.value;
+        const gradeEl = document.querySelector('[data-field="obGradeStatus"]');
+        if (gradeEl) gradeEl.dataset.pendingValue = nextGrade;
+      }
+      setObGradeStatus(nextGrade);
+    }
     if (action === 'toggleObGed') setObGed((v) => !v);
     if (action === 'openKakaoSupport') window.open('http://pf.kakao.com/_wxjxcgn', '_blank');
     if (action === 'openEmailSupport') window.location.href = 'mailto:contact@studycrack.co.kr';
@@ -3117,7 +3173,13 @@ function App() {
     }
     if (field === 'coachingMonth') setCoachingMonth(e.target.value);
     if (field === 'proEliteMonth') setProEliteMonth(e.target.value);
-    if (field === 'obTrack') setObTrack(e.target.value);
+    if (field === 'obTrack') {
+      if (isIOSSafari() && screen === 'ob1') {
+        e.target.dataset.pendingValue = e.target.value;
+      } else {
+        setObTrack(e.target.value);
+      }
+    }
     if (field === 'scoreExamType') applyScoreExamSelection(e.target.value);
     if (field === 'obExamType') applyObExamSelection(e.target.value);
     restoreIfUnexpectedTopJump();
@@ -3374,7 +3436,13 @@ function App() {
       return;
     }
     if (field === 'scoreExamType') preserveY(() => applyScoreExamSelection(e.target.value));
-    if (field === 'obTrack') preserveY(() => setObTrack(e.target.value));
+    if (field === 'obTrack') {
+      if (isIOSSafari() && screen === 'ob1') {
+        e.target.dataset.pendingValue = e.target.value;
+      } else {
+        preserveY(() => setObTrack(e.target.value));
+      }
+    }
     if (field === 'obExamType') preserveY(() => applyObExamSelection(e.target.value));
     if (field === 'v2e-english' || field === 'v2e-history' || field === 'v2e-inq1-subject' || field === 'v2e-inq2-subject') {
       const value = e.target.value;
@@ -3436,11 +3504,26 @@ function App() {
     if (field === 'signupPassword') setSignupPassword(value);
     if (field === 'signupPasswordConfirm') setSignupPasswordConfirm(value);
     if (field === 'analysisSearchTerm') setAnalysisSearchTerm(value);
-    if (field === 'obSchoolName') setObSchoolName(value);
-    if (field === 'obGradeStatus') setObGradeStatus(value);
-    if (field === 'obTrack') setObTrack(value);
-    if (field === 'obGoalText') setObGoalText(value);
-    if (field === 'obQuestionText') setObQuestionText(value);
+    if (field === 'obSchoolName') {
+      if (isIOSSafari() && screen === 'ob1') e.target.dataset.pendingValue = value;
+      else setObSchoolName(value);
+    }
+    if (field === 'obGradeStatus') {
+      if (isIOSSafari() && screen === 'ob1') e.target.dataset.pendingValue = value;
+      else setObGradeStatus(value);
+    }
+    if (field === 'obTrack') {
+      if (isIOSSafari() && screen === 'ob1') e.target.dataset.pendingValue = value;
+      else setObTrack(value);
+    }
+    if (field === 'obGoalText') {
+      if (isIOSSafari() && screen === 'ob1') e.target.dataset.pendingValue = value;
+      else setObGoalText(value);
+    }
+    if (field === 'obQuestionText') {
+      if (isIOSSafari() && screen === 'ob1') e.target.dataset.pendingValue = value;
+      else setObQuestionText(value);
+    }
     if (field === 'v2e-english' || field === 'v2e-history' || field === 'v2e-inq1-subject' || field === 'v2e-inq2-subject') {
       preserveScrollAfterStateChange(() => {
         if (field === 'v2e-english') setScoreEditState((prev) => ({ ...prev, english: value }));
