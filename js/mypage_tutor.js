@@ -53,6 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.location.href = '/login';
             return;
         }
+        checkLoginStatus();
     }
 
     initTutorCognito();

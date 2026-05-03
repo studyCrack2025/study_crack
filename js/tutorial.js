@@ -47,6 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.location.replace('/login');
             return;
         }
+        checkLoginStatus();
     }
 
     // DB에서 유저 데이터 복원 (mbti_completed 경로 포함)

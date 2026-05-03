@@ -82,6 +82,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.location.href = '/login';
             return;
         }
+        checkLoginStatus();
     }
 
     // 2. 세션 갱신 및 데이터 페치를 순차적으로 실행
