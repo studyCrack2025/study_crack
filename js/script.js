@@ -407,8 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            localStorage.clear();
-            sessionStorage.clear();
+            clearClientSession();
             alert("로그아웃 되었습니다.");
             window.location.href = '/';
         });
@@ -468,7 +467,7 @@ async function checkTutorialStatus() {
 }
 
 function updateNavUI() {
-    const isLoggedIn = !!getAccessToken();
+    const isLoggedIn = !!(getAccessToken() || localStorage.getItem('idToken'));
     const userRole = localStorage.getItem('userRole');
     
     const btnAnalysis = document.getElementById('navAnalysis');
