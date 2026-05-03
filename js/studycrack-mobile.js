@@ -1065,7 +1065,7 @@ function App() {
     const rows = todayPlannerItems.filter((item) => (item.subject || '기타') === subject).map((item) => ({
       content: item.content || '학습 내용 없음',
       plannedHour: ((item.minutes || 0) / 60),
-      actualHour: (((todaySubjectRecord.subjects && todaySubjectRecord.subjects[subject]) || 0) / 3600)
+      actualHour: ((item.doneMinutes || 0) / 60)
     }));
     acc[subject] = rows;
     return acc;
@@ -2251,6 +2251,15 @@ function App() {
           alert('필수 항목을 모두 선택해주세요');
           return;
         }
+        const historySelect = document.querySelector('[data-score-key="history_grade"], [data-field="obHistoryType"]');
+        const inq1SubjectSelect = document.querySelector('[data-field="obInquiry1Subject"], [data-score-key="inquiry1_subject"]');
+        const inq2SubjectSelect = document.querySelector('[data-field="obInquiry2Subject"], [data-score-key="inquiry2_subject"]');
+        if ((historySelect && isInvalidRequiredSelectValue(historySelect.value))
+          || (inq1SubjectSelect && isInvalidRequiredSelectValue(inq1SubjectSelect.value))
+          || (inq2SubjectSelect && isInvalidRequiredSelectValue(inq2SubjectSelect.value))) {
+          alert('필수 항목을 모두 선택해주세요');
+          return;
+        }
         const getScoreInput = (key) => Number(document.querySelector(`[data-score-key="${key}"]`)?.value || 0);
         const hasAllScores = ['korean_common','korean_elective','math_common','math_elective','english_grade','inquiry1_raw','inquiry2_raw']
           .every((k) => String(document.querySelector(`[data-score-key="${k}"]`)?.value || '').trim() !== '');
@@ -2493,7 +2502,17 @@ function App() {
         });
       });
     }
-    if (action === 'closePlannerCalendar') afterSafariViewportStable(() => setPlannerCalendarOpen(false));
+    if (action === 'closePlannerCalendar') {
+      const strip = document.querySelector('.planner-date-strip');
+      const left = strip?.scrollLeft || 0;
+      afterSafariViewportStable(() => setPlannerCalendarOpen(false));
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const nextStrip = document.querySelector('.planner-date-strip');
+          if (nextStrip && Math.abs((nextStrip.scrollLeft || 0) - left) > 2) nextStrip.scrollLeft = left;
+        });
+      });
+    }
     if (action === 'selectPlannerDate') {
       const date = actionEl.getAttribute('data-planner-date');
       if (!date) return;
@@ -2503,7 +2522,10 @@ function App() {
         const currentStrip = document.querySelector('.planner-date-strip');
         const selectedBtn = currentStrip?.querySelector(`[data-planner-date="${date}"]`);
         if (currentStrip && selectedBtn) {
-          const targetLeft = selectedBtn.offsetLeft - (currentStrip.clientWidth / 2) + (selectedBtn.clientWidth / 2);
+          const containerRect = currentStrip.getBoundingClientRect();
+          const btnRect = selectedBtn.getBoundingClientRect();
+          const currentLeft = currentStrip.scrollLeft || 0;
+          const targetLeft = currentLeft + (btnRect.left - containerRect.left) - (currentStrip.clientWidth / 2) + (selectedBtn.clientWidth / 2);
           currentStrip.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
         }
       });
@@ -2577,8 +2599,9 @@ function App() {
         korean: { ...prev.korean, common: nextCommonKor, elective: nextElecKor },
         math: { ...prev.math, common: nextCommonMath, elective: nextElecMath },
         english: nextEnglish,
-        inquiry1: { ...prev.inquiry1, score: nextInq1 },
-        inquiry2: { ...prev.inquiry2, score: nextInq2 }
+        history: nextHistory,
+        inquiry1: { ...prev.inquiry1, subject: nextInq1Subject, score: nextInq1 },
+        inquiry2: { ...prev.inquiry2, subject: nextInq2Subject, score: nextInq2 }
       }));
       const requiredMissing = !String(nextCommonKor).trim()
         || !String(nextElecKor).trim()
