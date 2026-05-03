@@ -222,6 +222,8 @@ function App() {
   const scrollGuardRef = useRef({ until: 0, y: 0, restoring: false });
   const renderStableScrollYRef = useRef(0);
   const renderStableScreenRef = useRef('');
+  const ob2SelectSyncTimerRef = useRef(null);
+  const v2eSelectSyncTimerRef = useRef(null);
   const isIOSSafari = () => {
     if (typeof navigator === 'undefined') return false;
     return /iP(ad|hone|od)/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|OPiOS|EdgiOS/.test(navigator.userAgent);
@@ -3456,6 +3458,39 @@ function App() {
   const onChange = (e) => {
     markStableScrollPosition();
     const field = e.target.getAttribute('data-field');
+    const isOb2ScoreField = field === 'obExamType'
+      || field === 'obKoreanType'
+      || field === 'obMathType'
+      || field === 'obHistoryType'
+      || field === 'obInquiry1Subject'
+      || field === 'obInquiry2Subject'
+      || e.target.getAttribute('data-score-key') === 'english_grade';
+    if (isIOSSafari() && screen === 'ob2' && isOb2ScoreField) {
+      if (ob2SelectSyncTimerRef.current) clearTimeout(ob2SelectSyncTimerRef.current);
+      ob2SelectSyncTimerRef.current = setTimeout(() => {
+        const examType = String(document.querySelector('[data-field="obExamType"]')?.value || '').trim();
+        if (examType) applyObExamSelection(examType);
+      }, 300);
+      return;
+    }
+    const isV2eSelectField = field === 'v2e-english' || field === 'v2e-history' || field === 'v2e-inq1-subject' || field === 'v2e-inq2-subject';
+    if (isIOSSafari() && scoreEditOpen && isV2eSelectField) {
+      if (v2eSelectSyncTimerRef.current) clearTimeout(v2eSelectSyncTimerRef.current);
+      v2eSelectSyncTimerRef.current = setTimeout(() => {
+        const english = document.querySelector('[data-field="v2e-english"]')?.value;
+        const history = document.querySelector('[data-field="v2e-history"]')?.value;
+        const inq1 = document.querySelector('[data-field="v2e-inq1-subject"]')?.value;
+        const inq2 = document.querySelector('[data-field="v2e-inq2-subject"]')?.value;
+        setScoreEditState((prev) => ({
+          ...prev,
+          english: english ?? prev.english,
+          history: history ?? prev.history,
+          inquiry1: { ...prev.inquiry1, subject: inq1 ?? prev.inquiry1.subject },
+          inquiry2: { ...prev.inquiry2, subject: inq2 ?? prev.inquiry2.subject }
+        }));
+      }, 300);
+      return;
+    }
     if (field === 'coachPlannerFiles') {
       const files = Array.from(e.target.files || []);
       if (files.length) setCoachingPlannerFiles((prev) => [...prev, ...files].slice(0, 5));
@@ -3477,7 +3512,7 @@ function App() {
       }
     }
     if (field === 'obExamType') preserveY(() => applyObExamSelection(e.target.value));
-    if (field === 'v2e-english' || field === 'v2e-history' || field === 'v2e-inq1-subject' || field === 'v2e-inq2-subject') {
+    if (isV2eSelectField) {
       const value = e.target.value;
       preserveScrollAfterStateChange(() => {
         if (field === 'v2e-english') setScoreEditState((prev) => ({ ...prev, english: value }));
