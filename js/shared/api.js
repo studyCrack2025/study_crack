@@ -71,7 +71,7 @@ async function apiFetch(url, options = {}) {
                 }
                 alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
                 const userRole = localStorage.getItem('userRole');
-                localStorage.clear();
+                ['accessToken','idToken','refreshToken','userId','userEmail','userRole','userName','userTier','authProvider'].forEach(k => localStorage.removeItem(k));
                 sessionStorage.clear();
                 window.location.href = (userRole === 'admin' || userRole === 'tutor') ? '/admin/login' : '/login';
                 return Promise.reject(new Error("Auth expired"));

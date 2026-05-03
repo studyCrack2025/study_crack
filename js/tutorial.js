@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!token && !localStorage.getItem('refreshToken')) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
+            clearClientSession();
             window.location.replace('/login');
             return;
         }
