@@ -743,10 +743,9 @@ function startDeleteReauth(provider) {
 
     const stateNonce = Array.from(crypto.getRandomValues(new Uint8Array(16)))
         .map(b => b.toString(16).padStart(2, '0')).join('');
-    const state = `${stateNonce}|${provider}`;
+    // purpose를 state에 인코딩 → OAuth 리다이렉트 후에도 sessionStorage 소실 없이 서버가 목적 확인 가능
+    const state = `${stateNonce}|${provider}|delete_reauth`;
     sessionStorage.setItem('socialState', state);
-    sessionStorage.setItem('socialReauthMode', 'true');
-    sessionStorage.setItem('socialReauthPurpose', 'delete_account');
 
     let authUrl = '';
     if (provider === 'google') {
@@ -973,17 +972,21 @@ function deleteStep2Submit() {
 }
 
 async function processBackendDeletion() {
+    // 소셜 계정 탈퇴 시 재인증으로 발급된 deleteConfirmToken 첨부 (5분 이내 사용)
+    const deleteConfirmToken = sessionStorage.getItem('deleteConfirmToken') || null;
+    sessionStorage.removeItem('deleteConfirmToken');
+
     try {
         await apiFetch(USER_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'delete_user' })
+            body: JSON.stringify({ type: 'delete_user', ...(deleteConfirmToken && { deleteConfirmToken }) })
         });
-        
-        alert("회원 탈퇴가 정상적으로 완료되었습니다. 그동안 스터디크랙을 이용해 주셔서 감사합니다."); 
-        localStorage.clear(); 
-        sessionStorage.clear(); 
-        window.location.href = '/'; 
-    } catch (error) { 
+
+        alert("회원 탈퇴가 정상적으로 완료되었습니다. 그동안 스터디크랙을 이용해 주셔서 감사합니다.");
+        clearClientSession();
+        sessionStorage.clear();
+        window.location.href = '/';
+    } catch (error) {
         if (error.message !== "Auth expired") alert("서버 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
         const btn = document.querySelector('#deleteStep2 .danger-btn');
         if (btn) { btn.innerText = '탈퇴하기'; btn.disabled = false; }
