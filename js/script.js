@@ -467,7 +467,7 @@ async function checkTutorialStatus() {
 }
 
 function updateNavUI() {
-    const isLoggedIn = !!(getAccessToken() || localStorage.getItem('idToken'));
+    const isLoggedIn = !!(getAccessToken() || getIdToken() || localStorage.getItem('userId'));
     const userRole = localStorage.getItem('userRole');
     
     const btnAnalysis = document.getElementById('navAnalysis');

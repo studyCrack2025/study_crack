@@ -74,7 +74,7 @@ function escapeHtml(text) {
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. 기본 토큰 존재 여부만 1차 확인 (accessToken으로 통일)
-    if (!getAccessToken() || !localStorage.getItem('idToken')) {
+    if (!getAccessToken() || !getIdToken()) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
             clearClientSession();
@@ -209,7 +209,7 @@ function initCognitoAndFetchData() {
             const freshAccessToken = session.getAccessToken().getJwtToken();
             const freshIdToken = session.getIdToken().getJwtToken();
             setAccessToken(freshAccessToken);
-            localStorage.setItem('idToken', freshIdToken);
+            setIdToken(freshIdToken);
 
             const userId = localStorage.getItem('userId');
             fetchUserData(userId);

@@ -8,6 +8,14 @@ function getAccessToken() { return _accessToken; }
 function setAccessToken(token) { _accessToken = token; }
 function clearAccessToken() { _accessToken = null; }
 
+// ==========================================
+// [메모리 저장소] idToken - XSS 탈취 방지
+// ==========================================
+let _idToken = null;
+function getIdToken() { return _idToken; }
+function setIdToken(token) { _idToken = token; }
+function clearIdToken() { _idToken = null; }
+
 // API URL 변경 (Gateway 사용)
 const USER_API_URL = CONFIG.api.user;
 const AUTH_URL = CONFIG.api.auth;
@@ -39,7 +47,7 @@ async function tryRefreshToken() {
             const data = await res.json();
             if (data.accessToken && data.idToken) {
                 setAccessToken(data.accessToken);
-                localStorage.setItem('idToken', data.idToken);
+                setIdToken(data.idToken);
                 return true;
             }
         }
@@ -55,7 +63,7 @@ async function tryRefreshToken() {
         const fallbackData = await fallbackRes.json();
         if (fallbackData.accessToken && fallbackData.idToken) {
             setAccessToken(fallbackData.accessToken);
-            localStorage.setItem('idToken', fallbackData.idToken);
+            setIdToken(fallbackData.idToken);
             return true;
         }
         return false;
@@ -124,7 +132,7 @@ function getPayloadFromToken(token) {
 // 분리된 DB 구조에 맞춘 스마트 권한 식별 함수
 async function resolveUserIdentity(eventType = 'none', promoCode = '') {
     const token = getAccessToken();
-    const idToken = localStorage.getItem('idToken');
+    const idToken = getIdToken();
     if (!token || !idToken) return;
 
     try {
@@ -684,7 +692,7 @@ async function handleFinalSubmit() {
                 onSuccess: async function(authResult) {
                     const refreshToken = authResult.getRefreshToken().getToken();
                     setAccessToken(authResult.getAccessToken().getJwtToken());
-                    localStorage.setItem('idToken', authResult.getIdToken().getJwtToken());
+                    setIdToken(authResult.getIdToken().getJwtToken());
                     localStorage.setItem('userId', authResult.getIdToken().payload.sub);
                     localStorage.setItem('userEmail', email);
                     localStorage.setItem('userRole', 'student');
@@ -700,7 +708,7 @@ async function handleFinalSubmit() {
                         if (cookieRes.ok) {
                             const d = await cookieRes.json();
                             if (d.accessToken) setAccessToken(d.accessToken);
-                            if (d.idToken) localStorage.setItem('idToken', d.idToken);
+                            if (d.idToken) setIdToken(d.idToken);
                             localStorage.removeItem('refreshToken');
                         } else {
                             localStorage.setItem('refreshToken', refreshToken);
@@ -737,8 +745,9 @@ async function handleFinalSubmit() {
 
 function clearClientSession() {
     clearAccessToken();
+    clearIdToken();
     const sessionKeys = [
-        'idToken', 'refreshToken',
+        'refreshToken',
         'userId', 'userEmail', 'userRole', 'userName', 'userTier', 'authProvider'
     ];
     sessionKeys.forEach(key => localStorage.removeItem(key));
@@ -746,7 +755,7 @@ function clearClientSession() {
 }
 
 function checkLoginStatus() {
-    const accessToken = getAccessToken() || localStorage.getItem('idToken');
+    const isLoggedIn = !!(getAccessToken() || getIdToken() || localStorage.getItem('userId'));
     const userRole = localStorage.getItem('userRole');
 
     const loginBtn = document.getElementById('loginBtn');
@@ -755,7 +764,7 @@ function checkLoginStatus() {
     const logoutBtn = document.getElementById('logoutBtn');
 
     if (loginBtn && logoutBtn) {
-        if (accessToken) {
+        if (isLoggedIn) {
             loginBtn.classList.add('hidden');
             logoutBtn.classList.remove('hidden');
             if (userRole === 'student') {
@@ -772,8 +781,8 @@ function checkLoginStatus() {
             logoutBtn.classList.add('hidden');
         }
     }
-    
-    if (getAccessToken() || localStorage.getItem('idToken')) {
+
+    if (isLoggedIn) {
         // 💡 [핵심] 조용히 백그라운드에서 신분(Role)을 재확인
         resolveUserIdentity('none');
     }
@@ -811,7 +820,7 @@ function handleSignIn() {
             const refreshToken = result.getRefreshToken().getToken();
 
             setAccessToken(accessToken);
-            localStorage.setItem('idToken', idToken.getJwtToken());
+            setIdToken(idToken.getJwtToken());
             localStorage.setItem('userEmail', email);
             localStorage.setItem('userId', userId);
 
@@ -826,7 +835,7 @@ function handleSignIn() {
                 if (cookieRes.ok) {
                     const d = await cookieRes.json();
                     if (d.accessToken) setAccessToken(d.accessToken);
-                    if (d.idToken) localStorage.setItem('idToken', d.idToken);
+                    if (d.idToken) setIdToken(d.idToken);
                     localStorage.removeItem('refreshToken');
                 } else {
                     localStorage.setItem('refreshToken', refreshToken); // 실패 시 폴백

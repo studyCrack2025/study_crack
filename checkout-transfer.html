@@ -166,6 +166,7 @@
             btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 입금 확인 요청 중...`;
             btn.disabled = true;
 
+            // TODO Stage5: auth.js 로드 후 getIdToken() 사용 필요
             const token = localStorage.getItem('idToken') || localStorage.getItem('accessToken');
 
             try {

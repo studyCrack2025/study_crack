@@ -7,6 +7,10 @@ let _adminAccessToken = null;
 function getAccessToken() { return _adminAccessToken; }
 function setAccessToken(token) { _adminAccessToken = token; }
 
+let _adminIdToken = null;
+function getIdToken() { return _adminIdToken; }
+function setIdToken(token) { _adminIdToken = token; }
+
 let _sharedIsRefreshing = false;
 
 async function tryRefreshToken() {
@@ -24,7 +28,7 @@ async function tryRefreshToken() {
             const data = await res.json();
             if (data.accessToken && data.idToken) {
                 setAccessToken(data.accessToken);
-                localStorage.setItem('idToken', data.idToken);
+                setIdToken(data.idToken);
                 return true;
             }
         }
@@ -40,7 +44,7 @@ async function tryRefreshToken() {
         const fallbackData = await fallbackRes.json();
         if (fallbackData.accessToken && fallbackData.idToken) {
             setAccessToken(fallbackData.accessToken);
-            localStorage.setItem('idToken', fallbackData.idToken);
+            setIdToken(fallbackData.idToken);
             return true;
         }
         return false;
@@ -77,7 +81,8 @@ async function apiFetch(url, options = {}) {
                 alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
                 const userRole = localStorage.getItem('userRole');
                 setAccessToken(null);
-                ['idToken','refreshToken','userId','userEmail','userRole','userName','userTier','authProvider'].forEach(k => localStorage.removeItem(k));
+                setIdToken(null);
+                ['refreshToken','userId','userEmail','userRole','userName','userTier','authProvider'].forEach(k => localStorage.removeItem(k));
                 sessionStorage.clear();
                 window.location.href = (userRole === 'admin' || userRole === 'tutor') ? '/admin/login' : '/login';
                 return Promise.reject(new Error("Auth expired"));

@@ -45,7 +45,7 @@ function parseDynamoItem(item) {
 document.addEventListener('DOMContentLoaded', async () => {
     const userId = localStorage.getItem('userId');
 
-    if (!getAccessToken() || !localStorage.getItem('idToken')) {
+    if (!getAccessToken() || !getIdToken()) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
             clearClientSession();
@@ -780,7 +780,7 @@ window.requestTutorWithdrawal = function() {
                 // 1. 최신 토큰으로 갱신
                 const newAccessToken = result.getAccessToken().getJwtToken();
                 setAccessToken(newAccessToken);
-                localStorage.setItem('idToken', result.getIdToken().getJwtToken());
+                setIdToken(result.getIdToken().getJwtToken());
 
                 // 2. 단일 API 호출 (saveSingleField 삭제됨)
                 // 💡 새 토큰을 헤더에 명시적으로 덮어씌워 401 동기화 에러 완벽 차단

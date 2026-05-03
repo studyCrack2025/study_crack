@@ -51,7 +51,7 @@ const EXAM_DISPLAY_NAMES = {
 document.addEventListener('DOMContentLoaded', async () => {
     const userId = localStorage.getItem('userId');
 
-    if (!getAccessToken() || !localStorage.getItem('idToken')) {
+    if (!getAccessToken() || !getIdToken()) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
             clearClientSession();
@@ -533,7 +533,7 @@ window.finishTutorialComplete = async function() {
     }
 
     try {
-        const token = localStorage.getItem('idToken');
+        const token = getIdToken();
         // 튜토리얼 보상으로 trial 티어 부여 및 횟수 4회 충전 요청
         await fetch(MYPAGE_API_URL, {
             method: 'POST',
@@ -658,7 +658,7 @@ function parseDynamoItem(item) {
 // [데이터 로드] 사용자 정보 & 리포트 데이터
 // ============================================================
 async function fetchUserData(userId) {
-    const token = localStorage.getItem('idToken');
+    const token = getIdToken();
     const safeUserId = userId || localStorage.getItem('userId'); 
     try {
         const response = await fetch(MYPAGE_API_URL, {
@@ -722,7 +722,7 @@ async function fetchUserData(userId) {
 }
 
 async function fetchWeeklyHistory() {
-    const token = localStorage.getItem('idToken');
+    const token = getIdToken();
     try {
         const response = await fetch(REPORT_API_URL, {
             method: 'POST',
@@ -738,7 +738,7 @@ async function fetchWeeklyHistory() {
 }
 
 async function fetchInitialProReports() {
-    const token = localStorage.getItem('idToken');
+    const token = getIdToken();
     try {
         const res = await fetch(REPORT_API_URL, {
             method: 'POST',
@@ -753,7 +753,7 @@ async function fetchInitialProReports() {
 }
 
 async function fetchUnivData() {
-    const token = localStorage.getItem('idToken');
+    const token = getIdToken();
     const userId = localStorage.getItem('userId');
     try {
         const response = await fetch(UNIV_DATA_API_URL, {
@@ -978,7 +978,7 @@ async function downloadMbtiReport() {
     // 💡 [핵심 방어] 서버 통신(await)을 시작하기 전, 사용자가 클릭한 즉시 빈 창을 먼저 엽니다!
     const newWindow = window.open('about:blank', '_blank');
 
-    const token = localStorage.getItem('idToken');
+    const token = getIdToken();
     try {
         const res = await fetch(REPORT_API_URL, {
             method: 'POST',
@@ -1387,7 +1387,7 @@ async function saveTargetUnivs() {
     }
     
     const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('idToken'); 
+    const token = getIdToken(); 
     
     try {
         const response = await fetch(MYPAGE_API_URL, {
@@ -1454,7 +1454,7 @@ async function updateAnalysisUI() {
     container.innerHTML = selectorHTML;
     
     const cardsContainer = document.getElementById('analysisCardsContainer');
-    const token = localStorage.getItem('idToken');
+    const token = getIdToken();
     const userId = localStorage.getItem('userId');
     const currentScoreData = userQuantData[currentExamMode];
 
@@ -1623,7 +1623,7 @@ async function fetchSimulationData() {
     
     chartArea.innerHTML = '<div style="margin:auto; color:#3b82f6;"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
     
-    const token = localStorage.getItem('idToken');
+    const token = getIdToken();
     const userId = localStorage.getItem('userId');
     
     let scoreData = null;
@@ -2777,7 +2777,7 @@ async function downloadReportPDF(reportTitle) {
             </body></html>
         `;
 
-        const token = localStorage.getItem('idToken');
+        const token = getIdToken();
         
         const response = await fetch(PDF_API_URL, { 
             method: 'POST', 
@@ -3233,7 +3233,7 @@ async function submitWeeklyCheck() {
 
         if (!confirm("제출하시겠습니까?")) return;
 
-        const token = localStorage.getItem('idToken'); 
+        const token = getIdToken(); 
 
         const currentUrls = currentPlannerFiles.filter(f => typeof f === 'string'); 
         const filesToDelete = originalPlannerFiles.filter(url => !currentUrls.includes(url));
@@ -3526,7 +3526,7 @@ async function submitProReport() {
     const submitBtn = document.querySelector('.pro-submit-btn'); const originalText = submitBtn.innerText;
     submitBtn.innerText = "처리 중..."; submitBtn.disabled = true;
     
-    const token = localStorage.getItem('idToken');
+    const token = getIdToken();
     try {
         const res = await fetch(REPORT_API_URL, {
             method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
