@@ -74,8 +74,7 @@ function escapeHtml(text) {
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. 기본 토큰 존재 여부만 1차 확인 (accessToken으로 통일)
-    const accessToken = localStorage.getItem('accessToken');
-    if (!accessToken && !localStorage.getItem('refreshToken')) {
+    if (!localStorage.getItem('accessToken') || !localStorage.getItem('idToken')) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
             clearClientSession();
