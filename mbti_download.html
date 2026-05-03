@@ -56,12 +56,18 @@ body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; displ
     </div>
 
     <script src="/js/config.js"></script>
+    <script src="/js/auth.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const token = localStorage.getItem('idToken');
-            if (!token) {
-                alert("로그인이 필요한 페이지입니다.");
-                window.location.href = '/login';
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!getAccessToken() || !getIdToken()) {
+                const refreshed = await tryRefreshToken();
+                if (!refreshed) {
+                    clearClientSession();
+                    alert("로그인이 필요한 페이지입니다.");
+                    window.location.href = '/login';
+                    return;
+                }
+                checkLoginStatus();
             }
         });
 
@@ -105,11 +111,9 @@ body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; displ
             if (newWindow) newWindow.opener = null;
 
             try {
-                const token = localStorage.getItem('idToken');
-
                 const res = await fetch(CONFIG.api.report, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAccessToken()}` },
                     body: JSON.stringify({ type: 'get_mbti_pdf_url', mbtiType: mbtiResult })
                 });
 

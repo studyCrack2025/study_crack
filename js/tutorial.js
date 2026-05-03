@@ -39,7 +39,7 @@ let mbtiDimSelections = [null, null, null, null];
 document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     // 인증 가드: 로그인하지 않은 사용자는 로그인 페이지로 이동
-    if (!getAccessToken() || !localStorage.getItem('idToken')) {
+    if (!getAccessToken() || !getIdToken()) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
             clearClientSession();

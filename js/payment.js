@@ -28,7 +28,7 @@ async function tryRefreshToken() {
             const data = await res.json();
             if (data.accessToken && data.idToken) {
                 setAccessToken(data.accessToken);
-                localStorage.setItem('idToken', data.idToken);
+                setIdToken(data.idToken);
                 return true;
             }
         }
@@ -43,7 +43,7 @@ async function tryRefreshToken() {
         const fallbackData = await fallbackRes.json();
         if (fallbackData.accessToken && fallbackData.idToken) {
             setAccessToken(fallbackData.accessToken);
-            localStorage.setItem('idToken', fallbackData.idToken);
+            setIdToken(fallbackData.idToken);
             return true;
         }
         return false;

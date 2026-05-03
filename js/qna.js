@@ -105,7 +105,7 @@ function closeDetailModal() { closeLocalModal('qna-detail-modal'); }
 async function loadQnaHistory() {
     const grid = document.getElementById('qna-grid');
 
-    if (!getAccessToken() || !localStorage.getItem('idToken')) {
+    if (!getAccessToken() || !getIdToken()) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
             clearClientSession();

@@ -132,7 +132,7 @@
         // 4. 연동 모드 + 새 계정 생성된 경우: 기존 세션 보관 후 확인
         if (isLinkMode && isNewUser) {
             const prevAccessToken = getAccessToken();
-            const prevIdToken    = localStorage.getItem('idToken');
+            const prevIdToken    = getIdToken();
             const prevUserId     = localStorage.getItem('userId');
 
             const confirmed = confirm(
@@ -143,7 +143,7 @@
             if (!confirmed) {
                 // 기존 세션 복원 후 마이페이지로 복귀
                 if (prevAccessToken) setAccessToken(prevAccessToken);
-                if (prevIdToken)    localStorage.setItem('idToken', prevIdToken);
+                if (prevIdToken)    setIdToken(prevIdToken);
                 if (prevUserId)     localStorage.setItem('userId', prevUserId);
                 window.location.href = '/mypage';
                 return;
@@ -151,7 +151,7 @@
 
             // 확인 → 새 계정 토큰으로 교체 후 welcome으로
             setAccessToken(accessToken);
-            localStorage.setItem('idToken', idToken);
+            setIdToken(idToken);
             localStorage.setItem('userId', userId);
             localStorage.setItem('userRole', 'student');
             window.location.href = '/welcome';
@@ -160,7 +160,7 @@
 
         // 5. 토큰 저장
         setAccessToken(accessToken);
-        localStorage.setItem('idToken', idToken);
+        setIdToken(idToken);
         localStorage.setItem('userId', userId);
         localStorage.setItem('userRole', 'student');
         if (result.refreshToken) localStorage.setItem('refreshToken', result.refreshToken);
