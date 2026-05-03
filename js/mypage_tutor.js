@@ -43,10 +43,9 @@ function parseDynamoItem(item) {
 // [초기화] DOM 로드 및 데이터 페치
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
-    const accessToken = localStorage.getItem('accessToken'); 
     const userId = localStorage.getItem('userId');
 
-    if (!accessToken && !localStorage.getItem('refreshToken')) {
+    if (!localStorage.getItem('accessToken') || !localStorage.getItem('idToken')) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
             clearClientSession();

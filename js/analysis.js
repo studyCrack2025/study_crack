@@ -49,13 +49,17 @@ const EXAM_DISPLAY_NAMES = {
 // [초기화] DOM 로드 시 실행 (💡 병렬 데이터 로딩으로 개편)
 // ============================================================
 document.addEventListener('DOMContentLoaded', async () => {
-    const idToken = localStorage.getItem('idToken'); 
     const userId = localStorage.getItem('userId');
 
-    if (!idToken) {
-        alert("로그인이 필요합니다.");
-        window.location.href = '/login';
-        return;
+    if (!localStorage.getItem('accessToken') || !localStorage.getItem('idToken')) {
+        const refreshed = await tryRefreshToken();
+        if (!refreshed) {
+            clearClientSession();
+            alert("로그인이 필요합니다.");
+            window.location.href = '/login';
+            return;
+        }
+        checkLoginStatus();
     }
 
     setWeeklyLoadingStatus(true);

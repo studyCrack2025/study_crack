@@ -38,10 +38,8 @@ let mbtiDimSelections = [null, null, null, null];
 
 document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
-    const token = localStorage.getItem('accessToken');
-
     // 인증 가드: 로그인하지 않은 사용자는 로그인 페이지로 이동
-    if (!token && !localStorage.getItem('refreshToken')) {
+    if (!localStorage.getItem('accessToken') || !localStorage.getItem('idToken')) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
             clearClientSession();
