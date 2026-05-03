@@ -1782,7 +1782,7 @@ function App() {
          <div class="ob-mbti-q"><p>4) 피드백이 있으면 공부가 더 잘 되나요?</p><div class="ob-mbti-opt"><button data-action="setMbti" data-mbti-q="q4" data-mbti-v="feedback" class="${mbtiAnswers.q4==='feedback'?'active':''}">네</button><button data-action="setMbti" data-mbti-q="q4" data-mbti-v="self" class="${mbtiAnswers.q4==='self'?'active':''}">아니오</button></div></div>
          <button class="btn btn-primary ${mbtiDone?'':'disabled'}" data-action="completeMbti" ${mbtiDone?'':'disabled'}>검사 완료</button>
        </div></div>` : ''}
-       </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="goto" data-target="ob4">분석 결과 보기</button></div></div>`,
+       </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="goto" data-target="home">홈으로 이동</button></div></div>`,
       false
     ),
     ob4: layout(
@@ -1811,6 +1811,7 @@ function App() {
          <div class="analysis-impact-item">탐구<div class="track"><i style="width:68%;background:#14b8a6"></i></div><span>+6점 → +9%</span></div>
          <div class="analysis-impact-item">영어<div class="track"><i style="width:48%;background:#f59e0b"></i></div><span>+3점 → +5%</span></div>
        </div>
+       ${mbtiResult ? `<div class="card ob-card"><p class="analysis-title">MBTI 검사 결과</p><p class="sub mbti-result">진단 결과: <b>${mbtiResult}</b></p><button class="btn btn-secondary" data-action="downloadMbtiReport">MBTI 학습 보고서 다운</button></div>` : ''}
        </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button type="button" class="cta-button" data-action="goto" data-target="ob5">내 맞춤 솔루션 보기</button></div></div>`,
       false
     ),
@@ -2106,6 +2107,7 @@ function App() {
     ),
     my: layout(appbar('마이페이지', false) + `<div class="my-stack">
       <div class="card my-profile-card"><div class="my-profile-left"><div class="my-avatar">${i('user', false)}</div><div><p class="my-name">김지민</p><p class="sub">목표 대학: 연세대학교 경영학과</p></div></div><span class="badge">Pro 이용 중</span></div>
+      ${mbtiResult ? `<div class="card"><p class="analysis-title">학습 MBTI 결과</p><p class="sub mbti-result">진단 결과: <b>${mbtiResult}</b></p><button class="btn btn-secondary" data-action="downloadMbtiReport">MBTI 학습 보고서 다운</button></div>` : ''}
       <div class="card my-subscription-card"><div class="my-sub-icon">${i('report', false)}</div><div><p class="my-sub-title">Pro 플랜 이용 중</p><p class="my-sub-date">다음 결제일 2024.06.14</p></div></div>
       <div class="card my-menu-card">
         <button class="my-row" data-action="goto" data-target="qualInfo">정성조사서 <span>${i('chevron', false)}</span></button><button class="my-row" data-action="goto" data-target="scoreInfo">성적 정보 <span>${i('chevron', false)}</span></button>
@@ -2371,7 +2373,7 @@ function App() {
         goto('ob3');
         return;
       }
-      if (screen === 'ob3' && target === 'ob4') {
+      if (screen === 'ob3' && target === 'home') {
         if (!Object.values(mbtiAnswers).every(Boolean)) {
           alert('MBTI 검사를 완료해주세요');
           return;
@@ -2646,6 +2648,18 @@ function App() {
       if (!ok) return;
       goto('ob5');
       return;
+    }
+    if (action === 'downloadMbtiReport') {
+      const reportText = `StudyCrack MBTI 학습 보고서\n\n진단 결과: ${mbtiResult || '미완료'}\n\n추천 학습 전략:\n- 주간 계획을 먼저 세우고 과목별 우선순위를 정하세요.\n- 취약 과목 1개를 매일 고정 시간에 학습하세요.\n- 주 1회 성취도 점검으로 다음 주 계획을 보정하세요.`;
+      const blob = new Blob([reportText], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'mbti-study-report.txt';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
     }
     if (action === 'scoreStepPrev') setScoreEditStep((v) => Math.max(1, v - 1));
     if (action === 'scoreStepNext') {
