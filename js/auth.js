@@ -86,8 +86,7 @@ async function apiFetch(url, options = {}) {
                 }
                 const currentPath = window.location.pathname;
                 if (!['/login', '/signup', '/'].includes(currentPath)) {
-                    localStorage.clear();
-                    sessionStorage.clear();
+                    clearClientSession();
                     window.location.href = '/login';
                 }
                 return Promise.reject(new Error("Auth expired"));
@@ -728,6 +727,15 @@ async function handleFinalSubmit() {
 // [Part F] 로그인 및 로그아웃
 // ==========================================
 
+function clearClientSession() {
+    const sessionKeys = [
+        'accessToken', 'idToken', 'refreshToken',
+        'userId', 'userEmail', 'userRole', 'userName', 'userTier', 'authProvider'
+    ];
+    sessionKeys.forEach(key => localStorage.removeItem(key));
+    sessionStorage.clear();
+}
+
 function checkLoginStatus() {
     const accessToken = localStorage.getItem('accessToken');
     const userRole = localStorage.getItem('userRole');
@@ -765,10 +773,9 @@ function checkLoginStatus() {
 function handleSignOut(silent = false) {
     const cognitoUser = userPool.getCurrentUser();
     if (cognitoUser != null) cognitoUser.signOut();
-    
-    localStorage.clear();
-    sessionStorage.clear();
-    
+
+    clearClientSession();
+
     if (!silent) alert("로그아웃 되었습니다.");
     window.location.href = '/login';
 }

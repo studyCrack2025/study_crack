@@ -49,10 +49,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!accessToken && !localStorage.getItem('refreshToken')) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
+            clearClientSession();
             alert("로그인이 필요합니다.");
             window.location.href = '/login';
             return;
         }
+        checkLoginStatus();
     }
 
     initTutorCognito();

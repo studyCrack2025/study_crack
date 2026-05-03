@@ -108,9 +108,12 @@ async function loadQnaHistory() {
     if (!localStorage.getItem('accessToken') && !localStorage.getItem('refreshToken')) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
+            clearClientSession();
             grid.innerHTML = '<div style="text-align:center; padding:40px; color:#64748b;">로그인 후 이용 가능한 서비스입니다.</div>';
+            checkLoginStatus();
             return;
         }
+        checkLoginStatus();
     }
 
     try {
