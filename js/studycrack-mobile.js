@@ -1930,6 +1930,21 @@ function App() {
             <div class="ob-gauge-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
             <p class="analysis-sub"><b>현재 → 합격권 진입 구간</b></p>
           </div>
+          <div class="card ob-card">
+            <p class="analysis-title">성적 변화 시 가능한 대학</p>
+            ${[['국민대 경영학부', gaugeCurrent + 6], ['숭실대 경제학과', gaugeCurrent + 10], ['세종대 미디어커뮤니케이션학과', gaugeCurrent + 14]].map(([name, target]) => `<div class="card ob-card" style="margin:10px 0 0;">
+              <p class="analysis-title">${name}</p>
+              <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${target}점</b></div></div>
+              <div class="ob-gauge">
+                <div class="ob-gauge-current" style="width:${Math.min(100, (gaugeCurrent / 250) * 100)}%"></div>
+                <div class="ob-gauge-target" style="width:${Math.min(100, (target / 250) * 100)}%"></div>
+                <i class="ob-gauge-cut pass" style="left:${gaugePassPct}%"></i>
+                <i class="ob-gauge-cut safe" style="left:${gaugeSafePct}%"></i>
+              </div>
+              <div class="ob-gauge-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
+              <p class="sub"><b>현재 → 합격권 진입 구간</b></p>
+            </div>`).join('')}
+          </div>
 
           <div class="card analysis-v2-cta sticky"><p class="analysis-title">지금 방향이 틀리면 시간만 낭비될 수 있습니다</p><p class="sub">Standard는 매주 학습 방향과 실행을 관리합니다.</p><button class="btn analysis-convert-btn" data-action="startStandard">2개월 내 합격권 진입 시작하기</button></div>
         ` : `
@@ -2218,6 +2233,7 @@ function App() {
     const actionEl = e.target.closest('[data-action]');
     if (!actionEl) return;
     const action = actionEl.getAttribute('data-action');
+    const isOverlaySelfClick = e.target === actionEl;
     const shouldKeepScroll = ['toggleFaq', 'toggleStudyBreakdown', 'openUniversityModal', 'closeUniversityModal', 'openDrawer', 'closeDrawer', 'openScoreEdit', 'closeScoreEdit'].includes(action);
     if (shouldKeepScroll) keepScrollPosition();
     if (action === 'goto') {
@@ -2455,40 +2471,28 @@ function App() {
       }, 500);
     }
     if (action === 'openUniversityModal') {
-      if (isIOSSafari() && screen === 'home') {
-        const modal = document.querySelector('.home-modal .analysis-search-row, .home-modal .analysis-rec-card')?.closest('.home-modal');
-        const overlay = modal?.closest('.home-modal-overlay');
-        if (overlay) {
-          overlay.hidden = false;
-          overlay.style.display = '';
-          return;
-        }
-      }
-      preserveY(() => setUniversityModalOpen(true));
+      preserveScrollAfterStateChange(() => {
+        setNotifModalOpen(false);
+        setUniversityModalOpen(true);
+        setAnalysisSearchOpen(false);
+      });
+      return;
     }
     if (action === 'openAnalysisSearchFromHome') {
-      if (isIOSSafari() && screen === 'home') {
-        const modal = document.querySelector('.home-modal .analysis-search-row, .home-modal .analysis-rec-card')?.closest('.home-modal');
-        const overlay = modal?.closest('.home-modal-overlay');
-        if (overlay) {
-          overlay.hidden = false;
-          overlay.style.display = '';
-          return;
-        }
-      }
-      preserveY(() => setUniversityModalOpen(true));
+      preserveScrollAfterStateChange(() => {
+        setNotifModalOpen(false);
+        setUniversityModalOpen(true);
+        setAnalysisSearchOpen(false);
+      });
+      return;
     }
     if (action === 'closeUniversityModal') {
-      if (isIOSSafari() && screen === 'home') {
-        const modal = document.querySelector('.home-modal .analysis-search-row, .home-modal .analysis-rec-card')?.closest('.home-modal');
-        const overlay = modal?.closest('.home-modal-overlay');
-        if (overlay) {
-          overlay.hidden = true;
-          overlay.style.display = 'none';
-          return;
-        }
-      }
-      afterSafariViewportStable(() => setUniversityModalOpen(false));
+      if (!isOverlaySelfClick && actionEl.classList.contains('home-modal-overlay')) return;
+      preserveScrollAfterStateChange(() => {
+        setUniversityModalOpen(false);
+        setAnalysisSearchOpen(false);
+      });
+      return;
     }
     if (action === 'openPlannerAddPage') goto('plannerAdd');
     if (action === 'openPlannerCalendar') {
@@ -2720,52 +2724,27 @@ function App() {
     if (action === 'openKakaoSupport') window.open('http://pf.kakao.com/_wxjxcgn', '_blank');
     if (action === 'openEmailSupport') window.location.href = 'mailto:contact@studycrack.co.kr';
     if (action === 'openDrawer') {
-      if (isIOSSafari() && screen === 'home') {
-        const drawer = document.querySelector('.side-drawer');
-        const overlay = drawer?.closest('.drawer-overlay');
-        if (overlay) {
-          overlay.hidden = false;
-          overlay.style.display = '';
-          return;
-        }
-      }
-      setDrawerOpen(true);
+      preserveScrollAfterStateChange(() => {
+        setNotifModalOpen(false);
+        setDrawerOpen(true);
+      });
+      return;
     }
     if (action === 'closeDrawer') {
-      if (isIOSSafari() && screen === 'home') {
-        const drawer = document.querySelector('.side-drawer');
-        const overlay = drawer?.closest('.drawer-overlay');
-        if (overlay) {
-          overlay.hidden = true;
-          overlay.style.display = 'none';
-          return;
-        }
-      }
-      setDrawerOpen(false);
+      if (!isOverlaySelfClick && actionEl.classList.contains('drawer-overlay')) return;
+      preserveScrollAfterStateChange(() => {
+        setDrawerOpen(false);
+      });
+      return;
     }
     if (action === 'openNotificationModal') {
-      if (isIOSSafari() && screen === 'home') {
-        const modal = document.querySelector('.pro-notif-modal');
-        const overlay = modal?.closest('.home-modal-overlay');
-        if (overlay) {
-          overlay.hidden = false;
-          overlay.style.display = '';
-          return;
-        }
-      }
-      setNotifModalOpen(true);
+      preserveScrollAfterStateChange(() => setNotifModalOpen(true));
+      return;
     }
     if (action === 'closeNotificationModal') {
-      if (isIOSSafari() && screen === 'home') {
-        const modal = document.querySelector('.pro-notif-modal');
-        const overlay = modal?.closest('.home-modal-overlay');
-        if (overlay) {
-          overlay.hidden = true;
-          overlay.style.display = 'none';
-          return;
-        }
-      }
-      setNotifModalOpen(false);
+      if (!isOverlaySelfClick && actionEl.classList.contains('home-modal-overlay')) return;
+      preserveScrollAfterStateChange(() => setNotifModalOpen(false));
+      return;
     }
     if (action === 'openProRequestModal') setProRequestModalOpen(true);
     if (action === 'closeProRequestModal') setProRequestModalOpen(false);
@@ -2886,17 +2865,12 @@ function App() {
       setCoachingStep((prev) => Math.min(8, prev + 1));
     }
     if (action === 'openStudySubjectSheet') {
-      setStudySubjectSheetOnlyPlanned(true);
-      if (isIOSSafari() && screen === 'home') {
-        const sheet = document.querySelector('.study-subject-sheet');
-        const overlay = sheet?.closest('.planner-sheet-overlay');
-        if (overlay) {
-          overlay.hidden = false;
-          overlay.style.display = '';
-          return;
-        }
-      }
-      setStudySubjectSheetOpen(true);
+      preserveScrollAfterStateChange(() => {
+        setNotifModalOpen(false);
+        setStudySubjectSheetOnlyPlanned(true);
+        setStudySubjectSheetOpen(true);
+      });
+      return;
     }
     if (action === 'toggleStudyBreakdown') {
       if (isIOSSafari() && screen === 'home') {
@@ -2919,17 +2893,12 @@ function App() {
       setExpandedBreakdownSubject((prev) => (prev === subject ? '' : subject));
     }
     if (action === 'closeStudySubjectSheet') {
-      setStudySubjectSheetOnlyPlanned(false);
-      if (isIOSSafari() && screen === 'home') {
-        const sheet = document.querySelector('.study-subject-sheet');
-        const overlay = sheet?.closest('.planner-sheet-overlay');
-        if (overlay) {
-          overlay.hidden = true;
-          overlay.style.display = 'none';
-          return;
-        }
-      }
-      setStudySubjectSheetOpen(false);
+      if (!isOverlaySelfClick && actionEl.classList.contains('planner-sheet-overlay')) return;
+      preserveScrollAfterStateChange(() => {
+        setStudySubjectSheetOnlyPlanned(false);
+        setStudySubjectSheetOpen(false);
+      });
+      return;
     }
     if (action === 'selectStudySubjectCustom') {
       const custom = window.prompt('과목명을 입력하세요', '기타');
