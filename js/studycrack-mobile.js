@@ -1218,7 +1218,7 @@ function App() {
           const sec = todaySubjectsWithTimer[subject] || 0;
           const rows = breakdownDetailMap[subject] || [];
           const expanded = expandedBreakdownSubject === subject;
-          return `<button class="home-breakdown-item" data-action="toggleBreakdownSubject" data-breakdown-subject="${subject}"><div><b>${subject}</b><span>${formatHms(sec)}</span></div></button>${expanded ? `<div class="home-breakdown-detail">${rows.length ? rows.map((row) => { const plannedSec = Math.round(row.plannedHour * 3600); const actualSec = Math.round(row.actualHour * 3600); const rate = plannedSec > 0 ? Math.min(100, Math.round((actualSec / plannedSec) * 100)) : 0; return `<div class="home-breakdown-detail-row"><small>${row.content}</small><em>계획 ${formatHms(plannedSec)} · 실제 ${formatHms(actualSec)}</em><span>${rate}%</span></div>`; }).join('') : '<p>오늘 등록된 학습 계획이 없습니다</p>'}</div>` : ''}`;
+          return `<button class="home-breakdown-item" data-action="toggleBreakdownSubject" data-breakdown-subject="${subject}"><div><b>${subject}</b><small style="margin-left:6px;color:#1D4ED8;font-weight:800;">${rows.length}개 항목</small><span>${formatHms(sec)}</span></div></button>${expanded ? `<div class="home-breakdown-detail">${rows.length ? rows.map((row) => { const plannedSec = Math.round(row.plannedHour * 3600); const actualSec = Math.round(row.actualHour * 3600); const rate = plannedSec > 0 ? Math.min(100, Math.round((actualSec / plannedSec) * 100)) : 0; return `<div class="home-breakdown-detail-row"><small>${row.content}</small><em>계획 ${formatHms(plannedSec)} · 실제 ${formatHms(actualSec)}</em><span>${rate}%</span></div>`; }).join('') : '<p>오늘 등록된 학습 계획이 없습니다</p>'}</div>` : ''}`;
         }).join('')}</div>` : ''}
       </div>
       <button class="card study-goal-card home-goal-linked-card home-insight-card premium-panel" data-action="goto" data-target="planner">
@@ -1775,8 +1775,7 @@ function App() {
          <p class="analysis-title">학습 MBTI 검사</p>
          <p class="sub">4문항으로 빠르게 진단해요.</p>
          <button class="btn btn-secondary" data-action="openMbtiModal">MBTI 시작하기</button>
-         ${mbtiResult ? `<button class="btn btn-secondary" data-action="downloadMbtiReport">MBTI 학습 보고서 다운</button>` : ''}
-         ${mbtiResult ? `<p class="sub mbti-result">진단 결과: <b>${mbtiResult}</b></p>` : ''}
+         ${mbtiResult ? `<div class="card" style="margin-top:12px;border:2px solid #2563EB;background:#EFF6FF;"><p class="analysis-title">진단 결과 & MBTI 학습보고서</p><p style="margin:6px 0 2px;font-size:30px;font-weight:900;letter-spacing:.08em;color:#1D4ED8;text-shadow:0 6px 18px rgba(37,99,235,.18);">CSDR</p><p class="sub" style="margin:0 0 12px;font-size:12px;color:#1E40AF;">(컨셉형, 직관령, 분석형, 루틴)</p><button class="btn btn-primary" data-action="downloadMbtiReport">MBTI 학습 보고서 다운</button></div>` : ''}
        </div>
        ${mbtiModalOpen ? `<div class="home-modal-overlay" data-action="closeMbtiModal"><div class="home-modal ob-mbti-modal" data-action="noopModal">
          <p class="home-modal-title">학습 MBTI 검사</p>
