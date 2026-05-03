@@ -511,12 +511,19 @@ window.toggleStudentNotiPanel = function() {
 let isFetchingNoti = false; 
 
 window.fetchStudentNotifications = async function() {
-    if (isFetchingNoti) return; 
+    if (isFetchingNoti) return;
     isFetchingNoti = true;
 
     try {
-        const response = await apiFetch(NOTI_API_URL, { 
-            method: 'POST', body: JSON.stringify({ type: 'student_get_notifications' }) 
+        // 페이지 최초 로드 시 메모리 토큰이 없으면 rt 쿠키로 먼저 복원
+        // (updateNavUI가 userId 힌트로 먼저 UI를 그린 뒤 이 함수를 호출하므로)
+        if (!getAccessToken()) {
+            const refreshed = await tryRefreshToken();
+            if (!refreshed) return; // 실제 미로그인 상태 → 조용히 종료
+        }
+
+        const response = await apiFetch(NOTI_API_URL, {
+            method: 'POST', body: JSON.stringify({ type: 'student_get_notifications' })
         });
         
         const data = await response.json();
