@@ -222,17 +222,21 @@ function App() {
   const scrollGuardRef = useRef({ until: 0, y: 0, restoring: false });
   const renderStableScrollYRef = useRef(0);
   const renderStableScreenRef = useRef('');
+  let lastInputInteractionTime = 0;
+  const isInFocusLock = () => Date.now() - lastInputInteractionTime < 350;
   const isIOSSafari = () => {
     if (typeof navigator === 'undefined') return false;
     return /iP(ad|hone|od)/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|OPiOS|EdgiOS/.test(navigator.userAgent);
   };
   const safeScrollIntoView = (el, options) => {
     if (!el?.scrollIntoView) return;
+    if (isIOSSafari() && isInFocusLock()) return;
     if (isIOSSafari()) return;
     if ((window.scrollY || window.pageYOffset || 0) >= 50) return;
     el.scrollIntoView(options);
   };
   const preserveScrollAfterStateChange = (callback) => {
+    if (isIOSSafari() && isInFocusLock()) return;
     const y = window.scrollY || window.pageYOffset || 0;
     callback();
     requestAnimationFrame(() => {
@@ -244,6 +248,7 @@ function App() {
     });
   };
   const safeScrollTo = (...args) => {
+    if (isIOSSafari() && isInFocusLock()) return;
     if (isIOSSafari()) return;
     window.scrollTo(...args);
   };
@@ -254,6 +259,7 @@ function App() {
   };
   const restoreIfUnexpectedTopJump = () => {
     if (!isIOSSafari()) return;
+    if (isInFocusLock()) return;
     if (scrollGuardRef.current.restoring) return;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -325,6 +331,7 @@ function App() {
   };
 
   const goto = (next, addHistory = true) => {
+    if (isIOSSafari() && isInFocusLock()) return;
     if (!next || next === screen) return;
     const currentY = window.scrollY || window.pageYOffset || 0;
     screenScrollRef.current[screen] = currentY;
@@ -352,6 +359,33 @@ function App() {
     setHistory(clone);
     setScreen(prev);
   };
+
+  useEffect(() => {
+    const recordInputInteraction = () => {
+      if (!isIOSSafari()) return;
+      lastInputInteractionTime = Date.now();
+    };
+    const onFocusIn = (e) => {
+      const t = e.target;
+      if (t?.matches?.('input, textarea, select')) recordInputInteraction();
+    };
+    const onTouchStart = (e) => {
+      const t = e.target;
+      if (t?.closest?.('input, textarea, select')) recordInputInteraction();
+    };
+    const onPointerDownInput = (e) => {
+      const t = e.target;
+      if (t?.closest?.('input, textarea, select')) recordInputInteraction();
+    };
+    document.addEventListener('focusin', onFocusIn, true);
+    document.addEventListener('touchstart', onTouchStart, { passive: true, capture: true });
+    document.addEventListener('pointerdown', onPointerDownInput, true);
+    return () => {
+      document.removeEventListener('focusin', onFocusIn, true);
+      document.removeEventListener('touchstart', onTouchStart, true);
+      document.removeEventListener('pointerdown', onPointerDownInput, true);
+    };
+  }, []);
 
   useEffect(() => {
     lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
@@ -3454,6 +3488,16 @@ function App() {
   }, [homeTargets.length, homeSlideIndex, activeScoreView]);
 
   const onChange = (e) => {
+    if (isIOSSafari() && e.target?.tagName === 'SELECT' && isInFocusLock()) {
+      const delayedValue = e.target.value;
+      setTimeout(() => {
+        const field = e.target.getAttribute('data-field');
+        if (field === 'scoreExamType') applyScoreExamSelection(delayedValue);
+        if (field === 'obExamType') applyObExamSelection(delayedValue);
+        if (field === 'obTrack') setObTrack(delayedValue);
+      }, 180);
+      return;
+    }
     markStableScrollPosition();
     const field = e.target.getAttribute('data-field');
     if (field === 'coachPlannerFiles') {
@@ -3490,6 +3534,7 @@ function App() {
     restoreIfUnexpectedTopJump();
   };
   const onBlur = (e) => {
+    if (isIOSSafari()) lastInputInteractionTime = Date.now();
     markStableScrollPosition();
     const field = e.target.getAttribute('data-field');
     const coachAnswer = e.target.getAttribute('data-coach-answer');
@@ -3628,3 +3673,16 @@ if (!rootElement) {
     rootElement.innerHTML = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>앱을 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.</h3></div></div></div></div>`;
   }
 }
+    if (isIOSSafari() && isInFocusLock()) {
+      setTimeout(() => {
+        const target = e.target;
+        const field = target?.getAttribute?.('data-field');
+        if (!field) return;
+        const value = target.value;
+        if (field === 'obSchoolName') setObSchoolName(value);
+        if (field === 'obTrack') setObTrack(value);
+        if (field === 'obGoalText') setObGoalText(value);
+        if (field === 'obQuestionText') setObQuestionText(value);
+      }, 180);
+      return;
+    }
