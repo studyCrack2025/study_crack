@@ -3332,6 +3332,16 @@ function App() {
     if (field === 'scoreExamType') preserveY(() => applyScoreExamSelection(e.target.value));
     if (field === 'obTrack') preserveY(() => setObTrack(e.target.value));
     if (field === 'obExamType') preserveY(() => applyObExamSelection(e.target.value));
+    if (field === 'v2e-english' || field === 'v2e-history' || field === 'v2e-inq1-subject' || field === 'v2e-inq2-subject') {
+      const value = e.target.value;
+      preserveScrollAfterStateChange(() => {
+        if (field === 'v2e-english') setScoreEditState((prev) => ({ ...prev, english: value }));
+        if (field === 'v2e-history') setScoreEditState((prev) => ({ ...prev, history: value }));
+        if (field === 'v2e-inq1-subject') setScoreEditState((prev) => ({ ...prev, inquiry1: { ...prev.inquiry1, subject: value } }));
+        if (field === 'v2e-inq2-subject') setScoreEditState((prev) => ({ ...prev, inquiry2: { ...prev.inquiry2, subject: value } }));
+      });
+      return;
+    }
     restoreIfUnexpectedTopJump();
   };
   const onBlur = (e) => {
@@ -3387,6 +3397,15 @@ function App() {
     if (field === 'obTrack') setObTrack(value);
     if (field === 'obGoalText') setObGoalText(value);
     if (field === 'obQuestionText') setObQuestionText(value);
+    if (field === 'v2e-english' || field === 'v2e-history' || field === 'v2e-inq1-subject' || field === 'v2e-inq2-subject') {
+      preserveScrollAfterStateChange(() => {
+        if (field === 'v2e-english') setScoreEditState((prev) => ({ ...prev, english: value }));
+        if (field === 'v2e-history') setScoreEditState((prev) => ({ ...prev, history: value }));
+        if (field === 'v2e-inq1-subject') setScoreEditState((prev) => ({ ...prev, inquiry1: { ...prev.inquiry1, subject: value } }));
+        if (field === 'v2e-inq2-subject') setScoreEditState((prev) => ({ ...prev, inquiry2: { ...prev.inquiry2, subject: value } }));
+      });
+      return;
+    }
     if (e.target && e.target.tagName === 'SELECT') return;
     if (field && field.startsWith('v2-')) {
       const [, subject, key] = field.split('-');
