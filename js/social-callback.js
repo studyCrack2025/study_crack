@@ -165,12 +165,11 @@
             return;
         }
 
-        // 5. 토큰 저장
+        // 5. 토큰 저장 (accessToken/idToken은 메모리, rt 쿠키는 Lambda Set-Cookie로 이미 저장됨)
         setAccessToken(accessToken);
         setIdToken(idToken);
         localStorage.setItem('userId', userId);
         localStorage.setItem('userRole', 'student');
-        if (result.refreshToken) localStorage.setItem('refreshToken', result.refreshToken);
 
         window.dataLayer = window.dataLayer || [];
         window.dataLayer.push({ event: 'login', user_id: userId });
