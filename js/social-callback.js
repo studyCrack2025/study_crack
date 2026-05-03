@@ -71,7 +71,7 @@
     if (isReauthMode) {
         try {
             statusMsg.textContent = '본인 확인 중입니다...';
-            const currentAccessToken = localStorage.getItem('accessToken');
+            const currentAccessToken = getAccessToken();
             if (!currentAccessToken) {
                 showError('로그인 세션이 만료되었습니다. 다시 로그인해주세요.');
                 return;
@@ -131,7 +131,7 @@
 
         // 4. 연동 모드 + 새 계정 생성된 경우: 기존 세션 보관 후 확인
         if (isLinkMode && isNewUser) {
-            const prevAccessToken = localStorage.getItem('accessToken');
+            const prevAccessToken = getAccessToken();
             const prevIdToken    = localStorage.getItem('idToken');
             const prevUserId     = localStorage.getItem('userId');
 
@@ -142,7 +142,7 @@
 
             if (!confirmed) {
                 // 기존 세션 복원 후 마이페이지로 복귀
-                if (prevAccessToken) localStorage.setItem('accessToken', prevAccessToken);
+                if (prevAccessToken) setAccessToken(prevAccessToken);
                 if (prevIdToken)    localStorage.setItem('idToken', prevIdToken);
                 if (prevUserId)     localStorage.setItem('userId', prevUserId);
                 window.location.href = '/mypage';
@@ -150,7 +150,7 @@
             }
 
             // 확인 → 새 계정 토큰으로 교체 후 welcome으로
-            localStorage.setItem('accessToken', accessToken);
+            setAccessToken(accessToken);
             localStorage.setItem('idToken', idToken);
             localStorage.setItem('userId', userId);
             localStorage.setItem('userRole', 'student');
@@ -159,7 +159,7 @@
         }
 
         // 5. 토큰 저장
-        localStorage.setItem('accessToken', accessToken);
+        setAccessToken(accessToken);
         localStorage.setItem('idToken', idToken);
         localStorage.setItem('userId', userId);
         localStorage.setItem('userRole', 'student');

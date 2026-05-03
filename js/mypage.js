@@ -11,7 +11,7 @@ let mypagePhoneTimerInterval = null;
 
 // 💡 공통 apiFetch 함수
 async function apiFetch(url, options = {}) {
-    const token = localStorage.getItem('accessToken');
+    const token = getAccessToken();
     const defaultHeaders = {
         'Content-Type': 'application/json',
         ...(token && { 'Authorization': `Bearer ${token}` })
@@ -26,7 +26,7 @@ async function apiFetch(url, options = {}) {
             if (response.status === 401 || response.status === 403) {
                 const refreshed = await tryRefreshToken();
                 if (refreshed) {
-                    const newToken = localStorage.getItem('accessToken');
+                    const newToken = getAccessToken();
                     options.headers['Authorization'] = `Bearer ${newToken}`;
                     const retryRes = await fetch(url, options);
                     if (retryRes.ok) return retryRes;
@@ -74,7 +74,7 @@ function escapeHtml(text) {
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. 기본 토큰 존재 여부만 1차 확인 (accessToken으로 통일)
-    if (!localStorage.getItem('accessToken') || !localStorage.getItem('idToken')) {
+    if (!getAccessToken() || !localStorage.getItem('idToken')) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
             clearClientSession();
@@ -205,18 +205,18 @@ function initCognitoAndFetchData() {
                 return;
             }
 
-            // 💡 갱신된 새 토큰(accessToken)을 로컬스토리지에 덮어씌움
+            // 💡 갱신된 새 토큰(accessToken)을 메모리에 저장
             const freshAccessToken = session.getAccessToken().getJwtToken();
             const freshIdToken = session.getIdToken().getJwtToken();
-            localStorage.setItem('accessToken', freshAccessToken);
+            setAccessToken(freshAccessToken);
             localStorage.setItem('idToken', freshIdToken);
 
             const userId = localStorage.getItem('userId');
             fetchUserData(userId);
         });
     } else {
-        // 소셜 로그인 사용자는 Cognito SDK 세션 없이 localStorage 토큰을 직접 사용
-        const accessToken = localStorage.getItem('accessToken');
+        // 소셜 로그인 사용자는 Cognito SDK 세션 없이 메모리 토큰을 직접 사용
+        const accessToken = getAccessToken();
         const userId = localStorage.getItem('userId');
         if (accessToken && userId) {
             fetchUserData(userId);

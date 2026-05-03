@@ -51,7 +51,7 @@ const EXAM_DISPLAY_NAMES = {
 document.addEventListener('DOMContentLoaded', async () => {
     const userId = localStorage.getItem('userId');
 
-    if (!localStorage.getItem('accessToken') || !localStorage.getItem('idToken')) {
+    if (!getAccessToken() || !localStorage.getItem('idToken')) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
             clearClientSession();
