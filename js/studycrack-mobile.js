@@ -2644,7 +2644,7 @@ function App() {
     if (action === 'skipOb2WithoutScore') {
       const ok = window.confirm('정확한 분석이 어려울 수 있어요. 그래도 진행할까요?');
       if (!ok) return;
-      goto('home');
+      goto('ob5');
       return;
     }
     if (action === 'scoreStepPrev') setScoreEditStep((v) => Math.max(1, v - 1));
