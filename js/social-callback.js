@@ -110,15 +110,22 @@
             })
         });
 
-        const result = await res.json();
+        let result;
+        try {
+            result = await res.json();
+        } catch (jsonErr) {
+            console.error('[SocialCallback] JSON parse error:', jsonErr, 'HTTP status:', res.status);
+            showError(`인증 처리 중 오류가 발생했습니다. (응답 파싱 실패, HTTP ${res.status})`);
+            return;
+        }
 
         if (!res.ok) {
+            console.error('[SocialCallback] Lambda error response:', { status: res.status, body: result });
             if (res.status === 409) {
                 showError(result.error || '이미 동일 이메일로 가입된 계정이 있습니다. 기존 이메일/비밀번호로 로그인해 주세요.');
             } else {
-                showError(result.error || '로그인 처리에 실패했습니다. 다시 시도해 주세요.');
+                showError(result.error || `로그인 처리에 실패했습니다. (HTTP ${res.status})`);
             }
-            console.error('[SocialCallback] Lambda error:', res.status, result);
             return;
         }
 
@@ -192,7 +199,14 @@
         window.location.href = isNewUser ? '/welcome' : '/';
 
     } catch (e) {
-        console.error('[SocialCallback] Error:', e);
-        showError('인증 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+        console.error('[SocialCallback] Unhandled error:', {
+            name: e.name,
+            message: e.message,
+            stack: e.stack
+        });
+        // TypeError: Failed to fetch → CORS 또는 네트워크 문제
+        // SyntaxError → Lambda가 JSON이 아닌 응답 반환
+        const hint = e.name === 'TypeError' ? ' (네트워크/CORS 문제 의심)' : e.name === 'SyntaxError' ? ' (서버 응답 파싱 실패)' : '';
+        showError(`인증 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.${hint}`);
     }
 })();
