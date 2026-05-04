@@ -2582,44 +2582,28 @@ input:focus, select:focus, textarea:focus,
 }
 
 /* add university dedicated page */
-.add-univ-page { display: grid; gap: 16px; padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+.add-univ-page { display: grid; gap: 16px; padding-bottom: 20px; }
 .add-univ-hero { border-radius: 18px; }
 .add-univ-hero .sub { margin: 6px 0 0; }
 .add-univ-section { border-radius: 18px; }
 .add-univ-head { display:flex; align-items:center; justify-content:space-between; margin-bottom: 10px; }
 .add-univ-head h4 { margin: 0; font-size: 16px; color: #0F172A; }
-.add-univ-section-desc { margin: 0 0 12px; font-size: 12px; color: #64748B; }
 .add-univ-grid { display:grid; grid-template-columns: 1fr; gap: 10px; }
-.add-univ-rec-card {
+.add-univ-card {
   border: 1px solid #E2E8F0;
   border-radius: 16px;
   background: #fff;
   padding: 12px;
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
-.add-univ-rec-head { display:flex; align-items:flex-start; justify-content:space-between; gap: 8px; }
-.add-univ-rec-head b { font-size: 14px; color: #0F172A; line-height: 1.35; }
-.add-univ-rec-head p { margin: 4px 0 0; font-size: 12px; color: #64748B; }
-.add-univ-rec-badge { background: #EEF2FF; color: #7C3AED; }
-.add-univ-rec-state { display:flex; align-items:center; justify-content:space-between; }
-.add-univ-rec-state em { font-style: normal; font-size: 11px; color: #64748B; }
-.add-univ-state-badge { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 4px 8px; border: 1px solid #E2E8F0; color: #2563EB; background: #EFF6FF; }
-.add-univ-state-badge.state-1 { color: #2563EB; background: #EEF6FF; }
-.add-univ-state-badge.state-2 { color: #7C3AED; background: #F5F3FF; }
-.add-univ-mini-gauge { height: 8px; background: #E2E8F0; border-radius: 999px; overflow: hidden; }
-.add-univ-mini-gauge i { display:block; height:100%; border-radius:999px; background: linear-gradient(135deg, #2563EB, #7C3AED); }
-.add-univ-rec-meta { display:flex; justify-content:space-between; font-size: 11px; color:#64748B; }
-.add-univ-rec-btn { min-height: 38px; border-radius: 999px; }
-.add-univ-search {
-  margin-bottom: 12px;
-  border-radius: 16px !important;
-  padding: 14px 14px 14px 40px !important;
-  background-image: radial-gradient(circle at 12px 50%, #94A3B8 0 2px, transparent 3px), radial-gradient(circle at 14px 50%, transparent 0 5px, #94A3B8 5px 6px, transparent 7px);
-  background-repeat: no-repeat;
-}
+.add-univ-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap: 8px; }
+.add-univ-card b { font-size: 14px; color: #0F172A; line-height: 1.35; }
+.add-univ-card p { margin: 0; font-size: 12px; color: #64748B; }
+.add-univ-card .btn { min-height: 38px; }
+.add-univ-search { margin-bottom: 10px; }
 .add-univ-results { display:grid; gap: 8px; }
-.add-univ-row-card {
+.add-univ-row {
   display:flex;
   align-items:center;
   justify-content:space-between;
@@ -2627,13 +2611,10 @@ input:focus, select:focus, textarea:focus,
   border: 1px solid #E2E8F0;
   border-radius: 14px;
   padding: 10px 12px;
-  background: #F8FAFC;
+  background: #fff;
 }
-.add-univ-row-copy { min-width: 0; }
-.add-univ-row-copy b { display:block; font-size: 13px; color:#0F172A; line-height: 1.35; }
-.add-univ-row-copy p { margin: 2px 0 0; font-size: 11px; color:#64748B; }
-.add-univ-row-btn.btn.mini { min-height: 34px; height: 34px; padding: 0 12px; font-size: 12px; width: auto; border-radius: 999px; }
-.add-univ-row-btn.btn-secondary { background: #E2E8F0; color: #64748B; border: 1px solid #E2E8F0; box-shadow: none; }
+.add-univ-row span { font-size: 13px; color:#0F172A; line-height: 1.35; }
+.add-univ-row .btn.mini { min-height: 34px; padding: 0 12px; font-size: 12px; width: auto; }
 
 @media (min-width: 390px) {
   .add-univ-grid { grid-template-columns: 1fr 1fr; }

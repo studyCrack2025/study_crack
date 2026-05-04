@@ -1961,29 +1961,21 @@ function App() {
           <p class="analysis-title">희망 대학을 추가해보세요</p>
           <p class="sub">현재 성적과 목표를 기준으로 대학을 추천하거나 직접 검색할 수 있어요.</p>
         </div>
-        <div class="card add-univ-section add-univ-section-rec">
+        <div class="card add-univ-section">
           <div class="add-univ-head"><h4>추천 대학</h4><span class="badge">추천</span></div>
-          <p class="add-univ-section-desc">현재 성적과 목표 기반으로 우선 검토할 대학이에요.</p>
           <div class="add-univ-grid">
-            ${analysisRecommended.map((name, index) => {
-              const stateLabel = index === 0 ? '추천' : index === 1 ? '안정권' : '도전';
-              const gaugeWidth = index === 0 ? 58 : index === 1 ? 66 : 44;
-              return `<div class="add-univ-rec-card">
-              <div class="add-univ-rec-head"><div><b>${name}</b><p>현재 성적 기준 우선 검토 대학</p></div><span class="badge add-univ-rec-badge">추천</span></div>
-              <div class="add-univ-rec-state"><span class="add-univ-state-badge state-${index}">${stateLabel}</span><em>AI 예측 기준</em></div>
-              <div class="add-univ-mini-gauge"><i style="width:${gaugeWidth}%"></i></div>
-              <div class="add-univ-rec-meta"><span>합격컷 100</span><span>안정컷 150</span></div>
-              <button class="btn add-univ-rec-btn ${analysisTargetList.includes(name)?'btn-secondary':'btn-primary'}" data-action="addAnalysisTarget" data-target-major="${name}" ${analysisTargetList.includes(name)?'disabled':''}>${analysisTargetList.includes(name)?'추가됨':'추가'}</button>
+            ${analysisRecommended.map((name) => `<div class="add-univ-card">
+              <div class="add-univ-card-top"><b>${name}</b><span class="badge">추천</span></div>
+              <p>현재 성적 기준 우선 검토 대학</p>
+              <button class="btn ${analysisTargetList.includes(name)?'btn-secondary':'btn-primary'}" data-action="addAnalysisTarget" data-target-major="${name}" ${analysisTargetList.includes(name)?'disabled':''}>${analysisTargetList.includes(name)?'추가됨':'추가'}</button>
             </div>`).join('')}
-            }).join('')}
           </div>
         </div>
-        <div class="card add-univ-section add-univ-section-search">
+        <div class="card add-univ-section">
           <div class="add-univ-head"><h4>대학 검색</h4></div>
-          <p class="add-univ-section-desc">원하는 대학/학과를 직접 검색해 추가하세요.</p>
           <input class="planner-input add-univ-search" data-field="analysisSearchTerm" value="${analysisSearchTerm}" placeholder="대학명 또는 학과명을 검색하세요"/>
           <div class="add-univ-results">
-            ${analysisSearchList.map((name) => `<div class="add-univ-row-card"><div class="add-univ-row-copy"><b>${name}</b><p>검색 결과에서 바로 추가</p></div><button class="btn add-univ-row-btn ${analysisTargetList.includes(name)?'btn-secondary':'btn-primary'} mini" data-action="addAnalysisTarget" data-target-major="${name}" ${analysisTargetList.includes(name)?'disabled':''}>${analysisTargetList.includes(name)?'추가됨':'추가'}</button></div>`).join('') || '<p class="sub">검색 결과가 없습니다.</p>'}
+            ${analysisSearchList.map((name) => `<div class="add-univ-row"><span>${name}</span><button class="btn ${analysisTargetList.includes(name)?'btn-secondary':'btn-primary'} mini" data-action="addAnalysisTarget" data-target-major="${name}" ${analysisTargetList.includes(name)?'disabled':''}>${analysisTargetList.includes(name)?'추가됨':'추가'}</button></div>`).join('') || '<p class="sub">검색 결과가 없습니다.</p>'}
           </div>
         </div>
       </div>`,
