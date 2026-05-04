@@ -1968,3 +1968,93 @@ textarea:focus {
   border-color:#dfe7f4;
   box-shadow:0 8px 22px rgba(37,72,134,.08);
 }
+
+/* --- premium product polish: css-only system normalization --- */
+:root {
+  --primary: #2563EB;
+  --primary-grad: linear-gradient(135deg, #2563EB, #7C3AED);
+  --score-low: #FA8072;
+  --score-mid: #2563EB;
+  --score-high: #7C3AED;
+  --bg: #F8FAFC;
+  --card: #FFFFFF;
+  --line: #E2E8F0;
+  --text: #0F172A;
+  --muted: #64748B;
+}
+
+body { font-size:14px; color:var(--text); background:var(--bg) !important; }
+h1 { font-size:22px; font-weight:700; }
+h2 { font-size:18px; font-weight:600; }
+small { font-size:12px; }
+.metric,.metric-sm,.analysis-v2-score-wrap strong,.ob-total-compare b,.analysis-v2-bar-item .score { font-weight:700; letter-spacing:-0.5px; }
+
+.card,
+.analysis-v2-summary,.analysis-v2-gauge-change,.analysis-v2-before-after,.analysis-v2-sim,.analysis-v2-targets,.analysis-v2-compare-card,
+.score-journey-card,.on-eta-card,.possible-university-card {
+  border-radius:16px !important;
+  background:var(--card) !important;
+  border:1px solid var(--line) !important;
+  box-shadow:0 4px 12px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.06) !important;
+}
+.card:hover { transform:translateY(-1px); box-shadow:0 8px 16px rgba(0,0,0,.06),0 2px 4px rgba(0,0,0,.06) !important; }
+
+.btn-primary,.cta-button,.analysis-convert-btn {
+  background: var(--primary-grad) !important;
+  color:#fff;
+  border-radius:12px;
+  box-shadow:0 4px 12px rgba(37,99,235,.3) !important;
+}
+.btn-primary:active,.cta-button:active,.analysis-convert-btn:active { transform:scale(.97); }
+
+.analysis-v2-tab { border-color:var(--line) !important; color:var(--muted) !important; }
+.analysis-v2-tab.active { border-color:var(--primary) !important; color:var(--primary) !important; background:#FFFFFF !important; }
+.planner-input,.analysis-dropdown,.coach-month-select,.coach-month-btn { border-color:var(--line) !important; color:var(--text) !important; }
+
+/* gauge system: clear track + solid fill */
+.home-result-gauge,.ob-gauge,.analysis-v2-gauge,.analysis-v2-progress::before,.admission-gauge,.result-gauge,.track,.progress {
+  background: var(--line) !important;
+  border-radius:999px;
+}
+
+.home-result-gauge i,
+.analysis-v2-gauge i,
+.ob-gauge-current,
+.ob-gauge-target,
+.admission-gauge > i,
+.result-gauge > i,
+.track > i,
+.progress > span,
+.analysis-v2-progress .progress-base,
+.analysis-v2-progress .progress-range {
+  border-radius:999px;
+  opacity:1 !important;
+  z-index:2;
+}
+
+.score-tier-low { background: var(--score-low) !important; color: var(--score-low) !important; }
+.score-tier-mid { background: var(--score-mid) !important; color: var(--score-mid) !important; }
+.score-tier-high { background: var(--score-high) !important; color: var(--score-high) !important; }
+.ob-gauge-target { opacity:.6 !important; z-index:1; }
+.ob-gauge-current { z-index:3; }
+
+/* bars */
+.analysis-v2-bar,.analysis-v2-vert-item .bar,.chart-bar,.analysis-score-bar {
+  border-radius:12px !important;
+  box-shadow:0 6px 12px rgba(0,0,0,.08) !important;
+}
+.analysis-v2-bar-item:hover .analysis-v2-bar { transform:scale(1.02); }
+.analysis-v2-bar-item .score { font-weight:700; }
+
+/* infographic colors */
+.planner-item .dot.math { background: var(--score-mid) !important; }
+.planner-item .dot.sci,
+.planner-item .dot.kor { background: var(--score-high) !important; }
+.planner-item .dot.eng { background: var(--score-low) !important; }
+
+/* spacing rhythm */
+.section,.home-content,.analysis-v2,.coach-page,.stack-card { gap:16px; }
+.card { padding:16px !important; }
+.home-content .card + .card,
+.analysis-v2 > .card,
+.coach-page > .card { margin-top:16px; }
