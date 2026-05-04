@@ -2632,6 +2632,33 @@ input:focus, select:focus, textarea:focus,
   font-size: 13px;
 }
 
+.home-result-card-v3 { position: relative; }
+.home-univ-remove {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(15,23,42,.06);
+  color: #64748B;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  z-index: 3;
+}
+.home-univ-remove:active { background: rgba(15,23,42,.14); }
+.analysis-add-link-btn {
+  margin-top: 8px;
+  border: none;
+  background: transparent;
+  color: #7C3AED;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 0;
+}
+
 @media (min-width: 390px) {
   .add-univ-grid { grid-template-columns: 1fr 1fr; }
 }

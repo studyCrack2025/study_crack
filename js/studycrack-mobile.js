@@ -1061,6 +1061,8 @@ function App() {
       rate: Math.round(Math.min(99, Math.max(20, (score / 150) * 100)))
     };
   });
+  const analysisMajorOptions = Array.from(new Set([...(analysisTargetList || []), ...(homeTargetList || [])])).filter(Boolean);
+  const normalizedTargetMajor = analysisMajorOptions.includes(targetMajor) ? targetMajor : (analysisMajorOptions[0] || targetMajor || '');
   const scoreRows = [
     [scoreEditState.korean.type || '국어', scores.korean, 'raw'],
     [scoreEditState.math.type || '수학', scores.math, 'raw'],
@@ -1210,6 +1212,7 @@ function App() {
       <div class="home-kpi-slider">
         <div class="home-kpi-track anchor-volatile ${homeSlideMotion}" style="--home-slide-card-width:100%;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .72s cubic-bezier(.22,1,.36,1)'};">
         ${homeTargets.map((item) => `<button class="university-card-slide card home-kpi-card admission-card slider-card home-result-card-v3" data-action="selectUniversity" data-target-major="${item.major}">
+          <span class="home-univ-remove" data-action="removeAnalysisTarget" data-target-major="${item.major}">✕</span>
           <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score"><strong>${item.score}점</strong><small>AI 점수</small></div></div>
           <div class="home-result-gauge"><i class="${scoreTierClass(item.score)}" style="width:${Math.min((item.score / 250) * 100, 100)}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
           <div class="home-result-gauge-meta"><span>0</span><span>합격컷 100</span><span>안정컷 150</span><span>MAX 250</span></div>
@@ -1997,7 +2000,11 @@ function App() {
         ${analysisMode === 'summary' ? `
           <div class="card analysis-v2-targets">
             <p class="analysis-title">희망 대학 선택</p>
-            <button class="analysis-dropdown" data-action="openAnalysisSearch"><span>${targetMajor}</span><em>⌄</em></button>
+            <select class="analysis-dropdown" data-field="analysisTargetMajor">
+              ${analysisMajorOptions.map((name) => `<option value="${name}" ${normalizedTargetMajor===name?'selected':''}>${name}</option>`).join('')}
+              <option value="__add_university__">+ 대학 추가하기</option>
+            </select>
+            <button class="analysis-add-link-btn" data-action="openAnalysisSearchFromHome">+ 대학 추가하기</button>
           </div>
 
           <div class="card analysis-v2-summary">
@@ -2601,6 +2608,23 @@ function App() {
         });
         setAddingUniversity(false);
       }, 500);
+    }
+    if (action === 'removeAnalysisTarget') {
+      const major = actionEl.getAttribute('data-target-major');
+      if (!major) return;
+      if ((homeTargetList || []).length <= 1) { alert('최소 1개 대학은 유지해야 합니다.'); return; }
+      const nextAnalysis = (analysisTargetList || []).filter((v) => v !== major);
+      const nextHome = (homeTargetList || []).filter((v) => v !== major);
+      setAnalysisTargetList(nextAnalysis);
+      setHomeTargetList(() => {
+        setHomeSlideIndex((idx) => Math.max(0, Math.min(idx, Math.max(0, nextHome.length - 1))));
+        return nextHome;
+      });
+      if (targetMajor === major) {
+        const fallback = nextAnalysis[0] || nextHome[0] || analysisRecommended[0] || '';
+        setTargetMajor(fallback);
+      }
+      return;
     }
     if (action === 'openUniversityModal') {
       goto('addUniversity');
@@ -3607,6 +3631,10 @@ function App() {
     if (field === 'signupPassword') setSignupPassword(value);
     if (field === 'signupPasswordConfirm') setSignupPasswordConfirm(value);
     if (field === 'analysisSearchTerm') setAnalysisSearchTerm(value);
+    if (field === 'analysisTargetMajor') {
+      if (value === '__add_university__') { goto('addUniversity'); return; }
+      if (value) setTargetMajor(value);
+    }
     if (field === 'obSchoolName') {
       if (isIOSSafari() && isObSurveyScreen()) e.target.dataset.pendingValue = value;
       else setObSchoolName(value);
