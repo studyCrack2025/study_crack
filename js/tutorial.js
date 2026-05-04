@@ -542,6 +542,18 @@ async function callAnalyzeMyTargets(token, targetUnivs, userScores) {
     } catch { return null; }
 }
 
+async function callSimulateScoreRise(token, targetUnivs, userScores) {
+    try {
+        const res = await fetch(CONFIG.api.analysis, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'simulate_score_rise', targetUnivs, userScores, examMode: 'mock' })
+        });
+        if (!res.ok) return null;
+        return await res.json();
+    } catch { return null; }
+}
+
 function getTutorialCandidates(streamData, totalStdScore, maxCandidates) {
     const allBandNums = Object.keys(streamData).map(Number).sort((a, b) => a - b);
     const currentBand = Math.floor(totalStdScore / 10) * 10;
@@ -573,7 +585,7 @@ function getTutorialCandidates(streamData, totalStdScore, maxCandidates) {
     return candidates;
 }
 
-async function selectTutorialUnivsWithAnalysis(stream, mar, totalStdScore, scoreData) {
+async function selectTutorialUnivsWithAnalysis(stream, mar, totalStdScore, scoreData, userScoresOverride = null) {
     const token = getAccessToken();
     if (!token) return null;
     const streamData = scoreData[stream];
@@ -582,23 +594,19 @@ async function selectTutorialUnivsWithAnalysis(stream, mar, totalStdScore, score
     const candidates = getTutorialCandidates(streamData, totalStdScore, 24);
     if (candidates.length === 0) return null;
 
-    const userScores = buildUserScoresForAnalysis(mar);
-    const boostedScores = boostUserScores(userScores, 5);
+    const userScores = userScoresOverride || buildUserScoresForAnalysis(mar);
 
-    const [currentResults, simResults] = await Promise.all([
-        callAnalyzeMyTargets(token, candidates, userScores),
-        callAnalyzeMyTargets(token, candidates, boostedScores)
-    ]);
-    if (!currentResults) return null;
+    const simResults = await callSimulateScoreRise(token, candidates, userScores);
+    if (!simResults || !Array.isArray(simResults)) return null;
 
     const currentMap = {}, simMap = {};
-    for (const r of currentResults) {
-        if (r && r.is_eligible && r.converted_score > 0) currentMap[`${r.univ}||${r.major}`] = r.converted_score;
-    }
-    if (simResults) {
-        for (const r of simResults) {
-            if (r && r.is_eligible && r.converted_score > 0) simMap[`${r.univ}||${r.major}`] = r.converted_score;
-        }
+    for (const r of simResults) {
+        if (!r || r.ineligible || !(r.base_ui_score > 0)) continue;
+        const key = `${r.univ}||${r.major}`;
+        currentMap[key] = r.base_ui_score;
+        let maxDiff = 0;
+        if (r.sim_data) Object.values(r.sim_data).forEach(sub => { if (sub && sub.uiDiff > maxDiff) maxDiff = sub.uiDiff; });
+        simMap[key] = r.base_ui_score + maxDiff;
     }
 
     // 시나리오별 분류
@@ -896,6 +904,30 @@ async function initSubjectRec() {
         }
     } catch(e) {}
 
+    // 점수 향상 후 대학 추천 (Greedy 계획 기반)
+    let postSimUnivs = null;
+    if (mar && plan) {
+        try {
+            const risingForSim = plan.filter(s => s.assigned > 0);
+            const totalGainForSim = risingForSim.reduce((sum, s) => sum + s.assigned, 0);
+            if (totalGainForSim > 0 && tutorialData.qual?.stream && tutorialData.totalStdScore > 0) {
+                const boostedUserScores = buildUserScoresForAnalysis(mar);
+                risingForSim.forEach(s => {
+                    if (boostedUserScores[s.key]) {
+                        boostedUserScores[s.key].std = (parseFloat(boostedUserScores[s.key].std) || 0) + s.assigned;
+                    }
+                });
+                const boostedTotalStdScore = tutorialData.totalStdScore + Math.round(totalGainForSim);
+                const scoreData = await fetchTutScoreData();
+                if (scoreData) {
+                    postSimUnivs = await selectTutorialUnivsWithAnalysis(
+                        tutorialData.qual.stream, mar, boostedTotalStdScore, scoreData, boostedUserScores
+                    );
+                }
+            }
+        } catch(e) {}
+    }
+
     showTutLoading(false);
 
     if (!mar || !plan) {
@@ -1017,7 +1049,24 @@ async function initSubjectRec() {
         <div class="reachable-univs-section">
             <div class="reachable-univs-title">🎯 선택한 목표 대학 도달 시뮬레이션</div>
             ${univCompareHtml}
-        </div>` : ''}`;
+        </div>` : ''}
+        ${postSimUnivs && postSimUnivs.length > 0 ? (() => {
+            const catLabels = ['안정', '적정', '도전'];
+            const catColors = ['#10b981', '#3b82f6', '#f59e0b'];
+            const cards = postSimUnivs.map((u, i) => {
+                const label = catLabels[i] || '';
+                const color = catColors[i] || '#64748b';
+                return `<div class="post-sim-univ-card">
+                    <div class="post-sim-badge" style="background:${color}15;color:${color};border:1px solid ${color}40">${label}</div>
+                    <div class="post-sim-school">${u.school}</div>
+                    <div class="post-sim-major">${u.major}</div>
+                </div>`;
+            }).join('');
+            return `<div class="post-sim-univs-section">
+                <div class="post-sim-univs-title">🎓 점수 향상 후 도달 가능한 대학</div>
+                <div class="post-sim-univs-list">${cards}</div>
+            </div>`;
+        })() : ''}`;
 }
 
 // ── 결제 / 완료 ──────────────────────────────────────────────────

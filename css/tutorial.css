@@ -176,6 +176,15 @@ header { background: #fff; padding: 15px 20px; box-shadow: 0 2px 4px rgba(0,0,0,
 .src-score { font-size: 0.85rem; color: #334155; font-weight: 700; margin-top: 6px; }
 .src-arrow { font-size: 1.3rem; color: #cbd5e1; font-weight: 700; flex-shrink: 0; }
 
+/* ── 향상 후 도달 가능 대학 ─────────────────────────────────────── */
+.post-sim-univs-section { margin-top: 14px; }
+.post-sim-univs-title { font-size: 0.92rem; font-weight: 800; color: #1e293b; margin-bottom: 12px; }
+.post-sim-univs-list { display: flex; flex-direction: column; gap: 8px; }
+.post-sim-univ-card { display: flex; align-items: center; gap: 10px; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; }
+.post-sim-badge { font-size: 0.72rem; font-weight: 800; padding: 3px 9px; border-radius: 20px; flex-shrink: 0; }
+.post-sim-school { font-size: 0.88rem; font-weight: 700; color: #1e293b; }
+.post-sim-major { font-size: 0.78rem; color: #64748b; margin-left: auto; }
+
 /* ── 버튼 ──────────────────────────────────────────────────────── */
 .tutorial-nav { display: flex; justify-content: space-between; align-items: center; }
 .tut-btn { padding: 14px 28px; border-radius: 12px; font-weight: 700; font-size: 1.05rem; cursor: pointer; border: none; transition: all 0.2s; font-family: inherit; }
