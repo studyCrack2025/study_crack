@@ -1955,6 +1955,32 @@ function App() {
 끝까지 함께해요</h2><p>플래너, 주간 점검, Sky튜터 피드백,
 프로 보고서로 완성됩니다.</p></div><div class="onboarding-center"><div class="onboarding-card list"><div class="onboarding-list-item"><span class="onboarding-icon-box"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M9 12l2 2 4-4"/></svg></span><span>플래너 & 주간 점검</span></div><div class="onboarding-list-item"><span class="onboarding-icon-box"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.8-4 5-6 8-6s6.2 2 8 6"/></svg></span><span>Sky튜터 1:1 피드백</span></div><div class="onboarding-list-item long-report"><span class="onboarding-icon-box"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v6h6"/></svg></span><span>중장기 합격 전략 리포트</span></div></div></div><img src="./assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png" class="onboarding-character on3" alt="크랙이"/><div class="onboarding-shot-dots"><i></i><i></i><i class="active"></i></div><button class="onboarding-next" data-action="goto" data-target="authLogin">시작하기</button></div></div></div></div>`,
     home: layout(homeView(), true),
+    addUniversity: layout(
+      appbar('대학 추가', true) + `<div class="add-univ-page">
+        <div class="card add-univ-hero">
+          <p class="analysis-title">희망 대학을 추가해보세요</p>
+          <p class="sub">현재 성적과 목표를 기준으로 대학을 추천하거나 직접 검색할 수 있어요.</p>
+        </div>
+        <div class="card add-univ-section">
+          <div class="add-univ-head"><h4>추천 대학</h4><span class="badge">추천</span></div>
+          <div class="add-univ-grid">
+            ${analysisRecommended.map((name) => `<div class="add-univ-card">
+              <div class="add-univ-card-top"><b>${name}</b><span class="badge">추천</span></div>
+              <p>현재 성적 기준 우선 검토 대학</p>
+              <button class="btn ${analysisTargetList.includes(name)?'btn-secondary':'btn-primary'}" data-action="addAnalysisTarget" data-target-major="${name}" ${analysisTargetList.includes(name)?'disabled':''}>${analysisTargetList.includes(name)?'추가됨':'추가'}</button>
+            </div>`).join('')}
+          </div>
+        </div>
+        <div class="card add-univ-section">
+          <div class="add-univ-head"><h4>대학 검색</h4></div>
+          <input class="planner-input add-univ-search" data-field="analysisSearchTerm" value="${analysisSearchTerm}" placeholder="대학명 또는 학과명을 검색하세요"/>
+          <div class="add-univ-results">
+            ${analysisSearchList.map((name) => `<div class="add-univ-row"><span>${name}</span><button class="btn ${analysisTargetList.includes(name)?'btn-secondary':'btn-primary'} mini" data-action="addAnalysisTarget" data-target-major="${name}" ${analysisTargetList.includes(name)?'disabled':''}>${analysisTargetList.includes(name)?'추가됨':'추가'}</button></div>`).join('') || '<p class="sub">검색 결과가 없습니다.</p>'}
+          </div>
+        </div>
+      </div>`,
+      true
+    ),
     analysis: layout(
       `<section class="analysis-v2 ${isAnalyzing ? 'loading' : ''}">
         <div class="card analysis-v2-head">
@@ -2539,7 +2565,10 @@ function App() {
       });
       restoreIfUnexpectedTopJump();
     }
-    if (action === 'openAnalysisSearch') preserveY(() => setAnalysisSearchOpen(true));
+    if (action === 'openAnalysisSearch') {
+      goto('addUniversity');
+      return;
+    }
     if (action === 'closeAnalysisSearch') {
       afterSafariViewportStable(() => setAnalysisSearchOpen(false));
       setAnalysisSearchTerm('');
@@ -2575,19 +2604,11 @@ function App() {
       }, 500);
     }
     if (action === 'openUniversityModal') {
-      preserveScrollAfterStateChange(() => {
-        setNotifModalOpen(false);
-        setUniversityModalOpen(true);
-        setAnalysisSearchOpen(false);
-      });
+      goto('addUniversity');
       return;
     }
     if (action === 'openAnalysisSearchFromHome') {
-      preserveScrollAfterStateChange(() => {
-        setNotifModalOpen(false);
-        setUniversityModalOpen(true);
-        setAnalysisSearchOpen(false);
-      });
+      goto('addUniversity');
       return;
     }
     if (action === 'closeUniversityModal') {
