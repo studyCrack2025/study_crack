@@ -2597,6 +2597,14 @@ input:focus, select:focus, textarea:focus,
   display: grid;
   gap: 8px;
 }
+.add-univ-item,
+.add-univ-card {
+  background: white;
+  border-radius: 16px;
+  padding: 14px;
+  border: 1px solid #EEF1F6;
+  margin-bottom: 12px;
+}
 .add-univ-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap: 8px; }
 .add-univ-card b { font-size: 14px; color: #0F172A; line-height: 1.35; }
 .add-univ-card p { margin: 0; font-size: 12px; color: #64748B; }
@@ -2615,6 +2623,12 @@ input:focus, select:focus, textarea:focus,
 }
 .add-univ-row span { font-size: 13px; color:#0F172A; line-height: 1.35; }
 .add-univ-row .btn.mini { min-height: 36px; height: 36px; padding: 0 12px; font-size: 12px; width: auto; border-radius: 999px; }
+.add-univ-item button,
+.add-univ-card button {
+  height: 36px;
+  border-radius: 999px;
+  font-size: 13px;
+}
 
 @media (min-width: 390px) {
   .add-univ-grid { grid-template-columns: 1fr 1fr; }
