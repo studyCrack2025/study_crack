@@ -2045,9 +2045,12 @@ small { font-size:12px; }
   opacity:.62 !important;
 }
 
-.score-tier-low { background: var(--score-low) !important; color: var(--score-low) !important; }
-.score-tier-mid { background: var(--score-mid) !important; color: var(--score-mid) !important; }
-.score-tier-high { background: var(--score-high) !important; color: var(--score-high) !important; }
+.score-tier-low { color: var(--score-low) !important; }
+.score-tier-mid { color: var(--score-mid) !important; }
+.score-tier-high { color: var(--score-high) !important; }
+.home-result-gauge i.score-tier-low,.ob-gauge-current.score-tier-low,.ob-gauge-target.score-tier-low,.admission-gauge>i.score-tier-low,.result-gauge>i.score-tier-low,.analysis-score-bar.score-tier-low,.analysis-v2-bar.score-tier-low,.chart-bar.score-tier-low { background: var(--score-low) !important; }
+.home-result-gauge i.score-tier-mid,.ob-gauge-current.score-tier-mid,.ob-gauge-target.score-tier-mid,.admission-gauge>i.score-tier-mid,.result-gauge>i.score-tier-mid,.analysis-score-bar.score-tier-mid,.analysis-v2-bar.score-tier-mid,.chart-bar.score-tier-mid { background: var(--score-mid) !important; }
+.home-result-gauge i.score-tier-high,.ob-gauge-current.score-tier-high,.ob-gauge-target.score-tier-high,.admission-gauge>i.score-tier-high,.result-gauge>i.score-tier-high,.analysis-score-bar.score-tier-high,.analysis-v2-bar.score-tier-high,.chart-bar.score-tier-high { background: var(--score-high) !important; }
 
 .ob-total-compare b.target,
 .analysis-v2-bar-item .score.score-tier-low,
@@ -2162,3 +2165,58 @@ small { font-size:12px; }
   box-shadow: none !important;
   background: transparent !important;
 }
+
+
+/* --- scope limit for simulation/score journey regressions --- */
+.score-simulation-card,
+.simulation-card,
+.plus-one-card,
+.analysis-v2-sim,
+.analysis-v2-sim-item {
+  background: #fff !important;
+}
+
+.score-simulation-card::before,
+.score-simulation-card::after,
+.simulation-card::before,
+.simulation-card::after,
+.plus-one-card::before,
+.plus-one-card::after,
+.score-journey-card::before,
+.score-journey-card::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.score-journey-scroll { overflow: hidden !important; }
+.score-journey-track { display: flex !important; width: 200% !important; }
+.score-journey-track .score-journey-col,
+.score-journey-col {
+  flex: 0 0 50% !important;
+  min-width: 50% !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.home-result-gauge,
+.ob-gauge,
+.admission-gauge,
+.result-gauge { overflow: hidden; position: relative; }
+.home-result-gauge i,
+.ob-gauge-current,
+.ob-gauge-target,
+.admission-gauge > i,
+.result-gauge > i { position: absolute; top: 0; bottom: 0; }
+
+.card.ranking-card { position: relative; overflow: hidden; }
+.card.ranking-card > * { position: relative; z-index: 1; }
+.card.ranking-card.tier-bronze,.ranking-card.tier-bronze { border: 1px solid rgba(180,115,60,.45) !important; background: linear-gradient(135deg, rgba(180,115,60,.14), #fff 70%) !important; }
+.card.ranking-card.tier-silver,.ranking-card.tier-silver { border: 1px solid rgba(148,163,184,.45) !important; background: linear-gradient(135deg, rgba(148,163,184,.14), #fff 70%) !important; }
+.card.ranking-card.tier-gold,.ranking-card.tier-gold { border: 1px solid rgba(245,158,11,.50) !important; background: linear-gradient(135deg, rgba(245,158,11,.16), #fff 70%) !important; }
+.card.ranking-card.tier-platinum,.ranking-card.tier-platinum { border: 1px solid rgba(99,102,241,.48) !important; background: linear-gradient(135deg, rgba(99,102,241,.16), #fff 70%) !important; }
+.card.ranking-card.tier-diamond,.ranking-card.tier-diamond { border: 1px solid rgba(6,182,212,.50) !important; background: linear-gradient(135deg, rgba(6,182,212,.16), #fff 70%) !important; }
+.ranking-card.tier-gold::after,.ranking-card.tier-platinum::after,.ranking-card.tier-diamond::after { z-index:0; opacity:.28; pointer-events:none; }
