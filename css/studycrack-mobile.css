@@ -1771,3 +1771,116 @@ textarea:focus {
   font-weight: 800;
   letter-spacing: -0.02em;
 }
+
+/* --- hotfix: ensure mobile gauge/chart visibility with score-banded track --- */
+:root {
+  --score-band-low: #fa8072;
+  --score-band-mid: #4f7cff;
+  --score-band-high: #8b5cf6;
+}
+
+/* shared score track: 0~100(40%) / 100~150(20%) / 150~250(40%) */
+.ob-gauge,
+.analysis-v2-gauge,
+.analysis-v2-progress::before,
+.home-result-gauge,
+.admission-gauge,
+.result-gauge {
+  background:
+    linear-gradient(to right,
+      rgba(250,128,114,.22) 0%,
+      rgba(250,128,114,.22) 40%,
+      rgba(79,124,255,.18) 40%,
+      rgba(79,124,255,.18) 60%,
+      rgba(139,92,246,.18) 60%,
+      rgba(139,92,246,.18) 100%) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+/* fill visibility fix: make sure active bars stay above track */
+.ob-gauge-current,
+.ob-gauge-target,
+.analysis-v2-gauge > i,
+.analysis-v2-progress .progress-base,
+.analysis-v2-progress .progress-range,
+.home-result-gauge > i,
+.admission-gauge > i,
+.result-gauge > i,
+.track > i,
+.progress > span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  opacity: 1 !important;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--score-band-low) 0%, var(--score-band-mid) 55%, var(--score-band-high) 100%) !important;
+}
+
+.ob-gauge-target,
+.analysis-v2-progress .progress-range { z-index: 1; opacity: .35 !important; }
+
+/* cut lines and fixed cut positions (100=40%, 150=60%) */
+.ob-gauge-cut,
+.analysis-v2-progress .line,
+.analysis-v2-gauge .cut,
+.home-result-gauge .gauge-cut,
+.admission-gauge .gauge-cut,
+.result-gauge .gauge-cut {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 20px;
+  z-index: 4;
+}
+
+.ob-gauge-cut.pass,
+.analysis-v2-progress .line.pass,
+.analysis-v2-gauge .cut.pass,
+.home-result-gauge .gauge-cut.pass,
+.admission-gauge .gauge-cut.pass,
+.result-gauge .gauge-cut.pass { left: 40% !important; background: #ff8f83 !important; }
+
+.ob-gauge-cut.safe,
+.analysis-v2-progress .line.safe,
+.analysis-v2-gauge .cut.safe,
+.home-result-gauge .gauge-cut.safe,
+.admission-gauge .gauge-cut.safe,
+.result-gauge .gauge-cut.safe { left: 60% !important; background: #6f8fff !important; }
+
+/* chart bars: score-band tone and stronger readability */
+.analysis-v2-bar,
+.analysis-v2-vert-item .bar,
+.chart-bar,
+.analysis-score-bar {
+  border-radius: 18px 18px 10px 10px !important;
+  box-shadow: 0 8px 16px rgba(61, 87, 173, 0.18);
+}
+
+.analysis-v2-bar-item .score,
+.analysis-v2-vert-item b,
+.score-simulation-chart .score,
+.possible-univ-card .score,
+.admission-card .percent {
+  font-weight: 800;
+  color: #375ed5;
+}
+
+.analysis-v2-guide-line,
+.analysis-v2-vert-chart .guide {
+  border-top: 1px dashed #c9d5ea !important;
+}
+
+.analysis-v2-guide-line.pass { bottom: 40% !important; }
+.analysis-v2-guide-line.safe { bottom: 60% !important; }
+
+.analysis-v2-chart-area,
+.score-simulation-chart,
+.scoreJourneyCard,
+.home-result-gauge,
+.admission-card,
+.possible-univ-card {
+  background: linear-gradient(180deg, #f9fbff 0%, #f4f7ff 100%);
+}
