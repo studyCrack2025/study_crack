@@ -1602,3 +1602,172 @@ textarea:focus {
   border: 1px solid #e1e8f5;
   box-shadow: 0 18px 34px rgba(27, 44, 88, 0.18);
 }
+
+/* --- data viz refinement: graph/gauge/infographic --- */
+:root {
+  --viz-blue: #3f6fe8;
+  --viz-blue-deep: #2458c8;
+  --viz-violet: #8d68ef;
+  --viz-violet-deep: #7b56dd;
+  --viz-track: #e9eef8;
+  --viz-line: #b8c6df;
+  --viz-label: #8a94a8;
+  --viz-strong: #2d3b58;
+  --viz-grad-main: linear-gradient(90deg, var(--viz-blue-deep) 0%, var(--viz-blue) 45%, var(--viz-violet) 100%);
+}
+
+.home-ranking-main,
+.analysis-v2-bar-item .score,
+.analysis-v2-gauge-head .target,
+.ob-gauge-head b.target,
+.analysis-v2-gauge-line b.target {
+  color: var(--viz-blue);
+}
+
+.home-ranking-progress,
+.ob-gauge,
+.analysis-v2-gauge,
+.analysis-v2-progress::before,
+.analysis-v2-sim-item .mini-track,
+.distance-track,
+.subject-bars .line,
+.progress,
+.track {
+  background: var(--viz-track);
+}
+
+.home-ranking-progress i,
+.ob-gauge-current,
+.ob-gauge-target,
+.analysis-v2-progress .progress-base,
+.analysis-v2-progress .progress-range,
+.analysis-v2-sim-item .mini-track i,
+.distance-track i,
+.progress > span,
+.track i {
+  background: var(--viz-grad-main);
+}
+
+.analysis-v2-gauge,
+.ob-gauge,
+.home-ranking-progress,
+.analysis-v2-progress,
+.subject-bars .line,
+.distance-track { border-radius: 999px; }
+
+.ob-gauge-cut,
+.analysis-v2-progress .line,
+.analysis-v2-gauge .cut,
+.analysis-v2-vert-chart .guide,
+.analysis-v2-guide-line {
+  opacity: .95;
+}
+
+.ob-gauge-cut.pass,
+.analysis-v2-progress .line.pass,
+.analysis-v2-vert-chart .guide.pass {
+  background: #ff6a6a;
+  border-color: #ff6a6a55;
+  color: #ff6a6a;
+}
+
+.ob-gauge-cut.safe,
+.analysis-v2-progress .line.safe,
+.analysis-v2-vert-chart .guide.safe {
+  background: #5d86f0;
+  border-color: #5d86f055;
+  color: #5d86f0;
+}
+
+.analysis-v2-label,
+.analysis-v2-gauge-meta,
+.analysis-v2-progress-label,
+.analysis-v2-gauge-head small,
+.analysis-v2-cut-labels,
+.analysis-v2-guide-line .label,
+.analysis-v2-bar-item p,
+.target-label,
+.home-ranking-sub,
+.home-ranking-tip,
+.home-ranking-foot,
+.ob-gauge-labels,
+.ob-gauge-head span,
+.quick-mini-label {
+  color: var(--viz-label);
+}
+
+.analysis-v2-targets,
+.analysis-v2-summary,
+.analysis-v2-before-after,
+.analysis-v2-gauge-change,
+.analysis-v2-sim,
+.analysis-v2-comment,
+.analysis-v2-cta,
+.scoreJourneyCard {
+  border-color: #dde5f4;
+  box-shadow: 0 12px 26px rgba(42, 61, 108, 0.08);
+}
+
+.analysis-v2-gauge-change,
+.analysis-v2-chart-area,
+.analysis-v2-sim-item,
+.home-result-gauge,
+.scoreJourneyCard {
+  padding: 18px;
+}
+
+.analysis-v2-bars,
+.analysis-v2-vert-chart,
+.on-graph-bars,
+.on-chart-line,
+.subject-bars,
+.analysis-bars {
+  margin-top: 10px;
+}
+
+.analysis-v2-bar,
+.analysis-v2-vert-item .bar,
+.on-graph-bars i {
+  border-radius: 14px 14px 8px 8px;
+  background: linear-gradient(180deg, #8fb0ff 0%, var(--viz-blue) 58%, var(--viz-violet) 100%);
+}
+
+.analysis-v2-bar {
+  box-shadow: 0 6px 14px rgba(79, 103, 188, 0.24);
+}
+
+.analysis-v2-bar-item.active p,
+.analysis-v2-gauge-line b.current,
+.analysis-v2-progress .trend-arrow {
+  color: var(--viz-violet-deep);
+}
+
+.subject-bars .row.focus .line i,
+.analysis-v2-bar-toggle.active i,
+.planner-item.done .planner-item-done,
+.coaching-achievement .progress i,
+.coaching-progress i,
+.planner-progress i {
+  background: var(--viz-grad-main);
+  border-color: var(--viz-blue);
+}
+
+.analysis-v2-guide-line {
+  border-top: 1px solid #c4d1e8;
+}
+
+.analysis-v2-vert-chart .guide,
+.analysis-v2-guide-line .label {
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.analysis-v2-gauge-head .current,
+.analysis-v2-gauge-head .target,
+.home-ranking-main,
+.ob-gauge-head b,
+.metric,
+.metric-sm {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
