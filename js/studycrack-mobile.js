@@ -1965,8 +1965,7 @@ function App() {
           <div class="add-univ-head"><h4>추천 대학</h4><span class="badge">추천</span></div>
           <div class="add-univ-grid">
             ${analysisRecommended.map((name) => `<div class="add-univ-card">
-              <div class="add-univ-card-top"><b>${name}</b><span class="badge">추천</span></div>
-              <p>현재 성적 기준 우선 검토 대학</p>
+              <div class="add-univ-card-top"><div class="add-univ-item-text"><b>${name}</b><p>현재 성적 기준 우선 검토 대학</p><span class="add-univ-item-badge">검토</span></div><span class="badge">추천</span></div>
               <button class="btn ${analysisTargetList.includes(name)?'btn-secondary':'btn-primary'}" data-action="addAnalysisTarget" data-target-major="${name}" ${analysisTargetList.includes(name)?'disabled':''}>${analysisTargetList.includes(name)?'추가됨':'추가'}</button>
             </div>`).join('')}
           </div>
@@ -1975,7 +1974,7 @@ function App() {
           <div class="add-univ-head"><h4>대학 검색</h4></div>
           <input class="planner-input add-univ-search" data-field="analysisSearchTerm" value="${analysisSearchTerm}" placeholder="대학명 또는 학과명을 검색하세요"/>
           <div class="add-univ-results">
-            ${analysisSearchList.map((name) => `<div class="add-univ-row"><span>${name}</span><button class="btn ${analysisTargetList.includes(name)?'btn-secondary':'btn-primary'} mini" data-action="addAnalysisTarget" data-target-major="${name}" ${analysisTargetList.includes(name)?'disabled':''}>${analysisTargetList.includes(name)?'추가됨':'추가'}</button></div>`).join('') || '<p class="sub">검색 결과가 없습니다.</p>'}
+            ${analysisSearchList.map((name) => `<div class="add-univ-row"><div class="add-univ-item-text"><span>${name}</span><span class="add-univ-item-badge">검색</span></div><button class="btn ${analysisTargetList.includes(name)?'btn-secondary':'btn-primary'} mini" data-action="addAnalysisTarget" data-target-major="${name}" ${analysisTargetList.includes(name)?'disabled':''}>${analysisTargetList.includes(name)?'추가됨':'추가'}</button></div>`).join('') || '<p class="sub">검색 결과가 없습니다.</p>'}
           </div>
         </div>
       </div>`,
