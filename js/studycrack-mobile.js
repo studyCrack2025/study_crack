@@ -1,6 +1,12 @@
 const { useState, useEffect, useRef } = React;
 
 const CRACKY_SRC = './assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png';
+const scoreTierClass = (score) => {
+  const n = Number(score) || 0;
+  if (n <= 100) return 'score-tier-low';
+  if (n <= 150) return 'score-tier-mid';
+  return 'score-tier-high';
+};
 const ONBOARDING_LOGO_SRC = './assets/images/og-image.jpg';
 const STUDYCRACK_LOGO_SRC = './assets/images/studycrack_logo_wo_bg.png';
 const HOME_FALLBACK_HTML = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>스터디크랙 홈</h3><p class="sub">앱을 불러왔어요. 계속 이용해 주세요.</p></div></div></div></div>`;
@@ -1200,7 +1206,7 @@ function App() {
         <div class="home-kpi-track anchor-volatile ${homeSlideMotion}" style="--home-slide-card-width:100%;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${homeDragOffset!==0?'0s':'transform .72s cubic-bezier(.22,1,.36,1)'};">
         ${homeTargets.map((item) => `<button class="university-card-slide card home-kpi-card admission-card slider-card home-result-card-v3" data-action="selectUniversity" data-target-major="${item.major}">
           <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score"><strong>${item.score}점</strong><small>AI 점수</small></div></div>
-          <div class="home-result-gauge"><i style="width:${Math.min((item.score / 250) * 100, 100)}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
+          <div class="home-result-gauge"><i class="${scoreTierClass(item.score)}" style="width:${Math.min((item.score / 250) * 100, 100)}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
           <div class="home-result-gauge-meta"><span>0</span><span>합격컷 100</span><span>안정컷 150</span><span>MAX 250</span></div>
           <div class="kpi-row score-row"><div class="kpi-item"><b>${item.score}점</b>현재 점수</div><div class="kpi-item"><b>${item.cut}점</b>합격 컷</div><div class="kpi-item danger"><b>${item.gap}점</b>부족 점수</div></div>
           <div class="home-planner-badges chip-row">${plannerBadges.map((badge) => `<span class="chip">${badge}</span>`).join('')}</div>
@@ -1802,9 +1808,9 @@ function App() {
          <p class="analysis-title">합격 가능성 분석</p>
          <div class="analysis-v2-summary-top">
            <div><p class="analysis-v2-univ">${targetMajor}</p><p class="analysis-v2-label">AI 점수 · 합격컷 대비 위치</p></div>
-           <div class="analysis-v2-score-wrap"><span class="analysis-v2-verdict" style="color:${analysisStatusColor};border-color:${analysisStatusColor}">${analysisStatus}</span><strong>${analysisSelected.score}점</strong></div>
+           <div class="analysis-v2-score-wrap"><span class="analysis-v2-verdict ${scoreTierClass(analysisSelected.score)}" style="color:${analysisStatusColor};border-color:${analysisStatusColor}">${analysisStatus}</span><strong>${analysisSelected.score}점</strong></div>
          </div>
-         <div class="analysis-v2-gauge"><i style="width:${analysisGaugeFill}%;background:${analysisGaugeColor}"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
+         <div class="analysis-v2-gauge"><i class="${scoreTierClass(analysisSelected.score)}" style="width:${analysisGaugeFill}%;background:${analysisGaugeColor}"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
          <div class="analysis-v2-gauge-meta"><span>0</span><span>합격컷 100점</span><span>안정컷 150점</span><span>MAX 250점</span></div>
          <div class="kpi-row score-row"><div class="kpi-item"><b>${liveCurrentScore}점</b>현재성적</div><div class="kpi-item"><b>100점</b>합격 컷</div><div class="kpi-item danger"><b>${analysisSelected.score-100>0?`+${analysisSelected.score-100}`:analysisSelected.score-100}점</b>격차</div></div>
        </div>
@@ -1831,8 +1837,8 @@ function App() {
          <p class="analysis-title">합격 가능성 변화</p>
          <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${gaugeTarget}점</b></div></div>
          <div class="ob-gauge">
-           <div class="ob-gauge-current" style="width:${gaugeCurrentPct}%"></div>
-           <div class="ob-gauge-target" style="width:${gaugeTargetPct}%"></div>
+           <div class="ob-gauge-current ${scoreTierClass(gaugeCurrent)}" style="width:${gaugeCurrentPct}%"></div>
+           <div class="ob-gauge-target ${scoreTierClass(gaugeTarget)}" style="width:${gaugeTargetPct}%"></div>
            <i class="ob-gauge-cut pass" style="left:${gaugePassPct}%"></i>
            <i class="ob-gauge-cut safe" style="left:${gaugeSafePct}%"></i>
          </div>
@@ -1845,8 +1851,8 @@ function App() {
            <p class="analysis-title">${name}</p>
            <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${target}점</b></div></div>
            <div class="ob-gauge">
-             <div class="ob-gauge-current" style="width:${Math.min(100, (gaugeCurrent / 250) * 100)}%"></div>
-             <div class="ob-gauge-target" style="width:${Math.min(100, (target / 250) * 100)}%"></div>
+             <div class="ob-gauge-current ${scoreTierClass(gaugeCurrent)}" style="width:${Math.min(100, (gaugeCurrent / 250) * 100)}%"></div>
+             <div class="ob-gauge-target ${scoreTierClass(target)}" style="width:${Math.min(100, (target / 250) * 100)}%"></div>
              <i class="ob-gauge-cut pass" style="left:${gaugePassPct}%"></i>
              <i class="ob-gauge-cut safe" style="left:${gaugeSafePct}%"></i>
            </div>
@@ -1968,11 +1974,11 @@ function App() {
                 <p class="analysis-v2-label">AI 점수 · 합격컷 대비 위치</p>
               </div>
               <div class="analysis-v2-score-wrap">
-                <span class="analysis-v2-verdict" style="color:${analysisStatusColor};border-color:${analysisStatusColor}">${analysisStatus}</span>
+                <span class="analysis-v2-verdict ${scoreTierClass(analysisSelected.score)}" style="color:${analysisStatusColor};border-color:${analysisStatusColor}">${analysisStatus}</span>
                 <strong>${analysisSelected.score}점</strong>
               </div>
             </div>
-            <div class="analysis-v2-gauge"><i style="width:${analysisGaugeFill}%;background:${analysisGaugeColor}"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
+            <div class="analysis-v2-gauge"><i class="${scoreTierClass(analysisSelected.score)}" style="width:${analysisGaugeFill}%;background:${analysisGaugeColor}"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
             <div class="analysis-v2-gauge-meta"><span>0</span><span>합격컷 100점</span><span>안정컷 150점</span><span>MAX 250점</span></div>
           </div>
 
@@ -1986,8 +1992,8 @@ function App() {
             <p class="analysis-title">합격 가능성 변화</p>
             <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${gaugeTarget}점</b></div></div>
             <div class="ob-gauge">
-              <div class="ob-gauge-current" style="width:${gaugeCurrentPct}%"></div>
-              <div class="ob-gauge-target" style="width:${gaugeTargetPct}%"></div>
+              <div class="ob-gauge-current ${scoreTierClass(gaugeCurrent)}" style="width:${gaugeCurrentPct}%"></div>
+              <div class="ob-gauge-target ${scoreTierClass(gaugeTarget)}" style="width:${gaugeTargetPct}%"></div>
               <i class="ob-gauge-cut pass" style="left:${gaugePassPct}%"></i>
               <i class="ob-gauge-cut safe" style="left:${gaugeSafePct}%"></i>
             </div>
@@ -2000,8 +2006,8 @@ function App() {
               <p class="analysis-title">${name}</p>
               <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${target}점</b></div></div>
               <div class="ob-gauge">
-                <div class="ob-gauge-current" style="width:${Math.min(100, (gaugeCurrent / 250) * 100)}%"></div>
-                <div class="ob-gauge-target" style="width:${Math.min(100, (target / 250) * 100)}%"></div>
+                <div class="ob-gauge-current ${scoreTierClass(gaugeCurrent)}" style="width:${Math.min(100, (gaugeCurrent / 250) * 100)}%"></div>
+                <div class="ob-gauge-target ${scoreTierClass(target)}" style="width:${Math.min(100, (target / 250) * 100)}%"></div>
                 <i class="ob-gauge-cut pass" style="left:${gaugePassPct}%"></i>
                 <i class="ob-gauge-cut safe" style="left:${gaugeSafePct}%"></i>
               </div>
@@ -2021,7 +2027,7 @@ function App() {
               <div class="analysis-v2-bars">
                 ${[['가천대 관광경영학과', 250, '가천대학교 관광경영학과'], ['강서대 G2빅데이터경영학과', 238, '강서대학교 G2빅데이터경영학과'], ['고려대 경영대학', 71, '고려대학교 경영대학']].map(([label, score, full]) => {
                   const heightPercent = Math.max(0, Math.min(100, (score / 250) * 100));
-                  const color = score >= 250 ? '#22C55E' : score < 100 ? '#F97316' : '#2563EB';
+                  const color = score <= 100 ? '#fa8072' : score <= 150 ? '#2563eb' : '#8b5cf6';
                   const shouldProject = analysisBarProjectionTarget === full;
                   const projectionGain = shouldProject ? Math.max(0, Math.min(analysisSimMax, 250 - score)) : null;
                   const projectionScore = projectionGain !== null ? Math.min(250, score + projectionGain) : null;
@@ -2030,7 +2036,8 @@ function App() {
                   const gainLabel = projectionGain === null ? '' : Number(projectionGain.toFixed(1)).toString();
                   const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${Math.max(0, (100 - projectionScore / 250 * 100))}%">${Number(projectionScore.toFixed(1)).toString()} (+${gainLabel})</span>` : '';
                   const projectionBox = projectionScore && projectionHeight > 0 ? `<span class="analysis-v2-bar-proj-box" style="bottom:${heightPercent}%;height:${projectionHeight}%"></span>` : '';
-                  return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="simulateBarGain" data-target-major="${full}" data-base-score="${score}"><b class="score">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar" style="height:${heightPercent}%;background:${color}"></i>${projectionBox}${projection}</div><p>${label}</p></button>`;
+                  const tier = scoreTierClass(score);
+                  return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="simulateBarGain" data-target-major="${full}" data-base-score="${score}"><b class="score ${tier}">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar ${tier}" style="height:${heightPercent}%;background:${color}"></i>${projectionBox}${projection}</div><p>${label}</p></button>`;
                 }).join('')}
               </div>
             </div>
