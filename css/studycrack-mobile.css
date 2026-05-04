@@ -2011,9 +2011,12 @@ small { font-size:12px; }
 .analysis-v2-tab.active { border-color:var(--primary) !important; color:var(--primary) !important; background:#FFFFFF !important; }
 .planner-input,.analysis-dropdown,.coach-month-select,.coach-month-btn { border-color:var(--line) !important; color:var(--text) !important; }
 
-/* gauge system: clear track + solid fill */
+/* gauge system: 3-soft track + tier fill */
 .home-result-gauge,.ob-gauge,.analysis-v2-gauge,.analysis-v2-progress::before,.admission-gauge,.result-gauge,.track,.progress {
-  background: var(--line) !important;
+  background: linear-gradient(to right,
+    var(--score-low-soft) 0%, var(--score-low-soft) 40%,
+    var(--score-mid-soft) 40%, var(--score-mid-soft) 60%,
+    var(--score-high-soft) 60%, var(--score-high-soft) 100%) !important;
   border-radius:999px;
 }
 
@@ -2029,20 +2032,39 @@ small { font-size:12px; }
 .analysis-v2-progress .progress-range {
   border-radius:999px;
   opacity:1 !important;
+}
+
+.home-result-gauge i,
+.analysis-v2-gauge i,
+.ob-gauge-current,
+.admission-gauge > i,
+.result-gauge > i { z-index:3; }
+
+.ob-gauge-target {
   z-index:2;
+  opacity:.62 !important;
 }
 
 .score-tier-low { background: var(--score-low) !important; color: var(--score-low) !important; }
 .score-tier-mid { background: var(--score-mid) !important; color: var(--score-mid) !important; }
 .score-tier-high { background: var(--score-high) !important; color: var(--score-high) !important; }
-.ob-gauge-target { opacity:.6 !important; z-index:1; }
-.ob-gauge-current { z-index:3; }
+
+.ob-total-compare b.target,
+.analysis-v2-bar-item .score.score-tier-low,
+.score-simulation-chart .score.score-tier-low { color: var(--score-low) !important; }
+.analysis-v2-bar-item .score.score-tier-mid,
+.score-simulation-chart .score.score-tier-mid { color: var(--score-mid) !important; }
+.analysis-v2-bar-item .score.score-tier-high,
+.score-simulation-chart .score.score-tier-high { color: var(--score-high) !important; }
 
 /* bars */
 .analysis-v2-bar,.analysis-v2-vert-item .bar,.chart-bar,.analysis-score-bar {
   border-radius:12px !important;
-  box-shadow:0 6px 12px rgba(0,0,0,.08) !important;
+  box-shadow:0 6px 12px rgba(15,23,42,.08) !important;
 }
+.analysis-v2-bar.score-tier-low,.analysis-v2-vert-item .bar.score-tier-low,.chart-bar.score-tier-low,.analysis-score-bar.score-tier-low { background: var(--score-low) !important; }
+.analysis-v2-bar.score-tier-mid,.analysis-v2-vert-item .bar.score-tier-mid,.chart-bar.score-tier-mid,.analysis-score-bar.score-tier-mid { background: var(--score-mid) !important; }
+.analysis-v2-bar.score-tier-high,.analysis-v2-vert-item .bar.score-tier-high,.chart-bar.score-tier-high,.analysis-score-bar.score-tier-high { background: var(--score-high) !important; }
 .analysis-v2-bar-item:hover .analysis-v2-bar { transform:scale(1.02); }
 .analysis-v2-bar-item .score { font-weight:700; }
 
