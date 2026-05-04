@@ -1198,8 +1198,13 @@ function App() {
         <button class="pro-top-btn" data-action="goto" data-target="proElite"><span>PRO LOUNGE 입장</span></button>
         <button class="top-icon-btn" data-action="openNotificationModal">${i('bell', false)}</button>
       </div>
-      <p class="home-greeting">안녕하세요, 지민님 👋</p>
-      <p class="home-sub">오늘도 크랙한 하루 되세요!</p>
+      <div class="home-greeting-bubble">
+        <img src="${CRACKY_SRC}" class="home-greeting-cracky" alt="크랙이" />
+        <div class="home-greeting-speech">
+          <p class="home-greeting">안녕하세요, 지민님 👋</p>
+          <p class="home-sub">오늘도 크랙한 하루 되세요!</p>
+        </div>
+      </div>
     </div>
     <div class="section home-section">
       <div class="home-kpi-slider">
@@ -1953,8 +1958,10 @@ function App() {
     analysis: layout(
       `<section class="analysis-v2 ${isAnalyzing ? 'loading' : ''}">
         <div class="card analysis-v2-head">
-          <h3>분석</h3>
-          <p>결과를 보고, 전략을 이해하고, 바로 실행으로 연결하세요.</p>
+          <div class="top-card-head">
+            <div><h3>분석</h3><p>결과를 보고, 전략을 이해하고, 바로 실행으로 연결하세요.</p></div>
+            <span class="top-infographic top-infographic-analysis" aria-hidden="true"><i></i><i></i><i></i></span>
+          </div>
         </div>
 
         <div class="analysis-v2-tabs">
@@ -2064,7 +2071,7 @@ function App() {
     ),
     strategy: layout(
       `<div class="coach-page">
-        <div class="card coach-title-card"><h3>학습 코칭</h3><p>주간 학습 계획을 점검하고, 튜터의 피드백을 받아보세요.</p></div>
+        <div class="card coach-title-card"><div class="top-card-head"><div><h3>학습 코칭</h3><p>주간 학습 계획을 점검하고, 튜터의 피드백을 받아보세요.</p></div><span class="top-infographic top-infographic-coach" aria-hidden="true"><i></i><i></i><i></i></span></div></div>
         <div class="card coach-status-card">
           <div class="coach-row"><h4>이번 주 학습 점검 & 코칭 요청</h4><span class="badge ${coachingSubmitted ? 'coach-submitted' : ''}">${coachingSubmitted ? '제출 완료' : '미제출'}</span></div>
           <p>이번 주 학습 달성률과 고민을 작성하면 튜터가 피드백을 제공해요.</p>
@@ -2118,7 +2125,7 @@ function App() {
       true
     ),
     my: layout(appbar('마이페이지', false) + `<div class="my-stack">
-      <div class="card my-profile-card"><div class="my-profile-left"><div class="my-avatar">${i('user', false)}</div><div><p class="my-name">김지민</p><p class="sub">목표 대학: 연세대학교 경영학과</p></div></div><span class="badge">Pro 이용 중</span></div>
+      <div class="card my-profile-card"><div class="my-profile-left"><div class="my-avatar">${i('user', false)}</div><div><p class="my-name">김지민</p><p class="sub">목표 대학: 연세대학교 경영학과</p></div></div><div class="my-profile-right"><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span><span class="badge">Pro 이용 중</span></div></div>
       ${mbtiResult ? `<div class="card" style="border:2px solid #2563EB;background:#EFF6FF;"><p class="analysis-title">진단 결과 & MBTI 학습보고서</p><p style="margin:6px 0 2px;font-size:30px;font-weight:900;letter-spacing:.08em;color:#1D4ED8;text-shadow:0 6px 18px rgba(37,99,235,.18);">CSDR</p><p class="sub" style="margin:0 0 12px;font-size:12px;color:#1E40AF;">(컨셉형, 직관령, 분석형, 루틴)</p><button class="btn btn-primary" data-action="downloadMbtiReport">MBTI 학습 보고서 다운</button></div>` : ''}
       <div class="card my-subscription-card"><div class="my-sub-icon">${i('report', false)}</div><div><p class="my-sub-title">Pro 플랜 이용 중</p><p class="my-sub-date">다음 결제일 2024.06.14</p></div></div>
       <div class="card my-menu-card">

@@ -2482,3 +2482,101 @@ input:focus, select:focus, textarea:focus,
     scroll-behavior: auto !important;
   }
 }
+
+/* --- Requested UI refinements (scoped) --- */
+.top-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.top-card-head h3,
+.top-card-head p { margin: 0; }
+.top-card-head p { margin-top: 6px; }
+.top-infographic {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  border: 1px solid #E2E8F0;
+  background: rgba(37,99,235,.08);
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 7px;
+}
+.top-infographic i {
+  display: block;
+  width: 5px;
+  border-radius: 999px;
+  background: #2563EB;
+  opacity: .9;
+}
+.top-infographic i:nth-child(1) { height: 9px; }
+.top-infographic i:nth-child(2) { height: 14px; }
+.top-infographic i:nth-child(3) { height: 19px; }
+.top-infographic-coach { background: rgba(124,58,237,.10); }
+.top-infographic-coach i { background: #7C3AED; }
+.top-infographic-my { background: rgba(37,99,235,.08); position: relative; }
+.top-infographic-my::after {
+  content: "";
+  position: absolute;
+  right: 7px;
+  top: 8px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #2563EB;
+  opacity: .18;
+}
+
+.my-profile-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+
+.home-greeting-bubble { display: flex; align-items: center; gap: 10px; }
+.home-greeting-cracky { width: 42px; height: 42px; object-fit: contain; flex-shrink: 0; }
+.home-greeting-speech {
+  position: relative;
+  background: #fff;
+  border: 1px solid #E2E8F0;
+  border-radius: 18px;
+  padding: 12px 14px;
+  box-shadow: 0 4px 12px rgba(15,23,42,.06);
+}
+.home-greeting-speech::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 18px;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-left: 1px solid #E2E8F0;
+  border-bottom: 1px solid #E2E8F0;
+  transform: rotate(45deg);
+}
+.home-greeting-speech .home-greeting { margin: 0; }
+.home-greeting-speech .home-sub { margin: 2px 0 0; }
+
+.score-journey-col,
+.score-journey-col.current,
+.score-journey-col.target {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+.score-journey-track {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+.score-journey-scroll {
+  border: 0 !important;
+  outline: 0 !important;
+}
+.score-target-panel {
+  background: rgba(139,92,246,.08);
+  border: 1px solid rgba(139,92,246,.28);
+  border-radius: 18px;
+}
