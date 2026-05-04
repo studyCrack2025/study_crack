@@ -808,3 +808,60 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .sim-warning p { font-size: 0.85rem; margin: 0; line-height: 1.4; color: #475569; }
     .sim-warning button { width: 100%; padding: 12px; margin-top: 5px; background: #ea580c; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 0.95rem; cursor: pointer; }
 }
+
+/* --- Premium mobile visual unification overrides --- */
+:root {
+  --primary: #2563EB;
+  --gradient-primary: linear-gradient(135deg, #2563EB, #7C3AED);
+  --score-low: #FA8072;
+  --score-mid: #2563EB;
+  --score-high: #7C3AED;
+  --bg: #F8FAFC;
+  --card: #FFFFFF;
+  --border: #E2E8F0;
+  --text: #0F172A;
+  --text-sub: #64748B;
+}
+.analysis-card,
+.sim-chart-wrapper,
+.sim-result-card,
+.sim-item,
+.univ-slot,
+.selection-item,
+.score-detail-view {
+  border-radius: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.analysis-card:hover,
+.sim-chart-wrapper:hover,
+.sim-result-card:hover,
+.sim-item:hover { transform: translateY(-1px); box-shadow: 0 8px 16px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08); }
+
+.score-bar-bg, .track, .progress { background: #E2E8F0; border-radius: 999px; }
+.score-bar-fill { border-radius: 999px; transition: width 0.6s ease; }
+.score-bar-fill.overlay { opacity: 0.6; }
+.sim-bar { border-radius: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.08); }
+.sim-bar-item:hover { transform: scale(1.02); }
+.sim-score-label { font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
+
+#btnSaveTarget, .upgrade-btn-small {
+  background: var(--gradient-primary);
+  color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+}
+#btnSaveTarget:active, .upgrade-btn-small:active { transform: scale(0.97); }
+
+.sol-title,h1{font-size:22px;font-weight:700;color:var(--text)}
+h2,.sim-univ-title{font-size:18px;font-weight:600;color:var(--text)}
+body{font-size:14px;color:var(--text)}
+small,.sol-desc,.sim-univ-dept{font-size:12px;color:var(--text-sub)}
+.score-info,.score-diff,.sim-score-label{font-weight:700;letter-spacing:-0.5px}
+
+/* subject infographic palette */
+.tag.math { background: #F8FAFC; color: #2563EB; }
+.tag.sci { background: #F8FAFC; color: #7C3AED; }
+.tag.eng { background: #F8FAFC; color: #FA8072; }
