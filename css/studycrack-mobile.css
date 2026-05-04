@@ -2220,3 +2220,110 @@ small { font-size:12px; }
 .card.ranking-card.tier-platinum,.ranking-card.tier-platinum { border: 1px solid rgba(99,102,241,.48) !important; background: linear-gradient(135deg, rgba(99,102,241,.16), #fff 70%) !important; }
 .card.ranking-card.tier-diamond,.ranking-card.tier-diamond { border: 1px solid rgba(6,182,212,.50) !important; background: linear-gradient(135deg, rgba(6,182,212,.16), #fff 70%) !important; }
 .ranking-card.tier-gold::after,.ranking-card.tier-platinum::after,.ranking-card.tier-diamond::after { z-index:0; opacity:.28; pointer-events:none; }
+
+/* --- strict rollback fixes: tier color + ranking + journey containment --- */
+/* root cause: broad tier/background overrides + rank-tier/tier naming mismatch */
+.score-tier-low .gauge-fill,
+.score-tier-low .home-result-gauge i,
+.score-tier-low .ob-gauge-current,
+.score-tier-low .analysis-score-bar,
+.gauge-fill.score-tier-low,
+.home-result-gauge i.score-tier-low,
+.ob-gauge-current.score-tier-low,
+.analysis-score-bar.score-tier-low { background:#fa8072 !important; }
+
+.score-tier-mid .gauge-fill,
+.score-tier-mid .home-result-gauge i,
+.score-tier-mid .ob-gauge-current,
+.score-tier-mid .analysis-score-bar,
+.gauge-fill.score-tier-mid,
+.home-result-gauge i.score-tier-mid,
+.ob-gauge-current.score-tier-mid,
+.analysis-score-bar.score-tier-mid { background:#2563eb !important; }
+
+.score-tier-high .gauge-fill,
+.score-tier-high .home-result-gauge i,
+.score-tier-high .ob-gauge-current,
+.score-tier-high .analysis-score-bar,
+.gauge-fill.score-tier-high,
+.home-result-gauge i.score-tier-high,
+.ob-gauge-current.score-tier-high,
+.analysis-score-bar.score-tier-high { background:#8b5cf6 !important; }
+
+.ob-gauge-target.score-tier-low { background: rgba(250,128,114,.45) !important; }
+.ob-gauge-target.score-tier-mid { background: rgba(37,99,235,.45) !important; }
+.ob-gauge-target.score-tier-high { background: rgba(139,92,246,.45) !important; }
+.ob-gauge-current { z-index:3 !important; }
+.ob-gauge-target { z-index:2 !important; }
+
+.score-journey-card { overflow: hidden !important; }
+.score-journey-scroll { overflow: hidden !important; width:100% !important; }
+.score-journey-track {
+  display:flex !important;
+  width:200% !important;
+  transform:translateX(var(--score-slide-x)) !important;
+  transition:var(--score-slide-transition) !important;
+}
+.score-journey-col {
+  flex:0 0 50% !important;
+  min-width:50% !important;
+  max-width:50% !important;
+  box-sizing:border-box !important;
+  border:0 !important;
+  box-shadow:none !important;
+  background:transparent !important;
+  padding:16px 18px !important;
+}
+
+.score-simulation-card::before,
+.score-simulation-card::after,
+.simulation-card::before,
+.simulation-card::after,
+.plus-one-card::before,
+.plus-one-card::after { content:none !important; display:none !important; }
+
+.card.home-bottom-summary.ranking-card.tier-bronze,
+.card.ranking-card.tier-bronze,
+.ranking-card.tier-bronze,
+.card.home-bottom-summary.ranking-card.rank-tier-bronze,
+.card.ranking-card.rank-tier-bronze,
+.ranking-card.rank-tier-bronze {
+  border:1px solid rgba(180,115,60,.50) !important;
+  background:linear-gradient(135deg, rgba(180,115,60,.16), #fff 72%) !important;
+}
+.card.home-bottom-summary.ranking-card.tier-silver,
+.card.ranking-card.tier-silver,
+.ranking-card.tier-silver,
+.card.home-bottom-summary.ranking-card.rank-tier-silver,
+.card.ranking-card.rank-tier-silver,
+.ranking-card.rank-tier-silver {
+  border:1px solid rgba(148,163,184,.50) !important;
+  background:linear-gradient(135deg, rgba(148,163,184,.16), #fff 72%) !important;
+}
+.card.home-bottom-summary.ranking-card.tier-gold,
+.card.ranking-card.tier-gold,
+.ranking-card.tier-gold,
+.card.home-bottom-summary.ranking-card.rank-tier-gold,
+.card.ranking-card.rank-tier-gold,
+.ranking-card.rank-tier-gold {
+  border:1px solid rgba(245,158,11,.56) !important;
+  background:linear-gradient(135deg, rgba(245,158,11,.18), #fff 72%) !important;
+}
+.card.home-bottom-summary.ranking-card.tier-platinum,
+.card.ranking-card.tier-platinum,
+.ranking-card.tier-platinum,
+.card.home-bottom-summary.ranking-card.rank-tier-platinum,
+.card.ranking-card.rank-tier-platinum,
+.ranking-card.rank-tier-platinum {
+  border:1px solid rgba(99,102,241,.54) !important;
+  background:linear-gradient(135deg, rgba(99,102,241,.18), #fff 72%) !important;
+}
+.card.home-bottom-summary.ranking-card.tier-diamond,
+.card.ranking-card.tier-diamond,
+.ranking-card.tier-diamond,
+.card.home-bottom-summary.ranking-card.rank-tier-diamond,
+.card.ranking-card.rank-tier-diamond,
+.ranking-card.rank-tier-diamond {
+  border:1px solid rgba(6,182,212,.56) !important;
+  background:linear-gradient(135deg, rgba(6,182,212,.18), #fff 72%) !important;
+}
