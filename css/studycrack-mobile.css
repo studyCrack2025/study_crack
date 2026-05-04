@@ -2383,3 +2383,102 @@ small { font-size: 12px; }
 .bar { border-radius: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.08); transition: transform 0.2s ease; }
 .bar:hover { transform: scale(1.02); }
 .bar .value, .sim-score-label { font-weight: 700; }
+
+/* --- Micro interactions polish (CSS-only, no DOM/JS changes) --- */
+:root {
+  --ease-soft: cubic-bezier(.22,1,.36,1);
+}
+
+/* 1) Buttons */
+.btn, .btn-primary, .btn-secondary, .btn-ghost,
+.cta-btn, .cta-button, .analysis-convert-btn,
+.tabbar button, .top-icon-btn {
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease, color .16s ease;
+}
+.btn:active, .btn-primary:active, .btn-secondary:active, .btn-ghost:active,
+.cta-btn:active, .cta-button:active, .analysis-convert-btn:active,
+.tabbar button:active, .top-icon-btn:active { transform: scale(.97); }
+.btn:disabled, .btn-primary:disabled, .btn-secondary:disabled, .btn-ghost:disabled,
+.cta-btn:disabled, .cta-button:disabled, .analysis-convert-btn:disabled {
+  opacity: .55;
+  box-shadow: none !important;
+}
+
+/* 2) Cards */
+.card, .planner-card, .analysis-card, .home-kpi-card,
+.analysis-v2-summary, .analysis-v2-gauge-change, .analysis-v2-before-after, .analysis-v2-sim,
+.analysis-v2-targets, .analysis-v2-compare-card, .score-journey-card, .on-eta-card, .possible-university-card {
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+@media (hover:hover) {
+  .card:hover, .planner-card:hover, .analysis-card:hover { transform: translateY(-1px); }
+}
+.card:active, .planner-card:active, .analysis-card:active { transform: scale(.995); }
+
+/* 3) Bottom nav / tabs */
+.tabbar button { transition: background .16s ease, color .16s ease, transform .16s ease; }
+.tabbar button.active { transform: translateY(-1px); }
+
+/* 4) Gauge / graph fill motion */
+.track i, .progress > span,
+.ob-gauge-current, .ob-gauge-target,
+.analysis-v2-progress .progress-base, .analysis-v2-progress .progress-range,
+.home-ranking-progress i, .distance-track i,
+.chart-bar, .analysis-v2-bar, .sim-bar {
+  transition: width .55s var(--ease-soft), height .55s var(--ease-soft), transform .2s ease, background .2s ease;
+  transform-origin: bottom;
+}
+
+/* 5) Modal / sheet */
+.modal-backdrop, .modal-overlay, .modal {
+  transition: opacity .24s ease, visibility .24s ease;
+}
+.modal-content, .sheet, .bottom-sheet, .score-edit-modal, .v2-step-modal {
+  transition: transform .26s var(--ease-soft), opacity .24s ease;
+  transform: translateY(8px);
+  opacity: .98;
+}
+.modal[style*="display: flex"] .modal-content,
+.modal[style*="display:block"] .modal-content,
+.modal.is-open .modal-content,
+.sheet.is-open, .bottom-sheet.is-open {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* 6) Inputs */
+input, select, textarea, .planner-input, .analysis-dropdown, .coach-month-select, .coach-month-btn {
+  transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+input:focus, select:focus, textarea:focus,
+.planner-input:focus, .analysis-dropdown:focus, .coach-month-select:focus, .coach-month-btn:focus {
+  border-color: #2563EB !important;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.10);
+}
+
+/* 7) Ranking shine */
+.ranking-card.tier-gold, .ranking-card.tier-platinum, .ranking-card.tier-diamond { position: relative; overflow: hidden; }
+.ranking-card.tier-gold::before, .ranking-card.tier-platinum::before, .ranking-card.tier-diamond::before {
+  content: "";
+  position: absolute;
+  inset: -40% -60%;
+  background: linear-gradient(120deg, rgba(255,255,255,0) 35%, rgba(255,255,255,.32) 50%, rgba(255,255,255,0) 65%);
+  transform: translateX(-45%) rotate(8deg);
+  animation: rankShine 3.1s ease-in-out infinite;
+  opacity: .42;
+  pointer-events: none;
+}
+@keyframes rankShine {
+  0%, 55%, 100% { transform: translateX(-55%) rotate(8deg); }
+  25% { transform: translateX(40%) rotate(8deg); }
+}
+
+/* 8) Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -865,3 +865,60 @@ small,.sol-desc,.sim-univ-dept{font-size:12px;color:var(--text-sub)}
 .tag.math { background: #F8FAFC; color: #2563EB; }
 .tag.sci { background: #F8FAFC; color: #7C3AED; }
 .tag.eng { background: #F8FAFC; color: #FA8072; }
+
+/* --- Micro interaction refinement (CSS-only) --- */
+:root { --ease-soft: cubic-bezier(.22,1,.36,1); }
+
+/* Buttons */
+#btnSaveTarget, .save-btn, .upgrade-btn-small, .btn-common, .btn-confirm, .btn-cancel,
+.toggle-btn, .tab-btn, .sol-btn, .pro-cta-btn, .req-btn, .mini-upload-btn, .file-upload-btn {
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease, color .16s ease;
+}
+#btnSaveTarget:active, .save-btn:active, .upgrade-btn-small:active, .btn-common:active, .btn-confirm:active,
+.btn-cancel:active, .toggle-btn:active, .tab-btn:active, .sol-btn:active, .pro-cta-btn:active, .req-btn:active,
+.mini-upload-btn:active, .file-upload-btn:active { transform: scale(.97); }
+#btnSaveTarget:disabled, .save-btn:disabled, .btn-common:disabled, .btn-confirm:disabled, .btn-cancel:disabled { opacity:.55; box-shadow:none !important; }
+
+/* Cards */
+.analysis-card, .sim-chart-wrapper, .sim-result-card, .sim-item, .subject-card, .pro-input-card {
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+@media (hover:hover) { .analysis-card:hover, .sim-result-card:hover, .sim-item:hover, .subject-card:hover { transform: translateY(-1px); } }
+.analysis-card:active, .sim-result-card:active, .sim-item:active, .subject-card:active { transform: scale(.995); }
+
+/* Tabs/nav feel */
+.tab-btn.active, .toggle-btn.active, .sol-btn.active { transform: translateY(-1px); }
+
+/* Gauge/graph */
+.score-bar-fill, .sim-bar, .progress > span, .track i, .sim-path {
+  transition: width .55s var(--ease-soft), height .55s var(--ease-soft), transform .2s ease;
+  transform-origin: bottom;
+}
+
+/* Modal/sheet */
+.modal, .custom-modal { transition: opacity .24s ease, visibility .24s ease; }
+.modal-content, .custom-modal-content, .select-modal-content, .check-modal-content, .pro-modal-content {
+  transition: transform .26s var(--ease-soft), opacity .24s ease;
+  transform: translateY(8px);
+}
+.modal[style*="display: flex"] .modal-content,
+.modal[style*="display:block"] .modal-content,
+.custom-modal[style*="display: block"] .custom-modal-content { transform: translateY(0); }
+
+/* Inputs */
+input, select, textarea, .quan-dropdown, .sub-input, .common-textarea, .pro-textarea {
+  transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+input:focus, select:focus, textarea:focus, .quan-dropdown:focus, .sub-input:focus, .common-textarea:focus, .pro-textarea:focus {
+  border-color: #2563EB !important;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.10) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
