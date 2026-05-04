@@ -2080,3 +2080,85 @@ small { font-size:12px; }
 .home-content .card + .card,
 .analysis-v2 > .card,
 .coach-page > .card { margin-top:16px; }
+
+/* --- regression recovery: keep visual layers behind text --- */
+.chart-bar,
+.ob-gauge-current,
+.ob-gauge-target,
+.home-result-gauge i,
+.analysis-score-bar,
+.gauge-fill {
+  position: relative;
+  z-index: 1 !important;
+}
+
+.chart label,
+.chart-value,
+.chart-score,
+.ob-gauge-labels,
+.analysis-title,
+.university-name,
+.score-label,
+.score-value,
+.analysis-v2-bar-item .score,
+.home-result-gauge-meta,
+.ob-total-compare,
+.analysis-v2-vert-item b,
+.analysis-v2-vert-item .label {
+  position: relative;
+  z-index: 3;
+}
+
+/* prevent oversized decorative circles/markers regression */
+.analysis-v2-vert-item i,
+.analysis-v2-vert-item span,
+.score-simulation-chart i,
+.score-simulation-chart span,
+.analysis-v2-chart-area i,
+.analysis-v2-chart-area span {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* restore ETA highlight card visibility in OB5 */
+.eta-card-slot,
+.eta-card,
+.on-eta-card,
+.ob-period-card.on-eta-card {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.on-eta-card,
+.analysis-v2-eta-card {
+  border: 1px solid #93C5FD !important;
+  background: linear-gradient(135deg,#0B1A47 0%,#1D4ED8 52%,#60A5FA 100%) !important;
+  box-shadow: 0 10px 24px rgba(29,78,216,.24) !important;
+}
+
+/* restore ranking tier accents */
+.ranking-card.tier-bronze { border-color: rgba(180,115,60,.35) !important; background: rgba(180,115,60,.08) !important; }
+.ranking-card.tier-silver { border-color: rgba(148,163,184,.35) !important; background: rgba(148,163,184,.08) !important; }
+.ranking-card.tier-gold { border-color: rgba(245,158,11,.42) !important; background: rgba(245,158,11,.10) !important; }
+.ranking-card.tier-platinum { border-color: rgba(99,102,241,.38) !important; background: rgba(99,102,241,.09) !important; }
+.ranking-card.tier-diamond { border-color: rgba(6,182,212,.40) !important; background: rgba(6,182,212,.10) !important; }
+.ranking-card.tier-gold::after,
+.ranking-card.tier-platinum::after,
+.ranking-card.tier-diamond::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(120deg, transparent 20%, rgba(255,255,255,.24) 50%, transparent 80%);
+  pointer-events: none;
+}
+
+/* remove inner column card chrome, keep outer journey card */
+.score-journey-col,
+.analysis-v2-target-col,
+.analysis-v2-current-col {
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
