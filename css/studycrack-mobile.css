@@ -2327,3 +2327,41 @@ small { font-size:12px; }
   border:1px solid rgba(6,182,212,.56) !important;
   background:linear-gradient(135deg, rgba(6,182,212,.18), #fff 72%) !important;
 }
+
+/* --- UI cleanup: simulation card / dual gauge / journey panel --- */
+.score-simulation-card,
+.plus-one-card {
+  background:#fff !important;
+}
+.score-simulation-card::before,
+.score-simulation-card::after,
+.plus-one-card::before,
+.plus-one-card::after {
+  content:none !important;
+  display:none !important;
+}
+.analysis-impact-item { grid-template-columns: 40px 1fr auto; }
+.analysis-impact-item .track { background:#E2E8F0 !important; border-radius:999px; overflow:hidden; position:relative; }
+.analysis-impact-item .track i { position:absolute; left:0; top:0; bottom:0; border-radius:999px; }
+
+/* dual gauge uses neutral gray track */
+.ob-gauge {
+  background:#E2E8F0 !important;
+}
+.ob-gauge-current.score-tier-low { background:#fa8072 !important; }
+.ob-gauge-current.score-tier-mid { background:#2563eb !important; }
+.ob-gauge-current.score-tier-high { background:#8b5cf6 !important; }
+.ob-gauge-target.score-tier-low { background:rgba(250,128,114,.60) !important; }
+.ob-gauge-target.score-tier-mid { background:rgba(37,99,235,.60) !important; }
+.ob-gauge-target.score-tier-high { background:rgba(139,92,246,.60) !important; }
+.ob-gauge-target { z-index:2 !important; }
+.ob-gauge-current { z-index:3 !important; }
+
+/* journey inner double-border cleanup + target-only purple panel */
+.score-journey-col { border:0 !important; box-shadow:none !important; background:transparent !important; }
+.score-journey-col.target .score-target-panel {
+  background: rgba(139,92,246,.08);
+  border: 1px solid rgba(139,92,246,.28);
+  border-radius: 18px;
+  padding: 16px;
+}

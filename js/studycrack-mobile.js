@@ -1672,6 +1672,7 @@ function App() {
           <div class="score-journey-total"><span>총점</span><b>${currAvg}점</b></div>
         </div>
         <div class="score-journey-col target" data-score-view="target">
+          <div class="score-target-panel">
           <h4>도달 성적</h4>
           ${row('국어', curr.korean, target.korean)}
           ${row('수학', curr.math, target.math)}
@@ -1679,6 +1680,7 @@ function App() {
           ${row('탐구1', curr.inquiry1, target.inquiry1)}
           ${row('탐구2', curr.inquiry2, target.inquiry2)}
           <div class="score-journey-total"><span>예상 총점</span><b>${targetAvg}점</b></div>
+          </div>
         </div>
         </div>
       </div>
@@ -1814,7 +1816,7 @@ function App() {
          <div class="analysis-v2-gauge-meta"><span>0</span><span>합격컷 100점</span><span>안정컷 150점</span><span>MAX 250점</span></div>
          <div class="kpi-row score-row"><div class="kpi-item"><b>${liveCurrentScore}점</b>현재성적</div><div class="kpi-item"><b>100점</b>합격 컷</div><div class="kpi-item danger"><b>${analysisSelected.score-100>0?`+${analysisSelected.score-100}`:analysisSelected.score-100}점</b>격차</div></div>
        </div>
-       <div class="card ob-card">
+       <div class="card ob-card plus-one-card">
          <p class="analysis-title">+1점 상승 시뮬레이션</p>
          <div class="analysis-impact-item">수학<div class="track"><i style="width:90%"></i></div><span>+12점 → +18%</span></div>
          <div class="analysis-impact-item">탐구<div class="track"><i style="width:68%;background:#14b8a6"></i></div><span>+6점 → +9%</span></div>
