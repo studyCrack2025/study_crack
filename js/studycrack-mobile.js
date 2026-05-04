@@ -2000,7 +2000,7 @@ function App() {
         ${analysisMode === 'summary' ? `
           <div class="card analysis-v2-targets">
             <p class="analysis-title">희망 대학 선택</p>
-            <select class="analysis-dropdown" data-field="analysisTargetMajor">
+            <select class="analysis-dropdown" data-field="analysisTargetMajor" value="${normalizedTargetMajor}">
               ${analysisMajorOptions.map((name) => `<option value="${name}" ${normalizedTargetMajor===name?'selected':''}>${name}</option>`).join('')}
               <option value="__add_university__">+ 대학 추가하기</option>
             </select>
@@ -3571,6 +3571,17 @@ function App() {
       }
     }
     if (field === 'obExamType') preserveY(() => applyObExamSelection(e.target.value));
+    if (field === 'analysisTargetMajor' || field === 'targetMajor') {
+      const value = e.target.value;
+      if (value === '__add_university__') {
+        goto('addUniversity');
+        return;
+      }
+      preserveScrollAfterStateChange(() => {
+        if (value) setTargetMajor(value);
+      });
+      return;
+    }
     if (isV2eSelectField) {
       const value = e.target.value;
       preserveScrollAfterStateChange(() => {

@@ -2635,10 +2635,10 @@ input:focus, select:focus, textarea:focus,
 .home-result-card-v3 { position: relative; }
 .home-univ-remove {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 26px;
-  height: 26px;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
   border-radius: 999px;
   background: rgba(15,23,42,.06);
   color: #64748B;
@@ -2646,9 +2646,10 @@ input:focus, select:focus, textarea:focus,
   place-items: center;
   font-size: 12px;
   font-weight: 700;
-  z-index: 3;
+  z-index: 5;
 }
 .home-univ-remove:active { background: rgba(15,23,42,.14); }
+.home-result-score { padding-right: 28px; }
 .analysis-add-link-btn {
   margin-top: 8px;
   border: none;
