@@ -1858,7 +1858,7 @@ function App() {
        <div class="card ob-card">
          <p class="analysis-title">성적 변화 시 가능한 대학</p>
          <div class="possible-univ-slider" data-slider-group="possible"><div class="possible-univ-track">
-         ${[['국민대 경영학부', gaugeCurrent + 6], ['숭실대 경제학과', gaugeCurrent + 10], ['세종대 미디어커뮤니케이션학과', gaugeCurrent + 14]].map(([name, target], idx) => `<div class="possible-univ-card"><button type="button" class="card ob-card" style="margin:10px 0 0; width:100%; text-align:left;" data-action="openPossibleUnivAnalysis" data-target-major="${name}">
+         ${[['국민대 경영학부', gaugeCurrent + 6], ['숭실대 경제학과', gaugeCurrent + 10], ['세종대 미디어커뮤니케이션학과', gaugeCurrent + 14]].map(([name, target], idx) => `<div class="possible-univ-card"><button type="button" class="card ob-card" style="margin:10px 0 0; width:100%; text-align:left;" data-action="addPossibleUniversity" data-target-major="${name}">
            <p class="analysis-title">${name}</p>
            <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${target}점</b></div></div>
            <div class="ob-gauge">
@@ -2046,7 +2046,7 @@ function App() {
           <div class="card ob-card">
             <p class="analysis-title">성적 변화 시 가능한 대학</p>
             <div class="possible-univ-slider" data-slider-group="possible"><div class="possible-univ-track">
-            ${[['국민대 경영학부', gaugeCurrent + 6], ['숭실대 경제학과', gaugeCurrent + 10], ['세종대 미디어커뮤니케이션학과', gaugeCurrent + 14]].map(([name, target], idx) => `<div class="possible-univ-card"><button type="button" class="card ob-card" style="margin:10px 0 0; width:100%; text-align:left;" data-action="openPossibleUnivAnalysis" data-target-major="${name}">
+            ${[['국민대 경영학부', gaugeCurrent + 6], ['숭실대 경제학과', gaugeCurrent + 10], ['세종대 미디어커뮤니케이션학과', gaugeCurrent + 14]].map(([name, target], idx) => `<div class="possible-univ-card"><button type="button" class="card ob-card" style="margin:10px 0 0; width:100%; text-align:left;" data-action="addPossibleUniversity" data-target-major="${name}">
               <p class="analysis-title">${name}</p>
               <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${target}점</b></div></div>
               <div class="ob-gauge">
@@ -2323,7 +2323,10 @@ function App() {
     if (!track || !total) return;
     const idx = Math.max(0, Math.min(nextIndex, total - 1));
     slider.dataset.slideIndex = String(idx);
-    track.style.transform = `translateX(calc(-${idx} * 55%))`;
+    const cardList = Array.from(cards);
+    const target = cardList[idx];
+    const x = target ? target.offsetLeft : 0;
+    track.style.transform = `translate3d(-${x}px,0,0)`;
     slider.parentElement?.querySelectorAll('.slider-indicator [data-action="slideTo"]').forEach((dot, i) => {
       dot.classList.toggle('active', i === idx);
     });
@@ -2346,6 +2349,16 @@ function App() {
         updatePossibleUnivSlider(slider, delta < 0 ? current + 1 : current - 1);
       }, { passive: true });
     });
+  };
+  const addMajorToTargets = (major) => {
+    if (!major) return;
+    setAnalysisTargetList((prev) => (prev.includes(major) ? prev : [...prev, major]));
+    setHomeTargetList((prev) => {
+      const next = prev.includes(major) ? prev : [...prev, major];
+      setHomeSlideIndex(Math.max(0, next.length - 1));
+      return next;
+    });
+    setTargetMajor(major);
   };
   const syncHomeSliderDomFromCurrentMarkup = () => ensureHomeSliderDomReady();
   const syncScoreJourneyDomFromCurrentMarkup = () => {
@@ -2655,15 +2668,15 @@ function App() {
       setAnalysisSearchTerm('');
       setAddingUniversity(true);
       setTimeout(() => {
-        setAnalysisTargetList((prev) => (prev.includes(major) ? prev : [...prev, major]));
-        setTargetMajor(major);
-        setHomeTargetList((prev) => {
-          const next = prev.includes(major) ? prev : [...prev, major];
-          setHomeSlideIndex(Math.max(0, next.length - 1));
-          return next;
-        });
+        addMajorToTargets(major);
         setAddingUniversity(false);
       }, 500);
+    }
+    if (action === 'addPossibleUniversity') {
+      const major = actionEl.getAttribute('data-target-major');
+      if (!major) return;
+      addMajorToTargets(major);
+      return;
     }
     if (action === 'removeAnalysisTarget') {
       const major = actionEl.getAttribute('data-target-major');
