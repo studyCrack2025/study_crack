@@ -1869,7 +1869,7 @@ function App() {
            </div>
            <div class="ob-gauge-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
            <p class="sub"><b>현재 → 합격권 진입 구간</b></p>
-         </button></div>`).join('')}</div></div><div class="possible-univ-nav"><button type="button" data-action="slidePrev">‹</button><div class="possible-univ-dots slider-indicator"><button data-action="slideTo" data-slide-index="0" class="active slider-dot"></button><button data-action="slideTo" data-slide-index="1" class="slider-dot"></button><button data-action="slideTo" data-slide-index="2" class="slider-dot"></button></div><button type="button" data-action="slideNext">›</button></div>
+         </button></div>`).join('')}</div></div><div class="possible-univ-nav"><button type="button" data-action="slidePrev">‹</button><div class="possible-univ-dots slider-indicator possible-univ-indicator possible-slider-indicator"><button data-action="slideTo" data-slide-index="0" class="active slider-dot possible-univ-dot possible-slider-dot"></button><button data-action="slideTo" data-slide-index="1" class="slider-dot possible-univ-dot possible-slider-dot"></button><button data-action="slideTo" data-slide-index="2" class="slider-dot possible-univ-dot possible-slider-dot"></button></div><button type="button" data-action="slideNext">›</button></div>
        </div></div>
        </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button type="button" class="cta-button" data-action="startStandard">Standard로 시작하기</button><button type="button" class="auth-link-btn" data-action="completeOnboarding">홈으로 이동</button></div></div>`,
       false
@@ -2057,7 +2057,7 @@ function App() {
               </div>
               <div class="ob-gauge-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
               <p class="sub"><b>현재 → 합격권 진입 구간</b></p>
-            </button></div>`).join('')}</div></div><div class="possible-univ-nav"><button type="button" data-action="slidePrev">‹</button><div class="possible-univ-dots slider-indicator"><button data-action="slideTo" data-slide-index="0" class="active slider-dot"></button><button data-action="slideTo" data-slide-index="1" class="slider-dot"></button><button data-action="slideTo" data-slide-index="2" class="slider-dot"></button></div><button type="button" data-action="slideNext">›</button></div>
+            </button></div>`).join('')}</div></div><div class="possible-univ-nav"><button type="button" data-action="slidePrev">‹</button><div class="possible-univ-dots slider-indicator possible-univ-indicator possible-slider-indicator"><button data-action="slideTo" data-slide-index="0" class="active slider-dot possible-univ-dot possible-slider-dot"></button><button data-action="slideTo" data-slide-index="1" class="slider-dot possible-univ-dot possible-slider-dot"></button><button data-action="slideTo" data-slide-index="2" class="slider-dot possible-univ-dot possible-slider-dot"></button></div><button type="button" data-action="slideNext">›</button></div>
           </div>
 
           <div class="card analysis-v2-cta sticky"><p class="analysis-cta-lead">지금 시작하면 평균 2개월 단축됩니다</p><button class="btn analysis-convert-btn" data-action="startStandard">합격까지 필요한 전략 보기</button><p class="analysis-cta-sub">MBTI 다운로드만 유지</p></div>
@@ -2315,6 +2315,7 @@ function App() {
   };
 
   let possibleUnivTouchStartX = 0;
+  let possibleUnivDragging = false;
   const updatePossibleUnivSlider = (slider, nextIndex) => {
     if (!slider) return;
     const track = slider.querySelector('.possible-univ-track');
@@ -2326,6 +2327,7 @@ function App() {
     const cardList = Array.from(cards);
     const target = cardList[idx];
     const x = target ? target.offsetLeft : 0;
+    track.style.transition = 'transform .35s cubic-bezier(.22,1,.36,1)';
     track.style.transform = `translate3d(-${x}px,0,0)`;
     slider.parentElement?.querySelectorAll('.slider-indicator [data-action="slideTo"]').forEach((dot, i) => {
       dot.classList.toggle('active', i === idx);
@@ -2340,13 +2342,24 @@ function App() {
       slider.dataset.bound = '1';
       slider.addEventListener('touchstart', (e) => {
         possibleUnivTouchStartX = e.touches?.[0]?.clientX || 0;
+        possibleUnivDragging = false;
+      }, { passive: true });
+      slider.addEventListener('touchmove', (e) => {
+        const moveX = e.touches?.[0]?.clientX || 0;
+        if (Math.abs(moveX - possibleUnivTouchStartX) > 8) {
+          possibleUnivDragging = true;
+          const track = slider.querySelector('.possible-univ-track');
+          if (track) track.style.transition = 'none';
+        }
       }, { passive: true });
       slider.addEventListener('touchend', (e) => {
         const endX = e.changedTouches?.[0]?.clientX || 0;
         const delta = endX - possibleUnivTouchStartX;
-        if (Math.abs(delta) < 40) return;
         const current = Number(slider.dataset.slideIndex || 0);
-        updatePossibleUnivSlider(slider, delta < 0 ? current + 1 : current - 1);
+        const next = Math.abs(delta) < 40 ? current : (delta < 0 ? current + 1 : current - 1);
+        updatePossibleUnivSlider(slider, next);
+        if (possibleUnivDragging) suppressClickUntilRef.current = Date.now() + 220;
+        possibleUnivDragging = false;
       }, { passive: true });
     });
   };

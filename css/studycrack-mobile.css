@@ -2690,15 +2690,15 @@ input:focus, select:focus, textarea:focus,
 .analysis-v2 .analysis-title,.analysis-v2 .sub,.analysis-v2 p{line-height:1.6;}
 
 
-.possible-univ-slider{overflow:hidden;width:100%;position:relative;min-height:218px;}
+.possible-univ-slider{overflow:hidden;width:100%;max-width:100%;position:relative;min-height:218px;}
 
-.possible-univ-track{display:flex;transform:translateX(0);transition:transform .35s ease;will-change:transform;width:auto;max-width:none;min-width:0;gap:10px;box-sizing:border-box;}
+.possible-univ-track{display:flex;transform:translateX(0);transition:transform .35s cubic-bezier(.22,1,.36,1);will-change:transform;width:auto;max-width:none;min-width:0;gap:10px;box-sizing:border-box;touch-action:pan-y;}
 .possible-univ-card{flex:0 0 85%;max-width:85%;margin-right:0;padding:0 6px;box-sizing:border-box;min-width:0;}
 .possible-univ-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;}
 .possible-univ-nav > button{width:30px;height:30px;border-radius:999px;border:1px solid #dbe4f4;background:#fff;color:#334155;}
-.possible-univ-dots,.slider-indicator{display:flex;justify-content:center;align-items:center;gap:6px;flex:1;margin-top:12px;}
-.possible-univ-dots button,.slider-dot{width:6px;height:6px;border-radius:50%;border:none;background:#D1D5DB;padding:4px;transition:all .2s ease;box-sizing:content-box;}
-.possible-univ-dots button.active,.slider-dot.active{background:#2563EB;transform:scale(1.2);}
+.possible-univ-dots,.slider-indicator,.possible-univ-indicator,.possible-slider-indicator{display:flex;justify-content:center;align-items:center;gap:6px;flex:1;margin-top:12px;}
+.possible-univ-dots button,.slider-dot,.possible-univ-dot,.possible-slider-dot{width:6px;height:6px;min-width:6px;min-height:6px;border-radius:50%;border:none;background:#CBD5E1;padding:0;transform:none;transition:background .2s ease, transform .2s ease;}
+.possible-univ-dots button.active,.slider-dot.active,.possible-univ-dot.active,.possible-slider-dot.active{background:#2563EB;transform:scale(1.2);}
 
 .analysis,
 .analysis-page,
