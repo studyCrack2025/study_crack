@@ -2769,7 +2769,7 @@ function App() {
     return true;
   };
 
-  const onClick = (e) => {
+  const onClick = async (e) => {
     lastStableScrollYRef.current = window.scrollY || window.pageYOffset || 0;
     if (Date.now() < suppressClickUntilRef.current) return;
     if (isAnalyzing && screen === 'analysis') return;
@@ -3028,9 +3028,25 @@ function App() {
         alert('이름과 전화번호를 입력해주세요.');
         return;
       }
+
       let masked = '';
-      if (name === '김태윤' && phone === '01040353745') masked = 'hj****2@naver.com';
-      else if (name.length >= 2 && phone.length >= 8) masked = `${name.slice(0,1).toLowerCase()}j****2@naver.com`;
+      try {
+        if (window.CONFIG?.api?.auth) {
+          const dbFormattedPhone = phone.startsWith('0') ? `+82${phone.slice(1)}` : `+82${phone}`;
+          const res = await fetch(window.CONFIG.api.auth, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'find_email', name, phone: dbFormattedPhone })
+          });
+          const data = await res.json();
+          if (res.ok && data?.success && data?.email) masked = String(data.email);
+        }
+      } catch (_) {
+      }
+
+      if (!masked) {
+        if (name === '김태윤' && phone === '01040353745') masked = 'hj****2@naver.com';
+      }
       if (!masked) {
         alert('일치하는 이메일을 찾지 못했습니다.');
         setFoundEmailMasked('');
