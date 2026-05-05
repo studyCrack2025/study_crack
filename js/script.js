@@ -319,15 +319,26 @@ async function renderReviews() {
         return;
     }
 
-    container.innerHTML = reviews.map(review => `
-        <div class="review-card">
+    const reviewAvatars = [
+        '/assets/figma/figma-asset-14.svg',
+        '/assets/figma/figma-asset-12.png',
+        '/assets/figma/figma-asset-20.png',
+        '/assets/figma/figma-asset-13.png',
+        '/assets/figma/figma-asset-03.png',
+        '/assets/figma/figma-asset-02.png'
+    ];
+
+    container.innerHTML = reviews.map((review, index) => `
+        <div class="review-card${index === 0 ? ' featured' : ''}">
             <div class="review-header">
                 <span class="review-badge">${escapeHtml(review.univ)}</span>
                 <span class="review-score">⭐️⭐️⭐️⭐️⭐️</span>
             </div>
             <p class="review-text">"${escapeHtml(review.content)}"</p>
             <div class="review-author">
-                <div class="review-avatar">${escapeHtml(review.name).charAt(0)}</div>
+                <div class="review-avatar">
+                    <img src="${reviewAvatars[index % reviewAvatars.length]}" alt="${escapeHtml(review.name)}">
+                </div>
                 <div class="review-info">
                     <div>${escapeHtml(review.name)}</div>
                 </div>

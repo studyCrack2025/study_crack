@@ -1,5 +1,7 @@
 /* css/style.css */
 
+@import url('https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css');
+
 /* =========================================
    0. CSS 변수 (Design Tokens from Figma)
    ========================================= */
@@ -16,7 +18,7 @@
     --color-bg-blue-light: #eaf1ff;
     --color-bg-purple-light: #f0ebff;
     --color-footer: #303030;
-    --radius-card: 16px;
+    --radius-card: 12px;
     --radius-btn: 4px;
     --shadow-card: 10px 20px 30px 0px rgba(60,60,60,0.1);
     --shadow-btn: 20px 30px 40px 0px rgba(0,0,0,0.15);
@@ -26,8 +28,18 @@
 /* =========================================
    1. 기본 설정 (Reset & Base)
    ========================================= */
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Pretendard Variable', 'Noto Sans KR', sans-serif; }
-body { color: var(--color-dark); line-height: 1.6; background-color: var(--color-bg); overflow-x: hidden; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    color: var(--color-dark);
+    line-height: 1.6;
+    background-color: var(--color-bg);
+    overflow-x: hidden;
+    font-family: "Paperlogy", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    letter-spacing: -0.02em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+    word-break: keep-all;
+}
 a { text-decoration: none; color: inherit; cursor: pointer; }
 ul, ol { list-style: none; }
 img { display: block; max-width: 100%; }
@@ -44,13 +56,26 @@ img { display: block; max-width: 100%; }
 /* =========================================
    2. 헤더 (Header)
    ========================================= */
-header { position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; padding: 18px 5%; display: flex; justify-content: space-between; align-items: center; background: transparent; transition: background 0.35s ease, box-shadow 0.35s ease; }
+header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    height: 92px;
+    padding: 0 clamp(20px, 5vw, 91px);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: transparent;
+    transition: background 0.35s ease, box-shadow 0.35s ease;
+}
 header.scrolled { background: #fff; border-bottom: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
 
 .logo-container { display: flex; align-items: center; gap: 10px; }
-.logo-container img { height: 40px; width: auto; }
+.logo-container img { height: 47px; width: auto; }
 .logo-link { display: flex; align-items: center; gap: 10px; }
-.logo { font-size: 1.5rem; font-weight: 800; color: #fff; letter-spacing: -0.5px; transition: color 0.35s ease; }
+.logo { font-size: 1.375rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; transition: color 0.35s ease; }
 header.scrolled .logo { color: #0F172A; }
 
 .nav-links { display: flex; align-items: center; gap: 25px; }
@@ -65,19 +90,19 @@ header.scrolled .nav-links a:hover { color: var(--color-primary); font-weight: 7
 /* =========================================
    3. 히어로 메인 (Hero Main)
    ========================================= */
-.hero-main { position: relative; width: 100%; min-height: 92vh; background: url('/assets/backgrounds/bg_message.png') no-repeat center center / cover; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.hero-main { position: relative; width: 100%; min-height: 92vh; background: url('/assets/figma/figma-asset-17.png') no-repeat center center / cover; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .hero-main::before { content: ''; position: absolute; inset: 0; background: rgba(55, 55, 55, 0.55); }
-.hero-main-content { position: relative; z-index: 2; text-align: center; color: #fff; padding: 0 20px; max-width: 900px; }
-.hero-title { font-size: clamp(2.5rem, 5vw, 4rem); line-height: 1.15; margin-bottom: 28px; text-shadow: 2px 2px 60px rgba(0,0,0,0.25); }
+.hero-main-content { position: relative; z-index: 2; text-align: center; color: #fff; padding: 0 20px; max-width: 860px; }
+.hero-title { font-size: clamp(2.75rem, 5vw, 4.25rem); line-height: 1.12; margin-bottom: 28px; text-shadow: 2px 2px 60px rgba(0,0,0,0.25); }
 .hero-title-bold { font-weight: 800; display: block; }
 .hero-title-light { font-weight: 300; display: block; }
-.hero-subtitle { font-size: clamp(1rem, 2vw, 1.4rem); color: rgba(255,255,255,0.9); line-height: 1.7; }
+.hero-subtitle { font-size: clamp(1rem, 2vw, 1.375rem); color: rgba(255,255,255,0.9); line-height: 1.7; }
 .hero-subtitle strong { font-weight: 700; }
 
 /* =========================================
    4. 문제 인식 섹션 (Problem Section, #about)
    ========================================= */
-.problem-section { background: var(--color-bg); padding: 100px 5%; overflow: hidden; position: relative; }
+.problem-section { background: var(--color-bg); padding: 88px 5%; overflow: hidden; position: relative; }
 .problem-container { display: flex; flex-wrap: wrap; max-width: 1280px; margin: 0 auto; gap: 60px; align-items: flex-start; }
 .problem-text-area { flex: 1; min-width: 300px; }
 .problem-text-area h2 { font-size: clamp(1.8rem, 3.5vw, 2.8rem); font-weight: 600; color: var(--color-dark); line-height: 1.3; letter-spacing: -0.02em; margin-bottom: 32px; word-break: keep-all; }
@@ -100,40 +125,40 @@ header.scrolled .nav-links a:hover { color: var(--color-primary); font-weight: 7
 /* =========================================
    5. 다크 히어로 카드 섹션 (Dark Hero Cards)
    ========================================= */
-.hero-dark { position: relative; padding: 80px 5%; overflow: hidden; text-align: center; background-image: linear-gradient(rgba(36,36,36,0.65), rgba(36,36,36,0.65)), url('/assets/backgrounds/bg_hero.png'); background-size: cover; background-position: center; }
+.hero-dark { position: relative; padding: 88px 5%; overflow: hidden; text-align: center; background-image: linear-gradient(rgba(36,36,36,0.65), rgba(36,36,36,0.65)), url('/assets/figma/figma-asset-08.png'); background-size: cover; background-position: center; }
 .hero-dark-content { position: relative; z-index: 2; max-width: 1280px; margin: 0 auto; }
 .hero-dark-header { margin-bottom: 60px; }
 .hero-dark-header h2 { font-size: clamp(1.6rem, 3vw, 2.8rem); font-weight: 600; color: #fff; line-height: 1.35; margin-bottom: 20px; letter-spacing: -0.02em; word-break: keep-all; }
 .hero-dark-header p { font-size: 1.05rem; color: rgba(255,255,255,0.85); line-height: 1.8; }
 
-.hero-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; max-width: 1280px; margin: 0 auto; }
-.ppt-card { display: flex; flex-direction: column; background: #fff; border-radius: var(--radius-card); overflow: hidden; transition: transform 0.3s ease; text-align: left; }
+.hero-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 22px; max-width: 1280px; margin: 0 auto; }
+.ppt-card { display: flex; flex-direction: column; background: #fff; border-radius: 8px; overflow: hidden; transition: transform 0.3s ease; text-align: left; box-shadow: 10px 20px 40px rgba(0,0,0,0.18); }
 .ppt-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.15); }
 .ppt-card-img { width: 100%; aspect-ratio: 4/3; overflow: hidden; }
 .ppt-card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.ppt-card-body { padding: 28px; display: flex; flex-direction: column; flex: 1; }
-.ppt-card-body h3 { font-size: 1.15rem; font-weight: 800; color: #0F172A; margin-bottom: 14px; line-height: 1.45; word-break: keep-all; }
-.card-body-text { font-size: 0.9rem; color: #475569; line-height: 1.7; flex-grow: 1; margin-bottom: 20px; word-break: keep-all; }
-.summary-box { background: #fff7ed; border-top: 2px solid #fb923c; color: #c2410c; padding: 14px; font-size: 0.9rem; font-weight: 600; text-align: center; line-height: 1.5; border-radius: 0 0 4px 4px; }
+.ppt-card-body { padding: 24px; display: flex; flex-direction: column; flex: 1; }
+.ppt-card-body h3 { font-size: 1.1rem; font-weight: 800; color: #0F172A; margin-bottom: 12px; line-height: 1.45; word-break: keep-all; }
+.card-body-text { font-size: 0.88rem; color: #475569; line-height: 1.7; flex-grow: 1; margin-bottom: 18px; word-break: keep-all; }
+.summary-box { background: #fff7ed; border-top: 2px solid #fb923c; color: #c2410c; padding: 14px; font-size: 0.88rem; font-weight: 600; text-align: center; line-height: 1.5; border-radius: 0 0 4px 4px; }
 
 /* =========================================
    6. 그라디언트 구분선 (Gradient Divider)
    ========================================= */
-.gradient-divider { background: linear-gradient(90deg, #e4dbff, #f0ebff); height: 80px; }
+.gradient-divider { background: linear-gradient(90deg, #e4dbff, #f0ebff); height: 72px; }
 
 /* =========================================
    7. 플래너 섹션 (Planner Section)
    ========================================= */
-.planner-section { padding: 100px 5%; background-color: var(--color-bg-section); background-image: url('/assets/backgrounds/bg_planner.png'); background-size: cover; background-position: top center; background-repeat: no-repeat; border-top: 1px solid #e2e8f0; }
+.planner-section { padding: 88px 5%; background-color: var(--color-bg-section); background-image: linear-gradient(#eee8ff 0, #f8f8fb 270px), url('/assets/backgrounds/bg_planner.png'); background-size: cover; background-position: top center; background-repeat: no-repeat; border-top: 1px solid #e2e8f0; }
 
 .section-label-badge { display: inline-block; font-size: 0.95rem; font-weight: 800; color: var(--color-dark); text-align: center; width: 100%; margin-bottom: 20px; }
-.planner-header { text-align: center; margin-bottom: 50px; }
-.planner-header h2 { font-size: clamp(1.8rem, 3vw, 2.8rem); font-weight: 600; color: var(--color-dark); margin-bottom: 16px; line-height: 1.35; text-shadow: 0 2px 4px rgba(255,255,255,0.9); }
-.planner-header p { font-size: 1.05rem; color: #334155; font-weight: 400; line-height: 1.8; text-shadow: 0 1px 3px rgba(255,255,255,0.9); }
+.planner-header { text-align: center; margin-bottom: 44px; }
+.planner-header h2 { font-size: clamp(1.8rem, 3vw, 2.7rem); font-weight: 600; color: var(--color-dark); margin-bottom: 14px; line-height: 1.35; text-shadow: 0 2px 4px rgba(255,255,255,0.9); }
+.planner-header p { font-size: 1rem; color: #334155; font-weight: 400; line-height: 1.8; text-shadow: 0 1px 3px rgba(255,255,255,0.9); }
 
 /* 플래너 기능 카드 그리드 */
-.planner-feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 1280px; margin: 0 auto 60px; }
-.planner-feat-card { border-radius: var(--radius-card); padding: 28px 30px; }
+.planner-feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 1280px; margin: 0 auto 52px; }
+.planner-feat-card { border-radius: 10px; padding: 24px 26px; }
 .feat-blue { background: var(--color-primary); color: #fff; box-shadow: var(--shadow-card); }
 .feat-purple { background: var(--color-secondary); color: #fff; box-shadow: var(--shadow-card); }
 .feat-blue-light { background: var(--color-bg-blue-light); }
@@ -154,16 +179,16 @@ header.scrolled .nav-links a:hover { color: var(--color-primary); font-weight: 7
 .pro-badge { background: linear-gradient(135deg, #F59E0B, #FCD34D); color: #78350f; font-size: 0.7rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px; }
 
 /* 플래너 리포트 제목 */
-.planner-report-label { font-size: 1.8rem; font-weight: 700; color: var(--color-dark); margin-bottom: 32px; text-align: center; }
+.planner-report-label { font-size: 1.7rem; font-weight: 700; color: var(--color-dark); margin-bottom: 28px; text-align: center; }
 
 /* 플래너 메인 컨테이너 */
-.planner-container { display: flex; max-width: 1280px; margin: 0 auto; align-items: center; gap: 80px; }
+.planner-container { display: flex; max-width: 1280px; margin: 0 auto; align-items: center; gap: 72px; }
 .planner-left { flex: 1; position: relative; z-index: 10; }
-.mockup-ui { background: #fff; border-radius: var(--radius-card); box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; overflow: visible; position: relative; }
-.mockup-header { background: #0f172a; color: #fff; padding: 15px 20px; font-weight: bold; display: flex; align-items: center; gap: 10px; border-radius: 15px 15px 0 0; }
-.mockup-body { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+.mockup-ui { background: #fff; border-radius: 10px; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; overflow: visible; position: relative; }
+.mockup-header { background: #0f172a; color: #fff; padding: 14px 18px; font-weight: bold; display: flex; align-items: center; gap: 10px; border-radius: 10px 10px 0 0; }
+.mockup-body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
 
-.mockup-block { position: relative; padding: 15px; background: var(--color-bg-section); border: 1px solid #e2e8f0; border-radius: 10px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 5; }
+.mockup-block { position: relative; padding: 14px; background: var(--color-bg-section); border: 1px solid #e2e8f0; border-radius: 8px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 5; }
 .mockup-block.active { background: #eff6ff; border-color: var(--color-primary); transform: scale(1.02); box-shadow: 0 4px 12px rgba(76,121,238,0.15); z-index: 10; }
 .mockup-block.pro-block.active { background: #fffbeb; border-color: #f59e0b; box-shadow: 0 4px 12px rgba(245,158,11,0.15); }
 .mockup-block h5 { margin: 0 0 10px 0; font-size: 0.95rem; color: #1e293b; }
@@ -179,8 +204,8 @@ header.scrolled .nav-links a:hover { color: var(--color-primary); font-weight: 7
 .mockup-dot { display: none; }
 
 /* 플래너 우측 피처 리스트 */
-.planner-right { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 30px; position: relative; z-index: 5; }
-.feat-item { position: relative; display: flex; align-items: flex-start; gap: 20px; padding: 15px; border-radius: 12px; background: #fff; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+.planner-right { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 24px; position: relative; z-index: 5; }
+.feat-item { position: relative; display: flex; align-items: flex-start; gap: 18px; padding: 14px; border-radius: 10px; background: #fff; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
 .feat-item:hover { border-color: #93c5fd; box-shadow: 0 0 20px rgba(76,121,238,0.15); transform: translateX(-15px); }
 .feat-item.pro-feat-item:hover { border-color: #fcd34d; background: #fffbeb; box-shadow: 0 0 20px rgba(245,158,11,0.15); }
 .feat-connector { display: none; }
@@ -196,17 +221,40 @@ header.scrolled .nav-links a:hover { color: var(--color-primary); font-weight: 7
 /* =========================================
    8. 기대 효과 섹션 (Effects Section)
    ========================================= */
-.effects-section { padding: 100px 5%; background: var(--color-bg-section); position: relative; background-image: linear-gradient(rgba(248,248,251,0.95), rgba(248,248,251,0.95)), url('/assets/backgrounds/bg_planner.png'); background-size: cover; }
-.effects-header { text-align: center; margin-bottom: 20px; }
+.effects-section { padding: 88px 5%; background: #f7f8fb; position: relative; overflow: hidden; }
+.effects-section::before,
+.effects-section::after {
+    position: absolute;
+    z-index: 0;
+    color: rgba(76,121,238,.16);
+    font-weight: 900;
+    line-height: 1;
+    pointer-events: none;
+}
+.effects-section::before {
+    content: '✱';
+    left: clamp(18px, 5vw, 72px);
+    top: clamp(44px, 8vw, 110px);
+    font-size: clamp(64px, 8vw, 120px);
+    transform: rotate(14deg);
+}
+.effects-section::after {
+    content: '✱';
+    right: clamp(24px, 6vw, 92px);
+    bottom: clamp(48px, 7vw, 96px);
+    font-size: clamp(72px, 9vw, 140px);
+    transform: rotate(-12deg);
+}
+.effects-header { text-align: center; margin-bottom: 24px; position: relative; z-index: 1; }
 .section-label-badge-dark { display: block; font-size: 0.95rem; font-weight: 800; color: var(--color-dark); text-align: center; margin-bottom: 20px; }
-.effects-header h2 { font-size: clamp(1.8rem, 3vw, 2.8rem); font-weight: 600; color: var(--color-dark); line-height: 1.35; margin-bottom: 60px; }
-.effects-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 30px; max-width: 1280px; margin: 0 auto; }
-.effect-item { display: flex; flex-direction: column; align-items: center; gap: 16px; }
-.effect-num-badge { width: 56px; height: 56px; background: var(--color-bg-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 700; color: var(--color-dark); flex-shrink: 0; align-self: center; }
-.effect-img { width: 100%; border-radius: 10px; overflow: hidden; aspect-ratio: 4/3; }
+.effects-header h2 { font-size: clamp(1.8rem, 3vw, 2.7rem); font-weight: 600; color: var(--color-dark); line-height: 1.35; margin-bottom: 52px; position: relative; z-index: 1; }
+.effects-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; max-width: 1280px; margin: 0 auto; position: relative; z-index: 1; }
+.effect-item { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.effect-num-badge { width: 54px; height: 54px; background: var(--color-bg-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; font-weight: 700; color: var(--color-dark); flex-shrink: 0; align-self: center; }
+.effect-img { width: 100%; border-radius: 8px; overflow: hidden; aspect-ratio: 4/3; box-shadow: 10px 20px 36px rgba(0,0,0,.08); }
 .effect-img img { width: 100%; height: 100%; object-fit: cover; }
-.effect-item h4 { font-size: 1.1rem; font-weight: 700; color: var(--color-dark); text-align: center; }
-.effect-item p { font-size: 0.9rem; color: var(--color-text); line-height: 1.7; text-align: center; word-break: keep-all; }
+.effect-item h4 { font-size: 1.05rem; font-weight: 700; color: var(--color-dark); text-align: center; }
+.effect-item p { font-size: 0.88rem; color: var(--color-text); line-height: 1.7; text-align: center; word-break: keep-all; }
 
 /* =========================================
    9. 커리큘럼 섹션 (Interactive Curriculum)
@@ -263,14 +311,15 @@ header.scrolled .nav-links a:hover { color: var(--color-primary); font-weight: 7
 /* =========================================
    10. 리뷰 섹션 (Review Section)
    ========================================= */
-.review-section { padding: 100px 5%; position: relative; background-color: var(--color-bg-section); background-image: linear-gradient(rgba(248,250,252,0.92), rgba(248,250,252,0.92)), url('/assets/backgrounds/bg_reviews.png'); background-size: cover; background-position: center; }
-.section-header { text-align: center; margin-bottom: 50px; }
-.section-header h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 800; color: #0f172a; margin-bottom: 10px; line-height: 1.35; word-break: keep-all; }
+.review-section { padding: 88px 5%; position: relative; background-color: var(--color-bg-section); background-image: linear-gradient(rgba(248,250,252,0.94), rgba(248,250,252,0.94)), url('/assets/backgrounds/bg_reviews.png'); background-size: cover; background-position: center; }
+.section-header { text-align: center; margin-bottom: 44px; }
+.section-header h2 { font-size: clamp(1.6rem, 3vw, 2.15rem); font-weight: 800; color: #0f172a; margin-bottom: 10px; line-height: 1.35; word-break: keep-all; }
+.section-header h2 em { color: var(--color-primary); font-style: normal; }
 .section-header h2 .text-blue { color: var(--color-primary); }
-.section-header p { font-size: 1.05rem; color: #334155; font-weight: 400; }
+.section-header p { font-size: 1rem; color: #334155; font-weight: 400; }
 
-.review-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; max-width: 1280px; margin: 0 auto; }
-.review-card { background: white; padding: 28px; border-radius: 10px; box-shadow: 4px 4px 4px 0px rgba(162,162,162,0.15); border: 1px solid #d5d5d5; transition: transform 0.3s; }
+.review-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 22px; max-width: 1280px; margin: 0 auto; }
+.review-card { background: white; padding: 24px; border-radius: 8px; box-shadow: 4px 4px 4px 0px rgba(162,162,162,0.15); border: 1px solid #d5d5d5; transition: transform 0.3s; }
 .review-card:hover { transform: translateY(-5px); }
 .review-card.featured { border: 2px solid #4db2ff; box-shadow: 4px 4px 4px 0px rgba(162,162,162,0.25); }
 .review-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
@@ -279,14 +328,15 @@ header.scrolled .nav-links a:hover { color: var(--color-primary); font-weight: 7
 .review-score { color: #f59e0b; font-size: 0.9rem; }
 .review-text { font-size: 0.95rem; color: #474747; line-height: 1.7; margin-bottom: 20px; min-height: 80px; word-break: keep-all; }
 .review-author { display: flex; align-items: center; gap: 10px; border-top: 1px solid #f1f5f9; padding-top: 15px; }
-.review-avatar { width: 40px; height: 40px; background: #cbd5e1; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+.review-avatar { width: 40px; height: 40px; background: #cbd5e1; border-radius: 50%; overflow: hidden; flex: 0 0 40px; }
+.review-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .review-info div:first-child { font-weight: 700; color: #0F172A; font-size: 0.95rem; }
 .review-info div:last-child { font-size: 0.85rem; color: #64748b; }
 
 /* =========================================
    11. CTA 섹션
    ========================================= */
-.cta-section { text-align: center; padding: 160px 20px; background-color: #0f172a; position: relative; background-image: linear-gradient(rgba(15,23,42,0.85), rgba(15,23,42,0.9)), url('/assets/backgrounds/bg_cta.png'); background-size: cover; background-position: center; }
+.cta-section { text-align: center; padding: 132px 20px; background-color: #0f172a; position: relative; background-image: linear-gradient(rgba(15,23,42,0.85), rgba(15,23,42,0.9)), url('/assets/figma/figma-asset-10.png'); background-size: cover; background-position: center; }
 .cta-content { max-width: 800px; margin: 0 auto; }
 .cta-content h3 { font-size: clamp(1.8rem, 3vw, 2.4rem); font-weight: 900; color: #fff; margin-bottom: 15px; line-height: 1.3; }
 .cta-content p { color: #cbd5e1; font-size: 1.1rem; margin-bottom: 45px; }
@@ -302,6 +352,7 @@ header.scrolled .nav-links a:hover { color: var(--color-primary); font-weight: 7
    ========================================= */
 footer { background-color: var(--color-footer); color: #94a3b8; padding: 60px 5%; font-size: 0.9rem; }
 .footer-content { max-width: 1280px; margin: 0 auto; }
+.footer-logo { display: block; height: 46px; width: auto; margin-bottom: 18px; }
 .company-name { color: white; font-weight: bold; font-size: 1.1rem; margin-bottom: 16px; }
 .company-info { margin-bottom: 20px; line-height: 2; }
 .company-info p { font-size: 0.88rem; color: rgba(255,255,255,0.7); }
@@ -440,7 +491,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .hero-title { font-size: 2rem; }
     .hero-subtitle { font-size: 1rem; }
 
-    .problem-section { padding: 60px 5%; }
+    .problem-section { padding: 56px 5%; }
     .problem-container { gap: 40px; }
     .problem-text-area h2 { font-size: 1.8rem; }
     .step-cards-area { gap: 14px; }
@@ -459,7 +510,9 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .planner-header h2 { font-size: 1.7rem; }
     .planner-report-label { font-size: 1.2rem; }
 
-    .effects-section { padding: 60px 5%; }
+    .effects-section { padding: 56px 5%; }
+    .effects-section::before,
+    .effects-section::after { display: none; }
     .effects-header h2 { font-size: 1.7rem; }
     .effects-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
 
@@ -467,7 +520,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .curriculum-header-text h2 { font-size: 1.6rem; }
     .curriculum-interactive-box { padding: 20px; gap: 20px; }
 
-    .review-section { padding: 60px 5%; }
+    .review-section { padding: 56px 5%; }
     .section-header h2 { font-size: 1.6rem; }
     .review-grid { display: flex !important; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; gap: 15px; padding-bottom: 20px; margin: 0 -5%; padding-left: 5%; padding-right: 5%; }
     .review-grid::-webkit-scrollbar { display: none; }
@@ -477,6 +530,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .cta-content h3 { font-size: 1.8rem; }
     .cta-button { padding: 16px 36px; font-size: 1rem; }
 
+    .footer-logo { height: 38px; margin-bottom: 16px; }
     .modal-content { margin: 15% auto; width: 90%; max-height: 70vh; padding: 20px; border-radius: 12px; }
     .floating-qna-btn { bottom: 20px; right: 20px; width: 50px; height: 50px; }
     .qna-icon { font-size: 1.4rem; }
@@ -487,4 +541,8 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 @media (max-width: 480px) {
     .effects-grid { grid-template-columns: 1fr; }
     .problem-container { flex-direction: column; }
+    .section-label-badge,
+    .section-label-badge-dark { font-size: 0.85rem; }
+    .planner-header p,
+    .section-header p { font-size: 0.95rem; }
 }
