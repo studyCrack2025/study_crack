@@ -1076,6 +1076,9 @@ body {
 .signup-input-row { display:grid; grid-template-columns:minmax(0,1fr) 140px; gap:10px; }
 .signup-input-row .input-btn { width:100%; max-width:150px; justify-self:end; }
 .signup-personal-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:end; }
+.signup-date-field,
+.signup-date-field .input,
+.signup-date-field input[type="date"] { width:100%; max-width:100%; min-width:0; box-sizing:border-box; }
 .gender-row { height:48px; display:flex; align-items:center; gap:16px; }
 .input-row .input { flex:1; }
 .input-btn { height:48px; padding:0 14px; border-radius:12px; background:#374151; color:#fff; font-size:13px; font-weight:600; white-space:nowrap; border:none; }
@@ -1093,6 +1096,7 @@ body {
 .pw-match { margin:8px 0 0; font-size:13px; font-weight:700; }
 .pw-match.ok { color:#16A34A; }
 .pw-match.bad { color:#DC2626; }
+.signup-pw-guide { display:block; margin:8px 0 10px; color:#6B7280; font-size:12px; line-height:1.4; }
 .terms-card { border:1px solid #E5E7EB; border-radius:16px; padding:16px; margin-top:20px; background:#fff; }
 .terms-header { display:flex; align-items:center; gap:8px; font-weight:700; min-height:34px; margin-bottom:10px; }
 .terms-item { display:grid; grid-template-columns:28px minmax(0,1fr) auto; align-items:center; column-gap:8px; min-height:40px; padding:4px 0; font-size:14px; }
