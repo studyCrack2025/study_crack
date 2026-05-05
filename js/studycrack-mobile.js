@@ -1308,18 +1308,25 @@ function App() {
     const btn = document.querySelector('[data-signup-submit]');
     if (!btn) return;
     const draft = window.__signupDraft || {};
-    const pw = document.querySelector('[data-field="signupPassword"]')?.value ?? '';
-    const pwc = document.querySelector('[data-field="signupPasswordConfirm"]')?.value ?? '';
+    const email = (document.querySelector('[data-field="signupEmail"]')?.value ?? draft.email ?? '').trim();
+    const phone = (document.querySelector('[data-field="signupPhone"]')?.value ?? draft.phone ?? '').trim();
+    const pw = document.querySelector('[data-field="signupPassword"]')?.value ?? draft.password ?? '';
+    const pwc = document.querySelector('[data-field="signupPasswordConfirm"]')?.value ?? draft.passwordConfirm ?? '';
+    const name = (document.querySelector('[data-field="signupName"]')?.value ?? draft.name ?? '').trim();
+    const birth = (document.querySelector('[data-field="signupBirth"]')?.value ?? draft.birth ?? '').trim();
+    const track = (document.querySelector('[data-field="signupTrack"]')?.value ?? draft.track ?? '').trim();
+    const source = (document.querySelector('[data-field="signupSource"]')?.value ?? draft.source ?? '').trim();
+    const gender = document.querySelector('input[name="signupGender"]:checked')?.getAttribute('data-gender') || draft.gender || '';
     const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
-    const requiredChecked = requiredInputs.length > 0 && requiredInputs.every((el) => el.checked);
+    const requiredChecked = requiredInputs.length === 4 && requiredInputs.every((el) => el.checked);
     const pwRuleValid = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(pw);
-    const emailVerified = signupEmailVerified || draft.emailVerified === true;
-    const phoneVerified = signupPhoneVerified || draft.phoneVerified === true;
-    const enabled = emailVerified && phoneVerified && pwRuleValid && pw === pwc && !!pwc && requiredChecked;
-    btn.disabled = !enabled;
-    btn.classList.toggle('active', enabled);
-    btn.classList.toggle('disabled', !enabled);
-    btn.textContent = enabled ? '회원가입 완료' : '이메일/전화번호 인증을 완료해주세요';
+    const emailVerified = draft.emailVerified === true || signupEmailVerified;
+    const phoneVerified = draft.phoneVerified === true || signupPhoneVerified;
+    const canSubmit = !!email && emailVerified && pwRuleValid && pw === pwc && !!name && !!gender && !!birth && !!phone && phoneVerified && !!track && !!source && requiredChecked;
+    btn.disabled = !canSubmit;
+    btn.classList.toggle('active', canSubmit);
+    btn.classList.toggle('disabled', !canSubmit);
+    btn.textContent = canSubmit ? '회원가입 완료' : '이메일/전화번호 인증을 완료해주세요';
   };
   const restoreSignupTermsScroll = (y) => {
     requestAnimationFrame(() => {
@@ -3244,25 +3251,25 @@ function App() {
       return;
     }
     if (action === 'toggleSignupTermsAll') {
+      e.preventDefault();
+      e.stopPropagation();
       preserveSignupDomValues();
       const y = window.scrollY || window.pageYOffset || 0;
       const allInput = document.querySelector('[data-field="signupTermsAll"]');
       const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
       const marketingInput = document.querySelector('[data-field="signupTermsMarketing"]');
-      const next = !!allInput?.checked;
+      const next = !(window.__signupDraft?.termsAll === true);
+      if (allInput) allInput.checked = next;
       requiredInputs.forEach((el) => { el.checked = next; });
       if (marketingInput) marketingInput.checked = next;
-      if (allInput) allInput.checked = next;
       window.__signupDraft = {
         ...(window.__signupDraft || {}),
         termsAll: next,
         termsRequired: requiredInputs.map(() => next),
         termsMarketing: next
       };
-      setSignupTermsRequired(next);
-      setSignupTermsMarketing(next);
-      setSignupTermsAll(next);
       updateSignupButtonState();
+      restoreSignupDomValues();
       restoreSignupTermsScroll(y);
       return;
     }
@@ -3275,10 +3282,13 @@ function App() {
       return;
     }
     if (action === 'toggleSignupTermsRequired') {
+      e.preventDefault();
+      e.stopPropagation();
       preserveSignupDomValues();
       const y = window.scrollY || window.pageYOffset || 0;
       const allInput = document.querySelector('[data-field="signupTermsAll"]');
       const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
+      if (actionEl instanceof HTMLInputElement) actionEl.checked = !actionEl.checked;
       const marketingInput = document.querySelector('[data-field="signupTermsMarketing"]');
       const allChecked = requiredInputs.length > 0 && requiredInputs.every((el) => el.checked);
       const marketingChecked = !!marketingInput?.checked;
@@ -3289,18 +3299,19 @@ function App() {
         termsRequired: requiredInputs.map((el) => !!el.checked),
         termsMarketing: marketingChecked
       };
-      setSignupTermsRequired(allChecked);
-      setSignupTermsMarketing(marketingChecked);
-      setSignupTermsAll(allChecked && marketingChecked);
       updateSignupButtonState();
+      restoreSignupDomValues();
       restoreSignupTermsScroll(y);
       return;
     }
     if (action === 'toggleSignupTermsMarketing') {
+      e.preventDefault();
+      e.stopPropagation();
       preserveSignupDomValues();
       const y = window.scrollY || window.pageYOffset || 0;
       const allInput = document.querySelector('[data-field="signupTermsAll"]');
       const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
+      if (actionEl instanceof HTMLInputElement) actionEl.checked = !actionEl.checked;
       const marketingInput = document.querySelector('[data-field="signupTermsMarketing"]');
       const allRequiredChecked = requiredInputs.length > 0 && requiredInputs.every((el) => el.checked);
       const marketingChecked = !!marketingInput?.checked;
@@ -3311,10 +3322,8 @@ function App() {
         termsRequired: requiredInputs.map((el) => !!el.checked),
         termsMarketing: marketingChecked
       };
-      setSignupTermsMarketing(marketingChecked);
-      setSignupTermsRequired(allRequiredChecked);
-      setSignupTermsAll(allRequiredChecked && marketingChecked);
       updateSignupButtonState();
+      restoreSignupDomValues();
       restoreSignupTermsScroll(y);
       return;
     }
@@ -3862,8 +3871,27 @@ function App() {
       setActiveStudySubject('');
       setActivePlannerItemId('');
     }
-    if (action === 'signupSuccess') syncSignupFromDom();
-    if (action === 'loginSuccess' || action === 'signupSuccess' || action === 'ssoSuccess') {
+    if (action === 'signupSuccess') {
+      e.preventDefault();
+      e.stopPropagation();
+      preserveSignupDomValues();
+      const form = syncSignupFromDom();
+      const draft = window.__signupDraft || {};
+      const pwRuleValid = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(form.pw || '');
+      const requiredChecked = !!form.requiredChecked;
+      const canSubmit = !!form.email && (draft.emailVerified === true || signupEmailVerified) && pwRuleValid && form.pw === form.pwc && !!form.name && !!form.gender && !!form.birth && !!form.phone && (draft.phoneVerified === true || signupPhoneVerified) && !!form.track && !!form.source && requiredChecked;
+      if (!canSubmit) {
+        alert('필수 입력 사항을 모두 입력하고 인증/약관 동의를 완료해주세요.');
+        restoreSignupDomValues();
+        return;
+      }
+      localStorage.setItem('studycrack_signup_completed', 'true');
+      localStorage.setItem('studycrack_signup_profile', JSON.stringify(form));
+      alert('회원가입이 완료되었습니다.');
+      goto('ob1');
+      return;
+    }
+    if (action === 'loginSuccess' || action === 'ssoSuccess') {
       setLoggedIn(true);
       setHistory([]);
       const completed = localStorage.getItem('studycrack_onboarding_completed') === 'true';
