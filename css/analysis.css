@@ -42,7 +42,7 @@
 
 /* 솔루션 페이지 공통 헤더 */
 .sol-header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid #f1f5f9; padding-bottom: 20px; display: flex; flex-direction: column; align-items: center; }
-.sol-title { font-size: 1.8rem; font-weight: 800; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 15px; }
+.sol-title { font-size: 1.8rem; font-weight: 800; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 16px; }
 .sol-icon-box { display: flex; align-items: center; justify-content: center; width: 50px; height: 50px; border-radius: 14px; font-size: 1.4rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
 .sol-desc { color: #64748b; font-size: 1.05rem; line-height: 1.6; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
 .sol-badge { padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.9rem; border: 1px solid transparent; }
@@ -561,7 +561,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 .tutorial-lock .mypage-container { pointer-events: none; user-select: none; }
 .tutorial-lock .logo-link, .tutorial-lock .nav-links { pointer-events: auto; }
 .tutorial-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9998; pointer-events: auto; }
-.tutorial-tooltip { position: fixed; z-index: 10000; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); color: #1e293b; pointer-events: auto; width: 90%; max-width: 400px; line-height: 1.6; font-size: 1rem; word-break: keep-all; transition: top 0.3s, left 0.3s; border: 2px solid #3b82f6; transform: translateX(-50%); --arrow-pos: 50%; }
+.tutorial-tooltip { position: fixed; z-index: 10000; background: #fff; padding: 13px; border-radius: 12px; box-shadow: 0 6px 14px rgba(15,23,42,0.12); color: #1e293b; pointer-events: auto; width: 90%; max-width: 400px; line-height: 1.6; font-size: 1rem; word-break: keep-all; transition: top 0.3s, left 0.3s; border: 2px solid #3b82f6; transform: translateX(-50%); --arrow-pos: 50%; }
 .tutorial-tooltip::before { content: ''; position: absolute; top: -10px; left: var(--arrow-pos); transform: translateX(-50%); border-width: 0 10px 10px 10px; border-style: solid; border-color: transparent transparent #3b82f6 transparent; transition: left 0.3s; }
 .tutorial-tooltip::after { content: ''; position: absolute; top: -7px; left: var(--arrow-pos); transform: translateX(-50%); border-width: 0 8px 8px 8px; border-style: solid; border-color: transparent transparent #fff transparent; transition: left 0.3s; }
 .tut-nav-btn { padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: background 0.2s; font-size: 0.95rem; }
@@ -829,6 +829,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 .univ-slot,
 .selection-item,
 .score-detail-view {
+  line-height: 1.6;
   border-radius: 16px;
   background: var(--card);
   border: 1px solid var(--border);

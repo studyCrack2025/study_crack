@@ -1818,7 +1818,7 @@ function App() {
          <p class="analysis-title">합격 가능성 분석</p>
          <div class="analysis-v2-summary-top">
            <div><p class="analysis-v2-univ">${targetMajor}</p><p class="analysis-v2-label">AI 점수 · 합격컷 대비 위치</p></div>
-           <div class="analysis-v2-score-wrap"><span class="analysis-v2-verdict ${scoreTierClass(analysisSelected.score)}" style="color:${analysisStatusColor};border-color:${analysisStatusColor}">${analysisStatus}</span><strong>${analysisSelected.score}점</strong></div>
+           <div class="analysis-v2-score-wrap"><span class="analysis-v2-verdict ${scoreTierClass(analysisSelected.score)}" style="color:${analysisStatusColor};border-color:${analysisStatusColor}">${analysisStatus}</span><strong>${analysisSelected.score}점</strong><small>AI 점수</small></div>
          </div>
          <div class="analysis-v2-gauge"><i class="${scoreTierClass(analysisSelected.score)}" style="width:${analysisGaugeFill}%;background:${analysisGaugeColor}"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
          <div class="analysis-v2-gauge-meta"><span>0</span><span>합격컷 100점</span><span>안정컷 150점</span><span>MAX 250점</span></div>
@@ -2012,14 +2012,15 @@ function App() {
             <div class="analysis-v2-summary-top">
               <div>
                 <p class="analysis-v2-univ">${targetMajor}</p>
-                <p class="analysis-v2-label">AI 점수 · 합격컷 대비 위치</p>
+                <p class="analysis-v2-label">합격 가능성 진단</p>
               </div>
               <div class="analysis-v2-score-wrap">
                 <span class="analysis-v2-verdict ${scoreTierClass(analysisSelected.score)}" style="color:${analysisStatusColor};border-color:${analysisStatusColor}">${analysisStatus}</span>
-                <strong>${analysisSelected.score}점</strong>
+                <strong>${analysisSelected.score}점</strong><small>AI 점수</small>
               </div>
             </div>
-            <div class="analysis-v2-gauge"><i class="${scoreTierClass(analysisSelected.score)}" style="width:${analysisGaugeFill}%;background:${analysisGaugeColor}"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
+            <div class="analysis-v2-infographic"><span class="icon">📍</span><div><b>${analysisSelected.score >= 150 ? '현재 위치: 합격 안정권 진입' : (analysisSelected.score >= 100 ? '현재 위치: 합격권 진입 전' : '현재 위치: 합격권까지 거리 있음')}</b><p>목표까지 ${Math.max(0, 150 - Number(analysisSelected.score || 0)) > 0 ? `-${Math.max(0, 150 - Number(analysisSelected.score || 0))}점` : '달성 완료'}</p></div></div>
+            <div class="analysis-v2-gauge"><i class="${scoreTierClass(analysisSelected.score)}" style="width:${analysisGaugeFill}%;background:${analysisGaugeColor}"></i></div>
             <div class="analysis-v2-gauge-meta"><span>0</span><span>합격컷 100점</span><span>안정컷 150점</span><span>MAX 250점</span></div>
           </div>
 
@@ -2039,7 +2040,7 @@ function App() {
               <i class="ob-gauge-cut safe" style="left:${gaugeSafePct}%"></i>
             </div>
             <div class="ob-gauge-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
-            <p class="analysis-sub"><b>현재 → 합격권 진입 구간</b></p>
+            <p class="analysis-sub"><b>현재 → 합격권 진입 구간</b></p><p class="analysis-conv-line">이 속도라면 목표까지 약 2~3개월이 필요합니다</p><p class="analysis-conv-line">방향이 틀리면 점수 상승 효율이 크게 떨어질 수 있습니다</p>
           </div>
           <div class="card ob-card">
             <p class="analysis-title">성적 변화 시 가능한 대학</p>
@@ -2057,7 +2058,7 @@ function App() {
             </div>`).join('')}
           </div>
 
-          <div class="card analysis-v2-cta sticky"><p class="analysis-title">지금 방향이 틀리면 시간만 낭비될 수 있습니다</p><p class="sub">Standard는 매주 학습 방향과 실행을 관리합니다.</p><button class="btn analysis-convert-btn" data-action="startStandard">2개월 내 합격권 진입 시작하기</button></div>
+          <div class="card analysis-v2-cta sticky"><p class="analysis-cta-lead">지금 시작하면 평균 2개월 단축됩니다</p><button class="btn analysis-convert-btn" data-action="startStandard">합격까지 필요한 전략 보기</button><p class="analysis-cta-sub">MBTI 다운로드만 유지</p></div>
         ` : `
           <div class="analysis-v2-compare-card">
             ${(() => { console.log('RENDER_ANALYSIS_BAR_CHART_FIXED_V3'); return ''; })()}

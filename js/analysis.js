@@ -1498,17 +1498,21 @@ function renderAnalysisCard(res) {
         </div>`;
     }
 
-    const badgeStyle = `background: ${res.color}15; color: ${res.color}; border: 1px solid ${res.color};`; 
-    const scoreStyle = `color: ${res.color}; font-weight: 800; font-size: 1.5rem;`;
+    const scoreValue = Number(res.converted_score) || 0;
+    const toneColor = scoreValue < 100 ? '#EF4444' : (scoreValue < 150 ? '#F59E0B' : '#7C3AED');
+    const badgeStyle = `background: ${toneColor}1A; color: ${toneColor}; border: 1px solid ${toneColor};`;
+    const scoreStyle = `color: ${toneColor}; font-weight: 800; font-size: 2.15rem; line-height:1;`;
 
     const safeIdx = escapeHtml(res.idx + 1); const safeUniv = escapeHtml(res.univ); const safeMajor = escapeHtml(res.major);
     const safeStatus = escapeHtml(res.status); const safeMsg = escapeHtml(res.msg); const safeScore = escapeHtml(res.converted_score);
+    const goalGap = Math.max(0, 150 - scoreValue);
+    const positionText = scoreValue >= 150 ? '현재 위치: 합격 안정권 진입' : (scoreValue >= 100 ? '현재 위치: 합격권 진입 전' : '현재 위치: 합격권까지 거리 있음');
 
     const MAX_SCORE = 250;
-    const barWidth = Math.min((res.converted_score / MAX_SCORE) * 100, 100);
+    const barWidth = Math.min((scoreValue / MAX_SCORE) * 100, 100);
 
     return `
-        <div class="analysis-card" style="border-left-color: ${res.color}; display: flex; flex-direction: column; gap: 15px;">
+        <div class="analysis-card" style="display: flex; flex-direction: column; gap: 16px; padding:20px; border-radius:20px;">
             <div class="analysis-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; border-bottom:1px solid #f1f5f9; padding-bottom:15px;">
                 <div style="flex: 1; min-width: 0;">
                     <span style="color:#64748b; font-size:1.1rem; font-weight:800; display:block; margin-bottom:5px;">${safeIdx}지망</span>
@@ -1517,20 +1521,25 @@ function renderAnalysisCard(res) {
                 </div>
                 <div style="text-align:right; flex-shrink: 0;">
                     <span style="${badgeStyle} padding:6px 14px; border-radius:20px; font-size:0.9rem; font-weight:bold; display:inline-block; margin-bottom:5px; white-space:nowrap;">${safeStatus}</span>
-                    <div style="font-size:0.8rem; color:${res.color}; font-weight:600; white-space:nowrap;">${safeMsg}</div>
+                    <div style="font-size:0.8rem; color:${toneColor}; font-weight:600; white-space:nowrap;">${safeMsg}</div>
                 </div>
             </div>
-            <div class="analysis-body" style="display:flex; flex-direction:column; gap:20px;">
+            <div class="analysis-body" style="display:flex; flex-direction:column; gap:16px;">
+                            <div class="analysis-infographic" style="background:#F8FAFC; padding:12px; border-radius:12px; display:flex; align-items:center; gap:10px; line-height:1.5;">
+                <i class="fas fa-location-dot" style="color:${toneColor}; font-size:1rem;"></i>
+                <div style="display:flex; flex-direction:column;">
+                    <span style="font-size:0.9rem; color:#334155; font-weight:700;">${positionText}</span>
+                    <span style="font-size:0.85rem; color:#64748b;">목표까지 ${goalGap > 0 ? `-${goalGap}점` : '달성 완료'}</span>
+                </div>
+            </div>
                 <div class="score-section">
                     <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
-                        <span style="font-size:0.95rem; color:#475569; font-weight:600;">AI 환산 진단점수</span>
+                        <span style="font-size:0.95rem; color:#475569; font-weight:600;"><span style="font-size:0.78rem; color:#94a3b8;">AI 점수</span></span>
                         <span style="${scoreStyle}">${safeScore}<span style="font-size:1rem; font-weight:normal; margin-left:2px; color:#64748b;">점</span></span>
                     </div>
                     <div class="score-bar-container">
-                        <div class="score-bar-bg">
-                            <div style="position:absolute; left:40%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
-                            <div style="position:absolute; left:60%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
-                            <div class="score-bar-fill" style="width: ${barWidth}%; background: ${res.color};"></div>
+                        <div class="score-bar-bg" style="background:#EEF1F6;">
+                            <div class="score-bar-fill" style="width: ${barWidth}%; background: ${toneColor};"></div>
                         </div>
                         <div class="score-labels">
                             <span class="label-min">0</span>
@@ -1540,11 +1549,15 @@ function renderAnalysisCard(res) {
                         </div>
                     </div>
                 </div>
-                <div class="advice-section" style="background:#f8fafc; border-radius:10px; padding:18px; border:1px solid #e2e8f0;">
+                <div class="advice-section" style="background:rgba(124,58,237,0.06); border:1px solid rgba(124,58,237,0.15); border-radius:16px; padding:16px;">
                     <h5 style="margin:0 0 8px 0; font-size:0.9rem; color:#334155; display:flex; align-items:center;">
-                        <i class="fas fa-lightbulb" style="color:#fbbf24; margin-right:6px;"></i> 합격 전략 코멘트
+                        <i class="fas fa-lightbulb" style="color:#7C3AED; margin-right:6px;"></i> 도달 성적 코멘트
                     </h5>
-                    <p style="margin:0; font-size:0.95rem; color:#475569; line-height:1.6;">${getSimpleAdvice(res.converted_score, res.status)}</p>
+                    <p style="margin:0; font-size:0.95rem; color:#475569; line-height:1.7;">${getSimpleAdvice(res.converted_score, res.status)}</p>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <p style="margin:0; font-size:0.95rem; line-height:1.7; color:#334155;">이 속도라면 목표까지 약 2~3개월이 필요합니다.</p>
+                    <p style="margin:0; font-size:0.95rem; line-height:1.7; color:#475569;">방향이 틀리면 점수 상승 효율이 크게 떨어질 수 있습니다.</p>
                 </div>
             </div>
         </div>`;
@@ -2209,9 +2222,11 @@ function renderDetailedSimCard() {
                         👉 지금 방향을 잡느냐에 따라 결과가 완전히 달라집니다.
                     </div>
 
-                    <button onclick="location.href='/payment'" style="width:100%; padding:14px; background:#ea580c; color:white; border:none; border-radius:8px; font-weight:bold; font-size:1rem; cursor:pointer; box-shadow:0 4px 6px rgba(234, 88, 12, 0.25);">
-                        공부 방향 설정하기
+                    <p style="margin:8px 0 12px; color:#334155; font-weight:600;">지금 시작하면 평균 2개월 단축됩니다</p>
+                    <button onclick="location.href='/payment'" style="width:100%; height:56px; background:linear-gradient(90deg,#2563EB,#7C3AED); color:white; border:none; border-radius:16px; font-weight:600; font-size:16px; cursor:pointer; box-shadow:0 8px 18px rgba(37,99,235,0.28);">
+                        합격까지 필요한 전략 보기
                     </button>
+                    <div style="margin-top:10px; font-size:0.82rem; color:#64748b; text-align:center;">MBTI 다운로드만 유지</div>
                 </div>`;
             } else {
                 if (currentScore < 10 && (currentScore + maxRise) < 25) {
@@ -2337,7 +2352,7 @@ function renderDetailedSimCard() {
 
         let warningHTML = '';
         if (!['standard', 'pro'].includes(currentUserTier) && univChangeRemaining <= 5) {
-            warningHTML = `<div class="sim-warning upsell-warning"><h4><i class="fas fa-exclamation-triangle"></i> 지금 점수 구조에서는 특정 과목이 결과에 불리하게 작용하고 있습니다.</h4><button onclick="location.href='/payment'" style="width: 100%; padding: 12px; background: #ea580c; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer;">공부 방향 설정하기</button></div>`;
+            warningHTML = `<div class="sim-warning upsell-warning"><h4><i class="fas fa-exclamation-triangle"></i> 지금 점수 구조에서는 특정 과목이 결과에 불리하게 작용하고 있습니다.</h4><p style="margin:4px 0 10px; color:#334155; font-weight:600;">지금 시작하면 평균 2개월 단축됩니다</p><button onclick="location.href='/payment'" style="width:100%; height:56px; background:linear-gradient(90deg,#2563EB,#7C3AED); color:#fff; border:none; border-radius:16px; font-weight:600; font-size:16px; cursor:pointer;">합격까지 필요한 전략 보기</button><div style="margin-top:8px; font-size:0.82rem; color:#64748b;">MBTI 다운로드만 유지</div></div>`;
         } else {
             if (currentScore < 10 && (currentScore + maxRise) < 25) warningHTML = `<div class="sim-warning" style="background:#fff7ed; border-color:#fdba74; color:#c2410c;"><i class="fas fa-exclamation-circle"></i><div><strong>여전히 불합격권입니다.</strong></div></div>`; 
             else if (currentScore >= 225 || (currentScore + maxRise) >= 250) warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><i class="fas fa-check-circle"></i><div><strong>이미 상당히 안정권입니다.</strong></div></div>`;

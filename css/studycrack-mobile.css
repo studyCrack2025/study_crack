@@ -2663,3 +2663,28 @@ input:focus, select:focus, textarea:focus,
 @media (min-width: 390px) {
   .add-univ-grid { grid-template-columns: 1fr 1fr; }
 }
+
+
+/* UI/전환 UX 개선 - mobile analysis */
+.analysis-v2-summary{padding:20px !important;border-radius:20px !important;display:grid;gap:16px;}
+.analysis-v2-score-wrap strong{font-size:34px !important;font-weight:800;}
+.analysis-v2-score-wrap small{display:block;font-size:12px;color:#94a3b8;margin-top:4px;}
+.analysis-v2-verdict{font-size:12px;padding:6px 10px;border-radius:999px;font-weight:700;}
+.analysis-v2-infographic{background:#F8FAFC;border-radius:12px;padding:12px;display:flex;gap:10px;align-items:center;}
+.analysis-v2-infographic .icon{font-size:15px;}
+.analysis-v2-infographic b{font-size:13px;line-height:1.45;color:#334155;}
+.analysis-v2-infographic p{margin:2px 0 0;font-size:12px;color:#64748b;}
+.analysis-v2-gauge{background:#EEF1F6 !important;}
+.analysis-v2-gauge .cut{display:none !important;}
+.analysis-v2-gauge i.score-tier-low{background:#EF4444 !important;}
+.analysis-v2-gauge i.score-tier-mid{background:#F59E0B !important;}
+.analysis-v2-gauge i.score-tier-high{background:#7C3AED !important;}
+.analysis-v2-gauge-change{background:rgba(124,58,237,0.06) !important;border:1px solid rgba(124,58,237,0.15) !important;border-radius:16px !important;padding:16px !important;}
+.analysis-conv-line{margin:6px 0 0;font-size:13px;line-height:1.6;color:#475569;}
+.analysis-v2-cta{display:grid;gap:10px;padding:20px !important;}
+.analysis-cta-lead{margin:0;font-size:15px;line-height:1.6;font-weight:600;color:#334155;}
+.analysis-convert-btn{height:56px !important;border-radius:16px !important;background:linear-gradient(90deg,#2563EB,#7C3AED) !important;font-size:16px !important;font-weight:600 !important;}
+.analysis-cta-sub{margin:0;text-align:center;font-size:12px;color:#64748b;}
+.bubble{padding:13px !important;box-shadow:0 4px 10px rgba(15,23,42,0.10);}
+.analysis-v2 > .card{margin-bottom:16px;}
+.analysis-v2 .analysis-title,.analysis-v2 .sub,.analysis-v2 p{line-height:1.6;}
