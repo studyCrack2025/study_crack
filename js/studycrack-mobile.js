@@ -146,6 +146,10 @@ function App() {
   const [loginPassword, setLoginPassword] = useState('');
   const [findEmailModalOpen, setFindEmailModalOpen] = useState(false);
   const [foundEmailMasked, setFoundEmailMasked] = useState('');
+  const [resetPasswordModalOpen, setResetPasswordModalOpen] = useState(false);
+  const [resetPasswordStep, setResetPasswordStep] = useState('request');
+  const [resetPasswordEmail, setResetPasswordEmail] = useState('');
+  const [resetPasswordSending, setResetPasswordSending] = useState(false);
   const [signupName, setSignupName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
@@ -2276,11 +2280,12 @@ function App() {
         <div class="auth-helper-row">
           <button class="auth-link-btn" data-action="openFindEmailModal">이메일 찾기</button>
           <span>|</span>
-          <button class="auth-link-btn" data-action="goto" data-target="authFindPw">비밀번호 찾기</button>
+          <button class="auth-link-btn" data-action="openResetPasswordModal">비밀번호 찾기</button>
         </div>
         <button class="auth-link-btn" data-action="goto" data-target="authSignup">아직 계정이 없나요? 회원가입</button>
       </div>
       ${findEmailModalOpen ? `<div class="find-email-modal-backdrop" data-action="closeFindEmailModal"><div class="find-email-modal" data-action="noopModal"><button type="button" class="close-btn" data-action="closeFindEmailModal">×</button><h3>이메일 찾기</h3><p class="sub">가입 시 등록한 이름과 전화번호를 입력해주세요.</p><input class="planner-input" data-find-email-name placeholder="이름" /><input class="planner-input" data-field="findEmailPhone" inputmode="numeric" placeholder="전화번호 (숫자만 입력)" /><button type="button" class="btn btn-primary" data-action="findEmailByNamePhone">이메일 찾기</button>${foundEmailMasked ? `<div class="find-email-result">회원님의 이메일은<br/><b>${foundEmailMasked}</b> 입니다.</div>` : ''}</div></div>` : ''}
+      ${resetPasswordModalOpen ? `<div class="find-email-modal-backdrop" data-action="closeResetPasswordModal"><div class="find-email-modal" data-action="noopModal"><button type="button" class="close-btn" data-action="closeResetPasswordModal">×</button><h3>비밀번호 재설정</h3><p class="sub">${resetPasswordStep === 'request' ? '가입하신 이메일 주소를 입력하시면 비밀번호 재설정 코드를 보내드립니다.' : '이메일로 발송된 6자리 코드와 새 비밀번호를 입력해주세요.'}</p>${resetPasswordStep === 'request' ? `<input class="planner-input" data-reset-email placeholder="가입한 이메일 주소" defaultValue="${resetPasswordEmail}" />` : `<input class="planner-input" data-reset-code placeholder="인증 코드 6자리" /><input class="planner-input" data-reset-password type="password" placeholder="새 비밀번호 (8자 이상)" /><input class="planner-input" data-reset-password-confirm type="password" placeholder="새 비밀번호 확인" />`}<button type="button" class="btn btn-primary" data-action="${resetPasswordStep === 'request' ? 'requestResetPasswordCode' : 'submitResetPassword'}" ${resetPasswordSending ? 'disabled' : ''}>${resetPasswordStep === 'request' ? (resetPasswordSending ? '발송 중...' : '인증 코드 받기') : '비밀번호 변경 완료'}</button></div></div>` : ''}
       </div>
     </div>`, false),
     authFindId: layout(appbar('아이디 찾기', true) + `<div class="auth-screen">
@@ -3053,6 +3058,71 @@ function App() {
         return;
       }
       setFoundEmailMasked(masked);
+      return;
+    }
+
+    if (action === 'openResetPasswordModal') {
+      e.preventDefault();
+      setResetPasswordModalOpen(true);
+      return;
+    }
+    if (action === 'closeResetPasswordModal') {
+      e.preventDefault();
+      setResetPasswordModalOpen(false);
+      setResetPasswordStep('request');
+      setResetPasswordEmail('');
+      setResetPasswordSending(false);
+      return;
+    }
+    if (action === 'requestResetPasswordCode') {
+      e.preventDefault();
+      const email = (document.querySelector('[data-reset-email]')?.value || '').trim();
+      if (!email) { alert('이메일을 입력해주세요.'); return; }
+      setResetPasswordSending(true);
+      try {
+        if (!window.CONFIG?.api?.auth) throw new Error('AUTH_API_MISSING');
+        const res = await fetch(window.CONFIG.api.auth, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'send_pw_reset_code', email })
+        });
+        const data = await res.json();
+        if (!res.ok || !data?.success) throw new Error(data?.message || 'REQUEST_FAILED');
+        alert('비밀번호 재설정 코드가 이메일로 발송되었습니다.');
+        setResetPasswordEmail(email);
+        setResetPasswordStep('verify');
+      } catch (error) {
+        alert(error.message || '비밀번호 재설정 코드 요청 중 오류가 발생했습니다.');
+      } finally {
+        setResetPasswordSending(false);
+      }
+      return;
+    }
+    if (action === 'submitResetPassword') {
+      e.preventDefault();
+      const code = (document.querySelector('[data-reset-code]')?.value || '').trim();
+      const newPw = document.querySelector('[data-reset-password]')?.value || '';
+      const confirmPw = document.querySelector('[data-reset-password-confirm]')?.value || '';
+      if (!code) { alert('인증 코드를 입력해주세요.'); return; }
+      if (newPw.length < 8) { alert('비밀번호는 8자 이상이어야 합니다.'); return; }
+      if (newPw !== confirmPw) { alert('비밀번호가 일치하지 않습니다.'); return; }
+      try {
+        if (!window.CONFIG?.api?.auth) throw new Error('AUTH_API_MISSING');
+        const res = await fetch(window.CONFIG.api.auth, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'reset_password', email: resetPasswordEmail, code, newPassword: newPw })
+        });
+        const data = await res.json();
+        if (!res.ok || !data?.success) throw new Error(data?.message || 'RESET_FAILED');
+        alert('비밀번호가 성공적으로 변경되었습니다. 새 비밀번호로 로그인해주세요.');
+        setResetPasswordModalOpen(false);
+        setResetPasswordStep('request');
+        setResetPasswordEmail('');
+        setResetPasswordSending(false);
+      } catch (error) {
+        alert(error.message || '비밀번호 변경 중 오류가 발생했습니다.');
+      }
       return;
     }
     if (action === 'openPossibleUnivAnalysis') {
