@@ -1301,16 +1301,26 @@ function App() {
   const updateSignupButtonState = () => {
     const btn = document.querySelector('[data-signup-submit]');
     if (!btn) return;
+    const draft = window.__signupDraft || {};
     const pw = document.querySelector('[data-field="signupPassword"]')?.value ?? '';
     const pwc = document.querySelector('[data-field="signupPasswordConfirm"]')?.value ?? '';
     const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
     const requiredChecked = requiredInputs.length > 0 && requiredInputs.every((el) => el.checked);
     const pwRuleValid = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(pw);
-    const enabled = signupEmailVerified && signupPhoneVerified && pwRuleValid && pw === pwc && !!pwc && requiredChecked;
+    const emailVerified = signupEmailVerified || draft.emailVerified === true;
+    const phoneVerified = signupPhoneVerified || draft.phoneVerified === true;
+    const enabled = emailVerified && phoneVerified && pwRuleValid && pw === pwc && !!pwc && requiredChecked;
     btn.disabled = !enabled;
     btn.classList.toggle('active', enabled);
     btn.classList.toggle('disabled', !enabled);
     btn.textContent = enabled ? '회원가입 완료' : '이메일/전화번호 인증을 완료해주세요';
+  };
+  const restoreSignupTermsScroll = (y) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        safeScrollTo({ top: y, left: 0, behavior: 'auto' });
+      });
+    });
   };
   const preserveSignupDomValues = () => {
     const draft = window.__signupDraft || {};
@@ -3080,7 +3090,10 @@ function App() {
       preserveSignupDomValues();
       syncSignupFromDom();
       const code = document.querySelector('[data-field="signupEmailCode"]')?.value ?? '';
-      if (code.length >= 4) setSignupEmailVerified(true);
+      if (code.length >= 4) {
+        setSignupEmailVerified(true);
+        window.__signupDraft = { ...(window.__signupDraft || {}), emailVerified: true };
+      }
       updateSignupButtonState();
       restoreSignupDomValues();
       return;
@@ -3090,7 +3103,10 @@ function App() {
       preserveSignupDomValues();
       syncSignupFromDom();
       const code = document.querySelector('[data-field="signupPhoneCode"]')?.value ?? '';
-      if (code.length >= 4) setSignupPhoneVerified(true);
+      if (code.length >= 4) {
+        setSignupPhoneVerified(true);
+        window.__signupDraft = { ...(window.__signupDraft || {}), phoneVerified: true };
+      }
       updateSignupButtonState();
       restoreSignupDomValues();
       return;
@@ -3105,20 +3121,25 @@ function App() {
     }
     if (action === 'toggleSignupTermsAll') {
       preserveSignupDomValues();
+      const y = window.scrollY || window.pageYOffset || 0;
       const allInput = document.querySelector('[data-field="signupTermsAll"]');
       const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
       const marketingInput = document.querySelector('[data-field="signupTermsMarketing"]');
       const next = !!allInput?.checked;
-      preserveSignupScroll(() => {
-        requiredInputs.forEach((el) => { el.checked = next; });
-        if (marketingInput) marketingInput.checked = next;
-        if (allInput) allInput.checked = next;
-        setSignupTermsRequired(next);
-        setSignupTermsMarketing(next);
-        setSignupTermsAll(next);
-      });
-      requestAnimationFrame(updateSignupButtonState);
-      restoreSignupDomValues();
+      requiredInputs.forEach((el) => { el.checked = next; });
+      if (marketingInput) marketingInput.checked = next;
+      if (allInput) allInput.checked = next;
+      window.__signupDraft = {
+        ...(window.__signupDraft || {}),
+        termsAll: next,
+        termsRequired: requiredInputs.map(() => next),
+        termsMarketing: next
+      };
+      setSignupTermsRequired(next);
+      setSignupTermsMarketing(next);
+      setSignupTermsAll(next);
+      updateSignupButtonState();
+      restoreSignupTermsScroll(y);
       return;
     }
     if (action === 'openTermsModal') {
@@ -3131,32 +3152,46 @@ function App() {
     }
     if (action === 'toggleSignupTermsRequired') {
       preserveSignupDomValues();
+      const y = window.scrollY || window.pageYOffset || 0;
+      const allInput = document.querySelector('[data-field="signupTermsAll"]');
       const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
       const marketingInput = document.querySelector('[data-field="signupTermsMarketing"]');
       const allChecked = requiredInputs.length > 0 && requiredInputs.every((el) => el.checked);
       const marketingChecked = !!marketingInput?.checked;
-      preserveSignupScroll(() => {
-        setSignupTermsRequired(allChecked);
-        setSignupTermsMarketing(marketingChecked);
-        setSignupTermsAll(allChecked && marketingChecked);
-      });
-      requestAnimationFrame(updateSignupButtonState);
-      restoreSignupDomValues();
+      if (allInput) allInput.checked = allChecked && marketingChecked;
+      window.__signupDraft = {
+        ...(window.__signupDraft || {}),
+        termsAll: allChecked && marketingChecked,
+        termsRequired: requiredInputs.map((el) => !!el.checked),
+        termsMarketing: marketingChecked
+      };
+      setSignupTermsRequired(allChecked);
+      setSignupTermsMarketing(marketingChecked);
+      setSignupTermsAll(allChecked && marketingChecked);
+      updateSignupButtonState();
+      restoreSignupTermsScroll(y);
       return;
     }
     if (action === 'toggleSignupTermsMarketing') {
       preserveSignupDomValues();
+      const y = window.scrollY || window.pageYOffset || 0;
+      const allInput = document.querySelector('[data-field="signupTermsAll"]');
       const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
       const marketingInput = document.querySelector('[data-field="signupTermsMarketing"]');
       const allRequiredChecked = requiredInputs.length > 0 && requiredInputs.every((el) => el.checked);
       const marketingChecked = !!marketingInput?.checked;
-      preserveSignupScroll(() => {
-        setSignupTermsMarketing(marketingChecked);
-        setSignupTermsRequired(allRequiredChecked);
-        setSignupTermsAll(allRequiredChecked && marketingChecked);
-      });
-      requestAnimationFrame(updateSignupButtonState);
-      restoreSignupDomValues();
+      if (allInput) allInput.checked = allRequiredChecked && marketingChecked;
+      window.__signupDraft = {
+        ...(window.__signupDraft || {}),
+        termsAll: allRequiredChecked && marketingChecked,
+        termsRequired: requiredInputs.map((el) => !!el.checked),
+        termsMarketing: marketingChecked
+      };
+      setSignupTermsMarketing(marketingChecked);
+      setSignupTermsRequired(allRequiredChecked);
+      setSignupTermsAll(allRequiredChecked && marketingChecked);
+      updateSignupButtonState();
+      restoreSignupTermsScroll(y);
       return;
     }
     if (action === 'removeAnalysisTarget') {
