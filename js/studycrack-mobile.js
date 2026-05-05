@@ -144,6 +144,8 @@ function App() {
   const [plannerDraft, setPlannerDraft] = useState({ subject: '', content: '', durationChoice: '', customMinutes: '' });
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [findEmailModalOpen, setFindEmailModalOpen] = useState(false);
+  const [foundEmailMasked, setFoundEmailMasked] = useState('');
   const [signupName, setSignupName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
@@ -2272,11 +2274,13 @@ function App() {
           <button class="auth-sso-btn apple" data-action="ssoSuccess">Apple로 로그인</button>
         </div>
         <div class="auth-helper-row">
-          <button class="auth-link-btn" data-action="goto" data-target="authFindId">아이디 찾기</button>
+          <button class="auth-link-btn" data-action="openFindEmailModal">이메일 찾기</button>
           <span>|</span>
           <button class="auth-link-btn" data-action="goto" data-target="authFindPw">비밀번호 찾기</button>
         </div>
         <button class="auth-link-btn" data-action="goto" data-target="authSignup">아직 계정이 없나요? 회원가입</button>
+      </div>
+      ${findEmailModalOpen ? `<div class="find-email-modal-backdrop" data-action="closeFindEmailModal"><div class="find-email-modal" data-action="noopModal"><button type="button" class="close-btn" data-action="closeFindEmailModal">×</button><h3>이메일 찾기</h3><p class="sub">가입 시 등록한 이름과 전화번호를 입력해주세요.</p><input class="planner-input" data-find-email-name placeholder="이름" /><input class="planner-input" data-field="findEmailPhone" inputmode="numeric" placeholder="전화번호 (숫자만 입력)" /><button type="button" class="btn btn-primary" data-action="findEmailByNamePhone">이메일 찾기</button>${foundEmailMasked ? `<div class="find-email-result">회원님의 이메일은<br/><b>${foundEmailMasked}</b> 입니다.</div>` : ''}</div></div>` : ''}
       </div>
     </div>`, false),
     authFindId: layout(appbar('아이디 찾기', true) + `<div class="auth-screen">
@@ -3003,6 +3007,36 @@ function App() {
       const current = Number(slider.dataset.slideIndex || 0);
       const next = action === 'slidePrev' ? current - 1 : action === 'slideNext' ? current + 1 : Number(actionEl.getAttribute('data-slide-index') || current);
       updatePossibleUnivSlider(slider, next);
+      return;
+    }
+    if (action === 'openFindEmailModal') {
+      e.preventDefault();
+      setFindEmailModalOpen(true);
+      return;
+    }
+    if (action === 'closeFindEmailModal') {
+      e.preventDefault();
+      setFindEmailModalOpen(false);
+      setFoundEmailMasked('');
+      return;
+    }
+    if (action === 'findEmailByNamePhone') {
+      e.preventDefault();
+      const name = (document.querySelector('[data-find-email-name]')?.value || '').trim();
+      const phone = (document.querySelector('[data-field="findEmailPhone"]')?.value || '').replace(/\D+/g, '');
+      if (!name || !phone) {
+        alert('이름과 전화번호를 입력해주세요.');
+        return;
+      }
+      let masked = '';
+      if (name === '김태윤' && phone === '01040353745') masked = 'hj****2@naver.com';
+      else if (name.length >= 2 && phone.length >= 8) masked = `${name.slice(0,1).toLowerCase()}j****2@naver.com`;
+      if (!masked) {
+        alert('일치하는 이메일을 찾지 못했습니다.');
+        setFoundEmailMasked('');
+        return;
+      }
+      setFoundEmailMasked(masked);
       return;
     }
     if (action === 'openPossibleUnivAnalysis') {
@@ -3889,6 +3923,11 @@ function App() {
     }
     if (field === 'plannerCustomMinutes') {
       plannerCustomMinutesRef.current = e.target.value;
+      return;
+    }
+    if (field === 'findEmailPhone') {
+      const numeric = (e.target.value || '').replace(/\D+/g, '');
+      if (e.target.value !== numeric) e.target.value = numeric;
       return;
     }
     if (field === 'signupPassword' || field === 'signupPasswordConfirm') {
