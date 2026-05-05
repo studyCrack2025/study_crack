@@ -144,6 +144,10 @@ function App() {
   const [plannerDraft, setPlannerDraft] = useState({ subject: '', content: '', durationChoice: '', customMinutes: '' });
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [authModalMode, setAuthModalMode] = useState(null);
+  const [authModalSending, setAuthModalSending] = useState(false);
+  const [foundEmailMasked, setFoundEmailMasked] = useState('');
+  const authModalScrollYRef = useRef(0);
   const [signupName, setSignupName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
@@ -1882,6 +1886,15 @@ function App() {
     .pro-top-btn:before{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,.35) 35%,transparent 60%);transform:translateX(-120%);animation:proShine 3.4s ease-in-out infinite;}
     .home-pro-below-card-btn{margin:10px 0 0;display:flex;align-items:center;justify-content:center;}
     @keyframes proShine{0%{transform:translateX(-120%);}45%,100%{transform:translateX(120%);}}
+    .auth-modal-backdrop {position: fixed;inset: 0;z-index: 9999;background: rgba(15, 23, 42, .55);display: flex;align-items: center;justify-content: center;padding: 20px;}
+    .auth-modal {width: min(100%, 430px);background: #fff;border-radius: 24px;padding: 32px 28px 34px;box-shadow: 0 24px 70px rgba(15,23,42,.28);box-sizing: border-box;position:relative;}
+    .auth-modal-close {position: absolute;top: 22px;right: 24px;font-size: 34px;color: #94A3B8;background: none;border: 0;line-height:1;}
+    .auth-modal-title {font-size: 28px;font-weight: 800;color: #111827;margin: 0 0 16px;}
+    .auth-modal-desc {font-size: 17px;line-height: 1.55;color: #64748B;margin: 0 0 28px;}
+    .auth-modal-input {width: 100%;height: 56px;border: 1px solid #CBD5E1;border-radius: 10px;padding: 0 16px;font-size: 16px;box-sizing: border-box;margin-bottom: 14px;}
+    .auth-modal-primary {width: 100%;height: 58px;border-radius: 10px;background: #2563EB;color: #fff;font-size: 20px;font-weight: 800;border: 0;margin-top: 18px;}
+    .find-email-result {margin-top: 20px;padding: 24px 18px;border-radius: 10px;border: 1px solid #BBF7D0;background: #F0FDF4;color: #166534;text-align: center;font-size: 18px;line-height: 1.6;}
+    .find-email-result strong {font-size: 21px;font-weight: 800;}
     .pro-notif-modal .pro-notif-list{display:grid;gap:10px;margin:10px 0 14px;}
     .pro-notif-modal .pro-notif-list > div{padding:10px;border:1px solid #E2E8F0;border-radius:12px;background:#F8FAFC;}
     .pro-notif-modal .pro-notif-list b{display:block;font-size:14px;color:#0F172A;margin-bottom:4px;}
@@ -2272,12 +2285,13 @@ function App() {
           <button class="auth-sso-btn apple" data-action="ssoSuccess">Apple로 로그인</button>
         </div>
         <div class="auth-helper-row">
-          <button class="auth-link-btn" data-action="goto" data-target="authFindId">아이디 찾기</button>
+          <button type="button" class="auth-link-btn" data-action="openFindEmailModal">아이디 찾기</button>
           <span>|</span>
-          <button class="auth-link-btn" data-action="goto" data-target="authFindPw">비밀번호 찾기</button>
+          <button type="button" class="auth-link-btn" data-action="openResetPasswordModal">비밀번호 찾기</button>
         </div>
         <button class="auth-link-btn" data-action="goto" data-target="authSignup">아직 계정이 없나요? 회원가입</button>
       </div>
+      ${(authModalMode === 'findEmail' || authModalMode === 'findEmailResult' || authModalMode === 'resetPassword' || authModalMode === 'resetPasswordCode') ? `<div class="auth-modal-backdrop" data-action="closeAuthModal"><div class="auth-modal" data-action="noopModal"><button type="button" class="auth-modal-close" data-action="closeAuthModal">×</button>${authModalMode === 'findEmail' || authModalMode === 'findEmailResult' ? `<p class="auth-modal-title">이메일 찾기</p><p class="auth-modal-desc">가입 시 등록한 이름과 전화번호를 입력해주세요.</p><input class="auth-modal-input" data-field="findEmailName" placeholder="이름" /><input class="auth-modal-input" data-field="findEmailPhone" placeholder="전화번호 (숫자만 입력)" inputmode="numeric" maxlength="11" />${authModalMode === 'findEmailResult' ? `<div class="find-email-result">회원님의 이메일은<br/><strong>${foundEmailMasked}</strong> 입니다.</div>` : `<button type="button" class="auth-modal-primary" data-action="submitFindEmailModal">이메일 찾기</button>`}` : `<p class="auth-modal-title">비밀번호 재설정</p><p class="auth-modal-desc">${authModalMode === 'resetPassword' ? '가입하신 이메일 주소를 입력하시면 비밀번호 재설정 코드를 보내드립니다.' : '이메일로 발송된 6자리 코드와 새 비밀번호를 입력해주세요.'}</p>${authModalMode === 'resetPassword' ? `<input class="auth-modal-input" data-field="resetEmail" placeholder="가입한 이메일 주소" /><button type="button" class="auth-modal-primary" data-action="submitResetPasswordCodeRequest">${authModalSending ? '발송 중...' : '인증 코드 받기'}</button>` : `<input class="auth-modal-input" data-field="resetCode" placeholder="인증 코드 6자리" inputmode="numeric" maxlength="6" /><input class="auth-modal-input" data-field="resetNewPassword" type="password" placeholder="새 비밀번호 (8자 이상)" /><input class="auth-modal-input" data-field="resetNewPasswordConfirm" type="password" placeholder="새 비밀번호 확인" /><button type="button" class="auth-modal-primary" data-action="submitResetPasswordComplete">비밀번호 변경 완료</button>`}</div></div>` : ''}
     </div>`, false),
     authFindId: layout(appbar('아이디 찾기', true) + `<div class="auth-screen">
       <div class="card auth-form-card">
@@ -3743,6 +3757,53 @@ function App() {
       setActivePlannerItemId('');
     }
     if (action === 'signupSuccess') syncSignupFromDom();
+    if (action === 'openFindEmailModal') {
+      authModalScrollYRef.current = window.scrollY || window.pageYOffset || 0;
+      setAuthModalMode('findEmail');
+      return;
+    }
+    if (action === 'openResetPasswordModal') {
+      authModalScrollYRef.current = window.scrollY || window.pageYOffset || 0;
+      setAuthModalMode('resetPassword');
+      return;
+    }
+    if (action === 'closeAuthModal') {
+      setAuthModalMode(null);
+      setAuthModalSending(false);
+      requestAnimationFrame(() => requestAnimationFrame(() => safeScrollTo({ top: authModalScrollYRef.current || 0, left: 0, behavior: 'auto' })));
+      return;
+    }
+    if (action === 'submitFindEmailModal') {
+      const name = (document.querySelector('[data-field="findEmailName"]')?.value || '').trim();
+      const phone = (document.querySelector('[data-field="findEmailPhone"]')?.value || '').replace(/\D+/g, '').slice(0, 11);
+      if (!name || !phone) { alert('이름과 전화번호를 입력해주세요.'); return; }
+      setFoundEmailMasked('hj****2@naver.com');
+      setAuthModalMode('findEmailResult');
+      return;
+    }
+    if (action === 'submitResetPasswordCodeRequest') {
+      const email = (document.querySelector('[data-field="resetEmail"]')?.value || '').trim();
+      if (!email) { alert('이메일을 입력해주세요.'); return; }
+      setAuthModalSending(true);
+      setTimeout(() => {
+        setAuthModalSending(false);
+        alert('비밀번호 재설정 코드가 이메일로 발송되었습니다.');
+        setAuthModalMode('resetPasswordCode');
+      }, 500);
+      return;
+    }
+    if (action === 'submitResetPasswordComplete') {
+      const code = (document.querySelector('[data-field="resetCode"]')?.value || '').trim();
+      const pw = (document.querySelector('[data-field="resetNewPassword"]')?.value || '');
+      const pwConfirm = (document.querySelector('[data-field="resetNewPasswordConfirm"]')?.value || '');
+      if (code.length < 6) { alert('인증 코드를 입력해주세요.'); return; }
+      if (pw.length < 8) { alert('새 비밀번호를 8자 이상 입력해주세요.'); return; }
+      if (pw !== pwConfirm) { alert('새 비밀번호가 일치하지 않습니다.'); return; }
+      alert('비밀번호가 변경되었습니다.');
+      setAuthModalMode(null);
+      requestAnimationFrame(() => requestAnimationFrame(() => safeScrollTo({ top: authModalScrollYRef.current || 0, left: 0, behavior: 'auto' })));
+      return;
+    }
     if (action === 'loginSuccess' || action === 'signupSuccess' || action === 'ssoSuccess') {
       setLoggedIn(true);
       setHistory([]);
