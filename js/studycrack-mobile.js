@@ -1857,7 +1857,8 @@ function App() {
        </div>
        <div class="card ob-card">
          <p class="analysis-title">성적 변화 시 가능한 대학</p>
-         ${[['국민대 경영학부', gaugeCurrent + 6], ['숭실대 경제학과', gaugeCurrent + 10], ['세종대 미디어커뮤니케이션학과', gaugeCurrent + 14]].map(([name, target]) => `<div class="card ob-card" style="margin:10px 0 0;">
+         <div class="possible-univ-slider" data-slider-group="possible"><div class="possible-univ-track">
+         ${[['국민대 경영학부', gaugeCurrent + 6], ['숭실대 경제학과', gaugeCurrent + 10], ['세종대 미디어커뮤니케이션학과', gaugeCurrent + 14]].map(([name, target], idx) => `<div class="possible-univ-card"><button type="button" class="card ob-card" style="margin:10px 0 0; width:100%; text-align:left;" data-action="openPossibleUnivAnalysis" data-target-major="${name}">
            <p class="analysis-title">${name}</p>
            <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${target}점</b></div></div>
            <div class="ob-gauge">
@@ -1868,7 +1869,7 @@ function App() {
            </div>
            <div class="ob-gauge-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
            <p class="sub"><b>현재 → 합격권 진입 구간</b></p>
-         </div>`).join('')}
+         </button></div>`).join('')}</div></div><div class="possible-univ-nav"><button type="button" data-action="slidePrev">‹</button><div class="possible-univ-dots"><button data-action="slideTo" data-slide-index="0" class="active"></button><button data-action="slideTo" data-slide-index="1"></button><button data-action="slideTo" data-slide-index="2"></button></div><button type="button" data-action="slideNext">›</button></div>
        </div></div>
        </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button type="button" class="cta-button" data-action="startStandard">Standard로 시작하기</button><button type="button" class="auth-link-btn" data-action="completeOnboarding">홈으로 이동</button></div></div>`,
       false
@@ -2044,7 +2045,8 @@ function App() {
           </div>
           <div class="card ob-card">
             <p class="analysis-title">성적 변화 시 가능한 대학</p>
-            ${[['국민대 경영학부', gaugeCurrent + 6], ['숭실대 경제학과', gaugeCurrent + 10], ['세종대 미디어커뮤니케이션학과', gaugeCurrent + 14]].map(([name, target]) => `<div class="card ob-card" style="margin:10px 0 0;">
+            <div class="possible-univ-slider" data-slider-group="possible"><div class="possible-univ-track">
+            ${[['국민대 경영학부', gaugeCurrent + 6], ['숭실대 경제학과', gaugeCurrent + 10], ['세종대 미디어커뮤니케이션학과', gaugeCurrent + 14]].map(([name, target], idx) => `<div class="possible-univ-card"><button type="button" class="card ob-card" style="margin:10px 0 0; width:100%; text-align:left;" data-action="openPossibleUnivAnalysis" data-target-major="${name}">
               <p class="analysis-title">${name}</p>
               <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${target}점</b></div></div>
               <div class="ob-gauge">
@@ -2055,7 +2057,7 @@ function App() {
               </div>
               <div class="ob-gauge-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
               <p class="sub"><b>현재 → 합격권 진입 구간</b></p>
-            </div>`).join('')}
+            </button></div>`).join('')}</div></div><div class="possible-univ-nav"><button type="button" data-action="slidePrev">‹</button><div class="possible-univ-dots"><button data-action="slideTo" data-slide-index="0" class="active"></button><button data-action="slideTo" data-slide-index="1"></button><button data-action="slideTo" data-slide-index="2"></button></div><button type="button" data-action="slideNext">›</button></div>
           </div>
 
           <div class="card analysis-v2-cta sticky"><p class="analysis-cta-lead">지금 시작하면 평균 2개월 단축됩니다</p><button class="btn analysis-convert-btn" data-action="startStandard">합격까지 필요한 전략 보기</button><p class="analysis-cta-sub">MBTI 다운로드만 유지</p></div>
@@ -2311,9 +2313,44 @@ function App() {
       track.style.setProperty('--score-slide-transition', 'transform .56s cubic-bezier(.22,.61,.36,1)');
     }
   };
+
+  let possibleUnivTouchStartX = 0;
+  const updatePossibleUnivSlider = (slider, nextIndex) => {
+    if (!slider) return;
+    const track = slider.querySelector('.possible-univ-track');
+    const cards = slider.querySelectorAll('.possible-univ-card');
+    const total = cards.length;
+    if (!track || !total) return;
+    const idx = Math.max(0, Math.min(nextIndex, total - 1));
+    slider.dataset.slideIndex = String(idx);
+    track.style.transform = `translateX(-${idx * 100}%)`;
+    slider.parentElement?.querySelectorAll('.possible-univ-dots [data-action="slideTo"]').forEach((dot, i) => {
+      dot.classList.toggle('active', i === idx);
+    });
+  };
+
+  const initPossibleUnivSliders = () => {
+    document.querySelectorAll('.possible-univ-slider').forEach((slider) => {
+      if (!slider.dataset.slideIndex) slider.dataset.slideIndex = '0';
+      updatePossibleUnivSlider(slider, Number(slider.dataset.slideIndex || 0));
+      if (slider.dataset.bound === '1') return;
+      slider.dataset.bound = '1';
+      slider.addEventListener('touchstart', (e) => {
+        possibleUnivTouchStartX = e.touches?.[0]?.clientX || 0;
+      }, { passive: true });
+      slider.addEventListener('touchend', (e) => {
+        const endX = e.changedTouches?.[0]?.clientX || 0;
+        const delta = endX - possibleUnivTouchStartX;
+        if (Math.abs(delta) < 40) return;
+        const current = Number(slider.dataset.slideIndex || 0);
+        updatePossibleUnivSlider(slider, delta < 0 ? current + 1 : current - 1);
+      }, { passive: true });
+    });
+  };
   const syncHomeSliderDomFromCurrentMarkup = () => ensureHomeSliderDomReady();
   const syncScoreJourneyDomFromCurrentMarkup = () => {
     document.querySelectorAll('.score-journey-card').forEach((card) => ensureScoreJourneyDomReady(card));
+    initPossibleUnivSliders();
   };
   const waitAndSyncHomeSliderDom = (attempt = 0) => {
     if (!isIOSSafari()) return;
@@ -2571,6 +2608,24 @@ function App() {
         return next;
       });
       restoreIfUnexpectedTopJump();
+    }
+    if (action === 'slidePrev' || action === 'slideNext' || action === 'slideTo') {
+      const slider = actionEl.closest('.card')?.querySelector('.possible-univ-slider') || actionEl.closest('.possible-univ-nav')?.previousElementSibling;
+      if (!slider) return;
+      const current = Number(slider.dataset.slideIndex || 0);
+      const next = action === 'slidePrev' ? current - 1 : action === 'slideNext' ? current + 1 : Number(actionEl.getAttribute('data-slide-index') || current);
+      updatePossibleUnivSlider(slider, next);
+      return;
+    }
+    if (action === 'openPossibleUnivAnalysis') {
+      const major = actionEl.getAttribute('data-target-major');
+      if (!major) return;
+      if (confirm(`${major} 분석을 보시겠어요?`)) {
+        setTargetMajor(major);
+        goto('analysis');
+        setAnalysisMode('summary');
+      }
+      return;
     }
     if (action === 'openAnalysisSearch') {
       goto('addUniversity');

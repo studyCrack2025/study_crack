@@ -2688,3 +2688,13 @@ input:focus, select:focus, textarea:focus,
 .bubble{padding:13px !important;box-shadow:0 4px 10px rgba(15,23,42,0.10);}
 .analysis-v2 > .card{margin-bottom:16px;}
 .analysis-v2 .analysis-title,.analysis-v2 .sub,.analysis-v2 p{line-height:1.6;}
+
+
+.possible-univ-slider{overflow:hidden;width:100%;position:relative;min-height:218px;}
+.possible-univ-track{display:flex;width:300%;transform:translateX(0);transition:transform .35s ease;will-change:transform;}
+.possible-univ-card{flex:0 0 100%;padding:0 6px;box-sizing:border-box;}
+.possible-univ-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;}
+.possible-univ-nav > button{width:30px;height:30px;border-radius:999px;border:1px solid #dbe4f4;background:#fff;color:#334155;}
+.possible-univ-dots{display:flex;gap:6px;align-items:center;justify-content:center;flex:1;}
+.possible-univ-dots button{width:7px;height:7px;border-radius:999px;border:none;background:#cbd5e1;padding:0;}
+.possible-univ-dots button.active{background:#2563EB;}
