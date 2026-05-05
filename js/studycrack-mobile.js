@@ -148,6 +148,13 @@ function App() {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupPasswordConfirm, setSignupPasswordConfirm] = useState('');
+  const [signupPhone, setSignupPhone] = useState('');
+  const [signupBirth, setSignupBirth] = useState('');
+  const [signupGender, setSignupGender] = useState('female');
+  const [signupEmailVerified, setSignupEmailVerified] = useState(false);
+  const [signupPhoneVerified, setSignupPhoneVerified] = useState(false);
+  const [signupTermsAll, setSignupTermsAll] = useState(false);
+  const [signupTermsRequired, setSignupTermsRequired] = useState(false);
   const [mbtiModalOpen, setMbtiModalOpen] = useState(false);
   const [mbtiAnswers, setMbtiAnswers] = useState({ q1: '', q2: '', q3: '', q4: '' });
   const [mbtiResult, setMbtiResult] = useState('');
@@ -1047,6 +1054,8 @@ function App() {
     try { return JSON.parse(localStorage.getItem('examScoresByType') || '{}') || {}; } catch { return {}; }
   };
   const saveExamScoresMap = (map) => localStorage.setItem('examScoresByType', JSON.stringify(map || {}));
+  const signupPasswordValid = signupPassword.length >= 8 && signupPassword === signupPasswordConfirm;
+  const signupSubmitEnabled = signupEmailVerified && signupPhoneVerified && signupPasswordValid && signupTermsRequired;
   const homeTargets = homeTargetList.map((major) => {
     const profile = analysisProfiles[major] || analysisSelected;
     const score = Number(liveCurrentScore || Math.round((scores.korean + scores.math + scores.english + scores.inquiry1 + scores.inquiry2) / 5));
@@ -1919,33 +1928,14 @@ function App() {
         <button class="btn btn-primary auth-submit" data-action="goto" data-target="authLogin">재설정 링크 받기</button>
       </div>
     </div>`, false),
-    authSignup: layout(appbar('회원가입', true) + `<div class="auth-screen">
-      <div class="auth-brand card">
-        <div class="auth-logo-wrap">
-          <img
-            src="${STUDYCRACK_LOGO_SRC}"
-            class="auth-logo"
-            alt="StudyCrack Logo"
-            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
-          />
-          <span class="auth-logo-fallback">StudyCrack</span>
-        </div>
-      </div>
-      <div class="card auth-form-card">
-        <label class="auth-label">이름</label>
-        <input class="planner-input" data-field="signupName" value="${signupName}" placeholder="이름 입력" />
-        <label class="auth-label">이메일</label>
-        <input class="planner-input" data-field="signupEmail" value="${signupEmail}" placeholder="you@example.com" />
-        <label class="auth-label">비밀번호</label>
-        <input class="planner-input" data-field="signupPassword" value="${signupPassword}" type="password" placeholder="비밀번호 입력" />
-        <label class="auth-label">비밀번호 확인</label>
-        <input class="planner-input" data-field="signupPasswordConfirm" value="${signupPasswordConfirm}" type="password" placeholder="비밀번호 다시 입력" />
-        <button class="btn btn-primary auth-submit" data-action="signupSuccess">회원가입 완료</button>
-      </div>
-      <div class="card auth-signup-card">
-        <p>이미 계정이 있나요?</p>
-        <button class="btn btn-secondary" data-action="goto" data-target="authLogin">로그인</button>
-      </div>
+    authSignup: layout(appbar('회원가입', true) + `<div class="signup-page">
+      <p class="signup-title">회원가입</p>
+      <div class="signup-section"><p class="section-title">기본 정보</p><div class="section-divider"></div><input class="input" data-field="signupName" value="${signupName}" placeholder="이름 입력" /></div>
+      <div class="signup-section"><p class="section-title">이메일 인증</p><div class="section-divider"></div><div class="input-row"><input class="input" data-field="signupEmail" value="${signupEmail}" placeholder="you@example.com" /><button class="input-btn" data-action="verifySignupEmail">${signupEmailVerified ? '인증완료' : '인증요청'}</button></div></div>
+      <div class="signup-section"><p class="section-title">휴대폰 인증</p><div class="section-divider"></div><div class="input-row"><input class="input" data-field="signupPhone" value="${signupPhone}" placeholder="휴대폰 번호 입력" /><button class="input-btn" data-action="verifySignupPhone">${signupPhoneVerified ? '인증완료' : '인증요청'}</button></div></div>
+      <div class="signup-section"><p class="section-title">계정 정보</p><div class="section-divider"></div><input class="input" data-field="signupPassword" value="${signupPassword}" type="password" placeholder="비밀번호 입력" /><input class="input" data-field="signupPasswordConfirm" value="${signupPasswordConfirm}" type="password" placeholder="비밀번호 다시 입력" style="margin-top:8px;" /><div class="grid-2" style="margin-top:8px;"><div class="radio-group"><label class="radio-item"><input type="radio" name="signupGender" data-action="setSignupGender" data-gender="female" ${signupGender==='female'?'checked':''}/>여성</label><label class="radio-item"><input type="radio" name="signupGender" data-action="setSignupGender" data-gender="male" ${signupGender==='male'?'checked':''}/>남성</label></div><input class="input" data-field="signupBirth" value="${signupBirth}" placeholder="생년월일 8자리" /></div></div>
+      <div class="terms-card"><div class="terms-header"><input type="checkbox" data-action="toggleSignupTermsAll" ${signupTermsAll?'checked':''}/><span>약관 전체 동의</span></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" ${signupTermsRequired?'checked':''}/> [필수] 서비스 이용약관</label><button class="terms-link" data-action="goto" data-target="termsScreen">보기</button></div></div>
+      <button class="signup-submit ${signupSubmitEnabled ? 'active' : 'disabled'}" data-action="signupSuccess" ${signupSubmitEnabled ? '' : 'disabled'}>회원가입 완료</button>
     </div>`, false),
     splash: `<div class="app-shell"><div class="app-frame"><div class="splash"><div class="logo-bolt">${i('bolt',true)}</div><img class="brand-logo" src="${(window.__studycrackAssetSrc && window.__studycrackAssetSrc.onboardingLogoSrc) || './assets/images/studycrack_logo_wo_bg.png'}" alt="logo"/><h1 style="margin:0;font-size:30px">스터디크랙</h1><p>합격까지 가장 빠른 전략</p></div></div></div>`,
     on1: `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="onboarding-shot"><div class="onboarding-shot-head"><h2><span class="accent">데이터 기반으로</span>
@@ -2689,6 +2679,34 @@ function App() {
       const major = actionEl.getAttribute('data-target-major');
       if (!major) return;
       addMajorToTargets(major);
+      return;
+    }
+    if (action === 'verifySignupEmail') {
+      if (signupEmail) setSignupEmailVerified(true);
+      return;
+    }
+    if (action === 'verifySignupPhone') {
+      if (signupPhone) setSignupPhoneVerified(true);
+      return;
+    }
+    if (action === 'setSignupGender') {
+      setSignupGender(actionEl.getAttribute('data-gender') || 'female');
+      return;
+    }
+    if (action === 'toggleSignupTermsAll') {
+      setSignupTermsAll((prev) => {
+        const next = !prev;
+        setSignupTermsRequired(next);
+        return next;
+      });
+      return;
+    }
+    if (action === 'toggleSignupTermsRequired') {
+      setSignupTermsRequired((prev) => {
+        const next = !prev;
+        if (!next) setSignupTermsAll(false);
+        return next;
+      });
       return;
     }
     if (action === 'removeAnalysisTarget') {
@@ -3721,6 +3739,8 @@ function App() {
     if (field === 'withdrawPassword') setWithdrawPassword(value);
     if (field === 'signupName') setSignupName(value);
     if (field === 'signupEmail') setSignupEmail(value);
+    if (field === 'signupPhone') setSignupPhone(value);
+    if (field === 'signupBirth') setSignupBirth(value);
     if (field === 'signupPassword') setSignupPassword(value);
     if (field === 'signupPasswordConfirm') setSignupPasswordConfirm(value);
     if (field === 'analysisSearchTerm') setAnalysisSearchTerm(value);
