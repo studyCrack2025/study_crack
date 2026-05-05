@@ -1312,6 +1312,67 @@ function App() {
     btn.classList.toggle('disabled', !enabled);
     btn.textContent = enabled ? '회원가입 완료' : '이메일/전화번호 인증을 완료해주세요';
   };
+  const preserveSignupDomValues = () => {
+    const draft = window.__signupDraft || {};
+    const pick = (field) => document.querySelector(`[data-field="${field}"]`);
+    const assignValue = (key, field) => {
+      const el = pick(field);
+      const value = el?.value ?? '';
+      if (value !== '') draft[key] = value;
+    };
+    assignValue('email', 'signupEmail');
+    assignValue('password', 'signupPassword');
+    assignValue('passwordConfirm', 'signupPasswordConfirm');
+    assignValue('name', 'signupName');
+    assignValue('phone', 'signupPhone');
+    assignValue('birth', 'signupBirth');
+    assignValue('track', 'signupTrack');
+    assignValue('source', 'signupSource');
+    draft.promoCode = pick('signupPromoCode')?.value ?? draft.promoCode ?? '';
+    draft.emailCode = pick('signupEmailCode')?.value ?? draft.emailCode ?? '';
+    draft.phoneCode = pick('signupPhoneCode')?.value ?? draft.phoneCode ?? '';
+    draft.gender = document.querySelector('input[name="signupGender"]:checked')?.getAttribute('data-gender') || draft.gender || signupGender;
+    draft.termsAll = !!document.querySelector('[data-field="signupTermsAll"]')?.checked;
+    draft.termsRequired = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]')).map((el) => !!el.checked);
+    draft.termsMarketing = !!document.querySelector('[data-field="signupTermsMarketing"]')?.checked;
+    draft.scrollY = window.scrollY || window.pageYOffset || 0;
+    window.__signupDraft = draft;
+  };
+  const restoreSignupDomValues = () => {
+    const draft = window.__signupDraft || {};
+    const apply = () => {
+      const setValue = (field, value) => {
+        const el = document.querySelector(`[data-field="${field}"]`);
+        if (el && typeof value === 'string') el.value = value;
+      };
+      setValue('signupEmail', draft.email);
+      setValue('signupPassword', draft.password);
+      setValue('signupPasswordConfirm', draft.passwordConfirm);
+      setValue('signupName', draft.name);
+      setValue('signupPhone', draft.phone);
+      setValue('signupBirth', draft.birth);
+      setValue('signupTrack', draft.track);
+      setValue('signupSource', draft.source);
+      setValue('signupPromoCode', draft.promoCode);
+      setValue('signupEmailCode', draft.emailCode);
+      setValue('signupPhoneCode', draft.phoneCode);
+      if (draft.gender) {
+        const g = document.querySelector(`input[name="signupGender"][data-gender="${draft.gender}"]`);
+        if (g) g.checked = true;
+      }
+      const allInput = document.querySelector('[data-field="signupTermsAll"]');
+      if (allInput) allInput.checked = !!draft.termsAll;
+      Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]')).forEach((el, idx) => {
+        if (Array.isArray(draft.termsRequired)) el.checked = !!draft.termsRequired[idx];
+      });
+      const marketingInput = document.querySelector('[data-field="signupTermsMarketing"]');
+      if (marketingInput) marketingInput.checked = !!draft.termsMarketing;
+      updateSignupPasswordMatchUi();
+      updateSignupButtonState();
+      if (typeof draft.scrollY === 'number') safeScrollTo({ top: draft.scrollY, left: 0, behavior: 'auto' });
+    };
+    requestAnimationFrame(() => requestAnimationFrame(apply));
+  };
   const syncSignupFromDom = () => {
     const pick = (field) => document.querySelector(`[data-field="${field}"]`)?.value ?? '';
     const email = pick('signupEmail');
@@ -2228,7 +2289,7 @@ function App() {
       <div class="signup-section"><p class="section-title">1 / 3 계정 정보</p><div class="section-divider"></div><label class="auth-label">이메일(아이디)</label><div class="input-row signup-input-row"><input class="input" data-field="signupEmail" defaultValue="${signupEmail}" placeholder="example@email.com" /><button type="button" class="input-btn" data-action="verifySignupEmail">${signupEmailSending ? '전송 중...' : (signupEmailCodeSent ? '재전송' : '인증번호 받기')}</button></div>${signupEmailCodeSent ? `<div class="verify-box"><p>이메일로 인증번호를 보냈습니다.${signupEmailVerified ? ' ✅ 인증 완료' : ''}</p><div class="verify-row"><input class="input" data-field="signupEmailCode" defaultValue="${signupEmailCode}" placeholder="인증코드 6자리" maxlength="6" inputmode="numeric" /><b data-signup-timer="email">05:00</b><button type="button" class="input-btn verify-confirm-btn" data-action="confirmSignupEmailCode">확인</button></div><small data-signup-expire="email" style="display:none">인증 시간이 만료되었습니다. 재전송해주세요.</small><small>이메일이 오지 않는다면 스팸 메일함을 먼저 확인해주세요.</small><small>그래도 도착하지 않는다면 contact@studycrack.co.kr로 문의 부탁드립니다.</small></div>` : ''}<label class="auth-label">비밀번호</label><input class="input" data-field="signupPassword" defaultValue="${signupPassword}" type="password" placeholder="영문 대/소문자, 숫자, 특수문자 포함 8자 이상" /><small class="signup-pw-guide">영문 대문자, 영문 소문자, 숫자, 특수문자를 모두 포함해 8자 이상 입력해주세요.</small><label class="auth-label">비밀번호 확인</label><input class="input" data-field="signupPasswordConfirm" defaultValue="${signupPasswordConfirm}" type="password" placeholder="비밀번호 재입력" /><p class="pw-match" data-signup-pw-match style="display:none"></p></div>
       <div class="signup-section"><p class="section-title">2 / 3 개인 정보</p><div class="section-divider"></div><label class="auth-label">이름(실명)</label><input class="input" data-field="signupName" defaultValue="${signupName}" placeholder="이름 입력" /><div class="grid-2 signup-personal-grid"><div><label class="auth-label">성별</label><div class="radio-group gender-row"><label class="radio-item"><input type="radio" name="signupGender" data-action="setSignupGender" data-gender="female" ${signupGender==='female'?'checked':''}/>여성</label><label class="radio-item"><input type="radio" name="signupGender" data-action="setSignupGender" data-gender="male" ${signupGender==='male'?'checked':''}/>남성</label></div></div><div class="signup-date-field"><label class="auth-label">생년월일</label><input class="input" type="date" data-field="signupBirth" defaultValue="${signupBirth}" placeholder="생년월일 선택" /></div></div><label class="auth-label">전화번호</label><div class="input-row signup-input-row"><input class="input" data-field="signupPhone" defaultValue="${signupPhone}" placeholder="- 없이 입력해주세요" /><button type="button" class="input-btn" data-action="verifySignupPhone">${signupPhoneSending ? '전송 중...' : (signupPhoneCodeSent ? '재전송' : '인증번호 전송')}</button></div>${signupPhoneCodeSent ? `<div class="verify-box"><p>문자로 인증번호를 보냈습니다.${signupPhoneVerified ? ' ✅ 인증 완료' : ''}</p><div class="verify-row"><input class="input" data-field="signupPhoneCode" defaultValue="${signupPhoneCode}" placeholder="인증코드 6자리" maxlength="6" inputmode="numeric" /><b data-signup-timer="phone">05:00</b><button type="button" class="input-btn verify-confirm-btn" data-action="confirmSignupPhoneCode">확인</button></div><small data-signup-expire="phone" style="display:none">인증 시간이 만료되었습니다. 재전송해주세요.</small></div>` : ''}</div>
       <div class="signup-section"><p class="section-title">3 / 3 세부 정보</p><div class="section-divider"></div><label class="auth-label">희망 계열</label><select class="input" data-field="signupTrack" defaultValue="${signupTrack}"><option value="">선택해주세요</option><option value="의치한약계열">의치한약계열</option><option value="자연/공학계열">자연/공학계열</option><option value="상경계열">상경계열</option><option value="어문/사회계열">어문/사회계열</option><option value="예체능">예체능</option><option value="기타">기타</option></select><label class="auth-label">유입 경로</label><select class="input" data-field="signupSource" defaultValue="${signupSource}"><option value="">선택해주세요</option><option value="인스타그램">인스타그램</option><option value="스레드">스레드</option><option value="오르비">오르비</option><option value="기타">기타</option></select><label class="auth-label">프로모션 코드(선택)</label><input class="input" data-field="signupPromoCode" defaultValue="${signupPromoCode}" placeholder="프로모션 코드 입력" /></div>
-      <div class="terms-card"><div class="terms-header"><input type="checkbox" data-action="toggleSignupTermsAll" data-field="signupTermsAll" ${signupTermsAll?'checked':''}/><span>약관 전체 동의</span></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" data-field="signupTermsStandard" ${signupTermsRequired?'checked':''}/> (필수) 표준이용약관 동의</label><button class="terms-link" data-action="openTermsModal" data-terms-type="standard">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" data-field="signupTermsService" ${signupTermsRequired?'checked':''}/> (필수) 서비스 이용약관 조항 동의</label><button class="terms-link" data-action="openTermsModal" data-terms-type="service">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" data-field="signupTermsPrivacy" ${signupTermsRequired?'checked':''}/> (필수) 개인정보 처리방침 동의</label><button class="terms-link" data-action="openTermsModal" data-terms-type="privacy">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" data-field="signupTermsRefund" ${signupTermsRequired?'checked':''}/> (필수) 환불 규정 동의</label><button class="terms-link" data-action="openTermsModal" data-terms-type="refund">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsMarketing" data-field="signupTermsMarketing" ${signupTermsMarketing?'checked':''}/> (선택) 마케팅 정보 수신 동의</label><button class="terms-link" data-action="openTermsModal" data-terms-type="marketing">전문보기</button></div></div>${openTermsType ? `<div class="terms-modal-backdrop" data-action="closeTermsModal"><div class="terms-modal" data-action="noopModal"><button class="terms-modal-close" data-action="closeTermsModal">×</button><p class="terms-modal-title">${TERMS_CONTENT[openTermsType]?.title || ''}</p><div class="terms-modal-body">${TERMS_CONTENT[openTermsType]?.body || ''}</div></div></div>` : ''}
+      <div class="terms-card"><div class="terms-header"><input type="checkbox" data-action="toggleSignupTermsAll" data-field="signupTermsAll" ${signupTermsAll?'checked':''}/><span>약관 전체 동의</span></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" data-field="signupTermsStandard" ${signupTermsRequired?'checked':''}/> (필수) 표준이용약관 동의</label><button type="button" class="terms-link" data-action="openTermsModal" data-terms-type="standard">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" data-field="signupTermsService" ${signupTermsRequired?'checked':''}/> (필수) 서비스 이용약관 조항 동의</label><button type="button" class="terms-link" data-action="openTermsModal" data-terms-type="service">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" data-field="signupTermsPrivacy" ${signupTermsRequired?'checked':''}/> (필수) 개인정보 처리방침 동의</label><button type="button" class="terms-link" data-action="openTermsModal" data-terms-type="privacy">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" data-field="signupTermsRefund" ${signupTermsRequired?'checked':''}/> (필수) 환불 규정 동의</label><button type="button" class="terms-link" data-action="openTermsModal" data-terms-type="refund">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsMarketing" data-field="signupTermsMarketing" ${signupTermsMarketing?'checked':''}/> (선택) 마케팅 정보 수신 동의</label><button type="button" class="terms-link" data-action="openTermsModal" data-terms-type="marketing">전문보기</button></div></div>${openTermsType ? `<div class="terms-modal-backdrop" data-action="closeTermsModal"><div class="terms-modal" data-action="noopModal"><button class="terms-modal-close" data-action="closeTermsModal">×</button><p class="terms-modal-title">${TERMS_CONTENT[openTermsType]?.title || ''}</p><div class="terms-modal-body">${TERMS_CONTENT[openTermsType]?.body || ''}</div></div></div>` : ''}
       <button class="signup-submit signup-submit-btn ${signupSubmitEnabled ? 'active' : 'disabled'}" data-signup-submit data-action="signupSuccess" ${signupSubmitEnabled ? '' : 'disabled'}>${signupSubmitEnabled ? '회원가입 완료' : '이메일/전화번호 인증을 완료해주세요'}</button>
       <p class="signup-login-link">이미 계정이 있으신가요? <button class="auth-link-btn" data-action="goto" data-target="authLogin">로그인</button></p>
     </div>
@@ -2528,7 +2589,8 @@ function App() {
       ['faq7', '혼자 해도 되는 거 아닌가요?', '가능합니다. 하지만 잘못된 방향으로 공부하면 시간은 쓰고 결과는 안 나옵니다. 스터디크랙은 시행착오를 줄여줍니다.'],
       ['faq8', '어떤 플랜을 선택해야 할지 모르겠어요.', '빠르게 방향만 잡고 싶다면 Basic, 루틴 관리까지 원하면 Standard, 확실한 결과를 원하면 Pro를 추천합니다.']
     ].map(([id, q, a]) => `<button class="faq-row" data-action="toggleFaq" data-faq-id="${id}"><div><b>${q}</b>${openFaq===id?`<p>${a}</p>`:''}</div><span>${i('chevron', false)}</span></button>`).join('')}</div>`, false),
-    settingsMain: layout(appbar('설정', true) + `<div class="card settings-list"><button data-action="goto" data-target="accountInfo">계정 정보 <span>${i('chevron', false)}</span></button><button data-action="openTermsModal" data-terms-type="standard">표준 이용약관 <span>${i('chevron', false)}</span></button><button data-action="openTermsModal" data-terms-type="privacy">개인정보 처리방침 <span>${i('chevron', false)}</span></button><button data-action="openTermsModal" data-terms-type="service">서비스 이용약관 <span>${i('chevron', false)}</span></button><button data-action="openTermsModal" data-terms-type="refund">환불규정 <span>${i('chevron', false)}</span></button><button data-action="openTermsModal" data-terms-type="marketing">마케팅 수신 정보 동의 <span>${i('chevron', false)}</span></button><button data-action="openLogoutModal">로그아웃 <span>${i('chevron', false)}</span></button></div>${logoutModalOpen ? `<div class="home-modal-overlay" data-action="closeLogoutModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">로그아웃하시겠어요?</p><div class="support-btns"><button class="btn btn-secondary" data-action="closeLogoutModal">취소</button><button class="btn btn-primary" data-action="confirmLogout">로그아웃</button></div></div></div>` : ''}${openTermsType ? `<div class="terms-modal-backdrop" data-action="closeTermsModal"><div class="terms-modal" data-action="noopModal"><button class="terms-modal-close" data-action="closeTermsModal">×</button><p class="terms-modal-title">${TERMS_CONTENT[openTermsType]?.title || ''}</p><div class="terms-modal-body">${TERMS_CONTENT[openTermsType]?.body || ''}</div></div></div>` : ''}`, false),
+    settingsMain: layout(appbar('설정', true) + `<div class="card settings-list"><button data-action="goto" data-target="accountInfo">계정 정보 <span>${i('chevron', false)}</span></button><button data-action="goto" data-target="settingsTermsPicker">약관 보기 <span>${i('chevron', false)}</span></button><button data-action="openLogoutModal">로그아웃 <span>${i('chevron', false)}</span></button></div>${logoutModalOpen ? `<div class="home-modal-overlay" data-action="closeLogoutModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">로그아웃하시겠어요?</p><div class="support-btns"><button class="btn btn-secondary" data-action="closeLogoutModal">취소</button><button class="btn btn-primary" data-action="confirmLogout">로그아웃</button></div></div></div>` : ''}${openTermsType ? `<div class="terms-modal-backdrop" data-action="closeTermsModal"><div class="terms-modal" data-action="noopModal"><button class="terms-modal-close" data-action="closeTermsModal">×</button><p class="terms-modal-title">${TERMS_CONTENT[openTermsType]?.title || ''}</p><div class="terms-modal-body">${TERMS_CONTENT[openTermsType]?.body || ''}</div></div></div>` : ''}`, false),
+    settingsTermsPicker: layout(appbar('약관 보기', true) + `<div class="card settings-list"><button type="button" data-action="openTermsModal" data-terms-type="standard">표준 이용약관 <span>${i('chevron', false)}</span></button><button type="button" data-action="openTermsModal" data-terms-type="privacy">개인정보 처리방침 <span>${i('chevron', false)}</span></button><button type="button" data-action="openTermsModal" data-terms-type="service">서비스 이용약관 <span>${i('chevron', false)}</span></button><button type="button" data-action="openTermsModal" data-terms-type="refund">환불규정 <span>${i('chevron', false)}</span></button><button type="button" data-action="openTermsModal" data-terms-type="marketing">마케팅 수신 정보 동의 <span>${i('chevron', false)}</span></button></div>${openTermsType ? `<div class="terms-modal-backdrop" data-action="closeTermsModal"><div class="terms-modal" data-action="noopModal"><button class="terms-modal-close" data-action="closeTermsModal">×</button><p class="terms-modal-title">${TERMS_CONTENT[openTermsType]?.title || ''}</p><div class="terms-modal-body">${TERMS_CONTENT[openTermsType]?.body || ''}</div></div></div>` : ''}`, false),
     accountInfo: layout(appbar('계정 정보', true) + `<div class="card"><div class="score-info-row"><span>이름</span><strong>${user?.name || DEFAULT_USER.name}</strong></div><div class="score-info-row"><span>목표 대학</span><strong>${targetMajor || DEFAULT_USER.targetUniversity}</strong></div><div class="score-info-row"><span>현재 플랜</span><strong>${selectedPlan || DEFAULT_USER.plan}</strong></div><button class="btn btn-secondary" style="margin-top:14px" data-action="openWithdrawModal">회원탈퇴</button></div>${withdrawModalOpen ? `<div class="home-modal-overlay" data-action="closeWithdrawModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">회원탈퇴</p><p class="sub" style="margin:8px 0 12px;">현재 비밀번호를 입력하면 탈퇴할 수 있습니다.</p><input class="planner-input" type="password" data-field="withdrawPassword" value="${withdrawPassword}" placeholder="현재 비밀번호"/><div class="support-btns" style="margin-top:12px"><button class="btn btn-secondary" data-action="closeWithdrawModal">취소</button><button class="btn btn-primary" data-action="confirmWithdraw">탈퇴하기</button></div></div></div>` : ''}`, false),
     privacyPolicy: layout(appbar('개인정보 처리방침', true) + `<div class="card"><p class="sub" style="margin:0">스터디크랙은 서비스 제공을 위해 필요한 최소한의 개인정보를 처리합니다.</p></div>`, false),
     termsScreen: layout(appbar('서비스 이용약관', true) + `<div class="card"><p class="sub" style="margin:0">본 약관은 스터디크랙 서비스 이용과 관련한 기본 사항을 안내합니다.</p></div>`, false)
@@ -2979,6 +3041,7 @@ function App() {
     }
     if (action === 'verifySignupEmail') {
       e.preventDefault();
+      preserveSignupDomValues();
       const prevY = window.scrollY || window.pageYOffset || 0;
       const form = syncSignupFromDom();
       if (!form.email) { alert('이메일을 입력해주세요.'); return; }
@@ -2990,11 +3053,13 @@ function App() {
         startSignupTimerDom('email', 300);
         alert('이메일로 인증번호가 발송되었습니다.');
         requestAnimationFrame(() => safeScrollTo({ top: prevY, left: 0, behavior: 'auto' }));
+        restoreSignupDomValues();
       }, 600);
       return;
     }
     if (action === 'verifySignupPhone') {
       e.preventDefault();
+      preserveSignupDomValues();
       const prevY = window.scrollY || window.pageYOffset || 0;
       const form = syncSignupFromDom();
       if (!form.phone) { alert('전화번호를 입력해주세요.'); return; }
@@ -3006,34 +3071,44 @@ function App() {
         startSignupTimerDom('phone', 300);
         alert('인증번호가 발송되었습니다. 5분 이내에 입력해주세요.');
         requestAnimationFrame(() => safeScrollTo({ top: prevY, left: 0, behavior: 'auto' }));
+        restoreSignupDomValues();
       }, 600);
       return;
     }
     if (action === 'confirmSignupEmailCode') {
       e.preventDefault();
+      preserveSignupDomValues();
       syncSignupFromDom();
       const code = document.querySelector('[data-field="signupEmailCode"]')?.value ?? '';
       if (code.length >= 4) setSignupEmailVerified(true);
       updateSignupButtonState();
+      restoreSignupDomValues();
       return;
     }
     if (action === 'confirmSignupPhoneCode') {
       e.preventDefault();
+      preserveSignupDomValues();
       syncSignupFromDom();
       const code = document.querySelector('[data-field="signupPhoneCode"]')?.value ?? '';
       if (code.length >= 4) setSignupPhoneVerified(true);
       updateSignupButtonState();
+      restoreSignupDomValues();
       return;
     }
     if (action === 'setSignupGender') {
-      setSignupGender(actionEl.getAttribute('data-gender') || 'female');
+      preserveSignupDomValues();
+      const gender = actionEl.getAttribute('data-gender') || 'female';
+      if (window.__signupDraft) window.__signupDraft.gender = gender;
+      setSignupGender(gender);
+      restoreSignupDomValues();
       return;
     }
     if (action === 'toggleSignupTermsAll') {
+      preserveSignupDomValues();
       const allInput = document.querySelector('[data-field="signupTermsAll"]');
       const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
       const marketingInput = document.querySelector('[data-field="signupTermsMarketing"]');
-      const next = !(allInput?.checked);
+      const next = !!allInput?.checked;
       preserveSignupScroll(() => {
         requiredInputs.forEach((el) => { el.checked = next; });
         if (marketingInput) marketingInput.checked = next;
@@ -3043,6 +3118,7 @@ function App() {
         setSignupTermsAll(next);
       });
       requestAnimationFrame(updateSignupButtonState);
+      restoreSignupDomValues();
       return;
     }
     if (action === 'openTermsModal') {
@@ -3054,6 +3130,7 @@ function App() {
       return;
     }
     if (action === 'toggleSignupTermsRequired') {
+      preserveSignupDomValues();
       const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
       const marketingInput = document.querySelector('[data-field="signupTermsMarketing"]');
       const allChecked = requiredInputs.length > 0 && requiredInputs.every((el) => el.checked);
@@ -3064,9 +3141,11 @@ function App() {
         setSignupTermsAll(allChecked && marketingChecked);
       });
       requestAnimationFrame(updateSignupButtonState);
+      restoreSignupDomValues();
       return;
     }
     if (action === 'toggleSignupTermsMarketing') {
+      preserveSignupDomValues();
       const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
       const marketingInput = document.querySelector('[data-field="signupTermsMarketing"]');
       const allRequiredChecked = requiredInputs.length > 0 && requiredInputs.every((el) => el.checked);
@@ -3077,6 +3156,7 @@ function App() {
         setSignupTermsAll(allRequiredChecked && marketingChecked);
       });
       requestAnimationFrame(updateSignupButtonState);
+      restoreSignupDomValues();
       return;
     }
     if (action === 'removeAnalysisTarget') {
