@@ -45,113 +45,13 @@ const EXAM_DISPLAY_NAMES = {
     "may": "5월 학력평가"
 };
 
-function isAnalysisDevPreviewMode() {
-    const host = window.location.hostname;
-    const params = new URLSearchParams(window.location.search);
-    return ['localhost', '127.0.0.1', '::1'].includes(host) && params.get('devPreview') === '1';
-}
-
-function getAnalysisDevPreviewUser() {
-    return {
-        name: '김태윤',
-        computedTier: 'pro',
-        qualitative: { status: '고3/N수', stream: 'natural', targets: ['서울대학교', '연세대학교'] },
-        quantitative: {
-            csat: {
-                kor: { std: 134, pct: 96, grd: 1, opt: '언어와 매체' },
-                math: { std: 138, pct: 98, grd: 1, opt: '미적분' },
-                eng: { grd: 1 },
-                inq1: { std: 68, pct: 95, grd: 1, name: '물리학I' },
-                inq2: { std: 66, pct: 93, grd: 2, name: '지구과학I' }
-            },
-            sep: {
-                kor: { std: 129, pct: 91, grd: 2, opt: '언어와 매체' },
-                math: { std: 133, pct: 95, grd: 1, opt: '미적분' },
-                eng: { grd: 2 },
-                inq1: { std: 65, pct: 90, grd: 2, name: '물리학I' },
-                inq2: { std: 64, pct: 88, grd: 2, name: '지구과학I' }
-            }
-        },
-        targetUnivs: [
-            { univ: '서울대학교', major: '컴퓨터공학부', date: new Date().toISOString() },
-            { univ: '연세대학교', major: '인공지능학과', date: new Date().toISOString() },
-            { univ: '고려대학교', major: '데이터과학과', date: new Date().toISOString() },
-            { univ: '성균관대학교', major: '소프트웨어학과', date: new Date().toISOString() },
-            { univ: '한양대학교', major: '컴퓨터소프트웨어학부', date: new Date().toISOString() },
-            { univ: '중앙대학교', major: 'AI학과', date: new Date().toISOString() }
-        ]
-    };
-}
-
-function seedAnalysisDevPreview() {
-    const user = getAnalysisDevPreviewUser();
-    localStorage.setItem('userId', 'local-analysis-preview');
-    localStorage.setItem('userName', user.name);
-    localStorage.setItem('userRole', 'student');
-    localStorage.setItem('userTier', user.computedTier);
-    userRecentPaymentDate = new Date();
-    userTargetUnivs = user.targetUnivs;
-    userQuantData = user.quantitative;
-    weeklyDataHistory = [{ title: getWeekTitle(new Date()), createdAt: new Date().toISOString(), feedback: '이번 주 학습량은 안정적입니다. 수학 고난도 문항 복습 비중을 조금 더 높여주세요.' }];
-    cachedProReports = [{ key: generateReportKey(new Date()), title: formatReportKey(generateReportKey(new Date())), status: 'ready', fileUrl: '#' }];
-    renderUserInfo(user);
-    applyUserTier(user.computedTier);
-    updateSurveyStatus(user);
-    updateQuotaUI();
-}
-
-function renderAnalysisDevPreview() {
-    seedAnalysisDevPreview();
-    initUnivGrid();
-    renderAnalysisDevCards(currentExamMode);
-    renderAnalysisDevSimulation();
-    initProSection();
-    setWeeklyLoadingStatus(false);
-    checkWeeklyStatus();
-    applyCoachTierLock();
-    applySimTierLock();
-    const loader = document.getElementById('pageLoadingOverlay');
-    if (loader) loader.classList.add('hidden');
-    console.info('[analysis] localhost design preview mode is active.');
-}
-
-function renderAnalysisDevCards(examMode = 'csat') {
-    const container = document.getElementById('univAnalysisResult');
-    if (!container) return;
-    currentExamMode = examMode;
-    const sampleResults = [
-        { idx: 0, univ: '서울대학교', major: '컴퓨터공학부', status: '소신', msg: '상향권, 수학 2문항 보강 필요', converted_score: 116, color: '#f59e0b' },
-        { idx: 1, univ: '연세대학교', major: '인공지능학과', status: '적정', msg: '추합권 진입 가능성이 높음', converted_score: 134, color: '#3b82f6' },
-        { idx: 2, univ: '고려대학교', major: '데이터과학과', status: '안정', msg: '최초합 가능권', converted_score: 153, color: '#10b981' }
-    ];
-    const options = Object.keys(userQuantData || {}).map(key => `<option value="${key}" ${key === currentExamMode ? 'selected' : ''}>${EXAM_DISPLAY_NAMES[key] || key}</option>`).join('');
-    container.innerHTML = `
-        <div class="analysis-controls" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:20px; background:#fff; padding:15px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); border:1px solid #e2e8f0;">
-            <div style="font-weight:700; color:#334155; font-size:1rem;"><i class="fas fa-chart-pie" style="color:#3b82f6; margin-right:6px;"></i> 합격 예측 리포트</div>
-            <div style="display:flex; align-items:center; gap:8px;"><label for="examSelector" style="font-size:0.85rem; color:#64748b; font-weight:500; white-space:nowrap;">기준 시험:</label><select id="examSelector" onchange="renderAnalysisDevCards(this.value)" style="padding:6px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; color:#1e293b; outline:none; cursor:pointer; font-family:inherit; background-color:#f8fafc; max-width: 180px; text-overflow: ellipsis;">${options}</select></div>
-        </div>
-        <div id="analysisCardsContainer" style="display:flex; flex-direction:column; gap:20px;">${sampleResults.map(item => renderAnalysisCard(item)).join('')}</div>`;
-}
-
-function renderAnalysisDevSimulation() {
-    const chartArea = document.getElementById('simChartArea');
-    const detailCard = document.getElementById('simDetailCard');
-    if (chartArea) {
-        chartArea.innerHTML = `<div style="width:100%; min-height:280px; display:flex; align-items:flex-end; justify-content:center; gap:28px; padding:26px 20px 16px; box-sizing:border-box;"><div class="sim-bar-item"><div class="sim-score-label">116</div><div class="sim-bar" style="height:132px; background:#f59e0b;"></div><div class="sim-label-item">서울대</div></div><div class="sim-bar-item"><div class="sim-score-label">134</div><div class="sim-bar" style="height:164px; background:#3b82f6;"></div><div class="sim-label-item">연세대</div></div><div class="sim-bar-item"><div class="sim-score-label">153</div><div class="sim-bar" style="height:192px; background:#10b981;"></div><div class="sim-label-item">고려대</div></div><div class="sim-bar-item"><div class="sim-score-label">148</div><div class="sim-bar" style="height:182px; background:#6366f1;"></div><div class="sim-label-item">성균관대</div></div></div>`;
-    }
-    if (detailCard) {
-        detailCard.innerHTML = `<div class="sim-result-card"><div style="font-weight:800; color:#1e293b; margin-bottom:8px;">연세대학교 인공지능학과</div><p style="margin:0; color:#475569; line-height:1.6;">수학 표준점수 +2점 또는 국어 백분위 +3p 상승 시 안정권에 가까워집니다. 현재 점수 구조에서는 수학 고난도 문항 보강 효율이 가장 높습니다.</p></div>`;
-    }
-}
-
 // ============================================================
 // [초기화] DOM 로드 시 실행 (💡 병렬 데이터 로딩으로 개편)
 // ============================================================
 document.addEventListener('DOMContentLoaded', async () => {
     const userId = localStorage.getItem('userId');
-    const isDevPreview = isAnalysisDevPreviewMode();
 
-    if (!isDevPreview && (!getAccessToken() || !getIdToken())) {
+    if (!getAccessToken() || !getIdToken()) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
             clearClientSession();
@@ -165,50 +65,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     setWeeklyLoadingStatus(true);
 
     try {
-        if (isDevPreview) {
-            renderAnalysisDevPreview();
-        } else {
-            // 1️⃣ [핵심] 유저 데이터를 가장 먼저 가져와서 등급(Tier)을 확인합니다.
-            await fetchUserData(userId);
+        // 1️⃣ [핵심] 유저 데이터를 가장 먼저 가져와서 등급(Tier)을 확인합니다.
+        await fetchUserData(userId);
 
-            // 2️⃣ [핵심] 확인된 등급에 따라 굳이 필요 없는 무거운 API 연산/호출은 배열에서 제외합니다.
-            const parallelTasks = [fetchUnivData()];
+        // 2️⃣ [핵심] 확인된 등급에 따라 굳이 필요 없는 무거운 API 연산/호출은 배열에서 제외합니다.
+        const parallelTasks = [fetchUnivData()];
         
+        if (['standard', 'pro'].includes(currentUserTier)) {
+            parallelTasks.push(fetchWeeklyHistory()); // 코칭 탭용 데이터
+        }
+        if (['pro'].includes(currentUserTier)) {
+            parallelTasks.push(fetchInitialProReports()); // PRO 탭용 데이터
+        }
+
+        const results = await Promise.allSettled(parallelTasks);
+        results.forEach((res, idx) => {
+            if (res.status === 'rejected') console.error(`Data Load Error [${idx}]:`, res.reason);
+        });
+
+        // 3️⃣ UI 초기화 로직 실행
+        initUnivGrid();
+        updateAnalysisUI();
+        initProSection();
+
+        setWeeklyLoadingStatus(false);
+        setTimeout(() => {
+            // 주간 상태 체크도 권한이 있는 사람만 실행
             if (['standard', 'pro'].includes(currentUserTier)) {
-                parallelTasks.push(fetchWeeklyHistory()); // 코칭 탭용 데이터
+                checkWeeklyStatus();
             }
-            if (['pro'].includes(currentUserTier)) {
-                parallelTasks.push(fetchInitialProReports()); // PRO 탭용 데이터
-            }
+            applyCoachTierLock();
+            applySimTierLock();
+        }, 500);
 
-            const results = await Promise.allSettled(parallelTasks);
-            results.forEach((res, idx) => {
-                if (res.status === 'rejected') console.error(`Data Load Error [${idx}]:`, res.reason);
-            });
-
-            // 3️⃣ UI 초기화 로직 실행
-            initUnivGrid(); 
-            updateAnalysisUI();
-            initProSection(); 
-        
-            setWeeklyLoadingStatus(false);
-            setTimeout(() => { 
-                // 주간 상태 체크도 권한이 있는 사람만 실행
-                if (['standard', 'pro'].includes(currentUserTier)) {
-                    checkWeeklyStatus(); 
-                }
-                applyCoachTierLock();
-                applySimTierLock();
-            }, 500); 
-        
-            const loader = document.getElementById('pageLoadingOverlay');
-            if (loader) {
-                setTimeout(() => {
-                    loader.classList.add('hidden');
-                    // 👇 추가: 로딩 오버레이가 사라질 때 높이 최종 동기화
-                    if (window.innerWidth <= 768) syncMobileHeight();
-                }, 500);
-            }
+        const loader = document.getElementById('pageLoadingOverlay');
+        if (loader) {
+            setTimeout(() => {
+                loader.classList.add('hidden');
+                // 👇 추가: 로딩 오버레이가 사라질 때 높이 최종 동기화
+                if (window.innerWidth <= 768) syncMobileHeight();
+            }, 500);
         }
 
         // URL 파라미터 확인 (?sol=sim 등)
@@ -1054,10 +950,7 @@ function openSolution(type) {
         }
     });
 
-    if (type === 'sim') {
-        if (isAnalysisDevPreviewMode()) renderAnalysisDevSimulation();
-        else initSimulation();
-    }
+    if (type === 'sim') initSimulation();
     if (window.innerWidth <= 768) updateMainSwipeHint(type);
 }
 
@@ -2278,13 +2171,6 @@ function renderDetailedSimCard() {
                     desc = isBest ? `<strong>가장 합격 상승에 유리합니다.</strong>` : `점수 상승으로 합격 가능성이 높아집니다.`;
                 }
 
-                // 부호 및 텍스트 렌더링 개선 (양수면 +, 음수면 - 출력)
-                let subText = '';
-                if (Math.abs(info.diff) >= 0.01) {
-                     const sign = info.diff > 0 ? '+' : '';
-                     subText = `(${sign}${info.diff.toFixed(2)}점)`;
-                }
-                
                 subjectsHTML += `
                     <div class="sim-item swipe-subj-card ${isBest ? 'best-pick' : ''}">
                         <div class="sim-item-header" style="margin-bottom:6px;">
@@ -2293,7 +2179,6 @@ function renderDetailedSimCard() {
                         </div>
                         <div class="sim-item-body" style="font-size:0.85rem; line-height:1.4;">
                             <div style="margin-bottom:2px;">${desc}</div>
-                            <div style="font-size:0.75rem; color:#94a3b8;">${subText}</div>
                         </div>
                     </div>`;
             });
@@ -2429,13 +2314,6 @@ function renderDetailedSimCard() {
                     desc = isBest ? `<strong>가장 합격 상승에 유리합니다.</strong>` : `점수 상승으로 합격 가능성이 높아집니다.`;
                 }
 
-                // 부호 및 텍스트 렌더링 개선 (양수면 +, 음수면 - 출력)
-                let subText = '';
-                if (Math.abs(info.diff) >= 0.01) {
-                     const sign = info.diff > 0 ? '+' : '';
-                     subText = `(${sign}${info.diff.toFixed(2)}점)`;
-                }
-            
             subjectsHTML += `
                 <div class="sim-item ${isBest ? 'best-pick' : ''}" style="display:flex; flex-direction:column; justify-content:flex-start; height:100%;">
                     <div class="sim-item-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:8px;">
@@ -2444,7 +2322,6 @@ function renderDetailedSimCard() {
                     </div>
                     <div class="sim-item-body" style="flex:1;">
                         <div style="font-size:0.9rem; color:#475569; margin-bottom:4px;">${desc}</div>
-                        <div style="font-size:0.75rem; color:#94a3b8;">${subText}</div>
                     </div>
                 </div>
             `;
