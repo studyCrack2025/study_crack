@@ -1869,7 +1869,7 @@ function App() {
            </div>
            <div class="ob-gauge-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
            <p class="sub"><b>현재 → 합격권 진입 구간</b></p>
-         </button></div>`).join('')}</div></div><div class="possible-univ-nav"><button type="button" data-action="slidePrev">‹</button><div class="possible-univ-dots"><button data-action="slideTo" data-slide-index="0" class="active"></button><button data-action="slideTo" data-slide-index="1"></button><button data-action="slideTo" data-slide-index="2"></button></div><button type="button" data-action="slideNext">›</button></div>
+         </button></div>`).join('')}</div></div><div class="possible-univ-nav"><button type="button" data-action="slidePrev">‹</button><div class="possible-univ-dots slider-indicator"><button data-action="slideTo" data-slide-index="0" class="active slider-dot"></button><button data-action="slideTo" data-slide-index="1" class="slider-dot"></button><button data-action="slideTo" data-slide-index="2" class="slider-dot"></button></div><button type="button" data-action="slideNext">›</button></div>
        </div></div>
        </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button type="button" class="cta-button" data-action="startStandard">Standard로 시작하기</button><button type="button" class="auth-link-btn" data-action="completeOnboarding">홈으로 이동</button></div></div>`,
       false
@@ -2057,7 +2057,7 @@ function App() {
               </div>
               <div class="ob-gauge-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
               <p class="sub"><b>현재 → 합격권 진입 구간</b></p>
-            </button></div>`).join('')}</div></div><div class="possible-univ-nav"><button type="button" data-action="slidePrev">‹</button><div class="possible-univ-dots"><button data-action="slideTo" data-slide-index="0" class="active"></button><button data-action="slideTo" data-slide-index="1"></button><button data-action="slideTo" data-slide-index="2"></button></div><button type="button" data-action="slideNext">›</button></div>
+            </button></div>`).join('')}</div></div><div class="possible-univ-nav"><button type="button" data-action="slidePrev">‹</button><div class="possible-univ-dots slider-indicator"><button data-action="slideTo" data-slide-index="0" class="active slider-dot"></button><button data-action="slideTo" data-slide-index="1" class="slider-dot"></button><button data-action="slideTo" data-slide-index="2" class="slider-dot"></button></div><button type="button" data-action="slideNext">›</button></div>
           </div>
 
           <div class="card analysis-v2-cta sticky"><p class="analysis-cta-lead">지금 시작하면 평균 2개월 단축됩니다</p><button class="btn analysis-convert-btn" data-action="startStandard">합격까지 필요한 전략 보기</button><p class="analysis-cta-sub">MBTI 다운로드만 유지</p></div>
@@ -2323,8 +2323,8 @@ function App() {
     if (!track || !total) return;
     const idx = Math.max(0, Math.min(nextIndex, total - 1));
     slider.dataset.slideIndex = String(idx);
-    track.style.transform = `translateX(-${idx * 100}%)`;
-    slider.parentElement?.querySelectorAll('.possible-univ-dots [data-action="slideTo"]').forEach((dot, i) => {
+    track.style.transform = `translateX(calc(-${idx} * 55%))`;
+    slider.parentElement?.querySelectorAll('.slider-indicator [data-action="slideTo"]').forEach((dot, i) => {
       dot.classList.toggle('active', i === idx);
     });
   };
