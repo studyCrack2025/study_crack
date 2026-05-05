@@ -1571,7 +1571,6 @@ function App() {
     <div class="home-content">
     <div class="home-header">
       <div class="home-top-icons">
-        <button class="pro-top-btn" data-action="goto" data-target="proElite"><span>PRO LOUNGE 입장</span></button>
         <button class="top-icon-btn" data-action="openNotificationModal">${i('bell', false)}</button>
       </div>
       <div class="home-greeting-bubble">
@@ -1595,6 +1594,7 @@ function App() {
         </button>`).join('')}<button class="university-card-slide university-card card slider-card home-add-univ-card" data-action="openAnalysisSearchFromHome"><b>+ 대학 추가</b><p>추천/검색으로 추가</p></button></div>
       </div>
       <div class="home-kpi-indicator card-indicator">${[...homeTargets, { add: true }].map((_, idx) => `<i class="${idx===homeSlideIndex?'active':''}" data-action="setHomeSlide" data-slide-index="${idx}"></i>`).join('')}</div>
+      <button class="pro-top-btn home-pro-below-card-btn" data-action="goto" data-target="proElite"><span>PRO LOUNGE 입장</span></button>
       ${universityModalOpen ? `<div class="home-modal-overlay" data-action="closeUniversityModal"><div class="home-modal" data-action="noopModal"><div class="analysis-search-head"><h4>희망 대학 선택</h4><button data-action="closeUniversityModal">✕</button></div><input class="planner-input" data-field="analysisSearchTerm" value="${analysisSearchTerm}" placeholder="대학명 또는 학과명을 검색하세요"/><div class="analysis-search-section recommend"><p>현재 성적 기준 추천</p><div class="analysis-search-rec-grid">${analysisRecommended.map((name) => `<button class="analysis-rec-card" data-action="addAnalysisTarget" data-target-major="${name}"><div><strong>${name}</strong><span class="badge">추천</span></div><em>${analysisTargetList.includes(name)?'추가됨':'선택'}</em></button>`).join('')}</div></div><div class="analysis-search-section"><p>검색 결과</p>${analysisSearchList.map((name) => `<button class="analysis-search-row" data-action="addAnalysisTarget" data-target-major="${name}">${name}<span>${analysisTargetList.includes(name)?'추가됨':'추가'}</span></button>`).join('')}</div></div></div>` : ''}
     </div>
     <div class="section home-section home-section-last">
@@ -1869,14 +1869,18 @@ function App() {
     .home-insight-card{border:1px solid #E2E8F0;border-radius:20px;box-shadow:0 8px 20px rgba(15,23,42,.05);padding:16px;}
     .home-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
     .home-mini-badge{font-size:11px;font-weight:700;color:#1D4ED8;background:#DBEAFE;border-radius:999px;padding:4px 8px;}
-    .home-top-icons{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+    .home-top-icons{display:flex;justify-content:flex-end;align-items:center;margin-bottom:2px;}
+    .home-greeting-bubble{margin-top:-12px;}
+    .home-greeting-cracky{transform:translateY(-10px);}
+    .home-greeting-speech{transform:translateY(-10px);}
     .pro-top-btn{
-      width:190px;height:42px;border:none;border-radius:16px;position:relative;overflow:hidden;
-      background:linear-gradient(135deg,#0F172A 0%,#1E293B 45%,#475569 100%);
-      box-shadow:0 8px 20px rgba(15,23,42,.25), inset 0 1px 0 rgba(255,255,255,.22);
+      width:100%;height:63px;border:none;border-radius:16px;position:relative;overflow:hidden;
+      background:linear-gradient(135deg,#2B145C 0%,#4C1D95 42%,#7C3AED 100%);
+      box-shadow:0 12px 26px rgba(49,18,92,.36), inset 0 1px 0 rgba(255,255,255,.26);
       color:#F8FAFC;font-weight:700;letter-spacing:0;font-size:15px;font-family:'Pretendard',system-ui;white-space:nowrap;
     }
     .pro-top-btn:before{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,.35) 35%,transparent 60%);transform:translateX(-120%);animation:proShine 3.4s ease-in-out infinite;}
+    .home-pro-below-card-btn{margin:10px 0 0;display:flex;align-items:center;justify-content:center;}
     @keyframes proShine{0%{transform:translateX(-120%);}45%,100%{transform:translateX(120%);}}
     .pro-notif-modal .pro-notif-list{display:grid;gap:10px;margin:10px 0 14px;}
     .pro-notif-modal .pro-notif-list > div{padding:10px;border:1px solid #E2E8F0;border-radius:12px;background:#F8FAFC;}
