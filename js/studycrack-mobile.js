@@ -161,6 +161,58 @@ function App() {
   const [signupPhoneCodeSent, setSignupPhoneCodeSent] = useState(false);
   const [signupEmailCode, setSignupEmailCode] = useState('');
   const [signupPhoneCode, setSignupPhoneCode] = useState('');
+
+  const [openTermsType, setOpenTermsType] = useState('');
+  const termsContentMap = {
+    standard: { title: '스터디크랙 이용약관', body: `제 1 장 총 칙
+제 1 조【 목 적 】
+1. 회원규칙은 공정거래법 및 기타 전기통신사업법 및 동법 시행령에 의하여 (주)스터디크랙(이하 "회사"라 한다)가 제공하는 스터디크랙에서 운영하는 모든 서비스(이하 "서비스 "라 한다)의 이용조건, 절차 그리고 회원규칙에 관한 사항을 규정함을 목적으로 합니다.
+제 2 조【 공지 및 적용 】
+1. 이 규정의 내용은 서비스 화면에 게시하거나 기타의 방법으로 회원에게 공지함으로써 효력을 발생합니다.
+2. 회사는 이 규정을 변경할 수 있으며, 변경된 규정은 제1항과 같은 방법으로 공지함으로 써 효력을 발생합니다.
+...
+제13조【 관할법원 】
+1. 요금 등 서비스 이용으로 발생한 분쟁에 대해 소송이 제기될 경우 회사의 본사 소재지를 관할하는 법원을 관할법원으로 합니다.` },
+    privacy: { title: '개인정보 처리방침', body: `스터디크랙은 「개인정보 보호법」에 따라 이용자의 개인정보를 보호하고,
+관련 법령을 준수하여 개인정보를 처리합니다.
+1. 수집하는 개인정보 항목
+- 필수 항목: 이름, 연락처, 학년, 성적 정보, 계열, 희망 대학
+- 선택 항목: 학습 성향, 목표 대학, 상담 참고 정보
+...
+10. 개인정보 보호 책임자
+- 책임자: 임태륭
+- 문의처: contact@studycrack.co.kr` },
+    service: { title: '서비스 이용약관', body: `제1조 (서비스 성격)
+스터디크랙은 수험생의 성적, 지원 성향, 대학별 전형 구조 및 공개된 입시 자료를 기반으로 입시 전략 및 학습 방향에 대한 분석과 자문을 제공하는 컨설팅 서비스입니다.
+본 서비스는 합격을 보장하거나 특정 결과를 약속하는 서비스가 아닙니다.
+...
+제4조 (결과 책임)
+구독 서비스에서 제공되는 정보는 참고용이며,
+입시 결과 및 의사결정에 대한 책임은 이용자 본인에게 있습니다.` },
+    refund: { title: '환불규정', body: `스터디크랙은 맞춤형 분석 및 컨설팅 서비스 특성상
+아래와 같은 환불 규정을 적용합니다.
+1. 분석 착수 전
+- 결제 완료 후 분석 착수 이전에 환불을 요청한 경우: 전액 환불
+...
+5. 예외 사항
+- 스터디크랙의 귀책 사유로 인해
+서비스 제공이 불가능하거나 중대한 하자가 발생한 경우에는
+관련 법령에 따라 환불이 이루어질 수 있습니다.` },
+    marketing: { title: '마케팅 수신 정보 동의', body: `“스터디크랙”(이하 “회사”)는 「정보통신망 이용촉진 및 정보보호 등에 관한 법률」 및 「개인정보 보호법」 등 관계 법령에 따라 광고성 정보를 전송하기 위해 이용자의 사전 동의를 받고 있습니다.
+
+1. 목적 
+- 이메일 및 문자(SMS/LMS)를 통한 광고성 정보 전송 
+- 스터디크랙 서비스, 이벤트, 혜택, 맞춤 입시 전략 및 합격 사례 안내 
+
+2. 이용 항목 
+- 휴대폰번호, 이메일주소 
+
+3. 보유 및 이용 기간 
+- 회원 탈퇴 또는 동의 철회 시까지 
+
+※ 본 동의는 선택 사항이며, 동의하지 않아도 서비스 이용에는 제한이 없습니다. 
+※ 이용자는 언제든지 수신 거부를 할 수 있습니다.` }
+  };
   const [signupEmailTimerSeconds, setSignupEmailTimerSeconds] = useState(0);
   const [signupPhoneTimerSeconds, setSignupPhoneTimerSeconds] = useState(0);
   const [mbtiModalOpen, setMbtiModalOpen] = useState(false);
@@ -1952,7 +2004,7 @@ function App() {
       <div class="signup-section"><p class="section-title">1 / 3 계정 정보</p><div class="section-divider"></div><label class="auth-label">이메일(아이디)</label><div class="input-row signup-input-row"><input class="input" data-field="signupEmail" value="${signupEmail}" placeholder="example@email.com" /><button class="input-btn" data-action="verifySignupEmail">${signupEmailSending ? '전송 중...' : (signupEmailCodeSent ? '재전송' : '인증번호 받기')}</button></div>${signupEmailCodeSent ? `<div class="verify-box"><p>이메일로 인증번호를 보냈습니다.</p><div class="verify-row"><input class="input" data-field="signupEmailCode" value="${signupEmailCode}" placeholder="인증코드 6자리" /><b>${formatSignupTimer(signupEmailTimerSeconds)}</b><button class="input-btn verify-confirm-btn" data-action="confirmSignupEmailCode">확인</button></div>${signupEmailTimerSeconds===0?'<small>인증 시간이 만료되었습니다. 재전송해주세요.</small>':''}<small>이메일이 오지 않는다면 스팸 메일함을 먼저 확인해주세요.</small><small>그래도 도착하지 않는다면 contact@studycrack.co.kr로 문의 부탁드립니다.</small></div>` : ''}<label class="auth-label">비밀번호</label><input class="input" data-field="signupPassword" value="${signupPassword}" type="password" placeholder="영문 대/소문자, 숫자, 특수문자 포함 8자 이상" /><label class="auth-label">비밀번호 확인</label><input class="input" data-field="signupPasswordConfirm" value="${signupPasswordConfirm}" type="password" placeholder="비밀번호 재입력" />${signupPasswordConfirm ? `<p class="pw-match ${signupPasswordValid ? 'ok' : 'bad'}">${signupPasswordValid ? '비밀번호가 일치합니다.' : '비밀번호가 일치하지 않습니다.'}</p>` : ''}</div>
       <div class="signup-section"><p class="section-title">2 / 3 개인 정보</p><div class="section-divider"></div><label class="auth-label">이름(실명)</label><input class="input" data-field="signupName" value="${signupName}" placeholder="이름 입력" /><div class="grid-2 signup-personal-grid"><div><label class="auth-label">성별</label><div class="radio-group gender-row"><label class="radio-item"><input type="radio" name="signupGender" data-action="setSignupGender" data-gender="female" ${signupGender==='female'?'checked':''}/>여성</label><label class="radio-item"><input type="radio" name="signupGender" data-action="setSignupGender" data-gender="male" ${signupGender==='male'?'checked':''}/>남성</label></div></div><div><label class="auth-label">생년월일</label><input class="input" type="date" data-field="signupBirth" value="${signupBirth}" placeholder="생년월일 선택" /></div></div><label class="auth-label">전화번호</label><div class="input-row signup-input-row"><input class="input" data-field="signupPhone" value="${signupPhone}" placeholder="- 없이 입력해주세요" /><button class="input-btn" data-action="verifySignupPhone">${signupPhoneSending ? '전송 중...' : (signupPhoneCodeSent ? '재전송' : '인증번호 전송')}</button></div>${signupPhoneCodeSent ? `<div class="verify-box"><p>문자로 인증번호를 보냈습니다.</p><div class="verify-row"><input class="input" data-field="signupPhoneCode" value="${signupPhoneCode}" placeholder="인증코드 6자리" /><b>${formatSignupTimer(signupPhoneTimerSeconds)}</b><button class="input-btn verify-confirm-btn" data-action="confirmSignupPhoneCode">확인</button></div>${signupPhoneTimerSeconds===0?'<small>인증 시간이 만료되었습니다. 재전송해주세요.</small>':''}</div>` : ''}</div>
       <div class="signup-section"><p class="section-title">3 / 3 세부 정보</p><div class="section-divider"></div><label class="auth-label">희망 계열</label><div class="radio-group signup-radio-grid"><label class="radio-item signup-radio-item"><input type="radio" name="track"/>의치한약계열</label><label class="radio-item signup-radio-item"><input type="radio" name="track"/>자연/공학계열</label><label class="radio-item signup-radio-item"><input type="radio" name="track"/>상경계열</label><label class="radio-item signup-radio-item"><input type="radio" name="track"/>어문/사회계열</label><label class="radio-item signup-radio-item"><input type="radio" name="track"/>예체능</label><label class="radio-item signup-radio-item"><input type="radio" name="track"/>기타</label></div><label class="auth-label">유입 경로</label><div class="radio-group signup-radio-grid"><label class="radio-item signup-radio-item"><input type="radio" name="source"/>인스타그램</label><label class="radio-item signup-radio-item"><input type="radio" name="source"/>스레드</label><label class="radio-item signup-radio-item"><input type="radio" name="source"/>오르비</label><label class="radio-item signup-radio-item"><input type="radio" name="source"/>기타</label></div><label class="auth-label">프로모션 코드(선택)</label><input class="input" placeholder="프로모션 코드 입력" /></div>
-      <div class="terms-card"><div class="terms-header"><input type="checkbox" data-action="toggleSignupTermsAll" ${signupTermsAll?'checked':''}/><span>약관 전체 동의</span></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" ${signupTermsRequired?'checked':''}/> (필수) 표준이용약관 동의</label><button class="terms-link" data-action="goto" data-target="termsScreen">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" ${signupTermsRequired?'checked':''}/> (필수) 서비스 이용약관 조항 동의</label><button class="terms-link" data-action="goto" data-target="termsScreen">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" ${signupTermsRequired?'checked':''}/> (필수) 개인정보 처리방침 동의</label><button class="terms-link" data-action="goto" data-target="termsScreen">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" ${signupTermsRequired?'checked':''}/> (필수) 환불 규정 동의</label><button class="terms-link" data-action="goto" data-target="termsScreen">전문보기</button></div><div class="terms-item"><label><input type="checkbox"/> (선택) 마케팅 정보 수신 동의</label><button class="terms-link" data-action="goto" data-target="termsScreen">전문보기</button></div></div>
+      <div class="terms-card"><div class="terms-header"><input type="checkbox" data-action="toggleSignupTermsAll" ${signupTermsAll?'checked':''}/><span>약관 전체 동의</span></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" ${signupTermsRequired?'checked':''}/> (필수) 표준이용약관 동의</label><button class="terms-link" data-action="openTermsModal" data-terms-type="standard">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" ${signupTermsRequired?'checked':''}/> (필수) 서비스 이용약관 조항 동의</label><button class="terms-link" data-action="openTermsModal" data-terms-type="service">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" ${signupTermsRequired?'checked':''}/> (필수) 개인정보 처리방침 동의</label><button class="terms-link" data-action="openTermsModal" data-terms-type="privacy">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" ${signupTermsRequired?'checked':''}/> (필수) 환불 규정 동의</label><button class="terms-link" data-action="openTermsModal" data-terms-type="refund">전문보기</button></div><div class="terms-item"><label><input type="checkbox"/> (선택) 마케팅 정보 수신 동의</label><button class="terms-link" data-action="openTermsModal" data-terms-type="marketing">전문보기</button></div></div>${openTermsType ? `<div class="terms-modal-backdrop" data-action="closeTermsModal"><div class="terms-modal" data-action="noopModal"><button class="terms-modal-close" data-action="closeTermsModal">×</button><p class="terms-modal-title">${termsContentMap[openTermsType]?.title || ''}</p><div class="terms-modal-body">${termsContentMap[openTermsType]?.body || ''}</div></div></div>` : ''}
       <button class="signup-submit signup-submit-btn ${signupSubmitEnabled ? 'active' : 'disabled'}" data-action="signupSuccess" ${signupSubmitEnabled ? '' : 'disabled'}>${signupSubmitEnabled ? '회원가입 완료' : '이메일/전화번호 인증을 완료해주세요'}</button>
       <p class="signup-login-link">이미 계정이 있으신가요? <button class="auth-link-btn" data-action="goto" data-target="authLogin">로그인</button></p>
     </div>
@@ -2745,6 +2797,14 @@ function App() {
         setSignupTermsRequired(next);
         return next;
       });
+      return;
+    }
+    if (action === 'openTermsModal') {
+      setOpenTermsType(actionEl.getAttribute('data-terms-type') || '');
+      return;
+    }
+    if (action === 'closeTermsModal') {
+      setOpenTermsType('');
       return;
     }
     if (action === 'toggleSignupTermsRequired') {

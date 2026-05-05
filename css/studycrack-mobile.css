@@ -1103,6 +1103,11 @@ body {
 .signup-submit.disabled { background:#E5E7EB; color:#9CA3AF; }
 .signup-submit.active { background:linear-gradient(90deg,#2563EB,#7C3AED); color:#fff; }
 .signup-login-link { margin:18px 0 0; text-align:center; font-size:14px; color:#6B7280; }
+.terms-modal-backdrop { position:fixed; inset:0; z-index:9999; background:rgba(15,23,42,.45); display:flex; align-items:center; justify-content:center; padding:24px 20px; }
+.terms-modal { width:min(100%,420px); max-height:82dvh; background:#fff; border-radius:24px; padding:24px; box-shadow:0 24px 60px rgba(15,23,42,.25); }
+.terms-modal-close { width:36px; height:36px; font-size:32px; color:#94A3B8; background:transparent; border:0; }
+.terms-modal-title { font-size:24px; font-weight:800; margin:14px 0 18px; }
+.terms-modal-body { max-height:58dvh; overflow-y:auto; background:#F8FAFC; border:1px solid #CBD5E1; border-radius:14px; padding:16px; white-space:pre-wrap; line-height:1.65; font-size:15px; color:#334155; -webkit-overflow-scrolling:touch; }
 @media (max-width: 390px) { .signup-input-row { grid-template-columns:minmax(0,1fr) 124px; } }
 @media (min-width: 430px) { .signup-radio-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
 
