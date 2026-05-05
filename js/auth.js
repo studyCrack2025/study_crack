@@ -755,7 +755,12 @@ function clearClientSession() {
 }
 
 function checkLoginStatus() {
-    const isLoggedIn = !!(getAccessToken() || getIdToken() || localStorage.getItem('userId'));
+    const isAnalysisPreview = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname) && window.location.pathname.includes('analysis') && new URLSearchParams(window.location.search).get('devPreview') === '1';
+    if (isAnalysisPreview) {
+        localStorage.setItem('userId', 'local-analysis-preview');
+        localStorage.setItem('userRole', 'student');
+    }
+    const isLoggedIn = isAnalysisPreview || !!(getAccessToken() || getIdToken() || localStorage.getItem('userId'));
     const userRole = localStorage.getItem('userRole');
 
     const loginBtn = document.getElementById('loginBtn');
@@ -782,7 +787,7 @@ function checkLoginStatus() {
         }
     }
 
-    if (isLoggedIn) {
+    if (isLoggedIn && !isAnalysisPreview) {
         // 💡 [핵심] 조용히 백그라운드에서 신분(Role)을 재확인
         resolveUserIdentity('none');
     }
