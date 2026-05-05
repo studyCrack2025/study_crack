@@ -2696,8 +2696,8 @@ input:focus, select:focus, textarea:focus,
 .possible-univ-card{flex:0 0 85%;max-width:85%;margin-right:0;padding:0 6px;box-sizing:border-box;min-width:0;}
 .possible-univ-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;}
 .possible-univ-nav > button{width:30px;height:30px;border-radius:999px;border:1px solid #dbe4f4;background:#fff;color:#334155;}
-.possible-univ-dots,.slider-indicator{display:flex;justify-content:center;gap:6px;align-items:center;flex:1;margin-top:12px;}
-.possible-univ-dots button,.slider-dot{width:6px;height:6px;border-radius:50%;border:none;background:#D1D5DB;padding:0;transition:all .25s ease;}
+.possible-univ-dots,.slider-indicator{display:flex;justify-content:center;align-items:center;gap:6px;flex:1;margin-top:12px;}
+.possible-univ-dots button,.slider-dot{width:6px;height:6px;border-radius:50%;border:none;background:#D1D5DB;padding:4px;transition:all .2s ease;box-sizing:content-box;}
 .possible-univ-dots button.active,.slider-dot.active{background:#2563EB;transform:scale(1.2);}
 
 .analysis,
