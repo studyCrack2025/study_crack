@@ -155,6 +155,12 @@ function App() {
   const [signupPhoneVerified, setSignupPhoneVerified] = useState(false);
   const [signupTermsAll, setSignupTermsAll] = useState(false);
   const [signupTermsRequired, setSignupTermsRequired] = useState(false);
+  const [signupEmailSending, setSignupEmailSending] = useState(false);
+  const [signupPhoneSending, setSignupPhoneSending] = useState(false);
+  const [signupEmailCodeSent, setSignupEmailCodeSent] = useState(false);
+  const [signupPhoneCodeSent, setSignupPhoneCodeSent] = useState(false);
+  const [signupEmailCode, setSignupEmailCode] = useState('');
+  const [signupPhoneCode, setSignupPhoneCode] = useState('');
   const [mbtiModalOpen, setMbtiModalOpen] = useState(false);
   const [mbtiAnswers, setMbtiAnswers] = useState({ q1: '', q2: '', q3: '', q4: '' });
   const [mbtiResult, setMbtiResult] = useState('');
@@ -1931,8 +1937,8 @@ function App() {
     authSignup: layout(appbar('회원가입', true) + `<div class="signup-page"><div class="signup-form-card">
       <div class="auth-logo-wrap compact signup-logo"><img src="${STUDYCRACK_LOGO_SRC}" class="auth-logo" alt="StudyCrack Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" /><span class="auth-logo-fallback">StudyCrack</span></div>
       <p class="signup-title">회원가입</p>
-      <div class="signup-section"><p class="section-title">1. 계정 정보</p><div class="section-divider"></div><label class="auth-label">이메일(아이디)</label><div class="input-row signup-input-row"><input class="input" data-field="signupEmail" value="${signupEmail}" placeholder="example@email.com" /><button class="input-btn" data-action="verifySignupEmail">인증번호 받기</button></div><label class="auth-label">비밀번호</label><input class="input" data-field="signupPassword" value="${signupPassword}" type="password" placeholder="영문 대/소문자, 숫자, 특수문자 포함 8자 이상" /><label class="auth-label">비밀번호 확인</label><input class="input" data-field="signupPasswordConfirm" value="${signupPasswordConfirm}" type="password" placeholder="비밀번호 재입력" /></div>
-      <div class="signup-section"><p class="section-title">2. 개인 정보</p><div class="section-divider"></div><label class="auth-label">이름(실명)</label><input class="input" data-field="signupName" value="${signupName}" placeholder="이름 입력" /><div class="grid-2 signup-personal-grid"><div class="radio-group gender-row"><label class="radio-item"><input type="radio" name="signupGender" data-action="setSignupGender" data-gender="female" ${signupGender==='female'?'checked':''}/>여성</label><label class="radio-item"><input type="radio" name="signupGender" data-action="setSignupGender" data-gender="male" ${signupGender==='male'?'checked':''}/>남성</label></div><input class="input" data-field="signupBirth" value="${signupBirth}" placeholder="생년월일 8자리" /></div><label class="auth-label">전화번호</label><div class="input-row signup-input-row"><input class="input" data-field="signupPhone" value="${signupPhone}" placeholder="- 없이 입력해주세요" /><button class="input-btn" data-action="verifySignupPhone">인증번호 전송</button></div></div>
+      <div class="signup-section"><p class="section-title">1. 계정 정보</p><div class="section-divider"></div><label class="auth-label">이메일(아이디)</label><div class="input-row signup-input-row"><input class="input" data-field="signupEmail" value="${signupEmail}" placeholder="example@email.com" /><button class="input-btn" data-action="verifySignupEmail">${signupEmailSending ? '전송 중...' : (signupEmailCodeSent ? '재전송' : '인증번호 받기')}</button></div>${signupEmailCodeSent ? `<div class="verify-box"><p>이메일로 인증번호를 보냈습니다.</p><div class="verify-row"><input class="input" data-field="signupEmailCode" value="${signupEmailCode}" placeholder="인증코드 6자리" /><b>05:00</b><button class="input-btn verify-confirm-btn" data-action="confirmSignupEmailCode">확인</button></div><small>이메일이 오지 않는다면 스팸 메일함을 먼저 확인해주세요.</small><small>그래도 도착하지 않는다면 contact@studycrack.co.kr로 문의 부탁드립니다.</small></div>` : ''}<label class="auth-label">비밀번호</label><input class="input" data-field="signupPassword" value="${signupPassword}" type="password" placeholder="영문 대/소문자, 숫자, 특수문자 포함 8자 이상" /><label class="auth-label">비밀번호 확인</label><input class="input" data-field="signupPasswordConfirm" value="${signupPasswordConfirm}" type="password" placeholder="비밀번호 재입력" />${signupPasswordConfirm ? `<p class="pw-match ${signupPasswordValid ? 'ok' : 'bad'}">${signupPasswordValid ? '비밀번호가 일치합니다.' : '비밀번호가 일치하지 않습니다.'}</p>` : ''}</div>
+      <div class="signup-section"><p class="section-title">2. 개인 정보</p><div class="section-divider"></div><label class="auth-label">이름(실명)</label><input class="input" data-field="signupName" value="${signupName}" placeholder="이름 입력" /><div class="grid-2 signup-personal-grid"><div class="radio-group gender-row"><label class="radio-item"><input type="radio" name="signupGender" data-action="setSignupGender" data-gender="female" ${signupGender==='female'?'checked':''}/>여성</label><label class="radio-item"><input type="radio" name="signupGender" data-action="setSignupGender" data-gender="male" ${signupGender==='male'?'checked':''}/>남성</label></div><input class="input" type="date" data-field="signupBirth" value="${signupBirth}" placeholder="생년월일 8자리" /></div><label class="auth-label">전화번호</label><div class="input-row signup-input-row"><input class="input" data-field="signupPhone" value="${signupPhone}" placeholder="- 없이 입력해주세요" /><button class="input-btn" data-action="verifySignupPhone">${signupPhoneSending ? '전송 중...' : (signupPhoneCodeSent ? '재전송' : '인증번호 전송')}</button></div>${signupPhoneCodeSent ? `<div class="verify-box"><p>문자로 인증번호를 보냈습니다.</p><div class="verify-row"><input class="input" data-field="signupPhoneCode" value="${signupPhoneCode}" placeholder="인증코드 6자리" /><b>03:00</b><button class="input-btn verify-confirm-btn" data-action="confirmSignupPhoneCode">확인</button></div></div>` : ''}</div>
       <div class="signup-section"><p class="section-title">3. 세부 정보</p><div class="section-divider"></div><label class="auth-label">희망 계열</label><div class="radio-group signup-radio-grid"><label class="radio-item signup-radio-item"><input type="radio" name="track"/>의치한약계열</label><label class="radio-item signup-radio-item"><input type="radio" name="track"/>자연/공학계열</label><label class="radio-item signup-radio-item"><input type="radio" name="track"/>상경계열</label><label class="radio-item signup-radio-item"><input type="radio" name="track"/>어문/사회계열</label><label class="radio-item signup-radio-item"><input type="radio" name="track"/>예체능</label><label class="radio-item signup-radio-item"><input type="radio" name="track"/>기타</label></div><label class="auth-label">유입 경로</label><div class="radio-group signup-radio-grid"><label class="radio-item signup-radio-item"><input type="radio" name="source"/>인스타그램</label><label class="radio-item signup-radio-item"><input type="radio" name="source"/>스레드</label><label class="radio-item signup-radio-item"><input type="radio" name="source"/>오르비</label><label class="radio-item signup-radio-item"><input type="radio" name="source"/>기타</label></div><label class="auth-label">프로모션 코드(선택)</label><input class="input" placeholder="프로모션 코드 입력" /></div>
       <div class="terms-card"><div class="terms-header"><input type="checkbox" data-action="toggleSignupTermsAll" ${signupTermsAll?'checked':''}/><span>약관 전체 동의</span></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" ${signupTermsRequired?'checked':''}/> (필수) 표준이용약관 동의</label><button class="terms-link" data-action="goto" data-target="termsScreen">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" ${signupTermsRequired?'checked':''}/> (필수) 서비스 이용약관 조항 동의</label><button class="terms-link" data-action="goto" data-target="termsScreen">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" ${signupTermsRequired?'checked':''}/> (필수) 개인정보 처리방침 동의</label><button class="terms-link" data-action="goto" data-target="termsScreen">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" ${signupTermsRequired?'checked':''}/> (필수) 환불 규정 동의</label><button class="terms-link" data-action="goto" data-target="termsScreen">전문보기</button></div><div class="terms-item"><label><input type="checkbox"/> (선택) 마케팅 정보 수신 동의</label><button class="terms-link" data-action="goto" data-target="termsScreen">전문보기</button></div></div>
       <button class="signup-submit signup-submit-btn ${signupSubmitEnabled ? 'active' : 'disabled'}" data-action="signupSuccess" ${signupSubmitEnabled ? '' : 'disabled'}>${signupSubmitEnabled ? '회원가입 완료' : '이메일/전화번호 인증을 완료해주세요'}</button>
@@ -2684,11 +2690,31 @@ function App() {
       return;
     }
     if (action === 'verifySignupEmail') {
-      if (signupEmail) setSignupEmailVerified(true);
+      if (!signupEmail) { alert('이메일을 입력해주세요.'); return; }
+      setSignupEmailSending(true);
+      setTimeout(() => {
+        setSignupEmailSending(false);
+        setSignupEmailCodeSent(true);
+        alert('이메일로 인증번호가 발송되었습니다.');
+      }, 600);
       return;
     }
     if (action === 'verifySignupPhone') {
-      if (signupPhone) setSignupPhoneVerified(true);
+      if (!signupPhone) { alert('전화번호를 입력해주세요.'); return; }
+      setSignupPhoneSending(true);
+      setTimeout(() => {
+        setSignupPhoneSending(false);
+        setSignupPhoneCodeSent(true);
+        alert('인증번호가 발송되었습니다. 5분 이내에 입력해주세요.');
+      }, 600);
+      return;
+    }
+    if (action === 'confirmSignupEmailCode') {
+      if (signupEmailCode.length >= 4) setSignupEmailVerified(true);
+      return;
+    }
+    if (action === 'confirmSignupPhoneCode') {
+      if (signupPhoneCode.length >= 4) setSignupPhoneVerified(true);
       return;
     }
     if (action === 'setSignupGender') {
@@ -3743,6 +3769,8 @@ function App() {
     if (field === 'signupEmail') setSignupEmail(value);
     if (field === 'signupPhone') setSignupPhone(value);
     if (field === 'signupBirth') setSignupBirth(value);
+    if (field === 'signupEmailCode') setSignupEmailCode(value);
+    if (field === 'signupPhoneCode') setSignupPhoneCode(value);
     if (field === 'signupPassword') setSignupPassword(value);
     if (field === 'signupPasswordConfirm') setSignupPasswordConfirm(value);
     if (field === 'analysisSearchTerm') setAnalysisSearchTerm(value);
