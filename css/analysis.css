@@ -888,7 +888,7 @@ body { color: #2c2c2c; letter-spacing: -0.02em; word-break: keep-all; -webkit-fo
     #btnSaveTarget { width: 304px; height: 64px; display: block; margin: 42px auto 56px; padding: 0 20px; border-radius: 4px; background: #4c79ee; color: #fff; box-shadow: 20px 30px 40px rgba(69,69,69,.1); font-size: 19px; font-weight: 900; }
     .divider { margin: 0 0 56px; border: 0; border-top: 1px solid #cfcfcf; }
     .analysis-container { display: flex; flex-direction: column; gap: 20px; }
-    .analysis-card, .sim-result-card, .feedback-box { width: 100%; min-width: 0; margin: 0 0 20px; padding: 34px; border: 0; border-radius: 6px; background: #f9f9fb; box-shadow: 1px 1px 1px rgba(159,159,159,.18); }
+    .analysis-card, .sim-result-card, .feedback-box { width: 100%; min-width: 0; margin: 0 0 17px; padding: 29px; border: 0; border-radius: 6px; background: #f9f9fb; box-shadow: 1px 1px 1px rgba(159,159,159,.18); }
     .analysis-card:hover { transform: none; }
     .score-bar-bg { height: 26px; border-radius: 150px; background: #eaeaea; overflow: hidden; }
     .score-bar-fill { border-radius: 150px; box-shadow: 0 4px 4px rgba(0,0,0,.08); }

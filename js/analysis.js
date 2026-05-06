@@ -1563,24 +1563,24 @@ function renderAnalysisCard(res) {
 
     return `
         <div class="analysis-card">
-            <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
                 <span style="font-size:18px; font-weight:700; color:#30363e; flex-shrink:0;">${safeIdx}지망</span>
                 <span style="flex:1; font-size:20px; font-weight:600; letter-spacing:-.02em; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeUniv} <span style="font-size:16px; font-weight:400; color:#575757;">(${safeMajor})</span></span>
-                <span style="display:inline-flex; align-items:center; height:36px; padding:0 16px; border-radius:150px; font-size:13px; font-weight:800; color:#fff; background:${res.color}; flex-shrink:0; white-space:nowrap;">${safeStatus}</span>
+                <span style="display:inline-flex; align-items:center; height:31px; padding:0 14px; border-radius:150px; font-size:13px; font-weight:800; color:#fff; background:${res.color}; flex-shrink:0; white-space:nowrap;">${safeStatus}</span>
             </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <span style="font-size:15px; font-weight:600; color:#575757;">AI 환산 진단점수</span>
                 <span style="font-size:24px; font-weight:800; color:${res.color};">${safeScore}<span style="font-size:15px; font-weight:500; color:#575757; margin-left:2px;">점</span></span>
             </div>
             <div class="score-bar-bg">
                 <div class="score-bar-fill" style="height:100%; width:${barWidth}%; background:${res.color};"></div>
             </div>
-            <div style="display:flex; justify-content:space-between; font-size:12px; color:#94a3b8; margin:6px 0 8px;">
+            <div style="display:flex; justify-content:space-between; font-size:12px; color:#94a3b8; margin:5px 0 7px;">
                 <span>0</span><span>합격(100)</span><span>안정(150)</span><span>MAX(250)</span>
             </div>
-            <p style="font-size:14px; font-weight:600; color:${res.color}; text-align:right; margin:0 0 12px;">${safeMsg}</p>
-            <div style="background:#fff; border-radius:6px; padding:18px 24px; box-shadow:10px 20px 40px rgba(179,179,179,.1);">
-                <p style="font-size:15px; font-weight:700; color:#30363e; margin:0 0 8px 0;">#합격 전략 코멘트</p>
+            <p style="font-size:14px; font-weight:600; color:${res.color}; text-align:right; margin:0 0 10px;">${safeMsg}</p>
+            <div style="background:#fff; border-radius:6px; padding:15px 20px; box-shadow:10px 20px 40px rgba(179,179,179,.1);">
+                <p style="font-size:15px; font-weight:700; color:#30363e; margin:0 0 7px 0;">#합격 전략 코멘트</p>
                 <p style="font-size:15px; color:#30363e; line-height:1.75; margin:0;">${getSimpleAdvice(res.converted_score, res.status)}</p>
             </div>
         </div>`;
