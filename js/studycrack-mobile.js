@@ -954,6 +954,10 @@ function App() {
     window.__studycrackAppBooted = true;
   }, []);
 
+  // TODO_API_SCORE_SNAPSHOT_SAVE:
+  // localStorage key: scores
+  // expected: PUT /scores/snapshot
+  // API 전환 시 localStorage.setItem('scores', ...) 제거.
   useEffect(() => {
     localStorage.setItem('scores', JSON.stringify(scores));
   }, [scores]);
@@ -966,6 +970,10 @@ function App() {
     localStorage.setItem('plannerItems', JSON.stringify(plannerItems));
   }, [plannerItems]);
 
+  // TODO_API_NOTIFICATIONS_SAVE:
+  // localStorage key: notifications
+  // expected: GET /notifications, PATCH /notifications/{id}/read
+  // API 전환 시 localStorage.setItem('notifications', ...) 제거.
   useEffect(() => {
     localStorage.setItem('notifications', JSON.stringify(notifications));
   }, [notifications]);
@@ -978,6 +986,10 @@ function App() {
     localStorage.setItem('studyRecords', JSON.stringify(studyRecords));
   }, [studyRecords]);
 
+  // TODO_API_STUDY_SUBJECT_RECORDS_SAVE:
+  // localStorage key: studySubjectRecords
+  // expected: PUT /study/records/subjects
+  // API 전환 시 localStorage.setItem('studySubjectRecords', ...) 제거.
   useEffect(() => {
     localStorage.setItem('studySubjectRecords', JSON.stringify(studySubjectRecords));
   }, [studySubjectRecords]);
