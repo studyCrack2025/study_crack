@@ -380,6 +380,9 @@ function App() {
   const [studySubjectSheetOnlyPlanned, setStudySubjectSheetOnlyPlanned] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+  const [myProfileEditOpen, setMyProfileEditOpen] = useState(false);
+  const [myProfileNameDraft, setMyProfileNameDraft] = useState('');
+  const [myProfileTargetDraft, setMyProfileTargetDraft] = useState('');
   const [withdrawPassword, setWithdrawPassword] = useState('');
   const [plannerItems, setPlannerItems] = useState(DEFAULT_PLANNER_ITEMS);
   const [plannerEditIndex, setPlannerEditIndex] = useState(null);
@@ -2636,7 +2639,8 @@ function App() {
       true
     ),
     my: layout(appbar('마이페이지', false) + `<div class="my-stack">
-      <div class="card my-profile-card"><div class="my-profile-left"><div class="my-avatar">${i('user', false)}</div><div><p class="my-name">김지민</p><p class="sub">목표 대학: 연세대학교 경영학과</p></div></div><div class="my-profile-right"><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span><span class="badge">Pro 이용 중</span></div></div>
+      <button type="button" class="card my-profile-card" data-action="openMyProfileEdit"><div class="my-profile-left"><div class="my-avatar">${i('user', false)}</div><div><p class="my-name">${user?.name || DEFAULT_USER.name}</p><p class="sub">목표 대학: ${targetMajor || DEFAULT_USER.targetUniversity}</p></div></div><div class="my-profile-right"><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span><span class="badge">${selectedPlan || DEFAULT_USER.plan} 이용 중</span></div></button>
+      ${myProfileEditOpen ? `<div class="home-modal-overlay" data-action="closeMyProfileEdit"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">프로필 수정</p><input class="planner-input" data-field="myProfileNameDraft" value="${myProfileNameDraft}" placeholder="이름"/><select class="planner-input" data-field="myProfileTargetDraft">${(analysisTargetList || []).map((major) => `<option value="${major}" ${myProfileTargetDraft===major?'selected':''}>${major}</option>`).join('')}</select><div class="support-btns" style="margin-top:12px"><button class="btn btn-secondary" data-action="closeMyProfileEdit">취소</button><button class="btn btn-primary" data-action="saveMyProfileEdit">저장</button></div></div></div>` : ''}
       ${mbtiResult ? `<div class="card" style="border:2px solid #2563EB;background:#EFF6FF;"><p class="analysis-title">진단 결과 & MBTI 학습보고서</p><p style="margin:6px 0 2px;font-size:30px;font-weight:900;letter-spacing:.08em;color:#1D4ED8;text-shadow:0 6px 18px rgba(37,99,235,.18);">CSDR</p><p class="sub" style="margin:0 0 12px;font-size:12px;color:#1E40AF;">(컨셉형, 직관령, 분석형, 루틴)</p><button class="btn btn-primary" data-action="downloadMbtiReport">MBTI 학습 보고서 다운</button></div>` : ''}
       <div class="card my-subscription-card"><div class="my-sub-icon">${i('report', false)}</div><div><p class="my-sub-title">Pro 플랜 이용 중</p><p class="my-sub-date">다음 결제일 2024.06.14</p></div></div>
       <div class="card my-menu-card">
@@ -3256,10 +3260,19 @@ function App() {
       setTimeout(() => setAnalysisHighlightedSubject(''), 550);
     }
     if (action === 'simulateBarGain') {
+      e.preventDefault();
+      e.stopPropagation();
+      const y = window.scrollY || window.pageYOffset || 0;
       const major = actionEl.getAttribute('data-target-major');
       if (!major) return;
       setTargetMajor(major);
       setAnalysisBarProjectionTarget(major);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+        });
+      });
+      return;
     }
     if (action === 'addAnalysisTarget') {
       const major = actionEl.getAttribute('data-target-major');
@@ -3709,6 +3722,24 @@ function App() {
     }
     if (action === 'openLogoutModal') setLogoutModalOpen(true);
     if (action === 'closeLogoutModal') setLogoutModalOpen(false);
+    if (action === 'openMyProfileEdit') {
+      setMyProfileNameDraft(user?.name || DEFAULT_USER.name);
+      setMyProfileTargetDraft(targetMajor || analysisTargetList[0] || DEFAULT_USER.targetUniversity);
+      setMyProfileEditOpen(true);
+      return;
+    }
+    if (action === 'closeMyProfileEdit') {
+      setMyProfileEditOpen(false);
+      return;
+    }
+    if (action === 'saveMyProfileEdit') {
+      const nextName = (myProfileNameDraft || '').trim() || DEFAULT_USER.name;
+      const nextTarget = myProfileTargetDraft || targetMajor || DEFAULT_USER.targetUniversity;
+      setUser((prev) => ({ ...(prev || {}), name: nextName, targetUniversity: nextTarget }));
+      setTargetMajor(nextTarget);
+      setMyProfileEditOpen(false);
+      return;
+    }
     if (action === 'openWithdrawModal') setWithdrawModalOpen(true);
     if (action === 'closeWithdrawModal') {
       setWithdrawModalOpen(false);
@@ -3912,7 +3943,10 @@ function App() {
       return;
     }
     if (action === 'toggleStudyBreakdown') {
+      e.preventDefault();
+      e.stopPropagation();
       const y = window.scrollY || window.pageYOffset || 0;
+      markStableScrollPosition();
       if (isIOSSafari() && screen === 'home') {
         const list = document.querySelector('.home-breakdown-list');
         const toggleBtn = document.querySelector('.home-breakdown-toggle');
@@ -3939,10 +3973,20 @@ function App() {
           window.scrollTo({ top: y, left: 0, behavior: 'auto' });
         });
       });
+      return;
     }
     if (action === 'toggleBreakdownSubject') {
+      e.preventDefault();
+      e.stopPropagation();
+      const y = window.scrollY || window.pageYOffset || 0;
       const subject = actionEl.getAttribute('data-breakdown-subject') || '';
       setExpandedBreakdownSubject((prev) => (prev === subject ? '' : subject));
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+        });
+      });
+      return;
     }
     if (action === 'closeStudySubjectSheet') {
       if (!isOverlaySelfClick && actionEl.classList.contains('planner-sheet-overlay')) return;
@@ -4086,9 +4130,18 @@ function App() {
       togglePlannerState();
     }
     if (action === 'selectUniversity') {
+      e.preventDefault();
+      e.stopPropagation();
+      const y = window.scrollY || window.pageYOffset || 0;
       setTargetMajor(actionEl.getAttribute('data-target-major'));
       setTargetOpen(false);
       goto('analysis');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+        });
+      });
+      return;
     }
     if (action === 'addPlannerFromSheet') {
       const content = plannerContentRef.current.trim();
@@ -4148,6 +4201,8 @@ function App() {
     }
     if (field === 'coachingMonth') setCoachingMonth(e.target.value);
     if (field === 'proEliteMonth') setProEliteMonth(e.target.value);
+    if (field === 'myProfileNameDraft') setMyProfileNameDraft(e.target.value);
+    if (field === 'myProfileTargetDraft') setMyProfileTargetDraft(e.target.value);
     if (field === 'obTrack') {
       if (isIOSSafari() && isObSurveyScreen()) {
         e.target.dataset.pendingValue = e.target.value;
@@ -4465,6 +4520,10 @@ function App() {
       return;
     }
     const isV2eSelectField = field === 'v2e-english' || field === 'v2e-history' || field === 'v2e-inq1-subject' || field === 'v2e-inq2-subject';
+    if (field === 'myProfileTargetDraft') {
+      setMyProfileTargetDraft(e.target.value);
+      return;
+    }
     if (isIOSSafari() && scoreEditOpen && isV2eSelectField) {
       if (v2eSelectSyncTimerRef.current) clearTimeout(v2eSelectSyncTimerRef.current);
       v2eSelectSyncTimerRef.current = setTimeout(() => {
