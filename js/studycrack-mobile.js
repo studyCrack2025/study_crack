@@ -1317,52 +1317,26 @@ function App() {
   const updateSignupButtonState = () => {
     const btn = document.querySelector('[data-signup-submit]');
     if (!btn) return;
-    const canSubmit = isSignupValid();
+    const draft = window.__signupDraft || {};
+    const email = (document.querySelector('[data-field="signupEmail"]')?.value ?? draft.email ?? '').trim();
+    const phone = (document.querySelector('[data-field="signupPhone"]')?.value ?? draft.phone ?? '').trim();
+    const pw = document.querySelector('[data-field="signupPassword"]')?.value ?? draft.password ?? '';
+    const pwc = document.querySelector('[data-field="signupPasswordConfirm"]')?.value ?? draft.passwordConfirm ?? '';
+    const name = (document.querySelector('[data-field="signupName"]')?.value ?? draft.name ?? '').trim();
+    const birth = (document.querySelector('[data-field="signupBirth"]')?.value ?? draft.birth ?? '').trim();
+    const track = (document.querySelector('[data-field="signupTrack"]')?.value ?? draft.track ?? '').trim();
+    const source = (document.querySelector('[data-field="signupSource"]')?.value ?? draft.source ?? '').trim();
+    const gender = document.querySelector('input[name="signupGender"]:checked')?.getAttribute('data-gender') || draft.gender || '';
+    const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
+    const requiredChecked = requiredInputs.length === 4 && requiredInputs.every((el) => el.checked);
+    const pwRuleValid = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(pw);
+    const emailVerified = draft.emailVerified === true || signupEmailVerified;
+    const phoneVerified = draft.phoneVerified === true || signupPhoneVerified;
+    const canSubmit = !!email && emailVerified && pwRuleValid && pw === pwc && !!name && !!gender && !!birth && !!phone && phoneVerified && !!track && !!source && requiredChecked;
     btn.disabled = !canSubmit;
     btn.classList.toggle('active', canSubmit);
     btn.classList.toggle('disabled', !canSubmit);
     btn.textContent = canSubmit ? '회원가입 완료' : '이메일/전화번호 인증을 완료해주세요';
-  };
-  const isSignupValid = () => {
-    const draft = window.__signupDraft || {};
-    const email = (document.querySelector('[data-field="signupEmail"]')?.value ?? '').trim();
-    const phone = (document.querySelector('[data-field="signupPhone"]')?.value ?? '').trim();
-    const pw = document.querySelector('[data-field="signupPassword"]')?.value ?? '';
-    const pwc = document.querySelector('[data-field="signupPasswordConfirm"]')?.value ?? '';
-    const name = (document.querySelector('[data-field="signupName"]')?.value ?? '').trim();
-    const birth = (document.querySelector('[data-field="signupBirth"]')?.value ?? '').trim();
-    const track = (document.querySelector('[data-field="signupTrack"]')?.value ?? '').trim();
-    const source = (document.querySelector('[data-field="signupSource"]')?.value ?? '').trim();
-    const gender = document.querySelector('input[name="signupGender"]:checked')?.getAttribute('data-gender') || '';
-    const requiredTerms = Array.from(document.querySelectorAll('.terms-item input[data-action="toggleSignupTermsRequired"]'));
-    const termsOk = requiredTerms.length === 4 && requiredTerms.every((cb) => cb.checked);
-    const emailOk = draft.emailVerified === true || signupEmailVerified;
-    const phoneOk = draft.phoneVerified === true || signupPhoneVerified;
-    const pwRuleValid = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(pw);
-    const pwOk = !!pw && !!pwc && pw === pwc && pwRuleValid;
-    return !!email && !!phone && !!name && !!birth && !!track && !!source && !!gender && emailOk && phoneOk && termsOk && pwOk;
-  };
-  const syncTermsFromAll = (checked) => {
-    const items = document.querySelectorAll('.terms-item input[type="checkbox"]');
-    items.forEach((cb) => { cb.checked = checked; });
-  };
-  const preserveForm = () => {
-    const form = document.querySelector('#signupForm');
-    if (!form) return;
-    window.__formCache = Array.from(new FormData(form).entries());
-  };
-  const restoreForm = () => {
-    const form = document.querySelector('#signupForm');
-    const cache = window.__formCache;
-    if (!form || !Array.isArray(cache)) return;
-    const grouped = cache.reduce((acc, [k, v]) => { (acc[k] ||= []).push(v); return acc; }, {});
-    Object.entries(grouped).forEach(([k, values]) => {
-      const els = Array.from(form.querySelectorAll(`[name="${k}"]`));
-      els.forEach((el) => {
-        if (el.type === 'checkbox' || el.type === 'radio') el.checked = values.includes(el.value);
-        else el.value = values[0] ?? '';
-      });
-    });
   };
   const restoreSignupTermsScroll = (y) => {
     requestAnimationFrame(() => {
@@ -1393,7 +1367,7 @@ function App() {
     draft.gender = document.querySelector('input[name="signupGender"]:checked')?.getAttribute('data-gender') || draft.gender || signupGender;
     draft.termsAll = !!document.querySelector('[data-field="signupTermsAll"]')?.checked;
     draft.termsRequired = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]')).map((el) => !!el.checked);
-    draft.termsMarketing = !!document.querySelector('[name="signupTermsMarketing" data-field="signupTermsMarketing"]')?.checked;
+    draft.termsMarketing = !!document.querySelector('[data-field="signupTermsMarketing"]')?.checked;
     draft.scrollY = window.scrollY || window.pageYOffset || 0;
     window.__signupDraft = draft;
   };
@@ -1424,7 +1398,7 @@ function App() {
       Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]')).forEach((el, idx) => {
         if (Array.isArray(draft.termsRequired)) el.checked = !!draft.termsRequired[idx];
       });
-      const marketingInput = document.querySelector('[name="signupTermsMarketing" data-field="signupTermsMarketing"]');
+      const marketingInput = document.querySelector('[data-field="signupTermsMarketing"]');
       if (marketingInput) marketingInput.checked = !!draft.termsMarketing;
       updateSignupPasswordMatchUi();
       updateSignupButtonState();
@@ -1449,7 +1423,7 @@ function App() {
     const gender = genderEl?.getAttribute('data-gender') || signupGender;
     const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
     const requiredChecked = requiredInputs.length > 0 && requiredInputs.every((el) => el.checked);
-    const marketingChecked = !!document.querySelector('[name="signupTermsMarketing" data-field="signupTermsMarketing"]')?.checked;
+    const marketingChecked = !!document.querySelector('[data-field="signupTermsMarketing"]')?.checked;
     preserveSignupScroll(() => {
       if (email !== '') setSignupEmail(email);
       if (phone !== '') setSignupPhone(phone);
@@ -2359,15 +2333,15 @@ function App() {
         <button class="btn btn-primary auth-submit" data-action="goto" data-target="authLogin">재설정 링크 받기</button>
       </div>
     </div>`, false),
-    authSignup: layout(appbar('회원가입', true) + `<div class="signup-page"><form id="signupForm" class="signup-form-card">
+    authSignup: layout(appbar('회원가입', true) + `<div class="signup-page"><div class="signup-form-card">
       <div class="auth-logo-wrap compact signup-logo"><img src="${STUDYCRACK_LOGO_SRC}" class="auth-logo" alt="StudyCrack Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" /><span class="auth-logo-fallback">StudyCrack</span></div>
       <p class="signup-title">회원가입</p>
-      <div class="signup-section"><p class="section-title">1 / 3 계정 정보</p><div class="section-divider"></div><label class="auth-label">이메일(아이디)</label><div class="input-row signup-input-row"><input class="input" name="signupEmail" data-field="signupEmail" defaultValue="${signupEmail}" placeholder="example@email.com" /><button type="button" class="input-btn" data-action="verifySignupEmail">${signupEmailSending ? '전송 중...' : (signupEmailCodeSent ? '재전송' : '인증번호 받기')}</button></div>${signupEmailCodeSent ? `<div class="verify-box"><p>이메일로 인증번호를 보냈습니다.${signupEmailVerified ? ' ✅ 인증 완료' : ''}</p><div class="verify-row"><input class="input" name="signupEmailCode" data-field="signupEmailCode" defaultValue="${signupEmailCode}" placeholder="인증코드 6자리" maxlength="6" inputmode="numeric" /><b data-signup-timer="email">05:00</b><button type="button" class="input-btn verify-confirm-btn" data-action="confirmSignupEmailCode">확인</button></div><small data-signup-expire="email" style="display:none">인증 시간이 만료되었습니다. 재전송해주세요.</small><small>이메일이 오지 않는다면 스팸 메일함을 먼저 확인해주세요.</small><small>그래도 도착하지 않는다면 contact@studycrack.co.kr로 문의 부탁드립니다.</small></div>` : ''}<label class="auth-label">비밀번호</label><input class="input" name="signupPassword" data-field="signupPassword" defaultValue="${signupPassword}" type="password" placeholder="영문 대/소문자, 숫자, 특수문자 포함 8자 이상" /><small class="signup-pw-guide">영문 대문자, 영문 소문자, 숫자, 특수문자를 모두 포함해 8자 이상 입력해주세요.</small><label class="auth-label">비밀번호 확인</label><input class="input" name="signupPasswordConfirm" data-field="signupPasswordConfirm" defaultValue="${signupPasswordConfirm}" type="password" placeholder="비밀번호 재입력" /><p class="pw-match" data-signup-pw-match style="display:none"></p></div>
-      <div class="signup-section"><p class="section-title">2 / 3 개인 정보</p><div class="section-divider"></div><label class="auth-label">이름(실명)</label><input class="input" name="signupName" data-field="signupName" defaultValue="${signupName}" placeholder="이름 입력" /><div class="grid-2 signup-personal-grid"><div><label class="auth-label">성별</label><div class="radio-group gender-row"><label class="radio-item"><input type="radio" name="signupGender" data-action="setSignupGender" data-gender="female" ${signupGender==='female'?'checked':''}/>여성</label><label class="radio-item"><input type="radio" name="signupGender" data-action="setSignupGender" data-gender="male" ${signupGender==='male'?'checked':''}/>남성</label></div></div><div class="signup-date-field"><label class="auth-label">생년월일</label><input class="input" type="date" name="signupBirth" data-field="signupBirth" defaultValue="${signupBirth}" placeholder="생년월일 선택" /></div></div><label class="auth-label">전화번호</label><div class="input-row signup-input-row"><input class="input" name="signupPhone" data-field="signupPhone" defaultValue="${signupPhone}" placeholder="- 없이 입력해주세요" /><button type="button" class="input-btn" data-action="verifySignupPhone">${signupPhoneSending ? '전송 중...' : (signupPhoneCodeSent ? '재전송' : '인증번호 전송')}</button></div>${signupPhoneCodeSent ? `<div class="verify-box"><p>문자로 인증번호를 보냈습니다.${signupPhoneVerified ? ' ✅ 인증 완료' : ''}</p><div class="verify-row"><input class="input" name="signupPhoneCode" data-field="signupPhoneCode" defaultValue="${signupPhoneCode}" placeholder="인증코드 6자리" maxlength="6" inputmode="numeric" /><b data-signup-timer="phone">05:00</b><button type="button" class="input-btn verify-confirm-btn" data-action="confirmSignupPhoneCode">확인</button></div><small data-signup-expire="phone" style="display:none">인증 시간이 만료되었습니다. 재전송해주세요.</small></div>` : ''}</div>
-      <div class="signup-section"><p class="section-title">3 / 3 세부 정보</p><div class="section-divider"></div><label class="auth-label">희망 계열</label><select class="input" name="signupTrack" data-field="signupTrack" defaultValue="${signupTrack}"><option value="">선택해주세요</option><option value="의치한약계열">의치한약계열</option><option value="자연/공학계열">자연/공학계열</option><option value="상경계열">상경계열</option><option value="어문/사회계열">어문/사회계열</option><option value="예체능">예체능</option><option value="기타">기타</option></select><label class="auth-label">유입 경로</label><select class="input" name="signupSource" data-field="signupSource" defaultValue="${signupSource}"><option value="">선택해주세요</option><option value="인스타그램">인스타그램</option><option value="스레드">스레드</option><option value="오르비">오르비</option><option value="기타">기타</option></select><label class="auth-label">프로모션 코드(선택)</label><input class="input" name="signupPromoCode" data-field="signupPromoCode" defaultValue="${signupPromoCode}" placeholder="프로모션 코드 입력" /></div>
-      <div class="terms-card"><div class="terms-header"><input type="checkbox" data-action="toggleSignupTermsAll" name="signupTermsAll" data-field="signupTermsAll" ${signupTermsAll?'checked':''}/><span>약관 전체 동의</span></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" name="signupTermsStandard" data-field="signupTermsStandard" ${signupTermsRequired?'checked':''}/> (필수) 표준이용약관 동의</label><button type="button" class="terms-link" data-action="openTermsModal" data-terms-type="standard">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" name="signupTermsService" data-field="signupTermsService" ${signupTermsRequired?'checked':''}/> (필수) 서비스 이용약관 조항 동의</label><button type="button" class="terms-link" data-action="openTermsModal" data-terms-type="service">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" name="signupTermsPrivacy" data-field="signupTermsPrivacy" ${signupTermsRequired?'checked':''}/> (필수) 개인정보 처리방침 동의</label><button type="button" class="terms-link" data-action="openTermsModal" data-terms-type="privacy">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" name="signupTermsRefund" data-field="signupTermsRefund" ${signupTermsRequired?'checked':''}/> (필수) 환불 규정 동의</label><button type="button" class="terms-link" data-action="openTermsModal" data-terms-type="refund">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsMarketing" name="signupTermsMarketing" data-field="signupTermsMarketing" ${signupTermsMarketing?'checked':''}/> (선택) 마케팅 정보 수신 동의</label><button type="button" class="terms-link" data-action="openTermsModal" data-terms-type="marketing">전문보기</button></div></div>${openTermsType ? `<div class="terms-modal-backdrop" data-action="closeTermsModal"><div class="terms-modal" data-action="noopModal"><button class="terms-modal-close" data-action="closeTermsModal">×</button><p class="terms-modal-title">${TERMS_CONTENT[openTermsType]?.title || ''}</p><div class="terms-modal-body">${TERMS_CONTENT[openTermsType]?.body || ''}</div></div></div>` : ''}
-      <button class="signup-submit signup-submit-btn ${signupSubmitEnabled ? 'active' : 'disabled'}" id="signupSubmit" data-signup-submit data-action="signupSuccess" ${signupSubmitEnabled ? '' : 'disabled'}>${signupSubmitEnabled ? '회원가입 완료' : '이메일/전화번호 인증을 완료해주세요'}</button>
-      </form><p class="signup-login-link">이미 계정이 있으신가요? <button class="auth-link-btn" data-action="goto" data-target="authLogin">로그인</button></p>
+      <div class="signup-section"><p class="section-title">1 / 3 계정 정보</p><div class="section-divider"></div><label class="auth-label">이메일(아이디)</label><div class="input-row signup-input-row"><input class="input" data-field="signupEmail" defaultValue="${signupEmail}" placeholder="example@email.com" /><button type="button" class="input-btn" data-action="verifySignupEmail">${signupEmailSending ? '전송 중...' : (signupEmailCodeSent ? '재전송' : '인증번호 받기')}</button></div>${signupEmailCodeSent ? `<div class="verify-box"><p>이메일로 인증번호를 보냈습니다.${signupEmailVerified ? ' ✅ 인증 완료' : ''}</p><div class="verify-row"><input class="input" data-field="signupEmailCode" defaultValue="${signupEmailCode}" placeholder="인증코드 6자리" maxlength="6" inputmode="numeric" /><b data-signup-timer="email">05:00</b><button type="button" class="input-btn verify-confirm-btn" data-action="confirmSignupEmailCode">확인</button></div><small data-signup-expire="email" style="display:none">인증 시간이 만료되었습니다. 재전송해주세요.</small><small>이메일이 오지 않는다면 스팸 메일함을 먼저 확인해주세요.</small><small>그래도 도착하지 않는다면 contact@studycrack.co.kr로 문의 부탁드립니다.</small></div>` : ''}<label class="auth-label">비밀번호</label><input class="input" data-field="signupPassword" defaultValue="${signupPassword}" type="password" placeholder="영문 대/소문자, 숫자, 특수문자 포함 8자 이상" /><small class="signup-pw-guide">영문 대문자, 영문 소문자, 숫자, 특수문자를 모두 포함해 8자 이상 입력해주세요.</small><label class="auth-label">비밀번호 확인</label><input class="input" data-field="signupPasswordConfirm" defaultValue="${signupPasswordConfirm}" type="password" placeholder="비밀번호 재입력" /><p class="pw-match" data-signup-pw-match style="display:none"></p></div>
+      <div class="signup-section"><p class="section-title">2 / 3 개인 정보</p><div class="section-divider"></div><label class="auth-label">이름(실명)</label><input class="input" data-field="signupName" defaultValue="${signupName}" placeholder="이름 입력" /><div class="grid-2 signup-personal-grid"><div><label class="auth-label">성별</label><div class="radio-group gender-row"><label class="radio-item"><input type="radio" name="signupGender" data-action="setSignupGender" data-gender="female" ${signupGender==='female'?'checked':''}/>여성</label><label class="radio-item"><input type="radio" name="signupGender" data-action="setSignupGender" data-gender="male" ${signupGender==='male'?'checked':''}/>남성</label></div></div><div class="signup-date-field"><label class="auth-label">생년월일</label><input class="input" type="date" data-field="signupBirth" defaultValue="${signupBirth}" placeholder="생년월일 선택" /></div></div><label class="auth-label">전화번호</label><div class="input-row signup-input-row"><input class="input" data-field="signupPhone" defaultValue="${signupPhone}" placeholder="- 없이 입력해주세요" /><button type="button" class="input-btn" data-action="verifySignupPhone">${signupPhoneSending ? '전송 중...' : (signupPhoneCodeSent ? '재전송' : '인증번호 전송')}</button></div>${signupPhoneCodeSent ? `<div class="verify-box"><p>문자로 인증번호를 보냈습니다.${signupPhoneVerified ? ' ✅ 인증 완료' : ''}</p><div class="verify-row"><input class="input" data-field="signupPhoneCode" defaultValue="${signupPhoneCode}" placeholder="인증코드 6자리" maxlength="6" inputmode="numeric" /><b data-signup-timer="phone">05:00</b><button type="button" class="input-btn verify-confirm-btn" data-action="confirmSignupPhoneCode">확인</button></div><small data-signup-expire="phone" style="display:none">인증 시간이 만료되었습니다. 재전송해주세요.</small></div>` : ''}</div>
+      <div class="signup-section"><p class="section-title">3 / 3 세부 정보</p><div class="section-divider"></div><label class="auth-label">희망 계열</label><select class="input" data-field="signupTrack" defaultValue="${signupTrack}"><option value="">선택해주세요</option><option value="의치한약계열">의치한약계열</option><option value="자연/공학계열">자연/공학계열</option><option value="상경계열">상경계열</option><option value="어문/사회계열">어문/사회계열</option><option value="예체능">예체능</option><option value="기타">기타</option></select><label class="auth-label">유입 경로</label><select class="input" data-field="signupSource" defaultValue="${signupSource}"><option value="">선택해주세요</option><option value="인스타그램">인스타그램</option><option value="스레드">스레드</option><option value="오르비">오르비</option><option value="기타">기타</option></select><label class="auth-label">프로모션 코드(선택)</label><input class="input" data-field="signupPromoCode" defaultValue="${signupPromoCode}" placeholder="프로모션 코드 입력" /></div>
+      <div class="terms-card"><div class="terms-header"><input type="checkbox" data-action="toggleSignupTermsAll" data-field="signupTermsAll" ${signupTermsAll?'checked':''}/><span>약관 전체 동의</span></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" data-field="signupTermsStandard" ${signupTermsRequired?'checked':''}/> (필수) 표준이용약관 동의</label><button type="button" class="terms-link" data-action="openTermsModal" data-terms-type="standard">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" data-field="signupTermsService" ${signupTermsRequired?'checked':''}/> (필수) 서비스 이용약관 조항 동의</label><button type="button" class="terms-link" data-action="openTermsModal" data-terms-type="service">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" data-field="signupTermsPrivacy" ${signupTermsRequired?'checked':''}/> (필수) 개인정보 처리방침 동의</label><button type="button" class="terms-link" data-action="openTermsModal" data-terms-type="privacy">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsRequired" data-field="signupTermsRefund" ${signupTermsRequired?'checked':''}/> (필수) 환불 규정 동의</label><button type="button" class="terms-link" data-action="openTermsModal" data-terms-type="refund">전문보기</button></div><div class="terms-item"><label><input type="checkbox" data-action="toggleSignupTermsMarketing" data-field="signupTermsMarketing" ${signupTermsMarketing?'checked':''}/> (선택) 마케팅 정보 수신 동의</label><button type="button" class="terms-link" data-action="openTermsModal" data-terms-type="marketing">전문보기</button></div></div>${openTermsType ? `<div class="terms-modal-backdrop" data-action="closeTermsModal"><div class="terms-modal" data-action="noopModal"><button class="terms-modal-close" data-action="closeTermsModal">×</button><p class="terms-modal-title">${TERMS_CONTENT[openTermsType]?.title || ''}</p><div class="terms-modal-body">${TERMS_CONTENT[openTermsType]?.body || ''}</div></div></div>` : ''}
+      <button class="signup-submit signup-submit-btn ${signupSubmitEnabled ? 'active' : 'disabled'}" data-signup-submit data-action="signupSuccess" ${signupSubmitEnabled ? '' : 'disabled'}>${signupSubmitEnabled ? '회원가입 완료' : '이메일/전화번호 인증을 완료해주세요'}</button>
+      <p class="signup-login-link">이미 계정이 있으신가요? <button class="auth-link-btn" data-action="goto" data-target="authLogin">로그인</button></p>
     </div>
     </div>`, false),
     splash: `<div class="app-shell"><div class="app-frame"><div class="splash"><div class="logo-bolt">${i('bolt',true)}</div><img class="brand-logo" src="${(window.__studycrackAssetSrc && window.__studycrackAssetSrc.onboardingLogoSrc) || './assets/images/studycrack_logo_wo_bg.png'}" alt="logo"/><h1 style="margin:0;font-size:30px">스터디크랙</h1><p>합격까지 가장 빠른 전략</p></div></div></div>`,
@@ -3269,9 +3243,6 @@ function App() {
       if (code.length >= 4) {
         setSignupEmailVerified(true);
         window.__signupDraft = { ...(window.__signupDraft || {}), emailVerified: true };
-        if (signupEmailTimerIdRef.current) { clearInterval(signupEmailTimerIdRef.current); signupEmailTimerIdRef.current = null; }
-        const timer = document.querySelector('[data-signup-timer="email"]');
-        if (timer) timer.textContent = '인증 완료';
       }
       updateSignupButtonState();
       restoreSignupDomValues();
@@ -3285,9 +3256,6 @@ function App() {
       if (code.length >= 4) {
         setSignupPhoneVerified(true);
         window.__signupDraft = { ...(window.__signupDraft || {}), phoneVerified: true };
-        if (signupPhoneTimerIdRef.current) { clearInterval(signupPhoneTimerIdRef.current); signupPhoneTimerIdRef.current = null; }
-        const timer = document.querySelector('[data-signup-timer="phone"]');
-        if (timer) timer.textContent = '인증 완료';
       }
       updateSignupButtonState();
       restoreSignupDomValues();
@@ -3308,8 +3276,12 @@ function App() {
       const y = window.scrollY || window.pageYOffset || 0;
       const allInput = document.querySelector('[data-field="signupTermsAll"]');
       const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
-      const next = !!allInput?.checked;
-      syncTermsFromAll(next);
+      const marketingInput = document.querySelector('[data-field="signupTermsMarketing"]');
+      const currentAll = !!allInput?.checked;
+      const next = !currentAll;
+      if (allInput) allInput.checked = next;
+      requiredInputs.forEach((el) => { el.checked = next; });
+      if (marketingInput) marketingInput.checked = next;
       window.__signupDraft = {
         ...(window.__signupDraft || {}),
         termsAll: next,
@@ -3323,11 +3295,9 @@ function App() {
     }
     if (action === 'openTermsModal') {
       preserveSignupDomValues();
-      preserveForm();
       const y = window.scrollY || window.pageYOffset || 0;
       setOpenTermsType(actionEl.getAttribute('data-terms-type') || '');
       requestAnimationFrame(() => {
-        restoreForm();
         restoreSignupDomValues();
         restoreSignupTermsScroll(y);
       });
@@ -3344,7 +3314,7 @@ function App() {
       const y = window.scrollY || window.pageYOffset || 0;
       const allInput = document.querySelector('[data-field="signupTermsAll"]');
       const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
-            const marketingInput = document.querySelector('[name="signupTermsMarketing" data-field="signupTermsMarketing"]');
+            const marketingInput = document.querySelector('[data-field="signupTermsMarketing"]');
       const allChecked = requiredInputs.length > 0 && requiredInputs.every((el) => el.checked);
       const marketingChecked = !!marketingInput?.checked;
       if (allInput) allInput.checked = allChecked && marketingChecked;
@@ -3366,7 +3336,7 @@ function App() {
       const y = window.scrollY || window.pageYOffset || 0;
       const allInput = document.querySelector('[data-field="signupTermsAll"]');
       const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
-            const marketingInput = document.querySelector('[name="signupTermsMarketing" data-field="signupTermsMarketing"]');
+            const marketingInput = document.querySelector('[data-field="signupTermsMarketing"]');
       const allRequiredChecked = requiredInputs.length > 0 && requiredInputs.every((el) => el.checked);
       const marketingChecked = !!marketingInput?.checked;
       if (allInput) allInput.checked = allRequiredChecked && marketingChecked;
