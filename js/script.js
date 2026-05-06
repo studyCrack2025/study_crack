@@ -81,15 +81,13 @@ const COURSE_DATA = { /* ... (이전과 동일한 데이터 객체이므로 생�
 
 function initMobileCourses() {
     document.querySelectorAll('.course-tab-btn').forEach(btn => {
-        const tier = btn.getAttribute('data-tier');
-        const labels = { mbti: 'MBTI', basic: 'BASIC', standard: 'STANDARD', pro: 'PRO' };
         const iconHtml = btn.querySelector('.tab-icon')?.outerHTML || '';
-        const label = labels[tier] || tier.toUpperCase();
+        const infoHtml = btn.querySelector('.tab-info')?.outerHTML || '';
 
         btn.innerHTML = `
             <div class="tab-summary-wrap">
                 ${iconHtml}
-                <div class="tab-info"><span class="tab-name">${label}</span></div>
+                ${infoHtml}
             </div>
         `;
     });
