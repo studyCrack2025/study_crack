@@ -70,7 +70,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         univChangeRemaining = 30;
         updateQuotaUI();
         setWeeklyLoadingStatus(true);
-        try { await fetchUnivData(); } catch (e) {}
         initUnivGrid();
         updateAnalysisUI();
         initProSection();
