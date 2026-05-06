@@ -1,15 +1,10 @@
 /* -- css/analysis.css -- */
 
 /* ============================================================
-   [0] 헤더 기본 레이아웃 (analysis 페이지 전용)
+   [0] 헤더 active-link 색상 (analysis 페이지 전용)
    ============================================================ */
-body > header { display: flex; align-items: center; justify-content: space-between; height: 92px; padding: 0 clamp(20px, 5vw, 91px); background: #fff; border-bottom: 1px solid #e5e5e5; position: sticky; top: 0; z-index: 1000; }
-body > header .logo-container a { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-body > header .logo { color: #2c2c2c; font-size: 22px; font-weight: 900; }
-body > header .nav-links { display: flex; align-items: center; gap: 28px; }
-body > header .nav-links a { color: #2c2c2c; font-size: 18px; font-weight: 800; text-decoration: none; white-space: nowrap; }
-body > header .nav-links a.active-link { color: #4c79ee; }
-body > header .nav-links .nav-btn { display: inline-flex; align-items: center; justify-content: center; width: 116px; height: 42px; padding: 0; border-radius: 4px; background: #4c79ee; color: #fff !important; font-size: 14px; font-weight: 900; }
+body { padding-top: 92px; }
+header#site-header .nav-links a.active-link { color: #4c79ee; }
 
 /* ============================================================
    [1] 기본 레이아웃, 탭 메뉴, 솔루션 헤더
@@ -809,15 +804,7 @@ body { color: #2c2c2c; letter-spacing: -0.02em; word-break: keep-all; -webkit-fo
    [9] 데스크톱 분석 페이지 레이아웃
    ============================================================ */
 @media (min-width: 769px) {
-    body { background: #fafafa; }
-    body > header { height: 92px; padding: 0 clamp(28px, 5vw, 91px); gap: 0; }
-    body > header .logo-container img { width: 47px; height: 47px; object-fit: contain; }
-    body > header .logo-link { gap: 10px; }
-    body > header .logo { color: #2c2c2c; font-size: 22px; font-weight: 900; }
-    body > header .nav-links { gap: 40px; }
-    body > header .nav-links a { color: #2c2c2c; font-size: 18px; font-weight: 800; }
-    body > header .nav-links a.active-link { color: #4c79ee; }
-    body > header .nav-links .nav-btn { width: 116px; min-width: 116px; height: 42px; min-height: 42px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 4px; background: #4c79ee; color: #fff; font-size: 14px; font-weight: 900; }
+    body { background: #fafafa; padding-top: 92px; }
     .mypage-container { width: min(100% - 40px, 1280px); max-width: 1280px; display: grid; grid-template-columns: 297px minmax(0, 1fr); gap: 26px; align-items: flex-start; margin: 46px auto 80px; padding: 0; }
     .profile-summary { width: auto; min-width: 0; min-height: 1220px; position: sticky; top: 112px; align-self: start; padding: 40px 30px 50px; border: 0; border-radius: 10px; background: #fff; box-shadow: 10px 20px 40px rgba(210,210,210,.2); text-align: center; overflow: visible; }
     .content-area { min-width: 0; max-width: none; width: 100%; min-height: 1220px; padding: 52px; border: 0; border-radius: 10px; background: #fff; box-shadow: 10px 20px 40px rgba(210,210,210,.2); overflow: hidden; }

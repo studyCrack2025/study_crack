@@ -3451,7 +3451,7 @@ async function renderProDashboard(container) {
                     <div id="requestBtnContainer"><button class="req-btn" onclick="openProReportModal()"><i class="fas fa-edit"></i> 분석 요청서 작성하기</button></div>
                 </div>
                 <div class="report-list-container">
-                    <h4 style="color:white; margin:0 0 15px 0; border-left:4px solid #3b82f6; padding-left:10px;">📑 분석 보고서 보관함</h4>
+                    <h4 style="color:white; margin:0 0 15px 0;">📑 분석 보고서 보관함</h4>
                     <div id="proReportListArea"><div style="text-align:center; color:#64748b; padding:20px;"><i class="fas fa-spinner fa-spin"></i> 로딩 중...</div></div>
                 </div>
             </div>
