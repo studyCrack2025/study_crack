@@ -1057,9 +1057,22 @@ function App() {
   const analysisBaseProfile = analysisProfiles[targetMajor] || analysisProfiles['연세대학교 경영학과'];
   const liveCurrentScore = Math.round((Number(scores.korean||0)+Number(scores.math||0)+Number(scores.english||0)+Number(scores.inquiry1||0)+Number(scores.inquiry2||0))/5);
   const analysisSelected = { ...analysisBaseProfile, score: liveCurrentScore, sim: (analysisBaseProfile.sim||[]).map((r,idx)=>{ const boost = Math.max(0, Math.round((liveCurrentScore-60)/10)); const g = Number(String(r[1]).replace(/[^0-9.-]/g,'')) || 0; const totalGain = Math.round(g + boost); return [r[0], `+${totalGain}점`, r[2], idx===0]; }) };
-  const analysisSearchPool = ['연세대학교 경영학과', '고려대학교 경영대학', '성균관대학교 글로벌경영학과', '서강대학교 경영학부', '한양대학교 경영학부'];
+  const analysisSearchPool = Array.from(new Set([
+    '연세대학교 경영학과',
+    '고려대학교 경영대학',
+    '성균관대학교 글로벌경영학과',
+    '서강대학교 경영학부',
+    '한양대학교 경영학부',
+    ...(analysisTargetList || []),
+    ...(homeTargetList || []),
+    ...(analysisRecommended || [])
+  ])).filter(Boolean);
   const analysisRecommended = ['가천대학교 관광경영학과', '강서대학교 G2빅데이터경영학과', '고려대학교 경영대학'];
-  const analysisSearchList = analysisSearchPool.filter((name) => name.includes(analysisSearchTerm.trim()));
+  const normalizedSearchTerm = String(analysisSearchTerm || '').trim().toLowerCase().replace(/\s+/g, '');
+  const analysisSearchList = analysisSearchPool.filter((name) => {
+    if (!normalizedSearchTerm) return true;
+    return String(name).toLowerCase().replace(/\s+/g, '').includes(normalizedSearchTerm);
+  });
   const analysisGaugeFill = Math.min((analysisSelected.score / 250) * 100, 100);
   const analysisGaugeColor = analysisSelected.score >= 150 ? '#22C55E' : analysisSelected.score >= 100 ? '#2563EB' : '#F97316';
   const analysisStatus = analysisSelected.score >= 150 ? '초안정' : analysisSelected.score >= 100 ? '적정' : '위험';
@@ -4206,6 +4219,7 @@ function App() {
     }
     if (field === 'coachingMonth') setCoachingMonth(e.target.value);
     if (field === 'proEliteMonth') setProEliteMonth(e.target.value);
+    if (field === 'analysisSearchTerm') setAnalysisSearchTerm(e.target.value);
     if (field === 'myProfileNameDraft') setMyProfileNameDraft(e.target.value);
     if (field === 'myProfileTargetDraft') setMyProfileTargetDraft(e.target.value);
     if (field === 'obTrack') {
@@ -4525,6 +4539,10 @@ function App() {
       return;
     }
     const isV2eSelectField = field === 'v2e-english' || field === 'v2e-history' || field === 'v2e-inq1-subject' || field === 'v2e-inq2-subject';
+    if (field === 'analysisSearchTerm') {
+      setAnalysisSearchTerm(e.target.value);
+      return;
+    }
     if (field === 'myProfileTargetDraft') {
       setMyProfileTargetDraft(e.target.value);
       return;
