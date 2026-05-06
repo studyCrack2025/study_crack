@@ -804,14 +804,6 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 html, body, button, input, select, textarea { font-family: "Paperlogy", system-ui, -apple-system, BlinkMacSystemFont, sans-serif; }
 body { color: #2c2c2c; letter-spacing: -0.02em; word-break: keep-all; -webkit-font-smoothing: antialiased; }
 .solution-hero { display: none; }
-.analysis-footer { border-top: 1px solid #cfcfcf; background: #303030; color: rgba(255,255,255,.72); }
-.analysis-footer-links { width: 100%; min-height: 80px; display: flex; align-items: center; gap: 80px; margin: 0; padding: 0 max(20px, calc((100% - 1280px) / 2)); color: #2c2c2c; background: #fff; }
-.analysis-footer-links a { font-weight: 800; }
-.analysis-footer-links span { margin-left: auto; color: #575757; font-weight: 400; }
-.analysis-footer-main { width: min(100% - 40px, 1280px); min-height: 220px; display: grid; grid-template-columns: 1fr auto; align-items: center; margin: 0 auto; }
-.analysis-footer-main strong { color: #fff; font-size: 28px; font-weight: 900; }
-.analysis-footer-main p { margin: 10px 0 0; color: rgba(255,255,255,.72); font-size: 14px; line-height: 1.6; }
-.analysis-footer-main img { width: 72px; height: 72px; object-fit: contain; opacity: .82; }
 
 /* ============================================================
    [9] 데스크톱 분석 페이지 레이아웃
@@ -932,4 +924,3 @@ body { color: #2c2c2c; letter-spacing: -0.02em; word-break: keep-all; -webkit-fo
 }
 
 @media (min-width: 769px) and (max-width: 1100px) { .mypage-container { grid-template-columns: 1fr; } .profile-summary { position: relative; top: auto; } .solution-menu { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 768px) { .analysis-footer-links { min-height: auto; flex-direction: column; align-items: flex-start; gap: 12px; padding: 24px 20px; } .analysis-footer-links span { margin-left: 0; } .analysis-footer-main { grid-template-columns: 1fr; gap: 20px; padding: 40px 0; } .analysis-footer-main img { width: 56px; height: 56px; } }
