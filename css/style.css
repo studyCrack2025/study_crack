@@ -2049,3 +2049,155 @@ footer {
         gap: 10px;
     }
 }
+
+/* =========================================================
+   01_1 figma_rearrange — production adaptation
+   hero h1만 Paperlogy 7 Bold(800), 나머지 제목 6 SemiBold(600),
+   두꺼운 요소 한 단계 다운, 전반적인 사이즈 소폭 축소
+   ========================================================= */
+
+/* ── 섹션 패딩 ───────────────────────────────────────────── */
+.section,
+.dark-feature,
+.effects-section,
+.curriculum,
+.review-section { padding: clamp(64px, 6vw, 90px) 0; }
+
+/* ── 폰트 두께 교정 ─────────────────────────────────────── */
+.section-heading h2,
+.problem__copy h2,
+.cta-content h3 { font-weight: 600; }
+
+.section-heading .eyebrow,
+.section-label-badge-dark { font-weight: 700; }
+
+.step-card h3 { font-weight: 700; }
+.ppt-card-body h3 { font-weight: 700; }
+.planner-card h3 { font-weight: 700; }
+.planner-card--blue h3,
+.planner-card--purple h3 { font-weight: 800; }
+.report-title { font-weight: 600; }
+.report-block h4 { font-weight: 600; }
+.effect-item h4 { font-weight: 700; }
+.detail-title { font-weight: 600; }
+
+.hero-subtitle strong { font-weight: 700; }
+.problem__copy p strong { font-weight: 500; }
+.problem__copy .accent { font-weight: 600; }
+.notice strong,
+.summary-box strong { font-weight: 500; }
+.step-card p strong { font-weight: 600; }
+
+.btn { font-weight: 700; }
+.btn--primary { font-weight: 800; }
+.nav-links a { font-weight: 700; }
+
+/* ── 히어로 ─────────────────────────────────────────────── */
+.hero-main { min-height: 750px; }
+.hero-title { font-size: clamp(34px, 3.4vw, 50px); margin-bottom: 26px; }
+.hero-subtitle { font-size: clamp(15px, 1.5vw, 18px); max-width: 640px; margin: 0 auto 46px; }
+.hero-dots { margin-top: 0; }
+.hero-dots span { cursor: pointer; }
+
+/* ── 문제 인식 섹션 ──────────────────────────────────────── */
+.problem__copy h2 { font-size: clamp(26px, 2.8vw, 40px); margin-bottom: 32px; }
+.problem__copy p { font-size: 15px; margin-bottom: 18px; }
+.step-card h3 { font-size: 18px; margin: 18px 0 10px; }
+.step-card p { font-size: 13.5px; }
+.badge { font-size: 12px; min-height: 24px; padding: 0 16px; }
+
+/* ── 섹션 헤딩 ───────────────────────────────────────────── */
+.section-heading { margin-bottom: clamp(36px, 4.5vw, 58px); max-width: 820px; }
+.section-heading .eyebrow { font-size: 17px; margin-bottom: 14px; }
+.section-heading h2 { font-size: clamp(24px, 2.6vw, 38px); }
+.section-heading > p:not(.eyebrow) { font-size: 15px; margin-top: 14px; }
+
+/* ── 다크 피처 카드 ──────────────────────────────────────── */
+.ppt-card-body { padding: 26px 28px; }
+.ppt-card-body h3 { font-size: 18px; margin-bottom: 10px; }
+.card-body-text,
+.summary-box { font-size: 14px; line-height: 1.7; }
+
+/* ── 플래너 섹션 ─────────────────────────────────────────── */
+.planner-cards { margin-bottom: 62px; }
+.planner-card h3 { font-size: clamp(16px, 1.6vw, 21px); }
+.planner-card p { font-size: 14px; }
+.planner-card--blue,
+.planner-card--purple { min-height: 248px; }
+.notice { margin: 50px 0 62px; padding: 20px 30px; min-height: 86px; }
+.notice p { font-size: 15px; }
+.report-title { font-size: clamp(17px, 1.8vw, 22px); margin-bottom: 26px; }
+.report-block h4 { font-size: clamp(14px, 1.4vw, 17px); margin-bottom: 12px; }
+.report-block p,
+.report-block li,
+.pro-note { font-size: 13px; }
+
+/* ── 기대 효과 ───────────────────────────────────────────── */
+.effects-header { max-width: 820px; margin-bottom: clamp(36px, 4.5vw, 58px); }
+.section-label-badge-dark { font-size: 17px; }
+.effects-header h2 { font-size: clamp(24px, 2.6vw, 38px); }
+.effect-num-badge { width: 58px; height: 58px; font-size: 17px; margin-bottom: 12px; }
+.effect-item h4 { font-size: 18px; margin-bottom: 10px; }
+.effect-item p { font-size: 13px; }
+.effects-section .notice { max-width: var(--container); margin-left: auto; margin-right: auto; margin-bottom: 0; }
+
+/* ── 입시 설계 섹션 ──────────────────────────────────────── */
+.curriculum-grid { gap: 56px; }
+.course-tab-btn { min-height: 58px; font-size: 15px; font-weight: 700; }
+.solution-card { padding: 30px 32px; }
+.detail-title { font-size: clamp(18px, 1.8vw, 23px); margin: 14px 0 10px; }
+.solution-card .detail-desc,
+.solution-card .detail-list li { font-size: 14px; }
+
+/* ── 리뷰 ────────────────────────────────────────────────── */
+.review-section .section-header h2 { font-size: clamp(24px, 2.6vw, 38px); }
+.review-section .section-header p { font-size: 15px; }
+.review-section .review-grid { margin: 0 auto; }
+.review-card { padding: 22px 24px; }
+.review-text { font-size: 13px; }
+.review-badge { font-size: 11px; }
+.review-score { font-size: 11px; }
+
+/* ── CTA ─────────────────────────────────────────────────── */
+.cta-section { min-height: 430px; }
+.cta-content h3 { font-size: clamp(26px, 2.8vw, 42px); }
+.cta-content p { font-size: 15px; margin: 18px auto 38px; max-width: 540px; }
+
+/* ── 반응형 보정 ─────────────────────────────────────────── */
+@media (max-width: 1200px) {
+    .hero-title { font-size: clamp(30px, 4.2vw, 44px); }
+    .section-heading h2,
+    .effects-header h2,
+    .review-section .section-header h2,
+    .problem__copy h2,
+    .cta-content h3 { font-size: clamp(22px, 3.2vw, 34px); }
+}
+@media (max-width: 900px) {
+    .section,
+    .dark-feature,
+    .effects-section,
+    .curriculum,
+    .review-section { padding: 60px 0; }
+    .hero-main { min-height: 640px; }
+    .hero-title { font-size: clamp(28px, 7vw, 40px); }
+    .section-heading h2,
+    .effects-header h2,
+    .review-section .section-header h2,
+    .problem__copy h2,
+    .cta-content h3 { font-size: clamp(22px, 5.5vw, 32px); }
+}
+@media (max-width: 560px) {
+    .section,
+    .dark-feature,
+    .effects-section,
+    .curriculum,
+    .review-section { padding: 52px 0; }
+    .hero-title { font-size: clamp(26px, 10vw, 36px); }
+    .hero-subtitle { font-size: 15px; }
+    .section-heading h2,
+    .effects-header h2,
+    .review-section .section-header h2,
+    .problem__copy h2,
+    .cta-content h3 { font-size: clamp(20px, 8vw, 28px); }
+    .planner-card h3 { font-size: 16px; }
+}

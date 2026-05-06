@@ -231,6 +231,7 @@
                 <p>주간 계획 + 성취도 추적 + 즉각적인 수정 → 공부 루틴 완성</p>
             </div>
         </div>
+        <div class="notice"><span>!</span><p>"얼마나 열심히"보다 "어떻게 올릴지"가 명확해질 때, <strong>합격은 전략으로 만들어집니다.</strong></p></div>
     </section>
 
     <section id="program" class="curriculum section-bg scroll-reveal">
@@ -549,6 +550,37 @@
         function onScroll() { if (window.scrollY > 80) { header.classList.add('scrolled'); } else { header.classList.remove('scrolled'); } }
         window.addEventListener('scroll', onScroll, { passive: true });
         onScroll();
+    })();
+    </script>
+
+    <script>
+    /* Hero image carousel */
+    (function () {
+        var IMGS = [
+            '/assets/figma/figma-asset-17.png',
+            '/assets/figma/figma-asset-08.png',
+            '/assets/figma/figma-asset-18.png'
+        ];
+        var cur = 0;
+        var hero = document.getElementById('hero-main');
+        var dots = document.querySelectorAll('.hero-dots span');
+
+        function goTo(idx) {
+            cur = idx;
+            hero.style.backgroundImage = 'url("' + IMGS[idx] + '")';
+            dots.forEach(function (d, i) { d.classList.toggle('active', i === idx); });
+        }
+
+        dots.forEach(function (d, i) {
+            d.addEventListener('click', function () { goTo(i); });
+        });
+
+        var timer = setInterval(function () { goTo((cur + 1) % IMGS.length); }, 4500);
+
+        hero.addEventListener('mouseenter', function () { clearInterval(timer); });
+        hero.addEventListener('mouseleave', function () {
+            timer = setInterval(function () { goTo((cur + 1) % IMGS.length); }, 4500);
+        });
     })();
     </script>
 
