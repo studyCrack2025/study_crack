@@ -49,6 +49,7 @@
     </header>
 
     <section id="hero-main" class="hero-main">
+        <div id="heroCrossFade" class="hero-crossfade" aria-hidden="true"></div>
         <div class="hero-main-content">
             <h2 class="hero-title">
                 <span class="hero-title-light">지금 공부방향,</span>
@@ -236,48 +237,56 @@
 
     <section id="program" class="curriculum section-bg scroll-reveal">
         <div class="curriculum-bg-overlay"></div>
-        <div class="container curriculum-grid">
-            <div class="curriculum-left">
-                <p>현재 성적과 목표에 맞춰<br>가장 효율적인 입시 전략을 선택하세요</p>
-                <div class="tabs">
-                    <button class="course-tab-btn active" data-tier="mbti" onclick="selectCourse('mbti')">
-                        <div class="tab-icon">⁉️</div>
-                        <div class="tab-info">
-                            <span class="tab-name">학습법 MBTI</span>
-                            <span class="tab-sub">특성파악/확인</span>
-                        </div>
-                    </button>
-                    <button class="course-tab-btn" data-tier="basic" onclick="selectCourse('basic')">
-                        <div class="tab-icon">🌱</div>
-                        <div class="tab-info">
-                            <span class="tab-name">BASIC</span>
-                            <span class="tab-sub">진단/분석</span>
-                        </div>
-                    </button>
-                    <button class="course-tab-btn" data-tier="standard" onclick="selectCourse('standard')">
-                        <div class="tab-icon">⚡️</div>
-                        <div class="tab-info">
-                            <span class="tab-name">STANDARD</span>
-                            <span class="tab-sub">전략/플래너</span>
-                        </div>
-                    </button>
-                    <button class="course-tab-btn" data-tier="pro" onclick="selectCourse('pro')">
-                        <div class="tab-icon">🔥</div>
-                        <div class="tab-info">
-                            <span class="tab-name">PRO</span>
-                            <span class="tab-sub">최적화/개인별맞춤</span>
-                        </div>
-                    </button>
-                </div>
+        <div class="container section-content">
+            <div class="section-heading section-heading--light">
+                <p class="eyebrow">03 · 개인 맞춤 입시 설계</p>
+                <h2>나에게 딱 맞는 입시 솔루션</h2>
+                <p>현재 상황에 맞는 최적의 플랜을 선택하세요.</p>
             </div>
-            <article class="solution-card">
-                <div class="course-detail-view" id="courseDetailView"></div>
-            </article>
+            <div class="curriculum-grid">
+                <div class="curriculum-left">
+                    <p>현재 성적과 목표에 맞춰<br>가장 효율적인 입시 전략을 선택하세요</p>
+                    <div class="tabs">
+                        <button class="course-tab-btn active" data-tier="mbti" onclick="selectCourse('mbti')">
+                            <div class="tab-icon">⁉️</div>
+                            <div class="tab-info">
+                                <span class="tab-name">학습법 MBTI</span>
+                                <span class="tab-sub"> 특성파악 / 확인</span>
+                            </div>
+                        </button>
+                        <button class="course-tab-btn" data-tier="basic" onclick="selectCourse('basic')">
+                            <div class="tab-icon">🌱</div>
+                            <div class="tab-info">
+                                <span class="tab-name">BASIC</span>
+                                <span class="tab-sub"> 진단 / 분석</span>
+                            </div>
+                        </button>
+                        <button class="course-tab-btn" data-tier="standard" onclick="selectCourse('standard')">
+                            <div class="tab-icon">⚡️</div>
+                            <div class="tab-info">
+                                <span class="tab-name">STANDARD</span>
+                                <span class="tab-sub"> 전략 / 플래너</span>
+                            </div>
+                        </button>
+                        <button class="course-tab-btn" data-tier="pro" onclick="selectCourse('pro')">
+                            <div class="tab-icon">🔥</div>
+                            <div class="tab-info">
+                                <span class="tab-name">PRO</span>
+                                <span class="tab-sub"> 최적화 / 개인별맞춤</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+                <article class="solution-card">
+                    <div class="course-detail-view" id="courseDetailView"></div>
+                </article>
+            </div>
         </div>
     </section>
 
     <section id="review-section" class="section review-section scroll-reveal">
         <div class="section-header">
+            <span class="section-label-badge-dark">04 · 리얼후기</span>
             <h2><em>수많은 후기가 증명하는</em><br>탁월한 학습 해결책</h2>
             <p>막막했던 입시, 전략을 바꾸고 결과가 달라졌습니다.</p>
         </div>
@@ -554,7 +563,7 @@
     </script>
 
     <script>
-    /* Hero image carousel */
+    /* Hero image carousel — cross-fade */
     (function () {
         var IMGS = [
             '/assets/figma/figma-asset-17.png',
@@ -563,11 +572,31 @@
         ];
         var cur = 0;
         var hero = document.getElementById('hero-main');
+        var fade = document.getElementById('heroCrossFade');
         var dots = document.querySelectorAll('.hero-dots span');
 
+        /* Set initial background (no transition needed) */
+        hero.style.backgroundImage = 'url("' + IMGS[0] + '")';
+
         function goTo(idx) {
+            if (idx === cur) return;
+            var next = IMGS[idx];
+            /* Load next image into crossfade layer and fade it in */
+            fade.style.backgroundImage = 'url("' + next + '")';
+            fade.style.opacity = '1';
+            /* After transition completes, swap main bg and reset fade layer */
+            var tid = setTimeout(function () {
+                hero.style.backgroundImage = 'url("' + next + '")';
+                fade.style.transition = 'none';
+                fade.style.opacity = '0';
+                /* Re-enable transition on next frame */
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(function () {
+                        fade.style.transition = '';
+                    });
+                });
+            }, 900);
             cur = idx;
-            hero.style.backgroundImage = 'url("' + IMGS[idx] + '")';
             dots.forEach(function (d, i) { d.classList.toggle('active', i === idx); });
         }
 

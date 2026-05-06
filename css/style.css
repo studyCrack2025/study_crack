@@ -2201,3 +2201,21 @@ footer {
     .cta-content h3 { font-size: clamp(20px, 8vw, 28px); }
     .planner-card h3 { font-size: 16px; }
 }
+
+/* ── 히어로 크로스페이드 레이어 ──────────────────────────── */
+.hero-crossfade { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 0.9s ease-in-out; pointer-events: none; z-index: 0; }
+.hero-main::before { z-index: 1; }
+.hero-main-content { position: relative; z-index: 2; }
+
+/* ── 커리큘럼 섹션 헤딩 ──────────────────────────────────── */
+.curriculum .section-content { display: flex; flex-direction: column; }
+.curriculum .section-heading--light { margin-bottom: clamp(32px, 4vw, 52px); }
+.curriculum .section-heading--light .eyebrow { font-size: 17px; font-weight: 700; margin-bottom: 14px; }
+.curriculum .section-heading--light h2 { font-size: clamp(24px, 2.6vw, 38px); font-weight: 600; }
+.curriculum .section-heading--light > p { font-size: 15px; margin-top: 14px; opacity: 0.85; }
+
+/* ── 탭 버튼 아이콘 숨김 (JS가 .tab-icon/.tab-info 필요로 하므로 CSS로만 제어) ── */
+.tabs .course-tab-btn .tab-icon { display: none; }
+.tabs .course-tab-btn .tab-info { display: inline; }
+.tabs .course-tab-btn .tab-name { display: inline; font-size: inherit; font-weight: inherit; color: inherit; }
+.tabs .course-tab-btn .tab-sub { display: inline; font-size: inherit; font-weight: inherit; color: inherit; opacity: 0.8; }
