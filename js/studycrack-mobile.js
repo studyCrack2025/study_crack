@@ -675,7 +675,7 @@ function App() {
   useEffect(() => {
     if (screen !== 'planner') return;
     requestAnimationFrame(() => {
-      const dateToCenter = plannerInitialCenterDoneRef.current ? selectedPlannerDate : String(FIXED_TODAY_DATE.getDate());
+      const dateToCenter = plannerInitialCenterDoneRef.current ? selectedPlannerDate : todayDateKey;
       centerPlannerDate(dateToCenter, plannerInitialCenterDoneRef.current ? 'smooth' : 'auto');
       plannerInitialCenterDoneRef.current = true;
     });
@@ -3295,7 +3295,12 @@ function App() {
     }
     if (action === 'openTermsModal') {
       preserveSignupDomValues();
+      const y = window.scrollY || window.pageYOffset || 0;
       setOpenTermsType(actionEl.getAttribute('data-terms-type') || '');
+      requestAnimationFrame(() => {
+        restoreSignupDomValues();
+        restoreSignupTermsScroll(y);
+      });
       return;
     }
     if (action === 'closeTermsModal') {
@@ -3309,8 +3314,7 @@ function App() {
       const y = window.scrollY || window.pageYOffset || 0;
       const allInput = document.querySelector('[data-field="signupTermsAll"]');
       const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
-      if (actionEl instanceof HTMLInputElement) actionEl.checked = !actionEl.checked;
-      const marketingInput = document.querySelector('[data-field="signupTermsMarketing"]');
+            const marketingInput = document.querySelector('[data-field="signupTermsMarketing"]');
       const allChecked = requiredInputs.length > 0 && requiredInputs.every((el) => el.checked);
       const marketingChecked = !!marketingInput?.checked;
       if (allInput) allInput.checked = allChecked && marketingChecked;
@@ -3332,8 +3336,7 @@ function App() {
       const y = window.scrollY || window.pageYOffset || 0;
       const allInput = document.querySelector('[data-field="signupTermsAll"]');
       const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
-      if (actionEl instanceof HTMLInputElement) actionEl.checked = !actionEl.checked;
-      const marketingInput = document.querySelector('[data-field="signupTermsMarketing"]');
+            const marketingInput = document.querySelector('[data-field="signupTermsMarketing"]');
       const allRequiredChecked = requiredInputs.length > 0 && requiredInputs.every((el) => el.checked);
       const marketingChecked = !!marketingInput?.checked;
       if (allInput) allInput.checked = allRequiredChecked && marketingChecked;
