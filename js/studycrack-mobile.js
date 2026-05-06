@@ -1930,7 +1930,7 @@ function App() {
     .home-mini-badge{font-size:11px;font-weight:700;color:#1D4ED8;background:#DBEAFE;border-radius:999px;padding:4px 8px;}
     .home-top-icons{display:flex;justify-content:flex-end;align-items:center;margin-bottom:2px;}
     .home-greeting-bubble{margin-top:-12px;}
-    .home-greeting-cracky{transform:translateY(-10px);}
+    .home-greeting-cracky{width:64px;height:64px;transform:translateY(-10px);margin-right:4px;}
     .home-greeting-speech{transform:translateY(-10px);}
     .pro-top-btn{
       width:100%;height:63px;border:none;border-radius:16px;position:relative;overflow:hidden;
@@ -4004,18 +4004,20 @@ function App() {
     if (action === 'setPlannerDuration') setPlannerDraft((prev) => ({ ...prev, durationChoice: actionEl.getAttribute('data-planner-duration') || '' }));
     if (action === 'removePlannerItem') {
       const plannerId = actionEl.getAttribute('data-planner-id');
+      const removePlannerState = () => setPlannerItems((prev) => prev.filter((item) => item.id !== plannerId));
       if (isIOSSafari() && screen === 'planner') {
         const item = actionEl.closest('.planner-item');
         if (item) {
           item.style.display = 'none';
-          document.body.dataset.pendingPlannerDelete = `${document.body.dataset.pendingPlannerDelete || ''},${plannerId}`;
+          requestAnimationFrame(removePlannerState);
           return;
         }
       }
-      setPlannerItems((prev) => prev.filter((item) => item.id !== plannerId));
+      removePlannerState();
     }
     if (action === 'togglePlannerDone') {
       const plannerId = actionEl.getAttribute('data-planner-id');
+      const togglePlannerState = () => setPlannerItems((prev) => prev.map((item) => (item.id === plannerId ? { ...item, done: !item.done } : item)));
       if (isIOSSafari() && screen === 'planner') {
         const item = actionEl.closest('.planner-item');
         if (item) {
@@ -4023,10 +4025,11 @@ function App() {
           item.classList.toggle('done', nextDone === '1');
           actionEl.dataset.completed = nextDone;
           actionEl.textContent = nextDone === '1' ? '✓ 완료!' : '✓ 완료';
+          requestAnimationFrame(togglePlannerState);
           return;
         }
       }
-      setPlannerItems((prev) => prev.map((item) => (item.id === plannerId ? { ...item, done: !item.done } : item)));
+      togglePlannerState();
     }
     if (action === 'selectUniversity') {
       setTargetMajor(actionEl.getAttribute('data-target-major'));
