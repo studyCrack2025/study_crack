@@ -1057,6 +1057,7 @@ function App() {
   const analysisBaseProfile = analysisProfiles[targetMajor] || analysisProfiles['연세대학교 경영학과'];
   const liveCurrentScore = Math.round((Number(scores.korean||0)+Number(scores.math||0)+Number(scores.english||0)+Number(scores.inquiry1||0)+Number(scores.inquiry2||0))/5);
   const analysisSelected = { ...analysisBaseProfile, score: liveCurrentScore, sim: (analysisBaseProfile.sim||[]).map((r,idx)=>{ const boost = Math.max(0, Math.round((liveCurrentScore-60)/10)); const g = Number(String(r[1]).replace(/[^0-9.-]/g,'')) || 0; const totalGain = Math.round(g + boost); return [r[0], `+${totalGain}점`, r[2], idx===0]; }) };
+  const analysisRecommended = ['가천대학교 관광경영학과', '강서대학교 G2빅데이터경영학과', '고려대학교 경영대학'];
   const analysisSearchPool = Array.from(new Set([
     '연세대학교 경영학과',
     '고려대학교 경영대학',
@@ -1067,7 +1068,6 @@ function App() {
     ...(homeTargetList || []),
     ...(analysisRecommended || [])
   ])).filter(Boolean);
-  const analysisRecommended = ['가천대학교 관광경영학과', '강서대학교 G2빅데이터경영학과', '고려대학교 경영대학'];
   const normalizedSearchTerm = String(analysisSearchTerm || '').trim().toLowerCase().replace(/\s+/g, '');
   const analysisSearchList = analysisSearchPool.filter((name) => {
     if (!normalizedSearchTerm) return true;
