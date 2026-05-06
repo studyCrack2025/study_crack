@@ -3165,3 +3165,34 @@ body { line-height: 1.45; -webkit-font-smoothing: antialiased; }
     box-shadow: 0 0 0 4px rgba(99,102,241,.14);
   }
 }
+
+/* startup skeleton + gpu-friendly loading */
+.app-loading-skeleton { padding: 18px 14px; display:grid; gap:12px; }
+.app-loading-skeleton .sk-line,
+.app-loading-skeleton .sk-card,
+.app-loading-skeleton .sk-progress {
+  position: relative;
+  overflow: hidden;
+  background: #eef2f7;
+  border-radius: 14px;
+}
+.app-loading-skeleton .sk-line { height: 14px; width: 68%; }
+.app-loading-skeleton .sk-line.title { height: 22px; width: 52%; margin-top: 6px; }
+.app-loading-skeleton .sk-card { height: 128px; border-radius: 22px; }
+.app-loading-skeleton .sk-progress { height: 10px; width: 100%; border-radius: 999px; }
+.app-loading-skeleton .sk-line::after,
+.app-loading-skeleton .sk-card::after,
+.app-loading-skeleton .sk-progress::after {
+  content:''; position:absolute; inset:0; transform:translate3d(-120%,0,0);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+  animation: skMove 1.05s linear infinite;
+  will-change: transform;
+}
+@keyframes skMove { to { transform: translate3d(120%,0,0);} }
+
+/* reduce expensive filter/shadow for mobile safari gpu */
+.home-modal-overlay, .planner-sheet-overlay, .terms-modal-backdrop, .coach-sheet-overlay {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.card, .analysis-top, .planner-item, .home-bottom-summary { box-shadow: 0 8px 20px rgba(15,23,42,.06); }

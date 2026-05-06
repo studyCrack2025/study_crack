@@ -1312,7 +1312,7 @@ function App() {
           <div class="onboarding-copy"><h2>${title}</h2><p>${subtitle}</p></div>
           ${cardContent}
           <div class="onboarding-speech">
-            <img src="${CRACKY_SRC}" class="onboarding-speech-char crackie" alt="크랙이"/>
+            <img loading="lazy" decoding="async" src="${CRACKY_SRC}" class="onboarding-speech-char crackie" alt="크랙이"/>
             <p class="onboarding-speech-text">${bubbleText}</p>
           </div>
           <div class="onboarding-footer">
@@ -1803,7 +1803,7 @@ function App() {
         <button class="top-icon-btn" data-action="openNotificationModal">${i('bell', false)}</button>
       </div>
       <div class="home-greeting-bubble">
-        <img src="${CRACKY_SRC}" class="home-greeting-cracky" alt="크랙이" />
+        <img loading="lazy" decoding="async" src="${CRACKY_SRC}" class="home-greeting-cracky" alt="크랙이" />
         <div class="home-greeting-speech">
           <p class="home-greeting">안녕하세요, 지민님 👋</p>
           <p class="home-sub">오늘도 크랙한 하루 되세요!</p>
@@ -2312,7 +2312,7 @@ function App() {
        ${onboardingProgress(1)}
        ${appbar('학습성향 진단 1-1', true)}
        <p class="sub ob-subcopy">지금 성적과 공부 습관을 바탕으로<br/>나에게 맞는 합격 전략을 찾아볼게요.</p>
-       <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>성적만 보는 게 아니라, 공부 방식까지 같이 봐야 정확해요!</p></div>
+       <div class="card ob-bubble-card"><img loading="lazy" decoding="async" src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>성적만 보는 게 아니라, 공부 방식까지 같이 봐야 정확해요!</p></div>
        <div class="ob1-survey-card">
          <h3>정성조사서</h3>
          <p class="ob1-subtitle">학습 상황과 고민을 알려주시면 더 정확한 전략을 만들 수 있어요.</p><p class="ob1-subtitle" style="color:#ef4444;font-weight:700;">* 표시는 필수 입력 항목입니다.</p>
@@ -2353,7 +2353,7 @@ function App() {
        ${onboardingProgress(2)}
        ${appbar('학습성향 진단 1-2', true)}
        <p class="sub ob-subcopy">과목별 성적을 입력하면 현재 위치를<br/>더 정확하게 계산할 수 있어요.</p>
-       <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>점수는 세밀할수록 좋아요! 입력한 정보로 맞춤 분석을 진행할게요.</p></div>
+       <div class="card ob-bubble-card"><img loading="lazy" decoding="async" src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>점수는 세밀할수록 좋아요! 입력한 정보로 맞춤 분석을 진행할게요.</p></div>
        <div class="ob1-score-wrap">
          <h3>성적 입력 <span style="color:#ef4444">*</span></h3>
          <p class="score-subtitle">과목별 입력을 완료하면 현재 위치를 더 정확하게 계산해요.</p>
@@ -2396,7 +2396,7 @@ function App() {
        ${onboardingProgress(3)}
        ${appbar('학습성향 진단 1-3', true)}
        <p class="sub ob-subcopy">마지막 단계예요.<br/>학습 MBTI로 내 공부 성향을 진단해보세요.</p>
-       <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>짧은 질문 4개로 학습 성향을 빠르게 확인할 수 있어요!</p></div>
+       <div class="card ob-bubble-card"><img loading="lazy" decoding="async" src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>짧은 질문 4개로 학습 성향을 빠르게 확인할 수 있어요!</p></div>
        <div class="card ob-card">
          <p class="analysis-title">학습 MBTI 검사</p>
          <p class="sub">4문항으로 빠르게 진단해요.</p>
@@ -2419,7 +2419,7 @@ function App() {
        ${onboardingProgress(2)}
        ${appbar('목표 설정 및 분석', true)}
        <p class="sub ob-subcopy">현재 성적 기준으로 도전 가능한 대학과<br/>합격 가능성을 분석해드릴게요.</p>
-       <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>목표 대학마다 유리한 과목이 달라요. 그래서 대학별로 따로 봐야 해요!</p></div>
+       <div class="card ob-bubble-card"><img loading="lazy" decoding="async" src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>목표 대학마다 유리한 과목이 달라요. 그래서 대학별로 따로 봐야 해요!</p></div>
        <div class="card ob-card">
          <p class="analysis-title">현재 성적 기준 추천 대학</p>
          <div class="ob-uni-list">${['연세대학교 경영학과','고려대학교 경영학과','성균관대학교 글로벌경영학과'].map((u) => `<button class="ob-uni-item ${targetMajor===u?'active':''}" data-action="selectTarget" data-target-major="${u}">${u}</button>`).join('')}</div>
@@ -2449,7 +2449,7 @@ function App() {
        ${onboardingProgress(3)}
        ${appbar('공부 성향 맞춤 솔루션', true)}
        <p class="sub ob-subcopy">현재 성적에서 합격컷까지,<br/>가장 효율적인 점수 상승 루트를 보여드릴게요.</p>
-       <div class="card ob-bubble-card"><img src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>무작정 전 과목을 올리는 게 아니라, 합격에 가장 크게 기여하는 과목부터 잡아야 해요!</p></div>
+       <div class="card ob-bubble-card"><img loading="lazy" decoding="async" src="${CRACKY_SRC}" class="ob-cracky" alt="크랙이"/><p>무작정 전 과목을 올리는 게 아니라, 합격에 가장 크게 기여하는 과목부터 잡아야 해요!</p></div>
        <div class="card ob-card">${scoreJourneyCard('최소 노력 대비 합격 도달 성적')}</div>
        <div class="eta-card"><div class="card ob-card ob-period-card on-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 3개월 내 도달 예상</b><p>주간 플래너 피드백과 학습 방향 코칭 제공</p></div>${ob3IsAnalyzing ? `<div class="loading-overlay"><div class="loading-box"><div class="dots">● ● ●</div><div>분석중입니다</div><div>잠시만 기다려주세요</div></div></div>` : ''}</div>
        <div class="ob5-after-eta">
@@ -2791,7 +2791,7 @@ function App() {
          <div class="feedback-item">${i('check', true)}수학 공부 시간이 부족해요. 개념 학습 시간을 늘려보세요.</div>
          <div class="feedback-item">${i('check', true)}탐구 문제 풀이 시간이 좋아요! 유지하면 더 좋은 결과가 기대돼요.</div>
          <div class="feedback-item">${i('check', true)}영어는 꾸준히 잘하고 있어요. 계속 유지해요!</div>
-         <img src="${CRACKY_SRC}" class="weekly-char crackie" alt="크랙이"/>
+         <img loading="lazy" decoding="async" src="${CRACKY_SRC}" class="weekly-char crackie" alt="크랙이"/>
        </div>
        <div class="cta-wrapper"><button class="btn btn-primary weekly-next cta-btn" data-action="goto" data-target="planner">다음 주 계획 세우기</button></div>`,
       true
@@ -4538,21 +4538,23 @@ function App() {
           const slider = document.querySelector('.home-kpi-slider');
           const cards = Array.from(slider?.querySelectorAll('.slider-card') || []);
           if (slider && cards.length) {
-            const sliderRect = slider.getBoundingClientRect();
-            const centerX = sliderRect.left + sliderRect.width / 2;
-            let nearest = 0;
-            let nearestDist = Number.POSITIVE_INFINITY;
-            cards.forEach((card, idx) => {
-              const rect = card.getBoundingClientRect();
-              const cardCenter = rect.left + rect.width / 2;
-              const dist = Math.abs(cardCenter - centerX);
-              if (dist < nearestDist) {
-                nearestDist = dist;
-                nearest = idx;
-              }
+            requestAnimationFrame(() => {
+              const sliderRect = slider.getBoundingClientRect();
+              const centerX = sliderRect.left + sliderRect.width / 2;
+              let nearest = 0;
+              let nearestDist = Number.POSITIVE_INFINITY;
+              cards.forEach((card, idx) => {
+                const rect = card.getBoundingClientRect();
+                const cardCenter = rect.left + rect.width / 2;
+                const dist = Math.abs(cardCenter - centerX);
+                if (dist < nearestDist) {
+                  nearestDist = dist;
+                  nearest = idx;
+                }
+              });
+              const current = Number(slider.querySelector('.home-kpi-track')?.dataset.homeSlideIndex || 0);
+              setHomeSlideDom(nearest, nearest > current ? 'motion-next' : 'motion-prev');
             });
-            const current = Number(slider.querySelector('.home-kpi-track')?.dataset.homeSlideIndex || 0);
-            setHomeSlideDom(nearest, nearest > current ? 'motion-next' : 'motion-prev');
           }
         }
         touchTargetRef.current = '';
@@ -4861,7 +4863,7 @@ function App() {
     restoreIfUnexpectedTopJump();
   };
 
-  const loadingOverlayUi = `<div class="loading-overlay"><div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><section class="app-loading-hero app-loading-poster anchor-volatile ${loadingFadeOut ? 'is-fade-out' : ''}"><img class="app-loading-poster-img" src="./assets/5CB38964-C563-4371-A660-A0475A71C603.png" alt="스터디크랙 로딩 이미지"/></section></div></div></div></div>`;
+  const loadingOverlayUi = `<div class="loading-overlay"><div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><section class="app-loading-skeleton ${loadingFadeOut ? 'is-fade-out' : ''}"><div class="sk-line title"></div><div class="sk-card"></div><div class="sk-line"></div><div class="sk-progress"></div></section></div></div></div></div>`;
   const fallbackUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div></div>`;
   const preAuthAllowedScreens = ['splash', 'authLogin', 'authSignup', 'authFindId', 'authFindPw', 'on1', 'on2', 'on3'];
   const renderedBase = error ? fallbackUi : !loggedIn && !preAuthAllowedScreens.includes(screen) ? getCurrentScreenHtml('on1') : current;
@@ -4869,7 +4871,7 @@ function App() {
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>분석중입니다</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
   const onboardingOverlay = onboardingLoading
-    ? `<div class="global-loading-overlay"><div class="global-loading-card"><img src="${CRACKY_SRC}" alt="크랙이" class="global-loading-char"/><div class="loading-dots"><i></i><i></i><i></i></div><b>${onboardingLoadingText}</b><p>잠시만 기다려주세요</p></div></div>`
+    ? `<div class="global-loading-overlay"><div class="global-loading-card"><img loading="lazy" decoding="async" src="${CRACKY_SRC}" alt="크랙이" class="global-loading-char"/><div class="loading-dots"><i></i><i></i><i></i></div><b>${onboardingLoadingText}</b><p>잠시만 기다려주세요</p></div></div>`
     : '';
   const addingUniversityOverlay = addingUniversity
     ? `<div class="global-loading-overlay"><div class="global-loading-card"><div class="loading-dots"><i></i><i></i><i></i></div><b>추가중입니다.</b><p>잠시만 기다려주세요</p></div></div>`
