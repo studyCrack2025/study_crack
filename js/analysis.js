@@ -1440,7 +1440,13 @@ async function saveTargetUnivs() {
 async function updateAnalysisUI() {
     const container = document.getElementById('univAnalysisResult');
     if (!container) return;
-    
+
+    // [DEV ONLY] localhost — API 없이 디자인 확인용 플레이스홀더
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        container.innerHTML = `<div style="padding:24px; text-align:center; color:#94a3b8; background:#f9f9fb; border-radius:6px; font-size:14px; font-weight:600;">[로컬 디자인 미리보기 — 분석 API 미연결]</div>`;
+        return;
+    }
+
     const hasTargets = userTargetUnivs && userTargetUnivs.some(u => u && u.univ);
     const availableExams = userQuantData ? Object.keys(userQuantData).filter(key => {
         const data = userQuantData[key];
@@ -1649,7 +1655,13 @@ function initSimulation() {
 async function fetchSimulationData() {
     const chartArea = document.getElementById('simChartArea');
     if (!chartArea) return;
-    
+
+    // [DEV ONLY] localhost — API 없이 디자인 확인용 플레이스홀더
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        chartArea.innerHTML = `<div style="margin:auto; color:#94a3b8; font-size:14px; font-weight:600;">[로컬 디자인 미리보기 — 시뮬레이션 API 미연결]</div>`;
+        return;
+    }
+
     chartArea.innerHTML = '<div style="margin:auto; color:#3b82f6;"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
     
     const token = getIdToken();
