@@ -111,8 +111,18 @@ function mascotBubble(text, size = 'sm') {
 
 function App() {
   console.log('APP_RENDER_START');
+  // TODO_API_AUTH_LOGIN_LOGOUT:
+  // mock state/local key: loggedIn, loginEmail, loginPassword
+  // expected:
+  // POST /auth/login { email, password } -> { accessToken, user }
+  // POST /auth/logout -> { ok:true }
+  // API 전환 시 local mock 로그인 성공 분기 제거.
   const [screen, setScreen] = useState('splash');
   const [tab, setTab] = useState('home');
+  // TODO_API_GET_RANKING:
+  // mock key: rankingPeriod, rankingMock
+  // expected: GET /ranking?period=daily|weekly|monthly
+  // response: { podium:[...], list:[...], myRank:{ rank, tier, streak, time } }
   const [rankingPeriod, setRankingPeriod] = useState('daily');
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -120,6 +130,11 @@ function App() {
   const [error, setError] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [selectedUniversityIndex, setSelectedUniversityIndex] = useState(0);
+  // TODO_API_PROFILE_LOAD_SAVE:
+  // state/local key: user, selectedPlan, targetMajor
+  // expected:
+  // GET /users/me, PATCH /users/me
+  // mock/localStorage 코드(user/selectedUniversity/selectedPlan) 제거 대상.
   const [user, setUser] = useState(DEFAULT_USER);
   const [selectedPlan, setSelectedPlan] = useState(DEFAULT_USER.plan);
   const [duration, setDuration] = useState('4주');
@@ -128,6 +143,12 @@ function App() {
   const [analysisTargetList, setAnalysisTargetList] = useState(['연세대학교 경영학과', '고려대학교 경영대학', '강서대학교 G2빅데이터경영학과']);
   const [homeTargetList, setHomeTargetList] = useState(['연세대학교 경영학과', '고려대학교 경영대학', '강서대학교 G2빅데이터경영학과']);
   const [analysisSearchOpen, setAnalysisSearchOpen] = useState(false);
+  // TODO_API_GET_ANALYSIS:
+  // mock key: analysisSearchTerm, analysisTargetList, homeTargetList
+  // expected:
+  // GET /analysis/universities?query=&score=
+  // GET /analysis/result?userId=
+  // response: { cuts, simulation, recommendSubjects, admissionProbability }
   const [analysisSearchTerm, setAnalysisSearchTerm] = useState('');
   const [analysisMode, setAnalysisMode] = useState('summary');
   const [analysisEtaStage, setAnalysisEtaStage] = useState(1);
@@ -148,10 +169,22 @@ function App() {
   const [findEmailModalOpen, setFindEmailModalOpen] = useState(false);
   const [foundEmailMasked, setFoundEmailMasked] = useState('');
   const [resetPasswordModalOpen, setResetPasswordModalOpen] = useState(false);
+  // TODO_API_AUTH_PASSWORD_RESET:
+  // mock key: resetPasswordStep, resetPasswordEmail
+  // expected:
+  // POST /auth/password/reset/request { email }
+  // POST /auth/password/reset/confirm { email, code, password }
   const [resetPasswordStep, setResetPasswordStep] = useState('request');
   const [resetPasswordEmail, setResetPasswordEmail] = useState('');
   const [resetPasswordSending, setResetPasswordSending] = useState(false);
   const [signupName, setSignupName] = useState('');
+  // TODO_API_AUTH_SIGNUP_VERIFY:
+  // mock key: signupEmailVerified, signupPhoneVerified, signupTerms*
+  // expected:
+  // POST /auth/signup
+  // POST /auth/verify/email/send, /auth/verify/email/confirm
+  // POST /auth/verify/phone/send, /auth/verify/phone/confirm
+  // API 전환 시 signup draft localStorage 동기화 코드 제거.
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupPasswordConfirm, setSignupPasswordConfirm] = useState('');
@@ -166,6 +199,14 @@ function App() {
   const [signupTrack, setSignupTrack] = useState('');
   const [signupSource, setSignupSource] = useState('');
   const [signupPromoCode, setSignupPromoCode] = useState('');
+  // TODO_API_DOMAIN_MAP:
+  // Onboarding(기초조사서/성적/목표대학): POST /onboarding/survey, /onboarding/scores, /onboarding/target
+  // Coaching(요청/주간피드백/SKY 플래너 요청): POST /coaching/requests, GET /coaching/weekly-feedback
+  // Pro Report(요청/상태/조회): POST /reports/requests, GET /reports, GET /reports/{id}
+  // Payment(결제 시작/구독상태/완료): POST /payments/checkout, GET /subscriptions/me, POST /payments/confirm
+  // Admin/Tutor(배정/피드백/관리자 데이터): GET /admin/dashboard, GET /tutors/assignments, GET /tutors/feedback
+  // Settings(알림/약관/환경): PATCH /users/settings
+  // 모두 현재 mock/local state 기반이며 API 교체 시 해당 local/state 분기 제거 필요.
   const [signupEmailSending, setSignupEmailSending] = useState(false);
   const [signupPhoneSending, setSignupPhoneSending] = useState(false);
   const [signupEmailCodeSent, setSignupEmailCodeSent] = useState(false);
@@ -917,6 +958,10 @@ function App() {
     localStorage.setItem('scores', JSON.stringify(scores));
   }, [scores]);
 
+  // TODO_API_PLANNER_SAVE:
+  // localStorage key: plannerItems
+  // expected: PUT /planner/items { items:[...] }
+  // API 전환 시 localStorage.setItem('plannerItems', ...) 제거.
   useEffect(() => {
     localStorage.setItem('plannerItems', JSON.stringify(plannerItems));
   }, [plannerItems]);
@@ -925,6 +970,10 @@ function App() {
     localStorage.setItem('notifications', JSON.stringify(notifications));
   }, [notifications]);
 
+  // TODO_API_STUDY_RECORDS_SAVE:
+  // localStorage key: studyRecords
+  // expected: PUT /study/records { date, studyTime }
+  // API 전환 시 localStorage.setItem('studyRecords', ...) 제거.
   useEffect(() => {
     localStorage.setItem('studyRecords', JSON.stringify(studyRecords));
   }, [studyRecords]);
