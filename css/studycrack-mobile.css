@@ -225,10 +225,9 @@ body {
 .home-container { display:flex; flex-direction:column; }
 .home-content { display:flex; flex-direction:column; gap:12px; }
 .home-header { margin-bottom: 4px; }
-.home-top-icons { display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px; }
+.home-top-icons { display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px; padding-top:4px; padding-bottom:4px; }
 .top-icon-btn { width: 36px; height: 36px; border-radius: 10px; border:1px solid var(--line); background:#fff; display:grid; place-items:center; color:#64748b; }
-.home-top-icons .top-icon-btn { transform: translateY(6px); }
-.home-top-icons .top-icon-btn[data-action="openNotificationModal"] { transform: translateY(8px); }
+.home-top-icons .top-icon-btn { transform: translateY(10px); }
 .top-icon-btn .icon { width:19px; height:19px; }
 .home-greeting { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -0.02em; color:#0f172a; }
 .home-sub { margin: 2px 0 0; font-size: 12px; color:#64748b; }
@@ -1103,8 +1102,12 @@ body {
 .signup-pw-guide { display:block; margin:8px 0 10px; color:#6B7280; font-size:12px; line-height:1.4; }
 .terms-card { border:1px solid #E5E7EB; border-radius:16px; padding:16px; margin-top:20px; background:#fff; }
 .terms-header { display:flex; align-items:center; gap:8px; font-weight:700; min-height:34px; margin-bottom:10px; }
-.terms-item { display:grid; grid-template-columns:28px minmax(0,1fr) auto; align-items:center; column-gap:8px; min-height:40px; padding:4px 0; font-size:14px; }
-.terms-item label { display:flex; align-items:center; gap:8px; cursor:pointer; pointer-events:auto; }
+.terms-item,
+.term-item { display:flex; align-items:center; gap:8px; min-height:40px; padding:4px 0; font-size:14px; }
+.terms-item label,
+.term-item label { display:flex; align-items:center; gap:8px; cursor:pointer; pointer-events:auto; white-space:nowrap; word-break:keep-all; flex:1; }
+.terms-item span,
+.term-item span { white-space:normal; line-height:1.4; }
 .terms-item input[type="checkbox"] { pointer-events:auto; cursor:pointer; }
 .terms-link { color:#6B7280; font-size:13px; border:none; background:transparent; }
 .signup-submit,
