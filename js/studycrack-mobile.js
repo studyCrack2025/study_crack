@@ -1056,7 +1056,7 @@ function App() {
   };
   const analysisBaseProfile = analysisProfiles[targetMajor] || analysisProfiles['연세대학교 경영학과'];
   const liveCurrentScore = Math.round((Number(scores.korean||0)+Number(scores.math||0)+Number(scores.english||0)+Number(scores.inquiry1||0)+Number(scores.inquiry2||0))/5);
-  const analysisSelected = { ...analysisBaseProfile, score: liveCurrentScore, sim: (analysisBaseProfile.sim||[]).map((r,idx)=>{ const boost = Math.max(0, Math.round((liveCurrentScore-60)/10)); const g = Number(String(r[1]).replace(/[^0-9.-]/g,'')) || 0; return [r[0], `+${(g+boost).toFixed(1)}점`, r[2], idx===0]; }) };
+  const analysisSelected = { ...analysisBaseProfile, score: liveCurrentScore, sim: (analysisBaseProfile.sim||[]).map((r,idx)=>{ const boost = Math.max(0, Math.round((liveCurrentScore-60)/10)); const g = Number(String(r[1]).replace(/[^0-9.-]/g,'')) || 0; const totalGain = Math.round(g + boost); return [r[0], `+${totalGain}점`, r[2], idx===0]; }) };
   const analysisSearchPool = ['연세대학교 경영학과', '고려대학교 경영대학', '성균관대학교 글로벌경영학과', '서강대학교 경영학부', '한양대학교 경영학부'];
   const analysisRecommended = ['가천대학교 관광경영학과', '강서대학교 G2빅데이터경영학과', '고려대학교 경영대학'];
   const analysisSearchList = analysisSearchPool.filter((name) => name.includes(analysisSearchTerm.trim()));
@@ -1520,7 +1520,11 @@ function App() {
     updateSignupPasswordMatchUi();
     return { email, phone, pw, pwc, name, birth, track, source, promoCode, emailCode, phoneCode, gender, requiredChecked, marketingChecked };
   };
-  const homeTargets = homeTargetList.map((major) => {
+  const orderedHomeTargetMajors = Array.from(new Set([
+    ...(targetMajor ? [targetMajor] : []),
+    ...(homeTargetList || [])
+  ])).filter(Boolean);
+  const homeTargets = orderedHomeTargetMajors.map((major) => {
     const profile = analysisProfiles[major] || analysisSelected;
     const score = Number(liveCurrentScore || Math.round((scores.korean + scores.math + scores.english + scores.inquiry1 + scores.inquiry2) / 5));
     const cut = 100;
@@ -1537,6 +1541,7 @@ function App() {
   const analysisMajorOptions = Array.from(new Set([...(analysisTargetList || []), ...(homeTargetList || [])])).filter(Boolean);
   const normalizedTargetMajor = analysisMajorOptions.includes(targetMajor) ? targetMajor : (analysisMajorOptions[0] || targetMajor || '');
   const analysisSimulationBaseOrder = Array.from(new Set([
+    ...(targetMajor ? [targetMajor] : []),
     ...(analysisTargetList || []),
     ...(homeTargetList || [])
   ])).filter(Boolean);
@@ -2556,8 +2561,8 @@ function App() {
                   const projectionScore = projectionGain !== null ? Math.min(maxScore, score + projectionGain) : null;
                   const projectedPercent = projectionScore ? Math.max(0, Math.min(100, (projectionScore / maxScore) * 100)) : heightPercent;
                   const projectionHeight = projectionScore ? Math.max(0, projectedPercent - heightPercent) : 0;
-                  const recommendedText = analysisRecommendedRow ? `${Math.round(analysisRecommendedSubjectScore + analysisRecommendedRow.gainNum)}점<br/>(${analysisRecommendedRow.subject} +1점 시 <span style="color:#2563EB;font-weight:800;">+${Math.round(analysisRecommendedRow.gainNum)}점</span>)` : '';
-                  const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${Math.max(0, (100 - projectionScore / maxScore * 100))}%">${recommendedText}</span>` : '';
+                  const recommendedText = analysisRecommendedRow ? `${Math.round(analysisRecommendedSubjectScore + analysisRecommendedRow.gainNum)}점 (${analysisRecommendedRow.subject} 1점 상승 시 +${Math.round(analysisRecommendedRow.gainNum)}점)` : '';
+                  const projection = projectionScore ? `<span class="analysis-v2-bar-proj analysis-efficiency-pill ${shouldProject ? 'pop' : ''}" style="bottom:${Math.max(0, (100 - projectionScore / maxScore * 100))}%">${recommendedText}</span>` : '';
                   const projectionBox = projectionScore && projectionHeight > 0 ? `<span class="analysis-v2-bar-proj-box" style="bottom:${heightPercent}%;height:${projectionHeight}%"></span>` : '';
                   const tier = scoreTierClass(score);
                   return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="simulateBarGain" data-target-major="${full}" data-base-score="${score}"><b class="score ${tier}">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar ${tier}" style="height:${heightPercent}%;background:${color}"></i>${projectionBox}${projection}</div><p>${label}</p></button>`;
@@ -2640,7 +2645,7 @@ function App() {
     ),
     my: layout(appbar('마이페이지', false) + `<div class="my-stack">
       <button type="button" class="card my-profile-card" data-action="openMyProfileEdit"><div class="my-profile-left"><div class="my-avatar">${i('user', false)}</div><div><p class="my-name">${user?.name || DEFAULT_USER.name}</p><p class="sub">목표 대학: ${targetMajor || DEFAULT_USER.targetUniversity}</p></div></div><div class="my-profile-right"><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span><span class="badge">${selectedPlan || DEFAULT_USER.plan} 이용 중</span></div></button>
-      ${myProfileEditOpen ? `<div class="home-modal-overlay" data-action="closeMyProfileEdit"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">프로필 수정</p><input class="planner-input" data-field="myProfileNameDraft" value="${myProfileNameDraft}" placeholder="이름"/><select class="planner-input" data-field="myProfileTargetDraft">${(analysisTargetList || []).map((major) => `<option value="${major}" ${myProfileTargetDraft===major?'selected':''}>${major}</option>`).join('')}</select><div class="support-btns" style="margin-top:12px"><button class="btn btn-secondary" data-action="closeMyProfileEdit">취소</button><button class="btn btn-primary" data-action="saveMyProfileEdit">저장</button></div></div></div>` : ''}
+      ${myProfileEditOpen ? `<div class="home-modal-overlay" data-action="closeMyProfileEdit"><div class="home-modal my-profile-edit-modal" data-action="noopModal"><p class="home-modal-title">프로필 수정</p><div class="my-profile-edit-fields"><label>이름</label><input class="planner-input" data-field="myProfileNameDraft" value="${myProfileNameDraft}" placeholder="이름"/></div><div class="my-profile-edit-fields"><label>목표 대학</label><select class="planner-input" data-field="myProfileTargetDraft">${(analysisTargetList || []).map((major) => `<option value="${major}" ${myProfileTargetDraft===major?'selected':''}>${major}</option>`).join('')}</select></div><div class="support-btns my-profile-edit-actions"><button class="btn btn-secondary" data-action="closeMyProfileEdit">취소</button><button class="btn btn-primary" data-action="saveMyProfileEdit">저장</button></div></div></div>` : ''}
       ${mbtiResult ? `<div class="card" style="border:2px solid #2563EB;background:#EFF6FF;"><p class="analysis-title">진단 결과 & MBTI 학습보고서</p><p style="margin:6px 0 2px;font-size:30px;font-weight:900;letter-spacing:.08em;color:#1D4ED8;text-shadow:0 6px 18px rgba(37,99,235,.18);">CSDR</p><p class="sub" style="margin:0 0 12px;font-size:12px;color:#1E40AF;">(컨셉형, 직관령, 분석형, 루틴)</p><button class="btn btn-primary" data-action="downloadMbtiReport">MBTI 학습 보고서 다운</button></div>` : ''}
       <div class="card my-subscription-card"><div class="my-sub-icon">${i('report', false)}</div><div><p class="my-sub-title">Pro 플랜 이용 중</p><p class="my-sub-date">다음 결제일 2024.06.14</p></div></div>
       <div class="card my-menu-card">

@@ -671,7 +671,7 @@ body {
 .plan-chip { display:inline-block; margin-top:8px; padding:4px 9px; border-radius:999px; background:#eef4ff; color:#2563EB; font-size:11px; font-weight:700; }
 
 .my-stack { display:grid; gap:16px; }
-.my-profile-card { padding:16px; display:flex; align-items:center; justify-content:space-between; }
+.my-profile-card { width:100%; padding:16px; display:flex; align-items:center; justify-content:space-between; border:1px solid #E2E8F0; text-align:left; }
 .my-profile-left { display:flex; align-items:center; gap:12px; }
 .my-avatar { width:42px; height:42px; border-radius:999px; background:#f8fafc; border:1px solid #dbe4f4; display:grid; place-items:center; }
 .my-avatar .icon { width:20px; height:20px; }
@@ -2696,6 +2696,23 @@ input:focus, select:focus, textarea:focus,
 }
 
 .my-profile-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.my-profile-edit-modal { width:min(88vw, 360px); max-height:min(78vh, 620px); overflow:auto; border-radius:22px !important; padding:18px; }
+.my-profile-edit-fields { display:grid; gap:6px; margin-top:10px; }
+.my-profile-edit-fields label { font-size:13px; font-weight:700; color:#334155; }
+.my-profile-edit-actions { margin-top:14px; }
+
+.analysis-efficiency-pill { display:inline-flex; align-items:center; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:8px 12px; border-radius:999px; font-size:11px; line-height:1.2; }
+@media (max-width:390px){ .analysis-efficiency-pill { font-size:10px; padding:7px 10px; max-width:94vw; } }
+
+.analysis .score-journey-card,
+.analysis .on-eta-card,
+.analysis .ob-period-card {
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
 
 .home-greeting-bubble { display: flex; align-items: center; gap: 10px; }
 .home-greeting-cracky { width: 42px; height: 42px; object-fit: contain; flex-shrink: 0; }
