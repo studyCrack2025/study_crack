@@ -1317,16 +1317,17 @@ function App() {
   const updateSignupButtonState = () => {
     const btn = document.querySelector('[data-signup-submit]');
     if (!btn) return;
+    const form = syncSignupFromDom();
     const draft = window.__signupDraft || {};
-    const email = (document.querySelector('[data-field="signupEmail"]')?.value ?? draft.email ?? '').trim();
-    const phone = (document.querySelector('[data-field="signupPhone"]')?.value ?? draft.phone ?? '').trim();
-    const pw = document.querySelector('[data-field="signupPassword"]')?.value ?? draft.password ?? '';
-    const pwc = document.querySelector('[data-field="signupPasswordConfirm"]')?.value ?? draft.passwordConfirm ?? '';
-    const name = (document.querySelector('[data-field="signupName"]')?.value ?? draft.name ?? '').trim();
-    const birth = (document.querySelector('[data-field="signupBirth"]')?.value ?? draft.birth ?? '').trim();
-    const track = (document.querySelector('[data-field="signupTrack"]')?.value ?? draft.track ?? '').trim();
-    const source = (document.querySelector('[data-field="signupSource"]')?.value ?? draft.source ?? '').trim();
-    const gender = document.querySelector('input[name="signupGender"]:checked')?.getAttribute('data-gender') || draft.gender || '';
+    const email = (form.email ?? draft.email ?? '').trim();
+    const phone = (form.phone ?? draft.phone ?? '').trim();
+    const pw = form.pw ?? draft.password ?? '';
+    const pwc = form.pwc ?? draft.passwordConfirm ?? '';
+    const name = (form.name ?? draft.name ?? '').trim();
+    const birth = (form.birth ?? draft.birth ?? '').trim();
+    const track = (form.track ?? draft.track ?? '').trim();
+    const source = (form.source ?? draft.source ?? '').trim();
+    const gender = form.gender || draft.gender || '';
     const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
     const requiredChecked = requiredInputs.length === 4 && requiredInputs.every((el) => el.checked);
     const pwRuleValid = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(pw);
@@ -3243,6 +3244,13 @@ function App() {
       if (code.length >= 4) {
         setSignupEmailVerified(true);
         window.__signupDraft = { ...(window.__signupDraft || {}), emailVerified: true };
+        actionEl.dataset.verified = 'true';
+        if (signupEmailTimerIdRef.current) {
+          clearInterval(signupEmailTimerIdRef.current);
+          signupEmailTimerIdRef.current = null;
+        }
+        const timerEl = document.querySelector('[data-signup-timer="email"]');
+        if (timerEl) timerEl.textContent = '인증 완료';
       }
       updateSignupButtonState();
       restoreSignupDomValues();
@@ -3256,6 +3264,13 @@ function App() {
       if (code.length >= 4) {
         setSignupPhoneVerified(true);
         window.__signupDraft = { ...(window.__signupDraft || {}), phoneVerified: true };
+        actionEl.dataset.verified = 'true';
+        if (signupPhoneTimerIdRef.current) {
+          clearInterval(signupPhoneTimerIdRef.current);
+          signupPhoneTimerIdRef.current = null;
+        }
+        const timerEl = document.querySelector('[data-signup-timer="phone"]');
+        if (timerEl) timerEl.textContent = '인증 완료';
       }
       updateSignupButtonState();
       restoreSignupDomValues();
@@ -3274,11 +3289,11 @@ function App() {
       e.stopPropagation();
       preserveSignupDomValues();
       const y = window.scrollY || window.pageYOffset || 0;
+      syncSignupFromDom();
       const allInput = document.querySelector('[data-field="signupTermsAll"]');
       const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
       const marketingInput = document.querySelector('[data-field="signupTermsMarketing"]');
-      const currentAll = !!allInput?.checked;
-      const next = !currentAll;
+      const next = !!allInput?.checked;
       if (allInput) allInput.checked = next;
       requiredInputs.forEach((el) => { el.checked = next; });
       if (marketingInput) marketingInput.checked = next;
@@ -3294,7 +3309,9 @@ function App() {
       return;
     }
     if (action === 'openTermsModal') {
+      e.preventDefault();
       preserveSignupDomValues();
+      syncSignupFromDom();
       const y = window.scrollY || window.pageYOffset || 0;
       setOpenTermsType(actionEl.getAttribute('data-terms-type') || '');
       requestAnimationFrame(() => {
