@@ -530,7 +530,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .cta-content h3 { font-size: 1.8rem; }
     .cta-button { padding: 16px 36px; font-size: 1rem; }
 
-    .footer-logo { height: 38px; margin-bottom: 16px; }
+    .footer-logo { height: 38px; width: auto; margin-bottom: 16px; }
     .modal-content { margin: 15% auto; width: 90%; max-height: 70vh; padding: 20px; border-radius: 12px; }
     .floating-qna-btn { bottom: 20px; right: 20px; width: 50px; height: 50px; }
     .qna-icon { font-size: 1.4rem; }
@@ -1013,7 +1013,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .cta__inner { padding: 60px 0; }
     .review-card.featured { border-width: 2px; }
     .footer-content { padding-inline: 0; }
-    .footer-logo { height: 40px; }
+    .footer-logo { height: 40px; width: auto; }
 }
 
 @media (max-width: 560px) {
@@ -1115,6 +1115,7 @@ header#site-header.scrolled {
 
 .logo-container img {
     height: 47px;
+    width: auto;
 }
 
 .logo {
@@ -1882,6 +1883,7 @@ footer {
 
 .footer-logo {
     height: 35px;
+    width: auto;
     margin-bottom: 18px;
 }
 
@@ -1921,7 +1923,7 @@ footer {
         height: 76px;
         padding: 0 20px;
     }
-    .logo-container img { height: 40px; }
+    .logo-container img { height: 40px; width: auto; }
     .logo { font-size: 20px; }
     .nav-links {
         gap: 12px;
@@ -2005,6 +2007,7 @@ footer {
     }
     .logo-container img {
         height: 34px;
+        width: auto;
     }
     .logo {
         font-size: 17px;
