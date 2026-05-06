@@ -2532,7 +2532,7 @@ function App() {
                   const projectionScore = projectionGain !== null ? Math.min(maxScore, score + projectionGain) : null;
                   const projectedPercent = projectionScore ? Math.max(0, Math.min(100, (projectionScore / maxScore) * 100)) : heightPercent;
                   const projectionHeight = projectionScore ? Math.max(0, projectedPercent - heightPercent) : 0;
-                  const recommendedText = analysisRecommendedRow ? `${analysisRecommendedRow.subject} ${Math.round(analysisRecommendedSubjectScore + analysisRecommendedRow.gainNum)}점 (<span style="color:#2563EB;font-weight:800;">+${Math.round(analysisRecommendedRow.gainNum)}점</span>)` : '';
+                  const recommendedText = analysisRecommendedRow ? `${Math.round(analysisRecommendedSubjectScore + analysisRecommendedRow.gainNum)}점 (${analysisRecommendedRow.subject} 1점 상승 시 <span style="color:#2563EB;font-weight:800;">+${Math.round(analysisRecommendedRow.gainNum)}점</span>)` : '';
                   const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${Math.max(0, (100 - projectionScore / maxScore * 100))}%">${recommendedText}</span>` : '';
                   const projectionBox = projectionScore && projectionHeight > 0 ? `<span class="analysis-v2-bar-proj-box" style="bottom:${heightPercent}%;height:${projectionHeight}%"></span>` : '';
                   const tier = scoreTierClass(score);
