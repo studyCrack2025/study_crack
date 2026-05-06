@@ -1890,6 +1890,9 @@ function App() {
     .analysis-chart-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
     .analysis-chart-head h3{margin:0;font-size:20px;}
     .analysis-chart-badge{font-size:11px;font-weight:700;color:#475569;background:#F1F5F9;border-radius:999px;padding:5px 10px;}
+    .score-simulation-chart-wrap{position:relative;}
+    .score-simulation-chart-hint{font-size:12px;color:#64748B;font-weight:500;margin:0 0 8px;text-align:right;}
+    .score-simulation-chart-wrap::after{content:"";position:absolute;top:0;right:0;width:28px;height:100%;pointer-events:none;background:linear-gradient(to left,#fff,rgba(255,255,255,0));}
     .analysis-v2-chart-area{position:relative;--bar-bottom:22px;--bar-height:440px;min-height:550px;padding:36px 10px 18px;border-radius:20px;background:linear-gradient(180deg,#F8FAFC 0%,#FFFFFF 100%);margin-top:14px;overflow:visible;}
     .analysis-v2-guide-line{position:absolute;left:10px;right:10px;border-top:1px dashed #94A3B8;}
     .analysis-v2-guide-line.pass{bottom:calc(var(--bar-bottom) + (var(--bar-height) * 0.4));}
@@ -2535,7 +2538,8 @@ function App() {
           <div class="analysis-v2-compare-card">
             ${(() => { console.log('RENDER_ANALYSIS_BAR_CHART_FIXED_V3'); return ''; })()}
             <div class="analysis-chart-head"><h3>합격 가능성 위치 (0~250점)</h3><span class="analysis-chart-badge">3월 학력평가 기준</span></div>
-            <div class="analysis-v2-chart-area">
+            <p class="score-simulation-chart-hint">옆으로 밀어 더 많은 대학 보기 →</p>
+            <div class="score-simulation-chart-wrap"><div class="analysis-v2-chart-area">
               <div class="analysis-v2-guide-line pass"><span class="label">합격선 100</span></div>
               <div class="analysis-v2-guide-line safe"><span class="label">안정선 150</span></div>
               <div class="analysis-v2-bars">
@@ -2556,7 +2560,7 @@ function App() {
                   return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="simulateBarGain" data-target-major="${full}" data-base-score="${score}"><b class="score ${tier}">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar ${tier}" style="height:${heightPercent}%;background:${color}"></i>${projectionBox}${projection}</div><p>${label}</p></button>`;
                 }).join('')}
               </div>
-            </div>
+            </div></div>
           </div>
 
           <div class="card analysis-v2-sim">
