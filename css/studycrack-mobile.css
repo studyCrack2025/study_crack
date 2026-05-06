@@ -2702,7 +2702,7 @@ input:focus, select:focus, textarea:focus,
 .my-profile-edit-actions { margin-top:14px; }
 .analysis-search-inline { display:flex; gap:8px; align-items:center; }
 .analysis-search-inline .planner-input { flex:1; margin:0; }
-.analysis-search-btn { min-height:36px; padding:0 10px; font-size:12px; white-space:nowrap; }
+.analysis-search-btn { min-height: 36px; height: 36px; padding: 0 12px; font-size: 12px; width: auto; border-radius: 999px; white-space: nowrap; }
 
 .analysis-efficiency-pill { display:inline-flex; align-items:center; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:8px 12px; border-radius:999px; font-size:11px; line-height:1.2; }
 @media (max-width:390px){ .analysis-efficiency-pill { font-size:10px; padding:7px 10px; max-width:94vw; } }
