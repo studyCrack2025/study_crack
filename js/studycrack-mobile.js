@@ -443,6 +443,7 @@ function App() {
   const plannerInitialCenterDoneRef = useRef(false);
   const ob2SelectSyncTimerRef = useRef(null);
   const v2eSelectSyncTimerRef = useRef(null);
+  const analysisSearchLiveTermRef = useRef('');
   const isIOSSafari = () => {
     if (typeof navigator === 'undefined') return false;
     return /iP(ad|hone|od)/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|OPiOS|EdgiOS/.test(navigator.userAgent);
@@ -1598,6 +1599,21 @@ function App() {
     const h = Math.floor(total / 3600);
     const m = Math.floor((total % 3600) / 60);
     return `${h}시간 ${m}분`;
+  };
+  const renderUniversityResultsOnly = (query, scopeEl) => {
+    const container = scopeEl?.closest?.('.home-modal, .analysis-search-modal, .add-univ-page') || document;
+    const resultSection = container.querySelector('.analysis-search-section:not(.recommend), .add-univ-list');
+    if (!resultSection) return;
+    const normalized = String(query || '').trim().toLowerCase().replace(/\s+/g, '');
+    const filtered = analysisSearchPool.filter((name) => {
+      if (!normalized) return true;
+      return String(name).toLowerCase().replace(/\s+/g, '').includes(normalized);
+    });
+    if (resultSection.classList.contains('add-univ-list')) {
+      resultSection.innerHTML = filtered.map((name) => `<div class="add-univ-row"><div class="add-univ-item-text"><span>${name}</span><span class="add-univ-item-badge">검색</span></div><button class="btn ${analysisTargetList.includes(name)?'btn-secondary':'btn-primary'} mini" data-action="addAnalysisTarget" data-target-major="${name}" ${analysisTargetList.includes(name)?'disabled':''}>${analysisTargetList.includes(name)?'추가됨':'추가'}</button></div>`).join('') || '<p class="sub">검색 결과가 없습니다.</p>';
+      return;
+    }
+    resultSection.innerHTML = `<p>검색 결과</p>${filtered.map((name) => `<button class="analysis-search-row" data-action="addAnalysisTarget" data-target-major="${name}">${name}<span>${analysisTargetList.includes(name)?'추가됨':'추가'}</span></button>`).join('')}`;
   };
   const syncLiveStudyTimerUi = (liveSeconds) => {
     document.querySelectorAll('[data-study-base-seconds]').forEach((node) => {
@@ -4219,7 +4235,10 @@ function App() {
     }
     if (field === 'coachingMonth') setCoachingMonth(e.target.value);
     if (field === 'proEliteMonth') setProEliteMonth(e.target.value);
-    if (field === 'analysisSearchTerm') setAnalysisSearchTerm(e.target.value);
+    if (field === 'analysisSearchTerm') {
+      analysisSearchLiveTermRef.current = e.target.value;
+      renderUniversityResultsOnly(e.target.value, e.target);
+    }
     if (field === 'myProfileNameDraft') setMyProfileNameDraft(e.target.value);
     if (field === 'myProfileTargetDraft') setMyProfileTargetDraft(e.target.value);
     if (field === 'obTrack') {
@@ -4539,10 +4558,7 @@ function App() {
       return;
     }
     const isV2eSelectField = field === 'v2e-english' || field === 'v2e-history' || field === 'v2e-inq1-subject' || field === 'v2e-inq2-subject';
-    if (field === 'analysisSearchTerm') {
-      setAnalysisSearchTerm(e.target.value);
-      return;
-    }
+    if (field === 'analysisSearchTerm') return;
     if (field === 'myProfileTargetDraft') {
       setMyProfileTargetDraft(e.target.value);
       return;
