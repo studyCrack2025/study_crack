@@ -1332,17 +1332,34 @@ function App() {
     if (!msgEl) return;
     const pw = document.querySelector('[data-field="signupPassword"]')?.value ?? '';
     const pwc = document.querySelector('[data-field="signupPasswordConfirm"]')?.value ?? '';
-    if (!pw || !pwc) {
+    const hasUpper = /[A-Z]/.test(pw);
+    const hasLower = /[a-z]/.test(pw);
+    const hasNumber = /\d/.test(pw);
+    const hasSpecial = /[^A-Za-z0-9]/.test(pw);
+    let message = '';
+    let matched = false;
+    if (!pw) message = '비밀번호를 입력해주세요.';
+    else if (pw.length < 8) message = '8자 이상 입력해주세요.';
+    else if (!hasUpper) message = '영문 대문자를 포함해주세요.';
+    else if (!hasLower) message = '영문 소문자를 포함해주세요.';
+    else if (!hasNumber) message = '숫자를 포함해주세요.';
+    else if (!hasSpecial) message = '특수문자를 포함해주세요.';
+    else if (!pwc) message = '비밀번호를 다시 입력해주세요.';
+    else if (pw !== pwc) message = '비밀번호가 일치하지 않습니다.';
+    else {
+      matched = true;
+      message = '비밀번호가 조건을 만족합니다.';
+    }
+    if (!message) {
       msgEl.style.display = 'none';
       msgEl.textContent = '';
       msgEl.classList.remove('ok', 'bad');
       return;
     }
-    const matched = pw === pwc;
     msgEl.style.display = 'block';
     msgEl.classList.toggle('ok', matched);
     msgEl.classList.toggle('bad', !matched);
-    msgEl.textContent = matched ? '비밀번호가 일치합니다.' : '비밀번호가 일치하지 않습니다.';
+    msgEl.textContent = message;
   };
   const updateSignupButtonState = () => {
     const btn = document.querySelector('[data-signup-submit]');
@@ -1516,11 +1533,11 @@ function App() {
   });
   const analysisMajorOptions = Array.from(new Set([...(analysisTargetList || []), ...(homeTargetList || [])])).filter(Boolean);
   const normalizedTargetMajor = analysisMajorOptions.includes(targetMajor) ? targetMajor : (analysisMajorOptions[0] || targetMajor || '');
-  const analysisSimulationTargets = Array.from(new Set([
-    targetMajor,
+  const analysisSimulationBaseOrder = Array.from(new Set([
     ...(analysisTargetList || []),
     ...(homeTargetList || [])
-  ])).filter(Boolean).map((major) => {
+  ])).filter(Boolean);
+  const analysisSimulationTargets = (analysisSimulationBaseOrder.length ? analysisSimulationBaseOrder : [targetMajor]).filter(Boolean).map((major) => {
     const base = homeTargets.find((item) => item.major === major) || homeTargets[0];
     const score = Number(base?.score || liveCurrentScore || 0);
     const cut = Number(base?.cut || 100);
