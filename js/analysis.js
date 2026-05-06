@@ -51,6 +51,36 @@ const EXAM_DISPLAY_NAMES = {
 document.addEventListener('DOMContentLoaded', async () => {
     const userId = localStorage.getItem('userId');
 
+    // [DEV ONLY] localhost 디자인 확인용 mock 우회 — 실서버 배포 전 반드시 제거
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        const MOCK_USER = {
+            name: '디자인 테스트',
+            computedTier: 'pro',
+            qualitative: { status: '재수생', stream: 'natural', targets: ['서울대학교', '연세대학교'] },
+            quantitative: { csat: { kor: 90, math: 95, eng: 1, sci1: 'phy', sci1Score: 45, sci2: 'chem', sci2Score: 42 } },
+            targetUnivs: [{ univ: '서울대학교', major: '컴퓨터공학부' }, { univ: '연세대학교', major: '컴퓨터과학과' }, null, null, null, null],
+            univChangeRemaining: 30,
+            profileImage: null
+        };
+        renderUserInfo(MOCK_USER);
+        applyUserTier('pro');
+        updateSurveyStatus(MOCK_USER);
+        userTargetUnivs = MOCK_USER.targetUnivs;
+        userQuantData = MOCK_USER.quantitative;
+        univChangeRemaining = 30;
+        updateQuotaUI();
+        setWeeklyLoadingStatus(true);
+        try { await fetchUnivData(); } catch (e) {}
+        initUnivGrid();
+        updateAnalysisUI();
+        initProSection();
+        setWeeklyLoadingStatus(false);
+        setTimeout(() => { applyCoachTierLock(); applySimTierLock(); }, 500);
+        const devLoader = document.getElementById('pageLoadingOverlay');
+        if (devLoader) setTimeout(() => devLoader.classList.add('hidden'), 500);
+        return;
+    }
+
     if (!getAccessToken() || !getIdToken()) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
