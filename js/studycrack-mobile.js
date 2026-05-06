@@ -1425,23 +1425,24 @@ function App() {
     const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
     const requiredChecked = requiredInputs.length > 0 && requiredInputs.every((el) => el.checked);
     const marketingChecked = !!document.querySelector('[data-field="signupTermsMarketing"]')?.checked;
-    preserveSignupScroll(() => {
-      if (email !== '') setSignupEmail(email);
-      if (phone !== '') setSignupPhone(phone);
-      if (pw !== '') setSignupPassword(pw);
-      if (pwc !== '') setSignupPasswordConfirm(pwc);
-      if (name !== '') setSignupName(name);
-      if (birth !== '') setSignupBirth(birth);
-      if (track !== '') setSignupTrack(track);
-      if (source !== '') setSignupSource(source);
-      setSignupPromoCode(promoCode);
-      if (emailCode !== '') setSignupEmailCode(emailCode);
-      if (phoneCode !== '') setSignupPhoneCode(phoneCode);
-      if (gender) setSignupGender(gender);
-      setSignupTermsRequired(requiredChecked);
-      setSignupTermsMarketing(marketingChecked);
-      setSignupTermsAll(requiredChecked && marketingChecked);
-    });
+    window.__signupDraft = {
+      ...(window.__signupDraft || {}),
+      email,
+      phone,
+      password: pw,
+      passwordConfirm: pwc,
+      name,
+      birth,
+      track,
+      source,
+      promoCode,
+      emailCode,
+      phoneCode,
+      gender,
+      termsAll: requiredChecked && marketingChecked,
+      termsRequired: requiredInputs.map((el) => !!el.checked),
+      termsMarketing: marketingChecked
+    };
     updateSignupPasswordMatchUi();
     return { email, phone, pw, pwc, name, birth, track, source, promoCode, emailCode, phoneCode, gender, requiredChecked, marketingChecked };
   };
@@ -1818,16 +1819,16 @@ function App() {
     .analysis-chart-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
     .analysis-chart-head h3{margin:0;font-size:20px;}
     .analysis-chart-badge{font-size:11px;font-weight:700;color:#475569;background:#F1F5F9;border-radius:999px;padding:5px 10px;}
-    .analysis-v2-chart-area{position:relative;--bar-bottom:26px;--label-zone:48px;--bar-height:280px;min-height:460px;padding:36px 10px 18px;border-radius:20px;background:linear-gradient(180deg,#F8FAFC 0%,#FFFFFF 100%);margin-top:14px;overflow:visible;}
+    .analysis-v2-chart-area{position:relative;--bar-bottom:22px;--bar-height:280px;min-height:390px;padding:36px 10px 18px;border-radius:20px;background:linear-gradient(180deg,#F8FAFC 0%,#FFFFFF 100%);margin-top:14px;overflow:visible;}
     .analysis-v2-guide-line{position:absolute;left:10px;right:10px;border-top:1px dashed #94A3B8;}
-    .analysis-v2-guide-line.pass{bottom:calc(var(--bar-bottom) + var(--label-zone) + (var(--bar-height) * 0.4));}
-    .analysis-v2-guide-line.safe{bottom:calc(var(--bar-bottom) + var(--label-zone) + (var(--bar-height) * 0.6));}
+    .analysis-v2-guide-line.pass{bottom:calc(var(--bar-bottom) + (var(--bar-height) * 0.4));}
+    .analysis-v2-guide-line.safe{bottom:calc(var(--bar-bottom) + (var(--bar-height) * 0.6));}
     .analysis-v2-guide-line .label{position:absolute;right:0;top:-18px;font-size:12px;font-weight:700;color:#64748B;text-align:right;background:rgba(255,255,255,.9);padding-left:8px;}
-    .analysis-v2-bars{position:absolute;left:0;right:0;bottom:var(--bar-bottom);display:flex;justify-content:space-evenly;align-items:flex-end;gap:10px;height:370px;padding:0 8px;}
+    .analysis-v2-bars{position:absolute;left:0;right:0;bottom:var(--bar-bottom);display:flex;justify-content:space-evenly;align-items:flex-end;gap:10px;height:var(--bar-height);padding:0 8px;}
     .analysis-v2-bar-item{background:transparent;border:none;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:88px;padding:34px 4px 0;position:relative;}
     .analysis-v2-bar-item .score{font-size:22px;font-weight:800;color:#0F172A;line-height:1;position:absolute;top:0;left:50%;transform:translateX(-50%);}
     .analysis-v2-bar-wrap{height:var(--bar-height);display:flex;align-items:flex-end;position:relative;}
-    .analysis-v2-bar{width:56px;min-height:8px;border-radius:18px 18px 12px 12px;position:relative;z-index:2;}
+    .analysis-v2-bar{width:56px;height:0;border-radius:18px 18px 12px 12px;position:relative;z-index:2;}
     .analysis-v2-bar-item p{margin:0;max-width:96px;min-height:48px;max-height:48px;font-size:12px;font-weight:600;line-height:1.3;color:#475569;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all;}
     .analysis-v2-bar-item.active p{color:#2563EB;font-weight:700;}
     .analysis-v2-bar-proj.pop{animation:barProjPop .36s ease;}
@@ -2003,9 +2004,9 @@ function App() {
     .analysis-v2-eta-card b,.on-eta-card b{display:block;font-size:22px;line-height:1.35;color:#fff;position:relative;z-index:1;}
     .analysis-v2-eta-card p,.on-eta-card p{margin:6px 0 0;font-size:13px;color:#DBEAFE;line-height:1.45;position:relative;z-index:1;}
     .analysis-v2-chart-area{overflow:visible;}
-    .analysis-v2-bars{position:absolute;left:0;right:0;bottom:var(--bar-bottom);display:flex;justify-content:space-evenly;align-items:flex-end;gap:10px;height:370px;padding:0 8px;}
+    .analysis-v2-bars{position:absolute;left:0;right:0;bottom:var(--bar-bottom);display:flex;justify-content:space-evenly;align-items:flex-end;gap:10px;height:var(--bar-height);padding:0 8px;}
     .analysis-v2-chart-area .analysis-v2-guide-line{z-index:1;}
-    .analysis-v2-bar-item{z-index:2;height:100%;justify-content:flex-end;min-height:280px;}
+    .analysis-v2-bar-item{z-index:2;height:100%;justify-content:flex-end;min-height:0;}
     .analysis-v2-bar-wrap{height:var(--bar-height);display:flex;align-items:flex-end;position:relative;}
     .analysis-v2-bar-item .score{font-size:14px;font-weight:700;}
     .analysis-v2-bar-item p{min-height:48px;max-height:48px;line-height:1.3;}
