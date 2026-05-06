@@ -1545,17 +1545,15 @@ function changeExamMode(mode) { currentExamMode = mode; updateAnalysisUI(); }
 function renderAnalysisCard(res) {
     if (res.msg.includes("오류") || res.msg.includes("데이터 없음") || res.status === '분석 불가') {
         return `
-        <div class="analysis-card" style="border-left-color: #94a3b8;">
-            <div class="analysis-header" style="margin-bottom:10px;">
-                <h4 style="margin:0;">${escapeHtml(res.idx + 1)}지망: ${escapeHtml(res.univ)} <small style="color:#64748b;">${escapeHtml(res.major)}</small></h4>
-                <span style="background:#f1f5f9; color:#64748b; padding:2px 8px; border-radius:4px; font-size:0.8rem; margin-top:5px; display:inline-block;">데이터 부족</span>
+        <div class="analysis-card">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                <span style="font-size:18px; font-weight:700; color:#30363e; flex-shrink:0;">${escapeHtml(res.idx + 1)}지망</span>
+                <span style="flex:1; font-size:20px; font-weight:600; letter-spacing:-.02em; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(res.univ)} <span style="font-size:16px; font-weight:400; color:#575757;">(${escapeHtml(res.major)})</span></span>
+                <span style="display:inline-flex; align-items:center; height:36px; padding:0 16px; border-radius:150px; font-size:13px; font-weight:800; color:#fff; background:#94a3b8; flex-shrink:0;">데이터 부족</span>
             </div>
             <p style="color:#64748b; font-size:0.9rem; margin:0;">${escapeHtml(res.msg || '해당 학과의 작년 입시 데이터가 없습니다.')}</p>
         </div>`;
     }
-
-    const badgeStyle = `background: ${res.color}15; color: ${res.color}; border: 1px solid ${res.color};`; 
-    const scoreStyle = `color: ${res.color}; font-weight: 800; font-size: 1.5rem;`;
 
     const safeIdx = escapeHtml(res.idx + 1); const safeUniv = escapeHtml(res.univ); const safeMajor = escapeHtml(res.major);
     const safeStatus = escapeHtml(res.status); const safeMsg = escapeHtml(res.msg); const safeScore = escapeHtml(res.converted_score);
@@ -1564,44 +1562,26 @@ function renderAnalysisCard(res) {
     const barWidth = Math.min((res.converted_score / MAX_SCORE) * 100, 100);
 
     return `
-        <div class="analysis-card" style="border-left-color: ${res.color}; display: flex; flex-direction: column; gap: 15px;">
-            <div class="analysis-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; border-bottom:1px solid #f1f5f9; padding-bottom:15px;">
-                <div style="flex: 1; min-width: 0;">
-                    <span style="color:#64748b; font-size:1.1rem; font-weight:800; display:block; margin-bottom:5px;">${safeIdx}지망</span>
-                    <h4 style="margin:0; font-size:1.2rem; color:#1e293b; letter-spacing:-0.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeUniv}</h4>
-                    <div style="color:#64748b; font-size:0.95rem; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeMajor}</div>
-                </div>
-                <div style="text-align:right; flex-shrink: 0;">
-                    <span style="${badgeStyle} padding:6px 14px; border-radius:20px; font-size:0.9rem; font-weight:bold; display:inline-block; margin-bottom:5px; white-space:nowrap;">${safeStatus}</span>
-                    <div style="font-size:0.8rem; color:${res.color}; font-weight:600; white-space:nowrap;">${safeMsg}</div>
-                </div>
+        <div class="analysis-card">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+                <span style="font-size:18px; font-weight:700; color:#30363e; flex-shrink:0;">${safeIdx}지망</span>
+                <span style="flex:1; font-size:20px; font-weight:600; letter-spacing:-.02em; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeUniv} <span style="font-size:16px; font-weight:400; color:#575757;">(${safeMajor})</span></span>
+                <span style="display:inline-flex; align-items:center; height:36px; padding:0 16px; border-radius:150px; font-size:13px; font-weight:800; color:#fff; background:${res.color}; flex-shrink:0; white-space:nowrap;">${safeStatus}</span>
             </div>
-            <div class="analysis-body" style="display:flex; flex-direction:column; gap:20px;">
-                <div class="score-section">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
-                        <span style="font-size:0.95rem; color:#475569; font-weight:600;">AI 환산 진단점수</span>
-                        <span style="${scoreStyle}">${safeScore}<span style="font-size:1rem; font-weight:normal; margin-left:2px; color:#64748b;">점</span></span>
-                    </div>
-                    <div class="score-bar-container">
-                        <div class="score-bar-bg">
-                            <div style="position:absolute; left:40%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
-                            <div style="position:absolute; left:60%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
-                            <div class="score-bar-fill" style="width: ${barWidth}%; background: ${res.color};"></div>
-                        </div>
-                        <div class="score-labels">
-                            <span class="label-min">0</span>
-                            <span class="label-pass">합격<span class="m-line">(100)</span></span>
-                            <span class="label-stable">안정<span class="m-line">(150)</span></span>
-                            <span class="label-max">MAX<span class="m-line">(${MAX_SCORE})</span></span>
-                        </div>
-                    </div>
-                </div>
-                <div class="advice-section" style="background:#f8fafc; border-radius:10px; padding:18px; border:1px solid #e2e8f0;">
-                    <h5 style="margin:0 0 8px 0; font-size:0.9rem; color:#334155; display:flex; align-items:center;">
-                        <i class="fas fa-lightbulb" style="color:#fbbf24; margin-right:6px;"></i> 합격 전략 코멘트
-                    </h5>
-                    <p style="margin:0; font-size:0.95rem; color:#475569; line-height:1.6;">${getSimpleAdvice(res.converted_score, res.status)}</p>
-                </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <span style="font-size:15px; font-weight:600; color:#575757;">AI 환산 진단점수</span>
+                <span style="font-size:24px; font-weight:800; color:${res.color};">${safeScore}<span style="font-size:15px; font-weight:500; color:#575757; margin-left:2px;">점</span></span>
+            </div>
+            <div class="score-bar-bg">
+                <div class="score-bar-fill" style="height:100%; width:${barWidth}%; background:${res.color};"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:12px; color:#94a3b8; margin:6px 0 8px;">
+                <span>0</span><span>합격(100)</span><span>안정(150)</span><span>MAX(250)</span>
+            </div>
+            <p style="font-size:14px; font-weight:600; color:${res.color}; text-align:right; margin:0 0 12px;">${safeMsg}</p>
+            <div style="background:#fff; border-radius:6px; padding:18px 24px; box-shadow:10px 20px 40px rgba(179,179,179,.1);">
+                <p style="font-size:15px; font-weight:700; color:#30363e; margin:0 0 8px 0;">#합격 전략 코멘트</p>
+                <p style="font-size:15px; color:#30363e; line-height:1.75; margin:0;">${getSimpleAdvice(res.converted_score, res.status)}</p>
             </div>
         </div>`;
 }
