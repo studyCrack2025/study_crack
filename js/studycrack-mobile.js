@@ -1625,6 +1625,27 @@ function App() {
     ]
   };
   const tierClass = (tier='') => tier.toLowerCase();
+  const ensureAutoSelfStudyItemForToday = () => {
+    const today = FIXED_TODAY_DATE;
+    const autoId = `auto-self-study-${today}`;
+    setPlannerItems((prev) => {
+      const exists = prev.some((item) => item.id === autoId || (item.date === today && item.content === '자율공부'));
+      if (exists) return prev;
+      return [...prev, {
+        id: autoId,
+        date: today,
+        subject: '기타',
+        content: '자율공부',
+        start: '--:--',
+        end: '--:--',
+        minutes: 0,
+        doneMinutes: 0,
+        done: false,
+        dot: 'etc',
+        autoCreated: true
+      }];
+    });
+  };
   const renderUniversityResultsOnly = (query, scopeEl) => {
     const container = scopeEl?.closest?.('.home-modal, .analysis-search-modal, .add-univ-page') || document;
     const resultSection = container.querySelector('.analysis-search-section:not(.recommend), .add-univ-list');
@@ -4018,6 +4039,7 @@ function App() {
       setCoachingStep((prev) => Math.min(8, prev + 1));
     }
     if (action === 'openStudySubjectSheet') {
+      ensureAutoSelfStudyItemForToday();
       preserveScrollAfterStateChange(() => {
         setNotifModalOpen(false);
         setStudySubjectSheetOnlyPlanned(true);
