@@ -2803,7 +2803,7 @@ input:focus, select:focus, textarea:focus,
 .planner-premium-cta{margin:6px 0 12px;padding:16px;border-radius:24px;border:1px solid rgba(147,197,253,.48) !important;background:linear-gradient(135deg,#1d4ed8 0%,#4f46e5 52%,#7c3aed 100%) !important;box-shadow:0 14px 30px rgba(49,46,129,.32), inset 0 1px 0 rgba(255,255,255,.25) !important;display:grid;gap:12px;overflow:hidden;position:relative;}
 .planner-premium-cta::after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,.2) 36%,transparent 60%);transform:translateX(-130%);animation:rankShine 3.4s ease-in-out infinite;pointer-events:none;}
 .planner-premium-copy{position:relative;z-index:1;color:#fff !important;display:grid;gap:6px;}
-.planner-premium-copy .badge{width:max-content;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.36);padding:4px 9px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.04em;}
+.planner-premium-copy .badge{width:max-content;background:rgba(15,23,42,.32);border:1px solid rgba(255,255,255,.52);padding:4px 9px;border-radius:999px;font-size:11px;font-weight:900;letter-spacing:.06em;color:#fff !important;text-shadow:0 1px 4px rgba(15,23,42,.45);}
 .planner-premium-copy b{font-size:20px;line-height:1.35;color:#fff !important;text-shadow:0 2px 8px rgba(15,23,42,.25);}
 .planner-premium-copy p{margin:0;font-size:14px;color:#eef2ff !important;line-height:1.45;}
 .planner-premium-btn{position:relative;z-index:1;border:none;border-radius:14px;min-height:46px;font-size:15px;font-weight:700;color:#1e3a8a;background:rgba(255,255,255,.92);box-shadow:0 8px 18px rgba(15,23,42,.24);backdrop-filter:blur(6px);}
