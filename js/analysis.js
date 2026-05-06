@@ -1441,9 +1441,14 @@ async function updateAnalysisUI() {
     const container = document.getElementById('univAnalysisResult');
     if (!container) return;
 
-    // [DEV ONLY] localhost — API 없이 디자인 확인용 플레이스홀더
+    // [DEV ONLY] localhost — API 없이 디자인 확인용 모의 카드
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        container.innerHTML = `<div style="padding:24px; text-align:center; color:#94a3b8; background:#f9f9fb; border-radius:6px; font-size:14px; font-weight:600;">[로컬 디자인 미리보기 — 분석 API 미연결]</div>`;
+        const mockCards = [
+            { idx: 0, univ: '서울대학교', major: '컴퓨터공학부', color: '#ef4444', status: '소신 지원 (C-)', msg: '문닫고 합격 가능성', converted_score: 88 },
+            { idx: 1, univ: '연세대학교', major: '경영학과',    color: '#10b981', status: '안정 (A)',       msg: '무난한 합격 예상',   converted_score: 155 }
+        ];
+        const cardsHtml = mockCards.map(renderAnalysisCard).join('');
+        container.innerHTML = `<div class="analysis-cards-wrapper">${cardsHtml}</div>`;
         return;
     }
 
@@ -1656,9 +1661,15 @@ async function fetchSimulationData() {
     const chartArea = document.getElementById('simChartArea');
     if (!chartArea) return;
 
-    // [DEV ONLY] localhost — API 없이 디자인 확인용 플레이스홀더
+    // [DEV ONLY] localhost — API 없이 디자인 확인용 모의 시뮬레이션
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        chartArea.innerHTML = `<div style="margin:auto; color:#94a3b8; font-size:14px; font-weight:600;">[로컬 디자인 미리보기 — 시뮬레이션 API 미연결]</div>`;
+        cachedSimData = [
+            { univ: '서울대학교', major: '컴퓨터공학부', base_ui_score: 88,  sim_data: { kor: { uiDiff: 10 }, math: { uiDiff: 15 } } },
+            { univ: '연세대학교', major: '경영학과',    base_ui_score: 155, sim_data: { kor: { uiDiff: 5  }, math: { uiDiff: 8  } } }
+        ];
+        simDisplayList = cachedSimData.map((item, i) => ({ ...item, originalIdx: i }));
+        selectedSimIndex = 0;
+        renderSimChart();
         return;
     }
 
