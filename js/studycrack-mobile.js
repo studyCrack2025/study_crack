@@ -806,10 +806,10 @@ function App() {
       });
     };
     const elapsed = Date.now() - loadingStartedAtRef.current;
-    const waitMs = Math.max(0, 1300 - elapsed);
+    const waitMs = Math.max(0, 1450 - elapsed);
     loadingExitTimerRef.current = setTimeout(() => {
       setLoadingFadeOut(true);
-      setTimeout(completeLoading, 320);
+      setTimeout(completeLoading, 480);
     }, waitMs);
   };
 
@@ -4637,7 +4637,7 @@ function App() {
     restoreIfUnexpectedTopJump();
   };
 
-  const loadingOverlayUi = `<div class="loading-overlay"><div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><section class="app-loading-hero app-loading-poster anchor-volatile ${loadingFadeOut ? 'is-fade-out' : ''}"><img class="app-loading-poster-img" src="./assets/images/IMG_3020.png" alt="스터디크랙 로딩 이미지"/><div class="app-loading-progress"><div class="app-loading-bar"><i></i></div><p class="app-loading-label">LOADING...</p></div></section></div></div></div></div>`;
+  const loadingOverlayUi = `<div class="loading-overlay"><div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><section class="app-loading-hero app-loading-poster anchor-volatile ${loadingFadeOut ? 'is-fade-out' : ''}"><img class="app-loading-poster-img" src="./assets/5CB38964-C563-4371-A660-A0475A71C603.png" alt="스터디크랙 로딩 이미지"/></section></div></div></div></div>`;
   const fallbackUi = `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>데이터를 불러오지 못했습니다.</h3><p class="sub">다시 시도해주세요.</p><button class="btn btn-primary" data-action="retryInit">다시 시도</button></div></div></div></div>`;
   const preAuthAllowedScreens = ['splash', 'authLogin', 'authSignup', 'authFindId', 'authFindPw', 'on1', 'on2', 'on3'];
   const renderedBase = error ? fallbackUi : !loggedIn && !preAuthAllowedScreens.includes(screen) ? screens.on1 : current;
