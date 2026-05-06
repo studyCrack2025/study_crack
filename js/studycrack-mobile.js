@@ -1052,6 +1052,17 @@ function App() {
   });
   const analysisSimMax = Math.max(...analysisSimRows.map(({ gainNum }) => gainNum), 0);
   const analysisSimRecommendedIndex = analysisSimRows.findIndex(({ gainNum }) => gainNum === analysisSimMax);
+  const analysisRecommendedRow = analysisSimRows[analysisSimRecommendedIndex] || null;
+  const analysisRecommendedSubjectScore = (() => {
+    if (!analysisRecommendedRow?.subject) return 0;
+    const key = analysisRecommendedRow.subject.replace(/\s+/g, '');
+    if (key.includes('국어')) return Number(scores.korean || 0);
+    if (key.includes('수학')) return Number(scores.math || 0);
+    if (key.includes('영어')) return Number(scores.english || 0);
+    if (key.includes('탐구1')) return Number(scores.inquiry1 || 0);
+    if (key.includes('탐구2') || key.includes('탐구')) return Number(scores.inquiry2 || 0);
+    return 0;
+  })();
   const proEliteMonths = Array.from(new Set(PRO_ELITE_REPORTS.map((report) => report.week.split(' ').slice(0, 2).join(' '))));
   const proEliteFilteredReports = PRO_ELITE_REPORTS.filter((report) => report.week.startsWith(proEliteMonth));
   const onboardingProgress = (step) => `<div class="ob-progress"><span>${step}/3</span><div class="ob-dots"><i class="${step>=1?'active':''}"></i><i class="${step>=2?'active':''}"></i><i class="${step>=3?'active':''}"></i></div></div>`;
@@ -1843,7 +1854,7 @@ function App() {
     .analysis-chart-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
     .analysis-chart-head h3{margin:0;font-size:20px;}
     .analysis-chart-badge{font-size:11px;font-weight:700;color:#475569;background:#F1F5F9;border-radius:999px;padding:5px 10px;}
-    .analysis-v2-chart-area{position:relative;--bar-bottom:22px;--bar-height:280px;min-height:390px;padding:36px 10px 18px;border-radius:20px;background:linear-gradient(180deg,#F8FAFC 0%,#FFFFFF 100%);margin-top:14px;overflow:visible;}
+    .analysis-v2-chart-area{position:relative;--bar-bottom:22px;--bar-height:440px;min-height:550px;padding:36px 10px 18px;border-radius:20px;background:linear-gradient(180deg,#F8FAFC 0%,#FFFFFF 100%);margin-top:14px;overflow:visible;}
     .analysis-v2-guide-line{position:absolute;left:10px;right:10px;border-top:1px dashed #94A3B8;}
     .analysis-v2-guide-line.pass{bottom:calc(var(--bar-bottom) + (var(--bar-height) * 0.4));}
     .analysis-v2-guide-line.safe{bottom:calc(var(--bar-bottom) + (var(--bar-height) * 0.6));}
@@ -2493,14 +2504,17 @@ function App() {
               <div class="analysis-v2-guide-line safe"><span class="label">안정선 150</span></div>
               <div class="analysis-v2-bars">
                 ${analysisSimulationTargets.map(({ label, score, major: full, cut, gap }) => {
-                  const heightPercent = Math.max(0, Math.min(100, (score / 250) * 100));
+                  const maxScore = 250;
+                  const scoreRatio = Math.max(0, Math.min(score / maxScore, 1));
+                  const heightPercent = scoreRatio * 100;
                   const color = score <= 100 ? '#fa8072' : score <= 150 ? '#2563eb' : '#8b5cf6';
                   const shouldProject = analysisBarProjectionTarget === full;
-                  const projectionGain = shouldProject ? Math.max(0, Math.min(analysisSimMax, 250 - score)) : null;
-                  const projectionScore = projectionGain !== null ? Math.min(250, score + projectionGain) : null;
-                  const projectedPercent = projectionScore ? Math.max(0, Math.min(100, (projectionScore / 250) * 100)) : heightPercent;
+                  const projectionGain = shouldProject ? Math.max(0, Math.min(analysisSimMax, maxScore - score)) : null;
+                  const projectionScore = projectionGain !== null ? Math.min(maxScore, score + projectionGain) : null;
+                  const projectedPercent = projectionScore ? Math.max(0, Math.min(100, (projectionScore / maxScore) * 100)) : heightPercent;
                   const projectionHeight = projectionScore ? Math.max(0, projectedPercent - heightPercent) : 0;
-                  const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${Math.max(0, (100 - projectionScore / 250 * 100))}%">${Number(projectionScore.toFixed(1)).toString()} (${gap >= 0 ? '+' : ''}${gap} / 컷 ${cut})</span>` : '';
+                  const recommendedText = analysisRecommendedRow ? `${analysisRecommendedRow.subject} ${Math.round(analysisRecommendedSubjectScore + analysisRecommendedRow.gainNum)}점 (<span style="color:#2563EB;font-weight:800;">+${Math.round(analysisRecommendedRow.gainNum)}점</span>)` : '';
+                  const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${Math.max(0, (100 - projectionScore / maxScore * 100))}%">${recommendedText}</span>` : '';
                   const projectionBox = projectionScore && projectionHeight > 0 ? `<span class="analysis-v2-bar-proj-box" style="bottom:${heightPercent}%;height:${projectionHeight}%"></span>` : '';
                   const tier = scoreTierClass(score);
                   return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="simulateBarGain" data-target-major="${full}" data-base-score="${score}"><b class="score ${tier}">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar ${tier}" style="height:${heightPercent}%;background:${color}"></i>${projectionBox}${projection}</div><p>${label}</p></button>`;
