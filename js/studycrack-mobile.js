@@ -437,6 +437,7 @@ function App() {
   const scrollGuardRef = useRef({ until: 0, y: 0, restoring: false });
   const renderStableScrollYRef = useRef(0);
   const renderStableScreenRef = useRef('');
+  const plannerInitialCenterDoneRef = useRef(false);
   const ob2SelectSyncTimerRef = useRef(null);
   const v2eSelectSyncTimerRef = useRef(null);
   const isIOSSafari = () => {
@@ -662,12 +663,21 @@ function App() {
   useEffect(() => {
     if (screen === 'analysis') setActiveScoreView('target');
   }, [screen]);
+  const centerPlannerDate = (date, behavior = 'smooth') => {
+    const container = document.querySelector('.planner-date-strip');
+    const selectedBtn = container?.querySelector(`[data-planner-date="${date}"]`);
+    if (!container || !selectedBtn) return;
+    const containerRect = container.getBoundingClientRect();
+    const btnRect = selectedBtn.getBoundingClientRect();
+    const targetLeft = (container.scrollLeft || 0) + (btnRect.left - containerRect.left) - (container.clientWidth / 2) + (selectedBtn.clientWidth / 2);
+    container.scrollTo({ left: Math.max(0, targetLeft), behavior });
+  };
   useEffect(() => {
     if (screen !== 'planner') return;
     requestAnimationFrame(() => {
-      const currentStrip = document.querySelector('.planner-date-strip');
-      const selectedBtn = currentStrip?.querySelector(`[data-planner-date="${selectedPlannerDate}"]`);
-      safeScrollIntoView(selectedBtn, { behavior: 'smooth', inline: 'center', block: 'nearest' });
+      const dateToCenter = plannerInitialCenterDoneRef.current ? selectedPlannerDate : String(FIXED_TODAY_DATE.getDate());
+      centerPlannerDate(dateToCenter, plannerInitialCenterDoneRef.current ? 'smooth' : 'auto');
+      plannerInitialCenterDoneRef.current = true;
     });
   }, [screen, selectedPlannerDate]);
 
@@ -1450,6 +1460,16 @@ function App() {
   });
   const analysisMajorOptions = Array.from(new Set([...(analysisTargetList || []), ...(homeTargetList || [])])).filter(Boolean);
   const normalizedTargetMajor = analysisMajorOptions.includes(targetMajor) ? targetMajor : (analysisMajorOptions[0] || targetMajor || '');
+  const analysisSimulationTargets = Array.from(new Set([
+    targetMajor,
+    ...(analysisTargetList || []),
+    ...(homeTargetList || [])
+  ])).filter(Boolean).map((major) => {
+    const base = homeTargets.find((item) => item.major === major) || homeTargets[0];
+    const score = Number(base?.score || liveCurrentScore || 0);
+    const cut = Number(base?.cut || 100);
+    return { major, label: major.replace('대학교', '대').replace('학부', '').replace('학과', ''), score, cut, gap: score - cut };
+  });
   const scoreRows = [
     [scoreEditState.korean.type || '국어', scores.korean, 'raw'],
     [scoreEditState.math.type || '수학', scores.math, 'raw'],
@@ -1614,7 +1634,7 @@ function App() {
       <div class="card home-study-summary study-summary-card home-insight-card premium-panel">
         <div class="home-card-head"><p class="analysis-title">오늘 누적 공부</p><span class="home-mini-badge">${studyTimerRunning ? '진행중' : '대기'}</span></div>
         <div class="study-timer-row"><b class="timer premium-clock" data-study-base-seconds="${todayRecord?.studyTime || 0}">${formatHms(todayStudySeconds)}</b><div class="timer-actions"><button class="btn btn-primary mini ${studyTimerRunning?'disabled':''}" data-action="openStudySubjectSheet" ${studyTimerRunning?'disabled':''}>공부 시작</button><button class="btn btn-secondary mini ${studyTimerRunning?'':'disabled'}" data-action="stopStudyTimer" ${studyTimerRunning?'':'disabled'}>정지</button></div></div>
-        <button class="home-breakdown-toggle" data-action="toggleStudyBreakdown">${showStudyBreakdown ? '접기' : '펼쳐보기'}</button>
+        <button type="button" class="home-breakdown-toggle" data-action="toggleStudyBreakdown">${showStudyBreakdown ? '접기' : '펼쳐보기'}</button>
         ${showStudyBreakdown ? `<div class="home-breakdown-list">${breakdownSubjects.map((subject) => {
           const sec = todaySubjectsWithTimer[subject] || 0;
           const rows = breakdownDetailMap[subject] || [];
@@ -2446,7 +2466,7 @@ function App() {
               <div class="analysis-v2-guide-line pass"><span class="label">합격선 100</span></div>
               <div class="analysis-v2-guide-line safe"><span class="label">안정선 150</span></div>
               <div class="analysis-v2-bars">
-                ${[['가천대 관광경영학과', 250, '가천대학교 관광경영학과'], ['강서대 G2빅데이터경영학과', 238, '강서대학교 G2빅데이터경영학과'], ['고려대 경영대학', 71, '고려대학교 경영대학']].map(([label, score, full]) => {
+                ${analysisSimulationTargets.map(({ label, score, major: full, cut, gap }) => {
                   const heightPercent = Math.max(0, Math.min(100, (score / 250) * 100));
                   const color = score <= 100 ? '#fa8072' : score <= 150 ? '#2563eb' : '#8b5cf6';
                   const shouldProject = analysisBarProjectionTarget === full;
@@ -2454,8 +2474,7 @@ function App() {
                   const projectionScore = projectionGain !== null ? Math.min(250, score + projectionGain) : null;
                   const projectedPercent = projectionScore ? Math.max(0, Math.min(100, (projectionScore / 250) * 100)) : heightPercent;
                   const projectionHeight = projectionScore ? Math.max(0, projectedPercent - heightPercent) : 0;
-                  const gainLabel = projectionGain === null ? '' : Number(projectionGain.toFixed(1)).toString();
-                  const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${Math.max(0, (100 - projectionScore / 250 * 100))}%">${Number(projectionScore.toFixed(1)).toString()} (+${gainLabel})</span>` : '';
+                  const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${Math.max(0, (100 - projectionScore / 250 * 100))}%">${Number(projectionScore.toFixed(1)).toString()} (${gap >= 0 ? '+' : ''}${gap} / 컷 ${cut})</span>` : '';
                   const projectionBox = projectionScore && projectionHeight > 0 ? `<span class="analysis-v2-bar-proj-box" style="bottom:${heightPercent}%;height:${projectionHeight}%"></span>` : '';
                   const tier = scoreTierClass(score);
                   return `<button class="analysis-v2-bar-item ${targetMajor===full?'active':''}" data-action="simulateBarGain" data-target-major="${full}" data-base-score="${score}"><b class="score ${tier}">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar ${tier}" style="height:${heightPercent}%;background:${color}"></i>${projectionBox}${projection}</div><p>${label}</p></button>`;
@@ -3389,15 +3408,7 @@ function App() {
       setSelectedDate(String(date));
       afterSafariViewportStable(() => setPlannerCalendarOpen(false));
       requestAnimationFrame(() => {
-        const currentStrip = document.querySelector('.planner-date-strip');
-        const selectedBtn = currentStrip?.querySelector(`[data-planner-date="${date}"]`);
-        if (currentStrip && selectedBtn) {
-          const containerRect = currentStrip.getBoundingClientRect();
-          const btnRect = selectedBtn.getBoundingClientRect();
-          const currentLeft = currentStrip.scrollLeft || 0;
-          const targetLeft = currentLeft + (btnRect.left - containerRect.left) - (currentStrip.clientWidth / 2) + (selectedBtn.clientWidth / 2);
-          currentStrip.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
-        }
+        centerPlannerDate(String(date), 'smooth');
       });
       restoreIfUnexpectedTopJump();
     }
@@ -3785,6 +3796,7 @@ function App() {
       return;
     }
     if (action === 'toggleStudyBreakdown') {
+      const y = window.scrollY || window.pageYOffset || 0;
       if (isIOSSafari() && screen === 'home') {
         const list = document.querySelector('.home-breakdown-list');
         const toggleBtn = document.querySelector('.home-breakdown-toggle');
@@ -3795,10 +3807,22 @@ function App() {
           list.style.display = nextOpen ? '' : 'none';
           toggleBtn.textContent = nextOpen ? '접기' : '펼쳐보기';
           toggleBtn.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+            });
+          });
           return;
         }
       }
-      setShowStudyBreakdown((v) => !v);
+      preserveScrollAfterStateChange(() => {
+        setShowStudyBreakdown((v) => !v);
+      });
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+        });
+      });
     }
     if (action === 'toggleBreakdownSubject') {
       const subject = actionEl.getAttribute('data-breakdown-subject') || '';
