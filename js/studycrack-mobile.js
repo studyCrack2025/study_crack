@@ -2735,11 +2735,11 @@ function App() {
         <button class="my-row" data-action="goto" data-target="settingsMain">설정 <span>${i('chevron', false)}</span></button>
       </div>
     </div>`, true),
-    ranking: layout(appbar('공부 랭킹', true) + `<div class="ranking-page">
+    ranking: layout(appbar('공부 랭킹', true) + `<div class="ranking-page"><p class="ranking-subtitle">오늘의 공부 몰입도를 확인해보세요</p>
       <div class="ranking-tabs">${[['daily','일간'],['weekly','주간'],['monthly','월간']].map(([k,label]) => `<button type="button" class="${rankingPeriod===k?'active':''}" data-action="setRankingPeriod" data-ranking-period="${k}">${label}</button>`).join('')}</div>
-      <div class="card ranking-podium-card"><div class="ranking-podium">${(rankingMock[rankingPeriod] || []).slice(0,3).map((row, idx) => `<div class="podium-item tier-card tier-${tierClass(row.tier)} ${idx===0?'first':idx===1?'second':'third'}">${idx===0?'<span class="podium-crown">👑</span>':'<span class="podium-crown">✦</span>'}<span class="tier-badge ${tierClass(row.tier)}">${row.streak}</span><b>${row.name}</b><p>${row.time}</p><small>${row.tier}</small></div>`).join('')}</div></div>
-      <div class="card ranking-list-card">${(rankingMock[rankingPeriod] || []).slice(3).map((row, idx) => `<div class="ranking-row tier-card tier-${tierClass(row.tier)}"><span class="num">${idx+4}</span><span class="tier-badge small ${tierClass(row.tier)}">${row.streak}</span><div class="meta"><b>${row.name}</b><p>${row.time}</p></div><em>${row.tier} · ${row.streak}일 연속</em></div>`).join('')}</div>
-      <div class="card my-rank-fixed"><p class="sub">내 순위</p><b>124등</b><div class="my-rank-tier"><span class="tier-badge small bronze">2</span><span>BRONZE · 2일 연속</span></div><small>오늘 1시간 20분</small></div>
+      <div class="card ranking-podium-card"><div class="ranking-podium">${(rankingMock[rankingPeriod] || []).slice(0,3).map((row, idx) => `<div class="podium-item tier-card tier-${tierClass(row.tier)} ${idx===0?'first':idx===1?'second':'third'}">${idx===0?'<span class="podium-crown">👑</span>':'<span class="podium-crown">✦</span>'}<span class="tier-emblem ${tierClass(row.tier)}"><strong>${row.streak}</strong><small>일</small></span><b>${row.name}</b><p>${row.time}</p><small>${row.tier}</small><i class="podium-block">${idx+1}</i></div>`).join('')}</div></div>
+      <div class="card ranking-list-card">${(rankingMock[rankingPeriod] || []).slice(3).map((row, idx) => `<div class="ranking-row tier-card tier-${tierClass(row.tier)}"><span class="num">${idx+4}</span><span class="tier-emblem small ${tierClass(row.tier)}"><strong>${row.streak}</strong><small>일</small></span><div class="meta"><b>${row.name}</b><p>${row.time}</p></div><em>${row.tier} · ${row.streak}일 연속</em></div>`).join('')}</div>
+      <div class="card my-rank-fixed"><p class="sub">내 순위</p><b>124등</b><div class="my-rank-tier"><span class="tier-emblem small bronze"><strong>2</strong><small>일</small></span><span>BRONZE · 2일 연속</span></div><small>오늘 1시간 20분</small></div>
     </div>`, true),
     weekly: layout(
       `<div class="weekly-head"><button class="weekly-back" data-action="back">←</button><h3>주간 점검</h3><span></span></div>

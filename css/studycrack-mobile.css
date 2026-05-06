@@ -2751,33 +2751,38 @@ input:focus, select:focus, textarea:focus,
 .analysis-efficiency-pill { display:inline-flex; align-items:center; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:8px 12px; border-radius:999px; font-size:11px; line-height:1.2; }
 @media (max-width:390px){ .analysis-efficiency-pill { font-size:10px; padding:7px 10px; max-width:94vw; } }
 
-.ranking-page { display:grid; gap:12px; background:linear-gradient(160deg,#f4f7ff 0%,#f5f3ff 100%); padding:6px 4px 90px; border-radius:24px; }
-.ranking-tabs { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:6px; border-radius:18px; background:rgba(255,255,255,.68); border:1px solid rgba(148,163,184,.25); box-shadow:0 8px 20px rgba(15,23,42,.08); backdrop-filter:blur(8px); }
-.ranking-tabs button { border:1px solid rgba(148,163,184,.25); background:#fff; border-radius:14px; min-height:42px; font-weight:800; color:#475569; }
-.ranking-tabs button.active { border-color:transparent; color:#fff; background:linear-gradient(120deg,#2563eb,#7c3aed); box-shadow:0 8px 16px rgba(79,70,229,.3); }
-.ranking-podium-card,.ranking-list-card,.my-rank-fixed{border-radius:24px !important;border:1px solid rgba(148,163,184,.22) !important;box-shadow:0 16px 34px rgba(15,23,42,.10) !important;background:rgba(255,255,255,.86) !important;backdrop-filter:blur(10px);}
+.ranking-page { display:grid; gap:12px; background:radial-gradient(circle at top, rgba(99,102,241,.28), transparent 38%), linear-gradient(180deg, #0f172a 0%, #111827 45%, #f8fafc 100%); padding:6px 4px 90px; border-radius:24px; overflow-x:hidden; }
+.ranking-subtitle{margin:2px 2px 4px;color:#cbd5e1;font-size:12px;font-weight:600}
+.ranking-tabs { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:6px; border-radius:18px; background:rgba(15,23,42,.42); border:1px solid rgba(148,163,184,.22); box-shadow:0 10px 22px rgba(2,6,23,.28); backdrop-filter:blur(8px); }
+.ranking-tabs button { border:1px solid rgba(148,163,184,.25); background:rgba(15,23,42,.52); border-radius:14px; min-height:42px; font-weight:800; color:#e2e8f0; }
+.ranking-tabs button.active { border-color:transparent; color:#fff; background:linear-gradient(120deg,#2563eb,#7c3aed); box-shadow:0 10px 20px rgba(79,70,229,.44); }
+.ranking-podium-card,.ranking-list-card,.my-rank-fixed{border-radius:24px !important;border:1px solid rgba(255,255,255,.12) !important;box-shadow:0 16px 34px rgba(2,6,23,.35) !important;background:rgba(15,23,42,.52) !important;backdrop-filter:blur(12px);}
 .ranking-podium { display:grid; grid-template-columns:1fr 1.2fr 1fr; gap:8px; align-items:end; }
-.podium-item { text-align:center; border:1px solid rgba(148,163,184,.2); border-radius:18px; padding:12px 8px; position:relative; }
-.podium-item.first { min-height:176px; transform:translateY(-6px); }
+.podium-item { text-align:center; border:1px solid rgba(255,255,255,.12); border-radius:18px; padding:12px 8px; position:relative; background:rgba(15,23,42,.45); }
+.podium-item.first { min-height:176px; transform:translateY(-12px) scale(1.08); z-index:2; }
 .podium-item.second,.podium-item.third { min-height:148px; }
 .podium-crown{position:absolute;top:8px;left:50%;transform:translateX(-50%);font-size:16px}
-.tier-badge { --tier-glow: rgba(37,99,235,.24); width:56px; height:56px; border-radius:999px; display:grid; place-items:center; margin:18px auto 8px; color:#fff; font-weight:900; position:relative; box-shadow: inset 0 2px 6px rgba(255,255,255,.45), inset 0 -8px 14px rgba(0,0,0,.18), 0 12px 28px var(--tier-glow); }
-.tier-badge::after { content:''; position:absolute; inset:8%; border-radius:inherit; background:linear-gradient(135deg, rgba(255,255,255,.55), rgba(255,255,255,0) 45%); pointer-events:none; }
-.tier-badge.bronze { --tier-glow: rgba(184,115,51,.35); background:radial-gradient(circle at 30% 25%, #f7c58b, #b87333 45%, #6f3f1f 100%); }
-.tier-badge.silver { --tier-glow: rgba(148,163,184,.35); background:radial-gradient(circle at 30% 25%, #ffffff, #cbd5e1 45%, #64748b 100%); }
-.tier-badge.gold { --tier-glow: rgba(245,158,11,.38); background:radial-gradient(circle at 30% 25%, #fff7b2, #f59e0b 45%, #92400e 100%); }
-.tier-badge.platinum { --tier-glow: rgba(56,189,248,.35); background:radial-gradient(circle at 30% 25%, #e0faff, #38bdf8 45%, #0f766e 100%); }
-.tier-badge.diamond { --tier-glow: rgba(139,92,246,.42); background:radial-gradient(circle at 30% 25%, #f5f3ff, #8b5cf6 45%, #312e81 100%); }
-.tier-badge.small { width:36px; height:36px; font-size:12px; margin:0; }
-.podium-item b { display:block; font-size:15px; color:#0f172a; font-weight:900; }
-.podium-item p { margin:4px 0; font-size:12px; color:#334155; font-weight:700; }
-.podium-item small { color:#64748b; font-weight:800; letter-spacing:.04em; }
+.tier-emblem{--tier-glow:rgba(37,99,235,.24);width:64px;height:72px;clip-path:polygon(50% 0%, 92% 20%, 82% 78%, 50% 100%, 18% 78%, 8% 20%);position:relative;display:grid;place-items:center;margin:18px auto 8px;color:#fff;box-shadow:inset 0 2px 6px rgba(255,255,255,.45), inset 0 -10px 14px rgba(0,0,0,.22), 0 12px 28px var(--tier-glow);}
+.tier-emblem::before{content:'';position:absolute;left:12%;right:12%;top:8%;height:28%;background:linear-gradient(180deg,rgba(255,255,255,.45),rgba(255,255,255,0));clip-path:inherit;}
+.tier-emblem::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.4),rgba(255,255,255,0) 45%);transform:translateX(-120%);animation:rankShine 3s ease-in-out infinite;}
+.tier-emblem strong{position:relative;z-index:1;font-size:22px;line-height:1;font-weight:900;text-shadow:0 2px 6px rgba(0,0,0,.4);}
+.tier-emblem small{position:relative;z-index:1;font-size:10px;color:#fff;opacity:.92;font-weight:800;letter-spacing:.12em;}
+.tier-emblem.bronze { --tier-glow: rgba(184,115,51,.35); background:linear-gradient(145deg, #f5c08a 0%, #b87333 45%, #5c2e12 100%); }
+.tier-emblem.silver { --tier-glow: rgba(148,163,184,.35); background:linear-gradient(145deg, #ffffff 0%, #cbd5e1 45%, #475569 100%); }
+.tier-emblem.gold { --tier-glow: rgba(245,158,11,.38); background:linear-gradient(145deg, #fff4b8 0%, #f59e0b 48%, #78350f 100%); }
+.tier-emblem.platinum { --tier-glow: rgba(56,189,248,.35); background:linear-gradient(145deg, #dffbff 0%, #38bdf8 45%, #0f766e 100%); }
+.tier-emblem.diamond { --tier-glow: rgba(139,92,246,.42); background:linear-gradient(145deg, #f5f3ff 0%, #8b5cf6 45%, #1e1b4b 100%); }
+.tier-emblem.small { width:52px; height:58px; margin:0; }
+.podium-item b { display:block; font-size:15px; color:#f8fafc; font-weight:900; }
+.podium-item p { margin:4px 0; font-size:12px; color:#cbd5e1; font-weight:700; }
+.podium-item small { color:#e2e8f0; font-weight:800; letter-spacing:.04em; }
+.podium-block{display:block;margin:10px auto 0;width:76%;height:44px;border-radius:10px 10px 16px 16px;background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(148,163,184,.12));color:#fff;font-style:normal;font-size:28px;font-weight:900;line-height:44px}
 .ranking-row { display:grid; grid-template-columns:24px 36px 1fr auto; gap:10px; align-items:center; padding:10px 8px; border-bottom:1px solid #edf2f7; border-radius:14px; margin-bottom:6px; }
 .ranking-row:last-child { border-bottom:none; }
-.ranking-row .num { font-weight:800; color:#64748b; }
-.ranking-row .meta b { font-size:14px; color:#0f172a; }
-.ranking-row .meta p { margin:2px 0 0; font-size:12px; color:#64748b; }
-.ranking-row em { font-style:normal; font-size:12px; font-weight:800; color:#334155; white-space:nowrap; background:#f1f5f9; border-radius:999px; padding:6px 10px; }
+.ranking-row .num { font-weight:800; color:#cbd5e1; }
+.ranking-row .meta b { font-size:14px; color:#f8fafc; }
+.ranking-row .meta p { margin:2px 0 0; font-size:12px; color:#cbd5e1; }
+.ranking-row em { font-style:normal; font-size:12px; font-weight:800; color:#e2e8f0; white-space:nowrap; background:rgba(255,255,255,.08); border-radius:999px; padding:6px 10px; border:1px solid rgba(255,255,255,.12); }
 .ranking-row:active{transform:scale(.995);}
 .tier-card.tier-bronze { background:linear-gradient(145deg, rgba(184,115,51,.12), rgba(255,255,255,.92) 55%), #fff; border-color:rgba(184,115,51,.25); }
 .tier-card.tier-silver { background:linear-gradient(145deg, rgba(148,163,184,.12), rgba(255,255,255,.92) 55%), #fff; border-color:rgba(148,163,184,.25); }
@@ -2790,8 +2795,8 @@ input:focus, select:focus, textarea:focus,
 .my-rank-fixed b { position:relative;display:block; font-size:32px; color:#fff; margin:2px 0 4px; }
 .my-rank-tier{position:relative;display:flex;align-items:center;gap:8px;}
 .my-rank-tier span{font-weight:800;color:#fff;}
-.my-rank-fixed .tier-badge.small{box-shadow:inset 0 2px 4px rgba(255,255,255,.35), inset 0 -6px 10px rgba(0,0,0,.2), 0 8px 16px rgba(15,23,42,.32);}
-@media (max-width:390px){.ranking-podium{gap:6px}.ranking-row{grid-template-columns:20px 32px 1fr}.ranking-row em{font-size:11px;padding:5px 8px}}
+.my-rank-fixed .tier-emblem.small{box-shadow:inset 0 2px 4px rgba(255,255,255,.35), inset 0 -6px 10px rgba(0,0,0,.2), 0 8px 16px rgba(15,23,42,.32);}
+@media (max-width:390px){.ranking-podium{gap:6px}.ranking-row{grid-template-columns:20px 56px 1fr}.ranking-row em{font-size:11px;padding:5px 8px}.tier-emblem{width:56px;height:64px}}
 @keyframes rankShine { 0% { transform: translateX(-120%); } 45%,100% { transform: translateX(120%); } }
 
 .analysis .score-journey-card,
