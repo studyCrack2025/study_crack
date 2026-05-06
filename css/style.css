@@ -111,7 +111,7 @@ header#site-header.scrolled .nav-links a { color: var(--text); }
 .problem__copy .accent { color: var(--primary); font-weight: 600; margin-bottom: 36px; }
 .step-grid { display: grid; grid-template-columns: repeat(2, minmax(0,248px)); gap: 21px; align-items: start; justify-content: end; }
 .step-card { min-height: 244px; border-radius: var(--radius-lg); background: var(--card); padding: 22px; box-shadow: var(--shadow); }
-.step-card--one { grid-row: span 2; }
+.step-card--one { grid-row: span 2; transform: translateY(99px); }
 .step-card h3 { margin: 14px 0 9px; font-size: 18px; font-weight: 700; line-height: 1.35; letter-spacing: -0.03em; }
 .step-card p { margin: 0; font-size: 13.5px; font-weight: 300; line-height: 1.65; }
 .step-card p strong { font-weight: 600; }
@@ -396,7 +396,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .section, .dark-feature, .effects-section, .curriculum, .review-section { padding: 60px 0; }
 
     .step-grid { grid-template-columns: 1fr; justify-content: start; }
-    .step-card--one { grid-row: auto; }
+    .step-card--one { grid-row: auto; transform: none; }
     .planner-cards, .report-grid, .card-grid--three, .effects-grid, .review-grid { grid-template-columns: 1fr; }
     .planner-stack { grid-column: auto; }
 
