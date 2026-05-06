@@ -1104,9 +1104,9 @@ body {
 .terms-card { width:100%; border:1px solid #E5E7EB; border-radius:16px; padding:16px; margin-top:20px; background:#fff; }
 .terms-header { display:flex; align-items:center; gap:8px; font-weight:700; min-height:34px; margin-bottom:10px; }
 .terms-item { width:100%; display:grid; grid-template-columns:24px minmax(0,1fr) 40px; align-items:center; column-gap:12px; min-height:40px; padding:4px 0; font-size:14px; }
-.terms-item label { display:block; cursor:pointer; pointer-events:auto; min-width:0; width:100%; white-space:normal; word-break:keep-all; overflow-wrap:break-word; line-height:1.35; }
+.terms-item label { display:grid; grid-template-columns:24px minmax(0,1fr); align-items:center; column-gap:8px; cursor:pointer; pointer-events:auto; min-width:0; width:100%; white-space:normal; word-break:keep-all; overflow-wrap:normal; line-height:1.45; writing-mode:horizontal-tb; }
 .terms-item input[type="checkbox"] { pointer-events:auto; cursor:pointer; }
-.terms-item label > input[type="checkbox"] { width:22px; height:22px; min-width:22px; max-width:22px; margin:0 8px 0 0; vertical-align:top; }
+.terms-item label > input[type="checkbox"] { width:22px; height:22px; min-width:22px; max-width:22px; margin:0; vertical-align:top; }
 .terms-link { color:#6B7280; font-size:14px; border:none; background:transparent; width:40px; min-width:40px; flex-shrink:0; justify-self:end; text-align:right; white-space:nowrap; }
 .terms-card,
 .signup-terms-list,
@@ -1149,13 +1149,16 @@ body {
 .term-row .term-title,
 .terms-row label,
 .terms-row .term-title {
-  display: block !important;
+  display: grid !important;
+  grid-template-columns: 24px minmax(0, 1fr) !important;
+  align-items: center !important;
+  column-gap: 8px !important;
   width: 100% !important;
   min-width: 0 !important;
   max-width: 100% !important;
   white-space: normal !important;
   word-break: keep-all !important;
-  overflow-wrap: break-word !important;
+  overflow-wrap: normal !important;
   line-height: 1.45 !important;
   font-size: 15px !important;
   writing-mode: horizontal-tb !important;
