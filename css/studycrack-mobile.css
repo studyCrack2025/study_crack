@@ -1077,9 +1077,11 @@ body {
 .signup-input-row { display:grid; grid-template-columns:minmax(0,1fr) 140px; gap:10px; }
 .signup-input-row .input-btn { width:100%; max-width:150px; justify-self:end; }
 .signup-personal-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:end; }
+.signup-personal-grid > * { min-width:0; }
 .signup-date-field,
 .signup-date-field .input,
 .signup-date-field input[type="date"] { width:100%; max-width:100%; min-width:0; box-sizing:border-box; }
+.signup-date-field input[type="date"] { position:relative; -webkit-appearance:none; appearance:none; padding-right:36px; }
 .gender-row { height:48px; display:flex; align-items:center; gap:16px; }
 .input-row .input { flex:1; }
 .input-btn { height:48px; padding:0 14px; border-radius:12px; background:#374151; color:#fff; font-size:13px; font-weight:600; white-space:nowrap; border:none; }

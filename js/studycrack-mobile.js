@@ -3277,7 +3277,8 @@ function App() {
       const allInput = document.querySelector('[data-field="signupTermsAll"]');
       const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
       const marketingInput = document.querySelector('[data-field="signupTermsMarketing"]');
-      const next = !(window.__signupDraft?.termsAll === true);
+      const currentAll = !!allInput?.checked;
+      const next = !currentAll;
       if (allInput) allInput.checked = next;
       requiredInputs.forEach((el) => { el.checked = next; });
       if (marketingInput) marketingInput.checked = next;
@@ -3293,6 +3294,7 @@ function App() {
       return;
     }
     if (action === 'openTermsModal') {
+      preserveSignupDomValues();
       setOpenTermsType(actionEl.getAttribute('data-terms-type') || '');
       return;
     }
