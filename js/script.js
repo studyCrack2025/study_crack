@@ -114,23 +114,9 @@ function initMobileCourses() {
         if (tier === 'mbti') {
             const isLoggedIn = !!getAccessToken();
             if (isLoggedIn) {
-                extraBtnHtml = `
-                    <div style="margin-top: 25px; padding: 15px; background: #f5f3ff; border: 1px dashed #8b5cf6; border-radius: 8px; text-align: center;">
-                        <p style="margin: 0 0 10px 0; color: #6d28d9; font-weight: bold; font-size: 0.9rem;">🎁 회원 전용 혜택</p>
-                        <a href="/mbti/download" onclick="event.stopPropagation();" style="display: inline-block; background: #8b5cf6; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: 0.2s;">
-                            나만의 맞춤 공부법 PDF 무제한 다운로드
-                        </a>
-                    </div>
-                `;
+                extraBtnHtml = `<a href="/mbti/download" onclick="event.stopPropagation();" class="solution-cta-link">나만의 맞춤 공부법 PDF 무제한 다운로드</a>`;
             } else {
-                extraBtnHtml = `
-                    <div style="margin-top: 25px; padding: 15px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; text-align: center;">
-                        <p style="margin: 0 0 10px 0; color: #475569; font-weight: bold; font-size: 0.9rem;">🎁 무료 혜택</p>
-                        <a href="/login" onclick="event.stopPropagation(); alert('로그인 후 이용할 수 있는 혜택입니다.');" style="display: inline-block; background: #94a3b8; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: 0.2s;">
-                            🔒 로그인하고 맞춤 공부법 PDF 받기
-                        </a>
-                    </div>
-                `;
+                extraBtnHtml = `<a href="/login" onclick="event.stopPropagation(); alert('로그인 후 이용할 수 있는 혜택입니다.');" class="solution-cta-link">🔒 로그인하고 맞춤 공부법 PDF 받기</a><strong class="solution-cta-note">1회성 무료 혜택</strong>`;
             }
         }
 
@@ -204,29 +190,15 @@ function selectCourse(tier) {
                 
                 if (!hasUsedPromo) {
                     if (isLoggedIn) {
-                        extraBtnHtml = `
-                            <div style="margin-top: 25px; padding: 15px; background: #f5f3ff; border: 1px dashed #8b5cf6; border-radius: 8px; text-align: center;">
-                                <p style="margin: 0 0 10px 0; color: #6d28d9; font-weight: bold; font-size: 0.9rem;">🎁 회원 전용 혜택</p>
-                                <a href="/mbti/download" onclick="event.stopPropagation();" style="display: inline-block; background: #8b5cf6; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: 0.2s;">
-                                    나만의 맞춤 공부법 PDF 무료 다운로드(1회)
-                                </a>
-                            </div>
-                        `;
+                        extraBtnHtml = `<a href="/mbti/download" onclick="event.stopPropagation();" class="solution-cta-link">나만의 맞춤 공부법 PDF 무료 다운로드(1회)</a>`;
                     } else {
-                        extraBtnHtml = `
-                            <div style="margin-top: 25px; padding: 15px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; text-align: center;">
-                                <p style="margin: 0 0 10px 0; color: #475569; font-weight: bold; font-size: 0.9rem;">🎁 1회성 무료 혜택</p>
-                                <a href="/login" onclick="event.stopPropagation(); alert('로그인 후 이용할 수 있는 혜택입니다.');" style="display: inline-block; background: #94a3b8; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: 0.2s;">
-                                    🔒 로그인하고 맞춤 공부법 PDF 받기
-                                </a>
-                            </div>
-                        `;
+                        extraBtnHtml = `<a href="/login" onclick="event.stopPropagation(); alert('로그인 후 이용할 수 있는 혜택입니다.');" class="solution-cta-link">🔒 로그인하고 맞춤 공부법 PDF 받기</a><strong class="solution-cta-note">1회성 무료 혜택</strong>`;
                     }
                 }
             }
 
             detailView.innerHTML = `
-                <span class="detail-badge" style="color:${data.themeColor}; background:#fff; border: 1px solid ${data.themeColor};">${tier.toUpperCase()}</span>
+                <span class="detail-badge">${tier.toUpperCase()}</span>
                 <h3 class="detail-title">${data.title}</h3>
                 <div class="detail-price">${data.price}</div>
                 <p class="detail-desc">${data.desc}</p>
