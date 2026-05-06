@@ -2081,7 +2081,7 @@ function App() {
     .analysis-v2-bar-wrap{height:var(--bar-height);display:flex;align-items:flex-end;position:relative;}
     .analysis-v2-bar-item .score{font-size:14px;font-weight:700;}
     .analysis-v2-bar-item p{min-height:48px;max-height:48px;line-height:1.3;}
-    .analysis-v2-bar-proj{position:absolute;left:50%;transform:translate(-50%, 100%);font-size:11px;font-weight:700;color:#1E3A8A;border:1px dashed #93C5FD;border-radius:999px;padding:2px 7px;background:#EFF6FF;white-space:nowrap;z-index:7;}
+    .analysis-v2-bar-proj{position:absolute;left:50%;transform:translate(-50%, 100%);font-size:11px;font-weight:700;color:#1E3A8A;border:1px dashed #93C5FD;border-radius:12px;padding:4px 8px;background:#EFF6FF;white-space:normal;line-height:1.25;text-align:center;min-width:112px;z-index:7;}
     .analysis-v2-bar-proj-box{position:absolute;left:50%;transform:translateX(-50%);width:62px;min-height:10px;border:3px dashed #F59E0B;border-bottom:none;border-radius:14px 14px 0 0;background:rgba(251,191,36,.18);pointer-events:none;z-index:6;}
     .analysis-v2-sim-item{min-height:112px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;border:1px solid #E2E8F0;border-radius:16px;padding:14px 15px;background:#fff;}
     .analysis-v2-sim-item .left{display:grid;gap:6px;}
@@ -2549,7 +2549,7 @@ function App() {
                   const projectionScore = projectionGain !== null ? Math.min(maxScore, score + projectionGain) : null;
                   const projectedPercent = projectionScore ? Math.max(0, Math.min(100, (projectionScore / maxScore) * 100)) : heightPercent;
                   const projectionHeight = projectionScore ? Math.max(0, projectedPercent - heightPercent) : 0;
-                  const recommendedText = analysisRecommendedRow ? `${Math.round(analysisRecommendedSubjectScore + analysisRecommendedRow.gainNum)}점 (${analysisRecommendedRow.subject} 1점 상승 시 <span style="color:#2563EB;font-weight:800;">+${Math.round(analysisRecommendedRow.gainNum)}점</span>)` : '';
+                  const recommendedText = analysisRecommendedRow ? `${Math.round(analysisRecommendedSubjectScore + analysisRecommendedRow.gainNum)}점<br/>(${analysisRecommendedRow.subject} +1점 시 <span style="color:#2563EB;font-weight:800;">+${Math.round(analysisRecommendedRow.gainNum)}점</span>)` : '';
                   const projection = projectionScore ? `<span class="analysis-v2-bar-proj ${shouldProject ? 'pop' : ''}" style="bottom:${Math.max(0, (100 - projectionScore / maxScore * 100))}%">${recommendedText}</span>` : '';
                   const projectionBox = projectionScore && projectionHeight > 0 ? `<span class="analysis-v2-bar-proj-box" style="bottom:${heightPercent}%;height:${projectionHeight}%"></span>` : '';
                   const tier = scoreTierClass(score);
