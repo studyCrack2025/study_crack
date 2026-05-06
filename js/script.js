@@ -82,54 +82,14 @@ const COURSE_DATA = { /* ... (이전과 동일한 데이터 객체이므로 생�
 function initMobileCourses() {
     document.querySelectorAll('.course-tab-btn').forEach(btn => {
         const tier = btn.getAttribute('data-tier');
-        const data = COURSE_DATA[tier];
-        if (!data) return;
-
-        const iconHtml = btn.querySelector('.tab-icon').outerHTML;
-        const infoHtml = btn.querySelector('.tab-info').outerHTML;
-        const listHtml = data.list.map(item => {
-            const checkColor = data.themeColor;
-            if (item.action) {
-                let clickHandler = "";
-                if (item.action === "preview") clickHandler = `onclick="event.stopPropagation(); openFeaturePreview('${item.imgBase}', '${item.text}')"`;
-                else if (item.action === "download") clickHandler = `onclick="event.stopPropagation(); downloadProReport('${item.file}')"`;
-                return `
-                    <li class="clickable-item" ${clickHandler} title="클릭하여 확인하기" style="display:flex; align-items:flex-start; gap:8px;">
-                        <i class="fas fa-check-circle" style="color:${checkColor}; margin-top:3px;"></i>
-                        <span style="flex:1; word-break:keep-all;">${item.text}</span>
-                        <i class="fas fa-external-link-alt" style="font-size: 0.7em; margin-left: 5px; opacity: 0.7; margin-top:5px;"></i>
-                    </li>
-                `;
-            } else {
-                return `
-                    <li style="display:flex; align-items:flex-start; gap:8px;">
-                        <i class="fas fa-check-circle" style="color:${checkColor}; margin-top:3px;"></i>
-                        <span style="flex:1; word-break:keep-all;">${item.text}</span>
-                    </li>
-                `;
-            }
-        }).join('');
-
-        let extraBtnHtml = "";
-        if (tier === 'mbti') {
-            const isLoggedIn = !!getAccessToken();
-            if (isLoggedIn) {
-                extraBtnHtml = `<a href="/mbti/download" onclick="event.stopPropagation();" class="solution-cta-link">나만의 맞춤 공부법 PDF 무제한 다운로드</a>`;
-            } else {
-                extraBtnHtml = `<a href="/login" onclick="event.stopPropagation(); alert('로그인 후 이용할 수 있는 혜택입니다.');" class="solution-cta-link">🔒 로그인하고 맞춤 공부법 PDF 받기</a><strong class="solution-cta-note">1회성 무료 혜택</strong>`;
-            }
-        }
+        const labels = { mbti: 'MBTI', basic: 'BASIC', standard: 'STANDARD', pro: 'PRO' };
+        const iconHtml = btn.querySelector('.tab-icon')?.outerHTML || '';
+        const label = labels[tier] || tier.toUpperCase();
 
         btn.innerHTML = `
             <div class="tab-summary-wrap">
                 ${iconHtml}
-                ${infoHtml}
-                <div class="tab-price-mobile">${data.price}</div>
-            </div>
-            <div class="mobile-detail-box">
-                <p class="detail-desc">${data.desc}</p>
-                <ul class="detail-list">${listHtml}</ul>
-                ${extraBtnHtml}
+                <div class="tab-info"><span class="tab-name">${label}</span></div>
             </div>
         `;
     });
