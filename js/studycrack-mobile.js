@@ -113,6 +113,7 @@ function App() {
   console.log('APP_RENDER_START');
   const [screen, setScreen] = useState('splash');
   const [tab, setTab] = useState('home');
+  const [rankingPeriod, setRankingPeriod] = useState('daily');
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingFadeOut, setLoadingFadeOut] = useState(false);
@@ -1600,6 +1601,30 @@ function App() {
     const m = Math.floor((total % 3600) / 60);
     return `${h}시간 ${m}분`;
   };
+  const rankingMock = {
+    daily: [
+      { name: '김지민', time: '8시간 30분', tier: 'DIAMOND', streak: 12 },
+      { name: '박서준', time: '7시간 10분', tier: 'PLATINUM', streak: 8 },
+      { name: '이하늘', time: '6시간 40분', tier: 'GOLD', streak: 5 },
+      { name: '최민준', time: '5시간 20분', tier: 'GOLD', streak: 7 },
+      { name: '정다은', time: '4시간 55분', tier: 'SILVER', streak: 4 }
+    ],
+    weekly: [
+      { name: '박서준', time: '42시간 10분', tier: 'DIAMOND', streak: 10 },
+      { name: '김지민', time: '39시간 30분', tier: 'PLATINUM', streak: 9 },
+      { name: '이하늘', time: '37시간 40분', tier: 'GOLD', streak: 6 },
+      { name: '최민준', time: '34시간 20분', tier: 'GOLD', streak: 8 },
+      { name: '정다은', time: '31시간 55분', tier: 'SILVER', streak: 5 }
+    ],
+    monthly: [
+      { name: '이하늘', time: '168시간 40분', tier: 'DIAMOND', streak: 15 },
+      { name: '박서준', time: '160시간 10분', tier: 'PLATINUM', streak: 11 },
+      { name: '김지민', time: '156시간 30분', tier: 'GOLD', streak: 7 },
+      { name: '최민준', time: '149시간 20분', tier: 'GOLD', streak: 9 },
+      { name: '정다은', time: '141시간 55분', tier: 'SILVER', streak: 6 }
+    ]
+  };
+  const tierClass = (tier='') => tier.toLowerCase();
   const renderUniversityResultsOnly = (query, scopeEl) => {
     const container = scopeEl?.closest?.('.home-modal, .analysis-search-modal, .add-univ-page') || document;
     const resultSection = container.querySelector('.analysis-search-section:not(.recommend), .add-univ-list');
@@ -1756,7 +1781,7 @@ function App() {
         <p class="analysis-title">오늘 공부 목표</p>
         ${todayPlannerItems.length ? `<div class="goal-compact"><b>${todayPlannerProgress}%</b><span>달성</span><em>${formatMinutesLabel(todayPlannerTotalMinutes)}</em></div><div class="track"><i style="width:${todayPlannerProgress}%"></i></div><div class="goal-tags">${todayPlannerSubjectSummary.slice(0,3).map((v)=>`<span>${v}</span>`).join('')}</div>` : `<p class="sub">오늘 계획을 추가해보세요</p><span class="home-goal-empty-cta">플래너로 이동</span>`}
       </button>
-      <div class="card home-bottom-summary ranking-card home-insight-card premium-panel rank-tier-${rankTier} ${['gold','platinum','diamond'].includes(rankTier) ? 'rank-shine' : ''}">
+      <button type="button" class="card home-bottom-summary ranking-card home-insight-card premium-panel rank-tier-${rankTier} ${['gold','platinum','diamond'].includes(rankTier) ? 'rank-shine' : ''}" data-action="goRanking">
         <div class="home-ranking-head"><p class="analysis-title">내 공부 랭킹</p><span class="badge">오늘 기준</span></div>
         <p class="home-ranking-main">${Math.min(myRank, 124)}등</p>
         <p class="home-ranking-tier">${rankTierLabel}</p>
@@ -1764,7 +1789,7 @@ function App() {
         <div class="home-ranking-progress"><i style="width:${rankingProgress}%"></i></div>
         <p class="home-ranking-foot">상위 ${percentile}%</p>
         <p class="home-ranking-tip">오늘 공부를 시작하면 순위가 올라가요</p>
-      </div>
+      </button>
     </div>
     ${studySubjectSheetOpen ? `<div class="planner-sheet-overlay" data-action="closeStudySubjectSheet"><div class="planner-sheet study-subject-sheet" data-action="noopModal"><h3>어떤 과목을 공부할까요?</h3>${studySubjectSheetOnlyPlanned ? '' : `<div class="study-subject-grid">${['국어', '수학', '영어', '탐구'].map((s) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${s}">${s}</button>`).join('')}<button class="planner-pill" data-action="selectStudySubjectCustom">기타 직접 입력</button></div>`}${plannedScheduleOptions.length ? `<p class="sub" style="margin:8px 0 6px">오늘 플래너 일정</p><div class="study-subject-grid">${plannedScheduleOptions.map((row) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${row.subject}" data-study-item-id="${row.id}">${row.label}</button>`).join('')}</div>` : '<p class="sub" style="margin-top:8px">오늘 플래너 일정이 없습니다.</p>'}</div></div>` : ''}
     ${notifModalOpen ? `<div class="home-modal-overlay" data-action="closeNotificationModal"><div class="home-modal pro-notif-modal" data-action="noopModal"><p class="home-modal-title">알림</p><div class="pro-notif-list"><div><b>주간 코칭 알림</b><p>이번 주 코칭 작성 마감이 오늘 20:00입니다.</p></div><div><b>PRO 리포트 알림</b><p>26년 4월 4주차 리포트가 도착했습니다.</p></div><div><b>플래너 알림</b><p>오늘 계획 3개 중 1개를 완료했어요.</p></div></div><button class="btn btn-primary" data-action="closeNotificationModal">확인</button></div></div>` : ''}
@@ -2689,6 +2714,12 @@ function App() {
         <button class="my-row" data-action="goto" data-target="settingsMain">설정 <span>${i('chevron', false)}</span></button>
       </div>
     </div>`, true),
+    ranking: layout(appbar('공부 랭킹', true) + `<div class="ranking-page">
+      <div class="ranking-tabs">${[['daily','일간'],['weekly','주간'],['monthly','월간']].map(([k,label]) => `<button type="button" class="${rankingPeriod===k?'active':''}" data-action="setRankingPeriod" data-ranking-period="${k}">${label}</button>`).join('')}</div>
+      <div class="card ranking-podium-card"><div class="ranking-podium">${(rankingMock[rankingPeriod] || []).slice(0,3).map((row, idx) => `<div class="podium-item ${idx===0?'first':idx===1?'second':'third'}"><span class="tier-badge ${tierClass(row.tier)}">${row.streak}</span><b>${row.name}</b><p>${row.time}</p><small>${row.tier}</small></div>`).join('')}</div></div>
+      <div class="card ranking-list-card">${(rankingMock[rankingPeriod] || []).slice(3).map((row, idx) => `<div class="ranking-row"><span class="num">${idx+4}</span><span class="tier-badge small ${tierClass(row.tier)}">${row.streak}</span><div class="meta"><b>${row.name}</b><p>${row.time}</p></div><em>${row.tier} · ${row.streak}일 연속</em></div>`).join('')}</div>
+      <div class="card my-rank-fixed"><p class="sub">내 순위</p><b>124등</b><span>BRONZE · 2일 연속</span><small>오늘 1시간 20분</small></div>
+    </div>`, true),
     weekly: layout(
       `<div class="weekly-head"><button class="weekly-back" data-action="back">←</button><h3>주간 점검</h3><span></span></div>
        <p class="weekly-range">이번 주 점검 (5.6 ~ 5.12)</p>
@@ -3042,7 +3073,15 @@ function App() {
       goto(target);
     }
     if (action === 'back') back();
+    if (action === 'goRanking') {
+      goto('ranking');
+      return;
+    }
     if (action === 'tab') goto(actionEl.getAttribute('data-tab'));
+    if (action === 'setRankingPeriod') {
+      setRankingPeriod(actionEl.getAttribute('data-ranking-period') || 'daily');
+      return;
+    }
     if (action === 'selectPlan') {
       const plan = actionEl.getAttribute('data-plan');
       if (isIOSSafari()) {
