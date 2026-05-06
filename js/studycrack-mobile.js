@@ -1625,27 +1625,6 @@ function App() {
     ]
   };
   const tierClass = (tier='') => tier.toLowerCase();
-  const ensureAutoSelfStudyItemForToday = () => {
-    const today = FIXED_TODAY_DATE;
-    const autoId = `auto-self-study-${today}`;
-    setPlannerItems((prev) => {
-      const exists = prev.some((item) => item.id === autoId || (item.date === today && item.content === '자율공부'));
-      if (exists) return prev;
-      return [...prev, {
-        id: autoId,
-        date: today,
-        subject: '기타',
-        content: '자율공부',
-        start: '--:--',
-        end: '--:--',
-        minutes: 0,
-        doneMinutes: 0,
-        done: false,
-        dot: 'etc',
-        autoCreated: true
-      }];
-    });
-  };
   const renderUniversityResultsOnly = (query, scopeEl) => {
     const container = scopeEl?.closest?.('.home-modal, .analysis-search-modal, .add-univ-page') || document;
     const resultSection = container.querySelector('.analysis-search-section:not(.recommend), .add-univ-list');
@@ -1812,7 +1791,7 @@ function App() {
         <p class="home-ranking-tip">오늘 공부를 시작하면 순위가 올라가요</p>
       </button>
     </div>
-    ${studySubjectSheetOpen ? `<div class="planner-sheet-overlay" data-action="closeStudySubjectSheet"><div class="planner-sheet study-subject-sheet" data-action="noopModal"><h3>어떤 과목을 공부할까요?</h3>${studySubjectSheetOnlyPlanned ? '' : `<div class="study-subject-grid">${['국어', '수학', '영어', '탐구'].map((s) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${s}">${s}</button>`).join('')}<button class="planner-pill" data-action="selectStudySubjectCustom">기타 직접 입력</button></div>`}${plannedScheduleOptions.length ? `<p class="sub" style="margin:8px 0 6px">오늘 플래너 일정</p><div class="study-subject-grid">${plannedScheduleOptions.map((row) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${row.subject}" data-study-item-id="${row.id}">${row.label}</button>`).join('')}</div>` : '<p class="sub" style="margin-top:8px">오늘 플래너 일정이 없습니다.</p>'}</div></div>` : ''}
+    ${studySubjectSheetOpen ? `<div class="planner-sheet-overlay" data-action="closeStudySubjectSheet"><div class="planner-sheet study-subject-sheet" data-action="noopModal"><h3>어떤 과목을 공부할까요?</h3>${studySubjectSheetOnlyPlanned ? '' : `<div class="study-subject-grid">${['국어', '수학', '영어', '탐구'].map((s) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${s}">${s}</button>`).join('')}<button class="planner-pill" data-action="selectStudySubjectCustom">기타 직접 입력</button><button class="planner-pill" data-action="selectSelfStudy">자율공부</button></div>`}${plannedScheduleOptions.length ? `<p class="sub" style="margin:8px 0 6px">오늘 플래너 일정</p><div class="study-subject-grid">${plannedScheduleOptions.map((row) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${row.subject}" data-study-item-id="${row.id}">${row.label}</button>`).join('')}</div>` : '<p class="sub" style="margin-top:8px">오늘 플래너 일정이 없습니다.</p>'}</div></div>` : ''}
     ${notifModalOpen ? `<div class="home-modal-overlay" data-action="closeNotificationModal"><div class="home-modal pro-notif-modal" data-action="noopModal"><p class="home-modal-title">알림</p><div class="pro-notif-list"><div><b>주간 코칭 알림</b><p>이번 주 코칭 작성 마감이 오늘 20:00입니다.</p></div><div><b>PRO 리포트 알림</b><p>26년 4월 4주차 리포트가 도착했습니다.</p></div><div><b>플래너 알림</b><p>오늘 계획 3개 중 1개를 완료했어요.</p></div></div><button class="btn btn-primary" data-action="closeNotificationModal">확인</button></div></div>` : ''}
     ${drawerOpen ? `<div class="home-modal-overlay drawer-overlay" data-action="closeDrawer"><aside class="side-drawer" data-action="noopModal"><h3>메뉴</h3>${[['analysis','분석'],['strategy','학습 코칭'],['planner','플래너'],['weekly','주간 점검'],['report','프로 보고서']].map(([target,label]) => `<button class="my-row" data-action="drawerGoto" data-target="${target}">${label}<span>${i('chevron', false)}</span></button>`).join('')}</aside></div>` : ''}
   </div>
@@ -4039,7 +4018,6 @@ function App() {
       setCoachingStep((prev) => Math.min(8, prev + 1));
     }
     if (action === 'openStudySubjectSheet') {
-      ensureAutoSelfStudyItemForToday();
       preserveScrollAfterStateChange(() => {
         setNotifModalOpen(false);
         setStudySubjectSheetOnlyPlanned(true);
@@ -4112,6 +4090,17 @@ function App() {
       studyTimerSecondsRef.current = 0;
       startLiveStudyTimer();
       syncLiveStudyTimerUi(0);
+    }
+    if (action === 'selectSelfStudy') {
+      setActiveStudySubject('기타');
+      setActivePlannerItemId('');
+      setStudySubjectSheetOpen(false);
+      setStudySubjectSheetOnlyPlanned(false);
+      setStudyTimerRunning(true);
+      studyTimerSecondsRef.current = 0;
+      startLiveStudyTimer();
+      syncLiveStudyTimerUi(0);
+      return;
     }
     if (action === 'selectStudySubject') {
       const subject = actionEl.getAttribute('data-study-subject');
