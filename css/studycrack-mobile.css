@@ -3057,3 +3057,111 @@ input:focus, select:focus, textarea:focus,
   box-shadow:none !important;
   background:transparent !important;
 }
+
+/* ===== Premium UI Polish System (visual only) ===== */
+:root {
+  --ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-micro: 160ms;
+  --dur-modal: 240ms;
+  --dur-page: 320ms;
+  --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #6366f1 35%, #8b5cf6 100%);
+  --gradient-soft: linear-gradient(140deg, #eef2ff 0%, #f5f3ff 55%, #f8faff 100%);
+  --card-radius: 24px;
+  --card-shadow-primary: 0 12px 32px rgba(15,23,42,.08);
+  --card-shadow-secondary: 0 6px 18px rgba(15,23,42,.05);
+  --card-border: 1px solid rgba(148,163,184,.22);
+}
+
+body { line-height: 1.45; -webkit-font-smoothing: antialiased; }
+.app-content { overscroll-behavior-y: contain; }
+.card, .target-select-card, .analysis-impact, .analysis-strategy, .analysis-roi, .home-bottom-summary,
+.plan-card, .my-profile-card, .my-subscription-card, .planner-item, .analysis-v2-targets, .analysis-v2-summary,
+.analysis-v2-before-after, .analysis-v2-gauge-change, .analysis-v2-sim, .analysis-v2-comment, .analysis-v2-cta {
+  border-radius: var(--card-radius);
+  border: var(--card-border);
+  box-shadow: var(--card-shadow-primary);
+}
+.quick-item, .quick-mini-item, .report-row, .feedback-item, .faq-row, .notify-row, .settings-list button, .my-row {
+  box-shadow: var(--card-shadow-secondary);
+  border-color: rgba(148,163,184,.22);
+}
+
+.btn, .tabbar button, .planner-item-done, .planner-fab, .top-icon-btn, .target-option, .planner-days button,
+.planner-cal-day, .planner-pill, .notify-switch, .progress > span, .track i {
+  transition: all var(--dur-micro) var(--ease-premium);
+}
+.btn:active, .top-icon-btn:active, .tabbar button:active, .planner-fab:active { transform: scale(.98); }
+
+.app-content > * { animation: premiumFadeUp var(--dur-page) var(--ease-premium); }
+.home-modal, .planner-sheet, .terms-modal, .coach-sheet, .study-subject-sheet {
+  border-radius: 26px 26px 0 0;
+  animation: premiumModalIn var(--dur-modal) var(--ease-premium);
+}
+.home-modal { border-radius: 24px; }
+.home-modal-overlay, .planner-sheet-overlay, .terms-modal-backdrop, .coach-sheet-overlay {
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.home-kpi-card, .analysis-top, .planner-feedback-card.info, .feedback-blue, .btn-primary, .planner-fab {
+  background-image: var(--gradient-primary);
+}
+.btn-primary { box-shadow: 0 12px 26px rgba(79,70,229,.24); }
+.feedback-blue, .planner-feedback-card.info { color: #fff; border: none; }
+
+.home-greeting { font-size: 23px; letter-spacing: -0.025em; }
+.analysis-v2-head h3, .planner-head h3, .weekly-head h3 { font-size: 23px; letter-spacing: -0.02em; }
+.analysis-title, .home-quick-title, .planner-section-title h4 { font-size: 17px; letter-spacing: -0.01em; }
+.sub, .analysis-sub, .planner-sheet p { font-size: 14px; }
+.caption, .home-sub, .home-ranking-tip, .planner-item small { font-size: 12px; line-height: 1.5; }
+.metric, .home-ranking-main, .weekly-rate h2, .report-main h2 { font-size: clamp(32px, 9vw, 40px); }
+
+.home-ranking-progress i, .analysis-v2-gauge i, .progress > span, .track i { transition: width 600ms var(--ease-premium); }
+.analysis-v2-tab, .tabbar button { transition: all var(--dur-micro) var(--ease-premium), opacity var(--dur-micro) var(--ease-premium); }
+.tabbar button.active { background: #eef2ff; color: #4f46e5; }
+.top-icon-btn[data-action="openNotificationModal"] { box-shadow: 0 0 0 1px rgba(99,102,241,.15), 0 8px 18px rgba(99,102,241,.16); }
+
+.home-empty-card, .planner-empty-day, .coach-empty {
+  position: relative;
+  overflow: hidden;
+  background: var(--gradient-soft);
+  border: var(--card-border);
+}
+.home-empty-card::after, .planner-empty-day::after, .coach-empty::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.5) 42%, transparent 62%);
+  transform: translateX(-130%);
+  animation: skeletonShimmer 1.4s infinite;
+}
+
+.global-loading-card, .ob-loading-card {
+  border-radius: 24px;
+  border: var(--card-border);
+  background: #fff;
+  box-shadow: var(--card-shadow-primary);
+  position: relative;
+  overflow: hidden;
+}
+.global-loading-card::before, .ob-loading-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 18%, rgba(99,102,241,.14) 42%, transparent 66%);
+  animation: skeletonShimmer 1.2s infinite;
+}
+
+@keyframes premiumFadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes premiumModalIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes skeletonShimmer { to { transform: translateX(130%); } }
+
+@supports (-webkit-touch-callout: none) {
+  .tabbar { padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
+  .app-content { padding-bottom: 108px; }
+  .planner-input:focus, input:focus, textarea:focus, select:focus {
+    transition: box-shadow var(--dur-micro) var(--ease-premium), border-color var(--dur-micro) var(--ease-premium);
+    border-color: #818cf8;
+    box-shadow: 0 0 0 4px rgba(99,102,241,.14);
+  }
+}
