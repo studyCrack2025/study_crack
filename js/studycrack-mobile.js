@@ -4261,6 +4261,27 @@ function App() {
       const absDelta = Math.abs(delta);
       const swipeThreshold = touchTargetRef.current === 'home' ? 22 : 26;
       if (absDelta < swipeThreshold) {
+        if (touchTargetRef.current === 'home' && screen === 'home') {
+          const slider = document.querySelector('.home-kpi-slider');
+          const cards = Array.from(slider?.querySelectorAll('.slider-card') || []);
+          if (slider && cards.length) {
+            const sliderRect = slider.getBoundingClientRect();
+            const centerX = sliderRect.left + sliderRect.width / 2;
+            let nearest = 0;
+            let nearestDist = Number.POSITIVE_INFINITY;
+            cards.forEach((card, idx) => {
+              const rect = card.getBoundingClientRect();
+              const cardCenter = rect.left + rect.width / 2;
+              const dist = Math.abs(cardCenter - centerX);
+              if (dist < nearestDist) {
+                nearestDist = dist;
+                nearest = idx;
+              }
+            });
+            const current = Number(slider.querySelector('.home-kpi-track')?.dataset.homeSlideIndex || 0);
+            setHomeSlideDom(nearest, nearest > current ? 'motion-next' : 'motion-prev');
+          }
+        }
         touchTargetRef.current = '';
         return;
       }
