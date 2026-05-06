@@ -1328,11 +1328,19 @@ function App() {
     const track = (form.track ?? draft.track ?? '').trim();
     const source = (form.source ?? draft.source ?? '').trim();
     const gender = form.gender || draft.gender || '';
-    const requiredInputs = Array.from(document.querySelectorAll('[data-action="toggleSignupTermsRequired"]'));
+    const requiredInputs = Array.from(document.querySelectorAll('[data-field="signupTermsStandard"], [data-field="signupTermsService"], [data-field="signupTermsPrivacy"], [data-field="signupTermsRefund"]'));
     const requiredChecked = requiredInputs.length === 4 && requiredInputs.every((el) => el.checked);
     const pwRuleValid = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(pw);
-    const emailVerified = draft.emailVerified === true || signupEmailVerified;
-    const phoneVerified = draft.phoneVerified === true || signupPhoneVerified;
+    const emailVerified = draft.emailVerified === true
+      || signupEmailVerified
+      || document.querySelector('[data-signup-email-verified="true"]')
+      || document.querySelector('[data-action="confirmSignupEmailCode"]')?.dataset.verified === 'true'
+      || document.querySelector('[data-signup-timer="email"]')?.textContent?.includes('인증 완료');
+    const phoneVerified = draft.phoneVerified === true
+      || signupPhoneVerified
+      || document.querySelector('[data-signup-phone-verified="true"]')
+      || document.querySelector('[data-action="confirmSignupPhoneCode"]')?.dataset.verified === 'true'
+      || document.querySelector('[data-signup-timer="phone"]')?.textContent?.includes('인증 완료');
     const canSubmit = !!email && emailVerified && pwRuleValid && pw === pwc && !!name && !!gender && !!birth && !!phone && phoneVerified && !!track && !!source && requiredChecked;
     btn.disabled = !canSubmit;
     btn.classList.toggle('active', canSubmit);
