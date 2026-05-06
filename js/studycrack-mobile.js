@@ -59,7 +59,7 @@ const resolveAssetPath = async (path, fallback) => {
   }
 };
 const buildPlannerId = () => `pl-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
-const normalizePlannerItems = (items = []) => items.map((item, idx) => ({
+const normalizePlannerItems = (items = []) => (Array.isArray(items) ? items : []).map((item, idx) => ({
   ...item,
   id: item.id || `pl-legacy-${idx}-${item.subject || 'item'}`,
   date: item.date || '14'
@@ -582,6 +582,25 @@ function App() {
     };
     window.addEventListener('scroll', onNativeScroll, { passive: true });
     return () => window.removeEventListener('scroll', onNativeScroll);
+  }, [screen]);
+
+  useEffect(() => {
+    const captureStartupError = (type, payload) => {
+      try {
+        const logs = safeParse('studycrack_startup_errors_v1', []);
+        const next = Array.isArray(logs) ? logs : [];
+        next.push({ type, payload: String(payload || ''), screen, ua: navigator.userAgent, width: window.innerWidth, vv: window.visualViewport ? window.visualViewport.width : null, ts: Date.now() });
+        localStorage.setItem('studycrack_startup_errors_v1', JSON.stringify(next.slice(-20)));
+      } catch (_e) { /* noop */ }
+    };
+    const onErr = (e) => captureStartupError('error', e?.error?.stack || e?.message);
+    const onRej = (e) => captureStartupError('unhandledrejection', e?.reason?.stack || e?.reason);
+    window.addEventListener('error', onErr);
+    window.addEventListener('unhandledrejection', onRej);
+    return () => {
+      window.removeEventListener('error', onErr);
+      window.removeEventListener('unhandledrejection', onRej);
+    };
   }, [screen]);
 
   useEffect(() => {
