@@ -1342,6 +1342,22 @@ function App() {
       || document.querySelector('[data-action="confirmSignupPhoneCode"]')?.dataset.verified === 'true'
       || document.querySelector('[data-signup-timer="phone"]')?.textContent?.includes('인증 완료');
     const canSubmit = !!email && emailVerified && pwRuleValid && pw === pwc && !!name && !!gender && !!birth && !!phone && phoneVerified && !!track && !!source && requiredChecked;
+    const failReasons = [];
+    if (!email) failReasons.push('email_empty');
+    if (!emailVerified) failReasons.push('email_not_verified');
+    if (!pw) failReasons.push('password_empty');
+    if (!pwRuleValid) failReasons.push('password_rule_fail');
+    if (!pwc) failReasons.push('password_confirm_empty');
+    if (pw !== pwc) failReasons.push('password_mismatch');
+    if (!name) failReasons.push('name_empty');
+    if (!gender) failReasons.push('gender_empty');
+    if (!birth) failReasons.push('birth_empty');
+    if (!phone) failReasons.push('phone_empty');
+    if (!phoneVerified) failReasons.push('phone_not_verified');
+    if (!track) failReasons.push('track_empty');
+    if (!source) failReasons.push('source_empty');
+    if (!requiredChecked) failReasons.push(`required_terms_${requiredInputs.filter((el)=>el.checked).length}/${requiredInputs.length}`);
+    window.__signupDebug = { email, emailVerified: !!emailVerified, passwordLength: pw.length, passwordValid: pwRuleValid, passwordConfirmLength: pwc.length, passwordMatch: pw === pwc, name, gender, birth, phone, phoneVerified: !!phoneVerified, track, source, requiredTermsTotal: requiredInputs.length, requiredTermsChecked: requiredInputs.filter((el)=>el.checked).length, failReasons };
     btn.disabled = !canSubmit;
     btn.classList.toggle('active', canSubmit);
     btn.classList.toggle('disabled', !canSubmit);
@@ -3319,8 +3335,23 @@ function App() {
     }
     if (action === 'openTermsModal') {
       e.preventDefault();
+      e.stopPropagation();
       preserveSignupDomValues();
-      syncSignupFromDom();
+      const form = syncSignupFromDom();
+      preserveSignupScroll(() => {
+        setSignupEmail(form.email || '');
+        setSignupPhone(form.phone || '');
+        setSignupPassword(form.pw || '');
+        setSignupPasswordConfirm(form.pwc || '');
+        setSignupName(form.name || '');
+        setSignupBirth(form.birth || '');
+        setSignupTrack(form.track || '');
+        setSignupSource(form.source || '');
+        setSignupPromoCode(form.promoCode || '');
+        setSignupEmailCode(form.emailCode || '');
+        setSignupPhoneCode(form.phoneCode || '');
+        setSignupGender(form.gender || signupGender);
+      });
       const y = window.scrollY || window.pageYOffset || 0;
       setOpenTermsType(actionEl.getAttribute('data-terms-type') || '');
       requestAnimationFrame(() => {
