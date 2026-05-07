@@ -502,3 +502,20 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .noti-panel { width: calc(100% - 36px); right: 18px; bottom: 140px; max-height: 380px; }
     .modal-content { margin: 15% auto; max-height: 70vh; padding: 20px; }
 }
+
+/* =========================================
+   태블릿 curriculum 레이아웃 보정: 769px ~ 1023px
+   1200px 규칙이 curriculum-grid를 1열로 만들므로 2열 복원
+   탭은 세로 4개 배치, solution-card 우측 유지
+   ========================================= */
+@media (min-width: 769px) and (max-width: 1023px) {
+    .curriculum-grid { grid-template-columns: minmax(0,1fr) minmax(0,1.15fr); gap: 28px; }
+    .tabs { grid-template-columns: 1fr; gap: 8px; }
+    .tabs .course-tab-btn { flex-direction: row; justify-content: flex-start; align-items: center; min-height: 52px; padding: 11px 16px; background: rgba(255,255,255,.12) !important; border: 1px solid rgba(255,255,255,.2) !important; border-radius: 8px; color: #fff !important; transform: none !important; }
+    .tabs .course-tab-btn.active { background: rgba(255,255,255,.28) !important; border-color: rgba(255,255,255,.38) !important; }
+    .tabs .course-tab-btn .tab-icon { display: none; }
+    .tabs .course-tab-btn .tab-info { display: flex; flex-direction: column; text-align: left; }
+    .tabs .course-tab-btn .tab-name { font-size: 0.9rem; font-weight: 800; }
+    .tabs .course-tab-btn .tab-sub { font-size: 0.76rem; opacity: 0.75; }
+    .course-detail-view { display: block !important; }
+}
