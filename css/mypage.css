@@ -1,6 +1,6 @@
 /* --- css/mypage.css --- */
 
-body { padding-top: 92px; }
+body { padding-top: 83px; }
 header#site-header .nav-links a.active-link { color: #4c79ee; }
 
 /* 1. 전체 레이아웃 (Layout) */
@@ -531,7 +531,7 @@ input:focus { outline: none; border-color: #4c79ee; }
 
 @media (min-width: 769px) {
     .mypage-container { display: flex; flex-direction: row; align-items: flex-start; gap: 30px; max-width: 1200px; margin: 40px auto; padding: 0 20px; }
-    .profile-summary { width: 300px; min-width: 300px; flex-shrink: 0; position: sticky; top: 112px; overflow: visible; }
+    .profile-summary { width: 300px; min-width: 300px; flex-shrink: 0; position: sticky; top: 103px; overflow: visible; }
     .content-area { flex-grow: 1; min-width: 0; width: 100%; }
     .password-section { display: flex; gap: 20px; }
     .password-section .form-group { flex: 1; }

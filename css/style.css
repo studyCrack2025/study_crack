@@ -30,7 +30,7 @@
    ========================================= */
 *, *::before, *::after { box-sizing: border-box; }
 html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
-html { scroll-behavior: smooth; scroll-padding-top: 92px; }
+html { scroll-behavior: smooth; scroll-padding-top: 83px; }
 body { margin: 0; font-family: "Paperlogy", system-ui, -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text); background: #fff; line-height: 1.5; letter-spacing: -0.02em; word-break: keep-all; -webkit-font-smoothing: antialiased; }
 a { color: inherit; text-decoration: none; cursor: pointer; }
 ul, ol { list-style: none; margin: 0; padding: 0; }
@@ -68,27 +68,28 @@ button { font: inherit; cursor: pointer; border: 0; background: transparent; }
 /* =========================================
    3. 헤더
    ========================================= */
-header#site-header { position: fixed; inset: 0 0 auto; z-index: 1000; height: 92px; padding: 0 clamp(20px, 5vw, 91px); display: flex; align-items: center; justify-content: space-between; background: transparent; transition: background .25s, box-shadow .25s; }
+header#site-header { position: fixed; inset: 0 0 auto; z-index: 1000; height: 83px; padding: 0 clamp(20px, 5vw, 91px); display: flex; align-items: center; justify-content: space-between; background: transparent; transition: background .25s, box-shadow .25s; }
 header#site-header.scrolled { background: rgba(255,255,255,.96); box-shadow: 0 1px 10px rgba(0,0,0,.08); }
 
 .logo-container { display: flex; align-items: center; gap: 10px; }
-.logo-container img { height: 47px; width: auto; }
+.logo-container img { height: 42px; width: auto; }
 .logo-link { display: flex; align-items: center; gap: 10px; }
 .logo { font-size: 22px; font-weight: 800; color: #fff; letter-spacing: -0.02em; transition: color .25s; }
 header#site-header.scrolled .logo { color: #0f172a; }
 
 .nav-links { display: flex; align-items: center; gap: clamp(16px, 2vw, 28px); }
-.nav-links a { font-size: 16px; font-weight: 700; color: rgba(255,255,255,.96); white-space: nowrap; transition: opacity .2s; }
+.nav-links a { font-size: 15px; font-weight: 700; color: rgba(255,255,255,.96); white-space: nowrap; transition: opacity .2s; }
 header#site-header.scrolled .nav-links a { color: var(--text); }
 .nav-links a:hover { opacity: .75; }
-.nav-btn { background: var(--primary) !important; color: #fff !important; padding: 9px 22px; border-radius: var(--radius-btn); font-weight: 800 !important; font-size: 14px !important; transition: background .2s !important; }
+.nav-btn { background: var(--primary) !important; color: #fff !important; padding: 8px 20px; border-radius: var(--radius-btn); font-weight: 800 !important; font-size: 14px !important; transition: background .2s !important; }
 .nav-btn:hover { background: #3b6add !important; opacity: 1 !important; }
 
 /* =========================================
    4. 히어로
    ========================================= */
-.hero-main { position: relative; width: 100%; min-height: 750px; padding-top: 92px; background: url('/assets/figma/figma-asset-17.png') center/cover no-repeat; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.hero-main { position: relative; width: 100%; min-height: 750px; padding-top: 83px; background-color: #1a1f2e; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .hero-main::before { content: ''; position: absolute; inset: 0; background: rgba(55,55,55,.55); z-index: 1; }
+.hero-bg { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 0.45s ease; pointer-events: none; z-index: 0; }
 .hero-crossfade { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity .9s ease-in-out; pointer-events: none; z-index: 0; }
 .hero-main-content { position: relative; z-index: 2; text-align: center; color: #fff; padding: 0 20px; max-width: 860px; }
 .hero-title { font-size: clamp(34px, 3.4vw, 50px); line-height: 1.12; margin-bottom: 26px; text-shadow: 2px 2px 60px rgba(0,0,0,.2); letter-spacing: -0.035em; }
@@ -117,6 +118,10 @@ header#site-header.scrolled .nav-links a { color: var(--text); }
 .step-card p { margin: 0; font-size: 13.5px; font-weight: 300; line-height: 1.65; }
 .step-card p strong { font-weight: 600; }
 .step-card img { width: min(105px, 55%); margin: 16px 0 0 auto; }
+.step-card-icon { display: flex; justify-content: flex-end; margin-top: 18px; font-size: 48px; line-height: 1; opacity: 0.82; }
+.step-icon--green i { color: #28ba9a; }
+.step-icon--purple i { color: var(--purple); }
+.step-icon--blue i { color: var(--primary); }
 .badge { display: inline-flex; align-items: center; min-height: 24px; padding: 0 16px; border-radius: 999px; background: #fff; font-size: 12px; font-weight: 700; }
 .badge--green { color: #28ba9a; }
 .badge--purple { color: var(--purple); }
@@ -144,7 +149,7 @@ header#site-header.scrolled .nav-links a { color: var(--text); }
 /* =========================================
    7. 플래너 섹션
    ========================================= */
-.planner { background: linear-gradient(#eee8ff 0, #f8f8fb 270px); }
+.planner { background: linear-gradient(180deg, #ddd2f8 0%, #ece6ff 120px, #f9f6ff 280px, #ffffff 420px); }
 .planner-cards { display: grid; grid-template-columns: minmax(0,226px) minmax(0,226px) minmax(0,1fr); gap: 12px; margin-bottom: 48px; }
 .planner-card { border-radius: var(--radius-lg); padding: 21px; box-shadow: var(--shadow); }
 .planner-card h3 { margin: 0 0 10px; font-size: clamp(15px, 1.5vw, 18px); font-weight: 700; line-height: 1.25; letter-spacing: -0.03em; }
@@ -179,7 +184,7 @@ header#site-header.scrolled .nav-links a { color: var(--text); }
 /* =========================================
    8. 기대 효과 섹션
    ========================================= */
-.effects-section { background: #f7f8fb; position: relative; overflow: hidden; }
+.effects-section { background: #eef3fc; position: relative; overflow: hidden; }
 .effects-section::before, .effects-section::after { position: absolute; z-index: 0; color: rgba(76,121,238,.16); font-weight: 900; line-height: 1; pointer-events: none; }
 .effects-section::before { content: '✱'; left: clamp(18px, 5vw, 72px); top: clamp(44px, 8vw, 110px); font-size: clamp(64px, 8vw, 120px); transform: rotate(14deg); }
 .effects-section::after { content: '✱'; right: clamp(24px, 6vw, 92px); bottom: clamp(48px, 7vw, 96px); font-size: clamp(72px, 9vw, 140px); transform: rotate(-12deg); }
@@ -385,8 +390,8 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 }
 
 @media (max-width: 900px) {
-    header#site-header { height: 76px; padding: 0 20px; }
-    .logo-container img { height: 40px; width: auto; }
+    header#site-header { height: 68px; padding: 0 20px; }
+    .logo-container img { height: 36px; width: auto; }
     .logo { font-size: 20px; }
     .nav-links { gap: 12px; }
     .nav-links a:not(.nav-btn):not(#loginBtn):not(#myPageBtn):not(#logoutBtn) { display: none; }
@@ -441,8 +446,8 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 @media (max-width: 560px) {
     .container, .footer-content, .cta-content { width: min(100% - 28px, var(--container)); }
     .section, .dark-feature, .effects-section, .curriculum, .review-section { padding: 52px 0; }
-    header#site-header { height: 68px; }
-    .logo-container img { height: 34px; width: auto; }
+    header#site-header { height: 61px; }
+    .logo-container img { height: 30px; width: auto; }
     .logo { font-size: 17px; }
     .hero-main { min-height: 520px; padding-top: 68px; }
     .hero-title { font-size: clamp(26px, 10vw, 36px); }

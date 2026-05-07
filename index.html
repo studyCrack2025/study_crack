@@ -52,6 +52,7 @@
     </header>
 
     <section id="hero-main" class="hero-main">
+        <div id="heroBg" class="hero-bg" aria-hidden="true"></div>
         <div id="heroCrossFade" class="hero-crossfade" aria-hidden="true"></div>
         <div class="hero-main-content">
             <h2 class="hero-title">
@@ -77,18 +78,19 @@
                     <span class="badge badge--green">1단계</span>
                     <h3>문제 인식 (HOOK)</h3>
                     <p><strong>지금 공부 방향, 확신이 있으신가요?</strong><br>막연한 노력만으로는 결과를 바꾸기 어렵습니다.</p>
-                    <img src="/assets/figma/figma-asset-21.png" alt="">
+                    <div class="step-card-icon step-icon--green"><i class="fas fa-magnifying-glass"></i></div>
                 </article>
                 <article class="step-card">
                     <span class="badge badge--purple">2단계</span>
                     <h3>해결 방법 (SOLUTION)</h3>
                     <p><strong>어떤 과목을 어떻게 올려야 하는지</strong>부터 실제 점수 상승까지 이어지는 실행 플랜을 제공합니다.</p>
-                    <img src="/assets/figma/figma-asset-07.png" alt="">
+                    <div class="step-card-icon step-icon--purple"><i class="fas fa-lightbulb"></i></div>
                 </article>
                 <article class="step-card">
                     <span class="badge badge--blue">3단계</span>
                     <h3>행동 유도 (CTA)</h3>
                     <p><strong>목표대학 합격, 전략이 먼저입니다.</strong> 지금 내 성적으로 어디까지 가능한지 확인해보세요.</p>
+                    <div class="step-card-icon step-icon--blue"><i class="fas fa-rocket"></i></div>
                 </article>
             </div>
         </div>
@@ -574,8 +576,13 @@
         var fade = document.getElementById('heroCrossFade');
         var dots = document.querySelectorAll('.hero-dots span');
 
-        /* Set initial background (no transition needed) */
-        hero.style.backgroundImage = 'url("' + IMGS[0] + '")';
+        var heroBg = document.getElementById('heroBg');
+
+        /* Set initial background with fade-in on load */
+        heroBg.style.backgroundImage = 'url("' + IMGS[0] + '")';
+        var initImg = new Image();
+        initImg.onload = function () { heroBg.style.opacity = '1'; };
+        initImg.src = IMGS[0];
 
         function goTo(idx) {
             if (idx === cur) return;
@@ -585,7 +592,7 @@
             fade.style.opacity = '1';
             /* After transition completes, swap main bg and reset fade layer */
             var tid = setTimeout(function () {
-                hero.style.backgroundImage = 'url("' + next + '")';
+                heroBg.style.backgroundImage = 'url("' + next + '")';
                 fade.style.transition = 'none';
                 fade.style.opacity = '0';
                 /* Re-enable transition on next frame */

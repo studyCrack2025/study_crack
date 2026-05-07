@@ -616,12 +616,12 @@ function syncMobileHeight() {
 function getStandardLockOverlayHTML(featureName) {
     return `
         <div style="background: white; padding: 30px 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; border: 1px solid #e2e8f0; width: 90%; max-width: 320px; box-sizing: border-box;">
-            <i class="fas fa-lock" style="font-size: 2.5rem; color: #94a3b8; margin-bottom: 15px;"></i>
+            <i class="fas fa-lock" style="font-size: 2.5rem; color: #7c9eef; margin-bottom: 15px;"></i>
             <h3 style="margin: 0 0 10px 0; color: #1e293b; font-size: 1.25rem; word-break: keep-all;">Standard 멤버십 전용</h3>
-            <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 20px; line-height: 1.5; word-break: keep-all;">
-                ${featureName}은(는)<br><strong>Standard 등급 이상</strong>부터 이용 가능합니다.
+            <p style="color: #475569; font-size: 0.95rem; margin-bottom: 20px; line-height: 1.5; word-break: keep-all;">
+                ${featureName}은(는)<br><strong style="color:#4c79ee;">Standard 등급 이상</strong>부터 이용 가능합니다.
             </p>
-            <button onclick="location.href='/payment'" style="width: 100%; padding: 14px 0; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.2s; white-space: nowrap; word-break: keep-all;">
+            <button onclick="location.href='/payment'" style="width: 100%; padding: 14px 0; background: #4c79ee; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.2s; white-space: nowrap; word-break: keep-all;">
                 🚀 멤버십 알아보기
             </button>
         </div>`;
@@ -823,7 +823,7 @@ function renderUserInfo(data) {
             icon.style.marginRight = '4px';
             tierBadgeEl.appendChild(icon);
         }
-        tierBadgeEl.appendChild(document.createTextNode(`${tierText} 멤버십`));
+        tierBadgeEl.appendChild(document.createTextNode(tierText));
     }
 }
 
@@ -899,12 +899,11 @@ function updateSurveyStatus(data) {
             if (!d) return;
 
             const makeRow = (label, obj) => {
-                if (!obj) return ''; 
+                if (!obj) return '';
                 let optText = '';
                 if (obj.opt && obj.opt !== 'none') {
                     optText = `<span class="opt-badge">(${escapeHtml(obj.opt)})</span>`;
-                }
-                else if (obj.name) {
+                } else if (obj.name) {
                     optText = `<span class="opt-badge">(${escapeHtml(obj.name)})</span>`;
                 }
 
@@ -913,10 +912,10 @@ function updateSurveyStatus(data) {
                 const grd = obj.grd ? `<span class="grade-circle">${escapeHtml(obj.grd)}</span>` : '';
 
                 let valStr = '';
-                if (label === '영어' || label === '한국사') valStr = grd; 
+                if (label === '영어' || label === '한국사') valStr = grd;
                 else valStr = `${std} / ${pct} ${grd}`;
 
-                return `<tr><td class="subj-label">${label}</td><td class="score-info">${optText} ${valStr}</td></tr>`;
+                return `<tr><td class="subj-label">${label}${optText}</td><td class="score-info">${valStr}</td></tr>`;
             };
 
             let html = '<table class="side-score-table">';
