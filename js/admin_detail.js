@@ -25,16 +25,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!err && session && session.isValid()) {
                 setAccessToken(session.getAccessToken().getJwtToken());
                 setIdToken(session.getIdToken().getJwtToken());
+                initDetailPage();
             } else {
                 tryRefreshToken().then(ok => {
                     if (!ok) {
                         alert("세션이 만료되었습니다. 다시 로그인해주세요.");
                         localStorage.clear();
                         window.location.href = '/admin/login';
+                        return;
                     }
+                    initDetailPage();
                 });
             }
-            initDetailPage();
         });
         return;
     }
