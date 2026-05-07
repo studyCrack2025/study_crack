@@ -97,6 +97,21 @@ header#site-header .nav-links a.active-link { color: #4c79ee; }
 .skeleton-card { background: #f1f5f9; animation: pulse 1.5s infinite; }
 @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
 
+/* 반응형 */
+@media (max-width: 900px) {
+    body { padding-top: 72px; }
+    .qna-header-section { padding: 48px 20px; }
+    .faq-section { padding: 40px 20px; }
+    .history-section { padding: 40px 20px; }
+}
+@media (max-width: 640px) {
+    body { padding-top: 61px; }
+}
+@media (min-width: 769px) and (max-width: 1023px) {
+    .qna-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 13px; }
+    .modal-content { max-width: 88vw; }
+}
+
 /* 모바일 대응 */
 @media (max-width: 768px) {
     .history-header { flex-direction: column; align-items: flex-start; gap: 12px; }
