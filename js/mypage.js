@@ -73,10 +73,11 @@ function escapeHtml(text) {
 // [초기화] DOM 로드 및 데이터 페치
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
-    // [DEV ONLY] localhost — API 없이 디자인 확인용
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        renderUserInfo({ name: '디자인 테스트', email: 'test@studycrack.co.kr', phone: '010-0000-0000', mbti: 'INTJ' });
-        applyUserTier('pro');
+
+    if (window.DEV_MOCK?.enabled) {
+        const u = window.DEV_MOCK.user;
+        renderUserInfo({ name: u.name, email: u.email, phone: u.phone, mbti: u.mbti });
+        applyUserTier(u.tier);
         setupUI();
         const loader = document.getElementById('pageLoadingOverlay');
         if (loader) setTimeout(() => loader.classList.add('hidden'), 300);

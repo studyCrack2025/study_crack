@@ -43,13 +43,14 @@ function parseDynamoItem(item) {
 // [초기화] DOM 로드 및 데이터 페치
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
-    // [DEV ONLY] localhost — API 없이 디자인 확인용
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+
+    if (window.DEV_MOCK?.enabled) {
+        const u = window.DEV_MOCK.user;
         const set = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
-        set('userNameDisplay', '디자인 테스트');
-        set('userEmailDisplay', 'test@studycrack.co.kr');
-        set('currentEmailDisplay', 'test@studycrack.co.kr');
-        set('currentPhoneDisplay', '010-0000-0000');
+        set('userNameDisplay', u.name);
+        set('userEmailDisplay', u.email);
+        set('currentEmailDisplay', u.email);
+        set('currentPhoneDisplay', u.phone);
         return;
     }
 

@@ -51,23 +51,13 @@ const EXAM_DISPLAY_NAMES = {
 document.addEventListener('DOMContentLoaded', async () => {
     const userId = localStorage.getItem('userId');
 
-    // [DEV ONLY] localhost 디자인 확인용 mock 우회 — 실서버 배포 전 반드시 제거
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        const MOCK_USER = {
-            name: '디자인 테스트',
-            computedTier: 'pro',
-            qualitative: { status: '재수생', stream: 'natural', targets: ['서울대학교', '연세대학교'] },
-            quantitative: { csat: { kor: 90, math: 95, eng: 1, sci1: 'phy', sci1Score: 45, sci2: 'chem', sci2Score: 42 } },
-            targetUnivs: [{ univ: '서울대학교', major: '컴퓨터공학부' }, { univ: '연세대학교', major: '컴퓨터과학과' }, null, null, null, null],
-            univChangeRemaining: 30,
-            profileImage: null
-        };
-        renderUserInfo(MOCK_USER);
-        applyUserTier('pro');
-        updateSurveyStatus(MOCK_USER);
-        userTargetUnivs = MOCK_USER.targetUnivs;
-        userQuantData = MOCK_USER.quantitative;
-        univChangeRemaining = 30;
+    if (window.DEV_MOCK?.enabled) {
+        const m = window.DEV_MOCK;
+        renderUserInfo({ name: m.user.name, email: m.user.email, phone: m.user.phone, mbti: m.user.mbti, profileImage: null, computedTier: m.user.tier, qualitative: m.analysis.qualitative, quantitative: m.analysis.quantitative, targetUnivs: m.analysis.targetUnivs, univChangeRemaining: m.analysis.univChangeRemaining });
+        applyUserTier(m.user.tier);
+        userTargetUnivs = m.analysis.targetUnivs;
+        userQuantData = m.analysis.quantitative;
+        univChangeRemaining = m.analysis.univChangeRemaining;
         updateQuotaUI();
         setWeeklyLoadingStatus(true);
         initUnivGrid();
@@ -1441,13 +1431,8 @@ async function updateAnalysisUI() {
     const container = document.getElementById('univAnalysisResult');
     if (!container) return;
 
-    // [DEV ONLY] localhost — API 없이 디자인 확인용 모의 카드
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        const mockCards = [
-            { idx: 0, univ: '서울대학교', major: '컴퓨터공학부', color: '#ef4444', status: '소신 지원 (C-)', msg: '문닫고 합격 가능성', converted_score: 88 },
-            { idx: 1, univ: '연세대학교', major: '경영학과',    color: '#10b981', status: '안정 (A)',       msg: '무난한 합격 예상',   converted_score: 155 }
-        ];
-        const cardsHtml = mockCards.map(renderAnalysisCard).join('');
+    if (window.DEV_MOCK?.enabled) {
+        const cardsHtml = window.DEV_MOCK.analysis.cards.map(renderAnalysisCard).join('');
         container.innerHTML = `<div class="analysis-cards-wrapper">${cardsHtml}</div>`;
         return;
     }
@@ -1641,12 +1626,8 @@ async function fetchSimulationData() {
     const chartArea = document.getElementById('simChartArea');
     if (!chartArea) return;
 
-    // [DEV ONLY] localhost — API 없이 디자인 확인용 모의 시뮬레이션
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        cachedSimData = [
-            { univ: '서울대학교', major: '컴퓨터공학부', base_ui_score: 88,  sim_data: { kor: { uiDiff: 10 }, math: { uiDiff: 15 } } },
-            { univ: '연세대학교', major: '경영학과',    base_ui_score: 155, sim_data: { kor: { uiDiff: 5  }, math: { uiDiff: 8  } } }
-        ];
+    if (window.DEV_MOCK?.enabled) {
+        cachedSimData = window.DEV_MOCK.analysis.simData;
         simDisplayList = cachedSimData.map((item, i) => ({ ...item, originalIdx: i }));
         selectedSimIndex = 0;
         renderSimChart();
