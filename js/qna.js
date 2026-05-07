@@ -105,6 +105,12 @@ function closeDetailModal() { closeLocalModal('qna-detail-modal'); }
 async function loadQnaHistory() {
     const grid = document.getElementById('qna-grid');
 
+    // [DEV ONLY] localhost — API 없이 디자인 확인용
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        if (grid) grid.innerHTML = '<div style="padding:40px; text-align:center; color:#94a3b8; font-size:14px; font-weight:600;">[로컬 디자인 미리보기 — Q&A 내역 API 미연결]</div>';
+        return;
+    }
+
     if (!getAccessToken() || !getIdToken()) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {

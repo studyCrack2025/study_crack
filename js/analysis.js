@@ -870,8 +870,8 @@ function updateSurveyStatus(data) {
         if (targets.length > 0) {
             const uniqueTargets = [...new Set(targets)].slice(0, 2);
             let targetHtml = '';
-            if (uniqueTargets[0]) targetHtml += `<div class="target-row"><span class="target-badge first">1지망</span> ${escapeHtml(uniqueTargets[0])}</div>`;
-            if (uniqueTargets[1]) targetHtml += `<div class="target-row"><span class="target-badge second">2지망</span> ${escapeHtml(uniqueTargets[1])}</div>`;
+            if (uniqueTargets[0]) targetHtml += `<div class="target-row first">${escapeHtml(uniqueTargets[0])}<span class="target-rank">1지망</span></div>`;
+            if (uniqueTargets[1]) targetHtml += `<div class="target-row second">${escapeHtml(uniqueTargets[1])}<span class="target-rank">2지망</span></div>`;
             targetContainer.innerHTML = targetHtml;
             qualTargetRow.style.display = 'flex';
         } else {

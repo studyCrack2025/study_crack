@@ -58,6 +58,13 @@ function escapeHtml(text) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // [DEV ONLY] localhost — API 없이 디자인 확인용
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        setupUI();
+        setTimeout(checkQualitativeForm, 500);
+        return;
+    }
+
     const userId = localStorage.getItem('userId');
     if (!userId) {
         alert("로그인이 필요합니다.");

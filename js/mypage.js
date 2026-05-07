@@ -73,6 +73,16 @@ function escapeHtml(text) {
 // [초기화] DOM 로드 및 데이터 페치
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
+    // [DEV ONLY] localhost — API 없이 디자인 확인용
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        renderUserInfo({ name: '디자인 테스트', email: 'test@studycrack.co.kr', phone: '010-0000-0000', mbti: 'INTJ' });
+        applyUserTier('pro');
+        setupUI();
+        const loader = document.getElementById('pageLoadingOverlay');
+        if (loader) setTimeout(() => loader.classList.add('hidden'), 300);
+        return;
+    }
+
     // 1. 기본 토큰 존재 여부만 1차 확인 (accessToken으로 통일)
     if (!getAccessToken() || !getIdToken()) {
         const refreshed = await tryRefreshToken();
