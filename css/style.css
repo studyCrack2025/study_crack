@@ -443,6 +443,56 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     header#site-header { padding: 0 16px; }
 }
 
+/* =========================================
+   태블릿: 769px ~ 1023px
+   max-width: 900px 규칙이 이 구간을 모바일처럼 처리하므로
+   2열 그리드·네비·카드 레이아웃을 태블릿에 맞게 복원
+   ========================================= */
+@media (min-width: 769px) and (max-width: 1023px) {
+    html { scroll-padding-top: 72px; }
+    header#site-header { height: 72px; padding: 0 26px; }
+    .logo-container img { height: 38px; }
+    .nav-links { gap: 14px; }
+    .nav-links a { font-size: 14px; }
+    .nav-links a:not(.nav-btn):not(#loginBtn):not(#myPageBtn):not(#logoutBtn) { display: inline; }
+
+    .hero-main { min-height: 560px; padding-top: 80px; }
+    .hero-title { font-size: clamp(28px, 4.5vw, 40px); }
+    .hero-subtitle { font-size: 16px; }
+
+    .section, .dark-feature, .effects-section, .curriculum, .review-section { padding: 64px 0; }
+
+    .step-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); justify-content: start; }
+    .step-card--one { grid-row: span 2; transform: translateY(60px); }
+
+    .card-grid--three { display: grid !important; grid-template-columns: repeat(2, minmax(0,1fr)); overflow-x: visible; padding-bottom: 0; }
+    .ppt-card { flex: unset; }
+
+    .planner-cards { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .planner-stack { grid-column: auto; }
+
+    .effects-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+
+    .report-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+
+    .tabs { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .tabs .course-tab-btn { flex-direction: column; background: rgba(255,255,255,.15) !important; border: 1px solid rgba(255,255,255,.2) !important; border-radius: 10px !important; color: #fff !important; min-height: 70px; padding: 12px 10px; }
+    .tabs .course-tab-btn .tab-icon { display: block; font-size: 1.6rem; }
+    .tabs .course-tab-btn .tab-info { display: flex; flex-direction: column; }
+    .tabs .course-tab-btn .tab-name { font-size: 0.9rem; font-weight: 800; }
+    .tabs .course-tab-btn .tab-sub { font-size: 0.78rem; opacity: 0.8; }
+    .course-detail-view { display: block !important; }
+
+    .review-grid { display: grid !important; grid-template-columns: repeat(2, minmax(0,1fr)); overflow-x: visible; padding-bottom: 0; }
+    .review-card { flex: unset; }
+
+    .floating-qna-btn { bottom: 24px; right: 24px; width: 56px; height: 56px; }
+    .qna-icon { font-size: 1.5rem; }
+    .floating-noti-btn { bottom: 92px; right: 24px; width: 56px; height: 56px; font-size: 1.3rem; }
+    .noti-panel { width: 320px; right: 24px; }
+    .modal-content { margin: 10% auto; }
+}
+
 @media (max-width: 560px) {
     .container, .footer-content, .cta-content { width: min(100% - 28px, var(--container)); }
     .section, .dark-feature, .effects-section, .curriculum, .review-section { padding: 52px 0; }
