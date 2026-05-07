@@ -162,6 +162,10 @@ header#site-header.scrolled .nav-links a { color: var(--text); }
 .planner-card--light-purple { background: #f0ebff; color: #30363e; }
 .planner-card--light-purple h3 { color: var(--purple); }
 .planner-card span { display: inline-block; margin-left: 4px; padding: 2px 6px; border-radius: 4px; background: linear-gradient(135deg,#f59e0b,#fcd34d); color: #78350f; font-size: 9px; font-weight: 700; }
+.planner-card-icon { font-size: 1.6rem; margin-bottom: 14px; }
+.planner-card--blue .planner-card-icon, .planner-card--purple .planner-card-icon { color: rgba(255,255,255,.85); }
+.planner-card--light-blue .planner-card-icon { color: var(--primary); }
+.planner-card--light-purple .planner-card-icon { color: var(--purple); }
 .planner-stack { display: grid; gap: 12px; }
 .notice { display: flex; align-items: center; gap: 12px; min-height: 75px; padding: 18px 27px; border-radius: 6px; background: #eaeaea; margin: 0 0 48px; }
 .notice span { flex: 0 0 26px; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: #014da2; color: #fff; font-size: 13px; font-weight: 900; }
@@ -385,8 +389,6 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 @media (max-width: 1200px) {
     .hero-title { font-size: clamp(30px, 4.2vw, 44px); }
     .section-heading h2, .effects-header h2, .section-header h2, .problem__copy h2, .cta-content h3 { font-size: clamp(22px, 3.2vw, 34px); }
-    .planner-cards { grid-template-columns: repeat(2, minmax(0,1fr)); }
-    .planner-stack { grid-column: 1 / -1; }
     .curriculum-grid { gap: 32px; }
     .card-grid { gap: 16px; }
     .ppt-card-body { padding: 22px 24px; }
@@ -426,8 +428,6 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .review-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
     .review-card { min-width: 0; }
 
-    .planner-cards { grid-template-columns: 1fr; }
-    .planner-stack { grid-column: auto; }
 
     .course-detail-view { display: block !important; }
     .feature-preview-panel { width: 100%; height: 100%; top: auto; bottom: 0; left: 0; right: 0; border-left: none; border-top: 1px solid rgba(255,255,255,.1); transform: translateY(110%); }
@@ -473,6 +473,8 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .review-grid::-webkit-scrollbar { display: none; }
 
     .report-grid { grid-template-columns: 1fr; }
+    .planner-cards { grid-template-columns: 1fr; }
+    .planner-stack { grid-column: auto; }
     .planner-card h3 { font-size: 16px; }
 
     .curriculum-grid { grid-template-columns: 1fr; }
