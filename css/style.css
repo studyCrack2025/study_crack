@@ -380,16 +380,24 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
    15. 반응형
    ========================================= */
 
-/* 1200px 이하: 타이포 축소, 커리큘럼·플래너만 레이아웃 조정
-   — card-grid / effects-grid / problem__grid는 유지 */
+/* 1200px 이하: 타이포 축소, 플래너 2열, 커리큘럼 gap 축소 + 탭 세로 배치
+   — curriculum-grid는 2열 유지, 탭 1열(세로 4개), solution-card 우측 유지 */
 @media (max-width: 1200px) {
     .hero-title { font-size: clamp(30px, 4.2vw, 44px); }
     .section-heading h2, .effects-header h2, .section-header h2, .problem__copy h2, .cta-content h3 { font-size: clamp(22px, 3.2vw, 34px); }
     .planner-cards { grid-template-columns: repeat(2, minmax(0,1fr)); }
     .planner-stack { grid-column: 1 / -1; }
-    .curriculum-grid { grid-template-columns: 1fr; }
+    .curriculum-grid { gap: 32px; }
     .card-grid { gap: 16px; }
     .ppt-card-body { padding: 22px 24px; }
+    .tabs { grid-template-columns: 1fr; gap: 8px; }
+    .tabs .course-tab-btn { flex-direction: row; justify-content: flex-start; align-items: center; min-height: 52px; padding: 11px 16px; background: rgba(255,255,255,.12) !important; border: 1px solid rgba(255,255,255,.22) !important; border-radius: 8px; color: #fff !important; transform: none !important; }
+    .tabs .course-tab-btn.active { background: rgba(255,255,255,.28) !important; border-color: rgba(255,255,255,.4) !important; }
+    .tabs .course-tab-btn .tab-icon { display: none; }
+    .tabs .course-tab-btn .tab-info { display: flex; flex-direction: column; text-align: left; }
+    .tabs .course-tab-btn .tab-name { font-size: 0.9rem; font-weight: 800; display: block; }
+    .tabs .course-tab-btn .tab-sub { font-size: 0.76rem; opacity: 0.75; display: block; }
+    .course-detail-view { display: block !important; }
 }
 
 /* 900px 이하: 태블릿 중형 — 헤더 축소, 카드 2열, 기대효과 2x2, problem__grid 1열
@@ -428,12 +436,6 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .planner-cards { grid-template-columns: 1fr; }
     .planner-stack { grid-column: auto; }
 
-    .tabs { grid-template-columns: repeat(2, minmax(0,1fr)); }
-    .tabs .course-tab-btn { flex-direction: column; align-items: center; min-height: 70px; padding: 12px 10px; background: rgba(255,255,255,.15) !important; border: 1px solid rgba(255,255,255,.2) !important; border-radius: 10px; color: #fff; transform: none !important; }
-    .tabs .course-tab-btn .tab-icon { display: block; font-size: 1.5rem; }
-    .tabs .course-tab-btn .tab-info { display: flex; flex-direction: column; }
-    .tabs .course-tab-btn .tab-name { font-size: 0.9rem; font-weight: 800; }
-    .tabs .course-tab-btn .tab-sub { font-size: .8rem; opacity: .8; }
     .course-detail-view { display: block !important; }
     .feature-preview-panel { width: 100%; height: 100%; top: auto; bottom: 0; left: 0; right: 0; border-left: none; border-top: 1px solid rgba(255,255,255,.1); transform: translateY(110%); }
     .feature-preview-panel.active { transform: translateY(0); }
@@ -480,6 +482,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .report-grid { grid-template-columns: 1fr; }
     .planner-card h3 { font-size: 16px; }
 
+    .curriculum-grid { grid-template-columns: 1fr; }
     .tabs { grid-template-columns: 1fr; }
     .tabs .course-tab-btn { flex-direction: row; justify-content: center; min-height: 58px; padding: 14px 16px; }
     .tabs .course-tab-btn .tab-icon { font-size: 1.8rem; }
@@ -503,19 +506,3 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .modal-content { margin: 15% auto; max-height: 70vh; padding: 20px; }
 }
 
-/* =========================================
-   태블릿 curriculum 레이아웃 보정: 769px ~ 1023px
-   1200px 규칙이 curriculum-grid를 1열로 만들므로 2열 복원
-   탭은 세로 4개 배치, solution-card 우측 유지
-   ========================================= */
-@media (min-width: 769px) and (max-width: 1023px) {
-    .curriculum-grid { grid-template-columns: minmax(0,1fr) minmax(0,1.15fr); gap: 28px; }
-    .tabs { grid-template-columns: 1fr; gap: 8px; }
-    .tabs .course-tab-btn { flex-direction: row; justify-content: flex-start; align-items: center; min-height: 52px; padding: 11px 16px; background: rgba(255,255,255,.12) !important; border: 1px solid rgba(255,255,255,.2) !important; border-radius: 8px; color: #fff !important; transform: none !important; }
-    .tabs .course-tab-btn.active { background: rgba(255,255,255,.28) !important; border-color: rgba(255,255,255,.38) !important; }
-    .tabs .course-tab-btn .tab-icon { display: none; }
-    .tabs .course-tab-btn .tab-info { display: flex; flex-direction: column; text-align: left; }
-    .tabs .course-tab-btn .tab-name { font-size: 0.9rem; font-weight: 800; }
-    .tabs .course-tab-btn .tab-sub { font-size: 0.76rem; opacity: 0.75; }
-    .course-detail-view { display: block !important; }
-}
