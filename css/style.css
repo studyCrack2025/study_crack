@@ -391,8 +391,8 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .card-grid { gap: 16px; }
     .ppt-card-body { padding: 22px 24px; }
     .tabs { grid-template-columns: 1fr; gap: 8px; }
-    .tabs .course-tab-btn { flex-direction: row; justify-content: flex-start; align-items: center; min-height: 52px; padding: 11px 16px; background: rgba(255,255,255,.12) !important; border: 1px solid rgba(255,255,255,.22) !important; border-radius: 8px; color: #fff !important; transform: none !important; }
-    .tabs .course-tab-btn.active { background: rgba(255,255,255,.28) !important; border-color: rgba(255,255,255,.4) !important; }
+    .tabs .course-tab-btn { flex-direction: row; justify-content: flex-start; align-items: center; min-height: 52px; padding: 11px 16px; background: #fff !important; border: 0 !important; border-radius: 8px; color: var(--text) !important; transform: none !important; }
+    .tabs .course-tab-btn.active { background: var(--primary) !important; color: #fff !important; }
     .tabs .course-tab-btn .tab-icon { display: none; }
     .tabs .course-tab-btn .tab-info { display: flex; flex-direction: column; text-align: left; }
     .tabs .course-tab-btn .tab-name { font-size: 0.9rem; font-weight: 800; display: block; }
