@@ -58,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!err && session && session.isValid()) {
                 setAccessToken(session.getAccessToken().getJwtToken());
                 setIdToken(session.getIdToken().getJwtToken());
+                initAdminPage(userId);
             } else {
                 // 세션 복원 실패 — tryRefreshToken으로 한 번 더 시도
                 tryRefreshToken().then(ok => {
@@ -65,12 +66,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         alert("세션이 만료되었습니다. 다시 로그인해주세요.");
                         localStorage.clear();
                         window.location.href = '/admin/login';
+                        return;
                     }
+                    initAdminPage(userId);
                 });
             }
-            initAdminPage(userId);
         });
-        return; // getSession 콜백 내에서 initAdminPage 호출
+        return;
     }
 
     initAdminPage(userId);

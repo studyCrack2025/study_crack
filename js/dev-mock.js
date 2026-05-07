@@ -5,3 +5,10 @@
 //   js/dev-mock.local.js 파일을 생성하세요 (템플릿: dev-mock.local.example.js)
 //   dev-mock.local.js 는 .gitignore 처리되어 절대 커밋/배포되지 않습니다.
 window.DEV_MOCK = { enabled: false };
+
+// localhost 환경에서만 dev-mock.local.js 동적 로드 (프로덕션에서는 요청 자체 안 함)
+if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    var _s = document.createElement('script');
+    _s.src = '/js/dev-mock.local.js';
+    document.head.appendChild(_s);
+}
