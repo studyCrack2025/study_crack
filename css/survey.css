@@ -102,8 +102,24 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #4c79ee
 .tutorial-skip-btn:hover { background: rgba(56,189,248,0.1); color: #7dd3fc; border-color: #7dd3fc; }
 
 /* =========================================================
-   7. 모바일 반응형 (Mobile Media Query)
+   7. 반응형
 ========================================================= */
+@media (max-width: 900px) {
+    body { padding-top: 72px; }
+    .survey-container { margin: 28px auto; }
+}
+@media (max-width: 640px) {
+    body { padding-top: 61px; }
+}
+@media (min-width: 769px) and (max-width: 1023px) {
+    .tab-content { padding: 26px 24px; }
+    .tab-btn { padding: 12px 8px; font-size: 0.9rem; }
+    .score-table { min-width: 560px; }
+    .score-table th { padding: 12px 10px; font-size: 0.86rem; }
+    .score-table td { padding: 6px; height: 50px; }
+    .term-modal-content { max-width: 86vw; }
+}
+
 @media (max-width: 768px) {
     .survey-container { padding: 0 15px 40px; margin-top: 20px; }
     .tab-content { padding: 25px 15px; }

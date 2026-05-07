@@ -379,40 +379,113 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 /* =========================================
    15. 반응형
    ========================================= */
+
+/* 1200px 이하: 타이포 축소, 커리큘럼·플래너만 레이아웃 조정
+   — card-grid / effects-grid / problem__grid는 유지 */
 @media (max-width: 1200px) {
     .hero-title { font-size: clamp(30px, 4.2vw, 44px); }
     .section-heading h2, .effects-header h2, .section-header h2, .problem__copy h2, .cta-content h3 { font-size: clamp(22px, 3.2vw, 34px); }
-    .card-grid--three, .review-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
-    .effects-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
     .planner-cards { grid-template-columns: repeat(2, minmax(0,1fr)); }
     .planner-stack { grid-column: 1 / -1; }
-    .problem__grid, .curriculum-grid { grid-template-columns: 1fr; }
+    .curriculum-grid { grid-template-columns: 1fr; }
+    .card-grid { gap: 16px; }
+    .ppt-card-body { padding: 22px 24px; }
 }
 
+/* 900px 이하: 태블릿 중형 — 헤더 축소, 카드 2열, 기대효과 2x2, problem__grid 1열
+   step-grid는 2열 유지 (problem__grid 1열 내부에서 나란히 배치) */
 @media (max-width: 900px) {
-    header#site-header { height: 68px; padding: 0 20px; }
-    .logo-container img { height: 36px; width: auto; }
+    html { scroll-padding-top: 72px; }
+    header#site-header { height: 72px; padding: 0 22px; }
+    .logo-container img { height: 38px; width: auto; }
     .logo { font-size: 20px; }
     .nav-links { gap: 12px; }
     .nav-links a:not(.nav-btn):not(#loginBtn):not(#myPageBtn):not(#logoutBtn) { display: none; }
 
-    .hero-main { min-height: 600px; padding-top: 76px; }
-    .hero-title { font-size: clamp(28px, 7vw, 40px); }
-    .section-heading h2, .effects-header h2, .section-header h2, .problem__copy h2, .cta-content h3 { font-size: clamp(22px, 5.5vw, 32px); }
+    .hero-main { min-height: 560px; padding-top: 80px; }
+    .hero-title { font-size: clamp(28px, 6vw, 38px); }
+    .section-heading h2, .effects-header h2, .section-header h2, .problem__copy h2, .cta-content h3 { font-size: clamp(22px, 5vw, 30px); }
     .section, .dark-feature, .effects-section, .curriculum, .review-section { padding: 60px 0; }
+
+    .problem__grid { grid-template-columns: 1fr; }
+    .step-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
+    .step-card--one { grid-row: span 2; transform: translateY(50px); }
+    .step-card { min-height: 210px; padding: 20px; }
+    .step-card h3 { font-size: 16px; }
+    .step-card-icon { font-size: 36px; }
+
+    .card-grid--three { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .ppt-card-body { padding: 18px 20px; }
+    .ppt-card-img { max-height: 220px; }
+
+    .effects-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .effect-item { min-width: 0; }
+    .effect-img { max-height: 200px; }
+
+    .review-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .review-card { min-width: 0; }
+
+    .planner-cards { grid-template-columns: 1fr; }
+    .planner-stack { grid-column: auto; }
+
+    .tabs { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .tabs .course-tab-btn { flex-direction: column; align-items: center; min-height: 70px; padding: 12px 10px; background: rgba(255,255,255,.15) !important; border: 1px solid rgba(255,255,255,.2) !important; border-radius: 10px; color: #fff; transform: none !important; }
+    .tabs .course-tab-btn .tab-icon { display: block; font-size: 1.5rem; }
+    .tabs .course-tab-btn .tab-info { display: flex; flex-direction: column; }
+    .tabs .course-tab-btn .tab-name { font-size: 0.9rem; font-weight: 800; }
+    .tabs .course-tab-btn .tab-sub { font-size: .8rem; opacity: .8; }
+    .course-detail-view { display: block !important; }
+    .feature-preview-panel { width: 100%; height: 100%; top: auto; bottom: 0; left: 0; right: 0; border-left: none; border-top: 1px solid rgba(255,255,255,.1); transform: translateY(110%); }
+    .feature-preview-panel.active { transform: translateY(0); }
+
+    .cta-section { min-height: 360px; }
+    .floating-qna-btn { bottom: 22px; right: 22px; width: 54px; height: 54px; }
+    .qna-icon { font-size: 1.5rem; }
+    .floating-noti-btn { bottom: 88px; right: 22px; width: 54px; height: 54px; font-size: 1.3rem; }
+    .noti-panel { width: 310px; right: 22px; bottom: 150px; max-height: 420px; }
+    .modal-content { margin: 12% auto; width: 90%; max-height: 75vh; padding: 24px; }
+    .footer-logo { height: 38px; }
+}
+
+/* 640px 이하: 모바일 — 1열, carousel, step-grid 1열 */
+@media (max-width: 640px) {
+    html { scroll-padding-top: 61px; }
+    .container, .footer-content, .cta-content { width: min(100% - 28px, var(--container)); }
+    .section, .dark-feature, .effects-section, .curriculum, .review-section { padding: 48px 0; }
+    header#site-header { height: 61px; padding: 0 16px; }
+    .logo-container img { height: 30px; width: auto; }
+    .logo { font-size: 17px; }
+
+    .hero-main { min-height: 500px; padding-top: 68px; }
+    .hero-title { font-size: clamp(26px, 10vw, 36px); }
+    .hero-subtitle { font-size: 15px; }
+    .section-heading h2, .effects-header h2, .section-header h2, .problem__copy h2, .cta-content h3 { font-size: clamp(20px, 8vw, 28px); }
 
     .step-grid { grid-template-columns: 1fr; justify-content: start; }
     .step-card--one { grid-row: auto; transform: none; }
-    .planner-cards, .report-grid, .card-grid--three, .effects-grid, .review-grid { grid-template-columns: 1fr; }
-    .planner-stack { grid-column: auto; }
+    .step-card { min-height: auto; }
+
+    .card-grid--three { display: flex !important; overflow-x: auto; scroll-snap-type: x mandatory; gap: 14px; padding-bottom: 18px; }
+    .ppt-card { flex: 0 0 82%; scroll-snap-align: center; }
+    .ppt-card-img { max-height: none; }
+    .card-grid--three::-webkit-scrollbar { display: none; }
+
+    .effects-grid { grid-template-columns: 1fr; }
+    .effect-img { max-height: none; }
+
+    .review-grid { display: flex !important; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; gap: 14px; padding-bottom: 18px; }
+    .review-card { flex: 0 0 85%; scroll-snap-align: center; }
+    .review-grid::-webkit-scrollbar { display: none; }
+
+    .report-grid { grid-template-columns: 1fr; }
+    .planner-card h3 { font-size: 16px; }
 
     .tabs { grid-template-columns: 1fr; }
-    .tabs .course-tab-btn { flex-direction: row; align-items: center; justify-content: center; min-height: 58px; padding: 14px 16px; height: auto; background: rgba(255,255,255,.15) !important; border: 1px solid rgba(255,255,255,.2) !important; border-radius: 12px; color: #fff; transform: none !important; }
+    .tabs .course-tab-btn { flex-direction: row; justify-content: center; min-height: 58px; padding: 14px 16px; }
+    .tabs .course-tab-btn .tab-icon { font-size: 1.8rem; }
+    .tabs .course-tab-btn .tab-name { font-size: 1rem; }
+    .tabs .course-tab-btn .tab-sub { font-size: .85rem; }
     .tabs .course-tab-btn.active-expand { background: rgba(255,255,255,.3) !important; }
-    .tabs .course-tab-btn .tab-icon { display: block; font-size: 1.8rem; }
-    .tabs .course-tab-btn .tab-info { display: flex; flex-direction: column; margin-top: 0; }
-    .tabs .course-tab-btn .tab-name { font-size: 1rem; font-weight: 800; }
-    .tabs .course-tab-btn .tab-sub { font-size: .85rem; opacity: .8; }
     .tab-price-mobile { display: none; font-size: .95rem; font-weight: 800; color: #fbbf24; margin-top: 6px; }
     .course-tab-btn.active-expand .mobile-detail-box { display: none !important; }
     .mobile-detail-box { display: none !important; width: 100%; margin-top: 15px; padding-top: 15px; border-top: 1px dashed rgba(255,255,255,.2); animation: fadeIn .3s; }
@@ -420,89 +493,12 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .mobile-detail-box .detail-list { gap: 10px; display: flex; flex-direction: column; }
     .mobile-detail-box .detail-list li { font-size: .85rem; color: #fff; }
     .course-detail-view { display: none !important; }
-    .feature-preview-panel { width: 100%; height: 100%; top: auto; bottom: 0; left: 0; right: 0; border-left: none; border-top: 1px solid rgba(255,255,255,.1); transform: translateY(110%); }
-    .feature-preview-panel.active { transform: translateY(0); }
 
-    .review-grid { display: flex !important; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; gap: 15px; padding-bottom: 20px; }
-    .review-card { flex: 0 0 85%; scroll-snap-align: center; }
-    .review-grid::-webkit-scrollbar { display: none; }
-
-    .card-grid--three { display: flex !important; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; padding-bottom: 20px; }
-    .ppt-card { flex: 0 0 85%; scroll-snap-align: center; }
-
-    .cta-section { min-height: 360px; }
-    .floating-qna-btn { bottom: 20px; right: 20px; width: 50px; height: 50px; }
-    .qna-icon { font-size: 1.4rem; }
-    .floating-noti-btn { bottom: 85px; right: 20px; width: 50px; height: 50px; font-size: 1.2rem; }
-    .noti-panel { width: calc(100% - 40px); right: 20px; bottom: 145px; max-height: 400px; }
-    .modal-content { margin: 15% auto; width: 90%; max-height: 70vh; padding: 20px; }
-    .footer-logo { height: 38px; }
-}
-
-@media (max-width: 768px) {
-    header#site-header { padding: 0 16px; }
-}
-
-/* =========================================
-   태블릿: 769px ~ 1023px
-   max-width: 900px 규칙이 이 구간을 모바일처럼 처리하므로
-   2열 그리드·네비·카드 레이아웃을 태블릿에 맞게 복원
-   ========================================= */
-@media (min-width: 769px) and (max-width: 1023px) {
-    html { scroll-padding-top: 72px; }
-    header#site-header { height: 72px; padding: 0 26px; }
-    .logo-container img { height: 38px; }
-    .nav-links { gap: 14px; }
-    .nav-links a { font-size: 14px; }
-    .nav-links a:not(.nav-btn):not(#loginBtn):not(#myPageBtn):not(#logoutBtn) { display: inline; }
-
-    .hero-main { min-height: 560px; padding-top: 80px; }
-    .hero-title { font-size: clamp(28px, 4.5vw, 40px); }
-    .hero-subtitle { font-size: 16px; }
-
-    .section, .dark-feature, .effects-section, .curriculum, .review-section { padding: 64px 0; }
-
-    .step-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); justify-content: start; }
-    .step-card--one { grid-row: span 2; transform: translateY(60px); }
-
-    .card-grid--three { display: grid !important; grid-template-columns: repeat(2, minmax(0,1fr)); overflow-x: visible; padding-bottom: 0; }
-    .ppt-card { flex: unset; }
-
-    .planner-cards { grid-template-columns: repeat(2, minmax(0,1fr)); }
-    .planner-stack { grid-column: auto; }
-
-    .effects-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
-
-    .report-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
-
-    .tabs { grid-template-columns: repeat(2, minmax(0,1fr)); }
-    .tabs .course-tab-btn { flex-direction: column; background: rgba(255,255,255,.15) !important; border: 1px solid rgba(255,255,255,.2) !important; border-radius: 10px !important; color: #fff !important; min-height: 70px; padding: 12px 10px; }
-    .tabs .course-tab-btn .tab-icon { display: block; font-size: 1.6rem; }
-    .tabs .course-tab-btn .tab-info { display: flex; flex-direction: column; }
-    .tabs .course-tab-btn .tab-name { font-size: 0.9rem; font-weight: 800; }
-    .tabs .course-tab-btn .tab-sub { font-size: 0.78rem; opacity: 0.8; }
-    .course-detail-view { display: block !important; }
-
-    .review-grid { display: grid !important; grid-template-columns: repeat(2, minmax(0,1fr)); overflow-x: visible; padding-bottom: 0; }
-    .review-card { flex: unset; }
-
-    .floating-qna-btn { bottom: 24px; right: 24px; width: 56px; height: 56px; }
-    .qna-icon { font-size: 1.5rem; }
-    .floating-noti-btn { bottom: 92px; right: 24px; width: 56px; height: 56px; font-size: 1.3rem; }
-    .noti-panel { width: 320px; right: 24px; }
-    .modal-content { margin: 10% auto; }
-}
-
-@media (max-width: 560px) {
-    .container, .footer-content, .cta-content { width: min(100% - 28px, var(--container)); }
-    .section, .dark-feature, .effects-section, .curriculum, .review-section { padding: 52px 0; }
-    header#site-header { height: 61px; }
-    .logo-container img { height: 30px; width: auto; }
-    .logo { font-size: 17px; }
-    .hero-main { min-height: 520px; padding-top: 68px; }
-    .hero-title { font-size: clamp(26px, 10vw, 36px); }
-    .hero-subtitle { font-size: 15px; }
-    .section-heading h2, .effects-header h2, .section-header h2, .problem__copy h2, .cta-content h3 { font-size: clamp(20px, 8vw, 28px); }
-    .planner-card h3 { font-size: 16px; }
     .btn--primary, .cta-button { width: 100%; }
+    .cta-section { min-height: 300px; }
+    .floating-qna-btn { bottom: 18px; right: 18px; width: 50px; height: 50px; }
+    .qna-icon { font-size: 1.4rem; }
+    .floating-noti-btn { bottom: 80px; right: 18px; width: 50px; height: 50px; font-size: 1.2rem; }
+    .noti-panel { width: calc(100% - 36px); right: 18px; bottom: 140px; max-height: 380px; }
+    .modal-content { margin: 15% auto; max-height: 70vh; padding: 20px; }
 }

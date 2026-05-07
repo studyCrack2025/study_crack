@@ -529,10 +529,24 @@ input:focus { outline: none; border-color: #4c79ee; }
 .social-action-btn.unlink-btn { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
 .social-action-btn.unlink-btn:hover { background: #fee2e2; }
 
+@media (max-width: 900px) {
+    body { padding-top: 72px; }
+}
+@media (max-width: 640px) {
+    body { padding-top: 61px; }
+}
+
 @media (min-width: 769px) {
     .mypage-container { display: flex; flex-direction: row; align-items: flex-start; gap: 30px; max-width: 1200px; margin: 40px auto; padding: 0 20px; }
     .profile-summary { width: 300px; min-width: 300px; flex-shrink: 0; position: sticky; top: 103px; overflow: visible; }
     .content-area { flex-grow: 1; min-width: 0; width: 100%; }
     .password-section { display: flex; gap: 20px; }
     .password-section .form-group { flex: 1; }
+}
+
+/* 태블릿: 769px ~ 1023px */
+@media (min-width: 769px) and (max-width: 1023px) {
+    .mypage-container { gap: 20px; padding: 0 16px; margin: 24px auto; }
+    .profile-summary { width: 240px; min-width: 240px; top: 92px; padding: 24px; }
+    .content-area { padding: 28px 24px; }
 }
