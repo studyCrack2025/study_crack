@@ -18,6 +18,31 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    // 페이지 리로드 후 메모리 토큰 복원 (Cognito SDK가 localStorage에 세션을 자동 저장함)
+    const cognitoUser = userPool.getCurrentUser();
+    if (cognitoUser && !getAccessToken()) {
+        cognitoUser.getSession((err, session) => {
+            if (!err && session && session.isValid()) {
+                setAccessToken(session.getAccessToken().getJwtToken());
+                setIdToken(session.getIdToken().getJwtToken());
+            } else {
+                tryRefreshToken().then(ok => {
+                    if (!ok) {
+                        alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+                        localStorage.clear();
+                        window.location.href = '/admin/login';
+                    }
+                });
+            }
+            initDetailPage();
+        });
+        return;
+    }
+
+    initDetailPage();
+});
+
+function initDetailPage() {
     const backBtn = document.querySelector('.back-btn');
     const userRole = localStorage.getItem('userRole');
 
@@ -30,10 +55,10 @@ document.addEventListener('DOMContentLoaded', () => {
             backBtn.innerText = '← 목록으로 돌아가기';
         }
     }
-    
+
     initRoleBasedView();
     loadAllStudentData();
-    
+
     const today = new Date();
     initDateFilter(today.getFullYear(), today.getMonth() + 1);
     initProDateFilter(today.getFullYear(), today.getMonth() + 1);
@@ -48,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const proFilterMonth = document.getElementById('proFilterMonth');
     if (proFilterYear) proFilterYear.addEventListener('change', renderProTab);
     if (proFilterMonth) proFilterMonth.addEventListener('change', renderProTab);
-});
+}
 
 function initRoleBasedView() {
     const userRole = localStorage.getItem('userRole');
