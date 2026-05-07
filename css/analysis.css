@@ -921,9 +921,9 @@ body { color: #2c2c2c; letter-spacing: -0.02em; word-break: keep-all; -webkit-fo
 .sidebar-toggle-btn i { font-size: 15px; }
 @media (min-width: 769px) and (max-width: 1100px) {
     .sidebar-toggle-btn { display: flex; }
-    .mypage-container { grid-template-columns: minmax(0, 1fr); }
-    .profile-summary { display: none; position: relative; top: auto; min-height: auto; }
-    .mypage-container.sidebar-open { grid-template-columns: 240px minmax(0, 1fr); }
-    .mypage-container.sidebar-open .profile-summary { display: block; position: sticky; top: 103px; min-height: auto; padding: 24px 16px 40px; }
-    .solution-menu { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mypage-container { grid-template-columns: 0px minmax(0, 1fr); column-gap: 0; transition: grid-template-columns 0.38s cubic-bezier(.4,0,.2,1), column-gap 0.38s cubic-bezier(.4,0,.2,1); }
+    .profile-summary { min-width: 0; overflow: hidden; opacity: 0; padding: 0 !important; position: relative; top: auto; min-height: auto; transition: opacity 0.15s ease 0s; }
+    .mypage-container.sidebar-open { grid-template-columns: 240px minmax(0, 1fr); column-gap: 26px; }
+    .mypage-container.sidebar-open .profile-summary { opacity: 1; padding: 24px 16px 40px !important; transition: opacity 0.25s ease 0.18s; }
+    .solution-menu { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
