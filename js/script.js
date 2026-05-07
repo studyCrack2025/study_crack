@@ -365,8 +365,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 obs.unobserve(entry.target);
             }
         });
-    }, { threshold: 0.15 });
-    document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.scroll-reveal').forEach(el => {
+        // 이미 뷰포트 안에 있는 요소는 즉시 표시 (초기 로딩 흔들림 방지)
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight && rect.bottom > 0) {
+            el.classList.add('visible');
+        } else {
+            observer.observe(el);
+        }
+    });
 
     // [핵심] 튜토리얼 완료 여부 엄격한 체크 시작
     if (getAccessToken() && userRole !== 'tutor' && userRole !== 'admin') {

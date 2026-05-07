@@ -23,10 +23,10 @@
     <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
 </head>
 <body>
-    <header>
+    <header id="site-header" class="scrolled">
         <div class="logo-container">
             <a href="/mypage/tutor" class="logo-link">
-                <img src="/assets/images/studycrack_logo_wo_bg.png" alt="StudyCrack 로고">
+                <img src="/assets/figma/figma-asset-04.svg" alt="StudyCrack 로고">
                 <span class="logo">StudyCrack <span class="logo-sub">Tutor</span></span>
             </a>
         </div>
@@ -209,6 +209,23 @@
         </main>
     </div> 
     
+    <footer id="contact">
+        <div class="footer-content">
+            <img class="footer-logo" src="/assets/figma/figma-asset-11.svg" alt="StudyCrack">
+            <div class="company-name">스터디크랙 (Study Crack)</div>
+            <div class="company-info">
+                <p>대표자: 임태륭 | 사업자등록번호: 201-61-00623</p>
+                <p>주소: 서울특별시 서대문구 이화여대길 50-12, 102-201</p>
+                <p>고객센터: 010-3364-6468 | 이메일: contact@studycrack.co.kr</p>
+            </div>
+            <div class="legal-links">
+                <a href="/terms">이용약관 (환불규정 포함)</a>
+                <a href="/privacy">개인정보처리방침</a>
+            </div>
+            <p class="copyright">&copy; 2026 Study Crack. All rights reserved.</p>
+        </div>
+    </footer>
+
     <div id="profileModal" class="modal hidden">
         <div class="modal-content large-modal">
             <span class="close-btn" onclick="closeModal('profileModal')">&times;</span>
@@ -403,7 +420,7 @@
             <h3 id="noteDetailTitle" style="margin-top: 0;"></h3>
             <div id="noteDetailContent" class="note-detail-content"></div>
             
-            <h4 style="color: #2563eb; margin-bottom: 10px;">관리자 답변</h4>
+            <h4 style="color: #4c79ee; margin-bottom: 10px;">관리자 답변</h4>
             <div id="noteDetailAnswerArea"></div>
         </div>
     </div>
