@@ -151,21 +151,25 @@ header#site-header.scrolled .nav-links a { color: var(--text); }
    ========================================= */
 .planner { background: linear-gradient(180deg, #ddd2f8 0%, #ece6ff 120px, #f9f6ff 280px, #ffffff 420px); }
 .planner-cards { display: grid; grid-template-columns: minmax(0,226px) minmax(0,226px) minmax(0,1fr); gap: 12px; margin-bottom: 48px; }
-.planner-card { border-radius: var(--radius-lg); padding: 21px; box-shadow: var(--shadow); }
+.planner-card { border-radius: var(--radius-lg); padding: 21px; box-shadow: var(--shadow); display: flex; flex-direction: column; }
 .planner-card h3 { margin: 0 0 10px; font-size: clamp(15px, 1.5vw, 18px); font-weight: 700; line-height: 1.25; letter-spacing: -0.03em; }
 .planner-card p { margin: 0; font-size: 11.5px; font-weight: 300; line-height: 1.75; }
 .planner-card--blue { background: var(--primary); color: #fff; min-height: 215px; }
 .planner-card--purple { background: var(--purple); color: #fff; min-height: 215px; }
 .planner-card--blue h3, .planner-card--purple h3 { font-weight: 800; }
-.planner-card--light-blue { background: #eaf1ff; color: #30363e; }
+.planner-card--light-blue { background: #eaf1ff; color: #30363e; flex-direction: row; align-items: center; gap: 16px; }
 .planner-card--light-blue h3 { color: var(--primary); }
-.planner-card--light-purple { background: #f0ebff; color: #30363e; }
+.planner-card--light-purple { background: #f0ebff; color: #30363e; flex-direction: row; align-items: center; gap: 16px; }
 .planner-card--light-purple h3 { color: var(--purple); }
 .planner-card span { display: inline-block; margin-left: 4px; padding: 2px 6px; border-radius: 4px; background: linear-gradient(135deg,#f59e0b,#fcd34d); color: #78350f; font-size: 9px; font-weight: 700; }
-.planner-card-icon { font-size: 1.6rem; margin-bottom: 14px; }
+.planner-card-body { flex: 1; }
+.planner-card-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+.planner-card-icon { font-size: 1.6rem; flex-shrink: 0; }
+.planner-card-arrow { font-size: 1.1rem; }
 .planner-card--blue .planner-card-icon, .planner-card--purple .planner-card-icon { color: rgba(255,255,255,.85); }
-.planner-card--light-blue .planner-card-icon { color: var(--primary); }
-.planner-card--light-purple .planner-card-icon { color: var(--purple); }
+.planner-card--blue .planner-card-arrow, .planner-card--purple .planner-card-arrow { color: rgba(255,255,255,.7); }
+.planner-card--light-blue .planner-card-icon { color: var(--primary); font-size: 2rem; }
+.planner-card--light-purple .planner-card-icon { color: var(--purple); font-size: 2rem; }
 .planner-stack { display: grid; gap: 12px; }
 .notice { display: flex; align-items: center; gap: 12px; min-height: 75px; padding: 18px 27px; border-radius: 6px; background: #eaeaea; margin: 0 0 48px; }
 .notice span { flex: 0 0 26px; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: #014da2; color: #fff; font-size: 13px; font-weight: 900; }
