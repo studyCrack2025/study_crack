@@ -902,28 +902,26 @@ function updateSurveyStatus(data) {
                 if (!obj) return '';
                 let optText = '';
                 if (obj.opt && obj.opt !== 'none') {
-                    optText = `<span class="opt-badge">(${escapeHtml(obj.opt)})</span>`;
+                    optText = `<span class="score-opt">(${escapeHtml(obj.opt)})</span>`;
                 } else if (obj.name) {
-                    optText = `<span class="opt-badge">(${escapeHtml(obj.name)})</span>`;
+                    optText = `<span class="score-opt">(${escapeHtml(obj.name)})</span>`;
                 }
 
-                const grdNum = obj.grd ? escapeHtml(obj.grd) : '-';
-                const gradeCell = `<span class="grade-circle">${grdNum}</span>`;
-
-                let scoreCell = '';
+                const grd = obj.grd ? escapeHtml(obj.grd) : '-';
+                let pctStr = '';
                 if (label !== '영어' && label !== '한국사') {
                     const std = escapeHtml(obj.std) || '-';
                     const pct = obj.pct ? escapeHtml(obj.pct) + '%' : '-';
-                    scoreCell = `${std} / ${pct}`;
+                    pctStr = `${std} / ${pct}`;
                 }
 
-                return `<tr><td class="subj-label">${label}${optText}</td><td class="score-val">${scoreCell}</td><td class="grade-col">${gradeCell}</td></tr>`;
+                return `<div class="score-row"><span class="score-subj">${label}${optText}</span><span class="score-nums">${pctStr}</span><span class="score-grd">${grd}</span></div>`;
             };
 
-            let html = '<table class="side-score-table">';
+            let html = '<div class="score-list">';
             html += makeRow('국어', d.kor); html += makeRow('수학', d.math); html += makeRow('영어', d.eng);
             html += makeRow('탐구1', d.inq1); html += makeRow('탐구2', d.inq2);
-            html += '</table>';
+            html += '</div>';
             detailBox.innerHTML = html;
         };
 
