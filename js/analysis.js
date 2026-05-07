@@ -639,7 +639,7 @@ function applySimTierLock() {
 
         const overlay = document.createElement('div');
         overlay.className = 'sim-tier-lock-overlay';
-        overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
+        overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(200, 217, 255, 0.82); backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
         overlay.innerHTML = getStandardLockOverlayHTML('점수 상승 시뮬레이션');
         container.appendChild(overlay);
     } else {
@@ -907,15 +907,17 @@ function updateSurveyStatus(data) {
                     optText = `<span class="opt-badge">(${escapeHtml(obj.name)})</span>`;
                 }
 
-                const std = escapeHtml(obj.std) || '-';
-                const pct = obj.pct ? escapeHtml(obj.pct) + '%' : '-';
-                const grd = obj.grd ? `<span class="grade-circle">${escapeHtml(obj.grd)}</span>` : '';
+                const grdNum = obj.grd ? escapeHtml(obj.grd) : '-';
+                const gradeCell = `<span class="grade-circle">${grdNum}</span>`;
 
-                let valStr = '';
-                if (label === '영어' || label === '한국사') valStr = grd;
-                else valStr = `${std} / ${pct} ${grd}`;
+                let scoreCell = '';
+                if (label !== '영어' && label !== '한국사') {
+                    const std = escapeHtml(obj.std) || '-';
+                    const pct = obj.pct ? escapeHtml(obj.pct) + '%' : '-';
+                    scoreCell = `${std} / ${pct}`;
+                }
 
-                return `<tr><td class="subj-label">${label}${optText}</td><td class="score-info">${valStr}</td></tr>`;
+                return `<tr><td class="subj-label">${label}${optText}</td><td class="score-val">${scoreCell}</td><td class="grade-col">${gradeCell}</td></tr>`;
             };
 
             let html = '<table class="side-score-table">';
@@ -2406,7 +2408,7 @@ function applyCoachTierLock() {
 
         const overlay = document.createElement('div');
         overlay.className = 'coach-tier-lock-overlay';
-        overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
+        overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(200, 217, 255, 0.82); backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
         overlay.innerHTML = getStandardLockOverlayHTML('주간 학습 점검 및 피드백');
         container.appendChild(overlay);
     } else {
