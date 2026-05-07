@@ -22,10 +22,10 @@
     <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
 </head>
 <body>
-    <header>
+    <header id="site-header" class="scrolled">
         <div class="logo-container">
             <a href="/" class="logo-link">
-                <img src="/assets/images/studycrack_logo_wo_bg.png" alt="StudyCrack 로고">
+                <img src="/assets/figma/figma-asset-04.svg" alt="StudyCrack 로고">
                 <span class="logo">StudyCrack</span>
             </a>
         </div>
@@ -33,8 +33,8 @@
             <a href="/analysis">나만의 솔루션</a>
             <a href="/qna">1:1 문의</a>
             <a href="/login" id="loginBtn" class="nav-btn">로그인 / 회원가입</a>
-            <a href="#" id="myPageBtn" class="active-link" class="nav-btn hidden">마이페이지</a>
-            <a href="#" id="logoutBtn" class="nav-btn hidden">로그아웃</a>
+            <a href="/mypage" id="myPageBtn" class="active-link hidden">마이페이지</a>
+            <a href="#" id="logoutBtn" onclick="handleSignOut()" class="nav-btn hidden">로그아웃</a>
         </nav>
     </header>
 
@@ -308,6 +308,8 @@
     
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <script src="/js/dev-mock.js"></script>
+    <script src="/js/dev-mock.local.js" onerror="void(0)"></script>
     <script src="/js/config.js"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/mypage.js"></script>

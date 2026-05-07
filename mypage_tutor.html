@@ -23,10 +23,10 @@
     <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
 </head>
 <body>
-    <header>
+    <header id="site-header" class="scrolled">
         <div class="logo-container">
             <a href="/mypage/tutor" class="logo-link">
-                <img src="/assets/images/studycrack_logo_wo_bg.png" alt="StudyCrack 로고">
+                <img src="/assets/figma/figma-asset-04.svg" alt="StudyCrack 로고">
                 <span class="logo">StudyCrack <span class="logo-sub">Tutor</span></span>
             </a>
         </div>
@@ -403,7 +403,7 @@
             <h3 id="noteDetailTitle" style="margin-top: 0;"></h3>
             <div id="noteDetailContent" class="note-detail-content"></div>
             
-            <h4 style="color: #2563eb; margin-bottom: 10px;">관리자 답변</h4>
+            <h4 style="color: #4c79ee; margin-bottom: 10px;">관리자 답변</h4>
             <div id="noteDetailAnswerArea"></div>
         </div>
     </div>
@@ -472,6 +472,8 @@
     
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <script src="/js/dev-mock.js"></script>
+    <script src="/js/dev-mock.local.js" onerror="void(0)"></script>
     <script src="/js/config.js"></script>
     <script src="/js/shared/store.js"></script>
     <script src="/js/auth.js"></script>

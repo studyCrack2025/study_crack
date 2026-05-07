@@ -58,6 +58,13 @@ function escapeHtml(text) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+
+    if (window.DEV_MOCK?.enabled) {
+        setupUI();
+        setTimeout(checkQualitativeForm, 500);
+        return;
+    }
+
     const userId = localStorage.getItem('userId');
     if (!userId) {
         alert("로그인이 필요합니다.");

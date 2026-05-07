@@ -73,6 +73,17 @@ function escapeHtml(text) {
 // [초기화] DOM 로드 및 데이터 페치
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
+
+    if (window.DEV_MOCK?.enabled) {
+        const u = window.DEV_MOCK.user;
+        renderUserInfo({ name: u.name, email: u.email, phone: u.phone, mbti: u.mbti });
+        applyUserTier(u.tier);
+        setupUI();
+        const loader = document.getElementById('pageLoadingOverlay');
+        if (loader) setTimeout(() => loader.classList.add('hidden'), 300);
+        return;
+    }
+
     // 1. 기본 토큰 존재 여부만 1차 확인 (accessToken으로 통일)
     if (!getAccessToken() || !getIdToken()) {
         const refreshed = await tryRefreshToken();

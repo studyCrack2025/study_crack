@@ -81,69 +81,13 @@ const COURSE_DATA = { /* ... (이전과 동일한 데이터 객체이므로 생�
 
 function initMobileCourses() {
     document.querySelectorAll('.course-tab-btn').forEach(btn => {
-        const tier = btn.getAttribute('data-tier');
-        const data = COURSE_DATA[tier];
-        if (!data) return;
-
-        const iconHtml = btn.querySelector('.tab-icon').outerHTML;
-        const infoHtml = btn.querySelector('.tab-info').outerHTML;
-        const listHtml = data.list.map(item => {
-            const checkColor = data.themeColor;
-            if (item.action) {
-                let clickHandler = "";
-                if (item.action === "preview") clickHandler = `onclick="event.stopPropagation(); openFeaturePreview('${item.imgBase}', '${item.text}')"`;
-                else if (item.action === "download") clickHandler = `onclick="event.stopPropagation(); downloadProReport('${item.file}')"`;
-                return `
-                    <li class="clickable-item" ${clickHandler} title="클릭하여 확인하기" style="display:flex; align-items:flex-start; gap:8px;">
-                        <i class="fas fa-check-circle" style="color:${checkColor}; margin-top:3px;"></i>
-                        <span style="flex:1; word-break:keep-all;">${item.text}</span>
-                        <i class="fas fa-external-link-alt" style="font-size: 0.7em; margin-left: 5px; opacity: 0.7; margin-top:5px;"></i>
-                    </li>
-                `;
-            } else {
-                return `
-                    <li style="display:flex; align-items:flex-start; gap:8px;">
-                        <i class="fas fa-check-circle" style="color:${checkColor}; margin-top:3px;"></i>
-                        <span style="flex:1; word-break:keep-all;">${item.text}</span>
-                    </li>
-                `;
-            }
-        }).join('');
-
-        let extraBtnHtml = "";
-        if (tier === 'mbti') {
-            const isLoggedIn = !!getAccessToken();
-            if (isLoggedIn) {
-                extraBtnHtml = `
-                    <div style="margin-top: 25px; padding: 15px; background: #f5f3ff; border: 1px dashed #8b5cf6; border-radius: 8px; text-align: center;">
-                        <p style="margin: 0 0 10px 0; color: #6d28d9; font-weight: bold; font-size: 0.9rem;">🎁 회원 전용 혜택</p>
-                        <a href="/mbti/download" onclick="event.stopPropagation();" style="display: inline-block; background: #8b5cf6; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: 0.2s;">
-                            나만의 맞춤 공부법 PDF 무제한 다운로드
-                        </a>
-                    </div>
-                `;
-            } else {
-                extraBtnHtml = `
-                    <div style="margin-top: 25px; padding: 15px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; text-align: center;">
-                        <p style="margin: 0 0 10px 0; color: #475569; font-weight: bold; font-size: 0.9rem;">🎁 무료 혜택</p>
-                        <a href="/login" onclick="event.stopPropagation(); alert('로그인 후 이용할 수 있는 혜택입니다.');" style="display: inline-block; background: #94a3b8; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: 0.2s;">
-                            🔒 로그인하고 맞춤 공부법 PDF 받기
-                        </a>
-                    </div>
-                `;
-            }
-        }
+        const iconHtml = btn.querySelector('.tab-icon')?.outerHTML || '';
+        const infoHtml = btn.querySelector('.tab-info')?.outerHTML || '';
 
         btn.innerHTML = `
             <div class="tab-summary-wrap">
                 ${iconHtml}
                 ${infoHtml}
-                <div class="tab-price-mobile">${data.price}</div>
-            </div>
-            <div class="mobile-detail-box">
-                <p class="detail-desc">${data.desc}</p>
-                <ul class="detail-list">${listHtml}</ul>
-                ${extraBtnHtml}
             </div>
         `;
     });
@@ -204,29 +148,15 @@ function selectCourse(tier) {
                 
                 if (!hasUsedPromo) {
                     if (isLoggedIn) {
-                        extraBtnHtml = `
-                            <div style="margin-top: 25px; padding: 15px; background: #f5f3ff; border: 1px dashed #8b5cf6; border-radius: 8px; text-align: center;">
-                                <p style="margin: 0 0 10px 0; color: #6d28d9; font-weight: bold; font-size: 0.9rem;">🎁 회원 전용 혜택</p>
-                                <a href="/mbti/download" onclick="event.stopPropagation();" style="display: inline-block; background: #8b5cf6; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: 0.2s;">
-                                    나만의 맞춤 공부법 PDF 무료 다운로드(1회)
-                                </a>
-                            </div>
-                        `;
+                        extraBtnHtml = `<a href="/mbti/download" onclick="event.stopPropagation();" class="solution-cta-link">나만의 맞춤 공부법 PDF 무료 다운로드(1회)</a>`;
                     } else {
-                        extraBtnHtml = `
-                            <div style="margin-top: 25px; padding: 15px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; text-align: center;">
-                                <p style="margin: 0 0 10px 0; color: #475569; font-weight: bold; font-size: 0.9rem;">🎁 1회성 무료 혜택</p>
-                                <a href="/login" onclick="event.stopPropagation(); alert('로그인 후 이용할 수 있는 혜택입니다.');" style="display: inline-block; background: #94a3b8; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: 0.2s;">
-                                    🔒 로그인하고 맞춤 공부법 PDF 받기
-                                </a>
-                            </div>
-                        `;
+                        extraBtnHtml = `<a href="/login" onclick="event.stopPropagation(); alert('로그인 후 이용할 수 있는 혜택입니다.');" class="solution-cta-link">🔒 로그인하고 맞춤 공부법 PDF 받기</a><strong class="solution-cta-note">1회성 무료 혜택</strong>`;
                     }
                 }
             }
 
             detailView.innerHTML = `
-                <span class="detail-badge" style="color:${data.themeColor}; background:#fff; border: 1px solid ${data.themeColor};">${tier.toUpperCase()}</span>
+                <span class="detail-badge">${tier.toUpperCase()}</span>
                 <h3 class="detail-title">${data.title}</h3>
                 <div class="detail-price">${data.price}</div>
                 <p class="detail-desc">${data.desc}</p>
@@ -312,22 +242,37 @@ async function renderReviews() {
     if (!container) return;
     
     container.innerHTML = '<p style="text-align:center;">후기를 불러오는 중...</p>';
-    const reviews = await getUserReviews();
-    
-    if (reviews.length === 0) {
-        container.innerHTML = '<p style="text-align:center;">등록된 후기가 없습니다.</p>';
-        return;
-    }
+    const fallbackReviews = [
+        { univ: '광운대 자율전공학부', name: '구*우', content: '기존에는 진학사를 보면서 감으로 기준을 잡았습니다. 컨설팅 후에는 제 점수가 어디에 유리한지 구조적으로 이해하게 됐습니다.' },
+        { univ: '경희대, 건국대, 한국외대', name: '구*우', content: '막연한 안정 지원이 아니라, 왜 안정인지 설명할 수 있는 지원을 하게 됐습니다.' },
+        { univ: '고려대, 중앙대', name: '구*우', content: '컨설팅을 통해 감정이 아닌 구조로 기준을 다시 세우고, 확신을 가지고 지원했습니다.' },
+        { univ: '광운대 자율전공학부', name: '구*우', content: '학과 정보와 실제 예상 합격률을 분석받은 순간, 불안이 확신으로 바뀌었습니다.' },
+        { univ: '광운대 자율전공학부', name: '구*우', content: '왜 이 선택이 유리한지 구조적으로 설명해주셔서 납득하고 지원할 수 있었습니다.' },
+        { univ: '광운대 자율전공학부', name: '구*우', content: '제 점수가 어디에 유리한지 구조적으로 이해하게 됐고, 대학 라인이 달라졌습니다.' }
+    ];
+    const fetchedReviews = await getUserReviews();
+    const reviews = fetchedReviews.length > 0 ? fetchedReviews : fallbackReviews;
 
-    container.innerHTML = reviews.map(review => `
-        <div class="review-card">
+    const reviewAvatars = [
+        '/assets/figma/figma-asset-14.svg',
+        '/assets/figma/figma-asset-12.png',
+        '/assets/figma/figma-asset-20.png',
+        '/assets/figma/figma-asset-13.png',
+        '/assets/figma/figma-asset-03.png',
+        '/assets/figma/figma-asset-02.png'
+    ];
+
+    container.innerHTML = reviews.map((review, index) => `
+        <div class="review-card${index === 0 ? ' featured' : ''}">
             <div class="review-header">
                 <span class="review-badge">${escapeHtml(review.univ)}</span>
-                <span class="review-score">⭐️⭐️⭐️⭐️⭐️</span>
+                <span class="review-score">${index === 0 ? '★★★★☆' : '★★★★★'}</span>
             </div>
             <p class="review-text">"${escapeHtml(review.content)}"</p>
             <div class="review-author">
-                <div class="review-avatar">${escapeHtml(review.name).charAt(0)}</div>
+                <div class="review-avatar">
+                    <img src="${reviewAvatars[index % reviewAvatars.length]}" alt="${escapeHtml(review.name)}">
+                </div>
                 <div class="review-info">
                     <div>${escapeHtml(review.name)}</div>
                 </div>
@@ -420,8 +365,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 obs.unobserve(entry.target);
             }
         });
-    }, { threshold: 0.15 });
-    document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.scroll-reveal').forEach(el => {
+        // 이미 뷰포트 안에 있는 요소는 즉시 표시 (초기 로딩 흔들림 방지)
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight && rect.bottom > 0) {
+            el.classList.add('visible');
+        } else {
+            observer.observe(el);
+        }
+    });
 
     // [핵심] 튜토리얼 완료 여부 엄격한 체크 시작
     if (getAccessToken() && userRole !== 'tutor' && userRole !== 'admin') {

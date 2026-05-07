@@ -25,7 +25,6 @@
     <link rel="stylesheet" href="/css/mypage.css">
     <link rel="stylesheet" href="/css/analysis.css"> 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <link rel="canonical" href="https://studycrack.co.kr/analysis" />
     
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
@@ -35,17 +34,17 @@
 </head>
 <body>
     <h1 class="sr-only">나만의 입시 솔루션 - 점수 분석 및 합격 시뮬레이션</h1> 
-    <header>
+    <header id="site-header" class="scrolled">
         <div class="logo-container">
             <a href="/" class="logo-link">
-                <img src="/assets/images/studycrack_logo_wo_bg.png" alt="StudyCrack 로고">
+                <img src="/assets/figma/figma-asset-04.svg" alt="StudyCrack 로고">
                 <span class="logo">StudyCrack</span>
             </a>
         </div>
         <nav class="nav-links">
             <a href="/analysis" id="navAnalysis" class="active-link">나만의 솔루션</a>
             <a href="/qna" id="navQna">1:1 문의</a>
-            <a href="/mypage" class="nav-btn">마이페이지</a>
+            <a href="/mypage">마이페이지</a>
             <a href="#" onclick="handleSignOut()" class="nav-btn">로그아웃</a>
         </nav>
     </header>
@@ -110,16 +109,16 @@
             
             <div class="solution-menu">
                 <button class="sol-btn active" onclick="openSolution('univ')">
-                    <i class="fas fa-university"></i><span>목표대학</span>
+                    <i class="fas fa-graduation-cap"></i><span>목표대학</span>
                 </button>
                 <button class="sol-btn" onclick="openSolution('sim')">
                     <i class="fas fa-chart-line"></i><span>점수 시뮬레이션</span>
                 </button>
                 <button class="sol-btn" onclick="openSolution('coach')">
-                    <i class="fas fa-chalkboard-teacher"></i><span>플래너 코칭</span>
+                    <i class="fas fa-wallet"></i><span>플래너 코칭</span>
                 </button>
                 <button class="sol-btn pro-btn" onclick="openSolution('pro')">
-                    <i class="fas fa-crown"></i><span>PRO EXCLUSIVE</span>
+                    <i class="fas fa-trophy"></i><span>PRO EXCLUSIVE</span>
                 </button>
             </div>
             
@@ -610,10 +609,29 @@
             </button>
         </div>
     </div>
+
+    <footer id="contact">
+        <div class="footer-content">
+            <img class="footer-logo" src="/assets/figma/figma-asset-11.svg" alt="StudyCrack">
+            <div class="company-name">스터디크랙 (Study Crack)</div>
+            <div class="company-info">
+                <p>대표자: 임태륭 | 사업자등록번호: 201-61-00623</p>
+                <p>주소: 서울특별시 서대문구 이화여대길 50-12, 102-201</p>
+                <p>고객센터: 010-3364-6468 | 이메일: contact@studycrack.co.kr</p>
+            </div>
+            <div class="legal-links">
+                <span><a href="/terms">이용약관 (환불규정 포함)</a></span>
+                <span><a href="/privacy">개인정보처리방침</a></span>
+            </div>
+            <p class="copyright">&copy; 2026 Study Crack. All rights reserved.</p>
+        </div>
+    </footer>
     
+    <script src="/js/dev-mock.js"></script>
+    <script src="/js/dev-mock.local.js" onerror="void(0)"></script>
     <script src="/js/config.js"></script>
     <script src="/js/auth.js"></script>
-    <script src="/js/analysis.js"></script> 
+    <script src="/js/analysis.js"></script>
     
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>

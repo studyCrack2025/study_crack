@@ -51,6 +51,25 @@ const EXAM_DISPLAY_NAMES = {
 document.addEventListener('DOMContentLoaded', async () => {
     const userId = localStorage.getItem('userId');
 
+    if (window.DEV_MOCK?.enabled) {
+        const m = window.DEV_MOCK;
+        renderUserInfo({ name: m.user.name, email: m.user.email, phone: m.user.phone, mbti: m.user.mbti, profileImage: null, computedTier: m.user.tier, qualitative: m.analysis.qualitative, quantitative: m.analysis.quantitative, targetUnivs: m.analysis.targetUnivs, univChangeRemaining: m.analysis.univChangeRemaining });
+        applyUserTier(m.user.tier);
+        userTargetUnivs = m.analysis.targetUnivs;
+        userQuantData = m.analysis.quantitative;
+        univChangeRemaining = m.analysis.univChangeRemaining;
+        updateQuotaUI();
+        setWeeklyLoadingStatus(true);
+        initUnivGrid();
+        updateAnalysisUI();
+        initProSection();
+        setWeeklyLoadingStatus(false);
+        setTimeout(() => { applyCoachTierLock(); applySimTierLock(); }, 500);
+        const devLoader = document.getElementById('pageLoadingOverlay');
+        if (devLoader) setTimeout(() => devLoader.classList.add('hidden'), 500);
+        return;
+    }
+
     if (!getAccessToken() || !getIdToken()) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
@@ -84,20 +103,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // 3️⃣ UI 초기화 로직 실행
-        initUnivGrid(); 
+        initUnivGrid();
         updateAnalysisUI();
-        initProSection(); 
-        
+        initProSection();
+
         setWeeklyLoadingStatus(false);
-        setTimeout(() => { 
+        setTimeout(() => {
             // 주간 상태 체크도 권한이 있는 사람만 실행
             if (['standard', 'pro'].includes(currentUserTier)) {
-                checkWeeklyStatus(); 
+                checkWeeklyStatus();
             }
             applyCoachTierLock();
             applySimTierLock();
-        }, 500); 
-        
+        }, 500);
+
         const loader = document.getElementById('pageLoadingOverlay');
         if (loader) {
             setTimeout(() => {
@@ -841,8 +860,8 @@ function updateSurveyStatus(data) {
         if (targets.length > 0) {
             const uniqueTargets = [...new Set(targets)].slice(0, 2);
             let targetHtml = '';
-            if (uniqueTargets[0]) targetHtml += `<div class="target-row"><span class="target-badge first">1지망</span> ${escapeHtml(uniqueTargets[0])}</div>`;
-            if (uniqueTargets[1]) targetHtml += `<div class="target-row"><span class="target-badge second">2지망</span> ${escapeHtml(uniqueTargets[1])}</div>`;
+            if (uniqueTargets[0]) targetHtml += `<div class="target-row first">${escapeHtml(uniqueTargets[0])}<span class="target-rank">1지망</span></div>`;
+            if (uniqueTargets[1]) targetHtml += `<div class="target-row second">${escapeHtml(uniqueTargets[1])}<span class="target-rank">2지망</span></div>`;
             targetContainer.innerHTML = targetHtml;
             qualTargetRow.style.display = 'flex';
         } else {
@@ -1411,7 +1430,13 @@ async function saveTargetUnivs() {
 async function updateAnalysisUI() {
     const container = document.getElementById('univAnalysisResult');
     if (!container) return;
-    
+
+    if (window.DEV_MOCK?.enabled) {
+        const cardsHtml = window.DEV_MOCK.analysis.cards.map(renderAnalysisCard).join('');
+        container.innerHTML = `<div class="analysis-cards-wrapper">${cardsHtml}</div>`;
+        return;
+    }
+
     const hasTargets = userTargetUnivs && userTargetUnivs.some(u => u && u.univ);
     const availableExams = userQuantData ? Object.keys(userQuantData).filter(key => {
         const data = userQuantData[key];
@@ -1505,17 +1530,15 @@ function changeExamMode(mode) { currentExamMode = mode; updateAnalysisUI(); }
 function renderAnalysisCard(res) {
     if (res.msg.includes("오류") || res.msg.includes("데이터 없음") || res.status === '분석 불가') {
         return `
-        <div class="analysis-card" style="border-left-color: #94a3b8;">
-            <div class="analysis-header" style="margin-bottom:10px;">
-                <h4 style="margin:0;">${escapeHtml(res.idx + 1)}지망: ${escapeHtml(res.univ)} <small style="color:#64748b;">${escapeHtml(res.major)}</small></h4>
-                <span style="background:#f1f5f9; color:#64748b; padding:2px 8px; border-radius:4px; font-size:0.8rem; margin-top:5px; display:inline-block;">데이터 부족</span>
+        <div class="analysis-card">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                <span style="font-size:18px; font-weight:700; color:#30363e; flex-shrink:0;">${escapeHtml(res.idx + 1)}지망</span>
+                <span style="flex:1; font-size:20px; font-weight:600; letter-spacing:-.02em; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(res.univ)} <span style="font-size:16px; font-weight:400; color:#575757;">(${escapeHtml(res.major)})</span></span>
+                <span style="display:inline-flex; align-items:center; height:36px; padding:0 16px; border-radius:150px; font-size:13px; font-weight:800; color:#fff; background:#94a3b8; flex-shrink:0;">데이터 부족</span>
             </div>
             <p style="color:#64748b; font-size:0.9rem; margin:0;">${escapeHtml(res.msg || '해당 학과의 작년 입시 데이터가 없습니다.')}</p>
         </div>`;
     }
-
-    const badgeStyle = `background: ${res.color}15; color: ${res.color}; border: 1px solid ${res.color};`; 
-    const scoreStyle = `color: ${res.color}; font-weight: 800; font-size: 1.5rem;`;
 
     const safeIdx = escapeHtml(res.idx + 1); const safeUniv = escapeHtml(res.univ); const safeMajor = escapeHtml(res.major);
     const safeStatus = escapeHtml(res.status); const safeMsg = escapeHtml(res.msg); const safeScore = escapeHtml(res.converted_score);
@@ -1524,44 +1547,26 @@ function renderAnalysisCard(res) {
     const barWidth = Math.min((res.converted_score / MAX_SCORE) * 100, 100);
 
     return `
-        <div class="analysis-card" style="border-left-color: ${res.color}; display: flex; flex-direction: column; gap: 15px;">
-            <div class="analysis-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; border-bottom:1px solid #f1f5f9; padding-bottom:15px;">
-                <div style="flex: 1; min-width: 0;">
-                    <span style="color:#64748b; font-size:1.1rem; font-weight:800; display:block; margin-bottom:5px;">${safeIdx}지망</span>
-                    <h4 style="margin:0; font-size:1.2rem; color:#1e293b; letter-spacing:-0.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeUniv}</h4>
-                    <div style="color:#64748b; font-size:0.95rem; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeMajor}</div>
-                </div>
-                <div style="text-align:right; flex-shrink: 0;">
-                    <span style="${badgeStyle} padding:6px 14px; border-radius:20px; font-size:0.9rem; font-weight:bold; display:inline-block; margin-bottom:5px; white-space:nowrap;">${safeStatus}</span>
-                    <div style="font-size:0.8rem; color:${res.color}; font-weight:600; white-space:nowrap;">${safeMsg}</div>
-                </div>
+        <div class="analysis-card">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+                <span style="font-size:18px; font-weight:700; color:#30363e; flex-shrink:0;">${safeIdx}지망</span>
+                <span style="flex:1; font-size:20px; font-weight:600; letter-spacing:-.02em; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeUniv} <span style="font-size:16px; font-weight:400; color:#575757;">(${safeMajor})</span></span>
+                <span style="display:inline-flex; align-items:center; height:26px; padding:0 12px; border-radius:150px; font-size:13px; font-weight:800; color:#fff; background:${res.color}; flex-shrink:0; white-space:nowrap;">${safeStatus}</span>
             </div>
-            <div class="analysis-body" style="display:flex; flex-direction:column; gap:20px;">
-                <div class="score-section">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
-                        <span style="font-size:0.95rem; color:#475569; font-weight:600;">AI 환산 진단점수</span>
-                        <span style="${scoreStyle}">${safeScore}<span style="font-size:1rem; font-weight:normal; margin-left:2px; color:#64748b;">점</span></span>
-                    </div>
-                    <div class="score-bar-container">
-                        <div class="score-bar-bg">
-                            <div style="position:absolute; left:40%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
-                            <div style="position:absolute; left:60%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
-                            <div class="score-bar-fill" style="width: ${barWidth}%; background: ${res.color};"></div>
-                        </div>
-                        <div class="score-labels">
-                            <span class="label-min">0</span>
-                            <span class="label-pass">합격<span class="m-line">(100)</span></span>
-                            <span class="label-stable">안정<span class="m-line">(150)</span></span>
-                            <span class="label-max">MAX<span class="m-line">(${MAX_SCORE})</span></span>
-                        </div>
-                    </div>
-                </div>
-                <div class="advice-section" style="background:#f8fafc; border-radius:10px; padding:18px; border:1px solid #e2e8f0;">
-                    <h5 style="margin:0 0 8px 0; font-size:0.9rem; color:#334155; display:flex; align-items:center;">
-                        <i class="fas fa-lightbulb" style="color:#fbbf24; margin-right:6px;"></i> 합격 전략 코멘트
-                    </h5>
-                    <p style="margin:0; font-size:0.95rem; color:#475569; line-height:1.6;">${getSimpleAdvice(res.converted_score, res.status)}</p>
-                </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-size:15px; font-weight:600; color:#575757;">AI 환산 진단점수</span>
+                <span style="font-size:24px; font-weight:800; color:${res.color};">${safeScore}<span style="font-size:15px; font-weight:500; color:#575757; margin-left:2px;">점</span></span>
+            </div>
+            <div class="score-bar-bg">
+                <div class="score-bar-fill" style="height:100%; width:${barWidth}%; background:${res.color};"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:12px; color:#94a3b8; margin:4px 0 6px;">
+                <span>0</span><span>합격(100)</span><span>안정(150)</span><span>MAX(250)</span>
+            </div>
+            <p style="font-size:14px; font-weight:600; color:${res.color}; text-align:right; margin:0 0 8px;">${safeMsg}</p>
+            <div style="background:#fff; border-radius:6px; padding:12px 16px; box-shadow:10px 20px 40px rgba(179,179,179,.1);">
+                <p style="font-size:15px; font-weight:700; color:#30363e; margin:0 0 6px 0;">#합격 전략 코멘트</p>
+                <p style="font-size:15px; color:#30363e; line-height:1.75; margin:0;">${getSimpleAdvice(res.converted_score, res.status)}</p>
             </div>
         </div>`;
 }
@@ -1620,7 +1625,15 @@ function initSimulation() {
 async function fetchSimulationData() {
     const chartArea = document.getElementById('simChartArea');
     if (!chartArea) return;
-    
+
+    if (window.DEV_MOCK?.enabled) {
+        cachedSimData = window.DEV_MOCK.analysis.simData;
+        simDisplayList = cachedSimData.map((item, i) => ({ ...item, originalIdx: i }));
+        selectedSimIndex = 0;
+        renderSimChart();
+        return;
+    }
+
     chartArea.innerHTML = '<div style="margin:auto; color:#3b82f6;"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
     
     const token = getIdToken();
@@ -2171,13 +2184,6 @@ function renderDetailedSimCard() {
                     desc = isBest ? `<strong>가장 합격 상승에 유리합니다.</strong>` : `점수 상승으로 합격 가능성이 높아집니다.`;
                 }
 
-                // 부호 및 텍스트 렌더링 개선 (양수면 +, 음수면 - 출력)
-                let subText = '';
-                if (Math.abs(info.diff) >= 0.01) {
-                     const sign = info.diff > 0 ? '+' : '';
-                     subText = `(${sign}${info.diff.toFixed(2)}점)`;
-                }
-                
                 subjectsHTML += `
                     <div class="sim-item swipe-subj-card ${isBest ? 'best-pick' : ''}">
                         <div class="sim-item-header" style="margin-bottom:6px;">
@@ -2186,7 +2192,6 @@ function renderDetailedSimCard() {
                         </div>
                         <div class="sim-item-body" style="font-size:0.85rem; line-height:1.4;">
                             <div style="margin-bottom:2px;">${desc}</div>
-                            <div style="font-size:0.75rem; color:#94a3b8;">${subText}</div>
                         </div>
                     </div>`;
             });
@@ -2322,13 +2327,6 @@ function renderDetailedSimCard() {
                     desc = isBest ? `<strong>가장 합격 상승에 유리합니다.</strong>` : `점수 상승으로 합격 가능성이 높아집니다.`;
                 }
 
-                // 부호 및 텍스트 렌더링 개선 (양수면 +, 음수면 - 출력)
-                let subText = '';
-                if (Math.abs(info.diff) >= 0.01) {
-                     const sign = info.diff > 0 ? '+' : '';
-                     subText = `(${sign}${info.diff.toFixed(2)}점)`;
-                }
-            
             subjectsHTML += `
                 <div class="sim-item ${isBest ? 'best-pick' : ''}" style="display:flex; flex-direction:column; justify-content:flex-start; height:100%;">
                     <div class="sim-item-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:8px;">
@@ -2337,7 +2335,6 @@ function renderDetailedSimCard() {
                     </div>
                     <div class="sim-item-body" style="flex:1;">
                         <div style="font-size:0.9rem; color:#475569; margin-bottom:4px;">${desc}</div>
-                        <div style="font-size:0.75rem; color:#94a3b8;">${subText}</div>
                     </div>
                 </div>
             `;
@@ -3435,7 +3432,7 @@ async function renderProDashboard(container) {
                     <div id="requestBtnContainer"><button class="req-btn" onclick="openProReportModal()"><i class="fas fa-edit"></i> 분석 요청서 작성하기</button></div>
                 </div>
                 <div class="report-list-container">
-                    <h4 style="color:white; margin:0 0 15px 0; border-left:4px solid #3b82f6; padding-left:10px;">📑 분석 보고서 보관함</h4>
+                    <h4 style="color:white; margin:0 0 15px 0;">📑 분석 보고서 보관함</h4>
                     <div id="proReportListArea"><div style="text-align:center; color:#64748b; padding:20px;"><i class="fas fa-spinner fa-spin"></i> 로딩 중...</div></div>
                 </div>
             </div>

@@ -43,6 +43,17 @@ function parseDynamoItem(item) {
 // [초기화] DOM 로드 및 데이터 페치
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
+
+    if (window.DEV_MOCK?.enabled) {
+        const u = window.DEV_MOCK.user;
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
+        set('userNameDisplay', u.name);
+        set('userEmailDisplay', u.email);
+        set('currentEmailDisplay', u.email);
+        set('currentPhoneDisplay', u.phone);
+        return;
+    }
+
     const userId = localStorage.getItem('userId');
 
     if (!getAccessToken() || !getIdToken()) {
