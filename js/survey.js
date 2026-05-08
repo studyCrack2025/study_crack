@@ -57,7 +57,7 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
 
     if (window.DEV_MOCK?.enabled) {
         setupUI();
@@ -71,6 +71,10 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = '/login';
         return;
     }
+
+    // JWT Authorizer가 있는 /api/user 엔드포인트 호출 전
+    // _accessToken이 메모리에 없으면 rt 쿠키로 먼저 복원 (401 방지)
+    if (!getAccessToken()) await tryRefreshToken();
 
     fetchUserData(userId);
     setupUI();
