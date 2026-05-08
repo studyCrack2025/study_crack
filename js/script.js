@@ -142,7 +142,7 @@ function selectCourse(tier) {
 
             let extraBtnHtml = "";
             if (tier === 'mbti') {
-                const isLoggedIn = !!getAccessToken();
+                const isLoggedIn = !!localStorage.getItem('userId');
                 if (isLoggedIn) {
                     extraBtnHtml = `<a href="/mbti/download" onclick="event.stopPropagation();" class="solution-cta-link">나만의 맞춤 공부법 PDF 무료 다운로드</a>`;
                 } else {
