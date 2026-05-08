@@ -472,7 +472,7 @@ input:focus { outline: none; border-color: #4c79ee; }
     /* 5. 계정 링크 박스 다이어트 */
     .account-links { gap: 10px; margin-bottom: 20px; }
     .link-item { padding: 12px; }
-    .link-item .label { width: 70px; font-size: 0.9rem; }
+    .link-item .label { min-width: 70px; flex-shrink: 0; font-size: 0.9rem; }
     .link-item .value { font-size: 0.9rem; }
     
     /* 6. 모달(튜터 및 일반 팝업) 여백 다이어트 */
