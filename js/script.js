@@ -143,15 +143,10 @@ function selectCourse(tier) {
             let extraBtnHtml = "";
             if (tier === 'mbti') {
                 const isLoggedIn = !!getAccessToken();
-                const userPromo = localStorage.getItem('promoCode') || ''; 
-                const hasUsedPromo = /^[0-9A-F]{4}-[0-9A-F]{4}-STC$/.test(userPromo);
-                
-                if (!hasUsedPromo) {
-                    if (isLoggedIn) {
-                        extraBtnHtml = `<a href="/mbti/download" onclick="event.stopPropagation();" class="solution-cta-link">나만의 맞춤 공부법 PDF 무료 다운로드(1회)</a>`;
-                    } else {
-                        extraBtnHtml = `<a href="/login" onclick="event.stopPropagation(); alert('로그인 후 이용할 수 있는 혜택입니다.');" class="solution-cta-link">🔒 로그인하고 맞춤 공부법 PDF 받기</a><strong class="solution-cta-note">1회성 무료 혜택</strong>`;
-                    }
+                if (isLoggedIn) {
+                    extraBtnHtml = `<a href="/mbti/download" onclick="event.stopPropagation();" class="solution-cta-link">나만의 맞춤 공부법 PDF 무료 다운로드</a>`;
+                } else {
+                    extraBtnHtml = `<a href="/login" onclick="event.stopPropagation(); alert('로그인 후 이용할 수 있는 혜택입니다.');" class="solution-cta-link">🔒 로그인하고 맞춤 공부법 PDF 받기</a>`;
                 }
             }
 
