@@ -24,7 +24,7 @@ const MASCOTS = {
 const STEPS = [
     { id: 'intro',       msg: '지금 바로 나만의 합격 전략을 확인해보세요.',                        mascot: 'hi' },
     { id: 'survey-qual', msg: '먼저 현재 학년과 희망 계열을 알려주세요.',                          mascot: 'thumbsup' },
-    { id: 'survey-quan', msg: '모의고사 원점수를 입력해주세요. 수능 예측 점수로 자동 보정돼요.',    mascot: 'analysis' },
+    { id: 'survey-quan', msg: '3월 또는 5월 학력평가 원점수를 입력해주세요. 수능 예측 점수로 자동 보정돼요.',    mascot: 'analysis' },
     { id: 'mbti',        msg: '학습 성향을 파악할게요. 검사를 시작하거나 직접 선택해주세요.',       mascot: 'hi' },
     { id: 'univ-rec',    msg: '성적을 분석했어요! 목표 대학을 선택하면 상세 시뮬레이션을 볼 수 있어요.', mascot: 'showresult' },
     { id: 'subject-rec', msg: '선택한 대학 합격선까지, 가장 효율적인 과목 전략을 알려드릴게요.',   mascot: 'showresult' }
@@ -32,7 +32,7 @@ const STEPS = [
 
 
 let currentStepIdx = 0;
-let tutorialData = { qual: {}, quan: {}, mbti: null, selectedUniv: null, selectedUnivs: null, totalStdScore: 0 };
+let tutorialData = { qual: {}, quan: {}, mbti: null, selectedUniv: null, selectedUnivs: null, totalStdScore: 0, examMonth: 'mar' };
 let isInterrupted = false;
 let mbtiDimSelections = [null, null, null, null];
 
@@ -62,13 +62,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 currentStepIdx = parseInt(data.tutorialStatus, 10);
                 localStorage.setItem('tutorialStatus', currentStepIdx);
             }
-            // 점수 데이터 복원
+            // 점수 데이터 복원 (may 우선, 없으면 mar)
             if (data.quantitative) {
                 tutorialData.quan = data.quantitative;
-                const mar = data.quantitative.mar;
-                if (mar) {
+                const activeMonth = data.quantitative.may ? 'may' : 'mar';
+                tutorialData.examMonth = activeMonth;
+                const activeQuan = data.quantitative[activeMonth];
+                if (activeQuan) {
                     tutorialData.totalStdScore = ['kor', 'math', 'inq1', 'inq2']
-                        .reduce((sum, k) => sum + (parseFloat(mar[k]?.std) || 0), 0);
+                        .reduce((sum, k) => sum + (parseFloat(activeQuan[k]?.std) || 0), 0);
                 }
             }
             // 정성 데이터 및 MBTI 복원
@@ -266,16 +268,20 @@ async function _nextStepCore() {
         const engGrd     = document.getElementById('tutEngGrd')?.value   || '';
         const histGrd    = document.getElementById('tutHistGrd')?.value  || '';
 
+        // 선택된 시험 월 (3월 또는 5월)
+        const examMonth = document.getElementById('tutExamMonth')?.value || 'mar';
+        tutorialData.examMonth = examMonth;
+
         // 점수 환산 API 병렬 호출 → survey.js 로드 시 std/pct/grd 즉시 표시
         const [korConv, mathConv, inq1Conv, inq2Conv] = await Promise.all([
-            convertScore('mar', 'kor',  korCommon + korSel,   korOpt,  '', korCommon,  korSel),
-            convertScore('mar', 'math', mathCommon + mathSel, mathOpt, '', mathCommon, mathSel),
-            convertScore('mar', 'inq1', inq1Raw, '', inq1Name),
-            convertScore('mar', 'inq2', inq2Raw, '', inq2Name)
+            convertScore(examMonth, 'kor',  korCommon + korSel,   korOpt,  '', korCommon,  korSel),
+            convertScore(examMonth, 'math', mathCommon + mathSel, mathOpt, '', mathCommon, mathSel),
+            convertScore(examMonth, 'inq1', inq1Raw, '', inq1Name),
+            convertScore(examMonth, 'inq2', inq2Raw, '', inq2Name)
         ]);
 
         tutorialData.quan = {
-            mar: {
+            [examMonth]: {
                 kor:     { opt: korOpt,  common: korCommon,  elective: korSel,  raw: korCommon  + korSel,  ...korConv  },
                 math:    { opt: mathOpt, common: mathCommon, elective: mathSel, raw: mathCommon + mathSel, ...mathConv },
                 eng:     { grd: engGrd },
@@ -295,7 +301,7 @@ async function _nextStepCore() {
         if (stream && tutorialData.totalStdScore > 0) {
             fetchTutScoreData().then(scoreData => {
                 if (!scoreData) return null;
-                return selectTutorialUnivsWithAnalysis(stream, tutorialData.quan.mar, tutorialData.totalStdScore, scoreData);
+                return selectTutorialUnivsWithAnalysis(stream, tutorialData.quan[examMonth], tutorialData.totalStdScore, scoreData);
             }).then(selected => {
                 if (selected && selected.length > 0) {
                     tutorialData.selectedUnivs = selected;
@@ -316,6 +322,13 @@ function prevStep() {
         currentStepIdx--;
         renderStep();
     }
+}
+
+// ── 튜토리얼 시험월 선택 토글 ──────────────────────────────────────
+function onTutExamMonthChange() {
+    const month = document.getElementById('tutExamMonth')?.value;
+    const warning = document.getElementById('tutMayWarning');
+    if (warning) warning.style.display = (month === 'may') ? 'block' : 'none';
 }
 
 // ── 성적 입력 바 ──────────────────────────────────────────────────
@@ -880,7 +893,8 @@ async function initSubjectRec() {
     showTutLoading(true);
 
     const univ = tutorialData.selectedUniv;
-    const mar  = tutorialData.quan?.mar;
+    const activeMonth = tutorialData.examMonth || (tutorialData.quan?.may ? 'may' : 'mar');
+    const mar  = tutorialData.quan?.[activeMonth];
     const mbti = tutorialData.mbti;
 
     let plan = null;
