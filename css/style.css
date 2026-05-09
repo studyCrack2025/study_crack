@@ -105,7 +105,7 @@ header#site-header.scrolled .nav-links a { color: var(--text); }
    5. 문제 인식 섹션
    ========================================= */
 .problem { position: relative; background: #fafafa; overflow: hidden; }
-.problem::before { content: 'ㅅㅇ\Aㄱㅇ'; white-space: pre; position: absolute; left: max(20px, calc(50% - 760px)); bottom: 30px; color: rgba(126,83,220,.055); font-size: clamp(90px, 12vw, 225px); font-weight: 900; line-height: .68; pointer-events: none; }
+.problem::before { content: 'ㅅㅇ\Aㄱㅇ'; white-space: pre; position: absolute; left: max(20px, calc(50% - 760px)); bottom: 30px; color: rgba(126,83,220,.055); font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; font-size: clamp(90px, 12vw, 225px); font-weight: 900; line-height: .68; pointer-events: none; }
 .problem__grid { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0,398px) minmax(0,1fr); gap: clamp(36px, 5vw, 68px); align-items: center; }
 .problem__copy h2 { margin: 0 0 32px; font-size: clamp(26px, 2.8vw, 40px); font-weight: 600; line-height: 1.23; letter-spacing: -0.035em; }
 .problem__copy p { margin: 0 0 16px; font-size: 15px; font-weight: 300; line-height: 1.78; }
@@ -194,8 +194,8 @@ header#site-header.scrolled .nav-links a { color: var(--text); }
    ========================================= */
 .effects-section { background: #eef3fc; position: relative; overflow: hidden; }
 .effects-section::before, .effects-section::after { position: absolute; z-index: 0; color: rgba(76,121,238,.16); font-weight: 900; line-height: 1; pointer-events: none; }
-.effects-section::before { content: '✱'; left: clamp(18px, 5vw, 72px); top: clamp(44px, 8vw, 110px); font-size: clamp(64px, 8vw, 120px); transform: rotate(14deg); }
-.effects-section::after { content: '✱'; right: clamp(24px, 6vw, 92px); bottom: clamp(48px, 7vw, 96px); font-size: clamp(72px, 9vw, 140px); transform: rotate(-12deg); }
+.effects-section::before { content: '✱'; left: clamp(18px, 5vw, 72px); top: clamp(44px, 8vw, 110px); font-family: Arial, sans-serif; font-size: clamp(64px, 8vw, 120px); transform: rotate(14deg); }
+.effects-section::after { content: '✱'; right: clamp(24px, 6vw, 92px); bottom: clamp(48px, 7vw, 96px); font-family: Arial, sans-serif; font-size: clamp(72px, 9vw, 140px); transform: rotate(-12deg); }
 .effects-header { max-width: var(--container); margin: 0 auto clamp(36px, 4.5vw, 58px); text-align: center; position: relative; z-index: 1; }
 .section-label-badge-dark { display: block; font-size: 17px; font-weight: 700; color: var(--text); text-align: center; margin-bottom: 14px; }
 .effects-header h2 { margin: 0; font-size: clamp(24px, 2.6vw, 38px); font-weight: 600; line-height: 1.23; letter-spacing: -0.035em; }
@@ -505,4 +505,3 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .noti-panel { width: calc(100% - 36px); right: 18px; bottom: 140px; max-height: 380px; }
     .modal-content { margin: 15% auto; max-height: 70vh; padding: 20px; }
 }
-
