@@ -11,6 +11,12 @@ const TIER_LEVELS = { 'free': 0, 'trial': 1, 'basic': 2, 'standard': 3, 'pro': 4
 let globalCurrentTier = 'free';
 let globalDaysLeft = 0;
 let globalExpireDate = null; // 기존 만료일(새로운 시작일) 저장용
+let paymentAccessToken = null;
+let paymentIdToken = null;
+
+function getPaymentAccessToken() { return paymentAccessToken; }
+function setPaymentAccessToken(token) { paymentAccessToken = token; }
+function setPaymentIdToken(token) { paymentIdToken = token; }
 
 // 💡 토큰 자동 갱신 (쿠키 우선, localStorage 폴백)
 let _isRefreshing = false;
@@ -27,8 +33,8 @@ async function tryRefreshToken() {
         if (res.ok) {
             const data = await res.json();
             if (data.accessToken && data.idToken) {
-                setAccessToken(data.accessToken);
-                setIdToken(data.idToken);
+                setPaymentAccessToken(data.accessToken);
+                setPaymentIdToken(data.idToken);
                 return true;
             }
         }
@@ -42,8 +48,8 @@ async function tryRefreshToken() {
         if (!fallbackRes.ok) return false;
         const fallbackData = await fallbackRes.json();
         if (fallbackData.accessToken && fallbackData.idToken) {
-            setAccessToken(fallbackData.accessToken);
-            setIdToken(fallbackData.idToken);
+            setPaymentAccessToken(fallbackData.accessToken);
+            setPaymentIdToken(fallbackData.idToken);
             return true;
         }
         return false;
@@ -56,7 +62,7 @@ async function tryRefreshToken() {
 
 // 💡 공통 apiFetch 함수
 async function apiFetch(url, options = {}) {
-    const token = getAccessToken();
+    const token = getPaymentAccessToken();
     const defaultHeaders = {
         'Content-Type': 'application/json',
         ...(token && { 'Authorization': `Bearer ${token}` })
@@ -71,7 +77,7 @@ async function apiFetch(url, options = {}) {
             if (response.status === 401 || response.status === 403) {
                 const refreshed = await tryRefreshToken();
                 if (refreshed) {
-                    const newToken = getAccessToken();
+                    const newToken = getPaymentAccessToken();
                     options.headers['Authorization'] = `Bearer ${newToken}`;
                     const retryRes = await fetch(url, options);
                     if (retryRes.ok) return retryRes;
@@ -105,7 +111,7 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const userId = localStorage.getItem('userId');
     if (!userId) {
         alert("로그인이 필요합니다.");
@@ -150,6 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (specialOptions) specialOptions.style.display = 'block';
     }
 
+    await tryRefreshToken();
     setupPaymentLoadingInterceptor();
     fetchUserInfo(userId);
 });
