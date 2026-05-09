@@ -1,15 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // Header scroll effect (main site 패턴 동일)
   const header = document.getElementById('site-header');
-  const onScroll = () => {
-    if (window.scrollY > 10) {
-      header.classList.add('scrolled');
-    } else {
-      header.classList.remove('scrolled');
-    }
-  };
-  window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
+  if (header) header.classList.add('scrolled');
+  syncHeaderNav();
 
   // Scroll reveal animation
   const reveals = document.querySelectorAll('.process-card, .plan-card, .formula-item, .message-band');
@@ -29,3 +21,36 @@ document.addEventListener('DOMContentLoaded', () => {
     io.observe(el);
   });
 });
+
+function syncHeaderNav() {
+  const isLoggedIn = !!localStorage.getItem('userId');
+  const btnAnalysis = document.getElementById('navAnalysis');
+  const btnQna = document.getElementById('navQna');
+  const btnLogin = document.getElementById('loginBtn');
+  const btnMyPage = document.getElementById('myPageBtn');
+  const btnLogout = document.getElementById('logoutBtn');
+
+  if (isLoggedIn) {
+    if (btnAnalysis) btnAnalysis.classList.remove('hidden');
+    if (btnQna) btnQna.classList.remove('hidden');
+    if (btnMyPage) btnMyPage.classList.remove('hidden');
+    if (btnLogout) btnLogout.classList.remove('hidden');
+    if (btnLogin) btnLogin.classList.add('hidden');
+  }
+
+  if (btnMyPage) {
+    btnMyPage.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.href = '/mypage';
+    });
+  }
+
+  if (btnLogout) {
+    btnLogout.addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.href = '/';
+    });
+  }
+}

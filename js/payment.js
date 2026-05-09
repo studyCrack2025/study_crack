@@ -113,16 +113,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // 헤더 스크롤 효과
     const header = document.getElementById('site-header');
-    if (header) {
-        const onScroll = () => {
-            if (window.scrollY > 10) header.classList.add('scrolled');
-            else header.classList.remove('scrolled');
-        };
-        window.addEventListener('scroll', onScroll, { passive: true });
-        onScroll();
-    }
+    if (header) header.classList.add('scrolled');
+    syncHeaderNav();
 
     // 스크롤 리빌 애니메이션
     const reveals = document.querySelectorAll('.road-card, .price-row, .example-card, .stat-card');
@@ -160,6 +153,39 @@ document.addEventListener('DOMContentLoaded', () => {
     setupPaymentLoadingInterceptor();
     fetchUserInfo(userId);
 });
+
+function syncHeaderNav() {
+    const isLoggedIn = !!localStorage.getItem('userId');
+    const btnAnalysis = document.getElementById('navAnalysis');
+    const btnQna = document.getElementById('navQna');
+    const btnLogin = document.getElementById('loginBtn');
+    const btnMyPage = document.getElementById('myPageBtn');
+    const btnLogout = document.getElementById('logoutBtn');
+
+    if (isLoggedIn) {
+        if (btnAnalysis) btnAnalysis.classList.remove('hidden');
+        if (btnQna) btnQna.classList.remove('hidden');
+        if (btnMyPage) btnMyPage.classList.remove('hidden');
+        if (btnLogout) btnLogout.classList.remove('hidden');
+        if (btnLogin) btnLogin.classList.add('hidden');
+    }
+
+    if (btnMyPage) {
+        btnMyPage.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = '/mypage';
+        });
+    }
+
+    if (btnLogout) {
+        btnLogout.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = '/';
+        });
+    }
+}
 
 // 유저 정보 가져오기 및 티어 계산
 async function fetchUserInfo(userId) {
