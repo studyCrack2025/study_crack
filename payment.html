@@ -1,162 +1,462 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-KNHVMTR5');</script>
-    
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="color-scheme" content="light">
-    <meta name="facebook-domain-verification" content="55eup0qlw7p4hdgj5hyv2fsmhksvoj" />
-    <meta name="naver-site-verification" content="e70d8cbe6d67167b9f8f6267985c17c42b616684" />
-    
-    <meta name="description" content="스터디크랙 Standard·PRO 요금제 안내. 점수 상승 시뮬레이션" />
-    <meta property="og:title" content="요금제 안내 | 스터디크랙" />
-    <meta property="og:description" content="Basic 무료, Standard, PRO 요금제별 기능을 안내" />
-    <meta property="og:image" content="https://studycrack.co.kr/og-image.jpg" />
-    <meta property="og:url" content="https://studycrack.co.kr/payment" />
-    <meta property="og:type" content="website" />
-    <title>스터디크랙 - 멤버십 신청</title>
-    
-    <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/payment.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-    <link rel="canonical" href="https://studycrack.co.kr/payment" />
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-KNHVMTR5');</script>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light" />
+  <meta name="facebook-domain-verification" content="55eup0qlw7p4hdgj5hyv2fsmhksvoj" />
+  <meta name="naver-site-verification" content="e70d8cbe6d67167b9f8f6267985c17c42b616684" />
+
+  <meta name="description" content="스터디크랙 Standard·PRO 요금제 안내. 점수 상승 시뮬레이션" />
+  <meta property="og:title" content="요금제 안내 | 스터디크랙" />
+  <meta property="og:description" content="Basic 무료, Standard, PRO 요금제별 기능을 안내" />
+  <meta property="og:image" content="https://studycrack.co.kr/og-image.jpg" />
+  <meta property="og:url" content="https://studycrack.co.kr/payment" />
+  <meta property="og:type" content="website" />
+  <title>스터디크랙 - 멤버십 신청</title>
+  <link rel="canonical" href="https://studycrack.co.kr/payment" />
+
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/payment.css" />
 </head>
 <body>
-    <header>
-        <div class="logo-container">
-            <a href="/" class="logo-link">
-                <img src="/assets/images/studycrack_logo_wo_bg.png" alt="StudyCrack 로고">
-                <span class="logo">StudyCrack</span>
-            </a>
-        </div>
-    </header>
 
-    <div class="payment-container">
-        <div style="text-align: center; margin-bottom: 30px;">
-            <h2 style="margin: 0 0 10px 0; color: #1e293b;">멤버십 플랜 선택</h2>
-            <p style="margin: 0; color: #64748b; font-size: 0.95rem;">지금 선택에 따라 갈 수 있는 대학이 달라집니다</p>
-        </div>
-        
-        <div id="activeSubBanner" class="active-sub-banner" style="display: none;">
-            <div class="sub-icon"><i class="fas fa-crown"></i></div>
-            <div class="sub-details">
-                <span class="sub-label">현재 이용 중인 플랜</span>
-                <strong id="activeSubName" class="sub-name">-</strong>
-                <span id="activeSubDate" class="sub-date">-</span>
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+  <header id="site-header">
+    <div class="logo-container">
+      <a href="/" class="logo-link">
+        <svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="#4c79ee"/>
+          <text x="16" y="22" font-size="18" font-weight="900" text-anchor="middle" fill="#fff" font-family="system-ui">S</text>
+        </svg>
+        <span class="logo">StudyCrack</span>
+      </a>
+    </div>
+    <nav class="nav-links">
+      <a href="/service">서비스 소개</a>
+      <a href="/analysis">나만의 솔루션</a>
+      <a href="/qna">1:1 문의</a>
+      <a href="/login" class="nav-btn">로그인 / 회원가입</a>
+    </nav>
+  </header>
+
+  <main class="pay-page">
+
+    <!-- Hero -->
+    <section class="pay-hero">
+      <div class="hero-copy">
+        <p class="eyebrow">StudyCrack 플랜 안내</p>
+        <h1>데이터와 SKY 튜터의<br>전략으로 <em>합격을<br>설계합니다.</em></h1>
+        <p class="hero-desc">4단계 로드맵으로 분석부터 실행,<br>그리고 더 높은 학교 합격을 위한<br>중장기 전략까지 함께합니다.</p>
+      </div>
+
+      <div class="hero-image-wrap">
+        <img src="/assets/images/payment-hero-student.png" alt="노트북을 보며 공부하는 학생" onerror="this.closest('.hero-image-wrap').style.display='none'">
+        <!-- AI 합격 진단점수 카드 — 이미지 좌하단에 자연스럽게 겹치도록 배치 -->
+        <article class="score-card">
+          <div class="score-card-top">
+            <div>
+              <p class="score-label-text">AI 합격 진단점수</p>
+              <div class="score-univ-row">
+                <span class="score-univ">1지망 서울대학교</span>
+                <span class="score-badge score-badge--pass">합격권</span>
+              </div>
             </div>
-        </div>
-        <div id="pendingSubBanner" class="active-sub-banner" style="display: none; background: #eff6ff; border-color: #bfdbfe;">
-            <div class="sub-icon" style="background: #dbeafe;"><i class="fas fa-calendar-check" style="color: #2563eb;"></i></div>
-            <div class="sub-details">
-                <span class="sub-label" style="color: #2563eb;">예약된 플랜</span>
-                <strong id="pendingSubName" class="sub-name" style="color: #1d4ed8;">-</strong>
-                <span id="pendingSubDate" class="sub-date">-</span>
+            <b class="score-value">114.0<span>점</span></b>
+          </div>
+          <div class="score-bar-container">
+            <div class="score-bar-bg">
+              <div class="score-bar-fill score-bar-fill--pass" style="width: 45.6%"></div>
+              <div class="score-marker score-marker--pass" style="left: 40%">
+                <div class="marker-line"></div>
+              </div>
+              <div class="score-marker score-marker--safe" style="left: 60%">
+                <div class="marker-line"></div>
+              </div>
             </div>
+            <div class="score-bar-labels">
+              <span class="sbl sbl--left">0</span>
+              <span class="sbl sbl--center" style="left: 40%">합격<br><small>(100)</small></span>
+              <span class="sbl sbl--center" style="left: 60%">안정<br><small>(150)</small></span>
+              <span class="sbl sbl--right">MAX<br><small>(250)</small></span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- 4단계 로드맵 -->
+    <section class="roadmap-section">
+      <div class="roadmap-grid">
+        <article class="road-card">
+          <div class="road-top">
+            <span class="road-num">01</span>
+            <strong>학습 성향 분석</strong>
+          </div>
+          <b class="plan-tag plan-free">FREE</b>
+          <div class="road-icon">
+            <svg viewBox="0 0 64 64" aria-hidden="true">
+              <path d="M31 8c-12.2 0-22 9.8-22 22 0 8.9 5.3 16.6 12.9 20.1v6.1" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/>
+              <path d="M31 8c10.8 0 19.8 7.8 21.6 18.1.6 3.5-.8 6.2-3.1 7.9l-3.7 2.7v7.8c0 3.4-2.8 6.2-6.2 6.2H30" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M23 30l6 6 13-15" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <p>나의 강점과 약점,<br>공부 성향을 AI가<br>정밀 분석합니다.</p>
+          <i class="road-arrow"><i class="fas fa-chevron-right"></i></i>
+        </article>
+
+        <article class="road-card">
+          <div class="road-top">
+            <span class="road-num">02</span>
+            <strong>목표 대학 분석</strong>
+          </div>
+          <b class="plan-tag plan-basic">BASIC</b>
+          <div class="road-icon">
+            <svg viewBox="0 0 64 64" aria-hidden="true">
+              <circle cx="32" cy="32" r="23" fill="none" stroke="currentColor" stroke-width="4.5"/>
+              <circle cx="32" cy="32" r="13" fill="none" stroke="currentColor" stroke-width="4.5"/>
+              <circle cx="32" cy="32" r="4" fill="currentColor"/>
+              <path d="M43 21l11-11M46 10h8v8" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <p>현재 성적으로 가장<br>유리한 대학과 목표<br>성적 조합을 제시합니다.</p>
+          <i class="road-arrow"><i class="fas fa-chevron-right"></i></i>
+        </article>
+
+        <article class="road-card road-card--std">
+          <div class="road-top">
+            <span class="road-num road-num--purple">03</span>
+            <strong>합격 플래너 제공</strong>
+          </div>
+          <b class="plan-tag plan-standard">STANDARD</b>
+          <div class="road-icon road-icon--purple">
+            <svg viewBox="0 0 64 64" aria-hidden="true">
+              <rect x="10" y="14" width="44" height="40" rx="7" fill="none" stroke="currentColor" stroke-width="4.5"/>
+              <path d="M10 25h44M22 10v8M42 10v8" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/>
+              <path d="M22 35h4M31 35h4M40 35h4M22 44h4M31 44h4M40 44h4" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <p>SKY 튜터가 목표 점수<br>달성을 위한 주간 플래너를<br>직접 설계하고 피드백합니다.</p>
+          <i class="road-arrow"><i class="fas fa-chevron-right"></i></i>
+        </article>
+
+        <article class="road-card road-card--pro">
+          <div class="road-top">
+            <span class="road-num road-num--orange">04</span>
+            <strong>중장기 전략 수립</strong>
+          </div>
+          <b class="plan-tag plan-pro">PRO</b>
+          <div class="road-icon road-icon--orange">
+            <svg viewBox="0 0 64 64" aria-hidden="true">
+              <path d="M28 54V11" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/>
+              <path d="M28 13h24l-5 9 5 9H28" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linejoin="round"/>
+              <path d="M16 54h34M21 54l7-12 7 12" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <p>더 높은 학교 합격을 위해<br>중장기 전략과 지속 성장<br>로드맵을 설계합니다.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- 플랜 가격 -->
+    <section class="pricing-section" id="plans">
+      <div class="price-list">
+
+        <article class="price-row" data-tier="free">
+          <div class="price-name">
+            <h2 class="c-primary">FREE</h2>
+            <p>무료 분석</p>
+          </div>
+          <div class="price-amount"><strong>0</strong>원</div>
+          <ul>
+            <li>학습 성향 분석</li>
+            <li>목표 대학 분석 및 목표 성적 제시</li>
+          </ul>
+          <a class="price-btn price-btn--primary" href="/survey">무료 시작하기 <i class="fas fa-arrow-right"></i></a>
+        </article>
+
+        <article class="price-row" data-tier="basic">
+          <div class="price-name">
+            <h2 class="c-primary">BASIC</h2>
+            <p>목표 분석 플랜</p>
+          </div>
+          <div class="price-amount"><strong>25,000</strong><span>원/월</span></div>
+          <ul>
+            <li>FREE 플랜 모든 혜택</li>
+            <li>점수 상승 시뮬레이션 (최대 30곳)</li>
+          </ul>
+          <a class="price-btn price-btn--outline" href="#checkout" onclick="selectPlan('basic', this.closest('.price-row'))">BASIC 선택하기 <i class="fas fa-arrow-right"></i></a>
+        </article>
+
+        <article class="price-row price-row--popular" data-tier="standard">
+          <div class="popular-ribbon">추천 플랜</div>
+          <div class="price-name">
+            <h2 class="c-purple">STANDARD</h2>
+            <p>합격 플래너 플랜</p>
+          </div>
+          <div class="price-amount"><strong>149,000</strong><span>원/4주</span></div>
+          <ul>
+            <li>BASIC 플랜 모든 혜택</li>
+            <li>SKY 튜터 합격 플래너 제공</li>
+            <li>주간 플래너 및 피드백</li>
+          </ul>
+          <a class="price-btn price-btn--purple" href="#checkout" onclick="selectPlan('standard', this.closest('.price-row'))">STANDARD 선택하기 <i class="fas fa-arrow-right"></i></a>
+        </article>
+
+        <article class="price-row" data-tier="pro">
+          <div class="price-name">
+            <h2 class="c-orange">PRO</h2>
+            <p>최상위 전략 플랜</p>
+          </div>
+          <div class="price-amount"><strong>299,000</strong><span>원/4주</span></div>
+          <ul>
+            <li>STANDARD 플랜 모든 혜택</li>
+            <li>우선 피드백 &amp; 전용 튜터 배정</li>
+            <li>목표 달성 시 수강료 환급</li>
+          </ul>
+          <a class="price-btn price-btn--orange" href="#checkout" onclick="selectPlan('pro', this.closest('.price-row'))">PRO 선택하기 <i class="fas fa-arrow-right"></i></a>
+        </article>
+
+      </div>
+      <p class="vat-note">모든 플랜은 VAT 포함 가격입니다. 결제는 언제든 취소 가능합니다.</p>
+    </section>
+
+    <!-- 실제 제공 예시 -->
+    <section class="examples-section">
+      <div class="section-head">
+        <h2>실제 제공 예시</h2>
+      </div>
+      <div class="example-grid">
+
+        <!-- 합격 전략 리포트 -->
+        <article class="example-card">
+          <div class="example-preview">
+            <div class="ex-report">
+              <div class="ex-report-header">
+                <i class="fas fa-file-alt"></i>
+                <span>합격 전략 리포트</span>
+              </div>
+              <div class="ex-report-body">
+                <p class="ex-strat-title">📌 핵심 전략 요약</p>
+                <ul class="ex-strat-list">
+                  <li>수학 기출 집중 → 3등급 → 1등급 목표</li>
+                  <li>영어 독해 루틴 매일 30분 유지</li>
+                  <li>탐구 개념 주 2회 반복 복습</li>
+                  <li>국어 문학·비문학 회차별 오답 정리</li>
+                </ul>
+                <p class="ex-strat-note">멘토 총평: 국어·영어 강점 유지하며 수학 집중 보완 필요</p>
+              </div>
+            </div>
+          </div>
+          <p>합격 전략 리포트 예시</p>
+        </article>
+
+        <!-- 목표 대학 분석 -->
+        <article class="example-card">
+          <div class="example-preview">
+            <div class="ex-target">
+              <div class="ex-target-header">
+                <i class="fas fa-university"></i>
+                <span>목표 대학 분석</span>
+              </div>
+              <div class="ex-univ-item">
+                <div class="ex-univ-top">
+                  <span class="ex-rank">4지망</span>
+                  <strong>연세대학교</strong>
+                  <b class="ex-score warn">91.2</b>
+                </div>
+                <div class="ex-univ-bar"><div style="width:36.5%; background:#ef4444"></div></div>
+              </div>
+              <div class="ex-univ-item">
+                <div class="ex-univ-top">
+                  <span class="ex-rank">5지망</span>
+                  <strong>한양대학교</strong>
+                  <b class="ex-score pass">104.7</b>
+                </div>
+                <div class="ex-univ-bar"><div style="width:41.9%; background:#3b82f6"></div></div>
+              </div>
+              <div class="ex-univ-item">
+                <div class="ex-univ-top">
+                  <span class="ex-rank">6지망</span>
+                  <strong>성균관대학교</strong>
+                  <b class="ex-score safe">155.0</b>
+                </div>
+                <div class="ex-univ-bar"><div style="width:62%; background:#10b981"></div></div>
+              </div>
+            </div>
+          </div>
+          <p>목표 대학 분석 예시</p>
+        </article>
+
+        <!-- 점수 상승 시뮬레이션 -->
+        <article class="example-card">
+          <div class="example-preview">
+            <div class="ex-sim">
+              <div class="ex-sim-header">
+                <i class="fas fa-chart-bar"></i>
+                <span>점수 상승 시뮬레이션</span>
+              </div>
+              <div class="ex-sim-graph-wrap">
+                <div class="ex-sim-graph">
+                  <div class="ex-guide" style="bottom:60%"><span style="color:#10b981">안정</span></div>
+                  <div class="ex-guide ex-guide--blue" style="bottom:40%"><span style="color:#3b82f6">합격</span></div>
+                  <div class="ex-bar-item"><div class="ex-bar-col" style="height:14%; background:#ef4444"><span>35</span></div></div>
+                  <div class="ex-bar-item"><div class="ex-bar-col" style="height:35%; background:#ef4444"><span>88</span></div></div>
+                  <div class="ex-bar-item"><div class="ex-bar-col" style="height:43%; background:#3b82f6"><span>107</span></div></div>
+                  <div class="ex-bar-item"><div class="ex-bar-col" style="height:51%; background:#3b82f6"><span>128</span></div></div>
+                  <div class="ex-bar-item"><div class="ex-bar-col" style="height:62%; background:#10b981; box-shadow:0 0 6px rgba(16,185,129,.4)"><span style="color:#10b981">155</span></div></div>
+                </div>
+                <div class="ex-sim-labels">
+                  <span>서울대</span><span>연세대</span><span>고려대</span><span>성균관대</span><span>한양대</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p>점수 상승 시뮬레이션 예시</p>
+        </article>
+
+        <!-- 중장기 로드맵 -->
+        <article class="example-card">
+          <div class="example-preview">
+            <div class="ex-roadmap">
+              <div class="ex-rm-header">
+                <i class="fas fa-route"></i>
+                <span>중장기 로드맵</span>
+              </div>
+              <div class="ex-rm-timeline">
+                <div class="ex-rm-item done">
+                  <div class="ex-rm-dot"><i class="fas fa-check"></i></div>
+                  <div class="ex-rm-content"><b>3월</b><span>국어 기출 완성 · 문학 개념 정리</span></div>
+                </div>
+                <div class="ex-rm-item done">
+                  <div class="ex-rm-dot"><i class="fas fa-check"></i></div>
+                  <div class="ex-rm-content"><b>5월</b><span>수학 심화 강화 · 오답노트 구축</span></div>
+                </div>
+                <div class="ex-rm-item current">
+                  <div class="ex-rm-dot ex-rm-dot--current"><i class="fas fa-map-marker-alt"></i></div>
+                  <div class="ex-rm-content"><b>현재</b><span>모의고사 분석 · 취약 단원 집중 보강</span></div>
+                </div>
+                <div class="ex-rm-item future">
+                  <div class="ex-rm-dot ex-rm-dot--future"></div>
+                  <div class="ex-rm-content"><b>9월</b><span>실전 전략 수립 · 과목별 마무리</span></div>
+                </div>
+                <div class="ex-rm-item future">
+                  <div class="ex-rm-dot ex-rm-dot--future"></div>
+                  <div class="ex-rm-content"><b>11월</b><span>수능 최종 점검 · 컨디션 관리</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p>중장기 로드맵 예시</p>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- 통계 -->
+    <section class="stats-section">
+      <div class="stat-card">
+        <i class="fas fa-star stat-icon"></i>
+        <strong><em>4.9</em> / 5</strong>
+        <p>수강생 만족도</p>
+      </div>
+      <div class="stat-card">
+        <i class="fas fa-user-graduate stat-icon"></i>
+        <strong>SKY 튜터<br>1:1 맞춤 관리</strong>
+        <p>전담 튜터의 밀착 관리</p>
+      </div>
+      <div class="stat-card">
+        <i class="fas fa-chart-line stat-icon"></i>
+        <strong>체계적인<br>관리 시스템</strong>
+        <p>주간 피드백과 성과 관리</p>
+      </div>
+      <div class="stat-card">
+        <i class="fas fa-shield-alt stat-icon"></i>
+        <strong>안전한<br>개인정보 보호</strong>
+        <p>모든 정보는 암호화 보호</p>
+      </div>
+    </section>
+
+    <!-- =============================================
+         결제 진행 섹션 (기존 payment.js 기능 연동)
+         ============================================= -->
+    <section class="checkout-section" id="checkout" style="display:none;">
+      <div class="checkout-inner">
+        <h2 class="checkout-title">결제 정보 입력</h2>
+
+        <!-- 현재 구독 배너 -->
+        <div id="activeSubBanner" class="active-sub-banner" style="display:none;">
+          <div class="sub-icon"><i class="fas fa-crown"></i></div>
+          <div class="sub-details">
+            <span class="sub-label">현재 이용 중인 플랜</span>
+            <strong id="activeSubName" class="sub-name">-</strong>
+            <span id="activeSubDate" class="sub-date">-</span>
+          </div>
+        </div>
+        <div id="pendingSubBanner" class="active-sub-banner" style="display:none; background:#eff6ff; border-color:#bfdbfe;">
+          <div class="sub-icon" style="background:#dbeafe;"><i class="fas fa-calendar-check" style="color:#2563eb;"></i></div>
+          <div class="sub-details">
+            <span class="sub-label" style="color:#2563eb;">예약된 플랜</span>
+            <strong id="pendingSubName" class="sub-name" style="color:#1d4ed8;">-</strong>
+            <span id="pendingSubDate" class="sub-date">-</span>
+          </div>
         </div>
 
+        <!-- 선택한 플랜 표시 -->
+        <div class="checkout-plan-row">
+          <span>선택한 플랜</span>
+          <strong id="checkoutPlanName">-</strong>
+        </div>
+
+        <!-- 특수 옵션 (TEST/TRIAL — 숨김, 조건 충족 시 노출) -->
+        <div id="specialOptions" class="special-options" style="display:none;">
+          <p class="special-options-label">특수 옵션</p>
+          <div id="testOption" class="special-option-btn" style="display:none;" onclick="selectSpecialPlan('test', this)">
+            <span class="sop-name">TEST</span><span class="sop-price">100원</span>
+          </div>
+          <div id="trialOption" class="special-option-btn" style="display:none;" onclick="selectSpecialPlan('trial', this)">
+            <span class="sop-name">TRIAL</span><span class="sop-price">30,000원</span>
+          </div>
+        </div>
+
+        <!-- 사용자 정보 폼 -->
         <form id="paymentForm">
-            <div class="form-group">
-                <label for="name">이름 (학생 본인)</label>
-                <input type="text" id="name" required placeholder="데이터 불러오는 중..." readonly style="background-color: #f3f4f6;">
-            </div>
-            <div class="form-group">
-                <label for="phone">전화번호</label>
-                <input type="tel" id="phone" required placeholder="데이터 불러오는 중..." readonly style="background-color: #f3f4f6;">
-            </div>
-            <div class="form-group">
-                <label for="email">이메일</label>
-                <input type="email" id="email" required placeholder="예: student@example.com">
-            </div>
+          <div class="form-group">
+            <label for="name">이름 (학생 본인)</label>
+            <input type="text" id="name" required placeholder="데이터 불러오는 중..." readonly style="background-color:#f3f4f6;">
+          </div>
+          <div class="form-group">
+            <label for="phone">전화번호</label>
+            <input type="tel" id="phone" required placeholder="데이터 불러오는 중..." readonly style="background-color:#f3f4f6;">
+          </div>
+          <div class="form-group">
+            <label for="email">이메일</label>
+            <input type="email" id="email" required placeholder="예: student@example.com">
+          </div>
 
-            <h3>나에게 맞는 합격 솔루션 선택</h3>
-            <div class="product-selection pricing-table-container">
-    <div class="pricing-col labels-col">
-        <div class="p-header-space"></div>
-        <div class="f-row">합격 시뮬레이션</div>
-        <div class="f-row">주간 플래너</div>
-        <div class="f-row">프리미엄 보고서</div>
-    </div>
+          <div id="tierMessageWrap" class="tier-message-wrap" style="display:none;">
+            <div id="tierMessageText"></div>
+          </div>
 
-    <div id="testOption" class="product-option tier-trial" style="display: none;" onclick="selectProduct(this, null, 'test')">
-        <div class="product-header">
-            <span class="p-name">TEST</span>
-            <span class="p-price">100원</span>
-        </div>
-        <div class="f-row">-</div>
-        <div class="f-row">-</div>
-        <div class="f-row">-</div>
-    </div>
-
-    <div id="trialOption" class="product-option tier-trial" style="display: none;" onclick="selectProduct(this, null, 'trial')">
-        <div class="product-header">
-            <span class="p-name">TRIAL</span>
-            <span class="p-price">30,000원</span>
-        </div>
-        <div class="f-row">O<br><small>(무제한)</small></div>
-        <div class="f-row">O</div>
-        <div class="f-row">O</div>
-    </div>
-
-    <div class="product-option tier-basic" onclick="selectProduct(this, null, 'basic')">
-        <div class="product-header">
-            <span class="p-name">BASIC</span>
-            <span class="p-price">
-                <span class="original-price">49,000</span>
-                <span class="discount-price">25,000원</span>
-            </span>
-        </div>
-        <div class="f-row">O<br><small>(최대 30곳)</small></div>
-        <div class="f-row text-muted">X</div>
-        <div class="f-row text-muted">X</div>
-    </div>
-
-    <div class="product-option tier-standard" onclick="selectProduct(this, null, 'standard')">
-        <div class="best-badge">BEST 추천</div>
-        <div class="product-header">
-            <span class="p-name">STANDARD</span>
-            <span class="p-price">
-                <span>149,000원</span>
-                <small>/4주</small>
-            </span>
-        </div>
-        <div class="f-row">O</div>
-        <div class="f-row">O</div>
-        <div class="f-row text-muted">X</div>
-    </div>
-
-    <div class="product-option tier-pro" onclick="selectProduct(this, null, 'pro')">
-        <div class="product-header">
-            <span class="p-name">PRO</span>
-            <span class="p-price">
-                <span>299,000원</span>
-                <small>/4주</small>
-            </span>
-        </div>
-        <div class="f-row">O</div>
-        <div class="f-row">O</div>
-        <div class="f-row">O</div>
-    </div>
-</div>
-
-            <div id="tierMessageWrap" class="tier-message-wrap" style="display: none;">
-                <div id="tierMessageText"></div>
-            </div>
-
-            <button type="button" class="btn-pay" id="submitBtn" onclick="processPayment()">👉 원하는 대학, 현실로 만들기</button>
+          <button type="button" class="btn-pay" id="submitBtn" onclick="processPayment()">결제하기</button>
         </form>
-    </div>
+      </div>
+    </section>
 
-    <script src="https://pay.nicepay.co.kr/v1/js/"></script>
-    <script src="/js/config.js"></script>
-    <script src="/js/payment.js"></script>
-    
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  </main>
+
+  <script src="https://pay.nicepay.co.kr/v1/js/"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/payment.js"></script>
+
 </body>
 </html>
