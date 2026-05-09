@@ -113,6 +113,28 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    const header = document.getElementById('site-header');
+    if (header) header.classList.add('scrolled');
+    syncHeaderNav();
+
+    // 스크롤 리빌 애니메이션
+    const reveals = document.querySelectorAll('.road-card, .price-row, .example-card, .stat-card');
+    const io = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+                io.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1 });
+    reveals.forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        el.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+        io.observe(el);
+    });
+
     const urlParams = new URLSearchParams(window.location.search);
 
     const errorMsg = urlParams.get('error');
@@ -124,11 +146,46 @@ document.addEventListener('DOMContentLoaded', () => {
     if (urlParams.get('test') === '1') {
         const testOption = document.getElementById('testOption');
         if (testOption) testOption.style.display = 'block';
+        const specialOptions = document.getElementById('specialOptions');
+        if (specialOptions) specialOptions.style.display = 'block';
     }
-    
+
     setupPaymentLoadingInterceptor();
     fetchUserInfo(userId);
 });
+
+function syncHeaderNav() {
+    const isLoggedIn = !!localStorage.getItem('userId');
+    const btnAnalysis = document.getElementById('navAnalysis');
+    const btnQna = document.getElementById('navQna');
+    const btnLogin = document.getElementById('loginBtn');
+    const btnMyPage = document.getElementById('myPageBtn');
+    const btnLogout = document.getElementById('logoutBtn');
+
+    if (isLoggedIn) {
+        if (btnAnalysis) btnAnalysis.classList.remove('hidden');
+        if (btnQna) btnQna.classList.remove('hidden');
+        if (btnMyPage) btnMyPage.classList.remove('hidden');
+        if (btnLogout) btnLogout.classList.remove('hidden');
+        if (btnLogin) btnLogin.classList.add('hidden');
+    }
+
+    if (btnMyPage) {
+        btnMyPage.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = '/mypage';
+        });
+    }
+
+    if (btnLogout) {
+        btnLogout.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = '/';
+        });
+    }
+}
 
 // 유저 정보 가져오기 및 티어 계산
 async function fetchUserInfo(userId) {
@@ -160,18 +217,20 @@ async function validatePromoCode(code) {
     try {
         const response = await apiFetch(USER_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 type: 'validate_promo_code',
-                data: { promoCode: code } 
+                data: { promoCode: code }
             })
         });
-        
+
         const result = await response.json();
-        
+
         // 백엔드에서 isValid: true를 뱉어내면 체험단 메뉴 노출
         if (result.isValid) {
             const trialOption = document.getElementById('trialOption');
-            if(trialOption) trialOption.style.display = 'block'; 
+            if (trialOption) trialOption.style.display = 'block';
+            const specialOptions = document.getElementById('specialOptions');
+            if (specialOptions) specialOptions.style.display = 'block';
         }
     } catch (error) {
         if (error.message !== "Auth expired") console.error("프로모션 코드 검증 API 호출 실패", error);
@@ -221,67 +280,159 @@ function setupPaymentLoadingInterceptor() {
 function calculateUserTierDisplay(data) {
     globalCurrentTier = data.computedTier || 'free';
 
-    // 1. 활성화된 구독 객체 파싱 (배열 검색 삭제)
+    // 1. 활성화된 구독 객체 파싱
     if (globalCurrentTier !== 'free' && data.currentSubscription && data.currentSubscription.status === 'active') {
         const payDate = new Date(data.currentSubscription.startDate);
-        
-        if (!isNaN(payDate)) { // 유효한 날짜인지 검증
-            const expireDate = new Date(payDate.getTime() + (28 * 24 * 60 * 60 * 1000)); // 28일 더하기
+
+        if (!isNaN(payDate)) {
+            const expireDate = new Date(payDate.getTime() + (28 * 24 * 60 * 60 * 1000));
             const now = new Date();
-            
+
             globalDaysLeft = Math.ceil((expireDate - now) / (1000 * 60 * 60 * 24));
             globalExpireDate = expireDate;
-            
-            // 상단 배너 표시
-            const banner = document.getElementById('activeSubBanner');
+
+            // 상단 배너 표시 (결제 섹션이 열릴 때 보임)
             document.getElementById('activeSubName').innerText = globalCurrentTier.toUpperCase();
-            
-            // Basic은 무기한이므로 텍스트 다르게 처리
             if (globalCurrentTier === 'basic') {
                 document.getElementById('activeSubDate').innerText = '평생 이용 가능';
             } else {
                 document.getElementById('activeSubDate').innerText = `${expireDate.getFullYear()}년 ${expireDate.getMonth()+1}월 ${expireDate.getDate()}일까지 유효`;
             }
-            banner.style.display = 'flex';
+            // 배너는 checkout 섹션 안에 있으므로 display:flex 처리는 selectPlan에서 수행
 
-            // 선택 박스에 '현재 이용 중' 뱃지 달기
-            const currentOptionObj = document.querySelector(`.tier-${globalCurrentTier}`);
-            if (currentOptionObj) {
-                currentOptionObj.classList.add('is-current-tier');
+            // price-row에 '현재 이용 중' 뱃지
+            const currentRow = document.querySelector(`.price-row[data-tier="${globalCurrentTier}"]`);
+            if (currentRow) {
                 const badge = document.createElement('div');
                 badge.className = 'current-tier-badge';
                 badge.innerText = '현재 이용 중';
-                currentOptionObj.appendChild(badge);
+                currentRow.appendChild(badge);
             }
         }
 
-    // 예약된 플랜(pendingSubscription)이 있으면 안내 배너 추가
-    if (data.pendingSubscription && data.pendingSubscription.status === 'active') {
-        const pending = data.pendingSubscription;
-        const pendingTier = (pending.tier || '').toUpperCase();
-        const pendingStart = pending.startDate
-            ? new Date(pending.startDate)
-            : null;
-        const pendingStartStr = pendingStart
-            ? `${pendingStart.getFullYear()}년 ${pendingStart.getMonth()+1}월 ${pendingStart.getDate()}일`
-            : '만료 후';
-        const pendingBanner = document.getElementById('pendingSubBanner');
-        if (pendingBanner) {
+        // 예약된 플랜(pendingSubscription) 배너
+        if (data.pendingSubscription && data.pendingSubscription.status === 'active') {
+            const pending = data.pendingSubscription;
+            const pendingTier = (pending.tier || '').toUpperCase();
+            const pendingStart = pending.startDate ? new Date(pending.startDate) : null;
+            const pendingStartStr = pendingStart
+                ? `${pendingStart.getFullYear()}년 ${pendingStart.getMonth()+1}월 ${pendingStart.getDate()}일`
+                : '만료 후';
             document.getElementById('pendingSubName').innerText = pendingTier;
             document.getElementById('pendingSubDate').innerText = `${pendingStartStr}부터 적용 예정`;
-            pendingBanner.style.display = 'flex';
-        }
-        // 선택 박스에 '예약됨' 뱃지 달기
-        const pendingOptionObj = document.querySelector(`.tier-${pending.tier?.toLowerCase()}`);
-        if (pendingOptionObj) {
-            const pendingBadge = document.createElement('div');
-            pendingBadge.className = 'current-tier-badge';
-            pendingBadge.style.background = '#dbeafe';
-            pendingBadge.style.color = '#1d4ed8';
-            pendingBadge.innerText = '예약됨';
-            pendingOptionObj.appendChild(pendingBadge);
+
+            // price-row에 '예약됨' 뱃지
+            const pendingRow = document.querySelector(`.price-row[data-tier="${(pending.tier || '').toLowerCase()}"]`);
+            if (pendingRow) {
+                const pendingBadge = document.createElement('div');
+                pendingBadge.className = 'current-tier-badge';
+                pendingBadge.style.background = '#dbeafe';
+                pendingBadge.style.color = '#1d4ed8';
+                pendingBadge.innerText = '예약됨';
+                pendingRow.appendChild(pendingBadge);
+            }
         }
     }
+}
+
+// v2 디자인 — price-row 클릭 시 plan 선택 및 결제 섹션 노출
+function selectPlan(tier, priceRowEl) {
+    // price-row 선택 상태 표시
+    document.querySelectorAll('.price-row').forEach(r => r.classList.remove('selected'));
+    if (priceRowEl) priceRowEl.classList.add('selected');
+
+    selectedTier = tier;
+    const h2 = priceRowEl ? priceRowEl.querySelector('h2') : null;
+    selectedProductName = h2 ? h2.textContent.trim() : tier.toUpperCase();
+
+    // 결제 섹션 노출 및 스크롤
+    const checkoutEl = document.getElementById('checkout');
+    if (checkoutEl) {
+        checkoutEl.style.display = 'block';
+        // 현재 구독 배너 노출 (데이터가 준비된 경우)
+        if (globalCurrentTier !== 'free') {
+            const activeBanner = document.getElementById('activeSubBanner');
+            if (activeBanner) activeBanner.style.display = 'flex';
+            const pendingBanner = document.getElementById('pendingSubBanner');
+            const pendingNameEl = document.getElementById('pendingSubName');
+            if (pendingBanner && pendingNameEl && pendingNameEl.innerText !== '-') {
+                pendingBanner.style.display = 'flex';
+            }
+        }
+        setTimeout(() => checkoutEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    }
+
+    // 선택 플랜 이름 표시
+    const planNameEl = document.getElementById('checkoutPlanName');
+    if (planNameEl) planNameEl.textContent = selectedProductName;
+
+    // 결제 버튼 초기화
+    const btn = document.getElementById('submitBtn');
+    if (btn) { btn.disabled = false; btn.innerText = '결제하기'; }
+
+    // 티어 메시지 계산 (기존 selectProduct 로직 재사용)
+    _applyTierMessage(tier, btn);
+}
+
+// 특수 옵션(TEST/TRIAL) 선택
+function selectSpecialPlan(tier, el) {
+    document.querySelectorAll('.special-option-btn').forEach(b => b.classList.remove('selected'));
+    if (el) el.classList.add('selected');
+    document.querySelectorAll('.price-row').forEach(r => r.classList.remove('selected'));
+
+    selectedTier = tier;
+    selectedProductName = tier.toUpperCase();
+
+    const planNameEl = document.getElementById('checkoutPlanName');
+    if (planNameEl) planNameEl.textContent = selectedProductName;
+
+    const btn = document.getElementById('submitBtn');
+    if (btn) { btn.disabled = false; btn.innerText = '결제하기'; }
+
+    document.getElementById('tierMessageWrap').style.display = 'none';
+}
+
+// 티어 메시지 공통 처리
+function _applyTierMessage(tier, btn) {
+    const msgWrap = document.getElementById('tierMessageWrap');
+    const msgText = document.getElementById('tierMessageText');
+    if (!msgWrap || !msgText) return;
+
+    const selectedLevel = TIER_LEVELS[tier];
+    const currentLevel = TIER_LEVELS[globalCurrentTier];
+
+    msgWrap.style.display = 'none';
+    msgWrap.className = 'tier-message-wrap';
+    if (btn) { btn.disabled = false; btn.innerText = '결제하기'; }
+
+    if (currentLevel > 0) {
+        if (globalCurrentTier === 'basic') {
+            if (selectedLevel === currentLevel) {
+                msgWrap.style.display = 'block';
+                msgText.innerHTML = `<i class="fas fa-check-circle" style="color:#10b981;"></i> 이미 평생 이용 가능한 BASIC 플랜을 보유하고 있습니다.`;
+                if (btn) { btn.disabled = true; btn.innerText = '현재 이용 중인 플랜'; }
+            } else if (selectedLevel > currentLevel) {
+                msgWrap.style.display = 'block'; msgWrap.classList.add('warning');
+                msgText.innerHTML = `<i class="fas fa-exclamation-circle"></i> <strong>업그레이드 안내:</strong> 결제 시 기존 BASIC 등급의 잔여 목표대학 설정 횟수는 <strong>무제한으로 전환되며 소멸</strong>됩니다.`;
+                if (btn) btn.innerText = '업그레이드 결제하기';
+            }
+        } else if (globalCurrentTier === 'standard' || globalCurrentTier === 'pro') {
+            const expireDateStr = globalExpireDate
+                ? `${globalExpireDate.getFullYear()}년 ${globalExpireDate.getMonth()+1}월 ${globalExpireDate.getDate()}일` : '';
+            if (selectedLevel < currentLevel) {
+                msgWrap.style.display = 'block'; msgWrap.classList.add('warning');
+                msgText.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <strong>다운그레이드 예약:</strong> 기존 구독 만료일(${expireDateStr}) 이후부터 <strong>${tier.toUpperCase()}</strong> 플랜이 적용됩니다.`;
+                if (btn) btn.innerText = '다운그레이드 예약 결제';
+            } else if (selectedLevel === currentLevel) {
+                msgWrap.style.display = 'block';
+                msgText.innerHTML = `<i class="fas fa-info-circle" style="color:#3b82f6;"></i> 기존 구독 기간이 <strong>${globalDaysLeft}일</strong> 남았습니다.<br>지금 결제하시면 만료일(${expireDateStr}) 이후로 4주가 연장됩니다.`;
+                if (btn) btn.innerText = '연장 결제하기';
+            } else {
+                msgWrap.style.display = 'block';
+                msgText.innerHTML = `<i class="fas fa-arrow-up" style="color:#3b82f6;"></i> <strong>업그레이드 예약:</strong> 기존 구독 만료일(${expireDateStr}) 이후부터 <strong>${tier.toUpperCase()}</strong> 혜택이 적용됩니다.`;
+                if (btn) btn.innerText = '업그레이드 예약 결제';
+            }
+        }
     }
 }
 

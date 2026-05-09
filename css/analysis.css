@@ -573,8 +573,15 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 
 @media (max-width: 768px) {
     /* =======================================
+       -1. 모바일 페이지 레이아웃 (그리드 미적용 구간)
+       ======================================= */
+    .mypage-container { display: flex; flex-direction: column; width: 100%; padding: 12px 15px 40px; box-sizing: border-box; gap: 15px; }
+    .profile-summary { width: 100%; box-sizing: border-box; padding: 20px; background: #fff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+    .content-area { width: 100%; min-width: 0; box-sizing: border-box; padding: 20px 15px; background: #fff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); overflow: hidden; }
+
+    /* =======================================
        0. 모바일 마법사(Wizard) 모드 및 주간리포트 모달
-       ======================================= */    
+       ======================================= */
     /* 🎯 주간 리포트 모달 전용 제어 (문서 뷰어 숨기고 안내창 표시) */
     #feedbackModal .modal-document { display: none !important; }
     #feedbackModal .mobile-only-msg { display: flex !important; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 50px 20px; background: #ffffff; border-radius: 16px; margin: 0 auto; width: 100%; box-sizing: border-box; }
@@ -794,6 +801,9 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 
 html, body, button, input, select, textarea { font-family: "Paperlogy", system-ui, -apple-system, BlinkMacSystemFont, sans-serif; }
 body { color: #2c2c2c; letter-spacing: -0.02em; word-break: keep-all; -webkit-font-smoothing: antialiased; }
+
+@media (max-width: 900px) { body { padding-top: 72px; } }
+@media (max-width: 640px) { body { padding-top: 61px; } }
 .solution-hero { display: none; }
 
 /* ============================================================

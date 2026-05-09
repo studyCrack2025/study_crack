@@ -1,374 +1,374 @@
-/* css/payment.css */
+/* css/payment.css — StudyCrack 결제 플랜 페이지
+   디자인 시스템: 메인 사이트(style.css) 토큰 기준 통일
+   ======================================================== */
 
 /* =========================================
-   1. 공통 레이아웃 및 폼 요소
+   0. Design Tokens (main site 일치)
    ========================================= */
-.payment-container { 
-    max-width: 600px; 
-    margin: 50px auto; 
-    padding: 40px; 
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-}
-
-.form-group { 
-    margin-bottom: 20px; 
-}
-
-.form-group label { 
-    display: block; 
-    margin-bottom: 8px; 
-    font-weight: 600; 
-    color: #334155;
-}
-
-.form-group input { 
-    width: 100%; 
-    padding: 12px; 
-    border: 1px solid #e2e8f0; 
-    border-radius: 6px; 
-    font-size: 1rem; 
-    transition: border-color 0.3s;
-    background-color: #fff;
-}
-
-.form-group input:read-only {
-    background-color: #f3f4f6;
-    color: #64748b;
-}
-
-.form-group input:focus {
-    outline: none;
-    border-color: #2563EB;
+:root {
+  --primary: #4c79ee;
+  --primary-dark: #344e8f;
+  --purple: #7141d9;
+  --orange: #f97316;
+  --text: #2c2c2c;
+  --muted: #64748b;
+  --navy: #1e293b;
+  --card: #f1f4fb;
+  --radius-sm: 4px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --shadow: 10px 20px 35px rgba(0,0,0,.12);
+  --shadow-card: 0 4px 20px rgba(76,121,238,.08);
+  --container: 1040px;
 }
 
 /* =========================================
-   2. 상단 구독 상태 배너
+   1. 기본 설정
    ========================================= */
-.active-sub-banner {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    background: linear-gradient(135deg, #1e293b, #0f172a);
-    padding: 20px 25px;
-    border-radius: 12px;
-    margin-bottom: 30px;
-    color: white;
-    box-shadow: 0 10px 15px rgba(0,0,0,0.1);
-    animation: fadeIn 0.5s ease;
-}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 83px; }
+html, body { max-width: 100%; overflow-x: hidden; }
+body { margin: 0; font-family: "Paperlogy", system-ui, -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text); background: #fff; line-height: 1.5; letter-spacing: -0.02em; word-break: keep-all; -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; cursor: pointer; }
+ul, ol { list-style: none; margin: 0; padding: 0; }
+img, svg { display: block; max-width: 100%; }
 
-.active-sub-banner .sub-icon {
-    font-size: 2rem;
-    color: #fbbf24; /* 골드 색상 */
-}
+/* =========================================
+   3. 공통 레이아웃
+   ========================================= */
+.pay-page { width: min(100%, var(--container)); margin: 0 auto; padding-top: 83px; }
 
-.active-sub-banner .sub-details {
-    display: flex;
-    flex-direction: column;
-}
+/* =========================================
+   4. Hero Section
+   ========================================= */
+.pay-hero { position: relative; padding: 64px 44px 56px; display: grid; grid-template-columns: minmax(0,1fr) minmax(320px,440px); gap: 40px; align-items: start; background: radial-gradient(circle at 15% 20%, rgba(76,121,238,.08) 0%, transparent 45%), linear-gradient(180deg, #fff 0%, #f8fbff 100%); overflow: visible; }
+.hero-copy { position: relative; z-index: 2; padding-top: 14px; }
+.eyebrow { margin: 0 0 14px; font-size: 14px; font-weight: 800; color: var(--primary); letter-spacing: .06em; text-transform: uppercase; }
+.hero-copy h1 { margin: 0; font-size: clamp(32px, 4vw, 46px); line-height: 1.2; letter-spacing: -0.04em; color: var(--navy); }
+.hero-copy h1 em { color: var(--primary); font-style: normal; }
+.hero-desc { margin: 24px 0 0; font-size: 16px; line-height: 1.75; font-weight: 500; color: #3d526e; }
 
-.active-sub-banner .sub-label {
-    font-size: 0.8rem;
-    color: #94a3b8;
-    margin-bottom: 3px;
-    font-weight: 600;
-}
+.hero-image-wrap { position: relative; z-index: 1; border-radius: var(--radius-lg); overflow: visible; }
+.hero-image-wrap img { width: 100%; height: auto; display: block; object-fit: cover; object-position: center top; border-radius: var(--radius-lg); box-shadow: 0 20px 48px rgba(30,41,59,.14); }
 
-.active-sub-banner .sub-name {
-    font-size: 1.2rem;
-    font-weight: 800;
-    color: #f8fafc;
-    letter-spacing: 1px;
-}
+/* ─ AI 합격 진단점수 카드 — 이미지 좌하단 겹침 배치 ─ */
+.score-card { position: absolute; left: -20px; bottom: -52px; z-index: 3; width: clamp(280px, 90%, 340px); padding: 18px 22px 16px; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: rgba(255,255,255,.97); box-shadow: 0 16px 40px rgba(30,41,59,.14); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.score-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.score-label-text { margin: 0 0 6px; font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.score-univ-row { display: flex; align-items: center; gap: 8px; }
+.score-univ { font-size: 15px; font-weight: 800; color: var(--navy); }
+.score-badge { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+.score-badge--pass { background: #eff6ff; color: #3b82f6; }
+.score-badge--safe { background: #f0fdf4; color: #10b981; }
+.score-badge--warn { background: #fef2f2; color: #ef4444; }
+.score-value { display: block; font-size: 26px; font-weight: 900; letter-spacing: -0.04em; color: #3b82f6; white-space: nowrap; }
+.score-value span { font-size: 16px; font-weight: 700; color: var(--muted); }
+.score-value--warn { color: #ef4444; }
 
-.active-sub-banner .sub-date {
-    font-size: 0.85rem;
-    color: #cbd5e1;
-    margin-top: 5px;
+/* score bar (analysis 페이지 동일 구조) */
+.score-bar-container { margin-top: 4px; }
+.score-bar-bg { position: relative; height: 14px; border-radius: 999px; background: #e8edf5; overflow: visible; }
+.score-bar-fill { height: 100%; border-radius: inherit; }
+.score-bar-fill--pass { background: linear-gradient(90deg, #93c5fd, #3b82f6); }
+.score-bar-fill--safe { background: linear-gradient(90deg, #6ee7b7, #10b981); }
+.score-bar-fill--warn { background: linear-gradient(90deg, #fca5a5, #ef4444); }
+.score-marker { position: absolute; top: -6px; bottom: -6px; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+.marker-line { width: 1.5px; height: 100%; }
+.score-marker--pass .marker-line { background: #3b82f6; }
+.score-marker--safe .marker-line { background: #10b981; }
+.score-bar-labels { position: relative; height: 38px; margin-top: 6px; }
+.sbl { position: absolute; font-size: 11px; color: var(--muted); line-height: 1.3; text-align: center; }
+.sbl--left { left: 0; transform: none; }
+.sbl--right { right: 0; text-align: right; }
+.sbl--center { font-weight: 700; font-size: 10px; transform: translateX(-50%); }
+
+/* university mini list */
+.score-univ-list { margin-top: 14px; padding-top: 14px; border-top: 1px solid #e8edf5; display: flex; flex-direction: column; gap: 8px; }
+.sul-item { display: flex; align-items: center; gap: 8px; }
+.sul-rank { flex-shrink: 0; font-size: 11px; color: var(--muted); font-weight: 600; width: 34px; }
+.sul-name { flex-shrink: 0; font-size: 13px; font-weight: 700; color: var(--navy); width: 82px; }
+.sul-bar { flex: 1; height: 6px; border-radius: 999px; background: #e8edf5; overflow: hidden; position: relative; }
+.sul-bar div { height: 100%; border-radius: inherit; background: #94a3b8; }
+.sul-bar div.pass { background: #3b82f6; }
+.sul-bar div.safe { background: #10b981; }
+.sul-score { flex-shrink: 0; font-size: 13px; font-weight: 800; width: 38px; text-align: right; }
+.sul-score.warn { color: #ef4444; }
+.sul-score.pass { color: #3b82f6; }
+.sul-score.safe { color: #10b981; }
+
+/* =========================================
+   5. Roadmap Section
+   ========================================= */
+.roadmap-section { padding: 40px 44px 32px; }
+.roadmap-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 20px; }
+
+.road-card { position: relative; padding: 22px 20px 28px; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 10px; transition: box-shadow .2s, transform .2s; }
+.road-card:hover { box-shadow: 0 8px 28px rgba(76,121,238,.14); transform: translateY(-2px); }
+.road-card--std { border-color: rgba(113,65,217,.2); }
+.road-card--pro { border-color: rgba(249,115,22,.2); }
+
+.road-top { display: flex; align-items: center; gap: 10px; }
+.road-num { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #6d96ff); color: #fff; font-size: 14px; font-weight: 900; flex-shrink: 0; }
+.road-num--purple { background: linear-gradient(135deg, var(--purple), #5b2bd3); }
+.road-num--orange { background: linear-gradient(135deg, var(--orange), #dc6612); }
+.road-top strong { font-size: 15px; font-weight: 800; color: var(--navy); line-height: 1.25; }
+
+.plan-tag { display: inline-block; font-size: 12px; font-weight: 900; letter-spacing: .04em; }
+.plan-free { color: var(--primary); }
+.plan-basic { color: var(--primary); }
+.plan-standard { color: var(--purple); }
+.plan-pro { color: var(--orange); }
+
+.road-icon { width: 52px; height: 52px; margin: 4px 0; color: var(--primary); }
+.road-icon--purple { color: var(--purple); }
+.road-icon--orange { color: var(--orange); }
+.road-icon svg { width: 100%; height: 100%; display: block; }
+
+.road-card p { margin: 0; font-size: 13px; line-height: 1.7; color: #3d526e; flex: 1; }
+
+.road-arrow { position: absolute; top: 50%; right: -16px; z-index: 2; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: #fff; border: 1px solid #e2eaf8; box-shadow: 0 2px 8px rgba(76,121,238,.1); color: var(--muted); font-size: 11px; transform: translateY(-50%); }
+
+/* =========================================
+   6. Pricing Section
+   ========================================= */
+.pricing-section { padding: 32px 44px 28px; }
+
+.price-list { display: grid; gap: 16px; }
+
+.price-row { position: relative; padding: 22px 28px; display: grid; grid-template-columns: 175px 145px minmax(0,1fr) 220px; gap: 20px; align-items: center; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); }
+.price-row--popular { border: 2px solid var(--primary); box-shadow: 0 12px 32px rgba(76,121,238,.15); }
+
+.popular-ribbon { position: absolute; left: 50%; top: -16px; transform: translateX(-50%); min-width: 100px; height: 30px; padding: 0 16px; display: grid; place-items: center; border-radius: var(--radius-sm); background: var(--primary); color: #fff; font-size: 12px; font-weight: 800; white-space: nowrap; }
+
+.price-name h2 { margin: 0 0 4px; font-size: 22px; font-weight: 900; letter-spacing: -0.03em; }
+.price-name p { margin: 0; font-size: 14px; color: var(--muted); font-weight: 600; }
+
+.c-primary { color: var(--primary); }
+.c-purple { color: var(--purple); }
+.c-orange { color: var(--orange); }
+
+.price-amount { padding-left: 20px; border-left: 1px solid #e2eaf8; }
+.price-amount strong { display: block; font-size: 28px; font-weight: 900; letter-spacing: -0.035em; color: var(--navy); }
+.price-amount span { font-size: 13px; color: var(--muted); }
+
+.price-row ul { margin: 0; padding: 0; }
+.price-row li { font-size: 14px; line-height: 1.8; color: var(--text); display: flex; align-items: flex-start; gap: 7px; }
+.price-row li::before { content: "✓"; color: var(--primary); font-weight: 900; font-size: 13px; flex-shrink: 0; margin-top: 2px; }
+
+.price-btn { min-height: 52px; display: flex; align-items: center; justify-content: center; gap: 10px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 800; font-family: inherit; transition: background .18s, transform .18s, opacity .18s; }
+.price-btn--primary { background: var(--primary); color: #fff; box-shadow: 0 8px 20px rgba(76,121,238,.28); }
+.price-btn--primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+.price-btn--outline { color: var(--primary); background: #fff; border: 1.5px solid var(--primary); }
+.price-btn--outline:hover { background: var(--primary); color: #fff; }
+.price-btn--purple { background: linear-gradient(135deg, var(--purple), #5b2bd3); color: #fff; }
+.price-btn--purple:hover { opacity: .9; transform: translateY(-1px); }
+.price-btn--orange { background: linear-gradient(135deg, var(--orange), #dc6612); color: #fff; }
+.price-btn--orange:hover { opacity: .9; transform: translateY(-1px); }
+
+.vat-note { margin: 20px 0 0; text-align: center; color: var(--muted); font-size: 13px; }
+
+/* =========================================
+   7. Examples Section
+   ========================================= */
+.examples-section { padding: 32px 44px 28px; }
+
+.section-head { margin-bottom: 24px; }
+.section-head h2 { margin: 0; font-size: 24px; font-weight: 900; color: var(--navy); letter-spacing: -0.03em; }
+
+.example-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 16px; }
+
+.example-card { border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); overflow: hidden; }
+.example-card > p { margin: 0; padding: 10px 14px 12px; font-size: 13px; font-weight: 700; color: var(--navy); }
+
+.example-preview { height: 176px; background: #f8fbff; border-bottom: 1px solid #e2eaf8; overflow: hidden; }
+
+/* ── 합격 전략 리포트 ── */
+.ex-report { height: 100%; display: flex; flex-direction: column; }
+.ex-report-header { display: flex; align-items: center; gap: 7px; padding: 8px 12px; background: var(--primary); color: #fff; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.ex-report-body { flex: 1; padding: 10px 12px; display: flex; flex-direction: column; gap: 7px; }
+.ex-strat-title { margin: 0; font-size: 10px; font-weight: 800; color: var(--primary); }
+.ex-strat-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.ex-strat-list li { font-size: 10px; color: var(--navy); line-height: 1.4; padding-left: 13px; position: relative; }
+.ex-strat-list li::before { content: "→"; position: absolute; left: 0; color: var(--primary); font-weight: 700; font-size: 9px; }
+.ex-strat-note { margin: 0; padding: 5px 8px; background: #eef4ff; border-radius: var(--radius-sm); font-size: 9.5px; color: var(--muted); line-height: 1.45; }
+
+/* ── 목표 대학 분석 ── */
+.ex-target { height: 100%; display: flex; flex-direction: column; }
+.ex-target-header { display: flex; align-items: center; gap: 7px; padding: 8px 12px; background: var(--navy); color: #fff; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.ex-univ-item { padding: 7px 12px 5px; }
+.ex-univ-top { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+.ex-rank { font-size: 10px; color: var(--muted); font-weight: 600; flex-shrink: 0; width: 32px; }
+.ex-univ-top strong { flex: 1; font-size: 12px; color: var(--navy); font-weight: 700; }
+.ex-score { font-size: 12px; font-weight: 800; flex-shrink: 0; }
+.ex-score.warn { color: #ef4444; }
+.ex-score.pass { color: #3b82f6; }
+.ex-score.safe { color: #10b981; }
+.ex-univ-bar { height: 5px; border-radius: 999px; background: #e2eaf8; overflow: hidden; }
+.ex-univ-bar div { height: 100%; border-radius: inherit; }
+
+/* ── 점수 상승 시뮬레이션 ── */
+.ex-sim { height: 100%; display: flex; flex-direction: column; }
+.ex-sim-header { display: flex; align-items: center; gap: 7px; padding: 8px 12px; background: #1e3a8a; color: #fff; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.ex-sim-graph-wrap { flex: 1; padding: 6px 10px 0; display: flex; flex-direction: column; }
+.ex-sim-graph { flex: 1; position: relative; display: flex; align-items: flex-end; gap: 5px; border-bottom: 1.5px solid #cbd5e1; padding: 22px 38px 0 4px; box-sizing: border-box; overflow: visible; min-height: 90px; }
+.ex-guide { position: absolute; left: 0; right: 0; border-top: 1px dashed #cbd5e1; pointer-events: none; }
+.ex-guide--blue { border-top-color: #3b82f6; }
+.ex-guide span { position: absolute; right: 2px; top: -13px; font-size: 8px; font-weight: 700; background: rgba(255,255,255,.95); padding: 1px 2px; white-space: nowrap; }
+.ex-bar-item { flex: 1; height: 100%; display: flex; align-items: flex-end; justify-content: center; position: relative; }
+.ex-bar-col { width: 18px; border-radius: 3px 3px 0 0; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); }
+.ex-bar-col span { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: var(--muted); white-space: nowrap; }
+.ex-sim-labels { display: flex; gap: 5px; padding: 4px 38px 6px 4px; }
+.ex-sim-labels span { flex: 1; text-align: center; font-size: 8px; color: #475569; }
+
+/* ── 중장기 로드맵 ── */
+.ex-roadmap { height: 100%; display: flex; flex-direction: column; }
+.ex-rm-header { display: flex; align-items: center; gap: 7px; padding: 8px 12px; background: linear-gradient(135deg, var(--purple), #5b2bd3); color: #fff; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.ex-rm-timeline { flex: 1; padding: 8px 12px; display: flex; flex-direction: column; gap: 7px; }
+.ex-rm-item { display: flex; align-items: center; gap: 8px; }
+.ex-rm-dot { width: 16px; height: 16px; border-radius: 50%; background: #e2eaf8; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 8px; color: #fff; }
+.ex-rm-item.done .ex-rm-dot { background: #10b981; }
+.ex-rm-dot--current { background: var(--primary) !important; }
+.ex-rm-dot--future { background: #cbd5e1 !important; border: 1.5px dashed #94a3b8; }
+.ex-rm-content { display: flex; align-items: baseline; gap: 6px; }
+.ex-rm-content b { font-size: 10px; color: var(--navy); font-weight: 800; white-space: nowrap; }
+.ex-rm-content span { font-size: 9.5px; color: var(--muted); line-height: 1.35; }
+
+/* =========================================
+   8. Stats Section
+   ========================================= */
+.stats-section { padding: 8px 44px 28px; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 16px; }
+
+.stat-card { padding: 22px 16px; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.stat-icon { font-size: 26px; color: var(--primary); }
+.stat-card strong { font-size: 16px; font-weight: 800; color: var(--navy); line-height: 1.4; }
+.stat-card strong em { display: block; font-size: 24px; font-weight: 900; color: var(--primary); font-style: normal; }
+.stat-card p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.45; }
+
+/* =========================================
+   9. Bottom Actions
+   ========================================= */
+.bottom-actions { padding: 8px 44px 64px; display: flex; gap: 14px; flex-wrap: wrap; }
+
+.bottom-btn { flex: 1; min-height: 54px; min-width: 160px; display: flex; align-items: center; justify-content: center; gap: 10px; border-radius: var(--radius-sm); font-size: 16px; font-weight: 800; font-family: inherit; transition: background .18s, transform .18s, opacity .18s; }
+.bottom-btn--primary { background: var(--primary); color: #fff; box-shadow: 0 8px 20px rgba(76,121,238,.28); }
+.bottom-btn--primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
+.bottom-btn--purple { background: linear-gradient(135deg, var(--purple), #5b2bd3); color: #fff; }
+.bottom-btn--purple:hover { opacity: .9; transform: translateY(-2px); }
+
+/* =========================================
+   10. Responsive — Tablet (900px)
+   ========================================= */
+@media (max-width: 900px) {
+  .pay-page { width: 100%; padding-top: 72px; }
+
+  .pay-hero { grid-template-columns: 1fr; padding: 48px 28px 56px; }
+  .hero-image-wrap { max-height: 320px; }
+
+  .score-card { left: 12px; bottom: -48px; width: calc(100% - 24px); }
+
+  .roadmap-section { padding: 36px 28px 28px; }
+  .roadmap-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .road-arrow { display: none; }
+
+  .pricing-section { padding: 28px 28px 20px; }
+  .price-row { grid-template-columns: 1fr; gap: 14px; }
+  .price-amount { padding-left: 0; border-left: 0; }
+
+  .examples-section { padding: 28px 28px 20px; }
+  .example-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+
+  .stats-section { padding: 8px 28px 24px; grid-template-columns: repeat(2, minmax(0,1fr)); }
+
+  .bottom-actions { padding: 8px 28px 48px; }
 }
 
 /* =========================================
-   3. 요금표 그리드 레이아웃 (Grid Table)
+   11. Responsive — Mobile (560px)
    ========================================= */
-.pricing-table-container {
-    display: grid;
-    /* Trial이 숨김 처리되면 자동으로 남은 열들이 늘어나며 맞춤 정렬됨 */
-    grid-template-columns: 85px repeat(auto-fit, minmax(0, 1fr));
-    gap: 8px;
-    margin: 20px 0 30px 0;
-    align-items: end;
-}
+@media (max-width: 560px) {
+  .pay-page { padding-top: 61px; }
 
-/* 왼쪽 기능명 라벨 컬럼 */
-.pricing-col.labels-col {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-}
+  .pay-hero { padding: 40px 20px 48px; }
+  .hero-copy h1 { font-size: 32px; }
+  .hero-desc { font-size: 15px; }
+  .hero-image-wrap { max-height: 260px; }
 
-.p-header-space { 
-    height: 100px; /* 상품 헤더 높이만큼 여백 */
-}
+  .score-card { left: 8px; bottom: -44px; width: calc(100% - 16px); padding: 16px 18px 14px; }
+  .score-value { font-size: 28px; }
 
-/* 표 내부 열 (기능 유무 O/X) */
-.f-row {
-    height: 55px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    border-bottom: 1px solid #f1f5f9;
-    font-size: 1rem;
-    font-weight: 800;
-    color: #334155;
-    word-break: keep-all;
-    overflow-wrap: break-word;
-}
+  .roadmap-section { padding: 28px 16px 20px; }
+  .roadmap-grid { grid-template-columns: 1fr; }
 
-.f-row small {
-    font-size: 0.7rem;
-    font-weight: 500;
-    color: #94a3b8;
-    margin-top: 2px;
-}
+  .pricing-section { padding: 20px 16px 16px; }
+  .price-row { padding: 20px; }
+  .price-btn { font-size: 14px; min-height: 48px; }
 
-.labels-col .f-row {
-    align-items: flex-start;
-    border-bottom: none;
-    font-weight: 600;
-    font-size: 0.85rem;
-    color: #64748b;
-    padding-left: 4px;
-}
+  .examples-section { padding: 20px 16px 16px; }
+  .example-grid { grid-template-columns: 1fr; }
 
-.text-muted { 
-    color: #cbd5e1; 
-    font-weight: 400; 
+  .stats-section { padding: 8px 16px 20px; grid-template-columns: repeat(2, minmax(0,1fr)); }
+
+  .bottom-actions { padding: 8px 16px 48px; flex-direction: column; }
+  .bottom-btn { min-width: unset; width: 100%; }
 }
 
 /* =========================================
-   4. 개별 상품 카드 및 헤더 디자인
+   결제 진행 섹션 (Checkout Form)
    ========================================= */
-.product-option {
-    display: block; 
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-    background-color: white;
-    position: relative;
-    text-align: center;
-    padding: 0;
-}
+.checkout-section { padding: 32px 44px 64px; }
+.checkout-inner { max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); }
+.checkout-title { margin: 0 0 28px; font-size: 22px; font-weight: 900; color: var(--navy); letter-spacing: -0.03em; }
 
-.product-option .f-row:last-child {
-    border-bottom: none;
-}
+/* 선택한 플랜 행 */
+.checkout-plan-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; margin-bottom: 24px; border-radius: var(--radius-md); background: #f1f5fb; border: 1px solid #e2eaf8; font-size: 14px; color: var(--muted); }
+.checkout-plan-row strong { font-size: 16px; font-weight: 800; color: var(--primary); }
 
-.product-header {
-    padding: 15px 5px;
-    height: 100px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #e2e8f0;
-    background-color: #f8fafc;
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
-    transition: background-color 0.2s;
-}
+/* 특수 옵션 (TEST/TRIAL) */
+.special-options { margin-bottom: 20px; }
+.special-options-label { margin: 0 0 8px; font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.special-option-btn { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; margin-bottom: 8px; border: 1.5px solid #e2eaf8; border-radius: var(--radius-md); cursor: pointer; transition: border-color .18s, background .18s; }
+.special-option-btn:hover { border-color: var(--primary); background: #eef4ff; }
+.special-option-btn.selected { border-color: var(--primary); background: #eef4ff; }
+.sop-name { font-weight: 800; color: var(--navy); font-size: 14px; }
+.sop-price { font-weight: 700; color: var(--primary); font-size: 14px; }
 
-.p-name { 
-    font-weight: 800; 
-    font-size: 1.05rem; 
-    margin-bottom: 0;
-}
+/* price-row 선택 상태 */
+.price-row.selected { border-color: var(--primary); box-shadow: 0 8px 24px rgba(76,121,238,.16); }
+.price-row.selected.price-row--popular { border-color: var(--primary); }
 
-.p-price { 
-    font-weight: 700; 
-    font-size: 1rem; 
-    line-height: 1.2; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    gap: 2px;
-}
+/* price-row 이용 중 뱃지 */
+.price-row { position: relative; }
+.current-tier-badge { position: absolute; top: 10px; right: 10px; background: var(--navy); color: #fff; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; z-index: 5; white-space: nowrap; }
 
-.p-price small { 
-    font-size: 0.75rem; 
-    color: #64748b; 
-    font-weight: 500; 
-}
+/* 구독 상태 배너 */
+.active-sub-banner { display: flex; align-items: center; gap: 15px; background: linear-gradient(135deg, #1e293b, #0f172a); padding: 18px 22px; border-radius: var(--radius-md); margin-bottom: 20px; color: #fff; box-shadow: 0 8px 20px rgba(0,0,0,.1); animation: fadeIn .5s ease; }
+.sub-icon { font-size: 1.8rem; color: #fbbf24; }
+.sub-details { display: flex; flex-direction: column; }
+.sub-label { font-size: 0.78rem; color: #94a3b8; margin-bottom: 3px; font-weight: 600; }
+.sub-name { font-size: 1.1rem; font-weight: 800; color: #f8fafc; letter-spacing: 1px; }
+.sub-date { font-size: 0.82rem; color: #cbd5e1; margin-top: 4px; }
 
-.original-price { 
-    font-size: 0.75rem; 
-    text-decoration: line-through; 
-    color: #94a3b8; 
-}
+/* 안내/경고 메시지 */
+.tier-message-wrap { background: #f8fafc; border-left: 4px solid #3b82f6; padding: 14px 18px; border-radius: var(--radius-sm); margin-bottom: 20px; font-size: 14px; line-height: 1.55; color: #334155; animation: fadeInDown .3s ease forwards; }
+.tier-message-wrap.warning { border-left-color: #ef4444; background: #fef2f2; }
+.tier-message-wrap i { margin-right: 6px; }
 
-.discount-price { 
-    font-size: 1.15rem; 
-    font-weight: 800; 
-}
+/* 폼 요소 */
+.form-group { margin-bottom: 18px; }
+.form-group label { display: block; margin-bottom: 7px; font-size: 14px; font-weight: 700; color: #334155; }
+.form-group input { width: 100%; padding: 12px 14px; border: 1px solid #e2eaf8; border-radius: var(--radius-sm); font-size: 15px; font-family: inherit; transition: border-color .18s; background: #fff; box-sizing: border-box; }
+.form-group input:read-only { background: #f3f4f6; color: var(--muted); }
+.form-group input:focus { outline: none; border-color: var(--primary); }
 
-/* =========================================
-   5. 플랜별 브랜드 컬러 및 선택(Selected) 효과
-   ========================================= */
-/* 브랜드 컬러 지정 */
-.tier-trial .p-name, .tier-trial .p-price { color: #8B5CF6; }
-.tier-basic .p-name, .tier-basic .p-price, .tier-basic .discount-price { color: #059669; }
-.tier-standard .p-name, .tier-standard .p-price { color: #2563EB; }
-.tier-pro .p-name, .tier-pro .p-price { color: #E11D48; }
+/* 결제 버튼 */
+.btn-pay { width: 100%; padding: 16px; margin-top: 20px; background: var(--primary); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 16px; font-weight: 800; font-family: inherit; cursor: pointer; transition: background .18s; }
+.btn-pay:hover { background: var(--primary-dark); }
+.btn-pay:disabled { background: #94a3b8; cursor: not-allowed; }
 
-/* 선택된 상태 기본 스타일 */
-.product-option.selected {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 15px rgba(0,0,0,0.05);
-}
-.product-option.selected .product-header { 
-    background-color: transparent; 
-}
+/* 애니메이션 */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeInDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 
-/* 선택된 티어별 테두리 및 배경색 적용 */
-.product-option.tier-trial.selected { border-color: #8B5CF6; background-color: #f5f3ff; }
-.product-option.tier-basic.selected { border-color: #059669; background-color: #ecfdf5; }
-.product-option.tier-standard.selected { border-color: #2563EB; background-color: #eff6ff; }
-.product-option.tier-pro.selected { border-color: #E11D48; background-color: #fff1f2; }
-
-/* 현재 이용 중인 상품 하이라이트 */
-.product-option.is-current-tier {
-    border: 2px solid #334155;
-    background-color: #f8fafc;
-}
-
-/* =========================================
-   6. 뱃지, 말풍선 메시지 및 결제 버튼
-   ========================================= */
-/* BEST 추천 뱃지 */
-.best-badge {
-    position: absolute;
-    top: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #2563EB;
-    color: #fff;
-    font-size: 0.7rem;
-    font-weight: 800;
-    padding: 4px 12px;
-    border-radius: 20px;
-    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
-    z-index: 10;
-    white-space: nowrap;
-}
-
-/* 현재 이용 중 뱃지 */
-.current-tier-badge {
-    position: absolute;
-    top: -8px;
-    left: 50%;
-    background: #334155;
-    color: white;
-    font-size: 0.7rem;
-    font-weight: bold;
-    padding: 4px 12px;
-    border-radius: 20px;
-    z-index: 11;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-}
-
-/* 안내/경고 말풍선 메시지 */
-.tier-message-wrap {
-    background-color: #f8fafc;
-    border-left: 4px solid #3b82f6;
-    padding: 15px 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    font-size: 0.95rem;
-    line-height: 1.5;
-    color: #334155;
-    animation: fadeInDown 0.3s ease forwards;
-}
-
-.tier-message-wrap.warning {
-    border-left-color: #ef4444;
-    background-color: #fef2f2;
-}
-
-.tier-message-wrap i {
-    margin-right: 6px;
-}
-
-/* 하단 결제 버튼 */
-.btn-pay { 
-    width: 100%; 
-    padding: 18px; 
-    background-color: #2563EB; 
-    color: white; 
-    border: none; 
-    border-radius: 8px; 
-    font-size: 1.1rem; 
-    font-weight: 700; 
-    cursor: pointer; 
-    margin-top: 20px; 
-    transition: background 0.3s;
-}
-
-.btn-pay:hover { 
-    background-color: #1d4ed8; 
-}
-
-.btn-pay:disabled { 
-    background-color: #94a3b8; 
-    cursor: not-allowed; 
-}
-
-/* =========================================
-   7. 애니메이션 및 모바일 반응형 처리
-   ========================================= */
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-@keyframes fadeInDown {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@media (max-width: 768px) {
-    /* 레이아웃 다이어트 */
-    .payment-container { 
-        margin: 20px 15px; 
-        padding: 25px 20px; 
-        border-radius: 12px; 
-    }
-    
-    .form-group { margin-bottom: 15px; }
-    .form-group label { font-size: 0.9rem; margin-bottom: 6px; }
-    .form-group input { padding: 10px 12px; font-size: 0.95rem; }
-    
-    /* 표 모바일 축소 최적화 */
-    .pricing-table-container {
-        grid-template-columns: 65px repeat(3, minmax(0, 1fr));
-        gap: 6px;
-    }
-    
-    .p-header-space { height: 85px; }
-    .product-header { height: 85px; padding: 10px 2px; }
-    
-    .labels-col .f-row { font-size: 0.7rem; letter-spacing: -0.5px; word-break: keep-all; }
-    
-    .p-name { font-size: 0.85rem; }
-    .p-price { font-size: 0.85rem; }
-    .discount-price { font-size: 0.95rem; }
-    
-    .f-row { font-size: 0.9rem; height: 50px; }
-    .f-row small { font-size: 0.65rem; }
-    
-    .best-badge { font-size: 0.65rem; padding: 3px 8px; top: -10px; }
-    
-    .btn-pay { padding: 15px; font-size: 1.05rem; margin-top: 15px; }
-}
+/* 결제 섹션 반응형 */
+@media (max-width: 900px) { .checkout-section { padding: 24px 28px 48px; } }
+@media (max-width: 560px) { .checkout-section { padding: 20px 16px 40px; } .checkout-inner { padding: 24px 20px; } }

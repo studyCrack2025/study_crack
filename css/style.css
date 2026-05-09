@@ -497,6 +497,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .course-detail-view { display: none !important; }
 
     .btn--primary, .cta-button { width: 100%; }
+    .solution-card .solution-cta-link { display: flex; width: 100%; box-sizing: border-box; justify-content: center; }
     .cta-section { min-height: 300px; }
     .floating-qna-btn { bottom: 18px; right: 18px; width: 50px; height: 50px; }
     .qna-icon { font-size: 1.4rem; }
