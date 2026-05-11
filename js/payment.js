@@ -13,6 +13,7 @@ let globalDaysLeft = 0;
 let globalExpireDate = null; // 기존 만료일(새로운 시작일) 저장용
 let paymentAccessToken = null;
 let paymentIdToken = null;
+let userPhoneMissing = false;
 
 function getPaymentAccessToken() { return paymentAccessToken; }
 function setPaymentAccessToken(token) { paymentAccessToken = token; }
@@ -205,7 +206,15 @@ async function fetchUserInfo(userId) {
         const data = await response.json();
         
         if (data.name) document.getElementById('name').value = escapeHtml(data.name);
-        if (data.phone) document.getElementById('phone').value = escapeHtml(data.phone);
+        const phoneInput = document.getElementById('phone');
+        if (data.phone && String(data.phone).trim()) {
+            phoneInput.value = escapeHtml(data.phone);
+            userPhoneMissing = false;
+        } else {
+            phoneInput.value = '';
+            phoneInput.placeholder = '마이페이지에서 전화번호를 등록해주세요';
+            userPhoneMissing = true;
+        }
         const email = localStorage.getItem('userEmail') || data.email;
         if (email) document.getElementById('email').value = escapeHtml(email);
 
@@ -215,6 +224,8 @@ async function fetchUserInfo(userId) {
         if (data.promoCode && data.promoCode.trim().length > 4) {
             validatePromoCode(data.promoCode);
         }
+
+        if (selectedTier) _applyPhoneRequiredMessage(document.getElementById('submitBtn'));
     } catch (error) {
         if (error.message !== "Auth expired") console.error("유저 정보 로드 실패:", error);
     }
@@ -379,6 +390,7 @@ function selectPlan(tier, priceRowEl) {
 
     // 티어 메시지 계산 (기존 selectProduct 로직 재사용)
     _applyTierMessage(tier, btn);
+    _applyPhoneRequiredMessage(btn);
 }
 
 // 특수 옵션(TEST/TRIAL) 선택
@@ -397,6 +409,7 @@ function selectSpecialPlan(tier, el) {
     if (btn) { btn.disabled = false; btn.innerText = '결제하기'; }
 
     document.getElementById('tierMessageWrap').style.display = 'none';
+    _applyPhoneRequiredMessage(btn);
 }
 
 // 티어 메시지 공통 처리
@@ -440,6 +453,22 @@ function _applyTierMessage(tier, btn) {
                 if (btn) btn.innerText = '업그레이드 예약 결제';
             }
         }
+    }
+}
+
+function _applyPhoneRequiredMessage(btn) {
+    if (!userPhoneMissing) return;
+
+    const msgWrap = document.getElementById('tierMessageWrap');
+    const msgText = document.getElementById('tierMessageText');
+    if (msgWrap && msgText) {
+        msgWrap.style.display = 'block';
+        msgWrap.className = 'tier-message-wrap warning';
+        msgText.innerHTML = `<i class="fas fa-exclamation-circle"></i> 전화번호 등록이 필요합니다. 마이페이지에서 전화번호를 입력한 뒤 결제를 진행해주세요.`;
+    }
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = '전화번호 등록 필요';
     }
 }
 
@@ -524,6 +553,11 @@ function processPayment() {
     const rawPhone = document.getElementById('phone').value;
     const email = document.getElementById('email').value;
 
+    if (userPhoneMissing || !rawPhone) {
+        alert("전화번호 등록이 필요합니다. 마이페이지에서 전화번호를 입력한 뒤 결제를 진행해주세요.");
+        window.location.href = '/mypage';
+        return;
+    }
     if (!name || !rawPhone || !email) {
         alert("필수 정보를 모두 입력해주세요."); return;
     }

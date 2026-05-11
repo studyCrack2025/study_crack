@@ -552,11 +552,9 @@ window.finishTutorialComplete = async function() {
     }
 
     try {
-        const token = getIdToken();
         // 튜토리얼 보상으로 trial 티어 부여 및 횟수 4회 충전 요청
-        await fetch(MYPAGE_API_URL, {
+        await apiFetch(MYPAGE_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'grant_tutorial_trial' })
         });
     } catch (e) {
@@ -677,20 +675,12 @@ function parseDynamoItem(item) {
 // [데이터 로드] 사용자 정보 & 리포트 데이터
 // ============================================================
 async function fetchUserData(userId) {
-    const token = getIdToken();
     const safeUserId = userId || localStorage.getItem('userId'); 
     try {
-        const response = await fetch(MYPAGE_API_URL, {
+        const response = await apiFetch(MYPAGE_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'get_user', userId: safeUserId }) 
         });
-        
-        if (response.status === 401) {
-            alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-            window.location.href = '/login';
-            return;
-        }
         if (!response.ok) throw new Error("사용자 데이터 로드 실패");
         
         const rawData = await response.json();
@@ -741,11 +731,9 @@ async function fetchUserData(userId) {
 }
 
 async function fetchWeeklyHistory() {
-    const token = getIdToken();
     try {
-        const response = await fetch(REPORT_API_URL, {
+        const response = await apiFetch(REPORT_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'get_weekly_reports' }) 
         });
         
@@ -757,11 +745,9 @@ async function fetchWeeklyHistory() {
 }
 
 async function fetchInitialProReports() {
-    const token = getIdToken();
     try {
-        const res = await fetch(REPORT_API_URL, {
+        const res = await apiFetch(REPORT_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'get_pro_reports', data: { requesterRole: 'student' } })
         });
         if (res.ok) {
@@ -772,12 +758,10 @@ async function fetchInitialProReports() {
 }
 
 async function fetchUnivData() {
-    const token = getIdToken();
     const userId = localStorage.getItem('userId');
     try {
-        const response = await fetch(UNIV_DATA_API_URL, {
+        const response = await apiFetch(UNIV_DATA_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'get_univ_list_only', userId: userId }) 
         });
         
@@ -862,10 +846,18 @@ function updateSurveyStatus(data) {
             let targetHtml = '';
             if (uniqueTargets[0]) targetHtml += `<div class="target-row first">${escapeHtml(uniqueTargets[0])}<span class="target-rank">1지망</span></div>`;
             if (uniqueTargets[1]) targetHtml += `<div class="target-row second">${escapeHtml(uniqueTargets[1])}<span class="target-rank">2지망</span></div>`;
+            const mbti = getUserMbti(data);
+            if (mbti) targetHtml += `<div class="target-row mbti">${escapeHtml(mbti)}<span class="target-rank">MBTI</span></div>`;
             targetContainer.innerHTML = targetHtml;
             qualTargetRow.style.display = 'flex';
         } else {
-            qualTargetRow.style.display = 'none';
+            const mbti = getUserMbti(data);
+            if (mbti) {
+                targetContainer.innerHTML = `<div class="target-row mbti">${escapeHtml(mbti)}<span class="target-rank">MBTI</span></div>`;
+                qualTargetRow.style.display = 'flex';
+            } else {
+                qualTargetRow.style.display = 'none';
+            }
         }
     } else {
         qualStatusEl.innerHTML = '<span style="color:#991b1b; font-weight:bold;">❌ 미작성</span>';
@@ -975,54 +967,64 @@ function openSolution(type) {
 function checkMbtiReport(data) {
     const container = document.getElementById('mbtiReportContainer');
     if (!container) return;
-    const promo = data.promoCode; 
-    if (!promo || !promo.includes("-STC") || data.mbtiReportDownloaded) { container.innerHTML = ''; return; }
-    
-    let hex = promo.replace("-STC", "").replace("-", "");
-    let mbti = '';
-    for (let i = 0; i < hex.length; i += 2) mbti += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+    const mbti = getUserMbti(data);
+    if (!mbti) { container.innerHTML = ''; return; }
     
     container.innerHTML = `
-        <button onclick="downloadMbtiReport()" id="mbtiDownBtn" class="btn-go-survey" style="background-color: #10b981; color: white; border: none; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
-            <i class="fas fa-file-download"></i> [${mbti.toUpperCase()}] 보고서 다운받기
+        <button onclick="downloadMbtiReport('${mbti}')" id="mbtiDownBtn" class="btn-go-survey" style="background-color: #10b981; color: white; border: none; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
+            <i class="fas fa-file-download"></i> [${escapeHtml(mbti)}] 보고서 다운받기
         </button>`;
 }
 
-async function downloadMbtiReport() {
-    if (!confirm("해당 MBTI 리포트는 1회만 다운로드 가능합니다.\n지금 다운로드 하시겠습니까?")) return;
+function getUserMbti(data) {
+    const rawMbti = data?.mbti || data?.qualitative?.mbti;
+    if (rawMbti && /^[A-Z]{4}$/i.test(String(rawMbti).trim())) {
+        return String(rawMbti).trim().toUpperCase();
+    }
+
+    const promo = data?.promoCode;
+    if (!promo || !promo.includes("-STC")) return '';
+
+    const hex = promo.replace("-STC", "").replace("-", "");
+    let decoded = '';
+    for (let i = 0; i < hex.length; i += 2) {
+        const code = parseInt(hex.substr(i, 2), 16);
+        if (!Number.isFinite(code)) return '';
+        decoded += String.fromCharCode(code);
+    }
+    return /^[A-Z]{4}$/i.test(decoded) ? decoded.toUpperCase() : '';
+}
+
+async function downloadMbtiReport(mbtiType) {
+    const mbti = String(mbtiType || '').trim().toUpperCase();
+    if (!/^[A-Z]{4}$/.test(mbti)) {
+        alert("MBTI 결과를 확인할 수 없습니다.");
+        return;
+    }
+
     const btn = document.getElementById('mbtiDownBtn');
     if (btn) { btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 발급 중...`; btn.disabled = true; }
 
-    // 💡 [핵심 방어] 서버 통신(await)을 시작하기 전, 사용자가 클릭한 즉시 빈 창을 먼저 엽니다!
     const newWindow = window.open('about:blank', '_blank');
 
-    const token = getIdToken();
     try {
-        const res = await fetch(REPORT_API_URL, {
+        const res = await apiFetch(REPORT_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'get_mbti_report' })
+            body: JSON.stringify({ type: 'get_mbti_pdf_url', mbtiType: mbti })
         });
         const data = await res.json();
         
-        if (res.ok && data.success) {
-            alert("다운로드가 시작되었습니다.");
-            
-            // 💡 [핵심 방어] 미리 열어둔 빈 창의 주소를 받아온 S3 다운로드 링크로 쓱 바꿔치기 합니다.
+        if (res.ok && data.success && data.downloadUrl) {
             newWindow.location.href = data.downloadUrl;
-            
-            const container = document.getElementById('mbtiReportContainer');
-            if (container) container.innerHTML = ''; 
         } else {
-            // 실패하면 열어둔 빈 창을 조용히 닫아줍니다.
             newWindow.close();
             alert(data.error || "보고서 발급에 실패했습니다.");
-            if (btn) { btn.innerHTML = `<i class="fas fa-file-download"></i> 보고서 다운받기`; btn.disabled = false; }
         }
     } catch (e) {
-        newWindow.close(); // 에러 시에도 빈 창 닫기
+        newWindow.close();
         alert("서버 통신 오류가 발생했습니다.");
-        if (btn) { btn.innerHTML = `<i class="fas fa-file-download"></i> 보고서 다운받기`; btn.disabled = false; }
+    } finally {
+        if (btn) { btn.innerHTML = `<i class="fas fa-file-download"></i> [${escapeHtml(mbti)}] 보고서 다운받기`; btn.disabled = false; }
     }
 }
 
@@ -1405,12 +1407,10 @@ async function saveTargetUnivs() {
     }
     
     const userId = localStorage.getItem('userId');
-    const token = getIdToken(); 
     
     try {
-        const response = await fetch(MYPAGE_API_URL, {
+        const response = await apiFetch(MYPAGE_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'update_target_univs', userId: userId, data: newUnivs })
         });
         const resData = await response.json();
@@ -1478,14 +1478,12 @@ async function updateAnalysisUI() {
     container.innerHTML = selectorHTML;
     
     const cardsContainer = document.getElementById('analysisCardsContainer');
-    const token = getIdToken();
     const userId = localStorage.getItem('userId');
     const currentScoreData = userQuantData[currentExamMode];
 
     try {
-        const res = await fetch(UNIV_DATA_API_URL, {
+        const res = await apiFetch(UNIV_DATA_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'analyze_my_targets', userId: userId, targetUnivs: userTargetUnivs, userScores: currentScoreData, examMode: currentExamMode
             })
@@ -1635,7 +1633,6 @@ async function fetchSimulationData() {
 
     chartArea.innerHTML = '<div style="margin:auto; color:#3b82f6;"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
     
-    const token = getIdToken();
     const userId = localStorage.getItem('userId');
     
     let scoreData = null;
@@ -1644,9 +1641,8 @@ async function fetchSimulationData() {
     }
     
     try {
-        const res = await fetch(UNIV_DATA_API_URL, {
+        const res = await apiFetch(UNIV_DATA_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
                 type: 'simulate_score_rise', 
                 userId: userId, 
@@ -1786,7 +1782,7 @@ function renderSimChart() {
                     extensionHtml = `
                         <div class="sim-extension-bar" data-target-height="${riseHeightPct}" style="position:absolute; bottom:${currentHeightPct}; left:50%; transform:translateX(-50%); height:0; opacity:0; z-index:2; transition:height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease; pointer-events:none;">
                              <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">
-                                ${Math.round(potentialScore)} <span style="font-size:0.7rem;">(+${maxRise.toFixed(1)})</span>
+                                +${maxRise.toFixed(1)}
                              </span>
                         </div>`;
                 }
@@ -1865,7 +1861,7 @@ function updateSimBarGraph(idx) {
                 extBar.style.height = extBar.getAttribute('data-target-height');
                 extBar.style.opacity = '1';
                 if (mainBar) mainBar.style.borderRadius = '0 0 0 0'; 
-                if (scoreLabel) scoreLabel.style.opacity = '0'; 
+                if (scoreLabel) scoreLabel.style.opacity = '1'; 
             }
             
             // 💡 [수정된 부분] 모바일 막대그래프 강제 스크롤 동기화 로직
@@ -2773,11 +2769,8 @@ async function downloadReportPDF(reportTitle) {
             </body></html>
         `;
 
-        const token = getIdToken();
-        
-        const response = await fetch(PDF_API_URL, { 
+        const response = await apiFetch(PDF_API_URL, { 
             method: 'POST', 
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
                 title: reportTitle, 
                 html: rawHtml,
@@ -3229,15 +3222,12 @@ async function submitWeeklyCheck() {
 
         if (!confirm("제출하시겠습니까?")) return;
 
-        const token = getIdToken(); 
-
         const currentUrls = currentPlannerFiles.filter(f => typeof f === 'string'); 
         const filesToDelete = originalPlannerFiles.filter(url => !currentUrls.includes(url));
         
         if (filesToDelete.length > 0) { 
-            await Promise.all(filesToDelete.map(url => fetch(FILE_API_URL, { 
+            await Promise.all(filesToDelete.map(url => apiFetch(FILE_API_URL, { 
                 method: 'POST', 
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
                 body: JSON.stringify({ type: 'delete_s3_file', data: { fileUrl: url } }) 
             }))); 
         }
@@ -3250,9 +3240,8 @@ async function submitWeeklyCheck() {
                 // 🔒 [보안] 파일명 살균 (Sanitization) 처리 적용
                 const secureFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`;
 
-                const res = await fetch(FILE_API_URL, { 
+                const res = await apiFetch(FILE_API_URL, { 
                     method: 'POST', 
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
                     body: JSON.stringify({ type: 'get_presigned_url', data: { fileName: secureFileName, fileType: file.type, folder: 'planner' } }) 
                 });
                 
@@ -3275,9 +3264,8 @@ async function submitWeeklyCheck() {
                 // 🔒 [보안] 파일명 살균 (Sanitization) 처리 적용
                 const secureMockName = `mock_${Date.now()}_${mFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`;
 
-                const mRes = await fetch(FILE_API_URL, { 
+                const mRes = await apiFetch(FILE_API_URL, { 
                     method: 'POST', 
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
                     body: JSON.stringify({ type: 'get_presigned_url', data: { fileName: secureMockName, fileType: mFile.type, folder: 'mock_exams' } }) 
                 });
                 
@@ -3317,9 +3305,8 @@ async function submitWeeklyCheck() {
             plannerFiles: finalFileUrls 
         };
 
-        const res = await fetch(REPORT_API_URL, { 
+        const res = await apiFetch(REPORT_API_URL, { 
             method: 'POST', 
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
             body: JSON.stringify({ type: 'save_weekly_check', data: weeklyData }) 
         });
         
@@ -3522,10 +3509,9 @@ async function submitProReport() {
     const submitBtn = document.querySelector('.pro-submit-btn'); const originalText = submitBtn.innerText;
     submitBtn.innerText = "처리 중..."; submitBtn.disabled = true;
     
-    const token = getIdToken();
     try {
-        const res = await fetch(REPORT_API_URL, {
-            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        const res = await apiFetch(REPORT_API_URL, {
+            method: 'POST',
             body: JSON.stringify({ type: 'request_pro_report', data: { requestText: text } })
         });
         const data = await res.json();

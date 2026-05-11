@@ -48,12 +48,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         checkLoginStatus();
     }
+    const token = getAccessToken();
 
     // DB에서 유저 데이터 복원 (mbti_completed 경로 포함)
     try {
-        const response = await fetch(CONFIG.api.user, {
+        const response = await apiFetch(CONFIG.api.user, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'get_user' })
         });
         if (response.ok) {
@@ -544,9 +544,8 @@ function boostUserScores(scores, boost) {
 
 async function callAnalyzeMyTargets(token, targetUnivs, userScores) {
     try {
-        const res = await fetch(CONFIG.api.analysis, {
+        const res = await apiFetch(CONFIG.api.analysis, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'analyze_my_targets', targetUnivs, userScores, examMode: 'mock' })
         });
         if (!res.ok) return null;
@@ -557,9 +556,8 @@ async function callAnalyzeMyTargets(token, targetUnivs, userScores) {
 
 async function callSimulateScoreRise(token, targetUnivs, userScores) {
     try {
-        const res = await fetch(CONFIG.api.analysis, {
+        const res = await apiFetch(CONFIG.api.analysis, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'simulate_score_rise', targetUnivs, userScores, examMode: 'mock' })
         });
         if (!res.ok) return null;
@@ -904,17 +902,13 @@ async function initSubjectRec() {
 
     let estimatedMonths = 3;
     try {
-        const token = getAccessToken();
-        if (token) {
-            const res = await fetch(CONFIG.api.analysis, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ type: 'get_estimated_months' })
-            });
-            if (res.ok) {
-                const d = await res.json();
-                if (d.months) estimatedMonths = d.months;
-            }
+        const res = await apiFetch(CONFIG.api.analysis, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'get_estimated_months' })
+        });
+        if (res.ok) {
+            const d = await res.json();
+            if (d.months) estimatedMonths = d.months;
         }
     } catch(e) {}
 
@@ -1139,13 +1133,10 @@ async function downloadMBTIReport(mbtiResult) {
 
 async function convertScore(month, subject, score, opt, subName, common, elective) {
     if (!score || score <= 0) return { std: '', pct: '', grd: '' };
-    const token = getAccessToken();
-    if (!token) return { std: '', pct: '', grd: '' };
     const hasDual = common != null && elective != null;
     try {
-        const res = await fetch(CONFIG.api.analysis, {
+        const res = await apiFetch(CONFIG.api.analysis, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'convert_score', month, subject, score, opt: opt || '', subName: subName || '', ...(hasDual ? { common, elective } : {}) })
         });
         if (!res.ok) return { std: '', pct: '', grd: '' };
