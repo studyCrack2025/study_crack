@@ -803,7 +803,7 @@ html, body, button, input, select, textarea { font-family: "Paperlogy", system-u
 body { color: #2c2c2c; letter-spacing: -0.02em; word-break: keep-all; -webkit-font-smoothing: antialiased; }
 
 @media (max-width: 900px) { body { padding-top: 72px; } }
-@media (max-width: 640px) { body { padding-top: 61px; } }
+@media (max-width: 640px) { body { padding-top: 61px; } .mypage-container { padding: 10px 12px 40px; gap: 12px; } .content-area { padding: 16px 12px; } .solution-menu { gap: 10px; } .sol-btn { height: 80px; font-size: 14px; } input, select, textarea { font-size: 16px !important; } }
 .solution-hero { display: none; }
 
 /* ============================================================

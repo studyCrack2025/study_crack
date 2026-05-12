@@ -283,9 +283,9 @@ img, svg { display: block; max-width: 100%; }
 }
 
 /* =========================================
-   11. Responsive — Mobile (560px)
+   11. Responsive — Mobile (640px)
    ========================================= */
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .pay-page { padding-top: 61px; }
 
   .pay-hero { padding: 40px 20px 48px; }
@@ -371,4 +371,4 @@ img, svg { display: block; max-width: 100%; }
 
 /* 결제 섹션 반응형 */
 @media (max-width: 900px) { .checkout-section { padding: 24px 28px 48px; } }
-@media (max-width: 560px) { .checkout-section { padding: 20px 16px 40px; } .checkout-inner { padding: 24px 20px; } }
+@media (max-width: 640px) { .checkout-section { padding: 20px 16px 40px; } .checkout-inner { padding: 24px 20px; } }

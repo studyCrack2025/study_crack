@@ -371,9 +371,9 @@ input[type="date"] {
 
     /* 입력창 공통 스타일 축소 */
     input[type="text"], input[type="email"], input[type="password"], input[type="tel"], select, input[type="date"] {
-        padding: 10px; 
-        font-size: 0.95rem; 
-        margin-bottom: 12px; 
+        padding: 10px;
+        font-size: 16px;
+        margin-bottom: 12px;
         height: 42px; /* 46px -> 42px로 높이 축소 */
     }
 
@@ -409,7 +409,7 @@ input[type="date"] {
         background-color: #fff !important;
         border: 1px solid #cbd5e1 !important;
         border-radius: 6px !important;
-        font-size: 0.95rem !important;
+        font-size: 16px !important;
         margin-bottom: 12px !important;
         display: block !important;
         overflow: hidden !important;  /* 내부 달력 요소가 밖으로 밀어내는 것 차단 */
