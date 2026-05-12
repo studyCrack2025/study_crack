@@ -542,9 +542,27 @@ function boostUserScores(scores, boost) {
     return b;
 }
 
+async function tutorialAnalysisFetch(options = {}) {
+    const buildOptions = () => ({
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            ...(getAccessToken() && { 'Authorization': `Bearer ${getAccessToken()}` }),
+            ...(options.headers || {})
+        }
+    });
+
+    let res = await fetch(CONFIG.api.analysis, buildOptions());
+    if ((res.status === 401 || res.status === 403) && typeof tryRefreshToken === 'function') {
+        const refreshed = await tryRefreshToken();
+        if (refreshed) res = await fetch(CONFIG.api.analysis, buildOptions());
+    }
+    return res;
+}
+
 async function callAnalyzeMyTargets(token, targetUnivs, userScores) {
     try {
-        const res = await apiFetch(CONFIG.api.analysis, {
+        const res = await tutorialAnalysisFetch({
             method: 'POST',
             body: JSON.stringify({ type: 'analyze_my_targets', targetUnivs, userScores, examMode: 'mock' })
         });
@@ -556,7 +574,7 @@ async function callAnalyzeMyTargets(token, targetUnivs, userScores) {
 
 async function callSimulateScoreRise(token, targetUnivs, userScores) {
     try {
-        const res = await apiFetch(CONFIG.api.analysis, {
+        const res = await tutorialAnalysisFetch({
             method: 'POST',
             body: JSON.stringify({ type: 'simulate_score_rise', targetUnivs, userScores, examMode: 'mock' })
         });
@@ -902,7 +920,7 @@ async function initSubjectRec() {
 
     let estimatedMonths = 3;
     try {
-        const res = await apiFetch(CONFIG.api.analysis, {
+        const res = await tutorialAnalysisFetch({
             method: 'POST',
             body: JSON.stringify({ type: 'get_estimated_months' })
         });
@@ -1135,7 +1153,7 @@ async function convertScore(month, subject, score, opt, subName, common, electiv
     if (!score || score <= 0) return { std: '', pct: '', grd: '' };
     const hasDual = common != null && elective != null;
     try {
-        const res = await apiFetch(CONFIG.api.analysis, {
+        const res = await tutorialAnalysisFetch({
             method: 'POST',
             body: JSON.stringify({ type: 'convert_score', month, subject, score, opt: opt || '', subName: subName || '', ...(hasDual ? { common, elective } : {}) })
         });
