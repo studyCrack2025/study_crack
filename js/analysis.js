@@ -1489,21 +1489,7 @@ async function updateAnalysisUI() {
             })
         });
         const data = await res.json();
-        
-        if (data.server_debug?.logs?.length) {
-            console.groupCollapsed(`%c[Analysis] 서버 로그 (${data.server_debug.logs.length}줄)`, 'color:#2563eb; font-weight:bold;');
-            data.server_debug.logs.forEach(line => {
-                if (line.startsWith('❌') || line.includes('Error') || line.includes('실패')) {
-                    console.error(line);
-                } else if (line.startsWith('⚠') || line.includes('warn') || line.includes('없음')) {
-                    console.warn(line);
-                } else {
-                    console.log(line);
-                }
-            });
-            console.groupEnd();
-        }
-        
+
         // 💡 [수정] 서버 데이터 배열 추출 로직 안정화
         const results = Array.isArray(data) ? data : (data.results || data.data || []);
         
