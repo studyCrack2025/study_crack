@@ -26,30 +26,45 @@ async function loadTutorStats() {
             }
 
             // 정산(Settlement) 내역 계산 및 UI 생성
+            const WEEKLY_RATE = 15000;
+            const PRO_RATE = 25000;
+            const PAY_STATUS_COLORS = { '미지급': '#ef4444', '지급대기': '#f59e0b', '지급완료': '#10b981' };
+            const MONTH_MAP = { "Jan":"1월", "Feb":"2월", "Mar":"3월", "Apr":"4월", "May":"5월", "Jun":"6월", "Jul":"7월", "Aug":"8월", "Sep":"9월", "Oct":"10월", "Nov":"11월", "Dec":"12월" };
+
             let settlementUI = '';
             if (t.settlements && Object.keys(t.settlements).length > 0) {
-                const monthMap = { "Jan":"1월", "Feb":"2월", "Mar":"3월", "Apr":"4월", "May":"5월", "Jun":"6월", "Jul":"7월", "Aug":"8월", "Sep":"9월", "Oct":"10월", "Nov":"11월", "Dec":"12월" };
-
                 const months = Object.keys(t.settlements).sort((a, b) => b.localeCompare(a)).slice(0, 3);
 
                 const listItems = months.map(month => {
                     const sData = t.settlements[month];
-                    const weeklyCount = sData.weekly ? sData.weekly.length : 0;
-                    const proCount = sData.pro ? sData.pro.length : 0;
+                    const weeklyCount = Array.isArray(sData.weekly) ? sData.weekly.length : 0;
+                    const proCount    = Array.isArray(sData.pro)    ? sData.pro.length    : 0;
+                    const totalAmt    = (weeklyCount * WEEKLY_RATE + proCount * PRO_RATE).toLocaleString();
+                    const payStatus   = sData.payStatus || '미지급';
+                    const statusColor = PAY_STATUS_COLORS[payStatus] || '#64748b';
 
                     const yy = "20" + month.substring(0, 2);
                     const mStr = month.substring(2);
-                    const readableMonth = `${yy}년 ${monthMap[mStr] || mStr}`;
+                    const readableMonth = `${yy}년 ${MONTH_MAP[mStr] || mStr}`;
 
-                    return `<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed #e2e8f0; font-size:0.85rem;">
-                        <span style="color:#475569; font-weight:bold;">${readableMonth}</span>
-                        <span style="color:#2563eb; font-weight:bold;">주간: ${weeklyCount}건 &nbsp;|&nbsp; PRO: ${proCount}건</span>
+                    return `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px dashed #e2e8f0; font-size:0.85rem; gap:8px; flex-wrap:wrap;">
+                        <span style="color:#475569; font-weight:bold; min-width:80px;">${readableMonth}</span>
+                        <span style="color:#2563eb;">주간 ${weeklyCount}건 × 15,000 &nbsp;+&nbsp; PRO ${proCount}건 × 25,000 = <strong>${totalAmt}원</strong></span>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="color:${statusColor}; font-weight:bold; font-size:0.8rem;">${payStatus}</span>
+                            <select onchange="setTutorPayStatus('${escapeHtml(t.userid)}', '${month}', this.value, this)"
+                                style="font-size:0.78rem; padding:3px 6px; border:1px solid #e2e8f0; border-radius:4px; cursor:pointer;">
+                                <option value="미지급"  ${payStatus === '미지급'  ? 'selected' : ''}>미지급</option>
+                                <option value="지급대기" ${payStatus === '지급대기' ? 'selected' : ''}>지급대기</option>
+                                <option value="지급완료" ${payStatus === '지급완료' ? 'selected' : ''}>지급완료</option>
+                            </select>
+                        </div>
                     </div>`;
                 }).join('');
 
                 settlementUI = `
                     <div style="margin-top:15px; padding:15px; background:white; border:1px solid #e2e8f0; border-radius:8px;">
-                        <p style="margin:0 0 10px 0; font-weight:bold; color:#1e293b; font-size:0.9rem;">💰 보고서 작성 실적 (최근 3개월)</p>
+                        <p style="margin:0 0 10px 0; font-weight:bold; color:#1e293b; font-size:0.9rem;">💰 급여 명세 (최근 3개월)</p>
                         ${listItems}
                     </div>
                 `;
@@ -186,4 +201,26 @@ window.toggleNoticeTree = function(iconEl) {
     const childrenBlock = iconEl.closest('.tree-group').querySelector('.tree-children');
     if (childrenBlock.style.display === 'none') { childrenBlock.style.display = 'grid'; iconEl.style.transform = 'rotate(180deg)'; }
     else { childrenBlock.style.display = 'none'; iconEl.style.transform = 'rotate(0deg)'; }
+};
+
+window.setTutorPayStatus = async function(tutorId, month, payStatus, selectEl) {
+    if (event) event.stopPropagation();
+    const originalValue = selectEl.dataset.original || selectEl.value;
+    selectEl.disabled = true;
+    try {
+        const res = await apiFetch(ADMIN_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'admin_set_tutor_pay_status', tutorId, month, payStatus })
+        });
+        if (!res.ok) throw new Error('서버 오류');
+        selectEl.dataset.original = payStatus;
+        const statusSpan = selectEl.previousElementSibling;
+        const PAY_STATUS_COLORS = { '미지급': '#ef4444', '지급대기': '#f59e0b', '지급완료': '#10b981' };
+        if (statusSpan) { statusSpan.textContent = payStatus; statusSpan.style.color = PAY_STATUS_COLORS[payStatus] || '#64748b'; }
+    } catch(e) {
+        if (e.message !== 'Auth expired') alert('지급 상태 저장 중 오류가 발생했습니다.');
+        selectEl.value = originalValue;
+    } finally {
+        selectEl.disabled = false;
+    }
 };
