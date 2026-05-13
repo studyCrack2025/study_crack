@@ -364,6 +364,8 @@ document.addEventListener('DOMContentLoaded', () => {
     renderReviews();
     initMobileCourses();
     selectCourse('mbti');
+    initPptCardSlider();
+    initEffectsSlider();
 
     const myPageBtn = document.getElementById('myPageBtn');
     if (myPageBtn) {
@@ -544,6 +546,77 @@ window.closeMobileNav = function() {
     document.body.style.overflow = '';
     setTimeout(() => { if (overlay && !overlay.classList.contains('active')) overlay.style.display = 'none'; }, 280);
 };
+
+/* ── PPT 카드 슬라이더 (모바일) ── */
+function initPptCardSlider() {
+    const grid = document.querySelector('.card-grid--three');
+    const indicatorsEl = document.getElementById('pptIndicators');
+    if (!grid || !indicatorsEl || window.innerWidth > 640) return;
+
+    const cards = grid.querySelectorAll('.ppt-card');
+    const bgImg = document.querySelector('.dark-feature .bg-img');
+    if (cards.length === 0) return;
+
+    const cardImages = Array.from(cards).map(card => {
+        const img = card.querySelector('.ppt-card-img img');
+        return img ? img.getAttribute('src') : null;
+    });
+
+    indicatorsEl.innerHTML = Array.from({length: cards.length}, (_, i) =>
+        `<button class="review-dot${i === 0 ? ' active' : ''}" data-idx="${i}" aria-label="카드 ${i+1}번"></button>`
+    ).join('');
+
+    indicatorsEl.querySelectorAll('.review-dot').forEach(dot => {
+        dot.addEventListener('click', () => {
+            const idx = parseInt(dot.dataset.idx);
+            const card = cards[idx];
+            if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        });
+    });
+
+    let scrollTimer;
+    grid.addEventListener('scroll', () => {
+        clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(() => {
+            const cardWidth = (cards[0]?.offsetWidth || 0) + 14;
+            const idx = Math.max(0, Math.min(Math.round(grid.scrollLeft / cardWidth), cards.length - 1));
+            indicatorsEl.querySelectorAll('.review-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+            if (bgImg && cardImages[idx]) bgImg.src = cardImages[idx];
+        }, 60);
+    }, { passive: true });
+}
+
+/* ── 기대효과 슬라이더 (모바일) ── */
+function initEffectsSlider() {
+    const grid = document.querySelector('.effects-grid');
+    const indicatorsEl = document.getElementById('effectsIndicators');
+    if (!grid || !indicatorsEl || window.innerWidth > 640) return;
+
+    const items = grid.querySelectorAll('.effect-item');
+    if (items.length === 0) return;
+
+    indicatorsEl.innerHTML = Array.from({length: items.length}, (_, i) =>
+        `<button class="review-dot${i === 0 ? ' active' : ''}" data-idx="${i}" aria-label="효과 ${i+1}번"></button>`
+    ).join('');
+
+    indicatorsEl.querySelectorAll('.review-dot').forEach(dot => {
+        dot.addEventListener('click', () => {
+            const idx = parseInt(dot.dataset.idx);
+            const item = items[idx];
+            if (item) item.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        });
+    });
+
+    let scrollTimer;
+    grid.addEventListener('scroll', () => {
+        clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(() => {
+            const itemWidth = (items[0]?.offsetWidth || 0) + 14;
+            const idx = Math.max(0, Math.min(Math.round(grid.scrollLeft / itemWidth), items.length - 1));
+            indicatorsEl.querySelectorAll('.review-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+        }, 60);
+    }, { passive: true });
+}
 
 /* ── 후기 인디케이터 ── */
 function initReviewIndicators() {
