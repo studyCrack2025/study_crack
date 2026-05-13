@@ -25,9 +25,7 @@ async function loadTutorStats() {
                 withdrawalUI = `<div style="margin-top:15px; padding:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px;"><span style="color:#475569; font-size:0.9rem;"><strong>✅ 탈퇴 승인 완료</strong> (튜터의 최종 확인 및 탈퇴 대기 중)</span></div>`;
             }
 
-            // 정산(Settlement) 내역 계산 및 UI 생성
-            const WEEKLY_RATE = 15000;
-            const PRO_RATE = 25000;
+            // 정산(Settlement) 내역 — 금액은 백엔드(admin_get_tutor_stats)에서 계산하여 반환
             const PAY_STATUS_COLORS = { '미지급': '#ef4444', '지급대기': '#f59e0b', '지급완료': '#10b981' };
             const MONTH_MAP = { "Jan":"1월", "Feb":"2월", "Mar":"3월", "Apr":"4월", "May":"5월", "Jun":"6월", "Jul":"7월", "Aug":"8월", "Sep":"9월", "Oct":"10월", "Nov":"11월", "Dec":"12월" };
 
@@ -37,9 +35,11 @@ async function loadTutorStats() {
 
                 const listItems = months.map(month => {
                     const sData = t.settlements[month];
-                    const weeklyCount = Array.isArray(sData.weekly) ? sData.weekly.length : 0;
-                    const proCount    = Array.isArray(sData.pro)    ? sData.pro.length    : 0;
-                    const totalAmt    = (weeklyCount * WEEKLY_RATE + proCount * PRO_RATE).toLocaleString();
+                    const weeklyCount = Number(sData.weeklyCount ?? (Array.isArray(sData.weekly) ? sData.weekly.length : 0));
+                    const proCount    = Number(sData.proCount    ?? (Array.isArray(sData.pro)    ? sData.pro.length    : 0));
+                    const weeklyAmt   = Number(sData.weeklyAmount || 0).toLocaleString();
+                    const proAmt      = Number(sData.proAmount    || 0).toLocaleString();
+                    const totalAmt    = Number(sData.totalAmount  || 0).toLocaleString();
                     const payStatus   = sData.payStatus || '미지급';
                     const statusColor = PAY_STATUS_COLORS[payStatus] || '#64748b';
 
@@ -49,7 +49,7 @@ async function loadTutorStats() {
 
                     return `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px dashed #e2e8f0; font-size:0.85rem; gap:8px; flex-wrap:wrap;">
                         <span style="color:#475569; font-weight:bold; min-width:80px;">${readableMonth}</span>
-                        <span style="color:#2563eb;">주간 ${weeklyCount}건 × 15,000 &nbsp;+&nbsp; PRO ${proCount}건 × 25,000 = <strong>${totalAmt}원</strong></span>
+                        <span style="color:#2563eb;">주간 ${weeklyCount}건(${weeklyAmt}원) + PRO ${proCount}건(${proAmt}원) = <strong>${totalAmt}원</strong></span>
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span style="color:${statusColor}; font-weight:bold; font-size:0.8rem;">${payStatus}</span>
                             <select onchange="setTutorPayStatus('${escapeHtml(t.userid)}', '${month}', this.value, this)"
