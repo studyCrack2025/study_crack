@@ -227,11 +227,11 @@ img, svg { display: block; max-width: 100%; }
   .service-page { padding-top: 61px; }
 
   /* Hero — 이미지를 제목 오른쪽에 겹쳐 배치 */
-  .hero-section { display: block; position: relative; padding: 36px 20px 24px; min-height: 240px; }
-  .hero-copy { width: 66%; }
+  .hero-section { display: block; position: relative; padding: 36px 20px 24px; min-height: 260px; }
+  .hero-copy { width: 62%; position: relative; z-index: 1; }
   .hero-copy h1 { font-size: 22px; line-height: 1.25; }
   .hero-desc { font-size: 13px; margin-top: 14px; }
-  .hero-visual { position: absolute; right: 0; top: 20px; width: 46%; padding: 0; pointer-events: none; }
+  .hero-visual { position: absolute; right: -8px; top: 56px; width: 62%; padding: 0; pointer-events: none; z-index: 0; }
   .hero-device-img { max-width: 100%; }
   /* 버튼 가로 배치 */
   .hero-actions { flex-direction: row; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
@@ -255,15 +255,14 @@ img, svg { display: block; max-width: 100%; }
   .process-preview { display: none; }
   .circle-arrow { position: static; transform: none; width: 36px; height: 36px; font-size: 13px; margin: 12px 0 0 auto; }
 
-  /* Formula — 좌우 스크롤 */
-  .formula-section { margin: 12px 0 32px; padding: 22px 0; }
-  .formula-section h2 { font-size: 20px; padding: 0 20px; text-align: left; }
-  .formula-desc { padding: 0 20px; font-size: 13px; }
-  .formula-row { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 0; align-items: center; padding: 16px 20px 12px; }
-  .formula-row::-webkit-scrollbar { display: none; }
-  .formula-item { flex: 0 0 130px; scroll-snap-align: center; min-height: auto; padding: 14px 10px; }
-  .formula-row .op { flex-shrink: 0; transform: none !important; font-size: 20px; padding: 0 8px; }
-  .formula-result { flex: 0 0 96px; width: 96px; height: 96px; font-size: 12px; line-height: 1.35; justify-self: auto; }
+  /* Formula — 2×2 격자 타일 */
+  .formula-section { margin: 12px 20px 32px; padding: 22px 20px; }
+  .formula-section h2 { font-size: 20px; text-align: left; }
+  .formula-desc { font-size: 13px; }
+  .formula-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px 0 12px; overflow: visible; }
+  .formula-row .op { display: none; }
+  .formula-item { min-height: auto; padding: 14px 10px; }
+  .formula-result { grid-column: 1 / -1; justify-self: center; width: 96px; height: 96px; font-size: 12px; line-height: 1.35; padding-top: 14px; }
 
   /* Plan — 좌우 스크롤 슬라이더 */
   .plan-section { padding: 20px 0 48px; }

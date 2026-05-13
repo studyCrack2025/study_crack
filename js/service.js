@@ -3,8 +3,22 @@ document.addEventListener('DOMContentLoaded', () => {
   if (header) header.classList.add('scrolled');
   syncHeaderNav();
 
+  // 모바일: 플랜 슬라이더 기본값 STANDARD(두 번째)
+  if (window.innerWidth <= 640) {
+    const planGrid = document.querySelector('.plan-grid');
+    const planCards = planGrid ? planGrid.querySelectorAll('.plan-card') : [];
+    if (planCards.length >= 2) {
+      setTimeout(() => { planCards[1].scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' }); }, 0);
+    }
+  }
+
   // Scroll reveal animation
-  const reveals = document.querySelectorAll('.process-card, .plan-card, .formula-item, .message-band');
+  // 모바일에서 plan-card는 가로 슬라이더 안에 있어 IntersectionObserver가 제대로 작동하지 않으므로 제외
+  const isMobile = window.innerWidth <= 640;
+  const revealSelector = isMobile
+    ? '.process-card, .formula-item, .message-band'
+    : '.process-card, .plan-card, .formula-item, .message-band';
+  const reveals = document.querySelectorAll(revealSelector);
   const io = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
