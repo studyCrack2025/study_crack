@@ -562,9 +562,14 @@ function initPptCardSlider() {
         return img ? img.getAttribute('src') : null;
     });
 
+    const pptInitIdx = Math.min(1, cards.length - 1);
+
     indicatorsEl.innerHTML = Array.from({length: cards.length}, (_, i) =>
-        `<button class="review-dot${i === 0 ? ' active' : ''}" data-idx="${i}" aria-label="카드 ${i+1}번"></button>`
+        `<button class="review-dot${i === pptInitIdx ? ' active' : ''}" data-idx="${i}" aria-label="카드 ${i+1}번"></button>`
     ).join('');
+
+    if (bgImg && cardImages[pptInitIdx]) bgImg.src = cardImages[pptInitIdx];
+    setTimeout(() => { cards[pptInitIdx]?.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' }); }, 0);
 
     indicatorsEl.querySelectorAll('.review-dot').forEach(dot => {
         dot.addEventListener('click', () => {
@@ -595,9 +600,13 @@ function initEffectsSlider() {
     const items = grid.querySelectorAll('.effect-item');
     if (items.length === 0) return;
 
+    const effInitIdx = Math.min(1, items.length - 1);
+
     indicatorsEl.innerHTML = Array.from({length: items.length}, (_, i) =>
-        `<button class="review-dot${i === 0 ? ' active' : ''}" data-idx="${i}" aria-label="효과 ${i+1}번"></button>`
+        `<button class="review-dot${i === effInitIdx ? ' active' : ''}" data-idx="${i}" aria-label="효과 ${i+1}번"></button>`
     ).join('');
+
+    setTimeout(() => { items[effInitIdx]?.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' }); }, 0);
 
     indicatorsEl.querySelectorAll('.review-dot').forEach(dot => {
         dot.addEventListener('click', () => {
@@ -627,9 +636,13 @@ function initReviewIndicators() {
     const cards = grid.querySelectorAll('.review-card');
     if (cards.length === 0) return;
 
+    const revInitIdx = Math.min(1, cards.length - 1);
+
     indicatorsEl.innerHTML = Array.from({length: cards.length}, (_, i) =>
-        `<button class="review-dot${i === 0 ? ' active' : ''}" data-idx="${i}" aria-label="후기 ${i+1}번"></button>`
+        `<button class="review-dot${i === revInitIdx ? ' active' : ''}" data-idx="${i}" aria-label="후기 ${i+1}번"></button>`
     ).join('');
+
+    setTimeout(() => { cards[revInitIdx]?.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' }); }, 0);
 
     indicatorsEl.querySelectorAll('.review-dot').forEach(dot => {
         dot.addEventListener('click', () => {
