@@ -66,7 +66,26 @@
                 <span class="logo">StudyCrack</span>
             </a>
         </div>
+        <div class="mobile-header-right">
+            <span class="mobile-nav-label">MBTI 검사</span>
+            <button class="hamburger-btn" id="hamburgerBtn" aria-label="메뉴 열기">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
     </header>
+
+    <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
+    <div class="mobile-nav-panel" id="mobileNavPanel">
+        <div class="mobile-nav-top">
+            <a class="mnp-logo" href="/"><img src="/assets/figma/figma-asset-04.svg" alt="StudyCrack"><span>StudyCrack</span></a>
+            <button class="mobile-nav-close" id="mobileNavClose" aria-label="메뉴 닫기">✕</button>
+        </div>
+        <nav class="mobile-nav-links">
+            <a href="/">홈</a>
+            <a href="/mypage">마이페이지</a>
+            <a href="#" id="mobileLogoutBtn" class="mnl-btn mnl-btn-logout">로그아웃</a>
+        </nav>
+    </div>
 
     <div class="mbti-wrap">
         <div class="mbti-intro" id="mbtiIntro">
@@ -331,5 +350,6 @@
 
         renderQuestion();
     </script>
+    <script src="/js/shared/hamburger.js"></script>
 </body>
 </html>

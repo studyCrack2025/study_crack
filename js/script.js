@@ -105,11 +105,45 @@ function selectCourse(tier) {
     closeFeaturePreview();
 
     if (isMobile) {
+        const mobileDetail = document.getElementById('mobileCourseDetail');
         if (activeBtn.classList.contains('active-expand')) {
             activeBtn.classList.remove('active-expand', 'active');
+            if (mobileDetail) { mobileDetail.innerHTML = ''; mobileDetail.style.display = 'none'; }
         } else {
             document.querySelectorAll('.course-tab-btn').forEach(btn => btn.classList.remove('active-expand', 'active'));
             activeBtn.classList.add('active-expand', 'active');
+            if (mobileDetail) {
+                const listHtml = data.list.map(item => {
+                    const checkColor = '#4ade80';
+                    if (item.action) {
+                        let clickHandler = "";
+                        if (item.action === "preview") clickHandler = `onclick="openFeaturePreview('${item.imgBase}', '${item.text}')"`;
+                        else if (item.action === "download") clickHandler = `onclick="downloadProReport('${item.file}')"`;
+                        return `<li class="clickable-item" ${clickHandler}><i class="fas fa-check-circle" style="color:${checkColor}"></i><span>${item.text}</span></li>`;
+                    } else {
+                        return `<li><i class="fas fa-check-circle" style="color:${checkColor}"></i><span>${item.text}</span></li>`;
+                    }
+                }).join('');
+                let extraBtnHtml = "";
+                if (tier === 'mbti') {
+                    const isLoggedIn = !!localStorage.getItem('userId');
+                    if (isLoggedIn) {
+                        extraBtnHtml = `<a href="/mbti/download" class="solution-cta-link">나만의 맞춤 공부법 PDF 무료 다운로드</a>`;
+                    } else {
+                        extraBtnHtml = `<a href="/login" class="solution-cta-link">🔒 로그인하고 맞춤 공부법 PDF 받기</a>`;
+                    }
+                }
+                mobileDetail.innerHTML = `
+                    <span class="detail-badge">${tier.toUpperCase()}</span>
+                    <h3 class="detail-title">${data.title}</h3>
+                    <div class="detail-price">${data.price}</div>
+                    <p class="detail-desc">${data.desc}</p>
+                    <ul class="detail-list">${listHtml}</ul>
+                    ${extraBtnHtml}
+                `;
+                mobileDetail.style.display = 'block';
+                setTimeout(() => mobileDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
+            }
         }
     } else {
         document.querySelectorAll('.course-tab-btn').forEach(btn => btn.classList.remove('active', 'active-expand'));
@@ -274,6 +308,8 @@ async function renderReviews() {
             </div>
         </div>
     `).join('');
+
+    initReviewIndicators();
 }
 
 /* =========================================
@@ -353,6 +389,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 햄버거 메뉴
+    document.getElementById('hamburgerBtn')?.addEventListener('click', openMobileNav);
+    document.getElementById('mobileNavClose')?.addEventListener('click', closeMobileNav);
+    document.getElementById('mobileNavOverlay')?.addEventListener('click', closeMobileNav);
+    document.getElementById('mobileLogoutBtn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeMobileNav();
+        clearClientSession();
+        alert("로그아웃 되었습니다.");
+        window.location.href = '/';
+    });
+    document.getElementById('mobileMyPageBtn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeMobileNav();
+        const userId = localStorage.getItem('userId');
+        if (!userId) { alert("로그인이 필요합니다."); window.location.href = '/login'; }
+        else window.location.href = '/mypage';
+    });
+
     const observer = new IntersectionObserver((entries, obs) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -417,7 +472,7 @@ async function checkTutorialStatus() {
 function updateNavUI() {
     const isLoggedIn = !!(getAccessToken() || getIdToken() || localStorage.getItem('userId'));
     const userRole = localStorage.getItem('userRole');
-    
+
     const btnAnalysis = document.getElementById('navAnalysis');
     const btnQna = document.getElementById('navQna');
     const btnLogin = document.getElementById('loginBtn');
@@ -425,12 +480,24 @@ function updateNavUI() {
     const btnLogout = document.getElementById('logoutBtn');
     const btnNoti = document.getElementById('studentNotiFab');
 
+    // mobile nav panel elements
+    const mobileAnalysis = document.getElementById('mobileNavAnalysis');
+    const mobileQna = document.getElementById('mobileNavQna');
+    const mobileLogin = document.getElementById('mobileLoginBtn');
+    const mobileMyPage = document.getElementById('mobileMyPageBtn');
+    const mobileLogout = document.getElementById('mobileLogoutBtn');
+
     if (isLoggedIn) {
         if (btnAnalysis) btnAnalysis.classList.remove('hidden');
         if (btnQna) btnQna.classList.remove('hidden');
         if (btnMyPage) btnMyPage.classList.remove('hidden');
         if (btnLogout) btnLogout.classList.remove('hidden');
         if (btnLogin) btnLogin.classList.add('hidden');
+        if (mobileAnalysis) mobileAnalysis.classList.remove('hidden');
+        if (mobileQna) mobileQna.classList.remove('hidden');
+        if (mobileMyPage) mobileMyPage.classList.remove('hidden');
+        if (mobileLogout) mobileLogout.classList.remove('hidden');
+        if (mobileLogin) mobileLogin.classList.add('hidden');
         if (userRole !== 'admin' && userRole !== 'tutor') {
             if (btnNoti) {
                 btnNoti.classList.remove('hidden');
@@ -443,8 +510,73 @@ function updateNavUI() {
         if (btnMyPage) btnMyPage.classList.add('hidden');
         if (btnLogout) btnLogout.classList.add('hidden');
         if (btnLogin) btnLogin.classList.remove('hidden');
+        if (mobileAnalysis) mobileAnalysis.classList.add('hidden');
+        if (mobileQna) mobileQna.classList.add('hidden');
+        if (mobileMyPage) mobileMyPage.classList.add('hidden');
+        if (mobileLogout) mobileLogout.classList.add('hidden');
+        if (mobileLogin) mobileLogin.classList.remove('hidden');
         if (btnNoti) btnNoti.classList.add('hidden');
     }
+}
+
+/* ── 햄버거 모바일 내비게이션 ── */
+window.openMobileNav = function() {
+    const panel = document.getElementById('mobileNavPanel');
+    const overlay = document.getElementById('mobileNavOverlay');
+    const btn = document.getElementById('hamburgerBtn');
+    if (!panel) return;
+    overlay.style.display = 'block';
+    requestAnimationFrame(() => {
+        panel.classList.add('active');
+        overlay.classList.add('active');
+        btn?.classList.add('open');
+    });
+    document.body.style.overflow = 'hidden';
+};
+
+window.closeMobileNav = function() {
+    const panel = document.getElementById('mobileNavPanel');
+    const overlay = document.getElementById('mobileNavOverlay');
+    const btn = document.getElementById('hamburgerBtn');
+    panel?.classList.remove('active');
+    overlay?.classList.remove('active');
+    btn?.classList.remove('open');
+    document.body.style.overflow = '';
+    setTimeout(() => { if (overlay && !overlay.classList.contains('active')) overlay.style.display = 'none'; }, 280);
+};
+
+/* ── 후기 인디케이터 ── */
+function initReviewIndicators() {
+    const grid = document.getElementById('reviewContainer');
+    const indicatorsEl = document.getElementById('reviewIndicators');
+    if (!grid || !indicatorsEl || window.innerWidth > 640) return;
+
+    const cards = grid.querySelectorAll('.review-card');
+    if (cards.length === 0) return;
+
+    indicatorsEl.innerHTML = Array.from({length: cards.length}, (_, i) =>
+        `<button class="review-dot${i === 0 ? ' active' : ''}" data-idx="${i}" aria-label="후기 ${i+1}번"></button>`
+    ).join('');
+
+    indicatorsEl.querySelectorAll('.review-dot').forEach(dot => {
+        dot.addEventListener('click', () => {
+            const idx = parseInt(dot.dataset.idx);
+            const card = cards[idx];
+            if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        });
+    });
+
+    let scrollTimer;
+    grid.addEventListener('scroll', () => {
+        clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(() => {
+            const scrollLeft = grid.scrollLeft;
+            const cardWidth = (cards[0]?.offsetWidth || 0) + 14;
+            const idx = Math.round(scrollLeft / cardWidth);
+            const clamped = Math.max(0, Math.min(idx, cards.length - 1));
+            indicatorsEl.querySelectorAll('.review-dot').forEach((d, i) => d.classList.toggle('active', i === clamped));
+        }, 60);
+    }, { passive: true });
 }
 
 // ============================================================

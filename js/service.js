@@ -38,6 +38,26 @@ function syncHeaderNav() {
     if (btnLogin) btnLogin.classList.add('hidden');
   }
 
+  // 모바일 햄버거 패널 링크 동기화
+  const mobileAnalysis = document.getElementById('mobileNavAnalysis');
+  const mobileQna      = document.getElementById('mobileNavQna');
+  const mobileLogin    = document.getElementById('mobileLoginBtn');
+  const mobileMyPage   = document.getElementById('mobileMyPageBtn');
+  const mobileLogout   = document.getElementById('mobileLogoutBtn');
+  if (isLoggedIn) {
+    if (mobileAnalysis) mobileAnalysis.classList.remove('hidden');
+    if (mobileQna)      mobileQna.classList.remove('hidden');
+    if (mobileMyPage)   mobileMyPage.classList.remove('hidden');
+    if (mobileLogout)   mobileLogout.classList.remove('hidden');
+    if (mobileLogin)    mobileLogin.classList.add('hidden');
+  } else {
+    if (mobileAnalysis) mobileAnalysis.classList.add('hidden');
+    if (mobileQna)      mobileQna.classList.add('hidden');
+    if (mobileMyPage)   mobileMyPage.classList.add('hidden');
+    if (mobileLogout)   mobileLogout.classList.add('hidden');
+    if (mobileLogin)    mobileLogin.classList.remove('hidden');
+  }
+
   if (btnMyPage) {
     btnMyPage.addEventListener('click', (e) => {
       e.preventDefault();
@@ -51,6 +71,13 @@ function syncHeaderNav() {
       localStorage.clear();
       sessionStorage.clear();
       window.location.href = '/';
+    });
+  }
+
+  if (mobileMyPage) {
+    mobileMyPage.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.href = '/mypage';
     });
   }
 }
