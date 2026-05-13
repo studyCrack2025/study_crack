@@ -226,28 +226,53 @@ img, svg { display: block; max-width: 100%; }
 @media (max-width: 640px) {
   .service-page { padding-top: 61px; }
 
-  .hero-section { padding: 40px 20px 28px; }
-  .hero-copy h1 { font-size: 28px; }
-  .hero-desc { font-size: 15px; }
-  .hero-actions { flex-direction: column; }
-  .btn { width: 100%; }
+  /* Hero — 이미지를 제목 오른쪽에 겹쳐 배치 */
+  .hero-section { display: block; position: relative; padding: 36px 20px 24px; min-height: 240px; }
+  .hero-copy { width: 66%; }
+  .hero-copy h1 { font-size: 22px; line-height: 1.25; }
+  .hero-desc { font-size: 13px; margin-top: 14px; }
+  .hero-visual { position: absolute; right: 0; top: 20px; width: 46%; padding: 0; pointer-events: none; }
   .hero-device-img { max-width: 100%; }
+  /* 버튼 가로 배치 */
+  .hero-actions { flex-direction: row; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+  .hero-actions .btn { width: auto; font-size: 12px; min-height: 40px; padding: 0 14px; }
+  .safe-note { font-size: 12px; margin-top: 14px; }
 
-  .message-band { margin: 20px 16px; padding: 22px 20px; grid-template-columns: 1fr; gap: 16px; }
-  .band-icon { width: 52px; height: 52px; font-size: 22px; }
-  .message-band p { font-size: 16px; }
-  .message-band strong { font-size: 18px; }
+  /* Message band */
+  .message-band { margin: 20px 16px; padding: 20px; grid-template-columns: 1fr; gap: 14px; }
+  .band-icon { width: 48px; height: 48px; font-size: 20px; }
+  .message-band p { font-size: 15px; }
+  .message-band strong { font-size: 17px; }
 
-  .process-section, .plan-section { padding-left: 16px; padding-right: 16px; }
-  .process-section h2, .formula-section h2, .plan-section h2 { font-size: 26px; }
-  .process-card { padding: 20px; }
+  /* Process — 좌우 스크롤 슬라이더 */
+  .process-section { padding: 20px 0 32px; }
+  .process-section .section-label { padding: 0 20px; }
+  .process-section h2 { font-size: 22px; padding: 0 20px; }
+  .section-desc { font-size: 14px; margin: 14px 0 20px; padding: 0 20px; }
+  .process-list { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 14px; padding-bottom: 16px; padding-inline: 20px; scroll-padding-inline: 20px; margin-inline: 0; }
+  .process-list::-webkit-scrollbar { display: none; }
+  .process-card { flex: 0 0 82%; scroll-snap-align: center; padding: 20px; min-height: auto; }
   .process-preview { display: none; }
-  .circle-arrow { position: static; transform: none; width: 40px; height: 40px; font-size: 14px; margin: 14px 0 0 auto; }
+  .circle-arrow { position: static; transform: none; width: 36px; height: 36px; font-size: 13px; margin: 12px 0 0 auto; }
 
-  .formula-section { margin: 12px 16px 40px; padding: 22px 20px; }
-  .formula-item { min-height: auto; padding: 16px 12px; }
+  /* Formula — 좌우 스크롤 */
+  .formula-section { margin: 12px 0 32px; padding: 22px 0; }
+  .formula-section h2 { font-size: 20px; padding: 0 20px; text-align: left; }
+  .formula-desc { padding: 0 20px; font-size: 13px; }
+  .formula-row { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 0; align-items: center; padding: 16px 20px 12px; }
+  .formula-row::-webkit-scrollbar { display: none; }
+  .formula-item { flex: 0 0 130px; scroll-snap-align: center; min-height: auto; padding: 14px 10px; }
+  .formula-row .op { flex-shrink: 0; transform: none !important; font-size: 20px; padding: 0 8px; }
+  .formula-result { flex: 0 0 96px; width: 96px; height: 96px; font-size: 12px; line-height: 1.35; justify-self: auto; }
 
-  .plan-grid { padding-top: 8px; }
+  /* Plan — 좌우 스크롤 슬라이더 */
+  .plan-section { padding: 20px 0 48px; }
+  .plan-section .section-label { padding: 0 20px; }
+  .plan-section h2 { font-size: 22px; padding: 0 20px; }
+  .plan-grid { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 16px; padding: 28px 20px 16px; margin-top: 0; }
+  .plan-grid::-webkit-scrollbar { display: none; }
+  .plan-card { flex: 0 0 82%; scroll-snap-align: center; }
+  .plan-card--popular { margin-top: 0; }
   .popular-ribbon { width: 200px; font-size: 12px; }
 
   .final-cta { padding: 40px 20px; margin-bottom: 56px; }
