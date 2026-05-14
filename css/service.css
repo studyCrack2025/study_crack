@@ -79,9 +79,9 @@ img, svg { display: block; max-width: 100%; }
 .process-section { padding: 20px 44px 48px; }
 .process-section h2, .formula-section h2, .plan-section h2 { margin: 0; font-size: clamp(26px, 3.2vw, 34px); line-height: 1.25; letter-spacing: -0.035em; color: var(--navy); }
 .section-desc { margin: 18px 0 36px; color: var(--muted); font-size: 16px; line-height: 1.65; }
-.process-list { display: grid; gap: 16px; }
+.process-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 
-.process-card { position: relative; min-height: 168px; padding: 26px 80px 26px 28px; display: grid; grid-template-columns: minmax(0,1fr) 400px; gap: 28px; align-items: center; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); transition: box-shadow .2s, transform .2s; }
+.process-card { position: relative; padding: 26px 28px 28px; display: flex; flex-direction: column; gap: 16px; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); transition: box-shadow .2s, transform .2s; }
 .process-card:hover { box-shadow: 0 8px 28px rgba(76,121,238,.14); transform: translateY(-2px); }
 
 .step-no { margin-right: 16px; font-size: 28px; color: var(--primary); font-weight: 900; }
@@ -96,7 +96,7 @@ img, svg { display: block; max-width: 100%; }
 .process-preview h4 { margin: 0 0 8px; color: var(--primary); font-size: 13px; font-weight: 800; }
 .process-preview p { margin: 0; font-size: 11px; color: var(--muted); }
 
-.radar-preview { display: grid; grid-template-columns: 1fr 140px; align-items: center; min-height: 112px; }
+.radar-preview { display: grid; grid-template-columns: 1fr 185px; align-items: center; }
 
 /* ── 목표대학 분석 차트 (analysis 페이지 renderSimChart() 동일 디자인) ── */
 .sim-chart-preview { padding: 14px 16px 10px; }
@@ -108,7 +108,7 @@ img, svg { display: block; max-width: 100%; }
 .sim-preview-graph-wrap { display: flex; flex-direction: column; }
 
 /* graph area — analysis의 chart-graph-area 동일 구조 */
-.sim-preview-graph { position: relative; height: 140px; border-bottom: 2px solid #cbd5e1; display: flex; align-items: flex-end; gap: 6px; padding: 28px 52px 0 4px; box-sizing: border-box; overflow: visible; }
+.sim-preview-graph { position: relative; height: 140px; border-bottom: 2px solid #cbd5e1; display: flex; align-items: flex-end; gap: 6px; padding: 0 52px 0 4px; box-sizing: border-box; overflow: visible; }
 
 /* guide lines — analysis의 chart-guide-line 동일 */
 .sim-preview-guide { position: absolute; left: 0; right: 0; border-top: 1px dashed #cbd5e1; pointer-events: none; }
@@ -143,7 +143,7 @@ img, svg { display: block; max-width: 100%; }
 .step-title-row .step-no { margin-right: 0; }
 .star-badge { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: #fef9ec; color: #f59e0b; font-size: 13px; }
 
-.circle-arrow { position: absolute; right: -38px; top: 50%; transform: translateY(-50%); width: 56px; height: 56px; display: grid; place-items: center; border-radius: 50%; color: var(--primary); background: #fff; box-shadow: 0 8px 24px rgba(76,121,238,.16); font-size: 18px; transition: background .18s, color .18s; }
+.circle-arrow { position: absolute; right: 16px; top: 16px; transform: none; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; color: var(--primary); background: #fff; box-shadow: 0 8px 24px rgba(76,121,238,.16); font-size: 16px; transition: background .18s, color .18s; }
 .circle-arrow:hover { background: var(--primary); color: #fff; }
 
 /* =========================================
@@ -209,8 +209,7 @@ img, svg { display: block; max-width: 100%; }
 
   .message-band { margin: 24px 28px; }
   .process-section, .plan-section { padding-left: 28px; padding-right: 28px; }
-  .process-card { grid-template-columns: 1fr; padding-right: 28px; }
-  .circle-arrow { right: 20px; width: 44px; height: 44px; font-size: 16px; }
+  .process-list { grid-template-columns: 1fr; }
 
   .formula-section { margin: 16px 28px 44px; padding: 28px; }
   .formula-row { grid-template-columns: 1fr; gap: 12px; }
@@ -254,7 +253,14 @@ img, svg { display: block; max-width: 100%; }
   .process-list { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 14px; padding-bottom: 16px; padding-inline: 20px; scroll-padding-inline: 20px; margin-inline: 0; }
   .process-list::-webkit-scrollbar { display: none; }
   .process-card { flex: 0 0 82%; scroll-snap-align: center; padding: 20px; min-height: auto; }
-  .process-preview { display: none; }
+  .process-preview { display: block; }
+  .radar-preview { display: flex; flex-direction: column; gap: 8px; }
+  .radar-preview svg { width: 100%; max-height: 170px; height: auto; }
+  .sim-preview-graph { height: 110px; padding: 0 44px 0 4px; gap: 14px; }
+  .sim-preview-bar { width: 20px; }
+  .sim-preview-labels { padding: 6px 44px 0 4px; gap: 14px; }
+  .sim-preview-label { font-size: 8px; }
+  .sim-preview-label strong { font-size: 8px; }
   .circle-arrow { position: static; transform: none; width: 36px; height: 36px; font-size: 13px; margin: 12px 0 0 auto; }
 
   /* Formula — 2×2 격자 타일 */

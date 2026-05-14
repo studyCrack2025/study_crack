@@ -433,7 +433,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 /* =========================================
    15. 분석 프로세스 카드 (index 페이지)
    ========================================= */
-.process-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.process-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .process-card { position: relative; padding: 26px 28px 28px; display: flex; flex-direction: column; gap: 16px; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: 0 4px 20px rgba(76,121,238,.08); transition: box-shadow .2s, transform .2s; }
 .process-card:hover { box-shadow: 0 8px 28px rgba(76,121,238,.14); transform: translateY(-2px); }
 .process-copy .step-no { display: inline; font-size: 28px; color: var(--primary); font-weight: 900; margin-right: 16px; }
@@ -470,6 +470,13 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 .sim-preview-legend { display: flex; gap: 10px; justify-content: center; margin-top: 10px; padding-top: 8px; border-top: 1px dashed #e2eaf8; }
 .sim-preview-legend span { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #64748b; font-weight: 600; }
 .sim-preview-legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+.step-title-row { display: flex; align-items: center; gap: 10px; }
+.step-title-row .process-copy .step-no { margin-right: 0; }
+.star-badge { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: #fef9ec; color: #f59e0b; font-size: 13px; }
+.strong-copy { font-size: 16px !important; font-weight: 800; color: #1e293b !important; }
+.calendar { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; font-size: 9px; text-align: center; }
+.calendar b { padding: 5px 2px; border-radius: 3px; background: #f1f5f9; color: #334155; font-weight: 700; }
+.calendar span { padding: 5px 2px; border-radius: 3px; background: #eef4ff; color: var(--primary); font-size: 8px; }
 
 /* =========================================
    16. 반응형
@@ -502,6 +509,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .section, .dark-feature, .effects-section, .curriculum, .review-section { padding: 60px 0; }
 
     .problem__grid { grid-template-columns: 1fr; }
+    .process-list { grid-template-columns: 1fr; }
     .process-circle-arrow i { width: 40px; height: 40px; font-size: 14px; }
     .step-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
     .step-card--one { grid-row: span 2; transform: translateY(50px); }
