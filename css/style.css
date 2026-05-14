@@ -453,7 +453,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 .sim-preview-title { font-size: 12px; font-weight: 800; color: #1e293b; }
 .sim-preview-badge { font-size: 11px; color: #64748b; background: #f1f5f9; padding: 3px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; }
 .sim-preview-graph-wrap { display: flex; flex-direction: column; }
-.sim-preview-graph { position: relative; height: 140px; border-bottom: 2px solid #cbd5e1; display: flex; align-items: flex-end; gap: 6px; padding: 28px 52px 0 4px; box-sizing: border-box; overflow: visible; }
+.sim-preview-graph { position: relative; height: 140px; border-bottom: 2px solid #cbd5e1; display: flex; align-items: flex-end; gap: 6px; padding: 0 52px 0 4px; box-sizing: border-box; overflow: visible; }
 .sim-preview-guide { position: absolute; left: 0; right: 0; border-top: 1px dashed #cbd5e1; pointer-events: none; }
 .sim-preview-guide--blue { border-top-color: #3b82f6; }
 .sim-preview-guide-label { position: absolute; right: 4px; top: -14px; font-size: 9px; font-weight: 700; background: rgba(255,255,255,.95); padding: 1px 2px; white-space: nowrap; }
@@ -560,7 +560,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .sim-desktop-bar { display: none; }
     .sim-preview-label .sim-label-d { display: none; }
     .sim-preview-label .sim-label-m { display: block; }
-    .sim-preview-graph { height: 110px; padding: 24px 44px 0 4px; gap: 14px; }
+    .sim-preview-graph { height: 110px; padding: 0 44px 0 4px; gap: 14px; }
     .sim-preview-bar { width: 20px; }
     .sim-preview-labels { padding: 6px 44px 0 4px; gap: 14px; }
     .sim-preview-label { font-size: 8px; }
