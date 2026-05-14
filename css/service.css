@@ -117,7 +117,7 @@ img, svg { display: block; max-width: 100%; }
 
 /* bar items — analysis의 sim-bar-item 동일 */
 .sim-preview-bar-item { flex: 1; height: 100%; display: flex; align-items: flex-end; justify-content: center; position: relative; }
-.sim-preview-bar { width: 28px; border-radius: 4px 4px 0 0; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); transition: height .5s ease-out; }
+.sim-preview-bar { width: 16px; border-radius: 4px 4px 0 0; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); transition: height .5s ease-out; }
 .sim-preview-bar--active { box-shadow: 0 0 8px rgba(16,185,129,.35); }
 
 /* score label above bar — analysis의 sim-score-label 동일 */
@@ -135,9 +135,9 @@ img, svg { display: block; max-width: 100%; }
 .sim-preview-legend span { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--muted); font-weight: 600; }
 .sim-preview-legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
 
-.calendar { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; font-size: 9px; text-align: center; }
-.calendar b { padding: 5px 2px; border-radius: 3px; background: #fff; color: #334155; font-weight: 700; }
-.calendar span { padding: 5px 2px; border-radius: 3px; background: #eef4ff; color: var(--primary); font-size: 8px; }
+.process-cta { margin-top: 24px; text-align: center; }
+.process-cta-link { display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; border: 1.5px solid var(--primary); border-radius: var(--radius-sm); color: var(--primary); font-size: 14px; font-weight: 700; transition: background .18s, color .18s; }
+.process-cta-link:hover { background: var(--primary); color: #fff; }
 
 .step-title-row { display: flex; align-items: center; gap: 10px; }
 .step-title-row .step-no { margin-right: 0; }

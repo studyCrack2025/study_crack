@@ -191,26 +191,21 @@
                             <p>논리적인 계획에 특화된 학생 유형.</p>
                         </div>
                         <svg viewBox="0 0 200 195" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
-                            <!-- 외곽 그리드 링 -->
                             <polygon points="100,28 168.5,77.7 142.3,158.2 57.7,158.2 31.5,77.7" fill="#eef4ff" stroke="#c8d9ff" stroke-width="1"/>
                             <polygon points="100,52.5 145.2,85.3 127.9,138.4 72.1,138.4 54.8,85.3" fill="none" stroke="#d8e7ff" stroke-width="0.7" stroke-dasharray="3,2"/>
                             <polygon points="100,76.2 122.6,92.6 114,119.3 86,119.3 77.4,92.6" fill="none" stroke="#d8e7ff" stroke-width="0.7" stroke-dasharray="3,2"/>
-                            <!-- 축선 -->
                             <line x1="100" y1="100" x2="100" y2="28" stroke="#c8d9f8" stroke-width="0.8"/>
                             <line x1="100" y1="100" x2="168.5" y2="77.7" stroke="#c8d9f8" stroke-width="0.8"/>
                             <line x1="100" y1="100" x2="142.3" y2="158.2" stroke="#c8d9f8" stroke-width="0.8"/>
                             <line x1="100" y1="100" x2="57.7" y2="158.2" stroke="#c8d9f8" stroke-width="0.8"/>
                             <line x1="100" y1="100" x2="31.5" y2="77.7" stroke="#c8d9f8" stroke-width="0.8"/>
                             <circle cx="100" cy="100" r="2" fill="#c8d9f8"/>
-                            <!-- 데이터 폴리곤 -->
                             <polygon points="100,42 145,86 137,151 70,142 62,88" fill="rgba(76,121,238,0.18)" stroke="#4c79ee" stroke-width="1.5" stroke-linejoin="round"/>
-                            <!-- 데이터 점 -->
                             <circle cx="100" cy="42" r="3.5" fill="#4c79ee" stroke="#fff" stroke-width="1"/>
                             <circle cx="145" cy="86" r="3.5" fill="#4c79ee" stroke="#fff" stroke-width="1"/>
                             <circle cx="137" cy="151" r="3.5" fill="#4c79ee" stroke="#fff" stroke-width="1"/>
                             <circle cx="70" cy="142" r="3.5" fill="#4c79ee" stroke="#fff" stroke-width="1"/>
                             <circle cx="62" cy="88" r="3.5" fill="#4c79ee" stroke="#fff" stroke-width="1"/>
-                            <!-- 축 레이블 -->
                             <text x="100" y="18" text-anchor="middle" font-size="10" font-weight="700" fill="#3d526e">국어</text>
                             <text x="177" y="76" text-anchor="start" font-size="10" font-weight="700" fill="#3d526e">수학</text>
                             <text x="148" y="178" text-anchor="middle" font-size="10" font-weight="700" fill="#3d526e">영어</text>
@@ -218,7 +213,6 @@
                             <text x="23" y="76" text-anchor="end" font-size="10" font-weight="700" fill="#3d526e">탐2</text>
                         </svg>
                     </div>
-                    <a class="process-circle-arrow" href="/service#program"><span class="process-arrow-label">서비스 소개 바로가기</span><i class="fas fa-arrow-right"></i></a>
                 </article>
                 <article class="process-card">
                     <div class="process-copy">
@@ -257,7 +251,6 @@
                             <span><i style="background:#3b82f6"></i>합격(100+)</span>
                         </div>
                     </div>
-                    <a class="process-circle-arrow" href="/service#plans"><i class="fas fa-arrow-right"></i></a>
                 </article>
                 <article class="process-card">
                     <div class="process-copy">
@@ -271,14 +264,41 @@
                     </div>
                     <div class="process-preview">
                         <h4>주간 플래너 (예시)</h4>
-                        <div class="calendar">
-                            <b>월</b><b>화</b><b>수</b><b>목</b><b>금</b><b>토</b><b>일</b>
-                            <span>개념</span><span>기출</span><span>오답</span><span>암기</span><span>정리</span><span>모의</span><span>오답</span>
-                            <span>복습</span><span>분석</span><span>오답</span><span>개념</span><span>자료</span><span>관리</span><span>오답</span>
+                        <div class="planner-cal">
+                            <div class="planner-cal-head">
+                                <span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span><span>일</span>
+                            </div>
+                            <div class="planner-cal-row">
+                                <div class="planner-cell pc--math">수학<br>개념</div>
+                                <div class="planner-cell pc--eng">영어<br>기출</div>
+                                <div class="planner-cell pc--review">오답<br>정리</div>
+                                <div class="planner-cell pc--kor">국어<br>암기</div>
+                                <div class="planner-cell pc--math">수학<br>실전</div>
+                                <div class="planner-cell pc--mock">모의<br>고사</div>
+                                <div class="planner-cell pc--review">오답<br>분석</div>
+                            </div>
+                            <div class="planner-cal-row">
+                                <div class="planner-cell pc--kor">국어<br>복습</div>
+                                <div class="planner-cell pc--review">심화<br>분석</div>
+                                <div class="planner-cell pc--eng">영어<br>심화</div>
+                                <div class="planner-cell pc--math">수학<br>개념</div>
+                                <div class="planner-cell pc--plan">자료<br>정리</div>
+                                <div class="planner-cell pc--rest">휴식<br>관리</div>
+                                <div class="planner-cell pc--review">오답<br>재풀기</div>
+                            </div>
+                        </div>
+                        <div class="planner-cal-legend">
+                            <span class="pc--math">수학</span>
+                            <span class="pc--kor">국어</span>
+                            <span class="pc--eng">영어</span>
+                            <span class="pc--review">오답/분석</span>
+                            <span class="pc--mock">모의고사</span>
                         </div>
                     </div>
-                    <a class="process-circle-arrow" href="/service#plans"><span class="process-arrow-label">서비스 소개 바로가기</span><i class="fas fa-arrow-right"></i></a>
                 </article>
+            </div>
+            <div class="process-cta">
+                <a href="/service" class="process-cta-link">서비스 소개 자세히 보기 <i class="fas fa-arrow-right"></i></a>
             </div>
         </div>
     </section>
