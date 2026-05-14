@@ -342,6 +342,10 @@ window.cycleResultView = function() {
 /* =========================================
    5. 페이지 초기화 및 이벤트 리스너
    ========================================= */
+// 브라우저 자동 스크롤 복원 비활성화 → 항상 최상단에서 시작
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+window.scrollTo(0, 0);
+
 document.addEventListener('DOMContentLoaded', () => {
     // 권한 체크
     const token = getAccessToken();
