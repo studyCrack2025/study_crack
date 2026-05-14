@@ -547,6 +547,13 @@ window.closeMobileNav = function() {
     setTimeout(() => { if (overlay && !overlay.classList.contains('active')) overlay.style.display = 'none'; }, 280);
 };
 
+/* ── 수평 슬라이더 스크롤 헬퍼 (페이지 수직 스크롤 없이 컨테이너만 이동) ── */
+function scrollSliderTo(container, item, smooth) {
+    if (!container || !item) return;
+    const left = item.offsetLeft - (container.clientWidth - item.offsetWidth) / 2;
+    container.scrollTo({ left: Math.max(0, left), behavior: smooth ? 'smooth' : 'instant' });
+}
+
 /* ── PPT 카드 슬라이더 (모바일) ── */
 function initPptCardSlider() {
     const grid = document.querySelector('.card-grid--three');
@@ -569,13 +576,11 @@ function initPptCardSlider() {
     ).join('');
 
     if (bgImg && cardImages[pptInitIdx]) bgImg.src = cardImages[pptInitIdx];
-    setTimeout(() => { cards[pptInitIdx]?.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' }); }, 0);
+    setTimeout(() => { scrollSliderTo(grid, cards[pptInitIdx], false); }, 0);
 
     indicatorsEl.querySelectorAll('.review-dot').forEach(dot => {
         dot.addEventListener('click', () => {
-            const idx = parseInt(dot.dataset.idx);
-            const card = cards[idx];
-            if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            scrollSliderTo(grid, cards[parseInt(dot.dataset.idx)], true);
         });
     });
 
@@ -606,13 +611,11 @@ function initEffectsSlider() {
         `<button class="review-dot${i === effInitIdx ? ' active' : ''}" data-idx="${i}" aria-label="효과 ${i+1}번"></button>`
     ).join('');
 
-    setTimeout(() => { items[effInitIdx]?.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' }); }, 0);
+    setTimeout(() => { scrollSliderTo(grid, items[effInitIdx], false); }, 0);
 
     indicatorsEl.querySelectorAll('.review-dot').forEach(dot => {
         dot.addEventListener('click', () => {
-            const idx = parseInt(dot.dataset.idx);
-            const item = items[idx];
-            if (item) item.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            scrollSliderTo(grid, items[parseInt(dot.dataset.idx)], true);
         });
     });
 
@@ -642,13 +645,11 @@ function initReviewIndicators() {
         `<button class="review-dot${i === revInitIdx ? ' active' : ''}" data-idx="${i}" aria-label="후기 ${i+1}번"></button>`
     ).join('');
 
-    setTimeout(() => { cards[revInitIdx]?.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' }); }, 0);
+    setTimeout(() => { scrollSliderTo(grid, cards[revInitIdx], false); }, 0);
 
     indicatorsEl.querySelectorAll('.review-dot').forEach(dot => {
         dot.addEventListener('click', () => {
-            const idx = parseInt(dot.dataset.idx);
-            const card = cards[idx];
-            if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            scrollSliderTo(grid, cards[parseInt(dot.dataset.idx)], true);
         });
     });
 

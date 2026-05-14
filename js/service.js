@@ -8,7 +8,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const planGrid = document.querySelector('.plan-grid');
     const planCards = planGrid ? planGrid.querySelectorAll('.plan-card') : [];
     if (planCards.length >= 2) {
-      setTimeout(() => { planCards[1].scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' }); }, 0);
+      setTimeout(() => {
+        const card = planCards[1];
+        planGrid.scrollTo({ left: card.offsetLeft - (planGrid.clientWidth - card.offsetWidth) / 2, behavior: 'instant' });
+      }, 0);
     }
   }
 
