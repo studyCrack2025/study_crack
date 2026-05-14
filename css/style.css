@@ -433,8 +433,8 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 /* =========================================
    15. 분석 프로세스 카드 (index 페이지)
    ========================================= */
-.process-list { display: grid; gap: 16px; }
-.process-card { position: relative; min-height: 168px; padding: 26px 80px 26px 28px; display: grid; grid-template-columns: minmax(0,1fr) 400px; gap: 28px; align-items: center; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: 0 4px 20px rgba(76,121,238,.08); transition: box-shadow .2s, transform .2s; }
+.process-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.process-card { position: relative; min-height: 168px; padding: 26px 28px 28px; display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: 0 4px 20px rgba(76,121,238,.08); transition: box-shadow .2s, transform .2s; }
 .process-card:hover { box-shadow: 0 8px 28px rgba(76,121,238,.14); transform: translateY(-2px); }
 .process-copy .step-no { display: inline; font-size: 28px; color: var(--primary); font-weight: 900; margin-right: 16px; }
 .process-copy h3 { display: inline; margin: 0; font-size: 22px; color: #1e293b; font-weight: 800; }
@@ -445,7 +445,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 .process-preview h4 { margin: 0 0 8px; color: var(--primary); font-size: 13px; font-weight: 800; }
 .process-preview p { margin: 0; font-size: 11px; color: #64748b; }
 .radar-preview { display: grid; grid-template-columns: 1fr 140px; align-items: center; min-height: 112px; }
-.process-circle-arrow { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; color: var(--primary); background: #fff; box-shadow: 0 8px 24px rgba(76,121,238,.16); font-size: 16px; transition: background .18s, color .18s; }
+.process-circle-arrow { position: absolute; right: 16px; top: 16px; transform: none; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; color: var(--primary); background: #fff; box-shadow: 0 8px 24px rgba(76,121,238,.16); font-size: 16px; transition: background .18s, color .18s; }
 .process-circle-arrow:hover { background: var(--primary); color: #fff; }
 .sim-preview-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .sim-preview-title { font-size: 12px; font-weight: 800; color: #1e293b; }
@@ -499,8 +499,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .section, .dark-feature, .effects-section, .curriculum, .review-section { padding: 60px 0; }
 
     .problem__grid { grid-template-columns: 1fr; }
-    .process-card { grid-template-columns: 1fr; padding-right: 28px; }
-    .process-circle-arrow { right: 16px; width: 40px; height: 40px; font-size: 14px; }
+    .process-circle-arrow { width: 40px; height: 40px; font-size: 14px; }
     .step-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
     .step-card--one { grid-row: span 2; transform: translateY(50px); }
     .step-card { min-height: 210px; padding: 20px; }
