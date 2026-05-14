@@ -93,7 +93,7 @@ function initMobileCourses() {
     });
 }
 
-function selectCourse(tier) {
+function selectCourse(tier, noScroll = false) {
     const data = COURSE_DATA[tier];
     if (!data) return;
 
@@ -142,7 +142,7 @@ function selectCourse(tier) {
                     ${extraBtnHtml}
                 `;
                 mobileDetail.style.display = 'block';
-                setTimeout(() => mobileDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
+                if (!noScroll) setTimeout(() => mobileDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
             }
         }
     } else {
@@ -367,7 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateNavUI();
     renderReviews();
     initMobileCourses();
-    selectCourse('mbti');
+    selectCourse('mbti', true);
     initPptCardSlider();
     initEffectsSlider();
 
