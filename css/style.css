@@ -434,17 +434,17 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
    15. 분석 프로세스 카드 (index 페이지)
    ========================================= */
 .process-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-.process-card { position: relative; min-height: 168px; padding: 26px 28px 28px; display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: 0 4px 20px rgba(76,121,238,.08); transition: box-shadow .2s, transform .2s; }
+.process-card { position: relative; padding: 26px 28px 28px; display: flex; flex-direction: column; gap: 16px; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: 0 4px 20px rgba(76,121,238,.08); transition: box-shadow .2s, transform .2s; }
 .process-card:hover { box-shadow: 0 8px 28px rgba(76,121,238,.14); transform: translateY(-2px); }
 .process-copy .step-no { display: inline; font-size: 28px; color: var(--primary); font-weight: 900; margin-right: 16px; }
 .process-copy h3 { display: inline; margin: 0; font-size: 22px; color: #1e293b; font-weight: 800; }
 .process-copy > p { margin: 16px 0 0; color: #3d526e; font-size: 15px; line-height: 1.6; }
 .chips { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
 .chips span { padding: 6px 12px; border-radius: var(--radius-sm); background: #eef4ff; color: var(--primary); font-size: 13px; font-weight: 700; }
-.process-preview { border: 1px solid #e2eaf8; border-radius: var(--radius-md); background: #fff; padding: 16px; }
+.process-preview { flex: 1; min-height: 0; border: 1px solid #e2eaf8; border-radius: var(--radius-md); background: #fff; padding: 16px; }
 .process-preview h4 { margin: 0 0 8px; color: var(--primary); font-size: 13px; font-weight: 800; }
 .process-preview p { margin: 0; font-size: 11px; color: #64748b; }
-.radar-preview { display: grid; grid-template-columns: 1fr 140px; align-items: center; min-height: 112px; }
+.radar-preview { display: grid; grid-template-columns: 1fr 150px; align-items: center; }
 .process-circle-arrow { position: absolute; right: 16px; top: 16px; transform: none; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; color: var(--primary); background: #fff; box-shadow: 0 8px 24px rgba(76,121,238,.16); font-size: 16px; transition: background .18s, color .18s; }
 .process-circle-arrow:hover { background: var(--primary); color: #fff; }
 .sim-preview-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
@@ -456,7 +456,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 .sim-preview-guide--blue { border-top-color: #3b82f6; }
 .sim-preview-guide-label { position: absolute; right: 4px; top: -14px; font-size: 9px; font-weight: 700; background: rgba(255,255,255,.95); padding: 1px 2px; white-space: nowrap; }
 .sim-preview-bar-item { flex: 1; height: 100%; display: flex; align-items: flex-end; justify-content: center; position: relative; }
-.sim-preview-bar { width: 28px; border-radius: 4px 4px 0 0; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); transition: height .5s ease-out; }
+.sim-preview-bar { width: 36px; border-radius: 4px 4px 0 0; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); transition: height .5s ease-out; }
 .sim-preview-bar--active { box-shadow: 0 0 8px rgba(16,185,129,.35); }
 .sim-preview-score { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 9px; font-weight: 800; color: #64748b; white-space: nowrap; }
 .sim-preview-labels { display: flex; gap: 6px; padding: 6px 52px 0 4px; }
@@ -547,24 +547,28 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 
     .process-list { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 14px; padding-bottom: 16px; padding-inline: 20px; scroll-padding-inline: 20px; }
     .process-list::-webkit-scrollbar { display: none; }
-    .process-card { flex: 0 0 82%; scroll-snap-align: center; padding: 20px; min-height: auto; }
-    .process-preview { margin-top: 4px; padding: 12px; }
-    .radar-preview { grid-template-columns: 1fr 110px; min-height: 90px; }
-    .radar-preview svg { width: 110px; height: auto; }
+    .process-card { flex: 0 0 82%; scroll-snap-align: center; padding: 20px; }
+    .process-preview { flex: none; padding: 12px; }
+    .process-copy > p br { display: none; }
+    .radar-preview { grid-template-columns: 1fr 115px; }
+    .radar-preview svg { width: 115px; height: auto; }
     .process-preview h4 { font-size: 12px; margin-bottom: 6px; }
     .process-preview > p { font-size: 10px; }
-    .sim-preview-graph { height: 110px; padding: 24px 44px 0 4px; gap: 4px; }
-    .sim-preview-bar { width: 22px; }
-    .sim-preview-labels { padding: 6px 44px 0 4px; gap: 4px; }
+    .sim-preview-graph { height: 110px; padding: 24px 44px 0 4px; gap: 10px; }
+    .sim-preview-bar { width: 28px; }
+    .sim-preview-labels { padding: 6px 44px 0 4px; gap: 10px; }
     .sim-preview-label { font-size: 8px; }
     .sim-preview-label strong { font-size: 8px; }
     .sim-preview-label small { font-size: 7.5px; }
-    .process-circle-arrow { position: static; transform: none; width: 36px; height: 36px; font-size: 13px; margin: 12px 0 0 auto; }
+    .chips { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .chips::-webkit-scrollbar { display: none; }
+    .chips span { flex-shrink: 0; font-size: 11px; padding: 4px 9px; }
+    .process-circle-arrow { position: static; transform: none; width: 36px; height: 36px; font-size: 13px; margin: 10px 0 0 auto; }
     .step-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
     .step-card { min-height: 150px; padding: 16px; box-sizing: border-box; }
     .step-card--one { transform: none; }
     .step-grid .step-card:nth-child(2) { margin-top: 52px; }
-    .step-grid .step-card:nth-child(3) { grid-column: 1; }
+    .step-grid .step-card:nth-child(3) { grid-column: 1; margin-top: -36px; }
     .step-card h3 { font-size: 15px; margin: 10px 0 7px; }
     .step-card p { font-size: 11.5px; }
     .step-card-icon { font-size: 28px; margin-top: 8px; }
