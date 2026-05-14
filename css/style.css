@@ -32,6 +32,8 @@
 html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
 html { scroll-behavior: smooth; scroll-padding-top: 83px; }
 body { margin: 0; font-family: "Paperlogy", system-ui, -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text); background: #fff; line-height: 1.5; letter-spacing: -0.02em; word-break: keep-all; -webkit-font-smoothing: antialiased; }
+h1, h2, h3, h4, h5 { text-wrap: balance; }
+p { text-wrap: pretty; }
 a { color: inherit; text-decoration: none; cursor: pointer; }
 ul, ol { list-style: none; margin: 0; padding: 0; }
 img { display: block; max-width: 100%; }
@@ -429,7 +431,45 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 .demo-step, .result-slide { display: none; }
 
 /* =========================================
-   15. 반응형
+   15. 분석 프로세스 카드 (index 페이지)
+   ========================================= */
+.process-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.process-card { position: relative; min-height: 168px; padding: 26px 28px 28px; display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: 0 4px 20px rgba(76,121,238,.08); transition: box-shadow .2s, transform .2s; }
+.process-card:hover { box-shadow: 0 8px 28px rgba(76,121,238,.14); transform: translateY(-2px); }
+.process-copy .step-no { display: inline; font-size: 28px; color: var(--primary); font-weight: 900; margin-right: 16px; }
+.process-copy h3 { display: inline; margin: 0; font-size: 22px; color: #1e293b; font-weight: 800; }
+.process-copy > p { margin: 16px 0 0; color: #3d526e; font-size: 15px; line-height: 1.6; }
+.chips { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+.chips span { padding: 6px 12px; border-radius: var(--radius-sm); background: #eef4ff; color: var(--primary); font-size: 13px; font-weight: 700; }
+.process-preview { border: 1px solid #e2eaf8; border-radius: var(--radius-md); background: #fff; padding: 16px; }
+.process-preview h4 { margin: 0 0 8px; color: var(--primary); font-size: 13px; font-weight: 800; }
+.process-preview p { margin: 0; font-size: 11px; color: #64748b; }
+.radar-preview { display: grid; grid-template-columns: 1fr 140px; align-items: center; min-height: 112px; }
+.process-circle-arrow { position: absolute; right: 16px; top: 16px; transform: none; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; color: var(--primary); background: #fff; box-shadow: 0 8px 24px rgba(76,121,238,.16); font-size: 16px; transition: background .18s, color .18s; }
+.process-circle-arrow:hover { background: var(--primary); color: #fff; }
+.sim-preview-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.sim-preview-title { font-size: 12px; font-weight: 800; color: #1e293b; }
+.sim-preview-badge { font-size: 11px; color: #64748b; background: #f1f5f9; padding: 3px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; }
+.sim-preview-graph-wrap { display: flex; flex-direction: column; }
+.sim-preview-graph { position: relative; height: 140px; border-bottom: 2px solid #cbd5e1; display: flex; align-items: flex-end; gap: 6px; padding: 28px 52px 0 4px; box-sizing: border-box; overflow: visible; }
+.sim-preview-guide { position: absolute; left: 0; right: 0; border-top: 1px dashed #cbd5e1; pointer-events: none; }
+.sim-preview-guide--blue { border-top-color: #3b82f6; }
+.sim-preview-guide-label { position: absolute; right: 4px; top: -14px; font-size: 9px; font-weight: 700; background: rgba(255,255,255,.95); padding: 1px 2px; white-space: nowrap; }
+.sim-preview-bar-item { flex: 1; height: 100%; display: flex; align-items: flex-end; justify-content: center; position: relative; }
+.sim-preview-bar { width: 28px; border-radius: 4px 4px 0 0; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); transition: height .5s ease-out; }
+.sim-preview-bar--active { box-shadow: 0 0 8px rgba(16,185,129,.35); }
+.sim-preview-score { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 9px; font-weight: 800; color: #64748b; white-space: nowrap; }
+.sim-preview-labels { display: flex; gap: 6px; padding: 6px 52px 0 4px; }
+.sim-preview-label { flex: 1; text-align: center; font-size: 9px; color: #475569; line-height: 1.35; word-break: keep-all; }
+.sim-preview-label strong { display: block; color: #1e293b; font-size: 9px; font-weight: 700; margin-bottom: 1px; }
+.sim-preview-label small { color: #64748b; font-size: 8.5px; }
+.sim-preview-label--active strong { color: #10b981; }
+.sim-preview-legend { display: flex; gap: 10px; justify-content: center; margin-top: 10px; padding-top: 8px; border-top: 1px dashed #e2eaf8; }
+.sim-preview-legend span { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #64748b; font-weight: 600; }
+.sim-preview-legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+
+/* =========================================
+   16. 반응형
    ========================================= */
 
 /* 1200px 이하: 타이포 축소, 플래너 2열, 커리큘럼 gap 축소 + 탭 세로 배치
@@ -459,6 +499,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .section, .dark-feature, .effects-section, .curriculum, .review-section { padding: 60px 0; }
 
     .problem__grid { grid-template-columns: 1fr; }
+    .process-circle-arrow { width: 40px; height: 40px; font-size: 14px; }
     .step-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
     .step-card--one { grid-row: span 2; transform: translateY(50px); }
     .step-card { min-height: 210px; padding: 20px; }
@@ -504,6 +545,11 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .hero-subtitle { font-size: 15px; }
     .section-heading h2, .effects-header h2, .section-header h2, .problem__copy h2, .cta-content h3 { font-size: clamp(20px, 8vw, 28px); }
 
+    .process-list { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 14px; padding-bottom: 16px; padding-inline: 20px; scroll-padding-inline: 20px; }
+    .process-list::-webkit-scrollbar { display: none; }
+    .process-card { flex: 0 0 82%; scroll-snap-align: center; padding: 20px; min-height: auto; }
+    .process-preview { display: none; }
+    .process-circle-arrow { position: static; transform: none; width: 36px; height: 36px; font-size: 13px; margin: 12px 0 0 auto; }
     .step-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
     .step-card { flex: 0 0 calc(50% - 5px); min-height: 150px; padding: 16px; box-sizing: border-box; }
     .step-card--one { transform: none; }
