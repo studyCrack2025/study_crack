@@ -1,10 +1,10 @@
 // 1. 티어별 설명 매핑
 const TIER_DATA = {
     'test':     { desc: '시스템 연동 테스트용 결제' },
-    'basic':    { desc: '현재 위치 진단 및 전략 수립' },
-    'standard': { desc: '월간 학습 코칭 (플래닝) 정기구독' },
-    'pro':      { desc: '최소 노력 최대 효율, 맞춤 전략 재설계 정기구독' },
-    'trial':    { desc: 'PRO 등급 한 달 완벽 체험' }
+    'basic':    { desc: 'STARTER 1주 플래너 진단 이용권' },
+    'standard': { desc: 'STANDARD 4주 합격 플래너 설계 이용권' },
+    'pro':      { desc: 'PRO 4주 프리미엄 전략 관리 이용권' },
+    'trial':    { desc: 'TRIAL 4주 체험 이용권' }
 };
 
 let checkoutData = null;
@@ -46,23 +46,19 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('chkPrice').textContent    = formattedPrice;
     document.getElementById('btnPayAmount').textContent = formattedPrice;
 
-    // 5. 결제 안내 문구
+    // 5. 결제 안내 문구 (단건 결제 기준)
     const noticeBox = document.getElementById('billingNotice');
-    if (checkoutData.tier === 'basic' || checkoutData.tier === 'trial') {
+    if (checkoutData.tier === 'free' || checkoutData.tier === 'test') {
         noticeBox.style.display = 'none';
     } else {
         const effectiveStart = new Date(checkoutData.effectiveStartDate || new Date());
-        const nextDate = new Date(effectiveStart);
-        nextDate.setDate(nextDate.getDate() + 28);
         const startM = effectiveStart.getMonth() + 1;
         const startD = effectiveStart.getDate();
-        const nextM  = nextDate.getMonth() + 1;
-        const nextD  = nextDate.getDate();
 
         if (effectiveStart > new Date()) {
-            noticeBox.innerHTML = `<i class="fas fa-info-circle" style="color:#0284c7;"></i> 예약 결제 안내<br>새로운 구독은 기존 만료일인 <strong>${startM}월 ${startD}일</strong>부터 적용되며, 다음 정기 결제일은 <strong>${nextM}월 ${nextD}일</strong>입니다.`;
+            noticeBox.innerHTML = `<i class="fas fa-info-circle" style="color:#0284c7;"></i> 예약 결제 안내<br>선택한 4주 이용권은 <strong>${startM}월 ${startD}일</strong>부터 적용됩니다.`;
         } else {
-            noticeBox.innerHTML = `<i class="fas fa-info-circle" style="color:#0284c7;"></i> 다음 결제일은 4주 뒤인 <strong>${nextM}월 ${nextD}일</strong>입니다. 언제든 해지 가능합니다.`;
+            noticeBox.innerHTML = `<i class="fas fa-info-circle" style="color:#0284c7;"></i> 본 결제는 단건 결제이며, 결제 후 <strong>4주 이용권</strong>이 제공됩니다.`;
         }
     }
 
@@ -101,7 +97,7 @@ function submitCheckout() {
         method:     selectedMethod.value,
         orderId:    checkoutData.orderId,
         amount:     checkoutData.amount,
-        goodsName:  `스터디크랙 ${checkoutData.productName} 멤버십`,
+        goodsName:  `스터디크랙 ${checkoutData.productName} 이용권`,
         buyerName:  checkoutData.name,
         buyerEmail: checkoutData.email,
         buyerTel:   checkoutData.phone,

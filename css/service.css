@@ -176,6 +176,9 @@ img, svg { display: block; max-width: 100%; }
 .plan-sub { margin: 0 0 20px; color: var(--muted); font-size: 14px; }
 .price { display: block; padding-bottom: 20px; border-bottom: 1px solid #e8eef8; font-size: 16px; color: var(--muted); font-weight: 600; }
 .price em { color: var(--primary); font-style: normal; font-size: 26px; font-weight: 900; letter-spacing: -0.03em; }
+.price-origin { display: block; margin-bottom: 4px; color: #94a3b8; font-size: .9em; text-decoration: line-through; }
+.price-sale-line { display: inline-flex; align-items: baseline; gap: 4px; white-space: nowrap; }
+.price-sale-line span { white-space: nowrap; }
 
 .plan-card ul { margin: 20px 0 28px; padding: 0; flex: 1; }
 .plan-card li { margin: 12px 0; color: var(--text); font-size: 14px; line-height: 1.5; display: flex; align-items: flex-start; gap: 8px; }

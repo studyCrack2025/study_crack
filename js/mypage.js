@@ -377,6 +377,7 @@ function renderUserInfo(data) {
 
 function applyUserTier(tier) {
     currentUserTier = tier;
+    const tierDisplayMap = { basic: 'STARTER', standard: 'STANDARD', pro: 'PRO', trial: 'TRIAL', test: 'TEST' };
     const profileBox = document.querySelector('.profile-summary');
     if (profileBox) {
         profileBox.classList.remove('tier-basic', 'tier-standard', 'tier-pro', 'tier-black');
@@ -389,7 +390,8 @@ function applyUserTier(tier) {
                 badge.className = 'premium-badge';
                 profileBox.appendChild(badge);
             }
-            badge.innerText = `${tier.toUpperCase()} MEMBER`;
+            const tierLabel = tierDisplayMap[tier] || String(tier || '').toUpperCase();
+            badge.innerText = `${tierLabel} MEMBER`;
         } else if (badge) {
             badge.remove();
         }

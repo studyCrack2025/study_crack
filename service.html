@@ -216,43 +216,71 @@
             <p>주간 플래너와 공부 루틴을 직접 설계하고,<br>예상 성적도 예측 모델로 정밀하게 조정합니다.</p>
           </div>
           <div class="process-preview">
-            <h4>주간 플래너 (예시)</h4>
+            <div class="planner-header">
+              <h4>주간 플래너 (예시)</h4>
+              <span class="planner-ai-badge"><i class="fas fa-user-graduate"></i>튜터 맞춤 설계</span>
+            </div>
             <div class="planner-cal">
               <div class="planner-cal-head">
                 <div class="planner-time-label"></div>
                 <span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span><span>일</span>
               </div>
               <div class="planner-cal-slot">
-                <div class="planner-time-label">AM</div>
+                <div class="planner-time-label">오전</div>
                 <div class="planner-cell pc--math">수학<small>개념</small></div>
-                <div class="planner-cell pc--eng">영어<small>기출</small></div>
-                <div class="planner-cell pc--review">오답<small>정리</small></div>
-                <div class="planner-cell pc--kor">국어<small>암기</small></div>
-                <div class="planner-cell pc--math">수학<small>실전</small></div>
-                <div class="planner-cell pc--mock">모의<small>고사</small></div>
-                <div class="planner-cell pc--review">오답<small>분석</small></div>
+                <div class="planner-cell pc--eng">영어<small>빈칸</small></div>
+                <div class="planner-cell pc--kor">국어<small>독서</small></div>
+                <div class="planner-cell pc--math">수학<small>미적</small></div>
+                <div class="planner-cell pc--review">오답<small>재풀이</small></div>
+                <div class="planner-cell pc--mock">모의<small>실전</small></div>
+                <div class="planner-cell pc--review">약점<small>정리</small></div>
               </div>
               <div class="planner-cal-slot">
-                <div class="planner-time-label">PM</div>
+                <div class="planner-time-label">오후</div>
+                <div class="planner-cell pc--kor">국어<small>문학</small></div>
+                <div class="planner-cell pc--math">수학<small>기출</small></div>
+                <div class="planner-cell pc--eng">영어<small>구문</small></div>
+                <div class="planner-cell pc--review">오답<small>분석</small></div>
+                <div class="planner-cell pc--plan">탐구<small>개념</small></div>
+                <div class="planner-cell pc--math">수학<small>N제</small></div>
+                <div class="planner-cell pc--eng">영어<small>듣기</small></div>
+              </div>
+              <div class="planner-cal-slot">
+                <div class="planner-time-label">저녁</div>
+                <div class="planner-cell pc--review">오답<small>정리</small></div>
+                <div class="planner-cell pc--rest">복습<small>점검</small></div>
+                <div class="planner-cell pc--plan">탐구<small>문풀</small></div>
                 <div class="planner-cell pc--kor">국어<small>복습</small></div>
-                <div class="planner-cell pc--review">심화<small>분석</small></div>
-                <div class="planner-cell pc--eng">영어<small>심화</small></div>
-                <div class="planner-cell pc--math">수학<small>개념</small></div>
-                <div class="planner-cell pc--plan">자료<small>정리</small></div>
-                <div class="planner-cell pc--rest">휴식<small>관리</small></div>
-                <div class="planner-cell pc--review">오답<small>재풀기</small></div>
+                <div class="planner-cell pc--math">수학<small>복습</small></div>
+                <div class="planner-cell pc--mock">주간<small>테스트</small></div>
+                <div class="planner-cell pc--plan">주간<small>회고</small></div>
               </div>
               <div class="planner-cal-totals">
                 <div class="planner-time-label">목표</div>
-                <div>4h</div><div>3h</div><div>3h</div><div>4h</div><div>5h</div><div>8h</div><div>2h</div>
+                <div>4h</div><div>4h</div><div>4h</div><div>4h</div><div>5h</div><div>6h</div><div>3h</div>
               </div>
             </div>
-            <div class="planner-cal-legend">
-              <span class="pc--math">수학</span>
-              <span class="pc--kor">국어</span>
-              <span class="pc--eng">영어</span>
-              <span class="pc--review">오답/분석</span>
-              <span class="pc--mock">모의고사</span>
+            <p class="planner-footnote">월~일 일별 목표 학습 시간</p>
+            <div class="planner-summary">
+              <div class="planner-summary-row">
+                <span class="planner-summary-label">주간 목표</span>
+                <span class="planner-summary-value">30시간</span>
+                <div class="planner-progress"><div class="planner-progress-bar" style="width:78%"></div></div>
+              </div>
+              <div class="planner-summary-row">
+                <span class="planner-summary-label">집중 과목</span>
+                <span class="planner-summary-value">수학 · 영어</span>
+              </div>
+              <div class="planner-focus">
+                <span class="planner-focus-label">이번 주 집중 전략</span>
+                <div class="planner-focus-tags">
+                  <span>수학 개념 보완</span>
+                  <span>국어 독서 복습</span>
+                  <span>영어 빈칸 약점</span>
+                  <span>오답 재풀이</span>
+                  <span>주말 모의고사</span>
+                </div>
+              </div>
             </div>
           </div>
         </article>
@@ -285,44 +313,45 @@
       <h2>당신의 목표와 상황에 맞는 <em>플랜</em>을 선택하세요</h2>
       <div class="plan-grid">
         <article class="plan-card">
-          <h3>BASIC PLAN</h3>
-          <p class="plan-sub">합격 가능성 분석 중심</p>
-          <strong class="price">월 <em>25,000원</em></strong>
+          <h3>STARTER PLAN</h3>
+          <p class="plan-sub">SKY 튜터 1주 플래너 진단</p>
+          <strong class="price"><em>39,000원</em> (1회)</strong>
           <ul>
-            <li>기초조사서 &amp; 성향 분석</li>
-            <li>합격 가능성 분석</li>
-            <li>유리한 대학 추천</li>
-            <li>목표 성적표 제시</li>
+            <li>SKY 튜터 1회 플래너 피드백</li>
+            <li>과목별 시간 배분 점검</li>
+            <li>목표 대학 기준 우선순위 제안</li>
+            <li>다음 1주 수정 방향 제시</li>
           </ul>
-          <a class="plan-btn" href="/payment">BASIC 플랜 시작하기</a>
+          <a class="plan-btn" href="/payment">STARTER 플랜 시작하기</a>
         </article>
         <article class="plan-card plan-card--popular">
           <div class="popular-ribbon">가장 많이 선택하는 플랜</div>
           <h3>STANDARD PLAN</h3>
-          <p class="plan-sub">SKY 멘토 플래너 관리</p>
-          <strong class="price">월 <em>45,000원</em></strong>
+          <p class="plan-sub">SKY 튜터 4주 합격 플래너 설계</p>
+          <strong class="price"><span class="price-origin">149,000원</span><span class="price-sale-line"><em>49,000원</em><span>/ 4주</span></span></strong>
           <ul>
-            <li>BASIC 모든 기능 포함</li>
-            <li>SKY 멘토 주간 플래너 설계</li>
-            <li>맞춤 공부 루틴 제공</li>
-            <li>예측 피드백 &amp; 점수 수정</li>
+            <li>전담 SKY 튜터 배정</li>
+            <li>주 1회 피드백, 총 4회 제공</li>
+            <li>과목별 공부량·우선순위 조정</li>
+            <li>실학습 기록 기반 다음 주 수정</li>
           </ul>
           <a class="plan-btn plan-btn--filled" href="/payment">STANDARD 플랜 시작하기</a>
         </article>
         <article class="plan-card">
           <h3>PRO PLAN</h3>
-          <p class="plan-sub">1:1 프리미엄 합격 설계</p>
-          <strong class="price">월 <em>75,000원</em></strong>
+          <p class="plan-sub">합격 보장형 프리미엄 전략 관리</p>
+          <strong class="price"><span class="price-origin">299,000원</span><span class="price-sale-line"><em>149,000원</em><span>/ 4주</span></span></strong>
           <ul>
             <li>STANDARD 모든 기능 포함</li>
-            <li>1:1 전담 멘토 배정</li>
-            <li>실전 모의고사 분석</li>
-            <li>수시/정시 지원 전략 &amp; 일정 관리</li>
+            <li>상향 지원 중장기 로드맵</li>
+            <li>심화 합격 전략 리포트</li>
+            <li>학부모 공유용 전략 리포트</li>
+            <li>조건부 환급 혜택 제공</li>
           </ul>
           <a class="plan-btn plan-btn--pro" href="/payment">PRO 플랜 시작하기</a>
         </article>
       </div>
-      <p class="plan-note">모든 플랜은 월 단위 구독이며, 언제든지 변경 또는 해지가 가능합니다.</p>
+      <p class="plan-note">모든 플랜은 단건 결제로 제공되며, STANDARD·PRO는 할인 기간 가격이 적용됩니다.</p>
     </section>
 
     <!-- Final CTA -->
