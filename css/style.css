@@ -485,10 +485,12 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 .planner-cal-head { display: grid; grid-template-columns: 30px repeat(7, 1fr); gap: 3px; }
 .planner-cal-head span { text-align: center; font-size: 9px; font-weight: 700; color: #475569; padding: 4px 0; background: #f8fafc; border-radius: 4px; }
 .planner-cal-slot { display: grid; grid-template-columns: 30px repeat(7, 1fr); gap: 3px; }
+.planner-cal-totals { display: grid; grid-template-columns: 30px repeat(7, 1fr); gap: 3px; }
 .planner-time-label { font-size: 8px; font-weight: 700; color: #64748b; display: flex; align-items: center; justify-content: center; }
 .planner-cell { padding: 5px 1px; border-radius: 4px; font-size: 8px; font-weight: 700; text-align: center; line-height: 1.25; border: 1px solid transparent; }
 .planner-cell small { display: block; margin-top: 1px; font-size: 7px; font-weight: 600; opacity: 0.85; }
 .planner-cal-totals > div:not(.planner-time-label) { text-align: center; font-size: 8px; font-weight: 700; color: #334155; background: #f8fafc; border-radius: 4px; padding: 4px 0; }
+.planner-footnote { margin: 6px 0 0; font-size: 7px; color: #7b8798; text-align: right; }
 .pc--math { background: #edf3ff; color: #2f5bc4; border-color: #d9e5fb; }
 .pc--kor { background: #ebf5ee; color: #2f7b54; border-color: #d6e9dc; }
 .pc--eng { background: #f1edfb; color: #6847b8; border-color: #e3daf4; }
@@ -606,11 +608,13 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .planner-ai-badge { font-size: 7px; padding: 2px 6px; }
     .planner-cal-head { grid-template-columns: 26px repeat(7, 1fr); }
     .planner-cal-slot { grid-template-columns: 26px repeat(7, 1fr); }
+    .planner-cal-totals { grid-template-columns: 26px repeat(7, 1fr); }
     .planner-cal-head span { font-size: 8px; }
     .planner-time-label { font-size: 7px; }
     .planner-cell { font-size: 7px; padding: 4px 1px; }
     .planner-cell small { font-size: 6px; }
     .planner-cal-totals > div:not(.planner-time-label) { font-size: 7px; }
+    .planner-footnote { font-size: 6.5px; }
     .planner-summary-label, .planner-focus-label { font-size: 7px; }
     .planner-summary-value { font-size: 8px; }
     .planner-focus-tags span { font-size: 6.5px; }
