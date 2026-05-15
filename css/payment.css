@@ -116,6 +116,7 @@ img, svg { display: block; max-width: 100%; }
 .plan-tag { display: inline-block; font-size: 12px; font-weight: 900; letter-spacing: .04em; }
 .plan-free { color: var(--primary); }
 .plan-basic { color: var(--primary); }
+.plan-starter { color: var(--primary); }
 .plan-standard { color: var(--purple); }
 .plan-pro { color: var(--orange); }
 
@@ -150,6 +151,8 @@ img, svg { display: block; max-width: 100%; }
 .price-amount { padding-left: 20px; border-left: 1px solid #e2eaf8; }
 .price-amount strong { display: block; font-size: 28px; font-weight: 900; letter-spacing: -0.035em; color: var(--navy); }
 .price-amount span { font-size: 13px; color: var(--muted); }
+.price-origin { display: block; margin-bottom: 2px; font-size: 12px; color: #94a3b8; text-decoration: line-through; font-weight: 600; }
+.price-discount-note { display: block; margin-top: 3px; font-size: 11px; color: #475569; font-weight: 700; }
 
 .price-row ul { margin: 0; padding: 0; }
 .price-row li { font-size: 14px; line-height: 1.8; color: var(--text); display: flex; align-items: flex-start; gap: 7px; }
