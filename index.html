@@ -263,43 +263,70 @@
                         <p>주간 플래너와 공부 루틴을 직접 설계하고, 예상 성적도 예측 모델로 정밀하게 조정합니다.</p>
                     </div>
                     <div class="process-preview">
-                        <h4>주간 플래너 (예시)</h4>
+                        <div class="planner-header">
+                            <h4>주간 플래너 (예시)</h4>
+                            <span class="planner-ai-badge"><i class="fas fa-wand-magic-sparkles"></i>AI 자동 배치</span>
+                        </div>
                         <div class="planner-cal">
                             <div class="planner-cal-head">
                                 <div class="planner-time-label"></div>
                                 <span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span><span>일</span>
                             </div>
                             <div class="planner-cal-slot">
-                                <div class="planner-time-label">AM</div>
+                                <div class="planner-time-label">오전</div>
                                 <div class="planner-cell pc--math">수학<small>개념</small></div>
-                                <div class="planner-cell pc--eng">영어<small>기출</small></div>
-                                <div class="planner-cell pc--review">오답<small>정리</small></div>
-                                <div class="planner-cell pc--kor">국어<small>암기</small></div>
-                                <div class="planner-cell pc--math">수학<small>실전</small></div>
-                                <div class="planner-cell pc--mock">모의<small>고사</small></div>
-                                <div class="planner-cell pc--review">오답<small>분석</small></div>
+                                <div class="planner-cell pc--eng">영어<small>빈칸</small></div>
+                                <div class="planner-cell pc--kor">국어<small>독서</small></div>
+                                <div class="planner-cell pc--math">수학<small>미적</small></div>
+                                <div class="planner-cell pc--review">오답<small>재풀이</small></div>
+                                <div class="planner-cell pc--mock">모의<small>실전</small></div>
+                                <div class="planner-cell pc--review">약점<small>정리</small></div>
                             </div>
                             <div class="planner-cal-slot">
-                                <div class="planner-time-label">PM</div>
+                                <div class="planner-time-label">오후</div>
+                                <div class="planner-cell pc--kor">국어<small>문학</small></div>
+                                <div class="planner-cell pc--math">수학<small>기출</small></div>
+                                <div class="planner-cell pc--eng">영어<small>구문</small></div>
+                                <div class="planner-cell pc--review">오답<small>분석</small></div>
+                                <div class="planner-cell pc--plan">탐구<small>개념</small></div>
+                                <div class="planner-cell pc--math">수학<small>N제</small></div>
+                                <div class="planner-cell pc--eng">영어<small>듣기</small></div>
+                            </div>
+                            <div class="planner-cal-slot">
+                                <div class="planner-time-label">저녁</div>
+                                <div class="planner-cell pc--review">오답<small>정리</small></div>
+                                <div class="planner-cell pc--rest">복습<small>점검</small></div>
+                                <div class="planner-cell pc--plan">탐구<small>문풀</small></div>
                                 <div class="planner-cell pc--kor">국어<small>복습</small></div>
-                                <div class="planner-cell pc--review">심화<small>분석</small></div>
-                                <div class="planner-cell pc--eng">영어<small>심화</small></div>
-                                <div class="planner-cell pc--math">수학<small>개념</small></div>
-                                <div class="planner-cell pc--plan">자료<small>정리</small></div>
-                                <div class="planner-cell pc--rest">휴식<small>관리</small></div>
-                                <div class="planner-cell pc--review">오답<small>재풀기</small></div>
+                                <div class="planner-cell pc--math">수학<small>복습</small></div>
+                                <div class="planner-cell pc--mock">주간<small>테스트</small></div>
+                                <div class="planner-cell pc--plan">주간<small>회고</small></div>
                             </div>
                             <div class="planner-cal-totals">
-                                <div class="planner-time-label">목표</div>
-                                <div>4h</div><div>3h</div><div>3h</div><div>4h</div><div>5h</div><div>8h</div><div>2h</div>
+                                <div class="planner-time-label">목표(h)</div>
+                                <div>3</div><div>4</div><div>4</div><div>4</div><div>5</div><div>7</div><div>3</div>
                             </div>
                         </div>
-                        <div class="planner-cal-legend">
-                            <span class="pc--math">수학</span>
-                            <span class="pc--kor">국어</span>
-                            <span class="pc--eng">영어</span>
-                            <span class="pc--review">오답/분석</span>
-                            <span class="pc--mock">모의고사</span>
+                        <div class="planner-summary">
+                            <div class="planner-summary-row">
+                                <span class="planner-summary-label">주간 목표</span>
+                                <span class="planner-summary-value">30시간</span>
+                                <div class="planner-progress"><div class="planner-progress-bar" style="width:78%"></div></div>
+                            </div>
+                            <div class="planner-summary-row">
+                                <span class="planner-summary-label">집중 과목</span>
+                                <span class="planner-summary-value">수학 · 영어</span>
+                            </div>
+                            <div class="planner-focus">
+                                <span class="planner-focus-label">이번 주 집중 전략</span>
+                                <div class="planner-focus-tags">
+                                    <span>수학 개념 보완</span>
+                                    <span>국어 독서 복습</span>
+                                    <span>영어 빈칸 약점</span>
+                                    <span>오답 재풀이</span>
+                                    <span>주말 모의고사</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </article>
