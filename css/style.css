@@ -322,8 +322,6 @@ header#site-header.scrolled .nav-links a { color: var(--text); }
 .review-score { color: #f59e0b; font-size: 11px; }
 .review-text { font-size: 13px; font-weight: 300; color: #474747; line-height: 1.7; margin-bottom: 16px; min-height: 60px; }
 .review-author { display: flex; align-items: center; gap: 10px; border-top: 1px solid #f1f5f9; padding-top: 12px; }
-.review-avatar { width: 46px; height: 46px; background: #cbd5e1; border-radius: 50%; overflow: hidden; flex: 0 0 46px; }
-.review-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .review-author div:first-child { font-weight: 700; color: #0f172a; font-size: 12px; }
 .review-author div:last-child { font-size: 11px; color: #64748b; }
 
