@@ -282,15 +282,6 @@ async function renderReviews() {
     const fetchedReviews = await getUserReviews();
     const reviews = fetchedReviews.length > 0 ? fetchedReviews : fallbackReviews;
 
-    const reviewAvatars = [
-        '/assets/figma/figma-asset-14.svg',
-        '/assets/figma/figma-asset-12.png',
-        '/assets/figma/figma-asset-20.png',
-        '/assets/figma/figma-asset-13.png',
-        '/assets/figma/figma-asset-03.png',
-        '/assets/figma/figma-asset-02.png'
-    ];
-
     container.innerHTML = reviews.map((review, index) => `
         <div class="review-card${index === 0 ? ' featured' : ''}">
             <div class="review-header">
@@ -299,9 +290,6 @@ async function renderReviews() {
             </div>
             <p class="review-text">"${escapeHtml(review.content)}"</p>
             <div class="review-author">
-                <div class="review-avatar">
-                    <img src="${reviewAvatars[index % reviewAvatars.length]}" alt="${escapeHtml(review.name)}">
-                </div>
                 <div class="review-info">
                     <div>${escapeHtml(review.name)}</div>
                 </div>
