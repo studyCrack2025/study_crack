@@ -446,6 +446,19 @@ header#site-header .nav-links a.active-link { color: #4c79ee; }
 .pro-textarea:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
 .char-count { text-align: right; font-size: 0.85rem; color: #94a3b8; margin-top: 5px; }
 
+/* 요일별 공부 가능 시간 그리드 */
+.weekly-time-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 12px; }
+.wt-item { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; transition: border-color 0.2s; }
+.wt-item:focus-within { border-color: #3b82f6; background: #eff6ff; }
+.wt-day { font-size: 0.85rem; font-weight: 700; color: #334155; }
+.wt-day--weekend { color: #ef4444; }
+.wt-input { width: 100%; max-width: 52px; padding: 6px 4px; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center; font-size: 1rem; font-weight: 700; color: #1e293b; -moz-appearance: textfield; }
+.wt-input::-webkit-outer-spin-button, .wt-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.wt-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+.wt-unit { font-size: 0.75rem; color: #94a3b8; }
+.wt-total { text-align: right; font-size: 0.95rem; color: #475569; padding: 8px 4px; font-weight: 600; }
+@media (max-width: 480px) { .weekly-time-grid { grid-template-columns: repeat(4, 1fr); } }
+
 /* 저장 버튼 */
 .save-btn { display: block; width: 100%; padding: 16px 20px; margin-top: 20px; background-color: #4c79ee; color: white; border: none; border-radius: 10px; font-size: 1.05rem; font-weight: 700; letter-spacing: -0.5px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 6px -1px rgba(76, 121, 238, 0.3); }
 .save-btn:hover { background-color: #3a68dd; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(76, 121, 238, 0.4); }
