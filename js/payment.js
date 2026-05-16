@@ -2,6 +2,7 @@
 
 const USER_API_URL = CONFIG.api.user;
 const PAYMENT_API_URL = CONFIG.api.payment;
+const FORCE_TEST_PAYMENT_100 = new URLSearchParams(window.location.search).get('testpay') === '1'; // /payment?testpay=1
 
 let selectedProductName = "";
 let selectedTier = null; 
@@ -510,7 +511,10 @@ function formatPhoneNumber(rawPhone) {
 }
 
 // 티어별 결제 금액 (서버 사이드 TIER_PRICES 와 동일하게 유지)
-const TIER_PRICES_KRW = { 'test': 100, 'trial': 30000, 'basic': 39000, 'standard': 49000, 'pro': 149000 };
+const BASE_TIER_PRICES_KRW = { 'test': 100, 'trial': 30000, 'basic': 39000, 'standard': 49000, 'pro': 149000 };
+const TIER_PRICES_KRW = FORCE_TEST_PAYMENT_100
+    ? Object.fromEntries(Object.entries(BASE_TIER_PRICES_KRW).map(([tier, amount]) => [tier, amount > 0 ? 100 : 0]))
+    : BASE_TIER_PRICES_KRW;
 
 // NicePay JS SDK 결제창 호출
 function processPayment() {
