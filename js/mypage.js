@@ -372,7 +372,7 @@ function renderUserInfo(data) {
     if (currentEmailDisplay) currentEmailDisplay.innerText = displayEmail;
 
     const mbtiDisplay = document.getElementById('profileMbtiDisplay');
-    if (mbtiDisplay) mbtiDisplay.textContent = data.mbti || '-';
+    if (mbtiDisplay) mbtiDisplay.textContent = data.mbti || data.qualitative?.mbti || '-';
 }
 
 function applyUserTier(tier) {
