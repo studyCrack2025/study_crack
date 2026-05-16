@@ -146,6 +146,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     const urlParams = new URLSearchParams(window.location.search);
+    if (FORCE_TEST_PAYMENT_100) {
+        const vatNote = document.querySelector('.vat-note');
+        if (vatNote) {
+            vatNote.innerHTML = '테스트 결제 모드 활성화: 유료 플랜은 현재 <strong>100원</strong>으로 결제됩니다.';
+        }
+    }
 
     const errorMsg = urlParams.get('error');
     if (errorMsg) {
@@ -542,14 +548,17 @@ function processPayment() {
         startDate = globalExpireDate;
     }
 
+    const checkoutTier = (FORCE_TEST_PAYMENT_100 && selectedTier !== 'free') ? 'test' : selectedTier;
     const amount = TIER_PRICES_KRW[selectedTier];
     if (!amount) { alert("유효하지 않은 상품입니다."); return; }
 
     const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
 
     const checkoutData = {
-        tier: selectedTier,
-        productName: selectedProductName,
+        tier: checkoutTier,
+        productName: FORCE_TEST_PAYMENT_100 && selectedTier !== 'free' ? `${selectedProductName} (테스트 결제)` : selectedProductName,
+        requestedTier: selectedTier,
+        isTestPayment: FORCE_TEST_PAYMENT_100,
         name: name,
         phone: formattedPhone,
         email: email,
