@@ -147,9 +147,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const urlParams = new URLSearchParams(window.location.search);
     if (FORCE_TEST_PAYMENT_100) {
-        const vatNote = document.querySelector('.vat-note');
-        if (vatNote) {
-            vatNote.innerHTML = '테스트 결제 모드 활성화: 유료 플랜은 현재 <strong>100원</strong>으로 결제됩니다.';
+        const priceList = document.querySelector('.price-list');
+        if (priceList) {
+            const testCard = document.createElement('article');
+            testCard.className = 'price-row';
+            testCard.setAttribute('data-tier', 'test');
+            testCard.innerHTML = `<div class="price-name"><h2 class="c-primary">TEST</h2><p>시스템 연동 테스트</p></div><div class="price-amount"><strong>100</strong><span>원</span></div><ul><li>결제 시스템 연동 확인용</li><li>실 결제 100원 처리</li></ul><a class="price-btn price-btn--primary" href="javascript:void(0)" onclick="selectPlan('test', this.closest('.price-row'))">테스트 결제 선택</a>`;
+            priceList.insertBefore(testCard, priceList.firstChild);
         }
     }
 
@@ -518,9 +522,7 @@ function formatPhoneNumber(rawPhone) {
 
 // 티어별 결제 금액 (서버 사이드 TIER_PRICES 와 동일하게 유지)
 const BASE_TIER_PRICES_KRW = { 'test': 100, 'trial': 30000, 'basic': 39000, 'standard': 49000, 'pro': 149000 };
-const TIER_PRICES_KRW = FORCE_TEST_PAYMENT_100
-    ? Object.fromEntries(Object.entries(BASE_TIER_PRICES_KRW).map(([tier, amount]) => [tier, amount > 0 ? 100 : 0]))
-    : BASE_TIER_PRICES_KRW;
+const TIER_PRICES_KRW = BASE_TIER_PRICES_KRW;
 
 // NicePay JS SDK 결제창 호출
 function processPayment() {
@@ -548,17 +550,18 @@ function processPayment() {
         startDate = globalExpireDate;
     }
 
-    const checkoutTier = (FORCE_TEST_PAYMENT_100 && selectedTier !== 'free') ? 'test' : selectedTier;
+    const checkoutTier = selectedTier;
     const amount = TIER_PRICES_KRW[selectedTier];
     if (!amount) { alert("유효하지 않은 상품입니다."); return; }
 
     const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
 
+    const isTestPayment = selectedTier === 'test';
     const checkoutData = {
         tier: checkoutTier,
-        productName: FORCE_TEST_PAYMENT_100 && selectedTier !== 'free' ? `${selectedProductName} (테스트 결제)` : selectedProductName,
+        productName: isTestPayment ? `${selectedProductName} (테스트 결제)` : selectedProductName,
         requestedTier: selectedTier,
-        isTestPayment: FORCE_TEST_PAYMENT_100,
+        isTestPayment,
         name: name,
         phone: formattedPhone,
         email: email,

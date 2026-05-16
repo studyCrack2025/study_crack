@@ -407,19 +407,33 @@ function goToMBTI() {
 }
 
 function simulateMbtiAnalysis() {
+    const mbtiCode = tutorialData.mbti || 'CSDR';
+    const dimLabels = ['학습 접근법', '변화 적응력', '사고 방식', '계획 스타일'];
+    const dimDescMap = { C: '개념 중심', I: '문제 중심', S: '루틴 선호', M: '변화 선호', D: '근거 중심', E: '흐름 중심', R: '계획 고수', F: '유연 조정' };
+    const dimTagsHtml = mbtiCode.split('').map((ch, i) => `<span style="display:inline-block; background:#f1f5f9; border-radius:6px; padding:4px 10px; margin:3px; font-size:0.85rem; color:#334155;">${dimLabels[i]}: <b>${ch}</b> ${dimDescMap[ch] || ''}</span>`).join('');
     const container = document.getElementById('stepContent');
     container.innerHTML = `
-        <div class="step-card" style="text-align:center; padding: 48px 20px;">
-            <div style="font-size:2.5rem; margin-bottom:16px;">🔍</div>
-            <div style="font-size:1.15rem; font-weight:700; color:#1e293b; margin-bottom:8px;">성적과 학습 유형을 종합 분석 중이에요</div>
-            <div style="font-size:0.95rem; color:#64748b;">잠시만 기다려주세요...</div>
+        <div class="step-card" style="text-align:center; padding: 40px 20px;">
+            <div style="font-size:2.2rem; margin-bottom:12px;">📊</div>
+            <div style="font-size:1rem; font-weight:600; color:#64748b; margin-bottom:4px;">나의 학습 유형</div>
+            <div style="font-size:2rem; font-weight:800; color:var(--primary); letter-spacing:6px; margin-bottom:16px;">${mbtiCode}</div>
+            <div style="margin-bottom:20px;">${dimTagsHtml}</div>
+            <div style="font-size:0.92rem; color:#475569; line-height:1.6; max-width:400px; margin:0 auto 24px;">이 유형은 본인만의 학습 체계를 기반으로 목표를 달성하는 데에 탁월한 잠재력을 가진 유형입니다.</div>
+            <button class="tut-action-btn" id="mbtiResultNextBtn" style="margin-top:8px;">성적 종합 분석 시작하기</button>
         </div>`;
-    updateMascot('입력하신 성적과 학습 유형을 종합 분석 중입니다.', 'analysis');
-
-    setTimeout(() => {
-        currentStepIdx = 4;
-        renderStep();
-    }, 2500);
+    updateMascot('학습 유형 분석이 완료되었어요! 결과를 확인하고, 종합 분석을 시작해보세요.', 'showresult');
+    document.getElementById('tutNextBtn').style.display = 'none';
+    document.getElementById('tutPrevBtn').style.display = 'none';
+    document.getElementById('mbtiResultNextBtn').addEventListener('click', () => {
+        container.innerHTML = `
+            <div class="step-card" style="text-align:center; padding: 48px 20px;">
+                <div style="font-size:2.5rem; margin-bottom:16px;">🔍</div>
+                <div style="font-size:1.15rem; font-weight:700; color:#1e293b; margin-bottom:8px;">성적과 학습 유형을 종합 분석 중이에요</div>
+                <div style="font-size:0.95rem; color:#64748b;">잠시만 기다려주세요...</div>
+            </div>`;
+        updateMascot('입력하신 성적과 학습 유형을 종합 분석 중입니다.', 'analysis');
+        setTimeout(() => { currentStepIdx = 4; renderStep(); }, 2500);
+    });
 }
 
 // ── 튜토리얼 학교 선정 로직 ──────────────────────────────────────
@@ -743,7 +757,10 @@ function initUnivSim() {
     if (!list) return;
     list.innerHTML = '';
 
-    if (!tutorialData.selectedUnivs || tutorialData.selectedUnivs.length === 0) return;
+    if (!tutorialData.selectedUnivs || tutorialData.selectedUnivs.length === 0) {
+        list.innerHTML = '<div style="text-align:center;padding:32px;color:#64748b;font-size:0.95rem;">추천 대학을 불러오는 중 문제가 발생했어요.<br>성적 입력 단계로 돌아가 다시 시도해 주세요.</div><button class="tut-action-btn" style="margin:16px auto;display:block;" onclick="currentStepIdx=2;renderStep();">성적 입력으로 돌아가기</button>';
+        return;
+    }
 
     const univsToRender = buildUnivCards(tutorialData.selectedUnivs, tutorialData.totalStdScore);
 
@@ -957,7 +974,7 @@ async function initSubjectRec() {
     showTutLoading(false);
 
     if (!mar || !plan) {
-        container.innerHTML = '<div style="text-align:center;padding:32px;color:#64748b">성적 데이터를 불러올 수 없습니다.</div>';
+        container.innerHTML = '<div style="text-align:center;padding:32px;color:#64748b;font-size:0.95rem;">성적 데이터를 불러올 수 없습니다.<br>성적 입력 단계에서 다시 시도해 주세요.</div><button class="tut-action-btn" style="margin:16px auto;display:block;" onclick="currentStepIdx=2;renderStep();">성적 입력으로 돌아가기</button>';
         return;
     }
 
@@ -1152,15 +1169,22 @@ async function downloadMBTIReport(mbtiResult) {
 async function convertScore(month, subject, score, opt, subName, common, elective) {
     if (!score || score <= 0) return { std: '', pct: '', grd: '' };
     const hasDual = common != null && elective != null;
+    const payload = { type: 'convert_score', subject, score, opt: opt || '', subName: subName || '', ...(hasDual ? { common, elective } : {}) };
     try {
-        const res = await tutorialAnalysisFetch({
-            method: 'POST',
-            body: JSON.stringify({ type: 'convert_score', month, subject, score, opt: opt || '', subName: subName || '', ...(hasDual ? { common, elective } : {}) })
-        });
-        if (!res.ok) return { std: '', pct: '', grd: '' };
-        const data = await res.json();
-        if (data.error) return { std: '', pct: '', grd: '' };
-        return { std: data.std || '', pct: data.pct || '', grd: data.grd || '' };
+        const res = await tutorialAnalysisFetch({ method: 'POST', body: JSON.stringify({ ...payload, month }) });
+        if (res.ok) {
+            const data = await res.json();
+            if (!data.error && (data.std || data.pct || data.grd)) return { std: data.std || '', pct: data.pct || '', grd: data.grd || '' };
+        }
+        // 5월 변환 실패 시 3월 기준 폴백
+        if (month === 'may') {
+            const fb = await tutorialAnalysisFetch({ method: 'POST', body: JSON.stringify({ ...payload, month: 'mar' }) });
+            if (fb.ok) {
+                const fd = await fb.json();
+                if (!fd.error && (fd.std || fd.pct || fd.grd)) return { std: fd.std || '', pct: fd.pct || '', grd: fd.grd || '' };
+            }
+        }
+        return { std: '', pct: '', grd: '' };
     } catch {
         return { std: '', pct: '', grd: '' };
     }
