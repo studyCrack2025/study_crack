@@ -2400,6 +2400,11 @@ function applyCoachTierLock() {
 }
 
 function switchWeeklyTab(step) {
+    // STARTER(basic)는 Step 2(심층코칭) 접근 불가
+    if (step === 'step2' && currentUserTier === 'basic') {
+        alert("심층코칭은 STANDARD 이상 플랜에서 이용할 수 있습니다.");
+        return;
+    }
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     if(step === 'step1') document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
     else document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
@@ -2862,7 +2867,15 @@ async function renderPdfToImages(url, containerId) {
 let currentMobileStep = 0; let wizardSteps = []; let wizardResizeHandler = null;
 
 function openWeeklyCheckModal() {
-    if (!['standard', 'pro'].includes(currentUserTier)) { alert("🔒 Standard 멤버십 이상 전용 기능입니다.\n멤버십 업그레이드 후 이용해주세요."); return; }
+    if (!['basic', 'standard', 'pro'].includes(currentUserTier)) {
+        if (confirm("🔒 STARTER 이상 플랜에서 주간 학습점검을 이용할 수 있습니다.\n결제 페이지로 이동하시겠습니까?")) { window.location.href = '/payment'; }
+        return;
+    }
+    // STARTER(basic) 1회 제출 제한: 이미 제출 이력이 있으면 차단
+    if (currentUserTier === 'basic' && weeklyDataHistory.length > 0) {
+        alert("STARTER 플랜은 1회 플래너 피드백이 제공됩니다.\n이미 제출을 완료하셨습니다. 추가 제출은 STANDARD 이상 플랜에서 가능합니다.");
+        return;
+    }
     const today = new Date();
     if (today.getDay() === 0 && today.getHours() >= 20) { alert("금주 학습 점검 제출이 마감되었습니다."); return; }
     
@@ -2875,12 +2888,26 @@ function openWeeklyCheckModal() {
     const thisWeekData = weeklyDataHistory.find(w => w.weekId === currentWeekId)
         || weeklyDataHistory.find(w => w.title && w.title.replace(/\s/g, '') === currentWeekTitle.replace(/\s/g, ''));
     if (thisWeekData) loadWeeklyDataToForm(thisWeekData); else resetWeeklyForm();
-    
+
+    // STARTER(basic) 티어: Step 2 탭 잠금 표시
+    const step2Btn = modal.querySelector('.tab-btn:nth-child(2)');
+    if (currentUserTier === 'basic') {
+        step2Btn.innerHTML = 'Step 2. 심층코칭 <i class="fas fa-lock" style="margin-left:4px; font-size:0.75rem; color:#94a3b8;"></i>';
+        step2Btn.style.opacity = '0.5';
+        step2Btn.style.cursor = 'not-allowed';
+    } else {
+        step2Btn.innerHTML = 'Step 2. 심층코칭';
+        step2Btn.style.opacity = ''; step2Btn.style.cursor = '';
+    }
+
     function applyModalLayout() {
         const isMobile = window.innerWidth <= 768;
         if (isMobile) {
-            modalContent.classList.add('mobile-wizard-mode'); wizardSteps = Array.from(modal.querySelectorAll('.check-section, .pro-input-card'));
-            if(currentMobileStep >= wizardSteps.length) currentMobileStep = 0; 
+            modalContent.classList.add('mobile-wizard-mode');
+            wizardSteps = Array.from(modal.querySelectorAll('.check-section, .pro-input-card'));
+            // STARTER(basic)는 Step 2(심층코칭) 카드 제외
+            if (currentUserTier === 'basic') { wizardSteps = wizardSteps.filter(el => !el.classList.contains('pro-input-card')); }
+            if(currentMobileStep >= wizardSteps.length) currentMobileStep = 0;
             updateMobileWizardUI();
         } else {
             modalContent.classList.remove('mobile-wizard-mode'); document.getElementById('mobileWizardProgress').style.display = 'none';
@@ -3147,10 +3174,11 @@ async function submitWeeklyCheck() {
 
         const getVal = (id) => document.getElementById(id) ? document.getElementById(id).value.trim() : "";
         const q1 = getVal('deepQ1'), q2 = getVal('deepQ2'), q3 = getVal('deepQ3'), q4 = getVal('deepQ4');
-        if (!q1 && !q2 && !q3 && !q4) { 
-            alert("심층 코칭 질문을 최소 1개 이상 작성해주세요."); 
+        // STARTER(basic)는 Step 2 없이 Step 1만 제출
+        if (currentUserTier !== 'basic' && !q1 && !q2 && !q3 && !q4) {
+            alert("심층 코칭 질문을 최소 1개 이상 작성해주세요.");
             forceMoveToStep(1, 'step2');
-            return; 
+            return;
         }
 
         // 요소가 존재하지 않을 때를 대비한 안전한 값 추출
