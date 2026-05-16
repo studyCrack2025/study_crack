@@ -432,48 +432,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // [핵심] 튜토리얼 완료 여부 엄격한 체크 시작
-    if (getAccessToken() && userRole !== 'tutor' && userRole !== 'admin') {
-        checkTutorialStatus();
-    }
+    // 튜토리얼 강제 체크는 auth.js resolveUserIdentity()에서 전역 처리
 });
-
-// 💡 튜토리얼 검증 후 강제 리다이렉트 (문지기 함수)
-async function checkTutorialStatus() {
-    if (window.location.pathname.startsWith('/tutorial')) return;
-    if (localStorage.getItem('tutorial_completed') === 'true') return;
-
-    if (localStorage.getItem('tutorialStatus') !== null) {
-        alert('진행 중인 튜토리얼이 있습니다. 전략 분석을 위해 먼저 완료해주세요!');
-        window.location.replace('/tutorial');
-        return;
-    }
-
-    const accessToken = getAccessToken();
-    if (!accessToken) return;
-
-    try {
-        const response = await fetch(CONFIG.api.user, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
-            body: JSON.stringify({ type: 'get_user' })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            if (data && (data.tutorialRewardClaimed === true || data.computedTier === 'standard' || data.computedTier === 'pro' || data.computedTier === 'trial')) {
-                localStorage.setItem('tutorial_completed', 'true');
-                return;
-            } else {
-                alert('진행 중인 튜토리얼로 바로 넘어갑니다!');
-                window.location.replace('/tutorial');
-            }
-        }
-        // API 에러 시 조용히 처리 (인증 문제일 수 있으므로 강제 이동하지 않음)
-    } catch (e) {
-        console.error("Tutorial sync error:", e);
-    }
-}
 
 function updateNavUI() {
     const isLoggedIn = !!(getAccessToken() || getIdToken() || localStorage.getItem('userId'));
