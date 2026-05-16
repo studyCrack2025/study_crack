@@ -9,13 +9,12 @@
 body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; margin: 0; padding: 0; overflow-x: hidden; }
 /* ── 레이아웃 ──────────────────────────────────────────────────── */
 .tutorial-wrapper { max-width: 650px; margin: 0 auto 40px; padding: 83px 20px 0; }
-.mascot-section { display: flex; align-items: flex-end; gap: 20px; margin-bottom: 10px; justify-content: center; min-height: 180px; overflow: hidden; }
-.mascot-img { width: 180px; height: auto; transform: translateY(100%); animation: popUpMascot 0.6s cubic-bezier(0.175,0.885,0.32,1.275) forwards; flex-shrink: 0; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1)); }
-.dialogue-bubble { background: #fff; border: 3px solid #bfdbfe; border-radius: 20px 20px 20px 0; padding: 20px 25px; font-weight: 700; font-size: 1.1rem; color: #1e293b; line-height: 1.55; max-width: 60%; box-shadow: 0 10px 25px rgba(0,0,0,0.05); opacity: 0; transform: translateX(-20px); animation: slideInBubble 0.5s ease 0.3s forwards; position: relative; }
-.dialogue-bubble::after { content: ''; position: absolute; bottom: 0; left: -12px; width: 0; height: 0; border: 15px solid transparent; border-right-color: #bfdbfe; border-bottom: 0; border-top-width: 20px; }
+.mascot-section { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; justify-content: center; }
+.mascot-img { width: 140px; height: auto; flex-shrink: 0; }
+.dialogue-bubble { background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 16px 20px; font-weight: 600; font-size: 0.95rem; color: #1e293b; line-height: 1.55; max-width: 65%; }
 
 /* ── 스텝 카드 ─────────────────────────────────────────────────── */
-.step-container { background: #fff; border-radius: 20px; padding: 28px 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #e2e8f0; position: relative; z-index: 5; }
+.step-container { background: #fff; border-radius: 16px; padding: 24px; margin-bottom: 20px; border: 1px solid #e2e8f0; position: relative; }
 .step-card h2 { color: #0f172a; margin: 0 0 12px; font-size: 1.45rem; font-weight: 900; }
 .step-card h3 { color: #0f172a; margin: 0 0 8px; font-size: 1.2rem; font-weight: 800; }
 .step-desc { color: #64748b; line-height: 1.6; margin: 0 0 20px; font-size: 0.95rem; }
@@ -71,8 +70,8 @@ body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; margi
 /* ── 대학 카드 ─────────────────────────────────────────────────── */
 .univ-card-list { display: flex; flex-direction: column; gap: 14px; }
 .univ-card { border: 2px solid #e2e8f0; border-radius: 16px; padding: 20px; cursor: pointer; transition: all 0.2s; background: #fff; }
-.univ-card:hover { border-color: #93c5fd; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.06); }
-.univ-card.selected { border-color: #f59e0b; box-shadow: 0 4px 18px rgba(245,158,11,0.22); background: #fffbeb; }
+.univ-card:hover { border-color: #93c5fd; }
+.univ-card.selected { border-color: #f59e0b; background: #fffbeb; }
 .univ-sim-badge { display: flex; align-items: center; gap: 6px; margin-top: 12px; padding: 7px 14px; background: linear-gradient(90deg, #fef3c7, #fde68a); border: 1px solid #f59e0b; border-radius: 99px; font-size: 0.82rem; font-weight: 700; color: #92400e; }
 .sim-badge-icon { font-size: 1rem; }
 .univ-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 18px; }
@@ -185,17 +184,15 @@ body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; margi
 .tutorial-nav { display: flex; justify-content: space-between; align-items: center; }
 .tut-btn { padding: 14px 28px; border-radius: 12px; font-weight: 700; font-size: 1.05rem; cursor: pointer; border: none; transition: all 0.2s; font-family: inherit; }
 .btn-gray { background: #f1f5f9; color: #64748b; }
-.btn-gray:hover { background: #e2e8f0; transform: translateY(-2px); }
-.btn-blue { background: #2563eb; color: #fff; margin-left: auto; box-shadow: 0 4px 6px rgba(37,99,235,0.2); }
-.btn-blue:hover { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(37,99,235,0.3); }
-.tut-action-btn { display: block; width: 100%; padding: 16px; background: #2563eb; color: #fff; text-align: center; border: none; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 20px; transition: all 0.2s; box-shadow: 0 4px 6px rgba(37,99,235,0.2); font-family: inherit; }
-.tut-action-btn:hover { background: #1d4ed8; transform: translateY(-2px); }
+.btn-gray:hover { background: #e2e8f0; }
+.btn-blue { background: #2563eb; color: #fff; margin-left: auto; }
+.btn-blue:hover { background: #1d4ed8; }
+.tut-action-btn { display: block; width: 100%; padding: 16px; background: #2563eb; color: #fff; text-align: center; border: none; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 20px; transition: background 0.2s; font-family: inherit; }
+.tut-action-btn:hover { background: #1d4ed8; }
 .tut-action-btn:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
 .btn-highlight-pulse { animation: highlightPulse 1.5s infinite; background: #e11d48 !important; color: #fff !important; }
 
 /* ── 애니메이션 ────────────────────────────────────────────────── */
-@keyframes popUpMascot { 0% { transform: translateY(100%) scale(0.9); opacity: 0; } 70% { transform: translateY(-5%) scale(1.05); opacity: 1; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
-@keyframes slideInBubble { 0% { opacity: 0; transform: translateX(-20px); } 100% { opacity: 1; transform: translateX(0); } }
 @keyframes highlightPulse { 0% { box-shadow: 0 0 0 0 rgba(225,29,72,0.7); } 70% { box-shadow: 0 0 0 15px rgba(225,29,72,0); } 100% { box-shadow: 0 0 0 0 rgba(225,29,72,0); } }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -227,9 +224,9 @@ body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; margi
 
 /* ── 업셀링 버튼 그룹 ────────────────────────────────────────── */
 .upsell-btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
-.btn-upsell-primary { display: block; width: 100%; padding: 16px; background: #2563eb; color: #fff; text-align: center; border: none; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px rgba(37,99,235,0.2); font-family: inherit; }
-.btn-upsell-primary:hover { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(37,99,235,0.3); }
-.btn-upsell-primary:disabled { background: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-upsell-primary { display: block; width: 100%; padding: 16px; background: #2563eb; color: #fff; text-align: center; border: none; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: background 0.2s; font-family: inherit; }
+.btn-upsell-primary:hover { background: #1d4ed8; }
+.btn-upsell-primary:disabled { background: #94a3b8; cursor: not-allowed; }
 .btn-upsell-secondary { display: block; width: 100%; padding: 13px; background: transparent; color: #64748b; text-align: center; border: 1.5px solid #e2e8f0; border-radius: 12px; font-weight: 600; font-size: 0.92rem; cursor: pointer; transition: all 0.2s; font-family: inherit; }
 .btn-upsell-secondary:hover { background: #f8fafc; color: #475569; border-color: #cbd5e1; }
 .btn-upsell-secondary:disabled { opacity: 0.5; cursor: not-allowed; }

@@ -161,7 +161,22 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '') {
             const userName = data.name || '학생';
             localStorage.setItem('userName', userName);
             if (data.computedTier) localStorage.setItem('userTier', data.computedTier);
-            
+
+            // 튜토리얼 완료 여부 체크 → 미완료 학생은 /tutorial로 강제 이동
+            const tutorialDone = data.tutorialRewardClaimed === true
+                || data.computedTier === 'standard' || data.computedTier === 'pro' || data.computedTier === 'trial';
+            if (tutorialDone) {
+                localStorage.setItem('tutorial_completed', 'true');
+            } else {
+                localStorage.removeItem('tutorial_completed');
+                const exemptPaths = ['/tutorial', '/login', '/signup', '/welcome', '/social-callback', '/mbti_survey', '/mbti_download', '/checkout', '/success'];
+                const currentPath = window.location.pathname;
+                if (!exemptPaths.some(p => currentPath.startsWith(p))) {
+                    window.location.replace('/tutorial');
+                    return;
+                }
+            }
+
             handleRoleSuccess('student', eventType, userName, promoCode);
         } else {
             throw new Error("계정 정보를 데이터베이스에서 찾을 수 없습니다.");
@@ -224,7 +239,12 @@ function handleRoleSuccess(role, eventType, userName = '회원', promoCode = '')
             window.location.href = '/mypage/tutor';
         } else {
             alert("로그인 성공!");
-            window.location.href = '/';
+            // 튜토리얼 미완료 학생은 /tutorial로 직행
+            if (localStorage.getItem('tutorial_completed') !== 'true') {
+                window.location.href = '/tutorial';
+            } else {
+                window.location.href = '/';
+            }
         }
     }
 }
