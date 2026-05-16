@@ -85,10 +85,9 @@ function submitCheckout() {
         return;
     }
 
-    const token = getAccessToken();
-    if (!token) {
-        alert("로그인이 만료되었습니다. 다시 로그인해 주세요.");
-        window.location.href = '/login';
+    if (!checkoutData || !checkoutData.userId) {
+        alert("결제 정보가 만료되었습니다. 다시 결제를 진행해주세요.");
+        window.location.href = '/payment';
         return;
     }
 
