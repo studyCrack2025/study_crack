@@ -431,7 +431,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 /* =========================================
    15. 분석 프로세스 카드 (index 페이지)
    ========================================= */
-.process-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.process-list { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 16px; }
 .process-card { position: relative; padding: 26px 28px 28px; display: flex; flex-direction: column; gap: 16px; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: 0 4px 20px rgba(76,121,238,.08); transition: box-shadow .2s, transform .2s; min-width: 0; }
 .process-card:hover { box-shadow: 0 8px 28px rgba(76,121,238,.14); transform: translateY(-2px); }
 .process-copy .step-no { display: inline; font-size: 28px; color: var(--primary); font-weight: 900; margin-right: 16px; }

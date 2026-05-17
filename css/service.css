@@ -79,7 +79,7 @@ img, svg { display: block; max-width: 100%; }
 .process-section { padding: 20px 44px 48px; }
 .process-section h2, .formula-section h2, .plan-section h2 { margin: 0; font-size: clamp(26px, 3.2vw, 34px); line-height: 1.25; letter-spacing: -0.035em; color: var(--navy); }
 .section-desc { margin: 18px 0 36px; color: var(--muted); font-size: 16px; line-height: 1.65; }
-.process-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.process-list { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 16px; }
 
 .process-card { position: relative; padding: 26px 28px 28px; display: flex; flex-direction: column; gap: 16px; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); transition: box-shadow .2s, transform .2s; min-width: 0; }
 .process-card:hover { box-shadow: 0 8px 28px rgba(76,121,238,.14); transform: translateY(-2px); }
