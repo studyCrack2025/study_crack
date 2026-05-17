@@ -442,7 +442,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 .process-preview { flex: 1; min-height: 0; border: 1px solid #e2eaf8; border-radius: var(--radius-md); background: #fff; padding: 16px; }
 .process-preview h4 { margin: 0 0 8px; color: var(--primary); font-size: 13px; font-weight: 800; }
 .process-preview p { margin: 0; font-size: 11px; color: #64748b; }
-.radar-preview { display: grid; grid-template-columns: 1fr 185px; align-items: center; }
+.radar-preview { display: flex; flex-direction: column; gap: 8px; }
 .process-circle-arrow { position: absolute; right: 16px; top: 16px; display: flex; align-items: center; gap: 10px; color: var(--primary); font-weight: 700; text-decoration: none; }
 .process-arrow-label { font-size: 12px; white-space: nowrap; }
 .process-circle-arrow i { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; background: #fff; box-shadow: 0 8px 24px rgba(76,121,238,.16); font-size: 16px; flex-shrink: 0; transition: background .18s, color .18s; }
