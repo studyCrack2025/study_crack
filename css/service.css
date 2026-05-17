@@ -94,8 +94,8 @@ img, svg { display: block; max-width: 100%; }
 .process-preview h4 { margin: 0 0 8px; color: var(--primary); font-size: 13px; font-weight: 800; }
 .process-preview p { margin: 0; font-size: 11px; color: var(--muted); }
 
-.radar-preview { display: flex; flex-direction: column; gap: 8px; }
-.radar-preview svg { max-height: 170px; width: auto; margin: 0 auto; }
+.radar-preview { display: flex; flex-direction: column; gap: 8px; align-items: center; text-align: center; }
+.radar-preview svg { max-height: 220px; width: auto; margin: 0 auto; }
 
 /* ── 목표대학 분석 차트 (analysis 페이지 renderSimChart() 동일 디자인) ── */
 .sim-chart-preview { padding: 14px 16px 10px; display: flex; flex-direction: column; }
