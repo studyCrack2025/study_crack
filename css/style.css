@@ -442,7 +442,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 .process-preview { flex: 1; min-height: 0; border: 1px solid #e2eaf8; border-radius: var(--radius-md); background: #fff; padding: 16px; }
 .process-preview h4 { margin: 0 0 8px; color: var(--primary); font-size: 13px; font-weight: 800; }
 .process-preview p { margin: 0; font-size: 11px; color: #64748b; }
-.radar-preview { display: flex; flex-direction: column; gap: 8px; align-items: center; text-align: center; }
+.radar-preview { display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; text-align: center; }
 .radar-preview svg { max-height: 220px; width: auto; margin: 0 auto; }
 .process-circle-arrow { position: absolute; right: 16px; top: 16px; display: flex; align-items: center; gap: 10px; color: var(--primary); font-weight: 700; text-decoration: none; }
 .process-arrow-label { font-size: 12px; white-space: nowrap; }
@@ -598,7 +598,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .process-card { flex: 0 0 82%; scroll-snap-align: center; padding: 20px; }
     .process-preview { flex: none; padding: 12px; }
     .process-copy > p br { display: none; }
-    .radar-preview { display: flex; flex-direction: column; gap: 8px; align-items: center; text-align: center; }
+    .radar-preview { display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; text-align: center; }
     .radar-preview svg { width: 100%; max-height: 200px; height: auto; }
     .process-preview h4 { font-size: 12px; margin-bottom: 6px; }
     .process-preview > p { font-size: 10px; }

@@ -85,7 +85,7 @@ img, svg { display: block; max-width: 100%; }
 .step-no { margin-right: 16px; font-size: 28px; color: var(--primary); font-weight: 900; }
 .process-copy h3 { display: inline; margin: 0; font-size: 22px; color: var(--navy); font-weight: 800; }
 .process-copy p { margin: 16px 0 0; color: #3d526e; font-size: 15px; line-height: 1.6; }
-.strong-copy { font-size: 18px !important; font-weight: 800; color: var(--navy) !important; }
+.strong-copy { font-size: 16px !important; font-weight: 800; color: var(--navy) !important; }
 
 .chips { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
 .chips span { padding: 6px 12px; border-radius: var(--radius-sm); background: #eef4ff; color: var(--primary); font-size: 13px; font-weight: 700; }
@@ -94,7 +94,7 @@ img, svg { display: block; max-width: 100%; }
 .process-preview h4 { margin: 0 0 8px; color: var(--primary); font-size: 13px; font-weight: 800; }
 .process-preview p { margin: 0; font-size: 11px; color: var(--muted); }
 
-.radar-preview { display: flex; flex-direction: column; gap: 8px; align-items: center; text-align: center; }
+.radar-preview { display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; text-align: center; }
 .radar-preview svg { max-height: 220px; width: auto; margin: 0 auto; }
 
 /* ── 목표대학 분석 차트 (analysis 페이지 renderSimChart() 동일 디자인) ── */
