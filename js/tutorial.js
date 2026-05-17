@@ -472,11 +472,11 @@ function buildUserScoresForAnalysis(mar) {
     if (hasSci) restriction.push('과탐 필수');
     if (restriction.length === 0) restriction.push('자유선택');
     return {
-        kor: { std: parseFloat(mar.kor?.std) || 0, pct: parseFloat(mar.kor?.pct) || 0, grd: parseInt(mar.kor?.grd) || 9, opt: mar.kor?.opt || '', name: '국어' },
-        math: { std: parseFloat(mar.math?.std) || 0, pct: parseFloat(mar.math?.pct) || 0, grd: parseInt(mar.math?.grd) || 9, opt: mar.math?.opt || '', name: '수학' },
+        kor: { std: parseFloat(mar.kor?.std) || 0, pct: parseFloat(mar.kor?.pct) || 0, grd: parseInt(mar.kor?.grd) || 9, opt: mar.kor?.opt || '', name: '국어', raw: parseInt(mar.kor?.raw) || 0, common: parseInt(mar.kor?.common) || 0, elective: parseInt(mar.kor?.elective) || 0 },
+        math: { std: parseFloat(mar.math?.std) || 0, pct: parseFloat(mar.math?.pct) || 0, grd: parseInt(mar.math?.grd) || 9, opt: mar.math?.opt || '', name: '수학', raw: parseInt(mar.math?.raw) || 0, common: parseInt(mar.math?.common) || 0, elective: parseInt(mar.math?.elective) || 0 },
         eng: { grd: mar.eng?.grd || 9 },
-        inq1: { std: parseFloat(mar.inq1?.std) || 0, pct: parseFloat(mar.inq1?.pct) || 0, grd: parseInt(mar.inq1?.grd) || 9, name: inq1Name },
-        inq2: { std: parseFloat(mar.inq2?.std) || 0, pct: parseFloat(mar.inq2?.pct) || 0, grd: parseInt(mar.inq2?.grd) || 9, name: inq2Name },
+        inq1: { std: parseFloat(mar.inq1?.std) || 0, pct: parseFloat(mar.inq1?.pct) || 0, grd: parseInt(mar.inq1?.grd) || 9, name: inq1Name, raw: parseInt(mar.inq1?.raw) || 0 },
+        inq2: { std: parseFloat(mar.inq2?.std) || 0, pct: parseFloat(mar.inq2?.pct) || 0, grd: parseInt(mar.inq2?.grd) || 9, name: inq2Name, raw: parseInt(mar.inq2?.raw) || 0 },
         restriction
     };
 }
