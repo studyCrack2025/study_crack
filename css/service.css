@@ -76,9 +76,12 @@ img, svg { display: block; max-width: 100%; }
 /* =========================================
    6. Process Section
    ========================================= */
-.process-section { padding: 20px 44px 48px; }
+.process-section { padding: clamp(64px, 6vw, 90px) 44px; }
+.process-section .section-heading { text-align: center; margin: 0 auto clamp(36px, 4.5vw, 58px); max-width: 820px; }
+.process-section .eyebrow { margin: 0 0 16px; font-size: 14px; font-weight: 800; color: var(--primary); letter-spacing: .06em; text-transform: uppercase; }
 .process-section h2, .formula-section h2, .plan-section h2 { margin: 0; font-size: clamp(26px, 3.2vw, 34px); line-height: 1.25; letter-spacing: -0.035em; color: var(--navy); }
-.section-desc { margin: 18px 0 36px; color: var(--muted); font-size: 16px; line-height: 1.65; }
+.process-section h2 em { color: var(--primary); font-style: normal; }
+.process-section .section-heading p:last-child { margin: 18px 0 0; color: var(--muted); font-size: 16px; line-height: 1.65; }
 .process-list { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 16px; }
 
 .process-card { position: relative; padding: 26px 28px 28px; display: flex; flex-direction: column; gap: 16px; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); transition: box-shadow .2s, transform .2s; min-width: 0; }
@@ -251,10 +254,9 @@ img, svg { display: block; max-width: 100%; }
   .message-band strong { font-size: 17px; }
 
   /* Process — 좌우 스크롤 슬라이더 */
-  .process-section { padding: 20px 0 32px; }
-  .process-section .section-label { padding: 0 20px; }
-  .process-section h2 { font-size: 22px; padding: 0 20px; }
-  .section-desc { font-size: 14px; margin: 14px 0 20px; padding: 0 20px; }
+  .process-section { padding: 48px 0 32px; }
+  .process-section .section-heading { padding: 0 20px; }
+  .process-section h2 { font-size: 22px; }
   .process-list { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 14px; padding-bottom: 16px; padding-inline: 20px; scroll-padding-inline: 20px; margin-inline: 0; }
   .process-list::-webkit-scrollbar { display: none; }
   .process-card { flex: 0 0 82%; scroll-snap-align: center; padding: 20px; min-height: auto; }
