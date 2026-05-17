@@ -99,16 +99,16 @@ img, svg { display: block; max-width: 100%; }
 .radar-preview { display: grid; grid-template-columns: 1fr 185px; align-items: center; }
 
 /* ── 목표대학 분석 차트 (analysis 페이지 renderSimChart() 동일 디자인) ── */
-.sim-chart-preview { padding: 14px 16px 10px; }
+.sim-chart-preview { padding: 14px 16px 10px; display: flex; flex-direction: column; }
 .sim-preview-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .sim-preview-title { font-size: 12px; font-weight: 800; color: var(--navy); }
 .sim-preview-badge { font-size: 11px; color: var(--muted); background: #f1f5f9; padding: 3px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; }
 
 /* graph wrapper */
-.sim-preview-graph-wrap { display: flex; flex-direction: column; }
+.sim-preview-graph-wrap { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
 /* graph area — analysis의 chart-graph-area 동일 구조 */
-.sim-preview-graph { position: relative; height: 120px; border-bottom: 2px solid #cbd5e1; display: flex; align-items: flex-end; gap: 4px; padding: 0 30px 0 4px; box-sizing: border-box; overflow: visible; }
+.sim-preview-graph { position: relative; flex: 1; min-height: 80px; border-bottom: 2px solid #cbd5e1; display: flex; align-items: flex-end; gap: 4px; padding: 20px 30px 0 4px; box-sizing: border-box; overflow: visible; }
 
 /* guide lines — analysis의 chart-guide-line 동일 */
 .sim-preview-guide { position: absolute; left: 0; right: 0; border-top: 1px dashed #cbd5e1; pointer-events: none; }
@@ -259,7 +259,7 @@ img, svg { display: block; max-width: 100%; }
   .process-preview { flex: none; padding: 12px; }
   .radar-preview { display: flex; flex-direction: column; gap: 8px; }
   .radar-preview svg { width: 100%; max-height: 170px; height: auto; }
-  .sim-preview-graph { height: 88px; padding: 0 26px 0 4px; gap: 8px; }
+  .sim-preview-graph { min-height: 60px; padding: 16px 26px 0 4px; gap: 8px; }
   .sim-preview-bar { width: 16px; }
   .sim-preview-score { font-size: 9px; top: -14px; }
   .sim-preview-labels { padding: 5px 26px 0 4px; gap: 8px; }
