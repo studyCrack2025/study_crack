@@ -216,14 +216,14 @@ img, svg { display: block; max-width: 100%; }
 .ex-sim { height: 100%; display: flex; flex-direction: column; }
 .ex-sim-header { display: flex; align-items: center; gap: 7px; padding: 8px 12px; background: #1e3a8a; color: #fff; font-size: 11px; font-weight: 700; flex-shrink: 0; }
 .ex-sim-graph-wrap { flex: 1; padding: 6px 10px 0; display: flex; flex-direction: column; }
-.ex-sim-graph { flex: 1; position: relative; display: flex; align-items: flex-end; gap: 5px; border-bottom: 1.5px solid #cbd5e1; padding: 22px 38px 0 4px; box-sizing: border-box; overflow: visible; min-height: 90px; }
+.ex-sim-graph { flex: 1; position: relative; display: flex; align-items: flex-end; gap: 4px; border-bottom: 1.5px solid #cbd5e1; padding: 18px 30px 0 4px; box-sizing: border-box; overflow: visible; min-height: 90px; }
 .ex-guide { position: absolute; left: 0; right: 0; border-top: 1px dashed #cbd5e1; pointer-events: none; }
 .ex-guide--blue { border-top-color: #3b82f6; }
-.ex-guide span { position: absolute; right: 2px; top: -13px; font-size: 8px; font-weight: 700; background: rgba(255,255,255,.95); padding: 1px 2px; white-space: nowrap; }
+.ex-guide span { position: absolute; right: 2px; top: -12px; font-size: 8px; font-weight: 700; white-space: nowrap; }
 .ex-bar-item { flex: 1; height: 100%; display: flex; align-items: flex-end; justify-content: center; position: relative; }
-.ex-bar-col { width: 18px; border-radius: 3px 3px 0 0; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); }
-.ex-bar-col span { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: var(--muted); white-space: nowrap; }
-.ex-sim-labels { display: flex; gap: 5px; padding: 4px 38px 6px 4px; }
+.ex-bar-col { width: 18px; border-radius: 5px 5px 0 0; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); }
+.ex-bar-col span { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 800; color: var(--muted); white-space: nowrap; }
+.ex-sim-labels { display: flex; gap: 4px; padding: 4px 30px 6px 4px; }
 .ex-sim-labels span { flex: 1; text-align: center; font-size: 8px; color: #475569; }
 
 /* ── 중장기 로드맵 ── */
