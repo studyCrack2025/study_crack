@@ -1,6 +1,28 @@
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 window.scrollTo(0, 0);
 
+function toggleScoreUp() {
+    const barItem = document.getElementById('simScoreUpBar');
+    if (!barItem) return;
+    const bar = barItem.querySelector('.sim-preview-bar');
+    const score = bar.querySelector('.sim-preview-score');
+    const delta = barItem.querySelector('.sim-score-delta');
+    const isUp = barItem.classList.toggle('score-up-active');
+    if (isUp) {
+        bar.style.height = '53.3%';
+        bar.style.background = '#10b981';
+        score.textContent = '133.3';
+        score.style.color = '#10b981';
+        delta.style.display = '';
+    } else {
+        bar.style.height = '42.8%';
+        bar.style.background = '#3b82f6';
+        score.textContent = '107';
+        score.style.color = '';
+        delta.style.display = 'none';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const header = document.getElementById('site-header');
   if (header) header.classList.add('scrolled');

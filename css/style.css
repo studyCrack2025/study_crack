@@ -450,6 +450,11 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 .sim-preview-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .sim-preview-title { font-size: 12px; font-weight: 800; color: #1e293b; }
 .sim-preview-badge { font-size: 11px; color: #64748b; background: #f1f5f9; padding: 3px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; }
+.sim-score-up-btn { font-size: 11px; font-weight: 700; color: #fff; background: #3b82f6; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: background 0.2s; }
+.sim-score-up-btn:hover { background: #2563eb; }
+.sim-score-delta { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 800; color: #f59e0b; background: #fffbeb; border: 1px dashed #f59e0b; padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+.sim-preview-bar-item { position: relative; }
+.sim-preview-legend-note { font-size: 10px; color: #94a3b8; display: inline-flex; align-items: center; gap: 3px; margin-left: auto; }
 .sim-preview-graph-wrap { display: flex; flex-direction: column; }
 .sim-preview-graph { position: relative; height: 140px; border-bottom: 2px solid #cbd5e1; display: flex; align-items: flex-end; gap: 6px; padding: 0 52px 0 4px; box-sizing: border-box; overflow: visible; }
 .sim-preview-guide { position: absolute; left: 0; right: 0; border-top: 1px dashed #cbd5e1; pointer-events: none; }
