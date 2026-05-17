@@ -111,13 +111,13 @@ img, svg { display: block; max-width: 100%; }
 .sim-preview-graph { position: relative; height: 150px; border-bottom: 2px solid #cbd5e1; display: flex; align-items: flex-end; gap: 4px; padding: 0 4px; box-sizing: border-box; overflow: visible; }
 
 /* guide lines — analysis의 chart-guide-line 동일 */
-.sim-preview-guide { position: absolute; left: 0; right: 0; border-top: 1px dashed #cbd5e1; pointer-events: none; }
+.sim-preview-guide { position: absolute; left: 0; right: 0; border-top: 1px dashed #cbd5e1; pointer-events: none; z-index: 2; }
 .sim-preview-guide--blue { border-top-color: #3b82f6; }
 .sim-preview-guide-label { position: absolute; right: 4px; top: -12px; font-size: 8px; font-weight: 700; background: rgba(255,255,255,.9); padding: 0 2px; white-space: nowrap; }
 
 /* bar items — analysis의 sim-bar-item 동일 */
 .sim-preview-bar-item { flex: 1; height: 100%; display: flex; align-items: flex-end; justify-content: center; position: relative; }
-.sim-preview-bar { width: 20px; border-radius: 5px 5px 0 0; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); transition: height .5s ease-out; }
+.sim-preview-bar { width: 20px; border-radius: 5px 5px 0 0; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); transition: height .5s ease-out; z-index: 1; }
 .sim-preview-bar--active { box-shadow: 0 0 8px rgba(16,185,129,.35); }
 
 /* score label above bar — analysis의 sim-score-label 동일 */
