@@ -307,7 +307,7 @@ async function _nextStepCore() {
                     tutorialData.selectedUnivs = selected;
                     sessionStorage.setItem('tut_selectedUnivs', JSON.stringify(selected));
                 }
-            }).catch(() => {});
+            }).catch(e => console.error('[튜토리얼] 추천대학 백그라운드 선정 실패:', e));
         }
     }
 
@@ -446,10 +446,14 @@ async function fetchTutScoreData() {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'get_tut_score_data' })
         });
-        if (!res.ok) return null;
+        if (!res.ok) {
+            console.error('[튜토리얼] get_tut_score_data 실패:', res.status);
+            return null;
+        }
         const data = await res.json();
         return data.scoreData || null;
-    } catch {
+    } catch (e) {
+        console.error('[튜토리얼] get_tut_score_data 에러:', e);
         return null;
     }
 }
@@ -576,25 +580,39 @@ async function tutorialAnalysisFetch(options = {}) {
 
 async function callAnalyzeMyTargets(token, targetUnivs, userScores) {
     try {
+        const examMode = tutorialData.examMonth || 'mar';
         const res = await tutorialAnalysisFetch({
             method: 'POST',
-            body: JSON.stringify({ type: 'analyze_my_targets', targetUnivs, userScores, examMode: 'mock' })
+            body: JSON.stringify({ type: 'analyze_my_targets', targetUnivs, userScores, examMode })
         });
-        if (!res.ok) return null;
+        if (!res.ok) {
+            console.error('[튜토리얼] analyze_my_targets 실패:', res.status);
+            return null;
+        }
         const data = await res.json();
         return data.results || null;
-    } catch { return null; }
+    } catch (e) {
+        console.error('[튜토리얼] analyze_my_targets 에러:', e);
+        return null;
+    }
 }
 
 async function callSimulateScoreRise(token, targetUnivs, userScores) {
     try {
+        const examMode = tutorialData.examMonth || 'mar';
         const res = await tutorialAnalysisFetch({
             method: 'POST',
-            body: JSON.stringify({ type: 'simulate_score_rise', targetUnivs, userScores, examMode: 'mock' })
+            body: JSON.stringify({ type: 'simulate_score_rise', targetUnivs, userScores, examMode, isTutorial: true })
         });
-        if (!res.ok) return null;
+        if (!res.ok) {
+            console.error('[튜토리얼] simulate_score_rise 실패:', res.status, res.statusText);
+            return null;
+        }
         return await res.json();
-    } catch { return null; }
+    } catch (e) {
+        console.error('[튜토리얼] simulate_score_rise 에러:', e);
+        return null;
+    }
 }
 
 function getTutorialCandidates(streamData, totalStdScore, maxCandidates) {
@@ -752,10 +770,32 @@ function buildUnivCards(selectedUnivs, studentScore) {
 }
 
 // ── 추천 대학 시뮬레이션 ──────────────────────────────────────────
-function initUnivSim() {
+async function initUnivSim() {
     const list = document.getElementById('univCardList');
     if (!list) return;
     list.innerHTML = '';
+
+    // P1: 데이터가 없으면 재요청 시도
+    if (!tutorialData.selectedUnivs || tutorialData.selectedUnivs.length === 0) {
+        list.innerHTML = '<div style="text-align:center;padding:32px;color:#64748b;font-size:0.95rem;">추천 대학을 분석 중입니다…</div>';
+        try {
+            const stream = tutorialData.qual?.stream;
+            const examMonth = tutorialData.examMonth || 'mar';
+            const mar = tutorialData.quan?.[examMonth];
+            if (stream && tutorialData.totalStdScore > 0) {
+                const scoreData = await fetchTutScoreData();
+                if (scoreData) {
+                    const selected = await selectTutorialUnivsWithAnalysis(stream, mar, tutorialData.totalStdScore, scoreData);
+                    if (selected && selected.length > 0) {
+                        tutorialData.selectedUnivs = selected;
+                        sessionStorage.setItem('tut_selectedUnivs', JSON.stringify(selected));
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('[튜토리얼] 추천대학 재요청 실패:', e);
+        }
+    }
 
     if (!tutorialData.selectedUnivs || tutorialData.selectedUnivs.length === 0) {
         list.innerHTML = '<div style="text-align:center;padding:32px;color:#64748b;font-size:0.95rem;">추천 대학을 불러오는 중 문제가 발생했어요.<br>성적 입력 단계로 돌아가 다시 시도해 주세요.</div><button class="tut-action-btn" style="margin:16px auto;display:block;" onclick="currentStepIdx=2;renderStep();">성적 입력으로 돌아가기</button>';
