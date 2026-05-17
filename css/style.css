@@ -457,16 +457,16 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 .sim-preview-bar-item { position: relative; }
 .sim-preview-legend-note { font-size: 10px; color: #94a3b8; display: inline-flex; align-items: center; gap: 3px; margin-left: auto; }
 .sim-preview-graph-wrap { display: flex; flex-direction: column; }
-.sim-preview-graph { position: relative; height: 150px; border-bottom: 2px solid #cbd5e1; display: flex; align-items: flex-end; gap: 4px; padding: 0 4px; box-sizing: border-box; overflow: visible; }
-.sim-preview-guide { position: absolute; left: 0; right: 0; border-top: 1px dashed #cbd5e1; pointer-events: none; z-index: 2; }
+.sim-preview-graph { position: relative; height: 150px; border-bottom: 2px solid #cbd5e1; display: flex; align-items: flex-end; gap: 4px; padding: 0 30px 0 4px; box-sizing: border-box; overflow: visible; }
+.sim-preview-guide { position: absolute; left: 0; right: 0; border-top: 1px dashed #cbd5e1; pointer-events: none; }
 .sim-preview-guide--blue { border-top-color: #3b82f6; }
-.sim-preview-guide-label { position: absolute; right: 4px; top: -12px; font-size: 8px; font-weight: 700; background: rgba(255,255,255,.9); padding: 0 2px; white-space: nowrap; }
+.sim-preview-guide-label { position: absolute; right: 2px; top: -12px; font-size: 8px; font-weight: 700; white-space: nowrap; }
 .sim-preview-bar-item { flex: 1; height: 100%; display: flex; align-items: flex-end; justify-content: center; position: relative; }
-.sim-preview-bar { width: 20px; border-radius: 5px 5px 0 0; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); transition: height .5s ease-out; z-index: 1; }
+.sim-preview-bar { width: 20px; border-radius: 5px 5px 0 0; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); transition: height .5s ease-out; }
 .sim-preview-label .sim-label-m { display: none; }
 .sim-preview-bar--active { box-shadow: 0 0 8px rgba(16,185,129,.35); }
 .sim-preview-score { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 800; color: #64748b; white-space: nowrap; }
-.sim-preview-labels { display: flex; gap: 4px; padding: 6px 4px 0; }
+.sim-preview-labels { display: flex; gap: 4px; padding: 6px 30px 0 4px; }
 .sim-preview-label { flex: 1; text-align: center; font-size: 9px; color: #475569; line-height: 1.35; word-break: keep-all; }
 .sim-preview-label strong { display: block; color: #1e293b; font-size: 9px; font-weight: 700; margin-bottom: 1px; }
 .sim-preview-label small { color: #64748b; font-size: 8.5px; }
@@ -603,10 +603,10 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .sim-desktop-bar { display: none; }
     .sim-preview-label .sim-label-d { display: none; }
     .sim-preview-label .sim-label-m { display: block; }
-    .sim-preview-graph { height: 110px; padding: 0 4px; gap: 8px; }
+    .sim-preview-graph { height: 110px; padding: 0 26px 0 4px; gap: 8px; }
     .sim-preview-bar { width: 16px; }
     .sim-preview-score { font-size: 9px; top: -14px; }
-    .sim-preview-labels { padding: 5px 4px 0; gap: 8px; }
+    .sim-preview-labels { padding: 5px 26px 0 4px; gap: 8px; }
     .sim-preview-label { font-size: 8px; }
     .sim-preview-label strong { font-size: 8px; }
     .sim-preview-label small { font-size: 7.5px; }
