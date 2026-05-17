@@ -299,15 +299,13 @@ async function _nextStepCore() {
 
         const stream = tutorialData.qual.stream;
         if (stream && tutorialData.totalStdScore > 0) {
-            fetchTutScoreData().then(scoreData => {
-                if (!scoreData) return null;
-                return selectTutorialUnivsWithAnalysis(stream, tutorialData.quan[examMonth], tutorialData.totalStdScore, scoreData);
-            }).then(selected => {
-                if (selected && selected.length > 0) {
-                    tutorialData.selectedUnivs = selected;
-                    sessionStorage.setItem('tut_selectedUnivs', JSON.stringify(selected));
-                }
-            }).catch(e => console.error('[튜토리얼] 추천대학 백그라운드 선정 실패:', e));
+            fetchTutorialRecommendations(stream, tutorialData.quan[examMonth], tutorialData.totalStdScore, examMonth)
+                .then(selected => {
+                    if (selected && selected.length > 0) {
+                        tutorialData.selectedUnivs = selected;
+                        sessionStorage.setItem('tut_selectedUnivs', JSON.stringify(selected));
+                    }
+                }).catch(e => console.error('[튜토리얼] 추천대학 백그라운드 선정 실패:', e));
         }
     }
 
@@ -436,100 +434,31 @@ function simulateMbtiAnalysis() {
     });
 }
 
-// ── 튜토리얼 학교 선정 로직 ──────────────────────────────────────
-async function fetchTutScoreData() {
+// ── 튜토리얼 추천대학 (서버 일괄 처리) ──────────────────────────────
+async function fetchTutorialRecommendations(stream, mar, totalStdScore, examMonth) {
     const token = getAccessToken();
     if (!token) return null;
+    const userScores = buildUserScoresForAnalysis(mar);
     try {
-        const res = await fetch(CONFIG.api.analysis, {
+        const res = await tutorialAnalysisFetch({
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'get_tut_score_data' })
+            body: JSON.stringify({
+                type: 'get_tutorial_recommendations',
+                userScores, stream, totalStdScore,
+                examMode: examMonth || 'mar'
+            })
         });
         if (!res.ok) {
-            console.error('[튜토리얼] get_tut_score_data 실패:', res.status);
+            console.error('[튜토리얼] get_tutorial_recommendations 실패:', res.status);
             return null;
         }
         const data = await res.json();
-        return data.scoreData || null;
+        return data.selected || null;
     } catch (e) {
-        console.error('[튜토리얼] get_tut_score_data 에러:', e);
+        console.error('[튜토리얼] get_tutorial_recommendations 에러:', e);
         return null;
     }
 }
-
-function selectTutorialUnivs(stream, totalScore, data) {
-    const streamData = data[stream];
-    if (!streamData) return null;
-
-    const allBandNums = Object.keys(streamData).map(Number).sort((a, b) => a - b);
-    if (allBandNums.length === 0) return null;
-
-    const currentBand = Math.floor(totalScore / 10) * 10;
-    const minBand = allBandNums[0];
-    const maxBand = allBandNums[allBandNums.length - 1];
-    const maxOffset = Math.max(currentBand - minBand, maxBand - currentBand) + 10;
-
-    const searchOrder = [currentBand];
-    for (let offset = 10; offset <= maxOffset; offset += 10) {
-        const upper = currentBand + offset;
-        const lower = currentBand - offset;
-        if (upper <= maxBand + offset) searchOrder.push(upper);
-        if (lower >= minBand - offset) searchOrder.push(lower);
-    }
-
-    const slots = [null, null, null];
-    const labelOrder = ['A', 'B', 'C', 'D', 'E'];
-    const usedSchools = new Set();
-
-    for (const band of searchOrder) {
-        const bandData = streamData[String(band)];
-        if (!bandData) continue;
-
-        for (const label of labelOrder) {
-            const labelData = bandData[label];
-            if (!labelData) continue;
-
-            const slotIdx = labelOrder.indexOf(label);
-            if (slotIdx >= slots.length) continue;
-            if (slots[slotIdx] !== null) continue;
-
-            const schoolNames = Object.keys(labelData);
-            let picked = null;
-
-            // 중복 없는 학교 우선 탐색
-            for (const schoolName of schoolNames) {
-                if (!usedSchools.has(schoolName) && labelData[schoolName].length > 0) {
-                    const entry = labelData[schoolName][0];
-                    picked = { school: schoolName, major: entry['학과'], passCut: entry['표준점수'] };
-                    break;
-                }
-            }
-            // 불가피한 경우 중복 허용
-            if (!picked) {
-                for (const schoolName of schoolNames) {
-                    if (labelData[schoolName].length > 0) {
-                        const entry = labelData[schoolName][0];
-                        picked = { school: schoolName, major: entry['학과'], passCut: entry['표준점수'] };
-                        break;
-                    }
-                }
-            }
-
-            if (picked) {
-                slots[slotIdx] = picked;
-                usedSchools.add(picked.school);
-            }
-        }
-
-        // 조기 종료: 현재 점수대에서 3개 모두 확정
-        if (slots.every(s => s !== null)) break;
-    }
-
-    return slots.filter(s => s !== null);
-}
-
-// ── 환산점수 기반 학교 선정 (자체 환산점수 계산 로직 적용) ────────────────
 
 function buildUserScoresForAnalysis(mar) {
     const mathOpt = (mar.math?.opt || '').replace(/\s/g, '');
@@ -552,14 +481,6 @@ function buildUserScoresForAnalysis(mar) {
     };
 }
 
-function boostUserScores(scores, boost) {
-    const b = JSON.parse(JSON.stringify(scores));
-    ['kor', 'math', 'inq1', 'inq2'].forEach(k => {
-        if (b[k]) b[k].std = (parseFloat(b[k].std) || 0) + boost;
-    });
-    return b;
-}
-
 async function tutorialAnalysisFetch(options = {}) {
     const buildOptions = () => ({
         ...options,
@@ -576,153 +497,6 @@ async function tutorialAnalysisFetch(options = {}) {
         if (refreshed) res = await fetch(CONFIG.api.analysis, buildOptions());
     }
     return res;
-}
-
-async function callAnalyzeMyTargets(token, targetUnivs, userScores) {
-    try {
-        const examMode = tutorialData.examMonth || 'mar';
-        const res = await tutorialAnalysisFetch({
-            method: 'POST',
-            body: JSON.stringify({ type: 'analyze_my_targets', targetUnivs, userScores, examMode })
-        });
-        if (!res.ok) {
-            console.error('[튜토리얼] analyze_my_targets 실패:', res.status);
-            return null;
-        }
-        const data = await res.json();
-        return data.results || null;
-    } catch (e) {
-        console.error('[튜토리얼] analyze_my_targets 에러:', e);
-        return null;
-    }
-}
-
-async function callSimulateScoreRise(token, targetUnivs, userScores) {
-    try {
-        const examMode = tutorialData.examMonth || 'mar';
-        const res = await tutorialAnalysisFetch({
-            method: 'POST',
-            body: JSON.stringify({ type: 'simulate_score_rise', targetUnivs, userScores, examMode, isTutorial: true })
-        });
-        if (!res.ok) {
-            console.error('[튜토리얼] simulate_score_rise 실패:', res.status, res.statusText);
-            return null;
-        }
-        return await res.json();
-    } catch (e) {
-        console.error('[튜토리얼] simulate_score_rise 에러:', e);
-        return null;
-    }
-}
-
-function getTutorialCandidates(streamData, totalStdScore, maxCandidates) {
-    const allBandNums = Object.keys(streamData).map(Number).sort((a, b) => a - b);
-    const currentBand = Math.floor(totalStdScore / 10) * 10;
-    const orderedBands = allBandNums.slice().sort((a, b) => Math.abs(a - currentBand) - Math.abs(b - currentBand));
-    const candidates = [];
-    const usedKeys = new Set();
-    for (const band of orderedBands) {
-        if (candidates.length >= maxCandidates) break;
-        const bandData = streamData[String(band)];
-        if (!bandData) continue;
-        for (const label of ['A', 'B', 'C', 'D', 'E']) {
-            const labelData = bandData[label];
-            if (!labelData) continue;
-            for (const schoolName of Object.keys(labelData)) {
-                const entries = labelData[schoolName];
-                if (entries && entries.length > 0) {
-                    const key = `${schoolName}||${entries[0]['학과']}`;
-                    if (!usedKeys.has(key)) {
-                        usedKeys.add(key);
-                        candidates.push({ univ: schoolName, major: entries[0]['학과'] });
-                        if (candidates.length >= maxCandidates) break;
-                    }
-                }
-                if (candidates.length >= maxCandidates) break;
-            }
-            if (candidates.length >= maxCandidates) break;
-        }
-    }
-    return candidates;
-}
-
-async function selectTutorialUnivsWithAnalysis(stream, mar, totalStdScore, scoreData, userScoresOverride = null) {
-    const token = getAccessToken();
-    if (!token) return null;
-    const streamData = scoreData[stream];
-    if (!streamData) return null;
-
-    const candidates = getTutorialCandidates(streamData, totalStdScore, 24);
-    if (candidates.length === 0) return null;
-
-    const userScores = userScoresOverride || buildUserScoresForAnalysis(mar);
-
-    const simResults = await callSimulateScoreRise(token, candidates, userScores);
-    if (!simResults || !Array.isArray(simResults)) return null;
-
-    const currentMap = {}, simMap = {};
-    for (const r of simResults) {
-        if (!r || r.ineligible || !(r.base_ui_score > 0)) continue;
-        const key = `${r.univ}||${r.major}`;
-        currentMap[key] = r.base_ui_score;
-        let maxDiff = 0;
-        if (r.sim_data) Object.values(r.sim_data).forEach(sub => { if (sub && sub.uiDiff > maxDiff) maxDiff = sub.uiDiff; });
-        simMap[key] = r.base_ui_score + maxDiff;
-    }
-
-    // 시나리오별 분류
-    // 학교1(안정/하향): 현재<100 AND 상승후<100
-    // 학교2(적정/도전): 현재<100 AND 상승후 100~125 (범위 확장)
-    // 학교3(상향/초과달성): 현재>=100 OR 상승후>125 (경계값 포함, 나머지 전부 커버)
-    const scenario1 = [], scenario2 = [], scenario3 = [], allEligible = [];
-    for (const cand of candidates) {
-        const key = `${cand.univ}||${cand.major}`;
-        const cur = currentMap[key];
-        if (!cur) continue;
-        const sim = simMap[key] ?? (cur + 10);
-        const item = { school: cand.univ, major: cand.major, currentScore: cur, simScore: sim };
-        allEligible.push(item);
-        if (cur < 100 && sim < 100)                        scenario1.push(item);
-        else if (cur < 100 && sim >= 100 && sim <= 125)    scenario2.push(item);
-        else                                               scenario3.push(item); // cur>=100 OR sim>125
-    }
-
-    // 시나리오 내 정렬
-    scenario1.sort((a, b) => b.currentScore - a.currentScore);
-    scenario2.sort((a, b) => Math.abs(a.simScore - 110) - Math.abs(b.simScore - 110));
-    scenario3.sort((a, b) => a.currentScore - b.currentScore);
-
-    // 폴백: 고정값 대신 실제 점수 분포의 4분위 기반으로 계산
-    const sortedByScore = [...allEligible].sort((a, b) => a.currentScore - b.currentScore);
-    const n = sortedByScore.length;
-    const t1 = sortedByScore[Math.floor(n * 0.20)]?.currentScore ?? 88;
-    const t2 = sortedByScore[Math.floor(n * 0.50)]?.currentScore ?? 97;
-    const t3 = sortedByScore[Math.floor(n * 0.75)]?.currentScore ?? 108;
-    const fallback1 = [...allEligible].sort((a, b) => Math.abs(a.currentScore - t1) - Math.abs(b.currentScore - t1));
-    const fallback2 = [...allEligible].sort((a, b) => Math.abs(a.currentScore - t2) - Math.abs(b.currentScore - t2));
-    const fallback3 = [...allEligible].sort((a, b) => Math.abs(a.currentScore - t3) - Math.abs(b.currentScore - t3));
-
-    const selected = [];
-    const usedSchools = new Set();
-
-    const tryPick = (primary, fallback) => {
-        const sources = primary.length > 0 ? [primary, fallback] : [fallback];
-        for (const src of sources) {
-            for (const item of src) {
-                if (!usedSchools.has(item.school)) {
-                    usedSchools.add(item.school);
-                    selected.push(item);
-                    return;
-                }
-            }
-        }
-    };
-
-    tryPick(scenario1, fallback1);
-    tryPick(scenario2, fallback2);
-    tryPick(scenario3, fallback3);
-
-    return selected.length > 0 ? selected : null;
 }
 
 function buildUnivCards(selectedUnivs, studentScore) {
@@ -783,13 +557,10 @@ async function initUnivSim() {
             const examMonth = tutorialData.examMonth || 'mar';
             const mar = tutorialData.quan?.[examMonth];
             if (stream && tutorialData.totalStdScore > 0) {
-                const scoreData = await fetchTutScoreData();
-                if (scoreData) {
-                    const selected = await selectTutorialUnivsWithAnalysis(stream, mar, tutorialData.totalStdScore, scoreData);
-                    if (selected && selected.length > 0) {
-                        tutorialData.selectedUnivs = selected;
-                        sessionStorage.setItem('tut_selectedUnivs', JSON.stringify(selected));
-                    }
+                const selected = await fetchTutorialRecommendations(stream, mar, tutorialData.totalStdScore, examMonth);
+                if (selected && selected.length > 0) {
+                    tutorialData.selectedUnivs = selected;
+                    sessionStorage.setItem('tut_selectedUnivs', JSON.stringify(selected));
                 }
             }
         } catch (e) {
@@ -994,19 +765,10 @@ async function initSubjectRec() {
             const risingForSim = plan.filter(s => s.assigned > 0);
             const totalGainForSim = risingForSim.reduce((sum, s) => sum + s.assigned, 0);
             if (totalGainForSim > 0 && tutorialData.qual?.stream && tutorialData.totalStdScore > 0) {
-                const boostedUserScores = buildUserScoresForAnalysis(mar);
-                risingForSim.forEach(s => {
-                    if (boostedUserScores[s.key]) {
-                        boostedUserScores[s.key].std = (parseFloat(boostedUserScores[s.key].std) || 0) + s.assigned;
-                    }
-                });
                 const boostedTotalStdScore = tutorialData.totalStdScore + Math.round(totalGainForSim);
-                const scoreData = await fetchTutScoreData();
-                if (scoreData) {
-                    postSimUnivs = await selectTutorialUnivsWithAnalysis(
-                        tutorialData.qual.stream, mar, boostedTotalStdScore, scoreData, boostedUserScores
-                    );
-                }
+                postSimUnivs = await fetchTutorialRecommendations(
+                    tutorialData.qual.stream, mar, boostedTotalStdScore, tutorialData.examMonth || 'mar'
+                );
             }
         } catch(e) {}
     }
