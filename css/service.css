@@ -76,12 +76,7 @@ img, svg { display: block; max-width: 100%; }
 /* =========================================
    6. Process Section
    ========================================= */
-.process-section { padding: clamp(64px, 6vw, 90px) 44px; }
-.process-section .section-heading { text-align: center; margin: 0 auto clamp(36px, 4.5vw, 58px); max-width: 820px; }
-.process-section .eyebrow { margin: 0 0 16px; font-size: 14px; font-weight: 800; color: var(--primary); letter-spacing: .06em; text-transform: uppercase; }
-.process-section h2, .formula-section h2, .plan-section h2 { margin: 0; font-size: clamp(26px, 3.2vw, 34px); line-height: 1.25; letter-spacing: -0.035em; color: var(--navy); }
-.process-section h2 em { color: var(--primary); font-style: normal; }
-.process-section .section-heading p:last-child { margin: 18px 0 0; color: var(--muted); font-size: 16px; line-height: 1.65; }
+.formula-section h2, .plan-section h2 { margin: 0; font-size: clamp(26px, 3.2vw, 34px); line-height: 1.25; letter-spacing: -0.035em; color: var(--navy); }
 .process-list { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 16px; }
 
 .process-card { position: relative; padding: 26px 28px 28px; display: flex; flex-direction: column; gap: 16px; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); transition: box-shadow .2s, transform .2s; min-width: 0; }
@@ -216,7 +211,7 @@ img, svg { display: block; max-width: 100%; }
   .hero-device-img { max-width: 480px; margin: 0 auto; }
 
   .message-band { margin: 24px 28px; }
-  .process-section, .plan-section { padding-left: 28px; padding-right: 28px; }
+  .plan-section { padding-left: 28px; padding-right: 28px; }
   .process-list { grid-template-columns: 1fr; }
 
   .formula-section { margin: 16px 28px 44px; padding: 28px; }
