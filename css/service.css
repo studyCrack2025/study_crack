@@ -76,9 +76,7 @@ img, svg { display: block; max-width: 100%; }
 /* =========================================
    6. Process Section
    ========================================= */
-.process-section { padding: 20px 44px 48px; }
-.process-section h2, .formula-section h2, .plan-section h2 { margin: 0; font-size: clamp(26px, 3.2vw, 34px); line-height: 1.25; letter-spacing: -0.035em; color: var(--navy); }
-.section-desc { margin: 18px 0 36px; color: var(--muted); font-size: 16px; line-height: 1.65; }
+.formula-section h2, .plan-section h2 { margin: 0; font-size: clamp(26px, 3.2vw, 34px); line-height: 1.25; letter-spacing: -0.035em; color: var(--navy); }
 .process-list { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 16px; }
 
 .process-card { position: relative; padding: 26px 28px 28px; display: flex; flex-direction: column; gap: 16px; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); transition: box-shadow .2s, transform .2s; min-width: 0; }
@@ -87,19 +85,21 @@ img, svg { display: block; max-width: 100%; }
 .step-no { margin-right: 16px; font-size: 28px; color: var(--primary); font-weight: 900; }
 .process-copy h3 { display: inline; margin: 0; font-size: 22px; color: var(--navy); font-weight: 800; }
 .process-copy p { margin: 16px 0 0; color: #3d526e; font-size: 15px; line-height: 1.6; }
-.strong-copy { font-size: 18px !important; font-weight: 800; color: var(--navy) !important; }
+.strong-copy { font-size: 16px !important; font-weight: 800; color: var(--navy) !important; }
 
 .chips { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
 .chips span { padding: 6px 12px; border-radius: var(--radius-sm); background: #eef4ff; color: var(--primary); font-size: 13px; font-weight: 700; }
 
-.process-preview { border: 1px solid #e2eaf8; border-radius: var(--radius-md); background: #fff; padding: 16px; }
+.process-preview { flex: 1; min-height: 0; border: 1px solid #e2eaf8; border-radius: var(--radius-md); background: #fff; padding: 16px; }
 .process-preview h4 { margin: 0 0 8px; color: var(--primary); font-size: 13px; font-weight: 800; }
 .process-preview p { margin: 0; font-size: 11px; color: var(--muted); }
 
-.radar-preview { display: flex; flex-direction: column; gap: 8px; }
+.radar-preview { display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; text-align: center; }
+.radar-preview svg { max-height: 220px; width: auto; margin: 0 auto; }
 
 /* ── 목표대학 분석 차트 (analysis 페이지 renderSimChart() 동일 디자인) ── */
 .sim-chart-preview { padding: 14px 16px 10px; display: flex; flex-direction: column; }
+.sim-preview-graph-wrap { margin-top: 20px; }
 .sim-preview-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .sim-preview-title { font-size: 12px; font-weight: 800; color: var(--navy); }
 .sim-preview-badge { font-size: 11px; color: var(--muted); background: #f1f5f9; padding: 3px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; }
@@ -108,7 +108,7 @@ img, svg { display: block; max-width: 100%; }
 .sim-preview-graph-wrap { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
 /* graph area — analysis의 chart-graph-area 동일 구조 */
-.sim-preview-graph { position: relative; flex: 1; min-height: 80px; border-bottom: 2px solid #cbd5e1; display: flex; align-items: flex-end; gap: 4px; padding: 20px 30px 0 4px; box-sizing: border-box; overflow: visible; }
+.sim-preview-graph { position: relative; flex: 1; min-height: 80px; border-bottom: 2px solid #cbd5e1; display: flex; align-items: flex-end; gap: 4px; padding: 0 30px 0 4px; box-sizing: border-box; overflow: visible; }
 
 /* guide lines — analysis의 chart-guide-line 동일 */
 .sim-preview-guide { position: absolute; left: 0; right: 0; border-top: 1px dashed #cbd5e1; pointer-events: none; }
@@ -211,7 +211,7 @@ img, svg { display: block; max-width: 100%; }
   .hero-device-img { max-width: 480px; margin: 0 auto; }
 
   .message-band { margin: 24px 28px; }
-  .process-section, .plan-section { padding-left: 28px; padding-right: 28px; }
+  .plan-section { padding-left: 28px; padding-right: 28px; }
   .process-list { grid-template-columns: 1fr; }
 
   .formula-section { margin: 16px 28px 44px; padding: 28px; }
@@ -249,17 +249,17 @@ img, svg { display: block; max-width: 100%; }
   .message-band strong { font-size: 17px; }
 
   /* Process — 좌우 스크롤 슬라이더 */
-  .process-section { padding: 20px 0 32px; }
-  .process-section .section-label { padding: 0 20px; }
-  .process-section h2 { font-size: 22px; padding: 0 20px; }
-  .section-desc { font-size: 14px; margin: 14px 0 20px; padding: 0 20px; }
+  .process-section { padding: 48px 0 32px; }
+  .process-section .section-heading { padding: 0 20px; }
+  .process-section h2 { font-size: 22px; }
   .process-list { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 14px; padding-bottom: 16px; padding-inline: 20px; scroll-padding-inline: 20px; margin-inline: 0; }
   .process-list::-webkit-scrollbar { display: none; }
   .process-card { flex: 0 0 82%; scroll-snap-align: center; padding: 20px; min-height: auto; }
   .process-preview { flex: none; padding: 12px; }
   .radar-preview { display: flex; flex-direction: column; gap: 8px; }
   .radar-preview svg { width: 100%; max-height: 170px; height: auto; }
-  .sim-preview-graph { min-height: 60px; padding: 16px 26px 0 4px; gap: 8px; }
+  .sim-preview-graph { min-height: 60px; padding: 0 26px 0 4px; gap: 8px; }
+  .sim-preview-graph-wrap { margin-top: 16px; }
   .sim-preview-bar { width: 16px; }
   .sim-preview-score { font-size: 9px; top: -14px; }
   .sim-preview-labels { padding: 5px 26px 0 4px; gap: 8px; }

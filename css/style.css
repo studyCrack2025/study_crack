@@ -442,7 +442,8 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 .process-preview { flex: 1; min-height: 0; border: 1px solid #e2eaf8; border-radius: var(--radius-md); background: #fff; padding: 16px; }
 .process-preview h4 { margin: 0 0 8px; color: var(--primary); font-size: 13px; font-weight: 800; }
 .process-preview p { margin: 0; font-size: 11px; color: #64748b; }
-.radar-preview { display: flex; flex-direction: column; gap: 8px; }
+.radar-preview { display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; text-align: center; }
+.radar-preview svg { max-height: 220px; width: auto; margin: 0 auto; }
 .process-circle-arrow { position: absolute; right: 16px; top: 16px; display: flex; align-items: center; gap: 10px; color: var(--primary); font-weight: 700; text-decoration: none; }
 .process-arrow-label { font-size: 12px; white-space: nowrap; }
 .process-circle-arrow i { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; background: #fff; box-shadow: 0 8px 24px rgba(76,121,238,.16); font-size: 16px; flex-shrink: 0; transition: background .18s, color .18s; }
@@ -457,8 +458,8 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 .sim-preview-bar-item { position: relative; }
 .sim-preview-legend-note { font-size: 10px; color: #94a3b8; display: inline-flex; align-items: center; gap: 3px; margin-left: auto; }
 .sim-chart-preview { display: flex; flex-direction: column; }
-.sim-preview-graph-wrap { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-.sim-preview-graph { position: relative; flex: 1; min-height: 80px; border-bottom: 2px solid #cbd5e1; display: flex; align-items: flex-end; gap: 4px; padding: 20px 30px 0 4px; box-sizing: border-box; overflow: visible; }
+.sim-preview-graph-wrap { display: flex; flex-direction: column; flex: 1; min-height: 0; margin-top: 20px; }
+.sim-preview-graph { position: relative; flex: 1; min-height: 80px; border-bottom: 2px solid #cbd5e1; display: flex; align-items: flex-end; gap: 4px; padding: 0 30px 0 4px; box-sizing: border-box; overflow: visible; }
 .sim-preview-guide { position: absolute; left: 0; right: 0; border-top: 1px dashed #cbd5e1; pointer-events: none; }
 .sim-preview-guide--blue { border-top-color: #3b82f6; }
 .sim-preview-guide-label { position: absolute; right: 2px; top: -12px; font-size: 8px; font-weight: 700; white-space: nowrap; }
@@ -597,14 +598,15 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .process-card { flex: 0 0 82%; scroll-snap-align: center; padding: 20px; }
     .process-preview { flex: none; padding: 12px; }
     .process-copy > p br { display: none; }
-    .radar-preview { display: flex; flex-direction: column; gap: 8px; }
-    .radar-preview svg { width: 100%; max-height: 170px; height: auto; }
+    .radar-preview { display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; text-align: center; }
+    .radar-preview svg { width: 100%; max-height: 200px; height: auto; }
     .process-preview h4 { font-size: 12px; margin-bottom: 6px; }
     .process-preview > p { font-size: 10px; }
     .sim-desktop-bar { display: none; }
     .sim-preview-label .sim-label-d { display: none; }
     .sim-preview-label .sim-label-m { display: block; }
-    .sim-preview-graph { min-height: 60px; padding: 16px 26px 0 4px; gap: 8px; }
+    .sim-preview-graph { min-height: 60px; padding: 0 26px 0 4px; gap: 8px; }
+    .sim-preview-graph-wrap { margin-top: 16px; }
     .sim-preview-bar { width: 16px; }
     .sim-preview-score { font-size: 9px; top: -14px; }
     .sim-preview-labels { padding: 5px 26px 0 4px; gap: 8px; }
