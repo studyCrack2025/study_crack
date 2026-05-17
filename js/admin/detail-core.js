@@ -19,6 +19,39 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    // 페이지 이동 후 메모리 토큰 복원
+    // Cognito SDK가 localStorage에 세션을 자동 저장하므로 getSession()으로 복원 가능
+    const _detailPool = new AmazonCognitoIdentity.CognitoUserPool({
+        UserPoolId: CONFIG.cognito.userPoolId,
+        ClientId: CONFIG.cognito.clientId
+    });
+    const _cognitoUser = _detailPool.getCurrentUser();
+
+    if (_cognitoUser && !getAccessToken()) {
+        _cognitoUser.getSession((err, session) => {
+            if (!err && session && session.isValid()) {
+                setAccessToken(session.getAccessToken().getJwtToken());
+                setIdToken(session.getIdToken().getJwtToken());
+                initDetailPage();
+            } else {
+                tryRefreshToken().then(ok => {
+                    if (!ok) {
+                        alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+                        localStorage.clear();
+                        window.location.href = '/admin/login';
+                        return;
+                    }
+                    initDetailPage();
+                });
+            }
+        });
+        return;
+    }
+
+    initDetailPage();
+});
+
+function initDetailPage() {
     const backBtn = document.querySelector('.back-btn');
     const userRole = localStorage.getItem('userRole');
 
@@ -48,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const proFilterMonth = document.getElementById('proFilterMonth');
     if (proFilterYear) proFilterYear.addEventListener('change', renderProTab);
     if (proFilterMonth) proFilterMonth.addEventListener('change', renderProTab);
-});
+}
 
 function initRoleBasedView() {
     const userRole = localStorage.getItem('userRole');
@@ -370,22 +403,13 @@ function renderQualitativeDetail(q) {
 
     area.innerHTML = `
         <div class="qual-section"><div class="qual-head">📍 현재 상황</div><div class="qual-grid">
-            <div class="qual-item"><span class="detail-label">학년</span><div>${v(q.status)}</div></div><div class="qual-item"><span class="detail-label">출신 학교</span><div>${v(q.school)}</div></div><div class="qual-item"><span class="detail-label">희망계열</span><div>${v(q.stream)}</div></div><div class="qual-item"><span class="detail-label">희망진로</span><div>${v(q.career)}</div></div>
+            <div class="qual-item"><span class="detail-label">학년</span><div>${v(q.status)}</div></div>
+            <div class="qual-item"><span class="detail-label">출신 학교</span><div>${v(q.school)}</div></div>
+            <div class="qual-item"><span class="detail-label">희망 계열</span><div>${v(q.stream)}</div></div>
         </div></div>
-        <div class="qual-section"><div class="qual-head">📍 원서 가치관</div><div class="qual-grid">
-            <div class="qual-item"><span class="detail-label">필수 진학 여부</span><div>${v(q.values?.mustGo)}</div></div><div class="qual-item"><span class="detail-label">우선순위</span><div>${v(q.values?.priority)}</div></div><div class="qual-item"><span class="detail-label">지원 전략</span><div>${v(q.values?.strategy)}</div></div><div class="qual-item"><span class="detail-label">지역 범위</span><div>${v(q.values?.region)}</div></div><div class="qual-item"><span class="detail-label">최악의 시나리오</span><div>${v(q.values?.worst)}</div></div><div class="qual-item"><span class="detail-label">교차지원 가능 여부</span><div>${v(q.values?.cross)}</div></div>
-        </div></div>
-        <div class="qual-section"><div class="qual-head">📍 대학 후보군 상세</div><div class="qual-grid">
-            <div class="qual-item"><span class="detail-label">가군 관심 대학</span><div>${v(q.candidates?.ga)}</div></div><div class="qual-item"><span class="detail-label">나군 관심 대학</span><div>${v(q.candidates?.na)}</div></div><div class="qual-item"><span class="detail-label">다군 관심 대학</span><div>${v(q.candidates?.da)}</div></div><div class="qual-item"><span class="detail-label">1순위 희망 대학 (이유)</span><div>${v(q.candidates?.most)}</div></div><div class="qual-item"><span class="detail-label">기피 대학 (이유)</span><div>${v(q.candidates?.least)}</div></div><div class="qual-item"><span class="detail-label">본인 감각 (상/적/안)</span><div>${v(q.candidates?.self)}</div></div>
-        </div></div>
-        <div class="qual-section"><div class="qual-head">📍 최종 희망 대학 리스트</div><div class="qual-grid">
-            ${q.targets && Array.isArray(q.targets) ? q.targets.map((t, i) => `<div class="qual-item"><span class="detail-label">${i+1}지망</span><div>${v(t)}</div></div>`).join('') : '<div class="qual-item">데이터 없음</div>'}
-        </div></div>
-        <div class="qual-section"><div class="qual-head">📍 부모님 / 환경 요인</div><div class="qual-grid">
-            <div class="qual-item"><span class="detail-label">부모님 의견 영향도</span><div>${v(q.parents?.influence)}</div></div><div class="qual-item"><span class="detail-label">부모님 추천/반대 대학</span><div>${v(q.parents?.opinion)}</div></div>
-        </div></div>
-        <div class="qual-section"><div class="qual-head">📍 특이사항</div><div class="qual-grid">
-            <div class="qual-item"><span class="detail-label">편입 계획</span><div>${v(q.special?.transfer)}</div></div><div class="qual-item"><span class="detail-label">교직 이수</span><div>${v(q.special?.teaching)}</div></div><div class="qual-item" style="grid-column: 1 / -1;"><span class="detail-label">기타 멘토에게 하고 싶은 말</span><div>${v(q.special?.etc)}</div></div>
+        <div class="qual-section"><div class="qual-head">📍 컨설팅 요청사항</div><div class="qual-grid">
+            <div class="qual-item" style="grid-column: 1 / -1;"><span class="detail-label">스터디크랙을 통해 얻고 싶은 점</span><div style="margin-top:6px; white-space:pre-wrap; line-height:1.6;">${v(q.benefits)}</div></div>
+            <div class="qual-item" style="grid-column: 1 / -1;"><span class="detail-label">입시 고민 및 질문</span><div style="margin-top:6px; white-space:pre-wrap; line-height:1.6;">${v(q.questions)}</div></div>
         </div></div>
     `;
 }

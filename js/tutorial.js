@@ -24,7 +24,7 @@ const MASCOTS = {
 const STEPS = [
     { id: 'intro',       msg: '지금 바로 나만의 합격 전략을 확인해보세요.',                        mascot: 'hi' },
     { id: 'survey-qual', msg: '먼저 현재 학년과 희망 계열을 알려주세요.',                          mascot: 'thumbsup' },
-    { id: 'survey-quan', msg: '모의고사 원점수를 입력해주세요. 수능 예측 점수로 자동 보정돼요.',    mascot: 'analysis' },
+    { id: 'survey-quan', msg: '3월 또는 5월 학력평가 원점수를 입력해주세요. 수능 예측 점수로 자동 보정돼요.',    mascot: 'analysis' },
     { id: 'mbti',        msg: '학습 성향을 파악할게요. 검사를 시작하거나 직접 선택해주세요.',       mascot: 'hi' },
     { id: 'univ-rec',    msg: '성적을 분석했어요! 목표 대학을 선택하면 상세 시뮬레이션을 볼 수 있어요.', mascot: 'showresult' },
     { id: 'subject-rec', msg: '선택한 대학 합격선까지, 가장 효율적인 과목 전략을 알려드릴게요.',   mascot: 'showresult' }
@@ -32,7 +32,7 @@ const STEPS = [
 
 
 let currentStepIdx = 0;
-let tutorialData = { qual: {}, quan: {}, mbti: null, selectedUniv: null, selectedUnivs: null, totalStdScore: 0 };
+let tutorialData = { qual: {}, quan: {}, mbti: null, selectedUniv: null, selectedUnivs: null, totalStdScore: 0, examMonth: 'mar' };
 let isInterrupted = false;
 let mbtiDimSelections = [null, null, null, null];
 
@@ -48,12 +48,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         checkLoginStatus();
     }
+    const token = getAccessToken();
 
     // DB에서 유저 데이터 복원 (mbti_completed 경로 포함)
     try {
-        const response = await fetch(CONFIG.api.user, {
+        const response = await apiFetch(CONFIG.api.user, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'get_user' })
         });
         if (response.ok) {
@@ -62,13 +62,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 currentStepIdx = parseInt(data.tutorialStatus, 10);
                 localStorage.setItem('tutorialStatus', currentStepIdx);
             }
-            // 점수 데이터 복원
+            // 점수 데이터 복원 (may 우선, 없으면 mar)
             if (data.quantitative) {
                 tutorialData.quan = data.quantitative;
-                const mar = data.quantitative.mar;
-                if (mar) {
+                const activeMonth = data.quantitative.may ? 'may' : 'mar';
+                tutorialData.examMonth = activeMonth;
+                const activeQuan = data.quantitative[activeMonth];
+                if (activeQuan) {
                     tutorialData.totalStdScore = ['kor', 'math', 'inq1', 'inq2']
-                        .reduce((sum, k) => sum + (parseFloat(mar[k]?.std) || 0), 0);
+                        .reduce((sum, k) => sum + (parseFloat(activeQuan[k]?.std) || 0), 0);
                 }
             }
             // 정성 데이터 및 MBTI 복원
@@ -266,16 +268,20 @@ async function _nextStepCore() {
         const engGrd     = document.getElementById('tutEngGrd')?.value   || '';
         const histGrd    = document.getElementById('tutHistGrd')?.value  || '';
 
+        // 선택된 시험 월 (3월 또는 5월)
+        const examMonth = document.getElementById('tutExamMonth')?.value || 'mar';
+        tutorialData.examMonth = examMonth;
+
         // 점수 환산 API 병렬 호출 → survey.js 로드 시 std/pct/grd 즉시 표시
         const [korConv, mathConv, inq1Conv, inq2Conv] = await Promise.all([
-            convertScore('mar', 'kor',  korCommon + korSel,   korOpt,  '', korCommon,  korSel),
-            convertScore('mar', 'math', mathCommon + mathSel, mathOpt, '', mathCommon, mathSel),
-            convertScore('mar', 'inq1', inq1Raw, '', inq1Name),
-            convertScore('mar', 'inq2', inq2Raw, '', inq2Name)
+            convertScore(examMonth, 'kor',  korCommon + korSel,   korOpt,  '', korCommon,  korSel),
+            convertScore(examMonth, 'math', mathCommon + mathSel, mathOpt, '', mathCommon, mathSel),
+            convertScore(examMonth, 'inq1', inq1Raw, '', inq1Name),
+            convertScore(examMonth, 'inq2', inq2Raw, '', inq2Name)
         ]);
 
         tutorialData.quan = {
-            mar: {
+            [examMonth]: {
                 kor:     { opt: korOpt,  common: korCommon,  elective: korSel,  raw: korCommon  + korSel,  ...korConv  },
                 math:    { opt: mathOpt, common: mathCommon, elective: mathSel, raw: mathCommon + mathSel, ...mathConv },
                 eng:     { grd: engGrd },
@@ -295,7 +301,7 @@ async function _nextStepCore() {
         if (stream && tutorialData.totalStdScore > 0) {
             fetchTutScoreData().then(scoreData => {
                 if (!scoreData) return null;
-                return selectTutorialUnivsWithAnalysis(stream, tutorialData.quan.mar, tutorialData.totalStdScore, scoreData);
+                return selectTutorialUnivsWithAnalysis(stream, tutorialData.quan[examMonth], tutorialData.totalStdScore, scoreData);
             }).then(selected => {
                 if (selected && selected.length > 0) {
                     tutorialData.selectedUnivs = selected;
@@ -316,6 +322,13 @@ function prevStep() {
         currentStepIdx--;
         renderStep();
     }
+}
+
+// ── 튜토리얼 시험월 선택 토글 ──────────────────────────────────────
+function onTutExamMonthChange() {
+    const month = document.getElementById('tutExamMonth')?.value;
+    const warning = document.getElementById('tutMayWarning');
+    if (warning) warning.style.display = (month === 'may') ? 'block' : 'none';
 }
 
 // ── 성적 입력 바 ──────────────────────────────────────────────────
@@ -394,19 +407,33 @@ function goToMBTI() {
 }
 
 function simulateMbtiAnalysis() {
+    const mbtiCode = tutorialData.mbti || 'CSDR';
+    const dimLabels = ['학습 접근법', '변화 적응력', '사고 방식', '계획 스타일'];
+    const dimDescMap = { C: '개념 중심', I: '문제 중심', S: '루틴 선호', M: '변화 선호', D: '근거 중심', E: '흐름 중심', R: '계획 고수', F: '유연 조정' };
+    const dimTagsHtml = mbtiCode.split('').map((ch, i) => `<span style="display:inline-block; background:#f1f5f9; border-radius:6px; padding:4px 10px; margin:3px; font-size:0.85rem; color:#334155;">${dimLabels[i]}: <b>${ch}</b> ${dimDescMap[ch] || ''}</span>`).join('');
     const container = document.getElementById('stepContent');
     container.innerHTML = `
-        <div class="step-card" style="text-align:center; padding: 48px 20px;">
-            <div style="font-size:2.5rem; margin-bottom:16px;">🔍</div>
-            <div style="font-size:1.15rem; font-weight:700; color:#1e293b; margin-bottom:8px;">성적과 학습 유형을 종합 분석 중이에요</div>
-            <div style="font-size:0.95rem; color:#64748b;">잠시만 기다려주세요...</div>
+        <div class="step-card" style="text-align:center; padding: 40px 20px;">
+            <div style="font-size:2.2rem; margin-bottom:12px;">📊</div>
+            <div style="font-size:1rem; font-weight:600; color:#64748b; margin-bottom:4px;">나의 학습 유형</div>
+            <div style="font-size:2rem; font-weight:800; color:var(--primary); letter-spacing:6px; margin-bottom:16px;">${mbtiCode}</div>
+            <div style="margin-bottom:20px;">${dimTagsHtml}</div>
+            <div style="font-size:0.92rem; color:#475569; line-height:1.6; max-width:400px; margin:0 auto 24px;">이 유형은 본인만의 학습 체계를 기반으로 목표를 달성하는 데에 탁월한 잠재력을 가진 유형입니다.</div>
+            <button class="tut-action-btn" id="mbtiResultNextBtn" style="margin-top:8px;">성적 종합 분석 시작하기</button>
         </div>`;
-    updateMascot('입력하신 성적과 학습 유형을 종합 분석 중입니다.', 'analysis');
-
-    setTimeout(() => {
-        currentStepIdx = 4;
-        renderStep();
-    }, 2500);
+    updateMascot('학습 유형 분석이 완료되었어요! 결과를 확인하고, 종합 분석을 시작해보세요.', 'showresult');
+    document.getElementById('tutNextBtn').style.display = 'none';
+    document.getElementById('tutPrevBtn').style.display = 'none';
+    document.getElementById('mbtiResultNextBtn').addEventListener('click', () => {
+        container.innerHTML = `
+            <div class="step-card" style="text-align:center; padding: 48px 20px;">
+                <div style="font-size:2.5rem; margin-bottom:16px;">🔍</div>
+                <div style="font-size:1.15rem; font-weight:700; color:#1e293b; margin-bottom:8px;">성적과 학습 유형을 종합 분석 중이에요</div>
+                <div style="font-size:0.95rem; color:#64748b;">잠시만 기다려주세요...</div>
+            </div>`;
+        updateMascot('입력하신 성적과 학습 유형을 종합 분석 중입니다.', 'analysis');
+        setTimeout(() => { currentStepIdx = 4; renderStep(); }, 2500);
+    });
 }
 
 // ── 튜토리얼 학교 선정 로직 ──────────────────────────────────────
@@ -529,11 +556,28 @@ function boostUserScores(scores, boost) {
     return b;
 }
 
+async function tutorialAnalysisFetch(options = {}) {
+    const buildOptions = () => ({
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            ...(getAccessToken() && { 'Authorization': `Bearer ${getAccessToken()}` }),
+            ...(options.headers || {})
+        }
+    });
+
+    let res = await fetch(CONFIG.api.analysis, buildOptions());
+    if ((res.status === 401 || res.status === 403) && typeof tryRefreshToken === 'function') {
+        const refreshed = await tryRefreshToken();
+        if (refreshed) res = await fetch(CONFIG.api.analysis, buildOptions());
+    }
+    return res;
+}
+
 async function callAnalyzeMyTargets(token, targetUnivs, userScores) {
     try {
-        const res = await fetch(CONFIG.api.analysis, {
+        const res = await tutorialAnalysisFetch({
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'analyze_my_targets', targetUnivs, userScores, examMode: 'mock' })
         });
         if (!res.ok) return null;
@@ -544,9 +588,8 @@ async function callAnalyzeMyTargets(token, targetUnivs, userScores) {
 
 async function callSimulateScoreRise(token, targetUnivs, userScores) {
     try {
-        const res = await fetch(CONFIG.api.analysis, {
+        const res = await tutorialAnalysisFetch({
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'simulate_score_rise', targetUnivs, userScores, examMode: 'mock' })
         });
         if (!res.ok) return null;
@@ -714,7 +757,10 @@ function initUnivSim() {
     if (!list) return;
     list.innerHTML = '';
 
-    if (!tutorialData.selectedUnivs || tutorialData.selectedUnivs.length === 0) return;
+    if (!tutorialData.selectedUnivs || tutorialData.selectedUnivs.length === 0) {
+        list.innerHTML = '<div style="text-align:center;padding:32px;color:#64748b;font-size:0.95rem;">추천 대학을 불러오는 중 문제가 발생했어요.<br>성적 입력 단계로 돌아가 다시 시도해 주세요.</div><button class="tut-action-btn" style="margin:16px auto;display:block;" onclick="currentStepIdx=2;renderStep();">성적 입력으로 돌아가기</button>';
+        return;
+    }
 
     const univsToRender = buildUnivCards(tutorialData.selectedUnivs, tutorialData.totalStdScore);
 
@@ -880,7 +926,8 @@ async function initSubjectRec() {
     showTutLoading(true);
 
     const univ = tutorialData.selectedUniv;
-    const mar  = tutorialData.quan?.mar;
+    const activeMonth = tutorialData.examMonth || (tutorialData.quan?.may ? 'may' : 'mar');
+    const mar  = tutorialData.quan?.[activeMonth];
     const mbti = tutorialData.mbti;
 
     let plan = null;
@@ -890,17 +937,13 @@ async function initSubjectRec() {
 
     let estimatedMonths = 3;
     try {
-        const token = getAccessToken();
-        if (token) {
-            const res = await fetch(CONFIG.api.analysis, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ type: 'get_estimated_months' })
-            });
-            if (res.ok) {
-                const d = await res.json();
-                if (d.months) estimatedMonths = d.months;
-            }
+        const res = await tutorialAnalysisFetch({
+            method: 'POST',
+            body: JSON.stringify({ type: 'get_estimated_months' })
+        });
+        if (res.ok) {
+            const d = await res.json();
+            if (d.months) estimatedMonths = d.months;
         }
     } catch(e) {}
 
@@ -931,7 +974,7 @@ async function initSubjectRec() {
     showTutLoading(false);
 
     if (!mar || !plan) {
-        container.innerHTML = '<div style="text-align:center;padding:32px;color:#64748b">성적 데이터를 불러올 수 없습니다.</div>';
+        container.innerHTML = '<div style="text-align:center;padding:32px;color:#64748b;font-size:0.95rem;">성적 데이터를 불러올 수 없습니다.<br>성적 입력 단계에서 다시 시도해 주세요.</div><button class="tut-action-btn" style="margin:16px auto;display:block;" onclick="currentStepIdx=2;renderStep();">성적 입력으로 돌아가기</button>';
         return;
     }
 
@@ -1125,19 +1168,23 @@ async function downloadMBTIReport(mbtiResult) {
 
 async function convertScore(month, subject, score, opt, subName, common, elective) {
     if (!score || score <= 0) return { std: '', pct: '', grd: '' };
-    const token = getAccessToken();
-    if (!token) return { std: '', pct: '', grd: '' };
     const hasDual = common != null && elective != null;
+    const payload = { type: 'convert_score', subject, score, opt: opt || '', subName: subName || '', ...(hasDual ? { common, elective } : {}) };
     try {
-        const res = await fetch(CONFIG.api.analysis, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'convert_score', month, subject, score, opt: opt || '', subName: subName || '', ...(hasDual ? { common, elective } : {}) })
-        });
-        if (!res.ok) return { std: '', pct: '', grd: '' };
-        const data = await res.json();
-        if (data.error) return { std: '', pct: '', grd: '' };
-        return { std: data.std || '', pct: data.pct || '', grd: data.grd || '' };
+        const res = await tutorialAnalysisFetch({ method: 'POST', body: JSON.stringify({ ...payload, month }) });
+        if (res.ok) {
+            const data = await res.json();
+            if (!data.error && (data.std || data.pct || data.grd)) return { std: data.std || '', pct: data.pct || '', grd: data.grd || '' };
+        }
+        // 5월 변환 실패 시 3월 기준 폴백
+        if (month === 'may') {
+            const fb = await tutorialAnalysisFetch({ method: 'POST', body: JSON.stringify({ ...payload, month: 'mar' }) });
+            if (fb.ok) {
+                const fd = await fb.json();
+                if (!fd.error && (fd.std || fd.pct || fd.grd)) return { std: fd.std || '', pct: fd.pct || '', grd: fd.grd || '' };
+            }
+        }
+        return { std: '', pct: '', grd: '' };
     } catch {
         return { std: '', pct: '', grd: '' };
     }

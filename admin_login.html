@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+  <script>if('scrollRestoration'in history)history.scrollRestoration='manual';</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>관리자 시스템 - 스터디크랙</title>
@@ -67,12 +68,8 @@
     </div>
 
     <script>
-        const poolData = {
-            UserPoolId: CONFIG.cognito.userPoolId,
-            ClientId: CONFIG.cognito.clientId
-        };
-        const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
-        
+        // poolData / userPool은 auth.js에서 이미 선언됨 — 중복 선언 제거
+
         let globalCognitoUser = null; // MFA 단계를 위해 유저 객체 임시 저장
 
         // 엔터키 이벤트 리스너 (이메일, 비밀번호 모두 적용)

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+  <script>if('scrollRestoration'in history)history.scrollRestoration='manual';</script>
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
     j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
@@ -22,10 +23,10 @@
     <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
 </head>
 <body>
-    <header>
+    <header id="site-header" class="scrolled">
         <div class="logo-container">
             <a href="/" class="logo-link">
-                <img src="/assets/images/studycrack_logo_wo_bg.png" alt="StudyCrack 로고">
+                <img src="/assets/figma/figma-asset-04.svg" alt="StudyCrack 로고">
                 <span class="logo">StudyCrack</span>
             </a>
         </div>
@@ -33,10 +34,30 @@
             <a href="/analysis">나만의 솔루션</a>
             <a href="/qna">1:1 문의</a>
             <a href="/login" id="loginBtn" class="nav-btn">로그인 / 회원가입</a>
-            <a href="#" id="myPageBtn" class="active-link" class="nav-btn hidden">마이페이지</a>
-            <a href="#" id="logoutBtn" class="nav-btn hidden">로그아웃</a>
+            <a href="/mypage" id="myPageBtn" class="active-link hidden">마이페이지</a>
+            <a href="#" id="logoutBtn" onclick="handleSignOut()" class="nav-btn hidden">로그아웃</a>
         </nav>
+        <div class="mobile-header-right">
+            <span class="mobile-nav-label">마이페이지</span>
+            <button class="hamburger-btn" id="hamburgerBtn" aria-label="메뉴 열기">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
     </header>
+
+    <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
+    <div class="mobile-nav-panel" id="mobileNavPanel">
+        <div class="mobile-nav-top">
+            <a class="mnp-logo" href="/"><img src="/assets/figma/figma-asset-04.svg" alt="StudyCrack"><span>StudyCrack</span></a>
+            <button class="mobile-nav-close" id="mobileNavClose" aria-label="메뉴 닫기">✕</button>
+        </div>
+        <nav class="mobile-nav-links">
+            <a href="/analysis">나만의 솔루션</a>
+            <a href="/qna">1:1 문의</a>
+            <a href="/mypage">마이페이지</a>
+            <a href="#" id="mobileLogoutBtn" class="mnl-btn mnl-btn-logout">로그아웃</a>
+        </nav>
+    </div>
 
     <div class="mypage-container">
         
@@ -308,8 +329,10 @@
     
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <script src="/js/dev-mock.js"></script>
     <script src="/js/config.js"></script>
     <script src="/js/auth.js"></script>
+    <script src="/js/shared/hamburger.js"></script>
     <script src="/js/mypage.js"></script>
 
 </body>

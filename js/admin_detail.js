@@ -18,6 +18,33 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    // 페이지 리로드 후 메모리 토큰 복원 (Cognito SDK가 localStorage에 세션을 자동 저장함)
+    const cognitoUser = userPool.getCurrentUser();
+    if (cognitoUser && !getAccessToken()) {
+        cognitoUser.getSession((err, session) => {
+            if (!err && session && session.isValid()) {
+                setAccessToken(session.getAccessToken().getJwtToken());
+                setIdToken(session.getIdToken().getJwtToken());
+                initDetailPage();
+            } else {
+                tryRefreshToken().then(ok => {
+                    if (!ok) {
+                        alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+                        localStorage.clear();
+                        window.location.href = '/admin/login';
+                        return;
+                    }
+                    initDetailPage();
+                });
+            }
+        });
+        return;
+    }
+
+    initDetailPage();
+});
+
+function initDetailPage() {
     const backBtn = document.querySelector('.back-btn');
     const userRole = localStorage.getItem('userRole');
 
@@ -30,10 +57,10 @@ document.addEventListener('DOMContentLoaded', () => {
             backBtn.innerText = '← 목록으로 돌아가기';
         }
     }
-    
+
     initRoleBasedView();
     loadAllStudentData();
-    
+
     const today = new Date();
     initDateFilter(today.getFullYear(), today.getMonth() + 1);
     initProDateFilter(today.getFullYear(), today.getMonth() + 1);
@@ -48,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const proFilterMonth = document.getElementById('proFilterMonth');
     if (proFilterYear) proFilterYear.addEventListener('change', renderProTab);
     if (proFilterMonth) proFilterMonth.addEventListener('change', renderProTab);
-});
+}
 
 function initRoleBasedView() {
     const userRole = localStorage.getItem('userRole');
@@ -526,8 +553,12 @@ function renderWeeklyTab() {
             footerHtml = `<div class="weekly-section planner-auth-section" style="margin-top:20px; padding-top:20px; border-top:1px solid #e2e8f0; background:#ffffff;">${hasFiles ? `<div class="section-title" style="margin-bottom:15px; font-weight:bold; color:#1e293b;"><i class="fas fa-camera-retro" style="color:#10b981;"></i> 주간 플래너 인증 사진</div><div class="file-area" style="display:flex; flex-wrap:wrap;">${fileLinks}</div>` : ''}${hasComment ? `<div class="comment-box" style="margin-top:${hasFiles ? '15px' : '0'}; background:#f1f5f9; padding:15px; border-radius:8px; color:#334155; font-size:0.95rem;"><strong style="color:#2563eb;"><i class="fas fa-comment-dots"></i> 학생 전달사항:</strong><div style="margin-top:8px; line-height:1.6;">${safeComment}</div></div>` : ''}</div>`;
         }
 
-        const fb = d.tutorFeedback || { priorityCheck: '', weakSubject: '', nextWeekTop3: '', planEvaluation: '', extraQuestion: '' };
-        
+        const reportFormVer = Number(d.formVersion) || 1;
+        const defaultFb = reportFormVer >= 2
+            ? { weeklyPlanner: '', planReason: '', questionAnswer: '', tutorComment: '' }
+            : { priorityCheck: '', weakSubject: '', nextWeekTop3: '', planEvaluation: '', extraQuestion: '' };
+        const fb = d.tutorFeedback || defaultFb;
+
         // 💡 3. 키값 설정 로직 (안전장치 포함)
         let weeklyKey = d.weekId;
         if (!weeklyKey) {
@@ -551,7 +582,7 @@ function renderWeeklyTab() {
             </div>
             <div class="card-grid-body">${studyHtml}${checkHtml}</div>
             ${mockHtml}${footerHtml}
-            ${renderWeeklyFeedbackArea(weeklyKey, fb)}
+            ${renderWeeklyFeedbackArea(weeklyKey, fb, reportFormVer)}
         `;
         container.appendChild(card);
     });
@@ -560,36 +591,45 @@ function renderWeeklyTab() {
 // ==========================================
 // 주간 리포트 - 튜터 코멘트 영역 렌더링
 // ==========================================
-const WEEKLY_FB_FIELDS = [
+const WEEKLY_FB_FIELDS_V1 = [
     { key: 'priorityCheck',  label: '이번 주 우선순위 점검',        placeholder: '이번 주 학습 목표 이행 여부와 우선순위를 평가해주세요.' },
     { key: 'weakSubject',    label: '취약 과목 진단 및 개입 포인트', placeholder: '취약 과목에 대한 구체적인 진단과 개선 방향을 작성해주세요.' },
     { key: 'nextWeekTop3',   label: '다음 주 핵심 과제 Top3',        placeholder: '다음 주에 집중해야 할 핵심 과제 3가지를 작성해주세요.' },
     { key: 'planEvaluation', label: '플랜 평가 및 조정',             placeholder: '이번 주 플랜 달성률을 평가하고 조정 방향을 제시해주세요.' },
     { key: 'extraQuestion',  label: '심층 질문 답변',                placeholder: '학생의 심층 질문에 대한 답변을 근거와 함께 작성해주세요.' },
 ];
+const WEEKLY_FB_FIELDS_V2 = [
+    { key: 'weeklyPlanner',   label: '요일별 플래너',           placeholder: '요일별 학습 계획을 작성해주세요. (예: 월-수학 수분감 p82~92/120분, 화-국어 이감 독서+오답/90분)' },
+    { key: 'planReason',      label: '이렇게 짠 이유',          placeholder: '위 플래너를 이렇게 구성한 근거를 작성해주세요.' },
+    { key: 'questionAnswer',  label: '학생 질문에 대한 답변',   placeholder: '학생이 남긴 질문에 대한 답변을 작성해주세요.' },
+    { key: 'tutorComment',    label: '튜터 총평 코멘트',        placeholder: '이번 주 전체적인 학습 상태에 대한 총평을 작성해주세요.' },
+];
+function getWeeklyFbFields(ver) { return ver >= 2 ? WEEKLY_FB_FIELDS_V2 : WEEKLY_FB_FIELDS_V1; }
 const WEEKLY_FB_MIN = 150;
 
 function weeklyIdKey(weeklyKey) {
     return weeklyKey.replace(/[^a-zA-Z0-9]/g, '_');
 }
 
-function renderWeeklyFeedbackArea(weeklyKey, fb) {
+function renderWeeklyFeedbackArea(weeklyKey, fb, formVersion) {
     const userRole = localStorage.getItem('userRole');
     const submitted = fb.submitted === true;
+    const ver = formVersion || 1;
     if (userRole === 'tutor') {
-        return submitted ? createWeeklyFbReadOnly(fb, true) : createWeeklyFbInput(weeklyKey, fb);
+        return submitted ? createWeeklyFbReadOnly(fb, true, ver) : createWeeklyFbInput(weeklyKey, fb, ver);
     }
-    return createWeeklyFbReadOnly(fb, false);
+    return createWeeklyFbReadOnly(fb, false, ver);
 }
 
-function createWeeklyFbReadOnly(fb, isLockedTutor) {
-    const hasAny = WEEKLY_FB_FIELDS.some(f => fb[f.key] && String(fb[f.key]).trim() !== '');
+function createWeeklyFbReadOnly(fb, isLockedTutor, formVersion) {
+    const fields = getWeeklyFbFields(formVersion);
+    const hasAny = fields.some(f => fb[f.key] && String(fb[f.key]).trim() !== '');
     const lockedBadge = isLockedTutor
         ? '<span style="font-size:0.8rem; color:#16a34a; font-weight:bold; background:#f0fdf4; padding:3px 10px; border-radius:20px; border:1px solid #bbf7d0;">✅ 최종 전송 완료 · 수정 불가</span>'
         : '';
-        
+
     const content = hasAny
-        ? WEEKLY_FB_FIELDS.map(f => fb[f.key] && String(fb[f.key]).trim() !== ''
+        ? fields.map(f => fb[f.key] && String(fb[f.key]).trim() !== ''
             ? `<div style="margin-bottom:14px;"><strong>${f.label}:</strong><div style="margin-top:4px; line-height:1.6; white-space:pre-wrap;">${escapeHtml(fb[f.key])}</div></div>`
             : '').join('')
         : '<span style="color:#94a3b8">튜터가 코멘트를 작성하지 않았습니다.</span>';
@@ -610,9 +650,10 @@ function createWeeklyFbReadOnly(fb, isLockedTutor) {
         </div>`;
 }
 
-function createWeeklyFbInput(weeklyKey, fb) {
+function createWeeklyFbInput(weeklyKey, fb, formVersion) {
     const idk = weeklyIdKey(weeklyKey);
-    const fieldsHtml = WEEKLY_FB_FIELDS.map(f => {
+    const fields = getWeeklyFbFields(formVersion);
+    const fieldsHtml = fields.map(f => {
         const val = fb[f.key] || '';
         const len = val.replace(/\s/g, '').length;
         const validClass = len >= WEEKLY_FB_MIN ? 'valid' : '';
@@ -636,7 +677,7 @@ function createWeeklyFbInput(weeklyKey, fb) {
         </div>`;
     }).join('');
 
-    const allPreSaved = WEEKLY_FB_FIELDS.every(f => (fb[f.key] || '').replace(/\s/g, '').length >= WEEKLY_FB_MIN);
+    const allPreSaved = fields.every(f => (fb[f.key] || '').replace(/\s/g, '').length >= WEEKLY_FB_MIN);
     const submitBtnClass = allPreSaved ? 'complete-write-btn active' : 'complete-write-btn';
 
     const existingFileHtml = fb.tutorImage 
@@ -724,8 +765,10 @@ window.uploadWeeklyTutorFile = async function(weeklyKey) {
         if (!uploadResult.ok) throw new Error("S3 업로드 실패");
 
         // 3. 현재 입력된 텍스트 코멘트도 함께 모아서 DB 임시저장
+        const reportDataForVer = currentWeeklyData.find(w => w.weekId === weeklyKey || w.date === weeklyKey) || {};
+        const uploadFields = getWeeklyFbFields(Number(reportDataForVer.formVersion) || 1);
         const feedback = {};
-        WEEKLY_FB_FIELDS.forEach(f => {
+        uploadFields.forEach(f => {
             const el = document.getElementById(`wfb_${idk}_${f.key}`);
             feedback[f.key] = el ? el.value : '';
         });
@@ -782,9 +825,10 @@ window.tempSaveWeeklyField = async function(weeklyKey, fieldName) {
     // 기존 데이터 메모리에서 파일 URL 가져오기
     const reportData = currentWeeklyData.find(w => w.weekId === weeklyKey || w.date === weeklyKey) || {};
     const existingFb = reportData.tutorFeedback || {};
+    const draftFields = getWeeklyFbFields(Number(reportData.formVersion) || 1);
 
     const feedback = {};
-    WEEKLY_FB_FIELDS.forEach(f => {
+    draftFields.forEach(f => {
         const el = document.getElementById(`wfb_${idk}_${f.key}`);
         feedback[f.key] = el ? el.value : '';
     });
@@ -805,8 +849,11 @@ window.tempSaveWeeklyField = async function(weeklyKey, fieldName) {
 
 window.submitWeeklyFeedback = async function(weeklyKey) {
     const idk = weeklyIdKey(weeklyKey);
+    const reportData = currentWeeklyData.find(w => w.weekId === weeklyKey || w.date === weeklyKey) || {};
+    const reportFormVer = Number(reportData.formVersion) || 1;
+    const fields = getWeeklyFbFields(reportFormVer);
 
-    for (const f of WEEKLY_FB_FIELDS) {
+    for (const f of fields) {
         const el = document.getElementById(`wfb_${idk}_${f.key}`);
         if (!el || el.value.replace(/\s/g, '').length < WEEKLY_FB_MIN) {
             alert(`'${f.label}' 항목을 최소 ${WEEKLY_FB_MIN}자 이상 입력해주세요. (공백 제외)`);
@@ -816,16 +863,15 @@ window.submitWeeklyFeedback = async function(weeklyKey) {
 
     if (!confirm('최종 전송 후에는 더 이상 수정할 수 없습니다.\n학생에게 코멘트를 전달하시겠습니까?')) return;
 
-    // 기존 데이터 메모리에서 파일 URL 가져오기
-    const reportData = currentWeeklyData.find(w => w.weekId === weeklyKey || w.date === weeklyKey) || {};
     const existingFb = reportData.tutorFeedback || {};
 
     const feedback = {};
-    WEEKLY_FB_FIELDS.forEach(f => {
+    fields.forEach(f => {
         const el = document.getElementById(`wfb_${idk}_${f.key}`);
         feedback[f.key] = el ? el.value : '';
     });
-    feedback.tutorImage = existingFb.tutorImage || ''; // 기존 파일 URL 유지
+    feedback.feedbackVersion = reportFormVer;
+    feedback.tutorImage = existingFb.tutorImage || '';
     feedback.submitted = true;
 
     const submitBtn = document.getElementById(`wfb_submit_${idk}`);
@@ -840,8 +886,8 @@ window.submitWeeklyFeedback = async function(weeklyKey) {
         
         // 제출 후 폼을 읽기 전용으로 전환
         const area = document.getElementById(`wfb_area_${idk}`);
-        if (area) area.outerHTML = createWeeklyFbReadOnly(feedback, true);
-        
+        if (area) area.outerHTML = createWeeklyFbReadOnly(feedback, true, reportFormVer);
+
     } catch (e) {
         if (e.message !== 'Auth expired') alert('전송에 실패했습니다.');
         if (submitBtn) { submitBtn.innerText = '최종 전송 (학생에게 전달)'; submitBtn.disabled = false; }

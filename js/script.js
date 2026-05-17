@@ -6,6 +6,29 @@
 const AUTH_API_URL = CONFIG.api.auth;
 const NOTI_API_URL = CONFIG.api.noti;
 
+// 점수 상승 시뮬레이션 토글
+function toggleScoreUp() {
+    const barItem = document.getElementById('simScoreUpBar');
+    if (!barItem) return;
+    const bar = barItem.querySelector('.sim-preview-bar');
+    const score = bar.querySelector('.sim-preview-score');
+    const delta = barItem.querySelector('.sim-score-delta');
+    const isUp = barItem.classList.toggle('score-up-active');
+    if (isUp) {
+        bar.style.height = '53.3%';
+        bar.style.background = '#10b981';
+        score.textContent = '133.3';
+        score.style.color = '#10b981';
+        delta.style.display = '';
+    } else {
+        bar.style.height = '42.8%';
+        bar.style.background = '#3b82f6';
+        score.textContent = '107';
+        score.style.color = '';
+        delta.style.display = 'none';
+    }
+}
+
 // 공통 apiFetch 함수
 async function apiFetch(url, options = {}) {
     const token = getAccessToken();
@@ -72,84 +95,28 @@ window.onclick = function(event) {
 /* =========================================
    2. 커리큘럼 탭 로직 (기존 코드 유지)
    ========================================= */
-const COURSE_DATA = { /* ... (이전과 동일한 데이터 객체이므로 생략) ... */ 
-    mbti: { title: "MBTI SOLUTION", price: "무료", desc: "탐구 MBTI 결과를 분석해 나의 학습 성향을 파악하고, 성적 상승을 위한 최적의 맞춤 공부법을 제안합니다.", list: [ { text: "탐구 MBTI 기반 학습 성향 정밀 진단" }, { text: "유형별 학습 강점 및 취약점 분석 리포트" }, { text: "성향에 딱 맞는 과목별 맞춤 공부법 솔루션 제공" } ], bg: "assets/backgrounds/bg_mbti.png", themeColor: "#8B5CF6" },
-    basic: { title: "BASIC PLAN", price: `<span class="original-price">49,000원</span> <span class="discount-price">특별 할인가 <strong class="highlight-price">25,000원</strong></span>`, desc: "내 점수와 목표 대학 합격선 사이의 거리를 정밀하게 진단합니다.", list: [ { text: "개인 성적 및 목표 대학 환산점수 계산 (최대 18개)" }, { text: "합격 컷 대비 거리 분석 (위험도 경고)", action: "preview", imgBase: "feat_basic_1" }, { text: "목표 대학별 '효자 과목' 발굴" } ], bg: "assets/backgrounds/bg_basic.png", themeColor: "#059669" },
-    standard: { title: "STANDARD PLAN", price: "월 149,000원", desc: "어떤 과목을 공부해야 점수가 가장 빨리 오르는지 분석하고 관리합니다.", list: [ { text: "목표 대학 무제한" }, { text: "과목별 1점당 환산 기울기(효율) 계산", action: "preview", imgBase: "feat_standard_1" }, { text: "점수 상승 시뮬레이션 제공", action: "preview", imgBase: "feat_standard_2" }, { text: "주 1회 전략 실행 학습 플래너 코칭 및 플래너 제공", action: "preview", imgBase: "feat_standard_3" } ], bg: "assets/backgrounds/bg_standard.png", themeColor: "#2563EB" },
-    pro: { title: "PRO PLAN", price: "월 299,000원", desc: "최소한의 공부량으로 합격하기 위한 최적의 조합을 설계합니다.", list: [ { text: "STANDARD 포함" }, { text: "최소 점수 상승 조합 최적화 알고리즘" }, { text: "내 점수에 가장 유리한 대학 역추적" }, { text: "주 1회 심층 전략 코칭 및 플래너 제공" }, { text: "PRO 전용 보고서 미리보기 📄", action: "download", file: "assets/features/feat_pro_report.pdf" } ], bg: "assets/backgrounds/bg_pro.png", themeColor: "#E11D48" }
+const COURSE_DATA = {
+    basic: { title: "BASIC PLAN", price: `<span class="original-price">49,000원</span> <span class="discount-price">특별 할인가 <strong class="highlight-price">25,000원</strong></span>`, desc: "내 점수와 목표 대학 합격선 사이의 거리를 정밀하게 진단합니다.", list: [ { text: "개인 성적 및 목표 대학 환산점수 계산 (최대 18개)" }, { text: "합격 컷 대비 거리 분석 (위험도 경고)", action: "preview", imgBase: "feat_basic_1" }, { text: "목표 대학별 '효자 과목' 발굴" }, { text: "과목별 1점당 환산 기울기(효율) 계산" }, { text: "점수 상승 시뮬레이션 제공" }, { text: "현재 성적 및 학습 성향 바탕 목표 대학 합격컷 도달 위한 목표 성적 제시" }, { text: "내 점수에 가장 유리한 대학 역추적" } ], bg: "assets/backgrounds/bg_basic.png", themeColor: "#059669" },
+    starter: { title: "STARTER PLAN", price: "39,000원", desc: "SKY 튜터의 1회 플래너 피드백으로 학습 방향을 점검합니다.", list: [ { text: "Basic 기능 모두 포함" }, { text: "SKY 튜터 1회 플래너 피드백" }, { text: "과목별 시간 배분 점검" }, { text: "목표 대학 기준 우선순위 제안" }, { text: "다음 1주 플래너 제시" } ], bg: "assets/backgrounds/bg_mbti.png", themeColor: "#8B5CF6" },
+    standard: { title: "STANDARD PLAN", price: "월 49,000원", desc: "매주 SKY 튜터의 플래너 피드백으로 학습을 체계적으로 관리합니다.", list: [ { text: "Basic 기능 모두 포함" }, { text: "SKY 튜터 주 1회 플래너 피드백" }, { text: "과목별 시간 배분 점검" }, { text: "목표 대학 기준 우선순위 제안" }, { text: "다음 1주 플래너 제시" } ], bg: "assets/backgrounds/bg_standard.png", themeColor: "#2563EB" },
+    pro: { title: "PRO PLAN", price: "월 149,000원", desc: "STANDARD의 모든 기능에 정밀 분석과 심화 전략을 더합니다.", list: [ { text: "STANDARD 모든 기능 포함" }, { text: "현재 성적 및 학습 성향 바탕 목표 대학 합격컷 도달 위한 목표 성적 정밀 제시" }, { text: "내 점수에 가장 유리한 대학 정밀 역추적" }, { text: "상향 지원 중장기 로드맵" }, { text: "심화 합격 전략 리포트" }, { text: "학부모 공유용 전략 리포트" }, { text: "조건부 환급 혜택 제공" }, { text: "PRO 전용 보고서 미리보기 📄", action: "download", file: "assets/features/feat_pro_report.pdf" } ], bg: "assets/backgrounds/bg_pro.png", themeColor: "#E11D48" }
 };
 
 function initMobileCourses() {
     document.querySelectorAll('.course-tab-btn').forEach(btn => {
-        const tier = btn.getAttribute('data-tier');
-        const data = COURSE_DATA[tier];
-        if (!data) return;
-
-        const iconHtml = btn.querySelector('.tab-icon').outerHTML;
-        const infoHtml = btn.querySelector('.tab-info').outerHTML;
-        const listHtml = data.list.map(item => {
-            const checkColor = data.themeColor;
-            if (item.action) {
-                let clickHandler = "";
-                if (item.action === "preview") clickHandler = `onclick="event.stopPropagation(); openFeaturePreview('${item.imgBase}', '${item.text}')"`;
-                else if (item.action === "download") clickHandler = `onclick="event.stopPropagation(); downloadProReport('${item.file}')"`;
-                return `
-                    <li class="clickable-item" ${clickHandler} title="클릭하여 확인하기" style="display:flex; align-items:flex-start; gap:8px;">
-                        <i class="fas fa-check-circle" style="color:${checkColor}; margin-top:3px;"></i>
-                        <span style="flex:1; word-break:keep-all;">${item.text}</span>
-                        <i class="fas fa-external-link-alt" style="font-size: 0.7em; margin-left: 5px; opacity: 0.7; margin-top:5px;"></i>
-                    </li>
-                `;
-            } else {
-                return `
-                    <li style="display:flex; align-items:flex-start; gap:8px;">
-                        <i class="fas fa-check-circle" style="color:${checkColor}; margin-top:3px;"></i>
-                        <span style="flex:1; word-break:keep-all;">${item.text}</span>
-                    </li>
-                `;
-            }
-        }).join('');
-
-        let extraBtnHtml = "";
-        if (tier === 'mbti') {
-            const isLoggedIn = !!getAccessToken();
-            if (isLoggedIn) {
-                extraBtnHtml = `
-                    <div style="margin-top: 25px; padding: 15px; background: #f5f3ff; border: 1px dashed #8b5cf6; border-radius: 8px; text-align: center;">
-                        <p style="margin: 0 0 10px 0; color: #6d28d9; font-weight: bold; font-size: 0.9rem;">🎁 회원 전용 혜택</p>
-                        <a href="/mbti/download" onclick="event.stopPropagation();" style="display: inline-block; background: #8b5cf6; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: 0.2s;">
-                            나만의 맞춤 공부법 PDF 무제한 다운로드
-                        </a>
-                    </div>
-                `;
-            } else {
-                extraBtnHtml = `
-                    <div style="margin-top: 25px; padding: 15px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; text-align: center;">
-                        <p style="margin: 0 0 10px 0; color: #475569; font-weight: bold; font-size: 0.9rem;">🎁 무료 혜택</p>
-                        <a href="/login" onclick="event.stopPropagation(); alert('로그인 후 이용할 수 있는 혜택입니다.');" style="display: inline-block; background: #94a3b8; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: 0.2s;">
-                            🔒 로그인하고 맞춤 공부법 PDF 받기
-                        </a>
-                    </div>
-                `;
-            }
-        }
+        const iconHtml = btn.querySelector('.tab-icon')?.outerHTML || '';
+        const infoHtml = btn.querySelector('.tab-info')?.outerHTML || '';
 
         btn.innerHTML = `
             <div class="tab-summary-wrap">
                 ${iconHtml}
                 ${infoHtml}
-                <div class="tab-price-mobile">${data.price}</div>
-            </div>
-            <div class="mobile-detail-box">
-                <p class="detail-desc">${data.desc}</p>
-                <ul class="detail-list">${listHtml}</ul>
-                ${extraBtnHtml}
             </div>
         `;
     });
 }
 
-function selectCourse(tier) {
+function selectCourse(tier, noScroll = false) {
     const data = COURSE_DATA[tier];
     if (!data) return;
 
@@ -161,11 +128,45 @@ function selectCourse(tier) {
     closeFeaturePreview();
 
     if (isMobile) {
+        const mobileDetail = document.getElementById('mobileCourseDetail');
         if (activeBtn.classList.contains('active-expand')) {
             activeBtn.classList.remove('active-expand', 'active');
+            if (mobileDetail) { mobileDetail.innerHTML = ''; mobileDetail.style.display = 'none'; }
         } else {
             document.querySelectorAll('.course-tab-btn').forEach(btn => btn.classList.remove('active-expand', 'active'));
             activeBtn.classList.add('active-expand', 'active');
+            if (mobileDetail) {
+                const listHtml = data.list.map(item => {
+                    const checkColor = '#4ade80';
+                    if (item.action) {
+                        let clickHandler = "";
+                        if (item.action === "preview") clickHandler = `onclick="openFeaturePreview('${item.imgBase}', '${item.text}')"`;
+                        else if (item.action === "download") clickHandler = `onclick="downloadProReport('${item.file}')"`;
+                        return `<li class="clickable-item" ${clickHandler}><i class="fas fa-check-circle" style="color:${checkColor}"></i><span>${item.text}</span></li>`;
+                    } else {
+                        return `<li><i class="fas fa-check-circle" style="color:${checkColor}"></i><span>${item.text}</span></li>`;
+                    }
+                }).join('');
+                let extraBtnHtml = "";
+                if (tier === 'mbti') {
+                    const isLoggedIn = !!localStorage.getItem('userId');
+                    if (isLoggedIn) {
+                        extraBtnHtml = `<a href="/mbti/download" class="solution-cta-link">나만의 맞춤 공부법 PDF 무료 다운로드</a>`;
+                    } else {
+                        extraBtnHtml = `<a href="/login" class="solution-cta-link">🔒 로그인하고 맞춤 공부법 PDF 받기</a>`;
+                    }
+                }
+                mobileDetail.innerHTML = `
+                    <span class="detail-badge">${tier.toUpperCase()}</span>
+                    <h3 class="detail-title">${data.title}</h3>
+                    <div class="detail-price">${data.price}</div>
+                    <p class="detail-desc">${data.desc}</p>
+                    <ul class="detail-list">${listHtml}</ul>
+                    ${extraBtnHtml}
+                `;
+                mobileDetail.style.display = 'block';
+                if (!noScroll) setTimeout(() => mobileDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
+            }
         }
     } else {
         document.querySelectorAll('.course-tab-btn').forEach(btn => btn.classList.remove('active', 'active-expand'));
@@ -198,35 +199,16 @@ function selectCourse(tier) {
 
             let extraBtnHtml = "";
             if (tier === 'mbti') {
-                const isLoggedIn = !!getAccessToken();
-                const userPromo = localStorage.getItem('promoCode') || ''; 
-                const hasUsedPromo = /^[0-9A-F]{4}-[0-9A-F]{4}-STC$/.test(userPromo);
-                
-                if (!hasUsedPromo) {
-                    if (isLoggedIn) {
-                        extraBtnHtml = `
-                            <div style="margin-top: 25px; padding: 15px; background: #f5f3ff; border: 1px dashed #8b5cf6; border-radius: 8px; text-align: center;">
-                                <p style="margin: 0 0 10px 0; color: #6d28d9; font-weight: bold; font-size: 0.9rem;">🎁 회원 전용 혜택</p>
-                                <a href="/mbti/download" onclick="event.stopPropagation();" style="display: inline-block; background: #8b5cf6; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: 0.2s;">
-                                    나만의 맞춤 공부법 PDF 무료 다운로드(1회)
-                                </a>
-                            </div>
-                        `;
-                    } else {
-                        extraBtnHtml = `
-                            <div style="margin-top: 25px; padding: 15px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; text-align: center;">
-                                <p style="margin: 0 0 10px 0; color: #475569; font-weight: bold; font-size: 0.9rem;">🎁 1회성 무료 혜택</p>
-                                <a href="/login" onclick="event.stopPropagation(); alert('로그인 후 이용할 수 있는 혜택입니다.');" style="display: inline-block; background: #94a3b8; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: 0.2s;">
-                                    🔒 로그인하고 맞춤 공부법 PDF 받기
-                                </a>
-                            </div>
-                        `;
-                    }
+                const isLoggedIn = !!localStorage.getItem('userId');
+                if (isLoggedIn) {
+                    extraBtnHtml = `<a href="/mbti/download" onclick="event.stopPropagation();" class="solution-cta-link">나만의 맞춤 공부법 PDF 무료 다운로드</a>`;
+                } else {
+                    extraBtnHtml = `<a href="/login" onclick="event.stopPropagation(); alert('로그인 후 이용할 수 있는 혜택입니다.');" class="solution-cta-link">🔒 로그인하고 맞춤 공부법 PDF 받기</a>`;
                 }
             }
 
             detailView.innerHTML = `
-                <span class="detail-badge" style="color:${data.themeColor}; background:#fff; border: 1px solid ${data.themeColor};">${tier.toUpperCase()}</span>
+                <span class="detail-badge">${tier.toUpperCase()}</span>
                 <h3 class="detail-title">${data.title}</h3>
                 <div class="detail-price">${data.price}</div>
                 <p class="detail-desc">${data.desc}</p>
@@ -312,28 +294,33 @@ async function renderReviews() {
     if (!container) return;
     
     container.innerHTML = '<p style="text-align:center;">후기를 불러오는 중...</p>';
-    const reviews = await getUserReviews();
-    
-    if (reviews.length === 0) {
-        container.innerHTML = '<p style="text-align:center;">등록된 후기가 없습니다.</p>';
-        return;
-    }
+    const fallbackReviews = [
+        { univ: '광운대 자율전공학부', name: '구*우', content: '기존에는 진학사를 보면서 감으로 기준을 잡았습니다. 컨설팅 후에는 제 점수가 어디에 유리한지 구조적으로 이해하게 됐습니다.' },
+        { univ: '경희대, 건국대, 한국외대', name: '구*우', content: '막연한 안정 지원이 아니라, 왜 안정인지 설명할 수 있는 지원을 하게 됐습니다.' },
+        { univ: '고려대, 중앙대', name: '구*우', content: '컨설팅을 통해 감정이 아닌 구조로 기준을 다시 세우고, 확신을 가지고 지원했습니다.' },
+        { univ: '광운대 자율전공학부', name: '구*우', content: '학과 정보와 실제 예상 합격률을 분석받은 순간, 불안이 확신으로 바뀌었습니다.' },
+        { univ: '광운대 자율전공학부', name: '구*우', content: '왜 이 선택이 유리한지 구조적으로 설명해주셔서 납득하고 지원할 수 있었습니다.' },
+        { univ: '광운대 자율전공학부', name: '구*우', content: '제 점수가 어디에 유리한지 구조적으로 이해하게 됐고, 대학 라인이 달라졌습니다.' }
+    ];
+    const fetchedReviews = await getUserReviews();
+    const reviews = fetchedReviews.length > 0 ? fetchedReviews : fallbackReviews;
 
-    container.innerHTML = reviews.map(review => `
-        <div class="review-card">
+    container.innerHTML = reviews.map((review, index) => `
+        <div class="review-card${index === 0 ? ' featured' : ''}">
             <div class="review-header">
                 <span class="review-badge">${escapeHtml(review.univ)}</span>
-                <span class="review-score">⭐️⭐️⭐️⭐️⭐️</span>
+                <span class="review-score">${index === 0 ? '★★★★☆' : '★★★★★'}</span>
             </div>
             <p class="review-text">"${escapeHtml(review.content)}"</p>
             <div class="review-author">
-                <div class="review-avatar">${escapeHtml(review.name).charAt(0)}</div>
                 <div class="review-info">
                     <div>${escapeHtml(review.name)}</div>
                 </div>
             </div>
         </div>
     `).join('');
+
+    initReviewIndicators();
 }
 
 /* =========================================
@@ -366,6 +353,10 @@ window.cycleResultView = function() {
 /* =========================================
    5. 페이지 초기화 및 이벤트 리스너
    ========================================= */
+// 브라우저 자동 스크롤 복원 비활성화 → 항상 최상단에서 시작
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+window.scrollTo(0, 0);
+
 document.addEventListener('DOMContentLoaded', () => {
     // 권한 체크
     const token = getAccessToken();
@@ -387,7 +378,9 @@ document.addEventListener('DOMContentLoaded', () => {
     updateNavUI();
     renderReviews();
     initMobileCourses();
-    selectCourse('mbti');
+    selectCourse('basic', true);
+    initPptCardSlider();
+    initEffectsSlider();
 
     const myPageBtn = document.getElementById('myPageBtn');
     if (myPageBtn) {
@@ -413,6 +406,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 햄버거 메뉴
+    document.getElementById('hamburgerBtn')?.addEventListener('click', openMobileNav);
+    document.getElementById('mobileNavClose')?.addEventListener('click', closeMobileNav);
+    document.getElementById('mobileNavOverlay')?.addEventListener('click', closeMobileNav);
+    document.getElementById('mobileLogoutBtn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeMobileNav();
+        clearClientSession();
+        alert("로그아웃 되었습니다.");
+        window.location.href = '/';
+    });
+    document.getElementById('mobileMyPageBtn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeMobileNav();
+        const userId = localStorage.getItem('userId');
+        if (!userId) { alert("로그인이 필요합니다."); window.location.href = '/login'; }
+        else window.location.href = '/mypage';
+    });
+
     const observer = new IntersectionObserver((entries, obs) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -420,56 +432,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 obs.unobserve(entry.target);
             }
         });
-    }, { threshold: 0.15 });
-    document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
-
-    // [핵심] 튜토리얼 완료 여부 엄격한 체크 시작
-    if (getAccessToken() && userRole !== 'tutor' && userRole !== 'admin') {
-        checkTutorialStatus();
-    }
-});
-
-// 💡 튜토리얼 검증 후 강제 리다이렉트 (문지기 함수)
-async function checkTutorialStatus() {
-    if (window.location.pathname.startsWith('/tutorial')) return;
-    if (localStorage.getItem('tutorial_completed') === 'true') return;
-
-    if (localStorage.getItem('tutorialStatus') !== null) {
-        alert('진행 중인 튜토리얼이 있습니다. 전략 분석을 위해 먼저 완료해주세요!');
-        window.location.replace('/tutorial');
-        return;
-    }
-
-    const accessToken = getAccessToken();
-    if (!accessToken) return;
-
-    try {
-        const response = await fetch(CONFIG.api.user, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
-            body: JSON.stringify({ type: 'get_user' })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            if (data && (data.tutorialRewardClaimed === true || data.computedTier === 'standard' || data.computedTier === 'pro' || data.computedTier === 'trial')) {
-                localStorage.setItem('tutorial_completed', 'true');
-                return;
-            } else {
-                alert('진행 중인 튜토리얼로 바로 넘어갑니다!');
-                window.location.replace('/tutorial');
-            }
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.scroll-reveal').forEach(el => {
+        // 이미 뷰포트 안에 있는 요소는 즉시 표시 (초기 로딩 흔들림 방지)
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight && rect.bottom > 0) {
+            el.classList.add('visible');
+        } else {
+            observer.observe(el);
         }
-        // API 에러 시 조용히 처리 (인증 문제일 수 있으므로 강제 이동하지 않음)
-    } catch (e) {
-        console.error("Tutorial sync error:", e);
-    }
-}
+    });
+
+    // 튜토리얼 강제 체크는 auth.js resolveUserIdentity()에서 전역 처리
+});
 
 function updateNavUI() {
     const isLoggedIn = !!(getAccessToken() || getIdToken() || localStorage.getItem('userId'));
     const userRole = localStorage.getItem('userRole');
-    
+
     const btnAnalysis = document.getElementById('navAnalysis');
     const btnQna = document.getElementById('navQna');
     const btnLogin = document.getElementById('loginBtn');
@@ -477,12 +457,24 @@ function updateNavUI() {
     const btnLogout = document.getElementById('logoutBtn');
     const btnNoti = document.getElementById('studentNotiFab');
 
+    // mobile nav panel elements
+    const mobileAnalysis = document.getElementById('mobileNavAnalysis');
+    const mobileQna = document.getElementById('mobileNavQna');
+    const mobileLogin = document.getElementById('mobileLoginBtn');
+    const mobileMyPage = document.getElementById('mobileMyPageBtn');
+    const mobileLogout = document.getElementById('mobileLogoutBtn');
+
     if (isLoggedIn) {
         if (btnAnalysis) btnAnalysis.classList.remove('hidden');
         if (btnQna) btnQna.classList.remove('hidden');
         if (btnMyPage) btnMyPage.classList.remove('hidden');
         if (btnLogout) btnLogout.classList.remove('hidden');
         if (btnLogin) btnLogin.classList.add('hidden');
+        if (mobileAnalysis) mobileAnalysis.classList.remove('hidden');
+        if (mobileQna) mobileQna.classList.remove('hidden');
+        if (mobileMyPage) mobileMyPage.classList.remove('hidden');
+        if (mobileLogout) mobileLogout.classList.remove('hidden');
+        if (mobileLogin) mobileLogin.classList.add('hidden');
         if (userRole !== 'admin' && userRole !== 'tutor') {
             if (btnNoti) {
                 btnNoti.classList.remove('hidden');
@@ -495,8 +487,158 @@ function updateNavUI() {
         if (btnMyPage) btnMyPage.classList.add('hidden');
         if (btnLogout) btnLogout.classList.add('hidden');
         if (btnLogin) btnLogin.classList.remove('hidden');
+        if (mobileAnalysis) mobileAnalysis.classList.add('hidden');
+        if (mobileQna) mobileQna.classList.add('hidden');
+        if (mobileMyPage) mobileMyPage.classList.add('hidden');
+        if (mobileLogout) mobileLogout.classList.add('hidden');
+        if (mobileLogin) mobileLogin.classList.remove('hidden');
         if (btnNoti) btnNoti.classList.add('hidden');
     }
+}
+
+/* ── 햄버거 모바일 내비게이션 ── */
+window.openMobileNav = function() {
+    const panel = document.getElementById('mobileNavPanel');
+    const overlay = document.getElementById('mobileNavOverlay');
+    const btn = document.getElementById('hamburgerBtn');
+    if (!panel) return;
+    overlay.style.display = 'block';
+    requestAnimationFrame(() => {
+        panel.classList.add('active');
+        overlay.classList.add('active');
+        btn?.classList.add('open');
+    });
+    document.body.style.overflow = 'hidden';
+};
+
+window.closeMobileNav = function() {
+    const panel = document.getElementById('mobileNavPanel');
+    const overlay = document.getElementById('mobileNavOverlay');
+    const btn = document.getElementById('hamburgerBtn');
+    panel?.classList.remove('active');
+    overlay?.classList.remove('active');
+    btn?.classList.remove('open');
+    document.body.style.overflow = '';
+    setTimeout(() => { if (overlay && !overlay.classList.contains('active')) overlay.style.display = 'none'; }, 280);
+};
+
+/* ── 수평 슬라이더 스크롤 헬퍼 (페이지 수직 스크롤 없이 컨테이너만 이동) ── */
+function scrollSliderTo(container, item, smooth) {
+    if (!container || !item) return;
+    const left = item.offsetLeft - (container.clientWidth - item.offsetWidth) / 2;
+    container.scrollTo({ left: Math.max(0, left), behavior: smooth ? 'smooth' : 'instant' });
+}
+
+/* ── PPT 카드 슬라이더 (모바일) ── */
+function initPptCardSlider() {
+    const grid = document.querySelector('.card-grid--three');
+    const indicatorsEl = document.getElementById('pptIndicators');
+    if (!grid || !indicatorsEl || window.innerWidth > 640) return;
+
+    const cards = grid.querySelectorAll('.ppt-card');
+    const bgImg = document.querySelector('.dark-feature .bg-img');
+    if (cards.length === 0) return;
+
+    const cardImages = Array.from(cards).map(card => {
+        const img = card.querySelector('.ppt-card-img img');
+        return img ? img.getAttribute('src') : null;
+    });
+
+    const pptInitIdx = Math.min(1, cards.length - 1);
+
+    indicatorsEl.innerHTML = Array.from({length: cards.length}, (_, i) =>
+        `<button class="review-dot${i === pptInitIdx ? ' active' : ''}" data-idx="${i}" aria-label="카드 ${i+1}번"></button>`
+    ).join('');
+
+    if (bgImg && cardImages[pptInitIdx]) bgImg.src = cardImages[pptInitIdx];
+    setTimeout(() => { scrollSliderTo(grid, cards[pptInitIdx], false); }, 0);
+
+    indicatorsEl.querySelectorAll('.review-dot').forEach(dot => {
+        dot.addEventListener('click', () => {
+            scrollSliderTo(grid, cards[parseInt(dot.dataset.idx)], true);
+        });
+    });
+
+    let scrollTimer;
+    grid.addEventListener('scroll', () => {
+        clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(() => {
+            const cardWidth = (cards[0]?.offsetWidth || 0) + 14;
+            const idx = Math.max(0, Math.min(Math.round(grid.scrollLeft / cardWidth), cards.length - 1));
+            indicatorsEl.querySelectorAll('.review-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+            if (bgImg && cardImages[idx]) bgImg.src = cardImages[idx];
+        }, 60);
+    }, { passive: true });
+}
+
+/* ── 기대효과 슬라이더 (모바일) ── */
+function initEffectsSlider() {
+    const grid = document.querySelector('.effects-grid');
+    const indicatorsEl = document.getElementById('effectsIndicators');
+    if (!grid || !indicatorsEl || window.innerWidth > 640) return;
+
+    const items = grid.querySelectorAll('.effect-item');
+    if (items.length === 0) return;
+
+    const effInitIdx = Math.min(1, items.length - 1);
+
+    indicatorsEl.innerHTML = Array.from({length: items.length}, (_, i) =>
+        `<button class="review-dot${i === effInitIdx ? ' active' : ''}" data-idx="${i}" aria-label="효과 ${i+1}번"></button>`
+    ).join('');
+
+    setTimeout(() => { scrollSliderTo(grid, items[effInitIdx], false); }, 0);
+
+    indicatorsEl.querySelectorAll('.review-dot').forEach(dot => {
+        dot.addEventListener('click', () => {
+            scrollSliderTo(grid, items[parseInt(dot.dataset.idx)], true);
+        });
+    });
+
+    let scrollTimer;
+    grid.addEventListener('scroll', () => {
+        clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(() => {
+            const itemWidth = (items[0]?.offsetWidth || 0) + 14;
+            const idx = Math.max(0, Math.min(Math.round(grid.scrollLeft / itemWidth), items.length - 1));
+            indicatorsEl.querySelectorAll('.review-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+        }, 60);
+    }, { passive: true });
+}
+
+/* ── 후기 인디케이터 ── */
+function initReviewIndicators() {
+    const grid = document.getElementById('reviewContainer');
+    const indicatorsEl = document.getElementById('reviewIndicators');
+    if (!grid || !indicatorsEl || window.innerWidth > 640) return;
+
+    const cards = grid.querySelectorAll('.review-card');
+    if (cards.length === 0) return;
+
+    const revInitIdx = Math.min(1, cards.length - 1);
+
+    indicatorsEl.innerHTML = Array.from({length: cards.length}, (_, i) =>
+        `<button class="review-dot${i === revInitIdx ? ' active' : ''}" data-idx="${i}" aria-label="후기 ${i+1}번"></button>`
+    ).join('');
+
+    setTimeout(() => { scrollSliderTo(grid, cards[revInitIdx], false); }, 0);
+
+    indicatorsEl.querySelectorAll('.review-dot').forEach(dot => {
+        dot.addEventListener('click', () => {
+            scrollSliderTo(grid, cards[parseInt(dot.dataset.idx)], true);
+        });
+    });
+
+    let scrollTimer;
+    grid.addEventListener('scroll', () => {
+        clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(() => {
+            const scrollLeft = grid.scrollLeft;
+            const cardWidth = (cards[0]?.offsetWidth || 0) + 14;
+            const idx = Math.round(scrollLeft / cardWidth);
+            const clamped = Math.max(0, Math.min(idx, cards.length - 1));
+            indicatorsEl.querySelectorAll('.review-dot').forEach((d, i) => d.classList.toggle('active', i === clamped));
+        }, 60);
+    }, { passive: true });
 }
 
 // ============================================================

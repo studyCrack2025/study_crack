@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+  <script>if('scrollRestoration'in history)history.scrollRestoration='manual';</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>스터디크랙 - 나만의 입시 전략 설정</title>
@@ -9,14 +10,33 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header>
+    <header id="site-header" class="scrolled">
         <div class="logo-container">
             <a href="/" class="logo-link">
-                <img src="/assets/images/studycrack_logo_wo_bg.png" alt="StudyCrack 로고" style="height: 40px; width: auto;">
+                <img src="/assets/figma/figma-asset-04.svg" alt="StudyCrack 로고">
                 <span class="logo">StudyCrack</span>
             </a>
         </div>
+        <div class="mobile-header-right">
+            <span class="mobile-nav-label">튜토리얼</span>
+            <button class="hamburger-btn" id="hamburgerBtn" aria-label="메뉴 열기">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
     </header>
+
+    <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
+    <div class="mobile-nav-panel" id="mobileNavPanel">
+        <div class="mobile-nav-top">
+            <a class="mnp-logo" href="/"><img src="/assets/figma/figma-asset-04.svg" alt="StudyCrack"><span>StudyCrack</span></a>
+            <button class="mobile-nav-close" id="mobileNavClose" aria-label="메뉴 닫기">✕</button>
+        </div>
+        <nav class="mobile-nav-links">
+            <a href="/">홈</a>
+            <a href="/mypage">마이페이지</a>
+            <a href="#" id="mobileLogoutBtn" class="mnl-btn mnl-btn-logout">로그아웃</a>
+        </nav>
+    </div>
 
     <div class="tutorial-wrapper">
         <div class="mascot-section">
@@ -87,7 +107,17 @@
     <template id="tpl-survey-quan">
         <div class="step-card">
             <h3>성적 입력</h3>
-            <p class="step-desc">가장 최근 시험의 원점수를 입력해주세요. 수능 환산 점수로 자동 보정됩니다.</p>
+            <p class="step-desc">3월 또는 5월 학력평가 원점수를 입력해주세요. 수능 환산 점수로 자동 보정됩니다.</p>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                <label style="font-size:0.9rem; font-weight:600; color:#475569;">시험 선택:</label>
+                <select id="tutExamMonth" onchange="onTutExamMonthChange()" style="padding:6px 12px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.9rem; color:#334155; background:#fff; cursor:pointer;">
+                    <option value="mar">3월 학평</option>
+                    <option value="may">5월 학평</option>
+                </select>
+            </div>
+            <div id="tutMayWarning" style="display:none; margin-bottom:14px; padding:12px 16px; background:#fffbeb; border:1px solid #fcd34d; border-radius:8px; font-size:0.85rem; color:#92400e; line-height:1.6;">
+                ⚠️ <strong>주의:</strong> 5월 학력평가는 성적표 발급 이전의 <strong>예상 등급컷 기반 임시 데이터</strong>입니다. 확정 데이터가 아니므로 표준점수·백분위는 실제와 다를 수 있습니다.
+            </div>
             <div class="score-grid">
                 <div class="score-input-card">
                     <div class="score-subject-label">국어</div>
@@ -310,6 +340,7 @@
     <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
     <script src="/js/config.js"></script>
     <script src="/js/auth.js"></script>
+    <script src="/js/shared/hamburger.js"></script>
     <script src="/js/tutorial.js"></script>
 </body>
 </html>

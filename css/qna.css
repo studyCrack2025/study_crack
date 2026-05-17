@@ -1,179 +1,151 @@
 /* --- css/qna.css --- */
 
 /* 1. 헤더 & 공통 */
-.active-link { color: #2563EB !important; font-weight: 700 !important; }
+body { padding-top: 83px; }
+header#site-header .nav-links a.active-link { color: #4c79ee; }
 
 .qna-header-section {
     background-color: #f8fafc;
-    padding: 80px 20px;
+    padding: 60px 20px;
     text-align: center;
     border-bottom: 1px solid #e2e8f0;
 }
-.header-content h2 { margin: 0 0 15px 0; font-size: 2rem; color: #1e293b; }
+.header-content h2 { margin: 0 0 12px 0; font-size: 1.7rem; color: #1e293b; }
 .header-content p { color: #64748b; line-height: 1.6; }
 
 /* 2. FAQ 섹션 */
-.faq-section { background: white; padding: 60px 20px; }
-.section-title { text-align: center; margin-bottom: 40px; }
-.section-title h2 { font-size: 1.8rem; color: #0F172A; position: relative; display: inline-block; }
+.faq-section { background: white; padding: 45px 20px; }
+.section-title { text-align: center; margin-bottom: 30px; }
+.section-title h2 { font-size: 1.5rem; color: #0F172A; position: relative; display: inline-block; }
 
-.faq-container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; }
-.faq-item { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; transition: all 0.3s; background: white; }
+.faq-container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+.faq-item { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; transition: all 0.3s; background: white; }
 .faq-item:hover { border-color: #cbd5e1; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
 
-.faq-question {
-    padding: 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;
-    font-weight: 600; color: #334155; user-select: none;
-}
-.faq-answer {
-    max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background: #f8fafc;
-}
-.faq-answer p { padding: 20px; margin: 0; color: #475569; font-size: 0.95rem; line-height: 1.6; border-top: 1px solid #e2e8f0; }
+.faq-question { padding: 16px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 600; color: #334155; user-select: none; }
+.faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background: #f8fafc; }
+.faq-answer p { padding: 16px 20px; margin: 0; color: #475569; font-size: 0.92rem; line-height: 1.6; border-top: 1px solid #e2e8f0; }
 
-.faq-item.active .faq-question { color: #2563EB; }
+.faq-item.active .faq-question { color: #4c79ee; }
 .faq-item.active .toggle-icon { transform: rotate(180deg); }
 .toggle-icon { transition: transform 0.3s; color: #94a3b8; }
 
 /* 3. 내 질문 내역 섹션 */
-.history-section { background: #fff; padding: 60px 20px; border-top: 10px solid #f1f5f9; }
+.history-section { background: #fff; padding: 45px 20px; border-top: 10px solid #f1f5f9; }
 .history-container { max-width: 1000px; margin: 0 auto; }
 
-.history-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; flex-wrap: wrap; gap: 20px; }
-.history-header h2 { margin: 0 0 5px 0; font-size: 1.6rem; color: #1e293b; }
-.history-header p { margin: 0; color: #64748b; font-size: 0.95rem; }
+.history-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+.history-header h2 { margin: 0 0 4px 0; font-size: 1.35rem; color: #1e293b; }
+.history-header p { margin: 0; color: #64748b; font-size: 0.92rem; }
 
-.btn-ask {
-    background-color: #2563EB; color: white; border: none; padding: 12px 24px; border-radius: 8px;
-    font-weight: 700; cursor: pointer; font-size: 1rem; transition: background 0.2s; display: flex; align-items: center; gap: 8px;
-}
-.btn-ask:hover { background-color: #1d4ed8; }
+.btn-ask { background-color: #4c79ee; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.95rem; transition: background 0.2s; display: flex; align-items: center; gap: 8px; }
+.btn-ask:hover { background-color: #3a68dd; }
 
 /* 그리드 레이아웃 */
-.qna-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+.qna-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
 
-.qna-card {
-    background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 25px;
-    height: 200px; display: flex; flex-direction: column; justify-content: space-between;
-    cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.03);
-}
+.qna-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; height: 180px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
 .qna-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.08); border-color: #cbd5e1; }
 
-.card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-.badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
-.badge-consulting { background: #eff6ff; color: #2563eb; }
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.badge { padding: 3px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; }
+.badge-consulting { background: #eff4ff; color: #4c79ee; }
 .badge-payment { background: #fef2f2; color: #dc2626; }
 .badge-system { background: #f0fdf4; color: #16a34a; }
 .badge-etc { background: #f1f5f9; color: #64748b; }
 
-.status-waiting { color: #f59e0b; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 4px; }
-.status-done { color: #2563eb; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+.status-waiting { color: #f59e0b; font-size: 0.78rem; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+.status-done { color: #4c79ee; font-size: 0.78rem; font-weight: 600; display: flex; align-items: center; gap: 4px; }
 
-.qna-title {
-    font-size: 1.1rem; font-weight: 700; color: #334155; margin-bottom: auto;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;
-}
-.qna-date { font-size: 0.8rem; color: #94a3b8; text-align: right; margin-top: 15px; }
+.qna-title { font-size: 1rem; font-weight: 700; color: #334155; margin-bottom: auto; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; }
+.qna-date { font-size: 0.75rem; color: #94a3b8; text-align: right; margin-top: 12px; }
 
-/* 4. 모달 스타일 (화면 중앙 정렬 Fix) */
-.modal {
-    display: none; /* JS에서 flex로 변경 */
-    position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(3px);
-    justify-content: center; align-items: center; /* Flexbox 중앙 정렬 */
-    padding: 20px; box-sizing: border-box;
-}
+/* 4. 모달 스타일 */
+.modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(3px); justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
 
-.modal-content {
-    background-color: #fff; border-radius: 16px; width: 100%; max-width: 550px;
-    display: flex; flex-direction: column; max-height: 90vh;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.2); animation: slideUp 0.3s ease-out;
-}
+.modal-content { background-color: #fff; border-radius: 14px; width: 100%; max-width: 520px; display: flex; flex-direction: column; max-height: 90vh; box-shadow: 0 10px 40px rgba(0,0,0,0.2); animation: slideUp 0.3s ease-out; }
 
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-.modal-header { padding: 20px 25px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
-.modal-header h2 { margin: 0; font-size: 1.25rem; color: #1e293b; }
-.close-btn { font-size: 1.8rem; color: #94a3b8; cursor: pointer; transition: color 0.2s; line-height: 1; }
+.modal-header { padding: 18px 22px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+.modal-header h2 { margin: 0; font-size: 1.15rem; color: #1e293b; }
+.close-btn { font-size: 1.7rem; color: #94a3b8; cursor: pointer; transition: color 0.2s; line-height: 1; }
 .close-btn:hover { color: #475569; }
 
-.modal-body { padding: 25px; overflow-y: auto; flex: 1; }
-.form-group { margin-bottom: 20px; }
-.form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #334155; font-size: 0.9rem; }
-.form-group input, .form-group select, .form-group textarea {
-    width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; box-sizing: border-box;
-}
+.modal-body { padding: 22px; overflow-y: auto; flex: 1; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; margin-bottom: 6px; font-weight: 600; color: #334155; font-size: 0.875rem; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.92rem; box-sizing: border-box; }
 .form-group textarea { resize: none; }
-.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-    outline: none; border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #4c79ee; box-shadow: 0 0 0 3px rgba(76, 121, 238, 0.12); }
 
-.modal-footer { padding: 20px 25px; border-top: 1px solid #f1f5f9; background: #f8fafc; border-radius: 0 0 16px 16px; }
-.btn-submit { width: 100%; background: #2563EB; color: white; padding: 14px; border: none; border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: 0.2s; }
-.btn-submit:hover { background: #1d4ed8; }
+.modal-footer { padding: 16px 22px; border-top: 1px solid #f1f5f9; background: #f8fafc; border-radius: 0 0 14px 14px; }
+.btn-submit { width: 100%; background: #4c79ee; color: white; padding: 12px; border: none; border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: 0.2s; }
+.btn-submit:hover { background: #3a68dd; }
 
 /* 상세 보기 스타일 */
-.detail-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-#detail-title { font-size: 1.3rem; color: #1e293b; margin: 0 0 15px 0; }
-.content-box { background: #f8fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; color: #334155; line-height: 1.6; white-space: pre-wrap; margin-bottom: 30px; }
-.answer-section h4 { margin: 0 0 10px 0; color: #2563eb; }
-.answer-box { background: #eff6ff; padding: 20px; border-radius: 10px; border: 1px solid #bfdbfe; }
+.detail-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+#detail-title { font-size: 1.2rem; color: #1e293b; margin: 0 0 12px 0; }
+.content-box { background: #f8fafc; padding: 16px; border-radius: 10px; border: 1px solid #e2e8f0; color: #334155; line-height: 1.6; white-space: pre-wrap; margin-bottom: 24px; }
+.answer-section h4 { margin: 0 0 10px 0; color: #4c79ee; }
+.answer-box { background: #eff4ff; padding: 16px; border-radius: 10px; border: 1px solid #c7d7fb; }
 .answer-text { color: #1e3a8a; line-height: 1.6; white-space: pre-wrap; }
-.answer-date { display: block; text-align: right; font-size: 0.8rem; color: #60a5fa; margin-top: 10px; }
+.answer-date { display: block; text-align: right; font-size: 0.78rem; color: #60a5fa; margin-top: 10px; }
 .no-answer { text-align: center; color: #94a3b8; padding: 20px; background: #f8fafc; border-radius: 8px; }
-
-/* 푸터 */
-footer { background: white; padding: 40px 20px; text-align: center; border-top: 1px solid #e2e8f0; margin-top: 60px; }
-.copyright { color: #94a3b8; margin-top: 15px; font-size: 0.85rem; }
 
 /* 스켈레톤 로딩 */
 .skeleton-card { background: #f1f5f9; animation: pulse 1.5s infinite; }
 @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
 
-/* 모바일 대응 */
-@media (max-width: 768px) {
-    /* 기존 유지 내용 */
-    .history-header { flex-direction: column; align-items: flex-start; gap: 15px; }
-    .btn-ask { width: 100%; justify-content: center; }
-    .qna-grid { grid-template-columns: 1fr; gap: 15px; } /* gap도 20px -> 15px 축소 */
-    .modal-content { max-height: 85vh; width: 95%; margin: 5% auto; }
-
-    /* 1. 전체 섹션 상하 여백(Padding) 대폭 축소 */
-    .qna-header-section { padding: 50px 20px; }
+/* 반응형 */
+@media (max-width: 900px) {
+    body { padding-top: 72px; }
+    .qna-header-section { padding: 48px 20px; }
     .faq-section { padding: 40px 20px; }
     .history-section { padding: 40px 20px; }
+}
+@media (max-width: 640px) {
+    body { padding-top: 61px; }
+}
+@media (min-width: 769px) and (max-width: 1023px) {
+    .qna-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 13px; }
+    .modal-content { max-width: 88vw; }
+}
 
-    /* 2. 주요 제목 텍스트 크기 축소 */
-    .header-content h2 { font-size: 1.6rem; margin-bottom: 10px; }
-    .header-content p { font-size: 0.95rem; }
-    .section-title { margin-bottom: 30px; }
-    .section-title h2 { font-size: 1.5rem; }
-    .history-header h2 { font-size: 1.4rem; margin-bottom: 0; }
+/* 모바일 대응 */
+@media (max-width: 768px) {
+    .history-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .btn-ask { width: 100%; justify-content: center; }
+    .qna-grid { grid-template-columns: 1fr; gap: 12px; }
+    .modal-content { max-height: 85vh; width: 95%; margin: 5% auto; }
 
-    /* 3. FAQ 리스트 내부 여백 및 폰트 축소 */
-    .faq-question { padding: 15px; font-size: 0.95rem; }
-    .faq-answer p { padding: 15px; font-size: 0.9rem; }
+    .qna-header-section { padding: 40px 20px; }
+    .faq-section { padding: 32px 20px; }
+    .history-section { padding: 32px 20px; }
 
-    /* 4. 내 질문 내역 카드(qna-card) 다이어트 */
-    .qna-card { 
-        padding: 20px; /* 25px -> 20px */
-        height: auto;  /* [중요] 모바일에서는 고정 200px 해제 */
-        min-height: 140px; /* 내용이 적어도 카드가 너무 납작해지지 않게 최소치만 부여 */
-    }
-    .qna-title { font-size: 1rem; margin-bottom: 15px; margin-top: 10px; }
-    .card-top { margin-bottom: 5px; }
+    .header-content h2 { font-size: 1.4rem; margin-bottom: 8px; }
+    .header-content p { font-size: 0.92rem; }
+    .section-title { margin-bottom: 22px; }
+    .section-title h2 { font-size: 1.3rem; }
+    .history-header h2 { font-size: 1.2rem; margin-bottom: 0; }
 
-    /* 5. 모달 팝업 내부 여백 다이어트 */
-    .modal-header { padding: 15px 20px; }
-    .modal-header h2 { font-size: 1.15rem; }
-    .modal-body { padding: 20px; }
-    .form-group { margin-bottom: 15px; }
-    .form-group label { font-size: 0.85rem; margin-bottom: 6px; }
-    .form-group input, .form-group select, .form-group textarea { padding: 10px; font-size: 0.9rem; }
-    .modal-footer { padding: 15px 20px; }
-    .btn-submit { padding: 12px; font-size: 0.95rem; }
+    .faq-question { padding: 13px 16px; font-size: 0.9rem; }
+    .faq-answer p { padding: 13px 16px; font-size: 0.87rem; }
 
-    /* 6. 모달 상세 보기 텍스트 다이어트 */
-    #detail-title { font-size: 1.15rem; margin-bottom: 10px; }
-    .content-box { padding: 15px; font-size: 0.95rem; margin-bottom: 20px; }
-    .answer-box { padding: 15px; font-size: 0.95rem; }
+    .qna-card { padding: 16px; height: auto; min-height: 130px; }
+    .qna-title { font-size: 0.95rem; margin-bottom: 12px; margin-top: 8px; }
+    .card-top { margin-bottom: 4px; }
+
+    .modal-header { padding: 14px 18px; }
+    .modal-header h2 { font-size: 1.05rem; }
+    .modal-body { padding: 18px; }
+    .form-group { margin-bottom: 13px; }
+    .form-group label { font-size: 0.82rem; margin-bottom: 5px; }
+    .form-group input, .form-group select, .form-group textarea { padding: 9px 11px; font-size: 0.87rem; }
+    .modal-footer { padding: 13px 18px; }
+    .btn-submit { padding: 11px; font-size: 0.9rem; }
+
+    #detail-title { font-size: 1.05rem; margin-bottom: 8px; }
+    .content-box { padding: 13px; font-size: 0.9rem; margin-bottom: 16px; }
+    .answer-box { padding: 13px; font-size: 0.9rem; }
 }

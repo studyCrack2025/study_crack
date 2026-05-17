@@ -73,6 +73,17 @@ function escapeHtml(text) {
 // [초기화] DOM 로드 및 데이터 페치
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
+
+    if (window.DEV_MOCK?.enabled) {
+        const u = window.DEV_MOCK.user;
+        renderUserInfo({ name: u.name, email: u.email, phone: u.phone, mbti: u.mbti });
+        applyUserTier(u.tier);
+        setupUI();
+        const loader = document.getElementById('pageLoadingOverlay');
+        if (loader) setTimeout(() => loader.classList.add('hidden'), 300);
+        return;
+    }
+
     // 1. 기본 토큰 존재 여부만 1차 확인 (accessToken으로 통일)
     if (!getAccessToken() || !getIdToken()) {
         const refreshed = await tryRefreshToken();
@@ -361,11 +372,12 @@ function renderUserInfo(data) {
     if (currentEmailDisplay) currentEmailDisplay.innerText = displayEmail;
 
     const mbtiDisplay = document.getElementById('profileMbtiDisplay');
-    if (mbtiDisplay) mbtiDisplay.textContent = data.mbti || '-';
+    if (mbtiDisplay) mbtiDisplay.textContent = data.mbti || data.qualitative?.mbti || '-';
 }
 
 function applyUserTier(tier) {
     currentUserTier = tier;
+    const tierDisplayMap = { basic: 'STARTER', standard: 'STANDARD', pro: 'PRO', trial: 'TRIAL', test: 'TEST' };
     const profileBox = document.querySelector('.profile-summary');
     if (profileBox) {
         profileBox.classList.remove('tier-basic', 'tier-standard', 'tier-pro', 'tier-black');
@@ -378,7 +390,8 @@ function applyUserTier(tier) {
                 badge.className = 'premium-badge';
                 profileBox.appendChild(badge);
             }
-            badge.innerText = `${tier.toUpperCase()} MEMBER`;
+            const tierLabel = tierDisplayMap[tier] || String(tier || '').toUpperCase();
+            badge.innerText = `${tierLabel} MEMBER`;
         } else if (badge) {
             badge.remove();
         }

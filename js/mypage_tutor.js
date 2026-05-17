@@ -43,6 +43,17 @@ function parseDynamoItem(item) {
 // [초기화] DOM 로드 및 데이터 페치
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
+
+    if (window.DEV_MOCK?.enabled) {
+        const u = window.DEV_MOCK.user;
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
+        set('userNameDisplay', u.name);
+        set('userEmailDisplay', u.email);
+        set('currentEmailDisplay', u.email);
+        set('currentPhoneDisplay', u.phone);
+        return;
+    }
+
     const userId = localStorage.getItem('userId');
 
     if (!getAccessToken() || !getIdToken()) {
@@ -260,46 +271,46 @@ window.toggleDepositHistory = function() {
 async function loadDepositHistoryData() {
     const tbody = document.getElementById('depositListBody');
     tbody.innerHTML = '<tr><td colspan="4" class="empty-msg"><i class="fas fa-spinner fa-spin"></i> 내역 조회 중...</td></tr>';
-    const userId = localStorage.getItem('userId');
+
+    const PAY_STATUS_COLORS = { '미지급': '#ef4444', '지급대기': '#f59e0b', '지급완료': '#10b981' };
 
     try {
         const response = await apiFetch(TUTOR_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'tutor_get_payment_history', userId: userId })
+            body: JSON.stringify({ type: 'tutor_get_payment_history' })
         });
-        
-        const rawList = await response.json();
-        let list = Array.isArray(rawList) ? rawList.map(parseDynamoItem) : [];
+
+        const list = await response.json();
 
         tbody.innerHTML = '';
-        if (list.length === 0) {
+        if (!Array.isArray(list) || list.length === 0) {
             tbody.innerHTML = '<tr><td colspan="4" class="empty-msg">정산 내역이 없습니다.</td></tr>';
             return;
         }
 
-        list.sort((a, b) => (b.yearMonth || '').localeCompare(a.yearMonth || ''));
-
         list.forEach(item => {
-            const stdCount = Number(item.standardCount || 0); const proCount = Number(item.proCount || 0);
-            const stdAmt = Number(item.standardAmount || 0).toLocaleString(); const proAmt = Number(item.proAmount || 0).toLocaleString();
-            const totalAmt = Number(item.totalAmount || 0).toLocaleString();
+            const weeklyCount = Number(item.weeklyCount || 0);
+            const proCount    = Number(item.proCount    || 0);
+            const weeklyAmt   = Number(item.weeklyAmount || 0).toLocaleString();
+            const proAmt      = Number(item.proAmount    || 0).toLocaleString();
+            const totalAmt    = Number(item.totalAmount  || 0).toLocaleString();
+            const payStatus   = item.payStatus || '미지급';
+            const statusColor = PAY_STATUS_COLORS[payStatus] || '#64748b';
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td data-label="정산 월"><strong>${escapeHtml(item.yearMonth)}</strong></td>
-                <td data-label="유료 등급별 학생 수">
-                    <div style="font-size:0.9rem;"><span style="color:#64748b;">Standard:</span> <strong>${stdCount}명</strong></div>
-                    <div style="font-size:0.9rem;"><span style="color:#2563eb;">Pro:</span> <strong>${proCount}명</strong></div>
+                <td data-label="보고서 작성 건수">
+                    <div style="font-size:0.9rem;"><span style="color:#64748b;">주간 리포트:</span> <strong>${weeklyCount}건</strong></div>
+                    <div style="font-size:0.9rem;"><span style="color:#2563eb;">PRO 보고서:</span> <strong>${proCount}건</strong></div>
                 </td>
-                <td data-label="등급별 정산 금액">
-                    <div style="font-size:0.9rem;"><span style="color:#64748b;">Std:</span> ${stdAmt}원</div>
-                    <div style="font-size:0.9rem;"><span style="color:#2563eb;">Pro:</span> ${proAmt}원</div>
+                <td data-label="급여 산정 내역">
+                    <div style="font-size:0.9rem;"><span style="color:#64748b;">주간:</span> ${weeklyAmt}원</div>
+                    <div style="font-size:0.9rem;"><span style="color:#2563eb;">PRO:</span> ${proAmt}원</div>
                 </td>
                 <td data-label="총 지급액 / 상태">
                     <div style="font-weight:bold; color:#1e293b; font-size:1rem;">${totalAmt}원</div>
-                    <div style="font-size:0.8rem; color:${item.status === '입금완료' ? 'green' : '#f59e0b'}; margin-top:4px;">
-                        ${escapeHtml(item.status)}
-                    </div>
+                    <div style="font-size:0.82rem; font-weight:700; color:${statusColor}; margin-top:4px;">${escapeHtml(payStatus)}</div>
                 </td>
             `;
             tbody.appendChild(tr);

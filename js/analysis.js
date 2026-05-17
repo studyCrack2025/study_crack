@@ -51,6 +51,25 @@ const EXAM_DISPLAY_NAMES = {
 document.addEventListener('DOMContentLoaded', async () => {
     const userId = localStorage.getItem('userId');
 
+    if (window.DEV_MOCK?.enabled) {
+        const m = window.DEV_MOCK;
+        renderUserInfo({ name: m.user.name, email: m.user.email, phone: m.user.phone, mbti: m.user.mbti, profileImage: null, computedTier: m.user.tier, qualitative: m.analysis.qualitative, quantitative: m.analysis.quantitative, targetUnivs: m.analysis.targetUnivs, univChangeRemaining: m.analysis.univChangeRemaining });
+        applyUserTier(m.user.tier);
+        userTargetUnivs = m.analysis.targetUnivs;
+        userQuantData = m.analysis.quantitative;
+        univChangeRemaining = m.analysis.univChangeRemaining;
+        updateQuotaUI();
+        setWeeklyLoadingStatus(true);
+        initUnivGrid();
+        updateAnalysisUI();
+        initProSection();
+        setWeeklyLoadingStatus(false);
+        setTimeout(() => { applyCoachTierLock(); applySimTierLock(); }, 500);
+        const devLoader = document.getElementById('pageLoadingOverlay');
+        if (devLoader) setTimeout(() => devLoader.classList.add('hidden'), 500);
+        return;
+    }
+
     if (!getAccessToken() || !getIdToken()) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
@@ -84,20 +103,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // 3️⃣ UI 초기화 로직 실행
-        initUnivGrid(); 
+        initUnivGrid();
         updateAnalysisUI();
-        initProSection(); 
-        
+        initProSection();
+
         setWeeklyLoadingStatus(false);
-        setTimeout(() => { 
+        setTimeout(() => {
             // 주간 상태 체크도 권한이 있는 사람만 실행
             if (['standard', 'pro'].includes(currentUserTier)) {
-                checkWeeklyStatus(); 
+                checkWeeklyStatus();
             }
             applyCoachTierLock();
             applySimTierLock();
-        }, 500); 
-        
+        }, 500);
+
         const loader = document.getElementById('pageLoadingOverlay');
         if (loader) {
             setTimeout(() => {
@@ -533,11 +552,9 @@ window.finishTutorialComplete = async function() {
     }
 
     try {
-        const token = getIdToken();
         // 튜토리얼 보상으로 trial 티어 부여 및 횟수 4회 충전 요청
-        await fetch(MYPAGE_API_URL, {
+        await apiFetch(MYPAGE_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'grant_tutorial_trial' })
         });
     } catch (e) {
@@ -597,12 +614,12 @@ function syncMobileHeight() {
 function getStandardLockOverlayHTML(featureName) {
     return `
         <div style="background: white; padding: 30px 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; border: 1px solid #e2e8f0; width: 90%; max-width: 320px; box-sizing: border-box;">
-            <i class="fas fa-lock" style="font-size: 2.5rem; color: #94a3b8; margin-bottom: 15px;"></i>
+            <i class="fas fa-lock" style="font-size: 2.5rem; color: #7c9eef; margin-bottom: 15px;"></i>
             <h3 style="margin: 0 0 10px 0; color: #1e293b; font-size: 1.25rem; word-break: keep-all;">Standard 멤버십 전용</h3>
-            <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 20px; line-height: 1.5; word-break: keep-all;">
-                ${featureName}은(는)<br><strong>Standard 등급 이상</strong>부터 이용 가능합니다.
+            <p style="color: #475569; font-size: 0.95rem; margin-bottom: 20px; line-height: 1.5; word-break: keep-all;">
+                ${featureName}은(는)<br><strong style="color:#4c79ee;">Standard 등급 이상</strong>부터 이용 가능합니다.
             </p>
-            <button onclick="location.href='/payment'" style="width: 100%; padding: 14px 0; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.2s; white-space: nowrap; word-break: keep-all;">
+            <button onclick="location.href='/payment'" style="width: 100%; padding: 14px 0; background: #4c79ee; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.2s; white-space: nowrap; word-break: keep-all;">
                 🚀 멤버십 알아보기
             </button>
         </div>`;
@@ -620,7 +637,7 @@ function applySimTierLock() {
 
         const overlay = document.createElement('div');
         overlay.className = 'sim-tier-lock-overlay';
-        overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
+        overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(200, 217, 255, 0.82); backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
         overlay.innerHTML = getStandardLockOverlayHTML('점수 상승 시뮬레이션');
         container.appendChild(overlay);
     } else {
@@ -658,20 +675,12 @@ function parseDynamoItem(item) {
 // [데이터 로드] 사용자 정보 & 리포트 데이터
 // ============================================================
 async function fetchUserData(userId) {
-    const token = getIdToken();
     const safeUserId = userId || localStorage.getItem('userId'); 
     try {
-        const response = await fetch(MYPAGE_API_URL, {
+        const response = await apiFetch(MYPAGE_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'get_user', userId: safeUserId }) 
         });
-        
-        if (response.status === 401) {
-            alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-            window.location.href = '/login';
-            return;
-        }
         if (!response.ok) throw new Error("사용자 데이터 로드 실패");
         
         const rawData = await response.json();
@@ -722,11 +731,9 @@ async function fetchUserData(userId) {
 }
 
 async function fetchWeeklyHistory() {
-    const token = getIdToken();
     try {
-        const response = await fetch(REPORT_API_URL, {
+        const response = await apiFetch(REPORT_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'get_weekly_reports' }) 
         });
         
@@ -738,11 +745,9 @@ async function fetchWeeklyHistory() {
 }
 
 async function fetchInitialProReports() {
-    const token = getIdToken();
     try {
-        const res = await fetch(REPORT_API_URL, {
+        const res = await apiFetch(REPORT_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'get_pro_reports', data: { requesterRole: 'student' } })
         });
         if (res.ok) {
@@ -753,12 +758,10 @@ async function fetchInitialProReports() {
 }
 
 async function fetchUnivData() {
-    const token = getIdToken();
     const userId = localStorage.getItem('userId');
     try {
-        const response = await fetch(UNIV_DATA_API_URL, {
+        const response = await apiFetch(UNIV_DATA_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'get_univ_list_only', userId: userId }) 
         });
         
@@ -804,7 +807,7 @@ function renderUserInfo(data) {
             icon.style.marginRight = '4px';
             tierBadgeEl.appendChild(icon);
         }
-        tierBadgeEl.appendChild(document.createTextNode(`${tierText} 멤버십`));
+        tierBadgeEl.appendChild(document.createTextNode(tierText));
     }
 }
 
@@ -841,12 +844,20 @@ function updateSurveyStatus(data) {
         if (targets.length > 0) {
             const uniqueTargets = [...new Set(targets)].slice(0, 2);
             let targetHtml = '';
-            if (uniqueTargets[0]) targetHtml += `<div class="target-row"><span class="target-badge first">1지망</span> ${escapeHtml(uniqueTargets[0])}</div>`;
-            if (uniqueTargets[1]) targetHtml += `<div class="target-row"><span class="target-badge second">2지망</span> ${escapeHtml(uniqueTargets[1])}</div>`;
+            if (uniqueTargets[0]) targetHtml += `<div class="target-row first">${escapeHtml(uniqueTargets[0])}<span class="target-rank">1지망</span></div>`;
+            if (uniqueTargets[1]) targetHtml += `<div class="target-row second">${escapeHtml(uniqueTargets[1])}<span class="target-rank">2지망</span></div>`;
+            const mbti = getUserMbti(data);
+            if (mbti) targetHtml += `<div class="target-row mbti">${escapeHtml(mbti)}<span class="target-rank">MBTI</span></div>`;
             targetContainer.innerHTML = targetHtml;
             qualTargetRow.style.display = 'flex';
         } else {
-            qualTargetRow.style.display = 'none';
+            const mbti = getUserMbti(data);
+            if (mbti) {
+                targetContainer.innerHTML = `<div class="target-row mbti">${escapeHtml(mbti)}<span class="target-rank">MBTI</span></div>`;
+                qualTargetRow.style.display = 'flex';
+            } else {
+                qualTargetRow.style.display = 'none';
+            }
         }
     } else {
         qualStatusEl.innerHTML = '<span style="color:#991b1b; font-weight:bold;">❌ 미작성</span>';
@@ -880,30 +891,29 @@ function updateSurveyStatus(data) {
             if (!d) return;
 
             const makeRow = (label, obj) => {
-                if (!obj) return ''; 
+                if (!obj) return '';
                 let optText = '';
                 if (obj.opt && obj.opt !== 'none') {
-                    optText = `<span class="opt-badge">(${escapeHtml(obj.opt)})</span>`;
+                    optText = `<span class="score-opt">(${escapeHtml(obj.opt)})</span>`;
+                } else if (obj.name) {
+                    optText = `<span class="score-opt">(${escapeHtml(obj.name)})</span>`;
                 }
-                else if (obj.name) {
-                    optText = `<span class="opt-badge">(${escapeHtml(obj.name)})</span>`;
+
+                const grd = obj.grd ? escapeHtml(obj.grd) : '-';
+                let pctStr = '';
+                if (label !== '영어' && label !== '한국사') {
+                    const std = escapeHtml(obj.std) || '-';
+                    const pct = obj.pct ? escapeHtml(obj.pct) + '%' : '-';
+                    pctStr = `${std} / ${pct}`;
                 }
 
-                const std = escapeHtml(obj.std) || '-';
-                const pct = obj.pct ? escapeHtml(obj.pct) + '%' : '-';
-                const grd = obj.grd ? `<span class="grade-circle">${escapeHtml(obj.grd)}</span>` : '';
-
-                let valStr = '';
-                if (label === '영어' || label === '한국사') valStr = grd; 
-                else valStr = `${std} / ${pct} ${grd}`;
-
-                return `<tr><td class="subj-label">${label}</td><td class="score-info">${optText} ${valStr}</td></tr>`;
+                return `<div class="score-row"><span class="score-subj">${label}${optText}</span><span class="score-nums">${pctStr}</span><span class="score-grd">${grd}</span></div>`;
             };
 
-            let html = '<table class="side-score-table">';
+            let html = '<div class="score-list">';
             html += makeRow('국어', d.kor); html += makeRow('수학', d.math); html += makeRow('영어', d.eng);
             html += makeRow('탐구1', d.inq1); html += makeRow('탐구2', d.inq2);
-            html += '</table>';
+            html += '</div>';
             detailBox.innerHTML = html;
         };
 
@@ -957,54 +967,64 @@ function openSolution(type) {
 function checkMbtiReport(data) {
     const container = document.getElementById('mbtiReportContainer');
     if (!container) return;
-    const promo = data.promoCode; 
-    if (!promo || !promo.includes("-STC") || data.mbtiReportDownloaded) { container.innerHTML = ''; return; }
-    
-    let hex = promo.replace("-STC", "").replace("-", "");
-    let mbti = '';
-    for (let i = 0; i < hex.length; i += 2) mbti += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+    const mbti = getUserMbti(data);
+    if (!mbti) { container.innerHTML = ''; return; }
     
     container.innerHTML = `
-        <button onclick="downloadMbtiReport()" id="mbtiDownBtn" class="btn-go-survey" style="background-color: #10b981; color: white; border: none; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
-            <i class="fas fa-file-download"></i> [${mbti.toUpperCase()}] 보고서 다운받기
+        <button onclick="downloadMbtiReport('${mbti}')" id="mbtiDownBtn" class="btn-go-survey" style="background-color: #10b981; color: white; border: none; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
+            <i class="fas fa-file-download"></i> [${escapeHtml(mbti)}] 보고서 다운받기
         </button>`;
 }
 
-async function downloadMbtiReport() {
-    if (!confirm("해당 MBTI 리포트는 1회만 다운로드 가능합니다.\n지금 다운로드 하시겠습니까?")) return;
+function getUserMbti(data) {
+    const rawMbti = data?.mbti || data?.qualitative?.mbti;
+    if (rawMbti && /^[A-Z]{4}$/i.test(String(rawMbti).trim())) {
+        return String(rawMbti).trim().toUpperCase();
+    }
+
+    const promo = data?.promoCode;
+    if (!promo || !promo.includes("-STC")) return '';
+
+    const hex = promo.replace("-STC", "").replace("-", "");
+    let decoded = '';
+    for (let i = 0; i < hex.length; i += 2) {
+        const code = parseInt(hex.substr(i, 2), 16);
+        if (!Number.isFinite(code)) return '';
+        decoded += String.fromCharCode(code);
+    }
+    return /^[A-Z]{4}$/i.test(decoded) ? decoded.toUpperCase() : '';
+}
+
+async function downloadMbtiReport(mbtiType) {
+    const mbti = String(mbtiType || '').trim().toUpperCase();
+    if (!/^[A-Z]{4}$/.test(mbti)) {
+        alert("MBTI 결과를 확인할 수 없습니다.");
+        return;
+    }
+
     const btn = document.getElementById('mbtiDownBtn');
     if (btn) { btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 발급 중...`; btn.disabled = true; }
 
-    // 💡 [핵심 방어] 서버 통신(await)을 시작하기 전, 사용자가 클릭한 즉시 빈 창을 먼저 엽니다!
     const newWindow = window.open('about:blank', '_blank');
 
-    const token = getIdToken();
     try {
-        const res = await fetch(REPORT_API_URL, {
+        const res = await apiFetch(REPORT_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'get_mbti_report' })
+            body: JSON.stringify({ type: 'get_mbti_pdf_url', mbtiType: mbti })
         });
         const data = await res.json();
         
-        if (res.ok && data.success) {
-            alert("다운로드가 시작되었습니다.");
-            
-            // 💡 [핵심 방어] 미리 열어둔 빈 창의 주소를 받아온 S3 다운로드 링크로 쓱 바꿔치기 합니다.
+        if (res.ok && data.success && data.downloadUrl) {
             newWindow.location.href = data.downloadUrl;
-            
-            const container = document.getElementById('mbtiReportContainer');
-            if (container) container.innerHTML = ''; 
         } else {
-            // 실패하면 열어둔 빈 창을 조용히 닫아줍니다.
             newWindow.close();
             alert(data.error || "보고서 발급에 실패했습니다.");
-            if (btn) { btn.innerHTML = `<i class="fas fa-file-download"></i> 보고서 다운받기`; btn.disabled = false; }
         }
     } catch (e) {
-        newWindow.close(); // 에러 시에도 빈 창 닫기
+        newWindow.close();
         alert("서버 통신 오류가 발생했습니다.");
-        if (btn) { btn.innerHTML = `<i class="fas fa-file-download"></i> 보고서 다운받기`; btn.disabled = false; }
+    } finally {
+        if (btn) { btn.innerHTML = `<i class="fas fa-file-download"></i> [${escapeHtml(mbti)}] 보고서 다운받기`; btn.disabled = false; }
     }
 }
 
@@ -1387,12 +1407,10 @@ async function saveTargetUnivs() {
     }
     
     const userId = localStorage.getItem('userId');
-    const token = getIdToken(); 
     
     try {
-        const response = await fetch(MYPAGE_API_URL, {
+        const response = await apiFetch(MYPAGE_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'update_target_univs', userId: userId, data: newUnivs })
         });
         const resData = await response.json();
@@ -1411,7 +1429,13 @@ async function saveTargetUnivs() {
 async function updateAnalysisUI() {
     const container = document.getElementById('univAnalysisResult');
     if (!container) return;
-    
+
+    if (window.DEV_MOCK?.enabled) {
+        const cardsHtml = window.DEV_MOCK.analysis.cards.map(renderAnalysisCard).join('');
+        container.innerHTML = `<div class="analysis-cards-wrapper">${cardsHtml}</div>`;
+        return;
+    }
+
     const hasTargets = userTargetUnivs && userTargetUnivs.some(u => u && u.univ);
     const availableExams = userQuantData ? Object.keys(userQuantData).filter(key => {
         const data = userQuantData[key];
@@ -1454,34 +1478,18 @@ async function updateAnalysisUI() {
     container.innerHTML = selectorHTML;
     
     const cardsContainer = document.getElementById('analysisCardsContainer');
-    const token = getIdToken();
     const userId = localStorage.getItem('userId');
     const currentScoreData = userQuantData[currentExamMode];
 
     try {
-        const res = await fetch(UNIV_DATA_API_URL, {
+        const res = await apiFetch(UNIV_DATA_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'analyze_my_targets', userId: userId, targetUnivs: userTargetUnivs, userScores: currentScoreData, examMode: currentExamMode
             })
         });
         const data = await res.json();
-        
-        if (data.server_debug?.logs?.length) {
-            console.groupCollapsed(`%c[Analysis] 서버 로그 (${data.server_debug.logs.length}줄)`, 'color:#2563eb; font-weight:bold;');
-            data.server_debug.logs.forEach(line => {
-                if (line.startsWith('❌') || line.includes('Error') || line.includes('실패')) {
-                    console.error(line);
-                } else if (line.startsWith('⚠') || line.includes('warn') || line.includes('없음')) {
-                    console.warn(line);
-                } else {
-                    console.log(line);
-                }
-            });
-            console.groupEnd();
-        }
-        
+
         // 💡 [수정] 서버 데이터 배열 추출 로직 안정화
         const results = Array.isArray(data) ? data : (data.results || data.data || []);
         
@@ -1505,17 +1513,15 @@ function changeExamMode(mode) { currentExamMode = mode; updateAnalysisUI(); }
 function renderAnalysisCard(res) {
     if (res.msg.includes("오류") || res.msg.includes("데이터 없음") || res.status === '분석 불가') {
         return `
-        <div class="analysis-card" style="border-left-color: #94a3b8;">
-            <div class="analysis-header" style="margin-bottom:10px;">
-                <h4 style="margin:0;">${escapeHtml(res.idx + 1)}지망: ${escapeHtml(res.univ)} <small style="color:#64748b;">${escapeHtml(res.major)}</small></h4>
-                <span style="background:#f1f5f9; color:#64748b; padding:2px 8px; border-radius:4px; font-size:0.8rem; margin-top:5px; display:inline-block;">데이터 부족</span>
+        <div class="analysis-card">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                <span style="font-size:18px; font-weight:700; color:#30363e; flex-shrink:0;">${escapeHtml(res.idx + 1)}지망</span>
+                <span style="flex:1; font-size:20px; font-weight:600; letter-spacing:-.02em; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(res.univ)} <span style="font-size:16px; font-weight:400; color:#575757;">(${escapeHtml(res.major)})</span></span>
+                <span style="display:inline-flex; align-items:center; height:36px; padding:0 16px; border-radius:150px; font-size:13px; font-weight:800; color:#fff; background:#94a3b8; flex-shrink:0;">데이터 부족</span>
             </div>
             <p style="color:#64748b; font-size:0.9rem; margin:0;">${escapeHtml(res.msg || '해당 학과의 작년 입시 데이터가 없습니다.')}</p>
         </div>`;
     }
-
-    const badgeStyle = `background: ${res.color}15; color: ${res.color}; border: 1px solid ${res.color};`; 
-    const scoreStyle = `color: ${res.color}; font-weight: 800; font-size: 1.5rem;`;
 
     const safeIdx = escapeHtml(res.idx + 1); const safeUniv = escapeHtml(res.univ); const safeMajor = escapeHtml(res.major);
     const safeStatus = escapeHtml(res.status); const safeMsg = escapeHtml(res.msg); const safeScore = escapeHtml(res.converted_score);
@@ -1524,44 +1530,26 @@ function renderAnalysisCard(res) {
     const barWidth = Math.min((res.converted_score / MAX_SCORE) * 100, 100);
 
     return `
-        <div class="analysis-card" style="border-left-color: ${res.color}; display: flex; flex-direction: column; gap: 15px;">
-            <div class="analysis-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; border-bottom:1px solid #f1f5f9; padding-bottom:15px;">
-                <div style="flex: 1; min-width: 0;">
-                    <span style="color:#64748b; font-size:1.1rem; font-weight:800; display:block; margin-bottom:5px;">${safeIdx}지망</span>
-                    <h4 style="margin:0; font-size:1.2rem; color:#1e293b; letter-spacing:-0.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeUniv}</h4>
-                    <div style="color:#64748b; font-size:0.95rem; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeMajor}</div>
-                </div>
-                <div style="text-align:right; flex-shrink: 0;">
-                    <span style="${badgeStyle} padding:6px 14px; border-radius:20px; font-size:0.9rem; font-weight:bold; display:inline-block; margin-bottom:5px; white-space:nowrap;">${safeStatus}</span>
-                    <div style="font-size:0.8rem; color:${res.color}; font-weight:600; white-space:nowrap;">${safeMsg}</div>
-                </div>
+        <div class="analysis-card">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+                <span style="font-size:18px; font-weight:700; color:#30363e; flex-shrink:0;">${safeIdx}지망</span>
+                <span style="flex:1; font-size:20px; font-weight:600; letter-spacing:-.02em; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeUniv} <span style="font-size:16px; font-weight:400; color:#575757;">(${safeMajor})</span></span>
+                <span style="display:inline-flex; align-items:center; height:26px; padding:0 12px; border-radius:150px; font-size:13px; font-weight:800; color:#fff; background:${res.color}; flex-shrink:0; white-space:nowrap;">${safeStatus}</span>
             </div>
-            <div class="analysis-body" style="display:flex; flex-direction:column; gap:20px;">
-                <div class="score-section">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
-                        <span style="font-size:0.95rem; color:#475569; font-weight:600;">AI 환산 진단점수</span>
-                        <span style="${scoreStyle}">${safeScore}<span style="font-size:1rem; font-weight:normal; margin-left:2px; color:#64748b;">점</span></span>
-                    </div>
-                    <div class="score-bar-container">
-                        <div class="score-bar-bg">
-                            <div style="position:absolute; left:40%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
-                            <div style="position:absolute; left:60%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
-                            <div class="score-bar-fill" style="width: ${barWidth}%; background: ${res.color};"></div>
-                        </div>
-                        <div class="score-labels">
-                            <span class="label-min">0</span>
-                            <span class="label-pass">합격<span class="m-line">(100)</span></span>
-                            <span class="label-stable">안정<span class="m-line">(150)</span></span>
-                            <span class="label-max">MAX<span class="m-line">(${MAX_SCORE})</span></span>
-                        </div>
-                    </div>
-                </div>
-                <div class="advice-section" style="background:#f8fafc; border-radius:10px; padding:18px; border:1px solid #e2e8f0;">
-                    <h5 style="margin:0 0 8px 0; font-size:0.9rem; color:#334155; display:flex; align-items:center;">
-                        <i class="fas fa-lightbulb" style="color:#fbbf24; margin-right:6px;"></i> 합격 전략 코멘트
-                    </h5>
-                    <p style="margin:0; font-size:0.95rem; color:#475569; line-height:1.6;">${getSimpleAdvice(res.converted_score, res.status)}</p>
-                </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-size:15px; font-weight:600; color:#575757;">AI 환산 진단점수</span>
+                <span style="font-size:24px; font-weight:800; color:${res.color};">${safeScore}<span style="font-size:15px; font-weight:500; color:#575757; margin-left:2px;">점</span></span>
+            </div>
+            <div class="score-bar-bg">
+                <div class="score-bar-fill" style="height:100%; width:${barWidth}%; background:${res.color};"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:12px; color:#94a3b8; margin:4px 0 6px;">
+                <span>0</span><span>합격(100)</span><span>안정(150)</span><span>MAX(250)</span>
+            </div>
+            <p style="font-size:14px; font-weight:600; color:${res.color}; text-align:right; margin:0 0 8px;">${safeMsg}</p>
+            <div style="background:#fff; border-radius:6px; padding:12px 16px; box-shadow:10px 20px 40px rgba(179,179,179,.1);">
+                <p style="font-size:15px; font-weight:700; color:#30363e; margin:0 0 6px 0;">#합격 전략 코멘트</p>
+                <p style="font-size:15px; color:#30363e; line-height:1.75; margin:0;">${getSimpleAdvice(res.converted_score, res.status)}</p>
             </div>
         </div>`;
 }
@@ -1620,10 +1608,17 @@ function initSimulation() {
 async function fetchSimulationData() {
     const chartArea = document.getElementById('simChartArea');
     if (!chartArea) return;
-    
+
+    if (window.DEV_MOCK?.enabled) {
+        cachedSimData = window.DEV_MOCK.analysis.simData;
+        simDisplayList = cachedSimData.map((item, i) => ({ ...item, originalIdx: i }));
+        selectedSimIndex = 0;
+        renderSimChart();
+        return;
+    }
+
     chartArea.innerHTML = '<div style="margin:auto; color:#3b82f6;"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
     
-    const token = getIdToken();
     const userId = localStorage.getItem('userId');
     
     let scoreData = null;
@@ -1632,9 +1627,8 @@ async function fetchSimulationData() {
     }
     
     try {
-        const res = await fetch(UNIV_DATA_API_URL, {
+        const res = await apiFetch(UNIV_DATA_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
                 type: 'simulate_score_rise', 
                 userId: userId, 
@@ -1774,7 +1768,7 @@ function renderSimChart() {
                     extensionHtml = `
                         <div class="sim-extension-bar" data-target-height="${riseHeightPct}" style="position:absolute; bottom:${currentHeightPct}; left:50%; transform:translateX(-50%); height:0; opacity:0; z-index:2; transition:height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease; pointer-events:none;">
                              <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">
-                                ${Math.round(potentialScore)} <span style="font-size:0.7rem;">(+${maxRise.toFixed(1)})</span>
+                                +${maxRise.toFixed(1)}
                              </span>
                         </div>`;
                 }
@@ -1853,7 +1847,7 @@ function updateSimBarGraph(idx) {
                 extBar.style.height = extBar.getAttribute('data-target-height');
                 extBar.style.opacity = '1';
                 if (mainBar) mainBar.style.borderRadius = '0 0 0 0'; 
-                if (scoreLabel) scoreLabel.style.opacity = '0'; 
+                if (scoreLabel) scoreLabel.style.opacity = '1'; 
             }
             
             // 💡 [수정된 부분] 모바일 막대그래프 강제 스크롤 동기화 로직
@@ -2171,13 +2165,6 @@ function renderDetailedSimCard() {
                     desc = isBest ? `<strong>가장 합격 상승에 유리합니다.</strong>` : `점수 상승으로 합격 가능성이 높아집니다.`;
                 }
 
-                // 부호 및 텍스트 렌더링 개선 (양수면 +, 음수면 - 출력)
-                let subText = '';
-                if (Math.abs(info.diff) >= 0.01) {
-                     const sign = info.diff > 0 ? '+' : '';
-                     subText = `(${sign}${info.diff.toFixed(2)}점)`;
-                }
-                
                 subjectsHTML += `
                     <div class="sim-item swipe-subj-card ${isBest ? 'best-pick' : ''}">
                         <div class="sim-item-header" style="margin-bottom:6px;">
@@ -2186,7 +2173,6 @@ function renderDetailedSimCard() {
                         </div>
                         <div class="sim-item-body" style="font-size:0.85rem; line-height:1.4;">
                             <div style="margin-bottom:2px;">${desc}</div>
-                            <div style="font-size:0.75rem; color:#94a3b8;">${subText}</div>
                         </div>
                     </div>`;
             });
@@ -2322,13 +2308,6 @@ function renderDetailedSimCard() {
                     desc = isBest ? `<strong>가장 합격 상승에 유리합니다.</strong>` : `점수 상승으로 합격 가능성이 높아집니다.`;
                 }
 
-                // 부호 및 텍스트 렌더링 개선 (양수면 +, 음수면 - 출력)
-                let subText = '';
-                if (Math.abs(info.diff) >= 0.01) {
-                     const sign = info.diff > 0 ? '+' : '';
-                     subText = `(${sign}${info.diff.toFixed(2)}점)`;
-                }
-            
             subjectsHTML += `
                 <div class="sim-item ${isBest ? 'best-pick' : ''}" style="display:flex; flex-direction:column; justify-content:flex-start; height:100%;">
                     <div class="sim-item-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:8px;">
@@ -2337,7 +2316,6 @@ function renderDetailedSimCard() {
                     </div>
                     <div class="sim-item-body" style="flex:1;">
                         <div style="font-size:0.9rem; color:#475569; margin-bottom:4px;">${desc}</div>
-                        <div style="font-size:0.75rem; color:#94a3b8;">${subText}</div>
                     </div>
                 </div>
             `;
@@ -2410,7 +2388,7 @@ function applyCoachTierLock() {
 
         const overlay = document.createElement('div');
         overlay.className = 'coach-tier-lock-overlay';
-        overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
+        overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(200, 217, 255, 0.82); backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
         overlay.innerHTML = getStandardLockOverlayHTML('주간 학습 점검 및 피드백');
         container.appendChild(overlay);
     } else {
@@ -2422,6 +2400,11 @@ function applyCoachTierLock() {
 }
 
 function switchWeeklyTab(step) {
+    // STARTER(basic)는 Step 2(심층코칭) 접근 불가
+    if (step === 'step2' && currentUserTier === 'basic') {
+        alert("심층코칭은 STANDARD 이상 플랜에서 이용할 수 있습니다.");
+        return;
+    }
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     if(step === 'step1') document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
     else document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
@@ -2506,11 +2489,13 @@ function renderFeedbackList() {
     filtered.forEach(h => {
         const fb = h.tutorFeedback || {};
         const hasFeedback = fb && (
-            (fb.priorityCheck && String(fb.priorityCheck).trim() !== "") || 
-            (fb.weakSubject && String(fb.weakSubject).trim() !== "") || 
-            (fb.nextWeekTop3 && String(fb.nextWeekTop3).trim() !== "") || 
+            (fb.priorityCheck && String(fb.priorityCheck).trim() !== "") ||
+            (fb.weakSubject && String(fb.weakSubject).trim() !== "") ||
+            (fb.nextWeekTop3 && String(fb.nextWeekTop3).trim() !== "") ||
             (fb.planEvaluation && String(fb.planEvaluation).trim() !== "") ||
-            (fb.extraQuestion && String(fb.extraQuestion).trim() !== "")
+            (fb.extraQuestion && String(fb.extraQuestion).trim() !== "") ||
+            (fb.weeklyPlanner && String(fb.weeklyPlanner).trim() !== "") ||
+            (fb.tutorComment && String(fb.tutorComment).trim() !== "")
         );
 
         const div = document.createElement('div'); 
@@ -2535,14 +2520,17 @@ function renderFeedbackList() {
 
 function openFeedbackModal(data) {
     const modal = document.getElementById('feedbackModal');
-    const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent'); 
+    const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent');
     if (!contentArea) return;
+
+    // formVersion 분기: v2이면 새 렌더링
+    if ((data.formVersion || 1) >= 2) { openFeedbackModalV2(data, modal, contentArea); return; }
 
     const fb = data.tutorFeedback || {};
     const hasFeedback = fb && (
-        (fb.priorityCheck && String(fb.priorityCheck).trim() !== "") || 
-        (fb.weakSubject && String(fb.weakSubject).trim() !== "") || 
-        (fb.nextWeekTop3 && String(fb.nextWeekTop3).trim() !== "") || 
+        (fb.priorityCheck && String(fb.priorityCheck).trim() !== "") ||
+        (fb.weakSubject && String(fb.weakSubject).trim() !== "") ||
+        (fb.nextWeekTop3 && String(fb.nextWeekTop3).trim() !== "") ||
         (fb.planEvaluation && String(fb.planEvaluation).trim() !== "") ||
         (fb.extraQuestion && String(fb.extraQuestion).trim() !== "") ||
         (fb.tutorImage && String(fb.tutorImage).trim() !== "")
@@ -2710,6 +2698,161 @@ function openFeedbackModal(data) {
     if (isPdfFile && typeof renderPdfToImages === 'function') setTimeout(() => { renderPdfToImages(actualPdfUrl, uniqueContainerId); }, 100);
 }
 
+function openFeedbackModalV2(data, modal, contentArea) {
+    const fb = data.tutorFeedback || {};
+    const hasFeedback = fb && (
+        (fb.weeklyPlanner && String(fb.weeklyPlanner).trim() !== "") ||
+        (fb.planReason && String(fb.planReason).trim() !== "") ||
+        (fb.questionAnswer && String(fb.questionAnswer).trim() !== "") ||
+        (fb.tutorComment && String(fb.tutorComment).trim() !== "") ||
+        (fb.tutorImage && String(fb.tutorImage).trim() !== "")
+    );
+
+    if (!hasFeedback) {
+        contentArea.innerHTML = `
+            <div class="pending-view" style="background:#fff; padding:100px 20px; border-radius:16px;">
+                <div class="pending-icon" style="font-size:4rem; color:#cbd5e1; margin-bottom:20px;"><i class="fas fa-hourglass-half"></i></div>
+                <h2 style="color:#1e293b; margin-bottom:10px; font-weight:800;">피드백 작성 대기중</h2>
+                <p style="color:#64748b; margin-bottom:30px;">담당 컨설턴트가 학생의 리포트를 꼼꼼히 분석하고 있습니다.</p>
+                <button onclick="document.getElementById('feedbackModal').style.display='none'" style="padding:12px 30px; background:#f1f5f9; border:none; border-radius:8px; font-weight:bold; color:#475569; cursor:pointer;">닫기</button>
+            </div>`;
+        modal.style.display = 'block';
+        return;
+    }
+
+    const consultantName = escapeHtml(data.tutorName || currentTutorName);
+    const nl2br = (str) => str ? escapeHtml(str).replace(/\n/g, '<br>') : '<span style="color:#94a3b8">작성 내용 없음</span>';
+
+    // 학생 달성률 테이블
+    let detailRows = ''; let totalPlan = '0H', totalAct = '0H', totalRate = '0%';
+    if (data.studyTime) {
+        totalPlan = data.studyTime.totalPlan || '0H'; totalAct = data.studyTime.totalAct || '0H'; totalRate = data.studyTime.totalRate || '0%';
+        if (data.studyTime.details && data.studyTime.details.length > 0) {
+            data.studyTime.details.forEach(d => {
+                const plan = parseFloat(d.plan) || 0; const act = parseFloat(d.act) || 0;
+                const rate = plan > 0 ? Math.min((act / plan) * 100, 100).toFixed(0) : 0;
+                const rateColor = rate >= 80 ? '#10b981' : (rate >= 50 ? '#f59e0b' : '#ef4444');
+                let mainSub = d.subject; let detailSub = "-";
+                const match = d.subject.match(/^(.*?)\s*\((.*?)\)$/);
+                if (match) { mainSub = match[1]; detailSub = match[2]; }
+                detailRows += `<tr><td style="text-align:left; font-weight:700; color:#334155;">${escapeHtml(mainSub)}</td><td style="color:#64748b; font-size:0.85rem; font-weight:600;">${escapeHtml(detailSub)}</td><td>${plan}H</td><td style="color:#2563eb; font-weight:bold;">${act}H</td><td style="color:${rateColor}; font-weight:800;">${rate}%</td></tr>`;
+            });
+        }
+    }
+    if (!detailRows) detailRows = `<tr><td colspan="5" style="color:#94a3b8; padding:20px;">상세 학습 기록이 없습니다.</td></tr>`;
+
+    // 요일별 시간
+    let availTimeHtml = '';
+    if (data.weeklyAvailableTime) {
+        const wt = data.weeklyAvailableTime;
+        const days = [['월', wt.mon], ['화', wt.tue], ['수', wt.wed], ['목', wt.thu], ['금', wt.fri], ['토', wt.sat], ['일', wt.sun]];
+        const total = days.reduce((s, d) => s + (parseFloat(d[1]) || 0), 0);
+        availTimeHtml = `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">${days.map(d => `<span style="background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; padding:4px 10px; font-size:0.85rem;"><strong>${d[0]}</strong> ${d[1] || 0}h</span>`).join('')}</div><div style="text-align:right; font-size:0.9rem; color:#475569; font-weight:600;">주간 합계: <span style="color:#2563eb;">${total}시간</span></div>`;
+    }
+
+    // 첨부파일
+    let tutorFileBlockHtml = '';
+    const uniqueContainerId = `pdf-render-${Date.now()}`;
+    let isPdfFile = false; let actualPdfUrl = "";
+    if (fb.tutorImage && String(fb.tutorImage).trim() !== "") {
+        isPdfFile = fb.tutorImage.toLowerCase().includes('.pdf');
+        actualPdfUrl = fb.tutorImage;
+        let fileDisplayHtml = isPdfFile
+            ? `<div id="${uniqueContainerId}" style="width:100%; text-align:center;"><div style="padding:40px 0; color:#3b82f6; font-weight:bold;" class="pdf-loading-spinner"><i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom:10px;"></i><br>튜터 첨부 파일을 불러오는 중...</div></div>`
+            : `<div style="text-align:center; padding:10px 0;"><img src="${escapeHtml(fb.tutorImage)}?t=${Date.now()}" crossorigin="anonymous" alt="튜터 첨부" style="max-width:100%; height:auto; border-radius:8px; border:1px solid #cbd5e1;"></div>`;
+        tutorFileBlockHtml = `
+            <div id="attachedPdfData" data-pdf-url="${actualPdfUrl}" style="display:none;"></div>
+            <div class="doc-matched-box allow-page-break" style="margin-top:30px;">
+                <div class="doc-matched-header"><i class="fas fa-paperclip" style="color:#3b82f6;"></i> 4. 첨부파일</div>
+                <div class="doc-matched-body allow-page-break-body" style="padding:25px;">${fileDisplayHtml}</div>
+            </div>`;
+    }
+
+    const safeTitleForJs = escapeHtml(data.title || "주간 리포트").replace(/'/g, "\\'");
+
+    const html = `
+        <div class="modal-document" id="pdfTargetDocument">
+            <div class="doc-controls" data-html2canvas-ignore="true">
+                <button class="btn-pdf" onclick="downloadReportPDF('${safeTitleForJs}')"><i class="fas fa-file-pdf"></i> PDF 파일 다운로드</button>
+                <button class="close-btn-doc" onclick="document.getElementById('feedbackModal').style.display='none'">&times;</button>
+            </div>
+            <div class="doc-header">
+                <div><span class="doc-subtitle">WEEKLY REPORT</span><h2 class="doc-title">스터디크랙 주간 전략리포트</h2></div>
+                <div class="doc-meta"><div>대상: <strong>${escapeHtml(data.title || "주간 리포트")}</strong></div><div>발행일: <strong>${new Date(data.date).toLocaleDateString()}</strong></div><div>분석: <strong>${consultantName}</strong></div></div>
+            </div>
+
+            <div class="doc-matched-box">
+                <div class="doc-matched-header"><i class="fas fa-clock"></i> 1. 지난주 달성 현황</div>
+                <div class="doc-matched-body">
+                    <div class="doc-student-data">
+                        <span class="doc-badge">학생 리포트</span>
+                        <table class="doc-table"><thead><tr><th>과목</th><th>세부</th><th>목표</th><th>실제</th><th>달성률</th></tr></thead><tbody>${detailRows}</tbody></table>
+                        <div style="margin-top:15px; text-align:right; font-size:0.9rem; color:#64748b; font-weight:700; background:#f8fafc; padding:8px; border-radius:6px;">총 달성률 <span style="color:#2563eb; font-size:1.1rem; margin-left:5px;">${totalRate}</span> <span style="font-weight:normal; font-size:0.8rem;">(${totalAct} / ${totalPlan})</span></div>
+                        ${data.bestPart ? `<div style="margin-top:15px; padding:12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px;"><strong style="color:#15803d; font-size:0.85rem;">잘 된 부분</strong><div style="color:#334155; margin-top:4px; font-size:0.9rem;">${nl2br(data.bestPart)}</div></div>` : ''}
+                        ${data.hardPart ? `<div style="margin-top:10px; padding:12px; background:#fff1f2; border:1px solid #fecaca; border-radius:8px;"><strong style="color:#dc2626; font-size:0.85rem;">어려웠던 부분</strong><div style="color:#334155; margin-top:4px; font-size:0.9rem;">${nl2br(data.hardPart)}</div></div>` : ''}
+                    </div>
+                    <div class="doc-tutor-feedback">
+                        <span class="doc-badge tutor-badge">Consultant 총평</span>
+                        <div class="doc-text">${nl2br(fb.tutorComment)}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="doc-matched-box">
+                <div class="doc-matched-header"><i class="fas fa-comments"></i> 2. 학생 질문 & 튜터 답변</div>
+                <div class="doc-matched-body">
+                    <div class="doc-student-data">
+                        <span class="doc-badge" style="background:#fef2f2; color:#ef4444; border-color:#fecaca;">학생 질문</span>
+                        ${data.questionToTutor ? `<div style="color:#334155; font-size:0.95rem; padding-left:10px; border-left:3px solid #fecaca;">${nl2br(data.questionToTutor)}</div>` : '<div style="color:#94a3b8; padding:10px 0;">질문 없음</div>'}
+                        ${data.stuckSubject ? `<div style="margin-top:15px; padding:12px; background:#fefce8; border:1px solid #fde68a; border-radius:8px;"><strong style="color:#92400e; font-size:0.85rem;">막히는 과목/유형</strong><div style="color:#334155; margin-top:4px; font-size:0.9rem;">${nl2br(data.stuckSubject)}</div></div>` : ''}
+                    </div>
+                    <div class="doc-tutor-feedback">
+                        <span class="doc-badge tutor-badge" style="background:#f0fdf4; color:#16a34a; border-color:#bbf7d0;">Consultant 답변</span>
+                        <div class="doc-text">${nl2br(fb.questionAnswer)}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="doc-matched-box">
+                <div class="doc-matched-header"><i class="fas fa-calendar-alt"></i> 3. 이번 주 플래너</div>
+                <div class="doc-matched-body">
+                    <div class="doc-student-data">
+                        <span class="doc-badge">학생 정보</span>
+                        ${availTimeHtml ? `<div style="margin-bottom:15px;"><strong style="font-size:0.9rem; color:#1e293b; display:block; margin-bottom:8px;">공부 가능 시간</strong>${availTimeHtml}</div>` : ''}
+                        ${data.currentMaterials ? `<div style="margin-bottom:10px;"><strong style="font-size:0.85rem; color:#64748b;">진행 중 교재/강의</strong><div style="color:#334155; font-size:0.9rem; margin-top:4px;">${nl2br(data.currentMaterials)}</div></div>` : ''}
+                        ${data.weeklyGoal ? `<div style="margin-bottom:10px;"><strong style="font-size:0.85rem; color:#64748b;">이번 주 목표</strong><div style="color:#334155; font-size:0.9rem; margin-top:4px;">${nl2br(data.weeklyGoal)}</div></div>` : ''}
+                        ${data.fixedSchedule ? `<div><strong style="font-size:0.85rem; color:#64748b;">고정 일정</strong><div style="color:#334155; font-size:0.9rem; margin-top:4px;">${nl2br(data.fixedSchedule)}</div></div>` : ''}
+                    </div>
+                    <div class="doc-tutor-feedback">
+                        <span class="doc-badge tutor-badge">튜터 플래너</span>
+                        <h4 style="margin:0 0 10px 0; font-size:1rem; color:#1e293b;">요일별 플래너</h4>
+                        <div class="doc-text" style="margin-bottom:20px; padding-bottom:20px; border-bottom:1px dashed #cbd5e1;">${nl2br(fb.weeklyPlanner)}</div>
+                        <h4 style="margin:0 0 10px 0; font-size:1rem; color:#2563eb;"><i class="fas fa-lightbulb"></i> 이렇게 짠 이유</h4>
+                        <div class="doc-text">${nl2br(fb.planReason)}</div>
+                    </div>
+                </div>
+            </div>
+            ${tutorFileBlockHtml}
+        </div>
+
+        <div class="mobile-only-msg" style="display:none;">
+            <i class="fas fa-file-pdf" style="font-size:3rem; color:#3b82f6; margin-bottom:15px;"></i>
+            <h3 style="margin:0 0 10px 0; color:#1e293b; font-size:1.4rem;">주간 리포트 도착</h3>
+            <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px; line-height:1.5; word-break:keep-all;">
+                모바일에서는 쾌적한 열람을 위해<br>PDF 변환 후 다운로드를 지원합니다.
+            </p>
+            <button onclick="downloadReportPDF('${safeTitleForJs}')" class="mobile-pdf-btn">
+                <i class="fas fa-magic" style="color:#ffffff !important; font-size:1.1rem !important; margin-bottom:0 !important;"></i> 리포트 PDF 생성하기
+            </button>
+            <button class="mobile-close-btn" onclick="document.getElementById('feedbackModal').style.display='none'">닫기</button>
+        </div>
+    `;
+
+    contentArea.innerHTML = html;
+    modal.style.display = 'block';
+    if (isPdfFile && typeof renderPdfToImages === 'function') setTimeout(() => { renderPdfToImages(actualPdfUrl, uniqueContainerId); }, 100);
+}
+
 async function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
@@ -2777,11 +2920,8 @@ async function downloadReportPDF(reportTitle) {
             </body></html>
         `;
 
-        const token = getIdToken();
-        
-        const response = await fetch(PDF_API_URL, { 
+        const response = await apiFetch(PDF_API_URL, { 
             method: 'POST', 
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
                 title: reportTitle, 
                 html: rawHtml,
@@ -2887,7 +3027,15 @@ async function renderPdfToImages(url, containerId) {
 let currentMobileStep = 0; let wizardSteps = []; let wizardResizeHandler = null;
 
 function openWeeklyCheckModal() {
-    if (!['standard', 'pro'].includes(currentUserTier)) { alert("🔒 Standard 멤버십 이상 전용 기능입니다.\n멤버십 업그레이드 후 이용해주세요."); return; }
+    if (!['basic', 'standard', 'pro'].includes(currentUserTier)) {
+        if (confirm("🔒 STARTER 이상 플랜에서 주간 학습점검을 이용할 수 있습니다.\n결제 페이지로 이동하시겠습니까?")) { window.location.href = '/payment'; }
+        return;
+    }
+    // STARTER(basic) 1회 제출 제한: 이미 제출 이력이 있으면 차단
+    if (currentUserTier === 'basic' && weeklyDataHistory.length > 0) {
+        alert("STARTER 플랜은 1회 플래너 피드백이 제공됩니다.\n이미 제출을 완료하셨습니다. 추가 제출은 STANDARD 이상 플랜에서 가능합니다.");
+        return;
+    }
     const today = new Date();
     if (today.getDay() === 0 && today.getHours() >= 20) { alert("금주 학습 점검 제출이 마감되었습니다."); return; }
     
@@ -2900,12 +3048,26 @@ function openWeeklyCheckModal() {
     const thisWeekData = weeklyDataHistory.find(w => w.weekId === currentWeekId)
         || weeklyDataHistory.find(w => w.title && w.title.replace(/\s/g, '') === currentWeekTitle.replace(/\s/g, ''));
     if (thisWeekData) loadWeeklyDataToForm(thisWeekData); else resetWeeklyForm();
-    
+
+    // STARTER(basic) 티어: Step 2 탭 잠금 표시
+    const step2Btn = modal.querySelector('.tab-btn:nth-child(2)');
+    if (currentUserTier === 'basic') {
+        step2Btn.innerHTML = 'Step 2. 심층코칭 <i class="fas fa-lock" style="margin-left:4px; font-size:0.75rem; color:#94a3b8;"></i>';
+        step2Btn.style.opacity = '0.5';
+        step2Btn.style.cursor = 'not-allowed';
+    } else {
+        step2Btn.innerHTML = 'Step 2. 심층코칭';
+        step2Btn.style.opacity = ''; step2Btn.style.cursor = '';
+    }
+
     function applyModalLayout() {
         const isMobile = window.innerWidth <= 768;
         if (isMobile) {
-            modalContent.classList.add('mobile-wizard-mode'); wizardSteps = Array.from(modal.querySelectorAll('.check-section, .pro-input-card'));
-            if(currentMobileStep >= wizardSteps.length) currentMobileStep = 0; 
+            modalContent.classList.add('mobile-wizard-mode');
+            wizardSteps = Array.from(modal.querySelectorAll('.check-section, .pro-input-card'));
+            // STARTER(basic)는 Step 2(심층코칭) 카드 제외
+            if (currentUserTier === 'basic') { wizardSteps = wizardSteps.filter(el => !el.classList.contains('pro-input-card')); }
+            if(currentMobileStep >= wizardSteps.length) currentMobileStep = 0;
             updateMobileWizardUI();
         } else {
             modalContent.classList.remove('mobile-wizard-mode'); document.getElementById('mobileWizardProgress').style.display = 'none';
@@ -2934,91 +3096,29 @@ function prevMobileStep() { if (currentMobileStep > 0) { currentMobileStep--; up
 function closeWeeklyModal() { document.getElementById('weeklyCheckModal').style.display = 'none'; document.body.style.overflow = 'auto'; }
 
 function resetWeeklyForm() {
-    // 1. 과목 리스트 초기화 (기본 과목 클리어 및 동적 카드 삭제)
+    // 1. 과목 리스트 초기화
     const list = document.getElementById('studyTimeList');
-    if (list) {
-        // 'addSubjectCard'로 추가되었던 커스텀 카드들만 선택해서 삭제
-        const dynamicCards = list.querySelectorAll('.custom-added-card');
-        dynamicCards.forEach(card => card.remove());
-    }
+    if (list) { list.querySelectorAll('.custom-added-card').forEach(card => card.remove()); }
+    document.querySelectorAll('.plan-time, .act-time, .sub-detail').forEach(input => { input.value = ''; });
+    document.querySelectorAll('.rate-txt').forEach(span => { span.innerText = '0%'; span.style.color = '#334155'; });
 
-    // 기본 과목(국어, 수학, 영어)의 입력값 및 달성률 텍스트 초기화
-    document.querySelectorAll('.plan-time, .act-time, .sub-detail').forEach(input => {
-        input.value = '';
-    });
-    document.querySelectorAll('.rate-txt').forEach(span => {
-        span.innerText = '0%';
-        span.style.color = '#334155'; // 기본 색상으로 복구
-    });
+    // 2. 총합 초기화
+    const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
+    setTxt('totalPlan', '0H'); setTxt('totalAct', '0H'); setTxt('totalRate', '0%');
 
-    // 2. 총합 요약 영역 초기화
-    const totalPlan = document.getElementById('totalPlan');
-    const totalAct = document.getElementById('totalAct');
-    const totalRate = document.getElementById('totalRate');
-    
-    if (totalPlan) totalPlan.innerText = '0H';
-    if (totalAct) totalAct.innerText = '0H';
-    if (totalRate) totalRate.innerText = '0%';
-
-    // 3. 실전 모의고사 섹션 초기화
-    // '미응시' 타일을 찾아 선택 상태로 강제 전환
-    const noneMockTile = document.querySelector('.mock-tile[onclick*="\'none\'"]');
-    if (noneMockTile) selectMockType('none', noneMockTile);
-
-    const mockFieldIds = [
-        'mockKorScore', 'mockKorOpt', 'mockMathScore', 'mockMathOpt', 
-        'mockEngScore', 'mockInq1Score', 'mockInq1Name', 'mockInq2Score', 'mockInq2Name'
-    ];
-    mockFieldIds.forEach(id => {
+    // 3. v2 텍스트 필드 초기화
+    const v2Fields = ['wkBestPart', 'wkHardPart', 'wkMaterials', 'wkGoal', 'wkStuck', 'wkSchedule', 'wkQuestion'];
+    v2Fields.forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.value = '';
+        if (el) { el.value = ''; const cs = el.parentElement?.querySelector('.char-count span'); if (cs) cs.innerText = '0'; }
     });
 
-    // 모의고사 파일 업로드 표시 초기화
-    const mockFileDisplay = document.getElementById('mockFileNameDisplay');
-    if (mockFileDisplay) {
-        mockFileDisplay.innerText = '선택된 파일 없음';
-        mockFileDisplay.style.color = '#94a3b8';
-    }
-    const mockFileInput = document.getElementById('mockExamProof');
-    if (mockFileInput) mockFileInput.value = '';
+    // 4. 요일별 시간 초기화
+    ['wtMon','wtTue','wtWed','wtThu','wtFri','wtSat','wtSun'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    setTxt('wtTotalHours', '0');
 
-    // 4. 학업 추이 및 하락 원인 섹션 초기화
-    const trendRadios = document.getElementsByName('studyTrend');
-    if (trendRadios.length >= 2) trendRadios[1].checked = true; // '유지' 인덱스 선택
-
-    const slumpDetail = document.getElementById('slumpDetail');
-    if (slumpDetail) slumpDetail.value = '';
-
-    document.querySelectorAll('#slumpReasonBox input[type="checkbox"]').forEach(cb => {
-        cb.checked = false;
-    });
-    
-    const slumpBox = document.getElementById('slumpReasonBox');
-    if (slumpBox) slumpBox.style.display = 'none';
-
-    // 5. 플래너 인증 파일 배열 및 뷰 초기화
-    currentPlannerFiles = []; // 전역 파일 배열 비우기
-    const plannerInput = document.getElementById('plannerUpload');
-    if (plannerInput) plannerInput.value = '';
-    renderPlannerFiles();
-
-    // 6. 심층 질문(Step 2) 및 글자 수 카운터 초기화
-    const deepQuestionIds = ['deepQ1', 'deepQ2', 'deepQ3', 'deepQ4'];
-    deepQuestionIds.forEach(id => {
-        const textarea = document.getElementById(id);
-        if (textarea) {
-            textarea.value = '';
-            // 텍스트영역 다음에 오는 글자 수 카운트 span 업데이트
-            const countSpan = textarea.parentElement.querySelector('.char-count span');
-            if (countSpan) countSpan.innerText = '0';
-        }
-    });
-
-    // 7. [핵심] 사용자가 버튼을 누르지 않아도 빈 과목 슬롯 1개를 자동으로 생성
-    if (typeof addSubjectCard === 'function') {
-        addSubjectCard();
-    }
+    // 5. 빈 과목 슬롯 1개 자동 생성
+    if (typeof addSubjectCard === 'function') addSubjectCard();
 }
 
 function selectMockType(type, element) { document.getElementById('mockExamType').value = type; document.querySelectorAll('.mock-tile').forEach(tile => tile.classList.remove('selected')); element.classList.add('selected'); toggleMockExamFields(); }
@@ -3105,36 +3205,37 @@ function removePlannerFile(idx) { currentPlannerFiles.splice(idx, 1); renderPlan
 function toggleSlumpReason() { const trend = document.querySelector('input[name="studyTrend"]:checked')?.value; const box = document.getElementById('slumpReasonBox'); if(trend === 'down') box.style.display = 'block'; else box.style.display = 'none'; }
 
 function loadWeeklyDataToForm(data) {
+    // 과목별 달성률 (v1, v2 공통)
     if (data.studyTime && data.studyTime.details) {
         const cards = document.querySelectorAll('.subject-card');
         data.studyTime.details.forEach((detail, idx) => {
             if (cards[idx]) {
                 const planInput = cards[idx].querySelector('.plan-time'); const actInput = cards[idx].querySelector('.act-time'); const detailInput = cards[idx].querySelector('.sub-detail'); const customInput = cards[idx].querySelector('.custom-subj');
                 if (planInput) planInput.value = detail.plan; if (actInput) actInput.value = detail.act;
-                if (detail.subject.includes('(') && detailInput) { const match = detail.subject.match(/\((.*?)\)/); if(match) detailInput.value = match[1]; } 
+                if (detail.subject.includes('(') && detailInput) { const match = detail.subject.match(/\((.*?)\)/); if(match) detailInput.value = match[1]; }
                 else if (customInput) { customInput.value = detail.subject; }
             }
         });
-        calcStudyRates(); 
+        calcStudyRates();
     }
-    if (data.mockExam) {
-        const targetTile = document.querySelector(`.mock-tile[onclick*="'${data.mockExam.type}'"]`); if(targetTile) selectMockType(data.mockExam.type, targetTile);
-        if (data.mockExam.scores) {
-            const s = data.mockExam.scores; const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
-            setVal('mockKorScore', s.kor); setVal('mockKorOpt', s.korOpt); setVal('mockMathScore', s.math); setVal('mockMathOpt', s.mathOpt); setVal('mockEngScore', s.eng); setVal('mockInq1Score', s.inq1); setVal('mockInq1Name', s.inq1Name); setVal('mockInq2Score', s.inq2); setVal('mockInq2Name', s.inq2Name);
-        }
+
+    // v2 필드 로드
+    const setField = (id, val) => { const el = document.getElementById(id); if (el && val) { el.value = val; if (typeof updateCharCount === 'function') updateCharCount(el); } };
+    setField('wkBestPart', data.bestPart);
+    setField('wkHardPart', data.hardPart);
+    setField('wkMaterials', data.currentMaterials);
+    setField('wkGoal', data.weeklyGoal);
+    setField('wkStuck', data.stuckSubject);
+    setField('wkSchedule', data.fixedSchedule);
+    setField('wkQuestion', data.questionToTutor);
+
+    // 요일별 시간
+    if (data.weeklyAvailableTime) {
+        const wt = data.weeklyAvailableTime;
+        const map = { wtMon: 'mon', wtTue: 'tue', wtWed: 'wed', wtThu: 'thu', wtFri: 'fri', wtSat: 'sat', wtSun: 'sun' };
+        Object.entries(map).forEach(([elId, key]) => { const el = document.getElementById(elId); if (el && wt[key]) el.value = wt[key]; });
+        calcWeeklyTotal();
     }
-    if (data.trend) {
-        const radio = document.querySelector(`input[name="studyTrend"][value="${data.trend.status}"]`);
-        if (radio) {
-            radio.checked = true; toggleSlumpReason(); 
-            if (data.trend.status === 'down' && data.trend.reasons) { data.trend.reasons.forEach(r => { const cb = document.querySelector(`#slumpReasonBox input[value="${r}"]`); if(cb) cb.checked = true; else document.getElementById('slumpDetail').value = r; }); }
-        }
-    }
-    if (data.deepAnswers && Array.isArray(data.deepAnswers)) {
-        ['deepQ1', 'deepQ2', 'deepQ3', 'deepQ4'].forEach((id, idx) => { const el = document.getElementById(id); if(el) { el.value = data.deepAnswers[idx] || ''; if(typeof updateCharCount === 'function') updateCharCount(el); } });
-    }
-    currentPlannerFiles = data.plannerFiles || []; originalPlannerFiles = [...currentPlannerFiles]; renderPlannerFiles();
 }
 
 function updateCharCount(el) { const countSpan = el.parentElement.querySelector('.char-count span'); if(countSpan) countSpan.innerText = el.value.length; }
@@ -3150,199 +3251,111 @@ function forceMoveToStep(mobileIdx, tabId) {
     }
 }
 
+// 요일별 공부 가능 시간 합계 계산
+function calcWeeklyTotal() {
+    const ids = ['wtMon','wtTue','wtWed','wtThu','wtFri','wtSat','wtSun'];
+    let total = 0;
+    ids.forEach(id => { total += parseFloat(document.getElementById(id)?.value) || 0; });
+    const el = document.getElementById('wtTotalHours');
+    if (el) el.innerText = total;
+}
+
 async function submitWeeklyCheck() {
-    const submitBtn = document.querySelector('.save-btn'); 
+    const submitBtn = document.querySelector('.save-btn');
     const originalBtnText = submitBtn ? submitBtn.innerText : "저장";
 
     try {
         if (submitBtn) { submitBtn.disabled = true; submitBtn.innerText = "처리 중..."; }
 
-        const totalPlanEl = document.getElementById('totalPlan'); 
-        if (!totalPlanEl) {
-            alert("시스템 오류: 학습 계획 시간 요소를 찾을 수 없습니다.");
+        const totalPlanEl = document.getElementById('totalPlan');
+        if (!totalPlanEl) { alert("시스템 오류: 학습 계획 시간 요소를 찾을 수 없습니다."); return; }
+
+        const totalPlan = parseFloat(totalPlanEl.innerText);
+        if (isNaN(totalPlan) || totalPlan === 0) {
+            alert("지난주 학습 목표 시간을 1시간 이상 입력해주세요.");
+            forceMoveToStep(0, 'step1');
             return;
         }
 
-        const totalPlan = parseFloat(totalPlanEl.innerText); 
-        if (isNaN(totalPlan) || totalPlan === 0) { 
-            alert("학습 계획 시간을 1시간 이상 입력해주세요."); 
-            forceMoveToStep(0, 'step1');
-            return; 
-        }
-
-        const getVal = (id) => document.getElementById(id) ? document.getElementById(id).value.trim() : "";
-        const q1 = getVal('deepQ1'), q2 = getVal('deepQ2'), q3 = getVal('deepQ3'), q4 = getVal('deepQ4');
-        if (!q1 && !q2 && !q3 && !q4) { 
-            alert("심층 코칭 질문을 최소 1개 이상 작성해주세요."); 
-            forceMoveToStep(1, 'step2');
-            return; 
-        }
-
-        // 요소가 존재하지 않을 때를 대비한 안전한 값 추출
-        const mockExamTypeEl = document.getElementById('mockExamType');
-        const mockType = mockExamTypeEl ? mockExamTypeEl.value : 'none';
-        
-        let mockData = { type: mockType, proofFile: null, scores: {} };
-        if (mockType !== 'none') {
-            const fileInput = document.getElementById('mockExamProof');
-            mockData.proofFile = (fileInput && fileInput.files.length > 0) ? fileInput.files[0].name : "file_uploaded"; 
-            mockData.scores = { 
-                kor: getVal('mockKorScore'), korOpt: getVal('mockKorOpt'), 
-                math: getVal('mockMathScore'), mathOpt: getVal('mockMathOpt'), 
-                eng: getVal('mockEngScore'), 
-                inq1: getVal('mockInq1Score'), inq1Name: getVal('mockInq1Name'), 
-                inq2: getVal('mockInq2Score'), inq2Name: getVal('mockInq2Name') 
-            };
-        }
-
-        const studyCards = document.querySelectorAll('.subject-card'); 
+        // 과목별 달성 현황 수집
+        const studyCards = document.querySelectorAll('.subject-card');
         let studyData = [];
         studyCards.forEach(card => {
-            let subjName = ""; 
-            const mainSub = card.querySelector('.main-sub'); 
-            const detail = card.querySelector('.sub-detail'); 
+            let subjName = "";
+            const mainSub = card.querySelector('.main-sub');
+            const detail = card.querySelector('.sub-detail');
             const custom = card.querySelector('.custom-subj');
-            
-            if (mainSub) { 
-                subjName = mainSub.innerText.replace('↳', '').trim(); 
-                if(detail) {
-    				const detailVal = detail.value.trim();
-    				// 값이 있으면 그 값을 쓰고, 없으면 기본값인 '공통'을 붙여줍니다.
-    				subjName += `(${detailVal ? detailVal : '공통'})`;
-				}
-            } else if (custom) { 
-                subjName = custom.value.trim() || "기타"; 
+            if (mainSub) {
+                subjName = mainSub.innerText.replace('↳', '').trim();
+                if (detail) {
+                    const detailVal = detail.value.trim();
+                    subjName += `(${detailVal ? detailVal : '공통'})`;
+                }
+            } else if (custom) {
+                subjName = custom.value.trim() || "기타";
             }
-            
-            const planEl = card.querySelector('.plan-time'); 
-            const actEl = card.querySelector('.act-time');
-            const plan = planEl ? (parseFloat(planEl.value) || 0) : 0; 
-            const act = actEl ? (parseFloat(actEl.value) || 0) : 0;
-            
+            const plan = parseFloat(card.querySelector('.plan-time')?.value) || 0;
+            const act = parseFloat(card.querySelector('.act-time')?.value) || 0;
             if (plan > 0 || act > 0) studyData.push({ subject: subjName, plan, act });
         });
 
-        const trendEl = document.querySelector('input[name="studyTrend"]:checked'); 
-        const trend = trendEl ? trendEl.value : 'keep'; 
-        let reasons = [];
-        if (trend === 'down') { 
-            document.querySelectorAll('#slumpReasonBox input:checked').forEach(cb => reasons.push(cb.value)); 
-            const det = document.getElementById('slumpDetail');
-            if(det && det.value) reasons.push(det.value); 
-        }
+        const getVal = (id) => document.getElementById(id) ? document.getElementById(id).value.trim() : "";
+
+        // 요일별 공부 가능 시간
+        const weeklyAvailableTime = {
+            mon: parseFloat(getVal('wtMon')) || 0,
+            tue: parseFloat(getVal('wtTue')) || 0,
+            wed: parseFloat(getVal('wtWed')) || 0,
+            thu: parseFloat(getVal('wtThu')) || 0,
+            fri: parseFloat(getVal('wtFri')) || 0,
+            sat: parseFloat(getVal('wtSat')) || 0,
+            sun: parseFloat(getVal('wtSun')) || 0
+        };
 
         if (!confirm("제출하시겠습니까?")) return;
-
-        const token = getIdToken(); 
-
-        const currentUrls = currentPlannerFiles.filter(f => typeof f === 'string'); 
-        const filesToDelete = originalPlannerFiles.filter(url => !currentUrls.includes(url));
-        
-        if (filesToDelete.length > 0) { 
-            await Promise.all(filesToDelete.map(url => fetch(FILE_API_URL, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-                body: JSON.stringify({ type: 'delete_s3_file', data: { fileUrl: url } }) 
-            }))); 
-        }
-        
-        let finalFileUrls = [...currentUrls]; 
-        const newFiles = currentPlannerFiles.filter(f => typeof f !== 'string');
-        
-        if (newFiles.length > 0) {
-            for (const file of newFiles) {
-                // 🔒 [보안] 파일명 살균 (Sanitization) 처리 적용
-                const secureFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`;
-
-                const res = await fetch(FILE_API_URL, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-                    body: JSON.stringify({ type: 'get_presigned_url', data: { fileName: secureFileName, fileType: file.type, folder: 'planner' } }) 
-                });
-                
-                if (!res.ok) throw new Error("플래너 업로드 URL 발급 실패");
-                const { uploadUrl, fileUrl, fields } = await res.json();
-                const formData = new FormData(); 
-                
-                Object.entries(fields || {}).forEach(([k, v]) => formData.append(k, v)); 
-                formData.append('file', file);
-                
-                await fetch(uploadUrl, { method: 'POST', body: formData }); 
-                finalFileUrls.push(fileUrl);
-            }
-        }
-        
-        if (mockData.type !== 'none') {
-            const mockFileInput = document.getElementById('mockExamProof');
-            if (mockFileInput && mockFileInput.files.length > 0) {
-                const mFile = mockFileInput.files[0];
-                // 🔒 [보안] 파일명 살균 (Sanitization) 처리 적용
-                const secureMockName = `mock_${Date.now()}_${mFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`;
-
-                const mRes = await fetch(FILE_API_URL, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-                    body: JSON.stringify({ type: 'get_presigned_url', data: { fileName: secureMockName, fileType: mFile.type, folder: 'mock_exams' } }) 
-                });
-                
-                if (!mRes.ok) throw new Error("모의고사 성적표 업로드 URL 발급 실패");
-                const { uploadUrl, fields, fileUrl } = await mRes.json();
-                
-                const formData = new FormData(); 
-                Object.entries(fields || {}).forEach(([k, v]) => formData.append(k, v)); 
-                formData.append('file', mFile); 
-                
-                const uploadRes = await fetch(uploadUrl, { method: 'POST', body: formData });
-                if (!uploadRes.ok) throw new Error("모의고사 S3 업로드 실패");
-                
-                mockData.proofFile = fileUrl; 
-            } else if (!mockData.proofFile || mockData.proofFile === "file_uploaded") {
-                alert("모의고사 성적 인증 사진을 첨부해주세요."); 
-                forceMoveToStep(0, 'step1'); 
-                return;
-            }
-        }
 
         const today = new Date().toISOString();
         const title = (typeof getWeekTitle === 'function') ? getWeekTitle(new Date()) : "주간점검";
         const weekId = generateWeekId(new Date());
-        
-        const weeklyData = { 
-            weekId, date: today, title: title, 
-            studyTime: { 
-                details: studyData, 
-                totalPlan: document.getElementById('totalPlan') ? document.getElementById('totalPlan').innerText : '0H', 
-                totalAct: document.getElementById('totalAct') ? document.getElementById('totalAct').innerText : '0H', 
-                totalRate: document.getElementById('totalRate') ? document.getElementById('totalRate').innerText : '0%' 
-            }, 
-            mockExam: mockData, 
-            trend: { status: trend, reasons: reasons }, 
-            deepAnswers: [q1, q2, q3, q4], 
-            plannerFiles: finalFileUrls 
+
+        const weeklyData = {
+            weekId, date: today, title: title,
+            formVersion: 2,
+            studyTime: {
+                details: studyData,
+                totalPlan: document.getElementById('totalPlan')?.innerText || '0H',
+                totalAct: document.getElementById('totalAct')?.innerText || '0H',
+                totalRate: document.getElementById('totalRate')?.innerText || '0%'
+            },
+            bestPart: getVal('wkBestPart'),
+            hardPart: getVal('wkHardPart'),
+            weeklyAvailableTime: weeklyAvailableTime,
+            currentMaterials: getVal('wkMaterials'),
+            weeklyGoal: getVal('wkGoal'),
+            stuckSubject: getVal('wkStuck'),
+            fixedSchedule: getVal('wkSchedule'),
+            questionToTutor: getVal('wkQuestion')
         };
 
-        const res = await fetch(REPORT_API_URL, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-            body: JSON.stringify({ type: 'save_weekly_check', data: weeklyData }) 
+        const res = await apiFetch(REPORT_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'save_weekly_check', data: weeklyData })
         });
-        
-        if (res.ok) { 
-            alert("제출이 완료되었습니다."); 
-            closeWeeklyModal(); 
-            location.reload(); 
-        } else { 
-            throw new Error("서버 응답 오류가 발생했습니다."); 
+
+        if (res.ok) {
+            alert("제출이 완료되었습니다.");
+            closeWeeklyModal();
+            location.reload();
+        } else {
+            const errBody = await res.json().catch(() => ({}));
+            throw new Error(errBody.error || "서버 응답 오류가 발생했습니다.");
         }
-        
-    } catch(e) { 
-        console.error("Submit Error:", e); 
-        alert("처리 중 오류가 발생했습니다: " + e.message); 
-    } finally { 
-        if (submitBtn) { 
-            submitBtn.disabled = false; 
-            submitBtn.innerText = originalBtnText; 
-        } 
+
+    } catch(e) {
+        console.error("Submit Error:", e);
+        alert("처리 중 오류가 발생했습니다: " + e.message);
+    } finally {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = originalBtnText; }
     }
 }
 
@@ -3435,7 +3448,7 @@ async function renderProDashboard(container) {
                     <div id="requestBtnContainer"><button class="req-btn" onclick="openProReportModal()"><i class="fas fa-edit"></i> 분석 요청서 작성하기</button></div>
                 </div>
                 <div class="report-list-container">
-                    <h4 style="color:white; margin:0 0 15px 0; border-left:4px solid #3b82f6; padding-left:10px;">📑 분석 보고서 보관함</h4>
+                    <h4 style="color:white; margin:0 0 15px 0;">📑 분석 보고서 보관함</h4>
                     <div id="proReportListArea"><div style="text-align:center; color:#64748b; padding:20px;"><i class="fas fa-spinner fa-spin"></i> 로딩 중...</div></div>
                 </div>
             </div>
@@ -3526,10 +3539,9 @@ async function submitProReport() {
     const submitBtn = document.querySelector('.pro-submit-btn'); const originalText = submitBtn.innerText;
     submitBtn.innerText = "처리 중..."; submitBtn.disabled = true;
     
-    const token = getIdToken();
     try {
-        const res = await fetch(REPORT_API_URL, {
-            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        const res = await apiFetch(REPORT_API_URL, {
+            method: 'POST',
             body: JSON.stringify({ type: 'request_pro_report', data: { requestText: text } })
         });
         const data = await res.json();
