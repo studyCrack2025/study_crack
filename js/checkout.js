@@ -72,7 +72,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // 7. 결제창 호출
+let isPaymentInProgress = false;
 function submitCheckout() {
+    if (isPaymentInProgress) return;
+
     const agree = document.getElementById('agreeTerms').checked;
     if (!agree) {
         alert("이용약관에 동의해주세요.");
@@ -90,6 +93,10 @@ function submitCheckout() {
         window.location.href = '/payment';
         return;
     }
+
+    isPaymentInProgress = true;
+    const payBtn = document.querySelector('.btn-pay');
+    if (payBtn) { payBtn.disabled = true; payBtn.style.opacity = '0.6'; }
 
     AUTHNICE.requestPay({
         clientId:   CONFIG.nicepay.clientId,
@@ -110,6 +117,8 @@ function submitCheckout() {
         }),
         fnError: function(result) {
             console.error('[NicePay Error]', result);
+            isPaymentInProgress = false;
+            if (payBtn) { payBtn.disabled = false; payBtn.style.opacity = '1'; }
             alert('결제 창 오류: ' + (result.errorMsg || '알 수 없는 오류'));
         }
     });

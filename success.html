@@ -162,6 +162,9 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // 0. 결제 완료 후 checkoutData 정리 (중복 결제 방지)
+            localStorage.removeItem('checkoutData');
+
             // 1. URL 파라미터에서 tier 값 추출 (기본값: basic)
             const urlParams = new URLSearchParams(window.location.search);
             const tier = (urlParams.get('tier') || 'basic').toLowerCase();
