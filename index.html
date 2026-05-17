@@ -102,20 +102,20 @@
             <div class="step-grid">
                 <article class="step-card step-card--one">
                     <span class="badge badge--green">1단계</span>
-                    <h3>문제 인식 (HOOK)</h3>
-                    <p><strong>지금 공부 방향, 확신이 있으신가요?</strong><br>막연한 노력만으로는 결과를 바꾸기 어렵습니다.</p>
+                    <h3>지금 공부 방향, 확신이 있으신가요?</h3>
+                    <p>막연한 노력만으로는 결과를 바꾸기 어렵습니다.</p>
                     <div class="step-card-icon step-icon--green"><i class="fas fa-magnifying-glass"></i></div>
                 </article>
                 <article class="step-card">
                     <span class="badge badge--purple">2단계</span>
-                    <h3>해결 방법 (SOLUTION)</h3>
-                    <p><strong>어떤 과목을 어떻게 올려야 하는지</strong>부터 실제 점수 상승까지 이어지는 실행 플랜을 제공합니다.</p>
+                    <h3>어떤 과목을 어떻게 올려야 하는지</h3>
+                    <p>실제 점수 상승까지 이어지는 실행 플랜을 제공합니다.</p>
                     <div class="step-card-icon step-icon--purple"><i class="fas fa-lightbulb"></i></div>
                 </article>
                 <article class="step-card">
                     <span class="badge badge--blue">3단계</span>
-                    <h3>행동 유도 (CTA)</h3>
-                    <p><strong>목표대학 합격, 전략이 먼저입니다.</strong> 지금 내 성적으로 어디까지 가능한지 확인해보세요.</p>
+                    <h3>목표대학 합격, 전략이 먼저입니다.</h3>
+                    <p>지금 내 성적으로 어디까지 가능한지 확인해보세요.</p>
                     <div class="step-card-icon step-icon--blue"><i class="fas fa-rocket"></i></div>
                 </article>
             </div>
@@ -224,31 +224,32 @@
                     <div class="process-preview sim-chart-preview">
                         <div class="sim-preview-top">
                             <span class="sim-preview-title">📊 합격 가능성 위치 (0~250점)</span>
-                            <span class="sim-preview-badge"><i class="fas fa-history"></i> 수능 기준</span>
+                            <button class="sim-score-up-btn" onclick="toggleScoreUp()"><i class="fas fa-arrow-trend-up"></i> 점수 상승</button>
                         </div>
                         <div class="sim-preview-graph-wrap">
                             <div class="sim-preview-graph">
-                                <div class="sim-preview-guide" style="bottom:60%"><span class="sim-preview-guide-label" style="color:#10b981">안정(150)</span></div>
-                                <div class="sim-preview-guide sim-preview-guide--blue" style="bottom:40%"><span class="sim-preview-guide-label" style="color:#3b82f6">합격(100)</span></div>
-                                <div class="sim-preview-bar-item"><div class="sim-preview-bar" style="height:14%; background:#ef4444"><span class="sim-preview-score">35</span></div></div>
-                                <div class="sim-preview-bar-item sim-desktop-bar"><div class="sim-preview-bar" style="height:35.6%; background:#ef4444"><span class="sim-preview-score">89</span></div></div>
+                                <div class="sim-preview-guide" style="bottom:60%"><span class="sim-preview-guide-label" style="color:#10b981">안정</span></div>
+                                <div class="sim-preview-guide sim-preview-guide--blue" style="bottom:40%"><span class="sim-preview-guide-label" style="color:#3b82f6">합격</span></div>
                                 <div class="sim-preview-bar-item"><div class="sim-preview-bar" style="height:42.8%; background:#3b82f6"><span class="sim-preview-score">107</span></div></div>
-                                <div class="sim-preview-bar-item sim-desktop-bar"><div class="sim-preview-bar" style="height:51.2%; background:#3b82f6"><span class="sim-preview-score">128</span></div></div>
-                                <div class="sim-preview-bar-item"><div class="sim-preview-bar sim-preview-bar--active" style="height:62%; background:#10b981"><span class="sim-preview-score" style="color:#10b981">155</span></div></div>
-                                <div class="sim-preview-bar-item sim-desktop-bar"><div class="sim-preview-bar" style="height:69.2%; background:#10b981"><span class="sim-preview-score" style="color:#10b981">173</span></div></div>
+                                <div class="sim-preview-bar-item sim-desktop-bar"><div class="sim-preview-bar" style="height:74%; background:#10b981"><span class="sim-preview-score" style="color:#10b981">185</span></div></div>
+                                <div class="sim-preview-bar-item" id="simScoreUpBar"><div class="sim-preview-bar" style="height:42.8%; background:#3b82f6"><span class="sim-preview-score">107</span><span class="sim-score-delta" style="display:none">+26.3</span></div></div>
+                                <div class="sim-preview-bar-item sim-desktop-bar"><div class="sim-preview-bar" style="height:81.2%; background:#10b981"><span class="sim-preview-score" style="color:#10b981">203</span></div></div>
+                                <div class="sim-preview-bar-item"><div class="sim-preview-bar sim-preview-bar--active" style="height:100%; background:#10b981"><span class="sim-preview-score" style="color:#10b981">250</span></div></div>
+                                <div class="sim-preview-bar-item sim-desktop-bar"><div class="sim-preview-bar" style="height:85.6%; background:#10b981"><span class="sim-preview-score" style="color:#10b981">214</span></div></div>
                             </div>
                             <div class="sim-preview-labels">
-                                <div class="sim-preview-label"><strong>1지망</strong><br>서울대<br><small>경영</small></div>
-                                <div class="sim-preview-label sim-desktop-bar"><strong>2지망</strong><br>연세대<br><small>경영</small></div>
-                                <div class="sim-preview-label"><strong class="sim-label-d">3지망</strong><strong class="sim-label-m">2지망</strong><br>고려대<br><small>경영</small></div>
-                                <div class="sim-preview-label sim-desktop-bar"><strong>4지망</strong><br>성균관대<br><small>경영</small></div>
-                                <div class="sim-preview-label sim-preview-label--active"><strong class="sim-label-d">5지망</strong><strong class="sim-label-m">3지망</strong><br>한양대<br><small>경영</small></div>
-                                <div class="sim-preview-label sim-desktop-bar"><strong>6지망</strong><br>중앙대<br><small>경영</small></div>
+                                <div class="sim-preview-label"><strong>1지망</strong><br>연세대<br><small>경영학과</small></div>
+                                <div class="sim-preview-label sim-desktop-bar"><strong>2지망</strong><br>고려대<br><small>경영대학</small></div>
+                                <div class="sim-preview-label"><strong class="sim-label-d">3지망</strong><strong class="sim-label-m">2지망</strong><br>서울대<br><small>간호대학</small></div>
+                                <div class="sim-preview-label sim-desktop-bar"><strong>4지망</strong><br>고려대<br><small>경제학과</small></div>
+                                <div class="sim-preview-label sim-preview-label--active"><strong class="sim-label-d">5지망</strong><strong class="sim-label-m">3지망</strong><br>고려대<br><small>가정교육과</small></div>
+                                <div class="sim-preview-label sim-desktop-bar"><strong>6지망</strong><br>한양대<br><small>정보시스템</small></div>
                             </div>
                         </div>
                         <div class="sim-preview-legend">
                             <span><i style="background:#10b981"></i>안정(150+)</span>
                             <span><i style="background:#3b82f6"></i>합격(100+)</span>
+                            <span class="sim-preview-legend-note"><i class="fas fa-calendar-check"></i> 3월 학력평가 기준</span>
                         </div>
                     </div>
                 </article>
@@ -393,16 +394,16 @@
                 <div class="curriculum-left">
                     <p>현재 성적과 목표에 맞춰<br>가장 효율적인 입시 전략을 선택하세요</p>
                     <div class="tabs" id="courseTabs">
-                        <button class="course-tab-btn active" data-tier="mbti" onclick="selectCourse('mbti')">
-                            <div class="tab-icon">⁉️</div>
-                            <div class="tab-info">
-                                <span class="tab-name">학습법 MBTI 특성파악 / 확인</span>
-                            </div>
-                        </button>
-                        <button class="course-tab-btn" data-tier="basic" onclick="selectCourse('basic')">
+                        <button class="course-tab-btn active" data-tier="basic" onclick="selectCourse('basic')">
                             <div class="tab-icon">🌱</div>
                             <div class="tab-info">
                                 <span class="tab-name">BASIC 진단 / 분석</span>
+                            </div>
+                        </button>
+                        <button class="course-tab-btn" data-tier="starter" onclick="selectCourse('starter')">
+                            <div class="tab-icon">⭐</div>
+                            <div class="tab-info">
+                                <span class="tab-name">STARTER 1회 플래너 피드백</span>
                             </div>
                         </button>
                         <button class="course-tab-btn" data-tier="standard" onclick="selectCourse('standard')">

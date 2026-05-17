@@ -151,7 +151,7 @@
               <path d="M43 21l11-11M46 10h8v8" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
-          <p>SKY 튜터가 1회 피드백으로<br>과목별 시간 배분과 다음 1주<br>수정 방향을 점검합니다.</p>
+          <p>SKY 튜터가 1회 피드백으로<br>과목별 시간 배분과 다음 1주<br>플래너 방향을 점검합니다.</p>
           <i class="road-arrow"><i class="fas fa-chevron-right"></i></i>
         </article>
 
@@ -168,7 +168,7 @@
               <path d="M22 35h4M31 35h4M40 35h4M22 44h4M31 44h4M40 44h4" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/>
             </svg>
           </div>
-          <p>전담 SKY 튜터가 4주 플래너를<br>직접 설계하고 주 1회,<br>총 4회 피드백을 제공합니다.</p>
+          <p>SKY 튜터가 주 1회 플래너 피드백으로<br>과목별 시간 배분과 우선순위를<br>체계적으로 관리합니다.</p>
           <i class="road-arrow"><i class="fas fa-chevron-right"></i></i>
         </article>
 
@@ -185,7 +185,7 @@
               <path d="M16 54h34M21 54l7-12 7 12" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
-          <p>상향 지원 전략, 심화 리포트,<br>학부모 공유용 리포트와<br>조건부 환급 혜택을 제공합니다.</p>
+          <p>목표 성적 정밀 제시, 정밀 역추적,<br>심화 리포트, 학부모 공유용 리포트와<br>조건부 환급 혜택을 제공합니다.</p>
         </article>
       </div>
     </section>
@@ -201,11 +201,11 @@
           </div>
           <div class="price-amount"><strong>39,000</strong><span>원</span></div>
           <ul>
+            <li>Basic 기능 모두 포함</li>
             <li>SKY 튜터 1회 플래너 피드백</li>
             <li>과목별 시간 배분 점검</li>
-            <li>목표 대학 기준 공부 우선순위 제안</li>
-            <li>다음 1주 플래너 수정 방향 제시</li>
-            <li>일요일 제출, 월요일 피드백 제공</li>
+            <li>목표 대학 기준 우선순위 제안</li>
+            <li>다음 1주 플래너 제시</li>
           </ul>
           <a class="price-btn price-btn--outline" href="#checkout" onclick="selectPlan('basic', this.closest('.price-row'))">STARTER 선택하기 <i class="fas fa-arrow-right"></i></a>
         </article>
@@ -222,11 +222,11 @@
             <span class="price-discount-note">약 67% 할인 · 할인 기간 적용</span>
           </div>
           <ul>
-            <li>전담 SKY 튜터 배정</li>
-            <li>목표 대학 기준 4주 플래너 직접 설계</li>
-            <li>주 1회 플래너 피드백 (총 4회)</li>
-            <li>과목별 공부량·우선순위 조정</li>
-            <li>실제 학습 기록 기반 다음 주 플래너 수정</li>
+            <li>Basic 기능 모두 포함</li>
+            <li>SKY 튜터 주 1회 플래너 피드백</li>
+            <li>과목별 시간 배분 점검</li>
+            <li>목표 대학 기준 우선순위 제안</li>
+            <li>다음 1주 플래너 제시</li>
           </ul>
           <a class="price-btn price-btn--purple" href="#checkout" onclick="selectPlan('standard', this.closest('.price-row'))">STANDARD 선택하기 <i class="fas fa-arrow-right"></i></a>
         </article>
@@ -242,11 +242,13 @@
             <span class="price-discount-note">약 50% 할인 · 할인 기간 적용</span>
           </div>
           <ul>
-            <li>STANDARD 플랜 모든 혜택</li>
-            <li>상향 지원을 위한 중장기 로드맵 제공</li>
-            <li>심화 합격 전략 리포트 제공</li>
-            <li>학부모 공유용 전략 리포트 제공</li>
-            <li>목표 대학 합격 시 조건부 환급 혜택</li>
+            <li>STANDARD 모든 기능 포함</li>
+            <li>목표 성적 정밀 제시</li>
+            <li>정밀 역추적</li>
+            <li>상향 지원 중장기 로드맵</li>
+            <li>심화 합격 전략 리포트</li>
+            <li>학부모 공유용 전략 리포트</li>
+            <li>조건부 환급 혜택 제공</li>
           </ul>
           <a class="price-btn price-btn--orange" href="#checkout" onclick="selectPlan('pro', this.closest('.price-row'))">PRO 선택하기 <i class="fas fa-arrow-right"></i></a>
         </article>
@@ -334,14 +336,15 @@
                 <div class="ex-sim-graph">
                   <div class="ex-guide" style="bottom:60%"><span style="color:#10b981">안정</span></div>
                   <div class="ex-guide ex-guide--blue" style="bottom:40%"><span style="color:#3b82f6">합격</span></div>
-                  <div class="ex-bar-item"><div class="ex-bar-col" style="height:14%; background:#ef4444"><span>35</span></div></div>
-                  <div class="ex-bar-item"><div class="ex-bar-col" style="height:35%; background:#ef4444"><span>88</span></div></div>
-                  <div class="ex-bar-item"><div class="ex-bar-col" style="height:43%; background:#3b82f6"><span>107</span></div></div>
-                  <div class="ex-bar-item"><div class="ex-bar-col" style="height:51%; background:#3b82f6"><span>128</span></div></div>
-                  <div class="ex-bar-item"><div class="ex-bar-col" style="height:62%; background:#10b981; box-shadow:0 0 6px rgba(16,185,129,.4)"><span style="color:#10b981">155</span></div></div>
+                  <div class="ex-bar-item"><div class="ex-bar-col" style="height:42.8%; background:#3b82f6"><span>107</span></div></div>
+                  <div class="ex-bar-item"><div class="ex-bar-col" style="height:74%; background:#10b981"><span style="color:#10b981">185</span></div></div>
+                  <div class="ex-bar-item"><div class="ex-bar-col" style="height:42.8%; background:#3b82f6"><span>107</span></div></div>
+                  <div class="ex-bar-item"><div class="ex-bar-col" style="height:81.2%; background:#10b981"><span style="color:#10b981">203</span></div></div>
+                  <div class="ex-bar-item"><div class="ex-bar-col" style="height:100%; background:#10b981; box-shadow:0 0 6px rgba(16,185,129,.4)"><span style="color:#10b981">250</span></div></div>
+                  <div class="ex-bar-item"><div class="ex-bar-col" style="height:85.6%; background:#10b981"><span style="color:#10b981">214</span></div></div>
                 </div>
                 <div class="ex-sim-labels">
-                  <span>서울대</span><span>연세대</span><span>고려대</span><span>성균관대</span><span>한양대</span>
+                  <span>연세대</span><span>고려대</span><span>서울대</span><span>고려대</span><span>고려대</span><span>한양대</span>
                 </div>
               </div>
             </div>

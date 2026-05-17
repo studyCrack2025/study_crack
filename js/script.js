@@ -6,6 +6,29 @@
 const AUTH_API_URL = CONFIG.api.auth;
 const NOTI_API_URL = CONFIG.api.noti;
 
+// 점수 상승 시뮬레이션 토글
+function toggleScoreUp() {
+    const barItem = document.getElementById('simScoreUpBar');
+    if (!barItem) return;
+    const bar = barItem.querySelector('.sim-preview-bar');
+    const score = bar.querySelector('.sim-preview-score');
+    const delta = barItem.querySelector('.sim-score-delta');
+    const isUp = barItem.classList.toggle('score-up-active');
+    if (isUp) {
+        bar.style.height = '53.3%';
+        bar.style.background = '#10b981';
+        score.textContent = '133.3';
+        score.style.color = '#10b981';
+        delta.style.display = '';
+    } else {
+        bar.style.height = '42.8%';
+        bar.style.background = '#3b82f6';
+        score.textContent = '107';
+        score.style.color = '';
+        delta.style.display = 'none';
+    }
+}
+
 // 공통 apiFetch 함수
 async function apiFetch(url, options = {}) {
     const token = getAccessToken();
@@ -72,11 +95,11 @@ window.onclick = function(event) {
 /* =========================================
    2. 커리큘럼 탭 로직 (기존 코드 유지)
    ========================================= */
-const COURSE_DATA = { /* ... (이전과 동일한 데이터 객체이므로 생략) ... */ 
-    mbti: { title: "MBTI SOLUTION", price: "무료", desc: "탐구 MBTI 결과를 분석해 나의 학습 성향을 파악하고, 성적 상승을 위한 최적의 맞춤 공부법을 제안합니다.", list: [ { text: "탐구 MBTI 기반 학습 성향 정밀 진단" }, { text: "유형별 학습 강점 및 취약점 분석 리포트" }, { text: "성향에 딱 맞는 과목별 맞춤 공부법 솔루션 제공" } ], bg: "assets/backgrounds/bg_mbti.png", themeColor: "#8B5CF6" },
-    basic: { title: "BASIC PLAN", price: `<span class="original-price">49,000원</span> <span class="discount-price">특별 할인가 <strong class="highlight-price">25,000원</strong></span>`, desc: "내 점수와 목표 대학 합격선 사이의 거리를 정밀하게 진단합니다.", list: [ { text: "개인 성적 및 목표 대학 환산점수 계산 (최대 18개)" }, { text: "합격 컷 대비 거리 분석 (위험도 경고)", action: "preview", imgBase: "feat_basic_1" }, { text: "목표 대학별 '효자 과목' 발굴" } ], bg: "assets/backgrounds/bg_basic.png", themeColor: "#059669" },
-    standard: { title: "STANDARD PLAN", price: "월 149,000원", desc: "어떤 과목을 공부해야 점수가 가장 빨리 오르는지 분석하고 관리합니다.", list: [ { text: "목표 대학 무제한" }, { text: "과목별 1점당 환산 기울기(효율) 계산", action: "preview", imgBase: "feat_standard_1" }, { text: "점수 상승 시뮬레이션 제공", action: "preview", imgBase: "feat_standard_2" }, { text: "주 1회 전략 실행 학습 플래너 코칭 및 플래너 제공", action: "preview", imgBase: "feat_standard_3" } ], bg: "assets/backgrounds/bg_standard.png", themeColor: "#2563EB" },
-    pro: { title: "PRO PLAN", price: "월 299,000원", desc: "최소한의 공부량으로 합격하기 위한 최적의 조합을 설계합니다.", list: [ { text: "STANDARD 포함" }, { text: "최소 점수 상승 조합 최적화 알고리즘" }, { text: "내 점수에 가장 유리한 대학 역추적" }, { text: "주 1회 심층 전략 코칭 및 플래너 제공" }, { text: "PRO 전용 보고서 미리보기 📄", action: "download", file: "assets/features/feat_pro_report.pdf" } ], bg: "assets/backgrounds/bg_pro.png", themeColor: "#E11D48" }
+const COURSE_DATA = {
+    basic: { title: "BASIC PLAN", price: `<span class="original-price">49,000원</span> <span class="discount-price">특별 할인가 <strong class="highlight-price">25,000원</strong></span>`, desc: "내 점수와 목표 대학 합격선 사이의 거리를 정밀하게 진단합니다.", list: [ { text: "개인 성적 및 목표 대학 환산점수 계산 (최대 18개)" }, { text: "합격 컷 대비 거리 분석 (위험도 경고)", action: "preview", imgBase: "feat_basic_1" }, { text: "목표 대학별 '효자 과목' 발굴" }, { text: "과목별 1점당 환산 기울기(효율) 계산" }, { text: "점수 상승 시뮬레이션 제공" }, { text: "현재 성적 및 학습 성향 바탕 목표 대학 합격컷 도달 위한 목표 성적 제시" }, { text: "내 점수에 가장 유리한 대학 역추적" } ], bg: "assets/backgrounds/bg_basic.png", themeColor: "#059669" },
+    starter: { title: "STARTER PLAN", price: "39,000원", desc: "SKY 튜터의 1회 플래너 피드백으로 학습 방향을 점검합니다.", list: [ { text: "Basic 기능 모두 포함" }, { text: "SKY 튜터 1회 플래너 피드백" }, { text: "과목별 시간 배분 점검" }, { text: "목표 대학 기준 우선순위 제안" }, { text: "다음 1주 플래너 제시" } ], bg: "assets/backgrounds/bg_mbti.png", themeColor: "#8B5CF6" },
+    standard: { title: "STANDARD PLAN", price: "월 49,000원", desc: "매주 SKY 튜터의 플래너 피드백으로 학습을 체계적으로 관리합니다.", list: [ { text: "Basic 기능 모두 포함" }, { text: "SKY 튜터 주 1회 플래너 피드백" }, { text: "과목별 시간 배분 점검" }, { text: "목표 대학 기준 우선순위 제안" }, { text: "다음 1주 플래너 제시" } ], bg: "assets/backgrounds/bg_standard.png", themeColor: "#2563EB" },
+    pro: { title: "PRO PLAN", price: "월 149,000원", desc: "STANDARD의 모든 기능에 정밀 분석과 심화 전략을 더합니다.", list: [ { text: "STANDARD 모든 기능 포함" }, { text: "현재 성적 및 학습 성향 바탕 목표 대학 합격컷 도달 위한 목표 성적 정밀 제시" }, { text: "내 점수에 가장 유리한 대학 정밀 역추적" }, { text: "상향 지원 중장기 로드맵" }, { text: "심화 합격 전략 리포트" }, { text: "학부모 공유용 전략 리포트" }, { text: "조건부 환급 혜택 제공" }, { text: "PRO 전용 보고서 미리보기 📄", action: "download", file: "assets/features/feat_pro_report.pdf" } ], bg: "assets/backgrounds/bg_pro.png", themeColor: "#E11D48" }
 };
 
 function initMobileCourses() {
@@ -355,7 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateNavUI();
     renderReviews();
     initMobileCourses();
-    selectCourse('mbti', true);
+    selectCourse('basic', true);
     initPptCardSlider();
     initEffectsSlider();
 
