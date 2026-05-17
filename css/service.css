@@ -81,7 +81,7 @@ img, svg { display: block; max-width: 100%; }
 .section-desc { margin: 18px 0 36px; color: var(--muted); font-size: 16px; line-height: 1.65; }
 .process-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 
-.process-card { position: relative; padding: 26px 28px 28px; display: flex; flex-direction: column; gap: 16px; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); transition: box-shadow .2s, transform .2s; }
+.process-card { position: relative; padding: 26px 28px 28px; display: flex; flex-direction: column; gap: 16px; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); transition: box-shadow .2s, transform .2s; min-width: 0; }
 .process-card:hover { box-shadow: 0 8px 28px rgba(76,121,238,.14); transform: translateY(-2px); }
 
 .step-no { margin-right: 16px; font-size: 28px; color: var(--primary); font-weight: 900; }
@@ -108,26 +108,26 @@ img, svg { display: block; max-width: 100%; }
 .sim-preview-graph-wrap { display: flex; flex-direction: column; }
 
 /* graph area — analysis의 chart-graph-area 동일 구조 */
-.sim-preview-graph { position: relative; height: 140px; border-bottom: 2px solid #cbd5e1; display: flex; align-items: flex-end; gap: 6px; padding: 0 52px 0 4px; box-sizing: border-box; overflow: visible; }
+.sim-preview-graph { position: relative; height: 180px; border-bottom: 2px solid #cbd5e1; display: flex; align-items: flex-end; gap: 8px; padding: 0 52px 0 4px; box-sizing: border-box; overflow: visible; }
 
 /* guide lines — analysis의 chart-guide-line 동일 */
 .sim-preview-guide { position: absolute; left: 0; right: 0; border-top: 1px dashed #cbd5e1; pointer-events: none; }
 .sim-preview-guide--blue { border-top-color: #3b82f6; }
-.sim-preview-guide-label { position: absolute; right: 4px; top: -14px; font-size: 9px; font-weight: 700; background: rgba(255,255,255,.95); padding: 1px 2px; white-space: nowrap; }
+.sim-preview-guide-label { position: absolute; right: 4px; top: -14px; font-size: 10px; font-weight: 700; background: rgba(255,255,255,.95); padding: 1px 4px; white-space: nowrap; }
 
 /* bar items — analysis의 sim-bar-item 동일 */
 .sim-preview-bar-item { flex: 1; height: 100%; display: flex; align-items: flex-end; justify-content: center; position: relative; }
-.sim-preview-bar { width: 16px; border-radius: 4px 4px 0 0; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); transition: height .5s ease-out; }
+.sim-preview-bar { width: 28px; border-radius: 6px 6px 0 0; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); transition: height .5s ease-out; }
 .sim-preview-bar--active { box-shadow: 0 0 8px rgba(16,185,129,.35); }
 
 /* score label above bar — analysis의 sim-score-label 동일 */
-.sim-preview-score { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 9px; font-weight: 800; color: var(--muted); white-space: nowrap; }
+.sim-preview-score { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 800; color: var(--muted); white-space: nowrap; }
 
 /* labels below — analysis의 sim-label-item / chart-label-area 동일 */
-.sim-preview-labels { display: flex; gap: 6px; padding: 6px 52px 0 4px; }
-.sim-preview-label { flex: 1; text-align: center; font-size: 9px; color: #475569; line-height: 1.35; word-break: keep-all; }
-.sim-preview-label strong { display: block; color: var(--navy); font-size: 9px; font-weight: 700; margin-bottom: 1px; }
-.sim-preview-label small { color: var(--muted); font-size: 8.5px; }
+.sim-preview-labels { display: flex; gap: 8px; padding: 8px 52px 0 4px; }
+.sim-preview-label { flex: 1; text-align: center; font-size: 10px; color: #475569; line-height: 1.4; word-break: keep-all; }
+.sim-preview-label strong { display: block; color: var(--navy); font-size: 10px; font-weight: 700; margin-bottom: 2px; }
+.sim-preview-label small { color: var(--muted); font-size: 9px; }
 .sim-preview-label--active strong { color: #10b981; }
 
 /* legend */
@@ -259,10 +259,13 @@ img, svg { display: block; max-width: 100%; }
   .process-preview { flex: none; padding: 12px; }
   .radar-preview { display: flex; flex-direction: column; gap: 8px; }
   .radar-preview svg { width: 100%; max-height: 170px; height: auto; }
-  .sim-preview-graph { height: 110px; padding: 0 44px 0 4px; gap: 14px; }
-  .sim-preview-labels { padding: 6px 44px 0 4px; gap: 14px; }
-  .sim-preview-label { font-size: 8px; }
-  .sim-preview-label strong { font-size: 8px; }
+  .sim-preview-graph { height: 130px; padding: 0 44px 0 4px; gap: 10px; }
+  .sim-preview-bar { width: 22px; }
+  .sim-preview-score { font-size: 10px; }
+  .sim-preview-labels { padding: 6px 44px 0 4px; gap: 10px; }
+  .sim-preview-label { font-size: 9px; }
+  .sim-preview-label strong { font-size: 9px; }
+  .sim-preview-label small { font-size: 8px; }
 
   /* Formula — 2×2 격자 타일 */
   .formula-section { margin: 12px 20px 32px; padding: 22px 20px; }
