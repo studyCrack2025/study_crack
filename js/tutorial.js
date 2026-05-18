@@ -881,7 +881,7 @@ async function initSubjectRec() {
             </div>`;
         }
 
-        const rawScore = mar[key]?.raw || 0;
+        const rawScore = parseInt(mar[key]?.raw, 10) || 0;
         if (assigned > 0) {
             const newRaw = rawScore + Math.round(assigned);
             return `<div class="score-plan-row">
