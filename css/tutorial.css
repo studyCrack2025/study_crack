@@ -15,6 +15,7 @@ body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; margi
 
 /* ── 스텝 카드 ─────────────────────────────────────────────────── */
 .step-container { background: #fff; border-radius: 16px; padding: 24px; margin-bottom: 20px; border: 1px solid #e2e8f0; position: relative; }
+.step-card { background: none; box-shadow: none; min-height: auto; padding: 0; border-radius: 0; }
 .step-card h2 { color: #0f172a; margin: 0 0 12px; font-size: 1.45rem; font-weight: 900; }
 .step-card h3 { color: #0f172a; margin: 0 0 8px; font-size: 1.2rem; font-weight: 800; }
 .step-desc { color: #64748b; line-height: 1.6; margin: 0 0 20px; font-size: 0.95rem; }
