@@ -24,6 +24,7 @@ let userGracePeriodUntil = null;
 
 let scrollPosition = 0;
 let currentTutorName = "수석 튜터";
+let userStream = null;
 
 // 대학 선택 모달 관련
 let currentSlotIndex = null;
@@ -711,7 +712,8 @@ async function fetchUserData(userId) {
             }
         }
         if (data.quantitative) userQuantData = data.quantitative;
-        
+        if (data.qualitative?.stream) userStream = data.qualitative.stream;
+
         if (currentUserTier === 'free') {
             univChangeRemaining = 0;
         } else {
@@ -1219,9 +1221,85 @@ function updateQuotaUI() {
     container.innerHTML = html;
 }
 
+// ============================================================
+// [추천대학] 모달 내 추천대학/학과 자동 선택
+// ============================================================
+function calcTotalStdScore(scoreData) {
+    const korStd = parseFloat(scoreData?.kor?.std) || 0;
+    const mathStd = parseFloat(scoreData?.math?.std) || 0;
+    const inq1Std = parseFloat(scoreData?.inq1?.std) || 0;
+    const inq2Std = parseFloat(scoreData?.inq2?.std) || 0;
+    return korStd + mathStd + inq1Std + inq2Std;
+}
+
+function inferStream(scoreData) {
+    const mathOpt = (scoreData?.math?.opt || '').replace(/\s/g, '');
+    const inq1Name = (scoreData?.inq1?.name || '').replace(/\s/g, '');
+    const inq2Name = (scoreData?.inq2?.name || '').replace(/\s/g, '');
+    const sciSubjects = ['물리학','화학','생명과학','지구과학'];
+    const hasSci = [inq1Name, inq2Name].some(n => sciSubjects.some(s => n.includes(s)));
+    const isMijet = mathOpt.includes('미적분') || mathOpt.includes('기하');
+    if (isMijet || hasSci) return 'natural';
+    return 'humanities';
+}
+
+async function handleRecommendUniv() {
+    const btn = document.getElementById('recommendBtn');
+    if (!btn || btn.disabled) return;
+
+    const scoreData = userQuantData?.[currentExamMode];
+    if (!scoreData) {
+        alert('성적 데이터가 없습니다. 기초조사서를 먼저 작성해주세요.');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 추천 중...';
+
+    try {
+        const totalStdScore = calcTotalStdScore(scoreData);
+        const stream = userStream || inferStream(scoreData);
+
+        const res = await apiFetch(UNIV_DATA_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'get_tutorial_recommendations',
+                userScores: scoreData,
+                stream: stream,
+                totalStdScore: totalStdScore,
+                examMode: currentExamMode
+            })
+        });
+
+        const data = await res.json();
+        const selected = data.selected || [];
+
+        if (selected.length === 0) {
+            alert('추천할 수 있는 대학이 없습니다.');
+            return;
+        }
+
+        // 이미 등록된 대학 제외 후 랜덤 선택
+        const existingKeys = new Set(
+            (userTargetUnivs || []).filter(t => t && t.univ).map(t => `${t.univ}||${t.major}`)
+        );
+        const available = selected.filter(s => !existingKeys.has(`${s.school}||${s.major}`));
+        const pool = available.length > 0 ? available : selected;
+        const pick = pool[Math.floor(Math.random() * pool.length)];
+
+        selectComplete(pick.school, pick.major);
+    } catch(e) {
+        console.error('추천대학 API 오류:', e);
+        alert('추천 중 오류가 발생했습니다.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-magic"></i> 추천대학/학과';
+    }
+}
+
 function closeUnivModal() {
     document.getElementById('univSelectModal').style.display = 'none';
-    
+
     document.body.classList.remove('modal-open');
     document.body.style.removeProperty('top');
     window.scrollTo(0, scrollPosition);
@@ -1262,7 +1340,13 @@ function openUnivSelectModal(index) {
     if(searchInput) searchInput.value = '';
 
     document.getElementById('stepUnivList').innerHTML = '<div style="padding:50px; text-align:center; color:#94a3b8; grid-column: 1/-1;"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>대학 목록을 불러오는 중...</div>';
-    showUnivStep(true); 
+
+    const recommendWrap = document.getElementById('recommendBtnWrap');
+    if (recommendWrap) {
+        recommendWrap.style.display = (userQuantData && userQuantData[currentExamMode]) ? 'flex' : 'none';
+    }
+
+    showUnivStep(true);
 }
 
 function showUnivStep(isDeferred = false) {
