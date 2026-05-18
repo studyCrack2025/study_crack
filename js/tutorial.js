@@ -78,6 +78,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 tutorialData.qual = data.qualitative;
                 if (data.qualitative.mbti) tutorialData.mbti = data.qualitative.mbti;
             }
+            // 추천 대학 목록 DB 복원 (localStorage보다 DB 우선)
+            if (data.tut_selectedUnivs && Array.isArray(data.tut_selectedUnivs) && data.tut_selectedUnivs.length > 0) {
+                tutorialData.selectedUnivs = data.tut_selectedUnivs;
+                localStorage.setItem('tut_selectedUnivs', JSON.stringify(data.tut_selectedUnivs));
+            }
         }
     } catch (e) {
         const savedStatus = localStorage.getItem('tutorialStatus');
@@ -132,17 +137,43 @@ function bindEvents() {
     document.getElementById('tutPrevBtn').addEventListener('click', prevStep);
     document.getElementById('tutNextBtn').addEventListener('click', nextStep);
 
-    // 브라우저 종료·새로고침 시 currentStepIdx를 서버에 안정적으로 전송
-    // fetch keepalive=true: sendBeacon과 달리 Authorization 헤더를 유지한 채 페이지 언로드 후에도 요청 완료
-    window.addEventListener('beforeunload', () => {
+    // 브라우저 종료·새로고침 시 currentStepIdx + 현재 폼 데이터를 서버에 안정적으로 전송
+    const _collectCurrentQual = () => {
+        const step = STEPS[currentStepIdx];
+        if (step?.id !== 'survey-qual') return null;
+        let statusVal = document.querySelector('input[name="tutStudentStatus"]:checked')?.value || '';
+        if (statusVal === 'other') statusVal = document.getElementById('tutStatusEtc')?.value || '';
+        return {
+            status: statusVal,
+            school: document.getElementById('tutHighSchool')?.value || '',
+            stream: document.getElementById('tutStream')?.value || '',
+            benefits: document.getElementById('tutBenefits')?.value || '',
+            questions: document.getElementById('tutQuestions')?.value || ''
+        };
+    };
+
+    const _saveOnExit = () => {
         const token = getAccessToken();
         if (!token) return;
-        fetch(CONFIG.api.user, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'update_tutorial_status', data: { step: currentStepIdx } }),
-            keepalive: true
-        }).catch(() => {});
+        const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+        const opts = { method: 'POST', headers, keepalive: true };
+        // 1. step 저장
+        fetch(CONFIG.api.user, { ...opts, body: JSON.stringify({ type: 'update_tutorial_status', data: { step: currentStepIdx } }) }).catch(() => {});
+        // 2. qual 저장 (현재 폼에서 재수집, 또는 마지막 저장 상태)
+        const freshQual = _collectCurrentQual();
+        const qualToSave = freshQual || tutorialData.qual;
+        if (qualToSave && Object.keys(qualToSave).length > 0) {
+            fetch(CONFIG.api.user, { ...opts, body: JSON.stringify({ type: 'update_qual', data: qualToSave }) }).catch(() => {});
+        }
+        // 3. quan 저장 (마지막 변환 완료된 상태)
+        if (tutorialData.quan && Object.keys(tutorialData.quan).length > 0) {
+            fetch(CONFIG.api.user, { ...opts, body: JSON.stringify({ type: 'update_quan', data: tutorialData.quan }) }).catch(() => {});
+        }
+    };
+
+    window.addEventListener('beforeunload', _saveOnExit);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') _saveOnExit();
     });
 
     const logoLink = document.querySelector('.logo-link');
@@ -304,6 +335,7 @@ async function _nextStepCore() {
                     if (selected && selected.length > 0) {
                         tutorialData.selectedUnivs = selected;
                         localStorage.setItem('tut_selectedUnivs', JSON.stringify(selected));
+                        apiCall('update_tutorial_status', { selectedUnivs: selected }).catch(() => {});
                     }
                 }).catch(e => console.error('[튜토리얼] 추천대학 백그라운드 선정 실패:', e));
         }
@@ -401,6 +433,16 @@ function confirmMBTIDims() {
 
 function goToMBTI() {
     localStorage.setItem('tutorialStatus', 3);
+    // DB에도 MBTI 단계 진입 상태 동기화 (keepalive로 redirect 후에도 전송 보장)
+    const token = getAccessToken();
+    if (token) {
+        fetch(CONFIG.api.user, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type: 'update_tutorial_status', data: { step: 3 } }),
+            keepalive: true
+        }).catch(() => {});
+    }
     window.location.href = '/mbti_survey?from_tutorial=true';
 }
 
@@ -581,6 +623,7 @@ async function initUnivSim() {
                 if (selected && selected.length > 0) {
                     tutorialData.selectedUnivs = selected;
                     localStorage.setItem('tut_selectedUnivs', JSON.stringify(selected));
+                    apiCall('update_tutorial_status', { selectedUnivs: selected }).catch(() => {});
                 }
             }
         } catch (e) {
@@ -643,6 +686,12 @@ async function initUnivSim() {
         card.onclick = () => selectUniv(card, u, fillId, simPct);
         list.appendChild(card);
     });
+
+    // 추천 대학 리스트가 생성되면 즉시 DB에 저장 (재진입 시 복원용)
+    if (univsToRender.length > 0) {
+        const univList = univsToRender.map(u => ({ univ: u.school, major: u.major }));
+        apiCall('update_tutorial_status', { tutorialUniv: univList }).catch(() => {});
+    }
 }
 
 function selectUniv(element, data, fillId, simPct) {
