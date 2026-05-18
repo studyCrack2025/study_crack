@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             apiCall('update_qual', { ...tutorialData.qual, mbti: tutorialData.mbti }).catch(() => {});
         }
         // 추천 대학 목록 복원
-        const savedUnivs = sessionStorage.getItem('tut_selectedUnivs');
+        const savedUnivs = localStorage.getItem('tut_selectedUnivs');
         if (savedUnivs) {
             try { tutorialData.selectedUnivs = JSON.parse(savedUnivs); } catch(e) {}
         }
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 추천 대학 목록 및 선택 대학 복원 (4단계 이상 재진입 시)
     if (currentStepIdx >= 4) {
-        const savedUnivs = sessionStorage.getItem('tut_selectedUnivs');
+        const savedUnivs = localStorage.getItem('tut_selectedUnivs');
         if (savedUnivs) {
             try {
                 tutorialData.selectedUnivs = JSON.parse(savedUnivs);
@@ -303,7 +303,7 @@ async function _nextStepCore() {
                 .then(selected => {
                     if (selected && selected.length > 0) {
                         tutorialData.selectedUnivs = selected;
-                        sessionStorage.setItem('tut_selectedUnivs', JSON.stringify(selected));
+                        localStorage.setItem('tut_selectedUnivs', JSON.stringify(selected));
                     }
                 }).catch(e => console.error('[튜토리얼] 추천대학 백그라운드 선정 실패:', e));
         }
@@ -560,7 +560,7 @@ async function initUnivSim() {
                 const selected = await fetchTutorialRecommendations(stream, mar, tutorialData.totalStdScore, examMonth);
                 if (selected && selected.length > 0) {
                     tutorialData.selectedUnivs = selected;
-                    sessionStorage.setItem('tut_selectedUnivs', JSON.stringify(selected));
+                    localStorage.setItem('tut_selectedUnivs', JSON.stringify(selected));
                 }
             }
         } catch (e) {
