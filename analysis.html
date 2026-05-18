@@ -296,6 +296,11 @@
                 <i class="fas fa-search"></i>
                 <input type="text" id="univSearchInput" class="modal-search-input" placeholder="대학명 검색 (예: 서울대, 연세)" oninput="handleModalSearch(event)">
             </div>
+            <div id="recommendBtnWrap" class="recommend-btn-wrap" style="display:none;">
+                <button id="recommendBtn" class="recommend-univ-btn" onclick="handleRecommendUniv()">
+                    <i class="fas fa-magic"></i> 추천대학/학과
+                </button>
+            </div>
             <div class="modal-body with-search">
                 <div id="stepUnivList" class="selection-grid"></div>
                 <div id="stepMajorList" class="selection-grid" style="display:none;"></div>

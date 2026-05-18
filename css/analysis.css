@@ -527,6 +527,10 @@ body.modal-open { position: fixed; width: 100%; overflow: hidden; overscroll-beh
 .modal-search-input { width: 100%; padding: 14px 15px 14px 50px !important; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; color: #334155; transition: all 0.2s; box-sizing: border-box; background-color: #f8fafc; position: relative; }
 .modal-search-input:focus { outline: none; border-color: #3b82f6; background-color: #fff; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
 .modal-body.with-search { padding-top: 15px; }
+.recommend-btn-wrap { display:flex; justify-content:center; padding:10px 24px 0; }
+.recommend-univ-btn { display:inline-flex; align-items:center; gap:6px; padding:10px 20px; border:1.5px solid #3b82f6; border-radius:10px; background:#eff6ff; color:#2563eb; font-size:0.9rem; font-weight:700; cursor:pointer; transition:all 0.15s; width:100%; justify-content:center; }
+.recommend-univ-btn:hover { background:#dbeafe; }
+.recommend-univ-btn:disabled { opacity:0.5; cursor:not-allowed; }
 .empty-search-result { grid-column: 1 / -1; text-align: center; padding: 40px 20px; color: #64748b; font-size: 0.95rem; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 
 

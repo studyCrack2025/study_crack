@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             apiCall('update_qual', { ...tutorialData.qual, mbti: tutorialData.mbti }).catch(() => {});
         }
         // 추천 대학 목록 복원
-        const savedUnivs = sessionStorage.getItem('tut_selectedUnivs');
+        const savedUnivs = localStorage.getItem('tut_selectedUnivs');
         if (savedUnivs) {
             try { tutorialData.selectedUnivs = JSON.parse(savedUnivs); } catch(e) {}
         }
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 추천 대학 목록 및 선택 대학 복원 (4단계 이상 재진입 시)
     if (currentStepIdx >= 4) {
-        const savedUnivs = sessionStorage.getItem('tut_selectedUnivs');
+        const savedUnivs = localStorage.getItem('tut_selectedUnivs');
         if (savedUnivs) {
             try {
                 tutorialData.selectedUnivs = JSON.parse(savedUnivs);
@@ -303,7 +303,7 @@ async function _nextStepCore() {
                 .then(selected => {
                     if (selected && selected.length > 0) {
                         tutorialData.selectedUnivs = selected;
-                        sessionStorage.setItem('tut_selectedUnivs', JSON.stringify(selected));
+                        localStorage.setItem('tut_selectedUnivs', JSON.stringify(selected));
                     }
                 }).catch(e => console.error('[튜토리얼] 추천대학 백그라운드 선정 실패:', e));
         }
@@ -560,7 +560,7 @@ async function initUnivSim() {
                 const selected = await fetchTutorialRecommendations(stream, mar, tutorialData.totalStdScore, examMonth);
                 if (selected && selected.length > 0) {
                     tutorialData.selectedUnivs = selected;
-                    sessionStorage.setItem('tut_selectedUnivs', JSON.stringify(selected));
+                    localStorage.setItem('tut_selectedUnivs', JSON.stringify(selected));
                 }
             }
         } catch (e) {
@@ -840,39 +840,52 @@ async function initSubjectRec() {
         </div>`;
     }).join('');
 
-    // 선택한 대학 1개 좌우 비교 (현재 vs 향상 후)
-    let univCompareHtml = '';
-    if (univ) {
-        const MAX_SCORE = univ.maxScore || 250;
-        const PASS_CUT  = univ.passCut  || 100;
-        const currentPct = (univ.currentScore / MAX_SCORE * 100).toFixed(1);
-        const simPct     = (univ.simScore     / MAX_SCORE * 100).toFixed(1);
-        const passPct    = (PASS_CUT          / MAX_SCORE * 100).toFixed(1);
-        univCompareHtml = `
-        <div class="subject-rec-univ-compare">
-            <div class="src-univ-name">${univ.school} · ${univ.major}</div>
-            <div class="src-compare-wrap">
-                <div class="src-side">
-                    <div class="src-side-label">현재</div>
-                    <div class="sbc-wrap">
-                        <div class="sbc-track">
-                            <div class="sbc-fill" style="width:${currentPct}%"></div>
-                            <div class="sbc-mark mark-pass" style="left:${passPct}%"></div>
-                        </div>
-                    </div>
-                    <div class="src-score">${univ.currentScore}점</div>
+    // 통합 "미래 대학" 섹션: (현재 대학) → (향상 후 대학 3개)
+    let futureUnivHtml = '';
+    if (univ || (postSimUnivs && postSimUnivs.length > 0)) {
+        const catLabels = ['안정', '적정', '도전'];
+        const catColors = ['#10b981', '#3b82f6', '#f59e0b'];
+        const catIcons = ['check-circle', 'crosshairs', 'star'];
+
+        const currentCard = univ ? `
+            <div class="future-current-card">
+                <div class="future-card-badge" style="background:#64748b15;color:#64748b;border:1px solid #64748b40">현재</div>
+                <div class="future-card-school">${univ.school}</div>
+                <div class="future-card-major">${univ.major}</div>
+                <div class="future-card-score">${univ.currentScore}점</div>
+            </div>` : '';
+
+        const futureCards = (postSimUnivs || []).map((u, i) => {
+            const label = catLabels[i] || '';
+            const color = catColors[i] || '#64748b';
+            const icon = catIcons[i] || 'university';
+            return `
+            <div class="future-target-card">
+                <div class="future-card-badge" style="background:${color}15;color:${color};border:1px solid ${color}40">
+                    <i class="fas fa-${icon}"></i> ${label}
                 </div>
-                <div class="src-arrow">→</div>
-                <div class="src-side">
-                    <div class="src-side-label">향상 후</div>
-                    <div class="sbc-wrap">
-                        <div class="sbc-track">
-                            <div class="sbc-fill" style="width:${simPct}%"></div>
-                            <div class="sbc-mark mark-pass" style="left:${passPct}%"></div>
-                        </div>
-                    </div>
-                    <div class="src-score">${univ.simScore}점 <em style="color:#10b981;font-size:0.8rem">+${univ.gain}</em></div>
+                <div class="future-card-school">${u.school}</div>
+                <div class="future-card-major">${u.major}</div>
+            </div>`;
+        }).join('');
+
+        futureUnivHtml = `
+        <div class="future-univ-section">
+            <div class="future-univ-title">점수가 오르면 이런 대학도 갈 수 있어요</div>
+            <div class="future-univ-layout">
+                ${currentCard ? `
+                <div class="future-from">
+                    ${currentCard}
                 </div>
+                <div class="future-arrow">
+                    <i class="fas fa-arrow-right"></i>
+                </div>` : ''}
+                <div class="future-to">
+                    ${futureCards}
+                </div>
+            </div>
+            <div class="future-period">
+                Standard 이용 시 평균 <strong>${estimatedMonths}개월</strong> 예상
             </div>
         </div>`;
     }
@@ -886,32 +899,7 @@ async function initSubjectRec() {
             <div class="score-plan-rows">${planRows}</div>
             <div class="score-plan-note">3·4순위 전략은 Standard 플랜 시작 후 공개됩니다.</div>
         </div>
-        <div class="reach-period-section">
-            <div class="reach-period-label">Standard 이용 시 예상 도달 기간</div>
-            <div class="reach-period-value">평균 <strong>${estimatedMonths}개월</strong> 예상</div>
-        </div>
-        ${univCompareHtml ? `
-        <div class="reachable-univs-section">
-            <div class="reachable-univs-title">🎯 선택한 목표 대학 도달 시뮬레이션</div>
-            ${univCompareHtml}
-        </div>` : ''}
-        ${postSimUnivs && postSimUnivs.length > 0 ? (() => {
-            const catLabels = ['안정', '적정', '도전'];
-            const catColors = ['#10b981', '#3b82f6', '#f59e0b'];
-            const cards = postSimUnivs.map((u, i) => {
-                const label = catLabels[i] || '';
-                const color = catColors[i] || '#64748b';
-                return `<div class="post-sim-univ-card">
-                    <div class="post-sim-badge" style="background:${color}15;color:${color};border:1px solid ${color}40">${label}</div>
-                    <div class="post-sim-school">${u.school}</div>
-                    <div class="post-sim-major">${u.major}</div>
-                </div>`;
-            }).join('');
-            return `<div class="post-sim-univs-section">
-                <div class="post-sim-univs-title">🎓 점수 향상 후 도달 가능한 대학</div>
-                <div class="post-sim-univs-list">${cards}</div>
-            </div>`;
-        })() : ''}`;
+        ${futureUnivHtml}`;
 }
 
 // ── 결제 / 완료 ──────────────────────────────────────────────────
