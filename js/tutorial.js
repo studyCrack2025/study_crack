@@ -406,18 +406,36 @@ function goToMBTI() {
 
 function simulateMbtiAnalysis() {
     const mbtiCode = tutorialData.mbti || 'CSDR';
-    const dimLabels = ['학습 접근법', '변화 적응력', '사고 방식', '계획 스타일'];
-    const dimDescMap = { C: '개념 중심', I: '문제 중심', S: '루틴 선호', M: '변화 선호', D: '근거 중심', E: '흐름 중심', R: '계획 고수', F: '유연 조정' };
-    const dimTagsHtml = mbtiCode.split('').map((ch, i) => `<span style="display:inline-block; background:#f1f5f9; border-radius:6px; padding:4px 10px; margin:3px; font-size:0.85rem; color:#334155;">${dimLabels[i]}: <b>${ch}</b> ${dimDescMap[ch] || ''}</span>`).join('');
+    const TYPE_PROFILES = {
+        CSDR: { name: '체계적 전략가', desc: '개념을 깊이 파고들고, 검증된 루틴으로 꾸준히 반복하며, 데이터에 근거한 철저한 계획으로 목표를 달성하는 유형입니다. 탄탄한 기본기 위에 전략을 쌓아 안정적으로 성적을 올릴 수 있어요.', traits: ['개념 이해력 우수', '루틴 학습에 강함', '계획 실행력 높음'] },
+        CSDF: { name: '유연한 학자', desc: '개념 중심으로 학습하면서도 상황에 따라 전략을 조정할 줄 아는 유형입니다. 루틴 속에서 안정감을 유지하되, 필요하면 계획을 수정하는 유연함이 강점이에요.', traits: ['개념 이해력 우수', '안정적 루틴', '유연한 전략 수정'] },
+        CSER: { name: '직관적 기획자', desc: '개념을 중심으로 학습하되 큰 흐름을 읽는 직관력이 뛰어난 유형입니다. 한번 세운 계획은 끝까지 밀고 나가는 실행력이 강점이에요.', traits: ['개념+직관 균형', '강한 실행력', '큰 그림 파악 능력'] },
+        CSEF: { name: '자유로운 탐구자', desc: '개념 이해를 중시하면서도 직관과 유연함으로 자기만의 학습법을 찾아가는 유형입니다. 틀에 얽매이지 않는 창의적 학습이 가능해요.', traits: ['창의적 학습 가능', '자기주도적', '유연한 사고'] },
+        CMDR: { name: '혁신적 설계자', desc: '새로운 방법을 적극적으로 시도하면서도 데이터에 기반한 견고한 계획을 세우는 유형입니다. 변화 속에서도 방향을 잃지 않는 전략적 사고가 강점이에요.', traits: ['새로운 방법 시도', '데이터 기반 판단', '전략적 변화 관리'] },
+        CMDF: { name: '적응형 분석가', desc: '변화를 즐기면서도 근거를 중시하고, 상황에 맞게 전략을 빠르게 수정하는 유형입니다. 빠른 판단력과 적응력으로 효율적인 학습이 가능해요.', traits: ['빠른 적응력', '근거 중심 판단', '효율적 전략 수정'] },
+        CMER: { name: '변화 추구 플래너', desc: '개념 학습을 기반으로 다양한 시도를 하면서도 큰 계획은 흔들림 없이 지키는 유형입니다. 흐름을 읽으면서 목표를 향해 나아가는 균형감이 강점이에요.', traits: ['다양한 시도', '흐름 파악 능력', '목표 지향적'] },
+        CMEF: { name: '자유로운 학습자', desc: '개념을 기반으로 하되 변화와 직관, 유연함을 모두 갖춘 유형입니다. 고정된 틀 없이 자유롭게 학습하면서도 핵심을 놓치지 않는 감각이 있어요.', traits: ['자유로운 학습', '높은 적응력', '핵심 파악 능력'] },
+        ISDR: { name: '실전형 전략가', desc: '문제 풀이를 통해 실력을 쌓고, 검증된 루틴과 데이터 기반 계획으로 목표를 향해 나아가는 유형입니다. 실전 경험에서 얻은 감각과 체계적 전략의 조합이 강점이에요.', traits: ['문제 풀이 중심', '체계적 루틴', '실전 감각 우수'] },
+        ISDF: { name: '실전 적응형', desc: '문제 풀이를 통해 학습하며 근거를 중시하되 유연하게 전략을 조정하는 유형입니다. 실전에서 부딪히며 배우는 과정에서 빠르게 성장할 수 있어요.', traits: ['실전 학습 선호', '근거 기반', '유연한 조정력'] },
+        ISER: { name: '실전 감각형', desc: '문제 풀이와 반복 루틴을 통해 체화하며, 흐름을 읽는 직관력으로 효율적으로 학습하는 유형입니다. 꾸준한 실전 연습이 성적 향상의 핵심이에요.', traits: ['반복 실전 학습', '직관적 판단', '꾸준한 실행'] },
+        ISEF: { name: '자유로운 실전파', desc: '문제 중심으로 학습하면서 직관과 유연함을 겸비한 유형입니다. 다양한 문제를 자유롭게 풀어보며 자기만의 풀이법을 발견하는 능력이 뛰어나요.', traits: ['문제 해결 중심', '직관적 풀이', '자기만의 방법'] },
+        IMDR: { name: '도전적 실행가', desc: '다양한 유형의 문제에 도전하며 데이터에 기반한 확고한 계획을 세우는 유형입니다. 새로운 문제에 대한 두려움이 적고 전략적으로 약점을 공략할 수 있어요.', traits: ['도전적 문제 풀이', '데이터 기반 전략', '약점 공략 능력'] },
+        IMDF: { name: '민첩한 문제해결사', desc: '문제 풀이를 즐기며 변화에 빠르게 적응하는 전략적 유형입니다. 상황 판단이 빠르고, 근거에 기반해 최적의 풀이 전략을 즉석에서 수정할 수 있어요.', traits: ['빠른 상황 판단', '전략적 문제 풀이', '즉각적 수정 능력'] },
+        IMER: { name: '감각적 도전가', desc: '문제 중심으로 다양한 시도를 하며 흐름을 읽는 감각과 계획 실행력을 겸비한 유형입니다. 실전에서 감을 잡으면 빠르게 성적이 오를 수 있어요.', traits: ['다양한 문제 도전', '흐름 파악 감각', '강한 실행력'] },
+        IMEF: { name: '자유로운 도전가', desc: '문제 풀이에 변화, 직관, 유연함을 모두 갖춘 유형입니다. 어떤 유형의 문제든 자기만의 방식으로 접근하며, 틀에 얽매이지 않는 학습이 가능해요.', traits: ['자유로운 접근', '높은 적응력', '창의적 문제 해결'] }
+    };
+    const profile = TYPE_PROFILES[mbtiCode] || TYPE_PROFILES.CSDR;
+    const traitsHtml = profile.traits.map(t => `<li class="mbti-trait-item">${t}</li>`).join('');
     const container = document.getElementById('stepContent');
     container.innerHTML = `
-        <div class="step-card" style="text-align:center; padding: 40px 20px;">
-            <div style="font-size:2.2rem; margin-bottom:12px;">📊</div>
-            <div style="font-size:1rem; font-weight:600; color:#64748b; margin-bottom:4px;">나의 학습 유형</div>
-            <div style="font-size:2rem; font-weight:800; color:var(--primary); letter-spacing:6px; margin-bottom:16px;">${mbtiCode}</div>
-            <div style="margin-bottom:20px;">${dimTagsHtml}</div>
-            <div style="font-size:0.92rem; color:#475569; line-height:1.6; max-width:400px; margin:0 auto 24px;">이 유형은 본인만의 학습 체계를 기반으로 목표를 달성하는 데에 탁월한 잠재력을 가진 유형입니다.</div>
-            <button class="tut-action-btn" id="mbtiResultNextBtn" style="margin-top:8px;">성적 종합 분석 시작하기</button>
+        <div class="step-card mbti-result-card">
+            <div class="mbti-result-top">
+                <div class="mbti-result-code">${mbtiCode}</div>
+                <div class="mbti-result-name">${profile.name}</div>
+            </div>
+            <p class="mbti-result-desc">${profile.desc}</p>
+            <ul class="mbti-trait-list">${traitsHtml}</ul>
+            <button class="tut-action-btn" id="mbtiResultNextBtn">성적 종합 분석 시작하기</button>
         </div>`;
     updateMascot('학습 유형 분석이 완료되었어요! 결과를 확인하고, 종합 분석을 시작해보세요.', 'showresult');
     document.getElementById('tutNextBtn').style.display = 'none';

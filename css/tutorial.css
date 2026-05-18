@@ -68,6 +68,16 @@ body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; margi
 .mbti-confirm-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
 .mbti-confirm-btn:not(:disabled):hover { background: #1d4ed8; transform: translateY(-1px); }
 
+/* ── MBTI 결과 카드 ───────────────────────────────────────────── */
+.mbti-result-card { text-align: center; padding: 36px 20px 24px; }
+.mbti-result-top { margin-bottom: 20px; }
+.mbti-result-code { font-size: 2.2rem; font-weight: 900; color: #2563eb; letter-spacing: 0.15em; line-height: 1; }
+.mbti-result-name { font-size: 1.15rem; font-weight: 700; color: #1e293b; margin-top: 8px; }
+.mbti-result-desc { font-size: 0.92rem; color: #475569; line-height: 1.7; text-align: left; margin: 0 0 18px; }
+.mbti-trait-list { list-style: none; padding: 0; margin: 0 0 22px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.mbti-trait-item { display: inline-flex; align-items: center; gap: 4px; background: #eff6ff; color: #2563eb; font-size: 0.8rem; font-weight: 600; padding: 5px 14px; border-radius: 50px; }
+.mbti-trait-item::before { content: '✦'; font-size: 0.65rem; }
+
 /* ── 대학 카드 ─────────────────────────────────────────────────── */
 .univ-card-list { display: flex; flex-direction: column; gap: 14px; }
 .univ-card { border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; cursor: pointer; transition: all 0.2s; background: #fff; }
