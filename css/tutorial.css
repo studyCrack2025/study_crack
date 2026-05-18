@@ -139,20 +139,22 @@ body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; margi
 .subj-visible { border-color: #bfdbfe; background: #eff6ff; }
 
 /* ── 과목별 최적 상승 계획 ─────────────────────────────────────── */
-.score-plan-section { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 18px 16px; margin-bottom: 14px; }
-.score-plan-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.score-plan-title { font-size: 0.95rem; font-weight: 800; color: #1e293b; }
-.score-plan-total { font-size: 0.85rem; color: #64748b; }
-.score-plan-total strong { color: #2563eb; }
-.score-plan-rows { display: flex; flex-direction: column; gap: 8px; }
-.score-plan-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+.score-plan-section { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 22px 18px; margin-bottom: 16px; }
+.score-plan-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid #f1f5f9; }
+.score-plan-title { font-size: 1rem; font-weight: 800; color: #1e293b; }
+.score-plan-total { display: inline-flex; align-items: center; gap: 4px; font-size: 0.82rem; font-weight: 700; color: #fff; background: #2563eb; padding: 5px 14px; border-radius: 50px; }
+.score-plan-total strong { color: #fff; font-size: 0.9rem; }
+.score-plan-rows { display: flex; flex-direction: column; gap: 6px; }
+.score-plan-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: #f8fafc; transition: background 0.15s; }
+.score-plan-row:has(.plan-rise) { background: #eff6ff; }
+.score-plan-blurred { background: #f8fafc !important; }
 .score-plan-blurred .score-plan-subject, .score-plan-blurred .plan-status, .score-plan-blurred .plan-score-text { filter: blur(4px); user-select: none; }
-.score-plan-subject { font-size: 0.9rem; font-weight: 800; min-width: 52px; }
-.plan-status { font-size: 0.75rem; font-weight: 700; border-radius: 6px; padding: 2px 8px; white-space: nowrap; flex-shrink: 0; }
-.plan-hold { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
-.plan-rise { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
-.plan-score-text { font-size: 0.88rem; color: #334155; font-weight: 600; }
-.score-plan-note { font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 12px; }
+.score-plan-subject { font-size: 0.88rem; font-weight: 700; min-width: 52px; }
+.plan-status { font-size: 0.75rem; font-weight: 700; border-radius: 6px; padding: 3px 10px; white-space: nowrap; flex-shrink: 0; }
+.plan-hold { background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; }
+.plan-rise { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
+.plan-score-text { font-size: 0.88rem; color: #334155; font-weight: 600; margin-left: auto; }
+.score-plan-note { font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid #f1f5f9; }
 /* ── 미래 대학 통합 섹션 (현재 → 향상 후 3개) ─────────────────── */
 .future-univ-section { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px 20px; }
 .future-univ-title { font-size: 1.05rem; font-weight: 800; color: #1e293b; margin-bottom: 20px; text-align: center; }

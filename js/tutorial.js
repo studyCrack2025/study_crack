@@ -435,18 +435,20 @@ function simulateMbtiAnalysis() {
 }
 
 // ── 튜토리얼 추천대학 (서버 일괄 처리) ──────────────────────────────
-async function fetchTutorialRecommendations(stream, mar, totalStdScore, examMonth) {
+async function fetchTutorialRecommendations(stream, mar, totalStdScore, examMonth, boostedRawScores) {
     const token = getAccessToken();
     if (!token) return null;
     const userScores = buildUserScoresForAnalysis(mar);
+    const payload = {
+        type: 'get_tutorial_recommendations',
+        userScores, stream, totalStdScore,
+        examMode: examMonth || 'mar'
+    };
+    if (boostedRawScores) payload.boostedRawScores = boostedRawScores;
     try {
         const res = await tutorialAnalysisFetch({
             method: 'POST',
-            body: JSON.stringify({
-                type: 'get_tutorial_recommendations',
-                userScores, stream, totalStdScore,
-                examMode: examMonth || 'mar'
-            })
+            body: JSON.stringify(payload)
         });
         if (!res.ok) {
             console.error('[튜토리얼] get_tutorial_recommendations 실패:', res.status);
@@ -592,6 +594,8 @@ async function initUnivSim() {
 
         card.dataset.currentPct = currentPct;
         card.dataset.simPct = simPct;
+        card.dataset.currentScore = u.currentScore;
+        card.dataset.simScore = u.simScore;
 
         card.innerHTML = `
             <div class="univ-card-header">
@@ -635,6 +639,9 @@ function selectUniv(element, data, fillId, simPct) {
         }
         const badge = c.querySelector('.univ-sim-badge');
         if (badge) badge.style.display = 'none';
+        // 점수 라벨 원상복구
+        const prevLabel = c.querySelector('.sbc-current-label');
+        if (prevLabel) prevLabel.innerHTML = `현재 <strong>${c.dataset.currentScore}점</strong>`;
     });
 
     element.classList.add('selected');
@@ -642,6 +649,12 @@ function selectUniv(element, data, fillId, simPct) {
     // 시뮬레이션 뱃지 표시
     const badge = element.querySelector('.univ-sim-badge');
     if (badge) badge.style.display = 'flex';
+
+    // 점수 라벨 변경: 현재 → 시뮬레이션 점수
+    const scoreLabel = element.querySelector('.sbc-current-label');
+    if (scoreLabel) {
+        scoreLabel.innerHTML = `<strong>${data.currentScore}점</strong> <span style="color:#10b981;font-weight:700;">→ ${data.simScore}점</span>`;
+    }
 
     const fill = document.getElementById(fillId);
     if (fill) {
@@ -674,8 +687,11 @@ function gradeToApproxPct(grd) {
 
 function calcGreedySubjectPlan(univ, mar, mbti) {
     const currentScore = univ.currentScore || 0;
-    // delta: 합격선(100)까지 부족한 점수. 이미 초과해도 최소 20점으로 개선 추천 제공
-    const delta = Math.max(20, 100 - currentScore);
+
+    // delta: UI 스케일(0~250) 부족분을 원점수 단위로 환산
+    // UI 1점 ≈ 원점수 0.3~0.5점 (대학별 가중합 계수에 따라 다름)
+    const uiGap = Math.max(20, 100 - currentScore);
+    const delta = Math.min(30, Math.max(5, Math.round(uiGap * 0.35)));
 
     const w = MBTI_SUBJECT_WEIGHTS[mbti] || [0.5, 0.7, 0.7, 0.4];
     // w = [국어, 수학, 탐구, 영어]
@@ -698,7 +714,17 @@ function calcGreedySubjectPlan(univ, mar, mbti) {
         eng: gradeToApproxPct(mar.eng?.grd)
     };
 
-    const HARD_LIMIT = { kor: 10, math: 15, inq1: 8, inq2: 8, eng: 5 };
+    // 과목별 현재 원점수 & 만점
+    const MAX_RAW = { kor: 100, math: 100, inq1: 50, inq2: 50, eng: 9 };
+    const currentRaw = {
+        kor: parseInt(mar.kor?.raw) || 0,
+        math: parseInt(mar.math?.raw) || 0,
+        inq1: parseInt(mar.inq1?.raw) || 0,
+        inq2: parseInt(mar.inq2?.raw) || 0,
+        eng: parseInt(mar.eng?.grd) || 9
+    };
+
+    const BASE_HARD_LIMIT = { kor: 10, math: 15, inq1: 8, inq2: 8, eng: 5 };
     const COLORS = { kor: '#8b5cf6', math: '#3b82f6', inq1: '#10b981', inq2: '#06b6d4', eng: '#f59e0b' };
     const LABELS = {
         kor: '국어', math: '수학',
@@ -709,13 +735,19 @@ function calcGreedySubjectPlan(univ, mar, mbti) {
     const mbtiW = { kor: w[0], math: w[1], inq1: w[2], inq2: w[2], eng: w[3] };
 
     // 최종 효율 = MBTI가중치 × (1 - 현재백분위/100) × 대학반영비율
-    const subjects = ['kor', 'math', 'inq1', 'inq2', 'eng'].map(key => ({
-        key,
-        label: LABELS[key],
-        color: COLORS[key],
-        efficiency: mbtiW[key] * (1 - curPct[key] / 100) * ur[key],
-        hardLimit: HARD_LIMIT[key]
-    })).sort((a, b) => b.efficiency - a.efficiency);
+    // hardLimit = min(기본한도, 만점 - 현재원점수) → 만점 초과 방지
+    const subjects = ['kor', 'math', 'inq1', 'inq2', 'eng'].map(key => {
+        const room = key === 'eng'
+            ? Math.max(0, currentRaw.eng - 1)  // 영어: 등급 낮출 여유 (1등급이면 0)
+            : Math.max(0, MAX_RAW[key] - currentRaw[key]);
+        return {
+            key,
+            label: LABELS[key],
+            color: COLORS[key],
+            efficiency: mbtiW[key] * (1 - curPct[key] / 100) * ur[key],
+            hardLimit: Math.min(BASE_HARD_LIMIT[key], room)
+        };
+    }).sort((a, b) => b.efficiency - a.efficiency);
 
     // Greedy 점수 할당
     let remaining = delta;
@@ -758,16 +790,23 @@ async function initSubjectRec() {
         }
     } catch(e) {}
 
-    // 점수 향상 후 대학 추천 (Greedy 계획 기반)
+    // 점수 향상 후 대학 추천 (Greedy 계획 기반 — 상승된 원점수를 백엔드에 전달하여 정확한 표준점수 역산)
     let postSimUnivs = null;
     if (mar && plan) {
         try {
             const risingForSim = plan.filter(s => s.assigned > 0);
             const totalGainForSim = risingForSim.reduce((sum, s) => sum + s.assigned, 0);
             if (totalGainForSim > 0 && tutorialData.qual?.stream && tutorialData.totalStdScore > 0) {
-                const boostedTotalStdScore = tutorialData.totalStdScore + Math.round(totalGainForSim);
+                // 상승된 원점수 계산
+                const boostedRawScores = {};
+                risingForSim.forEach(s => {
+                    if (s.key === 'eng') return; // 영어는 등급제, 원점수 없음
+                    const curRaw = parseInt(mar[s.key]?.raw) || 0;
+                    boostedRawScores[s.key] = curRaw + Math.round(s.assigned);
+                });
                 postSimUnivs = await fetchTutorialRecommendations(
-                    tutorialData.qual.stream, mar, boostedTotalStdScore, tutorialData.examMonth || 'mar'
+                    tutorialData.qual.stream, mar, tutorialData.totalStdScore,
+                    tutorialData.examMonth || 'mar', boostedRawScores
                 );
             }
         } catch(e) {}
