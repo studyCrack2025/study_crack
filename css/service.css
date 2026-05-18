@@ -166,7 +166,7 @@ img, svg { display: block; max-width: 100%; }
    ========================================= */
 .plan-section { padding: 20px 44px 56px; }
 .plan-section h2 em { color: var(--primary); font-style: normal; }
-.plan-grid { margin-top: 32px; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 20px; }
+.plan-grid { margin-top: 32px; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 20px; }
 
 .plan-card { position: relative; padding: 28px; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); display: flex; flex-direction: column; }
 .plan-card--popular { border: 2px solid var(--primary); box-shadow: 0 12px 32px rgba(76,121,238,.18); }
@@ -199,6 +199,13 @@ img, svg { display: block; max-width: 100%; }
 .final-cta { margin: 0 0 80px; padding: 64px 44px; text-align: center; background: radial-gradient(circle at 50% 60%, rgba(76,121,238,.07) 0%, transparent 60%); border-top: 1px solid #e8eef8; }
 .final-cta h2 { margin: 0 0 16px; font-size: clamp(24px, 3vw, 32px); color: var(--navy); letter-spacing: -0.03em; }
 .final-cta p { margin: 0 0 32px; color: var(--muted); font-size: 16px; line-height: 1.6; }
+
+/* =========================================
+   10-a. Responsive — Small Desktop (1200px)
+   ========================================= */
+@media (max-width: 1200px) {
+  .plan-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
 
 /* =========================================
    10. Responsive — Tablet (900px)

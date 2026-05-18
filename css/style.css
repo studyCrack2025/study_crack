@@ -454,7 +454,8 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 .sim-score-up-btn { font-size: 9px; font-weight: 700; color: #64748b; background: #f8fafc; border: 1px solid #e2e8f0; padding: 3px 8px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; transition: all 0.2s; }
 .sim-score-up-btn:hover { color: #f59e0b; border-color: #f59e0b; background: #fffbeb; }
 .sim-score-up-btn i { font-size: 8px; color: #f59e0b; }
-.sim-score-delta { position: absolute; top: -32px; left: 50%; transform: translateX(-50%); font-size: 9px; font-weight: 800; color: #d97706; background: #fffbeb; border: 1px dashed #f59e0b; padding: 1px 4px; border-radius: 3px; white-space: nowrap; z-index: 5; }
+.sim-ext-bar { position: absolute; bottom: 42.8%; left: 50%; transform: translateX(-50%); width: 100%; max-width: 30px; height: 0; opacity: 0; background: #ffffff; border: 2px dashed #f59e0b; border-bottom: none; border-radius: 6px 6px 0 0; box-sizing: border-box; transition: height 0.3s ease, opacity 0.3s ease; z-index: 2; }
+.sim-score-delta { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 9px; font-weight: 800; color: #d97706; white-space: nowrap; z-index: 5; }
 .sim-preview-bar-item { position: relative; }
 .sim-preview-legend-note { font-size: 10px; color: #94a3b8; display: inline-flex; align-items: center; gap: 3px; margin-left: auto; }
 .sim-chart-preview { display: flex; flex-direction: column; }
