@@ -884,25 +884,25 @@ async function initSubjectRec() {
     if (univ || (postSimUnivs && postSimUnivs.length > 0)) {
         const catLabels = ['안정', '적정', '도전'];
         const catColors = ['#10b981', '#3b82f6', '#f59e0b'];
-        const catIcons = ['check-circle', 'crosshairs', 'star'];
+        const catBgs = ['#ecfdf5', '#eff6ff', '#fffbeb'];
 
-        const currentCard = univ ? `
-            <div class="future-current-card">
-                <div class="future-card-badge" style="background:#64748b15;color:#64748b;border:1px solid #64748b40">현재</div>
-                <div class="future-card-school">${univ.school}</div>
-                <div class="future-card-major">${univ.major}</div>
-                <div class="future-card-score">${univ.currentScore}점</div>
+        const boostedScore = univ ? (univ.currentScore + Math.round(totalGain)) : 0;
+
+        const currentBlock = univ ? `
+            <div class="future-stage future-stage-now">
+                <div class="future-stage-label">현재</div>
+                <div class="future-stage-school">${univ.school}</div>
+                <div class="future-stage-major">${univ.major}</div>
+                <div class="future-stage-score">${univ.currentScore}점</div>
             </div>` : '';
 
         const futureCards = (postSimUnivs || []).map((u, i) => {
             const label = catLabels[i] || '';
             const color = catColors[i] || '#64748b';
-            const icon = catIcons[i] || 'university';
+            const bg = catBgs[i] || '#f8fafc';
             return `
-            <div class="future-target-card">
-                <div class="future-card-badge" style="background:${color}15;color:${color};border:1px solid ${color}40">
-                    <i class="fas fa-${icon}"></i> ${label}
-                </div>
+            <div class="future-target-card" style="border-left:3px solid ${color}">
+                <div class="future-card-badge" style="background:${bg};color:${color}">${label}</div>
                 <div class="future-card-school">${u.school}</div>
                 <div class="future-card-major">${u.major}</div>
             </div>`;
@@ -911,16 +911,18 @@ async function initSubjectRec() {
         futureUnivHtml = `
         <div class="future-univ-section">
             <div class="future-univ-title">점수가 오르면 이런 대학도 갈 수 있어요</div>
-            <div class="future-univ-layout">
-                ${currentCard ? `
-                <div class="future-from">
-                    ${currentCard}
+            <div class="future-flow">
+                ${currentBlock}
+                <div class="future-connector">
+                    <div class="future-connector-line"></div>
+                    <div class="future-connector-badge">+${Math.round(totalGain)}점 향상 시</div>
+                    <div class="future-connector-line"></div>
                 </div>
-                <div class="future-arrow">
-                    <i class="fas fa-arrow-right"></i>
-                </div>` : ''}
-                <div class="future-to">
-                    ${futureCards}
+                <div class="future-stage future-stage-after">
+                    <div class="future-stage-label future-stage-label-up">향상 후</div>
+                    <div class="future-targets">
+                        ${futureCards}
+                    </div>
                 </div>
             </div>
             <div class="future-period">

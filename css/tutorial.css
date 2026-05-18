@@ -15,6 +15,7 @@ body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; margi
 
 /* ── 스텝 카드 ─────────────────────────────────────────────────── */
 .step-container { background: #fff; border-radius: 16px; padding: 24px; margin-bottom: 20px; border: 1px solid #e2e8f0; position: relative; }
+.step-card { background: none; box-shadow: none; min-height: auto; padding: 0; border-radius: 0; }
 .step-card h2 { color: #0f172a; margin: 0 0 12px; font-size: 1.45rem; font-weight: 900; }
 .step-card h3 { color: #0f172a; margin: 0 0 8px; font-size: 1.2rem; font-weight: 800; }
 .step-desc { color: #64748b; line-height: 1.6; margin: 0 0 20px; font-size: 0.95rem; }
@@ -155,21 +156,26 @@ body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; margi
 .plan-rise { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
 .plan-score-text { font-size: 0.88rem; color: #334155; font-weight: 600; margin-left: auto; }
 .score-plan-note { font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid #f1f5f9; }
-/* ── 미래 대학 통합 섹션 (현재 → 향상 후 3개) ─────────────────── */
-.future-univ-section { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px 20px; }
-.future-univ-title { font-size: 1.05rem; font-weight: 800; color: #1e293b; margin-bottom: 20px; text-align: center; }
-.future-univ-layout { display: flex; align-items: center; gap: 16px; }
-.future-from { flex: 0 0 auto; }
-.future-arrow { flex: 0 0 auto; font-size: 1.5rem; color: #94a3b8; }
-.future-to { flex: 1; display: flex; flex-direction: column; gap: 10px; }
-.future-current-card,
-.future-target-card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; }
-.future-current-card { background: #f8fafc; text-align: center; min-width: 110px; }
-.future-target-card { background: #fff; }
-.future-card-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: 50px; margin-bottom: 6px; }
-.future-card-school { font-size: 0.95rem; font-weight: 700; color: #1e293b; }
-.future-card-major { font-size: 0.82rem; color: #64748b; margin-top: 2px; }
-.future-card-score { font-size: 0.85rem; font-weight: 600; color: #3b82f6; margin-top: 6px; }
+/* ── 미래 대학 통합 섹션 (현재 → 향상 후) ──────────────────────── */
+.future-univ-section { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 28px 20px; }
+.future-univ-title { font-size: 1.05rem; font-weight: 800; color: #1e293b; margin-bottom: 22px; text-align: center; }
+.future-flow { display: flex; align-items: stretch; gap: 0; }
+.future-stage { flex: 1; min-width: 0; }
+.future-stage-now { flex: 0 0 130px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.future-stage-label { font-size: 0.72rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+.future-stage-label-up { color: #2563eb; }
+.future-stage-school { font-size: 0.92rem; font-weight: 700; color: #1e293b; }
+.future-stage-major { font-size: 0.78rem; color: #64748b; margin-top: 2px; }
+.future-stage-score { font-size: 1.1rem; font-weight: 800; color: #3b82f6; margin-top: 8px; }
+.future-connector { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 10px; gap: 0; }
+.future-connector-line { width: 2px; flex: 1; min-height: 18px; background: linear-gradient(180deg, #cbd5e1, #3b82f6); border-radius: 2px; }
+.future-connector-badge { background: linear-gradient(135deg, #2563eb, #3b82f6); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 5px 12px; border-radius: 50px; white-space: nowrap; margin: 6px 0; }
+.future-stage-after { flex: 1; }
+.future-targets { display: flex; flex-direction: column; gap: 8px; }
+.future-target-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; transition: box-shadow 0.2s; }
+.future-card-badge { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 2px 10px; border-radius: 50px; margin-bottom: 4px; }
+.future-card-school { font-size: 0.92rem; font-weight: 700; color: #1e293b; }
+.future-card-major { font-size: 0.78rem; color: #64748b; margin-top: 2px; }
 .future-period { text-align: center; margin-top: 16px; padding-top: 14px; border-top: 1px solid #f1f5f9; font-size: 0.88rem; color: #64748b; }
 .future-period strong { color: #2563eb; font-size: 1.05rem; }
 
@@ -226,9 +232,9 @@ body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; margi
 
 /* ── 반응형 ────────────────────────────────────────────────────── */
 @media (max-width: 640px) { .score-grid { grid-template-columns: 1fr 1fr; gap: 10px; } .score-big-input { font-size: 1.9rem; width: 64px; } .subj-alloc-cards { grid-template-columns: 1fr; } .subj-donut-section { flex-direction: column; align-items: flex-start; } .dialogue-bubble { font-size: 0.95rem; padding: 15px 18px; } .mbti-dim-name { font-size: 0.78rem; min-width: 60px; }
-.future-univ-layout { flex-direction: column; }
-.future-arrow { transform: rotate(90deg); }
-.future-from { width: 100%; }
-.future-current-card { text-align: left; display: flex; align-items: center; gap: 12px; min-width: auto; }
-.future-current-card .future-card-badge { margin-bottom: 0; }
-.future-to { width: 100%; } }
+.future-flow { flex-direction: column; align-items: stretch; }
+.future-stage-now { flex: 0 0 auto; flex-direction: row; align-items: center; gap: 12px; text-align: left; padding: 12px 16px; }
+.future-stage-label { margin-bottom: 0; margin-right: 4px; }
+.future-stage-score { margin-top: 0; margin-left: auto; }
+.future-connector { flex-direction: row; padding: 8px 0; }
+.future-connector-line { width: auto; height: 2px; min-height: auto; min-width: 18px; background: linear-gradient(90deg, #cbd5e1, #3b82f6); } }
