@@ -151,9 +151,9 @@ img, svg { display: block; max-width: 100%; }
 .price-amount { padding-left: 20px; border-left: 1px solid #e2eaf8; }
 .price-amount strong { display: block; font-size: 28px; font-weight: 900; letter-spacing: -0.035em; color: var(--navy); }
 .price-amount span { font-size: 13px; color: var(--muted); }
-.price-sale-line { display: inline-flex; align-items: baseline; gap: 2px; white-space: nowrap; }
+.price-sale-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px; }
 .price-sale-line strong { display: inline; }
-.price-sale-line span { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.price-sale-line span { font-size: 13px; color: var(--muted); white-space: nowrap; display: block; width: 100%; }
 .price-origin { display: block; margin-bottom: 2px; font-size: 12px; color: #94a3b8; text-decoration: line-through; font-weight: 600; }
 .price-discount-note { display: block; margin-top: 3px; font-size: 11px; color: #475569; font-weight: 700; }
 
