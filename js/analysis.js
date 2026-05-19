@@ -3340,23 +3340,59 @@ function renderPlannerFiles() {
 function removePlannerFile(idx) { currentPlannerFiles.splice(idx, 1); renderPlannerFiles(); }
 function toggleSlumpReason() { const trend = document.querySelector('input[name="studyTrend"]:checked')?.value; const box = document.getElementById('slumpReasonBox'); if(trend === 'down') box.style.display = 'block'; else box.style.display = 'none'; }
 
+function parseStudySubjectLabel(subject) {
+    const raw = String(subject || '').trim();
+    const m = raw.match(/^(.*?)\s*\((.*?)\)\s*$/);
+    if (!m) return { main: raw, detail: '' };
+    return { main: m[1].trim(), detail: m[2].trim() };
+}
+
 function loadWeeklyDataToForm(data) {
+    // 로드 전 초기화: 기존 커스텀 카드 제거 + 고정 카드 입력값 리셋
+    const list = document.getElementById('studyTimeList');
+    if (list) list.querySelectorAll('.custom-added-card').forEach(card => card.remove());
+    document.querySelectorAll('#studyTimeList .plan-time, #studyTimeList .act-time, #studyTimeList .sub-detail, #studyTimeList .custom-subj').forEach(input => { input.value = ''; });
+    document.querySelectorAll('#studyTimeList .rate-txt').forEach(span => { span.innerText = '0%'; span.style.color = '#334155'; });
+
     // 과목별 달성률 (v1, v2 공통)
     if (data.studyTime && data.studyTime.details) {
-        const cards = document.querySelectorAll('.subject-card');
-        data.studyTime.details.forEach((detail, idx) => {
-            if (cards[idx]) {
-                const planInput = cards[idx].querySelector('.plan-time'); const actInput = cards[idx].querySelector('.act-time'); const detailInput = cards[idx].querySelector('.sub-detail'); const customInput = cards[idx].querySelector('.custom-subj');
-                if (planInput) planInput.value = detail.plan; if (actInput) actInput.value = detail.act;
-                if (detail.subject.includes('(') && detailInput) { const match = detail.subject.match(/\((.*?)\)/); if(match) detailInput.value = match[1]; }
-                else if (customInput) { customInput.value = detail.subject; }
+        const fixedCards = {};
+        document.querySelectorAll('#studyTimeList .subject-card').forEach(card => {
+            const main = card.querySelector('.main-sub')?.innerText?.trim();
+            if (main) fixedCards[main] = card;
+        });
+        const usedFixed = new Set();
+
+        data.studyTime.details.forEach((detail) => {
+            const subjectRaw = detail?.subject || '';
+            const { main, detail: subDetail } = parseStudySubjectLabel(subjectRaw);
+            let card = null;
+
+            if (fixedCards[main] && !usedFixed.has(main)) {
+                card = fixedCards[main];
+                usedFixed.add(main);
+            } else {
+                addSubjectCard();
+                const cards = document.querySelectorAll('#studyTimeList .subject-card');
+                card = cards[cards.length - 1];
             }
+
+            if (!card) return;
+            const planInput = card.querySelector('.plan-time');
+            const actInput = card.querySelector('.act-time');
+            const detailInput = card.querySelector('.sub-detail');
+            const customInput = card.querySelector('.custom-subj');
+
+            if (planInput) planInput.value = detail.plan ?? '';
+            if (actInput) actInput.value = detail.act ?? '';
+            if (detailInput) detailInput.value = subDetail || '';
+            if (customInput) customInput.value = main || subjectRaw;
         });
         calcStudyRates();
     }
 
     // v2 필드 로드
-    const setField = (id, val) => { const el = document.getElementById(id); if (el && val) { el.value = val; if (typeof updateCharCount === 'function') updateCharCount(el); } };
+    const setField = (id, val) => { const el = document.getElementById(id); if (el) { el.value = val || ''; if (typeof updateCharCount === 'function') updateCharCount(el); } };
     setField('wkBestPart', data.bestPart);
     setField('wkHardPart', data.hardPart);
     setField('wkMaterials', data.currentMaterials);
