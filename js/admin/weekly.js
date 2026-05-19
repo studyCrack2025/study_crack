@@ -56,70 +56,87 @@ function renderWeeklyTab() {
             studyHtml = `<div class="weekly-section"><div class="section-title"><i class="fas fa-clock"></i> 과목별 학습 달성도 (총 달성률: <span style="color:#2563eb;">${d.studyTime.totalRate || '0%'}</span>)</div><div class="table-responsive" style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;"><table class="compact-table" style="min-width:300px; width:100%;"><thead><tr><th style="text-align:left;">과목</th><th class="text-center">계획</th><th class="text-center">실행</th><th class="text-center">달성</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
         }
 
-        let checkHtml = '';
-        if (d.deepAnswers && d.deepAnswers.length > 0) {
-            const QUESTIONS = ['학습 계획 점검', '학습 방향성 설정', '취약 과목 솔루션', '기타 멘탈 관리'];
-            const listItems = d.deepAnswers.map((ans, i) => {
-               const questionLabel = QUESTIONS[i] ? `<span style="color:#1e293b; font-weight:800; margin-right:4px;">${QUESTIONS[i]}:</span>` : '';
-               return `<li><i class="fas fa-check-circle text-blue" style="margin-top:4px; flex-shrink:0;"></i><div style="flex:1;">${questionLabel} ${escapeHtml(ans)}</div></li>`;
-            }).join('');
-
-            let trendHtml = '';
-            if (d.trend) {
-                const statusMap = { 'up': '상승세 🔥', 'down': '하락세 📉', 'keep': '유지중 -' };
-                const statusText = statusMap[d.trend.status] || '유지중 -';
-                let reasonHtml = '';
-
-                if (d.trend.status === 'down' && Array.isArray(d.trend.reasons) && d.trend.reasons.length > 0) {
-                    const reasonMap = { 'overplan': '계획 과다', 'sense': '실전 감각 저하', 'condition': '컨디션/건강', 'etc': '기타' };
-                    const translatedReasons = d.trend.reasons.map(r => reasonMap[r] || r).join(', ');
-                    reasonHtml = `<div style="font-size: 0.85rem; color: #dc2626; margin-top: 8px; padding: 8px 12px; background: #fef2f2; border-radius: 6px; display: inline-block; font-weight: normal; border: 1px solid #fecaca;">⚠️ <strong>원인:</strong> ${escapeHtml(translatedReasons)}</div>`;
-                }
-
-                trendHtml = `<div class="trend-badge ${d.trend.status || 'keep'}" style="display: flex; flex-direction: column; align-items: flex-start;"><div style="font-weight: bold;">학습 흐름: ${statusText}</div>${reasonHtml}</div>`;
-            }
-
-            checkHtml = `<div class="weekly-section"><div class="section-title"><i class="fas fa-clipboard-check"></i> 이번주 심층 질문</div><ul class="check-list">${listItems}</ul>${trendHtml}</div>`;
-        }
-
-        let mockHtml = '';
-        if (d.mockExam && d.mockExam.scores) {
-            const s = d.mockExam.scores;
-            const typeMap = { 'school': '교내', 'edu': '평가원/교육청', 'private': '사설' };
-            const typeLabel = typeMap[d.mockExam.type] || '기타';
-            const typeBadge = `<span class="mock-type-badge ${d.mockExam.type || ''}">${typeLabel}</span>`;
-
-            const scoreItems = [
-                { l: '국어', v: s.kor }, { l: '수학', v: s.math }, { l: '영어', v: s.eng },
-                { l: s.inq1Name || '탐1', v: s.inq1 }, { l: s.inq2Name || '탐2', v: s.inq2 }
-            ].map(item => item.v ? `<div class="score-pill"><span class="lbl">${item.l}</span><span class="val">${item.v}</span></div>` : '').join('');
-
-            let proofHtml = '';
-            if (d.mockExam.proofFile && d.mockExam.proofFile.startsWith('http')) {
-                proofHtml = `<div style="margin-top:15px; padding-top:15px; border-top:1px dashed #e2e8f0; text-align:right;"><a href="${d.mockExam.proofFile}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; background:#eff6ff; color:#2563eb; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:bold; transition:all 0.2s; white-space:nowrap;"><i class="fas fa-file-invoice"></i> 📝 모의고사 성적표 원본 보기</a></div>`;
-            }
-
-            mockHtml = `<div class="weekly-mock-box"><div class="mock-header"><i class="fas fa-edit"></i> 주간 모의고사 결과 ${typeBadge}</div><div class="score-pills-container">${scoreItems}</div>${proofHtml}</div>`;
-        }
-
-        let footerHtml = '';
-        const hasFiles = d.plannerFiles && d.plannerFiles.length > 0;
-        const hasComment = !!d.comment;
-
-        if (hasFiles || hasComment) {
-            let fileLinks = '';
-            if (hasFiles) {
-                fileLinks = d.plannerFiles.map((f, i) => {
-                    let rawName = typeof f === 'string' ? decodeURIComponent(f.split('/').pop()) : `파일 ${i+1}`;
-                    let cleanName = rawName.includes('_') ? rawName.split('_').slice(1).join('_') : rawName;
-                    return `<a href="${f}" target="_blank" class="file-chip" style="display:inline-flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; padding:8px 14px; border-radius:20px; text-decoration:none; font-size:0.85rem; margin:0 8px 8px 0; transition:all 0.2s;"><i class="fas fa-paperclip" style="color:#64748b;"></i> ${cleanName}</a>`;
-                }).join('');
-            }
-
-            footerHtml = `<div class="weekly-section planner-auth-section" style="margin-top:20px; padding-top:20px; border-top:1px solid #e2e8f0; background:#ffffff;">${hasFiles ? `<div class="section-title" style="margin-bottom:15px; font-weight:bold; color:#1e293b;"><i class="fas fa-camera-retro" style="color:#10b981;"></i> 주간 플래너 인증 사진</div><div class="file-area" style="display:flex; flex-wrap:wrap;">${fileLinks}</div>` : ''}${hasComment ? `<div class="comment-box" style="margin-top:${hasFiles ? '15px' : '0'}; background:#f1f5f9; padding:15px; border-radius:8px; color:#334155; font-size:0.95rem;"><strong style="color:#2563eb;"><i class="fas fa-comment-dots"></i> 학생 전달사항:</strong><div style="margin-top:8px; line-height:1.6;">${safeComment}</div></div>` : ''}</div>`;
-        }
-
         const reportFormVer = Number(d.formVersion) || 1;
+        const nl2br = (str) => str ? escapeHtml(str).replace(/\n/g, '<br>') : '';
+
+        let checkHtml = '';
+        let mockHtml = '';
+        let footerHtml = '';
+
+        if (reportFormVer >= 2) {
+            // V2: 학생 주간 정보 섹션
+            let v2Items = '';
+            if (d.bestPart) v2Items += `<div style="padding:10px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; margin-bottom:8px;"><strong style="color:#15803d; font-size:0.85rem;">잘 된 부분</strong><div style="margin-top:4px; color:#334155; font-size:0.9rem; white-space:pre-wrap;">${nl2br(d.bestPart)}</div></div>`;
+            if (d.hardPart) v2Items += `<div style="padding:10px; background:#fff1f2; border:1px solid #fecaca; border-radius:8px; margin-bottom:8px;"><strong style="color:#dc2626; font-size:0.85rem;">어려웠던 부분</strong><div style="margin-top:4px; color:#334155; font-size:0.9rem; white-space:pre-wrap;">${nl2br(d.hardPart)}</div></div>`;
+            if (d.weeklyAvailableTime) {
+                const wt = d.weeklyAvailableTime;
+                const days = [['월',wt.mon],['화',wt.tue],['수',wt.wed],['목',wt.thu],['금',wt.fri],['토',wt.sat],['일',wt.sun]];
+                const total = days.reduce((s, x) => s + (parseFloat(x[1]) || 0), 0);
+                v2Items += `<div style="margin-bottom:8px;"><strong style="font-size:0.85rem; color:#1e293b;">공부 가능 시간</strong><div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:4px;">${days.map(x => `<span style="background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-size:0.8rem;"><strong>${x[0]}</strong> ${x[1]||0}h</span>`).join('')}</div><div style="text-align:right; font-size:0.85rem; color:#475569; margin-top:4px;">합계: <strong style="color:#2563eb;">${total}시간</strong></div></div>`;
+            }
+            if (d.currentMaterials) v2Items += `<div style="margin-bottom:8px;"><strong style="font-size:0.85rem; color:#64748b;">진행 중 교재/강의</strong><div style="color:#334155; font-size:0.9rem; margin-top:4px; white-space:pre-wrap;">${nl2br(d.currentMaterials)}</div></div>`;
+            if (d.weeklyGoal) v2Items += `<div style="margin-bottom:8px;"><strong style="font-size:0.85rem; color:#64748b;">이번 주 목표</strong><div style="color:#334155; font-size:0.9rem; margin-top:4px; white-space:pre-wrap;">${nl2br(d.weeklyGoal)}</div></div>`;
+            if (d.stuckSubject) v2Items += `<div style="padding:10px; background:#fefce8; border:1px solid #fde68a; border-radius:8px; margin-bottom:8px;"><strong style="color:#92400e; font-size:0.85rem;">막히는 과목/유형</strong><div style="margin-top:4px; color:#334155; font-size:0.9rem; white-space:pre-wrap;">${nl2br(d.stuckSubject)}</div></div>`;
+            if (d.fixedSchedule) v2Items += `<div style="margin-bottom:8px;"><strong style="font-size:0.85rem; color:#64748b;">고정 일정</strong><div style="color:#334155; font-size:0.9rem; margin-top:4px; white-space:pre-wrap;">${nl2br(d.fixedSchedule)}</div></div>`;
+            if (d.questionToTutor) v2Items += `<div style="padding:10px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; margin-bottom:8px;"><strong style="color:#1d4ed8; font-size:0.85rem;">튜터에게 질문</strong><div style="margin-top:4px; color:#334155; font-size:0.9rem; white-space:pre-wrap;">${nl2br(d.questionToTutor)}</div></div>`;
+            if (v2Items) {
+                checkHtml = `<div class="weekly-section"><div class="section-title"><i class="fas fa-clipboard-check"></i> 학생 주간 정보</div>${v2Items}</div>`;
+            }
+        } else {
+            // V1: 기존 심층 질문 + 트렌드 (과거 리포트 열람 전용)
+            if (d.deepAnswers && d.deepAnswers.length > 0) {
+                const QUESTIONS = ['학습 계획 점검', '학습 방향성 설정', '취약 과목 솔루션', '기타 멘탈 관리'];
+                const listItems = d.deepAnswers.map((ans, i) => {
+                   const questionLabel = QUESTIONS[i] ? `<span style="color:#1e293b; font-weight:800; margin-right:4px;">${QUESTIONS[i]}:</span>` : '';
+                   return `<li><i class="fas fa-check-circle text-blue" style="margin-top:4px; flex-shrink:0;"></i><div style="flex:1;">${questionLabel} ${escapeHtml(ans)}</div></li>`;
+                }).join('');
+
+                let trendHtml = '';
+                if (d.trend) {
+                    const statusMap = { 'up': '상승세 🔥', 'down': '하락세 📉', 'keep': '유지중 -' };
+                    const statusText = statusMap[d.trend.status] || '유지중 -';
+                    let reasonHtml = '';
+                    if (d.trend.status === 'down' && Array.isArray(d.trend.reasons) && d.trend.reasons.length > 0) {
+                        const reasonMap = { 'overplan': '계획 과다', 'sense': '실전 감각 저하', 'condition': '컨디션/건강', 'etc': '기타' };
+                        const translatedReasons = d.trend.reasons.map(r => reasonMap[r] || r).join(', ');
+                        reasonHtml = `<div style="font-size: 0.85rem; color: #dc2626; margin-top: 8px; padding: 8px 12px; background: #fef2f2; border-radius: 6px; display: inline-block; font-weight: normal; border: 1px solid #fecaca;">⚠️ <strong>원인:</strong> ${escapeHtml(translatedReasons)}</div>`;
+                    }
+                    trendHtml = `<div class="trend-badge ${d.trend.status || 'keep'}" style="display: flex; flex-direction: column; align-items: flex-start;"><div style="font-weight: bold;">학습 흐름: ${statusText}</div>${reasonHtml}</div>`;
+                }
+                checkHtml = `<div class="weekly-section"><div class="section-title"><i class="fas fa-clipboard-check"></i> 이번주 심층 질문</div><ul class="check-list">${listItems}</ul>${trendHtml}</div>`;
+            }
+
+            // V1 전용: 모의고사 + 플래너 인증
+            if (d.mockExam && d.mockExam.scores) {
+                const s = d.mockExam.scores;
+                const typeMap = { 'school': '교내', 'edu': '평가원/교육청', 'private': '사설' };
+                const typeLabel = typeMap[d.mockExam.type] || '기타';
+                const typeBadge = `<span class="mock-type-badge ${d.mockExam.type || ''}">${typeLabel}</span>`;
+                const scoreItems = [
+                    { l: '국어', v: s.kor }, { l: '수학', v: s.math }, { l: '영어', v: s.eng },
+                    { l: s.inq1Name || '탐1', v: s.inq1 }, { l: s.inq2Name || '탐2', v: s.inq2 }
+                ].map(item => item.v ? `<div class="score-pill"><span class="lbl">${item.l}</span><span class="val">${item.v}</span></div>` : '').join('');
+                let proofHtml = '';
+                if (d.mockExam.proofFile && d.mockExam.proofFile.startsWith('http')) {
+                    proofHtml = `<div style="margin-top:15px; padding-top:15px; border-top:1px dashed #e2e8f0; text-align:right;"><a href="${d.mockExam.proofFile}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; background:#eff6ff; color:#2563eb; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:bold; transition:all 0.2s; white-space:nowrap;"><i class="fas fa-file-invoice"></i> 📝 모의고사 성적표 원본 보기</a></div>`;
+                }
+                mockHtml = `<div class="weekly-mock-box"><div class="mock-header"><i class="fas fa-edit"></i> 주간 모의고사 결과 ${typeBadge}</div><div class="score-pills-container">${scoreItems}</div>${proofHtml}</div>`;
+            }
+
+            const hasFiles = d.plannerFiles && d.plannerFiles.length > 0;
+            const hasComment = !!d.comment;
+            if (hasFiles || hasComment) {
+                let fileLinks = '';
+                if (hasFiles) {
+                    fileLinks = d.plannerFiles.map((f, i) => {
+                        let rawName = typeof f === 'string' ? decodeURIComponent(f.split('/').pop()) : `파일 ${i+1}`;
+                        let cleanName = rawName.includes('_') ? rawName.split('_').slice(1).join('_') : rawName;
+                        return `<a href="${f}" target="_blank" class="file-chip" style="display:inline-flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; padding:8px 14px; border-radius:20px; text-decoration:none; font-size:0.85rem; margin:0 8px 8px 0; transition:all 0.2s;"><i class="fas fa-paperclip" style="color:#64748b;"></i> ${cleanName}</a>`;
+                    }).join('');
+                }
+                footerHtml = `<div class="weekly-section planner-auth-section" style="margin-top:20px; padding-top:20px; border-top:1px solid #e2e8f0; background:#ffffff;">${hasFiles ? `<div class="section-title" style="margin-bottom:15px; font-weight:bold; color:#1e293b;"><i class="fas fa-camera-retro" style="color:#10b981;"></i> 주간 플래너 인증 사진</div><div class="file-area" style="display:flex; flex-wrap:wrap;">${fileLinks}</div>` : ''}${hasComment ? `<div class="comment-box" style="margin-top:${hasFiles ? '15px' : '0'}; background:#f1f5f9; padding:15px; border-radius:8px; color:#334155; font-size:0.95rem;"><strong style="color:#2563eb;"><i class="fas fa-comment-dots"></i> 학생 전달사항:</strong><div style="margin-top:8px; line-height:1.6;">${safeComment}</div></div>` : ''}</div>`;
+            }
+        }
         const defaultFb = reportFormVer >= 2
             ? { weeklyPlanner: '', planReason: '', questionAnswer: '', tutorComment: '' }
             : { priorityCheck: '', weakSubject: '', nextWeekTop3: '', planEvaluation: '', extraQuestion: '' };
@@ -339,6 +356,7 @@ window.uploadWeeklyTutorFile = async function(weeklyKey) {
             feedback[f.key] = el ? el.value : '';
         });
         feedback.tutorImage = fileUrl; // 새로 업로드된 URL 포함
+        feedback.feedbackVersion = Number(reportDataForVer.formVersion) || 1;
 
         // 4. 로컬 데이터 갱신 (저장 시 덮어씌워지지 않게 메모리 유지)
         const reportData = currentWeeklyData.find(w => w.weekId === weeklyKey || w.date === weeklyKey);
@@ -398,6 +416,7 @@ window.tempSaveWeeklyField = async function(weeklyKey, fieldName) {
         feedback[f.key] = el ? el.value : '';
     });
     feedback.tutorImage = existingFb.tutorImage || ''; // 기존 파일 URL 유지
+    feedback.feedbackVersion = Number(reportData.formVersion) || 1;
 
     try {
         await apiFetch(REPORT_API_URL, {
