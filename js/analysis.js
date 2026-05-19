@@ -2897,9 +2897,9 @@ function openFeedbackModalV2(data, modal, contentArea) {
                 </div>
             </div>
 
-            <div class="doc-matched-box">
+            <div class="doc-matched-box allow-page-break">
                 <div class="doc-matched-header"><i class="fas fa-calendar-alt"></i> 3. 이번 주 플래너</div>
-                <div class="doc-matched-body">
+                <div class="doc-matched-body allow-page-break-body">
                     <div class="doc-student-data">
                         <span class="doc-badge">학생 정보</span>
                         ${availTimeHtml ? `<div style="margin-bottom:15px;"><strong style="font-size:0.9rem; color:#1e293b; display:block; margin-bottom:8px;">공부 가능 시간</strong>${availTimeHtml}</div>` : ''}
