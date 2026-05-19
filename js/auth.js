@@ -30,43 +30,19 @@ const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 let isPhoneVerified = false; 
 let isEmailVerified = false;
 
-// 토큰 갱신 시도: 쿠키 기반 silent_refresh 우선, localStorage refreshToken 폴백
+// 토큰 갱신 시도: 쿠키 기반 silent_refresh (rt 쿠키 → 백엔드가 at 쿠키 갱신)
 let _isRefreshing = false;
 async function tryRefreshToken() {
     if (_isRefreshing) return false;
     _isRefreshing = true;
     try {
-        // 1차: HttpOnly 쿠키 기반 silent_refresh
         const res = await fetch(AUTH_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
             body: JSON.stringify({ type: 'silent_refresh' })
         });
-        if (res.ok) {
-            const data = await res.json();
-            if (data.accessToken && data.idToken) {
-                setAccessToken(data.accessToken);
-                setIdToken(data.idToken);
-                return true;
-            }
-        }
-        // 2차: localStorage refreshToken 폴백 (구형 세션 호환)
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) return false;
-        const fallbackRes = await fetch(AUTH_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'refresh_token', refreshToken })
-        });
-        if (!fallbackRes.ok) return false;
-        const fallbackData = await fallbackRes.json();
-        if (fallbackData.accessToken && fallbackData.idToken) {
-            setAccessToken(fallbackData.accessToken);
-            setIdToken(fallbackData.idToken);
-            return true;
-        }
-        return false;
+        return res.ok;
     } catch (e) {
         return false;
     } finally {
@@ -74,31 +50,23 @@ async function tryRefreshToken() {
     }
 }
 
-// 💡 무한 루프 방지 및 헤더 병합 에러 방지가 적용된 글로벌 apiFetch
-// 401 수신 시 refreshToken으로 갱신 1회 시도 후 재시도 — 실패 시 로그아웃
+// 글로벌 apiFetch — HttpOnly 쿠키 기반 인증 (credentials: 'include')
+// 401 시 silent_refresh 1회 시도 후 재시도 — 실패 시 로그아웃
+// 403 은 권한 부족 (인증은 유효) — 로그아웃하지 않고 에러만 throw
 async function apiFetch(url, options = {}) {
-    const token = getAccessToken();
-    const defaultHeaders = {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
-    };
-
+    const defaultHeaders = { 'Content-Type': 'application/json' };
     options.headers = { ...defaultHeaders, ...(options.headers || {}) };
+    options.credentials = 'include';
 
     try {
         const response = await fetch(url, options);
 
         if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
+            if (response.status === 401) {
                 const refreshed = await tryRefreshToken();
                 if (refreshed) {
-                    const newToken = getAccessToken();
-                    options.headers['Authorization'] = `Bearer ${newToken}`;
                     const retryRes = await fetch(url, options);
                     if (retryRes.ok) return retryRes;
-                    if (!retryRes.ok && retryRes.status !== 401 && retryRes.status !== 403) {
-                        throw new Error(`서버 통신 오류 (상태 코드: ${retryRes.status})`);
-                    }
                 }
                 const currentPath = window.location.pathname;
                 if (!['/login', '/signup', '/'].includes(currentPath)) {
@@ -106,6 +74,10 @@ async function apiFetch(url, options = {}) {
                     window.location.href = '/login';
                 }
                 return Promise.reject(new Error("Auth expired"));
+            }
+            if (response.status === 403) {
+                const errBody = await response.json().catch(() => ({}));
+                throw new Error(errBody.error || errBody.message || '접근 권한이 없습니다.');
             }
             throw new Error(`서버 통신 오류 (상태 코드: ${response.status})`);
         }
@@ -131,53 +103,41 @@ function getPayloadFromToken(token) {
 
 // 분리된 DB 구조에 맞춘 스마트 권한 식별 함수
 async function resolveUserIdentity(eventType = 'none', promoCode = '') {
-    const token = getAccessToken();
-    const idToken = getIdToken();
-    if (!token || !idToken) return;
+    if (!localStorage.getItem('userId')) return;
 
     try {
-        const payload = getPayloadFromToken(idToken);
-        const groups = payload['cognito:groups'] || [];
-        
-        let role = 'student';
-        if (groups.includes('Admins')) role = 'admin';
-        else if (groups.includes('Tutors')) role = 'tutor';
-
-        if (role === 'admin' || role === 'tutor') {
-            const userName = payload.name || payload.given_name || (role === 'admin' ? '관리자' : '선생님');
-            localStorage.setItem('userName', userName);
-            handleRoleSuccess(role, eventType, userName, promoCode);
-            return;
-        }
-
         const userRes = await fetch(USER_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ type: 'get_user' })
         });
 
         if (userRes.ok) {
             const data = await userRes.json();
-            const userName = data.name || '학생';
+            const role = data.role || 'student';
+            const userName = data.name || (role === 'admin' ? '관리자' : role === 'tutor' ? '선생님' : '학생');
             localStorage.setItem('userName', userName);
             if (data.computedTier) localStorage.setItem('userTier', data.computedTier);
 
-            // 튜토리얼 완료 여부 체크 → 미완료 학생은 /tutorial로 강제 이동
-            const tutorialDone = data.tutorialRewardClaimed === true
-                || data.computedTier === 'standard' || data.computedTier === 'pro' || data.computedTier === 'trial';
-            if (tutorialDone) {
-                localStorage.setItem('tutorial_completed', 'true');
-            } else {
-                localStorage.removeItem('tutorial_completed');
-                const exemptPaths = ['/tutorial', '/login', '/signup', '/welcome', '/social-callback', '/mbti_survey', '/mbti_download', '/checkout', '/success'];
-                const currentPath = window.location.pathname;
-                if (!exemptPaths.some(p => currentPath.startsWith(p))) {
-                    window.location.replace('/tutorial');
-                    return;
+            // 학생만 튜토리얼 체크
+            if (role === 'student') {
+                const tutorialDone = data.tutorialRewardClaimed === true
+                    || data.computedTier === 'standard' || data.computedTier === 'pro' || data.computedTier === 'trial';
+                if (tutorialDone) {
+                    localStorage.setItem('tutorial_completed', 'true');
+                } else {
+                    localStorage.removeItem('tutorial_completed');
+                    const exemptPaths = ['/tutorial', '/login', '/signup', '/welcome', '/social-callback', '/mbti_survey', '/mbti_download', '/checkout', '/success'];
+                    const currentPath = window.location.pathname;
+                    if (!exemptPaths.some(p => currentPath.startsWith(p))) {
+                        window.location.replace('/tutorial');
+                        return;
+                    }
                 }
             }
 
-            handleRoleSuccess('student', eventType, userName, promoCode);
+            handleRoleSuccess(role, eventType, userName, promoCode);
         } else {
             throw new Error("계정 정보를 데이터베이스에서 찾을 수 없습니다.");
         }
@@ -717,7 +677,7 @@ async function handleFinalSubmit() {
                     localStorage.setItem('userEmail', email);
                     localStorage.setItem('userRole', 'student');
 
-                    // refreshToken → HttpOnly 쿠키 등록
+                    // refreshToken → HttpOnly 쿠키 등록 (at/rt 쿠키가 설정됨)
                     try {
                         const cookieRes = await fetch(AUTH_URL, {
                             method: 'POST',
@@ -726,9 +686,6 @@ async function handleFinalSubmit() {
                             body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken })
                         });
                         if (cookieRes.ok) {
-                            const d = await cookieRes.json();
-                            if (d.accessToken) setAccessToken(d.accessToken);
-                            if (d.idToken) setIdToken(d.idToken);
                             localStorage.removeItem('refreshToken');
                         } else {
                             localStorage.setItem('refreshToken', refreshToken);
@@ -775,7 +732,7 @@ function clearClientSession() {
 }
 
 function checkLoginStatus() {
-    const isLoggedIn = !!(getAccessToken() || getIdToken() || localStorage.getItem('userId'));
+    const isLoggedIn = !!localStorage.getItem('userId');
     const userRole = localStorage.getItem('userRole');
 
     const loginBtn = document.getElementById('loginBtn');
@@ -843,6 +800,15 @@ function handleSignOut(silent = false) {
     const cognitoUser = userPool.getCurrentUser();
     if (cognitoUser != null) cognitoUser.signOut();
 
+    // 서버에 쿠키 만료 요청 (at/rt HttpOnly 쿠키 삭제)
+    fetch(AUTH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ type: 'logout' }),
+        keepalive: true
+    }).catch(() => {});
+
     clearClientSession();
 
     if (!silent) alert("로그아웃 되었습니다.");
@@ -884,21 +850,17 @@ function handleSignIn() {
                     body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken })
                 });
                 if (cookieRes.ok) {
-                    const d = await cookieRes.json();
-                    if (d.accessToken) setAccessToken(d.accessToken);
-                    if (d.idToken) setIdToken(d.idToken);
                     localStorage.removeItem('refreshToken');
                 } else {
-                    localStorage.setItem('refreshToken', refreshToken); // 실패 시 폴백
+                    localStorage.setItem('refreshToken', refreshToken);
                 }
             } catch (e) {
-                localStorage.setItem('refreshToken', refreshToken); // 실패 시 폴백
+                localStorage.setItem('refreshToken', refreshToken);
             }
 
             window.dataLayer = window.dataLayer || [];
             window.dataLayer.push({ event: "login", user_id: userId });
 
-            // 💡 [핵심] 로그인 이벤트와 함께 스마트 라우팅 시작
             resolveUserIdentity('login');
         },
         onFailure: function(err) {

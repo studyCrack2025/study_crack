@@ -3,46 +3,39 @@ const DATA_FETCH_URL = CONFIG.api.analysis;
 
 let examScores = {}; 
 
-// 💡 공통 apiFetch 함수 (accessToken 기반 통합 및 401 예외 처리)
+// 💡 공통 apiFetch 함수 — HttpOnly 쿠키 기반 인증
 async function apiFetch(url, options = {}) {
-    const token = getAccessToken();
-    const defaultHeaders = {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
-    };
-
-    options.headers = { ...defaultHeaders, ...options.headers };
+    const defaultHeaders = { 'Content-Type': 'application/json' };
+    options.headers = { ...defaultHeaders, ...(options.headers || {}) };
+    options.credentials = 'include';
 
     try {
         const response = await fetch(url, options);
 
         if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
+            if (response.status === 401) {
                 const refreshed = await tryRefreshToken();
                 if (refreshed) {
-                    const newToken = getAccessToken();
-                    options.headers['Authorization'] = `Bearer ${newToken}`;
                     const retryRes = await fetch(url, options);
                     if (retryRes.ok) return retryRes;
-                    if (!retryRes.ok && retryRes.status !== 401 && retryRes.status !== 403) {
-                        throw new Error(`서버 통신 오류 (상태 코드: ${retryRes.status})`);
-                    }
                 }
                 const currentPath = window.location.pathname;
                 if (!['/login', '/signup', '/'].includes(currentPath)) {
-                    alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
-                    localStorage.clear();
-                    sessionStorage.clear();
+                    clearClientSession();
                     window.location.href = '/login';
                 }
                 return Promise.reject(new Error("Auth expired"));
+            }
+            if (response.status === 403) {
+                const errBody = await response.json().catch(() => ({}));
+                throw new Error(errBody.error || errBody.message || '접근 권한이 없습니다.');
             }
             throw new Error(`서버 통신 오류 (상태 코드: ${response.status})`);
         }
         return response;
     } catch (error) {
         console.error("API 통신 실패:", error);
-        throw error; 
+        throw error;
     }
 }
 
@@ -72,9 +65,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // JWT Authorizer가 있는 /api/user 엔드포인트 호출 전
-    // _accessToken이 메모리에 없으면 rt 쿠키로 먼저 복원 (401 방지)
-    if (!getAccessToken()) await tryRefreshToken();
+    // 쿠키 기반 인증 — 페이지 로드 시 at 쿠키 갱신
+    await tryRefreshToken();
 
     fetchUserData(userId);
     setupUI();

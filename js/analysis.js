@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    if (!getAccessToken() || !getIdToken()) {
+    if (!localStorage.getItem('userId')) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
             clearClientSession();

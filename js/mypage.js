@@ -9,52 +9,43 @@ let currentUserEmail = '';
 
 let mypagePhoneTimerInterval = null;
 
-// 💡 공통 apiFetch 함수
+// 💡 공통 apiFetch 함수 — HttpOnly 쿠키 기반 인증
 async function apiFetch(url, options = {}) {
-    const token = getAccessToken();
-    const defaultHeaders = {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
-    };
-
+    const defaultHeaders = { 'Content-Type': 'application/json' };
     options.headers = { ...defaultHeaders, ...(options.headers || {}) };
+    options.credentials = 'include';
 
     try {
         const response = await fetch(url, options);
 
         if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
+            if (response.status === 401) {
                 const refreshed = await tryRefreshToken();
                 if (refreshed) {
-                    const newToken = getAccessToken();
-                    options.headers['Authorization'] = `Bearer ${newToken}`;
                     const retryRes = await fetch(url, options);
                     if (retryRes.ok) return retryRes;
-                    if (!retryRes.ok && retryRes.status !== 401 && retryRes.status !== 403) {
-                        throw new Error(`서버 통신 오류 (상태 코드: ${retryRes.status})`);
-                    }
                 }
                 alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
                 handleSignOut();
                 return Promise.reject(new Error("Auth expired"));
             }
-            
-            // 💡 백엔드에서 내려준 에러 메시지가 있다면 파싱해서 사용
+            if (response.status === 403) {
+                const errBody = await response.json().catch(() => ({}));
+                throw new Error(errBody.error || errBody.message || '접근 권한이 없습니다.');
+            }
+
             let errorMessage = "요청 처리 중 문제가 발생했습니다.";
             try {
                 const errorData = await response.json();
                 if (errorData.message) errorMessage = errorData.message;
             } catch (e) {
-                // JSON 파싱 실패 시 기본 텍스트
                 errorMessage = `인증번호가 일치하지 않거나 오류가 발생했습니다.`;
             }
-            // 콘솔에 에러를 찍지 않고 바로 에러를 던집니다.
             throw new Error(errorMessage);
         }
         return response;
     } catch (error) {
-        // 네트워크 단절 또는 위에서 던진 에러만 그대로 전달
-        throw error; 
+        throw error;
     }
 }
 
@@ -84,8 +75,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // 1. 기본 토큰 존재 여부만 1차 확인 (accessToken으로 통일)
-    if (!getAccessToken() || !getIdToken()) {
+    // 1. 로그인 여부 확인 (쿠키 기반 — userId 존재 + at 쿠키 갱신)
+    if (!localStorage.getItem('userId')) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
             clearClientSession();
@@ -200,41 +191,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function initCognitoAndFetchData() {
-    const poolData = { 
-        UserPoolId: CONFIG.cognito.userPoolId, 
-        ClientId: CONFIG.cognito.clientId 
+    const poolData = {
+        UserPoolId: CONFIG.cognito.userPoolId,
+        ClientId: CONFIG.cognito.clientId
     };
     const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
-    
+
     cognitoUser = userPool.getCurrentUser();
-    
-    if (cognitoUser != null) {
-        cognitoUser.getSession(function(err, session) {
-            if (err) {
-                alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-                handleSignOut(); 
-                return;
-            }
 
-            // 💡 갱신된 새 토큰(accessToken)을 메모리에 저장
-            const freshAccessToken = session.getAccessToken().getJwtToken();
-            const freshIdToken = session.getIdToken().getJwtToken();
-            setAccessToken(freshAccessToken);
-            setIdToken(freshIdToken);
-
-            const userId = localStorage.getItem('userId');
-            fetchUserData(userId);
-        });
+    // 쿠키 기반 인증 — userId가 있으면 데이터 조회 (at 쿠키는 이미 갱신됨)
+    const userId = localStorage.getItem('userId');
+    if (userId) {
+        fetchUserData(userId);
     } else {
-        // 소셜 로그인 사용자는 Cognito SDK 세션 없이 메모리 토큰을 직접 사용
-        const accessToken = getAccessToken();
-        const userId = localStorage.getItem('userId');
-        if (accessToken && userId) {
-            fetchUserData(userId);
-        } else {
-            alert("로그인 정보가 유효하지 않습니다.");
-            handleSignOut();
-        }
+        alert("로그인 정보가 유효하지 않습니다.");
+        handleSignOut();
     }
 }
 

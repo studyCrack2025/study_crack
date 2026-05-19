@@ -13,16 +13,11 @@ const TIER_LEVELS = { 'free': 0, 'trial': 1, 'basic': 2, 'standard': 3, 'pro': 4
 let globalCurrentTier = 'free';
 let globalDaysLeft = 0;
 let globalExpireDate = null; // 기존 만료일(새로운 시작일) 저장용
-let paymentAccessToken = null;
-let paymentIdToken = null;
 let userPhoneMissing = false;
 
-function getPaymentAccessToken() { return paymentAccessToken; }
-function setPaymentAccessToken(token) { paymentAccessToken = token; }
-function setPaymentIdToken(token) { paymentIdToken = token; }
 function getTierDisplayName(tier) { return TIER_DISPLAY[(tier || '').toLowerCase()] || String(tier || '').toUpperCase(); }
 
-// 💡 토큰 자동 갱신 (쿠키 우선, localStorage 폴백)
+// 💡 토큰 자동 갱신 — HttpOnly 쿠키 기반
 let _isRefreshing = false;
 async function tryRefreshToken() {
     if (_isRefreshing) return false;
@@ -34,29 +29,7 @@ async function tryRefreshToken() {
             credentials: 'include',
             body: JSON.stringify({ type: 'silent_refresh' })
         });
-        if (res.ok) {
-            const data = await res.json();
-            if (data.accessToken && data.idToken) {
-                setPaymentAccessToken(data.accessToken);
-                setPaymentIdToken(data.idToken);
-                return true;
-            }
-        }
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) return false;
-        const fallbackRes = await fetch(CONFIG.api.auth, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'refresh_token', refreshToken })
-        });
-        if (!fallbackRes.ok) return false;
-        const fallbackData = await fallbackRes.json();
-        if (fallbackData.accessToken && fallbackData.idToken) {
-            setPaymentAccessToken(fallbackData.accessToken);
-            setPaymentIdToken(fallbackData.idToken);
-            return true;
-        }
-        return false;
+        return res.ok;
     } catch (e) {
         return false;
     } finally {
@@ -64,36 +37,31 @@ async function tryRefreshToken() {
     }
 }
 
-// 💡 공통 apiFetch 함수
+// 💡 공통 apiFetch 함수 — HttpOnly 쿠키 기반 인증
 async function apiFetch(url, options = {}) {
-    const token = getPaymentAccessToken();
-    const defaultHeaders = {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
-    };
-
+    const defaultHeaders = { 'Content-Type': 'application/json' };
     options.headers = { ...defaultHeaders, ...(options.headers || {}) };
+    options.credentials = 'include';
 
     try {
         const response = await fetch(url, options);
 
         if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
+            if (response.status === 401) {
                 const refreshed = await tryRefreshToken();
                 if (refreshed) {
-                    const newToken = getPaymentAccessToken();
-                    options.headers['Authorization'] = `Bearer ${newToken}`;
                     const retryRes = await fetch(url, options);
                     if (retryRes.ok) return retryRes;
-                    if (!retryRes.ok && retryRes.status !== 401 && retryRes.status !== 403) {
-                        throw new Error(`서버 통신 오류 (상태 코드: ${retryRes.status})`);
-                    }
                 }
                 alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
                 localStorage.clear();
                 sessionStorage.clear();
                 window.location.href = '/login';
                 return Promise.reject(new Error("Auth expired"));
+            }
+            if (response.status === 403) {
+                const errBody = await response.json().catch(() => ({}));
+                throw new Error(errBody.error || errBody.message || '접근 권한이 없습니다.');
             }
             throw new Error(`서버 통신 오류 (상태 코드: ${response.status})`);
         }
