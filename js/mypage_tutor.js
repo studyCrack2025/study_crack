@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const userId = localStorage.getItem('userId');
 
-    if (!getAccessToken() || !getIdToken()) {
+    if (!localStorage.getItem('userId')) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
             clearClientSession();
@@ -788,19 +788,21 @@ window.requestTutorWithdrawal = function() {
     tutorCognitoUser.authenticateUser(authDetails, {
         onSuccess: async function(result) {
             try {
-                // 1. 최신 토큰으로 갱신
-                const newAccessToken = result.getAccessToken().getJwtToken();
-                setAccessToken(newAccessToken);
-                setIdToken(result.getIdToken().getJwtToken());
+                // 1. register_refresh_cookie로 at/rt 쿠키 갱신
+                const refreshToken = result.getRefreshToken().getToken();
+                await fetch(CONFIG.api.auth, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken })
+                });
 
-                // 2. 단일 API 호출 (saveSingleField 삭제됨)
-                // 💡 새 토큰을 헤더에 명시적으로 덮어씌워 401 동기화 에러 완벽 차단
+                // 2. 쿠키 기반 API 호출
                 await apiFetch(NOTI_API_URL, {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${newAccessToken}` }, 
-                    body: JSON.stringify({ 
+                    body: JSON.stringify({
                         type: 'tutor_request_withdrawal',
-                        data: { reason: reason, tutorName: tutorInfoData.name } 
+                        data: { reason: reason, tutorName: tutorInfoData.name }
                     })
                 });
                 

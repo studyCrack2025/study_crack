@@ -109,18 +109,16 @@
             return;
         }
 
-        const { accessToken, idToken, userId, isNewUser } = result;
+        const { userId, isNewUser } = result;
 
-        if (!accessToken || !idToken || !userId) {
-            showError('로그인 처리에 실패했습니다. (토큰 오류)');
+        if (!userId) {
+            showError('로그인 처리에 실패했습니다. (사용자 ID 누락)');
             return;
         }
 
         // 4. 연동 모드 + 새 계정 생성된 경우: 기존 세션 보관 후 확인
         if (isLinkMode && isNewUser) {
-            const prevAccessToken = getAccessToken();
-            const prevIdToken    = getIdToken();
-            const prevUserId     = localStorage.getItem('userId');
+            const prevUserId = localStorage.getItem('userId');
 
             const confirmed = confirm(
                 '연동하려는 소셜 계정의 이메일이 현재 계정과 달라\n새로운 별도 계정이 생성되었습니다.\n\n' +
@@ -128,26 +126,18 @@
             );
 
             if (!confirmed) {
-                // 기존 세션 복원 후 마이페이지로 복귀
-                if (prevAccessToken) setAccessToken(prevAccessToken);
-                if (prevIdToken)    setIdToken(prevIdToken);
-                if (prevUserId)     localStorage.setItem('userId', prevUserId);
+                if (prevUserId) localStorage.setItem('userId', prevUserId);
                 window.location.href = '/mypage';
                 return;
             }
 
-            // 확인 → 새 계정 토큰으로 교체 후 welcome으로
-            setAccessToken(accessToken);
-            setIdToken(idToken);
             localStorage.setItem('userId', userId);
             localStorage.setItem('userRole', 'student');
             window.location.href = '/welcome';
             return;
         }
 
-        // 5. 토큰 저장 (accessToken/idToken은 메모리, rt 쿠키는 Lambda Set-Cookie로 이미 저장됨)
-        setAccessToken(accessToken);
-        setIdToken(idToken);
+        // 5. 세션 저장 (at/rt 쿠키는 Lambda Set-Cookie로 이미 설정됨)
         localStorage.setItem('userId', userId);
         localStorage.setItem('userRole', 'student');
 
@@ -159,7 +149,8 @@
 
         const userRes = await fetch(USER_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ type: 'get_user' })
         });
 

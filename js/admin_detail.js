@@ -18,28 +18,17 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // 페이지 리로드 후 메모리 토큰 복원 (Cognito SDK가 localStorage에 세션을 자동 저장함)
-    const cognitoUser = userPool.getCurrentUser();
-    if (cognitoUser && !getAccessToken()) {
-        cognitoUser.getSession((err, session) => {
-            if (!err && session && session.isValid()) {
-                setAccessToken(session.getAccessToken().getJwtToken());
-                setIdToken(session.getIdToken().getJwtToken());
-                initDetailPage();
-            } else {
-                tryRefreshToken().then(ok => {
-                    if (!ok) {
-                        alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-                        localStorage.clear();
-                        window.location.href = '/admin/login';
-                        return;
-                    }
-                    initDetailPage();
-                });
-            }
-        });
-        return;
-    }
+    // 페이지 리로드 시 at 쿠키 갱신 후 초기화
+    tryRefreshToken().then(ok => {
+        if (!ok && !localStorage.getItem('userId')) {
+            alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+            localStorage.clear();
+            window.location.href = '/admin/login';
+            return;
+        }
+        initDetailPage();
+    });
+    return;
 
     initDetailPage();
 });

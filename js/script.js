@@ -24,43 +24,36 @@ function toggleScoreUp() {
     }
 }
 
-// 공통 apiFetch 함수
+// 공통 apiFetch 함수 — HttpOnly 쿠키 기반 인증
 async function apiFetch(url, options = {}) {
-    const token = getAccessToken();
-    const defaultHeaders = {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
-    };
-
-    options.headers = { ...defaultHeaders, ...options.headers };
+    const defaultHeaders = { 'Content-Type': 'application/json' };
+    options.headers = { ...defaultHeaders, ...(options.headers || {}) };
+    options.credentials = 'include';
 
     try {
         const response = await fetch(url, options);
 
         if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
+            if (response.status === 401) {
                 const refreshed = await tryRefreshToken();
                 if (refreshed) {
-                    const newToken = getAccessToken();
-                    options.headers['Authorization'] = `Bearer ${newToken}`;
                     const retryRes = await fetch(url, options);
                     if (retryRes.ok) return retryRes;
-                    if (!retryRes.ok && retryRes.status !== 401 && retryRes.status !== 403) {
-                        throw new Error(`서버 통신 오류 (상태 코드: ${retryRes.status})`);
-                    }
                 }
-                alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
-                localStorage.clear();
-                sessionStorage.clear();
+                clearClientSession();
                 window.location.href = '/login';
                 return Promise.reject(new Error("Auth expired"));
+            }
+            if (response.status === 403) {
+                const errBody = await response.json().catch(() => ({}));
+                throw new Error(errBody.error || errBody.message || '접근 권한이 없습니다.');
             }
             throw new Error(`서버 통신 오류 (상태 코드: ${response.status})`);
         }
         return response;
     } catch (error) {
         console.error("API 통신 실패:", error);
-        throw error; 
+        throw error;
     }
 }
 
@@ -354,11 +347,10 @@ window.scrollTo(0, 0);
 
 document.addEventListener('DOMContentLoaded', () => {
     // 권한 체크
-    const token = getAccessToken();
     const userRole = localStorage.getItem('userRole');
     const userName = localStorage.getItem('userName') || '회원';
 
-    if (token && userRole) {
+    if (localStorage.getItem('userId') && userRole) {
         if (userRole === 'tutor') {
             alert(`${userName} 선생님 페이지로 이동합니다.`);
             window.location.href = '/mypage/tutor';
@@ -442,7 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function updateNavUI() {
-    const isLoggedIn = !!(getAccessToken() || getIdToken() || localStorage.getItem('userId'));
+    const isLoggedIn = !!localStorage.getItem('userId');
     const userRole = localStorage.getItem('userRole');
 
     const btnAnalysis = document.getElementById('navAnalysis');
@@ -652,12 +644,7 @@ window.fetchStudentNotifications = async function() {
     isFetchingNoti = true;
 
     try {
-        // 페이지 최초 로드 시 메모리 토큰이 없으면 rt 쿠키로 먼저 복원
-        // (updateNavUI가 userId 힌트로 먼저 UI를 그린 뒤 이 함수를 호출하므로)
-        if (!getAccessToken()) {
-            const refreshed = await tryRefreshToken();
-            if (!refreshed) return; // 실제 미로그인 상태 → 조용히 종료
-        }
+        if (!localStorage.getItem('userId')) return;
 
         const response = await apiFetch(NOTI_API_URL, {
             method: 'POST', body: JSON.stringify({ type: 'student_get_notifications' })

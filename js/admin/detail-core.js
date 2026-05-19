@@ -21,31 +21,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 페이지 이동 후 메모리 토큰 복원
     // Cognito SDK가 localStorage에 세션을 자동 저장하므로 getSession()으로 복원 가능
-    const _detailPool = new AmazonCognitoIdentity.CognitoUserPool({
-        UserPoolId: CONFIG.cognito.userPoolId,
-        ClientId: CONFIG.cognito.clientId
+    tryRefreshToken().then(ok => {
+        if (!ok && !localStorage.getItem('userId')) {
+            alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+            localStorage.clear();
+            window.location.href = '/admin/login';
+            return;
+        }
+        initDetailPage();
     });
-    const _cognitoUser = _detailPool.getCurrentUser();
-
-    if (_cognitoUser && !getAccessToken()) {
-        _cognitoUser.getSession((err, session) => {
-            if (!err && session && session.isValid()) {
-                setAccessToken(session.getAccessToken().getJwtToken());
-                setIdToken(session.getIdToken().getJwtToken());
-                initDetailPage();
-            } else {
-                tryRefreshToken().then(ok => {
-                    if (!ok) {
-                        alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-                        localStorage.clear();
-                        window.location.href = '/admin/login';
-                        return;
-                    }
-                    initDetailPage();
-                });
-            }
-        });
-        return;
+    return;
     }
 
     initDetailPage();

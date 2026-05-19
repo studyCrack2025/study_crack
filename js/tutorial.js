@@ -39,7 +39,7 @@ let mbtiDimSelections = [null, null, null, null];
 document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     // 인증 가드: 로그인하지 않은 사용자는 로그인 페이지로 이동
-    if (!getAccessToken() || !getIdToken()) {
+    if (!localStorage.getItem('userId')) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
             clearClientSession();
@@ -48,7 +48,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         checkLoginStatus();
     }
-    const token = getAccessToken();
 
     // DB에서 유저 데이터 복원 (mbti_completed 경로 포함)
     try {
@@ -153,10 +152,9 @@ function bindEvents() {
     };
 
     const _saveOnExit = () => {
-        const token = getAccessToken();
-        if (!token) return;
-        const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
-        const opts = { method: 'POST', headers, keepalive: true };
+        if (!localStorage.getItem('userId')) return;
+        const headers = { 'Content-Type': 'application/json' };
+        const opts = { method: 'POST', headers, credentials: 'include', keepalive: true };
         // 1. step 저장
         fetch(CONFIG.api.user, { ...opts, body: JSON.stringify({ type: 'update_tutorial_status', data: { step: currentStepIdx } }) }).catch(() => {});
         // 2. qual 저장 (현재 폼에서 재수집, 또는 마지막 저장 상태)
@@ -434,11 +432,11 @@ function confirmMBTIDims() {
 function goToMBTI() {
     localStorage.setItem('tutorialStatus', 3);
     // DB에도 MBTI 단계 진입 상태 동기화 (keepalive로 redirect 후에도 전송 보장)
-    const token = getAccessToken();
-    if (token) {
+    if (localStorage.getItem('userId')) {
         fetch(CONFIG.api.user, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ type: 'update_tutorial_status', data: { step: 3 } }),
             keepalive: true
         }).catch(() => {});
@@ -496,8 +494,7 @@ function simulateMbtiAnalysis() {
 
 // ── 튜토리얼 추천대학 (서버 일괄 처리) ──────────────────────────────
 async function fetchTutorialRecommendations(stream, mar, totalStdScore, examMonth, boostedRawScores) {
-    const token = getAccessToken();
-    if (!token) return null;
+    if (!localStorage.getItem('userId')) return null;
     const userScores = buildUserScoresForAnalysis(mar);
     const payload = {
         type: 'get_tutorial_recommendations',
@@ -546,15 +543,15 @@ function buildUserScoresForAnalysis(mar) {
 async function tutorialAnalysisFetch(options = {}) {
     const buildOptions = () => ({
         ...options,
+        credentials: 'include',
         headers: {
             'Content-Type': 'application/json',
-            ...(getAccessToken() && { 'Authorization': `Bearer ${getAccessToken()}` }),
             ...(options.headers || {})
         }
     });
 
     let res = await fetch(CONFIG.api.analysis, buildOptions());
-    if ((res.status === 401 || res.status === 403) && typeof tryRefreshToken === 'function') {
+    if (res.status === 401 && typeof tryRefreshToken === 'function') {
         const refreshed = await tryRefreshToken();
         if (refreshed) res = await fetch(CONFIG.api.analysis, buildOptions());
     }
@@ -1056,7 +1053,8 @@ async function downloadMBTIReport(mbtiResult) {
     try {
         const response = await fetch(CONFIG.api.user, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAccessToken()}` },
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ type: 'update_mbti_promo', data: { targetUserId: 'me', promoCode: 'TUTORIAL', mbtiResult } })
         });
         const result = await response.json();
