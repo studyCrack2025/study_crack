@@ -28,6 +28,7 @@ let userStream = null;
 
 // 대학 선택 모달 관련
 let currentSlotIndex = null;
+let recommendedUnivCandidates = [];
 
 // 플래너 파일 업로드 관련
 let currentPlannerFiles = []; 
@@ -1222,7 +1223,7 @@ function updateQuotaUI() {
 }
 
 // ============================================================
-// [추천대학] 모달 내 추천대학/학과 자동 선택
+// [추천대학] 모달 내 추천대학/학과 선택
 // ============================================================
 function calcTotalStdScore(scoreData) {
     const korStd = parseFloat(scoreData?.kor?.std) || 0;
@@ -1279,15 +1280,14 @@ async function handleRecommendUniv() {
             return;
         }
 
-        // 이미 등록된 대학 제외 후 랜덤 선택
+        // 이미 등록된 대학 제외 (없으면 원본 사용)
         const existingKeys = new Set(
             (userTargetUnivs || []).filter(t => t && t.univ).map(t => `${t.univ}||${t.major}`)
         );
         const available = selected.filter(s => !existingKeys.has(`${s.school}||${s.major}`));
         const pool = available.length > 0 ? available : selected;
-        const pick = pool[Math.floor(Math.random() * pool.length)];
-
-        selectComplete(pick.school, pick.major);
+        recommendedUnivCandidates = pool.slice(0, 3);
+        showRecommendedUnivChoices(recommendedUnivCandidates);
     } catch(e) {
         console.error('추천대학 API 오류:', e);
         alert('추천 중 오류가 발생했습니다.');
@@ -1297,6 +1297,42 @@ async function handleRecommendUniv() {
     }
 }
 
+function showRecommendedUnivChoices(candidates) {
+    const modalTitle = document.getElementById('modalTitle');
+    const listContainer = document.getElementById('stepUnivList');
+    const majorList = document.getElementById('stepMajorList');
+    const footer = document.getElementById('modalFooter');
+    const backBtn = footer ? footer.querySelector('.back-step-btn') : null;
+    const searchBox = document.querySelector('.modal-search-box');
+
+    currentSelectStep = 'recommend';
+    if (modalTitle) modalTitle.innerText = '추천 대학/학과 선택';
+    if (searchBox) searchBox.style.display = 'none';
+    if (majorList) majorList.style.display = 'none';
+    if (listContainer) listContainer.style.display = 'grid';
+    if (footer) footer.style.display = 'flex';
+    if (backBtn) backBtn.innerText = '← 전체 대학 목록 보기';
+
+    if (!listContainer) return;
+    listContainer.innerHTML = '';
+
+    if (!Array.isArray(candidates) || candidates.length === 0) {
+        listContainer.innerHTML = '<div class="empty-search-result"><i class="fas fa-exclamation-circle" style="font-size:2.2rem; color:#cbd5e1;"></i>추천 결과가 없습니다. 다시 시도해주세요.</div>';
+        return;
+    }
+
+    const frag = document.createDocumentFragment();
+    candidates.forEach((item, idx) => {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'selection-item selection-item-recommend';
+        card.innerHTML = `<span class="recommend-rank">추천 ${idx + 1}</span><strong>${item.school}</strong><em>${item.major}</em>`;
+        card.onclick = () => selectComplete(item.school, item.major);
+        frag.appendChild(card);
+    });
+    listContainer.appendChild(frag);
+}
+
 function closeUnivModal() {
     document.getElementById('univSelectModal').style.display = 'none';
 
@@ -1304,7 +1340,7 @@ function closeUnivModal() {
     document.body.style.removeProperty('top');
     window.scrollTo(0, scrollPosition);
 
-    currentSlotIndex = null; selectedUnivForMajor = '';
+    currentSlotIndex = null; selectedUnivForMajor = ''; recommendedUnivCandidates = [];
 }
 
 function applySafeHighlight(container, text, keyword) {
@@ -1359,6 +1395,10 @@ function showUnivStep(isDeferred = false) {
     
     document.getElementById('stepMajorList').style.display = 'none';
     document.getElementById('modalFooter').style.display = 'none';
+    const searchBox = document.querySelector('.modal-search-box');
+    if (searchBox) searchBox.style.display = 'block';
+    const backBtn = document.querySelector('#modalFooter .back-step-btn');
+    if (backBtn) backBtn.innerText = '← 대학 다시 선택';
 
     const searchInput = document.getElementById('univSearchInput');
     if(searchInput) { searchInput.placeholder = "대학명 검색 (예: 서울대, 연세)"; searchInput.value = ''; }
@@ -1387,6 +1427,10 @@ function showMajorStep(univName) {
 
     const searchInput = document.getElementById('univSearchInput');
     if(searchInput) { searchInput.placeholder = "학과명 검색 (예: 컴퓨터, 경영)"; searchInput.value = ''; }
+    const searchBox = document.querySelector('.modal-search-box');
+    if (searchBox) searchBox.style.display = 'block';
+    const backBtn = document.querySelector('#modalFooter .back-step-btn');
+    if (backBtn) backBtn.innerText = '← 대학 다시 선택';
 
     listEl.innerHTML = '<div style="padding:50px; text-align:center; color:#94a3b8; grid-column: 1/-1;"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>학과 목록을 불러오는 중...</div>';
     

@@ -30,10 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         initDetailPage();
     });
-    return;
-    }
-
-    initDetailPage();
 });
 
 function initDetailPage() {
