@@ -493,7 +493,7 @@ function simulateMbtiAnalysis() {
 }
 
 // ── 튜토리얼 추천대학 (서버 일괄 처리) ──────────────────────────────
-async function fetchTutorialRecommendations(stream, mar, totalStdScore, examMonth, boostedRawScores) {
+async function fetchTutorialRecommendations(stream, mar, totalStdScore, examMonth, boostedRawScores, extraOptions = {}) {
     if (!localStorage.getItem('userId')) return null;
     const userScores = buildUserScoresForAnalysis(mar);
     const payload = {
@@ -502,6 +502,9 @@ async function fetchTutorialRecommendations(stream, mar, totalStdScore, examMont
         examMode: examMonth || 'mar'
     };
     if (boostedRawScores) payload.boostedRawScores = boostedRawScores;
+    if (extraOptions && Number.isFinite(Number(extraOptions.minCurrentScore))) {
+        payload.minCurrentScore = Number(extraOptions.minCurrentScore);
+    }
     try {
         const res = await tutorialAnalysisFetch({
             method: 'POST',
@@ -870,7 +873,7 @@ async function initSubjectRec() {
                 });
                 postSimUnivs = await fetchTutorialRecommendations(
                     tutorialData.qual.stream, mar, tutorialData.totalStdScore,
-                    tutorialData.examMonth || 'mar', boostedRawScores
+                    tutorialData.examMonth || 'mar', boostedRawScores, { minCurrentScore: Number(univ.currentScore || 0) }
                 );
             }
         } catch(e) {}

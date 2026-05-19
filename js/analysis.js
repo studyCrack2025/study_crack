@@ -1285,8 +1285,16 @@ async function handleRecommendUniv() {
             (userTargetUnivs || []).filter(t => t && t.univ).map(t => `${t.univ}||${t.major}`)
         );
         const available = selected.filter(s => !existingKeys.has(`${s.school}||${s.major}`));
-        const pool = available.length > 0 ? available : selected;
-        recommendedUnivCandidates = pool.slice(0, 3);
+        const uniqueMap = new Map();
+        available.forEach(item => uniqueMap.set(`${item.school}||${item.major}`, item));
+        if (uniqueMap.size < 3) {
+            selected.forEach(item => {
+                if (uniqueMap.size >= 3) return;
+                const key = `${item.school}||${item.major}`;
+                if (!uniqueMap.has(key)) uniqueMap.set(key, item);
+            });
+        }
+        recommendedUnivCandidates = Array.from(uniqueMap.values()).slice(0, 3);
         showRecommendedUnivChoices(recommendedUnivCandidates);
     } catch(e) {
         console.error('추천대학 API 오류:', e);
