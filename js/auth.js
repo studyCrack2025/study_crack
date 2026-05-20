@@ -725,7 +725,8 @@ function clearClientSession() {
     clearIdToken();
     const sessionKeys = [
         'refreshToken',
-        'userId', 'userEmail', 'userRole', 'userName', 'userTier', 'authProvider'
+        'userId', 'userEmail', 'userRole', 'userName', 'userTier', 'authProvider',
+        'tutorial_completed', 'tutorialStatus', 'pending_tutorial', 'tut_selectedUnivs'
     ];
     sessionKeys.forEach(key => localStorage.removeItem(key));
     sessionStorage.clear();
@@ -782,16 +783,8 @@ function checkLoginStatus() {
     }
 
     if (isLoggedIn) {
-        // 튜토리얼 미완료 학생 → 즉시 리다이렉트 (localStorage 기반 동기 가드)
-        if (userRole === 'student' && localStorage.getItem('tutorial_completed') !== 'true') {
-            const exemptPaths = ['/tutorial', '/login', '/signup', '/welcome', '/social-callback', '/mbti_survey', '/mbti_download', '/checkout', '/success'];
-            const currentPath = window.location.pathname;
-            if (!exemptPaths.some(p => currentPath.startsWith(p))) {
-                window.location.replace('/tutorial');
-                return;
-            }
-        }
-        // 💡 [핵심] 조용히 백그라운드에서 신분(Role)을 재확인
+        // 튜토리얼 미완료 학생 → resolveUserIdentity에서 DB 확인 후 판단
+        // (tutorial_completed가 없어도 즉시 리다이렉트하지 않고, DB의 tutorialRewardClaimed을 먼저 확인)
         resolveUserIdentity('none');
     }
 }

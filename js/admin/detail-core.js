@@ -278,7 +278,8 @@ function renderTierBadge(tier) {
     let html = '';
     if (tier === 'pro') html = '<span class="tier-badge" style="background: linear-gradient(135deg, #F59E0B, #FCD34D); border: 2px solid #F59E0B; color: #78350f;">PRO TIER</span>';
     else if (tier === 'standard') html = '<span class="tier-badge" style="background: linear-gradient(135deg, #94A3B8, #CBD5E1); border: 2px solid #64748B; color: #0F172A;">STANDARD TIER</span>';
-    else if (tier === 'basic') html = '<span class="tier-badge" style="background: linear-gradient(135deg, #3B82F6, #60A5FA); border: 2px solid #3B82F6; color: white;">BASIC TIER</span>';
+    else if (tier === 'starter') html = '<span class="tier-badge" style="background: linear-gradient(135deg, #8B5CF6, #A78BFA); border: 2px solid #8B5CF6; color: white;">STARTER TIER</span>';
+    else if (tier === 'basic') html = '<span class="tier-badge" style="background: linear-gradient(135deg, #059669, #34D399); border: 2px solid #059669; color: white;">BASIC TIER</span>';
     else html = '<span class="tier-badge" style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1;">FREE USER</span>';
     area.innerHTML = html;
 }

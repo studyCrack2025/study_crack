@@ -14,9 +14,9 @@
   <meta name="facebook-domain-verification" content="55eup0qlw7p4hdgj5hyv2fsmhksvoj" />
   <meta name="naver-site-verification" content="e70d8cbe6d67167b9f8f6267985c17c42b616684" />
 
-  <meta name="description" content="스터디크랙 4주 이용권 안내. STARTER, STANDARD, PRO 단건 결제 플랜" />
+  <meta name="description" content="스터디크랙 이용권 안내. BASIC, STARTER, STANDARD, PRO 단건 결제 플랜" />
   <meta property="og:title" content="요금제 안내 | 스터디크랙" />
-  <meta property="og:description" content="STARTER, STANDARD, PRO 4주 이용권 단건 결제 안내" />
+  <meta property="og:description" content="BASIC, STARTER, STANDARD, PRO 이용권 단건 결제 안내" />
   <meta property="og:image" content="https://studycrack.co.kr/og-image.jpg" />
   <meta property="og:url" content="https://studycrack.co.kr/payment" />
   <meta property="og:type" content="website" />
@@ -79,7 +79,7 @@
       <div class="hero-copy">
         <p class="eyebrow">StudyCrack 플랜 안내</p>
         <h1>데이터와 SKY 튜터의<br>전략으로 <em>합격을<br>설계합니다.</em></h1>
-        <p class="hero-desc">4단계 로드맵으로 분석부터 실행,<br>4주 이용권 기반의 맞춤 플래너와<br>중장기 전략까지 함께합니다.</p>
+        <p class="hero-desc">5단계 로드맵으로 분석부터 실행,<br>4주 이용권 기반의 맞춤 플래너와<br>중장기 전략까지 함께합니다.</p>
       </div>
 
       <div class="hero-image-wrap">
@@ -117,7 +117,7 @@
       </div>
     </section>
 
-    <!-- 4단계 로드맵 -->
+    <!-- 5단계 로드맵 -->
     <section class="roadmap-section">
       <div class="roadmap-grid">
         <article class="road-card">
@@ -140,6 +140,22 @@
         <article class="road-card">
           <div class="road-top">
             <span class="road-num">02</span>
+            <strong>합격 예측 분석</strong>
+          </div>
+          <b class="plan-tag plan-basic">BASIC</b>
+          <div class="road-icon">
+            <svg viewBox="0 0 64 64" aria-hidden="true">
+              <rect x="8" y="12" width="48" height="40" rx="6" fill="none" stroke="currentColor" stroke-width="4.5"/>
+              <path d="M8 24h48M20 32h24M20 40h16" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <p>내 점수와 목표 대학<br>합격선 사이의 거리를<br>정밀하게 진단합니다.</p>
+          <i class="road-arrow"><i class="fas fa-chevron-right"></i></i>
+        </article>
+
+        <article class="road-card">
+          <div class="road-top">
+            <span class="road-num">03</span>
             <strong>1주 플래너 진단</strong>
           </div>
           <b class="plan-tag plan-starter">STARTER</b>
@@ -157,7 +173,7 @@
 
         <article class="road-card road-card--std">
           <div class="road-top">
-            <span class="road-num road-num--purple">03</span>
+            <span class="road-num road-num--purple">04</span>
             <strong>합격 플래너 제공</strong>
           </div>
           <b class="plan-tag plan-standard">STANDARD</b>
@@ -174,7 +190,7 @@
 
         <article class="road-card road-card--pro">
           <div class="road-top">
-            <span class="road-num road-num--orange">04</span>
+            <span class="road-num road-num--orange">05</span>
             <strong>프리미엄 전략 관리</strong>
           </div>
           <b class="plan-tag plan-pro">PRO</b>
@@ -196,6 +212,26 @@
 
         <article class="price-row" data-tier="basic">
           <div class="price-name">
+            <h2 class="c-green">BASIC</h2>
+            <p>AI 기반 합격 예측 분석</p>
+          </div>
+          <div class="price-amount">
+            <span class="price-origin">정가 49,000원</span>
+            <div class="price-sale-line"><strong>25,000</strong><span>원</span></div>
+            <span class="price-discount-note">약 49% 할인 · 할인 기간 적용</span>
+          </div>
+          <ul>
+            <li>목표대학 최대 18개 설정</li>
+            <li>합격 컷 대비 거리 분석</li>
+            <li>목표 대학별 효자 과목 발굴</li>
+            <li>과목별 1점당 환산 효율 계산</li>
+            <li>점수 상승 시뮬레이션</li>
+          </ul>
+          <a class="price-btn price-btn--green" href="#checkout" onclick="selectPlan('basic', this.closest('.price-row'))">BASIC 선택하기 <i class="fas fa-arrow-right"></i></a>
+        </article>
+
+        <article class="price-row" data-tier="starter">
+          <div class="price-name">
             <h2 class="c-primary">STARTER</h2>
             <p>SKY 튜터 1주 플래너 진단</p>
           </div>
@@ -207,7 +243,7 @@
             <li>목표 대학 기준 우선순위 제안</li>
             <li>다음 1주 플래너 제시</li>
           </ul>
-          <a class="price-btn price-btn--outline" href="#checkout" onclick="selectPlan('basic', this.closest('.price-row'))">STARTER 선택하기 <i class="fas fa-arrow-right"></i></a>
+          <a class="price-btn price-btn--outline" href="#checkout" onclick="selectPlan('starter', this.closest('.price-row'))">STARTER 선택하기 <i class="fas fa-arrow-right"></i></a>
         </article>
 
         <article class="price-row price-row--popular" data-tier="standard">
@@ -445,14 +481,11 @@
           <strong id="checkoutPlanName">-</strong>
         </div>
 
-        <!-- 특수 옵션 (TEST/TRIAL — 숨김, 조건 충족 시 노출) -->
+        <!-- 특수 옵션 (TEST — 숨김, 조건 충족 시 노출) -->
         <div id="specialOptions" class="special-options" style="display:none;">
           <p class="special-options-label">특수 옵션</p>
           <div id="testOption" class="special-option-btn" style="display:none;" onclick="selectSpecialPlan('test', this)">
             <span class="sop-name">TEST</span><span class="sop-price">100원</span>
-          </div>
-          <div id="trialOption" class="special-option-btn" style="display:none;" onclick="selectSpecialPlan('trial', this)">
-            <span class="sop-name">TRIAL</span><span class="sop-price">30,000원</span>
           </div>
         </div>
 

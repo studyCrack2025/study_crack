@@ -1,10 +1,10 @@
 // 1. 티어별 설명 매핑
 const TIER_DATA = {
     'test':     { desc: '시스템 연동 테스트용 결제' },
-    'basic':    { desc: 'STARTER 1주 플래너 진단 이용권' },
+    'basic':    { desc: 'BASIC AI 기반 합격 예측 분석 이용권' },
+    'starter':  { desc: 'STARTER 1주 플래너 진단 이용권' },
     'standard': { desc: 'STANDARD 4주 합격 플래너 설계 이용권' },
-    'pro':      { desc: 'PRO 4주 프리미엄 전략 관리 이용권' },
-    'trial':    { desc: 'TRIAL 4주 체험 이용권' }
+    'pro':      { desc: 'PRO 4주 프리미엄 전략 관리 이용권' }
 };
 
 let checkoutData = null;

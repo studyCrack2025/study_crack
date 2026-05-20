@@ -34,6 +34,7 @@ const STEPS = [
 let currentStepIdx = 0;
 let tutorialData = { qual: {}, quan: {}, mbti: null, selectedUniv: null, selectedUnivs: null, totalStdScore: 0, examMonth: 'mar' };
 let isInterrupted = false;
+let tutorialCompleted = false;
 let mbtiDimSelections = [null, null, null, null];
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -57,6 +58,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         if (response.ok) {
             const data = await response.json();
+            // 튜토리얼 이미 완료한 유저 → 즉시 홈으로 이동 (재진입 방지)
+            if (data.tutorialRewardClaimed === true) {
+                localStorage.setItem('tutorial_completed', 'true');
+                tutorialCompleted = true;
+                window.location.replace('/');
+                return;
+            }
             if (data && data.tutorialStatus !== undefined) {
                 currentStepIdx = parseInt(data.tutorialStatus, 10);
                 localStorage.setItem('tutorialStatus', currentStepIdx);
@@ -152,6 +160,7 @@ function bindEvents() {
     };
 
     const _saveOnExit = () => {
+        if (tutorialCompleted) return;
         if (!localStorage.getItem('userId')) return;
         const headers = { 'Content-Type': 'application/json' };
         const opts = { method: 'POST', headers, credentials: 'include', keepalive: true };
@@ -1027,6 +1036,8 @@ async function _completeTutorial(redirectUrl) {
         const payload = [{ univ: tutorialData.selectedUniv.school, major: tutorialData.selectedUniv.major }];
         await apiCall('update_target_univs', payload);
     }
+    // _saveOnExit 레이스 방지: beforeunload보다 먼저 플래그 설정
+    tutorialCompleted = true;
     localStorage.removeItem('tutorialStatus');
     localStorage.setItem('tutorial_completed', 'true');
     window.location.href = redirectUrl;
