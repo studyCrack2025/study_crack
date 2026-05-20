@@ -1296,7 +1296,10 @@ async function handleRecommendUniv() {
             });
         }
         recommendedUnivCandidates = Array.from(uniqueMap.values()).slice(0, 3);
-        showRecommendedUnivChoices(recommendedUnivCandidates);
+        const shortageMessage = (recommendedUnivCandidates.length < 3)
+            ? `기준을 충족하는 대학이 부족해 ${recommendedUnivCandidates.length}개만 추천합니다.`
+            : '';
+        showRecommendedUnivChoices(recommendedUnivCandidates, shortageMessage);
     } catch(e) {
         console.error('추천대학 API 오류:', e);
         alert('추천 중 오류가 발생했습니다.');
@@ -1306,7 +1309,7 @@ async function handleRecommendUniv() {
     }
 }
 
-function showRecommendedUnivChoices(candidates) {
+function showRecommendedUnivChoices(candidates, shortageMessage = '') {
     const modalTitle = document.getElementById('modalTitle');
     const listContainer = document.getElementById('stepUnivList');
     const majorList = document.getElementById('stepMajorList');
@@ -1331,6 +1334,20 @@ function showRecommendedUnivChoices(candidates) {
     }
 
     const frag = document.createDocumentFragment();
+    if (shortageMessage) {
+        const note = document.createElement('div');
+        note.style.gridColumn = '1 / -1';
+        note.style.marginBottom = '6px';
+        note.style.padding = '10px 12px';
+        note.style.border = '1px solid #fde68a';
+        note.style.background = '#fffbeb';
+        note.style.borderRadius = '10px';
+        note.style.color = '#92400e';
+        note.style.fontSize = '0.86rem';
+        note.style.fontWeight = '600';
+        note.textContent = shortageMessage;
+        frag.appendChild(note);
+    }
     candidates.forEach((item, idx) => {
         const card = document.createElement('button');
         card.type = 'button';
@@ -2314,6 +2331,34 @@ function renderDetailedSimCard() {
                     </div>`;
             });
 
+            const backtrace = data.backtrace_plan;
+            const formatBacktraceBySubject = (bySubject) => {
+                if (!bySubject) return '';
+                const labelMap = {
+                    kor: '국어',
+                    math: '수학',
+                    inq1: data.sim_data?.inq1?.name || '탐구1',
+                    inq2: data.sim_data?.inq2?.name || '탐구2'
+                };
+                return ['kor', 'math', 'inq1', 'inq2']
+                    .filter(k => Number(bySubject[k]) > 0)
+                    .map(k => `${labelMap[k]} +${Number(bySubject[k])}`)
+                    .join(', ');
+            };
+
+            const hasBacktrace = !!(backtrace && (backtrace.reachable || backtrace.bestEffort));
+            let backtraceReplaceHTML = '';
+            if (hasBacktrace) {
+                const isReachable = backtrace.reachable === true;
+                const planTotal = isReachable ? backtrace.minTotalRaw : backtrace.bestEffort?.minTotalRaw;
+                const planBySubject = isReachable ? backtrace.bySubject : backtrace.bestEffort?.bySubject;
+                const planUi = isReachable ? backtrace.expected?.uiScore : backtrace.bestEffort?.expected?.uiScore;
+                const breakdown = formatBacktraceBySubject(planBySubject);
+                backtraceReplaceHTML = isReachable
+                    ? `<div class="sim-backtrace-result" style="padding:14px; border:1px solid #93c5fd; background:#eff6ff; border-radius:10px; color:#1d4ed8;"><div style="font-size:0.92rem; font-weight:800; margin-bottom:6px;"><i class="fas fa-route"></i> 합격권 역추적 결과</div><div style="font-size:0.84rem; line-height:1.55; color:#334155;">최소 <strong>원점수 +${planTotal}점</strong>이 필요합니다.${breakdown ? `<br>${breakdown}` : ''}${Number.isFinite(Number(planUi)) ? `<br>예상 환산점수: ${Number(planUi).toFixed(1)}점` : ''}</div></div>`
+                    : `<div class="sim-backtrace-result" style="padding:14px; border:1px solid #fdba74; background:#fff7ed; border-radius:10px; color:#c2410c;"><div style="font-size:0.92rem; font-weight:800; margin-bottom:6px;"><i class="fas fa-exclamation-circle"></i> 상한 내 도달 불가</div><div style="font-size:0.84rem; line-height:1.55; color:#334155;">현재 설정 범위에서 합격권 도달은 어렵습니다.${Number.isFinite(Number(planTotal)) ? `<br>최선 조합: 원점수 +${Number(planTotal)}점` : ''}${breakdown ? `<br>${breakdown}` : ''}${Number.isFinite(Number(planUi)) ? `<br>예상 환산점수: ${Number(planUi).toFixed(1)}점` : ''}</div></div>`;
+            }
+
             // 💡 Warning 박스를 세로 정렬(column)에 맞게 HTML 단순화
             let warningHTML = '';
             if (!['standard', 'pro'].includes(currentUserTier) && univChangeRemaining <= 5) {
@@ -2344,7 +2389,7 @@ function renderDetailedSimCard() {
                         공부 방향 설정하기
                     </button>
                 </div>`;
-            } else {
+            } else if (!hasBacktrace) {
                 if (currentScore < 10 && (currentScore + maxRise) < 25) {
                     warningHTML = `<div class="sim-warning" style="color:#c2410c;"><h4 style="color:#c2410c; margin:0; line-height:1.3; font-size:0.95rem;"><i class="fas fa-exclamation-circle"></i> 불합격권입니다</h4><p style="margin:0; line-height:1.4; color:#475569; font-size:0.85rem;">다른 전형이나 대학 고려를 권장합니다.</p></div>`;
                 } else if (currentScore >= 225 || (currentScore + maxRise) >= 250) {
@@ -2357,6 +2402,9 @@ function renderDetailedSimCard() {
                 <div style="display:flex; justify-content:center; align-items:center; font-size:0.75rem; color:#94a3b8; margin-bottom:8px; gap:8px;">
                     <i class="fas fa-chevron-left" style="opacity:0.5;"></i> 과목 스와이프 <i class="fas fa-chevron-right" style="opacity:0.5;"></i>
                 </div>`;
+            const simBodyHTML = hasBacktrace
+                ? `${backtraceReplaceHTML}`
+                : `${subjSwipeHint}<div class="subj-scroll-container">${subjectsHTML}</div>`;
 
             html += `
             <div class="sim-result-card swipe-univ-card" style="flex: 0 0 100%; scroll-snap-align: center; box-sizing: border-box; margin-top: 0; display: flex; flex-direction: column;">
@@ -2371,10 +2419,7 @@ function renderDetailedSimCard() {
                     </div>
                 </div>
                 
-                ${subjSwipeHint}
-                <div class="subj-scroll-container">
-                    ${subjectsHTML}
-                </div>
+                ${simBodyHTML}
                 
                 ${warningHTML}
             </div>`;
@@ -2458,13 +2503,42 @@ function renderDetailedSimCard() {
             `;
         });
 
+        const backtrace = data.backtrace_plan;
+        const formatBacktraceBySubject = (bySubject) => {
+            if (!bySubject) return '';
+            const labelMap = {
+                kor: '국어',
+                math: '수학',
+                inq1: data.sim_data?.inq1?.name || '탐구1',
+                inq2: data.sim_data?.inq2?.name || '탐구2'
+            };
+            return ['kor', 'math', 'inq1', 'inq2']
+                .filter(k => Number(bySubject[k]) > 0)
+                .map(k => `${labelMap[k]} +${Number(bySubject[k])}`)
+                .join(', ');
+        };
+
+        const hasBacktrace = !!(backtrace && (backtrace.reachable || backtrace.bestEffort));
+        let backtraceReplaceHTML = '';
+        if (hasBacktrace) {
+            const isReachable = backtrace.reachable === true;
+            const planTotal = isReachable ? backtrace.minTotalRaw : backtrace.bestEffort?.minTotalRaw;
+            const planBySubject = isReachable ? backtrace.bySubject : backtrace.bestEffort?.bySubject;
+            const planUi = isReachable ? backtrace.expected?.uiScore : backtrace.bestEffort?.expected?.uiScore;
+            const breakdown = formatBacktraceBySubject(planBySubject);
+            backtraceReplaceHTML = isReachable
+                ? `<div class="sim-backtrace-result" style="padding:14px; border:1px solid #93c5fd; background:#eff6ff; border-radius:10px; color:#1d4ed8;"><div style="font-size:0.96rem; font-weight:800; margin-bottom:4px;"><i class="fas fa-route"></i> 합격권 역추적 결과</div><div style="font-size:0.86rem; line-height:1.55; color:#334155;">최소 <strong>원점수 +${planTotal}점</strong>이 필요합니다.${breakdown ? `<br>${breakdown}` : ''}${Number.isFinite(Number(planUi)) ? `<br>예상 환산점수: ${Number(planUi).toFixed(1)}점` : ''}</div></div>`
+                : `<div class="sim-backtrace-result" style="padding:14px; border:1px solid #fdba74; background:#fff7ed; border-radius:10px; color:#c2410c;"><div style="font-size:0.96rem; font-weight:800; margin-bottom:4px;"><i class="fas fa-exclamation-circle"></i> 상한 내 도달 불가</div><div style="font-size:0.86rem; line-height:1.55; color:#334155;">현재 설정 범위에서 합격권 도달은 어렵습니다.${Number.isFinite(Number(planTotal)) ? `<br>최선 조합: 원점수 +${Number(planTotal)}점` : ''}${breakdown ? `<br>${breakdown}` : ''}${Number.isFinite(Number(planUi)) ? `<br>예상 환산점수: ${Number(planUi).toFixed(1)}점` : ''}</div></div>`;
+        }
+
         let warningHTML = '';
         if (!['standard', 'pro'].includes(currentUserTier) && univChangeRemaining <= 5) {
             warningHTML = `<div class="sim-warning upsell-warning"><h4><i class="fas fa-exclamation-triangle"></i> 지금 점수 구조에서는 특정 과목이 결과에 불리하게 작용하고 있습니다.</h4><button onclick="location.href='/payment'" style="width: 100%; padding: 12px; background: #ea580c; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer;">공부 방향 설정하기</button></div>`;
-        } else {
+        } else if (!hasBacktrace) {
             if (currentScore < 10 && (currentScore + maxRise) < 25) warningHTML = `<div class="sim-warning" style="background:#fff7ed; border-color:#fdba74; color:#c2410c;"><i class="fas fa-exclamation-circle"></i><div><strong>여전히 불합격권입니다.</strong></div></div>`; 
             else if (currentScore >= 225 || (currentScore + maxRise) >= 250) warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><i class="fas fa-check-circle"></i><div><strong>이미 상당히 안정권입니다.</strong></div></div>`;
         }
+        const simBodyHTML = hasBacktrace ? backtraceReplaceHTML : `<div class="sim-grid">${subjectsHTML}</div>`;
 
         cardArea.innerHTML = `
             <div class="sim-result-card" style="display:block; height:auto;">
@@ -2478,7 +2552,7 @@ function renderDetailedSimCard() {
                         <span class="score-diff">${currentScore}점</span>
                     </div>
                 </div>
-                <div class="sim-grid">${subjectsHTML}</div>
+                ${simBodyHTML}
                 ${warningHTML}
             </div>
         `;

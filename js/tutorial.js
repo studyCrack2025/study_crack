@@ -870,13 +870,12 @@ async function initSubjectRec() {
     let postSimUnivs = null;
     if (mar && plan) {
         try {
-            const risingForSim = plan.filter(s => s.assigned > 0);
+            const risingForSim = plan.filter(s => s.assigned > 0 && s.key !== 'eng');
             const totalGainForSim = risingForSim.reduce((sum, s) => sum + s.assigned, 0);
             if (totalGainForSim > 0 && tutorialData.qual?.stream && tutorialData.totalStdScore > 0) {
                 // 상승된 원점수 계산
                 const boostedRawScores = {};
                 risingForSim.forEach(s => {
-                    if (s.key === 'eng') return; // 영어는 등급제, 원점수 없음
                     const curRaw = parseInt(mar[s.key]?.raw) || 0;
                     boostedRawScores[s.key] = curRaw + Math.round(s.assigned);
                 });
@@ -901,7 +900,9 @@ async function initSubjectRec() {
 
     // assigned > 0인 과목 우선순위 순서 (블러 판단용)
     const risingByPriority = plan.filter(s => s.assigned > 0);
-    const totalGain = risingByPriority.reduce((sum, s) => sum + s.assigned, 0);
+    const totalGainRawOnly = risingByPriority
+        .filter(s => s.key !== 'eng')
+        .reduce((sum, s) => sum + s.assigned, 0);
 
     const subjectOrder = ['kor', 'math', 'eng', 'inq1', 'inq2'];
     const LABELS = {
@@ -958,24 +959,38 @@ async function initSubjectRec() {
     // 통합 "미래 대학" 섹션: (현재 대학) → (향상 후 대학 3개)
     let futureUnivHtml = '';
     if (univ || (postSimUnivs && postSimUnivs.length > 0)) {
-        const catLabels = ['안정', '적정', '도전'];
-        const catColors = ['#10b981', '#3b82f6', '#f59e0b'];
-        const catBgs = ['#ecfdf5', '#eff6ff', '#fffbeb'];
-
-        const boostedScore = univ ? (univ.currentScore + Math.round(totalGain)) : 0;
+        const catColors = { 안정: '#10b981', 적정: '#3b82f6', 도전: '#f59e0b' };
+        const catBgs = { 안정: '#ecfdf5', 적정: '#eff6ff', 도전: '#fffbeb' };
 
         const currentBlock = univ ? `
             <div class="future-stage future-stage-now">
                 <div class="future-stage-label">현재</div>
                 <div class="future-stage-school">${univ.school}</div>
                 <div class="future-stage-major">${univ.major}</div>
-                <div class="future-stage-score">${univ.currentScore}점</div>
             </div>` : '';
 
-        const futureCards = (postSimUnivs || []).map((u, i) => {
-            const label = catLabels[i] || '';
-            const color = catColors[i] || '#64748b';
-            const bg = catBgs[i] || '#f8fafc';
+        const sortedFutureUnivs = [...(postSimUnivs || [])].sort((a, b) => (a.currentScore || 0) - (b.currentScore || 0));
+        const scoredFutureUnivs = sortedFutureUnivs.map((u, i, arr) => {
+            const n = arr.length;
+            let label = '적정';
+            if (n <= 1) {
+                label = '적정';
+            } else if (n === 2) {
+                label = (i === 0) ? '안정' : '도전';
+            } else if (i === 0) {
+                label = '안정';
+            } else if (i === n - 1) {
+                label = '도전';
+            } else {
+                label = '적정';
+            }
+            return { ...u, _label: label };
+        });
+
+        const futureCards = scoredFutureUnivs.map((u) => {
+            const label = u._label;
+            const color = catColors[label] || '#64748b';
+            const bg = catBgs[label] || '#f8fafc';
             return `
             <div class="future-target-card" style="border-left:3px solid ${color}">
                 <div class="future-card-badge" style="background:${bg};color:${color}">${label}</div>
@@ -991,7 +1006,7 @@ async function initSubjectRec() {
                 ${currentBlock}
                 <div class="future-connector">
                     <div class="future-connector-line"></div>
-                    <div class="future-connector-badge">+${Math.round(totalGain)}점 향상 시</div>
+                    <div class="future-connector-badge">+${Math.round(totalGainRawOnly)}점 향상 시</div>
                     <div class="future-connector-line"></div>
                 </div>
                 <div class="future-stage future-stage-after">
@@ -1011,7 +1026,7 @@ async function initSubjectRec() {
         <div class="score-plan-section">
             <div class="score-plan-header">
                 <span class="score-plan-title">📊 과목별 최적 상승 계획</span>
-                <span class="score-plan-total">합격선까지 총 <strong>+${Math.round(totalGain)}점</strong></span>
+                <span class="score-plan-total">합격선까지 총 <strong>+${Math.round(totalGainRawOnly)}점</strong></span>
             </div>
             <div class="score-plan-rows">${planRows}</div>
             <div class="score-plan-note">3·4순위 전략은 Standard 플랜 시작 후 공개됩니다.</div>
