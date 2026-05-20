@@ -102,16 +102,38 @@ function getPayloadFromToken(token) {
 }
 
 // 분리된 DB 구조에 맞춘 스마트 권한 식별 함수
-async function resolveUserIdentity(eventType = 'none', promoCode = '') {
+async function resolveUserIdentity(eventType = 'none', promoCode = '', options = {}) {
     if (!localStorage.getItem('userId')) return;
 
     try {
-        const userRes = await fetch(USER_API_URL, {
+        const headers = { 'Content-Type': 'application/json' };
+        const bearerToken = options.accessToken || getAccessToken();
+        if (bearerToken) {
+            headers.Authorization = `Bearer ${bearerToken}`;
+        }
+
+        const fetchIdentity = (requestType) => fetch(USER_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             credentials: 'include',
-            body: JSON.stringify({ type: 'get_user' })
+            body: JSON.stringify({ type: requestType })
         });
+
+        const profileMode = sessionStorage.getItem('user_profile_api_mode');
+        const shouldUseLegacy = profileMode === 'legacy';
+        let userRes = shouldUseLegacy ? await fetchIdentity('get_user') : await fetchIdentity('get_login_profile');
+
+        // 백엔드 배포 이전/호환 구간 대비: 경량 타입 미지원 시 기존 get_user 폴백
+        if (!userRes.ok && !shouldUseLegacy) {
+            const unsupportedLightApi = (userRes.status === 400 || userRes.status === 404);
+            const fallbackRes = await fetchIdentity('get_user');
+            if (fallbackRes.ok && unsupportedLightApi) {
+                sessionStorage.setItem('user_profile_api_mode', 'legacy');
+            }
+            userRes = fallbackRes;
+        } else if (userRes.ok && !shouldUseLegacy) {
+            sessionStorage.setItem('user_profile_api_mode', 'light');
+        }
 
         if (userRes.ok) {
             const data = await userRes.json();
@@ -698,7 +720,7 @@ async function handleFinalSubmit() {
                     window.dataLayer.push({ event: "login", user_id: authResult.getIdToken().payload.sub });
 
                     // 학생 가입 이벤트 전달
-                    resolveUserIdentity('signup', promoCode);
+                    resolveUserIdentity('signup', promoCode, { accessToken: getAccessToken() });
                 },
                 onFailure: function(err) {
                     console.error("Auto Login Failed:", err);
@@ -854,7 +876,7 @@ function handleSignIn() {
             window.dataLayer = window.dataLayer || [];
             window.dataLayer.push({ event: "login", user_id: userId });
 
-            resolveUserIdentity('login');
+            resolveUserIdentity('login', '', { accessToken });
         },
         onFailure: function(err) {
             alert(getErrorMessage(err));
