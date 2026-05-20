@@ -1,7 +1,6 @@
 // js/payment.js
 
 const USER_API_URL = CONFIG.api.user;
-const PAYMENT_API_URL = CONFIG.api.payment;
 const FORCE_TEST_PAYMENT_100 = new URLSearchParams(window.location.search).get('testpay') === '1'; // /payment?testpay=1
 
 let selectedProductName = "";
@@ -229,37 +228,9 @@ async function fetchUserInfo(userId) {
         // 프론트엔드에서 남은 기간 및 티어 계산
         calculateUserTierDisplay(data);
         
-        if (data.promoCode && data.promoCode.trim().length > 4) {
-            validatePromoCode(data.promoCode);
-        }
-
         if (selectedTier) _applyPhoneRequiredMessage(document.getElementById('submitBtn'));
     } catch (error) {
         if (error.message !== "Auth expired") console.error("유저 정보 로드 실패:", error);
-    }
-}
-
-async function validatePromoCode(code) {
-    try {
-        const response = await apiFetch(USER_API_URL, {
-            method: 'POST',
-            body: JSON.stringify({
-                type: 'validate_promo_code',
-                data: { promoCode: code }
-            })
-        });
-
-        const result = await response.json();
-
-        // 백엔드에서 isValid: true를 뱉어내면 체험단 메뉴 노출
-        if (result.isValid) {
-            const trialOption = document.getElementById('trialOption');
-            if (trialOption) trialOption.style.display = 'block';
-            const specialOptions = document.getElementById('specialOptions');
-            if (specialOptions) specialOptions.style.display = 'block';
-        }
-    } catch (error) {
-        if (error.message !== "Auth expired") console.error("프로모션 코드 검증 API 호출 실패", error);
     }
 }
 
@@ -397,7 +368,7 @@ function selectPlan(tier, priceRowEl) {
     _applyPhoneRequiredMessage(btn);
 }
 
-// 특수 옵션(TEST/TRIAL) 선택
+// 특수 옵션(TEST) 선택
 function selectSpecialPlan(tier, el) {
     document.querySelectorAll('.special-option-btn').forEach(b => b.classList.remove('selected'));
     if (el) el.classList.add('selected');
@@ -489,7 +460,7 @@ function formatPhoneNumber(rawPhone) {
 }
 
 // 티어별 결제 금액 (서버 사이드 TIER_PRICES 와 동일하게 유지)
-const BASE_TIER_PRICES_KRW = { 'test': 100, 'trial': 30000, 'basic': 25000, 'starter': 39000, 'standard': 49000, 'pro': 149000 };
+const BASE_TIER_PRICES_KRW = { 'test': 100, 'basic': 25000, 'starter': 39000, 'standard': 49000, 'pro': 149000 };
 const TIER_PRICES_KRW = BASE_TIER_PRICES_KRW;
 
 // NicePay JS SDK 결제창 호출
