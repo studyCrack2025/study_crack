@@ -797,6 +797,7 @@ function renderUserInfo(data) {
         let iconClass = '';
 
         if (tier === 'basic') { tierText = 'BASIC'; tierClass = 'tier-badge-basic'; }
+        else if (tier === 'starter') { tierText = 'STARTER'; tierClass = 'tier-badge-basic'; }
         else if (tier === 'standard') { tierText = 'STANDARD'; tierClass = 'tier-badge-standard'; iconClass = 'fa-gem'; }
         else if (tier === 'pro') { tierText = 'PRO'; tierClass = 'tier-badge-pro'; iconClass = 'fa-crown'; }
         else if (tier === 'trial') { tierText = 'TRIAL (무료 체험)'; tierClass = 'tier-badge-trial'; iconClass = 'fa-gift'; }
@@ -2536,8 +2537,8 @@ function applyCoachTierLock() {
 }
 
 function switchWeeklyTab(step) {
-    // STARTER(basic)는 Step 2(심층코칭) 접근 불가
-    if (step === 'step2' && currentUserTier === 'basic') {
+    // BASIC/STARTER는 Step 2(심층코칭) 접근 불가
+    if (step === 'step2' && (currentUserTier === 'basic' || currentUserTier === 'starter')) {
         alert("심층코칭은 STANDARD 이상 플랜에서 이용할 수 있습니다.");
         return;
     }
@@ -2624,14 +2625,18 @@ function renderFeedbackList() {
     const fragment = document.createDocumentFragment(); 
     filtered.forEach(h => {
         const fb = h.tutorFeedback || {};
-        const hasFeedback = fb && (
+        const isSubmitted = fb && fb.submitted === true;
+        const hasFeedback = isSubmitted && (
             (fb.priorityCheck && String(fb.priorityCheck).trim() !== "") ||
             (fb.weakSubject && String(fb.weakSubject).trim() !== "") ||
             (fb.nextWeekTop3 && String(fb.nextWeekTop3).trim() !== "") ||
             (fb.planEvaluation && String(fb.planEvaluation).trim() !== "") ||
             (fb.extraQuestion && String(fb.extraQuestion).trim() !== "") ||
+            (fb.planReason && String(fb.planReason).trim() !== "") ||
+            (fb.questionAnswer && String(fb.questionAnswer).trim() !== "") ||
             (fb.weeklyPlanner && String(fb.weeklyPlanner).trim() !== "") ||
-            (fb.tutorComment && String(fb.tutorComment).trim() !== "")
+            (fb.tutorComment && String(fb.tutorComment).trim() !== "") ||
+            (fb.tutorImage && String(fb.tutorImage).trim() !== "")
         );
 
         const div = document.createElement('div'); 
@@ -2663,7 +2668,8 @@ function openFeedbackModal(data) {
     if ((data.formVersion || 1) >= 2) { openFeedbackModalV2(data, modal, contentArea); return; }
 
     const fb = data.tutorFeedback || {};
-    const hasFeedback = fb && (
+    const isSubmitted = fb && fb.submitted === true;
+    const hasFeedback = isSubmitted && (
         (fb.priorityCheck && String(fb.priorityCheck).trim() !== "") ||
         (fb.weakSubject && String(fb.weakSubject).trim() !== "") ||
         (fb.nextWeekTop3 && String(fb.nextWeekTop3).trim() !== "") ||
@@ -2836,7 +2842,8 @@ function openFeedbackModal(data) {
 
 function openFeedbackModalV2(data, modal, contentArea) {
     const fb = data.tutorFeedback || {};
-    const hasFeedback = fb && (
+    const isSubmitted = fb && fb.submitted === true;
+    const hasFeedback = isSubmitted && (
         (fb.weeklyPlanner && String(fb.weeklyPlanner).trim() !== "") ||
         (fb.planReason && String(fb.planReason).trim() !== "") ||
         (fb.questionAnswer && String(fb.questionAnswer).trim() !== "") ||
@@ -3163,13 +3170,13 @@ async function renderPdfToImages(url, containerId) {
 let currentMobileStep = 0; let wizardSteps = []; let wizardResizeHandler = null;
 
 function openWeeklyCheckModal() {
-    if (!['basic', 'standard', 'pro'].includes(currentUserTier)) {
-        if (confirm("🔒 STARTER 이상 플랜에서 주간 학습점검을 이용할 수 있습니다.\n결제 페이지로 이동하시겠습니까?")) { window.location.href = '/payment'; }
+    if (!['basic', 'starter', 'standard', 'pro'].includes(currentUserTier)) {
+        if (confirm("🔒 BASIC 이상 플랜에서 주간 학습점검을 이용할 수 있습니다.\n결제 페이지로 이동하시겠습니까?")) { window.location.href = '/payment'; }
         return;
     }
-    // STARTER(basic) 1회 제출 제한: 이미 제출 이력이 있으면 차단
-    if (currentUserTier === 'basic' && weeklyDataHistory.length > 0) {
-        alert("STARTER 플랜은 1회 플래너 피드백이 제공됩니다.\n이미 제출을 완료하셨습니다. 추가 제출은 STANDARD 이상 플랜에서 가능합니다.");
+    // BASIC/STARTER 1회 제출 제한: 이미 제출 이력이 있으면 차단
+    if ((currentUserTier === 'basic' || currentUserTier === 'starter') && weeklyDataHistory.length > 0) {
+        alert("BASIC/STARTER 플랜은 1회 플래너 피드백이 제공됩니다.\n이미 제출을 완료하셨습니다. 추가 제출은 STANDARD 이상 플랜에서 가능합니다.");
         return;
     }
     const today = new Date();
@@ -3185,9 +3192,9 @@ function openWeeklyCheckModal() {
         || weeklyDataHistory.find(w => w.title && w.title.replace(/\s/g, '') === currentWeekTitle.replace(/\s/g, ''));
     if (thisWeekData) loadWeeklyDataToForm(thisWeekData); else resetWeeklyForm();
 
-    // STARTER(basic) 티어: Step 2 탭 잠금 표시
+    // BASIC/STARTER 티어: Step 2 탭 잠금 표시
     const step2Btn = modal.querySelector('.tab-btn:nth-child(2)');
-    if (currentUserTier === 'basic') {
+    if (currentUserTier === 'basic' || currentUserTier === 'starter') {
         step2Btn.innerHTML = 'Step 2. 심층코칭 <i class="fas fa-lock" style="margin-left:4px; font-size:0.75rem; color:#94a3b8;"></i>';
         step2Btn.style.opacity = '0.5';
         step2Btn.style.cursor = 'not-allowed';
@@ -3201,8 +3208,8 @@ function openWeeklyCheckModal() {
         if (isMobile) {
             modalContent.classList.add('mobile-wizard-mode');
             wizardSteps = Array.from(modal.querySelectorAll('.check-section, .pro-input-card'));
-            // STARTER(basic)는 Step 2(심층코칭) 카드 제외
-            if (currentUserTier === 'basic') { wizardSteps = wizardSteps.filter(el => !el.classList.contains('pro-input-card')); }
+            // BASIC/STARTER는 Step 2(심층코칭) 카드 제외
+            if (currentUserTier === 'basic' || currentUserTier === 'starter') { wizardSteps = wizardSteps.filter(el => !el.classList.contains('pro-input-card')); }
             if(currentMobileStep >= wizardSteps.length) currentMobileStep = 0;
             updateMobileWizardUI();
         } else {
@@ -3640,14 +3647,17 @@ function renderProReportList(currentKey, isDeadlinePassed) {
         gridDiv.className = 'report-grid';
         
         cachedProReports.forEach(rep => {
-            const isReady = (rep.status === 'published' || rep.status === 'sent');
+            const hasReportLink = !!(rep.reportLink && String(rep.reportLink).trim() !== '');
+            const isReady = (rep.status === 'published' || rep.status === 'sent') && hasReportLink;
             const formattedName = formatReportKey(rep.key);
+            const isPublishedNoLink = (rep.status === 'published' || rep.status === 'sent') && !hasReportLink;
 
             const itemDiv = document.createElement('div');
             itemDiv.className = 'report-item';
             itemDiv.style.cssText = `cursor:${isReady ? 'pointer' : 'default'}; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 15px 12px;`;
             itemDiv.onclick = () => {
                 if(isReady) window.open(rep.reportLink);
+                else if (isPublishedNoLink) alert('리포트 파일 연결을 준비 중입니다. 잠시 후 다시 확인해주세요.');
                 else alert('튜터가 리포트를 최종 검수 중입니다. 잠시만 기다려주세요.');
             };
 
@@ -3660,8 +3670,8 @@ function renderProReportList(currentKey, isDeadlinePassed) {
             nameStrong.textContent = formattedName; // 🔒 안전
 
             const statusSpan = document.createElement('span');
-            statusSpan.style.cssText = isReady ? 'color:#4ade80; font-size:0.8rem;' : 'color:#fbbf24; font-size:0.8rem;';
-            statusSpan.textContent = isReady ? '● 열람 가능' : '● 분석중'; // 🔒 안전
+            statusSpan.style.cssText = isReady ? 'color:#4ade80; font-size:0.8rem;' : (isPublishedNoLink ? 'color:#93c5fd; font-size:0.8rem;' : 'color:#fbbf24; font-size:0.8rem;');
+            statusSpan.textContent = isReady ? '● 열람 가능' : (isPublishedNoLink ? '● 파일 준비중' : '● 분석중'); // 🔒 안전
 
             infoDiv.appendChild(nameStrong);
             infoDiv.appendChild(statusSpan);

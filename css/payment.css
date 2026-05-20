@@ -145,6 +145,7 @@ img, svg { display: block; max-width: 100%; }
 .price-name p { margin: 0; font-size: 14px; color: var(--muted); font-weight: 600; }
 
 .c-primary { color: var(--primary); }
+.c-green { color: #22a861; }
 .c-purple { color: var(--purple); }
 .c-orange { color: var(--orange); }
 
@@ -166,6 +167,8 @@ img, svg { display: block; max-width: 100%; }
 .price-btn--primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
 .price-btn--outline { color: var(--primary); background: #fff; border: 1.5px solid var(--primary); }
 .price-btn--outline:hover { background: var(--primary); color: #fff; }
+.price-btn--green { background: linear-gradient(135deg, #22a861, #1a8f50); color: #fff; }
+.price-btn--green:hover { opacity: .9; transform: translateY(-1px); }
 .price-btn--purple { background: linear-gradient(135deg, var(--purple), #5b2bd3); color: #fff; }
 .price-btn--purple:hover { opacity: .9; transform: translateY(-1px); }
 .price-btn--orange { background: linear-gradient(135deg, var(--orange), #dc6612); color: #fff; }

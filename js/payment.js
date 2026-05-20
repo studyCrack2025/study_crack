@@ -6,10 +6,10 @@ const FORCE_TEST_PAYMENT_100 = new URLSearchParams(window.location.search).get('
 
 let selectedProductName = "";
 let selectedTier = null; 
-const TIER_DISPLAY = { free: 'FREE', basic: 'STARTER', standard: 'STANDARD', pro: 'PRO', trial: 'TRIAL', test: 'TEST' };
+const TIER_DISPLAY = { free: 'FREE', basic: 'BASIC', starter: 'STARTER', standard: 'STANDARD', pro: 'PRO', trial: 'TRIAL', test: 'TEST' };
 
 // 티어 비교를 위한 전역 변수
-const TIER_LEVELS = { 'free': 0, 'trial': 1, 'basic': 2, 'standard': 3, 'pro': 4 };
+const TIER_LEVELS = { 'free': 0, 'trial': 1, 'basic': 2, 'starter': 2.5, 'standard': 3, 'pro': 4 };
 let globalCurrentTier = 'free';
 let globalDaysLeft = 0;
 let globalExpireDate = null; // 기존 만료일(새로운 시작일) 저장용
@@ -489,7 +489,7 @@ function formatPhoneNumber(rawPhone) {
 }
 
 // 티어별 결제 금액 (서버 사이드 TIER_PRICES 와 동일하게 유지)
-const BASE_TIER_PRICES_KRW = { 'test': 100, 'trial': 30000, 'basic': 39000, 'standard': 49000, 'pro': 149000 };
+const BASE_TIER_PRICES_KRW = { 'test': 100, 'trial': 30000, 'basic': 25000, 'starter': 39000, 'standard': 49000, 'pro': 149000 };
 const TIER_PRICES_KRW = BASE_TIER_PRICES_KRW;
 
 // NicePay JS SDK 결제창 호출

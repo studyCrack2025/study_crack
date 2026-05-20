@@ -348,7 +348,7 @@ function renderUserInfo(data) {
 
 function applyUserTier(tier) {
     currentUserTier = tier;
-    const tierDisplayMap = { basic: 'STARTER', standard: 'STANDARD', pro: 'PRO', trial: 'TRIAL', test: 'TEST' };
+    const tierDisplayMap = { basic: 'BASIC', starter: 'STARTER', standard: 'STANDARD', pro: 'PRO', trial: 'TRIAL', test: 'TEST' };
     const profileBox = document.querySelector('.profile-summary');
     if (profileBox) {
         profileBox.classList.remove('tier-basic', 'tier-standard', 'tier-pro', 'tier-black');
