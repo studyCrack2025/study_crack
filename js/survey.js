@@ -522,8 +522,6 @@ async function saveQualitative() {
 
 function loadExamData() {
     const month = document.getElementById('examSelect').value;
-    const warning = document.getElementById('mayWarning');
-    if (warning) warning.style.display = (month === 'may') ? 'block' : 'none';
     const d = examScores[month] || {};
     
     const setVal = (id, val) => { 

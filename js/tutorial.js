@@ -361,13 +361,6 @@ function prevStep() {
     }
 }
 
-// ── 튜토리얼 시험월 선택 토글 ──────────────────────────────────────
-function onTutExamMonthChange() {
-    const month = document.getElementById('tutExamMonth')?.value;
-    const warning = document.getElementById('tutMayWarning');
-    if (warning) warning.style.display = (month === 'may') ? 'block' : 'none';
-}
-
 // ── 성적 입력 바 ──────────────────────────────────────────────────
 function updateScoreBar(inputEl, max, barId) {
     const raw = parseInt(inputEl.value) || 0;
