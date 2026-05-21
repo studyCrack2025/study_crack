@@ -112,12 +112,22 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             headers.Authorization = `Bearer ${bearerToken}`;
         }
 
-        const fetchIdentity = (requestType) => fetch(USER_API_URL, {
-            method: 'POST',
-            headers,
-            credentials: 'include',
-            body: JSON.stringify({ type: requestType })
-        });
+        // 🔥 at 쿠키 만료(1시간) 시 silent_refresh로 자동 갱신 — rt 쿠키(7일) 유효한 동안 세션 유지
+        //    raw fetch만 쓰면 401에서 즉시 handleSignOut → 페이지 로드만 해도 로그아웃되는 문제 방지
+        const fetchIdentity = async (requestType) => {
+            const doFetch = () => fetch(USER_API_URL, {
+                method: 'POST',
+                headers,
+                credentials: 'include',
+                body: JSON.stringify({ type: requestType })
+            });
+            let res = await doFetch();
+            if (res.status === 401) {
+                const refreshed = await tryRefreshToken();
+                if (refreshed) res = await doFetch();
+            }
+            return res;
+        };
 
         const profileMode = sessionStorage.getItem('user_profile_api_mode');
         const shouldUseLegacy = profileMode === 'legacy';
