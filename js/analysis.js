@@ -1805,16 +1805,17 @@ async function fetchSimulationData() {
             if (Array.isArray(cachedSimData)) {
                 const simItem = cachedSimData.find(d => d && d.univ === target.univ && d.major === target.major);
                 if (simItem) {
-                    simDisplayList.push({ ...simItem, originalIdx });
+                    // _uiMode: 'default' | 'loading' | 'backtrace' | 'upsell' (역추적 UX 4-상태)
+                    simDisplayList.push({ ...simItem, originalIdx, _uiMode: 'default' });
                 } else {
-                    simDisplayList.push({ ineligible: true, univ: target.univ, major: target.major, originalIdx });
+                    simDisplayList.push({ ineligible: true, univ: target.univ, major: target.major, originalIdx, _uiMode: 'default' });
                 }
             } else {
-                simDisplayList.push({ ineligible: true, univ: target.univ, major: target.major, originalIdx });
+                simDisplayList.push({ ineligible: true, univ: target.univ, major: target.major, originalIdx, _uiMode: 'default' });
             }
         });
 
-        await enrichBacktracePlansIfNeeded(scoreData, userId);
+        // 역추적은 사용자가 CTA 클릭 시점에 lazy 호출 (enrichBacktracePlansIfNeeded 제거)
 
         if (simDisplayList.length > 0) selectedSimIndex = 0;
         renderSimChart();
@@ -1879,6 +1880,89 @@ function setSimChartType(type) {
     const btnIdx = type === 'bar' ? 0 : 1;
     document.querySelectorAll('.toggle-btn')[btnIdx].classList.add('active');
     renderSimChart();
+}
+
+// ============================================================
+// 역추적 UX (sim-card 4-상태 모델: default / loading / backtrace / upsell)
+// ============================================================
+const BT_LOADING_MIN_MS = 450;     // 분석중 애니메이션 최소 지속 시간 (체감 통제)
+const BT_BACKTRACE_TIERS = ['standard', 'pro']; // 역추적 기능 허용 등급
+
+function _findSimItemByOriginalIdx(originalIdx) {
+    if (!Array.isArray(simDisplayList)) return null;
+    return simDisplayList.find(it => it && it.originalIdx === Number(originalIdx)) || null;
+}
+
+async function requestBacktrace(originalIdx) {
+    const item = _findSimItemByOriginalIdx(originalIdx);
+    if (!item || item.ineligible) return;
+
+    // 1) Tier 게이팅 — standard/pro 외엔 upsell 모드
+    if (!BT_BACKTRACE_TIERS.includes(currentUserTier)) {
+        item._uiMode = 'upsell';
+        renderDetailedSimCard();
+        return;
+    }
+
+    // 2) Loading 모드로 전환 + 최소 딜레이
+    item._uiMode = 'loading';
+    renderDetailedSimCard();
+    const loadingStart = Date.now();
+
+    // 3) 이미 캐시된 backtrace_plan 있으면 API 스킵
+    let plan = item.backtrace_plan || null;
+    if (!plan) {
+        try {
+            const userId = localStorage.getItem('userId');
+            const scoreData = userQuantData?.[currentExamMode]
+                ? JSON.parse(JSON.stringify(userQuantData[currentExamMode]))
+                : null;
+            const res = await apiFetch(UNIV_DATA_API_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    type: 'backtrace_required_raw',
+                    userId,
+                    targetUniv: { univ: item.univ, major: item.major },
+                    userScores: scoreData,
+                    examMode: currentExamMode,
+                    targetUiMin: 100,
+                    targetUiMax: 150,
+                    maxTotalRaw: 20
+                })
+            });
+            if (res.ok) {
+                const payload = await res.json();
+                plan = payload?.result || payload?.backtrace_plan || null;
+            }
+        } catch (e) {
+            console.error('Backtrace fetch error:', e);
+        }
+    }
+
+    // 4) 최소 딜레이 충족
+    const elapsed = Date.now() - loadingStart;
+    if (elapsed < BT_LOADING_MIN_MS) {
+        await new Promise(r => setTimeout(r, BT_LOADING_MIN_MS - elapsed));
+    }
+
+    // 5) 결과 부착 후 모드 전환
+    if (plan) {
+        item.backtrace_plan = plan;
+        item.needs_backtrace = true;
+        item._uiMode = 'backtrace';
+    } else {
+        // 응답 없음/실패 → default로 되돌리고 에러 토스트 대용 alert
+        item._uiMode = 'default';
+        alert('합격권 도달 경로 분석에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    }
+    renderDetailedSimCard();
+}
+
+function goBackFromBacktrace(originalIdx) {
+    const item = _findSimItemByOriginalIdx(originalIdx);
+    if (!item) return;
+    item._uiMode = 'default';
+    renderDetailedSimCard();
 }
 
 let simSvgRefs = null;
@@ -2273,7 +2357,8 @@ function renderDetailedSimCard() {
         return; 
     }
 
-    const buildBacktraceNarrativeCard = (data, currentScore, backtrace, compact = false) => {
+    // 역추적 결과 표시 (확장 그래프 + 압축 narrative)
+    const buildBacktraceNarrativeCard = (data, currentScore, backtrace) => {
         if (!backtrace) return '';
 
         const coreKeys = ['kor', 'math', 'inq1', 'inq2'];
@@ -2283,93 +2368,112 @@ function renderDetailedSimCard() {
             inq1: data.sim_data?.inq1?.name || '탐구1',
             inq2: data.sim_data?.inq2?.name || '탐구2'
         };
-        const maxOneStep = coreKeys.reduce((acc, key) => {
-            const val = Number(data.sim_data?.[key]?.uiDiff || 0);
-            return val > acc ? val : acc;
-        }, 0);
-        const oneStepBest = coreKeys.reduce((best, key) => {
-            const val = Number(data.sim_data?.[key]?.uiDiff || 0);
-            if (!best || val > best.diff) return { key, diff: val };
-            return best;
-        }, null);
-
-        const oneStepUi = Math.max(0, Math.min(250, Number(currentScore || 0) + maxOneStep));
-        const needAfterOne = Math.max(0, 100 - oneStepUi);
         const isReachable = backtrace.reachable === true;
         const planTotal = Number(isReachable ? backtrace.minTotalRaw : backtrace.bestEffort?.minTotalRaw);
         const planBySubject = isReachable ? backtrace.bySubject : backtrace.bestEffort?.bySubject;
         const planUi = Number(isReachable ? backtrace.expected?.uiScore : backtrace.bestEffort?.expected?.uiScore);
-        const additionalFromOne = Number.isFinite(planTotal) ? Math.max(0, planTotal - 1) : null;
-        const breakdown = planBySubject
-            ? coreKeys.filter(k => Number(planBySubject[k]) > 0).map(k => `${labelMap[k]} +${Number(planBySubject[k])}`).join(', ')
+        const breakdownChips = planBySubject
+            ? coreKeys.filter(k => Number(planBySubject[k]) > 0)
+                .map(k => `<span class="bt-chip">${labelMap[k]} <strong>+${Number(planBySubject[k])}</strong></span>`)
+                .join('')
             : '';
 
+        // 확장 막대 그래프 (현재 → 도달, 금색 overlay)
         const markerPos = (score) => `${Math.max(0, Math.min(100, (Number(score) / 250) * 100))}%`;
         const posCurrent = markerPos(currentScore);
-        const posOne = markerPos(oneStepUi);
         const hasPlanUi = Number.isFinite(planUi);
-        const posPlan = hasPlanUi ? markerPos(planUi) : null;
+        const posPlan = hasPlanUi ? markerPos(planUi) : posCurrent;
+        const extWidthPct = hasPlanUi
+            ? Math.max(0, Math.min(100, ((Number(planUi) - Number(currentScore)) / 250) * 100))
+            : 0;
 
-        const narrativeText = isReachable
-            ? `1점 상승 시 ${oneStepUi.toFixed(1)}점(${labelMap[oneStepBest?.key] || '최대효율'} 기준)이며, 합격권까지 ${needAfterOne.toFixed(1)}점 부족합니다. 따라서 최소 원점수 +${planTotal}점이 필요합니다.`
-            : `1점 상승 시 ${oneStepUi.toFixed(1)}점(${labelMap[oneStepBest?.key] || '최대효율'} 기준)이며, 상한 탐색 범위 내 합격권 도달이 어렵습니다.`;
-
-        const wrapPadding = compact ? '12px' : '14px';
-        const titleSize = compact ? '0.9rem' : '0.96rem';
-        const bodySize = compact ? '0.82rem' : '0.86rem';
-
-        return `
-            <div class="sim-backtrace-result" style="padding:${wrapPadding}; border:1px solid ${isReachable ? '#93c5fd' : '#fdba74'}; background:${isReachable ? '#eff6ff' : '#fff7ed'}; border-radius:10px; color:${isReachable ? '#1d4ed8' : '#c2410c'};">
-                <div style="font-size:${titleSize}; font-weight:800; margin-bottom:8px;">
-                    <i class="fas ${isReachable ? 'fa-route' : 'fa-exclamation-circle'}"></i>
-                    ${isReachable ? '합격권 역추적 로드맵' : '합격권 도달 경로 재탐색'}
+        const chartBlock = `
+            <div class="bt-chart">
+                <div class="bt-chart-axis">
+                    <span>0</span>
+                    <span class="bt-axis-cut">합격 100</span>
+                    <span class="bt-axis-safe">안정 150</span>
+                    <span>250</span>
                 </div>
-
-                <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-bottom:10px;">
-                    <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:7px 8px;">
-                        <div style="font-size:0.72rem; color:#64748b; margin-bottom:2px;">현재</div>
-                        <div style="font-size:0.95rem; font-weight:800; color:#0f172a;">${Number(currentScore).toFixed(1)}</div>
-                    </div>
-                    <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:7px 8px;">
-                        <div style="font-size:0.72rem; color:#64748b; margin-bottom:2px;">+1 시뮬</div>
-                        <div style="font-size:0.95rem; font-weight:800; color:#ea580c;">${oneStepUi.toFixed(1)}</div>
-                    </div>
-                    <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:7px 8px;">
-                        <div style="font-size:0.72rem; color:#64748b; margin-bottom:2px;">합격권까지</div>
-                        <div style="font-size:0.95rem; font-weight:800; color:#0f172a;">${needAfterOne.toFixed(1)}</div>
-                    </div>
+                <div class="bt-track">
+                    <div class="bt-guide bt-guide-100" style="left:40%;"></div>
+                    <div class="bt-guide bt-guide-150" style="left:60%;"></div>
+                    ${hasPlanUi ? `<div class="bt-ext-fill" style="left:${posCurrent}; width:${extWidthPct}%;"></div>` : ''}
+                    <div class="bt-dot bt-dot-current" style="left:${posCurrent};" title="현재 ${Number(currentScore).toFixed(1)}점"></div>
+                    ${hasPlanUi ? `<div class="bt-dot bt-dot-target" style="left:${posPlan};" title="${isReachable ? '도달' : '최선'} ${Number(planUi).toFixed(1)}점"></div>` : ''}
                 </div>
-
-                <div style="font-size:${bodySize}; line-height:1.55; color:#334155; margin-bottom:10px;">${narrativeText}</div>
-
-                <div style="margin-bottom:10px;">
-                    <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#94a3b8; margin-bottom:4px;">
-                        <span>0</span><span style="color:#3b82f6; font-weight:700;">합격 100</span><span style="color:#10b981; font-weight:700;">안정 150</span><span>250</span>
-                    </div>
-                    <div style="position:relative; height:12px; background:#e2e8f0; border-radius:999px; overflow:visible;">
-                        <div style="position:absolute; left:40%; top:-3px; bottom:-3px; width:1px; background:#3b82f6;"></div>
-                        <div style="position:absolute; left:60%; top:-3px; bottom:-3px; width:1px; background:#10b981;"></div>
-                        <div style="position:absolute; left:${posCurrent}; top:50%; width:10px; height:10px; border-radius:50%; background:#475569; transform:translate(-50%,-50%); box-shadow:0 0 0 2px #fff;"></div>
-                        <div style="position:absolute; left:${posOne}; top:50%; width:10px; height:10px; border-radius:50%; background:#f97316; transform:translate(-50%,-50%); box-shadow:0 0 0 2px #fff;"></div>
-                        ${hasPlanUi ? `<div style="position:absolute; left:${posPlan}; top:50%; width:10px; height:10px; border-radius:50%; background:${isReachable ? '#2563eb' : '#b45309'}; transform:translate(-50%,-50%); box-shadow:0 0 0 2px #fff;"></div>` : ''}
-                    </div>
-                    <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; margin-top:6px; font-size:0.72rem; color:#64748b;">
-                        <span>현재 ${Number(currentScore).toFixed(1)}</span>
-                        <span>+1 ${oneStepUi.toFixed(1)}</span>
-                        ${hasPlanUi ? `<span>${isReachable ? '도달' : '최선'} ${planUi.toFixed(1)}</span>` : ''}
-                    </div>
-                </div>
-
-                <div style="background:#ffffff; border:1px dashed #cbd5e1; border-radius:8px; padding:9px 10px; font-size:${bodySize}; line-height:1.55; color:#334155;">
-                    ${Number.isFinite(planTotal) ? `최소 조합: <strong>원점수 +${planTotal}점</strong>` : `${escapeHtml(backtrace.error || '역추적 계산 결과가 충분하지 않습니다.')}`}
-                    ${Number.isFinite(additionalFromOne) ? `<br>1점 상승 후 추가 필요: <strong>+${additionalFromOne}점</strong>` : ''}
-                    ${breakdown ? `<br>${breakdown}` : ''}
-                    ${hasPlanUi ? `<br>예상 환산점수: ${planUi.toFixed(1)}점` : ''}
-                    ${!isReachable && backtrace.error ? `<br>${escapeHtml(backtrace.error)}` : ''}
+                <div class="bt-track-labels">
+                    <span class="bt-label-current">현재 <strong>${Number(currentScore).toFixed(1)}</strong></span>
+                    ${hasPlanUi ? `<span class="bt-label-target">${isReachable ? '도달 가능' : '최선'} <strong>${Number(planUi).toFixed(1)}</strong></span>` : ''}
                 </div>
             </div>
         `;
+
+        const reachableMsg = isReachable
+            ? `합격권에 도달하려면 <strong>원점수 +${planTotal}점</strong>이 필요합니다.`
+            : (backtrace.error
+                ? escapeHtml(backtrace.error)
+                : `현재 설정 범위 안에서는 합격권 도달이 어렵습니다.${Number.isFinite(planTotal) ? ` 최선 조합 기준 +${planTotal}점.` : ''}`);
+
+        return `
+            <div class="sim-backtrace-result ${isReachable ? '' : 'bt-unreachable'}">
+                <div class="bt-result-title">
+                    <i class="fas ${isReachable ? 'fa-route' : 'fa-exclamation-circle'}"></i>
+                    ${isReachable ? '합격권 도달 경로' : '합격권 도달 어려움'}
+                </div>
+                ${chartBlock}
+                <div class="bt-narrative">${reachableMsg}</div>
+                ${breakdownChips ? `<div class="bt-chips">${breakdownChips}</div>` : ''}
+            </div>
+        `;
     };
+
+    // 역추적 CTA 버튼 (default 모드 하단)
+    const buildBacktraceCTA = (originalIdx) => `
+        <button class="sim-backtrace-cta" type="button" onclick="requestBacktrace(${originalIdx})">
+            <span class="cta-icon"><i class="fas fa-search-location"></i></span>
+            <span class="cta-text">
+                <span class="cta-headline">현재 점수로는 합격권 도달이 어렵습니다</span>
+                <span class="cta-action">몇 점을 더 받으면 가능한지 확인하기 →</span>
+            </span>
+        </button>
+    `;
+
+    // Loading 본문 (loading 모드)
+    const buildLoadingBlock = () => `
+        <div class="sim-backtrace-loading">
+            <div class="bt-loading-icon"><i class="fas fa-chart-line"></i></div>
+            <div class="bt-progress-bar"><div class="bt-progress-fill"></div></div>
+            <div class="bt-loading-text">합격권 도달 경로 분석 중...</div>
+        </div>
+    `;
+
+    // Upsell 본문 (free/trial/basic 등에서 CTA 누른 경우)
+    const buildUpsellBlock = (originalIdx) => `
+        <div class="sim-backtrace-upsell">
+            <button class="sim-backtrace-back" type="button" onclick="goBackFromBacktrace(${originalIdx})">
+                <i class="fas fa-arrow-left"></i> 다시 보기
+            </button>
+            <div class="bt-upsell-icon"><i class="fas fa-lock"></i></div>
+            <h4>합격권 도달 경로 분석은 Standard 이상 전용입니다</h4>
+            <p>현재 점수로 어떤 과목을 몇 점 올려야 합격권에 도달하는지,
+               SKY 합격생들의 루트 기반으로 정밀하게 분석해드립니다.</p>
+            <ul>
+                <li><i class="fas fa-check"></i> 과목별 정확한 원점수 상승 목표</li>
+                <li><i class="fas fa-check"></i> 합격권 도달까지 필요한 학습 기간</li>
+                <li><i class="fas fa-check"></i> 매주 어떻게 공부할지 플래너 제공</li>
+            </ul>
+            <button class="bt-upsell-btn" type="button" onclick="location.href='/payment'">멤버십 둘러보기 →</button>
+        </div>
+    `;
+
+    // Backtrace 결과 본문 wrapper (뒤로가기 + 결과 카드)
+    const buildBacktraceBlock = (data, currentScore, originalIdx) => `
+        <button class="sim-backtrace-back" type="button" onclick="goBackFromBacktrace(${originalIdx})">
+            <i class="fas fa-arrow-left"></i> 다시 보기
+        </button>
+        ${buildBacktraceNarrativeCard(data, currentScore, data.backtrace_plan)}
+    `;
 
     // ==========================================
     // [1] 모바일 전용 로직: 대학 카드 및 과목 카드 가로 스와이프
@@ -2473,7 +2577,7 @@ function renderDetailedSimCard() {
                 subjectsHTML += `
                     <div class="sim-item swipe-subj-card ${isBest ? 'best-pick' : ''}">
                         <div class="sim-item-header" style="margin-bottom:6px;">
-                            <span style="font-weight:700;">${escapeHtml(info.name || sub.name)} <span style="font-size:0.75rem; font-weight:normal;">(+1점)</span></span>
+                            <span style="font-weight:700;">${escapeHtml(info.name || sub.name)} <span style="font-size:0.75rem; font-weight:normal; color:#64748b;">1점 상승 시</span></span>
                             <span style="color:${info.uiDiff > 0 ? '#ef4444' : '#94a3b8'}; font-weight:800;">+${diffVal}점</span>
                         </div>
                         <div class="sim-item-body" style="font-size:0.85rem; line-height:1.4;">
@@ -2482,47 +2586,16 @@ function renderDetailedSimCard() {
                     </div>`;
             });
 
-            const backtrace = data.backtrace_plan;
-            const inferredBacktraceZone = (Math.round(Number(data.base_ui_score || 0)) <= 0 && maxRise < 15);
-            const hasBacktrace = !!(backtrace && (data.needs_backtrace || inferredBacktraceZone));
-            const backtraceReplaceHTML = hasBacktrace ? buildBacktraceNarrativeCard(data, currentScore, backtrace, true) : '';
+            // 역추적 CTA 노출 조건: UI 점수 100 미만 + 지원 가능
+            const uiMode = data._uiMode || 'default';
+            const showBtCTA = (currentScore < 100 && !data.ineligible && data.sim_data);
 
-            // 💡 Warning 박스를 세로 정렬(column)에 맞게 HTML 단순화
+            // Warning 박스 — 합격권 안정/불합격권만 표시 (구매 유도는 역추적 CTA/upsell로 일원화)
             let warningHTML = '';
-            if (!['standard', 'pro'].includes(currentUserTier) && univChangeRemaining <= 5) {
-                warningHTML = `
-                <div class="sim-warning upsell-warning" style="background:#fff7ed; border:1px solid #fdba74; padding:18px; border-radius:10px; margin-top:15px;">
-                    
-                    <div style="background: linear-gradient(90deg, #ea580c, #f97316); color: white; padding: 14px 12px; border-radius: 8px; font-size: 0.95rem; font-weight: 800; text-align: center; margin-bottom: 18px; line-height: 1.5; box-shadow: 0 3px 6px rgba(234,88,12,0.25); word-break:keep-all;">
-                        🎓 SKY 합격생들이 직접 짜준 플래너로<br>합격생이 실제로 밟아온 루트로 공부하세요!
-                    </div>
-
-                    <h4 style="color:#c2410c; margin:0 0 12px 0; line-height:1.3; font-size:1rem; font-weight:800;">
-                        <i class="fas fa-exclamation-triangle" style="margin-right:4px;"></i> 공부 방향 설정이 필요합니다
-                    </h4>
-                    
-                    <p style="margin:0 0 8px 0; line-height:1.5; color:#475569; font-size:0.85rem; word-break:keep-all;">
-                        어떤 과목이 중요한지는 확인됐지만, <strong>어떻게 점수를 올려야 할지</strong>는 아직 정해지지 않은 상태입니다.
-                    </p>
-                    
-                    <p style="margin:0 0 12px 0; line-height:1.5; color:#475569; font-size:0.85rem; word-break:keep-all;">
-                        특히 학기 초에 방향이 잘못 잡히면 <strong><span style="color:#ea580c;">시간만 낭비</span></strong>하게 되는 경우가 많습니다. 올바른 방향이 전제되지 않은 노력은 결과로 이어지기 어렵습니다.
-                    </p>
-
-                    <div style="background:#ffedd5; color:#9a3412; padding:10px 12px; border-radius:8px; font-size:0.85rem; font-weight:800; margin-bottom:15px; text-align:center; word-break:keep-all;">
-                        👉 지금 방향을 잡느냐에 따라 결과가 완전히 달라집니다.
-                    </div>
-
-                    <button onclick="location.href='/payment'" style="width:100%; padding:14px; background:#ea580c; color:white; border:none; border-radius:8px; font-weight:bold; font-size:1rem; cursor:pointer; box-shadow:0 4px 6px rgba(234, 88, 12, 0.25);">
-                        공부 방향 설정하기
-                    </button>
-                </div>`;
-            } else if (!hasBacktrace) {
-                if (currentScore < 10 && (currentScore + maxRise) < 25) {
-                    warningHTML = `<div class="sim-warning" style="color:#c2410c;"><h4 style="color:#c2410c; margin:0; line-height:1.3; font-size:0.95rem;"><i class="fas fa-exclamation-circle"></i> 불합격권입니다</h4><p style="margin:0; line-height:1.4; color:#475569; font-size:0.85rem;">다른 전형이나 대학 고려를 권장합니다.</p></div>`;
-                } else if (currentScore >= 225 || (currentScore + maxRise) >= 250) {
-                    warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><h4 style="color:#166534; margin:0; line-height:1.3; font-size:0.95rem;"><i class="fas fa-check-circle"></i> 안정권입니다</h4><p style="margin:0; line-height:1.4; color:#475569; font-size:0.85rem;">상위 대학 도전을 고려해보세요.</p></div>`;
-                }
+            if (currentScore < 10 && (currentScore + maxRise) < 25) {
+                warningHTML = `<div class="sim-warning" style="color:#c2410c;"><h4 style="color:#c2410c; margin:0; line-height:1.3; font-size:0.95rem;"><i class="fas fa-exclamation-circle"></i> 불합격권입니다</h4><p style="margin:0; line-height:1.4; color:#475569; font-size:0.85rem;">다른 전형이나 대학 고려를 권장합니다.</p></div>`;
+            } else if (currentScore >= 225 || (currentScore + maxRise) >= 250) {
+                warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><h4 style="color:#166534; margin:0; line-height:1.3; font-size:0.95rem;"><i class="fas fa-check-circle"></i> 안정권입니다</h4><p style="margin:0; line-height:1.4; color:#475569; font-size:0.85rem;">상위 대학 도전을 고려해보세요.</p></div>`;
             }
 
             // 💡 과목 컨테이너 바로 위에 과목 스와이프 안내 표시
@@ -2530,9 +2603,13 @@ function renderDetailedSimCard() {
                 <div style="display:flex; justify-content:center; align-items:center; font-size:0.75rem; color:#94a3b8; margin-bottom:8px; gap:8px;">
                     <i class="fas fa-chevron-left" style="opacity:0.5;"></i> 과목 스와이프 <i class="fas fa-chevron-right" style="opacity:0.5;"></i>
                 </div>`;
-            const simBodyHTML = hasBacktrace
-                ? `${backtraceReplaceHTML}`
-                : `${subjSwipeHint}<div class="subj-scroll-container">${subjectsHTML}</div>`;
+            const defaultBody = `${subjSwipeHint}<div class="subj-scroll-container">${subjectsHTML}</div>${showBtCTA ? buildBacktraceCTA(data.originalIdx) : ''}`;
+
+            let simBodyHTML;
+            if (uiMode === 'loading') simBodyHTML = buildLoadingBlock();
+            else if (uiMode === 'backtrace' && data.backtrace_plan) simBodyHTML = buildBacktraceBlock(data, currentScore, data.originalIdx);
+            else if (uiMode === 'upsell') simBodyHTML = buildUpsellBlock(data.originalIdx);
+            else simBodyHTML = defaultBody;
 
             html += `
             <div class="sim-result-card swipe-univ-card" style="flex: 0 0 100%; scroll-snap-align: center; box-sizing: border-box; margin-top: 0; display: flex; flex-direction: column;">
@@ -2621,7 +2698,7 @@ function renderDetailedSimCard() {
             subjectsHTML += `
                 <div class="sim-item ${isBest ? 'best-pick' : ''}" style="display:flex; flex-direction:column; justify-content:flex-start; height:100%;">
                     <div class="sim-item-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:8px;">
-                        <span style="flex:1; min-width:0; font-weight:700; color:#334155;">${escapeHtml(info.name || sub.name)} (+1점)</span>
+                        <span style="flex:1; min-width:0; font-weight:700; color:#334155;">${escapeHtml(info.name || sub.name)} <span style="font-size:0.78rem; font-weight:normal; color:#64748b;">1점 상승 시</span></span>
                         <span style="flex-shrink:0; color:${info.uiDiff > 0 ? '#ef4444' : '#94a3b8'}; font-weight:700;">+${diffVal}점</span>
                     </div>
                     <div class="sim-item-body" style="flex:1;">
@@ -2631,19 +2708,19 @@ function renderDetailedSimCard() {
             `;
         });
 
-        const backtrace = data.backtrace_plan;
-        const inferredBacktraceZone = (Math.round(Number(data.base_ui_score || 0)) <= 0 && maxRise < 15);
-        const hasBacktrace = !!(backtrace && (data.needs_backtrace || inferredBacktraceZone));
-        const backtraceReplaceHTML = hasBacktrace ? buildBacktraceNarrativeCard(data, currentScore, backtrace, false) : '';
+        const uiMode = data._uiMode || 'default';
+        const showBtCTA = (currentScore < 100 && !data.ineligible && data.sim_data);
 
         let warningHTML = '';
-        if (!['standard', 'pro'].includes(currentUserTier) && univChangeRemaining <= 5) {
-            warningHTML = `<div class="sim-warning upsell-warning"><h4><i class="fas fa-exclamation-triangle"></i> 지금 점수 구조에서는 특정 과목이 결과에 불리하게 작용하고 있습니다.</h4><button onclick="location.href='/payment'" style="width: 100%; padding: 12px; background: #ea580c; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer;">공부 방향 설정하기</button></div>`;
-        } else if (!hasBacktrace) {
-            if (currentScore < 10 && (currentScore + maxRise) < 25) warningHTML = `<div class="sim-warning" style="background:#fff7ed; border-color:#fdba74; color:#c2410c;"><i class="fas fa-exclamation-circle"></i><div><strong>여전히 불합격권입니다.</strong></div></div>`; 
-            else if (currentScore >= 225 || (currentScore + maxRise) >= 250) warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><i class="fas fa-check-circle"></i><div><strong>이미 상당히 안정권입니다.</strong></div></div>`;
-        }
-        const simBodyHTML = hasBacktrace ? backtraceReplaceHTML : `<div class="sim-grid">${subjectsHTML}</div>`;
+        if (currentScore < 10 && (currentScore + maxRise) < 25) warningHTML = `<div class="sim-warning" style="background:#fff7ed; border-color:#fdba74; color:#c2410c;"><i class="fas fa-exclamation-circle"></i><div><strong>여전히 불합격권입니다.</strong></div></div>`;
+        else if (currentScore >= 225 || (currentScore + maxRise) >= 250) warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><i class="fas fa-check-circle"></i><div><strong>이미 상당히 안정권입니다.</strong></div></div>`;
+
+        const defaultBody = `<div class="sim-grid">${subjectsHTML}</div>${showBtCTA ? buildBacktraceCTA(data.originalIdx) : ''}`;
+        let simBodyHTML;
+        if (uiMode === 'loading') simBodyHTML = buildLoadingBlock();
+        else if (uiMode === 'backtrace' && data.backtrace_plan) simBodyHTML = buildBacktraceBlock(data, currentScore, data.originalIdx);
+        else if (uiMode === 'upsell') simBodyHTML = buildUpsellBlock(data.originalIdx);
+        else simBodyHTML = defaultBody;
 
         cardArea.innerHTML = `
             <div class="sim-result-card" style="display:block; height:auto;">

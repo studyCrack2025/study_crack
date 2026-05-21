@@ -250,6 +250,130 @@ header#site-header .nav-links a.active-link { color: #4c79ee; }
 
 
 /* ============================================================
+   역추적 UX (backtrace) — sim-card 4-상태: default/loading/backtrace/upsell
+   ============================================================ */
+:root {
+    --bt-gold-light: #fde68a;
+    --bt-gold-soft:  #fef3c7;
+    --bt-gold-base:  #f59e0b;
+    --bt-gold-deep:  #b45309;
+    --bt-gold-bg:    rgba(245, 158, 11, 0.18);
+}
+
+/* CTA 버튼 (default 모드 하단) */
+.sim-backtrace-cta {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; margin-top: 16px; padding: 14px 16px;
+    background: linear-gradient(135deg, var(--bt-gold-soft) 0%, var(--bt-gold-light) 100%);
+    border: 1px solid var(--bt-gold-light);
+    border-left: 4px solid var(--bt-gold-deep);
+    border-radius: 10px;
+    color: #78350f; text-align: left; cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    font-family: inherit;
+}
+.sim-backtrace-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(180, 83, 9, 0.18); }
+.sim-backtrace-cta .cta-icon { font-size: 1.3rem; color: var(--bt-gold-deep); flex-shrink: 0; }
+.sim-backtrace-cta .cta-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.sim-backtrace-cta .cta-headline { font-size: 0.92rem; font-weight: 800; color: #7c2d12; }
+.sim-backtrace-cta .cta-action { font-size: 0.82rem; font-weight: 600; color: #b45309; }
+
+/* Loading 본문 */
+.sim-backtrace-loading {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    padding: 30px 16px; background: #f8fafc; border-radius: 10px;
+    border: 1px solid #e2e8f0;
+}
+.sim-backtrace-loading .bt-loading-icon { font-size: 1.8rem; color: #3b82f6; animation: btSpin 1.2s linear infinite; }
+.sim-backtrace-loading .bt-loading-text { font-size: 0.88rem; color: #475569; font-weight: 600; }
+.sim-backtrace-loading .bt-progress-bar { width: 100%; max-width: 240px; height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+.sim-backtrace-loading .bt-progress-fill { width: 0; height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa); border-radius: 999px; animation: btProgress 1.4s ease-out forwards; }
+@keyframes btSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes btProgress { 0% { width: 0; } 70% { width: 75%; } 100% { width: 100%; } }
+
+/* 뒤로가기 버튼 */
+.sim-backtrace-back {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: transparent; border: 1px solid #cbd5e1; color: #475569;
+    padding: 6px 12px; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
+    cursor: pointer; margin-bottom: 12px;
+    font-family: inherit;
+}
+.sim-backtrace-back:hover { background: #f1f5f9; }
+
+/* Backtrace 결과 카드 */
+.sim-backtrace-result {
+    padding: 16px; border: 1px solid var(--bt-gold-light); background: linear-gradient(180deg, #fffbeb 0%, #ffffff 80%);
+    border-radius: 12px; color: #78350f;
+    animation: btFadeIn 0.25s ease-out;
+}
+.sim-backtrace-result.bt-unreachable { border-color: #fdba74; background: linear-gradient(180deg, #fff7ed 0%, #ffffff 80%); color: #9a3412; }
+.sim-backtrace-result .bt-result-title { font-size: 0.98rem; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.sim-backtrace-result .bt-narrative { font-size: 0.9rem; line-height: 1.55; color: #334155; margin: 12px 0 10px; }
+.sim-backtrace-result .bt-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.sim-backtrace-result .bt-chip { background: #fff; border: 1px solid var(--bt-gold-light); padding: 5px 10px; border-radius: 999px; font-size: 0.8rem; color: #78350f; }
+.sim-backtrace-result .bt-chip strong { color: var(--bt-gold-deep); margin-left: 2px; }
+@keyframes btFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* 확장 막대 그래프 (현재 → 도달, 금색 overlay) */
+.bt-chart { margin: 4px 0 6px; }
+.bt-chart .bt-chart-axis { display: flex; justify-content: space-between; font-size: 0.7rem; color: #94a3b8; margin-bottom: 6px; }
+.bt-chart .bt-chart-axis .bt-axis-cut { color: #2563eb; font-weight: 700; }
+.bt-chart .bt-chart-axis .bt-axis-safe { color: #10b981; font-weight: 700; }
+.bt-chart .bt-track { position: relative; height: 14px; background: #e2e8f0; border-radius: 999px; overflow: visible; }
+.bt-chart .bt-guide { position: absolute; top: -3px; bottom: -3px; width: 1px; }
+.bt-chart .bt-guide-100 { background: #2563eb; }
+.bt-chart .bt-guide-150 { background: #10b981; }
+.bt-chart .bt-ext-fill {
+    position: absolute; top: 0; bottom: 0;
+    background: linear-gradient(90deg, var(--bt-gold-bg) 0%, var(--bt-gold-base) 100%);
+    border-radius: 0 999px 999px 0;
+    animation: btExtGrow 0.55s ease-out;
+    transform-origin: left center;
+}
+.bt-chart .bt-dot {
+    position: absolute; top: 50%; width: 14px; height: 14px; border-radius: 50%;
+    transform: translate(-50%, -50%); box-shadow: 0 0 0 2px #fff;
+}
+.bt-chart .bt-dot-current { background: #1e293b; }
+.bt-chart .bt-dot-target {
+    background: var(--bt-gold-base);
+    box-shadow: 0 0 0 2px #fff, 0 0 0 5px var(--bt-gold-bg);
+    animation: btPulse 1.6s ease-in-out infinite;
+}
+.bt-chart .bt-track-labels { display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.75rem; color: #475569; }
+.bt-chart .bt-track-labels .bt-label-current strong { color: #1e293b; }
+.bt-chart .bt-track-labels .bt-label-target { color: var(--bt-gold-deep); font-weight: 700; }
+.bt-chart .bt-track-labels .bt-label-target strong { color: var(--bt-gold-deep); }
+@keyframes btExtGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes btPulse {
+    0%, 100% { box-shadow: 0 0 0 2px #fff, 0 0 0 5px var(--bt-gold-bg); }
+    50%      { box-shadow: 0 0 0 2px #fff, 0 0 0 8px var(--bt-gold-bg); }
+}
+
+/* Upsell 본문 */
+.sim-backtrace-upsell {
+    padding: 24px 20px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px;
+    text-align: center; color: #9a3412;
+    animation: btFadeIn 0.25s ease-out;
+}
+.sim-backtrace-upsell .sim-backtrace-back { float: left; margin-bottom: 8px; }
+.sim-backtrace-upsell .bt-upsell-icon { font-size: 2rem; color: #ea580c; margin-bottom: 10px; }
+.sim-backtrace-upsell h4 { margin: 0 0 10px; font-size: 1.02rem; color: #7c2d12; font-weight: 800; line-height: 1.4; }
+.sim-backtrace-upsell p { margin: 0 0 16px; font-size: 0.88rem; line-height: 1.55; color: #78350f; word-break: keep-all; }
+.sim-backtrace-upsell ul { list-style: none; padding: 0; margin: 0 0 18px; text-align: left; display: inline-block; }
+.sim-backtrace-upsell ul li { padding: 5px 0; font-size: 0.86rem; color: #78350f; }
+.sim-backtrace-upsell ul li i { color: #16a34a; margin-right: 8px; }
+.sim-backtrace-upsell .bt-upsell-btn {
+    width: 100%; padding: 13px; background: #ea580c; color: white; border: none; border-radius: 8px;
+    font-weight: 800; font-size: 0.98rem; cursor: pointer;
+    box-shadow: 0 3px 8px rgba(234, 88, 12, 0.25);
+    font-family: inherit;
+}
+.sim-backtrace-upsell .bt-upsell-btn:hover { background: #c2410c; }
+
+
+/* ============================================================
    [5] 기능 3: 코칭 및 주간 점검
    ============================================================ */
 .coach-container { display: flex; flex-direction: column; gap: 20px; }
