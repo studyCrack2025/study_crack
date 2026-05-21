@@ -511,6 +511,12 @@ async function fetchTutorialRecommendations(stream, mar, totalStdScore, examMont
             major: extraOptions.selectedUniv.major
         };
     }
+    // 로직 1: 초기 추천 3대학과 중복 방지를 위한 제외 목록
+    if (extraOptions && Array.isArray(extraOptions.excludeUnivs) && extraOptions.excludeUnivs.length > 0) {
+        payload.excludeUnivs = extraOptions.excludeUnivs
+            .filter(u => u && u.univ && u.major)
+            .map(u => ({ univ: u.univ, major: u.major }));
+    }
     if (extraOptions && Number.isFinite(Number(extraOptions.minCurrentScore))) {
         payload.minCurrentScore = Number(extraOptions.minCurrentScore);
     }
@@ -761,13 +767,16 @@ function gradeToApproxPct(grd) {
     return map[String(grd)] || 50;
 }
 
-function calcGreedySubjectPlan(univ, mar, mbti) {
+// deltaOverride: 부스트 폭을 명시적으로 지정 (로직 2 retry용). null이면 기존 자동 산정 사용
+function calcGreedySubjectPlan(univ, mar, mbti, deltaOverride = null) {
     const currentScore = univ.currentScore || 0;
 
     // delta: UI 스케일(0~250) 부족분을 원점수 단위로 환산
     // UI 1점 ≈ 원점수 0.3~0.5점 (대학별 가중합 계수에 따라 다름)
     const uiGap = Math.max(20, 100 - currentScore);
-    const delta = Math.min(30, Math.max(5, Math.round(uiGap * 0.35)));
+    const delta = (deltaOverride !== null && Number.isFinite(deltaOverride))
+        ? Math.min(50, Math.max(5, Math.round(deltaOverride)))
+        : Math.min(30, Math.max(5, Math.round(uiGap * 0.35)));
 
     const w = MBTI_SUBJECT_WEIGHTS[mbti] || [0.5, 0.7, 0.7, 0.4];
     // w = [국어, 수학, 탐구, 영어]
@@ -812,6 +821,8 @@ function calcGreedySubjectPlan(univ, mar, mbti) {
 
     // 최종 효율 = MBTI가중치 × (1 - 현재백분위/100) × 대학반영비율
     // hardLimit = min(기본한도, 만점 - 현재원점수) → 만점 초과 방지
+    // 로직 2 retry로 deltaOverride가 들어왔으면 기본 한도를 2배까지 허용 (delta를 다 분배할 수 있게)
+    const limitMultiplier = (deltaOverride !== null && deltaOverride > 25) ? 2 : 1;
     const subjects = ['kor', 'math', 'inq1', 'inq2', 'eng'].map(key => {
         const room = key === 'eng'
             ? Math.max(0, currentRaw.eng - 1)  // 영어: 등급 낮출 여유 (1등급이면 0)
@@ -821,7 +832,7 @@ function calcGreedySubjectPlan(univ, mar, mbti) {
             label: LABELS[key],
             color: COLORS[key],
             efficiency: mbtiW[key] * (1 - curPct[key] / 100) * ur[key],
-            hardLimit: Math.min(BASE_HARD_LIMIT[key], room)
+            hardLimit: Math.min(BASE_HARD_LIMIT[key] * limitMultiplier, room)
         };
     }).sort((a, b) => b.efficiency - a.efficiency);
 
@@ -849,47 +860,75 @@ async function initSubjectRec() {
     const mar  = tutorialData.quan?.[activeMonth];
     const mbti = tutorialData.mbti;
 
+    // 로직 1: 초기 추천 3대학을 부스트 추천에서 제외하기 위한 목록
+    const excludeUnivs = (tutorialData.selectedUnivs || [])
+        .map(u => ({ univ: u.school, major: u.major }))
+        .filter(u => u.univ && u.major);
+
+    // 로직 2: retry 패턴 — 추천 3개 미달 시 부스트 폭(DELTA_STEP=8)씩 확대, 최대 3회
+    const DELTA_STEP = 8;
+    const DELTA_HARD_CAP = 45;
+    const MAX_RETRIES = 3;
+
     let plan = null;
-    if (univ && mar && mbti) {
-        try { plan = calcGreedySubjectPlan(univ, mar, mbti); } catch(e) {}
-    }
-
-    let estimatedMonths = 3;
-    try {
-        const res = await tutorialAnalysisFetch({
-            method: 'POST',
-            body: JSON.stringify({ type: 'get_estimated_months' })
-        });
-        if (res.ok) {
-            const d = await res.json();
-            if (d.months) estimatedMonths = d.months;
-        }
-    } catch(e) {}
-
-    // 점수 향상 후 대학 추천 (Greedy 계획 기반 — 상승된 원점수를 백엔드에 전달하여 정확한 표준점수 역산)
     let postSimUnivs = null;
-    if (mar && plan) {
-        try {
-            const risingForSim = plan.filter(s => s.assigned > 0 && s.key !== 'eng');
-            const totalGainForSim = risingForSim.reduce((sum, s) => sum + s.assigned, 0);
-            if (totalGainForSim > 0 && tutorialData.qual?.stream && tutorialData.totalStdScore > 0) {
-                // 상승된 원점수 계산
+    let finalDelta = 0;
+
+    if (univ && mar && mbti) {
+        // 1차 시도: deltaOverride 없이 기존 자동 산정
+        try { plan = calcGreedySubjectPlan(univ, mar, mbti); } catch(e) {}
+
+        if (plan && tutorialData.qual?.stream && tutorialData.totalStdScore > 0) {
+            const baseDelta = plan.filter(s => s.assigned > 0 && s.key !== 'eng')
+                .reduce((sum, s) => sum + s.assigned, 0);
+
+            for (let tryCount = 0; tryCount < MAX_RETRIES; tryCount++) {
+                const targetDelta = tryCount === 0 ? baseDelta : Math.min(DELTA_HARD_CAP, baseDelta + tryCount * DELTA_STEP);
+
+                // tryCount > 0 이면 재계획 (확장 한도로 재분배)
+                if (tryCount > 0) {
+                    try { plan = calcGreedySubjectPlan(univ, mar, mbti, targetDelta); } catch(e) { break; }
+                }
+
+                const risingForSim = plan.filter(s => s.assigned > 0 && s.key !== 'eng');
+                const totalGainForSim = risingForSim.reduce((sum, s) => sum + s.assigned, 0);
+                if (totalGainForSim <= 0) break;
+
                 const boostedRawScores = {};
                 risingForSim.forEach(s => {
                     const curRaw = parseInt(mar[s.key]?.raw) || 0;
                     boostedRawScores[s.key] = curRaw + Math.round(s.assigned);
                 });
-                postSimUnivs = await fetchTutorialRecommendations(
-                    tutorialData.qual.stream, mar, tutorialData.totalStdScore,
-                    tutorialData.examMonth || 'mar', boostedRawScores,
-                    {
-                        selectedUniv: { univ: univ.school, major: univ.major },
-                        minCurrentScore: Number(univ.currentScore || 0) // 폴백/호환용 잔류
-                    }
-                );
+
+                let attemptResult = null;
+                try {
+                    attemptResult = await fetchTutorialRecommendations(
+                        tutorialData.qual.stream, mar, tutorialData.totalStdScore,
+                        tutorialData.examMonth || 'mar', boostedRawScores,
+                        {
+                            selectedUniv: { univ: univ.school, major: univ.major },
+                            excludeUnivs,
+                            minCurrentScore: Number(univ.currentScore || 0) // 폴백/호환용 잔류
+                        }
+                    );
+                } catch(e) { break; }
+
+                postSimUnivs = attemptResult;
+                finalDelta = totalGainForSim;
+
+                if ((attemptResult || []).length >= 3) break;
+                if (targetDelta >= DELTA_HARD_CAP) break;
             }
-        } catch(e) {}
+        }
     }
+
+    // 로직 3: 학습 기간 산정 (8~16주, RAW_PER_WEEK=1.5)
+    const RAW_PER_WEEK = 1.5;
+    const MIN_WEEKS = 8;
+    const MAX_WEEKS = 16;
+    const estimatedWeeks = finalDelta > 0
+        ? Math.min(MAX_WEEKS, Math.max(MIN_WEEKS, Math.ceil(finalDelta / RAW_PER_WEEK)))
+        : MIN_WEEKS;
 
     showTutLoading(false);
 
@@ -1024,7 +1063,10 @@ async function initSubjectRec() {
                 </div>
             </div>
             <div class="future-period">
-                Standard 이용 시 평균 <strong>${estimatedMonths}개월</strong> 예상
+                Standard 이용 시 약 <strong>${estimatedWeeks}주</strong> 소요 예상
+                <span style="display:block; font-size:0.78rem; color:#94a3b8; margin-top:3px;">
+                    (원점수 +${Math.round(finalDelta)}점 기준, 주당 약 ${RAW_PER_WEEK}점 상승 가정)
+                </span>
             </div>
         </div>`;
     }
