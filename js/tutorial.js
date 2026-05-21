@@ -504,6 +504,13 @@ async function fetchTutorialRecommendations(stream, mar, totalStdScore, examMont
         examMode: examMonth || 'mar'
     };
     if (boostedRawScores) payload.boostedRawScores = boostedRawScores;
+    // 향상 시뮬 모드에서 선택 대학의 합격컷(난이도) 기준 필터링용
+    if (extraOptions && extraOptions.selectedUniv && extraOptions.selectedUniv.univ) {
+        payload.selectedUniv = {
+            univ: extraOptions.selectedUniv.univ,
+            major: extraOptions.selectedUniv.major
+        };
+    }
     if (extraOptions && Number.isFinite(Number(extraOptions.minCurrentScore))) {
         payload.minCurrentScore = Number(extraOptions.minCurrentScore);
     }
@@ -874,7 +881,11 @@ async function initSubjectRec() {
                 });
                 postSimUnivs = await fetchTutorialRecommendations(
                     tutorialData.qual.stream, mar, tutorialData.totalStdScore,
-                    tutorialData.examMonth || 'mar', boostedRawScores, { minCurrentScore: Number(univ.currentScore || 0) }
+                    tutorialData.examMonth || 'mar', boostedRawScores,
+                    {
+                        selectedUniv: { univ: univ.school, major: univ.major },
+                        minCurrentScore: Number(univ.currentScore || 0) // 폴백/호환용 잔류
+                    }
                 );
             }
         } catch(e) {}

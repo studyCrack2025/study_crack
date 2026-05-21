@@ -86,20 +86,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     setWeeklyLoadingStatus(true);
 
     try {
-        // 1️⃣ [핵심] 유저 데이터를 가장 먼저 가져와서 등급(Tier)을 확인합니다.
-        await fetchUserData(userId);
+        // P1-4: fetchUnivData는 등급에 무관하므로 fetchUserData와 동시에 시작
+        const userPromise = fetchUserData(userId);
+        const univPromise = fetchUnivData();
 
-        // 2️⃣ [핵심] 확인된 등급에 따라 굳이 필요 없는 무거운 API 연산/호출은 배열에서 제외합니다.
-        const parallelTasks = [fetchUnivData()];
-        
+        // 등급 확인 후 등급별 추가 호출 결정
+        await userPromise;
+        const tieredTasks = [];
         if (['standard', 'pro'].includes(currentUserTier)) {
-            parallelTasks.push(fetchWeeklyHistory()); // 코칭 탭용 데이터
+            tieredTasks.push(fetchWeeklyHistory()); // 코칭 탭용 데이터
         }
         if (['pro'].includes(currentUserTier)) {
-            parallelTasks.push(fetchInitialProReports()); // PRO 탭용 데이터
+            tieredTasks.push(fetchInitialProReports()); // PRO 탭용 데이터
         }
 
-        const results = await Promise.allSettled(parallelTasks);
+        const results = await Promise.allSettled([univPromise, ...tieredTasks]);
         results.forEach((res, idx) => {
             if (res.status === 'rejected') console.error(`Data Load Error [${idx}]:`, res.reason);
         });
