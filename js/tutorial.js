@@ -973,7 +973,10 @@ async function initSubjectRec() {
                 <div class="future-stage-major">${univ.major}</div>
             </div>` : '';
 
-        const sortedFutureUnivs = [...(postSimUnivs || [])].sort((a, b) => (a.currentScore || 0) - (b.currentScore || 0));
+        // 정렬 의도: 위→아래로 갈수록 난이도가 올라감 (안정 → 적정 → 도전)
+        //   currentScore = 사용자의 UI 점수 (높을수록 그 대학이 사용자에게 쉬움)
+        //   따라서 DESC 정렬: 쉬운(높은 currentScore) 대학을 먼저 → index 0 = 안정
+        const sortedFutureUnivs = [...(postSimUnivs || [])].sort((a, b) => (b.currentScore || 0) - (a.currentScore || 0));
         const scoredFutureUnivs = sortedFutureUnivs.map((u, i, arr) => {
             const n = arr.length;
             let label = '적정';
