@@ -1648,23 +1648,6 @@ async function updateAnalysisUI() {
         // 💡 [수정] 서버 데이터 배열 추출 로직 안정화
         const results = Array.isArray(data) ? data : (data.results || data.data || []);
 
-        // 백엔드 분석 디버그 로그 출력 (서버에서 생성된 계산 trace 확인용)
-        console.groupCollapsed(`📊 analyze_my_targets (${currentExamMode}) — ${results.length}개 대학 결과`);
-        console.log('▶ results:', results);
-        if (data.server_debug?.logs && Array.isArray(data.server_debug.logs)) {
-            console.group('🛠️ server_debug.logs (전역)');
-            data.server_debug.logs.forEach(line => console.log(line));
-            console.groupEnd();
-        }
-        results.forEach(r => {
-            if (r.calculation_log && Array.isArray(r.calculation_log) && r.calculation_log.length > 0) {
-                console.groupCollapsed(`🏫 ${r.univ} ${r.major} | real=${r.my_real_score?.toFixed?.(2) ?? r.my_real_score} ui=${r.converted_score?.toFixed?.(1) ?? r.converted_score} | ${r.status}`);
-                r.calculation_log.forEach(line => console.log(line));
-                console.groupEnd();
-            }
-        });
-        console.groupEnd();
-
         if (results.length === 0) {
             cardsContainer.innerHTML = `<div style="text-align:center; padding:40px;">분석 가능한 결과가 없습니다.</div>`;
         } else {
