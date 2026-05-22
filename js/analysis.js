@@ -539,12 +539,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (firstTab && wrapper) {
                 wrapper.style.height = `${firstTab.offsetHeight}px`;
                 
-                // 💡 [수정] 메인 화면 스와이프 안내 문구 (동적 렌더링 준비)
+                // 💡 [수정] 메인 화면 스와이프 안내 문구 (배경 없이 텍스트만, 화살표는 CSS 모션)
                 if (!document.getElementById('mainSwipeHint')) {
                     const hintDiv = document.createElement('div');
                     hintDiv.id = 'mainSwipeHint';
-                    // 제목과 충분한 여백 + 시각적으로 분리된 chip 형태 컨테이너
-                    hintDiv.style.cssText = "margin: 18px 0 12px; padding: 10px 14px; background: #eef2ff; border: 1px solid #dbe4ff; border-radius: 999px;";
+                    hintDiv.style.cssText = "margin: 18px 0 12px; padding: 0 4px; background: none; border: 0;";
                     wrapper.parentNode.insertBefore(hintDiv, wrapper);
                     updateMainSwipeHint('univ'); // 초기값
                 }
@@ -1097,8 +1096,10 @@ function renderUnivDeck() {
     }
 
     // 원본 컨테이너/헤더/구분선 모바일에서 숨김
+    // - #univAnalysisResult 통째로 숨김 (그 안의 examSelector chip + cards container 모두 deck로 대체됨)
     univGrid.style.display = 'none';
-    if (cardsContainer) cardsContainer.style.display = 'none';
+    const univAnalysisResult = document.getElementById('univAnalysisResult');
+    if (univAnalysisResult) univAnalysisResult.style.display = 'none';
     document.querySelectorAll('#sol-univ .univ-sub-header, #sol-univ hr.divider').forEach(el => el.style.display = 'none');
 }
 
@@ -1294,14 +1295,14 @@ function updateMainSwipeHint(type) {
     const idx = tabs.findIndex(t => t.id === type);
     if (idx === -1) return;
 
-    let leftText = idx > 0 ? `<i class="fas fa-chevron-left"></i> ${tabs[idx-1].name}` : '';
-    let rightText = idx < tabs.length - 1 ? `${tabs[idx+1].name} <i class="fas fa-chevron-right"></i>` : '';
+    let leftText = idx > 0 ? `<i class="fas fa-chevron-left swipe-arrow swipe-arrow-left"></i> ${tabs[idx-1].name}` : '';
+    let rightText = idx < tabs.length - 1 ? `${tabs[idx+1].name} <i class="fas fa-chevron-right swipe-arrow swipe-arrow-right"></i>` : '';
 
     hintDiv.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; width:100%; max-width:340px; margin:0 auto; font-weight:700; color:#475569;">
-            <div style="flex:1; text-align:left; font-size:0.85rem; color:#3b82f6;">${leftText}</div>
-            <div style="flex:0 0 auto; color:#94a3b8; font-size:0.75rem; font-weight:normal; margin:0 10px;">메뉴 스와이프</div>
-            <div style="flex:1; text-align:right; font-size:0.85rem; color:#3b82f6;">${rightText}</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; width:100%; max-width:340px; margin:0 auto; font-weight:600; color:#94a3b8;">
+            <div style="flex:1; text-align:left; font-size:0.85rem; color:#64748b;">${leftText}</div>
+            <div style="flex:0 0 auto; font-size:0.72rem; color:#cbd5e1; font-weight:normal; margin:0 10px;">메뉴 스와이프</div>
+            <div style="flex:1; text-align:right; font-size:0.85rem; color:#64748b;">${rightText}</div>
         </div>
     `;
 }

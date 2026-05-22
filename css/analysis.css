@@ -975,10 +975,31 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
         scroll-snap-align: center;
         display: flex; flex-direction: column; gap: 14px;
     }
-    .univ-deck > .univ-slide > .univ-slot { margin: 0; }
-    .univ-deck > .univ-slide > .analysis-card { margin: 0; }
+    /* 슬롯과 분석카드 폭을 슬라이드(=100%) 기준으로 강제 일치 */
+    .univ-deck > .univ-slide > .univ-slot,
+    .univ-deck > .univ-slide > .analysis-card { margin: 0; width: 100%; box-sizing: border-box; }
     .univ-deck-bottombar { margin-top: 18px; text-align: center; }
     .univ-deck-bottombar #btnSaveTarget { display: inline-block; width: 100%; max-width: 360px; }
+
+    /* mainSwipeHint 화살표 — 잔잔한 좌우 흔들림 */
+    .swipe-arrow {
+        display: inline-block;
+        will-change: transform;
+        color: #3b82f6;
+    }
+    .swipe-arrow-left  { animation: swipeArrowLeft  1.6s ease-in-out infinite; }
+    .swipe-arrow-right { animation: swipeArrowRight 1.6s ease-in-out infinite; }
+    @keyframes swipeArrowLeft {
+        0%, 100% { transform: translateX(0);  opacity: 0.6; }
+        50%      { transform: translateX(-4px); opacity: 1; }
+    }
+    @keyframes swipeArrowRight {
+        0%, 100% { transform: translateX(0);  opacity: 0.6; }
+        50%      { transform: translateX(4px);  opacity: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .swipe-arrow-left, .swipe-arrow-right { animation: none; opacity: 0.85; }
+    }
     
     /* 100vw 대신 100% 사용해서 우측 잘림 방지 */
     .sol-content { display: block !important; flex: 0 0 100% !important; width: 100% !important; min-width: 0; scroll-snap-align: start; box-sizing: border-box; animation: none !important; padding: 0 15px; }
