@@ -824,7 +824,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .pro-theme { padding: 25px 20px; border-radius: 12px; width: 100%; box-sizing: border-box; }
     .pro-promo-grid { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; padding-bottom: 10px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
     .pro-promo-grid::-webkit-scrollbar { display: none; }
-    .pro-feature-card { display: grid; grid-template-columns: min-content 1fr; grid-template-rows: auto auto; column-gap: 15px; row-gap: 5px; padding: 18px 20px; align-items: start; text-align: left; word-break: break-word; flex: 0 0 90%; scroll-snap-align: center; box-sizing: border-box; }
+    .pro-feature-card { display: grid; grid-template-columns: min-content 1fr; grid-template-rows: auto auto; column-gap: 15px; row-gap: 5px; padding: 18px 20px; align-items: start; text-align: left; word-break: break-word; flex: 0 0 100%; scroll-snap-align: center; box-sizing: border-box; }
     .pro-title { font-size: 1.4rem; word-break: keep-all; line-height: 1.3; }
     .pro-desc { font-size: 0.9rem; word-break: keep-all; line-height: 1.5; margin-bottom: 20px; }
     .pro-cta-btn { padding: 14px 20px; font-size: 1rem; margin-top: 20px; width: 100%; box-sizing: border-box; }
@@ -932,8 +932,8 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .subj-scroll-container { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 12px; scrollbar-width: none; margin-bottom: 5px; }
     .subj-scroll-container::-webkit-scrollbar { display: none; }
 
-    /* 🎯 4. 개별 과목 카드 90% 너비로 맞춰 스와이프 명확하게 표시 */
-    .sim-item.swipe-subj-card { flex: 0 0 90%; scroll-snap-align: center; padding: 12px 15px; border-radius: 8px; }
+    /* 🎯 4. 개별 과목 카드 — 전 너비 차지 (옆 카드 peek 없음, 스와이프 힌트는 swipe-hint 모듈에서 처리) */
+    .sim-item.swipe-subj-card { flex: 0 0 100%; scroll-snap-align: center; padding: 12px 15px; border-radius: 8px; box-sizing: border-box; }
     .sim-item-header { margin-bottom: 6px !important; }
     .sim-item-body { font-size: 0.85rem; line-height: 1.4; }
 
@@ -942,6 +942,30 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .sim-warning h4 { font-size: 0.95rem; margin: 0; line-height: 1.3; }
     .sim-warning p { font-size: 0.85rem; margin: 0; line-height: 1.4; color: #475569; }
     .sim-warning button { width: 100%; padding: 12px; margin-top: 5px; background: #ea580c; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 0.95rem; cursor: pointer; }
+
+    /* 🎯 6. 좌우 스와이프 힌트 — 첫 진입 시 1회 자연스러운 chevron 페이드 + 부드러운 흔들림 */
+    @keyframes swipeHintChevron {
+        0%   { opacity: 0; transform: translateY(-50%) translateX(0); }
+        20%  { opacity: 0.9; transform: translateY(-50%) translateX(0); }
+        45%  { opacity: 0.9; transform: translateY(-50%) translateX(7px); }
+        70%  { opacity: 0.9; transform: translateY(-50%) translateX(-2px); }
+        100% { opacity: 0; transform: translateY(-50%) translateX(0); }
+    }
+    @keyframes swipeHintChevronStatic {
+        0%, 100% { opacity: 0; }
+        40%, 60% { opacity: 0.85; }
+    }
+    .swipe-hint-chevron {
+        position: absolute; top: 50%; right: 10px;
+        transform: translateY(-50%);
+        pointer-events: none; z-index: 5;
+        font-size: 1.5rem; color: rgba(37, 99, 235, 0.88);
+        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.18));
+        animation: swipeHintChevron 1.4s ease-out forwards;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .swipe-hint-chevron { animation: swipeHintChevronStatic 1.4s ease-out forwards; }
+    }
 }
 
 html, body, button, input, select, textarea { font-family: "Paperlogy", system-ui, -apple-system, BlinkMacSystemFont, sans-serif; }
