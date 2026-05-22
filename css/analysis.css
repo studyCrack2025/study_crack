@@ -166,6 +166,14 @@ header#site-header .nav-links a.active-link { color: #4c79ee; }
 /* univ-deck-wrap: PC에서는 비활성화 (모바일 미디어쿼리에서만 display:block) */
 .univ-deck-wrap { display: none; }
 
+/* analysis-card msg 위치 — 기본(PC)은 게이지바 아래 outer, 모바일은 코멘트 박스 inner */
+.analysis-card .ac-msg-outer { display: block; }
+.analysis-card .ac-msg-inner { display: none; }
+@media (max-width: 768px) {
+    .analysis-card .ac-msg-outer { display: none; }
+    .analysis-card .ac-msg-inner { display: block; }
+}
+
 /* ---- analysis-card 헤더 Grid (2026-05-23 재설계) ---- */
 /* PC: 한 줄 (지망 | 대학명 | 학과명 | 뱃지). 모바일: 2단 그리드로 wrap 없이 겹침 방지 */
 .analysis-card .ac-head {
@@ -926,58 +934,67 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
        6. 솔루션 콘텐츠 좌우 스와이프 처리 & 높이 맞춤
        ======================================= */
     /* 상단 4개 탭 버튼 모바일에서 완전 숨김 & 영역 밖 글자 새는 현상 완벽 차단 */
-    /* 모바일 솔루션 탭 — 가로 한 줄 pill 탭 (필요 시 스크롤) */
+    /* 모바일 솔루션 탭 — 언더라인 모던 스타일 (fill 없음, 텍스트+밑줄만) */
     .solution-menu {
         display: flex !important;
         flex-wrap: nowrap !important;
-        gap: 6px;
-        margin-bottom: 18px;
-        padding: 4px 0;
+        gap: 0 !important;
+        margin: 0 0 16px !important;
+        padding: 0 !important;
         overflow-x: auto;
         overflow-y: hidden;
         scrollbar-width: none;
         -ms-overflow-style: none;
-        scroll-snap-type: x proximity;
+        border-bottom: 1px solid #e2e8f0;
+        background: transparent !important;
     }
     .solution-menu::-webkit-scrollbar { display: none; }
     .solution-menu .sol-btn {
-        flex: 1 1 auto;
+        flex: 1 1 auto !important;
         flex-direction: row !important;
         justify-content: center;
         align-items: center;
         gap: 6px;
-        padding: 9px 14px;
-        font-size: 0.85rem;
-        font-weight: 700;
-        min-height: 0;
+        padding: 12px 12px 13px !important;
+        font-size: 0.88rem !important;
+        font-weight: 600 !important;
+        min-height: 0 !important;
         min-width: max-content;
         white-space: nowrap;
-        border-radius: 999px;
-        border: 1px solid #e2e8f0;
-        background: #f8fafc;
-        color: #64748b;
-        box-shadow: none;
-        scroll-snap-align: start;
+        background: transparent !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        color: #94a3b8 !important;
+        position: relative;
+        transition: color 0.15s ease;
     }
     .solution-menu .sol-btn i {
-        font-size: 0.92rem !important;
-        margin-bottom: 0 !important;
-        color: #94a3b8;
+        font-size: 0.9rem !important;
+        margin: 0 !important;
+        color: inherit !important;
     }
     .solution-menu .sol-btn.active {
+        color: #2563eb !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+    .solution-menu .sol-btn.active::after {
+        content: '';
+        position: absolute;
+        left: 14%; right: 14%;
+        bottom: -1px;
+        height: 2.5px;
         background: #2563eb;
-        color: #fff;
-        border-color: #2563eb;
-        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+        border-radius: 2px;
+        animation: solTabUnderline 0.22s ease-out;
     }
-    .solution-menu .sol-btn.active i { color: #fff; }
-    .solution-menu .sol-btn.pro-btn.active {
-        background: #ff7461;
-        color: #fff;
-        border-color: #ff7461;
-        box-shadow: 0 4px 10px rgba(255, 116, 97, 0.25);
+    .solution-menu .sol-btn.pro-btn.active { color: #ff7461 !important; }
+    .solution-menu .sol-btn.pro-btn.active::after { background: #ff7461; }
+    @keyframes solTabUnderline {
+        from { transform: scaleX(0.4); opacity: 0; }
+        to   { transform: scaleX(1);   opacity: 1; }
     }
-    .solution-menu .sol-btn.pro-btn.active i { color: #fff; }
     .content-area { overflow: hidden !important; width: 100%; position: relative; }
 
     /* align-items: flex-start를 줘서 짧은 탭 밑에 거대한 빈 공백 생기는 현상 완벽 차단 */
