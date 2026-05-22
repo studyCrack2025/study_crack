@@ -160,7 +160,11 @@ header#site-header .nav-links a.active-link { color: #4c79ee; }
 .back-step-btn:hover { color: #2563EB; text-decoration: underline; }
 
 /* 대학 분석 카드 */
-.analysis-card { margin-bottom: 20px; background: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-left: 6px solid #e2e8f0; transition: transform 0.2s; }
+.analysis-card { margin-bottom: 20px; background: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.04); border: 1px solid #d8e1ee; border-left: 6px solid #c5d2e6; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
+.analysis-card:hover { box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12), 0 3px 6px rgba(15, 23, 42, 0.06); border-color: #b8c6e0; }
+
+/* univ-deck-wrap: PC에서는 비활성화 (모바일 미디어쿼리에서만 display:block) */
+.univ-deck-wrap { display: none; }
 
 /* ---- analysis-card 헤더 Grid (2026-05-23 재설계) ---- */
 /* PC: 한 줄 (지망 | 대학명 | 학과명 | 뱃지). 모바일: 2단 그리드로 wrap 없이 겹침 방지 */
@@ -935,7 +939,46 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .sim-detail-card-area > .sim-result-card,
     .subj-scroll-container > .sim-item,
     #analysisCardsContainer > .analysis-card,
-    .pro-promo-grid > .pro-feature-card { scroll-snap-stop: always; }
+    .pro-promo-grid > .pro-feature-card,
+    .univ-deck > .univ-slide { scroll-snap-stop: always; }
+
+    /* ---- 1~6지망 슬롯 + 분석카드 통합 deck (1-1) ---- */
+    .univ-deck-wrap { display: block; margin-top: 12px; }
+    .univ-deck-topbar {
+        display: flex; align-items: center; justify-content: space-between; gap: 10px;
+        margin-bottom: 14px;
+    }
+    .univ-deck-topbar .univ-deck-exam { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .univ-deck-topbar .univ-deck-exam label { font-size: 0.85rem; color: #64748b; white-space: nowrap; }
+    .univ-deck-topbar .univ-deck-exam select {
+        padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px;
+        font-size: 0.9rem; color: #1e293b; background: #f8fafc;
+        max-width: 150px; text-overflow: ellipsis;
+    }
+    .univ-deck-topbar .univ-deck-indicator {
+        font-size: 0.85rem; color: #475569; font-weight: 800;
+        padding: 4px 12px; background: #eef2ff; border: 1px solid #dbe4ff; border-radius: 999px;
+        white-space: nowrap; flex-shrink: 0;
+    }
+    .univ-deck {
+        display: flex;
+        overflow-x: auto; overflow-y: hidden;
+        scroll-snap-type: x mandatory;
+        scroll-behavior: smooth;
+        gap: 12px;
+        padding-bottom: 10px;
+        scrollbar-width: none; -ms-overflow-style: none;
+    }
+    .univ-deck::-webkit-scrollbar { display: none; }
+    .univ-deck > .univ-slide {
+        flex: 0 0 100%; box-sizing: border-box;
+        scroll-snap-align: center;
+        display: flex; flex-direction: column; gap: 14px;
+    }
+    .univ-deck > .univ-slide > .univ-slot { margin: 0; }
+    .univ-deck > .univ-slide > .analysis-card { margin: 0; }
+    .univ-deck-bottombar { margin-top: 18px; text-align: center; }
+    .univ-deck-bottombar #btnSaveTarget { display: inline-block; width: 100%; max-width: 360px; }
     
     /* 100vw 대신 100% 사용해서 우측 잘림 방지 */
     .sol-content { display: block !important; flex: 0 0 100% !important; width: 100% !important; min-width: 0; scroll-snap-align: start; box-sizing: border-box; animation: none !important; padding: 0 15px; }
@@ -1107,7 +1150,8 @@ body { color: #2c2c2c; letter-spacing: -0.02em; word-break: keep-all; -webkit-fo
     #btnSaveTarget { width: 304px; height: 64px; display: block; margin: 42px auto 56px; padding: 0 20px; border-radius: 4px; background: #4c79ee; color: #fff; box-shadow: 20px 30px 40px rgba(69,69,69,.1); font-size: 19px; font-weight: 900; }
     .divider { margin: 0 0 56px; border: 0; border-top: 1px solid #cfcfcf; }
     .analysis-container { display: flex; flex-direction: column; gap: 20px; }
-    .analysis-card, .sim-result-card, .feedback-box { width: 100%; min-width: 0; margin: 0 0 14px; padding: 22px; border: 0; border-radius: 6px; background: #f9f9fb; box-shadow: 1px 1px 1px rgba(159,159,159,.18); }
+    .analysis-card, .sim-result-card, .feedback-box { width: 100%; min-width: 0; margin: 0 0 14px; padding: 20px 18px; border: 1px solid #d8e1ee; border-radius: 12px; background: #ffffff; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.07), 0 1px 3px rgba(15, 23, 42, 0.04); }
+    .analysis-card { border-left: 5px solid #c5d2e6; }
     .analysis-card:hover { transform: none; }
     .score-bar-bg { height: 18px; border-radius: 150px; background: #eaeaea; overflow: hidden; }
     .score-bar-fill { border-radius: 150px; box-shadow: 0 4px 4px rgba(0,0,0,.08); }

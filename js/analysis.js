@@ -543,7 +543,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (!document.getElementById('mainSwipeHint')) {
                     const hintDiv = document.createElement('div');
                     hintDiv.id = 'mainSwipeHint';
-                    hintDiv.style.cssText = "padding:10px 15px 5px 15px; background:#f8fafc;";
+                    // 제목과 충분한 여백 + 시각적으로 분리된 chip 형태 컨테이너
+                    hintDiv.style.cssText = "margin: 18px 0 12px; padding: 10px 14px; background: #eef2ff; border: 1px solid #dbe4ff; border-radius: 999px;";
                     wrapper.parentNode.insertBefore(hintDiv, wrapper);
                     updateMainSwipeHint('univ'); // 초기값
                 }
@@ -976,6 +977,131 @@ function openSolution(type) {
     triggerSwipeHintForTab(type);
 }
 
+// viewport 회전/리사이즈 시 deck 토글 (모바일 ↔ PC 경계)
+let _univDeckResizeBound = false;
+function bindUnivDeckResize() {
+    if (_univDeckResizeBound) return;
+    _univDeckResizeBound = true;
+    let t = null;
+    window.addEventListener('resize', () => {
+        if (t) clearTimeout(t);
+        t = setTimeout(() => renderUnivDeck(), 180);
+    });
+}
+if (typeof window !== 'undefined') bindUnivDeckResize();
+
+// ============================================================
+// 모바일 — 슬롯(1~6지망) + 분석카드 통합 deck 렌더
+//   PC: 기존 2-section 레이아웃 유지. 모바일에서만 deck 활성화.
+//   변경 발생 시(슬롯 저장/분석 응답) 매번 재렌더 → 데이터 동기화 보장
+// ============================================================
+function renderUnivDeck() {
+    const sub = document.getElementById('sol-univ');
+    if (!sub) return;
+    const isMobile = window.innerWidth <= 768;
+    const wrap = document.getElementById('univDeckWrap');
+
+    if (!isMobile) {
+        if (wrap) wrap.style.display = 'none';
+        // 원본 컨테이너 복원 (PC 모드)
+        ['univGrid', 'univAnalysisResult', 'btnSaveTarget'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = '';
+        });
+        document.querySelectorAll('#sol-univ .univ-sub-header, #sol-univ hr.divider').forEach(el => el.style.display = '');
+        return;
+    }
+
+    const univGrid = document.getElementById('univGrid');
+    const cardsContainer = document.getElementById('analysisCardsContainer');
+    if (!univGrid) return;
+    const slots = univGrid.querySelectorAll('.univ-slot');
+    if (slots.length === 0) return;
+    const cards = cardsContainer ? cardsContainer.querySelectorAll('.analysis-card, .empty-state') : [];
+
+    // 래퍼 + 하위 영역 1회 생성
+    let deckWrap = wrap;
+    if (!deckWrap) {
+        deckWrap = document.createElement('div');
+        deckWrap.id = 'univDeckWrap';
+        deckWrap.className = 'univ-deck-wrap';
+        deckWrap.innerHTML = `
+            <div class="univ-deck-topbar">
+                <div class="univ-deck-exam"></div>
+                <div class="univ-deck-indicator"><span id="univDeckIndicator">1 / ${slots.length}</span></div>
+            </div>
+            <div id="univDeck" class="univ-deck"></div>
+            <div id="univDeckBottomBar" class="univ-deck-bottombar"></div>
+        `;
+        // sol-univ 첫 번째 sub-header 직후에 삽입
+        const subHeader = sub.querySelector('.univ-sub-header');
+        if (subHeader && subHeader.parentNode) subHeader.parentNode.insertBefore(deckWrap, subHeader.nextSibling);
+        else sub.insertBefore(deckWrap, sub.firstChild);
+    }
+    deckWrap.style.display = '';
+
+    // 상단 examSelector chip 동기화 (있을 때만)
+    const examSelEl = document.querySelector('#univAnalysisResult #examSelector');
+    const examSlot = deckWrap.querySelector('.univ-deck-exam');
+    if (examSlot) {
+        if (examSelEl) {
+            const options = Array.from(examSelEl.options).map(o => `<option value="${escapeHtml(o.value)}" ${o.selected ? 'selected' : ''}>${escapeHtml(o.textContent)}</option>`).join('');
+            examSlot.innerHTML = `<label>기준 시험</label><select onchange="changeExamMode(this.value)">${options}</select>`;
+        } else {
+            examSlot.innerHTML = '';
+        }
+    }
+
+    // 슬라이드 빌드
+    const deck = document.getElementById('univDeck');
+    deck.innerHTML = '';
+    slots.forEach((slot, i) => {
+        const slide = document.createElement('div');
+        slide.className = 'univ-slide';
+        slide.appendChild(slot.cloneNode(true));
+        if (cards[i]) {
+            slide.appendChild(cards[i].cloneNode(true));
+        } else {
+            const ph = document.createElement('div');
+            ph.className = 'analysis-card';
+            ph.style.cssText = 'text-align:center; padding:30px; color:#94a3b8; font-size:0.9rem;';
+            ph.innerHTML = '<i class="fas fa-info-circle" style="font-size:1.4rem; margin-bottom:8px;"></i><br>이 슬롯에 대학을 추가하면<br>분석 결과가 표시됩니다.';
+            slide.appendChild(ph);
+        }
+        deck.appendChild(slide);
+    });
+
+    // 인디케이터 (현재 슬라이드 위치)
+    if (!deck._indicatorBound) {
+        const indEl = document.getElementById('univDeckIndicator');
+        const updateInd = () => {
+            const w = deck.clientWidth;
+            if (w <= 0 || !indEl) return;
+            const idx = Math.round(deck.scrollLeft / w);
+            indEl.textContent = `${Math.min(idx + 1, slots.length)} / ${slots.length}`;
+        };
+        deck.addEventListener('scroll', updateInd, { passive: true });
+        deck._indicatorBound = true;
+        updateInd();
+    } else {
+        // 슬라이드 수 변경 시 인디케이터도 즉시 갱신
+        const indEl = document.getElementById('univDeckIndicator');
+        if (indEl) indEl.textContent = `${Math.min(Math.round(deck.scrollLeft / Math.max(deck.clientWidth, 1)) + 1, slots.length)} / ${slots.length}`;
+    }
+
+    // 저장 버튼을 deck 하단으로 이동 (1회만)
+    const saveBtn = document.getElementById('btnSaveTarget');
+    const bottomBar = document.getElementById('univDeckBottomBar');
+    if (saveBtn && bottomBar && saveBtn.parentNode !== bottomBar) {
+        bottomBar.appendChild(saveBtn);
+    }
+
+    // 원본 컨테이너/헤더/구분선 모바일에서 숨김
+    univGrid.style.display = 'none';
+    if (cardsContainer) cardsContainer.style.display = 'none';
+    document.querySelectorAll('#sol-univ .univ-sub-header, #sol-univ hr.divider').forEach(el => el.style.display = 'none');
+}
+
 // ============================================================
 // 모바일 스와이프 가능 힌트 (1회, surface별 LocalStorage 플래그)
 // ============================================================
@@ -1255,15 +1381,12 @@ function initUnivGrid() {
     }
     
     if (window.innerWidth <= 768) {
-        if (!document.getElementById('univGridSwipeHint')) {
-            const hintDiv = document.createElement('div');
-            hintDiv.id = 'univGridSwipeHint';
-            hintDiv.style.cssText = "text-align:right; font-size:0.75rem; color:#94a3b8; margin-bottom:8px; padding-right:4px;";
-            hintDiv.innerHTML = '<i class="fas fa-hand-pointer"></i> 좌우로 스와이프하여 6지망까지 확인';
-            // univGrid 바로 위에 삽입
-            grid.parentNode.insertBefore(hintDiv, grid);
-        }
+        // deck 모드에서는 안내 문구 불필요 (인디케이터로 대체)
+        const old = document.getElementById('univGridSwipeHint');
+        if (old) old.remove();
     }
+    // 슬롯 재렌더 후 모바일 deck도 즉시 재구성
+    renderUnivDeck();
 }
 
 function clearUnivSlot(index) {
@@ -1776,6 +1899,8 @@ async function updateAnalysisUI() {
             // 카드 컨테이너가 이제 막 DOM에 채워졌으니 univ 탭 힌트 재시도 (DOMContentLoaded 시점엔 아직 비어있었을 수 있음)
             if (window.innerWidth <= 768) triggerSwipeHintForTab('univ');
         }
+        // 모바일 deck도 카드 새 데이터로 즉시 재구성
+        renderUnivDeck();
 
         if (window.innerWidth <= 768) {
             setTimeout(syncMobileHeight, 150); // 렌더링 후 높이 재조정
