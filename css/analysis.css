@@ -160,7 +160,49 @@ header#site-header .nav-links a.active-link { color: #4c79ee; }
 .back-step-btn:hover { color: #2563EB; text-decoration: underline; }
 
 /* 대학 분석 카드 */
-.analysis-card { margin-bottom: 20px; background: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-left: 6px solid #e2e8f0; transition: transform 0.2s; } 
+.analysis-card { margin-bottom: 20px; background: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-left: 6px solid #e2e8f0; transition: transform 0.2s; }
+
+/* ---- analysis-card 헤더 Grid (2026-05-23 재설계) ---- */
+/* PC: 한 줄 (지망 | 대학명 | 학과명 | 뱃지). 모바일: 2단 그리드로 wrap 없이 겹침 방지 */
+.analysis-card .ac-head {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    grid-template-areas: "rank univ major badge";
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 6px;
+    margin-bottom: 14px;
+}
+.analysis-card .ac-rank  { grid-area: rank;  font-size: 18px; font-weight: 700; color: #30363e; white-space: nowrap; }
+.analysis-card .ac-univ  { grid-area: univ;  font-size: 20px; font-weight: 600; letter-spacing: -.02em; color: #30363e; min-width: 0; word-break: keep-all; line-height: 1.25; }
+.analysis-card .ac-major { grid-area: major; font-size: 16px; font-weight: 400; color: #575757; word-break: keep-all; line-height: 1.3; }
+.analysis-card .ac-badge { grid-area: badge; display: inline-flex; align-items: center; height: 26px; padding: 0 12px; border-radius: 150px; font-size: 13px; font-weight: 800; color: #fff; white-space: nowrap; justify-self: end; }
+.analysis-card .ac-score-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.analysis-card .ac-score-label { font-size: 15px; font-weight: 600; color: #575757; }
+.analysis-card .ac-score-value { font-size: 24px; font-weight: 800; }
+.analysis-card .ac-score-unit  { font-size: 15px; font-weight: 500; color: #575757; margin-left: 2px; }
+.analysis-card .ac-axis-nums   { position: relative; height: 16px; margin: 4px 0 0; font-size: 12px; color: #94a3b8; font-weight: 700; }
+.analysis-card .ac-axis-tags   { position: relative; height: 14px; margin: 0 0 6px; font-size: 11px; color: #94a3b8; }
+.analysis-card .ac-axis-100    { color: #3b82f6; }
+.analysis-card .ac-axis-150    { color: #10b981; }
+
+/* 모바일 — 헤더 2-row 재배치 (지망+뱃지 윗줄 / 대학명 / 학과명) */
+@media (max-width: 768px) {
+    .analysis-card .ac-head {
+        grid-template-columns: auto 1fr auto;
+        grid-template-areas:
+            "rank . badge"
+            "univ univ univ"
+            "major major major";
+        column-gap: 8px;
+        row-gap: 4px;
+    }
+    .analysis-card .ac-rank  { font-size: 15px; }
+    .analysis-card .ac-univ  { font-size: 18px; line-height: 1.3; }
+    .analysis-card .ac-major { font-size: 14px; color: #64748b; }
+    .analysis-card .ac-badge { height: 24px; padding: 0 10px; font-size: 12px; }
+    .analysis-card .ac-score-value { font-size: 22px; }
+}
 .score-bar-container { position: relative; width: 100%; padding-bottom: 30px; } 
 .score-bar-bg { position: relative; height: 12px; background: #f1f5f9; border-radius: 6px; margin: 10px 0; overflow: visible; } 
 .score-bar-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 6px; transition: width 1s ease-out; z-index: 1; } 
