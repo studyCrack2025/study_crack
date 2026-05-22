@@ -841,9 +841,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .sol-title { font-size: 1.5rem; gap: 10px; margin-bottom: 10px; }
     .sol-icon-box { width: 40px; height: 40px; font-size: 1.2rem; border-radius: 10px; }
     .sol-desc { font-size: 0.9rem; }
-    .solution-menu { flex-wrap: wrap; gap: 8px; margin-bottom: 25px; }
-    .sol-btn { flex: 1 1 45%; font-size: 0.85rem; padding: 10px 5px; min-width: 0; }
-    .sol-btn i { font-size: 1.1rem; margin-bottom: 5px; }
+    /* 솔루션 메뉴 스타일은 아래(line ~933) 가로 pill 탭 블록에서 일괄 정의 */
 
     /* =======================================
        2. 카드 및 박스 UI 여백 다이어트
@@ -928,10 +926,58 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
        6. 솔루션 콘텐츠 좌우 스와이프 처리 & 높이 맞춤
        ======================================= */
     /* 상단 4개 탭 버튼 모바일에서 완전 숨김 & 영역 밖 글자 새는 현상 완벽 차단 */
-    /* 모바일에서도 솔루션 탭 버튼 노출 (클릭+페이드 모드) */
-    .solution-menu { display: grid !important; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 18px; }
-    .solution-menu .sol-btn { flex: none; padding: 12px 6px; font-size: 0.85rem; min-width: 0; min-height: 64px; }
-    .solution-menu .sol-btn i { font-size: 1.1rem; margin-bottom: 4px; }
+    /* 모바일 솔루션 탭 — 가로 한 줄 pill 탭 (필요 시 스크롤) */
+    .solution-menu {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        gap: 6px;
+        margin-bottom: 18px;
+        padding: 4px 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        scroll-snap-type: x proximity;
+    }
+    .solution-menu::-webkit-scrollbar { display: none; }
+    .solution-menu .sol-btn {
+        flex: 1 1 auto;
+        flex-direction: row !important;
+        justify-content: center;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 14px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        min-height: 0;
+        min-width: max-content;
+        white-space: nowrap;
+        border-radius: 999px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        color: #64748b;
+        box-shadow: none;
+        scroll-snap-align: start;
+    }
+    .solution-menu .sol-btn i {
+        font-size: 0.92rem !important;
+        margin-bottom: 0 !important;
+        color: #94a3b8;
+    }
+    .solution-menu .sol-btn.active {
+        background: #2563eb;
+        color: #fff;
+        border-color: #2563eb;
+        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+    }
+    .solution-menu .sol-btn.active i { color: #fff; }
+    .solution-menu .sol-btn.pro-btn.active {
+        background: #ff7461;
+        color: #fff;
+        border-color: #ff7461;
+        box-shadow: 0 4px 10px rgba(255, 116, 97, 0.25);
+    }
+    .solution-menu .sol-btn.pro-btn.active i { color: #fff; }
     .content-area { overflow: hidden !important; width: 100%; position: relative; }
 
     /* align-items: flex-start를 줘서 짧은 탭 밑에 거대한 빈 공백 생기는 현상 완벽 차단 */
@@ -1201,8 +1247,9 @@ body { color: #2c2c2c; letter-spacing: -0.02em; word-break: keep-all; -webkit-fo
     .analysis-card, .sim-result-card, .feedback-box { width: 100%; min-width: 0; margin: 0 0 14px; padding: 20px 18px; border: 1px solid #d8e1ee; border-radius: 12px; background: #ffffff; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.07), 0 1px 3px rgba(15, 23, 42, 0.04); }
     .analysis-card { border-left: 5px solid #c5d2e6; }
     .analysis-card:hover { transform: none; }
-    .score-bar-bg { height: 18px; border-radius: 150px; background: #eaeaea; overflow: hidden; }
-    .score-bar-fill { border-radius: 150px; box-shadow: 0 4px 4px rgba(0,0,0,.08); }
+    /* 막대그래프 슬림화 + tick 표시 위해 overflow visible */
+    .score-bar-bg { height: 10px; border-radius: 999px; background: #eaeaea; overflow: visible; }
+    .score-bar-fill { border-radius: 999px; box-shadow: 0 2px 4px rgba(0,0,0,.06); }
     .score-labels { color: #2c2c2c; font-size: 14px; font-weight: 500; }
     .sim-container-new { max-width: none; gap: 20px; }
     .sim-controls { justify-content: flex-end; margin-bottom: 0; }

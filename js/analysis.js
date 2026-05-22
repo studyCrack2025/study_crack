@@ -1871,8 +1871,8 @@ function renderAnalysisCard(res) {
             <div class="score-bar-bg" style="position:relative;">
                 <div class="score-bar-fill" style="height:100%; width:${barWidth}%; background:${res.color};"></div>
                 <!-- 100점(합격), 150점(안정) 기준선 — 0~250 스케일에서 40%, 60% -->
-                <span class="score-bar-tick" style="position:absolute; top:-3px; bottom:-3px; left:40%; width:2px; background:#3b82f6; border-radius:1px;"></span>
-                <span class="score-bar-tick" style="position:absolute; top:-3px; bottom:-3px; left:60%; width:2px; background:#10b981; border-radius:1px;"></span>
+                <span class="score-bar-tick" style="position:absolute; top:-2px; bottom:-2px; left:40%; width:2px; background:#3b82f6; border-radius:1px;"></span>
+                <span class="score-bar-tick" style="position:absolute; top:-2px; bottom:-2px; left:60%; width:2px; background:#10b981; border-radius:1px;"></span>
             </div>
             <!-- 축 라벨: 숫자 줄 / 한글 줄 2단으로 겹침 방지 -->
             <div class="ac-axis-nums">
