@@ -31,23 +31,30 @@ let isPhoneVerified = false;
 let isEmailVerified = false;
 
 // 토큰 갱신 시도: 쿠키 기반 silent_refresh (rt 쿠키 → 백엔드가 at 쿠키 갱신)
-let _isRefreshing = false;
-async function tryRefreshToken() {
-    if (_isRefreshing) return false;
-    _isRefreshing = true;
-    try {
-        const res = await fetch(AUTH_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ type: 'silent_refresh' })
-        });
-        return res.ok;
-    } catch (e) {
-        return false;
-    } finally {
-        _isRefreshing = false;
-    }
+//
+// 🔒 Singleton Promise 패턴 (2026-05-23 수정)
+//    이전 _isRefreshing 플래그 방식: 동시 호출자가 즉시 false 반환받아 → 의도치 않은 logout
+//    수정: 동시 호출자 모두 같은 in-flight Promise를 공유하여 같은 결과 받음.
+//    → at 쿠키 만료 시 병렬 API 5~6건이 동시에 401 받아도 silent_refresh는 1번만 수행.
+let _refreshPromise = null;
+function tryRefreshToken() {
+    if (_refreshPromise) return _refreshPromise;
+    const p = (async () => {
+        try {
+            const res = await fetch(AUTH_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ type: 'silent_refresh' })
+            });
+            return res.ok;
+        } catch (e) {
+            return false;
+        }
+    })();
+    // p.finally로 결과 settle 직후 null로 비워, 이후 새로운 refresh가 가능하도록 유지
+    _refreshPromise = p.finally(() => { _refreshPromise = null; });
+    return _refreshPromise;
 }
 
 // 글로벌 apiFetch — HttpOnly 쿠키 기반 인증 (credentials: 'include')
