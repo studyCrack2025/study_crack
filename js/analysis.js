@@ -137,9 +137,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const targetTab = params.get('tab');
         if (targetTab) openSolution(targetTab);
 
-        // 모바일 솔루션 탭 좌우 전환 힌트 (1회)
-        triggerSolutionTabHintOnce();
-        // 기본 활성 탭(univ) 카드 스와이프 힌트도 1회 — 명시적 openSolution 미호출 케이스 대비
+        // 1-7: 솔루션 탭 스와이프 폐기 → triggerSolutionTabHintOnce 호출 제거
+        // 기본 활성 탭(univ) 카드 스와이프 힌트만 1회 — 명시적 openSolution 미호출 케이스 대비
         if (!sol && !targetTab) triggerSwipeHintForTab('univ');
     } catch (e) {
         console.error("Initialization Error:", e);
@@ -493,62 +492,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 500);
     }
     
-    const swipeWrapper = document.querySelector('.sol-swipe-wrapper');
-    if (swipeWrapper) {
-        let scrollTimeout;
-        swipeWrapper.addEventListener('scroll', () => {
-            if (window.innerWidth > 768) return; // 모바일에서만 작동
-            
-            clearTimeout(scrollTimeout);
-            scrollTimeout = setTimeout(() => {
-                const scrollLeft = swipeWrapper.scrollLeft;
-                const width = swipeWrapper.clientWidth;
-                // 현재 스크롤 위치를 계산해 몇 번째 탭인지 파악
-                const index = Math.round(scrollLeft / width);
-                const types = ['univ', 'sim', 'coach', 'pro'];
-                const currentType = types[index];
-                
-                updateMainSwipeHint(currentType);
-                
-                const targetContent = document.getElementById(`sol-${currentType}`);
-                if (targetContent) {
-                    swipeWrapper.style.height = `${targetContent.offsetHeight}px`;
-                }
-                
-                // 버튼 상태 동기화
-                document.querySelectorAll('.solution-menu .sol-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                    const onclickAttr = btn.getAttribute('onclick');
-                    if (onclickAttr && onclickAttr.includes(`'${currentType}'`)) {
-                        btn.classList.add('active');
-                    }
-                });
-                
-                // 시뮬레이션 탭 도달 시 데이터 로드 안 되어있으면 로드
-                if (currentType === 'sim' && document.getElementById('simChartArea').innerHTML.trim() === '') {
-                    initSimulation();
-                }
-            }, 100); // 부드러운 전환을 위해 스크롤 종료 0.1초 후 인식
-        });
-    }
-    
+    // 1-7: 솔루션 탭 스와이프 폐기 → scroll 리스너/mainSwipeHint 미사용 (제거)
+    // 잔존 mainSwipeHint 엘리먼트가 있으면 정리
+    const stale = document.getElementById('mainSwipeHint');
+    if (stale) stale.remove();
+
+    // 기본 활성 탭(univ) 클래스 보장 — HTML에 이미 .active 있지만 안전을 위해 명시
     if (window.innerWidth <= 768) {
-        setTimeout(() => {
-            const firstTab = document.getElementById('sol-univ');
-            const wrapper = document.querySelector('.sol-swipe-wrapper');
-            if (firstTab && wrapper) {
-                wrapper.style.height = `${firstTab.offsetHeight}px`;
-                
-                // 💡 [수정] 메인 화면 스와이프 안내 문구 (배경 없이 텍스트만, 화살표는 CSS 모션)
-                if (!document.getElementById('mainSwipeHint')) {
-                    const hintDiv = document.createElement('div');
-                    hintDiv.id = 'mainSwipeHint';
-                    hintDiv.style.cssText = "margin: 18px 0 12px; padding: 0 4px; background: none; border: 0;";
-                    wrapper.parentNode.insertBefore(hintDiv, wrapper);
-                    updateMainSwipeHint('univ'); // 초기값
-                }
-            }
-        }, 1000); 
+        const firstTab = document.getElementById('sol-univ');
+        if (firstTab && !firstTab.classList.contains('active')) firstTab.classList.add('active');
     }
 });
 
@@ -584,39 +536,11 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
+// 1-7: 솔루션 탭이 클릭+페이드 모드로 전환되어 더 이상 wrapper 높이를 강제할 필요 없음.
+// 기존 호출자가 많아 호환을 위해 함수는 유지하되 인라인 height만 비워 자연 높이로 복원.
 function syncMobileHeight() {
-    if (window.innerWidth > 768) return; // PC는 실행 안 함
-    
     const wrapper = document.querySelector('.sol-swipe-wrapper');
-    if (!wrapper) return;
-
-    // 스크롤 애니메이션 진행 중 오작동을 막기 위해 활성화된 탭을 강제 추적합니다.
-    const activeBtn = document.querySelector('.solution-menu .sol-btn.active');
-    let targetId = null;
-
-    if (activeBtn) {
-        const onclickAttr = activeBtn.getAttribute('onclick');
-        if (onclickAttr) {
-            const match = onclickAttr.match(/'([^']+)'/);
-            if (match) targetId = `sol-${match[1]}`;
-        }
-    }
-
-    // 폴백: 활성화된 버튼을 찾지 못한 경우 기존 방식(스크롤 위치) 사용
-    if (!targetId) {
-        const index = Math.round(wrapper.scrollLeft / Math.max(wrapper.clientWidth, 1));
-        const types = ['univ', 'sim', 'coach', 'pro'];
-        targetId = `sol-${types[index]}`;
-    }
-
-    const activeTab = document.getElementById(targetId);
-
-    if (activeTab) {
-        // 브라우저가 레이아웃을 다시 그릴 시간을 약간 준 뒤 높이 측정
-        requestAnimationFrame(() => {
-            wrapper.style.height = `${activeTab.offsetHeight}px`;
-        });
-    }
+    if (wrapper && wrapper.style.height) wrapper.style.height = '';
 }
 
 function getStandardLockOverlayHTML(featureName) {
@@ -944,22 +868,15 @@ function updateSurveyStatus(data) {
 }
 
 function openSolution(type) {
-    const isMobile = window.innerWidth <= 768;
     const targetContent = document.getElementById(`sol-${type}`);
 
-    if (isMobile) {
-        // 모바일: 스와이프 래퍼 스크롤 이동 (display:none 처리 안 함)
-        const wrapper = document.querySelector('.sol-swipe-wrapper');
-        if (wrapper && targetContent) {
-            // 해당 탭의 위치로 부드럽게 스크롤
-            wrapper.scrollTo({ left: targetContent.offsetLeft - wrapper.offsetLeft, behavior: 'smooth' });
-            setTimeout(syncMobileHeight, 350);
-        }
-    } else {
-        // PC: 기존처럼 display로 탭 전환
-        document.querySelectorAll('.sol-content').forEach(el => el.style.display = 'none');
-        if (targetContent) targetContent.style.display = 'block';
-    }
+    // 1-7: 모바일/PC 통합 — 클래스 토글로 탭 전환 (페이드 애니메이션은 CSS .sol-content.active에서)
+    document.querySelectorAll('.sol-content').forEach(el => {
+        el.classList.remove('active');
+        // 과거에 inline display로 토글했던 잔여 스타일 제거
+        el.style.display = '';
+    });
+    if (targetContent) targetContent.classList.add('active');
 
     // 상단 탭 버튼 활성화 UI 변경
     document.querySelectorAll('.solution-menu .sol-btn').forEach(btn => {
@@ -971,9 +888,14 @@ function openSolution(type) {
     });
 
     if (type === 'sim') initSimulation();
-    if (window.innerWidth <= 768) updateMainSwipeHint(type);
-    // 스와이프 힌트: 해당 탭의 1순위 surface에서 1회 자연스럽게 발동
+    // 스와이프 힌트: 해당 탭의 내부 카드/슬라이드 surface에서 1회 자연스럽게 발동
     triggerSwipeHintForTab(type);
+
+    // 뷰포트 상단으로 부드러운 스크롤 (모바일에서 탭 전환 후 상단부터 보이게)
+    if (window.innerWidth <= 768 && targetContent) {
+        const top = targetContent.getBoundingClientRect().top + window.scrollY - 80;
+        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    }
 }
 
 // viewport 회전/리사이즈 시 deck 토글 (모바일 ↔ PC 경계)
