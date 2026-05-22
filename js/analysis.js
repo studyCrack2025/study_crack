@@ -1792,10 +1792,11 @@ function renderAnalysisCard(res) {
     if (res.msg.includes("오류") || res.msg.includes("데이터 없음") || res.status === '분석 불가') {
         return `
         <div class="analysis-card">
-            <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
-                <span style="font-size:18px; font-weight:700; color:#30363e; flex-shrink:0;">${escapeHtml(res.idx + 1)}지망</span>
-                <span style="flex:1; font-size:20px; font-weight:600; letter-spacing:-.02em; min-width:0; word-break:keep-all; line-height:1.3;">${escapeHtml(res.univ)} <span style="font-size:16px; font-weight:400; color:#575757;">(${escapeHtml(res.major)})</span></span>
-                <span style="display:inline-flex; align-items:center; height:36px; padding:0 16px; border-radius:150px; font-size:13px; font-weight:800; color:#fff; background:#94a3b8; flex-shrink:0;">데이터 부족</span>
+            <div class="ac-head">
+                <span class="ac-rank">${escapeHtml(res.idx + 1)}지망</span>
+                <span class="ac-badge" style="background:#94a3b8;">데이터 부족</span>
+                <span class="ac-univ">${escapeHtml(res.univ)}</span>
+                <span class="ac-major">${escapeHtml(res.major)}</span>
             </div>
             <p style="color:#64748b; font-size:0.9rem; margin:0;">${escapeHtml(res.msg || '해당 학과의 작년 입시 데이터가 없습니다.')}</p>
         </div>`;
@@ -1809,14 +1810,15 @@ function renderAnalysisCard(res) {
 
     return `
         <div class="analysis-card">
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
-                <span style="font-size:18px; font-weight:700; color:#30363e; flex-shrink:0;">${safeIdx}지망</span>
-                <span style="flex:1; font-size:20px; font-weight:600; letter-spacing:-.02em; min-width:0; word-break:keep-all; line-height:1.3;">${safeUniv} <span style="font-size:16px; font-weight:400; color:#575757;">(${safeMajor})</span></span>
-                <span style="display:inline-flex; align-items:center; height:26px; padding:0 12px; border-radius:150px; font-size:13px; font-weight:800; color:#fff; background:${res.color}; flex-shrink:0; white-space:nowrap;">${safeStatus}</span>
+            <div class="ac-head">
+                <span class="ac-rank">${safeIdx}지망</span>
+                <span class="ac-badge" style="background:${res.color};">${safeStatus}</span>
+                <span class="ac-univ">${safeUniv}</span>
+                <span class="ac-major">${safeMajor}</span>
             </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <span style="font-size:15px; font-weight:600; color:#575757;">AI 환산 진단점수</span>
-                <span style="font-size:24px; font-weight:800; color:${res.color};">${safeScore}<span style="font-size:15px; font-weight:500; color:#575757; margin-left:2px;">점</span></span>
+            <div class="ac-score-row">
+                <span class="ac-score-label">AI 환산 진단점수</span>
+                <span class="ac-score-value" style="color:${res.color};">${safeScore}<span class="ac-score-unit">점</span></span>
             </div>
             <div class="score-bar-bg" style="position:relative;">
                 <div class="score-bar-fill" style="height:100%; width:${barWidth}%; background:${res.color};"></div>
@@ -1824,11 +1826,16 @@ function renderAnalysisCard(res) {
                 <span class="score-bar-tick" style="position:absolute; top:-3px; bottom:-3px; left:40%; width:2px; background:#3b82f6; border-radius:1px;"></span>
                 <span class="score-bar-tick" style="position:absolute; top:-3px; bottom:-3px; left:60%; width:2px; background:#10b981; border-radius:1px;"></span>
             </div>
-            <div style="position:relative; height:18px; margin:4px 0 6px; font-size:12px; color:#94a3b8;">
-                <span style="position:absolute; left:0; transform:translateX(0);">0</span>
-                <span style="position:absolute; left:40%; transform:translateX(-50%); color:#3b82f6; font-weight:700;">합격 100</span>
-                <span style="position:absolute; left:60%; transform:translateX(-50%); color:#10b981; font-weight:700;">안정 150</span>
-                <span style="position:absolute; right:0;">MAX 250</span>
+            <!-- 축 라벨: 숫자 줄 / 한글 줄 2단으로 겹침 방지 -->
+            <div class="ac-axis-nums">
+                <span style="position:absolute; left:0;">0</span>
+                <span class="ac-axis-100" style="position:absolute; left:40%; transform:translateX(-50%);">100</span>
+                <span class="ac-axis-150" style="position:absolute; left:60%; transform:translateX(-50%);">150</span>
+                <span style="position:absolute; right:0;">250</span>
+            </div>
+            <div class="ac-axis-tags">
+                <span class="ac-axis-100" style="position:absolute; left:40%; transform:translateX(-50%);">합격</span>
+                <span class="ac-axis-150" style="position:absolute; left:60%; transform:translateX(-50%);">안정</span>
             </div>
             <p style="font-size:14px; font-weight:600; color:${res.color}; text-align:right; margin:0 0 8px;">${safeMsg}</p>
             <div style="background:#fff; border-radius:6px; padding:12px 16px; box-shadow:10px 20px 40px rgba(179,179,179,.1);">
