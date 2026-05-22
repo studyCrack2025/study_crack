@@ -132,10 +132,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         // URL 파라미터 확인 (?sol=sim 등)
         const params = new URLSearchParams(window.location.search);
         const sol = params.get('sol');
-        if (sol) setTimeout(() => openSolution(sol), 100); 
+        if (sol) setTimeout(() => openSolution(sol), 100);
 
         const targetTab = params.get('tab');
-        if (targetTab) openSolution(targetTab);         
+        if (targetTab) openSolution(targetTab);
+
+        // 모바일 솔루션 탭 좌우 전환 힌트 (1회)
+        triggerSolutionTabHintOnce();
+        // 기본 활성 탭(univ) 카드 스와이프 힌트도 1회 — 명시적 openSolution 미호출 케이스 대비
+        if (!sol && !targetTab) triggerSwipeHintForTab('univ');
     } catch (e) {
         console.error("Initialization Error:", e);
     }
@@ -938,7 +943,7 @@ function updateSurveyStatus(data) {
     }
 }
 
-function openSolution(type) {    
+function openSolution(type) {
     const isMobile = window.innerWidth <= 768;
     const targetContent = document.getElementById(`sol-${type}`);
 
@@ -967,6 +972,103 @@ function openSolution(type) {
 
     if (type === 'sim') initSimulation();
     if (window.innerWidth <= 768) updateMainSwipeHint(type);
+    // 스와이프 힌트: 해당 탭의 1순위 surface에서 1회 자연스럽게 발동
+    triggerSwipeHintForTab(type);
+}
+
+// ============================================================
+// 모바일 스와이프 가능 힌트 (1회, surface별 LocalStorage 플래그)
+// ============================================================
+const SWIPE_HINT_VERSION = 'v1';
+const SWIPE_HINT_PREFERS_REDUCED = (typeof window !== 'undefined' && window.matchMedia)
+    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    : false;
+
+function _swipeHintIsMobile() { return window.innerWidth <= 768; }
+function _swipeHintAlreadyShown(key) {
+    try { return !!localStorage.getItem(`swipeHint_${SWIPE_HINT_VERSION}_${key}`); } catch { return false; }
+}
+function _swipeHintMark(key) {
+    try { localStorage.setItem(`swipeHint_${SWIPE_HINT_VERSION}_${key}`, '1'); } catch { /* 무시 */ }
+}
+function _swipeHintScrollable(el) {
+    return el && el.scrollWidth > el.clientWidth + 4;
+}
+
+function _swipeHintShowChevron(container) {
+    if (!container) return;
+    const parent = container.parentElement || container;
+    if (parent !== container && getComputedStyle(parent).position === 'static') {
+        parent.style.position = 'relative';
+    }
+    const chev = document.createElement('div');
+    chev.className = 'swipe-hint-chevron';
+    chev.innerHTML = '<i class="fas fa-chevron-right"></i>';
+    parent.appendChild(chev);
+    const cleanup = () => chev.remove();
+    chev.addEventListener('animationend', cleanup);
+    container.addEventListener('scroll', cleanup, { once: true, passive: true });
+}
+
+function _swipeHintBump(container, peek = 28, durationMs = 700) {
+    return new Promise(resolve => {
+        if (!container) return resolve();
+        const startTime = performance.now();
+        let cancelled = false;
+        const cancel = () => { cancelled = true; container.scrollLeft = 0; };
+        container.addEventListener('touchstart', cancel, { passive: true, once: true });
+        container.addEventListener('wheel', cancel, { passive: true, once: true });
+
+        function step(now) {
+            if (cancelled) return resolve();
+            const t = Math.min(1, (now - startTime) / durationMs);
+            // 0 → peak at t=0.42 → 0
+            const peak = 0.42;
+            const phase = t < peak ? (t / peak) : (1 - (t - peak) / (1 - peak));
+            const ease = 1 - Math.pow(1 - phase, 3);
+            container.scrollLeft = Math.round(ease * peek);
+            if (t < 1) requestAnimationFrame(step);
+            else { container.scrollLeft = 0; resolve(); }
+        }
+        requestAnimationFrame(step);
+    });
+}
+
+async function maybeShowSwipeHint(selector, hintKey) {
+    if (!_swipeHintIsMobile()) return;
+    if (_swipeHintAlreadyShown(hintKey)) return;
+    const el = document.querySelector(selector);
+    if (!_swipeHintScrollable(el)) return;
+    _swipeHintMark(hintKey);
+    _swipeHintShowChevron(el);
+    if (!SWIPE_HINT_PREFERS_REDUCED) await _swipeHintBump(el);
+}
+
+// 탭별 1순위 surface 매핑
+const SWIPE_HINT_SURFACES = {
+    univ:  { selector: '#analysisCardsContainer', key: 'univ_cards' },
+    sim:   { selector: '.sim-detail-card-area',   key: 'sim_detail_cards' },
+    // coach/pro 등은 추후 (해당 영역 스크롤 컨테이너 도입 시 매핑)
+};
+
+function triggerSwipeHintForTab(tabType) {
+    if (!_swipeHintIsMobile()) return;
+    const cfg = SWIPE_HINT_SURFACES[tabType];
+    if (!cfg) return;
+    // 800ms 지연: 사용자 시선이 콘텐츠에 안착하는 타이밍 + 렌더 완료 보장
+    setTimeout(() => maybeShowSwipeHint(cfg.selector, cfg.key), 800);
+}
+
+// 시뮬 카드 안 과목 스와이프는 시뮬 카드 진입 2초 후 1회 (renderDetailedSimCard 끝에서 호출)
+function triggerSubjScrollHintOnce() {
+    if (!_swipeHintIsMobile()) return;
+    setTimeout(() => maybeShowSwipeHint('.subj-scroll-container', 'sim_subj_scroll'), 2000);
+}
+
+// 솔루션 탭 간 좌우 전환은 페이지 첫 진입 시 1회 (DOMContentLoaded 800ms 후)
+function triggerSolutionTabHintOnce() {
+    if (!_swipeHintIsMobile()) return;
+    setTimeout(() => maybeShowSwipeHint('.sol-swipe-wrapper', 'solution_tabs'), 1200);
 }
 
 function checkMbtiReport(data) {
@@ -2586,15 +2688,13 @@ function renderDetailedSimCard() {
                     </div>`;
             });
 
-            // 역추적 CTA 노출 조건: UI 점수 100 미만 + 지원 가능
+            // 역추적 CTA 노출 조건: 현재 UI 점수 < 10 + 1점 상승해도 < 25 (사실상 도달 어려운 카드만)
             const uiMode = data._uiMode || 'default';
-            const showBtCTA = (currentScore < 100 && !data.ineligible && data.sim_data);
+            const showBtCTA = (currentScore < 10 && (currentScore + maxRise) < 25 && !data.ineligible && data.sim_data);
 
-            // Warning 박스 — 합격권 안정/불합격권만 표시 (구매 유도는 역추적 CTA/upsell로 일원화)
+            // Warning 박스 — 안정권만 유지. 불합격권은 역추적 CTA가 같은 조건으로 떠서 중복 → 제거.
             let warningHTML = '';
-            if (currentScore < 10 && (currentScore + maxRise) < 25) {
-                warningHTML = `<div class="sim-warning" style="color:#c2410c;"><h4 style="color:#c2410c; margin:0; line-height:1.3; font-size:0.95rem;"><i class="fas fa-exclamation-circle"></i> 불합격권입니다</h4><p style="margin:0; line-height:1.4; color:#475569; font-size:0.85rem;">다른 전형이나 대학 고려를 권장합니다.</p></div>`;
-            } else if (currentScore >= 225 || (currentScore + maxRise) >= 250) {
+            if (currentScore >= 225 || (currentScore + maxRise) >= 250) {
                 warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><h4 style="color:#166534; margin:0; line-height:1.3; font-size:0.95rem;"><i class="fas fa-check-circle"></i> 안정권입니다</h4><p style="margin:0; line-height:1.4; color:#475569; font-size:0.85rem;">상위 대학 도전을 고려해보세요.</p></div>`;
             }
 
@@ -2630,6 +2730,8 @@ function renderDetailedSimCard() {
             </div>`;
         });
         cardArea.innerHTML = html;
+        // 시뮬 카드 내부 과목 스와이프 힌트 (1회) — 카드 안착 후 2초 뒤
+        triggerSubjScrollHintOnce();
 
     } else {
         // ==========================================
@@ -2709,11 +2811,10 @@ function renderDetailedSimCard() {
         });
 
         const uiMode = data._uiMode || 'default';
-        const showBtCTA = (currentScore < 100 && !data.ineligible && data.sim_data);
+        const showBtCTA = (currentScore < 10 && (currentScore + maxRise) < 25 && !data.ineligible && data.sim_data);
 
         let warningHTML = '';
-        if (currentScore < 10 && (currentScore + maxRise) < 25) warningHTML = `<div class="sim-warning" style="background:#fff7ed; border-color:#fdba74; color:#c2410c;"><i class="fas fa-exclamation-circle"></i><div><strong>여전히 불합격권입니다.</strong></div></div>`;
-        else if (currentScore >= 225 || (currentScore + maxRise) >= 250) warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><i class="fas fa-check-circle"></i><div><strong>이미 상당히 안정권입니다.</strong></div></div>`;
+        if (currentScore >= 225 || (currentScore + maxRise) >= 250) warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><i class="fas fa-check-circle"></i><div><strong>이미 상당히 안정권입니다.</strong></div></div>`;
 
         const defaultBody = `<div class="sim-grid">${subjectsHTML}</div>${showBtCTA ? buildBacktraceCTA(data.originalIdx) : ''}`;
         let simBodyHTML;
