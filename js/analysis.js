@@ -1035,14 +1035,33 @@ function _swipeHintBump(container, peek = 28, durationMs = 700) {
 }
 
 async function maybeShowSwipeHint(selector, hintKey) {
-    if (!_swipeHintIsMobile()) return;
-    if (_swipeHintAlreadyShown(hintKey)) return;
+    const debug = (() => { try { return !!localStorage.getItem('DEV_LOG_SWIPE_HINT'); } catch { return false; } })();
+    const mobile = _swipeHintIsMobile();
+    const hinted = _swipeHintAlreadyShown(hintKey);
     const el = document.querySelector(selector);
-    if (!_swipeHintScrollable(el)) return;
+    const scrollable = _swipeHintScrollable(el);
+    if (debug) console.log('[swipeHint]', { selector, hintKey, mobile, hinted, scrollable, elFound: !!el });
+    if (!mobile) return;
+    if (hinted) return;
+    if (!el) return;
+    if (!scrollable) return;
     _swipeHintMark(hintKey);
     _swipeHintShowChevron(el);
     if (!SWIPE_HINT_PREFERS_REDUCED) await _swipeHintBump(el);
 }
+
+// 디버그: 콘솔에서 모든 swipeHint 플래그 리셋 (재검증용)
+window.resetSwipeHints = function () {
+    try {
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith('swipeHint_')) keys.push(k);
+        }
+        keys.forEach(k => localStorage.removeItem(k));
+        console.log(`[swipeHint] reset ${keys.length} keys:`, keys);
+    } catch (e) { console.error(e); }
+};
 
 // 탭별 1순위 surface 매핑
 const SWIPE_HINT_SURFACES = {
@@ -1754,8 +1773,10 @@ async function updateAnalysisUI() {
             cardsContainer.innerHTML = `<div style="text-align:center; padding:40px;">분석 가능한 결과가 없습니다.</div>`;
         } else {
             cardsContainer.innerHTML = results.map(item => renderAnalysisCard(item)).join('');
+            // 카드 컨테이너가 이제 막 DOM에 채워졌으니 univ 탭 힌트 재시도 (DOMContentLoaded 시점엔 아직 비어있었을 수 있음)
+            if (window.innerWidth <= 768) triggerSwipeHintForTab('univ');
         }
-        
+
         if (window.innerWidth <= 768) {
             setTimeout(syncMobileHeight, 150); // 렌더링 후 높이 재조정
         }
@@ -1773,7 +1794,7 @@ function renderAnalysisCard(res) {
         <div class="analysis-card">
             <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
                 <span style="font-size:18px; font-weight:700; color:#30363e; flex-shrink:0;">${escapeHtml(res.idx + 1)}지망</span>
-                <span style="flex:1; font-size:20px; font-weight:600; letter-spacing:-.02em; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(res.univ)} <span style="font-size:16px; font-weight:400; color:#575757;">(${escapeHtml(res.major)})</span></span>
+                <span style="flex:1; font-size:20px; font-weight:600; letter-spacing:-.02em; min-width:0; word-break:keep-all; line-height:1.3;">${escapeHtml(res.univ)} <span style="font-size:16px; font-weight:400; color:#575757;">(${escapeHtml(res.major)})</span></span>
                 <span style="display:inline-flex; align-items:center; height:36px; padding:0 16px; border-radius:150px; font-size:13px; font-weight:800; color:#fff; background:#94a3b8; flex-shrink:0;">데이터 부족</span>
             </div>
             <p style="color:#64748b; font-size:0.9rem; margin:0;">${escapeHtml(res.msg || '해당 학과의 작년 입시 데이터가 없습니다.')}</p>
@@ -1790,18 +1811,24 @@ function renderAnalysisCard(res) {
         <div class="analysis-card">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
                 <span style="font-size:18px; font-weight:700; color:#30363e; flex-shrink:0;">${safeIdx}지망</span>
-                <span style="flex:1; font-size:20px; font-weight:600; letter-spacing:-.02em; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeUniv} <span style="font-size:16px; font-weight:400; color:#575757;">(${safeMajor})</span></span>
+                <span style="flex:1; font-size:20px; font-weight:600; letter-spacing:-.02em; min-width:0; word-break:keep-all; line-height:1.3;">${safeUniv} <span style="font-size:16px; font-weight:400; color:#575757;">(${safeMajor})</span></span>
                 <span style="display:inline-flex; align-items:center; height:26px; padding:0 12px; border-radius:150px; font-size:13px; font-weight:800; color:#fff; background:${res.color}; flex-shrink:0; white-space:nowrap;">${safeStatus}</span>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                 <span style="font-size:15px; font-weight:600; color:#575757;">AI 환산 진단점수</span>
                 <span style="font-size:24px; font-weight:800; color:${res.color};">${safeScore}<span style="font-size:15px; font-weight:500; color:#575757; margin-left:2px;">점</span></span>
             </div>
-            <div class="score-bar-bg">
+            <div class="score-bar-bg" style="position:relative;">
                 <div class="score-bar-fill" style="height:100%; width:${barWidth}%; background:${res.color};"></div>
+                <!-- 100점(합격), 150점(안정) 기준선 — 0~250 스케일에서 40%, 60% -->
+                <span class="score-bar-tick" style="position:absolute; top:-3px; bottom:-3px; left:40%; width:2px; background:#3b82f6; border-radius:1px;"></span>
+                <span class="score-bar-tick" style="position:absolute; top:-3px; bottom:-3px; left:60%; width:2px; background:#10b981; border-radius:1px;"></span>
             </div>
-            <div style="display:flex; justify-content:space-between; font-size:12px; color:#94a3b8; margin:4px 0 6px;">
-                <span>0</span><span>합격(100)</span><span>안정(150)</span><span>MAX(250)</span>
+            <div style="position:relative; height:18px; margin:4px 0 6px; font-size:12px; color:#94a3b8;">
+                <span style="position:absolute; left:0; transform:translateX(0);">0</span>
+                <span style="position:absolute; left:40%; transform:translateX(-50%); color:#3b82f6; font-weight:700;">합격 100</span>
+                <span style="position:absolute; left:60%; transform:translateX(-50%); color:#10b981; font-weight:700;">안정 150</span>
+                <span style="position:absolute; right:0;">MAX 250</span>
             </div>
             <p style="font-size:14px; font-weight:600; color:${res.color}; text-align:right; margin:0 0 8px;">${safeMsg}</p>
             <div style="background:#fff; border-radius:6px; padding:12px 16px; box-shadow:10px 20px 40px rgba(179,179,179,.1);">
@@ -2185,7 +2212,7 @@ function renderSimChart() {
             wrapper.appendChild(graphArea); wrapper.appendChild(labelArea);
 
             const mobileLegendDiv = document.createElement('div'); mobileLegendDiv.className = 'mobile-legend-area';
-            mobileLegendDiv.style.cssText = "display: flex; justify-content: center; align-items: center; gap: 20px; padding-top: 15px; margin-top: 10px; border-top: 1px dashed #cbd5e1;";
+            mobileLegendDiv.style.cssText = "display: flex; justify-content: center; align-items: center; gap: 20px; padding-top: 8px; margin-top: 6px; border-top: 1px dashed #cbd5e1;";
             mobileLegendDiv.innerHTML = `
                 <div style="display:flex; align-items:center; gap:6px; font-size:0.85rem; color:#475569; font-weight:700;"><div style="width:16px; height:4px; background:#10b981; border-radius:2px;"></div> 안정(150)</div>
                 <div style="display:flex; align-items:center; gap:6px; font-size:0.85rem; color:#475569; font-weight:700;"><div style="width:16px; height:4px; background:#3b82f6; border-radius:2px;"></div> 합격(100)</div>
@@ -2690,7 +2717,7 @@ function renderDetailedSimCard() {
 
             // 역추적 CTA 노출 조건: 현재 UI 점수 < 10 + 1점 상승해도 < 25 (사실상 도달 어려운 카드만)
             const uiMode = data._uiMode || 'default';
-            const showBtCTA = (currentScore < 10 && (currentScore + maxRise) < 25 && !data.ineligible && data.sim_data);
+            const showBtCTA = ((window.DEV_FORCE_BT_CTA || localStorage.getItem('DEV_FORCE_BT_CTA') === '1') || (currentScore < 10 && (currentScore + maxRise) < 25)) && !data.ineligible && data.sim_data;
 
             // Warning 박스 — 안정권만 유지. 불합격권은 역추적 CTA가 같은 조건으로 떠서 중복 → 제거.
             let warningHTML = '';

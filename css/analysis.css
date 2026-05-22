@@ -863,8 +863,18 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .sim-bar-item, .sim-label-item { min-width: 40px; }
     .chart-graph-area, .chart-label-area { padding-left: 10px; padding-right: 10px; gap: 5px; }
     .chart-graph-area { padding-top: 10px !important; height: 200px; }
-    .chart-guide-label { display: none !important; }
-    .mobile-legend-area { display: flex; margin-top: 20px; }
+    /* 모바일 라벨 영역 고정 100px 제거 — x축과 범례 사이 큰 빈 공간 해소 */
+    .chart-label-area { height: auto !important; min-height: 36px; padding-top: 4px !important; padding-bottom: 0 !important; }
+    /* 모바일 차트 가이드 라벨 — 그래프 우측 끝에 작게 표시 */
+    .chart-guide-label {
+        display: inline-block !important;
+        font-size: 0.65rem !important;
+        right: 2px !important;
+        top: -14px !important;
+        padding: 1px 4px !important;
+        background: rgba(255,255,255,0.95) !important;
+    }
+    .mobile-legend-area { display: flex; margin-top: 8px; padding-top: 8px; }
     .sim-line-chart-area { min-height: 220px; overflow: visible !important; margin: 10px 0; }
     .sim-univ-scroll-box { flex-direction: column; gap: 8px; padding: 10px 0; overflow-x: hidden; grid-template-columns: 1fr; }
     
@@ -878,6 +888,12 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     /* align-items: flex-start를 줘서 짧은 탭 밑에 거대한 빈 공백 생기는 현상 완벽 차단 */
     .sol-swipe-wrapper { display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; -ms-overflow-style: none; width: 100%; scroll-behavior: smooth; align-items: flex-start !important; transition: height 0.3s ease-out; }
     .sol-swipe-wrapper::-webkit-scrollbar { display: none; }
+    /* 한 번에 한 카드씩만 넘기도록 (긴 스와이프로 여러 단계 점프 방지) */
+    .sol-swipe-wrapper > .sol-content,
+    .sim-detail-card-area > .sim-result-card,
+    .subj-scroll-container > .sim-item,
+    #analysisCardsContainer > .analysis-card,
+    .pro-promo-grid > .pro-feature-card { scroll-snap-stop: always; }
     
     /* 100vw 대신 100% 사용해서 우측 잘림 방지 */
     .sol-content { display: block !important; flex: 0 0 100% !important; width: 100% !important; min-width: 0; scroll-snap-align: start; box-sizing: border-box; animation: none !important; padding: 0 15px; }
