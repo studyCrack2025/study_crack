@@ -2586,9 +2586,9 @@ function renderDetailedSimCard() {
                     </div>`;
             });
 
-            // 역추적 CTA 노출 조건: UI 점수 100 미만 + 지원 가능
+            // 역추적 CTA 노출 조건: 현재 UI 점수 < 10 + 1점 상승해도 < 25 (사실상 도달 어려운 카드만)
             const uiMode = data._uiMode || 'default';
-            const showBtCTA = (currentScore < 100 && !data.ineligible && data.sim_data);
+            const showBtCTA = (currentScore < 10 && (currentScore + maxRise) < 25 && !data.ineligible && data.sim_data);
 
             // Warning 박스 — 합격권 안정/불합격권만 표시 (구매 유도는 역추적 CTA/upsell로 일원화)
             let warningHTML = '';
@@ -2709,7 +2709,7 @@ function renderDetailedSimCard() {
         });
 
         const uiMode = data._uiMode || 'default';
-        const showBtCTA = (currentScore < 100 && !data.ineligible && data.sim_data);
+        const showBtCTA = (currentScore < 10 && (currentScore + maxRise) < 25 && !data.ineligible && data.sim_data);
 
         let warningHTML = '';
         if (currentScore < 10 && (currentScore + maxRise) < 25) warningHTML = `<div class="sim-warning" style="background:#fff7ed; border-color:#fdba74; color:#c2410c;"><i class="fas fa-exclamation-circle"></i><div><strong>여전히 불합격권입니다.</strong></div></div>`;
