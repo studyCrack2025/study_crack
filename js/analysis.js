@@ -1885,9 +1885,10 @@ function renderAnalysisCard(res) {
                 <span class="ac-axis-100" style="position:absolute; left:40%; transform:translateX(-50%);">합격</span>
                 <span class="ac-axis-150" style="position:absolute; left:60%; transform:translateX(-50%);">안정</span>
             </div>
-            <p style="font-size:14px; font-weight:600; color:${res.color}; text-align:right; margin:0 0 8px;">${safeMsg}</p>
-            <div style="background:#fff; border-radius:6px; padding:12px 16px; box-shadow:10px 20px 40px rgba(179,179,179,.1);">
+            <p class="ac-msg-outer" style="font-size:14px; font-weight:600; color:${res.color}; text-align:right; margin:0 0 8px;">${safeMsg}</p>
+            <div class="ac-comment-box" style="background:#fff; border-radius:6px; padding:12px 16px; box-shadow:10px 20px 40px rgba(179,179,179,.1);">
                 <p style="font-size:15px; font-weight:700; color:#30363e; margin:0 0 6px 0;">#합격 전략 코멘트</p>
+                <p class="ac-msg-inner" style="font-size:14px; font-weight:700; color:${res.color}; margin:0 0 6px;">${safeMsg}</p>
                 <p style="font-size:15px; color:#30363e; line-height:1.75; margin:0;">${getSimpleAdvice(res.converted_score, res.status)}</p>
             </div>
         </div>`;
