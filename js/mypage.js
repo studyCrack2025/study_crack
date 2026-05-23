@@ -225,6 +225,7 @@ async function fetchUserData(userId) {
         // 2. 내 정보 렌더링
         renderUserInfo(userData);
         renderSocialLinks(userData);
+        renderPlanStatus(userData);
         applyUserTier(userData.computedTier || 'free');
 
         // 프로필 이미지 처리
@@ -344,6 +345,34 @@ function renderUserInfo(data) {
 
     const mbtiDisplay = document.getElementById('profileMbtiDisplay');
     if (mbtiDisplay) mbtiDisplay.textContent = data.mbti || data.qualitative?.mbti || '-';
+}
+
+function renderPlanStatus(data) {
+    const tier = data.computedTier || 'free';
+    const tierEl = document.getElementById('planStatusTier');
+    const expireEl = document.getElementById('planStatusExpire');
+    const btnEl = document.getElementById('planStatusBtn');
+    if (!tierEl || !expireEl) return;
+
+    tierEl.innerText = tier.toUpperCase();
+
+    if (tier === 'free') {
+        expireEl.innerText = '이용권 없음';
+        if (btnEl) btnEl.innerText = '이용권 구매하기';
+    } else if (tier === 'basic') {
+        expireEl.innerText = '평생 이용 가능';
+        if (btnEl) btnEl.innerText = '업그레이드';
+    } else if (data.currentSubscription && data.currentSubscription.startDate) {
+        const startDate = new Date(data.currentSubscription.startDate);
+        const expireDate = new Date(startDate.getTime() + 28 * 24 * 60 * 60 * 1000);
+        const y = expireDate.getFullYear();
+        const m = String(expireDate.getMonth() + 1).padStart(2, '0');
+        const d = String(expireDate.getDate()).padStart(2, '0');
+        expireEl.innerText = `이용 가능 기간: ${y}.${m}.${d} 까지`;
+        if (btnEl) btnEl.innerText = '이용권 연장 / 업그레이드';
+    } else {
+        expireEl.innerText = '-';
+    }
 }
 
 function applyUserTier(tier) {
