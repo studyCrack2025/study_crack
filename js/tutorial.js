@@ -303,8 +303,13 @@ async function _nextStepCore() {
         const inq2Name   = document.getElementById('tutInq2Name')?.value || '';
         const inq1Raw    = parseInt(document.getElementById('tutInq1')?.value) || 0;
         const inq2Raw    = parseInt(document.getElementById('tutInq2')?.value) || 0;
-        const engGrd     = document.getElementById('tutEngGrd')?.value   || '';
-        const histGrd    = document.getElementById('tutHistGrd')?.value  || '';
+        const engGrd     = normalizeGradeValue(document.getElementById('tutEngGrd')?.value);
+        const histGrd    = normalizeGradeValue(document.getElementById('tutHistGrd')?.value);
+
+        if (!engGrd || !histGrd) {
+            alert('영어/한국사는 등급(1~9)만 선택할 수 있어요.');
+            return;
+        }
 
         // 선택된 시험 월 (3월 또는 5월)
         const examMonth = document.getElementById('tutExamMonth')?.value || 'mar';
@@ -359,6 +364,11 @@ function prevStep() {
         currentStepIdx--;
         renderStep();
     }
+}
+
+function normalizeGradeValue(raw) {
+    const value = String(raw ?? '').trim();
+    return /^[1-9]$/.test(value) ? value : '';
 }
 
 // ── 성적 입력 바 ──────────────────────────────────────────────────
