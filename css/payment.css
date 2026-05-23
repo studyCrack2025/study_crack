@@ -353,6 +353,8 @@ img, svg { display: block; max-width: 100%; }
 /* 선택한 플랜 행 */
 .checkout-plan-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; margin-bottom: 24px; border-radius: var(--radius-md); background: #f1f5fb; border: 1px solid #e2eaf8; font-size: 14px; color: var(--muted); }
 .checkout-plan-row strong { font-size: 16px; font-weight: 800; color: var(--primary); }
+.checkout-plan-note { margin: -14px 0 20px; padding: 10px 12px; border-radius: var(--radius-sm); background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; font-size: 13px; font-weight: 700; line-height: 1.45; }
+.checkout-plan-note i { margin-right: 6px; color: #ea580c; }
 
 /* 특수 옵션 (TEST/TRIAL) */
 .special-options { margin-bottom: 20px; }
