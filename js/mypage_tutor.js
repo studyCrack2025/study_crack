@@ -12,55 +12,6 @@ let mypagePhoneTimerInterval = null;
 
 window.myStudentsList = [];
 
-// 💡 공통 apiFetch 함수
-async function apiFetch(url, options = {}) {
-    const token = localStorage.getItem('accessToken');
-    const defaultHeaders = {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
-    };
-
-    options.headers = { ...defaultHeaders, ...(options.headers || {}) };
-
-    try {
-        const response = await fetch(url, options);
-
-        if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
-                alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
-                handleSignOut(); 
-                return Promise.reject(new Error("Auth expired")); 
-            }
-            
-            // 💡 백엔드에서 내려준 에러 메시지가 있다면 파싱해서 사용
-            let errorMessage = "요청 처리 중 문제가 발생했습니다.";
-            try {
-                const errorData = await response.json();
-                if (errorData.message) errorMessage = errorData.message;
-            } catch (e) {
-                // JSON 파싱 실패 시 기본 텍스트
-                errorMessage = `인증번호가 일치하지 않거나 오류가 발생했습니다.`;
-            }
-            // 콘솔에 에러를 찍지 않고 바로 에러를 던집니다.
-            throw new Error(errorMessage);
-        }
-        return response;
-    } catch (error) {
-        // 네트워크 단절 또는 위에서 던진 에러만 그대로 전달
-        throw error; 
-    }
-}
-
-// 💡 공통 XSS 방어 유틸리티
-function escapeHtml(text) {
-    if (text == null) return ""; 
-    return String(text) 
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
 
 function parseDynamoItem(item) {
     if (item === undefined || item === null) return null;
@@ -92,13 +43,28 @@ function parseDynamoItem(item) {
 // [초기화] DOM 로드 및 데이터 페치
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
-    const accessToken = localStorage.getItem('accessToken'); 
+
+    if (window.DEV_MOCK?.enabled) {
+        const u = window.DEV_MOCK.user;
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
+        set('userNameDisplay', u.name);
+        set('userEmailDisplay', u.email);
+        set('currentEmailDisplay', u.email);
+        set('currentPhoneDisplay', u.phone);
+        return;
+    }
+
     const userId = localStorage.getItem('userId');
 
-    if (!accessToken) {
-        alert("로그인이 필요합니다.");
-        window.location.href = '/login';
-        return;
+    if (!localStorage.getItem('userId')) {
+        const refreshed = await tryRefreshToken();
+        if (!refreshed) {
+            clearClientSession();
+            alert("로그인이 필요합니다.");
+            window.location.href = '/login';
+            return;
+        }
+        checkLoginStatus();
     }
 
     initTutorCognito();
@@ -305,46 +271,46 @@ window.toggleDepositHistory = function() {
 async function loadDepositHistoryData() {
     const tbody = document.getElementById('depositListBody');
     tbody.innerHTML = '<tr><td colspan="4" class="empty-msg"><i class="fas fa-spinner fa-spin"></i> 내역 조회 중...</td></tr>';
-    const userId = localStorage.getItem('userId');
+
+    const PAY_STATUS_COLORS = { '미지급': '#ef4444', '지급대기': '#f59e0b', '지급완료': '#10b981' };
 
     try {
         const response = await apiFetch(TUTOR_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'tutor_get_payment_history', userId: userId })
+            body: JSON.stringify({ type: 'tutor_get_payment_history' })
         });
-        
-        const rawList = await response.json();
-        let list = Array.isArray(rawList) ? rawList.map(parseDynamoItem) : [];
+
+        const list = await response.json();
 
         tbody.innerHTML = '';
-        if (list.length === 0) {
+        if (!Array.isArray(list) || list.length === 0) {
             tbody.innerHTML = '<tr><td colspan="4" class="empty-msg">정산 내역이 없습니다.</td></tr>';
             return;
         }
 
-        list.sort((a, b) => (b.yearMonth || '').localeCompare(a.yearMonth || ''));
-
         list.forEach(item => {
-            const stdCount = Number(item.standardCount || 0); const proCount = Number(item.proCount || 0);
-            const stdAmt = Number(item.standardAmount || 0).toLocaleString(); const proAmt = Number(item.proAmount || 0).toLocaleString();
-            const totalAmt = Number(item.totalAmount || 0).toLocaleString();
+            const weeklyCount = Number(item.weeklyCount || 0);
+            const proCount    = Number(item.proCount    || 0);
+            const weeklyAmt   = Number(item.weeklyAmount || 0).toLocaleString();
+            const proAmt      = Number(item.proAmount    || 0).toLocaleString();
+            const totalAmt    = Number(item.totalAmount  || 0).toLocaleString();
+            const payStatus   = item.payStatus || '미지급';
+            const statusColor = PAY_STATUS_COLORS[payStatus] || '#64748b';
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td data-label="정산 월"><strong>${escapeHtml(item.yearMonth)}</strong></td>
-                <td data-label="유료 등급별 학생 수">
-                    <div style="font-size:0.9rem;"><span style="color:#64748b;">Standard:</span> <strong>${stdCount}명</strong></div>
-                    <div style="font-size:0.9rem;"><span style="color:#2563eb;">Pro:</span> <strong>${proCount}명</strong></div>
+                <td data-label="보고서 작성 건수">
+                    <div style="font-size:0.9rem;"><span style="color:#64748b;">주간 리포트:</span> <strong>${weeklyCount}건</strong></div>
+                    <div style="font-size:0.9rem;"><span style="color:#2563eb;">PRO 보고서:</span> <strong>${proCount}건</strong></div>
                 </td>
-                <td data-label="등급별 정산 금액">
-                    <div style="font-size:0.9rem;"><span style="color:#64748b;">Std:</span> ${stdAmt}원</div>
-                    <div style="font-size:0.9rem;"><span style="color:#2563eb;">Pro:</span> ${proAmt}원</div>
+                <td data-label="급여 산정 내역">
+                    <div style="font-size:0.9rem;"><span style="color:#64748b;">주간:</span> ${weeklyAmt}원</div>
+                    <div style="font-size:0.9rem;"><span style="color:#2563eb;">PRO:</span> ${proAmt}원</div>
                 </td>
                 <td data-label="총 지급액 / 상태">
                     <div style="font-weight:bold; color:#1e293b; font-size:1rem;">${totalAmt}원</div>
-                    <div style="font-size:0.8rem; color:${item.status === '입금완료' ? 'green' : '#f59e0b'}; margin-top:4px;">
-                        ${escapeHtml(item.status)}
-                    </div>
+                    <div style="font-size:0.82rem; font-weight:700; color:${statusColor}; margin-top:4px;">${escapeHtml(payStatus)}</div>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -822,19 +788,21 @@ window.requestTutorWithdrawal = function() {
     tutorCognitoUser.authenticateUser(authDetails, {
         onSuccess: async function(result) {
             try {
-                // 1. 최신 토큰으로 스토리지 갱신
-                const newAccessToken = result.getAccessToken().getJwtToken();
-                localStorage.setItem('accessToken', newAccessToken);
-                localStorage.setItem('idToken', result.getIdToken().getJwtToken());
+                // 1. register_refresh_cookie로 at/rt 쿠키 갱신
+                const refreshToken = result.getRefreshToken().getToken();
+                await fetch(CONFIG.api.auth, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken })
+                });
 
-                // 2. 단일 API 호출 (saveSingleField 삭제됨)
-                // 💡 새 토큰을 헤더에 명시적으로 덮어씌워 401 동기화 에러 완벽 차단
+                // 2. 쿠키 기반 API 호출
                 await apiFetch(NOTI_API_URL, {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${newAccessToken}` }, 
-                    body: JSON.stringify({ 
+                    body: JSON.stringify({
                         type: 'tutor_request_withdrawal',
-                        data: { reason: reason, tutorName: tutorInfoData.name } 
+                        data: { reason: reason, tutorName: tutorInfoData.name }
                     })
                 });
                 

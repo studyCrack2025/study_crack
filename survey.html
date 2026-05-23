@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+  <script>if('scrollRestoration'in history)history.scrollRestoration='manual';</script>
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
     j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
@@ -16,21 +17,25 @@
     
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/survey.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
 </head>
 <body>
-    <header>
+    <header id="site-header" class="scrolled">
         <div class="logo-container">
             <a href="/" class="logo-link">
-                <img src="/assets/images/studycrack_logo_wo_bg.png" alt="StudyCrack 로고" style="height: 40px; width: auto;">
+                <img src="/assets/figma/figma-asset-04.svg" alt="StudyCrack 로고">
                 <span class="logo">StudyCrack</span>
             </a>
         </div>
         <nav class="nav-links">
-            <a href="/mypage" class="nav-btn">마이페이지</a>
-            <a href="#" onclick="handleSignOut()" class="nav-btn">로그아웃</a>
+            <a href="/analysis">나만의 솔루션</a>
+            <a href="/qna">1:1 문의</a>
+            <a href="/login" id="loginBtn" class="nav-btn">로그인 / 회원가입</a>
+            <a href="/mypage" id="myPageBtn" class="hidden">마이페이지</a>
+            <a href="#" id="logoutBtn" onclick="handleSignOut()" class="nav-btn hidden">로그아웃</a>
         </nav>
     </header>
 
@@ -75,7 +80,7 @@
                 <option value="상경계열">상경계열</option>
                 <option value="자연/공학">자연/공학</option>
                 <option value="의치한약수">의치한약수</option>
-                <option value="간호">간호</option>
+                <option value="간호/보건">간호/보건</option>
                 <option value="사범/교대">사범/교대</option>
                 <option value="예체능">예체능</option>
                 <option value="기타">기타</option>
@@ -113,6 +118,7 @@
                 <label>시험 선택:</label>
                 <select id="examSelect" onchange="loadExamData()">
                     <option value="mar">3월 학평</option>
+                    <option value="may">5월 학평</option>
                 </select>
             </div>
 
@@ -187,7 +193,20 @@
                             <td colspan="2" class="disabled-cell hide-mobile"></td>
                             <td class="disabled-cell"></td>
                             <td class="disabled-cell"></td>
-                            <td data-label="등급"><input type="number" id="engGrd"></td>
+                            <td data-label="등급">
+                                <select id="engGrd">
+                                    <option value="">등급 선택</option>
+                                    <option value="1">1등급</option>
+                                    <option value="2">2등급</option>
+                                    <option value="3">3등급</option>
+                                    <option value="4">4등급</option>
+                                    <option value="5">5등급</option>
+                                    <option value="6">6등급</option>
+                                    <option value="7">7등급</option>
+                                    <option value="8">8등급</option>
+                                    <option value="9">9등급</option>
+                                </select>
+                            </td>
                         </tr>
 
                         <tr>
@@ -196,7 +215,20 @@
                             <td colspan="2" class="disabled-cell hide-mobile"></td>
                             <td class="disabled-cell"></td>
                             <td class="disabled-cell"></td>
-                            <td data-label="등급"><input type="number" id="histGrd"></td>
+                            <td data-label="등급">
+                                <select id="histGrd">
+                                    <option value="">등급 선택</option>
+                                    <option value="1">1등급</option>
+                                    <option value="2">2등급</option>
+                                    <option value="3">3등급</option>
+                                    <option value="4">4등급</option>
+                                    <option value="5">5등급</option>
+                                    <option value="6">6등급</option>
+                                    <option value="7">7등급</option>
+                                    <option value="8">8등급</option>
+                                    <option value="9">9등급</option>
+                                </select>
+                            </td>
                         </tr>
 
                         <tr>
@@ -266,47 +298,6 @@
         </div>
     </div>
     
-    <div id="termModal" class="modal hidden">
-        <div class="modal-content term-modal-content">
-            <span class="close-btn" onclick="closeTermModal('termModal')">&times;</span>
-            <h3 style="margin-bottom: 15px; font-size: 1.1rem; color:#1e293b;">스터디크랙 개인정보 처리방침</h3>
-            <div class="term-text-box">스터디크랙은 「개인정보 보호법」에 따라 이용자의 개인정보를 보호하고,
-관련 법령을 준수하여 개인정보를 처리합니다.
-1. 수집하는 개인정보 항목
-- 필수 항목: 이름, 연락처, 학년, 성적 정보, 계열, 희망 대학
-- 선택 항목: 학습 성향, 목표 대학, 상담 참고 정보
-2. 개인정보 수집 방법
-- 홈페이지 입력폼 및 설문지
-- 상담 신청 및 서비스 이용 과정
-- 결제 및 고객 응대 과정
-3. 개인정보 수집 및 이용 목적
-- 입시 컨설팅 및 학습 전략 분석
-- 상담 및 서비스 제공
-- 서비스 안내 및 고객 응대
-4. 개인정보 처리의 법적 근거
-- 정보주체의 동의
-- 서비스 제공을 위한 계약의 이행
-5. 개인정보 보유 및 이용 기간
-- 서비스 종료 후 5년간 보관
-- 단, 관계 법령에 따라 보존이 필요한 경우 해당 법령에서 정한 기간 동안 보관
-※ 보유 기간의 근거: 전자상거래 관련 법령, 소비자 분쟁 대응, 세무·회계 처리
-6. 개인정보의 파기 절차 및 방법
-- 보유 기간이 경과하거나 처리 목적이 달성된 개인정보는 지체 없이 파기합니다.
-- 전자적 파일 형태: 복구 불가능한 방식으로 삭제
-- 종이 문서: 분쇄 또는 소각
-7. 개인정보 제공
-스터디크랙은 이용자의 개인정보를 제3자에게 제공하지 않습니다.
-단, 법령에 따른 요청이 있는 경우는 예외로 합니다.
-8. 개인정보 처리 위탁
-현재 스터디크랙은 개인정보 처리 업무를 외부에 위탁하지 않습니다.
-향후 위탁이 발생할 경우 관련 법령에 따라 사전 고지하겠습니다.
-9. 이용자의 권리
-이용자는 언제든지 본인의 개인정보에 대해 열람, 수정, 삭제를 요청할 수 있습니다.
-10. 개인정보 보호 책임자
-- 책임자: 임태륭
-- 문의처: contact@studycrack.co.kr</div>
-        </div>
-    </div>
     
     <div id="tutorialOverlay" class="tutorial-overlay hidden">
         <div id="tutorialCloneContainer" style="position: fixed; z-index: 9999; pointer-events: none;"></div>
@@ -327,6 +318,7 @@
         </div>
     </div>
 
+    <script src="/js/dev-mock.js"></script>
     <script src="/js/config.js"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/survey.js"></script>

@@ -3,36 +3,39 @@ const DATA_FETCH_URL = CONFIG.api.analysis;
 
 let examScores = {}; 
 
-// 💡 공통 apiFetch 함수 (accessToken 기반 통합 및 401 예외 처리)
+// 💡 공통 apiFetch 함수 — HttpOnly 쿠키 기반 인증
 async function apiFetch(url, options = {}) {
-    const token = localStorage.getItem('accessToken');
-    const defaultHeaders = {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
-    };
-
-    options.headers = { ...defaultHeaders, ...options.headers };
+    const defaultHeaders = { 'Content-Type': 'application/json' };
+    options.headers = { ...defaultHeaders, ...(options.headers || {}) };
+    options.credentials = 'include';
 
     try {
         const response = await fetch(url, options);
 
         if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
+            if (response.status === 401) {
+                const refreshed = await tryRefreshToken();
+                if (refreshed) {
+                    const retryRes = await fetch(url, options);
+                    if (retryRes.ok) return retryRes;
+                }
                 const currentPath = window.location.pathname;
                 if (!['/login', '/signup', '/'].includes(currentPath)) {
-                    alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
-                    localStorage.clear();
-                    sessionStorage.clear();
-                    window.location.href = '/login'; 
+                    clearClientSession();
+                    window.location.href = '/login';
                 }
-                return Promise.reject(new Error("Auth expired")); 
+                return Promise.reject(new Error("Auth expired"));
+            }
+            if (response.status === 403) {
+                const errBody = await response.json().catch(() => ({}));
+                throw new Error(errBody.error || errBody.message || '접근 권한이 없습니다.');
             }
             throw new Error(`서버 통신 오류 (상태 코드: ${response.status})`);
         }
         return response;
     } catch (error) {
         console.error("API 통신 실패:", error);
-        throw error; 
+        throw error;
     }
 }
 
@@ -47,13 +50,23 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+
+    if (window.DEV_MOCK?.enabled) {
+        setupUI();
+        setTimeout(checkQualitativeForm, 500);
+        return;
+    }
+
     const userId = localStorage.getItem('userId');
     if (!userId) {
         alert("로그인이 필요합니다.");
         window.location.href = '/login';
         return;
     }
+
+    // 쿠키 기반 인증 — 페이지 로드 시 at 쿠키 갱신
+    await tryRefreshToken();
 
     fetchUserData(userId);
     setupUI();
@@ -262,15 +275,20 @@ async function requestScoreConversion(type) {
         if(grdEl) { grdEl.value = ""; grdEl.placeholder = "..."; }
         
         // 💡 apiFetch 적용
+        const isDualSubject = (type === 'kor' || type === 'math');
+        const commonVal   = isDualSubject ? (parseInt(document.getElementById(commonId)?.value)   || 0) : undefined;
+        const electiveVal = isDualSubject ? (parseInt(document.getElementById(electiveId)?.value) || 0) : undefined;
+
         const response = await apiFetch(DATA_FETCH_URL, {
             method: 'POST',
             body: JSON.stringify({
-                type: 'convert_score', 
+                type: 'convert_score',
                 month: month,
                 subject: subjectKey,
-                score: scoreVal, // 이제 원점수가 전송됨
+                score: scoreVal,
                 opt: optVal,
-                subName: subNameVal
+                subName: subNameVal,
+                ...(isDualSubject ? { common: commonVal, elective: electiveVal } : {})
             })
         });
 
@@ -313,6 +331,11 @@ function handleScoreInput(el, maxVal, subject) {
     const commonVal = parseInt(document.getElementById(`${subject}Common`).value) || 0;
     const electiveVal = parseInt(document.getElementById(`${subject}Elective`).value) || 0;
     document.getElementById(`${subject}Raw`).value = commonVal + electiveVal;
+}
+
+function normalizeGradeValue(raw) {
+    const value = String(raw ?? '').trim();
+    return /^[1-9]$/.test(value) ? value : '';
 }
 
 // === UI 설정 ===
@@ -527,8 +550,8 @@ function loadExamData() {
     setVal('mathRaw', d.math?.raw); 
     setVal('mathStd', d.math?.std); setVal('mathPct', d.math?.pct); setVal('mathGrd', d.math?.grd);
     
-    setVal('engGrd', d.eng?.grd); 
-    setVal('histGrd', d.hist?.grd);
+    setVal('engGrd', normalizeGradeValue(d.eng?.grd)); 
+    setVal('histGrd', normalizeGradeValue(d.hist?.grd));
     
     setVal('inq1Name', d.inq1?.name); setVal('inq1Raw', d.inq1?.raw); setVal('inq1Std', d.inq1?.std); setVal('inq1Pct', d.inq1?.pct); setVal('inq1Grd', d.inq1?.grd);
     setVal('inq2Name', d.inq2?.name); setVal('inq2Raw', d.inq2?.raw); setVal('inq2Std', d.inq2?.std); setVal('inq2Pct', d.inq2?.pct); setVal('inq2Grd', d.inq2?.grd);
@@ -551,12 +574,19 @@ async function saveQuantitative() {
     const mathOpt = getVal('mathOpt');
     const inq1Name = getVal('inq1Name');
     const inq2Name = getVal('inq2Name');
+    const engGrd = normalizeGradeValue(getVal('engGrd'));
+    const histGrd = normalizeGradeValue(getVal('histGrd'));
+
+    if (!engGrd || !histGrd) {
+        alert("영어/한국사는 등급(1~9)만 선택할 수 있습니다.");
+        return;
+    }
 
     const currentData = {
         kor: { opt: korOpt, common: getVal('korCommon'), elective: getVal('korElective'), raw: getVal('korRaw'), std: getVal('korStd'), pct: getVal('korPct'), grd: getVal('korGrd') },
         math: { opt: mathOpt, common: getVal('mathCommon'), elective: getVal('mathElective'), raw: getVal('mathRaw'), std: getVal('mathStd'), pct: getVal('mathPct'), grd: getVal('mathGrd') },
-        eng: { grd: getVal('engGrd') }, 
-        hist: { grd: getVal('histGrd') },
+        eng: { grd: engGrd }, 
+        hist: { grd: histGrd },
         inq1: { name: inq1Name, raw: getVal('inq1Raw'), std: getVal('inq1Std'), pct: getVal('inq1Pct'), grd: getVal('inq1Grd') },
         inq2: { name: inq2Name, raw: getVal('inq2Raw'), std: getVal('inq2Std'), pct: getVal('inq2Pct'), grd: getVal('inq2Grd') },
         foreign: { name: getVal('foreignName'), grd: getVal('foreignGrd') }

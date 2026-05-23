@@ -6,8 +6,9 @@ credentials.json
 # 2. 너무 무거운 의존성 폴더 (올릴 필요 없음)
 node_modules/
 
-# 3. 환경변수 파일 (나중에 쓸 수도 있음)
+# 3. 환경변수 및 설정파일
 .env
+serve.json
 
 # 4. 맥/윈도우 시스템 파일 (지저분함)
 .DS_Store
@@ -23,3 +24,9 @@ backend-backup/
 CLAUDE.md
 ARCHITECTURE.md
 docs/
+
+# 7. 기타 지금은 안쓰는 파일 및 폴더들
+black/
+
+# 8. 로컬 개발용 mock 데이터 (절대 커밋 금지)
+js/dev-mock.local.js

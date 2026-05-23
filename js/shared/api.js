@@ -1,0 +1,69 @@
+// js/shared/api.js
+// auth.js 없이 동작하는 페이지(admin_detail.html 등)용 apiFetch 모듈
+// HttpOnly 쿠키 기반 인증 — 토큰을 JS에 저장하지 않음
+
+let _sharedIsRefreshing = false;
+
+async function tryRefreshToken() {
+    if (_sharedIsRefreshing) return false;
+    _sharedIsRefreshing = true;
+    try {
+        const res = await fetch(CONFIG.api.auth, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ type: 'silent_refresh' })
+        });
+        return res.ok;
+    } catch (e) {
+        return false;
+    } finally {
+        _sharedIsRefreshing = false;
+    }
+}
+
+async function apiFetch(url, options = {}) {
+    const defaultHeaders = { 'Content-Type': 'application/json' };
+    options.headers = { ...defaultHeaders, ...(options.headers || {}) };
+    options.credentials = 'include';
+
+    try {
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                const refreshed = await tryRefreshToken();
+                if (refreshed) {
+                    const retryRes = await fetch(url, options);
+                    if (retryRes.ok) return retryRes;
+                }
+                alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
+                const userRole = localStorage.getItem('userRole');
+                ['refreshToken','userId','userEmail','userRole','userName','userTier','authProvider'].forEach(k => localStorage.removeItem(k));
+                sessionStorage.clear();
+                window.location.href = (userRole === 'admin' || userRole === 'tutor') ? '/admin/login' : '/login';
+                return Promise.reject(new Error("Auth expired"));
+            }
+            if (response.status === 403) {
+                const errBody = await response.json().catch(() => ({}));
+                throw new Error(errBody.error || errBody.message || '접근 권한이 없습니다.');
+            }
+            let errorMessage = `서버 통신 오류 (상태 코드: ${response.status})`;
+            try {
+                const errorData = await response.json();
+                if (errorData.message || errorData.error) errorMessage = errorData.message || errorData.error;
+            } catch (e) { /* ignore */ }
+            throw new Error(errorMessage);
+        }
+        return response;
+    } catch (error) {
+        console.error("API 통신 실패:", error);
+        throw error;
+    }
+}
+
+// 공유 URL 상수 (admin_detail.html 등 auth.js 미탑재 페이지용)
+const ADMIN_API_URL = CONFIG.api.admin;
+const REPORT_API_URL = CONFIG.api.report;
+const FILE_API_URL = CONFIG.api.file;
+const PAYMENT_API_URL = CONFIG.api.payment || CONFIG.api.admin;
