@@ -12,15 +12,6 @@ header#site-header .nav-links a.active-link { color: #4c79ee; }
 .plan-status-btn { display: inline-block; padding: 9px 18px; background: #2563eb; color: #fff; border-radius: 8px; font-size: 0.88rem; font-weight: 700; text-decoration: none; transition: background 0.2s; white-space: nowrap; }
 .plan-status-btn:hover { background: #1d4ed8; }
 
-/* Plan Status Card */
-.plan-status-card { display: flex; align-items: center; justify-content: space-between; background: #f0f7ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 18px 24px; margin-bottom: 28px; gap: 16px; flex-wrap: wrap; }
-.plan-status-left { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.plan-status-label { font-size: 0.85rem; color: #64748b; font-weight: 500; }
-.plan-status-tier { font-size: 1.15rem; font-weight: 800; color: #1d4ed8; }
-.plan-status-expire { font-size: 0.85rem; color: #475569; }
-.plan-status-btn { display: inline-block; padding: 9px 18px; background: #2563eb; color: #fff; border-radius: 8px; font-size: 0.88rem; font-weight: 700; text-decoration: none; transition: background 0.2s; white-space: nowrap; }
-.plan-status-btn:hover { background: #1d4ed8; }
-
 /* 1. 전체 레이아웃 (Layout) */
 .mypage-container {
     display: flex;
