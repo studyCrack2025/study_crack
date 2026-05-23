@@ -166,9 +166,10 @@ function renderWeeklyTab() {
             <div class="card-grid-body">${studyHtml}${checkHtml}</div>
             ${mockHtml}${footerHtml}
             ${renderWeeklyFeedbackArea(weeklyKey, fb, reportFormVer, {
-                weekId: d.weekId || '',
-                reportKey: d.reportKey || '',
-                reportDate: d.reportDate || d.date || '',
+                weekId: d.weekId || weeklyKey,
+                reportKey: d.reportKey || d.weekId || weeklyKey,
+                // reportDate는 서버에서 주차키로 해석되므로 ISO date 대신 주차키를 우선 전달
+                reportDate: d.reportDate || d.weekId || weeklyKey,
                 formVersion: reportFormVer
             })}
         `;
@@ -228,12 +229,34 @@ function weeklyIdKey(weeklyKey) {
     return String(weeklyKey || '').replace(/[^a-zA-Z0-9]/g, '_');
 }
 
+function toWeeklyKey(value) {
+    if (!value) return '';
+    const raw = String(value).trim();
+    if (/^\d{6}$/.test(raw)) return raw;
+
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) return '';
+
+    const year = parsed.getFullYear().toString().slice(2);
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    const startOfMonth = new Date(parsed.getFullYear(), parsed.getMonth(), 1);
+    const dayOfWeek = startOfMonth.getDay();
+    const offsetDate = parsed.getDate() + dayOfWeek - 1;
+    const weekNum = String(Math.floor(offsetDate / 7) + 1).padStart(2, '0');
+    return `${year}${month}${weekNum}`;
+}
+
 function findWeeklyReportByKeys(...keys) {
-    const normalized = [...new Set(keys.filter(Boolean).map(v => String(v)))];
-    if (normalized.length === 0) return null;
+    const normalizedRaw = [...new Set(keys.filter(Boolean).map(v => String(v).trim()))];
+    const normalizedWeekly = [...new Set(normalizedRaw.map(toWeeklyKey).filter(Boolean))];
+    if (normalizedRaw.length === 0 && normalizedWeekly.length === 0) return null;
+
     return (currentWeeklyData || []).find((w) => {
-        const candidates = [w.weekId, w.reportKey, w.reportDate, w.date].filter(Boolean).map(v => String(v));
-        return normalized.some(k => candidates.includes(k));
+        const candidates = [w.weekId, w.reportKey, w.reportDate, w.date]
+            .filter(Boolean)
+            .map(v => String(v).trim());
+        const weeklyCandidates = candidates.map(toWeeklyKey).filter(Boolean);
+        return normalizedRaw.some(k => candidates.includes(k)) || normalizedWeekly.some(k => weeklyCandidates.includes(k));
     }) || null;
 }
 
@@ -246,9 +269,14 @@ function resolveWeeklyPayloadContext(weeklyKey) {
     const areaFormVersion = Number(area?.dataset?.formVersion) || 1;
 
     const reportData = findWeeklyReportByKeys(weeklyKey, areaWeekId, areaReportKey, areaReportDate) || {};
-    const weekId = reportData.weekId || areaWeekId || areaReportKey || String(weeklyKey || '');
-    const reportKey = reportData.reportKey || areaReportKey || reportData.weekId || weekId;
-    const reportDate = reportData.reportDate || areaReportDate || reportData.weekId || weekId;
+    const weekId = toWeeklyKey(reportData.weekId)
+        || toWeeklyKey(areaWeekId)
+        || toWeeklyKey(areaReportKey)
+        || toWeeklyKey(weeklyKey)
+        || toWeeklyKey(areaReportDate);
+    const reportKey = String(reportData.reportKey || areaReportKey || reportData.weekId || weekId || '');
+    // ReportCore는 reportDate를 weekId로 사용하므로 canonical weekId를 전송한다.
+    const reportDate = weekId || String(reportData.reportDate || areaReportDate || '');
     const formVersion = Number(reportData.formVersion) || areaFormVersion || 1;
 
     return { reportData, weekId, reportKey, reportDate, formVersion };

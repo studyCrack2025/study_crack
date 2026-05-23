@@ -879,39 +879,18 @@ function updateSurveyStatus(data) {
             return `<option value="${key}">${name}</option>`;
         }).join('');
 
-        const renderSideScore = (examKey) => {
-            const d = quan[examKey];
-            if (!d) return;
-
-            const makeRow = (label, obj) => {
-                if (!obj) return '';
-                let optText = '';
-                if (obj.opt && obj.opt !== 'none') {
-                    optText = `<span class="score-opt">(${escapeHtml(obj.opt)})</span>`;
-                } else if (obj.name) {
-                    optText = `<span class="score-opt">(${escapeHtml(obj.name)})</span>`;
-                }
-
-                const grd = obj.grd ? escapeHtml(obj.grd) : '-';
-                let pctStr = '';
-                if (label !== '영어' && label !== '한국사') {
-                    const std = escapeHtml(obj.std) || '-';
-                    const pct = obj.pct ? escapeHtml(obj.pct) + '%' : '-';
-                    pctStr = `${std} / ${pct}`;
-                }
-
-                return `<div class="score-row"><span class="score-subj">${label}${optText}</span><span class="score-nums">${pctStr}</span><span class="score-grd">${grd}</span></div>`;
-            };
-
-            let html = '<div class="score-list">';
-            html += makeRow('국어', d.kor); html += makeRow('수학', d.math); html += makeRow('영어', d.eng);
-            html += makeRow('탐구1', d.inq1); html += makeRow('탐구2', d.inq2);
-            html += '</div>';
-            detailBox.innerHTML = html;
+        // 사이드바 정량 토글의 초기값을 currentExamMode 와 맞춰 두면 시뮬/목표대학 영역과 시작부터 동기화됨
+        const initialKey = (currentExamMode && validExams.includes(currentExamMode))
+            ? currentExamMode
+            : validExams[0];
+        selector.value = initialKey;
+        renderSideQuanDetail(initialKey);
+        // 사이드바에서 정량 토글 변경 → 본문(목표대학/시뮬)도 같이 갱신
+        selector.onchange = (e) => {
+            const next = e.target.value;
+            renderSideQuanDetail(next);
+            if (next !== currentExamMode) changeExamMode(next);
         };
-
-        renderSideScore(validExams[0]);
-        selector.onchange = (e) => { renderSideScore(e.target.value); };
     } else {
         quanEmptyEl.style.display = 'block';
         quanContentBox.style.display = 'none';
@@ -1887,9 +1866,51 @@ async function updateAnalysisUI() {
     }
 }
 
+// 사이드바 정량 데이터 디테일 박스 렌더 (모듈 스코프 — changeExamMode 에서도 호출)
+function renderSideQuanDetail(examKey) {
+    const detailBox = document.getElementById('sideQuanDetail');
+    if (!detailBox) return;
+    const d = userQuantData ? userQuantData[examKey] : null;
+    if (!d) { detailBox.innerHTML = ''; return; }
+
+    const makeRow = (label, obj) => {
+        if (!obj) return '';
+        let optText = '';
+        if (obj.opt && obj.opt !== 'none') {
+            optText = `<span class="score-opt">(${escapeHtml(obj.opt)})</span>`;
+        } else if (obj.name) {
+            optText = `<span class="score-opt">(${escapeHtml(obj.name)})</span>`;
+        }
+        const grd = obj.grd ? escapeHtml(obj.grd) : '-';
+        let pctStr = '';
+        if (label !== '영어' && label !== '한국사') {
+            const std = escapeHtml(obj.std) || '-';
+            const pct = obj.pct ? escapeHtml(obj.pct) + '%' : '-';
+            pctStr = `${std} / ${pct}`;
+        }
+        return `<div class="score-row"><span class="score-subj">${label}${optText}</span><span class="score-nums">${pctStr}</span><span class="score-grd">${grd}</span></div>`;
+    };
+
+    let html = '<div class="score-list">';
+    html += makeRow('국어', d.kor); html += makeRow('수학', d.math); html += makeRow('영어', d.eng);
+    html += makeRow('탐구1', d.inq1); html += makeRow('탐구2', d.inq2);
+    html += '</div>';
+    detailBox.innerHTML = html;
+}
+
 function changeExamMode(mode) {
     currentExamMode = mode;
     persistExamMode(mode);
+    // 본문(목표대학/시뮬) ↔ 사이드바 정량 토글 양방향 동기화.
+    // 값만 바꾸고 change 이벤트는 dispatch 하지 않음 (onchange → changeExamMode 재귀 방지).
+    const sideSel = document.getElementById('sideQuanSelector');
+    if (sideSel && sideSel.value !== mode) {
+        const hasOption = Array.from(sideSel.options).some(o => o.value === mode);
+        if (hasOption) {
+            sideSel.value = mode;
+            renderSideQuanDetail(mode);
+        }
+    }
     updateAnalysisUI();
 }
 
