@@ -674,7 +674,7 @@ async function fetchUserData(userId) {
         
         const rawData = await response.json();
         const data = parseDynamoItem(rawData);
-        
+
         userGracePeriodUntil = data.gracePeriodUntil || null;
 
         if (data.tutorName) currentTutorName = data.tutorName;
