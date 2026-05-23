@@ -21,7 +21,6 @@ let cachedProReports = [];  // 💡 이제 별도 API로 받아옴
 let currentSelectStep = 'univ';
 let selectedUnivForMajor = '';
 let userGracePeriodUntil = null;
-const SIM_ALLOWED_TIERS = ['standard', 'pro'];
 
 let scrollPosition = 0;
 let currentTutorName = "수석 튜터";
@@ -615,16 +614,12 @@ function getStandardLockOverlayHTML(featureName) {
         </div>`;
 }
 
-function canUseSimulationTier(tier = currentUserTier) {
-    return SIM_ALLOWED_TIERS.includes(String(tier || '').toLowerCase());
-}
-
 function applySimTierLock() {
     const container = document.querySelector('.sim-container-new') || document.getElementById('sol-sim');
     if (!container) return;
 
-    // 서버 권한과 동일하게 Standard/Pro만 허용
-    if (!canUseSimulationTier(currentUserTier)) {
+    // 💡 수정됨: 'trial'을 잠금 대상에서 제외 ('free', 'basic'만 잠금)
+    if (['free', 'basic'].includes(currentUserTier)) {
         container.style.position = 'relative';
         container.style.minHeight = '400px'; // 모달 위치 통일용 강제 고정
         if (container.querySelector('.sim-tier-lock-overlay')) return;
@@ -635,7 +630,7 @@ function applySimTierLock() {
         overlay.innerHTML = getStandardLockOverlayHTML('점수 상승 시뮬레이션');
         container.appendChild(overlay);
     } else {
-        // 권한이 있으면 잠금 해제
+        // 💡 추가됨: 'trial', 'standard', 'pro' 일 경우 자물쇠 원상복구(해제)
         container.style.minHeight = 'auto';
         const existingOverlay = container.querySelector('.sim-tier-lock-overlay');
         if (existingOverlay) existingOverlay.remove();
@@ -2011,7 +2006,7 @@ function initSimulation() {
     const chartArea = document.getElementById('simChartArea');
     if (!chartArea) return;
 
-    if (!canUseSimulationTier(currentUserTier)) {
+    if (!['trial', 'standard', 'pro'].includes(currentUserTier)) {
         chartArea.innerHTML = `<div style="width:100%; height:100%; min-height: 260px; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-weight:600; font-size:1.1rem;">Standard 멤버십 이상 전용 기능입니다.</div>`;
         renderDetailedSimCard(); // 블러 뒤에 나타날 타겟 CTA 렌더링 호출
         return;
@@ -2100,18 +2095,7 @@ async function fetchSimulationData() {
         renderSimChart();
         
     } catch (e) { 
-        const message = e?.message || '데이터 로드 실패';
-        const isAuthz = /권한|멤버십|403/.test(message);
-        if (isAuthz) {
-            chartArea.innerHTML = `<div style="width:100%; min-height:220px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; text-align:center; color:#475569; padding:16px;">
-                <i class="fas fa-lock" style="font-size:1.8rem; color:#7c9eef;"></i>
-                <strong style="color:#1f2937;">시뮬레이션 이용 권한이 없습니다.</strong>
-                <span style="font-size:0.92rem;">${escapeHtml(message)}</span>
-                <button type="button" onclick="location.href='/payment'" style="margin-top:4px; border:none; background:#4c79ee; color:#fff; font-weight:700; border-radius:8px; padding:10px 14px; cursor:pointer;">멤버십 확인하기</button>
-            </div>`;
-        } else {
-            chartArea.innerHTML = '<div style="color:#ef4444; padding:20px; text-align:center;">데이터 로드 실패</div>';
-        }
+        chartArea.innerHTML = '<div style="color:#ef4444; padding:20px; text-align:center;">데이터 로드 실패</div>'; 
         console.error("Simulation Fetch Error:", e);
     }
 }
