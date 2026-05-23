@@ -42,6 +42,17 @@
 
 ---
 
+## Cache Busting
+
+- 정적 리소스(`/css/*.css`, `/js/*.js`)는 HTML에서 `?v=...` 쿼리 버전으로 참조합니다.
+- 배포 직전에 아래 명령으로 버전을 갱신하세요:
+
+```bash
+./tools/bump_asset_version.sh 20260524b
+```
+
+---
+
 ## Changelog
 
 - **[v1.5]** (2026-05-23): 3월 학평 점수 상승 시뮬레이션 보정 로직을 5월과 통일(UI gap floor·KSAT pct-bridge 적용, 시뮬 표점 산출이 유저의 실제 공통/선택 분할을 보존하도록 교정), `/analysis` 사이드바 정량 토글 ↔ 본문 examSelector ↔ 시뮬 그래프 양방향 동기화 및 초기 로딩 순서 버그 수정
