@@ -333,6 +333,11 @@ function handleScoreInput(el, maxVal, subject) {
     document.getElementById(`${subject}Raw`).value = commonVal + electiveVal;
 }
 
+function normalizeGradeValue(raw) {
+    const value = String(raw ?? '').trim();
+    return /^[1-9]$/.test(value) ? value : '';
+}
+
 // === UI 설정 ===
 function setupUI() {
     const radioGroup = document.getElementById('statusRadioGroup');
@@ -545,8 +550,8 @@ function loadExamData() {
     setVal('mathRaw', d.math?.raw); 
     setVal('mathStd', d.math?.std); setVal('mathPct', d.math?.pct); setVal('mathGrd', d.math?.grd);
     
-    setVal('engGrd', d.eng?.grd); 
-    setVal('histGrd', d.hist?.grd);
+    setVal('engGrd', normalizeGradeValue(d.eng?.grd)); 
+    setVal('histGrd', normalizeGradeValue(d.hist?.grd));
     
     setVal('inq1Name', d.inq1?.name); setVal('inq1Raw', d.inq1?.raw); setVal('inq1Std', d.inq1?.std); setVal('inq1Pct', d.inq1?.pct); setVal('inq1Grd', d.inq1?.grd);
     setVal('inq2Name', d.inq2?.name); setVal('inq2Raw', d.inq2?.raw); setVal('inq2Std', d.inq2?.std); setVal('inq2Pct', d.inq2?.pct); setVal('inq2Grd', d.inq2?.grd);
@@ -569,12 +574,19 @@ async function saveQuantitative() {
     const mathOpt = getVal('mathOpt');
     const inq1Name = getVal('inq1Name');
     const inq2Name = getVal('inq2Name');
+    const engGrd = normalizeGradeValue(getVal('engGrd'));
+    const histGrd = normalizeGradeValue(getVal('histGrd'));
+
+    if (!engGrd || !histGrd) {
+        alert("영어/한국사는 등급(1~9)만 선택할 수 있습니다.");
+        return;
+    }
 
     const currentData = {
         kor: { opt: korOpt, common: getVal('korCommon'), elective: getVal('korElective'), raw: getVal('korRaw'), std: getVal('korStd'), pct: getVal('korPct'), grd: getVal('korGrd') },
         math: { opt: mathOpt, common: getVal('mathCommon'), elective: getVal('mathElective'), raw: getVal('mathRaw'), std: getVal('mathStd'), pct: getVal('mathPct'), grd: getVal('mathGrd') },
-        eng: { grd: getVal('engGrd') }, 
-        hist: { grd: getVal('histGrd') },
+        eng: { grd: engGrd }, 
+        hist: { grd: histGrd },
         inq1: { name: inq1Name, raw: getVal('inq1Raw'), std: getVal('inq1Std'), pct: getVal('inq1Pct'), grd: getVal('inq1Grd') },
         inq2: { name: inq2Name, raw: getVal('inq2Raw'), std: getVal('inq2Std'), pct: getVal('inq2Pct'), grd: getVal('inq2Grd') },
         foreign: { name: getVal('foreignName'), grd: getVal('foreignGrd') }
