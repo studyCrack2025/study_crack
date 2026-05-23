@@ -1819,6 +1819,7 @@ async function updateAnalysisUI() {
 
     const hasTargets = userTargetUnivs && userTargetUnivs.some(u => u && u.univ);
     const availableExams = getAvailableExamModes();
+    const userId = localStorage.getItem('userId');
 
     if (!hasTargets || availableExams.length === 0) { 
         container.innerHTML = `
@@ -1853,7 +1854,6 @@ async function updateAnalysisUI() {
     container.innerHTML = selectorHTML;
     
     const cardsContainer = document.getElementById('analysisCardsContainer');
-    const userId = localStorage.getItem('userId');
     const currentScoreData = userQuantData[currentExamMode];
 
     try {
