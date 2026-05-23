@@ -196,9 +196,10 @@ img, svg { display: block; max-width: 100%; }
   .hero-desc { font-size: 13px; margin-top: 14px; }
   .hero-visual { position: absolute; right: 8px; top: 52px; width: 58%; padding: 0; pointer-events: none; z-index: 0; transform: none; }
   .hero-device-img { max-width: 100%; }
-  /* 버튼 가로 배치 고정 (모바일 2열) */
-  .hero-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 18px; width: min(100%, 260px); }
-  .hero-actions .btn { width: 100%; font-size: 11px; min-height: 40px; padding: 6px 8px; line-height: 1.25; white-space: normal; text-align: center; }
+  /* 버튼 가로 배치 + 텍스트 길이만큼 너비 */
+  .hero-actions { display: flex; flex-wrap: nowrap; gap: 8px; margin-top: 18px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .hero-actions::-webkit-scrollbar { display: none; }
+  .hero-actions .btn { width: auto; flex: 0 0 auto; font-size: 11px; min-height: 40px; padding: 0 10px; white-space: nowrap; text-align: center; }
   .safe-note { font-size: 12px; margin-top: 14px; }
 
   /* Message band */
