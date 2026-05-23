@@ -1,10 +1,10 @@
 // 1. 티어별 설명 매핑
 const TIER_DATA = {
     'test':     { desc: '시스템 연동 테스트용 결제' },
-    'basic':    { desc: '현재 위치 진단 및 전략 수립 (28일 이용권)' },
-    'standard': { desc: '월간 학습 코칭 (플래닝) 28일 이용권' },
-    'pro':      { desc: '최소 노력 최대 효율, 맞춤 전략 재설계 28일 이용권' },
-    'trial':    { desc: 'PRO 등급 한 달 완벽 체험' }
+    'basic':    { desc: 'BASIC AI 기반 합격 예측 분석 이용권' },
+    'starter':  { desc: 'STARTER 1주 플래너 진단 이용권' },
+    'standard': { desc: 'STANDARD 4주 합격 플래너 설계 이용권' },
+    'pro':      { desc: 'PRO 4주 프리미엄 전략 관리 이용권' }
 };
 
 let checkoutData = null;
@@ -46,23 +46,21 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('chkPrice').textContent    = formattedPrice;
     document.getElementById('btnPayAmount').textContent = formattedPrice;
 
-    // 5. 결제 안내 문구
+    // 5. 결제 안내 문구 (단건 결제 기준)
     const noticeBox = document.getElementById('billingNotice');
-    if (checkoutData.tier === 'trial') {
-        noticeBox.style.display = 'none';
-    } else {
-        const effectiveStart = new Date(checkoutData.effectiveStartDate || new Date());
-        const nextDate = new Date(effectiveStart);
-        nextDate.setDate(nextDate.getDate() + 28);
-        const startM = effectiveStart.getMonth() + 1;
-        const startD = effectiveStart.getDate();
-        const nextM  = nextDate.getMonth() + 1;
-        const nextD  = nextDate.getDate();
-
-        if (effectiveStart > new Date()) {
-            noticeBox.innerHTML = `<i class="fas fa-info-circle" style="color:#0284c7;"></i> 예약 적용 안내: 기존 이용권 만료일인 <strong>${startM}월 ${startD}일</strong>부터 적용되며, <strong>${nextM}월 ${nextD}일</strong>까지 이용 가능합니다.`;
+    if (noticeBox) {
+        if (checkoutData.tier === 'free' || checkoutData.tier === 'test') {
+            noticeBox.style.display = 'none';
         } else {
-            noticeBox.innerHTML = `<i class="fas fa-info-circle" style="color:#0284c7;"></i> 결제 완료 시 28일간 이용 가능하며, 만료일은 <strong>${nextM}월 ${nextD}일</strong>입니다.`;
+            const effectiveStart = new Date(checkoutData.effectiveStartDate || new Date());
+            const startM = effectiveStart.getMonth() + 1;
+            const startD = effectiveStart.getDate();
+
+            if (effectiveStart > new Date()) {
+                noticeBox.innerHTML = `<i class="fas fa-info-circle" style="color:#0284c7;"></i> 예약 결제 안내<br>선택한 4주 이용권은 <strong>${startM}월 ${startD}일</strong>부터 적용됩니다.`;
+            } else {
+                noticeBox.innerHTML = `<i class="fas fa-info-circle" style="color:#0284c7;"></i> 본 결제는 단건 결제이며, 결제 후 <strong>4주 이용권</strong>이 제공됩니다.`;
+            }
         }
     }
 
@@ -76,7 +74,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // 7. 결제창 호출
+let isPaymentInProgress = false;
 function submitCheckout() {
+    if (isPaymentInProgress) return;
     const agree = document.getElementById('agreeTerms').checked;
     if (!agree) {
         alert("이용약관에 동의해주세요.");
@@ -89,19 +89,23 @@ function submitCheckout() {
         return;
     }
 
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-        alert("로그인이 만료되었습니다. 다시 로그인해 주세요.");
-        window.location.href = '/login';
+    if (!checkoutData || !checkoutData.userId) {
+        alert("결제 정보가 만료되었습니다. 다시 결제를 진행해주세요.");
+        window.location.href = '/payment';
         return;
     }
 
-    AUTHNICE.requestPay({
+    isPaymentInProgress = true;
+    const payBtn = document.getElementById('btnFinalPay') || document.querySelector('.btn-checkout');
+    if (payBtn) { payBtn.disabled = true; payBtn.style.opacity = '0.6'; }
+
+    try {
+        AUTHNICE.requestPay({
         clientId:   CONFIG.nicepay.clientId,
         method:     selectedMethod.value,
         orderId:    checkoutData.orderId,
         amount:     checkoutData.amount,
-        goodsName:  `스터디크랙 ${checkoutData.productName} 멤버십`,
+        goodsName:  `스터디크랙 ${checkoutData.productName} 이용권`,
         buyerName:  checkoutData.name,
         buyerEmail: checkoutData.email,
         buyerTel:   checkoutData.phone,
@@ -115,7 +119,15 @@ function submitCheckout() {
         }),
         fnError: function(result) {
             console.error('[NicePay Error]', result);
+            isPaymentInProgress = false;
+            if (payBtn) { payBtn.disabled = false; payBtn.style.opacity = '1'; }
             alert('결제 창 오류: ' + (result.errorMsg || '알 수 없는 오류'));
         }
     });
+    } catch (error) {
+        isPaymentInProgress = false;
+        if (payBtn) { payBtn.disabled = false; payBtn.style.opacity = '1'; }
+        console.error('[NicePay Exception]', error);
+        alert('결제 요청 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+    }
 }

@@ -2,29 +2,32 @@
 
 const QNA_API_URL = CONFIG.api.qna; 
 
-// 💡 공통 apiFetch 함수 (accessToken 기반 통합 및 401 예외 처리)
+// 💡 공통 apiFetch 함수 — HttpOnly 쿠키 기반 인증
 async function apiFetch(url, options = {}) {
-    const token = localStorage.getItem('accessToken');
-    const defaultHeaders = {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
-    };
-
-    options.headers = { ...defaultHeaders, ...options.headers };
+    const defaultHeaders = { 'Content-Type': 'application/json' };
+    options.headers = { ...defaultHeaders, ...(options.headers || {}) };
+    options.credentials = 'include';
 
     try {
         const response = await fetch(url, options);
 
         if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
+            if (response.status === 401) {
+                const refreshed = await tryRefreshToken();
+                if (refreshed) {
+                    const retryRes = await fetch(url, options);
+                    if (retryRes.ok) return retryRes;
+                }
                 const currentPath = window.location.pathname;
                 if (!['/login', '/signup', '/'].includes(currentPath)) {
-                    alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
-                    localStorage.clear();
-                    sessionStorage.clear();
-                    window.location.href = '/login'; 
+                    clearClientSession();
+                    window.location.href = '/login';
                 }
-                return Promise.reject(new Error("Auth expired")); 
+                return Promise.reject(new Error("Auth expired"));
+            }
+            if (response.status === 403) {
+                const errBody = await response.json().catch(() => ({}));
+                throw new Error(errBody.error || errBody.message || '접근 권한이 없습니다.');
             }
             throw new Error(`서버 통신 오류 (상태 코드: ${response.status})`);
         }
@@ -94,11 +97,21 @@ function closeDetailModal() { closeLocalModal('qna-detail-modal'); }
    ========================================= */
 async function loadQnaHistory() {
     const grid = document.getElementById('qna-grid');
-    const token = localStorage.getItem('accessToken');
 
-    if (!token) {
-        grid.innerHTML = '<div style="text-align:center; padding:40px; color:#64748b;">로그인 후 이용 가능한 서비스입니다.</div>';
+    if (window.DEV_MOCK?.enabled) {
+        if (grid) grid.innerHTML = '<div style="padding:40px; text-align:center; color:#94a3b8; font-size:14px; font-weight:600;">[로컬 디자인 미리보기 — Q&A 내역 API 미연결]</div>';
         return;
+    }
+
+    if (!localStorage.getItem('userId')) {
+        const refreshed = await tryRefreshToken();
+        if (!refreshed) {
+            clearClientSession();
+            grid.innerHTML = '<div style="text-align:center; padding:40px; color:#64748b;">로그인 후 이용 가능한 서비스입니다.</div>';
+            checkLoginStatus();
+            return;
+        }
+        checkLoginStatus();
     }
 
     try {

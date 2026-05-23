@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+  <script>if('scrollRestoration'in history)history.scrollRestoration='manual';</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light">
@@ -166,6 +167,7 @@
             btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 입금 확인 요청 중...`;
             btn.disabled = true;
 
+            // TODO Stage5: auth.js 로드 후 getIdToken() 사용 필요
             const token = localStorage.getItem('idToken') || localStorage.getItem('accessToken');
 
             try {

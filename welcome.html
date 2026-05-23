@@ -1,105 +1,207 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-KNHVMTR5');</script>
-    
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="color-scheme" content="light">
-    <meta name="facebook-domain-verification" content="55eup0qlw7p4hdgj5hyv2fsmhksvoj" />
-    <meta name="naver-site-verification" content="e70d8cbe6d67167b9f8f6267985c17c42b616684" />
-    <title>환영합니다 - 스터디크랙</title>
-    
-    <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-    
-    <style>
-        body { background-color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        .welcome-card { background: white; padding: 50px 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); text-align: center; max-width: 420px; width: 90%; border: 1px solid #e2e8f0; }
-        .logo { font-size: 1.5rem; font-weight: 900; color: #2563EB; letter-spacing: -0.5px; margin-bottom: 30px; display: inline-block; }
-        .success-icon { font-size: 5rem; color: #10b981; margin-bottom: 20px; animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        .welcome-title { color: #1e293b; font-size: 1.6rem; font-weight: 800; margin-bottom: 15px; margin-top: 0; }
-        .welcome-desc { color: #64748b; font-size: 1rem; line-height: 1.6; margin-bottom: 35px; word-break: keep-all; }
-        .welcome-desc strong { color: #334155; }
-        .btn-go-main { display: block; width: 100%; padding: 16px; background-color: #2563EB; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 1.05rem; transition: all 0.2s ease; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2); box-sizing: border-box; }
-        .btn-go-main:hover { background-color: #1d4ed8; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3); }
-    </style>
+  <script>if('scrollRestoration'in history)history.scrollRestoration='manual';</script>
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-KNHVMTR5');</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <meta name="facebook-domain-verification" content="55eup0qlw7p4hdgj5hyv2fsmhksvoj" />
+  <meta name="naver-site-verification" content="e70d8cbe6d67167b9f8f6267985c17c42b616684" />
+  <title>환영합니다 - 스터디크랙</title>
+
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/welcome.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <header id="site-header" class="scrolled">
+    <div class="logo-container">
+      <a href="/" class="logo-link">
+        <img src="/assets/figma/figma-asset-04.svg" alt="StudyCrack 로고">
+        <span class="logo">StudyCrack</span>
+      </a>
+    </div>
+    <nav class="nav-links">
+      <a href="/service">서비스 소개</a>
+      <a href="/analysis" id="navAnalysis" class="hidden">나만의 솔루션</a>
+      <a href="/qna" id="navQna" class="hidden">1:1 문의</a>
+      <a href="/login" id="loginBtn" class="nav-btn">로그인 / 회원가입</a>
+      <a href="/mypage" id="myPageBtn" class="hidden">마이페이지</a>
+      <a href="#" id="logoutBtn" class="nav-btn hidden">로그아웃</a>
+    </nav>
+    <div class="mobile-header-right">
+      <span class="mobile-nav-label">회원가입 완료</span>
+      <button class="hamburger-btn" id="hamburgerBtn" aria-label="메뉴 열기">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
 
-    <div class="welcome-card">
-        <div class="logo">StudyCrack</div>
-        
-        <i class="fas fa-check-circle success-icon"></i>
-        
+  <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
+  <div class="mobile-nav-panel" id="mobileNavPanel">
+    <div class="mobile-nav-top">
+      <a class="mnp-logo" href="/"><img src="/assets/figma/figma-asset-04.svg" alt="StudyCrack"><span>StudyCrack</span></a>
+      <button class="mobile-nav-close" id="mobileNavClose" aria-label="메뉴 닫기">✕</button>
+    </div>
+    <nav class="mobile-nav-links">
+      <a href="/service">서비스 소개</a>
+      <a href="/analysis" id="mobileNavAnalysis" class="hidden">나만의 솔루션</a>
+      <a href="/qna" id="mobileNavQna" class="hidden">1:1 문의</a>
+      <a href="/login" id="mobileLoginBtn" class="mnl-btn">로그인 / 회원가입</a>
+      <a href="/mypage" id="mobileMyPageBtn" class="hidden">마이페이지</a>
+      <a href="#" id="mobileLogoutBtn" class="mnl-btn mnl-btn-logout hidden">로그아웃</a>
+    </nav>
+  </div>
+
+  <main class="welcome-page">
+    <section class="welcome-section">
+      <div class="welcome-card" id="welcomeCard">
+        <i class="fas fa-check-circle welcome-icon" id="welcomeIcon" aria-hidden="true"></i>
         <h1 class="welcome-title">회원가입이<br>완료되었습니다!</h1>
         <p class="welcome-desc">
-            스터디크랙의 회원이 되신 것을 환영합니다.<br>
-            지금 바로 <strong>나만의 맞춤 입시 전략</strong>을<br>확인해보세요.
+          스터디크랙의 회원이 되신 것을 환영합니다.<br>
+          지금 바로 <strong>나만의 맞춤 입시 전략</strong>을 확인해보세요.
         </p>
-        
-        <a href="/" class="btn-go-main">스터디크랙 이용하러 가기</a>
-        
-    </div>
+        <a href="/tutorial" class="btn btn--primary welcome-btn" id="mainActionBtn">튜토리얼 시작하기</a>
+      </div>
+    </section>
+  </main>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            function escapeHtml(text) {
-                if (!text) return "";
-                return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-            }
+  <script src="/js/shared/hamburger.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const userId = localStorage.getItem('userId');
+      if (userId) {
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({ user_id: userId });
+      }
 
-            const userId = localStorage.getItem('userId');
-            if (userId) {
-                window.dataLayer = window.dataLayer || [];
-                window.dataLayer.push({ 'user_id': userId });
-            }
+      syncHeaderNav();
+      bindHeaderActions();
+      configureWelcomeContent();
+    });
 
-            const urlParams = new URLSearchParams(window.location.search);
-            const role = urlParams.get('role');
-            let promo = urlParams.get('promo') || localStorage.getItem('signupPromo');
+    function syncHeaderNav() {
+      const isLoggedIn = !!localStorage.getItem('userId');
 
-            // 튜터 가입 완료 시 화면 변경 로직
-            if (role === 'tutor') {
-                const icon = document.querySelector('.success-icon');
-                icon.classList.remove('fa-check-circle', 'success-icon');
-                icon.classList.add('fa-clock');
-                icon.style.color = '#3b82f6';
-                icon.style.fontSize = '5rem';
-                icon.style.marginBottom = '20px';
-                icon.style.animation = 'popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
+      const navAnalysis = document.getElementById('navAnalysis');
+      const navQna = document.getElementById('navQna');
+      const loginBtn = document.getElementById('loginBtn');
+      const myPageBtn = document.getElementById('myPageBtn');
+      const logoutBtn = document.getElementById('logoutBtn');
 
-                document.querySelector('.welcome-title').innerHTML = '파트너 지원이<br>완료되었습니다!';
-                document.querySelector('.welcome-desc').innerHTML = '스터디크랙 파트너로 지원해주셔서 감사합니다.<br>현재 <strong>관리자 승인 대기 중</strong>이며,<br>가입 심사 및 승인 완료 후 즉시 안내해 드리겠습니다.';
-            } 
-            // 기존 학생 프로모션 코드(MBTI) 처리 로직
-            else if (promo && promo.includes("-STC")) {
-                let hex = promo.replace("-STC", "").replace("-", "");
-                let mbti = '';
-                for (let i = 0; i < hex.length; i += 2) {
-                    mbti += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-                }
-                
-                const safeMbti = escapeHtml(mbti.toUpperCase());
-                
-                const btnHtml = `
-                    <a href="/analysis" class="btn-go-main" style="margin-top: 15px; background-color: #10b981; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
-                        <i class="fas fa-file-pdf"></i> [${safeMbti}] 보고서 받으러 가기
-                    </a>
-                `;
-                const mainBtn = document.querySelector('.btn-go-main');
-                if(mainBtn) mainBtn.insertAdjacentHTML('afterend', btnHtml);
-            }
-        });
-    </script>
+      const mobileNavAnalysis = document.getElementById('mobileNavAnalysis');
+      const mobileNavQna = document.getElementById('mobileNavQna');
+      const mobileLoginBtn = document.getElementById('mobileLoginBtn');
+      const mobileMyPageBtn = document.getElementById('mobileMyPageBtn');
+      const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
+
+      if (isLoggedIn) {
+        navAnalysis?.classList.remove('hidden');
+        navQna?.classList.remove('hidden');
+        myPageBtn?.classList.remove('hidden');
+        logoutBtn?.classList.remove('hidden');
+        loginBtn?.classList.add('hidden');
+
+        mobileNavAnalysis?.classList.remove('hidden');
+        mobileNavQna?.classList.remove('hidden');
+        mobileMyPageBtn?.classList.remove('hidden');
+        mobileLogoutBtn?.classList.remove('hidden');
+        mobileLoginBtn?.classList.add('hidden');
+      } else {
+        navAnalysis?.classList.add('hidden');
+        navQna?.classList.add('hidden');
+        myPageBtn?.classList.add('hidden');
+        logoutBtn?.classList.add('hidden');
+        loginBtn?.classList.remove('hidden');
+
+        mobileNavAnalysis?.classList.add('hidden');
+        mobileNavQna?.classList.add('hidden');
+        mobileMyPageBtn?.classList.add('hidden');
+        mobileLogoutBtn?.classList.add('hidden');
+        mobileLoginBtn?.classList.remove('hidden');
+      }
+    }
+
+    function bindHeaderActions() {
+      document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.href = '/';
+      });
+
+      document.getElementById('mobileLogoutBtn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (typeof closeMobileNav === 'function') closeMobileNav();
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.href = '/';
+      });
+    }
+
+    function configureWelcomeContent() {
+      const params = new URLSearchParams(window.location.search);
+      const role = params.get('role');
+      const promo = params.get('promo') || localStorage.getItem('signupPromo');
+
+      const card = document.getElementById('welcomeCard');
+      const icon = document.getElementById('welcomeIcon');
+      const title = document.querySelector('.welcome-title');
+      const desc = document.querySelector('.welcome-desc');
+      const mainBtn = document.getElementById('mainActionBtn');
+
+      if (role === 'tutor') {
+        card.classList.add('is-tutor');
+        icon.classList.remove('fa-check-circle');
+        icon.classList.add('fa-clock');
+        title.innerHTML = '파트너 지원이<br>완료되었습니다!';
+        desc.innerHTML = '스터디크랙 파트너로 지원해주셔서 감사합니다.<br>현재 <strong>관리자 승인 대기 중</strong>이며,<br>가입 심사 및 승인 완료 후 즉시 안내해 드리겠습니다.';
+        mainBtn.href = '/';
+        mainBtn.textContent = '메인으로 이동하기';
+      }
+
+      if (promo && promo.includes('-STC')) {
+        const mbti = decodePromoMbti(promo);
+        if (mbti) {
+          mainBtn.insertAdjacentHTML('afterend',
+            '<a href="/analysis" class="btn btn--primary welcome-btn welcome-btn--analysis"><i class="fas fa-file-pdf" aria-hidden="true"></i> [' + mbti + '] 보고서 받으러 가기</a>'
+          );
+        }
+      }
+    }
+
+    function decodePromoMbti(promo) {
+      try {
+        const hex = promo.replace('-STC', '').replace('-', '');
+        let mbti = '';
+        for (let i = 0; i < hex.length; i += 2) {
+          mbti += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+        }
+        return escapeHtml(mbti.toUpperCase());
+      } catch (error) {
+        return '';
+      }
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
 </body>
 </html>

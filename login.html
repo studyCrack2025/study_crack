@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+  <script>if('scrollRestoration'in history)history.scrollRestoration='manual';</script>
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
     j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
@@ -40,6 +41,18 @@
             </div>
             
             <button class="auth-btn" onclick="handleSignIn()">로그인</button>
+        </div>
+
+        <div class="social-divider"><span>또는 소셜 계정으로 로그인</span></div>
+        <div class="social-btn-group">
+            <button class="social-btn social-btn-google" id="socialBtnGoogle" onclick="handleSocialLogin('google')">
+                <span class="social-icon social-icon-google">G</span>
+                Google로 로그인
+            </button>
+            <button class="social-btn social-btn-naver" id="socialBtnNaver" onclick="handleSocialLogin('naver')">
+                <span class="social-icon social-icon-naver">N</span>
+                Naver로 로그인
+            </button>
         </div>
 
         <div class="auth-helper-links">

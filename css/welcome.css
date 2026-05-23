@@ -1,0 +1,103 @@
+.welcome-page {
+  min-height: 100vh;
+  padding-top: 83px;
+  background: linear-gradient(180deg, #f4f7ff 0%, #f8fafc 34%, #ffffff 100%);
+}
+
+.welcome-section {
+  min-height: calc(100vh - 83px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 20px;
+}
+
+.welcome-card {
+  width: min(100%, 520px);
+  padding: clamp(34px, 5vw, 46px);
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  text-align: center;
+}
+
+.welcome-icon {
+  display: inline-block;
+  margin-bottom: 16px;
+  font-size: clamp(54px, 8vw, 72px);
+  color: #10b981;
+  animation: welcomePop .6s cubic-bezier(.175,.885,.32,1.275) both;
+}
+
+.welcome-card.is-tutor .welcome-icon {
+  color: #3b82f6;
+}
+
+.welcome-title {
+  margin: 0 0 14px;
+  color: #0f172a;
+  font-size: clamp(30px, 4.3vw, 38px);
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: -0.03em;
+}
+
+.welcome-desc {
+  margin: 0;
+  color: #475569;
+  font-size: clamp(14px, 2vw, 16px);
+  font-weight: 400;
+  line-height: 1.72;
+}
+
+.welcome-desc strong {
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.welcome-btn {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 26px;
+  padding: 0 18px;
+  box-shadow: 0 10px 20px rgba(52, 78, 143, 0.25);
+  font-size: 15px;
+}
+
+.welcome-btn.welcome-btn--analysis {
+  margin-top: 10px;
+  background: #0f766e;
+  box-shadow: 0 10px 20px rgba(15, 118, 110, 0.22);
+}
+
+.welcome-btn.welcome-btn--analysis i {
+  margin-right: 8px;
+}
+
+@keyframes welcomePop {
+  0% {
+    transform: scale(.84);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .welcome-section {
+    padding: 20px 16px;
+  }
+
+  .welcome-card {
+    border-radius: 14px;
+    padding: 30px 20px;
+  }
+
+  .welcome-btn {
+    margin-top: 22px;
+    min-height: 50px;
+  }
+}

@@ -24,9 +24,11 @@ let userGracePeriodUntil = null;
 
 let scrollPosition = 0;
 let currentTutorName = "수석 튜터";
+let userStream = null;
 
 // 대학 선택 모달 관련
 let currentSlotIndex = null;
+let recommendedUnivCandidates = [];
 
 // 플래너 파일 업로드 관련
 let currentPlannerFiles = []; 
@@ -34,6 +36,7 @@ let originalPlannerFiles = [];
 
 // 시험 모드 (수능/평가원 등)
 let currentExamMode = 'csat'; 
+const ANALYSIS_EXAM_MODE_STORAGE_KEY = 'analysis_exam_mode';
 
 const EXAM_DISPLAY_NAMES = {
     "csat": "대학수학능력시험 (수능)",
@@ -45,55 +48,135 @@ const EXAM_DISPLAY_NAMES = {
     "may": "5월 학력평가"
 };
 
+function getExamModeStorageKey(userId) {
+    return `${ANALYSIS_EXAM_MODE_STORAGE_KEY}_${userId || 'guest'}`;
+}
+
+function getAvailableExamModes() {
+    if (!userQuantData) return [];
+    return Object.keys(userQuantData).filter((key) => {
+        const data = userQuantData[key];
+        return data && (data.kor || data.math || data.eng);
+    });
+}
+
+function pickPreferredExamMode(availableExams) {
+    if (!availableExams || availableExams.length === 0) return null;
+    const priority = ['csat', 'may', 'mar', 'sep', 'jun', 'oct', 'jul'];
+    const found = priority.find((key) => availableExams.includes(key));
+    return found || availableExams[0];
+}
+
+function persistExamMode(mode, userId = localStorage.getItem('userId')) {
+    if (!mode || !userId) return;
+    try {
+        localStorage.setItem(getExamModeStorageKey(userId), mode);
+    } catch (_) {
+        // ignore storage failures
+    }
+}
+
+function restoreExamModeFromStorage(userId = localStorage.getItem('userId')) {
+    const availableExams = getAvailableExamModes();
+    if (!userId || availableExams.length === 0) return false;
+
+    try {
+        const saved = localStorage.getItem(getExamModeStorageKey(userId));
+        if (saved && availableExams.includes(saved)) {
+            currentExamMode = saved;
+            return true;
+        }
+    } catch (_) {
+        // ignore storage failures
+    }
+    return false;
+}
+
+function ensureValidExamMode(userId = localStorage.getItem('userId')) {
+    const availableExams = getAvailableExamModes();
+    if (availableExams.length === 0) return false;
+    if (currentExamMode && availableExams.includes(currentExamMode)) {
+        persistExamMode(currentExamMode, userId);
+        return true;
+    }
+    currentExamMode = pickPreferredExamMode(availableExams);
+    persistExamMode(currentExamMode, userId);
+    return true;
+}
+
 // ============================================================
 // [초기화] DOM 로드 시 실행 (💡 병렬 데이터 로딩으로 개편)
 // ============================================================
 document.addEventListener('DOMContentLoaded', async () => {
-    const idToken = localStorage.getItem('idToken'); 
     const userId = localStorage.getItem('userId');
 
-    if (!idToken) {
-        alert("로그인이 필요합니다.");
-        window.location.href = '/login';
+    if (window.DEV_MOCK?.enabled) {
+        const m = window.DEV_MOCK;
+        renderUserInfo({ name: m.user.name, email: m.user.email, phone: m.user.phone, mbti: m.user.mbti, profileImage: null, computedTier: m.user.tier, qualitative: m.analysis.qualitative, quantitative: m.analysis.quantitative, targetUnivs: m.analysis.targetUnivs, univChangeRemaining: m.analysis.univChangeRemaining });
+        applyUserTier(m.user.tier);
+        userTargetUnivs = m.analysis.targetUnivs;
+        userQuantData = m.analysis.quantitative;
+        univChangeRemaining = m.analysis.univChangeRemaining;
+        updateQuotaUI();
+        setWeeklyLoadingStatus(true);
+        initUnivGrid();
+        updateAnalysisUI();
+        initProSection();
+        setWeeklyLoadingStatus(false);
+        setTimeout(() => { applyCoachTierLock(); applySimTierLock(); }, 500);
+        const devLoader = document.getElementById('pageLoadingOverlay');
+        if (devLoader) setTimeout(() => devLoader.classList.add('hidden'), 500);
         return;
+    }
+
+    if (!localStorage.getItem('userId')) {
+        const refreshed = await tryRefreshToken();
+        if (!refreshed) {
+            clearClientSession();
+            alert("로그인이 필요합니다.");
+            window.location.href = '/login';
+            return;
+        }
+        checkLoginStatus();
     }
 
     setWeeklyLoadingStatus(true);
 
     try {
-        // 1️⃣ [핵심] 유저 데이터를 가장 먼저 가져와서 등급(Tier)을 확인합니다.
-        await fetchUserData(userId);
+        // P1-4: fetchUnivData는 등급에 무관하므로 fetchUserData와 동시에 시작
+        const userPromise = fetchUserData(userId);
+        const univPromise = fetchUnivData();
 
-        // 2️⃣ [핵심] 확인된 등급에 따라 굳이 필요 없는 무거운 API 연산/호출은 배열에서 제외합니다.
-        const parallelTasks = [fetchUnivData()];
-        
+        // 등급 확인 후 등급별 추가 호출 결정
+        await userPromise;
+        const tieredTasks = [];
         if (['standard', 'pro'].includes(currentUserTier)) {
-            parallelTasks.push(fetchWeeklyHistory()); // 코칭 탭용 데이터
+            tieredTasks.push(fetchWeeklyHistory()); // 코칭 탭용 데이터
         }
         if (['pro'].includes(currentUserTier)) {
-            parallelTasks.push(fetchInitialProReports()); // PRO 탭용 데이터
+            tieredTasks.push(fetchInitialProReports()); // PRO 탭용 데이터
         }
 
-        const results = await Promise.allSettled(parallelTasks);
+        const results = await Promise.allSettled([univPromise, ...tieredTasks]);
         results.forEach((res, idx) => {
             if (res.status === 'rejected') console.error(`Data Load Error [${idx}]:`, res.reason);
         });
 
         // 3️⃣ UI 초기화 로직 실행
-        initUnivGrid(); 
+        initUnivGrid();
         updateAnalysisUI();
-        initProSection(); 
-        
+        initProSection();
+
         setWeeklyLoadingStatus(false);
-        setTimeout(() => { 
+        setTimeout(() => {
             // 주간 상태 체크도 권한이 있는 사람만 실행
             if (['standard', 'pro'].includes(currentUserTier)) {
-                checkWeeklyStatus(); 
+                checkWeeklyStatus();
             }
             applyCoachTierLock();
             applySimTierLock();
-        }, 500); 
-        
+        }, 500);
+
         const loader = document.getElementById('pageLoadingOverlay');
         if (loader) {
             setTimeout(() => {
@@ -106,10 +189,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         // URL 파라미터 확인 (?sol=sim 등)
         const params = new URLSearchParams(window.location.search);
         const sol = params.get('sol');
-        if (sol) setTimeout(() => openSolution(sol), 100); 
+        if (sol) setTimeout(() => openSolution(sol), 100);
 
         const targetTab = params.get('tab');
-        if (targetTab) openSolution(targetTab);         
+        if (targetTab) openSolution(targetTab);
+
+        // 1-7: 솔루션 탭 스와이프 폐기 → triggerSolutionTabHintOnce 호출 제거
+        // 기본 활성 탭(univ) 카드 스와이프 힌트만 1회 — 명시적 openSolution 미호출 케이스 대비
+        if (!sol && !targetTab) triggerSwipeHintForTab('univ');
     } catch (e) {
         console.error("Initialization Error:", e);
     }
@@ -462,62 +549,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 500);
     }
     
-    const swipeWrapper = document.querySelector('.sol-swipe-wrapper');
-    if (swipeWrapper) {
-        let scrollTimeout;
-        swipeWrapper.addEventListener('scroll', () => {
-            if (window.innerWidth > 768) return; // 모바일에서만 작동
-            
-            clearTimeout(scrollTimeout);
-            scrollTimeout = setTimeout(() => {
-                const scrollLeft = swipeWrapper.scrollLeft;
-                const width = swipeWrapper.clientWidth;
-                // 현재 스크롤 위치를 계산해 몇 번째 탭인지 파악
-                const index = Math.round(scrollLeft / width);
-                const types = ['univ', 'sim', 'coach', 'pro'];
-                const currentType = types[index];
-                
-                updateMainSwipeHint(currentType);
-                
-                const targetContent = document.getElementById(`sol-${currentType}`);
-                if (targetContent) {
-                    swipeWrapper.style.height = `${targetContent.offsetHeight}px`;
-                }
-                
-                // 버튼 상태 동기화
-                document.querySelectorAll('.solution-menu .sol-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                    const onclickAttr = btn.getAttribute('onclick');
-                    if (onclickAttr && onclickAttr.includes(`'${currentType}'`)) {
-                        btn.classList.add('active');
-                    }
-                });
-                
-                // 시뮬레이션 탭 도달 시 데이터 로드 안 되어있으면 로드
-                if (currentType === 'sim' && document.getElementById('simChartArea').innerHTML.trim() === '') {
-                    initSimulation();
-                }
-            }, 100); // 부드러운 전환을 위해 스크롤 종료 0.1초 후 인식
-        });
-    }
-    
+    // 1-7: 솔루션 탭 스와이프 폐기 → scroll 리스너/mainSwipeHint 미사용 (제거)
+    // 잔존 mainSwipeHint 엘리먼트가 있으면 정리
+    const stale = document.getElementById('mainSwipeHint');
+    if (stale) stale.remove();
+
+    // 기본 활성 탭(univ) 클래스 보장 — HTML에 이미 .active 있지만 안전을 위해 명시
     if (window.innerWidth <= 768) {
-        setTimeout(() => {
-            const firstTab = document.getElementById('sol-univ');
-            const wrapper = document.querySelector('.sol-swipe-wrapper');
-            if (firstTab && wrapper) {
-                wrapper.style.height = `${firstTab.offsetHeight}px`;
-                
-                // 💡 [수정] 메인 화면 스와이프 안내 문구 (동적 렌더링 준비)
-                if (!document.getElementById('mainSwipeHint')) {
-                    const hintDiv = document.createElement('div');
-                    hintDiv.id = 'mainSwipeHint';
-                    hintDiv.style.cssText = "padding:10px 15px 5px 15px; background:#f8fafc;";
-                    wrapper.parentNode.insertBefore(hintDiv, wrapper);
-                    updateMainSwipeHint('univ'); // 초기값
-                }
-            }
-        }, 1000); 
+        const firstTab = document.getElementById('sol-univ');
+        if (firstTab && !firstTab.classList.contains('active')) firstTab.classList.add('active');
     }
 });
 
@@ -529,11 +569,9 @@ window.finishTutorialComplete = async function() {
     }
 
     try {
-        const token = localStorage.getItem('idToken');
         // 튜토리얼 보상으로 trial 티어 부여 및 횟수 4회 충전 요청
-        await fetch(MYPAGE_API_URL, {
+        await apiFetch(MYPAGE_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'grant_tutorial_trial' })
         });
     } catch (e) {
@@ -555,50 +593,22 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
+// 1-7: 솔루션 탭이 클릭+페이드 모드로 전환되어 더 이상 wrapper 높이를 강제할 필요 없음.
+// 기존 호출자가 많아 호환을 위해 함수는 유지하되 인라인 height만 비워 자연 높이로 복원.
 function syncMobileHeight() {
-    if (window.innerWidth > 768) return; // PC는 실행 안 함
-    
     const wrapper = document.querySelector('.sol-swipe-wrapper');
-    if (!wrapper) return;
-
-    // 스크롤 애니메이션 진행 중 오작동을 막기 위해 활성화된 탭을 강제 추적합니다.
-    const activeBtn = document.querySelector('.solution-menu .sol-btn.active');
-    let targetId = null;
-
-    if (activeBtn) {
-        const onclickAttr = activeBtn.getAttribute('onclick');
-        if (onclickAttr) {
-            const match = onclickAttr.match(/'([^']+)'/);
-            if (match) targetId = `sol-${match[1]}`;
-        }
-    }
-
-    // 폴백: 활성화된 버튼을 찾지 못한 경우 기존 방식(스크롤 위치) 사용
-    if (!targetId) {
-        const index = Math.round(wrapper.scrollLeft / Math.max(wrapper.clientWidth, 1));
-        const types = ['univ', 'sim', 'coach', 'pro'];
-        targetId = `sol-${types[index]}`;
-    }
-
-    const activeTab = document.getElementById(targetId);
-
-    if (activeTab) {
-        // 브라우저가 레이아웃을 다시 그릴 시간을 약간 준 뒤 높이 측정
-        requestAnimationFrame(() => {
-            wrapper.style.height = `${activeTab.offsetHeight}px`;
-        });
-    }
+    if (wrapper && wrapper.style.height) wrapper.style.height = '';
 }
 
 function getStandardLockOverlayHTML(featureName) {
     return `
         <div style="background: white; padding: 30px 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; border: 1px solid #e2e8f0; width: 90%; max-width: 320px; box-sizing: border-box;">
-            <i class="fas fa-lock" style="font-size: 2.5rem; color: #94a3b8; margin-bottom: 15px;"></i>
+            <i class="fas fa-lock" style="font-size: 2.5rem; color: #7c9eef; margin-bottom: 15px;"></i>
             <h3 style="margin: 0 0 10px 0; color: #1e293b; font-size: 1.25rem; word-break: keep-all;">Standard 멤버십 전용</h3>
-            <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 20px; line-height: 1.5; word-break: keep-all;">
-                ${featureName}은(는)<br><strong>Standard 등급 이상</strong>부터 이용 가능합니다.
+            <p style="color: #475569; font-size: 0.95rem; margin-bottom: 20px; line-height: 1.5; word-break: keep-all;">
+                ${featureName}은(는)<br><strong style="color:#4c79ee;">Standard 등급 이상</strong>부터 이용 가능합니다.
             </p>
-            <button onclick="location.href='/payment'" style="width: 100%; padding: 14px 0; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.2s; white-space: nowrap; word-break: keep-all;">
+            <button onclick="location.href='/payment'" style="width: 100%; padding: 14px 0; background: #4c79ee; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.2s; white-space: nowrap; word-break: keep-all;">
                 🚀 멤버십 알아보기
             </button>
         </div>`;
@@ -616,7 +626,7 @@ function applySimTierLock() {
 
         const overlay = document.createElement('div');
         overlay.className = 'sim-tier-lock-overlay';
-        overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
+        overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(200, 217, 255, 0.82); backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
         overlay.innerHTML = getStandardLockOverlayHTML('점수 상승 시뮬레이션');
         container.appendChild(overlay);
     } else {
@@ -654,20 +664,12 @@ function parseDynamoItem(item) {
 // [데이터 로드] 사용자 정보 & 리포트 데이터
 // ============================================================
 async function fetchUserData(userId) {
-    const token = localStorage.getItem('idToken');
     const safeUserId = userId || localStorage.getItem('userId'); 
     try {
-        const response = await fetch(MYPAGE_API_URL, {
+        const response = await apiFetch(MYPAGE_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'get_user', userId: safeUserId }) 
         });
-        
-        if (response.status === 401) {
-            alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-            window.location.href = '/login';
-            return;
-        }
         if (!response.ok) throw new Error("사용자 데이터 로드 실패");
         
         const rawData = await response.json();
@@ -685,10 +687,17 @@ async function fetchUserData(userId) {
         }
         
         renderUserInfo(data);
-        applyUserTier(data.computedTier || 'free'); 
+        applyUserTier(data.computedTier || 'free');
+
+        // 사이드바 정량 렌더(updateSurveyStatus) 가 글로벌 userQuantData/currentExamMode 를 읽으므로
+        // 반드시 그 호출 *전* 에 두 값을 세팅해야 초기 진입 시 정량 데이터가 비어 보이지 않음.
+        if (data.quantitative) userQuantData = data.quantitative;
+        restoreExamModeFromStorage(safeUserId);
+        ensureValidExamMode(safeUserId);
+
         updateSurveyStatus(data);
         checkMbtiReport(data);
-        
+
         if (data.targetUnivs) {
             userTargetUnivs = data.targetUnivs;
             // 💡 [추가] Free, Trial 유저는 5, 6번째 슬롯(인덱스 4, 5) 데이터를 강제로 비워 분석을 차단합니다.
@@ -697,8 +706,8 @@ async function fetchUserData(userId) {
                 userTargetUnivs[5] = null;
             }
         }
-        if (data.quantitative) userQuantData = data.quantitative;
-        
+        if (data.qualitative?.stream) userStream = data.qualitative.stream;
+
         if (currentUserTier === 'free') {
             univChangeRemaining = 0;
         } else {
@@ -718,11 +727,9 @@ async function fetchUserData(userId) {
 }
 
 async function fetchWeeklyHistory() {
-    const token = localStorage.getItem('idToken');
     try {
-        const response = await fetch(REPORT_API_URL, {
+        const response = await apiFetch(REPORT_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'get_weekly_reports' }) 
         });
         
@@ -734,11 +741,9 @@ async function fetchWeeklyHistory() {
 }
 
 async function fetchInitialProReports() {
-    const token = localStorage.getItem('idToken');
     try {
-        const res = await fetch(REPORT_API_URL, {
+        const res = await apiFetch(REPORT_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'get_pro_reports', data: { requesterRole: 'student' } })
         });
         if (res.ok) {
@@ -749,12 +754,10 @@ async function fetchInitialProReports() {
 }
 
 async function fetchUnivData() {
-    const token = localStorage.getItem('idToken');
     const userId = localStorage.getItem('userId');
     try {
-        const response = await fetch(UNIV_DATA_API_URL, {
+        const response = await apiFetch(UNIV_DATA_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'get_univ_list_only', userId: userId }) 
         });
         
@@ -787,6 +790,7 @@ function renderUserInfo(data) {
         let iconClass = '';
 
         if (tier === 'basic') { tierText = 'BASIC'; tierClass = 'tier-badge-basic'; }
+        else if (tier === 'starter') { tierText = 'STARTER'; tierClass = 'tier-badge-basic'; }
         else if (tier === 'standard') { tierText = 'STANDARD'; tierClass = 'tier-badge-standard'; iconClass = 'fa-gem'; }
         else if (tier === 'pro') { tierText = 'PRO'; tierClass = 'tier-badge-pro'; iconClass = 'fa-crown'; }
         else if (tier === 'trial') { tierText = 'TRIAL (무료 체험)'; tierClass = 'tier-badge-trial'; iconClass = 'fa-gift'; }
@@ -800,7 +804,7 @@ function renderUserInfo(data) {
             icon.style.marginRight = '4px';
             tierBadgeEl.appendChild(icon);
         }
-        tierBadgeEl.appendChild(document.createTextNode(`${tierText} 멤버십`));
+        tierBadgeEl.appendChild(document.createTextNode(tierText));
     }
 }
 
@@ -837,12 +841,20 @@ function updateSurveyStatus(data) {
         if (targets.length > 0) {
             const uniqueTargets = [...new Set(targets)].slice(0, 2);
             let targetHtml = '';
-            if (uniqueTargets[0]) targetHtml += `<div class="target-row"><span class="target-badge first">1지망</span> ${escapeHtml(uniqueTargets[0])}</div>`;
-            if (uniqueTargets[1]) targetHtml += `<div class="target-row"><span class="target-badge second">2지망</span> ${escapeHtml(uniqueTargets[1])}</div>`;
+            if (uniqueTargets[0]) targetHtml += `<div class="target-row first">${escapeHtml(uniqueTargets[0])}<span class="target-rank">1지망</span></div>`;
+            if (uniqueTargets[1]) targetHtml += `<div class="target-row second">${escapeHtml(uniqueTargets[1])}<span class="target-rank">2지망</span></div>`;
+            const mbti = getUserMbti(data);
+            if (mbti) targetHtml += `<div class="target-row mbti">${escapeHtml(mbti)}<span class="target-rank">MBTI</span></div>`;
             targetContainer.innerHTML = targetHtml;
             qualTargetRow.style.display = 'flex';
         } else {
-            qualTargetRow.style.display = 'none';
+            const mbti = getUserMbti(data);
+            if (mbti) {
+                targetContainer.innerHTML = `<div class="target-row mbti">${escapeHtml(mbti)}<span class="target-rank">MBTI</span></div>`;
+                qualTargetRow.style.display = 'flex';
+            } else {
+                qualTargetRow.style.display = 'none';
+            }
         }
     } else {
         qualStatusEl.innerHTML = '<span style="color:#991b1b; font-weight:bold;">❌ 미작성</span>';
@@ -871,40 +883,18 @@ function updateSurveyStatus(data) {
             return `<option value="${key}">${name}</option>`;
         }).join('');
 
-        const renderSideScore = (examKey) => {
-            const d = quan[examKey];
-            if (!d) return;
-
-            const makeRow = (label, obj) => {
-                if (!obj) return ''; 
-                let optText = '';
-                if (obj.opt && obj.opt !== 'none') {
-                    optText = `<span class="opt-badge">(${escapeHtml(obj.opt)})</span>`;
-                }
-                else if (obj.name) {
-                    optText = `<span class="opt-badge">(${escapeHtml(obj.name)})</span>`;
-                }
-
-                const std = escapeHtml(obj.std) || '-';
-                const pct = obj.pct ? escapeHtml(obj.pct) + '%' : '-';
-                const grd = obj.grd ? `<span class="grade-circle">${escapeHtml(obj.grd)}</span>` : '';
-
-                let valStr = '';
-                if (label === '영어' || label === '한국사') valStr = grd; 
-                else valStr = `${std} / ${pct} ${grd}`;
-
-                return `<tr><td class="subj-label">${label}</td><td class="score-info">${optText} ${valStr}</td></tr>`;
-            };
-
-            let html = '<table class="side-score-table">';
-            html += makeRow('국어', d.kor); html += makeRow('수학', d.math); html += makeRow('영어', d.eng);
-            html += makeRow('탐구1', d.inq1); html += makeRow('탐구2', d.inq2);
-            html += '</table>';
-            detailBox.innerHTML = html;
+        // 사이드바 정량 토글의 초기값을 currentExamMode 와 맞춰 두면 시뮬/목표대학 영역과 시작부터 동기화됨
+        const initialKey = (currentExamMode && validExams.includes(currentExamMode))
+            ? currentExamMode
+            : validExams[0];
+        selector.value = initialKey;
+        renderSideQuanDetail(initialKey);
+        // 사이드바에서 정량 토글 변경 → 본문(목표대학/시뮬)도 같이 갱신
+        selector.onchange = (e) => {
+            const next = e.target.value;
+            renderSideQuanDetail(next);
+            if (next !== currentExamMode) changeExamMode(next);
         };
-
-        renderSideScore(validExams[0]);
-        selector.onchange = (e) => { renderSideScore(e.target.value); };
     } else {
         quanEmptyEl.style.display = 'block';
         quanContentBox.style.display = 'none';
@@ -919,23 +909,16 @@ function updateSurveyStatus(data) {
     }
 }
 
-function openSolution(type) {    
-    const isMobile = window.innerWidth <= 768;
+function openSolution(type) {
     const targetContent = document.getElementById(`sol-${type}`);
 
-    if (isMobile) {
-        // 모바일: 스와이프 래퍼 스크롤 이동 (display:none 처리 안 함)
-        const wrapper = document.querySelector('.sol-swipe-wrapper');
-        if (wrapper && targetContent) {
-            // 해당 탭의 위치로 부드럽게 스크롤
-            wrapper.scrollTo({ left: targetContent.offsetLeft - wrapper.offsetLeft, behavior: 'smooth' });
-            setTimeout(syncMobileHeight, 350);
-        }
-    } else {
-        // PC: 기존처럼 display로 탭 전환
-        document.querySelectorAll('.sol-content').forEach(el => el.style.display = 'none');
-        if (targetContent) targetContent.style.display = 'block';
-    }
+    // 1-7: 모바일/PC 통합 — 클래스 토글로 탭 전환 (페이드 애니메이션은 CSS .sol-content.active에서)
+    document.querySelectorAll('.sol-content').forEach(el => {
+        el.classList.remove('active');
+        // 과거에 inline display로 토글했던 잔여 스타일 제거
+        el.style.display = '';
+    });
+    if (targetContent) targetContent.classList.add('active');
 
     // 상단 탭 버튼 활성화 UI 변경
     document.querySelectorAll('.solution-menu .sol-btn').forEach(btn => {
@@ -947,60 +930,318 @@ function openSolution(type) {
     });
 
     if (type === 'sim') initSimulation();
-    if (window.innerWidth <= 768) updateMainSwipeHint(type);
+    // 스와이프 힌트: 해당 탭의 내부 카드/슬라이드 surface에서 1회 자연스럽게 발동
+    triggerSwipeHintForTab(type);
+
+    // 뷰포트 상단으로 부드러운 스크롤 (모바일에서 탭 전환 후 상단부터 보이게)
+    if (window.innerWidth <= 768 && targetContent) {
+        const top = targetContent.getBoundingClientRect().top + window.scrollY - 80;
+        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    }
+}
+
+// viewport 회전/리사이즈 시 deck 토글 (모바일 ↔ PC 경계)
+let _univDeckResizeBound = false;
+function bindUnivDeckResize() {
+    if (_univDeckResizeBound) return;
+    _univDeckResizeBound = true;
+    let t = null;
+    window.addEventListener('resize', () => {
+        if (t) clearTimeout(t);
+        t = setTimeout(() => renderUnivDeck(), 180);
+    });
+}
+if (typeof window !== 'undefined') bindUnivDeckResize();
+
+// ============================================================
+// 모바일 — 슬롯(1~6지망) + 분석카드 통합 deck 렌더
+//   PC: 기존 2-section 레이아웃 유지. 모바일에서만 deck 활성화.
+//   변경 발생 시(슬롯 저장/분석 응답) 매번 재렌더 → 데이터 동기화 보장
+// ============================================================
+function renderUnivDeck() {
+    const sub = document.getElementById('sol-univ');
+    if (!sub) return;
+    const isMobile = window.innerWidth <= 768;
+    const wrap = document.getElementById('univDeckWrap');
+
+    if (!isMobile) {
+        if (wrap) wrap.style.display = 'none';
+        // 원본 컨테이너 복원 (PC 모드)
+        ['univGrid', 'univAnalysisResult', 'btnSaveTarget'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = '';
+        });
+        document.querySelectorAll('#sol-univ .univ-sub-header, #sol-univ hr.divider').forEach(el => el.style.display = '');
+        return;
+    }
+
+    const univGrid = document.getElementById('univGrid');
+    const cardsContainer = document.getElementById('analysisCardsContainer');
+    if (!univGrid) return;
+    const slots = univGrid.querySelectorAll('.univ-slot');
+    if (slots.length === 0) return;
+    const cards = cardsContainer ? cardsContainer.querySelectorAll('.analysis-card, .empty-state') : [];
+
+    // 래퍼 + 하위 영역 1회 생성
+    let deckWrap = wrap;
+    if (!deckWrap) {
+        deckWrap = document.createElement('div');
+        deckWrap.id = 'univDeckWrap';
+        deckWrap.className = 'univ-deck-wrap';
+        deckWrap.innerHTML = `
+            <div class="univ-deck-topbar">
+                <div class="univ-deck-exam"></div>
+                <div class="univ-deck-indicator"><span id="univDeckIndicator">1 / ${slots.length}</span></div>
+            </div>
+            <div id="univDeck" class="univ-deck"></div>
+            <div id="univDeckBottomBar" class="univ-deck-bottombar"></div>
+        `;
+        // sol-univ 첫 번째 sub-header 직후에 삽입
+        const subHeader = sub.querySelector('.univ-sub-header');
+        if (subHeader && subHeader.parentNode) subHeader.parentNode.insertBefore(deckWrap, subHeader.nextSibling);
+        else sub.insertBefore(deckWrap, sub.firstChild);
+    }
+    deckWrap.style.display = '';
+
+    // 상단 examSelector chip 동기화 (있을 때만)
+    const examSelEl = document.querySelector('#univAnalysisResult #examSelector');
+    const examSlot = deckWrap.querySelector('.univ-deck-exam');
+    if (examSlot) {
+        if (examSelEl) {
+            const options = Array.from(examSelEl.options).map(o => `<option value="${escapeHtml(o.value)}" ${o.selected ? 'selected' : ''}>${escapeHtml(o.textContent)}</option>`).join('');
+            examSlot.innerHTML = `<label>기준 시험</label><select onchange="changeExamMode(this.value)">${options}</select>`;
+        } else {
+            examSlot.innerHTML = '';
+        }
+    }
+
+    // 슬라이드 빌드
+    const deck = document.getElementById('univDeck');
+    deck.innerHTML = '';
+    slots.forEach((slot, i) => {
+        const slide = document.createElement('div');
+        slide.className = 'univ-slide';
+        slide.appendChild(slot.cloneNode(true));
+        if (cards[i]) {
+            slide.appendChild(cards[i].cloneNode(true));
+        } else {
+            const ph = document.createElement('div');
+            ph.className = 'analysis-card';
+            ph.style.cssText = 'text-align:center; padding:30px; color:#94a3b8; font-size:0.9rem;';
+            ph.innerHTML = '<i class="fas fa-info-circle" style="font-size:1.4rem; margin-bottom:8px;"></i><br>이 슬롯에 대학을 추가하면<br>분석 결과가 표시됩니다.';
+            slide.appendChild(ph);
+        }
+        deck.appendChild(slide);
+    });
+
+    // 인디케이터 (현재 슬라이드 위치)
+    if (!deck._indicatorBound) {
+        const indEl = document.getElementById('univDeckIndicator');
+        const updateInd = () => {
+            const w = deck.clientWidth;
+            if (w <= 0 || !indEl) return;
+            const idx = Math.round(deck.scrollLeft / w);
+            indEl.textContent = `${Math.min(idx + 1, slots.length)} / ${slots.length}`;
+        };
+        deck.addEventListener('scroll', updateInd, { passive: true });
+        deck._indicatorBound = true;
+        updateInd();
+    } else {
+        // 슬라이드 수 변경 시 인디케이터도 즉시 갱신
+        const indEl = document.getElementById('univDeckIndicator');
+        if (indEl) indEl.textContent = `${Math.min(Math.round(deck.scrollLeft / Math.max(deck.clientWidth, 1)) + 1, slots.length)} / ${slots.length}`;
+    }
+
+    // 저장 버튼을 deck 하단으로 이동 (1회만)
+    const saveBtn = document.getElementById('btnSaveTarget');
+    const bottomBar = document.getElementById('univDeckBottomBar');
+    if (saveBtn && bottomBar && saveBtn.parentNode !== bottomBar) {
+        bottomBar.appendChild(saveBtn);
+    }
+
+    // 원본 컨테이너/헤더/구분선 모바일에서 숨김
+    // - #univAnalysisResult 통째로 숨김 (그 안의 examSelector chip + cards container 모두 deck로 대체됨)
+    univGrid.style.display = 'none';
+    const univAnalysisResult = document.getElementById('univAnalysisResult');
+    if (univAnalysisResult) univAnalysisResult.style.display = 'none';
+    document.querySelectorAll('#sol-univ .univ-sub-header, #sol-univ hr.divider').forEach(el => el.style.display = 'none');
+}
+
+// ============================================================
+// 모바일 스와이프 가능 힌트 (1회, surface별 LocalStorage 플래그)
+// ============================================================
+const SWIPE_HINT_VERSION = 'v1';
+const SWIPE_HINT_PREFERS_REDUCED = (typeof window !== 'undefined' && window.matchMedia)
+    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    : false;
+
+function _swipeHintIsMobile() { return window.innerWidth <= 768; }
+function _swipeHintAlreadyShown(key) {
+    try { return !!localStorage.getItem(`swipeHint_${SWIPE_HINT_VERSION}_${key}`); } catch { return false; }
+}
+function _swipeHintMark(key) {
+    try { localStorage.setItem(`swipeHint_${SWIPE_HINT_VERSION}_${key}`, '1'); } catch { /* 무시 */ }
+}
+function _swipeHintScrollable(el) {
+    return el && el.scrollWidth > el.clientWidth + 4;
+}
+
+function _swipeHintShowChevron(container) {
+    if (!container) return;
+    const parent = container.parentElement || container;
+    if (parent !== container && getComputedStyle(parent).position === 'static') {
+        parent.style.position = 'relative';
+    }
+    const chev = document.createElement('div');
+    chev.className = 'swipe-hint-chevron';
+    chev.innerHTML = '<i class="fas fa-chevron-right"></i>';
+    parent.appendChild(chev);
+    const cleanup = () => chev.remove();
+    chev.addEventListener('animationend', cleanup);
+    container.addEventListener('scroll', cleanup, { once: true, passive: true });
+}
+
+function _swipeHintBump(container, peek = 28, durationMs = 700) {
+    return new Promise(resolve => {
+        if (!container) return resolve();
+        const startTime = performance.now();
+        let cancelled = false;
+        const cancel = () => { cancelled = true; container.scrollLeft = 0; };
+        container.addEventListener('touchstart', cancel, { passive: true, once: true });
+        container.addEventListener('wheel', cancel, { passive: true, once: true });
+
+        function step(now) {
+            if (cancelled) return resolve();
+            const t = Math.min(1, (now - startTime) / durationMs);
+            // 0 → peak at t=0.42 → 0
+            const peak = 0.42;
+            const phase = t < peak ? (t / peak) : (1 - (t - peak) / (1 - peak));
+            const ease = 1 - Math.pow(1 - phase, 3);
+            container.scrollLeft = Math.round(ease * peek);
+            if (t < 1) requestAnimationFrame(step);
+            else { container.scrollLeft = 0; resolve(); }
+        }
+        requestAnimationFrame(step);
+    });
+}
+
+async function maybeShowSwipeHint(selector, hintKey) {
+    const debug = (() => { try { return !!localStorage.getItem('DEV_LOG_SWIPE_HINT'); } catch { return false; } })();
+    const mobile = _swipeHintIsMobile();
+    const hinted = _swipeHintAlreadyShown(hintKey);
+    const el = document.querySelector(selector);
+    const scrollable = _swipeHintScrollable(el);
+    if (debug) console.log('[swipeHint]', { selector, hintKey, mobile, hinted, scrollable, elFound: !!el });
+    if (!mobile) return;
+    if (hinted) return;
+    if (!el) return;
+    if (!scrollable) return;
+    _swipeHintMark(hintKey);
+    _swipeHintShowChevron(el);
+    if (!SWIPE_HINT_PREFERS_REDUCED) await _swipeHintBump(el);
+}
+
+// 디버그: 콘솔에서 모든 swipeHint 플래그 리셋 (재검증용)
+window.resetSwipeHints = function () {
+    try {
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith('swipeHint_')) keys.push(k);
+        }
+        keys.forEach(k => localStorage.removeItem(k));
+        console.log(`[swipeHint] reset ${keys.length} keys:`, keys);
+    } catch (e) { console.error(e); }
+};
+
+// 탭별 1순위 surface 매핑
+const SWIPE_HINT_SURFACES = {
+    univ:  { selector: '#analysisCardsContainer', key: 'univ_cards' },
+    sim:   { selector: '.sim-detail-card-area',   key: 'sim_detail_cards' },
+    // coach/pro 등은 추후 (해당 영역 스크롤 컨테이너 도입 시 매핑)
+};
+
+function triggerSwipeHintForTab(tabType) {
+    if (!_swipeHintIsMobile()) return;
+    const cfg = SWIPE_HINT_SURFACES[tabType];
+    if (!cfg) return;
+    // 800ms 지연: 사용자 시선이 콘텐츠에 안착하는 타이밍 + 렌더 완료 보장
+    setTimeout(() => maybeShowSwipeHint(cfg.selector, cfg.key), 800);
+}
+
+// 시뮬 카드 안 과목 스와이프는 시뮬 카드 진입 2초 후 1회 (renderDetailedSimCard 끝에서 호출)
+function triggerSubjScrollHintOnce() {
+    if (!_swipeHintIsMobile()) return;
+    setTimeout(() => maybeShowSwipeHint('.subj-scroll-container', 'sim_subj_scroll'), 2000);
+}
+
+// 솔루션 탭 간 좌우 전환은 페이지 첫 진입 시 1회 (DOMContentLoaded 800ms 후)
+function triggerSolutionTabHintOnce() {
+    if (!_swipeHintIsMobile()) return;
+    setTimeout(() => maybeShowSwipeHint('.sol-swipe-wrapper', 'solution_tabs'), 1200);
 }
 
 function checkMbtiReport(data) {
     const container = document.getElementById('mbtiReportContainer');
     if (!container) return;
-    const promo = data.promoCode; 
-    if (!promo || !promo.includes("-STC") || data.mbtiReportDownloaded) { container.innerHTML = ''; return; }
-    
-    let hex = promo.replace("-STC", "").replace("-", "");
-    let mbti = '';
-    for (let i = 0; i < hex.length; i += 2) mbti += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+    const mbti = getUserMbti(data);
+    if (!mbti) { container.innerHTML = ''; return; }
     
     container.innerHTML = `
-        <button onclick="downloadMbtiReport()" id="mbtiDownBtn" class="btn-go-survey" style="background-color: #10b981; color: white; border: none; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
-            <i class="fas fa-file-download"></i> [${mbti.toUpperCase()}] 보고서 다운받기
+        <button onclick="downloadMbtiReport('${mbti}')" id="mbtiDownBtn" class="btn-go-survey" style="background-color: #10b981; color: white; border: none; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
+            <i class="fas fa-file-download"></i> [${escapeHtml(mbti)}] 보고서 다운받기
         </button>`;
 }
 
-async function downloadMbtiReport() {
-    if (!confirm("해당 MBTI 리포트는 1회만 다운로드 가능합니다.\n지금 다운로드 하시겠습니까?")) return;
+function getUserMbti(data) {
+    const rawMbti = data?.mbti || data?.qualitative?.mbti;
+    if (rawMbti && /^[A-Z]{4}$/i.test(String(rawMbti).trim())) {
+        return String(rawMbti).trim().toUpperCase();
+    }
+
+    const promo = data?.promoCode;
+    if (!promo || !promo.includes("-STC")) return '';
+
+    const hex = promo.replace("-STC", "").replace("-", "");
+    let decoded = '';
+    for (let i = 0; i < hex.length; i += 2) {
+        const code = parseInt(hex.substr(i, 2), 16);
+        if (!Number.isFinite(code)) return '';
+        decoded += String.fromCharCode(code);
+    }
+    return /^[A-Z]{4}$/i.test(decoded) ? decoded.toUpperCase() : '';
+}
+
+async function downloadMbtiReport(mbtiType) {
+    const mbti = String(mbtiType || '').trim().toUpperCase();
+    if (!/^[A-Z]{4}$/.test(mbti)) {
+        alert("MBTI 결과를 확인할 수 없습니다.");
+        return;
+    }
+
     const btn = document.getElementById('mbtiDownBtn');
     if (btn) { btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 발급 중...`; btn.disabled = true; }
 
-    // 💡 [핵심 방어] 서버 통신(await)을 시작하기 전, 사용자가 클릭한 즉시 빈 창을 먼저 엽니다!
     const newWindow = window.open('about:blank', '_blank');
 
-    const token = localStorage.getItem('idToken');
     try {
-        const res = await fetch(REPORT_API_URL, {
+        const res = await apiFetch(REPORT_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type: 'get_mbti_report' })
+            body: JSON.stringify({ type: 'get_mbti_pdf_url', mbtiType: mbti })
         });
         const data = await res.json();
         
-        if (res.ok && data.success) {
-            alert("다운로드가 시작되었습니다.");
-            
-            // 💡 [핵심 방어] 미리 열어둔 빈 창의 주소를 받아온 S3 다운로드 링크로 쓱 바꿔치기 합니다.
+        if (res.ok && data.success && data.downloadUrl) {
             newWindow.location.href = data.downloadUrl;
-            
-            const container = document.getElementById('mbtiReportContainer');
-            if (container) container.innerHTML = ''; 
         } else {
-            // 실패하면 열어둔 빈 창을 조용히 닫아줍니다.
             newWindow.close();
             alert(data.error || "보고서 발급에 실패했습니다.");
-            if (btn) { btn.innerHTML = `<i class="fas fa-file-download"></i> 보고서 다운받기`; btn.disabled = false; }
         }
     } catch (e) {
-        newWindow.close(); // 에러 시에도 빈 창 닫기
+        newWindow.close();
         alert("서버 통신 오류가 발생했습니다.");
-        if (btn) { btn.innerHTML = `<i class="fas fa-file-download"></i> 보고서 다운받기`; btn.disabled = false; }
+    } finally {
+        if (btn) { btn.innerHTML = `<i class="fas fa-file-download"></i> [${escapeHtml(mbti)}] 보고서 다운받기`; btn.disabled = false; }
     }
 }
 
@@ -1018,14 +1259,14 @@ function updateMainSwipeHint(type) {
     const idx = tabs.findIndex(t => t.id === type);
     if (idx === -1) return;
 
-    let leftText = idx > 0 ? `<i class="fas fa-chevron-left"></i> ${tabs[idx-1].name}` : '';
-    let rightText = idx < tabs.length - 1 ? `${tabs[idx+1].name} <i class="fas fa-chevron-right"></i>` : '';
+    let leftText = idx > 0 ? `<i class="fas fa-chevron-left swipe-arrow swipe-arrow-left"></i> ${tabs[idx-1].name}` : '';
+    let rightText = idx < tabs.length - 1 ? `${tabs[idx+1].name} <i class="fas fa-chevron-right swipe-arrow swipe-arrow-right"></i>` : '';
 
     hintDiv.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; width:100%; max-width:340px; margin:0 auto; font-weight:700; color:#475569;">
-            <div style="flex:1; text-align:left; font-size:0.85rem; color:#3b82f6;">${leftText}</div>
-            <div style="flex:0 0 auto; color:#94a3b8; font-size:0.75rem; font-weight:normal; margin:0 10px;">메뉴 스와이프</div>
-            <div style="flex:1; text-align:right; font-size:0.85rem; color:#3b82f6;">${rightText}</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; width:100%; max-width:340px; margin:0 auto; font-weight:600; color:#94a3b8;">
+            <div style="flex:1; text-align:left; font-size:0.85rem; color:#64748b;">${leftText}</div>
+            <div style="flex:0 0 auto; font-size:0.72rem; color:#cbd5e1; font-weight:normal; margin:0 10px;">메뉴 스와이프</div>
+            <div style="flex:1; text-align:right; font-size:0.85rem; color:#64748b;">${rightText}</div>
         </div>
     `;
 }
@@ -1105,15 +1346,12 @@ function initUnivGrid() {
     }
     
     if (window.innerWidth <= 768) {
-        if (!document.getElementById('univGridSwipeHint')) {
-            const hintDiv = document.createElement('div');
-            hintDiv.id = 'univGridSwipeHint';
-            hintDiv.style.cssText = "text-align:right; font-size:0.75rem; color:#94a3b8; margin-bottom:8px; padding-right:4px;";
-            hintDiv.innerHTML = '<i class="fas fa-hand-pointer"></i> 좌우로 스와이프하여 6지망까지 확인';
-            // univGrid 바로 위에 삽입
-            grid.parentNode.insertBefore(hintDiv, grid);
-        }
+        // deck 모드에서는 안내 문구 불필요 (인디케이터로 대체)
+        const old = document.getElementById('univGridSwipeHint');
+        if (old) old.remove();
     }
+    // 슬롯 재렌더 후 모바일 deck도 즉시 재구성
+    renderUnivDeck();
 }
 
 function clearUnivSlot(index) {
@@ -1195,14 +1433,150 @@ function updateQuotaUI() {
     container.innerHTML = html;
 }
 
+// ============================================================
+// [추천대학] 모달 내 추천대학/학과 선택
+// ============================================================
+function calcTotalStdScore(scoreData) {
+    const korStd = parseFloat(scoreData?.kor?.std) || 0;
+    const mathStd = parseFloat(scoreData?.math?.std) || 0;
+    const inq1Std = parseFloat(scoreData?.inq1?.std) || 0;
+    const inq2Std = parseFloat(scoreData?.inq2?.std) || 0;
+    return korStd + mathStd + inq1Std + inq2Std;
+}
+
+function inferStream(scoreData) {
+    const mathOpt = (scoreData?.math?.opt || '').replace(/\s/g, '');
+    const inq1Name = (scoreData?.inq1?.name || '').replace(/\s/g, '');
+    const inq2Name = (scoreData?.inq2?.name || '').replace(/\s/g, '');
+    const sciSubjects = ['물리학','화학','생명과학','지구과학'];
+    const hasSci = [inq1Name, inq2Name].some(n => sciSubjects.some(s => n.includes(s)));
+    const isMijet = mathOpt.includes('미적분') || mathOpt.includes('기하');
+    if (isMijet || hasSci) return 'natural';
+    return 'humanities';
+}
+
+async function handleRecommendUniv() {
+    const btn = document.getElementById('recommendBtn');
+    if (!btn || btn.disabled) return;
+
+    const scoreData = userQuantData?.[currentExamMode];
+    if (!scoreData) {
+        alert('성적 데이터가 없습니다. 기초조사서를 먼저 작성해주세요.');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 추천 중...';
+
+    try {
+        const totalStdScore = calcTotalStdScore(scoreData);
+        const stream = userStream || inferStream(scoreData);
+
+        const res = await apiFetch(UNIV_DATA_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'get_tutorial_recommendations',
+                userScores: scoreData,
+                stream: stream,
+                totalStdScore: totalStdScore,
+                examMode: currentExamMode
+            })
+        });
+
+        const data = await res.json();
+        const selected = data.selected || [];
+
+        if (selected.length === 0) {
+            alert('추천할 수 있는 대학이 없습니다.');
+            return;
+        }
+
+        // 이미 등록된 대학 제외 (없으면 원본 사용)
+        const existingKeys = new Set(
+            (userTargetUnivs || []).filter(t => t && t.univ).map(t => `${t.univ}||${t.major}`)
+        );
+        const available = selected.filter(s => !existingKeys.has(`${s.school}||${s.major}`));
+        const uniqueMap = new Map();
+        available.forEach(item => uniqueMap.set(`${item.school}||${item.major}`, item));
+        if (uniqueMap.size < 3) {
+            selected.forEach(item => {
+                if (uniqueMap.size >= 3) return;
+                const key = `${item.school}||${item.major}`;
+                if (!uniqueMap.has(key)) uniqueMap.set(key, item);
+            });
+        }
+        recommendedUnivCandidates = Array.from(uniqueMap.values()).slice(0, 3);
+        const shortageMessage = (recommendedUnivCandidates.length < 3)
+            ? `기준을 충족하는 대학이 부족해 ${recommendedUnivCandidates.length}개만 추천합니다.`
+            : '';
+        showRecommendedUnivChoices(recommendedUnivCandidates, shortageMessage);
+    } catch(e) {
+        console.error('추천대학 API 오류:', e);
+        alert('추천 중 오류가 발생했습니다.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-magic"></i> 추천대학/학과';
+    }
+}
+
+function showRecommendedUnivChoices(candidates, shortageMessage = '') {
+    const modalTitle = document.getElementById('modalTitle');
+    const listContainer = document.getElementById('stepUnivList');
+    const majorList = document.getElementById('stepMajorList');
+    const footer = document.getElementById('modalFooter');
+    const backBtn = footer ? footer.querySelector('.back-step-btn') : null;
+    const searchBox = document.querySelector('.modal-search-box');
+
+    currentSelectStep = 'recommend';
+    if (modalTitle) modalTitle.innerText = '추천 대학/학과 선택';
+    if (searchBox) searchBox.style.display = 'none';
+    if (majorList) majorList.style.display = 'none';
+    if (listContainer) listContainer.style.display = 'grid';
+    if (footer) footer.style.display = 'flex';
+    if (backBtn) backBtn.innerText = '← 전체 대학 목록 보기';
+
+    if (!listContainer) return;
+    listContainer.innerHTML = '';
+
+    if (!Array.isArray(candidates) || candidates.length === 0) {
+        listContainer.innerHTML = '<div class="empty-search-result"><i class="fas fa-exclamation-circle" style="font-size:2.2rem; color:#cbd5e1;"></i>추천 결과가 없습니다. 다시 시도해주세요.</div>';
+        return;
+    }
+
+    const frag = document.createDocumentFragment();
+    if (shortageMessage) {
+        const note = document.createElement('div');
+        note.style.gridColumn = '1 / -1';
+        note.style.marginBottom = '6px';
+        note.style.padding = '10px 12px';
+        note.style.border = '1px solid #fde68a';
+        note.style.background = '#fffbeb';
+        note.style.borderRadius = '10px';
+        note.style.color = '#92400e';
+        note.style.fontSize = '0.86rem';
+        note.style.fontWeight = '600';
+        note.textContent = shortageMessage;
+        frag.appendChild(note);
+    }
+    candidates.forEach((item, idx) => {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'selection-item selection-item-recommend';
+        card.innerHTML = `<span class="recommend-rank">추천 ${idx + 1}</span><strong>${item.school}</strong><em>${item.major}</em>`;
+        card.onclick = () => selectComplete(item.school, item.major);
+        frag.appendChild(card);
+    });
+    listContainer.appendChild(frag);
+}
+
 function closeUnivModal() {
     document.getElementById('univSelectModal').style.display = 'none';
-    
+
     document.body.classList.remove('modal-open');
     document.body.style.removeProperty('top');
     window.scrollTo(0, scrollPosition);
 
-    currentSlotIndex = null; selectedUnivForMajor = '';
+    currentSlotIndex = null; selectedUnivForMajor = ''; recommendedUnivCandidates = [];
 }
 
 function applySafeHighlight(container, text, keyword) {
@@ -1238,7 +1612,13 @@ function openUnivSelectModal(index) {
     if(searchInput) searchInput.value = '';
 
     document.getElementById('stepUnivList').innerHTML = '<div style="padding:50px; text-align:center; color:#94a3b8; grid-column: 1/-1;"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>대학 목록을 불러오는 중...</div>';
-    showUnivStep(true); 
+
+    const recommendWrap = document.getElementById('recommendBtnWrap');
+    if (recommendWrap) {
+        recommendWrap.style.display = (userQuantData && userQuantData[currentExamMode]) ? 'flex' : 'none';
+    }
+
+    showUnivStep(true);
 }
 
 function showUnivStep(isDeferred = false) {
@@ -1251,6 +1631,10 @@ function showUnivStep(isDeferred = false) {
     
     document.getElementById('stepMajorList').style.display = 'none';
     document.getElementById('modalFooter').style.display = 'none';
+    const searchBox = document.querySelector('.modal-search-box');
+    if (searchBox) searchBox.style.display = 'block';
+    const backBtn = document.querySelector('#modalFooter .back-step-btn');
+    if (backBtn) backBtn.innerText = '← 대학 다시 선택';
 
     const searchInput = document.getElementById('univSearchInput');
     if(searchInput) { searchInput.placeholder = "대학명 검색 (예: 서울대, 연세)"; searchInput.value = ''; }
@@ -1279,6 +1663,10 @@ function showMajorStep(univName) {
 
     const searchInput = document.getElementById('univSearchInput');
     if(searchInput) { searchInput.placeholder = "학과명 검색 (예: 컴퓨터, 경영)"; searchInput.value = ''; }
+    const searchBox = document.querySelector('.modal-search-box');
+    if (searchBox) searchBox.style.display = 'block';
+    const backBtn = document.querySelector('#modalFooter .back-step-btn');
+    if (backBtn) backBtn.innerText = '← 대학 다시 선택';
 
     listEl.innerHTML = '<div style="padding:50px; text-align:center; color:#94a3b8; grid-column: 1/-1;"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>학과 목록을 불러오는 중...</div>';
     
@@ -1383,12 +1771,10 @@ async function saveTargetUnivs() {
     }
     
     const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('idToken'); 
     
     try {
-        const response = await fetch(MYPAGE_API_URL, {
+        const response = await apiFetch(MYPAGE_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ type: 'update_target_univs', userId: userId, data: newUnivs })
         });
         const resData = await response.json();
@@ -1407,12 +1793,16 @@ async function saveTargetUnivs() {
 async function updateAnalysisUI() {
     const container = document.getElementById('univAnalysisResult');
     if (!container) return;
-    
+
+    if (window.DEV_MOCK?.enabled) {
+        const cardsHtml = window.DEV_MOCK.analysis.cards.map(renderAnalysisCard).join('');
+        container.innerHTML = `<div class="analysis-cards-wrapper">${cardsHtml}</div>`;
+        return;
+    }
+
     const hasTargets = userTargetUnivs && userTargetUnivs.some(u => u && u.univ);
-    const availableExams = userQuantData ? Object.keys(userQuantData).filter(key => {
-        const data = userQuantData[key];
-        return data && (data.kor || data.math || data.eng);
-    }) : [];
+    const availableExams = getAvailableExamModes();
+    const userId = localStorage.getItem('userId');
 
     if (!hasTargets || availableExams.length === 0) { 
         container.innerHTML = `
@@ -1423,10 +1813,7 @@ async function updateAnalysisUI() {
         return; 
     }
     
-    if (!currentExamMode || !availableExams.includes(currentExamMode)) {
-        if (availableExams.includes('csat')) currentExamMode = 'csat';
-        else currentExamMode = availableExams[0];
-    }
+    ensureValidExamMode(userId);
 
     const selectorHTML = `
         <div class="analysis-controls" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:20px; background:#fff; padding:15px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); border:1px solid #e2e8f0;">
@@ -1450,31 +1837,30 @@ async function updateAnalysisUI() {
     container.innerHTML = selectorHTML;
     
     const cardsContainer = document.getElementById('analysisCardsContainer');
-    const token = localStorage.getItem('idToken');
-    const userId = localStorage.getItem('userId');
     const currentScoreData = userQuantData[currentExamMode];
 
     try {
-        const res = await fetch(UNIV_DATA_API_URL, {
+        const res = await apiFetch(UNIV_DATA_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 type: 'analyze_my_targets', userId: userId, targetUnivs: userTargetUnivs, userScores: currentScoreData, examMode: currentExamMode
             })
         });
         const data = await res.json();
-        
-        if (data.server_debug && data.server_debug.logs) console.log("🔥 [서버 환산 계산 로그]\n", data.server_debug.logs.join('\n'));
-        
+
         // 💡 [수정] 서버 데이터 배열 추출 로직 안정화
         const results = Array.isArray(data) ? data : (data.results || data.data || []);
-        
+
         if (results.length === 0) {
             cardsContainer.innerHTML = `<div style="text-align:center; padding:40px;">분석 가능한 결과가 없습니다.</div>`;
         } else {
             cardsContainer.innerHTML = results.map(item => renderAnalysisCard(item)).join('');
+            // 카드 컨테이너가 이제 막 DOM에 채워졌으니 univ 탭 힌트 재시도 (DOMContentLoaded 시점엔 아직 비어있었을 수 있음)
+            if (window.innerWidth <= 768) triggerSwipeHintForTab('univ');
         }
-        
+        // 모바일 deck도 카드 새 데이터로 즉시 재구성
+        renderUnivDeck();
+
         if (window.innerWidth <= 768) {
             setTimeout(syncMobileHeight, 150); // 렌더링 후 높이 재조정
         }
@@ -1484,22 +1870,75 @@ async function updateAnalysisUI() {
     }
 }
 
-function changeExamMode(mode) { currentExamMode = mode; updateAnalysisUI(); }
+// 사이드바 정량 데이터 디테일 박스 렌더 (모듈 스코프 — changeExamMode 에서도 호출)
+function renderSideQuanDetail(examKey) {
+    const detailBox = document.getElementById('sideQuanDetail');
+    if (!detailBox) return;
+    const d = userQuantData ? userQuantData[examKey] : null;
+    if (!d) { detailBox.innerHTML = ''; return; }
+
+    const makeRow = (label, obj) => {
+        if (!obj) return '';
+        let optText = '';
+        if (obj.opt && obj.opt !== 'none') {
+            optText = `<span class="score-opt">(${escapeHtml(obj.opt)})</span>`;
+        } else if (obj.name) {
+            optText = `<span class="score-opt">(${escapeHtml(obj.name)})</span>`;
+        }
+        const grd = obj.grd ? escapeHtml(obj.grd) : '-';
+        let pctStr = '';
+        if (label !== '영어' && label !== '한국사') {
+            const std = escapeHtml(obj.std) || '-';
+            const pct = obj.pct ? escapeHtml(obj.pct) + '%' : '-';
+            pctStr = `${std} / ${pct}`;
+        }
+        return `<div class="score-row"><span class="score-subj">${label}${optText}</span><span class="score-nums">${pctStr}</span><span class="score-grd">${grd}</span></div>`;
+    };
+
+    let html = '<div class="score-list">';
+    html += makeRow('국어', d.kor); html += makeRow('수학', d.math); html += makeRow('영어', d.eng);
+    html += makeRow('탐구1', d.inq1); html += makeRow('탐구2', d.inq2);
+    html += '</div>';
+    detailBox.innerHTML = html;
+}
+
+function changeExamMode(mode) {
+    currentExamMode = mode;
+    persistExamMode(mode);
+    // 본문(목표대학/시뮬) ↔ 사이드바 정량 토글 양방향 동기화.
+    // 값만 바꾸고 change 이벤트는 dispatch 하지 않음 (onchange → changeExamMode 재귀 방지).
+    const sideSel = document.getElementById('sideQuanSelector');
+    if (sideSel && sideSel.value !== mode) {
+        const hasOption = Array.from(sideSel.options).some(o => o.value === mode);
+        if (hasOption) {
+            sideSel.value = mode;
+            renderSideQuanDetail(mode);
+        }
+    }
+    updateAnalysisUI();
+    // 시뮬레이션 차트도 같이 새 examMode 로 즉시 재요청 (한 번이라도 시뮬을 본 적이 있으면).
+    // 안 본 사용자는 sim 탭 진입 시 openSolution('sim') → initSimulation 으로 lazy 로드되므로 중복 호출 회피.
+    if (Array.isArray(cachedSimData) && cachedSimData.length > 0) {
+        cachedSimData = [];
+        simDisplayList = [];
+        selectedSimIndex = null;
+        initSimulation();
+    }
+}
 
 function renderAnalysisCard(res) {
     if (res.msg.includes("오류") || res.msg.includes("데이터 없음") || res.status === '분석 불가') {
         return `
-        <div class="analysis-card" style="border-left-color: #94a3b8;">
-            <div class="analysis-header" style="margin-bottom:10px;">
-                <h4 style="margin:0;">${escapeHtml(res.idx + 1)}지망: ${escapeHtml(res.univ)} <small style="color:#64748b;">${escapeHtml(res.major)}</small></h4>
-                <span style="background:#f1f5f9; color:#64748b; padding:2px 8px; border-radius:4px; font-size:0.8rem; margin-top:5px; display:inline-block;">데이터 부족</span>
+        <div class="analysis-card">
+            <div class="ac-head">
+                <span class="ac-rank">${escapeHtml(res.idx + 1)}지망</span>
+                <span class="ac-badge" style="background:#94a3b8;">데이터 부족</span>
+                <span class="ac-univ">${escapeHtml(res.univ)}</span>
+                <span class="ac-major">${escapeHtml(res.major)}</span>
             </div>
             <p style="color:#64748b; font-size:0.9rem; margin:0;">${escapeHtml(res.msg || '해당 학과의 작년 입시 데이터가 없습니다.')}</p>
         </div>`;
     }
-
-    const badgeStyle = `background: ${res.color}15; color: ${res.color}; border: 1px solid ${res.color};`; 
-    const scoreStyle = `color: ${res.color}; font-weight: 800; font-size: 1.5rem;`;
 
     const safeIdx = escapeHtml(res.idx + 1); const safeUniv = escapeHtml(res.univ); const safeMajor = escapeHtml(res.major);
     const safeStatus = escapeHtml(res.status); const safeMsg = escapeHtml(res.msg); const safeScore = escapeHtml(res.converted_score);
@@ -1508,44 +1947,39 @@ function renderAnalysisCard(res) {
     const barWidth = Math.min((res.converted_score / MAX_SCORE) * 100, 100);
 
     return `
-        <div class="analysis-card" style="border-left-color: ${res.color}; display: flex; flex-direction: column; gap: 15px;">
-            <div class="analysis-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; border-bottom:1px solid #f1f5f9; padding-bottom:15px;">
-                <div style="flex: 1; min-width: 0;">
-                    <span style="color:#64748b; font-size:1.1rem; font-weight:800; display:block; margin-bottom:5px;">${safeIdx}지망</span>
-                    <h4 style="margin:0; font-size:1.2rem; color:#1e293b; letter-spacing:-0.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeUniv}</h4>
-                    <div style="color:#64748b; font-size:0.95rem; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeMajor}</div>
-                </div>
-                <div style="text-align:right; flex-shrink: 0;">
-                    <span style="${badgeStyle} padding:6px 14px; border-radius:20px; font-size:0.9rem; font-weight:bold; display:inline-block; margin-bottom:5px; white-space:nowrap;">${safeStatus}</span>
-                    <div style="font-size:0.8rem; color:${res.color}; font-weight:600; white-space:nowrap;">${safeMsg}</div>
-                </div>
+        <div class="analysis-card">
+            <div class="ac-head">
+                <span class="ac-rank">${safeIdx}지망</span>
+                <span class="ac-badge" style="background:${res.color};">${safeStatus}</span>
+                <span class="ac-univ">${safeUniv}</span>
+                <span class="ac-major">${safeMajor}</span>
             </div>
-            <div class="analysis-body" style="display:flex; flex-direction:column; gap:20px;">
-                <div class="score-section">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
-                        <span style="font-size:0.95rem; color:#475569; font-weight:600;">AI 환산 진단점수</span>
-                        <span style="${scoreStyle}">${safeScore}<span style="font-size:1rem; font-weight:normal; margin-left:2px; color:#64748b;">점</span></span>
-                    </div>
-                    <div class="score-bar-container">
-                        <div class="score-bar-bg">
-                            <div style="position:absolute; left:40%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
-                            <div style="position:absolute; left:60%; top:-5px; bottom:-5px; width:1px; border-left:1px dashed #cbd5e1; z-index:2;"></div>
-                            <div class="score-bar-fill" style="width: ${barWidth}%; background: ${res.color};"></div>
-                        </div>
-                        <div class="score-labels">
-                            <span class="label-min">0</span>
-                            <span class="label-pass">합격<span class="m-line">(100)</span></span>
-                            <span class="label-stable">안정<span class="m-line">(150)</span></span>
-                            <span class="label-max">MAX<span class="m-line">(${MAX_SCORE})</span></span>
-                        </div>
-                    </div>
-                </div>
-                <div class="advice-section" style="background:#f8fafc; border-radius:10px; padding:18px; border:1px solid #e2e8f0;">
-                    <h5 style="margin:0 0 8px 0; font-size:0.9rem; color:#334155; display:flex; align-items:center;">
-                        <i class="fas fa-lightbulb" style="color:#fbbf24; margin-right:6px;"></i> 합격 전략 코멘트
-                    </h5>
-                    <p style="margin:0; font-size:0.95rem; color:#475569; line-height:1.6;">${getSimpleAdvice(res.converted_score, res.status)}</p>
-                </div>
+            <div class="ac-score-row">
+                <span class="ac-score-label">AI 환산 진단점수</span>
+                <span class="ac-score-value" style="color:${res.color};">${safeScore}<span class="ac-score-unit">점</span></span>
+            </div>
+            <div class="score-bar-bg" style="position:relative;">
+                <div class="score-bar-fill" style="height:100%; width:${barWidth}%; background:${res.color};"></div>
+                <!-- 100점(합격), 150점(안정) 기준선 — 0~250 스케일에서 40%, 60% -->
+                <span class="score-bar-tick" style="position:absolute; top:-2px; bottom:-2px; left:40%; width:2px; background:#3b82f6; border-radius:1px;"></span>
+                <span class="score-bar-tick" style="position:absolute; top:-2px; bottom:-2px; left:60%; width:2px; background:#10b981; border-radius:1px;"></span>
+            </div>
+            <!-- 축 라벨: 숫자 줄 / 한글 줄 2단으로 겹침 방지 -->
+            <div class="ac-axis-nums">
+                <span style="position:absolute; left:0;">0</span>
+                <span class="ac-axis-100" style="position:absolute; left:40%; transform:translateX(-50%);">100</span>
+                <span class="ac-axis-150" style="position:absolute; left:60%; transform:translateX(-50%);">150</span>
+                <span style="position:absolute; right:0;">250</span>
+            </div>
+            <div class="ac-axis-tags">
+                <span class="ac-axis-100" style="position:absolute; left:40%; transform:translateX(-50%);">합격</span>
+                <span class="ac-axis-150" style="position:absolute; left:60%; transform:translateX(-50%);">안정</span>
+            </div>
+            <p class="ac-msg-outer" style="font-size:14px; font-weight:600; color:${res.color}; text-align:right; margin:0 0 8px;">${safeMsg}</p>
+            <div class="ac-comment-box" style="background:#fff; border-radius:6px; padding:12px 16px; box-shadow:10px 20px 40px rgba(179,179,179,.1);">
+                <p style="font-size:15px; font-weight:700; color:#30363e; margin:0 0 6px 0;">#합격 전략 코멘트</p>
+                <p class="ac-msg-inner" style="font-size:14px; font-weight:700; color:${res.color}; margin:0 0 6px;">${safeMsg}</p>
+                <p style="font-size:15px; color:#30363e; line-height:1.75; margin:0;">${getSimpleAdvice(res.converted_score, res.status)}</p>
             </div>
         </div>`;
 }
@@ -1586,10 +2020,9 @@ function initSimulation() {
         return;
     }
     
-    if (!currentExamMode || !userQuantData[currentExamMode]) {
-        const availableExams = Object.keys(userQuantData).filter(k => userQuantData[k] && (userQuantData[k].kor || userQuantData[k].math || userQuantData[k].eng));
-        if (availableExams.length > 0) currentExamMode = availableExams[0];
-        else { chartArea.innerHTML = `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8;">유효한 성적 데이터가 없습니다.</div>`; return; }
+    if (!ensureValidExamMode()) {
+        chartArea.innerHTML = `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8;">유효한 성적 데이터가 없습니다.</div>`;
+        return;
     }
 
     const validTargets = userTargetUnivs ? userTargetUnivs.filter(t => t && t.univ) : [];
@@ -1604,10 +2037,17 @@ function initSimulation() {
 async function fetchSimulationData() {
     const chartArea = document.getElementById('simChartArea');
     if (!chartArea) return;
-    
+
+    if (window.DEV_MOCK?.enabled) {
+        cachedSimData = window.DEV_MOCK.analysis.simData;
+        simDisplayList = cachedSimData.map((item, i) => ({ ...item, originalIdx: i }));
+        selectedSimIndex = 0;
+        renderSimChart();
+        return;
+    }
+
     chartArea.innerHTML = '<div style="margin:auto; color:#3b82f6;"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
     
-    const token = localStorage.getItem('idToken');
     const userId = localStorage.getItem('userId');
     
     let scoreData = null;
@@ -1616,9 +2056,8 @@ async function fetchSimulationData() {
     }
     
     try {
-        const res = await fetch(UNIV_DATA_API_URL, {
+        const res = await apiFetch(UNIV_DATA_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
                 type: 'simulate_score_rise', 
                 userId: userId, 
@@ -1640,14 +2079,17 @@ async function fetchSimulationData() {
             if (Array.isArray(cachedSimData)) {
                 const simItem = cachedSimData.find(d => d && d.univ === target.univ && d.major === target.major);
                 if (simItem) {
-                    simDisplayList.push({ ...simItem, originalIdx });
+                    // _uiMode: 'default' | 'loading' | 'backtrace' | 'upsell' (역추적 UX 4-상태)
+                    simDisplayList.push({ ...simItem, originalIdx, _uiMode: 'default' });
                 } else {
-                    simDisplayList.push({ ineligible: true, univ: target.univ, major: target.major, originalIdx });
+                    simDisplayList.push({ ineligible: true, univ: target.univ, major: target.major, originalIdx, _uiMode: 'default' });
                 }
             } else {
-                simDisplayList.push({ ineligible: true, univ: target.univ, major: target.major, originalIdx });
+                simDisplayList.push({ ineligible: true, univ: target.univ, major: target.major, originalIdx, _uiMode: 'default' });
             }
         });
+
+        // 역추적은 사용자가 CTA 클릭 시점에 lazy 호출 (enrichBacktracePlansIfNeeded 제거)
 
         if (simDisplayList.length > 0) selectedSimIndex = 0;
         renderSimChart();
@@ -1658,12 +2100,143 @@ async function fetchSimulationData() {
     }
 }
 
+async function enrichBacktracePlansIfNeeded(scoreData, userId) {
+    if (!Array.isArray(simDisplayList) || simDisplayList.length === 0) return;
+    if (!scoreData) return;
+
+    const candidates = simDisplayList
+        .map((item, idx) => ({ item, idx }))
+        .filter(({ item }) => {
+            if (!item || item.ineligible || item.backtrace_plan) return false;
+            const coreKeys = ['kor', 'math', 'inq1', 'inq2'];
+            const maxSingleRise = coreKeys.reduce((acc, key) => {
+                const v = Number(item.sim_data?.[key]?.uiDiff || 0);
+                return v > acc ? v : acc;
+            }, 0);
+            const roundedBase = Math.round(Number(item.base_ui_score || 0));
+            return roundedBase <= 0 && maxSingleRise < 15;
+        });
+
+    if (candidates.length === 0) return;
+
+    await Promise.all(candidates.map(async ({ item, idx }) => {
+        try {
+            const res = await apiFetch(UNIV_DATA_API_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    type: 'backtrace_required_raw',
+                    userId,
+                    targetUniv: { univ: item.univ, major: item.major },
+                    userScores: scoreData,
+                    examMode: currentExamMode,
+                    targetUiMin: 100,
+                    targetUiMax: 150,
+                    maxTotalRaw: 20
+                })
+            });
+
+            if (!res.ok) return;
+            const payload = await res.json();
+            const plan = payload?.result || payload?.backtrace_plan || null;
+            if (plan) {
+                simDisplayList[idx].needs_backtrace = true;
+                simDisplayList[idx].backtrace_plan = plan;
+            }
+        } catch (_) {
+            // 역추적 보강은 보조 경로이므로 실패 시 기존 시뮬레이션 렌더링을 유지
+        }
+    }));
+}
+
 function setSimChartType(type) {
     currentSimChartType = type;
     document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
     const btnIdx = type === 'bar' ? 0 : 1;
     document.querySelectorAll('.toggle-btn')[btnIdx].classList.add('active');
     renderSimChart();
+}
+
+// ============================================================
+// 역추적 UX (sim-card 4-상태 모델: default / loading / backtrace / upsell)
+// ============================================================
+const BT_LOADING_MIN_MS = 450;     // 분석중 애니메이션 최소 지속 시간 (체감 통제)
+const BT_BACKTRACE_TIERS = ['standard', 'pro']; // 역추적 기능 허용 등급
+
+function _findSimItemByOriginalIdx(originalIdx) {
+    if (!Array.isArray(simDisplayList)) return null;
+    return simDisplayList.find(it => it && it.originalIdx === Number(originalIdx)) || null;
+}
+
+async function requestBacktrace(originalIdx) {
+    const item = _findSimItemByOriginalIdx(originalIdx);
+    if (!item || item.ineligible) return;
+
+    // 1) Tier 게이팅 — standard/pro 외엔 upsell 모드
+    if (!BT_BACKTRACE_TIERS.includes(currentUserTier)) {
+        item._uiMode = 'upsell';
+        renderDetailedSimCard();
+        return;
+    }
+
+    // 2) Loading 모드로 전환 + 최소 딜레이
+    item._uiMode = 'loading';
+    renderDetailedSimCard();
+    const loadingStart = Date.now();
+
+    // 3) 이미 캐시된 backtrace_plan 있으면 API 스킵
+    let plan = item.backtrace_plan || null;
+    if (!plan) {
+        try {
+            const userId = localStorage.getItem('userId');
+            const scoreData = userQuantData?.[currentExamMode]
+                ? JSON.parse(JSON.stringify(userQuantData[currentExamMode]))
+                : null;
+            const res = await apiFetch(UNIV_DATA_API_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    type: 'backtrace_required_raw',
+                    userId,
+                    targetUniv: { univ: item.univ, major: item.major },
+                    userScores: scoreData,
+                    examMode: currentExamMode,
+                    targetUiMin: 100,
+                    targetUiMax: 150,
+                    maxTotalRaw: 20
+                })
+            });
+            if (res.ok) {
+                const payload = await res.json();
+                plan = payload?.result || payload?.backtrace_plan || null;
+            }
+        } catch (e) {
+            console.error('Backtrace fetch error:', e);
+        }
+    }
+
+    // 4) 최소 딜레이 충족
+    const elapsed = Date.now() - loadingStart;
+    if (elapsed < BT_LOADING_MIN_MS) {
+        await new Promise(r => setTimeout(r, BT_LOADING_MIN_MS - elapsed));
+    }
+
+    // 5) 결과 부착 후 모드 전환
+    if (plan) {
+        item.backtrace_plan = plan;
+        item.needs_backtrace = true;
+        item._uiMode = 'backtrace';
+    } else {
+        // 응답 없음/실패 → default로 되돌리고 에러 토스트 대용 alert
+        item._uiMode = 'default';
+        alert('합격권 도달 경로 분석에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    }
+    renderDetailedSimCard();
+}
+
+function goBackFromBacktrace(originalIdx) {
+    const item = _findSimItemByOriginalIdx(originalIdx);
+    if (!item) return;
+    item._uiMode = 'default';
+    renderDetailedSimCard();
 }
 
 let simSvgRefs = null;
@@ -1758,7 +2331,7 @@ function renderSimChart() {
                     extensionHtml = `
                         <div class="sim-extension-bar" data-target-height="${riseHeightPct}" style="position:absolute; bottom:${currentHeightPct}; left:50%; transform:translateX(-50%); height:0; opacity:0; z-index:2; transition:height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease; pointer-events:none;">
                              <span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); color:#d97706; font-size:0.8rem; font-weight:800; white-space:nowrap;">
-                                ${Math.round(potentialScore)} <span style="font-size:0.7rem;">(+${maxRise.toFixed(1)})</span>
+                                +${maxRise.toFixed(1)}
                              </span>
                         </div>`;
                 }
@@ -1784,7 +2357,7 @@ function renderSimChart() {
             wrapper.appendChild(graphArea); wrapper.appendChild(labelArea);
 
             const mobileLegendDiv = document.createElement('div'); mobileLegendDiv.className = 'mobile-legend-area';
-            mobileLegendDiv.style.cssText = "display: flex; justify-content: center; align-items: center; gap: 20px; padding-top: 15px; margin-top: 10px; border-top: 1px dashed #cbd5e1;";
+            mobileLegendDiv.style.cssText = "display: flex; justify-content: center; align-items: center; gap: 20px; padding-top: 8px; margin-top: 6px; border-top: 1px dashed #cbd5e1;";
             mobileLegendDiv.innerHTML = `
                 <div style="display:flex; align-items:center; gap:6px; font-size:0.85rem; color:#475569; font-weight:700;"><div style="width:16px; height:4px; background:#10b981; border-radius:2px;"></div> 안정(150)</div>
                 <div style="display:flex; align-items:center; gap:6px; font-size:0.85rem; color:#475569; font-weight:700;"><div style="width:16px; height:4px; background:#3b82f6; border-radius:2px;"></div> 합격(100)</div>
@@ -1838,6 +2411,8 @@ function updateSimBarGraph(idx) {
                 extBar.style.opacity = '1';
                 if (mainBar) mainBar.style.borderRadius = '0 0 0 0'; 
                 if (scoreLabel) scoreLabel.style.opacity = '0'; 
+            } else {
+                if (scoreLabel) scoreLabel.style.opacity = '1';
             }
             
             // 💡 [수정된 부분] 모바일 막대그래프 강제 스크롤 동기화 로직
@@ -2056,6 +2631,155 @@ function renderDetailedSimCard() {
         return; 
     }
 
+    // 역추적 결과 표시 (확장 그래프 + 압축 narrative)
+    const buildBacktraceNarrativeCard = (data, currentScore, backtrace) => {
+        if (!backtrace) return '';
+
+        const coreKeys = ['kor', 'math', 'inq1', 'inq2'];
+        const labelMap = {
+            kor: '국어',
+            math: '수학',
+            inq1: data.sim_data?.inq1?.name || '탐구1',
+            inq2: data.sim_data?.inq2?.name || '탐구2'
+        };
+        const isReachable = backtrace.reachable === true;
+        const planTotal = Number(isReachable ? backtrace.minTotalRaw : backtrace.bestEffort?.minTotalRaw);
+        const planBySubject = isReachable ? backtrace.bySubject : backtrace.bestEffort?.bySubject;
+        const planUi = Number(isReachable ? backtrace.expected?.uiScore : backtrace.bestEffort?.expected?.uiScore);
+        const breakdownChips = planBySubject
+            ? coreKeys.filter(k => Number(planBySubject[k]) > 0)
+                .map(k => `<span class="bt-chip">${labelMap[k]} <strong>+${Number(planBySubject[k])}</strong></span>`)
+                .join('')
+            : '';
+
+        // 확장 막대 그래프 (현재 → 도달, 금색 overlay)
+        const markerPos = (score) => `${Math.max(0, Math.min(100, (Number(score) / 250) * 100))}%`;
+        const posCurrent = markerPos(currentScore);
+        const hasPlanUi = Number.isFinite(planUi);
+        const posPlan = hasPlanUi ? markerPos(planUi) : posCurrent;
+        const extWidthPct = hasPlanUi
+            ? Math.max(0, Math.min(100, ((Number(planUi) - Number(currentScore)) / 250) * 100))
+            : 0;
+
+        const chartBlock = `
+            <div class="bt-chart">
+                <div class="bt-chart-axis">
+                    <span>0</span>
+                    <span class="bt-axis-cut">합격 100</span>
+                    <span class="bt-axis-safe">안정 150</span>
+                    <span>250</span>
+                </div>
+                <div class="bt-track">
+                    <div class="bt-guide bt-guide-100" style="left:40%;"></div>
+                    <div class="bt-guide bt-guide-150" style="left:60%;"></div>
+                    ${hasPlanUi ? `<div class="bt-ext-fill" style="left:${posCurrent}; width:${extWidthPct}%;"></div>` : ''}
+                    <div class="bt-dot bt-dot-current" style="left:${posCurrent};" title="현재 ${Number(currentScore).toFixed(1)}점"></div>
+                    ${hasPlanUi ? `<div class="bt-dot bt-dot-target" style="left:${posPlan};" title="${isReachable ? '도달' : '최선'} ${Number(planUi).toFixed(1)}점"></div>` : ''}
+                </div>
+                <div class="bt-track-labels">
+                    <span class="bt-label-current">현재 <strong>${Number(currentScore).toFixed(1)}</strong></span>
+                    ${hasPlanUi ? `<span class="bt-label-target">${isReachable ? '도달 가능' : '최선'} <strong>${Number(planUi).toFixed(1)}</strong></span>` : ''}
+                </div>
+            </div>
+        `;
+
+        const reachableMsg = isReachable
+            ? `합격권에 도달하려면 <strong>원점수 +${planTotal}점</strong>이 필요합니다.`
+            : (backtrace.error
+                ? escapeHtml(backtrace.error)
+                : `현재 설정 범위 안에서는 합격권 도달이 어렵습니다.${Number.isFinite(planTotal) ? ` 최선 조합 기준 +${planTotal}점.` : ''}`);
+
+        return `
+            <div class="sim-backtrace-result ${isReachable ? '' : 'bt-unreachable'}">
+                <div class="bt-result-title">
+                    <i class="fas ${isReachable ? 'fa-route' : 'fa-exclamation-circle'}"></i>
+                    ${isReachable ? '합격권 도달 경로' : '합격권 도달 어려움'}
+                </div>
+                ${chartBlock}
+                <div class="bt-narrative">${reachableMsg}</div>
+                ${breakdownChips ? `<div class="bt-chips">${breakdownChips}</div>` : ''}
+            </div>
+        `;
+    };
+
+    // 역추적 CTA 버튼 (default 모드 하단)
+    const buildBacktraceCTA = (originalIdx) => `
+        <button class="sim-backtrace-cta" type="button" onclick="requestBacktrace(${originalIdx})">
+            <span class="cta-icon"><i class="fas fa-search-location"></i></span>
+            <span class="cta-text">
+                <span class="cta-headline">현재 점수로는 합격권 도달이 어렵습니다</span>
+                <span class="cta-action">몇 점을 더 받으면 가능한지 확인하기 →</span>
+            </span>
+        </button>
+    `;
+
+    // Loading 본문 (loading 모드)
+    const buildLoadingBlock = () => `
+        <div class="sim-backtrace-loading">
+            <div class="bt-loading-icon"><i class="fas fa-chart-line"></i></div>
+            <div class="bt-progress-bar"><div class="bt-progress-fill"></div></div>
+            <div class="bt-loading-text">합격권 도달 경로 분석 중...</div>
+        </div>
+    `;
+
+    // Upsell 본문 (free/trial/basic 등에서 CTA 누른 경우)
+    const buildUpsellBlock = (originalIdx) => `
+        <div class="sim-backtrace-upsell">
+            <button class="sim-backtrace-back" type="button" onclick="goBackFromBacktrace(${originalIdx})">
+                <i class="fas fa-arrow-left"></i> 다시 보기
+            </button>
+            <div class="bt-upsell-icon"><i class="fas fa-lock"></i></div>
+            <h4>합격권 도달 경로 분석은 Standard 이상 전용입니다</h4>
+            <p>현재 점수로 어떤 과목을 몇 점 올려야 합격권에 도달하는지,
+               SKY 합격생들의 루트 기반으로 정밀하게 분석해드립니다.</p>
+            <ul>
+                <li><i class="fas fa-check"></i> 과목별 정확한 원점수 상승 목표</li>
+                <li><i class="fas fa-check"></i> 합격권 도달까지 필요한 학습 기간</li>
+                <li><i class="fas fa-check"></i> 매주 어떻게 공부할지 플래너 제공</li>
+            </ul>
+            <button class="bt-upsell-btn" type="button" onclick="location.href='/payment'">멤버십 둘러보기 →</button>
+        </div>
+    `;
+
+    // Backtrace 결과 본문 wrapper (뒤로가기 + 결과 카드)
+    const buildBacktraceBlock = (data, currentScore, originalIdx) => `
+        <button class="sim-backtrace-back" type="button" onclick="goBackFromBacktrace(${originalIdx})">
+            <i class="fas fa-arrow-left"></i> 다시 보기
+        </button>
+        ${buildBacktraceNarrativeCard(data, currentScore, data.backtrace_plan)}
+    `;
+
+    // sim-card 본문이 짧은 케이스(warning/CTA 둘 다 없음)에서 하단 빈공간을 채우는 컨텍스트 힌트
+    const buildSimFooterContext = (currentScore, bestSubjectKey, data) => {
+        const subjMap = {
+            kor: '국어',
+            math: '수학',
+            inq1: data.sim_data?.inq1?.name || '탐구1',
+            inq2: data.sim_data?.inq2?.name || '탐구2'
+        };
+        const bestLabel = bestSubjectKey ? subjMap[bestSubjectKey] : null;
+        let line = '';
+        if (currentScore >= 150) {
+            line = '이미 안정권에 안착해 있습니다. 약점 보강으로 상위 대학 도전도 고려해보세요.';
+        } else if (currentScore >= 120) {
+            line = '현재 안정 구간입니다. 1점 단위 상승만으로도 합격 안정성이 더욱 강화됩니다.';
+        } else if (currentScore >= 100) {
+            line = bestLabel
+                ? `합격권에 진입한 적정 구간입니다. <strong>${escapeHtml(bestLabel)}</strong>부터 보강하면 안정권 진입 가능성이 높아집니다.`
+                : '합격권에 진입한 적정 구간입니다. 약점 과목 보강이 안정권 도달의 열쇠입니다.';
+        } else if (currentScore >= 60) {
+            line = bestLabel
+                ? `합격컷에 근접한 소신 구간입니다. <strong>${escapeHtml(bestLabel)}</strong> 위주의 전략적 상승이 합격 가능성을 좌우합니다.`
+                : '합격컷에 근접한 소신 구간입니다. 효율적인 과목 선택이 합격 가능성을 좌우합니다.';
+        } else {
+            line = '현재 점수와 합격컷 차이가 큽니다. 과목별 효율과 학습 기간을 함께 검토해 전략적으로 접근하세요.';
+        }
+        return `
+            <div class="sim-footer-hint">
+                <i class="fas fa-lightbulb"></i><span>${line}</span>
+            </div>`;
+    };
+
     // ==========================================
     // [1] 모바일 전용 로직: 대학 카드 및 과목 카드 가로 스와이프
     // ==========================================
@@ -2155,62 +2879,26 @@ function renderDetailedSimCard() {
                     desc = isBest ? `<strong>가장 합격 상승에 유리합니다.</strong>` : `점수 상승으로 합격 가능성이 높아집니다.`;
                 }
 
-                // 부호 및 텍스트 렌더링 개선 (양수면 +, 음수면 - 출력)
-                let subText = '';
-                if (Math.abs(info.diff) >= 0.01) {
-                     const sign = info.diff > 0 ? '+' : '';
-                     subText = `(${sign}${info.diff.toFixed(2)}점)`;
-                }
-                
                 subjectsHTML += `
                     <div class="sim-item swipe-subj-card ${isBest ? 'best-pick' : ''}">
                         <div class="sim-item-header" style="margin-bottom:6px;">
-                            <span style="font-weight:700;">${escapeHtml(info.name || sub.name)} <span style="font-size:0.75rem; font-weight:normal;">(+1점)</span></span>
+                            <span style="font-weight:700;">${escapeHtml(info.name || sub.name)} <span style="font-size:0.75rem; font-weight:normal; color:#64748b;">1점 상승 시</span></span>
                             <span style="color:${info.uiDiff > 0 ? '#ef4444' : '#94a3b8'}; font-weight:800;">+${diffVal}점</span>
                         </div>
                         <div class="sim-item-body" style="font-size:0.85rem; line-height:1.4;">
                             <div style="margin-bottom:2px;">${desc}</div>
-                            <div style="font-size:0.75rem; color:#94a3b8;">${subText}</div>
                         </div>
                     </div>`;
             });
 
-            // 💡 Warning 박스를 세로 정렬(column)에 맞게 HTML 단순화
+            // 역추적 CTA 노출 조건: 현재 UI 점수 < 10 + 1점 상승해도 < 25 (사실상 도달 어려운 카드만)
+            const uiMode = data._uiMode || 'default';
+            const showBtCTA = ((window.DEV_FORCE_BT_CTA || localStorage.getItem('DEV_FORCE_BT_CTA') === '1') || (currentScore < 10 && (currentScore + maxRise) < 25)) && !data.ineligible && data.sim_data;
+
+            // Warning 박스 — 안정권만 유지. 불합격권은 역추적 CTA가 같은 조건으로 떠서 중복 → 제거.
             let warningHTML = '';
-            if (!['standard', 'pro'].includes(currentUserTier) && univChangeRemaining <= 5) {
-                warningHTML = `
-                <div class="sim-warning upsell-warning" style="background:#fff7ed; border:1px solid #fdba74; padding:18px; border-radius:10px; margin-top:15px;">
-                    
-                    <div style="background: linear-gradient(90deg, #ea580c, #f97316); color: white; padding: 14px 12px; border-radius: 8px; font-size: 0.95rem; font-weight: 800; text-align: center; margin-bottom: 18px; line-height: 1.5; box-shadow: 0 3px 6px rgba(234,88,12,0.25); word-break:keep-all;">
-                        🎓 SKY 합격생들이 직접 짜준 플래너로<br>합격생이 실제로 밟아온 루트로 공부하세요!
-                    </div>
-
-                    <h4 style="color:#c2410c; margin:0 0 12px 0; line-height:1.3; font-size:1rem; font-weight:800;">
-                        <i class="fas fa-exclamation-triangle" style="margin-right:4px;"></i> 공부 방향 설정이 필요합니다
-                    </h4>
-                    
-                    <p style="margin:0 0 8px 0; line-height:1.5; color:#475569; font-size:0.85rem; word-break:keep-all;">
-                        어떤 과목이 중요한지는 확인됐지만, <strong>어떻게 점수를 올려야 할지</strong>는 아직 정해지지 않은 상태입니다.
-                    </p>
-                    
-                    <p style="margin:0 0 12px 0; line-height:1.5; color:#475569; font-size:0.85rem; word-break:keep-all;">
-                        특히 학기 초에 방향이 잘못 잡히면 <strong><span style="color:#ea580c;">시간만 낭비</span></strong>하게 되는 경우가 많습니다. 올바른 방향이 전제되지 않은 노력은 결과로 이어지기 어렵습니다.
-                    </p>
-
-                    <div style="background:#ffedd5; color:#9a3412; padding:10px 12px; border-radius:8px; font-size:0.85rem; font-weight:800; margin-bottom:15px; text-align:center; word-break:keep-all;">
-                        👉 지금 방향을 잡느냐에 따라 결과가 완전히 달라집니다.
-                    </div>
-
-                    <button onclick="location.href='/payment'" style="width:100%; padding:14px; background:#ea580c; color:white; border:none; border-radius:8px; font-weight:bold; font-size:1rem; cursor:pointer; box-shadow:0 4px 6px rgba(234, 88, 12, 0.25);">
-                        공부 방향 설정하기
-                    </button>
-                </div>`;
-            } else {
-                if (currentScore < 10 && (currentScore + maxRise) < 25) {
-                    warningHTML = `<div class="sim-warning" style="color:#c2410c;"><h4 style="color:#c2410c; margin:0; line-height:1.3; font-size:0.95rem;"><i class="fas fa-exclamation-circle"></i> 불합격권입니다</h4><p style="margin:0; line-height:1.4; color:#475569; font-size:0.85rem;">다른 전형이나 대학 고려를 권장합니다.</p></div>`;
-                } else if (currentScore >= 225 || (currentScore + maxRise) >= 250) {
-                    warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><h4 style="color:#166534; margin:0; line-height:1.3; font-size:0.95rem;"><i class="fas fa-check-circle"></i> 안정권입니다</h4><p style="margin:0; line-height:1.4; color:#475569; font-size:0.85rem;">상위 대학 도전을 고려해보세요.</p></div>`;
-                }
+            if (currentScore >= 225 || (currentScore + maxRise) >= 250) {
+                warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><h4 style="color:#166534; margin:0; line-height:1.3; font-size:0.95rem;"><i class="fas fa-check-circle"></i> 안정권입니다</h4><p style="margin:0; line-height:1.4; color:#475569; font-size:0.85rem;">상위 대학 도전을 고려해보세요.</p></div>`;
             }
 
             // 💡 과목 컨테이너 바로 위에 과목 스와이프 안내 표시
@@ -2218,6 +2906,16 @@ function renderDetailedSimCard() {
                 <div style="display:flex; justify-content:center; align-items:center; font-size:0.75rem; color:#94a3b8; margin-bottom:8px; gap:8px;">
                     <i class="fas fa-chevron-left" style="opacity:0.5;"></i> 과목 스와이프 <i class="fas fa-chevron-right" style="opacity:0.5;"></i>
                 </div>`;
+            // 1-4: warning도 CTA도 없는 "특이사항 없음" 카드에서 하단 컨텍스트 힌트로 빈공간 채움
+            const showFooterHint = !showBtCTA && !warningHTML;
+            const footerHintHTML = showFooterHint ? buildSimFooterContext(currentScore, bestSubjectKey, data) : '';
+            const defaultBody = `${subjSwipeHint}<div class="subj-scroll-container">${subjectsHTML}</div>${showBtCTA ? buildBacktraceCTA(data.originalIdx) : ''}${footerHintHTML}`;
+
+            let simBodyHTML;
+            if (uiMode === 'loading') simBodyHTML = buildLoadingBlock();
+            else if (uiMode === 'backtrace' && data.backtrace_plan) simBodyHTML = buildBacktraceBlock(data, currentScore, data.originalIdx);
+            else if (uiMode === 'upsell') simBodyHTML = buildUpsellBlock(data.originalIdx);
+            else simBodyHTML = defaultBody;
 
             html += `
             <div class="sim-result-card swipe-univ-card" style="flex: 0 0 100%; scroll-snap-align: center; box-sizing: border-box; margin-top: 0; display: flex; flex-direction: column;">
@@ -2232,15 +2930,14 @@ function renderDetailedSimCard() {
                     </div>
                 </div>
                 
-                ${subjSwipeHint}
-                <div class="subj-scroll-container">
-                    ${subjectsHTML}
-                </div>
+                ${simBodyHTML}
                 
                 ${warningHTML}
             </div>`;
         });
         cardArea.innerHTML = html;
+        // 시뮬 카드 내부 과목 스와이프 힌트 (1회) — 카드 안착 후 2초 뒤
+        triggerSubjScrollHintOnce();
 
     } else {
         // ==========================================
@@ -2306,34 +3003,34 @@ function renderDetailedSimCard() {
                     desc = isBest ? `<strong>가장 합격 상승에 유리합니다.</strong>` : `점수 상승으로 합격 가능성이 높아집니다.`;
                 }
 
-                // 부호 및 텍스트 렌더링 개선 (양수면 +, 음수면 - 출력)
-                let subText = '';
-                if (Math.abs(info.diff) >= 0.01) {
-                     const sign = info.diff > 0 ? '+' : '';
-                     subText = `(${sign}${info.diff.toFixed(2)}점)`;
-                }
-            
             subjectsHTML += `
                 <div class="sim-item ${isBest ? 'best-pick' : ''}" style="display:flex; flex-direction:column; justify-content:flex-start; height:100%;">
                     <div class="sim-item-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:8px;">
-                        <span style="flex:1; min-width:0; font-weight:700; color:#334155;">${escapeHtml(info.name || sub.name)} (+1점)</span>
+                        <span style="flex:1; min-width:0; font-weight:700; color:#334155;">${escapeHtml(info.name || sub.name)} <span style="font-size:0.78rem; font-weight:normal; color:#64748b;">1점 상승 시</span></span>
                         <span style="flex-shrink:0; color:${info.uiDiff > 0 ? '#ef4444' : '#94a3b8'}; font-weight:700;">+${diffVal}점</span>
                     </div>
                     <div class="sim-item-body" style="flex:1;">
                         <div style="font-size:0.9rem; color:#475569; margin-bottom:4px;">${desc}</div>
-                        <div style="font-size:0.75rem; color:#94a3b8;">${subText}</div>
                     </div>
                 </div>
             `;
         });
 
+        const uiMode = data._uiMode || 'default';
+        const showBtCTA = (currentScore < 10 && (currentScore + maxRise) < 25 && !data.ineligible && data.sim_data);
+
         let warningHTML = '';
-        if (!['standard', 'pro'].includes(currentUserTier) && univChangeRemaining <= 5) {
-            warningHTML = `<div class="sim-warning upsell-warning"><h4><i class="fas fa-exclamation-triangle"></i> 지금 점수 구조에서는 특정 과목이 결과에 불리하게 작용하고 있습니다.</h4><button onclick="location.href='/payment'" style="width: 100%; padding: 12px; background: #ea580c; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer;">공부 방향 설정하기</button></div>`;
-        } else {
-            if (currentScore < 10 && (currentScore + maxRise) < 25) warningHTML = `<div class="sim-warning" style="background:#fff7ed; border-color:#fdba74; color:#c2410c;"><i class="fas fa-exclamation-circle"></i><div><strong>여전히 불합격권입니다.</strong></div></div>`; 
-            else if (currentScore >= 225 || (currentScore + maxRise) >= 250) warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><i class="fas fa-check-circle"></i><div><strong>이미 상당히 안정권입니다.</strong></div></div>`;
-        }
+        if (currentScore >= 225 || (currentScore + maxRise) >= 250) warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><i class="fas fa-check-circle"></i><div><strong>이미 상당히 안정권입니다.</strong></div></div>`;
+
+        // 1-4: warning도 CTA도 없는 "특이사항 없음" 카드에서 하단 컨텍스트 힌트로 빈공간 채움
+        const showFooterHint_pc = !showBtCTA && !warningHTML;
+        const footerHintHTML_pc = showFooterHint_pc ? buildSimFooterContext(currentScore, bestSubjectKey, data) : '';
+        const defaultBody = `<div class="sim-grid">${subjectsHTML}</div>${showBtCTA ? buildBacktraceCTA(data.originalIdx) : ''}${footerHintHTML_pc}`;
+        let simBodyHTML;
+        if (uiMode === 'loading') simBodyHTML = buildLoadingBlock();
+        else if (uiMode === 'backtrace' && data.backtrace_plan) simBodyHTML = buildBacktraceBlock(data, currentScore, data.originalIdx);
+        else if (uiMode === 'upsell') simBodyHTML = buildUpsellBlock(data.originalIdx);
+        else simBodyHTML = defaultBody;
 
         cardArea.innerHTML = `
             <div class="sim-result-card" style="display:block; height:auto;">
@@ -2347,7 +3044,7 @@ function renderDetailedSimCard() {
                         <span class="score-diff">${currentScore}점</span>
                     </div>
                 </div>
-                <div class="sim-grid">${subjectsHTML}</div>
+                ${simBodyHTML}
                 ${warningHTML}
             </div>
         `;
@@ -2394,7 +3091,7 @@ function applyCoachTierLock() {
 
         const overlay = document.createElement('div');
         overlay.className = 'coach-tier-lock-overlay';
-        overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
+        overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(200, 217, 255, 0.82); backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
         overlay.innerHTML = getStandardLockOverlayHTML('주간 학습 점검 및 피드백');
         container.appendChild(overlay);
     } else {
@@ -2406,6 +3103,11 @@ function applyCoachTierLock() {
 }
 
 function switchWeeklyTab(step) {
+    // BASIC/STARTER는 Step 2(심층코칭) 접근 불가
+    if (step === 'step2' && (currentUserTier === 'basic' || currentUserTier === 'starter')) {
+        alert("심층코칭은 STANDARD 이상 플랜에서 이용할 수 있습니다.");
+        return;
+    }
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     if(step === 'step1') document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
     else document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
@@ -2489,12 +3191,18 @@ function renderFeedbackList() {
     const fragment = document.createDocumentFragment(); 
     filtered.forEach(h => {
         const fb = h.tutorFeedback || {};
-        const hasFeedback = fb && (
-            (fb.priorityCheck && String(fb.priorityCheck).trim() !== "") || 
-            (fb.weakSubject && String(fb.weakSubject).trim() !== "") || 
-            (fb.nextWeekTop3 && String(fb.nextWeekTop3).trim() !== "") || 
+        const isSubmitted = fb && fb.submitted === true;
+        const hasFeedback = isSubmitted && (
+            (fb.priorityCheck && String(fb.priorityCheck).trim() !== "") ||
+            (fb.weakSubject && String(fb.weakSubject).trim() !== "") ||
+            (fb.nextWeekTop3 && String(fb.nextWeekTop3).trim() !== "") ||
             (fb.planEvaluation && String(fb.planEvaluation).trim() !== "") ||
-            (fb.extraQuestion && String(fb.extraQuestion).trim() !== "")
+            (fb.extraQuestion && String(fb.extraQuestion).trim() !== "") ||
+            (fb.planReason && String(fb.planReason).trim() !== "") ||
+            (fb.questionAnswer && String(fb.questionAnswer).trim() !== "") ||
+            (fb.weeklyPlanner && String(fb.weeklyPlanner).trim() !== "") ||
+            (fb.tutorComment && String(fb.tutorComment).trim() !== "") ||
+            (fb.tutorImage && String(fb.tutorImage).trim() !== "")
         );
 
         const div = document.createElement('div'); 
@@ -2519,14 +3227,18 @@ function renderFeedbackList() {
 
 function openFeedbackModal(data) {
     const modal = document.getElementById('feedbackModal');
-    const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent'); 
+    const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent');
     if (!contentArea) return;
 
+    // formVersion 분기: v2이면 새 렌더링
+    if ((data.formVersion || 1) >= 2) { openFeedbackModalV2(data, modal, contentArea); return; }
+
     const fb = data.tutorFeedback || {};
-    const hasFeedback = fb && (
-        (fb.priorityCheck && String(fb.priorityCheck).trim() !== "") || 
-        (fb.weakSubject && String(fb.weakSubject).trim() !== "") || 
-        (fb.nextWeekTop3 && String(fb.nextWeekTop3).trim() !== "") || 
+    const isSubmitted = fb && fb.submitted === true;
+    const hasFeedback = isSubmitted && (
+        (fb.priorityCheck && String(fb.priorityCheck).trim() !== "") ||
+        (fb.weakSubject && String(fb.weakSubject).trim() !== "") ||
+        (fb.nextWeekTop3 && String(fb.nextWeekTop3).trim() !== "") ||
         (fb.planEvaluation && String(fb.planEvaluation).trim() !== "") ||
         (fb.extraQuestion && String(fb.extraQuestion).trim() !== "") ||
         (fb.tutorImage && String(fb.tutorImage).trim() !== "")
@@ -2694,6 +3406,162 @@ function openFeedbackModal(data) {
     if (isPdfFile && typeof renderPdfToImages === 'function') setTimeout(() => { renderPdfToImages(actualPdfUrl, uniqueContainerId); }, 100);
 }
 
+function openFeedbackModalV2(data, modal, contentArea) {
+    const fb = data.tutorFeedback || {};
+    const isSubmitted = fb && fb.submitted === true;
+    const hasFeedback = isSubmitted && (
+        (fb.weeklyPlanner && String(fb.weeklyPlanner).trim() !== "") ||
+        (fb.planReason && String(fb.planReason).trim() !== "") ||
+        (fb.questionAnswer && String(fb.questionAnswer).trim() !== "") ||
+        (fb.tutorComment && String(fb.tutorComment).trim() !== "") ||
+        (fb.tutorImage && String(fb.tutorImage).trim() !== "")
+    );
+
+    if (!hasFeedback) {
+        contentArea.innerHTML = `
+            <div class="pending-view" style="background:#fff; padding:100px 20px; border-radius:16px;">
+                <div class="pending-icon" style="font-size:4rem; color:#cbd5e1; margin-bottom:20px;"><i class="fas fa-hourglass-half"></i></div>
+                <h2 style="color:#1e293b; margin-bottom:10px; font-weight:800;">피드백 작성 대기중</h2>
+                <p style="color:#64748b; margin-bottom:30px;">담당 컨설턴트가 학생의 리포트를 꼼꼼히 분석하고 있습니다.</p>
+                <button onclick="document.getElementById('feedbackModal').style.display='none'" style="padding:12px 30px; background:#f1f5f9; border:none; border-radius:8px; font-weight:bold; color:#475569; cursor:pointer;">닫기</button>
+            </div>`;
+        modal.style.display = 'block';
+        return;
+    }
+
+    const consultantName = escapeHtml(data.tutorName || currentTutorName);
+    const nl2br = (str) => str ? escapeHtml(str).replace(/\n/g, '<br>') : '<span style="color:#94a3b8">작성 내용 없음</span>';
+
+    // 학생 달성률 테이블
+    let detailRows = ''; let totalPlan = '0H', totalAct = '0H', totalRate = '0%';
+    if (data.studyTime) {
+        totalPlan = data.studyTime.totalPlan || '0H'; totalAct = data.studyTime.totalAct || '0H'; totalRate = data.studyTime.totalRate || '0%';
+        if (data.studyTime.details && data.studyTime.details.length > 0) {
+            data.studyTime.details.forEach(d => {
+                const plan = parseFloat(d.plan) || 0; const act = parseFloat(d.act) || 0;
+                const rate = plan > 0 ? Math.min((act / plan) * 100, 100).toFixed(0) : 0;
+                const rateColor = rate >= 80 ? '#10b981' : (rate >= 50 ? '#f59e0b' : '#ef4444');
+                let mainSub = d.subject; let detailSub = "-";
+                const match = d.subject.match(/^(.*?)\s*\((.*?)\)$/);
+                if (match) { mainSub = match[1]; detailSub = match[2]; }
+                detailRows += `<tr><td style="text-align:left; font-weight:700; color:#334155;">${escapeHtml(mainSub)}</td><td style="color:#64748b; font-size:0.85rem; font-weight:600;">${escapeHtml(detailSub)}</td><td>${plan}H</td><td style="color:#2563eb; font-weight:bold;">${act}H</td><td style="color:${rateColor}; font-weight:800;">${rate}%</td></tr>`;
+            });
+        }
+    }
+    if (!detailRows) detailRows = `<tr><td colspan="5" style="color:#94a3b8; padding:20px;">상세 학습 기록이 없습니다.</td></tr>`;
+
+    // 요일별 시간
+    let availTimeHtml = '';
+    if (data.weeklyAvailableTime) {
+        const wt = data.weeklyAvailableTime;
+        const days = [['월', wt.mon], ['화', wt.tue], ['수', wt.wed], ['목', wt.thu], ['금', wt.fri], ['토', wt.sat], ['일', wt.sun]];
+        const total = days.reduce((s, d) => s + (parseFloat(d[1]) || 0), 0);
+        availTimeHtml = `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">${days.map(d => `<span style="background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; padding:4px 10px; font-size:0.85rem;"><strong>${d[0]}</strong> ${d[1] || 0}h</span>`).join('')}</div><div style="text-align:right; font-size:0.9rem; color:#475569; font-weight:600;">주간 합계: <span style="color:#2563eb;">${total}시간</span></div>`;
+    }
+
+    // 첨부파일
+    let tutorFileBlockHtml = '';
+    const uniqueContainerId = `pdf-render-${Date.now()}`;
+    let isPdfFile = false; let actualPdfUrl = "";
+    if (fb.tutorImage && String(fb.tutorImage).trim() !== "") {
+        isPdfFile = fb.tutorImage.toLowerCase().includes('.pdf');
+        actualPdfUrl = fb.tutorImage;
+        let fileDisplayHtml = isPdfFile
+            ? `<div id="${uniqueContainerId}" style="width:100%; text-align:center;"><div style="padding:40px 0; color:#3b82f6; font-weight:bold;" class="pdf-loading-spinner"><i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom:10px;"></i><br>튜터 첨부 파일을 불러오는 중...</div></div>`
+            : `<div style="text-align:center; padding:10px 0;"><img src="${escapeHtml(fb.tutorImage)}?t=${Date.now()}" crossorigin="anonymous" alt="튜터 첨부" style="max-width:100%; height:auto; border-radius:8px; border:1px solid #cbd5e1;"></div>`;
+        tutorFileBlockHtml = `
+            <div id="attachedPdfData" data-pdf-url="${actualPdfUrl}" style="display:none;"></div>
+            <div class="doc-matched-box allow-page-break" style="margin-top:30px;">
+                <div class="doc-matched-header"><i class="fas fa-paperclip" style="color:#3b82f6;"></i> 4. 첨부파일</div>
+                <div class="doc-matched-body allow-page-break-body" style="padding:25px;">${fileDisplayHtml}</div>
+            </div>`;
+    }
+
+    const safeTitleForJs = escapeHtml(data.title || "주간 리포트").replace(/'/g, "\\'");
+
+    const html = `
+        <div class="modal-document" id="pdfTargetDocument">
+            <div class="doc-controls" data-html2canvas-ignore="true">
+                <button class="btn-pdf" onclick="downloadReportPDF('${safeTitleForJs}')"><i class="fas fa-file-pdf"></i> PDF 파일 다운로드</button>
+                <button class="close-btn-doc" onclick="document.getElementById('feedbackModal').style.display='none'">&times;</button>
+            </div>
+            <div class="doc-header">
+                <div><span class="doc-subtitle">WEEKLY REPORT</span><h2 class="doc-title">스터디크랙 주간 전략리포트</h2></div>
+                <div class="doc-meta"><div>대상: <strong>${escapeHtml(data.title || "주간 리포트")}</strong></div><div>발행일: <strong>${new Date(data.date).toLocaleDateString()}</strong></div><div>분석: <strong>${consultantName}</strong></div></div>
+            </div>
+
+            <div class="doc-matched-box">
+                <div class="doc-matched-header"><i class="fas fa-clock"></i> 1. 지난주 달성 현황</div>
+                <div class="doc-matched-body">
+                    <div class="doc-student-data">
+                        <span class="doc-badge">학생 리포트</span>
+                        <table class="doc-table"><thead><tr><th>과목</th><th>세부</th><th>목표</th><th>실제</th><th>달성률</th></tr></thead><tbody>${detailRows}</tbody></table>
+                        <div style="margin-top:15px; text-align:right; font-size:0.9rem; color:#64748b; font-weight:700; background:#f8fafc; padding:8px; border-radius:6px;">총 달성률 <span style="color:#2563eb; font-size:1.1rem; margin-left:5px;">${totalRate}</span> <span style="font-weight:normal; font-size:0.8rem;">(${totalAct} / ${totalPlan})</span></div>
+                        ${data.bestPart ? `<div style="margin-top:15px; padding:12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px;"><strong style="color:#15803d; font-size:0.85rem;">잘 된 부분</strong><div style="color:#334155; margin-top:4px; font-size:0.9rem;">${nl2br(data.bestPart)}</div></div>` : ''}
+                        ${data.hardPart ? `<div style="margin-top:10px; padding:12px; background:#fff1f2; border:1px solid #fecaca; border-radius:8px;"><strong style="color:#dc2626; font-size:0.85rem;">어려웠던 부분</strong><div style="color:#334155; margin-top:4px; font-size:0.9rem;">${nl2br(data.hardPart)}</div></div>` : ''}
+                    </div>
+                    <div class="doc-tutor-feedback">
+                        <span class="doc-badge tutor-badge">Consultant 총평</span>
+                        <div class="doc-text">${nl2br(fb.tutorComment)}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="doc-matched-box">
+                <div class="doc-matched-header"><i class="fas fa-comments"></i> 2. 학생 질문 & 튜터 답변</div>
+                <div class="doc-matched-body">
+                    <div class="doc-student-data">
+                        <span class="doc-badge" style="background:#fef2f2; color:#ef4444; border-color:#fecaca;">학생 질문</span>
+                        ${data.questionToTutor ? `<div style="color:#334155; font-size:0.95rem; padding-left:10px; border-left:3px solid #fecaca;">${nl2br(data.questionToTutor)}</div>` : '<div style="color:#94a3b8; padding:10px 0;">질문 없음</div>'}
+                        ${data.stuckSubject ? `<div style="margin-top:15px; padding:12px; background:#fefce8; border:1px solid #fde68a; border-radius:8px;"><strong style="color:#92400e; font-size:0.85rem;">막히는 과목/유형</strong><div style="color:#334155; margin-top:4px; font-size:0.9rem;">${nl2br(data.stuckSubject)}</div></div>` : ''}
+                    </div>
+                    <div class="doc-tutor-feedback">
+                        <span class="doc-badge tutor-badge" style="background:#f0fdf4; color:#16a34a; border-color:#bbf7d0;">Consultant 답변</span>
+                        <div class="doc-text">${nl2br(fb.questionAnswer)}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="doc-matched-box allow-page-break">
+                <div class="doc-matched-header"><i class="fas fa-calendar-alt"></i> 3. 이번 주 플래너</div>
+                <div class="doc-matched-body allow-page-break-body">
+                    <div class="doc-student-data">
+                        <span class="doc-badge">학생 정보</span>
+                        ${availTimeHtml ? `<div style="margin-bottom:15px;"><strong style="font-size:0.9rem; color:#1e293b; display:block; margin-bottom:8px;">공부 가능 시간</strong>${availTimeHtml}</div>` : ''}
+                        ${data.currentMaterials ? `<div style="margin-bottom:10px;"><strong style="font-size:0.85rem; color:#64748b;">진행 중 교재/강의</strong><div style="color:#334155; font-size:0.9rem; margin-top:4px;">${nl2br(data.currentMaterials)}</div></div>` : ''}
+                        ${data.weeklyGoal ? `<div style="margin-bottom:10px;"><strong style="font-size:0.85rem; color:#64748b;">이번 주 목표</strong><div style="color:#334155; font-size:0.9rem; margin-top:4px;">${nl2br(data.weeklyGoal)}</div></div>` : ''}
+                        ${data.fixedSchedule ? `<div><strong style="font-size:0.85rem; color:#64748b;">고정 일정</strong><div style="color:#334155; font-size:0.9rem; margin-top:4px;">${nl2br(data.fixedSchedule)}</div></div>` : ''}
+                    </div>
+                    <div class="doc-tutor-feedback">
+                        <span class="doc-badge tutor-badge">튜터 플래너</span>
+                        <h4 style="margin:0 0 10px 0; font-size:1rem; color:#1e293b;">요일별 플래너</h4>
+                        <div class="doc-text" style="margin-bottom:20px; padding-bottom:20px; border-bottom:1px dashed #cbd5e1;">${nl2br(fb.weeklyPlanner)}</div>
+                        <h4 style="margin:0 0 10px 0; font-size:1rem; color:#2563eb;"><i class="fas fa-lightbulb"></i> 이렇게 짠 이유</h4>
+                        <div class="doc-text">${nl2br(fb.planReason)}</div>
+                    </div>
+                </div>
+            </div>
+            ${tutorFileBlockHtml}
+        </div>
+
+        <div class="mobile-only-msg" style="display:none;">
+            <i class="fas fa-file-pdf" style="font-size:3rem; color:#3b82f6; margin-bottom:15px;"></i>
+            <h3 style="margin:0 0 10px 0; color:#1e293b; font-size:1.4rem;">주간 리포트 도착</h3>
+            <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px; line-height:1.5; word-break:keep-all;">
+                모바일에서는 쾌적한 열람을 위해<br>PDF 변환 후 다운로드를 지원합니다.
+            </p>
+            <button onclick="downloadReportPDF('${safeTitleForJs}')" class="mobile-pdf-btn">
+                <i class="fas fa-magic" style="color:#ffffff !important; font-size:1.1rem !important; margin-bottom:0 !important;"></i> 리포트 PDF 생성하기
+            </button>
+            <button class="mobile-close-btn" onclick="document.getElementById('feedbackModal').style.display='none'">닫기</button>
+        </div>
+    `;
+
+    contentArea.innerHTML = html;
+    modal.style.display = 'block';
+    if (isPdfFile && typeof renderPdfToImages === 'function') setTimeout(() => { renderPdfToImages(actualPdfUrl, uniqueContainerId); }, 100);
+}
+
 async function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
@@ -2761,11 +3629,8 @@ async function downloadReportPDF(reportTitle) {
             </body></html>
         `;
 
-        const token = localStorage.getItem('idToken');
-        
-        const response = await fetch(PDF_API_URL, { 
+        const response = await apiFetch(PDF_API_URL, { 
             method: 'POST', 
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
                 title: reportTitle, 
                 html: rawHtml,
@@ -2871,7 +3736,15 @@ async function renderPdfToImages(url, containerId) {
 let currentMobileStep = 0; let wizardSteps = []; let wizardResizeHandler = null;
 
 function openWeeklyCheckModal() {
-    if (!['standard', 'pro'].includes(currentUserTier)) { alert("🔒 Standard 멤버십 이상 전용 기능입니다.\n멤버십 업그레이드 후 이용해주세요."); return; }
+    if (!['basic', 'starter', 'standard', 'pro'].includes(currentUserTier)) {
+        if (confirm("🔒 BASIC 이상 플랜에서 주간 학습점검을 이용할 수 있습니다.\n결제 페이지로 이동하시겠습니까?")) { window.location.href = '/payment'; }
+        return;
+    }
+    // BASIC/STARTER 1회 제출 제한: 이미 제출 이력이 있으면 차단
+    if ((currentUserTier === 'basic' || currentUserTier === 'starter') && weeklyDataHistory.length > 0) {
+        alert("BASIC/STARTER 플랜은 1회 플래너 피드백이 제공됩니다.\n이미 제출을 완료하셨습니다. 추가 제출은 STANDARD 이상 플랜에서 가능합니다.");
+        return;
+    }
     const today = new Date();
     if (today.getDay() === 0 && today.getHours() >= 20) { alert("금주 학습 점검 제출이 마감되었습니다."); return; }
     
@@ -2884,12 +3757,26 @@ function openWeeklyCheckModal() {
     const thisWeekData = weeklyDataHistory.find(w => w.weekId === currentWeekId)
         || weeklyDataHistory.find(w => w.title && w.title.replace(/\s/g, '') === currentWeekTitle.replace(/\s/g, ''));
     if (thisWeekData) loadWeeklyDataToForm(thisWeekData); else resetWeeklyForm();
-    
+
+    // BASIC/STARTER 티어: Step 2 탭 잠금 표시
+    const step2Btn = modal.querySelector('.tab-btn:nth-child(2)');
+    if (currentUserTier === 'basic' || currentUserTier === 'starter') {
+        step2Btn.innerHTML = 'Step 2. 심층코칭 <i class="fas fa-lock" style="margin-left:4px; font-size:0.75rem; color:#94a3b8;"></i>';
+        step2Btn.style.opacity = '0.5';
+        step2Btn.style.cursor = 'not-allowed';
+    } else {
+        step2Btn.innerHTML = 'Step 2. 심층코칭';
+        step2Btn.style.opacity = ''; step2Btn.style.cursor = '';
+    }
+
     function applyModalLayout() {
         const isMobile = window.innerWidth <= 768;
         if (isMobile) {
-            modalContent.classList.add('mobile-wizard-mode'); wizardSteps = Array.from(modal.querySelectorAll('.check-section, .pro-input-card'));
-            if(currentMobileStep >= wizardSteps.length) currentMobileStep = 0; 
+            modalContent.classList.add('mobile-wizard-mode');
+            wizardSteps = Array.from(modal.querySelectorAll('.check-section, .pro-input-card'));
+            // BASIC/STARTER는 Step 2(심층코칭) 카드 제외
+            if (currentUserTier === 'basic' || currentUserTier === 'starter') { wizardSteps = wizardSteps.filter(el => !el.classList.contains('pro-input-card')); }
+            if(currentMobileStep >= wizardSteps.length) currentMobileStep = 0;
             updateMobileWizardUI();
         } else {
             modalContent.classList.remove('mobile-wizard-mode'); document.getElementById('mobileWizardProgress').style.display = 'none';
@@ -2918,91 +3805,29 @@ function prevMobileStep() { if (currentMobileStep > 0) { currentMobileStep--; up
 function closeWeeklyModal() { document.getElementById('weeklyCheckModal').style.display = 'none'; document.body.style.overflow = 'auto'; }
 
 function resetWeeklyForm() {
-    // 1. 과목 리스트 초기화 (기본 과목 클리어 및 동적 카드 삭제)
+    // 1. 과목 리스트 초기화
     const list = document.getElementById('studyTimeList');
-    if (list) {
-        // 'addSubjectCard'로 추가되었던 커스텀 카드들만 선택해서 삭제
-        const dynamicCards = list.querySelectorAll('.custom-added-card');
-        dynamicCards.forEach(card => card.remove());
-    }
+    if (list) { list.querySelectorAll('.custom-added-card').forEach(card => card.remove()); }
+    document.querySelectorAll('.plan-time, .act-time, .sub-detail').forEach(input => { input.value = ''; });
+    document.querySelectorAll('.rate-txt').forEach(span => { span.innerText = '0%'; span.style.color = '#334155'; });
 
-    // 기본 과목(국어, 수학, 영어)의 입력값 및 달성률 텍스트 초기화
-    document.querySelectorAll('.plan-time, .act-time, .sub-detail').forEach(input => {
-        input.value = '';
-    });
-    document.querySelectorAll('.rate-txt').forEach(span => {
-        span.innerText = '0%';
-        span.style.color = '#334155'; // 기본 색상으로 복구
-    });
+    // 2. 총합 초기화
+    const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
+    setTxt('totalPlan', '0H'); setTxt('totalAct', '0H'); setTxt('totalRate', '0%');
 
-    // 2. 총합 요약 영역 초기화
-    const totalPlan = document.getElementById('totalPlan');
-    const totalAct = document.getElementById('totalAct');
-    const totalRate = document.getElementById('totalRate');
-    
-    if (totalPlan) totalPlan.innerText = '0H';
-    if (totalAct) totalAct.innerText = '0H';
-    if (totalRate) totalRate.innerText = '0%';
-
-    // 3. 실전 모의고사 섹션 초기화
-    // '미응시' 타일을 찾아 선택 상태로 강제 전환
-    const noneMockTile = document.querySelector('.mock-tile[onclick*="\'none\'"]');
-    if (noneMockTile) selectMockType('none', noneMockTile);
-
-    const mockFieldIds = [
-        'mockKorScore', 'mockKorOpt', 'mockMathScore', 'mockMathOpt', 
-        'mockEngScore', 'mockInq1Score', 'mockInq1Name', 'mockInq2Score', 'mockInq2Name'
-    ];
-    mockFieldIds.forEach(id => {
+    // 3. v2 텍스트 필드 초기화
+    const v2Fields = ['wkBestPart', 'wkHardPart', 'wkMaterials', 'wkGoal', 'wkStuck', 'wkSchedule', 'wkQuestion'];
+    v2Fields.forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.value = '';
+        if (el) { el.value = ''; const cs = el.parentElement?.querySelector('.char-count span'); if (cs) cs.innerText = '0'; }
     });
 
-    // 모의고사 파일 업로드 표시 초기화
-    const mockFileDisplay = document.getElementById('mockFileNameDisplay');
-    if (mockFileDisplay) {
-        mockFileDisplay.innerText = '선택된 파일 없음';
-        mockFileDisplay.style.color = '#94a3b8';
-    }
-    const mockFileInput = document.getElementById('mockExamProof');
-    if (mockFileInput) mockFileInput.value = '';
+    // 4. 요일별 시간 초기화
+    ['wtMon','wtTue','wtWed','wtThu','wtFri','wtSat','wtSun'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    setTxt('wtTotalHours', '0');
 
-    // 4. 학업 추이 및 하락 원인 섹션 초기화
-    const trendRadios = document.getElementsByName('studyTrend');
-    if (trendRadios.length >= 2) trendRadios[1].checked = true; // '유지' 인덱스 선택
-
-    const slumpDetail = document.getElementById('slumpDetail');
-    if (slumpDetail) slumpDetail.value = '';
-
-    document.querySelectorAll('#slumpReasonBox input[type="checkbox"]').forEach(cb => {
-        cb.checked = false;
-    });
-    
-    const slumpBox = document.getElementById('slumpReasonBox');
-    if (slumpBox) slumpBox.style.display = 'none';
-
-    // 5. 플래너 인증 파일 배열 및 뷰 초기화
-    currentPlannerFiles = []; // 전역 파일 배열 비우기
-    const plannerInput = document.getElementById('plannerUpload');
-    if (plannerInput) plannerInput.value = '';
-    renderPlannerFiles();
-
-    // 6. 심층 질문(Step 2) 및 글자 수 카운터 초기화
-    const deepQuestionIds = ['deepQ1', 'deepQ2', 'deepQ3', 'deepQ4'];
-    deepQuestionIds.forEach(id => {
-        const textarea = document.getElementById(id);
-        if (textarea) {
-            textarea.value = '';
-            // 텍스트영역 다음에 오는 글자 수 카운트 span 업데이트
-            const countSpan = textarea.parentElement.querySelector('.char-count span');
-            if (countSpan) countSpan.innerText = '0';
-        }
-    });
-
-    // 7. [핵심] 사용자가 버튼을 누르지 않아도 빈 과목 슬롯 1개를 자동으로 생성
-    if (typeof addSubjectCard === 'function') {
-        addSubjectCard();
-    }
+    // 5. 빈 과목 슬롯 1개 자동 생성
+    if (typeof addSubjectCard === 'function') addSubjectCard();
 }
 
 function selectMockType(type, element) { document.getElementById('mockExamType').value = type; document.querySelectorAll('.mock-tile').forEach(tile => tile.classList.remove('selected')); element.classList.add('selected'); toggleMockExamFields(); }
@@ -3088,37 +3913,74 @@ function renderPlannerFiles() {
 function removePlannerFile(idx) { currentPlannerFiles.splice(idx, 1); renderPlannerFiles(); }
 function toggleSlumpReason() { const trend = document.querySelector('input[name="studyTrend"]:checked')?.value; const box = document.getElementById('slumpReasonBox'); if(trend === 'down') box.style.display = 'block'; else box.style.display = 'none'; }
 
+function parseStudySubjectLabel(subject) {
+    const raw = String(subject || '').trim();
+    const m = raw.match(/^(.*?)\s*\((.*?)\)\s*$/);
+    if (!m) return { main: raw, detail: '' };
+    return { main: m[1].trim(), detail: m[2].trim() };
+}
+
 function loadWeeklyDataToForm(data) {
+    // 로드 전 초기화: 기존 커스텀 카드 제거 + 고정 카드 입력값 리셋
+    const list = document.getElementById('studyTimeList');
+    if (list) list.querySelectorAll('.custom-added-card').forEach(card => card.remove());
+    document.querySelectorAll('#studyTimeList .plan-time, #studyTimeList .act-time, #studyTimeList .sub-detail, #studyTimeList .custom-subj').forEach(input => { input.value = ''; });
+    document.querySelectorAll('#studyTimeList .rate-txt').forEach(span => { span.innerText = '0%'; span.style.color = '#334155'; });
+
+    // 과목별 달성률 (v1, v2 공통)
     if (data.studyTime && data.studyTime.details) {
-        const cards = document.querySelectorAll('.subject-card');
-        data.studyTime.details.forEach((detail, idx) => {
-            if (cards[idx]) {
-                const planInput = cards[idx].querySelector('.plan-time'); const actInput = cards[idx].querySelector('.act-time'); const detailInput = cards[idx].querySelector('.sub-detail'); const customInput = cards[idx].querySelector('.custom-subj');
-                if (planInput) planInput.value = detail.plan; if (actInput) actInput.value = detail.act;
-                if (detail.subject.includes('(') && detailInput) { const match = detail.subject.match(/\((.*?)\)/); if(match) detailInput.value = match[1]; } 
-                else if (customInput) { customInput.value = detail.subject; }
-            }
+        const fixedCards = {};
+        document.querySelectorAll('#studyTimeList .subject-card').forEach(card => {
+            const main = card.querySelector('.main-sub')?.innerText?.trim();
+            if (main) fixedCards[main] = card;
         });
-        calcStudyRates(); 
+        const usedFixed = new Set();
+
+        data.studyTime.details.forEach((detail) => {
+            const subjectRaw = detail?.subject || '';
+            const { main, detail: subDetail } = parseStudySubjectLabel(subjectRaw);
+            let card = null;
+
+            if (fixedCards[main] && !usedFixed.has(main)) {
+                card = fixedCards[main];
+                usedFixed.add(main);
+            } else {
+                addSubjectCard();
+                const cards = document.querySelectorAll('#studyTimeList .subject-card');
+                card = cards[cards.length - 1];
+            }
+
+            if (!card) return;
+            const planInput = card.querySelector('.plan-time');
+            const actInput = card.querySelector('.act-time');
+            const detailInput = card.querySelector('.sub-detail');
+            const customInput = card.querySelector('.custom-subj');
+
+            if (planInput) planInput.value = detail.plan ?? '';
+            if (actInput) actInput.value = detail.act ?? '';
+            if (detailInput) detailInput.value = subDetail || '';
+            if (customInput) customInput.value = main || subjectRaw;
+        });
+        calcStudyRates();
     }
-    if (data.mockExam) {
-        const targetTile = document.querySelector(`.mock-tile[onclick*="'${data.mockExam.type}'"]`); if(targetTile) selectMockType(data.mockExam.type, targetTile);
-        if (data.mockExam.scores) {
-            const s = data.mockExam.scores; const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
-            setVal('mockKorScore', s.kor); setVal('mockKorOpt', s.korOpt); setVal('mockMathScore', s.math); setVal('mockMathOpt', s.mathOpt); setVal('mockEngScore', s.eng); setVal('mockInq1Score', s.inq1); setVal('mockInq1Name', s.inq1Name); setVal('mockInq2Score', s.inq2); setVal('mockInq2Name', s.inq2Name);
-        }
+
+    // v2 필드 로드
+    const setField = (id, val) => { const el = document.getElementById(id); if (el) { el.value = val || ''; if (typeof updateCharCount === 'function') updateCharCount(el); } };
+    setField('wkBestPart', data.bestPart);
+    setField('wkHardPart', data.hardPart);
+    setField('wkMaterials', data.currentMaterials);
+    setField('wkGoal', data.weeklyGoal);
+    setField('wkStuck', data.stuckSubject);
+    setField('wkSchedule', data.fixedSchedule);
+    setField('wkQuestion', data.questionToTutor);
+
+    // 요일별 시간
+    if (data.weeklyAvailableTime) {
+        const wt = data.weeklyAvailableTime;
+        const map = { wtMon: 'mon', wtTue: 'tue', wtWed: 'wed', wtThu: 'thu', wtFri: 'fri', wtSat: 'sat', wtSun: 'sun' };
+        Object.entries(map).forEach(([elId, key]) => { const el = document.getElementById(elId); if (el && wt[key]) el.value = wt[key]; });
+        calcWeeklyTotal();
     }
-    if (data.trend) {
-        const radio = document.querySelector(`input[name="studyTrend"][value="${data.trend.status}"]`);
-        if (radio) {
-            radio.checked = true; toggleSlumpReason(); 
-            if (data.trend.status === 'down' && data.trend.reasons) { data.trend.reasons.forEach(r => { const cb = document.querySelector(`#slumpReasonBox input[value="${r}"]`); if(cb) cb.checked = true; else document.getElementById('slumpDetail').value = r; }); }
-        }
-    }
-    if (data.deepAnswers && Array.isArray(data.deepAnswers)) {
-        ['deepQ1', 'deepQ2', 'deepQ3', 'deepQ4'].forEach((id, idx) => { const el = document.getElementById(id); if(el) { el.value = data.deepAnswers[idx] || ''; if(typeof updateCharCount === 'function') updateCharCount(el); } });
-    }
-    currentPlannerFiles = data.plannerFiles || []; originalPlannerFiles = [...currentPlannerFiles]; renderPlannerFiles();
 }
 
 function updateCharCount(el) { const countSpan = el.parentElement.querySelector('.char-count span'); if(countSpan) countSpan.innerText = el.value.length; }
@@ -3134,199 +3996,111 @@ function forceMoveToStep(mobileIdx, tabId) {
     }
 }
 
+// 요일별 공부 가능 시간 합계 계산
+function calcWeeklyTotal() {
+    const ids = ['wtMon','wtTue','wtWed','wtThu','wtFri','wtSat','wtSun'];
+    let total = 0;
+    ids.forEach(id => { total += parseFloat(document.getElementById(id)?.value) || 0; });
+    const el = document.getElementById('wtTotalHours');
+    if (el) el.innerText = total;
+}
+
 async function submitWeeklyCheck() {
-    const submitBtn = document.querySelector('.save-btn'); 
+    const submitBtn = document.querySelector('.save-btn');
     const originalBtnText = submitBtn ? submitBtn.innerText : "저장";
 
     try {
         if (submitBtn) { submitBtn.disabled = true; submitBtn.innerText = "처리 중..."; }
 
-        const totalPlanEl = document.getElementById('totalPlan'); 
-        if (!totalPlanEl) {
-            alert("시스템 오류: 학습 계획 시간 요소를 찾을 수 없습니다.");
+        const totalPlanEl = document.getElementById('totalPlan');
+        if (!totalPlanEl) { alert("시스템 오류: 학습 계획 시간 요소를 찾을 수 없습니다."); return; }
+
+        const totalPlan = parseFloat(totalPlanEl.innerText);
+        if (isNaN(totalPlan) || totalPlan === 0) {
+            alert("지난주 학습 목표 시간을 1시간 이상 입력해주세요.");
+            forceMoveToStep(0, 'step1');
             return;
         }
 
-        const totalPlan = parseFloat(totalPlanEl.innerText); 
-        if (isNaN(totalPlan) || totalPlan === 0) { 
-            alert("학습 계획 시간을 1시간 이상 입력해주세요."); 
-            forceMoveToStep(0, 'step1');
-            return; 
-        }
-
-        const getVal = (id) => document.getElementById(id) ? document.getElementById(id).value.trim() : "";
-        const q1 = getVal('deepQ1'), q2 = getVal('deepQ2'), q3 = getVal('deepQ3'), q4 = getVal('deepQ4');
-        if (!q1 && !q2 && !q3 && !q4) { 
-            alert("심층 코칭 질문을 최소 1개 이상 작성해주세요."); 
-            forceMoveToStep(1, 'step2');
-            return; 
-        }
-
-        // 요소가 존재하지 않을 때를 대비한 안전한 값 추출
-        const mockExamTypeEl = document.getElementById('mockExamType');
-        const mockType = mockExamTypeEl ? mockExamTypeEl.value : 'none';
-        
-        let mockData = { type: mockType, proofFile: null, scores: {} };
-        if (mockType !== 'none') {
-            const fileInput = document.getElementById('mockExamProof');
-            mockData.proofFile = (fileInput && fileInput.files.length > 0) ? fileInput.files[0].name : "file_uploaded"; 
-            mockData.scores = { 
-                kor: getVal('mockKorScore'), korOpt: getVal('mockKorOpt'), 
-                math: getVal('mockMathScore'), mathOpt: getVal('mockMathOpt'), 
-                eng: getVal('mockEngScore'), 
-                inq1: getVal('mockInq1Score'), inq1Name: getVal('mockInq1Name'), 
-                inq2: getVal('mockInq2Score'), inq2Name: getVal('mockInq2Name') 
-            };
-        }
-
-        const studyCards = document.querySelectorAll('.subject-card'); 
+        // 과목별 달성 현황 수집
+        const studyCards = document.querySelectorAll('.subject-card');
         let studyData = [];
         studyCards.forEach(card => {
-            let subjName = ""; 
-            const mainSub = card.querySelector('.main-sub'); 
-            const detail = card.querySelector('.sub-detail'); 
+            let subjName = "";
+            const mainSub = card.querySelector('.main-sub');
+            const detail = card.querySelector('.sub-detail');
             const custom = card.querySelector('.custom-subj');
-            
-            if (mainSub) { 
-                subjName = mainSub.innerText.replace('↳', '').trim(); 
-                if(detail) {
-    				const detailVal = detail.value.trim();
-    				// 값이 있으면 그 값을 쓰고, 없으면 기본값인 '공통'을 붙여줍니다.
-    				subjName += `(${detailVal ? detailVal : '공통'})`;
-				}
-            } else if (custom) { 
-                subjName = custom.value.trim() || "기타"; 
+            if (mainSub) {
+                subjName = mainSub.innerText.replace('↳', '').trim();
+                if (detail) {
+                    const detailVal = detail.value.trim();
+                    subjName += `(${detailVal ? detailVal : '공통'})`;
+                }
+            } else if (custom) {
+                subjName = custom.value.trim() || "기타";
             }
-            
-            const planEl = card.querySelector('.plan-time'); 
-            const actEl = card.querySelector('.act-time');
-            const plan = planEl ? (parseFloat(planEl.value) || 0) : 0; 
-            const act = actEl ? (parseFloat(actEl.value) || 0) : 0;
-            
+            const plan = parseFloat(card.querySelector('.plan-time')?.value) || 0;
+            const act = parseFloat(card.querySelector('.act-time')?.value) || 0;
             if (plan > 0 || act > 0) studyData.push({ subject: subjName, plan, act });
         });
 
-        const trendEl = document.querySelector('input[name="studyTrend"]:checked'); 
-        const trend = trendEl ? trendEl.value : 'keep'; 
-        let reasons = [];
-        if (trend === 'down') { 
-            document.querySelectorAll('#slumpReasonBox input:checked').forEach(cb => reasons.push(cb.value)); 
-            const det = document.getElementById('slumpDetail');
-            if(det && det.value) reasons.push(det.value); 
-        }
+        const getVal = (id) => document.getElementById(id) ? document.getElementById(id).value.trim() : "";
+
+        // 요일별 공부 가능 시간
+        const weeklyAvailableTime = {
+            mon: parseFloat(getVal('wtMon')) || 0,
+            tue: parseFloat(getVal('wtTue')) || 0,
+            wed: parseFloat(getVal('wtWed')) || 0,
+            thu: parseFloat(getVal('wtThu')) || 0,
+            fri: parseFloat(getVal('wtFri')) || 0,
+            sat: parseFloat(getVal('wtSat')) || 0,
+            sun: parseFloat(getVal('wtSun')) || 0
+        };
 
         if (!confirm("제출하시겠습니까?")) return;
-
-        const token = localStorage.getItem('idToken'); 
-
-        const currentUrls = currentPlannerFiles.filter(f => typeof f === 'string'); 
-        const filesToDelete = originalPlannerFiles.filter(url => !currentUrls.includes(url));
-        
-        if (filesToDelete.length > 0) { 
-            await Promise.all(filesToDelete.map(url => fetch(FILE_API_URL, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-                body: JSON.stringify({ type: 'delete_s3_file', data: { fileUrl: url } }) 
-            }))); 
-        }
-        
-        let finalFileUrls = [...currentUrls]; 
-        const newFiles = currentPlannerFiles.filter(f => typeof f !== 'string');
-        
-        if (newFiles.length > 0) {
-            for (const file of newFiles) {
-                // 🔒 [보안] 파일명 살균 (Sanitization) 처리 적용
-                const secureFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`;
-
-                const res = await fetch(FILE_API_URL, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-                    body: JSON.stringify({ type: 'get_presigned_url', data: { fileName: secureFileName, fileType: file.type, folder: 'planner' } }) 
-                });
-                
-                if (!res.ok) throw new Error("플래너 업로드 URL 발급 실패");
-                const { uploadUrl, fileUrl, fields } = await res.json();
-                const formData = new FormData(); 
-                
-                Object.entries(fields || {}).forEach(([k, v]) => formData.append(k, v)); 
-                formData.append('file', file);
-                
-                await fetch(uploadUrl, { method: 'POST', body: formData }); 
-                finalFileUrls.push(fileUrl);
-            }
-        }
-        
-        if (mockData.type !== 'none') {
-            const mockFileInput = document.getElementById('mockExamProof');
-            if (mockFileInput && mockFileInput.files.length > 0) {
-                const mFile = mockFileInput.files[0];
-                // 🔒 [보안] 파일명 살균 (Sanitization) 처리 적용
-                const secureMockName = `mock_${Date.now()}_${mFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`;
-
-                const mRes = await fetch(FILE_API_URL, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-                    body: JSON.stringify({ type: 'get_presigned_url', data: { fileName: secureMockName, fileType: mFile.type, folder: 'mock_exams' } }) 
-                });
-                
-                if (!mRes.ok) throw new Error("모의고사 성적표 업로드 URL 발급 실패");
-                const { uploadUrl, fields, fileUrl } = await mRes.json();
-                
-                const formData = new FormData(); 
-                Object.entries(fields || {}).forEach(([k, v]) => formData.append(k, v)); 
-                formData.append('file', mFile); 
-                
-                const uploadRes = await fetch(uploadUrl, { method: 'POST', body: formData });
-                if (!uploadRes.ok) throw new Error("모의고사 S3 업로드 실패");
-                
-                mockData.proofFile = fileUrl; 
-            } else if (!mockData.proofFile || mockData.proofFile === "file_uploaded") {
-                alert("모의고사 성적 인증 사진을 첨부해주세요."); 
-                forceMoveToStep(0, 'step1'); 
-                return;
-            }
-        }
 
         const today = new Date().toISOString();
         const title = (typeof getWeekTitle === 'function') ? getWeekTitle(new Date()) : "주간점검";
         const weekId = generateWeekId(new Date());
-        
-        const weeklyData = { 
-            weekId, date: today, title: title, 
-            studyTime: { 
-                details: studyData, 
-                totalPlan: document.getElementById('totalPlan') ? document.getElementById('totalPlan').innerText : '0H', 
-                totalAct: document.getElementById('totalAct') ? document.getElementById('totalAct').innerText : '0H', 
-                totalRate: document.getElementById('totalRate') ? document.getElementById('totalRate').innerText : '0%' 
-            }, 
-            mockExam: mockData, 
-            trend: { status: trend, reasons: reasons }, 
-            deepAnswers: [q1, q2, q3, q4], 
-            plannerFiles: finalFileUrls 
+
+        const weeklyData = {
+            weekId, date: today, title: title,
+            formVersion: 2,
+            studyTime: {
+                details: studyData,
+                totalPlan: document.getElementById('totalPlan')?.innerText || '0H',
+                totalAct: document.getElementById('totalAct')?.innerText || '0H',
+                totalRate: document.getElementById('totalRate')?.innerText || '0%'
+            },
+            bestPart: getVal('wkBestPart'),
+            hardPart: getVal('wkHardPart'),
+            weeklyAvailableTime: weeklyAvailableTime,
+            currentMaterials: getVal('wkMaterials'),
+            weeklyGoal: getVal('wkGoal'),
+            stuckSubject: getVal('wkStuck'),
+            fixedSchedule: getVal('wkSchedule'),
+            questionToTutor: getVal('wkQuestion')
         };
 
-        const res = await fetch(REPORT_API_URL, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-            body: JSON.stringify({ type: 'save_weekly_check', data: weeklyData }) 
+        const res = await apiFetch(REPORT_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'save_weekly_check', data: weeklyData })
         });
-        
-        if (res.ok) { 
-            alert("제출이 완료되었습니다."); 
-            closeWeeklyModal(); 
-            location.reload(); 
-        } else { 
-            throw new Error("서버 응답 오류가 발생했습니다."); 
+
+        if (res.ok) {
+            alert("제출이 완료되었습니다.");
+            closeWeeklyModal();
+            location.reload();
+        } else {
+            const errBody = await res.json().catch(() => ({}));
+            throw new Error(errBody.error || "서버 응답 오류가 발생했습니다.");
         }
-        
-    } catch(e) { 
-        console.error("Submit Error:", e); 
-        alert("처리 중 오류가 발생했습니다: " + e.message); 
-    } finally { 
-        if (submitBtn) { 
-            submitBtn.disabled = false; 
-            submitBtn.innerText = originalBtnText; 
-        } 
+
+    } catch(e) {
+        console.error("Submit Error:", e);
+        alert("처리 중 오류가 발생했습니다: " + e.message);
+    } finally {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = originalBtnText; }
     }
 }
 
@@ -3419,7 +4193,7 @@ async function renderProDashboard(container) {
                     <div id="requestBtnContainer"><button class="req-btn" onclick="openProReportModal()"><i class="fas fa-edit"></i> 분석 요청서 작성하기</button></div>
                 </div>
                 <div class="report-list-container">
-                    <h4 style="color:white; margin:0 0 15px 0; border-left:4px solid #3b82f6; padding-left:10px;">📑 분석 보고서 보관함</h4>
+                    <h4 style="color:white; margin:0 0 15px 0;">📑 분석 보고서 보관함</h4>
                     <div id="proReportListArea"><div style="text-align:center; color:#64748b; padding:20px;"><i class="fas fa-spinner fa-spin"></i> 로딩 중...</div></div>
                 </div>
             </div>
@@ -3439,14 +4213,17 @@ function renderProReportList(currentKey, isDeadlinePassed) {
         gridDiv.className = 'report-grid';
         
         cachedProReports.forEach(rep => {
-            const isReady = (rep.status === 'published' || rep.status === 'sent');
+            const hasReportLink = !!(rep.reportLink && String(rep.reportLink).trim() !== '');
+            const isReady = (rep.status === 'published' || rep.status === 'sent') && hasReportLink;
             const formattedName = formatReportKey(rep.key);
+            const isPublishedNoLink = (rep.status === 'published' || rep.status === 'sent') && !hasReportLink;
 
             const itemDiv = document.createElement('div');
             itemDiv.className = 'report-item';
             itemDiv.style.cssText = `cursor:${isReady ? 'pointer' : 'default'}; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 15px 12px;`;
             itemDiv.onclick = () => {
                 if(isReady) window.open(rep.reportLink);
+                else if (isPublishedNoLink) alert('리포트 파일 연결을 준비 중입니다. 잠시 후 다시 확인해주세요.');
                 else alert('튜터가 리포트를 최종 검수 중입니다. 잠시만 기다려주세요.');
             };
 
@@ -3459,8 +4236,8 @@ function renderProReportList(currentKey, isDeadlinePassed) {
             nameStrong.textContent = formattedName; // 🔒 안전
 
             const statusSpan = document.createElement('span');
-            statusSpan.style.cssText = isReady ? 'color:#4ade80; font-size:0.8rem;' : 'color:#fbbf24; font-size:0.8rem;';
-            statusSpan.textContent = isReady ? '● 열람 가능' : '● 분석중'; // 🔒 안전
+            statusSpan.style.cssText = isReady ? 'color:#4ade80; font-size:0.8rem;' : (isPublishedNoLink ? 'color:#93c5fd; font-size:0.8rem;' : 'color:#fbbf24; font-size:0.8rem;');
+            statusSpan.textContent = isReady ? '● 열람 가능' : (isPublishedNoLink ? '● 파일 준비중' : '● 분석중'); // 🔒 안전
 
             infoDiv.appendChild(nameStrong);
             infoDiv.appendChild(statusSpan);
@@ -3510,10 +4287,9 @@ async function submitProReport() {
     const submitBtn = document.querySelector('.pro-submit-btn'); const originalText = submitBtn.innerText;
     submitBtn.innerText = "처리 중..."; submitBtn.disabled = true;
     
-    const token = localStorage.getItem('idToken');
     try {
-        const res = await fetch(REPORT_API_URL, {
-            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        const res = await apiFetch(REPORT_API_URL, {
+            method: 'POST',
             body: JSON.stringify({ type: 'request_pro_report', data: { requestText: text } })
         });
         const data = await res.json();

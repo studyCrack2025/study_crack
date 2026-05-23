@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+  <script>if('scrollRestoration'in history)history.scrollRestoration='manual';</script>
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
     j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
@@ -22,10 +23,10 @@
     <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
 </head>
 <body>
-    <header>
+    <header id="site-header" class="scrolled">
         <div class="logo-container">
             <a href="/" class="logo-link">
-                <img src="/assets/images/studycrack_logo_wo_bg.png" alt="StudyCrack 로고">
+                <img src="/assets/figma/figma-asset-04.svg" alt="StudyCrack 로고">
                 <span class="logo">StudyCrack</span>
             </a>
         </div>
@@ -33,10 +34,30 @@
             <a href="/analysis">나만의 솔루션</a>
             <a href="/qna">1:1 문의</a>
             <a href="/login" id="loginBtn" class="nav-btn">로그인 / 회원가입</a>
-            <a href="#" id="myPageBtn" class="active-link" class="nav-btn hidden">마이페이지</a>
-            <a href="#" id="logoutBtn" class="nav-btn hidden">로그아웃</a>
+            <a href="/mypage" id="myPageBtn" class="active-link hidden">마이페이지</a>
+            <a href="#" id="logoutBtn" onclick="handleSignOut()" class="nav-btn hidden">로그아웃</a>
         </nav>
+        <div class="mobile-header-right">
+            <span class="mobile-nav-label">마이페이지</span>
+            <button class="hamburger-btn" id="hamburgerBtn" aria-label="메뉴 열기">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
     </header>
+
+    <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
+    <div class="mobile-nav-panel" id="mobileNavPanel">
+        <div class="mobile-nav-top">
+            <a class="mnp-logo" href="/"><img src="/assets/figma/figma-asset-04.svg" alt="StudyCrack"><span>StudyCrack</span></a>
+            <button class="mobile-nav-close" id="mobileNavClose" aria-label="메뉴 닫기">✕</button>
+        </div>
+        <nav class="mobile-nav-links">
+            <a href="/analysis">나만의 솔루션</a>
+            <a href="/qna">1:1 문의</a>
+            <a href="/mypage">마이페이지</a>
+            <a href="#" id="mobileLogoutBtn" class="mnl-btn mnl-btn-logout">로그아웃</a>
+        </nav>
+    </div>
 
     <div class="mypage-container">
         
@@ -112,12 +133,14 @@
 
                 <div class="form-group row-group">
                     <div class="input-wrapper">
-                        <label>학교</label>
-                        <input type="text" id="profileSchool" disabled>
+                        <label>탐구 MBTI</label>
+                        <div class="mbti-display-row">
+                            <span id="profileMbtiDisplay" class="mbti-code-display">-</span>
+                        </div>
                     </div>
-                    <button class="edit-btn" onclick="toggleEdit('profileSchool', this)">수정하기</button>
+                    <button class="edit-btn" onclick="openMbtiModal()">수정하기</button>
                 </div>
-                
+
                 <hr class="divider">
 
                 <h3>계정 정보 변경</h3>
@@ -125,50 +148,71 @@
                     <div class="link-item">
                         <span class="label">이메일</span>
                         <span class="value" id="currentEmailDisplay">loading...</span>
-                        <a href="#" onclick="openEmailModal(); return false;" class="text-link">이메일 변경하기</a>
                     </div>
                     <div class="link-item">
                         <span class="label">전화번호</span>
                         <span class="value" id="currentPhoneDisplay">loading...</span>
                         <a href="#" onclick="openPhoneModal(); return false;" class="text-link">전화번호 변경하기</a>
                     </div>
-                    <div class="link-item">
+                    <div class="link-item" id="passwordChangeRow">
                         <span class="label">비밀번호</span>
                         <span class="value">********</span>
                         <a href="/change-password" class="text-link">비밀번호 변경하기</a>
                     </div>
                 </div>
+
+                <hr class="divider">
+
+                <h3>소셜 계정 연동</h3>
+                <div id="socialLinksSection" class="social-links-section"></div>
             </div>
         </main>
     </div> 
     
-    <div id="emailModal" class="modal hidden">
+    <div id="mbtiModal" class="modal hidden">
         <div class="modal-content">
-            <span class="close-btn" onclick="closeModal('emailModal')">&times;</span>
-            <h3>이메일 변경</h3>
-            <p class="modal-desc">새로운 이메일 주소로 인증이 필요합니다.</p>
-            
-            <div id="step-email-input">
-                <div class="form-group">
-                    <label>새 이메일 주소</label>
-                    <input type="email" id="newEmailInput" placeholder="example@email.com">
-                </div>
-                <button class="modal-action-btn" onclick="requestEmailChange()">인증번호 전송</button>
-            </div>
-
-            <div id="step-email-verify" class="hidden">
-                <div class="form-group">
-                    <label>인증번호</label>
-                    <div class="verify-row">
-                        <input type="text" id="emailVerifyCode" placeholder="코드 6자리">
-                        <span id="emailTimer" class="timer">05:00</span>
+            <span class="close-btn" onclick="closeModal('mbtiModal')">&times;</span>
+            <h3>탐구 MBTI 변경</h3>
+            <p class="modal-desc">4가지 학습 성향을 선택하거나 테스트를 통해 알아보세요.</p>
+            <div class="mbti-dim-list" id="mbtiDimListMypage">
+                <div class="mbti-dim-row">
+                    <span class="mbti-dim-name">학습 접근법</span>
+                    <div class="mbti-dim-btns">
+                        <button class="mbti-dim-btn" onclick="selectMbtiDimMypage(0,'C',this)"><span class="dim-letter">C</span><span class="dim-sub">개념 중심</span></button>
+                        <button class="mbti-dim-btn" onclick="selectMbtiDimMypage(0,'I',this)"><span class="dim-letter">I</span><span class="dim-sub">문제 중심</span></button>
                     </div>
                 </div>
-                <button class="modal-action-btn" onclick="verifyEmailChange()">인증 및 변경 완료</button>
+                <div class="mbti-dim-row">
+                    <span class="mbti-dim-name">변화 적응력</span>
+                    <div class="mbti-dim-btns">
+                        <button class="mbti-dim-btn" onclick="selectMbtiDimMypage(1,'S',this)"><span class="dim-letter">S</span><span class="dim-sub">루틴 선호</span></button>
+                        <button class="mbti-dim-btn" onclick="selectMbtiDimMypage(1,'M',this)"><span class="dim-letter">M</span><span class="dim-sub">변화 선호</span></button>
+                    </div>
+                </div>
+                <div class="mbti-dim-row">
+                    <span class="mbti-dim-name">사고 방식</span>
+                    <div class="mbti-dim-btns">
+                        <button class="mbti-dim-btn" onclick="selectMbtiDimMypage(2,'D',this)"><span class="dim-letter">D</span><span class="dim-sub">근거 중심</span></button>
+                        <button class="mbti-dim-btn" onclick="selectMbtiDimMypage(2,'E',this)"><span class="dim-letter">E</span><span class="dim-sub">흐름 중심</span></button>
+                    </div>
+                </div>
+                <div class="mbti-dim-row">
+                    <span class="mbti-dim-name">계획 스타일</span>
+                    <div class="mbti-dim-btns">
+                        <button class="mbti-dim-btn" onclick="selectMbtiDimMypage(3,'R',this)"><span class="dim-letter">R</span><span class="dim-sub">계획 고수</span></button>
+                        <button class="mbti-dim-btn" onclick="selectMbtiDimMypage(3,'F',this)"><span class="dim-letter">F</span><span class="dim-sub">유연 조정</span></button>
+                    </div>
+                </div>
             </div>
+            <div class="mbti-preview">
+                <span class="mbti-preview-label">선택된 유형:</span>
+                <span id="mbtiPreviewCodeMypage" class="mbti-preview-code">? ? ? ?</span>
+            </div>
+            <button class="modal-action-btn mbti-test-btn" onclick="goToMbtiTestMypage()">테스트하기</button>
+            <button class="modal-action-btn" id="mbtiConfirmBtnMypage" onclick="confirmMbtiDimsMypage()" disabled>직접 선택 완료</button>
         </div>
     </div>
-    
+
     <div id="phoneModal" class="modal hidden">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('phoneModal')">&times;</span>
@@ -254,19 +298,29 @@
         <div class="modal-content delete-modal">
             <span class="close-btn" onclick="closeModal('deleteAccountModal')">&times;</span>
             <h3>회원 탈퇴</h3>
-            
+
             <div class="warning-box">
                 <i class="fas fa-exclamation-triangle"></i>
                 <strong>탈퇴 전 반드시 확인해주세요!</strong>
                 탈퇴 시 작성한 기초조사서, 입시 솔루션 결과, 결제 내역 등 <span class="highlight">모든 데이터가 영구적으로 삭제</span>되며 절대 복구할 수 없습니다.
             </div>
 
-            <div class="form-group">
-                <label>본인 확인을 위해 현재 비밀번호를 입력해주세요.</label>
-                <input type="password" id="deleteAccountPassword" placeholder="현재 비밀번호 입력">
+            <!-- 1단계: 계정 재인증 -->
+            <div id="deleteStep1">
+                <div class="form-group" id="deleteAuthGroup">
+                    <!-- JS에서 로컬/소셜 여부에 따라 label·input 동적 주입 -->
+                </div>
+                <button class="modal-action-btn primary-btn" onclick="deleteStep1Submit()">본인 확인</button>
             </div>
-            
-            <button class="modal-action-btn danger-btn" onclick="executeDeleteAccount()">네, 모든 데이터를 삭제하고 탈퇴합니다</button>
+
+            <!-- 2단계: '회원 탈퇴' 직접 입력 -->
+            <div id="deleteStep2" class="hidden">
+                <div class="delete-step2-notice">본인 확인이 완료되었습니다.<br>아래 입력란에 <strong>회원 탈퇴</strong>를 직접 입력하면 탈퇴가 진행됩니다.</div>
+                <div class="form-group">
+                    <input type="text" id="deleteConfirmText" placeholder="회원 탈퇴" autocomplete="off">
+                </div>
+                <button class="modal-action-btn danger-btn" onclick="deleteStep2Submit()">탈퇴하기</button>
+            </div>
         </div>
     </div>
     
@@ -284,8 +338,10 @@
     
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <script src="/js/dev-mock.js"></script>
     <script src="/js/config.js"></script>
     <script src="/js/auth.js"></script>
+    <script src="/js/shared/hamburger.js"></script>
     <script src="/js/mypage.js"></script>
 
 </body>

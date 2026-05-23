@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+  <script>if('scrollRestoration'in history)history.scrollRestoration='manual';</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>관리자 시스템 - 스터디크랙</title>
@@ -12,6 +13,7 @@
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
     <script src="/js/config.js"></script>
+    <script src="/js/auth.js"></script>
 
     <style>
         /* 관리자 페이지 전용 추가 스타일 (기존 auth.css 유지) */
@@ -66,12 +68,8 @@
     </div>
 
     <script>
-        const poolData = {
-            UserPoolId: CONFIG.cognito.userPoolId,
-            ClientId: CONFIG.cognito.clientId
-        };
-        const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
-        
+        // poolData / userPool은 auth.js에서 이미 선언됨 — 중복 선언 제거
+
         let globalCognitoUser = null; // MFA 단계를 위해 유저 객체 임시 저장
 
         // 엔터키 이벤트 리스너 (이메일, 비밀번호 모두 적용)
@@ -154,29 +152,45 @@
         }
 
         // 공통: 토큰 저장 및 백엔드 권한 검증
-        function processAdminSuccess(authResult) {
+        async function processAdminSuccess(authResult) {
             const accessToken = authResult.getAccessToken().getJwtToken();
             const idToken = authResult.getIdToken().getJwtToken();
+            const refreshToken = authResult.getRefreshToken().getToken();
             const payload = authResult.getIdToken().payload;
             const groups = payload['cognito:groups'] || [];
-            
-            // 1. 로컬스토리지 세팅
-            localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('idToken', idToken);
 
-            // 2. 토큰 꼬리표에 'Admins'가 있는지 0.001초 만에 즉시 확인!
-            if (groups.includes('Admins')) {
-                localStorage.setItem('userRole', 'admin');
-                localStorage.setItem('userId', payload.sub);
-                alert("관리자 인증이 완료되었습니다.");
-                window.location.href = '/admin'; // 관리자 대시보드로 이동
-            } else {
-                // 일반 유저나 튜터가 로그인한 경우 즉시 차단
+            // 1. 관리자 권한 즉시 확인 (토큰 저장 전에 차단)
+            if (!groups.includes('Admins')) {
                 alert("접근 거부: 관리자 권한이 없습니다.");
                 if (globalCognitoUser) globalCognitoUser.signOut();
-                localStorage.clear();
+                clearClientSession();
                 window.location.href = '/';
+                return;
             }
+
+            // 2. 메모리에 토큰 저장
+            setAccessToken(accessToken);
+            setIdToken(idToken);
+            localStorage.setItem('userRole', 'admin');
+            localStorage.setItem('userId', payload.sub);
+
+            // 3. refreshToken → HttpOnly 쿠키 등록 (이후 페이지 이동 후 tryRefreshToken으로 복원)
+            try {
+                const cookieRes = await fetch(CONFIG.api.auth, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken })
+                });
+                if (!cookieRes.ok) throw new Error('쿠키 등록 실패');
+            } catch (e) {
+                console.warn('[admin_login] register_refresh_cookie 실패:', e.message);
+                // rt 쿠키 등록 실패 시 localStorage에 fallback 저장
+                localStorage.setItem('refreshToken', refreshToken);
+            }
+
+            alert("관리자 인증이 완료되었습니다.");
+            window.location.href = '/admin';
         }
     </script>
 </body>

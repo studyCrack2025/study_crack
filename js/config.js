@@ -1,58 +1,55 @@
 // js/config.js
 
-// 1. 현재 접속한 도메인을 확인하여 개발(Dev) 환경인지 운영(Prod) 환경인지 판단
+// 1. 현재 접속한 도메인을 확인하여 환경을 판단
 const currentDomain = window.location.hostname;
-const IS_DEV = currentDomain.includes('cloudfront.net') || currentDomain.includes('dev.studycrack.co.kr') || currentDomain === 'localhost';
+const IS_LOCAL = currentDomain === 'localhost' || currentDomain === '127.0.0.1';
+const IS_DEV   = !IS_LOCAL && (currentDomain.includes('cloudfront.net') || currentDomain.includes('dev.studycrack.co.kr'));
 
-// 2. 환경에 따라 API Gateway 기본 주소에 스테이지(/dev 또는 /prod)를 자동으로 붙여줍니다.
-const API_BASE_URL = "https://ft35jsftc1.execute-api.ap-northeast-2.amazonaws.com";
-const GATEWAY_URL = IS_DEV ? `${API_BASE_URL}/dev` : `${API_BASE_URL}/prod`;
+// 2. 환경에 따라 API 베이스 URL 결정
+// local → API Gateway /local 직접 호출 (쿠키 미지원)
+// dev   → api.dev.studycrack.co.kr (API Gateway Custom Domain → /dev stage)
+// prod  → api.studycrack.co.kr     (API Gateway Custom Domain → /prod stage)
+const API_GATEWAY_BASE_URL = "https://ft35jsftc1.execute-api.ap-northeast-2.amazonaws.com";
+const API_BASE = IS_LOCAL
+    ? `${API_GATEWAY_BASE_URL}/local`
+    : IS_DEV
+        ? "https://api.dev.studycrack.co.kr"
+        : "https://api.studycrack.co.kr";
 
 const CONFIG = {
-    // API 경로 설정 (환경별로 자동 설정된 GATEWAY_URL 적용)
-    api: {        
-        // 유저 전용 엔드포인트
-        user: `${GATEWAY_URL}/api/user`,
-        
-        // 관리자/튜터 전용 엔드포인트
-        admin: `${GATEWAY_URL}/api/admin`,
-        
-        // 파일 서비스 전용 엔드포인트
-        file: `${GATEWAY_URL}/api/file`,
-        
-        // 알림 전용 엔드포인트
-        noti: `${GATEWAY_URL}/api/noti`,
-        
-        // Qna 전용 엔드포인트
-        qna: `${GATEWAY_URL}/api/qna`,
-        
-        // 리포트 전용 엔드포인트
-        report: `${GATEWAY_URL}/api/report`,
-        
-        // StudyCrack_Analysis 람다로 연결되는 주소
-        analysis: `${GATEWAY_URL}/analysis`,
-        
-        // StudyCrack_Payment 람다로 연결되는 주소
-        payment: `${GATEWAY_URL}/payment`,
-        
-        // StudyCrack_Auth 람다로 연결되는 주소
-        auth: `${GATEWAY_URL}/auth`,
-
-        // NicePay returnUrl 콜백
-        payment_return: `${GATEWAY_URL}/payment-return`,
-        
-        // pdf 생성 관련 백엔드
-        pdf: `${GATEWAY_URL}/generate-pdf`
+    api: {
+        user:           `${API_BASE}/api/user`,
+        admin:          `${API_BASE}/api/admin`,
+        file:           `${API_BASE}/api/file`,
+        noti:           `${API_BASE}/api/noti`,
+        qna:            `${API_BASE}/api/qna`,
+        report:         `${API_BASE}/api/report`,
+        analysis:       `${API_BASE}/api/analysis`,
+        payment:        `${API_BASE}/api/payment`,
+        auth:           `${API_BASE}/api/auth`,
+        payment_return: `${API_BASE}/api/payment-return`,
+        pdf:            `${API_BASE}/api/generate-pdf`
     },
 
     // NicePay 설정
     nicepay: {
         clientId: 'R2_9ff3f8dde7ae45a1b84b6c0ab9ca6ea9'
     },
-    
-    // 기존 Cognito 설정
+
+    // Cognito 설정
     cognito: {
-        userPoolId: 'ap-northeast-2_00mP8t8UM', 
-        clientId: '2lovlq38kvgn2dckppn91iqq2l'  
+        userPoolId: 'ap-northeast-2_00mP8t8UM',
+        clientId: '2lovlq38kvgn2dckppn91iqq2l',
+        domain: ''
+    },
+
+    // 소셜 로그인 설정
+    social: {
+        callbackUrl: IS_LOCAL
+            ? `http://${currentDomain}:3000/social-callback`
+            : `https://${currentDomain}/social-callback`,
+
+        google: { clientId: '943531531983-smammosbmt2netc1uu06bspf4553ucnj.apps.googleusercontent.com' },
+        naver:  { clientId: 'qzuULTydirmJNXlXhnVQ' }
     }
 };
