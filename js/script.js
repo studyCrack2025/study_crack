@@ -7,21 +7,33 @@ const AUTH_API_URL = CONFIG.api.auth;
 const NOTI_API_URL = CONFIG.api.noti;
 
 // 점수 상승 시뮬레이션 토글
-function toggleScoreUp() {
+function toggleScoreUp(btnEl) {
     const barItem = document.getElementById('simScoreUpBar');
     if (!barItem) return;
+
     const bar = barItem.querySelector('.sim-preview-bar');
     const extBar = barItem.querySelector('.sim-ext-bar');
+    const scoreLabel = barItem.querySelector('.sim-preview-score');
+    const toggleBtn = btnEl || document.querySelector('.sim-score-up-btn');
+
     const isUp = barItem.classList.toggle('score-up-active');
     if (isUp) {
-        bar.style.borderRadius = '0';
-        extBar.style.height = '10.5%';
-        extBar.style.opacity = '1';
+        if (bar) bar.style.borderRadius = '0';
+        if (extBar) {
+            extBar.style.height = '10.5%';
+            extBar.style.opacity = '1';
+        }
+        if (scoreLabel) scoreLabel.style.opacity = '0';
     } else {
-        bar.style.borderRadius = '';
-        extBar.style.height = '0';
-        extBar.style.opacity = '0';
+        if (bar) bar.style.borderRadius = '';
+        if (extBar) {
+            extBar.style.height = '0';
+            extBar.style.opacity = '0';
+        }
+        if (scoreLabel) scoreLabel.style.opacity = '1';
     }
+
+    if (toggleBtn) toggleBtn.classList.toggle('is-active', isUp);
 }
 
 // 공통 apiFetch 함수 — HttpOnly 쿠키 기반 인증
