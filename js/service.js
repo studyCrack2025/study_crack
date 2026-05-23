@@ -23,14 +23,18 @@ document.addEventListener('DOMContentLoaded', () => {
   if (header) header.classList.add('scrolled');
   syncHeaderNav();
 
-  // 모바일: 플랜 슬라이더 기본값 STANDARD(두 번째)
+  // 모바일: 플랜 슬라이더 기본값 STANDARD 카드로 맞춤
   if (window.innerWidth <= 640) {
     const planGrid = document.querySelector('.plan-grid');
+    const standardPlan = planGrid ? planGrid.querySelector('.plan-card--popular') : null;
     const planCards = planGrid ? planGrid.querySelectorAll('.plan-card') : [];
-    if (planCards.length >= 2) {
+    const targetCard = standardPlan || planCards[2] || null;
+    if (targetCard) {
       setTimeout(() => {
-        const card = planCards[1];
-        planGrid.scrollTo({ left: card.offsetLeft - (planGrid.clientWidth - card.offsetWidth) / 2, behavior: 'instant' });
+        planGrid.scrollTo({
+          left: targetCard.offsetLeft - (planGrid.clientWidth - targetCard.offsetWidth) / 2,
+          behavior: 'instant'
+        });
       }, 0);
     }
   }
@@ -57,6 +61,20 @@ document.addEventListener('DOMContentLoaded', () => {
     el.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out';
     io.observe(el);
   });
+
+  // "그래서 합격 루트도 달라집니다" 아이콘 지연 등장
+  const formulaSection = document.querySelector('.formula-section');
+  const routeIcon = document.querySelector('.route-emerge-icon');
+  if (formulaSection && routeIcon) {
+    const routeIo = new IntersectionObserver((entries, obs) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        setTimeout(() => routeIcon.classList.add('visible'), 800);
+        obs.unobserve(entry.target);
+      });
+    }, { threshold: 0.35 });
+    routeIo.observe(formulaSection);
+  }
 });
 
 function syncHeaderNav() {

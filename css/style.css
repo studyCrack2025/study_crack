@@ -458,7 +458,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
 .sim-score-delta { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 9px; font-weight: 800; color: #d97706; white-space: nowrap; z-index: 5; }
 .sim-preview-bar-item { position: relative; }
 .sim-preview-legend-note { font-size: 10px; color: #94a3b8; display: inline-flex; align-items: center; gap: 3px; margin-left: auto; }
-.sim-chart-preview { display: flex; flex-direction: column; }
+.sim-chart-preview { display: flex; flex-direction: column; min-height: 300px; }
 .sim-preview-graph-wrap { display: flex; flex-direction: column; flex: 1; min-height: 0; margin-top: 20px; }
 .sim-preview-graph { position: relative; flex: 1; min-height: 80px; border-bottom: 2px solid #cbd5e1; display: flex; align-items: flex-end; gap: 4px; padding: 0 30px 0 4px; box-sizing: border-box; overflow: visible; }
 .sim-preview-guide { position: absolute; left: 0; right: 0; border-top: 1px dashed #cbd5e1; pointer-events: none; }
@@ -598,6 +598,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .process-list::-webkit-scrollbar { display: none; }
     .process-card { flex: 0 0 82%; scroll-snap-align: center; padding: 20px; }
     .process-preview { flex: none; padding: 12px; }
+    .sim-chart-preview { min-height: 286px; }
     .process-copy > p br { display: none; }
     .radar-preview { display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; text-align: center; }
     .radar-preview svg { width: 100%; max-height: 200px; height: auto; }
@@ -649,14 +650,14 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .ppt-card-img { max-height: none; }
     .card-grid--three::-webkit-scrollbar { display: none; }
 
-    .effects-grid { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 14px; padding-bottom: 18px; padding-inline: 7.5%; scroll-padding-inline: 7.5%; }
+    .effects-grid { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 14px; padding-bottom: 18px; padding-inline: 20px; scroll-padding-inline: 20px; }
     .effects-grid::-webkit-scrollbar { display: none; }
-    .effect-item { flex: 0 0 72%; scroll-snap-align: center; min-width: 0; }
+    .effect-item { flex: 0 0 82%; scroll-snap-align: center; min-width: 0; }
     .effect-img { max-height: none; }
     .effects-indicators { display: flex; }
 
-    .review-grid { display: flex !important; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; gap: 14px; padding-bottom: 18px; padding-inline: 7.5%; scroll-padding-inline: 7.5%; }
-    .review-card { flex: 0 0 85%; scroll-snap-align: center; }
+    .review-grid { display: flex !important; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; gap: 14px; padding-bottom: 18px; padding-inline: 20px; scroll-padding-inline: 20px; }
+    .review-card { flex: 0 0 82%; scroll-snap-align: center; }
     .review-grid::-webkit-scrollbar { display: none; }
     .review-indicators { display: flex; }
 

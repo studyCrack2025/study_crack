@@ -2660,6 +2660,37 @@ function renderDetailedSimCard() {
         ${buildBacktraceNarrativeCard(data, currentScore, data.backtrace_plan)}
     `;
 
+    // sim-card 본문이 짧은 케이스(warning/CTA 둘 다 없음)에서 하단 빈공간을 채우는 컨텍스트 힌트
+    const buildSimFooterContext = (currentScore, bestSubjectKey, data) => {
+        const subjMap = {
+            kor: '국어',
+            math: '수학',
+            inq1: data.sim_data?.inq1?.name || '탐구1',
+            inq2: data.sim_data?.inq2?.name || '탐구2'
+        };
+        const bestLabel = bestSubjectKey ? subjMap[bestSubjectKey] : null;
+        let line = '';
+        if (currentScore >= 150) {
+            line = '이미 안정권에 안착해 있습니다. 약점 보강으로 상위 대학 도전도 고려해보세요.';
+        } else if (currentScore >= 120) {
+            line = '현재 안정 구간입니다. 1점 단위 상승만으로도 합격 안정성이 더욱 강화됩니다.';
+        } else if (currentScore >= 100) {
+            line = bestLabel
+                ? `합격권에 진입한 적정 구간입니다. <strong>${escapeHtml(bestLabel)}</strong>부터 보강하면 안정권 진입 가능성이 높아집니다.`
+                : '합격권에 진입한 적정 구간입니다. 약점 과목 보강이 안정권 도달의 열쇠입니다.';
+        } else if (currentScore >= 60) {
+            line = bestLabel
+                ? `합격컷에 근접한 소신 구간입니다. <strong>${escapeHtml(bestLabel)}</strong> 위주의 전략적 상승이 합격 가능성을 좌우합니다.`
+                : '합격컷에 근접한 소신 구간입니다. 효율적인 과목 선택이 합격 가능성을 좌우합니다.';
+        } else {
+            line = '현재 점수와 합격컷 차이가 큽니다. 과목별 효율과 학습 기간을 함께 검토해 전략적으로 접근하세요.';
+        }
+        return `
+            <div class="sim-footer-hint">
+                <i class="fas fa-lightbulb"></i><span>${line}</span>
+            </div>`;
+    };
+
     // ==========================================
     // [1] 모바일 전용 로직: 대학 카드 및 과목 카드 가로 스와이프
     // ==========================================
@@ -2786,7 +2817,10 @@ function renderDetailedSimCard() {
                 <div style="display:flex; justify-content:center; align-items:center; font-size:0.75rem; color:#94a3b8; margin-bottom:8px; gap:8px;">
                     <i class="fas fa-chevron-left" style="opacity:0.5;"></i> 과목 스와이프 <i class="fas fa-chevron-right" style="opacity:0.5;"></i>
                 </div>`;
-            const defaultBody = `${subjSwipeHint}<div class="subj-scroll-container">${subjectsHTML}</div>${showBtCTA ? buildBacktraceCTA(data.originalIdx) : ''}`;
+            // 1-4: warning도 CTA도 없는 "특이사항 없음" 카드에서 하단 컨텍스트 힌트로 빈공간 채움
+            const showFooterHint = !showBtCTA && !warningHTML;
+            const footerHintHTML = showFooterHint ? buildSimFooterContext(currentScore, bestSubjectKey, data) : '';
+            const defaultBody = `${subjSwipeHint}<div class="subj-scroll-container">${subjectsHTML}</div>${showBtCTA ? buildBacktraceCTA(data.originalIdx) : ''}${footerHintHTML}`;
 
             let simBodyHTML;
             if (uiMode === 'loading') simBodyHTML = buildLoadingBlock();
@@ -2899,7 +2933,10 @@ function renderDetailedSimCard() {
         let warningHTML = '';
         if (currentScore >= 225 || (currentScore + maxRise) >= 250) warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><i class="fas fa-check-circle"></i><div><strong>이미 상당히 안정권입니다.</strong></div></div>`;
 
-        const defaultBody = `<div class="sim-grid">${subjectsHTML}</div>${showBtCTA ? buildBacktraceCTA(data.originalIdx) : ''}`;
+        // 1-4: warning도 CTA도 없는 "특이사항 없음" 카드에서 하단 컨텍스트 힌트로 빈공간 채움
+        const showFooterHint_pc = !showBtCTA && !warningHTML;
+        const footerHintHTML_pc = showFooterHint_pc ? buildSimFooterContext(currentScore, bestSubjectKey, data) : '';
+        const defaultBody = `<div class="sim-grid">${subjectsHTML}</div>${showBtCTA ? buildBacktraceCTA(data.originalIdx) : ''}${footerHintHTML_pc}`;
         let simBodyHTML;
         if (uiMode === 'loading') simBodyHTML = buildLoadingBlock();
         else if (uiMode === 'backtrace' && data.backtrace_plan) simBodyHTML = buildBacktraceBlock(data, currentScore, data.originalIdx);
