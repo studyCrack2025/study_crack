@@ -140,7 +140,87 @@ document.addEventListener('DOMContentLoaded', async () => {
     await tryRefreshToken();
     setupPaymentLoadingInterceptor();
     fetchUserInfo(userId);
+    initMobileSwipeUX();
 });
+
+function centerCardInScroller(scrollerEl, cardEl, behavior = 'auto') {
+    if (!scrollerEl || !cardEl) return;
+    const targetLeft = cardEl.offsetLeft - (scrollerEl.clientWidth - cardEl.clientWidth) / 2;
+    scrollerEl.scrollTo({ left: Math.max(0, targetLeft), behavior });
+}
+
+function initPriceSwipeDeck() {
+    const priceList = document.querySelector('.price-list');
+    if (!priceList) return;
+
+    const centerStandardCard = (behavior = 'auto') => {
+        if (!window.matchMedia('(max-width: 900px)').matches) return;
+        const standardCard = priceList.querySelector('.price-row[data-tier="standard"]');
+        if (standardCard) centerCardInScroller(priceList, standardCard, behavior);
+    };
+
+    setTimeout(() => centerStandardCard('auto'), 60);
+
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+        if (resizeTimer) clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => centerStandardCard('auto'), 160);
+    });
+
+    const hint = document.getElementById('priceSwipeHint');
+    const hintKey = 'payment_price_swipe_hint_v1';
+    if (!hint || sessionStorage.getItem(hintKey) === '1') return;
+    if (!window.matchMedia('(max-width: 900px)').matches) return;
+
+    requestAnimationFrame(() => {
+        hint.classList.add('show');
+        setTimeout(() => {
+            hint.classList.remove('show');
+            sessionStorage.setItem(hintKey, '1');
+        }, 2200);
+    });
+}
+
+function initRoadmapSwipeDeck() {
+    const roadmapGrid = document.querySelector('.roadmap-grid');
+    const indicator = document.getElementById('roadmapIndicator');
+    if (!roadmapGrid || !indicator) return;
+
+    const cards = Array.from(roadmapGrid.querySelectorAll('.road-card'));
+    if (cards.length === 0) return;
+
+    indicator.innerHTML = cards.map(() => '<span class="dot"></span>').join('');
+    const dots = Array.from(indicator.querySelectorAll('.dot'));
+
+    const updateIndicator = () => {
+        if (!window.matchMedia('(max-width: 640px)').matches) {
+            dots.forEach(dot => dot.classList.remove('active'));
+            return;
+        }
+
+        const centerX = roadmapGrid.scrollLeft + (roadmapGrid.clientWidth / 2);
+        let activeIdx = 0;
+        let bestDist = Number.POSITIVE_INFINITY;
+        cards.forEach((card, idx) => {
+            const cardCenter = card.offsetLeft + (card.clientWidth / 2);
+            const dist = Math.abs(cardCenter - centerX);
+            if (dist < bestDist) {
+                bestDist = dist;
+                activeIdx = idx;
+            }
+        });
+        dots.forEach((dot, idx) => dot.classList.toggle('active', idx === activeIdx));
+    };
+
+    roadmapGrid.addEventListener('scroll', updateIndicator, { passive: true });
+    window.addEventListener('resize', updateIndicator);
+    setTimeout(updateIndicator, 60);
+}
+
+function initMobileSwipeUX() {
+    initPriceSwipeDeck();
+    initRoadmapSwipeDeck();
+}
 
 function syncHeaderNav() {
     const isLoggedIn = !!localStorage.getItem('userId');

@@ -63,8 +63,10 @@ body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; margi
 .dim-sub { font-size: 0.68rem; color: #94a3b8; font-weight: 500; white-space: nowrap; }
 .mbti-dim-btn.active .dim-sub { color: #3b82f6; }
 .mbti-code-preview { display: flex; align-items: center; justify-content: space-between; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px 18px; margin-top: 18px; gap: 12px; }
-.mbti-preview-code { font-size: 1.6rem; font-weight: 900; color: #1e293b; letter-spacing: 0.12em; min-width: 80px; }
-.mbti-confirm-btn { padding: 10px 18px; background: #2563eb; color: #fff; border: none; border-radius: 10px; font-size: 0.88rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.2s; white-space: nowrap; }
+.mbti-preview-code { font-size: 1.6rem; font-weight: 900; color: #1e293b; letter-spacing: 0.08em; min-width: 80px; }
+.mbti-confirm-btn { padding: 10px 18px; background: #2563eb; color: #fff; border: none; border-radius: 10px; font-size: 0.88rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.2s; white-space: normal; text-align: center; line-height: 1.25; }
+.mbti-confirm-mobile-break { display: none; }
+.mbti-confirm-indent { display: inline; }
 .mbti-confirm-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
 .mbti-confirm-btn:not(:disabled):hover { background: #1d4ed8; transform: translateY(-1px); }
 
@@ -241,10 +243,28 @@ body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; margi
 .btn-upsell-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ── 반응형 ────────────────────────────────────────────────────── */
-@media (max-width: 640px) { .score-grid { grid-template-columns: 1fr 1fr; gap: 10px; } .score-big-input { font-size: 1.9rem; width: 64px; } .subj-alloc-cards { grid-template-columns: 1fr; } .subj-donut-section { flex-direction: column; align-items: flex-start; } .dialogue-bubble { font-size: 0.95rem; padding: 15px 18px; } .mbti-dim-name { font-size: 0.78rem; min-width: 60px; }
-.future-flow { flex-direction: column; align-items: stretch; }
-.future-stage-now { flex: 0 0 auto; flex-direction: row; align-items: center; gap: 12px; text-align: left; padding: 12px 16px; }
-.future-stage-label { margin-bottom: 0; margin-right: 4px; }
-.future-stage-score { margin-top: 0; margin-left: auto; }
-.future-connector { flex-direction: row; padding: 8px 0; }
-.future-connector-line { width: auto; height: 2px; min-height: auto; min-width: 18px; background: linear-gradient(90deg, #cbd5e1, #3b82f6); } }
+@media (max-width: 640px) {
+    .score-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .score-big-input { font-size: 1.9rem; width: 64px; }
+    .subj-alloc-cards { grid-template-columns: 1fr; }
+    .subj-donut-section { flex-direction: column; align-items: flex-start; }
+    .dialogue-bubble { font-size: 0.95rem; padding: 15px 18px; }
+    .mbti-dim-name { font-size: 0.78rem; min-width: 60px; }
+
+    .mbti-code-preview { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 14px; }
+    .mbti-preview-code { font-size: 1.45rem; letter-spacing: 0.06em; min-width: 0; text-align: center; }
+    .mbti-confirm-btn { width: 100%; padding: 11px 14px; text-align: left; }
+    .mbti-confirm-mobile-break { display: inline; }
+    .mbti-confirm-indent { display: block; padding-left: 0.85em; }
+
+    .score-plan-header { padding-left: 2px; padding-right: 2px; }
+    .score-plan-title { padding-left: 2px; }
+    .score-plan-total { margin-left: 8px; }
+
+    .future-flow { flex-direction: column; align-items: stretch; }
+    .future-stage-now { flex: 0 0 auto; flex-direction: row; align-items: center; gap: 12px; text-align: left; padding: 12px 16px; }
+    .future-stage-label { margin-bottom: 0; margin-right: 4px; }
+    .future-stage-score { margin-top: 0; margin-left: auto; }
+    .future-connector { flex-direction: row; padding: 8px 0; }
+    .future-connector-line { width: auto; height: 2px; min-height: auto; min-width: 18px; background: linear-gradient(90deg, #cbd5e1, #3b82f6); }
+}

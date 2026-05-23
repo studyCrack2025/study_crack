@@ -165,7 +165,12 @@ function renderWeeklyTab() {
             </div>
             <div class="card-grid-body">${studyHtml}${checkHtml}</div>
             ${mockHtml}${footerHtml}
-            ${renderWeeklyFeedbackArea(weeklyKey, fb, reportFormVer)}
+            ${renderWeeklyFeedbackArea(weeklyKey, fb, reportFormVer, {
+                weekId: d.weekId || '',
+                reportKey: d.reportKey || '',
+                reportDate: d.reportDate || d.date || '',
+                formVersion: reportFormVer
+            })}
         `;
         container.appendChild(card);
     });
@@ -189,23 +194,80 @@ const WEEKLY_FB_FIELDS_V2 = [
 ];
 function getWeeklyFbFields(ver) { return ver >= 2 ? WEEKLY_FB_FIELDS_V2 : WEEKLY_FB_FIELDS_V1; }
 const WEEKLY_FB_MIN = 150;
+const WEEKLY_FB_META_KEYS = new Set(['submitted', 'tutorImage', 'feedbackVersion', 'updatedAt', 'createdAt']);
+const WEEKLY_FB_LABEL_MAP = [...WEEKLY_FB_FIELDS_V1, ...WEEKLY_FB_FIELDS_V2].reduce((acc, f) => {
+    acc[f.key] = f.label;
+    return acc;
+}, {});
 
-function weeklyIdKey(weeklyKey) {
-    return weeklyKey.replace(/[^a-zA-Z0-9]/g, '_');
+function humanizeFeedbackKey(key) {
+    return String(key || '')
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .replace(/[_-]/g, ' ')
+        .trim();
 }
 
-function renderWeeklyFeedbackArea(weeklyKey, fb, formVersion) {
+function resolveWeeklyFeedbackFields(formVersion, feedback = {}) {
+    const baseFields = getWeeklyFbFields(Number(formVersion) || 1);
+    const baseKeys = new Set(baseFields.map(f => f.key));
+    const dynamicFields = Object.keys(feedback || {})
+        .filter((k) => {
+            if (WEEKLY_FB_META_KEYS.has(k) || baseKeys.has(k)) return false;
+            const val = feedback[k];
+            return typeof val === 'string' && val.trim() !== '';
+        })
+        .map((k) => ({
+            key: k,
+            label: WEEKLY_FB_LABEL_MAP[k] || humanizeFeedbackKey(k),
+            placeholder: `${WEEKLY_FB_LABEL_MAP[k] || humanizeFeedbackKey(k)} 내용을 입력해주세요.`
+        }));
+    return [...baseFields, ...dynamicFields];
+}
+
+function weeklyIdKey(weeklyKey) {
+    return String(weeklyKey || '').replace(/[^a-zA-Z0-9]/g, '_');
+}
+
+function findWeeklyReportByKeys(...keys) {
+    const normalized = [...new Set(keys.filter(Boolean).map(v => String(v)))];
+    if (normalized.length === 0) return null;
+    return (currentWeeklyData || []).find((w) => {
+        const candidates = [w.weekId, w.reportKey, w.reportDate, w.date].filter(Boolean).map(v => String(v));
+        return normalized.some(k => candidates.includes(k));
+    }) || null;
+}
+
+function resolveWeeklyPayloadContext(weeklyKey) {
+    const idk = weeklyIdKey(weeklyKey);
+    const area = document.getElementById(`wfb_area_${idk}`);
+    const areaWeekId = area?.dataset?.weekId || '';
+    const areaReportKey = area?.dataset?.reportKey || '';
+    const areaReportDate = area?.dataset?.reportDate || '';
+    const areaFormVersion = Number(area?.dataset?.formVersion) || 1;
+
+    const reportData = findWeeklyReportByKeys(weeklyKey, areaWeekId, areaReportKey, areaReportDate) || {};
+    const weekId = reportData.weekId || areaWeekId || areaReportKey || String(weeklyKey || '');
+    const reportKey = reportData.reportKey || areaReportKey || reportData.weekId || weekId;
+    const reportDate = reportData.reportDate || areaReportDate || reportData.weekId || weekId;
+    const formVersion = Number(reportData.formVersion) || areaFormVersion || 1;
+
+    return { reportData, weekId, reportKey, reportDate, formVersion };
+}
+
+function renderWeeklyFeedbackArea(weeklyKey, fb, formVersion, reportMeta = {}) {
     const userRole = localStorage.getItem('userRole');
     const submitted = fb.submitted === true;
-    const ver = formVersion || 1;
+    const ver = Number(reportMeta.formVersion || formVersion || fb.feedbackVersion) || 1;
     if (userRole === 'tutor') {
-        return submitted ? createWeeklyFbReadOnly(fb, true, ver) : createWeeklyFbInput(weeklyKey, fb, ver);
+        return submitted
+            ? createWeeklyFbReadOnly(fb, true, ver)
+            : createWeeklyFbInput(weeklyKey, fb, ver, reportMeta);
     }
     return createWeeklyFbReadOnly(fb, false, ver);
 }
 
 function createWeeklyFbReadOnly(fb, isLockedTutor, formVersion) {
-    const fields = getWeeklyFbFields(formVersion);
+    const fields = resolveWeeklyFeedbackFields(formVersion, fb);
     const hasAny = fields.some(f => fb[f.key] && String(fb[f.key]).trim() !== '');
     const lockedBadge = isLockedTutor
         ? '<span style="font-size:0.8rem; color:#16a34a; font-weight:bold; background:#f0fdf4; padding:3px 10px; border-radius:20px; border:1px solid #bbf7d0;">✅ 최종 전송 완료 · 수정 불가</span>'
@@ -233,9 +295,11 @@ function createWeeklyFbReadOnly(fb, isLockedTutor, formVersion) {
         </div>`;
 }
 
-function createWeeklyFbInput(weeklyKey, fb, formVersion) {
+function createWeeklyFbInput(weeklyKey, fb, formVersion, reportMeta = {}) {
     const idk = weeklyIdKey(weeklyKey);
-    const fields = getWeeklyFbFields(formVersion);
+    const resolvedFormVersion = Number(reportMeta.formVersion || formVersion || fb.feedbackVersion) || 1;
+    const fields = resolveWeeklyFeedbackFields(resolvedFormVersion, fb);
+    const attr = (v) => String(v || '').replace(/"/g, '&quot;');
     const fieldsHtml = fields.map(f => {
         const val = fb[f.key] || '';
         const len = val.replace(/\s/g, '').length;
@@ -254,7 +318,7 @@ function createWeeklyFbInput(weeklyKey, fb, formVersion) {
             >${escapeHtml(val)}</textarea>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
                 <div id="wfb_cnt_${idk}_${f.key}" class="char-count ${validClass}">${len} / 최소 ${WEEKLY_FB_MIN}자</div>
-                <button id="wfb_btn_${idk}_${f.key}" class="${btnClass}"
+                <button type="button" id="wfb_btn_${idk}_${f.key}" class="${btnClass}" data-role="draft-save"
                     onclick="tempSaveWeeklyField('${weeklyKey}','${f.key}')">${btnText}</button>
             </div>
         </div>`;
@@ -268,10 +332,14 @@ function createWeeklyFbInput(weeklyKey, fb, formVersion) {
         : '';
 
     return `
-        <div class="tutor-feedback-area" id="wfb_area_${idk}">
+        <div class="tutor-feedback-area" id="wfb_area_${idk}"
+            data-week-id="${attr(reportMeta.weekId)}"
+            data-report-key="${attr(reportMeta.reportKey)}"
+            data-report-date="${attr(reportMeta.reportDate)}"
+            data-form-version="${resolvedFormVersion}">
             <div class="feedback-header" style="display:flex; justify-content:space-between; align-items:center;">
                 <div>👩‍🏫 튜터 코멘트 작성</div>
-                <button class="guide-btn" onclick="showCoachingGuideModal()"><i class="fas fa-info-circle"></i> 작성 가이드</button>
+                <button type="button" class="guide-btn" onclick="showCoachingGuideModal()"><i class="fas fa-info-circle"></i> 작성 가이드</button>
             </div>
             ${fieldsHtml}
 
@@ -282,13 +350,13 @@ function createWeeklyFbInput(weeklyKey, fb, formVersion) {
 
                 <div style="display:flex; gap:10px; align-items:center;">
                     <input type="file" id="wfb_file_${idk}" accept=".pdf" style="font-size:0.9rem; padding:5px; border:1px solid #cbd5e1; border-radius:6px; flex:1; background:#fff;">
-                    <button id="wfb_file_btn_${idk}" class="temp-save-btn" onclick="uploadWeeklyTutorFile('${weeklyKey}')" style="white-space:nowrap;"><i class="fas fa-upload"></i> 업로드</button>
+                    <button type="button" id="wfb_file_btn_${idk}" class="temp-save-btn" data-role="file-upload" onclick="uploadWeeklyTutorFile('${weeklyKey}')" style="white-space:nowrap;"><i class="fas fa-upload"></i> 업로드</button>
                 </div>
                 <p style="font-size:0.8rem; color:#94a3b8; margin-top:5px;">* PDF 파일만 업로드 가능합니다. (학생에게 리포트와 함께 전달됩니다)</p>
             </div>
 
             <div style="text-align:right; margin-top:10px;">
-                <button id="wfb_submit_${idk}" class="${submitBtnClass}"
+                <button type="button" id="wfb_submit_${idk}" class="${submitBtnClass}"
                     onclick="submitWeeklyFeedback('${weeklyKey}')">최종 전송 (학생에게 전달)</button>
             </div>
         </div>`;
@@ -307,8 +375,8 @@ window.checkWeeklyAllSaved = function(idk) {
     const area = document.getElementById(`wfb_area_${idk}`);
     if (!area) return;
 
-    const btns = area.querySelectorAll('.temp-save-btn');
-    const allSaved = Array.from(btns).every(b => b.classList.contains('saved'));
+    const btns = area.querySelectorAll('button[data-role="draft-save"]');
+    const allSaved = btns.length > 0 && Array.from(btns).every(b => b.classList.contains('saved'));
 
     const submitBtn = document.getElementById(`wfb_submit_${idk}`);
     if (submitBtn) {
@@ -348,18 +416,19 @@ window.uploadWeeklyTutorFile = async function(weeklyKey) {
         if (!uploadResult.ok) throw new Error("S3 업로드 실패");
 
         // 3. 현재 입력된 텍스트 코멘트도 함께 모아서 DB 임시저장
-        const reportDataForVer = currentWeeklyData.find(w => w.weekId === weeklyKey || w.date === weeklyKey) || {};
-        const uploadFields = getWeeklyFbFields(Number(reportDataForVer.formVersion) || 1);
+        const context = resolveWeeklyPayloadContext(weeklyKey);
+        const reportDataForVer = context.reportData || {};
+        const uploadFields = resolveWeeklyFeedbackFields(context.formVersion, reportDataForVer.tutorFeedback || {});
         const feedback = {};
         uploadFields.forEach(f => {
             const el = document.getElementById(`wfb_${idk}_${f.key}`);
             feedback[f.key] = el ? el.value : '';
         });
         feedback.tutorImage = fileUrl; // 새로 업로드된 URL 포함
-        feedback.feedbackVersion = Number(reportDataForVer.formVersion) || 1;
+        feedback.feedbackVersion = context.formVersion;
 
         // 4. 로컬 데이터 갱신 (저장 시 덮어씌워지지 않게 메모리 유지)
-        const reportData = currentWeeklyData.find(w => w.weekId === weeklyKey || w.date === weeklyKey);
+        const reportData = context.reportData;
         if (reportData) {
             if (!reportData.tutorFeedback) reportData.tutorFeedback = {};
             reportData.tutorFeedback.tutorImage = fileUrl;
@@ -367,7 +436,16 @@ window.uploadWeeklyTutorFile = async function(weeklyKey) {
 
         await apiFetch(REPORT_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'tutor_save_weekly_draft', data: { targetUserId, reportDate: weeklyKey, tutorFeedback: feedback } })
+            body: JSON.stringify({
+                type: 'tutor_save_weekly_draft',
+                data: {
+                    targetUserId,
+                    reportDate: context.reportDate,
+                    weekId: context.weekId,
+                    reportKey: context.reportKey,
+                    tutorFeedback: feedback
+                }
+            })
         });
 
         alert("파일이 성공적으로 업로드되었습니다.");
@@ -406,9 +484,10 @@ window.tempSaveWeeklyField = async function(weeklyKey, fieldName) {
     btn.innerText = '저장 중...'; btn.disabled = true;
 
     // 기존 데이터 메모리에서 파일 URL 가져오기
-    const reportData = currentWeeklyData.find(w => w.weekId === weeklyKey || w.date === weeklyKey) || {};
+    const context = resolveWeeklyPayloadContext(weeklyKey);
+    const reportData = context.reportData || {};
     const existingFb = reportData.tutorFeedback || {};
-    const draftFields = getWeeklyFbFields(Number(reportData.formVersion) || 1);
+    const draftFields = resolveWeeklyFeedbackFields(context.formVersion, existingFb);
 
     const feedback = {};
     draftFields.forEach(f => {
@@ -416,12 +495,21 @@ window.tempSaveWeeklyField = async function(weeklyKey, fieldName) {
         feedback[f.key] = el ? el.value : '';
     });
     feedback.tutorImage = existingFb.tutorImage || ''; // 기존 파일 URL 유지
-    feedback.feedbackVersion = Number(reportData.formVersion) || 1;
+    feedback.feedbackVersion = context.formVersion;
 
     try {
         await apiFetch(REPORT_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'tutor_save_weekly_draft', data: { targetUserId, reportDate: weeklyKey, tutorFeedback: feedback } })
+            body: JSON.stringify({
+                type: 'tutor_save_weekly_draft',
+                data: {
+                    targetUserId,
+                    reportDate: context.reportDate,
+                    weekId: context.weekId,
+                    reportKey: context.reportKey,
+                    tutorFeedback: feedback
+                }
+            })
         });
         btn.classList.add('saved'); btn.innerText = '저장됨'; btn.disabled = false;
         checkWeeklyAllSaved(idk);
@@ -433,9 +521,10 @@ window.tempSaveWeeklyField = async function(weeklyKey, fieldName) {
 
 window.submitWeeklyFeedback = async function(weeklyKey) {
     const idk = weeklyIdKey(weeklyKey);
-    const reportData = currentWeeklyData.find(w => w.weekId === weeklyKey || w.date === weeklyKey) || {};
-    const reportFormVer = Number(reportData.formVersion) || 1;
-    const fields = getWeeklyFbFields(reportFormVer);
+    const context = resolveWeeklyPayloadContext(weeklyKey);
+    const reportData = context.reportData || {};
+    const reportFormVer = context.formVersion;
+    const fields = resolveWeeklyFeedbackFields(reportFormVer, reportData.tutorFeedback || {});
 
     for (const f of fields) {
         const el = document.getElementById(`wfb_${idk}_${f.key}`);
@@ -464,7 +553,16 @@ window.submitWeeklyFeedback = async function(weeklyKey) {
     try {
         await apiFetch(REPORT_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'tutor_submit_weekly_feedback', data: { targetUserId, reportDate: weeklyKey, tutorFeedback: feedback } })
+            body: JSON.stringify({
+                type: 'tutor_submit_weekly_feedback',
+                data: {
+                    targetUserId,
+                    reportDate: context.reportDate,
+                    weekId: context.weekId,
+                    reportKey: context.reportKey,
+                    tutorFeedback: feedback
+                }
+            })
         });
         alert('학생에게 코멘트가 전달되었습니다.');
 

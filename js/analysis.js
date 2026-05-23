@@ -36,6 +36,7 @@ let originalPlannerFiles = [];
 
 // 시험 모드 (수능/평가원 등)
 let currentExamMode = 'csat'; 
+const ANALYSIS_EXAM_MODE_STORAGE_KEY = 'analysis_exam_mode';
 
 const EXAM_DISPLAY_NAMES = {
     "csat": "대학수학능력시험 (수능)",
@@ -46,6 +47,62 @@ const EXAM_DISPLAY_NAMES = {
     "mar": "3월 학력평가",
     "may": "5월 학력평가"
 };
+
+function getExamModeStorageKey(userId) {
+    return `${ANALYSIS_EXAM_MODE_STORAGE_KEY}_${userId || 'guest'}`;
+}
+
+function getAvailableExamModes() {
+    if (!userQuantData) return [];
+    return Object.keys(userQuantData).filter((key) => {
+        const data = userQuantData[key];
+        return data && (data.kor || data.math || data.eng);
+    });
+}
+
+function pickPreferredExamMode(availableExams) {
+    if (!availableExams || availableExams.length === 0) return null;
+    const priority = ['csat', 'may', 'mar', 'sep', 'jun', 'oct', 'jul'];
+    const found = priority.find((key) => availableExams.includes(key));
+    return found || availableExams[0];
+}
+
+function persistExamMode(mode, userId = localStorage.getItem('userId')) {
+    if (!mode || !userId) return;
+    try {
+        localStorage.setItem(getExamModeStorageKey(userId), mode);
+    } catch (_) {
+        // ignore storage failures
+    }
+}
+
+function restoreExamModeFromStorage(userId = localStorage.getItem('userId')) {
+    const availableExams = getAvailableExamModes();
+    if (!userId || availableExams.length === 0) return false;
+
+    try {
+        const saved = localStorage.getItem(getExamModeStorageKey(userId));
+        if (saved && availableExams.includes(saved)) {
+            currentExamMode = saved;
+            return true;
+        }
+    } catch (_) {
+        // ignore storage failures
+    }
+    return false;
+}
+
+function ensureValidExamMode(userId = localStorage.getItem('userId')) {
+    const availableExams = getAvailableExamModes();
+    if (availableExams.length === 0) return false;
+    if (currentExamMode && availableExams.includes(currentExamMode)) {
+        persistExamMode(currentExamMode, userId);
+        return true;
+    }
+    currentExamMode = pickPreferredExamMode(availableExams);
+    persistExamMode(currentExamMode, userId);
+    return true;
+}
 
 // ============================================================
 // [초기화] DOM 로드 시 실행 (💡 병렬 데이터 로딩으로 개편)
@@ -643,6 +700,8 @@ async function fetchUserData(userId) {
             }
         }
         if (data.quantitative) userQuantData = data.quantitative;
+        restoreExamModeFromStorage(safeUserId);
+        ensureValidExamMode(safeUserId);
         if (data.qualitative?.stream) userStream = data.qualitative.stream;
 
         if (currentUserTier === 'free') {
@@ -1759,10 +1818,7 @@ async function updateAnalysisUI() {
     }
 
     const hasTargets = userTargetUnivs && userTargetUnivs.some(u => u && u.univ);
-    const availableExams = userQuantData ? Object.keys(userQuantData).filter(key => {
-        const data = userQuantData[key];
-        return data && (data.kor || data.math || data.eng);
-    }) : [];
+    const availableExams = getAvailableExamModes();
 
     if (!hasTargets || availableExams.length === 0) { 
         container.innerHTML = `
@@ -1773,10 +1829,7 @@ async function updateAnalysisUI() {
         return; 
     }
     
-    if (!currentExamMode || !availableExams.includes(currentExamMode)) {
-        if (availableExams.includes('csat')) currentExamMode = 'csat';
-        else currentExamMode = availableExams[0];
-    }
+    ensureValidExamMode(userId);
 
     const selectorHTML = `
         <div class="analysis-controls" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:20px; background:#fff; padding:15px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); border:1px solid #e2e8f0;">
@@ -1834,7 +1887,11 @@ async function updateAnalysisUI() {
     }
 }
 
-function changeExamMode(mode) { currentExamMode = mode; updateAnalysisUI(); }
+function changeExamMode(mode) {
+    currentExamMode = mode;
+    persistExamMode(mode);
+    updateAnalysisUI();
+}
 
 function renderAnalysisCard(res) {
     if (res.msg.includes("오류") || res.msg.includes("데이터 없음") || res.status === '분석 불가') {
@@ -1930,10 +1987,9 @@ function initSimulation() {
         return;
     }
     
-    if (!currentExamMode || !userQuantData[currentExamMode]) {
-        const availableExams = Object.keys(userQuantData).filter(k => userQuantData[k] && (userQuantData[k].kor || userQuantData[k].math || userQuantData[k].eng));
-        if (availableExams.length > 0) currentExamMode = availableExams[0];
-        else { chartArea.innerHTML = `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8;">유효한 성적 데이터가 없습니다.</div>`; return; }
+    if (!ensureValidExamMode()) {
+        chartArea.innerHTML = `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8;">유효한 성적 데이터가 없습니다.</div>`;
+        return;
     }
 
     const validTargets = userTargetUnivs ? userTargetUnivs.filter(t => t && t.univ) : [];

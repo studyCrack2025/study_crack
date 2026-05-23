@@ -52,7 +52,7 @@ img, svg { display: block; max-width: 100%; }
 .hero-image-wrap img { width: 100%; height: auto; display: block; object-fit: cover; object-position: center top; border-radius: var(--radius-lg); box-shadow: 0 20px 48px rgba(30,41,59,.14); }
 
 /* ─ AI 합격 진단점수 카드 — 이미지 좌하단 겹침 배치 ─ */
-.score-card { position: absolute; left: -20px; bottom: -52px; z-index: 3; width: clamp(280px, 90%, 340px); padding: 18px 22px 16px; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: rgba(255,255,255,.97); box-shadow: 0 16px 40px rgba(30,41,59,.14); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.score-card { position: absolute; left: clamp(-16px, -1.8vw, -6px); bottom: clamp(-48px, -4.8vw, -28px); z-index: 3; width: min(78vw, 300px); max-width: 88%; padding: 18px 22px 16px; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: rgba(255,255,255,.97); box-shadow: 0 16px 40px rgba(30,41,59,.14); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .score-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
 .score-label-text { margin: 0 0 6px; font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
 .score-univ-row { display: flex; align-items: center; gap: 8px; }
@@ -100,12 +100,14 @@ img, svg { display: block; max-width: 100%; }
    5. Roadmap Section
    ========================================= */
 .roadmap-section { padding: 40px 44px 32px; }
-.roadmap-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 20px; }
+.roadmap-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 18px; position: relative; }
+.roadmap-grid::before { content: ""; position: absolute; left: 4%; right: 4%; top: 50%; height: 2px; background: linear-gradient(90deg, rgba(76,121,238,.16), rgba(113,65,217,.2), rgba(16,185,129,.2)); z-index: 0; pointer-events: none; }
 
-.road-card { position: relative; padding: 22px 20px 28px; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 10px; transition: box-shadow .2s, transform .2s; }
+.road-card { position: relative; z-index: 1; padding: 22px 20px 24px; border: 1px solid #e2eaf8; border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 10px; transition: box-shadow .2s, transform .2s; min-height: 238px; }
 .road-card:hover { box-shadow: 0 8px 28px rgba(76,121,238,.14); transform: translateY(-2px); }
 .road-card--std { border-color: rgba(113,65,217,.2); }
 .road-card--pro { border-color: rgba(249,115,22,.2); }
+.road-card--goal { border-color: rgba(16,185,129,.28); background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%); }
 
 .road-top { display: flex; align-items: center; gap: 10px; }
 .road-num { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #6d96ff); color: #fff; font-size: 14px; font-weight: 900; flex-shrink: 0; }
@@ -119,15 +121,21 @@ img, svg { display: block; max-width: 100%; }
 .plan-starter { color: var(--primary); }
 .plan-standard { color: var(--purple); }
 .plan-pro { color: var(--orange); }
+.plan-goal { color: #059669; }
 
 .road-icon { width: 52px; height: 52px; margin: 4px 0; color: var(--primary); }
 .road-icon--purple { color: var(--purple); }
 .road-icon--orange { color: var(--orange); }
+.road-icon--goal { color: #059669; }
 .road-icon svg { width: 100%; height: 100%; display: block; }
 
 .road-card p { margin: 0; font-size: 13px; line-height: 1.7; color: #3d526e; flex: 1; }
 
-.road-arrow { position: absolute; top: 50%; right: -16px; z-index: 2; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: #fff; border: 1px solid #e2eaf8; box-shadow: 0 2px 8px rgba(76,121,238,.1); color: var(--muted); font-size: 11px; transform: translateY(-50%); }
+.road-num--goal { background: linear-gradient(135deg, #10b981, #22c55e); }
+.road-arrow { display: none; }
+.roadmap-indicator { display: none; justify-content: center; align-items: center; gap: 6px; margin-top: 12px; }
+.roadmap-indicator .dot { width: 7px; height: 7px; border-radius: 50%; background: #cbd5e1; transition: all .2s ease; }
+.roadmap-indicator .dot.active { width: 18px; border-radius: 999px; background: var(--primary); }
 
 /* =========================================
    6. Pricing Section
@@ -161,6 +169,8 @@ img, svg { display: block; max-width: 100%; }
 .price-row ul { margin: 0; padding: 0; }
 .price-row li { font-size: 14px; line-height: 1.8; color: var(--text); display: flex; align-items: flex-start; gap: 7px; }
 .price-row li::before { content: "✓"; color: var(--primary); font-weight: 900; font-size: 13px; flex-shrink: 0; margin-top: 2px; }
+.price-swipe-hint { display: none; margin: 10px 0 0; text-align: center; font-size: 12px; font-weight: 700; color: #64748b; letter-spacing: .01em; opacity: 0; transform: translateY(4px); transition: opacity .22s ease, transform .22s ease; }
+.price-swipe-hint.show { opacity: 1; transform: translateY(0); }
 
 .price-btn { min-height: 52px; display: flex; align-items: center; justify-content: center; gap: 10px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 800; font-family: inherit; transition: background .18s, transform .18s, opacity .18s; }
 .price-btn--primary { background: var(--primary); color: #fff; box-shadow: 0 8px 20px rgba(76,121,238,.28); }
@@ -273,15 +283,18 @@ img, svg { display: block; max-width: 100%; }
   .pay-hero { grid-template-columns: 1fr; padding: 48px 28px 56px; }
   .hero-image-wrap { max-height: 320px; }
 
-  .score-card { left: 12px; bottom: -48px; width: calc(100% - 24px); }
+  .score-card { left: clamp(8px, 3.5vw, 22px); bottom: clamp(-42px, -7vw, -24px); width: min(72vw, 280px); max-width: 84%; }
 
   .roadmap-section { padding: 36px 28px 28px; }
   .roadmap-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
-  .road-arrow { display: none; }
+  .roadmap-grid::before { display: none; }
 
   .pricing-section { padding: 28px 28px 20px; }
-  .price-row { grid-template-columns: 1fr; gap: 14px; }
+  .price-list { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 2px 2px 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .price-list::-webkit-scrollbar { display: none; }
+  .price-row { flex: 0 0 clamp(280px, 88vw, 420px); scroll-snap-align: center; scroll-snap-stop: always; grid-template-columns: 1fr; gap: 14px; padding: 20px; }
   .price-amount { padding-left: 0; border-left: 0; }
+  .price-swipe-hint { display: block; }
 
   .examples-section { padding: 28px 28px 20px; }
   .example-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
@@ -302,14 +315,17 @@ img, svg { display: block; max-width: 100%; }
   .hero-desc { font-size: 15px; }
   .hero-image-wrap { max-height: 260px; }
 
-  .score-card { left: 8px; bottom: -44px; width: calc(100% - 16px); padding: 16px 18px 14px; }
+  .score-card { left: clamp(6px, 3vw, 14px); bottom: clamp(-34px, -8vw, -18px); width: min(74vw, 248px); max-width: 82%; padding: 16px 18px 14px; }
   .score-value { font-size: 28px; }
 
   .roadmap-section { padding: 28px 16px 20px; }
-  .roadmap-grid { grid-template-columns: 1fr; }
+  .roadmap-grid { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 0 2px 8px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .roadmap-grid::-webkit-scrollbar { display: none; }
+  .road-card { flex: 0 0 84%; min-height: 228px; scroll-snap-align: center; scroll-snap-stop: always; }
+  .roadmap-indicator { display: flex; }
 
   .pricing-section { padding: 20px 16px 16px; }
-  .price-row { padding: 20px; }
+  .price-row { flex: 0 0 90%; padding: 20px; }
   .price-btn { font-size: 14px; min-height: 48px; }
 
   .examples-section { padding: 20px 16px 16px; }
