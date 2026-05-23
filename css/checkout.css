@@ -75,7 +75,6 @@
     .pm-label { font-size: 0.73rem; }
     .chk-price { font-size: 1.5rem; }
 }
-
 /* 소형 모바일 (640px 이하) */
 @media (max-width: 640px) {
     .order-summary-panel { padding: 20px 16px; }
