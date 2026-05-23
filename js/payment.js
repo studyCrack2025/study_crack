@@ -438,6 +438,7 @@ function selectPlan(tier, priceRowEl) {
     // 선택 플랜 이름 표시
     const planNameEl = document.getElementById('checkoutPlanName');
     if (planNameEl) planNameEl.textContent = selectedProductName;
+    _updateCheckoutCycleNote(tier);
 
     // 결제 버튼 초기화
     const btn = document.getElementById('submitBtn');
@@ -459,12 +460,32 @@ function selectSpecialPlan(tier, el) {
 
     const planNameEl = document.getElementById('checkoutPlanName');
     if (planNameEl) planNameEl.textContent = selectedProductName;
+    _updateCheckoutCycleNote(tier);
 
     const btn = document.getElementById('submitBtn');
     if (btn) { btn.disabled = false; btn.innerText = '결제하기'; }
 
     document.getElementById('tierMessageWrap').style.display = 'none';
     _applyPhoneRequiredMessage(btn);
+}
+
+function _updateCheckoutCycleNote(tier) {
+    const noteEl = document.getElementById('checkoutPlanCycleNote');
+    if (!noteEl) return;
+
+    const weeklyView = {
+        standard: { weekly: '12,250원', total: '49,000원' },
+        pro: { weekly: '37,250원', total: '149,000원' }
+    };
+
+    if (weeklyView[tier]) {
+        const { weekly, total } = weeklyView[tier];
+        noteEl.innerHTML = `<i class="fas fa-calendar-week"></i> 주간 환산가는 <strong>${weekly}/주</strong>이며, 실제 결제는 <strong>4주 단위 (${total})</strong>로 진행됩니다.`;
+        noteEl.style.display = 'block';
+    } else {
+        noteEl.style.display = 'none';
+        noteEl.innerHTML = '';
+    }
 }
 
 // 티어 메시지 공통 처리
