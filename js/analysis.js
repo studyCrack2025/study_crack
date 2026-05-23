@@ -680,13 +680,6 @@ async function fetchUserData(userId) {
         const rawData = await response.json();
         const data = parseDynamoItem(rawData);
 
-        // 로컬 저장 userId와 서버 응답의 canonical id가 어긋날 수 있어 선반영
-        const canonicalUserId = [data.userId, data.id, data.sub, data.cognitoUserId, data.uid]
-            .find(v => typeof v === 'string' && v.trim().length > 0);
-        if (canonicalUserId && localStorage.getItem('userId') !== canonicalUserId) {
-            localStorage.setItem('userId', canonicalUserId);
-        }
-        
         userGracePeriodUntil = data.gracePeriodUntil || null;
 
         if (data.tutorName) currentTutorName = data.tutorName;
