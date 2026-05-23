@@ -687,10 +687,17 @@ async function fetchUserData(userId) {
         }
         
         renderUserInfo(data);
-        applyUserTier(data.computedTier || 'free'); 
+        applyUserTier(data.computedTier || 'free');
+
+        // 사이드바 정량 렌더(updateSurveyStatus) 가 글로벌 userQuantData/currentExamMode 를 읽으므로
+        // 반드시 그 호출 *전* 에 두 값을 세팅해야 초기 진입 시 정량 데이터가 비어 보이지 않음.
+        if (data.quantitative) userQuantData = data.quantitative;
+        restoreExamModeFromStorage(safeUserId);
+        ensureValidExamMode(safeUserId);
+
         updateSurveyStatus(data);
         checkMbtiReport(data);
-        
+
         if (data.targetUnivs) {
             userTargetUnivs = data.targetUnivs;
             // 💡 [추가] Free, Trial 유저는 5, 6번째 슬롯(인덱스 4, 5) 데이터를 강제로 비워 분석을 차단합니다.
@@ -699,9 +706,6 @@ async function fetchUserData(userId) {
                 userTargetUnivs[5] = null;
             }
         }
-        if (data.quantitative) userQuantData = data.quantitative;
-        restoreExamModeFromStorage(safeUserId);
-        ensureValidExamMode(safeUserId);
         if (data.qualitative?.stream) userStream = data.qualitative.stream;
 
         if (currentUserTier === 'free') {
@@ -1912,6 +1916,14 @@ function changeExamMode(mode) {
         }
     }
     updateAnalysisUI();
+    // 시뮬레이션 차트도 같이 새 examMode 로 즉시 재요청 (한 번이라도 시뮬을 본 적이 있으면).
+    // 안 본 사용자는 sim 탭 진입 시 openSolution('sim') → initSimulation 으로 lazy 로드되므로 중복 호출 회피.
+    if (Array.isArray(cachedSimData) && cachedSimData.length > 0) {
+        cachedSimData = [];
+        simDisplayList = [];
+        selectedSimIndex = null;
+        initSimulation();
+    }
 }
 
 function renderAnalysisCard(res) {
