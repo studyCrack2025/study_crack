@@ -26,9 +26,51 @@ const poolData = {
 };
 const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 
+const POST_LOGIN_IDENTITY_SKIP_KEY = 'post_login_identity_skip_until';
+const POST_LOGIN_IDENTITY_SKIP_MS = 20000;
+
 // 전역 변수
 let isPhoneVerified = false; 
 let isEmailVerified = false;
+
+function markPostLoginIdentitySkip(ttlMs = POST_LOGIN_IDENTITY_SKIP_MS) {
+    const until = Date.now() + ttlMs;
+    sessionStorage.setItem(POST_LOGIN_IDENTITY_SKIP_KEY, String(until));
+}
+
+function shouldSkipPostLoginIdentityResolve() {
+    const raw = sessionStorage.getItem(POST_LOGIN_IDENTITY_SKIP_KEY);
+    if (!raw) return false;
+    const until = Number(raw);
+    if (!Number.isFinite(until)) {
+        sessionStorage.removeItem(POST_LOGIN_IDENTITY_SKIP_KEY);
+        return false;
+    }
+    if (Date.now() > until) {
+        sessionStorage.removeItem(POST_LOGIN_IDENTITY_SKIP_KEY);
+        return false;
+    }
+    return true;
+}
+
+async function registerRefreshCookie(refreshToken) {
+    try {
+        const cookieRes = await fetch(AUTH_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken })
+        });
+        if (cookieRes.ok) {
+            localStorage.removeItem('refreshToken');
+            return true;
+        }
+    } catch (e) {
+        // noop: fallback below
+    }
+    localStorage.setItem('refreshToken', refreshToken);
+    return false;
+}
 
 // 토큰 갱신 시도: 쿠키 기반 silent_refresh (rt 쿠키 → 백엔드가 at 쿠키 갱신)
 //
@@ -176,6 +218,9 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
                 }
             }
 
+            if (options.waitFor && typeof options.waitFor.then === 'function') {
+                try { await options.waitFor; } catch (e) { /* noop */ }
+            }
             handleRoleSuccess(role, eventType, userName, promoCode);
         } else {
             throw new Error("계정 정보를 데이터베이스에서 찾을 수 없습니다.");
@@ -716,28 +761,18 @@ async function handleFinalSubmit() {
                     localStorage.setItem('userEmail', email);
                     localStorage.setItem('userRole', 'student');
 
-                    // refreshToken → HttpOnly 쿠키 등록 (at/rt 쿠키가 설정됨)
-                    try {
-                        const cookieRes = await fetch(AUTH_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include',
-                            body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken })
-                        });
-                        if (cookieRes.ok) {
-                            localStorage.removeItem('refreshToken');
-                        } else {
-                            localStorage.setItem('refreshToken', refreshToken);
-                        }
-                    } catch (e) {
-                        localStorage.setItem('refreshToken', refreshToken);
-                    }
+                    // refreshToken 쿠키 등록과 identity 조회를 병렬화해 가입 직후 대기 시간을 줄임
+                    const cookiePromise = registerRefreshCookie(refreshToken);
+                    markPostLoginIdentitySkip();
 
                     window.dataLayer = window.dataLayer || [];
                     window.dataLayer.push({ event: "login", user_id: authResult.getIdToken().payload.sub });
 
                     // 학생 가입 이벤트 전달
-                    resolveUserIdentity('signup', promoCode, { accessToken: getAccessToken() });
+                    resolveUserIdentity('signup', promoCode, {
+                        accessToken: getAccessToken(),
+                        waitFor: cookiePromise
+                    });
                 },
                 onFailure: function(err) {
                     console.error("Auto Login Failed:", err);
@@ -822,6 +857,7 @@ function checkLoginStatus() {
     }
 
     if (isLoggedIn) {
+        if (shouldSkipPostLoginIdentityResolve()) return;
         // 튜토리얼 미완료 학생 → resolveUserIdentity에서 DB 확인 후 판단
         // (tutorial_completed가 없어도 즉시 리다이렉트하지 않고, DB의 tutorialRewardClaimed을 먼저 확인)
         resolveUserIdentity('none');
@@ -873,27 +909,14 @@ function handleSignIn() {
             localStorage.setItem('userEmail', email);
             localStorage.setItem('userId', userId);
 
-            // refreshToken → HttpOnly 쿠키 등록 (localStorage에는 저장 안 함)
-            try {
-                const cookieRes = await fetch(AUTH_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken })
-                });
-                if (cookieRes.ok) {
-                    localStorage.removeItem('refreshToken');
-                } else {
-                    localStorage.setItem('refreshToken', refreshToken);
-                }
-            } catch (e) {
-                localStorage.setItem('refreshToken', refreshToken);
-            }
+            // refreshToken 쿠키 등록과 identity 조회를 병렬화해 로그인 체감 시간을 줄임
+            const cookiePromise = registerRefreshCookie(refreshToken);
+            markPostLoginIdentitySkip();
 
             window.dataLayer = window.dataLayer || [];
             window.dataLayer.push({ event: "login", user_id: userId });
 
-            resolveUserIdentity('login', '', { accessToken });
+            resolveUserIdentity('login', '', { accessToken, waitFor: cookiePromise });
         },
         onFailure: function(err) {
             alert(getErrorMessage(err));
