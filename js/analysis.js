@@ -2647,9 +2647,16 @@ function renderDetailedSimCard() {
         const planBySubject = isReachable ? backtrace.bySubject : backtrace.bestEffort?.bySubject;
         const planUi = Number(isReachable ? backtrace.expected?.uiScore : backtrace.bestEffort?.expected?.uiScore);
         const breakdownChips = planBySubject
-            ? coreKeys.filter(k => Number(planBySubject[k]) > 0)
-                .map(k => `<span class="bt-chip">${labelMap[k]} <strong>+${Number(planBySubject[k])}</strong></span>`)
-                .join('')
+            ? coreKeys.map(k => {
+                const gain = Number(planBySubject[k]);
+                if (!Number.isFinite(gain) || gain <= 0) return '';
+
+                const currentRaw = parseInt(data.sim_data?.[k]?.raw, 10);
+                if (!Number.isFinite(currentRaw)) return '';
+
+                const targetRaw = currentRaw + Math.round(gain);
+                return `<span class="bt-chip">${labelMap[k]} <strong>${currentRaw} -&gt; ${targetRaw}</strong></span>`;
+            }).filter(Boolean).join('')
             : '';
 
         // 확장 막대 그래프 (현재 → 도달, 금색 overlay)
