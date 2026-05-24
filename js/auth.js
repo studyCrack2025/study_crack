@@ -82,16 +82,49 @@ let _refreshPromise = null;
 function tryRefreshToken() {
     if (_refreshPromise) return _refreshPromise;
     const p = (async () => {
+        const callSilentRefresh = () => fetch(AUTH_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ type: 'silent_refresh' })
+        });
         try {
-            const res = await fetch(AUTH_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ type: 'silent_refresh' })
-            });
-            return res.ok;
-        } catch (e) {
+            const res = await callSilentRefresh();
+            if (res.ok) return true;
+
+            // rt 쿠키가 없을 때를 대비해 localStorage fallback으로 1회 복구 시도
+            const fallbackRt = localStorage.getItem('refreshToken');
+            if (fallbackRt) {
+                const registerRes = await fetch(AUTH_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken: fallbackRt })
+                });
+                if (registerRes.ok) {
+                    localStorage.removeItem('refreshToken');
+                    const retryRes = await callSilentRefresh();
+                    return retryRes.ok;
+                }
+            }
             return false;
+        } catch (e) {
+            const fallbackRt = localStorage.getItem('refreshToken');
+            if (!fallbackRt) return false;
+            try {
+                const registerRes = await fetch(AUTH_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken: fallbackRt })
+                });
+                if (!registerRes.ok) return false;
+                localStorage.removeItem('refreshToken');
+                const retryRes = await callSilentRefresh();
+                return retryRes.ok;
+            } catch (_) {
+                return false;
+            }
         }
     })();
     // p.finally로 결과 settle 직후 null로 비워, 이후 새로운 refresh가 가능하도록 유지
@@ -857,6 +890,10 @@ function checkLoginStatus() {
     }
 
     if (isLoggedIn) {
+        const currentPath = window.location.pathname || '';
+        const isAdminRoute = (currentPath === '/admin' || currentPath.startsWith('/admin/'));
+        // 관리자 페이지는 admin API 기준으로 세션을 검증하므로 user API identity 동기화를 건너뜀
+        if (isAdminRoute && userRole === 'admin') return;
         if (shouldSkipPostLoginIdentityResolve()) return;
         // 튜토리얼 미완료 학생 → resolveUserIdentity에서 DB 확인 후 판단
         // (tutorial_completed가 없어도 즉시 리다이렉트하지 않고, DB의 tutorialRewardClaimed을 먼저 확인)
