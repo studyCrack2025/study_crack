@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentStepIdx = 4;
         localStorage.setItem('tutorialStatus', currentStepIdx);
         // MBTI 결과를 DB에 저장
-        if (token) {
+        if (localStorage.getItem('userId')) {
             apiCall('update_qual', { ...tutorialData.qual, mbti: tutorialData.mbti }).catch(() => {});
         }
         // 추천 대학 목록 복원
