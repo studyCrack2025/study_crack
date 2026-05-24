@@ -2159,8 +2159,18 @@ function setSimChartType(type) {
 // ============================================================
 // 역추적 UX (sim-card 4-상태 모델: default / loading / backtrace / upsell)
 // ============================================================
-const BT_LOADING_MIN_MS = 450;     // 분석중 애니메이션 최소 지속 시간 (체감 통제)
+const BT_LOADING_MIN_MS = 900;     // 분석중 애니메이션 최소 지속 시간 (기존 대비 2배)
 const BT_BACKTRACE_TIERS = ['standard', 'pro']; // 역추적 기능 허용 등급
+
+function extractBacktraceRawSnapshot(scoreData) {
+    const coreKeys = ['kor', 'math', 'inq1', 'inq2'];
+    const snapshot = {};
+    coreKeys.forEach((key) => {
+        const raw = parseInt(scoreData?.[key]?.raw, 10);
+        if (Number.isFinite(raw)) snapshot[key] = raw;
+    });
+    return snapshot;
+}
 
 function _findSimItemByOriginalIdx(originalIdx) {
     if (!Array.isArray(simDisplayList)) return null;
@@ -2183,6 +2193,10 @@ async function requestBacktrace(originalIdx) {
     renderDetailedSimCard();
     const loadingStart = Date.now();
 
+    if (!item._backtraceBaseRaw) {
+        item._backtraceBaseRaw = extractBacktraceRawSnapshot(userQuantData?.[currentExamMode]);
+    }
+
     // 3) 이미 캐시된 backtrace_plan 있으면 API 스킵
     let plan = item.backtrace_plan || null;
     if (!plan) {
@@ -2191,6 +2205,7 @@ async function requestBacktrace(originalIdx) {
             const scoreData = userQuantData?.[currentExamMode]
                 ? JSON.parse(JSON.stringify(userQuantData[currentExamMode]))
                 : null;
+            item._backtraceBaseRaw = extractBacktraceRawSnapshot(scoreData);
             const res = await apiFetch(UNIV_DATA_API_URL, {
                 method: 'POST',
                 body: JSON.stringify({
@@ -2646,13 +2661,22 @@ function renderDetailedSimCard() {
         const planTotal = Number(isReachable ? backtrace.minTotalRaw : backtrace.bestEffort?.minTotalRaw);
         const planBySubject = isReachable ? backtrace.bySubject : backtrace.bestEffort?.bySubject;
         const planUi = Number(isReachable ? backtrace.expected?.uiScore : backtrace.bestEffort?.expected?.uiScore);
+        const liveRawSnapshot = extractBacktraceRawSnapshot(userQuantData?.[currentExamMode]);
+        const baseRawSnapshot = data._backtraceBaseRaw || {};
         const breakdownChips = planBySubject
             ? coreKeys.map(k => {
                 const gain = Number(planBySubject[k]);
                 if (!Number.isFinite(gain) || gain <= 0) return '';
 
-                const currentRaw = parseInt(data.sim_data?.[k]?.raw, 10);
-                if (!Number.isFinite(currentRaw)) return '';
+                const simRaw = parseInt(data.sim_data?.[k]?.raw, 10);
+                const snapRaw = parseInt(baseRawSnapshot[k], 10);
+                const liveRaw = parseInt(liveRawSnapshot[k], 10);
+                const currentRaw = Number.isFinite(simRaw)
+                    ? simRaw
+                    : (Number.isFinite(snapRaw) ? snapRaw : liveRaw);
+                if (!Number.isFinite(currentRaw)) {
+                    return `<span class="bt-chip">${labelMap[k]} <strong>+${Math.round(gain)}</strong></span>`;
+                }
 
                 const targetRaw = currentRaw + Math.round(gain);
                 return `<span class="bt-chip">${labelMap[k]} <strong>${currentRaw} -&gt; ${targetRaw}</strong></span>`;
