@@ -156,14 +156,7 @@ async function apiFetch(url, options = {}) {
     if (bearerToken && !options.headers.Authorization) {
         options.headers.Authorization = `Bearer ${bearerToken}`;
     }
-    const currentPath = window.location.pathname || '';
-    const isAdminRoute = (currentPath === '/admin' || currentPath.startsWith('/admin/'));
-    const isAdminSession = (localStorage.getItem('userRole') === 'admin');
-    const requestUrl = String(url || '');
-    const isAuthEndpoint = requestUrl.includes('/api/auth');
-    // 관리자 페이지에서는 stale 쿠키가 우선 인증되는 문제를 막기 위해 Bearer-only 모드 사용
-    if (isAdminRoute && isAdminSession && bearerToken && !isAuthEndpoint) options.credentials = 'omit';
-    else options.credentials = 'include';
+    options.credentials = 'include';
 
     try {
         const response = await fetch(url, options);
@@ -176,6 +169,12 @@ async function apiFetch(url, options = {}) {
                     if (retryRes.ok) return retryRes;
                 }
                 const currentPath = window.location.pathname;
+                const isAdminRoute = (currentPath === '/admin' || currentPath.startsWith('/admin/'));
+                const isAdminSession = (localStorage.getItem('userRole') === 'admin');
+                // 관리자 페이지는 즉시 강제 로그아웃하지 않고 호출자에서 재로그인 안내 처리
+                if (isAdminRoute && isAdminSession) {
+                    return Promise.reject(new Error("Auth expired"));
+                }
                 if (!['/login', '/signup', '/'].includes(currentPath)) {
                     clearClientSession();
                     window.location.href = '/login';
@@ -290,8 +289,8 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             alert("회원 정보 연동에 실패했습니다. 관리자에게 문의해주세요.");
             handleSignOut(true); 
         } else {
-            console.warn("Session invalid. Logging out silently.");
-            handleSignOut(true);
+            // 백그라운드 신원 동기화 실패(일시적 5xx/네트워크)에서는 즉시 로그아웃하지 않음
+            console.warn("Session identity sync skipped:", error?.message || error);
         }
     }
 }
