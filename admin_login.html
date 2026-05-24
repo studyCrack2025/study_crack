@@ -171,6 +171,9 @@
             // 2. 메모리에 토큰 저장
             setAccessToken(accessToken);
             setIdToken(idToken);
+            // 동일 탭에서 /admin 이동 직후 사용할 부트스트랩 토큰 보존
+            sessionStorage.setItem('accessToken', accessToken);
+            sessionStorage.setItem('idToken', idToken);
             localStorage.setItem('userRole', 'admin');
             localStorage.setItem('userId', payload.sub);
 

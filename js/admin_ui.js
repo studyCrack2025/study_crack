@@ -51,17 +51,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // 페이지 리로드 시 at 쿠키 갱신 후 초기화
-    tryRefreshToken().then(ok => {
-        // refresh 실패 시에는 localStorage에 userId가 남아 있어도 실제 세션은 무효로 간주
-        if (!ok) {
-            alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-            clearClientSession();
-            window.location.href = '/admin/login';
-            return;
-        }
-        initAdminPage(userId);
-    });
+    // 초기 렌더는 즉시 진행 (refresh API 일시 장애 시에도 관리자 진입 차단하지 않음)
+    initAdminPage(userId);
+
+    // 백그라운드에서만 refresh 시도 (실패해도 즉시 튕기지 않음)
+    tryRefreshToken().catch(() => {});
 });
 
 function initAdminPage(userId) {
