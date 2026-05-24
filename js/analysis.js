@@ -2159,8 +2159,18 @@ function setSimChartType(type) {
 // ============================================================
 // 역추적 UX (sim-card 4-상태 모델: default / loading / backtrace / upsell)
 // ============================================================
-const BT_LOADING_MIN_MS = 450;     // 분석중 애니메이션 최소 지속 시간 (체감 통제)
+const BT_LOADING_MIN_MS = 900;     // 분석중 애니메이션 최소 지속 시간 (기존 대비 2배)
 const BT_BACKTRACE_TIERS = ['standard', 'pro']; // 역추적 기능 허용 등급
+
+function extractBacktraceRawSnapshot(scoreData) {
+    const coreKeys = ['kor', 'math', 'inq1', 'inq2'];
+    const snapshot = {};
+    coreKeys.forEach((key) => {
+        const raw = parseInt(scoreData?.[key]?.raw, 10);
+        if (Number.isFinite(raw)) snapshot[key] = raw;
+    });
+    return snapshot;
+}
 
 function _findSimItemByOriginalIdx(originalIdx) {
     if (!Array.isArray(simDisplayList)) return null;
@@ -2183,6 +2193,10 @@ async function requestBacktrace(originalIdx) {
     renderDetailedSimCard();
     const loadingStart = Date.now();
 
+    if (!item._backtraceBaseRaw) {
+        item._backtraceBaseRaw = extractBacktraceRawSnapshot(userQuantData?.[currentExamMode]);
+    }
+
     // 3) 이미 캐시된 backtrace_plan 있으면 API 스킵
     let plan = item.backtrace_plan || null;
     if (!plan) {
@@ -2191,6 +2205,7 @@ async function requestBacktrace(originalIdx) {
             const scoreData = userQuantData?.[currentExamMode]
                 ? JSON.parse(JSON.stringify(userQuantData[currentExamMode]))
                 : null;
+            item._backtraceBaseRaw = extractBacktraceRawSnapshot(scoreData);
             const res = await apiFetch(UNIV_DATA_API_URL, {
                 method: 'POST',
                 body: JSON.stringify({
@@ -2646,10 +2661,61 @@ function renderDetailedSimCard() {
         const planTotal = Number(isReachable ? backtrace.minTotalRaw : backtrace.bestEffort?.minTotalRaw);
         const planBySubject = isReachable ? backtrace.bySubject : backtrace.bestEffort?.bySubject;
         const planUi = Number(isReachable ? backtrace.expected?.uiScore : backtrace.bestEffort?.expected?.uiScore);
-        const breakdownChips = planBySubject
-            ? coreKeys.filter(k => Number(planBySubject[k]) > 0)
-                .map(k => `<span class="bt-chip">${labelMap[k]} <strong>+${Number(planBySubject[k])}</strong></span>`)
-                .join('')
+        const liveRawSnapshot = extractBacktraceRawSnapshot(userQuantData?.[currentExamMode]);
+        const baseRawSnapshot = data._backtraceBaseRaw || {};
+        const breakdownRows = planBySubject
+            ? coreKeys.map(k => {
+                const gain = Number(planBySubject[k]);
+                if (!Number.isFinite(gain) || gain <= 0) return '';
+                const roundedGain = Math.round(gain);
+
+                const simRaw = parseInt(data.sim_data?.[k]?.raw, 10);
+                const snapRaw = parseInt(baseRawSnapshot[k], 10);
+                const liveRaw = parseInt(liveRawSnapshot[k], 10);
+                const currentRaw = Number.isFinite(simRaw)
+                    ? simRaw
+                    : (Number.isFinite(snapRaw) ? snapRaw : liveRaw);
+                const subjectLabel = escapeHtml(labelMap[k] || k);
+                if (!Number.isFinite(currentRaw)) {
+                    return `
+                        <div class="bt-plan-row" role="row">
+                            <span class="bt-cell bt-col-subject">${subjectLabel}</span>
+                            <span class="bt-cell bt-col-current">-</span>
+                            <span class="bt-cell bt-col-target">-</span>
+                            <span class="bt-cell bt-col-rise">+${roundedGain}</span>
+                        </div>
+                    `;
+                }
+
+                const targetRaw = currentRaw + roundedGain;
+                return `
+                    <div class="bt-plan-row" role="row">
+                        <span class="bt-cell bt-col-subject">${subjectLabel}</span>
+                        <span class="bt-cell bt-col-current">${currentRaw}</span>
+                        <span class="bt-cell bt-col-target">${targetRaw}</span>
+                        <span class="bt-cell bt-col-rise">+${roundedGain}</span>
+                    </div>
+                `;
+            }).filter(Boolean).join('')
+            : '';
+        const breakdownTable = breakdownRows
+            ? `
+                <div class="bt-plan-wrap">
+                    <div class="bt-plan-head">
+                        <span>과목별 상승 목표</span>
+                        ${Number.isFinite(planTotal) ? `<span class="bt-plan-total">총 +${Math.round(planTotal)}점</span>` : ''}
+                    </div>
+                    <div class="bt-plan-table" role="table" aria-label="과목별 원점수 상승 계획">
+                        <div class="bt-plan-row bt-plan-row-head" role="row">
+                            <span class="bt-cell bt-col-subject">과목</span>
+                            <span class="bt-cell bt-col-current">현재</span>
+                            <span class="bt-cell bt-col-target">목표</span>
+                            <span class="bt-cell bt-col-rise">상승</span>
+                        </div>
+                        ${breakdownRows}
+                    </div>
+                </div>
+            `
             : '';
 
         // 확장 막대 그래프 (현재 → 도달, 금색 overlay)
@@ -2697,7 +2763,7 @@ function renderDetailedSimCard() {
                 </div>
                 ${chartBlock}
                 <div class="bt-narrative">${reachableMsg}</div>
-                ${breakdownChips ? `<div class="bt-chips">${breakdownChips}</div>` : ''}
+                ${breakdownTable}
             </div>
         `;
     };

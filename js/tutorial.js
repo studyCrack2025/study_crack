@@ -584,7 +584,8 @@ function countPreferredRecommendations(candidates, fallbackCurrentScore = 0) {
 }
 
 function logRecommendationReason(stage, reasonCode, detail = {}) {
-    console.info('[튜토리얼][추천][reason_code]', { stage, reasonCode, ...detail });
+    // Intentionally no-op in runtime to keep end-user console clean.
+    return;
 }
 
 function buildTutorialRecommendationPayload(stream, mar, totalStdScore, examMode, boostedRawScores, options = {}) {

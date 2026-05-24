@@ -384,9 +384,69 @@ header#site-header .nav-links a.active-link { color: #4c79ee; }
 .sim-backtrace-result.bt-unreachable { border-color: #fdba74; background: linear-gradient(180deg, #fff7ed 0%, #ffffff 80%); color: #9a3412; }
 .sim-backtrace-result .bt-result-title { font-size: 0.98rem; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
 .sim-backtrace-result .bt-narrative { font-size: 0.9rem; line-height: 1.55; color: #334155; margin: 12px 0 10px; }
-.sim-backtrace-result .bt-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.sim-backtrace-result .bt-chip { background: #fff; border: 1px solid var(--bt-gold-light); padding: 5px 10px; border-radius: 999px; font-size: 0.8rem; color: #78350f; }
-.sim-backtrace-result .bt-chip strong { color: var(--bt-gold-deep); margin-left: 2px; }
+.sim-backtrace-result .bt-plan-wrap {
+    margin-top: 10px;
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid var(--bt-gold-light);
+    border-radius: 10px;
+    overflow: hidden;
+}
+.sim-backtrace-result .bt-plan-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    background: linear-gradient(135deg, #fff7db 0%, #fff2c2 100%);
+    border-bottom: 1px solid #fde68a;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #92400e;
+}
+.sim-backtrace-result .bt-plan-total { color: #b45309; white-space: nowrap; }
+.sim-backtrace-result .bt-plan-table { display: flex; flex-direction: column; }
+.sim-backtrace-result .bt-plan-row {
+    display: grid;
+    grid-template-columns: minmax(86px, 1.35fr) 1fr 1fr 1fr;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 0.82rem;
+    border-top: 1px solid #fef3c7;
+}
+.sim-backtrace-result .bt-plan-row:nth-child(even):not(.bt-plan-row-head) { background: rgba(255, 247, 237, 0.45); }
+.sim-backtrace-result .bt-plan-row-head {
+    background: #fffaf0;
+    border-top: none;
+    font-size: 0.74rem;
+}
+.sim-backtrace-result .bt-cell {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-variant-numeric: tabular-nums;
+}
+.sim-backtrace-result .bt-col-subject { color: #78350f; font-weight: 700; }
+.sim-backtrace-result .bt-col-current,
+.sim-backtrace-result .bt-col-target,
+.sim-backtrace-result .bt-col-rise { text-align: right; }
+.sim-backtrace-result .bt-col-current { color: #475569; }
+.sim-backtrace-result .bt-col-target { color: #1e293b; font-weight: 700; }
+.sim-backtrace-result .bt-col-rise { color: #b45309; font-weight: 800; }
+.sim-backtrace-result .bt-plan-row-head .bt-cell { color: #78716c; font-weight: 700; }
+@media (max-width: 520px) {
+    .sim-backtrace-result .bt-plan-head {
+        padding: 8px 10px;
+        font-size: 0.78rem;
+    }
+    .sim-backtrace-result .bt-plan-row {
+        grid-template-columns: minmax(72px, 1.2fr) 0.9fr 0.9fr 0.85fr;
+        gap: 6px;
+        padding: 8px 10px;
+        font-size: 0.78rem;
+    }
+    .sim-backtrace-result .bt-plan-row-head { font-size: 0.7rem; }
+}
 @keyframes btFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
 /* 확장 막대 그래프 (현재 → 도달, 금색 overlay) */
