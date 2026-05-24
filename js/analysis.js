@@ -2663,10 +2663,11 @@ function renderDetailedSimCard() {
         const planUi = Number(isReachable ? backtrace.expected?.uiScore : backtrace.bestEffort?.expected?.uiScore);
         const liveRawSnapshot = extractBacktraceRawSnapshot(userQuantData?.[currentExamMode]);
         const baseRawSnapshot = data._backtraceBaseRaw || {};
-        const breakdownChips = planBySubject
+        const breakdownRows = planBySubject
             ? coreKeys.map(k => {
                 const gain = Number(planBySubject[k]);
                 if (!Number.isFinite(gain) || gain <= 0) return '';
+                const roundedGain = Math.round(gain);
 
                 const simRaw = parseInt(data.sim_data?.[k]?.raw, 10);
                 const snapRaw = parseInt(baseRawSnapshot[k], 10);
@@ -2674,13 +2675,47 @@ function renderDetailedSimCard() {
                 const currentRaw = Number.isFinite(simRaw)
                     ? simRaw
                     : (Number.isFinite(snapRaw) ? snapRaw : liveRaw);
+                const subjectLabel = escapeHtml(labelMap[k] || k);
                 if (!Number.isFinite(currentRaw)) {
-                    return `<span class="bt-chip">${labelMap[k]} <strong>+${Math.round(gain)}</strong></span>`;
+                    return `
+                        <div class="bt-plan-row" role="row">
+                            <span class="bt-cell bt-col-subject">${subjectLabel}</span>
+                            <span class="bt-cell bt-col-current">-</span>
+                            <span class="bt-cell bt-col-target">-</span>
+                            <span class="bt-cell bt-col-rise">+${roundedGain}</span>
+                        </div>
+                    `;
                 }
 
-                const targetRaw = currentRaw + Math.round(gain);
-                return `<span class="bt-chip">${labelMap[k]} <strong>${currentRaw} -&gt; ${targetRaw}</strong></span>`;
+                const targetRaw = currentRaw + roundedGain;
+                return `
+                    <div class="bt-plan-row" role="row">
+                        <span class="bt-cell bt-col-subject">${subjectLabel}</span>
+                        <span class="bt-cell bt-col-current">${currentRaw}</span>
+                        <span class="bt-cell bt-col-target">${targetRaw}</span>
+                        <span class="bt-cell bt-col-rise">+${roundedGain}</span>
+                    </div>
+                `;
             }).filter(Boolean).join('')
+            : '';
+        const breakdownTable = breakdownRows
+            ? `
+                <div class="bt-plan-wrap">
+                    <div class="bt-plan-head">
+                        <span>과목별 상승 목표</span>
+                        ${Number.isFinite(planTotal) ? `<span class="bt-plan-total">총 +${Math.round(planTotal)}점</span>` : ''}
+                    </div>
+                    <div class="bt-plan-table" role="table" aria-label="과목별 원점수 상승 계획">
+                        <div class="bt-plan-row bt-plan-row-head" role="row">
+                            <span class="bt-cell bt-col-subject">과목</span>
+                            <span class="bt-cell bt-col-current">현재</span>
+                            <span class="bt-cell bt-col-target">목표</span>
+                            <span class="bt-cell bt-col-rise">상승</span>
+                        </div>
+                        ${breakdownRows}
+                    </div>
+                </div>
+            `
             : '';
 
         // 확장 막대 그래프 (현재 → 도달, 금색 overlay)
@@ -2728,7 +2763,7 @@ function renderDetailedSimCard() {
                 </div>
                 ${chartBlock}
                 <div class="bt-narrative">${reachableMsg}</div>
-                ${breakdownChips ? `<div class="bt-chips">${breakdownChips}</div>` : ''}
+                ${breakdownTable}
             </div>
         `;
     };
