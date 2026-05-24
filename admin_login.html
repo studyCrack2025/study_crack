@@ -177,7 +177,7 @@
             localStorage.setItem('userRole', 'admin');
             localStorage.setItem('userId', payload.sub);
 
-            // 3. 이전 세션의 stale 쿠키 제거 후 refreshToken → HttpOnly 쿠키 등록
+            // 3. 이전 세션의 stale 쿠키 제거
             try {
                 await fetch(CONFIG.api.auth, {
                     method: 'POST',
@@ -188,19 +188,8 @@
             } catch (e) {
                 // stale 쿠키 제거 실패는 치명적이지 않음
             }
-            try {
-                const cookieRes = await fetch(CONFIG.api.auth, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken })
-                });
-                if (!cookieRes.ok) throw new Error('쿠키 등록 실패');
-            } catch (e) {
-                console.warn('[admin_login] register_refresh_cookie 실패:', e.message);
-                // rt 쿠키 등록 실패 시 localStorage에 fallback 저장
-                localStorage.setItem('refreshToken', refreshToken);
-            }
+            // refreshToken은 fallback 보관 (필요 시 auth.js의 refresh 경로에서 사용)
+            localStorage.setItem('refreshToken', refreshToken);
 
             alert("관리자 인증이 완료되었습니다.");
             window.location.href = '/admin';

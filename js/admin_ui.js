@@ -54,8 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 초기 렌더는 즉시 진행 (refresh API 일시 장애 시에도 관리자 진입 차단하지 않음)
     initAdminPage(userId);
 
-    // 백그라운드에서만 refresh 시도 (실패해도 즉시 튕기지 않음)
-    tryRefreshToken().catch(() => {});
+    // 관리자 페이지는 초기 진입 시 별도 refresh 호출 없이 진행
 });
 
 function initAdminPage(userId) {
