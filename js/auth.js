@@ -3,18 +3,32 @@
 // ==========================================
 // [메모리 저장소] accessToken - XSS 탈취 방지
 // ==========================================
-let _accessToken = null;
+let _accessToken = sessionStorage.getItem('accessToken') || null;
 function getAccessToken() { return _accessToken; }
-function setAccessToken(token) { _accessToken = token; }
-function clearAccessToken() { _accessToken = null; }
+function setAccessToken(token) {
+    _accessToken = token;
+    if (token) sessionStorage.setItem('accessToken', token);
+    else sessionStorage.removeItem('accessToken');
+}
+function clearAccessToken() {
+    _accessToken = null;
+    sessionStorage.removeItem('accessToken');
+}
 
 // ==========================================
 // [메모리 저장소] idToken - XSS 탈취 방지
 // ==========================================
-let _idToken = null;
+let _idToken = sessionStorage.getItem('idToken') || null;
 function getIdToken() { return _idToken; }
-function setIdToken(token) { _idToken = token; }
-function clearIdToken() { _idToken = null; }
+function setIdToken(token) {
+    _idToken = token;
+    if (token) sessionStorage.setItem('idToken', token);
+    else sessionStorage.removeItem('idToken');
+}
+function clearIdToken() {
+    _idToken = null;
+    sessionStorage.removeItem('idToken');
+}
 
 // API URL 변경 (Gateway 사용)
 const USER_API_URL = CONFIG.api.user;
@@ -138,6 +152,10 @@ function tryRefreshToken() {
 async function apiFetch(url, options = {}) {
     const defaultHeaders = { 'Content-Type': 'application/json' };
     options.headers = { ...defaultHeaders, ...(options.headers || {}) };
+    const bearerToken = getAccessToken() || sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken') || localStorage.getItem('token');
+    if (bearerToken && !options.headers.Authorization) {
+        options.headers.Authorization = `Bearer ${bearerToken}`;
+    }
     options.credentials = 'include';
 
     try {
