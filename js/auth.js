@@ -156,7 +156,14 @@ async function apiFetch(url, options = {}) {
     if (bearerToken && !options.headers.Authorization) {
         options.headers.Authorization = `Bearer ${bearerToken}`;
     }
-    options.credentials = 'include';
+    const currentPath = window.location.pathname || '';
+    const isAdminRoute = (currentPath === '/admin' || currentPath.startsWith('/admin/'));
+    const isAdminSession = (localStorage.getItem('userRole') === 'admin');
+    const requestUrl = String(url || '');
+    const isAuthEndpoint = requestUrl.includes('/api/auth');
+    // 관리자 페이지에서는 stale 쿠키가 우선 인증되는 문제를 막기 위해 Bearer-only 모드 사용
+    if (isAdminRoute && isAdminSession && bearerToken && !isAuthEndpoint) options.credentials = 'omit';
+    else options.credentials = 'include';
 
     try {
         const response = await fetch(url, options);

@@ -12,8 +12,8 @@
     
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
-    <script src="/js/config.js?v=20260524b"></script>
-    <script src="/js/auth.js?v=20260524b"></script>
+    <script src="/js/config.js?v=20260524c"></script>
+    <script src="/js/auth.js?v=20260524c"></script>
 
     <style>
         /* 관리자 페이지 전용 추가 스타일 (기존 auth.css 유지) */
@@ -177,7 +177,17 @@
             localStorage.setItem('userRole', 'admin');
             localStorage.setItem('userId', payload.sub);
 
-            // 3. refreshToken → HttpOnly 쿠키 등록 (이후 페이지 이동 후 tryRefreshToken으로 복원)
+            // 3. 이전 세션의 stale 쿠키 제거 후 refreshToken → HttpOnly 쿠키 등록
+            try {
+                await fetch(CONFIG.api.auth, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ type: 'logout' })
+                });
+            } catch (e) {
+                // stale 쿠키 제거 실패는 치명적이지 않음
+            }
             try {
                 const cookieRes = await fetch(CONFIG.api.auth, {
                     method: 'POST',
