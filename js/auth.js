@@ -163,17 +163,17 @@ async function apiFetch(url, options = {}) {
 
         if (!response.ok) {
             if (response.status === 401) {
+                const currentPath = window.location.pathname;
+                const isAdminRoute = (currentPath === '/admin' || currentPath.startsWith('/admin/'));
+                const isAdminSession = (localStorage.getItem('userRole') === 'admin');
+                // 관리자 페이지는 auth refresh 체인을 태우지 않고 즉시 세션 만료로 처리
+                if (isAdminRoute && isAdminSession) {
+                    return Promise.reject(new Error("Auth expired"));
+                }
                 const refreshed = await tryRefreshToken();
                 if (refreshed) {
                     const retryRes = await fetch(url, options);
                     if (retryRes.ok) return retryRes;
-                }
-                const currentPath = window.location.pathname;
-                const isAdminRoute = (currentPath === '/admin' || currentPath.startsWith('/admin/'));
-                const isAdminSession = (localStorage.getItem('userRole') === 'admin');
-                // 관리자 페이지는 즉시 강제 로그아웃하지 않고 호출자에서 재로그인 안내 처리
-                if (isAdminRoute && isAdminSession) {
-                    return Promise.reject(new Error("Auth expired"));
                 }
                 if (!['/login', '/signup', '/'].includes(currentPath)) {
                     clearClientSession();
