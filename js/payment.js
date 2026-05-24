@@ -1,7 +1,9 @@
 // js/payment.js
 
 const USER_API_URL = CONFIG.api.user;
-const FORCE_TEST_PAYMENT_100 = new URLSearchParams(window.location.search).get('testpay') === '1'; // /payment?testpay=1
+const TEST_PAY_MODE = new URLSearchParams(window.location.search).get('testpay'); // /payment?testpay=1|2
+const FORCE_TEST_PAYMENT = (TEST_PAY_MODE === '1' || TEST_PAY_MODE === '2');
+const TEST_PAYMENT_AMOUNT_KRW = (TEST_PAY_MODE === '2') ? 1000 : 100;
 
 let selectedProductName = "";
 let selectedTier = null; 
@@ -113,13 +115,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     const urlParams = new URLSearchParams(window.location.search);
-    if (FORCE_TEST_PAYMENT_100) {
+    if (FORCE_TEST_PAYMENT) {
         const priceList = document.querySelector('.price-list');
         if (priceList) {
             const testCard = document.createElement('article');
             testCard.className = 'price-row';
             testCard.setAttribute('data-tier', 'test');
-            testCard.innerHTML = `<div class="price-name"><h2 class="c-primary">TEST</h2><p>시스템 연동 테스트</p></div><div class="price-amount"><strong>100</strong><span>원</span></div><ul><li>결제 시스템 연동 확인용</li><li>실 결제 100원 처리</li></ul><a class="price-btn price-btn--primary" href="javascript:void(0)" onclick="selectPlan('test', this.closest('.price-row'))">테스트 결제 선택</a>`;
+            testCard.innerHTML = `<div class="price-name"><h2 class="c-primary">TEST</h2><p>시스템 연동 테스트</p></div><div class="price-amount"><strong>${Number(TEST_PAYMENT_AMOUNT_KRW).toLocaleString()}</strong><span>원</span></div><ul><li>결제 시스템 연동 확인용</li><li>실 결제 ${Number(TEST_PAYMENT_AMOUNT_KRW).toLocaleString()}원 처리</li></ul><a class="price-btn price-btn--primary" href="javascript:void(0)" onclick="selectPlan('test', this.closest('.price-row'))">테스트 결제 선택</a>`;
             priceList.insertBefore(testCard, priceList.firstChild);
         }
     }
@@ -591,7 +593,8 @@ function processPayment() {
     }
 
     const checkoutTier = selectedTier;
-    const amount = TIER_PRICES_KRW[selectedTier];
+    let amount = TIER_PRICES_KRW[selectedTier];
+    if (selectedTier === 'test' && FORCE_TEST_PAYMENT) amount = TEST_PAYMENT_AMOUNT_KRW;
     if (!amount) { alert("유효하지 않은 상품입니다."); return; }
 
     const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;

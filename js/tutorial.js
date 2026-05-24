@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentStepIdx = 4;
         localStorage.setItem('tutorialStatus', currentStepIdx);
         // MBTI 결과를 DB에 저장
-        if (token) {
+        if (localStorage.getItem('userId')) {
             apiCall('update_qual', { ...tutorialData.qual, mbti: tutorialData.mbti }).catch(() => {});
         }
         // 추천 대학 목록 복원
@@ -865,6 +865,66 @@ function buildUnivCards(selectedUnivs, studentScore) {
     });
 }
 
+function getMaxUiDiffFromSimData(simData) {
+    if (!simData || typeof simData !== 'object') return 0;
+    let max = 0;
+    ['kor', 'math', 'inq1', 'inq2'].forEach((key) => {
+        const uiDiff = Number(simData[key]?.uiDiff || 0);
+        if (Number.isFinite(uiDiff) && uiDiff > max) max = uiDiff;
+    });
+    return max;
+}
+
+async function alignTutorialCardSimScores(univCards) {
+    if (!Array.isArray(univCards) || univCards.length === 0) return univCards;
+
+    const examMonth = tutorialData.examMonth || 'mar';
+    const monthScores = tutorialData.quan?.[examMonth];
+    if (!monthScores) return univCards;
+
+    const targetUnivs = univCards
+        .filter(u => u && u.school && u.major)
+        .map(u => ({ univ: u.school, major: u.major }));
+    if (targetUnivs.length === 0) return univCards;
+
+    try {
+        const res = await tutorialAnalysisFetch({
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'simulate_score_rise',
+                isTutorial: true,
+                targetUnivs,
+                userScores: buildUserScoresForAnalysis(monthScores),
+                examMode: examMonth
+            })
+        });
+        if (!res.ok) return univCards;
+
+        const simList = await res.json();
+        if (!Array.isArray(simList)) return univCards;
+
+        const simByKey = new Map();
+        simList.forEach((item) => {
+            if (!item || !item.univ || !item.major) return;
+            simByKey.set(`${item.univ}||${item.major}`, item);
+        });
+
+        return univCards.map((card) => {
+            const simItem = simByKey.get(`${card.school}||${card.major}`);
+            if (!simItem || !Number.isFinite(Number(simItem.base_ui_score))) return card;
+
+            const currentScore = Math.round(Number(simItem.base_ui_score));
+            const maxUiDiff = getMaxUiDiffFromSimData(simItem.sim_data);
+            const simScore = Math.round(Math.min(card.maxScore || 250, currentScore + maxUiDiff));
+            const gain = Math.max(0, simScore - currentScore);
+            return { ...card, currentScore, simScore, gain };
+        });
+    } catch (e) {
+        console.error('[튜토리얼] 카드 시뮬레이션 정합화 실패:', e);
+        return univCards;
+    }
+}
+
 // ── 추천 대학 시뮬레이션 ──────────────────────────────────────────
 async function initUnivSim() {
     const list = document.getElementById('univCardList');
@@ -896,7 +956,8 @@ async function initUnivSim() {
         return;
     }
 
-    const univsToRender = buildUnivCards(tutorialData.selectedUnivs, tutorialData.totalStdScore);
+    const rawUnivsToRender = buildUnivCards(tutorialData.selectedUnivs, tutorialData.totalStdScore);
+    const univsToRender = await alignTutorialCardSimScores(rawUnivsToRender);
 
     univsToRender.forEach((u) => {
         const card = document.createElement('div');

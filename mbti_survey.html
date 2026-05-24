@@ -257,6 +257,10 @@
             const typeCode = dims.map(d => d.chosen).join('');
             const rc = document.getElementById('resultCard');
             const urlParams = new URLSearchParams(window.location.search);
+            const fromTutorial = (urlParams.get('from_tutorial') || '').toLowerCase();
+            const fromMypage = (urlParams.get('from_mypage') || '').toLowerCase();
+            const isFromTutorial = urlParams.has('from_tutorial') && ['','1','true','y','yes'].includes(fromTutorial);
+            const isFromMypage = urlParams.has('from_mypage') && ['','1','true','y','yes'].includes(fromMypage);
 
             const loadingHtml = (emoji, msg) => `
                 <div class="result-emoji">${emoji}</div>
@@ -273,13 +277,13 @@
             };
 
             // [로직 1] 튜토리얼을 통해 유입된 경우
-            if (urlParams.get('from_tutorial') === 'true') {
+            if (isFromTutorial) {
                 redirectAfterDelay(`/tutorial?mbti_completed=true&mbti_result=${encodeURIComponent(typeCode)}`);
                 return;
             }
 
             // [로직 2] 마이페이지를 통해 유입된 경우
-            if (urlParams.get('from_mypage') === 'true') {
+            if (isFromMypage) {
                 redirectAfterDelay(`/mypage?mbti_completed=true&mbti_result=${encodeURIComponent(typeCode)}`);
                 return;
             }

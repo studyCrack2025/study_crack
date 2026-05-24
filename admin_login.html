@@ -12,8 +12,8 @@
     
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
-    <script src="/js/config.js?v=20260524a"></script>
-    <script src="/js/auth.js?v=20260524a"></script>
+    <script src="/js/config.js?v=20260524c"></script>
+    <script src="/js/auth.js?v=20260524c"></script>
 
     <style>
         /* 관리자 페이지 전용 추가 스타일 (기존 auth.css 유지) */
@@ -171,23 +171,25 @@
             // 2. 메모리에 토큰 저장
             setAccessToken(accessToken);
             setIdToken(idToken);
+            // 동일 탭에서 /admin 이동 직후 사용할 부트스트랩 토큰 보존
+            sessionStorage.setItem('accessToken', accessToken);
+            sessionStorage.setItem('idToken', idToken);
             localStorage.setItem('userRole', 'admin');
             localStorage.setItem('userId', payload.sub);
 
-            // 3. refreshToken → HttpOnly 쿠키 등록 (이후 페이지 이동 후 tryRefreshToken으로 복원)
+            // 3. 이전 세션의 stale 쿠키 제거
             try {
-                const cookieRes = await fetch(CONFIG.api.auth, {
+                await fetch(CONFIG.api.auth, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken })
+                    body: JSON.stringify({ type: 'logout' })
                 });
-                if (!cookieRes.ok) throw new Error('쿠키 등록 실패');
             } catch (e) {
-                console.warn('[admin_login] register_refresh_cookie 실패:', e.message);
-                // rt 쿠키 등록 실패 시 localStorage에 fallback 저장
-                localStorage.setItem('refreshToken', refreshToken);
+                // stale 쿠키 제거 실패는 치명적이지 않음
             }
+            // refreshToken은 fallback 보관 (필요 시 auth.js의 refresh 경로에서 사용)
+            localStorage.setItem('refreshToken', refreshToken);
 
             alert("관리자 인증이 완료되었습니다.");
             window.location.href = '/admin';

@@ -191,15 +191,16 @@ img, svg { display: block; max-width: 100%; }
 
   /* Hero — 이미지를 제목 오른쪽에 겹쳐 배치 */
   .hero-section { display: block; position: relative; padding: 36px 20px 24px; min-height: 260px; }
-  .hero-copy { width: 62%; position: relative; z-index: 1; }
+  .hero-copy { width: 62%; min-width: 0; overflow: visible; position: relative; z-index: 1; }
   .hero-copy h1 { font-size: 22px; line-height: 1.25; }
   .hero-desc { font-size: 13px; margin-top: 14px; }
   .hero-visual { position: absolute; right: 8px; top: 52px; width: 58%; padding: 0; pointer-events: none; z-index: 0; transform: none; }
   .hero-device-img { max-width: 100%; }
   /* 버튼 가로 배치 + 텍스트 길이만큼 너비 */
-  .hero-actions { display: flex; flex-wrap: nowrap; gap: 8px; margin-top: 18px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .hero-actions { display: flex; flex-wrap: nowrap; gap: 8px; margin-top: 18px; width: calc(100vw - 40px); overflow-x: auto; overflow-y: visible; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-inline-end: 6px; scroll-padding-inline-end: 6px; }
   .hero-actions::-webkit-scrollbar { display: none; }
   .hero-actions .btn { width: auto; flex: 0 0 auto; font-size: 11px; min-height: 40px; padding: 0 10px; white-space: nowrap; text-align: center; }
+  .hero-actions .btn:last-child { margin-right: 2px; }
   .safe-note { font-size: 12px; margin-top: 14px; }
 
   /* Message band */

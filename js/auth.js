@@ -3,18 +3,32 @@
 // ==========================================
 // [메모리 저장소] accessToken - XSS 탈취 방지
 // ==========================================
-let _accessToken = null;
+let _accessToken = sessionStorage.getItem('accessToken') || null;
 function getAccessToken() { return _accessToken; }
-function setAccessToken(token) { _accessToken = token; }
-function clearAccessToken() { _accessToken = null; }
+function setAccessToken(token) {
+    _accessToken = token;
+    if (token) sessionStorage.setItem('accessToken', token);
+    else sessionStorage.removeItem('accessToken');
+}
+function clearAccessToken() {
+    _accessToken = null;
+    sessionStorage.removeItem('accessToken');
+}
 
 // ==========================================
 // [메모리 저장소] idToken - XSS 탈취 방지
 // ==========================================
-let _idToken = null;
+let _idToken = sessionStorage.getItem('idToken') || null;
 function getIdToken() { return _idToken; }
-function setIdToken(token) { _idToken = token; }
-function clearIdToken() { _idToken = null; }
+function setIdToken(token) {
+    _idToken = token;
+    if (token) sessionStorage.setItem('idToken', token);
+    else sessionStorage.removeItem('idToken');
+}
+function clearIdToken() {
+    _idToken = null;
+    sessionStorage.removeItem('idToken');
+}
 
 // API URL 변경 (Gateway 사용)
 const USER_API_URL = CONFIG.api.user;
@@ -82,16 +96,49 @@ let _refreshPromise = null;
 function tryRefreshToken() {
     if (_refreshPromise) return _refreshPromise;
     const p = (async () => {
+        const callSilentRefresh = () => fetch(AUTH_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ type: 'silent_refresh' })
+        });
         try {
-            const res = await fetch(AUTH_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ type: 'silent_refresh' })
-            });
-            return res.ok;
-        } catch (e) {
+            const res = await callSilentRefresh();
+            if (res.ok) return true;
+
+            // rt 쿠키가 없을 때를 대비해 localStorage fallback으로 1회 복구 시도
+            const fallbackRt = localStorage.getItem('refreshToken');
+            if (fallbackRt) {
+                const registerRes = await fetch(AUTH_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken: fallbackRt })
+                });
+                if (registerRes.ok) {
+                    localStorage.removeItem('refreshToken');
+                    const retryRes = await callSilentRefresh();
+                    return retryRes.ok;
+                }
+            }
             return false;
+        } catch (e) {
+            const fallbackRt = localStorage.getItem('refreshToken');
+            if (!fallbackRt) return false;
+            try {
+                const registerRes = await fetch(AUTH_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken: fallbackRt })
+                });
+                if (!registerRes.ok) return false;
+                localStorage.removeItem('refreshToken');
+                const retryRes = await callSilentRefresh();
+                return retryRes.ok;
+            } catch (_) {
+                return false;
+            }
         }
     })();
     // p.finally로 결과 settle 직후 null로 비워, 이후 새로운 refresh가 가능하도록 유지
@@ -105,6 +152,10 @@ function tryRefreshToken() {
 async function apiFetch(url, options = {}) {
     const defaultHeaders = { 'Content-Type': 'application/json' };
     options.headers = { ...defaultHeaders, ...(options.headers || {}) };
+    const bearerToken = getAccessToken() || sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken') || localStorage.getItem('token');
+    if (bearerToken && !options.headers.Authorization) {
+        options.headers.Authorization = `Bearer ${bearerToken}`;
+    }
     options.credentials = 'include';
 
     try {
@@ -112,12 +163,18 @@ async function apiFetch(url, options = {}) {
 
         if (!response.ok) {
             if (response.status === 401) {
+                const currentPath = window.location.pathname;
+                const isAdminRoute = (currentPath === '/admin' || currentPath.startsWith('/admin/'));
+                const isAdminSession = (localStorage.getItem('userRole') === 'admin');
+                // 관리자 페이지는 auth refresh 체인을 태우지 않고 즉시 세션 만료로 처리
+                if (isAdminRoute && isAdminSession) {
+                    return Promise.reject(new Error("Auth expired"));
+                }
                 const refreshed = await tryRefreshToken();
                 if (refreshed) {
                     const retryRes = await fetch(url, options);
                     if (retryRes.ok) return retryRes;
                 }
-                const currentPath = window.location.pathname;
                 if (!['/login', '/signup', '/'].includes(currentPath)) {
                     clearClientSession();
                     window.location.href = '/login';
@@ -232,8 +289,8 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             alert("회원 정보 연동에 실패했습니다. 관리자에게 문의해주세요.");
             handleSignOut(true); 
         } else {
-            console.warn("Session invalid. Logging out silently.");
-            handleSignOut(true);
+            // 백그라운드 신원 동기화 실패(일시적 5xx/네트워크)에서는 즉시 로그아웃하지 않음
+            console.warn("Session identity sync skipped:", error?.message || error);
         }
     }
 }
@@ -857,6 +914,10 @@ function checkLoginStatus() {
     }
 
     if (isLoggedIn) {
+        const currentPath = window.location.pathname || '';
+        const isAdminRoute = (currentPath === '/admin' || currentPath.startsWith('/admin/'));
+        // 관리자 페이지는 admin API 기준으로 세션을 검증하므로 user API identity 동기화를 건너뜀
+        if (isAdminRoute && userRole === 'admin') return;
         if (shouldSkipPostLoginIdentityResolve()) return;
         // 튜토리얼 미완료 학생 → resolveUserIdentity에서 DB 확인 후 판단
         // (tutorial_completed가 없어도 즉시 리다이렉트하지 않고, DB의 tutorialRewardClaimed을 먼저 확인)

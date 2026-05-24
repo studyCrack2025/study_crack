@@ -51,16 +51,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // 페이지 리로드 시 at 쿠키 갱신 후 초기화
-    tryRefreshToken().then(ok => {
-        if (!ok && !localStorage.getItem('userId')) {
-            alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-            localStorage.clear();
-            window.location.href = '/admin/login';
-            return;
-        }
-        initAdminPage(userId);
-    });
+    // 초기 렌더는 즉시 진행 (refresh API 일시 장애 시에도 관리자 진입 차단하지 않음)
+    initAdminPage(userId);
+
+    // 관리자 페이지는 초기 진입 시 별도 refresh 호출 없이 진행
 });
 
 function initAdminPage(userId) {
