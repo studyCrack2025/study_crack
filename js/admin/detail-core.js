@@ -5,6 +5,8 @@
 const urlParams = new URLSearchParams(window.location.search);
 const targetUserId = urlParams.get('uid');
 const adminId = localStorage.getItem('userId');
+const userRole = String(localStorage.getItem('userRole') || '').toLowerCase();
+const isTutorView = userRole === 'tutor';
 
 let currentStudentData = null;
 let currentTier = 'free';
@@ -34,10 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function initDetailPage() {
     const backBtn = document.querySelector('.back-btn');
-    const userRole = localStorage.getItem('userRole');
 
     if (backBtn) {
-        if (userRole === 'tutor') {
+        if (isTutorView) {
             backBtn.href = '/mypage/tutor?tab=students';
             backBtn.innerText = '← 내 학생 목록으로';
         } else {
@@ -65,10 +66,21 @@ function initDetailPage() {
 }
 
 function initRoleBasedView() {
-    const userRole = localStorage.getItem('userRole');
-    if (userRole === 'tutor') {
+    if (isTutorView) {
         const btnPay = document.getElementById('btn-pay');
         if (btnPay) btnPay.style.display = 'none';
+
+        const memoCard = document.querySelector('.memo-card');
+        if (memoCard) memoCard.style.display = 'none';
+
+        const sidebarEmail = document.getElementById('viewEmail');
+        if (sidebarEmail) sidebarEmail.style.display = 'none';
+
+        ['viewPhone', 'viewEmailFull', 'viewJoinDate'].forEach((id) => {
+            const el = document.getElementById(id);
+            const detailItem = el ? el.closest('.detail-item') : null;
+            if (detailItem) detailItem.style.display = 'none';
+        });
     }
 }
 
@@ -145,7 +157,7 @@ function parseDynamoItem(item) {
 }
 
 async function loadAllStudentData() {
-    const cacheKey = 'studentDetail_' + targetUserId;
+    const cacheKey = `studentDetail_${isTutorView ? 'tutor' : 'admin'}_${targetUserId}`;
 
     // 캐시 확인 (2분 TTL) — 자주 돌아오는 튜터/관리자 UX 개선
     const cached = Store.get(cacheKey);
@@ -158,10 +170,13 @@ async function loadAllStudentData() {
     }
 
     try {
+        const detailType = isTutorView ? 'tutor_get_student_detail' : 'admin_get_user_detail';
         const detailPromise = apiFetch(ADMIN_API_URL, {
             method: 'POST',
             body: JSON.stringify({
-                type: 'admin_get_user_detail', userId: adminId, data: { targetUserId: targetUserId }
+                type: detailType,
+                userId: adminId,
+                data: { targetUserId }
             })
         }).then(res => res.json());
 
@@ -172,12 +187,15 @@ async function loadAllStudentData() {
             })
         }).then(res => res.json()).catch(() => ({ weeklyReports: [] }));
 
-        const paymentPromise = apiFetch(ADMIN_API_URL, {
-            method: 'POST',
-            body: JSON.stringify({
-                type: 'admin_get_payments', data: { targetUserId: targetUserId }
-            })
-        }).then(res => res.json()).catch(() => ({ payments: [] }));
+        const paymentPromise = isTutorView
+            ? Promise.resolve({ payments: [] })
+            : apiFetch(ADMIN_API_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    type: 'admin_get_payments',
+                    data: { targetUserId }
+                })
+            }).then(res => res.json()).catch(() => ({ payments: [] }));
 
         const [detailData, weeklyData, paymentData] = await Promise.all([detailPromise, weeklyPromise, paymentPromise]);
 
@@ -199,13 +217,12 @@ async function loadAllStudentData() {
 }
 
 async function loadProReportsForAdmin() {
-    const userRole = localStorage.getItem('userRole');
     try {
         const response = await apiFetch(REPORT_API_URL, {
             method: 'POST',
             body: JSON.stringify({
                 type: 'get_pro_reports',
-                data: { targetUserId: targetUserId, requesterRole: userRole }
+                data: { targetUserId: targetUserId, requesterRole: userRole || 'unknown' }
             })
         });
 
@@ -227,9 +244,13 @@ async function loadProReportsForAdmin() {
 function renderData(s) {
     if (!s) return;
 
+    const gradeText = s.grade || s.qualitative?.status || '-';
+
     document.getElementById('viewName').innerText = s.name || '미입력';
     document.getElementById('viewEmail').innerText = s.email || '-';
     document.getElementById('viewSchool').innerText = s.school || '-';
+    document.getElementById('viewSchoolSide').innerText = s.school || '-';
+    document.getElementById('viewGradeSide').innerText = gradeText;
     document.getElementById('viewPhone').innerText = s.phone || '-';
     document.getElementById('viewEmailFull').innerText = s.email || '-';
     document.getElementById('viewJoinDate').innerText = s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '-';
@@ -250,7 +271,8 @@ function renderData(s) {
     if (['pro'].includes(currentTier)) specialBtn.style.display = 'inline-block';
     else specialBtn.style.display = 'none';
 
-    document.getElementById('adminMemoInput').value = s.adminMemo || '';
+    const memoInput = document.getElementById('adminMemoInput');
+    if (memoInput) memoInput.value = s.adminMemo || '';
 
     renderTargetUnivs(s.targetUnivs || [], s.quantitative);
     renderQualitativeDetail(s.qualitative);
@@ -400,6 +422,7 @@ function renderPayments(p) {
     const listBody = document.getElementById('viewPaymentList');
     const totalEl = document.getElementById('payTotalAmount');
     const lastDateEl = document.getElementById('payLastDate');
+    if (!listBody || !totalEl || !lastDateEl) return;
     listBody.innerHTML = "";
     if (p && p.length > 0) {
         const sortedP = [...p].sort((a,b) => new Date(b.date) - new Date(a.date));
@@ -419,6 +442,11 @@ function renderPayments(p) {
 }
 
 async function saveAdminMemo() {
+    if (isTutorView) {
+        alert("권한이 없습니다.");
+        return;
+    }
+
     const memo = document.getElementById('adminMemoInput').value;
     try {
         await apiFetch(ADMIN_API_URL, {
