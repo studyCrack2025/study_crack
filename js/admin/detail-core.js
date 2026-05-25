@@ -212,7 +212,10 @@ async function loadAllStudentData() {
 
         renderData(currentStudentData);
     } catch (e) {
-        if (e.message !== "Auth expired") alert("학생 상세 데이터를 불러오지 못했습니다.");
+        if (e.message !== "Auth expired") {
+            console.error("[admin/detail] loadAllStudentData failed:", e);
+            alert(`학생 상세 데이터를 불러오지 못했습니다.\n사유: ${e.message || '알 수 없는 오류'}`);
+        }
     }
 }
 
@@ -246,14 +249,19 @@ function renderData(s) {
 
     const gradeText = s.grade || s.qualitative?.status || '-';
 
-    document.getElementById('viewName').innerText = s.name || '미입력';
-    document.getElementById('viewEmail').innerText = s.email || '-';
-    document.getElementById('viewSchool').innerText = s.school || '-';
-    document.getElementById('viewSchoolSide').innerText = s.school || '-';
-    document.getElementById('viewGradeSide').innerText = gradeText;
-    document.getElementById('viewPhone').innerText = s.phone || '-';
-    document.getElementById('viewEmailFull').innerText = s.email || '-';
-    document.getElementById('viewJoinDate').innerText = s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '-';
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = value;
+    };
+
+    setText('viewName', s.name || '미입력');
+    setText('viewEmail', s.email || '-');
+    setText('viewSchool', s.school || '-');
+    setText('viewSchoolSide', s.school || '-');
+    setText('viewGradeSide', gradeText);
+    setText('viewPhone', s.phone || '-');
+    setText('viewEmailFull', s.email || '-');
+    setText('viewJoinDate', s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '-');
 
     const profileImg = document.getElementById('studentProfileImg');
     if(s.profileImage) profileImg.src = s.profileImage;
@@ -447,7 +455,9 @@ async function saveAdminMemo() {
         return;
     }
 
-    const memo = document.getElementById('adminMemoInput').value;
+    const memoEl = document.getElementById('adminMemoInput');
+    if (!memoEl) return;
+    const memo = memoEl.value;
     try {
         await apiFetch(ADMIN_API_URL, {
             method: 'POST',
