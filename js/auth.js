@@ -67,6 +67,14 @@ function shouldSkipPostLoginIdentityResolve() {
     return true;
 }
 
+function isPublicRoute(pathname) {
+    const p = pathname || '';
+    const exact = ['/', '/login', '/signup', '/welcome', '/social-callback', '/admin/login', '/service', '/promo'];
+    if (exact.includes(p)) return true;
+    const prefixes = ['/mbti_', '/checkout', '/success', '/change-password'];
+    return prefixes.some(prefix => p.startsWith(prefix));
+}
+
 async function registerRefreshCookie(refreshToken) {
     try {
         const cookieRes = await fetch(AUTH_URL, {
@@ -251,6 +259,10 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             sessionStorage.setItem('user_profile_api_mode', 'light');
         }
 
+        if (userRes.status === 401) {
+            throw new Error("Auth expired");
+        }
+
         if (userRes.ok) {
             const data = await userRes.json();
             const role = data.role || 'student';
@@ -285,6 +297,16 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
 
     } catch (error) {
         console.error("Identity Resolve Error:", error);
+        if (eventType === 'none' && String(error?.message || '').includes('Auth expired')) {
+            clearClientSession();
+            const currentPath = window.location.pathname || '/';
+            if (!isPublicRoute(currentPath)) {
+                window.location.href = '/login';
+            } else {
+                checkLoginStatus();
+            }
+            return;
+        }
         if (eventType === 'login' || eventType === 'signup') {
             alert("회원 정보 연동에 실패했습니다. 관리자에게 문의해주세요.");
             handleSignOut(true); 
