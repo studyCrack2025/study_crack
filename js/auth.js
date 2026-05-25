@@ -75,6 +75,11 @@ function isPublicRoute(pathname) {
     return prefixes.some(prefix => p.startsWith(prefix));
 }
 
+function getRoleLoginPath() {
+    const role = localStorage.getItem('userRole');
+    return (role === 'admin' || role === 'tutor') ? '/admin/login' : '/login';
+}
+
 async function registerRefreshCookie(refreshToken) {
     try {
         const cookieRes = await fetch(AUTH_URL, {
@@ -172,12 +177,6 @@ async function apiFetch(url, options = {}) {
         if (!response.ok) {
             if (response.status === 401) {
                 const currentPath = window.location.pathname;
-                const isAdminRoute = (currentPath === '/admin' || currentPath.startsWith('/admin/'));
-                const isAdminSession = (localStorage.getItem('userRole') === 'admin');
-                // 관리자 페이지는 auth refresh 체인을 태우지 않고 즉시 세션 만료로 처리
-                if (isAdminRoute && isAdminSession) {
-                    return Promise.reject(new Error("Auth expired"));
-                }
                 const refreshed = await tryRefreshToken();
                 if (refreshed) {
                     const retryRes = await fetch(url, options);
@@ -185,7 +184,7 @@ async function apiFetch(url, options = {}) {
                 }
                 if (!['/login', '/signup', '/'].includes(currentPath)) {
                     clearClientSession();
-                    window.location.href = '/login';
+                    window.location.href = getRoleLoginPath();
                 }
                 return Promise.reject(new Error("Auth expired"));
             }
@@ -226,7 +225,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             headers.Authorization = `Bearer ${bearerToken}`;
         }
 
-        // 🔥 at 쿠키 만료(1시간) 시 silent_refresh로 자동 갱신 — rt 쿠키(7일) 유효한 동안 세션 유지
+        // 🔥 at 쿠키 만료 시 silent_refresh로 자동 갱신 — rt 쿠키 유효한 동안 세션 유지
         //    raw fetch만 쓰면 401에서 즉시 handleSignOut → 페이지 로드만 해도 로그아웃되는 문제 방지
         const fetchIdentity = async (requestType) => {
             const doFetch = () => fetch(USER_API_URL, {
@@ -301,7 +300,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             clearClientSession();
             const currentPath = window.location.pathname || '/';
             if (!isPublicRoute(currentPath)) {
-                window.location.href = '/login';
+                window.location.href = getRoleLoginPath();
             } else {
                 checkLoginStatus();
             }
@@ -950,6 +949,7 @@ function checkLoginStatus() {
 function handleSignOut(silent = false) {
     const cognitoUser = userPool.getCurrentUser();
     if (cognitoUser != null) cognitoUser.signOut();
+    const redirectPath = getRoleLoginPath();
 
     // 서버에 쿠키 만료 요청 (at/rt HttpOnly 쿠키 삭제)
     fetch(AUTH_URL, {
@@ -963,7 +963,7 @@ function handleSignOut(silent = false) {
     clearClientSession();
 
     if (!silent) alert("로그아웃 되었습니다.");
-    window.location.href = '/login';
+    window.location.href = redirectPath;
 }
 
 function handleSignIn() {

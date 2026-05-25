@@ -16,7 +16,7 @@
     
     <link rel="stylesheet" href="/css/style.css?v=20260524a">
     <link rel="stylesheet" href="/css/admin_theme.css?v=20260524a">
-    <link rel="stylesheet" href="/css/admin_detail.css?v=20260525a">
+    <link rel="stylesheet" href="/css/admin_detail.css?v=20260526c">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
@@ -108,9 +108,14 @@
 
                         <div class="univ-summary-section">
                             <div class="univ-summary-header">
-                            <h4>목표 대학 설정 현황</h4>
-                                <div class="univ-guide-text">
-                                    💡 <strong>100점</strong> 예상 커트라인 / <strong>150점</strong> 상위 70% 적정라인
+                                <h4>목표 대학 설정 현황</h4>
+                                <div class="univ-header-actions">
+                                    <select id="targetUnivExamFilter" onchange="renderTargetUnivsByExam()">
+                                        <option value="">시험 선택</option>
+                                    </select>
+                                    <div class="univ-guide-text">
+                                        💡 <strong>100점</strong> 예상 커트라인 / <strong>150점</strong> 상위 70% 적정라인
+                                    </div>
                                 </div>
                             </div>
     
@@ -206,7 +211,7 @@
     <script src="/js/shared/store.js?v=20260524a"></script>
     <script src="/js/shared/api.js?v=20260526a"></script>
     <script src="/js/shared/utils.js?v=20260524a"></script>
-    <script src="/js/admin/detail-core.js?v=20260526a"></script>
+    <script src="/js/admin/detail-core.js?v=20260526c"></script>
     <script src="/js/admin/weekly.js?v=20260524a"></script>
     <script src="/js/admin/pro-reports.js?v=20260524a"></script>
 </body>
