@@ -46,11 +46,6 @@ async function searchStudents() {
             return true;
         });
 
-        if (keyword.trim() === "") {
-            const totalStudentsEl = document.getElementById('totalStudents');
-            if (totalStudentsEl) totalStudentsEl.innerText = `${students.length}명`;
-        }
-
         // 다중 필터링 적용 (안전한 프론트엔드 필터링)
         if (students.length > 0) {
             // 1. 등급 필터
