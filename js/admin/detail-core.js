@@ -13,11 +13,21 @@ let currentTier = 'free';
 let currentPaymentsData = [];
 let currentWeeklyData = [];
 
+function clearAdminDetailSession() {
+    ['refreshToken','userId','userEmail','userRole','userName','userTier','authProvider','accessToken','token'].forEach((k) => localStorage.removeItem(k));
+    sessionStorage.clear();
+}
+
+function forceAdminRelogin(message) {
+    if (message) alert(message);
+    clearAdminDetailSession();
+    window.location.href = '/admin/login';
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!targetUserId || !adminId) {
         alert("잘못된 접근입니다.");
-        window.location.href = '/login';
+        window.location.href = '/admin/login';
         return;
     }
 
@@ -25,16 +35,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Cognito SDK가 localStorage에 세션을 자동 저장하므로 getSession()으로 복원 가능
     tryRefreshToken().then((ok) => {
         if (!ok) {
-            alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-            ['refreshToken','userId','userEmail','userRole','userName','userTier','authProvider','accessToken','token'].forEach((k) => localStorage.removeItem(k));
-            sessionStorage.clear();
-            window.location.href = '/admin/login';
+            forceAdminRelogin("세션이 만료되었습니다. 다시 로그인해주세요.");
             return;
         }
         initDetailPage();
     }).catch(() => {
-        alert("세션 확인 중 오류가 발생했습니다. 다시 로그인해주세요.");
-        window.location.href = '/admin/login';
+        forceAdminRelogin("세션 확인 중 오류가 발생했습니다. 다시 로그인해주세요.");
     });
 });
 
@@ -218,6 +224,16 @@ async function loadAllStudentData() {
     } catch (e) {
         if (e.message !== "Auth expired") {
             console.error("[admin/detail] loadAllStudentData failed:", e);
+
+            if (String(e.message || '').includes('Forbidden')) {
+                if (isTutorView) {
+                    alert("해당 학생 정보에 접근할 권한이 없습니다.");
+                    return;
+                }
+                forceAdminRelogin("세션이 만료되었거나 권한이 유효하지 않습니다. 다시 로그인해주세요.");
+                return;
+            }
+
             alert(`학생 상세 데이터를 불러오지 못했습니다.\n사유: ${e.message || '알 수 없는 오류'}`);
         }
     }
