@@ -23,14 +23,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 페이지 이동 후 메모리 토큰 복원
     // Cognito SDK가 localStorage에 세션을 자동 저장하므로 getSession()으로 복원 가능
-    tryRefreshToken().then(ok => {
-        if (!ok && !localStorage.getItem('userId')) {
+    tryRefreshToken().then((ok) => {
+        if (!ok) {
             alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-            localStorage.clear();
+            ['refreshToken','userId','userEmail','userRole','userName','userTier','authProvider','accessToken','token'].forEach((k) => localStorage.removeItem(k));
+            sessionStorage.clear();
             window.location.href = '/admin/login';
             return;
         }
         initDetailPage();
+    }).catch(() => {
+        alert("세션 확인 중 오류가 발생했습니다. 다시 로그인해주세요.");
+        window.location.href = '/admin/login';
     });
 });
 
