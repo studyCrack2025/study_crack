@@ -11,6 +11,10 @@ async function loadAdminStats(adminId) {
 
         const data = await response.json();
 
+        const totalStudentsEl = document.getElementById('totalStudents');
+        if (totalStudentsEl) {
+            totalStudentsEl.innerText = `${(Number(data.totalStudents) || 0).toLocaleString()}명`;
+        }
         document.getElementById('totalRevenue').innerText = `${(data.totalRevenue || 0).toLocaleString()}원`;
         document.getElementById('monthlyRevenue').innerText = `${(data.monthlyRevenue || 0).toLocaleString()}원`;
 
