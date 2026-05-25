@@ -12,6 +12,18 @@ let currentStudentData = null;
 let currentTier = 'free';
 let currentPaymentsData = [];
 let currentWeeklyData = [];
+const EXAM_NAME_MAP = {
+    mar: '3월 학평',
+    apr: '4월 학평',
+    may: '5월 학평',
+    jun: '6월 모평',
+    jul: '7월 학평',
+    sep: '9월 모평',
+    oct: '10월 학평',
+    csat: '수능'
+};
+const EXAM_KEY_ORDER = ['mar', 'apr', 'may', 'jun', 'jul', 'sep', 'oct', 'csat'];
+let selectedTargetExamKey = 'mar';
 
 function clearAdminDetailSession() {
     ['refreshToken','userId','userEmail','userRole','userName','userTier','authProvider','accessToken','token'].forEach((k) => localStorage.removeItem(k));
@@ -79,9 +91,6 @@ function initRoleBasedView() {
     if (isTutorView) {
         const btnPay = document.getElementById('btn-pay');
         if (btnPay) btnPay.style.display = 'none';
-
-        const memoCard = document.querySelector('.memo-card');
-        if (memoCard) memoCard.style.display = 'none';
 
         const sidebarEmail = document.getElementById('viewEmail');
         if (sidebarEmail) sidebarEmail.style.display = 'none';
@@ -302,10 +311,10 @@ function renderData(s) {
     const memoInput = document.getElementById('adminMemoInput');
     if (memoInput) memoInput.value = s.adminMemo || '';
 
-    renderTargetUnivs(s.targetUnivs || [], s.quantitative);
     renderQualitativeDetail(s.qualitative);
 
     initQuantitativeData(s.quantitative);
+    renderTargetUnivsByExam();
 
     renderPayments(currentPaymentsData);
 
@@ -337,23 +346,42 @@ function renderTierBadge(tier) {
 function initQuantitativeData(q) {
     const selector = document.getElementById('scoreExamFilter');
     const container = document.getElementById('viewScoreTable');
+    const targetExamSelector = document.getElementById('targetUnivExamFilter');
 
     if (!q || Object.keys(q).length === 0) {
         selector.innerHTML = '<option value="">데이터 없음</option>';
+        if (targetExamSelector) targetExamSelector.innerHTML = '<option value="">데이터 없음</option>';
         container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:20px;">입력된 성적이 없습니다.</p>';
         return;
     }
 
-    const examNames = { 'mar': '3월 학평', 'apr': '4월 학평', 'may': '5월 학평', 'jun': '6월 모평', 'jul': '7월 학평', 'sep': '9월 모평', 'oct': '10월 학평', 'csat': '수능' };
-    const availableKeys = Object.keys(q).filter(k => q[k]);
+    const rawKeys = Object.keys(q).filter(k => q[k]);
+    const keySet = new Set(rawKeys);
+    const orderedKeys = EXAM_KEY_ORDER.filter((k) => keySet.has(k));
+    rawKeys.forEach((k) => {
+        if (!orderedKeys.includes(k)) orderedKeys.push(k);
+    });
+    const availableKeys = orderedKeys;
 
     selector.innerHTML = '';
     availableKeys.forEach(key => {
-        const label = examNames[key] || key;
+        const label = EXAM_NAME_MAP[key] || key;
         selector.innerHTML += `<option value="${key}">${label}</option>`;
     });
 
-    if (availableKeys.length > 0) renderSelectedScore();
+    if (targetExamSelector) {
+        targetExamSelector.innerHTML = '';
+        availableKeys.forEach((key) => {
+            const label = EXAM_NAME_MAP[key] || key;
+            targetExamSelector.innerHTML += `<option value="${key}">${label}</option>`;
+        });
+    }
+
+    if (availableKeys.length > 0) {
+        if (!availableKeys.includes(selectedTargetExamKey)) selectedTargetExamKey = availableKeys[0];
+        if (targetExamSelector) targetExamSelector.value = selectedTargetExamKey;
+        renderSelectedScore();
+    }
 }
 
 function renderSelectedScore() {
@@ -377,6 +405,8 @@ function renderSelectedScore() {
 }
 
 async function renderTargetUnivs(list, quantData) {
+    const examMode = selectedTargetExamKey;
+    const examLabel = EXAM_NAME_MAP[examMode] || examMode;
     const container = document.getElementById('viewTargetUnivList');
     container.innerHTML = '';
 
@@ -384,7 +414,6 @@ async function renderTargetUnivs(list, quantData) {
     list.forEach((u, originalIdx) => { if (u && u.univ) validList.push({ ...u, originalIdx }); });
     if (validList.length === 0) { container.innerHTML = '<p style="color:#94a3b8;">설정된 목표 대학이 없습니다.</p>'; return; }
 
-    const examMode = 'mar';
     const hasMarScore = quantData && quantData[examMode] && (quantData[examMode].kor || quantData[examMode].math || quantData[examMode].eng);
 
     validList.forEach((u, idx) => {
@@ -394,7 +423,7 @@ async function renderTargetUnivs(list, quantData) {
 
         div.innerHTML = `
             <div style="display:flex; flex-direction:column; gap:5px;"><strong>${choiceNum}지망. ${escapeHtml(u.univ)}</strong><div class="major">${escapeHtml(u.major)}</div></div>
-            <div class="sim-summary-box empty" id="sim-box-${idx}">${hasMarScore ? '<div style="text-align:center; padding:10px; color:#3b82f6;"><i class="fas fa-spinner fa-spin"></i> 분석 중...</div>' : '<div class="sim-exam-label" style="color:#94a3b8;"><i class="fas fa-exclamation-circle"></i> 3월 학평 기준</div><div style="font-size:0.8rem; color:#94a3b8; text-align:center; padding:5px 0;">성적 데이터 없음</div>'}</div>
+            <div class="sim-summary-box empty" id="sim-box-${idx}">${hasMarScore ? '<div style="text-align:center; padding:10px; color:#3b82f6;"><i class="fas fa-spinner fa-spin"></i> 분석 중...</div>' : `<div class="sim-exam-label" style="color:#94a3b8;"><i class="fas fa-exclamation-circle"></i> ${examLabel}</div><div style="font-size:0.8rem; color:#94a3b8; text-align:center; padding:5px 0;">성적 데이터 없음</div>`}</div>
             <div class="date">${dateStr}</div>
         `;
         container.appendChild(div);
@@ -421,10 +450,20 @@ async function renderTargetUnivs(list, quantData) {
 
                 subjects.forEach(sub => { const info = data.sim_data[sub.key]; if (info && info.uiDiff > maxRise) { maxRise = info.uiDiff; bestSubName = sub.name; } });
                 box.className = 'sim-summary-box';
-                box.innerHTML = `<div class="sim-exam-label"><i class="fas fa-bolt"></i> 3월 학평 기준 시뮬레이션</div><div class="sim-score-row"><span>현재 환산</span><strong>${currentScore}점</strong></div><div class="sim-score-row"><span>+1점 효율</span><span class="sim-highlight">${bestSubName} (+${maxRise.toFixed(2)}점)</span></div>`;
+                box.innerHTML = `<div class="sim-exam-label"><i class="fas fa-bolt"></i> ${examLabel} 시뮬레이션</div><div class="sim-score-row"><span>현재 환산</span><strong>${currentScore}점</strong></div><div class="sim-score-row"><span>+1점 효율</span><span class="sim-highlight">${bestSubName} (+${maxRise.toFixed(2)}점)</span></div>`;
             } else { box.innerHTML = `<div style="font-size:0.8rem; color:#ef4444; text-align:center; padding:5px 0;"><i class="fas fa-ban" style="margin-right:4px;"></i>지원 불가 (분석 데이터 없음)</div>`; }
         });
     } catch (e) { console.error("Simulation API Error:", e); validList.forEach((u, idx) => { const box = document.getElementById(`sim-box-${idx}`); if (box) box.innerHTML = `<div style="font-size:0.8rem; color:#ef4444; text-align:center; padding:5px 0;">분석 서버 오류</div>`; }); }
+}
+
+function renderTargetUnivsByExam() {
+    if (!currentStudentData) return;
+
+    const q = currentStudentData.quantitative || {};
+    const filterEl = document.getElementById('targetUnivExamFilter');
+    const chosenKey = filterEl && filterEl.value ? filterEl.value : (Object.keys(q).find((k) => q[k]) || '');
+    selectedTargetExamKey = chosenKey || selectedTargetExamKey;
+    renderTargetUnivs(currentStudentData.targetUnivs || [], q);
 }
 
 function renderQualitativeDetail(q) {
@@ -470,24 +509,36 @@ function renderPayments(p) {
 }
 
 async function saveAdminMemo() {
-    if (isTutorView) {
-        alert("권한이 없습니다.");
-        return;
-    }
-
     const memoEl = document.getElementById('adminMemoInput');
     if (!memoEl) return;
     const memo = memoEl.value;
     try {
-        await apiFetch(ADMIN_API_URL, {
+        await apiFetch(REPORT_API_URL, {
             method: 'POST',
             body: JSON.stringify({
-                type: 'admin_update_memo',
+                type: 'save_shared_memo',
                 data: { targetUserId: targetUserId, memo: memo }
             })
         });
         alert("메모 저장 완료");
     } catch(e) {
-        if (e.message !== "Auth expired") alert("저장 실패: 서버 응답을 확인해주세요.");
+        if (e.message === "Auth expired") return;
+        // 레거시 백엔드 호환: shared memo API가 아직 배포되지 않은 경우 관리자 경로로 1회 폴백
+        if (!isTutorView) {
+            try {
+                await apiFetch(ADMIN_API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        type: 'admin_update_memo',
+                        data: { targetUserId: targetUserId, memo: memo }
+                    })
+                });
+                alert("메모 저장 완료");
+                return;
+            } catch (_) {
+                // noop
+            }
+        }
+        alert("메모 저장 실패: 서버 배포 상태 또는 권한을 확인해주세요.");
     }
 }
