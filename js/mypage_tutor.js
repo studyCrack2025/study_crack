@@ -9,8 +9,46 @@ let tutorInfoData = {};
 let tutorCognitoUser = null; 
 let tutorTimerInterval = null;
 let mypagePhoneTimerInterval = null;
+const TUTOR_NAME_ALIAS_CACHE_KEY = 'tutorNameAlias';
 
 window.myStudentsList = [];
+
+function normalizeText(value) {
+    return String(value || '').trim();
+}
+
+function uniqNonEmpty(values) {
+    const out = [];
+    const seen = new Set();
+    (values || []).forEach((v) => {
+        const t = normalizeText(v);
+        if (!t) return;
+        const k = t.toLowerCase();
+        if (seen.has(k)) return;
+        seen.add(k);
+        out.push(t);
+    });
+    return out;
+}
+
+function normalizeStudentsPayload(payload) {
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.students)) return payload.students;
+    if (Array.isArray(payload?.Items)) return payload.Items;
+    return [];
+}
+
+function getTutorNameCandidates() {
+    const displayName = normalizeText(document.getElementById('userNameDisplay')?.innerText);
+    const cachedAlias = normalizeText(localStorage.getItem(TUTOR_NAME_ALIAS_CACHE_KEY));
+    return uniqNonEmpty([
+        tutorInfoData?.nickname,
+        tutorInfoData?.name,
+        localStorage.getItem('userName'),
+        displayName,
+        cachedAlias
+    ]);
+}
 
 
 function parseDynamoItem(item) {
@@ -54,7 +92,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    const userId = localStorage.getItem('userId');
+    let userId = localStorage.getItem('userId');
 
     if (!localStorage.getItem('userId')) {
         const refreshed = await tryRefreshToken();
@@ -65,6 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         checkLoginStatus();
+        userId = localStorage.getItem('userId');
     }
 
     initTutorCognito();
@@ -160,11 +199,16 @@ async function loadTutorInfo(userId) {
         let rawData = await res.json();
         const data = parseDynamoItem(rawData);
         tutorInfoData = data;
+        tutorInfoData.nickname = normalizeText(tutorInfoData.nickname);
+        tutorInfoData.name = normalizeText(tutorInfoData.name);
+        if (tutorInfoData.nickname) {
+            localStorage.setItem(TUTOR_NAME_ALIAS_CACHE_KEY, tutorInfoData.nickname);
+        }
 
         const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
         const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
 
-        setTxt('userNameDisplay', data.name || '이름 없음');
+        setTxt('userNameDisplay', data.name || data.nickname || '이름 없음');
         setTxt('userEmailDisplay', data.email || '');
         setTxt('currentEmailDisplay', data.email || '');
         setTxt('currentPhoneDisplay', data.phone || '등록된 번호 없음');
@@ -209,6 +253,17 @@ window.saveProfileModalData = async function() {
     const strengths = document.getElementById('modalStrengths').value.trim();
     const message = document.getElementById('modalMessage').value.trim();
     const userId = localStorage.getItem('userId');
+    const currentNickname = normalizeText(tutorInfoData.nickname);
+    const hasAssignedStudents = Array.isArray(window.myStudentsList) && window.myStudentsList.length > 0;
+
+    if (!nickname) {
+        alert("닉네임은 비워둘 수 없습니다.");
+        return;
+    }
+    if (hasAssignedStudents && currentNickname && currentNickname !== nickname) {
+        alert("담당 학생이 있는 상태에서 닉네임을 변경하면 학생 매칭이 끊길 수 있어 변경할 수 없습니다. 관리자에게 튜터명 동기화를 요청해주세요.");
+        return;
+    }
 
     try {
         await apiFetch(TUTOR_API_URL, {
@@ -419,28 +474,89 @@ window.loadMyStudents = async function() {
     tbody.innerHTML = '<tr><td colspan="5" class="empty-msg"><i class="fas fa-spinner fa-spin"></i> 데이터 로딩 중...</td></tr>';
     
     const userId = localStorage.getItem('userId');
-    let myName = tutorInfoData.nickname || document.getElementById('userNameDisplay')?.innerText;
+    if (!userId) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">세션 정보가 없습니다. 다시 로그인해주세요.</td></tr>';
+        return;
+    }
 
-    if (!myName || myName === '이름 없음') {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">튜터 정보를 불러오지 못했습니다. 새로고침 해주세요.</td></tr>';
+    if (!normalizeText(tutorInfoData.name) && !normalizeText(tutorInfoData.nickname)) {
+        await loadTutorInfo(userId);
+    }
+
+    const tutorNameCandidates = getTutorNameCandidates();
+    if (tutorNameCandidates.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">튜터 프로필(이름/닉네임) 정보가 없어 학생 목록을 조회할 수 없습니다.</td></tr>';
         return;
     }
 
     try {
-        const response = await apiFetch(TUTOR_API_URL, {
-            method: 'POST',
-            body: JSON.stringify({ type: 'tutor_get_students', userId: userId, tutorName: myName })
-        });
-        
-        const students = await response.json();
-        window.myStudentsList = students || [];
+        const mergeStudents = (base, incoming, matchedAlias) => {
+            const out = Array.isArray(base) ? [...base] : [];
+            const seen = new Set(out.map(s => String(s?.userid || s?.userId || '').trim()).filter(Boolean));
+            (incoming || []).forEach((s) => {
+                const sid = String(s?.userid || s?.userId || '').trim();
+                if (!sid || seen.has(sid)) return;
+                seen.add(sid);
+                out.push({ ...s, _matchedTutorAlias: matchedAlias || '' });
+            });
+            return out;
+        };
+        const fetchStudentsByAlias = async (tutorName) => {
+            const response = await apiFetch(TUTOR_API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ type: 'tutor_get_students', userId: userId, tutorName })
+            });
+            const raw = await response.json();
+            const parsed = parseDynamoItem(raw);
+            return normalizeStudentsPayload(parsed);
+        };
+
+        let anyFetchSucceeded = false;
+        const canonicalNickname = normalizeText(tutorInfoData.nickname);
+        let students = [];
+
+        if (canonicalNickname) {
+            try {
+                const list = await fetchStudentsByAlias(canonicalNickname);
+                anyFetchSucceeded = true;
+                students = mergeStudents(students, list, canonicalNickname);
+                if (list.length > 0) {
+                    localStorage.setItem(TUTOR_NAME_ALIAS_CACHE_KEY, canonicalNickname);
+                }
+            } catch (_) {
+                // canonical nickname 조회 실패 시 alias fallback 진행
+            }
+        }
+
+        // fallback: nickname으로 0건일 때만 이름/캐시 alias로 재시도 (레거시/불일치 구간 대응)
+        if (students.length === 0) {
+            const fallbackAliases = tutorNameCandidates.filter(name => name !== canonicalNickname);
+            for (const tutorName of fallbackAliases) {
+                try {
+                    const list = await fetchStudentsByAlias(tutorName);
+                    anyFetchSucceeded = true;
+                    students = mergeStudents(students, list, tutorName);
+                    if (list.length > 0) {
+                        localStorage.setItem(TUTOR_NAME_ALIAS_CACHE_KEY, tutorName);
+                    }
+                } catch (_) {
+                    // 한 alias 조회 실패가 전체 실패가 되지 않도록 다음 후보를 계속 시도
+                }
+            }
+        }
+
+        window.myStudentsList = students;
 
         tbody.innerHTML = '';
         if (!students || students.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">배정된 학생이 없습니다.</td></tr>';
+            const detailMsg = anyFetchSucceeded
+                ? '배정된 학생이 없습니다. 닉네임 변경 이력이 있다면 관리자에게 재매칭(튜터명 동기화)을 요청해주세요.'
+                : '학생 목록 조회에 실패했습니다. 잠시 후 다시 시도해주세요.';
+            tbody.innerHTML = `<tr><td colspan="5" class="empty-msg">${detailMsg}</td></tr>`;
             return;
         }
         
+        students.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
         students.forEach(s => {
             // 💡 [수정] 백엔드에서 주는 최신 계산식 티어를 받아서 렌더링
             let tier = (s.tier || 'FREE').toUpperCase();
@@ -449,6 +565,13 @@ window.loadMyStudents = async function() {
             if (tier === 'PRO') tierClass = 'tier-pro';
             else if (tier === 'STANDARD') tierClass = 'tier-standard';
             else if (tier === 'BASIC') tierClass = 'tier-basic';
+            const studentId = String(s.userid || s.userId || '').trim();
+            if (!studentId) return;
+            const matchedAlias = normalizeText(s._matchedTutorAlias);
+            const needsAliasSync = (!canonicalNickname && !!matchedAlias) || (!!canonicalNickname && !!matchedAlias && canonicalNickname !== matchedAlias);
+            const manageButtons = needsAliasSync
+                ? `<span style="font-size:0.78rem; color:#b45309; font-weight:700;">튜터명 동기화 필요</span>`
+                : `<button class="manage-btn" onclick="goToStudentDetail('${studentId}')">상세관리</button><button class="manage-btn" style="color:#ef4444; border-color:#fca5a5; margin-left:5px; background:#fef2f2;" onclick="openUrgentModal('${studentId}', '${escapeHtml(s.name)}')">긴급</button>`;
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -456,17 +579,25 @@ window.loadMyStudents = async function() {
                 <td data-label="학교">${escapeHtml(s.school || '-')}</td>
                 <td data-label="연락처">${escapeHtml(s.phone || '-')}</td>
                 <td data-label="유료 등급"><span class="tier-badge ${tierClass}">${tier}</span></td>
-                <td data-label="관리"><button class="manage-btn" onclick="goToStudentDetail('${s.userid}')">상세관리</button><button class="manage-btn" style="color:#ef4444; border-color:#fca5a5; margin-left:5px; background:#fef2f2;" onclick="openUrgentModal('${s.userid}', '${escapeHtml(s.name)}')">긴급</button></td>
+                <td data-label="관리">${manageButtons}</td>
             `;
             tbody.appendChild(tr);
         });
 
+        if (!tbody.children.length) {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">학생 식별자 데이터가 없어 목록을 표시할 수 없습니다.</td></tr>';
+        }
+
     } catch (e) {
-        if (e.message !== "Auth expired") tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">데이터를 불러오지 못했습니다.</td></tr>';
+        if (e.message !== "Auth expired") {
+            const msg = escapeHtml(e.message || '데이터를 불러오지 못했습니다.');
+            tbody.innerHTML = `<tr><td colspan="5" class="empty-msg">${msg}</td></tr>`;
+        }
     }
 }
 
 window.goToStudentDetail = function(studentId) { 
+    if (!studentId) return alert("학생 식별자 정보가 없습니다.");
     window.location.href = `/admin/detail?uid=${studentId}`; 
 }
 
@@ -651,20 +782,26 @@ window.handleNoteCategoryChange = function() {
 };
 
 // 3. 작성 모달 열기 (학생 리스트 렌더링 포함)
-window.openTutorNoteModal = function() {
+window.openTutorNoteModal = async function() {
     document.getElementById('tutorNoteModal').classList.remove('hidden');
     document.getElementById('noteCategory').value = 'student';
     document.getElementById('noteTitle').value = '';
     document.getElementById('noteContent').value = '';
     handleNoteCategoryChange();
 
+    if (!Array.isArray(window.myStudentsList) || window.myStudentsList.length === 0) {
+        try { await window.loadMyStudents(); } catch (_) {}
+    }
+
     const select = document.getElementById('noteTargetStudent');
     select.innerHTML = '<option value="">학생을 선택해주세요</option>';
     
     if (window.myStudentsList && window.myStudentsList.length > 0) {
         window.myStudentsList.forEach(s => {
+            const sid = String(s.userid || s.userId || '').trim();
+            if (!sid) return;
             const opt = document.createElement('option');
-            opt.value = s.userid;
+            opt.value = sid;
             opt.textContent = `${s.name} (${s.school || '학교미상'})`;
             select.appendChild(opt);
         });
