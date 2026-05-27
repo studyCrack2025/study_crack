@@ -143,7 +143,8 @@ function closeCsvExportModal() {
 }
 
 function toggleAllCsvCols(checked) {
-    document.querySelectorAll('#csvColCheckboxList input.csv-col').forEach(el => { el.checked = checked; });
+    document.querySelectorAll('#csvColCheckboxList input.csv-col, #csvColCheckboxList input.csv-exam, #csvColCheckboxList input.csv-subj')
+        .forEach(el => { el.checked = checked; });
 }
 
 function formatCreatedAtDateOnly(value) {
@@ -206,22 +207,46 @@ function executeExportStudentsToCSV() {
         }
     });
 
+    // 시험 / 과목 선택 (성적 영역) — 둘 다 1개 이상 체크되어야 성적 컬럼이 들어감
     const EXAM_NAMES = { mar: '3월학평', apr: '4월학평', may: '5월학평', jun: '6월모평', jul: '7월학평', sep: '9월모평', oct: '10월학평', csat: '수능' };
     const EXAM_ORDER = ['mar', 'apr', 'may', 'jun', 'jul', 'sep', 'oct', 'csat'];
-    const includeQuantitative = selected.has('quantitative');
-    let activeExams = [];
 
-    if (includeQuantitative) {
-        activeExams = EXAM_ORDER.filter(k => currentStudentList.some(s => s.quantitative && s.quantitative[k]));
-        for (const examKey of activeExams) {
-            const p = EXAM_NAMES[examKey] || examKey;
-            headers.push(
-                `${p}_국어_선택과목`, `${p}_국어_표준점수`, `${p}_국어_등급`,
-                `${p}_수학_선택과목`, `${p}_수학_표준점수`, `${p}_수학_등급`,
-                `${p}_영어_등급`, `${p}_한국사_등급`,
-                `${p}_탐구1_과목명`, `${p}_탐구1_표준점수`, `${p}_탐구1_등급`,
-                `${p}_탐구2_과목명`, `${p}_탐구2_표준점수`, `${p}_탐구2_등급`
-            );
+    // 과목별 컬럼 정의: subjKey → [컬럼 라벨, 값 추출 함수] 배열
+    const SUBJECT_COLS = {
+        kor:  [['국어_선택과목',  d => d.kor?.opt  || ''], ['국어_표준점수',  d => d.kor?.std  || ''], ['국어_등급',  d => d.kor?.grd  || '']],
+        math: [['수학_선택과목',  d => d.math?.opt || ''], ['수학_표준점수',  d => d.math?.std || ''], ['수학_등급',  d => d.math?.grd || '']],
+        eng:  [['영어_등급',      d => d.eng?.grd  || '']],
+        hist: [['한국사_등급',    d => d.hist?.grd || '']],
+        inq1: [['탐구1_과목명',   d => d.inq1?.name|| ''], ['탐구1_표준점수', d => d.inq1?.std || ''], ['탐구1_등급', d => d.inq1?.grd || '']],
+        inq2: [['탐구2_과목명',   d => d.inq2?.name|| ''], ['탐구2_표준점수', d => d.inq2?.std || ''], ['탐구2_등급', d => d.inq2?.grd || '']],
+    };
+    const SUBJECT_ORDER = ['kor', 'math', 'eng', 'hist', 'inq1', 'inq2'];
+
+    const selectedExams = new Set(
+        Array.from(document.querySelectorAll('#csvColCheckboxList input.csv-exam:checked')).map(el => el.value)
+    );
+    const selectedSubjects = new Set(
+        Array.from(document.querySelectorAll('#csvColCheckboxList input.csv-subj:checked')).map(el => el.value)
+    );
+
+    // 실제 데이터가 있는 시험만 추리되, 선택된 시험에 한해서만
+    const activeExams = EXAM_ORDER.filter(k =>
+        selectedExams.has(k) && currentStudentList.some(s => s.quantitative && s.quantitative[k])
+    );
+    const activeSubjects = SUBJECT_ORDER.filter(k => selectedSubjects.has(k));
+
+    // 시험 × 과목 조합으로 헤더/getter 생성
+    const examColGetters = []; // [(student) => value, ...] 순서대로
+    for (const examKey of activeExams) {
+        const examName = EXAM_NAMES[examKey] || examKey;
+        for (const subjKey of activeSubjects) {
+            for (const [label, valueFn] of SUBJECT_COLS[subjKey]) {
+                headers.push(`${examName}_${label}`);
+                examColGetters.push(s => {
+                    const d = s.quantitative?.[examKey];
+                    return d ? valueFn(d) : '';
+                });
+            }
         }
     }
 
@@ -232,23 +257,7 @@ function executeExportStudentsToCSV() {
 
     const rows = currentStudentList.map(s => {
         const row = rowGetters.map(fn => fn(s));
-        if (includeQuantitative) {
-            for (const examKey of activeExams) {
-                const d = s.quantitative?.[examKey];
-                if (!d) {
-                    for (let i = 0; i < 14; i++) row.push('');
-                } else {
-                    row.push(
-                        d.kor?.opt  || '', d.kor?.std  || '', d.kor?.grd  || '',
-                        d.math?.opt || '', d.math?.std || '', d.math?.grd || '',
-                        d.eng?.grd  || '',
-                        d.hist?.grd || '',
-                        d.inq1?.name || '', d.inq1?.std || '', d.inq1?.grd || '',
-                        d.inq2?.name || '', d.inq2?.std || '', d.inq2?.grd || ''
-                    );
-                }
-            }
-        }
+        for (const fn of examColGetters) row.push(fn(s));
         return row;
     });
 

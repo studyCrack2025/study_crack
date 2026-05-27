@@ -536,8 +536,22 @@
                 <label><input type="checkbox" class="csv-col" value="qual_stream"> 희망 계열</label>
                 <label><input type="checkbox" class="csv-col" value="qual_benefits"> 얻고 싶은 점</label>
                 <label><input type="checkbox" class="csv-col" value="qual_questions"> 입시 고민/질문</label>
-                <label style="grid-column: 1 / -1; border-top: 1px solid #e2e8f0; padding-top: 10px; font-weight: bold; color: #475569;">— 성적(quantitative) —</label>
-                <label style="grid-column: 1 / -1;"><input type="checkbox" class="csv-col" value="quantitative" checked> 시험별 성적 전체 (국/수/영/한/탐구 14컬럼 × 시험)</label>
+                <label style="grid-column: 1 / -1; border-top: 1px solid #e2e8f0; padding-top: 10px; font-weight: bold; color: #475569;">— 성적: 시험 선택 —</label>
+                <label><input type="checkbox" class="csv-exam" value="mar" checked> 3월학평</label>
+                <label><input type="checkbox" class="csv-exam" value="apr" checked> 4월학평</label>
+                <label><input type="checkbox" class="csv-exam" value="may" checked> 5월학평</label>
+                <label><input type="checkbox" class="csv-exam" value="jun" checked> 6월모평</label>
+                <label><input type="checkbox" class="csv-exam" value="jul" checked> 7월학평</label>
+                <label><input type="checkbox" class="csv-exam" value="sep" checked> 9월모평</label>
+                <label><input type="checkbox" class="csv-exam" value="oct" checked> 10월학평</label>
+                <label><input type="checkbox" class="csv-exam" value="csat" checked> 수능</label>
+                <label style="grid-column: 1 / -1; border-top: 1px solid #e2e8f0; padding-top: 10px; font-weight: bold; color: #475569;">— 성적: 과목 선택 —</label>
+                <label><input type="checkbox" class="csv-subj" value="kor"  checked> 국어 (선택과목/표준/등급)</label>
+                <label><input type="checkbox" class="csv-subj" value="math" checked> 수학 (선택과목/표준/등급)</label>
+                <label><input type="checkbox" class="csv-subj" value="eng"  checked> 영어 (등급)</label>
+                <label><input type="checkbox" class="csv-subj" value="hist" checked> 한국사 (등급)</label>
+                <label><input type="checkbox" class="csv-subj" value="inq1" checked> 탐구1 (과목명/표준/등급)</label>
+                <label><input type="checkbox" class="csv-subj" value="inq2" checked> 탐구2 (과목명/표준/등급)</label>
             </div>
 
             <button style="width: 100%; padding: 14px; margin-top: 18px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer;" onclick="executeExportStudentsToCSV()">
@@ -555,7 +569,7 @@
     <script src="/js/auth.js?v=20260526b"></script>
     <script src="/js/admin_ui.js?v=20260524c"></script>
     <script src="/js/admin/stats.js?v=20260526a"></script>
-    <script src="/js/admin/students.js?v=20260527a"></script>
+    <script src="/js/admin/students.js?v=20260527b"></script>
     <script src="/js/admin/qna.js?v=20260524c"></script>
     <script src="/js/admin/tutors.js?v=20260524c"></script>
     <script src="/js/admin/notices.js?v=20260524c"></script>
