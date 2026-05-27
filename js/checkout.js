@@ -9,6 +9,19 @@ const TIER_DATA = {
 
 let checkoutData = null;
 
+function toYyyyMmDd(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}${m}${d}`;
+}
+
+function getVbankExpDate(daysAhead = 7) {
+    const dt = new Date();
+    dt.setDate(dt.getDate() + daysAhead);
+    return toYyyyMmDd(dt);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // 2. payment.js에서 넘어온 데이터 불러오기
     const dataStr = localStorage.getItem('checkoutData');
@@ -94,36 +107,58 @@ function submitCheckout() {
         window.location.href = '/payment';
         return;
     }
+    const amount = Number(checkoutData.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+        alert("결제 금액 정보가 올바르지 않습니다. 다시 결제를 진행해주세요.");
+        window.location.href = '/payment';
+        return;
+    }
 
     isPaymentInProgress = true;
     const payBtn = document.getElementById('btnFinalPay') || document.querySelector('.btn-checkout');
     if (payBtn) { payBtn.disabled = true; payBtn.style.opacity = '0.6'; }
 
     try {
-        AUTHNICE.requestPay({
-        clientId:   CONFIG.nicepay.clientId,
-        method:     selectedMethod.value,
-        orderId:    checkoutData.orderId,
-        amount:     checkoutData.amount,
-        goodsName:  `스터디크랙 ${checkoutData.productName} 이용권`,
-        buyerName:  checkoutData.name,
-        buyerEmail: checkoutData.email,
-        buyerTel:   checkoutData.phone,
-        returnUrl:  CONFIG.api.payment_return,
-        mallReserved: JSON.stringify({
+        const mallReserved = {
             userId:             checkoutData.userId,
             tier:               checkoutData.tier,
             productName:        checkoutData.productName,
+            orderId:            checkoutData.orderId,
+            amount:             amount,
+            payMethod:          selectedMethod.value,
+            isTestPayment:      !!checkoutData.isTestPayment,
+            testPayMode:        checkoutData.testPayMode || null,
+            testPayForced:      !!checkoutData.testPayForced,
             effectiveStartDate: checkoutData.effectiveStartDate,
             siteOrigin:         window.location.origin
-        }),
-        fnError: function(result) {
-            console.error('[NicePay Error]', result);
-            isPaymentInProgress = false;
-            if (payBtn) { payBtn.disabled = false; payBtn.style.opacity = '1'; }
-            alert('결제 창 오류: ' + (result.errorMsg || '알 수 없는 오류'));
+        };
+
+        const requestPayload = {
+            clientId:   CONFIG.nicepay.clientId,
+            method:     selectedMethod.value,
+            orderId:    checkoutData.orderId,
+            amount:     amount,
+            goodsName:  `스터디크랙 ${checkoutData.productName} 이용권`,
+            buyerName:  checkoutData.name,
+            buyerEmail: checkoutData.email,
+            buyerTel:   checkoutData.phone,
+            returnUrl:  CONFIG.api.payment_return,
+            mallReserved: JSON.stringify(mallReserved),
+            fnError: function(result) {
+                console.error('[NicePay Error]', result);
+                isPaymentInProgress = false;
+                if (payBtn) { payBtn.disabled = false; payBtn.style.opacity = '1'; }
+                alert('결제 창 오류: ' + (result.errorMsg || '알 수 없는 오류'));
+            }
+        };
+
+        if (selectedMethod.value === 'vbank') {
+            requestPayload.vbankHolder = checkoutData.name;
+            requestPayload.vbankExpDate = getVbankExpDate(7);
+            requestPayload.vbankValidHours = 168;
         }
-    });
+
+        AUTHNICE.requestPay(requestPayload);
     } catch (error) {
         isPaymentInProgress = false;
         if (payBtn) { payBtn.disabled = false; payBtn.style.opacity = '1'; }

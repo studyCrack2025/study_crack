@@ -605,6 +605,8 @@ function processPayment() {
         productName: isTestPayment ? `${selectedProductName} (테스트 결제)` : selectedProductName,
         requestedTier: selectedTier,
         isTestPayment,
+        testPayMode: isTestPayment ? (TEST_PAY_MODE || '0') : null,
+        testPayForced: isTestPayment && FORCE_TEST_PAYMENT,
         name: name,
         phone: formattedPhone,
         email: email,
