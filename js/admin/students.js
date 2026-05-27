@@ -127,61 +127,132 @@ function getStudentTierText(s) {
     return (s.currentSubscription.tier || 'FREE').toUpperCase();
 }
 
-// 현재 검색 결과를 CSV로 내보내기
+// CSV 컬럼 선택 모달 열기
 function exportStudentsToCSV() {
     if (!currentStudentList || currentStudentList.length === 0) {
         alert("내보낼 학생 데이터가 없습니다. 먼저 검색을 실행해 주세요.");
         return;
     }
+    const countEl = document.getElementById('csvExportTargetCount');
+    if (countEl) countEl.innerText = currentStudentList.length;
+    document.getElementById('csvExport-modal')?.classList.remove('hidden');
+}
+
+function closeCsvExportModal() {
+    document.getElementById('csvExport-modal')?.classList.add('hidden');
+}
+
+function toggleAllCsvCols(checked) {
+    document.querySelectorAll('#csvColCheckboxList input.csv-col').forEach(el => { el.checked = checked; });
+}
+
+function formatCreatedAtDateOnly(value) {
+    if (!value) return '';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return String(value).slice(0, 10);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+function formatMarketingAgreed(v) {
+    if (v === true || v === 'true' || v === 1 || v === '1') return 'Y';
+    if (v === false || v === 'false' || v === 0 || v === '0') return 'N';
+    return '';
+}
+
+// 체크박스 선택 결과로 실제 CSV 생성
+function executeExportStudentsToCSV() {
+    if (!currentStudentList || currentStudentList.length === 0) {
+        alert("내보낼 학생 데이터가 없습니다.");
+        closeCsvExportModal();
+        return;
+    }
+
+    const selected = new Set(
+        Array.from(document.querySelectorAll('#csvColCheckboxList input.csv-col:checked')).map(el => el.value)
+    );
+    if (selected.size === 0) {
+        alert("최소 1개 이상의 항목을 선택해주세요.");
+        return;
+    }
+
+    const SIMPLE_COLS = [
+        { key: 'name',             header: '이름',            get: s => s.name  || '' },
+        { key: 'email',            header: '이메일',          get: s => s.email || '' },
+        { key: 'phone',            header: '전화번호',        get: s => s.phone || '' },
+        { key: 'createdAt',        header: '가입일자',        get: s => formatCreatedAtDateOnly(s.createdAt) },
+        { key: 'grade',            header: '학년',            get: s => s.grade || '' },
+        { key: 'school',           header: '학교',            get: s => s.school || '' },
+        { key: 'major',            header: '희망 전공',       get: s => s.major || '' },
+        { key: 'tier',             header: '유료등급',        get: s => getStudentTierText(s) },
+        { key: 'mbti',             header: 'MBTI',            get: s => decodePromoCodeToMbti(s.promoCode) || '' },
+        { key: 'marketingAgreed',  header: '마케팅 수신동의', get: s => formatMarketingAgreed(s.marketingAgreed) },
+        { key: 'qual_status',      header: '설문_학년상태',   get: s => s.qualitative?.status   || '' },
+        { key: 'qual_school',      header: '설문_출신학교',   get: s => s.qualitative?.school   || '' },
+        { key: 'qual_stream',      header: '설문_희망계열',   get: s => s.qualitative?.stream   || '' },
+        { key: 'qual_benefits',    header: '설문_얻고싶은점', get: s => s.qualitative?.benefits || '' },
+        { key: 'qual_questions',   header: '설문_입시고민',   get: s => s.qualitative?.questions|| '' },
+    ];
+
+    const headers = [];
+    const rowGetters = [];
+
+    SIMPLE_COLS.forEach(col => {
+        if (selected.has(col.key)) {
+            headers.push(col.header);
+            rowGetters.push(col.get);
+        }
+    });
 
     const EXAM_NAMES = { mar: '3월학평', apr: '4월학평', may: '5월학평', jun: '6월모평', jul: '7월학평', sep: '9월모평', oct: '10월학평', csat: '수능' };
     const EXAM_ORDER = ['mar', 'apr', 'may', 'jun', 'jul', 'sep', 'oct', 'csat'];
+    const includeQuantitative = selected.has('quantitative');
+    let activeExams = [];
 
-    const activeExams = EXAM_ORDER.filter(k => currentStudentList.some(s => s.quantitative && s.quantitative[k]));
+    if (includeQuantitative) {
+        activeExams = EXAM_ORDER.filter(k => currentStudentList.some(s => s.quantitative && s.quantitative[k]));
+        for (const examKey of activeExams) {
+            const p = EXAM_NAMES[examKey] || examKey;
+            headers.push(
+                `${p}_국어_선택과목`, `${p}_국어_표준점수`, `${p}_국어_등급`,
+                `${p}_수학_선택과목`, `${p}_수학_표준점수`, `${p}_수학_등급`,
+                `${p}_영어_등급`, `${p}_한국사_등급`,
+                `${p}_탐구1_과목명`, `${p}_탐구1_표준점수`, `${p}_탐구1_등급`,
+                `${p}_탐구2_과목명`, `${p}_탐구2_표준점수`, `${p}_탐구2_등급`
+            );
+        }
+    }
 
-    const headers = ['이름', '이메일', '전화번호', '유료등급', 'MBTI'];
-
-    for (const examKey of activeExams) {
-        const p = EXAM_NAMES[examKey] || examKey;
-        headers.push(
-            `${p}_국어_선택과목`, `${p}_국어_표준점수`, `${p}_국어_등급`,
-            `${p}_수학_선택과목`, `${p}_수학_표준점수`, `${p}_수학_등급`,
-            `${p}_영어_등급`, `${p}_한국사_등급`,
-            `${p}_탐구1_과목명`, `${p}_탐구1_표준점수`, `${p}_탐구1_등급`,
-            `${p}_탐구2_과목명`, `${p}_탐구2_표준점수`, `${p}_탐구2_등급`
-        );
+    if (headers.length === 0) {
+        alert("최소 1개 이상의 항목을 선택해주세요.");
+        return;
     }
 
     const rows = currentStudentList.map(s => {
-        const base = [
-            s.name  || '',
-            s.email || '',
-            s.phone || '',
-            getStudentTierText(s),
-            decodePromoCodeToMbti(s.promoCode) || ''
-        ];
-
-        const examCols = [];
-        for (const examKey of activeExams) {
-            const d = s.quantitative?.[examKey];
-            if (!d) {
-                for (let i = 0; i < 14; i++) examCols.push('');
-            } else {
-                examCols.push(
-                    d.kor?.opt  || '', d.kor?.std  || '', d.kor?.grd  || '',
-                    d.math?.opt || '', d.math?.std || '', d.math?.grd || '',
-                    d.eng?.grd  || '',
-                    d.hist?.grd || '',
-                    d.inq1?.name || '', d.inq1?.std || '', d.inq1?.grd || '',
-                    d.inq2?.name || '', d.inq2?.std || '', d.inq2?.grd || ''
-                );
+        const row = rowGetters.map(fn => fn(s));
+        if (includeQuantitative) {
+            for (const examKey of activeExams) {
+                const d = s.quantitative?.[examKey];
+                if (!d) {
+                    for (let i = 0; i < 14; i++) row.push('');
+                } else {
+                    row.push(
+                        d.kor?.opt  || '', d.kor?.std  || '', d.kor?.grd  || '',
+                        d.math?.opt || '', d.math?.std || '', d.math?.grd || '',
+                        d.eng?.grd  || '',
+                        d.hist?.grd || '',
+                        d.inq1?.name || '', d.inq1?.std || '', d.inq1?.grd || '',
+                        d.inq2?.name || '', d.inq2?.std || '', d.inq2?.grd || ''
+                    );
+                }
             }
         }
-
-        return [...base, ...examCols];
+        return row;
     });
 
-    const csvEscape = val => `"${String(val).replace(/"/g, '""')}"`;
+    const csvEscape = val => `"${String(val ?? '').replace(/"/g, '""')}"`;
     const csvContent = [headers, ...rows].map(row => row.map(csvEscape).join(',')).join('\r\n');
 
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -193,6 +264,8 @@ function exportStudentsToCSV() {
     a.download = `studycrack_students_${dateStr}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+
+    closeCsvExportModal();
 }
 
 // 새로운 구독 스키마 기반 등급 뱃지 함수

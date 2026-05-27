@@ -505,6 +505,46 @@
             </button>
         </div>
     </div>
+
+    <div id="csvExport-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 560px;">
+            <span class="close-btn" onclick="closeCsvExportModal()">&times;</span>
+            <h3 style="color: #10b981; margin-top: 0;"><i class="fas fa-file-csv"></i> CSV 내보내기 항목 선택</h3>
+            <p style="font-size: 0.9rem; color: #475569; margin-bottom: 16px;">
+                내보낼 컬럼을 선택하세요. 현재 검색 결과 <strong><span id="csvExportTargetCount">0</span>명</strong>이 대상입니다.
+            </p>
+
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <button type="button" onclick="toggleAllCsvCols(true)" style="flex:1; padding:8px; background:#e2e8f0; border:none; border-radius:6px; font-size:0.85rem; cursor:pointer;">전체 선택</button>
+                <button type="button" onclick="toggleAllCsvCols(false)" style="flex:1; padding:8px; background:#e2e8f0; border:none; border-radius:6px; font-size:0.85rem; cursor:pointer;">전체 해제</button>
+            </div>
+
+            <div id="csvColCheckboxList" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; padding: 14px; background: #f8fafc; border-radius: 8px; max-height: 360px; overflow-y: auto; font-size: 0.92rem;">
+                <label><input type="checkbox" class="csv-col" value="name" checked> 이름</label>
+                <label><input type="checkbox" class="csv-col" value="email" checked> 이메일</label>
+                <label><input type="checkbox" class="csv-col" value="phone" checked> 전화번호</label>
+                <label><input type="checkbox" class="csv-col" value="createdAt"> 가입일자</label>
+                <label><input type="checkbox" class="csv-col" value="grade"> 학년</label>
+                <label><input type="checkbox" class="csv-col" value="school"> 학교</label>
+                <label><input type="checkbox" class="csv-col" value="major"> 희망 전공</label>
+                <label><input type="checkbox" class="csv-col" value="tier" checked> 유료등급</label>
+                <label><input type="checkbox" class="csv-col" value="mbti" checked> MBTI</label>
+                <label><input type="checkbox" class="csv-col" value="marketingAgreed"> 마케팅 수신동의</label>
+                <label style="grid-column: 1 / -1; border-top: 1px solid #e2e8f0; padding-top: 10px; font-weight: bold; color: #475569;">— 설문(qualitative) —</label>
+                <label><input type="checkbox" class="csv-col" value="qual_status"> 학년 상태</label>
+                <label><input type="checkbox" class="csv-col" value="qual_school"> 출신 학교</label>
+                <label><input type="checkbox" class="csv-col" value="qual_stream"> 희망 계열</label>
+                <label><input type="checkbox" class="csv-col" value="qual_benefits"> 얻고 싶은 점</label>
+                <label><input type="checkbox" class="csv-col" value="qual_questions"> 입시 고민/질문</label>
+                <label style="grid-column: 1 / -1; border-top: 1px solid #e2e8f0; padding-top: 10px; font-weight: bold; color: #475569;">— 성적(quantitative) —</label>
+                <label style="grid-column: 1 / -1;"><input type="checkbox" class="csv-col" value="quantitative" checked> 시험별 성적 전체 (국/수/영/한/탐구 14컬럼 × 시험)</label>
+            </div>
+
+            <button style="width: 100%; padding: 14px; margin-top: 18px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer;" onclick="executeExportStudentsToCSV()">
+                <i class="fas fa-download"></i> 선택한 항목으로 내보내기
+            </button>
+        </div>
+    </div>
     </main>
 </div>
 
