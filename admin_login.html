@@ -188,8 +188,40 @@
             } catch (e) {
                 // stale 쿠키 제거 실패는 치명적이지 않음
             }
-            // refreshToken은 fallback 보관 (필요 시 auth.js의 refresh 경로에서 사용)
-            localStorage.setItem('refreshToken', refreshToken);
+
+            // 4. /admin 이동 전에 HttpOnly 쿠키(rt, at)를 미리 설치
+            //    이걸 안 하면 /admin 진입 직후 병렬 API 5~6건이 모두 401 → refresh 폴백 진입
+            //    → 콘솔에 401 다수 출력 + 쿠키 propagation 지연 시 간헐적 로그아웃 유발
+            let cookieRegistered = false;
+            try {
+                const regRes = await fetch(CONFIG.api.auth, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken })
+                });
+                cookieRegistered = regRes.ok;
+            } catch (e) {
+                cookieRegistered = false;
+            }
+
+            if (cookieRegistered) {
+                // at 쿠키도 같이 발급받아 다음 페이지의 첫 API 콜부터 정상 통과시킨다
+                try {
+                    await fetch(CONFIG.api.auth, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ type: 'silent_refresh' })
+                    });
+                } catch (e) {
+                    // silent_refresh 실패해도 /admin에서 401 → tryRefreshToken으로 복구 가능
+                }
+                localStorage.removeItem('refreshToken');
+            } else {
+                // 쿠키 등록 실패 시에만 fallback으로 localStorage에 refreshToken 보관
+                localStorage.setItem('refreshToken', refreshToken);
+            }
 
             alert("관리자 인증이 완료되었습니다.");
             window.location.href = '/admin';
