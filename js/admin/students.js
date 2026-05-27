@@ -163,6 +163,12 @@ function formatMarketingAgreed(v) {
     return '';
 }
 
+// qualitative.targets 같은 배열 필드 → "값1 | 값2 | 값3" 형태로 조인 (빈 문자열은 제외)
+function joinQualList(arr) {
+    if (!Array.isArray(arr)) return '';
+    return arr.map(v => String(v ?? '').trim()).filter(v => v.length > 0).join(' | ');
+}
+
 // 체크박스 선택 결과로 실제 CSV 생성
 function executeExportStudentsToCSV() {
     if (!currentStudentList || currentStudentList.length === 0) {
@@ -197,6 +203,29 @@ function executeExportStudentsToCSV() {
         { key: 'qual_questions',   header: '설문_입시고민',   get: s => s.qualitative?.questions|| '' },
     ];
 
+    // 구버전 qualitative (2026-05 이전 가입자) — 한 체크박스(qual_legacy_all)로 18컬럼 일괄 출력
+    const LEGACY_QUAL_COLS = [
+        { header: '설문_희망진로',         get: s => s.qualitative?.career || '' },
+        { header: '설문_목표대학리스트',   get: s => joinQualList(s.qualitative?.targets) },
+        { header: '설문_후보_가군',        get: s => s.qualitative?.candidates?.ga    || '' },
+        { header: '설문_후보_나군',        get: s => s.qualitative?.candidates?.na    || '' },
+        { header: '설문_후보_다군',        get: s => s.qualitative?.candidates?.da    || '' },
+        { header: '설문_가장가고싶은대학', get: s => s.qualitative?.candidates?.most  || '' },
+        { header: '설문_덜가고싶은대학',   get: s => s.qualitative?.candidates?.least || '' },
+        { header: '설문_본인결정대학',     get: s => s.qualitative?.candidates?.self  || '' },
+        { header: '설문_부모님영향',       get: s => s.qualitative?.parents?.influence|| '' },
+        { header: '설문_부모님의견',       get: s => s.qualitative?.parents?.opinion  || '' },
+        { header: '설문_편입의향',         get: s => s.qualitative?.special?.transfer || '' },
+        { header: '설문_교직이수',         get: s => s.qualitative?.special?.teaching || '' },
+        { header: '설문_특이사항기타',     get: s => s.qualitative?.special?.etc      || '' },
+        { header: '가치관_우선순위',       get: s => s.qualitative?.values?.priority  || '' },
+        { header: '가치관_희망지역',       get: s => s.qualitative?.values?.region    || '' },
+        { header: '가치관_반드시',         get: s => s.qualitative?.values?.mustGo    || '' },
+        { header: '가치관_전략',           get: s => s.qualitative?.values?.strategy  || '' },
+        { header: '가치관_교차지원',       get: s => s.qualitative?.values?.cross     || '' },
+        { header: '가치관_최악시나리오',   get: s => s.qualitative?.values?.worst     || '' },
+    ];
+
     const headers = [];
     const rowGetters = [];
 
@@ -206,6 +235,14 @@ function executeExportStudentsToCSV() {
             rowGetters.push(col.get);
         }
     });
+
+    // 구버전 설문 전체 — 단일 체크박스로 18컬럼 일괄 추가
+    if (selected.has('qual_legacy_all')) {
+        LEGACY_QUAL_COLS.forEach(col => {
+            headers.push(col.header);
+            rowGetters.push(col.get);
+        });
+    }
 
     // 시험 / 과목 선택 (성적 영역) — 둘 다 1개 이상 체크되어야 성적 컬럼이 들어감
     const EXAM_NAMES = { mar: '3월학평', apr: '4월학평', may: '5월학평', jun: '6월모평', jul: '7월학평', sep: '9월모평', oct: '10월학평', csat: '수능' };
