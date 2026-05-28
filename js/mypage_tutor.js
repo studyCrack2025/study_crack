@@ -193,7 +193,7 @@ async function loadTutorInfo(userId) {
     try {
         const res = await apiFetch(TUTOR_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'tutor_get_user', userId: userId })
+            body: JSON.stringify({ type: 'tutor_get_profile', userId: userId })
         });
         
         let rawData = await res.json();
