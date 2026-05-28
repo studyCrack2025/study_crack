@@ -151,7 +151,7 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ type: 'get_user' })
+            body: JSON.stringify({ type: 'get_login_profile' })
         });
 
         if (userRes.ok) {

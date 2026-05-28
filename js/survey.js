@@ -409,7 +409,7 @@ async function fetchUserData(userId) {
         // 💡 apiFetch 적용
         const response = await apiFetch(USER_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'get_user' })
+            body: JSON.stringify({ type: 'get_user_analysis' })
         });
         const data = await response.json();
 
