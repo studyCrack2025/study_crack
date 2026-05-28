@@ -191,7 +191,7 @@ function executeExportStudentsToCSV() {
         { key: 'phone',            header: '전화번호',        get: s => s.phone || '' },
         { key: 'createdAt',        header: '가입일자',        get: s => formatCreatedAtDateOnly(s.createdAt) },
         { key: 'grade',            header: '학년',            get: s => s.grade || '' },
-        { key: 'school',           header: '학교',            get: s => s.school || '' },
+        // 학교는 설문_출신학교(qual_school)와 동일 값이 되어 중복 — 컬럼 제거. CSV는 'qual_school' 컬럼을 사용.
         { key: 'major',            header: '희망 전공',       get: s => s.major || '' },
         { key: 'tier',             header: '유료등급',        get: s => getStudentTierText(s) },
         { key: 'mbti',             header: 'MBTI',            get: s => decodePromoCodeToMbti(s.promoCode) || '' },
