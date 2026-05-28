@@ -92,13 +92,14 @@ function initRoleBasedView() {
         const btnPay = document.getElementById('btn-pay');
         if (btnPay) btnPay.style.display = 'none';
 
+        // 튜터에게는 사이드바의 이메일/전화/가입일 PII를 노출하지 않는다.
         const sidebarEmail = document.getElementById('viewEmail');
         if (sidebarEmail) sidebarEmail.style.display = 'none';
 
-        ['viewPhone', 'viewEmailFull', 'viewJoinDate'].forEach((id) => {
+        ['viewPhoneSide', 'viewEmailFullSide', 'viewJoinDateSide'].forEach((id) => {
             const el = document.getElementById(id);
-            const detailItem = el ? el.closest('.detail-item') : null;
-            if (detailItem) detailItem.style.display = 'none';
+            const row = el ? el.closest('.profile-meta-row') : null;
+            if (row) row.style.display = 'none';
         });
     }
 }
@@ -286,14 +287,13 @@ function renderData(s) {
     setText('viewName', s.name || '미입력');
     setText('viewEmail', s.email || '-');
     // 학교는 정성조사 출신학교(qualitative.school)를 정식 값으로 사용.
-    // 마이그레이션 fallback: 백엔드가 평탄화한 s.school을 그대로 받지만, 보수적으로 qualitative 우선 참조.
-    const resolvedSchool = (s.qualitative && s.qualitative.school) || s.school || '-';
-    setText('viewSchool', resolvedSchool);
+    const resolvedSchool = (s.qualitative && s.qualitative.school) || '-';
     setText('viewSchoolSide', resolvedSchool);
     setText('viewGradeSide', gradeText);
-    setText('viewPhone', s.phone || '-');
-    setText('viewEmailFull', s.email || '-');
-    setText('viewJoinDate', s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '-');
+    // 인적사항을 사이드바로 이전 (목표대학 탭 본문에는 더 이상 표시하지 않음)
+    setText('viewPhoneSide', s.phone || '-');
+    setText('viewEmailFullSide', s.email || '-');
+    setText('viewJoinDateSide', s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '-');
 
     const profileImg = document.getElementById('studentProfileImg');
     if(s.profileImage) profileImg.src = s.profileImage;
@@ -407,56 +407,307 @@ function renderSelectedScore() {
     container.innerHTML = html;
 }
 
+// ============================================================
+// [목표대학] 표 기반 렌더 — 환산점수/상태/과목별 효율/역추적 통합
+// ============================================================
+
+const TARGET_SUBJECT_KEYS = ['kor', 'math', 'inq1', 'inq2'];
+
+// 합격선(100점) 이하면 역추적 호출. 안정선(150점)을 넘는 경우는 굳이 +N점 계획이 의미 없음.
+function shouldRequestBacktrace(analyzeRes, simRes) {
+    const base = Number(simRes?.base_ui_score);
+    if (Number.isFinite(base) && base >= 100) return false;
+    // analyze 결과의 converted_score를 우선 신뢰
+    const conv = Number(analyzeRes?.converted_score);
+    if (Number.isFinite(conv) && conv >= 100) return false;
+    return true;
+}
+
+function subjectLabel(simRes, key) {
+    if (key === 'kor') return '국어';
+    if (key === 'math') return '수학';
+    if (key === 'inq1') return simRes?.sim_data?.inq1?.name || '탐구1';
+    if (key === 'inq2') return simRes?.sim_data?.inq2?.name || '탐구2';
+    return key;
+}
+
+function renderTargetEmptyState(container, msg) {
+    container.innerHTML = `<div class="target-univ-empty"><i class="fas fa-exclamation-circle"></i> ${msg}</div>`;
+}
+
 async function renderTargetUnivs(list, quantData) {
     const examMode = selectedTargetExamKey;
     const examLabel = EXAM_NAME_MAP[examMode] || examMode;
-    const container = document.getElementById('viewTargetUnivList');
-    container.innerHTML = '';
+    const container = document.getElementById('viewTargetUnivTable');
+    if (!container) return;
 
     const validList = [];
     list.forEach((u, originalIdx) => { if (u && u.univ) validList.push({ ...u, originalIdx }); });
-    if (validList.length === 0) { container.innerHTML = '<p style="color:#94a3b8;">설정된 목표 대학이 없습니다.</p>'; return; }
 
-    const hasMarScore = quantData && quantData[examMode] && (quantData[examMode].kor || quantData[examMode].math || quantData[examMode].eng);
+    if (validList.length === 0) {
+        renderTargetEmptyState(container, '설정된 목표 대학이 없습니다.');
+        return;
+    }
 
-    validList.forEach((u, idx) => {
-        const div = document.createElement('div'); div.className = 'target-univ-item';
-        const dateStr = u.date ? new Date(u.date).toLocaleDateString() + ' 선택' : '날짜 정보 없음';
-        const choiceNum = u.originalIdx + 1;
+    const scoreData = quantData && quantData[examMode] ? quantData[examMode] : null;
+    const hasScore = scoreData && (scoreData.kor || scoreData.math || scoreData.eng);
 
-        div.innerHTML = `
-            <div style="display:flex; flex-direction:column; gap:5px;"><strong>${choiceNum}지망. ${escapeHtml(u.univ)}</strong><div class="major">${escapeHtml(u.major)}</div></div>
-            <div class="sim-summary-box empty" id="sim-box-${idx}">${hasMarScore ? '<div style="text-align:center; padding:10px; color:#3b82f6;"><i class="fas fa-spinner fa-spin"></i> 분석 중...</div>' : `<div class="sim-exam-label" style="color:#94a3b8;"><i class="fas fa-exclamation-circle"></i> ${examLabel}</div><div style="font-size:0.8rem; color:#94a3b8; text-align:center; padding:5px 0;">성적 데이터 없음</div>`}</div>
-            <div class="date">${dateStr}</div>
-        `;
-        container.appendChild(div);
-    });
+    if (!hasScore) {
+        // 점수 데이터가 없으면 univ 헤더만 나열
+        container.innerHTML = validList.map((u) => `
+            <section class="target-univ-block target-univ-block--noscore">
+                <header class="univ-block-head">
+                    <div class="univ-block-rank">${u.originalIdx + 1}지망</div>
+                    <div class="univ-block-title">
+                        <strong>${escapeHtml(u.univ)}</strong>
+                        <span class="univ-block-major">${escapeHtml(u.major || '')}</span>
+                    </div>
+                    <span class="univ-status-badge univ-status-badge--muted">${escapeHtml(examLabel)} 성적 데이터 없음</span>
+                </header>
+            </section>
+        `).join('');
+        return;
+    }
 
-    if (!hasMarScore) return;
+    // 로딩 스켈레톤
+    container.innerHTML = validList.map((u) => `
+        <section class="target-univ-block" data-univ-idx="${u.originalIdx}">
+            <header class="univ-block-head">
+                <div class="univ-block-rank">${u.originalIdx + 1}지망</div>
+                <div class="univ-block-title">
+                    <strong>${escapeHtml(u.univ)}</strong>
+                    <span class="univ-block-major">${escapeHtml(u.major || '')}</span>
+                </div>
+                <span class="univ-status-badge univ-status-badge--loading"><i class="fas fa-spinner fa-spin"></i> 분석 중</span>
+            </header>
+            <div class="univ-block-body" id="univ-block-body-${u.originalIdx}">
+                <div class="univ-block-loading"><i class="fas fa-spinner fa-spin"></i> ${escapeHtml(examLabel)} 기준 분석 중...</div>
+            </div>
+        </section>
+    `).join('');
 
     try {
-        const res = await apiFetch(CONFIG.api.analysis, {
-            method: 'POST',
-            body: JSON.stringify({ type: 'simulate_score_rise', userId: targetUserId, targetUnivs: validList, userScores: quantData[examMode], examMode: examMode })
-        });
-        const simData = await res.json();
+        // 1) analyze + simulate 병렬 호출
+        const [analyzeRaw, simRaw] = await Promise.all([
+            apiFetch(CONFIG.api.analysis, {
+                method: 'POST',
+                body: JSON.stringify({
+                    type: 'analyze_my_targets',
+                    userId: targetUserId,
+                    targetUnivs: validList,
+                    userScores: scoreData,
+                    examMode
+                })
+            }).then(r => r.ok ? r.json() : null).catch(() => null),
+            apiFetch(CONFIG.api.analysis, {
+                method: 'POST',
+                body: JSON.stringify({
+                    type: 'simulate_score_rise',
+                    userId: targetUserId,
+                    targetUnivs: validList,
+                    userScores: scoreData,
+                    examMode
+                })
+            }).then(r => r.ok ? r.json() : null).catch(() => null)
+        ]);
 
-        validList.forEach((u, idx) => {
-            const box = document.getElementById(`sim-box-${idx}`);
-            const data = Array.isArray(simData)
-                ? simData.find(d => d && d.univ === u.univ && d.major === u.major)
-                : simData[idx];
-            if (data && typeof data.base_ui_score !== 'undefined' && data.sim_data) {
-                const currentScore = data.base_ui_score.toFixed(2);
-                let maxRise = 0; let bestSubName = '-';
-                const subjects = [{ key: 'kor', name: '국어' }, { key: 'math', name: '수학' }, { key: 'inq1', name: data.sim_data.inq1?.name || '탐구1' }, { key: 'inq2', name: data.sim_data.inq2?.name || '탐구2' }];
+        const analyzeArr = Array.isArray(analyzeRaw) ? analyzeRaw : (analyzeRaw?.results || analyzeRaw?.data || []);
+        const simArr = Array.isArray(simRaw) ? simRaw : [];
 
-                subjects.forEach(sub => { const info = data.sim_data[sub.key]; if (info && info.uiDiff > maxRise) { maxRise = info.uiDiff; bestSubName = sub.name; } });
-                box.className = 'sim-summary-box';
-                box.innerHTML = `<div class="sim-exam-label"><i class="fas fa-bolt"></i> ${examLabel} 시뮬레이션</div><div class="sim-score-row"><span>현재 환산</span><strong>${currentScore}점</strong></div><div class="sim-score-row"><span>+1점 효율</span><span class="sim-highlight">${bestSubName} (+${maxRise.toFixed(2)}점)</span></div>`;
-            } else { box.innerHTML = `<div style="font-size:0.8rem; color:#ef4444; text-align:center; padding:5px 0;"><i class="fas fa-ban" style="margin-right:4px;"></i>지원 불가 (분석 데이터 없음)</div>`; }
+        const findAnalyze = (u) => analyzeArr.find(d => d && d.univ === u.univ && d.major === u.major);
+        const findSim = (u) => simArr.find(d => d && d.univ === u.univ && d.major === u.major);
+
+        // 2) 역추적 후보(합격선 미만)만 골라 병렬 호출
+        const backtraceCandidates = validList
+            .map(u => ({ u, sim: findSim(u), analyze: findAnalyze(u) }))
+            .filter(({ u, sim, analyze }) => sim && !sim.ineligible && shouldRequestBacktrace(analyze, sim));
+
+        const backtraceMap = new Map();
+        await Promise.all(backtraceCandidates.map(async ({ u }) => {
+            try {
+                const res = await apiFetch(CONFIG.api.analysis, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        type: 'backtrace_required_raw',
+                        userId: targetUserId,
+                        targetUniv: { univ: u.univ, major: u.major },
+                        userScores: scoreData,
+                        examMode,
+                        targetUiMin: 100,
+                        targetUiMax: 150,
+                        maxTotalRaw: 20
+                    })
+                });
+                if (!res.ok) return;
+                const payload = await res.json();
+                const plan = payload?.result || payload?.backtrace_plan || null;
+                if (plan) backtraceMap.set(`${u.univ}||${u.major}`, plan);
+            } catch (_) { /* 역추적 실패는 카드별로 무시 */ }
+        }));
+
+        // 3) 최종 렌더
+        validList.forEach((u) => {
+            const block = container.querySelector(`.target-univ-block[data-univ-idx="${u.originalIdx}"]`);
+            if (!block) return;
+
+            const analyze = findAnalyze(u);
+            const sim = findSim(u);
+            const plan = backtraceMap.get(`${u.univ}||${u.major}`) || null;
+
+            renderUnivBlock(block, u, analyze, sim, plan, scoreData, examLabel);
         });
-    } catch (e) { console.error("Simulation API Error:", e); validList.forEach((u, idx) => { const box = document.getElementById(`sim-box-${idx}`); if (box) box.innerHTML = `<div style="font-size:0.8rem; color:#ef4444; text-align:center; padding:5px 0;">분석 서버 오류</div>`; }); }
+    } catch (e) {
+        console.error("[admin/detail] target univ render error:", e);
+        container.querySelectorAll('.univ-block-body').forEach(el => {
+            el.innerHTML = `<div class="univ-block-error"><i class="fas fa-exclamation-triangle"></i> 분석 서버 오류</div>`;
+        });
+        container.querySelectorAll('.univ-status-badge--loading').forEach(el => {
+            el.outerHTML = `<span class="univ-status-badge univ-status-badge--error">분석 실패</span>`;
+        });
+    }
+}
+
+function renderUnivBlock(block, u, analyze, sim, plan, scoreData, examLabel) {
+    // 헤더의 상태 배지 교체
+    const headerBadge = block.querySelector('.univ-status-badge');
+    if (headerBadge) {
+        if (sim && sim.ineligible) {
+            headerBadge.outerHTML = `<span class="univ-status-badge univ-status-badge--muted"><i class="fas fa-ban"></i> 지원 불가</span>`;
+        } else if (analyze && analyze.status) {
+            const color = analyze.color || '#64748b';
+            headerBadge.outerHTML = `<span class="univ-status-badge" style="background:${color};">${escapeHtml(analyze.status)}</span>`;
+        } else {
+            headerBadge.outerHTML = `<span class="univ-status-badge univ-status-badge--muted">데이터 부족</span>`;
+        }
+    }
+
+    const body = block.querySelector('.univ-block-body');
+    if (!body) return;
+
+    if (sim && sim.ineligible) {
+        body.innerHTML = `<div class="univ-block-msg"><i class="fas fa-ban"></i> ${escapeHtml(examLabel)} 기준으로 지원 가능 조건을 만족하지 못합니다.</div>`;
+        return;
+    }
+    if (!sim || typeof sim.base_ui_score === 'undefined') {
+        body.innerHTML = `<div class="univ-block-msg"><i class="fas fa-exclamation-circle"></i> ${escapeHtml(analyze?.msg || '분석 데이터가 없습니다.')}</div>`;
+        return;
+    }
+
+    // 환산 점수 요약
+    const baseUi = Number(sim.base_ui_score).toFixed(1);
+    const convertedScore = analyze && Number.isFinite(Number(analyze.converted_score))
+        ? Number(analyze.converted_score).toFixed(1)
+        : baseUi;
+    const convColor = analyze && analyze.color ? analyze.color : '#3b82f6';
+    const advice = analyze && analyze.msg ? escapeHtml(analyze.msg) : '';
+
+    const cutGap = (100 - Number(convertedScore)).toFixed(1);
+    const safeGap = (150 - Number(convertedScore)).toFixed(1);
+    const gapBadge = (n, label, hitColor) => {
+        const num = Number(n);
+        if (!Number.isFinite(num)) return '';
+        if (num <= 0) return `<span class="univ-gap-badge univ-gap-badge--hit">${label} 도달 (${Math.abs(num).toFixed(1)}점 초과)</span>`;
+        return `<span class="univ-gap-badge" style="--gap-color:${hitColor};">${label}까지 ${num.toFixed(1)}점</span>`;
+    };
+
+    // 과목별 표 — 현재 원점수 / 표점·등급 / +1점 효율 / 역추적 목표 / 상승폭
+    const isReachable = plan && plan.reachable === true;
+    const planBySubject = plan
+        ? (isReachable ? plan.bySubject : plan.bestEffort?.bySubject)
+        : null;
+    const planTotal = plan
+        ? Number(isReachable ? plan.minTotalRaw : plan.bestEffort?.minTotalRaw)
+        : null;
+    const planUi = plan
+        ? Number(isReachable ? plan.expected?.uiScore : plan.bestEffort?.expected?.uiScore)
+        : null;
+
+    const subjectRows = TARGET_SUBJECT_KEYS.map(key => {
+        const subInfo = sim.sim_data?.[key];
+        const scoreObj = scoreData?.[key] || {};
+        const label = subjectLabel(sim, key);
+
+        const currentRaw = Number.isFinite(parseInt(subInfo?.raw, 10))
+            ? parseInt(subInfo.raw, 10)
+            : (Number.isFinite(parseInt(scoreObj.raw, 10)) ? parseInt(scoreObj.raw, 10) : null);
+        const currentStd = subInfo?.std ?? scoreObj.std ?? null;
+        const currentGrd = subInfo?.grd ?? scoreObj.grd ?? null;
+        const uiDiff = Number(subInfo?.uiDiff);
+
+        const planGain = planBySubject && Number.isFinite(Number(planBySubject[key])) ? Math.round(Number(planBySubject[key])) : null;
+        const planTargetRaw = (planGain !== null && currentRaw !== null) ? currentRaw + planGain : null;
+
+        const fmt = (v, suffix = '') => (v === null || v === undefined || v === '') ? '-' : `${v}${suffix}`;
+        const uiDiffCell = Number.isFinite(uiDiff)
+            ? (uiDiff > 0 ? `<span class="us-up">+${uiDiff.toFixed(2)}점</span>` : `<span class="us-neutral">${uiDiff.toFixed(2)}점</span>`)
+            : '-';
+        const planCell = planGain
+            ? `<span class="us-plan">${planTargetRaw !== null ? planTargetRaw + '점 원점수' : '+' + planGain}</span><span class="us-plan-delta">+${planGain}</span>`
+            : '<span class="us-plan-none">-</span>';
+
+        return `
+            <tr>
+                <td class="us-subj">${escapeHtml(label)}</td>
+                <td class="us-raw">${fmt(currentRaw)}</td>
+                <td class="us-std">${fmt(currentStd)} / ${fmt(currentGrd, '등급')}</td>
+                <td class="us-rise">${uiDiffCell}</td>
+                <td class="us-plan-cell">${planCell}</td>
+            </tr>
+        `;
+    }).join('');
+
+    // 역추적 요약 메시지
+    let backtraceSummary = '';
+    if (plan) {
+        if (isReachable) {
+            backtraceSummary = `
+                <div class="univ-backtrace-msg univ-backtrace-msg--ok">
+                    <i class="fas fa-route"></i>
+                    합격권(<strong>100점</strong>) 도달까지 <strong>원점수 +${Math.round(planTotal)}점</strong>이 필요합니다${Number.isFinite(planUi) ? ` (도달 시 환산 <strong>${planUi.toFixed(1)}점</strong>)` : ''}.
+                </div>`;
+        } else if (plan.error) {
+            backtraceSummary = `
+                <div class="univ-backtrace-msg univ-backtrace-msg--warn">
+                    <i class="fas fa-exclamation-circle"></i>
+                    ${escapeHtml(plan.error)}
+                </div>`;
+        } else {
+            backtraceSummary = `
+                <div class="univ-backtrace-msg univ-backtrace-msg--warn">
+                    <i class="fas fa-exclamation-circle"></i>
+                    설정 범위 안에서는 합격권 도달이 어렵습니다.${Number.isFinite(planTotal) ? ` 최선 조합 기준 <strong>+${Math.round(planTotal)}점</strong>${Number.isFinite(planUi) ? ` → 환산 <strong>${planUi.toFixed(1)}점</strong>` : ''}.` : ''}
+                </div>`;
+        }
+    }
+
+    body.innerHTML = `
+        <div class="univ-score-summary">
+            <div class="univ-score-main">
+                <span class="univ-score-label">현재 환산 점수</span>
+                <span class="univ-score-value" style="color:${convColor};">${convertedScore}<span class="univ-score-unit">점</span></span>
+            </div>
+            <div class="univ-score-gap">
+                ${gapBadge(cutGap, '합격선(100)', '#3b82f6')}
+                ${gapBadge(safeGap, '안정선(150)', '#10b981')}
+            </div>
+            ${advice ? `<div class="univ-score-advice" style="color:${convColor};">${advice}</div>` : ''}
+        </div>
+        <div class="univ-subject-table-wrap">
+            <table class="univ-subject-table">
+                <thead>
+                    <tr>
+                        <th>과목</th>
+                        <th>현재 원점수</th>
+                        <th>표점 / 등급</th>
+                        <th>+1점 효율 (환산↑)</th>
+                        <th>역추적 목표 / 상승</th>
+                    </tr>
+                </thead>
+                <tbody>${subjectRows}</tbody>
+            </table>
+        </div>
+        ${backtraceSummary}
+    `;
 }
 
 function renderTargetUnivsByExam() {
