@@ -285,8 +285,11 @@ function renderData(s) {
 
     setText('viewName', s.name || '미입력');
     setText('viewEmail', s.email || '-');
-    setText('viewSchool', s.school || '-');
-    setText('viewSchoolSide', s.school || '-');
+    // 학교는 정성조사 출신학교(qualitative.school)를 정식 값으로 사용.
+    // 마이그레이션 fallback: 백엔드가 평탄화한 s.school을 그대로 받지만, 보수적으로 qualitative 우선 참조.
+    const resolvedSchool = (s.qualitative && s.qualitative.school) || s.school || '-';
+    setText('viewSchool', resolvedSchool);
+    setText('viewSchoolSide', resolvedSchool);
     setText('viewGradeSide', gradeText);
     setText('viewPhone', s.phone || '-');
     setText('viewEmailFull', s.email || '-');
