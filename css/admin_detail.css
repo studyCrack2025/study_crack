@@ -60,20 +60,68 @@ html, body { height: auto !important; min-height: 100vh !important; overflow-y: 
 .detail-value { font-size: 1.05rem; font-weight: 600; color: #334155; }
 
 /* 7. 목표 대학 요약 (University Summary) */
-.univ-summary-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; }
-.univ-summary-section { margin-top: 26px; background: #ffffff; padding: 24px; border-radius: 16px; border: 1px solid #dbe6f5; box-shadow: 0 10px 24px -24px rgba(15, 23, 42, 0.5); }
+.univ-summary-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; gap: 12px; flex-wrap: wrap; }
+.univ-summary-section { margin-top: 0; background: #ffffff; padding: 24px; border-radius: 16px; border: 1px solid #dbe6f5; box-shadow: 0 10px 24px -24px rgba(15, 23, 42, 0.5); }
+.univ-summary-section--bare { margin-top: 0; padding: 0; background: transparent; border: none; box-shadow: none; }
 .univ-summary-section h4 { margin: 0; color: #0f172a; font-size: 1.2rem; font-weight: 800; }
-.univ-header-actions { display: flex; align-items: center; gap: 10px; }
+.univ-header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .univ-header-actions select { padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem; color: #334155; background: #fff; font-weight: 600; }
 .univ-guide-text { font-size: 0.8rem; color: #64748b; font-weight: 500; background: #f8fafc; padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
 .univ-guide-text strong { color: #3b82f6; font-weight: 800; }
-.target-univ-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
-.target-univ-item { background: #ffffff; border: 1px solid #dce6f4; padding: 20px; border-radius: 16px; color: #334155; display: flex; flex-direction: column; box-shadow: 0 10px 24px -24px rgba(2, 6, 23, 0.6); transition: all 0.25s ease; position: relative; overflow: hidden; }
-.target-univ-item::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(90deg, #3b82f6, #60a5fa); }
-.target-univ-item:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); border-color: #bfdbfe; }
-.target-univ-item strong { font-size: 1.2rem; color: #0f172a; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
-.target-univ-item .major { font-size: 0.8rem; color: #4c79ee; font-weight: 700; background: #eff6ff; padding: 6px 12px; border-radius: 20px; align-self: flex-start; margin-bottom: 18px; border: 1px solid #bfdbfe; }
-.target-univ-item .date { font-size: 0.75rem; color: #94a3b8; margin-top: auto; border-top: 1px solid #f1f5f9; padding-top: 15px; display: flex; align-items: center; justify-content: flex-end; font-weight: 600; }
+
+/* 7-1. 목표 대학 표 블록 (Univ Block Table) */
+.target-univ-table-wrap { display: flex; flex-direction: column; gap: 18px; }
+.target-univ-empty { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 30px; text-align: center; color: #94a3b8; font-weight: 600; }
+.target-univ-block { background: #ffffff; border: 1px solid #dce6f4; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 24px -24px rgba(2, 6, 23, 0.45); }
+.target-univ-block--noscore { opacity: 0.85; }
+
+.univ-block-head { display: flex; align-items: center; gap: 12px; padding: 16px 20px; background: linear-gradient(135deg, #f8fbff 0%, #eef5ff 100%); border-bottom: 1px solid #dce6f4; }
+.univ-block-rank { background: #1e293b; color: #ffffff; font-weight: 800; font-size: 0.8rem; letter-spacing: 0.5px; padding: 6px 10px; border-radius: 999px; min-width: 56px; text-align: center; }
+.univ-block-title { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.univ-block-title strong { font-size: 1.1rem; font-weight: 800; color: #0f172a; letter-spacing: -0.3px; }
+.univ-block-major { font-size: 0.85rem; color: #4c79ee; font-weight: 700; }
+
+.univ-status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font-size: 0.8rem; font-weight: 800; color: #ffffff; letter-spacing: 0.3px; white-space: nowrap; }
+.univ-status-badge--muted { background: #cbd5e1; color: #334155; }
+.univ-status-badge--loading { background: #eef5ff; color: #3b82f6; border: 1px solid #bfdbfe; }
+.univ-status-badge--error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+.univ-block-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.univ-block-loading { text-align: center; color: #3b82f6; font-weight: 700; padding: 22px 0; }
+.univ-block-error { text-align: center; color: #ef4444; font-weight: 700; padding: 22px 0; }
+.univ-block-msg { text-align: center; color: #64748b; font-weight: 600; padding: 18px 0; }
+
+.univ-score-summary { background: #f8fbff; border: 1px solid #e2eaf5; border-radius: 12px; padding: 16px 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
+.univ-score-main { display: flex; flex-direction: column; gap: 2px; }
+.univ-score-label { font-size: 0.78rem; color: #64748b; font-weight: 700; letter-spacing: 0.3px; }
+.univ-score-value { font-size: 1.8rem; font-weight: 900; line-height: 1; letter-spacing: -0.5px; }
+.univ-score-unit { font-size: 0.95rem; margin-left: 2px; }
+.univ-score-gap { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+.univ-gap-badge { font-size: 0.78rem; font-weight: 700; color: var(--gap-color, #3b82f6); background: #ffffff; border: 1px solid var(--gap-color, #bfdbfe); padding: 5px 10px; border-radius: 8px; }
+.univ-gap-badge--hit { color: #047857; background: #ecfdf5; border-color: #6ee7b7; }
+.univ-score-advice { flex-basis: 100%; font-size: 0.85rem; font-weight: 700; letter-spacing: -0.1px; }
+
+.univ-subject-table-wrap { overflow-x: auto; }
+.univ-subject-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.9rem; }
+.univ-subject-table thead th { background: #f1f5f9; color: #475569; font-weight: 700; text-align: center; padding: 10px 12px; border-bottom: 1px solid #cbd5e1; font-size: 0.82rem; letter-spacing: 0.3px; }
+.univ-subject-table thead th:first-child { border-top-left-radius: 8px; }
+.univ-subject-table thead th:last-child { border-top-right-radius: 8px; }
+.univ-subject-table tbody td { padding: 11px 12px; text-align: center; border-bottom: 1px solid #f1f5f9; color: #1e293b; font-weight: 600; }
+.univ-subject-table tbody tr:last-child td { border-bottom: none; }
+.univ-subject-table .us-subj { text-align: left; font-weight: 800; color: #0f172a; background: #fbfdff; }
+.univ-subject-table .us-raw { font-variant-numeric: tabular-nums; }
+.univ-subject-table .us-std { color: #475569; font-weight: 600; font-variant-numeric: tabular-nums; }
+.univ-subject-table .us-rise .us-up { color: #047857; background: #ecfdf5; padding: 3px 8px; border-radius: 6px; border: 1px solid #6ee7b7; font-weight: 800; }
+.univ-subject-table .us-rise .us-neutral { color: #64748b; font-weight: 600; }
+.univ-subject-table .us-plan-cell { display: flex; flex-direction: column; gap: 2px; align-items: center; }
+.univ-subject-table .us-plan { font-weight: 700; color: #b45309; font-size: 0.88rem; }
+.univ-subject-table .us-plan-delta { font-weight: 800; color: #ea580c; background: #fff7ed; padding: 2px 8px; border-radius: 6px; border: 1px solid #fed7aa; font-size: 0.78rem; }
+.univ-subject-table .us-plan-none { color: #cbd5e1; font-weight: 600; }
+
+.univ-backtrace-msg { border-radius: 10px; padding: 12px 14px; font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.univ-backtrace-msg strong { font-weight: 900; }
+.univ-backtrace-msg--ok { background: #ecfdf5; color: #065f46; border: 1px solid #6ee7b7; }
+.univ-backtrace-msg--warn { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
 
 /* 8. 시뮬레이션 결과 요약 (Simulation) */
 .sim-summary-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 15px; }
@@ -246,13 +294,14 @@ html, body { height: auto !important; min-height: 100vh !important; overflow-y: 
 @media (max-width: 900px) {
   .detail-container { grid-template-columns: 1fr; margin-top: 16px; padding: 0 15px 40px 15px; gap: 18px; }
   .profile-card { position: static; margin-bottom: 0; }
-  .info-details-grid, .pay-summary-container, .qual-grid, .target-univ-list, .pro-item-grid, .pro-write-grid { grid-template-columns: 1fr; }
+  .pay-summary-container, .qual-grid, .pro-item-grid, .pro-write-grid { grid-template-columns: 1fr; }
   .card-grid-body { grid-template-columns: 1fr; }
   .weekly-section:first-child { border-right: none; border-bottom: 1px solid #f1f5f9; }
   .weekly-mock-box { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .info-header-card { flex-direction: column; text-align: center; }
   .univ-summary-header { flex-direction: column; align-items: flex-start; gap: 10px; }
   .univ-header-actions { flex-wrap: wrap; }
+  .univ-score-summary { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .univ-score-gap { margin-left: 0; }
 }
 
 @media (max-width: 768px) {
@@ -283,8 +332,11 @@ html, body { height: auto !important; min-height: 100vh !important; overflow-y: 
   .payment-table-modern td::before, .score-table td::before { content: attr(data-label); font-weight: 700; color: #64748b; text-align: left; flex-shrink: 0; margin-right: 15px; }
   .pay-summary-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
   .pay-stat-box { width: 100%; box-sizing: border-box; padding: 15px; }
-  .memo-card, .info-header-card, .univ-summary-section, .pro-period-section { padding: 15px; width: 100%; box-sizing: border-box; }
-  .detail-item { padding: 15px; flex-direction: column; align-items: flex-start; gap: 8px; width: 100%; box-sizing: border-box; }
+  .memo-card, .univ-summary-section, .pro-period-section { padding: 15px; width: 100%; box-sizing: border-box; }
+  .univ-summary-section--bare { padding: 0; }
+  .univ-block-head { padding: 14px; gap: 8px; }
+  .univ-block-body { padding: 14px; }
+  .univ-subject-table { min-width: 520px; }
   .card-header-row, .weekly-section, .weekly-mock-box, .weekly-footer { padding: 15px; width: 100%; box-sizing: border-box; }
   .pro-box { padding: 12px; width: 100%; box-sizing: border-box; }
   .req-content-area { padding: 15px; }
