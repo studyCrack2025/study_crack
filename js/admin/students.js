@@ -32,7 +32,7 @@ async function searchStudents() {
         const apiKeyword    = type === 'mbti' ? '' : keyword;
         const response = await apiFetch(ADMIN_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'admin_search', userId: adminId, data: { searchType: apiSearchType, keyword: apiKeyword } })
+            body: JSON.stringify({ type: 'admin_search_list', userId: adminId, data: { searchType: apiSearchType, keyword: apiKeyword } })
         });
 
         const rawData = await response.json();
@@ -169,8 +169,41 @@ function joinQualList(arr) {
     return arr.map(v => String(v ?? '').trim()).filter(v => v.length > 0).join(' | ');
 }
 
+// CSV 내보내기 진입 시 lite 검색 결과(currentStudentList)에는 quantitative/qualitative가 없으므로
+// admin_search(legacy, full payload)로 다시 가져온 뒤 동일한 필터링/정렬을 적용해 CSV로 변환.
+async function fetchFullSearchPayload() {
+    const adminId = localStorage.getItem('userId');
+    const lastSearch = Store.get('lastSearch') || {};
+    const type = lastSearch.type || document.getElementById('searchType')?.value || 'name';
+    const keyword = lastSearch.keyword || document.getElementById('searchInput')?.value || '';
+    const apiSearchType = type === 'mbti' ? 'name' : type;
+    const apiKeyword = type === 'mbti' ? '' : keyword;
+
+    const res = await apiFetch(ADMIN_API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ type: 'admin_search', userId: adminId, data: { searchType: apiSearchType, keyword: apiKeyword } })
+    });
+    const raw = await res.json();
+    let students = Array.isArray(raw) ? raw : (raw.students || []);
+
+    // 검색 시점과 동일한 1차 필터(역할/임시 레코드 제외)
+    students = students.filter(s => {
+        if (s.role === 'admin' || s.role === 'tutor') return false;
+        const uid = s.userid || '';
+        if ((uid.startsWith('TEMP') || uid.startsWith('VERIFIED')) && (!s.createdAt || String(s.createdAt).trim() === '')) return false;
+        return true;
+    });
+
+    // lite 검색 결과에 들어 있던 userid 집합으로 다시 한 번 좁힘 — 클라이언트 측 등급/튜터/MBTI 필터까지 자동 반영
+    if (Array.isArray(currentStudentList) && currentStudentList.length > 0) {
+        const allowed = new Set(currentStudentList.map(s => s.userid));
+        students = students.filter(s => allowed.has(s.userid));
+    }
+    return students;
+}
+
 // 체크박스 선택 결과로 실제 CSV 생성
-function executeExportStudentsToCSV() {
+async function executeExportStudentsToCSV() {
     if (!currentStudentList || currentStudentList.length === 0) {
         alert("내보낼 학생 데이터가 없습니다.");
         closeCsvExportModal();
@@ -266,9 +299,22 @@ function executeExportStudentsToCSV() {
         Array.from(document.querySelectorAll('#csvColCheckboxList input.csv-subj:checked')).map(el => el.value)
     );
 
+    // 검색 리스트는 lite 응답이라 quantitative/qualitative가 없음 — 이 시점에만 무거운 응답을 별도 fetch
+    let fullList;
+    try {
+        fullList = await fetchFullSearchPayload();
+    } catch (e) {
+        if (e?.message !== 'Auth expired') alert('CSV 데이터 로드 중 오류가 발생했습니다.');
+        return;
+    }
+    if (!Array.isArray(fullList) || fullList.length === 0) {
+        alert('CSV로 내보낼 학생이 없습니다.');
+        return;
+    }
+
     // 실제 데이터가 있는 시험만 추리되, 선택된 시험에 한해서만
     const activeExams = EXAM_ORDER.filter(k =>
-        selectedExams.has(k) && currentStudentList.some(s => s.quantitative && s.quantitative[k])
+        selectedExams.has(k) && fullList.some(s => s.quantitative && s.quantitative[k])
     );
     const activeSubjects = SUBJECT_ORDER.filter(k => selectedSubjects.has(k));
 
@@ -292,7 +338,7 @@ function executeExportStudentsToCSV() {
         return;
     }
 
-    const rows = currentStudentList.map(s => {
+    const rows = fullList.map(s => {
         const row = rowGetters.map(fn => fn(s));
         for (const fn of examColGetters) row.push(fn(s));
         return row;
