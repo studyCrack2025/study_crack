@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         const response = await apiFetch(CONFIG.api.user, {
             method: 'POST',
-            body: JSON.stringify({ type: 'get_user' })
+            body: JSON.stringify({ type: 'get_user_analysis' })
         });
         if (response.ok) {
             const data = await response.json();

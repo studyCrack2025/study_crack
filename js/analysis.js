@@ -668,7 +668,7 @@ async function fetchUserData(userId) {
     try {
         const response = await apiFetch(MYPAGE_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'get_user', userId: safeUserId }) 
+            body: JSON.stringify({ type: 'get_user_analysis', userId: safeUserId })
         });
         if (!response.ok) throw new Error("사용자 데이터 로드 실패");
         
@@ -681,9 +681,6 @@ async function fetchUserData(userId) {
         
         if (data.currentSubscription && data.currentSubscription.startDate) {
              userRecentPaymentDate = new Date(data.currentSubscription.startDate);
-        } else if (data.payments && Array.isArray(data.payments)) {
-            const paid = data.payments.filter(p => p.status === 'paid').sort((a,b) => new Date(b.date) - new Date(a.date));
-            if (paid.length > 0 && paid[0].date) userRecentPaymentDate = new Date(paid[0].date);
         }
         
         renderUserInfo(data);

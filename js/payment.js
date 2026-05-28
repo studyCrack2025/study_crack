@@ -289,7 +289,7 @@ async function fetchUserInfo(userId) {
     try {
         const response = await apiFetch(USER_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'get_user' }) 
+            body: JSON.stringify({ type: 'get_user_payment' })
         });
         
         const data = await response.json();
