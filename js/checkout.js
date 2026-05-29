@@ -143,6 +143,7 @@ function submitCheckout() {
             buyerEmail: checkoutData.email,
             buyerTel:   checkoutData.phone,
             returnUrl:  CONFIG.api.payment_return,
+            notifyUrl:  CONFIG.api.payment_notify,
             mallReserved: JSON.stringify(mallReserved),
             fnError: function(result) {
                 console.error('[NicePay Error]', result);
