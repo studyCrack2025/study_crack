@@ -28,6 +28,7 @@ const CONFIG = {
         payment:        `${API_BASE}/api/payment`,
         auth:           `${API_BASE}/api/auth`,
         payment_return: `${API_BASE}/api/payment-return`,
+        payment_notify: `${API_BASE}/api/payment-notify`,
         pdf:            `${API_BASE}/api/generate-pdf`
     },
 
