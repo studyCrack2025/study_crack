@@ -36,8 +36,7 @@ function initCognitoUser() {
             if (err) {
                 console.error("세션 갱신 실패:", err);
                 // 세션 갱신에 실패했다면 깔끔하게 로그아웃 처리
-                localStorage.clear();
-                sessionStorage.clear();
+                clearClientSession();
                 window.location.href = '/login';
             }
         });
@@ -90,9 +89,8 @@ function executeChangePassword() {
         
         // Cognito 로그아웃 및 로컬 세션 클리어
         cognitoUser.signOut();
-        localStorage.clear();
-        sessionStorage.clear();
-        
+        clearClientSession();
+
         // 로그인 페이지로 강제 리다이렉트
         window.location.href = '/login';
     });

@@ -3,41 +3,7 @@ const DATA_FETCH_URL = CONFIG.api.analysis;
 
 let examScores = {}; 
 
-// 💡 공통 apiFetch 함수 — HttpOnly 쿠키 기반 인증
-async function apiFetch(url, options = {}) {
-    const defaultHeaders = { 'Content-Type': 'application/json' };
-    options.headers = { ...defaultHeaders, ...(options.headers || {}) };
-    options.credentials = 'include';
-
-    try {
-        const response = await fetch(url, options);
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                const refreshed = await tryRefreshToken();
-                if (refreshed) {
-                    const retryRes = await fetch(url, options);
-                    if (retryRes.ok) return retryRes;
-                }
-                const currentPath = window.location.pathname;
-                if (!['/login', '/signup', '/'].includes(currentPath)) {
-                    clearClientSession();
-                    window.location.href = '/login';
-                }
-                return Promise.reject(new Error("Auth expired"));
-            }
-            if (response.status === 403) {
-                const errBody = await response.json().catch(() => ({}));
-                throw new Error(errBody.error || errBody.message || '접근 권한이 없습니다.');
-            }
-            throw new Error(`서버 통신 오류 (상태 코드: ${response.status})`);
-        }
-        return response;
-    } catch (error) {
-        console.error("API 통신 실패:", error);
-        throw error;
-    }
-}
+// apiFetch는 shared/api.js 의 단일 구현 사용
 
 // 💡 한층 더 강력해진 escapeHtml 적용 (XSS 방어)
 function escapeHtml(text) {

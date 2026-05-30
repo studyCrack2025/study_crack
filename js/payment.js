@@ -18,60 +18,8 @@ let userPhoneMissing = false;
 
 function getTierDisplayName(tier) { return TIER_DISPLAY[(tier || '').toLowerCase()] || String(tier || '').toUpperCase(); }
 
-// 💡 토큰 자동 갱신 — HttpOnly 쿠키 기반
-let _isRefreshing = false;
-async function tryRefreshToken() {
-    if (_isRefreshing) return false;
-    _isRefreshing = true;
-    try {
-        const res = await fetch(CONFIG.api.auth, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ type: 'silent_refresh' })
-        });
-        return res.ok;
-    } catch (e) {
-        return false;
-    } finally {
-        _isRefreshing = false;
-    }
-}
-
-// 💡 공통 apiFetch 함수 — HttpOnly 쿠키 기반 인증
-async function apiFetch(url, options = {}) {
-    const defaultHeaders = { 'Content-Type': 'application/json' };
-    options.headers = { ...defaultHeaders, ...(options.headers || {}) };
-    options.credentials = 'include';
-
-    try {
-        const response = await fetch(url, options);
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                const refreshed = await tryRefreshToken();
-                if (refreshed) {
-                    const retryRes = await fetch(url, options);
-                    if (retryRes.ok) return retryRes;
-                }
-                alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
-                localStorage.clear();
-                sessionStorage.clear();
-                window.location.href = '/login';
-                return Promise.reject(new Error("Auth expired"));
-            }
-            if (response.status === 403) {
-                const errBody = await response.json().catch(() => ({}));
-                throw new Error(errBody.error || errBody.message || '접근 권한이 없습니다.');
-            }
-            throw new Error(`서버 통신 오류 (상태 코드: ${response.status})`);
-        }
-        return response;
-    } catch (error) {
-        console.error("API 통신 실패:", error);
-        throw error;
-    }
-}
+// apiFetch / tryRefreshToken 은 shared/api.js 의 단일 구현 사용.
+// 결제 진행 중 만료 시 checkoutData 가 보존되도록 shared 의 clearClientSession allowlist 정책에 위임됨.
 
 // 💡 [추가] XSS 방어 유틸리티 (필드 렌더링 시 안전성 확보)
 function escapeHtml(text) {
@@ -270,8 +218,7 @@ function syncHeaderNav() {
     if (btnLogout) {
         btnLogout.addEventListener('click', (e) => {
             e.preventDefault();
-            localStorage.clear();
-            sessionStorage.clear();
+            clearClientSession();
             window.location.href = '/';
         });
     }
