@@ -211,14 +211,25 @@
 
             const fmtAmount = (n) => Number.isFinite(n) && n > 0 ? n.toLocaleString() + '원' : '';
 
-            // YYYYMMDDhhmm → "M월 D일 HH:MM"
+            // NicePay vbankExpDate는 ISO 8601("2026-06-06T20:30:00") 또는
+            // 압축형("YYYYMMDDhhmm")로 올 수 있어 양쪽 모두 처리.
             const fmtExpire = (raw) => {
-                if (!raw || raw.length < 12) return raw || '';
+                if (!raw) return '';
+                if (raw.includes('-') || raw.includes('T')) {
+                    const d = new Date(raw);
+                    if (isNaN(d)) return raw;
+                    const mo = d.getMonth() + 1;
+                    const day = d.getDate();
+                    const hh = String(d.getHours()).padStart(2, '0');
+                    const mm = String(d.getMinutes()).padStart(2, '0');
+                    return `${mo}월 ${day}일 ${hh}:${mm}까지`;
+                }
+                if (raw.length < 12) return raw;
                 const mo = parseInt(raw.slice(4, 6), 10);
-                const d  = parseInt(raw.slice(6, 8), 10);
+                const day = parseInt(raw.slice(6, 8), 10);
                 const hh = raw.slice(8, 10);
                 const mm = raw.slice(10, 12);
-                return `${mo}월 ${d}일 ${hh}:${mm}까지`;
+                return `${mo}월 ${day}일 ${hh}:${mm}까지`;
             };
 
             const tierConfig = {
