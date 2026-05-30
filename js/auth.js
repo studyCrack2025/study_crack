@@ -280,6 +280,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
                     const exemptPaths = ['/tutorial', '/login', '/signup', '/welcome', '/social-callback', '/mbti_survey', '/mbti_download', '/checkout', '/success'];
                     const currentPath = window.location.pathname;
                     if (!exemptPaths.some(p => currentPath.startsWith(p))) {
+                        alert('튜토리얼이 완료되지 않아 튜토리얼 페이지로 이동합니다.');
                         window.location.replace('/tutorial');
                         return;
                     }

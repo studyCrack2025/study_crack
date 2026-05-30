@@ -65,8 +65,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.location.replace('/');
                 return;
             }
-            if (data && data.tutorialStatus !== undefined) {
-                currentStepIdx = parseInt(data.tutorialStatus, 10);
+            // 신규 가입자는 응답 정책상 tutorialStatus=null로 옴 → NaN 방지 위해 number 타입만 허용 + 범위 가드
+            if (data && typeof data.tutorialStatus === 'number' && data.tutorialStatus >= 0 && data.tutorialStatus < STEPS.length) {
+                currentStepIdx = data.tutorialStatus;
                 localStorage.setItem('tutorialStatus', currentStepIdx);
             }
             // 점수 데이터 복원 (may 우선, 없으면 mar)
@@ -92,8 +93,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     } catch (e) {
-        const savedStatus = localStorage.getItem('tutorialStatus');
-        if (savedStatus) currentStepIdx = parseInt(savedStatus, 10);
+        const parsed = parseInt(localStorage.getItem('tutorialStatus'), 10);
+        if (Number.isFinite(parsed) && parsed >= 0 && parsed < STEPS.length) currentStepIdx = parsed;
     }
 
     if (urlParams.get('mbti_completed')) {
