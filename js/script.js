@@ -36,38 +36,7 @@ function toggleScoreUp(btnEl) {
     if (toggleBtn) toggleBtn.classList.toggle('is-active', isUp);
 }
 
-// 공통 apiFetch 함수 — HttpOnly 쿠키 기반 인증
-async function apiFetch(url, options = {}) {
-    const defaultHeaders = { 'Content-Type': 'application/json' };
-    options.headers = { ...defaultHeaders, ...(options.headers || {}) };
-    options.credentials = 'include';
-
-    try {
-        const response = await fetch(url, options);
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                const refreshed = await tryRefreshToken();
-                if (refreshed) {
-                    const retryRes = await fetch(url, options);
-                    if (retryRes.ok) return retryRes;
-                }
-                clearClientSession();
-                window.location.href = '/login';
-                return Promise.reject(new Error("Auth expired"));
-            }
-            if (response.status === 403) {
-                const errBody = await response.json().catch(() => ({}));
-                throw new Error(errBody.error || errBody.message || '접근 권한이 없습니다.');
-            }
-            throw new Error(`서버 통신 오류 (상태 코드: ${response.status})`);
-        }
-        return response;
-    } catch (error) {
-        console.error("API 통신 실패:", error);
-        throw error;
-    }
-}
+// apiFetch는 shared/api.js 의 단일 구현 사용
 
 function openModal(type) {
     const modal = document.getElementById(type + '-modal');
@@ -732,23 +701,63 @@ function showPaymentSuccessModal(noti) {
     const existing = document.getElementById('paymentSuccessModal');
     if (existing) existing.remove();
 
-    const detailText = noti.detail || '결제가 완료되었습니다.';
-    const detailHtml = escapeHtml(detailText).replace(/\n/g, '<br>');
-    const titleText = escapeHtml(noti.title || '결제 완료');
-    const dateText = noti.createdAt ? new Date(noti.createdAt).toLocaleString() : '';
+    // 티어별 한 줄 안내 — productName에서 상품 키워드 감지
+    const productName = noti.productName || '';
+    const productLower = String(productName).toLowerCase();
+    let tierBenefit = '';
+    if (productLower.includes('pro')) {
+        tierBenefit = '입시 데이터 기반 프리미엄 학습 전략 관리와 PRO 리포트를 4주간 받아보실 수 있습니다.';
+    } else if (productLower.includes('standard')) {
+        tierBenefit = '4주간의 체계적인 합격 플래너 설계와 주간 리포트로 입시 전략을 정교하게 다듬어보세요.';
+    } else if (productLower.includes('starter')) {
+        tierBenefit = '1주 플래너 진단을 통해 현재 학습 방향과 보완점을 정확히 파악하실 수 있습니다.';
+    } else if (productLower.includes('basic')) {
+        tierBenefit = 'AI 기반 대학 합격 가능성 분석으로 현재 점수의 가능성을 정확하게 확인해보세요.';
+    } else if (productLower.includes('테스트') || productLower.includes('test')) {
+        tierBenefit = '시스템 연동 테스트 결제가 정상 처리되었습니다.';
+    } else {
+        tierBenefit = '스터디크랙 멤버십이 활성화되었습니다.';
+    }
+
+    const safeProduct  = escapeHtml(productName || '스터디크랙 멤버십');
+    const safeAmount   = escapeHtml(noti.amount || '');
+    const safeStart    = escapeHtml(noti.startDate || '');
+    const safeEnd      = escapeHtml(noti.endDate || '');
+    const safeBenefit  = escapeHtml(tierBenefit);
+    const safeDate     = escapeHtml(noti.createdAt ? new Date(noti.createdAt).toLocaleString() : '');
 
     const modal = document.createElement('div');
     modal.id = 'paymentSuccessModal';
-    modal.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px;';
+    modal.style.cssText = 'position:fixed; inset:0; background:rgba(15,23,42,0.55); z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px;';
     modal.innerHTML = `
-        <div style="background:#fff; border-radius:14px; max-width:460px; width:100%; padding:28px 24px; box-shadow:0 20px 60px rgba(0,0,0,0.25); position:relative;">
-            <span id="paymentSuccessClose" style="position:absolute; top:14px; right:18px; font-size:1.6rem; cursor:pointer; color:#94a3b8; line-height:1;">&times;</span>
-            <div style="font-size:1.25rem; font-weight:700; color:#1e293b; margin-bottom:6px;">✅ ${titleText}</div>
-            <div style="font-size:0.8rem; color:#94a3b8; margin-bottom:18px;">${escapeHtml(dateText)}</div>
-            <div style="font-size:0.95rem; color:#334155; line-height:1.7; white-space:normal; background:#f8fafc; border-radius:10px; padding:16px; margin-bottom:20px;">${detailHtml}</div>
-            <div style="display:flex; gap:10px; justify-content:flex-end;">
-                <button id="paymentSuccessConfirm" style="background:#e2e8f0; color:#475569; border:none; border-radius:8px; padding:10px 18px; font-size:0.9rem; cursor:pointer;">확인</button>
-                <a href="/mypage" style="background:#4f46e5; color:#fff; text-decoration:none; border-radius:8px; padding:10px 18px; font-size:0.9rem; font-weight:600; display:inline-flex; align-items:center;">마이페이지로 이동</a>
+        <div style="background:#fff; border-radius:16px; max-width:480px; width:100%; box-shadow:0 24px 64px rgba(15,23,42,0.28); position:relative; overflow:hidden;">
+            <div style="background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%); color:#fff; padding:26px 24px 22px; position:relative;">
+                <span id="paymentSuccessClose" style="position:absolute; top:14px; right:18px; font-size:1.5rem; cursor:pointer; color:rgba(255,255,255,0.85); line-height:1;">&times;</span>
+                <div style="font-size:2rem; margin-bottom:6px;">🎉</div>
+                <div style="font-size:1.3rem; font-weight:700; margin-bottom:4px;">결제가 완료되었습니다</div>
+                <div style="font-size:0.88rem; opacity:0.9;">스터디크랙을 선택해주셔서 진심으로 감사합니다.</div>
+            </div>
+            <div style="padding:22px 24px 24px;">
+                <div style="font-size:0.92rem; color:#475569; line-height:1.6; margin-bottom:18px;">${safeBenefit}</div>
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; margin-bottom:18px;">
+                    <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:0.9rem;">
+                        <span style="color:#64748b;">이용 상품</span>
+                        <span style="color:#1e293b; font-weight:600; text-align:right; max-width:60%;">${safeProduct}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:0.9rem; border-top:1px dashed #e2e8f0;">
+                        <span style="color:#64748b;">결제 금액</span>
+                        <span style="color:#1e293b; font-weight:600;">${safeAmount}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:0.9rem; border-top:1px dashed #e2e8f0;">
+                        <span style="color:#64748b;">이용 기간</span>
+                        <span style="color:#1e293b; font-weight:600;">${safeStart} ~ ${safeEnd}</span>
+                    </div>
+                </div>
+                <div style="font-size:0.82rem; color:#94a3b8; margin-bottom:18px; text-align:right;">결제 시각 ${safeDate}</div>
+                <div style="display:flex; gap:10px; justify-content:flex-end;">
+                    <button id="paymentSuccessConfirm" style="background:#f1f5f9; color:#475569; border:none; border-radius:9px; padding:11px 18px; font-size:0.92rem; cursor:pointer;">확인</button>
+                    <a href="/mypage" style="background:linear-gradient(135deg,#4f46e5,#7c3aed); color:#fff; text-decoration:none; border-radius:9px; padding:11px 20px; font-size:0.92rem; font-weight:600; display:inline-flex; align-items:center;">마이페이지로 이동 →</a>
+                </div>
             </div>
         </div>
     `;

@@ -29,7 +29,9 @@
         <a href="/" class="auth-logo-link">
             <img src="/assets/images/studycrack_logo_wo_bg.png" alt="StudyCrack 로고" class="auth-logo-img">
         </a>
-        
+
+        <div id="sessionExpiredNotice" style="display:none; background:#fef3c7; color:#92400e; border:1px solid #fde68a; border-radius:8px; padding:10px 14px; font-size:0.88rem; margin-bottom:16px; text-align:center;"></div>
+
         <h2>로그인</h2>
         
         <div class="auth-form">
@@ -115,8 +117,27 @@
     </div>
 
     <script src="/js/config.js?v=20260524a"></script>
+    <script src="/js/shared/api.js?v=20260531a"></script>
     <script src="/js/auth.js?v=20260526b"></script>
-    
+
+    <script>
+        (function() {
+            try {
+                var reason = sessionStorage.getItem('session_redirect_reason');
+                if (!reason) return;
+                var el = document.getElementById('sessionExpiredNotice');
+                if (!el) return;
+                var msg = reason === 'expired'
+                    ? '세션이 만료되어 자동으로 로그아웃되었습니다. 다시 로그인해주세요.'
+                    : reason === 'unauthorized'
+                        ? '로그인이 필요한 페이지입니다.'
+                        : '';
+                if (msg) { el.textContent = msg; el.style.display = 'block'; }
+                sessionStorage.removeItem('session_redirect_reason');
+            } catch (e) { /* noop */ }
+        })();
+    </script>
+
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 </body>

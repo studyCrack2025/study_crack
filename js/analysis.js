@@ -718,8 +718,8 @@ async function fetchUserData(userId) {
             const imgElem = document.getElementById('profileImg');
             if (imgElem) imgElem.src = escapeHtml(data.profileImage);
         }
-    } catch (error) { 
-        if(error.message.includes("401")) { location.href='/login'; }
+    } catch (error) {
+        // 401은 shared apiFetch가 redirectToLogin으로 처리하므로 여기선 swallow
     }
 }
 

@@ -25,14 +25,15 @@ const EXAM_NAME_MAP = {
 const EXAM_KEY_ORDER = ['mar', 'apr', 'may', 'jun', 'jul', 'sep', 'oct', 'csat'];
 let selectedTargetExamKey = 'mar';
 
-function clearAdminDetailSession() {
-    ['refreshToken','userId','userEmail','userRole','userName','userTier','authProvider','accessToken','token'].forEach((k) => localStorage.removeItem(k));
-    sessionStorage.clear();
-}
-
 function forceAdminRelogin(message) {
     if (message) alert(message);
-    clearAdminDetailSession();
+    if (typeof clearClientSession === 'function') {
+        clearClientSession();
+    } else {
+        ['refreshToken','userId','userEmail','userRole','userName','userTier','authProvider','accessToken','token']
+            .forEach((k) => localStorage.removeItem(k));
+        sessionStorage.clear();
+    }
     window.location.href = '/admin/login';
 }
 

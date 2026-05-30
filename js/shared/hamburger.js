@@ -46,8 +46,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof handleSignOut === 'function') {
                 handleSignOut();
             } else {
-                localStorage.clear();
-                sessionStorage.clear();
+                if (typeof clearClientSession === 'function') {
+                    clearClientSession();
+                } else {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                }
                 window.location.href = '/';
             }
         });

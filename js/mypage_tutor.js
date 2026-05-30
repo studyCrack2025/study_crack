@@ -1185,8 +1185,8 @@ window.submitUrgentRequest = async function() {
 // [계정 관리 및 모달 유틸]
 window.handleSignOut = function() {
     if (tutorCognitoUser) tutorCognitoUser.signOut();
-    localStorage.clear(); sessionStorage.clear();
-    window.location.href = '/login';
+    clearClientSession();
+    window.location.href = '/admin/login';
 }
 window.closeModal = function(modalId) { document.getElementById(modalId).classList.add('hidden'); }
 window.openEmailModal = function() { document.getElementById('emailModal').classList.remove('hidden'); }

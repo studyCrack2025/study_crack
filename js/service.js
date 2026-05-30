@@ -135,8 +135,7 @@ function syncHeaderNav() {
   if (btnLogout) {
     btnLogout.addEventListener('click', (e) => {
       e.preventDefault();
-      localStorage.clear();
-      sessionStorage.clear();
+      clearClientSession();
       window.location.href = '/';
     });
   }
