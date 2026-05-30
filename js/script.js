@@ -708,9 +708,12 @@ window.fetchStudentNotifications = async function() {
 function handleNotiAction(noti) {
     toggleStudentNotiPanel();
 
-    if (noti.actionType === 'weekly_report') window.location.href = '/analysis?tab=coach'; 
-    else if (noti.actionType === 'pro_report') window.location.href = '/analysis?tab=pro'; 
+    if (noti.actionType === 'weekly_report') window.location.href = '/analysis?tab=coach';
+    else if (noti.actionType === 'pro_report') window.location.href = '/analysis?tab=pro';
     else if (noti.actionType === 'qna_reply') window.location.href = '/qna';
+    else if (noti.actionType === 'payment_success') {
+        showPaymentSuccessModal(noti);
+    }
     else if (noti.actionType === 'admin_notice') {
         document.getElementById('noticeModalTitle').innerText = escapeHtml(noti.title) || "공지사항";
         document.getElementById('noticeModalDate').innerText = new Date(noti.createdAt).toLocaleDateString();
@@ -723,6 +726,39 @@ function handleNotiAction(noti) {
             document.body.style.overflow = 'hidden';
         }
     }
+}
+
+function showPaymentSuccessModal(noti) {
+    const existing = document.getElementById('paymentSuccessModal');
+    if (existing) existing.remove();
+
+    const detailText = noti.detail || '결제가 완료되었습니다.';
+    const detailHtml = escapeHtml(detailText).replace(/\n/g, '<br>');
+    const titleText = escapeHtml(noti.title || '결제 완료');
+    const dateText = noti.createdAt ? new Date(noti.createdAt).toLocaleString() : '';
+
+    const modal = document.createElement('div');
+    modal.id = 'paymentSuccessModal';
+    modal.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px;';
+    modal.innerHTML = `
+        <div style="background:#fff; border-radius:14px; max-width:460px; width:100%; padding:28px 24px; box-shadow:0 20px 60px rgba(0,0,0,0.25); position:relative;">
+            <span id="paymentSuccessClose" style="position:absolute; top:14px; right:18px; font-size:1.6rem; cursor:pointer; color:#94a3b8; line-height:1;">&times;</span>
+            <div style="font-size:1.25rem; font-weight:700; color:#1e293b; margin-bottom:6px;">✅ ${titleText}</div>
+            <div style="font-size:0.8rem; color:#94a3b8; margin-bottom:18px;">${escapeHtml(dateText)}</div>
+            <div style="font-size:0.95rem; color:#334155; line-height:1.7; white-space:normal; background:#f8fafc; border-radius:10px; padding:16px; margin-bottom:20px;">${detailHtml}</div>
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button id="paymentSuccessConfirm" style="background:#e2e8f0; color:#475569; border:none; border-radius:8px; padding:10px 18px; font-size:0.9rem; cursor:pointer;">확인</button>
+                <a href="/mypage" style="background:#4f46e5; color:#fff; text-decoration:none; border-radius:8px; padding:10px 18px; font-size:0.9rem; font-weight:600; display:inline-flex; align-items:center;">마이페이지로 이동</a>
+            </div>
+        </div>
+    `;
+
+    const close = () => { modal.remove(); document.body.style.overflow = ''; };
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+    modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+    modal.querySelector('#paymentSuccessClose').addEventListener('click', close);
+    modal.querySelector('#paymentSuccessConfirm').addEventListener('click', close);
 }
 
 async function markStudentNotiRead(notiId) {
