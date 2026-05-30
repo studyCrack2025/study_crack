@@ -32,9 +32,12 @@ const CONFIG = {
         pdf:            `${API_BASE}/api/generate-pdf`
     },
 
-    // NicePay 설정
+    // NicePay 설정 — dev/prod 가맹점 ID 분리. clientId는 클라이언트 전송 공개 식별자라 코드에 평문 노출 OK.
+    // Secret Key는 백엔드 환경변수에만(StudyCrack_Payment Lambda alias별 다른 값 주입).
     nicepay: {
-        clientId: 'R2_9ff3f8dde7ae45a1b84b6c0ab9ca6ea9'
+        clientId: (IS_LOCAL || IS_DEV)
+            ? 'R2_3989842eefe74b4490031691658710a6'   // dev/local — NicePay 테스트 가맹점
+            : 'R2_9ff3f8dde7ae45a1b84b6c0ab9ca6ea9'   // prod — NicePay 운영 가맹점
     },
 
     // Cognito 설정
