@@ -5,9 +5,8 @@
 // ============================================================
 const MYPAGE_API_URL = CONFIG.api.user;
 const UNIV_DATA_API_URL = CONFIG.api.analysis;
-const FILE_API_URL = CONFIG.api.file;
-const REPORT_API_URL = CONFIG.api.report;
-const PDF_API_URL = CONFIG.api.pdf; 
+// FILE_API_URL / REPORT_API_URL 은 shared/api.js 에서 글로벌 선언됨 — 여기서 재선언 X
+const PDF_API_URL = CONFIG.api.pdf;
 
 let currentUserTier = 'free';
 let univChangeRemaining = 0;

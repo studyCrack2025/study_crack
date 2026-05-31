@@ -22,7 +22,7 @@ if (typeof ChartDataLabels !== 'undefined') {
 }
 
 // 2. 전역 변수 및 설정
-const ADMIN_API_URL = CONFIG.api.admin;
+// ADMIN_API_URL 은 shared/api.js 에서 글로벌 선언됨 — 여기서 재선언 X (SyntaxError 방지).
 const NOTI_API_URL = CONFIG.api.noti;
 const QNA_API_URL = CONFIG.api.qna;
 

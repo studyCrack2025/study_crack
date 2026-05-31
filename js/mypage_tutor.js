@@ -1,7 +1,7 @@
 // js/mypage_tutor.js
 
 const TUTOR_API_URL = CONFIG.api.admin;
-const FILE_API_URL = CONFIG.api.file;
+// FILE_API_URL 은 shared/api.js 에서 글로벌 선언됨 — 여기서 재선언 X
 const NOTI_API_URL = CONFIG.api.noti;
 const QNA_API_URL = CONFIG.api.qna;
 
