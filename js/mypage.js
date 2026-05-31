@@ -1,5 +1,5 @@
 // js/mypage.js
-const FILE_API_URL = CONFIG.api.file;
+// FILE_API_URL 은 shared/api.js 에서 글로벌 선언됨 — 여기서 재선언 X
 
 let currentUserTier = 'free';
 let cognitoUser = null;
