@@ -116,8 +116,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             headers.Authorization = `Bearer ${bearerToken}`;
         }
 
-        // 🔥 at 쿠키 만료 시 silent_refresh로 자동 갱신 — rt 쿠키 유효한 동안 세션 유지
-        //    raw fetch만 쓰면 401에서 즉시 handleSignOut → 페이지 로드만 해도 로그아웃되는 문제 방지
+        // 401/403 시 refresh+retry. 401 즉시 sign-out 방지가 목적. 정책: docs/security/architecture-notes.md §3
         const fetchIdentity = async (requestType) => {
             const doFetch = () => fetch(USER_API_URL, {
                 method: 'POST',
@@ -126,7 +125,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
                 body: JSON.stringify({ type: requestType })
             });
             let res = await doFetch();
-            // HTTP API Lambda Authorizer 만료 시 403 응답 — 401과 동일하게 refresh+retry 처리
+            // 401/403 처리 정책: docs/security/architecture-notes.md §3
             if (res.status === 401 || res.status === 403) {
                 const refreshed = await tryRefreshToken();
                 if (refreshed) res = await doFetch();
@@ -150,7 +149,6 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             sessionStorage.setItem('user_profile_api_mode', 'light');
         }
 
-        // 401 = 표준 만료, 403 = HTTP API Authorizer 거부(JWT 만료 포함). 둘 다 만료 처리.
         if (userRes.status === 401 || userRes.status === 403) {
             throw new Error("Auth expired");
         }
@@ -837,7 +835,6 @@ function checkLoginStatus() {
     if (isLoggedIn) {
         const currentPath = window.location.pathname || '';
         const isAdminRoute = (currentPath === '/admin' || currentPath.startsWith('/admin/'));
-        // 관리자 페이지는 admin API 기준으로 세션을 검증하므로 user API identity 동기화를 건너뜀
         if (isAdminRoute && userRole === 'admin') return;
         if (shouldSkipPostLoginIdentityResolve()) return;
         // 튜토리얼 미완료 학생 → resolveUserIdentity에서 DB 확인 후 판단
@@ -851,7 +848,6 @@ function handleSignOut(silent = false) {
     if (cognitoUser != null) cognitoUser.signOut();
     const redirectPath = getRoleLoginPath();
 
-    // 서버에 쿠키 만료 요청 (at/rt HttpOnly 쿠키 삭제)
     fetch(AUTH_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

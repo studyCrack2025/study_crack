@@ -1,20 +1,6 @@
-// js/analysis/backtrace.js
-// [역추적 UX + sim-card 4-상태 모델] — js/analysis.js 에서 분리(2026-05-31).
-//
-// 책임:
-//   - 점수 시뮬레이션 차트 렌더링(bar/line) — renderSimChart, updateSimBarGraph, updateSimLineGraph
-//   - sim-card 4상태(default / loading / backtrace / upsell) — renderDetailedSimCard, requestBacktrace, goBackFromBacktrace
-//   - sim-card 내 univ 버튼/스크롤 헬퍼 — renderSimUnivButtons, selectSimUniv
-//   - 역추적 raw 스냅샷 추출 — extractBacktraceRawSnapshot
-//
-// 외부 의존(analysis.js 글로벌):
-//   - 상태: currentUserTier, userQuantData, currentExamMode, simDisplayList, selectedSimIndex, currentSimChartType
-//   - 헬퍼: escapeHtml, syncMobileHeight, triggerSubjScrollHintOnce, updateSimCardSwipeHint
-//   - 상수/API: UNIV_DATA_API_URL, EXAM_DISPLAY_NAMES
-//   - shared: apiFetch (shared/api.js)
-//
-// HTML 동적 onclick 참조 (분리 후에도 글로벌 유지 필수):
-//   - requestBacktrace, goBackFromBacktrace, selectSimUniv
+// js/analysis/backtrace.js — 역추적 UX + sim-card 4-상태(default/loading/backtrace/upsell).
+// 모듈 책임/의존성 상세: docs/frontend-reference.md
+// HTML 동적 onclick: requestBacktrace, goBackFromBacktrace, selectSimUniv (글로벌 유지 필수)
 
 // ============================================================
 // 역추적 UX (sim-card 4-상태 모델: default / loading / backtrace / upsell)

@@ -1,7 +1,10 @@
 // js/payment.js
 
 const USER_API_URL = CONFIG.api.user;
-const TEST_PAY_MODE = new URLSearchParams(window.location.search).get('testpay'); // /payment?testpay=1|2
+// 테스트 결제 카드 노출 가드 — local/dev 환경에서만 ?testpay=1|2 허용. prod는 무시.
+const TEST_PAY_MODE = (IS_LOCAL || IS_DEV)
+    ? new URLSearchParams(window.location.search).get('testpay')
+    : null;
 const FORCE_TEST_PAYMENT = (TEST_PAY_MODE === '1' || TEST_PAY_MODE === '2');
 const TEST_PAYMENT_AMOUNT_KRW = (TEST_PAY_MODE === '2') ? 1000 : 100;
 
@@ -509,7 +512,7 @@ function formatPhoneNumber(rawPhone) {
     return cleaned.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/, "$1-$2-$3");
 }
 
-// 티어별 결제 금액 (서버 사이드 TIER_PRICES 와 동일하게 유지)
+// 티어별 결제 금액 (UI 표시용). 실제 정가 검증은 Payment Lambda의 computeExpectedAmount가 수행.
 const BASE_TIER_PRICES_KRW = { 'test': 100, 'basic': 25000, 'starter': 39000, 'standard': 49000, 'pro': 149000 };
 const TIER_PRICES_KRW = BASE_TIER_PRICES_KRW;
 

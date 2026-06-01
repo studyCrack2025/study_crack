@@ -1,7 +1,5 @@
-// js/shared/api.js
-// 인증/세션 처리 단일 모듈 — 모든 페이지가 이 파일의 apiFetch/redirectToLogin/clearClientSession을 사용한다.
-// HttpOnly 쿠키 기반 인증 — accessToken은 응답 헤더로만 받고 JS에는 저장하지 않는 것이 정책이나,
-// 레거시(Bearer) 호환을 위해 sessionStorage/localStorage의 accessToken을 fallback으로 첨부한다.
+// js/shared/api.js — 인증/세션 처리 단일 모듈 (apiFetch/redirectToLogin/clearClientSession).
+// 인증 정책 상세: docs/security/architecture-notes.md §3
 
 // ─── 공개 경로 정의 (비로그인 사용자가 정상 접근하는 페이지) ──────────────────
 // 공개 경로에서 401이 발생해도 강제 로그인 페이지로 튕기지 않는다. 호출처가 알아서 분기.
@@ -122,14 +120,12 @@ async function apiFetch(url, options = {}) {
 
         if (response.ok) return response;
 
-        // 401 = 표준 인증 만료. 403 = HTTP API Lambda Authorizer가 isAuthorized:false 리턴 시 발생(JWT 만료/위조 포함).
-        // 두 경우 모두 refresh 1회 시도 후 retry — retry까지 실패하면 정말 만료 또는 권한 부족.
+        // 401/403 처리 정책: docs/security/architecture-notes.md §3
         if (response.status === 401 || response.status === 403) {
             const refreshed = await tryRefreshToken();
             if (refreshed) {
                 const retryRes = await fetch(url, options);
                 if (retryRes.ok) return retryRes;
-                // retry까지 403이면 진짜 권한 부족(역할 mismatch 등) — redirect 없이 throw
                 if (retryRes.status === 403) {
                     const errBody = await retryRes.json().catch(() => ({}));
                     throw new Error(errBody.error || errBody.message || '접근 권한이 없습니다.');
