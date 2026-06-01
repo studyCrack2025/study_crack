@@ -126,7 +126,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
                 body: JSON.stringify({ type: requestType })
             });
             let res = await doFetch();
-            // HTTP API Lambda Authorizer 만료 시 403 응답 — 401과 동일하게 refresh+retry 처리
+            // 401/403 처리 정책: docs/security/architecture-notes.md §3
             if (res.status === 401 || res.status === 403) {
                 const refreshed = await tryRefreshToken();
                 if (refreshed) res = await doFetch();
@@ -150,7 +150,6 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             sessionStorage.setItem('user_profile_api_mode', 'light');
         }
 
-        // 401 = 표준 만료, 403 = HTTP API Authorizer 거부(JWT 만료 포함). 둘 다 만료 처리.
         if (userRes.status === 401 || userRes.status === 403) {
             throw new Error("Auth expired");
         }

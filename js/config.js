@@ -5,10 +5,7 @@ const currentDomain = window.location.hostname;
 const IS_LOCAL = currentDomain === 'localhost' || currentDomain === '127.0.0.1';
 const IS_DEV   = !IS_LOCAL && (currentDomain.includes('cloudfront.net') || currentDomain.includes('dev.studycrack.co.kr'));
 
-// 2. 환경에 따라 API 베이스 URL 결정
-// local → API Gateway /local 직접 호출 (쿠키 미지원)
-// dev   → api.dev.studycrack.co.kr (API Gateway Custom Domain → /dev stage)
-// prod  → api.studycrack.co.kr     (API Gateway Custom Domain → /prod stage)
+// 2. 환경에 따라 API 베이스 URL 결정 (스테이지 분리 상세: docs/security/architecture-notes.md §1)
 const API_GATEWAY_BASE_URL = "https://ft35jsftc1.execute-api.ap-northeast-2.amazonaws.com";
 const API_BASE = IS_LOCAL
     ? `${API_GATEWAY_BASE_URL}/local`
@@ -32,12 +29,11 @@ const CONFIG = {
         pdf:            `${API_BASE}/api/generate-pdf`
     },
 
-    // NicePay 설정 — dev/prod 가맹점 ID 분리. clientId는 클라이언트 전송 공개 식별자라 코드에 평문 노출 OK.
-    // Secret Key는 백엔드 환경변수에만(StudyCrack_Payment Lambda alias별 다른 값 주입).
+    // NicePay 가맹점 ID (공개 식별자). 상세: docs/security/architecture-notes.md §2
     nicepay: {
         clientId: (IS_LOCAL || IS_DEV)
-            ? 'R2_3989842eefe74b4490031691658710a6'   // dev/local — NicePay 테스트 가맹점
-            : 'R2_9ff3f8dde7ae45a1b84b6c0ab9ca6ea9'   // prod — NicePay 운영 가맹점
+            ? 'R2_3989842eefe74b4490031691658710a6'
+            : 'R2_9ff3f8dde7ae45a1b84b6c0ab9ca6ea9'
     },
 
     // Cognito 설정

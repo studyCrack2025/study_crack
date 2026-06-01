@@ -155,7 +155,7 @@
             document.getElementById('adminPassword').value = '';
         }
 
-        // 공통: 토큰 저장 및 백엔드 권한 검증
+        // 관리자 인증 후처리. 단계별 동작/약점 상세: docs/security/architecture-notes.md §4
         async function processAdminSuccess(authResult) {
             const accessToken = authResult.getAccessToken().getJwtToken();
             const idToken = authResult.getIdToken().getJwtToken();
@@ -163,7 +163,6 @@
             const payload = authResult.getIdToken().payload;
             const groups = payload['cognito:groups'] || [];
 
-            // 1. 관리자 권한 즉시 확인 (토큰 저장 전에 차단)
             if (!groups.includes('Admins')) {
                 alert("접근 거부: 관리자 권한이 없습니다.");
                 if (globalCognitoUser) globalCognitoUser.signOut();
@@ -172,16 +171,13 @@
                 return;
             }
 
-            // 2. 메모리에 토큰 저장
             setAccessToken(accessToken);
             setIdToken(idToken);
-            // 동일 탭에서 /admin 이동 직후 사용할 부트스트랩 토큰 보존
             sessionStorage.setItem('accessToken', accessToken);
             sessionStorage.setItem('idToken', idToken);
             localStorage.setItem('userRole', 'admin');
             localStorage.setItem('userId', payload.sub);
 
-            // 3. 이전 세션의 stale 쿠키 제거
             try {
                 await fetch(CONFIG.api.auth, {
                     method: 'POST',
@@ -189,13 +185,8 @@
                     credentials: 'include',
                     body: JSON.stringify({ type: 'logout' })
                 });
-            } catch (e) {
-                // stale 쿠키 제거 실패는 치명적이지 않음
-            }
+            } catch (e) { /* noop */ }
 
-            // 4. /admin 이동 전에 HttpOnly 쿠키(rt, at)를 미리 설치
-            //    이걸 안 하면 /admin 진입 직후 병렬 API 5~6건이 모두 401 → refresh 폴백 진입
-            //    → 콘솔에 401 다수 출력 + 쿠키 propagation 지연 시 간헐적 로그아웃 유발
             let cookieRegistered = false;
             try {
                 const regRes = await fetch(CONFIG.api.auth, {
@@ -210,7 +201,6 @@
             }
 
             if (cookieRegistered) {
-                // at 쿠키도 같이 발급받아 다음 페이지의 첫 API 콜부터 정상 통과시킨다
                 try {
                     await fetch(CONFIG.api.auth, {
                         method: 'POST',
@@ -218,12 +208,9 @@
                         credentials: 'include',
                         body: JSON.stringify({ type: 'silent_refresh' })
                     });
-                } catch (e) {
-                    // silent_refresh 실패해도 /admin에서 401 → tryRefreshToken으로 복구 가능
-                }
+                } catch (e) { /* noop */ }
                 localStorage.removeItem('refreshToken');
             } else {
-                // 쿠키 등록 실패 시에만 fallback으로 localStorage에 refreshToken 보관
                 localStorage.setItem('refreshToken', refreshToken);
             }
 

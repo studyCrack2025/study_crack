@@ -122,14 +122,12 @@ async function apiFetch(url, options = {}) {
 
         if (response.ok) return response;
 
-        // 401 = 표준 인증 만료. 403 = HTTP API Lambda Authorizer가 isAuthorized:false 리턴 시 발생(JWT 만료/위조 포함).
-        // 두 경우 모두 refresh 1회 시도 후 retry — retry까지 실패하면 정말 만료 또는 권한 부족.
+        // 401/403 처리 정책: docs/security/architecture-notes.md §3
         if (response.status === 401 || response.status === 403) {
             const refreshed = await tryRefreshToken();
             if (refreshed) {
                 const retryRes = await fetch(url, options);
                 if (retryRes.ok) return retryRes;
-                // retry까지 403이면 진짜 권한 부족(역할 mismatch 등) — redirect 없이 throw
                 if (retryRes.status === 403) {
                     const errBody = await retryRes.json().catch(() => ({}));
                     throw new Error(errBody.error || errBody.message || '접근 권한이 없습니다.');
