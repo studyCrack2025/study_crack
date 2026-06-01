@@ -2224,6 +2224,36 @@ function formatReportKey(key) {
     return `20${yStr}년 ${mStr}월 ${wStr}주차 PRO 분석`;
 }
 
+// PRO 4주 멤버십의 격주 2회차 스케줄 산출. 사양: docs/exec-plans/active/260602_pro_report_schedule_ux.md §3
+// 입력: paymentDate (Date 또는 Date-parsable)
+// 반환: { R1Deadline, R1Release, R2Deadline, R2Release, subscriptionEnd } — 비정상 입력이면 null
+function computeProSchedule(paymentDate) {
+    const p = paymentDate instanceof Date ? new Date(paymentDate) : new Date(paymentDate);
+    if (Number.isNaN(p.getTime())) return null;
+
+    const R1Deadline = new Date(p);
+    R1Deadline.setDate(R1Deadline.getDate() + 7);
+    const daysToSunday = (7 - R1Deadline.getDay()) % 7;
+    R1Deadline.setDate(R1Deadline.getDate() + daysToSunday);
+    R1Deadline.setHours(23, 59, 59, 999);
+
+    const R1Release = new Date(R1Deadline);
+    R1Release.setDate(R1Release.getDate() + 3);
+    R1Release.setHours(0, 0, 0, 0);
+
+    const R2Deadline = new Date(R1Deadline);
+    R2Deadline.setDate(R2Deadline.getDate() + 14);
+
+    const R2Release = new Date(R2Deadline);
+    R2Release.setDate(R2Release.getDate() + 3);
+    R2Release.setHours(0, 0, 0, 0);
+
+    const subscriptionEnd = new Date(p);
+    subscriptionEnd.setDate(subscriptionEnd.getDate() + 28);
+
+    return { R1Deadline, R1Release, R2Deadline, R2Release, subscriptionEnd };
+}
+
 async function renderProDashboard(container) {
     const now = new Date(); const currentKey = generateReportKey(now); 
     const displayDateStr = formatReportKey(currentKey).replace(" PRO 분석", ""); 
