@@ -29,6 +29,18 @@ function formatReportKey(key, isPro = true) {
     return key;
 }
 
+const KO_DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
+function formatKoDate(date, withTime = false) {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+    const m = date.getMonth() + 1;
+    const d = date.getDate();
+    const dow = KO_DAY_NAMES[date.getDay()];
+    if (!withTime) return `${m}월 ${d}일 (${dow})`;
+    const h = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    return `${m}월 ${d}일 (${dow}) ${h}:${min}`;
+}
+
 function getTierBadgeHTML(studentItem) {
     if (!studentItem || !studentItem.currentSubscription || studentItem.currentSubscription.status !== 'active') {
         return '<span style="color:#64748b; background:#f1f5f9; padding:4px 8px; border-radius:12px; font-size:0.8rem;">FREE</span>';

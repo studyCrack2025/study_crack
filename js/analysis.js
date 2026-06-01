@@ -11,6 +11,7 @@ const PDF_API_URL = CONFIG.api.pdf;
 let currentUserTier = 'free';
 let univChangeRemaining = 0;
 let userRecentPaymentDate = null;
+let userPendingSubscription = null; // PRO 갱신/연장 예약. PRO 일정 카드(§4.2)에서 활용.
 let userTargetUnivs = [null, null, null, null, null, null]; // 6슬롯
 let univData = []; 
 let univMap = {};  
@@ -681,7 +682,11 @@ async function fetchUserData(userId) {
         if (data.currentSubscription && data.currentSubscription.startDate) {
              userRecentPaymentDate = new Date(data.currentSubscription.startDate);
         }
-        
+
+        userPendingSubscription = (data.pendingSubscription && data.pendingSubscription.status === 'active')
+            ? data.pendingSubscription
+            : null;
+
         renderUserInfo(data);
         applyUserTier(data.computedTier || 'free');
 
@@ -2224,28 +2229,160 @@ function formatReportKey(key) {
     return `20${yStr}년 ${mStr}월 ${wStr}주차 PRO 분석`;
 }
 
-async function renderProDashboard(container) {
-    const now = new Date(); const currentKey = generateReportKey(now); 
-    const displayDateStr = formatReportKey(currentKey).replace(" PRO 분석", ""); 
-    
-    let paymentDate = userRecentPaymentDate || new Date();
-    let deadlineDate = new Date(paymentDate); deadlineDate.setDate(deadlineDate.getDate() + 7); 
-    const daysToSunday = (7 - deadlineDate.getDay()) % 7; deadlineDate.setDate(deadlineDate.getDate() + daysToSunday); deadlineDate.setHours(23, 59, 59, 999);
-    let releaseDate = new Date(deadlineDate); releaseDate.setDate(releaseDate.getDate() + 3);
+// PRO 4주 멤버십의 격주 2회차 스케줄 산출. 사양: docs/exec-plans/active/260602_pro_report_schedule_ux.md §3
+// 입력: paymentDate (Date 또는 Date-parsable)
+// 반환: { R1Deadline, R1Release, R2Deadline, R2Release, subscriptionEnd } — 비정상 입력이면 null
+function computeProSchedule(paymentDate) {
+    const p = paymentDate instanceof Date ? new Date(paymentDate) : new Date(paymentDate);
+    if (Number.isNaN(p.getTime())) return null;
 
-    const isDeadlinePassed = now > deadlineDate;
-    const deadlineStr = `${deadlineDate.getMonth() + 1}월 ${deadlineDate.getDate()}일(일) 자정`;
-    const releaseStr = `${releaseDate.getMonth() + 1}월 ${releaseDate.getDate()}일(수)`;
+    const R1Deadline = new Date(p);
+    R1Deadline.setDate(R1Deadline.getDate() + 7);
+    const daysToSunday = (7 - R1Deadline.getDay()) % 7;
+    R1Deadline.setDate(R1Deadline.getDate() + daysToSunday);
+    R1Deadline.setHours(23, 59, 59, 999);
+
+    const R1Release = new Date(R1Deadline);
+    R1Release.setDate(R1Release.getDate() + 3);
+    R1Release.setHours(0, 0, 0, 0);
+
+    const R2Deadline = new Date(R1Deadline);
+    R2Deadline.setDate(R2Deadline.getDate() + 14);
+
+    const R2Release = new Date(R2Deadline);
+    R2Release.setDate(R2Release.getDate() + 3);
+    R2Release.setHours(0, 0, 0, 0);
+
+    const subscriptionEnd = new Date(p);
+    subscriptionEnd.setDate(subscriptionEnd.getDate() + 28);
+
+    return { R1Deadline, R1Release, R2Deadline, R2Release, subscriptionEnd };
+}
+
+// PRO 윈도 산출. 사양: §3.3
+function deriveProWindow(now, schedule, pendingSub) {
+    if (!schedule) return 'r1'; // 결제일 미상 — 신규 결제 직후 폴백
+    if (now <= schedule.R1Deadline) return 'r1';
+    if (now <= schedule.R2Deadline) return 'r2';
+    if (now < schedule.subscriptionEnd) return 'closed';
+    const pendingIsPro = pendingSub && String(pendingSub.tier || '').toLowerCase() === 'pro';
+    return pendingIsPro ? 'pending_active' : 'expired';
+}
+
+// 회차별 신청 여부. roundDeadline의 calendar week 기준 reportKey로 cachedProReports와 매칭.
+function getRoundRequestStatus(roundDeadline) {
+    const key = generateReportKey(roundDeadline);
+    const entry = cachedProReports.find(r => r.key === key);
+    return entry && entry.request ? 'submitted' : 'pending';
+}
+
+// §4.1 회차 행 라벨/색상. roundNumber: 1|2, status: 'submitted'|'pending', currentRound: 1|2|null
+function getRoundLabel(roundNumber, status, currentRound, windowState) {
+    if (status === 'submitted') return { text: '✓ 신청 완료', color: '#166534', bg: '#dcfce7' };
+    const isCurrent = currentRound === roundNumber;
+    if (isCurrent) return { text: '신청 가능', color: '#92400e', bg: '#fef3c7' };
+    if (windowState === 'r1' && roundNumber === 2) return { text: '대기 중', color: '#475569', bg: '#e2e8f0' };
+    return { text: '신청 종료', color: '#94a3b8', bg: '#f1f5f9' };
+}
+
+// 일정 카드 마크업. title 예: "이번 멤버십 일정" / "다음 멤버십 일정". isPending=true면 회색 톤.
+function buildProScheduleCardHTML(title, subtitle, schedule, currentRound, windowState, isPending) {
+    if (!schedule) return '';
+    const bg = isPending ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.08)';
+    const titleColor = isPending ? '#94a3b8' : '#fff';
+    const rowColor = isPending ? '#cbd5e1' : '#e2e8f0';
+
+    const rows = [1, 2].map((n) => {
+        const dline = schedule[`R${n}Deadline`];
+        const rel = schedule[`R${n}Release`];
+        const status = isPending ? 'pending' : getRoundRequestStatus(dline);
+        const label = getRoundLabel(n, status, currentRound, windowState);
+        const isCurrent = !isPending && currentRound === n;
+        const marker = isCurrent
+            ? '<span style="color:#fbbf24; font-weight:bold; margin-right:6px;">▶</span>'
+            : '<span style="display:inline-block; width:14px; margin-right:6px;"></span>';
+        return `
+            <div style="padding:10px 0; border-top:1px solid rgba(255,255,255,0.08);">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <div style="color:${isCurrent ? '#fff' : rowColor}; font-size:0.95rem;">
+                        ${marker}${n}회차 신청 마감 — <strong>${formatKoDate(dline, true)}</strong>
+                    </div>
+                    <span style="background:${label.bg}; color:${label.color}; font-size:0.78rem; padding:3px 10px; border-radius:10px; font-weight:600;">${label.text}</span>
+                </div>
+                <div style="color:${isPending ? '#94a3b8' : '#bfdbfe'}; font-size:0.85rem; margin-left:20px; margin-top:3px;">
+                    수령일 — ${formatKoDate(rel)}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div style="background:${bg}; border-radius:12px; padding:16px 20px; margin-bottom:14px;">
+            <div style="color:${titleColor}; font-size:1rem; font-weight:600; margin-bottom:6px;">
+                ${title}${subtitle ? `<span style="color:#94a3b8; font-weight:400; font-size:0.85rem; margin-left:8px;">· ${subtitle}</span>` : ''}
+            </div>
+            ${rows}
+            <div style="color:${isPending ? '#94a3b8' : '#cbd5e1'}; font-size:0.82rem; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">
+                ${isPending ? '시작일' : '멤버십 만료'}: ${formatKoDate(schedule.subscriptionEnd)}${isPending ? '' : ' (4주 이용권)'}
+            </div>
+        </div>
+    `;
+}
+
+async function renderProDashboard(container) {
+    const now = new Date();
+
+    const paymentDate = userRecentPaymentDate || new Date();
+    const schedule = computeProSchedule(paymentDate);
+    const pendingSub = userPendingSubscription;
+    const pendingTier = pendingSub ? String(pendingSub.tier || '').toLowerCase() : '';
+    const pendingIsPro = pendingTier === 'pro';
+    const pendingSchedule = (pendingIsPro && pendingSub.startDate)
+        ? computeProSchedule(pendingSub.startDate)
+        : null;
+
+    const windowState = deriveProWindow(now, schedule, pendingSub);
+    const currentRound = (windowState === 'r1') ? 1 : (windowState === 'r2') ? 2 : null;
+
+    const currentCard = buildProScheduleCardHTML(
+        '이번 멤버십 일정',
+        '',
+        schedule,
+        currentRound,
+        windowState,
+        false
+    );
+
+    let pendingBlock = '';
+    if (pendingSchedule) {
+        const pendingStartStr = formatKoDate(new Date(pendingSub.startDate));
+        pendingBlock = buildProScheduleCardHTML(
+            '🔁 다음 멤버십 일정',
+            `${pendingStartStr}부터 자동 시작`,
+            pendingSchedule,
+            null,
+            'r1',
+            true
+        );
+    } else if (pendingSub && pendingSub.startDate && pendingTier && !pendingIsPro) {
+        const pendingStartStr = formatKoDate(new Date(pendingSub.startDate));
+        const pendingTierDisplay = String(pendingSub.tier || '').toUpperCase();
+        pendingBlock = `
+            <div style="background:rgba(255,255,255,0.04); border-radius:12px; padding:14px 20px; margin-bottom:14px; color:#cbd5e1; font-size:0.9rem;">
+                ${pendingStartStr}부터 <strong>${pendingTierDisplay}</strong> 멤버십으로 전환됩니다.
+            </div>
+        `;
+    }
 
     container.innerHTML = `
         <div style="display: block;">
             <div class="pro-header">
-                <div style="font-size:2rem; margin-bottom:10px;">🎓</div><h2 class="pro-title">PRO STRATEGY LOUNGE</h2><p class="pro-desc">상위 1%를 위한 프리미엄 분석 센터입니다.<br><strong>${displayDateStr}</strong> 회차 리포트 요청이 진행 중입니다.</p>
-                <div style="margin-top:10px; font-size:0.85rem; color:#cbd5e1;"><i class="fas fa-bell" style="color:#fbbf24;"></i> 리포트는 <strong>${releaseStr}</strong>에 일괄 발송됩니다.</div>
+                <div style="font-size:2rem; margin-bottom:10px;">🎓</div><h2 class="pro-title">PRO STRATEGY LOUNGE</h2><p class="pro-desc">상위 1%를 위한 프리미엄 분석 센터입니다.<br>결제 시점에 모든 일정이 확정되며, 2주마다 보고서가 제공됩니다.</p>
             </div>
+            ${currentCard}
+            ${pendingBlock}
             <div class="pro-dashboard-layout">
                 <div class="dashboard-actions">
-                    <div style="color:#bfdbfe; margin-bottom:15px; font-size:0.95rem;">⏳ 요청 마감: <strong>${deadlineStr}</strong> 까지</div>
                     <div id="requestBtnContainer"><button class="req-btn" onclick="openProReportModal()"><i class="fas fa-edit"></i> 분석 요청서 작성하기</button></div>
                 </div>
                 <div class="report-list-container">
@@ -2255,10 +2392,11 @@ async function renderProDashboard(container) {
             </div>
         </div>
     `;
-    renderProReportList(currentKey, isDeadlinePassed);
+    renderProReportList({ windowState, schedule, currentRound, pendingSub });
 }
 
-function renderProReportList(currentKey, isDeadlinePassed) {
+function renderProReportList(ctx) {
+    const { windowState, schedule, currentRound, pendingSub } = ctx;
     const listArea = document.getElementById('proReportListArea');
     const btnContainer = document.getElementById('requestBtnContainer');
 
@@ -2267,7 +2405,7 @@ function renderProReportList(currentKey, isDeadlinePassed) {
     } else {
         const gridDiv = document.createElement('div');
         gridDiv.className = 'report-grid';
-        
+
         cachedProReports.forEach(rep => {
             const hasReportLink = !!(rep.reportLink && String(rep.reportLink).trim() !== '');
             const isReady = (rep.status === 'published' || rep.status === 'sent') && hasReportLink;
@@ -2307,20 +2445,32 @@ function renderProReportList(currentKey, isDeadlinePassed) {
             itemDiv.appendChild(iconDiv);
             gridDiv.appendChild(itemDiv);
         });
-        
+
         listArea.innerHTML = '';
         listArea.appendChild(gridDiv);
     }
 
-    // 하단 버튼 처리 (기존 코드 유지)
-    const currentData = cachedProReports.find(r => r.key === currentKey);
-    const hasRequested = currentData && currentData.request;
+    // 신청 버튼 — windowState 기반 분기. 사양: §3.3, §4.3
+    const currentRoundDeadline = (currentRound && schedule) ? schedule[`R${currentRound}Deadline`] : null;
+    const currentKey = currentRoundDeadline ? generateReportKey(currentRoundDeadline) : '';
+    const currentData = currentKey ? cachedProReports.find(r => r.key === currentKey) : null;
+    const hasRequested = !!(currentData && currentData.request);
     window.currentProRequestText = hasRequested ? currentData.request : '';
 
-    if (isDeadlinePassed) {
-        btnContainer.innerHTML = `<button class="req-btn disabled" disabled style="background:#e2e8f0; color:#94a3b8; cursor:not-allowed;"><i class="fas fa-lock"></i> 접수 마감됨</button>`;
-    } else if (hasRequested) {
-        btnContainer.innerHTML = `<button class="req-btn" style="background:#dcfce7; color:#166534; border:1px solid #86efac;" onclick="modifyProRequest()"><i class="fas fa-check-circle"></i> 요청 완료 (수정하기)</button>`;
+    if (windowState === 'r1' || windowState === 'r2') {
+        if (hasRequested) {
+            btnContainer.innerHTML = `<button class="req-btn" style="background:#dcfce7; color:#166534; border:1px solid #86efac;" onclick="modifyProRequest()"><i class="fas fa-check-circle"></i> ${currentRound}회차 요청 완료 (수정하기)</button>`;
+        } else {
+            btnContainer.innerHTML = `<button class="req-btn" onclick="openProReportModal()"><i class="fas fa-edit"></i> ${currentRound}회차 분석 요청서 작성하기</button>`;
+        }
+    } else if (windowState === 'closed') {
+        btnContainer.innerHTML = `<button class="req-btn disabled" disabled style="background:#e2e8f0; color:#94a3b8; cursor:not-allowed;"><i class="fas fa-check-circle"></i> 이번 멤버십의 모든 회차 신청이 완료되었습니다</button>`;
+    } else if (windowState === 'pending_active') {
+        const startStr = (pendingSub && pendingSub.startDate) ? formatKoDate(new Date(pendingSub.startDate)) : '';
+        btnContainer.innerHTML = `<button class="req-btn disabled" disabled style="background:#e2e8f0; color:#475569; cursor:not-allowed;"><i class="fas fa-clock"></i> ${startStr}부터 다음 멤버십이 자동 시작됩니다</button>`;
+    } else {
+        // expired — 갱신 안내
+        btnContainer.innerHTML = `<button class="req-btn" onclick="location.href='/payment'" style="background:#f59e0b; color:#fff;"><i class="fas fa-redo"></i> PRO 멤버십 갱신하기</button>`;
     }
 }
 
