@@ -2289,55 +2289,41 @@ function getRoundRequestStatus(roundDeadline) {
     return entry && entry.request ? 'submitted' : 'pending';
 }
 
-// §4.1 회차 행 라벨/색상. roundNumber: 1|2, status: 'submitted'|'pending', currentRound: 1|2|null
+// §4.1 회차 행 라벨. roundNumber: 1|2, status: 'submitted'|'pending', currentRound: 1|2|null
 function getRoundLabel(roundNumber, status, currentRound, windowState) {
-    if (status === 'submitted') return { text: '✓ 신청 완료', color: '#166534', bg: '#dcfce7' };
+    if (status === 'submitted') return { kind: 'submitted', text: '✓ 신청 완료' };
     const isCurrent = currentRound === roundNumber;
-    if (isCurrent) return { text: '신청 가능', color: '#92400e', bg: '#fef3c7' };
-    if (windowState === 'r1' && roundNumber === 2) return { text: '대기 중', color: '#475569', bg: '#e2e8f0' };
-    return { text: '신청 종료', color: '#94a3b8', bg: '#f1f5f9' };
+    if (isCurrent) return { kind: 'active', text: '신청 가능' };
+    if (windowState === 'r1' && roundNumber === 2) return { kind: 'wait', text: '대기 중' };
+    return { kind: 'closed', text: '신청 종료' };
 }
 
-// 일정 카드 마크업. title 예: "이번 멤버십 일정" / "다음 멤버십 일정". isPending=true면 회색 톤.
+// 일정 카드 마크업. 스타일은 css/analysis.css의 .pro-schedule-* 클래스(dark/light 분기 모두 정의).
 function buildProScheduleCardHTML(title, subtitle, schedule, currentRound, windowState, isPending) {
     if (!schedule) return '';
-    const bg = isPending ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.08)';
-    const titleColor = isPending ? '#94a3b8' : '#fff';
-    const rowColor = isPending ? '#cbd5e1' : '#e2e8f0';
-
     const rows = [1, 2].map((n) => {
         const dline = schedule[`R${n}Deadline`];
         const rel = schedule[`R${n}Release`];
         const status = isPending ? 'pending' : getRoundRequestStatus(dline);
         const label = getRoundLabel(n, status, currentRound, windowState);
         const isCurrent = !isPending && currentRound === n;
-        const marker = isCurrent
-            ? '<span style="color:#fbbf24; font-weight:bold; margin-right:6px;">▶</span>'
-            : '<span style="display:inline-block; width:14px; margin-right:6px;"></span>';
         return `
-            <div style="padding:10px 0; border-top:1px solid rgba(255,255,255,0.08);">
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
-                    <div style="color:${isCurrent ? '#fff' : rowColor}; font-size:0.95rem;">
-                        ${marker}${n}회차 신청 마감 — <strong>${formatKoDate(dline, true)}</strong>
-                    </div>
-                    <span style="background:${label.bg}; color:${label.color}; font-size:0.78rem; padding:3px 10px; border-radius:10px; font-weight:600;">${label.text}</span>
+            <div class="pro-schedule-row${isCurrent ? ' current' : ''}">
+                <div class="pro-schedule-row-main">
+                    <span class="pro-schedule-marker">${isCurrent ? '▶' : ''}</span>
+                    <span class="pro-schedule-deadline">${n}회차 신청 마감 — <strong>${formatKoDate(dline, true)}</strong></span>
+                    <span class="pro-schedule-label ${label.kind}">${label.text}</span>
                 </div>
-                <div style="color:${isPending ? '#94a3b8' : '#bfdbfe'}; font-size:0.85rem; margin-left:20px; margin-top:3px;">
-                    수령일 — ${formatKoDate(rel)}
-                </div>
+                <div class="pro-schedule-row-release">수령일 — ${formatKoDate(rel)}</div>
             </div>
         `;
     }).join('');
 
     return `
-        <div style="background:${bg}; border-radius:12px; padding:16px 20px; margin-bottom:14px;">
-            <div style="color:${titleColor}; font-size:1rem; font-weight:600; margin-bottom:6px;">
-                ${title}${subtitle ? `<span style="color:#94a3b8; font-weight:400; font-size:0.85rem; margin-left:8px;">· ${subtitle}</span>` : ''}
-            </div>
+        <div class="pro-schedule-card${isPending ? ' pending' : ''}">
+            <div class="pro-schedule-title">${title}${subtitle ? `<span class="pro-schedule-subtitle">· ${subtitle}</span>` : ''}</div>
             ${rows}
-            <div style="color:${isPending ? '#94a3b8' : '#cbd5e1'}; font-size:0.82rem; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">
-                ${isPending ? '시작일' : '멤버십 만료'}: ${formatKoDate(schedule.subscriptionEnd)}${isPending ? '' : ' (4주 이용권)'}
-            </div>
+            <div class="pro-schedule-footer">${isPending ? '시작일' : '멤버십 만료'}: ${formatKoDate(schedule.subscriptionEnd)}${isPending ? '' : ' (4주 이용권)'}</div>
         </div>
     `;
 }
@@ -2380,11 +2366,7 @@ async function renderProDashboard(container) {
     } else if (pendingSub && pendingSub.startDate && pendingTier && !pendingIsPro) {
         const pendingStartStr = formatKoDate(new Date(pendingSub.startDate));
         const pendingTierDisplay = String(pendingSub.tier || '').toUpperCase();
-        pendingBlock = `
-            <div style="background:rgba(255,255,255,0.04); border-radius:12px; padding:14px 20px; margin-bottom:14px; color:#cbd5e1; font-size:0.9rem;">
-                ${pendingStartStr}부터 <strong>${pendingTierDisplay}</strong> 멤버십으로 전환됩니다.
-            </div>
-        `;
+        pendingBlock = `<div class="pro-pending-notice">${pendingStartStr}부터 <strong>${pendingTierDisplay}</strong> 멤버십으로 전환됩니다.</div>`;
     }
 
     container.innerHTML = `
@@ -2477,13 +2459,12 @@ function renderProReportList(ctx) {
             btnContainer.innerHTML = `<button class="req-btn" onclick="openProReportModal()"><i class="fas fa-edit"></i> ${currentRound}회차 분석 요청서 작성하기</button>`;
         }
     } else if (windowState === 'closed') {
-        btnContainer.innerHTML = `<button class="req-btn disabled" disabled style="background:#e2e8f0; color:#94a3b8; cursor:not-allowed;"><i class="fas fa-check-circle"></i> 이번 멤버십의 모든 회차 신청이 완료되었습니다</button>`;
+        btnContainer.innerHTML = `<button class="req-btn disabled" disabled><i class="fas fa-check-circle"></i> 이번 멤버십의 모든 회차 신청이 완료되었습니다</button>`;
     } else if (windowState === 'pending_active') {
         const startStr = (pendingSub && pendingSub.startDate) ? formatKoDate(new Date(pendingSub.startDate)) : '';
-        btnContainer.innerHTML = `<button class="req-btn disabled" disabled style="background:#e2e8f0; color:#475569; cursor:not-allowed;"><i class="fas fa-clock"></i> ${startStr}부터 다음 멤버십이 자동 시작됩니다</button>`;
+        btnContainer.innerHTML = `<button class="req-btn disabled" disabled><i class="fas fa-clock"></i> ${startStr}부터 다음 멤버십이 자동 시작됩니다</button>`;
     } else {
-        // expired — 갱신 안내
-        btnContainer.innerHTML = `<button class="req-btn" onclick="location.href='/payment'" style="background:#f59e0b; color:#fff;"><i class="fas fa-redo"></i> PRO 멤버십 갱신하기</button>`;
+        btnContainer.innerHTML = `<button class="req-btn renew" onclick="location.href='/payment'"><i class="fas fa-redo"></i> PRO 멤버십 갱신하기</button>`;
     }
 }
 
