@@ -2298,7 +2298,7 @@ function getRoundLabel(roundNumber, status, currentRound, windowState) {
     return { kind: 'closed', text: '신청 종료' };
 }
 
-// 일정 카드 마크업. 스타일은 css/analysis.css의 .pro-schedule-* 클래스(dark/light 분기 모두 정의).
+// 일정 카드 마크업. 좌측 회차 배지 + 중앙 일정 + 우측 라벨. 현재 회차는 좌측 강조 바.
 function buildProScheduleCardHTML(title, subtitle, schedule, currentRound, windowState, isPending) {
     if (!schedule) return '';
     const rows = [1, 2].map((n) => {
@@ -2308,13 +2308,13 @@ function buildProScheduleCardHTML(title, subtitle, schedule, currentRound, windo
         const label = getRoundLabel(n, status, currentRound, windowState);
         const isCurrent = !isPending && currentRound === n;
         return `
-            <div class="pro-schedule-row${isCurrent ? ' current' : ''}">
-                <div class="pro-schedule-row-main">
-                    <span class="pro-schedule-marker">${isCurrent ? '▶' : ''}</span>
-                    <span class="pro-schedule-deadline">${n}회차 신청 마감 — <strong>${formatKoDate(dline, true)}</strong></span>
-                    <span class="pro-schedule-label ${label.kind}">${label.text}</span>
+            <div class="pro-schedule-row ${label.kind}${isCurrent ? ' current' : ''}">
+                <div class="pro-schedule-round-badge ${label.kind}">${n}</div>
+                <div class="pro-schedule-row-content">
+                    <div class="pro-schedule-deadline">${formatKoDate(dline, true)} 마감</div>
+                    <div class="pro-schedule-row-release">${formatKoDate(rel)} 수령</div>
                 </div>
-                <div class="pro-schedule-row-release">수령일 — ${formatKoDate(rel)}</div>
+                <span class="pro-schedule-label ${label.kind}">${label.text}</span>
             </div>
         `;
     }).join('');
@@ -2322,8 +2322,8 @@ function buildProScheduleCardHTML(title, subtitle, schedule, currentRound, windo
     return `
         <div class="pro-schedule-card${isPending ? ' pending' : ''}">
             <div class="pro-schedule-title">${title}${subtitle ? `<span class="pro-schedule-subtitle">· ${subtitle}</span>` : ''}</div>
-            ${rows}
-            <div class="pro-schedule-footer">${isPending ? '시작일' : '멤버십 만료'}: ${formatKoDate(schedule.subscriptionEnd)}${isPending ? '' : ' (4주 이용권)'}</div>
+            <div class="pro-schedule-rows">${rows}</div>
+            <div class="pro-schedule-footer">${isPending ? '시작일' : '멤버십 만료'} — ${formatKoDate(schedule.subscriptionEnd)}${isPending ? '' : ' (4주 이용권)'}</div>
         </div>
     `;
 }
