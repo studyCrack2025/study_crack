@@ -1,23 +1,7 @@
-// js/analysis/coaching.js
-// [코칭 & 주간 학습 점검] — js/analysis.js 에서 분리(2026-06-01).
-//
-// 책임:
-//   - 주간 리포트 렌더링/탭 — checkWeeklyStatus, switchWeeklyTab, renderFeedbackList, setWeeklyLoadingStatus
-//   - 피드백 모달 — openFeedbackModal, openFeedbackModalV2
-//   - 주간 점검 입력 wizard — openWeeklyCheckModal, closeWeeklyModal, nextMobileStep, prevMobileStep, addSubjectCard 등
-//   - 플래너 파일 첨부/PDF 다운로드 — handlePlannerFiles, renderPlannerFiles, removePlannerFile, downloadReportPDF, renderPdfToImages
-//   - 주차 계산 헬퍼 — getWeekOfMonth, getWeekTitle, generateWeekId
-//   - 등급 락 — applyCoachTierLock
-//
-// 외부 의존(analysis.js 글로벌):
-//   - 상태: currentUserTier, weeklyDataHistory, currentPlannerFiles, originalPlannerFiles, currentTutorName, currentExamMode
-//   - 헬퍼: escapeHtml, getStandardLockOverlayHTML, fetchWeeklyHistory, applySimTierLock 등
-//   - 상수/API: REPORT_API_URL, FILE_API_URL, PDF_API_URL (shared/api.js), apiFetch
-//
-// HTML 동적 onclick 참조 (분리 후에도 글로벌 유지 필수):
-//   - downloadReportPDF, removePlannerFile
-// HTML 정적 onclick (analysis.html):
-//   - addSubjectCard, openWeeklyCheckModal, closeWeeklyModal, submitWeeklyCheck, switchWeeklyTab, nextMobileStep, prevMobileStep
+// js/analysis/coaching.js — 코칭 & 주간 학습 점검.
+// 모듈 책임/의존성 상세: docs/frontend-reference.md
+// HTML 동적 onclick: downloadReportPDF, removePlannerFile (글로벌 유지 필수)
+// HTML 정적 onclick (analysis.html): addSubjectCard, openWeeklyCheckModal, closeWeeklyModal, submitWeeklyCheck, switchWeeklyTab, nextMobileStep, prevMobileStep
 
 // ============================================================
 // [기능 4] 코칭 & 주간 학습 점검
