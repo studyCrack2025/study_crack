@@ -1,7 +1,5 @@
-// js/shared/api.js
-// 인증/세션 처리 단일 모듈 — 모든 페이지가 이 파일의 apiFetch/redirectToLogin/clearClientSession을 사용한다.
-// HttpOnly 쿠키 기반 인증 — accessToken은 응답 헤더로만 받고 JS에는 저장하지 않는 것이 정책이나,
-// 레거시(Bearer) 호환을 위해 sessionStorage/localStorage의 accessToken을 fallback으로 첨부한다.
+// js/shared/api.js — 인증/세션 처리 단일 모듈 (apiFetch/redirectToLogin/clearClientSession).
+// 인증 정책 상세: docs/security/architecture-notes.md §3
 
 // ─── 공개 경로 정의 (비로그인 사용자가 정상 접근하는 페이지) ──────────────────
 // 공개 경로에서 401이 발생해도 강제 로그인 페이지로 튕기지 않는다. 호출처가 알아서 분기.

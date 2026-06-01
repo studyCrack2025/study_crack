@@ -925,7 +925,7 @@ window.requestTutorWithdrawal = function() {
     tutorCognitoUser.authenticateUser(authDetails, {
         onSuccess: async function(result) {
             try {
-                // 1. register_refresh_cookie로 at/rt 쿠키 갱신
+                // 쿠키 갱신 후 탈퇴 요청. 인증 플로우: docs/security/architecture-notes.md §4
                 const refreshToken = result.getRefreshToken().getToken();
                 await fetch(CONFIG.api.auth, {
                     method: 'POST',
@@ -934,7 +934,6 @@ window.requestTutorWithdrawal = function() {
                     body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken })
                 });
 
-                // 2. 쿠키 기반 API 호출
                 await apiFetch(NOTI_API_URL, {
                     method: 'POST',
                     body: JSON.stringify({

@@ -116,8 +116,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             headers.Authorization = `Bearer ${bearerToken}`;
         }
 
-        // 🔥 at 쿠키 만료 시 silent_refresh로 자동 갱신 — rt 쿠키 유효한 동안 세션 유지
-        //    raw fetch만 쓰면 401에서 즉시 handleSignOut → 페이지 로드만 해도 로그아웃되는 문제 방지
+        // 401/403 시 refresh+retry. 401 즉시 sign-out 방지가 목적. 정책: docs/security/architecture-notes.md §3
         const fetchIdentity = async (requestType) => {
             const doFetch = () => fetch(USER_API_URL, {
                 method: 'POST',
@@ -849,7 +848,6 @@ function handleSignOut(silent = false) {
     if (cognitoUser != null) cognitoUser.signOut();
     const redirectPath = getRoleLoginPath();
 
-    // 서버에 쿠키 만료 요청 (at/rt HttpOnly 쿠키 삭제)
     fetch(AUTH_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
