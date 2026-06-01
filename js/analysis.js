@@ -2229,6 +2229,19 @@ function formatReportKey(key) {
     return `20${yStr}년 ${mStr}월 ${wStr}주차 PRO 분석`;
 }
 
+// 한국어 날짜 포맷. analysis.html이 shared/utils.js를 로드하지 않는 패턴이라 자체 정의.
+const KO_DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
+function formatKoDate(date, withTime = false) {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+    const m = date.getMonth() + 1;
+    const d = date.getDate();
+    const dow = KO_DAY_NAMES[date.getDay()];
+    if (!withTime) return `${m}월 ${d}일 (${dow})`;
+    const h = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    return `${m}월 ${d}일 (${dow}) ${h}:${min}`;
+}
+
 // PRO 4주 멤버십의 격주 2회차 스케줄 산출. 사양: docs/exec-plans/active/260602_pro_report_schedule_ux.md §3
 // 입력: paymentDate (Date 또는 Date-parsable)
 // 반환: { R1Deadline, R1Release, R2Deadline, R2Release, subscriptionEnd } — 비정상 입력이면 null
