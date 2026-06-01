@@ -11,6 +11,7 @@ const PDF_API_URL = CONFIG.api.pdf;
 let currentUserTier = 'free';
 let univChangeRemaining = 0;
 let userRecentPaymentDate = null;
+let userPendingSubscription = null; // PRO 갱신/연장 예약. PRO 일정 카드(§4.2)에서 활용.
 let userTargetUnivs = [null, null, null, null, null, null]; // 6슬롯
 let univData = []; 
 let univMap = {};  
@@ -681,7 +682,11 @@ async function fetchUserData(userId) {
         if (data.currentSubscription && data.currentSubscription.startDate) {
              userRecentPaymentDate = new Date(data.currentSubscription.startDate);
         }
-        
+
+        userPendingSubscription = (data.pendingSubscription && data.pendingSubscription.status === 'active')
+            ? data.pendingSubscription
+            : null;
+
         renderUserInfo(data);
         applyUserTier(data.computedTier || 'free');
 
