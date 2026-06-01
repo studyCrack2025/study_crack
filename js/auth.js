@@ -836,7 +836,6 @@ function checkLoginStatus() {
     if (isLoggedIn) {
         const currentPath = window.location.pathname || '';
         const isAdminRoute = (currentPath === '/admin' || currentPath.startsWith('/admin/'));
-        // 관리자 페이지는 admin API 기준으로 세션을 검증하므로 user API identity 동기화를 건너뜀
         if (isAdminRoute && userRole === 'admin') return;
         if (shouldSkipPostLoginIdentityResolve()) return;
         // 튜토리얼 미완료 학생 → resolveUserIdentity에서 DB 확인 후 판단

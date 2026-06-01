@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const role = localStorage.getItem('userRole');
     const userId = localStorage.getItem('userId');
 
-    // 보안: 관리자 권한 체크
+    // UI 진입 가드 — 실제 권한 검증은 Admin Lambda + CookieAuthorizer가 수행 (모든 API 호출 시).
     if (!userId || role !== 'admin') {
         alert("관리자 권한이 없습니다.");
         window.location.href = '/';
