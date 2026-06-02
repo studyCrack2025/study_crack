@@ -71,6 +71,12 @@ function shouldSkipPostLoginIdentityResolve() {
 // auth.js 는 그 위에서 동작 — 중복 정의 제거.
 
 async function registerRefreshCookie(refreshToken) {
+    // LOCAL: cross-site SameSite=Lax 쿠키가 후속 요청에 안 실리므로 쿠키 등록 의미 없음.
+    // refreshToken을 localStorage에만 보관해 tryRefreshToken의 body 기반 refresh 경로로 위임. (active/260603 §Phase 1)
+    if (IS_LOCAL) {
+        localStorage.setItem('refreshToken', refreshToken);
+        return false;
+    }
     try {
         const cookieRes = await fetch(AUTH_URL, {
             method: 'POST',
