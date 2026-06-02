@@ -33,7 +33,7 @@ const clearSharedClientSession = clearClientSession;
 // ─── 역할 기반 로그인 경로 ─────────────────────────────────────────────────
 function getRoleLoginPath() {
     const role = localStorage.getItem('userRole');
-    return (role === 'admin' || role === 'tutor') ? '/admin/login' : '/login';
+    return role === 'admin' ? '/admin/login' : '/login';
 }
 
 // 레거시 이름 alias.
