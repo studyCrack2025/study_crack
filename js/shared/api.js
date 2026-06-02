@@ -32,6 +32,17 @@ const SESSION_KEYS_LOCAL = [
 
 function clearClientSession() {
     SESSION_KEYS_LOCAL.forEach((k) => localStorage.removeItem(k));
+    // Cognito SDK localStorage 키 prefix 일괄 정리 — cognitoUser.signOut()이 누락하는 잔여 키 차단.
+    // Cognito SDK는 `CognitoIdentityServiceProvider.{clientId}.{username}.{idToken|accessToken|refreshToken|userData|clockDrift}`,
+    // `CognitoIdentityServiceProvider.{clientId}.LastAuthUser` 등을 저장한다. 잔여 시 다음 로그인이 이전 사용자로 들어가는 사고 발생.
+    try {
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith('CognitoIdentityServiceProvider.')) keysToRemove.push(k);
+        }
+        keysToRemove.forEach((k) => localStorage.removeItem(k));
+    } catch (_) { /* localStorage 접근 실패는 무시 */ }
     sessionStorage.clear();
 }
 
