@@ -75,7 +75,7 @@ html, body { height: auto !important; min-height: 100vh !important; overflow-y: 
 .target-univ-block { background: #ffffff; border: 1px solid #dce6f4; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 24px -24px rgba(2, 6, 23, 0.45); }
 .target-univ-block--noscore { opacity: 0.85; }
 
-.univ-block-head { display: flex; align-items: center; gap: 12px; padding: 16px 20px; background: linear-gradient(135deg, #f8fbff 0%, #eef5ff 100%); border-bottom: 1px solid #dce6f4; }
+.univ-block-head { display: flex; align-items: center; gap: 12px; padding: 16px 20px; background: linear-gradient(135deg, #f8fbff 0%, #eef5ff 100%); border-bottom: 1px solid #dce6f4; flex-wrap: wrap; }
 .univ-block-rank { background: #1e293b; color: #ffffff; font-weight: 800; font-size: 0.8rem; letter-spacing: 0.5px; padding: 6px 10px; border-radius: 999px; min-width: 56px; text-align: center; }
 .univ-block-title { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .univ-block-title strong { font-size: 1.1rem; font-weight: 800; color: #0f172a; letter-spacing: -0.3px; }
@@ -323,13 +323,15 @@ html, body { height: auto !important; min-height: 100vh !important; overflow-y: 
   .consult-header { margin-bottom: 20px; padding-bottom: 15px; }
   .consult-header h3 { font-size: 1.15rem; margin: 0 0 5px 0; color: #1e293b; }
   .consult-header p { font-size: 0.85rem; }
-  .payment-table-modern, .score-table, .compact-table { min-width: 0 !important; width: 100% !important; box-sizing: border-box; display: block; }
-  .payment-table-modern thead, .score-table thead, .compact-table thead { display: none; }
-  .payment-table-modern tbody, .score-table tbody, .compact-table tbody { display: block; width: 100%; box-sizing: border-box; }
-  .payment-table-modern tr, .score-table tr { display: flex; flex-direction: column; width: 100%; box-sizing: border-box; margin-bottom: 15px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); overflow: hidden; }
-  .payment-table-modern td, .score-table td { display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box; padding: 12px 15px; border-bottom: 1px solid #f1f5f9; text-align: right; font-size: 0.9rem; word-break: break-word; }
-  .payment-table-modern td:last-child, .score-table td:last-child { border-bottom: none; }
-  .payment-table-modern td::before, .score-table td::before { content: attr(data-label); font-weight: 700; color: #64748b; text-align: left; flex-shrink: 0; margin-right: 15px; }
+  .payment-table-modern, .score-table, .compact-table, .univ-subject-table { min-width: 0 !important; width: 100% !important; box-sizing: border-box; display: block; }
+  .payment-table-modern thead, .score-table thead, .compact-table thead, .univ-subject-table thead { display: none; }
+  .payment-table-modern tbody, .score-table tbody, .compact-table tbody, .univ-subject-table tbody { display: block; width: 100%; box-sizing: border-box; }
+  .payment-table-modern tr, .score-table tr, .univ-subject-table tr { display: flex; flex-direction: column; width: 100%; box-sizing: border-box; margin-bottom: 15px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); overflow: hidden; }
+  .payment-table-modern td, .score-table td, .univ-subject-table td { display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box; padding: 12px 15px; border-bottom: 1px solid #f1f5f9; text-align: right; font-size: 0.9rem; word-break: break-word; }
+  .payment-table-modern td:last-child, .score-table td:last-child, .univ-subject-table td:last-child { border-bottom: none; }
+  .payment-table-modern td::before, .score-table td::before, .univ-subject-table td::before { content: attr(data-label); font-weight: 700; color: #64748b; text-align: left; flex-shrink: 0; margin-right: 15px; }
+  .univ-subject-table .us-subj { background: #f0f5ff; color: #1e3a8a; font-weight: 800; }
+  .univ-subject-table .us-plan-cell { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px; }
   .pay-summary-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
   .pay-stat-box { width: 100%; box-sizing: border-box; padding: 15px; }
   .memo-card, .univ-summary-section, .pro-period-section { padding: 15px; width: 100%; box-sizing: border-box; }
