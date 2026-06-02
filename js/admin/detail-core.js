@@ -648,11 +648,11 @@ function renderUnivBlock(block, u, analyze, sim, plan, scoreData, examLabel) {
 
         return `
             <tr>
-                <td class="us-subj">${escapeHtml(label)}</td>
-                <td class="us-raw">${fmt(currentRaw)}</td>
-                <td class="us-std">${fmt(currentStd)} / ${fmt(currentGrd, '등급')}</td>
-                <td class="us-rise">${uiDiffCell}</td>
-                <td class="us-plan-cell">${planCell}</td>
+                <td class="us-subj" data-label="과목">${escapeHtml(label)}</td>
+                <td class="us-raw" data-label="현재 원점수">${fmt(currentRaw)}</td>
+                <td class="us-std" data-label="표점 / 등급">${fmt(currentStd)} / ${fmt(currentGrd, '등급')}</td>
+                <td class="us-rise" data-label="+1점 효율 (환산↑)">${uiDiffCell}</td>
+                <td class="us-plan-cell" data-label="역추적 목표 / 상승">${planCell}</td>
             </tr>
         `;
     }).join('');

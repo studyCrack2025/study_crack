@@ -1185,7 +1185,7 @@ window.submitUrgentRequest = async function() {
 window.handleSignOut = function() {
     if (tutorCognitoUser) tutorCognitoUser.signOut();
     clearClientSession();
-    window.location.href = '/admin/login';
+    window.location.href = '/login';
 }
 window.closeModal = function(modalId) { document.getElementById(modalId).classList.add('hidden'); }
 window.openEmailModal = function() { document.getElementById('emailModal').classList.remove('hidden'); }
