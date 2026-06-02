@@ -174,7 +174,7 @@
                 'Content-Type': 'application/json',
                 ...(result.accessToken ? { Authorization: `Bearer ${result.accessToken}` } : {})
             },
-            credentials: result.accessToken ? 'omit' : 'include',
+            credentials: 'include',
             body: JSON.stringify({ type: 'get_login_profile' })
         });
 

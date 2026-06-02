@@ -49,7 +49,7 @@ function buildAuthenticatedFetchOptions(options = {}) {
     return {
         ...options,
         headers,
-        credentials: headers.Authorization ? 'omit' : 'include'
+        credentials: 'include'
     };
 }
 
