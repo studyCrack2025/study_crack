@@ -1,6 +1,18 @@
 // js/shared/api.js — 인증/세션 처리 단일 모듈 (apiFetch/redirectToLogin/clearClientSession).
 // 인증 정책 상세: docs/security/architecture-notes.md §3
 
+// bfcache 차단 — 로그아웃 후 뒤로가기 시 페이지가 통째로 메모리 복원되면 세션 상태가 stale로 살아나는 사고 방지.
+// HTTP Cache-Control: no-store는 bfcache를 막지 못함(별개 캐시). pageshow에서 보호 페이지 세션을 재검증한다.
+const PAGE_SESSION_USER_ID = typeof window !== 'undefined'
+    ? (localStorage.getItem('userId') || '')
+    : '';
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('pageshow', (e) => {
+        enforceClientSessionOnPageShow(e);
+    });
+}
+
 // ─── 공개 경로 정의 (비로그인 사용자가 정상 접근하는 페이지) ──────────────────
 // 공개 경로에서 401이 발생해도 강제 로그인 페이지로 튕기지 않는다. 호출처가 알아서 분기.
 const PUBLIC_ROUTES_EXACT = ['/', '/login', '/signup', '/welcome', '/social-callback', '/admin/login', '/service', '/promo'];
@@ -10,6 +22,35 @@ function isPublicRoute(pathname) {
     const p = pathname || (typeof window !== 'undefined' ? window.location.pathname : '');
     if (PUBLIC_ROUTES_EXACT.includes(p)) return true;
     return PUBLIC_ROUTES_PREFIX.some((prefix) => p.startsWith(prefix));
+}
+
+function hasClientSession() {
+    return !!(
+        localStorage.getItem('userId') ||
+        sessionStorage.getItem('accessToken') ||
+        localStorage.getItem('accessToken') ||
+        localStorage.getItem('token') ||
+        localStorage.getItem('refreshToken')
+    );
+}
+
+function enforceClientSessionOnPageShow(event) {
+    const currentPath = window.location.pathname || '/';
+    const currentUserId = localStorage.getItem('userId') || '';
+    const isPublic = isPublicRoute(currentPath);
+
+    if (PAGE_SESSION_USER_ID && currentUserId && PAGE_SESSION_USER_ID !== currentUserId) {
+        window.location.reload();
+        return;
+    }
+
+    if (!hasClientSession() && !isPublic) {
+        window.location.replace(getRoleLoginPath());
+        return;
+    }
+    if (event && event.persisted) {
+        window.location.reload();
+    }
 }
 
 // ─── 세션 정리 ────────────────────────────────────────────────────────────
@@ -24,6 +65,17 @@ const SESSION_KEYS_LOCAL = [
 
 function clearClientSession() {
     SESSION_KEYS_LOCAL.forEach((k) => localStorage.removeItem(k));
+    // Cognito SDK localStorage 키 prefix 일괄 정리 — cognitoUser.signOut()이 누락하는 잔여 키 차단.
+    // Cognito SDK는 `CognitoIdentityServiceProvider.{clientId}.{username}.{idToken|accessToken|refreshToken|userData|clockDrift}`,
+    // `CognitoIdentityServiceProvider.{clientId}.LastAuthUser` 등을 저장한다. 잔여 시 다음 로그인이 이전 사용자로 들어가는 사고 발생.
+    try {
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith('CognitoIdentityServiceProvider.')) keysToRemove.push(k);
+        }
+        keysToRemove.forEach((k) => localStorage.removeItem(k));
+    } catch (_) { /* localStorage 접근 실패는 무시 */ }
     sessionStorage.clear();
 }
 
@@ -33,7 +85,7 @@ const clearSharedClientSession = clearClientSession;
 // ─── 역할 기반 로그인 경로 ─────────────────────────────────────────────────
 function getRoleLoginPath() {
     const role = localStorage.getItem('userRole');
-    return (role === 'admin' || role === 'tutor') ? '/admin/login' : '/login';
+    return role === 'admin' ? '/admin/login' : '/login';
 }
 
 // 레거시 이름 alias.
@@ -55,12 +107,70 @@ function redirectToLogin(reason) {
     clearClientSession();
     // clearClientSession 내부 sessionStorage.clear가 reason도 지우므로 재설정.
     try { sessionStorage.setItem('session_redirect_reason', r); } catch (_) {}
-    window.location.href = path;
+    window.location.replace(path);
 }
 
 // ─── Bearer 토큰 (레거시 호환) ────────────────────────────────────────────
 function getSharedBearerToken() {
     return sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken') || localStorage.getItem('token');
+}
+
+function syncTokensFromAuthResponse(data, options = {}) {
+    if (!data || typeof data !== 'object') return false;
+
+    const idPayload = data.idToken ? getSharedPayloadFromToken(data.idToken) : {};
+    const userId = data.userId || idPayload.sub;
+    if (!data.accessToken && !data.idToken && !userId) return true;
+
+    const expectedUserId = options.expectedUserId || localStorage.getItem('userId') || '';
+    if (expectedUserId && userId && expectedUserId !== userId) {
+        console.warn('[Auth] Refusing mismatched token sync', { expectedUserId, responseUserId: userId });
+        return false;
+    }
+
+    if (data.accessToken) {
+        sessionStorage.setItem('accessToken', data.accessToken);
+        if (typeof setAccessToken === 'function') setAccessToken(data.accessToken);
+    }
+    if (data.idToken) {
+        sessionStorage.setItem('idToken', data.idToken);
+        if (typeof setIdToken === 'function') setIdToken(data.idToken);
+    }
+
+    if (userId) localStorage.setItem('userId', userId);
+    return true;
+}
+
+function getSharedPayloadFromToken(token) {
+    try {
+        const base64Url = String(token).split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const json = decodeURIComponent(window.atob(base64).split('').map((c) => {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(json);
+    } catch (_) {
+        return {};
+    }
+}
+
+async function clearServerSessionCookies() {
+    try {
+        await fetch(CONFIG.api.auth, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ type: 'logout' })
+        });
+    } catch (_) {
+        // 네트워크 실패 시에도 클라이언트 세션 정리는 계속 진행한다.
+    }
+}
+
+async function performClientLogout(redirectPath) {
+    await clearServerSessionCookies();
+    clearClientSession();
+    window.location.replace(redirectPath || getRoleLoginPath());
 }
 
 // ─── silent_refresh 싱글톤 락 ──────────────────────────────────────────────
@@ -79,7 +189,10 @@ function tryRefreshToken() {
 
         try {
             const res = await callSilentRefresh();
-            if (res.ok) return true;
+            if (res.ok) {
+                const data = await res.json().catch(() => ({}));
+                return syncTokensFromAuthResponse(data);
+            }
 
             // auth.js를 로드하지 않은 페이지(admin_detail 등)에서도 동작하도록 localStorage refreshToken fallback 직접 처리
             const fallbackRt = localStorage.getItem('refreshToken');
@@ -95,7 +208,10 @@ function tryRefreshToken() {
 
             localStorage.removeItem('refreshToken');
             const retryRes = await callSilentRefresh();
-            return retryRes.ok;
+            if (!retryRes.ok) return false;
+
+            const data = await retryRes.json().catch(() => ({}));
+            return syncTokensFromAuthResponse(data);
         } catch (e) {
             return false;
         }
@@ -124,6 +240,12 @@ async function apiFetch(url, options = {}) {
         if (response.status === 401 || response.status === 403) {
             const refreshed = await tryRefreshToken();
             if (refreshed) {
+                const refreshedBearerToken = getSharedBearerToken();
+                if (refreshedBearerToken) {
+                    options.headers.Authorization = `Bearer ${refreshedBearerToken}`;
+                } else {
+                    delete options.headers.Authorization;
+                }
                 const retryRes = await fetch(url, options);
                 if (retryRes.ok) return retryRes;
                 if (retryRes.status === 403) {

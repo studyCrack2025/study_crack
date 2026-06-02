@@ -35,6 +35,24 @@ let isInterrupted = false;
 let tutorialCompleted = false;
 let mbtiDimSelections = [null, null, null, null];
 
+function buildAuthenticatedFetchOptions(options = {}) {
+    const headers = {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+    };
+    const bearerToken = typeof getAccessToken === 'function'
+        ? getAccessToken()
+        : (sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken') || localStorage.getItem('token'));
+    if (bearerToken && !headers.Authorization) {
+        headers.Authorization = `Bearer ${bearerToken}`;
+    }
+    return {
+        ...options,
+        headers,
+        credentials: 'include'
+    };
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     // 인증 가드: 로그인하지 않은 사용자는 로그인 페이지로 이동
@@ -161,8 +179,7 @@ function bindEvents() {
     const _saveOnExit = () => {
         if (tutorialCompleted) return;
         if (!localStorage.getItem('userId')) return;
-        const headers = { 'Content-Type': 'application/json' };
-        const opts = { method: 'POST', headers, credentials: 'include', keepalive: true };
+        const opts = buildAuthenticatedFetchOptions({ method: 'POST', keepalive: true });
         // 1. step 저장
         fetch(CONFIG.api.user, { ...opts, body: JSON.stringify({ type: 'update_tutorial_status', data: { step: currentStepIdx } }) }).catch(() => {});
         // 2. qual 저장 (현재 폼에서 재수집, 또는 마지막 저장 상태)
@@ -444,13 +461,11 @@ function goToMBTI() {
     localStorage.setItem('tutorialStatus', 3);
     // DB에도 MBTI 단계 진입 상태 동기화 (keepalive로 redirect 후에도 전송 보장)
     if (localStorage.getItem('userId')) {
-        fetch(CONFIG.api.user, {
+        fetch(CONFIG.api.user, buildAuthenticatedFetchOptions({
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
             body: JSON.stringify({ type: 'update_tutorial_status', data: { step: 3 } }),
             keepalive: true
-        }).catch(() => {});
+        })).catch(() => {});
     }
     window.location.href = '/mbti_survey?from_tutorial=true';
 }
@@ -804,14 +819,7 @@ function buildUserScoresForAnalysis(mar) {
 }
 
 async function tutorialAnalysisFetch(options = {}) {
-    const buildOptions = () => ({
-        ...options,
-        credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json',
-            ...(options.headers || {})
-        }
-    });
+    const buildOptions = () => buildAuthenticatedFetchOptions(options);
 
     let res = await fetch(CONFIG.api.analysis, buildOptions());
     if (res.status === 401 && typeof tryRefreshToken === 'function') {
@@ -1417,12 +1425,10 @@ async function endTutorial() {
 
 async function downloadMBTIReport(mbtiResult) {
     try {
-        const response = await fetch(CONFIG.api.user, {
+        const response = await fetch(CONFIG.api.user, buildAuthenticatedFetchOptions({
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
             body: JSON.stringify({ type: 'update_mbti_promo', data: { targetUserId: 'me', promoCode: 'TUTORIAL', mbtiResult } })
-        });
+        }));
         const result = await response.json();
         if (result.success && result.downloadUrl) window.open(result.downloadUrl, '_blank');
     } catch (e) { /* silent */ }

@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!refreshed) {
             clearClientSession();
             alert("로그인이 필요합니다.");
-            window.location.href = '/login';
+            window.location.replace('/login');
             return;
         }
         checkLoginStatus();
@@ -740,10 +740,14 @@ function startDeleteReauth(provider) {
     if (authUrl) window.location.href = authUrl;
 }
 
-function handleSignOut() {
+async function handleSignOut() {
     if (cognitoUser) cognitoUser.signOut();
-    clearClientSession();
-    window.location.href = '/login';
+    if (typeof performClientLogout === 'function') {
+        await performClientLogout('/login');
+    } else {
+        clearClientSession();
+        window.location.replace('/login');
+    }
 }
 
 // ==========================================

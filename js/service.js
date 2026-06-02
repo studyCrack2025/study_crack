@@ -133,10 +133,9 @@ function syncHeaderNav() {
   }
 
   if (btnLogout) {
-    btnLogout.addEventListener('click', (e) => {
+    btnLogout.addEventListener('click', async (e) => {
       e.preventDefault();
-      clearClientSession();
-      window.location.href = '/';
+      await performClientLogout('/');
     });
   }
 
