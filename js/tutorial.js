@@ -86,10 +86,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 currentStepIdx = data.tutorialStatus;
                 localStorage.setItem('tutorialStatus', currentStepIdx);
             }
-            // 점수 데이터 복원 (may 우선, 없으면 mar)
+            // 점수 데이터 복원 (최신 시험 월 우선: jun > may > mar)
             if (data.quantitative) {
                 tutorialData.quan = data.quantitative;
-                const activeMonth = data.quantitative.may ? 'may' : 'mar';
+                const activeMonth = data.quantitative.jun ? 'jun' : (data.quantitative.may ? 'may' : 'mar');
                 tutorialData.examMonth = activeMonth;
                 const activeQuan = data.quantitative[activeMonth];
                 if (activeQuan) {
@@ -327,17 +327,37 @@ async function _nextStepCore() {
             return;
         }
 
-        // 선택된 시험 월 (3월 또는 5월)
-        const examMonth = document.getElementById('tutExamMonth')?.value || 'mar';
+        // 선택된 시험 월 (3월 학평 / 5월 학평 / 6월 모평)
+        let examMonth = document.getElementById('tutExamMonth')?.value || 'mar';
         tutorialData.examMonth = examMonth;
 
-        // 점수 환산 API 병렬 호출 → survey.js 로드 시 std/pct/grd 즉시 표시
-        const [korConv, mathConv, inq1Conv, inq2Conv] = await Promise.all([
-            convertScore(examMonth, 'kor',  korCommon + korSel,   korOpt,  '', korCommon,  korSel),
-            convertScore(examMonth, 'math', mathCommon + mathSel, mathOpt, '', mathCommon, mathSel),
-            convertScore(examMonth, 'inq1', inq1Raw, '', inq1Name),
-            convertScore(examMonth, 'inq2', inq2Raw, '', inq2Name)
-        ]);
+        // 점수 환산 API 병렬 호출 → survey.js 로드 시 std/pct/grd 즉시 표시.
+        // 6월 모평 데이터 미준비(JUN_NOT_READY) 시 사용자 알림 후 3월 학평으로 전환해 재시도.
+        let korConv, mathConv, inq1Conv, inq2Conv;
+        try {
+            [korConv, mathConv, inq1Conv, inq2Conv] = await Promise.all([
+                convertScore(examMonth, 'kor',  korCommon + korSel,   korOpt,  '', korCommon,  korSel),
+                convertScore(examMonth, 'math', mathCommon + mathSel, mathOpt, '', mathCommon, mathSel),
+                convertScore(examMonth, 'inq1', inq1Raw, '', inq1Name),
+                convertScore(examMonth, 'inq2', inq2Raw, '', inq2Name)
+            ]);
+        } catch (e) {
+            if (e && e.code === 'JUN_NOT_READY') {
+                alert(e.message || '6월 모평 데이터는 시험 후 준비됩니다. 3월 학평 기준으로 진행할게요.');
+                examMonth = 'mar';
+                tutorialData.examMonth = 'mar';
+                const sel = document.getElementById('tutExamMonth');
+                if (sel) sel.value = 'mar';
+                [korConv, mathConv, inq1Conv, inq2Conv] = await Promise.all([
+                    convertScore('mar', 'kor',  korCommon + korSel,   korOpt,  '', korCommon,  korSel),
+                    convertScore('mar', 'math', mathCommon + mathSel, mathOpt, '', mathCommon, mathSel),
+                    convertScore('mar', 'inq1', inq1Raw, '', inq1Name),
+                    convertScore('mar', 'inq2', inq2Raw, '', inq2Name)
+                ]);
+            } else {
+                throw e;
+            }
+        }
 
         tutorialData.quan = {
             [examMonth]: {
@@ -695,7 +715,9 @@ async function fetchTutorialRecommendations(stream, mar, totalStdScore, examMont
         }
     ];
 
-    if (requestedExamMode === 'may') {
+    // may/jun 모드는 백엔드 데이터 미준비(JUN_NOT_READY)·매핑 누락 시를 대비해 mar 폴백 시도.
+    const isLearningMonthMode = (requestedExamMode === 'may' || requestedExamMode === 'jun');
+    if (isLearningMonthMode) {
         attempts.push({
             stage: 'fallback_exam_month_strict',
             examMode: 'mar',
@@ -720,7 +742,7 @@ async function fetchTutorialRecommendations(stream, mar, totalStdScore, examMont
 
     attempts.push({
         stage: 'deterministic_top3',
-        examMode: requestedExamMode === 'may' ? 'mar' : requestedExamMode,
+        examMode: isLearningMonthMode ? 'mar' : requestedExamMode,
         options: {
             selectedUniv: null,
             excludeUnivs: []
@@ -1159,7 +1181,7 @@ async function initSubjectRec() {
     showTutLoading(true);
 
     const univ = tutorialData.selectedUniv;
-    const activeMonth = tutorialData.examMonth || (tutorialData.quan?.may ? 'may' : 'mar');
+    const activeMonth = tutorialData.examMonth || (tutorialData.quan?.jun ? 'jun' : (tutorialData.quan?.may ? 'may' : 'mar'));
     const mar  = tutorialData.quan?.[activeMonth];
     const mbti = tutorialData.mbti;
 
@@ -1443,8 +1465,14 @@ async function convertScore(month, subject, score, opt, subName, common, electiv
         if (res.ok) {
             const data = await res.json();
             if (!data.error && (data.std || data.pct || data.grd)) return { std: data.std || '', pct: data.pct || '', grd: data.grd || '' };
+        } else if (res.status === 503 && month === 'jun') {
+            // 6월 모평 데이터 미준비 — 호출자가 dropdown 복귀 + 알림 처리하도록 명시적 throw.
+            const body = await res.json().catch(() => ({}));
+            const err = new Error(body.error || '6월 모평 데이터는 시험 후 준비됩니다.');
+            err.code = body.code || 'JUN_NOT_READY';
+            throw err;
         }
-        // 5월 변환 실패 시 3월 기준 폴백
+        // 5월 변환 실패 시 3월 기준 폴백 (legacy 동작 유지 — may 데이터 매핑 누락 edge case 대비).
         if (month === 'may') {
             const fb = await tutorialAnalysisFetch({ method: 'POST', body: JSON.stringify({ ...payload, month: 'mar' }) });
             if (fb.ok) {
@@ -1453,7 +1481,8 @@ async function convertScore(month, subject, score, opt, subName, common, electiv
             }
         }
         return { std: '', pct: '', grd: '' };
-    } catch {
+    } catch (e) {
+        if (e && e.code === 'JUN_NOT_READY') throw e;
         return { std: '', pct: '', grd: '' };
     }
 }

@@ -275,10 +275,20 @@ async function requestScoreConversion(type) {
         if (data.grd && grdEl) grdEl.value = data.grd;
 
     } catch (e) {
-        if (e.message !== "Auth expired") {
-            console.error("환산 실패:", e);
-            alert("점수 환산 중 오류가 발생했습니다.");
+        if (e.message === "Auth expired") return;
+        // 6월 모평 데이터 미준비(JUN_NOT_READY) 등 서버측 명시 사유는 그대로 노출하고 3월로 복귀.
+        const msg = e.message || "";
+        if (msg.includes('6월 모평') || msg.includes('JUN_NOT_READY')) {
+            alert(msg);
+            const examSel = document.getElementById('examSelect');
+            if (examSel && examSel.value === 'jun') {
+                examSel.value = 'mar';
+                if (typeof loadExamData === 'function') loadExamData();
+            }
+            return;
         }
+        console.error("환산 실패:", e);
+        alert("점수 환산 중 오류가 발생했습니다.");
     }
 }
 
