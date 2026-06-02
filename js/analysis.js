@@ -692,8 +692,8 @@ async function fetchUserData(userId) {
         // 사이드바 정량 렌더(updateSurveyStatus) 가 글로벌 userQuantData/currentExamMode 를 읽으므로
         // 반드시 그 호출 *전* 에 두 값을 세팅해야 초기 진입 시 정량 데이터가 비어 보이지 않음.
         if (data.quantitative) userQuantData = data.quantitative;
-        restoreExamModeFromStorage(safeUserId);
-        ensureValidExamMode(safeUserId);
+        restoreExamModeFromStorage(userId);
+        ensureValidExamMode(userId);
 
         updateSurveyStatus(data);
         checkMbtiReport(data);

@@ -155,6 +155,8 @@ function getSharedPayloadFromToken(token) {
 }
 
 async function clearServerSessionCookies() {
+    // LOCAL: 서버측에 박힌 쿠키가 애초에 없으므로 호출 자체가 불필요. (active/260603 §Phase 1)
+    if (IS_LOCAL) return;
     try {
         await fetch(CONFIG.api.auth, {
             method: 'POST',
@@ -180,6 +182,25 @@ function tryRefreshToken() {
     if (_sharedRefreshPromise) return _sharedRefreshPromise;
 
     const p = (async () => {
+        // LOCAL: silent_refresh는 rt 쿠키 의존이라 SameSite 제약으로 불가.
+        // localStorage.refreshToken을 직접 body로 보내는 'refresh_token' 핸들러 사용. (active/260603 §Phase 1)
+        if (IS_LOCAL) {
+            const rt = localStorage.getItem('refreshToken');
+            if (!rt) return false;
+            try {
+                const res = await fetch(CONFIG.api.auth, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'refresh_token', refreshToken: rt })
+                });
+                if (!res.ok) return false;
+                const data = await res.json().catch(() => ({}));
+                return syncTokensFromAuthResponse(data);
+            } catch (_) {
+                return false;
+            }
+        }
+
         const callSilentRefresh = () => fetch(CONFIG.api.auth, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
