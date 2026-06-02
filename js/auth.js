@@ -121,14 +121,22 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             const doFetch = () => fetch(USER_API_URL, {
                 method: 'POST',
                 headers,
-                credentials: 'include',
+                credentials: headers.Authorization ? 'omit' : 'include',
                 body: JSON.stringify({ type: requestType })
             });
             let res = await doFetch();
             // 401/403 처리 정책: docs/security/architecture-notes.md §3
             if (res.status === 401 || res.status === 403) {
                 const refreshed = await tryRefreshToken();
-                if (refreshed) res = await doFetch();
+                if (refreshed) {
+                    const refreshedBearerToken = getAccessToken();
+                    if (refreshedBearerToken) {
+                        headers.Authorization = `Bearer ${refreshedBearerToken}`;
+                    } else {
+                        delete headers.Authorization;
+                    }
+                    res = await doFetch();
+                }
             }
             return res;
         };
