@@ -849,14 +849,18 @@ async function handleSignOut(silent = false) {
     const redirectPath = getRoleLoginPath();
 
     // 백엔드 쿠키 삭제 응답을 반드시 기다림 — 안 그러면 다음 로그인 시 이전 at 쿠키 잔존 위험
-    try {
-        await fetch(AUTH_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ type: 'logout' })
-        });
-    } catch (_) { /* 네트워크 실패해도 클라이언트 정리는 진행 */ }
+    if (typeof clearServerSessionCookies === 'function') {
+        await clearServerSessionCookies();
+    } else {
+        try {
+            await fetch(AUTH_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ type: 'logout' })
+            });
+        } catch (_) { /* 네트워크 실패해도 클라이언트 정리는 진행 */ }
+    }
 
     clearClientSession();
 
@@ -892,14 +896,18 @@ function handleSignIn() {
             const refreshToken = result.getRefreshToken().getToken();
 
             // 1. 이전 at/rt 쿠키 명시적 제거 — 새 토큰 set 직전 동기화
-            try {
-                await fetch(AUTH_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ type: 'logout' })
-                });
-            } catch (_) { /* 다음 단계가 덮어쓰므로 치명적이지 않음 */ }
+            if (typeof clearServerSessionCookies === 'function') {
+                await clearServerSessionCookies();
+            } else {
+                try {
+                    await fetch(AUTH_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ type: 'logout' })
+                    });
+                } catch (_) { /* 다음 단계가 덮어쓰므로 치명적이지 않음 */ }
+            }
 
             // 2. 새 토큰 메모리/sessionStorage 저장
             setAccessToken(accessToken);
@@ -912,12 +920,16 @@ function handleSignIn() {
 
             // 4. 새 at 쿠키 사전 발급 — 다음 페이지 첫 API 호출이 401 안 받도록
             try {
-                await fetch(AUTH_URL, {
+                const refreshRes = await fetch(AUTH_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({ type: 'silent_refresh' })
                 });
+                const refreshData = await refreshRes.json().catch(() => ({}));
+                if (refreshRes.ok && typeof syncTokensFromAuthResponse === 'function') {
+                    syncTokensFromAuthResponse(refreshData);
+                }
             } catch (_) { /* 실패해도 첫 401에서 refresh 폴백 */ }
 
             markPostLoginIdentitySkip();

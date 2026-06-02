@@ -76,7 +76,9 @@
     </section>
   </main>
 
-  <script src="/js/shared/hamburger.js?v=20260524a"></script>
+  <script src="/js/config.js?v=20260524a"></script>
+  <script src="/js/shared/api.js?v=20260602a"></script>
+  <script src="/js/shared/hamburger.js?v=20260602a"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const userId = localStorage.getItem('userId');
@@ -133,19 +135,15 @@
     }
 
     function bindHeaderActions() {
-      document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+      document.getElementById('logoutBtn')?.addEventListener('click', async (e) => {
         e.preventDefault();
-        localStorage.clear();
-        sessionStorage.clear();
-        window.location.href = '/';
+        await performClientLogout('/');
       });
 
-      document.getElementById('mobileLogoutBtn')?.addEventListener('click', (e) => {
+      document.getElementById('mobileLogoutBtn')?.addEventListener('click', async (e) => {
         e.preventDefault();
         if (typeof closeMobileNav === 'function') closeMobileNav();
-        localStorage.clear();
-        sessionStorage.clear();
-        window.location.href = '/';
+        await performClientLogout('/');
       });
     }
 
