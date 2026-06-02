@@ -140,23 +140,49 @@
 
     <div class="success-card">
         <div id="topLine" class="card-top-line"></div>
-        
+
         <div class="logo">StudyCrack</div>
         <br>
-        
-        <i class="fas fa-file-invoice-dollar receipt-icon"></i>
+
+        <i id="receiptIcon" class="fas fa-file-invoice-dollar receipt-icon"></i>
         <br>
 
         <div id="tierBadge" class="tier-badge" style="background:#2563eb;">STARTER PLAN</div>
-        
+
         <h1 id="successTitle" class="success-title">결제가<br>완료되었습니다!</h1>
-        
+
         <p id="successDesc" class="success-desc">
             기본적인 입시 분석 솔루션을<br>바로 확인해 보세요.
         </p>
-        
+
+        <div id="vbankBox" style="display:none; margin: 0 0 25px; padding: 18px 16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; text-align:left;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px dashed #e2e8f0;">
+                <span style="color:#64748b; font-size:0.88rem;">은행</span>
+                <strong id="vbankBank" style="color:#1e293b; font-size:0.95rem;">-</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px dashed #e2e8f0;">
+                <span style="color:#64748b; font-size:0.88rem;">계좌번호</span>
+                <strong id="vbankAccount" style="color:#1e293b; font-size:0.95rem; user-select:all;">-</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px dashed #e2e8f0;">
+                <span style="color:#64748b; font-size:0.88rem;">예금주</span>
+                <strong id="vbankHolder" style="color:#1e293b; font-size:0.95rem;">-</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px dashed #e2e8f0;">
+                <span style="color:#64748b; font-size:0.88rem;">입금 금액</span>
+                <strong id="vbankAmount" style="color:#2563eb; font-size:1.0rem;">-</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0;">
+                <span style="color:#64748b; font-size:0.88rem;">입금 기한</span>
+                <strong id="vbankExpire" style="color:#ef4444; font-size:0.95rem;">-</strong>
+            </div>
+            <p style="margin:14px 0 0; padding-top:10px; border-top:1px solid #e2e8f0; color:#64748b; font-size:0.82rem; line-height:1.5;">
+                입금이 확인되면 1~3분 내에<br>자동으로 결제가 처리됩니다.
+            </p>
+        </div>
+
         <a id="actionBtn" href="/analysis" class="btn-action" style="background:#2563eb;">나만의 솔루션 보러가기</a>
-        
+
         <a href="/" class="btn-home">메인 화면으로 돌아가기</a>
     </div>
 
@@ -165,78 +191,124 @@
             // 0. 결제 완료 후 checkoutData 정리 (중복 결제 방지)
             localStorage.removeItem('checkoutData');
 
-            // 1. URL 파라미터에서 tier 값 추출 (기본값: basic)
+            // 1. URL 파라미터 추출
             const urlParams = new URLSearchParams(window.location.search);
-            const tier = (urlParams.get('tier') || 'basic').toLowerCase();
+            const tier   = (urlParams.get('tier') || 'basic').toLowerCase();
+            const status = urlParams.get('status') || 'paid';
+            const method = urlParams.get('method') || 'card';
+            const amount = parseInt(urlParams.get('amount') || '0', 10);
+            const orderId = urlParams.get('orderId') || '';
 
-            // 2. DOM 요소 가져오기
-            const badge = document.getElementById('tierBadge');
-            const title = document.getElementById('successTitle'); // 타이틀 변경을 위해 추가
-            const desc = document.getElementById('successDesc');
-            const btn = document.getElementById('actionBtn');
+            const isVbankReady = status === 'vbank_ready';
+
+            // 2. DOM 요소
+            const badge   = document.getElementById('tierBadge');
+            const title   = document.getElementById('successTitle');
+            const desc    = document.getElementById('successDesc');
+            const btn     = document.getElementById('actionBtn');
             const topLine = document.getElementById('topLine');
+            const icon    = document.getElementById('receiptIcon');
 
-            // 3. 티어별 데이터 세팅 (마이페이지 프리미엄 뱃지 색상에 맞춤)
+            const fmtAmount = (n) => Number.isFinite(n) && n > 0 ? n.toLocaleString() + '원' : '';
+
+            // NicePay vbankExpDate는 ISO 8601("2026-06-06T20:30:00") 또는
+            // 압축형("YYYYMMDDhhmm")로 올 수 있어 양쪽 모두 처리.
+            const fmtExpire = (raw) => {
+                if (!raw) return '';
+                if (raw.includes('-') || raw.includes('T')) {
+                    const d = new Date(raw);
+                    if (isNaN(d)) return raw;
+                    const mo = d.getMonth() + 1;
+                    const day = d.getDate();
+                    const hh = String(d.getHours()).padStart(2, '0');
+                    const mm = String(d.getMinutes()).padStart(2, '0');
+                    return `${mo}월 ${day}일 ${hh}:${mm}까지`;
+                }
+                if (raw.length < 12) return raw;
+                const mo = parseInt(raw.slice(4, 6), 10);
+                const day = parseInt(raw.slice(6, 8), 10);
+                const hh = raw.slice(8, 10);
+                const mm = raw.slice(10, 12);
+                return `${mo}월 ${day}일 ${hh}:${mm}까지`;
+            };
+
             const tierConfig = {
                 'basic': {
-                    name: 'STARTER PLAN',
-                    title: '결제가<br>완료되었습니다!',
-                    color: '#3B82F6', // 파란색
-                    desc: 'STARTER 1주 플래너 진단 결제가 완료되었습니다.<br>지금 바로 <strong>나만의 입시 솔루션</strong>을 확인해보세요.',
-                    btnText: '나만의 솔루션 보러가기',
-                    btnLink: '/analysis'
+                    name: 'STARTER PLAN', color: '#3B82F6',
+                    paidTitle: '결제가<br>완료되었습니다!',
+                    paidDesc:  'STARTER 1주 플래너 진단 결제가 완료되었습니다.<br>지금 바로 <strong>나만의 입시 솔루션</strong>을 확인해보세요.',
+                    btnText: '나만의 솔루션 보러가기', btnLink: '/analysis'
                 },
                 'standard': {
-                    name: 'STANDARD PLAN',
-                    title: '결제가<br>완료되었습니다!',
-                    color: '#64748B', // 슬레이트(회색)
-                    desc: 'STANDARD 4주 이용권 결제가 완료되었습니다.<br>기초조사서를 작성하고 <strong>합격 예측</strong>을 이용해보세요.',
-                    btnText: '기초조사서 작성하기',
-                    btnLink: '/survey'
+                    name: 'STANDARD PLAN', color: '#64748B',
+                    paidTitle: '결제가<br>완료되었습니다!',
+                    paidDesc:  'STANDARD 4주 이용권 결제가 완료되었습니다.<br>기초조사서를 작성하고 <strong>합격 예측</strong>을 이용해보세요.',
+                    btnText: '기초조사서 작성하기', btnLink: '/survey'
                 },
                 'pro': {
-                    name: 'PRO PLAN',
-                    title: '결제가<br>완료되었습니다!',
-                    color: '#F59E0B', // 앰버(금색)
-                    desc: 'PRO 4주 이용권 결제가 완료되었습니다.<br><strong>프리미엄 전략 관리</strong>를 시작해보세요.',
-                    btnText: '마이페이지로 이동하기',
-                    btnLink: '/mypage'
+                    name: 'PRO PLAN', color: '#F59E0B',
+                    paidTitle: '결제가<br>완료되었습니다!',
+                    paidDesc:  'PRO 4주 이용권 결제가 완료되었습니다.<br><strong>프리미엄 전략 관리</strong>를 시작해보세요.',
+                    btnText: '마이페이지로 이동하기', btnLink: '/mypage'
                 },
                 'black': {
-                    name: 'BLACK PLAN',
-                    title: '결제가<br>완료되었습니다!',
-                    color: '#171717', // 검은색
-                    desc: '블랙 플랜 결제가 완료되었습니다.<br>최상위권 도약을 위한 <strong>프리미엄 밀착 관리</strong>가 시작됩니다.',
-                    btnText: '마이페이지로 이동하기',
-                    btnLink: '/mypage'
+                    name: 'BLACK PLAN', color: '#171717',
+                    paidTitle: '결제가<br>완료되었습니다!',
+                    paidDesc:  '블랙 플랜 결제가 완료되었습니다.<br>최상위권 도약을 위한 <strong>프리미엄 밀착 관리</strong>가 시작됩니다.',
+                    btnText: '마이페이지로 이동하기', btnLink: '/mypage'
                 },
                 'test': {
-                    name: 'TEST',
-                    title: '테스트 결제<br>완료되었습니다!',
-                    color: '#6b7280',
-                    desc: '100원 테스트 결제가 정상적으로 처리되었습니다.<br>결제 연동이 정상 작동 중입니다.',
-                    btnText: '메인으로 돌아가기',
-                    btnLink: '/'
+                    name: 'TEST', color: '#6b7280',
+                    paidTitle: '테스트 결제<br>완료되었습니다!',
+                    paidDesc:  (amt) => `${fmtAmount(amt) || '테스트 금액'} 테스트 결제가 정상적으로 처리되었습니다.<br>결제 연동이 정상 작동 중입니다.`,
+                    btnText: '메인으로 돌아가기', btnLink: '/'
                 }
             };
 
-            // 매칭되는 티어가 없으면 basic으로 처리
             const config = tierConfig[tier] || tierConfig['basic'];
 
-            // 4. 화면 업데이트
             badge.innerText = config.name;
             badge.style.background = config.color;
             topLine.style.background = config.color;
-            
-            if(config.title) {
-                title.innerHTML = config.title;
+
+            if (isVbankReady) {
+                // 가상계좌 발급 — 입금 전 상태
+                icon.className = 'fas fa-piggy-bank receipt-icon';
+                icon.style.color = '#3b82f6';
+                title.innerHTML = '가상계좌가<br>발급되었습니다';
+                const goodsLabel = tier === 'test'
+                    ? '테스트 결제'
+                    : `${config.name.replace(' PLAN','')} 이용권`;
+                desc.innerHTML = `아래 계좌로 <strong>${fmtAmount(amount) || '금액'}</strong>을 입금하시면<br>${goodsLabel} 결제가 자동으로 완료됩니다.`;
+
+                document.getElementById('vbankBank').innerText    = urlParams.get('bank')    || '-';
+                document.getElementById('vbankAccount').innerText = urlParams.get('account') || '-';
+                document.getElementById('vbankHolder').innerText  = urlParams.get('holder')  || '-';
+                document.getElementById('vbankAmount').innerText  = fmtAmount(amount) || '-';
+                document.getElementById('vbankExpire').innerText  = fmtExpire(urlParams.get('expire'));
+                document.getElementById('vbankBox').style.display = 'block';
+
+                // 입금 전이므로 후속 액션 버튼은 "메인으로"
+                btn.innerText = '메인 화면으로 돌아가기';
+                btn.href      = '/';
+                btn.style.background = config.color;
+            } else {
+                // 즉시 결제(카드 등) — 기존 분기 + test desc 동적화
+                title.innerHTML = config.paidTitle;
+                const descContent = (typeof config.paidDesc === 'function') ? config.paidDesc(amount) : config.paidDesc;
+                desc.innerHTML = descContent;
+
+                btn.innerText = config.btnText;
+                btn.href      = config.btnLink;
+                btn.style.background = config.color;
             }
-            
-            desc.innerHTML = config.desc;
-            
-            btn.innerText = config.btnText;
-            btn.href = config.btnLink;
-            btn.style.background = config.color;
+
+            // 민감하지 않지만 길고 노이즈가 큰 쿼리는 도달 즉시 정리
+            if (orderId) {
+                history.replaceState({}, document.title, `${window.location.pathname}?orderId=${encodeURIComponent(orderId)}`);
+            } else {
+                history.replaceState({}, document.title, window.location.pathname);
+            }
         });
     </script>
 </body>

@@ -48,6 +48,18 @@
                     <span>학교</span>
                     <strong id="viewSchoolSide">-</strong>
                 </div>
+                <div class="profile-meta-row">
+                    <span>전화번호</span>
+                    <strong id="viewPhoneSide">-</strong>
+                </div>
+                <div class="profile-meta-row">
+                    <span>이메일 (ID)</span>
+                    <strong id="viewEmailFullSide">-</strong>
+                </div>
+                <div class="profile-meta-row">
+                    <span>가입 일자</span>
+                    <strong id="viewJoinDateSide">-</strong>
+                </div>
             </div>
 
             <div id="tierBadgeArea"></div>
@@ -67,7 +79,7 @@
 
             <div class="tab-card">
                 <div class="tabs">
-                    <button class="tab-btn active" onclick="switchTab('info')" id="btn-info">학생 정보</button>
+                    <button class="tab-btn active" onclick="switchTab('info')" id="btn-info">목표대학</button>
                     <button class="tab-btn" onclick="switchTab('qual')" id="btn-qual">정성 조사서</button>
                     <button class="tab-btn" onclick="switchTab('quan')" id="btn-quan">성적 데이터</button>
                     <button class="tab-btn" onclick="switchTab('weekly')" id="btn-weekly">📅 주간 점검</button>
@@ -78,49 +90,20 @@
                 </div>
 
                 <div id="tab_info" class="tab-content active">
-                    <div class="info-layout">
-                        <div class="info-header-card">
-                            <div class="info-icon-large">🎓</div>
-                            <div class="info-header-text">
-                                <h3>기본 인적사항</h3>
-                                <p>학생 기본 정보와 목표 대학 분석을 함께 확인합니다.</p>
-                            </div>
-                        </div>
-                        
-                        <div class="info-details-grid">
-                            <div class="detail-item">
-                                <span class="detail-label">🏫 소속 학교</span>
-                                <span class="detail-value" id="viewSchool">-</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">📞 전화번호</span>
-                                <span class="detail-value" id="viewPhone">-</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">📧 이메일 (ID)</span>
-                                <span class="detail-value" id="viewEmailFull">-</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">📅 가입 일자</span>
-                                <span class="detail-value" id="viewJoinDate">-</span>
+                    <div class="univ-summary-section univ-summary-section--bare">
+                        <div class="univ-summary-header">
+                            <h4>목표 대학 설정 현황</h4>
+                            <div class="univ-header-actions">
+                                <select id="targetUnivExamFilter" onchange="renderTargetUnivsByExam()">
+                                    <option value="">시험 선택</option>
+                                </select>
+                                <div class="univ-guide-text">
+                                    💡 <strong>100점</strong> 예상 커트라인 / <strong>150점</strong> 상위 70% 적정라인
+                                </div>
                             </div>
                         </div>
 
-                        <div class="univ-summary-section">
-                            <div class="univ-summary-header">
-                                <h4>목표 대학 설정 현황</h4>
-                                <div class="univ-header-actions">
-                                    <select id="targetUnivExamFilter" onchange="renderTargetUnivsByExam()">
-                                        <option value="">시험 선택</option>
-                                    </select>
-                                    <div class="univ-guide-text">
-                                        💡 <strong>100점</strong> 예상 커트라인 / <strong>150점</strong> 상위 70% 적정라인
-                                    </div>
-                                </div>
-                            </div>
-    
-                            <div id="viewTargetUnivList" class="target-univ-list"></div>
-                        </div>
+                        <div id="viewTargetUnivTable" class="target-univ-table-wrap"></div>
                     </div>
                 </div>
 

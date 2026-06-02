@@ -1,5 +1,5 @@
 // js/mypage.js
-const FILE_API_URL = CONFIG.api.file;
+// FILE_API_URL 은 shared/api.js 에서 글로벌 선언됨 — 여기서 재선언 X
 
 let currentUserTier = 'free';
 let cognitoUser = null;
@@ -9,45 +9,8 @@ let currentUserEmail = '';
 
 let mypagePhoneTimerInterval = null;
 
-// 💡 공통 apiFetch 함수 — HttpOnly 쿠키 기반 인증
-async function apiFetch(url, options = {}) {
-    const defaultHeaders = { 'Content-Type': 'application/json' };
-    options.headers = { ...defaultHeaders, ...(options.headers || {}) };
-    options.credentials = 'include';
-
-    try {
-        const response = await fetch(url, options);
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                const refreshed = await tryRefreshToken();
-                if (refreshed) {
-                    const retryRes = await fetch(url, options);
-                    if (retryRes.ok) return retryRes;
-                }
-                alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
-                handleSignOut();
-                return Promise.reject(new Error("Auth expired"));
-            }
-            if (response.status === 403) {
-                const errBody = await response.json().catch(() => ({}));
-                throw new Error(errBody.error || errBody.message || '접근 권한이 없습니다.');
-            }
-
-            let errorMessage = "요청 처리 중 문제가 발생했습니다.";
-            try {
-                const errorData = await response.json();
-                if (errorData.message) errorMessage = errorData.message;
-            } catch (e) {
-                errorMessage = `인증번호가 일치하지 않거나 오류가 발생했습니다.`;
-            }
-            throw new Error(errorMessage);
-        }
-        return response;
-    } catch (error) {
-        throw error;
-    }
-}
+// apiFetch는 shared/api.js 의 단일 구현 사용.
+// 인증번호 검증 등 사용자에게 보여줘야 하는 오류 메시지는 호출처에서 try/catch로 처리 (apiFetch가 throw하는 메시지 사용).
 
 // 💡 한층 더 강력해진 escapeHtml 적용
 function escapeHtml(text) {
@@ -217,7 +180,7 @@ async function fetchUserData(userId) {
         // 1. 내 정보 가져오기
         const response = await apiFetch(USER_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'get_user' }) 
+            body: JSON.stringify({ type: 'get_user_mypage' })
         });
         
         const userData = await response.json();
@@ -779,8 +742,7 @@ function startDeleteReauth(provider) {
 
 function handleSignOut() {
     if (cognitoUser) cognitoUser.signOut();
-    localStorage.clear();
-    sessionStorage.clear();
+    clearClientSession();
     window.location.href = '/login';
 }
 
@@ -997,7 +959,6 @@ async function processBackendDeletion() {
 
         alert("회원 탈퇴가 정상적으로 완료되었습니다. 그동안 스터디크랙을 이용해 주셔서 감사합니다.");
         clearClientSession();
-        sessionStorage.clear();
         window.location.href = '/';
     } catch (error) {
         if (error.message !== "Auth expired") alert("서버 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");

@@ -22,7 +22,7 @@ if (typeof ChartDataLabels !== 'undefined') {
 }
 
 // 2. 전역 변수 및 설정
-const ADMIN_API_URL = CONFIG.api.admin;
+// ADMIN_API_URL 은 shared/api.js 에서 글로벌 선언됨 — 여기서 재선언 X (SyntaxError 방지).
 const NOTI_API_URL = CONFIG.api.noti;
 const QNA_API_URL = CONFIG.api.qna;
 
@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const role = localStorage.getItem('userRole');
     const userId = localStorage.getItem('userId');
 
-    // 보안: 관리자 권한 체크
+    // UI 진입 가드 — 실제 권한 검증은 Admin Lambda + CookieAuthorizer가 수행 (모든 API 호출 시).
     if (!userId || role !== 'admin') {
         alert("관리자 권한이 없습니다.");
         window.location.href = '/';

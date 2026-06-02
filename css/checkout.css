@@ -39,7 +39,7 @@
 .section-label { font-size: 0.95rem; font-weight: 800; color: #1e293b; margin: 0 0 14px 0; }
 
 /* ── 결제 수단 카드 ── */
-.payment-method-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+.payment-method-group { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px; }
 .payment-method-card { display: flex; cursor: pointer; border: 2px solid #e2e8f0; border-radius: 12px; transition: border-color 0.18s, background 0.18s; }
 .payment-method-card input[type="radio"] { display: none; }
 .pm-card-inner { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 18px 8px; width: 100%; gap: 9px; }

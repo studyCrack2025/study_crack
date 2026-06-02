@@ -1,7 +1,7 @@
 // js/mypage_tutor.js
 
 const TUTOR_API_URL = CONFIG.api.admin;
-const FILE_API_URL = CONFIG.api.file;
+// FILE_API_URL 은 shared/api.js 에서 글로벌 선언됨 — 여기서 재선언 X
 const NOTI_API_URL = CONFIG.api.noti;
 const QNA_API_URL = CONFIG.api.qna;
 
@@ -193,7 +193,7 @@ async function loadTutorInfo(userId) {
     try {
         const res = await apiFetch(TUTOR_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'tutor_get_user', userId: userId })
+            body: JSON.stringify({ type: 'tutor_get_profile', userId: userId })
         });
         
         let rawData = await res.json();
@@ -925,7 +925,7 @@ window.requestTutorWithdrawal = function() {
     tutorCognitoUser.authenticateUser(authDetails, {
         onSuccess: async function(result) {
             try {
-                // 1. register_refresh_cookie로 at/rt 쿠키 갱신
+                // 쿠키 갱신 후 탈퇴 요청. 인증 플로우: docs/security/architecture-notes.md §4
                 const refreshToken = result.getRefreshToken().getToken();
                 await fetch(CONFIG.api.auth, {
                     method: 'POST',
@@ -934,7 +934,6 @@ window.requestTutorWithdrawal = function() {
                     body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken })
                 });
 
-                // 2. 쿠키 기반 API 호출
                 await apiFetch(NOTI_API_URL, {
                     method: 'POST',
                     body: JSON.stringify({
@@ -1185,8 +1184,8 @@ window.submitUrgentRequest = async function() {
 // [계정 관리 및 모달 유틸]
 window.handleSignOut = function() {
     if (tutorCognitoUser) tutorCognitoUser.signOut();
-    localStorage.clear(); sessionStorage.clear();
-    window.location.href = '/login';
+    clearClientSession();
+    window.location.href = '/admin/login';
 }
 window.closeModal = function(modalId) { document.getElementById(modalId).classList.add('hidden'); }
 window.openEmailModal = function() { document.getElementById('emailModal').classList.remove('hidden'); }

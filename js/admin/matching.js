@@ -20,8 +20,8 @@ async function loadMatchingData(isSilent = false) {
 
     try {
         const [tutorRes, studentRes] = await Promise.all([
-            apiFetch(ADMIN_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_get_tutor_stats' }) }),
-            apiFetch(ADMIN_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_search', userId: adminId, data: {} }) })
+            apiFetch(ADMIN_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_get_tutor_list' }) }),
+            apiFetch(ADMIN_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_search_list', userId: adminId, data: {} }) })
         ]);
 
         const tutorData = await tutorRes.json(); const studentData = await studentRes.json();

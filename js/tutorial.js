@@ -1,6 +1,4 @@
-// MBTI 유형별 과목 가중치 [국어, 수학, 탐구, 영어]
-// Dim1: C=개념중심, I=문제중심 | Dim2: S=루틴선호, M=변화선호
-// Dim3: D=근거중심, E=흐름중심 | Dim4: R=계획고수, F=유연조정
+// MBTI 유형별 과목 가중치 [국어, 수학, 탐구, 영어]. 4-차원 정의: docs/algorithms/tutorial-recommendation.md §1
 const MBTI_SUBJECT_WEIGHTS = {
     'CSDR': [0.6, 0.7, 0.8, 0.4], 'CSDF': [0.6, 0.6, 0.7, 0.5],
     'CSER': [0.8, 0.5, 0.6, 0.5], 'CSEF': [0.8, 0.4, 0.5, 0.6],
@@ -54,7 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         const response = await apiFetch(CONFIG.api.user, {
             method: 'POST',
-            body: JSON.stringify({ type: 'get_user' })
+            body: JSON.stringify({ type: 'get_user_analysis' })
         });
         if (response.ok) {
             const data = await response.json();
@@ -65,8 +63,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.location.replace('/');
                 return;
             }
-            if (data && data.tutorialStatus !== undefined) {
-                currentStepIdx = parseInt(data.tutorialStatus, 10);
+            // 신규 가입자는 응답 정책상 tutorialStatus=null로 옴 → NaN 방지 위해 number 타입만 허용 + 범위 가드
+            if (data && typeof data.tutorialStatus === 'number' && data.tutorialStatus >= 0 && data.tutorialStatus < STEPS.length) {
+                currentStepIdx = data.tutorialStatus;
                 localStorage.setItem('tutorialStatus', currentStepIdx);
             }
             // 점수 데이터 복원 (may 우선, 없으면 mar)
@@ -92,8 +91,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     } catch (e) {
-        const savedStatus = localStorage.getItem('tutorialStatus');
-        if (savedStatus) currentStepIdx = parseInt(savedStatus, 10);
+        const parsed = parseInt(localStorage.getItem('tutorialStatus'), 10);
+        if (Number.isFinite(parsed) && parsed >= 0 && parsed < STEPS.length) currentStepIdx = parsed;
     }
 
     if (urlParams.get('mbti_completed')) {
@@ -830,7 +829,7 @@ function buildUnivCards(selectedUnivs, studentScore) {
         { label: '기타', pct: 10, color: '#f59e0b' }
     ];
 
-    // 신규 포맷: currentScore가 이미 환산점수(0–250 UI 스케일)로 들어온 경우
+    // 신규/레거시 포맷 호환: docs/algorithms/tutorial-recommendation.md §6
     if (selectedUnivs.length > 0 && 'currentScore' in selectedUnivs[0]) {
         const PASS_CUT = 100, TOP70_CUT = 150, MAX_SCORE = 250;
         return selectedUnivs.map(u => {
@@ -847,7 +846,6 @@ function buildUnivCards(selectedUnivs, studentScore) {
         });
     }
 
-    // 구 포맷: passCut이 표준점수 단순합인 경우 (레거시 폴백)
     const allScores = [studentScore, ...selectedUnivs.map(u => u.passCut)];
     const maxScore = Math.ceil(Math.max(...allScores) * 1.08 / 10) * 10;
     return selectedUnivs.map(u => {
@@ -1067,28 +1065,23 @@ function selectUniv(element, data, fillId, simPct) {
     document.getElementById('tutNextBtn').style.display = 'block';
 }
 
-// ── 최소 노력 합격 최적화 (Greedy Algorithm) ─────────────────────
+// ── Greedy 점수 분배 — 사양: docs/algorithms/tutorial-recommendation.md §2 ──
 
 function gradeToApproxPct(grd) {
     const map = { '1': 96, '2': 89, '3': 77, '4': 60, '5': 40, '6': 23, '7': 11, '8': 4, '9': 1 };
     return map[String(grd)] || 50;
 }
 
-// deltaOverride: 부스트 폭을 명시적으로 지정 (로직 2 retry용). null이면 기존 자동 산정 사용
 function calcGreedySubjectPlan(univ, mar, mbti, deltaOverride = null) {
     const currentScore = univ.currentScore || 0;
 
-    // delta: UI 스케일(0~250) 부족분을 원점수 단위로 환산
-    // UI 1점 ≈ 원점수 0.3~0.5점 (대학별 가중합 계수에 따라 다름)
     const uiGap = Math.max(20, 100 - currentScore);
     const delta = (deltaOverride !== null && Number.isFinite(deltaOverride))
         ? Math.min(50, Math.max(5, Math.round(deltaOverride)))
         : Math.min(30, Math.max(5, Math.round(uiGap * 0.35)));
 
     const w = MBTI_SUBJECT_WEIGHTS[mbti] || [0.5, 0.7, 0.7, 0.4];
-    // w = [국어, 수학, 탐구, 영어]
 
-    // 대학 반영비율 — subjectAlloc에서 파싱, 없으면 기본값
     const allocArr = univ.subjectAlloc || [];
     const ur = { kor: 0.28, math: 0.40, inq1: 0.11, inq2: 0.11, eng: 0.10 };
     allocArr.forEach(a => {
@@ -1106,7 +1099,6 @@ function calcGreedySubjectPlan(univ, mar, mbti, deltaOverride = null) {
         eng: gradeToApproxPct(mar.eng?.grd)
     };
 
-    // 과목별 현재 원점수 & 만점
     const MAX_RAW = { kor: 100, math: 100, inq1: 50, inq2: 50, eng: 9 };
     const currentRaw = {
         kor: parseInt(mar.kor?.raw) || 0,
@@ -1126,13 +1118,10 @@ function calcGreedySubjectPlan(univ, mar, mbti, deltaOverride = null) {
     };
     const mbtiW = { kor: w[0], math: w[1], inq1: w[2], inq2: w[2], eng: w[3] };
 
-    // 최종 효율 = MBTI가중치 × (1 - 현재백분위/100) × 대학반영비율
-    // hardLimit = min(기본한도, 만점 - 현재원점수) → 만점 초과 방지
-    // 로직 2 retry로 deltaOverride가 들어왔으면 기본 한도를 2배까지 허용 (delta를 다 분배할 수 있게)
     const limitMultiplier = (deltaOverride !== null && deltaOverride > 25) ? 2 : 1;
     const subjects = ['kor', 'math', 'inq1', 'inq2', 'eng'].map(key => {
         const room = key === 'eng'
-            ? Math.max(0, currentRaw.eng - 1)  // 영어: 등급 낮출 여유 (1등급이면 0)
+            ? Math.max(0, currentRaw.eng - 1)
             : Math.max(0, MAX_RAW[key] - currentRaw[key]);
         return {
             key,
@@ -1143,7 +1132,6 @@ function calcGreedySubjectPlan(univ, mar, mbti, deltaOverride = null) {
         };
     }).sort((a, b) => b.efficiency - a.efficiency);
 
-    // Greedy 점수 할당
     let remaining = delta;
     subjects.forEach(s => {
         if (remaining <= 0) { s.assigned = 0; return; }
@@ -1167,12 +1155,11 @@ async function initSubjectRec() {
     const mar  = tutorialData.quan?.[activeMonth];
     const mbti = tutorialData.mbti;
 
-    // 로직 1: 초기 추천 3대학을 부스트 추천에서 제외하기 위한 목록
+    // 추천 retry 사양: docs/algorithms/tutorial-recommendation.md §3
     const excludeUnivs = (tutorialData.selectedUnivs || [])
         .map(u => ({ univ: u.school, major: u.major }))
         .filter(u => u.univ && u.major);
 
-    // 로직 2: retry 패턴 — 추천 3개 미달 시 부스트 폭(DELTA_STEP=8)씩 확대, 최대 3회
     const DELTA_STEP = 8;
     const DELTA_HARD_CAP = 45;
     const MAX_RETRIES = 3;
@@ -1182,7 +1169,6 @@ async function initSubjectRec() {
     let finalDelta = 0;
 
     if (univ && mar && mbti) {
-        // 1차 시도: deltaOverride 없이 기존 자동 산정
         try { plan = calcGreedySubjectPlan(univ, mar, mbti); } catch(e) {}
 
         if (plan && tutorialData.qual?.stream && tutorialData.totalStdScore > 0) {
@@ -1192,7 +1178,6 @@ async function initSubjectRec() {
             for (let tryCount = 0; tryCount < MAX_RETRIES; tryCount++) {
                 const targetDelta = tryCount === 0 ? baseDelta : Math.min(DELTA_HARD_CAP, baseDelta + tryCount * DELTA_STEP);
 
-                // tryCount > 0 이면 재계획 (확장 한도로 재분배)
                 if (tryCount > 0) {
                     try { plan = calcGreedySubjectPlan(univ, mar, mbti, targetDelta); } catch(e) { break; }
                 }
@@ -1229,7 +1214,7 @@ async function initSubjectRec() {
         }
     }
 
-    // 로직 3: 학습 기간 산정 (8~16주, RAW_PER_WEEK=1.5)
+    // 학습기간 산정: docs/algorithms/tutorial-recommendation.md §4
     const RAW_PER_WEEK = 1.5;
     const MIN_WEEKS = 8;
     const MAX_WEEKS = 16;
@@ -1244,11 +1229,9 @@ async function initSubjectRec() {
         return;
     }
 
-    // plan은 효율 순 정렬. key → plan item 맵
     const planMap = {};
     plan.forEach(s => { planMap[s.key] = s; });
 
-    // assigned > 0인 과목 우선순위 순서 (블러 판단용)
     const risingByPriority = plan.filter(s => s.assigned > 0);
     const totalGainRawOnly = risingByPriority
         .filter(s => s.key !== 'eng')
@@ -1268,7 +1251,7 @@ async function initSubjectRec() {
         const color = COLORS[key];
         const label = LABELS[key];
 
-        // 상승 과목 중 3순위 이상(인덱스 2+)은 잠금
+        // 잠금 정책: docs/algorithms/tutorial-recommendation.md §7
         const priorityIdx = risingByPriority.findIndex(p => p.key === key);
         const isLocked = priorityIdx >= 2;
 
@@ -1319,9 +1302,7 @@ async function initSubjectRec() {
                 <div class="future-stage-major">${univ.major}</div>
             </div>` : '';
 
-        // 정렬 의도: 위→아래로 갈수록 난이도가 올라감 (안정 → 적정 → 도전)
-        //   currentScore = 사용자의 UI 점수 (높을수록 그 대학이 사용자에게 쉬움)
-        //   따라서 DESC 정렬: 쉬운(높은 currentScore) 대학을 먼저 → index 0 = 안정
+        // 안정/적정/도전 분류: docs/algorithms/tutorial-recommendation.md §5
         const sortedFutureUnivs = [...(postSimUnivs || [])].sort((a, b) => (b.currentScore || 0) - (a.currentScore || 0));
         const scoredFutureUnivs = sortedFutureUnivs.map((u, i, arr) => {
             const n = arr.length;

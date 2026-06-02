@@ -1,7 +1,10 @@
 // js/payment.js
 
 const USER_API_URL = CONFIG.api.user;
-const TEST_PAY_MODE = new URLSearchParams(window.location.search).get('testpay'); // /payment?testpay=1|2
+// 테스트 결제 카드 노출 가드 — local/dev 환경에서만 ?testpay=1|2 허용. prod는 무시.
+const TEST_PAY_MODE = (IS_LOCAL || IS_DEV)
+    ? new URLSearchParams(window.location.search).get('testpay')
+    : null;
 const FORCE_TEST_PAYMENT = (TEST_PAY_MODE === '1' || TEST_PAY_MODE === '2');
 const TEST_PAYMENT_AMOUNT_KRW = (TEST_PAY_MODE === '2') ? 1000 : 100;
 
@@ -18,60 +21,8 @@ let userPhoneMissing = false;
 
 function getTierDisplayName(tier) { return TIER_DISPLAY[(tier || '').toLowerCase()] || String(tier || '').toUpperCase(); }
 
-// 💡 토큰 자동 갱신 — HttpOnly 쿠키 기반
-let _isRefreshing = false;
-async function tryRefreshToken() {
-    if (_isRefreshing) return false;
-    _isRefreshing = true;
-    try {
-        const res = await fetch(CONFIG.api.auth, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ type: 'silent_refresh' })
-        });
-        return res.ok;
-    } catch (e) {
-        return false;
-    } finally {
-        _isRefreshing = false;
-    }
-}
-
-// 💡 공통 apiFetch 함수 — HttpOnly 쿠키 기반 인증
-async function apiFetch(url, options = {}) {
-    const defaultHeaders = { 'Content-Type': 'application/json' };
-    options.headers = { ...defaultHeaders, ...(options.headers || {}) };
-    options.credentials = 'include';
-
-    try {
-        const response = await fetch(url, options);
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                const refreshed = await tryRefreshToken();
-                if (refreshed) {
-                    const retryRes = await fetch(url, options);
-                    if (retryRes.ok) return retryRes;
-                }
-                alert("보안을 위해 로그인이 만료되었습니다. 다시 로그인해 주세요.");
-                localStorage.clear();
-                sessionStorage.clear();
-                window.location.href = '/login';
-                return Promise.reject(new Error("Auth expired"));
-            }
-            if (response.status === 403) {
-                const errBody = await response.json().catch(() => ({}));
-                throw new Error(errBody.error || errBody.message || '접근 권한이 없습니다.');
-            }
-            throw new Error(`서버 통신 오류 (상태 코드: ${response.status})`);
-        }
-        return response;
-    } catch (error) {
-        console.error("API 통신 실패:", error);
-        throw error;
-    }
-}
+// apiFetch / tryRefreshToken 은 shared/api.js 의 단일 구현 사용.
+// 결제 진행 중 만료 시 checkoutData 가 보존되도록 shared 의 clearClientSession allowlist 정책에 위임됨.
 
 // 💡 [추가] XSS 방어 유틸리티 (필드 렌더링 시 안전성 확보)
 function escapeHtml(text) {
@@ -270,8 +221,7 @@ function syncHeaderNav() {
     if (btnLogout) {
         btnLogout.addEventListener('click', (e) => {
             e.preventDefault();
-            localStorage.clear();
-            sessionStorage.clear();
+            clearClientSession();
             window.location.href = '/';
         });
     }
@@ -289,7 +239,7 @@ async function fetchUserInfo(userId) {
     try {
         const response = await apiFetch(USER_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'get_user' }) 
+            body: JSON.stringify({ type: 'get_user_payment' })
         });
         
         const data = await response.json();
@@ -562,7 +512,7 @@ function formatPhoneNumber(rawPhone) {
     return cleaned.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/, "$1-$2-$3");
 }
 
-// 티어별 결제 금액 (서버 사이드 TIER_PRICES 와 동일하게 유지)
+// 티어별 결제 금액 (UI 표시용). 실제 정가 검증은 Payment Lambda의 computeExpectedAmount가 수행.
 const BASE_TIER_PRICES_KRW = { 'test': 100, 'basic': 25000, 'starter': 39000, 'standard': 49000, 'pro': 149000 };
 const TIER_PRICES_KRW = BASE_TIER_PRICES_KRW;
 
@@ -605,6 +555,8 @@ function processPayment() {
         productName: isTestPayment ? `${selectedProductName} (테스트 결제)` : selectedProductName,
         requestedTier: selectedTier,
         isTestPayment,
+        testPayMode: isTestPayment ? (TEST_PAY_MODE || '0') : null,
+        testPayForced: isTestPayment && FORCE_TEST_PAYMENT,
         name: name,
         phone: formattedPhone,
         email: email,

@@ -67,18 +67,8 @@ function shouldSkipPostLoginIdentityResolve() {
     return true;
 }
 
-function isPublicRoute(pathname) {
-    const p = pathname || '';
-    const exact = ['/', '/login', '/signup', '/welcome', '/social-callback', '/admin/login', '/service', '/promo'];
-    if (exact.includes(p)) return true;
-    const prefixes = ['/mbti_', '/checkout', '/success', '/change-password'];
-    return prefixes.some(prefix => p.startsWith(prefix));
-}
-
-function getRoleLoginPath() {
-    const role = localStorage.getItem('userRole');
-    return (role === 'admin' || role === 'tutor') ? '/admin/login' : '/login';
-}
+// isPublicRoute / getRoleLoginPath / tryRefreshToken / apiFetch 는 js/shared/api.js 에 정의됨.
+// auth.js 는 그 위에서 동작 — 중복 정의 제거.
 
 async function registerRefreshCookie(refreshToken) {
     try {
@@ -99,107 +89,8 @@ async function registerRefreshCookie(refreshToken) {
     return false;
 }
 
-// 토큰 갱신 시도: 쿠키 기반 silent_refresh (rt 쿠키 → 백엔드가 at 쿠키 갱신)
-//
-// 🔒 Singleton Promise 패턴 (2026-05-23 수정)
-//    이전 _isRefreshing 플래그 방식: 동시 호출자가 즉시 false 반환받아 → 의도치 않은 logout
-//    수정: 동시 호출자 모두 같은 in-flight Promise를 공유하여 같은 결과 받음.
-//    → at 쿠키 만료 시 병렬 API 5~6건이 동시에 401 받아도 silent_refresh는 1번만 수행.
-let _refreshPromise = null;
-function tryRefreshToken() {
-    if (_refreshPromise) return _refreshPromise;
-    const p = (async () => {
-        const callSilentRefresh = () => fetch(AUTH_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ type: 'silent_refresh' })
-        });
-        try {
-            const res = await callSilentRefresh();
-            if (res.ok) return true;
-
-            // rt 쿠키가 없을 때를 대비해 localStorage fallback으로 1회 복구 시도
-            const fallbackRt = localStorage.getItem('refreshToken');
-            if (fallbackRt) {
-                const registerRes = await fetch(AUTH_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken: fallbackRt })
-                });
-                if (registerRes.ok) {
-                    localStorage.removeItem('refreshToken');
-                    const retryRes = await callSilentRefresh();
-                    return retryRes.ok;
-                }
-            }
-            return false;
-        } catch (e) {
-            const fallbackRt = localStorage.getItem('refreshToken');
-            if (!fallbackRt) return false;
-            try {
-                const registerRes = await fetch(AUTH_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken: fallbackRt })
-                });
-                if (!registerRes.ok) return false;
-                localStorage.removeItem('refreshToken');
-                const retryRes = await callSilentRefresh();
-                return retryRes.ok;
-            } catch (_) {
-                return false;
-            }
-        }
-    })();
-    // p.finally로 결과 settle 직후 null로 비워, 이후 새로운 refresh가 가능하도록 유지
-    _refreshPromise = p.finally(() => { _refreshPromise = null; });
-    return _refreshPromise;
-}
-
-// 글로벌 apiFetch — HttpOnly 쿠키 기반 인증 (credentials: 'include')
-// 401 시 silent_refresh 1회 시도 후 재시도 — 실패 시 로그아웃
-// 403 은 권한 부족 (인증은 유효) — 로그아웃하지 않고 에러만 throw
-async function apiFetch(url, options = {}) {
-    const defaultHeaders = { 'Content-Type': 'application/json' };
-    options.headers = { ...defaultHeaders, ...(options.headers || {}) };
-    const bearerToken = getAccessToken() || sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken') || localStorage.getItem('token');
-    if (bearerToken && !options.headers.Authorization) {
-        options.headers.Authorization = `Bearer ${bearerToken}`;
-    }
-    options.credentials = 'include';
-
-    try {
-        const response = await fetch(url, options);
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                const currentPath = window.location.pathname;
-                const refreshed = await tryRefreshToken();
-                if (refreshed) {
-                    const retryRes = await fetch(url, options);
-                    if (retryRes.ok) return retryRes;
-                }
-                if (!['/login', '/signup', '/'].includes(currentPath)) {
-                    clearClientSession();
-                    window.location.href = getRoleLoginPath();
-                }
-                return Promise.reject(new Error("Auth expired"));
-            }
-            if (response.status === 403) {
-                const errBody = await response.json().catch(() => ({}));
-                throw new Error(errBody.error || errBody.message || '접근 권한이 없습니다.');
-            }
-            throw new Error(`서버 통신 오류 (상태 코드: ${response.status})`);
-        }
-        return response;
-    } catch (error) {
-        console.error("API 통신 실패:", error);
-        throw error;
-    }
-}
+// tryRefreshToken / apiFetch 본문은 js/shared/api.js 로 이관됨.
+// auth.js 의 _accessToken/_idToken 메모리 토큰은 그대로 유지 — sessionStorage 와 동기화되므로 shared의 apiFetch도 동일한 토큰을 읽음.
 
 // JWT 토큰을 브라우저에서 안전하게 해독하는 헬퍼 함수
 function getPayloadFromToken(token) {
@@ -225,8 +116,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             headers.Authorization = `Bearer ${bearerToken}`;
         }
 
-        // 🔥 at 쿠키 만료 시 silent_refresh로 자동 갱신 — rt 쿠키 유효한 동안 세션 유지
-        //    raw fetch만 쓰면 401에서 즉시 handleSignOut → 페이지 로드만 해도 로그아웃되는 문제 방지
+        // 401/403 시 refresh+retry. 401 즉시 sign-out 방지가 목적. 정책: docs/security/architecture-notes.md §3
         const fetchIdentity = async (requestType) => {
             const doFetch = () => fetch(USER_API_URL, {
                 method: 'POST',
@@ -235,7 +125,8 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
                 body: JSON.stringify({ type: requestType })
             });
             let res = await doFetch();
-            if (res.status === 401) {
+            // 401/403 처리 정책: docs/security/architecture-notes.md §3
+            if (res.status === 401 || res.status === 403) {
                 const refreshed = await tryRefreshToken();
                 if (refreshed) res = await doFetch();
             }
@@ -258,7 +149,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             sessionStorage.setItem('user_profile_api_mode', 'light');
         }
 
-        if (userRes.status === 401) {
+        if (userRes.status === 401 || userRes.status === 403) {
             throw new Error("Auth expired");
         }
 
@@ -280,6 +171,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
                     const exemptPaths = ['/tutorial', '/login', '/signup', '/welcome', '/social-callback', '/mbti_survey', '/mbti_download', '/checkout', '/success'];
                     const currentPath = window.location.pathname;
                     if (!exemptPaths.some(p => currentPath.startsWith(p))) {
+                        alert('튜토리얼이 완료되지 않아 튜토리얼 페이지로 이동합니다.');
                         window.location.replace('/tutorial');
                         return;
                     }
@@ -873,15 +765,21 @@ async function handleFinalSubmit() {
 // ==========================================
 
 function clearClientSession() {
+    // 메모리 토큰 정리 — sessionStorage.removeItem도 같이 수행
     clearAccessToken();
     clearIdToken();
-    const sessionKeys = [
-        'refreshToken',
-        'userId', 'userEmail', 'userRole', 'userName', 'userTier', 'authProvider',
-        'tutorial_completed', 'tutorialStatus', 'pending_tutorial', 'tut_selectedUnivs'
-    ];
-    sessionKeys.forEach(key => localStorage.removeItem(key));
-    sessionStorage.clear();
+    // 추가로 auth.js 만 다루는 잔존 키
+    ['tut_selectedUnivs'].forEach(key => localStorage.removeItem(key));
+    // 공통 allowlist 정리는 shared 모듈 위임 — checkoutData 등 보존 정책 일관 적용
+    if (typeof clearSharedClientSession === 'function') {
+        clearSharedClientSession();
+    } else {
+        // shared/api.js 미로드 페이지를 위한 fallback (현재 모든 페이지가 로드하므로 도달 안 함)
+        ['refreshToken','userId','userEmail','userRole','userName','userTier','authProvider','accessToken','token',
+         'tutorialStatus','pending_tutorial','tutorial_completed','tutorNameAlias']
+            .forEach(k => localStorage.removeItem(k));
+        sessionStorage.clear();
+    }
 }
 
 function checkLoginStatus() {
@@ -937,7 +835,6 @@ function checkLoginStatus() {
     if (isLoggedIn) {
         const currentPath = window.location.pathname || '';
         const isAdminRoute = (currentPath === '/admin' || currentPath.startsWith('/admin/'));
-        // 관리자 페이지는 admin API 기준으로 세션을 검증하므로 user API identity 동기화를 건너뜀
         if (isAdminRoute && userRole === 'admin') return;
         if (shouldSkipPostLoginIdentityResolve()) return;
         // 튜토리얼 미완료 학생 → resolveUserIdentity에서 DB 확인 후 판단
@@ -951,7 +848,6 @@ function handleSignOut(silent = false) {
     if (cognitoUser != null) cognitoUser.signOut();
     const redirectPath = getRoleLoginPath();
 
-    // 서버에 쿠키 만료 요청 (at/rt HttpOnly 쿠키 삭제)
     fetch(AUTH_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

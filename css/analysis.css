@@ -662,42 +662,75 @@ header#site-header .nav-links a.active-link { color: #4c79ee; }
 /* ============================================================
    [7] 기능 5: PRO EXCLUSIVE
    ============================================================ */
-.pro-theme { background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); padding: 40px; border-radius: 16px; color: white; border: 1px solid #3b82f6; box-shadow: 0 10px 30px rgba(30, 58, 138, 0.25); position: relative; overflow: hidden; }
-.pro-theme::before { content: ''; position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%); z-index: 0; }
+/* PRO EXCLUSIVE 섹션 — light theme 통일 (모바일/PC 일관). 사양: docs/exec-plans/active/260602_pro_report_schedule_ux.md §4. 보관함(report-list-container/report-item)은 의도적으로 dark 유지 */
+.pro-theme { background: #f9f9fb; padding: 40px; border-radius: 16px; color: #2c2c2c; border: 0; box-shadow: none; position: relative; overflow: hidden; }
+.pro-theme::before { display: none; }
 .pro-header { position: relative; z-index: 1; margin-bottom: 30px; text-align: center; }
-.pro-badge { display: inline-block; background: #3b82f6; color: white; font-size: 0.8rem; font-weight: 800; padding: 4px 12px; border-radius: 20px; margin-bottom: 10px; letter-spacing: 1px; }
-.pro-title { font-size: 1.8rem; font-weight: 800; margin: 0 0 10px 0; color: #fff; letter-spacing: -0.5px; }
-.pro-desc { color: #cbd5e1; font-size: 1rem; font-weight: 400; word-break: keep-all; }
+.pro-badge { display: inline-block; background: #ff7461; color: #fff; font-size: 0.8rem; font-weight: 800; padding: 4px 12px; border-radius: 20px; margin-bottom: 10px; letter-spacing: 1px; }
+.pro-title { font-size: 1.8rem; font-weight: 800; margin: 0 0 10px 0; color: #4c79ee; letter-spacing: -0.5px; }
+.pro-desc { color: #475569; font-size: 1rem; font-weight: 400; word-break: keep-all; }
 
 .pro-promo-grid { display: flex; flex-direction: column; gap: 15px; margin: 0 auto 30px auto; max-width: 100%; position: relative; z-index: 1; }
-.pro-feature-card { background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.28); border-radius: 12px; padding: 20px; transition: transform .3s; display: flex; flex-direction: row; align-items: flex-start; text-align: left; gap: 18px; word-break: keep-all; }
-.pro-feature-card:hover { transform: translateY(-3px); background: rgba(255,255,255,.26); }
-.pro-feature-card.highlight { border: 1.5px solid #f59e0b; background: rgba(245,158,11,.22); }
-.feat-icon { flex-shrink: 0; font-size: 2rem; line-height: 1; margin: 0; display: block; }
+.pro-feature-card { background: #fff; border: 1px solid #dde6f5; border-radius: 12px; padding: 20px; transition: transform .3s, background .3s, border-color .3s; display: flex; flex-direction: row; align-items: flex-start; text-align: left; gap: 18px; word-break: keep-all; box-shadow: 0 2px 10px rgba(76,121,238,0.07); }
+.pro-feature-card:hover { transform: translateY(-3px); background: #f5f8ff; border-color: #b4c8f5; }
+.pro-feature-card.highlight { background: #fff8eb; border: 1.5px solid #f6c860; box-shadow: 0 2px 10px rgba(245,158,11,0.1); }
+.feat-icon { flex-shrink: 0; font-size: 2rem; line-height: 1; margin: 0; display: block; color: #4c79ee; }
 .feat-text-box { flex: 1; min-width: 0; }
-.feat-title { font-size: 1.1rem; font-weight: 700; color: #60a5fa; margin: 0 0 6px 0; display: block; line-height: 1.3; }
-.feat-desc { font-size: 0.95rem; color: #e2e8f0; line-height: 1.5; margin: 0; }
+.feat-title { font-size: 1.1rem; font-weight: 700; color: #4c79ee; margin: 0 0 6px 0; display: block; line-height: 1.3; }
+.feat-desc { font-size: 0.95rem; color: #475569; line-height: 1.5; margin: 0; }
+.pro-feature-card.highlight .feat-title { color: #b45309; }
 
-.pro-cta-btn { display: block; width: 100%; max-width: 400px; margin: 0 auto; padding: 16px 24px; background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%); color: #1e3a8a; border: 1px solid #bfdbfe; font-size: 1.1rem; font-weight: 800; border-radius: 12px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); position: relative; z-index: 1; text-align: center; }
-.pro-cta-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(255, 255, 255, 0.2); background: #fff; border-color: #60a5fa; }
-.pro-cta-btn div { font-size: 0.85rem; color: #64748b; margin-top: 4px; font-weight: 500; word-break: keep-all; }
+.pro-cta-btn { display: block; width: 100%; max-width: 400px; margin: 0 auto; padding: 16px 24px; background: #4c79ee; color: #fff; border: 1px solid #4c79ee; font-size: 1.1rem; font-weight: 800; border-radius: 12px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 6px -1px rgba(76,121,238,0.15); position: relative; z-index: 1; text-align: center; }
+.pro-cta-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(76,121,238,0.25); background: #3b66d4; }
+.pro-cta-btn div { font-size: 0.85rem; color: #dbeafe; margin-top: 4px; font-weight: 500; word-break: keep-all; }
 
-.pro-feature-card.highlight .feat-title { color: #fbbf24; }
+.pro-dashboard-layout { display: flex; flex-direction: column; gap: 16px; position: relative; z-index: 1; }
+.dashboard-actions { text-align: center; background: #4c79ee; color: #fff; padding: 25px; border-radius: 8px; margin: 16px 0; }
+.req-btn { background: #fff; color: #4c79ee; font-weight: 700; padding: 12px 30px; border-radius: 6px; border: none; cursor: pointer; font-size: 1rem; transition: all 0.2s; box-shadow: 2px 2px 2px rgba(0,0,0,0.15); }
+.req-btn:hover { background: #eff6ff; box-shadow: 2px 2px 6px rgba(76,121,238,0.25); }
 
-.pro-dashboard-layout { display: flex; flex-direction: column; gap: 30px; position: relative; z-index: 1; }
-.dashboard-actions { text-align: center; background: rgba(255,255,255,0.05); padding: 25px; border-radius: 12px; }
-.req-btn { background: white; color: #1e3a8a; font-weight: 700; padding: 12px 30px; border-radius: 8px; border: none; cursor: pointer; font-size: 1rem; transition: all 0.2s; }
-.req-btn:hover { background: #eff6ff; box-shadow: 0 0 15px rgba(255,255,255,0.3); }
-
-.report-list-container { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 20px; }
+.report-list-container { background: linear-gradient(110deg, #121b43, #344ea8); border-radius: 12px; padding: 20px; }
 .report-year-group { margin-bottom: 20px; }
-.report-year-title { font-size: 0.9rem; color: #94a3b8; margin-bottom: 10px; border-bottom: 1px solid #334155; padding-bottom: 5px; }
+.report-year-title { font-size: 0.9rem; color: #fff; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px; }
 .report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
 .report-item { background: #1e293b; border: 1px solid #334155; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; transition: border-color 0.2s; cursor: pointer; }
 .report-item:hover { border-color: #3b82f6; }
 .rep-info strong { display: block; color: #fff; font-size: 0.95rem; margin-bottom: 2px; }
 .rep-info span { font-size: 0.8rem; color: #94a3b8; }
 .rep-icon { color: #3b82f6; }
+
+/* PRO 일정 카드 — light theme (모바일/PC 통일). 회차 원형 배지 + 좌측 강조 바 디자인 */
+.pro-schedule-card { background: #fff; border: 1px solid #dde6f5; box-shadow: 0 2px 10px rgba(76,121,238,0.07); border-radius: 12px; padding: 20px 24px; margin-bottom: 14px; position: relative; z-index: 1; }
+.pro-schedule-card.pending { background: #f5f8ff; border-color: #dde6f5; box-shadow: none; }
+.pro-schedule-title { color: #1e293b; font-size: 1.05rem; font-weight: 700; margin-bottom: 12px; }
+.pro-schedule-card.pending .pro-schedule-title { color: #475569; font-weight: 600; }
+.pro-schedule-subtitle { color: #64748b; font-weight: 400; font-size: 0.85rem; margin-left: 8px; }
+.pro-schedule-rows { display: flex; flex-direction: column; gap: 8px; }
+.pro-schedule-row { display: flex; align-items: center; gap: 14px; padding: 14px 12px; border-radius: 10px; border-left: 4px solid transparent; background: #fafbfd; transition: background 0.2s; }
+.pro-schedule-row.current { border-left-color: #4c79ee; background: #f0f5ff; }
+.pro-schedule-round-badge { flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.05rem; background: #e2e8f0; color: #64748b; }
+.pro-schedule-round-badge.submitted { background: #16a34a; color: #fff; }
+.pro-schedule-round-badge.active { background: #4c79ee; color: #fff; box-shadow: 0 2px 8px rgba(76,121,238,0.3); }
+.pro-schedule-round-badge.wait { background: #cbd5e1; color: #475569; }
+.pro-schedule-round-badge.closed { background: #e2e8f0; color: #94a3b8; }
+.pro-schedule-row-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pro-schedule-deadline { color: #1e293b; font-size: 0.95rem; font-weight: 600; }
+.pro-schedule-row.current .pro-schedule-deadline { color: #1e3a8a; }
+.pro-schedule-row.closed .pro-schedule-deadline { color: #94a3b8; }
+.pro-schedule-row-release { color: #64748b; font-size: 0.85rem; }
+.pro-schedule-card.pending .pro-schedule-row-release { color: #94a3b8; }
+.pro-schedule-label { display: inline-block; font-size: 0.78rem; padding: 4px 10px; border-radius: 10px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+.pro-schedule-label.submitted { background: #dcfce7; color: #166534; }
+.pro-schedule-label.active { background: #fef3c7; color: #92400e; }
+.pro-schedule-label.wait { background: #e2e8f0; color: #475569; }
+.pro-schedule-label.closed { background: #f1f5f9; color: #94a3b8; }
+.pro-schedule-footer { color: #475569; font-size: 0.82rem; margin-top: 14px; padding-top: 14px; border-top: 1px solid #e2e8f0; }
+.pro-schedule-card.pending .pro-schedule-footer { color: #64748b; }
+.pro-pending-notice { background: #f5f8ff; border: 1px solid #dde6f5; border-radius: 12px; padding: 14px 20px; margin-bottom: 14px; color: #475569; font-size: 0.9rem; position: relative; z-index: 1; }
+.req-btn.disabled { background: #e2e8f0; color: #64748b; cursor: not-allowed; box-shadow: none; }
+.req-btn.disabled:hover { background: #e2e8f0; box-shadow: none; }
+.req-btn.renew { background: #f59e0b; color: #fff; }
+.req-btn.renew:hover { background: #d97706; box-shadow: 0 0 15px rgba(245,158,11,0.4); }
 
 /* 심층 코칭 카드 */
 .pro-input-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
@@ -1387,6 +1420,13 @@ body { color: #2c2c2c; letter-spacing: -0.02em; word-break: keep-all; -webkit-fo
     .report-item { border: 1px solid #334155; border-radius: 8px; background: #1e293b; }
     .page-loading-overlay { border-radius: 6px; }
     .check-modal-content, .pro-modal-content { border-radius: 10px; box-shadow: 10px 20px 40px rgba(32,40,56,.22); }
+
+    /* PRO 일정 카드 PC 사이즈 특화. 색상은 base(light)에서 가져옴. */
+    .pro-schedule-card { padding: 24px 28px; }
+    .pro-schedule-row { padding: 16px 14px; }
+    .pro-schedule-round-badge { width: 40px; height: 40px; font-size: 1.1rem; }
+    .pro-schedule-deadline { font-size: 1rem; }
+    .pro-schedule-row-release { font-size: 0.9rem; }
 }
 
 .sidebar-toggle-btn { display: none; align-items: center; gap: 8px; margin-bottom: 20px; padding: 9px 16px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; color: #475569; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; }
