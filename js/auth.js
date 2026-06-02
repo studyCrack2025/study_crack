@@ -121,7 +121,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             const doFetch = () => fetch(USER_API_URL, {
                 method: 'POST',
                 headers,
-                credentials: headers.Authorization ? 'omit' : 'include',
+                credentials: 'include',
                 body: JSON.stringify({ type: requestType })
             });
             let res = await doFetch();
