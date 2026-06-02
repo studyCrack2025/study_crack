@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userId = localStorage.getItem('userId');
     if (!userId) {
         alert("로그인이 필요합니다.");
-        window.location.href = '/login';
+        window.location.replace('/login');
         return;
     }
 

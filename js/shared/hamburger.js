@@ -40,11 +40,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const mobileLogout = document.getElementById('mobileLogoutBtn');
     if (mobileLogout && !mobileLogout.dataset.bound) {
         mobileLogout.dataset.bound = '1';
-        mobileLogout.addEventListener('click', (e) => {
+        mobileLogout.addEventListener('click', async (e) => {
             e.preventDefault();
             closeMobileNav();
             if (typeof handleSignOut === 'function') {
                 handleSignOut();
+            } else if (typeof performClientLogout === 'function') {
+                await performClientLogout('/');
             } else {
                 if (typeof clearClientSession === 'function') {
                     clearClientSession();
@@ -52,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.clear();
                     sessionStorage.clear();
                 }
-                window.location.href = '/';
+                window.location.replace('/');
             }
         });
     }

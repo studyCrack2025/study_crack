@@ -137,7 +137,28 @@
             return;
         }
 
-        // 5. 세션 저장 (at/rt 쿠키는 Lambda Set-Cookie로 이미 설정됨)
+        // 5. 세션 갈아끼우기 — 이전 사용자 흔적 제거 후 새 토큰 set.
+        //    backend social_callback 응답에 accessToken/idToken/refreshToken이 포함됨 (Set-Cookie와 별개로 명시).
+        //    이걸 sessionStorage/메모리에 저장하지 않으면 Bearer 헤더 폴백이 stale 토큰을 그대로 사용 → 세션 뒤섞임 사고.
+        if (typeof clearClientSession === 'function') {
+            clearClientSession();
+        } else if (typeof clearSharedClientSession === 'function') {
+            clearSharedClientSession();
+        }
+        if (result.accessToken && typeof setAccessToken === 'function') {
+            setAccessToken(result.accessToken);
+        } else if (result.accessToken) {
+            sessionStorage.setItem('accessToken', result.accessToken);
+        }
+        if (result.idToken && typeof setIdToken === 'function') {
+            setIdToken(result.idToken);
+        } else if (result.idToken) {
+            sessionStorage.setItem('idToken', result.idToken);
+        }
+        if (result.refreshToken && typeof registerRefreshCookie === 'function') {
+            // 백엔드가 이미 Set-Cookie로 rt 쿠키 set했지만, fallback localStorage refreshToken 정합성을 위해 호출
+            try { await registerRefreshCookie(result.refreshToken); } catch (_) {}
+        }
         localStorage.setItem('userId', userId);
         localStorage.setItem('userRole', 'student');
 
@@ -149,7 +170,10 @@
 
         const userRes = await fetch(USER_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...(result.accessToken ? { Authorization: `Bearer ${result.accessToken}` } : {})
+            },
             credentials: 'include',
             body: JSON.stringify({ type: 'get_login_profile' })
         });

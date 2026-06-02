@@ -79,6 +79,13 @@ async function registerRefreshCookie(refreshToken) {
             body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken })
         });
         if (cookieRes.ok) {
+            const cookieData = await cookieRes.json().catch(() => ({}));
+            if (typeof syncTokensFromAuthResponse === 'function') {
+                const synced = syncTokensFromAuthResponse(cookieData);
+                if (!synced && (cookieData.accessToken || cookieData.idToken || cookieData.userId)) {
+                    return false;
+                }
+            }
             localStorage.removeItem('refreshToken');
             return true;
         }
@@ -128,7 +135,15 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             // 401/403 처리 정책: docs/security/architecture-notes.md §3
             if (res.status === 401 || res.status === 403) {
                 const refreshed = await tryRefreshToken();
-                if (refreshed) res = await doFetch();
+                if (refreshed) {
+                    const refreshedBearerToken = getAccessToken();
+                    if (refreshedBearerToken) {
+                        headers.Authorization = `Bearer ${refreshedBearerToken}`;
+                    } else {
+                        delete headers.Authorization;
+                    }
+                    res = await doFetch();
+                }
             }
             return res;
         };
@@ -192,7 +207,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             clearClientSession();
             const currentPath = window.location.pathname || '/';
             if (!isPublicRoute(currentPath)) {
-                window.location.href = getRoleLoginPath();
+                window.location.replace(getRoleLoginPath());
             } else {
                 checkLoginStatus();
             }
@@ -250,14 +265,14 @@ function handleRoleSuccess(role, eventType, userName = '회원', promoCode = '')
     if (eventType === 'login') {
         if (role === 'tutor') {
             alert(`${userName} 선생님, 안녕하세요.`);
-            window.location.href = '/mypage/tutor';
+            window.location.replace('/mypage/tutor');
         } else {
             alert("로그인 성공!");
             // 튜토리얼 미완료 학생은 /tutorial로 직행
             if (localStorage.getItem('tutorial_completed') !== 'true') {
-                window.location.href = '/tutorial';
+                window.location.replace('/tutorial');
             } else {
-                window.location.href = '/';
+                window.location.replace('/');
             }
         }
     }
@@ -849,19 +864,23 @@ async function handleSignOut(silent = false) {
     const redirectPath = getRoleLoginPath();
 
     // 백엔드 쿠키 삭제 응답을 반드시 기다림 — 안 그러면 다음 로그인 시 이전 at 쿠키 잔존 위험
-    try {
-        await fetch(AUTH_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ type: 'logout' })
-        });
-    } catch (_) { /* 네트워크 실패해도 클라이언트 정리는 진행 */ }
+    if (typeof clearServerSessionCookies === 'function') {
+        await clearServerSessionCookies();
+    } else {
+        try {
+            await fetch(AUTH_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ type: 'logout' })
+            });
+        } catch (_) { /* 네트워크 실패해도 클라이언트 정리는 진행 */ }
+    }
 
     clearClientSession();
 
     if (!silent) alert("로그아웃 되었습니다.");
-    window.location.href = redirectPath;
+    window.location.replace(redirectPath);
 }
 
 function handleSignIn() {
@@ -892,14 +911,18 @@ function handleSignIn() {
             const refreshToken = result.getRefreshToken().getToken();
 
             // 1. 이전 at/rt 쿠키 명시적 제거 — 새 토큰 set 직전 동기화
-            try {
-                await fetch(AUTH_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ type: 'logout' })
-                });
-            } catch (_) { /* 다음 단계가 덮어쓰므로 치명적이지 않음 */ }
+            if (typeof clearServerSessionCookies === 'function') {
+                await clearServerSessionCookies();
+            } else {
+                try {
+                    await fetch(AUTH_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ type: 'logout' })
+                    });
+                } catch (_) { /* 다음 단계가 덮어쓰므로 치명적이지 않음 */ }
+            }
 
             // 2. 새 토큰 메모리/sessionStorage 저장
             setAccessToken(accessToken);
@@ -909,16 +932,6 @@ function handleSignIn() {
 
             // 3. 새 rt 쿠키 등록 (await 보장)
             await registerRefreshCookie(refreshToken);
-
-            // 4. 새 at 쿠키 사전 발급 — 다음 페이지 첫 API 호출이 401 안 받도록
-            try {
-                await fetch(AUTH_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ type: 'silent_refresh' })
-                });
-            } catch (_) { /* 실패해도 첫 401에서 refresh 폴백 */ }
 
             markPostLoginIdentitySkip();
 
