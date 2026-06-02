@@ -189,7 +189,7 @@ async function apiFetch(url, options = {}) {
     if (bearerToken && !options.headers.Authorization) {
         options.headers.Authorization = `Bearer ${bearerToken}`;
     }
-    options.credentials = 'include';
+    options.credentials = options.headers.Authorization ? 'omit' : 'include';
 
     try {
         const response = await fetch(url, options);
@@ -200,6 +200,14 @@ async function apiFetch(url, options = {}) {
         if (response.status === 401 || response.status === 403) {
             const refreshed = await tryRefreshToken();
             if (refreshed) {
+                const refreshedBearerToken = getSharedBearerToken();
+                if (refreshedBearerToken) {
+                    options.headers.Authorization = `Bearer ${refreshedBearerToken}`;
+                    options.credentials = 'omit';
+                } else {
+                    delete options.headers.Authorization;
+                    options.credentials = 'include';
+                }
                 const retryRes = await fetch(url, options);
                 if (retryRes.ok) return retryRes;
                 if (retryRes.status === 403) {

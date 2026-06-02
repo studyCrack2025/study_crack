@@ -170,8 +170,11 @@
 
         const userRes = await fetch(USER_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(result.accessToken ? { Authorization: `Bearer ${result.accessToken}` } : {})
+            },
+            credentials: result.accessToken ? 'omit' : 'include',
             body: JSON.stringify({ type: 'get_login_profile' })
         });
 
