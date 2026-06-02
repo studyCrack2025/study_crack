@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.clear();
                     sessionStorage.clear();
                 }
-                window.location.href = '/';
+                window.location.replace('/');
             }
         });
     }

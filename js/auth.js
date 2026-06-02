@@ -79,6 +79,13 @@ async function registerRefreshCookie(refreshToken) {
             body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken })
         });
         if (cookieRes.ok) {
+            const cookieData = await cookieRes.json().catch(() => ({}));
+            if (typeof syncTokensFromAuthResponse === 'function') {
+                const synced = syncTokensFromAuthResponse(cookieData);
+                if (!synced && (cookieData.accessToken || cookieData.idToken || cookieData.userId)) {
+                    return false;
+                }
+            }
             localStorage.removeItem('refreshToken');
             return true;
         }
@@ -258,14 +265,14 @@ function handleRoleSuccess(role, eventType, userName = '회원', promoCode = '')
     if (eventType === 'login') {
         if (role === 'tutor') {
             alert(`${userName} 선생님, 안녕하세요.`);
-            window.location.href = '/mypage/tutor';
+            window.location.replace('/mypage/tutor');
         } else {
             alert("로그인 성공!");
             // 튜토리얼 미완료 학생은 /tutorial로 직행
             if (localStorage.getItem('tutorial_completed') !== 'true') {
-                window.location.href = '/tutorial';
+                window.location.replace('/tutorial');
             } else {
-                window.location.href = '/';
+                window.location.replace('/');
             }
         }
     }
@@ -925,20 +932,6 @@ function handleSignIn() {
 
             // 3. 새 rt 쿠키 등록 (await 보장)
             await registerRefreshCookie(refreshToken);
-
-            // 4. 새 at 쿠키 사전 발급 — 다음 페이지 첫 API 호출이 401 안 받도록
-            try {
-                const refreshRes = await fetch(AUTH_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ type: 'silent_refresh' })
-                });
-                const refreshData = await refreshRes.json().catch(() => ({}));
-                if (refreshRes.ok && typeof syncTokensFromAuthResponse === 'function') {
-                    syncTokensFromAuthResponse(refreshData);
-                }
-            } catch (_) { /* 실패해도 첫 401에서 refresh 폴백 */ }
 
             markPostLoginIdentitySkip();
 
