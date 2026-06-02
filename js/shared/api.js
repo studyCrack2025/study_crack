@@ -1,6 +1,14 @@
 // js/shared/api.js — 인증/세션 처리 단일 모듈 (apiFetch/redirectToLogin/clearClientSession).
 // 인증 정책 상세: docs/security/architecture-notes.md §3
 
+// bfcache 차단 — 로그아웃 후 뒤로가기 시 페이지가 통째로 메모리 복원되면 세션 상태가 stale로 살아나는 사고 방지.
+// HTTP Cache-Control: no-store는 bfcache를 막지 못함(별개 캐시). pageshow의 persisted 플래그로 감지 후 강제 reload.
+if (typeof window !== 'undefined') {
+    window.addEventListener('pageshow', (e) => {
+        if (e.persisted) window.location.reload();
+    });
+}
+
 // ─── 공개 경로 정의 (비로그인 사용자가 정상 접근하는 페이지) ──────────────────
 // 공개 경로에서 401이 발생해도 강제 로그인 페이지로 튕기지 않는다. 호출처가 알아서 분기.
 const PUBLIC_ROUTES_EXACT = ['/', '/login', '/signup', '/welcome', '/social-callback', '/admin/login', '/service', '/promo'];
