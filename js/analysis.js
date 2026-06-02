@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!refreshed) {
             clearClientSession();
             alert("로그인이 필요합니다.");
-            window.location.href = '/login';
+            window.location.replace('/login');
             return;
         }
         checkLoginStatus();
@@ -664,11 +664,10 @@ function parseDynamoItem(item) {
 // [데이터 로드] 사용자 정보 & 리포트 데이터
 // ============================================================
 async function fetchUserData(userId) {
-    const safeUserId = userId || localStorage.getItem('userId'); 
     try {
         const response = await apiFetch(MYPAGE_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'get_user_analysis', userId: safeUserId })
+            body: JSON.stringify({ type: 'get_user_analysis' })
         });
         if (!response.ok) throw new Error("사용자 데이터 로드 실패");
         
@@ -755,11 +754,10 @@ async function fetchInitialProReports() {
 }
 
 async function fetchUnivData() {
-    const userId = localStorage.getItem('userId');
     try {
         const response = await apiFetch(UNIV_DATA_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'get_univ_list_only', userId: userId }) 
+            body: JSON.stringify({ type: 'get_univ_list_only' })
         });
         
         if (!response.ok) throw new Error(`서버 응답 오류`);
@@ -1771,12 +1769,10 @@ async function saveTargetUnivs() {
         } else { newUnivs.push(null); }
     }
     
-    const userId = localStorage.getItem('userId');
-    
     try {
         const response = await apiFetch(MYPAGE_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'update_target_univs', userId: userId, data: newUnivs })
+            body: JSON.stringify({ type: 'update_target_univs', data: newUnivs })
         });
         const resData = await response.json();
         if(response.ok) { 
@@ -1844,7 +1840,7 @@ async function updateAnalysisUI() {
         const res = await apiFetch(UNIV_DATA_API_URL, {
             method: 'POST',
             body: JSON.stringify({
-                type: 'analyze_my_targets', userId: userId, targetUnivs: userTargetUnivs, userScores: currentScoreData, examMode: currentExamMode
+                type: 'analyze_my_targets', targetUnivs: userTargetUnivs, userScores: currentScoreData, examMode: currentExamMode
             })
         });
         const data = await res.json();
@@ -2061,7 +2057,6 @@ async function fetchSimulationData() {
             method: 'POST',
             body: JSON.stringify({ 
                 type: 'simulate_score_rise', 
-                userId: userId, 
                 targetUnivs: userTargetUnivs, 
                 userScores: scoreData,
                 examMode: currentExamMode 

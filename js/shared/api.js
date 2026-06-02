@@ -3,6 +3,10 @@
 
 // bfcache 차단 — 로그아웃 후 뒤로가기 시 페이지가 통째로 메모리 복원되면 세션 상태가 stale로 살아나는 사고 방지.
 // HTTP Cache-Control: no-store는 bfcache를 막지 못함(별개 캐시). pageshow에서 보호 페이지 세션을 재검증한다.
+const PAGE_SESSION_USER_ID = typeof window !== 'undefined'
+    ? (localStorage.getItem('userId') || '')
+    : '';
+
 if (typeof window !== 'undefined') {
     window.addEventListener('pageshow', (e) => {
         enforceClientSessionOnPageShow(e);
@@ -32,7 +36,15 @@ function hasClientSession() {
 
 function enforceClientSessionOnPageShow(event) {
     const currentPath = window.location.pathname || '/';
-    if (!hasClientSession() && !isPublicRoute(currentPath)) {
+    const currentUserId = localStorage.getItem('userId') || '';
+    const isPublic = isPublicRoute(currentPath);
+
+    if (PAGE_SESSION_USER_ID && currentUserId && PAGE_SESSION_USER_ID !== currentUserId) {
+        window.location.reload();
+        return;
+    }
+
+    if (!hasClientSession() && !isPublic) {
         window.location.replace(getRoleLoginPath());
         return;
     }
@@ -103,8 +115,18 @@ function getSharedBearerToken() {
     return sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken') || localStorage.getItem('token');
 }
 
-function syncTokensFromAuthResponse(data) {
-    if (!data || typeof data !== 'object') return;
+function syncTokensFromAuthResponse(data, options = {}) {
+    if (!data || typeof data !== 'object') return false;
+
+    const idPayload = data.idToken ? getSharedPayloadFromToken(data.idToken) : {};
+    const userId = data.userId || idPayload.sub;
+    if (!data.accessToken && !data.idToken && !userId) return true;
+
+    const expectedUserId = options.expectedUserId || localStorage.getItem('userId') || '';
+    if (expectedUserId && userId && expectedUserId !== userId) {
+        console.warn('[Auth] Refusing mismatched token sync', { expectedUserId, responseUserId: userId });
+        return false;
+    }
 
     if (data.accessToken) {
         sessionStorage.setItem('accessToken', data.accessToken);
@@ -115,9 +137,8 @@ function syncTokensFromAuthResponse(data) {
         if (typeof setIdToken === 'function') setIdToken(data.idToken);
     }
 
-    const idPayload = data.idToken ? getSharedPayloadFromToken(data.idToken) : {};
-    const userId = data.userId || idPayload.sub;
     if (userId) localStorage.setItem('userId', userId);
+    return true;
 }
 
 function getSharedPayloadFromToken(token) {
@@ -170,8 +191,7 @@ function tryRefreshToken() {
             const res = await callSilentRefresh();
             if (res.ok) {
                 const data = await res.json().catch(() => ({}));
-                syncTokensFromAuthResponse(data);
-                return true;
+                return syncTokensFromAuthResponse(data);
             }
 
             // auth.js를 로드하지 않은 페이지(admin_detail 등)에서도 동작하도록 localStorage refreshToken fallback 직접 처리
@@ -191,8 +211,7 @@ function tryRefreshToken() {
             if (!retryRes.ok) return false;
 
             const data = await retryRes.json().catch(() => ({}));
-            syncTokensFromAuthResponse(data);
-            return true;
+            return syncTokensFromAuthResponse(data);
         } catch (e) {
             return false;
         }

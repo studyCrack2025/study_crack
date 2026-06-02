@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!refreshed) {
             clearClientSession();
             alert("로그인이 필요합니다.");
-            window.location.href = '/login';
+            window.location.replace('/login');
             return;
         }
         checkLoginStatus();
