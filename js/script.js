@@ -366,11 +366,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', (e) => {
+        logoutBtn.addEventListener('click', async (e) => {
             e.preventDefault();
+            if (typeof performClientLogout === 'function') {
+                await performClientLogout('/');
+                return;
+            }
             clearClientSession();
             alert("로그아웃 되었습니다.");
-            window.location.href = '/';
+            window.location.replace('/');
         });
     }
 
@@ -378,12 +382,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('hamburgerBtn')?.addEventListener('click', openMobileNav);
     document.getElementById('mobileNavClose')?.addEventListener('click', closeMobileNav);
     document.getElementById('mobileNavOverlay')?.addEventListener('click', closeMobileNav);
-    document.getElementById('mobileLogoutBtn')?.addEventListener('click', (e) => {
+    document.getElementById('mobileLogoutBtn')?.addEventListener('click', async (e) => {
         e.preventDefault();
         closeMobileNav();
+        if (typeof performClientLogout === 'function') {
+            await performClientLogout('/');
+            return;
+        }
         clearClientSession();
         alert("로그아웃 되었습니다.");
-        window.location.href = '/';
+        window.location.replace('/');
     });
     document.getElementById('mobileMyPageBtn')?.addEventListener('click', (e) => {
         e.preventDefault();

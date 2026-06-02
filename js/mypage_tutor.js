@@ -1182,10 +1182,14 @@ window.submitUrgentRequest = async function() {
 };
 
 // [계정 관리 및 모달 유틸]
-window.handleSignOut = function() {
+window.handleSignOut = async function() {
     if (tutorCognitoUser) tutorCognitoUser.signOut();
-    clearClientSession();
-    window.location.href = '/login';
+    if (typeof performClientLogout === 'function') {
+        await performClientLogout('/login');
+    } else {
+        clearClientSession();
+        window.location.replace('/login');
+    }
 }
 window.closeModal = function(modalId) { document.getElementById(modalId).classList.add('hidden'); }
 window.openEmailModal = function() { document.getElementById('emailModal').classList.remove('hidden'); }
