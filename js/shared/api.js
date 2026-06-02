@@ -2,10 +2,10 @@
 // 인증 정책 상세: docs/security/architecture-notes.md §3
 
 // bfcache 차단 — 로그아웃 후 뒤로가기 시 페이지가 통째로 메모리 복원되면 세션 상태가 stale로 살아나는 사고 방지.
-// HTTP Cache-Control: no-store는 bfcache를 막지 못함(별개 캐시). pageshow의 persisted 플래그로 감지 후 강제 reload.
+// HTTP Cache-Control: no-store는 bfcache를 막지 못함(별개 캐시). pageshow에서 보호 페이지 세션을 재검증한다.
 if (typeof window !== 'undefined') {
     window.addEventListener('pageshow', (e) => {
-        if (e.persisted) window.location.reload();
+        enforceClientSessionOnPageShow(e);
     });
 }
 
@@ -18,6 +18,27 @@ function isPublicRoute(pathname) {
     const p = pathname || (typeof window !== 'undefined' ? window.location.pathname : '');
     if (PUBLIC_ROUTES_EXACT.includes(p)) return true;
     return PUBLIC_ROUTES_PREFIX.some((prefix) => p.startsWith(prefix));
+}
+
+function hasClientSession() {
+    return !!(
+        localStorage.getItem('userId') ||
+        sessionStorage.getItem('accessToken') ||
+        localStorage.getItem('accessToken') ||
+        localStorage.getItem('token') ||
+        localStorage.getItem('refreshToken')
+    );
+}
+
+function enforceClientSessionOnPageShow(event) {
+    const currentPath = window.location.pathname || '/';
+    if (!hasClientSession() && !isPublicRoute(currentPath)) {
+        window.location.replace(getRoleLoginPath());
+        return;
+    }
+    if (event && event.persisted) {
+        window.location.reload();
+    }
 }
 
 // ─── 세션 정리 ────────────────────────────────────────────────────────────
@@ -74,7 +95,7 @@ function redirectToLogin(reason) {
     clearClientSession();
     // clearClientSession 내부 sessionStorage.clear가 reason도 지우므로 재설정.
     try { sessionStorage.setItem('session_redirect_reason', r); } catch (_) {}
-    window.location.href = path;
+    window.location.replace(path);
 }
 
 // ─── Bearer 토큰 (레거시 호환) ────────────────────────────────────────────
@@ -128,7 +149,7 @@ async function clearServerSessionCookies() {
 async function performClientLogout(redirectPath) {
     await clearServerSessionCookies();
     clearClientSession();
-    window.location.href = redirectPath || getRoleLoginPath();
+    window.location.replace(redirectPath || getRoleLoginPath());
 }
 
 // ─── silent_refresh 싱글톤 락 ──────────────────────────────────────────────

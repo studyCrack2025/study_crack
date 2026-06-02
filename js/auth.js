@@ -200,7 +200,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             clearClientSession();
             const currentPath = window.location.pathname || '/';
             if (!isPublicRoute(currentPath)) {
-                window.location.href = getRoleLoginPath();
+                window.location.replace(getRoleLoginPath());
             } else {
                 checkLoginStatus();
             }
@@ -873,7 +873,7 @@ async function handleSignOut(silent = false) {
     clearClientSession();
 
     if (!silent) alert("로그아웃 되었습니다.");
-    window.location.href = redirectPath;
+    window.location.replace(redirectPath);
 }
 
 function handleSignIn() {
