@@ -82,6 +82,55 @@ function getSharedBearerToken() {
     return sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken') || localStorage.getItem('token');
 }
 
+function syncTokensFromAuthResponse(data) {
+    if (!data || typeof data !== 'object') return;
+
+    if (data.accessToken) {
+        sessionStorage.setItem('accessToken', data.accessToken);
+        if (typeof setAccessToken === 'function') setAccessToken(data.accessToken);
+    }
+    if (data.idToken) {
+        sessionStorage.setItem('idToken', data.idToken);
+        if (typeof setIdToken === 'function') setIdToken(data.idToken);
+    }
+
+    const idPayload = data.idToken ? getSharedPayloadFromToken(data.idToken) : {};
+    const userId = data.userId || idPayload.sub;
+    if (userId) localStorage.setItem('userId', userId);
+}
+
+function getSharedPayloadFromToken(token) {
+    try {
+        const base64Url = String(token).split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const json = decodeURIComponent(window.atob(base64).split('').map((c) => {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(json);
+    } catch (_) {
+        return {};
+    }
+}
+
+async function clearServerSessionCookies() {
+    try {
+        await fetch(CONFIG.api.auth, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ type: 'logout' })
+        });
+    } catch (_) {
+        // 네트워크 실패 시에도 클라이언트 세션 정리는 계속 진행한다.
+    }
+}
+
+async function performClientLogout(redirectPath) {
+    await clearServerSessionCookies();
+    clearClientSession();
+    window.location.href = redirectPath || getRoleLoginPath();
+}
+
 // ─── silent_refresh 싱글톤 락 ──────────────────────────────────────────────
 let _sharedRefreshPromise = null;
 
@@ -98,7 +147,11 @@ function tryRefreshToken() {
 
         try {
             const res = await callSilentRefresh();
-            if (res.ok) return true;
+            if (res.ok) {
+                const data = await res.json().catch(() => ({}));
+                syncTokensFromAuthResponse(data);
+                return true;
+            }
 
             // auth.js를 로드하지 않은 페이지(admin_detail 등)에서도 동작하도록 localStorage refreshToken fallback 직접 처리
             const fallbackRt = localStorage.getItem('refreshToken');
@@ -114,7 +167,11 @@ function tryRefreshToken() {
 
             localStorage.removeItem('refreshToken');
             const retryRes = await callSilentRefresh();
-            return retryRes.ok;
+            if (!retryRes.ok) return false;
+
+            const data = await retryRes.json().catch(() => ({}));
+            syncTokensFromAuthResponse(data);
+            return true;
         } catch (e) {
             return false;
         }
