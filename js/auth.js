@@ -235,6 +235,15 @@ function handleRoleSuccess(role, eventType, userName = '회원', promoCode = '')
         return;
     }
 
+    // 튜터 로그인 차단 — 공용 /login(handleSignIn)으로 들어온 튜터는 전용 페이지로 유도.
+    // (튜터 전용 /tutor/login은 handleTutorSignIn을 쓰며 handleRoleSuccess를 거치지 않으므로 영향 없음)
+    if (eventType === 'login' && role === 'tutor') {
+        alert("튜터 회원은 튜터 전용 로그인 페이지를 이용해주세요.");
+        handleSignOut(true);
+        window.location.href = '/tutor/login';
+        return;
+    }
+
     // 백그라운드 새로고침 시
     if (eventType === 'none') {
         if (currentLocalRole !== role) {
@@ -305,7 +314,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const emailInput = document.getElementById('email');
     if (emailInput && pwInput) {
-        const triggerSignIn = (e) => { if (e.key === 'Enter') handleSignIn(); };
+        // 튜터 전용 로그인 페이지에서는 Enter가 handleTutorSignIn(역할 검증 포함)을 호출.
+        const isTutorLogin = (document.body && document.body.dataset && document.body.dataset.authPage === 'tutor-login')
+            || (window.location.pathname || '').startsWith('/tutor/login');
+        const triggerSignIn = (e) => { if (e.key === 'Enter') (isTutorLogin ? handleTutorSignIn() : handleSignIn()); };
         emailInput.addEventListener('keypress', triggerSignIn);
         pwInput.addEventListener('keypress', triggerSignIn);
     }
@@ -628,8 +640,79 @@ function startTimer(duration, displayId, intervalVar) {
 }
 
 // ==========================================
-// [Part E] 최종 회원가입 
+// [Part E] 최종 회원가입
 // ==========================================
+
+// ------------------------------------------
+// [공유] 가입 자동 로그인 — 학생/튜터 공통
+// 가입 직후 Cognito 인증 → 토큰 set → rt 쿠키 등록 → resolveUserIdentity('signup').
+// 최종 역할/라우팅(/welcome vs /mypage/tutor)은 resolveUserIdentity→handleRoleSuccess가
+// DB role 기준으로 결정한다. 여기서 userRole을 하드코딩하지 않는다(역할 혼선 방지).
+// ------------------------------------------
+function autoLoginAfterSignup(email, password, { promoCode = '', loginPathOnFail = '/login' } = {}) {
+    const authData = { Username: email, Password: password };
+    const authDetails = new AmazonCognitoIdentity.AuthenticationDetails(authData);
+    const cognitoUserToAuth = new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool });
+
+    cognitoUserToAuth.authenticateUser(authDetails, {
+        onSuccess: async function(authResult) {
+            const refreshToken = authResult.getRefreshToken().getToken();
+            setAccessToken(authResult.getAccessToken().getJwtToken());
+            setIdToken(authResult.getIdToken().getJwtToken());
+            localStorage.setItem('userId', authResult.getIdToken().payload.sub);
+            localStorage.setItem('userEmail', email);
+
+            // refreshToken 쿠키 등록과 identity 조회를 병렬화해 가입 직후 대기 시간을 줄임
+            const cookiePromise = registerRefreshCookie(refreshToken);
+            markPostLoginIdentitySkip();
+
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({ event: "login", user_id: authResult.getIdToken().payload.sub });
+
+            resolveUserIdentity('signup', promoCode, {
+                accessToken: getAccessToken(),
+                waitFor: cookiePromise
+            });
+        },
+        onFailure: function(err) {
+            console.error("Auto Login Failed:", err);
+            alert("가입은 완료되었으나 자동 로그인에 실패했습니다. 로그인 창으로 이동합니다.");
+            window.location.href = loginPathOnFail;
+        }
+    });
+}
+
+// ------------------------------------------
+// [공유] 회원가입 완료 — 학생/튜터 공통
+// signUp → update_profile(역할은 서버가 promoCode로 결정) → 자동 로그인.
+// 호출부는 attributeList/profileData/promoCode와 onError(버튼 복구 등)만 주입한다.
+// onError(err, ctx): ctx.afterAccountCreated=true면 계정 생성 후 단계(update_profile/통신) 실패.
+// ------------------------------------------
+function completeSignUp({ email, password, attributeList, profileData, promoCode = '', loginPathOnFail = '/login', onError }) {
+    userPool.signUp(email, password, attributeList, null, async function(err, result) {
+        if (err) {
+            if (typeof onError === 'function') onError(err, { afterAccountCreated: false });
+            return;
+        }
+
+        const userSub = result.userSub;
+
+        try {
+            const response = await fetch(AUTH_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'update_profile', userId: userSub, data: profileData })
+            });
+
+            if (!response.ok) throw new Error("계정 승인 및 DB 저장 실패");
+
+            autoLoginAfterSignup(email, password, { promoCode, loginPathOnFail });
+        } catch (error) {
+            console.error(error);
+            if (typeof onError === 'function') onError(error, { afterAccountCreated: true });
+        }
+    });
+}
 
 async function handleFinalSubmit() {
     if (!isEmailVerified || !isPhoneVerified) {
@@ -698,78 +781,31 @@ async function handleFinalSubmit() {
     submitBtn.innerText = "가입 처리 중...";
     submitBtn.disabled = true;
 
-    // 💡 튜터 전용 코드는 제거하고 바로 가입 로직 수행
-    userPool.signUp(email, password, attributeList, null, async function(err, result) {
-        if (err) {
-            alert(getErrorMessage(err)); 
-            submitBtn.innerText = "회원가입 완료";
-            submitBtn.disabled = false;
-            return;
-        }
+    // 가입 공통 코어 사용 — signUp→update_profile→자동로그인. 역할은 서버가 promoCode로 결정.
+    const profileData = {
+        name: name,
+        email: email,
+        phone: dbFormattedPhone,
+        cognitoPhone: cleanPhone,
+        promoCode: promoCode,
+        referral: referral,
+        gender: gender,
+        birthdate: birthdate,
+        termsAgreed: true,
+        marketingAgreed: marketingAgreed
+    };
 
-        const userSub = result.userSub;
-
-        try {
-            const response = await fetch(AUTH_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: 'update_profile', 
-                    userId: userSub,
-                    data: {
-                        name: name,
-                        email: email,
-                        phone: dbFormattedPhone,
-                        cognitoPhone: cleanPhone,
-                        promoCode: promoCode,
-                        referral: referral,
-                        gender: gender,
-                        birthdate: birthdate,
-                        termsAgreed: true,
-                        marketingAgreed: marketingAgreed
-                    }
-                })
-            });
-
-            if (!response.ok) throw new Error("계정 승인 및 DB 저장 실패");
-            
-            const authData = { Username: email, Password: password };
-            const authDetails = new AmazonCognitoIdentity.AuthenticationDetails(authData);
-            const cognitoUserToAuth = new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool });
-
-            cognitoUserToAuth.authenticateUser(authDetails, {
-                onSuccess: async function(authResult) {
-                    const refreshToken = authResult.getRefreshToken().getToken();
-                    setAccessToken(authResult.getAccessToken().getJwtToken());
-                    setIdToken(authResult.getIdToken().getJwtToken());
-                    localStorage.setItem('userId', authResult.getIdToken().payload.sub);
-                    localStorage.setItem('userEmail', email);
-                    localStorage.setItem('userRole', 'student');
-
-                    // refreshToken 쿠키 등록과 identity 조회를 병렬화해 가입 직후 대기 시간을 줄임
-                    const cookiePromise = registerRefreshCookie(refreshToken);
-                    markPostLoginIdentitySkip();
-
-                    window.dataLayer = window.dataLayer || [];
-                    window.dataLayer.push({ event: "login", user_id: authResult.getIdToken().payload.sub });
-
-                    // 학생 가입 이벤트 전달
-                    resolveUserIdentity('signup', promoCode, {
-                        accessToken: getAccessToken(),
-                        waitFor: cookiePromise
-                    });
-                },
-                onFailure: function(err) {
-                    console.error("Auto Login Failed:", err);
-                    alert("가입은 완료되었으나 자동 로그인에 실패했습니다. 로그인 창으로 이동합니다.");
-                    window.location.href = '/login';
-                }
-            });
-
-        } catch (error) {
-            console.error(error);
-            alert("계정은 생성되었으나 서버 통신 지연으로 활성화에 실패했습니다. 관리자에게 문의하세요.");
-            submitBtn.innerText = "다시 시도하기";
+    completeSignUp({
+        email, password, attributeList, profileData, promoCode,
+        loginPathOnFail: '/login',
+        onError: (err, ctx) => {
+            if (ctx && ctx.afterAccountCreated) {
+                alert("계정은 생성되었으나 서버 통신 지연으로 활성화에 실패했습니다. 관리자에게 문의하세요.");
+                submitBtn.innerText = "다시 시도하기";
+            } else {
+                alert(getErrorMessage(err));
+                submitBtn.innerText = "회원가입 완료";
+            }
             submitBtn.disabled = false;
         }
     });
@@ -939,6 +975,93 @@ function handleSignIn() {
             window.dataLayer.push({ event: "login", user_id: userId });
 
             resolveUserIdentity('login', '', { accessToken });
+        },
+        onFailure: function(err) {
+            alert(getErrorMessage(err));
+        }
+    });
+}
+
+// ==========================================
+// [Part F-2] 튜터 전용 로그인
+// 관리자(admin_login)는 cognito:groups로 역할을 판정하지만, 튜터 역할은 DynamoDB(TBL_TUTORS)에
+// 있으므로 get_login_profile로 role을 확인해 튜터만 통과시킨다.
+// 비튜터(학생/관리자/미확인)는 방금 발급한 세션을 정리하고 알맞은 로그인 페이지로 돌려보낸다.
+// ==========================================
+function handleTutorSignIn() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+
+    if (!email || !password) {
+        alert("이메일과 비밀번호를 입력해주세요.");
+        return;
+    }
+
+    // 계정 전환 안전 — 이전 사용자 cognito SDK 세션 + 클라이언트 상태 사전 제거 (handleSignIn과 동일 패턴)
+    const prevCognitoUser = userPool.getCurrentUser();
+    if (prevCognitoUser) prevCognitoUser.signOut();
+    clearClientSession();
+
+    const authDetails = new AmazonCognitoIdentity.AuthenticationDetails({ Username: email, Password: password });
+    const cognitoUser = new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool });
+
+    cognitoUser.authenticateUser(authDetails, {
+        onSuccess: async function(result) {
+            const accessToken = result.getAccessToken().getJwtToken();
+            const idToken = result.getIdToken();
+            const userId = idToken.payload.sub;
+            const refreshToken = result.getRefreshToken().getToken();
+
+            // 이전 at/rt 쿠키 제거 후 새 토큰 동기화 (handleSignIn과 동일 순서)
+            if (typeof clearServerSessionCookies === 'function') {
+                await clearServerSessionCookies();
+            }
+            setAccessToken(accessToken);
+            setIdToken(idToken.getJwtToken());
+            localStorage.setItem('userEmail', email);
+            localStorage.setItem('userId', userId);
+            await registerRefreshCookie(refreshToken);
+
+            // DB role 검증 — 튜터만 통과 (역할 근거: get_login_profile의 role)
+            let role = null, userName = '선생님';
+            try {
+                const res = await fetch(USER_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAccessToken()}` },
+                    credentials: 'include',
+                    body: JSON.stringify({ type: 'get_login_profile' })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    role = data.role || null;
+                    if (data.name) userName = data.name;
+                }
+            } catch (e) { /* role 미확인 → 아래에서 차단 */ }
+
+            if (role !== 'tutor') {
+                const dest = role === 'admin' ? '/admin/login' : '/login';
+                const msg = role === 'admin'
+                    ? "관리자 계정입니다. 관리자 로그인 페이지를 이용해주세요."
+                    : role === 'student'
+                        ? "학생 회원입니다. 일반 로그인 페이지를 이용해주세요."
+                        : "튜터 계정이 아니거나 정보를 확인할 수 없습니다. 계정을 확인해주세요.";
+                const prev = userPool.getCurrentUser();
+                if (prev) prev.signOut();
+                if (typeof clearServerSessionCookies === 'function') await clearServerSessionCookies();
+                clearClientSession();
+                alert(msg);
+                window.location.replace(dest);
+                return;
+            }
+
+            localStorage.setItem('userRole', 'tutor');
+            markPostLoginIdentitySkip();
+
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({ event: "login", user_id: userId });
+
+            alert(`${userName} 선생님, 안녕하세요.`);
+            window.location.replace('/mypage/tutor');
         },
         onFailure: function(err) {
             alert(getErrorMessage(err));
