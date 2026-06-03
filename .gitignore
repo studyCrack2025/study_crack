@@ -19,9 +19,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# 6. claude reference 관련 추가 데이터 및 마크다운용 폴더
+# 6. claude/codex reference 관련 추가 데이터 및 마크다운용 폴더
 backend-backup/
 CLAUDE.md
+AGENTS.md
 ARCHITECTURE.md
 docs/
 
