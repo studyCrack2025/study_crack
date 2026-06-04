@@ -57,7 +57,7 @@
             <input type="text" id="tutorAuthCode" class="tutor-auth-code" placeholder="인증 코드 입력">
             <button class="auth-btn" id="verifyCodeBtn" onclick="verifyTutorCode()">인증하기</button>
             <div class="auth-links tutor-auth-links">
-                <a href="/login">이미 튜터 계정이 있으신가요? 로그인</a>
+                <a href="/tutor/login">이미 튜터 계정이 있으신가요? 로그인</a>
             </div>
         </div>
 
@@ -507,64 +507,38 @@
             submitBtn.innerText = "계정 생성 중...";
             submitBtn.disabled = true;
 
-            userPool.signUp(email, password, attributeList, null, async function(err, result) {
-                if (err) {
-                    console.error("Cognito Error:", err);
-                    
-                    let koreanErrorMsg = "회원가입 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
-                    
-                    if (err.name === 'InvalidPasswordException') {
-                        koreanErrorMsg = "비밀번호는 영문 대/소문자, 숫자, 특수문자를 모두 포함하여 8자 이상이어야 합니다. (입력 시 앞뒤 공백이 들어갔는지 확인해주세요.)";
-                    } else if (err.name === 'UsernameExistsException') {
-                        koreanErrorMsg = "이미 가입되어 있는 이메일입니다.";
-                    } else if (err.name === 'InvalidParameterException') {
-                        koreanErrorMsg = "입력한 정보의 형식이 올바르지 않습니다. 이메일 형식 등을 다시 확인해주세요.";
-                    } else if (err.name === 'LimitExceededException') {
-                        koreanErrorMsg = "요청 횟수를 초과했습니다. 잠시 후 다시 시도해주세요.";
+            // 가입 공통 코어(auth.js completeSignUp) 사용 — signUp→update_profile→자동로그인.
+            // 역할은 서버가 promoCode(validatedTutorCode)로 tutor 확정하며, 자동로그인 후
+            // resolveUserIdentity('signup')→handleRoleSuccess가 /mypage/tutor로 라우팅한다.
+            // (role 필드는 서버가 무시하지만 의도 표기로 유지)
+            const profileData = {
+                name: name,
+                nickname: nickname,
+                email: email,
+                phone: dbFormattedPhone,
+                cognitoPhone: cleanPhone,
+                promoCode: validatedTutorCode,
+                gender: gender,
+                birthdate: birthdate,
+                termsAgreed: true,
+                marketingAgreed: marketingAgreed,
+                role: 'tutor',
+                maxStudents: parseInt(maxStudents),
+                maxHours: parseInt(maxHours)
+            };
+
+            completeSignUp({
+                email, password, attributeList, profileData,
+                promoCode: validatedTutorCode,
+                loginPathOnFail: '/tutor/login',
+                onError: (err, ctx) => {
+                    if (ctx && ctx.afterAccountCreated) {
+                        alert("계정은 생성되었으나 활성화에 실패했습니다. 관리자에게 문의하세요.");
+                        submitBtn.innerText = "다시 시도하기";
+                    } else {
+                        alert(getErrorMessage(err));
+                        submitBtn.innerText = "파트너 가입 완료";
                     }
-
-                    alert(koreanErrorMsg); 
-                    
-                    // [수정됨] 에러 발생 시 버튼 텍스트를 정상적으로 복구
-                    submitBtn.innerText = "파트너 가입 완료";
-                    submitBtn.disabled = false;
-                    return;
-                }
-
-                const userSub = result.userSub;
-
-                try {
-                    const response = await fetch(CONFIG.api.auth, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            type: 'update_profile', 
-                            userId: userSub,
-                            data: {
-                                name: name,
-                                nickname: nickname,
-                                email: email,
-                                phone: dbFormattedPhone,
-                                cognitoPhone: cleanPhone,
-                                promoCode: validatedTutorCode, 
-                                gender: gender,
-                                birthdate: birthdate,
-                                termsAgreed: true,
-                                marketingAgreed: marketingAgreed,
-                                role: 'tutor', 
-                                maxStudents: parseInt(maxStudents),
-                                maxHours: parseInt(maxHours)
-                            }
-                        })
-                    });
-
-                    if (!response.ok) throw new Error("계정 승인 및 DB 저장 실패");
-                    window.location.href = '/welcome?role=tutor';
-
-                } catch (error) {
-                    console.error(error);
-                    alert("계정은 생성되었으나 활성화에 실패했습니다. 관리자에게 문의하세요.");
-                    submitBtn.innerText = "다시 시도하기";
                     submitBtn.disabled = false;
                 }
             });

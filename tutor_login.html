@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <script>if('scrollRestoration'in history)history.scrollRestoration='manual';</script>
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-KNHVMTR5');</script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <title>튜터 로그인 - 스터디크랙</title>
+
+    <link rel="stylesheet" href="/css/style.css?v=20260524a">
+    <link rel="stylesheet" href="/css/auth.css?v=20260524a">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="canonical" href="https://studycrack.co.kr/tutor/login" />
+
+    <style>
+    .tutor-logo-link { text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 5px; margin-bottom: 20px; }
+    .tutor-badge { color: #2563eb; font-size: 0.9rem; font-weight: bold; letter-spacing: 1px; }
+    </style>
+
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
+</head>
+<body class="auth-body" data-auth-page="tutor-login">
+    <div class="auth-card">
+        <a href="/" class="auth-logo-link tutor-logo-link">
+            <img src="/assets/images/studycrack_logo_wo_bg.png" alt="StudyCrack 로고" class="auth-logo-img">
+            <span class="tutor-badge">Tutor</span>
+        </a>
+
+        <div id="sessionExpiredNotice" style="display:none; background:#fef3c7; color:#92400e; border:1px solid #fde68a; border-radius:8px; padding:10px 14px; font-size:0.88rem; margin-bottom:16px; text-align:center;"></div>
+
+        <h2>튜터 로그인</h2>
+
+        <div class="auth-form">
+            <div class="form-group">
+                <input type="email" id="email" placeholder="이메일" required>
+            </div>
+            <div class="form-group">
+                <input type="password" id="password" placeholder="비밀번호" required>
+            </div>
+
+            <button class="auth-btn" onclick="handleTutorSignIn()">튜터 로그인</button>
+        </div>
+
+        <div class="auth-helper-links">
+            <a href="#" onclick="openAuthModal('forgotPwModal'); return false;">비밀번호 찾기</a>
+        </div>
+
+        <div class="auth-links" style="margin-top: 25px;">
+            <span>아직 파트너 계정이 없으신가요?</span>
+            <a href="/tutor/signup" style="color: #2563EB; font-weight: bold;">튜터 가입하기</a>
+        </div>
+
+        <div class="auth-links" style="margin-top: 12px;">
+            <span>학생이신가요?</span>
+            <a href="/login" style="color: #64748b; font-weight: bold;">일반 로그인</a>
+        </div>
+    </div>
+
+    <div id="forgotPwModal" class="modal hidden">
+        <div class="modal-content auth-modal">
+            <span class="close-btn" onclick="closeAuthModal('forgotPwModal')">&times;</span>
+            <h3>비밀번호 재설정</h3>
+
+            <div id="forgotPwStep1">
+                <p class="modal-desc">가입하신 이메일 주소를 입력하시면 비밀번호 재설정 코드를 보내드립니다.</p>
+                <div class="form-group">
+                    <input type="email" id="forgotPwEmail" placeholder="가입한 이메일 주소">
+                </div>
+                <button class="auth-btn" id="reqResetBtn" onclick="requestPasswordReset()">인증 코드 받기</button>
+            </div>
+
+            <div id="forgotPwStep2" class="hidden">
+                <p class="modal-desc">이메일로 발송된 6자리 코드와 새 비밀번호를 입력해주세요.</p>
+                <div class="form-group">
+                    <input type="text" id="forgotPwCode" placeholder="인증 코드 6자리">
+                </div>
+                <div class="form-group">
+                    <input type="password" id="forgotPwNew" placeholder="새 비밀번호 (8자 이상)">
+                </div>
+                <div class="form-group">
+                    <input type="password" id="forgotPwConfirm" placeholder="새 비밀번호 확인">
+                </div>
+                <button class="auth-btn" onclick="confirmPasswordReset()">비밀번호 변경 완료</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/config.js?v=20260524a"></script>
+    <script src="/js/shared/api.js?v=20260602f"></script>
+    <script src="/js/auth.js?v=20260602f"></script>
+
+    <script>
+        (function() {
+            try {
+                var reason = sessionStorage.getItem('session_redirect_reason');
+                if (!reason) return;
+                var el = document.getElementById('sessionExpiredNotice');
+                if (!el) return;
+                var msg = reason === 'expired'
+                    ? '세션이 만료되어 자동으로 로그아웃되었습니다. 다시 로그인해주세요.'
+                    : reason === 'unauthorized'
+                        ? '튜터 로그인이 필요한 페이지입니다.'
+                        : '';
+                if (msg) { el.textContent = msg; el.style.display = 'block'; }
+                sessionStorage.removeItem('session_redirect_reason');
+            } catch (e) { /* noop */ }
+        })();
+    </script>
+
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+</body>
+</html>
