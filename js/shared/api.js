@@ -15,7 +15,7 @@ if (typeof window !== 'undefined') {
 
 // ─── 공개 경로 정의 (비로그인 사용자가 정상 접근하는 페이지) ──────────────────
 // 공개 경로에서 401이 발생해도 강제 로그인 페이지로 튕기지 않는다. 호출처가 알아서 분기.
-const PUBLIC_ROUTES_EXACT = ['/', '/login', '/signup', '/welcome', '/social-callback', '/admin/login', '/service', '/promo'];
+const PUBLIC_ROUTES_EXACT = ['/', '/login', '/signup', '/tutor/login', '/tutor/signup', '/welcome', '/social-callback', '/admin/login', '/service', '/promo'];
 const PUBLIC_ROUTES_PREFIX = ['/mbti_', '/checkout', '/success', '/change-password'];
 
 function isPublicRoute(pathname) {
@@ -83,9 +83,12 @@ function clearClientSession() {
 const clearSharedClientSession = clearClientSession;
 
 // ─── 역할 기반 로그인 경로 ─────────────────────────────────────────────────
+// 역할별 전용 로그인 페이지로 분리 — 세션 만료/미인증 redirect 시 알맞은 입구로 보낸다.
 function getRoleLoginPath() {
     const role = localStorage.getItem('userRole');
-    return role === 'admin' ? '/admin/login' : '/login';
+    if (role === 'admin') return '/admin/login';
+    if (role === 'tutor') return '/tutor/login';
+    return '/login';
 }
 
 // 레거시 이름 alias.
@@ -155,6 +158,8 @@ function getSharedPayloadFromToken(token) {
 }
 
 async function clearServerSessionCookies() {
+    // LOCAL: 서버측에 박힌 쿠키가 애초에 없으므로 호출 자체가 불필요. (active/260603 §Phase 1)
+    if (IS_LOCAL) return;
     try {
         await fetch(CONFIG.api.auth, {
             method: 'POST',
@@ -180,6 +185,25 @@ function tryRefreshToken() {
     if (_sharedRefreshPromise) return _sharedRefreshPromise;
 
     const p = (async () => {
+        // LOCAL: silent_refresh는 rt 쿠키 의존이라 SameSite 제약으로 불가.
+        // localStorage.refreshToken을 직접 body로 보내는 'refresh_token' 핸들러 사용. (active/260603 §Phase 1)
+        if (IS_LOCAL) {
+            const rt = localStorage.getItem('refreshToken');
+            if (!rt) return false;
+            try {
+                const res = await fetch(CONFIG.api.auth, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'refresh_token', refreshToken: rt })
+                });
+                if (!res.ok) return false;
+                const data = await res.json().catch(() => ({}));
+                return syncTokensFromAuthResponse(data);
+            } catch (_) {
+                return false;
+            }
+        }
+
         const callSilentRefresh = () => fetch(CONFIG.api.auth, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

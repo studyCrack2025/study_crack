@@ -692,8 +692,8 @@ async function fetchUserData(userId) {
         // 사이드바 정량 렌더(updateSurveyStatus) 가 글로벌 userQuantData/currentExamMode 를 읽으므로
         // 반드시 그 호출 *전* 에 두 값을 세팅해야 초기 진입 시 정량 데이터가 비어 보이지 않음.
         if (data.quantitative) userQuantData = data.quantitative;
-        restoreExamModeFromStorage(safeUserId);
-        ensureValidExamMode(safeUserId);
+        restoreExamModeFromStorage(userId);
+        ensureValidExamMode(userId);
 
         updateSurveyStatus(data);
         checkMbtiReport(data);
@@ -1824,6 +1824,9 @@ async function updateAnalysisUI() {
                 </select>
             </div>
         </div>
+        <div id="junEstimateNoticeAnalysis" style="${currentExamMode === 'jun' ? '' : 'display:none;'} margin:0 0 16px; background:#fef3c7; color:#92400e; border:1px solid #fde68a; border-radius:6px; padding:8px 12px; font-size:0.85rem; line-height:1.5;">
+            ⚠️ 6월 모의평가 기준 분석은 <b>예상 등급컷 기반 추정치</b>입니다. 실제 성적표와 다를 수 있습니다.
+        </div>
         <div id="analysisCardsContainer" style="display: flex; flex-direction: column; gap: 20px;">
             <div style="padding:60px; text-align:center; color:#3b82f6;">
                 <i class="fas fa-spinner fa-spin fa-2x"></i>
@@ -1892,7 +1895,11 @@ function renderSideQuanDetail(examKey) {
         return `<div class="score-row"><span class="score-subj">${label}${optText}</span><span class="score-nums">${pctStr}</span><span class="score-grd">${grd}</span></div>`;
     };
 
-    let html = '<div class="score-list">';
+    let html = '';
+    if (examKey === 'jun') {
+        html += '<div style="margin-bottom:8px; background:#fef3c7; color:#92400e; border:1px solid #fde68a; border-radius:6px; padding:6px 10px; font-size:0.78rem; line-height:1.4;">⚠️ 6월 모평은 예상 등급컷 기반 추정치입니다. 실제와 다를 수 있습니다.</div>';
+    }
+    html += '<div class="score-list">';
     html += makeRow('국어', d.kor); html += makeRow('수학', d.math); html += makeRow('영어', d.eng);
     html += makeRow('탐구1', d.inq1); html += makeRow('탐구2', d.inq2);
     html += '</div>';

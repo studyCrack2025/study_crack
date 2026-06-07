@@ -86,10 +86,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 currentStepIdx = data.tutorialStatus;
                 localStorage.setItem('tutorialStatus', currentStepIdx);
             }
-            // 점수 데이터 복원 (may 우선, 없으면 mar)
+            // 전화번호 상태 — 보유 시 prefill(이미 인증된 번호로 간주), 없으면(소셜 다수) intro에서 SMS 인증 필요
+            tutorialData.phone = data.phone || '';
+            tutorialData.phoneVerified = !!(data.phone && String(data.phone).trim());
+            // 점수 데이터 복원 (최신 시험 월 우선: jun > may > mar)
             if (data.quantitative) {
                 tutorialData.quan = data.quantitative;
-                const activeMonth = data.quantitative.may ? 'may' : 'mar';
+                const activeMonth = data.quantitative.jun ? 'jun' : (data.quantitative.may ? 'may' : 'mar');
                 tutorialData.examMonth = activeMonth;
                 const activeQuan = data.quantitative[activeMonth];
                 if (activeQuan) {
@@ -262,7 +265,82 @@ async function renderStep() {
     }
 
     if (step.id === 'univ-rec') initUnivSim();
+    if (step.id === 'intro') setupIntroPhone();
 }
+
+// ── intro 전화번호 단계 (결제·알림용) ──────────────────────────────
+// 보유(일반 가입) → prefill 표시(인증됨 간주). 미보유(소셜) → SMS 인증 입력.
+function setupIntroPhone() {
+    const prefill = document.getElementById('tutPhonePrefill');
+    const verify = document.getElementById('tutPhoneVerify');
+    if (!prefill || !verify) return;
+    if (tutorialData.phone && String(tutorialData.phone).trim()) {
+        document.getElementById('tutPhonePrefillNum').textContent = tutorialData.phone;
+        prefill.style.display = 'block';
+        verify.style.display = 'none';
+        tutorialData.phoneVerified = true;
+    } else {
+        prefill.style.display = 'none';
+        verify.style.display = 'block';
+        tutorialData.phoneVerified = false;
+    }
+}
+
+function _tutPhoneE164(raw) { return '+82' + raw.substring(1); }
+function _tutPhoneDb(raw) { return raw.replace(/(^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/, "$1-$2-$3"); }
+
+// SMS 인증번호 발송 (기존 Auth send_sms_auth 재사용)
+window.handleTutPhoneSend = async function() {
+    const raw = (document.getElementById('tutPhoneInput')?.value || '').replace(/[^0-9]/g, '');
+    const msg = document.getElementById('tutPhoneMsg');
+    if (!/^01[0-9]{8,9}$/.test(raw)) { msg.style.color = '#dc2626'; msg.textContent = '올바른 휴대폰 번호를 입력해주세요.'; return; }
+    const btn = document.getElementById('tutPhoneSendBtn');
+    btn.disabled = true; btn.textContent = '전송 중...';
+    try {
+        const res = await fetch(CONFIG.api.auth, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'send_sms_auth', phone: _tutPhoneE164(raw) })
+        });
+        if (!res.ok) throw new Error();
+        document.getElementById('tutPhoneCodeRow').style.display = 'flex';
+        msg.style.color = '#047857'; msg.textContent = '인증번호를 발송했어요. 5분 이내 입력해주세요.';
+        btn.textContent = '재전송';
+    } catch (e) {
+        msg.style.color = '#dc2626'; msg.textContent = '발송에 실패했어요. 잠시 후 다시 시도해주세요.';
+        btn.textContent = '인증번호 받기';
+    } finally { btn.disabled = false; }
+};
+
+// SMS 인증 확인 (verify_code) → 성공 시 update_member_info로 phone 저장
+window.handleTutPhoneVerify = async function() {
+    const raw = (document.getElementById('tutPhoneInput')?.value || '').replace(/[^0-9]/g, '');
+    const code = (document.getElementById('tutPhoneCode')?.value || '').trim();
+    const msg = document.getElementById('tutPhoneMsg');
+    if (!code) { msg.style.color = '#dc2626'; msg.textContent = '인증번호를 입력해주세요.'; return; }
+    const btn = document.getElementById('tutPhoneVerifyBtn');
+    btn.disabled = true; btn.textContent = '확인 중...';
+    try {
+        const res = await fetch(CONFIG.api.auth, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'verify_code', phone: _tutPhoneE164(raw), code })
+        });
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok || !result.success) {
+            msg.style.color = '#dc2626'; msg.textContent = '인증번호가 일치하지 않거나 만료됐어요.';
+            btn.disabled = false; btn.textContent = '확인'; return;
+        }
+        const dbPhone = _tutPhoneDb(raw);
+        await apiCall('update_member_info', { phone: dbPhone });
+        tutorialData.phone = dbPhone;
+        tutorialData.phoneVerified = true;
+        document.getElementById('tutPhoneVerify').style.display = 'none';
+        document.getElementById('tutPhonePrefillNum').textContent = dbPhone;
+        document.getElementById('tutPhonePrefill').style.display = 'block';
+    } catch (e) {
+        msg.style.color = '#dc2626'; msg.textContent = '처리 중 오류가 발생했어요.';
+        btn.disabled = false; btn.textContent = '확인';
+    }
+};
 
 function showTutLoading(show) {
     const overlay = document.getElementById('tutLoadingOverlay');
@@ -292,6 +370,12 @@ async function nextStep() {
 
 async function _nextStepCore() {
     const step = STEPS[currentStepIdx];
+
+    // intro 전화번호 게이트 — 미인증(소셜 등) 시 다음으로 진행 차단
+    if (step.id === 'intro' && !tutorialData.phoneVerified) {
+        alert('전화번호 인증을 완료해주세요.\n(결제·합격 알림 수신에 사용됩니다)');
+        return;
+    }
 
     if (step.id === 'survey-qual') {
         let statusVal = document.querySelector('input[name="tutStudentStatus"]:checked')?.value || '';
@@ -327,17 +411,37 @@ async function _nextStepCore() {
             return;
         }
 
-        // 선택된 시험 월 (3월 또는 5월)
-        const examMonth = document.getElementById('tutExamMonth')?.value || 'mar';
+        // 선택된 시험 월 (3월 학평 / 5월 학평 / 6월 모평)
+        let examMonth = document.getElementById('tutExamMonth')?.value || 'mar';
         tutorialData.examMonth = examMonth;
 
-        // 점수 환산 API 병렬 호출 → survey.js 로드 시 std/pct/grd 즉시 표시
-        const [korConv, mathConv, inq1Conv, inq2Conv] = await Promise.all([
-            convertScore(examMonth, 'kor',  korCommon + korSel,   korOpt,  '', korCommon,  korSel),
-            convertScore(examMonth, 'math', mathCommon + mathSel, mathOpt, '', mathCommon, mathSel),
-            convertScore(examMonth, 'inq1', inq1Raw, '', inq1Name),
-            convertScore(examMonth, 'inq2', inq2Raw, '', inq2Name)
-        ]);
+        // 점수 환산 API 병렬 호출 → survey.js 로드 시 std/pct/grd 즉시 표시.
+        // 6월 모평 데이터 미준비(JUN_NOT_READY) 시 사용자 알림 후 3월 학평으로 전환해 재시도.
+        let korConv, mathConv, inq1Conv, inq2Conv;
+        try {
+            [korConv, mathConv, inq1Conv, inq2Conv] = await Promise.all([
+                convertScore(examMonth, 'kor',  korCommon + korSel,   korOpt,  '', korCommon,  korSel),
+                convertScore(examMonth, 'math', mathCommon + mathSel, mathOpt, '', mathCommon, mathSel),
+                convertScore(examMonth, 'inq1', inq1Raw, '', inq1Name),
+                convertScore(examMonth, 'inq2', inq2Raw, '', inq2Name)
+            ]);
+        } catch (e) {
+            if (e && e.code === 'JUN_NOT_READY') {
+                alert(e.message || '6월 모평 데이터는 시험 후 준비됩니다. 3월 학평 기준으로 진행할게요.');
+                examMonth = 'mar';
+                tutorialData.examMonth = 'mar';
+                const sel = document.getElementById('tutExamMonth');
+                if (sel) sel.value = 'mar';
+                [korConv, mathConv, inq1Conv, inq2Conv] = await Promise.all([
+                    convertScore('mar', 'kor',  korCommon + korSel,   korOpt,  '', korCommon,  korSel),
+                    convertScore('mar', 'math', mathCommon + mathSel, mathOpt, '', mathCommon, mathSel),
+                    convertScore('mar', 'inq1', inq1Raw, '', inq1Name),
+                    convertScore('mar', 'inq2', inq2Raw, '', inq2Name)
+                ]);
+            } else {
+                throw e;
+            }
+        }
 
         tutorialData.quan = {
             [examMonth]: {
@@ -695,7 +799,9 @@ async function fetchTutorialRecommendations(stream, mar, totalStdScore, examMont
         }
     ];
 
-    if (requestedExamMode === 'may') {
+    // may/jun 모드는 백엔드 데이터 미준비(JUN_NOT_READY)·매핑 누락 시를 대비해 mar 폴백 시도.
+    const isLearningMonthMode = (requestedExamMode === 'may' || requestedExamMode === 'jun');
+    if (isLearningMonthMode) {
         attempts.push({
             stage: 'fallback_exam_month_strict',
             examMode: 'mar',
@@ -720,7 +826,7 @@ async function fetchTutorialRecommendations(stream, mar, totalStdScore, examMont
 
     attempts.push({
         stage: 'deterministic_top3',
-        examMode: requestedExamMode === 'may' ? 'mar' : requestedExamMode,
+        examMode: isLearningMonthMode ? 'mar' : requestedExamMode,
         options: {
             selectedUniv: null,
             excludeUnivs: []
@@ -1159,7 +1265,7 @@ async function initSubjectRec() {
     showTutLoading(true);
 
     const univ = tutorialData.selectedUniv;
-    const activeMonth = tutorialData.examMonth || (tutorialData.quan?.may ? 'may' : 'mar');
+    const activeMonth = tutorialData.examMonth || (tutorialData.quan?.jun ? 'jun' : (tutorialData.quan?.may ? 'may' : 'mar'));
     const mar  = tutorialData.quan?.[activeMonth];
     const mbti = tutorialData.mbti;
 
@@ -1443,8 +1549,14 @@ async function convertScore(month, subject, score, opt, subName, common, electiv
         if (res.ok) {
             const data = await res.json();
             if (!data.error && (data.std || data.pct || data.grd)) return { std: data.std || '', pct: data.pct || '', grd: data.grd || '' };
+        } else if (res.status === 503 && month === 'jun') {
+            // 6월 모평 데이터 미준비 — 호출자가 dropdown 복귀 + 알림 처리하도록 명시적 throw.
+            const body = await res.json().catch(() => ({}));
+            const err = new Error(body.error || '6월 모평 데이터는 시험 후 준비됩니다.');
+            err.code = body.code || 'JUN_NOT_READY';
+            throw err;
         }
-        // 5월 변환 실패 시 3월 기준 폴백
+        // 5월 변환 실패 시 3월 기준 폴백 (legacy 동작 유지 — may 데이터 매핑 누락 edge case 대비).
         if (month === 'may') {
             const fb = await tutorialAnalysisFetch({ method: 'POST', body: JSON.stringify({ ...payload, month: 'mar' }) });
             if (fb.ok) {
@@ -1453,7 +1565,8 @@ async function convertScore(month, subject, score, opt, subName, common, electiv
             }
         }
         return { std: '', pct: '', grd: '' };
-    } catch {
+    } catch (e) {
+        if (e && e.code === 'JUN_NOT_READY') throw e;
         return { std: '', pct: '', grd: '' };
     }
 }
