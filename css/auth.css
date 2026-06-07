@@ -506,3 +506,7 @@ input[type="date"] {
 .social-signup-box { background: #f8faff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 18px 20px; margin-bottom: 24px; text-align: center; }
 .social-signup-title { font-size: 0.88rem; font-weight: 700; color: #1d4ed8; margin-bottom: 12px; }
 .social-signup-box .social-btn-group { margin-bottom: 0; }
+.social-terms-modal { max-width: 520px; }
+.social-terms-list { margin: 18px 0 22px; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+.social-terms-list .terms-item { margin: 0; padding: 12px 14px; border-bottom: 1px solid #e2e8f0; }
+.social-terms-list .terms-item:last-child { border-bottom: 0; }
