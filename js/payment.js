@@ -482,7 +482,7 @@ function _applyPhoneRequiredMessage(btn) {
     if (msgWrap && msgText) {
         msgWrap.style.display = 'block';
         msgWrap.className = 'tier-message-wrap warning';
-        msgText.innerHTML = `<i class="fas fa-exclamation-circle"></i> 전화번호 등록이 필요합니다. 마이페이지에서 전화번호를 입력한 뒤 결제를 진행해주세요.`;
+        msgText.innerHTML = `<div class="phone-required-message"><span><i class="fas fa-exclamation-circle"></i> 전화번호 등록이 필요합니다. 마이페이지에서 전화번호를 입력한 뒤 결제를 진행해주세요.</span><a href="/mypage" class="phone-required-link">마이페이지 바로가기</a></div>`;
     }
     if (btn) {
         btn.disabled = true;
