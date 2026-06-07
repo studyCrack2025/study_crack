@@ -308,6 +308,9 @@ function renderUserInfo(data) {
 
     const mbtiDisplay = document.getElementById('profileMbtiDisplay');
     if (mbtiDisplay) mbtiDisplay.textContent = data.mbti || data.qualitative?.mbti || '-';
+
+    const marketingToggle = document.getElementById('marketingConsentToggle');
+    if (marketingToggle) marketingToggle.checked = data.marketingAgreed === true;
 }
 
 function renderPlanStatus(data) {
@@ -413,6 +416,27 @@ async function saveSingleField(field, value) {
     } catch (error) {
         if (error.message !== "Auth expired") alert("저장 중 오류가 발생했습니다.");
         return false;
+    }
+}
+
+async function saveMarketingConsent(isAgreed) {
+    const toggle = document.getElementById('marketingConsentToggle');
+    if (toggle) toggle.disabled = true;
+
+    try {
+        await apiFetch(USER_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'update_member_info',
+                data: { marketingAgreed: isAgreed === true }
+            })
+        });
+        alert(isAgreed ? '마케팅 정보 수신에 동의했습니다.' : '마케팅 정보 수신 동의를 철회했습니다.');
+    } catch (error) {
+        if (toggle) toggle.checked = !isAgreed;
+        if (error.message !== "Auth expired") alert("저장 중 오류가 발생했습니다.");
+    } finally {
+        if (toggle) toggle.disabled = false;
     }
 }
 
