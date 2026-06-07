@@ -1111,9 +1111,9 @@ function validateSocialConfig(provider) {
 }
 
 window.handleSocialLogin = function(provider) {
-    const isSignupPage = window.location.pathname === '/signup';
+    const isSocialEntryPage = window.location.pathname === '/signup' || window.location.pathname === '/login';
     const socialTermsReady = sessionStorage.getItem('socialSignupTermsAgreed') === 'true';
-    if (isSignupPage && !socialTermsReady) {
+    if (isSocialEntryPage && !socialTermsReady) {
         pendingSocialSignupProvider = provider;
         const modal = document.getElementById('socialSignupTermsModal');
         if (modal) modal.classList.remove('hidden');
@@ -1138,7 +1138,7 @@ window.handleSocialLogin = function(provider) {
         .map(b => b.toString(16).padStart(2, '0')).join('');
     const state = `${stateNonce}|${provider}`;
     sessionStorage.setItem('socialState', state);
-    if (isSignupPage) {
+    if (isSocialEntryPage) {
         sessionStorage.setItem('socialSignupFlow', 'true');
     }
 

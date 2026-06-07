@@ -510,3 +510,4 @@ input[type="date"] {
 .social-terms-list { margin: 18px 0 22px; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
 .social-terms-list .terms-item { margin: 0; padding: 12px 14px; border-bottom: 1px solid #e2e8f0; }
 .social-terms-list .terms-item:last-child { border-bottom: 0; }
+.social-terms-note { margin: -8px 0 18px; color: #64748b; font-size: 0.82rem; line-height: 1.5; text-align: left; }
