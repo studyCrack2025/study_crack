@@ -537,7 +537,10 @@ input:focus { outline: none; border-color: #4c79ee; }
 .social-action-btn.link-btn:hover { background: #dbeafe; }
 .social-action-btn.unlink-btn { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
 .social-action-btn.unlink-btn:hover { background: #fee2e2; }
-.marketing-consent-item { align-items: center; }
+.marketing-consent-item { align-items: center; gap: 14px; }
+.marketing-consent-copy { display: flex; align-items: baseline; gap: 14px; min-width: 0; flex: 1; }
+.marketing-consent-copy .label { width: auto; min-width: max-content; white-space: nowrap; }
+.marketing-consent-status { flex: 1; min-width: 0; font-size: 0.9rem; color: #64748b; word-break: keep-all; }
 .marketing-toggle { position: relative; display: inline-flex; align-items: center; width: 48px; height: 28px; cursor: pointer; flex-shrink: 0; }
 .marketing-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
 .marketing-toggle-slider { position: absolute; inset: 0; border-radius: 999px; background: #cbd5e1; transition: background 0.18s; }

@@ -42,10 +42,8 @@
     // 2. CSRF state 검증
     const savedState = sessionStorage.getItem('socialState');
     const isLinkMode = sessionStorage.getItem('socialLinkMode') === 'true';
-    const socialMarketingAgreed = !isLinkMode && sessionStorage.getItem('socialMarketingAgreed') === 'true';
     sessionStorage.removeItem('socialState');
     sessionStorage.removeItem('socialLinkMode');
-    sessionStorage.removeItem('socialMarketingAgreed');
 
     if (!savedState || savedState !== returnedState) {
         showError('보안 검증에 실패했습니다. 다시 시도해 주세요.');
@@ -81,7 +79,6 @@
                 provider,
                 code,
                 redirectUri: callbackUrl,
-                marketingAgreed: socialMarketingAgreed,
                 ...(statePurpose && { purpose: statePurpose })
             })
         });

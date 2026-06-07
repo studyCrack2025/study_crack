@@ -505,7 +505,4 @@ input[type="date"] {
 .social-btn-naver .social-icon { color: #fff; }
 .social-signup-box { background: #f8faff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 18px 20px; margin-bottom: 24px; text-align: center; }
 .social-signup-title { font-size: 0.88rem; font-weight: 700; color: #1d4ed8; margin-bottom: 12px; }
-.social-signup-box .social-btn-group { margin-bottom: 12px; }
-.social-consent-row { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 8px; color: #475569; font-size: 0.82rem; line-height: 1.45; text-align: left; }
-.social-consent-row input { margin-top: 3px; flex-shrink: 0; }
-.social-consent-link { display: block; margin: -2px 0 14px; color: #4c79ee; font-size: 0.8rem; font-weight: 700; text-align: left; }
+.social-signup-box .social-btn-group { margin-bottom: 0; }

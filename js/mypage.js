@@ -311,6 +311,33 @@ function renderUserInfo(data) {
 
     const marketingToggle = document.getElementById('marketingConsentToggle');
     if (marketingToggle) marketingToggle.checked = data.marketingAgreed === true;
+    renderMarketingConsentStatus(data.marketingAgreed === true, data.marketingAgreedAt);
+}
+
+function formatMarketingConsentDate(value) {
+    if (!value) return '';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleString('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function renderMarketingConsentStatus(isAgreed, agreedAt) {
+    const statusEl = document.getElementById('marketingConsentStatus');
+    if (!statusEl) return;
+
+    if (!isAgreed) {
+        statusEl.innerText = '미동의';
+        return;
+    }
+
+    const agreedAtText = formatMarketingConsentDate(agreedAt);
+    statusEl.innerText = agreedAtText ? `${agreedAtText} 동의` : '동의 중';
 }
 
 function renderPlanStatus(data) {
@@ -431,6 +458,7 @@ async function saveMarketingConsent(isAgreed) {
                 data: { marketingAgreed: isAgreed === true }
             })
         });
+        renderMarketingConsentStatus(isAgreed === true, isAgreed ? new Date().toISOString() : null);
         alert(isAgreed ? '마케팅 정보 수신에 동의했습니다.' : '마케팅 정보 수신 동의를 철회했습니다.');
     } catch (error) {
         if (toggle) toggle.checked = !isAgreed;

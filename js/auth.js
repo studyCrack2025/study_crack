@@ -1128,8 +1128,6 @@ window.handleSocialLogin = function(provider) {
         .map(b => b.toString(16).padStart(2, '0')).join('');
     const state = `${stateNonce}|${provider}`;
     sessionStorage.setItem('socialState', state);
-    const marketingConsentEl = document.getElementById('socialMarketingConsent');
-    sessionStorage.setItem('socialMarketingAgreed', marketingConsentEl && marketingConsentEl.checked ? 'true' : 'false');
 
     let authUrl = '';
     if (provider === 'google') {

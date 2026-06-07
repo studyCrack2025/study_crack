@@ -158,7 +158,10 @@
                         <a href="/change-password" class="text-link">비밀번호 변경하기</a>
                     </div>
                     <div class="link-item marketing-consent-item">
-                        <span class="label">마케팅 수신 동의</span>
+                        <div class="marketing-consent-copy">
+                            <span class="label">마케팅 수신 동의</span>
+                            <span class="value marketing-consent-status" id="marketingConsentStatus">확인 중...</span>
+                        </div>
                         <label class="marketing-toggle">
                             <input type="checkbox" id="marketingConsentToggle" onchange="saveMarketingConsent(this.checked)">
                             <span class="marketing-toggle-slider"></span>
