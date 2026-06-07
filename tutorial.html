@@ -63,6 +63,28 @@
                 <li><span class="check-icon">✓</span> 맞춤형 추천 대학 / 학과 시뮬레이션</li>
                 <li><span class="check-icon">✓</span> 합격까지 과목별 공부시간 배분 전략</li>
             </ul>
+
+            <div id="tutPhoneSection" style="margin-top:22px; text-align:left; border-top:1px solid #eef2f7; padding-top:18px;">
+                <label class="input-label">결제·합격 알림 수신을 위한 전화번호 <span class="tut-req">*</span></label>
+                <!-- 보유(일반 가입) → prefill 표시 -->
+                <div id="tutPhonePrefill" style="display:none;">
+                    <div style="display:flex; align-items:center; gap:8px; background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; border-radius:8px; padding:10px 12px; font-size:0.92rem;">
+                        <span>✓ 인증된 번호</span><strong id="tutPhonePrefillNum"></strong>
+                    </div>
+                </div>
+                <!-- 미보유(소셜) → 입력 + SMS 인증 -->
+                <div id="tutPhoneVerify" style="display:none;">
+                    <div style="display:flex; gap:8px; margin-top:6px;">
+                        <input type="tel" id="tutPhoneInput" class="tut-input" placeholder="010-0000-0000" maxlength="13" style="flex:1; margin:0;">
+                        <button type="button" id="tutPhoneSendBtn" class="tut-btn btn-blue" style="white-space:nowrap; padding:0 14px;" onclick="handleTutPhoneSend()">인증번호 받기</button>
+                    </div>
+                    <div id="tutPhoneCodeRow" style="display:none; gap:8px; margin-top:8px;">
+                        <input type="text" id="tutPhoneCode" class="tut-input" placeholder="인증번호 6자리" maxlength="6" style="flex:1; margin:0;">
+                        <button type="button" id="tutPhoneVerifyBtn" class="tut-btn btn-blue" style="white-space:nowrap; padding:0 14px;" onclick="handleTutPhoneVerify()">확인</button>
+                    </div>
+                    <p id="tutPhoneMsg" style="font-size:0.83rem; margin:8px 0 0; min-height:1em;"></p>
+                </div>
+            </div>
         </div>
     </template>
 
@@ -339,7 +361,6 @@
         <div class="tut-loading-text">데이터를 분석 중입니다. 잠시만 기다려 주세요...</div>
     </div>
 
-    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1390.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
     <script src="/js/config.js?v=20260524a"></script>
     <script src="/js/shared/api.js?v=20260602f"></script>
