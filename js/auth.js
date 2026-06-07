@@ -972,15 +972,18 @@ function handleSignIn() {
             localStorage.setItem('userEmail', email);
             localStorage.setItem('userId', userId);
 
-            // 3. 새 rt 쿠키 등록 (await 보장)
-            await registerRefreshCookie(refreshToken);
+            // 3. rt 쿠키 등록과 신원 조회(get_login_profile)를 병렬화 — 직렬 왕복 1회 제거.
+            //    signup(autoLoginAfterSignup)과 동일 패턴: register는 await하지 않고 waitFor로 넘겨,
+            //    get_login_profile은 Bearer로 즉시 진행하되 라우팅 직전에 쿠키 등록 완료를 보장한다.
+            //    (logout은 쿠키 교차오염 방지 위해 직렬 유지 — 병렬화 금지)
+            const cookiePromise = registerRefreshCookie(refreshToken);
 
             markPostLoginIdentitySkip();
 
             window.dataLayer = window.dataLayer || [];
             window.dataLayer.push({ event: "login", user_id: userId });
 
-            resolveUserIdentity('login', '', { accessToken });
+            resolveUserIdentity('login', '', { accessToken, waitFor: cookiePromise });
         },
         onFailure: function(err) {
             alert(getErrorMessage(err));
@@ -1026,7 +1029,8 @@ function handleTutorSignIn() {
             setIdToken(idToken.getJwtToken());
             localStorage.setItem('userEmail', email);
             localStorage.setItem('userId', userId);
-            await registerRefreshCookie(refreshToken);
+            // rt 쿠키 등록은 await하지 않고 get_login_profile과 병렬 진행 → 아래에서 join (직렬 왕복 1회 제거)
+            const cookiePromise = registerRefreshCookie(refreshToken);
 
             // DB role 검증 — 튜터만 통과 (역할 근거: get_login_profile의 role)
             let role = null, userName = '선생님';
@@ -1043,6 +1047,9 @@ function handleTutorSignIn() {
                     if (data.name) userName = data.name;
                 }
             } catch (e) { /* role 미확인 → 아래에서 차단 */ }
+
+            // join: 라우팅/세션정리 전에 rt 쿠키 등록 완료 보장 (양 경로 안전)
+            await cookiePromise.catch(() => {});
 
             if (role !== 'tutor') {
                 const dest = role === 'admin' ? '/admin/login' : '/login';
