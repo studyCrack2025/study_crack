@@ -31,6 +31,9 @@
     if (errorParam) {
         showError('소셜 로그인이 취소되었습니다.');
         sessionStorage.removeItem('socialState');
+        sessionStorage.removeItem('socialSignupFlow');
+        sessionStorage.removeItem('socialSignupTermsAgreed');
+        sessionStorage.removeItem('socialSignupMarketingAgreed');
         return;
     }
 
@@ -42,8 +45,14 @@
     // 2. CSRF state 검증
     const savedState = sessionStorage.getItem('socialState');
     const isLinkMode = sessionStorage.getItem('socialLinkMode') === 'true';
+    const isSignupFlow = sessionStorage.getItem('socialSignupFlow') === 'true';
+    const socialTermsAgreed = isSignupFlow && sessionStorage.getItem('socialSignupTermsAgreed') === 'true';
+    const socialMarketingAgreed = isSignupFlow && sessionStorage.getItem('socialSignupMarketingAgreed') === 'true';
     sessionStorage.removeItem('socialState');
     sessionStorage.removeItem('socialLinkMode');
+    sessionStorage.removeItem('socialSignupFlow');
+    sessionStorage.removeItem('socialSignupTermsAgreed');
+    sessionStorage.removeItem('socialSignupMarketingAgreed');
 
     if (!savedState || savedState !== returnedState) {
         showError('보안 검증에 실패했습니다. 다시 시도해 주세요.');
@@ -79,6 +88,8 @@
                 provider,
                 code,
                 redirectUri: callbackUrl,
+                termsAgreed: socialTermsAgreed,
+                marketingAgreed: socialMarketingAgreed,
                 ...(statePurpose && { purpose: statePurpose })
             })
         });
