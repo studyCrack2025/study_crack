@@ -47,6 +47,24 @@ const POST_LOGIN_IDENTITY_SKIP_MS = 20000;
 let isPhoneVerified = false; 
 let isEmailVerified = false;
 
+function createAuthTiming(flow) {
+    const canMeasure = typeof performance !== 'undefined' && typeof performance.now === 'function';
+    const start = canMeasure ? performance.now() : 0;
+    const marks = [];
+
+    return {
+        mark(step) {
+            if (!canMeasure) return;
+            marks.push({ step, ms: Math.round((performance.now() - start) * 10) / 10 });
+        },
+        flush(status = 'done') {
+            if (!canMeasure || marks.length === 0) return;
+            const totalMs = Math.round((performance.now() - start) * 10) / 10;
+            console.info('[auth_timing]', { flow, status, totalMs, marks });
+        }
+    };
+}
+
 function markPostLoginIdentitySkip(ttlMs = POST_LOGIN_IDENTITY_SKIP_MS) {
     const until = Date.now() + ttlMs;
     sessionStorage.setItem(POST_LOGIN_IDENTITY_SKIP_KEY, String(until));
@@ -70,13 +88,51 @@ function shouldSkipPostLoginIdentityResolve() {
 // isPublicRoute / getRoleLoginPath / tryRefreshToken / apiFetch 는 js/shared/api.js 에 정의됨.
 // auth.js 는 그 위에서 동작 — 중복 정의 제거.
 
-async function registerRefreshCookie(refreshToken) {
+async function registerRefreshCookie(refreshToken, options = {}) {
     // LOCAL: cross-site SameSite=Lax 쿠키가 후속 요청에 안 실리므로 쿠키 등록 의미 없음.
     // refreshToken을 localStorage에만 보관해 tryRefreshToken의 body 기반 refresh 경로로 위임. (active/260603 §Phase 1)
     if (IS_LOCAL) {
         localStorage.setItem('refreshToken', refreshToken);
         return false;
     }
+
+    const accessToken = options.accessToken || getAccessToken();
+    const idToken = options.idToken || getIdToken();
+    const shouldReplaceExisting = options.replaceExisting !== false;
+
+    if (accessToken && idToken && refreshToken) {
+        try {
+            const fastCookieRes = await fetch(AUTH_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    type: 'register_login_cookies',
+                    accessToken,
+                    idToken,
+                    refreshToken
+                })
+            });
+            if (fastCookieRes.ok) {
+                const cookieData = await fastCookieRes.json().catch(() => ({}));
+                if (typeof syncTokensFromAuthResponse === 'function') {
+                    const synced = syncTokensFromAuthResponse(cookieData);
+                    if (!synced && (cookieData.accessToken || cookieData.idToken || cookieData.userId)) {
+                        return false;
+                    }
+                }
+                localStorage.removeItem('refreshToken');
+                return true;
+            }
+        } catch (e) {
+            // 레거시 경로로 폴백
+        }
+    }
+
+    if (shouldReplaceExisting && typeof clearServerSessionCookies === 'function') {
+        try { await clearServerSessionCookies(); } catch (_) {}
+    }
+
     try {
         const cookieRes = await fetch(AUTH_URL, {
             method: 'POST',
@@ -203,6 +259,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
                 try { await options.waitFor; } catch (e) { /* noop */ }
             }
             handleRoleSuccess(role, eventType, userName, promoCode);
+            return true;
         } else {
             throw new Error("계정 정보를 데이터베이스에서 찾을 수 없습니다.");
         }
@@ -217,14 +274,16 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             } else {
                 checkLoginStatus();
             }
-            return;
+            return false;
         }
         if (eventType === 'login' || eventType === 'signup') {
             alert("회원 정보 연동에 실패했습니다. 관리자에게 문의해주세요.");
             handleSignOut(true); 
+            return false;
         } else {
             // 백그라운드 신원 동기화 실패(일시적 5xx/네트워크)에서는 즉시 로그아웃하지 않음
             console.warn("Session identity sync skipped:", error?.message || error);
+            return false;
         }
     }
 }
@@ -926,11 +985,15 @@ async function handleSignOut(silent = false) {
 }
 
 function handleSignIn() {
+    const timing = createAuthTiming('student_login');
+    timing.mark('submit');
+
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
 
     if (!email || !password) {
         alert("이메일과 비밀번호를 입력해주세요.");
+        timing.flush('validation_failed');
         return;
     }
 
@@ -949,43 +1012,47 @@ function handleSignIn() {
         onSuccess: async function(result) {
             const accessToken = result.getAccessToken().getJwtToken();
             const idToken = result.getIdToken();
+            const idTokenJwt = idToken.getJwtToken();
             const userId = idToken.payload.sub;
             const refreshToken = result.getRefreshToken().getToken();
+            timing.mark('cognito_success');
 
-            // 1. 이전 at/rt 쿠키 명시적 제거 — 새 토큰 set 직전 동기화
-            if (typeof clearServerSessionCookies === 'function') {
-                await clearServerSessionCookies();
-            } else {
-                try {
-                    await fetch(AUTH_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include',
-                        body: JSON.stringify({ type: 'logout' })
-                    });
-                } catch (_) { /* 다음 단계가 덮어쓰므로 치명적이지 않음 */ }
-            }
-
-            // 2. 새 토큰 메모리/sessionStorage 저장
+            // 새 서버 쿠키 교체는 registerRefreshCookie가 처리한다. 상세: docs/security/architecture-notes.md §6
             setAccessToken(accessToken);
-            setIdToken(idToken.getJwtToken());
+            setIdToken(idTokenJwt);
             localStorage.setItem('userEmail', email);
             localStorage.setItem('userId', userId);
 
-            // 3. rt 쿠키 등록과 신원 조회(get_login_profile)를 병렬화 — 직렬 왕복 1회 제거.
-            //    signup(autoLoginAfterSignup)과 동일 패턴: register는 await하지 않고 waitFor로 넘겨,
-            //    get_login_profile은 Bearer로 즉시 진행하되 라우팅 직전에 쿠키 등록 완료를 보장한다.
-            //    (logout은 쿠키 교차오염 방지 위해 직렬 유지 — 병렬화 금지)
-            const cookiePromise = registerRefreshCookie(refreshToken);
+            const cookiePromise = registerRefreshCookie(refreshToken, {
+                accessToken,
+                idToken: idTokenJwt,
+                replaceExisting: true
+            }).then((result) => {
+                timing.mark('cookie_register_done');
+                return result;
+            }).catch((error) => {
+                timing.mark('cookie_register_failed');
+                throw error;
+            });
 
             markPostLoginIdentitySkip();
 
             window.dataLayer = window.dataLayer || [];
             window.dataLayer.push({ event: "login", user_id: userId });
 
-            resolveUserIdentity('login', '', { accessToken, waitFor: cookiePromise });
+            timing.mark('identity_start');
+            resolveUserIdentity('login', '', { accessToken, waitFor: cookiePromise })
+                .then((ok) => {
+                    timing.mark('identity_done');
+                    timing.flush(ok === false ? 'identity_failed' : 'success');
+                })
+                .catch(() => {
+                    timing.flush('identity_failed');
+                });
         },
         onFailure: function(err) {
+            timing.mark('cognito_failure');
+            timing.flush('failure');
             alert(getErrorMessage(err));
         }
     });
@@ -998,11 +1065,15 @@ function handleSignIn() {
 // 비튜터(학생/관리자/미확인)는 방금 발급한 세션을 정리하고 알맞은 로그인 페이지로 돌려보낸다.
 // ==========================================
 function handleTutorSignIn() {
+    const timing = createAuthTiming('tutor_login');
+    timing.mark('submit');
+
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
 
     if (!email || !password) {
         alert("이메일과 비밀번호를 입력해주세요.");
+        timing.flush('validation_failed');
         return;
     }
 
@@ -1018,23 +1089,31 @@ function handleTutorSignIn() {
         onSuccess: async function(result) {
             const accessToken = result.getAccessToken().getJwtToken();
             const idToken = result.getIdToken();
+            const idTokenJwt = idToken.getJwtToken();
             const userId = idToken.payload.sub;
             const refreshToken = result.getRefreshToken().getToken();
+            timing.mark('cognito_success');
 
-            // 이전 at/rt 쿠키 제거 후 새 토큰 동기화 (handleSignIn과 동일 순서)
-            if (typeof clearServerSessionCookies === 'function') {
-                await clearServerSessionCookies();
-            }
             setAccessToken(accessToken);
-            setIdToken(idToken.getJwtToken());
+            setIdToken(idTokenJwt);
             localStorage.setItem('userEmail', email);
             localStorage.setItem('userId', userId);
-            // rt 쿠키 등록은 await하지 않고 get_login_profile과 병렬 진행 → 아래에서 join (직렬 왕복 1회 제거)
-            const cookiePromise = registerRefreshCookie(refreshToken);
+            const cookiePromise = registerRefreshCookie(refreshToken, {
+                accessToken,
+                idToken: idTokenJwt,
+                replaceExisting: true
+            }).then((result) => {
+                timing.mark('cookie_register_done');
+                return result;
+            }).catch((error) => {
+                timing.mark('cookie_register_failed');
+                throw error;
+            });
 
             // DB role 검증 — 튜터만 통과 (역할 근거: get_login_profile의 role)
             let role = null, userName = '선생님';
             try {
+                timing.mark('identity_start');
                 const res = await fetch(USER_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAccessToken()}` },
@@ -1046,6 +1125,7 @@ function handleTutorSignIn() {
                     role = data.role || null;
                     if (data.name) userName = data.name;
                 }
+                timing.mark('identity_done');
             } catch (e) { /* role 미확인 → 아래에서 차단 */ }
 
             // join: 라우팅/세션정리 전에 rt 쿠키 등록 완료 보장 (양 경로 안전)
@@ -1063,6 +1143,7 @@ function handleTutorSignIn() {
                 if (typeof clearServerSessionCookies === 'function') await clearServerSessionCookies();
                 clearClientSession();
                 alert(msg);
+                timing.flush('role_blocked');
                 window.location.replace(dest);
                 return;
             }
@@ -1074,9 +1155,12 @@ function handleTutorSignIn() {
             window.dataLayer.push({ event: "login", user_id: userId });
 
             alert(`${userName} 선생님, 안녕하세요.`);
+            timing.flush('success');
             window.location.replace('/mypage/tutor');
         },
         onFailure: function(err) {
+            timing.mark('cognito_failure');
+            timing.flush('failure');
             alert(getErrorMessage(err));
         }
     });
