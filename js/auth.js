@@ -59,6 +59,7 @@ function createAuthTiming(flow) {
         },
         flush(status = 'done') {
             if (!canMeasure || marks.length === 0) return;
+            if (status !== 'success') return;
             const totalMs = Math.round((performance.now() - start) * 10) / 10;
             console.info('[auth_timing]', { flow, status, totalMs, marks });
         }
