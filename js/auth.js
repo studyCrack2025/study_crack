@@ -1170,8 +1170,6 @@ function handleTutorSignIn() {
 // ==========================================
 // [Part G] 소셜 로그인
 // ==========================================
-let pendingSocialSignupProvider = null;
-
 function validateSocialConfig(provider) {
     const social = CONFIG && CONFIG.social;
     const callbackUrl = social && social.callbackUrl;
@@ -1196,15 +1194,6 @@ function validateSocialConfig(provider) {
 }
 
 window.handleSocialLogin = function(provider) {
-    const isSocialEntryPage = window.location.pathname === '/signup' || window.location.pathname === '/login';
-    const socialTermsReady = sessionStorage.getItem('socialSignupTermsAgreed') === 'true';
-    if (isSocialEntryPage && !socialTermsReady) {
-        pendingSocialSignupProvider = provider;
-        const modal = document.getElementById('socialSignupTermsModal');
-        if (modal) modal.classList.remove('hidden');
-        return;
-    }
-
     const buttons = document.querySelectorAll('.social-btn');
     buttons.forEach(btn => { btn.disabled = true; });
 
@@ -1223,9 +1212,6 @@ window.handleSocialLogin = function(provider) {
         .map(b => b.toString(16).padStart(2, '0')).join('');
     const state = `${stateNonce}|${provider}`;
     sessionStorage.setItem('socialState', state);
-    if (isSocialEntryPage) {
-        sessionStorage.setItem('socialSignupFlow', 'true');
-    }
 
     let authUrl = '';
     if (provider === 'google') {
@@ -1246,34 +1232,6 @@ window.handleSocialLogin = function(provider) {
     }
 
     window.location.href = authUrl;
-};
-
-window.closeSocialSignupTermsModal = function() {
-    const modal = document.getElementById('socialSignupTermsModal');
-    if (modal) modal.classList.add('hidden');
-    pendingSocialSignupProvider = null;
-};
-
-window.confirmSocialSignupTerms = function() {
-    const requiredTerms = Array.from(document.querySelectorAll('.social-required-term'));
-    const allRequiredChecked = requiredTerms.length > 0 && requiredTerms.every(chk => chk.checked);
-    if (!allRequiredChecked) {
-        alert('소셜 회원가입을 진행하려면 필수 약관에 모두 동의해주세요.');
-        return;
-    }
-
-    const provider = pendingSocialSignupProvider;
-    if (!provider) {
-        alert('소셜 인증 정보를 다시 선택해주세요.');
-        closeSocialSignupTermsModal();
-        return;
-    }
-
-    const marketingEl = document.getElementById('socialSignupMarketingConsent');
-    sessionStorage.setItem('socialSignupTermsAgreed', 'true');
-    sessionStorage.setItem('socialSignupMarketingAgreed', marketingEl && marketingEl.checked ? 'true' : 'false');
-    closeSocialSignupTermsModal();
-    handleSocialLogin(provider);
 };
 
 window.openAuthModal = function(modalId) {
