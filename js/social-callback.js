@@ -207,13 +207,16 @@
             return;
         }
 
+        if (res.ok && result.requiresTerms && result.pendingSignupToken) {
+            pendingSocialSignup = { pendingSignupToken: result.pendingSignupToken };
+            statusMsg.textContent = '신규 회원가입을 완료하려면 약관 동의가 필요합니다.';
+            setPendingSignupModalVisible(true);
+            return;
+        }
+
         if (!res.ok) {
             console.error('[SocialCallback] Lambda error response:', { status: res.status, requiresTerms: result.requiresTerms === true });
-            if (res.status === 428 && result.requiresTerms && result.pendingSignupToken) {
-                pendingSocialSignup = { pendingSignupToken: result.pendingSignupToken };
-                statusMsg.textContent = '신규 회원가입을 완료하려면 약관 동의가 필요합니다.';
-                setPendingSignupModalVisible(true);
-            } else if (res.status === 409) {
+            if (res.status === 409) {
                 showError(result.error || '이미 동일 이메일로 가입된 계정이 있습니다. 기존 이메일/비밀번호로 로그인해 주세요.');
             } else {
                 showError(result.error || `로그인 처리에 실패했습니다. (HTTP ${res.status})`);
