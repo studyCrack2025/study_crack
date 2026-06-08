@@ -943,7 +943,7 @@ function buildUnivCards(selectedUnivs, studentScore) {
         { label: '기타', pct: 10, color: '#f59e0b' }
     ];
 
-    // 신규/레거시 포맷 호환: docs/algorithms/tutorial-recommendation.md §6
+        // 신규/레거시 포맷 호환: docs/algorithms/tutorial-recommendation.md §7
     if (selectedUnivs.length > 0 && 'currentScore' in selectedUnivs[0]) {
         const PASS_CUT = 100, TOP70_CUT = 150, MAX_SCORE = 250;
         return selectedUnivs.map(u => {
@@ -1179,7 +1179,7 @@ function selectUniv(element, data, fillId, simPct) {
     document.getElementById('tutNextBtn').style.display = 'block';
 }
 
-// ── Greedy 점수 분배 — 사양: docs/algorithms/tutorial-recommendation.md §2 ──
+// ── Greedy 점수 분배 — 사양: docs/algorithms/tutorial-recommendation.md §3 ──
 
 function gradeToApproxPct(grd) {
     const map = { '1': 96, '2': 89, '3': 77, '4': 60, '5': 40, '6': 23, '7': 11, '8': 4, '9': 1 };
@@ -1304,60 +1304,110 @@ function normalizeStrategyPlan(strategyResult) {
     })).filter(subject => subject.key && subject.assigned > 0);
 }
 
-function getStrategyFutureStreams(mode, baseStream) {
-    const streams = [];
-    const add = (stream) => {
-        if (stream && !streams.includes(stream)) streams.push(stream);
+function getStrategyFutureSteps(mode, baseStream) {
+    const adjacent = {
+        '의치한약수': ['간호/보건', '자연/공학'],
+        '간호/보건': ['자연/공학', '의치한약수'],
+        '자연/공학': ['간호/보건'],
+        '상경계열': ['인문사회'],
+        '인문사회': ['상경계열'],
+        '사범/교대': ['인문사회']
     };
-    if (mode === 'target_mismatch' && baseStream === '의치한약수') {
-        add('간호/보건');
-        add('자연/공학');
-        add('의치한약수');
-        return streams;
+
+    if (mode === 'target_mismatch') {
+        const bridgeStreams = adjacent[baseStream] || ['간호/보건', '자연/공학'];
+        return [
+            { label: '1차 목표', stream: bridgeStreams[0] || baseStream, boosted: true, relaxed: true },
+            { label: '계열 인접', stream: bridgeStreams[1] || bridgeStreams[0] || baseStream, boosted: true, relaxed: true },
+            { label: '장기 발판', stream: baseStream, boosted: true, relaxed: true }
+        ];
     }
-    add(baseStream);
+
     if (mode === 'low_but_projectable') {
-        add('간호/보건');
-        add('자연/공학');
+        const bridgeStreams = adjacent[baseStream] || [];
+        return [
+            { label: '현재 기준', stream: baseStream, boosted: false, relaxed: true },
+            { label: '1차 목표', stream: baseStream, boosted: true, relaxed: true },
+            { label: '계열 인접', stream: bridgeStreams[0] || baseStream, boosted: true, relaxed: true }
+        ];
     }
-    return streams;
+
+    if (mode === 'elite_ceiling') {
+        return [
+            { label: '안정', stream: baseStream, boosted: false, relaxed: false },
+            { label: '상향 도전', stream: baseStream, boosted: true, relaxed: false },
+            { label: '도전', stream: baseStream, boosted: true, relaxed: false }
+        ];
+    }
+
+    return [
+        { label: '안정', stream: baseStream, boosted: false, relaxed: false },
+        { label: '적정', stream: baseStream, boosted: true, relaxed: false },
+        { label: '도전', stream: baseStream, boosted: true, relaxed: false }
+    ];
 }
 
 async function fetchStrategyFutureUnivs(strategyResult, mar, univ, excludeUnivs) {
     const boostedRawScores = strategyResult?.boostedRawScores;
     if (!boostedRawScores || !mar || !tutorialData.totalStdScore) return Array.isArray(strategyResult?.futureUnivs) ? strategyResult.futureUnivs : null;
     const mode = strategyResult?.mode || 'normal_growth';
-    const streams = getStrategyFutureStreams(mode, tutorialData.qual?.stream);
-    const relaxed = mode === 'target_mismatch' || mode === 'low_but_projectable';
+    const steps = getStrategyFutureSteps(mode, tutorialData.qual?.stream);
     const merged = [];
     const seen = new Set();
+    const addCandidate = (item, label) => {
+        if (!item || !item.school || !item.major) return false;
+        const key = `${item.school}||${item.major}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        merged.push({ ...item, _strategyLabel: label });
+        return true;
+    };
 
-    for (const stream of streams) {
+    for (const step of steps) {
+        if (!step.stream) continue;
         const selected = await fetchTutorialRecommendations(
-            stream,
+            step.stream,
             mar,
             tutorialData.totalStdScore,
             tutorialData.examMonth || 'mar',
-            boostedRawScores,
+            step.boosted ? boostedRawScores : null,
             {
-                selectedUniv: relaxed ? null : { univ: univ.school, major: univ.major },
+                selectedUniv: step.relaxed ? null : { univ: univ.school, major: univ.major },
                 excludeUnivs,
-                minCurrentScore: relaxed ? 0 : Number(univ.currentScore || 0),
+                minCurrentScore: step.relaxed ? 0 : Number(univ.currentScore || 0),
                 fallbackCurrentScore: Number(univ.currentScore || tutorialData.totalStdScore || 0)
             }
         );
-        (selected || []).forEach(item => {
-            const key = `${item.school}||${item.major}`;
-            if (seen.has(key)) return;
-            seen.add(key);
-            merged.push(item);
-        });
+        const picked = (selected || []).find(item => !seen.has(`${item.school}||${item.major}`));
+        addCandidate(picked, step.label);
         if (merged.length >= TUTORIAL_RECO_TARGET_COUNT) break;
     }
 
-    return merged.length > 0
-        ? rankTutorialRecommendations(merged, Number(univ.currentScore || tutorialData.totalStdScore || 0), TUTORIAL_RECO_TARGET_COUNT)
-        : (Array.isArray(strategyResult?.futureUnivs) ? strategyResult.futureUnivs : null);
+    if (merged.length < TUTORIAL_RECO_TARGET_COUNT) {
+        for (const step of steps) {
+            if (!step.stream) continue;
+            const selected = await fetchTutorialRecommendations(
+                step.stream,
+                mar,
+                tutorialData.totalStdScore,
+                tutorialData.examMonth || 'mar',
+                step.boosted ? boostedRawScores : null,
+                {
+                    selectedUniv: null,
+                    excludeUnivs: [],
+                    minCurrentScore: 0,
+                    fallbackCurrentScore: Number(univ.currentScore || tutorialData.totalStdScore || 0)
+                }
+            );
+            for (const item of (selected || [])) {
+                addCandidate(item, step.label);
+                if (merged.length >= TUTORIAL_RECO_TARGET_COUNT) break;
+            }
+            if (merged.length >= TUTORIAL_RECO_TARGET_COUNT) break;
+        }
+    }
+
+    return merged.length > 0 ? merged.slice(0, TUTORIAL_RECO_TARGET_COUNT) : (Array.isArray(strategyResult?.futureUnivs) ? strategyResult.futureUnivs : null);
 }
 
 function getStrategyModeCopy(mode) {
@@ -1398,7 +1448,7 @@ async function initSubjectRec() {
     const mar  = tutorialData.quan?.[activeMonth];
     const mbti = tutorialData.mbti;
 
-    // 추천 retry 사양: docs/algorithms/tutorial-recommendation.md §3
+    // 추천 retry 사양: docs/algorithms/tutorial-recommendation.md §4
     const excludeUnivs = (tutorialData.selectedUnivs || [])
         .map(u => ({ univ: u.school, major: u.major }))
         .filter(u => u.univ && u.major);
@@ -1477,7 +1527,7 @@ async function initSubjectRec() {
         }
     }
 
-    // 학습기간 산정: docs/algorithms/tutorial-recommendation.md §4
+    // 학습기간 산정: docs/algorithms/tutorial-recommendation.md §5
     const RAW_PER_WEEK = 1.5;
     const MIN_WEEKS = 8;
     const MAX_WEEKS = 16;
@@ -1515,7 +1565,7 @@ async function initSubjectRec() {
         const label = s?.label || LABELS[key];
         const safeLabel = escapeTutorialHtml(label);
 
-        // 잠금 정책: docs/algorithms/tutorial-recommendation.md §7
+        // 잠금 정책: docs/algorithms/tutorial-recommendation.md §8
         const priorityIdx = risingByPriority.findIndex(p => p.key === key);
         const isLocked = priorityIdx >= 2;
 
@@ -1557,8 +1607,8 @@ async function initSubjectRec() {
     let futureUnivHtml = '';
     if (univ || (postSimUnivs && postSimUnivs.length > 0)) {
         const strategyCopy = getStrategyModeCopy(strategyMeta?.mode || 'normal_growth');
-        const catColors = { 안정: '#10b981', 적정: '#3b82f6', 도전: '#f59e0b', '1차 목표': '#3b82f6', '계열 인접': '#10b981', '장기 발판': '#f59e0b', '상향 도전': '#8b5cf6' };
-        const catBgs = { 안정: '#ecfdf5', 적정: '#eff6ff', 도전: '#fffbeb', '1차 목표': '#eff6ff', '계열 인접': '#ecfdf5', '장기 발판': '#fffbeb', '상향 도전': '#f5f3ff' };
+        const catColors = { 안정: '#10b981', 적정: '#3b82f6', 도전: '#f59e0b', '현재 기준': '#64748b', '1차 목표': '#3b82f6', '계열 인접': '#10b981', '장기 발판': '#f59e0b', '상향 도전': '#8b5cf6' };
+        const catBgs = { 안정: '#ecfdf5', 적정: '#eff6ff', 도전: '#fffbeb', '현재 기준': '#f8fafc', '1차 목표': '#eff6ff', '계열 인접': '#ecfdf5', '장기 발판': '#fffbeb', '상향 도전': '#f5f3ff' };
 
         const currentBlock = univ ? `
             <div class="future-stage future-stage-now">
@@ -1567,15 +1617,20 @@ async function initSubjectRec() {
                 <div class="future-stage-major">${escapeTutorialHtml(univ.major)}</div>
             </div>` : '';
 
-        // 안정/적정/도전 분류: docs/algorithms/tutorial-recommendation.md §5
-        const sortedFutureUnivs = [...(postSimUnivs || [])].sort((a, b) => (b.currentScore || 0) - (a.currentScore || 0));
+        // 안정/적정/도전 분류: docs/algorithms/tutorial-recommendation.md §6
+        const preserveStrategyOrder = ['target_mismatch', 'low_but_projectable'].includes(strategyMeta?.mode);
+        const sortedFutureUnivs = preserveStrategyOrder
+            ? [...(postSimUnivs || [])]
+            : [...(postSimUnivs || [])].sort((a, b) => (b.currentScore || 0) - (a.currentScore || 0));
         const scoredFutureUnivs = sortedFutureUnivs.map((u, i, arr) => {
             const n = arr.length;
-            let label = '적정';
-            if (strategyMeta?.mode === 'target_mismatch') {
+            let label = u._strategyLabel || '적정';
+            if (u._strategyLabel) {
+                label = u._strategyLabel;
+            } else if (strategyMeta?.mode === 'target_mismatch') {
                 label = ['1차 목표', '계열 인접', '장기 발판'][i] || '1차 목표';
             } else if (strategyMeta?.mode === 'low_but_projectable') {
-                label = ['1차 목표', '적정', '도전'][i] || '적정';
+                label = ['현재 기준', '1차 목표', '계열 인접'][i] || '적정';
             } else if (strategyMeta?.mode === 'elite_ceiling') {
                 label = ['안정', '상향 도전', '도전'][i] || '상향 도전';
             } else if (n <= 1) {
