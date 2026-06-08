@@ -29,6 +29,30 @@
         modal.classList.toggle('hidden', !visible);
     }
 
+    function getSocialTermCheckboxes() {
+        return Array.from(document.querySelectorAll('.social-required-term, #socialSignupMarketingConsent'));
+    }
+
+    function syncSocialAllConsentState() {
+        const allConsent = document.getElementById('socialSignupAllConsent');
+        if (!allConsent) return;
+        const checkboxes = getSocialTermCheckboxes();
+        allConsent.checked = checkboxes.length > 0 && checkboxes.every(chk => chk.checked);
+    }
+
+    function setupSocialTermsAllConsent() {
+        const allConsent = document.getElementById('socialSignupAllConsent');
+        const checkboxes = getSocialTermCheckboxes();
+        if (allConsent) {
+            allConsent.addEventListener('change', () => {
+                checkboxes.forEach(chk => { chk.checked = allConsent.checked; });
+            });
+        }
+        checkboxes.forEach(chk => {
+            chk.addEventListener('change', syncSocialAllConsentState);
+        });
+    }
+
     async function finishSocialLogin(result, { isLinkMode = false } = {}) {
         const { userId, isNewUser } = result;
 
@@ -136,6 +160,8 @@
             showError('회원가입 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
         }
     };
+
+    setupSocialTermsAllConsent();
 
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
