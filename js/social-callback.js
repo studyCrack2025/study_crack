@@ -5,6 +5,7 @@
     const AUTH_URL = CONFIG.api.auth;
     const USER_API_URL = CONFIG.api.user;
     const statusMsg = document.getElementById('statusMsg');
+    let pendingSocialSignup = null;
 
     // innerHTML 대신 안전한 DOM 조작 (XSS 방지)
     function showError(msg) {
@@ -22,6 +23,146 @@
         statusMsg.appendChild(link);
     }
 
+    function setPendingSignupModalVisible(visible) {
+        const modal = document.getElementById('socialSignupTermsModal');
+        if (!modal) return;
+        modal.classList.toggle('hidden', !visible);
+    }
+
+    function getSocialTermCheckboxes() {
+        return Array.from(document.querySelectorAll('.social-required-term, #socialSignupMarketingConsent'));
+    }
+
+    function syncSocialAllConsentState() {
+        const allConsent = document.getElementById('socialSignupAllConsent');
+        if (!allConsent) return;
+        const checkboxes = getSocialTermCheckboxes();
+        allConsent.checked = checkboxes.length > 0 && checkboxes.every(chk => chk.checked);
+    }
+
+    function setupSocialTermsAllConsent() {
+        const allConsent = document.getElementById('socialSignupAllConsent');
+        const checkboxes = getSocialTermCheckboxes();
+        if (allConsent) {
+            allConsent.addEventListener('change', () => {
+                checkboxes.forEach(chk => { chk.checked = allConsent.checked; });
+            });
+        }
+        checkboxes.forEach(chk => {
+            chk.addEventListener('change', syncSocialAllConsentState);
+        });
+    }
+
+    async function finishSocialLogin(result, { isLinkMode = false } = {}) {
+        const { userId, isNewUser } = result;
+
+        if (!userId) {
+            showError('로그인 처리에 실패했습니다. (사용자 ID 누락)');
+            return;
+        }
+
+        if (typeof clearClientSession === 'function') {
+            clearClientSession();
+        } else if (typeof clearSharedClientSession === 'function') {
+            clearSharedClientSession();
+        }
+        if (result.accessToken && typeof setAccessToken === 'function') {
+            setAccessToken(result.accessToken);
+        } else if (result.accessToken) {
+            sessionStorage.setItem('accessToken', result.accessToken);
+        }
+        if (result.idToken && typeof setIdToken === 'function') {
+            setIdToken(result.idToken);
+        } else if (result.idToken) {
+            sessionStorage.setItem('idToken', result.idToken);
+        }
+        if (result.refreshToken && typeof registerRefreshCookie === 'function') {
+            try {
+                await registerRefreshCookie(result.refreshToken, {
+                    accessToken: result.accessToken,
+                    idToken: result.idToken,
+                    replaceExisting: true
+                });
+            } catch (_) {}
+        }
+        localStorage.setItem('userId', userId);
+        localStorage.setItem('userRole', 'student');
+
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({ event: 'login', user_id: userId });
+
+        statusMsg.textContent = isLinkMode ? '연동 완료! 마이페이지로 이동 중...' : '로그인 완료! 이동 중입니다...';
+
+        const userRes = await fetch(USER_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(result.accessToken ? { Authorization: `Bearer ${result.accessToken}` } : {})
+            },
+            credentials: 'include',
+            body: JSON.stringify({ type: 'get_login_profile' })
+        });
+
+        if (userRes.ok) {
+            const userData = await userRes.json();
+            localStorage.setItem('userName', userData.name || '');
+            if (userData.computedTier) localStorage.setItem('userTier', userData.computedTier);
+        }
+
+        if (isLinkMode) {
+            window.location.href = '/mypage';
+            return;
+        }
+
+        window.location.href = isNewUser ? '/welcome' : '/';
+    }
+
+    window.closePendingSocialSignupTermsModal = function() {
+        setPendingSignupModalVisible(false);
+        showError('소셜 회원가입이 완료되지 않았습니다.');
+    };
+
+    window.confirmPendingSocialSignupTerms = async function() {
+        const requiredTerms = Array.from(document.querySelectorAll('.social-required-term'));
+        const allRequiredChecked = requiredTerms.length > 0 && requiredTerms.every(chk => chk.checked);
+        if (!allRequiredChecked) {
+            alert('소셜 회원가입을 진행하려면 필수 약관에 모두 동의해주세요.');
+            return;
+        }
+        if (!pendingSocialSignup || !pendingSocialSignup.pendingSignupToken) {
+            showError('소셜 회원가입 대기 정보가 없습니다. 다시 시도해주세요.');
+            return;
+        }
+
+        const marketingEl = document.getElementById('socialSignupMarketingConsent');
+        setPendingSignupModalVisible(false);
+        statusMsg.textContent = '회원가입을 완료하고 있습니다...';
+
+        try {
+            const completeRes = await fetch(AUTH_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    type: 'social_complete_signup',
+                    pendingSignupToken: pendingSocialSignup.pendingSignupToken,
+                    termsAgreed: true,
+                    marketingAgreed: marketingEl && marketingEl.checked === true
+                })
+            });
+            const completeResult = await completeRes.json().catch(() => ({}));
+            if (!completeRes.ok) {
+                showError(completeResult.error || `회원가입 처리에 실패했습니다. (HTTP ${completeRes.status})`);
+                return;
+            }
+            await finishSocialLogin(completeResult);
+        } catch (e) {
+            showError('회원가입 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+        }
+    };
+
+    setupSocialTermsAllConsent();
+
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
     const returnedState = params.get('state');
@@ -31,9 +172,6 @@
     if (errorParam) {
         showError('소셜 로그인이 취소되었습니다.');
         sessionStorage.removeItem('socialState');
-        sessionStorage.removeItem('socialSignupFlow');
-        sessionStorage.removeItem('socialSignupTermsAgreed');
-        sessionStorage.removeItem('socialSignupMarketingAgreed');
         return;
     }
 
@@ -45,14 +183,8 @@
     // 2. CSRF state 검증
     const savedState = sessionStorage.getItem('socialState');
     const isLinkMode = sessionStorage.getItem('socialLinkMode') === 'true';
-    const isSignupFlow = sessionStorage.getItem('socialSignupFlow') === 'true';
-    const socialTermsAgreed = isSignupFlow && sessionStorage.getItem('socialSignupTermsAgreed') === 'true';
-    const socialMarketingAgreed = isSignupFlow && sessionStorage.getItem('socialSignupMarketingAgreed') === 'true';
     sessionStorage.removeItem('socialState');
     sessionStorage.removeItem('socialLinkMode');
-    sessionStorage.removeItem('socialSignupFlow');
-    sessionStorage.removeItem('socialSignupTermsAgreed');
-    sessionStorage.removeItem('socialSignupMarketingAgreed');
 
     if (!savedState || savedState !== returnedState) {
         showError('보안 검증에 실패했습니다. 다시 시도해 주세요.');
@@ -88,8 +220,6 @@
                 provider,
                 code,
                 redirectUri: callbackUrl,
-                termsAgreed: socialTermsAgreed,
-                marketingAgreed: socialMarketingAgreed,
                 ...(statePurpose && { purpose: statePurpose })
             })
         });
@@ -103,8 +233,15 @@
             return;
         }
 
+        if (res.ok && result.requiresTerms && result.pendingSignupToken) {
+            pendingSocialSignup = { pendingSignupToken: result.pendingSignupToken };
+            statusMsg.textContent = '신규 회원가입을 완료하려면 약관 동의가 필요합니다.';
+            setPendingSignupModalVisible(true);
+            return;
+        }
+
         if (!res.ok) {
-            console.error('[SocialCallback] Lambda error response:', { status: res.status, body: result });
+            console.error('[SocialCallback] Lambda error response:', { status: res.status, requiresTerms: result.requiresTerms === true });
             if (res.status === 409) {
                 showError(result.error || '이미 동일 이메일로 가입된 계정이 있습니다. 기존 이메일/비밀번호로 로그인해 주세요.');
             } else {
@@ -120,15 +257,8 @@
             return;
         }
 
-        const { userId, isNewUser } = result;
-
-        if (!userId) {
-            showError('로그인 처리에 실패했습니다. (사용자 ID 누락)');
-            return;
-        }
-
         // 4. 연동 모드 + 새 계정 생성된 경우: 기존 세션 보관 후 확인
-        if (isLinkMode && isNewUser) {
+        if (isLinkMode && result.isNewUser) {
             const prevUserId = localStorage.getItem('userId');
 
             const confirmed = confirm(
@@ -142,66 +272,13 @@
                 return;
             }
 
-            localStorage.setItem('userId', userId);
+            localStorage.setItem('userId', result.userId);
             localStorage.setItem('userRole', 'student');
             window.location.href = '/welcome';
             return;
         }
 
-        // 5. 세션 갈아끼우기 — 이전 사용자 흔적 제거 후 새 토큰 set.
-        //    backend social_callback 응답에 accessToken/idToken/refreshToken이 포함됨 (Set-Cookie와 별개로 명시).
-        //    이걸 sessionStorage/메모리에 저장하지 않으면 Bearer 헤더 폴백이 stale 토큰을 그대로 사용 → 세션 뒤섞임 사고.
-        if (typeof clearClientSession === 'function') {
-            clearClientSession();
-        } else if (typeof clearSharedClientSession === 'function') {
-            clearSharedClientSession();
-        }
-        if (result.accessToken && typeof setAccessToken === 'function') {
-            setAccessToken(result.accessToken);
-        } else if (result.accessToken) {
-            sessionStorage.setItem('accessToken', result.accessToken);
-        }
-        if (result.idToken && typeof setIdToken === 'function') {
-            setIdToken(result.idToken);
-        } else if (result.idToken) {
-            sessionStorage.setItem('idToken', result.idToken);
-        }
-        if (result.refreshToken && typeof registerRefreshCookie === 'function') {
-            // 백엔드가 이미 Set-Cookie로 rt 쿠키 set했지만, fallback localStorage refreshToken 정합성을 위해 호출
-            try { await registerRefreshCookie(result.refreshToken); } catch (_) {}
-        }
-        localStorage.setItem('userId', userId);
-        localStorage.setItem('userRole', 'student');
-
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({ event: 'login', user_id: userId });
-
-        // 6. 사용자 정보 조회 및 라우팅
-        statusMsg.textContent = isLinkMode ? '연동 완료! 마이페이지로 이동 중...' : '로그인 완료! 이동 중입니다...';
-
-        const userRes = await fetch(USER_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(result.accessToken ? { Authorization: `Bearer ${result.accessToken}` } : {})
-            },
-            credentials: 'include',
-            body: JSON.stringify({ type: 'get_login_profile' })
-        });
-
-        if (userRes.ok) {
-            const userData = await userRes.json();
-            localStorage.setItem('userName', userData.name || '');
-            if (userData.computedTier) localStorage.setItem('userTier', userData.computedTier);
-        }
-
-        // 마이페이지 연동 요청인 경우 마이페이지로 복귀
-        if (isLinkMode) {
-            window.location.href = '/mypage';
-            return;
-        }
-
-        window.location.href = isNewUser ? '/welcome' : '/';
+        await finishSocialLogin(result, { isLinkMode });
 
     } catch (e) {
         console.error('[SocialCallback] Unhandled error:', {
