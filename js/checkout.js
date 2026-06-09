@@ -12,8 +12,9 @@ let checkoutData = null;
 function initCheckoutExitGuard() {
     if (!window.PaymentExitGuard) return;
     window.PaymentExitGuard.init({
-        seenKey: 'payment_exit_guard_seen_checkout_v1',
+        seenKey: 'payment_exit_guard_seen_checkout_v2',
         contactUrl: '/qna?source=payment_exit&stage=checkout',
+        backUrl: '/payment',
         historyTrap: true,
         shouldGuard: () => !!checkoutData,
         isPaymentInProgress: () => isPaymentInProgress

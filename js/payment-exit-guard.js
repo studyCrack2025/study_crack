@@ -9,14 +9,13 @@
     let historyTrapArmed = false;
     let clickListenerAttached = false;
     let popListenerAttached = false;
-    let unloadListenerAttached = false;
 
     function now() {
         return Date.now();
     }
 
     function getSeenKey() {
-        return config.seenKey || 'payment_exit_guard_seen_v1';
+        return config.seenKey || 'payment_exit_guard_seen_v2';
     }
 
     function shouldGuard() {
@@ -36,12 +35,21 @@
         if (typeof action === 'function') action();
     }
 
+    function restoreHistoryTrapIfNeeded() {
+        if (!historyTrapArmed) return;
+        if (now() < bypassUntil) return;
+        if (history.state && history.state.paymentExitGuard) return;
+        history.pushState({ paymentExitGuard: true }, '', window.location.href);
+    }
+
     function getModalHtml() {
         return `
             <div class="payment-exit-dialog" role="dialog" aria-modal="true" aria-labelledby="paymentExitTitle">
                 <button type="button" class="payment-exit-close" data-payment-exit-close aria-label="닫기">×</button>
                 <div class="payment-exit-view payment-exit-view-main" data-payment-exit-main>
-                    <div class="payment-exit-icon"><i class="fas fa-credit-card"></i></div>
+                    <div class="payment-exit-mascot-wrap">
+                        <img class="payment-exit-mascot" src="/assets/images/mascots/crack_startle.png" alt="놀란 크랙이">
+                    </div>
                     <h2 id="paymentExitTitle">결제 전에 확인이 필요하신가요?</h2>
                     <p class="payment-exit-copy">선택하신 플랜은 결제 후 4주 동안 이용할 수 있어요. 가격, 이용 방식, 결제 오류가 걱정된다면 바로 확인해드릴게요.</p>
                     <div class="payment-exit-actions">
@@ -118,6 +126,7 @@
         document.body.classList.remove('payment-exit-lock');
         pendingExitAction = null;
         showMainView();
+        restoreHistoryTrapIfNeeded();
     }
 
     function showMainView() {
@@ -190,7 +199,8 @@
             const backButton = event.target.closest('[data-payment-exit-back]');
             if (backButton) {
                 event.preventDefault();
-                requestExit(() => { history.back(); });
+                const targetUrl = backButton.getAttribute('data-payment-exit-back') || config.backUrl || '/payment';
+                requestExit(() => { window.location.href = targetUrl; });
                 return;
             }
 
@@ -210,18 +220,7 @@
         popListenerAttached = true;
         window.addEventListener('popstate', () => {
             if (!shouldGuard()) return;
-            history.pushState({ paymentExitGuard: true }, '', window.location.href);
             requestExit(() => { history.back(); });
-        });
-    }
-
-    function attachBeforeUnload() {
-        if (unloadListenerAttached) return;
-        unloadListenerAttached = true;
-        window.addEventListener('beforeunload', (event) => {
-            if (!shouldGuard()) return;
-            event.preventDefault();
-            event.returnValue = '';
         });
     }
 
@@ -232,7 +231,6 @@
         };
         ensureModal();
         attachClickListener();
-        attachBeforeUnload();
         if (options.historyTrap) armHistoryTrap();
     }
 
