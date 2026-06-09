@@ -10,6 +10,25 @@ const MBTI_SUBJECT_WEIGHTS = {
     'IMER': [0.4, 0.8, 0.7, 0.4], 'IMEF': [0.4, 0.7, 0.6, 0.5]
 };
 
+const MBTI_RECOMMENDED_INQUIRY_SUBJECTS = {
+    CSDR: ['생활과 윤리', '윤리와 사상', '화학Ⅰ', '물리Ⅰ'],
+    CSDF: ['생활과 윤리', '사회문화', '화학Ⅰ', '생명과학Ⅰ'],
+    CSER: ['윤리와 사상', '한국지리', '지구과학Ⅰ'],
+    CSEF: ['한국지리', '세계지리', '지구과학Ⅰ', '생명과학Ⅰ'],
+    CMDR: ['사회문화', '경제', '화학Ⅰ', '물리Ⅰ'],
+    CMDF: ['사회문화', '경제', '화학Ⅰ', '생명과학Ⅰ'],
+    CMER: ['사회문화', '한국지리', '지구과학Ⅰ'],
+    CMEF: ['사회문화', '세계지리', '지구과학Ⅰ', '생명과학Ⅰ'],
+    ISDR: ['화학Ⅰ', '물리Ⅰ', '정치와 법'],
+    ISDF: ['정치와 법', '사회문화', '화학Ⅰ', '생명과학Ⅰ'],
+    ISER: ['한국지리', '지구과학Ⅰ'],
+    ISEF: ['세계지리', '지구과학Ⅰ'],
+    IMDR: ['경제', '물리Ⅰ', '화학Ⅰ'],
+    IMDF: ['경제', '물리학Ⅰ', '화학Ⅰ'],
+    IMER: ['사회문화', '지구과학Ⅰ'],
+    IMEF: ['사회문화', '지구과학Ⅰ', '생명과학Ⅰ']
+};
+
 const MASCOTS = {
     hi: '/assets/images/mascots/crack_hi.png',
     thumbsup: '/assets/images/mascots/crack_thumbsup.png',
@@ -103,7 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 정성 데이터 및 MBTI 복원
             if (data.qualitative) {
                 tutorialData.qual = data.qualitative;
-                if (data.qualitative.mbti) tutorialData.mbti = data.qualitative.mbti;
+                if (data.qualitative.mbti) tutorialData.mbti = normalizeMbtiCode(data.qualitative.mbti);
             }
             // 추천 대학 목록 DB 복원 (localStorage보다 DB 우선)
             if (data.tut_selectedUnivs && Array.isArray(data.tut_selectedUnivs) && data.tut_selectedUnivs.length > 0) {
@@ -118,7 +137,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (urlParams.get('mbti_completed')) {
         // URL 파라미터 mbti가 DB보다 우선 (방금 완료한 결과)
-        tutorialData.mbti = urlParams.get('mbti_result') || tutorialData.mbti || 'CSDR';
+        tutorialData.mbti = normalizeMbtiCode(urlParams.get('mbti_result') || tutorialData.mbti || 'CSDR');
         currentStepIdx = 4;
         localStorage.setItem('tutorialStatus', currentStepIdx);
         // MBTI 결과를 DB에 저장
@@ -574,8 +593,16 @@ function goToMBTI() {
     window.location.href = '/mbti_survey?from_tutorial=true';
 }
 
+function normalizeMbtiCode(code) {
+    const normalized = String(code || '').trim().toUpperCase();
+    return Object.prototype.hasOwnProperty.call(MBTI_RECOMMENDED_INQUIRY_SUBJECTS, normalized)
+        ? normalized
+        : 'CSDR';
+}
+
 function simulateMbtiAnalysis() {
-    const mbtiCode = tutorialData.mbti || 'CSDR';
+    const mbtiCode = normalizeMbtiCode(tutorialData.mbti);
+    tutorialData.mbti = mbtiCode;
     const TYPE_PROFILES = {
         CSDR: { name: '체계적 전략가', desc: '개념을 깊이 파고들고, 검증된 루틴으로 꾸준히 반복하며, 데이터에 근거한 철저한 계획으로 목표를 달성하는 유형입니다. 탄탄한 기본기 위에 전략을 쌓아 안정적으로 성적을 올릴 수 있어요.', traits: ['개념 이해력 우수', '루틴 학습에 강함', '계획 실행력 높음'] },
         CSDF: { name: '유연한 학자', desc: '개념 중심으로 학습하면서도 상황에 따라 전략을 조정할 줄 아는 유형입니다. 루틴 속에서 안정감을 유지하되, 필요하면 계획을 수정하는 유연함이 강점이에요.', traits: ['개념 이해력 우수', '안정적 루틴', '유연한 전략 수정'] },
@@ -596,6 +623,10 @@ function simulateMbtiAnalysis() {
     };
     const profile = TYPE_PROFILES[mbtiCode] || TYPE_PROFILES.CSDR;
     const traitsHtml = profile.traits.map(t => `<li class="mbti-trait-item">${t}</li>`).join('');
+    const recommendedSubjects = MBTI_RECOMMENDED_INQUIRY_SUBJECTS[mbtiCode] || [];
+    const subjectHtml = recommendedSubjects
+        .map(subject => `<span class="mbti-subject-chip">${escapeTutorialHtml(subject)}</span>`)
+        .join('');
     const container = document.getElementById('stepContent');
     container.innerHTML = `
         <div class="step-card mbti-result-card">
@@ -605,6 +636,11 @@ function simulateMbtiAnalysis() {
             </div>
             <p class="mbti-result-desc">${profile.desc}</p>
             <ul class="mbti-trait-list">${traitsHtml}</ul>
+            <div class="mbti-subject-rec">
+                <div class="mbti-subject-rec-label">추천 탐구 과목</div>
+                <div class="mbti-subject-chip-list">${subjectHtml}</div>
+                <p class="mbti-subject-rec-note">유형별 강점이 잘 살아나는 과목 조합이에요. 최종 선택은 학교·목표대학 반영 방식과 함께 다시 맞춰보면 좋아요.</p>
+            </div>
             <button class="tut-action-btn" id="mbtiResultNextBtn">성적 종합 분석 시작하기</button>
         </div>`;
     updateMascot('학습 유형 분석이 완료되었어요! 결과를 확인하고, 종합 분석을 시작해보세요.', 'showresult');

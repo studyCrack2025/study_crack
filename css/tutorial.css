@@ -79,6 +79,11 @@ body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; margi
 .mbti-trait-list { list-style: none; padding: 0; margin: 0 0 22px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .mbti-trait-item { display: inline-flex; align-items: center; gap: 4px; background: #eff6ff; color: #2563eb; font-size: 0.8rem; font-weight: 600; padding: 5px 14px; border-radius: 50px; }
 .mbti-trait-item::before { content: '✦'; font-size: 0.65rem; }
+.mbti-subject-rec { border-top: 1px solid #e2e8f0; padding-top: 18px; margin: 0 0 22px; text-align: left; }
+.mbti-subject-rec-label { font-size: 0.82rem; font-weight: 800; color: #334155; margin-bottom: 10px; }
+.mbti-subject-chip-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.mbti-subject-chip { display: inline-flex; align-items: center; justify-content: center; min-height: 32px; padding: 6px 12px; border-radius: 999px; background: #ecfdf5; color: #047857; font-size: 0.82rem; font-weight: 800; line-height: 1.2; white-space: nowrap; }
+.mbti-subject-rec-note { margin: 10px 0 0; color: #64748b; font-size: 0.78rem; line-height: 1.6; word-break: keep-all; }
 
 /* ── 대학 카드 ─────────────────────────────────────────────────── */
 .univ-card-list { display: flex; flex-direction: column; gap: 14px; }
