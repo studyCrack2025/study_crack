@@ -328,11 +328,35 @@ async function sendAdminNotice() {
 
         const result = await response.json();
 
-        let alertMessage = "✅ 앱 내 공지 발송이 완료되었습니다.";
+        let alertMessage = result.success === false
+            ? "⚠️ 공지 발송이 일부 또는 전체 실패했습니다."
+            : "✅ 앱 내 공지 발송이 완료되었습니다.";
+
+        if (result.inAppReport) {
+            const report = result.inAppReport;
+            alertMessage = `${report.failCount > 0 || result.success === false ? '⚠️' : '✅'} 앱 내 공지 발송 결과`
+                + `\n- 대상: ${report.targetCount}명`
+                + `\n- 사용자 조회: ${report.loadedCount}명`
+                + `\n- 저장 성공: ${report.successCount}건`
+                + `\n- 저장 실패: ${report.failCount}건`;
+
+            if (report.sentLogSaved === false) {
+                alertMessage += `\n- 보낸 공지함 기록: 실패`;
+            }
+
+            if (report.failCount > 0 && report.errors && report.errors.length > 0) {
+                alertMessage += `\n\n🚨 인앱 저장 실패 사유:\n${report.errors.slice(0, 3).join('\n')}`;
+                if (report.errors.length > 3) alertMessage += `\n... 외 ${report.errors.length - 3}건`;
+            }
+        }
 
         if (useAlimtalk && result.solapiReport) {
             const report = result.solapiReport;
             alertMessage += `\n\n📱 카카오 알림톡/친구톡 발송 결과\n- 성공: ${report.successCount}건\n- 실패: ${report.failCount}건`;
+
+            if (report.skipped) {
+                alertMessage += `\n- 제외: 전화번호 없음 ${report.skipped.noPhone || 0}건 / 형식 오류 ${report.skipped.invalidPhone || 0}건 / 마케팅 미동의 ${report.skipped.marketingDisagreed || 0}건`;
+            }
 
             if (report.failCount > 0 && report.errors && report.errors.length > 0) {
                 alertMessage += `\n\n🚨 주요 실패 사유:\n${report.errors.slice(0, 3).join('\n')}`;
