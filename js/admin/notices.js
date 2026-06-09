@@ -308,25 +308,104 @@ async function sendAdminNotice() {
     let targetNamesDisplay = targetNamesList.slice(0, 5).join(', ');
     if (targetNamesList.length > 5) targetNamesDisplay += ` 외 ${targetNamesList.length - 5}명`;
 
-    try {
-        const response = await apiFetch(NOTI_API_URL, {
-            method: 'POST',
-            body: JSON.stringify({
-                type: 'admin_manual_notice',
-                data: {
-                    targetUserIds: targetUserIds,
-                    title: title,
-                    content: content,
-                    targetNamesDisplay: targetNamesDisplay,
-                    senderName: adminName,
-                    useAlimtalk: useAlimtalk,
-                    templateType: templateType,
-                    isMarketing: isMarketing
-                }
-            })
-        });
+    const chunkSize = useAlimtalk ? 80 : 120;
+    const targetChunks = [];
+    for (let i = 0; i < targetUserIds.length; i += chunkSize) {
+        targetChunks.push(targetUserIds.slice(i, i + chunkSize));
+    }
 
-        const result = await response.json();
+    try {
+        const submitBtn = document.querySelector('.noti-submit-btn');
+        const originalButtonHtml = submitBtn ? submitBtn.innerHTML : '';
+        const result = {
+            success: false,
+            inAppReport: {
+                targetCount: targetUserIds.length,
+                loadedCount: 0,
+                successCount: 0,
+                failCount: 0,
+                errors: [],
+                sentLogSaved: true
+            },
+            solapiReport: {
+                attempted: useAlimtalk,
+                successCount: 0,
+                failCount: 0,
+                errors: [],
+                skipped: {
+                    noPhone: 0,
+                    invalidPhone: 0,
+                    marketingDisagreed: 0,
+                    noTemplate: 0
+                }
+            },
+            requestErrors: []
+        };
+
+        try {
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 발송 중...';
+            }
+
+            for (let index = 0; index < targetChunks.length; index += 1) {
+                const chunk = targetChunks[index];
+                const chunkLabel = targetChunks.length > 1
+                    ? `${targetNamesDisplay} (${index + 1}/${targetChunks.length})`
+                    : targetNamesDisplay;
+
+                if (submitBtn) {
+                    submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 발송 중... (${index + 1}/${targetChunks.length})`;
+                }
+
+                try {
+                    const response = await apiFetch(NOTI_API_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            type: 'admin_manual_notice',
+                            data: {
+                                targetUserIds: chunk,
+                                title: title,
+                                content: content,
+                                targetNamesDisplay: chunkLabel,
+                                senderName: adminName,
+                                useAlimtalk: useAlimtalk,
+                                templateType: templateType,
+                                isMarketing: isMarketing
+                            }
+                        })
+                    });
+
+                    const chunkResult = await response.json();
+                    const inApp = chunkResult.inAppReport || {};
+                    const solapi = chunkResult.solapiReport || {};
+                    const skipped = solapi.skipped || {};
+
+                    result.success = result.success || chunkResult.success === true;
+                    result.inAppReport.loadedCount += Number(inApp.loadedCount || 0);
+                    result.inAppReport.successCount += Number(inApp.successCount || 0);
+                    result.inAppReport.failCount += Number(inApp.failCount || 0);
+                    result.inAppReport.sentLogSaved = result.inAppReport.sentLogSaved && inApp.sentLogSaved !== false;
+                    if (Array.isArray(inApp.errors)) result.inAppReport.errors.push(...inApp.errors);
+
+                    result.solapiReport.successCount += Number(solapi.successCount || 0);
+                    result.solapiReport.failCount += Number(solapi.failCount || 0);
+                    if (Array.isArray(solapi.errors)) result.solapiReport.errors.push(...solapi.errors);
+                    result.solapiReport.skipped.noPhone += Number(skipped.noPhone || 0);
+                    result.solapiReport.skipped.invalidPhone += Number(skipped.invalidPhone || 0);
+                    result.solapiReport.skipped.marketingDisagreed += Number(skipped.marketingDisagreed || 0);
+                    result.solapiReport.skipped.noTemplate += Number(skipped.noTemplate || 0);
+                } catch (chunkError) {
+                    if (chunkError.message === "Auth expired") throw chunkError;
+                    result.requestErrors.push(`${index + 1}/${targetChunks.length}: ${chunkError.message || '요청 실패'}`);
+                }
+            }
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalButtonHtml;
+            }
+        }
 
         let alertMessage = result.success === false
             ? "⚠️ 공지 발송이 일부 또는 전체 실패했습니다."
@@ -342,6 +421,10 @@ async function sendAdminNotice() {
 
             if (report.sentLogSaved === false) {
                 alertMessage += `\n- 보낸 공지함 기록: 실패`;
+            }
+
+            if (result.requestErrors.length > 0) {
+                alertMessage += `\n- 요청 실패: ${result.requestErrors.length}개 구간`;
             }
 
             if (report.failCount > 0 && report.errors && report.errors.length > 0) {
@@ -364,16 +447,23 @@ async function sendAdminNotice() {
             }
         }
 
+        if (result.requestErrors.length > 0) {
+            alertMessage += `\n\n🚨 요청 실패 구간:\n${result.requestErrors.slice(0, 3).join('\n')}`;
+            if (result.requestErrors.length > 3) alertMessage += `\n... 외 ${result.requestErrors.length - 3}건`;
+        }
+
         alert(alertMessage);
 
-        document.getElementById('noticeTitle').value = '';
-        document.getElementById('noticeContent').value = '';
-        if (useAlimtalkElement) useAlimtalkElement.checked = false;
+        if (result.inAppReport.successCount > 0) {
+            document.getElementById('noticeTitle').value = '';
+            document.getElementById('noticeContent').value = '';
+            if (useAlimtalkElement) useAlimtalkElement.checked = false;
 
-        if (typeof toggleAlimtalkOptions === 'function') toggleAlimtalkOptions();
-        if (typeof clearAllTargets === 'function') clearAllTargets();
+            if (typeof toggleAlimtalkOptions === 'function') toggleAlimtalkOptions();
+            if (typeof clearAllTargets === 'function') clearAllTargets();
 
-        showNotiMenu('sent');
+            showNotiMenu('sent');
+        }
     } catch(e) {
         if (e.message !== "Auth expired") alert("서버 통신 중 오류가 발생했습니다.");
         console.error("Notice Send Error:", e);
