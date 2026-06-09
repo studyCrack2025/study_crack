@@ -18,6 +18,13 @@
 .payment-exit-secondary:hover { background: #f8fafc; border-color: #94a3b8; color: #0f172a; }
 .payment-exit-ghost { border: 0; background: transparent; color: #64748b; }
 .payment-exit-ghost:hover { background: #f8fafc; color: #334155; }
-.payment-exit-typeform { min-height: 360px; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #f8fafc; margin-bottom: 14px; }
-.payment-exit-survey-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-@media (max-width: 640px) { .payment-exit-modal { align-items: flex-end; padding: 12px; } .payment-exit-dialog { max-height: calc(100vh - 24px); border-radius: 14px; padding: 22px 18px 18px; } .payment-exit-mascot-wrap { width: 124px; height: 96px; margin-bottom: 12px; } .payment-exit-mascot { width: 118px; } .payment-exit-dialog h2 { font-size: 20px; } .payment-exit-copy { font-size: 14px; } .payment-exit-survey-actions { grid-template-columns: 1fr; } .payment-exit-typeform { min-height: 330px; } }
+.payment-survey-overlay { position: fixed; inset: 0; z-index: 10001; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(15, 23, 42, 0.72); }
+.payment-survey-overlay[hidden] { display: none; }
+.payment-survey-panel { width: min(760px, 100%); max-height: min(820px, calc(100vh - 40px)); overflow-y: auto; border-radius: 16px; background: #fff; box-shadow: 0 28px 80px rgba(15, 23, 42, 0.34); padding: 26px; color: #0f172a; }
+.payment-survey-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 12px; }
+.payment-survey-eyebrow { margin: 0; color: #2563eb; font-size: 12px; font-weight: 900; letter-spacing: 0; }
+.payment-survey-close { width: 36px; height: 36px; flex-shrink: 0; border: 0; border-radius: 999px; background: #f1f5f9; color: #64748b; font-size: 24px; line-height: 1; cursor: pointer; }
+.payment-survey-close:hover { background: #e2e8f0; color: #0f172a; }
+.payment-survey-typeform { min-height: 460px; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #f8fafc; margin-bottom: 14px; }
+.payment-survey-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 640px) { .payment-exit-modal { align-items: flex-end; padding: 12px; } .payment-exit-dialog { max-height: calc(100vh - 24px); border-radius: 14px; padding: 22px 18px 18px; } .payment-exit-mascot-wrap { width: 124px; height: 96px; margin-bottom: 12px; } .payment-exit-mascot { width: 118px; } .payment-exit-dialog h2 { font-size: 20px; } .payment-exit-copy { font-size: 14px; } .payment-survey-overlay { align-items: flex-end; padding: 12px; } .payment-survey-panel { max-height: calc(100vh - 24px); border-radius: 14px; padding: 18px; } .payment-survey-typeform { min-height: 390px; } .payment-survey-actions { grid-template-columns: 1fr; } }

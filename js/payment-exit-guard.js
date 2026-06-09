@@ -4,6 +4,7 @@
 
     let config = {};
     let modalEl = null;
+    let surveyEl = null;
     let pendingExitAction = null;
     let bypassUntil = 0;
     let historyTrapArmed = false;
@@ -31,7 +32,8 @@
 
     function runExitAction(action) {
         allowNavigationOnce();
-        closeExitModal();
+        closeExitModal({ skipRestore: true });
+        closeSurveyOverlay({ skipRestore: true });
         if (typeof action === 'function') action();
     }
 
@@ -59,14 +61,21 @@
                         <button type="button" class="payment-exit-ghost" data-payment-exit-leave>그냥 나가기</button>
                     </div>
                 </div>
-                <div class="payment-exit-view payment-exit-view-survey" data-payment-exit-survey-view hidden>
-                    <h2>어떤 점이 망설여졌나요?</h2>
-                    <p class="payment-exit-copy">남겨주신 이유는 결제 흐름과 상품 안내를 개선하는 데만 사용됩니다.</p>
-                    <div class="payment-exit-typeform" data-payment-exit-typeform></div>
-                    <div class="payment-exit-survey-actions">
-                        <button type="button" class="payment-exit-primary" data-payment-exit-continue>계속 결제하기</button>
-                        <button type="button" class="payment-exit-ghost" data-payment-exit-leave>설문 닫고 나가기</button>
-                    </div>
+            </div>
+        `;
+    }
+
+    function getSurveyHtml() {
+        return `
+            <div class="payment-survey-panel" role="dialog" aria-modal="true" aria-label="결제 이탈 설문">
+                <div class="payment-survey-head">
+                    <p class="payment-survey-eyebrow">결제 이탈 설문</p>
+                    <button type="button" class="payment-survey-close" data-payment-survey-close aria-label="설문 닫기">×</button>
+                </div>
+                <div class="payment-survey-typeform" data-payment-exit-typeform></div>
+                <div class="payment-survey-actions">
+                    <button type="button" class="payment-exit-primary" data-payment-survey-continue>계속 결제하기</button>
+                    <button type="button" class="payment-exit-ghost" data-payment-survey-leave>설문 닫고 나가기</button>
                 </div>
             </div>
         `;
@@ -93,7 +102,7 @@
             }
 
             if (event.target.closest('[data-payment-exit-survey]')) {
-                showSurveyView();
+                showSurveyOverlay();
                 return;
             }
 
@@ -103,10 +112,37 @@
         });
 
         document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' && modalEl && !modalEl.hasAttribute('hidden')) closeExitModal();
+            if (event.key !== 'Escape') return;
+            if (surveyEl && !surveyEl.hasAttribute('hidden')) {
+                closeSurveyOverlay();
+                return;
+            }
+            if (modalEl && !modalEl.hasAttribute('hidden')) closeExitModal();
         });
 
         return modalEl;
+    }
+
+    function ensureSurveyOverlay() {
+        if (surveyEl) return surveyEl;
+        surveyEl = document.createElement('div');
+        surveyEl.className = 'payment-survey-overlay';
+        surveyEl.setAttribute('hidden', '');
+        surveyEl.innerHTML = getSurveyHtml();
+        document.body.appendChild(surveyEl);
+
+        surveyEl.addEventListener('click', (event) => {
+            if (event.target === surveyEl || event.target.closest('[data-payment-survey-close]') || event.target.closest('[data-payment-survey-continue]')) {
+                closeSurveyOverlay();
+                return;
+            }
+
+            if (event.target.closest('[data-payment-survey-leave]')) {
+                runExitAction(pendingExitAction);
+            }
+        });
+
+        return surveyEl;
     }
 
     function openExitModal(action) {
@@ -115,40 +151,37 @@
         sessionStorage.setItem(getSeenKey(), '1');
         modalEl.removeAttribute('hidden');
         document.body.classList.add('payment-exit-lock');
-        showMainView();
         const primaryButton = modalEl.querySelector('[data-payment-exit-continue]');
         if (primaryButton) primaryButton.focus();
     }
 
-    function closeExitModal() {
+    function closeExitModal(options = {}) {
         if (!modalEl) return;
         modalEl.setAttribute('hidden', '');
         document.body.classList.remove('payment-exit-lock');
-        pendingExitAction = null;
-        showMainView();
-        restoreHistoryTrapIfNeeded();
+        if (!options.keepAction) pendingExitAction = null;
+        if (!options.skipRestore) restoreHistoryTrapIfNeeded();
     }
 
-    function showMainView() {
-        if (!modalEl) return;
-        const mainView = modalEl.querySelector('[data-payment-exit-main]');
-        const surveyView = modalEl.querySelector('[data-payment-exit-survey-view]');
-        if (mainView) mainView.hidden = false;
-        if (surveyView) surveyView.hidden = true;
-    }
-
-    function showSurveyView() {
-        if (!modalEl) return;
-        const mainView = modalEl.querySelector('[data-payment-exit-main]');
-        const surveyView = modalEl.querySelector('[data-payment-exit-survey-view]');
-        if (mainView) mainView.hidden = true;
-        if (surveyView) surveyView.hidden = false;
+    function showSurveyOverlay() {
+        closeExitModal({ keepAction: true, skipRestore: true });
+        ensureSurveyOverlay();
+        surveyEl.removeAttribute('hidden');
+        document.body.classList.add('payment-exit-lock');
         mountTypeform();
     }
 
+    function closeSurveyOverlay(options = {}) {
+        if (!surveyEl) return;
+        surveyEl.setAttribute('hidden', '');
+        document.body.classList.remove('payment-exit-lock');
+        if (!options.keepAction) pendingExitAction = null;
+        if (!options.skipRestore) restoreHistoryTrapIfNeeded();
+    }
+
     function mountTypeform() {
-        if (!modalEl) return;
-        const mount = modalEl.querySelector('[data-payment-exit-typeform]');
+        ensureSurveyOverlay();
+        const mount = surveyEl.querySelector('[data-payment-exit-typeform]');
         if (!mount) return;
         if (!mount.querySelector('[data-tf-live]')) {
             mount.innerHTML = `<div data-tf-live="${TYPEFORM_ID}"></div>`;
