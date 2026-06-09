@@ -5,9 +5,10 @@
 .payment-exit-close { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; border: 0; border-radius: 999px; background: #f1f5f9; color: #64748b; font-size: 24px; line-height: 1; cursor: pointer; }
 .payment-exit-close:hover { background: #e2e8f0; color: #0f172a; }
 .payment-exit-view[hidden] { display: none; }
-.payment-exit-mascot-wrap { width: 82px; height: 82px; border-radius: 22px; display: flex; align-items: center; justify-content: center; background: #eff6ff; margin-bottom: 18px; overflow: hidden; }
-.payment-exit-mascot { width: 76px; height: auto; display: block; }
-.payment-exit-dialog h2 { margin: 0 44px 10px 0; font-size: 24px; line-height: 1.35; font-weight: 900; letter-spacing: 0; color: #111827; }
+.payment-exit-view-main { text-align: center; }
+.payment-exit-mascot-wrap { width: 144px; height: 112px; display: flex; align-items: center; justify-content: center; margin: -4px auto 14px; overflow: visible; }
+.payment-exit-mascot { width: 138px; height: auto; display: block; filter: drop-shadow(0 12px 18px rgba(15, 23, 42, 0.12)); }
+.payment-exit-dialog h2 { margin: 0 auto 10px; font-size: 24px; line-height: 1.35; font-weight: 900; letter-spacing: 0; color: #111827; }
 .payment-exit-copy { margin: 0 0 22px; color: #475569; font-size: 15px; line-height: 1.7; word-break: keep-all; }
 .payment-exit-actions { display: grid; grid-template-columns: 1fr; gap: 10px; }
 .payment-exit-primary, .payment-exit-secondary, .payment-exit-ghost { width: 100%; min-height: 46px; border-radius: 10px; font-family: inherit; font-size: 15px; font-weight: 800; cursor: pointer; transition: background 0.18s, border-color 0.18s, color 0.18s, transform 0.12s; }
@@ -19,4 +20,4 @@
 .payment-exit-ghost:hover { background: #f8fafc; color: #334155; }
 .payment-exit-typeform { min-height: 360px; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #f8fafc; margin-bottom: 14px; }
 .payment-exit-survey-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-@media (max-width: 640px) { .payment-exit-modal { align-items: flex-end; padding: 12px; } .payment-exit-dialog { max-height: calc(100vh - 24px); border-radius: 14px; padding: 24px 18px 18px; } .payment-exit-dialog h2 { margin-right: 38px; font-size: 20px; } .payment-exit-copy { font-size: 14px; } .payment-exit-survey-actions { grid-template-columns: 1fr; } .payment-exit-typeform { min-height: 330px; } }
+@media (max-width: 640px) { .payment-exit-modal { align-items: flex-end; padding: 12px; } .payment-exit-dialog { max-height: calc(100vh - 24px); border-radius: 14px; padding: 22px 18px 18px; } .payment-exit-mascot-wrap { width: 124px; height: 96px; margin-bottom: 12px; } .payment-exit-mascot { width: 118px; } .payment-exit-dialog h2 { font-size: 20px; } .payment-exit-copy { font-size: 14px; } .payment-exit-survey-actions { grid-template-columns: 1fr; } .payment-exit-typeform { min-height: 330px; } }
