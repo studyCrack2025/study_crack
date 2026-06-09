@@ -1,0 +1,21 @@
+.payment-exit-lock { overflow: hidden; }
+.payment-exit-modal { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(15, 23, 42, 0.56); }
+.payment-exit-modal[hidden] { display: none; }
+.payment-exit-dialog { position: relative; width: min(560px, 100%); max-height: min(760px, calc(100vh - 40px)); overflow-y: auto; border-radius: 16px; background: #fff; box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28); padding: 30px; color: #0f172a; }
+.payment-exit-close { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; border: 0; border-radius: 999px; background: #f1f5f9; color: #64748b; font-size: 24px; line-height: 1; cursor: pointer; }
+.payment-exit-close:hover { background: #e2e8f0; color: #0f172a; }
+.payment-exit-view[hidden] { display: none; }
+.payment-exit-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: #eff6ff; color: #2563eb; font-size: 20px; margin-bottom: 18px; }
+.payment-exit-dialog h2 { margin: 0 44px 10px 0; font-size: 24px; line-height: 1.35; font-weight: 900; letter-spacing: 0; color: #111827; }
+.payment-exit-copy { margin: 0 0 22px; color: #475569; font-size: 15px; line-height: 1.7; word-break: keep-all; }
+.payment-exit-actions { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.payment-exit-primary, .payment-exit-secondary, .payment-exit-ghost { width: 100%; min-height: 46px; border-radius: 10px; font-family: inherit; font-size: 15px; font-weight: 800; cursor: pointer; transition: background 0.18s, border-color 0.18s, color 0.18s, transform 0.12s; }
+.payment-exit-primary { border: 1px solid #2563eb; background: #2563eb; color: #fff; }
+.payment-exit-primary:hover { background: #1d4ed8; border-color: #1d4ed8; transform: translateY(-1px); }
+.payment-exit-secondary { border: 1px solid #cbd5e1; background: #fff; color: #334155; }
+.payment-exit-secondary:hover { background: #f8fafc; border-color: #94a3b8; color: #0f172a; }
+.payment-exit-ghost { border: 0; background: transparent; color: #64748b; }
+.payment-exit-ghost:hover { background: #f8fafc; color: #334155; }
+.payment-exit-typeform { min-height: 360px; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #f8fafc; margin-bottom: 14px; }
+.payment-exit-survey-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 640px) { .payment-exit-modal { align-items: flex-end; padding: 12px; } .payment-exit-dialog { max-height: calc(100vh - 24px); border-radius: 14px; padding: 24px 18px 18px; } .payment-exit-dialog h2 { margin-right: 38px; font-size: 20px; } .payment-exit-copy { font-size: 14px; } .payment-exit-survey-actions { grid-template-columns: 1fr; } .payment-exit-typeform { min-height: 330px; } }
