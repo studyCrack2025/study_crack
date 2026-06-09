@@ -168,6 +168,9 @@ body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; margi
 .plan-rise { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
 .plan-score-text { font-size: 0.88rem; color: #334155; font-weight: 600; margin-left: auto; }
 .score-plan-note { font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid #f1f5f9; }
+.score-plan-reasons { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; padding-top: 12px; border-top: 1px solid #f1f5f9; }
+.score-plan-reason { position: relative; padding-left: 12px; font-size: 0.78rem; line-height: 1.5; color: #64748b; word-break: keep-all; }
+.score-plan-reason::before { content: ""; position: absolute; left: 0; top: 0.72em; width: 4px; height: 4px; border-radius: 50%; background: #3b82f6; }
 /* ── 미래 대학 통합 섹션 (현재 → 향상 후) ──────────────────────── */
 .future-univ-section { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 28px 20px; }
 .future-univ-title { font-size: 1.05rem; font-weight: 800; color: #1e293b; margin-bottom: 22px; text-align: center; }
