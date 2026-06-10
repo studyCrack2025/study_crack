@@ -165,39 +165,6 @@
         </div>
     </div>
 
-    <div id="socialSignupTermsModal" class="modal hidden">
-        <div class="modal-content auth-modal social-terms-modal">
-            <span class="close-btn" onclick="closeSocialSignupTermsModal()">&times;</span>
-            <h3>소셜 회원가입 약관 동의</h3>
-            <p class="modal-desc">소셜 인증을 시작하기 전에 서비스 이용에 필요한 약관 동의를 먼저 확인해주세요.</p>
-
-            <div class="social-terms-list">
-                <div class="terms-item">
-                    <label><input type="checkbox" class="social-required-term"> (필수) 표준이용약관 동의</label>
-                    <a href="#" onclick="openTermModal('termModal1'); return false;">전문보기</a>
-                </div>
-                <div class="terms-item">
-                    <label><input type="checkbox" class="social-required-term"> (필수) 서비스 이용약관 조항 동의</label>
-                    <a href="#" onclick="openTermModal('termModal2'); return false;">전문보기</a>
-                </div>
-                <div class="terms-item">
-                    <label><input type="checkbox" class="social-required-term"> (필수) 개인정보 처리방침 동의</label>
-                    <a href="#" onclick="openTermModal('termModal3'); return false;">전문보기</a>
-                </div>
-                <div class="terms-item">
-                    <label><input type="checkbox" class="social-required-term"> (필수) 환불 규정 동의</label>
-                    <a href="#" onclick="openTermModal('termModal4'); return false;">전문보기</a>
-                </div>
-                <div class="terms-item">
-                    <label><input type="checkbox" id="socialSignupMarketingConsent"> (선택) 마케팅 정보 수신 동의</label>
-                    <a href="#" onclick="openTermModal('termModal5'); return false;">전문보기</a>
-                </div>
-            </div>
-
-            <button type="button" class="auth-btn" onclick="confirmSocialSignupTerms()">동의하고 소셜 인증 계속하기</button>
-        </div>
-    </div>
-    
     <div id="termModal1" class="modal hidden">
         <div class="modal-content term-modal-content">
             <span class="close-btn" onclick="closeTermModal('termModal1')">&times;</span>

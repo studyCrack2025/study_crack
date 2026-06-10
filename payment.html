@@ -27,6 +27,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css?v=20260524a">
   <link rel="stylesheet" href="/css/payment.css?v=20260524a" />
+  <link rel="stylesheet" href="/css/payment-exit-guard.css?v=20260609a" />
 </head>
 <body>
 
@@ -244,7 +245,7 @@
             <li>과목별 1점당 환산 효율 계산</li>
             <li>점수 상승 시뮬레이션</li>
           </ul>
-          <a class="price-btn price-btn--green" href="#checkout" onclick="selectPlan('basic', this.closest('.price-row'))">BASIC 선택하기 <i class="fas fa-arrow-right"></i></a>
+          <a class="price-btn price-btn--green" href="javascript:void(0)" onclick="selectPlan('basic', this.closest('.price-row')); return false;">BASIC 선택하기 <i class="fas fa-arrow-right"></i></a>
         </article>
 
         <article class="price-row" data-tier="starter">
@@ -260,7 +261,7 @@
             <li>목표 대학 기준 우선순위 제안</li>
             <li>다음 1주 플래너 제시</li>
           </ul>
-          <a class="price-btn price-btn--outline" href="#checkout" onclick="selectPlan('starter', this.closest('.price-row'))">STARTER 선택하기 <i class="fas fa-arrow-right"></i></a>
+          <a class="price-btn price-btn--outline" href="javascript:void(0)" onclick="selectPlan('starter', this.closest('.price-row')); return false;">STARTER 선택하기 <i class="fas fa-arrow-right"></i></a>
         </article>
 
         <article class="price-row price-row--popular" data-tier="standard">
@@ -281,7 +282,7 @@
             <li>목표 대학 기준 우선순위 제안</li>
             <li>매주 플래너 제시</li>
           </ul>
-          <a class="price-btn price-btn--purple" href="#checkout" onclick="selectPlan('standard', this.closest('.price-row'))">STANDARD 선택하기 <i class="fas fa-arrow-right"></i></a>
+          <a class="price-btn price-btn--purple" href="javascript:void(0)" onclick="selectPlan('standard', this.closest('.price-row')); return false;">STANDARD 선택하기 <i class="fas fa-arrow-right"></i></a>
         </article>
 
         <article class="price-row" data-tier="pro">
@@ -303,7 +304,7 @@
             <li>학부모 공유용 전략 리포트</li>
             <li>조건부 환급 혜택 제공</li>
           </ul>
-          <a class="price-btn price-btn--orange" href="#checkout" onclick="selectPlan('pro', this.closest('.price-row'))">PRO 선택하기 <i class="fas fa-arrow-right"></i></a>
+          <a class="price-btn price-btn--orange" href="javascript:void(0)" onclick="selectPlan('pro', this.closest('.price-row')); return false;">PRO 선택하기 <i class="fas fa-arrow-right"></i></a>
         </article>
 
       </div>
@@ -537,6 +538,7 @@
   <script src="https://pay.nicepay.co.kr/v1/js/"></script>
   <script src="/js/config.js?v=20260524a"></script>
   <script src="/js/shared/api.js?v=20260602f"></script>
+  <script src="/js/payment-exit-guard.js?v=20260609a"></script>
   <script src="/js/payment.js?v=20260602a"></script>
   <script src="/js/shared/hamburger.js?v=20260602f"></script>
 
