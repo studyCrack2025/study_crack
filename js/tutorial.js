@@ -634,12 +634,20 @@ function simulateMbtiAnalysis() {
                 <div class="mbti-result-code">${mbtiCode}</div>
                 <div class="mbti-result-name">${profile.name}</div>
             </div>
-            <p class="mbti-result-desc">${profile.desc}</p>
-            <ul class="mbti-trait-list">${traitsHtml}</ul>
-            <div class="mbti-subject-rec">
-                <div class="mbti-subject-rec-label">추천 탐구 과목</div>
-                <div class="mbti-subject-chip-list">${subjectHtml}</div>
-                <p class="mbti-subject-rec-note">유형별 강점이 잘 살아나는 과목 조합이에요. 최종 선택은 학교·목표대학 반영 방식과 함께 다시 맞춰보면 좋아요.</p>
+            <div class="mbti-result-grid">
+                <div class="mbti-result-summary">
+                    <div class="mbti-panel-label">유형 해석</div>
+                    <p class="mbti-result-desc">${profile.desc}</p>
+                    <ul class="mbti-trait-list">${traitsHtml}</ul>
+                </div>
+                <div class="mbti-subject-rec">
+                    <div class="mbti-subject-rec-head">
+                        <div class="mbti-subject-rec-label">추천 탐구 과목</div>
+                        <span class="mbti-subject-rec-badge">${recommendedSubjects.length}과목</span>
+                    </div>
+                    <div class="mbti-subject-chip-list">${subjectHtml}</div>
+                    <p class="mbti-subject-rec-note">유형별 강점이 잘 살아나는 조합이에요. 최종 선택은 학교·목표대학 반영 방식과 함께 다시 맞춰보면 좋아요.</p>
+                </div>
             </div>
             <button class="tut-action-btn" id="mbtiResultNextBtn">성적 종합 분석 시작하기</button>
         </div>`;
@@ -660,8 +668,12 @@ function simulateMbtiAnalysis() {
 
 // ── 튜토리얼 추천대학 (서버 일괄 처리) ──────────────────────────────
 const TUTORIAL_RECO_TARGET_COUNT = 3;
-const TUTORIAL_RECO_BASE_MIN = 100;
-const TUTORIAL_RECO_SIM_MIN = 125;
+const TUTORIAL_RECO_BASE_MIN = 90;
+const TUTORIAL_RECO_SIM_MIN = 100;
+const TUTORIAL_RECO_IDEAL_SCORE = 108;
+const TUTORIAL_RECO_PREFERRED_MAX = 135;
+const TUTORIAL_RECO_RELAXED_MIN = 70;
+const TUTORIAL_RECO_RELAXED_MAX = 160;
 
 function toFiniteNumber(value, fallback = null) {
     const num = Number(value);
@@ -697,18 +709,20 @@ function rankTutorialRecommendations(candidates, fallbackCurrentScore = 0, limit
         .filter(item => item && item.school && item.major)
         .map((item, idx) => {
             const { currentScore, simScore } = deriveRecommendationScores(item, fallbackCurrentScore);
-            const meetsBase = currentScore >= TUTORIAL_RECO_BASE_MIN;
-            const meetsBoost = simScore >= TUTORIAL_RECO_SIM_MIN;
-            const priority = meetsBase && meetsBoost ? 0 : meetsBoost ? 1 : meetsBase ? 2 : 3;
+            const inPreferred = currentScore >= TUTORIAL_RECO_BASE_MIN && currentScore <= TUTORIAL_RECO_PREFERRED_MAX && simScore >= TUTORIAL_RECO_SIM_MIN;
+            const inRelaxed = currentScore >= TUTORIAL_RECO_RELAXED_MIN && currentScore <= TUTORIAL_RECO_RELAXED_MAX;
+            const priority = inPreferred ? 0 : inRelaxed ? 1 : 2;
+            const distance = Math.abs(currentScore - TUTORIAL_RECO_IDEAL_SCORE);
             const gain = Math.max(0, simScore - currentScore);
-            return { ...item, __priority: priority, __simScore: simScore, __currentScore: currentScore, __gain: gain, __idx: idx };
+            return { ...item, __priority: priority, __distance: distance, __simScore: simScore, __currentScore: currentScore, __gain: gain, __idx: idx };
         });
 
     scored.sort((a, b) =>
         a.__priority - b.__priority ||
-        b.__simScore - a.__simScore ||
-        b.__currentScore - a.__currentScore ||
+        a.__distance - b.__distance ||
+        Math.abs(a.__simScore - TUTORIAL_RECO_IDEAL_SCORE) - Math.abs(b.__simScore - TUTORIAL_RECO_IDEAL_SCORE) ||
         b.__gain - a.__gain ||
+        b.__currentScore - a.__currentScore ||
         String(a.school || '').localeCompare(String(b.school || '')) ||
         String(a.major || '').localeCompare(String(b.major || '')) ||
         a.__idx - b.__idx
@@ -720,7 +734,7 @@ function rankTutorialRecommendations(candidates, fallbackCurrentScore = 0, limit
         const key = `${row.school}||${row.major}`;
         if (seen.has(key)) continue;
         seen.add(key);
-        const { __priority, __simScore, __currentScore, __gain, __idx, ...clean } = row;
+        const { __priority, __distance, __simScore, __currentScore, __gain, __idx, ...clean } = row;
         if (!Number.isFinite(Number(clean.currentScore))) clean.currentScore = Math.round(__currentScore);
         if (!Number.isFinite(Number(clean.simScore))) clean.simScore = Math.round(__simScore);
         picked.push(clean);
@@ -733,7 +747,7 @@ function countPreferredRecommendations(candidates, fallbackCurrentScore = 0) {
     if (!Array.isArray(candidates) || candidates.length === 0) return 0;
     return candidates.reduce((count, item) => {
         const { currentScore, simScore } = deriveRecommendationScores(item, fallbackCurrentScore);
-        return count + ((currentScore >= TUTORIAL_RECO_BASE_MIN && simScore >= TUTORIAL_RECO_SIM_MIN) ? 1 : 0);
+        return count + ((currentScore >= TUTORIAL_RECO_BASE_MIN && currentScore <= TUTORIAL_RECO_PREFERRED_MAX && simScore >= TUTORIAL_RECO_SIM_MIN) ? 1 : 0);
     }, 0);
 }
 
@@ -1225,10 +1239,10 @@ function gradeToApproxPct(grd) {
 function calcGreedySubjectPlan(univ, mar, mbti, deltaOverride = null) {
     const currentScore = univ.currentScore || 0;
 
-    const uiGap = Math.max(20, 100 - currentScore);
-    const delta = (deltaOverride !== null && Number.isFinite(deltaOverride))
-        ? Math.min(50, Math.max(5, Math.round(deltaOverride)))
-        : Math.min(30, Math.max(5, Math.round(uiGap * 0.35)));
+    const uiGap = Math.max(0, 100 - currentScore);
+    const targetTotalGain = (deltaOverride !== null && Number.isFinite(deltaOverride))
+        ? Math.min(50, Math.max(14, Math.round(deltaOverride)))
+        : Math.min(24, Math.max(14, Math.round(14 + uiGap * 0.35)));
 
     const w = MBTI_SUBJECT_WEIGHTS[mbti] || [0.5, 0.7, 0.7, 0.4];
 
@@ -1258,7 +1272,14 @@ function calcGreedySubjectPlan(univ, mar, mbti, deltaOverride = null) {
         eng: parseInt(mar.eng?.grd) || 9
     };
 
-    const BASE_HARD_LIMIT = { kor: 10, math: 15, inq1: 8, inq2: 8, eng: 5 };
+    const BASE_HARD_LIMIT = { kor: 12, math: 12, inq1: 8, inq2: 8, eng: 0 };
+    const REALISTIC_BUCKETS = {
+        kor: [4, 6, 8, 10, 12],
+        math: [3, 4, 6, 7, 8, 10, 12],
+        inq1: [3, 4, 6, 8],
+        inq2: [3, 4, 6, 8],
+        eng: []
+    };
     const COLORS = { kor: '#8b5cf6', math: '#3b82f6', inq1: '#10b981', inq2: '#06b6d4', eng: '#f59e0b' };
     const LABELS = {
         kor: '국어', math: '수학',
@@ -1282,12 +1303,43 @@ function calcGreedySubjectPlan(univ, mar, mbti, deltaOverride = null) {
         };
     }).sort((a, b) => b.efficiency - a.efficiency);
 
-    let remaining = delta;
+    const coreSubjects = subjects.filter(s => s.key !== 'eng' && s.hardLimit > 0);
+    const scenarios = [];
+    for (let i = 0; i < coreSubjects.length; i++) {
+        for (let j = i + 1; j < coreSubjects.length; j++) {
+            const a = coreSubjects[i];
+            const b = coreSubjects[j];
+            const aBuckets = (REALISTIC_BUCKETS[a.key] || []).filter(g => g <= a.hardLimit);
+            const bBuckets = (REALISTIC_BUCKETS[b.key] || []).filter(g => g <= b.hardLimit);
+            for (const gainA of aBuckets) {
+                for (const gainB of bBuckets) {
+                    const total = gainA + gainB;
+                    const balance = 1 - Math.abs(gainA - gainB) / total;
+                    const score = (a.efficiency * gainA) + (b.efficiency * gainB)
+                        - Math.abs(total - targetTotalGain) * 1.8
+                        + balance * 4;
+                    scenarios.push({ gains: { [a.key]: gainA, [b.key]: gainB }, total, score });
+                }
+            }
+        }
+    }
+
+    if (scenarios.length > 0) {
+        scenarios.sort((a, b) =>
+            b.score - a.score ||
+            Math.abs(a.total - targetTotalGain) - Math.abs(b.total - targetTotalGain)
+        );
+        const best = scenarios[0];
+        subjects.forEach(s => { s.assigned = best.gains[s.key] || 0; });
+        return subjects.sort((a, b) => (b.assigned > 0) - (a.assigned > 0) || b.assigned - a.assigned || b.efficiency - a.efficiency);
+    }
+
+    let remaining = targetTotalGain;
     subjects.forEach(s => {
         if (remaining <= 0) { s.assigned = 0; return; }
-        const alloc = Math.min(remaining, s.hardLimit);
-        s.assigned = Math.round(alloc * 10) / 10;
-        remaining -= alloc;
+        const bucket = (REALISTIC_BUCKETS[s.key] || []).filter(g => g <= s.hardLimit && g <= remaining).pop();
+        s.assigned = bucket || 0;
+        remaining -= s.assigned;
     });
 
     return subjects;

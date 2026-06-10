@@ -69,19 +69,25 @@ body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; margi
 .mbti-confirm-btn:not(:disabled):hover { background: #1d4ed8; transform: translateY(-1px); }
 
 /* ── MBTI 결과 카드 ───────────────────────────────────────────── */
-.mbti-result-card { text-align: center; padding: 36px 20px 24px; }
-.mbti-result-top { margin-bottom: 20px; }
+.mbti-result-card { text-align: center; padding: 32px 14px 24px; }
+.mbti-result-top { margin-bottom: 22px; }
 .mbti-result-code { font-size: 2.2rem; font-weight: 900; color: #2563eb; letter-spacing: 0.15em; line-height: 1; }
 .mbti-result-name { font-size: 1.15rem; font-weight: 700; color: #1e293b; margin-top: 8px; }
-.mbti-result-desc { font-size: 0.92rem; color: #475569; line-height: 1.7; text-align: left; margin: 0 0 18px; }
-.mbti-trait-list { list-style: none; padding: 0; margin: 0 0 22px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-.mbti-trait-item { display: inline-flex; align-items: center; gap: 4px; background: #eff6ff; color: #2563eb; font-size: 0.8rem; font-weight: 600; padding: 5px 14px; border-radius: 50px; }
+.mbti-result-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(220px, 0.85fr); gap: 14px; align-items: stretch; margin: 0 0 22px; }
+.mbti-result-summary { display: flex; flex-direction: column; justify-content: center; min-height: 188px; padding: 18px; border: 1px solid #e2e8f0; border-radius: 16px; background: #f8fafc; text-align: left; }
+.mbti-panel-label { font-size: 0.78rem; font-weight: 900; color: #2563eb; margin-bottom: 10px; }
+.mbti-result-desc { font-size: 0.92rem; color: #475569; line-height: 1.7; text-align: left; margin: 0 0 16px; word-break: keep-all; }
+.mbti-trait-list { list-style: none; padding: 0; margin: auto 0 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-start; }
+.mbti-trait-item { display: inline-flex; align-items: center; gap: 4px; background: #fff; border: 1px solid #dbeafe; color: #2563eb; font-size: 0.8rem; font-weight: 700; padding: 5px 12px; border-radius: 50px; }
 .mbti-trait-item::before { content: '✦'; font-size: 0.65rem; }
-.mbti-subject-rec { border-top: 1px solid #e2e8f0; padding-top: 18px; margin: 0 0 22px; text-align: left; }
-.mbti-subject-rec-label { font-size: 0.82rem; font-weight: 800; color: #334155; margin-bottom: 10px; }
+.mbti-subject-rec { display: flex; flex-direction: column; justify-content: center; min-height: 188px; padding: 18px; border: 1px solid #bfdbfe; border-radius: 16px; background: #eff6ff; text-align: left; }
+.mbti-subject-rec-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.mbti-subject-rec-label { font-size: 0.86rem; font-weight: 900; color: #1e3a8a; }
+.mbti-subject-rec-badge { flex-shrink: 0; padding: 3px 9px; border-radius: 999px; background: #dbeafe; color: #1d4ed8; font-size: 0.7rem; font-weight: 900; }
 .mbti-subject-chip-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .mbti-subject-chip { display: inline-flex; align-items: center; justify-content: center; min-height: 32px; padding: 6px 12px; border-radius: 999px; background: #ecfdf5; color: #047857; font-size: 0.82rem; font-weight: 800; line-height: 1.2; white-space: nowrap; }
-.mbti-subject-rec-note { margin: 10px 0 0; color: #64748b; font-size: 0.78rem; line-height: 1.6; word-break: keep-all; }
+.mbti-subject-rec-note { margin: 12px 0 0; color: #475569; font-size: 0.78rem; line-height: 1.6; word-break: keep-all; }
+.mbti-result-card .tut-action-btn { margin-top: 0; }
 
 /* ── 대학 카드 ─────────────────────────────────────────────────── */
 .univ-card-list { display: flex; flex-direction: column; gap: 14px; }
@@ -260,6 +266,13 @@ body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; margi
     .mbti-code-preview { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 14px; }
     .mbti-preview-code { font-size: 1.45rem; letter-spacing: 0.06em; min-width: 0; text-align: center; }
     .mbti-confirm-btn { width: 100%; padding: 11px 14px; text-align: center; }
+    .mbti-result-card { padding: 28px 0 20px; }
+    .mbti-result-top { margin-bottom: 18px; }
+    .mbti-result-grid { grid-template-columns: 1fr; gap: 12px; margin-bottom: 18px; }
+    .mbti-result-summary, .mbti-subject-rec { min-height: auto; padding: 16px; }
+    .mbti-trait-list { justify-content: center; }
+    .mbti-subject-chip-list { justify-content: center; }
+    .mbti-subject-rec-head { justify-content: center; }
     .score-plan-header { padding-left: 2px; padding-right: 2px; }
     .score-plan-title { padding-left: 2px; }
     .score-plan-total { margin-left: 8px; }
