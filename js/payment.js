@@ -24,7 +24,6 @@ function getTierDisplayName(tier) { return TIER_DISPLAY[(tier || '').toLowerCase
 function initPaymentExitGuard() {
     if (!window.PaymentExitGuard) return;
     window.PaymentExitGuard.init({
-        seenKey: 'payment_exit_guard_seen_payment_v2',
         contactUrl: '/qna?source=payment_exit&stage=payment',
         shouldGuard: () => {
             const checkoutEl = document.getElementById('checkout');

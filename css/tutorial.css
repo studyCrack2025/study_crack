@@ -64,9 +64,7 @@ body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; margi
 .mbti-dim-btn.active .dim-sub { color: #3b82f6; }
 .mbti-code-preview { display: flex; align-items: center; justify-content: space-between; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px 18px; margin-top: 18px; gap: 12px; }
 .mbti-preview-code { font-size: 1.6rem; font-weight: 900; color: #1e293b; letter-spacing: 0.08em; min-width: 80px; }
-.mbti-confirm-btn { padding: 10px 18px; background: #2563eb; color: #fff; border: none; border-radius: 10px; font-size: 0.88rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.2s; white-space: normal; text-align: center; line-height: 1.25; }
-.mbti-confirm-mobile-break { display: none; }
-.mbti-confirm-indent { display: inline; }
+.mbti-confirm-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 10px 18px; background: #2563eb; color: #fff; border: none; border-radius: 10px; font-size: 0.88rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.2s; white-space: nowrap; text-align: center; line-height: 1.25; }
 .mbti-confirm-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
 .mbti-confirm-btn:not(:disabled):hover { background: #1d4ed8; transform: translateY(-1px); }
 
@@ -261,10 +259,7 @@ body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; margi
 
     .mbti-code-preview { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 14px; }
     .mbti-preview-code { font-size: 1.45rem; letter-spacing: 0.06em; min-width: 0; text-align: center; }
-    .mbti-confirm-btn { width: 100%; padding: 11px 14px; text-align: left; }
-    .mbti-confirm-mobile-break { display: inline; }
-    .mbti-confirm-indent { display: block; padding-left: 0.85em; }
-
+    .mbti-confirm-btn { width: 100%; padding: 11px 14px; text-align: center; }
     .score-plan-header { padding-left: 2px; padding-right: 2px; }
     .score-plan-title { padding-left: 2px; }
     .score-plan-total { margin-left: 8px; }
