@@ -21,6 +21,27 @@ let userPhoneMissing = false;
 
 function getTierDisplayName(tier) { return TIER_DISPLAY[(tier || '').toLowerCase()] || String(tier || '').toUpperCase(); }
 
+function initPaymentExitGuard() {
+    if (!window.PaymentExitGuard) return;
+    window.PaymentExitGuard.init({
+        seenKey: 'payment_exit_guard_seen_payment_v2',
+        contactUrl: '/qna?source=payment_exit&stage=payment',
+        shouldGuard: () => {
+            const checkoutEl = document.getElementById('checkout');
+            return !!selectedTier && !userPhoneMissing && !!checkoutEl && checkoutEl.style.display !== 'none';
+        }
+    });
+}
+
+function armPaymentExitGuard() {
+    if (!window.PaymentExitGuard || userPhoneMissing) return;
+    setTimeout(() => window.PaymentExitGuard.armHistoryTrap(), 80);
+}
+
+function allowPaymentNavigationOnce() {
+    if (window.PaymentExitGuard) window.PaymentExitGuard.allowNavigationOnce();
+}
+
 // apiFetch / tryRefreshToken 은 shared/api.js 의 단일 구현 사용.
 // 결제 진행 중 만료 시 checkoutData 가 보존되도록 shared 의 clearClientSession allowlist 정책에 위임됨.
 
@@ -46,6 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const header = document.getElementById('site-header');
     if (header) header.classList.add('scrolled');
     syncHeaderNav();
+    initPaymentExitGuard();
 
     // 스크롤 리빌 애니메이션
     const reveals = document.querySelectorAll('.road-card, .price-row, .example-card, .stat-card');
@@ -398,6 +420,7 @@ function selectPlan(tier, priceRowEl) {
     // 티어 메시지 계산 (기존 selectProduct 로직 재사용)
     _applyTierMessage(tier, btn);
     _applyPhoneRequiredMessage(btn);
+    armPaymentExitGuard();
 }
 
 // 특수 옵션(TEST) 선택
@@ -418,6 +441,7 @@ function selectSpecialPlan(tier, el) {
 
     document.getElementById('tierMessageWrap').style.display = 'none';
     _applyPhoneRequiredMessage(btn);
+    armPaymentExitGuard();
 }
 
 function _updateCheckoutCycleNote(tier) {
@@ -523,6 +547,7 @@ function processPayment() {
 
     if (userPhoneMissing || !rawPhone) {
         alert("전화번호 등록이 필요합니다. 마이페이지에서 전화번호를 입력한 뒤 결제를 진행해주세요.");
+        allowPaymentNavigationOnce();
         window.location.href = '/mypage';
         return;
     }
@@ -566,5 +591,6 @@ function processPayment() {
     };
 
     localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
+    allowPaymentNavigationOnce();
     window.location.href = '/checkout';
 }
