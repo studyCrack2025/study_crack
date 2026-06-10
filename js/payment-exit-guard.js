@@ -15,13 +15,8 @@
         return Date.now();
     }
 
-    function getSeenKey() {
-        return config.seenKey || 'payment_exit_guard_seen_v2';
-    }
-
     function shouldGuard() {
         if (now() < bypassUntil) return false;
-        if (sessionStorage.getItem(getSeenKey()) === '1') return false;
         if (typeof config.isPaymentInProgress === 'function' && config.isPaymentInProgress()) return false;
         return typeof config.shouldGuard === 'function' ? !!config.shouldGuard() : true;
     }
@@ -52,12 +47,12 @@
                     <div class="payment-exit-mascot-wrap">
                         <img class="payment-exit-mascot" src="/assets/images/mascots/crack_startle.png" alt="놀란 크랙이">
                     </div>
-                    <h2 id="paymentExitTitle">결제 전에 확인이 필요하신가요?</h2>
-                    <p class="payment-exit-copy">선택하신 플랜은 결제 후 4주 동안 이용할 수 있어요. 가격, 이용 방식, 결제 오류가 걱정된다면 바로 확인해드릴게요.</p>
+                    <h2 id="paymentExitTitle">잠깐만요, 나가기 전 할인 혜택을 받아가세요</h2>
+                    <p class="payment-exit-copy">가격이나 이용 방식이 고민되셨다면 30초 설문에 남겨주세요. 설문 참여자에게 결제 부담을 줄일 수 있는 할인 혜택을 안내해드릴게요.</p>
                     <div class="payment-exit-actions">
                         <button type="button" class="payment-exit-primary" data-payment-exit-continue>계속 결제하기</button>
                         <button type="button" class="payment-exit-secondary" data-payment-exit-contact>궁금한 점 문의하기</button>
-                        <button type="button" class="payment-exit-secondary" data-payment-exit-survey>이유 남기고 나가기</button>
+                        <button type="button" class="payment-exit-secondary" data-payment-exit-survey>설문 참여하고 할인 받기</button>
                         <button type="button" class="payment-exit-ghost" data-payment-exit-leave>그냥 나가기</button>
                     </div>
                 </div>
@@ -148,7 +143,6 @@
     function openExitModal(action) {
         ensureModal();
         pendingExitAction = action;
-        sessionStorage.setItem(getSeenKey(), '1');
         modalEl.removeAttribute('hidden');
         document.body.classList.add('payment-exit-lock');
         const primaryButton = modalEl.querySelector('[data-payment-exit-continue]');
