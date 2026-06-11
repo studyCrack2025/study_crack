@@ -4,6 +4,7 @@ export * from './auth-handlers.js';
 export * from './dispatch.js';
 export * from './form-handlers.js';
 export * from './gesture-handlers.js';
+export * from './mobile-handlers.js';
 export * from './navigation-handlers.js';
 export * from './planner-handlers.js';
 export * from './profile-handlers.js';
