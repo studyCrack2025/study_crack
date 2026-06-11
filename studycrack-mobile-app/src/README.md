@@ -3,7 +3,7 @@
 이 디렉토리는 `js/studycrack-mobile.js`를 기능 단위로 분리하기 위한 소스 영역입니다.
 
 - `constants/`: asset path, mock data, 약관, 요금제, 대학 mock 데이터
-- `state/`: localStorage, scroll, app state 초기화 유틸
+- `state/`: localStorage, scroll, planner item normalization 유틸
 - `components/`: 재사용 UI 조각
 - `screens/`: 화면별 renderer 또는 JSX component
 - `handlers/`: `data-action` 이벤트 처리

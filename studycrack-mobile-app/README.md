@@ -20,3 +20,9 @@
 6. Vite/React 빌드 전환
 
 각 단계는 `docs/exec-plans/active/260611_studycrack_mobile_app_modularization.md`를 기준으로 진행합니다.
+
+## Current Status
+
+- Phase 0: 앱 소스 골격 생성 완료
+- Phase 1: constants/mock data 분리 완료
+- Phase 2: storage/state 유틸 분리 진행 중
