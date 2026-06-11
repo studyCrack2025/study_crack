@@ -26,4 +26,4 @@
 - Phase 0: 앱 소스 골격 생성 완료
 - Phase 1: constants/mock data 분리 완료
 - Phase 2: storage/state 유틸 분리 완료
-- Phase 3: onboarding/auth/home/mypage-settings renderer 분리 진행 중
+- Phase 3: onboarding/auth/home/mypage-settings/planner renderer 분리 진행 중
