@@ -1,0 +1,8 @@
+{
+  "name": "studycrack-mobile-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/check-source.mjs"
+  }
+}
