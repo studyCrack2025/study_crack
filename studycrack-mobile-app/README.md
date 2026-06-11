@@ -27,4 +27,4 @@
 - Phase 1: constants/mock data 분리 완료
 - Phase 2: storage/state 유틸 분리 완료
 - Phase 3: screen renderer 분리 완료
-- Phase 4: action dispatch/navigation handler 분리 진행 중
+- Phase 4: action dispatch/navigation/auth handler 분리 진행 중
