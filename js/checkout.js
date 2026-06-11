@@ -9,6 +9,21 @@ const TIER_DATA = {
 
 let checkoutData = null;
 
+function initCheckoutExitGuard() {
+    if (!window.PaymentExitGuard) return;
+    window.PaymentExitGuard.init({
+        contactUrl: '/qna?source=payment_exit&stage=checkout',
+        backUrl: '/payment',
+        historyTrap: true,
+        shouldGuard: () => !!checkoutData,
+        isPaymentInProgress: () => isPaymentInProgress
+    });
+}
+
+function allowCheckoutNavigationOnce() {
+    if (window.PaymentExitGuard) window.PaymentExitGuard.allowNavigationOnce();
+}
+
 function toYyyyMmDd(date) {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -84,6 +99,8 @@ document.addEventListener('DOMContentLoaded', () => {
             card.classList.add('selected');
         });
     });
+
+    initCheckoutExitGuard();
 });
 
 // 7. 결제창 호출
@@ -104,12 +121,14 @@ function submitCheckout() {
 
     if (!checkoutData || !checkoutData.userId) {
         alert("결제 정보가 만료되었습니다. 다시 결제를 진행해주세요.");
+        allowCheckoutNavigationOnce();
         window.location.href = '/payment';
         return;
     }
     const amount = Number(checkoutData.amount);
     if (!Number.isFinite(amount) || amount <= 0) {
         alert("결제 금액 정보가 올바르지 않습니다. 다시 결제를 진행해주세요.");
+        allowCheckoutNavigationOnce();
         window.location.href = '/payment';
         return;
     }

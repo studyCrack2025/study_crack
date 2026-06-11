@@ -1,0 +1,30 @@
+.payment-exit-lock { overflow: hidden; }
+.payment-exit-modal { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(15, 23, 42, 0.56); }
+.payment-exit-modal[hidden] { display: none; }
+.payment-exit-dialog { position: relative; width: min(560px, 100%); max-height: min(760px, calc(100vh - 40px)); overflow-y: auto; border-radius: 16px; background: #fff; box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28); padding: 30px; color: #0f172a; }
+.payment-exit-close { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; border: 0; border-radius: 999px; background: #f1f5f9; color: #64748b; font-size: 24px; line-height: 1; cursor: pointer; }
+.payment-exit-close:hover { background: #e2e8f0; color: #0f172a; }
+.payment-exit-view[hidden] { display: none; }
+.payment-exit-view-main { text-align: center; }
+.payment-exit-mascot-wrap { width: 144px; height: 112px; display: flex; align-items: center; justify-content: center; margin: -4px auto 14px; overflow: visible; }
+.payment-exit-mascot { width: 138px; height: auto; display: block; filter: drop-shadow(0 12px 18px rgba(15, 23, 42, 0.12)); }
+.payment-exit-dialog h2 { margin: 0 auto 10px; font-size: 24px; line-height: 1.35; font-weight: 900; letter-spacing: 0; color: #111827; }
+.payment-exit-copy { margin: 0 0 22px; color: #475569; font-size: 15px; line-height: 1.7; word-break: keep-all; }
+.payment-exit-actions { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.payment-exit-primary, .payment-exit-secondary, .payment-exit-ghost { width: 100%; min-height: 46px; border-radius: 10px; font-family: inherit; font-size: 15px; font-weight: 800; cursor: pointer; transition: background 0.18s, border-color 0.18s, color 0.18s, transform 0.12s; }
+.payment-exit-primary { border: 1px solid #2563eb; background: #2563eb; color: #fff; }
+.payment-exit-primary:hover { background: #1d4ed8; border-color: #1d4ed8; transform: translateY(-1px); }
+.payment-exit-secondary { border: 1px solid #cbd5e1; background: #fff; color: #334155; }
+.payment-exit-secondary:hover { background: #f8fafc; border-color: #94a3b8; color: #0f172a; }
+.payment-exit-ghost { border: 0; background: transparent; color: #64748b; }
+.payment-exit-ghost:hover { background: #f8fafc; color: #334155; }
+.payment-survey-overlay { position: fixed; inset: 0; z-index: 10001; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(15, 23, 42, 0.72); }
+.payment-survey-overlay[hidden] { display: none; }
+.payment-survey-panel { width: min(760px, 100%); max-height: min(820px, calc(100vh - 40px)); overflow-y: auto; border-radius: 16px; background: #fff; box-shadow: 0 28px 80px rgba(15, 23, 42, 0.34); padding: 26px; color: #0f172a; }
+.payment-survey-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 12px; }
+.payment-survey-eyebrow { margin: 0; color: #2563eb; font-size: 12px; font-weight: 900; letter-spacing: 0; }
+.payment-survey-close { width: 36px; height: 36px; flex-shrink: 0; border: 0; border-radius: 999px; background: #f1f5f9; color: #64748b; font-size: 24px; line-height: 1; cursor: pointer; }
+.payment-survey-close:hover { background: #e2e8f0; color: #0f172a; }
+.payment-survey-typeform { min-height: 460px; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #f8fafc; margin-bottom: 14px; }
+.payment-survey-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 640px) { .payment-exit-modal { align-items: flex-end; padding: 12px; } .payment-exit-dialog { max-height: calc(100vh - 24px); border-radius: 14px; padding: 18px 14px 14px; } .payment-exit-close { top: 10px; right: 10px; width: 32px; height: 32px; font-size: 20px; } .payment-exit-mascot-wrap { width: 100px; height: 78px; margin-bottom: 8px; } .payment-exit-mascot { width: 96px; } .payment-exit-dialog h2 { max-width: 300px; margin-bottom: 8px; font-size: 18px; line-height: 1.3; } .payment-exit-copy { margin-bottom: 16px; font-size: 13px; line-height: 1.55; } .payment-exit-actions { gap: 8px; } .payment-exit-primary, .payment-exit-secondary, .payment-exit-ghost { min-height: 40px; border-radius: 9px; font-size: 13px; } .payment-survey-overlay { align-items: flex-end; padding: 12px; } .payment-survey-panel { max-height: calc(100vh - 24px); border-radius: 14px; padding: 18px; } .payment-survey-typeform { min-height: 390px; } .payment-survey-actions { grid-template-columns: 1fr; } }

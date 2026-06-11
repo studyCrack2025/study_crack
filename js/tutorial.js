@@ -10,6 +10,25 @@ const MBTI_SUBJECT_WEIGHTS = {
     'IMER': [0.4, 0.8, 0.7, 0.4], 'IMEF': [0.4, 0.7, 0.6, 0.5]
 };
 
+const MBTI_RECOMMENDED_INQUIRY_SUBJECTS = {
+    CSDR: ['생활과 윤리', '윤리와 사상', '화학Ⅰ', '물리Ⅰ'],
+    CSDF: ['생활과 윤리', '사회문화', '화학Ⅰ', '생명과학Ⅰ'],
+    CSER: ['윤리와 사상', '한국지리', '지구과학Ⅰ'],
+    CSEF: ['한국지리', '세계지리', '지구과학Ⅰ', '생명과학Ⅰ'],
+    CMDR: ['사회문화', '경제', '화학Ⅰ', '물리Ⅰ'],
+    CMDF: ['사회문화', '경제', '화학Ⅰ', '생명과학Ⅰ'],
+    CMER: ['사회문화', '한국지리', '지구과학Ⅰ'],
+    CMEF: ['사회문화', '세계지리', '지구과학Ⅰ', '생명과학Ⅰ'],
+    ISDR: ['화학Ⅰ', '물리Ⅰ', '정치와 법'],
+    ISDF: ['정치와 법', '사회문화', '화학Ⅰ', '생명과학Ⅰ'],
+    ISER: ['한국지리', '지구과학Ⅰ'],
+    ISEF: ['세계지리', '지구과학Ⅰ'],
+    IMDR: ['경제', '물리Ⅰ', '화학Ⅰ'],
+    IMDF: ['경제', '물리학Ⅰ', '화학Ⅰ'],
+    IMER: ['사회문화', '지구과학Ⅰ'],
+    IMEF: ['사회문화', '지구과학Ⅰ', '생명과학Ⅰ']
+};
+
 const MASCOTS = {
     hi: '/assets/images/mascots/crack_hi.png',
     thumbsup: '/assets/images/mascots/crack_thumbsup.png',
@@ -103,7 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 정성 데이터 및 MBTI 복원
             if (data.qualitative) {
                 tutorialData.qual = data.qualitative;
-                if (data.qualitative.mbti) tutorialData.mbti = data.qualitative.mbti;
+                if (data.qualitative.mbti) tutorialData.mbti = normalizeMbtiCode(data.qualitative.mbti);
             }
             // 추천 대학 목록 DB 복원 (localStorage보다 DB 우선)
             if (data.tut_selectedUnivs && Array.isArray(data.tut_selectedUnivs) && data.tut_selectedUnivs.length > 0) {
@@ -118,7 +137,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (urlParams.get('mbti_completed')) {
         // URL 파라미터 mbti가 DB보다 우선 (방금 완료한 결과)
-        tutorialData.mbti = urlParams.get('mbti_result') || tutorialData.mbti || 'CSDR';
+        tutorialData.mbti = normalizeMbtiCode(urlParams.get('mbti_result') || tutorialData.mbti || 'CSDR');
         currentStepIdx = 4;
         localStorage.setItem('tutorialStatus', currentStepIdx);
         // MBTI 결과를 DB에 저장
@@ -574,8 +593,16 @@ function goToMBTI() {
     window.location.href = '/mbti_survey?from_tutorial=true';
 }
 
+function normalizeMbtiCode(code) {
+    const normalized = String(code || '').trim().toUpperCase();
+    return Object.prototype.hasOwnProperty.call(MBTI_RECOMMENDED_INQUIRY_SUBJECTS, normalized)
+        ? normalized
+        : 'CSDR';
+}
+
 function simulateMbtiAnalysis() {
-    const mbtiCode = tutorialData.mbti || 'CSDR';
+    const mbtiCode = normalizeMbtiCode(tutorialData.mbti);
+    tutorialData.mbti = mbtiCode;
     const TYPE_PROFILES = {
         CSDR: { name: '체계적 전략가', desc: '개념을 깊이 파고들고, 검증된 루틴으로 꾸준히 반복하며, 데이터에 근거한 철저한 계획으로 목표를 달성하는 유형입니다. 탄탄한 기본기 위에 전략을 쌓아 안정적으로 성적을 올릴 수 있어요.', traits: ['개념 이해력 우수', '루틴 학습에 강함', '계획 실행력 높음'] },
         CSDF: { name: '유연한 학자', desc: '개념 중심으로 학습하면서도 상황에 따라 전략을 조정할 줄 아는 유형입니다. 루틴 속에서 안정감을 유지하되, 필요하면 계획을 수정하는 유연함이 강점이에요.', traits: ['개념 이해력 우수', '안정적 루틴', '유연한 전략 수정'] },
@@ -596,6 +623,10 @@ function simulateMbtiAnalysis() {
     };
     const profile = TYPE_PROFILES[mbtiCode] || TYPE_PROFILES.CSDR;
     const traitsHtml = profile.traits.map(t => `<li class="mbti-trait-item">${t}</li>`).join('');
+    const recommendedSubjects = MBTI_RECOMMENDED_INQUIRY_SUBJECTS[mbtiCode] || [];
+    const subjectHtml = recommendedSubjects
+        .map(subject => `<span class="mbti-subject-chip">${escapeTutorialHtml(subject)}</span>`)
+        .join('');
     const container = document.getElementById('stepContent');
     container.innerHTML = `
         <div class="step-card mbti-result-card">
@@ -605,6 +636,11 @@ function simulateMbtiAnalysis() {
             </div>
             <p class="mbti-result-desc">${profile.desc}</p>
             <ul class="mbti-trait-list">${traitsHtml}</ul>
+            <div class="mbti-subject-rec">
+                <div class="mbti-subject-rec-label">추천 탐구 과목</div>
+                <div class="mbti-subject-chip-list">${subjectHtml}</div>
+                <p class="mbti-subject-rec-note">유형별 강점이 잘 살아나는 과목 조합이에요. 최종 선택은 학교·목표대학 반영 방식과 함께 다시 맞춰보면 좋아요.</p>
+            </div>
             <button class="tut-action-btn" id="mbtiResultNextBtn">성적 종합 분석 시작하기</button>
         </div>`;
     updateMascot('학습 유형 분석이 완료되었어요! 결과를 확인하고, 종합 분석을 시작해보세요.', 'showresult');
@@ -943,7 +979,7 @@ function buildUnivCards(selectedUnivs, studentScore) {
         { label: '기타', pct: 10, color: '#f59e0b' }
     ];
 
-    // 신규/레거시 포맷 호환: docs/algorithms/tutorial-recommendation.md §6
+        // 신규/레거시 포맷 호환: docs/algorithms/tutorial-recommendation.md §7
     if (selectedUnivs.length > 0 && 'currentScore' in selectedUnivs[0]) {
         const PASS_CUT = 100, TOP70_CUT = 150, MAX_SCORE = 250;
         return selectedUnivs.map(u => {
@@ -1179,7 +1215,7 @@ function selectUniv(element, data, fillId, simPct) {
     document.getElementById('tutNextBtn').style.display = 'block';
 }
 
-// ── Greedy 점수 분배 — 사양: docs/algorithms/tutorial-recommendation.md §2 ──
+// ── Greedy 점수 분배 — 사양: docs/algorithms/tutorial-recommendation.md §3 ──
 
 function gradeToApproxPct(grd) {
     const map = { '1': 96, '2': 89, '3': 77, '4': 60, '5': 40, '6': 23, '7': 11, '8': 4, '9': 1 };
@@ -1257,6 +1293,185 @@ function calcGreedySubjectPlan(univ, mar, mbti, deltaOverride = null) {
     return subjects;
 }
 
+function escapeTutorialHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+async function requestTutorialStrategyProjection(univ, mar, mbti, excludeUnivs) {
+    if (!univ || !mar || !mbti || !tutorialData.qual?.stream) return null;
+    try {
+        const res = await tutorialAnalysisFetch({
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'tutorial_strategy_projection',
+                userScores: buildUserScoresForAnalysis(mar),
+                examMode: tutorialData.examMonth || 'mar',
+                stream: tutorialData.qual.stream,
+                mbti,
+                selectedUniv: { univ: univ.school, major: univ.major },
+                excludeUnivs
+            })
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (!data?.strategy || !Array.isArray(data.strategy.subjects)) return null;
+        return data;
+    } catch (e) {
+        return null;
+    }
+}
+
+function normalizeStrategyPlan(strategyResult) {
+    const colors = { kor: '#8b5cf6', math: '#3b82f6', inq1: '#10b981', inq2: '#06b6d4' };
+    const subjects = strategyResult?.strategy?.subjects;
+    if (!Array.isArray(subjects) || subjects.length === 0) return null;
+    return subjects.map(subject => ({
+        key: subject.key,
+        label: subject.label,
+        color: colors[subject.key] || '#3b82f6',
+        assigned: Number(subject.gain) || 0,
+        from: Number(subject.from),
+        to: Number(subject.to)
+    })).filter(subject => subject.key && subject.assigned > 0);
+}
+
+function getStrategyFutureSteps(mode, baseStream) {
+    const adjacent = {
+        '의치한약수': ['간호/보건', '자연/공학'],
+        '간호/보건': ['자연/공학', '의치한약수'],
+        '자연/공학': ['간호/보건'],
+        '상경계열': ['인문사회'],
+        '인문사회': ['상경계열'],
+        '사범/교대': ['인문사회']
+    };
+
+    if (mode === 'target_mismatch') {
+        const bridgeStreams = adjacent[baseStream] || ['간호/보건', '자연/공학'];
+        return [
+            { label: '1차 목표', stream: bridgeStreams[0] || baseStream, boosted: true, relaxed: true },
+            { label: '계열 인접', stream: bridgeStreams[1] || bridgeStreams[0] || baseStream, boosted: true, relaxed: true },
+            { label: '장기 발판', stream: baseStream, boosted: true, relaxed: true }
+        ];
+    }
+
+    if (mode === 'low_but_projectable') {
+        const bridgeStreams = adjacent[baseStream] || [];
+        return [
+            { label: '현재 기준', stream: baseStream, boosted: false, relaxed: true },
+            { label: '1차 목표', stream: baseStream, boosted: true, relaxed: true },
+            { label: '계열 인접', stream: bridgeStreams[0] || baseStream, boosted: true, relaxed: true }
+        ];
+    }
+
+    if (mode === 'elite_ceiling') {
+        return [
+            { label: '안정', stream: baseStream, boosted: false, relaxed: false },
+            { label: '상향 도전', stream: baseStream, boosted: true, relaxed: false },
+            { label: '도전', stream: baseStream, boosted: true, relaxed: false }
+        ];
+    }
+
+    return [
+        { label: '안정', stream: baseStream, boosted: false, relaxed: false },
+        { label: '적정', stream: baseStream, boosted: true, relaxed: false },
+        { label: '도전', stream: baseStream, boosted: true, relaxed: false }
+    ];
+}
+
+async function fetchStrategyFutureUnivs(strategyResult, mar, univ, excludeUnivs) {
+    const boostedRawScores = strategyResult?.boostedRawScores;
+    if (!boostedRawScores || !mar || !tutorialData.totalStdScore) return Array.isArray(strategyResult?.futureUnivs) ? strategyResult.futureUnivs : null;
+    const mode = strategyResult?.mode || 'normal_growth';
+    const steps = getStrategyFutureSteps(mode, tutorialData.qual?.stream);
+    const merged = [];
+    const seen = new Set();
+    const addCandidate = (item, label) => {
+        if (!item || !item.school || !item.major) return false;
+        const key = `${item.school}||${item.major}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        merged.push({ ...item, _strategyLabel: label });
+        return true;
+    };
+
+    for (const step of steps) {
+        if (!step.stream) continue;
+        const selected = await fetchTutorialRecommendations(
+            step.stream,
+            mar,
+            tutorialData.totalStdScore,
+            tutorialData.examMonth || 'mar',
+            step.boosted ? boostedRawScores : null,
+            {
+                selectedUniv: step.relaxed ? null : { univ: univ.school, major: univ.major },
+                excludeUnivs,
+                minCurrentScore: step.relaxed ? 0 : Number(univ.currentScore || 0),
+                fallbackCurrentScore: Number(univ.currentScore || tutorialData.totalStdScore || 0)
+            }
+        );
+        const picked = (selected || []).find(item => !seen.has(`${item.school}||${item.major}`));
+        addCandidate(picked, step.label);
+        if (merged.length >= TUTORIAL_RECO_TARGET_COUNT) break;
+    }
+
+    if (merged.length < TUTORIAL_RECO_TARGET_COUNT) {
+        for (const step of steps) {
+            if (!step.stream) continue;
+            const selected = await fetchTutorialRecommendations(
+                step.stream,
+                mar,
+                tutorialData.totalStdScore,
+                tutorialData.examMonth || 'mar',
+                step.boosted ? boostedRawScores : null,
+                {
+                    selectedUniv: null,
+                    excludeUnivs: [],
+                    minCurrentScore: 0,
+                    fallbackCurrentScore: Number(univ.currentScore || tutorialData.totalStdScore || 0)
+                }
+            );
+            for (const item of (selected || [])) {
+                addCandidate(item, step.label);
+                if (merged.length >= TUTORIAL_RECO_TARGET_COUNT) break;
+            }
+            if (merged.length >= TUTORIAL_RECO_TARGET_COUNT) break;
+        }
+    }
+
+    return merged.length > 0 ? merged.slice(0, TUTORIAL_RECO_TARGET_COUNT) : (Array.isArray(strategyResult?.futureUnivs) ? strategyResult.futureUnivs : null);
+}
+
+function getStrategyModeCopy(mode) {
+    const copy = {
+        elite_ceiling: {
+            title: '상위권 안정화 후 이런 도전도 가능해요',
+            connector: '안정화 목표',
+            note: '대폭 상승보다 실수 방지와 변동성 관리 중심으로 산정했습니다.'
+        },
+        low_but_projectable: {
+            title: '10주 뒤 1차 목표 후보를 만들 수 있어요',
+            connector: '1차 목표',
+            note: '현재 목표 대학군까지는 거리가 있어 1차 도달 후보를 함께 봅니다.'
+        },
+        target_mismatch: {
+            title: '이번 단계의 현실 1차 목표를 먼저 잡았어요',
+            connector: '1차 목표',
+            note: '희망 계열까지는 장기 상승 구간이 필요해 현실 후보와 계열 인접 후보를 분리했습니다.'
+        },
+        normal_growth: {
+            title: '점수가 오르면 이런 대학도 갈 수 있어요',
+            connector: null,
+            note: '2과목을 함께 올리는 8~12주 목표로 산정했습니다.'
+        }
+    };
+    return copy[mode] || copy.normal_growth;
+}
+
 // ── 과목별 최적 상승 계획 + 선택한 대학 도달 시뮬레이션 ──────────
 async function initSubjectRec() {
     const container = document.getElementById('subjectRecContent');
@@ -1269,7 +1484,7 @@ async function initSubjectRec() {
     const mar  = tutorialData.quan?.[activeMonth];
     const mbti = tutorialData.mbti;
 
-    // 추천 retry 사양: docs/algorithms/tutorial-recommendation.md §3
+    // 추천 retry 사양: docs/algorithms/tutorial-recommendation.md §4
     const excludeUnivs = (tutorialData.selectedUnivs || [])
         .map(u => ({ univ: u.school, major: u.major }))
         .filter(u => u.univ && u.major);
@@ -1281,15 +1496,35 @@ async function initSubjectRec() {
     let plan = null;
     let postSimUnivs = null;
     let finalDelta = 0;
+    let strategyMeta = null;
 
     if (univ && mar && mbti) {
-        try { plan = calcGreedySubjectPlan(univ, mar, mbti); } catch(e) {}
+        const strategyResult = await requestTutorialStrategyProjection(univ, mar, mbti, excludeUnivs);
+        const strategyPlan = normalizeStrategyPlan(strategyResult);
+        if (strategyResult && strategyPlan && strategyPlan.length > 0) {
+            plan = strategyPlan;
+            finalDelta = Number(strategyResult.strategy?.totalRawGain) || strategyPlan.reduce((sum, s) => sum + s.assigned, 0);
+            strategyMeta = {
+                mode: strategyResult.mode || 'normal_growth',
+                weeks: Number(strategyResult.strategy?.weeks) || 10,
+                reasons: Array.isArray(strategyResult.strategy?.reasons) ? strategyResult.strategy.reasons : [],
+                expectedUiScore: Number(strategyResult.strategy?.expectedUiScore),
+                currentUiScore: Number(strategyResult.strategy?.currentUiScore)
+            };
+            try {
+                postSimUnivs = await fetchStrategyFutureUnivs(strategyResult, mar, univ, excludeUnivs);
+            } catch(e) {}
+        }
+
+        if (!plan) {
+            try { plan = calcGreedySubjectPlan(univ, mar, mbti); } catch(e) {}
+        }
 
         if (plan && tutorialData.qual?.stream && tutorialData.totalStdScore > 0) {
             const baseDelta = plan.filter(s => s.assigned > 0 && s.key !== 'eng')
                 .reduce((sum, s) => sum + s.assigned, 0);
 
-            for (let tryCount = 0; tryCount < MAX_RETRIES; tryCount++) {
+            for (let tryCount = 0; !strategyMeta && tryCount < MAX_RETRIES; tryCount++) {
                 const targetDelta = tryCount === 0 ? baseDelta : Math.min(DELTA_HARD_CAP, baseDelta + tryCount * DELTA_STEP);
 
                 if (tryCount > 0) {
@@ -1328,13 +1563,13 @@ async function initSubjectRec() {
         }
     }
 
-    // 학습기간 산정: docs/algorithms/tutorial-recommendation.md §4
+    // 학습기간 산정: docs/algorithms/tutorial-recommendation.md §5
     const RAW_PER_WEEK = 1.5;
     const MIN_WEEKS = 8;
     const MAX_WEEKS = 16;
-    const estimatedWeeks = finalDelta > 0
+    const estimatedWeeks = strategyMeta?.weeks || (finalDelta > 0
         ? Math.min(MAX_WEEKS, Math.max(MIN_WEEKS, Math.ceil(finalDelta / RAW_PER_WEEK)))
-        : MIN_WEEKS;
+        : MIN_WEEKS);
 
     showTutLoading(false);
 
@@ -1363,9 +1598,10 @@ async function initSubjectRec() {
         const s = planMap[key];
         const assigned = s ? s.assigned : 0;
         const color = COLORS[key];
-        const label = LABELS[key];
+        const label = s?.label || LABELS[key];
+        const safeLabel = escapeTutorialHtml(label);
 
-        // 잠금 정책: docs/algorithms/tutorial-recommendation.md §7
+        // 잠금 정책: docs/algorithms/tutorial-recommendation.md §8
         const priorityIdx = risingByPriority.findIndex(p => p.key === key);
         const isLocked = priorityIdx >= 2;
 
@@ -1381,23 +1617,23 @@ async function initSubjectRec() {
             const grd = mar.eng?.grd;
             const grdLabel = grd ? `${grd}등급` : '';
             return `<div class="score-plan-row">
-                <div class="score-plan-subject" style="color:${color}">${label}</div>
+                <div class="score-plan-subject" style="color:${color}">${safeLabel}</div>
                 <div class="plan-status ${assigned > 0 ? 'plan-rise' : 'plan-hold'}">${assigned > 0 ? '향상' : '유지'}</div>
                 <div class="plan-score-text">${grdLabel}</div>
             </div>`;
         }
 
-        const rawScore = parseInt(mar[key]?.raw, 10) || 0;
+        const rawScore = Number.isFinite(Number(s?.from)) ? Number(s.from) : (parseInt(mar[key]?.raw, 10) || 0);
         if (assigned > 0) {
-            const newRaw = rawScore + Math.round(assigned);
+            const newRaw = Number.isFinite(Number(s?.to)) ? Number(s.to) : (rawScore + Math.round(assigned));
             return `<div class="score-plan-row">
-                <div class="score-plan-subject" style="color:${color}">${label}</div>
+                <div class="score-plan-subject" style="color:${color}">${safeLabel}</div>
                 <div class="plan-status plan-rise">+${Math.round(assigned)}</div>
                 <div class="plan-score-text">${rawScore} → ${newRaw}</div>
             </div>`;
         }
         return `<div class="score-plan-row">
-            <div class="score-plan-subject" style="color:${color}">${label}</div>
+            <div class="score-plan-subject" style="color:${color}">${safeLabel}</div>
             <div class="plan-status plan-hold">유지</div>
             <div class="plan-score-text">${rawScore}</div>
         </div>`;
@@ -1406,22 +1642,34 @@ async function initSubjectRec() {
     // 통합 "미래 대학" 섹션: (현재 대학) → (향상 후 대학 3개)
     let futureUnivHtml = '';
     if (univ || (postSimUnivs && postSimUnivs.length > 0)) {
-        const catColors = { 안정: '#10b981', 적정: '#3b82f6', 도전: '#f59e0b' };
-        const catBgs = { 안정: '#ecfdf5', 적정: '#eff6ff', 도전: '#fffbeb' };
+        const strategyCopy = getStrategyModeCopy(strategyMeta?.mode || 'normal_growth');
+        const catColors = { 안정: '#10b981', 적정: '#3b82f6', 도전: '#f59e0b', '현재 기준': '#64748b', '1차 목표': '#3b82f6', '계열 인접': '#10b981', '장기 발판': '#f59e0b', '상향 도전': '#8b5cf6' };
+        const catBgs = { 안정: '#ecfdf5', 적정: '#eff6ff', 도전: '#fffbeb', '현재 기준': '#f8fafc', '1차 목표': '#eff6ff', '계열 인접': '#ecfdf5', '장기 발판': '#fffbeb', '상향 도전': '#f5f3ff' };
 
         const currentBlock = univ ? `
             <div class="future-stage future-stage-now">
                 <div class="future-stage-label">현재</div>
-                <div class="future-stage-school">${univ.school}</div>
-                <div class="future-stage-major">${univ.major}</div>
+                <div class="future-stage-school">${escapeTutorialHtml(univ.school)}</div>
+                <div class="future-stage-major">${escapeTutorialHtml(univ.major)}</div>
             </div>` : '';
 
-        // 안정/적정/도전 분류: docs/algorithms/tutorial-recommendation.md §5
-        const sortedFutureUnivs = [...(postSimUnivs || [])].sort((a, b) => (b.currentScore || 0) - (a.currentScore || 0));
+        // 안정/적정/도전 분류: docs/algorithms/tutorial-recommendation.md §6
+        const preserveStrategyOrder = ['target_mismatch', 'low_but_projectable'].includes(strategyMeta?.mode);
+        const sortedFutureUnivs = preserveStrategyOrder
+            ? [...(postSimUnivs || [])]
+            : [...(postSimUnivs || [])].sort((a, b) => (b.currentScore || 0) - (a.currentScore || 0));
         const scoredFutureUnivs = sortedFutureUnivs.map((u, i, arr) => {
             const n = arr.length;
-            let label = '적정';
-            if (n <= 1) {
+            let label = u._strategyLabel || '적정';
+            if (u._strategyLabel) {
+                label = u._strategyLabel;
+            } else if (strategyMeta?.mode === 'target_mismatch') {
+                label = ['1차 목표', '계열 인접', '장기 발판'][i] || '1차 목표';
+            } else if (strategyMeta?.mode === 'low_but_projectable') {
+                label = ['현재 기준', '1차 목표', '계열 인접'][i] || '적정';
+            } else if (strategyMeta?.mode === 'elite_ceiling') {
+                label = ['안정', '상향 도전', '도전'][i] || '상향 도전';
+            } else if (n <= 1) {
                 label = '적정';
             } else if (n === 2) {
                 label = (i === 0) ? '안정' : '도전';
@@ -1442,19 +1690,24 @@ async function initSubjectRec() {
             return `
             <div class="future-target-card" style="border-left:3px solid ${color}">
                 <div class="future-card-badge" style="background:${bg};color:${color}">${label}</div>
-                <div class="future-card-school">${u.school}</div>
-                <div class="future-card-major">${u.major}</div>
+                <div class="future-card-school">${escapeTutorialHtml(u.school)}</div>
+                <div class="future-card-major">${escapeTutorialHtml(u.major)}</div>
             </div>`;
-        }).join('');
+        }).join('') || `
+            <div class="future-target-card" style="border-left:3px solid #94a3b8">
+                <div class="future-card-badge" style="background:#f8fafc;color:#64748b">분석 중</div>
+                <div class="future-card-school">후보 재탐색 필요</div>
+                <div class="future-card-major">성적표/희망 계열 기준을 조금 넓혀 다시 확인합니다.</div>
+            </div>`;
 
         futureUnivHtml = `
         <div class="future-univ-section">
-            <div class="future-univ-title">점수가 오르면 이런 대학도 갈 수 있어요</div>
+            <div class="future-univ-title">${strategyCopy.title}</div>
             <div class="future-flow">
                 ${currentBlock}
                 <div class="future-connector">
                     <div class="future-connector-line"></div>
-                    <div class="future-connector-badge">+${Math.round(totalGainRawOnly)}점 향상 시</div>
+                    <div class="future-connector-badge">${strategyCopy.connector || `+${Math.round(totalGainRawOnly)}점 향상 시`}</div>
                     <div class="future-connector-line"></div>
                 </div>
                 <div class="future-stage future-stage-after">
@@ -1467,11 +1720,17 @@ async function initSubjectRec() {
             <div class="future-period">
                 Standard 이용 시 약 <strong>${estimatedWeeks}주</strong> 소요 예상
                 <span style="display:block; font-size:0.78rem; color:#94a3b8; margin-top:3px;">
-                    (원점수 +${Math.round(finalDelta)}점 기준, 주당 약 ${RAW_PER_WEEK}점 상승 가정)
+                    ${escapeTutorialHtml(strategyCopy.note)}
                 </span>
             </div>
         </div>`;
     }
+
+    const strategyReasonsHtml = strategyMeta?.reasons?.length
+        ? `<div class="score-plan-reasons">
+            ${strategyMeta.reasons.map(reason => `<div class="score-plan-reason">${escapeTutorialHtml(reason)}</div>`).join('')}
+        </div>`
+        : '<div class="score-plan-note">3·4순위 전략은 Standard 플랜 시작 후 공개됩니다.</div>';
 
     container.innerHTML = `
         <div class="score-plan-section">
@@ -1480,7 +1739,7 @@ async function initSubjectRec() {
                 <span class="score-plan-total">합격선까지 <strong>+${Math.round(totalGainRawOnly)}점</strong></span>
             </div>
             <div class="score-plan-rows">${planRows}</div>
-            <div class="score-plan-note">3·4순위 전략은 Standard 플랜 시작 후 공개됩니다.</div>
+            ${strategyReasonsHtml}
         </div>
         ${futureUnivHtml}`;
 }
