@@ -272,6 +272,7 @@ header#site-header.scrolled .nav-links a { color: var(--text); }
 .mobile-course-detail .detail-list li { font-size: 13px; font-weight: 400; line-height: 1.6; color: rgba(255,255,255,.9); display: flex; align-items: flex-start; gap: 7px; }
 .mobile-course-detail .detail-list li i.fa-check-circle { color: #4ade80; margin-top: 3px; flex-shrink: 0; }
 .mobile-course-detail .solution-cta-link { display: flex; width: 100%; box-sizing: border-box; justify-content: center; min-height: 44px; align-items: center; border: 1px solid rgba(255,255,255,.5); border-radius: 6px; padding: 0 16px; font-weight: 800; font-size: 13px; color: #fff; margin-top: 12px; text-decoration: none; }
+.mobile-course-detail .solution-cta-link--disabled { opacity: .65; cursor: not-allowed; }
 
 /* ── Review Indicators ── */
 .review-indicators { display: none; justify-content: center; gap: 8px; margin-top: 14px; }
@@ -292,6 +293,8 @@ header#site-header.scrolled .nav-links a { color: var(--text); }
 .solution-card .detail-list li.clickable-item:hover span { text-decoration-color: rgba(0,0,0,.6); }
 .solution-card .solution-cta-link { display: inline-flex; min-height: 44px; align-items: center; border: 1px solid var(--purple); border-radius: 4px; padding: 0 20px; font-weight: 800; font-size: 14px; color: var(--purple); margin-top: 16px; transition: background .2s, color .2s; }
 .solution-card .solution-cta-link:hover { background: var(--purple); color: #fff; }
+.solution-card .solution-cta-link--disabled { border-color: #cbd5e1; color: #64748b; cursor: not-allowed; background: #f8fafc; }
+.solution-card .solution-cta-link--disabled:hover { background: #f8fafc; color: #64748b; }
 .solution-card .solution-cta-note { display: block; margin-top: 10px; color: var(--purple); font-weight: 700; font-size: 13px; }
 
 /* 피처 프리뷰 패널 */

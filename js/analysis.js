@@ -618,8 +618,7 @@ function applySimTierLock() {
     const container = document.querySelector('.sim-container-new') || document.getElementById('sol-sim');
     if (!container) return;
 
-    // 💡 수정됨: 'trial'을 잠금 대상에서 제외 ('free', 'basic'만 잠금)
-    if (['free', 'basic'].includes(currentUserTier)) {
+    if (['free', 'basic', 'starter'].includes(currentUserTier)) {
         container.style.position = 'relative';
         container.style.minHeight = '400px'; // 모달 위치 통일용 강제 고정
         if (container.querySelector('.sim-tier-lock-overlay')) return;
@@ -630,7 +629,6 @@ function applySimTierLock() {
         overlay.innerHTML = getStandardLockOverlayHTML('점수 상승 시뮬레이션');
         container.appendChild(overlay);
     } else {
-        // 💡 추가됨: 'trial', 'standard', 'pro' 일 경우 자물쇠 원상복구(해제)
         container.style.minHeight = 'auto';
         const existingOverlay = container.querySelector('.sim-tier-lock-overlay');
         if (existingOverlay) existingOverlay.remove();
@@ -1187,8 +1185,8 @@ function checkMbtiReport(data) {
     if (!mbti) { container.innerHTML = ''; return; }
     
     container.innerHTML = `
-        <button onclick="downloadMbtiReport('${mbti}')" id="mbtiDownBtn" class="btn-go-survey" style="background-color: #10b981; color: white; border: none; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
-            <i class="fas fa-file-download"></i> [${escapeHtml(mbti)}] 보고서 다운받기
+        <button type="button" id="mbtiDownBtn" class="btn-go-survey" disabled aria-disabled="true" style="background-color: #cbd5e1; color: #64748b; border: none; box-shadow: none; cursor: not-allowed;">
+            <i class="fas fa-file-download"></i> [${escapeHtml(mbti)}] 보고서 준비 중
         </button>`;
 }
 
@@ -1209,39 +1207,6 @@ function getUserMbti(data) {
         decoded += String.fromCharCode(code);
     }
     return /^[A-Z]{4}$/i.test(decoded) ? decoded.toUpperCase() : '';
-}
-
-async function downloadMbtiReport(mbtiType) {
-    const mbti = String(mbtiType || '').trim().toUpperCase();
-    if (!/^[A-Z]{4}$/.test(mbti)) {
-        alert("MBTI 결과를 확인할 수 없습니다.");
-        return;
-    }
-
-    const btn = document.getElementById('mbtiDownBtn');
-    if (btn) { btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 발급 중...`; btn.disabled = true; }
-
-    const newWindow = window.open('about:blank', '_blank');
-
-    try {
-        const res = await apiFetch(REPORT_API_URL, {
-            method: 'POST',
-            body: JSON.stringify({ type: 'get_mbti_pdf_url', mbtiType: mbti })
-        });
-        const data = await res.json();
-        
-        if (res.ok && data.success && data.downloadUrl) {
-            newWindow.location.href = data.downloadUrl;
-        } else {
-            newWindow.close();
-            alert(data.error || "보고서 발급에 실패했습니다.");
-        }
-    } catch (e) {
-        newWindow.close();
-        alert("서버 통신 오류가 발생했습니다.");
-    } finally {
-        if (btn) { btn.innerHTML = `<i class="fas fa-file-download"></i> [${escapeHtml(mbti)}] 보고서 다운받기`; btn.disabled = false; }
-    }
 }
 
 // [추가] 메인 탭 좌우 스와이프 동적 안내 헬퍼 함수
