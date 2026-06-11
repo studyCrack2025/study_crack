@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>StudyCrack Mobile App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/studycrack-mobile.css" />
+</head>
+<body>
+  <div id="root">StudyCrack 앱을 불러오는 중입니다...</div>
+  <script>
+    window.__studycrackAppBooted = false;
+    setTimeout(function () {
+      if (window.__studycrackAppBooted) return;
+      var root = document.getElementById('root');
+      if (!root) return;
+      root.innerHTML = '<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>스터디크랙 홈</h3><p class="sub">초기 로딩이 지연되어 홈으로 이동했습니다.</p></div></div></div></div>';
+    }, 12000);
+  </script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="./js/config.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel" src="./js/studycrack-mobile.js"></script>
+</body>
+</html>
