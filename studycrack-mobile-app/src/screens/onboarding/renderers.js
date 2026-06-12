@@ -29,25 +29,25 @@ function renderBubble(text, crackySrc = CRACKY_SRC) {
   return `<div class="card ob-bubble-card"><img loading="lazy" decoding="async" src="${crackySrc}" class="ob-cracky" alt="크랙이"/><p>${text}</p></div>`;
 }
 
-export function renderOb1Screen(ctx) {
-  const {
-    appbar,
-    layout,
-    obGradeStatus,
-    obGoalText,
-    obQuestionText,
-    obSchoolName,
-    obTrack,
-    crackySrc = CRACKY_SRC
-  } = ctx;
+function renderOnboardingScreen(ctx, { step, title, subcopy, bubbleText, body = '', cta = '' }) {
+  const { appbar, layout, crackySrc = CRACKY_SRC } = ctx;
 
   return layout(
     `<div class="onboarding-container"><div class="content">
-       ${renderOnboardingProgress(1)}
-       ${appbar('학습성향 진단 1-1', true)}
-       <p class="sub ob-subcopy">지금 성적과 공부 습관을 바탕으로<br/>나에게 맞는 합격 전략을 찾아볼게요.</p>
-       ${renderBubble('성적만 보는 게 아니라, 공부 방식까지 같이 봐야 정확해요!', crackySrc)}
-       <div class="ob1-survey-card">
+       ${renderOnboardingProgress(step)}
+       ${appbar(title, true)}
+       <p class="sub ob-subcopy">${subcopy}</p>
+       ${renderBubble(bubbleText, crackySrc)}
+       ${body}
+       </div><div class="cta-wrapper cta-container onboarding-fixed-cta">${cta}</div></div>`,
+    false
+  );
+}
+
+export function renderOb1Screen(ctx) {
+  const { obGradeStatus, obGoalText, obQuestionText, obSchoolName, obTrack } = ctx;
+
+  const body = `<div class="ob1-survey-card">
          <h3>정성조사서</h3>
          <p class="ob1-subtitle">학습 상황과 고민을 알려주시면 더 정확한 전략을 만들 수 있어요.</p><p class="ob1-subtitle" style="color:#ef4444;font-weight:700;">* 표시는 필수 입력 항목입니다.</p>
          <div class="ob1-field-stack">
@@ -76,22 +76,22 @@ export function renderOb1Screen(ctx) {
              <textarea class="ob1-textarea" data-field="obQuestionText" placeholder="자유롭게 입력">${obQuestionText}</textarea>
            </div>
          </div>
-       </div>
-       </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="goto" data-target="ob2">1-2 성적 입력으로</button></div></div>`,
-    false
-  );
+       </div>`;
+
+  return renderOnboardingScreen(ctx, {
+    step: 1,
+    title: '학습성향 진단 1-1',
+    subcopy: '지금 성적과 공부 습관을 바탕으로<br/>나에게 맞는 합격 전략을 찾아볼게요.',
+    bubbleText: '성적만 보는 게 아니라, 공부 방식까지 같이 봐야 정확해요!',
+    body,
+    cta: '<button class="cta-button" data-action="goto" data-target="ob2">1-2 성적 입력으로</button>'
+  });
 }
 
 export function renderOb2Screen(ctx) {
-  const { appbar, layout, obExamType, crackySrc = CRACKY_SRC } = ctx;
+  const { obExamType } = ctx;
 
-  return layout(
-    `<div class="onboarding-container"><div class="content">
-       ${renderOnboardingProgress(2)}
-       ${appbar('학습성향 진단 1-2', true)}
-       <p class="sub ob-subcopy">과목별 성적을 입력하면 현재 위치를<br/>더 정확하게 계산할 수 있어요.</p>
-       ${renderBubble('점수는 세밀할수록 좋아요! 입력한 정보로 맞춤 분석을 진행할게요.', crackySrc)}
-       <div class="ob1-score-wrap">
+  const body = `<div class="ob1-score-wrap">
          <h3>성적 입력 <span style="color:#ef4444">*</span></h3>
          <p class="score-subtitle">과목별 입력을 완료하면 현재 위치를 더 정확하게 계산해요.</p>
          <div class="ob1-score-exam">
@@ -116,37 +116,35 @@ export function renderOb2Screen(ctx) {
            <div class="ob1-subject-card"><h4>탐구1</h4><select class="ob1-score-select" data-field="obInquiry1Subject">${renderInquirySubjectOptions()}</select><input class="ob1-score-input" data-score-key="inquiry1_raw" placeholder="원점수" type="number"/></div>
            <div class="ob1-subject-card"><h4>탐구2</h4><select class="ob1-score-select" data-field="obInquiry2Subject">${renderInquirySubjectOptions()}</select><input class="ob1-score-input" data-score-key="inquiry2_raw" placeholder="원점수" type="number"/></div>
          </div>
-       </div>
-       </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="goto" data-target="ob3">1-3 학습 MBTI로</button><button type="button" class="auth-link-btn" data-action="skipOb2WithoutScore">시험 성적이 없어요</button></div></div>`,
-    false
-  );
+       </div>`;
+
+  return renderOnboardingScreen(ctx, {
+    step: 2,
+    title: '학습성향 진단 1-2',
+    subcopy: '과목별 성적을 입력하면 현재 위치를<br/>더 정확하게 계산할 수 있어요.',
+    bubbleText: '점수는 세밀할수록 좋아요! 입력한 정보로 맞춤 분석을 진행할게요.',
+    body,
+    cta: '<button class="cta-button" data-action="goto" data-target="ob3">1-3 학습 MBTI로</button><button type="button" class="auth-link-btn" data-action="skipOb2WithoutScore">시험 성적이 없어요</button>'
+  });
 }
 
 export function renderOb3Screen(ctx) {
-  const {
-    appbar,
-    layout,
-    mbtiAnswers,
-    mbtiDone,
-    mbtiModalOpen,
-    mbtiResult,
-    crackySrc = CRACKY_SRC
-  } = ctx;
+  const { mbtiAnswers, mbtiDone, mbtiModalOpen, mbtiResult } = ctx;
 
-  return layout(
-    `<div class="onboarding-container"><div class="content">
-       ${renderOnboardingProgress(3)}
-       ${appbar('학습성향 진단 1-3', true)}
-       <p class="sub ob-subcopy">마지막 단계예요.<br/>학습 MBTI로 내 공부 성향을 진단해보세요.</p>
-       ${renderBubble('짧은 질문 4개로 학습 성향을 빠르게 확인할 수 있어요!', crackySrc)}
-       <div class="card ob-card">
+  const body = `<div class="card ob-card">
          <p class="analysis-title">학습 MBTI 검사</p>
          <p class="sub">4문항으로 빠르게 진단해요.</p>
          <button class="btn btn-secondary" data-action="openMbtiModal">MBTI 시작하기</button>
          ${mbtiResult ? `<div class="card" style="margin-top:12px;border:2px solid #2563EB;background:#EFF6FF;"><p class="analysis-title">진단 결과</p><p style="margin:6px 0 2px;font-size:30px;font-weight:900;letter-spacing:.08em;color:#1D4ED8;text-shadow:0 6px 18px rgba(37,99,235,.18);">CSDR</p><p class="sub" style="margin:0 0 12px;font-size:12px;color:#1E40AF;">(컨셉형, 직관령, 분석형, 루틴)</p><button class="btn btn-secondary" disabled>맞춤 공부법 PDF 준비 중</button></div>` : ''}
        </div>
-       ${renderMbtiModal({ mbtiModalOpen, mbtiAnswers, mbtiDone })}
-       </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="goto" data-target="ob4">분석 결과 보기</button></div></div>`,
-    false
-  );
+       ${renderMbtiModal({ mbtiModalOpen, mbtiAnswers, mbtiDone })}`;
+
+  return renderOnboardingScreen(ctx, {
+    step: 3,
+    title: '학습성향 진단 1-3',
+    subcopy: '마지막 단계예요.<br/>학습 MBTI로 내 공부 성향을 진단해보세요.',
+    bubbleText: '짧은 질문 4개로 학습 성향을 빠르게 확인할 수 있어요!',
+    body,
+    cta: '<button class="cta-button" data-action="goto" data-target="ob4">분석 결과 보기</button>'
+  });
 }
