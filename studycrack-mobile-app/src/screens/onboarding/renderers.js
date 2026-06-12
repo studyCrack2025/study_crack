@@ -1,4 +1,5 @@
 import { renderGradeButtons } from '../../components/grade-buttons.js';
+import { renderMbtiModal } from '../../components/mbti-modal.js';
 import { EXAM_OPTIONS } from '../../constants/options.js';
 import { CRACKY_SRC } from '../../constants/assets.js';
 
@@ -12,10 +13,6 @@ export function renderOnboardingProgress(step) {
 
 function selected(value, candidate) {
   return value === candidate ? 'selected' : '';
-}
-
-function active(value, candidate) {
-  return value === candidate ? 'active' : '';
 }
 
 function renderGradeOptions() {
@@ -148,14 +145,7 @@ export function renderOb3Screen(ctx) {
          <button class="btn btn-secondary" data-action="openMbtiModal">MBTI 시작하기</button>
          ${mbtiResult ? `<div class="card" style="margin-top:12px;border:2px solid #2563EB;background:#EFF6FF;"><p class="analysis-title">진단 결과</p><p style="margin:6px 0 2px;font-size:30px;font-weight:900;letter-spacing:.08em;color:#1D4ED8;text-shadow:0 6px 18px rgba(37,99,235,.18);">CSDR</p><p class="sub" style="margin:0 0 12px;font-size:12px;color:#1E40AF;">(컨셉형, 직관령, 분석형, 루틴)</p><button class="btn btn-secondary" disabled>맞춤 공부법 PDF 준비 중</button></div>` : ''}
        </div>
-       ${mbtiModalOpen ? `<div class="home-modal-overlay" data-action="closeMbtiModal"><div class="home-modal ob-mbti-modal" data-action="noopModal">
-         <p class="home-modal-title">학습 MBTI 검사</p>
-         <div class="ob-mbti-q"><p>1) 계획을 세우고 공부하는 편인가요?</p><div class="ob-mbti-opt"><button data-action="setMbti" data-mbti-q="q1" data-mbti-v="plan" class="${active(mbtiAnswers.q1, 'plan')}">네</button><button data-action="setMbti" data-mbti-q="q1" data-mbti-v="flex" class="${active(mbtiAnswers.q1, 'flex')}">아니오</button></div></div>
-         <div class="ob-mbti-q"><p>2) 혼자 공부할 때 집중이 잘 되나요?</p><div class="ob-mbti-opt"><button data-action="setMbti" data-mbti-q="q2" data-mbti-v="solo" class="${active(mbtiAnswers.q2, 'solo')}">네</button><button data-action="setMbti" data-mbti-q="q2" data-mbti-v="group" class="${active(mbtiAnswers.q2, 'group')}">아니오</button></div></div>
-         <div class="ob-mbti-q"><p>3) 부족한 과목부터 먼저 하는 편인가요?</p><div class="ob-mbti-opt"><button data-action="setMbti" data-mbti-q="q3" data-mbti-v="weak_first" class="${active(mbtiAnswers.q3, 'weak_first')}">네</button><button data-action="setMbti" data-mbti-q="q3" data-mbti-v="strong_first" class="${active(mbtiAnswers.q3, 'strong_first')}">아니오</button></div></div>
-         <div class="ob-mbti-q"><p>4) 피드백이 있으면 공부가 더 잘 되나요?</p><div class="ob-mbti-opt"><button data-action="setMbti" data-mbti-q="q4" data-mbti-v="feedback" class="${active(mbtiAnswers.q4, 'feedback')}">네</button><button data-action="setMbti" data-mbti-q="q4" data-mbti-v="self" class="${active(mbtiAnswers.q4, 'self')}">아니오</button></div></div>
-         <button class="btn btn-primary ${mbtiDone ? '' : 'disabled'}" data-action="completeMbti" ${mbtiDone ? '' : 'disabled'}>검사 완료</button>
-       </div></div>` : ''}
+       ${renderMbtiModal({ mbtiModalOpen, mbtiAnswers, mbtiDone })}
        </div><div class="cta-wrapper cta-container onboarding-fixed-cta"><button class="cta-button" data-action="goto" data-target="ob4">분석 결과 보기</button></div></div>`,
     false
   );
