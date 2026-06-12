@@ -1,3 +1,5 @@
+import { renderSheet } from '../../components/sheet.js';
+
 const PLANNER_SUBJECTS = ['수학', '국어', '영어', '탐구', '기타'];
 const PLANNER_DURATIONS = [
   ['30', '30분'],
@@ -34,12 +36,14 @@ function renderPlannerItems({ plannerViewItems = [], selectedPlannerDate = '' })
 
 function renderCalendarSheet({ plannerCalendarOpen = false, selectedPlannerDate = '' }) {
   if (!plannerCalendarOpen) return '';
-  return `<div class="planner-sheet-overlay" data-action="closePlannerCalendar"><div class="planner-sheet planner-calendar-sheet" data-action="noopModal"><button class="planner-sheet-close" data-action="closePlannerCalendar">✕</button><h3>2024년 5월</h3><div class="planner-calendar-grid">${Array.from({ length: 31 }, (_, i) => i + 1).map((day) => `<button class="planner-cal-day ${activeClass(selectedPlannerDate === String(day))}" data-action="selectPlannerDate" data-planner-date="${day}">${day}</button>`).join('')}</div></div></div>`;
+  const body = `<button class="planner-sheet-close" data-action="closePlannerCalendar">✕</button><h3>2024년 5월</h3><div class="planner-calendar-grid">${Array.from({ length: 31 }, (_, i) => i + 1).map((day) => `<button class="planner-cal-day ${activeClass(selectedPlannerDate === String(day))}" data-action="selectPlannerDate" data-planner-date="${day}">${day}</button>`).join('')}</div>`;
+  return renderSheet({ panelClass: 'planner-calendar-sheet', dismissAction: 'closePlannerCalendar', body });
 }
 
 function renderEditSheet({ plannerEditIndex = null, plannerEditItem = null }) {
   if (plannerEditIndex === null) return '';
-  return `<div class="planner-sheet-overlay" data-action="closePlannerEdit"><div class="planner-sheet" data-action="noopModal"><button class="planner-sheet-close" data-action="closePlannerEdit">✕</button><h3>플래너 항목 수정</h3><div class="planner-sheet-block"><label>과목</label><input class="planner-input" data-field="plannerEditSubject" value="${plannerEditItem?.subject || ''}" /></div><div class="planner-sheet-block"><label>세부 내용</label><input class="planner-input" data-field="plannerEditContent" value="${plannerEditItem?.content || ''}" /></div><div class="planner-sheet-block"><label>소요 시간(분)</label><input class="planner-input" data-field="plannerEditMinutes" type="number" value="${plannerEditItem?.minutes || ''}" /></div><button class="btn btn-primary" data-action="savePlannerEdit">수정 저장</button></div></div>`;
+  const body = `<button class="planner-sheet-close" data-action="closePlannerEdit">✕</button><h3>플래너 항목 수정</h3><div class="planner-sheet-block"><label>과목</label><input class="planner-input" data-field="plannerEditSubject" value="${plannerEditItem?.subject || ''}" /></div><div class="planner-sheet-block"><label>세부 내용</label><input class="planner-input" data-field="plannerEditContent" value="${plannerEditItem?.content || ''}" /></div><div class="planner-sheet-block"><label>소요 시간(분)</label><input class="planner-input" data-field="plannerEditMinutes" type="number" value="${plannerEditItem?.minutes || ''}" /></div><button class="btn btn-primary" data-action="savePlannerEdit">수정 저장</button>`;
+  return renderSheet({ dismissAction: 'closePlannerEdit', body });
 }
 
 function renderSubjectPills(plannerDraft = {}) {

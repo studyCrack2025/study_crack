@@ -1,4 +1,5 @@
 import { renderModal } from '../../components/modal.js';
+import { renderSheet } from '../../components/sheet.js';
 import { CRACKY_SRC } from '../../constants/assets.js';
 
 const DEFAULT_MENU_ITEMS = [
@@ -103,7 +104,8 @@ function renderStudySubjectSheet(ctx) {
     ? `<p class="sub" style="margin:8px 0 6px">오늘 플래너 일정</p><div class="study-subject-grid">${plannedScheduleOptions.map((row) => `<button class="planner-pill" data-action="selectStudySubject" data-study-subject="${row.subject}" data-study-item-id="${row.id}">${row.label}</button>`).join('')}</div>`
     : '<p class="sub" style="margin-top:8px">오늘 플래너 일정이 없습니다.</p>';
 
-  return `<div class="planner-sheet-overlay" data-action="closeStudySubjectSheet"><div class="planner-sheet study-subject-sheet" data-action="noopModal"><h3>어떤 과목을 공부할까요?</h3>${freeSubjects}${planned}</div></div>`;
+  const body = `<h3>어떤 과목을 공부할까요?</h3>${freeSubjects}${planned}`;
+  return renderSheet({ panelClass: 'study-subject-sheet', dismissAction: 'closeStudySubjectSheet', body });
 }
 
 function renderNotificationModal(notifModalOpen = false) {
