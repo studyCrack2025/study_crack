@@ -1,3 +1,4 @@
+import { renderModal } from '../../components/modal.js';
 import { renderTermsModal } from '../../components/terms-modal.js';
 import { DEFAULT_USER } from '../../constants/mock-data.js';
 import { TERMS_CONTENT } from '../../constants/terms.js';
@@ -16,17 +17,20 @@ function renderProfileEditModal(ctx) {
 
   if (!myProfileEditOpen) return '';
 
-  return `<div class="home-modal-overlay" data-action="closeMyProfileEdit"><div class="home-modal my-profile-edit-modal" data-action="noopModal"><p class="home-modal-title">프로필 수정</p><div class="my-profile-edit-fields"><label>이름</label><input class="planner-input" data-field="myProfileNameDraft" value="${myProfileNameDraft}" placeholder="이름"/></div><div class="my-profile-edit-fields"><label>목표 대학</label><select class="planner-input" data-field="myProfileTargetDraft">${analysisTargetList.map((major) => `<option value="${major}" ${myProfileTargetDraft === major ? 'selected' : ''}>${major}</option>`).join('')}</select></div><div class="support-btns my-profile-edit-actions"><button class="btn btn-secondary" data-action="closeMyProfileEdit">취소</button><button class="btn btn-primary" data-action="saveMyProfileEdit">저장</button></div></div></div>`;
+  const body = `<p class="home-modal-title">프로필 수정</p><div class="my-profile-edit-fields"><label>이름</label><input class="planner-input" data-field="myProfileNameDraft" value="${myProfileNameDraft}" placeholder="이름"/></div><div class="my-profile-edit-fields"><label>목표 대학</label><select class="planner-input" data-field="myProfileTargetDraft">${analysisTargetList.map((major) => `<option value="${major}" ${myProfileTargetDraft === major ? 'selected' : ''}>${major}</option>`).join('')}</select></div><div class="support-btns my-profile-edit-actions"><button class="btn btn-secondary" data-action="closeMyProfileEdit">취소</button><button class="btn btn-primary" data-action="saveMyProfileEdit">저장</button></div>`;
+  return renderModal({ panelClass: 'my-profile-edit-modal', dismissAction: 'closeMyProfileEdit', body });
 }
 
 function renderLogoutModal(logoutModalOpen = false) {
   if (!logoutModalOpen) return '';
-  return `<div class="home-modal-overlay" data-action="closeLogoutModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">로그아웃하시겠어요?</p><div class="support-btns"><button class="btn btn-secondary" data-action="closeLogoutModal">취소</button><button class="btn btn-primary" data-action="confirmLogout">로그아웃</button></div></div></div>`;
+  const body = `<p class="home-modal-title">로그아웃하시겠어요?</p><div class="support-btns"><button class="btn btn-secondary" data-action="closeLogoutModal">취소</button><button class="btn btn-primary" data-action="confirmLogout">로그아웃</button></div>`;
+  return renderModal({ dismissAction: 'closeLogoutModal', body });
 }
 
 function renderWithdrawModal({ withdrawModalOpen = false, withdrawPassword = '' }) {
   if (!withdrawModalOpen) return '';
-  return `<div class="home-modal-overlay" data-action="closeWithdrawModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">회원탈퇴</p><p class="sub" style="margin:8px 0 12px;">현재 비밀번호를 입력하면 탈퇴할 수 있습니다.</p><input class="planner-input" type="password" data-field="withdrawPassword" value="${withdrawPassword}" placeholder="현재 비밀번호"/><div class="support-btns" style="margin-top:12px"><button class="btn btn-secondary" data-action="closeWithdrawModal">취소</button><button class="btn btn-primary" data-action="confirmWithdraw">탈퇴하기</button></div></div></div>`;
+  const body = `<p class="home-modal-title">회원탈퇴</p><p class="sub" style="margin:8px 0 12px;">현재 비밀번호를 입력하면 탈퇴할 수 있습니다.</p><input class="planner-input" type="password" data-field="withdrawPassword" value="${withdrawPassword}" placeholder="현재 비밀번호"/><div class="support-btns" style="margin-top:12px"><button class="btn btn-secondary" data-action="closeWithdrawModal">취소</button><button class="btn btn-primary" data-action="confirmWithdraw">탈퇴하기</button></div>`;
+  return renderModal({ dismissAction: 'closeWithdrawModal', body });
 }
 
 export function renderMyPageScreen(ctx) {
