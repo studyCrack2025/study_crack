@@ -176,6 +176,18 @@ export function createInitialAppState() {
   };
 }
 
+// 상태 키별 setX setter를 자동 생성. 핸들러 ctx 계약(setLogoutModalOpen, setScores 등)과 1:1 매칭.
+// value/updater 함수 둘 다 지원(setHistory((h)=>[...h]) 같은 functional update 호환).
+export function createStateSetters(stateKeys, { setState, getState } = {}) {
+  const setters = {};
+  for (const key of stateKeys) {
+    const name = `set${key.charAt(0).toUpperCase()}${key.slice(1)}`;
+    setters[name] = (next) =>
+      setState({ [key]: typeof next === 'function' ? next(getState()[key]) : next });
+  }
+  return setters;
+}
+
 // 내비게이션 백본 (순수). React 셸이 getState/setState를 주입한다.
 // onScreenChange: 화면 전환 시 부수효과(스크롤 저장 등) 훅. 브라우저 의존은 셸이 주입.
 export function createNavigationOps({ getState, setState, onScreenChange } = {}) {

@@ -6,7 +6,7 @@ import { renderIcon } from '../components/icon.js';
 import { renderTabBar } from '../components/tab-bar.js';
 import { createMobileEventHandlers } from '../handlers/mobile-handlers.js';
 import { renderMobileScreen } from '../app/screen-registry.js';
-import { createInitialAppState, createNavigationOps } from './app-state.js';
+import { createInitialAppState, createNavigationOps, createStateSetters } from './app-state.js';
 
 const { useCallback, useMemo, useReducer, useRef } = React;
 
@@ -37,6 +37,12 @@ function MobileApp() {
   const stateRef = useRef(state);
   stateRef.current = state;
 
+  // 상태 키별 setX setter 자동 생성(핸들러 ctx 계약 충족). 키는 고정이라 1회 생성.
+  const setters = useMemo(
+    () => createStateSetters(Object.keys(stateRef.current), { setState, getState: () => stateRef.current }),
+    []
+  );
+
   const nav = useMemo(
     () =>
       createNavigationOps({
@@ -56,6 +62,8 @@ function MobileApp() {
 
   const ctx = {
     ...state,
+    // 상태 키별 setX setter 전체(핸들러 ctx 계약)
+    ...setters,
     // 렌더 helper (실제 컴포넌트 주입)
     icon: renderIcon,
     appbar: (title, showBack) => renderAppBar({ title, showBack }),
