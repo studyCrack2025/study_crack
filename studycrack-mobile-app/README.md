@@ -30,4 +30,4 @@
 - Phase 3: screen renderer 분리 완료
 - Phase 4: event handler 분리 완료
 - Phase 5: 앱 entry/screen registry 조립 완료
-- Phase 6: 진행 중 — 공용 셸(AppBar/AppShell/TabBar/Modal/Sheet/MascotBubble)·공유 조각(약관/학년/MBTI 모달) 추출, 온보딩 공통 셸 단일화, 앱 전역 모달/시트 오버레이를 공용 Modal/Sheet로 통일(drawer 제외) 완료. 남은 건 플래너 항목/카드 컴포넌트화 → 이후 literal JSX 전환(Phase 7 빌드 이후)
+- Phase 6: 비-JSX 1차 정리 완료 — 공용 셸(AppBar/AppShell/TabBar/Modal/Sheet/MascotBubble)·공유 조각(약관/학년/MBTI 모달) 추출, 온보딩 공통 셸 단일화, 앱 전역 모달/시트 오버레이를 공용 Modal/Sheet로 통일(drawer 제외), 플래너 항목 카드 추출. 다음은 literal JSX 전환(Phase 7 빌드 이후)
