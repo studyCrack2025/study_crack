@@ -1,3 +1,5 @@
+import { renderAppBar } from '../components/app-bar.js';
+import { renderAppShell } from '../components/app-shell.js';
 import {
   renderAddUniversityScreen,
   renderAnalysisScreen,
@@ -33,12 +35,12 @@ import {
   renderWeeklyScreen
 } from '../screens/index.js';
 
-function defaultLayout(content) {
-  return String(content || '');
+function defaultLayout(inner, withTab = false) {
+  return renderAppShell({ inner: String(inner || ''), withTab });
 }
 
-function defaultAppbar(title = '') {
-  return `<div class="appbar"><button data-action="back">‹</button><strong>${title}</strong></div>`;
+function defaultAppbar(title = '', showBack = false) {
+  return renderAppBar({ title, showBack });
 }
 
 function defaultIcon() {
@@ -47,7 +49,7 @@ function defaultIcon() {
 
 function renderMissingScreen(ctx, screenName = '') {
   const layout = ctx.layout || defaultLayout;
-  return layout(`<div class="screen app-screen app-content"><div class="center init-loading"><h3>${screenName || 'home'}</h3><p class="sub">화면 renderer 연결 준비 중입니다.</p></div></div>`, false);
+  return layout(`<div class="center init-loading"><h3>${screenName || 'home'}</h3><p class="sub">화면 renderer 연결 준비 중입니다.</p></div>`, false);
 }
 
 export const MOBILE_SCREEN_RENDERER_NAMES = [

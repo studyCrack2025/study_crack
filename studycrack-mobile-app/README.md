@@ -30,4 +30,4 @@
 - Phase 3: screen renderer 분리 완료
 - Phase 4: event handler 분리 완료
 - Phase 5: 앱 entry/screen registry 조립 완료
-- Phase 6: JSX component 전환 (예정)
+- Phase 6: 공용 셸 컴포넌트(AppBar/AppShell/TabBar/Modal/MascotBubble) 추출 완료 — 이후 화면별 컴포넌트화 및 literal JSX 전환(Phase 7 빌드 이후) 진행 예정

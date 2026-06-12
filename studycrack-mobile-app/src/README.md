@@ -4,7 +4,7 @@
 
 - `constants/`: asset path, mock data, 약관, 요금제, 대학 mock 데이터
 - `state/`: localStorage, scroll, planner item normalization 유틸
-- `components/`: 재사용 UI 조각
+- `components/`: 재사용 UI 조각. 공용 셸(AppBar/AppShell/TabBar/Modal/MascotBubble)을 입력 주입형 순수 함수로 분리. 현재는 문자열 반환, literal JSX 전환은 Phase 7 빌드 이후.
 - `screens/`: 화면별 renderer 또는 JSX component. 초기에는 원본 문자열 renderer를 module 함수로 분리합니다.
 - `handlers/`: `data-action` 이벤트 처리와 모바일 앱 handler group 조립
 - `styles/`: 앱 전용 CSS 원본
