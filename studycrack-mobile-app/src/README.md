@@ -8,5 +8,6 @@
 - `screens/`: 화면별 renderer 또는 JSX component. 초기에는 원본 문자열 renderer를 module 함수로 분리합니다.
 - `handlers/`: `data-action` 이벤트 처리와 모바일 앱 handler group 조립
 - `styles/`: 앱 전용 CSS 원본
+- `app/`: screen registry와 모바일 앱 kernel 조립
 
 초기 단계에서는 런타임 파일을 바로 대체하지 않고, 원본과 동일한 의미의 데이터를 이곳에 먼저 분리합니다.

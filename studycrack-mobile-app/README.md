@@ -16,8 +16,9 @@
 2. storage/state 유틸 분리
 3. 화면 renderer 분리
 4. event handler 분리
-5. JSX component 전환
-6. Vite/React 빌드 전환
+5. 앱 entry/screen registry 조립
+6. JSX component 전환
+7. Vite/React 빌드 전환
 
 각 단계는 `docs/exec-plans/active/260611_studycrack_mobile_app_modularization.md`를 기준으로 진행합니다.
 
@@ -27,4 +28,6 @@
 - Phase 1: constants/mock data 분리 완료
 - Phase 2: storage/state 유틸 분리 완료
 - Phase 3: screen renderer 분리 완료
-- Phase 4: handler group 조립 레이어 진행 중
+- Phase 4: event handler 분리 완료
+- Phase 5: 앱 entry/screen registry 조립 완료
+- Phase 6: JSX component 전환 (예정)
