@@ -7,6 +7,7 @@ import { renderTabBar } from '../components/tab-bar.js';
 import { createMobileEventHandlers } from '../handlers/mobile-handlers.js';
 import { renderMobileScreen } from '../app/screen-registry.js';
 import { createInitialAppState, createNavigationOps, createStateSetters } from './app-state.js';
+import { buildDerivedContext } from './derived.js';
 
 const { useCallback, useMemo, useReducer, useRef } = React;
 
@@ -64,6 +65,8 @@ function MobileApp() {
     ...state,
     // 상태 키별 setX setter 전체(핸들러 ctx 계약)
     ...setters,
+    // 화면 renderer가 기대하는 derived view-model(원시 state에서 파생)
+    ...buildDerivedContext(state),
     // 렌더 helper (실제 컴포넌트 주입)
     icon: renderIcon,
     appbar: (title, showBack) => renderAppBar({ title, showBack }),
