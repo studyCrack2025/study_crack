@@ -14,6 +14,8 @@ export const INQUIRY_SUBJECTS = [
   '지구과학'
 ];
 
+export const GRADE_STATUS_OPTIONS = ['고1/2 재학', '고3 재학', 'N수생', '검정고시', '기타'];
+
 export const EXAM_OPTIONS = [
   '3월 모의고사',
   '5월 모의고사',

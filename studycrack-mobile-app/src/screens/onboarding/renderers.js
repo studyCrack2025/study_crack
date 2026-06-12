@@ -1,7 +1,7 @@
+import { renderGradeButtons } from '../../components/grade-buttons.js';
 import { EXAM_OPTIONS } from '../../constants/options.js';
 import { CRACKY_SRC } from '../../constants/assets.js';
 
-const GRADE_STATUS_OPTIONS = ['고1/2 재학', '고3 재학', 'N수생', '검정고시', '기타'];
 const ENGLISH_HISTORY_GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const SOCIAL_INQUIRY_SUBJECTS = ['생활과 윤리', '윤리와 사상', '한국지리', '세계지리', '동아시아사', '세계사', '경제', '정치와 법', '사회·문화'];
 const SCIENCE_INQUIRY_SUBJECTS = ['물리학Ⅰ', '화학Ⅰ', '생명과학Ⅰ', '지구과학Ⅰ', '물리학Ⅱ', '화학Ⅱ', '생명과학Ⅱ', '지구과학Ⅱ'];
@@ -16,10 +16,6 @@ function selected(value, candidate) {
 
 function active(value, candidate) {
   return value === candidate ? 'active' : '';
-}
-
-function renderGradeButtons(current) {
-  return GRADE_STATUS_OPTIONS.map((grade) => `<button class="ob1-pill ${active(current, grade)}" data-action="setObGradeStatus" data-ob-grade="${grade}">${grade}</button>`).join('');
 }
 
 function renderGradeOptions() {

@@ -1,7 +1,7 @@
+import { renderGradeButtons } from '../../components/grade-buttons.js';
 import { EXAM_OPTIONS } from '../../constants/options.js';
 import { RANKING_MOCK } from '../../constants/ranking.js';
 
-const GRADE_STATUS_OPTIONS = ['고1/2 재학', '고3 재학', 'N수생', '검정고시', '기타'];
 const TRACK_OPTIONS = ['예체능', '인문사회', '상경계열', '자연/공학', '의치한약수', '간호', '사범/교대', '기타'];
 const RANKING_PERIODS = [
   ['daily', '일간'],
@@ -11,10 +11,6 @@ const RANKING_PERIODS = [
 
 function defaultTierClass(tier = '') {
   return tier.toLowerCase();
-}
-
-function renderGradeButtons(obGradeStatus = '') {
-  return GRADE_STATUS_OPTIONS.map((grade) => `<button class="ob1-pill ${obGradeStatus === grade ? 'active' : ''}" data-action="setObGradeStatus" data-ob-grade="${grade}">${grade}</button>`).join('');
 }
 
 function renderTrackOptions(obTrack = '') {
