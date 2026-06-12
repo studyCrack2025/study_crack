@@ -1,3 +1,4 @@
+import { renderTermsModal } from '../../components/terms-modal.js';
 import { STUDYCRACK_LOGO_SRC } from '../../constants/assets.js';
 import { TERMS_CONTENT } from '../../constants/terms.js';
 
@@ -18,12 +19,6 @@ function disabled(value) {
 
 function renderLogo(logoSrc = STUDYCRACK_LOGO_SRC) {
   return `<div class="auth-logo-wrap compact signup-logo"><img src="${logoSrc}" class="auth-logo" alt="StudyCrack Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" /><span class="auth-logo-fallback">StudyCrack</span></div>`;
-}
-
-function renderTermsModal(openTermsType, termsContent = TERMS_CONTENT) {
-  if (!openTermsType) return '';
-  const content = termsContent[openTermsType] || {};
-  return `<div class="terms-modal-backdrop" data-action="closeTermsModal"><div class="terms-modal" data-action="noopModal"><button class="terms-modal-close" data-action="closeTermsModal">×</button><p class="terms-modal-title">${content.title || ''}</p><div class="terms-modal-body">${content.body || ''}</div></div></div>`;
 }
 
 function renderFindEmailModal({ findEmailModalOpen, foundEmailMasked }) {
