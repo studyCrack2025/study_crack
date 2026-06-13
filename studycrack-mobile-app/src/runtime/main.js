@@ -33,8 +33,16 @@ function reducer(state, patch) {
 // state 컨테이너 보관 + ctx 조립 + kernel 렌더 + data-action dispatch만 담당.
 // 현재 연결: 상태 컨테이너 전체 + 내비게이션(goto/back/tab) + 전체 action dispatch(미연결 연산은 no-op).
 // 미연결: 화면별 derived view-model, localStorage 영속/타이머/스크롤/제스처 effect(후속 단계).
+// 프리뷰/디자인 점검용: URL ?screen=<id>로 초기 화면 지정(파라미터 있을 때만 override).
+function createInitialAppStateWithScreenParam() {
+  const base = createInitialAppState();
+  if (typeof window === 'undefined' || !window.location) return base;
+  const param = new URLSearchParams(window.location.search).get('screen');
+  return param ? { ...base, screen: param } : base;
+}
+
 function MobileApp() {
-  const [state, setState] = useReducer(reducer, undefined, createInitialAppState);
+  const [state, setState] = useReducer(reducer, undefined, createInitialAppStateWithScreenParam);
   const stateRef = useRef(state);
   stateRef.current = state;
 
