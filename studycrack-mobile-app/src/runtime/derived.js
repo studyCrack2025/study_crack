@@ -26,6 +26,15 @@ function formatMinutesLabel(minutes) {
   return `${min}분`;
 }
 
+// 원점수 → 표준점수/백분위/등급 환산(원본 scoreMetric, 순수 공식·테이블 없음).
+function scoreMetric(raw) {
+  const n = Math.max(0, Number(raw) || 0);
+  const std = Math.min(160, Math.round(n * 0.95 + 22));
+  const pct = Math.min(99, Math.max(1, Math.round(n * 0.9 + 10)));
+  const grade = pct >= 96 ? 1 : pct >= 89 ? 2 : pct >= 77 ? 3 : pct >= 64 ? 4 : pct >= 52 ? 5 : pct >= 40 ? 6 : pct >= 28 ? 7 : pct >= 16 ? 8 : 9;
+  return { std, pct, grade };
+}
+
 // 현재 입력 성적 기준 평균 점수(원본 liveCurrentScore).
 function computeLiveCurrentScore(scores = {}) {
   return Math.round(
@@ -122,7 +131,7 @@ function computeHomeTargets(state = {}) {
 
 // 홈 화면 derived (원본 js/studycrack-mobile.js 홈 계산 블록과 동일).
 export function buildHomeDerived(state = {}) {
-  const { scores = {}, plannerItems = [] } = state;
+  const { scores = {}, plannerItems = [], studyRecords = [], studySubjectRecords = [] } = state;
 
   const liveCurrentScore = computeLiveCurrentScore(scores);
   const homeTargets = computeHomeTargets(state);
@@ -143,12 +152,65 @@ export function buildHomeDerived(state = {}) {
     .sort((a, b) => b[1] - a[1])
     .map(([subject, minutes]) => `${subject} ${formatMinutesLabel(minutes)}`);
 
+  // 오늘 공부 기록 / 진행률 / 과목 breakdown / 랭킹.
+  // 원본 todayStudySeconds = (todayRecord?.studyTime||0) + liveStudySeconds(타이머 ref).
+  // derived는 순수 함수라 라이브 ref가 없어 정지 상태(liveStudySeconds=0)와 동일하게 누적 기록만 반영.
+  // 라이브 타이머 가산은 후속 effect 단계에서 연결한다.
+  const todayKey = FIXED_TODAY_DATE;
+  const todayRecord = studyRecords.find((item) => item.date === todayKey) || null;
+  const todayStudySeconds = todayRecord?.studyTime || 0;
+  const todayPlannerTotalSeconds = todayPlannerTotalMinutes * 60;
+  const todayPlannerProgress = todayPlannerTotalSeconds
+    ? Math.min(100, Math.round((todayStudySeconds / todayPlannerTotalSeconds) * 100))
+    : 0;
+
+  const todaySubjectRecord = studySubjectRecords.find((item) => item.date === todayKey) || { date: todayKey, subjects: {} };
+  const todaySubjectsWithTimer = { ...todaySubjectRecord.subjects };
+
+  const plannedScheduleOptions = todayPlannerItems.map((item) => ({
+    id: item.id,
+    subject: item.subject || '기타',
+    label: `${item.subject || '기타'}${item.content ? ` - ${item.content}` : ''}`
+  }));
+
+  const breakdownSubjects = Array.from(
+    new Set(['국어', '수학', '영어', '탐구', '기타', ...Object.keys(todaySubjectsWithTimer), ...todayPlannerItems.map((item) => item.subject || '기타')])
+  );
+  const breakdownDetailMap = breakdownSubjects.reduce((acc, subject) => {
+    acc[subject] = todayPlannerItems
+      .filter((item) => (item.subject || '기타') === subject)
+      .map((item) => ({
+        content: item.content || '학습 내용 없음',
+        plannedHour: (item.minutes || 0) / 60,
+        actualHour: (item.doneMinutes || 0) / 60
+      }));
+    return acc;
+  }, {});
+
+  const myRank = Math.max(1, 160 - Math.floor(todayStudySeconds / 60));
+  const percentile = Math.max(1, Math.min(100, 100 - Math.floor(todayStudySeconds / 120)));
+  const rankingProgress = Math.max(5, 100 - percentile);
+  const rankTier = percentile <= 5 ? 'diamond' : percentile <= 15 ? 'platinum' : percentile <= 30 ? 'gold' : percentile <= 60 ? 'silver' : 'bronze';
+  const rankTierLabel = rankTier === 'diamond' ? 'DIAMOND' : rankTier === 'platinum' ? 'PLATINUM' : rankTier === 'gold' ? 'GOLD' : rankTier === 'silver' ? 'SILVER' : 'BRONZE';
+
   return {
     liveCurrentScore,
     homeTargets,
     todayPlannerItems,
     todayPlannerTotalMinutes,
-    todayPlannerSubjectSummary
+    todayPlannerSubjectSummary,
+    todayRecord,
+    todayStudySeconds,
+    todayPlannerProgress,
+    todaySubjectsWithTimer,
+    plannedScheduleOptions,
+    breakdownSubjects,
+    breakdownDetailMap,
+    myRank,
+    percentile,
+    rankingProgress,
+    rankTier,
+    rankTierLabel
   };
 }
 
@@ -260,11 +322,54 @@ export function buildAnalysisDerived(state = {}) {
   };
 }
 
+// 성적 정보 화면 derived. 과목별 원점수/표준/백분위/등급 행 HTML을 1:1 생성(원본 scoreInfoDetailList).
+// plannerViewDonutGradient 선례처럼 derived가 표현용 문자열을 반환한다.
+export function buildScoreInfoDerived(state = {}) {
+  const { scores = {}, scoreEditState = {} } = state;
+  const ses = {
+    korean: scoreEditState.korean || {},
+    math: scoreEditState.math || {},
+    inquiry1: scoreEditState.inquiry1 || {},
+    inquiry2: scoreEditState.inquiry2 || {},
+    english: scoreEditState.english,
+    history: scoreEditState.history
+  };
+
+  const scoreRows = [
+    [ses.korean.type || '국어', scores.korean, 'raw'],
+    [ses.math.type || '수학', scores.math, 'raw'],
+    ['영어', scores.english, 'grade-only'],
+    [ses.inquiry1.subject || '탐구1', scores.inquiry1, 'raw'],
+    [ses.inquiry2.subject || '탐구2', scores.inquiry2, 'raw']
+  ];
+
+  const scoreInfoDetailList =
+    scoreRows
+      .map(([subject, raw, type]) => {
+        if (type === 'grade-only') {
+          const englishGrade =
+            Number(ses.english || 0) || Math.min(9, Math.max(1, Math.round((100 - Number(raw || 0)) / 12.5) + 1));
+          return `<div class="score-info-detail-row"><b>${subject}</b><span>-</span><span>-</span><span>-</span><span>${englishGrade}</span></div>`;
+        }
+        const m = scoreMetric(raw);
+        const rawText = Number(raw) > 0 ? raw : '-';
+        const stdText = Number(raw) > 0 ? m.std : '-';
+        const pctText = Number(raw) > 0 ? m.pct : '-';
+        const grdText = Number(raw) > 0 ? m.grade : '-';
+        return `<div class="score-info-detail-row"><b>${subject}</b><span>${rawText}</span><span>${stdText}</span><span>${pctText}</span><span>${grdText}</span></div>`;
+      })
+      .join('') +
+    `<div class="score-info-detail-row"><b>한국사</b><span>-</span><span>-</span><span>-</span><span>${Math.max(1, Number(ses.history || 3) || 3)}</span></div>`;
+
+  return { scoreInfoDetailList };
+}
+
 // 도메인 derived 집계.
 export function buildDerivedContext(state = {}) {
   return {
     ...buildPlannerDerived(state),
     ...buildHomeDerived(state),
-    ...buildAnalysisDerived(state)
+    ...buildAnalysisDerived(state),
+    ...buildScoreInfoDerived(state)
   };
 }
