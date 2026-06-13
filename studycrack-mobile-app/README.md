@@ -31,3 +31,4 @@
 - Phase 4: event handler 분리 완료
 - Phase 5: 앱 entry/screen registry 조립 완료
 - Phase 6: 비-JSX 1차 정리 완료 — 공용 셸(AppBar/AppShell/TabBar/Modal/Sheet/MascotBubble)·공유 조각(약관/학년/MBTI 모달) 추출, 온보딩 공통 셸 단일화, 앱 전역 모달/시트 오버레이를 공용 Modal/Sheet로 통일(drawer 제외), 플래너 항목 카드 추출. 다음은 literal JSX 전환(Phase 7 빌드 이후)
+- Phase 7(진행 중): Vite 빌드 + 런타임 셸 연결. 상태 컨테이너/내비/dispatch/setter + home·analysis·planner derived 연결. design-v2 스타일을 `src/styles/design-v2.css`로 추출해 빌드 번들에 주입(프리뷰 무스타일 회귀 해소). 남은 작업은 비-setter 연산·고위험 effect·`studycrack-mobile.html` 스위치

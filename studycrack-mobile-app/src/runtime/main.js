@@ -1,5 +1,8 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+// V2 재디자인 스타일(원본 designV2StyleTag 추출). 빌드 시 별도 CSS 자산으로 산출되어
+// 프리뷰/런타임 HTML이 외부 V1 CSS 뒤에 로드한다.
+import '../styles/design-v2.css';
 import { renderAppBar } from '../components/app-bar.js';
 import { renderAppShell } from '../components/app-shell.js';
 import { renderIcon } from '../components/icon.js';
