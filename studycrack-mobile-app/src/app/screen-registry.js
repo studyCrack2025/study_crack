@@ -77,7 +77,7 @@ export const MOBILE_SCREEN_RENDERER_NAMES = [
   'proIntro',
   'payment',
   'paymentComplete',
-  'myPage',
+  'my',
   'notificationSettings',
   'customerSupport',
   'settingsMain',
@@ -108,7 +108,8 @@ export function createMobileScreenRenderers(ctx = {}) {
     authSignup: renderAuthSignupScreen,
     customerSupport: renderCustomerSupportScreen,
     home: renderHomeScreen,
-    myPage: renderMyPageScreen,
+    // screen id는 메인 탭/원본 런타임과 동일하게 'my'(레지스트리 camelCase 'myPage'에서 정정).
+    my: renderMyPageScreen,
     notificationSettings: renderNotificationSettingsScreen,
     ob1: renderOb1Screen,
     ob2: renderOb2Screen,
