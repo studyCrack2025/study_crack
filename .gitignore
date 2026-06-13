@@ -9,6 +9,9 @@ node_modules/
 # 2-1. 빌드 산출물 (모바일 앱 Vite 빌드 검증용 dist; 실제 배포 산출물 경로는 HTML 스위치 시 별도 확정)
 studycrack-mobile-app/dist/
 
+# 2-2. Phase 7 런타임 셸 프리뷰 HTML (로컬 확인용; 배포 대상 아님)
+studycrack-mobile-preview.html
+
 # 3. 환경변수 및 설정파일
 .env
 serve.json
