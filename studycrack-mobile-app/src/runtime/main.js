@@ -105,8 +105,11 @@ function MobileApp() {
   const onChange = useCallback((event) => events.handleChange?.(event), [events]);
   const onBlur = useCallback((event) => events.handleBlur?.(event), [events]);
 
+  // display:contents로 래퍼 박스를 없애 원본 DOM(#root > .app-shell) 레이아웃 체인을 보존한다.
+  // (dangerouslySetInnerHTML는 호스트 엘리먼트가 필요하므로 래퍼 자체는 유지하되 레이아웃에서 투명화)
   return React.createElement('div', {
     className: 'studycrack-mobile-root',
+    style: { display: 'contents' },
     onClick,
     onInput,
     onChange,
