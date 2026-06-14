@@ -14,7 +14,7 @@ import { buildDerivedContext } from './derived.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
 
-const { useCallback, useLayoutEffect, useMemo, useReducer, useRef } = React;
+const { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef } = React;
 
 // 스크롤 비-setter 연산(원본 window 스크롤 헬퍼). iOS 가드 상태를 유지해야 하므로
 // 컴포넌트 밖 단일 인스턴스로 둔다(렌더마다 재생성 금지).
@@ -22,6 +22,23 @@ const scrollOps = createScrollOps();
 
 // 라이브 공부 타이머 연산. 인터벌/누적 ref를 유지해야 하므로 컴포넌트 밖 단일 인스턴스.
 const timerOps = createTimerOps();
+
+// 제스처(드래그) 트랜지언트 상태 ref. 리스너 재부착·재렌더에도 진행 중 제스처가 유지되도록 모듈 레벨.
+const touchStartXRef = { current: null };
+const touchLastXRef = { current: null };
+const touchTargetRef = { current: '' };
+const touchCardRef = { current: null };
+const suppressClickUntilRef = { current: 0 };
+
+// 홈 KPI 슬라이더 DOM 상태(원본 getHomeSliderState, 순수 DOM 조회 — 스테일 클로저 회피).
+function getHomeSliderState(doc = globalThis.document) {
+  const slider = doc?.querySelector?.('.home-kpi-slider');
+  const track = slider?.querySelector?.('.home-kpi-track');
+  const indicators = doc?.querySelectorAll?.('.home-kpi-indicator i') || [];
+  const total = indicators.length;
+  const activeIndex = Array.from(indicators).findIndex((el) => el.classList.contains('active'));
+  return { slider, track, indicators, total, activeIndex: activeIndex >= 0 ? activeIndex : 0 };
+}
 
 // 탭바 dimmed 조건. 원본 App()의 tabbarDimmed와 동일.
 function isTabbarDimmed(state) {
@@ -131,6 +148,22 @@ function MobileApp() {
     startLiveStudyTimer: timerOps.startLiveStudyTimer,
     stopLiveStudyTimer: timerOps.stopLiveStudyTimer,
     syncLiveStudyTimerUi: timerOps.syncLiveStudyTimerUi,
+    // 홈 슬라이더 드래그 제스처(원본 1:1). touch ref는 모듈 레벨, slider 상태는 DOM 조회.
+    touchStartXRef,
+    touchLastXRef,
+    touchTargetRef,
+    touchCardRef,
+    suppressClickUntilRef,
+    isIOSSafari: scrollOps.isIOSSafari,
+    getHomeSliderState: () => getHomeSliderState(),
+    // 슬라이드 확정은 state로 반영(JSX 트랙이 유지된 채 transform transition 적용). 원본은 DOM-direct였으나
+    // 이 런타임은 재렌더가 state→DOM이라 state 경유가 필요하다.
+    setHomeSlideDom: (index, motion = '') => {
+      const { total } = getHomeSliderState();
+      const max = Math.max(0, total - 1);
+      const next = Math.max(0, Math.min(Number(index) || 0, max));
+      setState({ homeSlideIndex: next, homeSlideMotion: motion || '' });
+    },
     // 자주 쓰는 최소 연산 (나머지 도메인 연산은 후속 단계에서 연결)
     setField: (key, value) => setState({ [key]: value }),
     closeDrawer: () => setState({ drawerOpen: false }),
@@ -139,6 +172,11 @@ function MobileApp() {
   };
 
   const events = useMemo(() => createMobileEventHandlers(ctx), [ctx]);
+
+  // 제스처(드래그) 리스너를 document에 부착(원본 attachGestureListeners). events가 매 렌더 새 ctx로
+  // 재생성되므로 [events]로 재부착 → 핸들러가 항상 현재 state를 본다(스테일 방지). 홈 드래그 move는
+  // DOM-direct라 드래그 중 setState가 없어 재부착 thrash가 없다. cleanup이 이전 리스너를 제거.
+  useEffect(() => events.gesture?.attachGestureListeners?.(), [events]);
 
   const onClick = useCallback(
     (event) => {
