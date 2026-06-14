@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 💡 메시지 5개로 분할
         const tutMsgs = [
             'Basic 등급 이상에서 사용 가능합니다. 현재 점수를 통해 각 대학에서 본인의 현재 위치를 알려줍니다.',
-            'Standard 등급 이상에서 사용 가능합니다. 현재 점수와 각 대학의 반영비를 통해 어떤 과목을 공부하는 가장 효율적인지를 보여줍니다.',
+            'Basic 등급 이상에서 사용 가능합니다. 현재 점수와 각 대학의 반영비를 통해 어떤 과목을 공부하는 가장 효율적인지를 보여줍니다.',
             'Standard 등급 이상에서 사용 가능합니다. SKY 출신 선생님들이 목표대학 합격을 위해 매주 어떻게 공부를 해야하는지 플래너를 검토해줍니다.',
             'PRO 등급 이상에서 사용 가능합니다. 현재 학습 상황과 고민을 작성하여 1:1 맞춤형 프리미엄 전략 리포트를 요청할 수 있습니다.',
             '담당 컨설턴트가 데이터를 기반으로 분석한 최종 리포트를 2주마다 제공받아, 목표 대학 합격률을 극대화할 수 있습니다.'
@@ -600,13 +600,13 @@ function syncMobileHeight() {
     if (wrapper && wrapper.style.height) wrapper.style.height = '';
 }
 
-function getStandardLockOverlayHTML(featureName) {
+function getBasicLockOverlayHTML(featureName) {
     return `
         <div style="background: white; padding: 30px 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; border: 1px solid #e2e8f0; width: 90%; max-width: 320px; box-sizing: border-box;">
             <i class="fas fa-lock" style="font-size: 2.5rem; color: #7c9eef; margin-bottom: 15px;"></i>
-            <h3 style="margin: 0 0 10px 0; color: #1e293b; font-size: 1.25rem; word-break: keep-all;">Standard 멤버십 전용</h3>
+            <h3 style="margin: 0 0 10px 0; color: #1e293b; font-size: 1.25rem; word-break: keep-all;">Basic 멤버십 전용</h3>
             <p style="color: #475569; font-size: 0.95rem; margin-bottom: 20px; line-height: 1.5; word-break: keep-all;">
-                ${featureName}은(는)<br><strong style="color:#4c79ee;">Standard 등급 이상</strong>부터 이용 가능합니다.
+                ${featureName}은(는)<br><strong style="color:#4c79ee;">Basic 등급 이상</strong>부터 이용 가능합니다.
             </p>
             <button onclick="location.href='/payment'" style="width: 100%; padding: 14px 0; background: #4c79ee; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.2s; white-space: nowrap; word-break: keep-all;">
                 🚀 멤버십 알아보기
@@ -618,7 +618,7 @@ function applySimTierLock() {
     const container = document.querySelector('.sim-container-new') || document.getElementById('sol-sim');
     if (!container) return;
 
-    if (['free', 'basic', 'starter'].includes(currentUserTier)) {
+    if (['free'].includes(currentUserTier)) {
         container.style.position = 'relative';
         container.style.minHeight = '400px'; // 모달 위치 통일용 강제 고정
         if (container.querySelector('.sim-tier-lock-overlay')) return;
@@ -626,7 +626,7 @@ function applySimTierLock() {
         const overlay = document.createElement('div');
         overlay.className = 'sim-tier-lock-overlay';
         overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(200, 217, 255, 0.82); backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
-        overlay.innerHTML = getStandardLockOverlayHTML('점수 상승 시뮬레이션');
+        overlay.innerHTML = getBasicLockOverlayHTML('점수 상승 시뮬레이션');
         container.appendChild(overlay);
     } else {
         container.style.minHeight = 'auto';
