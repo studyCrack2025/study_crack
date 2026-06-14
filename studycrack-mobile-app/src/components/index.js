@@ -6,5 +6,6 @@ export * from './mascot-bubble.js';
 export * from './mbti-modal.js';
 export * from './modal.js';
 export * from './sheet.js';
+export * from './score-journey.js';
 export * from './tab-bar.js';
 export * from './terms-modal.js';

@@ -6,6 +6,7 @@ import '../styles/design-v2.css';
 import { renderAppBar } from '../components/app-bar.js';
 import { renderAppShell } from '../components/app-shell.js';
 import { renderIcon } from '../components/icon.js';
+import { renderScoreJourneyCard, scoreTierClass } from '../components/score-journey.js';
 import { renderTabBar } from '../components/tab-bar.js';
 import { createMobileEventHandlers } from '../handlers/mobile-handlers.js';
 import { getScreenComponent, renderMobileScreen } from '../app/screen-registry.js';
@@ -39,6 +40,23 @@ function getHomeSliderState(doc = globalThis.document) {
   const total = indicators.length;
   const activeIndex = Array.from(indicators).findIndex((el) => el.classList.contains('active'));
   return { slider, track, indicators, total, activeIndex: activeIndex >= 0 ? activeIndex : 0 };
+}
+
+function updatePossibleUnivSlider(slider, nextIndex) {
+  if (!slider) return;
+  const track = slider.querySelector?.('.possible-univ-track');
+  const cards = slider.querySelectorAll?.('.possible-univ-card') || [];
+  const total = cards.length;
+  if (!track || !total) return;
+  const idx = Math.max(0, Math.min(Number(nextIndex) || 0, total - 1));
+  slider.dataset.slideIndex = String(idx);
+  const target = Array.from(cards)[idx];
+  const x = target ? target.offsetLeft : 0;
+  track.style.transition = 'transform .35s cubic-bezier(.22,1,.36,1)';
+  track.style.transform = `translate3d(-${x}px,0,0)`;
+  slider.parentElement?.querySelectorAll?.('.slider-indicator [data-action="slideTo"]')?.forEach((dot, i) => {
+    dot.classList?.toggle?.('active', i === idx);
+  });
 }
 
 // 탭바 dimmed 조건. 원본 App()의 tabbarDimmed와 동일.
@@ -113,13 +131,14 @@ function MobileApp() {
 
   const dimmed = isTabbarDimmed(state);
 
-  const ctx = {
+  const derivedCtx = buildDerivedContext(state, timerOps.studyTimerSecondsRef.current);
+  const baseCtx = {
     ...state,
     // 상태 키별 setX setter 전체(핸들러 ctx 계약)
     ...setters,
     // 화면 renderer가 기대하는 derived view-model(원시 state에서 파생).
     // 라이브 타이머 ref 현재값을 더해 재렌더 시 표시/랭킹/진행률이 base+live로 일관되게 한다.
-    ...buildDerivedContext(state, timerOps.studyTimerSecondsRef.current),
+    ...derivedCtx,
     // 렌더 helper (실제 컴포넌트 주입)
     icon: renderIcon,
     appbar: (title, showBack) => renderAppBar({ title, showBack }),
@@ -158,6 +177,8 @@ function MobileApp() {
     suppressClickUntilRef,
     isIOSSafari: scrollOps.isIOSSafari,
     getHomeSliderState: () => getHomeSliderState(),
+    updatePossibleUnivSlider,
+    scoreTierClass,
     // 슬라이드 확정은 state로 반영(JSX 트랙이 유지된 채 transform transition 적용). 원본은 DOM-direct였으나
     // 이 런타임은 재렌더가 state→DOM이라 state 경유가 필요하다.
     setHomeSlideDom: (index, motion = '') => {
@@ -171,6 +192,10 @@ function MobileApp() {
     closeDrawer: () => setState({ drawerOpen: false }),
     selectPlan: (plan) => setState({ selectedPlan: plan }),
     markOnboardingComplete: () => setState({ loggedIn: true })
+  };
+  const ctx = {
+    ...baseCtx,
+    scoreJourneyCard: (title) => renderScoreJourneyCard(baseCtx, title)
   };
 
   const events = useMemo(() => createMobileEventHandlers(ctx), [ctx]);

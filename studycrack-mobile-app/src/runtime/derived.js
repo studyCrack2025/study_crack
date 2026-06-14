@@ -318,6 +318,7 @@ export function buildAnalysisDerived(state = {}) {
     analysisSearchList,
     analysisGaugeFill,
     analysisGaugeColor,
+    analysisTargetScore,
     analysisStatus,
     analysisStatusColor,
     analysisMajorOptions,
