@@ -12,14 +12,14 @@ const DEFAULT_MENU_ITEMS = [
 
 const DEFAULT_STUDY_SUBJECTS = ['국어', '수학', '영어', '탐구'];
 
-function defaultScoreTierClass(score) {
+export function defaultScoreTierClass(score) {
   const n = Number(score) || 0;
   if (n <= 100) return 'score-tier-low';
   if (n <= 150) return 'score-tier-mid';
   return 'score-tier-high';
 }
 
-function defaultFormatHms(total) {
+export function defaultFormatHms(total) {
   const safeTotal = Math.max(0, Number(total) || 0);
   const h = Math.floor(safeTotal / 3600);
   const m = Math.floor((safeTotal % 3600) / 60);
@@ -27,7 +27,7 @@ function defaultFormatHms(total) {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-function defaultFormatMinutesLabel(minutes) {
+export function defaultFormatMinutesLabel(minutes) {
   const safeMinutes = Math.max(0, Number(minutes) || 0);
   const hour = Math.floor(safeMinutes / 60);
   const min = safeMinutes % 60;
@@ -47,7 +47,7 @@ function renderUniversityCard({ item, plannerBadges, scoreTierClass }) {
         </button>`;
 }
 
-function renderUniversityModal(ctx) {
+export function renderUniversityModal(ctx) {
   const {
     analysisRecommended = [],
     analysisSearchList = [],
@@ -63,7 +63,7 @@ function renderUniversityModal(ctx) {
   return renderModal({ dismissAction: 'closeUniversityModal', body });
 }
 
-function renderStudyBreakdown(ctx) {
+export function renderStudyBreakdown(ctx) {
   const {
     breakdownDetailMap = {},
     breakdownSubjects = [],
@@ -88,7 +88,7 @@ function renderStudyBreakdown(ctx) {
   }).join('')}</div>`;
 }
 
-function renderStudySubjectSheet(ctx) {
+export function renderStudySubjectSheet(ctx) {
   const {
     plannedScheduleOptions = [],
     studySubjectSheetOnlyPlanned = false,
@@ -108,13 +108,13 @@ function renderStudySubjectSheet(ctx) {
   return renderSheet({ panelClass: 'study-subject-sheet', dismissAction: 'closeStudySubjectSheet', body });
 }
 
-function renderNotificationModal(notifModalOpen = false) {
+export function renderNotificationModal(notifModalOpen = false) {
   if (!notifModalOpen) return '';
   const body = `<p class="home-modal-title">알림</p><div class="pro-notif-list"><div><b>주간 코칭 알림</b><p>이번 주 코칭 작성 마감이 오늘 20:00입니다.</p></div><div><b>PRO 리포트 알림</b><p>26년 4월 4주차 리포트가 도착했습니다.</p></div><div><b>플래너 알림</b><p>오늘 계획 3개 중 1개를 완료했어요.</p></div></div><button class="btn btn-primary" data-action="closeNotificationModal">확인</button>`;
   return renderModal({ panelClass: 'pro-notif-modal', dismissAction: 'closeNotificationModal', body });
 }
 
-function renderDrawer({ drawerOpen = false, icon, menuItems = DEFAULT_MENU_ITEMS }) {
+export function renderDrawer({ drawerOpen = false, icon, menuItems = DEFAULT_MENU_ITEMS }) {
   if (!drawerOpen) return '';
   return `<div class="home-modal-overlay drawer-overlay" data-action="closeDrawer"><aside class="side-drawer" data-action="noopModal"><h3>메뉴</h3>${menuItems.map(([target, label]) => `<button class="my-row" data-action="drawerGoto" data-target="${target}">${label}<span>${icon('chevron', false)}</span></button>`).join('')}</aside></div>`;
 }
