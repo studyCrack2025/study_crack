@@ -8,6 +8,7 @@ import { renderAppShell } from '../components/app-shell.js';
 import { renderIcon } from '../components/icon.js';
 import { renderScoreJourneyCard, scoreTierClass } from '../components/score-journey.js';
 import { renderTabBar } from '../components/tab-bar.js';
+import { CRACKY_SRC, ONBOARDING_LOGO_SRC } from '../constants/assets.js';
 import { createMobileEventHandlers } from '../handlers/mobile-handlers.js';
 import { getScreenComponent, renderMobileScreen } from '../app/screen-registry.js';
 import { createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
@@ -31,6 +32,18 @@ const touchLastXRef = { current: null };
 const touchTargetRef = { current: '' };
 const touchCardRef = { current: null };
 const suppressClickUntilRef = { current: 0 };
+
+function markAppBooted() {
+  if (typeof window === 'undefined') return;
+  window.__studycrackAppBooted = true;
+  window.__studycrackAssetSrc = {
+    ...(window.__studycrackAssetSrc || {}),
+    crackySrc: CRACKY_SRC,
+    onboardingLogoSrc: ONBOARDING_LOGO_SRC
+  };
+}
+
+markAppBooted();
 
 // 홈 KPI 슬라이더 DOM 상태(원본 getHomeSliderState, 순수 DOM 조회 — 스테일 클로저 회피).
 function getHomeSliderState(doc = globalThis.document) {
@@ -199,6 +212,20 @@ function MobileApp() {
   };
 
   const events = useMemo(() => createMobileEventHandlers(ctx), [ctx]);
+
+  // HTML fallback timer가 새 런타임을 정상 부팅으로 인식하도록 원본과 같은 플래그를 세운다.
+  useEffect(() => {
+    markAppBooted();
+  }, []);
+
+  // 원본 초기 진입 흐름: splash를 잠깐 노출한 뒤 첫 소개 화면으로 이동.
+  useEffect(() => {
+    if (state.screen !== 'splash') return undefined;
+    const timer = globalThis.setTimeout?.(() => nav.goto('on1', false), 900);
+    return () => {
+      if (timer) globalThis.clearTimeout?.(timer);
+    };
+  }, [state.screen, nav]);
 
   // 제스처(드래그) 리스너를 document에 부착(원본 attachGestureListeners). events가 매 렌더 새 ctx로
   // 재생성되므로 [events]로 재부착 → 핸들러가 항상 현재 state를 본다(스테일 방지). 홈 드래그 move는
