@@ -22,7 +22,7 @@ function renderSearchRow({ analysisTargetList = [], name }) {
   return `<div class="add-univ-row"><div class="add-univ-item-text"><span>${name}</span><span class="add-univ-item-badge">검색</span></div><button class="btn ${added ? 'btn-secondary' : 'btn-primary'} mini" data-action="addAnalysisTarget" data-target-major="${name}" ${added ? 'disabled' : ''}>${added ? '추가됨' : '추가'}</button></div>`;
 }
 
-function renderAnalysisSearchModal(ctx) {
+export function renderAnalysisSearchModal(ctx) {
   const {
     analysisRecommended = [],
     analysisSearchList = [],
@@ -67,7 +67,7 @@ function renderPossibleUniversityCards(ctx) {
           </div>`;
 }
 
-function renderSummaryMode(ctx) {
+export function renderSummaryMode(ctx) {
   const {
     analysisEtaStage = 3,
     analysisGaugeColor = '#2563EB',
@@ -173,7 +173,7 @@ function renderSimulationBar(ctx, item) {
   return `<button class="analysis-v2-bar-item ${targetMajor === full ? 'active' : ''}" data-action="simulateBarGain" data-target-major="${full}" data-base-score="${score}"><b class="score ${tier}">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar ${tier}" style="height:${heightPercent}%;background:${color}"></i>${projectionBox}${projection}</div><p>${label}</p></button>`;
 }
 
-function renderSimulationMode(ctx) {
+export function renderSimulationMode(ctx) {
   const {
     analysisHighlightedSubject = '',
     analysisSimMax = 0,
