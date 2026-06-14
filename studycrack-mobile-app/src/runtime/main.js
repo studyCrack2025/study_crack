@@ -9,7 +9,8 @@ import { renderIcon } from '../components/icon.js';
 import { renderTabBar } from '../components/tab-bar.js';
 import { createMobileEventHandlers } from '../handlers/mobile-handlers.js';
 import { getScreenComponent, renderMobileScreen } from '../app/screen-registry.js';
-import { createInitialAppState, createNavigationOps, createStateSetters } from './app-state.js';
+import { createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
+import { STORAGE_KEYS, safeStringifySet } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
@@ -63,8 +64,9 @@ function reducer(state, patch) {
 // 현재 연결: 상태 컨테이너 전체 + 내비게이션(goto/back/tab) + 전체 action dispatch(미연결 연산은 no-op).
 // 미연결: 화면별 derived view-model, localStorage 영속/타이머/스크롤/제스처 effect(후속 단계).
 // 프리뷰/디자인 점검용: URL ?screen=<id>로 초기 화면 지정(파라미터 있을 때만 override).
+// 초기 상태는 localStorage 하이드레이션을 적용(저장 effect와 짝 → 새로고침 간 상태 유지).
 function createInitialAppStateWithScreenParam() {
-  const base = createInitialAppState();
+  const base = hydrateAppState(createInitialAppState());
   if (typeof window === 'undefined' || !window.location) return base;
   const param = new URLSearchParams(window.location.search).get('screen');
   return param ? { ...base, screen: param } : base;
@@ -177,6 +179,25 @@ function MobileApp() {
   // 재생성되므로 [events]로 재부착 → 핸들러가 항상 현재 state를 본다(스테일 방지). 홈 드래그 move는
   // DOM-direct라 드래그 중 setState가 없어 재부착 thrash가 없다. cleanup이 이전 리스너를 제거.
   useEffect(() => events.gesture?.attachGestureListeners?.(), [events]);
+
+  // localStorage 영속(원본 per-key useEffect 1:1). 변경 시 저장 → hydrateAppState와 짝으로 새로고침 유지.
+  useEffect(() => { safeStringifySet(STORAGE_KEYS.scores, state.scores); }, [state.scores]);
+  useEffect(() => { safeStringifySet(STORAGE_KEYS.plannerItems, state.plannerItems); }, [state.plannerItems]);
+  useEffect(() => { safeStringifySet(STORAGE_KEYS.notifications, state.notifications); }, [state.notifications]);
+  useEffect(() => { safeStringifySet(STORAGE_KEYS.studyRecords, state.studyRecords); }, [state.studyRecords]);
+  useEffect(() => { safeStringifySet(STORAGE_KEYS.studySubjectRecords, state.studySubjectRecords); }, [state.studySubjectRecords]);
+  useEffect(() => {
+    // 문자열 키는 원본과 동일하게 raw 저장(readString과 짝).
+    const ls = globalThis.localStorage;
+    if (!ls?.setItem) return;
+    try {
+      ls.setItem(STORAGE_KEYS.selectedPlan, String(state.selectedPlan ?? ''));
+      ls.setItem(STORAGE_KEYS.selectedUniversity, String(state.targetMajor ?? ''));
+      ls.setItem(STORAGE_KEYS.activeTab, String(state.tab ?? ''));
+    } catch (_error) {
+      /* 저장 실패는 무시(quota/사파리 프라이빗) */
+    }
+  }, [state.selectedPlan, state.targetMajor, state.tab]);
 
   const onClick = useCallback(
     (event) => {

@@ -4,6 +4,8 @@ import {
   DEFAULT_SCORES,
   DEFAULT_USER
 } from '../constants/mock-data.js';
+import { STORAGE_KEYS, readString, safeParse } from '../state/storage.js';
+import { normalizePlannerItems } from '../state/planner-storage.js';
 
 // 메인 탭과 매핑되는 screen id (goto 시 탭 동기화 대상). 원본 App().goto와 동일.
 export const MAIN_TAB_SCREENS = ['home', 'analysis', 'strategy', 'planner', 'my'];
@@ -173,6 +175,33 @@ export function createInitialAppState() {
     coachingTrend: '',
     coachingDropReasons: [],
     coachingAnswers: { step4Reason: '', step5: '', step6: '', step7: '', step8: '' }
+  };
+}
+
+// localStorage 하이드레이션(원본 initializeApp의 동기 로드분 1:1, async 자산/온보딩 플로우는 제외).
+// 저장된 값이 있으면 기본값을 덮어쓴다. 객체는 기본값 위에 머지, 배열/문자열은 유효 시 대체.
+// 저장 effect(main.js)와 짝이 되어 새로고침 간 상태를 유지한다.
+export function hydrateAppState(state = {}, storage = globalThis.localStorage) {
+  if (!storage) return state;
+  const savedScores = safeParse(STORAGE_KEYS.scores, null, storage);
+  const savedItems = safeParse(STORAGE_KEYS.plannerItems, null, storage);
+  const savedNotifications = safeParse(STORAGE_KEYS.notifications, null, storage);
+  const savedStudyRecords = safeParse(STORAGE_KEYS.studyRecords, null, storage);
+  const savedSubjectRecords = safeParse(STORAGE_KEYS.studySubjectRecords, null, storage);
+  const savedPlan = readString(STORAGE_KEYS.selectedPlan, '', storage);
+  const savedTarget = readString(STORAGE_KEYS.selectedUniversity, '', storage);
+  const savedTab = readString(STORAGE_KEYS.activeTab, '', storage);
+  const isPlainObject = (v) => v && typeof v === 'object' && !Array.isArray(v);
+  return {
+    ...state,
+    scores: { ...state.scores, ...(isPlainObject(savedScores) ? savedScores : {}) },
+    plannerItems: Array.isArray(savedItems) ? normalizePlannerItems(savedItems) : state.plannerItems,
+    notifications: { ...state.notifications, ...(isPlainObject(savedNotifications) ? savedNotifications : {}) },
+    studyRecords: Array.isArray(savedStudyRecords) ? savedStudyRecords : state.studyRecords,
+    studySubjectRecords: Array.isArray(savedSubjectRecords) ? savedSubjectRecords : state.studySubjectRecords,
+    selectedPlan: savedPlan || state.selectedPlan,
+    targetMajor: savedTarget || state.targetMajor,
+    tab: savedTab || state.tab
   };
 }
 
