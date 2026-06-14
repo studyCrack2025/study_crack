@@ -227,6 +227,59 @@ function MobileApp() {
     };
   }, [state.screen, nav]);
 
+  // 원본 motion/easing state 정리. class가 남으면 다음 전환 애니메이션이 재발화하지 않는다.
+  useEffect(() => {
+    if (!state.homeSlideMotion) return undefined;
+    const timer = globalThis.setTimeout?.(() => setState({ homeSlideMotion: '' }), 420);
+    return () => {
+      if (timer) globalThis.clearTimeout?.(timer);
+    };
+  }, [state.homeSlideMotion]);
+
+  useEffect(() => {
+    if (!state.scoreSlideMotion) return undefined;
+    const timer = globalThis.setTimeout?.(() => setState({ scoreSlideMotion: '' }), 380);
+    return () => {
+      if (timer) globalThis.clearTimeout?.(timer);
+    };
+  }, [state.scoreSlideMotion]);
+
+  // 분석 화면 진입 시 원본처럼 도달 성적 카드 skeleton을 단계적으로 해제한다.
+  useEffect(() => {
+    if (state.screen !== 'analysis' || state.analysisMode !== 'summary') return undefined;
+    setState({ analysisEtaStage: 1, activeScoreView: 'target' });
+    const timer1 = globalThis.setTimeout?.(() => setState({ analysisEtaStage: 2 }), 1500);
+    const timer2 = globalThis.setTimeout?.(() => setState({ analysisEtaStage: 3 }), 4500);
+    return () => {
+      if (timer1) globalThis.clearTimeout?.(timer1);
+      if (timer2) globalThis.clearTimeout?.(timer2);
+    };
+  }, [state.screen, state.analysisMode, state.targetMajor]);
+
+  useEffect(() => {
+    if (state.screen !== 'analysis') return undefined;
+    setState({ isAnalyzing: true });
+    const timer = globalThis.setTimeout?.(() => setState({ isAnalyzing: false }), 2000);
+    return () => {
+      if (timer) globalThis.clearTimeout?.(timer);
+    };
+  }, [state.screen, state.targetMajor]);
+
+  // 원본 ob3 분석 로딩은 1.5초 후 해제된다. ob5 직접 진입 시에도 영구 오버레이를 방지한다.
+  useEffect(() => {
+    if (state.screen === 'ob5') {
+      if (state.ob3IsAnalyzing) setState({ ob3IsAnalyzing: false });
+      return undefined;
+    }
+    if (state.screen !== 'ob3') return undefined;
+    setState({ ob3IsAnalyzing: true });
+    const timer = globalThis.setTimeout?.(() => setState({ ob3IsAnalyzing: false }), 1500);
+    return () => {
+      if (timer) globalThis.clearTimeout?.(timer);
+      setState({ ob3IsAnalyzing: false });
+    };
+  }, [state.screen]);
+
   // 제스처(드래그) 리스너를 document에 부착(원본 attachGestureListeners). events가 매 렌더 새 ctx로
   // 재생성되므로 [events]로 재부착 → 핸들러가 항상 현재 state를 본다(스테일 방지). 홈 드래그 move는
   // DOM-direct라 드래그 중 setState가 없어 재부착 thrash가 없다. cleanup이 이전 리스너를 제거.
