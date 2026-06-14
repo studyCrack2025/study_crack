@@ -130,8 +130,18 @@ function computeHomeTargets(state = {}) {
 }
 
 // 홈 화면 derived (원본 js/studycrack-mobile.js 홈 계산 블록과 동일).
-export function buildHomeDerived(state = {}) {
-  const { scores = {}, plannerItems = [], studyRecords = [], studySubjectRecords = [] } = state;
+// liveStudySeconds: 라이브 타이머 ref의 현재값(원본 todayStudySeconds = 저장값 + liveStudySeconds).
+// 매초 interval은 DOM을 직접 갱신하고, 재렌더 시 표시/랭킹/진행률 일관성을 위해 여기서 더한다.
+export function buildHomeDerived(state = {}, liveStudySeconds = 0) {
+  const {
+    scores = {},
+    plannerItems = [],
+    studyRecords = [],
+    studySubjectRecords = [],
+    studyTimerRunning = false,
+    activeStudySubject = ''
+  } = state;
+  const live = Number(liveStudySeconds) || 0;
 
   const liveCurrentScore = computeLiveCurrentScore(scores);
   const homeTargets = computeHomeTargets(state);
@@ -158,7 +168,7 @@ export function buildHomeDerived(state = {}) {
   // 라이브 타이머 가산은 후속 effect 단계에서 연결한다.
   const todayKey = FIXED_TODAY_DATE;
   const todayRecord = studyRecords.find((item) => item.date === todayKey) || null;
-  const todayStudySeconds = todayRecord?.studyTime || 0;
+  const todayStudySeconds = (todayRecord?.studyTime || 0) + live;
   const todayPlannerTotalSeconds = todayPlannerTotalMinutes * 60;
   const todayPlannerProgress = todayPlannerTotalSeconds
     ? Math.min(100, Math.round((todayStudySeconds / todayPlannerTotalSeconds) * 100))
@@ -166,6 +176,9 @@ export function buildHomeDerived(state = {}) {
 
   const todaySubjectRecord = studySubjectRecords.find((item) => item.date === todayKey) || { date: todayKey, subjects: {} };
   const todaySubjectsWithTimer = { ...todaySubjectRecord.subjects };
+  if (studyTimerRunning && activeStudySubject) {
+    todaySubjectsWithTimer[activeStudySubject] = (todaySubjectsWithTimer[activeStudySubject] || 0) + live;
+  }
 
   const plannedScheduleOptions = todayPlannerItems.map((item) => ({
     id: item.id,
@@ -364,11 +377,11 @@ export function buildScoreInfoDerived(state = {}) {
   return { scoreInfoDetailList };
 }
 
-// 도메인 derived 집계.
-export function buildDerivedContext(state = {}) {
+// 도메인 derived 집계. liveStudySeconds는 라이브 타이머 ref의 현재값(없으면 0).
+export function buildDerivedContext(state = {}, liveStudySeconds = 0) {
   return {
     ...buildPlannerDerived(state),
-    ...buildHomeDerived(state),
+    ...buildHomeDerived(state, liveStudySeconds),
     ...buildAnalysisDerived(state),
     ...buildScoreInfoDerived(state)
   };

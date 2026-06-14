@@ -12,12 +12,16 @@ import { getScreenComponent, renderMobileScreen } from '../app/screen-registry.j
 import { createInitialAppState, createNavigationOps, createStateSetters } from './app-state.js';
 import { buildDerivedContext } from './derived.js';
 import { createScrollOps } from './scroll-ops.js';
+import { createTimerOps } from './timer-ops.js';
 
 const { useCallback, useLayoutEffect, useMemo, useReducer, useRef } = React;
 
 // 스크롤 비-setter 연산(원본 window 스크롤 헬퍼). iOS 가드 상태를 유지해야 하므로
 // 컴포넌트 밖 단일 인스턴스로 둔다(렌더마다 재생성 금지).
 const scrollOps = createScrollOps();
+
+// 라이브 공부 타이머 연산. 인터벌/누적 ref를 유지해야 하므로 컴포넌트 밖 단일 인스턴스.
+const timerOps = createTimerOps();
 
 // 탭바 dimmed 조건. 원본 App()의 tabbarDimmed와 동일.
 function isTabbarDimmed(state) {
@@ -94,8 +98,9 @@ function MobileApp() {
     ...state,
     // 상태 키별 setX setter 전체(핸들러 ctx 계약)
     ...setters,
-    // 화면 renderer가 기대하는 derived view-model(원시 state에서 파생)
-    ...buildDerivedContext(state),
+    // 화면 renderer가 기대하는 derived view-model(원시 state에서 파생).
+    // 라이브 타이머 ref 현재값을 더해 재렌더 시 표시/랭킹/진행률이 base+live로 일관되게 한다.
+    ...buildDerivedContext(state, timerOps.studyTimerSecondsRef.current),
     // 렌더 helper (실제 컴포넌트 주입)
     icon: renderIcon,
     appbar: (title, showBack) => renderAppBar({ title, showBack }),
@@ -121,6 +126,11 @@ function MobileApp() {
     restoreIfUnexpectedTopJump: scrollOps.restoreIfUnexpectedTopJump,
     markStableScrollPosition: scrollOps.markStableScrollPosition,
     centerPlannerDate: scrollOps.centerPlannerDate,
+    // 라이브 공부 타이머(원본 1:1). interval이 [data-study-base-seconds] DOM을 직접 갱신.
+    studyTimerSecondsRef: timerOps.studyTimerSecondsRef,
+    startLiveStudyTimer: timerOps.startLiveStudyTimer,
+    stopLiveStudyTimer: timerOps.stopLiveStudyTimer,
+    syncLiveStudyTimerUi: timerOps.syncLiveStudyTimerUi,
     // 자주 쓰는 최소 연산 (나머지 도메인 연산은 후속 단계에서 연결)
     setField: (key, value) => setState({ [key]: value }),
     closeDrawer: () => setState({ drawerOpen: false }),
