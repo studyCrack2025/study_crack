@@ -38,13 +38,13 @@ function renderPlannerItems({ plannerViewItems = [], selectedPlannerDate = '' })
        </div>`;
 }
 
-function renderCalendarSheet({ plannerCalendarOpen = false, selectedPlannerDate = '' }) {
+export function renderCalendarSheet({ plannerCalendarOpen = false, selectedPlannerDate = '' }) {
   if (!plannerCalendarOpen) return '';
   const body = `<button class="planner-sheet-close" data-action="closePlannerCalendar">✕</button><h3>2024년 5월</h3><div class="planner-calendar-grid">${Array.from({ length: 31 }, (_, i) => i + 1).map((day) => `<button class="planner-cal-day ${activeClass(selectedPlannerDate === String(day))}" data-action="selectPlannerDate" data-planner-date="${day}">${day}</button>`).join('')}</div>`;
   return renderSheet({ panelClass: 'planner-calendar-sheet', dismissAction: 'closePlannerCalendar', body });
 }
 
-function renderEditSheet({ plannerEditIndex = null, plannerEditItem = null }) {
+export function renderEditSheet({ plannerEditIndex = null, plannerEditItem = null }) {
   if (plannerEditIndex === null) return '';
   const body = `<button class="planner-sheet-close" data-action="closePlannerEdit">✕</button><h3>플래너 항목 수정</h3><div class="planner-sheet-block"><label>과목</label><input class="planner-input" data-field="plannerEditSubject" value="${plannerEditItem?.subject || ''}" /></div><div class="planner-sheet-block"><label>세부 내용</label><input class="planner-input" data-field="plannerEditContent" value="${plannerEditItem?.content || ''}" /></div><div class="planner-sheet-block"><label>소요 시간(분)</label><input class="planner-input" data-field="plannerEditMinutes" type="number" value="${plannerEditItem?.minutes || ''}" /></div><button class="btn btn-primary" data-action="savePlannerEdit">수정 저장</button>`;
   return renderSheet({ dismissAction: 'closePlannerEdit', body });

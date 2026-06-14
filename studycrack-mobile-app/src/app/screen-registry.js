@@ -1,5 +1,6 @@
 import { renderAppBar } from '../components/app-bar.js';
 import { renderAppShell } from '../components/app-shell.js';
+import { PlannerScreen } from '../screens/planner/PlannerScreen.jsx';
 import {
   renderAddUniversityScreen,
   renderAnalysisScreen,
@@ -86,6 +87,17 @@ export const MOBILE_SCREEN_RENDERER_NAMES = [
   'privacyPolicy',
   'termsScreen'
 ];
+
+// dual-mode: JSX(실제 React 트리) 화면 컴포넌트 레지스트리. 여기 등록된 화면은 main.js가
+// 문자열 주입 대신 React 엘리먼트로 렌더해 DOM/scroll 상태를 reconciliation으로 보존한다.
+// 미등록 화면은 기존 문자열 renderer 경로로 폴백한다(점진 이관).
+export const MOBILE_SCREEN_COMPONENTS = {
+  planner: PlannerScreen
+};
+
+export function getScreenComponent(screenName) {
+  return MOBILE_SCREEN_COMPONENTS[screenName] || null;
+}
 
 export function createScreenRenderContext(ctx = {}) {
   return {

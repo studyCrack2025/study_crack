@@ -8,12 +8,12 @@ import { renderAppShell } from '../components/app-shell.js';
 import { renderIcon } from '../components/icon.js';
 import { renderTabBar } from '../components/tab-bar.js';
 import { createMobileEventHandlers } from '../handlers/mobile-handlers.js';
-import { renderMobileScreen } from '../app/screen-registry.js';
+import { getScreenComponent, renderMobileScreen } from '../app/screen-registry.js';
 import { createInitialAppState, createNavigationOps, createStateSetters } from './app-state.js';
 import { buildDerivedContext } from './derived.js';
 import { createScrollOps } from './scroll-ops.js';
 
-const { useCallback, useMemo, useReducer, useRef } = React;
+const { useCallback, useLayoutEffect, useMemo, useReducer, useRef } = React;
 
 // 스크롤 비-setter 연산(원본 window 스크롤 헬퍼). iOS 가드 상태를 유지해야 하므로
 // 컴포넌트 밖 단일 인스턴스로 둔다(렌더마다 재생성 금지).
@@ -75,6 +75,19 @@ function MobileApp() {
     []
   );
 
+  // 플래너 진입/날짜 변경 시 날짜 스트립을 선택 날짜로 가로 센터링.
+  // planner가 JSX(React 트리)라 스트립 노드가 재렌더 간 유지되므로 센터링이 정착한다.
+  // useLayoutEffect에서 동기 실행: commit 직후 layout이 준비되고 paint 전이라 깜빡임이 없으며,
+  // requestAnimationFrame에 의존하지 않아 모든 환경(헤드리스 포함)에서 동작한다.
+  // 미연결 화면에선 .planner-date-strip 부재로 no-op.
+  const plannerCenteredRef = useRef(false);
+  useLayoutEffect(() => {
+    if (state.screen !== 'planner') return;
+    const behavior = plannerCenteredRef.current ? 'smooth' : 'auto';
+    scrollOps.centerPlannerDate(state.selectedDate, behavior);
+    plannerCenteredRef.current = true;
+  }, [state.screen, state.selectedDate]);
+
   const dimmed = isTabbarDimmed(state);
 
   const ctx = {
@@ -93,6 +106,9 @@ function MobileApp() {
         dimmed,
         tabBar: renderTabBar({ tab: state.tab, dimmed, icon: renderIcon })
       }),
+    // JSX 화면이 셸을 직접 조립할 때 쓰는 raw 값(문자열 leaf로 임베드).
+    dimmed,
+    tabBarHtml: renderTabBar({ tab: state.tab, dimmed, icon: renderIcon }),
     // 내비게이션 백본
     goto: nav.goto,
     back: nav.back,
@@ -114,8 +130,6 @@ function MobileApp() {
 
   const events = useMemo(() => createMobileEventHandlers(ctx), [ctx]);
 
-  const html = renderMobileScreen(state.screen, ctx, { fallbackScreen: 'home' });
-
   const onClick = useCallback(
     (event) => {
       events.dispatchAction(event);
@@ -127,16 +141,25 @@ function MobileApp() {
   const onBlur = useCallback((event) => events.handleBlur?.(event), [events]);
 
   // display:contents로 래퍼 박스를 없애 원본 DOM(#root > .app-shell) 레이아웃 체인을 보존한다.
-  // (dangerouslySetInnerHTML는 호스트 엘리먼트가 필요하므로 래퍼 자체는 유지하되 레이아웃에서 투명화)
-  return React.createElement('div', {
+  // 이벤트(onClick/onInput/...)는 양쪽 경로 공통으로 래퍼에 위임된다.
+  const wrapperProps = {
     className: 'studycrack-mobile-root',
     style: { display: 'contents' },
     onClick,
     onInput,
     onChange,
-    onBlur,
-    dangerouslySetInnerHTML: { __html: html }
-  });
+    onBlur
+  };
+
+  // dual-mode: JSX 컴포넌트로 등록된 화면은 실제 React 트리로 렌더(reconciliation → DOM/scroll 보존).
+  // 미등록 화면은 기존 문자열 renderer를 dangerouslySetInnerHTML로 주입(매 렌더 전체 교체).
+  const ScreenComponent = getScreenComponent(state.screen);
+  if (ScreenComponent) {
+    return React.createElement('div', wrapperProps, React.createElement(ScreenComponent, ctx));
+  }
+
+  const html = renderMobileScreen(state.screen, ctx, { fallbackScreen: 'home' });
+  return React.createElement('div', { ...wrapperProps, dangerouslySetInnerHTML: { __html: html } });
 }
 
 const rootEl = document.getElementById('root') || document.body;

@@ -11,7 +11,9 @@ async function collect(dirUrl) {
     const child = new URL(`${entry.name}${entry.isDirectory() ? '/' : ''}`, dirUrl);
     if (entry.isDirectory()) {
       await collect(child);
-    } else if (entry.name.endsWith('.js') || entry.name.endsWith('.jsx')) {
+    } else if (entry.name.endsWith('.js')) {
+      // .js만 node --check로 문법 검증. .jsx는 node가 파싱 못 하므로 제외하고
+      // vite build(esbuild 트랜스파일)가 문법 검증을 담당한다(JSX 점진 이관).
       files.push(child);
     }
   }
