@@ -31,6 +31,9 @@ CLAUDE.md
 AGENTS.md
 ARCHITECTURE.md
 docs/
+# 모바일 앱 모듈 구조 안내 문서(내부용, 공개 레포 비노출)
+studycrack-mobile-app/README.md
+studycrack-mobile-app/src/README.md
 
 # 7. 기타 지금은 안쓰는 파일 및 폴더들
 black/
