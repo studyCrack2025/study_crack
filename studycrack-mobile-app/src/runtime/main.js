@@ -11,8 +11,13 @@ import { createMobileEventHandlers } from '../handlers/mobile-handlers.js';
 import { renderMobileScreen } from '../app/screen-registry.js';
 import { createInitialAppState, createNavigationOps, createStateSetters } from './app-state.js';
 import { buildDerivedContext } from './derived.js';
+import { createScrollOps } from './scroll-ops.js';
 
 const { useCallback, useMemo, useReducer, useRef } = React;
+
+// 스크롤 비-setter 연산(원본 window 스크롤 헬퍼). iOS 가드 상태를 유지해야 하므로
+// 컴포넌트 밖 단일 인스턴스로 둔다(렌더마다 재생성 금지).
+const scrollOps = createScrollOps();
 
 // 탭바 dimmed 조건. 원본 App()의 tabbarDimmed와 동일.
 function isTabbarDimmed(state) {
@@ -92,9 +97,14 @@ function MobileApp() {
     goto: nav.goto,
     back: nav.back,
     beforeGoto: () => true,
-    preserveScroll: (task) => {
-      if (typeof task === 'function') task();
-    },
+    // 비-setter 스크롤 연산(원본 1:1). preserveScroll은 추가 payload 인자를 무시한다.
+    preserveScroll: (task) => scrollOps.preserveScrollAfterStateChange(task),
+    preserveScrollAfterStateChange: scrollOps.preserveScrollAfterStateChange,
+    preserveY: scrollOps.preserveY,
+    afterSafariViewportStable: scrollOps.afterSafariViewportStable,
+    restoreIfUnexpectedTopJump: scrollOps.restoreIfUnexpectedTopJump,
+    markStableScrollPosition: scrollOps.markStableScrollPosition,
+    centerPlannerDate: scrollOps.centerPlannerDate,
     // 자주 쓰는 최소 연산 (나머지 도메인 연산은 후속 단계에서 연결)
     setField: (key, value) => setState({ [key]: value }),
     closeDrawer: () => setState({ drawerOpen: false }),
