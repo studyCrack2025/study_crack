@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light">
-    <title>맞춤 공부법 PDF 다운로드 - 스터디크랙</title>
+    <title>맞춤 공부법 PDF 준비 중 - 스터디크랙</title>
 
     <link rel="stylesheet" href="/css/style.css?v=20260524a">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -62,8 +62,8 @@
         <div class="mbti-dl-card">
             <div class="mbti-dl-hero">
                 <div class="mbti-dl-icon">🧠</div>
-                <h1>나만의 맞춤 공부법 PDF</h1>
-                <p>탐구 MBTI 검사 후 발급된 코드를 입력하면<br>내 유형에 맞는 공부법 PDF를 바로 받을 수 있어요.</p>
+                <h1>맞춤 공부법 PDF 준비 중</h1>
+                <p>현재 탐구 MBTI 결과는 튜토리얼 안 추천 과목과 전략으로 제공됩니다.<br>기존 PDF 다운로드는 잠시 비활성화했습니다.</p>
             </div>
 
             <div class="mbti-step">
@@ -80,13 +80,13 @@
 
             <div class="mbti-step">
                 <p class="mbti-step-label">Step 2</p>
-                <h3>발급 코드 입력 후 다운로드</h3>
-                <input type="text" id="promoInput" class="mbti-code-input" placeholder="XXXX-XXXX-STC" maxlength="13">
-                <p class="mbti-code-hint">검사 결과 페이지 하단의 11자리 코드를 입력해주세요</p>
-                <p class="mbti-expire-note">🚨 PDF 열람 링크는 60초 후 만료됩니다 · 새 창이 열리면 즉시 저장해주세요</p>
-                <button id="downloadBtn" class="mbti-dl-btn" onclick="verifyAndDownload()">
-                    <i class="fas fa-download"></i>
-                    PDF 다운로드
+                <h3>PDF 다운로드 일시 중지</h3>
+                <input type="text" id="promoInput" class="mbti-code-input" placeholder="현재 제공 준비 중" disabled>
+                <p class="mbti-code-hint">코드를 통한 PDF 다운로드는 현재 제공하지 않습니다</p>
+                <p class="mbti-expire-note">튜토리얼과 나만의 솔루션에서 최신 추천 과목과 전략을 확인해주세요</p>
+                <button id="downloadBtn" class="mbti-dl-btn" type="button" disabled aria-disabled="true">
+                    <i class="fas fa-clock"></i>
+                    준비 중
                 </button>
             </div>
         </div>
@@ -109,70 +109,6 @@
             checkLoginStatus();
         });
 
-        const promoInput = document.getElementById('promoInput');
-        promoInput.addEventListener('input', function(e) {
-            let val = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-            if (val.length > 4) val = val.substring(0, 4) + '-' + val.substring(4);
-            if (val.length > 9) val = val.substring(0, 9) + '-' + val.substring(9);
-            e.target.value = val;
-        });
-
-        function decodeMbtiCode(code) {
-            const hexStr = code.replace(/-/g, '').replace('STC', '');
-            if (hexStr.length !== 8) return null;
-            let mbti = '';
-            for (let i = 0; i < 8; i += 2) {
-                mbti += String.fromCharCode(parseInt(hexStr.substr(i, 2), 16));
-            }
-            return mbti;
-        }
-
-        async function verifyAndDownload() {
-            const btn = document.getElementById('downloadBtn');
-            const code = promoInput.value.trim();
-
-            if (!/^[0-9A-F]{4}-[0-9A-F]{4}-STC$/.test(code)) {
-                return alert("올바른 형태의 코드가 아닙니다. (예: 434D-4446-STC)");
-            }
-
-            const mbtiResult = decodeMbtiCode(code);
-            if (!mbtiResult || !/^[A-Z]{4}$/.test(mbtiResult)) {
-                return alert("유효하지 않은 코드입니다.");
-            }
-
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 처리 중...';
-
-            const newWindow = window.open('about:blank', '_blank');
-            // Reverse Tabnabbing 방지
-            if (newWindow) newWindow.opener = null;
-
-            try {
-                const res = await fetch(CONFIG.api.report, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAccessToken()}` },
-                    body: JSON.stringify({ type: 'get_mbti_pdf_url', mbtiType: mbtiResult })
-                });
-
-                const responseData = await res.json();
-                if (!res.ok) throw new Error(responseData.error || "오류가 발생했습니다.");
-
-                // Open Redirect 방지: HTTPS URL 검증
-                if (!responseData.downloadUrl || !responseData.downloadUrl.startsWith('https://')) {
-                    throw new Error("안전하지 않은 다운로드 경로입니다.");
-                }
-
-                alert(`${mbtiResult} 유형 솔루션 다운로드를 시작합니다!\n\n🚨 새 창이 열리면 60초 안에 반드시 PDF를 기기에 저장해주세요.`);
-                newWindow.location.href = responseData.downloadUrl;
-
-            } catch (e) {
-                if (newWindow && !newWindow.closed) newWindow.close();
-                alert(e.message);
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-download"></i> PDF 다운로드';
-            }
-        }
     </script>
 </body>
 </html>
