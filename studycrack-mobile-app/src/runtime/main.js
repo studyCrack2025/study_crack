@@ -173,6 +173,12 @@ function MobileApp() {
     // auth-handlers의 find_email/비번재설정이 실제 백엔드를 치도록. 미설정 시 핸들러는 graceful no-op.
     authApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.auth) || '',
     apiBase: (typeof window !== 'undefined' && window.CONFIG?.api) || null,
+    // 백엔드 결합 B2(쿠키 세션 공유): 웹 js/shared/api.js의 검증된 단일 출처를 재사용.
+    // apiFetch는 credentials:'include'(쿠키)+401 silent_refresh+만료 시 /login 리다이렉트를 모두 처리.
+    // hasClientSession으로 로그인 여부 판단(실데이터 vs 데모). 미로드 시 graceful no-op.
+    apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
+    hasClientSession: (typeof window !== 'undefined' && window.hasClientSession) || (() => false),
+    redirectToLogin: (typeof window !== 'undefined' && window.redirectToLogin) || (() => {}),
     // 비-setter 스크롤 연산(원본 1:1). preserveScroll은 추가 payload 인자를 무시한다.
     preserveScroll: (task) => scrollOps.preserveScrollAfterStateChange(task),
     preserveScrollAfterStateChange: scrollOps.preserveScrollAfterStateChange,

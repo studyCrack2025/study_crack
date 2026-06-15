@@ -16,7 +16,7 @@ if (typeof window !== 'undefined') {
 // ─── 공개 경로 정의 (비로그인 사용자가 정상 접근하는 페이지) ──────────────────
 // 공개 경로에서 401이 발생해도 강제 로그인 페이지로 튕기지 않는다. 호출처가 알아서 분기.
 const PUBLIC_ROUTES_EXACT = ['/', '/login', '/signup', '/tutor/login', '/tutor/signup', '/welcome', '/social-callback', '/admin/login', '/service', '/promo'];
-const PUBLIC_ROUTES_PREFIX = ['/mbti_', '/checkout', '/success', '/change-password'];
+const PUBLIC_ROUTES_PREFIX = ['/mbti_', '/checkout', '/success', '/change-password', '/studycrack-mobile'];
 
 function isPublicRoute(pathname) {
     const p = pathname || (typeof window !== 'undefined' ? window.location.pathname : '');
