@@ -47,6 +47,7 @@ export function createInitialAppState() {
     drawerOpen: false,
     // user/plan
     user: DEFAULT_USER,
+    userTier: '', // 백엔드 get_user의 computedTier(쿠키 세션 시 채워짐, 미인증은 빈값=데모)
     selectedPlan: DEFAULT_USER.plan,
     duration: '4주',
     targetMajor: DEFAULT_USER.targetUniversity,

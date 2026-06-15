@@ -14,6 +14,7 @@ import { getScreenComponent, renderMobileScreen } from '../app/screen-registry.j
 import { createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, safeStringifySet } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
+import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
 
@@ -313,6 +314,22 @@ function MobileApp() {
       /* 저장 실패는 무시(quota/사파리 프라이빗) */
     }
   }, [state.selectedPlan, state.targetMajor, state.tab]);
+
+  // 백엔드 결합 B3: 쿠키 세션이 있으면 get_user로 실데이터를 가져와 mock 위에 병합(1회).
+  // 미인증/실패 시 데모(mock) 유지 — 순수 가산. apiFetch/세션 판별은 웹 단일 출처(window).
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
+    let cancelled = false;
+    fetchCurrentUser({ apiFetch: window.apiFetch, userApiUrl: window.CONFIG?.api?.user }).then((userData) => {
+      if (cancelled || !userData) return;
+      const patch = mapUserToStatePatch(userData, stateRef.current);
+      if (Object.keys(patch).length) setState(patch);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const onClick = useCallback(
     (event) => {
