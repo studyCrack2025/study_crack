@@ -53,3 +53,7 @@ const CONFIG = {
         naver:  { clientId: 'qzuULTydirmJNXlXhnVQ' }
     }
 };
+
+// 모바일 앱 번들(IIFE)은 클래식 스크립트의 렉시컬 CONFIG에 접근 못 하므로 window에 노출.
+// 웹 클래식 스크립트는 bare CONFIG를 그대로 쓰므로 영향 없음(additive).
+window.CONFIG = CONFIG;

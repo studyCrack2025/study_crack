@@ -169,6 +169,10 @@ function MobileApp() {
     goto: nav.goto,
     back: nav.back,
     beforeGoto: () => true,
+    // 백엔드 결합 기반(B1): window.CONFIG(js/config.js)에서 엔드포인트 주입.
+    // auth-handlers의 find_email/비번재설정이 실제 백엔드를 치도록. 미설정 시 핸들러는 graceful no-op.
+    authApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.auth) || '',
+    apiBase: (typeof window !== 'undefined' && window.CONFIG?.api) || null,
     // 비-setter 스크롤 연산(원본 1:1). preserveScroll은 추가 payload 인자를 무시한다.
     preserveScroll: (task) => scrollOps.preserveScrollAfterStateChange(task),
     preserveScrollAfterStateChange: scrollOps.preserveScrollAfterStateChange,
