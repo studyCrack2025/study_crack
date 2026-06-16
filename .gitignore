@@ -11,9 +11,6 @@ studycrack-mobile-app/dist/
 # 2-1-1. Vite 의존성 최적화 캐시 (빌드 시 생성, 커밋 금지)
 studycrack-mobile-app/.vite/
 
-# 2-2. Phase 7 런타임 셸 프리뷰 HTML (로컬 확인용; 배포 대상 아님)
-studycrack-mobile-preview.html
-
 # 3. 환경변수 및 설정파일
 .env
 serve.json
