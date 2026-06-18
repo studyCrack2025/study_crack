@@ -319,7 +319,11 @@ function MobileApp() {
   // 미인증/실패 시 데모(mock) 유지 — 순수 가산. apiFetch/세션 판별은 웹 단일 출처(window).
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
-    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
+    // dev 진단: 세션 게이트 결정 기록(get_user가 아예 안 불리는 경우 구분).
+    const sessionFn = typeof window.hasClientSession === 'function' ? window.hasClientSession : null;
+    const hasSession = sessionFn ? !!sessionFn() : null;
+    window.__scSession = { hasSessionFn: !!sessionFn, hasSession, userId: (() => { try { return localStorage.getItem('userId') || null; } catch (_e) { return null; } })() };
+    if (sessionFn && !hasSession) return undefined;
     let cancelled = false;
     fetchCurrentUser({ apiFetch: window.apiFetch, userApiUrl: window.CONFIG?.api?.user }).then((userData) => {
       if (cancelled || !userData) return;

@@ -75,6 +75,7 @@ export function HomeScreen(ctx) {
     dimmed = false,
     tabBarHtml = '',
     crackySrc = CRACKY_SRC,
+    user = {},
     formatHms = defaultFormatHms,
     formatMinutesLabel = defaultFormatMinutesLabel,
     scoreTierClass = defaultScoreTierClass,
@@ -131,7 +132,7 @@ export function HomeScreen(ctx) {
                 <div className="home-greeting-bubble">
                   <img loading="lazy" decoding="async" src={crackySrc} className="home-greeting-cracky" alt="크랙이" />
                   <div className="home-greeting-speech">
-                    <p className="home-greeting">안녕하세요, 지민님 👋</p>
+                    <p className="home-greeting">안녕하세요, {(user && user.name) || '지민'}님 👋</p>
                     <p className="home-sub">오늘도 크랙한 하루 되세요!</p>
                   </div>
                 </div>
