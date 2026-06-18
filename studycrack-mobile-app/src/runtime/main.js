@@ -320,7 +320,7 @@ function MobileApp() {
     }
   }, [state.selectedPlan, state.targetMajor, state.tab]);
 
-  // 백엔드 결합 B3: 쿠키 세션이 있으면 get_user로 실데이터를 가져와 mock 위에 병합(1회).
+  // 쿠키 세션이 있으면 사용자 데이터를 가져와 mock 위에 병합(1회).
   // 미인증/실패 시 데모(mock) 유지 — 순수 가산. apiFetch/세션 판별은 웹 단일 출처(window).
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
