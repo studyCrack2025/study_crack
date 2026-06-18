@@ -126,6 +126,15 @@ export function mapUserToStatePatch(userData, base = {}) {
   const userPatch = { ...(base.user || {}) };
   if (userData.name) userPatch.name = userData.name;
   if (userData.quantitative && typeof userData.quantitative === 'object') userPatch.quantitative = userData.quantitative;
+  if (userData.qualitative && typeof userData.qualitative === 'object') {
+    userPatch.qualitative = userData.qualitative;
+    if (userData.qualitative.status) patch.obGradeStatus = userData.qualitative.status;
+    if (userData.qualitative.school) patch.obSchoolName = userData.qualitative.school;
+    if (userData.qualitative.stream) patch.obTrack = userData.qualitative.stream;
+    if (userData.qualitative.benefits) patch.obGoalText = userData.qualitative.benefits;
+    if (userData.qualitative.questions) patch.obQuestionText = userData.qualitative.questions;
+    if (userData.qualitative.mbti) patch.mbtiResult = userData.qualitative.mbti;
+  }
   if (userData.computedTier) {
     const tier = String(userData.computedTier).toLowerCase();
     patch.userTier = tier;

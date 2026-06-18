@@ -11,9 +11,11 @@ import { renderTabBar } from '../components/tab-bar.js';
 import { CRACKY_SRC, ONBOARDING_LOGO_SRC } from '../constants/assets.js';
 import { createMobileEventHandlers } from '../handlers/mobile-handlers.js';
 import { getScreenComponent, renderMobileScreen } from '../app/screen-registry.js';
+import { renderScoreEditModal } from '../screens/profile/renderers.js';
 import { createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
-import { STORAGE_KEYS, safeStringifySet } from '../state/storage.js';
+import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
+import { saveQualitative, saveQuantitative, saveTargetUnivs } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
@@ -73,6 +75,15 @@ function updatePossibleUnivSlider(slider, nextIndex) {
   });
 }
 
+function uniqueTargetList(list = []) {
+  return Array.from(new Set((list || []).map((item) => String(item || '').trim()).filter(Boolean))).slice(0, 6);
+}
+
+function notifySaveFailure(result, message) {
+  if (!result || result.ok !== false) return;
+  globalThis.alert?.(result.error || message);
+}
+
 // 탭바 dimmed 조건. 원본 App()의 tabbarDimmed와 동일.
 function isTabbarDimmed(state) {
   return Boolean(
@@ -128,6 +139,29 @@ function MobileApp() {
         }
       }),
     []
+  );
+
+  const getUserApiBinding = useCallback(
+    () => ({
+      apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
+      userApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.user) || ''
+    }),
+    []
+  );
+
+  const persistTargetUnivs = useCallback(
+    (targetList) => saveTargetUnivs({ ...getUserApiBinding(), targetList }),
+    [getUserApiBinding]
+  );
+
+  const persistQuantitative = useCallback(
+    (quantitative) => saveQuantitative({ ...getUserApiBinding(), quantitative }),
+    [getUserApiBinding]
+  );
+
+  const persistQualitative = useCallback(
+    (qualitative) => saveQualitative({ ...getUserApiBinding(), qualitative }),
+    [getUserApiBinding]
   );
 
   // 플래너 진입/날짜 변경 시 날짜 스트립을 선택 날짜로 가로 센터링.
@@ -203,6 +237,7 @@ function MobileApp() {
     getHomeSliderState: () => getHomeSliderState(),
     updatePossibleUnivSlider,
     scoreTierClass,
+    ScoreEditModal: () => renderScoreEditModal(stateRef.current),
     // 슬라이드 확정은 state로 반영(JSX 트랙이 유지된 채 transform transition 적용). 원본은 DOM-direct였으나
     // 이 런타임은 재렌더가 state→DOM이라 state 경유가 필요하다.
     setHomeSlideDom: (index, motion = '') => {
@@ -215,7 +250,26 @@ function MobileApp() {
     setField: (key, value) => setState({ [key]: value }),
     closeDrawer: () => setState({ drawerOpen: false }),
     selectPlan: (plan) => setState({ selectedPlan: plan }),
-    markOnboardingComplete: () => setState({ loggedIn: true })
+    markOnboardingComplete: () => setState({ loggedIn: true }),
+    getExamScoresMap: () => readExamScoresMap(),
+    saveExamScoresMap: (map) => writeExamScoresMap(map),
+    applyScoreExamSelection: (scoreExamType) => setState({ scoreExamType }),
+    persistTargetUnivs,
+    persistQuantitative,
+    persistQualitative,
+    addMajorToTargets: (major) => {
+      if (!major) return false;
+      const current = stateRef.current;
+      const nextAnalysis = uniqueTargetList([...(current.analysisTargetList || []), major]);
+      const nextHome = uniqueTargetList([...(current.homeTargetList || []), major]);
+      setState({
+        analysisTargetList: nextAnalysis,
+        homeTargetList: nextHome,
+        targetMajor: current.targetMajor || major
+      });
+      persistTargetUnivs(nextHome).then((result) => notifySaveFailure(result, '목표 대학 저장에 실패했습니다.'));
+      return true;
+    }
   };
   const ctx = {
     ...baseCtx,

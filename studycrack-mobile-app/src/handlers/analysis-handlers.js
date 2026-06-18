@@ -99,6 +99,7 @@ export function createAnalysisHandlers(ctx) {
     setTargetMajor = noop,
     setTargetOpen = noop,
     setUniversityModalOpen = noop,
+    persistTargetUnivs = noop,
     timeout = setTimeout,
     updatePossibleUnivSlider = noop
   } = ctx;
@@ -259,7 +260,7 @@ export function createAnalysisHandlers(ctx) {
       return true;
     },
 
-    removeAnalysisTarget({ actionEl }) {
+    async removeAnalysisTarget({ actionEl }) {
       const major = getData(actionEl, 'target-major');
       if (!major) return false;
       const homeTargetList = ctx.homeTargetList || [];
@@ -276,6 +277,11 @@ export function createAnalysisHandlers(ctx) {
       });
       if (ctx.targetMajor === major) {
         setTargetMajor(nextAnalysis[0] || nextHome[0] || ctx.analysisRecommended?.[0] || '');
+      }
+      const result = await persistTargetUnivs(nextHome);
+      if (result && result.ok === false) {
+        alert(result.error || '목표 대학 저장에 실패했습니다.');
+        return false;
       }
       return true;
     },
