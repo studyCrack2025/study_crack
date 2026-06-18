@@ -234,7 +234,8 @@ export function buildAnalysisDerived(state = {}) {
     targetMajor = '',
     analysisTargetList = [],
     homeTargetList = [],
-    analysisSearchTerm = ''
+    analysisSearchTerm = '',
+    universityCatalog = []
   } = state;
 
   const liveCurrentScore = computeLiveCurrentScore(scores);
@@ -252,14 +253,21 @@ export function buildAnalysisDerived(state = {}) {
   };
 
   const analysisRecommended = ANALYSIS_RECOMMENDED;
+  const hasUniversityCatalog = Array.isArray(universityCatalog) && universityCatalog.length;
+  const catalogPool = hasUniversityCatalog
+    ? universityCatalog
+    : ANALYSIS_SEARCH_SEED;
+  const recommendedSearchPool = hasUniversityCatalog ? [] : analysisRecommended;
   const analysisSearchPool = Array.from(
-    new Set([...ANALYSIS_SEARCH_SEED, ...(analysisTargetList || []), ...(homeTargetList || []), ...analysisRecommended])
+    new Set([...catalogPool, ...(analysisTargetList || []), ...(homeTargetList || []), ...recommendedSearchPool])
   ).filter(Boolean);
   const normalizedSearchTerm = String(analysisSearchTerm || '').trim().toLowerCase().replace(/\s+/g, '');
-  const analysisSearchList = analysisSearchPool.filter((name) => {
-    if (!normalizedSearchTerm) return true;
-    return String(name).toLowerCase().replace(/\s+/g, '').includes(normalizedSearchTerm);
-  });
+  const analysisSearchList = analysisSearchPool
+    .filter((name) => {
+      if (!normalizedSearchTerm) return true;
+      return String(name).toLowerCase().replace(/\s+/g, '').includes(normalizedSearchTerm);
+    })
+    .slice(0, normalizedSearchTerm ? 80 : 30);
 
   const analysisGaugeFill = Math.min((analysisSelected.score / 250) * 100, 100);
   const analysisGaugeColor =

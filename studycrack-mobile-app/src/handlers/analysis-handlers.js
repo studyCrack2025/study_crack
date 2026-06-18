@@ -213,6 +213,7 @@ export function createAnalysisHandlers(ctx) {
       const input = findUniversitySearchInput(actionEl);
       const value = input?.value || getRefValue(ctx.analysisSearchLiveTermRef);
       setRefValue(ctx.analysisSearchLiveTermRef, value);
+      setAnalysisSearchTerm(value);
       renderUniversityResultsOnly(value, input || actionEl);
       const doc = getDocument(ctx);
       if (input && doc?.activeElement !== input) input.focus?.({ preventScroll: true });

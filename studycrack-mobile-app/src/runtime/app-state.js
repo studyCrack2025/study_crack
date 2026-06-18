@@ -64,6 +64,7 @@ export function createInitialAppState() {
     analysisBarProjectionTarget: '',
     activeScoreView: 'target',
     universityModalOpen: false,
+    universityCatalog: [],
     addingUniversity: false,
     // 홈 슬라이더/드래그
     homeSlideIndex: 0,

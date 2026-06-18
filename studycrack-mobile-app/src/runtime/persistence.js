@@ -63,3 +63,39 @@ export function saveQualitative({ apiFetch, userApiUrl, qualitative } = {}) {
     data: qualitative || {}
   });
 }
+
+function normalizeUniversityCatalog(data) {
+  const list = Array.isArray(data) ? data : (Array.isArray(data?.univs) ? data.univs : []);
+  return Array.from(
+    new Set(
+      list.flatMap((item) => {
+        const univName = String(item?.univName || item?.univ || '').trim();
+        const majors = Array.isArray(item?.majors) ? item.majors : [];
+        if (!univName) return [];
+        if (!majors.length) return [univName];
+        return majors
+          .map((major) => {
+            const name = typeof major === 'string' ? major : major?.name;
+            const majorName = String(name || '').trim();
+            return majorName ? `${univName} ${majorName}` : univName;
+          })
+          .filter(Boolean);
+      })
+    )
+  );
+}
+
+export async function fetchUniversityCatalog({ apiFetch, analysisApiUrl } = {}) {
+  if (typeof apiFetch !== 'function' || !analysisApiUrl) return [];
+  try {
+    const response = await apiFetch(analysisApiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'get_univ_list_only' })
+    });
+    if (!response || !response.ok) return [];
+    const data = await response.json().catch(() => []);
+    return normalizeUniversityCatalog(data);
+  } catch (_error) {
+    return [];
+  }
+}

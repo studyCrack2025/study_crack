@@ -15,7 +15,7 @@ import { renderScoreEditModal } from '../screens/profile/renderers.js';
 import { createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
-import { saveQualitative, saveQuantitative, saveTargetUnivs } from './persistence.js';
+import { fetchUniversityCatalog, saveQualitative, saveQuantitative, saveTargetUnivs } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
@@ -149,6 +149,14 @@ function MobileApp() {
     []
   );
 
+  const getAnalysisApiBinding = useCallback(
+    () => ({
+      apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
+      analysisApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.analysis) || ''
+    }),
+    []
+  );
+
   const persistTargetUnivs = useCallback(
     (targetList) => saveTargetUnivs({ ...getUserApiBinding(), targetList }),
     [getUserApiBinding]
@@ -207,6 +215,7 @@ function MobileApp() {
     // 백엔드 결합 기반(B1): window.CONFIG(js/config.js)에서 엔드포인트 주입.
     // auth-handlers의 find_email/비번재설정이 실제 백엔드를 치도록. 미설정 시 핸들러는 graceful no-op.
     authApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.auth) || '',
+    analysisApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.analysis) || '',
     apiBase: (typeof window !== 'undefined' && window.CONFIG?.api) || null,
     // 백엔드 결합 B2(쿠키 세션 공유): 웹 js/shared/api.js의 검증된 단일 출처를 재사용.
     // apiFetch는 credentials:'include'(쿠키)+401 silent_refresh+만료 시 /login 리다이렉트를 모두 처리.
@@ -389,6 +398,19 @@ function MobileApp() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
+    let cancelled = false;
+    fetchUniversityCatalog(getAnalysisApiBinding()).then((catalog) => {
+      if (cancelled || !catalog.length) return;
+      setState({ universityCatalog: catalog });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [getAnalysisApiBinding]);
 
   const onClick = useCallback(
     (event) => {
