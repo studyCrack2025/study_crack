@@ -2,39 +2,19 @@
 // 쿠키 세션이 있을 때만 get_user로 실데이터를 가져와 mock 위에 병합한다(미인증/실패 시 데모 유지 — 순수 가산).
 // apiFetch는 웹 js/shared/api.js의 단일 출처(credentials:'include'+401 refresh). 여기선 호출만 한다.
 
-// dev 진단 표면: get_user 결과를 window.__scGetUser에 기록(콘솔/주소창에서 한 줄로 원인 판별).
-// 실데이터 흐름이 확정되면 제거.
-function recordDebug(info) {
-  if (typeof window !== 'undefined') {
-    window.__scGetUser = { t: Date.now(), ...info };
-  }
-}
-
 // get_user 호출. 성공 시 백엔드 userData(학생 레코드, 민감필드 제거됨) 반환, 그 외 null.
+// 미인증/네트워크/CORS 실패는 throw 없이 null(데모 유지).
 export async function fetchCurrentUser({ apiFetch, userApiUrl } = {}) {
-  if (typeof apiFetch !== 'function' || !userApiUrl) {
-    recordDebug({ ok: false, reason: 'no-apiFetch-or-url', hasFetch: typeof apiFetch === 'function', userApiUrl: userApiUrl || null });
-    return null;
-  }
+  if (typeof apiFetch !== 'function' || !userApiUrl) return null;
   try {
     const res = await apiFetch(userApiUrl, {
       method: 'POST',
       body: JSON.stringify({ type: 'get_user' })
     });
-    if (!res || !res.ok) {
-      recordDebug({ ok: false, reason: 'non-ok', status: res ? res.status : null });
-      return null;
-    }
+    if (!res || !res.ok) return null;
     const data = await res.json().catch(() => null);
-    if (!data || typeof data !== 'object') {
-      recordDebug({ ok: false, reason: 'bad-json', status: res.status });
-      return null;
-    }
-    recordDebug({ ok: true, status: res.status, name: data.name || null, computedTier: data.computedTier || null, keys: Object.keys(data).slice(0, 20) });
-    return data;
-  } catch (error) {
-    // 미인증/네트워크/CORS 실패 → 데모 유지(throw 안 함).
-    recordDebug({ ok: false, reason: 'throw', error: String((error && error.message) || error) });
+    return data && typeof data === 'object' ? data : null;
+  } catch (_error) {
     return null;
   }
 }

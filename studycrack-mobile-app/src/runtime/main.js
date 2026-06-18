@@ -229,10 +229,15 @@ function MobileApp() {
     markAppBooted();
   }, []);
 
-  // 원본 초기 진입 흐름: splash를 잠깐 노출한 뒤 첫 소개 화면으로 이동.
+  // 초기 진입 흐름: splash를 잠깐 노출한 뒤 이동.
+  // R2(쿠키 세션 공유): 이미 로그인된(쿠키 세션) 사용자는 온보딩 건너뛰고 바로 홈(실데이터)으로,
+  // 미로그인은 기존처럼 소개 화면(on1)으로.
   useEffect(() => {
     if (state.screen !== 'splash') return undefined;
-    const timer = globalThis.setTimeout?.(() => nav.goto('on1', false), 900);
+    const loggedIn =
+      typeof window !== 'undefined' && typeof window.hasClientSession === 'function' && window.hasClientSession();
+    const dest = loggedIn ? 'home' : 'on1';
+    const timer = globalThis.setTimeout?.(() => nav.goto(dest, false), 900);
     return () => {
       if (timer) globalThis.clearTimeout?.(timer);
     };
@@ -319,11 +324,7 @@ function MobileApp() {
   // 미인증/실패 시 데모(mock) 유지 — 순수 가산. apiFetch/세션 판별은 웹 단일 출처(window).
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
-    // dev 진단: 세션 게이트 결정 기록(get_user가 아예 안 불리는 경우 구분).
-    const sessionFn = typeof window.hasClientSession === 'function' ? window.hasClientSession : null;
-    const hasSession = sessionFn ? !!sessionFn() : null;
-    window.__scSession = { hasSessionFn: !!sessionFn, hasSession, userId: (() => { try { return localStorage.getItem('userId') || null; } catch (_e) { return null; } })() };
-    if (sessionFn && !hasSession) return undefined;
+    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
     let cancelled = false;
     fetchCurrentUser({ apiFetch: window.apiFetch, userApiUrl: window.CONFIG?.api?.user }).then((userData) => {
       if (cancelled || !userData) return;
