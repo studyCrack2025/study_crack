@@ -1,0 +1,18 @@
+{
+  "name": "studycrack-mobile-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/check-source.mjs",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10"
+  }
+}
