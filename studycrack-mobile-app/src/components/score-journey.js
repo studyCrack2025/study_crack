@@ -9,11 +9,21 @@ function toEnglishGrade(value) {
   return Math.min(9, Math.max(1, Math.round((100 - Number(value || 0)) / 12.5) + 1));
 }
 
+function formatScoreValue(label, value) {
+  const n = Number(value || 0);
+  if (!n) return '-';
+  return label === '영어' ? `${toEnglishGrade(n)}등급` : `${n}`;
+}
+
+function renderCurrentRow(label, current) {
+  return `<div class="score-row"><span>${label}</span><b>${formatScoreValue(label, current)}</b></div>`;
+}
+
 function renderTargetRow(label, current, target) {
   const diff = target - current;
   const badge = diff > 0 ? `<span class="pill up">+${diff}</span>` : '<span class="pill keep">유지</span>';
-  const fromValue = label === '영어' ? `${toEnglishGrade(current)}등급` : `${current}`;
-  const toValue = label === '영어' ? `${toEnglishGrade(target)}등급` : `${target}`;
+  const fromValue = formatScoreValue(label, current);
+  const toValue = formatScoreValue(label, target);
   const detail = diff > 0
     ? `<span class="old">${fromValue}</span><span class="arrow">→</span><span class="new">${toValue}</span>`
     : fromValue;
@@ -32,6 +42,58 @@ function renderUnavailableCard(title, body, cta = '') {
   `;
 }
 
+function normalizeText(value) {
+  return String(value || '').replace(/\s+/g, '').toLowerCase();
+}
+
+function createSubjectResolver(scoreState = {}) {
+  const inquiryAssignments = new Set();
+  return (subject = '') => {
+    const normalized = normalizeText(subject);
+    const inquiry1 = normalizeText(scoreState.inquiry1?.subject);
+    const inquiry2 = normalizeText(scoreState.inquiry2?.subject);
+    if (normalized.includes('국어') || normalized === 'kor') return 'korean';
+    if (normalized.includes('수학') || normalized === 'math') return 'math';
+    if (normalized.includes('영어') || normalized === 'eng') return 'english';
+    if (normalized.includes('탐구1') || (inquiry1 && normalized.includes(inquiry1))) return 'inquiry1';
+    if (normalized.includes('탐구2') || (inquiry2 && normalized.includes(inquiry2))) return 'inquiry2';
+    if (!inquiryAssignments.has('inquiry1')) {
+      inquiryAssignments.add('inquiry1');
+      return 'inquiry1';
+    }
+    if (!inquiryAssignments.has('inquiry2')) {
+      inquiryAssignments.add('inquiry2');
+      return 'inquiry2';
+    }
+    return '';
+  };
+}
+
+function buildSimulationTarget({ current, analysisSelected, analysisTargetScore, analysisSimRows, scoreState }) {
+  const target = { ...current };
+  const currentAiScore = Math.round(Number(analysisSelected?.score) || 0);
+  const targetAiScore = Math.max(currentAiScore, Math.round(Number(analysisTargetScore) || currentAiScore));
+  let remainingAiGain = Math.max(0, targetAiScore - currentAiScore);
+  const resolveSubject = createSubjectResolver(scoreState);
+  const rows = [...analysisSimRows]
+    .map((row) => ({ ...row, key: resolveSubject(row.subject), gainNum: Number(row.gainNum || 0) }))
+    .filter((row) => row.key && row.gainNum > 0 && Number(current[row.key] || 0) > 0)
+    .sort((a, b) => b.gainNum - a.gainNum)
+    .slice(0, 2);
+
+  rows.forEach((row) => {
+    if (remainingAiGain <= 0) return;
+    const minRawGain = row.key === 'english' ? 1 : 2;
+    const maxRawGain = Math.max(0, 100 - Number(target[row.key] || 0));
+    const neededRawGain = Math.max(minRawGain, Math.ceil(remainingAiGain / Math.max(row.gainNum, 1)));
+    const rawGain = Math.min(maxRawGain, neededRawGain);
+    target[row.key] = Math.min(100, Number(target[row.key] || 0) + rawGain);
+    remainingAiGain = Math.max(0, remainingAiGain - rawGain * row.gainNum);
+  });
+
+  return target;
+}
+
 export function renderScoreJourneyCard(ctx = {}, title = '최소 노력 대비 합격 도달 성적') {
   const {
     activeScoreView = 'target',
@@ -42,6 +104,7 @@ export function renderScoreJourneyCard(ctx = {}, title = '최소 노력 대비 �
     canAccessStandard = false,
     scoreDragOffset = 0,
     scoreSlideMotion = '',
+    scoreState = {},
     scores = {}
   } = ctx;
   if (!canAccessStandard) {
@@ -74,17 +137,13 @@ export function renderScoreJourneyCard(ctx = {}, title = '최소 노력 대비 �
     Number(analysisSelected?.score) ||
       ((current.korean + current.math + current.english + current.inquiry1 + current.inquiry2) / 5)
   );
-  const target = {
-    korean: Math.min(100, current.korean + Math.max(1, Math.round((100 - current.korean) * 0.12))),
-    math: Math.min(100, current.math + Math.max(2, Math.round((100 - current.math) * 0.22))),
-    english: Math.min(100, current.english + Math.max(1, Math.round((100 - current.english) * 0.08))),
-    inquiry1: Math.min(100, current.inquiry1 + Math.max(1, Math.round((100 - current.inquiry1) * 0.14))),
-    inquiry2: Math.min(100, current.inquiry2 + Math.max(1, Math.round((100 - current.inquiry2) * 0.1)))
-  };
+  const target = buildSimulationTarget({ current, analysisSelected, analysisTargetScore, analysisSimRows, scoreState });
   const targetAverage = Math.round(
     Number(analysisTargetScore) ||
       ((target.korean + target.math + target.english + target.inquiry1 + target.inquiry2) / 5)
   );
+  const inquiry1Label = scoreState.inquiry1?.subject || '탐구1';
+  const inquiry2Label = scoreState.inquiry2?.subject || '탐구2';
   const slideX = activeScoreView === 'target' ? '-50%' : '0%';
   const transition = Number(scoreDragOffset) !== 0 ? '0s' : 'transform .56s cubic-bezier(.22,.61,.36,1)';
 
@@ -99,12 +158,12 @@ export function renderScoreJourneyCard(ctx = {}, title = '최소 노력 대비 �
         <div class="score-journey-track anchor-volatile ${scoreSlideMotion}" style="--score-slide-x:calc(${slideX} + ${Number(scoreDragOffset) || 0}px);--score-slide-transition:${transition};">
           <div class="score-journey-col current" data-score-view="current">
             <h4>현재 성적</h4>
-            <div class="score-row"><span>국어</span><b>${current.korean}</b></div>
-            <div class="score-row"><span>수학</span><b>${current.math}</b></div>
-            <div class="score-row"><span>영어</span><b>${toEnglishGrade(current.english)}등급</b></div>
-            <div class="score-row"><span>탐구1</span><b>${current.inquiry1}</b></div>
-            <div class="score-row"><span>탐구2</span><b>${current.inquiry2}</b></div>
-            <div class="score-journey-total"><span>총점</span><b>${currentAverage}점</b></div>
+            ${renderCurrentRow('국어', current.korean)}
+            ${renderCurrentRow('수학', current.math)}
+            ${renderCurrentRow('영어', current.english)}
+            ${renderCurrentRow(inquiry1Label, current.inquiry1)}
+            ${renderCurrentRow(inquiry2Label, current.inquiry2)}
+            <div class="score-journey-total"><span>AI 점수</span><b>${currentAverage}점</b></div>
           </div>
           <div class="score-journey-col target" data-score-view="target">
             <div class="score-target-panel">
@@ -112,9 +171,9 @@ export function renderScoreJourneyCard(ctx = {}, title = '최소 노력 대비 �
               ${renderTargetRow('국어', current.korean, target.korean)}
               ${renderTargetRow('수학', current.math, target.math)}
               ${renderTargetRow('영어', current.english, target.english)}
-              ${renderTargetRow('탐구1', current.inquiry1, target.inquiry1)}
-              ${renderTargetRow('탐구2', current.inquiry2, target.inquiry2)}
-              <div class="score-journey-total"><span>예상 총점</span><b>${targetAverage}점</b></div>
+              ${renderTargetRow(inquiry1Label, current.inquiry1, target.inquiry1)}
+              ${renderTargetRow(inquiry2Label, current.inquiry2, target.inquiry2)}
+              <div class="score-journey-total"><span>예상 AI 점수</span><b>${targetAverage}점</b></div>
             </div>
           </div>
         </div>
