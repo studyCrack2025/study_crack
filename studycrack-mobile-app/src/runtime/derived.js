@@ -1,5 +1,6 @@
 import { FIXED_TODAY_DATE } from '../constants/mock-data.js';
 import { ANALYSIS_PROFILES, ANALYSIS_RECOMMENDED, ANALYSIS_SEARCH_SEED } from '../constants/universities.js';
+import { scoreExamTypeToKey } from './persistence.js';
 
 // 런타임 derived view-model: 원시 state에서 화면 renderer가 기대하는 계산값을 파생.
 // 모놀리식 App() 본문의 계산을 도메인별 순수 함수로 이식한다(로직 1:1 유지).
@@ -415,7 +416,28 @@ export function buildAnalysisDerived(state = {}) {
 // 성적 정보 화면 derived. 과목별 원점수/표준/백분위/등급 행 HTML을 1:1 생성(원본 scoreInfoDetailList).
 // plannerViewDonutGradient 선례처럼 derived가 표현용 문자열을 반환한다.
 export function buildScoreInfoDerived(state = {}) {
-  const { scores = {}, scoreEditState = {} } = state;
+  const { scores = {}, scoreEditState = {}, scoreExamKey = '', scoreExamType = '', user = {} } = state;
+  const examKey = scoreExamKey || scoreExamTypeToKey(scoreExamType);
+  const examData = user?.quantitative?.[examKey] || null;
+  if (examData) {
+    const rows = [
+      [examData.kor?.opt || '국어', examData.kor],
+      [examData.math?.opt || '수학', examData.math],
+      ['영어', examData.eng, 'grade-only'],
+      [examData.inq1?.name || '탐구1', examData.inq1],
+      [examData.inq2?.name || '탐구2', examData.inq2],
+      ['한국사', examData.hist || examData.history, 'grade-only']
+    ];
+    const scoreInfoDetailList = rows
+      .map(([subject, item, type]) => {
+        if (type === 'grade-only') {
+          return `<div class="score-info-detail-row"><b>${subject}</b><span>${item?.raw || '-'}</span><span>${item?.std || '-'}</span><span>${item?.pct || '-'}</span><span>${item?.grd || '-'}</span></div>`;
+        }
+        return `<div class="score-info-detail-row"><b>${subject}</b><span>${item?.raw || '-'}</span><span>${item?.std || '-'}</span><span>${item?.pct || '-'}</span><span>${item?.grd || '-'}</span></div>`;
+      })
+      .join('');
+    return { scoreInfoDetailList };
+  }
   const ses = {
     korean: scoreEditState.korean || {},
     math: scoreEditState.math || {},
@@ -437,9 +459,9 @@ export function buildScoreInfoDerived(state = {}) {
     scoreRows
       .map(([subject, raw, type]) => {
         if (type === 'grade-only') {
-          const englishGrade =
-            Number(ses.english || 0) || Math.min(9, Math.max(1, Math.round((100 - Number(raw || 0)) / 12.5) + 1));
-          return `<div class="score-info-detail-row"><b>${subject}</b><span>-</span><span>-</span><span>-</span><span>${englishGrade}</span></div>`;
+          const englishGrade = Number(ses.english || 0)
+            || (Number(raw) > 0 ? Math.min(9, Math.max(1, Math.round((100 - Number(raw || 0)) / 12.5) + 1)) : '');
+          return `<div class="score-info-detail-row"><b>${subject}</b><span>-</span><span>-</span><span>-</span><span>${englishGrade || '-'}</span></div>`;
         }
         const m = scoreMetric(raw);
         const rawText = Number(raw) > 0 ? raw : '-';
@@ -449,7 +471,7 @@ export function buildScoreInfoDerived(state = {}) {
         return `<div class="score-info-detail-row"><b>${subject}</b><span>${rawText}</span><span>${stdText}</span><span>${pctText}</span><span>${grdText}</span></div>`;
       })
       .join('') +
-    `<div class="score-info-detail-row"><b>한국사</b><span>-</span><span>-</span><span>-</span><span>${Math.max(1, Number(ses.history || 3) || 3)}</span></div>`;
+    `<div class="score-info-detail-row"><b>한국사</b><span>-</span><span>-</span><span>-</span><span>${ses.history ? Math.max(1, Number(ses.history) || 1) : '-'}</span></div>`;
 
   return { scoreInfoDetailList };
 }

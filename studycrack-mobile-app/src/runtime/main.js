@@ -7,7 +7,7 @@ import { renderAppBar } from '../components/app-bar.js';
 import { renderAppShell } from '../components/app-shell.js';
 import { renderIcon } from '../components/icon.js';
 import { renderScoreJourneyCard, scoreTierClass } from '../components/score-journey.js';
-import { renderTabBar } from '../components/tab-bar.js';
+import { renderTabBar, TAB_ITEMS } from '../components/tab-bar.js';
 import { CRACKY_SRC, ONBOARDING_LOGO_SRC } from '../constants/assets.js';
 import { createMobileEventHandlers } from '../handlers/mobile-handlers.js';
 import { getScreenComponent, renderMobileScreen } from '../app/screen-registry.js';
@@ -15,7 +15,7 @@ import { renderScoreEditModal } from '../screens/profile/renderers.js';
 import { createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
-import { fetchMobileTargetAnalysis, fetchUniversityCatalog, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey } from './persistence.js';
+import { createBlankScoreState, fetchMobileTargetAnalysis, fetchUniversityCatalog, mapExamDataToScorePatch, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
@@ -82,6 +82,58 @@ function uniqueTargetList(list = []) {
 function notifySaveFailure(result, message) {
   if (!result || result.ok !== false) return;
   globalThis.alert?.(result.error || message);
+}
+
+const PLAN_RANK = { free: 0, trial: 0, basic: 1, starter: 1, standard: 2, pro: 3 };
+const SCREEN_REQUIREMENTS = {
+  strategy: 'standard',
+  planner: 'standard',
+  plannerAdd: 'standard',
+  weekly: 'standard',
+  report: 'pro',
+  reportDetail: 'pro',
+  proElite: 'pro',
+  tutor: 'pro'
+};
+
+function getEffectiveTier(state = {}) {
+  const raw = state.userTier || state.selectedPlan || '';
+  return String(raw).toLowerCase();
+}
+
+function canAccessTier(state, requiredTier) {
+  if (!requiredTier) return true;
+  return (PLAN_RANK[getEffectiveTier(state)] || 0) >= (PLAN_RANK[requiredTier] || 0);
+}
+
+function filterTabItemsForTier(state) {
+  return TAB_ITEMS.filter((item) => canAccessTier(state, SCREEN_REQUIREMENTS[item.key]));
+}
+
+function buildScoreSelectionPatch(scoreExamType, current) {
+  const scoreExamKey = scoreExamTypeToKey(scoreExamType);
+  const mapped = mapExamDataToScorePatch(current.user?.quantitative?.[scoreExamKey], current);
+  if (mapped) {
+    return {
+      scoreExamType,
+      scoreExamKey,
+      ...mapped,
+      analysisResults: [],
+      analysisSimulations: [],
+      analysisApiStatus: 'idle'
+    };
+  }
+  const blankScoreState = createBlankScoreState();
+  return {
+    scoreExamType,
+    scoreExamKey,
+    scores: {},
+    scoreState: blankScoreState,
+    scoreEditState: blankScoreState,
+    analysisResults: [],
+    analysisSimulations: [],
+    analysisApiStatus: 'empty'
+  };
 }
 
 // 탭바 dimmed 조건. 원본 App()의 tabbarDimmed와 동일.
@@ -186,6 +238,16 @@ function MobileApp() {
   }, [state.screen, state.selectedDate]);
 
   const dimmed = isTabbarDimmed(state);
+  const visibleTabItems = filterTabItemsForTier(state);
+
+  const beforeGoto = useCallback(({ target } = {}) => {
+    const required = SCREEN_REQUIREMENTS[target];
+    if (!required || canAccessTier(stateRef.current, required)) return true;
+    const label = required === 'pro' ? 'Pro' : 'Standard';
+    globalThis.alert?.(`${label} 이상 플랜에서 이용할 수 있는 기능입니다.`);
+    nav.goto('proIntro');
+    return false;
+  }, [nav]);
 
   const derivedCtx = buildDerivedContext(state, timerOps.studyTimerSecondsRef.current);
   const baseCtx = {
@@ -203,20 +265,22 @@ function MobileApp() {
         inner: String(inner || ''),
         withTab,
         dimmed,
-        tabBar: renderTabBar({ tab: state.tab, dimmed, icon: renderIcon })
+        tabBar: renderTabBar({ tab: state.tab, dimmed, icon: renderIcon, items: visibleTabItems })
       }),
     // JSX 화면이 셸을 직접 조립할 때 쓰는 raw 값(문자열 leaf로 임베드).
     dimmed,
-    tabBarHtml: renderTabBar({ tab: state.tab, dimmed, icon: renderIcon }),
+    tabBarHtml: renderTabBar({ tab: state.tab, dimmed, icon: renderIcon, items: visibleTabItems }),
     // 내비게이션 백본
     goto: nav.goto,
     back: nav.back,
-    beforeGoto: () => true,
+    beforeGoto,
     // 백엔드 결합 기반(B1): window.CONFIG(js/config.js)에서 엔드포인트 주입.
     // auth-handlers의 find_email/비번재설정이 실제 백엔드를 치도록. 미설정 시 핸들러는 graceful no-op.
     authApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.auth) || '',
     analysisApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.analysis) || '',
     apiBase: (typeof window !== 'undefined' && window.CONFIG?.api) || null,
+    canAccessStandard: canAccessTier(state, 'standard'),
+    canAccessPro: canAccessTier(state, 'pro'),
     // 백엔드 결합 B2(쿠키 세션 공유): 웹 js/shared/api.js의 검증된 단일 출처를 재사용.
     // apiFetch는 credentials:'include'(쿠키)+401 silent_refresh+만료 시 /login 리다이렉트를 모두 처리.
     // hasClientSession으로 로그인 여부 판단(실데이터 vs 데모). 미로드 시 graceful no-op.
@@ -262,7 +326,7 @@ function MobileApp() {
     markOnboardingComplete: () => setState({ loggedIn: true }),
     getExamScoresMap: () => readExamScoresMap(),
     saveExamScoresMap: (map) => writeExamScoresMap(map),
-    applyScoreExamSelection: (scoreExamType) => setState({ scoreExamType, scoreExamKey: scoreExamTypeToKey(scoreExamType) }),
+    applyScoreExamSelection: (scoreExamType) => setState(buildScoreSelectionPatch(scoreExamType, stateRef.current)),
     persistTargetUnivs,
     persistQuantitative,
     persistQualitative,
@@ -422,7 +486,12 @@ function MobileApp() {
       ...(state.analysisTargetList || []),
       ...(state.homeTargetList || [])
     ]);
-    if (!userScores || !targetList.length) return undefined;
+    if (!userScores || !targetList.length) {
+      if ((state.analysisResults || []).length || (state.analysisSimulations || []).length || state.analysisApiStatus !== 'empty') {
+        setState({ analysisResults: [], analysisSimulations: [], analysisApiStatus: 'empty' });
+      }
+      return undefined;
+    }
 
     let cancelled = false;
     setState({ analysisApiStatus: 'loading' });

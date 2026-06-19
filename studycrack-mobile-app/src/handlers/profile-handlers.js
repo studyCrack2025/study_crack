@@ -214,6 +214,7 @@ export function createProfileHandlers(ctx) {
     confirm = globalThis.confirm || (() => false),
     getExamScoresMap = () => ({}),
     goto,
+    applyScoreExamSelection = noop,
     localStorage = globalThis.localStorage,
     saveExamScoresMap = noop,
     setLoggedIn = noop,
@@ -360,17 +361,25 @@ export function createProfileHandlers(ctx) {
     },
 
     applyScoreExam() {
-      const values = readScoreEditValues(ctx);
-      if (isInvalidRequiredSelectValue(values.english)
-        || isInvalidRequiredSelectValue(values.history)
-        || isInvalidRequiredSelectValue(values.inquiry1Subject)
-        || isInvalidRequiredSelectValue(values.inquiry2Subject)
-        || isInvalidRequiredSelectValue(ctx.scoreExamType)) {
-        alert('필수 항목을 모두 선택해주세요');
+      if (isInvalidRequiredSelectValue(ctx.scoreExamType)) {
+        alert('시험을 선택해주세요');
         return false;
       }
+      const examKey = scoreExamTypeToKey(ctx.scoreExamType);
+      const hasServerScore = Boolean(ctx.user?.quantitative?.[examKey]);
       const picked = getExamScoresMap()[ctx.scoreExamType];
+      if (hasServerScore) {
+        applyScoreExamSelection(ctx.scoreExamType);
+        alert('선택한 시험 성적이 적용되었습니다.');
+        return true;
+      }
+      if (ctx.hasClientSession?.()) {
+        applyScoreExamSelection(ctx.scoreExamType);
+        alert('선택한 시험의 저장된 성적이 없습니다.');
+        return false;
+      }
       if (!picked) {
+        applyScoreExamSelection(ctx.scoreExamType);
         alert('선택한 시험의 저장된 성적이 없습니다.');
         return false;
       }
