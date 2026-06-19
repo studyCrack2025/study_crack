@@ -78,7 +78,7 @@ function hasMissingExamScore(scores) {
 
 function togglePlanDom(ctx, plan) {
   const doc = getDocument(ctx);
-  if (doc?.body?.dataset) doc.body.dataset.selectedPlan = plan;
+  if (doc?.body?.dataset) doc.body.dataset.checkoutPlan = plan;
   queryAll(ctx, '.plan-card, .payment-plan-tabs button').forEach((card) => {
     const key = card.getAttribute?.('data-plan');
     if (key) card.classList?.toggle?.('active', key === plan);
@@ -108,6 +108,7 @@ export function createServiceHandlers(ctx) {
     setCoachingExamScores = noop,
     setCoachingExamType = noop,
     setCoachingMonth = noop,
+    setCheckoutPlan = noop,
     setCoachingPlannerFiles = noop,
     setCoachingSheetOpen = noop,
     setCoachingStep = noop,
@@ -120,7 +121,6 @@ export function createServiceHandlers(ctx) {
     setNotifModalOpen = noop,
     setProRequestModalOpen = noop,
     setProRequestText = noop,
-    setSelectedPlan = noop,
     setTargetMajor = noop,
     setTargetOpen = noop,
     setUniversityModalOpen = noop,
@@ -137,7 +137,7 @@ export function createServiceHandlers(ctx) {
         togglePlanDom(ctx, plan);
         return true;
       }
-      setSelectedPlan(plan);
+      setCheckoutPlan(plan);
       return true;
     },
 
@@ -149,6 +149,13 @@ export function createServiceHandlers(ctx) {
         return true;
       }
       setDuration(duration);
+      return true;
+    },
+
+    openWebPayment() {
+      const target = '/payment?source=mobile_app';
+      if (win?.location?.assign) win.location.assign(target);
+      else if (win?.location) win.location.href = target;
       return true;
     },
 

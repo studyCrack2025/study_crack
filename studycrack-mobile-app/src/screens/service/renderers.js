@@ -148,16 +148,16 @@ export function renderTutorScreen({ appbar, layout }) {
 export function renderProIntroScreen(ctx) {
   const {
     appbar,
+    checkoutPlan = 'Standard',
     layout,
-    planMeta = PLAN_META,
-    selectedPlan = 'Pro'
+    planMeta = PLAN_META
   } = ctx;
 
   return layout(appbar('StudyCrack 요금제', true) + `<p class="sub pricing-sub">합격 전략, 단계별로 선택하세요</p>
       <div class="plan-stack">
-        ${renderPlanCard({ meta: planMeta.Basic, plan: 'Basic', selectedPlan, variant: 'intro' })}
-        ${renderPlanCard({ meta: planMeta.Standard, plan: 'Standard', selectedPlan, variant: 'intro' })}
-        ${renderPlanCard({ meta: planMeta.Pro, plan: 'Pro', selectedPlan, variant: 'intro' })}
+        ${renderPlanCard({ meta: planMeta.Basic, plan: 'Basic', selectedPlan: checkoutPlan, variant: 'intro' })}
+        ${renderPlanCard({ meta: planMeta.Standard, plan: 'Standard', selectedPlan: checkoutPlan, variant: 'intro' })}
+        ${renderPlanCard({ meta: planMeta.Pro, plan: 'Pro', selectedPlan: checkoutPlan, variant: 'intro' })}
       </div>
       <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="payment">결제하기</button></div>`, false);
 }
@@ -165,34 +165,34 @@ export function renderProIntroScreen(ctx) {
 export function renderPaymentScreen(ctx) {
   const {
     appbar,
+    checkoutPlan = 'Standard',
     currentPlan,
     duration = '4주',
     layout,
-    planMeta = PLAN_META,
-    selectedPlan = 'Pro'
+    planMeta = PLAN_META
   } = ctx;
-  const activePlan = currentPlan || planMeta[selectedPlan] || planMeta.Pro;
+  const activePlan = currentPlan || planMeta[checkoutPlan] || planMeta.Standard;
 
   return layout(appbar('플랜 선택', true) + `<div class="payment-tabs full">
-      <button class="${selectedPlan === 'Basic' ? 'active' : ''}" data-action="selectPlan" data-plan="Basic">Basic</button>
-      <button class="${selectedPlan === 'Standard' ? 'active' : ''}" data-action="selectPlan" data-plan="Standard">Standard</button>
-      <button class="${selectedPlan === 'Pro' ? 'active' : ''}" data-action="selectPlan" data-plan="Pro">Pro</button>
+      <button class="${checkoutPlan === 'Basic' ? 'active' : ''}" data-action="selectPlan" data-plan="Basic">Basic</button>
+      <button class="${checkoutPlan === 'Standard' ? 'active' : ''}" data-action="selectPlan" data-plan="Standard">Standard</button>
+      <button class="${checkoutPlan === 'Pro' ? 'active' : ''}" data-action="selectPlan" data-plan="Pro">Pro</button>
     </div>
-      <div class="card payment-focus-card"><div class="payment-focus-head"><div><h3>${selectedPlan}</h3><p>${activePlan.payPrice}</p></div></div><p class="payment-desc">${activePlan.desc}</p><ul class="payment-check-list">${activePlan.features.map((item) => `<li>${item}</li>`).join('')}</ul></div>
+      <div class="card payment-focus-card"><div class="payment-focus-head"><div><h3>${checkoutPlan}</h3><p>${activePlan.payPrice}</p></div></div><p class="payment-desc">${activePlan.desc}</p><ul class="payment-check-list">${activePlan.features.map((item) => `<li>${item}</li>`).join('')}</ul></div>
       <div class="duration-row payment-duration-row">
         <button class="${duration === '4주' ? 'active' : ''}" data-action="selectDuration" data-duration="4주">4주</button>
         <button class="${duration === '8주' ? 'active' : ''}" data-action="selectDuration" data-duration="8주">8주</button>
         <button class="${duration === '12주' ? 'active' : ''}" data-action="selectDuration" data-duration="12주">12주</button>
       </div>
-      <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="paymentComplete">결제하기</button></div>`, false);
+      <div class="card payment-focus-card"><p class="sub" style="margin:0">결제는 기존 웹 결제 페이지에서 전화번호 확인, 할인/결제 정보 입력, NICEPAY 인증을 거쳐 진행됩니다.</p></div>
+      <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="openWebPayment">웹 결제 페이지로 이동</button></div>`, false);
 }
 
 export function renderPaymentCompleteScreen(ctx) {
   const {
     icon = defaultIcon,
-    layout,
-    selectedPlan = 'Pro'
+    layout
   } = ctx;
 
-  return layout(`<div class="payment-done-screen"><div class="payment-complete-wrap"><div class="payment-check">${icon('check', true)}</div><p class="title payment-complete-title">결제가 완료되었습니다!</p><p class="sub payment-complete-sub">${selectedPlan.toUpperCase()} 플랜이 활성화되었습니다.</p><div class="card payment-complete-note"><b>프로 보고서 이용 안내</b><p>2주에 한 번 새로운 리포트를 제공해 드려요.<br/>다음 리포트는 5월 25일에 이용 가능해요.</p></div></div><div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="home">홈으로 이동</button></div></div>`, false);
+  return layout(`<div class="payment-done-screen"><div class="payment-complete-wrap"><div class="payment-check">${icon('check', true)}</div><p class="title payment-complete-title">결제 확인은 웹 결제 페이지에서 진행됩니다</p><p class="sub payment-complete-sub">모바일 앱 내부에서는 결제 완료를 임의로 처리하지 않습니다.</p><div class="card payment-complete-note"><b>안전한 결제 안내</b><p>전화번호 확인과 NICEPAY 인증을 위해 기존 웹 결제 페이지로 이동해주세요.</p></div></div><div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="openWebPayment">웹 결제 페이지로 이동</button></div></div>`, false);
 }

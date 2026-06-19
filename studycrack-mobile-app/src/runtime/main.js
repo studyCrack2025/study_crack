@@ -322,7 +322,7 @@ function MobileApp() {
     // 자주 쓰는 최소 연산 (나머지 도메인 연산은 후속 단계에서 연결)
     setField: (key, value) => setState({ [key]: value }),
     closeDrawer: () => setState({ drawerOpen: false }),
-    selectPlan: (plan) => setState({ selectedPlan: plan }),
+    selectPlan: (plan) => setState({ checkoutPlan: plan }),
     markOnboardingComplete: () => setState({ loggedIn: true }),
     getExamScoresMap: () => readExamScoresMap(),
     saveExamScoresMap: (map) => writeExamScoresMap(map),
