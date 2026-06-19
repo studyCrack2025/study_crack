@@ -44,12 +44,13 @@ export function renderMyPageScreen(ctx) {
     targetMajor,
     user
   } = ctx;
+  const planLabel = selectedPlan || DEFAULT_USER.plan;
 
   return layout(appbar('마이페이지', false) + `<div class="my-stack">
-      <button type="button" class="card my-profile-card" data-action="openMyProfileEdit"><div class="my-profile-left"><div class="my-avatar">${icon('user', false)}</div><div><p class="my-name">${user?.name || DEFAULT_USER.name}</p><p class="sub">목표 대학: ${targetMajor || DEFAULT_USER.targetUniversity}</p></div></div><div class="my-profile-right"><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span><span class="badge">${selectedPlan || DEFAULT_USER.plan} 이용 중</span></div></button>
+      <button type="button" class="card my-profile-card" data-action="openMyProfileEdit"><div class="my-profile-left"><div class="my-avatar">${icon('user', false)}</div><div><p class="my-name">${user?.name || DEFAULT_USER.name}</p><p class="sub">목표 대학: ${targetMajor || DEFAULT_USER.targetUniversity}</p></div></div><div class="my-profile-right"><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span><span class="badge">${planLabel} 이용 중</span></div></button>
       ${renderProfileEditModal({ ...ctx, analysisTargetList })}
       ${mbtiResult ? `<div class="card" style="border:2px solid #2563EB;background:#EFF6FF;"><p class="analysis-title">진단 결과</p><p style="margin:6px 0 2px;font-size:30px;font-weight:900;letter-spacing:.08em;color:#1D4ED8;text-shadow:0 6px 18px rgba(37,99,235,.18);">CSDR</p><p class="sub" style="margin:0 0 12px;font-size:12px;color:#1E40AF;">(컨셉형, 직관령, 분석형, 루틴)</p><button class="btn btn-secondary" disabled>맞춤 공부법 PDF 준비 중</button></div>` : ''}
-      <div class="card my-subscription-card"><div class="my-sub-icon">${icon('report', false)}</div><div><p class="my-sub-title">Pro 플랜 이용 중</p><p class="my-sub-date">다음 결제일 2024.06.14</p></div></div>
+      <div class="card my-subscription-card"><div class="my-sub-icon">${icon('report', false)}</div><div><p class="my-sub-title">${planLabel} 플랜 이용 중</p><p class="my-sub-date">구독 정보는 결제 내역과 연동됩니다.</p></div></div>
       <div class="card my-menu-card">
         <button class="my-row" data-action="goto" data-target="qualInfo">정성조사서 <span>${icon('chevron', false)}</span></button><button class="my-row" data-action="goto" data-target="scoreInfo">성적 정보 <span>${icon('chevron', false)}</span></button>
 

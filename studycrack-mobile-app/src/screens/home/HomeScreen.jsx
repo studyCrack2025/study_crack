@@ -74,6 +74,8 @@ export function HomeScreen(ctx) {
   const {
     dimmed = false,
     tabBarHtml = '',
+    canAccessPro = false,
+    canAccessStandard = false,
     crackySrc = CRACKY_SRC,
     user = {},
     formatHms = defaultFormatHms,
@@ -163,8 +165,8 @@ export function HomeScreen(ctx) {
                     />
                   ))}
                 </div>
-                <button className="pro-top-btn home-pro-below-card-btn" data-action="goto" data-target="proElite">
-                  <span>PRO LOUNGE 입장</span>
+                <button className="pro-top-btn home-pro-below-card-btn" data-action="goto" data-target={canAccessPro ? 'proElite' : 'proIntro'}>
+                  <span>{canAccessPro ? 'PRO LOUNGE 입장' : '플랜 업그레이드'}</span>
                 </button>
                 <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: universityModalHtml }} />
               </div>
@@ -205,10 +207,10 @@ export function HomeScreen(ctx) {
                 <button
                   className="card study-goal-card home-goal-linked-card home-insight-card premium-panel"
                   data-action="goto"
-                  data-target="planner"
+                  data-target={canAccessStandard ? 'planner' : 'proIntro'}
                 >
-                  <p className="analysis-title">오늘 공부 목표</p>
-                  {todayPlannerItems.length ? (
+                  <p className="analysis-title">{canAccessStandard ? '오늘 공부 목표' : '플래너는 Standard 이상 전용'}</p>
+                  {canAccessStandard && todayPlannerItems.length ? (
                     <>
                       <div className="goal-compact">
                         <b>{todayPlannerProgress}%</b>
@@ -224,10 +226,15 @@ export function HomeScreen(ctx) {
                         ))}
                       </div>
                     </>
-                  ) : (
+                  ) : canAccessStandard ? (
                     <>
                       <p className="sub">오늘 계획을 추가해보세요</p>
                       <span className="home-goal-empty-cta">플래너로 이동</span>
+                    </>
+                  ) : (
+                    <>
+                      <p className="sub">학습 계획과 주간 코칭을 이용하려면 업그레이드가 필요해요.</p>
+                      <span className="home-goal-empty-cta">플랜 보기</span>
                     </>
                   )}
                 </button>

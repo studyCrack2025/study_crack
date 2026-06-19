@@ -1,4 +1,5 @@
 // 세션이 있을 때만 사용자 데이터를 가져와 mock 위에 병합한다(미인증/실패 시 데모 유지).
+import { createBlankScoreState, mapExamDataToScorePatch, scoreExamKeyToLabel } from './persistence.js';
 
 // 사용자 분석 데이터 호출. 성공 시 백엔드 userData 반환, 그 외 null.
 // 미인증/네트워크/CORS 실패는 throw 없이 null(데모 유지).
@@ -35,19 +36,6 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function hasValue(value) {
-  return value !== undefined && value !== null && String(value).trim() !== '';
-}
-
-function optionalNumber(value) {
-  return hasValue(value) ? toNumber(value, 0) : undefined;
-}
-
-function englishGradeToScore(grade) {
-  const n = toNumber(grade, 0);
-  return n ? Math.max(0, Math.round(100 - (n - 1) * 12.5)) : 0;
-}
-
 function getLatestExamEntry(quantitative = {}) {
   if (!quantitative || typeof quantitative !== 'object') return null;
   const key = EXAM_PRIORITY.find((examKey) => {
@@ -57,46 +45,15 @@ function getLatestExamEntry(quantitative = {}) {
   return key ? { key, data: quantitative[key] } : null;
 }
 
-function mapExamKeyToLabel(key) {
-  const labels = {
-    active: '최근 성적',
-    mar: '3월 모의고사',
-    apr: '4월 모의고사',
-    may: '5월 모의고사',
-    jun: '6월 모의고사',
-    jul: '7월 모의고사',
-    sep: '9월 모의고사',
-    oct: '10월 모의고사',
-    csat: '수능'
-  };
-  return labels[key] || '최근 성적';
-}
-
 function mapQuantitativeToScores(quantitative = {}) {
   const latest = getLatestExamEntry(quantitative);
   if (!latest) return null;
-  const d = latest.data || {};
-  const englishGrade = toNumber(d.eng?.grd, 0);
-  const englishScore = optionalNumber(d.eng?.raw) ?? (englishGrade ? englishGradeToScore(englishGrade) : undefined);
-  const scores = {
-    korean: optionalNumber(d.kor?.raw),
-    math: optionalNumber(d.math?.raw),
-    english: englishScore,
-    inquiry1: optionalNumber(d.inq1?.raw),
-    inquiry2: optionalNumber(d.inq2?.raw)
-  };
+  const patch = mapExamDataToScorePatch(latest.data);
+  if (!patch) return null;
   return {
     examKey: latest.key,
-    examLabel: mapExamKeyToLabel(latest.key),
-    scores: Object.fromEntries(Object.entries(scores).filter(([, value]) => value !== undefined)),
-    scoreState: {
-      korean: { type: d.kor?.opt || '', common: d.kor?.common || '', elective: d.kor?.elective || '' },
-      math: { type: d.math?.opt || '', common: d.math?.common || '', elective: d.math?.elective || '' },
-      english: englishGrade || '',
-      history: d.hist?.grd || d.history?.grd || '',
-      inquiry1: { subject: d.inq1?.name || '', score: d.inq1?.raw || '' },
-      inquiry2: { subject: d.inq2?.name || '', score: d.inq2?.raw || '' }
-    }
+    examLabel: scoreExamKeyToLabel(latest.key),
+    ...patch
   };
 }
 
@@ -156,6 +113,11 @@ export function mapUserToStatePatch(userData, base = {}) {
     patch.scoreEditState = { ...(base.scoreEditState || {}), ...mappedScore.scoreState };
     patch.scoreExamType = mappedScore.examLabel;
     patch.scoreExamKey = mappedScore.examKey;
+  } else if (userData.quantitative && typeof userData.quantitative === 'object') {
+    const blankScoreState = createBlankScoreState();
+    patch.scores = {};
+    patch.scoreState = blankScoreState;
+    patch.scoreEditState = blankScoreState;
   }
   if (Object.keys(userPatch).length) patch.user = userPatch;
   return patch;
