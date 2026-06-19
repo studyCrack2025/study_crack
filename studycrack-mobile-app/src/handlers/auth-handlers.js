@@ -9,6 +9,14 @@ function prevent(event) {
   event?.stopPropagation?.();
 }
 
+// 쿠키 세션 공유(A): 모바일 자체 로그인/가입(mock) 대신 웹 /login·/signup으로 보낸다.
+// 현재 모바일 경로를 returnUrl로 전달 → 웹 로그인 성공 후 모바일로 자동 복귀(auth.js가 처리).
+function redirectToWebAuth(path) {
+  if (typeof window === 'undefined' || !window.location) return;
+  const here = (window.location.pathname || '/') + (window.location.search || '');
+  window.location.href = `${path}?returnUrl=${encodeURIComponent(here)}`;
+}
+
 function getDocument(ctx) {
   return ctx.document || globalThis.document;
 }
@@ -430,33 +438,20 @@ export function createAuthHandlers(ctx) {
 
     signupSuccess({ event }) {
       prevent(event);
-      ctx.preserveSignupDomValues?.();
-      const form = syncSignupFromDom();
-      if (!isSignupFormSubmittable(form, ctx)) {
-        alert('필수 입력 사항을 모두 입력하고 인증/약관 동의를 완료해주세요.');
-        restoreSignupDomValues();
-        return false;
-      }
-      localStorage?.setItem?.('studycrack_signup_completed', 'true');
-      localStorage?.setItem?.('studycrack_signup_profile', JSON.stringify(form));
-      alert('회원가입이 완료되었습니다.');
-      goto?.('ob1');
+      // 쿠키 세션 공유(A): mock 회원가입 제거 → 웹 /signup에서 실제 가입(이메일/SMS 인증 포함).
+      redirectToWebAuth('/signup');
       return true;
     },
 
     loginSuccess() {
-      setLoggedIn(true);
-      setHistory([]);
-      const completed = localStorage?.getItem?.('studycrack_onboarding_completed') === 'true';
-      goto?.(completed ? 'home' : 'ob1', true);
+      // 쿠키 세션 공유(A): mock 로그인 제거 → 웹 /login에서 실제 인증. 성공 시 returnUrl로 모바일 복귀.
+      redirectToWebAuth('/login');
       return true;
     },
 
     ssoSuccess() {
-      setLoggedIn(true);
-      setHistory([]);
-      const completed = localStorage?.getItem?.('studycrack_onboarding_completed') === 'true';
-      goto?.(completed ? 'home' : 'ob1', true);
+      // 모바일 SSO 버튼도 웹 /login(소셜 로그인 버튼 보유)으로 위임.
+      redirectToWebAuth('/login');
       return true;
     }
   };

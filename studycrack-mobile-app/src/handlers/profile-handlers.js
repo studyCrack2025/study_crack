@@ -1,4 +1,5 @@
 import { DEFAULT_USER } from '../constants/mock-data.js';
+import { scoreExamTypeToKey } from '../runtime/persistence.js';
 import { getData } from './action-utils.js';
 
 const MBTI_STRATEGY_VALUES = ['plan', 'solo', 'weak_first', 'feedback'];
@@ -65,8 +66,10 @@ function isQualInfoMissing(values = {}) {
 function readScoreEditValues(ctx) {
   const state = ctx.scoreEditState || {};
   return {
+    koreanType: getInputValue(ctx, 'v2e-korean-type', state.korean?.type || ''),
     koreanCommon: getInputValue(ctx, 'v2e-korean-common', state.korean?.common || ''),
     koreanElective: getInputValue(ctx, 'v2e-korean-elective', state.korean?.elective || ''),
+    mathType: getInputValue(ctx, 'v2e-math-type', state.math?.type || ''),
     mathCommon: getInputValue(ctx, 'v2e-math-common', state.math?.common || ''),
     mathElective: getInputValue(ctx, 'v2e-math-elective', state.math?.elective || ''),
     english: getInputValue(ctx, 'v2e-english', state.english || ''),
@@ -81,8 +84,8 @@ function readScoreEditValues(ctx) {
 function updateScoreEditState(ctx, values) {
   ctx.setScoreEditState?.((prev = {}) => ({
     ...prev,
-    korean: { ...(prev.korean || {}), common: values.koreanCommon, elective: values.koreanElective },
-    math: { ...(prev.math || {}), common: values.mathCommon, elective: values.mathElective },
+    korean: { ...(prev.korean || {}), type: values.koreanType, common: values.koreanCommon, elective: values.koreanElective },
+    math: { ...(prev.math || {}), type: values.mathType, common: values.mathCommon, elective: values.mathElective },
     english: values.english,
     history: values.history,
     inquiry1: { ...(prev.inquiry1 || {}), subject: values.inquiry1Subject, score: values.inquiry1Score },
@@ -97,16 +100,16 @@ function patchCurrentScoreStep(ctx) {
   if (step === 1) {
     ctx.setScoreEditState?.((prev = {}) => ({
       ...prev,
-      korean: { ...(prev.korean || {}), common: values.koreanCommon, elective: values.koreanElective }
+      korean: { ...(prev.korean || {}), type: values.koreanType, common: values.koreanCommon, elective: values.koreanElective }
     }));
-    return { ...state, korean: { ...(state.korean || {}), common: values.koreanCommon, elective: values.koreanElective } };
+    return { ...state, korean: { ...(state.korean || {}), type: values.koreanType, common: values.koreanCommon, elective: values.koreanElective } };
   }
   if (step === 2) {
     ctx.setScoreEditState?.((prev = {}) => ({
       ...prev,
-      math: { ...(prev.math || {}), common: values.mathCommon, elective: values.mathElective }
+      math: { ...(prev.math || {}), type: values.mathType, common: values.mathCommon, elective: values.mathElective }
     }));
-    return { ...state, math: { ...(state.math || {}), common: values.mathCommon, elective: values.mathElective } };
+    return { ...state, math: { ...(state.math || {}), type: values.mathType, common: values.mathCommon, elective: values.mathElective } };
   }
   if (step === 3) {
     ctx.setScoreEditState?.((prev = {}) => ({ ...prev, english: values.english }));
@@ -154,14 +157,26 @@ function englishGradeToScore(grade) {
   return n ? Math.max(0, Math.round(100 - (n - 1) * 12.5)) : 0;
 }
 
-function buildQuantitative(values) {
+function buildQuantitative(values, examType) {
+  const examKey = scoreExamTypeToKey(examType);
   return {
-    active: {
-      kor: { raw: Number(values.koreanCommon || 0) + Number(values.koreanElective || 0) },
-      math: { raw: Number(values.mathCommon || 0) + Number(values.mathElective || 0) },
+    [examKey]: {
+      kor: {
+        opt: values.koreanType || '',
+        common: Number(values.koreanCommon || 0),
+        elective: Number(values.koreanElective || 0),
+        raw: Number(values.koreanCommon || 0) + Number(values.koreanElective || 0)
+      },
+      math: {
+        opt: values.mathType || '',
+        common: Number(values.mathCommon || 0),
+        elective: Number(values.mathElective || 0),
+        raw: Number(values.mathCommon || 0) + Number(values.mathElective || 0)
+      },
       eng: { grd: Number(values.english || 0) },
-      inq1: { raw: Number(values.inquiry1Score || 0) },
-      inq2: { raw: Number(values.inquiry2Score || 0) }
+      hist: { grd: Number(values.history || 0) },
+      inq1: { name: values.inquiry1Subject || '', raw: Number(values.inquiry1Score || 0) },
+      inq2: { name: values.inquiry2Subject || '', raw: Number(values.inquiry2Score || 0) }
     }
   };
 }
@@ -217,10 +232,14 @@ export function createProfileHandlers(ctx) {
     setOpenFaq = noop,
     setScoreEditOpen = noop,
     setScoreEditStep = noop,
+    setScoreExamKey = noop,
     setScores = noop,
     setTargetMajor = noop,
     setUser = noop,
     setWithdrawModalOpen = noop,
+    persistQualitative = noop,
+    persistQuantitative = noop,
+    persistTargetUnivs = noop,
     setWithdrawPassword = noop
   } = ctx;
   const storage = ctx.localStorage || localStorage;
@@ -238,7 +257,7 @@ export function createProfileHandlers(ctx) {
       return true;
     },
 
-    saveQualInfo() {
+    async saveQualInfo() {
       const values = readQualValues(ctx);
       if (isQualInfoMissing(values)) {
         alert('필수 입력 사항을 모두 입력해주세요');
@@ -248,6 +267,11 @@ export function createProfileHandlers(ctx) {
       const qualitative = buildQualitative(values);
       setUser((prev) => ({ ...prev, qualitative }));
       persistUser({ ...ctx, localStorage: storage }, { qualitative });
+      const result = await persistQualitative(qualitative);
+      if (result && result.ok === false) {
+        alert(result.error || '정성조사서 저장에 실패했습니다.');
+        return false;
+      }
       alert('정성조사서가 저장되었습니다.');
       return true;
     },
@@ -280,7 +304,7 @@ export function createProfileHandlers(ctx) {
       return true;
     },
 
-    saveScoreEdit() {
+    async saveScoreEdit() {
       if (isInvalidRequiredSelectValue(ctx.scoreExamType)) {
         alert('필수 항목을 모두 선택해주세요');
         return false;
@@ -315,13 +339,21 @@ export function createProfileHandlers(ctx) {
         inquiry2: nextIq2
       };
       saveExamScoresMap(map);
+      const quantitativePatch = buildQuantitative(values, ctx.scoreExamType);
+      const nextQuantitative = {
+        ...(ctx.user?.quantitative || {}),
+        ...quantitativePatch
+      };
+      setScoreExamKey(scoreExamTypeToKey(ctx.scoreExamType));
       setUser((prevUser) => ({
         ...prevUser,
-        quantitative: {
-          ...(prevUser.quantitative || {}),
-          ...buildQuantitative(values)
-        }
+        quantitative: nextQuantitative
       }));
+      const result = await persistQuantitative(nextQuantitative);
+      if (result && result.ok === false) {
+        alert(result.error || '성적 저장에 실패했습니다.');
+        return false;
+      }
       setScoreEditOpen(false);
       setScoreEditStep(1);
       return true;
@@ -350,6 +382,7 @@ export function createProfileHandlers(ctx) {
         inquiry1: Number(picked.inquiry1 || prev.inquiry1),
         inquiry2: Number(picked.inquiry2 || prev.inquiry2)
       }));
+      setScoreExamKey(scoreExamTypeToKey(ctx.scoreExamType));
       alert('선택한 시험 성적이 적용되었습니다.');
       return true;
     },
@@ -401,11 +434,17 @@ export function createProfileHandlers(ctx) {
       return true;
     },
 
-    saveMyProfileEdit() {
+    async saveMyProfileEdit() {
       const nextName = String(ctx.myProfileNameDraft || '').trim() || DEFAULT_USER.name;
       const nextTarget = ctx.myProfileTargetDraft || ctx.targetMajor || DEFAULT_USER.targetUniversity;
       setUser((prev) => ({ ...(prev || {}), name: nextName, targetUniversity: nextTarget }));
       setTargetMajor(nextTarget);
+      const nextTargets = Array.from(new Set([nextTarget, ...(ctx.homeTargetList || [])].filter(Boolean))).slice(0, 6);
+      const result = await persistTargetUnivs(nextTargets);
+      if (result && result.ok === false) {
+        alert(result.error || '목표 대학 저장에 실패했습니다.');
+        return false;
+      }
       setMyProfileEditOpen(false);
       return true;
     },

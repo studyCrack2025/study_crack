@@ -193,6 +193,7 @@ export function createFormHandlers(ctx) {
     if (field === 'proEliteMonth') setProEliteMonth(target.value);
     if (field === 'analysisSearchTerm') {
       if (ctx.analysisSearchLiveTermRef) ctx.analysisSearchLiveTermRef.current = target.value;
+      setAnalysisSearchTerm(target.value);
       renderUniversityResultsOnly(target.value, target);
     }
     if (field === 'myProfileNameDraft') setMyProfileNameDraft(target.value);

@@ -11,9 +11,11 @@ import { renderTabBar } from '../components/tab-bar.js';
 import { CRACKY_SRC, ONBOARDING_LOGO_SRC } from '../constants/assets.js';
 import { createMobileEventHandlers } from '../handlers/mobile-handlers.js';
 import { getScreenComponent, renderMobileScreen } from '../app/screen-registry.js';
+import { renderScoreEditModal } from '../screens/profile/renderers.js';
 import { createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
-import { STORAGE_KEYS, safeStringifySet } from '../state/storage.js';
+import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
+import { fetchMobileTargetAnalysis, fetchUniversityCatalog, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
@@ -73,6 +75,15 @@ function updatePossibleUnivSlider(slider, nextIndex) {
   });
 }
 
+function uniqueTargetList(list = []) {
+  return Array.from(new Set((list || []).map((item) => String(item || '').trim()).filter(Boolean))).slice(0, 6);
+}
+
+function notifySaveFailure(result, message) {
+  if (!result || result.ok !== false) return;
+  globalThis.alert?.(result.error || message);
+}
+
 // 탭바 dimmed 조건. 원본 App()의 tabbarDimmed와 동일.
 function isTabbarDimmed(state) {
   return Boolean(
@@ -130,6 +141,37 @@ function MobileApp() {
     []
   );
 
+  const getUserApiBinding = useCallback(
+    () => ({
+      apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
+      userApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.user) || ''
+    }),
+    []
+  );
+
+  const getAnalysisApiBinding = useCallback(
+    () => ({
+      apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
+      analysisApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.analysis) || ''
+    }),
+    []
+  );
+
+  const persistTargetUnivs = useCallback(
+    (targetList) => saveTargetUnivs({ ...getUserApiBinding(), targetList }),
+    [getUserApiBinding]
+  );
+
+  const persistQuantitative = useCallback(
+    (quantitative) => saveQuantitative({ ...getUserApiBinding(), quantitative }),
+    [getUserApiBinding]
+  );
+
+  const persistQualitative = useCallback(
+    (qualitative) => saveQualitative({ ...getUserApiBinding(), qualitative }),
+    [getUserApiBinding]
+  );
+
   // 플래너 진입/날짜 변경 시 날짜 스트립을 선택 날짜로 가로 센터링.
   // planner가 JSX(React 트리)라 스트립 노드가 재렌더 간 유지되므로 센터링이 정착한다.
   // useLayoutEffect에서 동기 실행: commit 직후 layout이 준비되고 paint 전이라 깜빡임이 없으며,
@@ -173,6 +215,7 @@ function MobileApp() {
     // 백엔드 결합 기반(B1): window.CONFIG(js/config.js)에서 엔드포인트 주입.
     // auth-handlers의 find_email/비번재설정이 실제 백엔드를 치도록. 미설정 시 핸들러는 graceful no-op.
     authApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.auth) || '',
+    analysisApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.analysis) || '',
     apiBase: (typeof window !== 'undefined' && window.CONFIG?.api) || null,
     // 백엔드 결합 B2(쿠키 세션 공유): 웹 js/shared/api.js의 검증된 단일 출처를 재사용.
     // apiFetch는 credentials:'include'(쿠키)+401 silent_refresh+만료 시 /login 리다이렉트를 모두 처리.
@@ -203,6 +246,7 @@ function MobileApp() {
     getHomeSliderState: () => getHomeSliderState(),
     updatePossibleUnivSlider,
     scoreTierClass,
+    ScoreEditModal: () => renderScoreEditModal(stateRef.current),
     // 슬라이드 확정은 state로 반영(JSX 트랙이 유지된 채 transform transition 적용). 원본은 DOM-direct였으나
     // 이 런타임은 재렌더가 state→DOM이라 state 경유가 필요하다.
     setHomeSlideDom: (index, motion = '') => {
@@ -215,7 +259,26 @@ function MobileApp() {
     setField: (key, value) => setState({ [key]: value }),
     closeDrawer: () => setState({ drawerOpen: false }),
     selectPlan: (plan) => setState({ selectedPlan: plan }),
-    markOnboardingComplete: () => setState({ loggedIn: true })
+    markOnboardingComplete: () => setState({ loggedIn: true }),
+    getExamScoresMap: () => readExamScoresMap(),
+    saveExamScoresMap: (map) => writeExamScoresMap(map),
+    applyScoreExamSelection: (scoreExamType) => setState({ scoreExamType, scoreExamKey: scoreExamTypeToKey(scoreExamType) }),
+    persistTargetUnivs,
+    persistQuantitative,
+    persistQualitative,
+    addMajorToTargets: (major) => {
+      if (!major) return false;
+      const current = stateRef.current;
+      const nextAnalysis = uniqueTargetList([...(current.analysisTargetList || []), major]);
+      const nextHome = uniqueTargetList([...(current.homeTargetList || []), major]);
+      setState({
+        analysisTargetList: nextAnalysis,
+        homeTargetList: nextHome,
+        targetMajor: current.targetMajor || major
+      });
+      persistTargetUnivs(nextHome).then((result) => notifySaveFailure(result, '목표 대학 저장에 실패했습니다.'));
+      return true;
+    }
   };
   const ctx = {
     ...baseCtx,
@@ -229,10 +292,15 @@ function MobileApp() {
     markAppBooted();
   }, []);
 
-  // 원본 초기 진입 흐름: splash를 잠깐 노출한 뒤 첫 소개 화면으로 이동.
+  // 초기 진입 흐름: splash를 잠깐 노출한 뒤 이동.
+  // R2(쿠키 세션 공유): 이미 로그인된(쿠키 세션) 사용자는 온보딩 건너뛰고 바로 홈(실데이터)으로,
+  // 미로그인은 기존처럼 소개 화면(on1)으로.
   useEffect(() => {
     if (state.screen !== 'splash') return undefined;
-    const timer = globalThis.setTimeout?.(() => nav.goto('on1', false), 900);
+    const loggedIn =
+      typeof window !== 'undefined' && typeof window.hasClientSession === 'function' && window.hasClientSession();
+    const dest = loggedIn ? 'home' : 'on1';
+    const timer = globalThis.setTimeout?.(() => nav.goto(dest, false), 900);
     return () => {
       if (timer) globalThis.clearTimeout?.(timer);
     };
@@ -315,15 +383,11 @@ function MobileApp() {
     }
   }, [state.selectedPlan, state.targetMajor, state.tab]);
 
-  // 백엔드 결합 B3: 쿠키 세션이 있으면 get_user로 실데이터를 가져와 mock 위에 병합(1회).
+  // 쿠키 세션이 있으면 사용자 데이터를 가져와 mock 위에 병합(1회).
   // 미인증/실패 시 데모(mock) 유지 — 순수 가산. apiFetch/세션 판별은 웹 단일 출처(window).
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
-    // dev 진단: 세션 게이트 결정 기록(get_user가 아예 안 불리는 경우 구분).
-    const sessionFn = typeof window.hasClientSession === 'function' ? window.hasClientSession : null;
-    const hasSession = sessionFn ? !!sessionFn() : null;
-    window.__scSession = { hasSessionFn: !!sessionFn, hasSession, userId: (() => { try { return localStorage.getItem('userId') || null; } catch (_e) { return null; } })() };
-    if (sessionFn && !hasSession) return undefined;
+    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
     let cancelled = false;
     fetchCurrentUser({ apiFetch: window.apiFetch, userApiUrl: window.CONFIG?.api?.user }).then((userData) => {
       if (cancelled || !userData) return;
@@ -334,6 +398,56 @@ function MobileApp() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
+    let cancelled = false;
+    fetchUniversityCatalog(getAnalysisApiBinding()).then((catalog) => {
+      if (cancelled || !catalog.length) return;
+      setState({ universityCatalog: catalog });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [getAnalysisApiBinding]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
+    const examMode = state.scoreExamKey || scoreExamTypeToKey(state.scoreExamType);
+    const userScores = state.user?.quantitative?.[examMode] || state.user?.quantitative?.active;
+    const targetList = uniqueTargetList([
+      state.targetMajor,
+      ...(state.analysisTargetList || []),
+      ...(state.homeTargetList || [])
+    ]);
+    if (!userScores || !targetList.length) return undefined;
+
+    let cancelled = false;
+    setState({ analysisApiStatus: 'loading' });
+    fetchMobileTargetAnalysis({ ...getAnalysisApiBinding(), targetList, userScores, examMode }).then((payload) => {
+      if (cancelled || !payload) return;
+      setState({
+        analysisResults: payload.analysisResults || [],
+        analysisSimulations: payload.simulationResults || [],
+        analysisApiStatus: payload.analysisResults?.length ? 'ready' : 'empty'
+      });
+    }).catch(() => {
+      if (!cancelled) setState({ analysisApiStatus: 'error' });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    getAnalysisApiBinding,
+    state.analysisTargetList,
+    state.homeTargetList,
+    state.scoreExamKey,
+    state.scoreExamType,
+    state.targetMajor,
+    state.user?.quantitative
+  ]);
 
   const onClick = useCallback(
     (event) => {

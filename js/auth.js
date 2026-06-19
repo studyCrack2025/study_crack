@@ -338,13 +338,24 @@ function handleRoleSuccess(role, eventType, userName = '회원', promoCode = '')
     }
 
     if (eventType === 'login') {
+        // 모바일 앱 등에서 ?returnUrl=로 복귀 지점 전달 시 우선 이동.
+        // open-redirect 방지: 동일 출처 절대경로(/...)만 허용 — //, http(s):, 백슬래시 차단. (보안: §docs/security)
+        let returnUrl = null;
+        try {
+            const raw = new URLSearchParams(window.location.search).get('returnUrl');
+            const decoded = raw ? decodeURIComponent(raw) : '';
+            if (decoded && decoded.startsWith('/') && !decoded.startsWith('//') && !decoded.includes('\\')) returnUrl = decoded;
+        } catch (_) { /* 파싱 실패 시 기본 라우팅 */ }
+
         if (role === 'tutor') {
             alert(`${userName} 선생님, 안녕하세요.`);
-            window.location.replace('/mypage/tutor');
+            window.location.replace(returnUrl || '/mypage/tutor');
         } else {
             alert("로그인 성공!");
-            // 튜토리얼 미완료 학생은 /tutorial로 직행
-            if (localStorage.getItem('tutorial_completed') !== 'true') {
+            if (returnUrl) {
+                window.location.replace(returnUrl);
+            } else if (localStorage.getItem('tutorial_completed') !== 'true') {
+                // 튜토리얼 미완료 학생은 /tutorial로 직행
                 window.location.replace('/tutorial');
             } else {
                 window.location.replace('/');
