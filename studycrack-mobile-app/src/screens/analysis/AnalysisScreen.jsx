@@ -10,12 +10,14 @@ import {
 export function AnalysisScreen(ctx) {
   const {
     analysisMode = 'summary',
+    canAccessStandard = false,
     dimmed = false,
     isAnalyzing = false,
     tabBarHtml = ''
   } = ctx;
 
-  const modeBodyHtml = analysisMode === 'summary'
+  const effectiveMode = canAccessStandard ? analysisMode : 'summary';
+  const modeBodyHtml = effectiveMode === 'summary'
     ? renderSummaryMode(ctx)
     : renderSimulationMode(ctx);
   const searchModalHtml = renderAnalysisSearchModal(ctx);
@@ -41,16 +43,17 @@ export function AnalysisScreen(ctx) {
 
             <div className="analysis-v2-tabs">
               <button
-                className={`analysis-v2-tab ${analysisMode === 'summary' ? 'active' : ''}`}
+                className={`analysis-v2-tab ${effectiveMode === 'summary' ? 'active' : ''}`}
                 data-action="setAnalysisMode"
                 data-analysis-mode="summary"
               >
                 전략 요약
               </button>
               <button
-                className={`analysis-v2-tab ${analysisMode === 'simulation' ? 'active' : ''}`}
-                data-action="setAnalysisMode"
+                className={`analysis-v2-tab ${effectiveMode === 'simulation' ? 'active' : ''} ${canAccessStandard ? '' : 'locked'}`}
+                data-action={canAccessStandard ? 'setAnalysisMode' : 'goto'}
                 data-analysis-mode="simulation"
+                data-target="proIntro"
               >
                 점수 상승 시뮬레이션
               </button>

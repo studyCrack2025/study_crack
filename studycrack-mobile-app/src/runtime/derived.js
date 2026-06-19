@@ -328,15 +328,13 @@ export function buildAnalysisDerived(state = {}) {
   const analysisStatusColor =
     serverSelected?.color || (analysisSelected.score >= 150 ? '#22C55E' : analysisSelected.score >= 100 ? '#0B6BFF' : '#F97316');
 
-  const fallbackSimRows = analysisSelected.sim.map(([subject, gain, desc], idx) => {
-    const gainNum = Number(String(gain).replace(/[^0-9.]/g, '')) || 0;
-    return { subject, gain, desc, gainNum, idx };
-  });
   const serverSimRows = buildServerSimRows(serverSimulation);
-  const analysisSimRows = serverSimRows.length ? serverSimRows : fallbackSimRows;
+  const analysisSimRows = serverSimRows.length ? serverSimRows : [];
   const analysisSimMax = Math.max(...analysisSimRows.map(({ gainNum }) => gainNum), 0);
   const analysisSimRecommendedIndex = analysisSimRows.findIndex(({ gainNum }) => gainNum === analysisSimMax);
-  const analysisTargetScore = Math.min(250, Math.max(analysisSelected.score, Math.round(analysisSelected.score + (analysisSimMax || 34))));
+  const analysisTargetScore = analysisSimMax
+    ? Math.min(250, Math.max(analysisSelected.score, Math.round(analysisSelected.score + analysisSimMax)))
+    : Math.round(analysisSelected.score);
 
   const gaugeTotal = 250;
   const gaugeCurrent = Math.max(0, Math.min(gaugeTotal, Math.round(analysisSelected.score)));

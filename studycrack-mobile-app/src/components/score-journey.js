@@ -20,15 +20,38 @@ function renderTargetRow(label, current, target) {
   return `<div class="score-row"><span>${label}</span><b>${badge}</b><em>${detail}</em></div>`;
 }
 
+function renderUnavailableCard(title, body, cta = '') {
+  return `
+    <div class="score-journey-card score-journey-card-empty">
+      <p class="analysis-title">${title}</p>
+      <div class="score-journey-empty-panel">
+        <b>${body}</b>
+        ${cta}
+      </div>
+    </div>
+  `;
+}
+
 export function renderScoreJourneyCard(ctx = {}, title = '최소 노력 대비 합격 도달 성적') {
   const {
     activeScoreView = 'target',
+    analysisApiStatus = 'idle',
     analysisSelected = {},
+    analysisSimRows = [],
     analysisTargetScore,
+    canAccessStandard = false,
     scoreDragOffset = 0,
     scoreSlideMotion = '',
     scores = {}
   } = ctx;
+  if (!canAccessStandard) {
+    return renderUnavailableCard(
+      title,
+      '점수 상승 시뮬레이션은 Standard 이상 플랜에서 확인할 수 있어요.',
+      '<button type="button" class="btn btn-primary mini" data-action="goto" data-target="proIntro">플랜 보기</button>'
+    );
+  }
+
   const current = {
     korean: Number(scores.korean || 0),
     math: Number(scores.math || 0),
@@ -36,6 +59,17 @@ export function renderScoreJourneyCard(ctx = {}, title = '최소 노력 대비 �
     inquiry1: Number(scores.inquiry1 || 0),
     inquiry2: Number(scores.inquiry2 || 0)
   };
+  const hasCurrentScores = Object.values(current).some((value) => Number(value) > 0);
+  if (!hasCurrentScores) {
+    return renderUnavailableCard(title, '선택한 시험의 저장된 성적이 없어 도달 성적을 계산할 수 없어요.');
+  }
+  if (!analysisSimRows.length) {
+    const message = analysisApiStatus === 'loading'
+      ? '도달 성적을 계산하는 중입니다.'
+      : '시뮬레이션 결과를 불러오면 도달 성적이 표시돼요.';
+    return renderUnavailableCard(title, message);
+  }
+
   const currentAverage = Math.round(
     Number(analysisSelected?.score) ||
       ((current.korean + current.math + current.english + current.inquiry1 + current.inquiry2) / 5)

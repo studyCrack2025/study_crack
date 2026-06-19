@@ -179,8 +179,28 @@ export function renderSimulationMode(ctx) {
     analysisSimMax = 0,
     analysisSimRecommendedIndex = -1,
     analysisSimRows = [],
-    analysisSimulationTargets = []
+    analysisSimulationTargets = [],
+    canAccessStandard = false
   } = ctx;
+
+  if (!canAccessStandard) {
+    return `
+          <div class="card analysis-v2-locked">
+            <p class="analysis-title">점수 상승 시뮬레이션</p>
+            <p class="sub">Standard 이상 플랜에서 과목별 상승 효율과 도달 성적을 확인할 수 있어요.</p>
+            <button type="button" class="btn btn-primary" data-action="goto" data-target="proIntro">플랜 보기</button>
+          </div>
+        `;
+  }
+
+  if (!analysisSimRows.length) {
+    return `
+          <div class="card analysis-v2-locked">
+            <p class="analysis-title">점수 상승 시뮬레이션</p>
+            <p class="sub">선택한 시험과 목표 대학 기준의 시뮬레이션 결과를 불러오면 표시됩니다.</p>
+          </div>
+        `;
+  }
 
   return `
           <div class="analysis-v2-compare-card">
@@ -245,9 +265,11 @@ export function renderAddUniversityScreen(ctx) {
 export function renderAnalysisScreen(ctx) {
   const {
     analysisMode = 'summary',
+    canAccessStandard = false,
     isAnalyzing = false,
     layout
   } = ctx;
+  const effectiveMode = canAccessStandard ? analysisMode : 'summary';
 
   return layout(
     `<section class="analysis-v2 ${isAnalyzing ? 'loading' : ''}">
@@ -259,11 +281,11 @@ export function renderAnalysisScreen(ctx) {
         </div>
 
         <div class="analysis-v2-tabs">
-          <button class="analysis-v2-tab ${analysisMode === 'summary' ? 'active' : ''}" data-action="setAnalysisMode" data-analysis-mode="summary">전략 요약</button>
-          <button class="analysis-v2-tab ${analysisMode === 'simulation' ? 'active' : ''}" data-action="setAnalysisMode" data-analysis-mode="simulation">점수 상승 시뮬레이션</button>
+          <button class="analysis-v2-tab ${effectiveMode === 'summary' ? 'active' : ''}" data-action="setAnalysisMode" data-analysis-mode="summary">전략 요약</button>
+          <button class="analysis-v2-tab ${effectiveMode === 'simulation' ? 'active' : ''} ${canAccessStandard ? '' : 'locked'}" data-action="${canAccessStandard ? 'setAnalysisMode' : 'goto'}" data-target="proIntro" data-analysis-mode="simulation">점수 상승 시뮬레이션</button>
         </div>
 
-        ${analysisMode === 'summary' ? renderSummaryMode(ctx) : renderSimulationMode(ctx)}
+        ${effectiveMode === 'summary' ? renderSummaryMode(ctx) : renderSimulationMode(ctx)}
 
         ${renderAnalysisSearchModal(ctx)}
       </section>`,
