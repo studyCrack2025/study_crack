@@ -20,7 +20,19 @@ async function postUserData({ apiFetch, userApiUrl, type, data } = {}) {
   }
 }
 
-function parseTargetMajor(value) {
+export function scoreExamTypeToKey(label = '') {
+  if (String(label).includes('3월')) return 'mar';
+  if (String(label).includes('4월')) return 'apr';
+  if (String(label).includes('5월')) return 'may';
+  if (String(label).includes('6월')) return 'jun';
+  if (String(label).includes('7월')) return 'jul';
+  if (String(label).includes('9월')) return 'sep';
+  if (String(label).includes('10월')) return 'oct';
+  if (String(label).includes('수능')) return 'csat';
+  return 'active';
+}
+
+export function parseTargetMajor(value) {
   const text = String(value || '').trim();
   if (!text) return null;
   const match = text.match(/^(.+?(?:대학교|대학))\s+(.+)$/);
@@ -98,4 +110,50 @@ export async function fetchUniversityCatalog({ apiFetch, analysisApiUrl } = {}) 
   } catch (_error) {
     return [];
   }
+}
+
+function toAnalysisTargetPayload(targetList = []) {
+  return buildTargetUnivsPayload(targetList)
+    .map((item) => item ? { univ: item.univ, major: item.major } : null)
+    .filter((item) => item?.univ && item?.major);
+}
+
+function normalizeAnalysisResults(payload) {
+  const list = Array.isArray(payload) ? payload : (Array.isArray(payload?.results) ? payload.results : (Array.isArray(payload?.data) ? payload.data : []));
+  return list.filter((item) => item && item.univ && item.major);
+}
+
+function normalizeSimulationResults(payload) {
+  return (Array.isArray(payload) ? payload : []).filter((item) => item && item.univ && item.major);
+}
+
+export async function fetchMobileTargetAnalysis({ apiFetch, analysisApiUrl, targetList, userScores, examMode } = {}) {
+  if (typeof apiFetch !== 'function' || !analysisApiUrl || !userScores) return null;
+  const targetUnivs = toAnalysisTargetPayload(targetList);
+  if (!targetUnivs.length) return null;
+
+  const request = (type) =>
+    apiFetch(analysisApiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ type, targetUnivs, userScores, examMode })
+    });
+
+  const [analysisRes, simulationRes] = await Promise.allSettled([
+    request('analyze_my_targets'),
+    request('simulate_score_rise')
+  ]);
+
+  let analysisResults = [];
+  let simulationResults = [];
+
+  if (analysisRes.status === 'fulfilled' && analysisRes.value?.ok) {
+    const data = await analysisRes.value.json().catch(() => null);
+    analysisResults = normalizeAnalysisResults(data);
+  }
+  if (simulationRes.status === 'fulfilled' && simulationRes.value?.ok) {
+    const data = await simulationRes.value.json().catch(() => null);
+    simulationResults = normalizeSimulationResults(data);
+  }
+
+  return { analysisResults, simulationResults };
 }

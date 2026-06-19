@@ -129,6 +129,47 @@ function computeHomeTargets(state = {}) {
   });
 }
 
+function targetFullName(item = {}) {
+  const univ = String(item.univ || '').trim();
+  const major = String(item.major || '').trim();
+  if (!univ && !major) return '';
+  if (!univ) return major;
+  if (!major) return univ;
+  return major.includes(univ) ? major : `${univ} ${major}`;
+}
+
+function compactTargetLabel(name = '') {
+  return String(name || '').replace('대학교', '대').replace('학부', '').replace('학과', '');
+}
+
+function findTargetItem(list = [], targetMajor = '') {
+  const normalized = String(targetMajor || '').replace(/\s+/g, '');
+  if (!normalized) return null;
+  return (list || []).find((item) => targetFullName(item).replace(/\s+/g, '') === normalized) || null;
+}
+
+const SIM_SUBJECT_ORDER = ['kor', 'math', 'inq1', 'inq2'];
+const SIM_SUBJECT_FALLBACK = { kor: '국어', math: '수학', inq1: '탐구1', inq2: '탐구2' };
+
+function buildServerSimRows(simulation) {
+  const simData = simulation?.sim_data || {};
+  return SIM_SUBJECT_ORDER
+    .map((key, idx) => {
+      const item = simData[key];
+      if (!item) return null;
+      const gainNum = Number(item.uiDiff ?? item.diff ?? 0);
+      const rounded = Number.isFinite(gainNum) ? Math.max(0, gainNum) : 0;
+      return {
+        subject: item.name || SIM_SUBJECT_FALLBACK[key] || key,
+        gain: `+${rounded.toFixed(rounded >= 10 ? 0 : 1)}점`,
+        desc: item.msg || (rounded > 0 ? '점수 상승으로 합격 가능성이 높아집니다.' : '현재 조건에서는 상승 효율이 낮습니다.'),
+        gainNum: rounded,
+        idx
+      };
+    })
+    .filter(Boolean);
+}
+
 // 홈 화면 derived (원본 js/studycrack-mobile.js 홈 계산 블록과 동일).
 // liveStudySeconds: 라이브 타이머 ref의 현재값(원본 todayStudySeconds = 저장값 + liveStudySeconds).
 // 매초 interval은 DOM을 직접 갱신하고, 재렌더 시 표시/랭킹/진행률 일관성을 위해 여기서 더한다.
@@ -235,15 +276,25 @@ export function buildAnalysisDerived(state = {}) {
     analysisTargetList = [],
     homeTargetList = [],
     analysisSearchTerm = '',
-    universityCatalog = []
+    universityCatalog = [],
+    analysisResults = [],
+    analysisSimulations = []
   } = state;
 
   const liveCurrentScore = computeLiveCurrentScore(scores);
 
+  const serverSelected = findTargetItem(analysisResults, targetMajor);
+  const serverSimulation = findTargetItem(analysisSimulations, targetMajor);
+  const serverScore = Number(serverSelected?.converted_score);
+  const hasServerScore = Number.isFinite(serverScore);
   const analysisBaseProfile = ANALYSIS_PROFILES[targetMajor] || ANALYSIS_PROFILES['연세대학교 경영학과'];
   const analysisSelected = {
     ...analysisBaseProfile,
-    score: liveCurrentScore,
+    score: hasServerScore ? Math.round(serverScore) : liveCurrentScore,
+    verdict: serverSelected?.status || analysisBaseProfile.verdict,
+    verdictColor: serverSelected?.color || analysisBaseProfile.verdictColor,
+    aiGrade: serverSelected?.status || analysisBaseProfile.aiGrade,
+    comment: serverSelected?.msg || analysisBaseProfile.comment,
     sim: (analysisBaseProfile.sim || []).map((r, idx) => {
       const boost = Math.max(0, Math.round((liveCurrentScore - 60) / 10));
       const g = Number(String(r[1]).replace(/[^0-9.-]/g, '')) || 0;
@@ -271,18 +322,20 @@ export function buildAnalysisDerived(state = {}) {
 
   const analysisGaugeFill = Math.min((analysisSelected.score / 250) * 100, 100);
   const analysisGaugeColor =
-    analysisSelected.score >= 150 ? '#22C55E' : analysisSelected.score >= 100 ? '#2563EB' : '#F97316';
-  const analysisStatus = analysisSelected.score >= 150 ? '초안정' : analysisSelected.score >= 100 ? '적정' : '위험';
+    serverSelected?.color || (analysisSelected.score >= 150 ? '#22C55E' : analysisSelected.score >= 100 ? '#2563EB' : '#F97316');
+  const analysisStatus = serverSelected?.status || (analysisSelected.score >= 150 ? '초안정' : analysisSelected.score >= 100 ? '적정' : '위험');
   const analysisStatusColor =
-    analysisSelected.score >= 150 ? '#22C55E' : analysisSelected.score >= 100 ? '#0B6BFF' : '#F97316';
-  const analysisTargetScore = Math.min(analysisSelected.score + 34, 180);
+    serverSelected?.color || (analysisSelected.score >= 150 ? '#22C55E' : analysisSelected.score >= 100 ? '#0B6BFF' : '#F97316');
 
-  const analysisSimRows = analysisSelected.sim.map(([subject, gain, desc], idx) => {
+  const fallbackSimRows = analysisSelected.sim.map(([subject, gain, desc], idx) => {
     const gainNum = Number(String(gain).replace(/[^0-9.]/g, '')) || 0;
     return { subject, gain, desc, gainNum, idx };
   });
+  const serverSimRows = buildServerSimRows(serverSimulation);
+  const analysisSimRows = serverSimRows.length ? serverSimRows : fallbackSimRows;
   const analysisSimMax = Math.max(...analysisSimRows.map(({ gainNum }) => gainNum), 0);
   const analysisSimRecommendedIndex = analysisSimRows.findIndex(({ gainNum }) => gainNum === analysisSimMax);
+  const analysisTargetScore = Math.min(250, Math.max(analysisSelected.score, Math.round(analysisSelected.score + (analysisSimMax || 34))));
 
   const gaugeTotal = 250;
   const gaugeCurrent = Math.max(0, Math.min(gaugeTotal, Math.round(analysisSelected.score)));
@@ -305,7 +358,21 @@ export function buildAnalysisDerived(state = {}) {
     new Set([...(targetMajor ? [targetMajor] : []), ...(analysisTargetList || []), ...(homeTargetList || [])])
   ).filter(Boolean);
   const homeTargets = computeHomeTargets(state);
-  const analysisSimulationTargets = (analysisSimulationBaseOrder.length ? analysisSimulationBaseOrder : [targetMajor])
+  const serverSimulationTargets = (analysisResults || [])
+    .map((item) => {
+      const major = targetFullName(item);
+      const score = Number(item.converted_score);
+      if (!major || !Number.isFinite(score)) return null;
+      return {
+        major,
+        label: compactTargetLabel(major),
+        score: Math.round(score),
+        cut: 100,
+        gap: score - 100
+      };
+    })
+    .filter(Boolean);
+  const fallbackSimulationTargets = (analysisSimulationBaseOrder.length ? analysisSimulationBaseOrder : [targetMajor])
     .filter(Boolean)
     .map((major) => {
       const base = homeTargets.find((item) => item.major === major) || homeTargets[0];
@@ -313,12 +380,13 @@ export function buildAnalysisDerived(state = {}) {
       const cut = Number(base?.cut || 100);
       return {
         major,
-        label: major.replace('대학교', '대').replace('학부', '').replace('학과', ''),
+        label: compactTargetLabel(major),
         score,
         cut,
         gap: score - cut
       };
     });
+  const analysisSimulationTargets = serverSimulationTargets.length ? serverSimulationTargets : fallbackSimulationTargets;
 
   return {
     analysisSelected,

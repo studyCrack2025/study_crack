@@ -155,6 +155,7 @@ export function mapUserToStatePatch(userData, base = {}) {
     patch.scoreState = { ...(base.scoreState || {}), ...mappedScore.scoreState };
     patch.scoreEditState = { ...(base.scoreEditState || {}), ...mappedScore.scoreState };
     patch.scoreExamType = mappedScore.examLabel;
+    patch.scoreExamKey = mappedScore.examKey;
   }
   if (Object.keys(userPatch).length) patch.user = userPatch;
   return patch;

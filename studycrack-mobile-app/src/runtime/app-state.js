@@ -65,6 +65,9 @@ export function createInitialAppState() {
     activeScoreView: 'target',
     universityModalOpen: false,
     universityCatalog: [],
+    analysisResults: [],
+    analysisSimulations: [],
+    analysisApiStatus: 'idle',
     addingUniversity: false,
     // 홈 슬라이더/드래그
     homeSlideIndex: 0,
@@ -150,6 +153,7 @@ export function createInitialAppState() {
     scoreEditOpen: false,
     scoreEditStep: 1,
     scoreExamType: '3월 모의고사',
+    scoreExamKey: 'mar',
     // 알림/FAQ
     notifications: DEFAULT_NOTIFICATIONS,
     openFaq: '',

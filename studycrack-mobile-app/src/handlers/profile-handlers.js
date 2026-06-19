@@ -1,4 +1,5 @@
 import { DEFAULT_USER } from '../constants/mock-data.js';
+import { scoreExamTypeToKey } from '../runtime/persistence.js';
 import { getData } from './action-utils.js';
 
 const MBTI_STRATEGY_VALUES = ['plan', 'solo', 'weak_first', 'feedback'];
@@ -156,18 +157,6 @@ function englishGradeToScore(grade) {
   return n ? Math.max(0, Math.round(100 - (n - 1) * 12.5)) : 0;
 }
 
-function scoreExamTypeToKey(label = '') {
-  if (String(label).includes('3월')) return 'mar';
-  if (String(label).includes('4월')) return 'apr';
-  if (String(label).includes('5월')) return 'may';
-  if (String(label).includes('6월')) return 'jun';
-  if (String(label).includes('7월')) return 'jul';
-  if (String(label).includes('9월')) return 'sep';
-  if (String(label).includes('10월')) return 'oct';
-  if (String(label).includes('수능')) return 'csat';
-  return 'active';
-}
-
 function buildQuantitative(values, examType) {
   const examKey = scoreExamTypeToKey(examType);
   return {
@@ -243,6 +232,7 @@ export function createProfileHandlers(ctx) {
     setOpenFaq = noop,
     setScoreEditOpen = noop,
     setScoreEditStep = noop,
+    setScoreExamKey = noop,
     setScores = noop,
     setTargetMajor = noop,
     setUser = noop,
@@ -354,6 +344,7 @@ export function createProfileHandlers(ctx) {
         ...(ctx.user?.quantitative || {}),
         ...quantitativePatch
       };
+      setScoreExamKey(scoreExamTypeToKey(ctx.scoreExamType));
       setUser((prevUser) => ({
         ...prevUser,
         quantitative: nextQuantitative
@@ -391,6 +382,7 @@ export function createProfileHandlers(ctx) {
         inquiry1: Number(picked.inquiry1 || prev.inquiry1),
         inquiry2: Number(picked.inquiry2 || prev.inquiry2)
       }));
+      setScoreExamKey(scoreExamTypeToKey(ctx.scoreExamType));
       alert('선택한 시험 성적이 적용되었습니다.');
       return true;
     },

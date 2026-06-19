@@ -15,7 +15,7 @@ import { renderScoreEditModal } from '../screens/profile/renderers.js';
 import { createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
-import { fetchUniversityCatalog, saveQualitative, saveQuantitative, saveTargetUnivs } from './persistence.js';
+import { fetchMobileTargetAnalysis, fetchUniversityCatalog, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
@@ -262,7 +262,7 @@ function MobileApp() {
     markOnboardingComplete: () => setState({ loggedIn: true }),
     getExamScoresMap: () => readExamScoresMap(),
     saveExamScoresMap: (map) => writeExamScoresMap(map),
-    applyScoreExamSelection: (scoreExamType) => setState({ scoreExamType }),
+    applyScoreExamSelection: (scoreExamType) => setState({ scoreExamType, scoreExamKey: scoreExamTypeToKey(scoreExamType) }),
     persistTargetUnivs,
     persistQuantitative,
     persistQualitative,
@@ -411,6 +411,43 @@ function MobileApp() {
       cancelled = true;
     };
   }, [getAnalysisApiBinding]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
+    const examMode = state.scoreExamKey || scoreExamTypeToKey(state.scoreExamType);
+    const userScores = state.user?.quantitative?.[examMode] || state.user?.quantitative?.active;
+    const targetList = uniqueTargetList([
+      state.targetMajor,
+      ...(state.analysisTargetList || []),
+      ...(state.homeTargetList || [])
+    ]);
+    if (!userScores || !targetList.length) return undefined;
+
+    let cancelled = false;
+    setState({ analysisApiStatus: 'loading' });
+    fetchMobileTargetAnalysis({ ...getAnalysisApiBinding(), targetList, userScores, examMode }).then((payload) => {
+      if (cancelled || !payload) return;
+      setState({
+        analysisResults: payload.analysisResults || [],
+        analysisSimulations: payload.simulationResults || [],
+        analysisApiStatus: payload.analysisResults?.length ? 'ready' : 'empty'
+      });
+    }).catch(() => {
+      if (!cancelled) setState({ analysisApiStatus: 'error' });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    getAnalysisApiBinding,
+    state.analysisTargetList,
+    state.homeTargetList,
+    state.scoreExamKey,
+    state.scoreExamType,
+    state.targetMajor,
+    state.user?.quantitative
+  ]);
 
   const onClick = useCallback(
     (event) => {
