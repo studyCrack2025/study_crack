@@ -564,3 +564,17 @@ export async function fetchMobileNotifications({ apiFetch, notiApiUrl } = {}) {
   const data = await response.json().catch(() => null);
   return normalizeNotifications(data);
 }
+
+// 알림 읽음 처리(R6b): student_read_notification. notiId='all'이면 전체 읽음(백엔드 지원).
+export async function markMobileNotificationsRead({ apiFetch, notiApiUrl, notiId = 'all' } = {}) {
+  if (typeof apiFetch !== 'function' || !notiApiUrl) return { ok: false };
+  try {
+    const response = await apiFetch(notiApiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'student_read_notification', data: { notiId } })
+    });
+    return { ok: !!response?.ok };
+  } catch (_error) {
+    return { ok: false };
+  }
+}

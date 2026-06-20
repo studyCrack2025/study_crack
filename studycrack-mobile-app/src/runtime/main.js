@@ -15,7 +15,7 @@ import { renderScoreEditModal } from '../screens/profile/renderers.js';
 import { createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
-import { createBlankScoreState, fetchMobileNotifications, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, uploadMobileWeeklyFiles } from './persistence.js';
+import { createBlankScoreState, fetchMobileNotifications, markMobileNotificationsRead, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, uploadMobileWeeklyFiles } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
@@ -632,6 +632,18 @@ function MobileApp() {
       cancelled = true;
     };
   }, [getNotiApiBinding]);
+
+  // 알림 읽음 처리(R6b): 모달이 열리고 미읽음이 있으면 낙관적 업데이트 + 서버 일괄 읽음(notiId='all').
+  useEffect(() => {
+    if (!state.notifModalOpen) return undefined;
+    if (typeof window === 'undefined') return undefined;
+    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
+    const current = stateRef.current.notiList || [];
+    if (!current.some((n) => !n.isRead)) return undefined;
+    setState({ notiList: current.map((n) => ({ ...n, isRead: true })) });
+    markMobileNotificationsRead({ ...getNotiApiBinding(), notiId: 'all' });
+    return undefined;
+  }, [state.notifModalOpen, getNotiApiBinding]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
