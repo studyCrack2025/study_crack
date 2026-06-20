@@ -204,13 +204,7 @@ function renderQnaComposerModal(ctx) {
 function renderPlanCard({ meta, plan, selectedPlan, variant }) {
   const active = selectedPlan === plan;
   const badge = plan === 'Standard' ? '<span class="badge">추천</span>' : plan === 'Pro' ? '<span class="badge">최고 효율</span>' : '';
-  const features = variant === 'intro'
-    ? plan === 'Basic'
-      ? ['합격 가능성 분석', '대학별 전략 확인']
-      : plan === 'Standard'
-        ? ['플래너 피드백', '학습 방향 코칭']
-        : ['모든 기능 무제한 이용', '프로 보고서 2주 1회', 'Sky튜터 1:1 피드백']
-    : meta.features;
+  const features = meta.features;
 
   return `<button class="plan-card ${plan.toLowerCase()} ${active ? 'active' : ''}" data-action="selectPlan" data-plan="${plan}"><div class="plan-head"><h4>${plan}</h4>${badge}</div><p class="plan-price">${meta.introPrice}</p><ul>${features.map((item) => `<li>${item}</li>`).join('')}</ul></button>`;
 }
@@ -367,10 +361,16 @@ export function renderProIntroScreen(ctx) {
     appbar,
     checkoutPlan = 'Standard',
     layout,
-    planMeta = PLAN_META
+    planMeta = PLAN_META,
+    upgradePromptTarget = '',
+    upgradePromptTier = ''
   } = ctx;
+  const requiredPlan = upgradePromptTier === 'pro' ? 'PRO' : upgradePromptTier === 'standard' ? 'STANDARD' : '';
+  const upgradeNotice = requiredPlan
+    ? `<div class="card locked-upgrade-card"><span class="badge">잠긴 기능</span><h3>${escapeHtml(upgradePromptTarget || '선택한 기능')}은 ${requiredPlan} 이상에서 이용할 수 있어요.</h3><p>요금제를 업그레이드하면 하단 탭은 그대로 유지하면서 해당 기능이 바로 열립니다.</p></div>`
+    : '';
 
-  return layout(appbar('StudyCrack 요금제', true) + `<p class="sub pricing-sub">합격 전략, 단계별로 선택하세요</p>
+  return layout(appbar('StudyCrack 요금제', true) + `${upgradeNotice}<p class="sub pricing-sub">합격 전략, 단계별로 선택하세요</p>
       <div class="plan-stack">
         ${renderPlanCard({ meta: planMeta.Basic, plan: 'Basic', selectedPlan: checkoutPlan, variant: 'intro' })}
         ${renderPlanCard({ meta: planMeta.Standard, plan: 'Standard', selectedPlan: checkoutPlan, variant: 'intro' })}

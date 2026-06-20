@@ -141,6 +141,16 @@ const SCREEN_REQUIREMENTS = {
   proElite: 'pro',
   tutor: 'pro'
 };
+const LOCKED_SCREEN_LABELS = {
+  strategy: '학습 코칭',
+  planner: '플래너',
+  plannerAdd: '플래너 작성',
+  weekly: '주간 피드백',
+  report: 'PRO 리포트',
+  reportDetail: '리포트 상세',
+  proElite: 'PRO 전용 리포트',
+  tutor: 'SKY튜터 1:1 피드백'
+};
 
 function getEffectiveTier(state = {}) {
   const raw = state.userTier || state.selectedPlan || '';
@@ -152,8 +162,8 @@ function canAccessTier(state, requiredTier) {
   return (PLAN_RANK[getEffectiveTier(state)] || 0) >= (PLAN_RANK[requiredTier] || 0);
 }
 
-function filterTabItemsForTier(state) {
-  return TAB_ITEMS.filter((item) => canAccessTier(state, SCREEN_REQUIREMENTS[item.key]));
+function filterTabItemsForTier() {
+  return TAB_ITEMS;
 }
 
 function buildScoreSelectionPatch(scoreExamType, current) {
@@ -337,13 +347,15 @@ function MobileApp() {
   }, [state.screen, state.selectedDate]);
 
   const dimmed = isTabbarDimmed(state);
-  const visibleTabItems = filterTabItemsForTier(state);
+  const visibleTabItems = filterTabItemsForTier();
 
   const beforeGoto = useCallback(({ target } = {}) => {
     const required = SCREEN_REQUIREMENTS[target];
     if (!required || canAccessTier(stateRef.current, required)) return true;
-    const label = required === 'pro' ? 'Pro' : 'Standard';
-    globalThis.alert?.(`${label} 이상 플랜에서 이용할 수 있는 기능입니다.`);
+    setState({
+      upgradePromptTier: required,
+      upgradePromptTarget: LOCKED_SCREEN_LABELS[target] || '선택한 기능'
+    });
     nav.goto('proIntro');
     return false;
   }, [nav]);

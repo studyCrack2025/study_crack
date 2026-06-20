@@ -4,7 +4,6 @@ import { getData } from './action-utils.js';
 
 const MBTI_STRATEGY_VALUES = ['plan', 'solo', 'weak_first', 'feedback'];
 const KAKAO_SUPPORT_URL = 'http://pf.kakao.com/_wxjxcgn';
-const SUPPORT_EMAIL = 'contact@studycrack.co.kr';
 
 function noop() {}
 
@@ -225,7 +224,6 @@ export function createProfileHandlers(ctx) {
     setMbtiResult = noop,
     setMyProfileEditOpen = noop,
     setMyProfileNameDraft = noop,
-    setMyProfileTargetDraft = noop,
     setNotifications = noop,
     setOb2SkippedNoScore = noop,
     setObGed = noop,
@@ -240,7 +238,6 @@ export function createProfileHandlers(ctx) {
     setWithdrawModalOpen = noop,
     persistQualitative = noop,
     persistQuantitative = noop,
-    persistTargetUnivs = noop,
     setWithdrawPassword = noop
   } = ctx;
   const storage = ctx.localStorage || localStorage;
@@ -433,7 +430,6 @@ export function createProfileHandlers(ctx) {
 
     openMyProfileEdit() {
       setMyProfileNameDraft(ctx.user?.name || DEFAULT_USER.name);
-      setMyProfileTargetDraft(ctx.targetMajor || ctx.analysisTargetList?.[0] || DEFAULT_USER.targetUniversity);
       setMyProfileEditOpen(true);
       return true;
     },
@@ -445,15 +441,7 @@ export function createProfileHandlers(ctx) {
 
     async saveMyProfileEdit() {
       const nextName = String(ctx.myProfileNameDraft || '').trim() || DEFAULT_USER.name;
-      const nextTarget = ctx.myProfileTargetDraft || ctx.targetMajor || DEFAULT_USER.targetUniversity;
-      setUser((prev) => ({ ...(prev || {}), name: nextName, targetUniversity: nextTarget }));
-      setTargetMajor(nextTarget);
-      const nextTargets = Array.from(new Set([nextTarget, ...(ctx.homeTargetList || [])].filter(Boolean))).slice(0, 6);
-      const result = await persistTargetUnivs(nextTargets);
-      if (result && result.ok === false) {
-        alert(result.error || '목표 대학 저장에 실패했습니다.');
-        return false;
-      }
+      setUser((prev) => ({ ...(prev || {}), name: nextName }));
       setMyProfileEditOpen(false);
       return true;
     },
@@ -533,15 +521,6 @@ export function createProfileHandlers(ctx) {
       const win = getWindow(ctx);
       if (typeof ctx.windowOpen === 'function') ctx.windowOpen(KAKAO_SUPPORT_URL, '_blank');
       else win.open?.(KAKAO_SUPPORT_URL, '_blank');
-      return true;
-    },
-
-    openEmailSupport() {
-      if (typeof ctx.setLocationHref === 'function') ctx.setLocationHref(`mailto:${SUPPORT_EMAIL}`);
-      else {
-        const win = getWindow(ctx);
-        if (win.location) win.location.href = `mailto:${SUPPORT_EMAIL}`;
-      }
       return true;
     }
   };

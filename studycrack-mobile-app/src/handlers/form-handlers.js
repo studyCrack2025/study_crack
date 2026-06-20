@@ -142,7 +142,6 @@ export function createFormHandlers(ctx) {
     setCoachingPlannerFiles = noop,
     setCoachingSubjectRows = noop,
     setMyProfileNameDraft = noop,
-    setMyProfileTargetDraft = noop,
     setObGoalText = noop,
     setObGradeStatus = noop,
     setObQuestionText = noop,
@@ -196,7 +195,6 @@ export function createFormHandlers(ctx) {
       renderUniversityResultsOnly(target.value, target);
     }
     if (field === 'myProfileNameDraft') setMyProfileNameDraft(target.value);
-    if (field === 'myProfileTargetDraft') setMyProfileTargetDraft(target.value);
     if (field === 'obTrack') {
       setPendingOrState({
         field,
@@ -259,10 +257,6 @@ export function createFormHandlers(ctx) {
       return { handled: true, field };
     }
     if (field === 'analysisSearchTerm') return { handled: true, field };
-    if (field === 'myProfileTargetDraft') {
-      setMyProfileTargetDraft(target.value);
-      return { handled: true, field };
-    }
     if (ctx.isIOSSafari?.() && ctx.scoreEditOpen && V2E_SELECT_FIELDS.has(field)) {
       if (ctx.v2eSelectSyncTimerRef?.current) clearTimeout(ctx.v2eSelectSyncTimerRef.current);
       if (ctx.v2eSelectSyncTimerRef) {

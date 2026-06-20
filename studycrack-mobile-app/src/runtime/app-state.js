@@ -50,6 +50,8 @@ export function createInitialAppState() {
     userTier: '', // 백엔드 get_user의 computedTier(쿠키 세션 시 채워짐, 미인증은 빈값=데모)
     selectedPlan: DEFAULT_USER.plan,
     checkoutPlan: 'Standard',
+    upgradePromptTier: '',
+    upgradePromptTarget: '',
     duration: '4주',
     targetMajor: DEFAULT_USER.targetUniversity,
     targetOpen: false,
@@ -140,7 +142,6 @@ export function createInitialAppState() {
     withdrawModalOpen: false,
     myProfileEditOpen: false,
     myProfileNameDraft: '',
-    myProfileTargetDraft: '',
     withdrawPassword: '',
     // service/PRO/coaching
     proRequestModalOpen: false,
