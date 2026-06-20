@@ -1,14 +1,23 @@
 :root {
-  --primary: #2563EB;
-  --gradient-primary: linear-gradient(135deg, #2563EB, #7C3AED);
+  --primary: #4c79ee;
+  --primary-dark: #344e8f;
+  --purple: #7141d9;
+  --gradient-primary: linear-gradient(135deg, #4c79ee, #7141d9);
+  --primary-soft: #eaf2ff;
+  --danger-bg: #fff3f1;
   --score-low: #FA8072;
-  --score-mid: #2563EB;
-  --score-high: #7C3AED;
+  --score-mid: #4c79ee;
+  --score-high: #7141d9;
   --bg: #F8FAFC;
-  --card: #FFFFFF;
-  --text: #0F172A;
+  --card: #f1f4fb;
+  --surface: #FFFFFF;
+  --text: #2c2c2c;
   --muted: #64748B;
   --line: #E2E8F0;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
 }
 
 * { box-sizing: border-box; }
@@ -19,8 +28,11 @@ html, body {
   overflow: auto;
 }
 body {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: "Paperlogy", "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--text);
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+  -webkit-font-smoothing: antialiased;
 }
 #root { width: 100%; min-height: -webkit-fill-available; }
 .ios-scroll-root {
