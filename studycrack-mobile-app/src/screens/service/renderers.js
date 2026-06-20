@@ -1,5 +1,5 @@
 import { renderModal } from '../../components/modal.js';
-import { CRACKY_SRC, PRO_ELITE_REPORT_PDF_PATH } from '../../constants/assets.js';
+import { CRACKY_SRC } from '../../constants/assets.js';
 import { COACHING_MONTHLY_REPORTS, PLAN_META } from '../../constants/plans.js';
 
 function defaultIcon() {
@@ -24,9 +24,27 @@ function renderCoachingSheet(ctx) {
         </div>`;
 }
 
-function renderReportRows({ icon = defaultIcon }) {
-  return `<button class="report-row" data-action="goto" data-target="reportDetail"><div><b>5월 11일 (토)</b><p>종합 분석 리포트</p></div><span>${icon('chevron', false)}</span></button>
-         <button class="report-row"><div><b>4월 27일 (토)</b><p>중간 분석 리포트</p></div><span>${icon('chevron', false)}</span></button>`;
+function formatReportKeyLabel(key = '') {
+  const value = String(key || '').trim();
+  const match = value.match(/^(\d{2})(\d{2})(\d{2})$/);
+  if (!match) return value || 'PRO 리포트';
+  return `20${match[1]}년 ${Number(match[2])}월 ${Number(match[3])}주차`;
+}
+
+function reportStatusLabel(report = {}) {
+  const status = String(report.status || '').toLowerCase();
+  if ((status === 'published' || status === 'sent') && report.reportLink) return '다운로드 가능';
+  if (status === 'tutor_review') return '튜터 검수 중';
+  if (status === 'drafting') return '작성 중';
+  return '준비 중';
+}
+
+function renderReportRows({ icon = defaultIcon, reports = [] }) {
+  if (!reports.length) return '<div class="coach-empty">아직 발행된 PRO 리포트가 없습니다.</div>';
+  return reports.map((report) => {
+    const ready = !!report.reportLink && ['published', 'sent'].includes(String(report.status || '').toLowerCase());
+    return `<button class="report-row" data-action="downloadProReport" data-pdf-path="${ready ? report.reportLink : ''}" data-pdf-name="studycrack-pro-report-${report.key || 'latest'}.pdf"><div><b>${formatReportKeyLabel(report.key)}</b><p>${reportStatusLabel(report)}</p></div><span>${ready ? 'PDF' : icon('chevron', false)}</span></button>`;
+  }).join('');
 }
 
 function renderProRequestModal(ctx) {
@@ -109,36 +127,47 @@ export function renderWeeklyScreen(ctx) {
 export function renderReportScreen(ctx) {
   const {
     icon = defaultIcon,
-    layout
+    layout,
+    proReports = [],
+    proReportsStatus = 'idle'
   } = ctx;
+  const statusText = proReportsStatus === 'loading'
+    ? '<div class="coach-empty">PRO 리포트를 불러오는 중입니다.</div>'
+    : renderReportRows({ icon, reports: proReports });
 
   return layout(
     `<span class="badge">프로 플랜 전용</span>
        <p class="report-desc">2주에 한 번, 내 맞춤 분석 리포트 제공</p>
-       <div class="card report-main"><p class="sub">다음 보고서 이용 가능일</p><p class="report-date">5월 25일 (토)</p><h2>D-11</h2></div>
+       <div class="card report-main"><p class="sub">리포트 상태</p><p class="report-date">${proReports.length ? '발행 이력 있음' : '발행 대기 중'}</p><h2>${proReports.length}</h2></div>
        <div class="card report-list"><p class="sub">이전 보고서</p>
-         ${renderReportRows({ icon })}
+         ${statusText}
        </div>
-       <div class="cta-wrapper"><button class="btn btn-primary report-sample cta-btn">프로 보고서 샘플 보기</button></div>`,
+       <div class="cta-wrapper"><button class="btn btn-primary report-sample cta-btn" data-action="openProRequestModal">전략 리포트 요청하기</button></div>${renderProRequestModal(ctx)}`,
     true
   );
 }
 
 export function renderReportDetailScreen({ appbar, layout }) {
-  return layout(appbar('종합 분석 리포트', true) + `<div class="report-tabs"><span class="active">종합 분석</span><span>과목 분석</span><span>학습 전략</span><span>현재 위치</span></div><div class="report-detail-stack"><div class="card report-detail-card"><p class="sub">핵심 요약</p><p class="report-detail-text">수학에서 점수 상승 여지가 가장 큽니다. 개념 학습 시간을 늘리고, 문제 풀이 비중을 높이면 단기간 점수 개선이 가능합니다.</p></div><div class="card report-detail-card"><p class="sub">과목별 성과</p><div class="subject-result"><span>수학</span><div class="track"><i style="width:82%"></i></div><em><span class="score">68점</span><span class="delta">▲12</span></em></div><div class="subject-result"><span>국어</span><div class="track"><i style="width:74%"></i></div><em><span class="score">82점</span><span class="delta">▲3</span></em></div><div class="subject-result"><span>영어</span><div class="track"><i style="width:70%"></i></div><em><span class="score">77점</span><span class="delta">-</span></em></div><div class="subject-result"><span>탐구</span><div class="track"><i style="width:62%"></i></div><em><span class="score">66점</span><span class="delta">▲5</span></em></div></div></div><div class="cta-wrapper report-detail-cta"><button class="btn btn-primary cta-btn">PDF 다운로드</button></div>`, false);
+  return layout(appbar('종합 분석 리포트', true) + '<div class="card report-detail-card"><p class="sub">모바일 앱에서는 실제 발행된 PDF 리포트만 확인할 수 있습니다.</p><p class="report-detail-text">PRO 리포트 목록에서 다운로드 가능한 항목을 선택해주세요.</p></div>', false);
 }
 
 export function renderProEliteScreen(ctx) {
   const {
     appbar,
     layout,
-    proEliteFilteredReports = [],
-    proEliteMonth = '',
-    proEliteMonths = [],
-    proEliteReportPdfPath = PRO_ELITE_REPORT_PDF_PATH
+    proReports = [],
+    proReportsStatus = 'idle'
   } = ctx;
+  const reportList = proReportsStatus === 'loading'
+    ? '<div class="coach-empty">PRO 리포트를 불러오는 중입니다.</div>'
+    : (proReports.length
+      ? proReports.map((report) => {
+        const ready = !!report.reportLink && ['published', 'sent'].includes(String(report.status || '').toLowerCase());
+        return `<button class="pro-elite-item" data-action="downloadProReport" data-pdf-path="${ready ? report.reportLink : ''}" data-pdf-name="studycrack-pro-report-${report.key || 'latest'}.pdf"><div><b>${formatReportKeyLabel(report.key)} PRO 리포트</b><p>${reportStatusLabel(report)}</p></div><span class="pro-elite-download">${ready ? 'PDF 다운로드' : '준비 중'}</span></button>`;
+      }).join('')
+      : '<div class="coach-empty">아직 발행된 PRO 리포트가 없습니다.</div>');
 
-  return layout(appbar('PRO EXCLUSIVE', true) + `<div class="pro-elite-page"><div class="pro-elite-hero"><span class="pro-elite-badge">TOP 1%</span><h3>상위 1%를 위한<br/>중장기 집중 맞춤 솔루션</h3><p>주차별 프리미엄 전략 리포트를 다운로드하세요.</p></div><div class="pro-elite-filter"><select class="pro-elite-month-select" data-field="proEliteMonth">${proEliteMonths.map((month) => `<option value="${month}" ${proEliteMonth === month ? 'selected' : ''}>${month}</option>`).join('')}</select></div><div class="pro-elite-list">${proEliteFilteredReports.map((report) => `<button class="pro-elite-item" data-action="downloadProReport" data-pdf-path="${proEliteReportPdfPath}" data-pdf-name="${report.fileName}"><div><b>${report.week} PRO 리포트</b><p>${report.desc}</p></div><span class="pro-elite-download">PDF 다운로드</span></button>`).join('') || '<div class="coach-empty">해당 월 리포트가 없습니다.</div>'}</div><div class="pro-elite-request-bottom"><button class="pro-request-btn" data-action="openProRequestModal"><i class="spark">✦</i><span>전략 리포트 요청하기</span></button></div>${renderProRequestModal(ctx)}</div>`, false);
+  return layout(appbar('PRO EXCLUSIVE', true) + `<div class="pro-elite-page"><div class="pro-elite-hero"><span class="pro-elite-badge">TOP 1%</span><h3>상위 1%를 위한<br/>중장기 집중 맞춤 솔루션</h3><p>발행된 프리미엄 전략 리포트를 확인하세요.</p></div><div class="pro-elite-list">${reportList}</div><div class="pro-elite-request-bottom"><button class="pro-request-btn" data-action="openProRequestModal"><i class="spark">✦</i><span>전략 리포트 요청하기</span></button></div>${renderProRequestModal(ctx)}</div>`, false);
 }
 
 export function renderTutorScreen({ appbar, layout }) {

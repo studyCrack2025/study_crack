@@ -1,4 +1,3 @@
-import { PRO_ELITE_REPORT_PDF_PATH } from '../constants/assets.js';
 import { getData } from './action-utils.js';
 
 function noop() {}
@@ -249,7 +248,11 @@ export function createServiceHandlers(ctx) {
     },
 
     downloadProReport({ actionEl }) {
-      const pdfPath = getData(actionEl, 'pdf-path', PRO_ELITE_REPORT_PDF_PATH);
+      const pdfPath = getData(actionEl, 'pdf-path');
+      if (!pdfPath) {
+        alert('리포트 파일이 준비되면 다운로드할 수 있습니다.');
+        return false;
+      }
       const fileName = getData(actionEl, 'pdf-name', 'studycrack-pro-report.pdf');
       return clickDownload(ctx, pdfPath, fileName);
     },

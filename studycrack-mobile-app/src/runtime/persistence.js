@@ -226,3 +226,27 @@ export async function fetchMobileTargetAnalysis({ apiFetch, analysisApiUrl, targ
 
   return { analysisResults, simulationResults };
 }
+
+function normalizeProReports(payload) {
+  const reports = Array.isArray(payload?.reports) ? payload.reports : [];
+  return reports
+    .filter((item) => item && item.key)
+    .map((item) => ({
+      key: String(item.key || ''),
+      reportLink: item.reportLink || '',
+      status: item.status || (item.reportLink ? 'sent' : 'pending'),
+      updatedAt: item.updatedAt || '',
+      request: item.request || ''
+    }));
+}
+
+export async function fetchMobileProReports({ apiFetch, reportApiUrl } = {}) {
+  if (typeof apiFetch !== 'function' || !reportApiUrl) return null;
+  const response = await apiFetch(reportApiUrl, {
+    method: 'POST',
+    body: JSON.stringify({ type: 'get_pro_reports', data: { requesterRole: 'student' } })
+  });
+  if (!response?.ok) return [];
+  const data = await response.json().catch(() => null);
+  return normalizeProReports(data);
+}

@@ -15,7 +15,7 @@ import { renderScoreEditModal } from '../screens/profile/renderers.js';
 import { createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
-import { createBlankScoreState, fetchMobileTargetAnalysis, fetchUniversityCatalog, mapExamDataToScorePatch, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey } from './persistence.js';
+import { createBlankScoreState, fetchMobileProReports, fetchMobileTargetAnalysis, fetchUniversityCatalog, mapExamDataToScorePatch, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
@@ -205,6 +205,14 @@ function MobileApp() {
     () => ({
       apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
       analysisApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.analysis) || ''
+    }),
+    []
+  );
+
+  const getReportApiBinding = useCallback(
+    () => ({
+      apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
+      reportApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.report) || ''
     }),
     []
   );
@@ -475,6 +483,22 @@ function MobileApp() {
       cancelled = true;
     };
   }, [getAnalysisApiBinding]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
+    let cancelled = false;
+    setState({ proReportsStatus: 'loading' });
+    fetchMobileProReports(getReportApiBinding()).then((reports) => {
+      if (cancelled || !reports) return;
+      setState({ proReports: reports, proReportsStatus: reports.length ? 'ready' : 'empty' });
+    }).catch(() => {
+      if (!cancelled) setState({ proReports: [], proReportsStatus: 'error' });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [getReportApiBinding]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
