@@ -2430,16 +2430,12 @@ function App() {
         </div>
         <h1>StudyCrack</h1>
         <p class="auth-title">합격 전략을 시작해볼까요?</p>
-        <p class="sub">내 성적에 맞는 대학별 합격 가능성과 전략을 확인하세요.</p>
-        <label class="auth-label">이메일</label>
-        <input class="planner-input" data-field="loginEmail" value="${loginEmail}" placeholder="you@example.com" />
-        <label class="auth-label">비밀번호</label>
-        <input class="planner-input" data-field="loginPassword" value="${loginPassword}" type="password" placeholder="비밀번호 입력" />
-        <button class="btn btn-primary auth-submit" data-action="loginSuccess">로그인</button>
-        <div class="auth-divider"><span>또는</span></div>
+        <p class="sub">웹 로그인으로 안전하게 인증한 뒤 모바일 화면으로 돌아옵니다.</p>
+        <button class="btn btn-primary auth-submit" data-action="loginSuccess">StudyCrack 로그인</button>
+        <div class="auth-divider"><span>또는 소셜 계정으로 로그인</span></div>
         <div class="auth-sso-row">
-          <button class="auth-sso-btn kakao" data-action="ssoSuccess">카카오 계정으로 로그인</button>
-          <button class="auth-sso-btn apple" data-action="ssoSuccess">Apple로 로그인</button>
+          <button class="auth-sso-btn google" data-action="ssoSuccess"><span class="auth-sso-icon">G</span><span>Google로 로그인</span></button>
+          <button class="auth-sso-btn naver" data-action="ssoSuccess"><span class="auth-sso-icon">N</span><span>Naver로 로그인</span></button>
         </div>
         <div class="auth-helper-row">
           <button class="auth-link-btn" data-action="openFindEmailModal">이메일 찾기</button>
@@ -2473,12 +2469,13 @@ function App() {
     authSignup: () => layout(appbar('회원가입', true) + `<div class="signup-page"><div class="signup-form-card">
       <div class="auth-logo-wrap compact signup-logo"><img src="${STUDYCRACK_LOGO_SRC}" class="auth-logo" alt="StudyCrack Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" /><span class="auth-logo-fallback">StudyCrack</span></div>
       <p class="signup-title">회원가입</p>
-      <div class="signup-section"><p class="section-title">1 / 3 계정 정보</p><div class="section-divider"></div><label class="auth-label">이메일(아이디)</label><div class="input-row signup-input-row"><input class="input" data-field="signupEmail" defaultValue="${signupEmail}" placeholder="example@email.com" /><button type="button" class="input-btn" data-action="verifySignupEmail">${signupEmailSending ? '전송 중...' : (signupEmailCodeSent ? '재전송' : '인증번호 받기')}</button></div>${signupEmailCodeSent ? `<div class="verify-box"><p>이메일로 인증번호를 보냈습니다.${signupEmailVerified ? ' ✅ 인증 완료' : ''}</p><div class="verify-row"><input class="input" data-field="signupEmailCode" defaultValue="${signupEmailCode}" placeholder="인증코드 6자리" maxlength="6" inputmode="numeric" /><b data-signup-timer="email">05:00</b><button type="button" class="input-btn verify-confirm-btn" data-action="confirmSignupEmailCode">확인</button></div><small data-signup-expire="email" style="display:none">인증 시간이 만료되었습니다. 재전송해주세요.</small><small>이메일이 오지 않는다면 스팸 메일함을 먼저 확인해주세요.</small><small>그래도 도착하지 않는다면 contact@studycrack.co.kr로 문의 부탁드립니다.</small></div>` : ''}<label class="auth-label">비밀번호</label><input class="input" data-field="signupPassword" defaultValue="${signupPassword}" type="password" placeholder="영문 대/소문자, 숫자, 특수문자 포함 8자 이상" /><small class="signup-pw-guide">영문 대문자, 영문 소문자, 숫자, 특수문자를 모두 포함해 8자 이상 입력해주세요.</small><label class="auth-label">비밀번호 확인</label><input class="input" data-field="signupPasswordConfirm" defaultValue="${signupPasswordConfirm}" type="password" placeholder="비밀번호 재입력" /><p class="pw-match" data-signup-pw-match style="display:none"></p></div>
-      <div class="signup-section"><p class="section-title">2 / 3 개인 정보</p><div class="section-divider"></div><label class="auth-label">이름(실명)</label><input class="input" data-field="signupName" defaultValue="${signupName}" placeholder="이름 입력" /><div class="grid-2 signup-personal-grid"><div><label class="auth-label">성별</label><div class="radio-group gender-row"><label class="radio-item"><input type="radio" name="signupGender" data-action="setSignupGender" data-gender="female" ${signupGender==='female'?'checked':''}/>여성</label><label class="radio-item"><input type="radio" name="signupGender" data-action="setSignupGender" data-gender="male" ${signupGender==='male'?'checked':''}/>남성</label></div></div><div class="signup-date-field"><label class="auth-label">생년월일</label><input class="input" type="date" data-field="signupBirth" defaultValue="${signupBirth}" placeholder="생년월일 선택" /></div></div><label class="auth-label">전화번호</label><div class="input-row signup-input-row"><input class="input" data-field="signupPhone" defaultValue="${signupPhone}" placeholder="- 없이 입력해주세요" /><button type="button" class="input-btn" data-action="verifySignupPhone">${signupPhoneSending ? '전송 중...' : (signupPhoneCodeSent ? '재전송' : '인증번호 전송')}</button></div>${signupPhoneCodeSent ? `<div class="verify-box"><p>문자로 인증번호를 보냈습니다.${signupPhoneVerified ? ' ✅ 인증 완료' : ''}</p><div class="verify-row"><input class="input" data-field="signupPhoneCode" defaultValue="${signupPhoneCode}" placeholder="인증코드 6자리" maxlength="6" inputmode="numeric" /><b data-signup-timer="phone">05:00</b><button type="button" class="input-btn verify-confirm-btn" data-action="confirmSignupPhoneCode">확인</button></div><small data-signup-expire="phone" style="display:none">인증 시간이 만료되었습니다. 재전송해주세요.</small></div>` : ''}</div>
-      <div class="signup-section"><p class="section-title">3 / 3 세부 정보</p><div class="section-divider"></div><label class="auth-label">희망 계열</label><select class="input" data-field="signupTrack" defaultValue="${signupTrack}"><option value="">선택해주세요</option><option value="의치한약계열">의치한약계열</option><option value="자연/공학계열">자연/공학계열</option><option value="상경계열">상경계열</option><option value="어문/사회계열">어문/사회계열</option><option value="예체능">예체능</option><option value="기타">기타</option></select><label class="auth-label">유입 경로</label><select class="input" data-field="signupSource" defaultValue="${signupSource}"><option value="">선택해주세요</option><option value="인스타그램">인스타그램</option><option value="스레드">스레드</option><option value="오르비">오르비</option><option value="기타">기타</option></select><label class="auth-label">프로모션 코드(선택)</label><input class="input" data-field="signupPromoCode" defaultValue="${signupPromoCode}" placeholder="프로모션 코드 입력" /></div>
-      <div class="terms-card"><div class="terms-header signup-term-row"><input type="checkbox" data-action="toggleSignupTermsAll" data-field="signupTermsAll" ${signupTermsAll?'checked':''}/><span class="signup-term-title">약관 전체 동의</span></div><div class="terms-item signup-term-row"><input type="checkbox" data-action="toggleSignupTermsRequired" data-field="signupTermsStandard" ${signupTermsRequired?'checked':''}/><span class="signup-term-title">(필수) 표준이용약관 동의</span><button type="button" class="terms-link signup-term-view" data-action="openTermsModal" data-terms-type="standard">보기</button></div><div class="terms-item signup-term-row"><input type="checkbox" data-action="toggleSignupTermsRequired" data-field="signupTermsService" ${signupTermsRequired?'checked':''}/><span class="signup-term-title">(필수) 서비스 이용약관 조항 동의</span><button type="button" class="terms-link signup-term-view" data-action="openTermsModal" data-terms-type="service">보기</button></div><div class="terms-item signup-term-row"><input type="checkbox" data-action="toggleSignupTermsRequired" data-field="signupTermsPrivacy" ${signupTermsRequired?'checked':''}/><span class="signup-term-title">(필수) 개인정보 처리방침 동의</span><button type="button" class="terms-link signup-term-view" data-action="openTermsModal" data-terms-type="privacy">보기</button></div><div class="terms-item signup-term-row"><input type="checkbox" data-action="toggleSignupTermsRequired" data-field="signupTermsRefund" ${signupTermsRequired?'checked':''}/><span class="signup-term-title">(필수) 환불 규정 동의</span><button type="button" class="terms-link signup-term-view" data-action="openTermsModal" data-terms-type="refund">보기</button></div><div class="terms-item signup-term-row"><input type="checkbox" data-action="toggleSignupTermsMarketing" data-field="signupTermsMarketing" ${signupTermsMarketing?'checked':''}/><span class="signup-term-title">(선택) 마케팅 정보 수신 동의</span><button type="button" class="terms-link signup-term-view" data-action="openTermsModal" data-terms-type="marketing">보기</button></div></div>${openTermsType ? `<div class="terms-modal-backdrop" data-action="closeTermsModal"><div class="terms-modal" data-action="noopModal"><button class="terms-modal-close" data-action="closeTermsModal">×</button><p class="terms-modal-title">${TERMS_CONTENT[openTermsType]?.title || ''}</p><div class="terms-modal-body">${TERMS_CONTENT[openTermsType]?.body || ''}</div></div></div>` : ''}
-      <button class="signup-submit signup-submit-btn ${signupSubmitEnabled ? 'active' : 'disabled'}" data-signup-submit data-action="signupSuccess" ${signupSubmitEnabled ? '' : 'disabled'}>${signupSubmitEnabled ? '회원가입 완료' : '이메일/전화번호 인증을 완료해주세요'}</button>
-      <p class="signup-login-link">이미 계정이 있으신가요? <button class="auth-link-btn" data-action="goto" data-target="authLogin">로그인</button></p>
+      <div class="signup-section auth-signup-social"><p class="section-title">소셜 계정으로 3초 만에 시작하기</p><div class="section-divider"></div><div class="auth-sso-row"><button class="auth-sso-btn google" data-action="signupSuccess"><span class="auth-sso-icon">G</span><span>Google로 시작하기</span></button><button class="auth-sso-btn naver" data-action="signupSuccess"><span class="auth-sso-icon">N</span><span>Naver로 시작하기</span></button></div></div>
+      <div class="auth-divider"><span>또는 이메일로 직접 가입하기</span></div>
+      <div class="signup-section auth-signup-summary"><p class="section-title">웹 회원가입에서 입력하는 정보</p><div class="auth-support-list"><span>이메일 인증</span><span>비밀번호</span><span>이름</span><span>성별</span><span>생년월일</span><span>전화번호 인증</span><span>유입 경로</span><span>프로모션 코드</span></div></div>
+      <div class="signup-section auth-terms-preview"><p class="section-title">약관 동의</p><div class="auth-terms-row all"><b>약관 전체 동의</b></div><div class="auth-terms-row"><span>(필수)</span> 표준이용약관 동의</div><div class="auth-terms-row"><span>(필수)</span> 서비스 이용약관 조항 동의</div><div class="auth-terms-row"><span>(필수)</span> 개인정보 처리방침 동의</div><div class="auth-terms-row"><span>(필수)</span> 환불 규정 동의</div><div class="auth-terms-row optional"><span>(선택)</span> 마케팅 정보 수신 동의</div></div>
+      <p class="auth-web-note">가입 입력과 약관 전문보기는 StudyCrack 웹 회원가입 화면에서 동일하게 진행됩니다.</p>
+      <button class="signup-submit signup-submit-btn active" data-action="signupSuccess">웹 회원가입에서 계속하기</button>
+      <p class="signup-login-link">이미 계정이 있으신가요? <button class="auth-link-btn" data-action="loginSuccess">로그인</button></p>
     </div>
     </div>`, false),
     splash: `<div class="app-shell"><div class="app-frame"><div class="splash"><div class="logo-bolt">${i('bolt',true)}</div><img class="brand-logo" src="${(window.__studycrackAssetSrc && window.__studycrackAssetSrc.onboardingLogoSrc) || './assets/images/studycrack_logo_wo_bg.png'}" alt="logo"/><h1 style="margin:0;font-size:30px">스터디크랙</h1><p>합격까지 가장 빠른 전략</p></div></div></div>`,
@@ -2951,6 +2948,10 @@ function App() {
     el.style.display = open ? '' : 'none';
     el.setAttribute('aria-hidden', open ? 'false' : 'true');
     return true;
+  };
+  const redirectToWebAuth = (path) => {
+    const here = `${window.location.pathname || '/'}${window.location.search || ''}`;
+    window.location.href = `${path}?returnUrl=${encodeURIComponent(here)}`;
   };
 
   const onClick = async (e) => {
@@ -4147,28 +4148,14 @@ function App() {
     if (action === 'signupSuccess') {
       e.preventDefault();
       e.stopPropagation();
-      preserveSignupDomValues();
-      const form = syncSignupFromDom();
-      const draft = window.__signupDraft || {};
-      const pwRuleValid = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(form.pw || '');
-      const requiredChecked = !!form.requiredChecked;
-      const canSubmit = !!form.email && (draft.emailVerified === true || signupEmailVerified) && pwRuleValid && form.pw === form.pwc && !!form.name && !!form.gender && !!form.birth && !!form.phone && (draft.phoneVerified === true || signupPhoneVerified) && !!form.track && !!form.source && requiredChecked;
-      if (!canSubmit) {
-        alert('필수 입력 사항을 모두 입력하고 인증/약관 동의를 완료해주세요.');
-        restoreSignupDomValues();
-        return;
-      }
-      localStorage.setItem('studycrack_signup_completed', 'true');
-      localStorage.setItem('studycrack_signup_profile', JSON.stringify(form));
-      alert('회원가입이 완료되었습니다.');
-      goto('ob1');
+      redirectToWebAuth('/signup');
       return;
     }
     if (action === 'loginSuccess' || action === 'ssoSuccess') {
-      setLoggedIn(true);
-      setHistory([]);
-      const completed = localStorage.getItem('studycrack_onboarding_completed') === 'true';
-      goto(completed ? 'home' : 'ob1', true);
+      e.preventDefault();
+      e.stopPropagation();
+      redirectToWebAuth('/login');
+      return;
     }
     if (action === 'completeOnboarding') {
       preserveOB5Scroll(() => {
