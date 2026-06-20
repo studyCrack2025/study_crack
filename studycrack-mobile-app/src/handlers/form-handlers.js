@@ -131,7 +131,6 @@ export function createFormHandlers(ctx) {
     goto,
     markStableScrollPosition = noop,
     preserveScrollAfterStateChange = (fn) => fn?.(),
-    preserveSignupScroll = (fn) => fn?.(),
     preserveY = (fn) => fn?.(),
     renderUniversityResultsOnly = noop,
     restoreIfUnexpectedTopJump = noop,
@@ -142,8 +141,6 @@ export function createFormHandlers(ctx) {
     setCoachingMonth = noop,
     setCoachingPlannerFiles = noop,
     setCoachingSubjectRows = noop,
-    setLoginEmail = noop,
-    setLoginPassword = noop,
     setMyProfileNameDraft = noop,
     setMyProfileTargetDraft = noop,
     setObGoalText = noop,
@@ -164,9 +161,7 @@ export function createFormHandlers(ctx) {
     setTargetMajor = noop,
     setTimeout = globalThis.setTimeout || ((fn) => fn()),
     setWeakSubject = noop,
-    setWithdrawPassword = noop,
-    updateSignupButtonState = noop,
-    updateSignupPasswordMatchUi = noop
+    setWithdrawPassword = noop
   } = ctx;
 
   function handleInput(event) {
@@ -244,31 +239,6 @@ export function createFormHandlers(ctx) {
       if (target.value !== numeric) target.value = numeric;
       return { handled: true, field };
     }
-    if (field === 'signupPassword' || field === 'signupPasswordConfirm') {
-      updateSignupPasswordMatchUi();
-      updateSignupButtonState();
-      if (field === 'signupPassword' && event.inputType === 'insertLineBreak') {
-        query(ctx, '[data-field="signupPasswordConfirm"]')?.focus?.();
-      }
-      return { handled: true, field };
-    }
-    if (field === 'signupEmailCode' || field === 'signupPhoneCode') {
-      const numeric = String(target.value || '').replace(/\D+/g, '').slice(0, 6);
-      if (target.value !== numeric) target.value = numeric;
-      if (numeric.length === 6) {
-        target.closest?.('.verify-row')?.querySelector?.('[data-action^="confirmSignup"]')?.classList?.add?.('active');
-      }
-      updateSignupButtonState();
-      return { handled: true, field };
-    }
-    if (field === 'signupEmail' && event.inputType === 'insertLineBreak') {
-      preserveSignupScroll(() => query(ctx, '[data-field="signupPassword"]')?.focus?.());
-      return { handled: true, field };
-    }
-    if (field === 'signupName' && event.inputType === 'insertLineBreak') {
-      preserveSignupScroll(() => query(ctx, '[data-field="signupPhone"]')?.focus?.());
-      return { handled: true, field };
-    }
     return { handled: true, field };
   }
 
@@ -321,7 +291,6 @@ export function createFormHandlers(ctx) {
       preserveScrollAfterStateChange(() => updateV2eSelectState(setScoreEditState, field, target.value));
       return { handled: true, field };
     }
-    if (field?.startsWith('signup')) updateSignupButtonState();
     restoreIfUnexpectedTopJump();
     return { handled: Boolean(field), field };
   }
@@ -359,14 +328,7 @@ export function createFormHandlers(ctx) {
     if (field === 'studyHours') setStudyHours(value);
     if (field === 'studyDifficulty') setStudyDifficulty(value);
     if (field === 'proRequestText') setProRequestText(value);
-    if (field === 'loginEmail') setLoginEmail(value);
-    if (field === 'loginPassword') setLoginPassword(value);
     if (field === 'withdrawPassword') setWithdrawPassword(value);
-    if (field?.startsWith('signup')) {
-      updateSignupPasswordMatchUi();
-      updateSignupButtonState();
-      return { handled: true, field };
-    }
     if (field === 'analysisSearchTerm') setAnalysisSearchTerm(value);
     if (field === 'analysisTargetMajor') {
       if (value === '__add_university__') {
