@@ -131,6 +131,8 @@ export function createInitialAppState() {
     scoreExamKey: 'mar',
     // 알림/FAQ
     notifications: DEFAULT_NOTIFICATIONS,
+    notiList: [], // 서버 알림 목록(student_get_notifications). 미인증/로딩 전 빈 배열.
+    notiStatus: 'idle', // idle | loading | ready | empty | error
     openFaq: '',
     notifModalOpen: false,
     // mypage/계정

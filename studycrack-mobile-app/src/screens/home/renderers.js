@@ -108,9 +108,38 @@ export function renderStudySubjectSheet(ctx) {
   return renderSheet({ panelClass: 'study-subject-sheet', dismissAction: 'closeStudySubjectSheet', body });
 }
 
-export function renderNotificationModal(notifModalOpen = false) {
-  if (!notifModalOpen) return '';
-  const body = `<p class="home-modal-title">알림</p><div class="pro-notif-list"><div><b>주간 코칭 알림</b><p>이번 주 코칭 작성 마감이 오늘 20:00입니다.</p></div><div><b>PRO 리포트 알림</b><p>26년 4월 4주차 리포트가 도착했습니다.</p></div><div><b>플래너 알림</b><p>오늘 계획 3개 중 1개를 완료했어요.</p></div></div><button class="btn btn-primary" data-action="closeNotificationModal">확인</button>`;
+// 서버 알림 데이터(title/body)는 innerHTML로 들어가므로 XSS 방지 이스케이프 필수.
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// 알림 모달(R6): 서버 student_get_notifications 결과(notiList)를 렌더. 미인증/빈 목록/에러는 안내 문구.
+// 하위호환: 옛 시그니처(boolean notifModalOpen)도 허용.
+export function renderNotificationModal(ctx = {}) {
+  const open = typeof ctx === 'boolean' ? ctx : ctx.notifModalOpen;
+  if (!open) return '';
+  const notiList = typeof ctx === 'object' && Array.isArray(ctx.notiList) ? ctx.notiList : [];
+  const notiStatus = (typeof ctx === 'object' && ctx.notiStatus) || 'idle';
+  const itemsHtml = notiList.length
+    ? notiList
+        .map(
+          (n) =>
+            `<div class="${n.isRead ? '' : 'pro-notif-unread'}"><b>${escapeHtml(n.title)}</b><p>${escapeHtml(n.body)}</p></div>`
+        )
+        .join('')
+    : `<div class="pro-notif-empty"><p>${
+        notiStatus === 'loading'
+          ? '알림을 불러오는 중...'
+          : notiStatus === 'error'
+            ? '알림을 불러오지 못했습니다.'
+            : '새로운 알림이 없습니다.'
+      }</p></div>`;
+  const body = `<p class="home-modal-title">알림</p><div class="pro-notif-list">${itemsHtml}</div><button class="btn btn-primary" data-action="closeNotificationModal">확인</button>`;
   return renderModal({ panelClass: 'pro-notif-modal', dismissAction: 'closeNotificationModal', body });
 }
 
@@ -139,6 +168,8 @@ export function renderHomeView(ctx) {
     icon = () => '',
     myRank = 124,
     notifModalOpen = false,
+    notiList = [],
+    notiStatus = 'idle',
     percentile = 100,
     plannedScheduleOptions = [],
     plannerBadges = [],
@@ -212,7 +243,7 @@ export function renderHomeView(ctx) {
       </button>
     </div>
     ${renderStudySubjectSheet({ plannedScheduleOptions, studySubjectSheetOnlyPlanned, studySubjectSheetOpen })}
-    ${renderNotificationModal(notifModalOpen)}
+    ${renderNotificationModal({ notifModalOpen, notiList, notiStatus })}
     ${renderDrawer({ drawerOpen, icon })}
   </div>
   </div>`;

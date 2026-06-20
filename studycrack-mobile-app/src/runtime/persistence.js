@@ -533,3 +533,34 @@ export async function saveMobileQna({ apiFetch, qnaApiUrl, title, content } = {}
     return { ok: false, error: '네트워크 오류로 질문을 저장하지 못했습니다.' };
   }
 }
+
+// 알림(R6): /api/noti student_get_notifications 로드(qna/리포트와 동일 패턴).
+// 응답 { notifications: [{ notiId, title, body|message, type, isRead, createdAt }] } 정규화.
+export function normalizeNotifications(payload) {
+  const list = Array.isArray(payload?.notifications)
+    ? payload.notifications
+    : Array.isArray(payload)
+      ? payload
+      : [];
+  return list
+    .filter((item) => item && (item.notiId || item.id))
+    .map((item) => ({
+      notiId: String(item.notiId || item.id || ''),
+      title: item.title || '알림',
+      body: item.body || item.message || '',
+      type: item.type || '',
+      isRead: item.isRead === true,
+      createdAt: item.createdAt || ''
+    }));
+}
+
+export async function fetchMobileNotifications({ apiFetch, notiApiUrl } = {}) {
+  if (typeof apiFetch !== 'function' || !notiApiUrl) return null;
+  const response = await apiFetch(notiApiUrl, {
+    method: 'POST',
+    body: JSON.stringify({ type: 'student_get_notifications' })
+  });
+  if (!response?.ok) return [];
+  const data = await response.json().catch(() => null);
+  return normalizeNotifications(data);
+}

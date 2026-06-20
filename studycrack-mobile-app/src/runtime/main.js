@@ -15,7 +15,7 @@ import { renderScoreEditModal } from '../screens/profile/renderers.js';
 import { createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
-import { createBlankScoreState, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, uploadMobileWeeklyFiles } from './persistence.js';
+import { createBlankScoreState, fetchMobileNotifications, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, uploadMobileWeeklyFiles } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
@@ -267,6 +267,14 @@ function MobileApp() {
     () => ({
       apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
       qnaApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.qna) || ''
+    }),
+    []
+  );
+
+  const getNotiApiBinding = useCallback(
+    () => ({
+      apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
+      notiApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.noti) || ''
     }),
     []
   );
@@ -607,6 +615,23 @@ function MobileApp() {
       cancelled = true;
     };
   }, [getQnaApiBinding]);
+
+  // 알림(R6): 쿠키 세션이 있으면 student_get_notifications로 실제 알림 로드(미인증은 빈 목록=데모).
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
+    let cancelled = false;
+    setState({ notiStatus: 'loading' });
+    fetchMobileNotifications(getNotiApiBinding()).then((items) => {
+      if (cancelled || !items) return;
+      setState({ notiList: items, notiStatus: items.length ? 'ready' : 'empty' });
+    }).catch(() => {
+      if (!cancelled) setState({ notiList: [], notiStatus: 'error' });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [getNotiApiBinding]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
