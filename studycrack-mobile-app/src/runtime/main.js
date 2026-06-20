@@ -464,6 +464,34 @@ function MobileApp() {
     markAppBooted();
   }, []);
 
+  // [임시·dev 스모크] window.apiFetch를 1회 래핑해 모든 /api 호출 결과를 window.__scDiag에 기록.
+  // 로그인 후 콘솔에서 window.__scDiag만 보면 엔드포인트별 200/실패가 한눈에 보인다. 실데이터 확정 후 제거.
+  // 이 페이지 window에만 영향(웹 페이지와 분리). 로드 effect보다 먼저 정의돼 패치가 선행된다.
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.apiFetch !== 'function' || window.__scDiagPatched) return undefined;
+    window.__scDiagPatched = true;
+    window.__scDiag = [];
+    const orig = window.apiFetch;
+    window.apiFetch = async (url, options) => {
+      let type = '';
+      try {
+        type = JSON.parse(options?.body || '{}').type || '';
+      } catch (_e) {
+        /* body 없음/비JSON */
+      }
+      const api = String(url).split('/api/')[1] || String(url);
+      try {
+        const res = await orig(url, options);
+        window.__scDiag.push({ api, type, status: res?.status, ok: !!res?.ok });
+        return res;
+      } catch (error) {
+        window.__scDiag.push({ api, type, error: String((error && error.message) || error) });
+        throw error;
+      }
+    };
+    return undefined;
+  }, []);
+
   // 초기 진입 흐름: splash를 잠깐 노출한 뒤 이동.
   // R2(쿠키 세션 공유): 이미 로그인된(쿠키 세션) 사용자는 온보딩 건너뛰고 바로 홈(실데이터)으로,
   // 미로그인은 기존처럼 소개 화면(on1)으로.
