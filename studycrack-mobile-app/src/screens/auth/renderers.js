@@ -8,6 +8,10 @@ function renderLogo(logoSrc = STUDYCRACK_LOGO_SRC) {
   return `<div class="auth-logo-wrap compact signup-logo"><img src="${logoSrc}" class="auth-logo" alt="StudyCrack Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" /><span class="auth-logo-fallback">StudyCrack</span></div>`;
 }
 
+function renderSocialAuthButtons(action = 'ssoSuccess', suffix = '로그인') {
+  return `<div class="auth-sso-row"><button class="auth-sso-btn google" data-action="${action}"><span class="auth-sso-icon">G</span><span>Google로 ${suffix}</span></button><button class="auth-sso-btn naver" data-action="${action}"><span class="auth-sso-icon">N</span><span>Naver로 ${suffix}</span></button></div>`;
+}
+
 function renderFindEmailModal({ findEmailModalOpen, foundEmailMasked }) {
   if (!findEmailModalOpen) return '';
   return `<div class="find-email-modal-backdrop" data-action="closeFindEmailModal"><div class="find-email-modal" data-action="noopModal"><button type="button" class="close-btn" data-action="closeFindEmailModal">×</button><h3>이메일 찾기</h3><p class="sub">가입 시 등록한 이름과 전화번호를 입력해주세요.</p><input class="planner-input" data-find-email-name placeholder="이름" /><input class="planner-input" data-field="findEmailPhone" inputmode="numeric" placeholder="전화번호 (숫자만 입력)" /><button type="button" class="btn btn-primary" data-action="findEmailByNamePhone">이메일 찾기</button>${foundEmailMasked ? `<div class="find-email-result">회원님의 이메일은<br/><b>${foundEmailMasked}</b> 입니다.</div>` : ''}</div></div>`;
@@ -44,11 +48,8 @@ export function renderAuthLoginScreen(ctx) {
         <p class="auth-title">합격 전략을 시작해볼까요?</p>
         <p class="sub">웹 로그인으로 안전하게 인증한 뒤 모바일 화면으로 돌아옵니다.</p>
         <button class="btn btn-primary auth-submit" data-action="loginSuccess">StudyCrack 로그인</button>
-        <div class="auth-divider"><span>또는</span></div>
-        <div class="auth-sso-row">
-          <button class="auth-sso-btn kakao" data-action="ssoSuccess">카카오 계정으로 로그인</button>
-          <button class="auth-sso-btn apple" data-action="ssoSuccess">Apple로 로그인</button>
-        </div>
+        <div class="auth-divider"><span>또는 소셜 계정으로 로그인</span></div>
+        ${renderSocialAuthButtons('ssoSuccess', '로그인')}
         <div class="auth-helper-row">
           <button class="auth-link-btn" data-action="openFindEmailModal">이메일 찾기</button>
           <span>|</span>
@@ -92,8 +93,12 @@ export function renderAuthSignupScreen(ctx) {
   return layout(appbar('회원가입', true) + `<div class="signup-page"><div class="signup-form-card">
       ${renderLogo(studycrackLogoSrc)}
       <p class="signup-title">회원가입</p>
-      <div class="signup-section"><p class="section-title">웹 회원가입으로 계속</p><div class="section-divider"></div><p class="sub">약관 동의, 전화번호 인증, 소셜 회원가입은 StudyCrack 웹 가입 화면에서 진행됩니다.</p><p class="sub">가입을 마치면 같은 계정으로 모바일 화면을 사용할 수 있습니다.</p></div>
-      <button class="signup-submit signup-submit-btn active" data-action="signupSuccess">StudyCrack 회원가입</button>
+      <div class="signup-section auth-signup-social"><p class="section-title">소셜 계정으로 3초 만에 시작하기</p><div class="section-divider"></div>${renderSocialAuthButtons('signupSuccess', '시작하기')}</div>
+      <div class="auth-divider"><span>또는 이메일로 직접 가입하기</span></div>
+      <div class="signup-section auth-signup-summary"><p class="section-title">웹 회원가입에서 입력하는 정보</p><div class="auth-support-list"><span>이메일 인증</span><span>비밀번호</span><span>이름</span><span>성별</span><span>생년월일</span><span>전화번호 인증</span><span>유입 경로</span><span>프로모션 코드</span></div></div>
+      <div class="signup-section auth-terms-preview"><p class="section-title">약관 동의</p><div class="auth-terms-row all"><b>약관 전체 동의</b></div><div class="auth-terms-row"><span>(필수)</span> 표준이용약관 동의</div><div class="auth-terms-row"><span>(필수)</span> 서비스 이용약관 조항 동의</div><div class="auth-terms-row"><span>(필수)</span> 개인정보 처리방침 동의</div><div class="auth-terms-row"><span>(필수)</span> 환불 규정 동의</div><div class="auth-terms-row optional"><span>(선택)</span> 마케팅 정보 수신 동의</div></div>
+      <p class="auth-web-note">가입 입력과 약관 전문보기는 StudyCrack 웹 회원가입 화면에서 동일하게 진행됩니다.</p>
+      <button class="signup-submit signup-submit-btn active" data-action="signupSuccess">웹 회원가입에서 계속하기</button>
       <p class="signup-login-link">이미 계정이 있으신가요? <button class="auth-link-btn" data-action="loginSuccess">로그인</button></p>
     </div>
     </div>`, false);
