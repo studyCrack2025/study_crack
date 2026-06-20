@@ -324,11 +324,67 @@ function shortText(value, max = 500) {
   return String(value || '').trim().slice(0, max);
 }
 
+function fallbackMimeType(fileName = '') {
+  const lower = String(fileName || '').toLowerCase();
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.pdf')) return 'application/pdf';
+  return 'image/jpeg';
+}
+
+export async function uploadMobileFile({ apiFetch, fetchImpl = globalThis.fetch, file, fileApiUrl, folder } = {}) {
+  if (typeof apiFetch !== 'function' || !fileApiUrl) return { ok: false, error: '파일 업로드 경로를 찾지 못했습니다.' };
+  if (typeof fetchImpl !== 'function' || typeof FormData === 'undefined') return { ok: false, error: '현재 환경에서 파일 업로드를 사용할 수 없습니다.' };
+  if (!file) return { ok: true, fileUrl: '' };
+
+  const fileName = file.name || 'upload.jpg';
+  const fileType = file.type || fallbackMimeType(fileName);
+  try {
+    const presignRes = await apiFetch(fileApiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'get_presigned_url', data: { fileName: encodeURIComponent(fileName), fileType, folder } })
+    });
+    const presign = await presignRes?.json?.().catch(() => null);
+    if (!presignRes?.ok) return { ok: false, error: presign?.error || '파일 업로드 URL 발급에 실패했습니다.' };
+    const formData = new FormData();
+    Object.entries(presign.fields || {}).forEach(([key, value]) => formData.append(key, value));
+    formData.append('file', file);
+    const uploadRes = await fetchImpl(presign.uploadUrl, { method: 'POST', body: formData });
+    if (!uploadRes?.ok) return { ok: false, error: 'S3 파일 업로드에 실패했습니다.' };
+    return { ok: true, fileUrl: presign.fileUrl || '' };
+  } catch (_error) {
+    return { ok: false, error: '네트워크 오류로 파일을 업로드하지 못했습니다.' };
+  }
+}
+
+export async function uploadMobileWeeklyFiles({
+  apiFetch,
+  examFiles = [],
+  fetchImpl = globalThis.fetch,
+  fileApiUrl,
+  plannerFiles = []
+} = {}) {
+  const plannerFileUrls = [];
+  const examFileUrls = [];
+  for (const file of plannerFiles || []) {
+    const result = await uploadMobileFile({ apiFetch, fetchImpl, file, fileApiUrl, folder: 'planner' });
+    if (!result.ok) return result;
+    if (result.fileUrl) plannerFileUrls.push(result.fileUrl);
+  }
+  for (const file of examFiles || []) {
+    const result = await uploadMobileFile({ apiFetch, fetchImpl, file, fileApiUrl, folder: 'mock_exams' });
+    if (!result.ok) return result;
+    if (result.fileUrl) examFileUrls.push(result.fileUrl);
+  }
+  return { ok: true, plannerFileUrls, examFileUrls };
+}
+
 export function buildMobileWeeklyCheckPayload({
   answers = {},
   dropReasons = [],
   examScores = {},
   examType = '',
+  examFileUrls = [],
+  plannerFileUrls = [],
   rows = [],
   trend = '',
   now = new Date()
@@ -356,6 +412,8 @@ export function buildMobileWeeklyCheckPayload({
   const mockExam = examType && examType !== '미응시'
     ? {
       type: examType,
+      proofFile: examFileUrls[0] || '',
+      proofFiles: examFileUrls,
       scores: {
         koreanType: shortText(examScores.koreanType, 50),
         koreanRaw: shortText(examScores.koreanRaw, 10),
@@ -388,7 +446,7 @@ export function buildMobileWeeklyCheckPayload({
       reason: shortText(answers.step4Reason, 200)
     },
     deepAnswers,
-    plannerFiles: []
+    plannerFiles: plannerFileUrls
   };
 }
 

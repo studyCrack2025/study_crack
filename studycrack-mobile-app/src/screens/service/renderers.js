@@ -75,7 +75,7 @@ function renderCoachingStepBody(ctx) {
   }
 
   if (coachingStep === 2) {
-    return `<div class="coach-step-body"><h4>2. 플래너 인증</h4><p class="sub">사진 첨부는 선택 사항입니다. 첨부 파일 저장은 추후 웹 업로드 플로우와 연결됩니다.</p>
+    return `<div class="coach-step-body"><h4>2. 플래너 인증</h4><p class="sub">플래너 사진을 첨부하면 주간 점검과 함께 저장됩니다.</p>
         <div class="coach-upload-box"><p>파일/사진 첨부 박스</p><input type="file" class="coach-hidden-file" data-field="coachPlannerFiles" accept="image/*" multiple /><button class="btn btn-secondary" data-action="openPlannerFilePicker">사진 추가하기</button></div>
         <div class="coach-thumb-list">${coachingPlannerFiles.length ? `<p class="sub">사진 ${coachingPlannerFiles.length}장 선택됨</p>${coachingPlannerFiles.map((file, idx) => `<div class="coach-thumb"><span>${escapeHtml(file.name || `사진 ${idx + 1}`)}</span><button data-action="removePlannerPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}` : '<p class="sub">선택된 사진이 없습니다.</p>'}</div>
       </div>`;

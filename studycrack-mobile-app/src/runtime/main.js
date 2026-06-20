@@ -15,7 +15,7 @@ import { renderScoreEditModal } from '../screens/profile/renderers.js';
 import { createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
-import { createBlankScoreState, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey } from './persistence.js';
+import { createBlankScoreState, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, uploadMobileWeeklyFiles } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
@@ -271,6 +271,15 @@ function MobileApp() {
     []
   );
 
+  const getFileApiBinding = useCallback(
+    () => ({
+      apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
+      fetchImpl: (typeof window !== 'undefined' && window.fetch?.bind(window)) || globalThis.fetch,
+      fileApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.file) || ''
+    }),
+    []
+  );
+
   const persistTargetUnivs = useCallback(
     (targetList) => saveTargetUnivs({ ...getUserApiBinding(), targetList }),
     [getUserApiBinding]
@@ -299,6 +308,11 @@ function MobileApp() {
   const persistWeeklyCheck = useCallback(
     (payload) => saveMobileWeeklyCheck({ ...getReportApiBinding(), payload }),
     [getReportApiBinding]
+  );
+
+  const uploadWeeklyCheckFiles = useCallback(
+    ({ examFiles, plannerFiles } = {}) => uploadMobileWeeklyFiles({ ...getFileApiBinding(), examFiles, plannerFiles }),
+    [getFileApiBinding]
   );
 
   // 플래너 진입/날짜 변경 시 날짜 스트립을 선택 날짜로 가로 센터링.
@@ -410,6 +424,7 @@ function MobileApp() {
     persistMobileQna,
     persistProReportRequest,
     persistWeeklyCheck,
+    uploadWeeklyCheckFiles,
     ensureCoachingSubjectRows: () => {
       const current = stateRef.current;
       if ((current.coachingSubjectRows || []).length) return;

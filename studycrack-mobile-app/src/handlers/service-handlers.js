@@ -428,11 +428,26 @@ export function createServiceHandlers(ctx) {
       if (step >= 8) {
         if (ctx.coachingSubmitting) return false;
         const latestRows = readCoachingRows(ctx);
+        const plannerFiles = ctx.coachingPlannerFiles || [];
+        const examFiles = ctx.coachingExamFiles || [];
+        let uploaded = { plannerFileUrls: [], examFileUrls: [] };
+        if (plannerFiles.length || examFiles.length) {
+          setCoachingSubmitting(true);
+          const uploadResult = await ctx.uploadWeeklyCheckFiles?.({ plannerFiles, examFiles });
+          if (!uploadResult?.ok) {
+            setCoachingSubmitting(false);
+            alert(uploadResult?.error || '첨부 파일 업로드에 실패했습니다.');
+            return false;
+          }
+          uploaded = uploadResult;
+        }
         const payload = buildMobileWeeklyCheckPayload({
           answers: ctx.coachingAnswers || {},
           dropReasons: ctx.coachingDropReasons || [],
           examScores: readCoachingExamScores(ctx),
           examType: ctx.coachingExamType || '',
+          examFileUrls: uploaded.examFileUrls || [],
+          plannerFileUrls: uploaded.plannerFileUrls || [],
           rows: latestRows,
           trend: ctx.coachingTrend || ''
         });
