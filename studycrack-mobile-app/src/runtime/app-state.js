@@ -169,6 +169,7 @@ export function createInitialAppState() {
     // service/PRO/coaching
     proRequestModalOpen: false,
     proRequestText: '',
+    proRequestSubmitting: false,
     proEliteMonth: '26년 4월',
     proReports: [],
     proReportsStatus: 'idle',

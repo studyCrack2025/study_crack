@@ -15,7 +15,7 @@ import { renderScoreEditModal } from '../screens/profile/renderers.js';
 import { createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
-import { createBlankScoreState, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, saveMobileQna, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey } from './persistence.js';
+import { createBlankScoreState, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
@@ -245,6 +245,11 @@ function MobileApp() {
     [getQnaApiBinding]
   );
 
+  const persistProReportRequest = useCallback(
+    (requestText) => requestMobileProReport({ ...getReportApiBinding(), requestText }),
+    [getReportApiBinding]
+  );
+
   // 플래너 진입/날짜 변경 시 날짜 스트립을 선택 날짜로 가로 센터링.
   // planner가 JSX(React 트리)라 스트립 노드가 재렌더 간 유지되므로 센터링이 정착한다.
   // useLayoutEffect에서 동기 실행: commit 직후 layout이 준비되고 paint 전이라 깜빡임이 없으며,
@@ -352,6 +357,7 @@ function MobileApp() {
     persistQuantitative,
     persistQualitative,
     persistMobileQna,
+    persistProReportRequest,
     addMajorToTargets: (major) => {
       if (!major) return false;
       const current = stateRef.current;

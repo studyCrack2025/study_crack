@@ -251,6 +251,32 @@ export async function fetchMobileProReports({ apiFetch, reportApiUrl } = {}) {
   return normalizeProReports(data);
 }
 
+export async function requestMobileProReport({ apiFetch, reportApiUrl, requestText } = {}) {
+  if (typeof apiFetch !== 'function' || !reportApiUrl) return { ok: false, error: '리포트 요청 경로를 찾지 못했습니다.' };
+  const safeText = String(requestText || '').trim();
+  if (!safeText) return { ok: false, error: '요청 사항을 입력해주세요.' };
+  try {
+    const response = await apiFetch(reportApiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'request_pro_report', data: { requestText: safeText } })
+    });
+    const body = await response?.json?.().catch(() => null);
+    if (!response?.ok) return { ok: false, error: body?.error || body?.message || '리포트 요청에 실패했습니다.' };
+    return {
+      ok: true,
+      report: {
+        key: String(body?.targetKey || ''),
+        reportLink: '',
+        status: 'pending',
+        updatedAt: new Date().toISOString(),
+        request: safeText
+      }
+    };
+  } catch (_error) {
+    return { ok: false, error: '네트워크 오류로 리포트 요청을 저장하지 못했습니다.' };
+  }
+}
+
 function normalizeWeeklyReports(payload) {
   const reports = Array.isArray(payload?.weeklyReports) ? payload.weeklyReports : [];
   return reports

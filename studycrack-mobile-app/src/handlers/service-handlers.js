@@ -118,6 +118,9 @@ export function createServiceHandlers(ctx) {
     setHistory = noop,
     setNotifModalOpen = noop,
     setProRequestModalOpen = noop,
+    setProReports = noop,
+    setProReportsStatus = noop,
+    setProRequestSubmitting = noop,
     setProRequestText = noop,
     setQnaComposerOpen = noop,
     setQnaDraftContent = noop,
@@ -241,14 +244,29 @@ export function createServiceHandlers(ctx) {
       return true;
     },
 
-    submitProRequest() {
+    async submitProRequest() {
       if (!String(ctx.proRequestText || '').trim()) {
         alert('요청 사항을 입력해주세요.');
         return false;
       }
-      alert('요청서가 제출되었습니다.');
+      if (ctx.proRequestSubmitting) return false;
+      setProRequestSubmitting(true);
+      const result = await ctx.persistProReportRequest?.(ctx.proRequestText);
+      setProRequestSubmitting(false);
+      if (!result?.ok) {
+        alert(result?.error || '리포트 요청에 실패했습니다.');
+        return false;
+      }
+      if (result.report?.key) {
+        setProReports((prev) => {
+          const list = Array.isArray(prev) ? prev : [];
+          return [result.report, ...list.filter((item) => item.key !== result.report.key)];
+        });
+        setProReportsStatus('ready');
+      }
       setProRequestModalOpen(false);
       setProRequestText('');
+      alert('전략 리포트 요청이 접수되었습니다.');
       return true;
     },
 
