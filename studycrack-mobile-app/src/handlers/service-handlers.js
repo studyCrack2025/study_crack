@@ -1,5 +1,5 @@
-import { PRO_ELITE_REPORT_PDF_PATH } from '../constants/assets.js';
 import { getData } from './action-utils.js';
+import { buildMobileWeeklyCheckPayload } from '../runtime/persistence.js';
 
 function noop() {}
 
@@ -78,7 +78,7 @@ function hasMissingExamScore(scores) {
 
 function togglePlanDom(ctx, plan) {
   const doc = getDocument(ctx);
-  if (doc?.body?.dataset) doc.body.dataset.selectedPlan = plan;
+  if (doc?.body?.dataset) doc.body.dataset.checkoutPlan = plan;
   queryAll(ctx, '.plan-card, .payment-plan-tabs button').forEach((card) => {
     const key = card.getAttribute?.('data-plan');
     if (key) card.classList?.toggle?.('active', key === plan);
@@ -107,9 +107,10 @@ export function createServiceHandlers(ctx) {
     setCoachingExamFiles = noop,
     setCoachingExamScores = noop,
     setCoachingExamType = noop,
-    setCoachingMonth = noop,
+    setCheckoutPlan = noop,
     setCoachingPlannerFiles = noop,
     setCoachingSheetOpen = noop,
+    setCoachingSubmitting = noop,
     setCoachingStep = noop,
     setCoachingSubjectRows = noop,
     setCoachingSubmitted = noop,
@@ -119,11 +120,21 @@ export function createServiceHandlers(ctx) {
     setHistory = noop,
     setNotifModalOpen = noop,
     setProRequestModalOpen = noop,
+    setProReports = noop,
+    setProReportsStatus = noop,
+    setProRequestSubmitting = noop,
     setProRequestText = noop,
-    setSelectedPlan = noop,
+    setQnaComposerOpen = noop,
+    setQnaDraftContent = noop,
+    setQnaDraftTitle = noop,
+    setQnaHistory = noop,
+    setQnaStatus = noop,
+    setQnaSubmitting = noop,
     setTargetMajor = noop,
     setTargetOpen = noop,
     setUniversityModalOpen = noop,
+    setWeeklyReports = noop,
+    setWeeklyReportsStatus = noop,
     syncStep1FromDom,
     window = getWindow(ctx)
   } = ctx;
@@ -137,7 +148,7 @@ export function createServiceHandlers(ctx) {
         togglePlanDom(ctx, plan);
         return true;
       }
-      setSelectedPlan(plan);
+      setCheckoutPlan(plan);
       return true;
     },
 
@@ -149,6 +160,13 @@ export function createServiceHandlers(ctx) {
         return true;
       }
       setDuration(duration);
+      return true;
+    },
+
+    openWebPayment() {
+      const target = '/payment?source=mobile_app';
+      if (win?.location?.assign) win.location.assign(target);
+      else if (win?.location) win.location.href = target;
       return true;
     },
 
@@ -230,35 +248,74 @@ export function createServiceHandlers(ctx) {
       return true;
     },
 
-    submitProRequest() {
+    async submitProRequest() {
       if (!String(ctx.proRequestText || '').trim()) {
         alert('요청 사항을 입력해주세요.');
         return false;
       }
-      alert('요청서가 제출되었습니다.');
+      if (ctx.proRequestSubmitting) return false;
+      setProRequestSubmitting(true);
+      const result = await ctx.persistProReportRequest?.(ctx.proRequestText);
+      setProRequestSubmitting(false);
+      if (!result?.ok) {
+        alert(result?.error || '리포트 요청에 실패했습니다.');
+        return false;
+      }
+      if (result.report?.key) {
+        setProReports((prev) => {
+          const list = Array.isArray(prev) ? prev : [];
+          return [result.report, ...list.filter((item) => item.key !== result.report.key)];
+        });
+        setProReportsStatus('ready');
+      }
       setProRequestModalOpen(false);
       setProRequestText('');
+      alert('전략 리포트 요청이 접수되었습니다.');
+      return true;
+    },
+
+    openQnaComposer() {
+      setQnaComposerOpen(true);
+      return true;
+    },
+
+    closeQnaComposer() {
+      setQnaComposerOpen(false);
+      return true;
+    },
+
+    async submitMobileQna() {
+      const title = String(ctx.qnaDraftTitle || '').trim();
+      const content = String(ctx.qnaDraftContent || '').trim();
+      if (!title || !content) {
+        alert('질문 제목과 내용을 입력해주세요.');
+        return false;
+      }
+      if (ctx.qnaSubmitting) return false;
+      setQnaSubmitting(true);
+      const result = await ctx.persistMobileQna?.({ title, content });
+      setQnaSubmitting(false);
+      if (!result?.ok || !result.item) {
+        alert(result?.error || '질문 저장에 실패했습니다.');
+        return false;
+      }
+      setQnaHistory((prev) => [result.item, ...(Array.isArray(prev) ? prev : [])]);
+      setQnaStatus('ready');
+      setQnaDraftTitle('');
+      setQnaDraftContent('');
+      setQnaComposerOpen(false);
+      alert('질문이 등록되었습니다.');
       return true;
     },
 
     downloadProReport({ actionEl }) {
-      const pdfPath = getData(actionEl, 'pdf-path', PRO_ELITE_REPORT_PDF_PATH);
-      const fileName = getData(actionEl, 'pdf-name', 'studycrack-pro-report.pdf');
-      return clickDownload(ctx, pdfPath, fileName);
-    },
-
-    toggleCoachingMonth() {
-      setCoachingMonth((prev) => (prev === '26년 4월' ? '26년 3월' : '26년 4월'));
-      return true;
-    },
-
-    downloadCoachingPdf({ actionEl }) {
       const pdfPath = getData(actionEl, 'pdf-path');
       if (!pdfPath) {
-        alert('PDF 다운로드 준비 중입니다.');
+        alert('리포트 파일이 준비되면 다운로드할 수 있습니다.');
         return false;
       }
-      return clickDownload(ctx, pdfPath);
+      const fileName = getData(actionEl, 'pdf-name', 'studycrack-pro-report.pdf');
+      return clickDownload(ctx, pdfPath, fileName);
     },
 
     openCoachingSheet() {
@@ -338,20 +395,17 @@ export function createServiceHandlers(ctx) {
       return true;
     },
 
-    coachingNext() {
+    async coachingNext() {
       const step = Number(ctx.coachingStep || 1);
+      let rows = ctx.coachingSubjectRows || [];
       if (step === 1) {
-        const rows = readCoachingRows(ctx);
+        rows = readCoachingRows(ctx);
         if (typeof syncStep1FromDom === 'function') syncStep1FromDom();
         else setCoachingSubjectRows(rows);
         if (hasInvalidCoachingRows(rows)) {
           alert('필수 입력 사항을 모두 입력해주세요');
           return false;
         }
-      }
-      if (step === 2 && (ctx.coachingPlannerFiles || []).length === 0) {
-        alert('필수 입력 사항을 모두 입력해주세요');
-        return false;
       }
       if (step === 3) {
         const examScores = readCoachingExamScores(ctx);
@@ -372,6 +426,46 @@ export function createServiceHandlers(ctx) {
         return false;
       }
       if (step >= 8) {
+        if (ctx.coachingSubmitting) return false;
+        const latestRows = readCoachingRows(ctx);
+        const plannerFiles = ctx.coachingPlannerFiles || [];
+        const examFiles = ctx.coachingExamFiles || [];
+        let uploaded = { plannerFileUrls: [], examFileUrls: [] };
+        if (plannerFiles.length || examFiles.length) {
+          setCoachingSubmitting(true);
+          const uploadResult = await ctx.uploadWeeklyCheckFiles?.({ plannerFiles, examFiles });
+          if (!uploadResult?.ok) {
+            setCoachingSubmitting(false);
+            alert(uploadResult?.error || '첨부 파일 업로드에 실패했습니다.');
+            return false;
+          }
+          uploaded = uploadResult;
+        }
+        const payload = buildMobileWeeklyCheckPayload({
+          answers: ctx.coachingAnswers || {},
+          dropReasons: ctx.coachingDropReasons || [],
+          examScores: readCoachingExamScores(ctx),
+          examType: ctx.coachingExamType || '',
+          examFileUrls: uploaded.examFileUrls || [],
+          plannerFileUrls: uploaded.plannerFileUrls || [],
+          rows: latestRows,
+          trend: ctx.coachingTrend || ''
+        });
+        setCoachingSubmitting(true);
+        const result = await ctx.persistWeeklyCheck?.(payload);
+        setCoachingSubmitting(false);
+        if (!result?.ok) {
+          alert(result?.error || '주간 점검 저장에 실패했습니다.');
+          return false;
+        }
+        if (result.report?.weekId) {
+          setWeeklyReports((prev) => {
+            const list = Array.isArray(prev) ? prev : [];
+            return [result.report, ...list.filter((item) => item.weekId !== result.report.weekId)];
+          });
+          setWeeklyReportsStatus('ready');
+        }
+        setCoachingSubjectRows(latestRows);
         setCoachingSheetOpen(false);
         setCoachingSubmitted(true);
         alert('코칭 요청이 제출되었습니다.\n튜터 피드백이 도착하면 학습 코칭 페이지에서 확인할 수 있어요.');

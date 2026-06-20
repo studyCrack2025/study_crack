@@ -226,3 +226,355 @@ export async function fetchMobileTargetAnalysis({ apiFetch, analysisApiUrl, targ
 
   return { analysisResults, simulationResults };
 }
+
+function normalizeProReports(payload) {
+  const reports = Array.isArray(payload?.reports) ? payload.reports : [];
+  return reports
+    .filter((item) => item && item.key)
+    .map((item) => ({
+      key: String(item.key || ''),
+      reportLink: item.reportLink || '',
+      status: item.status || (item.reportLink ? 'sent' : 'pending'),
+      updatedAt: item.updatedAt || '',
+      request: item.request || ''
+    }));
+}
+
+export async function fetchMobileProReports({ apiFetch, reportApiUrl } = {}) {
+  if (typeof apiFetch !== 'function' || !reportApiUrl) return null;
+  const response = await apiFetch(reportApiUrl, {
+    method: 'POST',
+    body: JSON.stringify({ type: 'get_pro_reports', data: { requesterRole: 'student' } })
+  });
+  if (!response?.ok) return [];
+  const data = await response.json().catch(() => null);
+  return normalizeProReports(data);
+}
+
+export async function requestMobileProReport({ apiFetch, reportApiUrl, requestText } = {}) {
+  if (typeof apiFetch !== 'function' || !reportApiUrl) return { ok: false, error: '리포트 요청 경로를 찾지 못했습니다.' };
+  const safeText = String(requestText || '').trim();
+  if (!safeText) return { ok: false, error: '요청 사항을 입력해주세요.' };
+  try {
+    const response = await apiFetch(reportApiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'request_pro_report', data: { requestText: safeText } })
+    });
+    const body = await response?.json?.().catch(() => null);
+    if (!response?.ok) return { ok: false, error: body?.error || body?.message || '리포트 요청에 실패했습니다.' };
+    return {
+      ok: true,
+      report: {
+        key: String(body?.targetKey || ''),
+        reportLink: '',
+        status: 'pending',
+        updatedAt: new Date().toISOString(),
+        request: safeText
+      }
+    };
+  } catch (_error) {
+    return { ok: false, error: '네트워크 오류로 리포트 요청을 저장하지 못했습니다.' };
+  }
+}
+
+function normalizeWeeklyReports(payload) {
+  const reports = Array.isArray(payload?.weeklyReports) ? payload.weeklyReports : [];
+  return reports
+    .filter((item) => item && item.weekId)
+    .map((item) => ({
+      weekId: String(item.weekId || ''),
+      title: item.title || '',
+      date: item.date || '',
+      updatedAt: item.updatedAt || '',
+      tutorName: item.tutorName || '',
+      tutorFeedback: item.tutorFeedback || null,
+      weeklyGoal: item.weeklyGoal || '',
+      questionToTutor: item.questionToTutor || ''
+    }));
+}
+
+export async function fetchMobileWeeklyReports({ apiFetch, reportApiUrl } = {}) {
+  if (typeof apiFetch !== 'function' || !reportApiUrl) return null;
+  const response = await apiFetch(reportApiUrl, {
+    method: 'POST',
+    body: JSON.stringify({ type: 'get_weekly_reports' })
+  });
+  if (!response?.ok) return [];
+  const data = await response.json().catch(() => null);
+  return normalizeWeeklyReports(data);
+}
+
+function generateMobileReportKey(dateObj = new Date()) {
+  const kstOffsetMs = 9 * 60 * 60 * 1000;
+  const baseDate = dateObj instanceof Date ? dateObj : new Date(dateObj);
+  const kstDate = new Date(baseDate.getTime() + kstOffsetMs);
+  const yearNum = kstDate.getUTCFullYear();
+  const monthIdx = kstDate.getUTCMonth();
+  const dayOfMonth = kstDate.getUTCDate();
+  const year = String(yearNum).slice(2);
+  const month = String(monthIdx + 1).padStart(2, '0');
+  const startOfMonth = new Date(Date.UTC(yearNum, monthIdx, 1));
+  const dayOfWeek = startOfMonth.getUTCDay();
+  const offsetDate = dayOfMonth + dayOfWeek - 1;
+  const weekNum = String(Math.floor(offsetDate / 7) + 1).padStart(2, '0');
+  return `${year}${month}${weekNum}`;
+}
+
+function shortText(value, max = 500) {
+  return String(value || '').trim().slice(0, max);
+}
+
+function fallbackMimeType(fileName = '') {
+  const lower = String(fileName || '').toLowerCase();
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.pdf')) return 'application/pdf';
+  return 'image/jpeg';
+}
+
+export async function uploadMobileFile({ apiFetch, fetchImpl = globalThis.fetch, file, fileApiUrl, folder } = {}) {
+  if (typeof apiFetch !== 'function' || !fileApiUrl) return { ok: false, error: '파일 업로드 경로를 찾지 못했습니다.' };
+  if (typeof fetchImpl !== 'function' || typeof FormData === 'undefined') return { ok: false, error: '현재 환경에서 파일 업로드를 사용할 수 없습니다.' };
+  if (!file) return { ok: true, fileUrl: '' };
+
+  const fileName = file.name || 'upload.jpg';
+  const fileType = file.type || fallbackMimeType(fileName);
+  try {
+    const presignRes = await apiFetch(fileApiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'get_presigned_url', data: { fileName: encodeURIComponent(fileName), fileType, folder } })
+    });
+    const presign = await presignRes?.json?.().catch(() => null);
+    if (!presignRes?.ok) return { ok: false, error: presign?.error || '파일 업로드 URL 발급에 실패했습니다.' };
+    const formData = new FormData();
+    Object.entries(presign.fields || {}).forEach(([key, value]) => formData.append(key, value));
+    formData.append('file', file);
+    const uploadRes = await fetchImpl(presign.uploadUrl, { method: 'POST', body: formData });
+    if (!uploadRes?.ok) return { ok: false, error: 'S3 파일 업로드에 실패했습니다.' };
+    return { ok: true, fileUrl: presign.fileUrl || '' };
+  } catch (_error) {
+    return { ok: false, error: '네트워크 오류로 파일을 업로드하지 못했습니다.' };
+  }
+}
+
+export async function uploadMobileWeeklyFiles({
+  apiFetch,
+  examFiles = [],
+  fetchImpl = globalThis.fetch,
+  fileApiUrl,
+  plannerFiles = []
+} = {}) {
+  const plannerFileUrls = [];
+  const examFileUrls = [];
+  for (const file of plannerFiles || []) {
+    const result = await uploadMobileFile({ apiFetch, fetchImpl, file, fileApiUrl, folder: 'planner' });
+    if (!result.ok) return result;
+    if (result.fileUrl) plannerFileUrls.push(result.fileUrl);
+  }
+  for (const file of examFiles || []) {
+    const result = await uploadMobileFile({ apiFetch, fetchImpl, file, fileApiUrl, folder: 'mock_exams' });
+    if (!result.ok) return result;
+    if (result.fileUrl) examFileUrls.push(result.fileUrl);
+  }
+  return { ok: true, plannerFileUrls, examFileUrls };
+}
+
+export function buildMobileWeeklyCheckPayload({
+  answers = {},
+  dropReasons = [],
+  examScores = {},
+  examType = '',
+  examFileUrls = [],
+  plannerFileUrls = [],
+  rows = [],
+  trend = '',
+  now = new Date()
+} = {}) {
+  const weekId = generateMobileReportKey(now);
+  const details = (rows || [])
+    .map((row) => ({
+      subject: `${row.subject || '기타'}${row.detail ? `(${row.detail})` : ''}`,
+      plan: Number(row.planned || 0),
+      act: Number(row.actual || 0)
+    }))
+    .filter((row) => row.subject && (row.plan > 0 || row.act > 0));
+  const totalPlan = details.reduce((sum, row) => sum + row.plan, 0);
+  const totalAct = details.reduce((sum, row) => sum + row.act, 0);
+  const totalRate = totalPlan > 0 ? Math.round((totalAct / totalPlan) * 100) : 0;
+  const deepAnswers = [
+    trend ? `최근 2주 학업 추이: ${trend}` : '',
+    dropReasons.length ? `하락 원인: ${dropReasons.join(', ')}` : '',
+    answers.step4Reason ? `추이 상세: ${answers.step4Reason}` : '',
+    answers.step5 ? `학습 계획 점검: ${answers.step5}` : '',
+    answers.step6 ? `학습 방향성: ${answers.step6}` : '',
+    answers.step7 ? `튜터 질문: ${answers.step7}` : '',
+    answers.step8 ? `멘탈/기타: ${answers.step8}` : ''
+  ].filter(Boolean);
+  const mockExam = examType && examType !== '미응시'
+    ? {
+      type: examType,
+      proofFile: examFileUrls[0] || '',
+      proofFiles: examFileUrls,
+      scores: {
+        koreanType: shortText(examScores.koreanType, 50),
+        koreanRaw: shortText(examScores.koreanRaw, 10),
+        mathType: shortText(examScores.mathType, 50),
+        mathRaw: shortText(examScores.mathRaw, 10),
+        englishGrade: shortText(examScores.englishGrade, 10),
+        inq1Name: shortText(examScores.inq1Name, 50),
+        inq1Raw: shortText(examScores.inq1Raw, 10),
+        inq2Name: shortText(examScores.inq2Name, 50),
+        inq2Raw: shortText(examScores.inq2Raw, 10)
+      }
+    }
+    : { type: 'none', scores: {} };
+
+  return {
+    weekId,
+    date: now.toISOString(),
+    title: `20${weekId.slice(0, 2)}년 ${Number(weekId.slice(2, 4))}월 ${Number(weekId.slice(4, 6))}주차 학습점검`,
+    formVersion: 1,
+    studyTime: {
+      details,
+      totalPlan: `${Number(totalPlan.toFixed(1))}H`,
+      totalAct: `${Number(totalAct.toFixed(1))}H`,
+      totalRate: `${totalRate}%`
+    },
+    mockExam,
+    trend: {
+      value: trend || '',
+      dropReasons,
+      reason: shortText(answers.step4Reason, 200)
+    },
+    deepAnswers,
+    plannerFiles: plannerFileUrls
+  };
+}
+
+export async function saveMobileWeeklyCheck({ apiFetch, reportApiUrl, payload } = {}) {
+  if (typeof apiFetch !== 'function' || !reportApiUrl) return { ok: false, error: '주간 점검 저장 경로를 찾지 못했습니다.' };
+  if (!payload?.title) return { ok: false, error: '주간 점검 데이터가 올바르지 않습니다.' };
+  try {
+    const response = await apiFetch(reportApiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'save_weekly_check', data: payload })
+    });
+    const body = await response?.json?.().catch(() => null);
+    if (!response?.ok) return { ok: false, error: body?.error || body?.message || '주간 점검 저장에 실패했습니다.' };
+    return {
+      ok: true,
+      report: {
+        weekId: payload.weekId,
+        title: payload.title,
+        date: payload.date,
+        updatedAt: new Date().toISOString(),
+        studyTime: payload.studyTime,
+        mockExam: payload.mockExam,
+        trend: payload.trend,
+        deepAnswers: payload.deepAnswers
+      }
+    };
+  } catch (_error) {
+    return { ok: false, error: '네트워크 오류로 주간 점검을 저장하지 못했습니다.' };
+  }
+}
+
+export function normalizeQnaHistory(payload) {
+  const list = Array.isArray(payload?.qnaHistory) ? payload.qnaHistory : (Array.isArray(payload) ? payload : []);
+  return list
+    .filter((item) => item && item.qnaId)
+    .map((item) => ({
+      qnaId: String(item.qnaId || ''),
+      title: item.title || '제목 없는 질문',
+      content: item.content || '',
+      status: item.status || 'waiting',
+      answer: item.answer || '',
+      createdAt: item.createdAt || '',
+      answeredAt: item.answeredAt || ''
+    }));
+}
+
+export async function fetchMobileQnaHistory({ apiFetch, qnaApiUrl } = {}) {
+  if (typeof apiFetch !== 'function' || !qnaApiUrl) return null;
+  const response = await apiFetch(qnaApiUrl, {
+    method: 'POST',
+    body: JSON.stringify({ type: 'get_qna_list' })
+  });
+  if (!response?.ok) return [];
+  const data = await response.json().catch(() => null);
+  return normalizeQnaHistory(data);
+}
+
+export async function saveMobileQna({ apiFetch, qnaApiUrl, title, content } = {}) {
+  if (typeof apiFetch !== 'function' || !qnaApiUrl) return { ok: false, error: '질문 저장 경로를 찾지 못했습니다.' };
+  const safeTitle = String(title || '').trim();
+  const safeContent = String(content || '').trim();
+  if (!safeTitle || !safeContent) return { ok: false, error: '질문 제목과 내용을 입력해주세요.' };
+  try {
+    const response = await apiFetch(qnaApiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'save_qna', data: { title: safeTitle, content: safeContent } })
+    });
+    const body = await response?.json?.().catch(() => null);
+    if (!response?.ok) return { ok: false, error: body?.error || body?.message || '질문 저장에 실패했습니다.' };
+    const now = new Date().toISOString();
+    return {
+      ok: true,
+      item: {
+        qnaId: String(body?.qnaId || `local-${Date.now()}`),
+        title: safeTitle,
+        content: safeContent,
+        status: 'waiting',
+        answer: '',
+        createdAt: now,
+        answeredAt: ''
+      }
+    };
+  } catch (_error) {
+    return { ok: false, error: '네트워크 오류로 질문을 저장하지 못했습니다.' };
+  }
+}
+
+// 알림(R6): /api/noti student_get_notifications 로드(qna/리포트와 동일 패턴).
+// 응답 { notifications: [{ notiId, title, body|message, type, isRead, createdAt }] } 정규화.
+export function normalizeNotifications(payload) {
+  const list = Array.isArray(payload?.notifications)
+    ? payload.notifications
+    : Array.isArray(payload)
+      ? payload
+      : [];
+  return list
+    .filter((item) => item && (item.notiId || item.id))
+    .map((item) => ({
+      notiId: String(item.notiId || item.id || ''),
+      title: item.title || '알림',
+      body: item.body || item.message || '',
+      type: item.type || '',
+      isRead: item.isRead === true,
+      createdAt: item.createdAt || ''
+    }));
+}
+
+export async function fetchMobileNotifications({ apiFetch, notiApiUrl } = {}) {
+  if (typeof apiFetch !== 'function' || !notiApiUrl) return null;
+  const response = await apiFetch(notiApiUrl, {
+    method: 'POST',
+    body: JSON.stringify({ type: 'student_get_notifications' })
+  });
+  if (!response?.ok) return [];
+  const data = await response.json().catch(() => null);
+  return normalizeNotifications(data);
+}
+
+// 알림 읽음 처리(R6b): student_read_notification. notiId='all'이면 전체 읽음(백엔드 지원).
+export async function markMobileNotificationsRead({ apiFetch, notiApiUrl, notiId = 'all' } = {}) {
+  if (typeof apiFetch !== 'function' || !notiApiUrl) return { ok: false };
+  try {
+    const response = await apiFetch(notiApiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'student_read_notification', data: { notiId } })
+    });
+    return { ok: !!response?.ok };
+  } catch (_error) {
+    return { ok: false };
+  }
+}

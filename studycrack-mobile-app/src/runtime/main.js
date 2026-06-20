@@ -15,7 +15,7 @@ import { renderScoreEditModal } from '../screens/profile/renderers.js';
 import { createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
-import { createBlankScoreState, fetchMobileTargetAnalysis, fetchUniversityCatalog, mapExamDataToScorePatch, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey } from './persistence.js';
+import { createBlankScoreState, fetchMobileNotifications, markMobileNotificationsRead, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, uploadMobileWeeklyFiles } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
@@ -82,6 +82,52 @@ function uniqueTargetList(list = []) {
 function notifySaveFailure(result, message) {
   if (!result || result.ok !== false) return;
   globalThis.alert?.(result.error || message);
+}
+
+function buildDefaultCoachingSubjects(derived = {}) {
+  const {
+    todayPlannerItems = [],
+    todayStudySeconds = 0,
+    todaySubjectsWithTimer = {}
+  } = derived;
+  const rows = todayPlannerItems.map((item, idx) => {
+    const subject = item.subject || '기타';
+    const plannedHour = (Number(item.minutes || 0) / 60);
+    const actualHour = (Number(todaySubjectsWithTimer[subject] || 0) / 3600);
+    return {
+      id: `plan-${idx}-${subject}`,
+      sourceId: item.id || `plan-${idx}`,
+      subject,
+      detail: item.content || '',
+      planned: plannedHour ? plannedHour.toFixed(1) : '',
+      actual: actualHour ? actualHour.toFixed(1) : '',
+      removable: true,
+      placeholder: '세부과목 입력'
+    };
+  });
+  if (rows.length) return rows;
+  return ['국어', '수학', '영어', '탐구', '기타'].map((subject) => {
+    const actualHour = (Number(todaySubjectsWithTimer[subject] || 0) || Number(todayStudySeconds || 0)) / 3600;
+    const placeholder = subject === '국어'
+      ? '세부과목 (예: 언매)'
+      : subject === '수학'
+        ? '세부과목 (예: 미적)'
+        : subject === '영어'
+          ? '세부과목 (예: 독해)'
+          : subject === '탐구'
+            ? '세부과목 (예: 생1)'
+            : '세부과목 입력';
+    return {
+      id: `${subject}-base`,
+      sourceId: `${subject}-base`,
+      subject,
+      detail: '',
+      planned: '',
+      actual: actualHour ? actualHour.toFixed(1) : '',
+      removable: subject === '기타',
+      placeholder
+    };
+  });
 }
 
 const PLAN_RANK = { free: 0, trial: 0, basic: 1, starter: 1, standard: 2, pro: 3 };
@@ -209,6 +255,39 @@ function MobileApp() {
     []
   );
 
+  const getReportApiBinding = useCallback(
+    () => ({
+      apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
+      reportApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.report) || ''
+    }),
+    []
+  );
+
+  const getQnaApiBinding = useCallback(
+    () => ({
+      apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
+      qnaApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.qna) || ''
+    }),
+    []
+  );
+
+  const getNotiApiBinding = useCallback(
+    () => ({
+      apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
+      notiApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.noti) || ''
+    }),
+    []
+  );
+
+  const getFileApiBinding = useCallback(
+    () => ({
+      apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
+      fetchImpl: (typeof window !== 'undefined' && window.fetch?.bind(window)) || globalThis.fetch,
+      fileApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.file) || ''
+    }),
+    []
+  );
+
   const persistTargetUnivs = useCallback(
     (targetList) => saveTargetUnivs({ ...getUserApiBinding(), targetList }),
     [getUserApiBinding]
@@ -222,6 +301,26 @@ function MobileApp() {
   const persistQualitative = useCallback(
     (qualitative) => saveQualitative({ ...getUserApiBinding(), qualitative }),
     [getUserApiBinding]
+  );
+
+  const persistMobileQna = useCallback(
+    ({ title, content } = {}) => saveMobileQna({ ...getQnaApiBinding(), title, content }),
+    [getQnaApiBinding]
+  );
+
+  const persistProReportRequest = useCallback(
+    (requestText) => requestMobileProReport({ ...getReportApiBinding(), requestText }),
+    [getReportApiBinding]
+  );
+
+  const persistWeeklyCheck = useCallback(
+    (payload) => saveMobileWeeklyCheck({ ...getReportApiBinding(), payload }),
+    [getReportApiBinding]
+  );
+
+  const uploadWeeklyCheckFiles = useCallback(
+    ({ examFiles, plannerFiles } = {}) => uploadMobileWeeklyFiles({ ...getFileApiBinding(), examFiles, plannerFiles }),
+    [getFileApiBinding]
   );
 
   // 플래너 진입/날짜 변경 시 날짜 스트립을 선택 날짜로 가로 센터링.
@@ -322,7 +421,7 @@ function MobileApp() {
     // 자주 쓰는 최소 연산 (나머지 도메인 연산은 후속 단계에서 연결)
     setField: (key, value) => setState({ [key]: value }),
     closeDrawer: () => setState({ drawerOpen: false }),
-    selectPlan: (plan) => setState({ selectedPlan: plan }),
+    selectPlan: (plan) => setState({ checkoutPlan: plan }),
     markOnboardingComplete: () => setState({ loggedIn: true }),
     getExamScoresMap: () => readExamScoresMap(),
     saveExamScoresMap: (map) => writeExamScoresMap(map),
@@ -330,6 +429,15 @@ function MobileApp() {
     persistTargetUnivs,
     persistQuantitative,
     persistQualitative,
+    persistMobileQna,
+    persistProReportRequest,
+    persistWeeklyCheck,
+    uploadWeeklyCheckFiles,
+    ensureCoachingSubjectRows: () => {
+      const current = stateRef.current;
+      if ((current.coachingSubjectRows || []).length) return;
+      setState({ coachingSubjectRows: buildDefaultCoachingSubjects(derivedCtx) });
+    },
     addMajorToTargets: (major) => {
       if (!major) return false;
       const current = stateRef.current;
@@ -475,6 +583,83 @@ function MobileApp() {
       cancelled = true;
     };
   }, [getAnalysisApiBinding]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
+    let cancelled = false;
+    setState({ proReportsStatus: 'loading' });
+    fetchMobileProReports(getReportApiBinding()).then((reports) => {
+      if (cancelled || !reports) return;
+      setState({ proReports: reports, proReportsStatus: reports.length ? 'ready' : 'empty' });
+    }).catch(() => {
+      if (!cancelled) setState({ proReports: [], proReportsStatus: 'error' });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [getReportApiBinding]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
+    let cancelled = false;
+    setState({ qnaStatus: 'loading' });
+    fetchMobileQnaHistory(getQnaApiBinding()).then((items) => {
+      if (cancelled || !items) return;
+      setState({ qnaHistory: items, qnaStatus: items.length ? 'ready' : 'empty' });
+    }).catch(() => {
+      if (!cancelled) setState({ qnaHistory: [], qnaStatus: 'error' });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [getQnaApiBinding]);
+
+  // 알림(R6): 쿠키 세션이 있으면 student_get_notifications로 실제 알림 로드(미인증은 빈 목록=데모).
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
+    let cancelled = false;
+    setState({ notiStatus: 'loading' });
+    fetchMobileNotifications(getNotiApiBinding()).then((items) => {
+      if (cancelled || !items) return;
+      setState({ notiList: items, notiStatus: items.length ? 'ready' : 'empty' });
+    }).catch(() => {
+      if (!cancelled) setState({ notiList: [], notiStatus: 'error' });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [getNotiApiBinding]);
+
+  // 알림 읽음 처리(R6b): 모달이 열리고 미읽음이 있으면 낙관적 업데이트 + 서버 일괄 읽음(notiId='all').
+  useEffect(() => {
+    if (!state.notifModalOpen) return undefined;
+    if (typeof window === 'undefined') return undefined;
+    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
+    const current = stateRef.current.notiList || [];
+    if (!current.some((n) => !n.isRead)) return undefined;
+    setState({ notiList: current.map((n) => ({ ...n, isRead: true })) });
+    markMobileNotificationsRead({ ...getNotiApiBinding(), notiId: 'all' });
+    return undefined;
+  }, [state.notifModalOpen, getNotiApiBinding]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
+    let cancelled = false;
+    setState({ weeklyReportsStatus: 'loading' });
+    fetchMobileWeeklyReports(getReportApiBinding()).then((reports) => {
+      if (cancelled || !reports) return;
+      setState({ weeklyReports: reports, weeklyReportsStatus: reports.length ? 'ready' : 'empty' });
+    }).catch(() => {
+      if (!cancelled) setState({ weeklyReports: [], weeklyReportsStatus: 'error' });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [getReportApiBinding]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;

@@ -115,7 +115,7 @@ export function HomeScreen(ctx) {
   const universityModalHtml = renderUniversityModal(ctx);
   const breakdownHtml = renderStudyBreakdown(ctx);
   const overlaysHtml =
-    renderStudySubjectSheet(ctx) + renderNotificationModal(ctx.notifModalOpen) + renderDrawer({ drawerOpen: ctx.drawerOpen, icon });
+    renderStudySubjectSheet(ctx) + renderNotificationModal(ctx) + renderDrawer({ drawerOpen: ctx.drawerOpen, icon });
 
   return (
     <div className="app-shell">

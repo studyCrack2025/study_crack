@@ -328,18 +328,22 @@ export function buildAnalysisDerived(state = {}) {
   const analysisStatusColor =
     serverSelected?.color || (analysisSelected.score >= 150 ? '#22C55E' : analysisSelected.score >= 100 ? '#0B6BFF' : '#F97316');
 
-  const fallbackSimRows = analysisSelected.sim.map(([subject, gain, desc], idx) => {
-    const gainNum = Number(String(gain).replace(/[^0-9.]/g, '')) || 0;
-    return { subject, gain, desc, gainNum, idx };
-  });
   const serverSimRows = buildServerSimRows(serverSimulation);
-  const analysisSimRows = serverSimRows.length ? serverSimRows : fallbackSimRows;
+  const analysisSimRows = serverSimRows.length ? serverSimRows : [];
   const analysisSimMax = Math.max(...analysisSimRows.map(({ gainNum }) => gainNum), 0);
   const analysisSimRecommendedIndex = analysisSimRows.findIndex(({ gainNum }) => gainNum === analysisSimMax);
-  const analysisTargetScore = Math.min(250, Math.max(analysisSelected.score, Math.round(analysisSelected.score + (analysisSimMax || 34))));
+  const analysisScore = Math.round(Number(analysisSelected.score) || 0);
+  const reachTargetScore = analysisScore < 100
+    ? 100
+    : analysisScore < 150
+      ? 150
+      : Math.min(250, analysisScore + analysisSimMax);
+  const analysisTargetScore = analysisSimMax
+    ? Math.min(250, Math.max(analysisScore, reachTargetScore))
+    : analysisScore;
 
   const gaugeTotal = 250;
-  const gaugeCurrent = Math.max(0, Math.min(gaugeTotal, Math.round(analysisSelected.score)));
+  const gaugeCurrent = Math.max(0, Math.min(gaugeTotal, analysisScore));
   const gaugeTarget = Math.max(gaugeCurrent, Math.min(gaugeTotal, Math.round(analysisTargetScore)));
   const gaugePass = 100;
   const gaugeSafe = 150;

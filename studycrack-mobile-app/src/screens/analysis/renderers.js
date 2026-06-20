@@ -38,16 +38,19 @@ export function renderAnalysisSearchModal(ctx) {
 
 function renderPossibleUniversityCards(ctx) {
   const {
+    analysisSimulationTargets = [],
     gaugeCurrent = 0,
     gaugePassPct = 40,
     gaugeSafePct = 60,
+    gaugeTarget = 0,
     scoreTierClass = defaultScoreTierClass
   } = ctx;
-  const possibleUniversities = [
-    ['국민대 경영학부', gaugeCurrent + 6],
-    ['숭실대 경제학과', gaugeCurrent + 10],
-    ['세종대 미디어커뮤니케이션학과', gaugeCurrent + 14]
-  ];
+  const possibleUniversities = analysisSimulationTargets
+    .map((item) => [item.major, Math.max(Number(item.score || 0), gaugeTarget)])
+    .filter(([name]) => name)
+    .slice(0, 3);
+
+  if (!possibleUniversities.length) return '';
 
   return `<div class="card ob-card">
             <p class="analysis-title">성적 변화 시 가능한 대학</p>
@@ -72,8 +75,10 @@ export function renderSummaryMode(ctx) {
     analysisEtaStage = 3,
     analysisGaugeColor = '#2563EB',
     analysisGaugeFill = 0,
+    analysisSimRows = [],
     analysisMajorOptions = [],
     analysisSelected = {},
+    canAccessStandard = false,
     analysisStatus = '',
     analysisStatusColor = '#2563EB',
     gaugeCurrent = 0,
@@ -90,6 +95,7 @@ export function renderSummaryMode(ctx) {
   const score = Number(analysisSelected.score || 0);
   const remaining = Math.max(0, 150 - score);
   const location = score >= 150 ? '현재 위치: 합격 안정권 진입' : (score >= 100 ? '현재 위치: 합격권 진입 전' : '현재 위치: 합격권까지 거리 있음');
+  const hasSimulation = canAccessStandard && analysisSimRows.length > 0;
   const eta = analysisEtaStage === 1
     ? '<div class="analysis-eta-loading"><span class="skeleton"></span><p>도달 성적 계산 중입니다...</p></div>'
     : analysisEtaStage === 2
@@ -129,7 +135,7 @@ export function renderSummaryMode(ctx) {
               ${eta}
             </div>
           </div>
-          <div class="card analysis-v2-gauge-change">
+          ${hasSimulation ? `<div class="card analysis-v2-gauge-change">
             <p class="analysis-title">합격 가능성 변화</p>
             <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${gaugeTarget}점</b></div></div>
             <div class="ob-gauge">
@@ -141,7 +147,7 @@ export function renderSummaryMode(ctx) {
             <div class="ob-gauge-labels"><span>합격컷 100점</span><span>안정컷 150점</span></div>
             <p class="analysis-sub"><b>현재 → 합격권 진입 구간</b></p><p class="analysis-conv-line">이 속도라면 목표까지 약 2~3개월이 필요합니다</p><p class="analysis-conv-line">방향이 틀리면 점수 상승 효율이 크게 떨어질 수 있습니다</p>
           </div>
-          ${renderPossibleUniversityCards(ctx)}
+          ${renderPossibleUniversityCards(ctx)}` : ''}
 
           <div class="card analysis-v2-cta sticky"><p class="analysis-cta-lead">지금 시작하면 평균 2개월 단축됩니다</p><button class="btn analysis-convert-btn" data-action="startStandard">합격까지 필요한 전략 보기</button><p class="analysis-cta-sub">MBTI 결과는 앱 안에서 확인할 수 있어요</p></div>
         `;
@@ -179,8 +185,28 @@ export function renderSimulationMode(ctx) {
     analysisSimMax = 0,
     analysisSimRecommendedIndex = -1,
     analysisSimRows = [],
-    analysisSimulationTargets = []
+    analysisSimulationTargets = [],
+    canAccessStandard = false
   } = ctx;
+
+  if (!canAccessStandard) {
+    return `
+          <div class="card analysis-v2-locked">
+            <p class="analysis-title">점수 상승 시뮬레이션</p>
+            <p class="sub">Standard 이상 플랜에서 과목별 상승 효율과 도달 성적을 확인할 수 있어요.</p>
+            <button type="button" class="btn btn-primary" data-action="goto" data-target="proIntro">플랜 보기</button>
+          </div>
+        `;
+  }
+
+  if (!analysisSimRows.length) {
+    return `
+          <div class="card analysis-v2-locked">
+            <p class="analysis-title">점수 상승 시뮬레이션</p>
+            <p class="sub">선택한 시험과 목표 대학 기준의 시뮬레이션 결과를 불러오면 표시됩니다.</p>
+          </div>
+        `;
+  }
 
   return `
           <div class="analysis-v2-compare-card">
@@ -245,9 +271,11 @@ export function renderAddUniversityScreen(ctx) {
 export function renderAnalysisScreen(ctx) {
   const {
     analysisMode = 'summary',
+    canAccessStandard = false,
     isAnalyzing = false,
     layout
   } = ctx;
+  const effectiveMode = canAccessStandard ? analysisMode : 'summary';
 
   return layout(
     `<section class="analysis-v2 ${isAnalyzing ? 'loading' : ''}">
@@ -259,11 +287,11 @@ export function renderAnalysisScreen(ctx) {
         </div>
 
         <div class="analysis-v2-tabs">
-          <button class="analysis-v2-tab ${analysisMode === 'summary' ? 'active' : ''}" data-action="setAnalysisMode" data-analysis-mode="summary">전략 요약</button>
-          <button class="analysis-v2-tab ${analysisMode === 'simulation' ? 'active' : ''}" data-action="setAnalysisMode" data-analysis-mode="simulation">점수 상승 시뮬레이션</button>
+          <button class="analysis-v2-tab ${effectiveMode === 'summary' ? 'active' : ''}" data-action="setAnalysisMode" data-analysis-mode="summary">전략 요약</button>
+          <button class="analysis-v2-tab ${effectiveMode === 'simulation' ? 'active' : ''} ${canAccessStandard ? '' : 'locked'}" data-action="${canAccessStandard ? 'setAnalysisMode' : 'goto'}" data-target="proIntro" data-analysis-mode="simulation">점수 상승 시뮬레이션</button>
         </div>
 
-        ${analysisMode === 'summary' ? renderSummaryMode(ctx) : renderSimulationMode(ctx)}
+        ${effectiveMode === 'summary' ? renderSummaryMode(ctx) : renderSimulationMode(ctx)}
 
         ${renderAnalysisSearchModal(ctx)}
       </section>`,
