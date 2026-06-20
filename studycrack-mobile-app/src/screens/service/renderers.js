@@ -93,6 +93,33 @@ function renderProRequestModal(ctx) {
   return renderModal({ panelClass: 'pro-request-modal', dismissAction: 'closeProRequestModal', body });
 }
 
+function formatQnaDate(value = '') {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function qnaStatusLabel(status = '') {
+  if (String(status).toLowerCase() === 'done') return '답변 완료';
+  if (String(status).toLowerCase() === 'read') return '확인 중';
+  return '답변 대기';
+}
+
+function renderQnaComposerModal(ctx) {
+  const {
+    qnaComposerOpen = false,
+    qnaDraftContent = '',
+    qnaDraftTitle = '',
+    qnaSubmitting = false
+  } = ctx;
+
+  if (!qnaComposerOpen) return '';
+
+  const body = `<div class="qna-modal-head"><h4>새 질문 작성</h4><button class="qna-modal-close" data-action="closeQnaComposer">✕</button></div><div class="qna-modal-body"><label>질문 제목</label><input class="planner-input" data-field="qnaDraftTitle" value="${escapeHtml(qnaDraftTitle)}" maxlength="80" placeholder="예: 수학 기출 복습 순서가 고민이에요"/><label>질문 내용</label><textarea class="planner-input qna-textarea" data-field="qnaDraftContent" maxlength="1000" placeholder="현재 상황과 궁금한 점을 구체적으로 적어주세요.">${escapeHtml(qnaDraftContent)}</textarea><div class="qna-modal-actions"><button class="btn btn-secondary" data-action="closeQnaComposer">취소</button><button class="btn btn-primary" data-action="submitMobileQna" ${qnaSubmitting ? 'disabled' : ''}>${qnaSubmitting ? '등록 중' : '질문 등록'}</button></div></div>`;
+  return renderModal({ panelClass: 'qna-modal', dismissAction: 'closeQnaComposer', body });
+}
+
 function renderPlanCard({ meta, plan, selectedPlan, variant }) {
   const active = selectedPlan === plan;
   const badge = plan === 'Standard' ? '<span class="badge">추천</span>' : plan === 'Pro' ? '<span class="badge">최고 효율</span>' : '';
@@ -232,8 +259,26 @@ export function renderProEliteScreen(ctx) {
   return layout(appbar('PRO EXCLUSIVE', true) + `<div class="pro-elite-page"><div class="pro-elite-hero"><span class="pro-elite-badge">TOP 1%</span><h3>상위 1%를 위한<br/>중장기 집중 맞춤 솔루션</h3><p>발행된 프리미엄 전략 리포트를 확인하세요.</p></div><div class="pro-elite-list">${reportList}</div><div class="pro-elite-request-bottom"><button class="pro-request-btn" data-action="openProRequestModal"><i class="spark">✦</i><span>전략 리포트 요청하기</span></button></div>${renderProRequestModal(ctx)}</div>`, false);
 }
 
-export function renderTutorScreen({ appbar, layout }) {
-  return layout(appbar('SKY튜터 1:1 피드백', true) + '<div class="card"><p class="sub">텍스트 기반 질의응답</p><ul class="list"><li>Q. 수학 개념 이해가 잘 안돼요</li><li>A. 유형별 복습 루틴을 추가하세요</li></ul></div><button class="btn btn-primary">새 질문 작성</button>', false);
+export function renderTutorScreen(ctx) {
+  const {
+    appbar,
+    layout,
+    qnaHistory = [],
+    qnaStatus = 'idle'
+  } = ctx;
+  const statusNode = qnaStatus === 'loading'
+    ? '<div class="coach-empty">질문 내역을 불러오는 중입니다.</div>'
+    : qnaStatus === 'error'
+      ? '<div class="coach-empty">질문 내역을 불러오지 못했습니다.</div>'
+      : qnaHistory.length
+        ? qnaHistory.map((item) => {
+          const done = String(item.status || '').toLowerCase() === 'done';
+          const created = formatQnaDate(item.createdAt);
+          return `<article class="qna-card"><div class="qna-card-head"><div><b>${escapeHtml(item.title)}</b>${created ? `<span>${escapeHtml(created)}</span>` : ''}</div><em class="${done ? 'done' : ''}">${qnaStatusLabel(item.status)}</em></div><p class="qna-question">${escapeHtml(item.content)}</p>${done && item.answer ? `<div class="qna-answer"><strong>튜터 답변</strong><p>${escapeHtml(item.answer)}</p>${item.answeredAt ? `<span>${escapeHtml(formatQnaDate(item.answeredAt))}</span>` : ''}</div>` : ''}</article>`;
+        }).join('')
+        : '<div class="coach-empty">아직 남긴 질문이 없습니다.</div>';
+
+  return layout(appbar('SKY튜터 1:1 피드백', true) + `<div class="tutor-qna-page"><div class="card qna-intro-card"><p class="sub">텍스트 기반 질의응답</p><h3>학습 고민을 남기면 튜터가 답변해요</h3><button class="btn btn-primary" data-action="openQnaComposer">새 질문 작성</button></div><div class="qna-list">${statusNode}</div>${renderQnaComposerModal(ctx)}</div>`, false);
 }
 
 export function renderProIntroScreen(ctx) {

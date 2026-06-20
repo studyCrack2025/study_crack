@@ -119,6 +119,12 @@ export function createServiceHandlers(ctx) {
     setNotifModalOpen = noop,
     setProRequestModalOpen = noop,
     setProRequestText = noop,
+    setQnaComposerOpen = noop,
+    setQnaDraftContent = noop,
+    setQnaDraftTitle = noop,
+    setQnaHistory = noop,
+    setQnaStatus = noop,
+    setQnaSubmitting = noop,
     setTargetMajor = noop,
     setTargetOpen = noop,
     setUniversityModalOpen = noop,
@@ -243,6 +249,40 @@ export function createServiceHandlers(ctx) {
       alert('요청서가 제출되었습니다.');
       setProRequestModalOpen(false);
       setProRequestText('');
+      return true;
+    },
+
+    openQnaComposer() {
+      setQnaComposerOpen(true);
+      return true;
+    },
+
+    closeQnaComposer() {
+      setQnaComposerOpen(false);
+      return true;
+    },
+
+    async submitMobileQna() {
+      const title = String(ctx.qnaDraftTitle || '').trim();
+      const content = String(ctx.qnaDraftContent || '').trim();
+      if (!title || !content) {
+        alert('질문 제목과 내용을 입력해주세요.');
+        return false;
+      }
+      if (ctx.qnaSubmitting) return false;
+      setQnaSubmitting(true);
+      const result = await ctx.persistMobileQna?.({ title, content });
+      setQnaSubmitting(false);
+      if (!result?.ok || !result.item) {
+        alert(result?.error || '질문 저장에 실패했습니다.');
+        return false;
+      }
+      setQnaHistory((prev) => [result.item, ...(Array.isArray(prev) ? prev : [])]);
+      setQnaStatus('ready');
+      setQnaDraftTitle('');
+      setQnaDraftContent('');
+      setQnaComposerOpen(false);
+      alert('질문이 등록되었습니다.');
       return true;
     },
 

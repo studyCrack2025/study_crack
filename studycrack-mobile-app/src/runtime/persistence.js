@@ -277,3 +277,59 @@ export async function fetchMobileWeeklyReports({ apiFetch, reportApiUrl } = {}) 
   const data = await response.json().catch(() => null);
   return normalizeWeeklyReports(data);
 }
+
+export function normalizeQnaHistory(payload) {
+  const list = Array.isArray(payload?.qnaHistory) ? payload.qnaHistory : (Array.isArray(payload) ? payload : []);
+  return list
+    .filter((item) => item && item.qnaId)
+    .map((item) => ({
+      qnaId: String(item.qnaId || ''),
+      title: item.title || '제목 없는 질문',
+      content: item.content || '',
+      status: item.status || 'waiting',
+      answer: item.answer || '',
+      createdAt: item.createdAt || '',
+      answeredAt: item.answeredAt || ''
+    }));
+}
+
+export async function fetchMobileQnaHistory({ apiFetch, qnaApiUrl } = {}) {
+  if (typeof apiFetch !== 'function' || !qnaApiUrl) return null;
+  const response = await apiFetch(qnaApiUrl, {
+    method: 'POST',
+    body: JSON.stringify({ type: 'get_qna_list' })
+  });
+  if (!response?.ok) return [];
+  const data = await response.json().catch(() => null);
+  return normalizeQnaHistory(data);
+}
+
+export async function saveMobileQna({ apiFetch, qnaApiUrl, title, content } = {}) {
+  if (typeof apiFetch !== 'function' || !qnaApiUrl) return { ok: false, error: '질문 저장 경로를 찾지 못했습니다.' };
+  const safeTitle = String(title || '').trim();
+  const safeContent = String(content || '').trim();
+  if (!safeTitle || !safeContent) return { ok: false, error: '질문 제목과 내용을 입력해주세요.' };
+  try {
+    const response = await apiFetch(qnaApiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'save_qna', data: { title: safeTitle, content: safeContent } })
+    });
+    const body = await response?.json?.().catch(() => null);
+    if (!response?.ok) return { ok: false, error: body?.error || body?.message || '질문 저장에 실패했습니다.' };
+    const now = new Date().toISOString();
+    return {
+      ok: true,
+      item: {
+        qnaId: String(body?.qnaId || `local-${Date.now()}`),
+        title: safeTitle,
+        content: safeContent,
+        status: 'waiting',
+        answer: '',
+        createdAt: now,
+        answeredAt: ''
+      }
+    };
+  } catch (_error) {
+    return { ok: false, error: '네트워크 오류로 질문을 저장하지 못했습니다.' };
+  }
+}

@@ -153,6 +153,8 @@ export function createFormHandlers(ctx) {
     setObTrack = noop,
     setProEliteMonth = noop,
     setProRequestText = noop,
+    setQnaDraftContent = noop,
+    setQnaDraftTitle = noop,
     setScoreEditState = noop,
     setScores = noop,
     setScoreState = noop,
@@ -191,6 +193,8 @@ export function createFormHandlers(ctx) {
     }
     if (field === 'coachingMonth') setCoachingMonth(target.value);
     if (field === 'proEliteMonth') setProEliteMonth(target.value);
+    if (field === 'qnaDraftTitle') setQnaDraftTitle(target.value);
+    if (field === 'qnaDraftContent') setQnaDraftContent(target.value);
     if (field === 'analysisSearchTerm') {
       if (ctx.analysisSearchLiveTermRef) ctx.analysisSearchLiveTermRef.current = target.value;
       setAnalysisSearchTerm(target.value);
