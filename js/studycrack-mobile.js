@@ -383,7 +383,6 @@ function App() {
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const [myProfileEditOpen, setMyProfileEditOpen] = useState(false);
   const [myProfileNameDraft, setMyProfileNameDraft] = useState('');
-  const [myProfileTargetDraft, setMyProfileTargetDraft] = useState('');
   const [withdrawPassword, setWithdrawPassword] = useState('');
   const [plannerItems, setPlannerItems] = useState(DEFAULT_PLANNER_ITEMS);
   const [plannerEditIndex, setPlannerEditIndex] = useState(null);
@@ -560,6 +559,25 @@ function App() {
     if (addHistory && screen !== next) setHistory((h) => [...h, screen]);
     setScreen(next);
     if (['home', 'analysis', 'strategy', 'planner', 'my'].includes(next)) setTab(next);
+  };
+
+  const planRank = { free: 0, trial: 0, basic: 1, starter: 1, standard: 2, pro: 3 };
+  const screenRequirements = { strategy: 'standard', planner: 'standard', plannerAdd: 'standard', weekly: 'standard', report: 'pro', reportDetail: 'pro', proElite: 'pro', tutor: 'pro' };
+  const canAccessScreen = (target) => {
+    const required = screenRequirements[target];
+    if (!required) return true;
+    const current = String(selectedPlan || '').toLowerCase();
+    return (planRank[current] || 0) >= (planRank[required] || 0);
+  };
+  const guardedGoto = (target, addHistory = true) => {
+    if (canAccessScreen(target)) {
+      goto(target, addHistory);
+      return true;
+    }
+    const required = screenRequirements[target] === 'pro' ? 'PRO' : 'STANDARD';
+    alert(`${required} 이상 플랜에서 이용할 수 있는 기능입니다.`);
+    goto('proIntro', addHistory);
+    return false;
   };
 
   const back = () => {
@@ -1800,23 +1818,23 @@ function App() {
     Basic: {
       introPrice: '25,000원 / 4주',
       payPrice: '25,000원 / 4주',
-      desc: '합격 가능성 분석 + 대학별 전략 확인',
-      features: ['합격 가능성 분석', '대학별 전략 확인'],
+      desc: 'AI 기반 합격 예측 분석',
+      features: ['목표대학 최대 18개 설정', '합격 컷 대비 거리 분석', '목표 대학별 효자 과목 발굴', '과목별 1점당 환산 효율 계산', '점수 상승 시뮬레이션'],
       complete: '합격 가능성 분석과 대학별 전략을 확인할 수 있어요.'
     },
     Standard: {
-      introPrice: '149,000원 / 4주',
-      payPrice: '149,000원 / 4주',
-      desc: '전략 + 플래너 + 주간 점검',
-      features: ['전략 기능 이용', '플래너 피드백', '학습 방향 코칭', '주간 점검 제공'],
+      introPrice: '49,000원 / 4주',
+      payPrice: '49,000원 / 4주',
+      desc: 'SKY 튜터 주간 합격 플래너 설계',
+      features: ['Basic 기능 모두 포함', 'SKY 튜터 주 1회 플래너 피드백', '과목별 시간 배분 점검', '목표 대학 기준 우선순위 제안', '매주 플래너 제시'],
       complete: '플래너 피드백과 학습 방향 코칭을 받을 수 있어요.'
     },
     Pro: {
-      introPrice: '299,000원 / 4주',
-      payPrice: '299,000원 / 4주',
-      desc: '모든 기능 무제한 + 프로 보고서 제공',
-      features: ['모든 기능 무제한 이용', '프로 보고서 2주에 1번 제공', 'Sky튜터 1:1 피드백 무제한', '광고 제거'],
-      complete: '프로 보고서는 2주 단위로 제공됩니다.'
+      introPrice: '149,000원 / 4주',
+      payPrice: '149,000원 / 4주',
+      desc: '합격 보장형 프리미엄 전략 관리',
+      features: ['STANDARD 모든 기능 포함', '목표 성적 정밀 제시', '정밀 역추적', '상향 지원 중장기 로드맵', '심화 합격 전략 리포트', '학부모 공유용 전략 리포트', '조건부 환급 혜택 제공'],
+      complete: '심화 합격 전략 리포트와 중장기 로드맵을 확인할 수 있어요.'
     }
   };
   const currentPlan = planMeta[selectedPlan] || planMeta.Pro;
@@ -2695,10 +2713,10 @@ function App() {
       true
     ),
     my: () => layout(appbar('마이페이지', false) + `<div class="my-stack">
-      <button type="button" class="card my-profile-card" data-action="openMyProfileEdit"><div class="my-profile-left"><div class="my-avatar">${i('user', false)}</div><div><p class="my-name">${user?.name || DEFAULT_USER.name}</p><p class="sub">목표 대학: ${targetMajor || DEFAULT_USER.targetUniversity}</p></div></div><div class="my-profile-right"><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span><span class="badge">${selectedPlan || DEFAULT_USER.plan} 이용 중</span></div></button>
-      ${myProfileEditOpen ? `<div class="home-modal-overlay" data-action="closeMyProfileEdit"><div class="home-modal my-profile-edit-modal" data-action="noopModal"><p class="home-modal-title">프로필 수정</p><div class="my-profile-edit-fields"><label>이름</label><input class="planner-input" data-field="myProfileNameDraft" value="${myProfileNameDraft}" placeholder="이름"/></div><div class="my-profile-edit-fields"><label>목표 대학</label><select class="planner-input" data-field="myProfileTargetDraft">${(analysisTargetList || []).map((major) => `<option value="${major}" ${myProfileTargetDraft===major?'selected':''}>${major}</option>`).join('')}</select></div><div class="support-btns my-profile-edit-actions"><button class="btn btn-secondary" data-action="closeMyProfileEdit">취소</button><button class="btn btn-primary" data-action="saveMyProfileEdit">저장</button></div></div></div>` : ''}
+      <button type="button" class="card my-profile-card" data-action="openMyProfileEdit"><div class="my-profile-left"><div class="my-avatar">${i('user', false)}</div><div><p class="my-name">${user?.name || DEFAULT_USER.name}</p><p class="sub">계정 및 구독 정보</p></div></div><div class="my-profile-right"><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span><span class="badge">${selectedPlan || DEFAULT_USER.plan} 이용 중</span></div></button>
+      ${myProfileEditOpen ? `<div class="home-modal-overlay" data-action="closeMyProfileEdit"><div class="home-modal my-profile-edit-modal" data-action="noopModal"><p class="home-modal-title">프로필 수정</p><div class="my-profile-edit-fields"><label>이름</label><input class="planner-input" data-field="myProfileNameDraft" value="${myProfileNameDraft}" placeholder="이름"/></div><p class="sub" style="margin:8px 0 0;">목표 대학은 분석 탭에서 관리합니다.</p><div class="support-btns my-profile-edit-actions"><button class="btn btn-secondary" data-action="closeMyProfileEdit">취소</button><button class="btn btn-primary" data-action="saveMyProfileEdit">저장</button></div></div></div>` : ''}
       ${mbtiResult ? `<div class="card" style="border:2px solid #2563EB;background:#EFF6FF;"><p class="analysis-title">진단 결과</p><p style="margin:6px 0 2px;font-size:30px;font-weight:900;letter-spacing:.08em;color:#1D4ED8;text-shadow:0 6px 18px rgba(37,99,235,.18);">CSDR</p><p class="sub" style="margin:0 0 12px;font-size:12px;color:#1E40AF;">(컨셉형, 직관령, 분석형, 루틴)</p><button class="btn btn-secondary" disabled>맞춤 공부법 PDF 준비 중</button></div>` : ''}
-      <div class="card my-subscription-card"><div class="my-sub-icon">${i('report', false)}</div><div><p class="my-sub-title">Pro 플랜 이용 중</p><p class="my-sub-date">다음 결제일 2024.06.14</p></div></div>
+      <div class="card my-subscription-card"><div class="my-sub-icon">${i('report', false)}</div><div><p class="my-sub-title">${selectedPlan || DEFAULT_USER.plan} 플랜 이용 중</p><p class="my-sub-date">구독 정보는 결제 내역과 연동됩니다.</p></div></div>
       <div class="card my-menu-card">
         <button class="my-row" data-action="goto" data-target="qualInfo">정성조사서 <span>${i('chevron', false)}</span></button><button class="my-row" data-action="goto" data-target="scoreInfo">성적 정보 <span>${i('chevron', false)}</span></button>
 
@@ -2747,9 +2765,9 @@ function App() {
     tutor: () => layout(appbar('SKY튜터 1:1 피드백', true) + `<div class="card"><p class="sub">텍스트 기반 질의응답</p><ul class="list"><li>Q. 수학 개념 이해가 잘 안돼요</li><li>A. 유형별 복습 루틴을 추가하세요</li></ul></div><button class="btn btn-primary">새 질문 작성</button>`, false),
     proIntro: () => layout(appbar('StudyCrack 요금제', true) + `<p class="sub pricing-sub">합격 전략, 단계별로 선택하세요</p>
       <div class="plan-stack">
-        <button class="plan-card basic ${selectedPlan==='Basic'?'active':''}" data-action="selectPlan" data-plan="Basic"><div class="plan-head"><h4>Basic</h4></div><p class="plan-price">${planMeta.Basic.introPrice}</p><ul><li>합격 가능성 분석</li><li>대학별 전략 확인</li></ul></button>
-        <button class="plan-card standard ${selectedPlan==='Standard'?'active':''}" data-action="selectPlan" data-plan="Standard"><div class="plan-head"><h4>Standard</h4><span class="badge">추천</span></div><p class="plan-price">${planMeta.Standard.introPrice}</p><ul><li>플래너 피드백</li><li>학습 방향 코칭</li></ul></button>
-        <button class="plan-card pro ${selectedPlan==='Pro'?'active':''}" data-action="selectPlan" data-plan="Pro"><div class="plan-head"><h4>Pro</h4><span class="badge">최고 효율</span></div><p class="plan-price">${planMeta.Pro.introPrice}</p><ul><li>모든 기능 무제한 이용</li><li>프로 보고서 2주 1회</li><li>Sky튜터 1:1 피드백</li></ul></button>
+        <button class="plan-card basic ${selectedPlan==='Basic'?'active':''}" data-action="selectPlan" data-plan="Basic"><div class="plan-head"><h4>Basic</h4></div><p class="plan-price">${planMeta.Basic.introPrice}</p><ul>${planMeta.Basic.features.map((item) => `<li>${item}</li>`).join('')}</ul></button>
+        <button class="plan-card standard ${selectedPlan==='Standard'?'active':''}" data-action="selectPlan" data-plan="Standard"><div class="plan-head"><h4>Standard</h4><span class="badge">추천</span></div><p class="plan-price">${planMeta.Standard.introPrice}</p><ul>${planMeta.Standard.features.map((item) => `<li>${item}</li>`).join('')}</ul></button>
+        <button class="plan-card pro ${selectedPlan==='Pro'?'active':''}" data-action="selectPlan" data-plan="Pro"><div class="plan-head"><h4>Pro</h4><span class="badge">최고 효율</span></div><p class="plan-price">${planMeta.Pro.introPrice}</p><ul>${planMeta.Pro.features.map((item) => `<li>${item}</li>`).join('')}</ul></button>
       </div>
       <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="payment">결제하기</button></div>`, false),
     payment: () => layout(appbar('플랜 선택', true) + `<div class="payment-tabs full">
@@ -2774,7 +2792,7 @@ function App() {
       ['report', '프로 보고서 알림', '새 리포트 이용 가능일을 알려드려요'],
       ['billing', '결제/구독 알림', '다음 결제일을 미리 알려드려요']
     ].map(([key, title, desc]) => `<button class="notify-row" data-action="toggleNotification" data-notify-key="${key}"><div><b>${title}</b><p>${desc}</p></div><span class="notify-switch ${notifications[key]?'on':''}"><i></i></span></button>`).join('')}</div>`, false),
-    customerSupport: () => layout(appbar('고객센터', true) + `<div class="card"><p class="analysis-title">궁금한 점이 있으면 언제든 문의해주세요.</p><p class="sub" style="margin:0">운영 시간: 평일 10:00 - 18:00</p><div class="support-btns"><button class="btn btn-secondary" data-action="openKakaoSupport">카카오톡 문의하기</button><button class="btn btn-secondary" data-action="openEmailSupport">이메일 문의하기</button></div></div><div class="card faq-card">${[
+    customerSupport: () => layout(appbar('고객센터', true) + `<div class="card support-direct-card"><p class="analysis-title">궁금한 점을 바로 남겨주세요.</p><p class="sub" style="margin:0">운영 시간: 평일 10:00 - 18:00</p><div class="support-btns"><button class="btn btn-primary" data-action="openWebQna">1:1 문의 작성</button><button class="btn btn-secondary" data-action="openKakaoSupport">카카오톡 문의하기</button></div></div><div class="card faq-card">${[
       ['faq1', '분석 결과는 얼마나 정확한가요?', '스터디크랙의 분석 엔진은 최근 3개년의 합격자 표본과 대학별 환산식을 기반으로 계산됩니다. 단순 등급이 아닌 대학별 실질 환산 점수를 사용하여 높은 정확도를 제공합니다.'],
       ['faq2', '목표 대학을 중간에 변경할 수 있나요?', '네, 가능합니다. 목표 대학을 수정하면 즉시 새로운 분석 결과가 반영됩니다.'],
       ['faq3', '환불 규정이 궁금합니다.', '결제 후 목표 대학 설정 전까지는 전액 환불이 가능합니다. 목표 대학 설정 이후에는 콘텐츠 이용으로 간주되어 환불이 제한될 수 있습니다.'],
@@ -2786,7 +2804,7 @@ function App() {
     ].map(([id, q, a]) => `<button class="faq-row" data-action="toggleFaq" data-faq-id="${id}"><div><b>${q}</b>${openFaq===id?`<p>${a}</p>`:''}</div><span>${i('chevron', false)}</span></button>`).join('')}</div>`, false),
     settingsMain: () => layout(appbar('설정', true) + `<div class="card settings-list"><button data-action="goto" data-target="accountInfo">계정 정보 <span>${i('chevron', false)}</span></button><button data-action="goto" data-target="settingsTermsPicker">약관 보기 <span>${i('chevron', false)}</span></button><button data-action="openLogoutModal">로그아웃 <span>${i('chevron', false)}</span></button></div>${logoutModalOpen ? `<div class="home-modal-overlay" data-action="closeLogoutModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">로그아웃하시겠어요?</p><div class="support-btns"><button class="btn btn-secondary" data-action="closeLogoutModal">취소</button><button class="btn btn-primary" data-action="confirmLogout">로그아웃</button></div></div></div>` : ''}${openTermsType ? `<div class="terms-modal-backdrop" data-action="closeTermsModal"><div class="terms-modal" data-action="noopModal"><button class="terms-modal-close" data-action="closeTermsModal">×</button><p class="terms-modal-title">${TERMS_CONTENT[openTermsType]?.title || ''}</p><div class="terms-modal-body">${TERMS_CONTENT[openTermsType]?.body || ''}</div></div></div>` : ''}`, false),
     settingsTermsPicker: () => layout(appbar('약관 보기', true) + `<div class="card settings-list"><button type="button" data-action="openTermsModal" data-terms-type="standard">표준 이용약관 <span>${i('chevron', false)}</span></button><button type="button" data-action="openTermsModal" data-terms-type="privacy">개인정보 처리방침 <span>${i('chevron', false)}</span></button><button type="button" data-action="openTermsModal" data-terms-type="service">서비스 이용약관 <span>${i('chevron', false)}</span></button><button type="button" data-action="openTermsModal" data-terms-type="refund">환불규정 <span>${i('chevron', false)}</span></button><button type="button" data-action="openTermsModal" data-terms-type="marketing">마케팅 수신 정보 동의 <span>${i('chevron', false)}</span></button></div>${openTermsType ? `<div class="terms-modal-backdrop" data-action="closeTermsModal"><div class="terms-modal" data-action="noopModal"><button class="terms-modal-close" data-action="closeTermsModal">×</button><p class="terms-modal-title">${TERMS_CONTENT[openTermsType]?.title || ''}</p><div class="terms-modal-body">${TERMS_CONTENT[openTermsType]?.body || ''}</div></div></div>` : ''}`, false),
-    accountInfo: () => layout(appbar('계정 정보', true) + `<div class="card"><div class="score-info-row"><span>이름</span><strong>${user?.name || DEFAULT_USER.name}</strong></div><div class="score-info-row"><span>목표 대학</span><strong>${targetMajor || DEFAULT_USER.targetUniversity}</strong></div><div class="score-info-row"><span>현재 플랜</span><strong>${selectedPlan || DEFAULT_USER.plan}</strong></div><button class="btn btn-secondary" style="margin-top:14px" data-action="openWithdrawModal">회원탈퇴</button></div>${withdrawModalOpen ? `<div class="home-modal-overlay" data-action="closeWithdrawModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">회원탈퇴</p><p class="sub" style="margin:8px 0 12px;">현재 비밀번호를 입력하면 탈퇴할 수 있습니다.</p><input class="planner-input" type="password" data-field="withdrawPassword" value="${withdrawPassword}" placeholder="현재 비밀번호"/><div class="support-btns" style="margin-top:12px"><button class="btn btn-secondary" data-action="closeWithdrawModal">취소</button><button class="btn btn-primary" data-action="confirmWithdraw">탈퇴하기</button></div></div></div>` : ''}`, false),
+    accountInfo: () => layout(appbar('계정 정보', true) + `<div class="card"><div class="score-info-row"><span>이름</span><strong>${user?.name || DEFAULT_USER.name}</strong></div><div class="score-info-row"><span>현재 플랜</span><strong>${selectedPlan || DEFAULT_USER.plan}</strong></div><button class="btn btn-secondary" style="margin-top:14px" data-action="openWithdrawModal">회원탈퇴</button></div>${withdrawModalOpen ? `<div class="home-modal-overlay" data-action="closeWithdrawModal"><div class="home-modal" data-action="noopModal"><p class="home-modal-title">회원탈퇴</p><p class="sub" style="margin:8px 0 12px;">현재 비밀번호를 입력하면 탈퇴할 수 있습니다.</p><input class="planner-input" type="password" data-field="withdrawPassword" value="${withdrawPassword}" placeholder="현재 비밀번호"/><div class="support-btns" style="margin-top:12px"><button class="btn btn-secondary" data-action="closeWithdrawModal">취소</button><button class="btn btn-primary" data-action="confirmWithdraw">탈퇴하기</button></div></div></div>` : ''}`, false),
     privacyPolicy: () => layout(appbar('개인정보 처리방침', true) + `<div class="card"><p class="sub" style="margin:0">스터디크랙은 서비스 제공을 위해 필요한 최소한의 개인정보를 처리합니다.</p></div>`, false),
     termsScreen: () => layout(appbar('서비스 이용약관', true) + `<div class="card"><p class="sub" style="margin:0">본 약관은 스터디크랙 서비스 이용과 관련한 기본 사항을 안내합니다.</p></div>`, false)
   };
@@ -3075,14 +3093,14 @@ function App() {
         }, 3000);
         return;
       }
-      goto(target);
+      guardedGoto(target);
     }
     if (action === 'back') back();
     if (action === 'goRanking') {
       goto('ranking');
       return;
     }
-    if (action === 'tab') goto(actionEl.getAttribute('data-tab'));
+    if (action === 'tab') guardedGoto(actionEl.getAttribute('data-tab'));
     if (action === 'setRankingPeriod') {
       setRankingPeriod(actionEl.getAttribute('data-ranking-period') || 'daily');
       return;
@@ -3803,7 +3821,6 @@ function App() {
     if (action === 'closeLogoutModal') setLogoutModalOpen(false);
     if (action === 'openMyProfileEdit') {
       setMyProfileNameDraft(user?.name || DEFAULT_USER.name);
-      setMyProfileTargetDraft(targetMajor || analysisTargetList[0] || DEFAULT_USER.targetUniversity);
       setMyProfileEditOpen(true);
       return;
     }
@@ -3813,9 +3830,7 @@ function App() {
     }
     if (action === 'saveMyProfileEdit') {
       const nextName = (myProfileNameDraft || '').trim() || DEFAULT_USER.name;
-      const nextTarget = myProfileTargetDraft || targetMajor || DEFAULT_USER.targetUniversity;
-      setUser((prev) => ({ ...(prev || {}), name: nextName, targetUniversity: nextTarget }));
-      setTargetMajor(nextTarget);
+      setUser((prev) => ({ ...(prev || {}), name: nextName }));
       setMyProfileEditOpen(false);
       return;
     }
@@ -3871,7 +3886,7 @@ function App() {
     }
     if (action === 'toggleObGed') setObGed((v) => !v);
     if (action === 'openKakaoSupport') window.open('http://pf.kakao.com/_wxjxcgn', '_blank');
-    if (action === 'openEmailSupport') window.location.href = 'mailto:contact@studycrack.co.kr';
+    if (action === 'openWebQna') window.location.href = '/qna';
     if (action === 'openDrawer') {
       preserveScrollAfterStateChange(() => {
         setNotifModalOpen(false);
@@ -4282,7 +4297,6 @@ function App() {
       renderUniversityResultsOnly(e.target.value, e.target);
     }
     if (field === 'myProfileNameDraft') setMyProfileNameDraft(e.target.value);
-    if (field === 'myProfileTargetDraft') setMyProfileTargetDraft(e.target.value);
     if (field === 'obTrack') {
       if (isIOSSafari() && isObSurveyScreen()) {
         e.target.dataset.pendingValue = e.target.value;
@@ -4603,10 +4617,6 @@ function App() {
     }
     const isV2eSelectField = field === 'v2e-english' || field === 'v2e-history' || field === 'v2e-inq1-subject' || field === 'v2e-inq2-subject';
     if (field === 'analysisSearchTerm') return;
-    if (field === 'myProfileTargetDraft') {
-      setMyProfileTargetDraft(e.target.value);
-      return;
-    }
     if (isIOSSafari() && scoreEditOpen && isV2eSelectField) {
       if (v2eSelectSyncTimerRef.current) clearTimeout(v2eSelectSyncTimerRef.current);
       v2eSelectSyncTimerRef.current = setTimeout(() => {

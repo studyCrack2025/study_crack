@@ -7,17 +7,37 @@ function defaultIcon() {
   return '';
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function formatQnaDate(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function qnaStatusLabel(status = '') {
+  if (String(status).toLowerCase() === 'done') return '답변 완료';
+  if (String(status).toLowerCase() === 'read') return '확인 중';
+  return '답변 대기';
+}
+
 function renderProfileEditModal(ctx) {
   const {
-    analysisTargetList = [],
     myProfileEditOpen = false,
-    myProfileNameDraft = '',
-    myProfileTargetDraft = ''
+    myProfileNameDraft = ''
   } = ctx;
 
   if (!myProfileEditOpen) return '';
 
-  const body = `<p class="home-modal-title">프로필 수정</p><div class="my-profile-edit-fields"><label>이름</label><input class="planner-input" data-field="myProfileNameDraft" value="${myProfileNameDraft}" placeholder="이름"/></div><div class="my-profile-edit-fields"><label>목표 대학</label><select class="planner-input" data-field="myProfileTargetDraft">${analysisTargetList.map((major) => `<option value="${major}" ${myProfileTargetDraft === major ? 'selected' : ''}>${major}</option>`).join('')}</select></div><div class="support-btns my-profile-edit-actions"><button class="btn btn-secondary" data-action="closeMyProfileEdit">취소</button><button class="btn btn-primary" data-action="saveMyProfileEdit">저장</button></div>`;
+  const body = `<p class="home-modal-title">프로필 수정</p><div class="my-profile-edit-fields"><label>이름</label><input class="planner-input" data-field="myProfileNameDraft" value="${escapeHtml(myProfileNameDraft)}" placeholder="이름"/></div><p class="sub" style="margin:8px 0 0;">목표 대학은 분석 탭에서 관리합니다.</p><div class="support-btns my-profile-edit-actions"><button class="btn btn-secondary" data-action="closeMyProfileEdit">취소</button><button class="btn btn-primary" data-action="saveMyProfileEdit">저장</button></div>`;
   return renderModal({ panelClass: 'my-profile-edit-modal', dismissAction: 'closeMyProfileEdit', body });
 }
 
@@ -33,22 +53,46 @@ function renderWithdrawModal({ withdrawModalOpen = false, withdrawPassword = '' 
   return renderModal({ dismissAction: 'closeWithdrawModal', body });
 }
 
+function renderSupportQnaComposerModal(ctx) {
+  const {
+    qnaComposerOpen = false,
+    qnaDraftContent = '',
+    qnaDraftTitle = '',
+    qnaSubmitting = false
+  } = ctx;
+
+  if (!qnaComposerOpen) return '';
+
+  const body = `<div class="qna-modal-head"><h4>1:1 문의 작성</h4><button class="qna-modal-close" data-action="closeQnaComposer">✕</button></div><div class="qna-modal-body"><label>문의 제목</label><input class="planner-input" data-field="qnaDraftTitle" value="${escapeHtml(qnaDraftTitle)}" maxlength="80" placeholder="예: 결제 후 이용 권한이 궁금해요"/><label>문의 내용</label><textarea class="planner-input qna-textarea" data-field="qnaDraftContent" maxlength="1000" placeholder="현재 상황과 궁금한 점을 구체적으로 적어주세요.">${escapeHtml(qnaDraftContent)}</textarea><div class="qna-modal-actions"><button class="btn btn-secondary" data-action="closeQnaComposer">취소</button><button class="btn btn-primary" data-action="submitMobileQna" ${qnaSubmitting ? 'disabled' : ''}>${qnaSubmitting ? '접수 중' : '문의 접수'}</button></div></div>`;
+  return renderModal({ panelClass: 'qna-modal', dismissAction: 'closeQnaComposer', body });
+}
+
+function renderSupportQnaList({ qnaHistory = [], qnaStatus = 'idle' }) {
+  if (qnaStatus === 'loading') return '<div class="coach-empty">문의 내역을 불러오는 중입니다.</div>';
+  if (qnaStatus === 'error') return '<div class="coach-empty">문의 내역을 불러오지 못했습니다.</div>';
+  if (!qnaHistory.length) return '<div class="coach-empty">아직 남긴 문의가 없습니다.</div>';
+
+  return qnaHistory.map((item) => {
+    const done = String(item.status || '').toLowerCase() === 'done';
+    const created = formatQnaDate(item.createdAt);
+    return `<article class="qna-card"><div class="qna-card-head"><div><b>${escapeHtml(item.title)}</b>${created ? `<span>${escapeHtml(created)}</span>` : ''}</div><em class="${done ? 'done' : ''}">${qnaStatusLabel(item.status)}</em></div><p class="qna-question">${escapeHtml(item.content)}</p>${done && item.answer ? `<div class="qna-answer"><strong>답변</strong><p>${escapeHtml(item.answer)}</p>${item.answeredAt ? `<span>${escapeHtml(formatQnaDate(item.answeredAt))}</span>` : ''}</div>` : ''}</article>`;
+  }).join('');
+}
+
 export function renderMyPageScreen(ctx) {
   const {
-    analysisTargetList = [],
     appbar,
     icon = defaultIcon,
     layout,
     mbtiResult,
     selectedPlan,
-    targetMajor,
     user
   } = ctx;
   const planLabel = selectedPlan || DEFAULT_USER.plan;
 
   return layout(appbar('마이페이지', false) + `<div class="my-stack">
-      <button type="button" class="card my-profile-card" data-action="openMyProfileEdit"><div class="my-profile-left"><div class="my-avatar">${icon('user', false)}</div><div><p class="my-name">${user?.name || DEFAULT_USER.name}</p><p class="sub">목표 대학: ${targetMajor || DEFAULT_USER.targetUniversity}</p></div></div><div class="my-profile-right"><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span><span class="badge">${planLabel} 이용 중</span></div></button>
-      ${renderProfileEditModal({ ...ctx, analysisTargetList })}
+      <button type="button" class="card my-profile-card" data-action="openMyProfileEdit"><div class="my-profile-left"><div class="my-avatar">${icon('user', false)}</div><div><p class="my-name">${escapeHtml(user?.name || DEFAULT_USER.name)}</p><p class="sub">계정 및 구독 정보</p></div></div><div class="my-profile-right"><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span><span class="badge">${planLabel} 이용 중</span></div></button>
+      ${renderProfileEditModal(ctx)}
       ${mbtiResult ? `<div class="card" style="border:2px solid #2563EB;background:#EFF6FF;"><p class="analysis-title">진단 결과</p><p style="margin:6px 0 2px;font-size:30px;font-weight:900;letter-spacing:.08em;color:#1D4ED8;text-shadow:0 6px 18px rgba(37,99,235,.18);">CSDR</p><p class="sub" style="margin:0 0 12px;font-size:12px;color:#1E40AF;">(컨셉형, 직관령, 분석형, 루틴)</p><button class="btn btn-secondary" disabled>맞춤 공부법 PDF 준비 중</button></div>` : ''}
       <div class="card my-subscription-card"><div class="my-sub-icon">${icon('report', false)}</div><div><p class="my-sub-title">${planLabel} 플랜 이용 중</p><p class="my-sub-date">구독 정보는 결제 내역과 연동됩니다.</p></div></div>
       <div class="card my-menu-card">
@@ -87,7 +131,9 @@ export function renderCustomerSupportScreen(ctx) {
     appbar,
     icon = defaultIcon,
     layout,
-    openFaq
+    openFaq,
+    qnaHistory = [],
+    qnaStatus = 'idle'
   } = ctx;
 
   const faqs = [
@@ -101,7 +147,7 @@ export function renderCustomerSupportScreen(ctx) {
     ['faq8', '어떤 플랜을 선택해야 할지 모르겠어요.', '빠르게 방향만 잡고 싶다면 Basic, 루틴 관리까지 원하면 Standard, 확실한 결과를 원하면 Pro를 추천합니다.']
   ];
 
-  return layout(appbar('고객센터', true) + `<div class="card"><p class="analysis-title">궁금한 점이 있으면 언제든 문의해주세요.</p><p class="sub" style="margin:0">운영 시간: 평일 10:00 - 18:00</p><div class="support-btns"><button class="btn btn-secondary" data-action="openKakaoSupport">카카오톡 문의하기</button><button class="btn btn-secondary" data-action="openEmailSupport">이메일 문의하기</button></div></div><div class="card faq-card">${faqs.map(([id, q, a]) => `<button class="faq-row" data-action="toggleFaq" data-faq-id="${id}"><div><b>${q}</b>${openFaq === id ? `<p>${a}</p>` : ''}</div><span>${icon('chevron', false)}</span></button>`).join('')}</div>`, false);
+  return layout(appbar('고객센터', true) + `<div class="card support-direct-card"><p class="analysis-title">궁금한 점을 바로 남겨주세요.</p><p class="sub" style="margin:0">운영 시간: 평일 10:00 - 18:00</p><div class="support-btns"><button class="btn btn-primary" data-action="openQnaComposer">1:1 문의 작성</button><button class="btn btn-secondary" data-action="openKakaoSupport">카카오톡 문의하기</button></div></div><div class="card support-qna-card"><div class="support-section-head"><p class="analysis-title">내 문의 내역</p>${qnaHistory.length ? `<span>${qnaStatusLabel(qnaHistory[0]?.status)}</span>` : ''}</div><div class="qna-list">${renderSupportQnaList({ qnaHistory, qnaStatus })}</div></div><div class="card faq-card">${faqs.map(([id, q, a]) => `<button class="faq-row" data-action="toggleFaq" data-faq-id="${id}"><div><b>${q}</b>${openFaq === id ? `<p>${a}</p>` : ''}</div><span>${icon('chevron', false)}</span></button>`).join('')}</div>${renderSupportQnaComposerModal(ctx)}`, false);
 }
 
 export function renderSettingsMainScreen(ctx) {
@@ -134,13 +180,12 @@ export function renderAccountInfoScreen(ctx) {
     appbar,
     layout,
     selectedPlan,
-    targetMajor,
     user,
     withdrawModalOpen,
     withdrawPassword
   } = ctx;
 
-  return layout(appbar('계정 정보', true) + `<div class="card"><div class="score-info-row"><span>이름</span><strong>${user?.name || DEFAULT_USER.name}</strong></div><div class="score-info-row"><span>목표 대학</span><strong>${targetMajor || DEFAULT_USER.targetUniversity}</strong></div><div class="score-info-row"><span>현재 플랜</span><strong>${selectedPlan || DEFAULT_USER.plan}</strong></div><button class="btn btn-secondary" style="margin-top:14px" data-action="openWithdrawModal">회원탈퇴</button></div>${renderWithdrawModal({ withdrawModalOpen, withdrawPassword })}`, false);
+  return layout(appbar('계정 정보', true) + `<div class="card"><div class="score-info-row"><span>이름</span><strong>${escapeHtml(user?.name || DEFAULT_USER.name)}</strong></div><div class="score-info-row"><span>현재 플랜</span><strong>${selectedPlan || DEFAULT_USER.plan}</strong></div><button class="btn btn-secondary" style="margin-top:14px" data-action="openWithdrawModal">회원탈퇴</button></div>${renderWithdrawModal({ withdrawModalOpen, withdrawPassword })}`, false);
 }
 
 export function renderPrivacyPolicyScreen({ appbar, layout }) {

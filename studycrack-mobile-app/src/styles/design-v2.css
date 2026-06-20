@@ -234,6 +234,14 @@ input,select,textarea{font-size:16px !important;}
 .qna-modal-body label{font-size:13px;font-weight:800;color:#475569;}
 .qna-textarea{height:170px;resize:none;}
 .qna-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
+.locked-upgrade-card{border:1px solid rgba(37,99,235,.18);background:linear-gradient(135deg,#EFF6FF,#FFFFFF);display:grid;gap:8px;margin-bottom:12px;}
+.locked-upgrade-card h3{margin:0;color:#0F172A;font-size:18px;line-height:1.35;font-weight:900;letter-spacing:0;}
+.locked-upgrade-card p{margin:0;color:#475569;font-size:13px;line-height:1.55;}
+.support-direct-card{display:grid;gap:8px;}
+.support-qna-card{display:grid;gap:12px;margin-top:12px;}
+.support-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.support-section-head .analysis-title{margin:0;}
+.support-section-head span{flex:0 0 auto;border-radius:999px;background:#F1F5F9;color:#64748B;padding:5px 9px;font-size:11px;font-weight:800;}
 .home-chip-grid{display:flex;flex-wrap:wrap;gap:8px;}
 .study-goal-card .track{height:12px;border-radius:999px;background:#E2E8F0;overflow:hidden;}
 .study-goal-card .track i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--primary),#38BDF8);}
