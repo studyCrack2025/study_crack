@@ -106,7 +106,6 @@ export function createServiceHandlers(ctx) {
     setCoachingExamFiles = noop,
     setCoachingExamScores = noop,
     setCoachingExamType = noop,
-    setCoachingMonth = noop,
     setCheckoutPlan = noop,
     setCoachingPlannerFiles = noop,
     setCoachingSheetOpen = noop,
@@ -255,20 +254,6 @@ export function createServiceHandlers(ctx) {
       }
       const fileName = getData(actionEl, 'pdf-name', 'studycrack-pro-report.pdf');
       return clickDownload(ctx, pdfPath, fileName);
-    },
-
-    toggleCoachingMonth() {
-      setCoachingMonth((prev) => (prev === '26년 4월' ? '26년 3월' : '26년 4월'));
-      return true;
-    },
-
-    downloadCoachingPdf({ actionEl }) {
-      const pdfPath = getData(actionEl, 'pdf-path');
-      if (!pdfPath) {
-        alert('PDF 다운로드 준비 중입니다.');
-        return false;
-      }
-      return clickDownload(ctx, pdfPath);
     },
 
     openCoachingSheet() {

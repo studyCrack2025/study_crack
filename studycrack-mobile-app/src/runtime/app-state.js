@@ -172,6 +172,8 @@ export function createInitialAppState() {
     proEliteMonth: '26년 4월',
     proReports: [],
     proReportsStatus: 'idle',
+    weeklyReports: [],
+    weeklyReportsStatus: 'idle',
     coachingSubmitted: false,
     coachingSheetOpen: false,
     coachingStep: 1,

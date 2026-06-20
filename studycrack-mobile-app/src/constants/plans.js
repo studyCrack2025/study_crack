@@ -21,11 +21,3 @@ export const PLAN_META = {
     complete: '프로 보고서는 2주 단위로 제공됩니다.'
   }
 };
-
-export const COACHING_MONTHLY_REPORTS = {
-  '26년 4월': [
-    { title: '4월 1주차 피드백 리포트', date: '2026.04.07', pdfPath: '' },
-    { title: '4월 2주차 피드백 리포트', date: '2026.04.14', pdfPath: '' }
-  ],
-  '26년 3월': []
-};

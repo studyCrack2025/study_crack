@@ -1,9 +1,23 @@
 import { renderModal } from '../../components/modal.js';
 import { CRACKY_SRC } from '../../constants/assets.js';
-import { COACHING_MONTHLY_REPORTS, PLAN_META } from '../../constants/plans.js';
+import { PLAN_META } from '../../constants/plans.js';
 
 function defaultIcon() {
   return '';
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function safeExternalUrl(value) {
+  const text = String(value || '').trim();
+  return /^https?:\/\//i.test(text) ? text : '';
 }
 
 function renderCoachingSheet(ctx) {
@@ -39,11 +53,31 @@ function reportStatusLabel(report = {}) {
   return '준비 중';
 }
 
+function formatWeekIdLabel(weekId = '') {
+  const value = String(weekId || '').trim();
+  const match = value.match(/^(\d{2})(\d{2})(\d{2})$/);
+  if (!match) return value || '주간 점검';
+  return `20${match[1]}년 ${Number(match[2])}월 ${Number(match[3])}주차`;
+}
+
+function hasSubmittedFeedback(report = {}) {
+  return report?.tutorFeedback?.submitted === true;
+}
+
+function renderWeeklyRows({ reports = [] }) {
+  if (!reports.length) return '<div class="coach-empty">아직 제출된 주간 점검이 없습니다.</div>';
+  return reports.map((report) => {
+    const done = hasSubmittedFeedback(report);
+    return `<button class="coach-report-card" data-action="goto" data-target="weekly"><div><b>${escapeHtml(formatWeekIdLabel(report.weekId))}</b><p>${done ? '튜터 피드백 도착' : '피드백 대기 중'}</p></div><div class="coach-report-side"><span class="badge coach-pdf-badge">${done ? '완료' : '대기'}</span><span class="coach-report-arrow">›</span></div></button>`;
+  }).join('');
+}
+
 function renderReportRows({ icon = defaultIcon, reports = [] }) {
   if (!reports.length) return '<div class="coach-empty">아직 발행된 PRO 리포트가 없습니다.</div>';
   return reports.map((report) => {
-    const ready = !!report.reportLink && ['published', 'sent'].includes(String(report.status || '').toLowerCase());
-    return `<button class="report-row" data-action="downloadProReport" data-pdf-path="${ready ? report.reportLink : ''}" data-pdf-name="studycrack-pro-report-${report.key || 'latest'}.pdf"><div><b>${formatReportKeyLabel(report.key)}</b><p>${reportStatusLabel(report)}</p></div><span>${ready ? 'PDF' : icon('chevron', false)}</span></button>`;
+    const reportLink = safeExternalUrl(report.reportLink);
+    const ready = !!reportLink && ['published', 'sent'].includes(String(report.status || '').toLowerCase());
+    return `<button class="report-row" data-action="downloadProReport" data-pdf-path="${ready ? escapeHtml(reportLink) : ''}" data-pdf-name="studycrack-pro-report-${escapeHtml(report.key || 'latest')}.pdf"><div><b>${escapeHtml(formatReportKeyLabel(report.key))}</b><p>${reportStatusLabel(report)}</p></div><span>${ready ? 'PDF' : icon('chevron', false)}</span></button>`;
   }).join('');
 }
 
@@ -75,25 +109,31 @@ function renderPlanCard({ meta, plan, selectedPlan, variant }) {
 
 export function renderStrategyScreen(ctx) {
   const {
-    coachingMonth = '26년 4월',
     coachingSubmitted = false,
     layout,
-    selectedCoachingReports = COACHING_MONTHLY_REPORTS[coachingMonth] || []
+    weeklyReports = [],
+    weeklyReportsStatus = 'idle'
   } = ctx;
+  const latest = weeklyReports[0] || null;
+  const submitted = coachingSubmitted || !!latest;
+  const feedbackReady = weeklyReports.some(hasSubmittedFeedback);
+  const weeklyList = weeklyReportsStatus === 'loading'
+    ? '<div class="coach-empty">주간 점검을 불러오는 중입니다.</div>'
+    : renderWeeklyRows({ reports: weeklyReports });
 
   return layout(
     `<div class="coach-page">
         <div class="card coach-title-card"><div class="top-card-head"><div><h3>학습 코칭</h3><p>주간 학습 계획을 점검하고, 튜터의 피드백을 받아보세요.</p></div><span class="top-infographic top-infographic-coach" aria-hidden="true"><i></i><i></i><i></i></span></div></div>
         <div class="card coach-status-card">
-          <div class="coach-row"><h4>이번 주 학습 점검 & 코칭 요청</h4><span class="badge ${coachingSubmitted ? 'coach-submitted' : ''}">${coachingSubmitted ? '제출 완료' : '미제출'}</span></div>
+          <div class="coach-row"><h4>이번 주 학습 점검 & 코칭 요청</h4><span class="badge ${submitted ? 'coach-submitted' : ''}">${submitted ? '제출 이력 있음' : '미제출'}</span></div>
           <p>이번 주 학습 달성률과 고민을 작성하면 튜터가 피드백을 제공해요.</p>
           <small>매주 일요일 20:00 마감</small>
-          <button class="btn btn-primary" data-action="openCoachingSheet">${coachingSubmitted ? '다시 작성하기' : '코칭 요청하기'}</button>
+          <button class="btn btn-primary" data-action="openCoachingSheet">${submitted ? '이번 주 점검 작성/수정' : '코칭 요청하기'}</button>
         </div>
         <div class="card coach-feedback-card">
-          <div class="coach-row"><h4>주간학습 피드백</h4><select class="coach-month-select" data-field="coachingMonth"><option value="26년 4월" ${coachingMonth === '26년 4월' ? 'selected' : ''}>26년 4월</option><option value="26년 3월" ${coachingMonth === '26년 3월' ? 'selected' : ''}>26년 3월</option></select></div>
-          <p>월별 피드백 리포트를 PDF로 다운로드할 수 있어요.</p>
-          ${selectedCoachingReports.length ? `<div class="coach-report-list">${selectedCoachingReports.map((report) => `<button class="coach-report-card" data-action="downloadCoachingPdf" data-pdf-path="${report.pdfPath}"><div><b>${report.title}</b><p>${report.date}</p></div><div class="coach-report-side"><span class="badge coach-pdf-badge">PDF</span><span class="coach-report-arrow">›</span></div></button>`).join('')}</div>` : '<div class="coach-empty">아직 도착한 피드백 리포트가 없습니다.</div>'}
+          <div class="coach-row"><h4>주간학습 피드백</h4><span class="badge ${feedbackReady ? 'coach-submitted' : ''}">${feedbackReady ? '도착' : '대기'}</span></div>
+          <p>제출한 주간 점검과 튜터가 최종 제출한 피드백만 표시됩니다.</p>
+          <div class="coach-report-list">${weeklyList}</div>
         </div>
         ${renderCoachingSheet(ctx)}
       </div>`,
@@ -105,19 +145,40 @@ export function renderWeeklyScreen(ctx) {
   const {
     crackySrc = CRACKY_SRC,
     icon = defaultIcon,
-    layout
+    layout,
+    weeklyReports = []
   } = ctx;
+  const latest = weeklyReports[0] || null;
+  const fb = latest?.tutorFeedback || {};
+  if (!latest) {
+    return layout(
+      `<div class="weekly-head"><button class="weekly-back" data-action="back">←</button><h3>주간 점검</h3><span></span></div>
+       <div class="card weekly-feedback"><p class="sub" style="margin:0 0 10px;">주간 점검 기록이 없습니다.</p><div class="feedback-item">${icon('check', true)}학습 코칭 화면에서 이번 주 점검을 제출하면 이곳에 피드백이 표시됩니다.</div><img loading="lazy" decoding="async" src="${escapeHtml(crackySrc)}" class="weekly-char crackie" alt="크랙이"/></div>
+       <div class="cta-wrapper"><button class="btn btn-primary weekly-next cta-btn" data-action="goto" data-target="strategy">학습 코칭으로 이동</button></div>`,
+      true
+    );
+  }
+
+  const done = hasSubmittedFeedback(latest);
+  const feedbackItems = done
+    ? [
+      fb.weeklyPlanner ? `이번 주 플래너: ${fb.weeklyPlanner}` : '',
+      fb.planReason ? `계획 이유: ${fb.planReason}` : '',
+      fb.questionAnswer ? `질문 답변: ${fb.questionAnswer}` : '',
+      fb.tutorComment ? `튜터 총평: ${fb.tutorComment}` : '',
+      fb.nextWeekTop3 ? `다음 주 TOP3: ${fb.nextWeekTop3}` : '',
+      fb.planEvaluation ? `플랜 평가: ${fb.planEvaluation}` : ''
+    ].filter(Boolean)
+    : ['튜터가 피드백을 최종 제출하면 이곳에 표시됩니다.'];
 
   return layout(
     `<div class="weekly-head"><button class="weekly-back" data-action="back">←</button><h3>주간 점검</h3><span></span></div>
-       <p class="weekly-range">이번 주 점검 (5.6 ~ 5.12)</p>
-       <div class="card weekly-rate"><div><p class="sub">플래너 수행률</p><h2>82%</h2></div><span class="badge">목표 90%</span></div>
+       <p class="weekly-range">${escapeHtml(formatWeekIdLabel(latest.weekId))}</p>
+       <div class="card weekly-rate"><div><p class="sub">피드백 상태</p><h2>${done ? '도착' : '대기'}</h2></div><span class="badge">${escapeHtml(latest.tutorName || '튜터 확인 중')}</span></div>
        <div class="card weekly-feedback">
          <p class="sub" style="margin:0 0 10px;">주간 요약 피드백</p>
-         <div class="feedback-item">${icon('check', true)}수학 공부 시간이 부족해요. 개념 학습 시간을 늘려보세요.</div>
-         <div class="feedback-item">${icon('check', true)}탐구 문제 풀이 시간이 좋아요! 유지하면 더 좋은 결과가 기대돼요.</div>
-         <div class="feedback-item">${icon('check', true)}영어는 꾸준히 잘하고 있어요. 계속 유지해요!</div>
-         <img loading="lazy" decoding="async" src="${crackySrc}" class="weekly-char crackie" alt="크랙이"/>
+         ${feedbackItems.map((item) => `<div class="feedback-item">${icon('check', true)}${escapeHtml(item)}</div>`).join('')}
+         <img loading="lazy" decoding="async" src="${escapeHtml(crackySrc)}" class="weekly-char crackie" alt="크랙이"/>
        </div>
        <div class="cta-wrapper"><button class="btn btn-primary weekly-next cta-btn" data-action="goto" data-target="planner">다음 주 계획 세우기</button></div>`,
     true
@@ -162,8 +223,9 @@ export function renderProEliteScreen(ctx) {
     ? '<div class="coach-empty">PRO 리포트를 불러오는 중입니다.</div>'
     : (proReports.length
       ? proReports.map((report) => {
-        const ready = !!report.reportLink && ['published', 'sent'].includes(String(report.status || '').toLowerCase());
-        return `<button class="pro-elite-item" data-action="downloadProReport" data-pdf-path="${ready ? report.reportLink : ''}" data-pdf-name="studycrack-pro-report-${report.key || 'latest'}.pdf"><div><b>${formatReportKeyLabel(report.key)} PRO 리포트</b><p>${reportStatusLabel(report)}</p></div><span class="pro-elite-download">${ready ? 'PDF 다운로드' : '준비 중'}</span></button>`;
+        const reportLink = safeExternalUrl(report.reportLink);
+        const ready = !!reportLink && ['published', 'sent'].includes(String(report.status || '').toLowerCase());
+        return `<button class="pro-elite-item" data-action="downloadProReport" data-pdf-path="${ready ? escapeHtml(reportLink) : ''}" data-pdf-name="studycrack-pro-report-${escapeHtml(report.key || 'latest')}.pdf"><div><b>${escapeHtml(formatReportKeyLabel(report.key))} PRO 리포트</b><p>${reportStatusLabel(report)}</p></div><span class="pro-elite-download">${ready ? 'PDF 다운로드' : '준비 중'}</span></button>`;
       }).join('')
       : '<div class="coach-empty">아직 발행된 PRO 리포트가 없습니다.</div>');
 

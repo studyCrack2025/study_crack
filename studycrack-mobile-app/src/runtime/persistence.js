@@ -250,3 +250,30 @@ export async function fetchMobileProReports({ apiFetch, reportApiUrl } = {}) {
   const data = await response.json().catch(() => null);
   return normalizeProReports(data);
 }
+
+function normalizeWeeklyReports(payload) {
+  const reports = Array.isArray(payload?.weeklyReports) ? payload.weeklyReports : [];
+  return reports
+    .filter((item) => item && item.weekId)
+    .map((item) => ({
+      weekId: String(item.weekId || ''),
+      title: item.title || '',
+      date: item.date || '',
+      updatedAt: item.updatedAt || '',
+      tutorName: item.tutorName || '',
+      tutorFeedback: item.tutorFeedback || null,
+      weeklyGoal: item.weeklyGoal || '',
+      questionToTutor: item.questionToTutor || ''
+    }));
+}
+
+export async function fetchMobileWeeklyReports({ apiFetch, reportApiUrl } = {}) {
+  if (typeof apiFetch !== 'function' || !reportApiUrl) return null;
+  const response = await apiFetch(reportApiUrl, {
+    method: 'POST',
+    body: JSON.stringify({ type: 'get_weekly_reports' })
+  });
+  if (!response?.ok) return [];
+  const data = await response.json().catch(() => null);
+  return normalizeWeeklyReports(data);
+}
