@@ -1,4 +1,5 @@
 import { getData } from './action-utils.js';
+import { buildMobileWeeklyCheckPayload } from '../runtime/persistence.js';
 
 function noop() {}
 
@@ -109,6 +110,7 @@ export function createServiceHandlers(ctx) {
     setCheckoutPlan = noop,
     setCoachingPlannerFiles = noop,
     setCoachingSheetOpen = noop,
+    setCoachingSubmitting = noop,
     setCoachingStep = noop,
     setCoachingSubjectRows = noop,
     setCoachingSubmitted = noop,
@@ -131,6 +133,8 @@ export function createServiceHandlers(ctx) {
     setTargetMajor = noop,
     setTargetOpen = noop,
     setUniversityModalOpen = noop,
+    setWeeklyReports = noop,
+    setWeeklyReportsStatus = noop,
     syncStep1FromDom,
     window = getWindow(ctx)
   } = ctx;
@@ -391,20 +395,17 @@ export function createServiceHandlers(ctx) {
       return true;
     },
 
-    coachingNext() {
+    async coachingNext() {
       const step = Number(ctx.coachingStep || 1);
+      let rows = ctx.coachingSubjectRows || [];
       if (step === 1) {
-        const rows = readCoachingRows(ctx);
+        rows = readCoachingRows(ctx);
         if (typeof syncStep1FromDom === 'function') syncStep1FromDom();
         else setCoachingSubjectRows(rows);
         if (hasInvalidCoachingRows(rows)) {
           alert('필수 입력 사항을 모두 입력해주세요');
           return false;
         }
-      }
-      if (step === 2 && (ctx.coachingPlannerFiles || []).length === 0) {
-        alert('필수 입력 사항을 모두 입력해주세요');
-        return false;
       }
       if (step === 3) {
         const examScores = readCoachingExamScores(ctx);
@@ -425,6 +426,31 @@ export function createServiceHandlers(ctx) {
         return false;
       }
       if (step >= 8) {
+        if (ctx.coachingSubmitting) return false;
+        const latestRows = readCoachingRows(ctx);
+        const payload = buildMobileWeeklyCheckPayload({
+          answers: ctx.coachingAnswers || {},
+          dropReasons: ctx.coachingDropReasons || [],
+          examScores: readCoachingExamScores(ctx),
+          examType: ctx.coachingExamType || '',
+          rows: latestRows,
+          trend: ctx.coachingTrend || ''
+        });
+        setCoachingSubmitting(true);
+        const result = await ctx.persistWeeklyCheck?.(payload);
+        setCoachingSubmitting(false);
+        if (!result?.ok) {
+          alert(result?.error || '주간 점검 저장에 실패했습니다.');
+          return false;
+        }
+        if (result.report?.weekId) {
+          setWeeklyReports((prev) => {
+            const list = Array.isArray(prev) ? prev : [];
+            return [result.report, ...list.filter((item) => item.weekId !== result.report.weekId)];
+          });
+          setWeeklyReportsStatus('ready');
+        }
+        setCoachingSubjectRows(latestRows);
         setCoachingSheetOpen(false);
         setCoachingSubmitted(true);
         alert('코칭 요청이 제출되었습니다.\n튜터 피드백이 도착하면 학습 코칭 페이지에서 확인할 수 있어요.');

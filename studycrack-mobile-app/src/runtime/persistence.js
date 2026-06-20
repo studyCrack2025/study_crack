@@ -304,6 +304,122 @@ export async function fetchMobileWeeklyReports({ apiFetch, reportApiUrl } = {}) 
   return normalizeWeeklyReports(data);
 }
 
+function generateMobileReportKey(dateObj = new Date()) {
+  const kstOffsetMs = 9 * 60 * 60 * 1000;
+  const baseDate = dateObj instanceof Date ? dateObj : new Date(dateObj);
+  const kstDate = new Date(baseDate.getTime() + kstOffsetMs);
+  const yearNum = kstDate.getUTCFullYear();
+  const monthIdx = kstDate.getUTCMonth();
+  const dayOfMonth = kstDate.getUTCDate();
+  const year = String(yearNum).slice(2);
+  const month = String(monthIdx + 1).padStart(2, '0');
+  const startOfMonth = new Date(Date.UTC(yearNum, monthIdx, 1));
+  const dayOfWeek = startOfMonth.getUTCDay();
+  const offsetDate = dayOfMonth + dayOfWeek - 1;
+  const weekNum = String(Math.floor(offsetDate / 7) + 1).padStart(2, '0');
+  return `${year}${month}${weekNum}`;
+}
+
+function shortText(value, max = 500) {
+  return String(value || '').trim().slice(0, max);
+}
+
+export function buildMobileWeeklyCheckPayload({
+  answers = {},
+  dropReasons = [],
+  examScores = {},
+  examType = '',
+  rows = [],
+  trend = '',
+  now = new Date()
+} = {}) {
+  const weekId = generateMobileReportKey(now);
+  const details = (rows || [])
+    .map((row) => ({
+      subject: `${row.subject || '기타'}${row.detail ? `(${row.detail})` : ''}`,
+      plan: Number(row.planned || 0),
+      act: Number(row.actual || 0)
+    }))
+    .filter((row) => row.subject && (row.plan > 0 || row.act > 0));
+  const totalPlan = details.reduce((sum, row) => sum + row.plan, 0);
+  const totalAct = details.reduce((sum, row) => sum + row.act, 0);
+  const totalRate = totalPlan > 0 ? Math.round((totalAct / totalPlan) * 100) : 0;
+  const deepAnswers = [
+    trend ? `최근 2주 학업 추이: ${trend}` : '',
+    dropReasons.length ? `하락 원인: ${dropReasons.join(', ')}` : '',
+    answers.step4Reason ? `추이 상세: ${answers.step4Reason}` : '',
+    answers.step5 ? `학습 계획 점검: ${answers.step5}` : '',
+    answers.step6 ? `학습 방향성: ${answers.step6}` : '',
+    answers.step7 ? `튜터 질문: ${answers.step7}` : '',
+    answers.step8 ? `멘탈/기타: ${answers.step8}` : ''
+  ].filter(Boolean);
+  const mockExam = examType && examType !== '미응시'
+    ? {
+      type: examType,
+      scores: {
+        koreanType: shortText(examScores.koreanType, 50),
+        koreanRaw: shortText(examScores.koreanRaw, 10),
+        mathType: shortText(examScores.mathType, 50),
+        mathRaw: shortText(examScores.mathRaw, 10),
+        englishGrade: shortText(examScores.englishGrade, 10),
+        inq1Name: shortText(examScores.inq1Name, 50),
+        inq1Raw: shortText(examScores.inq1Raw, 10),
+        inq2Name: shortText(examScores.inq2Name, 50),
+        inq2Raw: shortText(examScores.inq2Raw, 10)
+      }
+    }
+    : { type: 'none', scores: {} };
+
+  return {
+    weekId,
+    date: now.toISOString(),
+    title: `20${weekId.slice(0, 2)}년 ${Number(weekId.slice(2, 4))}월 ${Number(weekId.slice(4, 6))}주차 학습점검`,
+    formVersion: 1,
+    studyTime: {
+      details,
+      totalPlan: `${Number(totalPlan.toFixed(1))}H`,
+      totalAct: `${Number(totalAct.toFixed(1))}H`,
+      totalRate: `${totalRate}%`
+    },
+    mockExam,
+    trend: {
+      value: trend || '',
+      dropReasons,
+      reason: shortText(answers.step4Reason, 200)
+    },
+    deepAnswers,
+    plannerFiles: []
+  };
+}
+
+export async function saveMobileWeeklyCheck({ apiFetch, reportApiUrl, payload } = {}) {
+  if (typeof apiFetch !== 'function' || !reportApiUrl) return { ok: false, error: '주간 점검 저장 경로를 찾지 못했습니다.' };
+  if (!payload?.title) return { ok: false, error: '주간 점검 데이터가 올바르지 않습니다.' };
+  try {
+    const response = await apiFetch(reportApiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'save_weekly_check', data: payload })
+    });
+    const body = await response?.json?.().catch(() => null);
+    if (!response?.ok) return { ok: false, error: body?.error || body?.message || '주간 점검 저장에 실패했습니다.' };
+    return {
+      ok: true,
+      report: {
+        weekId: payload.weekId,
+        title: payload.title,
+        date: payload.date,
+        updatedAt: new Date().toISOString(),
+        studyTime: payload.studyTime,
+        mockExam: payload.mockExam,
+        trend: payload.trend,
+        deepAnswers: payload.deepAnswers
+      }
+    };
+  } catch (_error) {
+    return { ok: false, error: '네트워크 오류로 주간 점검을 저장하지 못했습니다.' };
+  }
+}
+
 export function normalizeQnaHistory(payload) {
   const list = Array.isArray(payload?.qnaHistory) ? payload.qnaHistory : (Array.isArray(payload) ? payload : []);
   return list

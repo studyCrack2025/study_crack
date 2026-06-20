@@ -181,6 +181,7 @@ export function createInitialAppState() {
     qnaDraftTitle: '',
     qnaDraftContent: '',
     qnaSubmitting: false,
+    coachingSubmitting: false,
     coachingSubmitted: false,
     coachingSheetOpen: false,
     coachingStep: 1,

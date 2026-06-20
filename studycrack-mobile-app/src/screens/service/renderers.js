@@ -23,19 +23,99 @@ function safeExternalUrl(value) {
 function renderCoachingSheet(ctx) {
   const {
     coachingSheetOpen = false,
+    coachingSubmitting = false,
     coachingStep = 1,
-    coachingStepBody = () => ''
   } = ctx;
 
   if (!coachingSheetOpen) return '';
 
+  const submitLabel = coachingSubmitting ? '제출 중' : '작성 완료 및 제출';
   return `<div class="coach-sheet-overlay" data-action="closeCoachingSheet">
           <section class="coach-sheet" data-action="noopModal">
-            <div class="coach-sheet-head"><div><h3>26년 4월 4주차 학습점검</h3><p>${coachingStep} / 8 단계</p></div><button class="coach-close" data-action="closeCoachingSheet">✕</button></div>
-            <div class="coach-sheet-body">${coachingStepBody()}</div>
-            <div class="coach-sheet-footer"><button class="btn btn-secondary" data-action="coachingPrev" ${coachingStep === 1 ? 'disabled' : ''}>이전</button><button class="btn btn-primary" data-action="coachingNext">${coachingStep === 8 ? '작성 완료 및 제출' : '다음 단계'}</button></div>
+            <div class="coach-sheet-head"><div><h3>이번 주 학습점검</h3><p>${coachingStep} / 8 단계</p></div><button class="coach-close" data-action="closeCoachingSheet">✕</button></div>
+            <div class="coach-sheet-body">${renderCoachingStepBody(ctx)}</div>
+            <div class="coach-sheet-footer"><button class="btn btn-secondary" data-action="coachingPrev" ${coachingStep === 1 || coachingSubmitting ? 'disabled' : ''}>이전</button><button class="btn btn-primary" data-action="coachingNext" ${coachingSubmitting ? 'disabled' : ''}>${coachingStep === 8 ? submitLabel : '다음 단계'}</button></div>
           </section>
         </div>`;
+}
+
+function renderCoachingStepBody(ctx) {
+  const {
+    coachingAnswers = {},
+    coachingDropReasons = [],
+    coachingExamFiles = [],
+    coachingExamScores = {},
+    coachingExamType = '',
+    coachingPlannerFiles = [],
+    coachingStep = 1,
+    coachingSubjectRows = [],
+    coachingTrend = ''
+  } = ctx;
+
+  if (coachingStep === 1) {
+    return `<div class="coach-step-body"><h4>1. 과목별 학습 달성률 <span style="color:#ef4444">*</span></h4><p class="sub">과목별 구체적인 과목명과 시간을 입력하세요.</p>
+        <div class="coach-subject-list">
+          ${coachingSubjectRows.map((row) => {
+            const planned = Number(row.planned) || 0;
+            const actual = Number(row.actual) || 0;
+            const rate = planned > 0 ? Math.min(999, Math.round((actual / planned) * 100)) : 0;
+            return `<div class="coach-subject-card">
+              <div class="coach-subject-head"><b>${escapeHtml(row.subject || '기타')}</b>${row.removable ? `<button class="coach-delete-btn" data-action="removeCoachingSubject" data-coach-row="${escapeHtml(row.id)}">삭제</button>` : ''}</div>
+              <input class="planner-input" data-coach-detail="${escapeHtml(row.id)}" value="${escapeHtml(row.detail || '')}" placeholder="${escapeHtml(row.placeholder || '세부과목 입력')}" />
+              <div class="coach-hours-row">
+                <input class="planner-input" data-coach-plan="${escapeHtml(row.id)}" value="${escapeHtml(row.planned || '')}" type="number" placeholder="계획(H)" />
+                <input class="planner-input" data-coach-actual="${escapeHtml(row.id)}" value="${escapeHtml(row.actual || '')}" type="number" placeholder="실제(H)" />
+                <div class="coach-rate-box" data-coach-rate="${escapeHtml(row.id)}">달성률 ${rate}%</div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+        <button class="btn btn-secondary" data-action="addCoachingSubject">+ 새로운 과목 추가</button>
+      </div>`;
+  }
+
+  if (coachingStep === 2) {
+    return `<div class="coach-step-body"><h4>2. 플래너 인증</h4><p class="sub">사진 첨부는 선택 사항입니다. 첨부 파일 저장은 추후 웹 업로드 플로우와 연결됩니다.</p>
+        <div class="coach-upload-box"><p>파일/사진 첨부 박스</p><input type="file" class="coach-hidden-file" data-field="coachPlannerFiles" accept="image/*" multiple /><button class="btn btn-secondary" data-action="openPlannerFilePicker">사진 추가하기</button></div>
+        <div class="coach-thumb-list">${coachingPlannerFiles.length ? `<p class="sub">사진 ${coachingPlannerFiles.length}장 선택됨</p>${coachingPlannerFiles.map((file, idx) => `<div class="coach-thumb"><span>${escapeHtml(file.name || `사진 ${idx + 1}`)}</span><button data-action="removePlannerPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}` : '<p class="sub">선택된 사진이 없습니다.</p>'}</div>
+      </div>`;
+  }
+
+  if (coachingStep === 3) {
+    const examTypes = ['미응시', '교내', '평가원/교육청', '사설'];
+    return `<div class="coach-step-body"><h4>3. 모의고사 응시 여부 <span style="color:#ef4444">*</span></h4><p class="sub">이번 주 사설 모의고사 또는 학력평가를 응시했나요?</p>
+        <div class="coach-choice-row">${examTypes.map((type) => `<button class="planner-pill ${coachingExamType === type ? 'active' : ''}" data-action="setCoachingExamType" data-coach-exam="${type}">${type}</button>`).join('')}</div>
+        ${coachingExamType && coachingExamType !== '미응시' ? `<div class="coach-exam-form">
+          <input type="file" class="coach-hidden-file" data-field="coachExamFiles" accept="image/*" multiple /><button class="btn btn-secondary" data-action="openExamFilePicker">성적 인증 사진 첨부</button>
+          <div class="coach-thumb-list">${coachingExamFiles.length ? `<p class="sub">사진 ${coachingExamFiles.length}장 선택됨</p>${coachingExamFiles.map((file, idx) => `<div class="coach-thumb"><span>${escapeHtml(file.name || `사진 ${idx + 1}`)}</span><button data-action="removeExamPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}` : '<p class="sub">선택된 사진이 없습니다.</p>'}</div>
+          <div class="coach-exam-subject-list">
+            <section class="coach-exam-subject-card"><h5>국어</h5><input class="planner-input" data-coach-field="koreanType" value="${escapeHtml(coachingExamScores.koreanType || '')}" placeholder="선택과목" /><input class="planner-input" data-coach-field="koreanRaw" value="${escapeHtml(coachingExamScores.koreanRaw || '')}" placeholder="원점수" /></section>
+            <section class="coach-exam-subject-card"><h5>수학</h5><input class="planner-input" data-coach-field="mathType" value="${escapeHtml(coachingExamScores.mathType || '')}" placeholder="선택과목" /><input class="planner-input" data-coach-field="mathRaw" value="${escapeHtml(coachingExamScores.mathRaw || '')}" placeholder="원점수" /></section>
+            <section class="coach-exam-subject-card"><h5>영어</h5><input class="planner-input" data-coach-field="englishGrade" value="${escapeHtml(coachingExamScores.englishGrade || '')}" placeholder="등급" /></section>
+            <section class="coach-exam-subject-card"><h5>탐구1</h5><input class="planner-input" data-coach-field="inq1Name" value="${escapeHtml(coachingExamScores.inq1Name || '')}" placeholder="과목명" /><input class="planner-input" data-coach-field="inq1Raw" value="${escapeHtml(coachingExamScores.inq1Raw || '')}" placeholder="원점수" /></section>
+            <section class="coach-exam-subject-card"><h5>탐구2</h5><input class="planner-input" data-coach-field="inq2Name" value="${escapeHtml(coachingExamScores.inq2Name || '')}" placeholder="과목명" /><input class="planner-input" data-coach-field="inq2Raw" value="${escapeHtml(coachingExamScores.inq2Raw || '')}" placeholder="원점수" /></section>
+          </div>
+        </div>` : ''}
+      </div>`;
+  }
+
+  if (coachingStep === 4) {
+    const reasons = ['계획 과다', '실전 감각 저하', '컨디션/건강', '기타'];
+    return `<div class="coach-step-body"><h4>4. 최근 2주 학업 추이 <span style="color:#ef4444">*</span></h4><p class="sub">최근 2주간 학습 흐름이 어땠나요?</p>
+        <div class="coach-choice-row">${['상승', '유지', '하락'].map((v) => `<button class="planner-pill ${coachingTrend === v ? 'active' : ''}" data-action="setCoachingTrend" data-coach-trend="${v}">${v}</button>`).join('')}</div>
+        ${coachingTrend === '하락' ? `<div class="coach-drop-box"><p class="sub">하락 원인 (중복 선택 가능)</p><div class="coach-choice-row">${reasons.map((reason) => `<button class="planner-pill ${coachingDropReasons.includes(reason) ? 'active' : ''}" data-action="toggleDropReason" data-drop-reason="${reason}">${reason}</button>`).join('')}</div><textarea class="planner-input coach-textarea" data-coach-answer="step4Reason" maxlength="200" placeholder="구체적인 이유를 간단히 적어주세요.">${escapeHtml(coachingAnswers.step4Reason || '')}</textarea><p class="coach-count" data-coach-count="step4Reason">${(coachingAnswers.step4Reason || '').length}/200</p></div>` : ''}
+      </div>`;
+  }
+
+  const stepMap = {
+    5: ['5. 학습 계획 점검', '현재 세우고 있는 계획의 문제점이나 확신이 없는 부분을 적어주세요.', 'step5', '예: 하루 14시간 계획을 세우는데 자꾸 밀립니다. 현실적인 수정이 필요합니다.'],
+    6: ['6. 학습 방향성 설정', '현재 공부하고 있는 방향이 맞는지, 입시 전략과 일치하는지 고민을 적어주세요.', 'step6', '예: 정시 파이터인데 내신 기간에 수능 공부 밸런스를 어떻게 잡아야 할까요?'],
+    7: ['7. 튜터에게 묻고 싶은 질문', '이번 주 피드백에서 꼭 답변받고 싶은 질문을 적어주세요.', 'step7', '예: 수학은 기출을 반복하는 게 나을까요, N제를 늘리는 게 나을까요?'],
+    8: ['8. 기타 멘탈 관리', '슬럼프, 불안감 등 학습 외적인 고민이 있다면 자유롭게 적어주세요.', 'step8', '자유롭게 작성해주세요.']
+  };
+  const [title, desc, key, placeholder] = stepMap[coachingStep] || stepMap[8];
+  const value = coachingAnswers[key] || '';
+  return `<div class="coach-step-body"><h4>${title}</h4><p class="sub">${desc}</p><textarea class="planner-input coach-textarea" data-coach-answer="${key}" maxlength="200" placeholder="${placeholder}">${escapeHtml(value)}</textarea><p class="coach-count" data-coach-count="${key}">${value.length}/200</p></div>`;
 }
 
 function formatReportKeyLabel(key = '') {

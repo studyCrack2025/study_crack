@@ -15,7 +15,7 @@ import { renderScoreEditModal } from '../screens/profile/renderers.js';
 import { createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
-import { createBlankScoreState, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey } from './persistence.js';
+import { createBlankScoreState, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
@@ -82,6 +82,52 @@ function uniqueTargetList(list = []) {
 function notifySaveFailure(result, message) {
   if (!result || result.ok !== false) return;
   globalThis.alert?.(result.error || message);
+}
+
+function buildDefaultCoachingSubjects(derived = {}) {
+  const {
+    todayPlannerItems = [],
+    todayStudySeconds = 0,
+    todaySubjectsWithTimer = {}
+  } = derived;
+  const rows = todayPlannerItems.map((item, idx) => {
+    const subject = item.subject || '기타';
+    const plannedHour = (Number(item.minutes || 0) / 60);
+    const actualHour = (Number(todaySubjectsWithTimer[subject] || 0) / 3600);
+    return {
+      id: `plan-${idx}-${subject}`,
+      sourceId: item.id || `plan-${idx}`,
+      subject,
+      detail: item.content || '',
+      planned: plannedHour ? plannedHour.toFixed(1) : '',
+      actual: actualHour ? actualHour.toFixed(1) : '',
+      removable: true,
+      placeholder: '세부과목 입력'
+    };
+  });
+  if (rows.length) return rows;
+  return ['국어', '수학', '영어', '탐구', '기타'].map((subject) => {
+    const actualHour = (Number(todaySubjectsWithTimer[subject] || 0) || Number(todayStudySeconds || 0)) / 3600;
+    const placeholder = subject === '국어'
+      ? '세부과목 (예: 언매)'
+      : subject === '수학'
+        ? '세부과목 (예: 미적)'
+        : subject === '영어'
+          ? '세부과목 (예: 독해)'
+          : subject === '탐구'
+            ? '세부과목 (예: 생1)'
+            : '세부과목 입력';
+    return {
+      id: `${subject}-base`,
+      sourceId: `${subject}-base`,
+      subject,
+      detail: '',
+      planned: '',
+      actual: actualHour ? actualHour.toFixed(1) : '',
+      removable: subject === '기타',
+      placeholder
+    };
+  });
 }
 
 const PLAN_RANK = { free: 0, trial: 0, basic: 1, starter: 1, standard: 2, pro: 3 };
@@ -250,6 +296,11 @@ function MobileApp() {
     [getReportApiBinding]
   );
 
+  const persistWeeklyCheck = useCallback(
+    (payload) => saveMobileWeeklyCheck({ ...getReportApiBinding(), payload }),
+    [getReportApiBinding]
+  );
+
   // 플래너 진입/날짜 변경 시 날짜 스트립을 선택 날짜로 가로 센터링.
   // planner가 JSX(React 트리)라 스트립 노드가 재렌더 간 유지되므로 센터링이 정착한다.
   // useLayoutEffect에서 동기 실행: commit 직후 layout이 준비되고 paint 전이라 깜빡임이 없으며,
@@ -358,6 +409,12 @@ function MobileApp() {
     persistQualitative,
     persistMobileQna,
     persistProReportRequest,
+    persistWeeklyCheck,
+    ensureCoachingSubjectRows: () => {
+      const current = stateRef.current;
+      if ((current.coachingSubjectRows || []).length) return;
+      setState({ coachingSubjectRows: buildDefaultCoachingSubjects(derivedCtx) });
+    },
     addMajorToTargets: (major) => {
       if (!major) return false;
       const current = stateRef.current;
