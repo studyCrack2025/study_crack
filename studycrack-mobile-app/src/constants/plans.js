@@ -10,6 +10,17 @@ export const PLAN_META = {
     features: ['목표대학 최대 18개 설정', '합격 컷 대비 거리 분석', '목표 대학별 효자 과목 발굴', '과목별 1점당 환산 효율 계산', '점수 상승 시뮬레이션'],
     complete: '합격 가능성 분석과 대학별 전략을 확인할 수 있어요.'
   },
+  Starter: {
+    introPrice: '39,000원 / 1회',
+    payPrice: '39,000원',
+    originalPrice: '',
+    weeklyPrice: '39,000원',
+    billingNote: '1회 플래너 진단',
+    theme: 'blue',
+    desc: 'SKY 튜터 1주 플래너 진단',
+    features: ['Basic 기능 모두 포함', 'SKY 튜터 1회 플래너 피드백', '과목별 시간 배분 점검', '목표 대학 기준 우선순위 제안', '다음 1주 플래너 제시'],
+    complete: '한 번의 플래너 피드백으로 현재 학습 방향을 점검할 수 있어요.'
+  },
   Standard: {
     introPrice: '49,000원 / 4주',
     payPrice: '49,000원 / 4주',

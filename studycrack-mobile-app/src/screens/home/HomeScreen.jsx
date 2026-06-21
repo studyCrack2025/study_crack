@@ -1,4 +1,5 @@
 import { CRACKY_SRC } from '../../constants/assets.js';
+import { EXAM_OPTIONS } from '../../constants/options.js';
 import {
   defaultFormatHms,
   defaultFormatMinutesLabel,
@@ -81,6 +82,7 @@ export function HomeScreen(ctx) {
     formatHms = defaultFormatHms,
     formatMinutesLabel = defaultFormatMinutesLabel,
     scoreTierClass = defaultScoreTierClass,
+    scoreExamType = '',
     homeDragOffset = 0,
     homeSlideIndex = 0,
     homeSlideMotion = '',
@@ -141,6 +143,19 @@ export function HomeScreen(ctx) {
               </div>
 
               <div className="section home-section">
+                <div className="home-analysis-criteria">
+                  <div>
+                    <b>지원학과 AI 점수</b>
+                    <span>{scoreExamType || '선택 시험'} 기준</span>
+                  </div>
+                  <select className="planner-input" data-field="scoreExamType" defaultValue={scoreExamType}>
+                    {EXAM_OPTIONS.map((label) => (
+                      <option value={label} key={label}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div className="home-kpi-slider">
                   <div className={`home-kpi-track anchor-volatile ${homeSlideMotion}`} style={trackStyle}>
                     {homeTargets.map((item) => (
@@ -165,7 +180,7 @@ export function HomeScreen(ctx) {
                     />
                   ))}
                 </div>
-                <button className="pro-top-btn home-pro-below-card-btn" data-action="goto" data-target={canAccessPro ? 'proElite' : 'proIntro'}>
+                <button className="pro-top-btn home-pro-below-card-btn" data-action="goto" data-target="proElite">
                   <span>{canAccessPro ? 'PRO LOUNGE 입장' : '플랜 업그레이드'}</span>
                 </button>
                 <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: universityModalHtml }} />
@@ -207,7 +222,7 @@ export function HomeScreen(ctx) {
                 <button
                   className="card study-goal-card home-goal-linked-card home-insight-card premium-panel"
                   data-action="goto"
-                  data-target={canAccessStandard ? 'planner' : 'proIntro'}
+                  data-target="planner"
                 >
                   <p className="analysis-title">{canAccessStandard ? '오늘 공부 목표' : '플래너는 Standard 이상 전용'}</p>
                   {canAccessStandard && todayPlannerItems.length ? (
