@@ -352,11 +352,15 @@ function MobileApp() {
   const beforeGoto = useCallback(({ target } = {}) => {
     const required = SCREEN_REQUIREMENTS[target];
     if (!required || canAccessTier(stateRef.current, required)) return true;
+    const label = LOCKED_SCREEN_LABELS[target] || '선택한 기능';
     setState({
       upgradePromptTier: required,
-      upgradePromptTarget: LOCKED_SCREEN_LABELS[target] || '선택한 기능'
+      upgradePromptTarget: label,
+      lockedFeatureTarget: target,
+      lockedFeatureTier: required,
+      lockedFeatureLabel: label
     });
-    nav.goto('proIntro');
+    nav.goto('lockedFeature');
     return false;
   }, [nav]);
 
