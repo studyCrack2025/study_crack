@@ -201,12 +201,45 @@ function renderQnaComposerModal(ctx) {
   return renderModal({ panelClass: 'qna-modal', dismissAction: 'closeQnaComposer', body });
 }
 
-function renderPlanCard({ meta, plan, selectedPlan, variant }) {
+function planDisplayName(plan = '') {
+  return plan === 'Pro' ? 'PRO' : String(plan || '').toUpperCase();
+}
+
+function renderPlanCard({ meta, plan, selectedPlan }) {
   const active = selectedPlan === plan;
-  const badge = plan === 'Standard' ? '<span class="badge">추천</span>' : plan === 'Pro' ? '<span class="badge">최고 효율</span>' : '';
+  const badge = plan === 'Standard' ? '<span class="badge">추천</span>' : plan === 'Pro' ? '<span class="badge">프리미엄</span>' : '<span class="badge muted">입문</span>';
   const features = meta.features;
 
-  return `<button class="plan-card ${plan.toLowerCase()} ${active ? 'active' : ''}" data-action="selectPlan" data-plan="${plan}"><div class="plan-head"><h4>${plan}</h4>${badge}</div><p class="plan-price">${meta.introPrice}</p><ul>${features.map((item) => `<li>${item}</li>`).join('')}</ul></button>`;
+  return `<button class="plan-card mobile-plan-card ${plan.toLowerCase()} ${active ? 'active' : ''}" data-action="selectPlan" data-plan="${plan}"><div class="plan-head"><div><span class="plan-kicker">${escapeHtml(meta.desc)}</span><h4>${planDisplayName(plan)}</h4></div>${badge}</div><div class="plan-price-row"><span class="original">${escapeHtml(meta.originalPrice || '')}</span><b>${escapeHtml(meta.weeklyPrice || meta.introPrice)}</b><em>${escapeHtml(meta.billingNote || meta.payPrice)}</em></div><ul>${features.slice(0, 5).map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></button>`;
+}
+
+function requiredTierLabel(tier = '') {
+  return String(tier).toLowerCase() === 'pro' ? 'PRO' : 'STANDARD';
+}
+
+function renderLockedFeaturePreview(target = '') {
+  if (['planner', 'plannerAdd'].includes(target)) {
+    return `<div class="locked-preview planner-preview"><div class="planner-head preview-head"><h3>2024년 5월 14일</h3><span class="preview-icon">일정</span></div><div class="planner-section-title"><div><h4>오늘의 합격 플래너</h4><p>총 6시간 30분</p></div><div class="planner-donut-wrap"><div class="planner-donut" style="--donut:conic-gradient(#2563EB 0 46%,#10B981 46% 72%,#F59E0B 72% 100%)"></div></div></div><div class="planner-plan-list preview-list"><div class="planner-item"><i class="dot blue"></i><div class="planner-item-main"><b>수학</b><p>약점 단원 3문항 재풀이</p></div><strong>90분</strong></div><div class="planner-item"><i class="dot green"></i><div class="planner-item-main"><b>국어</b><p>비문학 지문 분석 루틴</p></div><strong>70분</strong></div></div></div>`;
+  }
+  if (['report', 'reportDetail', 'proElite', 'tutor'].includes(target)) {
+    return `<div class="locked-preview pro-preview"><div class="pro-elite-hero"><span class="pro-elite-badge">PRO EXCLUSIVE</span><h3>상위권 전략 리포트</h3><p>2주 단위로 목표 대학 도달 전략을 정리합니다.</p></div><div class="pro-elite-list"><div class="pro-elite-item"><div><b>6월 2주차 PRO 리포트</b><p>정밀 역추적 · 지원 전략 · 학부모 공유 요약</p></div><span class="pro-elite-download">PDF</span></div><div class="qna-card"><div class="qna-card-head"><div><b>SKY튜터 1:1 피드백</b><span>답변 대기</span></div><em>PRO</em></div><p class="qna-question">주간 학습 흐름과 질문을 남기면 튜터 답변이 연결됩니다.</p></div></div></div>`;
+  }
+  return `<div class="locked-preview coach-preview"><div class="card coach-title-card"><div class="top-card-head"><div><h3>학습 코칭</h3><p>주간 학습 계획을 점검하고 튜터 피드백을 받아보세요.</p></div><span class="top-infographic top-infographic-coach" aria-hidden="true"><i></i><i></i><i></i></span></div></div><div class="card coach-status-card"><div class="coach-row"><h4>이번 주 학습 점검</h4><span class="badge">대기</span></div><p>학습 달성률, 컨디션, 질문을 바탕으로 다음 주 플래너가 정리됩니다.</p><button class="btn btn-primary" type="button">코칭 요청하기</button></div><div class="card coach-feedback-card"><div class="coach-row"><h4>주간학습 피드백</h4><span class="badge">Standard</span></div><div class="coach-report-list"><div class="coach-report-card"><div><b>튜터 피드백 예시</b><p>과목별 시간 배분과 우선순위 조정</p></div><span class="coach-report-arrow">›</span></div></div></div></div>`;
+}
+
+export function renderLockedFeatureScreen(ctx) {
+  const {
+    appbar,
+    layout,
+    lockedFeatureLabel = '',
+    lockedFeatureTarget = '',
+    lockedFeatureTier = '',
+    upgradePromptTarget = '',
+    upgradePromptTier = ''
+  } = ctx;
+  const label = lockedFeatureLabel || upgradePromptTarget || '선택한 기능';
+  const tier = requiredTierLabel(lockedFeatureTier || upgradePromptTier || 'standard');
+  return layout(appbar(label, true) + `<div class="locked-feature-page"><div class="locked-feature-preview-wrap">${renderLockedFeaturePreview(lockedFeatureTarget)}<div class="locked-feature-fade" aria-hidden="true"></div><section class="locked-feature-panel"><span class="badge">잠긴 기능</span><h3>${escapeHtml(label)}은 ${tier} 플랜 전용이에요</h3><p>실제 화면은 플랜 업그레이드 후 바로 이어서 사용할 수 있도록 유지해두었어요.</p><div class="locked-feature-actions"><button class="btn btn-primary" data-action="goto" data-target="proIntro">${tier} 플랜 확인하기</button><button class="btn btn-secondary" data-action="back">돌아가기</button></div></section></div></div>`, false);
 }
 
 export function renderStrategyScreen(ctx) {
@@ -370,11 +403,11 @@ export function renderProIntroScreen(ctx) {
     ? `<div class="card locked-upgrade-card"><span class="badge">잠긴 기능</span><h3>${escapeHtml(upgradePromptTarget || '선택한 기능')}은 ${requiredPlan} 이상에서 이용할 수 있어요.</h3><p>요금제를 업그레이드하면 하단 탭은 그대로 유지하면서 해당 기능이 바로 열립니다.</p></div>`
     : '';
 
-  return layout(appbar('StudyCrack 요금제', true) + `${upgradeNotice}<p class="sub pricing-sub">합격 전략, 단계별로 선택하세요</p>
+  return layout(appbar('StudyCrack 요금제', true) + `${upgradeNotice}<section class="mobile-plan-hero"><span class="plan-hero-kicker">SERVICE PLAN</span><h3>필요한 만큼 시작하고,<br/>관리 강도는 플랜으로 선택하세요.</h3><p>웹 결제 페이지의 상품 구성과 동일하게 4주 단건 결제 기준으로 안내합니다.</p></section><div class="mobile-plan-guide"><span>분석</span><i></i><span>플래너</span><i></i><span>리포트</span></div><p class="sub pricing-sub">합격 전략, 단계별로 선택하세요</p>
       <div class="plan-stack">
-        ${renderPlanCard({ meta: planMeta.Basic, plan: 'Basic', selectedPlan: checkoutPlan, variant: 'intro' })}
-        ${renderPlanCard({ meta: planMeta.Standard, plan: 'Standard', selectedPlan: checkoutPlan, variant: 'intro' })}
-        ${renderPlanCard({ meta: planMeta.Pro, plan: 'Pro', selectedPlan: checkoutPlan, variant: 'intro' })}
+        ${renderPlanCard({ meta: planMeta.Basic, plan: 'Basic', selectedPlan: checkoutPlan })}
+        ${renderPlanCard({ meta: planMeta.Standard, plan: 'Standard', selectedPlan: checkoutPlan })}
+        ${renderPlanCard({ meta: planMeta.Pro, plan: 'Pro', selectedPlan: checkoutPlan })}
       </div>
       <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="payment">결제하기</button></div>`, false);
 }
@@ -390,18 +423,18 @@ export function renderPaymentScreen(ctx) {
   } = ctx;
   const activePlan = currentPlan || planMeta[checkoutPlan] || planMeta.Standard;
 
-  return layout(appbar('플랜 선택', true) + `<div class="payment-tabs full">
+  return layout(appbar('플랜 선택', true) + `<section class="mobile-payment-hero"><span class="plan-hero-kicker">CHECKOUT</span><h3>${planDisplayName(checkoutPlan)} 플랜</h3><p>${escapeHtml(activePlan.desc)}</p></section><div class="payment-tabs full">
       <button class="${checkoutPlan === 'Basic' ? 'active' : ''}" data-action="selectPlan" data-plan="Basic">Basic</button>
       <button class="${checkoutPlan === 'Standard' ? 'active' : ''}" data-action="selectPlan" data-plan="Standard">Standard</button>
       <button class="${checkoutPlan === 'Pro' ? 'active' : ''}" data-action="selectPlan" data-plan="Pro">Pro</button>
     </div>
-      <div class="card payment-focus-card"><div class="payment-focus-head"><div><h3>${checkoutPlan}</h3><p>${activePlan.payPrice}</p></div></div><p class="payment-desc">${activePlan.desc}</p><ul class="payment-check-list">${activePlan.features.map((item) => `<li>${item}</li>`).join('')}</ul></div>
+      <div class="card payment-focus-card mobile-payment-card"><div class="payment-focus-head"><div><span class="plan-kicker">${escapeHtml(activePlan.billingNote || '4주 단건 결제')}</span><h3>${planDisplayName(checkoutPlan)}</h3><p>${escapeHtml(activePlan.weeklyPrice || activePlan.payPrice)}</p></div><span class="payment-save-badge">특별 할인가</span></div><div class="payment-total-row"><span>${escapeHtml(activePlan.originalPrice || '')}</span><b>${escapeHtml(activePlan.payPrice)}</b></div><p class="payment-desc">${escapeHtml(activePlan.desc)}</p><ul class="payment-check-list">${activePlan.features.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div>
       <div class="duration-row payment-duration-row">
         <button class="${duration === '4주' ? 'active' : ''}" data-action="selectDuration" data-duration="4주">4주</button>
         <button class="${duration === '8주' ? 'active' : ''}" data-action="selectDuration" data-duration="8주">8주</button>
         <button class="${duration === '12주' ? 'active' : ''}" data-action="selectDuration" data-duration="12주">12주</button>
       </div>
-      <div class="card payment-focus-card"><p class="sub" style="margin:0">결제는 기존 웹 결제 페이지에서 전화번호 확인, 할인/결제 정보 입력, NICEPAY 인증을 거쳐 진행됩니다.</p></div>
+      <div class="card payment-safe-card"><b>안전 결제 안내</b><p>전화번호 확인과 NICEPAY 인증은 기존 웹 결제 페이지에서 그대로 진행됩니다.</p></div>
       <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="openWebPayment">웹 결제 페이지로 이동</button></div>`, false);
 }
 

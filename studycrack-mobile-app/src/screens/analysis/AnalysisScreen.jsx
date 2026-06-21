@@ -41,6 +41,21 @@ export function AnalysisScreen(ctx) {
               </div>
             </div>
 
+            {isAnalyzing && (
+              <div className="analysis-loading-panel" role="status" aria-live="polite">
+                <div className="analysis-loading-orbit">
+                  <i />
+                  <i />
+                  <i />
+                </div>
+                <div>
+                  <span>AI 분석 진행 중</span>
+                  <b>목표 대학 기준으로 합격 가능성을 계산하고 있어요</b>
+                  <p>성적, 목표 대학, 과목별 효율을 순서대로 확인합니다.</p>
+                </div>
+              </div>
+            )}
+
             <div className="analysis-v2-tabs">
               <button
                 className={`analysis-v2-tab ${effectiveMode === 'summary' ? 'active' : ''}`}

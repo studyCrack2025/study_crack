@@ -2,7 +2,7 @@ import { renderGradeButtons } from '../../components/grade-buttons.js';
 import { renderMbtiModal } from '../../components/mbti-modal.js';
 import { scoreTierClass as defaultScoreTierClass } from '../../components/score-journey.js';
 import { EXAM_OPTIONS } from '../../constants/options.js';
-import { CRACKY_SRC, ONBOARDING_LOGO_SRC } from '../../constants/assets.js';
+import { CRACKY_SRC } from '../../constants/assets.js';
 
 const ENGLISH_HISTORY_GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const SOCIAL_INQUIRY_SUBJECTS = ['생활과 윤리', '윤리와 사상', '한국지리', '세계지리', '동아시아사', '세계사', '경제', '정치와 법', '사회·문화'];
@@ -31,8 +31,8 @@ function renderBubble(text, crackySrc = CRACKY_SRC) {
 }
 
 export function renderSplashScreen(ctx) {
-  const { icon, onboardingLogoSrc = ONBOARDING_LOGO_SRC } = ctx;
-  return `<div class="app-shell"><div class="app-frame"><div class="splash"><div class="logo-bolt">${icon('bolt', true)}</div><img class="brand-logo" src="${onboardingLogoSrc}" alt="logo"/><h1 style="margin:0;font-size:30px">스터디크랙</h1><p>합격까지 가장 빠른 전략</p></div></div></div>`;
+  const { icon } = ctx;
+  return `<div class="app-shell"><div class="app-frame"><div class="splash splash-v2"><div class="splash-brand-mark"><span class="splash-bolt">${icon('bolt', true)}</span><span class="splash-card"><i></i><i></i><i></i></span></div><h1>스터디크랙</h1><p>합격까지 가장 빠른 전략</p><div class="splash-progress" aria-hidden="true"><i></i></div></div></div></div>`;
 }
 
 export function renderOn1Screen() {
