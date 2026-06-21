@@ -240,7 +240,7 @@ export function renderLockedFeatureScreen(ctx) {
   } = ctx;
   const label = lockedFeatureLabel || upgradePromptTarget || '선택한 기능';
   const tier = requiredTierLabel(lockedFeatureTier || upgradePromptTier || 'standard');
-  return layout(appbar(label, true) + `<div class="locked-feature-page"><div class="locked-feature-preview-wrap">${renderLockedFeaturePreview(lockedFeatureTarget)}<div class="locked-feature-fade" aria-hidden="true"></div><section class="locked-feature-panel"><span class="badge">잠긴 기능</span><h3>${escapeHtml(label)}은 ${tier} 플랜에서 열려요</h3><p>아래 화면처럼 플래너와 피드백이 연결되며, 업그레이드 후 바로 이어서 사용할 수 있어요.</p><div class="locked-feature-actions"><button class="btn btn-primary" data-action="goto" data-target="proIntro">${tier} 플랜 보기</button><button class="btn btn-secondary" data-action="back">돌아가기</button></div></section></div></div>`, false);
+  return layout(appbar(label, true) + `<div class="locked-feature-page"><div class="locked-feature-preview-wrap">${renderLockedFeaturePreview(lockedFeatureTarget)}<div class="locked-feature-fade" aria-hidden="true"></div><section class="locked-feature-panel"><span class="badge">잠긴 기능</span><h3>${escapeHtml(label)}은 ${tier} 플랜에서 열려요</h3><p>아래 화면처럼 플래너와 피드백이 연결되며, 업그레이드 후 바로 이어서 사용할 수 있어요.</p><div class="locked-feature-actions"><button class="btn btn-primary" data-action="goto" data-target="proIntro">${tier} 플랜 보기</button><button class="btn btn-secondary" data-action="back">돌아가기</button></div></section></div></div>`, true);
 }
 
 export function renderStrategyScreen(ctx) {

@@ -146,7 +146,6 @@ export function HomeScreen(ctx) {
                 <div className="home-analysis-criteria">
                   <div>
                     <b>지원학과 AI 점수</b>
-                    <span>{scoreExamType || '선택 시험'} 기준</span>
                   </div>
                   <select className="planner-input" data-field="scoreExamType" defaultValue={scoreExamType}>
                     {EXAM_OPTIONS.map((label) => (
