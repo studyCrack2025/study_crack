@@ -42,10 +42,11 @@ export function defaultFormatMinutesLabel(minutes) {
 }
 
 function renderUniversityCard({ item, plannerBadges, scoreTierClass }) {
+  const scorePct = Math.min((item.score / 250) * 100, 100);
   return `<button class="university-card-slide card home-kpi-card admission-card slider-card home-result-card-v3" data-action="selectUniversity" data-target-major="${item.major}">
           <span class="home-univ-remove" data-action="removeAnalysisTarget" data-target-major="${item.major}">✕</span>
           <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score"><strong>${item.score}점</strong><small>AI 점수</small></div></div>
-          <div class="home-result-gauge"><i class="${scoreTierClass(item.score)}" style="width:${Math.min((item.score / 250) * 100, 100)}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
+          <div class="home-result-gauge"><i class="${scoreTierClass(item.score)}" style="width:${scorePct}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
           <div class="home-result-gauge-meta"><span>0</span><span>합격컷 100</span><span>안정컷 150</span><span>MAX 250</span></div>
           <div class="kpi-row score-row"><div class="kpi-item"><b>${item.score}점</b>현재 점수</div><div class="kpi-item"><b>${item.cut}점</b>합격 컷</div><div class="kpi-item danger"><b>${item.gap}점</b>부족 점수</div></div>
           <div class="home-planner-badges chip-row">${plannerBadges.map((badge) => `<span class="chip">${badge}</span>`).join('')}</div>
@@ -80,16 +81,18 @@ export function renderStudyBreakdown(ctx) {
 
   if (!showStudyBreakdown) return '';
 
+  if (!breakdownSubjects.length) return '<div class="home-breakdown-list"><p class="home-breakdown-empty">아직 과목별 공부 기록이 없습니다.</p></div>';
+
   return `<div class="home-breakdown-list">${breakdownSubjects.map((subject) => {
     const sec = todaySubjectsWithTimer[subject] || 0;
     const rows = breakdownDetailMap[subject] || [];
     const expanded = expandedBreakdownSubject === subject;
-    return `<button class="home-breakdown-item" data-action="toggleBreakdownSubject" data-breakdown-subject="${subject}"><div><b>${subject}</b><small style="margin-left:6px;color:#1D4ED8;font-weight:800;">${rows.length}개 항목</small><span>${formatHms(sec)}</span></div></button>${expanded ? `<div class="home-breakdown-detail">${rows.length ? rows.map((row) => {
+    return `<button type="button" class="home-breakdown-item ${expanded ? 'expanded' : ''}" data-action="toggleBreakdownSubject" data-breakdown-subject="${escapeHtml(subject)}"><span class="home-breakdown-subject"><b>${escapeHtml(subject)}</b><small>${rows.length}개 항목</small></span><span class="home-breakdown-time">${formatHms(sec)}</span></button>${expanded ? `<div class="home-breakdown-detail">${rows.length ? rows.map((row) => {
       const plannedSec = Math.round(row.plannedHour * 3600);
       const actualSec = Math.round(row.actualHour * 3600);
       const rate = plannedSec > 0 ? Math.min(100, Math.round((actualSec / plannedSec) * 100)) : 0;
-      return `<div class="home-breakdown-detail-row"><small>${row.content}</small><em>계획 ${formatHms(plannedSec)} · 실제 ${formatHms(actualSec)}</em><span>${rate}%</span></div>`;
-    }).join('') : '<p>오늘 등록된 학습 계획이 없습니다</p>'}</div>` : ''}`;
+      return `<div class="home-breakdown-detail-row"><small>${escapeHtml(row.content || '학습 항목')}</small><em>계획 ${formatHms(plannedSec)} · 실제 ${formatHms(actualSec)}</em><span>${rate}%</span></div>`;
+    }).join('') : '<p class="home-breakdown-empty">오늘 등록된 학습 계획이 없습니다.</p>'}</div>` : ''}`;
   }).join('')}</div>`;
 }
 
@@ -161,6 +164,8 @@ export function renderHomeView(ctx) {
     analysisTargetList = [],
     breakdownDetailMap = {},
     breakdownSubjects = [],
+    canAccessPro = false,
+    canAccessStandard = false,
     crackySrc = CRACKY_SRC,
     drawerOpen = false,
     expandedBreakdownSubject = '',
@@ -225,7 +230,7 @@ export function renderHomeView(ctx) {
         ${universityCards}<button class="university-card-slide university-card card slider-card home-add-univ-card" data-action="openAnalysisSearchFromHome"><b>+ 대학 추가</b><p>추천/검색으로 추가</p></button></div>
       </div>
       <div class="home-kpi-indicator card-indicator">${indicators}</div>
-      <button class="pro-top-btn home-pro-below-card-btn" data-action="goto" data-target="proElite"><span>PRO LOUNGE 입장</span></button>
+      <button class="pro-top-btn home-pro-below-card-btn" data-action="goto" data-target="proElite"><span>${canAccessPro ? 'PRO LOUNGE 입장' : 'PRO 리포트 미리보기'}</span></button>
       ${renderUniversityModal({ analysisRecommended, analysisSearchList, analysisSearchTerm, analysisTargetList, universityModalOpen })}
     </div>
     <div class="section home-section home-section-last">
@@ -235,9 +240,9 @@ export function renderHomeView(ctx) {
         <button type="button" class="home-breakdown-toggle" data-action="toggleStudyBreakdown">${showStudyBreakdown ? '접기' : '펼쳐보기'}</button>
         ${renderStudyBreakdown({ breakdownDetailMap, breakdownSubjects, expandedBreakdownSubject, formatHms, showStudyBreakdown, todaySubjectsWithTimer })}
       </div>
-      <button class="card study-goal-card home-goal-linked-card home-insight-card premium-panel" data-action="goto" data-target="planner">
-        <p class="analysis-title">오늘 공부 목표</p>
-        ${todayPlannerItems.length ? `<div class="goal-compact"><b>${todayPlannerProgress}%</b><span>달성</span><em>${formatMinutesLabel(todayPlannerTotalMinutes)}</em></div><div class="track"><i style="width:${todayPlannerProgress}%"></i></div><div class="goal-tags">${todayPlannerSubjectSummary.slice(0, 3).map((value) => `<span>${value}</span>`).join('')}</div>` : `<p class="sub">오늘 계획을 추가해보세요</p><span class="home-goal-empty-cta">플래너로 이동</span>`}
+      <button class="card study-goal-card home-goal-linked-card home-insight-card premium-panel ${canAccessStandard ? '' : 'is-locked'}" data-action="goto" data-target="planner">
+        <div class="home-goal-title-row"><p class="analysis-title">오늘 공부 목표</p>${canAccessStandard ? '' : '<span class="home-goal-plan-badge">Standard부터</span>'}</div>
+        ${canAccessStandard && todayPlannerItems.length ? `<div class="goal-compact"><b>${todayPlannerProgress}%</b><span>달성</span><em>${formatMinutesLabel(todayPlannerTotalMinutes)}</em></div><div class="track"><i style="width:${todayPlannerProgress}%"></i></div><div class="goal-tags">${todayPlannerSubjectSummary.slice(0, 3).map((value) => `<span>${value}</span>`).join('')}</div>` : canAccessStandard ? `<p class="sub">오늘 계획을 추가해보세요</p><span class="home-goal-empty-cta">플래너로 이동</span>` : `<p class="sub">주간 플래너와 학습 코칭을 연결해 공부 목표를 관리할 수 있어요.</p><span class="home-goal-empty-cta">Standard 기능 보기</span>`}
       </button>
       <button type="button" class="card home-bottom-summary ranking-card home-insight-card premium-panel rank-tier-${rankTier} ${rankingShine}" data-action="goRanking">
         <div class="home-ranking-head"><p class="analysis-title">내 공부 랭킹</p><span class="badge">오늘 기준</span></div>
