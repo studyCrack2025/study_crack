@@ -19,6 +19,7 @@ import {
 // 탭바는 기존 문자열 renderer를 leaf로 임베드해 변환 범위를 한정한다.
 
 function UniversityCard({ item, plannerBadges, scoreTierClass }) {
+  const scorePct = Math.min((item.score / 250) * 100, 100);
   return (
     <button
       className="university-card-slide card home-kpi-card admission-card slider-card home-result-card-v3"
@@ -39,7 +40,7 @@ function UniversityCard({ item, plannerBadges, scoreTierClass }) {
         </div>
       </div>
       <div className="home-result-gauge">
-        <i className={scoreTierClass(item.score)} style={{ width: `${Math.min((item.score / 250) * 100, 100)}%` }} />
+        <i className={scoreTierClass(item.score)} style={{ width: `${scorePct}%` }} />
         <span className="cut pass" style={{ left: '40%' }} />
         <span className="cut safe" style={{ left: '60%' }} />
       </div>
@@ -180,7 +181,7 @@ export function HomeScreen(ctx) {
                   ))}
                 </div>
                 <button className="pro-top-btn home-pro-below-card-btn" data-action="goto" data-target="proElite">
-                  <span>{canAccessPro ? 'PRO LOUNGE 입장' : '플랜 업그레이드'}</span>
+                  <span>{canAccessPro ? 'PRO LOUNGE 입장' : 'PRO 리포트 미리보기'}</span>
                 </button>
                 <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: universityModalHtml }} />
               </div>
@@ -219,11 +220,14 @@ export function HomeScreen(ctx) {
                 </div>
 
                 <button
-                  className="card study-goal-card home-goal-linked-card home-insight-card premium-panel"
+                  className={`card study-goal-card home-goal-linked-card home-insight-card premium-panel ${canAccessStandard ? '' : 'is-locked'}`}
                   data-action="goto"
                   data-target="planner"
                 >
-                  <p className="analysis-title">{canAccessStandard ? '오늘 공부 목표' : '플래너는 Standard 이상 전용'}</p>
+                  <div className="home-goal-title-row">
+                    <p className="analysis-title">오늘 공부 목표</p>
+                    {!canAccessStandard && <span className="home-goal-plan-badge">Standard부터</span>}
+                  </div>
                   {canAccessStandard && todayPlannerItems.length ? (
                     <>
                       <div className="goal-compact">
@@ -247,8 +251,8 @@ export function HomeScreen(ctx) {
                     </>
                   ) : (
                     <>
-                      <p className="sub">학습 계획과 주간 코칭을 이용하려면 업그레이드가 필요해요.</p>
-                      <span className="home-goal-empty-cta">플랜 보기</span>
+                      <p className="sub">주간 플래너와 학습 코칭을 연결해 공부 목표를 관리할 수 있어요.</p>
+                      <span className="home-goal-empty-cta">Standard 기능 보기</span>
                     </>
                   )}
                 </button>
