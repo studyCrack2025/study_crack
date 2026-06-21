@@ -75,7 +75,7 @@ function renderSupportQnaList({ qnaHistory = [], qnaStatus = 'idle' }) {
   return qnaHistory.map((item) => {
     const done = String(item.status || '').toLowerCase() === 'done';
     const created = formatQnaDate(item.createdAt);
-    return `<article class="qna-card"><div class="qna-card-head"><div><b>${escapeHtml(item.title)}</b>${created ? `<span>${escapeHtml(created)}</span>` : ''}</div><em class="${done ? 'done' : ''}">${qnaStatusLabel(item.status)}</em></div><p class="qna-question">${escapeHtml(item.content)}</p>${done && item.answer ? `<div class="qna-answer"><strong>답변</strong><p>${escapeHtml(item.answer)}</p>${item.answeredAt ? `<span>${escapeHtml(formatQnaDate(item.answeredAt))}</span>` : ''}</div>` : ''}</article>`;
+    return `<article class="qna-list-row"><div class="qna-row-main"><b>${escapeHtml(item.title || '제목 없는 문의')}</b><p>${escapeHtml(item.content || '문의 내용 없음')}</p>${done && item.answer ? `<small>답변: ${escapeHtml(item.answer)}</small>` : ''}</div><div class="qna-row-side"><em class="${done ? 'done' : ''}">${qnaStatusLabel(item.status)}</em>${created ? `<span>${escapeHtml(created)}</span>` : ''}</div></article>`;
   }).join('');
 }
 
@@ -147,7 +147,7 @@ export function renderCustomerSupportScreen(ctx) {
     ['faq8', '어떤 플랜을 선택해야 할지 모르겠어요.', '빠르게 방향만 잡고 싶다면 Basic, 루틴 관리까지 원하면 Standard, 확실한 결과를 원하면 Pro를 추천합니다.']
   ];
 
-  return layout(appbar('고객센터', true) + `<div class="card support-direct-card"><p class="analysis-title">궁금한 점을 바로 남겨주세요.</p><p class="sub" style="margin:0">운영 시간: 평일 10:00 - 18:00</p><div class="support-btns"><button class="btn btn-primary" data-action="openQnaComposer">1:1 문의 작성</button><button class="btn btn-secondary" data-action="openKakaoSupport">카카오톡 문의하기</button></div></div><div class="card support-qna-card"><div class="support-section-head"><p class="analysis-title">내 문의 내역</p>${qnaHistory.length ? `<span>${qnaStatusLabel(qnaHistory[0]?.status)}</span>` : ''}</div><div class="qna-list">${renderSupportQnaList({ qnaHistory, qnaStatus })}</div></div><div class="card faq-card">${faqs.map(([id, q, a]) => `<button class="faq-row" data-action="toggleFaq" data-faq-id="${id}"><div><b>${q}</b>${openFaq === id ? `<p>${a}</p>` : ''}</div><span>${icon('chevron', false)}</span></button>`).join('')}</div>${renderSupportQnaComposerModal(ctx)}`, false);
+  return layout(appbar('고객센터', true) + `<div class="card support-direct-card"><p class="analysis-title">궁금한 점을 바로 남겨주세요.</p><p class="sub" style="margin:0">운영 시간: 평일 10:00 - 18:00</p><div class="support-btns"><button class="btn btn-primary" data-action="openQnaComposer">1:1 문의 작성</button><button class="btn btn-secondary" data-action="openKakaoSupport">카카오톡 문의하기</button></div></div><div class="card support-qna-card"><div class="support-section-head"><p class="analysis-title">내 문의 내역</p>${qnaHistory.length ? `<span>${qnaHistory.length}건</span>` : ''}</div><div class="qna-list compact">${renderSupportQnaList({ qnaHistory, qnaStatus })}</div></div><div class="card faq-card">${faqs.map(([id, q, a]) => `<button class="faq-row" data-action="toggleFaq" data-faq-id="${id}"><div><b>${q}</b>${openFaq === id ? `<p>${a}</p>` : ''}</div><span>${icon('chevron', false)}</span></button>`).join('')}</div>${renderSupportQnaComposerModal(ctx)}`, false);
 }
 
 export function renderSettingsMainScreen(ctx) {

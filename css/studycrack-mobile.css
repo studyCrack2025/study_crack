@@ -3,17 +3,17 @@
   --primary-dark: #344e8f;
   --purple: #7141d9;
   --gradient-primary: linear-gradient(135deg, var(--primary), var(--primary));
-  --primary-soft: #eaf2ff;
+  --primary-soft: #eef4ff;
   --danger-bg: #fff3f1;
   --score-low: #FA8072;
   --score-mid: #4c79ee;
   --score-high: #7141d9;
-  --bg: #F8FAFC;
-  --card: #f1f4fb;
+  --bg: #F6F8FE;
+  --card: #EEF3FD;
   --surface: #FFFFFF;
-  --text: #2c2c2c;
+  --text: #26304A;
   --muted: #64748B;
-  --line: #E2E8F0;
+  --line: #D8E3F4;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
@@ -71,13 +71,13 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #F8FAFC;
+  background: var(--bg);
 }
 .app-frame {
   width: 100%;
   max-width: 430px;
   height: 100dvh;
-  background: #F8FAFC;
+  background: var(--bg);
   display: flex;
   flex-direction: column;
   position: relative;

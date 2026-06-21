@@ -9,6 +9,15 @@ const RANKING_PERIODS = [
   ['monthly', '월간']
 ];
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 function defaultTierClass(tier = '') {
   return tier.toLowerCase();
 }
@@ -99,7 +108,7 @@ export function renderQualInfoScreen(ctx) {
     obTrack = ''
   } = ctx;
 
-  return layout(appbar('정성조사서', true) + `<div class="card"><p class="sub" style="color:#ef4444;font-weight:700;margin:0 0 10px;">* 표시는 필수 입력 항목입니다.</p><p class="analysis-title">현재 학년 <span style="color:#ef4444">*</span></p><div class="ob1-pill-row">${renderGradeButtons(obGradeStatus)}</div></div><div class="card"><p class="analysis-title">출신 학교 <span style="color:#ef4444">*</span></p><input class="planner-input" data-field="obSchoolName" value="${obSchoolName}" placeholder="출신 학교 입력"/></div><div class="card"><p class="analysis-title">희망 계열 <span style="color:#ef4444">*</span></p><select class="planner-input" data-field="obTrack">${renderTrackOptions(obTrack)}</select></div><div class="card"><p class="analysis-title">스터디크랙을 통해서 얻고 싶은 점 <span style="color:#ef4444">*</span></p><textarea class="planner-input" data-field="obGoalText" rows="3">${obGoalText}</textarea></div><div class="card"><p class="analysis-title">입시 고민 및 질문 (있으면 작성해주세요.)</p><textarea class="planner-input" data-field="obQuestionText" rows="4">${obQuestionText}</textarea><button class="btn btn-primary" data-action="saveQualInfo">정성조사서 저장</button></div>`, false);
+  return layout(appbar('정성조사서', true) + `<section class="qual-form-page"><div class="card qual-form-head"><span class="badge">학습성향 진단</span><h3>전략 설계를 위한 기본 정보를 입력해주세요.</h3><p>* 표시는 필수 입력 항목입니다.</p></div><div class="card qual-form-card"><div class="qual-field wide"><label>현재 학년 <span>*</span></label><div class="ob1-pill-row qual-grade-row">${renderGradeButtons(obGradeStatus)}</div></div><div class="qual-field"><label>출신 학교 <span>*</span></label><input class="planner-input" data-field="obSchoolName" value="${escapeHtml(obSchoolName)}" placeholder="출신 학교 입력"/></div><div class="qual-field"><label>희망 계열 <span>*</span></label><select class="planner-input" data-field="obTrack">${renderTrackOptions(obTrack)}</select></div><div class="qual-field wide"><label>스터디크랙을 통해 얻고 싶은 점 <span>*</span></label><textarea class="planner-input qual-textarea" data-field="obGoalText" rows="4" placeholder="예: 목표 대학에 맞는 과목별 우선순위를 알고 싶어요.">${escapeHtml(obGoalText)}</textarea></div><div class="qual-field wide"><label>입시 고민 및 질문</label><textarea class="planner-input qual-textarea" data-field="obQuestionText" rows="5" placeholder="현재 가장 고민되는 부분을 자유롭게 적어주세요.">${escapeHtml(obQuestionText)}</textarea></div><button class="btn btn-primary qual-save-btn" data-action="saveQualInfo">정성조사서 저장</button></div></section>`, false);
 }
 
 export function renderScoreInfoScreen(ctx) {

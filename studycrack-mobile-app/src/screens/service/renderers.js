@@ -207,10 +207,11 @@ function planDisplayName(plan = '') {
 
 function renderPlanCard({ meta, plan, selectedPlan }) {
   const active = selectedPlan === plan;
-  const badge = plan === 'Standard' ? '<span class="badge">추천</span>' : plan === 'Pro' ? '<span class="badge">프리미엄</span>' : '<span class="badge muted">입문</span>';
+  const badge = plan === 'Standard' ? '<span class="badge">핵심 추천</span>' : plan === 'Pro' ? '<span class="badge">프리미엄</span>' : plan === 'Starter' ? '<span class="badge muted">1회 진단</span>' : '<span class="badge muted">입문</span>';
   const features = meta.features;
+  const original = meta.originalPrice ? `<span class="original">${escapeHtml(meta.originalPrice)}</span>` : '';
 
-  return `<button class="plan-card mobile-plan-card ${plan.toLowerCase()} ${active ? 'active' : ''}" data-action="selectPlan" data-plan="${plan}"><div class="plan-head"><div><span class="plan-kicker">${escapeHtml(meta.desc)}</span><h4>${planDisplayName(plan)}</h4></div>${badge}</div><div class="plan-price-row"><span class="original">${escapeHtml(meta.originalPrice || '')}</span><b>${escapeHtml(meta.weeklyPrice || meta.introPrice)}</b><em>${escapeHtml(meta.billingNote || meta.payPrice)}</em></div><ul>${features.slice(0, 5).map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></button>`;
+  return `<button class="plan-card mobile-plan-card ${plan.toLowerCase()} ${active ? 'active' : ''}" data-action="selectPlan" data-plan="${plan}"><div class="plan-head"><div><span class="plan-kicker">${escapeHtml(meta.desc)}</span><h4>${planDisplayName(plan)}</h4></div>${badge}</div><div class="plan-price-row">${original}<b>${escapeHtml(meta.weeklyPrice || meta.introPrice)}</b><em>${escapeHtml(meta.billingNote || meta.payPrice)}</em></div><ul>${features.slice(0, 5).map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></button>`;
 }
 
 function requiredTierLabel(tier = '') {
@@ -239,7 +240,7 @@ export function renderLockedFeatureScreen(ctx) {
   } = ctx;
   const label = lockedFeatureLabel || upgradePromptTarget || '선택한 기능';
   const tier = requiredTierLabel(lockedFeatureTier || upgradePromptTier || 'standard');
-  return layout(appbar(label, true) + `<div class="locked-feature-page"><div class="locked-feature-preview-wrap">${renderLockedFeaturePreview(lockedFeatureTarget)}<div class="locked-feature-fade" aria-hidden="true"></div><section class="locked-feature-panel"><span class="badge">잠긴 기능</span><h3>${escapeHtml(label)}은 ${tier} 플랜 전용이에요</h3><p>실제 화면은 플랜 업그레이드 후 바로 이어서 사용할 수 있도록 유지해두었어요.</p><div class="locked-feature-actions"><button class="btn btn-primary" data-action="goto" data-target="proIntro">${tier} 플랜 확인하기</button><button class="btn btn-secondary" data-action="back">돌아가기</button></div></section></div></div>`, false);
+  return layout(appbar(label, true) + `<div class="locked-feature-page"><div class="locked-feature-preview-wrap">${renderLockedFeaturePreview(lockedFeatureTarget)}<div class="locked-feature-fade" aria-hidden="true"></div><section class="locked-feature-panel"><span class="badge">잠긴 기능</span><h3>${escapeHtml(label)}은 ${tier} 플랜에서 열려요</h3><p>아래 화면처럼 플래너와 피드백이 연결되며, 업그레이드 후 바로 이어서 사용할 수 있어요.</p><div class="locked-feature-actions"><button class="btn btn-primary" data-action="goto" data-target="proIntro">${tier} 플랜 보기</button><button class="btn btn-secondary" data-action="back">돌아가기</button></div></section></div></div>`, false);
 }
 
 export function renderStrategyScreen(ctx) {
@@ -382,11 +383,11 @@ export function renderTutorScreen(ctx) {
         ? qnaHistory.map((item) => {
           const done = String(item.status || '').toLowerCase() === 'done';
           const created = formatQnaDate(item.createdAt);
-          return `<article class="qna-card"><div class="qna-card-head"><div><b>${escapeHtml(item.title)}</b>${created ? `<span>${escapeHtml(created)}</span>` : ''}</div><em class="${done ? 'done' : ''}">${qnaStatusLabel(item.status)}</em></div><p class="qna-question">${escapeHtml(item.content)}</p>${done && item.answer ? `<div class="qna-answer"><strong>튜터 답변</strong><p>${escapeHtml(item.answer)}</p>${item.answeredAt ? `<span>${escapeHtml(formatQnaDate(item.answeredAt))}</span>` : ''}</div>` : ''}</article>`;
+          return `<article class="qna-list-row"><div class="qna-row-main"><b>${escapeHtml(item.title || '제목 없는 질문')}</b><p>${escapeHtml(item.content || '질문 내용 없음')}</p>${done && item.answer ? `<small>답변: ${escapeHtml(item.answer)}</small>` : ''}</div><div class="qna-row-side"><em class="${done ? 'done' : ''}">${qnaStatusLabel(item.status)}</em>${created ? `<span>${escapeHtml(created)}</span>` : ''}</div></article>`;
         }).join('')
         : '<div class="coach-empty">아직 남긴 질문이 없습니다.</div>';
 
-  return layout(appbar('SKY튜터 1:1 피드백', true) + `<div class="tutor-qna-page"><div class="card qna-intro-card"><p class="sub">텍스트 기반 질의응답</p><h3>학습 고민을 남기면 튜터가 답변해요</h3><button class="btn btn-primary" data-action="openQnaComposer">새 질문 작성</button></div><div class="qna-list">${statusNode}</div>${renderQnaComposerModal(ctx)}</div>`, false);
+  return layout(appbar('SKY튜터 1:1 피드백', true) + `<div class="tutor-qna-page"><div class="card qna-intro-card"><p class="sub">텍스트 기반 질의응답</p><h3>학습 고민을 남기면 튜터가 답변해요</h3><button class="btn btn-primary" data-action="openQnaComposer">새 질문 작성</button></div><div class="qna-list compact">${statusNode}</div>${renderQnaComposerModal(ctx)}</div>`, false);
 }
 
 export function renderProIntroScreen(ctx) {
@@ -403,9 +404,10 @@ export function renderProIntroScreen(ctx) {
     ? `<div class="card locked-upgrade-card"><span class="badge">잠긴 기능</span><h3>${escapeHtml(upgradePromptTarget || '선택한 기능')}은 ${requiredPlan} 이상에서 이용할 수 있어요.</h3><p>요금제를 업그레이드하면 하단 탭은 그대로 유지하면서 해당 기능이 바로 열립니다.</p></div>`
     : '';
 
-  return layout(appbar('StudyCrack 요금제', true) + `${upgradeNotice}<section class="mobile-plan-hero"><span class="plan-hero-kicker">SERVICE PLAN</span><h3>필요한 만큼 시작하고,<br/>관리 강도는 플랜으로 선택하세요.</h3><p>웹 결제 페이지의 상품 구성과 동일하게 4주 단건 결제 기준으로 안내합니다.</p></section><div class="mobile-plan-guide"><span>분석</span><i></i><span>플래너</span><i></i><span>리포트</span></div><p class="sub pricing-sub">합격 전략, 단계별로 선택하세요</p>
+  return layout(appbar('StudyCrack 요금제', true) + `${upgradeNotice}<section class="mobile-plan-hero"><span class="plan-hero-kicker">플랜 안내</span><h3>목표와 상황에 맞는 플랜을 선택하세요</h3><p>내 성적과 목표 대학 사이의 거리 분석부터 SKY 튜터 플래너, PRO 전략 리포트까지 단계별로 제공합니다.</p></section><div class="mobile-plan-guide"><span>BASIC 분석</span><i></i><span>STARTER 1회 진단</span><i></i><span>STANDARD 주간 관리</span><i></i><span>PRO 전략 리포트</span></div><p class="sub pricing-sub">웹 결제 페이지와 동일한 상품 구성입니다.</p>
       <div class="plan-stack">
         ${renderPlanCard({ meta: planMeta.Basic, plan: 'Basic', selectedPlan: checkoutPlan })}
+        ${renderPlanCard({ meta: planMeta.Starter, plan: 'Starter', selectedPlan: checkoutPlan })}
         ${renderPlanCard({ meta: planMeta.Standard, plan: 'Standard', selectedPlan: checkoutPlan })}
         ${renderPlanCard({ meta: planMeta.Pro, plan: 'Pro', selectedPlan: checkoutPlan })}
       </div>
@@ -416,19 +418,20 @@ export function renderPaymentScreen(ctx) {
   const {
     appbar,
     checkoutPlan = 'Standard',
-    currentPlan,
     duration = '4주',
     layout,
     planMeta = PLAN_META
   } = ctx;
-  const activePlan = currentPlan || planMeta[checkoutPlan] || planMeta.Standard;
+  const activePlan = planMeta[checkoutPlan] || planMeta.Standard;
+  const originalPriceNode = activePlan.originalPrice ? `<span>${escapeHtml(activePlan.originalPrice)}</span>` : '<span></span>';
 
-  return layout(appbar('플랜 선택', true) + `<section class="mobile-payment-hero"><span class="plan-hero-kicker">CHECKOUT</span><h3>${planDisplayName(checkoutPlan)} 플랜</h3><p>${escapeHtml(activePlan.desc)}</p></section><div class="payment-tabs full">
+  return layout(appbar('플랜 선택', true) + `<section class="mobile-payment-hero"><span class="plan-hero-kicker">결제 플랜</span><h3>${planDisplayName(checkoutPlan)} 플랜</h3><p>${escapeHtml(activePlan.desc)}</p></section><div class="payment-tabs full four">
       <button class="${checkoutPlan === 'Basic' ? 'active' : ''}" data-action="selectPlan" data-plan="Basic">Basic</button>
+      <button class="${checkoutPlan === 'Starter' ? 'active' : ''}" data-action="selectPlan" data-plan="Starter">Starter</button>
       <button class="${checkoutPlan === 'Standard' ? 'active' : ''}" data-action="selectPlan" data-plan="Standard">Standard</button>
       <button class="${checkoutPlan === 'Pro' ? 'active' : ''}" data-action="selectPlan" data-plan="Pro">Pro</button>
     </div>
-      <div class="card payment-focus-card mobile-payment-card"><div class="payment-focus-head"><div><span class="plan-kicker">${escapeHtml(activePlan.billingNote || '4주 단건 결제')}</span><h3>${planDisplayName(checkoutPlan)}</h3><p>${escapeHtml(activePlan.weeklyPrice || activePlan.payPrice)}</p></div><span class="payment-save-badge">특별 할인가</span></div><div class="payment-total-row"><span>${escapeHtml(activePlan.originalPrice || '')}</span><b>${escapeHtml(activePlan.payPrice)}</b></div><p class="payment-desc">${escapeHtml(activePlan.desc)}</p><ul class="payment-check-list">${activePlan.features.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div>
+      <div class="card payment-focus-card mobile-payment-card"><div class="payment-focus-head"><div><span class="plan-kicker">${escapeHtml(activePlan.billingNote || '4주 단건 결제')}</span><h3>${planDisplayName(checkoutPlan)}</h3><p>${escapeHtml(activePlan.weeklyPrice || activePlan.payPrice)}</p></div><span class="payment-save-badge">${activePlan.originalPrice ? '특별 할인가' : '단건 결제'}</span></div><div class="payment-total-row">${originalPriceNode}<b>${escapeHtml(activePlan.payPrice)}</b></div><p class="payment-desc">${escapeHtml(activePlan.desc)}</p><ul class="payment-check-list">${activePlan.features.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div>
       <div class="duration-row payment-duration-row">
         <button class="${duration === '4주' ? 'active' : ''}" data-action="selectDuration" data-duration="4주">4주</button>
         <button class="${duration === '8주' ? 'active' : ''}" data-action="selectDuration" data-duration="8주">8주</button>

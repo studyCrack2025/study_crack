@@ -1,6 +1,7 @@
 import { renderModal } from '../../components/modal.js';
 import { renderSheet } from '../../components/sheet.js';
 import { CRACKY_SRC } from '../../constants/assets.js';
+import { EXAM_OPTIONS } from '../../constants/options.js';
 
 const DEFAULT_MENU_ITEMS = [
   ['analysis', '분석'],
@@ -11,6 +12,10 @@ const DEFAULT_MENU_ITEMS = [
 ];
 
 const DEFAULT_STUDY_SUBJECTS = ['국어', '수학', '영어', '탐구'];
+
+function renderExamOptions(scoreExamType = '') {
+  return EXAM_OPTIONS.map((label) => `<option value="${label}" ${scoreExamType === label ? 'selected' : ''}>${label}</option>`).join('');
+}
 
 export function defaultScoreTierClass(score) {
   const n = Number(score) || 0;
@@ -177,6 +182,7 @@ export function renderHomeView(ctx) {
     rankTier = 'bronze',
     rankTierLabel = 'BRONZE',
     scoreTierClass = defaultScoreTierClass,
+    scoreExamType = '',
     showStudyBreakdown = false,
     studySubjectSheetOnlyPlanned = false,
     studySubjectSheetOpen = false,
@@ -213,6 +219,7 @@ export function renderHomeView(ctx) {
       </div>
     </div>
     <div class="section home-section">
+      <div class="home-analysis-criteria"><div><b>지원학과 AI 점수</b><span>${scoreExamType || '선택 시험'} 기준</span></div><select class="planner-input" data-field="scoreExamType">${renderExamOptions(scoreExamType)}</select></div>
       <div class="home-kpi-slider">
         <div class="home-kpi-track anchor-volatile ${homeSlideMotion}" style="--home-slide-card-width:100%;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${slideTransition};">
         ${universityCards}<button class="university-card-slide university-card card slider-card home-add-univ-card" data-action="openAnalysisSearchFromHome"><b>+ 대학 추가</b><p>추천/검색으로 추가</p></button></div>

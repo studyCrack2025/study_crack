@@ -110,13 +110,16 @@ export function buildPlannerDerived(state = {}) {
 // 홈 대학 KPI 카드(원본 homeTargets). planner-by-date처럼 home/analysis derived 공유.
 // 원본은 profile을 계산하되 결과 객체엔 쓰지 않으므로(점수=liveCurrentScore, cut=100) 동일하게 생략.
 function computeHomeTargets(state = {}) {
-  const { scores = {}, targetMajor = '', homeTargetList = [] } = state;
+  const { scores = {}, targetMajor = '', homeTargetList = [], analysisResults = [] } = state;
   const liveCurrentScore = computeLiveCurrentScore(scores);
   const orderedHomeTargetMajors = Array.from(
     new Set([...(targetMajor ? [targetMajor] : []), ...(homeTargetList || [])])
   ).filter(Boolean);
   return orderedHomeTargetMajors.map((major) => {
-    const score = Number(liveCurrentScore || computeLiveCurrentScore(scores));
+    const serverItem = findTargetItem(analysisResults, major);
+    const serverScore = Number(serverItem?.converted_score);
+    const hasServerScore = Number.isFinite(serverScore);
+    const score = hasServerScore ? Math.round(serverScore) : Number(liveCurrentScore || computeLiveCurrentScore(scores));
     const cut = 100;
     const gap = score - cut;
     return {
@@ -124,7 +127,7 @@ function computeHomeTargets(state = {}) {
       score,
       cut,
       gap: gap > 0 ? `+${gap}` : String(gap),
-      rank: score >= 150 ? '안정' : score >= 100 ? '합격권' : '도전',
+      rank: serverItem?.status || (score >= 150 ? '안정' : score >= 100 ? '합격권' : '도전'),
       rate: Math.round(Math.min(99, Math.max(20, (score / 150) * 100)))
     };
   });
