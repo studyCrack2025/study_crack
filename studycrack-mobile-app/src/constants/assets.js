@@ -1,4 +1,5 @@
 export const CRACKY_SRC = './assets/images/3A1D897F-252E-4096-AEF2-C4FA7CA6689D.png';
+export const CRACKY_HI_SRC = './assets/images/mascots/crack_hi.png';
 export const ONBOARDING_LOGO_SRC = './assets/images/og-image.jpg';
 export const STUDYCRACK_LOGO_SRC = './assets/images/studycrack_logo_wo_bg.png';
 
