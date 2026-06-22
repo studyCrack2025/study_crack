@@ -78,14 +78,14 @@ function renderPossibleUniversityCards(ctx) {
 export function renderSummaryMode(ctx) {
   const {
     analysisEtaStage = 3,
-    analysisGaugeColor = '#2563EB',
+    analysisGaugeColor = '#4c79ee',
     analysisGaugeFill = 0,
     analysisSimRows = [],
     analysisMajorOptions = [],
     analysisSelected = {},
     canAccessStandard = false,
     analysisStatus = '',
-    analysisStatusColor = '#2563EB',
+    analysisStatusColor = '#4c79ee',
     gaugeCurrent = 0,
     gaugeCurrentPct = 0,
     gaugePassPct = 40,

@@ -56,6 +56,9 @@ input,select,textarea{font-size:16px !important;}
 .ob1-subject-card h4{margin:0;font-size:18px;line-height:1.3;}
 .ob1-score-select,.ob1-score-input{height:48px;border-radius:14px;}
 .ob1-score-two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.ob-mbti-result{margin-top:12px;border:1px solid var(--primary);background:var(--primary-soft);border-radius:var(--radius-lg);}
+.ob-mbti-result .ob-mbti-code{margin:6px 0 2px;font-size:30px;font-weight:900;letter-spacing:.08em;color:var(--primary-dark);}
+.ob-mbti-result .ob-mbti-desc{margin:0 0 12px;font-size:12px;color:var(--primary-dark);}
 
 .analysis-v2-compare-card{box-shadow:0 4px 12px rgba(15,23,42,.05);overflow:visible;}
 .analysis-chart-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
@@ -271,9 +274,7 @@ input,select,textarea{font-size:16px !important;}
 .score-journey-total{margin-top:2px;padding-top:10px;border-top:1px solid #CBD5E1;display:flex;justify-content:space-between;font-weight:800;white-space:nowrap;word-break:keep-all;}
 .score-journey-total b{font-weight:800;}
 .score-journey-arrow{align-self:center;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#E2E8F0;color:#334155;font-weight:900;}
-.analysis-v2-eta-card,.on-eta-card{margin-top:2px;padding:16px;border:1px solid #93C5FD;border-radius:var(--radius-lg);background:var(--primary-dark);box-shadow:0 4px 12px rgba(29,78,216,.16);position:relative;overflow:hidden;}
-.analysis-v2-eta-card:before,.on-eta-card:before{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 8%,rgba(255,255,255,.35) 38%,transparent 62%);transform:translateX(-120%);animation:etaShine 3.3s ease-in-out infinite;}
-@keyframes etaShine{0%{transform:translateX(-120%);}45%,100%{transform:translateX(130%);}}
+.analysis-v2-eta-card,.on-eta-card{margin-top:2px;padding:16px;border:1px solid var(--primary-dark);border-radius:var(--radius-lg);background:var(--primary-dark);box-shadow:0 4px 12px rgba(52,78,143,.16);position:relative;overflow:hidden;}
 .analysis-v2-eta-card .eyebrow,.on-eta-card .eyebrow{display:block;font-size:13px;font-weight:700;color:#DBEAFE;margin-bottom:4px;position:relative;z-index:1;}
 .analysis-v2-eta-card b,.on-eta-card b{display:block;font-size:22px;line-height:1.35;color:#fff;position:relative;z-index:1;}
 .analysis-v2-eta-card p,.on-eta-card p{margin:6px 0 0;font-size:13px;color:#DBEAFE;line-height:1.45;position:relative;z-index:1;}
