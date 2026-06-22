@@ -143,8 +143,13 @@ export function createInitialAppState() {
     // mypage/계정
     logoutModalOpen: false,
     withdrawModalOpen: false,
+    phoneChangeModalOpen: false,
+    phoneChangeStep: 'input',
+    phoneChangeSending: false,
     myProfileEditOpen: false,
     myProfileNameDraft: '',
+    myProfilePhoneDraft: '',
+    myProfilePhoneCodeDraft: '',
     withdrawPassword: '',
     // service/PRO/coaching
     proRequestModalOpen: false,
