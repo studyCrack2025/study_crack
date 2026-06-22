@@ -119,7 +119,7 @@ function createSocialState(win, provider) {
   const cryptoObj = win.crypto || globalThis.crypto;
   cryptoObj?.getRandomValues?.(bytes);
   const nonce = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('') || String(Date.now());
-  return `${nonce}|${provider}`;
+  return `${nonce}|${provider}|mobile`;
 }
 
 function getMobileReturnPath(win) {
@@ -138,8 +138,13 @@ function buildSocialAuthUrl(ctx, provider) {
   const state = createSocialState(win, provider);
   const storage = win.sessionStorage || globalThis.sessionStorage;
   storage?.setItem?.('socialState', state);
-  storage?.setItem?.('socialReturnUrl', getMobileReturnPath(win));
+  const returnUrl = getMobileReturnPath(win);
+  storage?.setItem?.('socialReturnUrl', returnUrl);
   storage?.setItem?.('socialEntry', 'mobile');
+  try {
+    win.localStorage?.setItem?.('socialReturnUrl', returnUrl);
+    win.localStorage?.setItem?.('socialEntry', 'mobile');
+  } catch (_) {}
   storage?.removeItem?.('socialLinkMode');
   if (provider === 'google') {
     return `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({

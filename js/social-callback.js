@@ -221,8 +221,8 @@
         let value = '';
         let entry = '';
         try {
-            value = sessionStorage.getItem('socialReturnUrl') || '';
-            entry = sessionStorage.getItem('socialEntry') || '';
+            value = sessionStorage.getItem('socialReturnUrl') || localStorage.getItem('socialReturnUrl') || '';
+            entry = sessionStorage.getItem('socialEntry') || localStorage.getItem('socialEntry') || '';
         } catch (_) {
             value = '';
             entry = '';
@@ -237,6 +237,8 @@
         try {
             sessionStorage.removeItem('socialReturnUrl');
             sessionStorage.removeItem('socialEntry');
+            localStorage.removeItem('socialReturnUrl');
+            localStorage.removeItem('socialEntry');
         } catch (_) {}
     }
 
@@ -352,7 +354,7 @@
             if (userData.computedTier) localStorage.setItem('userTier', userData.computedTier);
         }
 
-        const socialReturnUrl = getSafeSocialReturnUrl();
+        const socialReturnUrl = getSafeSocialReturnUrl() || (startedFromMobile ? '/studycrack-mobile.html' : '');
         clearSocialReturnState();
 
         if (isLinkMode) {
@@ -449,6 +451,7 @@
     }
     const provider = stateParts[1];
     const statePurpose = stateParts[2] || '';
+    const startedFromMobile = statePurpose === 'mobile';
 
     if (!['google', 'naver'].includes(provider)) {
         showError('지원하지 않는 로그인 방식입니다.');
@@ -469,7 +472,7 @@
                 provider,
                 code,
                 redirectUri: callbackUrl,
-                ...(statePurpose && { purpose: statePurpose })
+                ...(statePurpose === 'delete_reauth' && { purpose: statePurpose })
             })
         });
 
@@ -509,7 +512,7 @@
         // 4. 연동 모드 + 새 계정 생성된 경우: 기존 세션 보관 후 확인
         if (isLinkMode && result.isNewUser) {
             const prevUserId = localStorage.getItem('userId');
-            const socialReturnUrl = getSafeSocialReturnUrl();
+            const socialReturnUrl = getSafeSocialReturnUrl() || (startedFromMobile ? '/studycrack-mobile.html' : '');
 
             const confirmed = confirm(
                 '연동하려는 소셜 계정의 이메일이 현재 계정과 달라\n새로운 별도 계정이 생성되었습니다.\n\n' +
