@@ -9,6 +9,11 @@ function defaultScoreJourneyCard(title) {
   return `<p class="analysis-title">${title}</p>`;
 }
 
+function examBasisLabel(scoreExamType = '') {
+  const label = String(scoreExamType || '').trim();
+  return label ? `${label} 기준` : '선택 시험 기준';
+}
+
 function renderAddUniversityCard({ analysisTargetList = [], name }) {
   const added = analysisTargetList.includes(name);
   return `<div class="add-univ-card">
@@ -188,6 +193,7 @@ export function renderSimulationMode(ctx) {
     analysisSimulationTargets = [],
     canAccessStandard = false
   } = ctx;
+  const basisLabel = examBasisLabel(ctx.scoreExamType);
 
   if (!canAccessStandard) {
     return `
@@ -210,7 +216,7 @@ export function renderSimulationMode(ctx) {
 
   return `
           <div class="analysis-v2-compare-card">
-            <div class="analysis-chart-head"><h3>합격 가능성 위치 (0~250점)</h3><span class="analysis-chart-badge">3월 학력평가 기준</span></div>
+            <div class="analysis-chart-head"><h3>합격 가능성 위치 (0~250점)</h3><span class="analysis-chart-badge">${basisLabel}</span></div>
             <p class="score-simulation-chart-hint">옆으로 밀어 더 많은 대학 보기 →</p>
             <div class="score-simulation-chart-wrap"><div class="analysis-v2-chart-area">
               <div class="analysis-v2-guide-line pass"><span class="label">합격선 100</span></div>
@@ -276,6 +282,9 @@ export function renderAnalysisScreen(ctx) {
     layout
   } = ctx;
   const effectiveMode = canAccessStandard ? analysisMode : 'summary';
+  const loadingPanel = isAnalyzing
+    ? '<div class="analysis-loading-panel"><span class="analysis-loading-orbit"><i></i><i></i><i></i></span><div><span>분석 중</span><b>선택한 성적과 목표대학을 다시 계산하고 있어요</b><p>잠시 뒤 지원 가능성과 추천 전략이 갱신됩니다.</p></div></div>'
+    : '';
 
   return layout(
     `<section class="analysis-v2 ${isAnalyzing ? 'loading' : ''}">
@@ -285,6 +294,8 @@ export function renderAnalysisScreen(ctx) {
             <span class="top-infographic top-infographic-analysis" aria-hidden="true"><i></i><i></i><i></i></span>
           </div>
         </div>
+
+        ${loadingPanel}
 
         <div class="analysis-v2-tabs">
           <button class="analysis-v2-tab ${effectiveMode === 'summary' ? 'active' : ''}" data-action="setAnalysisMode" data-analysis-mode="summary">전략 요약</button>

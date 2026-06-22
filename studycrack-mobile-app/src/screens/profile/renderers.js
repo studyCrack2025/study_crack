@@ -46,6 +46,11 @@ function renderGradeSelect(field, selected = '') {
   return `<select class="planner-input" data-field="${field}"><option value="">등급 선택</option>${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `<option value="${n}" ${String(selected) === String(n) ? 'selected' : ''}>${n}등급</option>`).join('')}</select>`;
 }
 
+function renderGradeSegment(field, selected = '') {
+  const key = field === 'v2e-english' ? 'english' : 'history';
+  return `<div class="score-grade-segment" role="group" aria-label="등급 선택">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `<button type="button" class="${String(selected) === String(n) ? 'active' : ''}" data-action="setScoreEditGrade" data-grade-field="${key}" data-grade-value="${n}">${n}</button>`).join('')}</div>`;
+}
+
 function renderRawMetric(raw) {
   if (!Number(raw || 0)) return '<div class="score-onepage-metric"><span>표준 -</span><span>백분위 -</span><span>등급 -</span></div>';
   const metric = scoreMetric(raw);
@@ -60,6 +65,14 @@ function rawScoreLabel(value) {
   return Number(value || 0) ? `${Number(value)}점` : '미입력';
 }
 
+function isMissingValue(value) {
+  return !String(value ?? '').trim();
+}
+
+function subjectHint(missing, text) {
+  return missing ? `<p class="score-field-hint">${text}</p>` : '';
+}
+
 export function renderScoreEditModal(ctx = {}) {
   const state = ctx.scoreEditState || {};
   const korean = state.korean || {};
@@ -68,7 +81,28 @@ export function renderScoreEditModal(ctx = {}) {
   const inquiry2 = state.inquiry2 || {};
   const koreanRaw = Number(korean.common || 0) + Number(korean.elective || 0);
   const mathRaw = Number(math.common || 0) + Number(math.elective || 0);
-  return `<div class="home-modal-overlay" data-action="closeScoreEdit"><div class="home-modal score-edit-modal score-onepage-modal" data-action="noopModal"><div class="score-onepage-head"><div><p class="home-modal-title">성적 전체 입력</p><p class="sub">모든 과목을 한 화면에서 입력하고 저장합니다.</p></div><button class="score-onepage-close" data-action="closeScoreEdit">닫기</button></div><div class="score-onepage-body"><section class="score-subject-card major"><div class="score-subject-head"><div><span>국어</span><b>${rawScoreLabel(koreanRaw)}</b></div>${renderRawMetric(koreanRaw)}</div><select class="planner-input" data-field="v2e-korean-type"><option value="화법과작문" ${korean.type === '화법과작문' ? 'selected' : ''}>화법과작문</option><option value="언어와매체" ${korean.type === '언어와매체' ? 'selected' : ''}>언어와매체</option></select><div class="score-input-grid">${renderScoreNumberInput('v2e-korean-common', korean.common, '공통 원점수', 76)}${renderScoreNumberInput('v2e-korean-elective', korean.elective, '선택 원점수', 24)}</div></section><section class="score-subject-card major"><div class="score-subject-head"><div><span>수학</span><b>${rawScoreLabel(mathRaw)}</b></div>${renderRawMetric(mathRaw)}</div><select class="planner-input" data-field="v2e-math-type"><option value="확률과통계" ${math.type === '확률과통계' ? 'selected' : ''}>확률과통계</option><option value="미적분" ${math.type === '미적분' ? 'selected' : ''}>미적분</option><option value="기하" ${math.type === '기하' ? 'selected' : ''}>기하</option></select><div class="score-input-grid">${renderScoreNumberInput('v2e-math-common', math.common, '공통 원점수', 74)}${renderScoreNumberInput('v2e-math-elective', math.elective, '선택 원점수', 26)}</div></section><section class="score-subject-card compact"><div class="score-subject-head"><div><span>영어</span><b>${state.english ? `${escapeHtml(state.english)}등급` : '미입력'}</b></div></div>${renderGradeSelect('v2e-english', state.english)}</section><section class="score-subject-card compact"><div class="score-subject-head"><div><span>한국사</span><b>${state.history ? `${escapeHtml(state.history)}등급` : '미입력'}</b></div></div>${renderGradeSelect('v2e-history', state.history)}</section><section class="score-subject-card"><div class="score-subject-head"><div><span>탐구 1</span><b>${rawScoreLabel(inquiry1.score)}</b></div>${renderRawMetric(inquiry1.score)}</div><select class="planner-input" data-field="v2e-inq1-subject">${renderInquiryOptions(inquiry1.subject)}</select>${renderScoreNumberInput('v2e-inq1-score', inquiry1.score, '원점수', 50)}</section><section class="score-subject-card"><div class="score-subject-head"><div><span>탐구 2</span><b>${rawScoreLabel(inquiry2.score)}</b></div>${renderRawMetric(inquiry2.score)}</div><select class="planner-input" data-field="v2e-inq2-subject">${renderInquiryOptions(inquiry2.subject)}</select>${renderScoreNumberInput('v2e-inq2-score', inquiry2.score, '원점수', 50)}</section></div><div class="score-onepage-actions"><button class="btn btn-secondary" data-action="closeScoreEdit">취소</button><button class="btn btn-primary" data-action="saveScoreEdit">성적 저장</button></div></div></div>`;
+  const missing = {
+    korean: isMissingValue(korean.common) || isMissingValue(korean.elective),
+    math: isMissingValue(math.common) || isMissingValue(math.elective),
+    english: isMissingValue(state.english),
+    history: isMissingValue(state.history),
+    inquiry1: isMissingValue(inquiry1.subject) || isMissingValue(inquiry1.score),
+    inquiry2: isMissingValue(inquiry2.subject) || isMissingValue(inquiry2.score)
+  };
+  const missingCount = [
+    korean.common,
+    korean.elective,
+    math.common,
+    math.elective,
+    state.english,
+    state.history,
+    inquiry1.subject,
+    inquiry1.score,
+    inquiry2.subject,
+    inquiry2.score
+  ].filter(isMissingValue).length;
+  const statusText = missingCount ? `필수 ${missingCount}개 남음` : '필수 입력 완료';
+  return `<div class="home-modal-overlay" data-action="closeScoreEdit"><div class="home-modal score-edit-modal score-onepage-modal" data-action="noopModal"><div class="score-onepage-head"><div><p class="home-modal-title">성적 전체 입력</p><p class="sub">모든 과목을 한 화면에서 입력하고 저장합니다.</p></div><button class="score-onepage-close" data-action="closeScoreEdit">닫기</button></div><div class="score-onepage-status ${missingCount ? 'pending' : 'complete'}"><span>${statusText}</span><b>국어·수학은 공통/선택 점수를 모두 입력해주세요.</b></div><div class="score-onepage-body"><section class="score-subject-card major ${missing.korean ? 'missing' : ''}"><div class="score-subject-head"><div><span>국어</span><b>${rawScoreLabel(koreanRaw)}</b></div>${renderRawMetric(koreanRaw)}</div><select class="planner-input" data-field="v2e-korean-type"><option value="화법과작문" ${korean.type === '화법과작문' ? 'selected' : ''}>화법과작문</option><option value="언어와매체" ${korean.type === '언어와매체' ? 'selected' : ''}>언어와매체</option></select><div class="score-input-grid">${renderScoreNumberInput('v2e-korean-common', korean.common, '공통 원점수', 76)}${renderScoreNumberInput('v2e-korean-elective', korean.elective, '선택 원점수', 24)}</div>${subjectHint(missing.korean, '공통/선택 원점수를 모두 입력해주세요.')}</section><section class="score-subject-card major ${missing.math ? 'missing' : ''}"><div class="score-subject-head"><div><span>수학</span><b>${rawScoreLabel(mathRaw)}</b></div>${renderRawMetric(mathRaw)}</div><select class="planner-input" data-field="v2e-math-type"><option value="확률과통계" ${math.type === '확률과통계' ? 'selected' : ''}>확률과통계</option><option value="미적분" ${math.type === '미적분' ? 'selected' : ''}>미적분</option><option value="기하" ${math.type === '기하' ? 'selected' : ''}>기하</option></select><div class="score-input-grid">${renderScoreNumberInput('v2e-math-common', math.common, '공통 원점수', 74)}${renderScoreNumberInput('v2e-math-elective', math.elective, '선택 원점수', 26)}</div>${subjectHint(missing.math, '공통/선택 원점수를 모두 입력해주세요.')}</section><section class="score-subject-card compact ${missing.english ? 'missing' : ''}"><div class="score-subject-head"><div><span>영어</span><b>${state.english ? `${escapeHtml(state.english)}등급` : '미입력'}</b></div></div>${renderGradeSegment('v2e-english', state.english)}${subjectHint(missing.english, '영어 등급을 선택해주세요.')}</section><section class="score-subject-card compact ${missing.history ? 'missing' : ''}"><div class="score-subject-head"><div><span>한국사</span><b>${state.history ? `${escapeHtml(state.history)}등급` : '미입력'}</b></div></div>${renderGradeSegment('v2e-history', state.history)}${subjectHint(missing.history, '한국사 등급을 선택해주세요.')}</section><section class="score-subject-card ${missing.inquiry1 ? 'missing' : ''}"><div class="score-subject-head"><div><span>탐구 1</span><b>${rawScoreLabel(inquiry1.score)}</b></div>${renderRawMetric(inquiry1.score)}</div><select class="planner-input" data-field="v2e-inq1-subject">${renderInquiryOptions(inquiry1.subject)}</select>${renderScoreNumberInput('v2e-inq1-score', inquiry1.score, '원점수', 50)}${subjectHint(missing.inquiry1, '과목과 원점수를 모두 입력해주세요.')}</section><section class="score-subject-card ${missing.inquiry2 ? 'missing' : ''}"><div class="score-subject-head"><div><span>탐구 2</span><b>${rawScoreLabel(inquiry2.score)}</b></div>${renderRawMetric(inquiry2.score)}</div><select class="planner-input" data-field="v2e-inq2-subject">${renderInquiryOptions(inquiry2.subject)}</select>${renderScoreNumberInput('v2e-inq2-score', inquiry2.score, '원점수', 50)}${subjectHint(missing.inquiry2, '과목과 원점수를 모두 입력해주세요.')}</section></div><div class="score-onepage-actions"><div class="score-save-status"><b>${statusText}</b><span>${missingCount ? '저장 전 누락 항목을 확인해주세요.' : '이 성적으로 분석 기준을 갱신할 수 있어요.'}</span></div><button class="btn btn-primary" data-action="saveScoreEdit">성적 저장</button></div></div></div>`;
 }
 
 export function renderRankingScreen(ctx) {

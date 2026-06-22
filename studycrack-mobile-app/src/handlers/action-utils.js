@@ -6,7 +6,8 @@ export const DEFAULT_KEEP_SCROLL_ACTIONS = new Set([
   'openDrawer',
   'closeDrawer',
   'openScoreEdit',
-  'closeScoreEdit'
+  'closeScoreEdit',
+  'setScoreEditGrade'
 ]);
 
 export function getActionElement(event, selector = '[data-action]') {
