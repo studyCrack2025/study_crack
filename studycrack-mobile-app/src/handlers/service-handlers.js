@@ -97,6 +97,8 @@ export function createServiceHandlers(ctx) {
   const {
     afterSafariViewportStable = (fn) => fn?.(),
     alert = globalThis.alert || noop,
+    checkoutPlan = 'Standard',
+    duration = '4주',
     ensureCoachingSubjectRows = noop,
     goto,
     preserveScrollAfterStateChange = (fn) => fn?.(),
@@ -164,7 +166,11 @@ export function createServiceHandlers(ctx) {
     },
 
     openWebPayment() {
-      const target = '/payment?source=mobile_app';
+      const params = new URLSearchParams({ source: 'mobile_app' });
+      const tier = String(checkoutPlan || '').trim().toLowerCase();
+      if (['basic', 'starter', 'standard', 'pro'].includes(tier)) params.set('plan', tier);
+      if (duration) params.set('duration', String(duration));
+      const target = `/payment?${params.toString()}`;
       if (win?.location?.assign) win.location.assign(target);
       else if (win?.location) win.location.href = target;
       return true;

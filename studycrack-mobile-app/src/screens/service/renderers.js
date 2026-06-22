@@ -233,6 +233,13 @@ function planBadgeText(plan = '') {
   return '프리미엄';
 }
 
+function planAccessText(plan = 'Standard') {
+  const labels = PLAN_CAPABILITIES
+    .filter(([, , plans]) => plans.includes(plan))
+    .map(([, label]) => label);
+  return labels.join(' · ');
+}
+
 function renderPlanSelector({ checkoutPlan = 'Standard', planMeta = PLAN_META }) {
   return `<div class="plan-console-selector">${PLAN_ORDER.map((plan) => {
     const meta = planMeta[plan] || {};
@@ -251,7 +258,15 @@ function renderSelectedPlanDetail({ checkoutPlan = 'Standard', ctaLabel = '결�
   const activePlan = planMeta[checkoutPlan] || planMeta.Standard;
   const original = activePlan.originalPrice ? `<span class="plan-console-original">${escapeHtml(activePlan.originalPrice)}</span>` : '';
   const ctaAttrs = ctaAction === 'goto' ? `data-action="goto" data-target="${ctaTarget}"` : `data-action="${ctaAction}"`;
-  return `<section class="card plan-console-detail ${String(activePlan.theme || '').toLowerCase()}"><div class="plan-console-head"><div><span class="plan-console-badge">${planBadgeText(checkoutPlan)}</span><h3>${planDisplayName(checkoutPlan)}</h3><p>${escapeHtml(activePlan.desc || '')}</p></div><div class="plan-console-price">${original}<b>${escapeHtml(activePlan.payPrice || activePlan.introPrice || '')}</b><em>${escapeHtml(activePlan.billingNote || activePlan.weeklyPrice || '')}</em></div></div><div class="plan-console-features">${(activePlan.features || []).map((item) => `<span>${escapeHtml(item)}</span>`).join('')}</div>${renderPlanCapabilityGrid(checkoutPlan)}${showCta ? `<button class="btn btn-primary plan-console-cta" ${ctaAttrs}>${ctaLabel}</button>` : ''}</section>`;
+  const features = activePlan.features || [];
+  const visibleFeatures = features.slice(0, 4);
+  const hiddenCount = Math.max(0, features.length - visibleFeatures.length);
+  const hiddenFeature = hiddenCount ? `<span class="plan-console-more">+${hiddenCount}개 추가 혜택</span>` : '';
+  return `<section class="card plan-console-detail ${String(activePlan.theme || '').toLowerCase()}"><div class="plan-console-head"><div><span class="plan-console-badge">${planBadgeText(checkoutPlan)}</span><h3>${planDisplayName(checkoutPlan)}</h3><p>${escapeHtml(activePlan.desc || '')}</p></div><div class="plan-console-price">${original}<b>${escapeHtml(activePlan.payPrice || activePlan.introPrice || '')}</b><em>${escapeHtml(activePlan.billingNote || activePlan.weeklyPrice || '')}</em></div></div><div class="plan-console-summary"><div><span>핵심 결과</span><b>${escapeHtml(activePlan.complete || activePlan.desc || '')}</b></div><div><span>열리는 기능</span><b>${escapeHtml(planAccessText(checkoutPlan))}</b></div></div><div class="plan-console-features">${visibleFeatures.map((item) => `<span>${escapeHtml(item)}</span>`).join('')}${hiddenFeature}</div>${renderPlanCapabilityGrid(checkoutPlan)}${showCta ? `<button class="btn btn-primary plan-console-cta" ${ctaAttrs}>${ctaLabel}</button>` : ''}</section>`;
+}
+
+function renderPaymentFlow({ checkoutPlan = 'Standard', duration = '4주' }) {
+  return `<div class="card payment-flow-card"><div><span>1</span><b>플랜 확인</b><p>${planDisplayName(checkoutPlan)} 선택</p></div><div><span>2</span><b>기간 확인</b><p>${escapeHtml(duration)} 기준</p></div><div><span>3</span><b>웹 결제</b><p>본인 확인 후 진행</p></div></div>`;
 }
 
 function renderLockedFeaturePreview(target = '') {
@@ -276,7 +291,7 @@ export function renderLockedFeatureScreen(ctx) {
   } = ctx;
   const label = lockedFeatureLabel || upgradePromptTarget || '선택한 기능';
   const tier = requiredTierLabel(lockedFeatureTier || upgradePromptTier || 'standard');
-  return layout(appbar(label, true) + `<div class="locked-feature-page"><div class="locked-feature-preview-wrap">${renderLockedFeaturePreview(lockedFeatureTarget)}<div class="locked-feature-fade" aria-hidden="true"></div><section class="locked-feature-panel"><span class="badge">잠긴 기능</span><h3>${escapeHtml(label)}은 ${tier} 플랜에서 열려요</h3><p>아래 화면처럼 플래너와 피드백이 연결되며, 업그레이드 후 바로 이어서 사용할 수 있어요.</p><div class="locked-feature-actions"><button class="btn btn-primary" data-action="goto" data-target="proIntro">${tier} 플랜 보기</button><button class="btn btn-secondary" data-action="back">돌아가기</button></div></section></div></div>`, true);
+  return layout(appbar(label, true) + `<div class="locked-feature-page"><div class="locked-feature-preview-wrap">${renderLockedFeaturePreview(lockedFeatureTarget)}<div class="locked-feature-fade" aria-hidden="true"></div><section class="locked-feature-panel"><span class="badge">잠긴 기능</span><h3>${escapeHtml(label)} 기능은 ${tier} 플랜에서 열려요</h3><p>아래 화면처럼 플래너와 피드백이 연결되며, 업그레이드 후 바로 이어서 사용할 수 있어요.</p><div class="locked-feature-actions"><button class="btn btn-primary" data-action="goto" data-target="proIntro">${tier} 플랜 보기</button><button class="btn btn-secondary" data-action="back">돌아가기</button></div></section></div></div>`, true);
 }
 
 export function renderStrategyScreen(ctx) {
@@ -451,7 +466,7 @@ export function renderPaymentScreen(ctx) {
     layout,
     planMeta = PLAN_META
   } = ctx;
-  return layout(appbar('결제', true) + `<section class="payment-console-page"><div class="mobile-payment-hero plan-console-hero"><span class="plan-hero-kicker">결제 플랜</span><h3>결제 전 플랜 구성을 확인하세요</h3><p>결제와 본인 확인은 기존 웹 결제 페이지에서 안전하게 이어집니다.</p></div>${renderPlanSelector({ checkoutPlan, planMeta })}${renderSelectedPlanDetail({ checkoutPlan, planMeta, ctaLabel: '웹 결제 페이지로 이동', ctaAction: 'openWebPayment' })}<div class="duration-row payment-duration-row"><button class="${duration === '4주' ? 'active' : ''}" data-action="selectDuration" data-duration="4주">4주</button><button class="${duration === '8주' ? 'active' : ''}" data-action="selectDuration" data-duration="8주">8주</button><button class="${duration === '12주' ? 'active' : ''}" data-action="selectDuration" data-duration="12주">12주</button></div><div class="card payment-safe-card"><b>안전 결제 안내</b><p>전화번호 확인과 NICEPAY 인증은 웹 결제 페이지에서 동일하게 진행됩니다.</p></div></section>`, false);
+  return layout(appbar('결제', true) + `<section class="payment-console-page"><div class="mobile-payment-hero plan-console-hero"><span class="plan-hero-kicker">결제 플랜</span><h3>결제 전 플랜 구성을 확인하세요</h3><p>최종 결제와 본인 확인은 기존 웹 결제 페이지에서 안전하게 이어집니다.</p></div>${renderPlanSelector({ checkoutPlan, planMeta })}<div class="payment-option-block"><b>결제 기간</b><div class="duration-row payment-duration-row"><button class="${duration === '4주' ? 'active' : ''}" data-action="selectDuration" data-duration="4주">4주</button><button class="${duration === '8주' ? 'active' : ''}" data-action="selectDuration" data-duration="8주">8주</button><button class="${duration === '12주' ? 'active' : ''}" data-action="selectDuration" data-duration="12주">12주</button></div></div>${renderPaymentFlow({ checkoutPlan, duration })}${renderSelectedPlanDetail({ checkoutPlan, planMeta, ctaLabel: '웹 결제 페이지로 이동', ctaAction: 'openWebPayment' })}<div class="card payment-safe-card"><b>안전 결제 안내</b><p>선택한 플랜과 기간 정보를 웹 결제 페이지에 전달하고, 전화번호 확인과 NICEPAY 인증은 웹에서 동일하게 진행됩니다.</p></div></section>`, false);
 }
 
 export function renderPaymentCompleteScreen(ctx) {

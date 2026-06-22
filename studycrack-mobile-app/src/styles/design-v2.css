@@ -545,8 +545,13 @@ input,select,textarea{font-size:16px !important;}
 .plan-console-price b{font-size:18px;line-height:1.15;color:#26304A;font-weight:900;text-align:right;}
 .plan-console-price em{font-style:normal;font-size:11px;color:#64748B;font-weight:900;text-align:right;}
 .plan-console-original{font-size:11px;color:#94A3B8;text-decoration:line-through;font-weight:800;text-align:right;}
+.plan-console-summary{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.plan-console-summary div{display:grid;gap:4px;padding:11px;border:1px solid #DDE7F6;background:#F8FBFF;border-radius:14px;}
+.plan-console-summary span{font-size:10.5px;line-height:1.2;color:#64748B;font-weight:900;}
+.plan-console-summary b{font-size:12px;line-height:1.35;color:#26304A;font-weight:900;}
 .plan-console-features{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
 .plan-console-features span{min-height:34px;border:1px solid #E3EAF6;background:#FFFFFF;border-radius:12px;padding:8px 9px;font-size:11px;line-height:1.25;color:#334155;font-weight:800;}
+.plan-console-features .plan-console-more{display:flex;align-items:center;justify-content:center;border-style:dashed;background:#F8FBFF;color:var(--primary-dark);font-weight:900;}
 .plan-capability-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;}
 .plan-capability{border-radius:14px;padding:9px 6px;text-align:center;border:1px solid #E3EAF6;background:#FFFFFF;}
 .plan-capability.enabled{border-color:#BFD3F8;background:#EEF4FF;}
@@ -563,11 +568,18 @@ input,select,textarea{font-size:16px !important;}
 .payment-duration-row{border:1px solid #DDE7F6;background:#FFFFFF;border-radius:16px;padding:5px;box-shadow:0 5px 14px rgba(52,78,143,.05);}
 .payment-duration-row button{border-radius:12px;font-weight:900;color:#526176;}
 .payment-duration-row button.active{background:#EEF4FF;color:var(--primary-dark);}
+.payment-option-block{display:grid;gap:7px;padding:12px;border:1px solid #DDE7F6;background:#FFFFFF;border-radius:18px;box-shadow:0 5px 14px rgba(52,78,143,.05);}
+.payment-option-block > b{font-size:13px;color:#26304A;font-weight:900;}
+.payment-flow-card{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;padding:12px;}
+.payment-flow-card div{min-width:0;display:grid;gap:4px;justify-items:center;text-align:center;padding:10px 6px;border:1px solid #E3EAF6;background:#F8FBFF;border-radius:14px;}
+.payment-flow-card span{display:grid;place-items:center;width:22px;height:22px;border-radius:999px;background:#EEF4FF;color:var(--primary-dark);font-size:11px;font-weight:900;}
+.payment-flow-card b{font-size:12px;color:#26304A;font-weight:900;}
+.payment-flow-card p{margin:0;font-size:10.5px;line-height:1.3;color:#64748B;font-weight:800;}
 .app-screen .card{border-radius:18px;}
 .home-dashboard,.analysis-v2,.planner-screen,.coach-page,.tutor-qna-page,.pro-elite-page,.account-info-page,.qual-form-page,.score-info-page,.plan-console-page,.payment-console-page{background:linear-gradient(180deg,#F6F8FE 0%,#FFFFFF 48%,#F7F9FE 100%);}
 .home-dashboard .card,.analysis-v2 .card,.planner-screen .card,.coach-page .card,.tutor-qna-page .card,.pro-elite-page .card,.account-info-page .card,.qual-form-page .card,.score-info-page .card,.plan-console-page .card,.payment-console-page .card{border-color:#DDE7F6;box-shadow:0 7px 18px rgba(52,78,143,.07);}
 @media (max-width:390px){.score-journey-col{padding:10px;}.score-row{font-size:13px;}.score-row .pill{font-size:11px;padding:2px 6px;}.score-journey-total{font-size:13px;}}
-@media (max-width:390px){.score-onepage-body{grid-template-columns:1fr;}.score-subject-card.major{grid-column:auto;}.score-onepage-status{display:grid;}.score-onepage-status b{text-align:left;}.plan-console-head{grid-template-columns:1fr;}.plan-console-price{justify-items:start;}.plan-console-price b,.plan-console-price em,.plan-console-original{text-align:left;}.plan-console-features{grid-template-columns:1fr;}.plan-capability-grid{grid-template-columns:1fr 1fr;}}
+@media (max-width:390px){.score-onepage-body{grid-template-columns:1fr;}.score-subject-card.major{grid-column:auto;}.score-onepage-status{display:grid;}.score-onepage-status b{text-align:left;}.plan-console-head{grid-template-columns:1fr;}.plan-console-price{justify-items:start;}.plan-console-price b,.plan-console-price em,.plan-console-original{text-align:left;}.plan-console-summary,.plan-console-features{grid-template-columns:1fr;}.plan-capability-grid{grid-template-columns:1fr 1fr;}.payment-flow-card{grid-template-columns:1fr;}}
 .analysis-v2-head,.analysis-v2-targets,.analysis-v2-summary,.analysis-v2-before-after,.analysis-v2-gauge-change,.analysis-v2-cta,.analysis-v2-locked,.analysis-v2-sim,.analysis-v2-compare-card{border-color:#DDE7F6;background:#FFFFFF;box-shadow:0 7px 18px rgba(52,78,143,.07);}
 .analysis-v2-head .top-card-head h3{color:#26304A;}
 .analysis-v2-head .top-card-head p,.analysis-v2-label,.analysis-sub,.analysis-conv-line,.analysis-cta-sub{color:#64748B;}
