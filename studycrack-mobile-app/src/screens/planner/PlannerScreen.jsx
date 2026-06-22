@@ -54,17 +54,20 @@ export function PlannerScreen(ctx) {
     plannerEditIndex,
     plannerEditItem,
     plannerFeedback = {},
+    plannerMonthDays,
+    plannerMonthLabel = '',
     plannerViewDonutGradient,
     plannerViewHour = 0,
     plannerViewItems = [],
     plannerViewMinute = 0,
     plannerViewSubjectStats = [],
     plannerWeekDates = [],
-    selectedPlannerDate = ''
+    selectedPlannerDate = '',
+    selectedPlannerWeekday = ''
   } = ctx;
 
   const overlaysHtml =
-    renderCalendarSheet({ plannerCalendarOpen, selectedPlannerDate }) +
+    renderCalendarSheet({ plannerCalendarOpen, selectedPlannerDate, plannerMonthLabel, plannerMonthDays }) +
     renderEditSheet({ plannerEditIndex, plannerEditItem });
 
   return (
@@ -73,7 +76,7 @@ export function PlannerScreen(ctx) {
         <div className={`screen app-screen app-content ${dimmed ? 'modal-lock' : ''}`}>
           <div className="planner-screen">
             <div className="planner-head">
-              <h3>2024년 5월 {selectedPlannerDate}일 (화)</h3>
+              <h3>{plannerMonthLabel} {selectedPlannerDate}일 ({selectedPlannerWeekday})</h3>
               <button
                 className="planner-cal-btn"
                 data-action="openPlannerCalendar"
@@ -129,7 +132,10 @@ export function PlannerScreen(ctx) {
               {plannerViewItems.length ? (
                 plannerViewItems.map((item) => <PlannerItemCard key={item.id} item={item} />)
               ) : (
-                <div className="planner-empty-day">선택한 날짜의 플래너가 없습니다.</div>
+                <div className="planner-empty-day">
+                  <b>아직 등록한 계획이 없어요</b>
+                  <p>{selectedPlannerDate}일에 학습을 추가해 하루 목표를 만들어 보세요.</p>
+                </div>
               )}
               <button className="planner-add-cta" data-action="openPlannerAddPage">
                 + {selectedPlannerDate}일 계획 추가하기

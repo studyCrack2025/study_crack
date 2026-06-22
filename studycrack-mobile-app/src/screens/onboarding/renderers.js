@@ -30,6 +30,11 @@ function renderBubble(text, crackySrc = CRACKY_SRC) {
   return `<div class="card ob-bubble-card"><img loading="lazy" decoding="async" src="${crackySrc}" class="ob-cracky" alt="크랙이"/><p>${text}</p></div>`;
 }
 
+function renderMbtiResultCard(mbtiResult) {
+  if (!mbtiResult) return '';
+  return '<div class="card ob-card ob-mbti-result"><p class="analysis-title">진단 결과</p><p class="ob-mbti-code">CSDR</p><p class="sub ob-mbti-desc">(컨셉형, 직관령, 분석형, 루틴)</p><button class="btn btn-secondary" disabled>맞춤 공부법 PDF 준비 중</button></div>';
+}
+
 export function renderSplashScreen(ctx) {
   const { crackyHiSrc = CRACKY_HI_SRC, studycrackLogoSrc = STUDYCRACK_LOGO_SRC } = ctx;
   return `<div class="app-shell"><div class="app-frame"><div class="splash splash-v2"><div class="splash-logo-panel"><img class="splash-real-logo" src="${studycrackLogoSrc}" alt="StudyCrack"/></div><img class="splash-cracky" src="${crackyHiSrc}" alt="크랙이"/><p>합격까지 가장 빠른 전략</p><div class="splash-progress" aria-hidden="true"><i></i></div></div></div></div>`;
@@ -38,14 +43,14 @@ export function renderSplashScreen(ctx) {
 export function renderOn1Screen() {
   return `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="onboarding-shot"><div class="onboarding-shot-head"><h2><span class="accent">데이터 기반으로</span>
 내 합격 가능성을 분석해요</h2><p>흔들리지 않는 방향을
-제시해드립니다.</p></div><div class="onboarding-center"><div class="onboarding-card data"><div class="onboarding-label">합격 가능성</div><div class="onboarding-score">72<em>%</em></div><svg class="onboarding-graph data" viewBox="0 0 320 124"><defs><linearGradient id="obDataFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#BFD8FF" stop-opacity="0.65"/><stop offset="100%" stop-color="#BFD8FF" stop-opacity="0"/></linearGradient></defs><path d="M16 106 L42 84 L66 92 L94 60 L122 76 L146 92 L172 74 L196 36 L224 76 L248 62 L272 24 L292 56 L310 10 L310 124 L16 124 Z" fill="url(#obDataFill)"/><path d="M16 106 L42 84 L66 92 L94 60 L122 76 L146 92 L172 74 L196 36 L224 76 L248 62 L272 24 L292 56 L310 10" stroke="#0B6BFF" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="310" cy="10" r="5" fill="#0B6BFF"/></svg></div></div><img src="${CRACKY_SRC}" class="onboarding-character on1" alt="크랙이"/><div class="onboarding-shot-dots"><i class="active"></i><i></i><i></i></div><button class="onboarding-next" data-action="goto" data-target="on2">다음</button></div></div></div></div>`;
+제시해드립니다.</p></div><div class="onboarding-center"><div class="onboarding-card data"><div class="onboarding-label">합격 가능성</div><div class="onboarding-score">72<em>%</em></div><svg class="onboarding-graph data" viewBox="0 0 320 124"><defs><linearGradient id="obDataFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c7d8f8" stop-opacity="0.65"/><stop offset="100%" stop-color="#c7d8f8" stop-opacity="0"/></linearGradient></defs><path d="M16 106 L42 84 L66 92 L94 60 L122 76 L146 92 L172 74 L196 36 L224 76 L248 62 L272 24 L292 56 L310 10 L310 124 L16 124 Z" fill="url(#obDataFill)"/><path d="M16 106 L42 84 L66 92 L94 60 L122 76 L146 92 L172 74 L196 36 L224 76 L248 62 L272 24 L292 56 L310 10" stroke="#4c79ee" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="310" cy="10" r="5" fill="#4c79ee"/></svg></div></div><img src="${CRACKY_SRC}" class="onboarding-character on1" alt="크랙이"/><div class="onboarding-shot-dots"><i class="active"></i><i></i><i></i></div><button class="onboarding-next" data-action="goto" data-target="on2">다음</button></div></div></div></div>`;
 }
 
 export function renderOn2Screen() {
   return `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="onboarding-shot"><div class="onboarding-shot-head"><h2>나에게 최적화된
 점수 상승 전략을 제공해요</h2><p>과목별 효율과 목표 도달 시간을
 정확하게 예측해 드려요.</p></div><div class="onboarding-center"><div class="onboarding-card strategy"><div class="onboarding-stat">수학 +12점
-합격 가능성 +18%</div><svg class="onboarding-graph strategy" viewBox="0 0 320 96"><rect x="72" y="58" width="16" height="38" rx="3" fill="#0B6BFF" fill-opacity="0.85"/><rect x="142" y="40" width="16" height="56" rx="3" fill="#0B6BFF" fill-opacity="0.85"/><rect x="212" y="22" width="16" height="74" rx="3" fill="#0B6BFF" fill-opacity="0.85"/><rect x="282" y="-2" width="16" height="98" rx="3" fill="#0B6BFF" fill-opacity="0.85"/><path d="M18 88 L56 84 L92 70 L126 62 L162 48 L196 42 L232 30 L266 20 L302 12" stroke="#4A8DFF" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="88" r="3" fill="#4A8DFF"/><circle cx="302" cy="12" r="3" fill="#4A8DFF"/></svg></div></div><img src="${CRACKY_SRC}" class="onboarding-character on2" alt="크랙이"/><div class="onboarding-shot-dots"><i></i><i class="active"></i><i></i></div><button class="onboarding-next" data-action="goto" data-target="on3">다음</button></div></div></div></div>`;
+합격 가능성 +18%</div><svg class="onboarding-graph strategy" viewBox="0 0 320 96"><rect x="72" y="58" width="16" height="38" rx="3" fill="#4c79ee" fill-opacity="0.85"/><rect x="142" y="40" width="16" height="56" rx="3" fill="#4c79ee" fill-opacity="0.85"/><rect x="212" y="22" width="16" height="74" rx="3" fill="#4c79ee" fill-opacity="0.85"/><rect x="282" y="-2" width="16" height="98" rx="3" fill="#4c79ee" fill-opacity="0.85"/><path d="M18 88 L56 84 L92 70 L126 62 L162 48 L196 42 L232 30 L266 20 L302 12" stroke="#8aa9f1" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="88" r="3" fill="#8aa9f1"/><circle cx="302" cy="12" r="3" fill="#8aa9f1"/></svg></div></div><img src="${CRACKY_SRC}" class="onboarding-character on2" alt="크랙이"/><div class="onboarding-shot-dots"><i></i><i class="active"></i><i></i></div><button class="onboarding-next" data-action="goto" data-target="on3">다음</button></div></div></div></div>`;
 }
 
 export function renderOn3Screen() {
@@ -160,7 +165,7 @@ export function renderOb3Screen(ctx) {
          <p class="analysis-title">학습 MBTI 검사</p>
          <p class="sub">4문항으로 빠르게 진단해요.</p>
          <button class="btn btn-secondary" data-action="openMbtiModal">MBTI 시작하기</button>
-         ${mbtiResult ? `<div class="card" style="margin-top:12px;border:2px solid #2563EB;background:#EFF6FF;"><p class="analysis-title">진단 결과</p><p style="margin:6px 0 2px;font-size:30px;font-weight:900;letter-spacing:.08em;color:#1D4ED8;text-shadow:0 6px 18px rgba(37,99,235,.18);">CSDR</p><p class="sub" style="margin:0 0 12px;font-size:12px;color:#1E40AF;">(컨셉형, 직관령, 분석형, 루틴)</p><button class="btn btn-secondary" disabled>맞춤 공부법 PDF 준비 중</button></div>` : ''}
+         ${renderMbtiResultCard(mbtiResult)}
        </div>
        ${renderMbtiModal({ mbtiModalOpen, mbtiAnswers, mbtiDone })}`;
 
@@ -176,11 +181,11 @@ export function renderOb3Screen(ctx) {
 
 export function renderOb4Screen(ctx) {
   const {
-    analysisGaugeColor = '#2563EB',
+    analysisGaugeColor = '#4c79ee',
     analysisGaugeFill = 0,
     analysisSelected = {},
     analysisStatus = '',
-    analysisStatusColor = '#2563EB',
+    analysisStatusColor = '#4c79ee',
     liveCurrentScore = 0,
     mbtiResult = '',
     scoreTierClass = defaultScoreTierClass,
@@ -209,7 +214,7 @@ export function renderOb4Screen(ctx) {
          <div class="analysis-impact-item">탐구<div class="track"><i style="width:68%;background:#14b8a6"></i></div><span>+6점 → +9%</span></div>
          <div class="analysis-impact-item">영어<div class="track"><i style="width:48%;background:#f59e0b"></i></div><span>+3점 → +5%</span></div>
        </div>
-       ${mbtiResult ? `<div class="card ob-card" style="border:2px solid #2563EB;background:#EFF6FF;"><p class="analysis-title">진단 결과</p><p style="margin:6px 0 2px;font-size:30px;font-weight:900;letter-spacing:.08em;color:#1D4ED8;text-shadow:0 6px 18px rgba(37,99,235,.18);">CSDR</p><p class="sub" style="margin:0 0 12px;font-size:12px;color:#1E40AF;">(컨셉형, 직관령, 분석형, 루틴)</p><button class="btn btn-secondary" disabled>맞춤 공부법 PDF 준비 중</button></div>` : ''}`;
+       ${renderMbtiResultCard(mbtiResult)}`;
 
   return renderOnboardingScreen(ctx, {
     step: 2,

@@ -343,6 +343,14 @@ export function createProfileHandlers(ctx) {
       return true;
     },
 
+    setScoreEditGrade({ actionEl }) {
+      const field = getData(actionEl, 'grade-field');
+      const value = getData(actionEl, 'grade-value');
+      if (!['english', 'history'].includes(field) || !value) return false;
+      ctx.setScoreEditState?.((prev = {}) => ({ ...prev, [field]: value }));
+      return true;
+    },
+
     async saveQualInfo() {
       const values = readQualValues(ctx);
       if (isQualInfoMissing(values)) {

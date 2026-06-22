@@ -21,6 +21,11 @@ let userPhoneMissing = false;
 
 function getTierDisplayName(tier) { return TIER_DISPLAY[(tier || '').toLowerCase()] || String(tier || '').toUpperCase(); }
 
+function normalizePaymentTier(tier) {
+    const value = String(tier || '').trim().toLowerCase();
+    return ['basic', 'starter', 'standard', 'pro'].includes(value) ? value : '';
+}
+
 function initPaymentExitGuard() {
     if (!window.PaymentExitGuard) return;
     window.PaymentExitGuard.init({
@@ -115,6 +120,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupPaymentLoadingInterceptor();
     fetchUserInfo(userId);
     initMobileSwipeUX();
+    const requestedTier = normalizePaymentTier(urlParams.get('plan'));
+    if (requestedTier) {
+        const requestedRow = document.querySelector(`.price-row[data-tier="${requestedTier}"]`);
+        if (requestedRow) selectPlan(requestedTier, requestedRow);
+    }
 });
 
 function centerCardInScroller(scrollerEl, cardEl, behavior = 'auto') {

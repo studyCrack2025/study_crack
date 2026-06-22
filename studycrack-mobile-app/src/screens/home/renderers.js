@@ -199,6 +199,7 @@ export function renderHomeView(ctx) {
     todayRecord = null,
     todayStudySeconds = 0,
     todaySubjectsWithTimer = {},
+    user = {},
     universityModalOpen = false
   } = ctx;
 
@@ -218,7 +219,7 @@ export function renderHomeView(ctx) {
       <div class="home-greeting-bubble">
         <img loading="lazy" decoding="async" src="${crackySrc}" class="home-greeting-cracky" alt="크랙이" />
         <div class="home-greeting-speech">
-          <p class="home-greeting">안녕하세요, 지민님 👋</p>
+          <p class="home-greeting">안녕하세요, ${escapeHtml(user?.name || '회원')}님 👋</p>
           <p class="home-sub">오늘도 크랙한 하루 되세요!</p>
         </div>
       </div>

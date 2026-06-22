@@ -2,7 +2,8 @@ import {
   DEFAULT_NOTIFICATIONS,
   DEFAULT_PLANNER_ITEMS,
   DEFAULT_SCORES,
-  DEFAULT_USER
+  DEFAULT_USER,
+  FIXED_TODAY_DATE
 } from '../constants/mock-data.js';
 import { STORAGE_KEYS, readString, safeParse } from '../state/storage.js';
 import { normalizePlannerItems } from '../state/planner-storage.js';
@@ -82,7 +83,7 @@ export function createInitialAppState() {
     homeDragOffset: 0,
     scoreDragOffset: 0,
     // planner
-    selectedDate: '14',
+    selectedDate: String(Number(FIXED_TODAY_DATE.split('-')[2])),
     plannerCalendarOpen: false,
     plannerDraft: { subject: '', content: '', durationChoice: '', customMinutes: '' },
     plannerItems: DEFAULT_PLANNER_ITEMS,

@@ -33,14 +33,14 @@ function renderPlannerItemCard(item) {
 function renderPlannerItems({ plannerViewItems = [], selectedPlannerDate = '' }) {
   const items = plannerViewItems.map(renderPlannerItemCard).join('');
   return `<div class="planner-plan-list">
-         ${items || '<div class="planner-empty-day">선택한 날짜의 플래너가 없습니다.</div>'}
+         ${items || `<div class="planner-empty-day"><b>아직 등록한 계획이 없어요</b><p>${selectedPlannerDate}일에 학습을 추가해 하루 목표를 만들어 보세요.</p></div>`}
          <button class="planner-add-cta" data-action="openPlannerAddPage">+ ${selectedPlannerDate}일 계획 추가하기</button>
        </div>`;
 }
 
-export function renderCalendarSheet({ plannerCalendarOpen = false, selectedPlannerDate = '' }) {
+export function renderCalendarSheet({ plannerCalendarOpen = false, selectedPlannerDate = '', plannerMonthLabel = '', plannerMonthDays = 31 }) {
   if (!plannerCalendarOpen) return '';
-  const body = `<button class="planner-sheet-close" data-action="closePlannerCalendar">✕</button><h3>2024년 5월</h3><div class="planner-calendar-grid">${Array.from({ length: 31 }, (_, i) => i + 1).map((day) => `<button class="planner-cal-day ${activeClass(selectedPlannerDate === String(day))}" data-action="selectPlannerDate" data-planner-date="${day}">${day}</button>`).join('')}</div>`;
+  const body = `<button class="planner-sheet-close" data-action="closePlannerCalendar">✕</button><h3>${plannerMonthLabel}</h3><div class="planner-calendar-grid">${Array.from({ length: plannerMonthDays }, (_, i) => i + 1).map((day) => `<button class="planner-cal-day ${activeClass(selectedPlannerDate === String(day))}" data-action="selectPlannerDate" data-planner-date="${day}">${day}</button>`).join('')}</div>`;
   return renderSheet({ panelClass: 'planner-calendar-sheet', dismissAction: 'closePlannerCalendar', body });
 }
 
@@ -66,24 +66,27 @@ export function renderPlannerScreen(ctx) {
     plannerEditIndex,
     plannerEditItem,
     plannerFeedback = {},
+    plannerMonthDays,
+    plannerMonthLabel = '',
     plannerViewDonutGradient,
     plannerViewHour = 0,
     plannerViewItems,
     plannerViewMinute = 0,
     plannerViewSubjectStats,
     plannerWeekDates,
-    selectedPlannerDate = ''
+    selectedPlannerDate = '',
+    selectedPlannerWeekday = ''
   } = ctx;
 
   return layout(
-    `<div class="planner-screen"><div class="planner-head"><h3>2024년 5월 ${selectedPlannerDate}일 (화)</h3><button class="planner-cal-btn" data-action="openPlannerCalendar">${icon('calendar', false)}</button></div>
+    `<div class="planner-screen"><div class="planner-head"><h3>${plannerMonthLabel} ${selectedPlannerDate}일 (${selectedPlannerWeekday})</h3><button class="planner-cal-btn" data-action="openPlannerCalendar">${icon('calendar', false)}</button></div>
        ${renderDateStrip({ plannerWeekDates, selectedPlannerDate })}
        <div class="planner-section-title planner-fade"><div><h4>${selectedPlannerDate}일 계획</h4><p>총 ${plannerViewHour}시간 ${plannerViewMinute}분</p>${plannerFeedback.tone === 'warn' ? '<span class="planner-warning-pill">⚠ 수학 비중 높음 · 과목 균형 필요</span>' : ''}</div>${renderSubjectDonut({ plannerViewDonutGradient, plannerViewSubjectStats })}</div>
        <div class="card planner-premium-cta"><div class="planner-premium-copy"><span class="badge">SKY MENTOR</span><b>혼자 짠 플래너, 불안하신가요?</b><p>SKY 선생님이<br/>직접 이번 주 플래너를 짜드립니다.</p></div><button type="button" class="planner-premium-btn" data-action="startStandard">플래너 직접 받기</button></div>
        ${renderPlannerItems({ plannerViewItems, selectedPlannerDate })}
 
        <div class="planner-bottom-space"></div>
-       ${renderCalendarSheet({ plannerCalendarOpen, selectedPlannerDate })}
+       ${renderCalendarSheet({ plannerCalendarOpen, selectedPlannerDate, plannerMonthLabel, plannerMonthDays })}
        ${renderEditSheet({ plannerEditIndex, plannerEditItem })}
        </div>`,
     true
