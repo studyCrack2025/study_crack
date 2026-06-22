@@ -19,6 +19,7 @@ import { createBlankScoreState, fetchMobileNotifications, markMobileNotification
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
+import { clearMobileAuthArtifacts } from './auth-service.js';
 
 const { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef } = React;
 
@@ -162,6 +163,31 @@ function canAccessTier(state, requiredTier) {
   return (PLAN_RANK[getEffectiveTier(state)] || 0) >= (PLAN_RANK[requiredTier] || 0);
 }
 
+function getRoleLoginPath(role) {
+  if (role === 'admin') return '/admin/login';
+  if (role === 'tutor') return '/tutor/login';
+  return '/login';
+}
+
+async function blockNonStudentMobileSession(role) {
+  if (typeof window === 'undefined') return;
+  try {
+    await window.apiFetch?.(window.CONFIG?.api?.auth, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'logout' })
+    });
+  } catch (_error) {}
+  try {
+    clearMobileAuthArtifacts(window);
+  } catch (_error) {}
+  try {
+    window.alert?.(role === 'tutor'
+      ? '튜터 계정은 튜터 전용 페이지를 이용해주세요.'
+      : '관리자 계정은 관리자 페이지를 이용해주세요.');
+  } catch (_error) {}
+  window.location.replace(getRoleLoginPath(role));
+}
+
 function filterTabItemsForTier() {
   return TAB_ITEMS;
 }
@@ -220,6 +246,8 @@ function createInitialAppStateWithScreenParam() {
   const base = hydrateAppState(createInitialAppState());
   if (typeof window === 'undefined' || !window.location) return base;
   const param = new URLSearchParams(window.location.search).get('screen');
+  const hasSession = typeof window.hasClientSession === 'function' && window.hasClientSession();
+  if (hasSession && (param === 'authLogin' || param === 'authSignup')) return { ...base, screen: 'home' };
   return param ? { ...base, screen: param } : base;
 }
 
@@ -607,6 +635,14 @@ function MobileApp() {
     let cancelled = false;
     fetchCurrentUser({ apiFetch: window.apiFetch, userApiUrl: window.CONFIG?.api?.user }).then((userData) => {
       if (cancelled || !userData) return;
+      const role = String(userData.role || 'student').toLowerCase();
+      if (role && role !== 'student') {
+        blockNonStudentMobileSession(role);
+        return;
+      }
+      if (userData.role) {
+        try { localStorage.setItem('userRole', userData.role); } catch (_error) {}
+      }
       const patch = mapUserToStatePatch(userData, stateRef.current);
       if (Object.keys(patch).length) setState(patch);
     });

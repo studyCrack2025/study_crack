@@ -1,4 +1,5 @@
 import { STUDYCRACK_LOGO_SRC } from '../../constants/assets.js';
+import { renderTermsModal } from '../../components/terms-modal.js';
 
 function disabled(value) {
   return value ? 'disabled' : '';
@@ -18,7 +19,23 @@ function renderLogo(logoSrc = STUDYCRACK_LOGO_SRC) {
 }
 
 function renderSocialAuthButtons(action = 'ssoSuccess', suffix = '로그인') {
-  return `<div class="auth-sso-row"><button class="auth-sso-btn google" data-action="${action}"><span class="auth-sso-icon">G</span><span>Google로 ${suffix}</span></button><button class="auth-sso-btn naver" data-action="${action}"><span class="auth-sso-icon">N</span><span>Naver로 ${suffix}</span></button></div>`;
+  return `<div class="auth-sso-row"><button class="auth-sso-btn google" data-action="${action}" data-provider="google"><span class="auth-sso-icon">G</span><span>Google로 ${suffix}</span></button><button class="auth-sso-btn naver" data-action="${action}" data-provider="naver"><span class="auth-sso-icon">N</span><span>Naver로 ${suffix}</span></button></div>`;
+}
+
+function renderSignupVerifyStatus(done, label) {
+  return `<span class="signup-verify-status ${done ? 'done' : ''}">${done ? `${label} 완료` : `${label} 필요`}</span>`;
+}
+
+function renderTermsLine({ checked = false, label, required = false, type }) {
+  return `<div class="auth-terms-check-row"><input type="checkbox" data-action="toggleSignupTerm" data-signup-term="${type}" ${required ? 'data-signup-term-required="true"' : ''} ${checked ? 'checked' : ''}/><span>${required ? '(필수)' : '(선택)'} ${label}</span><button type="button" class="auth-terms-view" data-action="openSignupTermsModal" data-terms-type="${type}">보기</button></div>`;
+}
+
+function selected(current, value) {
+  return current === value ? 'selected' : '';
+}
+
+function checked(value) {
+  return value ? 'checked' : '';
 }
 
 function renderFindEmailModal({ findEmailModalOpen, foundEmailMasked }) {
@@ -100,19 +117,62 @@ export function renderAuthSignupScreen(ctx) {
   const {
     appbar,
     layout,
+    openTermsType,
+    signupEmailSending = false,
+    signupError = '',
+    signupSmsSending = false,
+    signupSubmitting = false,
+    signupForm = {},
+    signupTerms = {},
+    signupVerifiedEmail = '',
+    signupVerifiedPhone = '',
     studycrackLogoSrc = STUDYCRACK_LOGO_SRC
   } = ctx;
+  const emailVerified = Boolean(signupVerifiedEmail);
+  const phoneVerified = Boolean(signupVerifiedPhone);
+  const allTermsChecked = ['standard', 'service', 'privacy', 'refund', 'marketing'].every((key) => signupTerms[key] === true);
 
   return layout(appbar('회원가입', true) + `<div class="signup-page"><div class="signup-form-card">
       ${renderLogo(studycrackLogoSrc)}
       <p class="signup-title">회원가입</p>
-      <div class="signup-section auth-signup-social"><p class="section-title">소셜 계정으로 3초 만에 시작하기</p><div class="section-divider"></div>${renderSocialAuthButtons('signupSuccess', '시작하기')}</div>
+      <div class="signup-section auth-signup-social"><p class="section-title">소셜 계정으로 시작하기</p><div class="section-divider"></div>${renderSocialAuthButtons('ssoSuccess', '시작하기')}<p class="auth-web-note slim">가입되지 않은 계정은 약관 동의 후 바로 시작합니다.</p></div>
       <div class="auth-divider"><span>또는 이메일로 직접 가입하기</span></div>
-      <div class="signup-section auth-signup-summary"><p class="section-title">웹 회원가입에서 입력하는 정보</p><div class="auth-support-list"><span>이메일 인증</span><span>비밀번호</span><span>이름</span><span>성별</span><span>생년월일</span><span>전화번호 인증</span><span>유입 경로</span><span>프로모션 코드</span></div></div>
-      <div class="signup-section auth-terms-preview"><p class="section-title">약관 동의</p><div class="auth-terms-row all"><b>약관 전체 동의</b></div><div class="auth-terms-row"><span>(필수)</span> 표준이용약관 동의</div><div class="auth-terms-row"><span>(필수)</span> 서비스 이용약관 조항 동의</div><div class="auth-terms-row"><span>(필수)</span> 개인정보 처리방침 동의</div><div class="auth-terms-row"><span>(필수)</span> 환불 규정 동의</div><div class="auth-terms-row optional"><span>(선택)</span> 마케팅 정보 수신 동의</div></div>
-      <p class="auth-web-note">가입 입력과 약관 전문보기는 StudyCrack 웹 회원가입 화면에서 동일하게 진행됩니다.</p>
-      <button class="signup-submit signup-submit-btn active" data-action="signupSuccess">웹 회원가입에서 계속하기</button>
-      <p class="signup-login-link">이미 계정이 있으신가요? <button class="auth-link-btn" data-action="loginSuccess">로그인</button></p>
+      <div class="signup-section auth-native-section">
+        <div class="signup-section-head"><p class="section-title">계정 인증</p>${renderSignupVerifyStatus(emailVerified, '이메일')}</div>
+        <input class="planner-input auth-input" data-field="signupEmail" type="email" inputmode="email" autocomplete="email" placeholder="이메일" value="${escapeHtml(signupForm.email)}" />
+        <button type="button" class="btn btn-secondary signup-inline-btn" data-action="sendSignupEmailCode" ${disabled(signupEmailSending || signupSubmitting)}>${signupEmailSending ? '발송 중...' : '이메일 인증번호 받기'}</button>
+        <div class="signup-code-row"><input class="planner-input auth-input" data-field="signupEmailCode" inputmode="numeric" placeholder="인증번호 6자리" value="${escapeHtml(signupForm.emailCode)}" /><button type="button" class="btn btn-secondary signup-code-btn" data-action="verifySignupEmail" ${disabled(signupSubmitting)}>확인</button></div>
+      </div>
+      <div class="signup-section auth-native-section">
+        <p class="section-title">기본 정보</p>
+        <input class="planner-input auth-input" data-field="signupPassword" type="password" autocomplete="new-password" placeholder="비밀번호 (영문 대/소문자, 숫자, 특수문자 포함)" value="${escapeHtml(signupForm.password)}" />
+        <input class="planner-input auth-input" data-field="signupPasswordConfirm" type="password" autocomplete="new-password" placeholder="비밀번호 확인" value="${escapeHtml(signupForm.passwordConfirm)}" />
+        <input class="planner-input auth-input" data-field="signupName" autocomplete="name" placeholder="이름" value="${escapeHtml(signupForm.name)}" />
+        <div class="signup-two-col"><select class="planner-input auth-input" data-field="signupGender"><option value="">성별</option><option value="male" ${selected(signupForm.gender, 'male')}>남성</option><option value="female" ${selected(signupForm.gender, 'female')}>여성</option></select><input class="planner-input auth-input" data-field="signupBirthdate" type="date" value="${escapeHtml(signupForm.birthdate)}" /></div>
+      </div>
+      <div class="signup-section auth-native-section">
+        <div class="signup-section-head"><p class="section-title">전화번호 인증</p>${renderSignupVerifyStatus(phoneVerified, '전화번호')}</div>
+        <input class="planner-input auth-input" data-field="signupPhone" inputmode="numeric" autocomplete="tel" placeholder="휴대폰 번호 (01012345678)" value="${escapeHtml(signupForm.phoneRaw)}" />
+        <button type="button" class="btn btn-secondary signup-inline-btn" data-action="sendSignupSmsCode" ${disabled(signupSmsSending || signupSubmitting)}>${signupSmsSending ? '발송 중...' : 'SMS 인증번호 받기'}</button>
+        <div class="signup-code-row"><input class="planner-input auth-input" data-field="signupPhoneCode" inputmode="numeric" placeholder="인증번호 6자리" value="${escapeHtml(signupForm.phoneCode)}" /><button type="button" class="btn btn-secondary signup-code-btn" data-action="verifySignupPhone" ${disabled(signupSubmitting)}>확인</button></div>
+      </div>
+      <div class="signup-section auth-native-section">
+        <p class="section-title">가입 경로</p>
+        <select class="planner-input auth-input" data-field="signupReferral"><option value="인스타그램" ${selected(signupForm.referral || '인스타그램', '인스타그램')}>인스타그램</option><option value="스레드" ${selected(signupForm.referral, '스레드')}>스레드</option><option value="오르비" ${selected(signupForm.referral, '오르비')}>오르비</option><option value="etc" ${selected(signupForm.referral, 'etc')}>기타</option></select>
+        <input class="planner-input auth-input" data-field="signupReferralEtc" placeholder="기타 경로를 입력해주세요" value="${escapeHtml(signupForm.referralEtc)}" />
+        <input class="planner-input auth-input" data-field="signupPromoCode" placeholder="프로모션 코드 (선택)" value="${escapeHtml(signupForm.promoCode)}" />
+      </div>
+      <div class="signup-section auth-terms-preview native">
+        <label class="auth-terms-check-row all"><input type="checkbox" data-action="toggleSignupAllTerms" ${checked(allTermsChecked)}/><b>약관 전체 동의</b></label>
+        ${renderTermsLine({ checked: signupTerms.standard, label: '스터디크랙 이용약관 동의', required: true, type: 'standard' })}
+        ${renderTermsLine({ checked: signupTerms.service, label: '서비스 이용약관 조항 동의', required: true, type: 'service' })}
+        ${renderTermsLine({ checked: signupTerms.privacy, label: '개인정보 처리방침 동의', required: true, type: 'privacy' })}
+        ${renderTermsLine({ checked: signupTerms.refund, label: '환불 규정 동의', required: true, type: 'refund' })}
+        ${renderTermsLine({ checked: signupTerms.marketing, label: '마케팅 정보 수신 동의', type: 'marketing' })}
+      </div>
+      ${signupError ? `<p class="auth-error signup-error">${escapeHtml(signupError)}</p>` : ''}
+      <button class="signup-submit signup-submit-btn active" data-action="submitNativeSignup" ${disabled(signupSubmitting)}>${signupSubmitting ? '가입 처리 중...' : '회원가입 완료'}</button>
+      <p class="signup-login-link">이미 계정이 있으신가요? <button class="auth-link-btn" data-action="goto" data-target="authLogin">로그인</button></p>
     </div>
-    </div>`, false);
+    ${renderTermsModal(openTermsType)}</div>`, false);
 }

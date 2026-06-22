@@ -1,8 +1,5 @@
-// 모바일 자립형 인증 서비스(Phase A). 웹 js/auth.js의 검증된 Cognito 로그인 흐름과 동치로 맞춘다.
-// - 토큰 저장/세션 부트는 웹과 동일: sessionStorage accessToken/idToken(Bearer) + Auth Lambda 쿠키 등록(httpOnly).
-// - 토큰 동기화/세션 정리는 js/shared/api.js의 전역(window.syncTokensFromAuthResponse/clearClientSession)을 재사용.
-// 보안: fake/우회 경로 없음. 실제 Cognito + 검증된 Auth Lambda만 사용. (계획: docs/exec-plans/active/260623_mobile_native_auth.md)
-import { AuthenticationDetails, CognitoUser, CognitoUserPool } from 'amazon-cognito-identity-js';
+// 모바일 자체 인증 서비스. 세부 인증 사양은 docs/exec-plans/active/260623_mobile_native_auth.md 참조.
+import { AuthenticationDetails, CognitoUser, CognitoUserAttribute, CognitoUserPool } from 'amazon-cognito-identity-js';
 
 function getConfig() {
   return (typeof window !== 'undefined' && window.CONFIG) || {};
@@ -22,7 +19,6 @@ function isLocalHost() {
   return host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local');
 }
 
-// 웹 registerRefreshCookie와 동치. LOCAL은 cross-site 쿠키가 후속 요청에 안 실리므로 refreshToken만 보관.
 async function registerLoginCookies({ accessToken, idToken, refreshToken }) {
   if (isLocalHost()) {
     try { localStorage.setItem('refreshToken', refreshToken); } catch (_) {}
@@ -53,10 +49,43 @@ async function registerLoginCookies({ accessToken, idToken, refreshToken }) {
 }
 
 function clearPreviousSession() {
+  clearMobileAuthArtifacts();
+}
+
+export function clearMobileAuthArtifacts(win = typeof window !== 'undefined' ? window : undefined) {
   try { getUserPool() && getUserPool().getCurrentUser() && getUserPool().getCurrentUser().signOut(); } catch (_) {}
-  if (typeof window !== 'undefined' && typeof window.clearClientSession === 'function') {
-    try { window.clearClientSession(); } catch (_) {}
+  if (win && typeof win.clearClientSession === 'function') {
+    try { win.clearClientSession(); } catch (_) {}
+    return;
   }
+  try {
+    const storage = win?.localStorage || globalThis.localStorage;
+    [
+      'refreshToken',
+      'userId',
+      'userEmail',
+      'userRole',
+      'userName',
+      'userTier',
+      'authProvider',
+      'accessToken',
+      'idToken',
+      'token',
+      'tutorialStatus',
+      'pending_tutorial',
+      'tutorial_completed',
+      'tutorNameAlias'
+    ].forEach((key) => storage?.removeItem?.(key));
+    const cognitoKeys = [];
+    for (let i = 0; i < (storage?.length || 0); i += 1) {
+      const key = storage.key(i);
+      if (key && key.startsWith('CognitoIdentityServiceProvider.')) cognitoKeys.push(key);
+    }
+    cognitoKeys.forEach((key) => storage.removeItem(key));
+  } catch (_) {}
+  try {
+    (win?.sessionStorage || globalThis.sessionStorage)?.clear?.();
+  } catch (_) {}
 }
 
 function mapCognitoError(err) {
@@ -67,6 +96,88 @@ function mapCognitoError(err) {
   if (code === 'PasswordResetRequiredException') return '비밀번호 재설정이 필요합니다. 비밀번호 찾기를 이용해주세요.';
   if (code === 'TooManyRequestsException' || code === 'LimitExceededException') return '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.';
   return (err && err.message) || '로그인 중 오류가 발생했습니다.';
+}
+
+function mapSignupError(err) {
+  const code = (err && (err.code || err.name)) || '';
+  if (code === 'UsernameExistsException') return '이미 가입된 이메일입니다. 로그인 또는 비밀번호 찾기를 이용해주세요.';
+  if (code === 'InvalidPasswordException') return '비밀번호 조건을 확인해주세요. 영문 대/소문자, 숫자, 특수문자 포함 8자 이상이어야 합니다.';
+  if (code === 'InvalidParameterException') return '입력 정보를 다시 확인해주세요.';
+  if (code === 'TooManyRequestsException' || code === 'LimitExceededException') return '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.';
+  return (err && err.message) || '회원가입 중 오류가 발생했습니다.';
+}
+
+async function postAuthJson({ authApiUrl, fetchImpl = globalThis.fetch, payload } = {}) {
+  const url = authApiUrl || (getConfig().api && getConfig().api.auth);
+  if (!url || typeof fetchImpl !== 'function') throw new Error('AUTH_API_MISSING');
+  const res = await fetchImpl(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error || data?.message || 'REQUEST_FAILED');
+  return data;
+}
+
+export async function requestSignupEmailCode({ authApiUrl, email, fetchImpl } = {}) {
+  return postAuthJson({ authApiUrl, fetchImpl, payload: { type: 'send_email_auth', email } });
+}
+
+export async function verifySignupEmailCode({ authApiUrl, code, email, fetchImpl } = {}) {
+  const data = await postAuthJson({ authApiUrl, fetchImpl, payload: { type: 'verify_code', email, code } });
+  if (data?.success === false) throw new Error(data?.error || 'VERIFY_FAILED');
+  return data;
+}
+
+export async function requestSignupSmsCode({ authApiUrl, fetchImpl, phone } = {}) {
+  return postAuthJson({ authApiUrl, fetchImpl, payload: { type: 'send_sms_auth', phone } });
+}
+
+export async function verifySignupSmsCode({ authApiUrl, code, fetchImpl, phone } = {}) {
+  const data = await postAuthJson({ authApiUrl, fetchImpl, payload: { type: 'verify_code', phone, code } });
+  if (data?.success === false) throw new Error(data?.error || 'VERIFY_FAILED');
+  return data;
+}
+
+function signUpCognito({ attributeList, email, password }) {
+  return new Promise((resolve) => {
+    const pool = getUserPool();
+    if (!pool) {
+      resolve({ ok: false, error: '회원가입 설정을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.' });
+      return;
+    }
+    pool.signUp(email, password, attributeList, null, (err, result) => {
+      if (err) {
+        resolve({ ok: false, error: mapSignupError(err) });
+        return;
+      }
+      resolve({ ok: true, userSub: result?.userSub || '' });
+    });
+  });
+}
+
+export async function signUpWithEmail({ authApiUrl, email, fetchImpl, password, profileData } = {}) {
+  const attributeList = [
+    new CognitoUserAttribute({ Name: 'gender', Value: profileData.gender }),
+    new CognitoUserAttribute({ Name: 'given_name', Value: profileData.name }),
+    new CognitoUserAttribute({ Name: 'name', Value: profileData.name }),
+    new CognitoUserAttribute({ Name: 'phone_number', Value: profileData.cognitoPhone }),
+    new CognitoUserAttribute({ Name: 'email', Value: email }),
+    new CognitoUserAttribute({ Name: 'birthdate', Value: profileData.birthdate })
+  ];
+  const signup = await signUpCognito({ attributeList, email, password });
+  if (!signup.ok) return signup;
+  try {
+    await postAuthJson({
+      authApiUrl,
+      fetchImpl,
+      payload: { type: 'update_profile', userId: signup.userSub, data: profileData }
+    });
+    return { ok: true, userSub: signup.userSub };
+  } catch (error) {
+    return { ok: false, afterAccountCreated: true, error: error?.message || '계정은 생성되었으나 프로필 저장에 실패했습니다.' };
+  }
 }
 
 // 이메일/비밀번호 로그인. 성공 시 { ok: true }, 실패 시 { ok: false, error }.

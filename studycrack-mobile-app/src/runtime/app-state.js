@@ -107,6 +107,33 @@ export function createInitialAppState() {
     resetPasswordSending: false,
     authError: '',
     authSubmitting: false,
+    signupEmailSending: false,
+    signupSmsSending: false,
+    signupSubmitting: false,
+    signupError: '',
+    signupVerifiedEmail: '',
+    signupVerifiedPhone: '',
+    signupForm: {
+      email: '',
+      emailCode: '',
+      password: '',
+      passwordConfirm: '',
+      name: '',
+      gender: '',
+      birthdate: '',
+      phoneRaw: '',
+      phoneCode: '',
+      referral: '인스타그램',
+      referralEtc: '',
+      promoCode: ''
+    },
+    signupTerms: {
+      standard: false,
+      service: false,
+      privacy: false,
+      refund: false,
+      marketing: false
+    },
     openTermsType: '',
     // 온보딩/MBTI
     mbtiModalOpen: false,
