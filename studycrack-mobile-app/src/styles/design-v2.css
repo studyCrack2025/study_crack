@@ -309,6 +309,13 @@ input,select,textarea{font-size:16px !important;}
 .planner-donut-legend span{display:flex;align-items:center;gap:6px;font-size:11px;color:#475569;font-weight:700;white-space:nowrap;}
 .planner-donut-legend i{width:8px;height:8px;border-radius:999px;display:inline-block;}
 .planner-add-cta{margin-top:10px;border:1px dashed #93C5FD;background:#EFF6FF;color:var(--primary-dark);border-radius:16px;padding:14px;text-align:center;font-weight:800;}
+/* 플래너 표면 Quiet Strategy Console 정렬: premium CTA 평탄화(eta 카드와 동일 톤) + 빈 상태 다음-액션 */
+.planner-premium-cta{box-shadow:0 4px 12px rgba(52,78,143,.16) !important;border-color:var(--primary-dark) !important;}
+.planner-premium-copy .badge{text-shadow:none !important;background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.4);}
+.planner-premium-copy b{text-shadow:none !important;}
+.planner-empty-day{display:grid;gap:4px;padding:18px 16px;}
+.planner-empty-day b{font-size:14px;font-weight:800;color:#334155;}
+.planner-empty-day p{margin:0;font-size:12.5px;color:#64748B;line-height:1.5;}
 .planner-add-page{padding:0 0 120px;}
 .planner-add-form{margin-top:12px;display:grid;gap:12px;background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:16px;}
 .planner-add-form h4{margin:0;font-size:18px;color:#0F172A;}

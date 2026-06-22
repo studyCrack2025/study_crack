@@ -1,6 +1,13 @@
 import { renderModal } from '../../components/modal.js';
 import { CRACKY_SRC } from '../../constants/assets.js';
+import { FIXED_TODAY_DATE } from '../../constants/mock-data.js';
 import { PLAN_META } from '../../constants/plans.js';
+
+// 잠금 프리뷰(블러 처리되는 데모 표면)용 현재 월/일 라벨.
+function lockedPreviewDateLabel() {
+  const [, month, day] = FIXED_TODAY_DATE.split('-').map(Number);
+  return `${month}월 ${day}일`;
+}
 
 function defaultIcon() {
   return '';
@@ -271,7 +278,7 @@ function renderPaymentFlow({ checkoutPlan = 'Standard', duration = '4주' }) {
 
 function renderLockedFeaturePreview(target = '') {
   if (['planner', 'plannerAdd'].includes(target)) {
-    return `<div class="locked-preview planner-preview"><div class="planner-head preview-head"><h3>2024년 5월 14일</h3><span class="preview-icon">일정</span></div><div class="planner-section-title"><div><h4>오늘의 합격 플래너</h4><p>총 6시간 30분</p></div><div class="planner-donut-wrap"><div class="planner-donut" style="--donut:conic-gradient(#2563EB 0 46%,#10B981 46% 72%,#F59E0B 72% 100%)"></div></div></div><div class="planner-plan-list preview-list"><div class="planner-item"><i class="dot blue"></i><div class="planner-item-main"><b>수학</b><p>약점 단원 3문항 재풀이</p></div><strong>90분</strong></div><div class="planner-item"><i class="dot green"></i><div class="planner-item-main"><b>국어</b><p>비문학 지문 분석 루틴</p></div><strong>70분</strong></div></div></div>`;
+    return `<div class="locked-preview planner-preview"><div class="planner-head preview-head"><h3>${lockedPreviewDateLabel()}</h3><span class="preview-icon">일정</span></div><div class="planner-section-title"><div><h4>오늘의 합격 플래너</h4><p>총 6시간 30분</p></div><div class="planner-donut-wrap"><div class="planner-donut" style="--donut:conic-gradient(#4c79ee 0 46%,#10B981 46% 72%,#F59E0B 72% 100%)"></div></div></div><div class="planner-plan-list preview-list"><div class="planner-item"><i class="dot blue"></i><div class="planner-item-main"><b>수학</b><p>약점 단원 3문항 재풀이</p></div><strong>90분</strong></div><div class="planner-item"><i class="dot green"></i><div class="planner-item-main"><b>국어</b><p>비문학 지문 분석 루틴</p></div><strong>70분</strong></div></div></div>`;
   }
   if (['report', 'reportDetail', 'proElite', 'tutor'].includes(target)) {
     return `<div class="locked-preview pro-preview"><div class="pro-elite-hero"><span class="pro-elite-badge">PRO EXCLUSIVE</span><h3>상위권 전략 리포트</h3><p>2주 단위로 목표 대학 도달 전략을 정리합니다.</p></div><div class="pro-elite-list"><div class="pro-elite-item"><div><b>6월 2주차 PRO 리포트</b><p>정밀 역추적 · 지원 전략 · 학부모 공유 요약</p></div><span class="pro-elite-download">PDF</span></div><div class="qna-card"><div class="qna-card-head"><div><b>SKY튜터 1:1 피드백</b><span>답변 대기</span></div><em>PRO</em></div><p class="qna-question">주간 학습 흐름과 질문을 남기면 튜터 답변이 연결됩니다.</p></div></div></div>`;

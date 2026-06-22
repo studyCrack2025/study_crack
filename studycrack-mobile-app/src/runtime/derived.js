@@ -52,13 +52,19 @@ function computeLiveCurrentScore(scores = {}) {
 export function buildPlannerDerived(state = {}) {
   const { plannerItems = [], selectedDate = '14', plannerEditIndex = null } = state;
 
+  // "오늘" 앵커(FIXED_TODAY_DATE = 런타임 현재 날짜)에서 연/월/월 일수를 단일 출처로 파생한다.
+  const [todayYear, todayMonth] = FIXED_TODAY_DATE.split('-').map(Number);
+  const plannerMonthDays = new Date(todayYear, todayMonth, 0).getDate();
+  const plannerMonthLabel = `${todayYear}년 ${todayMonth}월`;
+
   const plannerWeekDates = Array.from({ length: 15 }, (_, idx) => {
-    const day = Math.min(31, Math.max(1, Number(selectedDate) - 7 + idx));
-    const weekday = WEEKDAY_LABELS[new Date(2024, 4, day).getDay()];
+    const day = Math.min(plannerMonthDays, Math.max(1, Number(selectedDate) - 7 + idx));
+    const weekday = WEEKDAY_LABELS[new Date(todayYear, todayMonth - 1, day).getDay()];
     return { day: String(day), weekday };
   });
 
   const selectedPlannerDate = selectedDate;
+  const selectedPlannerWeekday = WEEKDAY_LABELS[new Date(todayYear, todayMonth - 1, Number(selectedDate) || 1).getDay()];
 
   const plannerItemsByDate = groupPlannerByDate(plannerItems);
 
@@ -97,7 +103,10 @@ export function buildPlannerDerived(state = {}) {
 
   return {
     plannerWeekDates,
+    plannerMonthDays,
+    plannerMonthLabel,
     selectedPlannerDate,
+    selectedPlannerWeekday,
     plannerViewItems,
     plannerViewHour,
     plannerViewMinute,
