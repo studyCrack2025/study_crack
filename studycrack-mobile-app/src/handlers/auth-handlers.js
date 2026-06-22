@@ -1,3 +1,5 @@
+import { loginWithPassword } from '../runtime/auth-service.js';
+
 function noop() {}
 
 function prevent(event) {
@@ -9,6 +11,14 @@ function redirectToWebAuth(path) {
   if (typeof window === 'undefined' || !window.location) return;
   const here = (window.location.pathname || '/') + (window.location.search || '');
   window.location.href = `${path}?returnUrl=${encodeURIComponent(here)}`;
+}
+
+// 로그인 성공 후 세션 부트: 토큰/쿠키가 설정된 상태로 앱을 재부팅하면
+// hasClientSession()이 true가 되어 R2a(세션 → home, 실데이터) 흐름을 그대로 탄다.
+function reloadAppDefault() {
+  if (typeof window !== 'undefined' && window.location && typeof window.location.reload === 'function') {
+    window.location.reload();
+  }
 }
 
 function getDocument(ctx) {
@@ -74,8 +84,12 @@ export function createAuthHandlers(ctx) {
     alert = globalThis.alert || noop,
     fetchImpl,
     findEmail = defaultFindEmail,
+    loginWithPasswordImpl = loginWithPassword,
+    reloadApp = reloadAppDefault,
     requestResetCode = defaultRequestResetCode,
     resetPassword = defaultResetPassword,
+    setAuthError = noop,
+    setAuthSubmitting = noop,
     setFindEmailModalOpen = noop,
     setFoundEmailMasked = noop,
     setResetPasswordEmail = noop,
@@ -195,8 +209,29 @@ export function createAuthHandlers(ctx) {
       return true;
     },
 
-    loginSuccess() {
-      redirectToWebAuth('/login');
+    async loginSuccess({ event }) {
+      prevent(event);
+      const email = getInputValue(ctx, '[data-field="loginEmail"]').trim();
+      const password = getInputValue(ctx, '[data-login-password]');
+      if (!email || !password) {
+        setAuthError('이메일과 비밀번호를 입력해주세요.');
+        return false;
+      }
+      setAuthError('');
+      setAuthSubmitting(true);
+      let result;
+      try {
+        result = await loginWithPasswordImpl({ email, password });
+      } catch (error) {
+        result = { ok: false, error: (error && error.message) || '로그인 중 오류가 발생했습니다.' };
+      }
+      if (!result || !result.ok) {
+        setAuthSubmitting(false);
+        setAuthError((result && result.error) || '로그인에 실패했습니다.');
+        return false;
+      }
+      // 성공: 세션 부트(재부팅). authSubmitting은 reload로 화면이 교체되므로 별도 해제 불필요.
+      reloadApp();
       return true;
     },
 

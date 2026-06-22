@@ -105,6 +105,8 @@ export function createInitialAppState() {
     resetPasswordStep: 'request',
     resetPasswordEmail: '',
     resetPasswordSending: false,
+    authError: '',
+    authSubmitting: false,
     openTermsType: '',
     // 온보딩/MBTI
     mbtiModalOpen: false,

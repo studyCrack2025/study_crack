@@ -316,6 +316,10 @@ input,select,textarea{font-size:16px !important;}
 .planner-empty-day{display:grid;gap:4px;padding:18px 16px;}
 .planner-empty-day b{font-size:14px;font-weight:800;color:#334155;}
 .planner-empty-day p{margin:0;font-size:12.5px;color:#64748B;line-height:1.5;}
+/* 모바일 자체 로그인 입력/에러 (Phase B) */
+.auth-input{margin:0;}
+.auth-unified-card .planner-input{border-color:#DDE7F6;background:#F8FBFF;border-radius:13px;height:48px;}
+.auth-error{margin:0;color:#dc2626;font-size:13px;font-weight:700;line-height:1.45;}
 .planner-add-page{padding:0 0 120px;}
 .planner-add-form{margin-top:12px;display:grid;gap:12px;background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:16px;}
 .planner-add-form h4{margin:0;font-size:18px;color:#0F172A;}
