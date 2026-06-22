@@ -81,6 +81,7 @@ export function mapUserToStatePatch(userData, base = {}) {
   if (!userData || typeof userData !== 'object') return {};
   const patch = {};
   const userPatch = { ...(base.user || {}) };
+  if (userData.role) userPatch.role = userData.role;
   if (userData.name) userPatch.name = userData.name;
   ['email', 'socialEmail', 'phone', 'school', 'mbti', 'authProvider', 'marketingAgreedAt'].forEach((key) => {
     if (userData[key] !== undefined && userData[key] !== null) userPatch[key] = userData[key];

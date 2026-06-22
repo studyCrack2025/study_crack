@@ -19,7 +19,7 @@ function renderLogo(logoSrc = STUDYCRACK_LOGO_SRC) {
 }
 
 function renderSocialAuthButtons(action = 'ssoSuccess', suffix = '로그인') {
-  return `<div class="auth-sso-row"><button class="auth-sso-btn google" data-action="${action}"><span class="auth-sso-icon">G</span><span>Google로 ${suffix}</span></button><button class="auth-sso-btn naver" data-action="${action}"><span class="auth-sso-icon">N</span><span>Naver로 ${suffix}</span></button></div>`;
+  return `<div class="auth-sso-row"><button class="auth-sso-btn google" data-action="${action}" data-provider="google"><span class="auth-sso-icon">G</span><span>Google로 ${suffix}</span></button><button class="auth-sso-btn naver" data-action="${action}" data-provider="naver"><span class="auth-sso-icon">N</span><span>Naver로 ${suffix}</span></button></div>`;
 }
 
 function renderSignupVerifyStatus(done, label) {
@@ -135,7 +135,7 @@ export function renderAuthSignupScreen(ctx) {
   return layout(appbar('회원가입', true) + `<div class="signup-page"><div class="signup-form-card">
       ${renderLogo(studycrackLogoSrc)}
       <p class="signup-title">회원가입</p>
-      <div class="signup-section auth-signup-social"><p class="section-title">소셜 계정으로 시작하기</p><div class="section-divider"></div>${renderSocialAuthButtons('signupSuccess', '시작하기')}<p class="auth-web-note slim">소셜 회원가입 약관 동의는 다음 단계에서 이어집니다.</p></div>
+      <div class="signup-section auth-signup-social"><p class="section-title">소셜 계정으로 시작하기</p><div class="section-divider"></div>${renderSocialAuthButtons('ssoSuccess', '시작하기')}<p class="auth-web-note slim">가입되지 않은 계정은 약관 동의 후 바로 시작합니다.</p></div>
       <div class="auth-divider"><span>또는 이메일로 직접 가입하기</span></div>
       <div class="signup-section auth-native-section">
         <div class="signup-section-head"><p class="section-title">계정 인증</p>${renderSignupVerifyStatus(emailVerified, '이메일')}</div>

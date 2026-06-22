@@ -6,6 +6,7 @@ import {
   verifySignupEmailCode,
   verifySignupSmsCode
 } from '../runtime/auth-service.js';
+import { getData } from './action-utils.js';
 
 function noop() {}
 
@@ -24,6 +25,10 @@ function reloadAppDefault() {
   if (typeof window !== 'undefined' && window.location && typeof window.location.reload === 'function') {
     window.location.reload();
   }
+}
+
+function getWindow(ctx) {
+  return ctx.window || globalThis.window || {};
 }
 
 function getDocument(ctx) {
@@ -107,6 +112,52 @@ function isValidEmail(email) {
 
 function isValidSignupPassword(password) {
   return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(String(password || ''));
+}
+
+function createSocialState(win, provider) {
+  const bytes = new Uint8Array(16);
+  const cryptoObj = win.crypto || globalThis.crypto;
+  cryptoObj?.getRandomValues?.(bytes);
+  const nonce = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('') || String(Date.now());
+  return `${nonce}|${provider}`;
+}
+
+function getMobileReturnPath(win) {
+  const location = win.location || {};
+  const path = location.pathname || '/studycrack-mobile.html';
+  if (!path.startsWith('/') || path.startsWith('//') || path.includes('\\')) return '/studycrack-mobile.html';
+  return path;
+}
+
+function buildSocialAuthUrl(ctx, provider) {
+  const win = getWindow(ctx);
+  const social = win.CONFIG?.social;
+  const clientId = social?.[provider]?.clientId;
+  const callbackUrl = social?.callbackUrl;
+  if (!clientId || !callbackUrl || !['google', 'naver'].includes(provider)) return '';
+  const state = createSocialState(win, provider);
+  const storage = win.sessionStorage || globalThis.sessionStorage;
+  storage?.setItem?.('socialState', state);
+  storage?.setItem?.('socialReturnUrl', getMobileReturnPath(win));
+  storage?.setItem?.('socialEntry', 'mobile');
+  storage?.removeItem?.('socialLinkMode');
+  if (provider === 'google') {
+    return `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: callbackUrl,
+      response_type: 'code',
+      scope: 'openid email profile',
+      state,
+      access_type: 'offline',
+      prompt: 'select_account'
+    })}`;
+  }
+  return `https://nid.naver.com/oauth2.0/authorize?${new URLSearchParams({
+    response_type: 'code',
+    client_id: clientId,
+    redirect_uri: callbackUrl,
+    state
+  })}`;
 }
 
 async function defaultFindEmail({ authApiUrl, fetchImpl = globalThis.fetch, name, phone }) {
@@ -519,8 +570,15 @@ export function createAuthHandlers(ctx) {
       return true;
     },
 
-    ssoSuccess() {
-      redirectToWebAuth('/login');
+    ssoSuccess({ actionEl, event }) {
+      prevent(event);
+      const provider = getData(actionEl, 'provider');
+      const authUrl = buildSocialAuthUrl(ctx, provider);
+      if (!authUrl) {
+        alert('소셜 로그인 설정을 불러오지 못했습니다.');
+        return false;
+      }
+      getWindow(ctx).location.href = authUrl;
       return true;
     }
   };

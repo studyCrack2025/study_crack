@@ -202,6 +202,7 @@
 
     // innerHTML 대신 안전한 DOM 조작 (XSS 방지)
     function showError(msg) {
+        clearSocialReturnState();
         statusMsg.textContent = '';
         const span = document.createElement('span');
         span.style.color = '#dc2626';
@@ -214,6 +215,29 @@
         statusMsg.appendChild(document.createElement('br'));
         statusMsg.appendChild(document.createElement('br'));
         statusMsg.appendChild(link);
+    }
+
+    function getSafeSocialReturnUrl() {
+        let value = '';
+        let entry = '';
+        try {
+            value = sessionStorage.getItem('socialReturnUrl') || '';
+            entry = sessionStorage.getItem('socialEntry') || '';
+        } catch (_) {
+            value = '';
+            entry = '';
+        }
+        if (entry !== 'mobile') return '';
+        if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('\\')) return '';
+        if (value.startsWith('/social-callback')) return '';
+        return value;
+    }
+
+    function clearSocialReturnState() {
+        try {
+            sessionStorage.removeItem('socialReturnUrl');
+            sessionStorage.removeItem('socialEntry');
+        } catch (_) {}
     }
 
     function setPendingSignupModalVisible(visible) {
@@ -328,12 +352,15 @@
             if (userData.computedTier) localStorage.setItem('userTier', userData.computedTier);
         }
 
+        const socialReturnUrl = getSafeSocialReturnUrl();
+        clearSocialReturnState();
+
         if (isLinkMode) {
-            window.location.href = '/mypage';
+            window.location.href = socialReturnUrl || '/mypage';
             return;
         }
 
-        window.location.href = isNewUser ? '/welcome' : '/';
+        window.location.href = socialReturnUrl || (isNewUser ? '/welcome' : '/');
     }
 
     window.closePendingSocialSignupTermsModal = function() {
@@ -392,6 +419,7 @@
     if (errorParam) {
         showError('소셜 로그인이 취소되었습니다.');
         sessionStorage.removeItem('socialState');
+        clearSocialReturnState();
         return;
     }
 
@@ -408,6 +436,7 @@
 
     if (!savedState || savedState !== returnedState) {
         showError('보안 검증에 실패했습니다. 다시 시도해 주세요.');
+        clearSocialReturnState();
         return;
     }
 
@@ -480,6 +509,7 @@
         // 4. 연동 모드 + 새 계정 생성된 경우: 기존 세션 보관 후 확인
         if (isLinkMode && result.isNewUser) {
             const prevUserId = localStorage.getItem('userId');
+            const socialReturnUrl = getSafeSocialReturnUrl();
 
             const confirmed = confirm(
                 '연동하려는 소셜 계정의 이메일이 현재 계정과 달라\n새로운 별도 계정이 생성되었습니다.\n\n' +
@@ -488,13 +518,15 @@
 
             if (!confirmed) {
                 if (prevUserId) localStorage.setItem('userId', prevUserId);
-                window.location.href = '/mypage';
+                clearSocialReturnState();
+                window.location.href = socialReturnUrl || '/mypage';
                 return;
             }
 
             localStorage.setItem('userId', result.userId);
             localStorage.setItem('userRole', 'student');
-            window.location.href = '/welcome';
+            clearSocialReturnState();
+            window.location.href = socialReturnUrl || '/welcome';
             return;
         }
 

@@ -49,10 +49,43 @@ async function registerLoginCookies({ accessToken, idToken, refreshToken }) {
 }
 
 function clearPreviousSession() {
+  clearMobileAuthArtifacts();
+}
+
+export function clearMobileAuthArtifacts(win = typeof window !== 'undefined' ? window : undefined) {
   try { getUserPool() && getUserPool().getCurrentUser() && getUserPool().getCurrentUser().signOut(); } catch (_) {}
-  if (typeof window !== 'undefined' && typeof window.clearClientSession === 'function') {
-    try { window.clearClientSession(); } catch (_) {}
+  if (win && typeof win.clearClientSession === 'function') {
+    try { win.clearClientSession(); } catch (_) {}
+    return;
   }
+  try {
+    const storage = win?.localStorage || globalThis.localStorage;
+    [
+      'refreshToken',
+      'userId',
+      'userEmail',
+      'userRole',
+      'userName',
+      'userTier',
+      'authProvider',
+      'accessToken',
+      'idToken',
+      'token',
+      'tutorialStatus',
+      'pending_tutorial',
+      'tutorial_completed',
+      'tutorNameAlias'
+    ].forEach((key) => storage?.removeItem?.(key));
+    const cognitoKeys = [];
+    for (let i = 0; i < (storage?.length || 0); i += 1) {
+      const key = storage.key(i);
+      if (key && key.startsWith('CognitoIdentityServiceProvider.')) cognitoKeys.push(key);
+    }
+    cognitoKeys.forEach((key) => storage.removeItem(key));
+  } catch (_) {}
+  try {
+    (win?.sessionStorage || globalThis.sessionStorage)?.clear?.();
+  } catch (_) {}
 }
 
 function mapCognitoError(err) {

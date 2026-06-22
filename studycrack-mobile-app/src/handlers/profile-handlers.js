@@ -1,4 +1,5 @@
 import { DEFAULT_USER } from '../constants/mock-data.js';
+import { clearMobileAuthArtifacts } from '../runtime/auth-service.js';
 import { scoreExamTypeToKey } from '../runtime/persistence.js';
 import { getData } from './action-utils.js';
 
@@ -21,6 +22,20 @@ function getInputValue(ctx, name, fallback = '') {
 
 function getWindow(ctx) {
   return ctx.window || globalThis.window || {};
+}
+
+function getMobileReturnPath(ctx) {
+  const location = getWindow(ctx).location || {};
+  const path = location.pathname || '/studycrack-mobile.html';
+  if (!path.startsWith('/') || path.startsWith('//') || path.includes('\\')) return '/studycrack-mobile.html';
+  return `${path}?screen=accountInfo`;
+}
+
+function getMobileLoginPath(ctx) {
+  const location = getWindow(ctx).location || {};
+  const path = location.pathname || '/studycrack-mobile.html';
+  if (!path.startsWith('/') || path.startsWith('//') || path.includes('\\')) return '/studycrack-mobile.html?screen=authLogin';
+  return `${path}?screen=authLogin`;
 }
 
 function getSessionStorage(ctx) {
@@ -59,6 +74,29 @@ async function postJson({ apiFetch, url, payload }) {
   }
 }
 
+async function clearMobileAuthSession(ctx, authApiUrl) {
+  if (authApiUrl) {
+    try {
+      if (typeof ctx.apiFetch === 'function') {
+        await ctx.apiFetch(authApiUrl, {
+          method: 'POST',
+          body: JSON.stringify({ type: 'logout' })
+        });
+      } else {
+        await getWindow(ctx).fetch?.(authApiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ type: 'logout' })
+        });
+      }
+    } catch (_error) {}
+  }
+  try {
+    clearMobileAuthArtifacts(getWindow(ctx));
+  } catch (_error) {}
+}
+
 function buildSocialAuthUrl(ctx, provider) {
   const win = getWindow(ctx);
   const social = win.CONFIG?.social;
@@ -72,6 +110,8 @@ function buildSocialAuthUrl(ctx, provider) {
   const state = `${nonce}|${provider}`;
   getSessionStorage(ctx)?.setItem?.('socialState', state);
   getSessionStorage(ctx)?.setItem?.('socialLinkMode', 'true');
+  getSessionStorage(ctx)?.setItem?.('socialReturnUrl', getMobileReturnPath(ctx));
+  getSessionStorage(ctx)?.setItem?.('socialEntry', 'mobile');
   if (provider === 'google') {
     return `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
       client_id: clientId,
@@ -709,10 +749,15 @@ export function createProfileHandlers(ctx) {
       return true;
     },
 
-    confirmLogout() {
+    async confirmLogout() {
       setLogoutModalOpen(false);
+      await clearMobileAuthSession(ctx, authApiUrl);
       setLoggedIn(false);
       setHistory([]);
+      if (typeof getWindow(ctx).location?.replace === 'function') {
+        getWindow(ctx).location.replace(getMobileLoginPath(ctx));
+        return true;
+      }
       goto?.('authLogin', false);
       alert('로그아웃되었습니다');
       return true;
