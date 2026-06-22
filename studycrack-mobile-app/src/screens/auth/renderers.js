@@ -4,6 +4,15 @@ function disabled(value) {
   return value ? 'disabled' : '';
 }
 
+function escapeHtml(text) {
+  return String(text == null ? '' : text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function renderLogo(logoSrc = STUDYCRACK_LOGO_SRC) {
   return `<div class="auth-logo-wrap compact signup-logo"><img src="${logoSrc}" class="auth-logo" alt="StudyCrack Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" /><span class="auth-logo-fallback">StudyCrack</span></div>`;
 }
@@ -31,6 +40,8 @@ function renderResetPasswordModal({ resetPasswordEmail, resetPasswordModalOpen, 
 
 export function renderAuthLoginScreen(ctx) {
   const {
+    authError = '',
+    authSubmitting = false,
     findEmailModalOpen,
     foundEmailMasked,
     layout,
@@ -46,8 +57,10 @@ export function renderAuthLoginScreen(ctx) {
         ${renderLogo(studycrackLogoSrc)}
         <h1>StudyCrack</h1>
         <p class="auth-title">합격 전략을 시작해볼까요?</p>
-        <p class="sub">웹 로그인으로 안전하게 인증한 뒤 모바일 화면으로 돌아옵니다.</p>
-        <button class="btn btn-primary auth-submit" data-action="loginSuccess">StudyCrack 로그인</button>
+        <input class="planner-input auth-input" data-field="loginEmail" type="email" inputmode="email" autocomplete="username" placeholder="이메일" />
+        <input class="planner-input auth-input" data-login-password type="password" autocomplete="current-password" placeholder="비밀번호" />
+        ${authError ? `<p class="auth-error">${escapeHtml(authError)}</p>` : ''}
+        <button class="btn btn-primary auth-submit" data-action="loginSuccess" ${disabled(authSubmitting)}>${authSubmitting ? '로그인 중...' : '로그인'}</button>
         <div class="auth-divider"><span>또는 소셜 계정으로 로그인</span></div>
         ${renderSocialAuthButtons('ssoSuccess', '로그인')}
         <div class="auth-helper-row">
