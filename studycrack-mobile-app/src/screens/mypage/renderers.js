@@ -1,4 +1,5 @@
 import { renderModal } from '../../components/modal.js';
+import { renderMbtiModal } from '../../components/mbti-modal.js';
 import { renderTermsModal } from '../../components/terms-modal.js';
 import { DEFAULT_USER } from '../../constants/mock-data.js';
 import { TERMS_CONTENT } from '../../constants/terms.js';
@@ -21,6 +22,24 @@ function formatQnaDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
   return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function formatMarketingConsentDate(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+function displayEmail(user = {}) {
+  const raw = user.socialEmail || user.email || '';
+  return raw.includes('@social.studycrack.co.kr') ? '소셜 계정 이메일 미제공' : raw || '등록된 이메일 없음';
+}
+
+function providerLabel(provider = '') {
+  if (provider === 'google') return 'Google';
+  if (provider === 'naver') return 'Naver';
+  return provider || '';
 }
 
 function qnaStatusLabel(status = '') {
@@ -51,6 +70,37 @@ function renderWithdrawModal({ withdrawModalOpen = false, withdrawPassword = '' 
   if (!withdrawModalOpen) return '';
   const body = `<p class="home-modal-title">회원탈퇴</p><p class="sub" style="margin:8px 0 12px;">현재 비밀번호를 입력하면 탈퇴할 수 있습니다.</p><input class="planner-input" type="password" data-field="withdrawPassword" value="${withdrawPassword}" placeholder="현재 비밀번호"/><div class="support-btns" style="margin-top:12px"><button class="btn btn-secondary" data-action="closeWithdrawModal">취소</button><button class="btn btn-primary" data-action="confirmWithdraw">탈퇴하기</button></div>`;
   return renderModal({ dismissAction: 'closeWithdrawModal', body });
+}
+
+function renderPhoneChangeModal(ctx) {
+  const {
+    myProfilePhoneCodeDraft = '',
+    myProfilePhoneDraft = '',
+    phoneChangeModalOpen = false,
+    phoneChangeSending = false,
+    phoneChangeStep = 'input'
+  } = ctx;
+  if (!phoneChangeModalOpen) return '';
+  const body = phoneChangeStep === 'verify'
+    ? `<p class="home-modal-title">전화번호 인증</p><p class="sub" style="margin:8px 0 12px;">문자로 받은 인증번호를 입력해주세요.</p><input class="planner-input" data-field="myProfilePhoneCodeDraft" inputmode="numeric" value="${escapeHtml(myProfilePhoneCodeDraft)}" placeholder="인증번호 6자리"/><div class="support-btns" style="margin-top:12px"><button class="btn btn-secondary" data-action="closePhoneChangeModal">취소</button><button class="btn btn-primary" data-action="verifyPhoneChange">인증 후 변경</button></div>`
+    : `<p class="home-modal-title">전화번호 변경</p><p class="sub" style="margin:8px 0 12px;">알림과 결제 확인에 사용할 휴대폰 번호를 인증합니다.</p><input class="planner-input" data-field="myProfilePhoneDraft" inputmode="tel" value="${escapeHtml(myProfilePhoneDraft)}" placeholder="01012345678"/><div class="support-btns" style="margin-top:12px"><button class="btn btn-secondary" data-action="closePhoneChangeModal">취소</button><button class="btn btn-primary" data-action="requestPhoneChange" ${phoneChangeSending ? 'disabled' : ''}>${phoneChangeSending ? '전송 중' : '인증번호 전송'}</button></div>`;
+  return renderModal({ panelClass: 'phone-change-modal', dismissAction: 'closePhoneChangeModal', body });
+}
+
+function renderSocialAccountRows(user = {}) {
+  const primaryProvider = user.authProvider || 'local';
+  const linked = Array.isArray(user.linkedProviders) ? user.linkedProviders : [];
+  const linkedSet = new Set(linked.map((item) => item.provider));
+  if (primaryProvider !== 'local') linkedSet.add(primaryProvider);
+  const providers = [
+    { key: 'google', label: 'Google', mark: 'G' },
+    { key: 'naver', label: 'Naver', mark: 'N' }
+  ];
+  return providers.map((provider) => {
+    const isLinked = linkedSet.has(provider.key);
+    const isPrimary = primaryProvider === provider.key;
+    return `<div class="mobile-social-row"><div class="mobile-social-info"><span class="mobile-social-mark ${provider.key}">${provider.mark}</span><div><b>${provider.label}</b><small>${isPrimary ? '기본 로그인 계정' : isLinked ? '연동된 계정' : '미연동'}</small></div></div><div class="mobile-social-action">${isLinked ? `<span class="social-badge linked">연동됨</span>${isPrimary ? '' : `<button type="button" class="social-action-btn unlink-btn" data-action="unlinkSocial" data-provider="${provider.key}">해제</button>`}` : `<span class="social-badge unlinked">미연동</span><button type="button" class="social-action-btn link-btn" data-action="linkSocial" data-provider="${provider.key}">연동</button>`}</div></div>`;
+  }).join('');
 }
 
 function renderSupportQnaComposerModal(ctx) {
@@ -184,8 +234,36 @@ export function renderAccountInfoScreen(ctx) {
     withdrawModalOpen,
     withdrawPassword
   } = ctx;
+  const marketingAgreed = user?.marketingAgreed === true;
+  const marketingDate = formatMarketingConsentDate(user?.marketingAgreedAt);
+  const authProvider = user?.authProvider || 'local';
 
-  return layout(appbar('계정 정보', true) + `<div class="card"><div class="score-info-row"><span>이름</span><strong>${escapeHtml(user?.name || DEFAULT_USER.name)}</strong></div><div class="score-info-row"><span>현재 플랜</span><strong>${selectedPlan || DEFAULT_USER.plan}</strong></div><button class="btn btn-secondary" style="margin-top:14px" data-action="openWithdrawModal">회원탈퇴</button></div>${renderWithdrawModal({ withdrawModalOpen, withdrawPassword })}`, false);
+  return layout(appbar('계정 정보', true) + `<div class="account-info-page">
+    <section class="card mobile-account-card">
+      <div class="account-section-head"><h3>기본 인적사항</h3><button type="button" class="text-link-btn" data-action="openMyProfileEdit">이름 수정</button></div>
+      <div class="account-info-row"><span>이름</span><strong>${escapeHtml(user?.name || DEFAULT_USER.name)}</strong></div>
+      <div class="account-info-row"><span>탐구 MBTI</span><strong>${escapeHtml(user?.mbti || user?.qualitative?.mbti || '-')}</strong></div>
+      <button type="button" class="btn btn-secondary account-full-btn" data-action="openMbtiModal">탐구 MBTI 수정하기</button>
+    </section>
+    <section class="card mobile-account-card">
+      <div class="account-section-head"><h3>계정 정보 변경</h3><span>${escapeHtml(providerLabel(authProvider) || 'Local')}</span></div>
+      <div class="account-info-row"><span>이메일</span><strong>${escapeHtml(displayEmail(user))}</strong></div>
+      <div class="account-info-row action"><span>전화번호</span><strong>${escapeHtml(user?.phone || '등록된 번호 없음')}</strong><button type="button" class="text-link-btn" data-action="openPhoneChangeModal">변경</button></div>
+      ${authProvider === 'local' ? `<div class="account-info-row action"><span>비밀번호</span><strong>********</strong><button type="button" class="text-link-btn" data-action="openChangePassword">변경</button></div>` : ''}
+      <div class="account-marketing-row">
+        <div><b>마케팅 수신 동의</b><p>${marketingAgreed ? `${marketingDate || '동의일 확인 중'} 동의` : '미동의 상태입니다.'}</p></div>
+        <button type="button" class="notify-switch ${marketingAgreed ? 'on' : ''}" data-action="saveMarketingConsent" data-marketing-agreed="${marketingAgreed ? 'false' : 'true'}"><i></i></button>
+      </div>
+    </section>
+    <section class="card mobile-account-card">
+      <div class="account-section-head"><h3>소셜 계정 연동</h3><span>Google · Naver</span></div>
+      <div class="mobile-social-list">${renderSocialAccountRows(user)}</div>
+    </section>
+    <section class="card mobile-account-card danger-zone">
+      <div class="account-info-row"><span>현재 플랜</span><strong>${escapeHtml(selectedPlan || DEFAULT_USER.plan)}</strong></div>
+      <button class="btn btn-secondary account-full-btn" data-action="openWithdrawModal">회원탈퇴</button>
+    </section>
+  </div>${renderProfileEditModal(ctx)}${renderPhoneChangeModal(ctx)}${renderWithdrawModal({ withdrawModalOpen, withdrawPassword })}${renderMbtiModal(ctx)}`, false);
 }
 
 export function renderPrivacyPolicyScreen({ appbar, layout }) {

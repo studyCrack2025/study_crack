@@ -160,6 +160,8 @@ export function createFormHandlers(ctx) {
     setTargetMajor = noop,
     setTimeout = globalThis.setTimeout || ((fn) => fn()),
     setWeakSubject = noop,
+    setMyProfilePhoneCodeDraft = noop,
+    setMyProfilePhoneDraft = noop,
     setWithdrawPassword = noop
   } = ctx;
 
@@ -195,6 +197,13 @@ export function createFormHandlers(ctx) {
       renderUniversityResultsOnly(target.value, target);
     }
     if (field === 'myProfileNameDraft') setMyProfileNameDraft(target.value);
+    if (field === 'myProfilePhoneDraft') setMyProfilePhoneDraft(target.value);
+    if (field === 'myProfilePhoneCodeDraft') setMyProfilePhoneCodeDraft(target.value);
+    if (field === 'marketingAgreed') {
+      const checked = target.checked === true;
+      ctx.setUser?.((prev) => ({ ...(prev || {}), marketingAgreed: checked }));
+      ctx.actionHandlers?.saveMarketingConsent?.({ isAgreed: checked });
+    }
     if (field === 'obTrack') {
       setPendingOrState({
         field,
@@ -322,6 +331,8 @@ export function createFormHandlers(ctx) {
     if (field === 'studyHours') setStudyHours(value);
     if (field === 'studyDifficulty') setStudyDifficulty(value);
     if (field === 'proRequestText') setProRequestText(value);
+    if (field === 'myProfilePhoneDraft') setMyProfilePhoneDraft(value);
+    if (field === 'myProfilePhoneCodeDraft') setMyProfilePhoneCodeDraft(value);
     if (field === 'withdrawPassword') setWithdrawPassword(value);
     if (field === 'analysisSearchTerm') setAnalysisSearchTerm(value);
     if (field === 'analysisTargetMajor') {

@@ -218,6 +218,42 @@ function requiredTierLabel(tier = '') {
   return String(tier).toLowerCase() === 'pro' ? 'PRO' : 'STANDARD';
 }
 
+const PLAN_ORDER = ['Basic', 'Starter', 'Standard', 'Pro'];
+const PLAN_CAPABILITIES = [
+  ['score', '합격 분석', ['Basic', 'Starter', 'Standard', 'Pro']],
+  ['planner', '플래너 피드백', ['Starter', 'Standard', 'Pro']],
+  ['weekly', '주간 관리', ['Standard', 'Pro']],
+  ['report', '전략 리포트', ['Pro']]
+];
+
+function planBadgeText(plan = '') {
+  if (plan === 'Basic') return '분석 입문';
+  if (plan === 'Starter') return '1회 진단';
+  if (plan === 'Standard') return '주간 관리';
+  return '프리미엄';
+}
+
+function renderPlanSelector({ checkoutPlan = 'Standard', planMeta = PLAN_META }) {
+  return `<div class="plan-console-selector">${PLAN_ORDER.map((plan) => {
+    const meta = planMeta[plan] || {};
+    return `<button class="${checkoutPlan === plan ? 'active' : ''}" data-action="selectPlan" data-plan="${plan}"><span>${planDisplayName(plan)}</span><b>${escapeHtml(meta.payPrice || meta.introPrice || '')}</b></button>`;
+  }).join('')}</div>`;
+}
+
+function renderPlanCapabilityGrid(plan = 'Standard') {
+  return `<div class="plan-capability-grid">${PLAN_CAPABILITIES.map(([key, label, plans]) => {
+    const enabled = plans.includes(plan);
+    return `<div class="plan-capability ${enabled ? 'enabled' : 'locked'}" data-capability="${key}"><span>${enabled ? '제공' : '상위 플랜'}</span><b>${label}</b></div>`;
+  }).join('')}</div>`;
+}
+
+function renderSelectedPlanDetail({ checkoutPlan = 'Standard', ctaLabel = '결제하기', ctaAction = 'goto', ctaTarget = 'payment', planMeta = PLAN_META, showCta = true }) {
+  const activePlan = planMeta[checkoutPlan] || planMeta.Standard;
+  const original = activePlan.originalPrice ? `<span class="plan-console-original">${escapeHtml(activePlan.originalPrice)}</span>` : '';
+  const ctaAttrs = ctaAction === 'goto' ? `data-action="goto" data-target="${ctaTarget}"` : `data-action="${ctaAction}"`;
+  return `<section class="card plan-console-detail ${String(activePlan.theme || '').toLowerCase()}"><div class="plan-console-head"><div><span class="plan-console-badge">${planBadgeText(checkoutPlan)}</span><h3>${planDisplayName(checkoutPlan)}</h3><p>${escapeHtml(activePlan.desc || '')}</p></div><div class="plan-console-price">${original}<b>${escapeHtml(activePlan.payPrice || activePlan.introPrice || '')}</b><em>${escapeHtml(activePlan.billingNote || activePlan.weeklyPrice || '')}</em></div></div><div class="plan-console-features">${(activePlan.features || []).map((item) => `<span>${escapeHtml(item)}</span>`).join('')}</div>${renderPlanCapabilityGrid(checkoutPlan)}${showCta ? `<button class="btn btn-primary plan-console-cta" ${ctaAttrs}>${ctaLabel}</button>` : ''}</section>`;
+}
+
 function renderLockedFeaturePreview(target = '') {
   if (['planner', 'plannerAdd'].includes(target)) {
     return `<div class="locked-preview planner-preview"><div class="planner-head preview-head"><h3>2024년 5월 14일</h3><span class="preview-icon">일정</span></div><div class="planner-section-title"><div><h4>오늘의 합격 플래너</h4><p>총 6시간 30분</p></div><div class="planner-donut-wrap"><div class="planner-donut" style="--donut:conic-gradient(#2563EB 0 46%,#10B981 46% 72%,#F59E0B 72% 100%)"></div></div></div><div class="planner-plan-list preview-list"><div class="planner-item"><i class="dot blue"></i><div class="planner-item-main"><b>수학</b><p>약점 단원 3문항 재풀이</p></div><strong>90분</strong></div><div class="planner-item"><i class="dot green"></i><div class="planner-item-main"><b>국어</b><p>비문학 지문 분석 루틴</p></div><strong>70분</strong></div></div></div>`;
@@ -404,14 +440,7 @@ export function renderProIntroScreen(ctx) {
     ? `<div class="card locked-upgrade-card"><span class="badge">잠긴 기능</span><h3>${escapeHtml(upgradePromptTarget || '선택한 기능')}은 ${requiredPlan} 이상에서 이용할 수 있어요.</h3><p>요금제를 업그레이드하면 하단 탭은 그대로 유지하면서 해당 기능이 바로 열립니다.</p></div>`
     : '';
 
-  return layout(appbar('StudyCrack 요금제', true) + `${upgradeNotice}<section class="mobile-plan-hero"><span class="plan-hero-kicker">플랜 안내</span><h3>목표와 상황에 맞는 플랜을 선택하세요</h3><p>내 성적과 목표 대학 사이의 거리 분석부터 SKY 튜터 플래너, PRO 전략 리포트까지 단계별로 제공합니다.</p></section><div class="mobile-plan-guide"><span>BASIC 분석</span><i></i><span>STARTER 1회 진단</span><i></i><span>STANDARD 주간 관리</span><i></i><span>PRO 전략 리포트</span></div><p class="sub pricing-sub">웹 결제 페이지와 동일한 상품 구성입니다.</p>
-      <div class="plan-stack">
-        ${renderPlanCard({ meta: planMeta.Basic, plan: 'Basic', selectedPlan: checkoutPlan })}
-        ${renderPlanCard({ meta: planMeta.Starter, plan: 'Starter', selectedPlan: checkoutPlan })}
-        ${renderPlanCard({ meta: planMeta.Standard, plan: 'Standard', selectedPlan: checkoutPlan })}
-        ${renderPlanCard({ meta: planMeta.Pro, plan: 'Pro', selectedPlan: checkoutPlan })}
-      </div>
-      <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="goto" data-target="payment">결제하기</button></div>`, false);
+  return layout(appbar('StudyCrack 요금제', true) + `<section class="plan-console-page">${upgradeNotice}<div class="mobile-plan-hero plan-console-hero"><span class="plan-hero-kicker">플랜 안내</span><h3>필요한 관리 강도에 맞춰 선택하세요</h3><p>웹 결제 페이지의 상품 구성을 모바일에서도 같은 기준으로 보여줍니다.</p></div>${renderPlanSelector({ checkoutPlan, planMeta })}${renderSelectedPlanDetail({ checkoutPlan, planMeta, ctaLabel: '선택한 플랜 결제하기' })}<div class="card plan-console-note"><b>플랜 차이</b><p>Basic은 분석 중심, Starter는 1회 플래너 진단, Standard는 주간 관리, PRO는 심화 전략 리포트까지 포함합니다.</p></div></section>`, false);
 }
 
 export function renderPaymentScreen(ctx) {
@@ -422,23 +451,7 @@ export function renderPaymentScreen(ctx) {
     layout,
     planMeta = PLAN_META
   } = ctx;
-  const activePlan = planMeta[checkoutPlan] || planMeta.Standard;
-  const originalPriceNode = activePlan.originalPrice ? `<span>${escapeHtml(activePlan.originalPrice)}</span>` : '<span></span>';
-
-  return layout(appbar('플랜 선택', true) + `<section class="mobile-payment-hero"><span class="plan-hero-kicker">결제 플랜</span><h3>${planDisplayName(checkoutPlan)} 플랜</h3><p>${escapeHtml(activePlan.desc)}</p></section><div class="payment-tabs full four">
-      <button class="${checkoutPlan === 'Basic' ? 'active' : ''}" data-action="selectPlan" data-plan="Basic">Basic</button>
-      <button class="${checkoutPlan === 'Starter' ? 'active' : ''}" data-action="selectPlan" data-plan="Starter">Starter</button>
-      <button class="${checkoutPlan === 'Standard' ? 'active' : ''}" data-action="selectPlan" data-plan="Standard">Standard</button>
-      <button class="${checkoutPlan === 'Pro' ? 'active' : ''}" data-action="selectPlan" data-plan="Pro">Pro</button>
-    </div>
-      <div class="card payment-focus-card mobile-payment-card"><div class="payment-focus-head"><div><span class="plan-kicker">${escapeHtml(activePlan.billingNote || '4주 단건 결제')}</span><h3>${planDisplayName(checkoutPlan)}</h3><p>${escapeHtml(activePlan.weeklyPrice || activePlan.payPrice)}</p></div><span class="payment-save-badge">${activePlan.originalPrice ? '특별 할인가' : '단건 결제'}</span></div><div class="payment-total-row">${originalPriceNode}<b>${escapeHtml(activePlan.payPrice)}</b></div><p class="payment-desc">${escapeHtml(activePlan.desc)}</p><ul class="payment-check-list">${activePlan.features.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div>
-      <div class="duration-row payment-duration-row">
-        <button class="${duration === '4주' ? 'active' : ''}" data-action="selectDuration" data-duration="4주">4주</button>
-        <button class="${duration === '8주' ? 'active' : ''}" data-action="selectDuration" data-duration="8주">8주</button>
-        <button class="${duration === '12주' ? 'active' : ''}" data-action="selectDuration" data-duration="12주">12주</button>
-      </div>
-      <div class="card payment-safe-card"><b>안전 결제 안내</b><p>전화번호 확인과 NICEPAY 인증은 기존 웹 결제 페이지에서 그대로 진행됩니다.</p></div>
-      <div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="openWebPayment">웹 결제 페이지로 이동</button></div>`, false);
+  return layout(appbar('결제', true) + `<section class="payment-console-page"><div class="mobile-payment-hero plan-console-hero"><span class="plan-hero-kicker">결제 플랜</span><h3>결제 전 플랜 구성을 확인하세요</h3><p>결제와 본인 확인은 기존 웹 결제 페이지에서 안전하게 이어집니다.</p></div>${renderPlanSelector({ checkoutPlan, planMeta })}${renderSelectedPlanDetail({ checkoutPlan, planMeta, ctaLabel: '웹 결제 페이지로 이동', ctaAction: 'openWebPayment' })}<div class="duration-row payment-duration-row"><button class="${duration === '4주' ? 'active' : ''}" data-action="selectDuration" data-duration="4주">4주</button><button class="${duration === '8주' ? 'active' : ''}" data-action="selectDuration" data-duration="8주">8주</button><button class="${duration === '12주' ? 'active' : ''}" data-action="selectDuration" data-duration="12주">12주</button></div><div class="card payment-safe-card"><b>안전 결제 안내</b><p>전화번호 확인과 NICEPAY 인증은 웹 결제 페이지에서 동일하게 진행됩니다.</p></div></section>`, false);
 }
 
 export function renderPaymentCompleteScreen(ctx) {

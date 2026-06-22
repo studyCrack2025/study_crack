@@ -23,6 +23,77 @@ function getWindow(ctx) {
   return ctx.window || globalThis.window || {};
 }
 
+function getSessionStorage(ctx) {
+  return ctx.sessionStorage || getWindow(ctx).sessionStorage || globalThis.sessionStorage;
+}
+
+function normalizeKoreanPhone(phone = '') {
+  let cleanPhone = String(phone || '').replace(/[^0-9+]/g, '').trim();
+  if (cleanPhone.startsWith('010')) cleanPhone = `+82${cleanPhone.substring(1)}`;
+  else if (cleanPhone.startsWith('10')) cleanPhone = `+82${cleanPhone}`;
+  return cleanPhone;
+}
+
+function formatLocalPhone(phone = '') {
+  const digits = String(phone || '').replace(/[^0-9]/g, '');
+  if (digits.length === 11) return digits.replace(/(^01[0-9])([0-9]+)([0-9]{4})$/, '$1-$2-$3');
+  if (digits.length === 10) return digits.replace(/(^0[0-9]{1,2})([0-9]+)([0-9]{4})$/, '$1-$2-$3');
+  return phone;
+}
+
+async function postJson({ apiFetch, url, payload }) {
+  if (typeof apiFetch !== 'function' || !url) return { ok: false, error: 'API 설정을 불러오지 못했습니다.' };
+  try {
+    const response = await apiFetch(url, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    if (!response?.ok) {
+      const body = await response?.json?.().catch(() => null);
+      return { ok: false, error: body?.error || body?.message || '요청을 처리하지 못했습니다.' };
+    }
+    const body = await response.json?.().catch(() => null);
+    return { ok: true, data: body || null };
+  } catch (_error) {
+    return { ok: false, error: '네트워크 오류가 발생했습니다.' };
+  }
+}
+
+function buildSocialAuthUrl(ctx, provider) {
+  const win = getWindow(ctx);
+  const social = win.CONFIG?.social;
+  const clientId = social?.[provider]?.clientId;
+  const callbackUrl = social?.callbackUrl;
+  if (!clientId || !callbackUrl) return '';
+  const bytes = new Uint8Array(16);
+  const cryptoObj = win.crypto || globalThis.crypto;
+  cryptoObj?.getRandomValues?.(bytes);
+  const nonce = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('') || String(Date.now());
+  const state = `${nonce}|${provider}`;
+  getSessionStorage(ctx)?.setItem?.('socialState', state);
+  getSessionStorage(ctx)?.setItem?.('socialLinkMode', 'true');
+  if (provider === 'google') {
+    return `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: callbackUrl,
+      response_type: 'code',
+      scope: 'openid email profile',
+      state,
+      access_type: 'offline',
+      prompt: 'select_account'
+    })}`;
+  }
+  if (provider === 'naver') {
+    return `https://nid.naver.com/oauth2.0/authorize?${new URLSearchParams({
+      response_type: 'code',
+      client_id: clientId,
+      redirect_uri: callbackUrl,
+      state
+    })}`;
+  }
+  return '';
+}
+
 function isInvalidRequiredSelectValue(value) {
   const trimmed = String(value ?? '').trim();
   return !trimmed || ['선택', '과목 선택', '선택하세요', '미선택'].includes(trimmed);
@@ -224,11 +295,17 @@ export function createProfileHandlers(ctx) {
     setMbtiResult = noop,
     setMyProfileEditOpen = noop,
     setMyProfileNameDraft = noop,
+    setMyProfilePhoneCodeDraft = noop,
+    setMyProfilePhoneDraft = noop,
     setNotifications = noop,
     setOb2SkippedNoScore = noop,
     setObGed = noop,
     setObGradeStatus = noop,
     setOpenFaq = noop,
+    setOpenTermsType = noop,
+    setPhoneChangeModalOpen = noop,
+    setPhoneChangeSending = noop,
+    setPhoneChangeStep = noop,
     setScoreEditOpen = noop,
     setScoreEditStep = noop,
     setScoreExamKey = noop,
@@ -241,6 +318,17 @@ export function createProfileHandlers(ctx) {
     setWithdrawPassword = noop
   } = ctx;
   const storage = ctx.localStorage || localStorage;
+  const userApiUrl = ctx.userApiUrl || ctx.apiBase?.user || getWindow(ctx).CONFIG?.api?.user || '';
+  const authApiUrl = ctx.authApiUrl || ctx.apiBase?.auth || getWindow(ctx).CONFIG?.api?.auth || '';
+
+  async function updateMemberInfo(patch) {
+    const result = await postJson({
+      apiFetch: ctx.apiFetch,
+      url: userApiUrl,
+      payload: { type: 'update_member_info', data: patch }
+    });
+    return result;
+  }
 
   return {
     openScoreEdit() {
@@ -442,7 +530,138 @@ export function createProfileHandlers(ctx) {
     async saveMyProfileEdit() {
       const nextName = String(ctx.myProfileNameDraft || '').trim() || DEFAULT_USER.name;
       setUser((prev) => ({ ...(prev || {}), name: nextName }));
+      await updateMemberInfo({ name: nextName });
       setMyProfileEditOpen(false);
+      return true;
+    },
+
+    openTermsModal({ actionEl }) {
+      setOpenTermsType(getData(actionEl, 'terms-type') || 'standard');
+      return true;
+    },
+
+    closeTermsModal() {
+      setOpenTermsType('');
+      return true;
+    },
+
+    openPhoneChangeModal() {
+      setMyProfilePhoneDraft('');
+      setMyProfilePhoneCodeDraft('');
+      setPhoneChangeStep('input');
+      setPhoneChangeModalOpen(true);
+      return true;
+    },
+
+    closePhoneChangeModal() {
+      setPhoneChangeModalOpen(false);
+      setMyProfilePhoneDraft('');
+      setMyProfilePhoneCodeDraft('');
+      setPhoneChangeStep('input');
+      return true;
+    },
+
+    async requestPhoneChange() {
+      const phone = normalizeKoreanPhone(ctx.myProfilePhoneDraft);
+      if (!phone || !phone.startsWith('+')) {
+        alert('휴대폰 번호 형식을 확인해주세요. 예: 01012345678');
+        return false;
+      }
+      setPhoneChangeSending(true);
+      const result = await postJson({
+        apiFetch: ctx.apiFetch,
+        url: authApiUrl,
+        payload: { type: 'send_sms_auth', phone }
+      });
+      setPhoneChangeSending(false);
+      if (!result.ok) {
+        alert(result.error || '인증번호 발송에 실패했습니다.');
+        return false;
+      }
+      setPhoneChangeStep('verify');
+      alert('인증번호가 발송되었습니다.');
+      return true;
+    },
+
+    async verifyPhoneChange() {
+      const phone = normalizeKoreanPhone(ctx.myProfilePhoneDraft);
+      const code = String(ctx.myProfilePhoneCodeDraft || '').trim();
+      if (!phone || !code) {
+        alert('전화번호와 인증번호를 입력해주세요.');
+        return false;
+      }
+      const verifyResult = await postJson({
+        apiFetch: ctx.apiFetch,
+        url: authApiUrl,
+        payload: { type: 'verify_code', phone, code }
+      });
+      if (!verifyResult.ok || verifyResult.data?.success === false) {
+        alert(verifyResult.error || '인증번호가 일치하지 않거나 만료되었습니다.');
+        return false;
+      }
+      const nextPhone = formatLocalPhone(ctx.myProfilePhoneDraft);
+      const updateResult = await updateMemberInfo({ phone: nextPhone });
+      if (!updateResult.ok) {
+        alert(updateResult.error || '전화번호 저장에 실패했습니다.');
+        return false;
+      }
+      setUser((prev) => ({ ...(prev || {}), phone: nextPhone }));
+      setPhoneChangeModalOpen(false);
+      setPhoneChangeStep('input');
+      setMyProfilePhoneDraft('');
+      setMyProfilePhoneCodeDraft('');
+      alert('전화번호가 변경되었습니다.');
+      return true;
+    },
+
+    async saveMarketingConsent({ actionEl, isAgreed } = {}) {
+      const fromAttr = getData(actionEl, 'marketing-agreed', '');
+      const nextValue = isAgreed === undefined
+        ? (fromAttr ? fromAttr === 'true' : !(ctx.user?.marketingAgreed === true))
+        : isAgreed === true;
+      setUser((prev) => ({
+        ...(prev || {}),
+        marketingAgreed: nextValue,
+        marketingAgreedAt: nextValue ? new Date().toISOString() : null
+      }));
+      const result = await updateMemberInfo({ marketingAgreed: nextValue });
+      if (!result.ok) {
+        setUser((prev) => ({ ...(prev || {}), marketingAgreed: !nextValue }));
+        alert(result.error || '마케팅 수신 동의 저장에 실패했습니다.');
+        return false;
+      }
+      alert(nextValue ? '마케팅 정보 수신에 동의했습니다.' : '마케팅 정보 수신 동의를 철회했습니다.');
+      return true;
+    },
+
+    linkSocial({ actionEl }) {
+      const provider = getData(actionEl, 'provider');
+      const authUrl = buildSocialAuthUrl(ctx, provider);
+      if (!authUrl) {
+        alert('소셜 연동 설정을 불러오지 못했습니다.');
+        return false;
+      }
+      getWindow(ctx).location.href = authUrl;
+      return true;
+    },
+
+    async unlinkSocial({ actionEl }) {
+      const provider = getData(actionEl, 'provider');
+      if (!provider || !confirm(`${provider} 계정 연동을 해제하시겠습니까?`)) return false;
+      const result = await postJson({
+        apiFetch: ctx.apiFetch,
+        url: authApiUrl,
+        payload: { type: 'unlink_social', data: { provider } }
+      });
+      if (!result.ok) {
+        alert(result.error || '연동 해제 중 오류가 발생했습니다.');
+        return false;
+      }
+      setUser((prev) => ({
+        ...(prev || {}),
+        linkedProviders: (prev?.linkedProviders || []).filter((item) => item.provider !== provider)
+      }));
+      alert(`${provider} 연동이 해제되었습니다.`);
       return true;
     },
 
@@ -521,6 +740,11 @@ export function createProfileHandlers(ctx) {
       const win = getWindow(ctx);
       if (typeof ctx.windowOpen === 'function') ctx.windowOpen(KAKAO_SUPPORT_URL, '_blank');
       else win.open?.(KAKAO_SUPPORT_URL, '_blank');
+      return true;
+    },
+
+    openChangePassword() {
+      getWindow(ctx).location.href = '/change-password';
       return true;
     }
   };
