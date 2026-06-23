@@ -1788,17 +1788,6 @@ async function endTutorial() {
     }
 }
 
-async function downloadMBTIReport(mbtiResult) {
-    try {
-        const response = await fetch(CONFIG.api.user, buildAuthenticatedFetchOptions({
-            method: 'POST',
-            body: JSON.stringify({ type: 'update_mbti_promo', data: { targetUserId: 'me', promoCode: 'TUTORIAL', mbtiResult } })
-        }));
-        const result = await response.json();
-        if (result.success && result.downloadUrl) window.open(result.downloadUrl, '_blank');
-    } catch (e) { /* silent */ }
-}
-
 async function convertScore(month, subject, score, opt, subName, common, elective) {
     if (!score || score <= 0) return { std: '', pct: '', grd: '' };
     const hasDual = common != null && elective != null;

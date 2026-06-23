@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 💡 메시지 5개로 분할
         const tutMsgs = [
             'Basic 등급 이상에서 사용 가능합니다. 현재 점수를 통해 각 대학에서 본인의 현재 위치를 알려줍니다.',
-            'Standard 등급 이상에서 사용 가능합니다. 현재 점수와 각 대학의 반영비를 통해 어떤 과목을 공부하는 가장 효율적인지를 보여줍니다.',
+            'Basic 등급 이상에서 사용 가능합니다. 현재 점수와 각 대학의 반영비를 통해 어떤 과목을 공부하는 가장 효율적인지를 보여줍니다.',
             'Standard 등급 이상에서 사용 가능합니다. SKY 출신 선생님들이 목표대학 합격을 위해 매주 어떻게 공부를 해야하는지 플래너를 검토해줍니다.',
             'PRO 등급 이상에서 사용 가능합니다. 현재 학습 상황과 고민을 작성하여 1:1 맞춤형 프리미엄 전략 리포트를 요청할 수 있습니다.',
             '담당 컨설턴트가 데이터를 기반으로 분석한 최종 리포트를 2주마다 제공받아, 목표 대학 합격률을 극대화할 수 있습니다.'
@@ -1193,8 +1193,8 @@ function checkMbtiReport(data) {
     if (!mbti) { container.innerHTML = ''; return; }
     
     container.innerHTML = `
-        <button onclick="downloadMbtiReport('${mbti}')" id="mbtiDownBtn" class="btn-go-survey" style="background-color: #10b981; color: white; border: none; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
-            <i class="fas fa-file-download"></i> [${escapeHtml(mbti)}] 보고서 다운받기
+        <button type="button" id="mbtiDownBtn" class="btn-go-survey" disabled aria-disabled="true" style="background-color: #cbd5e1; color: #64748b; border: none; box-shadow: none; cursor: not-allowed;">
+            <i class="fas fa-file-download"></i> [${escapeHtml(mbti)}] 보고서 준비 중
         </button>`;
 }
 
@@ -1215,39 +1215,6 @@ function getUserMbti(data) {
         decoded += String.fromCharCode(code);
     }
     return /^[A-Z]{4}$/i.test(decoded) ? decoded.toUpperCase() : '';
-}
-
-async function downloadMbtiReport(mbtiType) {
-    const mbti = String(mbtiType || '').trim().toUpperCase();
-    if (!/^[A-Z]{4}$/.test(mbti)) {
-        alert("MBTI 결과를 확인할 수 없습니다.");
-        return;
-    }
-
-    const btn = document.getElementById('mbtiDownBtn');
-    if (btn) { btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 발급 중...`; btn.disabled = true; }
-
-    const newWindow = window.open('about:blank', '_blank');
-
-    try {
-        const res = await apiFetch(REPORT_API_URL, {
-            method: 'POST',
-            body: JSON.stringify({ type: 'get_mbti_pdf_url', mbtiType: mbti })
-        });
-        const data = await res.json();
-        
-        if (res.ok && data.success && data.downloadUrl) {
-            newWindow.location.href = data.downloadUrl;
-        } else {
-            newWindow.close();
-            alert(data.error || "보고서 발급에 실패했습니다.");
-        }
-    } catch (e) {
-        newWindow.close();
-        alert("서버 통신 오류가 발생했습니다.");
-    } finally {
-        if (btn) { btn.innerHTML = `<i class="fas fa-file-download"></i> [${escapeHtml(mbti)}] 보고서 다운받기`; btn.disabled = false; }
-    }
 }
 
 // [추가] 메인 탭 좌우 스와이프 동적 안내 헬퍼 함수
