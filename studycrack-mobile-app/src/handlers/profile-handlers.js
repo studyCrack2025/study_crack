@@ -1,4 +1,3 @@
-import { DEFAULT_USER } from '../constants/mock-data.js';
 import { clearMobileAuthArtifacts } from '../runtime/auth-service.js';
 import { scoreExamTypeToKey } from '../runtime/persistence.js';
 import { getData } from './action-utils.js';
@@ -570,7 +569,7 @@ export function createProfileHandlers(ctx) {
     },
 
     openMyProfileEdit() {
-      setMyProfileNameDraft(ctx.user?.name || DEFAULT_USER.name);
+      setMyProfileNameDraft(ctx.user?.name || '');
       setMyProfileEditOpen(true);
       return true;
     },
@@ -581,7 +580,11 @@ export function createProfileHandlers(ctx) {
     },
 
     async saveMyProfileEdit() {
-      const nextName = String(ctx.myProfileNameDraft || '').trim() || DEFAULT_USER.name;
+      const nextName = String(ctx.myProfileNameDraft || '').trim();
+      if (!nextName) {
+        alert('이름을 입력해주세요.');
+        return false;
+      }
       setUser((prev) => ({ ...(prev || {}), name: nextName }));
       await updateMemberInfo({ name: nextName });
       setMyProfileEditOpen(false);

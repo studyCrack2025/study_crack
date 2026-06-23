@@ -84,6 +84,8 @@ export function renderSummaryMode(ctx) {
     analysisMajorOptions = [],
     analysisSelected = {},
     canAccessStandard = false,
+    canUseScoreSimulation = canAccessStandard,
+    canUseReverseProjection = canAccessStandard,
     analysisStatus = '',
     analysisStatusColor = '#4c79ee',
     gaugeCurrent = 0,
@@ -100,25 +102,25 @@ export function renderSummaryMode(ctx) {
   const score = Number(analysisSelected.score || 0);
   const remaining = Math.max(0, 150 - score);
   const location = score >= 150 ? '현재 위치: 합격 안정권 진입' : (score >= 100 ? '현재 위치: 합격권 진입 전' : '현재 위치: 합격권까지 거리 있음');
-  const hasSimulation = canAccessStandard && analysisSimRows.length > 0;
-  const eta = analysisEtaStage === 1
+  const hasSimulation = canUseScoreSimulation && analysisSimRows.length > 0;
+  const eta = !canUseReverseProjection
+    ? '<div class="analysis-eta-locked"><span class="eyebrow">Standard 이상</span><b>역산 기반 도달 성적은 상위 플랜에서 열려요</b><p>Basic에서는 점수 상승 시뮬레이션까지 확인할 수 있습니다.</p><button type="button" class="btn btn-secondary mini" data-action="goto" data-target="proIntro">Standard 기능 보기</button></div>'
+    : analysisEtaStage === 1
     ? '<div class="analysis-eta-loading"><span class="skeleton"></span><p>도달 성적 계산 중입니다...</p></div>'
     : analysisEtaStage === 2
       ? '<div class="analysis-eta-loading"><span class="skeleton thin"></span><p>도달 시간을 예상 중입니다...</p></div>'
       : '<button class="analysis-v2-eta-card" data-action="startStandard"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 2개월 내 도달 예상</b><p>매주 플래너 피드백과 학습 방향 관리를 기준으로 계산했어요</p></button>';
 
   return `
-          <div class="card analysis-v2-targets">
-            <p class="analysis-title">희망 대학 선택</p>
-            <select class="analysis-dropdown" data-field="analysisTargetMajor" value="${normalizedTargetMajor}">
+          <div class="card analysis-v2-summary">
+            <div class="analysis-v2-summary-control">
+              <div><p class="analysis-title">희망 대학 분석</p><span>선택한 대학 기준으로 핵심 결과를 계산합니다.</span></div>
+              <button class="analysis-add-link-btn" data-action="openAnalysisSearchFromHome">대학 추가</button>
+            </div>
+            <select class="analysis-dropdown analysis-v2-target-select" data-field="analysisTargetMajor" value="${normalizedTargetMajor}">
               ${analysisMajorOptions.map((name) => `<option value="${name}" ${normalizedTargetMajor === name ? 'selected' : ''}>${name}</option>`).join('')}
               <option value="__add_university__">+ 대학 추가하기</option>
             </select>
-            <button class="analysis-add-link-btn" data-action="openAnalysisSearchFromHome">+ 대학 추가하기</button>
-          </div>
-
-          <div class="card analysis-v2-summary">
-            <p class="analysis-title">핵심 결과 카드</p>
             <div class="analysis-v2-summary-top">
               <div>
                 <p class="analysis-v2-univ">${targetMajor}</p>
@@ -191,15 +193,16 @@ export function renderSimulationMode(ctx) {
     analysisSimRecommendedIndex = -1,
     analysisSimRows = [],
     analysisSimulationTargets = [],
-    canAccessStandard = false
+    canAccessStandard = false,
+    canUseScoreSimulation = canAccessStandard
   } = ctx;
   const basisLabel = examBasisLabel(ctx.scoreExamType);
 
-  if (!canAccessStandard) {
+  if (!canUseScoreSimulation) {
     return `
           <div class="card analysis-v2-locked">
             <p class="analysis-title">점수 상승 시뮬레이션</p>
-            <p class="sub">Standard 이상 플랜에서 과목별 상승 효율과 도달 성적을 확인할 수 있어요.</p>
+            <p class="sub">Basic 이상 플랜에서 과목별 상승 효율과 점수 변화를 확인할 수 있어요.</p>
             <button type="button" class="btn btn-primary" data-action="goto" data-target="proIntro">플랜 보기</button>
           </div>
         `;
@@ -278,12 +281,17 @@ export function renderAnalysisScreen(ctx) {
   const {
     analysisMode = 'summary',
     canAccessStandard = false,
+    canUseScoreSimulation = canAccessStandard,
+    analysisApiStatus = 'idle',
     isAnalyzing = false,
     layout
   } = ctx;
-  const effectiveMode = canAccessStandard ? analysisMode : 'summary';
+  const effectiveMode = canUseScoreSimulation ? analysisMode : 'summary';
   const loadingPanel = isAnalyzing
     ? '<div class="analysis-loading-panel"><span class="analysis-loading-orbit"><i></i><i></i><i></i></span><div><span>분석 중</span><b>선택한 성적과 목표대학을 다시 계산하고 있어요</b><p>잠시 뒤 지원 가능성과 추천 전략이 갱신됩니다.</p></div></div>'
+    : '';
+  const stalePanel = analysisApiStatus === 'stale'
+    ? '<div class="analysis-stale-note"><i aria-hidden="true"></i><div><b>이전 분석 결과를 먼저 보여드리고 있어요</b><span>새 기준으로 계산이 끝나면 결과가 자동으로 갱신됩니다.</span></div></div>'
     : '';
 
   return layout(
@@ -296,10 +304,11 @@ export function renderAnalysisScreen(ctx) {
         </div>
 
         ${loadingPanel}
+        ${stalePanel}
 
         <div class="analysis-v2-tabs">
           <button class="analysis-v2-tab ${effectiveMode === 'summary' ? 'active' : ''}" data-action="setAnalysisMode" data-analysis-mode="summary">전략 요약</button>
-          <button class="analysis-v2-tab ${effectiveMode === 'simulation' ? 'active' : ''} ${canAccessStandard ? '' : 'locked'}" data-action="${canAccessStandard ? 'setAnalysisMode' : 'goto'}" data-target="proIntro" data-analysis-mode="simulation">점수 상승 시뮬레이션</button>
+          <button class="analysis-v2-tab ${effectiveMode === 'simulation' ? 'active' : ''} ${canUseScoreSimulation ? '' : 'locked'}" data-action="${canUseScoreSimulation ? 'setAnalysisMode' : 'goto'}" ${canUseScoreSimulation ? '' : 'data-target="proIntro"'} data-analysis-mode="simulation">점수 상승 시뮬레이션</button>
         </div>
 
         ${effectiveMode === 'summary' ? renderSummaryMode(ctx) : renderSimulationMode(ctx)}

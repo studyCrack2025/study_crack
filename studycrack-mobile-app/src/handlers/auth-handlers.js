@@ -15,12 +15,6 @@ function prevent(event) {
   event?.stopPropagation?.();
 }
 
-function redirectToWebAuth(path) {
-  if (typeof window === 'undefined' || !window.location) return;
-  const here = (window.location.pathname || '/') + (window.location.search || '');
-  window.location.href = `${path}?returnUrl=${encodeURIComponent(here)}`;
-}
-
 function reloadAppDefault() {
   if (typeof window !== 'undefined' && window.location && typeof window.location.reload === 'function') {
     window.location.reload();
@@ -348,8 +342,8 @@ export function createAuthHandlers(ctx) {
 
     signupSuccess({ event }) {
       prevent(event);
-      redirectToWebAuth('/signup');
-      return true;
+      setSignupError('현재 화면에서 회원가입을 완료해주세요.');
+      return false;
     },
 
     toggleSignupAllTerms({ actionEl }) {

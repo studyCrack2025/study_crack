@@ -12,13 +12,16 @@ export function AnalysisScreen(ctx) {
   const {
     analysisMode = 'summary',
     canAccessStandard = false,
+    canUseScoreSimulation = canAccessStandard,
     dimmed = false,
     isAnalyzing = false,
+    analysisApiStatus = 'idle',
     scoreExamType = '',
     tabBarHtml = ''
   } = ctx;
 
-  const effectiveMode = canAccessStandard ? analysisMode : 'summary';
+  const effectiveMode = canUseScoreSimulation ? analysisMode : 'summary';
+  const isStale = analysisApiStatus === 'stale';
   const modeBodyHtml = effectiveMode === 'summary'
     ? renderSummaryMode(ctx)
     : renderSimulationMode(ctx);
@@ -58,6 +61,16 @@ export function AnalysisScreen(ctx) {
               </div>
             )}
 
+            {isStale && (
+              <div className="analysis-stale-note" role="status" aria-live="polite">
+                <i aria-hidden="true" />
+                <div>
+                  <b>이전 분석 결과를 먼저 보여드리고 있어요</b>
+                  <span>새 기준으로 계산이 끝나면 결과가 자동으로 갱신됩니다.</span>
+                </div>
+              </div>
+            )}
+
             <div className="analysis-exam-picker">
               <div>
                 <b>분석 기준 시험</b>
@@ -81,10 +94,10 @@ export function AnalysisScreen(ctx) {
                 전략 요약
               </button>
               <button
-                className={`analysis-v2-tab ${effectiveMode === 'simulation' ? 'active' : ''} ${canAccessStandard ? '' : 'locked'}`}
-                data-action={canAccessStandard ? 'setAnalysisMode' : 'goto'}
+                className={`analysis-v2-tab ${effectiveMode === 'simulation' ? 'active' : ''} ${canUseScoreSimulation ? '' : 'locked'}`}
+                data-action={canUseScoreSimulation ? 'setAnalysisMode' : 'goto'}
                 data-analysis-mode="simulation"
-                data-target="proIntro"
+                data-target={canUseScoreSimulation ? undefined : 'proIntro'}
               >
                 점수 상승 시뮬레이션
               </button>

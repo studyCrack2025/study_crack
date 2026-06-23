@@ -163,6 +163,14 @@ function canAccessTier(state, requiredTier) {
   return (PLAN_RANK[getEffectiveTier(state)] || 0) >= (PLAN_RANK[requiredTier] || 0);
 }
 
+function canUseScoreSimulation(state) {
+  return canAccessTier(state, 'basic');
+}
+
+function canUseReverseProjection(state) {
+  return canAccessTier(state, 'standard');
+}
+
 function getRoleLoginPath(role) {
   if (role === 'admin') return '/admin/login';
   if (role === 'tutor') return '/tutor/login';
@@ -430,6 +438,8 @@ function MobileApp() {
     apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
     hasClientSession: (typeof window !== 'undefined' && window.hasClientSession) || (() => false),
     redirectToLogin: (typeof window !== 'undefined' && window.redirectToLogin) || (() => {}),
+    canUseScoreSimulation: canUseScoreSimulation(state),
+    canUseReverseProjection: canUseReverseProjection(state),
     // 비-setter 스크롤 연산(원본 1:1). preserveScroll은 추가 payload 인자를 무시한다.
     preserveScroll: (task) => scrollOps.preserveScrollAfterStateChange(task),
     preserveScrollAfterStateChange: scrollOps.preserveScrollAfterStateChange,
@@ -752,8 +762,11 @@ function MobileApp() {
       ...(state.homeTargetList || [])
     ]);
     if (!userScores || !targetList.length) {
-      if ((state.analysisResults || []).length || (state.analysisSimulations || []).length || state.analysisApiStatus !== 'empty') {
-        setState({ analysisResults: [], analysisSimulations: [], analysisApiStatus: 'empty' });
+      const hasPrevious = (state.analysisResults || []).length || state.lastAnalysisSnapshot?.analysisResults?.length;
+      if (!hasPrevious && state.analysisApiStatus !== 'empty') {
+        setState({ analysisApiStatus: 'empty' });
+      } else if (hasPrevious && state.analysisApiStatus !== 'stale') {
+        setState({ analysisApiStatus: 'stale' });
       }
       return undefined;
     }
@@ -762,13 +775,21 @@ function MobileApp() {
     setState({ analysisApiStatus: 'loading' });
     fetchMobileTargetAnalysis({ ...getAnalysisApiBinding(), targetList, userScores, examMode }).then((payload) => {
       if (cancelled || !payload) return;
+      const analysisResults = payload.analysisResults || [];
+      const analysisSimulations = payload.simulationResults || [];
       setState({
-        analysisResults: payload.analysisResults || [],
-        analysisSimulations: payload.simulationResults || [],
-        analysisApiStatus: payload.analysisResults?.length ? 'ready' : 'empty'
+        analysisResults,
+        analysisSimulations,
+        lastAnalysisSnapshot: analysisResults.length
+          ? { examMode, targetList, analysisResults, analysisSimulations, updatedAt: Date.now() }
+          : stateRef.current.lastAnalysisSnapshot,
+        analysisApiStatus: analysisResults.length ? 'ready' : 'empty'
       });
     }).catch(() => {
-      if (!cancelled) setState({ analysisApiStatus: 'error' });
+      if (!cancelled) {
+        const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
+        setState({ analysisApiStatus: hasPrevious ? 'stale' : 'error' });
+      }
     });
     return () => {
       cancelled = true;

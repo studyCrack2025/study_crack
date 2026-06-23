@@ -291,13 +291,16 @@ export function buildAnalysisDerived(state = {}) {
     analysisSearchTerm = '',
     universityCatalog = [],
     analysisResults = [],
-    analysisSimulations = []
+    analysisSimulations = [],
+    lastAnalysisSnapshot = null
   } = state;
+  const effectiveAnalysisResults = analysisResults.length ? analysisResults : (lastAnalysisSnapshot?.analysisResults || []);
+  const effectiveAnalysisSimulations = analysisSimulations.length ? analysisSimulations : (lastAnalysisSnapshot?.analysisSimulations || []);
 
   const liveCurrentScore = computeLiveCurrentScore(scores);
 
-  const serverSelected = findTargetItem(analysisResults, targetMajor);
-  const serverSimulation = findTargetItem(analysisSimulations, targetMajor);
+  const serverSelected = findTargetItem(effectiveAnalysisResults, targetMajor);
+  const serverSimulation = findTargetItem(effectiveAnalysisSimulations, targetMajor);
   const serverScore = Number(serverSelected?.converted_score);
   const hasServerScore = Number.isFinite(serverScore);
   const analysisBaseProfile = ANALYSIS_PROFILES[targetMajor] || ANALYSIS_PROFILES['연세대학교 경영학과'];
@@ -375,7 +378,7 @@ export function buildAnalysisDerived(state = {}) {
     new Set([...(targetMajor ? [targetMajor] : []), ...(analysisTargetList || []), ...(homeTargetList || [])])
   ).filter(Boolean);
   const homeTargets = computeHomeTargets(state);
-  const serverSimulationTargets = (analysisResults || [])
+  const serverSimulationTargets = (effectiveAnalysisResults || [])
     .map((item) => {
       const major = targetFullName(item);
       const score = Number(item.converted_score);
