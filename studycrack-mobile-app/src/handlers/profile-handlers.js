@@ -132,7 +132,8 @@ function buildSocialAuthUrl(ctx, provider) {
       response_type: 'code',
       client_id: clientId,
       redirect_uri: callbackUrl,
-      state
+      state,
+      auth_type: 'reauthenticate'
     })}`;
   }
   return '';
@@ -350,6 +351,8 @@ export function createProfileHandlers(ctx) {
     setPhoneChangeModalOpen = noop,
     setPhoneChangeSending = noop,
     setPhoneChangeStep = noop,
+    setProfileDetailModalOpen = noop,
+    setProfilePhotoUploading = noop,
     setScoreEditOpen = noop,
     setScoreEditStep = noop,
     setScoreExamKey = noop,
@@ -568,8 +571,60 @@ export function createProfileHandlers(ctx) {
       return true;
     },
 
+    async openProfileDetailModal() {
+      setProfileDetailModalOpen(true);
+      const tutorName = String(ctx.user?.tutorName || '').trim();
+      if (tutorName && !ctx.user?.tutorInfo) {
+        const result = await postJson({
+          apiFetch: ctx.apiFetch,
+          url: userApiUrl,
+          payload: { type: 'get_tutor_info', data: { tutorName } }
+        });
+        if (result.ok && result.data) {
+          setUser((prev) => ({ ...(prev || {}), tutorInfo: result.data }));
+        }
+      }
+      return true;
+    },
+
+    closeProfileDetailModal() {
+      setProfileDetailModalOpen(false);
+      return true;
+    },
+
+    async saveProfilePhoto() {
+      const file = query(ctx, '[data-profile-photo-input]')?.files?.[0] || null;
+      if (!file) {
+        alert('변경할 프로필 사진을 선택해주세요.');
+        return false;
+      }
+      if (typeof ctx.uploadProfileImage !== 'function') {
+        alert('프로필 사진 업로드 설정을 불러오지 못했습니다.');
+        return false;
+      }
+      setProfilePhotoUploading(true);
+      try {
+        const uploadResult = await ctx.uploadProfileImage(file);
+        if (!uploadResult?.ok || !uploadResult.fileUrl) {
+          alert(uploadResult?.error || '프로필 사진 업로드에 실패했습니다.');
+          return false;
+        }
+        const updateResult = await updateMemberInfo({ profileImage: uploadResult.fileUrl });
+        if (!updateResult.ok) {
+          alert(updateResult.error || '프로필 사진 저장에 실패했습니다.');
+          return false;
+        }
+        setUser((prev) => ({ ...(prev || {}), profileImage: uploadResult.fileUrl }));
+        alert('프로필 사진이 변경되었습니다.');
+        return true;
+      } finally {
+        setProfilePhotoUploading(false);
+      }
+    },
+
     openMyProfileEdit() {
       setMyProfileNameDraft(ctx.user?.name || '');
+      setProfileDetailModalOpen(false);
       setMyProfileEditOpen(true);
       return true;
     },
@@ -605,6 +660,7 @@ export function createProfileHandlers(ctx) {
       setMyProfilePhoneDraft('');
       setMyProfilePhoneCodeDraft('');
       setPhoneChangeStep('input');
+      setProfileDetailModalOpen(false);
       setPhoneChangeModalOpen(true);
       return true;
     },

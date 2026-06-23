@@ -54,6 +54,61 @@ function displayPlanStatus(plan = '') {
   return label === '미구독' ? '이용권 없음' : `${label} 이용 중`;
 }
 
+function canViewTutorInfo(plan = '', user = {}) {
+  const raw = String(user?.computedTier || user?.tier || plan || '').toLowerCase();
+  return raw.includes('standard') || raw.includes('pro');
+}
+
+function renderProfileAvatar(user = {}, icon = defaultIcon, className = '') {
+  const image = String(user?.profileImage || '').trim();
+  if (image) return `<img class="${escapeHtml(className)}" src="${escapeHtml(image)}" alt="프로필 사진" loading="lazy"/>`;
+  return icon('user', false);
+}
+
+function renderTutorInfo(user = {}, selectedPlan = '') {
+  if (!canViewTutorInfo(selectedPlan, user)) return '';
+  const tutor = user?.tutorInfo && typeof user.tutorInfo === 'object' ? user.tutorInfo : {};
+  const name = tutor.nickname || user?.tutorName || '배정 튜터 확인 중';
+  const schoolMajor = [tutor.school, tutor.major].filter(Boolean).join(' · ');
+  const strengths = Array.isArray(tutor.strengths) ? tutor.strengths.join(' · ') : (tutor.strengths || '');
+  const tutorImage = tutor.profileImage ? `<img src="${escapeHtml(tutor.profileImage)}" alt="튜터 프로필" loading="lazy"/>` : '<span>T</span>';
+
+  return `<section class="profile-detail-section profile-tutor-card"><div class="profile-tutor-photo">${tutorImage}</div><div><p class="profile-detail-kicker">담당 튜터</p><h4>${escapeHtml(name)}</h4>${schoolMajor ? `<p>${escapeHtml(schoolMajor)}</p>` : ''}${strengths ? `<small>${escapeHtml(strengths)}</small>` : ''}${tutor.message ? `<em>${escapeHtml(tutor.message)}</em>` : ''}</div></section>`;
+}
+
+function renderProfileDetailModal(ctx) {
+  const {
+    icon = defaultIcon,
+    profileDetailModalOpen = false,
+    profilePhotoUploading = false,
+    selectedPlan,
+    user = {}
+  } = ctx;
+
+  if (!profileDetailModalOpen) return '';
+
+  const body = `<div class="profile-detail-modal-head"><p class="home-modal-title">계정 및 구독 정보</p><button type="button" class="qna-modal-close" data-action="closeProfileDetailModal">✕</button></div>
+    <div class="profile-detail-hero">
+      <div class="profile-photo-large">${renderProfileAvatar(user, icon, 'profile-photo-img')}</div>
+      <div class="profile-photo-copy"><strong>${escapeHtml(displayName(user))}</strong><span>${escapeHtml(displayPlanStatus(selectedPlan))}</span></div>
+    </div>
+    <div class="profile-photo-actions">
+      <input class="profile-photo-input" type="file" accept="image/*" data-profile-photo-input/>
+      <button type="button" class="btn btn-secondary" data-action="saveProfilePhoto" ${profilePhotoUploading ? 'disabled' : ''}>${profilePhotoUploading ? '업로드 중' : '사진 저장'}</button>
+    </div>
+    <section class="profile-detail-section">
+      <div class="profile-detail-row"><span>이름</span><strong>${escapeHtml(displayName(user))}</strong></div>
+      <div class="profile-detail-row"><span>이메일</span><strong>${escapeHtml(displayEmail(user))}</strong></div>
+      <div class="profile-detail-row"><span>전화번호</span><strong>${escapeHtml(user?.phone || '등록된 번호 없음')}</strong></div>
+      <div class="profile-detail-row"><span>현재 플랜</span><strong>${escapeHtml(displayPlan(selectedPlan))}</strong></div>
+    </section>
+    ${renderTutorInfo(user, selectedPlan)}
+    <section class="profile-detail-section">
+      <div class="profile-detail-actions"><button type="button" class="btn btn-secondary" data-action="openMyProfileEdit">이름 변경</button><button type="button" class="btn btn-secondary" data-action="openPhoneChangeModal">${user?.phone ? '전화번호 변경' : '전화번호 등록'}</button><button type="button" class="btn btn-secondary" data-action="goto" data-target="accountInfo">소셜 로그인 관리</button></div>
+    </section>`;
+  return renderModal({ panelClass: 'profile-detail-modal', dismissAction: 'closeProfileDetailModal', body });
+}
+
 function qnaStatusLabel(status = '') {
   if (String(status).toLowerCase() === 'done') return '답변 완료';
   if (String(status).toLowerCase() === 'read') return '확인 중';
@@ -154,7 +209,8 @@ export function renderMyPageScreen(ctx) {
   const planStatus = displayPlanStatus(selectedPlan);
 
   return layout(appbar('마이페이지', false) + `<div class="my-stack">
-      <button type="button" class="card my-profile-card" data-action="openMyProfileEdit"><div class="my-profile-left"><div class="my-avatar">${icon('user', false)}</div><div><p class="my-name">${escapeHtml(displayName(user))}</p><p class="sub">계정 및 구독 정보</p></div></div><div class="my-profile-right"><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span><span class="badge">${escapeHtml(planStatus)}</span></div></button>
+      <button type="button" class="card my-profile-card" data-action="openProfileDetailModal"><div class="my-profile-left"><div class="my-avatar">${renderProfileAvatar(user, icon, 'my-avatar-img')}</div><div><p class="my-name">${escapeHtml(displayName(user))}</p><p class="sub">계정 및 구독 정보</p></div></div><div class="my-profile-right"><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span><span class="badge">${escapeHtml(planStatus)}</span></div></button>
+      ${renderProfileDetailModal(ctx)}
       ${renderProfileEditModal(ctx)}
       ${mbtiResult ? `<div class="card" style="border:2px solid #2563EB;background:#EFF6FF;"><p class="analysis-title">진단 결과</p><p style="margin:6px 0 2px;font-size:30px;font-weight:900;letter-spacing:.08em;color:#1D4ED8;text-shadow:0 6px 18px rgba(37,99,235,.18);">CSDR</p><p class="sub" style="margin:0 0 12px;font-size:12px;color:#1E40AF;">(컨셉형, 직관령, 분석형, 루틴)</p><button class="btn btn-secondary" disabled>맞춤 공부법 PDF 준비 중</button></div>` : ''}
       <div class="card my-subscription-card"><div class="my-sub-icon">${icon('report', false)}</div><div><p class="my-sub-title">${escapeHtml(planStatus)}</p><p class="my-sub-date">구독 정보는 결제 내역과 연동됩니다.</p></div></div>

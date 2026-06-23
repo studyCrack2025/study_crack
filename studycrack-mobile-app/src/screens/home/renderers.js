@@ -116,6 +116,18 @@ export function renderStudySubjectSheet(ctx) {
   return renderSheet({ panelClass: 'study-subject-sheet', dismissAction: 'closeStudySubjectSheet', body });
 }
 
+function reportStatusText(status = 'idle', hasItem = false) {
+  if (status === 'loading') return '불러오는 중';
+  if (status === 'error') return '확인 필요';
+  return hasItem ? '생성됨' : '대기 중';
+}
+
+function renderHomeReportPreview({ proReports = [], proReportsStatus = 'idle', weeklyReports = [], weeklyReportsStatus = 'idle' } = {}) {
+  const latestWeekly = weeklyReports[0] || null;
+  const latestPro = proReports[0] || null;
+  return `<section class="card home-report-preview-card home-insight-card premium-panel"><div class="home-card-head"><p class="analysis-title">리포트 미리보기</p><span class="home-mini-badge">학습 기록 기반</span></div><div class="home-report-preview-grid"><button type="button" class="home-report-preview-item" data-action="goto" data-target="weekly"><span>주간 리포트</span><b>${escapeHtml(latestWeekly?.title || latestWeekly?.weekId || '이번 주 학습 요약')}</b><small>${reportStatusText(weeklyReportsStatus, Boolean(latestWeekly))}</small></button><button type="button" class="home-report-preview-item pro" data-action="goto" data-target="report"><span>PRO 리포트</span><b>${escapeHtml(latestPro?.key ? `${latestPro.key} 전략 리포트` : '상위권 전략 리포트')}</b><small>${reportStatusText(proReportsStatus, Boolean(latestPro))}</small></button></div></section>`;
+}
+
 // 서버 알림 데이터(title/body)는 innerHTML로 들어가므로 XSS 방지 이스케이프 필수.
 function escapeHtml(value) {
   return String(value ?? '')
@@ -183,6 +195,8 @@ export function renderHomeView(ctx) {
     percentile = 100,
     plannedScheduleOptions = [],
     plannerBadges = [],
+    proReports = [],
+    proReportsStatus = 'idle',
     rankingProgress = 0,
     rankTier = 'bronze',
     rankTierLabel = 'BRONZE',
@@ -200,7 +214,9 @@ export function renderHomeView(ctx) {
     todayStudySeconds = 0,
     todaySubjectsWithTimer = {},
     user = {},
-    universityModalOpen = false
+    universityModalOpen = false,
+    weeklyReports = [],
+    weeklyReportsStatus = 'idle'
   } = ctx;
 
   const slideTransition = homeDragOffset !== 0 ? '0s' : 'transform .72s cubic-bezier(.22,1,.36,1)';
@@ -231,7 +247,6 @@ export function renderHomeView(ctx) {
         ${universityCards}<button class="university-card-slide university-card card slider-card home-add-univ-card" data-action="openAnalysisSearchFromHome"><b>+ 대학 추가</b><p>추천/검색으로 추가</p></button></div>
       </div>
       <div class="home-kpi-indicator card-indicator">${indicators}</div>
-      <button class="pro-top-btn home-pro-below-card-btn" data-action="goto" data-target="proElite"><span>${canAccessPro ? 'PRO LOUNGE 입장' : 'PRO 리포트 미리보기'}</span></button>
       ${renderUniversityModal({ analysisRecommended, analysisSearchList, analysisSearchTerm, analysisTargetList, universityModalOpen })}
     </div>
     <div class="section home-section home-section-last">
@@ -245,6 +260,7 @@ export function renderHomeView(ctx) {
         <div class="home-goal-title-row"><p class="analysis-title">오늘 공부 목표</p>${canAccessStandard ? '' : '<span class="home-goal-plan-badge">Standard부터</span>'}</div>
         ${canAccessStandard && todayPlannerItems.length ? `<div class="goal-compact"><b>${todayPlannerProgress}%</b><span>달성</span><em>${formatMinutesLabel(todayPlannerTotalMinutes)}</em></div><div class="track"><i style="width:${todayPlannerProgress}%"></i></div><div class="goal-tags">${todayPlannerSubjectSummary.slice(0, 3).map((value) => `<span>${value}</span>`).join('')}</div>` : canAccessStandard ? `<p class="sub">오늘 계획을 추가해보세요</p><span class="home-goal-empty-cta">플래너로 이동</span>` : `<p class="sub">주간 플래너와 학습 코칭을 연결해 공부 목표를 관리할 수 있어요.</p><span class="home-goal-empty-cta">Standard 기능 보기</span>`}
       </button>
+      ${renderHomeReportPreview({ proReports, proReportsStatus, weeklyReports, weeklyReportsStatus })}
       <button type="button" class="card home-bottom-summary ranking-card home-insight-card premium-panel rank-tier-${rankTier} ${rankingShine}" data-action="goRanking">
         <div class="home-ranking-head"><p class="analysis-title">내 공부 랭킹</p><span class="badge">오늘 기준</span></div>
         <p class="home-ranking-main">${Math.min(myRank, 124)}등</p>

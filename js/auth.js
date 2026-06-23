@@ -1234,7 +1234,8 @@ window.handleSocialLogin = function(provider) {
     } else if (provider === 'naver') {
         authUrl = `https://nid.naver.com/oauth2.0/authorize?` + new URLSearchParams({
             response_type: 'code', client_id: clientId,
-            redirect_uri: callbackUrl, state
+            redirect_uri: callbackUrl, state,
+            auth_type: 'reauthenticate'
         });
     } else {
         buttons.forEach(btn => { btn.disabled = false; });
