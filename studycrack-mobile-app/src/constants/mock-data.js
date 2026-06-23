@@ -1,4 +1,4 @@
-export const DEFAULT_USER = { name: '김지민', targetUniversity: '연세대학교 경영학과', plan: 'Pro' };
+export const DEFAULT_USER = { name: '', targetUniversity: '연세대학교 경영학과', plan: '' };
 
 export const DEFAULT_SCORES = {
   korean: 82,

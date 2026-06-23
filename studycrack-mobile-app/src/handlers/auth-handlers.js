@@ -15,12 +15,6 @@ function prevent(event) {
   event?.stopPropagation?.();
 }
 
-function redirectToWebAuth(path) {
-  if (typeof window === 'undefined' || !window.location) return;
-  const here = (window.location.pathname || '/') + (window.location.search || '');
-  window.location.href = `${path}?returnUrl=${encodeURIComponent(here)}`;
-}
-
 function reloadAppDefault() {
   if (typeof window !== 'undefined' && window.location && typeof window.location.reload === 'function') {
     window.location.reload();
@@ -119,7 +113,7 @@ function createSocialState(win, provider) {
   const cryptoObj = win.crypto || globalThis.crypto;
   cryptoObj?.getRandomValues?.(bytes);
   const nonce = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('') || String(Date.now());
-  return `${nonce}|${provider}`;
+  return `${nonce}|${provider}|mobile`;
 }
 
 function getMobileReturnPath(win) {
@@ -138,8 +132,13 @@ function buildSocialAuthUrl(ctx, provider) {
   const state = createSocialState(win, provider);
   const storage = win.sessionStorage || globalThis.sessionStorage;
   storage?.setItem?.('socialState', state);
-  storage?.setItem?.('socialReturnUrl', getMobileReturnPath(win));
+  const returnUrl = getMobileReturnPath(win);
+  storage?.setItem?.('socialReturnUrl', returnUrl);
   storage?.setItem?.('socialEntry', 'mobile');
+  try {
+    win.localStorage?.setItem?.('socialReturnUrl', returnUrl);
+    win.localStorage?.setItem?.('socialEntry', 'mobile');
+  } catch (_) {}
   storage?.removeItem?.('socialLinkMode');
   if (provider === 'google') {
     return `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
@@ -343,8 +342,8 @@ export function createAuthHandlers(ctx) {
 
     signupSuccess({ event }) {
       prevent(event);
-      redirectToWebAuth('/signup');
-      return true;
+      setSignupError('현재 화면에서 회원가입을 완료해주세요.');
+      return false;
     },
 
     toggleSignupAllTerms({ actionEl }) {

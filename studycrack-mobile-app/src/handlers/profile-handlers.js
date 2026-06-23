@@ -1,4 +1,3 @@
-import { DEFAULT_USER } from '../constants/mock-data.js';
 import { clearMobileAuthArtifacts } from '../runtime/auth-service.js';
 import { scoreExamTypeToKey } from '../runtime/persistence.js';
 import { getData } from './action-utils.js';
@@ -107,11 +106,16 @@ function buildSocialAuthUrl(ctx, provider) {
   const cryptoObj = win.crypto || globalThis.crypto;
   cryptoObj?.getRandomValues?.(bytes);
   const nonce = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('') || String(Date.now());
-  const state = `${nonce}|${provider}`;
+  const state = `${nonce}|${provider}|mobile`;
   getSessionStorage(ctx)?.setItem?.('socialState', state);
   getSessionStorage(ctx)?.setItem?.('socialLinkMode', 'true');
-  getSessionStorage(ctx)?.setItem?.('socialReturnUrl', getMobileReturnPath(ctx));
+  const returnUrl = getMobileReturnPath(ctx);
+  getSessionStorage(ctx)?.setItem?.('socialReturnUrl', returnUrl);
   getSessionStorage(ctx)?.setItem?.('socialEntry', 'mobile');
+  try {
+    getWindow(ctx).localStorage?.setItem?.('socialReturnUrl', returnUrl);
+    getWindow(ctx).localStorage?.setItem?.('socialEntry', 'mobile');
+  } catch (_) {}
   if (provider === 'google') {
     return `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
       client_id: clientId,
@@ -565,7 +569,7 @@ export function createProfileHandlers(ctx) {
     },
 
     openMyProfileEdit() {
-      setMyProfileNameDraft(ctx.user?.name || DEFAULT_USER.name);
+      setMyProfileNameDraft(ctx.user?.name || '');
       setMyProfileEditOpen(true);
       return true;
     },
@@ -576,7 +580,11 @@ export function createProfileHandlers(ctx) {
     },
 
     async saveMyProfileEdit() {
-      const nextName = String(ctx.myProfileNameDraft || '').trim() || DEFAULT_USER.name;
+      const nextName = String(ctx.myProfileNameDraft || '').trim();
+      if (!nextName) {
+        alert('이름을 입력해주세요.');
+        return false;
+      }
       setUser((prev) => ({ ...(prev || {}), name: nextName }));
       await updateMemberInfo({ name: nextName });
       setMyProfileEditOpen(false);

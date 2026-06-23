@@ -1,7 +1,6 @@
 import { renderModal } from '../../components/modal.js';
 import { renderMbtiModal } from '../../components/mbti-modal.js';
 import { renderTermsModal } from '../../components/terms-modal.js';
-import { DEFAULT_USER } from '../../constants/mock-data.js';
 import { TERMS_CONTENT } from '../../constants/terms.js';
 
 function defaultIcon() {
@@ -40,6 +39,19 @@ function providerLabel(provider = '') {
   if (provider === 'google') return 'Google';
   if (provider === 'naver') return 'Naver';
   return provider || '';
+}
+
+function displayName(user = {}) {
+  return String(user?.name || '').trim() || '회원';
+}
+
+function displayPlan(plan = '') {
+  return String(plan || '').trim() || '미구독';
+}
+
+function displayPlanStatus(plan = '') {
+  const label = displayPlan(plan);
+  return label === '미구독' ? '이용권 없음' : `${label} 이용 중`;
 }
 
 function qnaStatusLabel(status = '') {
@@ -82,8 +94,8 @@ function renderPhoneChangeModal(ctx) {
   } = ctx;
   if (!phoneChangeModalOpen) return '';
   const body = phoneChangeStep === 'verify'
-    ? `<p class="home-modal-title">전화번호 인증</p><p class="sub" style="margin:8px 0 12px;">문자로 받은 인증번호를 입력해주세요.</p><input class="planner-input" data-field="myProfilePhoneCodeDraft" inputmode="numeric" value="${escapeHtml(myProfilePhoneCodeDraft)}" placeholder="인증번호 6자리"/><div class="support-btns" style="margin-top:12px"><button class="btn btn-secondary" data-action="closePhoneChangeModal">취소</button><button class="btn btn-primary" data-action="verifyPhoneChange">인증 후 변경</button></div>`
-    : `<p class="home-modal-title">전화번호 변경</p><p class="sub" style="margin:8px 0 12px;">알림과 결제 확인에 사용할 휴대폰 번호를 인증합니다.</p><input class="planner-input" data-field="myProfilePhoneDraft" inputmode="tel" value="${escapeHtml(myProfilePhoneDraft)}" placeholder="01012345678"/><div class="support-btns" style="margin-top:12px"><button class="btn btn-secondary" data-action="closePhoneChangeModal">취소</button><button class="btn btn-primary" data-action="requestPhoneChange" ${phoneChangeSending ? 'disabled' : ''}>${phoneChangeSending ? '전송 중' : '인증번호 전송'}</button></div>`;
+    ? `<p class="home-modal-title">전화번호 인증</p><p class="sub" style="margin:8px 0 12px;">${escapeHtml(myProfilePhoneDraft || '입력한 번호')}로 받은 인증번호를 입력해주세요.</p><input class="planner-input" data-field="myProfilePhoneCodeDraft" inputmode="numeric" value="${escapeHtml(myProfilePhoneCodeDraft)}" placeholder="인증번호 6자리"/><div class="support-btns" style="margin-top:12px"><button class="btn btn-secondary" data-action="requestPhoneChange" ${phoneChangeSending ? 'disabled' : ''}>재전송</button><button class="btn btn-primary" data-action="verifyPhoneChange">인증 후 변경</button></div><button class="text-link-btn phone-change-cancel" data-action="closePhoneChangeModal">취소</button>`
+    : `<p class="home-modal-title">전화번호 변경</p><p class="sub" style="margin:8px 0 12px;">결제 확인, 알림톡, 중요 공지 수신에 사용할 휴대폰 번호를 인증합니다.</p><input class="planner-input" data-field="myProfilePhoneDraft" inputmode="tel" value="${escapeHtml(myProfilePhoneDraft)}" placeholder="01012345678"/><p class="phone-change-hint">숫자만 입력해도 자동으로 인증 형식에 맞춰 전송됩니다.</p><div class="support-btns" style="margin-top:12px"><button class="btn btn-secondary" data-action="closePhoneChangeModal">취소</button><button class="btn btn-primary" data-action="requestPhoneChange" ${phoneChangeSending ? 'disabled' : ''}>${phoneChangeSending ? '전송 중' : '인증번호 전송'}</button></div>`;
   return renderModal({ panelClass: 'phone-change-modal', dismissAction: 'closePhoneChangeModal', body });
 }
 
@@ -138,13 +150,14 @@ export function renderMyPageScreen(ctx) {
     selectedPlan,
     user
   } = ctx;
-  const planLabel = selectedPlan || DEFAULT_USER.plan;
+  const planLabel = displayPlan(selectedPlan);
+  const planStatus = displayPlanStatus(selectedPlan);
 
   return layout(appbar('마이페이지', false) + `<div class="my-stack">
-      <button type="button" class="card my-profile-card" data-action="openMyProfileEdit"><div class="my-profile-left"><div class="my-avatar">${icon('user', false)}</div><div><p class="my-name">${escapeHtml(user?.name || DEFAULT_USER.name)}</p><p class="sub">계정 및 구독 정보</p></div></div><div class="my-profile-right"><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span><span class="badge">${planLabel} 이용 중</span></div></button>
+      <button type="button" class="card my-profile-card" data-action="openMyProfileEdit"><div class="my-profile-left"><div class="my-avatar">${icon('user', false)}</div><div><p class="my-name">${escapeHtml(displayName(user))}</p><p class="sub">계정 및 구독 정보</p></div></div><div class="my-profile-right"><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span><span class="badge">${escapeHtml(planStatus)}</span></div></button>
       ${renderProfileEditModal(ctx)}
       ${mbtiResult ? `<div class="card" style="border:2px solid #2563EB;background:#EFF6FF;"><p class="analysis-title">진단 결과</p><p style="margin:6px 0 2px;font-size:30px;font-weight:900;letter-spacing:.08em;color:#1D4ED8;text-shadow:0 6px 18px rgba(37,99,235,.18);">CSDR</p><p class="sub" style="margin:0 0 12px;font-size:12px;color:#1E40AF;">(컨셉형, 직관령, 분석형, 루틴)</p><button class="btn btn-secondary" disabled>맞춤 공부법 PDF 준비 중</button></div>` : ''}
-      <div class="card my-subscription-card"><div class="my-sub-icon">${icon('report', false)}</div><div><p class="my-sub-title">${planLabel} 플랜 이용 중</p><p class="my-sub-date">구독 정보는 결제 내역과 연동됩니다.</p></div></div>
+      <div class="card my-subscription-card"><div class="my-sub-icon">${icon('report', false)}</div><div><p class="my-sub-title">${escapeHtml(planStatus)}</p><p class="my-sub-date">구독 정보는 결제 내역과 연동됩니다.</p></div></div>
       <div class="card my-menu-card">
         <button class="my-row" data-action="goto" data-target="qualInfo">정성조사서 <span>${icon('chevron', false)}</span></button><button class="my-row" data-action="goto" data-target="scoreInfo">성적 정보 <span>${icon('chevron', false)}</span></button>
 
@@ -237,18 +250,20 @@ export function renderAccountInfoScreen(ctx) {
   const marketingAgreed = user?.marketingAgreed === true;
   const marketingDate = formatMarketingConsentDate(user?.marketingAgreedAt);
   const authProvider = user?.authProvider || 'local';
+  const hasPhone = Boolean(String(user?.phone || '').trim());
 
   return layout(appbar('계정 정보', true) + `<div class="account-info-page">
     <section class="card mobile-account-card">
-      <div class="account-section-head"><h3>기본 인적사항</h3><button type="button" class="text-link-btn" data-action="openMyProfileEdit">이름 수정</button></div>
-      <div class="account-info-row"><span>이름</span><strong>${escapeHtml(user?.name || DEFAULT_USER.name)}</strong></div>
+      <div class="account-section-head"><h3>기본 인적사항</h3><span>프로필</span></div>
+      <div class="account-info-row"><span>이름</span><strong>${escapeHtml(displayName(user))}</strong></div>
       <div class="account-info-row"><span>탐구 MBTI</span><strong>${escapeHtml(user?.mbti || user?.qualitative?.mbti || '-')}</strong></div>
-      <button type="button" class="btn btn-secondary account-full-btn" data-action="openMbtiModal">탐구 MBTI 수정하기</button>
+      <div class="account-action-grid"><button type="button" class="btn btn-secondary account-full-btn" data-action="openMyProfileEdit">이름 변경</button><button type="button" class="btn btn-secondary account-full-btn" data-action="openMbtiModal">탐구 MBTI 수정</button></div>
     </section>
     <section class="card mobile-account-card">
       <div class="account-section-head"><h3>계정 정보 변경</h3><span>${escapeHtml(providerLabel(authProvider) || 'Local')}</span></div>
       <div class="account-info-row"><span>이메일</span><strong>${escapeHtml(displayEmail(user))}</strong></div>
-      <div class="account-info-row action"><span>전화번호</span><strong>${escapeHtml(user?.phone || '등록된 번호 없음')}</strong><button type="button" class="text-link-btn" data-action="openPhoneChangeModal">변경</button></div>
+      <div class="account-info-row action phone-row ${hasPhone ? '' : 'missing'}"><span>전화번호</span><strong>${escapeHtml(user?.phone || '등록된 번호 없음')}</strong><button type="button" class="text-link-btn" data-action="openPhoneChangeModal">${hasPhone ? '변경' : '등록'}</button></div>
+      ${hasPhone ? '' : '<p class="account-inline-warning">결제와 중요 알림을 위해 전화번호 인증 등록이 필요합니다.</p>'}
       ${authProvider === 'local' ? `<div class="account-info-row action"><span>비밀번호</span><strong>********</strong><button type="button" class="text-link-btn" data-action="openChangePassword">변경</button></div>` : ''}
       <div class="account-marketing-row">
         <div><b>마케팅 수신 동의</b><p>${marketingAgreed ? `${marketingDate || '동의일 확인 중'} 동의` : '미동의 상태입니다.'}</p></div>
@@ -260,7 +275,7 @@ export function renderAccountInfoScreen(ctx) {
       <div class="mobile-social-list">${renderSocialAccountRows(user)}</div>
     </section>
     <section class="card mobile-account-card danger-zone">
-      <div class="account-info-row"><span>현재 플랜</span><strong>${escapeHtml(selectedPlan || DEFAULT_USER.plan)}</strong></div>
+      <div class="account-info-row"><span>현재 플랜</span><strong>${escapeHtml(displayPlan(selectedPlan))}</strong></div>
       <button class="btn btn-secondary account-full-btn" data-action="openWithdrawModal">회원탈퇴</button>
     </section>
   </div>${renderProfileEditModal(ctx)}${renderPhoneChangeModal(ctx)}${renderWithdrawModal({ withdrawModalOpen, withdrawPassword })}${renderMbtiModal(ctx)}`, false);

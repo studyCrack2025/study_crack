@@ -600,13 +600,17 @@ function syncMobileHeight() {
     if (wrapper && wrapper.style.height) wrapper.style.height = '';
 }
 
-function getBasicLockOverlayHTML(featureName) {
+function canUseScoreSimulationTier() {
+    return ['trial', 'basic', 'starter', 'standard', 'pro'].includes(currentUserTier);
+}
+
+function getTierLockOverlayHTML(featureName, tierLabel = 'Standard') {
     return `
         <div style="background: white; padding: 30px 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; border: 1px solid #e2e8f0; width: 90%; max-width: 320px; box-sizing: border-box;">
             <i class="fas fa-lock" style="font-size: 2.5rem; color: #7c9eef; margin-bottom: 15px;"></i>
-            <h3 style="margin: 0 0 10px 0; color: #1e293b; font-size: 1.25rem; word-break: keep-all;">Basic 멤버십 전용</h3>
+            <h3 style="margin: 0 0 10px 0; color: #1e293b; font-size: 1.25rem; word-break: keep-all;">${tierLabel} 멤버십 전용</h3>
             <p style="color: #475569; font-size: 0.95rem; margin-bottom: 20px; line-height: 1.5; word-break: keep-all;">
-                ${featureName}은(는)<br><strong style="color:#4c79ee;">Basic 등급 이상</strong>부터 이용 가능합니다.
+                ${featureName}은(는)<br><strong style="color:#4c79ee;">${tierLabel} 등급 이상</strong>부터 이용 가능합니다.
             </p>
             <button onclick="location.href='/payment'" style="width: 100%; padding: 14px 0; background: #4c79ee; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.2s; white-space: nowrap; word-break: keep-all;">
                 🚀 멤버십 알아보기
@@ -614,11 +618,15 @@ function getBasicLockOverlayHTML(featureName) {
         </div>`;
 }
 
+function getStandardLockOverlayHTML(featureName) {
+    return getTierLockOverlayHTML(featureName, 'Standard');
+}
+
 function applySimTierLock() {
     const container = document.querySelector('.sim-container-new') || document.getElementById('sol-sim');
     if (!container) return;
 
-    if (['free'].includes(currentUserTier)) {
+    if (!canUseScoreSimulationTier()) {
         container.style.position = 'relative';
         container.style.minHeight = '400px'; // 모달 위치 통일용 강제 고정
         if (container.querySelector('.sim-tier-lock-overlay')) return;
@@ -626,7 +634,7 @@ function applySimTierLock() {
         const overlay = document.createElement('div');
         overlay.className = 'sim-tier-lock-overlay';
         overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(200, 217, 255, 0.82); backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
-        overlay.innerHTML = getBasicLockOverlayHTML('점수 상승 시뮬레이션');
+        overlay.innerHTML = getTierLockOverlayHTML('점수 상승 시뮬레이션', 'Basic');
         container.appendChild(overlay);
     } else {
         container.style.minHeight = 'auto';
@@ -1975,8 +1983,8 @@ function initSimulation() {
     const chartArea = document.getElementById('simChartArea');
     if (!chartArea) return;
 
-    if (!['trial', 'standard', 'pro'].includes(currentUserTier)) {
-        chartArea.innerHTML = `<div style="width:100%; height:100%; min-height: 260px; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-weight:600; font-size:1.1rem;">Standard 멤버십 이상 전용 기능입니다.</div>`;
+    if (!canUseScoreSimulationTier()) {
+        chartArea.innerHTML = `<div style="width:100%; height:100%; min-height: 260px; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-weight:600; font-size:1.1rem;">Basic 멤버십 이상 전용 기능입니다.</div>`;
         renderDetailedSimCard(); // 블러 뒤에 나타날 타겟 CTA 렌더링 호출
         return;
     }

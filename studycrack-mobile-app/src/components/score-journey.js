@@ -102,15 +102,16 @@ export function renderScoreJourneyCard(ctx = {}, title = '최소 노력 대비 �
     analysisSimRows = [],
     analysisTargetScore,
     canAccessStandard = false,
+    canUseReverseProjection = canAccessStandard,
     scoreDragOffset = 0,
     scoreSlideMotion = '',
     scoreState = {},
     scores = {}
   } = ctx;
-  if (!canAccessStandard) {
+  if (!canUseReverseProjection) {
     return renderUnavailableCard(
       title,
-      '점수 상승 시뮬레이션은 Standard 이상 플랜에서 확인할 수 있어요.',
+      '최소 노력 대비 도달 성적과 역산 전략은 Standard 이상 플랜에서 확인할 수 있어요.',
       '<button type="button" class="btn btn-primary mini" data-action="goto" data-target="proIntro">플랜 보기</button>'
     );
   }
