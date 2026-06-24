@@ -57,7 +57,8 @@ function renderEventForm(ctx) {
   const {
     calendarEventFormOpen = false,
     calendarEventEditId = null,
-    calendarEventDraft = null
+    calendarEventDraft = null,
+    calendarSaving = false
   } = ctx;
   if (!calendarEventFormOpen) return '';
   const draft = calendarEventDraft || {};
@@ -78,9 +79,9 @@ function renderEventForm(ctx) {
       <textarea class="planner-input calendar-form-note" data-calendar-field="note" maxlength="300" placeholder="메모">${escapeHtml(draft.note || '')}</textarea>
     </div>
     <div class="support-btns calendar-form-actions">
-      ${calendarEventEditId ? `<button type="button" class="btn btn-secondary calendar-delete-btn" data-action="deleteCalendarEvent" data-event-id="${escapeHtml(calendarEventEditId)}">삭제</button>` : ''}
-      <button type="button" class="btn btn-secondary" data-action="closeCalendarEventForm">취소</button>
-      <button type="button" class="btn btn-primary" data-action="saveCalendarEvent">저장</button>
+      ${calendarEventEditId ? `<button type="button" class="btn btn-secondary calendar-delete-btn" data-action="deleteCalendarEvent" data-event-id="${escapeHtml(calendarEventEditId)}" ${calendarSaving ? 'disabled' : ''}>삭제</button>` : ''}
+      <button type="button" class="btn btn-secondary" data-action="closeCalendarEventForm" ${calendarSaving ? 'disabled' : ''}>취소</button>
+      <button type="button" class="btn btn-primary" data-action="saveCalendarEvent" ${calendarSaving ? 'disabled' : ''}>${calendarSaving ? '저장 중...' : '저장'}</button>
     </div>`;
   return renderModal({ panelClass: 'calendar-event-modal', dismissAction: 'closeCalendarEventForm', body });
 }
@@ -95,7 +96,8 @@ export function renderCalendarSheet(ctx = {}) {
     calendarNearestEvent = null,
     calendarNearestDdayLabel = '',
     calendarSelectedDate = '',
-    calendarSelectedEvents = []
+    calendarSelectedEvents = [],
+    calendarSyncStatus = 'idle'
   } = ctx;
   if (!calendarSheetOpen) return '';
 
@@ -108,16 +110,23 @@ export function renderCalendarSheet(ctx = {}) {
   const selectedListHtml = calendarSelectedEvents.length
     ? calendarSelectedEvents.map(renderEventRow).join('')
     : '<p class="calendar-empty">이 날짜에 등록된 일정이 없어요.</p>';
+  const syncHtml = calendarSyncStatus === 'loading'
+    ? '<p class="calendar-sync-note">내 일정을 동기화하고 있어요.</p>'
+    : calendarSyncStatus === 'error'
+      ? '<p class="calendar-sync-note error">내 일정을 불러오지 못했습니다. 잠시 후 다시 열어주세요.</p>'
+      : '';
+  const addDisabled = calendarSyncStatus === 'loading' ? 'disabled' : '';
 
   const body = `<div class="notif-sheet-handle" aria-hidden="true"></div>
     <div class="notif-sheet-head"><p class="home-modal-title">다가오는 일정</p><button type="button" class="qna-modal-close" data-action="closeCalendarSheet" aria-label="닫기">✕</button></div>
     <div class="calendar-sheet-scroll">
+      ${syncHtml}
       ${nearestHtml}
       <div class="calendar-month-nav"><button type="button" class="calendar-nav-btn" data-action="calendarPrevMonth" aria-label="이전 달">‹</button><b>${escapeHtml(calendarMonthLabel)}</b><button type="button" class="calendar-nav-btn" data-action="calendarNextMonth" aria-label="다음 달">›</button></div>
       <div class="calendar-weekdays">${weekdaysHtml}</div>
       <div class="calendar-grid">${gridHtml}</div>
       <div class="calendar-selected">
-        <div class="calendar-selected-head"><b>${escapeHtml(formatDateLabel(calendarSelectedDate))}</b><button type="button" class="btn btn-primary mini" data-action="openCalendarEventForm">+ 내 일정 추가</button></div>
+        <div class="calendar-selected-head"><b>${escapeHtml(formatDateLabel(calendarSelectedDate))}</b><button type="button" class="btn btn-primary mini" data-action="openCalendarEventForm" ${addDisabled}>+ 내 일정 추가</button></div>
         <div class="calendar-selected-list">${selectedListHtml}</div>
       </div>
     </div>`;

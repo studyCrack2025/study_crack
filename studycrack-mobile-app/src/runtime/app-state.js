@@ -182,6 +182,8 @@ export function createInitialAppState() {
     calendarEventFormOpen: false,
     calendarEventEditId: null, // 수정 중인 개인 일정 id(null이면 신규)
     calendarEventDraft: null, // { title, date, endDate, category, note }
+    calendarSyncStatus: 'idle', // idle | loading | ready | error | local
+    calendarSaving: false,
     // mypage/계정
     logoutModalOpen: false,
     withdrawModalOpen: false,

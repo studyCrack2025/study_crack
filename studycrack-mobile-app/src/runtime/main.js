@@ -15,7 +15,7 @@ import { renderScoreEditModal } from '../screens/profile/renderers.js';
 import { MAIN_TAB_SCREENS, createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
-import { createBlankScoreState, fetchMobileNotifications, markMobileNotificationsRead, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, uploadMobileFile, uploadMobileWeeklyFiles } from './persistence.js';
+import { createBlankScoreState, fetchMobileAdmissionCalendar, fetchMobileNotifications, markMobileNotificationsRead, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, uploadMobileFile, uploadMobileWeeklyFiles } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
@@ -274,8 +274,11 @@ function createInitialAppStateWithScreenParam() {
   if (typeof window === 'undefined' || !window.location) return base;
   const param = new URLSearchParams(window.location.search).get('screen');
   const hasSession = typeof window.hasClientSession === 'function' && window.hasClientSession();
-  if (hasSession && (param === 'authLogin' || param === 'authSignup')) return { ...base, screen: 'home' };
-  return param ? { ...base, screen: param } : base;
+  const sessionSafeBase = hasSession
+    ? { ...base, personalEvents: [], calendarSyncStatus: 'loading' }
+    : base;
+  if (hasSession && (param === 'authLogin' || param === 'authSignup')) return { ...sessionSafeBase, screen: 'home' };
+  return param ? { ...sessionSafeBase, screen: param } : sessionSafeBase;
 }
 
 function MobileApp() {
@@ -462,8 +465,10 @@ function MobileApp() {
     // apiFetch는 credentials:'include'(쿠키)+401 silent_refresh+만료 시 /login 리다이렉트를 모두 처리.
     // hasClientSession으로 로그인 여부 판단(실데이터 vs 데모). 미로드 시 graceful no-op.
     apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
+    userApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.user) || '',
     hasClientSession: (typeof window !== 'undefined' && window.hasClientSession) || (() => false),
     redirectToLogin: (typeof window !== 'undefined' && window.redirectToLogin) || (() => {}),
+    expireMobileSessionSilently,
     canUseScoreSimulation: canUseScoreSimulation(state),
     canUseReverseProjection: canUseReverseProjection(state),
     // 비-setter 스크롤 연산(원본 1:1). preserveScroll은 추가 payload 인자를 무시한다.
@@ -701,6 +706,34 @@ function MobileApp() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || state.userLoadStatus !== 'ready') return undefined;
+    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) {
+      setState({ calendarSyncStatus: 'local' });
+      return undefined;
+    }
+    let cancelled = false;
+    setState({ calendarSyncStatus: 'loading' });
+    fetchMobileAdmissionCalendar(getUserApiBinding()).then((events) => {
+      if (cancelled) return;
+      if (!events) {
+        setState({ calendarSyncStatus: 'error' });
+        return;
+      }
+      setState({ personalEvents: events, calendarSyncStatus: 'ready' });
+    }).catch((error) => {
+      if (cancelled) return;
+      if (error?.code === 'AUTH_EXPIRED') {
+        expireMobileSessionSilently();
+        return;
+      }
+      setState({ calendarSyncStatus: 'error' });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [getUserApiBinding, state.userLoadStatus]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;

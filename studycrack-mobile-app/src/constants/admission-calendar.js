@@ -93,7 +93,7 @@ export function normalizePersonalEvent(input = {}) {
     category,
     ...(note ? { note } : {}),
     createdAt: input.createdAt || now,
-    updatedAt: now,
+    updatedAt: input.updatedAt || now,
     source: 'personal'
   };
 }

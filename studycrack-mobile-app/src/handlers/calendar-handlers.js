@@ -1,5 +1,6 @@
 import { getData } from './action-utils.js';
 import { PERSONAL_EVENT_LIMITS, normalizePersonalEvent } from '../constants/admission-calendar.js';
+import { deleteMobileAdmissionEvent, upsertMobileAdmissionEvent } from '../runtime/persistence.js';
 
 function noop() {}
 
@@ -25,6 +26,7 @@ function shiftMonthAnchor(anchor, delta) {
 export function createCalendarHandlers(ctx = {}) {
   const {
     alert = globalThis.alert || noop,
+    confirm = globalThis.confirm || (() => true),
     preserveScrollAfterStateChange = (fn) => fn?.(),
     setCalendarSheetOpen = noop,
     setCalendarSelectedDate = noop,
@@ -32,8 +34,16 @@ export function createCalendarHandlers(ctx = {}) {
     setCalendarEventFormOpen = noop,
     setCalendarEventEditId = noop,
     setCalendarEventDraft = noop,
+    setCalendarSaving = noop,
     setPersonalEvents = noop
   } = ctx;
+
+  function usesServerCalendar() {
+    return typeof ctx.apiFetch === 'function' &&
+      Boolean(ctx.userApiUrl) &&
+      typeof ctx.hasClientSession === 'function' &&
+      ctx.hasClientSession();
+  }
 
   return {
     openCalendarSheet() {
@@ -85,7 +95,8 @@ export function createCalendarHandlers(ctx = {}) {
       return true;
     },
 
-    saveCalendarEvent() {
+    async saveCalendarEvent() {
+      if (ctx.calendarSaving || ctx.calendarSyncStatus === 'loading') return true;
       const editId = ctx.calendarEventEditId || null;
       const draft = {
         id: editId || undefined,
@@ -110,10 +121,39 @@ export function createCalendarHandlers(ctx = {}) {
         alert(`개인 일정은 최대 ${PERSONAL_EVENT_LIMITS.maxEvents}개까지 추가할 수 있어요.`);
         return true;
       }
-      const next = editId
-        ? current.map((e) => (e.id === editId ? normalized : e))
-        : current.concat(normalized);
-      setPersonalEvents(next);
+      if (usesServerCalendar()) {
+        setCalendarSaving(true);
+        const payload = {
+          ...normalized,
+          ...(editId ? { id: editId } : {})
+        };
+        if (!editId) {
+          delete payload.id;
+          delete payload.createdAt;
+          delete payload.updatedAt;
+          delete payload.source;
+        }
+        const result = await upsertMobileAdmissionEvent({
+          apiFetch: ctx.apiFetch,
+          userApiUrl: ctx.userApiUrl,
+          event: payload
+        });
+        setCalendarSaving(false);
+        if (!result.ok) {
+          if (result.code === 'AUTH_EXPIRED') {
+            ctx.expireMobileSessionSilently?.();
+            return true;
+          }
+          alert(result.error || '일정을 저장하지 못했습니다.');
+          return true;
+        }
+        setPersonalEvents(result.events);
+      } else {
+        const next = editId
+          ? current.map((e) => (e.id === editId ? normalized : e))
+          : current.concat(normalized);
+        setPersonalEvents(next);
+      }
       setCalendarSelectedDate(normalized.date);
       setCalendarEventFormOpen(false);
       setCalendarEventEditId(null);
@@ -121,11 +161,32 @@ export function createCalendarHandlers(ctx = {}) {
       return true;
     },
 
-    deleteCalendarEvent({ actionEl }) {
+    async deleteCalendarEvent({ actionEl }) {
+      if (ctx.calendarSaving || ctx.calendarSyncStatus === 'loading') return true;
       const eventId = getData(actionEl, 'event-id') || ctx.calendarEventEditId;
       if (!eventId) return true;
-      const next = (ctx.personalEvents || []).filter((e) => e.id !== eventId);
-      setPersonalEvents(next);
+      if (!confirm('이 일정을 삭제하시겠어요?')) return true;
+      if (usesServerCalendar()) {
+        setCalendarSaving(true);
+        const result = await deleteMobileAdmissionEvent({
+          apiFetch: ctx.apiFetch,
+          userApiUrl: ctx.userApiUrl,
+          eventId
+        });
+        setCalendarSaving(false);
+        if (!result.ok) {
+          if (result.code === 'AUTH_EXPIRED') {
+            ctx.expireMobileSessionSilently?.();
+            return true;
+          }
+          alert(result.error || '일정을 삭제하지 못했습니다.');
+          return true;
+        }
+        setPersonalEvents(result.events);
+      } else {
+        const next = (ctx.personalEvents || []).filter((e) => e.id !== eventId);
+        setPersonalEvents(next);
+      }
       setCalendarEventFormOpen(false);
       setCalendarEventEditId(null);
       setCalendarEventDraft(null);

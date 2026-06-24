@@ -1,3 +1,5 @@
+import { normalizePersonalEvent } from '../constants/admission-calendar.js';
+
 function noopResult(skipped = true) {
   return { ok: true, skipped };
 }
@@ -15,8 +17,13 @@ async function postUserData({ apiFetch, userApiUrl, type, data } = {}) {
     }
     const body = await response.json?.().catch(() => null);
     return { ok: true, data: body || null };
-  } catch (_error) {
-    return { ok: false, error: '네트워크 오류로 저장하지 못했습니다.' };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error?.message || '네트워크 오류로 저장하지 못했습니다.',
+      code: error?.code || '',
+      status: error?.status || 0
+    };
   }
 }
 
@@ -577,4 +584,44 @@ export async function markMobileNotificationsRead({ apiFetch, notiApiUrl, notiId
   } catch (_error) {
     return { ok: false };
   }
+}
+
+// ── 개인 수험 일정(admissionCalendar) — UserCore 연동 ────────────────────────
+// 공식 일정은 프론트 정적 데이터라 개인 일정만 서버와 동기화한다.
+// localStorage는 미로그인 로컬 프리뷰에서만 사용하고 로그인 사용자는 서버 응답을 단일 기준으로 삼는다.
+export async function fetchMobileAdmissionCalendar({ apiFetch, userApiUrl } = {}) {
+  if (typeof apiFetch !== 'function' || !userApiUrl) return null;
+  try {
+    const response = await apiFetch(userApiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'get_admission_calendar' })
+    });
+    if (!response?.ok) return null;
+    const data = await response.json().catch(() => null);
+    return Array.isArray(data?.events)
+      ? data.events.map((event) => normalizePersonalEvent(event)).filter(Boolean)
+      : [];
+  } catch (error) {
+    if (error?.code === 'AUTH_EXPIRED') throw error;
+    return null;
+  }
+}
+
+export async function upsertMobileAdmissionEvent({ apiFetch, userApiUrl, event } = {}) {
+  const result = await postUserData({ apiFetch, userApiUrl, type: 'upsert_admission_calendar_event', data: event });
+  if (!result.ok) return result;
+  const events = Array.isArray(result.data?.events)
+    ? result.data.events.map((item) => normalizePersonalEvent(item)).filter(Boolean)
+    : [];
+  const savedEvent = result.data?.event ? normalizePersonalEvent(result.data.event) : null;
+  return { ...result, events, event: savedEvent };
+}
+
+export async function deleteMobileAdmissionEvent({ apiFetch, userApiUrl, eventId } = {}) {
+  const result = await postUserData({ apiFetch, userApiUrl, type: 'delete_admission_calendar_event', data: { id: eventId } });
+  if (!result.ok) return result;
+  const events = Array.isArray(result.data?.events)
+    ? result.data.events.map((item) => normalizePersonalEvent(item)).filter(Boolean)
+    : [];
+  return { ...result, events };
 }
