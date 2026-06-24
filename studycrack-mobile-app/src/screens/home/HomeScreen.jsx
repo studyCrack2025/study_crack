@@ -191,7 +191,7 @@ export function HomeScreen(ctx) {
   return (
     <div className="app-shell">
       <div className="app-frame">
-        <div className={`screen app-screen app-content ${dimmed ? 'modal-lock' : ''}`}>
+        <div className={`screen app-screen app-content ${dimmed ? 'modal-lock' : ''}`} data-screen="home">
           <div className="home-dashboard home-container">
             <div className="home-content">
               <div className="home-header">

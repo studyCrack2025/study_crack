@@ -422,6 +422,7 @@ function MobileApp() {
         inner: String(inner || ''),
         withTab,
         dimmed,
+        screen: state.screen,
         tabBar: renderTabBar({ tab: state.tab, dimmed, icon: renderIcon, items: visibleTabItems })
       }),
     // JSX 화면이 셸을 직접 조립할 때 쓰는 raw 값(문자열 leaf로 임베드).

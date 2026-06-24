@@ -30,7 +30,7 @@ export function AnalysisScreen(ctx) {
   return (
     <div className="app-shell">
       <div className="app-frame">
-        <div className={`screen app-screen app-content ${dimmed ? 'modal-lock' : ''}`}>
+        <div className={`screen app-screen app-content ${dimmed ? 'modal-lock' : ''}`} data-screen="analysis">
           <section className={`analysis-v2 ${isAnalyzing ? 'loading' : ''}`}>
             <div className="card analysis-v2-head">
               <div className="top-card-head">
