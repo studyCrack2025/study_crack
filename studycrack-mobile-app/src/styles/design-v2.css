@@ -925,3 +925,88 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .locked-feature-panel{animation:surfaceLiftIn 360ms var(--ease-enter) both;}
 .analysis-v2.loading .card::before,.analysis-eta-loading .skeleton{animation-duration:1.35s;}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;scroll-behavior:auto !important;transition-duration:.001ms !important;}}
+
+/* ── Phase 3: 모바일 모달 레이아웃 공통화 (계획 §공통 모달 규칙) ───────────────
+   app frame 기준 공통 폭/safe-area/내부 스크롤. 개별 viewport 직접 계산(100vw-…) 제거. */
+:root{--mobile-modal-width:min(calc(100% - 24px),520px);}
+.home-modal-overlay,.terms-modal-backdrop{padding-inline:12px;padding-block:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-bottom));box-sizing:border-box;}
+.home-modal,.profile-detail-modal,.score-onepage-modal,.qna-modal,.phone-change-modal,.my-profile-edit-modal,.pro-request-modal{width:var(--mobile-modal-width);max-width:100%;box-sizing:border-box;}
+.profile-detail-modal{max-width:100%;}
+.score-onepage-modal{width:var(--mobile-modal-width);}
+/* 긴 모달은 panel overflow를 닫고 본문만 스크롤 → 하단 radius/safe-area 보장 */
+.terms-modal{width:var(--mobile-modal-width);max-width:100%;max-height:min(82dvh,640px);display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;padding:0;border-radius:20px;}
+.terms-modal-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px 12px;border-bottom:1px solid #E2E8F4;}
+.terms-modal-head .terms-modal-title{margin:0;font-size:18px;font-weight:800;}
+.terms-modal-head .terms-modal-close{flex:0 0 auto;margin:0;width:32px;height:32px;font-size:26px;line-height:1;display:flex;align-items:center;justify-content:center;}
+.terms-modal-body{flex:1 1 auto;min-height:0;max-height:none;margin:14px;border-radius:12px;-webkit-overflow-scrolling:touch;}
+/* 좁은 화면에서는 모달 액션을 단일 열로 */
+@media (max-width:360px){
+  .profile-detail-actions,.support-btns,.my-profile-edit-actions{flex-direction:column;}
+  .profile-detail-actions .btn,.support-btns .btn,.my-profile-edit-actions .btn{width:100%;}
+}
+
+/* ── Phase 4: 홈 알림 FAB + 바텀시트 (계획 §홈 알림) ──────────────────────────
+   우상단 bell 제거 후 탭바 위 우하단 플로팅 버튼 + 하단에서 올라오는 알림 시트. */
+.home-notif-fab{position:absolute;right:16px;bottom:calc(78px + 16px + env(safe-area-inset-bottom));z-index:60;width:52px;height:52px;border-radius:999px;border:1px solid var(--primary-dark);background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(52,78,143,.28);}
+.home-notif-fab .home-notif-fab-icon{display:flex;align-items:center;justify-content:center;width:24px;height:24px;}
+.home-notif-fab .home-notif-fab-icon svg{width:22px;height:22px;stroke:#fff;}
+.home-notif-fab-badge{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#EF4444;color:#fff;font-size:11px;font-weight:800;line-height:20px;text-align:center;border:2px solid #fff;}
+.notif-sheet{max-height:70dvh;display:flex;flex-direction:column;overflow:hidden;border-top-left-radius:20px;border-top-right-radius:20px;padding:8px 16px max(16px,env(safe-area-inset-bottom));box-sizing:border-box;}
+.notif-sheet-handle{flex:0 0 auto;width:40px;height:4px;border-radius:999px;background:#CBD5E1;margin:4px auto 10px;}
+.notif-sheet-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;}
+.notif-sheet-head .home-modal-title{margin:0;}
+.notif-sheet .pro-notif-list{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:grid;gap:10px;margin:0;padding-right:2px;}
+.notif-sheet .pro-notif-item{padding:12px;border:1px solid #E2E8F0;border-radius:12px;background:#F8FAFC;}
+.notif-sheet .pro-notif-item.pro-notif-unread{border-color:var(--primary);background:#EEF4FF;}
+.notif-sheet .pro-notif-item b{display:block;font-size:14px;color:#0F172A;margin-bottom:4px;}
+.notif-sheet .pro-notif-item p{margin:0;font-size:12px;color:#475569;line-height:1.45;}
+.notif-sheet .pro-notif-empty{padding:28px 12px;text-align:center;color:#64748B;font-size:13px;}
+
+/* ── Phase 5: 수험 일정 캘린더 (계획 §수험 일정 캘린더) ────────────────────── */
+.home-top-icons{display:flex;justify-content:flex-end;}
+.home-calendar-btn{position:relative;display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 12px;border-radius:999px;border:1px solid #DDE7F6;background:#FFFFFF;color:#26304A;box-shadow:0 5px 14px rgba(52,78,143,.06);}
+.home-calendar-btn-icon{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;}
+.home-calendar-btn-icon svg{width:18px;height:18px;stroke:var(--primary-dark);}
+.home-calendar-dday{font-size:12px;font-weight:800;color:var(--primary-dark);letter-spacing:.01em;}
+/* 캘린더 시트 */
+.calendar-sheet{max-height:80dvh;display:flex;flex-direction:column;overflow:hidden;border-top-left-radius:20px;border-top-right-radius:20px;padding:8px 16px max(16px,env(safe-area-inset-bottom));box-sizing:border-box;}
+.calendar-sheet-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.calendar-nearest{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid var(--primary);border-radius:14px;background:#EEF4FF;margin-bottom:14px;}
+.calendar-nearest-dday{flex:0 0 auto;min-width:52px;text-align:center;font-size:16px;font-weight:900;color:var(--primary-dark);}
+.calendar-nearest-main b{display:block;font-size:15px;color:#0F172A;}
+.calendar-nearest-main p{margin:3px 0 0;font-size:12px;color:#475569;}
+.calendar-nearest-empty{justify-content:center;border-style:dashed;border-color:#CBD5E1;background:#F8FAFC;}
+.calendar-nearest-empty p{margin:0;font-size:13px;color:#64748B;}
+.calendar-month-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.calendar-month-nav b{font-size:15px;font-weight:800;color:#26304A;}
+.calendar-nav-btn{width:36px;height:36px;border-radius:10px;border:1px solid #E2E8F4;background:#fff;font-size:20px;line-height:1;color:#475569;}
+.calendar-weekdays{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11px;font-weight:700;color:#94A3B8;margin-bottom:4px;}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.calendar-cell{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;min-height:44px;padding:6px 0 4px;border:1px solid transparent;border-radius:10px;background:transparent;}
+.calendar-cell-blank{visibility:hidden;}
+.calendar-cell-day{font-style:normal;font-size:13px;font-weight:700;color:#334155;}
+.calendar-cell.is-today .calendar-cell-day{color:var(--primary-dark);}
+.calendar-cell.is-today{background:#F1F6FF;}
+.calendar-cell.is-selected{border-color:var(--primary);background:#EEF4FF;}
+.calendar-cell-dots{display:flex;gap:2px;height:6px;}
+.calendar-cell-dots i{width:5px;height:5px;border-radius:999px;display:inline-block;}
+.calendar-selected{margin-top:14px;}
+.calendar-selected-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+.calendar-selected-head b{font-size:14px;font-weight:800;color:#26304A;}
+.calendar-selected-list{display:grid;gap:8px;}
+.calendar-event-row{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid #E2E8F0;border-radius:12px;background:#F8FAFC;text-align:left;width:100%;}
+.calendar-event-row.is-editable{cursor:pointer;}
+.calendar-event-dot{flex:0 0 auto;width:8px;height:8px;border-radius:999px;}
+.calendar-event-main{flex:1 1 auto;min-width:0;}
+.calendar-event-main b{display:block;font-size:14px;color:#0F172A;}
+.calendar-event-main p{margin:3px 0 0;font-size:12px;color:#475569;line-height:1.4;}
+.calendar-event-main small{display:block;margin-top:3px;font-size:11px;color:#94A3B8;}
+.calendar-event-chev{flex:0 0 auto;font-size:18px;color:#CBD5E1;}
+.calendar-event-tag{flex:0 0 auto;font-size:11px;font-weight:700;color:#94A3B8;background:#EEF2F7;border-radius:999px;padding:2px 8px;}
+.calendar-empty{padding:22px 12px;text-align:center;color:#64748B;font-size:13px;}
+/* 일정 추가/수정 모달 */
+.calendar-form-fields{display:flex;flex-direction:column;gap:6px;margin:6px 0 14px;}
+.calendar-form-fields label{font-size:12px;font-weight:700;color:#475569;margin-top:6px;}
+.calendar-form-note{min-height:64px;resize:vertical;}
+.calendar-form-actions{display:flex;gap:8px;}
+.calendar-form-actions .calendar-delete-btn{margin-right:auto;color:#DC2626;}

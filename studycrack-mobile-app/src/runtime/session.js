@@ -2,7 +2,8 @@
 import { createBlankScoreState, mapExamDataToScorePatch, scoreExamKeyToLabel } from './persistence.js';
 
 // 사용자 분석 데이터 호출. 성공 시 백엔드 userData 반환, 그 외 null.
-// 미인증/네트워크/CORS 실패는 throw 없이 null(데모 유지).
+// 네트워크/CORS 실패는 throw 없이 null(데모 유지)하되, 인증 만료(AUTH_EXPIRED)는
+// 상위(모바일 부트스트랩)가 세션 정리/로그인 이동을 분기하도록 그대로 전달한다.
 export async function fetchCurrentUser({ apiFetch, userApiUrl } = {}) {
   if (typeof apiFetch !== 'function' || !userApiUrl) return null;
   try {
@@ -13,7 +14,8 @@ export async function fetchCurrentUser({ apiFetch, userApiUrl } = {}) {
     if (!res || !res.ok) return null;
     const data = await res.json().catch(() => null);
     return data && typeof data === 'object' ? data : null;
-  } catch (_error) {
+  } catch (error) {
+    if (error && error.code === 'AUTH_EXPIRED') throw error;
     return null;
   }
 }
@@ -87,6 +89,16 @@ export function mapUserToStatePatch(userData, base = {}) {
     if (userData[key] !== undefined && userData[key] !== null) userPatch[key] = userData[key];
   });
   if (userData.tutorInfo && typeof userData.tutorInfo === 'object') userPatch.tutorInfo = userData.tutorInfo;
+  // 구독 정보: 백엔드 get_user_analysis가 내려주는 축약 필드를 마이페이지 카드/상세 모달이 읽도록 병합.
+  if (userData.currentSubscription && typeof userData.currentSubscription === 'object') {
+    userPatch.currentSubscription = userData.currentSubscription;
+  }
+  if (userData.pendingSubscription && typeof userData.pendingSubscription === 'object') {
+    userPatch.pendingSubscription = userData.pendingSubscription;
+  }
+  if (userData.gracePeriodUntil !== undefined && userData.gracePeriodUntil !== null) {
+    userPatch.gracePeriodUntil = userData.gracePeriodUntil;
+  }
   if (userData.marketingAgreed !== undefined) userPatch.marketingAgreed = userData.marketingAgreed === true;
   if (Array.isArray(userData.linkedProviders)) userPatch.linkedProviders = userData.linkedProviders;
   if (userData.quantitative && typeof userData.quantitative === 'object') userPatch.quantitative = userData.quantitative;

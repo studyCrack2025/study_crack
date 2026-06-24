@@ -1,3 +1,4 @@
+import { renderCalendarSheet } from '../../components/calendar-sheet.js';
 import { renderModal } from '../../components/modal.js';
 import { renderSheet } from '../../components/sheet.js';
 import { CRACKY_SRC } from '../../constants/assets.js';
@@ -138,7 +139,14 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
-// 알림 모달(R6): 서버 student_get_notifications 결과(notiList)를 렌더. 미인증/빈 목록/에러는 안내 문구.
+// 미읽음 알림 개수(FAB badge용).
+export function countUnreadNotifications(notiList = []) {
+  if (!Array.isArray(notiList)) return 0;
+  return notiList.reduce((sum, n) => (n && !n.isRead ? sum + 1 : sum), 0);
+}
+
+// 알림 시트(R6 → Phase 4): 중앙 모달 대신 하단 바텀시트로 표시.
+// 서버 student_get_notifications 결과(notiList)를 렌더. 미인증/빈 목록/에러는 안내 문구.
 // 하위호환: 옛 시그니처(boolean notifModalOpen)도 허용.
 export function renderNotificationModal(ctx = {}) {
   const open = typeof ctx === 'boolean' ? ctx : ctx.notifModalOpen;
@@ -149,7 +157,7 @@ export function renderNotificationModal(ctx = {}) {
     ? notiList
         .map(
           (n) =>
-            `<div class="${n.isRead ? '' : 'pro-notif-unread'}"><b>${escapeHtml(n.title)}</b><p>${escapeHtml(n.body)}</p></div>`
+            `<div class="pro-notif-item ${n.isRead ? '' : 'pro-notif-unread'}"><b>${escapeHtml(n.title)}</b><p>${escapeHtml(n.body)}</p></div>`
         )
         .join('')
     : `<div class="pro-notif-empty"><p>${
@@ -159,8 +167,8 @@ export function renderNotificationModal(ctx = {}) {
             ? '알림을 불러오지 못했습니다.'
             : '새로운 알림이 없습니다.'
       }</p></div>`;
-  const body = `<p class="home-modal-title">알림</p><div class="pro-notif-list">${itemsHtml}</div><button class="btn btn-primary" data-action="closeNotificationModal">확인</button>`;
-  return renderModal({ panelClass: 'pro-notif-modal', dismissAction: 'closeNotificationModal', body });
+  const body = `<div class="notif-sheet-handle" aria-hidden="true"></div><div class="notif-sheet-head"><p class="home-modal-title">알림</p><button type="button" class="qna-modal-close" data-action="closeNotificationModal" aria-label="닫기">✕</button></div><div class="pro-notif-list">${itemsHtml}</div>`;
+  return renderSheet({ panelClass: 'notif-sheet', dismissAction: 'closeNotificationModal', body });
 }
 
 export function renderDrawer({ drawerOpen = false, icon, menuItems = DEFAULT_MENU_ITEMS }) {
@@ -230,7 +238,7 @@ export function renderHomeView(ctx) {
     <div class="home-content">
     <div class="home-header">
       <div class="home-top-icons">
-        <button class="top-icon-btn" data-action="openNotificationModal">${icon('bell', false)}</button>
+        <button type="button" class="home-calendar-btn" data-action="openCalendarSheet" aria-label="수험 일정"><span class="home-calendar-btn-icon">${icon('calendar', false)}</span>${ctx.calendarNearestDdayLabel ? `<span class="home-calendar-dday">${escapeHtml(ctx.calendarNearestDdayLabel)}</span>` : ''}</button>
       </div>
       <div class="home-greeting-bubble">
         <img loading="lazy" decoding="async" src="${crackySrc}" class="home-greeting-cracky" alt="크랙이" />
@@ -272,7 +280,9 @@ export function renderHomeView(ctx) {
       </button>
     </div>
     ${renderStudySubjectSheet({ plannedScheduleOptions, studySubjectSheetOnlyPlanned, studySubjectSheetOpen })}
+    <button type="button" class="home-notif-fab" data-action="openNotificationModal" aria-label="${countUnreadNotifications(notiList) ? `알림 ${countUnreadNotifications(notiList)}건` : '알림'}"><span class="home-notif-fab-icon">${icon('bell', false)}</span>${countUnreadNotifications(notiList) ? `<span class="home-notif-fab-badge">${countUnreadNotifications(notiList) > 9 ? '9+' : countUnreadNotifications(notiList)}</span>` : ''}</button>
     ${renderNotificationModal({ notifModalOpen, notiList, notiStatus })}
+    ${renderCalendarSheet(ctx)}
     ${renderDrawer({ drawerOpen, icon })}
   </div>
   </div>`;

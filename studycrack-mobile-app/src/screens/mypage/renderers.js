@@ -54,6 +54,40 @@ function displayPlanStatus(plan = '') {
   return label === '미구독' ? '이용권 없음' : `${label} 이용 중`;
 }
 
+// 기간 제한 없는 상품(Basic/Starter)은 endDate가 있어도 평생 이용으로 표시한다. (구독 표시 규칙: 계획 §구독 정보 통합)
+function isLifetimePlan(tier = '') {
+  const raw = String(tier || '').toLowerCase();
+  return raw.includes('basic') || raw.includes('starter');
+}
+
+function formatSubDate(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+}
+
+// 상단 카드/상세 모달 공용 구독 요약. 정기결제 스키마 미확정이라 '다음 결제일' 대신 '이용 종료 예정일' 사용.
+function buildSubscriptionSummary(user = {}, selectedPlan = '') {
+  const sub = user?.currentSubscription && typeof user.currentSubscription === 'object' ? user.currentSubscription : null;
+  const pending = user?.pendingSubscription && typeof user.pendingSubscription === 'object' ? user.pendingSubscription : null;
+  const planLabel = displayPlan(selectedPlan);
+  const tier = (sub && sub.tier) || selectedPlan;
+  const hasPlan = planLabel !== '미구독';
+  const lifetime = hasPlan && isLifetimePlan(tier);
+  const startDate = sub ? formatSubDate(sub.startDate) : '';
+  const endDate = sub ? formatSubDate(sub.endDate) : '';
+  let periodLine = '';
+  if (!hasPlan) periodLine = '이용권 없음';
+  else if (lifetime) periodLine = '평생 이용';
+  else if (endDate) periodLine = `${endDate}까지`;
+  else periodLine = '이용 기간 정보 없음';
+  const pendingLine = pending && pending.tier
+    ? `다음 플랜 ${displayPlan(pending.tier)}${pending.startDate ? ` · ${formatSubDate(pending.startDate)} 시작` : ''}`
+    : '';
+  return { planLabel, hasPlan, lifetime, startDate, endDate, periodLine, pendingLine };
+}
+
 function canViewTutorInfo(plan = '', user = {}) {
   const raw = String(user?.computedTier || user?.tier || plan || '').toLowerCase();
   return raw.includes('standard') || raw.includes('pro');
@@ -87,6 +121,11 @@ function renderProfileDetailModal(ctx) {
 
   if (!profileDetailModalOpen) return '';
 
+  const sub = buildSubscriptionSummary(user, selectedPlan);
+  const subRows = `<div class="profile-detail-row"><span>현재 플랜</span><strong>${escapeHtml(sub.planLabel)}</strong></div>
+      ${sub.hasPlan && sub.startDate ? `<div class="profile-detail-row"><span>이용 시작일</span><strong>${escapeHtml(sub.startDate)}</strong></div>` : ''}
+      <div class="profile-detail-row"><span>${sub.lifetime ? '이용 기간' : '이용 종료 예정일'}</span><strong>${escapeHtml(sub.lifetime ? '평생 이용' : (sub.endDate || (sub.hasPlan ? '정보 없음' : '이용권 없음')))}</strong></div>
+      ${sub.pendingLine ? `<div class="profile-detail-row"><span>예약 플랜</span><strong>${escapeHtml(sub.pendingLine)}</strong></div>` : ''}`;
   const body = `<div class="profile-detail-modal-head"><p class="home-modal-title">계정 및 구독 정보</p><button type="button" class="qna-modal-close" data-action="closeProfileDetailModal">✕</button></div>
     <div class="profile-detail-hero">
       <div class="profile-photo-large">${renderProfileAvatar(user, icon, 'profile-photo-img')}</div>
@@ -100,7 +139,9 @@ function renderProfileDetailModal(ctx) {
       <div class="profile-detail-row"><span>이름</span><strong>${escapeHtml(displayName(user))}</strong></div>
       <div class="profile-detail-row"><span>이메일</span><strong>${escapeHtml(displayEmail(user))}</strong></div>
       <div class="profile-detail-row"><span>전화번호</span><strong>${escapeHtml(user?.phone || '등록된 번호 없음')}</strong></div>
-      <div class="profile-detail-row"><span>현재 플랜</span><strong>${escapeHtml(displayPlan(selectedPlan))}</strong></div>
+    </section>
+    <section class="profile-detail-section">
+      ${subRows}
     </section>
     ${renderTutorInfo(user, selectedPlan)}
     <section class="profile-detail-section">
@@ -205,15 +246,15 @@ export function renderMyPageScreen(ctx) {
     selectedPlan,
     user
   } = ctx;
-  const planLabel = displayPlan(selectedPlan);
   const planStatus = displayPlanStatus(selectedPlan);
+  const sub = buildSubscriptionSummary(user, selectedPlan);
+  const cardSummary = sub.hasPlan ? `${sub.planLabel} · ${sub.periodLine}` : '계정 및 구독 정보';
 
   return layout(appbar('마이페이지', false) + `<div class="my-stack">
-      <button type="button" class="card my-profile-card" data-action="openProfileDetailModal"><div class="my-profile-left"><div class="my-avatar">${renderProfileAvatar(user, icon, 'my-avatar-img')}</div><div><p class="my-name">${escapeHtml(displayName(user))}</p><p class="sub">계정 및 구독 정보</p></div></div><div class="my-profile-right"><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span><span class="badge">${escapeHtml(planStatus)}</span></div></button>
+      <button type="button" class="card my-profile-card" data-action="openProfileDetailModal"><div class="my-profile-left"><div class="my-avatar">${renderProfileAvatar(user, icon, 'my-avatar-img')}</div><div><p class="my-name">${escapeHtml(displayName(user))}</p><p class="sub">${escapeHtml(cardSummary)}</p></div></div><div class="my-profile-right"><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span><span class="badge">${escapeHtml(planStatus)}</span></div></button>
       ${renderProfileDetailModal(ctx)}
       ${renderProfileEditModal(ctx)}
       ${mbtiResult ? `<div class="card" style="border:2px solid #2563EB;background:#EFF6FF;"><p class="analysis-title">진단 결과</p><p style="margin:6px 0 2px;font-size:30px;font-weight:900;letter-spacing:.08em;color:#1D4ED8;text-shadow:0 6px 18px rgba(37,99,235,.18);">CSDR</p><p class="sub" style="margin:0 0 12px;font-size:12px;color:#1E40AF;">(컨셉형, 직관령, 분석형, 루틴)</p><button class="btn btn-secondary" disabled>맞춤 공부법 PDF 준비 중</button></div>` : ''}
-      <div class="card my-subscription-card"><div class="my-sub-icon">${icon('report', false)}</div><div><p class="my-sub-title">${escapeHtml(planStatus)}</p><p class="my-sub-date">구독 정보는 결제 내역과 연동됩니다.</p></div></div>
       <div class="card my-menu-card">
         <button class="my-row" data-action="goto" data-target="qualInfo">정성조사서 <span>${icon('chevron', false)}</span></button><button class="my-row" data-action="goto" data-target="scoreInfo">성적 정보 <span>${icon('chevron', false)}</span></button>
 

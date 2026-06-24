@@ -1,5 +1,6 @@
 import { createAnalysisHandlers } from './analysis-handlers.js';
 import { createAuthHandlers } from './auth-handlers.js';
+import { createCalendarHandlers } from './calendar-handlers.js';
 import { createActionDispatcher, mergeHandlerGroups } from './dispatch.js';
 import { createFormHandlers } from './form-handlers.js';
 import { createGestureHandlers } from './gesture-handlers.js';
@@ -14,7 +15,8 @@ export const MOBILE_ACTION_HANDLER_ORDER = [
   'planner',
   'profile',
   'service',
-  'analysis'
+  'analysis',
+  'calendar'
 ];
 
 export function createMobileActionHandlerGroups(ctx = {}) {
@@ -24,7 +26,8 @@ export function createMobileActionHandlerGroups(ctx = {}) {
     planner: createPlannerHandlers(ctx),
     profile: createProfileHandlers(ctx),
     service: createServiceHandlers(ctx),
-    analysis: createAnalysisHandlers(ctx)
+    analysis: createAnalysisHandlers(ctx),
+    calendar: createCalendarHandlers(ctx)
   };
 }
 

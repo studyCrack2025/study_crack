@@ -1,5 +1,13 @@
 import { FIXED_TODAY_DATE } from '../constants/mock-data.js';
 import { ANALYSIS_PROFILES, ANALYSIS_RECOMMENDED, ANALYSIS_SEARCH_SEED } from '../constants/universities.js';
+import {
+  computeDday,
+  eventCoversDate,
+  formatDdayLabel,
+  getNearestUpcomingEvent,
+  getOfficialAdmissionEvents,
+  mergeCalendarEvents
+} from '../constants/admission-calendar.js';
 import { scoreExamTypeToKey } from './persistence.js';
 
 // 런타임 derived view-model: 원시 state에서 화면 renderer가 기대하는 계산값을 파생.
@@ -516,11 +524,75 @@ export function buildScoreInfoDerived(state = {}) {
 }
 
 // 도메인 derived 집계. liveStudySeconds는 라이브 타이머 ref의 현재값(없으면 0).
+const CALENDAR_WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+// 수험 일정 캘린더 파생: 병합 일정, 최근접 일정/D-day, 월간 그리드, 선택일 일정.
+export function buildCalendarDerived(state = {}) {
+  const today = FIXED_TODAY_DATE;
+  const personalEvents = Array.isArray(state.personalEvents) ? state.personalEvents : [];
+  const todayYear = Number(today.slice(0, 4));
+  const officialEvents = getOfficialAdmissionEvents(todayYear);
+  const calendarEvents = mergeCalendarEvents(officialEvents, personalEvents);
+
+  const nearestEvent = getNearestUpcomingEvent(calendarEvents, today);
+  const calendarNearestDdayLabel = nearestEvent ? formatDdayLabel(nearestEvent.date, today) : '';
+  const calendarNearestDday = nearestEvent ? computeDday(nearestEvent.date, today) : null;
+
+  const anchor = /^\d{4}-\d{2}-\d{2}$/.test(state.calendarMonthAnchor || '')
+    ? state.calendarMonthAnchor
+    : `${today.slice(0, 7)}-01`;
+  const year = Number(anchor.slice(0, 4));
+  const month = Number(anchor.slice(5, 7)); // 1-12
+  const calendarMonthLabel = `${year}년 ${month}월`;
+  const firstWeekday = new Date(year, month - 1, 1).getDay(); // 0=일
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const selected = state.calendarSelectedDate || today;
+
+  const calendarMonthCells = [];
+  for (let i = 0; i < firstWeekday; i += 1) calendarMonthCells.push({ blank: true, key: `b${i}` });
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const ymd = `${year}-${pad2(month)}-${pad2(day)}`;
+    const dayEvents = calendarEvents.filter((e) => eventCoversDate(e, ymd));
+    calendarMonthCells.push({
+      blank: false,
+      key: ymd,
+      ymd,
+      day,
+      isToday: ymd === today,
+      isSelected: ymd === selected,
+      hasEvents: dayEvents.length > 0,
+      eventDots: dayEvents.slice(0, 3).map((e) => ({ category: e.category, source: e.source }))
+    });
+  }
+
+  const calendarSelectedEvents = calendarEvents.filter((e) => eventCoversDate(e, selected));
+
+  return {
+    calendarToday: today,
+    calendarEvents,
+    calendarNearestEvent: nearestEvent,
+    calendarNearestDday,
+    calendarNearestDdayLabel,
+    calendarMonthLabel,
+    calendarMonthYear: year,
+    calendarMonthIndex: month,
+    calendarWeekdays: CALENDAR_WEEKDAYS,
+    calendarMonthCells,
+    calendarSelectedEvents,
+    calendarUnreadCount: 0
+  };
+}
+
 export function buildDerivedContext(state = {}, liveStudySeconds = 0) {
   return {
     ...buildPlannerDerived(state),
     ...buildHomeDerived(state, liveStudySeconds),
     ...buildAnalysisDerived(state),
-    ...buildScoreInfoDerived(state)
+    ...buildScoreInfoDerived(state),
+    ...buildCalendarDerived(state)
   };
 }
