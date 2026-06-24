@@ -238,6 +238,13 @@ export function createServiceHandlers(ctx) {
       return true;
     },
 
+    // 알림 팝오버 항목/전체 보기 → 알림 목록 화면으로 이동(팝오버는 닫음).
+    openNotificationList() {
+      setNotifModalOpen(false);
+      goto?.('notificationList');
+      return true;
+    },
+
     drawerGoto({ actionEl }) {
       setDrawerOpen(false);
       goto?.(getData(actionEl, 'target'));

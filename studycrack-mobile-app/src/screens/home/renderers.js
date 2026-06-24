@@ -145,9 +145,11 @@ export function countUnreadNotifications(notiList = []) {
   return notiList.reduce((sum, n) => (n && !n.isRead ? sum + 1 : sum), 0);
 }
 
-// 알림 시트(R6 → Phase 4): 중앙 모달 대신 하단 바텀시트로 표시.
-// 서버 student_get_notifications 결과(notiList)를 렌더. 미인증/빈 목록/에러는 안내 문구.
+// 알림 팝오버(Phase 4 → 개선): 바텀시트 대신 우하단 FAB 위로 뜨는 부분 팝오버.
+// 최근 알림 미리보기를 보여주고, 항목/전체 보기 클릭 시 알림 목록 화면(notificationList)으로 이동.
 // 하위호환: 옛 시그니처(boolean notifModalOpen)도 허용.
+const NOTIF_POPOVER_PREVIEW_COUNT = 4;
+
 export function renderNotificationModal(ctx = {}) {
   const open = typeof ctx === 'boolean' ? ctx : ctx.notifModalOpen;
   if (!open) return '';
@@ -155,20 +157,24 @@ export function renderNotificationModal(ctx = {}) {
   const notiStatus = (typeof ctx === 'object' && ctx.notiStatus) || 'idle';
   const itemsHtml = notiList.length
     ? notiList
+        .slice(0, NOTIF_POPOVER_PREVIEW_COUNT)
         .map(
           (n) =>
-            `<div class="pro-notif-item ${n.isRead ? '' : 'pro-notif-unread'}"><b>${escapeHtml(n.title)}</b><p>${escapeHtml(n.body)}</p></div>`
+            `<button type="button" class="notif-popover-item ${n.isRead ? '' : 'pro-notif-unread'}" data-action="openNotificationList"><b>${escapeHtml(n.title)}</b><p>${escapeHtml(n.body || n.message || '')}</p></button>`
         )
         .join('')
-    : `<div class="pro-notif-empty"><p>${
+    : `<div class="notif-popover-empty"><p>${
         notiStatus === 'loading'
           ? '알림을 불러오는 중...'
           : notiStatus === 'error'
             ? '알림을 불러오지 못했습니다.'
             : '새로운 알림이 없습니다.'
       }</p></div>`;
-  const body = `<div class="notif-sheet-handle" aria-hidden="true"></div><div class="notif-sheet-head"><p class="home-modal-title">알림</p><button type="button" class="qna-modal-close" data-action="closeNotificationModal" aria-label="닫기">✕</button></div><div class="pro-notif-list">${itemsHtml}</div>`;
-  return renderSheet({ panelClass: 'notif-sheet', dismissAction: 'closeNotificationModal', body });
+  const moreCount = Math.max(0, notiList.length - NOTIF_POPOVER_PREVIEW_COUNT);
+  const footer = notiList.length
+    ? `<button type="button" class="notif-popover-all" data-action="openNotificationList">${moreCount ? `알림 ${moreCount}건 더 보기` : '알림 전체 보기'}</button>`
+    : '';
+  return `<div class="notif-popover-overlay" data-action="closeNotificationModal"><div class="notif-popover" data-action="noopModal"><div class="notif-popover-head"><b>알림</b><button type="button" class="qna-modal-close" data-action="closeNotificationModal" aria-label="닫기">✕</button></div><div class="notif-popover-list">${itemsHtml}</div>${footer}</div></div>`;
 }
 
 export function renderDrawer({ drawerOpen = false, icon, menuItems = DEFAULT_MENU_ITEMS }) {
@@ -237,15 +243,15 @@ export function renderHomeView(ctx) {
   return `<div class="home-dashboard home-container">
     <div class="home-content">
     <div class="home-header">
-      <div class="home-top-icons">
-        <button type="button" class="home-calendar-btn" data-action="openCalendarSheet" aria-label="수험 일정"><span class="home-calendar-btn-icon">${icon('calendar', false)}</span>${ctx.calendarNearestDdayLabel ? `<span class="home-calendar-dday">${escapeHtml(ctx.calendarNearestDdayLabel)}</span>` : ''}</button>
-      </div>
       <div class="home-greeting-bubble">
         <img loading="lazy" decoding="async" src="${crackySrc}" class="home-greeting-cracky" alt="크랙이" />
         <div class="home-greeting-speech">
           <p class="home-greeting">안녕하세요, ${escapeHtml(user?.name || '회원')}님 👋</p>
           <p class="home-sub">오늘도 크랙한 하루 되세요!</p>
         </div>
+      </div>
+      <div class="home-top-icons">
+        <button type="button" class="home-calendar-btn" data-action="openCalendarSheet" aria-label="수험 일정"><span class="home-calendar-btn-icon">${icon('calendar', false)}</span>${ctx.calendarNearestDdayLabel ? `<span class="home-calendar-dday">${escapeHtml(ctx.calendarNearestDdayLabel)}</span>` : ''}</button>
       </div>
     </div>
     <div class="section home-section">
