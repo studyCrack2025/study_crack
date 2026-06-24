@@ -1,5 +1,6 @@
 import { CRACKY_SRC } from '../../constants/assets.js';
 import { EXAM_OPTIONS } from '../../constants/options.js';
+import { formatCompactCalendarTitle } from '../../constants/admission-calendar.js';
 import { renderCalendarSheet } from '../../components/calendar-sheet.js';
 import {
   countUnreadNotifications,
@@ -169,6 +170,7 @@ export function HomeScreen(ctx) {
     weeklyReportsStatus = 'idle',
     userLoadStatus = 'idle',
     notiList = [],
+    calendarNearestEvent = null,
     calendarNearestDdayLabel = '',
     hasClientSession = () => false
   } = ctx;
@@ -216,7 +218,10 @@ export function HomeScreen(ctx) {
                 <div className="home-top-icons">
                   <button type="button" className="home-calendar-btn" data-action="openCalendarSheet" aria-label="수험 일정">
                     <span className="home-calendar-btn-icon" dangerouslySetInnerHTML={{ __html: icon('calendar', false) }} />
-                    {calendarNearestDdayLabel ? <span className="home-calendar-dday">{calendarNearestDdayLabel}</span> : null}
+                    <span className="home-calendar-copy">
+                      <strong className="home-calendar-dday">{calendarNearestDdayLabel || '일정'}</strong>
+                      <small className="home-calendar-summary">{formatCompactCalendarTitle(calendarNearestEvent)}</small>
+                    </span>
                   </button>
                 </div>
               </div>

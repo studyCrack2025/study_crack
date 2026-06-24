@@ -2,6 +2,7 @@ import { renderCalendarSheet } from '../../components/calendar-sheet.js';
 import { renderModal } from '../../components/modal.js';
 import { renderSheet } from '../../components/sheet.js';
 import { CRACKY_SRC } from '../../constants/assets.js';
+import { formatCompactCalendarTitle } from '../../constants/admission-calendar.js';
 import { EXAM_OPTIONS } from '../../constants/options.js';
 
 const DEFAULT_MENU_ITEMS = [
@@ -251,7 +252,7 @@ export function renderHomeView(ctx) {
         </div>
       </div>
       <div class="home-top-icons">
-        <button type="button" class="home-calendar-btn" data-action="openCalendarSheet" aria-label="수험 일정"><span class="home-calendar-btn-icon">${icon('calendar', false)}</span>${ctx.calendarNearestDdayLabel ? `<span class="home-calendar-dday">${escapeHtml(ctx.calendarNearestDdayLabel)}</span>` : ''}</button>
+        <button type="button" class="home-calendar-btn" data-action="openCalendarSheet" aria-label="수험 일정"><span class="home-calendar-btn-icon">${icon('calendar', false)}</span><span class="home-calendar-copy"><strong class="home-calendar-dday">${escapeHtml(ctx.calendarNearestDdayLabel || '일정')}</strong><small class="home-calendar-summary">${escapeHtml(formatCompactCalendarTitle(ctx.calendarNearestEvent))}</small></span></button>
       </div>
     </div>
     <div class="section home-section">
